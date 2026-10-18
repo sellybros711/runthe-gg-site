@@ -82,7 +82,6 @@
 <!-- 2 AND 3. THE MOUND AND THE PITCH -->
 <section class="screen" id="s-mound" aria-label="On the mound">
   <div class="hud">
-    <div class="strip" id="m-strip" aria-label="Your grades so far"></div>
     <div class="scorebar">
       <div class="sb-score"><span class="tm">us</span><b id="m-us">0</b><span class="tm">them</span><b id="m-them">0</b></div>
       <div class="sb-inn" id="m-inn"></div>
@@ -96,6 +95,7 @@
       <div class="sb-count"><b id="m-count">0-0</b><span>count</span></div>
       <div class="sb-pn"><b id="m-pn">1</b><span>pitch</span></div>
     </div>
+    <p class="pbp" id="m-pbp" aria-live="polite"></p>
   </div>
   <button class="batterbar" id="m-batter" type="button" aria-expanded="false" aria-controls="m-scout">
     <span class="bb-name"><b id="m-bname"></b><span class="hand" id="m-bhand"></span></span>
@@ -105,8 +105,6 @@
   <div class="scene" id="m-scene">
     <canvas id="m-canvas" aria-hidden="true"></canvas>
     <div class="scout" id="m-scout" hidden></div>
-    <div class="callout" id="m-call" aria-live="polite"></div>
-    <div class="flash" id="m-flash"></div>
     <div class="dbg" id="m-dbg" hidden></div>
     <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
   </div>
@@ -124,8 +122,8 @@
     <div class="r-stat"><small>better than</small><b id="r-pct"></b><small>of closers</small></div>
     <div class="r-stat"><small>pitched like</small><b class="nm" id="r-like"></b><span id="r-why"></span></div>
   </div>
-  <section class="card lesson" id="r-lesson" aria-label="Your worst pitch"></section>
   <div class="card reveal" id="r-reveal"></div>
+  <button class="btn coach-go" id="r-coach" type="button"><b>talk to pitching coach</b><span>your costliest pitch, then every pitch</span></button>
   <div class="r-actions">
     <button class="btn go" id="r-share" type="button">share</button>
     <button class="btn ghost" id="r-again" type="button">run it back</button>
@@ -136,25 +134,6 @@
 </section>
 
 </main>
-
-<!-- 4. THE GRADE CARD. Tap anywhere and it is gone. -->
-<div class="gcard" id="g-card" hidden aria-live="polite">
-  <div class="g-inner">
-    <div class="g-top"><span class="pill" id="g-pill"></span><span class="g-head" id="g-head"></span></div>
-    <div class="g-body">
-      <div class="g-mini" id="g-mini"></div>
-      <div class="g-txt">
-        <p class="g-you" id="g-you"></p>
-        <p class="g-best" id="g-best"></p>
-        <p class="g-reason" id="g-reason"></p>
-        <p class="g-hold" id="g-hold"></p>
-      </div>
-    </div>
-    <p class="g-note" id="g-note" hidden>good pitch. the grade is the decision, not the result.</p>
-    <p class="g-dbg" id="g-dbg" hidden></p>
-    <p class="g-tap">tap to go on</p>
-  </div>
-</div>
 
 <!-- 6. THE SHEETS. Every one opens from a button. None opens by itself. -->
 <div class="sheet" id="sheet-menu" hidden aria-hidden="true" role="dialog" aria-label="Menu">
@@ -173,7 +152,13 @@
 <div class="sheet" id="sheet-how" hidden aria-hidden="true" role="dialog" aria-label="How to play">
   <div class="sh-in"><div class="sh-h"><h2>how to play</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body prose" id="how-body"></div></div>
 </div>
- <div class="sheet" id="sheet-101" hidden aria-hidden="true" role="dialog" aria-label="Pitching 101">
+ <div class="sheet coach" id="sheet-coach" hidden aria-hidden="true" role="dialog" aria-label="Pitching coach">
+  <div class="sh-in"><div class="sh-h"><h2>pitching coach</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div>
+    <div class="coach-log" id="coach-log" aria-live="polite"></div>
+    <div class="coach-chips" id="coach-chips"></div>
+  </div>
+</div>
+<div class="sheet" id="sheet-101" hidden aria-hidden="true" role="dialog" aria-label="Pitching 101">
   <div class="sh-in"><div class="sh-h"><h2>pitching 101</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body prose" id="p101-body"></div></div>
 </div>
 <div class="sheet" id="sheet-stats" hidden aria-hidden="true" role="dialog" aria-label="Stats">
@@ -211,6 +196,7 @@
 <script src="auth.js?v=2"></script>
 <script src="api.js?v=2"></script>
 <script src="mock-api.js?v=4"></script>
-<script src="ui.js?v=3"></script>
+<script src="coach.js?v=1"></script>
+<script src="ui.js?v=4"></script>
 </body>
 </html>

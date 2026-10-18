@@ -12,9 +12,13 @@
  *   3. the grid is the pitcher's view: cell 0 (catcher's left) is drawn on the
  *      right, through screenCol()
  *   4. take the mound, scout the batter (the heat map lands on the same grid)
- *   5. throw a whole outing to a result: every pitch animates, a tap skips it,
- *      a grade card follows and a tap dismisses it
- *   6. the result: outcome, strip, percentile, pitched like, the reveal, share
+ *   5. throw a whole outing to a result: every pitch animates, a tap skips it
+ *      and none is needed. Between the first pitch and the last nothing is
+ *      graded or tipped: no grade card, no strip square, no band word, no
+ *      banner, flash or sheet, and nothing over the field (the owner,
+ *      2026-10-17). One quiet play by play line under the scoreboard.
+ *   6. the end reveal: outcome, strip, percentile, pitched like and the real
+ *      pitcher's night, on screen together; share
  *   7. run it back is practice; a reload shows today as done
  *   8. ?debug=1 shows the seed
  *   9. no page error and no console error anywhere
@@ -26,11 +30,15 @@
  *      the field and on the scorebar's diamond; the proxy note and a reveal
  *      with no pitch count; the stats sheet from the account and from the
  *      device
- *  12. the lesson card on every result: with a pro example, without one
- *      (?mockPro=none), and with no lesson (?mockLesson=none); never a modal
+ *  12. the pitching coach: never open by itself, opens from its button, says
+ *      one line on the outing, then the lesson (your call against the best on
+ *      the mirrored mini grid, the why, next time, the numbers, how the pros
+ *      do it when there is a pro), then the pattern, then the whole outing
+ *      pitch by pitch with band and reason. On the real engine and on the
+ *      mock: a pro, no pro (?mockPro=none) and no lesson (?mockLesson=none)
  *
- * Runs on the mock (mock-api.js) until api.js lands; the steps only use the
- * page, so they hold for the real engine too.
+ * Steps 1 to 10 play the real engine (no mock switch). Step 11 forces each
+ * ending through mock-api.js.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -70,6 +78,128 @@ const pw = loadPlaywright();
 const SHOT_N = {};
 const nextN = (tag) => { SHOT_N[tag] = (SHOT_N[tag] || 0) + 1; return String(SHOT_N[tag]).padStart(2, '0'); };
 const browser = await pw.chromium.launch(CHROME ? { executablePath: CHROME } : {});
+
+
+/* ---- shared steps ------------------------------------------------------- */
+
+/* The owner's rule while pitching: nothing graded, nothing tipped, nothing
+   over the field. Returns what broke it, or an empty list. */
+async function quietProblems(page) {
+  return page.evaluate(() => {
+    const vis = (el) => {
+      if (!el) return false;
+      const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+      return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.05;
+    };
+    const mound = document.getElementById('s-mound'), out = [];
+    if ([...mound.querySelectorAll('.sq, .pill, .strip')].some(vis)) out.push('a grade square');
+    const text = mound.innerText;
+    if (/\b(green|yellow|orange|red)\b/i.test(text)) out.push('a band word');
+    if (/\b(best call|pts|hold \d|next time)\b/i.test(text)) out.push('grade copy');
+    if ([...document.querySelectorAll('.gcard, .callout, .flash, #toast.on')].some(vis)) out.push('a banner or card');
+    if ([...document.querySelectorAll('.sheet')].some((s) => !s.hidden)) out.push('a sheet');
+    const sc = document.getElementById('m-scene').getBoundingClientRect();
+    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('.grid') || el.id === 'm-proxy' || el.id === 'm-dbg');
+    for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) {
+      const el = document.elementFromPoint(sc.left + sc.width * i / 6, sc.top + sc.height * j / 6);
+      if (!fine(el)) { out.push('over the field: ' + (el ? el.id || el.className || el.tagName : 'nothing')); return out; }
+    }
+    return out;
+  });
+}
+
+/* Throw a whole outing. The first pitch gets no tap at all, to show the game
+   goes on by itself; later ones are skipped with a tap. The quiet rule is
+   checked through each flight and after it. */
+async function playOuting(page, o) {
+  const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
+  const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [] };
+  const done = () => page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
+  for (let i = 0; i < 80; i++) {
+    if (await done()) break;
+    const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
+    await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
+    await page.click(`#m-scene .grid .cell[data-cell="${o.cell != null ? o.cell : CELLS[i % CELLS.length]}"]`);
+    if (i === 0 && o.shot) await o.shot('ready');
+    const label = await page.textContent('#m-throw');
+    if (!/throw|shut it/.test(label)) { r.problems.push('the throw button was not ready: ' + label); break; }
+    await page.click('#m-throw');
+    r.pitches++;
+    const tapless = i === 0;
+    let shotTaken = false;
+    for (let t = 0; t < 80; t++) {
+      await page.waitForTimeout(tapless ? 90 : 60);
+      if (!tapless && t === 2) await page.mouse.click(o.w / 2, Math.round(o.h * 0.5));
+      const s = await page.evaluate(() => ({ dots: document.querySelectorAll('#m-runners circle').length, outs: document.querySelectorAll('#m-runners circle.out').length,
+        busy: /pitching/.test(document.getElementById('m-throw').textContent), over: document.getElementById('s-result').classList.contains('on') }));
+      if (s.dots) r.sawMove = true;
+      if (s.outs) r.sawOut = true;
+      if (s.over) break;
+      const q = await quietProblems(page);
+      if (q.length) r.problems.push('pitch ' + r.pitches + ': ' + q.join(', '));
+      if (tapless && t === 8 && o.shot && !shotTaken) { shotTaken = true; await o.shot('pitch-flight'); }
+      if (o.runnerShots && s.dots && !shotTaken && t > 6) { shotTaken = true; await o.shot('runners-p' + r.pitches); }
+      if (!s.busy) break;
+    }
+    if (await done()) break;
+    const after = await quietProblems(page);
+    if (after.length) r.problems.push('after pitch ' + r.pitches + ': ' + after.join(', '));
+    r.pbp.push(await page.textContent('#m-pbp'));
+    if (i === 0 && o.shot) await o.shot('after-pitch');
+  }
+  await page.waitForSelector('#s-result.on', { timeout: 6000 });
+  return r;
+}
+
+/* The end: everything at once, the coach still closed. */
+async function revealCheck(page, label, pitches) {
+  const rv = await page.evaluate(() => {
+    const vis = (id) => { const el = document.getElementById(id); const b = el && el.getBoundingClientRect(); return !!(b && b.width > 0 && b.height > 0); };
+    return { outcome: vis('r-outcome') && document.getElementById('r-outcome').textContent, strip: document.querySelectorAll('#r-strip .sq').length,
+      pct: vis('r-pct') && document.getElementById('r-pct').textContent, like: vis('r-like'), real: vis('r-reveal'), coachBtn: vis('r-coach'),
+      sheetOpen: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden), labels: Object.values(window.STD_CONTRACT.OUTCOME_LABEL) };
+  });
+  ok(rv.labels.includes(rv.outcome) && rv.strip === pitches && /^\d+%$/.test(rv.pct) && rv.like && rv.real,
+    label + ': the end reveals the outcome (' + rv.outcome + '), the strip (' + rv.strip + '), the percentile (' + rv.pct + '), pitched like and the real one together');
+  ok(rv.coachBtn && !rv.sheetOpen, label + ': "talk to pitching coach" is there and nothing opened by itself');
+}
+
+/* The coach: only from its button; the lesson; the pro or not; every pitch. */
+async function coachCheck(page, label, pitches, expect, shot) {
+  await page.waitForTimeout(1200);
+  ok(await page.isHidden('#sheet-coach'), label + ': the coach does not open by itself');
+  await page.click('#r-coach');
+  await page.waitForSelector('#sheet-coach.on', { timeout: 3000 });
+  await page.waitForSelector('#coach-chips [data-chip="rest"]', { timeout: 20000 });
+  const c = await page.evaluate(() => {
+    const L = window.STD_UI.state.result.lesson, log = document.getElementById('coach-log');
+    const lc = log.querySelector('.cc.lesson'), pc = log.querySelector('.cc.pro');
+    return { L: L ? { why: (L.why || []).length, pro: !!L.pro, pattern: !!L.pattern } : null, text: log.innerText,
+      opener: (log.querySelector('.cm.coach') || {}).textContent || '',
+      lesson: !!lc, you: !!(lc && lc.querySelector('.cell.m-target')), best: !!(lc && lc.querySelector('.cell.m-best')),
+      why: lc ? lc.querySelectorAll('.cc-why li').length : 0, next: !!(lc && lc.querySelector('.cc-next')), num: !!(lc && lc.querySelector('.cc-num')),
+      pro: !!pc, proCell: !!(pc && pc.querySelector('.cell.m-actual')), pattern: !!log.querySelector('.cm.pattern') };
+  });
+  ok(/\d+ pitch/.test(c.opener), label + ': the coach opens with one line on the outing');
+  if (expect && 'lesson' in expect) ok(!!c.L === expect.lesson, label + ': the result ' + (expect.lesson ? 'has' : 'has no') + ' lesson, as forced');
+  if (!c.L) {
+    ok(/nothing to fix\. every pitch was the right idea\./.test(c.text) && !c.lesson, label + ': no lesson, the coach says the contract\'s line');
+  } else {
+    ok(c.lesson && c.you && c.best, label + ': the lesson shows your pitch against the best on the mirrored mini grid');
+    ok(c.why === c.L.why && c.why >= 2 && c.next && c.num, label + ': with ' + c.why + ' why lines, next time and the numbers');
+    ok(c.pro === c.L.pro && (!c.pro || c.proCell), label + ': ' + (c.L.pro ? 'how the pros do it, with the pro\'s pitch on a grid' : 'no pro example, no pro block'));
+    if (expect && 'pro' in expect) ok(c.L.pro === expect.pro, label + ': the pro is ' + (expect.pro ? 'there' : 'null') + ', as forced');
+    ok(c.pattern === c.L.pattern, label + ': the pattern line ' + (c.L.pattern ? 'shows' : 'is absent, as in the lesson'));
+  }
+  if (shot) await shot(c.L ? (c.L.pro ? 'coach-lesson' : 'coach-lesson-no-pro') : 'coach-no-lesson');
+  await page.click('#coach-chips [data-chip="rest"]');
+  await page.waitForSelector('#coach-chips [data-chip="done"]', { timeout: 20000 });
+  const rv = await page.evaluate(() => [...document.querySelectorAll('#coach-log .review li')].map((li) => ({ band: li.dataset.band, why: (li.querySelector('.rv-why') || {}).textContent || '' })));
+  ok(rv.length === pitches && rv.every((x) => /^(green|yellow|orange|red)$/.test(x.band) && x.why.length > 5), label + ': going through the rest lists all ' + rv.length + ' pitches with band and reason');
+  if (shot) await shot('coach-review');
+  await page.click('#coach-chips [data-chip="done"]');
+  await page.waitForSelector('#sheet-coach', { state: 'hidden', timeout: 3000 });
+}
 
 async function run(w, h) {
   console.log(`\n${w}x${h}`);
@@ -189,60 +319,22 @@ async function run(w, h) {
   }
 
   /* 5 */
-  const CELLS = [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
-  let pitches = 0, cards = 0, sawBall = false;
-  for (let i = 0; i < 80; i++) {
-    const done = await page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
-    if (done) break;
-    const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
-    await page.click(`#m-arsenal .pitch >> nth=${i % nTypes}`);
-    await page.click(`#m-scene .grid .cell[data-cell="${CELLS[i % CELLS.length]}"]`);
-    if (i === 0) await shot('ready');
-    const label = await page.textContent('#m-throw');
-    if (!/throw|shut it/.test(label)) { ok(false, '5 the throw button is ready (' + label + ')'); break; }
-    await page.click('#m-throw');
-    pitches++;
-    if (i === 0) {
-      await page.waitForTimeout(640);
-      sawBall = true;
-      await shot('pitch-flight');
-      await page.waitForSelector('#g-card.on', { timeout: 6000 });
-      await page.waitForTimeout(350);
-      await shot('grade-card');
-    } else {
-      await page.waitForTimeout(120);
-      await page.mouse.click(w / 2, Math.round(h * 0.45));
-      await page.waitForSelector('#g-card.on', { timeout: 6000 });
-      await page.waitForTimeout(300);
-    }
-    cards++;
-    await page.mouse.click(w / 2, Math.round(h * 0.3));
-    await page.waitForSelector('#g-card', { state: 'hidden', timeout: 3000 });
-    await page.waitForFunction(() => document.getElementById('s-result').classList.contains('on') || !document.getElementById('m-throw').textContent.includes('pitching'), null, { timeout: 5000 });
-  }
-  ok(sawBall, '5 the first pitch played its animation');
-  ok(pitches > 0 && cards === pitches, '5 every pitch got a grade card (' + pitches + ' pitches)');
-  await page.waitForSelector('#s-result.on', { timeout: 5000 });
+  const play = await playOuting(page, { w, h, shot });
+  ok(play.pitches > 0, '5 a whole outing on the real engine (' + play.pitches + ' pitches)');
+  ok(play.problems.length === 0, '5 nothing graded, tipped or over the field from the first pitch to the last' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
+  ok(play.pbp.length && play.pbp.every((x) => x && x.length > 3), '5 one line of play by play after each pitch ("' + (play.pbp[0] || '') + '")');
 
   /* 6 */
-  const res = await page.evaluate(() => ({
-    outcome: document.getElementById('r-outcome').textContent,
-    squares: document.querySelectorAll('#r-strip .sq').length,
-    pct: document.getElementById('r-pct').textContent,
-    like: document.getElementById('r-like').textContent,
-    reveal: document.getElementById('r-reveal').textContent,
-    labels: Object.values(window.STD_CONTRACT.OUTCOME_LABEL),
-  }));
-  ok(res.labels.includes(res.outcome), '6 the outcome reads ' + res.outcome);
-  ok(res.squares === pitches, '6 the strip has a square per pitch');
-  ok(/^\d+%$/.test(res.pct) && res.like.length > 1, '6 percentile ' + res.pct + ', pitched like ' + res.like);
-  ok(/did/.test(res.reveal), '6 the reveal shows what the real pitcher did');
+  await revealCheck(page, '6', play.pitches);
   await shot('result', true);
   await page.click('#r-share');
   await page.waitForSelector('#toast.on', { timeout: 3000 });
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
   ok(/Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014), '6 share copies the share text');
   await shot('shared');
+
+  /* 12, on the real engine */
+  await coachCheck(page, '12', play.pitches, null, shot);
 
   /* 7 */
   await page.click('#r-again');
@@ -296,65 +388,24 @@ async function ending(w, h, end, extra) {
   await page.click('#b-take');
   await page.waitForSelector('#s-mound.on .grid .cell');
   if (proxy) ok(await page.isVisible('#m-proxy'), '11 ' + end + ': the proxy note is on the mound, small');
-  let sawOut = false, sawRun = false, sawMove = false, k = 0;
-  for (; k < 30; k++) {
-    if (await page.evaluate(() => document.getElementById('s-result').classList.contains('on'))) break;
-    await page.click('#m-arsenal .pitch >> nth=0');
-    await page.click('#m-scene .grid .cell[data-cell="12"]');
-    await page.click('#m-throw');
-    /* watch the runners for this play, then let the card come */
-    let shotTaken = false;
-    for (let t = 0; t < 60; t++) {
-      await page.waitForTimeout(50);
-      const r = await page.evaluate(() => ({ dots: document.querySelectorAll('#m-runners circle').length, outs: document.querySelectorAll('#m-runners circle.out').length, card: document.getElementById('g-card').classList.contains('on') }));
-      if (r.dots) sawMove = true;
-      if (r.outs) sawOut = true;
-      if (r.dots && !shotTaken && t > 22) { shotTaken = true; await shot('runners-p' + (k + 1)); }
-      if (r.card) break;
-    }
-    await page.waitForSelector('#g-card.on', { timeout: 8000 });
-    await page.waitForTimeout(300);
-    await page.mouse.click(w / 2, Math.round(h * 0.3));
-    await page.waitForSelector('#g-card', { state: 'hidden', timeout: 3000 });
-    await page.waitForFunction(() => document.getElementById('s-result').classList.contains('on') || !document.getElementById('m-throw').textContent.includes('pitching'), null, { timeout: 5000 });
-  }
-  await page.waitForSelector('#s-result.on', { timeout: 5000 });
+  const play = await playOuting(page, { w, h, shot, runnerShots: end !== 'door_shut', type0: true, cell: 12 });
+  const k = play.pitches, sawMove = play.sawMove, sawOut = play.sawOut;
+  ok(play.problems.length === 0, '11 ' + end + ': nothing graded, tipped or over the field during play' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
   const res = await page.evaluate(() => ({ o: document.getElementById('r-outcome').textContent, cls: document.getElementById('r-outcome').className, rv: document.getElementById('r-reveal').textContent, st: document.getElementById('r-streak').textContent, them: window.STD_UI.state.outing.score.them, start: window.STD_UI.state.scn.situation.score.them }));
-  sawRun = res.them > res.start;
+  const sawRun = res.them > res.start;
   ok(res.cls.includes(end), '11 ' + end + ': the outing ends ' + res.o + ' after ' + k + ' pitches');
   if (end !== 'door_shut') {
-    ok(sawMove, '11 ' + end + ': runners move on the field and the diamond');
+    ok(sawMove, '11 ' + end + ': runners move on the scorebar diamond');
     ok(sawRun, '11 ' + end + ': runs score (' + res.start + ' to ' + res.them + ')');
   }
   if (end === 'doors_open') ok(sawOut, '11 doors_open: the double play shows a runner put out');
   if (/mockNull/.test(extra || '')) ok(/at least 13 pitches/.test(res.rv), '11 ' + end + ': a reveal with no pitch count shows its note');
   const auth = /mockAuth/.test(extra || '');
   if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
-  /* 12: the lesson card */
-  const lessonNone = /mockLesson=none/.test(extra || ''), proNone = /mockPro=none/.test(extra || '');
-  const ls = await page.evaluate(() => {
-    const el = document.getElementById('r-lesson');
-    return { text: el.textContent, none: el.classList.contains('none'), head: (el.querySelector('.ls-head') || {}).textContent || '',
-      you: !!el.querySelector('#ls-mini .cell.m-target'), best: !!el.querySelector('#ls-mini .cell.m-best'),
-      modal: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden) };
-  });
-  ok(!ls.modal, '12 ' + end + ': the lesson is a card, nothing opened over the result');
-  if (lessonNone || ls.none) {
-    ok(/nothing to fix\. every pitch was the right idea\./.test(ls.text), '12 ' + end + ': no lesson reads the contract\'s line' + (lessonNone ? '' : ' (every pitch green)'));
-    await shot('lesson-none');
-  } else {
-    ok(ls.head.length > 3 && ls.you && ls.best, '12 ' + end + ': the lesson shows its headline and your pitch against the best on a mini grid');
-    await page.click('#ls-more');
-    const body = await page.evaluate(() => ({ why: document.querySelectorAll('#ls-body .ls-why li').length, num: (document.querySelector('#ls-body .ls-num') || {}).textContent || '',
-      pro: !!document.querySelector('#ls-body .ls-pro'), proCell: !!document.querySelector('#ls-pro-mini .cell.m-actual'), next: document.querySelector('#r-lesson .ls-next').textContent }));
-    ok(body.why >= 2 && body.why <= 3 && /hold [\d.]+% with your pitch/.test(body.num) && body.next.length > 5, '12 ' + end + ': opened, it has ' + body.why + ' why lines, the numbers and next time');
-    ok(proNone ? !body.pro : body.pro && body.proCell, '12 ' + end + ': ' + (proNone ? 'no pro example, no pro block' : 'how the pros do it shows the pro\'s pitch on a mini grid'));
-    await page.evaluate(() => document.getElementById('r-lesson').scrollIntoView({ block: 'start' }));
-    await page.waitForTimeout(120);
-    await shot(proNone ? 'lesson-no-pro' : 'lesson');
-    await page.evaluate(() => window.scrollTo(0, 0));
-  }
+  await revealCheck(page, '11 ' + end, k);
   await shot('result', true);
+  /* 12 */
+  await coachCheck(page, '12 ' + end, k, { lesson: !/mockLesson=none/.test(extra || ''), pro: !/mockPro=none/.test(extra || '') && !/mockLesson=none/.test(extra || '') }, shot);
   await page.click('#r-home');
   await page.click('#h-main [data-open="stats"]');
   await page.waitForSelector('#sheet-stats.on');

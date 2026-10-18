@@ -383,7 +383,10 @@ Scene.prototype.draw = function (frame) {
   var P = this.pitcherBox();
   blit(ctx, SP.get('pitcher', frame.pitcher || 'set', colors, 'us'), P.x, P.y, b, P.flip);
   if (frame.ball && !ballFirst) drawBall(ctx, frame.ball, b);
-  if (frame.field) drawField(ctx, frame.field, L);
+  /* The runner inset is off: nothing is drawn over the field during play
+     (the owner, 2026-10-17). The scorebar's diamond carries the runners. A
+     page can turn it back on with scene.fieldInset = true. */
+  if (frame.field && this.fieldInset) drawField(ctx, frame.field, L);
   ctx.restore();
 };
 

@@ -349,3 +349,58 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .p101 li { margin: 0 0 10px; }
 .p101 b { display: block; }
 .p101 span { color: var(--dim); font-size: 14px; }
+
+/* ---- the play by play: one quiet line under the scoreboard ---- */
+.pbp { margin: 4px 2px 0; min-height: 18px; font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbp.new { animation: pbpIn .35s ease-out; }
+@keyframes pbpIn { from { opacity: .2; } to { opacity: 1; } }
+
+/* ---- the result: the way to the coach ---- */
+.btn.coach-go { width: 100%; margin: 12px 0 4px; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--ink); color: var(--bg); border-radius: 14px; box-shadow: 0 4px 0 rgba(0, 0, 0, .25); }
+.btn.coach-go b { font-family: var(--pix); font-size: 18px; }
+.btn.coach-go span { font-size: 12px; font-weight: 600; opacity: .8; }
+.btn.coach-go:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .25); }
+
+/* ---- the pitching coach: a conversation set like the menus ---- */
+.sheet.coach .sh-in { display: flex; flex-direction: column; height: 92vh; height: 92dvh; max-height: none; padding-top: 0; padding-bottom: 0; overflow: hidden; }
+.sheet.coach .sh-h { flex: 0 0 auto; position: static; padding-top: 14px; border-bottom: 1px solid var(--line); }
+.coach-log { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px 2px 12px; }
+.cm { max-width: 92%; font-size: 15px; line-height: 1.45; }
+.cm.coach { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; padding: 9px 12px; }
+.cm.coach.card { padding: 0; background: none; border: 0; max-width: 100%; width: 100%; }
+.cm.me { align-self: flex-end; background: var(--ink); color: var(--bg); border-radius: 14px 4px 14px 14px; padding: 8px 12px; font-weight: 600; }
+.cm.pattern .lbl { display: block; }
+.cm.none { font-weight: 700; border-left: 4px solid var(--green); }
+.cm.dots { padding: 10px 12px; }
+.typing i { display: inline-block; width: 6px; height: 6px; margin: 0 2px; border-radius: 50%; background: var(--dim); animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+.cc { background: var(--panel); border: 1px solid var(--line-2); border-radius: 14px; padding: 12px 14px; }
+.cc.lesson { border-left: 4px solid var(--hi); }
+.cc.pro { border-left: 4px solid var(--go); }
+.cc p { margin: 0 0 6px; }
+.cc-head { font-family: var(--pix); font-size: 17px; line-height: 1.2; margin: 2px 0 10px; }
+.cc-top { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px; }
+.cc-mini { flex: 0 0 auto; }
+.cc-sit { flex: 1; min-width: 0; font-size: 14px; }
+.cc-why { margin: 0 0 8px; padding-left: 18px; }
+.cc-why li { margin: 2px 0; }
+.cc-next { font-weight: 700; }
+.cc-num { font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.cc-res { font-weight: 700; color: var(--go); }
+.review { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rv-p { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--line-2); border-radius: 10px; padding: 8px 10px; }
+.rv-p.green { border-left-color: var(--green); } .rv-p.yellow { border-left-color: var(--yellow); }
+.rv-p.orange { border-left-color: var(--orange); } .rv-p.red { border-left-color: var(--red); }
+.rv-p p { margin: 2px 0 0; font-size: 14px; }
+.rv-h { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.rv-h b { font-family: var(--pix); }
+.rv-band { margin-left: auto; font-family: var(--pix); font-size: 11px; color: var(--dim); }
+.rv-call { font-weight: 600; }
+.rv-why { color: var(--dim); }
+.rv-best { font-size: 13px !important; }
+.coach-chips { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 10px 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line); min-height: 20px; }
+.coach-chips:empty { border-top: 0; padding: 0; min-height: 0; }
+.chip { border: 1.5px solid var(--ink); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 14px; }
+.chip.quiet { border-color: var(--line-2); color: var(--dim); }
+@media (min-width: 700px) { .sheet.coach .sh-in { height: 86vh; } }
