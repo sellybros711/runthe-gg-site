@@ -6,7 +6,7 @@
  * --game loads the game page (shut-the-door/index.html) instead, other hosts refused (fonts and
  * auth answer nothing), and records: home (the home screen up), preloaded (every 3D download in
  * and parsed, started from the home screen), the tap on take the mound 4 s in (a player reading
- * the spot), and mound (the 3D mound drawn), ms after that tap.
+ * the spot), and mound (the 3D mound laid out and drawn), ms after that tap.
  *
  * Serves the repo the way the site is served: text compressed (as the CDN does), and the cache
  * rules of the repo's _headers file for the lab (HTML revalidated, versioned files held). Then, in
@@ -132,13 +132,16 @@ async function visitGame(page) {
   await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.marks.preloaded, null, { timeout: 180000 });
   const pre = await page.evaluate(() => window.STD_STAGE.marks.preloaded);
   await page.waitForFunction(() => performance.now() > 4000, null, { timeout: 30000 });
-  const tap = await page.evaluate(() => Math.round(performance.now()));
-  await page.click('#b-take');
-  await page.waitForFunction(() => window.STD_STAGE.marks.drawn, null, { timeout: 180000 });
+  // the tap, timed in the page: the mound is laid out and drawn inside the tap's own handler when the
+  // stage was ready on the home screen (a software GL then takes seconds more to put that frame on
+  // screen; a phone's GPU, a few ms). If it was not ready, the first draw comes when it is.
+  const tap = await page.evaluate(() => { const t = performance.now(); document.getElementById('b-take').click(); return Math.round(t); });
+  await page.waitForFunction(() => window.STD_STAGE.marks.drawn, null, { timeout: 180000, polling: 100 });
   const drawn = await page.evaluate(() => window.STD_STAGE.marks.drawn);
+  const marks = await page.evaluate(() => window.STD_STAGE.marks);
   await page.close();
   const bytes = log.reduce((a, [, , b]) => a + b, 0);
-  return { firstPaintMs: home, loadedMs: pre, playableMs: drawn - tap, bytes, requests: log.length, files: log.filter(([, s]) => s === 200).map(([p, , b]) => [p, b]), marks: { home, preloaded: pre, tap, drawn } };
+  return { firstPaintMs: home, loadedMs: pre, playableMs: drawn - tap, bytes, requests: log.length, files: log.filter(([, s]) => s === 200).map(([p, , b]) => [p, b]), marks: { home, tap, mound: drawn, ...marks } };
 }
 
 const results = [];

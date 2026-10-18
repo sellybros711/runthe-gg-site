@@ -8,7 +8,7 @@
  *                <link rel=modulepreload> for every module the page's entry reaches (all fetched
  *                at once instead of one import level per round trip), <link rel=preload> for the
  *                downloads load.js starts; and its poster URLs. The pages: the lab (lab/index.html,
- *                entry lab/scene.js) and the game (index.html, entry 3d/stage.js).
+ *                entry lab/scene.js) and the game (index.html, entry 3d/boot.js).
  * A changed file gets a new URL, so the CDN can hold every one of them for a year (_headers).
  * load.js itself is versioned by hand (?v=) like every module, and scripts/check-cachebust.mjs
  * holds that: a new ASSETS table is a change to load.js, so its ?v= must move.
@@ -33,7 +33,7 @@ fs.writeFileSync(path.join(RT, 'load.js'), load);
 const VENDOR = ['three.module.min.js', 'addons/loaders/GLTFLoader.js', 'addons/loaders/RGBELoader.js', 'addons/libs/meshopt_decoder.module.js', 'addons/utils/BufferGeometryUtils.js'];
 const PAGES = [
   { page: path.join(STD, 'lab', 'index.html'), entry: 'scene.js', entryDir: path.join(STD, 'lab'), rt: '../3d/' },
-  { page: path.join(STD, 'index.html'), entry: '3d/stage.js', entryDir: STD, rt: '3d/' },
+  { page: path.join(STD, 'index.html'), entry: '3d/boot.js', entryDir: STD, rt: '3d/' },
 ];
 let nmods = 0;
 for (const P of PAGES) {
@@ -61,11 +61,13 @@ for (const P of PAGES) {
     ? [`<link rel="preload" as="image" href="${url('hero.webp')}">`]
     : [`<link rel="preload" as="image" href="${url('poster-phone.webp')}" media="(orientation: portrait)" fetchpriority="high">`,
       `<link rel="preload" as="image" href="${url('poster-desktop.webp')}" media="(orientation: landscape)" fetchpriority="high">`];
-  const lines = [
+  // the game preloads only its hero still: the 3D waits for the home screen (boot.js imports it)
+  const lines = P.rt === '3d/' ? images : [
     ...images,
     ...[...mods, ...VENDOR.map((f) => `${P.rt}vendor/three-0.170.0/${f}`)].map((m) => `<link rel="modulepreload" href="${m}">`),
-    ...['packs/std-2025-ws7-yamamoto.json', 'uniform.json', 'bio.json', 'env_256.hdr'].filter((f) => P.rt === '../3d/' ? f !== 'bio.json' : !f.startsWith('packs/')).map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}">`),
-    ...['batter.glb', 'catcher.glb', 'umpire.glb'].map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}" fetchpriority="low">`),
+    // the game fetches nothing of the scene's before its home screen is up (ui.js warm3d starts it)
+    ...(P.rt === '3d/' ? [] : ['packs/std-2025-ws7-yamamoto.json', 'uniform.json', 'bio.json', 'env_256.hdr']).filter((f) => P.rt === '../3d/' ? f !== 'bio.json' : !f.startsWith('packs/')).map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}">`),
+    ...(P.rt === '3d/' ? [] : ['batter.glb', 'catcher.glb', 'umpire.glb']).map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}" fetchpriority="low">`),
   ];
   html = html.replace(/(<!-- stamp:preload:begin -->\n)[\s\S]*?(<!-- stamp:preload:end -->)/, `$1${lines.join('\n')}\n$2`);
   html = html.replace(/((?:\.\.\/)?(?:\.\/)?3d\/|\.\/)assets\/((?:poster-(?:phone|desktop)|hero)\.webp)(?:\?h=\w+)*/g, (_, pre, f) => url(f));

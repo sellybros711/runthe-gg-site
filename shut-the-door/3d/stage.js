@@ -1,9 +1,7 @@
-/* Shut The Door: the mound in 3D. window.STD_STAGE, for the game (ui.js).
+/* Shut The Door: the mound in 3D, for the game (ui.js), reached through boot.js (window.STD_STAGE).
  *
  * The same surface the old canvas scene and its animation gave the game, so ui.js keeps its flow:
- *   STD_STAGE.supported()            WebGL here? (no: the game keeps its old drawing)
- *   STD_STAGE.preload()              start every download now (the page calls it on the home screen)
- *   const st = STD_STAGE.create(canvas)
+ *   const st = await STD_STAGE.create(canvas)   (making it starts every download)
  *   st.setScenario(scn)              the pack's scenario: the closer, his arsenal, the hitters
  *   st.setBatter(b)                  each hitter in turn: his real height and weight, his side
  *   st.setTarget(cell)               the catcher sets up on the picked cell (null: the middle)
@@ -19,7 +17,7 @@
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=6';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, webglAvailable } from './park.js?v=3';
+import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
 import { People } from './people.js?v=14';
 import { Pitch } from './pitch.js?v=5';
 import { fromResult, motion } from './play.js?v=3';
@@ -64,23 +62,33 @@ class Stage {
   }
 
   async init() {
+    const mk = (k) => { window.STD_STAGE.marks[k] = Math.round(performance.now()); };
+    mk('created');
     const a = await preload({ game: true });
+    mk('assets');
+    mk('preloaded');
     this.extra = { uniform: a.facts.uniform, bio: a.facts.bio };
     this.gltfs = a.gltfs;
     lightFrom(this.scene, this.renderer, a.env);
+    mk('lit');
     if (this.scn) this.applyScenario();
-    this.loaded = true;
+    mk('people');
     await this.renderer.compileAsync(this.scene, this.camera);
+    // one draw now compiles what compileAsync leaves (the shadow pass); on the home screen the canvas
+    // is hidden, so nobody sees it
+    this.render();
+    mk('compiled');
+    this.loaded = true;
     this.layout();
+    mk('framed');
     this.draw();
-    window.STD_STAGE.marks.drawn = Math.round(performance.now());
     return this;
   }
 
   setScenario(scn) {
     if (scn === this.scn) return;
     this.scn = scn;
-    if (this.loaded) this.applyScenario();
+    if (this.gltfs) this.applyScenario();
   }
 
   applyScenario() {
@@ -100,7 +108,7 @@ class Stage {
     this.bat = b;
     this.zone = { szTop: b.szTop, szBot: b.szBot, bats: b.bats };
     this.eye.setSide(b.bats);
-    if (this.loaded && this.facts) this.applyBatter();
+    if (this.facts) this.applyBatter();
     this.layout();
   }
 
@@ -125,7 +133,7 @@ class Stage {
     const play = { call: { type: this.facts.pitcher.arsenal[0].type, cell }, actual: { x: tg.x, z }, velo: null, batter: 'take', result: 'ball', inPlay: null };
     this.setPitch(play);
     this.pose(0);
-    this.render();
+    if (this.loaded) this.render();
   }
 
   setPitch(play) {
@@ -157,8 +165,9 @@ class Stage {
   /** frame (ignored: the 3D scene keeps its own state). After a pitch, back to the set. */
   draw() {
     if (!this.loaded) return;
-    if (this.dirty && this.facts && this.facts.batter) { this.dirty = false; this.preview(); return; }
-    this.render();
+    if (this.dirty && this.facts && this.facts.batter) { this.dirty = false; this.preview(); } else this.render();
+    // check-load's mark: the first frame of the mound drawn where it can be seen
+    if (!window.STD_STAGE.marks.drawn && this.canvas.clientWidth) window.STD_STAGE.marks.drawn = Math.round(performance.now());
   }
 
   /** A plate point (catcher's view x in feet, zn normalised to this hitter) on the canvas, in CSS px. */
@@ -323,15 +332,5 @@ class Stage {
   }
 }
 
-let theStage = null;
-window.STD_STAGE = {
-  supported: webglAvailable,
-  preload: () => preload({ game: true }),
-  create(canvas) { if (!theStage || theStage.canvas !== canvas) theStage = new Stage(canvas); return theStage; },
-  get current() { return theStage; },
-};
-// the downloads start as soon as this module runs: on the home screen, before the mound is opened
-// (marks for check-load: when every download is in and parsed, and when the mound first drew)
-window.STD_STAGE.marks = {};
-if (webglAvailable()) window.STD_STAGE.preload().then(() => { window.STD_STAGE.marks.preloaded = Math.round(performance.now()); });
-window.dispatchEvent(new Event('std-stage'));
+/** The stage on this canvas (boot.js keeps the one the page made). */
+export function create(canvas) { return new Stage(canvas); }

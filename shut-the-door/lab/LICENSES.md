@@ -28,9 +28,9 @@ scripts), `gltfpack@0.25.0` from npm (MIT, meshoptimizer), Pillow, NumPy, SciPy.
 
 ## Loading posters
 
-`assets/poster-phone.webp` and `assets/poster-desktop.webp` are stills of this scene, rendered from
-the files listed here by `pipeline/shoot.mjs` (`poster` mode). They carry the same licences as the
-scene and nothing else.
+`assets/poster-phone.webp`, `assets/poster-desktop.webp` (the lab's) and `assets/hero.webp` (the game's
+home screen) are stills of this scene, rendered from the files listed here by `pipeline/shoot.mjs`
+(`poster` mode). They carry the same licences as the scene and nothing else.
 
 ## Field and stand textures (`assets/tex/`, made by `pipeline/prep_textures.py`)
 

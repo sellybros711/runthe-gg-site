@@ -25,21 +25,29 @@ var Q = new URLSearchParams(location.search);
 var DEBUG = Q.get('debug') === '1';
 
 /* ---- the mound's scene: 3D, or the old drawing -----------------------------------
-   The 3D scene (3d/stage.js, window.STD_STAGE) is a module, so it arrives after this script.
+   The 3D scene (3d/boot.js, window.STD_STAGE, which imports 3d/stage.js when asked) is a module,
+   so it arrives after this script.
    use3d(): WebGL here and the module on the page. The mound's scene object keeps the old
    drawing's calls (setScenario, setBatter, layout, gridRect, toScreen, cellCenter, draw), plus
    setTarget and play for the 3D one. Until the module has run, Pending keeps the calls and hands
    them over when it does. Without WebGL the old drawing stays, the only place it is used. */
 function use3d() {
   if (window.STD_STAGE) return window.STD_STAGE.supported();
-  if (!document.querySelector('script[src*="3d/stage.js"]')) return false;
+  if (!document.querySelector('script[src*="3d/boot.js"]')) return false;
   try { var c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
 }
 function Pending(canvas) {
   this.is3d = true; this.canvas = canvas; this.calls = []; this.real = null;
   var self = this;
   this.arrived = new Promise(function (res) {
-    function go() { self.real = window.STD_STAGE.create(canvas); self.calls.forEach(function (c) { self.real[c[0]].apply(self.real, c[1]); }); self.calls = null; res(self.real); }
+    function go() {
+      window.STD_STAGE.create(canvas).then(function (st) {
+        self.real = st;
+        self.calls.forEach(function (c) { st[c[0]].apply(st, c[1]); });
+        self.calls = null;
+        res(st);
+      });
+    }
     if (window.STD_STAGE) go(); else window.addEventListener('std-stage', go, { once: true });
   });
 }
@@ -268,7 +276,7 @@ function renderHomeState() {
 /* the hero: the same scene as the mound, small, with the first batter in */
 function drawHero() {
   /* with the 3D scene, the hero is a still of it (and its downloads are already on the way) */
-  if (use3d()) { $('h-canvas').hidden = true; $('h-poster').hidden = false; return; }
+  if (use3d()) { $('h-canvas').hidden = true; $('h-poster').hidden = false; warm3d(); return; }
   if (!S.hero) S.hero = new M.Scene($('h-canvas'), { hero: true });
   S.hero.setScenario(S.scn);
   S.hero.setBatter(S.scn.batters[0]);
@@ -276,11 +284,21 @@ function drawHero() {
   S.hero.draw({ pitcher: 'set', batter: 'stance' });
 }
 
+/* The 3D mound starts on the home screen: its downloads, the people for today's spot and the
+   first hitter, and its shaders, all while the player reads the spot. Take the mound then only
+   sizes it and draws. */
+function warm3d() {
+  if (S.scene || !S.scn) return;
+  S.scene = new Pending($('m-canvas'));
+  S.scene.setScenario(S.scn);
+  S.scene.setBatter(S.scn.batters[0]);
+}
+
 /* ---- the mound ----------------------------------------------------------------------- */
 
 function buildMound() {
-  if (S.scene) return;
-  S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas'));
+  if (S.grid) return;
+  if (!S.scene) S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas'));
   $('m-scene').classList.toggle('s3d', !!S.scene.is3d);
   /* the 3D module lands after this: put the grid on its zone then */
   if (S.scene.arrived) S.scene.arrived.then(function (st) { return st.ready; }).then(function () { if (document.body.dataset.screen === 's-mound') relayout(); });
