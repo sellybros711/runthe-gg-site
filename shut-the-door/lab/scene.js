@@ -13,12 +13,11 @@
  * for the pitcher's view falls out of the camera, never out of the data.
  */
 import * as THREE from 'three';
-import { preload } from '../3d/load.js?v=4';
-import { buildField } from '../3d/field.js?v=4';
-import { buildStands } from '../3d/stands.js?v=4';
-import { People } from '../3d/people.js?v=12';
-import { Pitch } from '../3d/pitch.js?v=4';
-import { labPlay, motion, describe } from '../3d/play.js?v=2';
+import { preload } from '../3d/load.js?v=5';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=2';
+import { People } from '../3d/people.js?v=13';
+import { Pitch } from '../3d/pitch.js?v=5';
+import { labPlay, motion, describe } from '../3d/play.js?v=3';
 import { FT, P, smooth } from '../3d/units.js?v=1';
 
 const Q = new URLSearchParams(location.search);
@@ -26,14 +25,7 @@ const MODE = Q.get('take') === '1' ? 'take' : 'swing';   // kept for the checks'
 const FREEZE = Q.has('t') ? parseFloat(Q.get('t')) : null;
 
 const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-const DPR = Math.min(window.devicePixelRatio || 1, Q.has('dpr') ? parseFloat(Q.get('dpr')) : 2);
-renderer.setPixelRatio(DPR);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.AgXToneMapping;
-renderer.toneMappingExposure = 1.0;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const renderer = makeRenderer(canvas, Q.has('dpr') ? parseFloat(Q.get('dpr')) : 2);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(10, 1, 0.05, 900);
@@ -47,22 +39,11 @@ async function main() {
   const mark = (n) => { (lab.marks ??= {})[n] = Math.round(performance.now()); };
   mark('start');
   // the park first: it needs nothing from the network but its small textures
-  scene.background = new THREE.Color(0x8fa6bf);
-  scene.backgroundRotation.y = SUN.envRot;
-  scene.fog = new THREE.Fog(0xb9c2c8, 90, 420);
-  addSun();
-  const tex = new THREE.TextureLoader();
-  buildField(scene, tex, renderer);
-  const stands = buildStands(scene, tex, renderer);
+  const { stands } = buildPark(scene, renderer);
   mark('park');
   const { facts, env, gltfs } = await assets;
   mark('assets');
-  // the HDRI lights the scene; its sun is turned to come from the third base side, a little behind
-  // the plate (late afternoon light across the batter's face)
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromEquirectangular(env).texture;
-  scene.environmentRotation.y = SUN.envRot;
-  scene.environmentIntensity = 0.45;
+  lightFrom(scene, renderer, env);
   // the hitter (?slot, default the pack's first left handed one, as the lab always showed) and the play
   const slot = Q.has('slot') ? +Q.get('slot') : Math.max(0, facts.batters.findIndex((b) => b.bats === 'L'));
   facts.batter = facts.batters[Math.min(facts.batters.length - 1, slot)];
@@ -100,48 +81,13 @@ async function main() {
   start(update, () => shot.resize());
 }
 
-/* The sun. In the HDRI it sits at u 0.352, 15 degrees up. Three looks the environment up at
-   Ry(-rot) * dir, and its equirect u is atan2(z, x) / 2pi + 0.5, so a texel at azimuth a shows at
-   world azimuth a - rot. SUN.az is where we want it: from the third base side, a little behind the
-   plate (late afternoon light across a left handed batter's face). */
-const SUN = { u: 0.352, el: 15, az: THREE.MathUtils.degToRad(-22), lift: 22 };
-SUN.envRot = (SUN.u - 0.5) * Math.PI * 2 - SUN.az;
-function addSun() {
-  // the HDRI's sun is low (15 degrees); the key light is raised for a hard mid afternoon light
-  const el = THREE.MathUtils.degToRad(SUN.el + SUN.lift);
-  const d = new THREE.Vector3(Math.cos(SUN.az) * Math.cos(el), Math.sin(el), Math.sin(SUN.az) * Math.cos(el));
-  SUN.dir = d;
-  const sun = new THREE.DirectionalLight(0xffdcb8, 5.0);
-  sun.position.copy(d).multiplyScalar(40);
-  sun.target.position.set(0, 0, -0.6);
-  sun.castShadow = true;
-  const S = 4.2;
-  Object.assign(sun.shadow.camera, { left: -S, right: S, top: S, bottom: -S, near: 10, far: 80 });
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.bias = -0.0004;
-  sun.shadow.normalBias = 0.02;
-  sun.shadow.radius = 3;
-  scene.add(sun, sun.target);
-  const sky = new THREE.HemisphereLight(0xbcd2ff, 0x5a4a35, 0.25);
-  scene.add(sky);
-}
-
 function setupCamera(facts) {
   const cam = Q.get('cam') || 'pitcher';
-  // the pitcher's eye in the set: a right hander on the rubber, a stride's lean forward at release
-  const eye0 = P(-0.45, 59.2, 6.05), eye1 = P(-0.75, 56.6, 5.55);
-  // framed toward the hitter's side of the plate (a left handed hitter stands on the catcher's right)
-  const side = facts.batter && facts.batter.bats === 'R' ? -1 : 1;
-  const lookP = P(0.85 * side, 0, 3.4), lookL = P(0.6 * side, 0, 2.7);
-  const look = new THREE.Vector3();
-  function frameWidthFt() { return innerWidth > innerHeight ? 15 : 6.6; }
+  const eye = pitcherEye(camera);
+  eye.setSide(facts.batter && facts.batter.bats);
   function resize() {
-    look.copy(innerWidth > innerHeight ? lookL : lookP);
     renderer.setSize(innerWidth, innerHeight, false);
-    camera.aspect = innerWidth / innerHeight;
-    const d = eye0.distanceTo(look);
-    const halfW = (frameWidthFt() * FT) / 2;
-    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(halfW / camera.aspect / d));
+    eye.resize(innerWidth, innerHeight);
     if (cam === 'side') camera.fov = 22;
     if (cam === 'free') camera.fov = parseFloat(Q.get('fov') || 30);
     camera.updateProjectionMatrix();
@@ -152,10 +98,7 @@ function setupCamera(facts) {
       const v = (Q.get('pos') || '0,20,6').split(',').map(Number), l = (Q.get('at') || '0,0,3').split(',').map(Number);
       camera.position.copy(P(...v)); camera.lookAt(P(...l)); return;
     }
-    // the delivery: the head drifts forward and down until release, then settles
-    const k = smooth(THREE.MathUtils.clamp((t - 0.05) / 0.75, 0, 1));
-    camera.position.lerpVectors(eye0, eye1, k * 0.35);
-    camera.lookAt(look);
+    eye.update(t);
   }
   resize();
   return { update, resize };

@@ -18,24 +18,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { look } from '../../3d/looks.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKS = path.join(HERE, '..', '..', 'data', 'packs');
 const OUT = path.join(HERE, '..', '..', '3d', 'assets', 'packs');
 const bio = JSON.parse(fs.readFileSync(path.join(HERE, '..', '..', '3d', 'assets', 'bio.json'), 'utf8')).batters;
 fs.mkdirSync(OUT, { recursive: true });
-
-// FNV-1a, then a little mixing: stable across machines
-function hash(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } h ^= h >>> 15; h = Math.imul(h, 2246822507); h ^= h >>> 13; return h >>> 0; }
-function look(id) {
-  const h = hash(id), u = (k) => ((h >>> k) & 1023) / 1023;
-  return {
-    tone: +u(0).toFixed(3),                                    // 0 the light skin map .. 1 the dark one
-    beard: [0, 0, 0.45, 0.9][(h >>> 10) & 3],                  // none (twice as likely), stubble, full
-    jawGuard: ((h >>> 12) % 100) < 35,
-    number: String(((h >>> 16) % 79) + 1),
-  };
-}
 
 const index = [];
 for (const f of fs.readdirSync(PACKS).filter((x) => x.endsWith('.json')).sort()) {

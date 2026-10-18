@@ -12,7 +12,7 @@
  *         hit_by_pitch|dirt     (default swinging_strike; take=1 is called_strike)
  *   &type=FF &cell=12 &mx=0.1 &mz=-0.1   override the pitch, the aimed cell, the miss (feet)
  */
-import { cellPoint } from './pitch.js?v=4';
+import { cellPoint } from './pitch.js?v=5';
 
 export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'dirt'];
 

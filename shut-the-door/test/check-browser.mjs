@@ -84,6 +84,11 @@ const browser = await pw.chromium.launch(CHROME ? { executablePath: CHROME } : {
 
 /* ---- shared steps ------------------------------------------------------- */
 
+/* Headless Chromium draws WebGL in software, a frame in a large fraction of a second, so on a real
+   clock a pitch would show two frames. The 3D mound takes a stepped clock for the check: a pitch
+   plays every frame of its motion at 15 a second, and draws every third. */
+const STAGE_TEST = () => { window.STD_STAGE_TEST = { step: 1 / 15, renderEvery: 3 }; };
+
 /* The owner's rule while pitching: nothing graded, nothing tipped, nothing
    over the field. Returns what broke it, or an empty list. */
 async function quietProblems(page) {
@@ -110,12 +115,138 @@ async function quietProblems(page) {
   });
 }
 
+/* The 3D mound (3d/stage.js). Waits for its downloads, then reads pixels straight off the WebGL
+   canvas after a draw: the park, the people and the zone's surroundings, not a blank or one color. */
+async function stageReady(page) {
+  const on = await page.evaluate(() => !!(window.STD_STAGE && window.STD_STAGE.supported()));
+  if (!on) return false;
+  await page.waitForFunction(() => window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 90000 });
+  await page.evaluate(() => window.STD_UI.state.scene.real.ready);
+  return true;
+}
+async function canvasRenders(page) {
+  return page.evaluate(() => {
+    const st = window.STD_STAGE.current, gl = st.renderer.getContext();
+    st.render();
+    const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, px = new Uint8Array(4), seen = new Set();
+    let lit = 0, n = 0;
+    for (let i = 1; i < 12; i++) for (let j = 1; j < 12; j++) {
+      gl.readPixels(Math.floor(W * i / 12), Math.floor(H * j / 12), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      seen.add((px[0] >> 4) + ',' + (px[1] >> 4) + ',' + (px[2] >> 4));
+      if (px[0] + px[1] + px[2] > 30) lit++;
+      n++;
+    }
+    const cv = document.getElementById('m-canvas'), r = cv.getBoundingClientRect();
+    return { W, H, css: [Math.round(r.width), Math.round(r.height)], colors: seen.size, lit: lit / n, s3d: document.getElementById('m-scene').classList.contains('s3d') };
+  });
+}
+
+/* What a PitchResult must look like on the field (3d/play.js reads it; this is the spec, written
+   apart from it): the hitter's motion, where the ball goes, the umpire's signal. */
+function expectedMotion(tr) {
+  const r = tr.result, swing = ['swinging_strike', 'foul', 'foul_tip', 'in_play'].includes(r);
+  const batter = swing ? 'swing' : r === 'hit_by_pitch' ? 'hbp' : tr.check ? 'check' : 'take';
+  const ball = tr.dirt ? ['dirt'] : r === 'foul_tip' ? ['tip'] : r === 'foul' ? ['back', 'pulled'] : r === 'in_play' ? ['play'] : r === 'hit_by_pitch' ? ['hbp'] : ['glove'];
+  const ump = r === 'called_strike' ? 'strike' : r === 'foul' ? 'foul' : r === 'hit_by_pitch' ? 'hbp' : null;
+  return { batter, ball, ump };
+}
+/* Read one play's trace (the stage keeps it): the reading matches the result, and the frames show
+   it: the ball flies, a swing moves the bat, a ball in play leaves, the umpire signals, and nothing
+   but the field is drawn. Returns what is wrong, or an empty list. */
+function motionProblems(tr) {
+  const out = [], e = expectedMotion(tr), name = tr.result + (tr.bb ? ' ' + tr.bb : '') + (tr.check ? ' (check)' : '') + (tr.dirt ? ' (dirt)' : '');
+  if (tr.m.batter !== e.batter) out.push(name + ': the hitter does ' + tr.m.batter + ', not ' + e.batter);
+  if (!e.ball.includes(tr.m.ball)) out.push(name + ': the ball goes ' + tr.m.ball + ', not ' + e.ball.join(' or '));
+  if ((tr.m.ump || null) !== e.ump) out.push(name + ': the umpire signals ' + tr.m.ump + ', not ' + e.ump);
+  if (tr.s.some((x) => x.overlay)) out.push(name + ': an overlay was drawn on the field');
+  if (tr.skipped) return out;
+  if (tr.frames < 5) out.push(name + ': only ' + tr.frames + ' frames');
+  const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const balls = tr.s.filter((x) => x.ball);
+  if (balls.length < 3) { out.push(name + ': the ball was seen in ' + balls.length + ' frames'); return out; }
+  const flew = Math.max(...balls.map((x) => d(x.ball, balls[0].ball)));
+  if (flew < 14) out.push(name + ': the ball flew ' + flew.toFixed(1) + ' m');
+  const s0 = tr.s[0], before = tr.s.filter((x) => x.t < tr.resultAt - 0.15), after = tr.s.filter((x) => x.t >= tr.resultAt);
+  const tip0 = (before.length ? before : tr.s)[0].tip;
+  const batMove = Math.max(...tr.s.map((x) => d(x.tip, tip0)));
+  if (e.batter === 'swing' && batMove < 0.8) out.push(name + ': the bat moved ' + batMove.toFixed(2) + ' m in a swing');
+  if (e.batter === 'check' && batMove < 0.12) out.push(name + ': the bat moved ' + batMove.toFixed(2) + ' m in a check swing');
+  if (e.batter === 'hbp' && Math.max(...tr.s.map((x) => d(x.pel, s0.pel))) < 0.05) out.push(name + ': the hitter did not flinch');
+  const ballAt = (t) => { const b = balls.filter((x) => x.t >= t); return b.length ? b : null; };
+  if (tr.m.ball === 'play' || tr.m.ball === 'back' || tr.m.ball === 'pulled') {
+    const b = ballAt(tr.resultAt);
+    const off = b ? Math.max(...b.map((x) => d(x.ball, b[0].ball))) : 0;
+    if (off < (tr.m.ball === 'play' ? 6 : 2)) out.push(name + ': off the bat the ball went ' + off.toFixed(1) + ' m');
+  }
+  if (e.ump && after.length) {
+    const rise = (k) => Math.max(...after.map((x) => x[k][1] - s0[k][1]));
+    const moved = (k) => Math.max(...after.map((x) => d(x[k], s0[k])));
+    const okU = e.ump === 'strike' ? Math.max(rise('uR'), rise('uL')) > 0.2 : e.ump === 'foul' ? Math.min(rise('uR'), rise('uL')) > 0.2 : Math.max(moved('uR'), moved('uL')) > 0.2;
+    if (!okU) out.push(name + ': the umpire did not signal ' + e.ump);
+  }
+  return out;
+}
+
+/* The outing's own pitches on the 3D mound: each played its result's motion (a tapped one is
+   judged on its reading only), every hitter in turn. */
+function traceCheck(label, play) {
+  const probs = [].concat(...play.traces.map(motionProblems));
+  const kinds = [...new Set(play.traces.map((t) => t.result + (t.bb ? ' ' + t.bb : '')))];
+  ok(play.traces.length === play.pitches && probs.length === 0,
+    label + ': each of the ' + play.traces.length + ' pitches played its motion on the 3D mound (' + kinds.join(', ') + ')' + (probs.length ? ': ' + probs.slice(0, 4).join(' | ') : ''));
+}
+
+/* Every kind of PitchResult, played on the 3D mound straight from a PitchResult (the stage's own
+   entry, no engine draw): both hands, each pitch type in turn. Returns the problems and the kinds. */
+async function everyResult(page) {
+  return page.evaluate(async () => {
+    const S = window.STD_UI.state, st = window.STD_STAGE.current, C = window.STD_CONTRACT;
+    const was = st.bat, kinds = [];
+    const plays = [
+      ['ball', 'take', 3, { b: 0, s: 0 }, null, { x: 1.4, zn: 0.5 }],
+      ['ball', 'take', 20, { b: 1, s: 0 }, null, { x: 0.2, zn: -1.1 }],          // in the dirt
+      ['ball', 'take', 9, { b: 1, s: 2 }, null, { x: 0.8, zn: -0.15 }],          // a check swing, two strikes
+      ['called_strike', 'take', 18, { b: 0, s: 0 }, null, { x: 0.5, zn: 0.2 }],
+      ['swinging_strike', 'swing', 22, { b: 0, s: 1 }, null, { x: 0.1, zn: 0.0 }],
+      ['foul', 'swing', 7, { b: 1, s: 1 }, { bb: 'popup', ev: 70, la: 60, spray: 0 }, { x: 0.05, zn: 0.8 }],
+      ['foul', 'swing', 11, { b: 1, s: 1 }, { bb: 'ground', ev: 92, la: 4, spray: -44 }, { x: -0.3, zn: 0.4 }],
+      ['foul_tip', 'swing', 12, { b: 2, s: 1 }, null, { x: 0.0, zn: 0.6 }],
+      ['in_play', 'swing', 17, { b: 0, s: 0 }, { bb: 'ground', ev: 95, la: -6, spray: 12, result: 'out', text: 'grounds out to short' }, { x: 0.1, zn: 0.3 }],
+      ['in_play', 'swing', 12, { b: 0, s: 0 }, { bb: 'line', ev: 104, la: 14, spray: -20, result: 'single', text: 'lines a single to left' }, { x: 0.0, zn: 0.5 }],
+      ['in_play', 'swing', 7, { b: 0, s: 0 }, { bb: 'fly', ev: 99, la: 31, spray: 25, result: 'out', text: 'flies out to right' }, { x: 0.0, zn: 0.8 }],
+      ['in_play', 'swing', 7, { b: 0, s: 0 }, { bb: 'popup', ev: 80, la: 58, spray: 5, result: 'out', text: 'pops out to second' }, { x: 0.1, zn: 0.9 }],
+      ['hit_by_pitch', 'take', 14, { b: 0, s: 0 }, null, { x: 0, zn: 0.4 }],
+    ];
+    const out = [];
+    for (const hand of ['L', 'R']) {
+      const b = S.scn.batters.find((x) => x.bats === hand);
+      if (!b) { out.push('no ' + hand + ' handed hitter in the pack'); continue; }
+      st.setBatter(b);
+      for (const [i, [result, batter, cell, countBefore, inPlay, at]] of plays.entries()) {
+        const a = S.scn.pitcher.arsenal[i % S.scn.pitcher.arsenal.length];
+        // the hit by pitch comes in on the hands: inside is the hitter's side of the plate
+        const x = result === 'hit_by_pitch' ? (hand === 'L' ? 1 : -1) * 1.55 : at.x;
+        const pr = { n: i + 1, call: { type: a.type, cell }, actual: { x, zn: at.zn }, actualCell: C.cellAt(x, at.zn), velo: a.velo, batter, result,
+          inPlay, countBefore, count: countBefore, outs: 0, bases: 0, runnerMoves: [], runs: 0, paOver: false };
+        await st.play({ pr, quick: true });
+        const tr = st.trace;
+        kinds.push(hand + ' ' + result + (inPlay ? ' ' + inPlay.bb : '') + (tr.check ? ' check' : '') + (tr.dirt ? ' dirt' : ''));
+        out.push(tr);
+      }
+    }
+    st.setBatter(was);
+    S.grid.place(st.gridRect());
+    st.draw();
+    return { traces: out.filter((x) => typeof x === 'object'), errors: out.filter((x) => typeof x === 'string'), kinds };
+  });
+}
+
 /* Throw a whole outing. The first pitch gets no tap at all, to show the game
    goes on by itself; later ones are skipped with a tap. The quiet rule is
    checked through each flight and after it. */
 async function playOuting(page, o) {
   const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
-  const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [] };
+  const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
   const done = () => page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
   for (let i = 0; i < 80; i++) {
     if (await done()) break;
@@ -143,6 +274,8 @@ async function playOuting(page, o) {
       if (o.runnerShots && s.dots && !shotTaken && t > 6) { shotTaken = true; await o.shot('runners-p' + r.pitches); }
       if (!s.busy) break;
     }
+    const tr = await page.evaluate(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.trace);
+    if (tr && tr.n !== r.lastN) { r.traces.push(tr); r.lastN = tr.n; }
     if (await done()) break;
     const after = await quietProblems(page);
     if (after.length) r.problems.push('after pitch ' + r.pitches + ': ' + after.join(', '));
@@ -210,6 +343,7 @@ async function run(w, h, theme) {
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE.replace(/\/shut-the-door\/$/, '') });
   const page = await ctx.newPage();
   await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, theme);
+  await page.addInitScript(STAGE_TEST);
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
@@ -306,6 +440,13 @@ async function run(w, h, theme) {
   /* 3 and 4 */
   await page.click('#b-take');
   await page.waitForSelector('#s-mound.on .grid .cell', { timeout: 5000 });
+  /* 14: the mound is 3D */
+  const is3d = await stageReady(page);
+  ok(is3d, '14 the mound is the 3D scene (WebGL here)');
+  if (is3d) {
+    const cv = await canvasRenders(page);
+    ok(cv.s3d && cv.W >= cv.css[0] && cv.colors >= 12 && cv.lit > 0.9, '14 the 3D canvas renders (' + cv.W + 'x' + cv.H + ' for ' + cv.css.join('x') + ' css px, ' + cv.colors + ' colors in 121 samples)');
+  }
   await page.waitForTimeout(200);
   const mirror = await page.evaluate(() => {
     const r = (c) => document.querySelector('#m-scene .grid .cell[data-cell="' + c + '"]').getBoundingClientRect();
@@ -337,17 +478,31 @@ async function run(w, h, theme) {
       return { f, cell: [c.width, c.height], was: S.scn.batters.indexOf(was) };
     }, hand);
     const inside = (bx) => bx.x0 >= 0 && bx.x1 <= fr.f.W && bx.y0 >= 0 && bx.y1 <= fr.f.H;
-    ok(inside(fr.f.batter) && inside(fr.f.catcher) && inside(fr.f.umpire),
-      '10 a ' + (hand === 'L' ? 'left' : 'right') + ' handed hitter, the catcher and the umpire are all in frame (batter ' + fr.f.batter.x0 + '-' + fr.f.batter.x1 + ' of ' + fr.f.W + ')');
+    /* the 3D set is to scale, so on a narrow phone a thumb sized cell wins over the catcher's far
+       side: the hitter is whole, the catcher and the umpire are whole top to bottom and mostly in
+       across (the top of the bat may leave the frame) */
+    const mostly = (bx) => bx.y0 >= 0 && bx.y1 <= fr.f.H && (Math.min(bx.x1, fr.f.W) - Math.max(bx.x0, 0)) / (bx.x1 - bx.x0) >= 0.8;
+    const R = (v) => Math.round(v);
+    ok(inside(fr.f.batter) && (fr.f.bat ? mostly(fr.f.catcher) && mostly(fr.f.umpire) : inside(fr.f.catcher) && inside(fr.f.umpire)),
+      '10 a ' + (hand === 'L' ? 'left' : 'right') + ' handed hitter, the catcher and the umpire are all in frame (batter ' + R(fr.f.batter.x0) + '-' + R(fr.f.batter.x1) + ', catcher ' + R(fr.f.catcher.x0) + '-' + R(fr.f.catcher.x1) + ' of ' + fr.f.W + ')');
     ok(fr.cell[0] >= 44 && fr.cell[1] >= 44, '10 cells stay tappable with him in frame (' + Math.round(fr.cell[0]) + 'x' + Math.round(fr.cell[1]) + ')');
     await shot('framing-' + hand);
     await page.evaluate((i) => { const S = window.STD_UI.state; S.scene.setBatter(S.scn.batters[i]); S.grid.place(S.scene.gridRect()); S.scene.draw({}); }, fr.was);
+  }
+
+  /* 14: every kind of result plays its own motion, for a hitter from each side */
+  if (is3d) {
+    const ev = await everyResult(page);
+    const probs = ev.errors.concat(...ev.traces.map(motionProblems));
+    ok(ev.traces.length === 26 && probs.length === 0, '14 every pitch result plays its motion (' + ev.traces.length + ' plays: ' + [...new Set(ev.kinds.map((k) => k.slice(2)))].join(', ') + ')' + (probs.length ? ': ' + probs.slice(0, 4).join(' | ') : ''));
+    await shot('after-every-result');
   }
 
   /* 5 */
   const play = await playOuting(page, { w, h, shot });
   ok(play.pitches > 0, '5 a whole outing on the real engine (' + play.pitches + ' pitches)');
   ok(play.problems.length === 0, '5 nothing graded, tipped or over the field from the first pitch to the last' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
+  if (is3d) traceCheck('5', play);
   ok(play.pbp.length && play.pbp.every((x) => x && x.length > 3), '5 one line of play by play after each pitch ("' + (play.pbp[0] || '') + '")');
 
   /* 6 */
@@ -392,6 +547,7 @@ async function ending(w, h, end, extra) {
   const tag = String(w);
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
@@ -413,10 +569,13 @@ async function ending(w, h, end, extra) {
   }
   await page.click('#b-take');
   await page.waitForSelector('#s-mound.on .grid .cell');
+  const is3d = await stageReady(page);
   if (proxy) ok(await page.isVisible('#m-proxy'), '11 ' + end + ': the proxy note is on the mound, small');
   const play = await playOuting(page, { w, h, shot, runnerShots: end !== 'door_shut', type0: true, cell: 12, noSkip: end !== 'door_shut' });
   const k = play.pitches, sawMove = play.sawMove, sawOut = play.sawOut;
   ok(play.problems.length === 0, '11 ' + end + ': nothing graded, tipped or over the field during play' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
+  ok(is3d, '11 ' + end + ': on the 3D mound');
+  if (is3d) traceCheck('11 ' + end, play);
   const res = await page.evaluate(() => ({ o: document.getElementById('r-outcome').textContent, cls: document.getElementById('r-outcome').className, rv: document.getElementById('r-reveal').textContent, st: document.getElementById('r-streak').textContent, them: window.STD_UI.state.outing.score.them, start: window.STD_UI.state.scn.situation.score.them }));
   const sawRun = res.them > res.start;
   ok(res.cls.includes(end), '11 ' + end + ': the outing ends ' + res.o + ' after ' + k + ' pitches');

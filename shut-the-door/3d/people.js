@@ -10,7 +10,7 @@ import * as M from './materials.js?v=3';
 import * as G from './gear3d.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import { assetUrl } from './load.js?v=4';
+import { assetUrl } from './load.js?v=5';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -309,7 +309,7 @@ export function fitOnHead(p, obj, opts = {}) {
 
 export class People {
   constructor({ scene, facts, mode, pitch, play, m }) {
-    Object.assign(this, { scene, facts, mode, pitch, play, m: m || { batter: mode, ball: 'glove', contactShift: 0 } });
+    Object.assign(this, { scene, facts, mode: mode || 'take', pitch, play, m: m || { batter: mode || 'take', ball: 'glove', contactShift: 0 } });
     this.tex = new THREE.TextureLoader();
   }
 
@@ -321,13 +321,56 @@ export class People {
     const ln = this.tex.load(assetUrl('tex/leather_normal.webp'));
     // the knit, tiled by the uniform shader
     const knit = this.tex.load(assetUrl('tex/knit_color.webp')); knit.wrapS = knit.wrapT = THREE.RepeatWrapping; knit.colorSpace = THREE.NoColorSpace;
-    const U = this.facts.uniform || {};
-    if (b) dress(b, kitFor(this.facts, 'them'), this.facts.batter.number ?? '24', knit);
+    this.knit = knit;
     if (c) dress(c, kitFor(this.facts, 'us'), '8', knit);
-    if (b) this.look(b, this.facts.batter);
-    if (b) this.setupBatter(b);
     if (c) this.setupCatcher(c, lm, ln);
     if (u) this.setupUmpire(u);
+    if (b && this.facts.batter) this.setBatter(this.facts.batter);
+    if (this.pitch) this.setPlay(this.pitch, this.play, this.m);
+  }
+
+  /** A new hitter in the box (every batter in the pack, in turn): his build, look, kit, helmet,
+      bat and stance. The models are loaded once; this re-dresses and re-places the same body. */
+  setBatter(f) {
+    const b = this.batter;
+    if (!b) return;
+    this.facts.batter = f;
+    if (b.helmet) { b.helmet.parent && b.helmet.parent.remove(b.helmet); b.helmet = null; }
+    if (b.bat) { this.scene.remove(b.bat); b.bat = null; }
+    for (const [bone, pos, q] of b.bind) { bone.position.copy(pos); bone.quaternion.copy(q); }
+    b.root.position.set(0, 0, 0); b.root.rotation.set(0, 0, 0); b.root.scale.setScalar(1);
+    b.root.updateMatrixWorld(true);
+    b.chain = null; b.feetSwing = null; b.feetTake = null; b.footGeom = null; b.clavBind = null;
+    dress(b, kitFor(this.facts, 'them'), f.number ?? '24', this.knit);
+    this.look(b, f);
+    this.setupBatter(b);
+    if (this.umpire) this.placeUmpire(this.umpire);
+    if (this.pitch) this.setPlay(this.pitch, this.play, this.m);
+  }
+
+  /** One pitch's story for everyone (play.js): what the batter does, where the ball goes after
+      the plate, where the catcher sets up. */
+  setPlay(pitch, play, m) {
+    this.pitch = pitch; this.play = play; this.m = m || { batter: 'take', ball: 'glove', contactShift: 0 };
+    this.mode = this.m.batter === 'swing' ? 'swing' : 'take';
+    const b = this.batter, c = this.catcher;
+    if (b && b.chain) {
+      b.take = this.mode === 'take';
+      b.motion = this.m.batter;              // swing, take, check or hbp
+      const la = play && play.inPlay && play.inPlay.la;
+      b.batTilt = la == null ? 0 : THREE.MathUtils.clamp((la - 12) / 30, -1, 1) * 9;
+      this.planBatterFeet(b);
+    }
+    if (c && c.crouch) {
+      // he sets up where the pitch is aimed
+      face(c, P(0.1 + 0.4 * this.aimX(), -2.85, 0));
+      stance(c);
+      c.feetN = c.feet;
+      const c0 = c.crouch;
+      c.crouch = { ...c0, ...BLOCK }; stance(c); c.feetB = c.feet;
+      c.crouch = c0; c.feet = c.feetN;
+    }
+    this.wireBall();
   }
 
   /* ---------------------------------------------------------------- batter */
@@ -337,6 +380,7 @@ export class People {
     const skin = p.meshes.find((m) => m.material.name === 'skin');
     if (!skin || !skin.material.userData.u) return;
     const u = skin.material.userData.u;
+    u.uTone.value = 0; u.uBeardAmt.value = 0;
     if (f.tone > 0.01) { const d = this.tex.load(assetUrl('tex/skin_dark.webp')); d.colorSpace = THREE.SRGBColorSpace; d.flipY = false; u.uDark.value = d; u.uTone.value = f.tone; }
     if (f.beard > 0) { const bm = this.tex.load(assetUrl('tex/beard_mask.webp')); bm.colorSpace = THREE.NoColorSpace; bm.flipY = false; u.uBeard.value = bm; u.uBeardAmt.value = f.beard; }
   }
@@ -367,12 +411,11 @@ export class People {
     // the swing for his side: the capture mirrored for a left handed hitter, as it is for a right
     b.clip = lefty || !b.clips.swingR ? 'swing' : 'swingR';
     b.take = this.mode === 'take';
-    b.motion = this.m.batter;              // swing, take, check or hbp
-    const la = this.play && this.play.inPlay && this.play.inPlay.la;
-    b.batTilt = la == null ? 0 : THREE.MathUtils.clamp((la - 12) / 30, -1, 1) * 9;
+    b.motion = this.m.batter;
+    b.batTilt = 0;
     // the helmet in his club's colour; the jaw guard where the batter's appearance says he wears one
     for (const m of b.meshes) if (m.material.name === 'hair') m.visible = false; // under the helmet
-    fitOnHead(b, G.battingHelmet(b.kit ? b.kit.trim : NAVY, lefty ? -1 : 1, { jaw: !!this.facts.batter.jawGuard }), { drop: 0.105, fwd: 0.012, tilt: 0.06 });
+    b.helmet = fitOnHead(b, G.battingHelmet(b.kit ? b.kit.trim : NAVY, lefty ? -1 : 1, { jaw: !!this.facts.batter.jawGuard }), { drop: 0.105, fwd: 0.012, tilt: 0.06 });
     b.bat = G.bat();
     this.scene.add(b.bat);
     // grips: bottom hand near the knob. A left handed hitter's bottom hand is his right.
@@ -439,9 +482,17 @@ export class People {
     const back = b.lefty ? 'l' : 'r', tLift = hs[lift][0];
     // after contact the front foot spins open on its heel (35 degrees, the way the hips open)
     const open = { at: tC - 0.02, deg: 35, dir: Math.sign(dy) || 1 };
-    const feet = (t0, t1, swing) => ({ [back]: [[t0, t1, 'pivot']], [front]: [[t0, tLift, 'land'], [tStrike, t1, 'flat', swing ? open : null]] });
-    if (!b.take) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, clip.duration, feet(0, clip.duration, true));
-    else { const ct0 = -this.pitch.tPlate + b.tContact - 0.1; b.feetTake = planFeet(b, (t) => this.takeBase(b, t), ct0, ct0 + 3.8, feet(ct0, ct0 + 3.8, false)); }
+    b.feetSpec = (t0, t1, swing) => ({ [back]: [[t0, t1, 'pivot']], [front]: [[t0, tLift, 'land'], [tStrike, t1, 'flat', swing ? open : null]] });
+    this.planBatterFeet(b);
+  }
+
+  /** The feet for this pitch's motion: the swing's plan is his own (once per hitter); a take's
+      runs on the pitch's clock, so it is planned per pitch. */
+  planBatterFeet(b) {
+    if (!b.feetSpec) return;
+    const clip = b.clips[b.clip];
+    if (!b.take) { if (!b.feetSwing) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, clip.duration, b.feetSpec(0, clip.duration, true)); }
+    else if (this.pitch) { const ct0 = -this.pitch.tPlate + b.tContact - 0.1; b.feetTake = planFeet(b, (t) => this.takeBase(b, t), ct0, ct0 + 3.8, b.feetSpec(ct0, ct0 + 3.8, false)); }
   }
 
   /** The swing at capture time t, before the feet are planted. */
@@ -613,8 +664,14 @@ export class People {
     for (const m of u.meshes) if (m.material.name === 'hair') m.visible = false; // under the cap
     // the slot: between the catcher and a left handed hitter, his chin over the catcher's shoulder
     // directly behind the catcher, his head over the catcher's inside shoulder
-    face(u, P(this.facts.batter.bats === 'L' ? 0.55 : -0.55, -5.0, 0));
     u.crouch = { drop: 0.4, back: 0.16, width: 0.36, toeOut: 0.3, heel: 0.05, lean: 0.62, kneeOut: 0.6 };
+    this.placeUmpire(u);
+  }
+
+  /** The umpire's slot follows the hitter's side; set again for each hitter. */
+  placeUmpire(u) {
+    const bats = this.facts.batter ? this.facts.batter.bats : 'L';
+    face(u, P(bats === 'L' ? 0.55 : -0.55, -5.0, 0));
     stance(u);
   }
 

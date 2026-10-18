@@ -65,12 +65,16 @@ export function packId() {
 let started = null;
 try { MeshoptDecoder.useWorkers(2); } catch (e) { /* no workers: decode on the main thread */ }
 
-export function preload() {
+export function preload(opts = {}) {
   if (started) return started;
   const bytes = (f) => fetch(assetUrl(f), { priority: 'high' }).then((r) => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.arrayBuffer(); });
   const gltf = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const json = (f) => fetch(assetUrl(f), { priority: 'high' }).then((r) => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); });
-  const facts = Promise.all([json(`packs/${packId()}.json`), json('uniform.json')]).then(([f, u]) => Object.assign(f, { uniform: u }));
+  // the lab reads a pack's facts file; the game builds its facts from the scenario it plays (and
+  // takes the heights and weights from bio.json)
+  const facts = opts.game
+    ? Promise.all([json('uniform.json'), json('bio.json')]).then(([u, b]) => ({ uniform: u, bio: b.batters }))
+    : Promise.all([json(`packs/${packId()}.json`), json('uniform.json')]).then(([f, u]) => Object.assign(f, { uniform: u }));
   const env = bytes('env_256.hdr').then((buf) => {
     const d = new RGBELoader().parse(buf);
     const t = new THREE.DataTexture(d.data, d.width, d.height, THREE.RGBAFormat, d.type);

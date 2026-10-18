@@ -50,8 +50,11 @@ export function flight(rel, plate, velo, pfxX, pfxZ) {
 
 export class Pitch {
   /** play: see play.js (call, actual, velo); batter: the hitter's facts (zone); m: motion(play). */
-  constructor({ scene, facts, play, batter, m }) {
+  /** opts.overlays false: no grid, no aimed and actual markers, no trail (the game draws its own
+      grid, and nothing on the field tips where the pitch went). */
+  constructor({ scene, facts, play, batter, m, overlays = true }) {
     this.scene = scene;
+    this.overlays = overlays;
     const a = facts.pitcher.arsenal.find((x) => x.type === play.call.type) || facts.pitcher.arsenal[0];
     this.p = { ...a, aimCell: play.call.cell, velo: play.velo ?? a.velo };
     this.play = play; this.m = m || { ball: 'glove' };
@@ -76,6 +79,7 @@ export class Pitch {
     this.buildTracer();
     this.buildMarkers();
     this.buildGrid(batter);
+    if (!overlays) for (const o of [...this.grid, this.aimRing, this.hitDot, this.tracer]) o.visible = false;
     this.spin = new THREE.Vector3(1, 0, 0);
     // backspin for the riding pitches, topspin for the drops, little for a splitter
     const sh = a.shape;
@@ -133,6 +137,15 @@ export class Pitch {
       void tt;
     }
     return { x, y, z };
+  }
+
+  /** Take this pitch's ball, trail, grid and markers out of the scene (the next pitch has its own). */
+  dispose() {
+    for (const o of [this.ball, this.tracer, this.aimRing, this.hitDot, ...(this.grid || [])]) {
+      if (!o) continue;
+      this.scene.remove(o);
+      o.traverse((x) => { if (x.geometry) x.geometry.dispose(); if (x.material && x.material.map && x.material.map.isCanvasTexture) x.material.map.dispose(); if (x.material) x.material.dispose(); });
+    }
   }
 
   /** Move the whole pitch in time: release at tRel (the pitcher's capture sets it). */
@@ -267,6 +280,7 @@ export class Pitch {
     // aiming: the grid is up until a beat before release, then gone for the pitch
     const aiming = 1 - smooth(clamp01((t - (this.tRel - 0.45)) / 0.25));
     for (const g of this.grid) g.material.opacity = g.userData.op * aiming;
+    if (!this.overlays) return;
     const show = 1 - smooth(clamp01((t - this.tPlate - 1.0) / 0.7));
     this.aimRing.material.opacity = 0.42 * smooth(clamp01(t / 0.4)) * show;
     this.hitDot.material.opacity = 0.8 * smooth(clamp01((t - this.tPlate) / 0.08)) * show;
