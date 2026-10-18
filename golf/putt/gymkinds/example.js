@@ -57,5 +57,5 @@ function view(R){ var Q = R.Q, on = 0;
     ground:function(){} }; }
 
 root.RTT_GYMKIND_EXAMPLE = { id:'example', gyms:GYMS, input:'tap', parse:parse, init:init, key:key, act:act, moves:moves, won:won, proof:proof, enc:enc,
-  goal:function(){ return 'Light every lamp.'; }, view:view };
+  goal:function(){ return 'Light every lamp.'; }, hello:'Tap a lamp to flip it. Undo takes one back.', unit:'tap', view:view };
 })();

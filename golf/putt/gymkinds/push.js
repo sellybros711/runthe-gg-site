@@ -264,6 +264,7 @@ root.RTT_GYMKIND_PUSH = { id:'push', gyms:GYMS, input:'step', CONV:CONV,
   // the game's own reset button lit only when he is truly shut in: not when the lever is merely out of walking reach
   stuck:function(G, s){ return !onFoot(G, s) && shutIn(G, s); },
   goal:goal, tell:{ edge:'That\'s a hole. You can\'t walk on it.' },
+  calm:true, unit:'step', hello:'One tile a step. Undo takes one back.',
   dur:function(how){ return how === 'fill' ? G_FILL : how === 'slide' || how === 'ride' ? G_RIDE : G_STEP; },
   floor:floor, mats:mats, view:view,
   deck:function(G, s, i){ return deck(parse(G), s, i); }, isHole:function(G, s, i){ return isHole(parse(G), s, i); } };
