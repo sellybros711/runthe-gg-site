@@ -146,16 +146,20 @@ function crouch(p, k) {
   for (const [b, part] of [['spine_01', 0.35], ['spine_02', 0.35], ['spine_03', 0.3]]) bendWorld(B[b], p.left, lean * part);
 }
 
-/** Turn the head (and a little of the neck) toward a world point. */
+/** Turn the head (and a little of the neck) toward a world point, never more than a neck can:
+    each joint adds at most its share of 30 degrees on top of the capture. */
 function lookAt(p, pt, w) {
   const B = p.bones;
-  for (const [b, part] of [['neck_01', 0.35], ['head', 0.65]]) {
+  for (const [b, part, max] of [['neck_01', 0.4, 12], ['head', 0.6, 15]]) {
     const bone = B[b];
     const from = wpos(bone);
     const fwdNow = p.headFwd.clone().applyQuaternion(wquat(B.head));
     const want = pt.clone().sub(from).normalize();
     const q = new THREE.Quaternion().setFromUnitVectors(fwdNow, want);
     q.slerp(new THREE.Quaternion(), 1 - w * part);
+    const ang = 2 * Math.acos(Math.min(1, Math.abs(q.w)));
+    const lim = THREE.MathUtils.degToRad(max);
+    if (ang > lim) q.slerp(new THREE.Quaternion(), 1 - lim / ang);
     rotateWorld(bone, q);
   }
 }
@@ -331,6 +335,7 @@ export class People {
     const m = new THREE.Matrix4().copy(basis).setPosition(hc.clone().addScaledVector(along, 0.05).addScaledVector(palm, 0.035));
     attach(hand, mitt, m);
     c.mitt = mitt;
+    c.mittBindQ = mitt.quaternion.clone();
     face(c, P(0.1 + 0.4 * this.aimX(), -2.85, 0));
     // a catcher's crouch: hips just above the heels, knees wide, on the balls of his feet
     c.crouch = { drop: 0.5, back: 0.02, width: 0.27, toeOut: 0.42, heel: 0.35, lean: 0.18, kneeOut: 0.9 };
@@ -410,23 +415,32 @@ export class People {
     const target = aim.clone().lerp(ball, k1);
     target.z -= give * 0.06;
     const B = c.bones;
-    const pole = wpos(B.lowerarm_l).add(new THREE.Vector3(1.0, -0.6, -0.4));
+    // the elbow points down and a little out, as a catcher's does: never backward
+    const pole = wpos(B.lowerarm_l).add(new THREE.Vector3(0.35, -1.0, -0.25));
     // glove face toward the ball: fingers up for high pitches, down when it is low
     const low = target.y < 0.45;
     const fwd = new THREE.Vector3(0, 0, 1), up = new THREE.Vector3(0.3, low ? -1 : 1, 0).normalize();
     const side = new THREE.Vector3().crossVectors(up, fwd).normalize();
     const want = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(side, up, fwd));
-    // the pocket, not the wrist, goes to the ball: solve, measure the pocket, correct, solve again
+    // the pocket, not the wrist, goes to the ball: solve, measure the pocket, correct, solve again.
+    // The wrist turns only part of the way toward the glove's facing (a wrist has a range); the
+    // mitt, rigid on the hand, turns the rest, so the skin of the wrist is never wrung.
     let hand = target.clone().add(new THREE.Vector3(0, -0.04, -0.08));
     const arm0 = [B.upperarm_l, B.lowerarm_l, B.hand_l].map((b) => b.quaternion.clone());
     for (let it = 0; it < 5; it++) {
       [B.upperarm_l, B.lowerarm_l, B.hand_l].forEach((b, i) => b.quaternion.copy(arm0[i]));
       B.upperarm_l.updateMatrixWorld(true);
       twoBoneIK(B.upperarm_l, B.lowerarm_l, B.hand_l, hand, pole, k0);
-      const mittQ = wquat(c.mitt);
-      const delta = want.clone().multiply(mittQ.invert());
+      c.mitt.quaternion.copy(c.mittBindQ);
+      c.mitt.updateMatrixWorld(true);
+      const delta = want.clone().multiply(wquat(c.mitt).invert());
       delta.slerp(new THREE.Quaternion(), 1 - k0);
-      rotateWorld(B.hand_l, delta);
+      rotateWorld(B.hand_l, delta.clone().slerp(new THREE.Quaternion(), 0.65));
+      // the remainder on the mitt itself, in the hand's frame
+      const hq = wquat(B.hand_l);
+      const wantMitt = delta.multiply(wquat(c.mitt));
+      c.mitt.quaternion.copy(hq.invert().multiply(wantMitt));
+      c.mitt.updateMatrixWorld(true);
       const pocket = new THREE.Vector3(0, 0, 0.02).applyMatrix4(c.mitt.matrixWorld);
       c.mittErr = target.distanceTo(pocket);
       hand.add(target.clone().sub(pocket));

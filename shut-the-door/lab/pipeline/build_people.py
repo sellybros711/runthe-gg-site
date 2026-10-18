@@ -107,6 +107,13 @@ def body(cfg):
     h = mh.Human(MHA, mh.macro_targets(f'{MHA}/targets', **cfg['shape']))
     arm = h.build_armature(f'{MHA}/rigs/standard/rig.game_engine.json', cfg['name'])
     h.load_weights(f'{MHA}/rigs/standard/weights.game_engine.json')
+    h.add_twist_bones()
+    # wide, smooth joints where the swing bends hardest: the neck, the elbows
+    # the neck band only: up to the skull's base (the jaw line), never into the face
+    h.smooth_weights(['spine_03', 'neck_01', 'head'], iterations=8, below=h.cube('joint-head')[1] + 0.1)
+    for side in ('l', 'r'):
+        h.smooth_weights([f'upperarm_twist_{side}', f'lowerarm_{side}'], iterations=6)
+        h.smooth_weights([f'lowerarm_twist_{side}', f'hand_{side}'], iterations=4)
     parts = []
     for c in cfg.get('clothes', []):
         d = f'{MHA}/clothes/{c["id"]}'
@@ -166,7 +173,7 @@ PEOPLE = {
             dict(id='shoes06', own=True, color=(0.05, 0.05, 0.06, 1)),
         ],
         gear=[],
-        clips=[('idle', '120/120_21.bvh', 90, 280, False, {'l': 'open', 'r': 'fist'})],
+        clips=[('idle', '120/120_21.bvh', 90, 280, False, {'l': 'grip', 'r': 'relaxed'})],
     ),
     'umpire': dict(
         name='umpire', skin='middleage_caucasian_male', skin_size=1024,

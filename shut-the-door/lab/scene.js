@@ -64,6 +64,8 @@ async function main() {
   const people = new People({ scene, loader, facts, mode: MODE, pitch });
   await people.load();
   lab.people = people; lab.pitch = pitch; lab.THREE = THREE;
+  // for pipeline/check-deform.mjs: pose everyone at a moment without drawing a frame
+  lab.poseAt = (t) => { pitch.update(t, camera); people.update(t, 0); };
   lab.times = { release: pitch.tRel, flight: pitch.f.T, plate: pitch.tPlate, catch: pitch.tCatch };
 
   const shot = setupCamera(facts);

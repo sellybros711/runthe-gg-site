@@ -162,6 +162,73 @@ class Human:
         for b, (i, x) in self.weights.items():
             col = np.zeros(n); col[i] = x; self.wmat[b] = col
 
+    def add_twist_bones(self):
+        """Twist bones in the upper arm and forearm (the game_engine rig has none). Linear blend
+        skinning wrings the skin when a whole forearm's roll sits on the elbow joint; with a twist
+        bone half way down each segment the roll is carried along the arm the way the radius and
+        the humerus carry it. Weights are split along each segment: the elbow end keeps the
+        segment's bone, the far end goes to its twist bone, blended over the middle."""
+        arm = self.arm
+        bpy.context.view_layer.objects.active = arm
+        bpy.ops.object.mode_set(mode='EDIT')
+        eb = arm.data.edit_bones
+        spans = {}
+        for side in ('l', 'r'):
+            for seg, child in (('upperarm', 'lowerarm'), ('lowerarm', 'hand')):
+                b = eb[f'{seg}_{side}']
+                tw = eb.new(f'{seg}_twist_{side}')
+                tw.head = b.head + (b.tail - b.head) * 0.5
+                tw.tail = b.tail.copy()
+                tw.roll = b.roll
+                tw.parent = b
+                tw.use_connect = False
+                c = eb[f'{child}_{side}']
+                c.parent = tw
+                spans[f'{seg}_{side}'] = (np.array(b.head), np.array(b.tail))
+        bpy.ops.object.mode_set(mode='OBJECT')
+        vb = to_blender(self.v)
+        for bone, (a, b) in spans.items():
+            if bone not in self.wmat:
+                continue
+            axis = b - a
+            t = ((vb - a) @ axis) / (axis @ axis)
+            f = np.clip((t - 0.25) / 0.6, 0, 1)
+            f = f * f * (3 - 2 * f)
+            w = self.wmat[bone]
+            side = bone[-1]; seg = bone[:-2]
+            self.wmat[f'{seg}_twist_{side}'] = w * f
+            self.wmat[bone] = w * (1 - f)
+
+    def smooth_weights(self, bones, iterations=6, rate=0.5, below=None):
+        """Relax the weights among a set of bones over the skin's own edges (Laplacian), only on
+        vertices that use those bones (and, with below, only under that height). A sharp change of bone at a joint puts all of the joint's
+        bend into one ring of edges; relaxed, it is shared by several rings."""
+        if not hasattr(self, '_nbrs'):
+            nb = {}
+            for f, g in zip(self.faces, self.groups):
+                if g != 'body': continue
+                ids = [i for i, _ in f]
+                for a_, b_ in zip(ids, ids[1:] + ids[:1]):
+                    nb.setdefault(a_, set()).add(b_); nb.setdefault(b_, set()).add(a_)
+            self._nbrs = {k: np.array(sorted(v)) for k, v in nb.items()}
+        bones = [b for b in bones if b in self.wmat]
+        M = np.stack([self.wmat[b] for b in bones], 1)
+        total = M.sum(1)
+        verts = [v for v in self._nbrs if total[v] > 1e-4]
+        if below is not None:   # only under a height (MakeHuman units): keeps the face out of it
+            verts = [v for v in verts if self.v[v][1] < below]
+        for _ in range(iterations):
+            N = M.copy()
+            for v in verts:
+                nb = self._nbrs[v]
+                avg = M[nb].mean(0)
+                s_ = avg.sum()
+                if s_ > 1e-6:
+                    N[v] = M[v] * (1 - rate) + (avg / s_ * total[v]) * rate
+            M = N
+        for j, b in enumerate(bones):
+            self.wmat[b] = M[:, j]
+
     # -- meshes
     def body_object(self, name, material, keep_groups=('body',)):
         keep = [k for k, g in enumerate(self.groups) if g in keep_groups]
@@ -199,6 +266,46 @@ class Human:
         ob.parent = self.arm
         mod = ob.modifiers.new('Armature', 'ARMATURE'); mod.object = self.arm
         return ob
+
+    def transfer_weights(self, pts):
+        """Skin weights for a proxy from the body surface under it, the way Blender's Data
+        Transfer does with "nearest face interpolated": each garment vertex finds the closest
+        point on the skin's triangles (searched around its nearest skin vertex) and takes that
+        point's barycentric blend of the three corners' weights. One surface point, one side of
+        the body: the .mhclo reference triangles (and a plain nearest-k blend) reach across folds
+        and between the legs, which wrung the collar and tore the crotch as the body turned."""
+        from scipy.spatial import cKDTree
+        if not hasattr(self, '_tri'):
+            body = [f for f, g in zip(self.faces, self.groups) if g == 'body']
+            tris = []
+            for f in body:
+                ids = [i for i, _ in f]
+                tris.append(ids[:3])
+                if len(ids) == 4: tris.append([ids[0], ids[2], ids[3]])
+            self._tri = np.array(tris)
+            self._vert_tris = {}
+            for t, (a_, b_, c_) in enumerate(self._tri):
+                for v in (a_, b_, c_): self._vert_tris.setdefault(int(v), []).append(t)
+            bidx = np.array(sorted(self._vert_tris))
+            self._bidx = bidx
+            self._tree = cKDTree(self.v[bidx])
+        W = np.stack([col for col in self.wmat.values()], 1)
+        names = list(self.wmat.keys())
+        out = np.zeros((len(pts), len(names)))
+        _, nn = self._tree.query(pts, k=3)
+        for i, p in enumerate(pts):
+            best = None
+            for cand in nn[i]:
+                for t in self._vert_tris[int(self._bidx[cand])]:
+                    a_, b_, c_ = self.v[self._tri[t]]
+                    bary, d = _closest_on_tri(p, a_, b_, c_)
+                    if best is None or d < best[0]:
+                        best = (d, t, bary)
+            _, t, bary = best
+            out[i] = bary @ W[self._tri[t]]
+        tot = out.sum(1, keepdims=True)
+        out /= np.where(tot > 1e-6, tot, 1.0)
+        return {n: out[:, j] for j, n in enumerate(names) if out[:, j].max() > 1e-4}
 
     # -- proxies (.mhclo)
     def proxy(self, mhclo_path, name, material=None, offset_scale=1.0, delete=True):
@@ -241,13 +348,50 @@ class Human:
         pv, puv, pf, _ = read_obj(objf)
         idx = np.array([r[0] for r in refs]); w = np.array([r[1] for r in refs]); off = np.array([r[2] for r in refs])
         pos = (self.v[idx] * w[..., None]).sum(1) + off * sc * offset_scale
-        wmat = {b: (col[idx] * w).sum(1) for b, col in self.wmat.items()}
+        wmat = self.transfer_weights(pos)
         if material is None:
             material = material_from_mhmat(mhmat, name)
-        if delete:
+        if delete and dels:
+            # Hide the skin under the garment, but not near its openings: keep a band of skin about
+            # 7 cm wide inside every collar, cuff and hem. Where the skin was cut right at the
+            # opening, any difference in how skin and cloth bend showed the hole between them (the
+            # neck seemed to come off the body in a swing).
+            from scipy.spatial import cKDTree
+            cnt = {}
+            for f in pf:
+                ids = [i for i, _ in f]
+                for a_, b_ in zip(ids, ids[1:] + ids[:1]):
+                    e = (min(a_, b_), max(a_, b_)); cnt[e] = cnt.get(e, 0) + 1
+            rim = sorted({i for e, c in cnt.items() if c == 1 for i in e})
+            if rim:
+                tree = cKDTree(pos[rim])
+                d, _ = tree.query(self.v[np.array(dels)], k=1)
+                dels = [v for v, dd in zip(dels, d) if dd > 0.7]   # decimetres
             self.deleted.update(dels)
         ob = self._make_mesh(name, pos, puv, pf, material, wmat)
         return ob
+
+
+def _closest_on_tri(p, a, b, c):
+    """Barycentric coordinates of the point on triangle abc closest to p, and the distance."""
+    ab, ac, ap = b - a, c - a, p - a
+    d1, d2 = ab @ ap, ac @ ap
+    if d1 <= 0 and d2 <= 0: return np.array([1.0, 0, 0]), np.linalg.norm(ap)
+    bp = p - b; d3, d4 = ab @ bp, ac @ bp
+    if d3 >= 0 and d4 <= d3: return np.array([0, 1.0, 0]), np.linalg.norm(bp)
+    vc = d1 * d4 - d3 * d2
+    if vc <= 0 and d1 >= 0 and d3 <= 0:
+        v = d1 / (d1 - d3); return np.array([1 - v, v, 0]), np.linalg.norm(p - (a + v * ab))
+    cp = p - c; d5, d6 = ab @ cp, ac @ cp
+    if d6 >= 0 and d5 <= d6: return np.array([0, 0, 1.0]), np.linalg.norm(cp)
+    vb = d5 * d2 - d1 * d6
+    if vb <= 0 and d2 >= 0 and d6 <= 0:
+        w = d2 / (d2 - d6); return np.array([1 - w, 0, w]), np.linalg.norm(p - (a + w * ac))
+    va = d3 * d6 - d5 * d4
+    if va <= 0 and (d4 - d3) >= 0 and (d5 - d6) >= 0:
+        w = (d4 - d3) / ((d4 - d3) + (d5 - d6)); return np.array([0, 1 - w, w]), np.linalg.norm(p - (b + w * (c - b)))
+    den = 1.0 / (va + vb + vc); v = vb * den; w = vc * den
+    return np.array([1 - v - w, v, w]), np.linalg.norm(p - (a + ab * v + ac * w))
 
 
 # ---------------------------------------------------------------- materials
