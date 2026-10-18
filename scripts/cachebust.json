@@ -2925,8 +2925,8 @@
       "sha": "20a348fc8d984cf5"
     },
     "mound.js": {
-      "v": "2",
-      "sha": "c4b2ea4934533331"
+      "v": "3",
+      "sha": "ce6189371fc459dd"
     },
     "anim.js": {
       "v": "2",
@@ -2968,9 +2968,13 @@
       "v": "4",
       "sha": "18c9b3c93901ab9a"
     },
+    "coach.js": {
+      "v": "1",
+      "sha": "7eddfba072520e94"
+    },
     "ui.js": {
-      "v": "3",
-      "sha": "307c95a8845f007f"
+      "v": "4",
+      "sha": "fca1ae3f9789ddb4"
     }
   },
   "soccer/index.html": {
