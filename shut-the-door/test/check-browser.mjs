@@ -125,7 +125,7 @@ async function playOuting(page, o) {
     if (!/throw|shut it/.test(label)) { r.problems.push('the throw button was not ready: ' + label); break; }
     await page.click('#m-throw');
     r.pitches++;
-    const tapless = i === 0;
+    const tapless = i === 0 || !!o.noSkip;
     let shotTaken = false;
     for (let t = 0; t < 80; t++) {
       await page.waitForTimeout(tapless ? 90 : 60);
@@ -137,7 +137,7 @@ async function playOuting(page, o) {
       if (s.over) break;
       const q = await quietProblems(page);
       if (q.length) r.problems.push('pitch ' + r.pitches + ': ' + q.join(', '));
-      if (tapless && t === 8 && o.shot && !shotTaken) { shotTaken = true; await o.shot('pitch-flight'); }
+      if (i === 0 && t === 8 && o.shot && !shotTaken && !o.runnerShots) { shotTaken = true; await o.shot('pitch-flight'); }
       if (o.runnerShots && s.dots && !shotTaken && t > 6) { shotTaken = true; await o.shot('runners-p' + r.pitches); }
       if (!s.busy) break;
     }
@@ -388,7 +388,7 @@ async function ending(w, h, end, extra) {
   await page.click('#b-take');
   await page.waitForSelector('#s-mound.on .grid .cell');
   if (proxy) ok(await page.isVisible('#m-proxy'), '11 ' + end + ': the proxy note is on the mound, small');
-  const play = await playOuting(page, { w, h, shot, runnerShots: end !== 'door_shut', type0: true, cell: 12 });
+  const play = await playOuting(page, { w, h, shot, runnerShots: end !== 'door_shut', type0: true, cell: 12, noSkip: end !== 'door_shut' });
   const k = play.pitches, sawMove = play.sawMove, sawOut = play.sawOut;
   ok(play.problems.length === 0, '11 ' + end + ': nothing graded, tipped or over the field during play' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
   const res = await page.evaluate(() => ({ o: document.getElementById('r-outcome').textContent, cls: document.getElementById('r-outcome').className, rv: document.getElementById('r-reveal').textContent, st: document.getElementById('r-streak').textContent, them: window.STD_UI.state.outing.score.them, start: window.STD_UI.state.scn.situation.score.them }));
