@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { preload } from './load.js?v=3';
 import { buildField } from './field.js?v=3';
 import { buildStands } from './stands.js?v=3';
-import { People } from './people.js?v=10';
+import { People } from './people.js?v=11';
 import { Pitch } from './pitch.js?v=4';
 import { labPlay, motion, describe } from './play.js?v=2';
 import { FT, P, smooth } from './units.js?v=1';
@@ -82,11 +82,16 @@ async function main() {
   lab.times = { release: pitch.tRel, flight: pitch.f.T, plate: pitch.tPlate, catch: pitch.tCatch };
 
   const shot = setupCamera(facts);
+  // the play by play line (the game shows its own under the scoreboard): once the pitch has its result
+  const note = document.getElementById('note');
+  const resultAt = pitch.after ? pitch.tRel + pitch.after.t0 : pitch.tCatch;
   const update = (t, dt) => {
     shot.update(t);
     pitch.update(t, camera);
     people.update(t, dt);
     stands.userData.tick(t);
+    const show = t > resultAt + 0.3 && !Q.has('nopbp');
+    if (show !== lab.pbpShown) { note.textContent = show ? lab.pbp : ''; lab.pbpShown = show; }
   };
   // pose the first moment and compile every shader before the first frame, without blocking
   update(FREEZE ?? 0, 0);

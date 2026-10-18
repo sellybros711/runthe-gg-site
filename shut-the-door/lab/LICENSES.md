@@ -63,16 +63,24 @@ states it for the rig and weight files.
 | base mesh `3dobjs/base.obj` | https://raw.githubusercontent.com/makehumancommunity/makehuman/master/makehuman/data/3dobjs/base.obj | every body |
 | macro targets `targets/macrodetails/*-male-*.target`, `height/`, `proportions/` (24 + 36 + 18 files) | https://raw.githubusercontent.com/makehumancommunity/makehuman/master/makehuman/data/targets/macrodetails/ | body shape (age, muscle, weight, height, ancestry) |
 | `rig.game_engine.json`, `weights.game_engine.json` | https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/rigs/standard/ | the 53 bone skeleton and skin weights |
-| skins: `young_caucasian_male2`, `young_african_male`, `middleage_caucasian_male`  | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/skins/ | skin colour |
+| skins: `young_caucasian_male2`, `young_african_male`, `middleage_caucasian_male`  | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/skins/ | skin colour; `young_african_male` also as `assets/tex/skin_dark.webp` (512 px), which the scene mixes into the batter's skin for each hitter's tone |
 | eyes `eyes/high-poly`, `eyes/low-poly`, `eyes/materials/brown_eye.png` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/eyes/ | eyes |
 | `eyebrows/eyebrow001`, `eyelashes/eyelashes02` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/ | brows, lashes |
 | `hair/short02`, `hair/short04` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/hair/ | hair |
-| `clothes/male_casualsuit06`, `shoes01`, `shoes06` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/clothes/ | uniforms (re-coloured), shoes |
+| `clothes/male_casualsuit06`, `shoes01` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/clothes/ | the umpire's shirt and slacks (re-coloured); the cleats |
 
 The skins, eyes, brows, lashes, hair and clothes come from `vidya-hub/makehuman-core`, a copy of
 MakeHuman's system assets (the official asset repository is not reachable from here). Its files
 carry MakeHuman's own CC0 header unchanged ("This asset was explicitly released as CC0 in september
 2020"); the textures inside them are the same release.
+
+The batter's and catcher's uniforms are not MakeHuman clothes: `pipeline/uniform.py` cuts them from
+the CC0 base mesh itself (regions of the skin lifted off by a garment's ease, skinned with the
+body's weights): jersey, undershirt, pants, belt with loops, stirrup socks, batting gloves, the
+number patch. Their trim lives in a mask in the base mesh's UV layout, painted by the same script
+(`uniform_mask_*`, inside the glb), and the scene colours it per club. `assets/tex/beard_mask.webp`
+is painted the same way (the face's beard area). `assets/uniform.json` is the models' measured
+heights. The batter also carries two shape keys, the base mesh on heavier and leaner macro targets.
 
 What was changed: bodies shaped by blending the targets; the skeleton fitted from the joint cubes;
 clothes fitted from the `.mhclo` data; the clothes' own colour maps replaced by a team colour times a
@@ -91,15 +99,19 @@ file `CMU_EcstasyMotion_BVH-Poser-friendly-2012.zip`, downloaded through https:/
 
 | clip | CMU take | used for | changed |
 |---|---|---|---|
-| `swing` (batter) | 124_07, frames 22-140 | a batter's stance, load, stride and swing | fitted to the MakeHuman rig, mirrored left to right (the capture is a right handed hitter), fixed finger grip added; the take reuses the same capture up to the stride |
+| `swing` (batter) | 124_07, frames 22-140 | a left handed batter's stance, load, stride and swing | fitted to the MakeHuman rig, mirrored left to right (the capture is a right handed hitter), fixed finger grip added; the take, check swing and hit by pitch reuse the same capture up to the stride |
+| `swingR` (batter) | 124_07, frames 22-140 | a right handed batter's | fitted to the rig as it is, fixed finger grip added |
 | `idle` (catcher) | 120_21, frames 90-280 | breathing and weight shift under the procedural crouch | fitted to the rig |
 | `idle` (umpire) | 142_03, frames 90-280 | the same, for the umpire | fitted to the rig |
 
-The catcher's crouch, the umpire's slot stance and strike call, and the catcher's reach for the
-ball are procedural (two bone IK in `people.js`) laid over those idles.
+The catcher's crouch, reach, framing and block, the umpire's slot stance and his strike, foul and
+hit batsman signals, the hit batter's flinch, the swing's kinetic chain, planted feet and collar
+bones are procedural (`people.js`, `motion.js`) laid over those clips.
 
 ## Data
 
 | file | source | changed |
 |---|---|---|
-| `assets/pitch.json` | `data/packs/std-2025-ws7-yamamoto.json` (this repo), via `pipeline/extract_pitch.mjs` | the arsenal's velo and pfx, the batter's side and zone, copied; the aimed cell, the miss and the release point are labelled samples |
+| `assets/packs/<pack>.json` | `data/packs/*.json` (this repo), via `pipeline/extract_lab.mjs` | each pack's arsenal (velo, pfx, shape), its hitters' sides and zones, home or away, and real outcomes from its own pitch list (with their exit velocity, launch angle and spray), copied; each hitter's look (tone, facial hair, jaw guard, a generic number) is drawn from a hash of his id, not from his real look; the release point is a labelled stand in |
+| `assets/bio.json` | MLB Stats API, https://statsapi.mlb.com/api/v1/people/ (by MLBAM id, or found by name and matched by its own Retrosheet cross reference), via `pipeline/fetch_bio.mjs` on 2026-10-18 | each hitter's height, weight and batting side as listed there, copied |
+| `assets/tex/knit_color.webp`, `knit_normal.webp` | Poly Haven `cotton_jersey` and `jogging_melange` (CC0, `.../Textures/jpg/1k/<name>/`), via `pipeline/prep_textures.py` | a 256 px corner of each, at 128 px; the knit's brightness only; the melange's relief lifted 3x |

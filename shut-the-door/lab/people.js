@@ -697,6 +697,18 @@ export class People {
     const give = pt.after ? 0 : smooth(clamp01((t - catchT) / 0.12)) * (1 - smooth(clamp01((t - catchT - 0.5) / 0.6)));
     const target = aim.clone().lerp(ball, k1);
     target.z -= give * 0.06;
+    // framing: a pitch caught near the edge of the zone, he brings the mitt a few centimetres back
+    // toward the zone as he holds it (never a pitch well off the plate, never one he did not catch)
+    if (!pt.after) {
+      const zb = this.facts.batter, edgeX = 0.83, f = pt.actual;
+      const off = { x: Math.max(0, Math.abs(f.x) - edgeX + 0.3) * -Math.sign(f.x), z: f.z > zb.szTop - 0.3 ? -1 : f.z < zb.szBot + 0.3 ? 1 : 0 };
+      const near = Math.abs(f.x) < edgeX + 0.35 && f.z > zb.szBot - 0.35 && f.z < zb.szTop + 0.35;
+      const fr = near ? smooth(clamp01((t - catchT - 0.05) / 0.18)) : 0;
+      if (fr > 0) {
+        const dir = P(Math.sign(off.x) * Math.min(1, Math.abs(off.x) * 3), 0, off.z).normalize();
+        target.addScaledVector(dir, 0.035 * fr);
+      }
+    }
     const B = c.bones;
     // the elbow points down and a little out, as a catcher's does: never backward
     const pole = wpos(B.lowerarm_l).add(new THREE.Vector3(0.35, -1.0, -0.25));

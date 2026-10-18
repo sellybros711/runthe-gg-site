@@ -2927,8 +2927,8 @@
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "10",
-      "sha": "5e662ed0ca7cfdd0"
+      "v": "11",
+      "sha": "2d0f2d1bffbb8db0"
     }
   },
   "soccer/index.html": {
@@ -3055,8 +3055,8 @@
       "sha": "05546e130dd776cd"
     },
     "people.js": {
-      "v": "10",
-      "sha": "3bae3ac8b665f553"
+      "v": "11",
+      "sha": "013c28de6df50647"
     },
     "pitch.js": {
       "v": "4",
