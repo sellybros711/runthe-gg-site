@@ -2595,8 +2595,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "100",
-      "sha": "7777a946a3375c21"
+      "v": "101",
+      "sha": "ed7cbe92cf72f2dc"
     },
     "putt/land.js": {
       "v": "13",
@@ -2607,16 +2607,56 @@
       "sha": "3a82bb9bdeeffbb3"
     },
     "putt/gyms.js": {
-      "v": "3",
-      "sha": "74c2f8cb48b7fd3c"
+      "v": "4",
+      "sha": "45d7b0b33e29de49"
     },
     "putt/gymkinds/push.js": {
+      "v": "2",
+      "sha": "5e5dcad639562666"
+    },
+    "putt/gymkinds/trickshot.js": {
       "v": "1",
-      "sha": "3ab166505830a290"
+      "sha": "2aec2e642e30c10e"
+    },
+    "putt/gymkinds/lights.js": {
+      "v": "1",
+      "sha": "de60231e000e6f18"
+    },
+    "putt/gymkinds/islands.js": {
+      "v": "1",
+      "sha": "6fcc6d3bd2960e73"
+    },
+    "putt/gymkinds/pipes.js": {
+      "v": "2",
+      "sha": "9126c9571ee3625a"
+    },
+    "putt/gymkinds/lasers.js": {
+      "v": "1",
+      "sha": "688f2b5686062a2b"
+    },
+    "putt/gymkinds/ice.js": {
+      "v": "1",
+      "sha": "5113cf9c84996a35"
+    },
+    "putt/gymkinds/mimic.js": {
+      "v": "1",
+      "sha": "17ea52c313a233e3"
+    },
+    "putt/gymkinds/railyard.js": {
+      "v": "2",
+      "sha": "8e064fd810692f35"
+    },
+    "putt/gymkinds/rock.js": {
+      "v": "1",
+      "sha": "df8dd5a7cbc927a2"
+    },
+    "putt/gymkinds/runes.js": {
+      "v": "1",
+      "sha": "e506eaa07ba7c4e9"
     },
     "putt/trail.js": {
-      "v": "41",
-      "sha": "262592d9635629ed"
+      "v": "42",
+      "sha": "9230c44240191003"
     },
     "putt/mapland.js": {
       "v": "6",

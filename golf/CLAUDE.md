@@ -33,6 +33,7 @@ node golf/putt/solve.mjs --tour main        search every hole for the par it sho
 node golf/putt/solve.mjs --tour members --only 3,7 --write    re-solve edited holes and record their routes
 node golf/putt/ace.mjs <tour> <n>           build an ace for one hole, then verify it with robust()
 node golf/putt/fair.mjs --tour main         how often each hole's route goes wet or out with a person's error
+node golf/putt/trick.mjs --only <id> --write  record a trick shot gym's fewest strokes and fairest route (kind file and routes.json)
 node golf/putt/build-cards.mjs              re-cut the home cards from the signature holes (then bump CARD_V)
 node golf/check-golfer3d.mjs                every look, every aim, every shot (server on :8099)
 node golf/check-tracer3d.mjs                every course draws, nothing the ball rests on moves (server on :8099)
@@ -59,19 +60,36 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - **A skin name is global.** A second `snowman` in `SKIN` silently replaces the first everywhere.
 - Never put a real course name on screen.
 
-**Trail gyms** (`golf/putt/gyms.js` the kind registry, a kind a world in `golf/putt/gymkinds/`, pilot: Pirate Cove's `push`)
+**Trail gyms and their kinds** (`golf/putt/gyms.js` the registry and its KINDS README, a kind a file in `golf/putt/gymkinds/`)
 
-- Every world's gyms are a different KIND of puzzle, each kind in its own file publishing one global
-  (`RTT_GYMKIND_<ID>`) and touching nothing shared. The KINDS README at the top of `gyms.js` is the interface;
-  `gymkinds/example.js` is the worked example. A new kind file needs its script tag in `golf/index.html`.
-- A gym is hand designed, never random. check-putt solves every one (section 5b) and fails on an unsolvable gym,
-  a softlock, or a stale `moves`/`proof`: change a layout and record both again from `solve()`.
-- **Nothing covers the board in a gym** (the owner, 2026-10-17). Lines and messages go in the docked panel; the
-  controls (Undo, Restart, Leave, the pad) live there too. check-putt measures it at 390 x 844 and 1440 x 900.
+- **Every world's gyms are a different KIND of puzzle**: Pirate Cove `push`, the Clubhouse `trickshot`, the Schoolyard
+  `lights`, Sky Islands `islands`, Candy Works `pipes`, Neon Arcade `lasers`, Ice Age `ice`, Dino Valley `mimic`, Canyon Mine `railyard`, Lost Temple `runes`, Volcano Island `rock`. check-putt
+  fails a world with two kinds or a kind in two worlds.
+- **One kind a file, one global a file.** `gymkinds/<id>.js` is one function wrapper publishing `RTT_GYMKIND_<ID>`, its gyms
+  in the same file, touching nothing shared and never calling another kind. The registry finds kinds by that prefix, so
+  there is no list to edit. A new kind is its file, its script tag in `golf/index.html` (after gyms.js, before trail.js),
+  `check-cachebust --update`, and check-putt. `gymkinds/example.js` is the worked example and is not on the page.
+- **The frame is one place** (trail.js): the room, the camera, the civilian, the docked panel, Undo, Restart, Leave, the
+  vault and the pack are the same for every kind. A kind never pays, saves or draws outside its room.
+- **A kind speaks for itself.** `hello` is the line said as he walks in (how it is played, never how it is solved), `unit`
+  is the word the panel counts in (`step`, `slide`, `tap`, `stroke`), `tell` its one time lines and `tell.stuck` its line
+  when Restart lights. The frame has no entry line or counter word of its own.
+- **Nothing covers the board in a gym** (the owner, 2026-10-17). Every kind on the page is `calm:true`: while he is in the
+  room nothing of the world's life (birds, motes, balloons, tumbleweeds, ships) is drawn over it, and the plan keeps every
+  tree, landmark, rock and lamp off the room's whole rect on screen plus a margin (`screensGym`). Lines, messages and the
+  controls go in the docked panel. check-putt measures every kind's gatekeeper at 390 x 844 and 1440 x 900.
+- **A gym is hand designed, never random.** check-putt 5b solves every one, replays its proof, audits it and fails an
+  unsolvable gym, a softlock or a stale `moves`/`proof`: change a layout and record both again from `solve()`.
 - A change to a room that should not alter its picture (a refactor of the frame or a kind) is held pixel for pixel:
   pin the camera with the trail's `gymPin` and hash the room's pixels before and after.
-- The civilian's lines nudge, never solve: no step order, no positions.
-- A world with gyms carries none of the small trail puzzles (`pzKind:'none'`). A vault pays once (`st.gym`).
+- The civilian's three lines nudge, never solve: no step order, no positions.
+- **A world with gyms carries none of the small trail puzzles** (`pzKind:'none'`); they live on only where there are no
+  gyms (the Members Tour). A vault pays once (`st.gym`). No loot's beam crosses a gym's room on screen.
+- **The trick shot kind** plays the real ball: putt.js's `simulate` knocks `C.targets` down only in order, and the cup's
+  lid is on until the last is down. Change a room and run `trick.mjs --only <id> --write` (it records `moves`, `proof`
+  and `trick:<id>`); `limit` is the fewest plus two. check-putt 5c holds every putt of the route to a birdie putt's room
+  for error and under 34% for a person, and keeps him off every standing bottle and the cup at address. A room never
+  costs a life.
 
 **A new world, all in one commit**
 

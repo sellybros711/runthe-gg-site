@@ -43,6 +43,9 @@ var STOP_V = 0.05;          // ft/s
 var DROP = BALL_R * 1.25;   // how far a ball must fall before the far lip catches it
 var MAX_T = 24;             // s, a putt that is still rolling after this has found a perpetual slope
 var V_MAX = 15;             // ft/s
+var TGT_R = 0.4;            // a trick shot target (a bottle and its coaster): what the ball has to touch to knock it over
+var TGT_KEEP = 0.7;         // one that topples keeps the ball going at this share of its speed
+var TGT_E = 0.55;           // and one hit out of order rings and stays up: the ball bounces off it this hard
 var ART = 0.25;             // ft per art pixel: the pixel grid the greens are painted on
 
 // materials, in the order a painter would lay them
@@ -290,6 +293,11 @@ function simulate(C, x, y, vx, vy, t0){
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
   var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
+  /* TRICK SHOT TARGETS (the Clubhouse's gyms, gymkinds/trickshot.js): numbered targets that must go down in order. tk is
+     how many are down when the putt is struck (C.tk, kept by whoever plays the room, never by the hole). The cup is shut
+     under its lid for any putt struck before every one is down: the lid comes off once the last bottle has fallen and the
+     ball has stopped, so the cup is always a putt of its own. A hole with no targets never reads any of it. */
+  var tgs = C.targets && C.targets.length ? C.targets : null, tk = tgs ? (C.tk | 0) : 0, shut = !!tgs && tk < tgs.length;
   for (var di = 0; di < movs.length; di++) if (movs[di].k === 'door') movs[di]._p = null;
   // a stretch of a set piece, played out: each point is [x, y, dt from now, z above the surface]
   function ride(path){ var t1 = t, k = 0; for (var q = 0; q < path.length; q++){ var pp = path[q]; t1 = t + pp[2]; out.pts.push([pp[0], pp[1], t1, 0, pp[3] || 0]); } t = t1; n = 0; }
@@ -391,9 +399,16 @@ function simulate(C, x, y, vx, vy, t0){
       if (mo.k === 'spin' && hitCircle(s, mo.x, mo.y, mo.hub, 0.6)) hit = true; }
     if (hit) out.ev.push([t, 'wall']);
     for (i = 0; i < movs.length; i++){ var dr = movs[i]; if (dr.k === 'door' && dr._p == null && Math.hypot(s.x - dr.px, s.y - dr.py) < dr.pr){ dr._p = t0 + t; out.ev.push([t, 'plate']); } }
+    /* ---- TRICK SHOT TARGETS. The next one in order topples when the ball reaches it, and the ball runs on through where it
+       stood with TGT_KEEP of its speed. One out of order rings and stays up: a post the ball bounces off. A target that is
+       down lies flat on the felt and the ball rolls over it. */
+    if (tgs) for (i = tk; i < tgs.length; i++){ var tq = tgs[i], tqx = s.x - tq.x, tqy = s.y - tq.y, tqr = tq.r + BALL_R;
+      if (tqx * tqx + tqy * tqy >= tqr * tqr) continue;
+      if (i === tk){ tk++; s.vx *= TGT_KEEP; s.vy *= TGT_KEEP; out.ev.push([t, 'topple', i]); }
+      else if (hitCircle(s, tq.x, tq.y, tq.r, TGT_E)) out.ev.push([t, 'ring', i]); }
     // the cup: over the hole the ball falls, and it is in once it has fallen far enough to catch the far lip
     var dx = s.x - cx, dy = s.y - cy, d = Math.hypot(dx, dy);
-    if (d < cr){
+    if (d < cr && !shut){
       if (!over){ over = true; z = 0; zv = 0; }
       zv += G * DT; z += zv * DT;
       if (z >= DROP){ out.holed = true; out.ev.push([t, 'cup']); s.x = cx; s.y = cy; break; }
@@ -415,7 +430,7 @@ function simulate(C, x, y, vx, vy, t0){
     if (t > MAX_T){ if (deck){ out.water = true; out.ev.push([t, 'water']); } break; }
   }
   return finishOut();
-  function finishOut(){ out.t = t; out.rest = [s.x, s.y]; out.pts.push([s.x, s.y, t]); return out; }
+  function finishOut(){ out.t = t; out.rest = [s.x, s.y]; out.pts.push([s.x, s.y, t]); if (tgs) out.tk = tk; return out; }
 }
 
 /* ============================================================================ a course, assembled */
@@ -1813,7 +1828,7 @@ var RTT_PUTT = {
   simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
-  CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
+  CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, TGT_R:TGT_R, TGT_KEEP:TGT_KEEP, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
 };
 /* ================================================================================ THE PICTURE */
 /* Everything static is painted ONCE, onto a pixel grid of ART feet per pixel (the same grid the
