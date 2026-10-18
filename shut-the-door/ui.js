@@ -536,7 +536,7 @@ function poolChart(r) {
   var ticks = '';
   for (var t = Math.ceil(lo / 100) * 100; t < hi; t += 100) ticks += '<text x="' + ((t - lo) / BIN * bw).toFixed(1) + '" y="' + (base + 16) + '" text-anchor="middle">' + t + '</text>';
   var mx = (mine + 0.5) * bw;
-  var note = under ? '<text class="note" x="0" y="' + (H - 4) + '">' + under + ' of ' + n + ' pool outings scored under ' + lo + '.</text>' : '';
+  var note = under ? '<text class="note" x="0" y="' + (H - 4) + '">' + under + ' of ' + n + ' closer outings scored lower than the chart shows.</text>' : '';
   return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="your score against the closer pool">' + bars +
     '<text class="you" x="' + Math.max(24, Math.min(W - 24, mx)).toFixed(1) + '" y="14" text-anchor="middle">you, ' + r.score + '</text>' + ticks + note + '</svg>';
 }
