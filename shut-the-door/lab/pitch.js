@@ -1,10 +1,12 @@
 /* One pitch: release, flight, the plate, the glove.
  *
- * The flight uses the arsenal's real numbers from the pack (velo and pfx, through assets/pitch.json):
+ * The flight uses the arsenal's real numbers from the pack (velo and pfx, through assets/packs/):
  * the spin's push is a constant acceleration sized so the pitch moves pfx inches against a spinless
  * pitch over its last 40 ft (Statcast's definition), gravity on top, and drag takes about 8% of the
- * speed by the plate. The release point is a stand in (not in the pack). The aimed cell and the miss
- * are a sample, labelled so in pitch.json. Cells follow CONTRACT.md section 2, catcher's view.
+ * speed by the plate. The release point is a stand in (not in the pack). In the lab the aimed cell and
+ * the miss are a sample (play.js, labelled so); in the game they are the engine's. Cells follow
+ * CONTRACT.md section 2, catcher's view. After the plate the ball goes where the play sends it: into
+ * the glove, off the bat (the real exit velocity, launch angle and spray), off the dirt, off the hitter.
  */
 import * as THREE from 'three';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
@@ -47,33 +49,90 @@ export function flight(rel, plate, velo, pfxX, pfxZ) {
 }
 
 export class Pitch {
-  constructor({ scene, facts, mode }) {
+  /** play: see play.js (call, actual, velo); batter: the hitter's facts (zone); m: motion(play). */
+  constructor({ scene, facts, play, batter, m }) {
     this.scene = scene;
-    const p = facts.pitches[mode === 'take' ? 'take' : 'swing'];
-    this.p = p;
-    const { szTop, szBot } = facts.batter;
-    const aim = cellPoint(p.aimCell, szTop, szBot);
+    const a = facts.pitcher.arsenal.find((x) => x.type === play.call.type) || facts.pitcher.arsenal[0];
+    this.p = { ...a, aimCell: play.call.cell, velo: play.velo ?? a.velo };
+    this.play = play; this.m = m || { ball: 'glove' };
+    const { szTop, szBot } = batter;
+    const aim = cellPoint(play.call.cell, szTop, szBot);
     this.aim = aim;
-    this.actual = { x: aim.x + p.missFt.x, z: aim.z + p.missFt.z };
-    this.f = flight(facts.release, this.actual, p.velo, p.pfxX, p.pfxZ);
+    this.actual = { x: play.actual.x, z: play.actual.z };
+    this.f = flight(facts.release, this.actual, this.p.velo, a.pfxX, a.pfxZ);
     // the glove: about 3 ft behind the front of the plate, out in front of the catcher's knees
     const yGlove = -1.45;
     const tg = this.timeAtY(yGlove);
     this.tg = tg;
     this.retime(T_RELEASE);
     const g = this.f.at(tg);
-    this.catchPoint = P(g.x, g.y, g.z);
+    this.catchPoint = P(g.x, Math.max(g.y, yGlove), Math.max(g.z, 0.25));
     const ga = { x: aim.x, z: aim.z + (g.z - this.actual.z) * 0.6 };
     this.aimGlove = P(ga.x, yGlove, ga.z);
+    this.after = null;                       // the ball's path after the plate (setAfter)
     this.ball = G.baseball();
     this.ball.visible = false;
     scene.add(this.ball);
     this.buildTracer();
     this.buildMarkers();
-    this.buildGrid(facts.batter);
+    this.buildGrid(batter);
     this.spin = new THREE.Vector3(1, 0, 0);
-    // backspin for the splitter (little of it), topspin for the curveball
-    this.spinRate = (p.type === 'CU' ? -2400 : p.type === 'FS' ? 1300 : 2300) / 60 * Math.PI * 2;
+    // backspin for the riding pitches, topspin for the drops, little for a splitter
+    const sh = a.shape;
+    this.spinRate = (sh === 'drop' ? -2400 : sh === 'split' ? 1300 : sh === 'slide' || sh === 'sweep' ? 2500 : 2300) / 60 * Math.PI * 2;
+    this.bounce = this.m.ball === 'dirt' ? this.dirtPath() : null;
+  }
+
+  /** A pitch in the dirt: it lands short of the plate, kicks up and goes into the catcher's chest. */
+  dirtPath() {
+    let lo = 0, hi = this.f.T;
+    for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (this.f.at(mid).z > 0.12) lo = mid; else hi = mid; }
+    const tb = (lo + hi) / 2, b = this.f.at(tb), b2 = this.f.at(tb + 0.001);
+    const v = { x: (b2.x - b.x) / 0.001 * 0.75, y: (b2.y - b.y) / 0.001 * 0.7, z: -(b2.z - b.z) / 0.001 * 0.42 };
+    return { tb, b, v };
+  }
+
+  /** The ball's path after the plate: off the bat, back into the screen, off the hitter. contact
+      is the flight time it is met at; path(dt) gives catcher view feet dt after that. */
+  setAfter(kind, contactT, opts = {}) {
+    const c = this.f.at(contactT);
+    const ip = opts.inPlay || {};
+    const mph = (v) => v * 1.46667;
+    let ev, la, spray;
+    if (kind === 'play') { ev = ip.ev ?? 85; la = ip.la ?? 10; spray = ip.spray ?? 0; }
+    else if (kind === 'back') { ev = 65; la = 62; spray = 180 + (opts.lefty ? -12 : 12); }
+    else if (kind === 'pulled') { ev = ip.ev ?? 80; la = ip.la ?? 8; spray = (opts.lefty ? 1 : -1) * 54; }
+    else if (kind === 'hbp') {
+      // off his body: it drops away toward the pitcher's side of the plate
+      const side = opts.lefty ? -1 : 1;     // away from the hitter, catcher's view x
+      this.after = { t0: contactT, c, vel: { x: side * 5, y: 7, z: 4 }, ground: false };
+      return;
+    } else return;
+    const v = mph(ev), D = Math.PI / 180;
+    const vel = { x: v * Math.cos(la * D) * Math.sin(spray * D), y: v * Math.cos(la * D) * Math.cos(spray * D), z: v * Math.sin(la * D) };
+    const ground = kind === 'play' && (ip.bb === 'ground' || la < 2);
+    this.after = { t0: contactT, c, vel, ground };
+  }
+
+  afterAt(dt) {
+    const { c, vel, ground } = this.after;
+    // drag: the speed falls about a third over the first two seconds
+    const k = 0.2, s = (1 - Math.exp(-k * dt)) / k;
+    let x = c.x + vel.x * s, y = c.y + vel.y * s, z = c.z + vel.z * s - 16.1 * dt * dt;
+    if (z < 0.12) {
+      // on the ground: it bounces lower each time and rolls (a few hops, then along the grass)
+      let tt = 0, pz = c.z, vz = vel.z, vx = vel.x, vy = vel.y, px = c.x, py = c.y, left = dt;
+      for (let hop = 0; hop < 6 && left > 0; hop++) {
+        const a = -16.1, disc = vz * vz - 4 * a * (pz - 0.12);
+        const th = (-vz - Math.sqrt(Math.max(0, disc))) / (2 * a);
+        if (th >= left || !(th > 0)) { px += vx * left; py += vy * left; pz = Math.max(0.12, pz + vz * left + a * left * left); left = 0; break; }
+        px += vx * th; py += vy * th; pz = 0.12; vz = -(vz + 2 * a * th) * (ground ? 0.38 : 0.3); vx *= 0.82; vy *= 0.82; left -= th;
+      }
+      if (left > 0) { px += vx * left; py += vy * left; }
+      x = px; y = py; z = pz;
+      void tt;
+    }
+    return { x, y, z };
   }
 
   /** Move the whole pitch in time: release at tRel (the pitcher's capture sets it). */
@@ -87,6 +146,17 @@ export class Pitch {
     let lo = 0, hi = this.f.T * 1.3;
     for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (this.f.at(m).y > y) lo = m; else hi = m; }
     return (lo + hi) / 2;
+  }
+
+  /** The ball t seconds after release: in flight, off the bat, or off the dirt. */
+  ballAt(t) {
+    if (this.after && t > this.after.t0) { const s = this.afterAt(t - this.after.t0); return P(s.x, s.y, s.z); }
+    if (this.bounce && t > this.bounce.tb) {
+      const { tb, b, v } = this.bounce, d = t - tb;
+      const z = Math.max(0.12, b.z + v.z * d - 16.1 * d * d);
+      return P(b.x + v.x * d, Math.max(b.y + v.y * d, -1.9), z);
+    }
+    return this.pointAt(t);
   }
 
   pointAt(t) { const s = this.f.at(t); return P(s.x, s.y, s.z); }
@@ -177,14 +247,17 @@ export class Pitch {
   }
 
   update(t, camera) {
-    const inFlight = t >= this.tRel && t <= this.tCatch + 0.02;
-    // before release the ball is in the pitcher's hand
+    // in the air until the glove has it; off the bat or off the dirt it flies on, out of the frame
+    const free = this.after || this.bounce;
+    const end = free ? this.tRel + 6 : this.tCatch + 0.02;
+    const inFlight = t >= this.tRel && t <= end;
     const inHand = t < this.tRel && this.handPoint;
     this.ball.visible = inFlight || !!inHand;
+    if (this.hidden && t > this.hidden) this.ball.visible = false;
     if (inHand) this.ball.position.copy(this.handPoint());
     if (inFlight) {
       const tt = t - this.tRel;
-      this.ball.position.copy(this.pointAt(Math.min(tt, this.tCatch - this.tRel)));
+      this.ball.position.copy(free ? this.ballAt(tt) : this.pointAt(Math.min(tt, this.tCatch - this.tRel)));
       this.ball.rotation.x = tt * this.spinRate;
     }
     if (camera) {

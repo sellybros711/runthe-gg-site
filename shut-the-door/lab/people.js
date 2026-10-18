@@ -6,11 +6,11 @@
  * and squat blended, his strike call layered on top.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=2';
+import * as M from './materials.js?v=3';
 import * as G from './gear3d.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import { assetUrl } from './load.js?v=2';
+import { assetUrl } from './load.js?v=3';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=4';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -230,8 +230,43 @@ function crouch(p, k) {
   for (const [b, part] of [['spine_01', 0.35], ['spine_02', 0.35], ['spine_03', 0.3]]) bendWorld(B[b], p.left, lean * part);
 }
 
+/** The block: the crouch blended toward knees on the ground, up on his toes, chest over the ball.
+    Both stances (p.feetN, p.feetB) are worked out once at setup. */
+const BLOCK = { drop: 0.7, back: -0.1, heel: 1.0, lean: 0.55, kneeOut: 0.55 };   // same width and turn: his feet stay put
+function blockCrouch(p, k) {
+  const c0 = p.crouch, f0 = p.feet;
+  p.crouch = Object.fromEntries(Object.keys(c0).map((n) => [n, c0[n] + ((BLOCK[n] ?? c0[n]) - c0[n]) * k]));
+  p.feet = {};
+  for (const s of ['l', 'r']) {
+    const a = p.feetN[s], b = p.feetB[s];
+    p.feet[s] = { pos: a.pos.clone().lerp(b.pos, k), q: a.q.clone().slerp(b.q, k), flat: a.flat.clone().slerp(b.flat, k), ball: a.ball.clone().lerp(b.ball, k) };
+  }
+  crouch(p, 1);
+  p.crouch = c0; p.feet = f0;
+}
+
 /** Turn the head (and a little of the neck) toward a world point, never more than a neck can:
     each joint adds at most its share of 30 degrees on top of the capture. */
+/** Keep a joint inside its range: its swing from the bind pose (about anything but its own length)
+    is scaled back to max degrees. The same limits check-deform.mjs judges. */
+function limitSwing(p, name, maxDeg) {
+  const bone = p.bones[name];
+  if (!p.bindQ) p.bindQ = new Map(p.bind.map(([b, , q]) => [b, q]));
+  const q0 = p.bindQ.get(bone);
+  const rel = q0.clone().invert().multiply(bone.quaternion);
+  const child = bone.children.find((c) => c.isBone);
+  const ax = child ? child.position.clone().normalize() : new THREE.Vector3(0, 1, 0);
+  const pr = ax.clone().multiplyScalar(rel.x * ax.x + rel.y * ax.y + rel.z * ax.z);
+  const tw = new THREE.Quaternion(pr.x, pr.y, pr.z, rel.w).normalize();
+  const sw = rel.clone().multiply(tw.clone().invert());
+  const ang = 2 * Math.acos(Math.min(1, Math.abs(sw.w)));
+  const lim = THREE.MathUtils.degToRad(maxDeg);
+  if (ang <= lim) return;
+  const swc = new THREE.Quaternion().slerp(sw.w < 0 ? new THREE.Quaternion(-sw.x, -sw.y, -sw.z, -sw.w) : sw, lim / ang);
+  bone.quaternion.copy(q0).multiply(swc).multiply(tw);
+  bone.updateMatrixWorld(true);
+}
+
 function lookAt(p, pt, w) {
   const B = p.bones;
   for (const [b, part, max] of [['neck_01', 0.4, 12], ['head', 0.6, 15]]) {
@@ -246,6 +281,9 @@ function lookAt(p, pt, w) {
     if (ang > lim) q.slerp(new THREE.Quaternion(), 1 - lim / ang);
     rotateWorld(bone, q);
   }
+  // however far the ball has gone (back over his head into the screen), the neck stays in range
+  limitSwing(p, 'neck_01', 36);
+  limitSwing(p, 'head', 27);
 }
 
 function headFrame(p) {
@@ -270,8 +308,8 @@ export function fitOnHead(p, obj, opts = {}) {
 }
 
 export class People {
-  constructor({ scene, facts, mode, pitch }) {
-    Object.assign(this, { scene, facts, mode, pitch });
+  constructor({ scene, facts, mode, pitch, play, m }) {
+    Object.assign(this, { scene, facts, mode, pitch, play, m: m || { batter: mode, ball: 'glove', contactShift: 0 } });
     this.tex = new THREE.TextureLoader();
   }
 
@@ -286,12 +324,23 @@ export class People {
     const U = this.facts.uniform || {};
     if (b) dress(b, kitFor(this.facts, 'them'), this.facts.batter.number ?? '24', knit);
     if (c) dress(c, kitFor(this.facts, 'us'), '8', knit);
+    if (b) this.look(b, this.facts.batter);
     if (b) this.setupBatter(b);
     if (c) this.setupCatcher(c, lm, ln);
     if (u) this.setupUmpire(u);
   }
 
   /* ---------------------------------------------------------------- batter */
+  /** His look from the pack's facts (a hash of his id: skin tone and facial hair, never a
+      likeness): the darker skin map mixed in, the beard mask darkened. */
+  look(p, f) {
+    const skin = p.meshes.find((m) => m.material.name === 'skin');
+    if (!skin || !skin.material.userData.u) return;
+    const u = skin.material.userData.u;
+    if (f.tone > 0.01) { const d = this.tex.load(assetUrl('tex/skin_dark.webp')); d.colorSpace = THREE.SRGBColorSpace; d.flipY = false; u.uDark.value = d; u.uTone.value = f.tone; }
+    if (f.beard > 0) { const bm = this.tex.load(assetUrl('tex/beard_mask.webp')); bm.colorSpace = THREE.NoColorSpace; bm.flipY = false; u.uBeard.value = bm; u.uBeardAmt.value = f.beard; }
+  }
+
   /** His real height (root scale against the model's own) and build (the heavy and lean shape
       keys, from his body mass index against the model's): MLB Stats API figures, pipeline/fetch_bio. */
   build(p, heightIn, weightLb, modelHeightM = modelHeight(p)) {
@@ -317,6 +366,9 @@ export class People {
     b.lefty = lefty;
     b.clip = 'swing';
     b.take = this.mode === 'take';
+    b.motion = this.m.batter;              // swing, take, check or hbp
+    const la = this.play && this.play.inPlay && this.play.inPlay.la;
+    b.batTilt = la == null ? 0 : THREE.MathUtils.clamp((la - 12) / 30, -1, 1) * 9;
     // the helmet in his club's colour; the jaw guard where the batter's appearance says he wears one
     for (const m of b.meshes) if (m.material.name === 'hair') m.visible = false; // under the helmet
     fitOnHead(b, G.battingHelmet(b.kit ? b.kit.trim : NAVY, lefty ? -1 : 1, { jaw: !!this.facts.batter.jawGuard }), { drop: 0.105, fwd: 0.012, tilt: 0.06 });
@@ -408,8 +460,10 @@ export class People {
       the same capture through his load and stride, then he holds the hands back as the ball goes
       by and lets the bat settle toward his stance again. */
   takeBase(b, ct) {
-    const launch = b.tContact - 0.2;
-    const k = smooth(clamp01((ct - launch - 0.25) / 0.9));
+    // a check swing lets the bat start (the hands come through, the barrel stays back), then holds
+    const check = b.motion === 'check';
+    const launch = b.tContact - (check ? 0.075 : 0.2);
+    const k = smooth(clamp01((ct - launch - (check ? 0.12 : 0.25)) / (check ? 0.6 : 0.9)));
     pose(b, [[b.clip, Math.min(ct, launch), 1], [b.clip, 0.4 + Math.max(0, ct - launch) * 0.3, k * 0.75]]);
     const ch = b.chain;
     if (!ch) return;
@@ -487,6 +541,13 @@ export class People {
     const f = ct / b.batDt, i = Math.min(b.batTrack.length - 2, Math.floor(f));
     const local = b.batTrack[i].clone().slerp(b.batTrack[i + 1], Math.min(1, f - i));
     const q = handQ.multiply(local);
+    // the bat's plane through contact follows the ball's launch: a little under it for a fly ball,
+    // on top of it for a grounder (b.batTilt degrees at contact, easing in and out over 0.15 s)
+    if (b.batTilt) {
+      const w = Math.exp(-Math.pow((ct - b.tContact) / 0.09, 2));
+      const ax = UP.clone().applyQuaternion(q), across = new THREE.Vector3().crossVectors(ax, UP);
+      if (across.lengthSq() > 1e-6) q.premultiply(new THREE.Quaternion().setFromAxisAngle(across.normalize(), THREE.MathUtils.degToRad(b.batTilt) * w));
+    }
     const axis = UP.clone().applyQuaternion(q);
     b.bat.quaternion.copy(q);
     b.bat.position.copy(gb).addScaledVector(axis, -0.055);
@@ -534,6 +595,11 @@ export class People {
     // a catcher's crouch: hips just above the heels, knees wide, on the balls of his feet
     c.crouch = { drop: 0.5, back: 0.02, width: 0.27, toeOut: 0.42, heel: 0.35, lean: 0.18, kneeOut: 0.9 };
     stance(c);
+    // the block's stance, for a ball in the dirt
+    c.feetN = c.feet;
+    const c0 = c.crouch;
+    c.crouch = { ...c0, ...BLOCK }; stance(c); c.feetB = c.feet;
+    c.crouch = c0; c.feet = c.feetN;
   }
 
   aimX() { return this.pitch ? this.pitch.aim.x : 0; }
@@ -557,7 +623,8 @@ export class People {
     const pt = this.pitch;
     const b = this.batter, c = this.catcher, u = this.umpire;
     if (b) {
-      const ct = t - pt.tPlate + b.tContact;
+      // met early to pull it (contactShift < 0), late to go the other way
+      const ct = t - (pt.tPlate + (b.take ? 0 : this.m.contactShift)) + b.tContact;
       if (!b.take) {
         // after the follow through the capture's batter walks off and drops the bat; a real hitter
         // holds his finish, so time slows to a near hold half a second after contact
@@ -569,9 +636,10 @@ export class People {
         plantFeet(b, b.feetSwing, cw);
       } else {
         this.takeBase(b, ct);
+        if (b.motion === 'hbp') this.flinch(b, t);
         reach(b, b.feetTake, ct);
         plantFeet(b, b.feetTake, ct);
-        b.batTime = Math.min(ct, b.tContact - 0.2);
+        b.batTime = Math.min(ct, b.tContact - (b.motion === 'check' ? 0.075 : 0.2));
       }
       clavicles(b);
       deltoids(b);
@@ -579,9 +647,20 @@ export class People {
     }
     if (c) {
       pose(c, { idle: [1.5 + t, 1] });
-      crouch(c, 1);
-      this.catcherArms(c, t);
-      lookAt(c, this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
+      const cm = this.m.catcher;
+      if (cm === 'block' && pt.bounce) {
+        // a ball in the dirt: he drops to his knees, squares up and smothers it
+        const k = smooth(clamp01((t - (pt.tRel + pt.bounce.tb) + 0.22) / 0.2));
+        blockCrouch(c, k);
+        this.catcherArms(c, t);
+        if (k > 0) this.blockArms(c, k);
+      } else {
+        const contact = pt.after ? pt.tRel + pt.after.t0 : Infinity;
+        const k = cm === 'rise' ? smooth(clamp01((t - contact - 0.2) / 0.5)) : 0;
+        crouch(c, 1 - 0.5 * k);
+        this.catcherArms(c, t);
+      }
+      lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
       clavicles(c);
       deltoids(c);
     }
@@ -606,13 +685,15 @@ export class People {
 
   catcherReach(c, t) {
     const pt = this.pitch;
-    const catchT = pt.tCatch;
-    const ball = pt.catchPoint;            // where the ball meets the glove
+    // a ball met by the bat or the batter never reaches him: the reach stops at contact and eases off
+    const missed = pt.after && t > pt.tRel + pt.after.t0 ? smooth(clamp01((t - pt.tRel - pt.after.t0) / 0.35)) : 0;
+    const catchT = pt.after ? Math.min(pt.tCatch, pt.tRel + pt.after.t0 + 0.05) : pt.tCatch;
+    const ball = pt.catchPoint.clone().lerp(pt.aimGlove, missed);   // where the ball meets the glove
     // the target he sets: the aimed point, carried back to his glove plane
     const aim = pt.aimGlove;
     const k0 = smooth(clamp01((t + 0.4) / 0.6));                  // sets up the target
     const k1 = smooth(clamp01((t - (catchT - 0.32)) / 0.3));     // reaches for the ball
-    const give = smooth(clamp01((t - catchT) / 0.12)) * (1 - smooth(clamp01((t - catchT - 0.5) / 0.6)));
+    const give = pt.after ? 0 : smooth(clamp01((t - catchT) / 0.12)) * (1 - smooth(clamp01((t - catchT - 0.5) / 0.6)));
     const target = aim.clone().lerp(ball, k1);
     target.z -= give * 0.06;
     const B = c.bones;
@@ -648,13 +729,44 @@ export class People {
     }
   }
 
+  /** In the block both hands go down between his knees, the mitt's pocket to the ball. */
+  blockArms(c, k) {
+    const B = c.bones, home = c.home.clone();
+    const sc = c.root.scale.y;
+    const glove = home.clone().addScaledVector(c.fwd, 0.42 * sc).add(new THREE.Vector3(0, 0.16 * sc, 0));
+    const bare = glove.clone().addScaledVector(c.fwd, -0.06).addScaledVector(c.left, -0.05);
+    for (const [s, tgt] of [['l', glove], ['r', bare]]) {
+      const pole = wpos(B[`lowerarm_${s}`]).addScaledVector(c.left, (s === 'l' ? 1 : -1) * 0.5).add(new THREE.Vector3(0, -0.3, 0));
+      twoBoneIK(B[`upperarm_${s}`], B[`lowerarm_${s}`], B[`hand_${s}`], wpos(B[`hand_${s}`]).lerp(tgt, k), pole, 1);
+    }
+  }
+
+  /** The ball's path after the plate, once the batter stands where he stands: off the bat at the
+      swing's contact, or off his body for a hit by pitch. */
+  wireBall() {
+    const pt = this.pitch, m = this.m, b = this.batter;
+    if (!pt || !b) return;
+    if (m.batter === 'swing' && ['play', 'back', 'pulled'].includes(m.ball)) {
+      pt.setAfter(m.ball, pt.f.T + m.contactShift, { inPlay: this.play && this.play.inPlay, lefty: b.lefty });
+    } else if (m.ball === 'hbp') {
+      // where his hip is, in the catcher's view feet the flight uses
+      pose(b, { [b.clip]: [Math.max(0, b.tContact - 0.2), 1] });
+      const hip = wpos(b.bones.pelvis);
+      const hipY = hip.z / FT;
+      const tHit = Math.min(pt.f.T * 1.08, pt.timeAtY(hipY + 0.3));
+      pt.setAfter('hbp', tHit, { lefty: b.lefty });
+    }
+  }
+
   umpireMove(u, t) {
-    const pt = this.pitch, B = u.bones;
-    const call = this.mode === 'take' && this.facts.pitches.take.call === 'strike';
-    // he comes up out of the crouch after the catch; on a called strike he punches it out
-    const up = call ? smooth(clamp01((t - pt.tCatch - 0.18) / 0.45)) : smooth(clamp01((t - pt.tCatch - 0.5) / 0.6)) * 0.35;
+    const pt = this.pitch, B = u.bones, sig = this.m.ump;
+    // he comes up out of the crouch after the catch; on a strike he punches it out, on a foul both
+    // arms go up, on a hit batsman he sends him to first
+    const after = pt.after ? pt.tRel + pt.after.t0 : pt.tCatch;
+    const up = sig === 'strike' ? smooth(clamp01((t - pt.tCatch - 0.18) / 0.45))
+      : sig ? smooth(clamp01((t - after - 0.25) / 0.45))
+        : smooth(clamp01((t - pt.tCatch - 0.5) / 0.6)) * 0.35;
     crouch(u, 1 - up * 0.85);
-    // hands on his knees in the crouch
     const kneeL = wpos(B.calf_l), kneeR = wpos(B.calf_r);
     const handOn = (side, knee) => {
       const tgt = knee.clone().add(new THREE.Vector3(0, 0.1, 0)).addScaledVector(u.fwd, 0.04).addScaledVector(u.left, side * -0.03);
@@ -663,18 +775,66 @@ export class People {
     };
     const w = 1 - up;
     const [tl, pl] = handOn(1, kneeL), [tr, pr] = handOn(-1, kneeR);
-    twoBoneIK(B.upperarm_l, B.lowerarm_l, B.hand_l, tl, pl, w);
-    if (call) {
+    const shL = wpos(B.upperarm_l), shR = wpos(B.upperarm_r);
+    const sc = u.root.scale.y;
+    if (sig === 'strike') {
       // the strike call: right arm out to his side, elbow bent, a short punch
+      twoBoneIK(B.upperarm_l, B.lowerarm_l, B.hand_l, tl, pl, w);
       const k = smooth(clamp01((t - pt.tCatch - 0.42) / 0.16)) * (1 - smooth(clamp01((t - pt.tCatch - 1.4) / 0.5)));
-      const sh = wpos(B.upperarm_r);
-      const punch = sh.clone().addScaledVector(u.left, -0.42).addScaledVector(u.fwd, 0.18).add(new THREE.Vector3(0, 0.08 - 0.06 * k, 0));
-      const pole = sh.clone().addScaledVector(u.left, -0.3).addScaledVector(u.fwd, -0.5).add(new THREE.Vector3(0, -0.4, 0));
+      const punch = shR.clone().addScaledVector(u.left, -0.42 * sc).addScaledVector(u.fwd, 0.18 * sc).add(new THREE.Vector3(0, (0.08 - 0.06 * k) * sc, 0));
+      const pole = shR.clone().addScaledVector(u.left, -0.3).addScaledVector(u.fwd, -0.5).add(new THREE.Vector3(0, -0.4, 0));
       if (k > 0) twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tr.clone().lerp(punch, k), pole, 1);
       else twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tr, pr, w);
+    } else if (sig === 'foul') {
+      // foul ball: he stands, then both hands go up and out in a wide V, a little over his head.
+      // The hands come off his knees as he rises; the arms lift from where they hang, out to the
+      // side on an arc (a straight line passed through the shoulder and folded the elbow)
+      const k = smooth(clamp01((t - after - 0.6) / 0.3)) * (1 - smooth(clamp01((t - after - 2.6) / 0.6)));   // held to the end of the play
+      for (const [s, sh, tgt0, pole0] of [['l', shL, tl, pl], ['r', shR, tr, pr]]) {
+        const side = s === 'l' ? 1 : -1;
+        if (w > 0) twoBoneIK(B[`upperarm_${s}`], B[`lowerarm_${s}`], B[`hand_${s}`], tgt0, pole0, w);
+        // standing, his arms hang loose at his sides (the capture's idle arms carry a bent elbow)
+        const hang = sh.clone().add(new THREE.Vector3(0, -0.58 * sc, 0)).addScaledVector(u.left, side * 0.1 * sc).addScaledVector(u.fwd, 0.06 * sc);
+        const hangPole = sh.clone().add(new THREE.Vector3(0, -0.3, 0)).addScaledVector(u.fwd, -0.5);
+        if (up * (1 - k) > 0) twoBoneIK(B[`upperarm_${s}`], B[`lowerarm_${s}`], B[`hand_${s}`], hang, hangPole, up * (1 - k));
+        if (k <= 0) continue;
+        const from = wpos(B[`hand_${s}`]);
+        const hi = sh.clone().addScaledVector(u.left, side * 0.32 * sc).add(new THREE.Vector3(0, 0.34 * sc, 0)).addScaledVector(u.fwd, 0.2 * sc);
+        const mid = sh.clone().addScaledVector(u.left, side * 0.6 * sc).addScaledVector(u.fwd, 0.2 * sc);
+        const arc = from.clone().multiplyScalar((1 - k) * (1 - k)).addScaledVector(mid, 2 * k * (1 - k)).addScaledVector(hi, k * k);
+        const pole = sh.clone().addScaledVector(u.left, side * 0.6).add(new THREE.Vector3(0, -0.2, 0)).addScaledVector(u.fwd, -0.3);
+        twoBoneIK(B[`upperarm_${s}`], B[`lowerarm_${s}`], B[`hand_${s}`], arc, pole, 1);
+      }
+    } else if (sig === 'hbp') {
+      // take your base: his right arm points down the line to first (his right is first base's side)
+      twoBoneIK(B.upperarm_l, B.lowerarm_l, B.hand_l, tl, pl, w);
+      const k = smooth(clamp01((t - after - 0.35) / 0.3)) * (1 - smooth(clamp01((t - after - 1.8) / 0.5)));
+      const point = shR.clone().addScaledVector(u.left, -0.62 * sc).addScaledVector(u.fwd, 0.25 * sc).add(new THREE.Vector3(0, 0.04 * sc, 0));
+      const pole = shR.clone().add(new THREE.Vector3(0, -0.6, 0)).addScaledVector(u.fwd, -0.3);
+      twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tr.clone().lerp(point, k), pr.clone().lerp(pole, k), Math.max(w, k));
     } else {
+      twoBoneIK(B.upperarm_l, B.lowerarm_l, B.hand_l, tl, pl, w);
       twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tr, pr, w);
     }
-    lookAt(u, this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.7);
+    // his eyes on the ball, wherever it goes
+    lookAt(u, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.7);
+  }
+
+  /** Hit by the pitch: as the ball arrives he turns his back to it and tucks his head, then
+      comes back out of it once it has hit him. */
+  flinch(b, t) {
+    const pt = this.pitch, ch = b.chain;
+    if (!ch) return;
+    const hit = pt.after ? pt.tRel + pt.after.t0 : pt.tPlate;
+    const k = smooth(clamp01((t - (hit - 0.26)) / 0.22)) * (1 - 0.6 * smooth(clamp01((t - hit - 0.35) / 0.8)));
+    if (k <= 0) return;
+    // turn away: further closed than his coil, the hips taking 60% of it and the spine the rest
+    // (the feet are planted after this, so they stay where they are)
+    const ang = -ch.dirn * THREE.MathUtils.degToRad(55) * k;
+    const chest = wquat(b.bones.spine_03);
+    rotateWorld(b.bones.pelvis, new THREE.Quaternion().setFromAxisAngle(UP, ang * 0.6));
+    chestTo(b, new THREE.Quaternion().setFromAxisAngle(UP, ang).multiply(chest), UP);
+    const across = wpos(b.bones.upperarm_l).sub(wpos(b.bones.upperarm_r)).normalize();
+    bendWorld(b.bones.neck_01, across, 0.3 * k * (b.lefty ? 1 : -1));
   }
 }

@@ -22,8 +22,25 @@ export function skin(src, opts = {}) {
   });
   m.name = 'skin';
   m.defines = { SKIN_WRAP: '' };
+  // a look per player: tone mixes the model's skin map toward a darker one; facial hair darkens the
+  // beard area (a mask in the same UV layout) with a stubble grain. Both read through the map's own
+  // UV transform (vMapUv). Off until look() sets them.
+  const u = { uDark: { value: null }, uTone: { value: 0 }, uBeard: { value: null }, uBeardAmt: { value: 0 }, uHairCol: { value: new THREE.Color(0x1a120c) } };
+  m.userData.u = u;
   m.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_pars_fragment>', SKIN_CHUNK);
+    Object.assign(sh.uniforms, u);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_pars_fragment>', SKIN_CHUNK)
+      .replace('#include <common>', `#include <common>
+        uniform sampler2D uDark, uBeard; uniform float uTone, uBeardAmt; uniform vec3 uHairCol;`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        #ifdef USE_MAP
+          if (uTone > 0.001) diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(uDark, vMapUv).rgb * diffuse, uTone);
+          if (uBeardAmt > 0.001) {
+            float grain = fract(sin(dot(floor(vMapUv * 900.0), vec2(12.9898, 78.233))) * 43758.5453);
+            float b = texture2D(uBeard, vMapUv).r * uBeardAmt * (0.55 + 0.45 * grain);
+            diffuseColor.rgb = mix(diffuseColor.rgb, uHairCol, clamp(b, 0.0, 0.85));
+          }
+        #endif`);
   };
   m.customProgramCacheKey = () => 'skin';
   return m;

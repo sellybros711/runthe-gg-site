@@ -1,24 +1,28 @@
 /* Shut The Door 3D lab: one pitch from the pitcher's eye.
  *
- *   index.html            the swing: Yamamoto's splitter, Varsho's side chases it
- *   index.html?take=1     the take: the curveball, called strike
- *   &t=1.2                freeze at a moment (seconds from the set), for screenshots
- *   &stats=1              frame rate in the corner
+ *   index.html                 a pack's pitcher and one of his hitters, one pitch (play.js)
+ *   ?pack=std-2016-ws7-chapman  any pack (assets/packs/index.json)   &slot=0..8 the hitter
+ *   &play=ground               the play: swinging_strike, foul, foul_back, foul_tip, ground, line,
+ *                              fly, popup, called_strike, ball, check, hit_by_pitch, dirt (take=1 is
+ *                              called_strike)   &type=FF &cell=12 &mx= &mz= to change the pitch
+ *   &t=1.2                     freeze at a moment (seconds from the set), for screenshots
+ *   &stats=1                   frame rate in the corner
  *
  * Coordinates: the world is in metres, y up. The plate is at the origin; Statcast's catcher view
  * (x to the catcher's right, y toward the mound, z up, feet) maps through P() below, so the mirror
  * for the pitcher's view falls out of the camera, never out of the data.
  */
 import * as THREE from 'three';
-import { preload } from './load.js?v=2';
-import { buildField } from './field.js?v=2';
-import { buildStands } from './stands.js?v=2';
-import { People } from './people.js?v=7';
-import { Pitch } from './pitch.js?v=2';
+import { preload } from './load.js?v=3';
+import { buildField } from './field.js?v=3';
+import { buildStands } from './stands.js?v=3';
+import { People } from './people.js?v=8';
+import { Pitch } from './pitch.js?v=4';
+import { labPlay, motion, describe } from './play.js?v=2';
 import { FT, P, smooth } from './units.js?v=1';
 
 const Q = new URLSearchParams(location.search);
-const MODE = Q.get('take') === '1' ? 'take' : 'swing';
+const MODE = Q.get('take') === '1' ? 'take' : 'swing';   // kept for the checks' URLs (take=1)
 const FREEZE = Q.has('t') ? parseFloat(Q.get('t')) : null;
 
 const canvas = document.getElementById('c');
@@ -59,9 +63,18 @@ async function main() {
   scene.environment = pmrem.fromEquirectangular(env).texture;
   scene.environmentRotation.y = SUN.envRot;
   scene.environmentIntensity = 0.45;
-  const pitch = new Pitch({ scene, facts, mode: MODE });
-  const people = new People({ scene, facts, mode: MODE, pitch });
+  // the hitter (?slot, default the pack's first left handed one, as the lab always showed) and the play
+  const slot = Q.has('slot') ? +Q.get('slot') : Math.max(0, facts.batters.findIndex((b) => b.bats === 'L'));
+  facts.batter = facts.batters[Math.min(facts.batters.length - 1, slot)];
+  const play = labPlay(facts, facts.batter, Q);
+  const m = motion(play, facts.batter);
+  lab.playFacts = play; lab.motion = m;
+  const pitch = new Pitch({ scene, facts, play, batter: facts.batter, m });
+  const people = new People({ scene, facts, mode: m.batter === 'swing' ? 'swing' : 'take', pitch, play, m });
+  document.getElementById('note').textContent = '';
+  lab.pbp = describe(play);
   people.setup(gltfs);
+  people.wireBall();
   mark('people');
   lab.people = people; lab.pitch = pitch; lab.THREE = THREE;
   // for pipeline/check-deform.mjs: pose everyone at a moment without drawing a frame

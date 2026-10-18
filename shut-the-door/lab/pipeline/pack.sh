@@ -15,7 +15,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 LAB="$HERE/.."
 OUT="$TOOLS/out"
 mkdir -p "$OUT"
-node "$HERE/extract_pitch.mjs"
+node "$HERE/extract_lab.mjs"           # needs assets/bio.json (fetch_bio.mjs, a network step, run apart)
 python3 -I "$HERE/prep_textures.py" "$ASSETS/polyhaven-textures/files" "$LAB/assets/tex"
 "$TOOLS/venv/bin/python" -I "$HERE/build_people.py" "$ASSETS" "$OUT" batter catcher umpire
 for n in batter catcher umpire; do

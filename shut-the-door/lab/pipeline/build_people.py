@@ -43,9 +43,9 @@ def _lin(hexs):
     return tuple((x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4) for x in c) + (1,)
 
 
-# the closer's side (the catcher's gear): the pack's team colour, no logo
-_FACTS = json.load(open(os.path.join(HERE, '..', 'assets', 'pitch.json')))
-TEAM = _lin(_FACTS['pitcher']['teamColors'][0])
+# soft gear and trim baked into a model (none of the three uses either now: the uniform is coloured
+# per club at run time) take a neutral navy
+TEAM = NAVY
 
 
 def reset():
@@ -149,6 +149,13 @@ def body(cfg):
                 h.morphable[ob.name] = (lambda V, g=g: g.positions(V)[g.used])
             parts.append(ob)
         uniform.hide_skin(h, c_, out)
+        if cfg['name'] == 'batter':
+            # facial hair and the darker skin, for the scene to vary every hitter's look
+            from PIL import Image as _I
+            bm = uniform.beard_mask(c_, os.path.join(WORK, 'beard_mask.png'))
+            _I.open(bm).save(os.path.join(HERE, '..', 'assets', 'tex', 'beard_mask.webp'), 'WEBP', quality=80, method=6)
+            dark = textures.skin(f'{MHA}/skins/young_african_male', WORK, 512)['color']
+            _I.open(dark).convert('RGB').save(os.path.join(HERE, '..', 'assets', 'tex', 'skin_dark.webp'), 'WEBP', quality=72, method=6)
     for c in cfg.get('clothes', []):
         d = f'{MHA}/clothes/{c["id"]}'
         mat = None if c.get('own') else cloth_material(c['id'], c['color'], d, c['id'], c.get('pattern', 'jogging_melange'), color2=c.get('color2'))

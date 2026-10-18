@@ -154,7 +154,7 @@ window.__deformProbe = (opts) => {
         for (let i = 0; i < arr.length; i += 3) {
           const dx = arr[i] - j.x, dy = arr[i + 1] - j.y, dz = arr[i + 2] - j.z;
           const o = (dx * u.x + dy * u.y + dz * u.z) * sign;
-          if (o <= 0 || o > 0.2) continue;
+          if (o <= 0 || o > 0.12) continue;   // the cap only: an arm raised along the ray is not the shoulder
           const off2 = dx * dx + dy * dy + dz * dz - o * o;
           if (off2 < 0.04 * 0.04 && o < m) m = o;
         }
@@ -229,9 +229,13 @@ window.__deformProbe = (opts) => {
       {
         const tl = wp('thigh_l'), tr = wp('thigh_r'), ul = wp('upperarm_l'), ur = wp('upperarm_r'), pel = wp('pelvis');
         const cw = capWidth(surf(now, clothNow)), width = cw.w / restWidth;
+        // an upper arm raised past 80 degrees (an umpire's foul signal) makes the shoulder line's
+        // silhouette the arm itself: such frames are reported, not judged
+        const elev = (sd) => { const a = wp(`upperarm_${sd}`), b = wp(`lowerarm_${sd}`); return Math.acos(Math.max(-1, Math.min(1, (a.y - b.y) / a.distanceTo(b)))) * 180 / Math.PI; };
+        const raised = Math.max(elev('l'), elev('r')) > 80;
         kin.push({ t, hip: Math.atan2(tl.x - tr.x, tl.z - tr.z), sh: Math.atan2(ul.x - ur.x, ul.z - ur.z),
           tilt: Math.atan2(tl.y - tr.y, Math.hypot(tl.x - tr.x, tl.z - tr.z)) * 180 / Math.PI, pel: [pel.x, pel.y, pel.z], width,
-          capL: cw.l / restCap.l, capR: cw.r / restCap.r,
+          capL: cw.l / restCap.l, capR: cw.r / restCap.r, raised,
           feet: Object.fromEntries(['l', 'r'].map((sd) => [sd, { a: wp(`foot_${sd}`).toArray(), b: wp(`ball_${sd}`).toArray() }])) });
       }
       series.push([+t.toFixed(3), +hi.toFixed(2), +lo.toFixed(2), +gap.toFixed(3), +js.neck_01.twist.toFixed(0), +js.head.twist.toFixed(0), +js.spine_03.twist.toFixed(0)]);
@@ -252,11 +256,14 @@ function kinematics(kin, p, who) {
   const out = {};
   let wLo = { v: 9 }, wHi = { v: 0 };
   let cap = { v: 9 };
+  let raisedFrames = 0;
   for (const k of kin) {
+    if (k.raised) { raisedFrames++; continue; }
     if (k.width < wLo.v) wLo = { v: k.width, t: k.t }; if (k.width > wHi.v) wHi = { v: k.width, t: k.t };
     for (const [sd, c] of [['l', k.capL], ['r', k.capR]]) if (c < cap.v) cap = { v: c, t: k.t, side: sd };
   }
-  out.width = { lo: wLo, hi: wHi, cap };
+  if (wLo.t == null) wLo = { v: 1, t: 0 }; if (wHi.t == null) wHi = { v: 1, t: 0 };
+  out.width = { lo: wLo, hi: wHi, cap, raisedFrames };
   // feet: the ball of the foot and the heel (the ankle over it) each have their own spans on the
   // ground (low and still); within a span a point must stay where it came down. A foot turning on
   // its ball or on its heel keeps that point still while the other moves, which is not a slide:
@@ -291,7 +298,7 @@ function kinematics(kin, p, who) {
   const it = tilt.indexOf(Math.max(...tilt));
   const z = kin.map((k) => k.pel[2]);
   out.pelvis = { tilt: { v: tilt[it], t: kin[it].t }, travel: Math.max(...z) - Math.min(...z) };
-  if (who === 'batter' && p.lefty !== undefined && !p.take) {
+  if (who === 'batter' && p.lefty !== undefined && !p.take && p.motion === 'swing') {
     const unwrap = (arr) => { const o = [arr[0]]; for (let i = 1; i < arr.length; i++) { let d = arr[i] - arr[i - 1]; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; o.push(o[i - 1] + d); } return o; };
     const hip = unwrap(kin.map((k) => k.hip)), sh = unwrap(kin.map((k) => k.sh));
     const vel = (y) => y.map((_, i) => { const a = Math.max(0, i - 1), c = Math.min(y.length - 1, i + 1); return (y[c] - y[a]) / (kin[c].t - kin[a].t); });

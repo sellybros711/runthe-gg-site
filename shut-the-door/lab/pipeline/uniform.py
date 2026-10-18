@@ -477,3 +477,53 @@ def paint_mask(c, out, path, size=1024):
                 img[p[:, 1], p[:, 0]] = np.maximum(img[p[:, 1], p[:, 0]], fields(name, X, Nn))
     Image.fromarray((img * 255).astype(np.uint8), 'RGB').save(path)
     return path
+
+
+def paint_region(c, pred, path, size=256):
+    """A grey mask in the body's UV layout: 1 where pred(points, normals) holds on the skin (the face's
+    beard area, say). Texel by texel, like the trim mask."""
+    h = c.h
+    img = np.zeros((size, size), np.float32)
+    uv = np.asarray(h.base_uv)
+    for f in c.faces:
+        ids = [i for i, _ in f]; tt = [t for _, t in f]
+        for tri in ((0, 1, 2), (0, 2, 3)) if len(ids) == 4 else ((0, 1, 2),):
+            vi = [ids[k] for k in tri]; ti = [tt[k] for k in tri]
+            if min(ti) < 0: continue
+            U = uv[ti] * [size, size]; U[:, 1] = size - U[:, 1]
+            x0, y0 = np.floor(U.min(0)).astype(int); x1, y1 = np.ceil(U.max(0)).astype(int)
+            x0, y0 = max(x0, 0), max(y0, 0); x1, y1 = min(x1, size - 1), min(y1, size - 1)
+            if x1 < x0 or y1 < y0: continue
+            xs, ys = np.meshgrid(np.arange(x0, x1 + 1) + 0.5, np.arange(y0, y1 + 1) + 0.5)
+            pts = np.stack([xs.ravel(), ys.ravel()], 1)
+            a, b, cc = U
+            m = np.array([[b[0] - a[0], cc[0] - a[0]], [b[1] - a[1], cc[1] - a[1]]])
+            if abs(np.linalg.det(m)) < 1e-9: continue
+            l12 = np.linalg.solve(m, (pts - a).T).T
+            bary = np.column_stack([1 - l12.sum(1), l12])
+            inside = (bary >= -0.02).all(1)
+            if not inside.any(): continue
+            bary = bary[inside]; p = pts[inside].astype(int)
+            X = bary @ c.P[vi]
+            Nn = bary @ c.N[vi]; Nn /= np.maximum(np.linalg.norm(Nn, axis=1, keepdims=True), 1e-9)
+            img[p[:, 1], p[:, 0]] = np.maximum(img[p[:, 1], p[:, 0]], pred(X, Nn).astype(np.float32))
+    from PIL import ImageFilter
+    im = Image.fromarray((img * 255).astype(np.uint8), 'L').filter(ImageFilter.GaussianBlur(size / 256 * 1.5))
+    im.save(path)
+    return path
+
+
+def beard_mask(c, path):
+    """Where facial hair grows: the jaw, chin, upper lip and lower cheeks (from the head's own joints:
+    below the eyes' line, in front of the ears, above the neck's crease)."""
+    head = c.j.get('joint-head') if 'joint-head' in c.j else None
+    h = c.h
+    jh = to_blender(h.cube('joint-head')); jn = c.j['joint-neck']
+    W = c.w('head')
+    def pred(X, Nn):
+        # facing forward or to the side (not the back of the head), between the neck and the cheekbones
+        zlo, zhi = jn[2] + 0.035, jh[2] + 0.035
+        front = Nn[:, 1] < 0.15
+        y_ok = X[:, 1] < jh[1] + 0.035              # in front of the ears
+        return front & y_ok & (np.abs(X[:, 0]) < 0.085) & (X[:, 2] > zlo) & (X[:, 2] < zhi)
+    return paint_region(c, pred, path)

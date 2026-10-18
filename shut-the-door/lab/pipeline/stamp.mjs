@@ -48,7 +48,7 @@ const lines = [
   `<link rel="preload" as="image" href="${url('poster-phone.webp')}" media="(orientation: portrait)" fetchpriority="high">`,
   `<link rel="preload" as="image" href="${url('poster-desktop.webp')}" media="(orientation: landscape)" fetchpriority="high">`,
   ...[...mods, ...vendor].map((m) => `<link rel="modulepreload" href="${m}">`),
-  ...['pitch.json', 'env_256.hdr'].map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}">`),
+  ...['packs/std-2025-ws7-yamamoto.json', 'uniform.json', 'env_256.hdr'].map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}">`),
   ...['batter.glb', 'catcher.glb', 'umpire.glb'].map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}" fetchpriority="low">`),
 ];
 let html = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');

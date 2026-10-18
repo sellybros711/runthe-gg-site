@@ -1,6 +1,6 @@
 /* The people must not tear or warp as they move.
  *
- *   node shut-the-door/lab/pipeline/check-deform.mjs            the swing and the take
+ *   node shut-the-door/lab/pipeline/check-deform.mjs            every play (--quick: the swing and the take)
  *   node shut-the-door/lab/pipeline/check-deform.mjs --series   and print every frame
  *
  * Plays the lab scene frame by frame (30 per second) in headless Chromium and, with CPU skinning,
@@ -18,7 +18,8 @@
  *     70 twist, a collar bone 35 swing, the ball and socket of the shoulder 120 swing and 70 roll
  * And the body moving as one (added after the owner's next test, 2026-10-18: "the shoulders and hip
  * movements need to be corrected"):
- *   the width across the deltoids stays within 8% of its bind pose (no collapsed or pinched shoulder)
+ *   the width across the deltoids stays within 8% of its bind pose (no collapsed or pinched shoulder),
+ *   judged while the arms are below 80 degrees (an arm raised overhead makes the silhouette the arm)
  *   a planted foot skates no more than 1 cm; the pelvis tilts under 12 deg and travels under 40 cm
  *   the batter's swing is a kinetic chain: the hips' turn peaks before the shoulders', and at foot
  *   strike the shoulders are still closed 30 to 50 deg against the hips
@@ -55,7 +56,11 @@ await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const browser = await loadPlaywright().chromium.launch({ executablePath: CHROME, args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader'] });
 const probe = fs.readFileSync(path.join(HERE, 'deform-probe.js'), 'utf8');
 let failed = 0;
-for (const [label, q] of [['swing', ''], ['take', 'take=1']]) {
+// every motion the scene plays: the swing (a miss), the take (a called strike), a ground ball, a
+// foul back, a check swing, a hit by pitch, a ball in the dirt (the catcher's block)
+const PLAYS = process.argv.includes('--quick') ? [['swing', ''], ['take', 'take=1']]
+  : [['swing', ''], ['take', 'take=1'], ['ground', 'play=ground'], ['foul', 'play=foul_back'], ['check', 'play=check'], ['hbp', 'play=hit_by_pitch'], ['dirt', 'play=dirt']];
+for (const [label, q] of PLAYS) {
   const page = await browser.newPage({ viewport: { width: 200, height: 300 } });
   page.on('pageerror', (e) => { console.log('page error', String(e)); failed++; });
   await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/lab/index.html?${q}&t=0&dpr=1`);
@@ -90,7 +95,7 @@ for (const [label, q] of [['swing', ''], ['take', 'take=1']]) {
     console.log(`  cloth   stretch max ${w.clothStretch.v.toFixed(2)} at t=${w.clothStretch.t?.toFixed(2)} (${w.clothStretch.part || ''} ${w.clothStretch.at ? w.clothStretch.at.join(',') : ''}), squash min ${w.clothSquash.v.toFixed(2)} at t=${w.clothSquash.t?.toFixed(2)} (reported only)`);
     console.log(`  collar  gap ${(w.collar.v * 100).toFixed(1)} cm at t=${w.collar.t?.toFixed(2)} (${x.collarVerts} collar vertices)`);
     console.log(`  joints  worst ${(w.joint.v * 100).toFixed(0)}% of limit at t=${w.joint.t?.toFixed(2)}: ${w.joint.bone} twist ${w.joint.twist} swing ${w.joint.swing}`);
-    console.log(`  shoulders width ${(k.width.lo.v * 100).toFixed(1)}% (t=${k.width.lo.t.toFixed(2)}) to ${(k.width.hi.v * 100).toFixed(1)}% (t=${k.width.hi.t.toFixed(2)}) of rest; thinnest deltoid ${(k.width.cap.v * 100).toFixed(0)}% (${k.width.cap.side}, t=${k.width.cap.t.toFixed(2)}, reported only)`);
+    console.log(`  shoulders width ${(k.width.lo.v * 100).toFixed(1)}% (t=${k.width.lo.t.toFixed(2)}) to ${(k.width.hi.v * 100).toFixed(1)}% (t=${k.width.hi.t.toFixed(2)}) of rest; thinnest deltoid ${(k.width.cap.v * 100).toFixed(0)}% (${k.width.cap.side}, t=${k.width.cap.t?.toFixed(2)}, reported only)${k.width.raisedFrames ? `; ${k.width.raisedFrames} frames with an arm raised past 80 deg not judged` : ''}`);
     for (const sd of ['l', 'r']) { const f = k.feet[sd].skate; console.log(`  foot ${sd}  skate ${(f.v * 100).toFixed(1)} cm${f.t != null ? ` at t=${f.t.toFixed(2)} (${f.part}, planted at ${f.from.toFixed(2)})` : ''}`); }
     console.log(`  pelvis  tilt ${k.pelvis.tilt.v.toFixed(1)} deg at t=${k.pelvis.tilt.t.toFixed(2)}, travel ${(k.pelvis.travel * 100).toFixed(0)} cm`);
     if (q) console.log(`  chain   hips peak ${q.hipPeak.v.toFixed(0)} deg/s at t=${q.hipPeak.t.toFixed(3)}, shoulders ${q.shoulderPeak.v.toFixed(0)} deg/s at t=${q.shoulderPeak.t.toFixed(3)} (lead ${q.leadMs.toFixed(0)} ms); foot strike t=${q.strike.toFixed(2)}, separation ${q.separation.toFixed(0)} deg (max ${q.maxSeparation.toFixed(0)}); turn hips ${q.hipTurn.toFixed(0)}, shoulders ${q.shoulderTurn.toFixed(0)}`);
