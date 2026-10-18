@@ -181,13 +181,15 @@ export function catcherHelmet(color) {
 export function shinGuard(color, len) {
   const mat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.2, side: THREE.DoubleSide });
   const g = new THREE.Group();
-  const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.056, len * 0.92, 20, 6, true, -Math.PI * 0.62, Math.PI * 1.24), mat);
+  const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.048, len * 0.9, 20, 6, true, -Math.PI * 0.6, Math.PI * 1.2), mat);
   shell.rotation.y = Math.PI / 2;   // the open side to the back
   shell.position.y = len * 0.5;
   g.add(shell);
   const knee = new THREE.Mesh(new THREE.SphereGeometry(0.075, 18, 12, 0, Math.PI, 0, Math.PI), mat);
   knee.position.set(0, len * 0.98, 0.012); knee.scale.set(1, 1.1, 0.8);
   g.add(knee);
+  const saver = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.05, 0.11), new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.8 }));
+  saver.position.set(0, len * 0.86, -0.1); g.add(saver);
   const instep = new THREE.Mesh(new THREE.SphereGeometry(0.06, 14, 8, 0, Math.PI, 0, Math.PI * 0.5), mat);
   instep.rotation.x = Math.PI / 2; instep.position.set(0, 0.0, 0.03); instep.scale.set(1, 1.3, 0.6);
   g.add(instep);
@@ -202,14 +204,23 @@ export function chestProtector(color, w = 0.38, h = 0.56) {
   shape.moveTo(-w * 0.32, h * 0.5); shape.quadraticCurveTo(0, h * 0.42, w * 0.32, h * 0.5);
   shape.lineTo(w * 0.5, h * 0.3); shape.lineTo(w * 0.46, -h * 0.4);
   shape.quadraticCurveTo(0, -h * 0.56, -w * 0.46, -h * 0.4); shape.lineTo(-w * 0.5, h * 0.3); shape.closePath();
-  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.035, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 3, curveSegments: 12 });
-  // bend it around the chest: z falls off with x
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.018, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.01, bevelSegments: 3, curveSegments: 12 });
+  // wrap it round the chest (z falls off with x) and quilt it in horizontal pads (a ripple in z)
   const p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, p.getZ(i) - (x * x) * 1.6); }
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i);
+    p.setZ(i, p.getZ(i) - (x * x) * 2.6 + Math.abs(Math.sin((y / h) * Math.PI * 5)) * 0.008);
+  }
   geo.computeVertexNormals();
   const m = new THREE.Mesh(geo, mat);
   m.castShadow = true; m.receiveShadow = true;
   const g = new THREE.Group(); g.add(m);
+  // shoulder caps
+  for (const sx of [-1, 1]) {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), mat);
+    cap.scale.set(1, 0.55, 1.1); cap.position.set(sx * w * 0.5, h * 0.42, -0.05); cap.rotation.z = -sx * 0.5;
+    cap.castShadow = true; g.add(cap);
+  }
   return g;
 }
 
@@ -229,7 +240,7 @@ export function umpireMask() {
 /** A catcher's mitt: a round pillow with a deep pocket and a rolled rim, wider at the top.
     Pocket faces +z, fingers toward +y. Leather maps from Poly Haven. */
 export function mitt(leatherMap, leatherNormal) {
-  const mat = new THREE.MeshStandardMaterial({ color: 0xb98454, roughness: 0.58, map: leatherMap ?? null, normalMap: leatherNormal ?? null, vertexColors: true });
+  const mat = new THREE.MeshStandardMaterial({ color: 0x5a4030, roughness: 0.55, map: leatherMap ?? null, normalMap: leatherNormal ?? null, vertexColors: true });
   const g = new THREE.Group();
   const geo = new THREE.SphereGeometry(1, 36, 24);
   const pos = geo.attributes.position;

@@ -56,12 +56,11 @@ export class Pitch {
     this.aim = aim;
     this.actual = { x: aim.x + p.missFt.x, z: aim.z + p.missFt.z };
     this.f = flight(facts.release, this.actual, p.velo, p.pfxX, p.pfxZ);
-    this.tRel = T_RELEASE;
-    this.tPlate = this.tRel + this.f.T;
-    // the glove: about 2.4 ft behind the front of the plate, where the catcher meets it
-    const yGlove = -2.0;
+    // the glove: about 3 ft behind the front of the plate, out in front of the catcher's knees
+    const yGlove = -1.45;
     const tg = this.timeAtY(yGlove);
-    this.tCatch = this.tRel + tg;
+    this.tg = tg;
+    this.retime(T_RELEASE);
     const g = this.f.at(tg);
     this.catchPoint = P(g.x, g.y, g.z);
     const ga = { x: aim.x, z: aim.z + (g.z - this.actual.z) * 0.6 };
@@ -71,9 +70,17 @@ export class Pitch {
     scene.add(this.ball);
     this.buildTracer();
     this.buildMarkers();
+    this.buildGrid(facts.batter);
     this.spin = new THREE.Vector3(1, 0, 0);
     // backspin for the splitter (little of it), topspin for the curveball
     this.spinRate = (p.type === 'CU' ? -2400 : p.type === 'FS' ? 1300 : 2300) / 60 * Math.PI * 2;
+  }
+
+  /** Move the whole pitch in time: release at tRel (the pitcher's capture sets it). */
+  retime(tRel) {
+    this.tRel = tRel;
+    this.tPlate = tRel + this.f.T;
+    this.tCatch = tRel + this.tg;
   }
 
   timeAtY(y) {
@@ -130,6 +137,33 @@ export class Pitch {
     pos.needsUpdate = true; a.needsUpdate = true;
   }
 
+  /** The 5x5 target grid (contract section 2) on the front plane of the plate, in catcher's view
+      coordinates through P(): the pitcher's view mirror comes from the camera. Faint, shown only
+      while aiming, gone before the ball leaves the hand. The aimed cell is filled a touch. */
+  buildGrid({ szTop, szBot }) {
+    const yF = 17 / 12, cw = 0.553, h = (szTop - szBot) / 3;
+    const xs = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5].map((k) => k * cw);
+    const zs = [-1, 0, 1, 2, 3, 4].map((k) => szBot + k * h);
+    const pts = [], zone = [];
+    for (const x of xs) pts.push(P(x, yF, zs[0]), P(x, yF, zs[5]));
+    for (const z of zs) pts.push(P(xs[0], yF, z), P(xs[5], yF, z));
+    const zx = [xs[1], xs[4]], zz = [zs[1], zs[4]];
+    zone.push(P(zx[0], yF, zz[0]), P(zx[1], yF, zz[0]), P(zx[1], yF, zz[0]), P(zx[1], yF, zz[1]),
+      P(zx[1], yF, zz[1]), P(zx[0], yF, zz[1]), P(zx[0], yF, zz[1]), P(zx[0], yF, zz[0]));
+    const mk = (arr, op) => {
+      const l = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(arr),
+        new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthTest: false, depthWrite: false }));
+      l.userData.op = op; l.renderOrder = 7; this.scene.add(l); return l;
+    };
+    this.grid = [mk(pts, 0.22), mk(zone, 0.5)];
+    const r = Math.floor(this.p.aimCell / 5), c = this.p.aimCell % 5;
+    const x0 = xs[c], x1 = xs[c + 1], z1 = zs[5 - r], z0 = zs[4 - r];
+    const cell = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([P(x0, yF, z0), P(x1, yF, z0), P(x1, yF, z1), P(x0, yF, z0), P(x1, yF, z1), P(x0, yF, z1)]),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
+    cell.userData.op = 0.14; cell.renderOrder = 7; this.scene.add(cell);
+    this.grid.push(cell);
+  }
+
   buildMarkers() {
     // aimed: a thin ring. Actual: a small solid dot. Both on the front plane of the plate.
     const yF = 17 / 12;
@@ -144,7 +178,10 @@ export class Pitch {
 
   update(t, camera) {
     const inFlight = t >= this.tRel && t <= this.tCatch + 0.02;
-    this.ball.visible = inFlight;
+    // before release the ball is in the pitcher's hand
+    const inHand = t < this.tRel && this.handPoint;
+    this.ball.visible = inFlight || !!inHand;
+    if (inHand) this.ball.position.copy(this.handPoint());
     if (inFlight) {
       const tt = t - this.tRel;
       this.ball.position.copy(this.pointAt(Math.min(tt, this.tCatch - this.tRel)));
@@ -154,6 +191,9 @@ export class Pitch {
       this.updateTracer(t, camera);
       for (const m of [this.aimRing, this.hitDot]) m.lookAt(camera.position);
     }
+    // aiming: the grid is up until a beat before release, then gone for the pitch
+    const aiming = 1 - smooth(clamp01((t - (this.tRel - 0.45)) / 0.25));
+    for (const g of this.grid) g.material.opacity = g.userData.op * aiming;
     const show = 1 - smooth(clamp01((t - this.tPlate - 1.0) / 0.7));
     this.aimRing.material.opacity = 0.42 * smooth(clamp01(t / 0.4)) * show;
     this.hitDot.material.opacity = 0.8 * smooth(clamp01((t - this.tPlate) / 0.08)) * show;

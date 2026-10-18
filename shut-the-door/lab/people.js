@@ -299,7 +299,8 @@ export class People {
 
   /* ---------------------------------------------------------------- catcher */
   setupCatcher(c, lm, ln) {
-    const team = new THREE.Color(this.facts.pitcher.teamColors[0]);
+    // catcher's gear: charcoal, as most big league gear is; the team colour stays off it (no marks)
+    const team = new THREE.Color(0x1d1f22);
     fitOnHead(c, G.catcherHelmet(team), { drop: 0.118, fwd: 0.0 });
     // shin guards along each calf, front toward his front (+z in the bind pose)
     for (const s of ['l', 'r']) {
@@ -315,8 +316,8 @@ export class People {
     // the chest protector on the upper spine, in front of the chest
     const torso = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'spine_03', 0.5);
     const tc = torso.getCenter(new THREE.Vector3());
-    const cp = G.chestProtector(team, 0.36, 0.5);
-    attach(c.bones.spine_03, cp, new THREE.Matrix4().setPosition(tc.x, tc.y - 0.17, torso.max.z + 0.06));
+    const cp = G.chestProtector(team, 0.33, 0.47);
+    attach(c.bones.spine_03, cp, new THREE.Matrix4().setPosition(tc.x, tc.y - 0.17, torso.max.z + 0.07));
     for (const m of c.meshes) if (m.material.name === 'hair') m.visible = false; // under the helmet
     // the mitt on his left hand, pocket toward the palm
     const hb = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'hand_l', 0.5);
@@ -330,9 +331,9 @@ export class People {
     const m = new THREE.Matrix4().copy(basis).setPosition(hc.clone().addScaledVector(along, 0.05).addScaledVector(palm, 0.035));
     attach(hand, mitt, m);
     c.mitt = mitt;
-    face(c, P(0.15 + 0.4 * this.aimX(), -2.55, 0));
+    face(c, P(0.1 + 0.4 * this.aimX(), -2.85, 0));
     // a catcher's crouch: hips just above the heels, knees wide, on the balls of his feet
-    c.crouch = { drop: 0.5, back: 0.02, width: 0.27, toeOut: 0.42, heel: 0.35, lean: 0.36, kneeOut: 0.9 };
+    c.crouch = { drop: 0.5, back: 0.02, width: 0.27, toeOut: 0.42, heel: 0.35, lean: 0.18, kneeOut: 0.9 };
     stance(c);
   }
 
@@ -344,7 +345,8 @@ export class People {
     fitOnHead(u, G.umpireMask(), { drop: 0.12 });
     for (const m of u.meshes) if (m.material.name === 'hair') m.visible = false; // under the cap
     // the slot: between the catcher and a left handed hitter, his chin over the catcher's shoulder
-    face(u, P(this.facts.batter.bats === 'L' ? 1.0 : -1.0, -5.3, 0));
+    // directly behind the catcher, his head over the catcher's inside shoulder
+    face(u, P(this.facts.batter.bats === 'L' ? 0.55 : -0.55, -5.0, 0));
     u.crouch = { drop: 0.4, back: 0.16, width: 0.36, toeOut: 0.3, heel: 0.05, lean: 0.62, kneeOut: 0.6 };
     stance(u);
   }

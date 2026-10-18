@@ -57,11 +57,11 @@ states it for the rig and weight files.
 | base mesh `3dobjs/base.obj` | https://raw.githubusercontent.com/makehumancommunity/makehuman/master/makehuman/data/3dobjs/base.obj | every body |
 | macro targets `targets/macrodetails/*-male-*.target`, `height/`, `proportions/` (24 + 36 + 18 files) | https://raw.githubusercontent.com/makehumancommunity/makehuman/master/makehuman/data/targets/macrodetails/ | body shape (age, muscle, weight, height, ancestry) |
 | `rig.game_engine.json`, `weights.game_engine.json` | https://raw.githubusercontent.com/makehumancommunity/mpfb2/master/src/mpfb/data/rigs/standard/ | the 53 bone skeleton and skin weights |
-| skins: `young_caucasian_male2`, `young_african_male`, `middleage_caucasian_male` (and for the crowd also `young_caucasian_male`, `middleage_african_male`) | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/skins/ | skin colour |
+| skins: `young_caucasian_male2`, `young_african_male`, `middleage_caucasian_male`  | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/skins/ | skin colour |
 | eyes `eyes/high-poly`, `eyes/low-poly`, `eyes/materials/brown_eye.png` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/eyes/ | eyes |
 | `eyebrows/eyebrow001`, `eyelashes/eyelashes02` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/ | brows, lashes |
 | `hair/short02`, `hair/short04` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/hair/ | hair |
-| `clothes/male_casualsuit06` (people), `male_casualsuit01`-`06` (crowd), `shoes01`, `shoes06` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/clothes/ | uniforms (re-coloured), crowd outfits, shoes |
+| `clothes/male_casualsuit06`, `shoes01`, `shoes06` | https://raw.githubusercontent.com/vidya-hub/makehuman-core/main/data/clothes/ | uniforms (re-coloured), shoes |
 
 The skins, eyes, brows, lashes, hair and clothes come from `vidya-hub/makehuman-core`, a copy of
 MakeHuman's system assets (the official asset repository is not reachable from here). Its files
@@ -91,13 +91,6 @@ file `CMU_EcstasyMotion_BVH-Poser-friendly-2012.zip`, downloaded through https:/
 
 The catcher's crouch, the umpire's slot stance and strike call, and the catcher's reach for the
 ball are procedural (two bone IK in `people.js`) laid over those idles.
-
-### The crowd (`assets/crowd.webp`, made by `pipeline/build_crowd.py`)
-
-40 seated fans rendered with Blender Cycles from the MakeHuman assets above (bodies, skins, eyes,
-brows, hair, `male_casualsuit01`-`06`), lit by Poly Haven `stadium_01_2k.hdr`
-(https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/stadium_01_2k.hdr, CC0), blurred slightly and
-packed in one WebP atlas. Every input is CC0, so is the atlas.
 
 ## Data
 

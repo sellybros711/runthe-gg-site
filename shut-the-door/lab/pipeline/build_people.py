@@ -115,7 +115,7 @@ def body(cfg):
         if c['id'] == 'male_casualsuit06':
             tuck_shirt(ob)
         if c.get('trim'):
-            paint_trim(ob, c['trim'], placket=c.get('placket', False))
+            paint_trim(ob, TEAM if c['trim'] == 'TEAM' else c['trim'], placket=c.get('placket', False))
         parts.append(ob)
     eyes = mh.principled('eyes', base_tex=f'{MHA}/eyes/materials/brown_eye.png', rough=0.05)
     parts.append(h.proxy(f'{MHA}/eyes/high-poly/high-poly.mhclo', 'eyes', eyes, delete=False))
@@ -148,18 +148,18 @@ PEOPLE = {
     # Daulton Varsho's side (bats left, from the Yamamoto pack). Generic body and face.
     'batter': dict(
         name='batter', skin='young_caucasian_male2', skin_size=1024,
-        shape=dict(age=0.52, muscle=0.75, weight=0.55, height=0.5, race={'caucasian': 0.8, 'african': 0.1, 'asian': 0.1}),
+        shape=dict(age=0.52, muscle=0.78, weight=0.55, height=0.78, race={'caucasian': 0.8, 'african': 0.1, 'asian': 0.1}),
         hair='hair/short02/short02',
         clothes=[
             dict(id='male_casualsuit06', color=ROAD_GREY, color2=ROAD_GREY, pattern='jogging_melange', trim=NAVY, placket=True),
             dict(id='shoes06', own=True, color=NAVY),
         ],
         gear=[],
-        clips=[('swing', '124/124_07.bvh', 22, 140, True, 'grip'), ('take', '124/124_08.bvh', 15, 150, True, 'grip')],
+        clips=[('swing', '124/124_07.bvh', 22, 140, True, 'grip')],
     ),
     'catcher': dict(
         name='catcher', skin='young_african_male', skin_size=1024,
-        shape=dict(age=0.55, muscle=0.7, weight=0.7, height=0.4, race={'african': 0.6, 'caucasian': 0.3, 'asian': 0.1}),
+        shape=dict(age=0.55, muscle=0.72, weight=0.68, height=0.6, race={'african': 0.6, 'caucasian': 0.3, 'asian': 0.1}),
         hair='hair/short04/short04',
         clothes=[
             dict(id='male_casualsuit06', color=(0.88, 0.88, 0.9, 1), color2=(0.88, 0.88, 0.9, 1), pattern='jogging_melange'),
@@ -170,7 +170,7 @@ PEOPLE = {
     ),
     'umpire': dict(
         name='umpire', skin='middleage_caucasian_male', skin_size=1024,
-        shape=dict(age=0.68, muscle=0.5, weight=0.75, height=0.6, race={'caucasian': 0.7, 'african': 0.2, 'asian': 0.1}),
+        shape=dict(age=0.68, muscle=0.5, weight=0.72, height=0.7, race={'caucasian': 0.7, 'african': 0.2, 'asian': 0.1}),
         hair='hair/short02/short02',
         clothes=[
             dict(id='male_casualsuit06', color=UMP_NAVY, color2=UMP_SLACKS, pattern='cotton_jersey'),

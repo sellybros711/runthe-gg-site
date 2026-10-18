@@ -147,7 +147,7 @@ export function buildField(scene, tex, renderer) {
         // the mower's stripes: a diamond pattern, 15 ft wide, and slow colour drift
         float s1 = sin((sft.x + sft.y) * 3.14159 / 15.0), s2 = sin((sft.x - sft.y) * 3.14159 / 15.0);
         float stripe = smoothstep(-0.2, 0.2, s1) * 0.5 + smoothstep(-0.2, 0.2, s2) * 0.5;
-        gcol *= 0.86 + 0.22 * stripe;
+        gcol *= 0.8 + 0.34 * stripe;
         gcol *= 0.9 + 0.2 * vnoise(sft * 0.08);
         vec3 dcol = texture2D(dirtC, duv).rgb * (0.92 + 0.16 * vnoise(sft * 0.6));
         dcol *= mix(1.0, 0.68, fm.b);                 // damp around the plate

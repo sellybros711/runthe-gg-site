@@ -1,8 +1,8 @@
-/* Behind home plate: the padded backstop wall, the net, the seats rising behind it, and the crowd.
+/* Behind home plate: the padded backstop wall, the net, and the empty seats rising behind it.
  *
  * Only a narrow wedge behind the plate is ever in the pitcher's view, so the stands are an arc of
- * about 50 degrees. The crowd is one instanced quad per seat; the sprites are rendered people
- * (pipeline/build_crowd.py), pre-blurred because the eye is focused 60 ft nearer.
+ * about 50 degrees. The seats are empty: the owner's reference shows that empty seats read as
+ * real, and a repeated crowd does not.
  */
 import * as THREE from 'three';
 import { FT } from './units.js';
@@ -60,18 +60,15 @@ export function buildStands(scene, tex, renderer) {
   const conc = tex.load('./assets/tex/concrete_color.webp'); conc.colorSpace = THREE.SRGBColorSpace;
   conc.wrapS = conc.wrapT = THREE.RepeatWrapping; conc.repeat.set(30, 1);
   const bowlMat = new THREE.MeshStandardMaterial({ map: conc, color: 0x6e7176, roughness: 0.9, side: THREE.DoubleSide });
-  const seatMat = new THREE.MeshStandardMaterial({ color: 0x173462, roughness: 0.55, side: THREE.DoubleSide });
   const seg = 72, a0 = Math.PI - A * 1.25, aL = A * 2.5;
   // every row's riser, tread and seat backs merged into two meshes: three draw calls, not a hundred
-  const concG = [], seatG = [];
+  const concG = [];
   for (let r = 0; r < ROWS; r++) {
     const rad = R0 + 0.6 + r * rowD, y = base + r * rowH;
     concG.push(new THREE.CylinderGeometry(rad, rad, rowH, seg, 1, true, a0, aL).translate(0, y - rowH / 2, 0));
     concG.push(new THREE.RingGeometry(rad, rad + rowD, seg, 1, Math.PI / 2 - aL / 2, aL).rotateX(-Math.PI / 2).translate(0, y, 0));
-    seatG.push(new THREE.CylinderGeometry(rad + 0.55, rad + 0.55, 0.42, seg, 1, true, a0, aL).translate(0, y + 0.24, 0));
   }
   group.add(new THREE.Mesh(mergeGeometries(concG.map((g) => g.toNonIndexed())), bowlMat));
-  group.add(new THREE.Mesh(mergeGeometries(seatG), seatMat));
   // the suite level above the bowl: a dark glass band and a fascia
   const topY = base + ROWS * rowH, topR = R0 + 0.6 + ROWS * rowD;
   const fascia = new THREE.Mesh(new THREE.CylinderGeometry(topR, topR, 1.6, seg, 1, true, a0, aL), new THREE.MeshStandardMaterial({ color: 0x1b2633, roughness: 0.4 }));
@@ -81,58 +78,34 @@ export function buildStands(scene, tex, renderer) {
   const upper = new THREE.Mesh(new THREE.CylinderGeometry(topR + 3, topR + 26, 22, seg, 1, true, a0, aL), new THREE.MeshStandardMaterial({ color: 0x5b6470, roughness: 0.9 }));
   upper.position.y = topY + 5.6 + 11; group.add(upper);
 
-  // ---- the crowd
-  const crowdTex = tex.load('./assets/crowd.webp', (t) => { t.needsUpdate = true; });
-  crowdTex.colorSpace = THREE.SRGBColorSpace; crowdTex.anisotropy = aniso;
-  const COLS = 8, CROWS = 5;
-  const quad = new THREE.PlaneGeometry(0.62, 0.93);
-  quad.translate(0, 0.93 / 2, 0);
-  const uvOff = [];
-  const mats = [];
+  // ---- the seats: no crowd. A repeated crowd reads as fake far sooner than empty seats do, so the
+  // rows are real seats (a pan and a back each), dark, one instanced mesh
+  const seatGeo = mergeGeometries([
+    new THREE.BoxGeometry(0.46, 0.05, 0.42).translate(0, 0.44, 0.02),
+    new THREE.BoxGeometry(0.46, 0.44, 0.04).rotateX(-0.12).translate(0, 0.7, -0.2),
+  ]);
+  const chair = new THREE.MeshStandardMaterial({ color: 0x46505c, roughness: 0.4 });
   const r = rng(11);
+  const seats = [];
   const seatW = 0.52;
-  let count = 0;
-  const instances = [];
   for (let row = 0; row < ROWS; row++) {
-    const rad = R0 + 0.6 + row * rowD + 0.25, y = base + row * rowH;
+    const rad = R0 + 0.6 + row * rowD + 0.35, y = base + row * rowH;
     const n = Math.floor((aL * rad) / seatW);
     for (let i = 0; i < n; i++) {
-      if (r() < 0.06) continue;      // a few empty seats
-      const a = -aL / 2 + (i + 0.5 + (r() - 0.5) * 0.15) * (aL / n);
-      // the upper rows sit in the shade of the deck above
-      const shade = THREE.MathUtils.lerp(0.92, 0.5, THREE.MathUtils.smoothstep(row, 6, ROWS)) * (0.9 + r() * 0.15);
-      instances.push({ a, rad, y: y + 0.02 + (r() - 0.5) * 0.04, v: Math.floor(r() * COLS * CROWS), s: 0.94 + r() * 0.12, phase: r() * 6.28, shade });
+      const a = -aL / 2 + (i + 0.5) * (aL / n);
+      seats.push({ a, rad, y, shade: 0.85 + r() * 0.2 });
     }
   }
-  count = instances.length;
-  const mesh = new THREE.InstancedMesh(quad, new THREE.MeshStandardMaterial({ map: crowdTex, alphaTest: 0.5, roughness: 0.9, side: THREE.DoubleSide }), count);
-  const cell = new Float32Array(count * 2);
-  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
-  instances.forEach((it, k) => {
+  const seatMesh = new THREE.InstancedMesh(seatGeo, chair, seats.length);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3();
+  seats.forEach((it, k) => {
     p.set(Math.sin(it.a) * it.rad, it.y, -Math.cos(it.a) * it.rad);
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -it.a);
-    s.setScalar(it.s);
-    mesh.setMatrixAt(k, m4.compose(p, q, s));
-    mesh.setColorAt(k, new THREE.Color(it.shade, it.shade, it.shade));
-    cell[k * 2] = it.v % COLS; cell[k * 2 + 1] = Math.floor(it.v / COLS);
+    seatMesh.setMatrixAt(k, m4.compose(p, q, one));
+    seatMesh.setColorAt(k, new THREE.Color(it.shade, it.shade, it.shade));
   });
-  quad.setAttribute('cell', new THREE.InstancedBufferAttribute(cell, 2));
-  // a crowd is never still: each fan sways and shifts a little on his own clock
-  const phase = new Float32Array(count);
-  instances.forEach((it, k) => { phase[k] = it.phase; });
-  quad.setAttribute('phase', new THREE.InstancedBufferAttribute(phase, 1));
-  const uTime = { value: 0 };
-  group.userData.tick = (t) => { uTime.value = t; };
-  mesh.material.onBeforeCompile = (sh) => {
-    sh.uniforms.uTime = uTime;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 cell;\nattribute float phase;\nuniform float uTime;')
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-        float sw = sin(uTime * (0.6 + fract(phase * 3.1) * 0.9) + phase) * 0.018;
-        transformed.x += sw * position.y;
-        transformed.y += max(0.0, sin(uTime * 0.35 + phase * 5.0) - 0.96) * 0.6;`)
-      .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = (vec2(cell.x, ${CROWS - 1}.0 - cell.y) + uv) / vec2(${COLS}.0, ${CROWS}.0);`);
-  };
-  mesh.frustumCulled = false;
-  group.add(mesh);
+  seatMesh.receiveShadow = true;
+  group.add(seatMesh);
+  group.userData.tick = () => {};
   return group;
 }

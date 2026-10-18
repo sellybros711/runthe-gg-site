@@ -79,10 +79,11 @@ async function main() {
    Ry(-rot) * dir, and its equirect u is atan2(z, x) / 2pi + 0.5, so a texel at azimuth a shows at
    world azimuth a - rot. SUN.az is where we want it: from the third base side, a little behind the
    plate (late afternoon light across a left handed batter's face). */
-const SUN = { u: 0.352, el: 15, az: THREE.MathUtils.degToRad(-22) };
+const SUN = { u: 0.352, el: 15, az: THREE.MathUtils.degToRad(-22), lift: 22 };
 SUN.envRot = (SUN.u - 0.5) * Math.PI * 2 - SUN.az;
 function addSun() {
-  const el = THREE.MathUtils.degToRad(SUN.el + 4);
+  // the HDRI's sun is low (15 degrees); the key light is raised for a hard mid afternoon light
+  const el = THREE.MathUtils.degToRad(SUN.el + SUN.lift);
   const d = new THREE.Vector3(Math.cos(SUN.az) * Math.cos(el), Math.sin(el), Math.sin(SUN.az) * Math.cos(el));
   SUN.dir = d;
   const sun = new THREE.DirectionalLight(0xffdcb8, 5.0);
