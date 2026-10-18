@@ -87,7 +87,7 @@ for (const [label, q] of [['swing', ''], ['take', 'take=1']]) {
     console.log(`  squash  min ${w.squash.v.toFixed(2)} at t=${w.squash.t?.toFixed(2)} (${w.squash.bone}${w.squash.at ? ', height ' + w.squash.at[1].toFixed(2) + ' m' : ''})`);
     console.log(`  creases stretch max ${w.creaseStretch.v.toFixed(2)} at t=${w.creaseStretch.t?.toFixed(2)} (${w.creaseStretch.bone}), squash min ${w.creaseSquash.v.toFixed(2)} at t=${w.creaseSquash.t?.toFixed(2)} (${w.creaseSquash.bone})`);
  console.log(`  fingers stretch max ${w.fingerStretch.v.toFixed(2)}, squash min ${w.fingerSquash.v.toFixed(2)} (reported only)`);
-    console.log(`  cloth   stretch max ${w.clothStretch.v.toFixed(2)} at t=${w.clothStretch.t?.toFixed(2)}, squash min ${w.clothSquash.v.toFixed(2)} at t=${w.clothSquash.t?.toFixed(2)} (reported only)`);
+    console.log(`  cloth   stretch max ${w.clothStretch.v.toFixed(2)} at t=${w.clothStretch.t?.toFixed(2)} (${w.clothStretch.part || ''} ${w.clothStretch.at ? w.clothStretch.at.join(',') : ''}), squash min ${w.clothSquash.v.toFixed(2)} at t=${w.clothSquash.t?.toFixed(2)} (reported only)`);
     console.log(`  collar  gap ${(w.collar.v * 100).toFixed(1)} cm at t=${w.collar.t?.toFixed(2)} (${x.collarVerts} collar vertices)`);
     console.log(`  joints  worst ${(w.joint.v * 100).toFixed(0)}% of limit at t=${w.joint.t?.toFixed(2)}: ${w.joint.bone} twist ${w.joint.twist} swing ${w.joint.swing}`);
     console.log(`  shoulders width ${(k.width.lo.v * 100).toFixed(1)}% (t=${k.width.lo.t.toFixed(2)}) to ${(k.width.hi.v * 100).toFixed(1)}% (t=${k.width.hi.t.toFixed(2)}) of rest; thinnest deltoid ${(k.width.cap.v * 100).toFixed(0)}% (${k.width.cap.side}, t=${k.width.cap.t.toFixed(2)}, reported only)`);

@@ -36,7 +36,7 @@ const visit = (file) => {
   const src = fs.readFileSync(file, 'utf8');
   for (const m of src.matchAll(/^\s*import[^;'"]*?from\s*'(\.\/[a-z0-9]+\.js\?v=\d+)'/gm)) { mods.add(m[1]); visit(path.join(LAB, m[1].split('?')[0])); }
 };
-mods.add('./scene.js?v=' + fs.readFileSync(path.join(LAB, 'index.html'), 'utf8').match(/scene\.js\?v=(\d+)/)[1]);
+mods.add('./scene.js?v=' + fs.readFileSync(path.join(LAB, 'index.html'), 'utf8').match(/<script type="module" src="\.\/scene\.js\?v=(\d+)"/)[1]);
 visit(path.join(LAB, 'scene.js'));
 const vendor = ['three.module.min.js', 'addons/loaders/GLTFLoader.js', 'addons/loaders/RGBELoader.js', 'addons/libs/meshopt_decoder.module.js', 'addons/utils/BufferGeometryUtils.js']
   .map((f) => './vendor/three-0.170.0/' + f);

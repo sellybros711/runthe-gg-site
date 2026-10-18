@@ -6,15 +6,60 @@
  * and squat blended, his strike call layered on top.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=1';
+import * as M from './materials.js?v=2';
 import * as G from './gear3d.js?v=1';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import { assetUrl } from './load.js?v=1';
+import { assetUrl } from './load.js?v=2';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=4';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
+
+const UNIFORM = new Set(['uniform', 'socks', 'gloves', 'undershirt', 'belt', 'number']);
+
+/* Team kits. Our side (the catcher) wears the closer's club colours from the pack; the hitters wear
+   a generic palette picked per pack (two colours that read as a club, no club's marks or names).
+   Home whites, road greys: the home side is the pack's (usHome). */
+const WHITE = '#f2f1ec', GREY = '#a3a6aa';
+const PALETTES = [['#0c2340', '#bf0d3e'], ['#1d4d2b', '#d4a017'], ['#5c1a2b', '#9fa3a8'], ['#13274f', '#e35205'],
+  ['#111111', '#c4ced4'], ['#4b2c6f', '#e8b923'], ['#8a1c1c', '#0c2340'], ['#00594f', '#e7e3d4']];
+const hashStr = (str) => { let h = 2166136261; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+export function kitFor(facts, side) {
+  const ours = facts.pitcher.teamColors || ['#0c2340', '#ffffff'];
+  const usHome = !!(facts.situation && facts.situation.usHome);
+  let cols;
+  if (side === 'us') cols = ours;
+  else {
+    const h = hashStr(facts.scenarioId || facts.pitcher.name);
+    const dist = (a, b) => new THREE.Color(a).getHSL({}).h - new THREE.Color(b).getHSL({}).h;
+    cols = PALETTES[h % PALETTES.length];
+    for (let k = 1; k < PALETTES.length && Math.abs(dist(cols[0], ours[0])) < 0.06; k++) cols = PALETTES[(h + k) % PALETTES.length];
+  }
+  const home = side === 'us' ? usHome : !usHome;
+  // the darker of the two club colours trims the uniform (a white secondary would vanish on whites)
+  const lum = (c) => new THREE.Color(c).getHSL({}).l;
+  const [dark, light] = lum(cols[0]) <= lum(cols[1]) ? [cols[0], cols[1]] : [cols[1], cols[0]];
+  const C = (x) => new THREE.Color(x);
+  return { base: C(home ? WHITE : GREY), trim: C(dark), stripe: C(dark), sock: C(dark), slot: C(WHITE), number: C(dark),
+    undershirt: C(dark), belt: C('#111111'), glove: C(lum(light) > 0.85 ? '#f2f2f2' : light), gloveAccent: C(dark), home };
+}
+
+/** Put a kit on a person: the uniform's trim mask coloured, the number drawn on the back. */
+export function dress(p, kit, numberText, weave) {
+  for (const o of p.meshes) {
+    const part = o.userData.part;
+    if (!part) continue;
+    const src = o.userData.src;
+    if (part === 'uniform') o.material = M.uniform(src, { base: kit.base, trim: kit.trim, stripe: kit.stripe, slot: kit.base }, { weave });
+    else if (part === 'number') { o.material = M.numberMaterial(numberText, kit.number, kit.base, src); o.visible = !!numberText; }
+    else if (part === 'socks') o.material = M.uniform(src, { base: kit.sock, trim: kit.sock, stripe: kit.sock, slot: kit.slot }, { weave });
+    else if (part === 'gloves') o.material = M.uniform(src, { base: kit.glove, trim: kit.glove, stripe: kit.glove, slot: kit.gloveAccent }, { roughness: 0.55 });
+    else if (part === 'undershirt') o.material = M.plain('undershirt', kit.undershirt, { roughness: 0.7 });
+    else if (part === 'belt') o.material = M.plain('belt', kit.belt, { roughness: 0.35, sheen: 0, clearcoat: 0.4 });
+    o.material.name = part;
+  }
+}
 
 export function loadPerson(g, scene) {
   const root = new THREE.Group();
@@ -30,7 +75,8 @@ export function loadPerson(g, scene) {
       if (n.startsWith('skin')) o.material = M.skin(s);
       else if (n.startsWith('eyes')) o.material = M.eyes(s);
       else if (n.includes('eyebrow') || n.includes('eyelash') || n.includes('hair') || n.includes('short0')) { o.material = M.hair(s); o.castShadow = n.includes('hair') || n.includes('short0'); }
-      else if (n.includes('shoes')) o.material = new THREE.MeshStandardMaterial({ map: s.map, normalMap: s.normalMap, roughness: 0.45, color: 0x9a9a9a });
+      else if (n.includes('shoes')) o.material = new THREE.MeshStandardMaterial({ map: s.map, normalMap: s.normalMap, roughness: 0.45, color: 0x2a2a2a });
+      else if (UNIFORM.has(n)) { o.material = M.plain(n, 0x808080); o.userData.src = s; o.userData.part = n; }
       else o.material = M.cloth(s);
     }
   });
@@ -52,6 +98,21 @@ export function loadPerson(g, scene) {
   const headFwd = new THREE.Vector3(0, 0, 1).applyQuaternion(wquat(bones.head).invert());
   const bind = Object.values(bones).map((b) => [b, b.position.clone(), b.quaternion.clone()]);
   return { root, scene: g.scene, bones, meshes, mixer, clips, actions, samplers, ankleY, headFwd, bind };
+}
+
+/** The model's own standing height: the top of the skin over the soles, in the bind pose. */
+function modelHeight(p) {
+  const skin = p.meshes.find((m) => m.material.name === 'skin');
+  if (!skin) return 0;
+  const saved = p.bones && Object.values(p.bones).map((b) => [b, b.position.clone(), b.quaternion.clone()]);
+  for (const [b, pos, q] of p.bind) { b.position.copy(pos); b.quaternion.copy(q); }
+  p.root.updateMatrixWorld(true);
+  const v = new THREE.Vector3(); let top = -Infinity, bot = Infinity;
+  const n = skin.geometry.attributes.position.count;
+  for (let i = 0; i < n; i += 3) { skin.getVertexPosition(i, v).applyMatrix4(skin.matrixWorld); top = Math.max(top, v.y); bot = Math.min(bot, v.y); }
+  for (const [b, pos, q] of saved) { b.position.copy(pos); b.quaternion.copy(q); }
+  p.root.updateMatrixWorld(true);
+  return (top - bot) / p.root.scale.y;
 }
 
 /** Put the lower ankle at its bind pose height (the soles on the ground) for the current pose. */
@@ -128,7 +189,7 @@ function stance(p) {
   p.feet = {};
   for (const [s, sign] of [['l', 1], ['r', -1]]) {
     const a = wpos(p.bones[`foot_${s}`]);
-    a.x = pel.x + sign * c.width; a.z = pel.z + 0.02;
+    a.x = pel.x + sign * c.width * p.root.scale.x; a.z = pel.z + 0.02;
     const q0 = wquat(p.bones[`foot_${s}`]);
     // toes out (about up), heel up (about the foot's own side axis)
     const yaw = new THREE.Quaternion().setFromAxisAngle(UP, sign * c.toeOut);
@@ -148,7 +209,9 @@ function crouch(p, k) {
   const c = p.crouch, B = p.bones;
   const pel = B.pelvis;
   const w = wpos(pel);
-  w.y -= c.drop * k; w.z -= c.back * k;
+  // the crouch's distances were set on the model at its own size: they scale with the body
+  const sc = p.root.scale.y;
+  w.y -= c.drop * sc * k; w.z -= c.back * sc * k;
   pel.position.copy(pel.parent.worldToLocal(w));
   pel.updateMatrixWorld(true);
   for (const [s, sign] of [['l', 1], ['r', -1]]) {
@@ -217,13 +280,38 @@ export class People {
     this.batter = b; this.catcher = c; this.umpire = u;
     const lm = this.tex.load(assetUrl('tex/leather_color.webp')); lm.colorSpace = THREE.SRGBColorSpace;
     const ln = this.tex.load(assetUrl('tex/leather_normal.webp'));
+    // the knit, tiled by the uniform shader
+    const knit = this.tex.load(assetUrl('tex/knit_color.webp')); knit.wrapS = knit.wrapT = THREE.RepeatWrapping; knit.colorSpace = THREE.NoColorSpace;
+    const U = this.facts.uniform || {};
+    if (b) dress(b, kitFor(this.facts, 'them'), this.facts.batter.number ?? '24', knit);
+    if (c) dress(c, kitFor(this.facts, 'us'), '8', knit);
     if (b) this.setupBatter(b);
     if (c) this.setupCatcher(c, lm, ln);
     if (u) this.setupUmpire(u);
   }
 
   /* ---------------------------------------------------------------- batter */
+  /** His real height (root scale against the model's own) and build (the heavy and lean shape
+      keys, from his body mass index against the model's): MLB Stats API figures, pipeline/fetch_bio. */
+  build(p, heightIn, weightLb, modelHeightM = modelHeight(p)) {
+    if (!heightIn || !modelHeightM) return;
+    const hm = heightIn * 0.0254;
+    p.root.scale.setScalar(hm / modelHeightM);
+    p.root.updateMatrixWorld(true);
+    const bmi = weightLb ? 703 * weightLb / (heightIn * heightIn) : 26;
+    const heavy = clamp01((bmi - 27) / 6), lean = clamp01((25.5 - bmi) / 3);
+    for (const m of p.meshes) {
+      const d = m.morphTargetDictionary;
+      if (!d) continue;
+      if (d.heavy !== undefined) m.morphTargetInfluences[d.heavy] = heavy;
+      if (d.lean !== undefined) m.morphTargetInfluences[d.lean] = lean;
+    }
+    p.bmi = bmi;
+  }
+
   setupBatter(b) {
+    const U = this.facts.uniform || {};
+    this.build(b, this.facts.batter.heightIn ?? 72, this.facts.batter.weightLb ?? 200);
     const lefty = this.facts.batter.bats === 'L';
     b.lefty = lefty;
     b.clip = 'swing';
@@ -404,6 +492,8 @@ export class People {
 
   /* ---------------------------------------------------------------- catcher */
   setupCatcher(c, lm, ln) {
+    // a generic catcher and umpire: big league average builds (no one real), 6 ft 0 and 6 ft 1
+    this.build(c, 72, 210);
     // catcher's gear: charcoal, as most big league gear is; the team colour stays off it (no marks)
     const team = new THREE.Color(0x1d1f22);
     fitOnHead(c, G.catcherHelmet(team), { drop: 0.118, fwd: 0.0 });
@@ -422,7 +512,7 @@ export class People {
     const torso = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'spine_03', 0.5);
     const tc = torso.getCenter(new THREE.Vector3());
     const cp = G.chestProtector(team, 0.33, 0.47);
-    attach(c.bones.spine_03, cp, new THREE.Matrix4().setPosition(tc.x, tc.y - 0.17, torso.max.z + 0.07));
+    attach(c.bones.spine_03, cp, new THREE.Matrix4().setPosition(tc.x, tc.y - 0.17, torso.max.z + 0.088));   // out over the jersey
     for (const m of c.meshes) if (m.material.name === 'hair') m.visible = false; // under the helmet
     // the mitt on his left hand, pocket toward the palm
     const hb = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'hand_l', 0.5);
@@ -447,6 +537,7 @@ export class People {
 
   /* ---------------------------------------------------------------- umpire */
   setupUmpire(u) {
+    this.build(u, 73, 225);
     fitOnHead(u, G.cap(0x0a0a0c), { drop: 0.07, fwd: 0.0, tilt: 0.05 });
     fitOnHead(u, G.umpireMask(), { drop: 0.12 });
     for (const m of u.meshes) if (m.material.name === 'hair') m.visible = false; // under the cap

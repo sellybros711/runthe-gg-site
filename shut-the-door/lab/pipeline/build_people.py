@@ -21,6 +21,7 @@ import mh            # noqa: E402
 import gear          # noqa: E402
 import retarget      # noqa: E402
 import textures      # noqa: E402
+import uniform       # noqa: E402
 
 ASSETS, OUT = sys.argv[1], sys.argv[2]
 WHO = sys.argv[3:] or ['batter', 'catcher', 'umpire']
@@ -103,6 +104,13 @@ def paint_trim(ob, trim, placket=False, width=0.022):
             im.reload()
 
 
+def _white_png():
+    from PIL import Image as _I
+    p = os.path.join(WORK, 'white_1px.png')
+    _I.new('RGB', (1, 1), (255, 255, 255)).save(p)
+    return p
+
+
 def body(cfg):
     h = mh.Human(MHA, mh.macro_targets(f'{MHA}/targets', **cfg['shape']))
     arm = h.build_armature(f'{MHA}/rigs/standard/rig.game_engine.json', cfg['name'])
@@ -118,6 +126,29 @@ def body(cfg):
         h.smooth_weights([f'clavicle_{side}', f'deltoid_{side}', f'upperarm_{side}'], iterations=4)
         h.smooth_weights([f'lowerarm_twist_{side}', f'hand_{side}'], iterations=4)
     parts = []
+    if cfg.get('uniform'):
+        # the uniform, cut from the body (uniform.py); colours come at run time from the trim mask
+        c_, out = uniform.garments(h, cfg['name'])
+        mask = uniform.paint_mask(c_, out, os.path.join(WORK, f'uniform_mask_{cfg["name"]}.png'))
+        mats = {
+            'jersey': mh.principled('uniform', base_tex=mask, rough=0.8),
+            'pants': None, 'undershirt': mh.principled('undershirt', color=(0.05, 0.07, 0.15, 1), rough=0.75),
+            'belt': mh.principled('belt', color=(0.02, 0.02, 0.02, 1), rough=0.45),
+            'socks': mh.principled('socks', base_tex=mask, rough=0.85),
+            'gloves': mh.principled('gloves', base_tex=mask, rough=0.6),
+            # a texture (one white pixel) keeps the patch's UVs through gltfpack, which drops the
+            # UVs of an untextured material; the scene draws the number there
+            'number': mh.principled('number', base_tex=_white_png(), rough=0.6),
+        }
+        mats['pants'] = mats['jersey']
+        for name, g in out.items():
+            ob = g.build(mats[name])
+            if name == 'belt':
+                h.morphable[ob.name] = (lambda V, g=g: g.morph_positions(V))
+            else:
+                h.morphable[ob.name] = (lambda V, g=g: g.positions(V)[g.used])
+            parts.append(ob)
+        uniform.hide_skin(h, c_, out)
     for c in cfg.get('clothes', []):
         d = f'{MHA}/clothes/{c["id"]}'
         mat = None if c.get('own') else cloth_material(c['id'], c['color'], d, c['id'], c.get('pattern', 'jogging_melange'), color2=c.get('color2'))
@@ -134,7 +165,12 @@ def body(cfg):
     if cfg.get('hair'):
         parts.append(h.proxy(f'{MHA}/{cfg["hair"]}.mhclo', 'hair', delete=False))
     skin = skin_material('skin', cfg['skin'], cfg.get('skin_size', 1024))
-    parts.insert(0, h.body_object('body', skin))
+    bo = h.body_object('body', skin)
+    h.body_morph(bo)
+    parts.insert(0, bo)
+    if cfg.get('morphs'):
+        # builds: each shape key is the whole body (and everything fitted to it) on another shape
+        h.add_shape_keys({n: h.shape(mh.macro_targets(f'{MHA}/targets', **sh)) for n, sh in cfg['morphs'].items()})
     for p in parts:
         if p.data.materials and p.data.materials[0].blend_method == 'CLIP':
             pass
@@ -151,6 +187,8 @@ def shrink_images():
         n = im.name.lower()
         if any(k in n for k in ('eye', 'brow', 'lash')):
             cap = 128
+        elif 'mask' in n:
+            cap = 1024
         elif 'normal' in n or any(k in n for k in ('hair', 'short0', 'shoes')):
             cap = 256
         else:
@@ -168,7 +206,7 @@ def export(name):
                               export_animations=True, export_animation_mode='ACTIONS',
                               export_force_sampling=True, export_frame_step=1,
                               export_optimize_animation_size=True, export_def_bones=False,
-                              export_skins=True, export_morph=False, export_yup=True,
+                              export_skins=True, export_morph=True, export_morph_normal=False, export_yup=True,
                               export_apply=False, export_texcoords=True, export_normals=True,
                               export_tangents=False, export_materials='EXPORT', export_cameras=False,
                               export_lights=False, export_image_quality=72)
@@ -177,14 +215,17 @@ def export(name):
 
 PEOPLE = {
     # Daulton Varsho's side (bats left, from the Yamamoto pack). Generic body and face.
+    # One body for every hitter: a big league build at its base, a heavier and a leaner build as
+    # shape keys (the scene mixes them from each batter's real height and weight), the uniform cut
+    # from it. Generic face, no likeness.
     'batter': dict(
         name='batter', skin='young_caucasian_male2', skin_size=1024,
-        shape=dict(age=0.52, muscle=0.78, weight=0.55, height=0.78, race={'caucasian': 0.8, 'african': 0.1, 'asian': 0.1}),
+        shape=dict(age=0.52, muscle=0.78, weight=0.55, height=0.78, race={'caucasian': 0.6, 'african': 0.2, 'asian': 0.2}),
+        morphs={'heavy': dict(age=0.55, muscle=0.85, weight=0.95, height=0.78, race={'caucasian': 0.6, 'african': 0.2, 'asian': 0.2}),
+                'lean': dict(age=0.5, muscle=0.7, weight=0.25, height=0.78, race={'caucasian': 0.6, 'african': 0.2, 'asian': 0.2})},
         hair='hair/short02/short02',
-        clothes=[
-            dict(id='male_casualsuit06', color=ROAD_GREY, color2=ROAD_GREY, pattern='jogging_melange', trim=NAVY, placket=True),
-            dict(id='shoes06', own=True, color=NAVY),
-        ],
+        uniform=True,
+        clothes=[dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1))],
         gear=[],
         clips=[('swing', '124/124_07.bvh', 22, 140, True, 'grip')],
     ),
@@ -192,10 +233,8 @@ PEOPLE = {
         name='catcher', skin='young_african_male', skin_size=1024,
         shape=dict(age=0.55, muscle=0.72, weight=0.68, height=0.6, race={'african': 0.6, 'caucasian': 0.3, 'asian': 0.1}),
         hair='hair/short04/short04',
-        clothes=[
-            dict(id='male_casualsuit06', color=(0.88, 0.88, 0.9, 1), color2=(0.88, 0.88, 0.9, 1), pattern='jogging_melange'),
-            dict(id='shoes06', own=True, color=(0.05, 0.05, 0.06, 1)),
-        ],
+        uniform=True,
+        clothes=[dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1))],
         gear=[],
         clips=[('idle', '120/120_21.bvh', 90, 280, False, {'l': 'grip', 'r': 'relaxed'})],
     ),
@@ -229,7 +268,11 @@ def build(who):
     for (clip, path, a, b, mirror, hands) in cfg['clips']:
         retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands)
     export(who)
-
+    # the model's own height, for the scene to scale each player to his real one
+    fn = os.path.join(HERE, '..', 'assets', 'uniform.json')
+    data = json.load(open(fn)) if os.path.exists(fn) else {}
+    data[who] = {'heightM': round(float(max(v.co.z for v in parts[0].data.vertices)), 4)}
+    json.dump(data, open(fn, 'w'), indent=1)
 
 if __name__ == '__main__':
     for w in WHO:

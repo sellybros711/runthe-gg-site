@@ -10,10 +10,10 @@
  * for the pitcher's view falls out of the camera, never out of the data.
  */
 import * as THREE from 'three';
-import { preload } from './load.js?v=1';
-import { buildField } from './field.js?v=1';
-import { buildStands } from './stands.js?v=1';
-import { People } from './people.js?v=5';
+import { preload } from './load.js?v=2';
+import { buildField } from './field.js?v=2';
+import { buildStands } from './stands.js?v=2';
+import { People } from './people.js?v=6';
 import { Pitch } from './pitch.js?v=1';
 import { FT, P, smooth } from './units.js?v=1';
 

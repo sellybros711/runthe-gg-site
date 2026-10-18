@@ -21,7 +21,11 @@ window.__deformProbe = (opts) => {
     const p = L.people[who];
     if (!p) continue;
     const body = p.meshes.find((m) => m.material.name === 'skin');
-    const shirt = p.meshes.find((m) => (m.material.name || '').startsWith('male_casualsuit'));
+    // the shirt: the casual suit, or the jersey (of the two uniform meshes, the one reaching higher)
+    const CLOTH = /casualsuit|shoes|uniform|socks|gloves|undershirt|belt|number/;
+    const top = (m) => { const q = new T.Vector3(); let y = -1e9; for (let i = 0; i < m.geometry.attributes.position.count; i += 5) y = Math.max(y, m.getVertexPosition(i, q).applyMatrix4(m.matrixWorld).y); return y; };
+    const shirt = p.meshes.find((m) => (m.material.name || '').startsWith('male_casualsuit'))
+      || p.meshes.filter((m) => m.material.name === 'uniform').sort((a, b) => top(b) - top(a))[0];
     const geo = body.geometry, pos = geo.attributes.position, idx = geo.index;
     const n = pos.count;
     // the bind pose: put the bones back, read rest positions
@@ -38,7 +42,7 @@ window.__deformProbe = (opts) => {
     let E = [...edges].map((k) => [Math.floor(k / n), k % n]);
     // what a viewer sees: skin that is not under a garment, and the garments themselves. Skin kept under a collar or hem only to close the gap is hidden,
     // and is not judged.
-    const cloths = p.meshes.filter((m) => m.isSkinnedMesh && m !== body && m.visible && /casualsuit|shoes/.test(m.material.name || ''));
+    const cloths = p.meshes.filter((m) => m.isSkinnedMesh && m !== body && m.visible && CLOTH.test(m.material.name || ''));
     const clothPts = [];
     for (const m of cloths) { const cp = m.geometry.attributes.position; for (let i = 0; i < cp.count; i += 1) { m.getVertexPosition(i, v).applyMatrix4(m.matrixWorld); clothPts.push(v.x, v.y, v.z); } }
     const grid = new Map(), G = 0.05, key = (x, y, z) => `${Math.floor(x / G)},${Math.floor(y / G)},${Math.floor(z / G)}`;
@@ -184,7 +188,7 @@ window.__deformProbe = (opts) => {
       if (flo < worst.fingerSquash.v) worst.fingerSquash = { v: flo, t };
       if (chi2 > worst.creaseStretch.v) worst.creaseStretch = { v: chi2, t, bone: boneOf(E[chE][0]) + '/' + boneOf(E[chE][1]) };
       if (clo2 < worst.creaseSquash.v) worst.creaseSquash = { v: clo2, t, bone: boneOf(E[clE][0]) + '/' + boneOf(E[clE][1]) };
-      let chi = 1, clo = 1;
+      let chi = 1, clo = 1, chiName = '', chiAt = null;
       const clothNow = [];
       for (const c of clothJ) {
         const cp = new Float32Array(c.cn * 3);
@@ -192,13 +196,13 @@ window.__deformProbe = (opts) => {
         for (let i = 0; i < c.cn; i++) { c.m.getVertexPosition(i, v).applyMatrix4(c.m.matrixWorld); cp[i * 3] = v.x; cp[i * 3 + 1] = v.y; cp[i * 3 + 2] = v.z; }
         for (let k = 0; k < c.ce.length; k++) {
           const [a, b] = c.ce[k];
-          if (c.len[k] < 1e-4) continue;
+          if (c.len[k] < 0.004) continue;   // a sliver under 4 mm (a seam's) shows nothing, whatever its ratio
           const r = Math.hypot(cp[a * 3] - cp[b * 3], cp[a * 3 + 1] - cp[b * 3 + 1], cp[a * 3 + 2] - cp[b * 3 + 2]) / c.len[k];
-          if (r > chi) { chi = r; }
+          if (r > chi) { chi = r; chiName = c.m.material.name; chiAt = [cp[a * 3], cp[a * 3 + 1], cp[a * 3 + 2]].map((x) => +x.toFixed(2)); }
           if (r < clo) { clo = r; }
         }
       }
-      if (chi > worst.clothStretch.v) worst.clothStretch = { v: chi, t };
+      if (chi > worst.clothStretch.v) worst.clothStretch = { v: chi, t, part: chiName, at: chiAt };
       if (clo < worst.clothSquash.v) worst.clothSquash = { v: clo, t };
       const nameOf = (e) => (e == null ? '-' : typeof e === 'string' ? e : boneOf(E[e][0]) + '/' + boneOf(E[e][1]));
       if (hi > worst.stretch.v) worst.stretch = { v: hi, t, bone: nameOf(hiE) };

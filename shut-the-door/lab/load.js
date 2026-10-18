@@ -15,8 +15,9 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 /* stamp:begin (pipeline/stamp.mjs rewrites this block; do not edit by hand) */
 export const ASSETS = {
-  'batter.glb': 'd02696aba0',
-  'catcher.glb': '63f179287e',
+  'batter.glb': '177e387fd7',
+  'bio.json': '3ce6273c86',
+  'catcher.glb': 'e6176f0da9',
   'env_256.hdr': 'b069d60e9b',
   'pitch.json': 'da06753b1a',
   'poster-desktop.webp': '179185beca',
@@ -26,11 +27,14 @@ export const ASSETS = {
   'tex/dirt_normal.webp': '66f2d75074',
   'tex/grass_color.webp': '79cca19790',
   'tex/grass_normal.webp': '8095665bd2',
+  'tex/knit_color.webp': 'd146c073fa',
+  'tex/knit_normal.webp': '572c0efe5d',
   'tex/leather_color.webp': '88fb7b499a',
   'tex/leather_normal.webp': '187c773393',
   'tex/pad_color.webp': '3292b8fc9d',
   'tex/pad_normal.webp': '65ee1616a5',
-  'umpire.glb': '1041f97c12'
+  'umpire.glb': '1041f97c12',
+  'uniform.json': 'e0760cc232'
 };
 /* stamp:end */
 
@@ -44,7 +48,8 @@ export function preload() {
   if (started) return started;
   const bytes = (f) => fetch(assetUrl(f), { priority: 'high' }).then((r) => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.arrayBuffer(); });
   const gltf = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  const facts = fetch(assetUrl('pitch.json'), { priority: 'high' }).then((r) => r.json());
+  const json = (f) => fetch(assetUrl(f), { priority: 'high' }).then((r) => r.json());
+  const facts = Promise.all([json('pitch.json'), json('uniform.json')]).then(([f, u]) => Object.assign(f, { uniform: u }));
   const env = bytes('env_256.hdr').then((buf) => {
     const d = new RGBELoader().parse(buf);
     const t = new THREE.DataTexture(d.data, d.width, d.height, THREE.RGBAFormat, d.type);

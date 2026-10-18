@@ -114,6 +114,7 @@ class Human:
         # stand him on the ground: the rig's joint-ground cube goes to height 0
         self.v[:, 1] -= self.cube('joint-ground')[1]
         self.deleted = set()
+        self.morphable = {}
 
     def cube(self, name):
         return self.v[sorted(self.group_verts[name])].mean(0)
@@ -383,6 +384,12 @@ class Human:
         pv, puv, pf, _ = read_obj(objf)
         idx = np.array([r[0] for r in refs]); w = np.array([r[1] for r in refs]); off = np.array([r[2] for r in refs])
         pos = (self.v[idx] * w[..., None]).sum(1) + off * sc * offset_scale
+
+        def posfn(V, idx=idx, w=w, off=off, scales=dict(scales), osc=offset_scale):
+            # the same fit on another body (a shape key): positions in MakeHuman space
+            k_ = np.array([abs(V[a][k] - V[b][k]) / ref if ax in scales else 1.0
+                           for ax, k in (('x', 0), ('y', 1), ('z', 2)) for (a, b, ref) in [scales.get(ax, (0, 0, 1))]])
+            return (V[idx] * w[..., None]).sum(1) + off * k_ * osc
         wmat = self.transfer_weights(pos)
         if material is None:
             material = material_from_mhmat(mhmat, name)
@@ -404,7 +411,35 @@ class Human:
                 dels = [v for v, dd in zip(dels, d) if dd > 0.7]   # decimetres
             self.deleted.update(dels)
         ob = self._make_mesh(name, pos, puv, pf, material, wmat)
+        used = sorted({i for f in pf for i, _ in f})
+        self.morphable[ob.name] = lambda V, posfn=posfn, used=used: to_blender(posfn(V)[used])
         return ob
+
+    def body_morph(self, ob, keep_groups=('body',)):
+        keep = [k for k, g in enumerate(self.groups) if g in keep_groups]
+        faces = [self.faces[k] for k in keep if not any(i in self.deleted for i, _ in self.faces[k])]
+        used = sorted({i for f in faces for i, _ in f})
+        self.morphable[ob.name] = lambda V, used=used: to_blender(V[used])
+
+    def shape(self, targets):
+        """Another body from the same base mesh (for a shape key), stood on the ground the same way."""
+        v = apply_targets(self.base_v, targets)
+        v[:, 1] -= v[sorted(self.group_verts['joint-ground'])].mean(0)[1]
+        return v
+
+    def add_shape_keys(self, shapes):
+        """shapes: {name: V}. Every morphable object gets a key per shape."""
+        for ob_name, fn in self.morphable.items():
+            ob = bpy.data.objects.get(ob_name)
+            if ob is None:
+                continue
+            ob.shape_key_add(name='Basis', from_mix=False)
+            for n, V in shapes.items():
+                k = ob.shape_key_add(name=n, from_mix=False)
+                P = fn(V)
+                if len(P) != len(k.data):
+                    print('  shape key size mismatch', ob_name, len(P), len(k.data)); continue
+                k.data.foreach_set('co', P.astype(np.float32).ravel())
 
 
 def _closest_on_tri(p, a, b, c):

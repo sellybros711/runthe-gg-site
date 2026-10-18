@@ -51,3 +51,15 @@ save(c, 'concrete_color.webp')
 l = load('brown_leather_albedo_1k.jpg', 512)
 save(l, 'leather_color.webp')
 save(load('brown_leather_nor_gl_1k.jpg', 512), 'leather_normal.webp', q=80)
+
+# the uniform's knit (cotton_jersey and jogging_melange's relief, CC0): a quarter of the 1k tile at half size (the knit stays
+# visible; shrinking the whole tile to 128 px averaged it away), its brightness only for the colour
+def crop(name, n=256, size=128):
+    im = Image.open(os.path.join(SRC, name)).convert('RGB')
+    return np.asarray(im.crop((0, 0, n, n)).resize((size, size), Image.LANCZOS)).astype(np.float32) / 255
+k = crop('cotton_jersey_diff_1k.jpg').mean(-1)
+k = 0.5 + (k - k.mean()) / (4 * k.std() + 1e-6)
+save(np.repeat(k[..., None], 3, -1), 'knit_color.webp', q=80)
+nm = crop('jogging_melange_nor_gl_1k.jpg')
+nm[..., :2] = 0.5 + (nm[..., :2] - 0.5) * 3.0           # its relief is faint at this size: lift it
+save(nm, 'knit_normal.webp', q=80)
