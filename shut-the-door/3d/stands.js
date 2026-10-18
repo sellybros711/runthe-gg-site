@@ -6,8 +6,8 @@
  */
 import * as THREE from 'three';
 import { FT } from './units.js?v=1';
-import { BACKSTOP_FT } from './field.js?v=5';
-import { assetUrl } from './load.js?v=5';
+import { BACKSTOP_FT } from './field.js?v=6';
+import { assetUrl } from './load.js?v=6';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }

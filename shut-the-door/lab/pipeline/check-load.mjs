@@ -1,6 +1,12 @@
-/* How fast the lab comes up on a phone's network, first visit and repeat.
+/* How fast the lab, or the game's 3D mound, comes up on a phone's network, first visit and repeat.
  *
  *   node shut-the-door/lab/pipeline/check-load.mjs [--runs 3]
+ *   node shut-the-door/lab/pipeline/check-load.mjs --game [--runs 3]
+ *
+ * --game loads the game page (shut-the-door/index.html) instead, other hosts refused (fonts and
+ * auth answer nothing), and records: home (the home screen up), preloaded (every 3D download in
+ * and parsed, started from the home screen), the tap on take the mound 4 s in (a player reading
+ * the spot), and mound (the 3D mound drawn), ms after that tap.
  *
  * Serves the repo the way the site is served: text compressed (as the CDN does), and the cache
  * rules of the repo's _headers file for the lab (HTML revalidated, versioned files held). Then, in
@@ -30,6 +36,7 @@ const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..', '..');
 const RUNS = +(process.argv[process.argv.indexOf('--runs') + 1] || 2) || 2;
+const GAME = process.argv.includes('--game');
 
 /* _headers, read for the paths it names (exact, or a trailing *), last match wins per header. */
 const rules = [];
@@ -90,14 +97,15 @@ const STD = path.join(ROOT, 'shut-the-door');
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? (['pipeline', 'data', 'test', 'fixtures', 'scenarios'].includes(e.name) ? [] : walk(path.join(d, e.name))) : [path.join(d, e.name)]);
 for (const f of walk(STD)) if (TEXT.has(path.extname(f))) brCache.set(f + etagOf(f), zlib.brotliCompressSync(fs.readFileSync(f)));
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const BASE = `https://127.0.0.1:${server.address().port}/shut-the-door/lab/index.html`;
+const BASE = `https://127.0.0.1:${server.address().port}/shut-the-door/${GAME ? '' : 'lab/index.html'}`;
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) { /* next */ } }
   throw new Error('playwright not found');
 }
 const CHROME = ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
-const browser = await loadPlaywright().chromium.launch({ executablePath: CHROME, args: [`--ignore-certificate-errors-spki-list=${SPKI}`, '--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader'] });
+const browser = await loadPlaywright().chromium.launch({ executablePath: CHROME, args: [`--ignore-certificate-errors-spki-list=${SPKI}`, '--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader',
+  ...(GAME ? ['--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'] : [])] });
 
 // each visit in a new tab of the same browser profile (the cache is the profile's), throttled
 async function visit(ctx) {
@@ -107,6 +115,7 @@ async function visit(ctx) {
   await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 170, downloadThroughput: (9 * 1024 * 1024) / 8, uploadThroughput: (1.5 * 1024 * 1024) / 8 });
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   log = [];
+  if (GAME) return visitGame(page);
   await page.goto(BASE + '?once=1', { waitUntil: 'commit' });
   await page.waitForFunction(() => window.__lab && window.__lab.firstPaintMs != null, null, { timeout: 120000 });
   await page.waitForFunction(() => window.__lab && window.__lab.ready, null, { timeout: 180000 });
@@ -114,6 +123,22 @@ async function visit(ctx) {
   await page.close();
   const bytes = log.reduce((a, [, , b]) => a + b, 0);
   return { firstPaintMs: Math.round(m.fp), loadedMs: m.marks?.compiled ?? null, playableMs: Math.round(m.ready), bytes, requests: log.length, files: log.filter(([, s]) => s === 200).map(([p, , b]) => [p, b]), marks: m.marks, timeline: m.timeline };
+}
+
+async function visitGame(page) {
+  await page.goto(BASE, { waitUntil: 'commit' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 120000 });
+  const home = await page.evaluate(() => Math.round(performance.now()));
+  await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.marks.preloaded, null, { timeout: 180000 });
+  const pre = await page.evaluate(() => window.STD_STAGE.marks.preloaded);
+  await page.waitForFunction(() => performance.now() > 4000, null, { timeout: 30000 });
+  const tap = await page.evaluate(() => Math.round(performance.now()));
+  await page.click('#b-take');
+  await page.waitForFunction(() => window.STD_STAGE.marks.drawn, null, { timeout: 180000 });
+  const drawn = await page.evaluate(() => window.STD_STAGE.marks.drawn);
+  await page.close();
+  const bytes = log.reduce((a, [, , b]) => a + b, 0);
+  return { firstPaintMs: home, loadedMs: pre, playableMs: drawn - tap, bytes, requests: log.length, files: log.filter(([, s]) => s === 200).map(([p, , b]) => [p, b]), marks: { home, preloaded: pre, tap, drawn } };
 }
 
 const results = [];
@@ -127,6 +152,7 @@ for (let r = 0; r < RUNS; r++) {
 }
 const med = (k, w) => { const v = results.map((x) => x[w][k]).sort((a, b) => a - b); return v[Math.floor(v.length / 2)]; };
 const out = {
+  page: GAME ? 'the game: firstPaintMs is the home screen, loadedMs every 3D download in and parsed, playableMs the mound drawn after the tap on take the mound' : 'the lab',
   profile: 'Fast 4G (9 Mbps down, 1.5 up, 170 ms RTT), CPU 4x, 390x844 at 2x, SwiftShader',
   first: { firstPaintMs: med('firstPaintMs', 'first'), loadedMs: med('loadedMs', 'first'), playableMs: med('playableMs', 'first'), bytes: results[0].first.bytes, requests: results[0].first.requests },
   repeat: { firstPaintMs: med('firstPaintMs', 'again'), loadedMs: med('loadedMs', 'again'), playableMs: med('playableMs', 'again'), bytes: results[0].again.bytes, requests: results[0].again.requests },

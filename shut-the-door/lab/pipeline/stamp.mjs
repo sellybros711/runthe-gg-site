@@ -56,15 +56,19 @@ for (const P of PAGES) {
   };
   visit(path.join(P.entryDir, P.entry.replace(/^3d\//, '3d/')).replace(path.join(STD, '3d', '3d'), path.join(STD, '3d')));
   const url = (f) => `${P.rt}assets/${f}?h=${assets[f]}`;
+  // the lab shows a full screen poster while it loads; the game's home screen shows the hero still
+  const images = P.rt === '3d/'
+    ? [`<link rel="preload" as="image" href="${url('hero.webp')}">`]
+    : [`<link rel="preload" as="image" href="${url('poster-phone.webp')}" media="(orientation: portrait)" fetchpriority="high">`,
+      `<link rel="preload" as="image" href="${url('poster-desktop.webp')}" media="(orientation: landscape)" fetchpriority="high">`];
   const lines = [
-    `<link rel="preload" as="image" href="${url('poster-phone.webp')}" media="(orientation: portrait)" fetchpriority="high">`,
-    `<link rel="preload" as="image" href="${url('poster-desktop.webp')}" media="(orientation: landscape)" fetchpriority="high">`,
+    ...images,
     ...[...mods, ...VENDOR.map((f) => `${P.rt}vendor/three-0.170.0/${f}`)].map((m) => `<link rel="modulepreload" href="${m}">`),
     ...['packs/std-2025-ws7-yamamoto.json', 'uniform.json', 'bio.json', 'env_256.hdr'].filter((f) => P.rt === '../3d/' ? f !== 'bio.json' : !f.startsWith('packs/')).map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}">`),
     ...['batter.glb', 'catcher.glb', 'umpire.glb'].map((f) => `<link rel="preload" as="fetch" crossorigin href="${url(f)}" fetchpriority="low">`),
   ];
   html = html.replace(/(<!-- stamp:preload:begin -->\n)[\s\S]*?(<!-- stamp:preload:end -->)/, `$1${lines.join('\n')}\n$2`);
-  html = html.replace(/((?:\.\.\/)?(?:\.\/)?3d\/|\.\/)assets\/(poster-(?:phone|desktop)\.webp)(?:\?h=\w+)*/g, (_, pre, f) => url(f));
+  html = html.replace(/((?:\.\.\/)?(?:\.\/)?3d\/|\.\/)assets\/((?:poster-(?:phone|desktop)|hero)\.webp)(?:\?h=\w+)*/g, (_, pre, f) => url(f));
   fs.writeFileSync(P.page, html);
   nmods += mods.size;
 }

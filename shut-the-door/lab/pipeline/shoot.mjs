@@ -91,6 +91,10 @@ if (WHAT === 'poster') {
     execFileSync('python3', ['-I', '-c', `import sys\nfrom PIL import Image\nim=Image.open(sys.argv[1]).convert('RGB')\nim.save(sys.argv[2],'WEBP',quality=58,method=6)`, png, path.join(ASSETS, `${name}.webp`)]);
     console.log('poster', name, fs.statSync(path.join(ASSETS, `${name}.webp`)).size);
   }
+  // the game's home screen hero (330 px tall, a phone's width to a column's): the set with no grid
+  await still('overlays=0', 0, 560, 330, 'hero');
+  execFileSync('python3', ['-I', '-c', `import sys\nfrom PIL import Image\nim=Image.open(sys.argv[1]).convert('RGB')\nim.save(sys.argv[2],'WEBP',quality=62,method=6)`, path.join(OUT, 'hero.png'), path.join(ASSETS, 'hero.webp')]);
+  console.log('poster hero', fs.statSync(path.join(ASSETS, 'hero.webp')).size);
 }
 
 if (WHAT === 'one') {

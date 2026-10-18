@@ -18,9 +18,9 @@
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
  */
 import * as THREE from 'three';
-import { preload } from './load.js?v=5';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, webglAvailable } from './park.js?v=2';
-import { People } from './people.js?v=13';
+import { preload } from './load.js?v=6';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, webglAvailable } from './park.js?v=3';
+import { People } from './people.js?v=14';
 import { Pitch } from './pitch.js?v=5';
 import { fromResult, motion } from './play.js?v=3';
 import { look } from './looks.js?v=1';
@@ -73,6 +73,7 @@ class Stage {
     await this.renderer.compileAsync(this.scene, this.camera);
     this.layout();
     this.draw();
+    window.STD_STAGE.marks.drawn = Math.round(performance.now());
     return this;
   }
 
@@ -330,5 +331,7 @@ window.STD_STAGE = {
   get current() { return theStage; },
 };
 // the downloads start as soon as this module runs: on the home screen, before the mound is opened
-if (webglAvailable()) window.STD_STAGE.preload();
+// (marks for check-load: when every download is in and parsed, and when the mound first drew)
+window.STD_STAGE.marks = {};
+if (webglAvailable()) window.STD_STAGE.preload().then(() => { window.STD_STAGE.marks.preloaded = Math.round(performance.now()); });
 window.dispatchEvent(new Event('std-stage'));

@@ -40,15 +40,14 @@
 </script>
 <!-- the mound's 3D scene: its modules and downloads start with the page (shut-the-door/lab/pipeline/stamp.mjs writes this list) -->
 <!-- stamp:preload:begin -->
-<link rel="preload" as="image" href="3d/assets/poster-phone.webp?h=b638ef170e" media="(orientation: portrait)" fetchpriority="high">
-<link rel="preload" as="image" href="3d/assets/poster-desktop.webp?h=58c8b648fd" media="(orientation: landscape)" fetchpriority="high">
-<link rel="modulepreload" href="3d/stage.js?v=1">
-<link rel="modulepreload" href="3d/load.js?v=5">
-<link rel="modulepreload" href="3d/park.js?v=2">
-<link rel="modulepreload" href="3d/field.js?v=5">
+<link rel="preload" as="image" href="3d/assets/hero.webp?h=a8b96e3af7">
+<link rel="modulepreload" href="3d/stage.js?v=2">
+<link rel="modulepreload" href="3d/load.js?v=6">
+<link rel="modulepreload" href="3d/park.js?v=3">
+<link rel="modulepreload" href="3d/field.js?v=6">
 <link rel="modulepreload" href="3d/units.js?v=1">
-<link rel="modulepreload" href="3d/stands.js?v=5">
-<link rel="modulepreload" href="3d/people.js?v=13">
+<link rel="modulepreload" href="3d/stands.js?v=6">
+<link rel="modulepreload" href="3d/people.js?v=14">
 <link rel="modulepreload" href="3d/materials.js?v=3">
 <link rel="modulepreload" href="3d/gear3d.js?v=2">
 <link rel="modulepreload" href="3d/rig.js?v=1">
@@ -96,7 +95,7 @@
   <div id="h-main" hidden>
     <div class="hero" id="h-hero">
       <canvas id="h-canvas" aria-hidden="true"></canvas>
-      <picture class="h-poster" id="h-poster" hidden><source media="(orientation: landscape)" srcset="3d/assets/poster-desktop.webp?h=58c8b648fd"><img src="3d/assets/poster-phone.webp?h=b638ef170e" alt=""></picture>
+      <img class="h-poster" id="h-poster" src="3d/assets/hero.webp?h=a8b96e3af7" alt="" hidden>
       <div class="hero-chips" id="h-day"></div>
       <div class="hero-text"><p class="h-title" id="h-title"></p><h1 class="hero-head" id="h-head"></h1></div>
     </div>
@@ -258,6 +257,6 @@
 <script src="mock-api.js?v=5"></script>
 <script src="coach.js?v=1"></script>
 <script src="ui.js?v=7"></script>
-<script type="module" src="3d/stage.js?v=1"></script>
+<script type="module" src="3d/stage.js?v=2"></script>
 </body>
 </html>

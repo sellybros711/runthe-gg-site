@@ -13,9 +13,9 @@
  * for the pitcher's view falls out of the camera, never out of the data.
  */
 import * as THREE from 'three';
-import { preload } from '../3d/load.js?v=5';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=2';
-import { People } from '../3d/people.js?v=13';
+import { preload } from '../3d/load.js?v=6';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=3';
+import { People } from '../3d/people.js?v=14';
 import { Pitch } from '../3d/pitch.js?v=5';
 import { labPlay, motion, describe } from '../3d/play.js?v=3';
 import { FT, P, smooth } from '../3d/units.js?v=1';
@@ -50,7 +50,7 @@ async function main() {
   const play = labPlay(facts, facts.batter, Q);
   const m = motion(play, facts.batter);
   lab.playFacts = play; lab.motion = m;
-  const pitch = new Pitch({ scene, facts, play, batter: facts.batter, m });
+  const pitch = new Pitch({ scene, facts, play, batter: facts.batter, m, overlays: Q.get('overlays') !== '0' });
   const people = new People({ scene, facts, mode: m.batter === 'swing' ? 'swing' : 'take', pitch, play, m });
   document.getElementById('note').textContent = '';
   lab.pbp = describe(play);
