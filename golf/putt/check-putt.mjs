@@ -530,7 +530,7 @@ if (!args.includes('--no-browser')){
     // while every claim in this file stayed green because none of them redraws the home screen.
     // So: once every deferred module has run, the game must still be able to draw a screen and move to another.
     await pg.waitForFunction(() => window.RTT_PUTT_3D && window.RTT_PUTT_LAND && window.PXHD, null, { timeout:30000 });
-    claim(await pg.evaluate(() => { try{ const n0 = errs0(); S.overlay = null; S.screen = 'title'; render(); document.querySelector('#rttnav [data-nav="daily"]').click(); return S.screen !== 'title' && document.body.innerText.length > 0; }catch(e){ return false; } function errs0(){ return 0; } }),
+    claim(await pg.evaluate(() => { try{ const n0 = errs0(); S.overlay = null; S.screen = 'title'; render(); document.querySelector('#rttnav [data-nav="protour"]').click(); return S.screen !== 'title' && document.body.innerText.length > 0; }catch(e){ return false; } function errs0(){ return 0; } }),
       'with every module loaded, the game still draws its home screen and a tab still moves it on');
     // LIVE: the door is everybody's. The kill switch (PUTT_LIVE=false) still shuts it on all but the testers.
     claim(await pg.evaluate(() => typeof PUTT_LIVE !== 'undefined' && PUTT_LIVE === true), 'PUTT_LIVE is true: Putt Putt is live');
