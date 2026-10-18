@@ -16370,6 +16370,13 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-scene .spk-pk{display:block}
 .ft-pk1{left:4%;top:45%} .ft-pk2{left:15%;top:48.5%} .ft-pk3{right:5%;top:46%}
 .ft-fog{top:40%;bottom:auto;height:24%;opacity:.85}
+/* LIGHTER ON A PHONE (the owner, 2026-10-18: laggy on an iPhone). The home keeps its scene and loses the motion
+   that costs a repaint every frame: the pumpkins' glow is a fixed glow (a drop-shadow animated is a filter redrawn each
+   frame), and on a phone the clouds hold still and the fog is a still, unblurred band, so nothing moves under the
+   blurred glass of the pin sheet and the top bar (a backdrop blur is recomputed whenever what is behind it moves).
+   The Haunted Links hunt's own bats and peeks stay: they are the hunt. */
+.ft-scene .spk-pk{animation:none}
+@media (max-width:899px){ .ft-cloud{animation:none!important} .ft-fog{animation:none!important;filter:none} .ft-chip,.ft-pill{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(6,20,14,.78)} }
 
 /* the top bar */
 .ft-tb{position:absolute;z-index:20;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(8,20,16,.58),rgba(8,20,16,.34));-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border-bottom:1px solid var(--glt);box-shadow:0 10px 30px rgba(0,0,0,.18)}
@@ -16461,8 +16468,10 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-pq{position:absolute;left:4px;right:4px;bottom:3px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
 .ft-pq i{height:4px;background:rgba(255,255,255,.18)} .ft-pq i.on{background:#2fa564}
 .ft-pf.part .ft-pi{margin-top:-6px} .ft-pf.part .ft-pi svg{width:19px;height:19px}
-@media (prefers-reduced-motion:no-preference){ .ft-pf.ready{animation:ftRing 2.2s ease-in-out infinite} .ft-pf.claim{animation:ftGift 1.6s ease-in-out infinite} .ft-pf.claim .ft-pi{animation:ftWiggle 1.6s steps(4) infinite} }
-@keyframes ftRing{50%{box-shadow:inset 0 0 0 2px var(--gold),0 0 0 5px rgba(241,208,74,.3)}}
+/* the ready pin's pulse is a ring that fades in and out (opacity, done on the compositor), not an animated box-shadow */
+.ft-pf.ready::after{content:'';position:absolute;inset:-5px;border-radius:12px;box-shadow:0 0 0 3px rgba(241,208,74,.32);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:no-preference){ .ft-pf.ready::after{animation:ftRing 2.2s ease-in-out infinite} .ft-pf.claim{animation:ftGift 1.6s ease-in-out infinite} .ft-pf.claim .ft-pi{animation:ftWiggle 1.6s steps(4) infinite} }
+@keyframes ftRing{50%{opacity:1}}
 @keyframes ftGift{50%{box-shadow:inset 0 0 0 2px var(--gold),0 0 18px rgba(241,208,74,.7)}}
 @keyframes ftWiggle{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
 .ft-sheet{position:relative;border-radius:12px;overflow:hidden;text-align:left}
