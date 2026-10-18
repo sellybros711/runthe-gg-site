@@ -134,3 +134,12 @@ the spot.
 The mock's lesson (`mockLesson()` in `mock-api.js`) is FICTIONAL: its pro is "Mock Pro" to "Mock
 Hitter" in "mock series game 1". Switches: `?mockLesson=none` (a null lesson, the contract's line)
 and `?mockPro=none` (a lesson with `pro: null`, no pro block).
+
+## B11. The closer pool's scores on the result, for the end screen's chart
+
+The brand round's end screen draws the player's score on the real distribution of the closer pool's
+outings in this spot (the owner liked it in direction C). The scores are `pack.pool.scores`, which
+the four calls never return. The UI reads them from `result.pool.scores` when present and otherwise
+shows a plain percentile meter, so nothing breaks either way. Asked: one line in `engine.js`
+`finishOuting`, `pool: { scores: (o.pack.pool && o.pack.pool.scores) || [] }`, or a binned
+histogram if the stored result should stay small. The mock already carries it.

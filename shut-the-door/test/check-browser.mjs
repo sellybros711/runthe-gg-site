@@ -30,6 +30,8 @@
  *      the field and on the scorebar's diamond; the proxy note and a reveal
  *      with no pitch count; the stats sheet from the account and from the
  *      device
+ *  13. the brand: the outlined lockup in the header for the theme, the
+ *      manifest and its icons, the favicons and the apple touch icon
  *  12. the pitching coach: never open by itself, opens from its button, says
  *      one line on the outing, then the lesson (your call against the best on
  *      the mirrored mini grid, the why, next time, the numbers, how the pros
@@ -61,7 +63,7 @@ const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chr
 let passes = 0, fails = 0;
 function ok(c, m) { if (c) { passes++; console.log('  ok ' + m); } else { fails++; console.log('  FAIL ' + m); } }
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
+const TYPES = { '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
 const server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (rel.endsWith('/')) rel += 'index.html';
@@ -159,7 +161,7 @@ async function revealCheck(page, label, pitches) {
       pct: vis('r-pct') && document.getElementById('r-pct').textContent, like: vis('r-like'), real: vis('r-reveal'), coachBtn: vis('r-coach'),
       sheetOpen: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden), labels: Object.values(window.STD_CONTRACT.OUTCOME_LABEL) };
   });
-  ok(rv.labels.includes(rv.outcome) && rv.strip === pitches && /^\d+%$/.test(rv.pct) && rv.like && rv.real,
+  ok(rv.labels.includes(rv.outcome) && rv.strip === pitches && /^\d+(st|nd|rd|th)$/.test(rv.pct) && rv.like && rv.real,
     label + ': the end reveals the outcome (' + rv.outcome + '), the strip (' + rv.strip + '), the percentile (' + rv.pct + '), pitched like and the real one together');
   ok(rv.coachBtn && !rv.sheetOpen, label + ': "talk to pitching coach" is there and nothing opened by itself');
 }
@@ -201,12 +203,13 @@ async function coachCheck(page, label, pitches, expect, shot) {
   await page.waitForSelector('#sheet-coach', { state: 'hidden', timeout: 3000 });
 }
 
-async function run(w, h) {
-  console.log(`\n${w}x${h}`);
-  const tag = String(w);
+async function run(w, h, theme) {
+  console.log(`\n${w}x${h}, ${theme}`);
+  const tag = w + '-' + theme;
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE.replace(/\/shut-the-door\/$/, '') });
   const page = await ctx.newPage();
+  await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, theme);
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
@@ -235,15 +238,38 @@ async function run(w, h) {
     openSheets: [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden).length,
     robots: document.querySelector('meta[name=robots]').content,
   }));
-  ok(home.title.length > 0 && home.ars >= 2 && /up/.test(home.sit), '1 home shows the spot, the situation and the arsenal (' + home.ars + ' pitches)');
+  ok(home.title.length > 0 && home.ars >= 2 && /lead/.test(home.sit) && /out/.test(home.sit), '1 home shows the spot, the situation and the arsenal (' + home.ars + ' pitches)');
   ok(home.openSheets === 0, '1 no sheet or tutorial opened by itself');
   ok(/noindex/.test(home.robots), '1 the page is noindexed');
   await shot('home', true);
 
+  /* 13: the brand. The outlined lockup in the header, the icons, the manifest */
+  const brand = await page.evaluate(async () => {
+    const bm = async (src) => { const b = await createImageBitmap(await (await fetch(src)).blob()); return [b.width, b.height]; };
+    const imgs = [...document.querySelectorAll('.hdr .lockup img')].filter((i) => getComputedStyle(i).display !== 'none');
+    const wm = await (await fetch(document.querySelector('.hdr .wm-light').getAttribute('src'))).text();
+    const man = JSON.parse(await (await fetch(document.querySelector('link[rel=manifest]').getAttribute('href'))).text());
+    const icons = [];
+    for (const ic of man.icons) icons.push({ sizes: ic.sizes, purpose: ic.purpose, px: (await bm(ic.src)).join('x') });
+    const heads = [];
+    for (const l of document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')) heads.push((l.getAttribute('sizes') || 'touch') + '=' + (await bm(l.getAttribute('href'))).join('x'));
+    return { shown: imgs.length, loaded: imgs.every((i) => i.complete && i.naturalWidth > 0), wmVisible: imgs.some((i) => i.classList.contains('wm')),
+      outlined: /<path/.test(wm) && !/<text/.test(wm), name: man.name, themeColor: man.theme_color, display: man.display, icons, heads,
+      theme: document.documentElement.dataset.theme, meta: document.getElementById('themeMeta').content };
+  });
+  ok(brand.shown === 2 && brand.loaded && brand.wmVisible, '13 the header shows the mark and the ' + brand.theme + ' wordmark, both loaded');
+  ok(brand.outlined, '13 the wordmark is outlined paths, with no live font');
+  ok(brand.name === 'Shut The Door' && /^#[0-9a-f]{6}$/i.test(brand.themeColor) && brand.display === 'standalone', '13 the manifest names the game, in the palette (' + brand.themeColor + ')');
+  const want = ['192x192 any 192x192', '512x512 any 512x512', '512x512 maskable 512x512'];
+  ok(want.every((x) => brand.icons.some((i) => i.sizes + ' ' + i.purpose + ' ' + i.px === x)), '13 the manifest icons are 192, 512 and a maskable 512, at their sizes');
+  ok(['32x32=32x32', '16x16=16x16', 'touch=180x180'].every((x) => brand.heads.includes(x)), '13 favicon 32 and 16 and the apple touch icon 180 are linked and the right size');
+
   /* 2 */
   for (const [btn, id, name] of [['#b-menu', 'sheet-menu', 'menu'], ['[data-open="how"]', 'sheet-how', 'how'], ['[data-open="stats"]', 'sheet-stats', 'stats'],
-    ['[data-open="past"]', 'sheet-past', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
-    await page.click('#h-main ' + btn + ', header ' + btn);
+    ['@menu [data-open="past"]', 'sheet-past', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
+    /* past dailies lives in the menu only */
+    if (btn.startsWith('@menu')) { await page.click('header #b-menu'); await page.waitForSelector('#sheet-menu.on'); await page.click('#sheet-menu ' + btn.slice(6)); }
+    else await page.click('#h-main ' + btn + ', header ' + btn);
     await page.waitForSelector('#' + id + '.on', { timeout: 3000 });
     await page.waitForTimeout(260);
     const filled = await page.evaluate((i) => document.querySelector('#' + i + ' .sh-in').textContent.trim().length, id);
@@ -419,8 +445,8 @@ async function ending(w, h, end, extra) {
 }
 
 try {
-  await run(390, 844);
-  await run(1440, 900);
+  await run(390, 844, 'light');
+  await run(1440, 900, 'dark');
   console.log('\nthe three endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
   await ending(390, 844, 'doors_open', '&mockPro=none');
