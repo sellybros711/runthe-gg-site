@@ -138,7 +138,28 @@ def body(cfg):
     return h, arm, parts
 
 
+def shrink_images():
+    """Textures at the size a phone shows them: a player is about 300 px tall on screen and his
+    face about 30, so a 512 px body map is already more than the screen can use. Normal maps and
+    small parts (eyes, brows, lashes, hair) go smaller still."""
+    for im in bpy.data.images:
+        if not im.size[0]:
+            continue
+        n = im.name.lower()
+        if any(k in n for k in ('eye', 'brow', 'lash')):
+            cap = 128
+        elif 'normal' in n or any(k in n for k in ('hair', 'short0', 'shoes')):
+            cap = 256
+        else:
+            cap = 512
+        w, h = im.size
+        if max(w, h) > cap:
+            k = cap / max(w, h)
+            im.scale(max(1, int(w * k)), max(1, int(h * k)))
+
+
 def export(name):
+    shrink_images()
     path = os.path.join(OUT, f'{name}.glb')
     bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', export_image_format='WEBP',
                               export_animations=True, export_animation_mode='ACTIONS',
@@ -147,7 +168,7 @@ def export(name):
                               export_skins=True, export_morph=False, export_yup=True,
                               export_apply=False, export_texcoords=True, export_normals=True,
                               export_tangents=False, export_materials='EXPORT', export_cameras=False,
-                              export_lights=False)
+                              export_lights=False, export_image_quality=72)
     print('wrote', path, os.path.getsize(path))
 
 

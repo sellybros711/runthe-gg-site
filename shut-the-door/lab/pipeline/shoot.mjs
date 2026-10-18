@@ -59,7 +59,7 @@ async function still(query, t, w, h, name) {
   const { ctx, page, errors } = await open(`${query}&t=${t}`, w, h);
   await page.evaluate((tt) => window.__lab.setTime(tt), t);
   await page.waitForFunction(() => window.__lab.frames > 3, null, { timeout: 60000 });
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(700);
   const file = path.join(OUT, `${name}.png`);
   await page.screenshot({ path: file });
   if (errors.length) console.log('  page messages:', errors.slice(0, 5).join(' | '));
@@ -79,6 +79,18 @@ if (WHAT === 'strip') {
   }
   await ctx.close();
   console.log('strip', name, k);
+}
+
+if (WHAT === 'poster') {
+  // the stills index.html shows while the scene loads: the set, at the phone and desktop sizes
+  const { execFileSync } = await import('node:child_process');
+  const ASSETS = path.join(ROOT, 'shut-the-door', 'lab', 'assets');
+  for (const [w, h, name] of [[390, 844, 'poster-phone'], [1440, 900, 'poster-desktop']]) {
+    await still('', 0, w, h, name);
+    const png = path.join(OUT, `${name}.png`);
+    execFileSync('python3', ['-I', '-c', `import sys\nfrom PIL import Image\nim=Image.open(sys.argv[1]).convert('RGB')\nim.save(sys.argv[2],'WEBP',quality=58,method=6)`, png, path.join(ASSETS, `${name}.webp`)]);
+    console.log('poster', name, fs.statSync(path.join(ASSETS, `${name}.webp`)).size);
+  }
 }
 
 if (WHAT === 'one') {

@@ -1,0 +1,62 @@
+/* Everything the scene downloads, fetched at once.
+ *
+ *   preload() from load.js, imported with its version like every module here
+ *   preload();            the menus call this as soon as they are up: the 3D warms in the background
+ *   const a = await preload();   the scene awaits the same promise (one download, ever)
+ *
+ * Every asset URL carries its content hash (ASSETS below, written by pipeline/stamp.mjs), so a
+ * file's URL changes exactly when its bytes do and the CDN may hold it for a year (_headers).
+ * People are parsed as their bytes arrive, their meshopt geometry decoded in workers.
+ */
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+/* stamp:begin (pipeline/stamp.mjs rewrites this block; do not edit by hand) */
+export const ASSETS = {
+  'batter.glb': 'e85cca774c',
+  'catcher.glb': 'b91958a054',
+  'env_256.hdr': 'b069d60e9b',
+  'pitch.json': 'da06753b1a',
+  'poster-desktop.webp': '179185beca',
+  'poster-phone.webp': '581f5b3efa',
+  'tex/concrete_color.webp': '0a126bec84',
+  'tex/dirt_color.webp': '4b00ba1875',
+  'tex/dirt_normal.webp': '66f2d75074',
+  'tex/grass_color.webp': '79cca19790',
+  'tex/grass_normal.webp': '8095665bd2',
+  'tex/leather_color.webp': '88fb7b499a',
+  'tex/leather_normal.webp': '187c773393',
+  'tex/pad_color.webp': '3292b8fc9d',
+  'tex/pad_normal.webp': '65ee1616a5',
+  'umpire.glb': '26175a41bb'
+};
+/* stamp:end */
+
+export const assetUrl = (f) => `./assets/${f}${ASSETS[f] ? `?h=${ASSETS[f]}` : ''}`;
+export const PEOPLE = ['batter', 'catcher', 'umpire'];
+
+let started = null;
+try { MeshoptDecoder.useWorkers(2); } catch (e) { /* no workers: decode on the main thread */ }
+
+export function preload() {
+  if (started) return started;
+  const bytes = (f) => fetch(assetUrl(f), { priority: 'high' }).then((r) => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.arrayBuffer(); });
+  const gltf = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const facts = fetch(assetUrl('pitch.json'), { priority: 'high' }).then((r) => r.json());
+  const env = bytes('env_256.hdr').then((buf) => {
+    const d = new RGBELoader().parse(buf);
+    const t = new THREE.DataTexture(d.data, d.width, d.height, THREE.RGBAFormat, d.type);
+    t.colorSpace = THREE.LinearSRGBColorSpace;
+    t.minFilter = t.magFilter = THREE.LinearFilter;
+    t.generateMipmaps = false;
+    t.flipY = true;
+    t.mapping = THREE.EquirectangularReflectionMapping;
+    t.needsUpdate = true;
+    return t;
+  });
+  const people = Promise.all(PEOPLE.map((n) => bytes(`${n}.glb`).then((b) => gltf.parseAsync(b, './assets/'))));
+  started = Promise.all([facts, env, people]).then(([f, e, p]) => ({ facts: f, env: e, gltfs: Object.fromEntries(PEOPLE.map((n, i) => [n, p[i]])) }));
+  return started;
+}

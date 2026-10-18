@@ -6,27 +6,59 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Shut The Door 3D lab</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #0b0d10; overflow: hidden; }
-  canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: manipulation; }
-  #hint { position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); text-align: center;
-          font: 500 13px/1.3 system-ui, sans-serif; color: rgba(255,255,255,.72); pointer-events: none;
+  html, body { margin: 0; height: 100%; background: #2b3036; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: manipulation;
+           opacity: 0; transition: opacity .35s; }
+  canvas.on { opacity: 1; }
+  /* the poster: a still of this very scene, so the first thing on screen is the park, not a blank */
+  #load { position: fixed; inset: 0; transition: opacity .35s; pointer-events: none; }
+  #load img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #load.off { opacity: 0; }
+  #hint, #note { position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); text-align: center;
+          font: 500 13px/1.3 system-ui, sans-serif; color: rgba(255,255,255,.75); pointer-events: none;
           transition: opacity .4s; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
   #hint.off { opacity: 0; }
-  #load { position: fixed; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.6);
-          font: 500 13px system-ui, sans-serif; background: #0b0d10; transition: opacity .5s; }
-  #load.off { opacity: 0; pointer-events: none; }
 </style>
 <script type="importmap">
 { "imports": {
-  "three": "./vendor/three/three.module.min.js",
-  "three/addons/": "./vendor/three/addons/"
+  "three": "./vendor/three-0.170.0/three.module.min.js",
+  "three/addons/": "./vendor/three-0.170.0/addons/"
 } }
 </script>
+<!-- stamp:preload:begin -->
+<link rel="preload" as="image" href="./assets/poster-phone.webp?h=581f5b3efa" media="(orientation: portrait)" fetchpriority="high">
+<link rel="preload" as="image" href="./assets/poster-desktop.webp?h=179185beca" media="(orientation: landscape)" fetchpriority="high">
+<link rel="modulepreload" href="./scene.js?v=1">
+<link rel="modulepreload" href="./load.js?v=1">
+<link rel="modulepreload" href="./field.js?v=1">
+<link rel="modulepreload" href="./units.js?v=1">
+<link rel="modulepreload" href="./stands.js?v=1">
+<link rel="modulepreload" href="./people.js?v=1">
+<link rel="modulepreload" href="./materials.js?v=1">
+<link rel="modulepreload" href="./gear3d.js?v=1">
+<link rel="modulepreload" href="./rig.js?v=1">
+<link rel="modulepreload" href="./pitch.js?v=1">
+<link rel="modulepreload" href="./vendor/three-0.170.0/three.module.min.js">
+<link rel="modulepreload" href="./vendor/three-0.170.0/addons/loaders/GLTFLoader.js">
+<link rel="modulepreload" href="./vendor/three-0.170.0/addons/loaders/RGBELoader.js">
+<link rel="modulepreload" href="./vendor/three-0.170.0/addons/libs/meshopt_decoder.module.js">
+<link rel="modulepreload" href="./vendor/three-0.170.0/addons/utils/BufferGeometryUtils.js">
+<link rel="preload" as="fetch" crossorigin href="./assets/pitch.json?h=da06753b1a">
+<link rel="preload" as="fetch" crossorigin href="./assets/env_256.hdr?h=b069d60e9b">
+<link rel="preload" as="fetch" crossorigin href="./assets/batter.glb?h=e85cca774c" fetchpriority="low">
+<link rel="preload" as="fetch" crossorigin href="./assets/catcher.glb?h=b91958a054" fetchpriority="low">
+<link rel="preload" as="fetch" crossorigin href="./assets/umpire.glb?h=26175a41bb" fetchpriority="low">
+<!-- stamp:preload:end -->
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="load">Loading the park</div>
+<div id="load"><picture>
+  <source media="(orientation: landscape)" srcset="./assets/poster-desktop.webp?h=179185beca">
+  <img src="./assets/poster-phone.webp?h=581f5b3efa" alt="" fetchpriority="high" decoding="async"
+       onload="(window.__lab = window.__lab || {}).firstPaintMs = (window.__lab.firstPaintMs ?? performance.now())">
+</picture></div>
 <div id="hint" class="off">Tap to throw it again</div>
-<script type="module" src="./scene.js"></script>
+<div id="note"></div>
+<script type="module" src="./scene.js?v=1"></script>
 </body>
 </html>

@@ -6,7 +6,8 @@
  * the plate, the chalk 3 in wide, the catcher's box 43 in wide.
  */
 import * as THREE from 'three';
-import { P, FT } from './units.js';
+import { P, FT } from './units.js?v=1';
+import { assetUrl } from './load.js?v=1';
 
 const MASK_FT = 120;        // the mask covers 120 x 120 ft centred on the plate
 const MASK_PX = 2048;
@@ -22,7 +23,7 @@ function drawMask() {
   // canvas x = catcher's view x (ft), canvas y = toward the mound (ft); centre = plate point
   const X = (x) => (x + MASK_FT / 2) * k, Y = (y) => (MASK_FT / 2 - y) * k;
   const r = rng(7);
-  // R: dirt. G: chalk. B: damp (darker). A: wear (scuffs, holes).
+  // R: dirt. G: chalk. B: damp (darker). A second canvas: wear (scuffs, holes).
   const layer = (draw) => { const l = document.createElement('canvas'); l.width = l.height = MASK_PX; draw(l.getContext('2d')); return l; };
 
   const dirt = layer((d) => {
@@ -92,32 +93,38 @@ function drawMask() {
     }
   });
 
-  // pack the four layers into RGBA
-  const out = g.createImageData(MASK_PX, MASK_PX);
-  const get = (l) => l.getContext('2d').getImageData(0, 0, MASK_PX, MASK_PX).data;
-  const a = get(dirt), b = get(chalk), cc = get(damp), dd = get(wear);
-  for (let i = 0; i < a.length; i += 4) {
-    out.data[i] = a[i]; out.data[i + 1] = b[i]; out.data[i + 2] = cc[i]; out.data[i + 3] = 255 - dd[i] * 0.999;
-  }
-  g.putImageData(out, 0, 0);
-  return c;
+  // pack dirt, chalk and damp into R, G and B by tinting and adding (no per-pixel loop in script:
+  // that took over a second on a slowed phone CPU); wear stays its own grey canvas
+  const tint = (l, col) => {
+    const t = document.createElement('canvas'); t.width = t.height = MASK_PX;
+    const x = t.getContext('2d');
+    x.drawImage(l, 0, 0); x.globalCompositeOperation = 'multiply'; x.fillStyle = col; x.fillRect(0, 0, MASK_PX, MASK_PX);
+    return t;
+  };
+  g.fillStyle = '#000'; g.fillRect(0, 0, MASK_PX, MASK_PX);
+  g.globalCompositeOperation = 'lighter';
+  g.drawImage(tint(dirt, '#f00'), 0, 0); g.drawImage(tint(chalk, '#0f0'), 0, 0); g.drawImage(tint(damp, '#00f'), 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  return { rgb: c, wear };
 }
 
 export function buildField(scene, tex, renderer) {
   const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   const load = (name, srgb) => {
-    const t = tex.load(`./assets/tex/${name}.webp`);
+    const t = tex.load(assetUrl(`tex/${name}.webp`));
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = aniso;
     if (srgb) t.colorSpace = THREE.SRGBColorSpace;
     return t;
   };
-  const mask = new THREE.CanvasTexture(drawMask());
+  const layers = drawMask();
+  const mask = new THREE.CanvasTexture(layers.rgb);
   mask.anisotropy = aniso; mask.flipY = false; mask.generateMipmaps = true;
-  mask.premultiplyAlpha = false;
+  const wearT = new THREE.CanvasTexture(layers.wear);
+  wearT.flipY = false;
   const U = {
     grassC: { value: load('grass_color', true) }, grassN: { value: load('grass_normal') },
     dirtC: { value: load('dirt_color', true) }, dirtN: { value: load('dirt_normal') },
-    fieldMask: { value: mask }, maskFt: { value: MASK_FT },
+    fieldMask: { value: mask }, wearMask: { value: wearT }, maskFt: { value: MASK_FT },
   };
   const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0 });
   mat.onBeforeCompile = (sh) => {
@@ -128,7 +135,7 @@ export function buildField(scene, tex, renderer) {
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         varying vec3 vWPos;
-        uniform sampler2D grassC, grassN, dirtC, dirtN, fieldMask;
+        uniform sampler2D grassC, grassN, dirtC, dirtN, fieldMask, wearMask;
         uniform float maskFt;
         vec4 fm; float dirtK; vec3 nW;
         float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -140,7 +147,8 @@ export function buildField(scene, tex, renderer) {
         vec2 muv = vec2(sft.x / maskFt + 0.5, 0.5 - sft.y / maskFt);
         fm = texture2D(fieldMask, muv);
         if (muv.x < 0.0 || muv.x > 1.0 || muv.y < 0.0 || muv.y > 1.0) fm = vec4(sft.y < -40.0 ? 1.0 : 0.0, 0.0, 0.0, 1.0);
-        float wear = 1.0 - fm.a;
+        bool inMask = muv.x >= 0.0 && muv.x <= 1.0 && muv.y >= 0.0 && muv.y <= 1.0;
+        float wear = inMask ? texture2D(wearMask, muv).r : 0.0;
         dirtK = smoothstep(0.35, 0.65, fm.r);
         vec2 guv = vWPos.xz / 1.4, duv = vWPos.xz / 1.1;
         vec3 gcol = texture2D(grassC, guv).rgb;

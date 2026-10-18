@@ -2925,6 +2925,12 @@
       "sha": "307c95a8845f007f"
     }
   },
+  "shut-the-door/lab/index.html": {
+    "./scene.js": {
+      "v": "1",
+      "sha": "099c6fe4647382ee"
+    }
+  },
   "soccer/index.html": {
     "/assets/newsletter.js": {
       "v": "2",
@@ -3035,6 +3041,32 @@
       "sha": "36afe06c5ac503d0"
     }
   },
+  "shut-the-door/lab/scene.js": {
+    "load.js": {
+      "v": "1",
+      "sha": "850071804208ee3f"
+    },
+    "field.js": {
+      "v": "1",
+      "sha": "7715389d655d5b8d"
+    },
+    "stands.js": {
+      "v": "1",
+      "sha": "1e240ea7fe77b8cb"
+    },
+    "people.js": {
+      "v": "1",
+      "sha": "c825c8db99fd0dd1"
+    },
+    "pitch.js": {
+      "v": "1",
+      "sha": "13ca119f71763485"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    }
+  },
   "wrestling/ring3d/boot.js": {
     "stage.js": {
       "v": "1",
@@ -3067,6 +3099,62 @@
     "rig.js": {
       "v": "1",
       "sha": "3f9b02fb2d13517d"
+    }
+  },
+  "shut-the-door/lab/field.js": {
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "load.js": {
+      "v": "1",
+      "sha": "850071804208ee3f"
+    }
+  },
+  "shut-the-door/lab/stands.js": {
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "field.js": {
+      "v": "1",
+      "sha": "7715389d655d5b8d"
+    },
+    "load.js": {
+      "v": "1",
+      "sha": "850071804208ee3f"
+    }
+  },
+  "shut-the-door/lab/people.js": {
+    "materials.js": {
+      "v": "1",
+      "sha": "5f50ad285ef1af24"
+    },
+    "gear3d.js": {
+      "v": "1",
+      "sha": "67974bdea4708def"
+    },
+    "rig.js": {
+      "v": "1",
+      "sha": "34647a01ead672d6"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "load.js": {
+      "v": "1",
+      "sha": "850071804208ee3f"
+    }
+  },
+  "shut-the-door/lab/pitch.js": {
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "gear3d.js": {
+      "v": "1",
+      "sha": "67974bdea4708def"
     }
   },
   "wrestling/ring3d/arena.js": {

@@ -10,14 +10,12 @@
  * for the pitcher's view falls out of the camera, never out of the data.
  */
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { buildField } from './field.js';
-import { buildStands } from './stands.js';
-import { People } from './people.js';
-import { Pitch } from './pitch.js';
-import { FT, P, smooth } from './units.js';
+import { preload } from './load.js?v=1';
+import { buildField } from './field.js?v=1';
+import { buildStands } from './stands.js?v=1';
+import { People } from './people.js?v=1';
+import { Pitch } from './pitch.js?v=1';
+import { FT, P, smooth } from './units.js?v=1';
 
 const Q = new URLSearchParams(location.search);
 const MODE = Q.get('take') === '1' ? 'take' : 'swing';
@@ -35,24 +33,16 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(10, 1, 0.05, 900);
-const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const T0 = performance.now();
-const lab = (window.__lab = { mode: MODE, ready: false, frames: 0, t: 0, firstFrameMs: null, bytes: 0 });
-
-async function json(url) { const r = await fetch(url); return r.json(); }
+// index.html may already have recorded the poster's paint here
+const lab = (window.__lab = Object.assign(window.__lab || {}, { mode: MODE, ready: false, frames: 0, t: 0, firstFrameMs: null }));
+// start every download now, before anything else runs
+const assets = preload();
 
 async function main() {
-  const facts = await json('./assets/pitch.json');
-  const hdr = await new RGBELoader().loadAsync('./assets/stadium_01_1k.hdr');
-  hdr.mapping = THREE.EquirectangularReflectionMapping;
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const env = pmrem.fromEquirectangular(hdr).texture;
-  scene.environment = env;
-  // the HDRI's sun sits at u 0.352, 15 degrees up; this turns it to come from the third base side,
-  // a little behind the plate: late afternoon light across the batter's face
-  scene.environmentRotation.y = SUN.envRot;
-  scene.environmentIntensity = 0.45;
-
+  const mark = (n) => { (lab.marks ??= {})[n] = Math.round(performance.now()); };
+  mark('start');
+  // the park first: it needs nothing from the network but its small textures
   scene.background = new THREE.Color(0x8fa6bf);
   scene.backgroundRotation.y = SUN.envRot;
   scene.fog = new THREE.Fog(0xb9c2c8, 90, 420);
@@ -60,21 +50,36 @@ async function main() {
   const tex = new THREE.TextureLoader();
   buildField(scene, tex, renderer);
   const stands = buildStands(scene, tex, renderer);
+  mark('park');
+  const { facts, env, gltfs } = await assets;
+  mark('assets');
+  // the HDRI lights the scene; its sun is turned to come from the third base side, a little behind
+  // the plate (late afternoon light across the batter's face)
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromEquirectangular(env).texture;
+  scene.environmentRotation.y = SUN.envRot;
+  scene.environmentIntensity = 0.45;
   const pitch = new Pitch({ scene, facts, mode: MODE });
-  const people = new People({ scene, loader, facts, mode: MODE, pitch });
-  await people.load();
+  const people = new People({ scene, facts, mode: MODE, pitch });
+  people.setup(gltfs);
+  mark('people');
   lab.people = people; lab.pitch = pitch; lab.THREE = THREE;
   // for pipeline/check-deform.mjs: pose everyone at a moment without drawing a frame
   lab.poseAt = (t) => { pitch.update(t, camera); people.update(t, 0); };
   lab.times = { release: pitch.tRel, flight: pitch.f.T, plate: pitch.tPlate, catch: pitch.tCatch };
 
   const shot = setupCamera(facts);
-  start((t, dt) => {
+  const update = (t, dt) => {
     shot.update(t);
     pitch.update(t, camera);
     people.update(t, dt);
     stands.userData.tick(t);
-  }, () => shot.resize());
+  };
+  // pose the first moment and compile every shader before the first frame, without blocking
+  update(FREEZE ?? 0, 0);
+  await renderer.compileAsync(scene, camera);
+  mark('compiled');
+  start(update, () => shot.resize());
 }
 
 /* The sun. In the HDRI it sits at u 0.352, 15 degrees up. Three looks the environment up at
@@ -175,7 +180,11 @@ function start(update, resize) {
     }
     if (lab.firstFrameMs == null) {
       lab.firstFrameMs = performance.now() - T0;
+      lab.readyMs = performance.now();
+      if (lab.firstPaintMs == null) lab.firstPaintMs = lab.readyMs;
+      // the live scene takes over from the poster
       document.getElementById('load').classList.add('off');
+      canvas.classList.add('on');
       lab.ready = true;
     }
     if (stats) stats(now);
@@ -192,4 +201,4 @@ function makeStats() {
   return (now) => { n++; if (now - t0 > 1000) { el.textContent = `${Math.round(n * 1000 / (now - t0))} fps`; n = 0; t0 = now; } };
 }
 
-main().catch((e) => { console.error(e); document.getElementById('load').textContent = 'Could not load the scene.'; });
+main().catch((e) => { console.error(e); document.getElementById('note').textContent = 'Could not load the scene.'; });

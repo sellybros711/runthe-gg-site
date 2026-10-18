@@ -5,8 +5,9 @@
  * real, and a repeated crowd does not.
  */
 import * as THREE from 'three';
-import { FT } from './units.js';
-import { BACKSTOP_FT } from './field.js';
+import { FT } from './units.js?v=1';
+import { BACKSTOP_FT } from './field.js?v=1';
+import { assetUrl } from './load.js?v=1';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
@@ -19,8 +20,8 @@ export function buildStands(scene, tex, renderer) {
   scene.add(group);
 
   // ---- the wall: dark padding, 5 ft, with seams and a light cap
-  const padC = tex.load('./assets/tex/pad_color.webp'); padC.colorSpace = THREE.SRGBColorSpace;
-  const padN = tex.load('./assets/tex/pad_normal.webp');
+  const padC = tex.load(assetUrl('tex/pad_color.webp')); padC.colorSpace = THREE.SRGBColorSpace;
+  const padN = tex.load(assetUrl('tex/pad_normal.webp'));
   for (const t of [padC, padN]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(40, 1.5); t.anisotropy = aniso; }
   const wallH = 5 * FT;
   const wallGeo = new THREE.CylinderGeometry(R0, R0, wallH, 96, 1, true, Math.PI - A * 1.6, A * 3.2);
@@ -57,7 +58,7 @@ export function buildStands(scene, tex, renderer) {
 
   // ---- the seating bowl: concrete treads and risers, 34 rows
   const ROWS = 34, rowD = 0.86, rowH = 0.43, base = wallH + 0.1;
-  const conc = tex.load('./assets/tex/concrete_color.webp'); conc.colorSpace = THREE.SRGBColorSpace;
+  const conc = tex.load(assetUrl('tex/concrete_color.webp')); conc.colorSpace = THREE.SRGBColorSpace;
   conc.wrapS = conc.wrapT = THREE.RepeatWrapping; conc.repeat.set(30, 1);
   const bowlMat = new THREE.MeshStandardMaterial({ map: conc, color: 0x6e7176, roughness: 0.9, side: THREE.DoubleSide });
   const seg = 72, a0 = Math.PI - A * 1.25, aL = A * 2.5;

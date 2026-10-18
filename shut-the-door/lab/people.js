@@ -6,16 +6,16 @@
  * and squat blended, his strike call layered on top.
  */
 import * as THREE from 'three';
-import * as M from './materials.js';
-import * as G from './gear3d.js';
-import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js';
-import { P, FT, smooth, clamp01 } from './units.js';
+import * as M from './materials.js?v=1';
+import * as G from './gear3d.js?v=1';
+import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
+import { P, FT, smooth, clamp01 } from './units.js?v=1';
+import { assetUrl } from './load.js?v=1';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
 
-export async function loadPerson(loader, url, scene) {
-  const g = await loader.loadAsync(url);
+export function loadPerson(g, scene) {
   const root = new THREE.Group();
   root.add(g.scene);
   scene.add(root);
@@ -186,16 +186,17 @@ export function fitOnHead(p, obj, opts = {}) {
 }
 
 export class People {
-  constructor({ scene, loader, facts, mode, pitch }) {
-    Object.assign(this, { scene, loader, facts, mode, pitch });
+  constructor({ scene, facts, mode, pitch }) {
+    Object.assign(this, { scene, facts, mode, pitch });
     this.tex = new THREE.TextureLoader();
   }
 
-  async load() {
-    const [b, c, u] = await Promise.all(['batter', 'catcher', 'umpire'].map((n) => loadPerson(this.loader, `./assets/${n}.glb`, this.scene).catch((e) => { console.warn(n, e); return null; })));
+  /** Dress and place the people from their parsed glTF (load.js fetched and parsed them). */
+  setup(gltfs) {
+    const [b, c, u] = ['batter', 'catcher', 'umpire'].map((n) => (gltfs[n] ? loadPerson(gltfs[n], this.scene) : null));
     this.batter = b; this.catcher = c; this.umpire = u;
-    const lm = this.tex.load('./assets/tex/leather_color.webp'); lm.colorSpace = THREE.SRGBColorSpace;
-    const ln = this.tex.load('./assets/tex/leather_normal.webp');
+    const lm = this.tex.load(assetUrl('tex/leather_color.webp')); lm.colorSpace = THREE.SRGBColorSpace;
+    const ln = this.tex.load(assetUrl('tex/leather_normal.webp'));
     if (b) this.setupBatter(b);
     if (c) this.setupCatcher(c, lm, ln);
     if (u) this.setupUmpire(u);

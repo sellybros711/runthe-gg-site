@@ -7,12 +7,12 @@ Nothing here is loaded from a CDN. Everything is free and open: CC0, MIT, or CMU
 
 | file | source | licence | changed |
 |---|---|---|---|
-| `vendor/three/three.module.min.js` | npm `three@0.170.0` (registry.npmjs.org), `build/three.module.min.js` | MIT (`vendor/three/LICENSE`) | no |
-| `vendor/three/addons/loaders/GLTFLoader.js` | `three@0.170.0`, `examples/jsm/loaders/` | MIT | no |
-| `vendor/three/addons/loaders/RGBELoader.js` | `three@0.170.0`, `examples/jsm/loaders/` | MIT | no |
-| `vendor/three/addons/libs/meshopt_decoder.module.js` | `three@0.170.0`, `examples/jsm/libs/` | MIT | no |
-| `vendor/three/addons/utils/BufferGeometryUtils.js` | `three@0.170.0`, `examples/jsm/utils/` | MIT | no |
-| `vendor/three/LICENSE` | `three@0.170.0` | MIT | no |
+| `vendor/three-0.170.0/three.module.min.js` | npm `three@0.170.0` (registry.npmjs.org), `build/three.module.min.js` | MIT (`vendor/three-0.170.0/LICENSE`) | no |
+| `vendor/three-0.170.0/addons/loaders/GLTFLoader.js` | `three@0.170.0`, `examples/jsm/loaders/` | MIT | no |
+| `vendor/three-0.170.0/addons/loaders/RGBELoader.js` | `three@0.170.0`, `examples/jsm/loaders/` | MIT | no |
+| `vendor/three-0.170.0/addons/libs/meshopt_decoder.module.js` | `three@0.170.0`, `examples/jsm/libs/` | MIT | no |
+| `vendor/three-0.170.0/addons/utils/BufferGeometryUtils.js` | `three@0.170.0`, `examples/jsm/utils/` | MIT | no |
+| `vendor/three-0.170.0/LICENSE` | `three@0.170.0` | MIT | no |
 
 Build tools (not in the repo): Blender as the `bpy==4.2.0` wheel (GPL, used only to run our own
 scripts), `gltfpack@0.25.0` from npm (MIT, meshoptimizer), Pillow, NumPy, SciPy.
@@ -21,12 +21,18 @@ scripts), `gltfpack@0.25.0` from npm (MIT, meshoptimizer), Pillow, NumPy, SciPy.
 
 | file | source | licence | changed |
 |---|---|---|---|
-| `assets/stadium_01_1k.hdr` | Poly Haven "Stadium 01" by Sergej Majboroda, https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/stadium_01_1k.hdr | CC0 | no (rotated at run time so its sun comes from the third base side) |
+| `assets/env_256.hdr` | Poly Haven "Stadium 01" by Sergej Majboroda, https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/stadium_01_1k.hdr | CC0 | area averaged down to 256 x 128 by `pipeline/prep_env.py` (it only lights the scene), and rotated at run time so its sun comes from the third base side |
+
+## Loading posters
+
+`assets/poster-phone.webp` and `assets/poster-desktop.webp` are stills of this scene, rendered from
+the files listed here by `pipeline/shoot.mjs` (`poster` mode). They carry the same licences as the
+scene and nothing else.
 
 ## Field and stand textures (`assets/tex/`, made by `pipeline/prep_textures.py`)
 
 All from Poly Haven, CC0, 1k JPG originals at `https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/<name>/<file>`.
-Every one is resized and re-encoded as WebP.
+Every one is resized to 512 px and re-encoded as WebP.
 
 | file | Poly Haven source | changed |
 |---|---|---|
@@ -34,11 +40,11 @@ Every one is resized and re-encoded as WebP.
 | `grass_normal.webp` | `sparse_grass/sparse_grass_nor_gl_1k.jpg` | re-encoded |
 | `dirt_color.webp` | `baseball_playground/baseball_playground_diff_1k.jpg` | tinted toward infield clay |
 | `dirt_normal.webp` | `baseball_playground/baseball_playground_nor_gl_1k.jpg` | re-encoded |
-| `pad_color.webp` | `poly_wool_herringbone/poly_wool_herringbone_diff_1k.jpg` | darkened to backstop padding, 512 px |
-| `pad_normal.webp` | `poly_wool_herringbone/poly_wool_herringbone_nor_gl_1k.jpg` | 512 px |
-| `concrete_color.webp` | `concrete_wall_004/concrete_wall_004_diff_1k.jpg` | 512 px |
-| `leather_color.webp` | `brown_leather/brown_leather_albedo_1k.jpg` | 512 px (the mitt) |
-| `leather_normal.webp` | `brown_leather/brown_leather_nor_gl_1k.jpg` | 512 px |
+| `pad_color.webp` | `poly_wool_herringbone/poly_wool_herringbone_diff_1k.jpg` | darkened to backstop padding |
+| `pad_normal.webp` | `poly_wool_herringbone/poly_wool_herringbone_nor_gl_1k.jpg` | none beyond the above |
+| `concrete_color.webp` | `concrete_wall_004/concrete_wall_004_diff_1k.jpg` | none beyond the above |
+| `leather_color.webp` | `brown_leather/brown_leather_albedo_1k.jpg` | none beyond the above (the mitt) |
+| `leather_normal.webp` | `brown_leather/brown_leather_nor_gl_1k.jpg` | none beyond the above |
 
 The layout of the field (dirt circle, chalk, damp, scuffs), the bat, the helmets, caps, masks, the
 mitt, shin guards, chest protector and the ball are modelled in code (`field.js`, `gear3d.js`).

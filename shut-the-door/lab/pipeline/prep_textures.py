@@ -33,13 +33,13 @@ def retint(a, target, keep=0.55):
 
 
 # mown grass: sparse_grass gives the blade detail; the colour goes to a ballpark green
-g = load('sparse_grass_diff_1k.jpg', 1024)
+g = load('sparse_grass_diff_1k.jpg', 512)
 save(retint(g, (0.16, 0.30, 0.09), keep=0.7), 'grass_color.webp')
-save(load('sparse_grass_nor_gl_1k.jpg', 1024), 'grass_normal.webp', q=80)
+save(load('sparse_grass_nor_gl_1k.jpg', 512), 'grass_normal.webp', q=75)
 # infield clay: the baseball_playground dirt, warmer and redder
-d = load('baseball_playground_diff_1k.jpg', 1024)
+d = load('baseball_playground_diff_1k.jpg', 512)
 save(retint(d, (0.50, 0.33, 0.22), keep=0.9), 'dirt_color.webp')
-save(load('baseball_playground_nor_gl_1k.jpg', 1024), 'dirt_normal.webp', q=80)
+save(load('baseball_playground_nor_gl_1k.jpg', 512), 'dirt_normal.webp', q=75)
 # the backstop padding: a vinyl-ish weave, dark
 w = load('poly_wool_herringbone_diff_1k.jpg', 512)
 save(retint(w, (0.05, 0.09, 0.12), keep=0.4), 'pad_color.webp')
