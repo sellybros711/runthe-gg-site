@@ -47,8 +47,9 @@ export const scenes = [
     laptop: [{ clip: 'map', from: 0.6, to: 7.3 }],
     phone: [{ clip: 'w-candy', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-neon', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-sky', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-ice', from: 0.9, speed: 1.15 }] },
   { dur: HD, card: 'holes',
-    laptop: [{ clip: 'a-sky', from: 0.7, to: -0.4 }],
-    phone: [{ clip: 'a-neon', from: 0.7, to: -0.4 }] },
+    // two aces a screen, each from the end of the hold to just after the card lands
+    laptop: [{ clip: 'a-sky', from: 1.3, to: -0.5, dur: 4.5 }, { clip: 'a-temple', from: 1.3, to: -0.5 }],
+    phone: [{ clip: 'a-neon', from: 1.3, to: -0.5, dur: 4.5 }, { clip: 'a-dino', from: 1.3, to: -0.5 }] },
   { dur: PZ, card: 'puzzles',
     laptop: [{ clip: 'gym', from: 0.4, to: -0.3 }],
     phone: [{ clip: 'gym', from: 0.4, to: -0.3 }] },

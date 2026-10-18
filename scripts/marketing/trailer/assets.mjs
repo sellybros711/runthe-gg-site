@@ -1,8 +1,8 @@
 /* The trailer's drawn parts: a phone, a laptop, the background and the title cards, each a PNG with a
    transparent background, drawn by a browser in the games' own type (Anton, Barlow Semi Condensed).
 
-   A device is drawn with its screen cut out. What shows in the cut out is the game, laid in by the
-   compositor, so the device's own chrome (the phone's status bar, the laptop's browser bar with the
+   A device is drawn with a black screen, and the compositor lays the game over it at the screen's place
+   (masked to its rounded corners on the phone), so the device's own chrome (the phone's status bar, the laptop's browser bar with the
    address in it) is part of the drawing and the footage is exactly the page's viewport.
 
    draw(dir, spec) writes the PNGs and returns where each screen's hole is, in the PNG's pixels. */
@@ -44,7 +44,7 @@ const PHONE = (k) => `${BASE}<style>
   .bat i{display:block;width:${24 * k}px;height:${11 * k}px;border:${1.5 * k}px solid #fff;border-radius:${3 * k}px;position:relative}
   .bat i:after{content:'';position:absolute;inset:${1.5 * k}px;width:70%;background:#fff;border-radius:${1 * k}px}
   .bars{display:flex;gap:${2 * k}px;align-items:flex-end}.bars b{display:block;width:${3 * k}px;background:#fff;border-radius:${1 * k}px}
-  .hole{height:${844 * k}px;background:#ff00ff}
+  .hole{height:${844 * k}px;background:#000}
   .btn{position:absolute;width:${4 * k}px;border-radius:${2 * k}px;background:#3a3e45}
 </style>
 <div class="ph" id="dev"><div class="btn" style="left:${-3 * k}px;top:${150 * k}px;height:${30 * k}px"></div>
@@ -72,7 +72,7 @@ const LAPTOP = (k) => `${BASE}<style>
     color:#e8eaed;font:600 ${16 * k}px 'Barlow Semi Condensed',system-ui,sans-serif;letter-spacing:.01em}
   .url .lock{width:${10 * k}px;height:${8 * k}px;border:${2 * k}px solid #9aa0a6;border-radius:${2 * k}px}
   .url b{color:#fff;font-weight:700}.url span{color:#9aa0a6}
-  .hole{height:${900 * k}px;background:#ff00ff}
+  .hole{height:${900 * k}px;background:#000}
   .base{position:relative;margin:0 ${-90 * k}px;height:${30 * k}px;border-radius:0 0 ${40 * k}px ${40 * k}px;
     background:linear-gradient(180deg,#9a9fa6,#5b5f66 45%,#2c2f34);box-shadow:0 ${30 * k}px ${50 * k}px rgba(0,0,0,.55)}
   .base:before{content:'';position:absolute;left:50%;top:0;width:${230 * k}px;height:${10 * k}px;margin-left:${-115 * k}px;border-radius:0 0 ${12 * k}px ${12 * k}px;background:#3b3f45}
@@ -118,8 +118,6 @@ async function shot(pw, browser, html, { width = 1600, height = 1200, sel = '#de
   const el = page.locator(sel);
   const box = await el.boundingBox();
   const hole = await page.evaluate(() => { const h = document.getElementById('hole'); if (!h) return null; const r = h.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
-  // the hole is painted magenta only so it can be measured; it is cut out of the picture below
-  if (hole) await page.evaluate(() => { document.getElementById('hole').style.background = 'transparent'; });
   // room round a device for its shadow, which falls mostly downwards
   const pad = sel === '#dev' ? Math.min(box.x, 180) : 0;
   const clip = { x: box.x - pad, y: Math.max(0, box.y - pad * 0.6), width: box.width + 2 * pad, height: box.height + pad * 1.9 };
@@ -136,6 +134,7 @@ export async function draw(dir, { formats, cards }) {
   const out = { phone: null, laptop: null, bg: {}, cards: {} };
   const save = (name, s) => { fs.writeFileSync(path.join(dir, name), s.buf); return { file: path.join(dir, name), w: s.w, h: s.h, hole: s.hole }; };
   out.phone = save('phone.png', await shot(pw, browser, PHONE(2), { width: 1500, height: 2600 }));
+  out.phone.radius = 48 * 2;   // the screen's bottom corners (.sc), which the footage is masked to
   out.laptop = save('laptop.png', await shot(pw, browser, LAPTOP(1), { width: 2600, height: 1700 }));
   for (const [id, f] of Object.entries(formats)) {
     const bw = Math.round(f.W * 1.12), bh = Math.round(f.H * 1.12);

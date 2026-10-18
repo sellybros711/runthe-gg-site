@@ -68,9 +68,19 @@ export function compose({ spec, art, format, foot, out, music }) {
     const L = F[d], k = L.screenW ? L.screenW / A.hole.w : L.screenH / A.hole.h;
     const sw = Math.round(A.w * k), sh = Math.round(A.h * k);
     L.px = L.keys.map(([t, cx, top]) => [t, Math.round(cx - (A.hole.x + A.hole.w / 2) * k), Math.round(top - A.hole.y * k)]);
-    filters.push(`color=c=black@0:s=${A.w}x${A.h}:r=${FPS}:d=${r2(T)},format=rgba[${d}cv]`,
-      `[${d}cv][${d}scr]overlay=${A.hole.x}:${A.hole.y}:shortest=1[${d}c1]`,
-      `[${d}c1][${pi}:v]overlay=0:0:shortest=1,scale=${sw}:${sh}:flags=lanczos[${d}]`);
+    // the drawing, then the game over its screen; a phone's screen has round bottom corners, so the
+    // footage is masked to them (a still mask, made once)
+    let scr = `${d}scr`;
+    if (A.radius) {
+      const mask = path.join(path.dirname(out), `mask-${d}.png`), R = A.radius, Wm = A.hole.w, Hm = A.hole.h;
+      spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', `color=white:s=${Wm}x${Hm},format=gray`, '-vf',
+        `geq=lum='255*if(gt(Y,${Hm - R}),clip(${R}+0.5-hypot(if(lt(X,${R}),${R}-X,if(gt(X,${Wm - R}),X-${Wm - R},0)),Y-${Hm - R}),0,1),1)'`, '-frames:v', '1', mask]);
+      const mi = still(mask);
+      filters.push(`[${mi}:v]format=gray[${d}mk]`, `[${d}scr][${d}mk]alphamerge[${d}scrm]`);
+      scr = `${d}scrm`;
+    }
+    filters.push(`[${pi}:v]format=rgba[${d}pic]`,
+      `[${d}pic][${scr}]overlay=${A.hole.x}:${A.hole.y}:shortest=1,scale=${sw}:${sh}:flags=lanczos[${d}]`);
     devs[d] = { sw, sh };
   }
 
