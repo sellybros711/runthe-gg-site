@@ -489,10 +489,12 @@ try {
       r.t99 = ovrTier(99).lab; r.t100 = ovrTier(100).lab; r.t112 = ovrTier(112).lab;
       S.cardView = { self: true, name: 'x', look: S.look, ovr: 103 }; S.cardFlipped = false; r.card = /pcovr icon/.test(playerCardHTML(S.cardView));
       sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.other = ovrTier(103).lab;
+      const live = PUTT_LIVE; PUTT_LIVE = false; r.killed = ovrTier(103).lab; PUTT_LIVE = live;
       sbUser = kU; sbUsername = kN; return r; });
     ok('a tester: 99 is ELITE, 100 and 112 are ICON', T.t99 === 'ELITE' && T.t100 === 'ICON' && T.t112 === 'ICON', T);
     ok('a tester\'s player card wears the ICON badge at 103', T.card === true);
-    ok('anybody else keeps ELITE until the switch flips', T.other === 'ELITE', T.other);
+    ok('with the switch on, anybody else is ICON at 103 too', T.other === 'ICON', T.other);
+    ok('with the kill switch thrown, anybody else is back to ELITE', T.killed === 'ELITE', T.killed);
   }
 
   head('SERVER: what the boards store');

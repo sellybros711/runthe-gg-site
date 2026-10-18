@@ -60,9 +60,9 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=101"></script>
+<script defer src="putt/putt.js?v=104"></script>
 <script defer src="putt/land.js?v=13"></script>
-<script defer src="putt/hole3d.js?v=17"></script>
+<script defer src="putt/hole3d.js?v=18"></script>
 <script defer src="putt/gyms.js?v=4"></script>
 <script defer src="putt/gymkinds/push.js?v=2"></script>
 <script defer src="putt/gymkinds/trickshot.js?v=1"></script>
@@ -75,7 +75,7 @@
 <script defer src="putt/gymkinds/railyard.js?v=2"></script>
 <script defer src="putt/gymkinds/rock.js?v=1"></script>
 <script defer src="putt/gymkinds/runes.js?v=1"></script>
-<script defer src="putt/trail.js?v=42"></script>
+<script defer src="putt/trail.js?v=43"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=21"></script>
@@ -1341,6 +1341,7 @@ window.GA_ID='G-L29P5MRWKE';
   .botnav button .navdot.num{width:auto; min-width:17px; height:17px; border-radius:9px; padding:0 4px;
     font:900 10px/17px var(--mono); color:#fff; text-align:center; letter-spacing:0}
   .navfab .navdot.num{top:-3px!important; right:2px}
+  .botnav button .navdot.new{background:#f1d04a; color:#1a1206; border-color:#04160b; box-shadow:0 0 6px rgba(241,208,74,.8); left:calc(50% + 2px)}
   /* 8: real tap targets + pressed states on the small home controls */
   .om-btn,.howtop,.wheelbtn{min-height:44px}
   .navtile{min-height:62px}
@@ -13076,12 +13077,13 @@ function navSetActive(nav){
     b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
     let gift=false; try{ gift=!!loginPend(); }catch(e){}
     const want=(id==='me' && (newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo)
-      || (id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='daily' && dailyTodo);
-    const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : '';
+      || (id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='daily' && dailyTodo) || (id==='putthub' && puttNewTag());
+    const fresh=id==='putthub' && puttNewTag();
+    const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : fresh ? 'NEW' : '';
     let dot=b.querySelector('.navdot');
     if(want && !dot){ dot=document.createElement('span'); dot.className='navdot'; b.appendChild(dot); }
     else if(!want && dot){ dot.remove(); dot=null; }
-    if(dot){ dot.classList.toggle('num', !!num); dot.textContent=num; } });
+    if(dot){ dot.classList.toggle('num', !!num); dot.classList.toggle('new', fresh); dot.textContent=num; } });
 }
 function openRules(){ if(S.screen==='rules')return; S.rulesReturn=S.screen; S.overlay=null; S.screen='rules'; render(); }
 function scrRules(){
@@ -15736,7 +15738,7 @@ function ftLive(){ try{ return puttOn(); }catch(e){ return false; } }
 function ftOn(){ return FT_SCREENS.includes(S.screen) && ftLive(); }
 function ftClosetOn(){ try{ return S.screen==='setup' && !!S.setupEdit && ftLive(); }catch(e){ return false; } }
 function ftDesk(){ try{ return matchMedia('(min-width: 900px) and (min-height: 560px)').matches; }catch(e){ return false; } }
-function ftGo(scr){ S.overlay=null; S.screen=scr; render(); }
+function ftGo(scr){ if(scr==='putthub'){ try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} } S.overlay=null; S.screen=scr; render(); }
 // the pixel check, drawn on the game's 18 by 18 icon grid and shaded by its medal renderer
 const FT_CHECK=["..................","..................","..................","..............hh..",".............hmm..","............hmmd..","...........hmmd...","..hh......hmmd....","..mmh....hmmd.....","..dmmh..hmmd......","...dmmhhmmd.......","....dmmmmd........",".....dmmd.........","......dd..........","..................","..................","..................",".................."];
 function ftIcon(k){ try{
@@ -15802,7 +15804,7 @@ function ftPins(){
       go:()=>{ S.overlay='challenges'; render(); }, short:'Quests'}); }
   try{ if(puttOn()){ const m=window.RTT_PUTT.summary(puttHost()), d=m.daily||{};
     pins.push({id:'dhole', icon:'green', name:'Daily Hole', sub: d.done?`${esc(d.name||'Done')} · ${d.s} on a par ${d.par}`:`${esc(d.name||'Today\'s hole')} · +${window.RTT_PUTT.COINS.daily} coins`,
-      state: d.done?'done':'ready', val: d.done?'Done':'Ready', go:openPutt, short:'Hole'}); } }catch(e){}
+      state: d.done?'done':'ready', val: d.done?'Done':'Ready', go:openPuttDaily, short:'Hole'}); } }catch(e){}
   return pins;
 }
 function ftPinTile(p){
@@ -16160,7 +16162,7 @@ function scrTitle(){
   pro.querySelector('.ft-dbtn').onclick=()=>ftGo('protour'); pro.querySelector('.ft-play').onclick=pp.go; root.appendChild(pro);
   if(putt){ let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
     const hearts=m?ftHearts(m.lives,m.max):'';
-    const door=$(`<div class="ft-door putt" data-side="putt"><button type="button" class="ft-dbtn" aria-label="Putt Putt: worlds, stars and the Members Tour"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>`:''}</span><span class="ft-go">Into the world ›</span></button><button type="button" class="ft-play" aria-label="Play Putt Putt"><i class="ft-tri"></i><span>Play</span><small>${m?'Hole '+m.lv:'Putt Putt'}</small></button></div>`);
+    const door=$(`<div class="ft-door putt" data-side="putt"><button type="button" class="ft-dbtn" aria-label="Putt Putt: worlds, stars and the Members Tour"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt${puttNewTag()?'<span class="ft-new">New</span>':''}</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>`:''}</span><span class="ft-go">Into the world ›</span></button><button type="button" class="ft-play" aria-label="Play Putt Putt"><i class="ft-tri"></i><span>Play</span><small>${m?'Hole '+m.lv:'Putt Putt'}</small></button></div>`);
     door.querySelector('.ft-dbtn').onclick=()=>ftGo('putthub');
     door.querySelector('.ft-play').onclick=()=>{ try{ track('home_play_putt'); }catch(e){} openPutt(); }; root.appendChild(door); }
   // desktop: the seam leans toward the other side while you hover one
@@ -16247,7 +16249,7 @@ function scrPuttHub(){
     </div>
   </div>`);
   card.querySelector('.ft-big').onclick=openPutt;
-  card.querySelector('[data-k="daily"]').onclick=openPutt;
+  card.querySelector('[data-k="daily"]').onclick=openPuttDaily;
   card.querySelector('[data-k="members"]').onclick=()=>{ if(m.members) openPutt(); else { S.overlay='tourpass'; render(); } };
   body.appendChild(card); root.appendChild(body); add(root);
 }
@@ -16368,6 +16370,13 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-scene .spk-pk{display:block}
 .ft-pk1{left:4%;top:45%} .ft-pk2{left:15%;top:48.5%} .ft-pk3{right:5%;top:46%}
 .ft-fog{top:40%;bottom:auto;height:24%;opacity:.85}
+/* LIGHTER ON A PHONE (the owner, 2026-10-18: laggy on an iPhone). The home keeps its scene and loses the motion
+   that costs a repaint every frame: the pumpkins' glow is a fixed glow (a drop-shadow animated is a filter redrawn each
+   frame), and on a phone the clouds hold still and the fog is a still, unblurred band, so nothing moves under the
+   blurred glass of the pin sheet and the top bar (a backdrop blur is recomputed whenever what is behind it moves).
+   The Haunted Links hunt's own bats and peeks stay: they are the hunt. */
+.ft-scene .spk-pk{animation:none}
+@media (max-width:899px){ .ft-cloud{animation:none!important} .ft-fog{animation:none!important;filter:none} .ft-chip,.ft-pill{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(6,20,14,.78)} }
 
 /* the top bar */
 .ft-tb{position:absolute;z-index:20;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(8,20,16,.58),rgba(8,20,16,.34));-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border-bottom:1px solid var(--glt);box-shadow:0 10px 30px rgba(0,0,0,.18)}
@@ -16432,6 +16441,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-long{display:none} .ft-short{display:inline}
 .ft-dk{font:800 9px var(--body);white-space:nowrap;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.6)}
 .ft-dt{font:400 clamp(30px,9.5vw,40px)/.92 var(--display);text-transform:uppercase;text-shadow:0 6px 24px rgba(0,0,0,.6)}
+.ft-new{display:inline-block;vertical-align:top;margin-left:6px;padding:3px 6px 2px;border-radius:7px;background:#f1d04a;color:#1a1206;font:900 11px/1 var(--mono);letter-spacing:.08em;text-shadow:none;box-shadow:0 0 10px rgba(241,208,74,.6)}
 .ft-row{display:flex;flex-wrap:wrap;gap:5px}
 .ft-door.putt .ft-row{justify-content:flex-end}
 .ft-chip{display:inline-flex;align-items:center;gap:4px;font:700 11px var(--body);background:rgba(6,20,14,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(244,227,201,.14);border-radius:7px;padding:3px 7px;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -16458,8 +16468,10 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-pq{position:absolute;left:4px;right:4px;bottom:3px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
 .ft-pq i{height:4px;background:rgba(255,255,255,.18)} .ft-pq i.on{background:#2fa564}
 .ft-pf.part .ft-pi{margin-top:-6px} .ft-pf.part .ft-pi svg{width:19px;height:19px}
-@media (prefers-reduced-motion:no-preference){ .ft-pf.ready{animation:ftRing 2.2s ease-in-out infinite} .ft-pf.claim{animation:ftGift 1.6s ease-in-out infinite} .ft-pf.claim .ft-pi{animation:ftWiggle 1.6s steps(4) infinite} }
-@keyframes ftRing{50%{box-shadow:inset 0 0 0 2px var(--gold),0 0 0 5px rgba(241,208,74,.3)}}
+/* the ready pin's pulse is a ring that fades in and out (opacity, done on the compositor), not an animated box-shadow */
+.ft-pf.ready::after{content:'';position:absolute;inset:-5px;border-radius:12px;box-shadow:0 0 0 3px rgba(241,208,74,.32);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:no-preference){ .ft-pf.ready::after{animation:ftRing 2.2s ease-in-out infinite} .ft-pf.claim{animation:ftGift 1.6s ease-in-out infinite} .ft-pf.claim .ft-pi{animation:ftWiggle 1.6s steps(4) infinite} }
+@keyframes ftRing{50%{opacity:1}}
 @keyframes ftGift{50%{box-shadow:inset 0 0 0 2px var(--gold),0 0 18px rgba(241,208,74,.7)}}
 @keyframes ftWiggle{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
 .ft-sheet{position:relative;border-radius:12px;overflow:hidden;text-align:left}
@@ -23671,12 +23683,11 @@ function cutscenesOn(){
   }catch(e){ return false; }
 }
 /* ---- THE PUTTING GREEN (golf/putt/putt.js): a game you PLAY, on the real greens and on themed
-   mini-golf courses. NOT LAUNCHED. The door is drawn for the tester accounts and nobody else, by
-   the same server-attributed username the cutscene gate reads; there is deliberately no local
-   override, because a localStorage flag is a switch any visitor can flip from the console.
-   To LAUNCH: set PUTT_LIVE to true. The module draws nothing until it is opened, so the script tag
-   costs everybody else one cached download and no screen. -------------------------------------- */
-var PUTT_LIVE=false;   // the launch: Putt Putt Tour and the First Tee home go live together
+   mini-golf courses. LIVE for everybody, signed in or not. PUTT_LIVE=false is the kill switch: it puts
+   Putt Putt and the First Tee back to the tester accounts only, read off the same server-attributed
+   username the cutscene gate reads, and everybody else back to the classic home. There is
+   deliberately no local override, because a localStorage flag is a switch any visitor can flip. ---- */
+var PUTT_LIVE=true;    // the launch: Putt Putt Tour and the First Tee home, live together
 const PUTT_API=1;                                         // the putt.js API this page was written against
 var PUTT_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];      // tester accounts (lowercased usernames)
 var PUTT_ALL_ACCESS=['csel8','runnyj','malikwillislover'];   // every Putt Putt hole open for good, whatever the record says (lowercased usernames)
@@ -23871,7 +23882,12 @@ function puttLivesReturn(){
     try{ toast('Paid. Your lives are on the way. They show up in a minute.', 5200); }catch(e){}
   }); })();
 }
-function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }
+// THE NEW TAG on the Putt Putt tab and the home's Putt Putt door: until this browser has opened Putt Putt once,
+// and for the launch weeks only (PUTT_NEW_UNTIL, midnight Eastern on that day).
+const PUTT_NEW_UNTIL=Date.parse('2026-11-16T05:00:00Z');
+function puttNewTag(){ try{ return puttOn() && Date.now()<PUTT_NEW_UNTIL && !localStorage.getItem('bag_putt_seen'); }catch(e){ return false; } }
+function openPutt(o){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&o.go?o:undefined); }
+function openPuttDaily(){ openPutt({go:'daily'}); }
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){
   let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
@@ -28772,7 +28788,7 @@ function tourRetroNode(){
    knockout. This is that record. Newest first, one entry per feature, each saying plainly what it is and
    where to go and find it. Adding a feature = adding one row at the TOP of NEWS_ENTRIES; everything else
    (the unread count, the badges, the pill) is derived.                                                  */
-const NEWS_CATS={tour:{name:'The Tour',col:'#F1D04A'}, career:{name:'Your Career',col:'#35d6a0'},
+const NEWS_CATS={putt:{name:'Putt Putt',col:'#7ee2a8'}, tour:{name:'The Tour',col:'#F1D04A'}, career:{name:'Your Career',col:'#35d6a0'},
                  team:{name:'Team Golf',col:'#8fd3ff'}, sim:{name:'Playing It',col:'#c99bff'}};
 // Entries are grouped under the date they shipped, so an issue reads as an issue. Everything up to and
 // including the split-cup fix went out together; a later feature just carries its own date string.
@@ -28781,7 +28797,26 @@ const NEWS_DATE2='8/22/26';
 const NEWS_DATE3='8/27/26';
 const NEWS_DATE4='10/1/26';
 const NEWS_DATE5='10/5/26';
+const NEWS_DATE6='10/18/26';   // the Putt Putt Tour launch
 const NEWS_ENTRIES=[
+  {id:'putt-launch', date:NEWS_DATE6, cat:'putt', icon:'⛳', title:'Putt Putt Tour is here',
+   blurb:'A whole mini golf game, right inside Run The Tour. Walk themed worlds. Make par or better for stars. Stars open the next world. Your golfer and your putter come with you.',
+   where:'The Putt Putt tab, or the Putt Putt side of Home.'},
+  {id:'first-tee', date:NEWS_DATE6, cat:'putt', icon:'🏠', title:'A new home: The First Tee',
+   blurb:'Your golfer stands on the tee. Pro Tour is on one side. Putt Putt is on the other. Today\'s dailies sit on one pin sheet. Your login gift waits there to be claimed.',
+   where:'The Home tab.'},
+  {id:'putt-daily', date:NEWS_DATE6, cat:'putt', icon:'⏱', title:'The Daily Hole',
+   blurb:'A new hole every day. You get one try, and it never costs a life. Fewest strokes tops the board. The clock breaks ties.',
+   where:'Tap Daily Hole on the pin sheet.'},
+  {id:'putt-gyms', date:NEWS_DATE6, cat:'putt', icon:'🔐', title:'Puzzle gyms on the trails',
+   blurb:'The trails hide puzzle gyms. No two worlds play the same kind of puzzle. Solve one for coins and a free pack. Beat the Gatekeeper to reach a world\'s last hole.',
+   where:'Walk the trails between holes in Putt Putt.'},
+  {id:'putt-lives', date:NEWS_DATE6, cat:'putt', icon:'❤', title:'Hearts and lives',
+   blurb:'Going over par costs a life. Each life comes back a day after you lose it. The Daily Hole is always free. A Tour Pass doubles your hearts.',
+   where:'The hearts at the top of Putt Putt.'},
+  {id:'putt-gear', date:NEWS_DATE6, cat:'putt', icon:'🏅', title:'Win gear in Putt Putt',
+   blurb:'Clear a world to win its named items. They boost your golfer in both games. Find putter parts on the trails and build a new putter.',
+   where:'Putt Putt. Wear what you win from the Closet.'},
   {id:'menu-grouped', date:NEWS_DATE5, cat:'tour', icon:'📖', title:'A tidier menu',
    blurb:'The menu is grouped now: Play, Progress, Records, Shop, Help, Account and Settings. On a computer the groups sit side by side. A badge shows when a spin or a pass reward is waiting.',
    where:'The ≡ button at the top of any screen.'},
@@ -29051,7 +29086,7 @@ function overlayWhatsNew(app){
   const fresh=new Set(S._newsFresh||[]);
   const ov=$(`<div class="ov"></div>`);
   ov.appendChild($(`<h3 style="margin:0 0 2px">What's New</h3>`));
-  ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:0 0 14px">Everything new in Career Mode, newest first.</p>`));
+  ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:0 0 14px">Everything new in Run The Tour and Putt Putt, newest first.</p>`));
   if(fresh.size) ov.appendChild($(`<div class="nw-bar"><b style="color:var(--gold)">${fresh.size} new</b> since you last looked.</div>`));
   // grouped under the date each batch shipped, so it reads as an issue rather than a flat list
   const groups=[]; NEWS_ENTRIES.forEach(e=>{ const d=e.date||NEWS_DATE;
@@ -39668,7 +39703,7 @@ function spkStyleOnce(){ if(_spkCss) return; _spkCss=true;
   '.spk-hint{font:600 12.5px/1.35 var(--body);color:#a9e9b8;margin:2px auto 16px;max-width:320px}',
   '.spk-go{display:block;width:100%;max-width:320px;margin:0 auto 8px;padding:14px;border:0;border-radius:14px;font:900 17px var(--body);letter-spacing:.05em;text-transform:uppercase;color:#2a0f00;background:linear-gradient(180deg,#ffb35a,#e0761f);box-shadow:0 0 20px rgba(255,140,40,.45),inset 0 -3px 0 rgba(0,0,0,.18);cursor:pointer}',
   '.spk-later{background:none;border:0;color:#bfaedb;font:700 14px var(--body);padding:8px 14px;cursor:pointer}',
-  '.spk-x{position:absolute;top:12px;right:12px;z-index:3;width:40px;height:40px;border-radius:50%;border:1px solid rgba(201,168,255,.35);background:rgba(0,0,0,.35);color:#e6dcf4;font-size:16px;cursor:pointer}',
+  '.spk-x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;z-index:3;width:40px;height:40px;border-radius:50%;border:1px solid rgba(201,168,255,.35);background:rgba(0,0,0,.35);color:#e6dcf4;font-size:16px;cursor:pointer}',
   // the home scene and the hidden things
   '.spk-scene-web{position:absolute;top:0;width:min(38vw,240px);image-rendering:pixelated;opacity:.55}',
   '.spk-scene-web.l{left:0}.spk-scene-web.r{right:0;transform:scaleX(-1)}',
@@ -39860,7 +39895,7 @@ function hlStyleOnce(){ if(_hlcss) return; _hlcss=true; const st=document.create
   .gc-haunted .gc-kick{color:#9dff7c}
   .gc-haunted .gc-badge.claim{background:#7dff5a;color:#14280a}
   .ov.hl-ov{--hl-o:#ff9a3a;--hl-g:#7dff5a;--muted:#c2b3cf;background:#0d0814;background-image:radial-gradient(100% 45% at 50% -5%,rgba(255,138,42,.28),transparent 65%),radial-gradient(80% 50% at 0% 60%,rgba(125,255,90,.08),transparent 70%),linear-gradient(180deg,#1a0d24,#0f0817 60%,#09060e);background-attachment:fixed;overflow-x:hidden}
-  .hl-ov .x{z-index:8;position:absolute;top:14px;right:14px}   /* scrolls away with the hero, so it never sits on a claim button */
+  .hl-ov .x{z-index:8;position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:14px}   /* scrolls away with the hero, so it never sits on a claim button */
   .hl-hero{position:relative;max-width:600px;margin:6px auto 0;padding:26px 16px 18px;text-align:center;overflow:hidden;border-radius:20px;
     background:radial-gradient(70% 90% at 50% 0%,rgba(255,138,42,.32),transparent 70%),linear-gradient(180deg,#24102f,#140a1d);border:1px solid rgba(255,154,58,.45);box-shadow:0 18px 40px -24px rgba(255,120,30,.8)}
   .hl-moon{position:absolute;top:58px;right:-14px;width:84px;opacity:.5;pointer-events:none}
@@ -40085,7 +40120,7 @@ function wcStyleOnce(){ if(_wccss) return; _wccss=true; const st=document.create
   .gc-winter .gc-badge.claim{background:#ffd56e;color:#3a2200}
   .ov.wc-ov{--wc-r:#e8404e;--wc-g:#ffd56e;--wc-i:#9fdcff;--muted:#b4c8dc;background:#07131f;
     background-image:radial-gradient(100% 45% at 50% -5%,rgba(159,220,255,.22),transparent 65%),radial-gradient(80% 50% at 100% 70%,rgba(232,64,78,.12),transparent 70%),linear-gradient(180deg,#0c2238,#08182a 60%,#050e18)}
-  .wc-ov .x{z-index:8;position:absolute;top:14px;right:14px}
+  .wc-ov .x{z-index:8;position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:14px}
   .wc-snow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
   .wc-snow i{position:absolute;top:-12px;width:var(--s);height:var(--s);border-radius:50%;background:#fff;opacity:.55;animation:wcSnow var(--d) linear infinite}
   @keyframes wcSnow{to{transform:translate(var(--dx),110vh)}}

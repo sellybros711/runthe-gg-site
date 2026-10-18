@@ -2473,7 +2473,8 @@ function save(st){ try{ localStorage.setItem('bag_putt_v1', JSON.stringify(st));
 function today(){ try{ var k = String(hostOf().todayKey()); if (/^\d{8}$/.test(k)) return k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8); if (/^\d{4}-\d{2}-\d{2}$/.test(k)) return k; }catch(e){} return new Date().toISOString().slice(0, 10); }
 function fmtPar(d){ return d === 0 ? 'E' : (d > 0 ? '+' + d : String(d)); }
 
-function open(host){
+// o.go 'daily': straight into today's Daily Hole (the First Tee's pin and the scorecard tile), with the menu behind it
+function open(host, o){
   if (S) close();
   if (!document.getElementById('pt-css')){ var st = document.createElement('style'); st.id = 'pt-css'; st.textContent = CSS + '\n' + skinCss(); document.head.appendChild(st); }
   var ov = el('<div class="pt-ov" role="dialog" aria-modal="true" aria-label="Putt Putt Tour"></div>');
@@ -2486,7 +2487,8 @@ function open(host){
   // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
   ov.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-pass]'); if (!b) return; var h = S && S.host; if (h && h.pass){ close(); try{ h.pass(); }catch(x){} } });
   syncPutters();
-  if (!resumeCur()) showMenu();
+  if (o && o.go === 'daily'){ showMenu(); startDaily(); }
+  else if (!resumeCur()) showMenu();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
   cloudPull().then(function(moved){ if (moved) syncPutters(); if (moved) pulled(); });
 }
@@ -2766,7 +2768,10 @@ function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p
    guest never sees a coin count: what they pick up is held for the account (the host's held coins) and the game
    says so. A host that cannot say who is signed in gates nobody. GUEST_WALK is how many holes of the main tour a
    guest may walk to (the opening world). */
-var GUEST_WALK = 18;
+// STORY MODE (the owner, 2026-10-18): everybody starts on hole 1 and opens the next only by beating the one before.
+// A guest walks the trail to hole 1 and nothing past it; hole 1 asks them to sign in. GUEST_WALK was 18 (the
+// opening world, 2026-10-16).
+var GUEST_WALK = 1;
 function isGuest(){ try{ var h = hostOf(); return !!(h.signedIn && !h.signedIn()); }catch(e){ return false; } }
 var GUEST_COINS = 'Sign in to collect your coins and open packs.';
 function guestSheet(n, tid){
@@ -3056,7 +3061,7 @@ function drawMap(st, TR){
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id];
-    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK){ return trailOk() ? openTrail(TR.id, n - 1) : guestSheet(n, TR.id); }   // a guest walks the opening world
+    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK && opened(TR, tq, n)){ return trailOk() ? openTrail(TR.id, n - 1) : guestSheet(n, TR.id); }   // a guest walks the opening world
     if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? wLabel(TR, pw + 1) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
   box.querySelectorAll('[data-cw]').forEach(function(c){ c.onclick = function(){ var w = +c.getAttribute('data-cw'), tq = pload().tours[TR.id], have = starsThrough(tq, TR, w - 1), need = worldGate(TR, w - 1);
@@ -3771,6 +3776,8 @@ function startLevel(n, tid){
   if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
   if (isGuest() && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays no Tour hole
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
+  // STORY MODE: a hole not yet reached never starts, from any door (the map already refuses it; this is the backstop)
+  var TRo = tourOf(tid); if (!back && !TRo.lab && !TRo.secret && !opened(TRo, (st.tours || {})[tid], n)) return showHub(tid);
   var kp = !back && keeperBlocks(st, n, tid); if (kp) return keeperSheet(kp, n);
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
   if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !tourOf(tid).secret && !allAccess()) return outOfLives();
@@ -4110,7 +4117,9 @@ function aimNudge(da){
   P.target = [P.ball[0] + Math.cos(a) * r, P.ball[1] + Math.sin(a) * r]; P.aimAng = a;
 }
 function sizeCanvas(){
-  var r = S.stage.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+  // 2 at most (the owner, 2026-10-18: laggy on an iPhone). The art is pixel art, so a 3x phone loses nothing it shows,
+  // and a canvas at 3x is 2.25 times the pixels to fill every frame.
+  var r = S.stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
   S.dpr = dpr; S.cv.width = Math.max(1, Math.round(r.width * dpr)); S.cv.height = Math.max(1, Math.round(r.height * dpr)); S.play.cam = null;
 }
 function hud(){
@@ -4272,12 +4281,8 @@ function frame(){
   var cam = P.camNow;
   if (cam.canFollow && !P.ovShown){ P.ovShown = true; var ob = S.ov.querySelector('[data-ov]'); if (ob) ob.hidden = false; }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
-  var bg = C.kind === 'real' ? ((C.biome && C.biome.base) || '#5f8a30') : (cam.v3 && cam.v3.bg) || C.T.bg; ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  if (cam.v3){ var sk = cam.v3.sky, ph = cam.v3.cv.height * cam.k;
-    // the console look carries the land past the picture's edges: haze and sky above the far land, the near land into the dark below
-    if (sk && cam.oy > 0){ var gs = ctx.createLinearGradient(0, 0, 0, cam.oy + 1); gs.addColorStop(0, sk.sky); gs.addColorStop(1, sk.top); ctx.fillStyle = gs; ctx.fillRect(0, 0, W, cam.oy + 1); }
-    if (sk && cam.oy + ph < H){ var gb = ctx.createLinearGradient(0, cam.oy + ph - 1, 0, H); gb.addColorStop(0, sk.bot); gb.addColorStop(1, bg); ctx.fillStyle = gb; ctx.fillRect(0, cam.oy + ph - 1, W, H - cam.oy - ph + 1); }
-    ctx.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, ph); if (cam.v3.amb) drawAmbient(ctx, C, cam, performance.now() / 1000); }
+  var bg = C.kind === 'real' ? ((C.biome && C.biome.base) || '#5f8a30') : (cam.v3 && cam.v3.bg) || C.T.bg;
+  if (cam.v3){ ctx.drawImage(v3Base(C, cam, W, H, bg, P.fx), 0, 0); if (cam.v3.amb) drawAmbient(ctx, C, cam, performance.now() / 1000); }
   else { var o = w2s(cam, C.bounds[0], C.bounds[1]), k = cam.s * ART;
     ctx.drawImage(P.art, Math.round(o[0]), Math.round(o[1]), Math.round(P.art.width * k), Math.round(P.art.height * k)); }
   if (C.movers.length) (cam.v3 ? drawMovers3 : drawMovers)(ctx, C, cam, clock);
@@ -4294,7 +4299,6 @@ function frame(){
   if (P.state === 'cheer') drawCheer(ctx, P, cam, (gnow() - P.cheerAt) / PLAY_RATE / 1000);
   else if (!hidden && !P.sunk) drawBall(ctx, cam, bx, by, falling, bz);   // a ball that dropped is gone: never drawn back on the cup behind the card
   if (cam.v3 && cam.v3.amb) drawFlyers(ctx, C, cam, performance.now() / 1000);
-  if (P.fx && cam.v3) drawFxScreen(ctx, W, H, cam.v3.night);
   readChip(P, bx, by);
 }
 /* the console look's last touch, drawn over the stage in screen pixels: the low sun's warm light washing in
@@ -4395,6 +4399,24 @@ function drawFlyers(ctx, C, cam, t){ var LF = window.RTT_PUTT_LAND && window.RTT
     else { ctx.fillRect(p[0] - u * 1.8, p[1] + u * 0.1, u * 1.2, u * 0.4); ctx.fillRect(p[0] + u * 0.6, p[1] + u * 0.1, u * 1.2, u * 0.4); }
     ctx.fillStyle = kind.h; ctx.fillRect(p[0] + (hx >= 0 ? u * 0.6 : -u * 1.0), p[1] - u * 0.2, u * 0.4, u * 0.4); }
   ctx.restore(); }
+/* THE STILL PART OF A 3D HOLE, drawn once and kept: the ground colour, the sky and the near land past the picture's
+   edges, the picture, and the console look's sun and vignette. A frame draws this one canvas and then what moves.
+   It is drawn again only when the camera moves or the stage changes size, so a mini hole (which holds still) costs
+   one copy a frame instead of the picture scaled, two gradients and a full screen blend. The vignette now sits under
+   the ball and the golfer rather than over them. */
+function v3Base(C, cam, W, H, bg, fx){
+  var k = [W, H, cam.ox, cam.oy, cam.k, cam.v3.cv.width, bg, fx ? 1 : 0].join('|'), B = S.v3base;
+  if (B && B.k === k && B.v3 === cam.v3) return B.c;
+  var c = (B && B.c.width === W && B.c.height === H) ? B.c : document.createElement('canvas'); c.width = W; c.height = H;
+  var x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  var sk = cam.v3.sky, ph = cam.v3.cv.height * cam.k;
+  // the console look carries the land past the picture's edges: haze and sky above the far land, the near land into the dark below
+  if (sk && cam.oy > 0){ var gs = x.createLinearGradient(0, 0, 0, cam.oy + 1); gs.addColorStop(0, sk.sky); gs.addColorStop(1, sk.top); x.fillStyle = gs; x.fillRect(0, 0, W, cam.oy + 1); }
+  if (sk && cam.oy + ph < H){ var gb = x.createLinearGradient(0, cam.oy + ph - 1, 0, H); gb.addColorStop(0, sk.bot); gb.addColorStop(1, bg); x.fillStyle = gb; x.fillRect(0, cam.oy + ph - 1, W, H - cam.oy - ph + 1); }
+  x.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, ph);
+  if (fx) drawFxScreen(x, W, H, cam.v3.night);
+  S.v3base = { k:k, v3:cam.v3, c:c }; return c;
+}
 function drawFxScreen(ctx, W, H, night){
   var k = W + 'x' + H + (night ? 'n' : ''); if (!S.fxScr || S.fxScr.k !== k){ var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d');
     // a night world gets no sun: only the vignette

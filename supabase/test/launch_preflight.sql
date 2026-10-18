@@ -745,7 +745,15 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from has_table where name = 'shutdoor_streaks')
       and (select count(*) > 0 from proc where name = 'shutdoor_submit')
       and (select count(*) > 0 from proc where name = 'shutdoor_board')
-      and (select count(*) > 0 from proc where name = 'shutdoor_my_stats'))
+      and (select count(*) > 0 from proc where name = 'shutdoor_my_stats')),
+  -- THE PUTT PUTT DAILY HOLE BOARD. Without it the Daily Hole plays and pays, and the
+  -- round is never posted: the board stays empty and nothing is said.
+  (65, '148_putt_daily_board',
+      'A signed in player''s first Daily Hole round of the day posts to the Putt Putt board',
+      'The Daily Hole board is empty for everybody. Rounds play and pay, and none is posted.',
+      (select count(*) > 0 from has_table where name = 'putt_daily')
+      and (select count(*) > 0 from proc where name = 'putt_daily_submit')
+      and (select count(*) > 0 from proc where name = 'putt_daily_board'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
