@@ -2473,7 +2473,8 @@ function save(st){ try{ localStorage.setItem('bag_putt_v1', JSON.stringify(st));
 function today(){ try{ var k = String(hostOf().todayKey()); if (/^\d{8}$/.test(k)) return k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8); if (/^\d{4}-\d{2}-\d{2}$/.test(k)) return k; }catch(e){} return new Date().toISOString().slice(0, 10); }
 function fmtPar(d){ return d === 0 ? 'E' : (d > 0 ? '+' + d : String(d)); }
 
-function open(host){
+// o.go 'daily': straight into today's Daily Hole (the First Tee's pin and the scorecard tile), with the menu behind it
+function open(host, o){
   if (S) close();
   if (!document.getElementById('pt-css')){ var st = document.createElement('style'); st.id = 'pt-css'; st.textContent = CSS + '\n' + skinCss(); document.head.appendChild(st); }
   var ov = el('<div class="pt-ov" role="dialog" aria-modal="true" aria-label="Putt Putt Tour"></div>');
@@ -2486,7 +2487,8 @@ function open(host){
   // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
   ov.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-pass]'); if (!b) return; var h = S && S.host; if (h && h.pass){ close(); try{ h.pass(); }catch(x){} } });
   syncPutters();
-  if (!resumeCur()) showMenu();
+  if (o && o.go === 'daily'){ showMenu(); startDaily(); }
+  else if (!resumeCur()) showMenu();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
   cloudPull().then(function(moved){ if (moved) syncPutters(); if (moved) pulled(); });
 }

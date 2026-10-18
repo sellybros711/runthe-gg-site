@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=101"></script>
+<script defer src="putt/putt.js?v=102"></script>
 <script defer src="putt/land.js?v=13"></script>
 <script defer src="putt/hole3d.js?v=17"></script>
 <script defer src="putt/gyms.js?v=4"></script>
@@ -15802,7 +15802,7 @@ function ftPins(){
       go:()=>{ S.overlay='challenges'; render(); }, short:'Quests'}); }
   try{ if(puttOn()){ const m=window.RTT_PUTT.summary(puttHost()), d=m.daily||{};
     pins.push({id:'dhole', icon:'green', name:'Daily Hole', sub: d.done?`${esc(d.name||'Done')} · ${d.s} on a par ${d.par}`:`${esc(d.name||'Today\'s hole')} · +${window.RTT_PUTT.COINS.daily} coins`,
-      state: d.done?'done':'ready', val: d.done?'Done':'Ready', go:openPutt, short:'Hole'}); } }catch(e){}
+      state: d.done?'done':'ready', val: d.done?'Done':'Ready', go:openPuttDaily, short:'Hole'}); } }catch(e){}
   return pins;
 }
 function ftPinTile(p){
@@ -16247,7 +16247,7 @@ function scrPuttHub(){
     </div>
   </div>`);
   card.querySelector('.ft-big').onclick=openPutt;
-  card.querySelector('[data-k="daily"]').onclick=openPutt;
+  card.querySelector('[data-k="daily"]').onclick=openPuttDaily;
   card.querySelector('[data-k="members"]').onclick=()=>{ if(m.members) openPutt(); else { S.overlay='tourpass'; render(); } };
   body.appendChild(card); root.appendChild(body); add(root);
 }
@@ -23871,7 +23871,8 @@ function puttLivesReturn(){
     try{ toast('Paid. Your lives are on the way. They show up in a minute.', 5200); }catch(e){}
   }); })();
 }
-function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }
+function openPutt(o){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&o.go?o:undefined); }
+function openPuttDaily(){ openPutt({go:'daily'}); }
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){
   let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
