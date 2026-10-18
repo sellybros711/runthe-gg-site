@@ -74,8 +74,12 @@ function toast(msg) {
   clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('on'); }, 2200);
 }
 function stripHTML(strip, big) {
-  return (strip || []).map(function (b, i) { return '<i class="sq ' + b + '" title="pitch ' + (i + 1) + ': ' + b + '"></i>'; }).join('');
+  return (strip || []).map(function (b, i) { return '<i class="sq ' + b + '" title="pitch ' + (i + 1) + ': ' + b + '">' + (big ? i + 1 : '') + '</i>'; }).join('');
 }
+var NUM_WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
+function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; return ['th', 'st', 'nd', 'rd'][n % 10] || 'th'; }
+/* the colours of the break chart and the arsenal list, in usage order */
+var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
@@ -130,33 +134,62 @@ function setTheme(t) {
 
 function renderHome() {
   var s = S.scn, sit = s.situation, p = s.pitcher;
-  $('h-day').textContent = '#' + s.number + ' · ' + fmtDay(s.day);
-  $('h-title').textContent = s.title;
-  $('h-setup').textContent = s.setup;
   var margin = sit.score.us - sit.score.them;
+  $('h-day').innerHTML = '<span class="chip-s hot">#' + esc(s.number) + ' \u00b7 today</span><span class="chip-s">' + esc(fmtDay(s.day)) + '</span>' +
+    '<span class="chip-s quiet">' + (s.resolution === 'proxy' ? 'modern pitch data' : 'real spot') + '</span>';
+  $('h-title').textContent = s.title.toLowerCase();
+  $('h-head').innerHTML = esc((sit.half === 'bottom' ? 'bottom ' : 'top ') + sit.inning + '. up ' + (NUM_WORD[margin] || margin) + '.') +
+    '<br>' + esc('three outs to ') + '<em>' + (sit.inning >= 9 ? 'win it.' : 'hold it.') + '</em>';
+  $('h-setup').textContent = s.setup;
+  var on = sit.bases === 0 ? 'none' : sit.bases === 7 ? 'loaded' : [1, 2, 4].filter(function (b) { return sit.bases & b; }).map(function (b) { return { 1: '1st', 2: '2nd', 4: '3rd' }[b]; }).join(', ');
   $('h-sit').innerHTML =
-    '<span><b>' + esc(sit.half === 'bottom' ? 'bot' : 'top') + ' ' + esc(ord(sit.inning)) + '</b></span>' +
-    '<span>up ' + esc(sit.score.us) + '-' + esc(sit.score.them) + '</span>' +
-    '<span>' + esc(basesWords(sit.bases)) + '</span><span>' + esc(outsWords(sit.outs)) + '</span>' +
-    (sit.walkOffLive ? '<span class="hot">walk-off live</span>' : '');
-  var ars = p.arsenal.map(function (a) {
-    return '<li><span class="an">' + esc(a.name) + '</span><span class="av">' + esc(a.velo.toFixed(1)) + '</span>' +
-      '<span class="au"><i style="width:' + Math.round(a.usage * 100) + '%"></i></span><span class="ap">' + esc(pct(a.usage)) + '</span></li>';
+    '<div class="tl"><b>' + esc(sit.score.us) + '-' + esc(sit.score.them) + '</b><span>your lead</span></div>' +
+    '<div class="tl"><b>' + esc(sit.outs) + '</b><span>' + (sit.outs === 1 ? 'out' : 'outs') + '</span></div>' +
+    '<div class="tl"><b>' + esc(on) + '</b><span>on base</span></div>' +
+    '<div class="tl' + (sit.walkOffLive ? ' hot' : '') + '"><b>' + (sit.walkOffLive ? 'live' : 'no') + '</b><span>walk-off</span></div>';
+  var ordered = p.arsenal.slice().sort(function (a, b) { return b.usage - a.usage; });
+  var ars = ordered.map(function (a, i) {
+    return '<li><i class="dot" style="background:' + PITCH_COLORS[i % PITCH_COLORS.length] + '"></i><span class="an">' + esc(a.name) + '</span>' +
+      '<span class="av">' + esc(a.velo.toFixed(1)) + '</span><span class="ap">' + esc(pct(a.usage)) + '</span></li>';
   }).join('');
+  var chart = breakChart(ordered, p.throws);
   $('h-pitcher').innerHTML =
     '<div class="pc-top"><span class="swatch" style="background:' + esc(p.teamColors[0]) + ';border-color:' + esc(p.teamColors[1]) + '"></span>' +
-    '<div><p class="pc-name">' + esc(p.name) + '</p><p class="quiet">' + esc(p.team) + ' · ' + esc(p.year) + ' · throws ' + esc(handWord(p.throws)) + '</p></div></div>' +
-    '<ul class="ars"><li class="hd"><span>pitch</span><span>mph</span><span>usage</span></li>' + ars + '</ul>';
+    '<div><p class="pc-name">' + esc(p.name) + '</p><p class="quiet">' + esc(p.team) + ' \u00b7 ' + esc(p.year) + ' \u00b7 throws ' + esc(handWord(p.throws)) + '</p></div></div>' +
+    '<div class="pc-body' + (chart ? '' : ' flat') + '">' + (chart ? '<div class="brk">' + chart + '</div>' : '') + '<ul class="ars">' + ars + '</ul></div>';
   var due = s.batters.slice(0, 3).map(function (b) {
     return '<li><b>' + esc(b.name) + '</b><span class="hand">' + esc(b.bats) + '</span><span class="quiet">' + esc(b.line) + '</span></li>';
   }).join('');
-  $('h-due').innerHTML = '<p class="lbl">due up</p><ol>' + due + '</ol>';
+  $('h-due').innerHTML = '<div class="ch"><b>due up</b><span>the real order</span></div><ol>' + due + '</ol>';
   $('h-proxy').hidden = s.resolution !== 'proxy';
   $('m-proxy').hidden = s.resolution !== 'proxy';
   renderStreak();
   $('h-load').hidden = true;
   $('h-main').hidden = false;
   drawHero();
+}
+
+/* The arsenal as a break chart, seen from the pitcher's side: induced vertical
+   break up, horizontal break with arm side marked. pfx is catcher's view in
+   the data, so x is mirrored, as the grid is. Dots sized by usage. Null when
+   the pack has no movement. */
+function breakChart(ars, throws) {
+  if (!ars.length || ars.some(function (a) { return a.pfxX == null || a.pfxZ == null; })) return '';
+  var m = 20;
+  ars.forEach(function (a) { m = Math.max(m, Math.abs(a.pfxX) + 3, Math.abs(a.pfxZ) + 3); });
+  var c = 74, r = 60, k = r / m;
+  var dots = ars.map(function (a, i) {
+    var x = c - a.pfxX * k, y = c - a.pfxZ * k, rad = 5 + Math.sqrt(a.usage) * 13;
+    return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + PITCH_COLORS[i % PITCH_COLORS.length] + '" fill-opacity=".92"><title>' + esc(a.name) + '</title></circle>';
+  }).reverse().join('');
+  var armRight = throws !== 'L';
+  return '<svg viewBox="0 0 148 148" role="img" aria-label="his pitches by movement">' +
+    '<line x1="' + c + '" y1="10" x2="' + c + '" y2="138" stroke="currentColor" stroke-opacity=".18"/>' +
+    '<line x1="10" y1="' + c + '" x2="138" y2="' + c + '" stroke="currentColor" stroke-opacity=".18"/>' +
+    '<circle cx="' + c + '" cy="' + c + '" r="' + (r * 0.5) + '" fill="none" stroke="currentColor" stroke-opacity=".12" stroke-dasharray="2 3"/>' +
+    dots +
+    '<text x="12" y="20">more rise</text>' +
+    '<text x="' + (armRight ? 136 : 12) + '" y="140" text-anchor="' + (armRight ? 'end' : 'start') + '">' + (armRight ? 'arm side \u203a' : '\u2039 arm side') + '</text></svg>';
 }
 
 function streakNow() {
@@ -218,6 +251,7 @@ function buildMound() {
   $('m-scene').insertBefore(S.grid.el, $('m-scout'));
   var ars = $('m-arsenal');
   ars.innerHTML = '';
+  ars.dataset.n = S.scn.pitcher.arsenal.length;
   S.scn.pitcher.arsenal.forEach(function (a, i) {
     var b = document.createElement('button');
     b.type = 'button';
@@ -438,30 +472,73 @@ function finish() {
 
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
-  var runs = st ? st.score.them - s.situation.score.them : null;
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : '#' + s.number + ' · ' + s.title.toLowerCase();
+  var runs = r.runs != null ? r.runs : st ? st.score.them - s.situation.score.them : null;
+  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice \u00b7 not scored' : '#' + s.number + ' \u00b7 final \u00b7 ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
   $('r-line').textContent = r.pitches + ' pitches.' + (runs != null ? ' ' + runs + (runs === 1 ? ' run.' : ' runs.') : '');
+  $('r-npitch').textContent = r.pitches + (r.pitches === 1 ? ' pitch' : ' pitches');
   $('r-strip').innerHTML = stripHTML(r.strip, true);
-  $('r-pct').textContent = Math.round(r.percentile) + '%';
+  var WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
+  $('r-legend').innerHTML = C.BANDS.map(function (b) { return '<span><i class="sq ' + b.band + '"></i>' + WORD[b.band] + '</span>'; }).join('');
+  var p = Math.round(r.percentile);
+  $('r-pct').innerHTML = p + '<sup>' + ordSuffix(p) + '</sup>';
+  $('r-pctline').textContent = 'better than ' + p + '% of the closer pool in this spot.';
+  $('r-score').textContent = r.score != null ? 'score ' + r.score : '';
+  $('r-chart').innerHTML = poolChart(r);
   $('r-like').textContent = r.pitchedLike ? r.pitchedLike.name : '-';
   $('r-why').textContent = r.pitchedLike ? r.pitchedLike.reason : '';
   var rv = r.reveal || {};
-  var vs = { beat: 'you beat him.', matched: 'you matched him.', lost: 'he did better.' }[r.vsReal] || '';
-  var pas = (rv.plateAppearances || []).map(function (p) {
-    return '<li><b>' + esc(p.batter) + '</b><span>' + esc(p.result) + '</span><span class="quiet">' + esc(p.pitches) + ' p</span></li>';
+  var VS = { beat: 'you beat him', matched: 'you matched him', lost: 'he did better' };
+  var rvPitches = rv.pitches == null ? (rv.pitchesNote || 'pitch count unknown') : rv.pitches + ' pitches';
+  $('r-real').innerHTML = '<small>the real one</small><b class="vs ' + esc(r.vsReal) + '">' + esc(VS[r.vsReal] || '-') + '</b>' +
+    '<span>' + esc(lastName(s.pitcher.name)) + ': ' + esc((C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase()) + '. ' + esc(rvPitches) + '. ' + esc(rv.runs) + (rv.runs === 1 ? ' run.' : ' runs.') + '</span>';
+  var pas = (rv.plateAppearances || []).map(function (pa) {
+    return '<li><b>' + esc(pa.batter) + '</b><span>' + esc(pa.result) + '</span><span class="quiet">' + esc(pa.pitches) + ' p</span></li>';
   }).join('');
   $('r-reveal').innerHTML =
-    '<p class="lbl">what ' + esc(s.pitcher.name) + ' did</p>' +
-    '<p class="rv-out ' + esc(rv.outcome) + '">' + esc(C.OUTCOME_LABEL[rv.outcome] || '') + '<span class="quiet"> · ' + esc(rv.pitches == null ? (rv.pitchesNote || 'pitch count unknown') : rv.pitches + ' pitches') + ' · ' + esc(rv.runs) + (rv.runs === 1 ? ' run' : ' runs') + '</span></p>' +
+    '<div class="ch"><b>what ' + esc(s.pitcher.name.toLowerCase()) + ' did</b><span>' + esc(rvPitches) + '</span></div>' +
+    '<p class="rv-out ' + esc(rv.outcome) + '">' + esc(C.OUTCOME_LABEL[rv.outcome] || '') + '<span class="quiet"> \u00b7 ' + esc(rv.runs) + (rv.runs === 1 ? ' run' : ' runs') + '</span></p>' +
     '<p>' + esc(rv.summary) + '.</p>' +
-    (pas ? '<ul class="pas">' + pas + '</ul>' : '') +
-    '<p class="vs ' + esc(r.vsReal) + '">' + vs + '</p>';
+    (pas ? '<ul class="pas">' + pas + '</ul>' : '');
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
   renderStreak();
+}
+
+/* Your score on the real distribution of the closer pool's outings in this
+   spot (pack.pool.scores), when the result carries them as result.pool.
+   Without them, a plain meter at the percentile. */
+function poolChart(r) {
+  var scores = r.pool && r.pool.scores;
+  var p = Math.max(0, Math.min(100, Math.round(r.percentile)));
+  if (!Array.isArray(scores) || scores.length < 20 || r.score == null) {
+    return '<div class="meter" role="img" aria-label="better than ' + p + '% of the closer pool"><i style="width:' + p + '%"></i><b style="left:' + p + '%"></b></div>';
+  }
+  var sorted = scores.slice().sort(function (a, b) { return a - b; }), n = sorted.length, BIN = 20;
+  var lo = Math.floor(Math.min(sorted[Math.floor(n * 0.03)], r.score) / BIN) * BIN;
+  var hi = Math.ceil((Math.max(sorted[Math.floor(n * 0.995)], r.score) + 1) / BIN) * BIN;
+  var bins = [], k = Math.max(1, Math.round((hi - lo) / BIN));
+  for (var i = 0; i < k; i++) bins.push(0);
+  var under = 0, over = 0;
+  sorted.forEach(function (v) {
+    if (v < lo) { under++; return; }
+    if (v >= hi) { over++; return; }
+    bins[Math.min(k - 1, Math.floor((v - lo) / BIN))]++;
+  });
+  var mine = Math.min(k - 1, Math.max(0, Math.floor((r.score - lo) / BIN)));
+  var W = 320, H = 150, top = 22, base = 104, bw = W / k, max = Math.max.apply(null, bins) || 1;
+  var bars = bins.map(function (c, i) {
+    var h = Math.max(2, (c / max) * (base - top));
+    return '<rect class="' + (i === mine ? 'you' : 'bar') + '" x="' + (i * bw + 1).toFixed(1) + '" y="' + (base - h).toFixed(1) + '" width="' + (bw - 2).toFixed(1) + '" height="' + h.toFixed(1) + '" rx="2"/>';
+  }).join('');
+  var ticks = '';
+  for (var t = Math.ceil(lo / 100) * 100; t < hi; t += 100) ticks += '<text x="' + ((t - lo) / BIN * bw).toFixed(1) + '" y="' + (base + 16) + '" text-anchor="middle">' + t + '</text>';
+  var mx = (mine + 0.5) * bw;
+  var note = under ? '<text class="note" x="0" y="' + (H - 4) + '">' + under + ' of ' + n + ' closer outings scored lower than the chart shows.</text>' : '';
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="your score against the closer pool">' + bars +
+    '<text class="you" x="' + Math.max(24, Math.min(W - 24, mx)).toFixed(1) + '" y="14" text-anchor="middle">you, ' + r.score + '</text>' + ticks + note + '</svg>';
 }
 
 /* ---- the coach -------------------------------------------------------------------

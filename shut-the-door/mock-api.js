@@ -427,6 +427,8 @@ function finishOuting(outingId) {
       reveal: rv, vsReal: vs,
     };
     r.lesson = MOCK.lessonNone ? null : mockLesson(o);
+    /* the pool's scores for the end screen's chart (CONTRACT_REQUESTS.md B11) */
+    r.pool = { scores: sc.slice() };
     r.share = window.STD_SHARE.text(r, o.scn.number);
     var au = window.STD_AUTH && window.STD_AUTH.state && window.STD_AUTH.state();
     if (o.st.mode === 'daily' && au && au.signedIn) r.account = { streak: st.outcome === 'door_shut' ? 4 : 0, best: 5, rank: 18, players: 240 };
