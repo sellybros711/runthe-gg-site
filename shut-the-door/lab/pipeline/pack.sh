@@ -13,17 +13,18 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 LAB="$HERE/.."
+RT="$HERE/../../3d"            # the runtime: modules, vendor, assets (the game and the lab load it)
 OUT="$TOOLS/out"
 mkdir -p "$OUT"
 node "$HERE/extract_lab.mjs"           # needs assets/bio.json (fetch_bio.mjs, a network step, run apart)
-python3 -I "$HERE/prep_textures.py" "$ASSETS/polyhaven-textures/files" "$LAB/assets/tex"
+python3 -I "$HERE/prep_textures.py" "$ASSETS/polyhaven-textures/files" "$RT/assets/tex"
 "$TOOLS/venv/bin/python" -I "$HERE/build_people.py" "$ASSETS" "$OUT" batter catcher umpire
 for n in batter catcher umpire; do
   # meshopt compression, names kept (the scene finds bones and materials by name)
-  (cd "$TOOLS" && npx gltfpack -i "$OUT/$n.glb" -o "$LAB/assets/$n.glb" -cc -kn -km)
+  (cd "$TOOLS" && npx gltfpack -i "$OUT/$n.glb" -o "$RT/assets/$n.glb" -cc -kn -km)
 done
 # the environment light, cut down from the 1k HDRI
-python3 -I "$HERE/prep_env.py" "$ASSETS/polyhaven-stadium_01-1k/stadium_01_1k.hdr" "$LAB/assets/env_256.hdr"
+python3 -I "$HERE/prep_env.py" "$ASSETS/polyhaven-stadium_01-1k/stadium_01_1k.hdr" "$RT/assets/env_256.hdr"
 # the loading posters (a still of the scene itself), then the content hashes and the preload list
 node "$HERE/shoot.mjs" "$OUT/poster" poster
 node "$HERE/stamp.mjs"

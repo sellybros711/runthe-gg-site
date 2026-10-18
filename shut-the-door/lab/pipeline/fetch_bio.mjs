@@ -3,7 +3,7 @@
  *   node shut-the-door/lab/pipeline/fetch_bio.mjs DOWNLOAD_DIR
  *
  * DOWNLOAD_DIR is a new, empty folder outside the repo: each answer is saved there as it came
- * (read as data, never run). Writes shut-the-door/lab/assets/bio.json:
+ * (read as data, never run). Writes shut-the-door/3d/assets/bio.json:
  *   { batters: { "<pack batter id>": { name, mlbam, heightIn, weightLb, batSide, source } }, fetched }
  * A pack id that is numeric is the MLBAM id: https://statsapi.mlb.com/api/v1/people/<id>. A
  * Retrosheet id (retro:xxxxx001, the 1988 and 2001 packs) is found by name with
@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKS = path.join(HERE, '..', '..', 'data', 'packs');
-const OUT = path.join(HERE, '..', 'assets', 'bio.json');
+const OUT = path.join(HERE, '..', '..', '3d', 'assets', 'bio.json');
 const DL = process.argv[2];
 if (!DL) { console.error('usage: fetch_bio.mjs DOWNLOAD_DIR'); process.exit(2); }
 fs.mkdirSync(DL, { recursive: true });

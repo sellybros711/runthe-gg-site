@@ -86,9 +86,9 @@ const server = http2.createSecureServer({ key: fs.readFileSync(path.join(CERT, '
 });
 // compress the lab's text files before the clock starts
 const etagOf = (f) => '"' + fs.statSync(f).mtimeMs.toString(36) + fs.statSync(f).size.toString(36) + '"';
-const LAB = path.join(ROOT, 'shut-the-door', 'lab');
-const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? (e.name === 'pipeline' ? [] : walk(path.join(d, e.name))) : [path.join(d, e.name)]);
-for (const f of walk(LAB)) if (TEXT.has(path.extname(f))) brCache.set(f + etagOf(f), zlib.brotliCompressSync(fs.readFileSync(f)));
+const STD = path.join(ROOT, 'shut-the-door');
+const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? (['pipeline', 'data', 'test', 'fixtures', 'scenarios'].includes(e.name) ? [] : walk(path.join(d, e.name))) : [path.join(d, e.name)]);
+for (const f of walk(STD)) if (TEXT.has(path.extname(f))) brCache.set(f + etagOf(f), zlib.brotliCompressSync(fs.readFileSync(f)));
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const BASE = `https://127.0.0.1:${server.address().port}/shut-the-door/lab/index.html`;
 

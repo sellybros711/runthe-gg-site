@@ -2,7 +2,7 @@
  *
  *   node shut-the-door/lab/pipeline/extract_lab.mjs
  *
- * Writes shut-the-door/lab/assets/packs/<pack>.json (and index.json, the list) with:
+ * Writes shut-the-door/3d/assets/packs/<pack>.json (and index.json, the list) with:
  *   pitcher     name, throws, team colours, and his arsenal (velo, pfx, shape: catcher's view)
  *   usHome      whether the closer's side is at home (home whites, road greys)
  *   batters     each hitter's side against this pitcher and his zone (the pack), his height and weight
@@ -21,8 +21,8 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKS = path.join(HERE, '..', '..', 'data', 'packs');
-const OUT = path.join(HERE, '..', 'assets', 'packs');
-const bio = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'assets', 'bio.json'), 'utf8')).batters;
+const OUT = path.join(HERE, '..', '..', '3d', 'assets', 'packs');
+const bio = JSON.parse(fs.readFileSync(path.join(HERE, '..', '..', '3d', 'assets', 'bio.json'), 'utf8')).batters;
 fs.mkdirSync(OUT, { recursive: true });
 
 // FNV-1a, then a little mixing: stable across machines

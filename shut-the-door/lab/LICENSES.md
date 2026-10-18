@@ -1,5 +1,8 @@
 # Shut The Door 3D lab: every asset, where it came from, its licence, what was changed
 
+The scene's runtime (modules, `vendor/`, `assets/`) lives in `shut-the-door/3d/`, which the game
+loads; the paths below are relative to it. This folder keeps the lab page and the pipeline.
+
 Nothing here is loaded from a CDN. Everything is free and open: CC0, MIT, or CMU's own terms
 ("free for all uses"). No asset carries a real person's likeness, a team name or a logo.
 

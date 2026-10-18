@@ -50,7 +50,9 @@ export const ASSETS = {
 };
 /* stamp:end */
 
-export const assetUrl = (f) => `./assets/${f}${ASSETS[f] ? `?h=${ASSETS[f]}` : ''}`;
+// assets beside this module, wherever the page that imports it lives (the game, the lab)
+const BASE = new URL('./assets/', import.meta.url).href;
+export const assetUrl = (f) => `${BASE}${f}${ASSETS[f] ? `?h=${ASSETS[f]}` : ''}`;
 export const PEOPLE = ['batter', 'catcher', 'umpire'];
 /** The pack the scene shows: ?pack= in the lab (assets/packs/index.json lists them). */
 export const DEFAULT_PACK = 'std-2025-ws7-yamamoto';
@@ -80,7 +82,7 @@ export function preload() {
     t.needsUpdate = true;
     return t;
   });
-  const people = Promise.all(PEOPLE.map((n) => bytes(`${n}.glb`).then((b) => gltf.parseAsync(b, './assets/'))));
+  const people = Promise.all(PEOPLE.map((n) => bytes(`${n}.glb`).then((b) => gltf.parseAsync(b, BASE))));
   started = Promise.all([facts, env, people]).then(([f, e, p]) => ({ facts: f, env: e, gltfs: Object.fromEntries(PEOPLE.map((n, i) => [n, p[i]])) }));
   return started;
 }

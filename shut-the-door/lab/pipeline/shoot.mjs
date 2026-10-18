@@ -84,7 +84,7 @@ if (WHAT === 'strip') {
 if (WHAT === 'poster') {
   // the stills index.html shows while the scene loads: the set, at the phone and desktop sizes
   const { execFileSync } = await import('node:child_process');
-  const ASSETS = path.join(ROOT, 'shut-the-door', 'lab', 'assets');
+  const ASSETS = path.join(ROOT, 'shut-the-door', '3d', 'assets');
   for (const [w, h, name] of [[390, 844, 'poster-phone'], [1440, 900, 'poster-desktop']]) {
     await still('', 0, w, h, name);
     const png = path.join(OUT, `${name}.png`);

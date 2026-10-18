@@ -7,7 +7,7 @@ ASSETS holds the downloads (see LICENSES.md for every source):
   ASSETS/makehuman/...         the CC0 MakeHuman files (3dobjs, targets, rigs, skins, clothes, ...)
   ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps)
   ASSETS/polyhaven-textures/files/...   the CC0 Poly Haven cloth and leather maps
-OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into lab/assets.
+OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into shut-the-door/3d/assets.
 who: batter catcher umpire (all three when left out).
 """
 import os, sys, math, json
@@ -153,9 +153,9 @@ def body(cfg):
             # facial hair and the darker skin, for the scene to vary every hitter's look
             from PIL import Image as _I
             bm = uniform.beard_mask(c_, os.path.join(WORK, 'beard_mask.png'))
-            _I.open(bm).save(os.path.join(HERE, '..', 'assets', 'tex', 'beard_mask.webp'), 'WEBP', quality=80, method=6)
+            _I.open(bm).save(os.path.join(HERE, '..', '..', '3d', 'assets', 'tex', 'beard_mask.webp'), 'WEBP', quality=80, method=6)
             dark = textures.skin(f'{MHA}/skins/young_african_male', WORK, 512)['color']
-            _I.open(dark).convert('RGB').save(os.path.join(HERE, '..', 'assets', 'tex', 'skin_dark.webp'), 'WEBP', quality=72, method=6)
+            _I.open(dark).convert('RGB').save(os.path.join(HERE, '..', '..', '3d', 'assets', 'tex', 'skin_dark.webp'), 'WEBP', quality=72, method=6)
     for c in cfg.get('clothes', []):
         d = f'{MHA}/clothes/{c["id"]}'
         mat = None if c.get('own') else cloth_material(c['id'], c['color'], d, c['id'], c.get('pattern', 'jogging_melange'), color2=c.get('color2'))
@@ -277,7 +277,7 @@ def build(who):
         retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands)
     export(who)
     # the model's own height, for the scene to scale each player to his real one
-    fn = os.path.join(HERE, '..', 'assets', 'uniform.json')
+    fn = os.path.join(HERE, '..', '..', '3d', 'assets', 'uniform.json')
     data = json.load(open(fn)) if os.path.exists(fn) else {}
     data[who] = {'heightM': round(float(max(v.co.z for v in parts[0].data.vertices)), 4)}
     json.dump(data, open(fn, 'w'), indent=1)
