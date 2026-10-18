@@ -1,0 +1,719 @@
+{
+ "fetched": "2026-10-18",
+ "source": "MLB Stats API, statsapi.mlb.com",
+ "batters": {
+  "204020": {
+   "name": "Lance Berkman",
+   "mlbam": 204020,
+   "heightIn": 73,
+   "weightLb": 220,
+   "batSide": "S",
+   "source": "https://statsapi.mlb.com/api/v1/people/204020"
+  },
+  "346798": {
+   "name": "Kyle Lohse",
+   "mlbam": 346798,
+   "heightIn": 74,
+   "weightLb": 215,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/346798"
+  },
+  "405395": {
+   "name": "Albert Pujols",
+   "mlbam": 405395,
+   "heightIn": 75,
+   "weightLb": 235,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/405395"
+  },
+  "424825": {
+   "name": "Coco Crisp",
+   "mlbam": 424825,
+   "heightIn": 70,
+   "weightLb": 185,
+   "batSide": "S",
+   "source": "https://statsapi.mlb.com/api/v1/people/424825"
+  },
+  "425877": {
+   "name": "Yadier Molina",
+   "mlbam": 425877,
+   "heightIn": 71,
+   "weightLb": 225,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/425877"
+  },
+  "434658": {
+   "name": "Rajai Davis",
+   "mlbam": 434658,
+   "heightIn": 70,
+   "weightLb": 195,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/434658"
+  },
+  "435062": {
+   "name": "Howie Kendrick",
+   "mlbam": 435062,
+   "heightIn": 71,
+   "weightLb": 225,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/435062"
+  },
+  "435063": {
+   "name": "Mike Napoli",
+   "mlbam": 435063,
+   "heightIn": 73,
+   "weightLb": 225,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/435063"
+  },
+  "435559": {
+   "name": "Kurt Suzuki",
+   "mlbam": 435559,
+   "heightIn": 71,
+   "weightLb": 210,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/435559"
+  },
+  "444135": {
+   "name": "Ryan Theriot",
+   "mlbam": 444135,
+   "heightIn": 71,
+   "weightLb": 185,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/444135"
+  },
+  "445055": {
+   "name": "Jon Jay",
+   "mlbam": 445055,
+   "heightIn": 71,
+   "weightLb": 200,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/445055"
+  },
+  "446386": {
+   "name": "Brandon Guyer",
+   "mlbam": 446386,
+   "heightIn": 74,
+   "weightLb": 210,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/446386"
+  },
+  "452678": {
+   "name": "Asdrúbal Cabrera",
+   "mlbam": 452678,
+   "heightIn": 72,
+   "weightLb": 235,
+   "batSide": "S",
+   "source": "https://statsapi.mlb.com/api/v1/people/452678"
+  },
+  "467793": {
+   "name": "Carlos Santana",
+   "mlbam": 467793,
+   "heightIn": 70,
+   "weightLb": 210,
+   "batSide": "S",
+   "source": "https://statsapi.mlb.com/api/v1/people/467793"
+  },
+  "475582": {
+   "name": "Ryan Zimmerman",
+   "mlbam": 475582,
+   "heightIn": 75,
+   "weightLb": 215,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/475582"
+  },
+  "501800": {
+   "name": "Allen Craig",
+   "mlbam": 501800,
+   "heightIn": 74,
+   "weightLb": 215,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/501800"
+  },
+  "501896": {
+   "name": "David Freese",
+   "mlbam": 501896,
+   "heightIn": 74,
+   "weightLb": 213,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/501896"
+  },
+  "516416": {
+   "name": "Jean Segura",
+   "mlbam": 516416,
+   "heightIn": 70,
+   "weightLb": 220,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/516416"
+  },
+  "518614": {
+   "name": "Daniel Descalso",
+   "mlbam": 518614,
+   "heightIn": 70,
+   "weightLb": 190,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/518614"
+  },
+  "519203": {
+   "name": "Anthony Rizzo",
+   "mlbam": 519203,
+   "heightIn": 75,
+   "weightLb": 240,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/519203"
+  },
+  "519317": {
+   "name": "Giancarlo Stanton",
+   "mlbam": 519317,
+   "heightIn": 77,
+   "weightLb": 245,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/519317"
+  },
+  "521692": {
+   "name": "Salvador Perez",
+   "mlbam": 521692,
+   "heightIn": 74,
+   "weightLb": 255,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/521692"
+  },
+  "543228": {
+   "name": "Yan Gomes",
+   "mlbam": 543228,
+   "heightIn": 74,
+   "weightLb": 212,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/543228"
+  },
+  "543401": {
+   "name": "Jason Kipnis",
+   "mlbam": 543401,
+   "heightIn": 71,
+   "weightLb": 200,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/543401"
+  },
+  "543685": {
+   "name": "Anthony Rendon",
+   "mlbam": 543685,
+   "heightIn": 73,
+   "weightLb": 200,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/543685"
+  },
+  "543807": {
+   "name": "George Springer",
+   "mlbam": 543807,
+   "heightIn": 73,
+   "weightLb": 220,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/543807"
+  },
+  "547180": {
+   "name": "Bryce Harper",
+   "mlbam": 547180,
+   "heightIn": 73,
+   "weightLb": 210,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/547180"
+  },
+  "572191": {
+   "name": "Michael A. Taylor",
+   "mlbam": 572191,
+   "heightIn": 76,
+   "weightLb": 215,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/572191"
+  },
+  "592192": {
+   "name": "Mark Canha",
+   "mlbam": 592192,
+   "heightIn": 73,
+   "weightLb": 200,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/592192"
+  },
+  "592206": {
+   "name": "Nick Castellanos",
+   "mlbam": 592206,
+   "heightIn": 75,
+   "weightLb": 203,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/592206"
+  },
+  "592450": {
+   "name": "Aaron Judge",
+   "mlbam": 592450,
+   "heightIn": 79,
+   "weightLb": 282,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/592450"
+  },
+  "592663": {
+   "name": "J.T. Realmuto",
+   "mlbam": 592663,
+   "heightIn": 72,
+   "weightLb": 212,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/592663"
+  },
+  "596019": {
+   "name": "Francisco Lindor",
+   "mlbam": 596019,
+   "heightIn": 70,
+   "weightLb": 190,
+   "batSide": "S",
+   "source": "https://statsapi.mlb.com/api/v1/people/596019"
+  },
+  "607208": {
+   "name": "Trea Turner",
+   "mlbam": 607208,
+   "heightIn": 73,
+   "weightLb": 185,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/607208"
+  },
+  "608070": {
+   "name": "José Ramírez",
+   "mlbam": 608070,
+   "heightIn": 68,
+   "weightLb": 190,
+   "batSide": "S",
+   "source": "https://statsapi.mlb.com/api/v1/people/608070"
+  },
+  "643396": {
+   "name": "Isiah Kiner-Falefa",
+   "mlbam": 643396,
+   "heightIn": 70,
+   "weightLb": 195,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/643396"
+  },
+  "645302": {
+   "name": "Victor Robles",
+   "mlbam": 645302,
+   "heightIn": 72,
+   "weightLb": 193,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/645302"
+  },
+  "650402": {
+   "name": "Gleyber Torres",
+   "mlbam": 650402,
+   "heightIn": 70,
+   "weightLb": 205,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/650402"
+  },
+  "656555": {
+   "name": "Rhys Hoskins",
+   "mlbam": 656555,
+   "heightIn": 75,
+   "weightLb": 241,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/656555"
+  },
+  "656941": {
+   "name": "Kyle Schwarber",
+   "mlbam": 656941,
+   "heightIn": 71,
+   "weightLb": 229,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/656941"
+  },
+  "657077": {
+   "name": "Alex Verdugo",
+   "mlbam": 657077,
+   "heightIn": 72,
+   "weightLb": 209,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/657077"
+  },
+  "662139": {
+   "name": "Daulton Varsho",
+   "mlbam": 662139,
+   "heightIn": 68,
+   "weightLb": 207,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/662139"
+  },
+  "663647": {
+   "name": "Ke'Bryan Hayes",
+   "mlbam": 663647,
+   "heightIn": 71,
+   "weightLb": 215,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/663647"
+  },
+  "663697": {
+   "name": "Jonathan India",
+   "mlbam": 663697,
+   "heightIn": 70,
+   "weightLb": 200,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/663697"
+  },
+  "664702": {
+   "name": "Myles Straw",
+   "mlbam": 664702,
+   "heightIn": 69,
+   "weightLb": 178,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/664702"
+  },
+  "664761": {
+   "name": "Alec Bohm",
+   "mlbam": 664761,
+   "heightIn": 76,
+   "weightLb": 218,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/664761"
+  },
+  "665489": {
+   "name": "Vladimir Guerrero Jr.",
+   "mlbam": 665489,
+   "heightIn": 72,
+   "weightLb": 245,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/665489"
+  },
+  "665742": {
+   "name": "Juan Soto",
+   "mlbam": 665742,
+   "heightIn": 73,
+   "weightLb": 224,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/665742"
+  },
+  "665862": {
+   "name": "Jazz Chisholm Jr.",
+   "mlbam": 665862,
+   "heightIn": 71,
+   "weightLb": 184,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/665862"
+  },
+  "665926": {
+   "name": "Andrés Giménez",
+   "mlbam": 665926,
+   "heightIn": 71,
+   "weightLb": 161,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/665926"
+  },
+  "666158": {
+   "name": "Gavin Lux",
+   "mlbam": 666158,
+   "heightIn": 71,
+   "weightLb": 190,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/666158"
+  },
+  "666181": {
+   "name": "Will Benson",
+   "mlbam": 666181,
+   "heightIn": 76,
+   "weightLb": 230,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/666181"
+  },
+  "668715": {
+   "name": "Spencer Steer",
+   "mlbam": 668715,
+   "heightIn": 69,
+   "weightLb": 185,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/668715"
+  },
+  "669016": {
+   "name": "Brandon Marsh",
+   "mlbam": 669016,
+   "heightIn": 74,
+   "weightLb": 215,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/669016"
+  },
+  "669224": {
+   "name": "Austin Wells",
+   "mlbam": 669224,
+   "heightIn": 73,
+   "weightLb": 220,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/669224"
+  },
+  "669720": {
+   "name": "Austin Hays",
+   "mlbam": 669720,
+   "heightIn": 70,
+   "weightLb": 200,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/669720"
+  },
+  "670770": {
+   "name": "TJ Friedl",
+   "mlbam": 670770,
+   "heightIn": 68,
+   "weightLb": 180,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/670770"
+  },
+  "672386": {
+   "name": "Alejandro Kirk",
+   "mlbam": 672386,
+   "heightIn": 68,
+   "weightLb": 245,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/672386"
+  },
+  "672580": {
+   "name": "Maikel Garcia",
+   "mlbam": 672580,
+   "heightIn": 73,
+   "weightLb": 180,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/672580"
+  },
+  "676391": {
+   "name": "Ernie Clement",
+   "mlbam": 676391,
+   "heightIn": 72,
+   "weightLb": 170,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/676391"
+  },
+  "677951": {
+   "name": "Bobby Witt Jr.",
+   "mlbam": 677951,
+   "heightIn": 73,
+   "weightLb": 200,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/677951"
+  },
+  "679845": {
+   "name": "Nick Loftin",
+   "mlbam": 679845,
+   "heightIn": 71,
+   "weightLb": 180,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/679845"
+  },
+  "680574": {
+   "name": "Matt McLain",
+   "mlbam": 680574,
+   "heightIn": 68,
+   "weightLb": 180,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/680574"
+  },
+  "680718": {
+   "name": "Addison Barger",
+   "mlbam": 680718,
+   "heightIn": 71,
+   "weightLb": 210,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/680718"
+  },
+  "681082": {
+   "name": "Bryson Stott",
+   "mlbam": 681082,
+   "heightIn": 72,
+   "weightLb": 200,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/681082"
+  },
+  "682622": {
+   "name": "Noelvi Marte",
+   "mlbam": 682622,
+   "heightIn": 74,
+   "weightLb": 216,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/682622"
+  },
+  "682829": {
+   "name": "Elly De La Cruz",
+   "mlbam": 682829,
+   "heightIn": 78,
+   "weightLb": 200,
+   "batSide": "S",
+   "source": "https://statsapi.mlb.com/api/v1/people/682829"
+  },
+  "683011": {
+   "name": "Anthony Volpe",
+   "mlbam": 683011,
+   "heightIn": 70,
+   "weightLb": 197,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/683011"
+  },
+  "686469": {
+   "name": "Vinnie Pasquantino",
+   "mlbam": 686469,
+   "heightIn": 75,
+   "weightLb": 245,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/686469"
+  },
+  "686475": {
+   "name": "Tyler Tolbert",
+   "mlbam": 686475,
+   "heightIn": 70,
+   "weightLb": 185,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/686475"
+  },
+  "695506": {
+   "name": "Jac Caglianone",
+   "mlbam": 695506,
+   "heightIn": 76,
+   "weightLb": 250,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/695506"
+  },
+  "retro:sciom001": {
+   "name": "Mike Scioscia",
+   "mlbam": 121919,
+   "heightIn": 74,
+   "weightLb": 220,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/121919 (retrosheet sciom001)"
+  },
+  "retro:hamij001": {
+   "name": "Jeff Hamilton",
+   "mlbam": 115382,
+   "heightIn": 75,
+   "weightLb": 205,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/115382 (retrosheet hamij001)"
+  },
+  "retro:davim002": {
+   "name": "Mike Davis",
+   "mlbam": 113127,
+   "heightIn": 75,
+   "weightLb": 185,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/113127 (retrosheet davim002)"
+  },
+  "retro:gibsk001": {
+   "name": "Kirk Gibson",
+   "mlbam": 114752,
+   "heightIn": 75,
+   "weightLb": 215,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/114752 (retrosheet gibsk001)"
+  },
+  "retro:sax-s001": {
+   "name": "Steve Sax",
+   "mlbam": 121732,
+   "heightIn": 71,
+   "weightLb": 185,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/121732 (retrosheet sax-s001)"
+  },
+  "retro:stubf001": {
+   "name": "Franklin Stubbs",
+   "mlbam": 122899,
+   "heightIn": 74,
+   "weightLb": 215,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/122899 (retrosheet stubf001)"
+  },
+  "retro:hatcm001": {
+   "name": "Mickey Hatcher",
+   "mlbam": 115601,
+   "heightIn": 74,
+   "weightLb": 200,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/115601 (retrosheet hatcm001)"
+  },
+  "retro:marsm001": {
+   "name": "Mike Marshall",
+   "mlbam": 118319,
+   "heightIn": 77,
+   "weightLb": 220,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/118319 (retrosheet marsm001)"
+  },
+  "retro:shelj001": {
+   "name": "John Shelby",
+   "mlbam": 122112,
+   "heightIn": 73,
+   "weightLb": 175,
+   "batSide": "S",
+   "source": "https://statsapi.mlb.com/api/v1/people/122112 (retrosheet shelj001)"
+  },
+  "retro:gracm001": {
+   "name": "Mark Grace",
+   "mlbam": 115007,
+   "heightIn": 74,
+   "weightLb": 200,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/115007 (retrosheet gracm001)"
+  },
+  "retro:milld002": {
+   "name": "Damian Miller",
+   "mlbam": 119064,
+   "heightIn": 75,
+   "weightLb": 220,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/119064 (retrosheet milld002)"
+  },
+  "retro:bellj001": {
+   "name": "Jay Bell",
+   "mlbam": 110826,
+   "heightIn": 72,
+   "weightLb": 185,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/110826 (retrosheet bellj001)"
+  },
+  "retro:womat001": {
+   "name": "Tony Womack",
+   "mlbam": 124523,
+   "heightIn": 69,
+   "weightLb": 170,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/124523 (retrosheet womat001)"
+  },
+  "retro:counc001": {
+   "name": "Craig Counsell",
+   "mlbam": 112736,
+   "heightIn": 72,
+   "weightLb": 180,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/112736 (retrosheet counc001)"
+  },
+  "retro:gonzl001": {
+   "name": "Luis Gonzalez",
+   "mlbam": 114935,
+   "heightIn": 74,
+   "weightLb": 210,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/114935 (retrosheet gonzl001)"
+  },
+  "retro:willm003": {
+   "name": "Matt Williams",
+   "mlbam": 124326,
+   "heightIn": 74,
+   "weightLb": 225,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/124326 (retrosheet willm003)"
+  },
+  "retro:finls001": {
+   "name": "Steve Finley",
+   "mlbam": 114135,
+   "heightIn": 74,
+   "weightLb": 195,
+   "batSide": "L",
+   "source": "https://statsapi.mlb.com/api/v1/people/114135 (retrosheet finls001)"
+  },
+  "retro:bautd001": {
+   "name": "Danny Bautista",
+   "mlbam": 110712,
+   "heightIn": 71,
+   "weightLb": 225,
+   "batSide": "R",
+   "source": "https://statsapi.mlb.com/api/v1/people/110712 (retrosheet bautd001)"
+  }
+ },
+ "missing": []
+}
