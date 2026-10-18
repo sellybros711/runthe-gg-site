@@ -2483,6 +2483,8 @@ function open(host, o){
   // the hearts in the header and the play bar open the Lives sheet, where lives are bought (the owner, 2026-10-17)
   ov.addEventListener('click', function(e){ var hs = e.target && e.target.closest && e.target.closest('.pp-hearts'); if (hs && ov.contains(hs)) livesSheet(); });
   document.body.style.overflow = 'hidden';
+  // the page behind is covered: it stops painting and animating while Putt Putt is open (CSS: body.pt-open)
+  document.body.classList.add('pt-open');
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
   // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
   ov.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-pass]'); if (!b) return; var h = S && S.host; if (h && h.pass){ close(); try{ h.pass(); }catch(x){} } });
@@ -2510,7 +2512,7 @@ function close(){
   if (!S) return;
   stopTrail();
   cancelAnimationFrame(S.raf); clearInterval(S.tick); window.removeEventListener('keydown', S.onKey); if (S.onResize) window.removeEventListener('resize', S.onResize);
-  document.body.style.overflow = S.prevOverflow || ''; S.ov.remove();
+  document.body.style.overflow = S.prevOverflow || ''; document.body.classList.remove('pt-open'); S.ov.remove();
   var h = S.host; S = null; try{ if (h.onClose) h.onClose(); }catch(e){}
 }
 function top(title, sub, right){
@@ -4061,9 +4063,18 @@ function v3Ahead(){
 }
 /* THE HOLE AT THE END OF A WALK RENDERS WHILE IT IS WALKED, a few milliseconds a frame, so arriving at it is not a wait.
    Arriving early is fine: v3Get finishes the half done render rather than start again. */
+/* BACKGROUND WORK GIVES WAY (the owner, 2026-10-18: laggy walking, on a phone and on a computer). A hole or a trail
+   rendered ahead runs a slice a frame, but only while frames are coming in on time: a frame that took over 20 ms
+   means the device is busy, so that frame does no background work. Every sixth frame still takes a slice, so a slow
+   device finishes in the end; arriving early only means the hole finishes rendering then (v3Get). */
+function bgSlack(){ var n = performance.now(), dt = n - (S.bgLast || n); S.bgLast = n; S.bgSkip = (S.bgSkip || 0) + 1;
+  if (dt < 20 || S.bgSkip >= 6){ S.bgSkip = 0; return true; } return false; }
+/* A CANVAS IS NEVER MORE THAN ABOUT 1.6 MILLION PIXELS. Pixel art loses nothing a phone or a big screen shows, and a
+   computer screen at 2x was 4.3 million pixels to fill every frame. */
+function capDpr(w, h){ var d = Math.min(2, window.devicePixelRatio || 1), MAX = 1.6e6; if (w * h * d * d > MAX) d = Math.max(1, Math.sqrt(MAX / Math.max(1, w * h))); return d; }
 function holeAhead(tid, n){ if (!v3Ok() || S.v3job) return; var d; try{ d = tourDesc(n, S.host, tid); }catch(e){ return; } if (!d || d.real || (S.v3c && S.v3c[v3Key(d)] !== undefined)) return;
   try{ S.v3job = { k:v3Key(d), step:window.RTT_PUTT_3D.slices(buildFrom(d), v3Opt(d)) }; }catch(e){ S.v3job = null; return; }
-  (function tick(){ var J = S && S.v3job; if (!J || S.screen !== 'trail') return; var out = null; try{ out = J.step(3); }catch(e){ S.v3job = null; return; }
+  (function tick(){ var J = S && S.v3job; if (!J || S.screen !== 'trail') return; if (!bgSlack()) return requestAnimationFrame(tick); var out = null; try{ out = J.step(3); }catch(e){ S.v3job = null; return; }
     if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; return; } requestAnimationFrame(tick); })(); }
 function v3Tick(){
   var J = S.v3job; if (!J) return;
@@ -4125,7 +4136,7 @@ function aimNudge(da){
 function sizeCanvas(){
   // 2 at most (the owner, 2026-10-18: laggy on an iPhone). The art is pixel art, so a 3x phone loses nothing it shows,
   // and a canvas at 3x is 2.25 times the pixels to fill every frame.
-  var r = S.stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  var r = S.stage.getBoundingClientRect(), dpr = capDpr(r.width, r.height);
   S.dpr = dpr; S.cv.width = Math.max(1, Math.round(r.width * dpr)); S.cv.height = Math.max(1, Math.round(r.height * dpr)); S.play.cam = null;
 }
 function hud(){
@@ -4258,7 +4269,7 @@ function frame(){
   if (!S || S.screen !== 'play') return;
   S.raf = requestAnimationFrame(frame);
   var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = gnow() / 1000, clock = now - P.clock0;
-  v3Tick(); trailTick(4);
+  if (bgSlack()){ v3Tick(); trailTick(4); }
   if (S.round.mode === 'pdaily') dailyClock(P);
   if (P.state === 'cheer' && (gnow() - P.cheerAt) / PLAY_RATE > (P.cheerAce ? CHEER_ACE : CHEER_MS)){ P.state = 'aim'; return holeOut(); }   // the hole keeps living behind the card, as it always did
   // where the ball is: at rest, or partway along the putt it is playing back

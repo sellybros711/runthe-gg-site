@@ -532,13 +532,11 @@ if (!args.includes('--no-browser')){
     await pg.waitForFunction(() => window.RTT_PUTT_3D && window.RTT_PUTT_LAND && window.PXHD, null, { timeout:30000 });
     claim(await pg.evaluate(() => { try{ const n0 = errs0(); S.overlay = null; S.screen = 'title'; render(); document.querySelector('#rttnav [data-nav="protour"]').click(); return S.screen !== 'title' && document.body.innerText.length > 0; }catch(e){ return false; } function errs0(){ return 0; } }),
       'with every module loaded, the game still draws its home screen and a tab still moves it on');
-    // LIVE: the door is everybody's. The kill switch (PUTT_LIVE=false) still shuts it on all but the testers.
-    claim(await pg.evaluate(() => typeof PUTT_LIVE !== 'undefined' && PUTT_LIVE === true), 'PUTT_LIVE is true: Putt Putt is live');
-    claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt') && ftLive()), 'signed out: the door is there, on the First Tee');
+    // LIVE: the door is everybody's, signed out or in, on the First Tee (the classic home and PUTT_LIVE are gone)
+    claim(await pg.evaluate(() => typeof PUTT_LIVE === 'undefined' && typeof ftLive === 'undefined' && typeof scrTitleClassic === 'undefined'), 'the launch switch and the classic home are gone');
+    claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt') && !!document.querySelector('.ft-home, .ft')), 'signed out: the door is there, on the First Tee');
     await pg.evaluate(() => { sbUser = { id:'x' }; sbUsername = 'somebody'; });
     claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as anybody: the door is there');
-    claim(await pg.evaluate(() => { PUTT_LIVE = false; const shut = !puttOn() && !ftLive(); PUTT_LIVE = true; return shut; }),
-      'the kill switch shuts it for anybody else');
     // a tester who is NOT on PUTT_ALL_ACCESS, so every gate below is the one an ordinary player meets
     await pg.evaluate(() => { sbUsername = 'SlimeyB3'; });
     claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as a tester: the door is there');

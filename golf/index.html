@@ -59,8 +59,8 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
-<!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=105"></script>
+<!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
+<script defer src="putt/putt.js?v=106"></script>
 <script defer src="putt/land.js?v=13"></script>
 <script defer src="putt/hole3d.js?v=18"></script>
 <script defer src="putt/gyms.js?v=4"></script>
@@ -75,7 +75,7 @@
 <script defer src="putt/gymkinds/railyard.js?v=2"></script>
 <script defer src="putt/gymkinds/rock.js?v=1"></script>
 <script defer src="putt/gymkinds/runes.js?v=1"></script>
-<script defer src="putt/trail.js?v=43"></script>
+<script defer src="putt/trail.js?v=44"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=21"></script>
@@ -1341,6 +1341,9 @@ window.GA_ID='G-L29P5MRWKE';
   .botnav button .navdot.num{width:auto; min-width:17px; height:17px; border-radius:9px; padding:0 4px;
     font:900 10px/17px var(--mono); color:#fff; text-align:center; letter-spacing:0}
   .navfab .navdot.num{top:-3px!important; right:2px}
+  /* PUTT PUTT COVERS THE PAGE (putt.js adds body.pt-open): what is behind it stops painting and animating */
+  body.pt-open #app, body.pt-open #rttnav, body.pt-open .spk-egg{visibility:hidden}
+  body.pt-open #app *, body.pt-open .spk-egg, body.pt-open .spk-egg *{animation-play-state:paused!important}
   .botnav button .navdot.new{background:#f1d04a; color:#1a1206; border-color:#04160b; box-shadow:0 0 6px rgba(241,208,74,.8); left:calc(50% + 2px)}
   /* 8: real tap targets + pressed states on the small home controls */
   .om-btn,.howtop,.wheelbtn{min-height:44px}
@@ -5669,23 +5672,11 @@ function loginRewLabel(o){ if(!o) return '';
 // so the popup shows the first time an account is seen each day. Grants on detect (idempotent via `day`),
 // then opens the celebratory popup.
 // the daily popup, as it was: paid on sight, then shown. Everybody not on the First Tee.
-function maybeLoginBonusClassic(s){ const t=todayKey();
-  const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
-  const rew=loginReward(n); grantLoginReward(rew);   // grant now (idempotent by day) regardless of display
-  loginSave({day:t, n:n});
-  S.loginReward=rew;
-  try{ track('login_bonus',{day:n,kind:rew.kind}); }catch(e){}
-  // Sequencing (owner): the Season 1 launch popup always shows FIRST. If it's still pending, or any
-  // other popup is already up, DEFER this login bonus so the two don't clobber each other: it opens
-  // when the season popup is dismissed (or on the next clean title render) via flushPendingLogin().
-  if(S.overlay || s1LaunchPending() || welcomePackPending()){ S._loginPending=true; return; }
-  S.overlay='login'; try{ render(); }catch(e){} }
 function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(); let s=loginState();
   if(s.day===t) return;                              // already claimed today
   // THE GIFT WAITS ON THE PIN SHEET (owner, 2026-10-15): it is set aside, not paid, and the First Tee says a
   // reward is there to claim (claimLoginGift pays it and opens the calendar). One never opened is paid here,
   // quietly, the next day the account is seen, so nobody loses a day's gift.
-  if(!ftLive()) return maybeLoginBonusClassic(s);
   const old=LS.get(acctKey('bag_login_pend'),null);
   if(old && old.day && old.day!==t && s.day!==old.day){ grantLoginReward(old.rew); loginSave({day:old.day, n:old.n}); s=loginState(); }
   const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
@@ -7783,7 +7774,6 @@ function spotDoneThisMonth(){ return spotAttemptsLeft(monthlySpotlight(todayKey(
 function nextSpotlight(){ const t=todayKey(), cur=monthlySpotlight(t);
   if(cur.liveDayKey+SPOT_WINDOW_DAYS-1>=t) return cur;                    // still upcoming or live this week
   let Y=cur.Y, M=cur.M+1; if(M>12){M=1;Y++;} return monthlySpotlightFor(Y,M); }
-function fmtDayKey(k){ const d=_ymd(k); return MONTH_NAMES[d.M-1].slice(0,3)+' '+d.D; }
 function dCourseSkillTop(c,n){ return CATS.filter(x=>x.k!=='clu').sort((a,b)=>c.fit[b.k]-c.fit[a.k]).slice(0,n||3); }
 /* ---- local course records (Phase 2, replaced/augmented by the backend in Phase 3) ---- */
 function courseRecords(){ return LS.get('bag_courserecords',{}); }
@@ -11516,8 +11506,7 @@ function ppRewardItems(cat){ return PP_REWARDS.filter(function(o){ return o.cat=
    of real golf gear, year round and in no drop: tour caps, a tam, a Panama, quarter-zips, vests, rain gear, shorts,
    joggers, tartan trousers, spikeless shoes, kilties and practice balls. `price` is the base price, which picks the
    rarity (packRarityOf: under 9,000 common, under 16,000 rare). Boosts follow the ladder (COS_BOOST, a common item 1
-   point, a rare 2); outerwear and legwear are style and carry none. Pack only, like every unique item. It rides the
-   First Tee switch with the rest of the launch: off it, the line is not in the closet, the shop or a pack.
+   point, a rare 2); outerwear and legwear are style and carry none. Pack only, like every unique item.
    The art is at THE PRO SHOP LINE'S ART; the 3D models are in golfer3d.js. */
 const PRO_LINE=[
  {cat:'hw',id:'ropecap',name:'Rope Cap',price:7000,hist:'Old tour style. A braided rope across the peak.'},
@@ -11542,8 +11531,7 @@ const PRO_LINE=[
  {cat:'ball',id:'optic',name:'Optic Yellow',price:7000,hist:'Easy to find in the rough.',col:'#e6f03a',tracer:{g:'rgba(230,240,58,.5)',c:'#f8ffc0'}},
  {cat:'ball',id:'alignment',name:'Alignment Ball',price:11000,hist:'A line to aim down.',col:'#f4f6fb',tracer:{g:'rgba(40,110,220,.45)',c:'#cfe0ff'}} ];
 const PRO_LINE_BY={}; PRO_LINE.forEach(function(o){ PRO_LINE_BY[o.cat+':'+o.id]=o; });
-function proLineOn(){ try{ return ftLive(); }catch(e){ return false; } }
-function proLineItems(cat){ if(!proLineOn()) return []; return PRO_LINE.filter(function(o){ return o.cat===cat; }).map(function(o){ const r={id:o.id,name:o.name,hist:o.hist}; r[cat]=1; if(o.col) r.col=o.col; return r; }); }
+function proLineItems(cat){ return PRO_LINE.filter(function(o){ return o.cat===cat; }).map(function(o){ const r={id:o.id,name:o.name,hist:o.hist}; r[cat]=1; if(o.col) r.col=o.col; return r; }); }
 // CS414, BALL cosmetics. A ball is a small teed sprite beside the standing golfer (PXG_BALL overlay) plus
 // an optional hole-view tint on the shot ball/tracer. `tracer` recolors the in-play ball (Comet → fire).
 const PXBALL=[
@@ -12405,10 +12393,9 @@ function buildPlayer(o){const p={name:S.name||'Your Golfer',you:true};
 /* ---------- build identity ---------- */
 /* ICON: the tier above ELITE, for an overall of 100 and up. Only the player's own career golfer gets there (world
    golfers and the Daily clamp at 99). A prism instead of one colour: c is its solid colour (the rating web), and
-   the chip, the player card and the share card wear the full prism. It rides the First Tee switch, so it goes live
-   with the new home. */
+   the chip, the player card and the share card wear the full prism. */
 const ICON_PRISM=['#ff9bd6','#c59bff','#7fe3ff','#9ff5c8','#ffe27a'];
-function ovrIcon(o){ try{ return o>=100 && ftLive(); }catch(e){ return false; } }
+function ovrIcon(o){ return o>=100; }
 function ovrTier(o){
   if(ovrIcon(o)) return {c:'#7fe3ff', glow:'0 0 16px rgba(127,227,255,.55)', lab:'ICON', icon:true};
   if(o>=90) return {c:'#35d6a0', glow:'0 0 14px rgba(53,214,160,.45)', lab:'ELITE'};
@@ -12910,7 +12897,6 @@ function render(){
   // handlers read live state so the persisted node is never stale.
   try{
     let nav=document.getElementById('rttnav');
-    if(nav && nav.getAttribute('data-ft')!==(ftLive()?'1':'0')){ nav.remove(); nav=null; }
     if(!nav){ nav=bottomNav(); document.body.appendChild(nav); navWatchdog(nav); }
     nav.classList.toggle('navhide', !showNav);
     if(showNav) navSetActive(nav);
@@ -12945,23 +12931,15 @@ const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwa
 function bottomNav(){
   // THE FIRST TEE's tabs (owner, 2026-10-15; Shop and Leaders added 2026-10-17):
   // Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me
-  const ft=ftLive();
-  const tabs=ft?[
+  const tabs=[
     {id:'home',    ico:'home',  label:'Home',      go:()=>ftGo('title')},
     {id:'protour', ico:'flag',  label:'Pro Tour',  go:()=>ftGo('protour')},
     {id:'shop',    ico:'cart',  label:'Shop',      go:()=>{ S.overlay='shop'; render(); }},
     {id:'putthub', ico:'green', label:'Putt Putt', go:()=>ftGo('putthub')},
     {id:'leaderboard', ico:'trophy', label:'Leaders', go:()=>{ S.overlay='leaderboard'; render(); }},
     {id:'me',      ico:'user',  label:'Me',        go:()=>ftGo('me')},
-  ]:[
-    {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
-    {id:'daily',   ico:'calendar', label:'Daily',  go:()=>{ S.overlay=null; startDailyChallenge(); }},
-    {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
-    {id:'profile', ico:'user',   label:'Profile',  go:()=>{ S.overlay='record'; render(); }},   // CS455: Trophy Room = your profile
-    {id:'online',  ico:'globe',  label:'Online',   go:()=>{ S.overlay=null; openH2H(); }},
-    {id:'shop',    ico:'cart',   label:'Shop',     go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
   ];
-  const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation" data-ft="${ft?1:0}"><div class="botnav-in"></div></nav>`);
+  const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation" data-ft="1"><div class="botnav-in"></div></nav>`);
   const inner=nav.querySelector('.botnav-in');
   const mk=(t)=>{
     const b=$(`<button type="button" data-nav="${t.id}" aria-label="${t.label}">${ic(t.ico)}<span>${t.label}</span></button>`);
@@ -13036,7 +13014,6 @@ function navWatchdog(nav){
 }
 // which tab is active for the current screen/overlay (a non-leaderboard overlay → none highlighted)
 function navActiveTab(){
-  if(!ftLive()) return navActiveTabClassic();
   const scr=S.screen, ov=S.overlay;
   if(ov==='tourpass') return 'pass';
   if(ov==='shop') return 'shop';
@@ -13047,19 +13024,6 @@ function navActiveTab(){
   if(scr==='protour'||NAV_CAREER_SCR.includes(scr)||NAV_DAILY_SCR.includes(scr)||NAV_H2H_SCR.includes(scr)||scr==='rules') return 'protour';
   if(scr==='putthub') return 'putthub';
   if(scr==='me'||scr==='setup') return 'me';
-  return '';
-}
-function navActiveTabClassic(){
-  const scr=S.screen, ov=S.overlay;
-  if(ov==='record') return 'profile';   // CS455
-  if(ov==='shop') return 'shop';
-  if(ov==='tourpass') return 'pass';
-  if(ov) return '';
-  if(scr==='title') return 'home';
-  if(NAV_CAREER_SCR.includes(scr)) return 'career';
-  if(NAV_DAILY_SCR.includes(scr)) return 'daily';
-  if(NAV_H2H_SCR.includes(scr)) return 'online';
-
   return '';
 }
 function navSetActive(nav){
@@ -15374,68 +15338,9 @@ function homeHeroPick(list){
 // bunker left, a putting green + swallowtail flag + ball right), plus a heavy top scrim + vignette so the
 // cards stay the hero and the scene recedes. Replaces the old full-canvas pixel bg (which upscaled blurry).
 let _pxTitleGreen=null, _pxTitleBunker=null;
-function pxGreenFlagURL(){   // crisp pixel putting green + swallowtail flag + ball
-  if(_pxTitleGreen) return _pxTitleGreen;
-  const W=104,H=76, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const cx=cv.getContext('2d');
-  const px=(x,y,c)=>{ cx.fillStyle=c; cx.fillRect(x,y,1,1); };
-  const gcx=52,gcy=58,grx=48,gry=15;
-  for(let y=gcy-gry;y<=gcy+gry;y++) for(let x=gcx-grx;x<=gcx+grx;x++){ const d=((x-gcx)/grx)**2+((y-gcy)/gry)**2; if(d<=1) px(x,y, d>0.8?'#256b40':(y<gcy?'#49b76c':'#329457')); }
-  // pin + ball sit on the LEFT of the green so they stay on-screen when the green's right half bleeds off the edge
-  for(let y=52;y<=54;y++) for(let x=18;x<=20;x++) px(x,y,'#eeece2');   // ball
-  const fx=30; for(let y=18;y<=57;y++){ px(fx,y,'#e4e7e0'); px(fx+1,y,'#aeb7b1'); }   // pole
-  for(let i=0;i<15;i++) for(let j=0;j<10;j++){ if(i>=9 && Math.abs(j-4.5)<(i-8)) continue; px(fx+2+i,18+j, i<2?'#bf922a':'#eac845'); }   // swallowtail flag
-  _pxTitleGreen=cv.toDataURL('image/png'); return _pxTitleGreen;
-}
-function pxBunkerURL(){   // crisp pixel greenside bunker: sand floor + grass lip overhang + rake lines
-  if(_pxTitleBunker) return _pxTitleBunker;
-  const W=98,H=54, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const cx=cv.getContext('2d');
-  const px=(x,y,c)=>{ cx.fillStyle=c; cx.fillRect(x,y,1,1); };
-  const bcx=49,bcy=32,brx=45,bry=17;
-  for(let y=bcy-bry;y<=bcy+bry;y++) for(let x=bcx-brx;x<=bcx+brx;x++){ const nx=(x-bcx)/brx, ny=(y-bcy)/bry; const d=nx*nx+ny*ny; if(d>1) continue;
-    let c = y<bcy-2?'#c9b788' : (y>bcy+4?'#f0e4bf':'#ddcb9a'); if(d>0.86) c='#c2ad78'; px(x,y,c); }
-  for(let x=bcx-brx;x<=bcx+brx;x++){ const nx=(x-bcx)/brx, inside=1-nx*nx; if(inside<0) continue; const ty=bcy-Math.sqrt(inside)*bry;
-    for(let y=Math.floor(ty)-3;y<Math.floor(ty)+1;y++) px(x,y, y<ty-1?'#1b452e':'#123320');   // grass lip
-    px(x,Math.floor(ty)+1,'#b8a675'); px(x,Math.floor(ty)+2,'#c8b684'); }                       // lip shadow on sand
-  for(let r=0;r<3;r++){ const ry2=bcy+4+r*4; for(let x=bcx-brx+8;x<=bcx+brx-8;x++){ const nx=(x-bcx)/brx; if(1-nx*nx<0.05) continue; if((x+r)%3===0) px(x,ry2,'#cbb984'); } }   // rake lines
-  _pxTitleBunker=cv.toDataURL('image/png'); return _pxTitleBunker;
-}
-function titleSceneHTML(){
-  let green='', bunker='';
-  try{ green=pxGreenFlagURL(); }catch(e){}
-  try{ bunker=pxBunkerURL(); }catch(e){}
-  return `<svg class="sc-scene" viewBox="0 0 1440 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs>
-      <linearGradient id="sc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#040d0a"/><stop offset="0.34" stop-color="#0b2733"/><stop offset="0.58" stop-color="#1c4f4a"/><stop offset="0.71" stop-color="#5c5f3c"/><stop offset="0.78" stop-color="#8a6636"/></linearGradient>
-      <linearGradient id="sc-grnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a6a45"/><stop offset="0.5" stop-color="#1c5334"/><stop offset="1" stop-color="#0f3a24"/></linearGradient>
-      <radialGradient id="sc-glow" cx="72%" cy="86%" r="52%"><stop offset="0" stop-color="#e2b45a" stop-opacity="0.34"/><stop offset="0.55" stop-color="#e2b45a" stop-opacity="0"/></radialGradient>
-    </defs>
-    <rect width="1440" height="1000" fill="url(#sc-sky)"/>
-    <path d="M0 700 q40 -20 80 -6 t80 -8 t80 6 t80 -12 t80 4 t80 -10 t80 8 t80 -6 t80 -8 t80 8 t80 -6 t80 6 t80 -8 t80 6 t80 -6 t80 8 t80 -6 L1440 720 L0 720 Z" fill="#0c3330" opacity="0.55"/>
-    <rect x="0" y="700" width="1440" height="60" fill="#1c4f4a" opacity="0.2"/>
-    <path d="M0 728 Q 360 690 720 720 T 1440 710 L1440 1000 L0 1000 Z" fill="#2b6b47"/>
-    <path d="M0 812 Q 480 772 960 806 T 1440 796 L1440 1000 L0 1000 Z" fill="url(#sc-grnd)"/>
-    <rect width="1440" height="1000" fill="url(#sc-glow)"/>
-  </svg>
-  ${bunker?`<img class="sc-sprite sc-bunker" src="${bunker}" alt="" aria-hidden="true">`:''}
-  ${green?`<img class="sc-sprite sc-green" src="${green}" alt="" aria-hidden="true">`:''}
-  <div class="sc-ov sc-scrim"></div><div class="sc-ov sc-vig"></div><div class="sc-ov sc-ground"></div>`;
-}
 // CS374: scale the one-line title headline to fill its width (biggest that fits, capped). Re-run on
 // font load + resize since the display font (Anton) loads async / may fall back to a wider face.
 let _fitHeroBound=false;
-function fitHero(){
-  const el=document.getElementById('herohead'); if(!el||!el.parentElement) return;
-  const pw=el.parentElement.clientWidth; if(!pw) return;
-  el.style.fontSize='46px';
-  const sw=el.scrollWidth||1;
-  const sz=Math.max(20, Math.min(62, 46*(pw*0.96)/sw));
-  el.style.fontSize=sz.toFixed(1)+'px';
-}
-function scheduleFitHero(){
-  requestAnimationFrame(fitHero);
-  try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitHero); }catch(e){}
-  if(!_fitHeroBound){ _fitHeroBound=true; window.addEventListener('resize', ()=>{ if(document.getElementById('herohead')) fitHero(); }); }
-}
 // CS473: first-run onboarding. The #1 piece of feedback is "too many buttons/text, don't know what to do."
 // For a brand-new player the home collapses to ONE focused path (build → play one round), the rest of the
 // menu hidden until they've played once or tapped "explore". Additive: anyone with any history never sees it.
@@ -15514,32 +15419,7 @@ const TOUR_KEY='bag_tour_done';
 var _tourI=0, _tourList=null, _tourKey=TOUR_KEY;
 function tourSeen(){ try{ return !!LS.get(TOUR_KEY,false); }catch(e){ return true; } }
 function tourRunning(){ return !!document.getElementById('tourdim'); }
-function tourStepsClassic(){ return [
-  { title:'Welcome to Run The Tour',
-    body:'Build one golfer and play out their whole career. Thirty seasons, four majors a year and a world ranking to climb. Can you go down as the greatest of all time?',
-    target:null },
-  { title:'Career is the game',
-    body:'Draft your golfer one skill at a time from real pros, then take them through thirty seasons. Win majors, make the team cups, and hang on when age starts taking your distance.',
-    target:'#rttnav [data-nav="career"]' },
-  { title:'A round a day',
-    body:'One course, same for everybody. Three tries to beat the tour average. Five minutes, and the fastest way to learn how a round plays.',
-    target:'#rttnav [data-nav="daily"]' },
-  { title:'Your season track',
-    body:'Everything you play feeds this. Sixty tiers of rewards, free the whole way down, with a paid lane if you want the rest of it.',
-    target:'#rttnav [data-nav="pass"]' },
-  { title:'What you earn',
-    body:'Coins, packs and gear live in the Shop. Rewards from every mode drop here.',
-    target:'#rttnav [data-nav="shop"]' },
-  { title:'Your record',
-    body:'Trophies, achievements, the majors leaderboard, your career history and every lifetime stat live in Profile. Come back here to see where the run stands.',
-    target:'#rttnav [data-nav="profile"]' },
-  { title:'Start here',
-    body:'Play one Daily round first. It takes five minutes and teaches you the swing, the courses and the scoring, so you start your career already knowing the ropes.',
-    target:'#rttnav [data-nav="daily"]',
-    cta:'▶ Play my first round',
-    act:function(){ try{ track('tour_cta'); }catch(e){} startDailyChallenge(); } }
-]; }
-function tourSteps(){ if(!ftLive()) return tourStepsClassic(); return [
+function tourSteps(){ return [
   { title:'Welcome to Run The Tour',
     body:'This is your golfer, on the first tee. Two tours start from here: the Pro Tour, where you build a career, and Putt Putt, where you play every putt yourself.',
     target:'.ft-home .ft-fig' },
@@ -15686,38 +15566,6 @@ function replayTour(){
 // Enhancements 4+5: the "A RunThe.GG Game / Build the Perfect Golfer" hero is ~90px of pitch aimed at
 // someone who's already bought in, and the pixel golfer (the best thing in the game) was nowhere on the
 // home page. Anyone with history gets their golfer + their name instead; first-run keeps the full hero.
-function homeReturning(){
-  try{
-    if(sbSignedIn()) return true;
-    if(careerSaveInfo()) return true;
-    const c=(typeof career==='function')?career():null;
-    if(c && c.builds>0) return true;
-    if(typeof dailyStats==='function' && dailyStats().played>0) return true;
-  }catch(e){}
-  return false;
-}
-function homePlayerHeader(){
-  const nm=(S.name&&String(S.name).trim())||'Your Golfer';
-  const chips=[];
-  try{ const t=repTier(); if(t&&t.tier) chips.push(`<span class="hh-chip">🏅 <b>${esc(t.tier.name)}</b></span>`); }catch(e){}
-  try{ const c=career(), lt=(c&&c.lt)||{};
-    if((lt.wins||0)>0) chips.push(`<span class="hh-chip"><b>${lt.wins}</b> career win${lt.wins===1?'':'s'}</span>`);
-    if((lt.majors||0)>0) chips.push(`<span class="hh-chip"><b>${lt.majors}</b> major${lt.majors===1?'':'s'}</span>`);
-  }catch(e){}
-  const box=$(`<div class="homehdr">
-    <div class="hh-fig" role="button" tabindex="0" aria-label="Open your closet" title="Open your closet" style="position:relative">${pxFigureHTML(S.look,66)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="spk-hhpk">'+spkEl('pumpkin',22)+'</span>'):''}</div>
-    <div class="hh-txt">
-      <div class="hh-hi">Welcome back</div>
-      <div class="hh-name">${esc(nm)}</div>
-      ${chips.length?`<div class="hh-chips">${chips.join('')}</div>`:''}
-    </div>
-  </div>`);
-  /* tapping your golfer opens the closet, the same door the shop's closet button uses */
-  const fig=box.querySelector('.hh-fig');
-  if(fig){ const go=()=>{ track('home_open_closet'); S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:'title',overlay:null}; S.screen='setup'; S.setupCat='shirt'; render(); };
-    fig.onclick=go; fig.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; }
-  return box;
-}
 /* ════ THE FIRST TEE: the golf home, and the hubs it opens (owner's call, 2026-10-15) ═══════════════════
    One screen, an app rather than a page. Your golfer stands on a tee in the middle with their bag tag.
    Behind them the ground splits along a gold seam: today's Play 18 hole on one side (the Pro Tour), the
@@ -15732,14 +15580,11 @@ const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeh
 const FT_PLATE_V=2;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
 // the worlds that have a picture for the home's Putt Putt side. A world added without one shows the Clubhouse
 const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage'];
-// THE SWITCH. The First Tee goes live with Putt Putt Tour, on the same flag (PUTT_LIVE) and for the same testers
-// before it (PUTT_TESTERS): owner, 2026-10-15, everything goes live at once. Everybody else keeps the classic home.
-// The First Tee does not wait for putt.js: with PUTT_LIVE on, the very first screen is the First Tee (its Putt Putt
-// side is drawn once the module has run), so the classic home is never painted, not even for a frame (the owner,
-// 2026-10-18: "I don't want the old ones to be visible"). With the kill switch thrown it is the testers' again.
-function ftLive(){ try{ return PUTT_LIVE===true || puttOn(); }catch(e){ return false; } }
-function ftOn(){ return FT_SCREENS.includes(S.screen) && ftLive(); }
-function ftClosetOn(){ try{ return S.screen==='setup' && !!S.setupEdit && ftLive(); }catch(e){ return false; } }
+// THE FIRST TEE IS THE HOME, for everybody (live since 2026-10-18; the classic home and the PUTT_LIVE switch were
+// removed the same day, at the owner's call). It does not wait for putt.js: its Putt Putt side is drawn once the module
+// has run.
+function ftOn(){ return FT_SCREENS.includes(S.screen); }
+function ftClosetOn(){ try{ return S.screen==='setup' && !!S.setupEdit; }catch(e){ return false; } }
 function ftDesk(){ try{ return matchMedia('(min-width: 900px) and (min-height: 560px)').matches; }catch(e){ return false; } }
 function ftGo(scr){ if(scr==='putthub'){ try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} } S.overlay=null; S.screen=scr; render(); }
 // the pixel check, drawn on the game's 18 by 18 icon grid and shaded by its medal renderer
@@ -15949,193 +15794,8 @@ function ftAd(where){
   if(where==='home') return null;
   return $(`<a class="ft-ad ft-ad-${where} ft-house" href="/" target="_blank" rel="noopener"><img src="/assets/runthegames-icon_192.png" alt="" width="32" height="32" loading="lazy"><span><b>More games at RunThe.GG</b>One free account plays them all</span><span class="ft-adgo">Play ↗</span></a>`); }
 
-/* THE CLASSIC HOME: what everybody who is not on the First Tee still sees, kept exactly as it was. */
-function scrTitleClassic(){
-  if(!S.daily) restoreProfileIdentity();   // self-heal: a Legend round swaps S.look/S.name to the legend's frozen identity; any path back to the title must show (and never later persist) anything but the PROFILE look
-  reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
-  // CS363: pixel-art dusk-course backdrop (matches the game's pixel theme) instead of the old smooth vector scene
-  let sceneHtml=''; try{ sceneHtml=titleSceneHTML(); }catch(e){}
-  const scene=$(`<div class="scene" aria-hidden="true">${sceneHtml}</div>`);
-  add(scene);
-  // seasonal decor: webs and pumpkins in the scene, and the hidden things to find on the home screen
-  if(decorLive()==='spooky'){ try{ spkStyleOnce(); scene.insertAdjacentHTML('beforeend',spookySceneHTML()); }catch(e){} try{ spookyHomeEggs().forEach(b=>app.appendChild(b)); }catch(e){} }
-  const w=$(`<div class="titlewrap center"></div>`);
-  // 5: returning players get their golfer + name (4) instead of the marketing hero; first-run keeps the pitch.
-  const returning=homeReturning();
-  // returning players get a header ROW (golfer + name on the left, the quick pills on the right on
-  // desktop); the first-run marketing hero keeps its own centred stack, untouched.
-  const head=returning?$(`<div class="homehead"></div>`):null;
-  if(returning){
-    head.appendChild(homePlayerHeader());
-    w.appendChild(head);
-  } else {
-    w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
-    w.appendChild($(`<h1 id="herohead" class="hero" style="white-space:nowrap;font-size:46px"><span class="hr1">Build the </span><span class="hr2">Perfect Golfer</span></h1>`));
-  }
-  // CS374: one big single-line headline - fit the text to fill the width so it reads large on any device
-  // (Anton loads async / may fall back, so measure & scale rather than trust a fixed clamp).
-  if(!returning){
-    scheduleFitHero();
-    w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#F1D04A" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#F1D04A"/></svg><span></span></div>`));
-  }
-  // CS473: brand-new player (guest, no history, no auto sign-in) → a focused first-run path.
-  // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
-  // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up - open the challenges panel here)
-  // Skip this row on the first-run screen so the intro panel stands alone, uncluttered (owner).
-  /* THE QUICK BAR: four equal tiles in one strip, each an icon over a short label. These used to be
-     four pills of three different designs (a pink wheel pill, a gold How to Play, two cream newspaper
-     boxes) that wrapped three and one on a phone, so the last one sat alone on a line of its own and
-     the row read as leftovers rather than a control (owner). One shape, one row, at every width: the
-     colour lives in each icon, and the wheel alone glows when a spin is waiting. */
-  { const hw=$(`<div class="homehead-act hqbar" role="group" aria-label="Quick links"></div>`);
-    const qb=(cls,icon,label,aria,fn,badge)=>{ const b=$(`<button type="button" class="hq${cls?' '+cls:''}" aria-label="${esc(aria)}"><span class="hqi" aria-hidden="true">${icon}${badge||''}</span><span class="hql">${label}</span></button>`); b.onclick=fn; hw.appendChild(b); return b; };
-    // Prize Wheel lives here too (owner: no full-size tile for it)
-    if(wheelEnabled()){ const avail=wheelAvail(), free=wheelFreeReady(), on=sbSignedIn();
-      const lab=!on?'Prize wheel':avail>0?(free&&avail===1?'Free spin':'Spin'):'Wheel';
-      qb('wheel'+(avail>0?' ready':''), wheelMiniSVG(), lab,
-         'Prize Wheel'+(avail>0?', '+avail+' spin'+(avail>1?'s':'')+' ready':', next free spin tomorrow'), openWheel,
-         (on&&avail>1)?`<span class="hqn">${avail}</span>`:''); }
-    qb('howto', pxMedalSVG(PXICONS.book,'#F1D04A'), 'How to play', 'How to Play', openRules);
-    // the newsletter carries its unread count on the icon
-    { const nn=newsUnseenCount();
-      qb('news', pxMedalSVG(PXICONS.scroll,'#f4e3c9'), "What's new", "What's New"+(nn?', '+nn+' unread':''), openWhatsNew,
-         nn?`<span class="hqn">${nn}</span>`:''); }
-    // Roster Updates: the weekly in-season rating refresh (owner)
-    { const ru=qb('roster', pxMedalSVG(PXICONS.chartup,'#6fd3ff'), 'Rosters', 'Roster Updates', openRosterUpdates,
-         rosterUpdUnseen()?'<span class="hqd"></span>':'');
-      ru.setAttribute('data-rosterbtn',''); }
-    // The next season's countdown, under the quick bar in a season's last 14 days, and only for a season
-    // that has been written (an unauthored one would count down to a pass with nothing on it). It names the
-    // NUMBER and nothing else: what the next season holds is still not shown before it starts (owner).
-    let qwrap=hw; const ssn=passSeason(), nx=ssn.n+1;
-    if(PASS_SEASONS[nx] && ssn.daysLeft<=14){
-      hw.classList.remove('homehead-act');
-      qwrap=$(`<div class="homehead-act hqwrap"></div>`); qwrap.appendChild(hw);
-      const acc=(PASS_SEASONS[nx].accent)||'#a24be0';
-      const cd=$(`<button type="button" class="hqcd" style="--acc:${acc}" aria-label="Season ${nx} countdown, opens the Tour Pass"><span class="hqcdl">Season ${nx} starts in</span><span class="hqcdt" aria-live="off"></span></button>`);
-      cd.onclick=function(){ S.overlay='tourpass'; render(); };
-      qwrap.appendChild(cd);
-      const tt=cd.querySelector('.hqcdt'), pad=function(v){ return v<10?'0'+v:String(v); };
-      // The first tick runs while the home screen is still being built, before the button is in the page,
-      // so the stop is only for a button that WAS on screen and has since been thrown away by a render.
-      let seen=false;
-      const tick=function(){
-        if(cd.isConnected) seen=true; else if(seen){ clearInterval(iv); return; }
-        const sec=Math.max(0, Math.floor((passSeasonEndMs(ssn.n)-Date.now())/1000));
-        // At zero the home screen redraws itself, so Season 2 (and its launch popup) arrives on the second.
-        // It waits for the game's own season to have turned, which is the same Eastern midnight, so a
-        // rounding gap can never redraw the old season. A popup open on top is left alone: closing it redraws.
-        if(sec<=0){ tt.textContent='00h 00m 00s';
-          if(passSeason().n===ssn.n) return;
-          clearInterval(iv);
-          if(cd.isConnected && S.screen==='title' && !S.overlay){ try{ render(); }catch(e){} }
-          return; }
-        const d=Math.floor(sec/86400), h=Math.floor(sec/3600)%24, m=Math.floor(sec/60)%60, x=sec%60;
-        tt.textContent=(d?d+'d ':'')+pad(h)+'h '+pad(m)+'m '+pad(x)+'s';
-      };
-      const iv=setInterval(tick,1000); tick();
-    }
-    (head||w).appendChild(qwrap); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
-  // (career bests moved off the top onto the new-career card, see careerHeroCard)
-  const stack=$(`<div class="stack"></div>`);
-  const ri=resumeInfo();
-  const cs=careerSaveInfo();
-  // CS473: brand-new player → the focused first-run path instead of the full menu (until they play or skip).
-  // (the old first-run panel is retired: a brand-new player now gets the REAL home screen with the
-  // guided tour running over it, so the arrows point at the actual tabs and they finish the intro
-  // already oriented on the interface instead of being dropped onto it cold.)
-  // Season 1 launch announcement (returning players, once), fires after this render settles, and only
-  // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeSpookyPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
-  // ════════════════════════════════════════════════════════════════════
-  // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
-  // card (mid-career it's "Resume Year 12", first thing in the morning it's
-  // "Play 18"); every other mode rides a rail under it - which scrolls
-  // sideways on a phone and becomes the right-hand column on a desktop, so
-  // the page fills the width instead of sitting in a 520px strip.
-  // The daily companions (streak calendar, weekly goals, free-Legend hook)
-  // live in the Play-18 flow, not here.
-  // ════════════════════════════════════════════════════════════════════
-  const modes=homeModeList();
-  const hero=homeHeroPick(modes);
-  const main=$(`<div class="homemain"></div>`);
-  const heroSlot=$(`<div class="homehero"></div>`);
-  if(hero){ const hc=hero.make({hero:true}); hc.classList.add('heroc'); heroSlot.appendChild(hc); }
-  main.appendChild(heroSlot);
-  const rest=modes.filter(m=>m!==hero);
-  if(rest.length){
-    const side=$(`<div class="homeside"><div class="rail-lab">Also today<i></i></div><div class="homerail"></div></div>`);
-    const rail=side.querySelector('.homerail');
-    rest.forEach(m=>{ const c=m.make({rail:true}); c.classList.add('railc'); if(m.id==='haunted'||m.id==='winter') c.classList.add('hl-rail'); rail.appendChild(c); });
-    main.appendChild(side);
-  }
-  w.appendChild(main);
-  // extras that aren't modes: a stale build draft still wants a way to start over, and a dormant
-  // Spotlight gets a one-line tease so the month's event isn't invisible. On desktop these sit under
-  // the hero (filling the left column); on a phone they just follow the rail.
-  const extras=$(`<div class="homeextras"></div>`);
-  // Haunted Links on a desktop sits in the left column under the hero (it replaces the drop banner
-  // there); the rail copy is hidden at that width. A phone keeps the rail copy and the banner.
-  const evm=rest.find(m=>m.id==='haunted'||m.id==='winter'), hlHere=!!evm;
-  if(evm){ try{ const hc=evm.make({}); hc.classList.add('hl-left'); extras.appendChild(hc); }catch(e){} }
-  if(ri && !cs){
-    const go=$(`<button class="btn ghost">New Career<span class="sub">Build a new golfer</span></button>`);
-    go.onclick=()=>{homeSetLastMode('career');reset();S.mode='easy';S.screen='setup';render();};
-    stack.appendChild(go);
-  }
-  if(!spotlightLiveToday()){
-    const ns=nextSpotlight();
-    stack.appendChild($(`<div class="small center" style="color:var(--muted);margin-top:6px">★ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
-  }
-  if(stack.children.length) extras.appendChild(stack);
-  // ── LIVE THEMED DROP promo: shows whenever a windowed drop is live (Summer Smash now, Spooky in Oct...),
-  // routes straight to the Pro Shop's Drops tab. Fully data-driven off the DROPS registry. ──
-  try{ const ld=liveThemedDrop();
-    if(ld){ const pr=dropProgress(ld), done=pr.own>=pr.tot;
-      const db=$(`<button class="homedrop${hlHere&&(ld.id==='spooky'||ld.id==='winter')?' hd-hl':''}" style="--dacc:${ld.accent}">
-        <span class="hd-dot"></span>
-        <span class="hd-txt"><b>${esc(ld.name)} is LIVE</b><span>${(typeof dropClaimable==='function'&&dropClaimable(ld))?'🏆 COMPLETE · tap to CLAIM your reward!':done?'✓ Collection complete!':`Collect all ${pr.tot} · you have ${pr.own} · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]}`}</span></span>
-        <span class="hd-go">▸</span>`);
-      db.onclick=()=>{ track('home_drop_promo',{id:ld.id}); S.overlay='shop'; S.shopSec='drops'; S.shopDrop=ld.id; render(); };
-      extras.appendChild(db); } }catch(e){}
-  if(extras.children.length) main.appendChild(extras);
-  // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
-  const sec=$(`<div class="home-nav compact"></div>`);
-  const signedIn=sbSignedIn();
-  // CS454: each tile carries its own accent + a pixel icon (pxMedalSVG tints the 18x18 sprite to the accent).
-  const navRgba=(hex,a)=>{ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; };
-  const mkTile=(pxrows,acc,label,sub,fn,opts)=>{ opts=opts||{};
-    const svg=pxMedalSVG(pxrows,acc), dot=opts.dot, wide=opts.wide;
-    const tileStyle=`--acc:${acc};border:1.5px solid ${navRgba(acc,.34)};background:linear-gradient(160deg,${navRgba(acc,.13)},rgba(6,18,12,.5))`;
-    const chipStyle=`background:${navRgba(acc,.18)};border:1px solid ${navRgba(acc,.4)}`;
-    const b=$(`<button type="button" class="navtile${wide?' wide':''}" aria-label="${esc(label)}${dot?' · new items':''}" style="${tileStyle}">
-      <span class="nichip" aria-hidden="true" style="${chipStyle}">${svg}</span>
-      <span class="ntext"><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}</span>
-      ${wide?'<span class="ngo" aria-hidden="true">↗</span>':''}${dot?'<span class="ndot"></span>':''}</button>`);
-    b.onclick=fn; sec.appendChild(b); };
-  // CS290: Challenges is now a prominent nav tile (was buried in the ≡ menu) - daily quests + weekly
-  // challenges - daily/weekly quests feed your Tour Rep tier + earn coins / mulli-spins.
-  // Compact icon row (owner: reduce home scrolling) - short labels, no sub-lines; the dots still flag
-  // anything waiting (new gear / a free pack), and every one of these also lives in the bottom nav or menu.
-  const _dq=(signedIn && typeof dailyQuests==='function')?dailyQuests():null;
-  const _dqLeft=_dq?dailyQuestDefs().filter(d=>!_dq[d.k]).length:0;
-  mkTile(PXI.target,'#16b5a6','Quests','', ()=>{S.overlay='challenges';render();}, {dot:_dqLeft>0});
-  mkTile(PXI.podium,'#4aa3ff','Ranks','', ()=>{S.overlay='leaderboard';render();});
-  mkTile(PXI.cup,'#F1D04A','Profile','', ()=>{S.overlay='record';render();});
-  if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')+(liveSeasonalPackId()?packCredits('seasonal'):0)):0);
-    const shopNew=((typeof cosNewTotal==='function')&&cosNewTotal()>0)||nFree>0;   // CS423: NEW-item dot on the Pro Shop tile (leads to the gear)
-    mkTile(PXI.cart,'#3fbf7a','Shop','', ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, {dot:shopNew}); }
-  mkTile(PXI.gift,'#b06be0','Invite','', ()=>{ referralShare(); });   // CS403: refer a friend -> free packs
-  // (How to Play moved up under the hero, CS287)
-  w.appendChild(sec);
-  // CS303: the once-a-day challenges pop-up is removed (owner) - the "🎯 Daily Quests" button under the hero opens it.
-  const credit=$(`<div class="small muted center homecredit" style="margin-top:11px;line-height:1.5">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
-  w.appendChild(credit);
-  add(w);
-}
 /* ── THE FIRST TEE ──────────────────────────────────────────────────────────────────────────────── */
 function scrTitle(){
-  if(!ftLive()) return scrTitleClassic();
   if(!S.daily) restoreProfileIdentity();   // a Legend round swaps the look to the legend's; the home must show the player's own
   reconcileDailyAttempts();
   ftStyleOnce();
@@ -16202,7 +15862,6 @@ function ftHearts(lives,max){ lives=lives|0; max=max||9; const nh=Math.ceil(Math
 /* ── PRO TOUR: the career, Play 18, head to head and the Spotlight, each the card the game already builds,
    worn in the hub's glass. Today's course sits on a brass plaque; the ad slot is at the foot. ── */
 function scrProTour(){
-  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
   ftStyleOnce();
   const root=$(`<div class="ft ft-hub ft-protour"></div>`);
   root.appendChild(ftScene()); root.appendChild(ftTopBar({back:true}));
@@ -16226,7 +15885,6 @@ function scrProTour(){
 /* ── PUTT PUTT: the scorecard. Your world, your hole, your hearts, the way in, the Daily Hole and the
    Members Tour. Everything inside is the Putt Putt module's own (openPutt). ── */
 function scrPuttHub(){
-  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
   ftStyleOnce();
   const root=$(`<div class="ft ft-hub ft-putthub"></div>`);
   root.appendChild(ftScene()); root.appendChild(ftTopBar({back:true}));
@@ -16261,7 +15919,6 @@ function hmShort(ms){ const m=Math.max(0,Math.round(ms/60000)); return Math.floo
 /* ── ME: the dressing room. Your golfer on a plinth, the eight things they wear around them, the closet
    one tap away, and everything that is not a tour underneath, settings and the site's links last. ── */
 function scrMe(){
-  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
   ftStyleOnce();
   const si=sbSignedIn(), L=S.look||DEFLOOK;
   const root=$(`<div class="ft ft-hub ft-mescr"><div class="ft-wood"></div></div>`);
@@ -16365,7 +16022,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-scene.solo .ft-seam{display:none}
 .ft-shade{position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(transparent,rgba(4,14,9,.75));pointer-events:none}
 .ft-home[data-hov=pro] .ft-putt,.ft-home[data-hov=putt] .ft-pro{filter:brightness(.45) saturate(.5)}
-/* Halloween: a moonlit dusk, the webs and pumpkins the classic home had, and a low fog */
+/* Halloween: a moonlit dusk, webs and pumpkins, and a low fog */
 .ft-spksky{position:absolute;left:0;right:0;top:0;height:47%;pointer-events:none;background:linear-gradient(180deg,rgba(20,8,40,.9),rgba(54,24,86,.66) 45%,rgba(150,64,70,.22) 85%,transparent)}
 .ft-scene.spooky .ft-haze{background:linear-gradient(rgba(214,110,70,.75),transparent)}
 .ft-moon{position:absolute;top:calc(env(safe-area-inset-top,0px) + 62px);right:5%;width:min(15vw,96px);image-rendering:pixelated;filter:drop-shadow(0 0 24px rgba(255,236,170,.45))}
@@ -23686,11 +23343,9 @@ function cutscenesOn(){
   }catch(e){ return false; }
 }
 /* ---- THE PUTTING GREEN (golf/putt/putt.js): a game you PLAY, on the real greens and on themed
-   mini-golf courses. LIVE for everybody, signed in or not. PUTT_LIVE=false is the kill switch: it puts
-   Putt Putt and the First Tee back to the tester accounts only, read off the same server-attributed
-   username the cutscene gate reads, and everybody else back to the classic home. There is
-   deliberately no local override, because a localStorage flag is a switch any visitor can flip. ---- */
-var PUTT_LIVE=true;    // the launch: Putt Putt Tour and the First Tee home, live together
+   mini-golf courses. Live for everybody, signed in or not, since 2026-10-18. PUTT_TESTERS keeps its tester
+   tools (Tester preview, the free refill, the Lab, the pass), read off the server-attributed username the
+   cutscene gate reads; there is deliberately no local override. ---- */
 const PUTT_API=1;                                         // the putt.js API this page was written against
 var PUTT_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];      // tester accounts (lowercased usernames)
 var PUTT_ALL_ACCESS=['csel8','runnyj','malikwillislover'];   // every Putt Putt hole open for good, whatever the record says (lowercased usernames)
@@ -23721,13 +23376,12 @@ function g3dOn(){
   }catch(e){ return false; }
 }
 /* ---- THE 3D MENU GOLFER (golfer3d.js pic()): the golfer at x3 in the menus (the First Tee, Me, the closet, player
-   cards, leaderboards) and the hat, glasses, club and cleat tiles drawn from the same model. It rides the First
-   Tee's switch (ftLive), so testers see it now and everybody sees it when the new home goes live. Anything it
+   cards, leaderboards) and the hat, glasses, club and cleat tiles drawn from the same model, for everybody. Anything it
    cannot draw falls back to today's picture. A drawing costs 10 to 45 ms: a task draws up to G3M_BUDGET ms of new
    pictures at once, and the rest go up blank and are drawn while the page is idle (a leaderboard of new looks). ---- */
 const G3M_BUDGET=90;
 const G3M_BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-function g3dMenuOn(){ try{ return ftLive() && g3dOn() && typeof RTT_G3D.pic==='function'; }catch(e){ return false; } }
+function g3dMenuOn(){ try{ return g3dOn() && typeof RTT_G3D.pic==='function'; }catch(e){ return false; } }
 let _g3mSpent=0, _g3mN=0; const _g3mQ=[], _g3mIds=new Map();
 function g3dPic(look,part){
   if(!g3dMenuOn()) return null;
@@ -23767,9 +23421,7 @@ function g3dSet(look,vx,vy,kind){
 }
 function puttOn(){
   try{
-    if(!(window.RTT_PUTT && window.RTT_PUTT.API_VERSION===PUTT_API)) return false;   // a blocked or stale module draws no door
-    if(PUTT_LIVE) return true;
-    return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
+    return !!(window.RTT_PUTT && window.RTT_PUTT.API_VERSION===PUTT_API);   // a blocked or stale module draws no door
   }catch(e){ return false; }
 }
 // everything the module reads off the game, so the greens are the game's own greens
@@ -38634,7 +38286,7 @@ function passHeroNode(ssn, opts){
 }
 // Putt Putt's lives with and without the pass, from the module, so the pitch is the game's own numbers.
 // Null before Putt Putt is live for this player (the one launch: it shows when the switch flips).
-function puttPassLives(){ try{ const L=ftLive()&&window.RTT_PUTT&&window.RTT_PUTT.LIVES; return L&&L.pass>L.free?L:null; }catch(e){ return null; } }
+function puttPassLives(){ try{ const L=window.RTT_PUTT&&window.RTT_PUTT.LIVES; return L&&L.pass>L.free?L:null; }catch(e){ return null; } }
 // Putt Putt's three-band heart (a heart is three lives), the one icon for every double lives line
 function puttHeartIcon(sz){ try{ const svg=window.RTT_PUTT&&window.RTT_PUTT.heart?window.RTT_PUTT.heart():''; return svg?`<span class="pp-hic" style="display:inline-block;width:${sz||'1em'};height:${sz||'1em'};vertical-align:-0.15em;line-height:0">${svg.replace('<svg ','<svg width="100%" height="100%" ')}</span>`:'❤️'; }catch(e){ return '❤️'; } }
 // The Pro perk stack (the $14.99 value story), used on both the sales page and the in-track upsell.
@@ -39114,7 +38766,7 @@ function pxIconBig(map){ const big=map.flatMap(r=>{ const w=r.split('').map(c=>c
   return big.map((row,y)=>row.split('').map((c,x)=>{ if(c!=='k') return c;
     const L=fill(row[x-1]), R=fill(row[x+1]), U=fill((big[y-1]||'')[x]), D=fill((big[y+1]||'')[x]);
     return ((L&&R)||(U&&D))?'s':'.'; }).join('')); }
-// a shirt or a pair of trousers in that colour, drawn alone by the 3D golfer (testers, the First Tee switch)
+// a shirt or a pair of trousers in that colour, drawn alone by the 3D golfer (the menus' 3D golfer)
 function g3dGarmentThumb(cat,id){ if(!id||(cat!=='shirt'&&cat!=='pants')) return null;
   const g=g3dPic(g3dItemLook(cat==='shirt'?{polo:id,shirtPat:'none'}:{pants:id}),cat); return g?g3dTile(g):null; }
 function pxColorThumb(cat,col){ const key=cat+col; if(!_pxColThumb[key]){
@@ -40303,12 +39955,6 @@ function wcLightUI(ov,k){ const r=wcLight(k); if(!r) return;
   ov.appendChild(box); }
 
 // ---- the home scene: webs in the corners and lit pumpkins on the ground ----
-function spookySceneHTML(){
-  return `<img class="spk-scene-web l" src="${spkWebURL()}" alt=""><img class="spk-scene-web r" src="${spkWebURL()}" alt="">
-    <span class="spk-pk" style="left:calc(4% + 140px);bottom:15%">${spkEl('pumpkin',40)}</span>
-    <span class="spk-pk" style="left:calc(4% + 196px);bottom:13%;animation-delay:1.2s">${spkEl('pumpkin',28)}</span>
-    <span class="spk-pk" style="right:24%;bottom:9%;animation-delay:.6s">${spkEl('pumpkin',34)}</span>`; }
-
 // ---- the hidden things: five to find, each one once, counted per device ----
 function spkFoundKey(){ return 'bag_spooky_'+decorYear()+'_found'; }
 function spkFound(){ try{ return LS.get(spkFoundKey(),[])||[]; }catch(e){ return []; } }
