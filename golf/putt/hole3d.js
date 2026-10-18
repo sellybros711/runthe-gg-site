@@ -155,10 +155,12 @@ function* steps(C, opt){
   // ---- solids: a voxel grid, each surface voxel lit by which way its empty neighbours lie
   var NB = []; (function(){ for (var dk = -1; dk <= 1; dk++) for (var dj = -1; dj <= 1; dj++) for (var di = -1; di <= 1; di++) if (di || dj || dk) NB.push([di, dj, dk]);
     NB.push([2, 0, 0], [-2, 0, 0], [0, 2, 0], [0, -2, 0], [0, 0, 2], [0, 0, -2]); })();
-  function emit(A, nx, ny, nz, x0, y0, z0, sv){
+  // a generator, so a big solid is built a few rows a step (the owner, 2026-10-18: a whole solid in one step held a phone's
+  // frame for 300 ms while a hole was rendered ahead during a walk). The voxels and their order are exactly as before.
+  function* emit(A, nx, ny, nz, x0, y0, z0, sv){
     var id = function(i, j, k){ return (k * ny + j) * nx + i; };
     var occ = function(i, j, k){ return i >= 0 && j >= 0 && k >= 0 && i < nx && j < ny && k < nz && A[id(i, j, k)] ? 1 : 0; };
-    for (var k = 0; k < nz; k++) for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++){
+    for (var k = 0; k < nz; k++) for (var j = 0; j < ny; j++){ if ((j & 3) === 3) yield; for (var i = 0; i < nx; i++){
       var c = A[id(i, j, k)]; if (!c) continue;
       if (occ(i, j + 1, k) && occ(i, j, k + 1) && occ(i - 1, j, k) && occ(i + 1, j, k)) continue;   // hidden from the camera
       var gx = 0, gy = 0, gz2 = 0;
@@ -167,27 +169,27 @@ function* steps(C, opt){
       if (sv > ART * 1.01){ var nb = Math.ceil(sv / ART), fs = sv / nb;   // a voxel bigger than an art pixel covers its whole face, not one dot
         for (var d0 = 0; d0 < nb; d0++) for (var d1 = 0; d1 < nb; d1++) for (var d2 = 0; d2 < nb; d2++) splat(x0 + i * sv + d0 * fs, y0 + j * sv + d1 * fs, z0 + k * sv + d2 * fs, 'x:' + c, nn); }
       else splat(x0 + i * sv, y0 + j * sv, z0 + k * sv, 'x:' + c, nn);
-    }
+    } }
   }
   // solid(box, fn): asks fn(x, y, z) for a colour at every voxel. Fine for small things.
   // every solid is queued and built later, one a step, so no one piece of land holds a frame
   var JOBS = [];
-  function solid(){ var a = arguments; JOBS.push(function(){ solidNow.apply(null, a); }); }
-  function vox(){ var a = arguments; JOBS.push(function(){ voxNow.apply(null, a); }); }
-  function solidNow(x0, y0, z0, x1, y1, z1, fn, sv){
+  function solid(){ var a = arguments; JOBS.push(function(){ return solidNow.apply(null, a); }); }
+  function vox(){ var a = arguments; JOBS.push(function(){ return voxNow.apply(null, a); }); }
+  function* solidNow(x0, y0, z0, x1, y1, z1, fn, sv){
     sv = sv || ART / 2; if (FINE && sv > ART * 0.7) sv = ART * 0.7;
     var nx = Math.ceil((x1 - x0) / sv) + 1, ny = Math.ceil((y1 - y0) / sv) + 1, nz = Math.ceil((z1 - z0) / sv) + 1, A = new Array(nx * ny * nz);
-    for (var k = 0; k < nz; k++) for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) A[(k * ny + j) * nx + i] = fn(x0 + i * sv, y0 + j * sv, z0 + k * sv);
-    emit(A, nx, ny, nz, x0, y0, z0, sv);
+    for (var k = 0; k < nz; k++){ for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) A[(k * ny + j) * nx + i] = fn(x0 + i * sv, y0 + j * sv, z0 + k * sv); yield; }
+    yield* emit(A, nx, ny, nz, x0, y0, z0, sv);
   }
   // vox(box, draw): draw(set) writes voxels itself, so a tree is the cost of its branches rather than its box.
-  function voxNow(x0, y0, z0, x1, y1, z1, draw, sv){
+  function* voxNow(x0, y0, z0, x1, y1, z1, draw, sv){
     sv = sv || ART / 2; if (FINE && sv > ART * 0.7) sv = ART * 0.7;
     var nx = Math.ceil((x1 - x0) / sv) + 1, ny = Math.ceil((y1 - y0) / sv) + 1, nz = Math.ceil((z1 - z0) / sv) + 1, A = new Array(nx * ny * nz);
     var set = function(x, y, z, c){ var i = Math.round((x - x0) / sv), j = Math.round((y - y0) / sv), k = Math.round((z - z0) / sv);
       if (i < 0 || j < 0 || k < 0 || i >= nx || j >= ny || k >= nz) return; A[(k * ny + j) * nx + i] = c; };
-    set.st = sv; draw(set);
-    emit(A, nx, ny, nz, x0, y0, z0, sv);
+    set.st = sv; draw(set); yield;
+    yield* emit(A, nx, ny, nz, x0, y0, z0, sv);
   }
   // a tapered tube from a to b, coloured col(t) along it
   function tube(set, ax, ay, az, bx, by, bz, r0, r1, col){
@@ -258,7 +260,7 @@ function* steps(C, opt){
     mill = bl ? { x:bl.x, y:bl.y, z:CARP + bl.hz, r:bl.r, w:bl.sw } : { x:mx, y:my + 1.25, z:mzb + Ht * 0.78, r:3.2 };
   }
 
-  for (var jb = 0; jb < JOBS.length; jb++){ JOBS[jb](); yield; }
+  for (var jb = 0; jb < JOBS.length; jb++){ var gj = JOBS[jb](); while (!gj.next().done) yield; yield; }
   // ---- paint, with the theme's colours on the golfer's ramps
   var R = PX.ramp, h3 = P.hash3;
   var y0 = 0; while (y0 < Hh - 1 && S.g[y0].every(function(c){ return !c; })) y0++;

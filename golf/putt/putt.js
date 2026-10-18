@@ -4112,7 +4112,9 @@ function aimNudge(da){
   P.target = [P.ball[0] + Math.cos(a) * r, P.ball[1] + Math.sin(a) * r]; P.aimAng = a;
 }
 function sizeCanvas(){
-  var r = S.stage.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+  // 2 at most (the owner, 2026-10-18: laggy on an iPhone). The art is pixel art, so a 3x phone loses nothing it shows,
+  // and a canvas at 3x is 2.25 times the pixels to fill every frame.
+  var r = S.stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
   S.dpr = dpr; S.cv.width = Math.max(1, Math.round(r.width * dpr)); S.cv.height = Math.max(1, Math.round(r.height * dpr)); S.play.cam = null;
 }
 function hud(){
@@ -4274,12 +4276,8 @@ function frame(){
   var cam = P.camNow;
   if (cam.canFollow && !P.ovShown){ P.ovShown = true; var ob = S.ov.querySelector('[data-ov]'); if (ob) ob.hidden = false; }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
-  var bg = C.kind === 'real' ? ((C.biome && C.biome.base) || '#5f8a30') : (cam.v3 && cam.v3.bg) || C.T.bg; ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  if (cam.v3){ var sk = cam.v3.sky, ph = cam.v3.cv.height * cam.k;
-    // the console look carries the land past the picture's edges: haze and sky above the far land, the near land into the dark below
-    if (sk && cam.oy > 0){ var gs = ctx.createLinearGradient(0, 0, 0, cam.oy + 1); gs.addColorStop(0, sk.sky); gs.addColorStop(1, sk.top); ctx.fillStyle = gs; ctx.fillRect(0, 0, W, cam.oy + 1); }
-    if (sk && cam.oy + ph < H){ var gb = ctx.createLinearGradient(0, cam.oy + ph - 1, 0, H); gb.addColorStop(0, sk.bot); gb.addColorStop(1, bg); ctx.fillStyle = gb; ctx.fillRect(0, cam.oy + ph - 1, W, H - cam.oy - ph + 1); }
-    ctx.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, ph); if (cam.v3.amb) drawAmbient(ctx, C, cam, performance.now() / 1000); }
+  var bg = C.kind === 'real' ? ((C.biome && C.biome.base) || '#5f8a30') : (cam.v3 && cam.v3.bg) || C.T.bg;
+  if (cam.v3){ ctx.drawImage(v3Base(C, cam, W, H, bg, P.fx), 0, 0); if (cam.v3.amb) drawAmbient(ctx, C, cam, performance.now() / 1000); }
   else { var o = w2s(cam, C.bounds[0], C.bounds[1]), k = cam.s * ART;
     ctx.drawImage(P.art, Math.round(o[0]), Math.round(o[1]), Math.round(P.art.width * k), Math.round(P.art.height * k)); }
   if (C.movers.length) (cam.v3 ? drawMovers3 : drawMovers)(ctx, C, cam, clock);
@@ -4296,7 +4294,6 @@ function frame(){
   if (P.state === 'cheer') drawCheer(ctx, P, cam, (gnow() - P.cheerAt) / PLAY_RATE / 1000);
   else if (!hidden && !P.sunk) drawBall(ctx, cam, bx, by, falling, bz);   // a ball that dropped is gone: never drawn back on the cup behind the card
   if (cam.v3 && cam.v3.amb) drawFlyers(ctx, C, cam, performance.now() / 1000);
-  if (P.fx && cam.v3) drawFxScreen(ctx, W, H, cam.v3.night);
   readChip(P, bx, by);
 }
 /* the console look's last touch, drawn over the stage in screen pixels: the low sun's warm light washing in
@@ -4397,6 +4394,24 @@ function drawFlyers(ctx, C, cam, t){ var LF = window.RTT_PUTT_LAND && window.RTT
     else { ctx.fillRect(p[0] - u * 1.8, p[1] + u * 0.1, u * 1.2, u * 0.4); ctx.fillRect(p[0] + u * 0.6, p[1] + u * 0.1, u * 1.2, u * 0.4); }
     ctx.fillStyle = kind.h; ctx.fillRect(p[0] + (hx >= 0 ? u * 0.6 : -u * 1.0), p[1] - u * 0.2, u * 0.4, u * 0.4); }
   ctx.restore(); }
+/* THE STILL PART OF A 3D HOLE, drawn once and kept: the ground colour, the sky and the near land past the picture's
+   edges, the picture, and the console look's sun and vignette. A frame draws this one canvas and then what moves.
+   It is drawn again only when the camera moves or the stage changes size, so a mini hole (which holds still) costs
+   one copy a frame instead of the picture scaled, two gradients and a full screen blend. The vignette now sits under
+   the ball and the golfer rather than over them. */
+function v3Base(C, cam, W, H, bg, fx){
+  var k = [W, H, cam.ox, cam.oy, cam.k, cam.v3.cv.width, bg, fx ? 1 : 0].join('|'), B = S.v3base;
+  if (B && B.k === k && B.v3 === cam.v3) return B.c;
+  var c = (B && B.c.width === W && B.c.height === H) ? B.c : document.createElement('canvas'); c.width = W; c.height = H;
+  var x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  var sk = cam.v3.sky, ph = cam.v3.cv.height * cam.k;
+  // the console look carries the land past the picture's edges: haze and sky above the far land, the near land into the dark below
+  if (sk && cam.oy > 0){ var gs = x.createLinearGradient(0, 0, 0, cam.oy + 1); gs.addColorStop(0, sk.sky); gs.addColorStop(1, sk.top); x.fillStyle = gs; x.fillRect(0, 0, W, cam.oy + 1); }
+  if (sk && cam.oy + ph < H){ var gb = x.createLinearGradient(0, cam.oy + ph - 1, 0, H); gb.addColorStop(0, sk.bot); gb.addColorStop(1, bg); x.fillStyle = gb; x.fillRect(0, cam.oy + ph - 1, W, H - cam.oy - ph + 1); }
+  x.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, ph);
+  if (fx) drawFxScreen(x, W, H, cam.v3.night);
+  S.v3base = { k:k, v3:cam.v3, c:c }; return c;
+}
 function drawFxScreen(ctx, W, H, night){
   var k = W + 'x' + H + (night ? 'n' : ''); if (!S.fxScr || S.fxScr.k !== k){ var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d');
     // a night world gets no sun: only the vignette
