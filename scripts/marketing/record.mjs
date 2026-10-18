@@ -6,6 +6,7 @@
    node scripts/marketing/record.mjs football --out marketing/clips/2026-10-16-football.mp4
    node scripts/marketing/record.mjs football --keep          also keep the raw frames, to look at
    node scripts/marketing/record.mjs football --speed 1.5     play it back faster (a long draft, a short clip)
+   node scripts/marketing/record.mjs putt-ace --arg 60 --viewport 1440x900 --scale 1    a laptop's view of one thing
 
    A SHOT is a module in scripts/marketing/shots/ that plays one moment of one game:
 
@@ -49,13 +50,14 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
 const opt = (f, d) => { const i = args.indexOf(f); return i < 0 ? d : args[i + 1]; };
-const name = args.find((a, i) => !a.startsWith('--') && !['--out', '--speed'].includes(args[i - 1]));
+const name = args.find((a, i) => !a.startsWith('--') && !['--out', '--speed', '--viewport', '--scale', '--arg'].includes(args[i - 1]));
 if (!name) { console.error('usage: node scripts/marketing/record.mjs <shot> [--out marketing/clips/x.mp4] [--speed 1.5] [--keep]'); process.exit(2); }
 const shotFile = path.join(ROOT, 'scripts/marketing/shots', `${name}.mjs`);
 if (!fs.existsSync(shotFile)) {
@@ -69,10 +71,17 @@ const SPEED = Math.max(0.25, +opt('--speed', 1) || 1);
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 
 // The frame is always 1080x1920. The page's CSS size sets how much fits on it.
-const W = 1080, H = 1920, FPS = 30, FRAME = 1000 / FPS;
-const VIEW = shot.viewport || { width: 432, height: 768 };
-if (VIEW.width * 16 !== VIEW.height * 9) { console.error(`viewport ${VIEW.width}x${VIEW.height} is not 9:16`); process.exit(2); }
-const DPR = W / VIEW.width;
+/* The screen. A post is 1080x1920 (9:16) and that is the default: a 9:16 viewport scaled to 1080 wide.
+   Footage for something else, a trailer that puts the game on a drawn phone and laptop, asks for the
+   device's own screen: --viewport 1440x900 --scale 1 is a laptop's desktop layout, --viewport 390x844
+   --scale 2 a phone's. The page is told it is a phone (touch, mobile) when it is taller than wide. */
+const FPS = 30, FRAME = 1000 / FPS;
+const wh = (v) => { const m = /^(\d+)x(\d+)$/.exec(v || ''); return m ? { width: +m[1], height: +m[2] } : null; };
+const VIEW = wh(opt('--viewport')) || shot.viewport || { width: 432, height: 768 };
+const DPR = +opt('--scale', 0) || shot.scale || 1080 / VIEW.width;
+const even = (n) => Math.round(n / 2) * 2;
+const W = even(VIEW.width * DPR), H = even(VIEW.height * DPR);
+const MOBILE = VIEW.width < VIEW.height;
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2', '.woff': 'font/woff', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif',
@@ -129,14 +138,29 @@ const opened = context.waitForEvent('page');
 await (await browser.newBrowserCDPSession()).send('Target.createTarget', { url: 'about:blank', enableBeginFrameControl: true });
 const page = await opened;
 const cdp = await context.newCDPSession(page);
-await cdp.send('Emulation.setDeviceMetricsOverride', { width: VIEW.width, height: VIEW.height, deviceScaleFactor: DPR, mobile: true });
-await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: VIEW.width, height: VIEW.height, deviceScaleFactor: DPR, mobile: MOBILE });
+if (MOBILE) await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
 await page.addInitScript(FINGER);
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
+/* Google Fonts, fetched once with curl (it goes through the environment's proxy, the browser does not) and
+   kept in a cache, so every take of every clip draws the same type. A font that cannot be fetched is a
+   404, and the page falls back as it would offline. */
+const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
+const FONT_DIR = path.join(os.tmpdir(), 'clip-fonts');
+const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
+function font(url) {
+  fs.mkdirSync(FONT_DIR, { recursive: true });
+  const f = path.join(FONT_DIR, crypto.createHash('sha1').update(url).digest('hex'));
+  if (!fs.existsSync(f) && spawnSync('curl', ['-sSfL', '-A', UA, '-o', f, url]).status !== 0) { try { fs.rmSync(f); } catch {} return { status: 404, body: '' }; }
+  const body = fs.readFileSync(f), css = /fonts\.googleapis\.com/.test(url);
+  return { status: 200, body, contentType: css ? 'text/css' : /\.ttf/.test(url) ? 'font/ttf' : 'font/woff2', headers: { 'access-control-allow-origin': '*' } };
+}
 await page.route('**/*', async (r) => {
   const u = new URL(r.request().url());
-  // Nothing leaves the machine: no payment, no account, no analytics on a recording.
+  // Nothing leaves the machine: no payment, no account, no analytics on a recording. The one exception is
+  // the pages' web fonts, or the clip is drawn in fallback fonts a player never sees.
+  if (FONT_HOSTS.includes(u.hostname)) return r.fulfill(font(u.href));
   if (u.hostname !== 'local.test') return r.abort();
   let rel = decodeURIComponent(u.pathname);
   if (rel.endsWith('/')) rel += 'index.html';
@@ -187,6 +211,9 @@ const frames = async (n) => { for (let i = 0; i < n; i++) await nextFrame(); };
 const hold = async (ms) => { const end = now + ms; while (now < end) await nextFrame(); };
 const onScreen = (box) => box && box.y >= 64 && box.y + box.height <= VIEW.height - 8;
 const t = {
+  view: { ...VIEW, mobile: MOBILE },
+  // --arg, for a shot that films one of several things (which hole, which world)
+  arg: opt('--arg', ''),
   hold,
   async until(fn, ms = 15000, arg) {
     const end = now + ms;
@@ -252,8 +279,9 @@ if (!failed) {
 stop = true;
 await pump.catch(() => {});
 await browser.close().catch(() => {});
-proc.kill();
-fs.rmSync(profile, { recursive: true, force: true });
+// Wait for the shell to exit before clearing its profile, or it is still writing into it.
+await new Promise((res) => { if (proc.exitCode !== null) return res(); proc.once('exit', res); proc.kill(); setTimeout(res, 5000); });
+try { fs.rmSync(profile, { recursive: true, force: true, maxRetries: 3 }); } catch {}
 if (failed) { console.error(`the shot failed: ${failed.message}`); process.exit(1); }
 if (keepDir) console.log(`raw frames kept in ${keepDir}`);
 const size = fs.statSync(out).size / 1048576;
