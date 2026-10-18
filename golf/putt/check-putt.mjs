@@ -1555,7 +1555,7 @@ if (!args.includes('--no-browser')){
       return { par, rows, ok:rows.length >= 2 && rows.every(r => T.starsOf(r[1], par, L.three) === r[0]) && rows[rows.length - 1][1] === par && rows[0][0] === 3 }; });
     claim(tgt.ok, `a Tour hole shows the strokes each star costs, and each row matches the stars rule (${JSON.stringify(tgt)})`);
     await pg.setViewportSize({ width:390, height:844 }); await pg.waitForTimeout(300);
-    await pg.evaluate(() => { const D3 = window.RTT_PUTT_3D; window.__keep = D3.render; D3.render = () => { throw new Error('probe'); }; window.RTT_PUTT._state().v3c = {}; window.RTT_PUTT._state().v3job = null; window.RTT_PUTT._level(34); });
+    await pg.evaluate(() => { const D3 = window.RTT_PUTT_3D; window.__keep = D3.render; D3.render = () => { throw new Error('probe'); }; window.RTT_PUTT._state().v3c = {}; window.RTT_PUTT._state().v3job = null; const u0 = sbUsername; sbUsername = 'RunnyJ'; window.RTT_PUTT._level(34); sbUsername = u0; });
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
     claim(await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return !P.v3 && !!P.art; }), 'a 3D render that throws falls back to the flat hole');
     await pg.evaluate(() => { window.RTT_PUTT_3D.render = window.__keep; });
