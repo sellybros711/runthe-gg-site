@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Shut The Door logos | design</title>
+<!-- Logo options for the owner. Not loaded by the game and linked from
+     nowhere. ?o=1, ?o=2, ?o=3 is one option's sheet, ?o=all the comparison,
+     ?icon=N&size=512 a bare icon for export. -->
+<style>
+@font-face { font-family: 'Yellowtail'; src: url(fonts/Yellowtail-Regular.ttf); }
+@font-face { font-family: 'Graduate'; src: url(fonts/Graduate-Regular.ttf); }
+@font-face { font-family: 'Alfa Slab One'; src: url(fonts/AlfaSlabOne-Regular.ttf); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 600; src: url(fonts/BarlowCondensed-SemiBold.ttf); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 800; font-style: italic; src: url(fonts/BarlowCondensed-ExtraBoldItalic.ttf); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 900; font-style: italic; src: url(fonts/BarlowCondensed-BlackItalic.ttf); }
+* { box-sizing: border-box; }
+body { margin: 0; background: #e9e6df; font-family: 'Barlow Condensed', system-ui, sans-serif; color: #1b1f27; }
+svg { display: block; width: 100%; height: auto; }
+.sheet { width: 1600px; padding: 48px 56px 56px; }
+.top { display: flex; align-items: baseline; gap: 22px; margin-bottom: 26px; }
+.top h1 { font-size: 46px; font-weight: 600; letter-spacing: .06em; margin: 0; text-transform: uppercase; }
+.top .n { font-size: 20px; letter-spacing: .3em; color: #6b6f78; font-weight: 600; }
+.top p { margin: 0; font-size: 22px; color: #3b4150; font-family: Inter, system-ui, sans-serif; }
+.lbl { font-size: 15px; letter-spacing: .28em; font-weight: 600; color: #6b6f78; text-transform: uppercase; margin: 0 0 10px; }
+.row { display: grid; gap: 24px; margin-bottom: 26px; }
+.r2 { grid-template-columns: 1fr 1fr; }
+.panel { border-radius: 22px; padding: 34px 40px; display: flex; align-items: center; justify-content: center; min-height: 380px; }
+.icons { display: flex; align-items: flex-end; gap: 36px; background: #fff; border-radius: 22px; padding: 30px 36px; }
+.icons figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.icons figcaption { font-size: 15px; letter-spacing: .2em; color: #6b6f78; font-weight: 600; }
+.ic { border-radius: 22%; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+.ic svg { width: 100%; height: 100%; }
+.onDark { background: #111; }
+.foot { display: grid; grid-template-columns: 330px 330px 1fr; gap: 24px; align-items: start; }
+/* a phone home screen */
+.phone { width: 330px; height: 680px; border-radius: 48px; border: 10px solid #15171c; overflow: hidden; position: relative; box-shadow: 0 14px 34px rgba(0,0,0,.25); }
+.phone .wall { position: absolute; inset: 0; }
+.phone .status { position: relative; display: flex; justify-content: space-between; padding: 14px 26px 0; font: 600 15px Inter, system-ui, sans-serif; }
+.phone .grid { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 0; padding: 30px 14px 0; }
+.app { display: flex; flex-direction: column; align-items: center; gap: 6px; font: 500 11px Inter, system-ui, sans-serif; text-align: center; white-space: nowrap; }
+.app .ai { width: 58px; height: 58px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; }
+.app .ai svg { width: 100%; height: 100%; }
+.app.us { font-weight: 700; }
+.dock { position: absolute; left: 12px; right: 12px; bottom: 14px; height: 86px; border-radius: 30px; display: flex; justify-content: space-around; align-items: center; }
+/* the game header at 390 */
+.hdrs { display: flex; flex-direction: column; gap: 18px; }
+.hdr { width: 390px; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px 0 12px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.hdr .lk { display: flex; align-items: center; gap: 9px; height: 52px; }
+.hdr .lk .ic { width: 32px; height: 32px; box-shadow: none; border-radius: 8px; }
+.hdr .lk .wm { width: 196px; height: 40px; }
+.hdr .btns { display: flex; gap: 14px; }
+.hdr .btns i { width: 20px; height: 20px; border: 2px solid currentColor; border-radius: 50%; opacity: .75; }
+.hdr .btns i:last-child { border-radius: 2px; border-width: 2px 0; height: 14px; }
+.note { font: 18px/1.45 Inter, system-ui, sans-serif; color: #3b4150; background: #fff; border-radius: 22px; padding: 24px 28px; }
+.note b { font-weight: 700; }
+/* the comparison */
+.cmp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+.col { display: flex; flex-direction: column; gap: 16px; }
+.col .panel { min-height: 270px; padding: 22px 26px; }
+.col h2 { margin: 0; font-size: 34px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.col .idea { margin: 0; font: 17px/1.4 Inter, system-ui, sans-serif; color: #3b4150; min-height: 50px; }
+.smalls { display: flex; align-items: flex-end; gap: 22px; background: #fff; border-radius: 18px; padding: 18px 22px; }
+.bare { margin: 0; background: transparent; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="logos.js"></script>
+<script>
+(function () {
+  var L = window.STD_LOGOS, Q = new URLSearchParams(location.search), root = document.getElementById('root');
+  function icon(o, px) { return '<div class="ic" style="width:' + px + 'px;height:' + px + 'px">' + o.mark() + '</div>'; }
+  var FILLER = [['clock', '#2b2f38'], ['notes', '#f2c94c'], ['maps', '#5fb37a'], ['music', '#e2546b'], ['mail', '#3d7be0'], ['photos', '#f4f1ea'],
+    ['files', '#4f8fe8'], ['camera', '#8a8f99'], ['weather', '#4aa3df'], ['calendar', '#ffffff'], ['books', '#f08a3c'], ['health', '#f6f6f6']];
+  function filler(f) {
+    return '<div class="app"><div class="ai" style="background:' + f[1] + '"><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="12" fill="rgba(0,0,0,.18)"/></svg></div><span>' + f[0] + '</span></div>';
+  }
+  function phone(o, dark) {
+    var apps = FILLER.slice(0, 5).map(filler).join('') +
+      '<div class="app us"><div class="ai">' + o.mark() + '</div><span>Shut The Door</span></div>' + FILLER.slice(5, 11).map(filler).join('');
+    var wall = dark ? 'linear-gradient(160deg,#1b2440,#0b0e16 70%)' : 'linear-gradient(160deg,#cfe0f4,#f3e7d6 70%)';
+    var ink = dark ? '#f2f2f2' : '#15171c';
+    return '<div class="phone"><div class="wall" style="background:' + wall + '"></div><div class="status" style="color:' + ink + '"><span>9:41</span><span>●●●</span></div>' +
+      '<div class="grid" style="color:' + ink + '">' + apps + '</div>' +
+      '<div class="dock" style="background:' + (dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.45)') + '">' + FILLER.slice(0, 4).map(function (f) { return '<div class="ai" style="width:58px;height:58px;border-radius:14px;background:' + f[1] + '"></div>'; }).join('') + '</div></div>';
+  }
+  function header(o, dark) {
+    var bg = dark ? o.bgDark : o.bgLight, ink = dark ? '#f2f2f2' : '#15171c';
+    return '<div class="hdr" style="background:' + bg + ';color:' + ink + '"><div class="lk">' + icon(o, 32) + '<div class="wm">' + o.header(dark) + '</div></div>' +
+      '<div class="btns"><i></i><i></i><i></i></div></div>';
+  }
+  function sheet(n) {
+    var o = L[n];
+    return '<div class="sheet" id="sheet-' + n + '">' +
+      '<div class="top"><span class="n">OPTION ' + n + '</span><h1>' + o.name + '</h1><p>' + o.idea + '</p></div>' +
+      '<div class="row r2"><div><p class="lbl">lockup on light</p><div class="panel" style="background:' + o.bgLight + '">' + o.lockup(false) + '</div></div>' +
+      '<div><p class="lbl">lockup on dark</p><div class="panel" style="background:' + o.bgDark + '">' + o.lockup(true) + '</div></div></div>' +
+      '<p class="lbl">the mark: app icon at 512, 180, 64 and 32 px, and on dark</p>' +
+      '<div class="row"><div class="icons">' +
+      '<figure>' + icon(o, 256) + '<figcaption>512</figcaption></figure>' +
+      '<figure>' + icon(o, 90) + '<figcaption>180</figcaption></figure>' +
+      '<figure>' + icon(o, 32) + '<figcaption>64</figcaption></figure>' +
+      '<figure>' + icon(o, 16) + '<figcaption>32</figcaption></figure>' +
+      '<figure style="background:#111;padding:18px;border-radius:16px">' + icon(o, 90) + '<figcaption style="color:#aaa">dark</figcaption></figure>' +
+      '</div></div>' +
+      '<p class="lbl">on a home screen, light and dark, and the game header at 390</p>' +
+      '<div class="foot">' + phone(o, false) + phone(o, true) +
+      '<div class="hdrs">' + header(o, false) + header(o, true) +
+      '<div class="note"><b>' + o.name + '.</b> ' + o.note + '</div></div></div>' +
+      '</div>';
+  }
+  function compare() {
+    return '<div class="sheet" id="sheet-all"><div class="top"><span class="n">SHUT THE DOOR</span><h1>three logo options</h1><p>vintage ballpark lettering with clean modern type.</p></div>' +
+      '<div class="cmp">' + [1, 2, 3].map(function (n) {
+        var o = L[n];
+        return '<div class="col"><h2>' + n + '. ' + o.name + '</h2><p class="idea">' + o.idea + '</p>' +
+          '<div class="panel" style="background:' + o.bgDark + '">' + o.lockup(true) + '</div>' +
+          '<div class="panel" style="background:' + o.bgLight + '">' + o.lockup(false) + '</div>' +
+          '<div class="smalls"><figure class="bare">' + icon(o, 128) + '</figure><figure class="bare">' + icon(o, 32) + '</figure><figure class="bare">' + icon(o, 16) + '</figure></div>' +
+          header(o, false) + header(o, true) + '</div>';
+      }).join('') + '</div></div>';
+  }
+  var n = Q.get('icon');
+  if (n) {
+    var size = +(Q.get('size') || 512);
+    document.body.style.background = 'transparent';
+    root.innerHTML = '<div style="width:' + size + 'px;height:' + size + 'px">' + L[n].mark() + '</div>';
+  } else {
+    var o = Q.get('o') || 'all';
+    root.innerHTML = o === 'all' ? compare() : sheet(o);
+  }
+  document.fonts.ready.then(function () {
+    L.stitch(root);
+    document.body.setAttribute('data-ready', '1');
+  });
+})();
+</script>
+</body>
+</html>

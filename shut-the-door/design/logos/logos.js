@@ -28,7 +28,7 @@ function id(p) { return p + (++uid); }
    in the browser after layout (needs getPointAtLength), so here it is a
    placeholder the page fills in. */
 function stitchPath(d, color, w, gap, size) {
-  return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + w + '" stroke-linecap="round" data-stitch="' + gap + ',' + size + ',' + color + '"/>';
+  return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-opacity=".45" stroke-width="' + w + '" stroke-linecap="round" data-stitch="' + gap + ',' + size + ',' + color + '"/>';
 }
 
 /* ---- option 1: Night Script ------------------------------------------------ */
@@ -49,9 +49,10 @@ function o1Lockup(dark) {
     '<text x="408" y="268" fill="' + fg + '" stroke="' + (dark ? P1.navy : P1.paper) + '" stroke-width="3" paint-order="stroke">Door</text>' +
     '</g>' +
     /* the tail swash under the word, ending in a ball */
-    '<path d="M 236 300 C 340 334, 470 336, 600 300 C 610 297, 617 293, 622 289 C 600 310, 470 352, 236 300 Z" fill="' + fg + '"/>' +
-    '<circle cx="640" cy="282" r="17" fill="' + (dark ? P1.cream : '#fff') + '" stroke="' + fg + '" stroke-width="3"/>' +
-    '<path d="M 630 270 Q 637 282 630 294 M 650 270 Q 643 282 650 294" fill="none" stroke="' + P1.red + '" stroke-width="2.4" stroke-dasharray="3 3"/>' +
+    '<path d="M 214 296 C 330 330, 480 330, 612 290 C 620 287, 626 285, 632 284 C 612 300, 470 362, 214 296 Z" fill="' + P1.red + '" transform="translate(5 5)"/>' +
+    '<path d="M 214 296 C 330 330, 480 330, 612 290 C 620 287, 626 285, 632 284 C 612 300, 470 362, 214 296 Z" fill="' + fg + '"/>' +
+    '<circle cx="652" cy="280" r="19" fill="' + (dark ? P1.cream : '#ffffff') + '" stroke="' + (dark ? P1.cream : P1.navy) + '" stroke-width="3"/>' +
+    '<path d="M 641 266 Q 649 280 641 294 M 663 266 Q 655 280 663 294" fill="none" stroke="' + P1.red + '" stroke-width="2.6" stroke-dasharray="3 2.6"/>' +
     '<text x="400" y="360" font-family="' + COND + '" font-weight="600" font-size="22" letter-spacing="8" text-anchor="middle" fill="' + (dark ? 'rgba(244,234,213,.62)' : 'rgba(13,27,46,.6)') + '">A DAILY CLOSER GAME</text>');
 }
 function o1Mark() {
@@ -62,17 +63,15 @@ function o1Mark() {
     '<rect width="512" height="512" rx="112" fill="url(#' + g + ')"/><rect width="512" height="512" rx="112" fill="url(#' + r + ')"/>' +
     '<rect x="22" y="22" width="468" height="468" rx="92" fill="none" stroke="' + P1.brass + '" stroke-width="6" opacity=".85"/>' +
     /* home plate from above, a doorway cut in it, a red knob */
-    '<path d="M 128 142 H 384 V 298 L 256 418 L 128 298 Z" fill="' + P1.cream + '"/>' +
-    '<path d="M 210 352 V 232 A 46 46 0 0 1 302 232 V 352 Z" fill="' + P1.navy + '"/>' +
-    '<circle cx="285" cy="292" r="9" fill="' + P1.red + '"/>' +
-    /* seam stitches along the plate's top edge */
-    stitchPath('M 150 116 H 362', P1.red, 0, 26, 9));
+    '<path d="M 116 130 H 396 V 300 L 256 430 L 116 300 Z" fill="' + P1.cream + '"/>' +
+    '<path d="M 206 356 V 230 A 50 50 0 0 1 306 230 V 356 Z" fill="' + P1.navy + '"/>' +
+    '<circle cx="285" cy="292" r="10" fill="' + P1.red + '"/>');
 }
 function o1Header(dark) {
   var fg = dark ? P1.cream : P1.navy, cap = dark ? P1.brass : P1.red;
   return svg('0 0 300 60',
-    '<text x="0" y="40" font-family="' + COND + '" font-weight="600" font-size="20" letter-spacing="4" fill="' + cap + '">SHUT THE</text>' +
-    '<text x="104" y="45" font-family="' + SCRIPT + '" font-size="48" fill="' + fg + '">Door</text>');
+    '<text x="0" y="41" font-family="' + COND + '" font-weight="600" font-size="25" letter-spacing="3" fill="' + cap + '">SHUT THE</text>' +
+    '<text x="112" y="46" font-family="' + SCRIPT + '" font-size="52" fill="' + fg + '">Door</text>');
 }
 
 /* ---- option 2: Grandstand ------------------------------------------------------ */
@@ -81,8 +80,8 @@ var P2 = { green: '#1f4a35', deep: '#0f2a1e', cream: '#f3e9d3', brass: '#d9a62e'
 
 function o2Lockup(dark) {
   var arc = id('a'), sh = '';
-  for (var i = 7; i >= 1; i--) sh += '<text x="' + (400 + i * 1.6) + '" y="' + (318 + i * 1.6) + '" fill="' + P2.deep + '">DOOR</text>';
-  return svg('0 0 800 470',
+  for (var i = 7; i >= 1; i--) sh += '<text x="' + (400 + i * 1.4) + '" y="' + (316 + i * 1.4) + '" fill="' + P2.deep + '">DOOR</text>';
+  return svg('0 -24 800 512',
     '<defs><path id="' + arc + '" d="M 220 226 A 190 190 0 0 1 580 226"/></defs>' +
     (dark ? '' : '<path d="M 156 452 V 232 A 244 244 0 0 1 644 232 V 452 Z" fill="rgba(31,43,69,.18)" transform="translate(6 8)"/>') +
     /* the ballpark gate: an arch, brass rim, a cream keyline */
@@ -92,12 +91,12 @@ function o2Lockup(dark) {
     '<text font-family="' + VARSITY + '" font-size="46" letter-spacing="6" fill="' + P2.cream + '" text-anchor="middle"><textPath href="#' + arc + '" startOffset="50%">SHUT THE</textPath></text>' +
     '<text x="218" y="238" font-size="26" fill="' + P2.brass + '" text-anchor="middle">★</text><text x="582" y="238" font-size="26" fill="' + P2.brass + '" text-anchor="middle">★</text>' +
     /* the slab, block shadow and a brass keyline */
-    '<g font-family="' + SLAB + '" font-size="146" text-anchor="middle" letter-spacing="2">' + sh +
-    '<text x="400" y="318" fill="' + P2.cream + '" stroke="' + P2.brass + '" stroke-width="3" paint-order="stroke">DOOR</text></g>' +
+    '<g font-family="' + SLAB + '" font-size="118" text-anchor="middle" letter-spacing="1">' + sh +
+    '<text x="400" y="316" fill="' + P2.cream + '" stroke="' + P2.brass + '" stroke-width="3" paint-order="stroke">DOOR</text></g>' +
     /* the ribbon with the modern line */
     '<path d="M 182 356 H 618 L 600 382 L 618 408 H 182 L 200 382 Z" fill="' + P2.red + '"/>' +
     '<text x="400" y="392" font-family="' + COND + '" font-weight="600" font-size="27" letter-spacing="5" fill="' + P2.cream + '" text-anchor="middle">THREE OUTS. YOUR CALL.</text>' +
-    '<text x="400" y="436" font-family="' + COND + '" font-weight="600" font-size="16" letter-spacing="6" fill="' + P2.brass + '" text-anchor="middle">A DAILY CLOSER GAME</text>');
+    '<text x="400" y="434" font-family="' + COND + '" font-weight="600" font-size="17" letter-spacing="6" fill="' + P2.brass + '" text-anchor="middle">A DAILY CLOSER GAME</text>');
 }
 function o2Mark() {
   var g = id('g'), glow = id('w');
@@ -136,20 +135,19 @@ function o3Mark() {
   var g = id('g');
   return svg('0 0 512 512',
     '<defs><linearGradient id="' + g + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d2536"/><stop offset="1" stop-color="' + P3.ink + '"/></linearGradient></defs>' +
-    '<rect width="512" height="512" rx="112" fill="url(#' + g + ')"/>' + o3MarkBody(P3.white, P3.ink) +
-    stitchPath('M 120 452 Q 256 478 392 452', P3.signal, 0, 24, 8));
+    '<rect width="512" height="512" rx="112" fill="url(#' + g + ')"/>' + o3MarkBody(P3.white, P3.ink));
 }
 function o3Lockup(dark) {
   var fg = dark ? P3.white : P3.ink;
-  return svg('0 0 860 340',
+  return svg('0 0 860 360',
     '<g transform="translate(20 50) scale(0.47)">' + o3MarkBody(fg, dark ? P3.ink : P3.paper) + '</g>' +
     '<g font-family="' + COND + '" font-style="italic">' +
     '<text x="300" y="128" font-weight="800" font-size="76" letter-spacing="3" fill="' + fg + '">SHUT THE</text>' +
     '<text x="292" y="270" font-weight="900" font-size="196" letter-spacing="2" fill="' + fg + '">DOOR</text>' +
     '</g>' +
     /* the vintage half: a chain of seam stitches under the word */
-    stitchPath('M 300 300 Q 520 318 752 292', P3.signal, 0, 22, 9) +
-    '<text x="302" y="334" font-family="' + COND + '" font-weight="600" font-size="22" letter-spacing="7" fill="' + (dark ? P3.mute : '#5b6476') + '">ONE INNING. YOUR CALLS.</text>');
+    stitchPath('M 304 298 Q 520 318 748 292', P3.signal, 2.5, 13, 10) +
+    '<text x="304" y="346" font-family="' + COND + '" font-weight="600" font-size="22" letter-spacing="7" fill="' + (dark ? P3.mute : '#5b6476') + '">ONE INNING. YOUR CALLS.</text>');
 }
 function o3Header(dark) {
   var fg = dark ? P3.white : P3.ink;
@@ -177,14 +175,16 @@ window.STD_LOGOS.stitch = function (root) {
     for (var s = gap / 2; s < L; s += gap) {
       var q = p.getPointAtLength(s), q2 = p.getPointAtLength(Math.min(L, s + 1));
       var ang = Math.atan2(q2.y - q.y, q2.x - q.x), nx = -Math.sin(ang), ny = Math.cos(ang), tx = Math.cos(ang), ty = Math.sin(ang);
+      /* two rows of short ticks, apart from the seam and from each other:
+         how stitches are drawn on a ball, so they never read as arrows */
       [-1, 1].forEach(function (side) {
-        var bx = q.x + nx * side * size * 0.25, by = q.y + ny * side * size * 0.25;
-        out += 'M ' + (bx - tx * size * 0.45 + nx * side * size * 0.7).toFixed(1) + ' ' + (by - ty * size * 0.45 + ny * side * size * 0.7).toFixed(1) +
-          ' L ' + bx.toFixed(1) + ' ' + by.toFixed(1);
+        var ax = q.x + nx * side * size * 0.42, ay = q.y + ny * side * size * 0.42;
+        var bx = q.x + nx * side * size * 1.15 - tx * size * 0.32, by = q.y + ny * side * size * 1.15 - ty * size * 0.32;
+        out += 'M ' + ax.toFixed(1) + ' ' + ay.toFixed(1) + ' L ' + bx.toFixed(1) + ' ' + by.toFixed(1) + ' ';
       });
     }
     var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    el.setAttribute('d', out); el.setAttribute('stroke', col); el.setAttribute('stroke-width', Math.max(2.5, size * 0.42));
+    el.setAttribute('d', out); el.setAttribute('stroke', col); el.setAttribute('stroke-width', Math.max(2.5, size * 0.36));
     el.setAttribute('stroke-linecap', 'round'); el.setAttribute('fill', 'none');
     p.parentNode.insertBefore(el, p.nextSibling);
   });
