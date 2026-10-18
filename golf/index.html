@@ -39668,7 +39668,7 @@ function spkStyleOnce(){ if(_spkCss) return; _spkCss=true;
   '.spk-hint{font:600 12.5px/1.35 var(--body);color:#a9e9b8;margin:2px auto 16px;max-width:320px}',
   '.spk-go{display:block;width:100%;max-width:320px;margin:0 auto 8px;padding:14px;border:0;border-radius:14px;font:900 17px var(--body);letter-spacing:.05em;text-transform:uppercase;color:#2a0f00;background:linear-gradient(180deg,#ffb35a,#e0761f);box-shadow:0 0 20px rgba(255,140,40,.45),inset 0 -3px 0 rgba(0,0,0,.18);cursor:pointer}',
   '.spk-later{background:none;border:0;color:#bfaedb;font:700 14px var(--body);padding:8px 14px;cursor:pointer}',
-  '.spk-x{position:absolute;top:12px;right:12px;z-index:3;width:40px;height:40px;border-radius:50%;border:1px solid rgba(201,168,255,.35);background:rgba(0,0,0,.35);color:#e6dcf4;font-size:16px;cursor:pointer}',
+  '.spk-x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;z-index:3;width:40px;height:40px;border-radius:50%;border:1px solid rgba(201,168,255,.35);background:rgba(0,0,0,.35);color:#e6dcf4;font-size:16px;cursor:pointer}',
   // the home scene and the hidden things
   '.spk-scene-web{position:absolute;top:0;width:min(38vw,240px);image-rendering:pixelated;opacity:.55}',
   '.spk-scene-web.l{left:0}.spk-scene-web.r{right:0;transform:scaleX(-1)}',
@@ -39860,7 +39860,7 @@ function hlStyleOnce(){ if(_hlcss) return; _hlcss=true; const st=document.create
   .gc-haunted .gc-kick{color:#9dff7c}
   .gc-haunted .gc-badge.claim{background:#7dff5a;color:#14280a}
   .ov.hl-ov{--hl-o:#ff9a3a;--hl-g:#7dff5a;--muted:#c2b3cf;background:#0d0814;background-image:radial-gradient(100% 45% at 50% -5%,rgba(255,138,42,.28),transparent 65%),radial-gradient(80% 50% at 0% 60%,rgba(125,255,90,.08),transparent 70%),linear-gradient(180deg,#1a0d24,#0f0817 60%,#09060e);background-attachment:fixed;overflow-x:hidden}
-  .hl-ov .x{z-index:8;position:absolute;top:14px;right:14px}   /* scrolls away with the hero, so it never sits on a claim button */
+  .hl-ov .x{z-index:8;position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:14px}   /* scrolls away with the hero, so it never sits on a claim button */
   .hl-hero{position:relative;max-width:600px;margin:6px auto 0;padding:26px 16px 18px;text-align:center;overflow:hidden;border-radius:20px;
     background:radial-gradient(70% 90% at 50% 0%,rgba(255,138,42,.32),transparent 70%),linear-gradient(180deg,#24102f,#140a1d);border:1px solid rgba(255,154,58,.45);box-shadow:0 18px 40px -24px rgba(255,120,30,.8)}
   .hl-moon{position:absolute;top:58px;right:-14px;width:84px;opacity:.5;pointer-events:none}
@@ -40085,7 +40085,7 @@ function wcStyleOnce(){ if(_wccss) return; _wccss=true; const st=document.create
   .gc-winter .gc-badge.claim{background:#ffd56e;color:#3a2200}
   .ov.wc-ov{--wc-r:#e8404e;--wc-g:#ffd56e;--wc-i:#9fdcff;--muted:#b4c8dc;background:#07131f;
     background-image:radial-gradient(100% 45% at 50% -5%,rgba(159,220,255,.22),transparent 65%),radial-gradient(80% 50% at 100% 70%,rgba(232,64,78,.12),transparent 70%),linear-gradient(180deg,#0c2238,#08182a 60%,#050e18)}
-  .wc-ov .x{z-index:8;position:absolute;top:14px;right:14px}
+  .wc-ov .x{z-index:8;position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:14px}
   .wc-snow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
   .wc-snow i{position:absolute;top:-12px;width:var(--s);height:var(--s);border-radius:50%;background:#fff;opacity:.55;animation:wcSnow var(--d) linear infinite}
   @keyframes wcSnow{to{transform:translate(var(--dx),110vh)}}
