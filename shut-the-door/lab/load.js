@@ -15,7 +15,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 /* stamp:begin (pipeline/stamp.mjs rewrites this block; do not edit by hand) */
 export const ASSETS = {
-  'batter.glb': '4c39b11178',
+  'batter.glb': 'cc5e662fbe',
   'bio.json': '3ce6273c86',
   'catcher.glb': '3b5c36def3',
   'env_256.hdr': 'b069d60e9b',
@@ -32,7 +32,7 @@ export const ASSETS = {
   'packs/std-2025-ws7-yamamoto.json': '2bbab8e2e6',
   'poster-desktop.webp': '179185beca',
   'poster-phone.webp': '581f5b3efa',
-  'tex/beard_mask.webp': '16e2dcab5d',
+  'tex/beard_mask.webp': '17ec25655e',
   'tex/concrete_color.webp': '0a126bec84',
   'tex/dirt_color.webp': '4b00ba1875',
   'tex/dirt_normal.webp': '66f2d75074',

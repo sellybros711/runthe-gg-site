@@ -276,6 +276,7 @@ export function chestTo(p, q, axis = null) {
   }
   const proj = axis.clone().multiplyScalar(R.x * axis.x + R.y * axis.y + R.z * axis.z);
   R = new THREE.Quaternion(proj.x, proj.y, proj.z, R.w).normalize();
+  if (R.w < 0) R.set(-R.x, -R.y, -R.z, -R.w);             // the short way round (a right handed hitter's coil flipped)
   const ang = 2 * Math.atan2(Math.hypot(R.x, R.y, R.z) * Math.sign(R.x * axis.x + R.y * axis.y + R.z * axis.z), R.w);
   for (const [n, c] of [['spine_01', 'spine_02'], ['spine_02', 'spine_03'], ['spine_03', 'neck_01']]) {
     const along = wpos(B[c]).sub(wpos(B[n])).normalize();

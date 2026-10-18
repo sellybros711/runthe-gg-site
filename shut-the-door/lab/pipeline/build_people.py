@@ -234,7 +234,8 @@ PEOPLE = {
         uniform=True,
         clothes=[dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1))],
         gear=[],
-        clips=[('swing', '124/124_07.bvh', 22, 140, True, 'grip')],
+        # the capture is a right handed hitter: as it is for a right handed batter, mirrored for a left
+        clips=[('swing', '124/124_07.bvh', 22, 140, True, 'grip'), ('swingR', '124/124_07.bvh', 22, 140, False, 'grip')],
     ),
     'catcher': dict(
         name='catcher', skin='young_african_male', skin_size=1024,

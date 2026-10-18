@@ -57,9 +57,12 @@ const browser = await loadPlaywright().chromium.launch({ executablePath: CHROME,
 const probe = fs.readFileSync(path.join(HERE, 'deform-probe.js'), 'utf8');
 let failed = 0;
 // every motion the scene plays: the swing (a miss), the take (a called strike), a ground ball, a
-// foul back, a check swing, a hit by pitch, a ball in the dirt (the catcher's block)
+// foul back, a check swing, a hit by pitch, a ball in the dirt (the catcher's block); and two other
+// hitters, for both sides and the spread of builds
 const PLAYS = process.argv.includes('--quick') ? [['swing', ''], ['take', 'take=1']]
-  : [['swing', ''], ['take', 'take=1'], ['ground', 'play=ground'], ['foul', 'play=foul_back'], ['check', 'play=check'], ['hbp', 'play=hit_by_pitch'], ['dirt', 'play=dirt']];
+  : [['swing', ''], ['take', 'take=1'], ['ground', 'play=ground'], ['foul', 'play=foul_back'], ['check', 'play=check'], ['hbp', 'play=hit_by_pitch'], ['dirt', 'play=dirt'],
+    // a right handed hitter, heavy (6 ft 0, 245 lb), and a small left handed one (5 ft 9, 175 lb)
+    ['righty', 'slot=0&play=line'], ['small', 'pack=std-2025-diaz-cin&slot=2&play=swinging_strike']];
 for (const [label, q] of PLAYS) {
   const page = await browser.newPage({ viewport: { width: 200, height: 300 } });
   page.on('pageerror', (e) => { console.log('page error', String(e)); failed++; });

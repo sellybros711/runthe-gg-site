@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { preload } from './load.js?v=3';
 import { buildField } from './field.js?v=3';
 import { buildStands } from './stands.js?v=3';
-import { People } from './people.js?v=8';
+import { People } from './people.js?v=10';
 import { Pitch } from './pitch.js?v=4';
 import { labPlay, motion, describe } from './play.js?v=2';
 import { FT, P, smooth } from './units.js?v=1';
@@ -125,7 +125,9 @@ function setupCamera(facts) {
   const cam = Q.get('cam') || 'pitcher';
   // the pitcher's eye in the set: a right hander on the rubber, a stride's lean forward at release
   const eye0 = P(-0.45, 59.2, 6.05), eye1 = P(-0.75, 56.6, 5.55);
-  const lookP = P(0.85, 0, 3.4), lookL = P(0.6, 0, 2.7);
+  // framed toward the hitter's side of the plate (a left handed hitter stands on the catcher's right)
+  const side = facts.batter && facts.batter.bats === 'R' ? -1 : 1;
+  const lookP = P(0.85 * side, 0, 3.4), lookL = P(0.6 * side, 0, 2.7);
   const look = new THREE.Vector3();
   function frameWidthFt() { return innerWidth > innerHeight ? 15 : 6.6; }
   function resize() {

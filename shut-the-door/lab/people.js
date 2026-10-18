@@ -11,7 +11,7 @@ import * as G from './gear3d.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=3';
-import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=4';
+import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
@@ -364,7 +364,8 @@ export class People {
     this.build(b, this.facts.batter.heightIn ?? 72, this.facts.batter.weightLb ?? 200);
     const lefty = this.facts.batter.bats === 'L';
     b.lefty = lefty;
-    b.clip = 'swing';
+    // the swing for his side: the capture mirrored for a left handed hitter, as it is for a right
+    b.clip = lefty || !b.clips.swingR ? 'swing' : 'swingR';
     b.take = this.mode === 'take';
     b.motion = this.m.batter;              // swing, take, check or hbp
     const la = this.play && this.play.inPlay && this.play.inPlay.la;
