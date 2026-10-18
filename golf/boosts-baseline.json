@@ -1,0 +1,826 @@
+{
+ "recorded": "2026-10-16",
+ "rule": "The owner's boost rule: never lower, remove, move or re-stat a boost in this file.",
+ "boosts": {
+  "cos hw:visor": {
+   "clu": 2
+  },
+  "cos hw:bucket": {
+   "clu": 3,
+   "dist": -1
+  },
+  "cos hw:flat": {
+   "app": 2
+  },
+  "cos hw:cowboy": {
+   "dist": 2,
+   "acc": 1,
+   "put": -1
+  },
+  "cos hw:wizard": {
+   "put": 4,
+   "app": 2,
+   "dist": -2
+  },
+  "cos hw:crown": {
+   "clu": 4,
+   "app": 2,
+   "dist": -1
+  },
+  "cos hw:party": {
+   "clu": 2,
+   "scr": 2,
+   "acc": -1
+  },
+  "cos hw:tophat": {
+   "clu": 3,
+   "app": 1
+  },
+  "cos hw:propeller": {
+   "dist": 3,
+   "put": -2
+  },
+  "cos hw:headband": {
+   "scr": 2,
+   "clu": 1
+  },
+  "cos hw:beanie": {
+   "clu": 2
+  },
+  "cos hw:fedora": {
+   "app": 2,
+   "clu": 1
+  },
+  "cos hw:sombrero": {
+   "scr": 2,
+   "dist": -1
+  },
+  "cos hw:halo": {
+   "put": 3,
+   "app": 2,
+   "clu": 2
+  },
+  "cos hw:viking": {
+   "dist": 3,
+   "acc": 1,
+   "put": -2
+  },
+  "cos hw:chef": {
+   "scr": 3,
+   "app": 1
+  },
+  "cos hw:beret": {
+   "app": 2,
+   "clu": 1
+  },
+  "cos hw:headphones": {
+   "clu": 3,
+   "acc": -1
+  },
+  "cos hw:flatbrim": {
+   "dist": 2,
+   "scr": 1
+  },
+  "cos hw:santa": {
+   "clu": 2,
+   "scr": 2
+  },
+  "cos hw:safari": {
+   "acc": 2,
+   "scr": 1
+  },
+  "cos ew:shades": {
+   "clu": 3,
+   "app": -1
+  },
+  "cos ew:heart": {
+   "clu": 2,
+   "scr": 1
+  },
+  "cos ew:star": {
+   "clu": 3,
+   "app": 1,
+   "acc": -1
+  },
+  "cos ew:threed": {
+   "app": 3,
+   "dist": -1
+  },
+  "cos ew:monocle": {
+   "app": 2,
+   "clu": 2,
+   "dist": -1
+  },
+  "cos ew:aviators": {
+   "clu": 2,
+   "app": 1
+  },
+  "cos ew:round": {
+   "app": 2,
+   "clu": 1
+  },
+  "cos ew:goggles": {
+   "acc": 2,
+   "dist": 1,
+   "put": -1
+  },
+  "cos ew:eyepatch": {
+   "clu": 3,
+   "acc": -1
+  },
+  "cos ew:visorband": {
+   "app": 2,
+   "acc": 1
+  },
+  "cos sp:pinstripe": {
+   "app": 1
+  },
+  "cos sp:polka": {
+   "clu": 1
+  },
+  "cos sp:gingham": {
+   "scr": 1
+  },
+  "cos sp:argyle": {
+   "app": 1
+  },
+  "cos sp:tartan": {
+   "acc": 1
+  },
+  "cos sp:houndstooth": {
+   "app": 1
+  },
+  "cos sp:chevron": {
+   "dist": 1
+  },
+  "cos sp:colorblock": {
+   "dist": 1
+  },
+  "cos cl:driver": {
+   "dist": 1
+  },
+  "cos cl:steeldriver": {
+   "dist": 3
+  },
+  "cos cl:finderdriver": {
+   "acc": 3
+  },
+  "cos cl:speeddriver": {
+   "dist": 4,
+   "acc": -1
+  },
+  "cos cl:tourwood": {
+   "dist": 2,
+   "app": 1
+  },
+  "cos cl:forgediron": {
+   "app": 3
+  },
+  "cos cl:bladeirons": {
+   "app": 4,
+   "scr": -1
+  },
+  "cos cl:milledwedge": {
+   "sht": 2,
+   "bnk": 1
+  },
+  "cos cl:sandwedge": {
+   "bnk": 3
+  },
+  "cos cl:lobwedge": {
+   "sht": 3,
+   "scr": 1,
+   "dist": -1
+  },
+  "cos cl:mallet": {
+   "put": 3
+  },
+  "cos cl:scoringiron": {
+   "app": 3,
+   "scr": 1
+  },
+  "cos cl:persimmon": {
+   "dist": 3,
+   "acc": 1
+  },
+  "cos cl:blade": {
+   "put": 3
+  },
+  "cos cl:excalibur": {
+   "dist": 5,
+   "acc": 1
+  },
+  "cos cl:wand": {
+   "put": 5
+  },
+  "cos cl:hockey": {
+   "put": 4,
+   "scr": 1
+  },
+  "cos cl:scepter": {
+   "put": 4,
+   "app": 1
+  },
+  "cos cl:candycane": {
+   "put": 3,
+   "clu": 1
+  },
+  "cos cl:onyxdriver": {
+   "dist": 5
+  },
+  "cos cl:emeraldirons": {
+   "app": 5
+  },
+  "cos cl:frostdriver": {
+   "dist": 3,
+   "acc": 1
+  },
+  "cos cl:rubywedge": {
+   "sht": 3,
+   "bnk": 1,
+   "dist": -1
+  },
+  "cos cl:sapphireputter": {
+   "put": 3,
+   "clu": 1
+  },
+  "cos cl:voidputter": {
+   "put": 4,
+   "scr": 1
+  },
+  "cos cl:rosewood": {
+   "dist": 2,
+   "app": 2
+  },
+  "cos cl:scramblewedge": {
+   "scr": 4,
+   "sht": 1
+  },
+  "cos cl:golden": {
+   "dist": 2,
+   "app": 2,
+   "put": 2
+  },
+  "cos cl:platinum": {
+   "acc": 2,
+   "app": 2,
+   "put": 2
+  },
+  "cos cl:diamond": {
+   "dist": 1,
+   "acc": 1,
+   "app": 1,
+   "sht": 1,
+   "put": 1,
+   "clu": 1
+  },
+  "cos cl:glizzy": {
+   "sht": 2,
+   "scr": 1,
+   "clu": 2
+  },
+  "cos cl:coffin": {
+   "dist": 3,
+   "scr": 1
+  },
+  "cos cl:poolnoodle": {
+   "scr": 2,
+   "clu": 2
+  },
+  "cos pu:milled": {
+   "put": 1
+  },
+  "cos pu:halfmoon": {
+   "put": 2
+  },
+  "cos pu:longbroom": {
+   "put": 2
+  },
+  "cos pu:counter": {
+   "put": 3
+  },
+  "cos pu:copper": {
+   "put": 3
+  },
+  "cos pu:magicwand": {
+   "put": 4
+  },
+  "cos pu:goldplated": {
+   "put": 4,
+   "clu": 1
+  },
+  "cos pu:scope": {
+   "put": 2
+  },
+  "cos pu:bank": {
+   "put": 2
+  },
+  "cos pu:buoy": {
+   "put": 2
+  },
+  "club driver": {
+   "dist": 1
+  },
+  "club steeldriver": {
+   "dist": 3
+  },
+  "club finderdriver": {
+   "acc": 3
+  },
+  "club speeddriver": {
+   "dist": 4,
+   "acc": -1
+  },
+  "club tourwood": {
+   "dist": 2,
+   "app": 1
+  },
+  "club forgediron": {
+   "app": 3
+  },
+  "club bladeirons": {
+   "app": 4,
+   "scr": -1
+  },
+  "club milledwedge": {
+   "sht": 2,
+   "bnk": 1
+  },
+  "club sandwedge": {
+   "bnk": 3
+  },
+  "club lobwedge": {
+   "sht": 3,
+   "scr": 1,
+   "dist": -1
+  },
+  "club mallet": {
+   "put": 3
+  },
+  "club scoringiron": {
+   "app": 3,
+   "scr": 1
+  },
+  "club persimmon": {
+   "dist": 3,
+   "acc": 1
+  },
+  "club blade": {
+   "put": 3
+  },
+  "club excalibur": {
+   "dist": 5,
+   "acc": 1
+  },
+  "club wand": {
+   "put": 5
+  },
+  "club hockey": {
+   "put": 4,
+   "scr": 1
+  },
+  "club scepter": {
+   "put": 4,
+   "app": 1
+  },
+  "club candycane": {
+   "put": 3,
+   "clu": 1
+  },
+  "club onyxdriver": {
+   "dist": 5
+  },
+  "club emeraldirons": {
+   "app": 5
+  },
+  "club frostdriver": {
+   "dist": 3,
+   "acc": 1
+  },
+  "club rubywedge": {
+   "sht": 3,
+   "bnk": 1,
+   "dist": -1
+  },
+  "club sapphireputter": {
+   "put": 3,
+   "clu": 1
+  },
+  "club voidputter": {
+   "put": 4,
+   "scr": 1
+  },
+  "club rosewood": {
+   "dist": 2,
+   "app": 2
+  },
+  "club scramblewedge": {
+   "scr": 4,
+   "sht": 1
+  },
+  "club golden": {
+   "dist": 2,
+   "app": 2,
+   "put": 2
+  },
+  "club platinum": {
+   "acc": 2,
+   "app": 2,
+   "put": 2
+  },
+  "club diamond": {
+   "dist": 1,
+   "acc": 1,
+   "app": 1,
+   "sht": 1,
+   "put": 1,
+   "clu": 1
+  },
+  "club glizzy": {
+   "sht": 2,
+   "scr": 1,
+   "clu": 2
+  },
+  "club poolnoodle": {
+   "scr": 2,
+   "clu": 2
+  },
+  "club coffin": {
+   "dist": 3,
+   "scr": 1
+  },
+  "putter milled": {
+   "put": 1
+  },
+  "putter halfmoon": {
+   "put": 2
+  },
+  "putter longbroom": {
+   "put": 2
+  },
+  "putter counter": {
+   "put": 3
+  },
+  "putter copper": {
+   "put": 3
+  },
+  "putter magicwand": {
+   "put": 4
+  },
+  "putter goldplated": {
+   "put": 4,
+   "clu": 1
+  },
+  "putter scope": {
+   "put": 2
+  },
+  "putter bank": {
+   "put": 2
+  },
+  "putter buoy": {
+   "put": 2
+  },
+  "bag driver 1": {
+   "dist": 1
+  },
+  "bag driver 2": {
+   "dist": 2,
+   "acc": -1
+  },
+  "bag driver 3": {
+   "dist": 3,
+   "acc": -2
+  },
+  "bag woods 1": {
+   "dist": 1
+  },
+  "bag woods 2": {
+   "dist": 1,
+   "app": 1
+  },
+  "bag woods 3": {
+   "app": 2,
+   "dist": -1
+  },
+  "bag irons 1": {
+   "app": 1
+  },
+  "bag irons 2": {
+   "app": 3,
+   "scr": -2
+  },
+  "bag irons 3": {
+   "app": 3,
+   "acc": 1,
+   "scr": -2
+  },
+  "bag wedges 1": {
+   "sht": 1
+  },
+  "bag wedges 2": {
+   "sht": 2,
+   "bnk": 1
+  },
+  "bag wedges 3": {
+   "sht": 3,
+   "bnk": 2,
+   "dist": -1
+  },
+  "bag putter 1": {
+   "put": 1
+  },
+  "bag putter 2": {
+   "put": 2
+  },
+  "bag putter 3": {
+   "put": 3,
+   "clu": -1
+  },
+  "acc head_visor": {
+   "clu": 2
+  },
+  "acc head_bucket": {
+   "clu": 3
+  },
+  "acc head_sig": {
+   "clu": 3,
+   "app": 2
+  },
+  "acc head_crown": {
+   "clu": 4,
+   "app": 2
+  },
+  "acc eyes_sport": {
+   "app": 2
+  },
+  "acc eyes_polar": {
+   "app": 3
+  },
+  "acc eyes_focus": {
+   "app": 3,
+   "clu": 2
+  },
+  "acc eyes_eagle": {
+   "app": 4,
+   "clu": 2
+  },
+  "acc glove_rain": {
+   "sht": 2
+  },
+  "acc glove_cab": {
+   "put": 3
+  },
+  "acc glove_tour": {
+   "put": 3,
+   "sht": 2
+  },
+  "acc glove_gold": {
+   "put": 4,
+   "sht": 3
+  },
+  "acc shoes_train": {
+   "acc": 2
+  },
+  "acc shoes_boa": {
+   "dist": 3
+  },
+  "acc shoes_tract": {
+   "dist": 2,
+   "acc": 3
+  },
+  "acc shoes_carbon": {
+   "dist": 4,
+   "acc": 3
+  },
+  "acc drv_graph": {
+   "dist": 2
+  },
+  "acc drv_ti": {
+   "dist": 3
+  },
+  "acc drv_speed": {
+   "dist": 4
+  },
+  "acc drv_rocket": {
+   "dist": 5,
+   "acc": 2
+  },
+  "acc put_blade": {
+   "put": 2
+  },
+  "acc put_mallet": {
+   "put": 3
+  },
+  "acc put_counter": {
+   "put": 4
+  },
+  "acc put_wand": {
+   "put": 6
+  },
+  "acc ball_dist": {
+   "app": 2
+  },
+  "acc ball_soft": {
+   "scr": 3
+  },
+  "acc ball_ureth": {
+   "app": 3,
+   "scr": 2
+  },
+  "acc ball_proto": {
+   "app": 4,
+   "scr": 3
+  },
+  "acc ball_rungames": {
+   "app": 3,
+   "scr": 2,
+   "clu": 1
+  },
+  "acc charm_tee": {
+   "scr": 2
+  },
+  "acc charm_mark": {
+   "clu": 3
+  },
+  "acc charm_divot": {
+   "scr": 3,
+   "clu": 2
+  },
+  "acc charm_clover": {
+   "clu": 3,
+   "scr": 3
+  },
+  "milestone mi_first_win": {
+   "clu": 2
+  },
+  "milestone mi_major": {
+   "app": 3
+  },
+  "milestone mi_slam": {
+   "clu": 4,
+   "scr": 4
+  },
+  "milestone mi_no1": {
+   "clu": 3,
+   "app": 3
+  },
+  "milestone mi_career": {
+   "dist": 5,
+   "acc": 3
+  },
+  "caddie bones-mackay": {
+   "app": 2
+  },
+  "caddie steve-williams": {
+   "clu": 1
+  },
+  "caddie steve-williams major": {
+   "app": 1,
+   "clu": 1
+  },
+  "caddie fluff-cowan": {
+   "clu": 2,
+   "put": 1
+  },
+  "caddie fanny-sunesson": {
+   "acc": 2
+  },
+  "caddie fanny-sunesson major": {
+   "app": 1
+  },
+  "caddie angelo-argea": {
+   "clu": 1,
+   "dist": 1
+  },
+  "caddie angelo-argea major": {
+   "clu": 1
+  },
+  "caddie carl-jackson": {
+   "put": 1
+  },
+  "caddie carl-jackson venue": {
+   "put": 2
+  },
+  "caddie bruce-edwards": {
+   "clu": 2,
+   "app": 1
+  },
+  "caddie jp-fitzgerald": {
+   "dist": 1,
+   "app": 1
+  },
+  "caddie joe-lacava": {
+   "clu": 1,
+   "scr": 1
+  },
+  "caddie herman-mitchell": {
+   "acc": 2
+  },
+  "caddie terry-mcnamara": {
+   "app": 1,
+   "put": 1
+  },
+  "caddie alfie-fyles": {
+   "app": 1
+  },
+  "caddie alfie-fyles venue": {
+   "app": 1,
+   "clu": 1
+  },
+  "caddie willie-peterson": {
+   "put": 1
+  },
+  "caddie willie-peterson venue": {
+   "put": 1,
+   "clu": 1
+  },
+  "caddie tip-anderson": {
+   "acc": 1
+  },
+  "caddie tip-anderson venue": {
+   "acc": 1,
+   "sht": 1
+  },
+  "caddie willie-aitchison": {
+   "clu": 2
+  },
+  "caddie rabbit-dyer": {
+   "bnk": 1,
+   "clu": 1
+  },
+  "caddie pete-bender": {
+   "acc": 1
+  },
+  "caddie pete-bender venue": {
+   "sht": 1
+  },
+  "caddie mike-martinez": {
+   "app": 1,
+   "put": 1
+  },
+  "caddie pappy-stokes": {
+   "app": 1
+  },
+  "caddie pappy-stokes venue": {
+   "app": 1,
+   "put": 1
+  },
+  "caddie two-shot-lynch": {
+   "clu": 2,
+   "dist": -1
+  },
+  "caddie golf-ball-hull": {
+   "clu": 1
+  },
+  "caddie golf-ball-hull major": {
+   "clu": 1
+  },
+  "caddie killer-foy": {
+   "scr": 1,
+   "clu": 1
+  },
+  "caddie last-call-lance": {
+   "clu": 1
+  },
+  "caddie freddie-bennett": {
+   "app": 1
+  },
+  "caddie freddie-bennett venue": {
+   "app": 1
+  },
+  "caddie eddie-lowery": {
+   "clu": 1,
+   "scr": 1
+  },
+  "caddie iron-man": {
+   "acc": 1
+  },
+  "caddie iron-man venue": {
+   "acc": 1
+  },
+  "caddie snipes-nipper": {
+   "sht": 1
+  },
+  "caddie snipes-nipper venue": {
+   "sht": 1
+  },
+  "caddie bubba-beard": {
+   "put": 1
+  },
+  "caddie bubba-beard venue": {
+   "put": 1
+  },
+  "caddie shorty-mac": {
+   "bnk": 1
+  },
+  "caddie shorty-mac venue": {
+   "bnk": 1
+  },
+  "caddie stovepipe": {
+   "scr": 1
+  },
+  "caddie stovepipe venue": {
+   "scr": 1
+  }
+ }
+}

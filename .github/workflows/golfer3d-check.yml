@@ -14,6 +14,8 @@ on:
       - 'golf/golfer3d.js'
       - 'golf/check-golfer3d.mjs'
       - 'golf/index.html'
+      - 'golf/putt/putt.js'
+      - 'golf/putt/trail.js'
       - '.github/workflows/golfer3d-check.yml'
   push:
     branches: [main]
@@ -21,6 +23,8 @@ on:
       - 'golf/golfer3d.js'
       - 'golf/check-golfer3d.mjs'
       - 'golf/index.html'
+      - 'golf/putt/putt.js'
+      - 'golf/putt/trail.js'
       - '.github/workflows/golfer3d-check.yml'
   workflow_dispatch: {}
 

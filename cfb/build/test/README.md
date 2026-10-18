@@ -12,6 +12,7 @@ initdb -D /tmp/pg && pg_ctl -D /tmp/pg -o '-p 5433 -k /tmp' start
 createdb -h /tmp -p 5433 cfbtest
 export PGHOST=/tmp PGPORT=5433
 psql -d cfbtest -f cfb/build/test/stub_supabase.sql
+psql -d cfbtest -f supabase/50_football_perfect_season.sql
 psql -d cfbtest -f supabase/53_football_profile_avatars.sql
 psql -d cfbtest -f supabase/62_cfb_leaderboard.sql
 psql -d cfbtest -f supabase/63_cfb_run_mode.sql

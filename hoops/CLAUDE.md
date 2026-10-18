@@ -46,7 +46,7 @@ node hoops/check-cloudsave.mjs    the run, the career and the daily on two devic
 node hoops/check-arenas.mjs       arenas, the camera and the Locker
 node hoops/check-rosters.mjs      the roster file, the season, the handover
 node hoops/build/check-fetch.mjs  the scrapers' parsers against saved markup
-node hoops/build/replay-careers.mjs --story off --against base.json   old careers byte identical
+node hoops/build/replay-careers.mjs --against base.json   a refactor moves no career, old saves included
 ```
 
 The economy has its own suite: `check-economy`, `check-wardrobe`, `check-closet`, `check-earn`,
@@ -68,11 +68,22 @@ The economy has its own suite: `check-economy`, `check-wardrobe`, `check-closet`
 
 **The engine**
 
+- **Two scripts are built from parts.** `hoops/career/` builds `career.js` and `hoops/page/` builds
+  `page.js` (the page's own script, inline in `index.html` until 2026-10-16). Edit a part, never a
+  built file, then `node hoops/build/bundle.mjs`, bump its `?v=` and `check-cachebust --update`.
+  CI runs `--check`. A new part is listed in `bundle.mjs` in closure order. Balance numbers live
+  in `hoops/career/tuning.js`.
+- **A check that reads the page's code reads `pageSource()`** (`hoops/build/page-source.mjs`): the
+  page with `page.js` put back inline. Reading `index.html` alone finds no function and no copy.
+
 - **A box score decomposes the scoreline. It is never a second model.** The same holds for a game
   seven and the bracket: one loop, the one that already existed.
-- **Story features sit behind `storyOn`.** `replay-careers --story off` must stay byte identical.
-- **A save is versioned and migrated** (`LIFE_VERSION`). `migrate()` never moves a number the sim
-  reads. Never regenerate `hoops/build/fixtures/` with the current engine.
+- **One Career engine, the story engine** (the owner's call, 2026-10-15). There is no story-off
+  career and no `storyOn` branch to add. A refactor proves itself with `replay-careers --against`,
+  byte identical over 1,000 careers and the six old saves.
+- **A save is versioned and migrated** (`LIFE_VERSION`). An old save must load, keep who it was and
+  play on to a retirement (`check-saves`). Never regenerate `hoops/build/fixtures/` with the
+  current engine.
 - `legacyScore` is integer arithmetic, because the server derives the same score and they must agree.
 - A season is named for the year it ENDS: 2026 is 2025-26.
 
@@ -88,5 +99,8 @@ The economy has its own suite: `check-economy`, `check-wardrobe`, `check-closet`
   others) and drives them in node. Never copy the arithmetic into a guard. Never put a page-level
   call inside a lifted function: it is a ReferenceError in an unrelated suite.
 - A guard that finds nothing must fail, not pass. Every extractor list is asserted.
+- A dark badge in `check-badges` is answered by the bot a person chasing it would be, never by an
+  excuse or a moved number. Three MVPs and 38,000 points need an A+ ceiling, so the career section
+  plays a prospect who rolls until the builder grades it A+; the blind sweep lit them only by seed.
 - `check-saves` and the frozen fixtures are the proof old careers still play. Do not "fix" a failure
   there by updating the fixtures.

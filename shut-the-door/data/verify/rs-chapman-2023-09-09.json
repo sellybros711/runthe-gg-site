@@ -1,0 +1,306 @@
+{
+ "id": "rs-chapman-2023-09-09",
+ "plan": "regular season L-held",
+ "resolution": "real",
+ "gamePk": 716657,
+ "date": "2023-09-09",
+ "game": "Regular Season Game 2: Oakland Athletics at Texas Rangers",
+ "gameType": "R",
+ "pitcher": {
+  "id": 547973,
+  "name": "Aroldis Chapman",
+  "throws": "L",
+  "team": "Texas Rangers",
+  "seasonLine": "3.09 ERA, 6 SV, 58.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 71,
+   "batterId": 649557,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "547973": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Aledmys Diaz grounds out, third baseman Jonathan Ornelas to first baseman Nathaniel Lowe.",
+   "feedEvent": "field_out",
+   "feedDescription": "Aledmys Diaz grounds out, third baseman Jonathan Ornelas to first baseman Nathaniel Lowe.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Aledmys Díaz",
+   "batSideListed": "R",
+   "seasonLine": ".229/.280/.337, 4 HR"
+  },
+  {
+   "atBat": 72,
+   "batterId": 669397,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "547973": 5
+   },
+   "pitches": 5,
+   "event": "walk",
+   "des": "Nick Allen walks.",
+   "feedEvent": "walk",
+   "feedDescription": "Nick Allen walks.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Nick Allen",
+   "batSideListed": "R",
+   "seasonLine": ".221/.263/.287, 4 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 542208,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "547973": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Carlos Perez strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Carlos Perez strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Carlos Pérez",
+   "batSideListed": "R",
+   "seasonLine": ".226/.293/.357, 6 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 680869,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "547973": 6
+   },
+   "pitches": 6,
+   "event": "walk",
+   "des": "Zack Gelof walks. Nick Allen to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Zack Gelof walks. Nick Allen to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Zack Gelof",
+   "batSideListed": "R",
+   "seasonLine": ".267/.337/.504, 14 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 672478,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "547973": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Jordan Diaz grounds out, shortstop Corey Seager to first baseman Nathaniel Lowe.",
+   "feedEvent": "field_out",
+   "feedDescription": "Jordan Diaz grounds out, shortstop Corey Seager to first baseman Nathaniel Lowe.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Jordan Diaz",
+   "batSideListed": "R",
+   "seasonLine": ".221/.273/.364, 10 HR"
+  }
+ ],
+ "realFaced": 5,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 22,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 667670,
+   "name": "Brent Rooker",
+   "batSideListed": "R"
+  },
+  {
+   "id": 669127,
+   "name": "Shea Langeliers",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665923,
+   "name": "Esteury Ruiz",
+   "batSideListed": "R"
+  },
+  {
+   "id": 675656,
+   "name": "Kevin Smith",
+   "batSideListed": "R"
+  },
+  {
+   "id": 649557,
+   "name": "Aledmys Díaz",
+   "batSideListed": "R"
+  },
+  {
+   "id": 669397,
+   "name": "Nick Allen",
+   "batSideListed": "R"
+  },
+  {
+   "id": 542208,
+   "name": "Carlos Pérez",
+   "batSideListed": "R"
+  },
+  {
+   "id": 680869,
+   "name": "Zack Gelof",
+   "batSideListed": "R"
+  },
+  {
+   "id": 672478,
+   "name": "Jordan Diaz",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1008,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 479,
+     "usage": 0.4752,
+     "velo": 99.0,
+     "pfxXin": 4.6,
+     "pfxZin": 17.9
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 292,
+     "usage": 0.2897,
+     "velo": 88.1,
+     "pfxXin": -8.4,
+     "pfxZin": 5.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 166,
+     "usage": 0.1647,
+     "velo": 101.1,
+     "pfxXin": 12.4,
+     "pfxZin": 15.5
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 71,
+     "usage": 0.0704,
+     "velo": 90.5,
+     "pfxXin": 2.7,
+     "pfxZin": 2.6
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=547973"
+  },
+  "postseason": {
+   "pitches": 128,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 79,
+     "usage": 0.6172,
+     "velo": 99.4,
+     "pfxXin": 5.2,
+     "pfxZin": 17.3
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 22,
+     "usage": 0.1719,
+     "velo": 88.0,
+     "pfxXin": -11.0,
+     "pfxZin": 5.4
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 19,
+     "usage": 0.1484,
+     "velo": 100.9,
+     "pfxXin": 13.1,
+     "pfxZin": 15.4
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 8,
+     "usage": 0.0625,
+     "velo": 90.8,
+     "pfxXin": 0.9,
+     "pfxZin": 4.3
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=547973"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 716657: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=716657",
+  "MLB Stats API schedule 2023-09-09 and live feed /api/v1.1/game/716657/feed/live",
+  "MLB Stats API people with 2023 season stats",
+  "Baseball Savant 547973 2023 season search (regular season and postseason) for the arsenal"
+ ],
+ "search": {
+  "gamePk": 716657,
+  "date": "2023-09-09",
+  "year": 2023,
+  "half": "Top",
+  "pitcher": 547973,
+  "name": "Chapman, Aroldis",
+  "throws": "L",
+  "home": "TEX",
+  "away": "ATH",
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "midPA": false,
+  "li9": 2.39,
+  "li9n": 758,
+  "swing": 0.645,
+  "held": true,
+  "endLead": 1,
+  "faced": 5,
+  "pitches": 22
+ },
+ "mlbWinProbabilityAtEntry": {
+  "leverageIndex": 2.87,
+  "atBatIndex": 70
+ }
+}

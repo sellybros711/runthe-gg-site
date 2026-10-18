@@ -87,7 +87,8 @@ const DATA = /fetch\(\s*['"]([A-Za-z0-9_./-]+\.json)\?v=([A-Za-z0-9_.-]+)['"]/g;
 
 function pages(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
-    if (name === '.git' || name === 'node_modules') continue;
+    // .claude holds agent worktrees (whole copies of the site) in a cloud session: never part of it
+    if (name === '.git' || name === 'node_modules' || name === '.claude') continue;
     const full = path.join(dir, name);
     const st = fs.statSync(full);
     if (st.isDirectory()) { pages(full, out); continue; }
@@ -143,7 +144,14 @@ for (const page of pages(ROOT)) {
  * leaf to the page, one record at a time, with nobody having to remember it.
  *
  * It reads static imports and a dynamic import('./x.js?v=N'), from every recorded .js
- * file, and from each file THOSE reach, once each. */
+ * file, and from each file THOSE reach, once each.
+ *
+ * AND A SCRIPT THAT FETCHES DATA IS A PAGE TOO. hoops moved its inline script into
+ * hoops/page.js on 2026-10-16, and with it the three fetch('data/...json?v=N') lines this
+ * file had been reading off hoops/index.html: the count of versioned files dropped by
+ * three and the run stayed green. So the walk reads DATA from every script it reaches,
+ * resolved against that script's folder, the way a fetch from it resolves against the
+ * page that loaded it when both sit together. */
 const DYN = /\bimport\(\s*['"]\.?\/?([A-Za-z0-9_.-]+\.js)\?v=([^'"]+)['"]\s*\)/g;
 {
   const queue = [], seen = new Set();
@@ -159,12 +167,12 @@ const DYN = /\bimport\(\s*['"]\.?\/?([A-Za-z0-9_.-]+\.js)\?v=([^'"]+)['"]\s*\)/g
     seen.add(file);
     const src = fs.readFileSync(file, 'utf8');
     const rel = path.relative(ROOT, file);
-    for (const re of [MOD, DYN]) {
+    for (const re of [MOD, DYN, DATA]) {
       for (const m of src.matchAll(re)) {
-        const dep = path.join(path.dirname(file), m[1]);
+        const dep = m[1].startsWith('/') ? path.join(ROOT, m[1].slice(1)) : path.join(path.dirname(file), m[1]);
         if (!fs.existsSync(dep)) continue;
         (found[rel] ??= {})[m[1]] = { v: m[2], sha: sha(dep) };
-        queue.push(dep);
+        if (re !== DATA) queue.push(dep);
       }
     }
   }
@@ -250,7 +258,15 @@ function moduleVersion(src) {
 const pins = [];
 let pairs = 0;
 for (const page of pages(ROOT)) {
-  const html = fs.readFileSync(page, 'utf8');
+  /* THE PAGE AND THE SCRIPTS BESIDE IT THAT IT LOADS. A page's pins can live in its own
+     script rather than inline: hoops moved its inline script into page.js on 2026-10-16, and
+     read off the HTML alone this loop found nothing there and skipped hoops in silence (14
+     pins agreed before, 10 after, and the run was green). A sibling script is read as part of
+     the page; a shared one (a leading /) is not, because its pins are not this page's. */
+  const htmlOnly = fs.readFileSync(page, 'utf8');
+  const siblings = [...htmlOnly.matchAll(/<script[^>]*\ssrc="([A-Za-z0-9_.-]+\.js)(?:\?[^"]*)?"/g)]
+    .map((m) => path.join(path.dirname(page), m[1])).filter((f) => fs.existsSync(f));
+  const html = [htmlOnly].concat(siblings.map((f) => fs.readFileSync(f, 'utf8'))).join('\n');
   const rel = path.relative(ROOT, page);
   /* A page that COMPARES an API_VERSION is a page that pins one. A page that merely mentions
      the words (the stub below the comparison writes `API_VERSION:BOARD_VERSION` into itself)

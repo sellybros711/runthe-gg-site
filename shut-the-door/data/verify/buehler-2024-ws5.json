@@ -1,0 +1,294 @@
+{
+ "id": "buehler-2024-ws5",
+ "plan": 2,
+ "resolution": "real",
+ "gamePk": 775296,
+ "date": "2024-10-30",
+ "game": "World Series Game 5: Los Angeles Dodgers at New York Yankees",
+ "gameType": "W",
+ "pitcher": {
+  "id": 621111,
+  "name": "Walker Buehler",
+  "throws": "R",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "5.38 ERA, 0 SV, 75.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 7,
+   "them": 6
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 87,
+   "batterId": 683011,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621111": 5
+   },
+   "pitches": 5,
+   "event": "field_out",
+   "des": "Anthony Volpe grounds out, third baseman Max Muncy to first baseman Freddie Freeman.",
+   "feedEvent": "field_out",
+   "feedDescription": "Anthony Volpe grounds out, third baseman Max Muncy to first baseman Freddie Freeman.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Anthony Volpe",
+   "batSideListed": "R",
+   "seasonLine": ".243/.293/.364, 12 HR"
+  },
+  {
+   "atBat": 88,
+   "batterId": 669224,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621111": 7
+   },
+   "pitches": 7,
+   "event": "strikeout",
+   "des": "Austin Wells strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Austin Wells strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Austin Wells",
+   "batSideListed": "L",
+   "seasonLine": ".229/.322/.395, 13 HR"
+  },
+  {
+   "atBat": 89,
+   "batterId": 657077,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621111": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Alex Verdugo strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Alex Verdugo strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Alex Verdugo",
+   "batSideListed": "L",
+   "seasonLine": ".233/.291/.356, 13 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 16,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 650402,
+   "name": "Gleyber Torres",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665742,
+   "name": "Juan Soto",
+   "batSideListed": "L"
+  },
+  {
+   "id": 592450,
+   "name": "Aaron Judge",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665862,
+   "name": "Jazz Chisholm Jr.",
+   "batSideListed": "L"
+  },
+  {
+   "id": 519317,
+   "name": "Giancarlo Stanton",
+   "batSideListed": "R"
+  },
+  {
+   "id": 519203,
+   "name": "Anthony Rizzo",
+   "batSideListed": "L"
+  },
+  {
+   "id": 683011,
+   "name": "Anthony Volpe",
+   "batSideListed": "R"
+  },
+  {
+   "id": 669224,
+   "name": "Austin Wells",
+   "batSideListed": "L"
+  },
+  {
+   "id": 657077,
+   "name": "Alex Verdugo",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1336,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 386,
+     "usage": 0.2889,
+     "velo": 95.0,
+     "pfxXin": -4.3,
+     "pfxZin": 16.7
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 279,
+     "usage": 0.2088,
+     "velo": 91.2,
+     "pfxXin": 4.6,
+     "pfxZin": 9.4
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 256,
+     "usage": 0.1916,
+     "velo": 78.0,
+     "pfxXin": 10.7,
+     "pfxZin": -14.7
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 219,
+     "usage": 0.1639,
+     "velo": 94.8,
+     "pfxXin": -13.8,
+     "pfxZin": 11.1
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 116,
+     "usage": 0.0868,
+     "velo": 82.6,
+     "pfxXin": 14.8,
+     "pfxZin": 1.4
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 69,
+     "usage": 0.0516,
+     "velo": 90.0,
+     "pfxXin": -12.9,
+     "pfxZin": 7.0
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 11,
+     "usage": 0.0082,
+     "velo": 86.2,
+     "pfxXin": 7.3,
+     "pfxZin": 1.1
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=621111"
+  },
+  "postseason": {
+   "pitches": 259,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 95,
+     "usage": 0.3668,
+     "velo": 94.6,
+     "pfxXin": -4.4,
+     "pfxZin": 18.5
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 55,
+     "usage": 0.2124,
+     "velo": 77.7,
+     "pfxXin": 12.2,
+     "pfxZin": -16.9
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 42,
+     "usage": 0.1622,
+     "velo": 91.4,
+     "pfxXin": 4.8,
+     "pfxZin": 11.2
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 37,
+     "usage": 0.1429,
+     "velo": 81.0,
+     "pfxXin": 19.4,
+     "pfxZin": 0.0
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 20,
+     "usage": 0.0772,
+     "velo": 94.2,
+     "pfxXin": -16.4,
+     "pfxZin": 12.8
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 5,
+     "usage": 0.0193,
+     "velo": 90.4,
+     "pfxXin": -13.8,
+     "pfxZin": 7.9
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 5,
+     "usage": 0.0193,
+     "velo": 87.3,
+     "pfxXin": 8.0,
+     "pfxZin": 5.1
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=621111"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 775296: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=775296",
+  "MLB Stats API schedule 2024-10-30 and live feed /api/v1.1/game/775296/feed/live",
+  "MLB Stats API people with 2024 season stats",
+  "Baseball Savant 621111 2024 season search (regular season and postseason) for the arsenal"
+ ]
+}

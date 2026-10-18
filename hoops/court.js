@@ -65,7 +65,7 @@ var S = window.RTF_SOUND || { cue: function(){}, crowd: function(){}, on: functi
 var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 var TICK = 1000 / 12;
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var esc = window.RTF_UTIL.esc;
 function lerp(a, b, u){ return a + (b - a) * u; }
 function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 function ease(u){ return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; }
@@ -94,7 +94,9 @@ var CSS = [
 '@keyframes ctHot{50%{color:#ff4b4b}}',
 '.ct-call{position:absolute;left:0;right:0;top:40px;z-index:4;padding:8px 12px;background:linear-gradient(90deg,rgba(5,7,13,0),rgba(5,7,13,.78) 18%,rgba(5,7,13,.78) 82%,rgba(5,7,13,0));box-shadow:inset 0 2px 0 0 color-mix(in srgb,var(--c1) 70%,transparent),inset 0 -2px 0 0 rgba(255,255,255,.08);animation:ctCall .32s cubic-bezier(.2,.8,.2,1) both;font-family:var(--k-f-display,var(--display,Impact));font-size:clamp(16px,4.6vw,24px);letter-spacing:.03em;text-transform:uppercase;color:#fff;text-shadow:2px 2px 0 #05070d;text-align:center;pointer-events:none;}',
 '.ct-call:empty{display:none;}',
-'@keyframes ctCall{0%{transform:translateX(-14%);opacity:0;clip-path:inset(0 100% 0 0);}100%{transform:none;opacity:1;clip-path:inset(0 0 0 0);}}',
+/* transform and opacity only: a clip-path wipe runs on the main thread, and
+   a busy frame froze it half open ("AT THE HORN! BA") */
+'@keyframes ctCall{0%{transform:translateX(-14%);opacity:0;}100%{transform:none;opacity:1;}}',
 '.ct-call.big{text-shadow:2px 2px 0 #05070d,0 0 18px rgba(255,209,102,.55);box-shadow:inset 0 2px 0 0 #ffd166,inset 0 -2px 0 0 #ffd166;}',
 '@media (prefers-reduced-motion:reduce){.ct-call{animation:none;}}',
 '.ct-call.big{color:#ffd166;font-size:clamp(24px,8vw,46px);}',
@@ -177,9 +179,15 @@ var UX = Math.sin(PSI), UY = Math.cos(PSI) * SN_, VX = -Math.cos(PSI), VY = Math
    also a step up or down it, by this much */
 var SLOPE = UY / UX;
 var FINE = {}, FINEN = 0, FINEASK = {};
+function spriteKey(who, pose, yaw){
+  return JSON.stringify([who.look, who.c1, who.c2, who.num, pose, who.age, who.dress || '', who.faceless ? 1 : 0, yaw == null ? CAM.yaw : yaw, who.faceless ? null : who.cwear || null]);
+}
+/* Has the worker handed back this figure's fine trace yet? */
+var HITSTOP = 110;
+function fineReady(who, pose, yaw, R){ return R < 2 || !B.paintAsync || !!FINE[spriteKey(who, pose, yaw) + '|' + R]; }
 function sprite(who, pose, yaw, R, urgent){
   if (yaw == null) yaw = CAM.yaw;
-  var k = JSON.stringify([who.look, who.c1, who.c2, who.num, pose, who.age, who.dress || '', who.faceless ? 1 : 0, yaw, who.faceless ? null : who.cwear || null]);
+  var k = spriteKey(who, pose, yaw);
   /* the fine trace, if the worker has handed it back; asked for once */
   if (R > 1 && B.paintAsync) {
     var fk = k + '|' + R;
@@ -190,7 +198,7 @@ function sprite(who, pose, yaw, R, urgent){
         if (!img) return;
         if (++FINEN > 300) { FINE = {}; FINEASK = {}; FINEN = 0; }
         FINE[fk] = B.gridCanvas(img);
-      }, !!urgent);
+      }, urgent === 2 ? 2 : !!urgent);
     }
   }
   if (SPR[k]) return SPR[k];
@@ -300,13 +308,34 @@ function stage(host, opts){
     /* Wide enough for a three: 130 cells across at least, so a phone gets a
        smaller man on a real court rather than a big man cut off at the edge,
        and tall enough for a dunk. Whichever binds sets the cell. */
+    /* THE FRAME HOLDS ONCE THE PLAY IS LIVE (st.hold, set at the press). The
+       controls leave the screen when you let go, the box grows, and a refit
+       here dropped the floor line a quarter of a phone screen in one frame,
+       with the shot in the air. Held, the canvas keeps its cell, its top and
+       every row it had, and only grows floor at the bottom. */
+    if (st.hold && st.room && Math.ceil(W / st.k) === st.cw) {
+      var top0 = st.top != null ? st.top : st.H - st.ch * st.k;
+      var ch2 = Math.max(st.floorY + 8, Math.ceil((H - top0) / st.k));
+      if (ch2 !== st.ch) {
+        st.ch = ch2; cv.height = ch2 * st.R; cv.style.height = (ch2 * st.k) + 'px';
+        if (opts.hoop) st.floor = courtFloor(st.cw, ch2, st.fy, st.rim[0], st.playY, roomC1 || '#c8102e', st.R);
+      }
+      st.top = top0; cv.style.top = top0 + 'px'; cv.style.bottom = 'auto';
+      draw();
+      return;
+    }
     var k = Math.max(2, Math.min(Math.floor((H - (opts.pad || 0)) / 124), Math.floor(W / 130)));
     var cw = Math.ceil(W / k), ch = Math.floor(H / k);
+    st.H = H;
     var R = fineRes(k);
     if (cw === st.cw && ch === st.ch && R === st.R && st.room) return;
     st.k = k; st.cw = cw; st.ch = ch; st.R = R;
     cv.width = cw * R; cv.height = ch * R;
     cv.style.width = (cw * k) + 'px'; cv.style.height = (ch * k) + 'px';
+    /* pinned from the top where the bottom would put it: the box can grow a
+       frame before this refit runs (the controls going away), and a canvas
+       pinned to the bottom rode down with it for that frame */
+    st.top = H - ch * k; cv.style.top = st.top + 'px'; cv.style.bottom = 'auto';
     /* Anything laid over the bottom of the court (the meter) pushes the
        floor up so it never covers the man. */
     st.floorY = ch - 6 - Math.ceil((opts.pad || 0) / k);
@@ -325,10 +354,14 @@ function stage(host, opts){
     st.floor = opts.hoop ? courtFloor(cw, ch, st.fy, rimX, st.playY, roomC1 || '#c8102e', R) : null;
     /* his whole vocabulary, in the background behind anything urgent: the
        next moment of this career starts fine from its first frame */
+    /* the men on the floor now come before his vocabulary for later */
+    if (st.warmCast) st.warmCast();
     if (R > 1 && opts.me && opts.hoop && !st.warmed) { st.warmed = 1; Object.keys(B.SETS || {}).forEach(function(n){ for (var i = 0; i < B.SETS[n]; i++) sprite(opts.me, n + i, st.yaw, R, false); }); }
     var art = K.room(opts.room || 'nba', cw, ch, { c1: roomC1, c2: roomC2, floorAt: st.fy / ch, seed: 'court:' + (opts.room || 'nba'), spotAt: 0.5 });
     var im = new Image();
-    im.onload = function(){ st.room = im; st.soft = softRoom(im, cw, ch, R, opts.hoop ? st.fy : ch); draw(); };
+    /* only a court's stands are soft: a ceremony's room IS the shot, and blurred
+       it read as broken, the way the 3D rooms were before they went sharp */
+    im.onload = function(){ st.room = im; st.soft = opts.hoop ? softRoom(im, cw, ch, R, st.fy) : null; draw(); };
     im.src = art.url;
     draw();
   }
@@ -449,12 +482,12 @@ function stage(host, opts){
     if (st.room) {
       /* A loud building jumps: the crowd above the floor moves a cell. */
       var bump = s.loud >= 2 && !REDUCED && (st.tick % 4 < 2) ? 1 : 0;
-      if (st.soft) ctx.drawImage(st.soft, 0, -bump, st.cw, fy);
+      /* the top of the picture is the top of the room, never the whole room
+         squeezed into it: drawn whole, a ceremony showed its floor twice, a
+         black seam between (the walkout, the enshrinement) */
+      if (st.soft) ctx.drawImage(st.soft, 0, 0, st.soft.width, Math.min(st.soft.height, Math.round(fy * st.R)), 0, -bump, st.cw, Math.min(st.soft.height / st.R, fy));
       else ctx.drawImage(st.room, 0, 0, st.cw, fy, 0, -bump, st.cw, fy);
-      /* a room (no court) is soft all the way down: the stands in front of the
-         stage are out of focus too, the way a lens at the stage would see them */
-      if (st.soft && !opts.hoop) ctx.drawImage(st.soft, 0, fy * st.R, st.cw * st.R, (st.ch - fy) * st.R, 0, fy, st.cw, st.ch - fy);
-      else ctx.drawImage(st.room, 0, fy, st.cw, st.ch - fy, 0, fy, st.cw, st.ch - fy);
+      ctx.drawImage(st.room, 0, fy, st.cw, st.ch - fy, 0, fy, st.cw, st.ch - fy);
       if (bump) rect(0, fy - 1, st.cw, 1, '#05070d');
     } else rect(0, 0, st.cw, st.ch, '#0b0e1a');
     /* depth: the upper deck falls into the dark */
@@ -476,7 +509,10 @@ function stage(host, opts){
     if (s.flash && !REDUCED) for (var f = 0; f < 6; f++) { var fx2 = ((st.tick * 37 + f * 53) % st.cw), fyy = ((st.tick * 11 + f * 29) % Math.round(st.ch * 0.5)); rect(fx2, fyy, 1, 1, '#fffbe8'); rect(fx2 - 1, fyy, 3, 1, 'rgba(255,251,232,.5)'); rect(fx2, fyy - 1, 1, 3, 'rgba(255,251,232,.5)'); }
     if (s.spot) { ctx.fillStyle = 'rgba(5,7,13,.55)'; ctx.fillRect(0, 0, st.cw, st.ch); }
     if (opts.hoop) hoopBack(s);
-    var acts = (s.actors || []).slice().sort(function(a, b){ return (a.y + (a.z || 0)) - (b.y + (b.z || 0)); });
+    var acts = (s.actors || []).concat(floorCast(s)).sort(function(a, b){ return (a.y + (a.z || 0)) - (b.y + (b.z || 0)); });
+    /* how many men in this frame are still waiting on their fine trace
+       (a checker reads it: a court should open with none waiting) */
+    st.waiting = acts.filter(function(a){ var w = a.who === 'me' ? opts.me : a.who; return w && !fineReady(w, a.pose, st.yaw, st.R); }).length;
     if (st.floor) acts.forEach(function(a){ drawActor(a, true); });
     var ball = s.ball;
     if (!ball) trail = [];
@@ -523,6 +559,7 @@ function stage(host, opts){
     var tx = clamp(fx / st.cw * 100, 15, 85), ty = clamp(fyy / st.ch * 100, 20, 85);
     cam.z += (tz - cam.z) * 0.08; cam.x += (tx - cam.x) * 0.06; cam.y += (ty - cam.y) * 0.06;
     var k = s.rimShake ? (s.rimShake % 2 ? 1 : -1) * st.k * 0.8 : 0;
+    if (st.shake > 0.25) { k += (Math.random() < 0.5 ? -1 : 1) * st.shake * st.k * 0.5; st.shake *= 0.8; } else st.shake = 0;
     cv.style.transformOrigin = cam.x.toFixed(2) + '% ' + cam.y.toFixed(2) + '%';
     cv.style.transform = 'translateX(-50%) translate(' + k.toFixed(1) + 'px,' + (k * 0.5).toFixed(1) + 'px) scale(' + cam.z.toFixed(4) + ')';
   }
@@ -607,18 +644,26 @@ function stage(host, opts){
      at() is cheap and draws no random number, so reading ahead is free. */
   st.warm = function(clips, urgent){
     if (st.R < 2 || !B.paintAsync) return;
-    var seen = {};
+    var seen = {}, want = [], moods = {};
+    st.warming = true;
     clips.forEach(function(c){
       if (!c || typeof c.at !== 'function') return;
       for (var t = 0; t < Math.min(c.len || 1, 120); t++) {
         var sx; try { sx = c.at(t); } catch (e) { return; }
+        if (sx && sx.mood && !moods[sx.mood]) moods[sx.mood] = 1;
         (sx && sx.actors || []).forEach(function(a){
-          var who = a.who === 'me' ? opts.me : a.who, k = a.pose + '|' + (who && who.num);
+          var who = a.who === 'me' ? opts.me : a.who, k = a.pose + '|' + (who && who.num) + '|' + (who && who.faceless ? 1 : 0) + '|' + (who && who.c1);
           if (!who || seen[k]) return; seen[k] = 1;
-          sprite(who, a.pose, st.yaw, st.R, urgent);
+          want.push([who, a.pose]);
         });
       }
     });
+    /* an urgent ask goes to the FRONT of the worker's queue, so they are
+       asked last tick first and the first frame's men are traced first */
+    Object.keys(moods).forEach(function(m){ want = want.concat(st.castPoses ? st.castPoses(m) : []); });
+    st.warming = false;
+    if (urgent) want.reverse();
+    want.forEach(function(w){ sprite(w[0], w[1], st.yaw, st.R, urgent); });
   };
   st.play = function(clip, done){
     cancelAnimationFrame(st.raf); clearTimeout(st.timer);
@@ -643,6 +688,10 @@ function stage(host, opts){
       while (acc >= per) {
         acc -= per;
         if (cues[t] && !clip.slow) S.cue(cues[t]);
+        /* CONTACT HAS WEIGHT: a dunk landing on the rim (the thud) or a block
+           (clip.impact) holds that frame a beat and kicks the camera, the way
+           a console sells the hit. Never on a replay. */
+        if (!clip.slow && (cues[t] === 'thud' || clip.impact === t)) { acc -= HITSTOP; st.shake = 3.2; }
         st.tick = t;
         st.state = clip.at(t);
         t++;
@@ -685,6 +734,93 @@ function stage(host, opts){
     if (!text) return;
     o = document.createElement('div'); o.className = 'ct-fbk ' + (tone || ''); o.textContent = text; el.appendChild(o);
     setTimeout(function(){ if (o.parentNode) o.parentNode.removeChild(o); }, 900);
+  };
+  /* THE REST OF THE FLOOR. A moment is two or three men, and the other
+     seven or eight were nowhere: a free throw was one man and a hoop. The
+     cast (st.cast) is everyone else, both kits, stood where a half court
+     puts them, in court terms (along toward the rim, and across), so the
+     camera foreshortens them like the floor. They breathe in place while
+     the play is live and answer it when it is over: your side up, theirs
+     down, or the other way (s.mood, set by the reaction). A man is only
+     drawn once his fine trace is back, faded up, so the floor never shows a
+     blocky man beside a sharp one; a pose not back yet stands him still. */
+  st.cast = null;
+  var castIn = {};
+  /* asked again whenever the stage settles on a new trace size (a desk
+     screen lands on a finer one after the first fit), or the cast would wait
+     behind the whole play's frames at the back of the queue */
+  var castR = 0;
+  st.warmCast = function(){
+    if (!st.cast || st.R < 2 || !B.paintAsync || castR === st.R) return;
+    castR = st.R;
+    st.cast.forEach(function(c){ sprite(c.who, 'stand', st.yaw, st.R, true); });
+    /* and how they answer either way, traced while he lines it up */
+    /* one pose each before anyone's second: a man with only cheer0 back
+       pumps between it and standing, which still reads */
+    var all = st.castPoses('us').concat(st.castPoses('them'));
+    ['cheer0', 'sad0', 'sad1', 'cheer1'].forEach(function(p){ all.forEach(function(w){ if (w[1] === p) sprite(w[0], w[1], st.yaw, st.R, 2); }); });
+  };
+  /* the poses the cast answers a mood with (floorCast), asked for by st.warm
+     when it is handed the reaction, right behind the reaction's own men */
+  st.castPoses = function(mood){
+    var out = [];
+    (st.cast || []).forEach(function(c){
+      if ((mood === 'us') === (c.side === 'us')) { out.push([c.who, 'cheer0'], [c.who, 'cheer1']); }
+      else out.push([c.who, c.ph % 2 ? 'sad0' : 'sad1']);
+    });
+    return out;
+  };
+  /* a frame later, once the stage has its real size: a desk screen first
+     fits at a coarser trace for one frame, and frames traced at that size
+     are thrown away */
+  st.setCast = function(list){
+    st.cast = list; castR = 0;
+    var go = function(){ if (!st.dead) st.warmCast(); };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function(){ requestAnimationFrame(go); }); else go();
+  };
+  /* a point on the floor, u along the court toward the rim and v across it
+     toward the camera, in cells from the rim's own spot on the floor */
+  st.spot = function(u, v){
+    var dx = u * UX + v * VX, dy = u * UY + v * VY;
+    var x = st.rim[0] + dx, y = st.playY + dy - dx * SLOPE;
+    var sy0 = st.playY + dy;
+    return x > 10 && x < st.cw - 10 && sy0 > st.fy + 10 && sy0 < st.ch - 2 ? { x: x, y: y } : null;
+  };
+  function floorCast(s){
+    if (!st.cast || !opts.hoop || s.noFloor) { st.castDrawn = 0; return []; }
+    var out = [], now = performance.now();
+    st.cast.forEach(function(c, i){
+      var p = st.spot(c.u, c.v);
+      if (!p) return;
+      var t = (st.tick || 0) + c.ph, mood = s.mood, up = mood && ((mood === 'us') === (c.side === 'us'));
+      var pose = !mood ? 'stand' : up ? (Math.floor(t / 3) % 2 ? 'cheer1' : 'cheer0') : (c.ph % 2 ? 'sad0' : 'sad1');
+      if (st.R > 1 && B.paintAsync) {
+        /* asked for by st.warmCast at the right place in the queue; asked
+           again here only after that (a first ask here would go to the back,
+           and the warm's ask would then be dropped as a repeat) */
+        var ask = castR === st.R;
+        if (!fineReady(c.who, 'stand', st.yaw, st.R)) { if (ask) sprite(c.who, 'stand', st.yaw, st.R, true); return; }
+        if (!castIn[i]) castIn[i] = now;
+        if (!fineReady(c.who, pose, st.yaw, st.R)) { if (ask) sprite(c.who, pose, st.yaw, st.R, 2); pose = 'stand'; }
+      } else if (!castIn[i]) castIn[i] = now - 1000;
+      var a = Math.min(1, (now - castIn[i]) / 320);
+      out.push({ who: c.who, x: p.x + (pose === 'stand' && !REDUCED ? Math.sin((t + c.ph * 3) / 7) * 0.5 : 0), y: p.y, pose: pose, jump: up && Math.floor(t / 3) % 2 ? 2 : 0, flip: c.flip, z: -3, alpha: a < 1 ? a : null });
+    });
+    st.castDrawn = out.length;
+    st.castMoved = out.filter(function(a){ return a.pose !== 'stand'; }).length;
+    return out;
+  }
+  /* THE CAST STAYS ON THE FLOOR. A reaction or a tip draws its own people;
+     everyone else who was on the floor when the play ended is still there,
+     come down from the air and standing, and a ball on the floor stays where
+     it came to rest. Read once, when the clip first plays: a warm-up read
+     ahead of time (st.warming) is not kept, because the clips before it in
+     the run have not put their people on the floor yet. */
+  st.others = function(skip){
+    var s = st.state || {}, ball = s.ball && s.ball.y >= st.playY - 6 ? { x: s.ball.x, y: st.playY - 3, spin: 0 } : null;
+    return { early: !!st.warming, ball: ball, actors: (s.actors || []).filter(function(a){ return a.who !== 'me' && (skip || []).indexOf(a.who) < 0; }).map(function(a){
+      return { who: a.who, x: a.x, y: a.y, pose: /^(cheer|sad)/.test(a.pose) ? a.pose : 'stand', jump: 0, flip: a.flip, z: a.z };
+    }) };
   };
   st.replay = function(on){ el.classList.toggle('ct-bars', !!on); el.querySelector('.ct-rp').hidden = !on; };
   st.stop = function(){ st.dead = true; cancelAnimationFrame(st.raf); clearTimeout(st.timer); if (ro) ro.disconnect(); if (el.parentNode) el.parentNode.removeChild(el); };
@@ -753,14 +889,16 @@ var CLIPS = {
     }, cues: { 0: 'clank', 11: 'bounce' } };
   },
   /* A miss that a teammate tips back in at the horn. */
-  tip: function(st, mate, me){
-    var rx = st.rim[0], ry = st.rim[1];
+  /* theirs: the other side's man tips it in, and the building groans */
+  tip: function(st, mate, me, theirs){
+    var rx = st.rim[0], ry = st.rim[1], cast = null;
     return { len: 14, at: function(t){
+      if (!cast || cast.early) cast = st.others([mate]);
       var mx = lerp(rx - 34, rx - 12, Math.min(1, t / 5));
       var m = { who: mate, x: mx, y: st.playY, pose: t < 5 ? cyc('walk', t, 1) : t < 9 ? 'block2' : 'cheer1', jump: t < 5 ? 0 : t < 9 ? [8, 22, 30, 26][t - 5] : 0 };
       var ball = t < 6 ? { x: lerp(rx - 6, rx - 14, t / 5), y: ry - 6 - Math.sin(t / 5 * Math.PI) * 8, spin: t } : t < 11 ? { x: rx, y: ry + (t - 7) * 3, behind: t < 9, spin: t } : { x: rx - (t - 10) * 2, y: st.playY - 3 };
-      return { actors: [m].concat(me ? [me] : []), ball: ball, net: t >= 8 && t < 10 ? 1 : 0, loud: 3, flash: t > 8, focus: rx - 10 };
-    }, cues: { 0: 'squeak', 7: 'slap', 8: 'swish', 9: 'buzzer', 10: 'roar' } };
+      return { actors: cast.actors.concat([m], me ? [me] : []), ball: ball, mood: t > 8 ? (theirs ? 'them' : 'us') : '', net: t >= 8 && t < 10 ? 1 : 0, loud: theirs ? 1 : 3, flash: !theirs && t > 8, focus: rx - 10 };
+    }, cues: { 0: 'squeak', 7: 'slap', 8: 'swish', 9: 'buzzer', 10: theirs ? 'groan' : 'roar' } };
   },
   /* After: one of several celebrations, or one of several ways to hurt. */
   react: function(st, x, made, len, style, mate){
@@ -778,12 +916,13 @@ var CLIPS = {
       hips: function(){ return { p: 'sad0', j: 0 }; },
       knees: function(t){ return { p: t < 5 ? 'sad1' : 'sad2', j: 0 }; },
     };
-    var f = CELE[style] || CELE[made ? 'roar' : 'head'];
+    var f = CELE[style] || CELE[made ? 'roar' : 'head'], cast = null;
     return { len: len, key: len - 1, at: function(t){
+      if (!cast || cast.early) cast = st.others(style === 'chest' && mate ? [mate] : []);
       var r = f(t), a = { who: 'me', x: x + (r.dx || 0), y: st.playY, pose: r.p, jump: r.j, flip: r.flip };
-      var acts = [a];
+      var acts = cast.actors.concat([a]);
       if (style === 'chest' && mate) acts.push({ who: mate, x: x + 22 - (t < 6 ? t * 1.5 : 9), y: st.playY, pose: t < 6 ? 'cheer0' : 'cheer1', jump: a.jump, flip: true });
-      return { actors: acts, loud: made ? 3 : 0, flash: made, confetti: made && st.opts.confetti, focus: x };
+      return { actors: acts, ball: cast.ball, mood: made ? 'us' : 'them', loud: made ? 3 : 0, flash: made, confetti: made && st.opts.confetti, focus: x };
     }, cues: made ? { 0: 'roar' } : { 0: 'groan' } };
   },
 };
@@ -874,12 +1013,30 @@ function controls(spec, st){
     + '<div class="ct-hint">Tap, or press Space</div>';
   ctl.hidden = true;
   if (spec.ctlHost) { ctl.classList.add('ct-ctl-in'); spec.ctlHost.appendChild(ctl); } else st.el.appendChild(ctl);
+  /* THE CONTROLS' ROOM IS KEPT FROM THE START. Below the court (a scene's
+     caption) the meter coming and going changed the court's box, and every
+     change refit the court: the floor jumped when the meter arrived after a
+     drive's approach and again when it left with the ball in the air. The
+     host keeps the meter's height for the whole moment, measured once here
+     before anything is painted, and lets it go when the moment stops. */
   var bar = ctl.querySelector('.ct-bar'), zEl = ctl.querySelector('.ct-zone'), cEl = ctl.querySelector('.ct-cur'), go = ctl.querySelector('.ct-go:not(.ct-l1)');
   var fEl = ctl.querySelector('.ct-fill'), marks = ctl.querySelector('.ct-marks'), hint = ctl.querySelector('.ct-hint');
   var lanesEl = ctl.querySelector('.ct-lanes'), l1 = ctl.querySelector('.ct-l1');
   var cue = ctl.querySelector('.ct-cue'), cueTx = cue.querySelector('span');
   var cur = null, raf = 0, timers = [], downAt = 0;
   function clear(){ cancelAnimationFrame(raf); timers.forEach(clearTimeout); timers = []; }
+  /* the tallest it gets is the launch, with its tags and a two-line tip */
+  var keepH = '';
+  if (spec.ctlHost) {
+    var hostEl = spec.ctlHost;
+    keepH = hostEl.style.minHeight; ctl.hidden = false;
+    var h0 = hostEl.offsetHeight;
+    label('Athleticism 99', 'Load up. Let go before the help gets there', 'Load up', 'Hold to load your legs. Let go to take off');
+    bar.classList.add('hold', 'launch'); marks.innerHTML = '<i class="ct-tag" style="left:50%">Dunk</i>';
+    var h1 = hostEl.offsetHeight;
+    reset(); label('', '', 'Go'); ctl.hidden = true;
+    hostEl.style.minHeight = Math.max(h0, h1) + 'px';
+  }
   /* back to a plain bar and one button, whatever the last control was */
   function reset(){
     bar.className = 'ct-bar'; marks.innerHTML = ''; fEl.style.width = '0';
@@ -896,13 +1053,15 @@ function controls(spec, st){
     if (!cur) return;
     var done = cur.done; cur = null; clear();
     reset();
+    st.hold = true;
     ctl.hidden = true; ctl.removeAttribute('data-armed');
     st.say('');
     st.feedback(words, tone);
     if (tone === 'p') S.cue('perfect');
     done(Math.round(q * 100) / 100, info || {});
   }
-  function arm(kind){ ctl.hidden = false; ctl.setAttribute('data-armed', kind); }
+  /* armed once the court is on screen, the frame holds (see fit) */
+  function arm(kind){ if (st.room) st.hold = true; ctl.hidden = false; ctl.setAttribute('data-armed', kind); }
   var api = {
     el: ctl,
     /* o: { zone, speed (passes a second), nerves 0..1, rn, tip, btn } */
@@ -1098,7 +1257,7 @@ function controls(spec, st){
     },
     armed: function(){ return !!cur; },
     kind: function(){ return cur ? cur.kind : null; },
-    stop: function(){ clear(); cur = null; window.removeEventListener('pointerup', onUp, true); window.removeEventListener('pointercancel', onUp, true); window.removeEventListener('blur', onUp); if (ctl.parentNode) ctl.parentNode.removeChild(ctl); },
+    stop: function(){ clear(); cur = null; window.removeEventListener('pointerup', onUp, true); window.removeEventListener('pointercancel', onUp, true); window.removeEventListener('blur', onUp); if (ctl.parentNode) ctl.parentNode.removeChild(ctl); if (spec.ctlHost) spec.ctlHost.style.minHeight = keepH; },
   };
   /* A hold is a pointer held anywhere it started: the release is heard on the
      window, so a thumb that slides off the button still lets go, and losing
@@ -1187,6 +1346,34 @@ function moment(host, spec, cb){
   var opp = { look: oppLook, c1: spec.oc || '#3a4566', c2: spec.oc2 || '#c9ccd6', num: '', age: 26, faceless: true };
   var opp2 = { look: B.lookFor('opp2:' + (spec.seed || '')), c1: opp.c1, c2: opp.c2, num: '', age: 27, faceless: true };
   var mate = spec.mate && spec.mate.look ? { look: spec.mate.look, c1: spec.c1, c2: spec.c2, num: spec.mate.num || '', age: 26, faceless: !!spec.mate.faceless } : null;
+  /* THE OTHER MEN ON THE FLOOR, in both kits and faceless (the cast,
+     st.setCast). Offense spaced to the far corner, the far wing and the near
+     corner, each with his man a step toward the rim; at the line, the lane
+     lined both sides. On defense (a stop, a chase-down, a steal) your side
+     guards and theirs spaces. */
+  (function(){
+    var def = /stop|block|steal/.test(M.act);
+    var castOf = function(side, i){ var o = side === 'us' ? { c1: spec.c1, c2: spec.c2 } : { c1: opp.c1, c2: opp.c2 };
+      return { look: B.lookFor('cast:' + side + i + ':' + (spec.seed || '')), c1: o.c1, c2: o.c2, num: '', age: 26, faceless: true }; };
+    var list = [];
+    /* spots in cells from the rim's spot, u along the court and v across
+       (negative is the far side). From this camera the near side runs off the
+       bottom of the screen and the far side off the right, so the floor that
+       shows is the far half: the cast stands there, behind the play. */
+    if (M.act === 'ft') {
+      [[-18, -26, 'them'], [-30, -26, 'us'], [-42, -26, 'them'], [-112, -62, 'us'], [-100, -52, 'them']].forEach(function(p, i){
+        list.push({ who: castOf(p[2], i), side: p[2], u: p[0], v: p[1], ph: i * 5, flip: p[2] !== 'us' });
+      });
+    } else {
+      var spots = M.act === 'steal' ? [[-112, -62]] : M.act === 'pass' ? [[-60, -60], [-112, -62]] : [[-6, -40], [-60, -60], [-112, -62]];
+      spots.forEach(function(p, i){
+        var o = def ? 'them' : 'us', d = def ? 'us' : 'them';
+        list.push({ who: castOf(o, i), side: o, u: p[0], v: p[1], ph: i * 7, flip: false });
+        list.push({ who: castOf(d, i), side: d, u: p[0] + 12, v: p[1] + 10, ph: i * 7 + 3, flip: true });
+      });
+    }
+    st.setCast(list);
+  })();
   var celebrate = pickOf(R, mate ? ['roar', 'flex', 'point', 'chest', 'shimmy', 'shush', 'stare', 'salute'] : ['roar', 'flex', 'point', 'shimmy', 'shush', 'stare', 'salute']);
   var hurt = pickOf(R, ['head', 'hips', 'knees']);
   var rx = function(){ return st.rim[0]; }, x0 = function(){ return st.rim[0] + (variant === 'heave' ? -98 : M.at); };
@@ -1196,6 +1383,7 @@ function moment(host, spec, cb){
   function resolve(arg){
     var res = cb.resolve ? cb.resolve(arg) : { made: (typeof arg === 'number' ? arg : arg.touch) > 0 };
     outcome = res || { made: false };
+    st.hold = true;
     return outcome;
   }
   /* the end: the reaction, the final, the call */
@@ -1204,7 +1392,12 @@ function moment(host, spec, cb){
     var list = [];
     var shot = made === true || made === 2;
     if (won === true && !shot && mate && /jumper|drive|pass|ft/.test(M.act)) list.push(CLIPS.tip(st, mate, { who: 'me', x: x, y: st.playY, pose: 'shot4' }));
+    /* A stop that still loses: you got it, and they tipped it in at the horn.
+       Show the tip, or the screen shouts LOCKED UP over a loss it never shows. */
+    var theirTip = won === false && shot && /stop|block/.test(M.act);
+    if (theirTip) { st.say(call, true); call = ''; }
     if (won === false && shot) list.push(CLIPS.react(st, x, true, 6, celebrate, mate));
+    if (theirTip) list.push(CLIPS.tip(st, opp2, { who: 'me', x: x, y: st.playY, pose: 'stand' }, true));
     var happy = won == null ? shot : won;
     list.push(CLIPS.react(st, x, happy, 20, happy ? (won != null && !shot ? 'roar' : celebrate) : hurt, mate));
     st.run(list, function(){
@@ -1335,27 +1528,30 @@ function moment(host, spec, cb){
       if (!poster && !layup) bigX = helpX();
       var seq = layup ? ['shot0', 'shot1', 'shot1', 'shot2', 'shot2', 'shot2', 'shot3', 'shot3', 'shot3', 'shot4'] : ['dunk0', 'dunk1', 'dunk1', 'dunk2', 'dunk2', 'dunk2', 'dunk2', 'dunk3', 'dunk3', 'dunk3'];
       var top = layup ? 24 : 40, jumps = layup ? [0, 0, 6, 12, 18, 22, 24, 24, 22, 18] : [0, 0, 0, 10, 22, 32, 38, 40, 40, 40];
+      /* the men guarding the drive stay where they were when you went up */
+      var guards = st.others().actors;
+      var withG = function(acts){ return guards.concat(acts); };
       var list = [
         { len: 10, at: function(t){
           /* a reverse goes under the rim and finishes on the far side */
           var xx = rev ? lerp(end - 8, st.rim[0] + 7, Math.min(1, t / 7)) : lerp(end - 8, end, Math.min(1, t / 6));
           var a = { who: 'me', x: xx, y: st.playY, pose: seq[t], jump: jumps[t], flip: rev && t > 4 };
           var hn = hand(seq[t], a, build);
-          var acts = [a].concat(poster ? [big(t > 4 ? 'block1' : 'block0', t > 4 ? (t - 4) * 4 : 0)] : []);
+          var acts = [a].concat(poster ? [big(t > 4 ? 'block1' : 'block0', t > 4 ? (t - 4) * 4 : 0)] : guards);
           return { actors: acts, ball: { x: hn[0] - 1, y: hn[1] - 2 }, loud: 3, focus: xx };
         }, cues: { 2: 'squeak' } },
         function(){ return made
-          ? (layup ? CLIPS.result(st, true, function(t){ return [{ who: 'me', x: rev ? st.rim[0] + 7 : end, y: st.playY, pose: 'shot4', jump: Math.max(0, top - t * 6), flip: rev }]; })
+          ? (layup ? CLIPS.result(st, true, function(t){ return withG([{ who: 'me', x: rev ? st.rim[0] + 7 : end, y: st.playY, pose: 'shot4', jump: Math.max(0, top - t * 6), flip: rev }]); })
             : { len: 14, key: 3, at: function(t){
               var a = { who: 'me', x: end, y: st.playY, pose: t < 8 ? 'dunk4' : 'shot4', jump: t < 8 ? top : Math.max(0, top - (t - 7) * 12) };
-              var acts = [a].concat(poster ? [big(t < 3 ? 'block1' : 'sad2', t < 3 ? 6 : 0, -Math.min(10, t * 2))] : []);
+              var acts = [a].concat(poster ? [big(t < 3 ? 'block1' : 'sad2', t < 3 ? 6 : 0, -Math.min(10, t * 2))] : guards);
               return { actors: acts, ball: t < 6 ? { x: st.rim[0], y: st.rim[1] + 3 + t * 3, behind: t < 3 } : { x: st.rim[0] - (t - 5) * 2, y: st.playY - 3 }, net: t < 2 ? 1 : t < 4 ? 2 : 0, rimShake: t < 6 ? t + 1 : 0, loud: 3, flash: true, dust: poster && t > 2 && t < 8 ? [{ x: bigX - t * 2, y: st.playY, t: t - 2 }] : null, focus: end };
             }, cues: { 0: 'thud', 1: 'swish', 9: 'bounce' } })
           : poster ? { len: 14, key: 4, at: function(t){
             var a = { who: 'me', x: end - Math.min(8, t), y: st.playY, pose: t < 5 ? 'dunk3' : 'sad1', jump: Math.max(0, top - t * 8) };
             return { actors: [a, big('block0')], ball: { x: lerp(st.rim[0] - 10, st.rim[0] - 40, t / 13), y: st.playY - 3 - Math.max(0, 20 - t * 3), spin: t }, loud: 1, focus: end };
           }, cues: { 1: 'thud', 3: 'whistle' } }
-            : CLIPS.result(st, false, function(t){ return [{ who: 'me', x: end, y: st.playY, pose: 'shot4', jump: Math.max(0, top - t * 10) }]; }); },
+            : CLIPS.result(st, false, function(t){ return withG([{ who: 'me', x: end, y: st.playY, pose: 'shot4', jump: Math.max(0, top - t * 10) }]); }); },
       ];
       st.run(withReplay(list, made && (!layup || euro || rev), function(){ return list[0]; }), function(){ finish(made, callFor(made), rev ? st.rim[0] + 7 : end); });
     }
@@ -1413,7 +1609,7 @@ function moment(host, spec, cb){
       var list = [
         { len: 6, at: function(t){ var a = { who: 'me', x: x, y: st.playY, pose: t < 3 ? 'shot0' : 'shake1' }, hn = hand(a.pose, a, build); return { actors: [a, { who: m, x: mx, y: st.playY + 4, pose: 'up', z: 2 }].concat(defs(t)), ball: { x: lerp(hn[0], mx, t / 5), y: lerp(hn[1], st.playY - 36, t / 5) - Math.sin(t / 5 * Math.PI) * 4, spin: t }, loud: 3, focus: (x + mx) / 2 }; }, cues: { 0: 'slap' } },
         function(){ return CLIPS.flight(st, [mx + 2, st.playY - 44], made, function(t){ return [{ who: 'me', x: x, y: st.playY, pose: 'stand' }, { who: m, x: mx, y: st.playY + 4, pose: t < 3 ? 'shot2' : 'shot4', jump: Math.max(0, 14 - t * 3), z: 2 }].concat(defs(t)); }, 9); },
-        function(){ return CLIPS.result(st, made, function(){ return [{ who: 'me', x: x, y: st.playY, pose: 'stand' }, { who: m, x: mx, y: st.playY + 4, pose: 'shot4', z: 2 }]; }); },
+        function(){ return CLIPS.result(st, made, function(){ return [{ who: 'me', x: x, y: st.playY, pose: 'stand' }, { who: m, x: mx, y: st.playY + 4, pose: 'shot4', z: 2 }].concat(defs(0)); }); },
       ];
       st.run(list, function(){ finish(made, callFor(made), x); });
     });
@@ -1487,7 +1683,7 @@ function moment(host, spec, cb){
           var me = { who: 'me', x: end - 12, y: st.playY + 2, pose: made ? (t < 6 ? 'block2' : 'block3') : 'block3', jump: made ? Math.max(0, 40 - t * 6) : Math.max(0, 24 - t * 6), z: 1 };
           var ball = made ? (t < 3 ? { x: st.rim[0] + 7, y: st.rim[1] - 8, spin: 0 } : { x: st.rim[0] + 7 - (t - 2) * 4, y: st.rim[1] - 8 + (t - 2) * (t - 2) * 0.7, spin: t }) : (t < 6 ? { x: st.rim[0], y: st.rim[1] + 2 + t * 2.5, behind: t < 3 } : { x: st.rim[0] - (t - 5) * 2, y: st.playY - 3 });
           return { actors: [o, me], ball: ball, net: !made && t < 4 ? (t < 2 ? 1 : 2) : 0, loud: made ? 3 : 1, flash: made, focus: end };
-        }, cues: made ? { 0: 'slap', 1: 'roar' } : { 1: 'swish', 2: 'whistle' } }; },
+        }, impact: made ? 0 : null, cues: made ? { 0: 'slap', 1: 'roar' } : { 1: 'swish', 2: 'whistle' } }; },
       ], function(){ finish(made, callFor(made), end - 12); });
     });
   }
@@ -1613,8 +1809,8 @@ function moment(host, spec, cb){
             var xx = lerp(m[0], end, t / 13), a = { who: 'me', x: xx, y: lerp(m[1], st.playY, t / 13), pose: cyc('dribble', t, 1) };
             return { actors: [passer('stand'), a, man(tgt, 'sad0'), man(1 - tgt, 'stand')], ball: dribbleBall(st, a, build, t), loud: 3, focus: xx, dust: t === 0 ? [{ x: m[0], y: m[1], t: 3 }] : null };
           }, cues: { 0: 'roar', 4: 'bounce', 10: 'bounce' } },
-          { len: 8, at: function(t){ var seq = ['dunk0', 'dunk1', 'dunk2', 'dunk2', 'dunk3', 'dunk3', 'dunk3', 'dunk3'], a = { who: 'me', x: end, y: st.playY, pose: seq[t], jump: [0, 6, 16, 28, 36, 38, 38, 38][t] }, hn = hand(seq[t], a, build); return { actors: [a, passer('stand'), man(tgt, 'sad0', -6)], ball: { x: hn[0], y: hn[1] - 1 }, loud: 3, focus: end }; } },
-          function(){ return { len: 12, key: 2, at: function(t){ var a = { who: 'me', x: end, y: st.playY, pose: t < 6 ? 'dunk4' : 'shot4', jump: t < 6 ? 38 : Math.max(0, 38 - (t - 5) * 12) }; return { actors: [a, passer('stand'), man(tgt, 'sad0', -6)], ball: t < 6 ? { x: st.rim[0], y: st.rim[1] + 3 + t * 3, behind: t < 3 } : { x: st.rim[0] - (t - 5) * 2, y: st.playY - 3 }, net: t < 2 ? 1 : t < 4 ? 2 : 0, rimShake: t < 6 ? t + 1 : 0, loud: 3, flash: true, focus: end }; }, cues: { 0: 'thud', 1: 'swish' } }; },
+          { len: 8, at: function(t){ var seq = ['dunk0', 'dunk1', 'dunk2', 'dunk2', 'dunk3', 'dunk3', 'dunk3', 'dunk3'], a = { who: 'me', x: end, y: st.playY, pose: seq[t], jump: [0, 6, 16, 28, 36, 38, 38, 38][t] }, hn = hand(seq[t], a, build); return { actors: [a, passer('stand'), man(tgt, 'sad0', -6), man(1 - tgt, 'stand')], ball: { x: hn[0], y: hn[1] - 1 }, loud: 3, focus: end }; } },
+          function(){ return { len: 12, key: 2, at: function(t){ var a = { who: 'me', x: end, y: st.playY, pose: t < 6 ? 'dunk4' : 'shot4', jump: t < 6 ? 38 : Math.max(0, 38 - (t - 5) * 12) }; return { actors: [a, passer('stand'), man(tgt, 'sad0', -6), man(1 - tgt, 'stand')], ball: t < 6 ? { x: st.rim[0], y: st.rim[1] + 3 + t * 3, behind: t < 3 } : { x: st.rim[0] - (t - 5) * 2, y: st.playY - 3 }, net: t < 2 ? 1 : t < 4 ? 2 : 0, rimShake: t < 6 ? t + 1 : 0, loud: 3, flash: true, focus: end }; }, cues: { 0: 'thud', 1: 'swish' } }; },
         ], function(){ finish(true, callFor(true), end); });
       } else {
         /* you went where he did not throw, or got there a step late */

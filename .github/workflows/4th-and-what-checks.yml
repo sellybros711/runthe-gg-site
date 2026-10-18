@@ -1,0 +1,63 @@
+name: 4th and What checks
+
+# 4th and What is served and unlisted until the owner puts it live.
+#
+#   node 4th-and-what/check-posture.mjs               noindexed, unlinked, off the sitemap and the newsletter
+#   node --test 4th-and-what/test/engine.test.mjs     the four plays, determinism, the rates
+#   node 4th-and-what/test/check-browser.mjs          the whole game in Chromium, phone and desktop
+#
+# The posture job runs on EVERY pull request, with no path filter: a link
+# added anywhere on the site is what would launch the game, and a filter on
+# 4th-and-what/** would never see it. The rest runs when the game changes.
+#
+# No secrets, no network beyond the npm install, no deploy.
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: 4th-and-what-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  posture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Still unlisted
+        run: node 4th-and-what/check-posture.mjs
+
+  game:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Only when the game, the painter it borrows or this file changed.
+      - name: Did the game change
+        id: changed
+        run: |
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git fetch --no-tags --depth=1 origin "$base" 2>/dev/null || true
+          if git diff --name-only "$base" HEAD | grep -qE '^(4th-and-what/|setlist/pxhd\.js|arcade/auth(-ui)?\.js|\.github/workflows/4th-and-what-checks\.yml)'; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+      - name: The sim (the four plays, determinism, the conversion rates)
+        if: steps.changed.outputs.run == 'true'
+        run: node --test 4th-and-what/test/engine.test.mjs
+      - name: Install Chromium
+        if: steps.changed.outputs.run == 'true'
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: The game in a browser, phone and desktop
+        if: steps.changed.outputs.run == 'true'
+        run: node 4th-and-what/test/check-browser.mjs

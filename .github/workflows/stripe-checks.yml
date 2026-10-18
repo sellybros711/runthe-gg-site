@@ -11,7 +11,11 @@ name: Stripe checks
 #                     webhook against a fake Stripe and Supabase
 #   check-floor-money Run The Floor's coin buckets and Floor Pass, shipped dark: the
 #                     switches are off and agree, and each is driven on in a scratch copy
+#   check-putt-lives  Putt Putt's two lives packs (nine for $4.99, three for $2.99), the
+#                     same way: page and server agree, checkout sells a pack only when all
+#                     of it would land, the webhook files the catalog's lives
 #   hoops_wallet      supabase/141's paid coin rules, in SQL
+#   putt_lives_buy    supabase/149's bought lives, in SQL, then 151's lives over the max, with 150's spares beside them, then 152's refunds
 #   replay-webhook    every yearly plan event through the real webhook, against a real
 #                     Postgres built from the migrations, asserting after every event
 #                     that no lifetime row moved and no Fantasy pass was cut short
@@ -23,6 +27,7 @@ name: Stripe checks
 #   node scripts/stripe/check-checkout.mjs
 #   node scripts/stripe/check-recurring.mjs
 #   node scripts/stripe/check-floor-money.mjs
+#   node scripts/stripe/check-putt-lives.mjs
 #   node scripts/stripe/replay-webhook.mjs
 #
 # No secrets and no network: every Stripe and Supabase request is answered locally,
@@ -38,6 +43,7 @@ on:
       - 'hoops/pass.js'
       - 'hoops/pass-ui.js'
       - 'hoops/wardrobe.js'
+      - 'golf/putt/putt.js'
       - '.github/workflows/stripe-checks.yml'
   push:
     paths:
@@ -48,6 +54,7 @@ on:
       - 'hoops/pass.js'
       - 'hoops/pass-ui.js'
       - 'hoops/wardrobe.js'
+      - 'golf/putt/putt.js'
       - '.github/workflows/stripe-checks.yml'
   workflow_dispatch: {}
 
@@ -75,6 +82,8 @@ jobs:
         run: node scripts/stripe/check-recurring.mjs
       - name: Run The Floor's money is dark, and works when lit
         run: node scripts/stripe/check-floor-money.mjs
+      - name: Putt Putt's lives are dark, and work when lit
+        run: node scripts/stripe/check-putt-lives.mjs
       # The runner image ships PostgreSQL stopped. Start it, and let the runner's own
       # user create databases, which is all the replay needs.
       - name: Start Postgres
@@ -108,3 +117,21 @@ jobs:
           $P -f supabase/141_hoops_wallet.sql
           $P -f supabase/141_hoops_wallet.sql
           $P -f supabase/test/hoops_wallet_test.sql
+      - name: supabase/149, Putt Putt's bought lives
+        run: |
+          createdb pbuy
+          P="psql -X -q -v ON_ERROR_STOP=1 -d pbuy"
+          $P -f supabase/test/baseball_pro_base.sql
+          $P -f supabase/138_putt_lives.sql
+          $P -f supabase/146_putt_lives_nine.sql
+          $P -f supabase/149_putt_lives_buy.sql
+          $P -f supabase/149_putt_lives_buy.sql
+          $P -f supabase/test/putt_lives_buy_test.sql
+          $P -f supabase/150_putt_lives_spares.sql
+          $P -f supabase/151_putt_lives_extra.sql
+          $P -f supabase/151_putt_lives_extra.sql
+          $P -f supabase/test/putt_lives_extra_test.sql
+          $P -f supabase/test/putt_lives_spare_test.sql
+          $P -f supabase/152_putt_lives_refund.sql
+          $P -f supabase/152_putt_lives_refund.sql
+          $P -f supabase/test/putt_lives_refund_test.sql

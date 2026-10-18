@@ -62,7 +62,8 @@ var LOOT = {
   trinket:{ rows:PIX_GEM, pal:{ r:'#b48cff', h:'#ffffff', o:'#2a1a40' }, beam:'190,150,255', name:'Trinket' },
   part:{ rows:PIX_PART, pal:{ r:'#7fa0c4', h:'#e6eef8', o:'#1e2a38', g:'#2a2a2a' }, beam:'120,190,255', name:'Putter part' },
   chest:{ rows:PIX_CHEST, pal:{ r:'#a8662e', h:'#d8944a', g:'#ffd23a', o:'#3a2410' }, beam:null, name:'Chest' },
-  prize:{ rows:PIX_CHEST, pal:{ r:'#3a78b8', h:'#7cc8ff', g:'#ffd23a', o:'#14304a' }, beam:null, name:'Puzzle' }
+  prize:{ rows:PIX_CHEST, pal:{ r:'#3a78b8', h:'#7cc8ff', g:'#ffd23a', o:'#14304a' }, beam:null, name:'Puzzle' },
+  vault:{ rows:PIX_CHEST, pal:{ r:'#7a3ab8', h:'#c89cff', g:'#ffd23a', o:'#2a1440' }, beam:null, name:'Gym' }
 };
 function lootPal(t){ var L = LOOT[t.k]; return t.k === 'trinket' && t.col ? Object.assign({}, L.pal, { r:t.col }) : L.pal; }
 function lootBeam(t){ if (t.k === 'trinket' && t.col){ var n = parseInt(t.col.slice(1), 16); return (n >> 16) + ',' + (n >> 8 & 255) + ',' + (n & 255); } return LOOT[t.k].beam; }
@@ -76,10 +77,10 @@ function lootIcon(t){ var key = t.k + (t.col || ''); if (ICONS[key]) return ICON
 var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5, CRATE_H = 0.8;
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
-var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', frozen:'ice lamps', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], frozen:['#6ec8ff', '#e2f6ff'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', frozen:'rocksnow', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
+var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
+  school:'lanterns', iceage:'fire pits', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -123,9 +124,9 @@ var KIT = {
   volcano:{ g:['#3a3236', '#443a3e', '#2e282c', 0.22], p:['#6a5a52', '#7a6a60', '#5a4c46'], tree:['dead', 'basalt', 'basalt'], leaves:['#3a4a2e', '#4a5a34', '#2e3a24'], bark:'#2b2229',
     low:['rock', 'rockdark', 'ember'], brk:'pot', haz:'lava', dens:0.6, hazC:['#ff6a1a', '#ffc23a'], lm:['basaltset', 'vent', 'skull'], wall:['#4a4046', '#221c20'],
     npc:{ skin:'tan', polo:'black', hat:'black', pants:'grey', hair:'black', hairStyle:'buzz', cap:false, gender:'male' }, who:'the ranger' },
-  frozen:{ g:['#eef4fb', '#f8fbff', '#dfe8f3', 0.2], p:['#c8d6e6', '#d6e2f0', '#b8c8da'], tree:['pine', 'pine', 'pine'], leaves:['#1f4f3e', '#2a6450', '#173e30'], bark:'#4a3626', snow:true,
-    low:['rocksnow', 'bushsnow', 'rocksnow'], brk:'ice', haz:'ice', hazC:['#a8dcf4', '#d4f0ff'], lm:['igloo', 'snowman', 'cabin'], wall:['#dfe8f3', '#9fb2c8'],
-    npc:{ skin:'light', polo:'teal', hat:'white', pants:'navy', hair:'blonde', hairStyle:'long', cap:false, gender:'female' }, who:'the ski patrol' },
+  dino:{ g:['#5e7a2e', '#688632', '#54702a', 0.22], p:['#a8875a', '#b8976a', '#98774c'], tree:['palm', 'broad', 'palm'], leaves:['#2e6a22', '#3a7a2a', '#24561c'], bark:'#5a4026',
+    low:['fern', 'fern', 'rock', 'bush'], brk:'pot', haz:'water', hazC:['#4a6a2e', '#86a454'], waterC:['#3f6a3a', '#7aa65a'], iceC:['#8a4e30', '#b8724a'], lm:['longneck', 'dinoskel', 'nest'], wall:['#c9a46a', '#7a5a34'],
+    npc:{ skin:'medium', polo:'gold', hat:'tan', pants:'khaki', hair:'brown', hairStyle:'ponytail', cap:true, hatStyle:'cap', gender:'female' }, who:'the fossil hunter' },
   sky:{ g:['#f4f6fb', '#ffffff', '#e4e9f4', 0.22], p:['#f7d27a', '#ffe09a', '#e6c066'], tree:['puff', 'puff', 'broad'], leaves:['#8fd3a0', '#a6e0b4', '#7ac08c'], bark:'#c9a46a',
     low:['puffsmall', 'rainbowrock', 'puffsmall'], brk:'crate', haz:null, lm:['balloon', 'kite', 'pillar'], wall:['#ffffff', '#c9d4ea'],
     npc:{ skin:'porcelain', polo:'purple', hat:'white', pants:'stone', hair:'platinum', hairStyle:'curly', cap:false, gender:'female' }, who:'the balloonist' },
@@ -138,6 +139,9 @@ var KIT = {
   iceage:{ g:['#e6edf2', '#f2f6f9', '#d6e0e7', 0.2], p:['#b8aa92', '#c8bca6', '#a89a82'], tree:['pine', 'pine', 'dead'], leaves:['#1e3f30', '#28503e', '#173a2a'], bark:'#4a3626', snow:true,
     low:['rocksnow', 'bushsnow', 'rock'], brk:'ice', haz:'slow', hazC:['#1e1a16', '#3a3028'], bogC:['#1e1a16', '#3a3028'], lm:['mammoth', 'cave', 'tusks'], wall:['#cfeaf2', '#6fb6d0'],
     npc:{ skin:'tan', polo:'gold', hat:'tan', pants:'khaki', hair:'darkbrown', hairStyle:'long', cap:false, gender:'male' }, who:'the cave dweller' },
+  candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
+    low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
+    npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
   haunted:{ g:['#2e3a2a', '#36442e', '#283224', 0.2], p:['#5d4634', '#6d5440', '#4d3a2a'], tree:['dead', 'dead', 'dead'], leaves:['#3a4a2e', '#4a5a34', '#2e3a24'], bark:'#2b2229',
     low:['tomb', 'rock', 'pumpkin'], brk:'pumpkin', haz:'slow', hazC:['#5d4634', '#4a3628'], lm:['crypt', 'graves', 'fenceyard'], wall:['#4a4652', '#24222a'],
     npc:{ skin:'porcelain', polo:'black', hat:'black', pants:'grey', hair:'white', hairStyle:'long', cap:false, gender:'female' }, who:'the caretaker' },
@@ -145,13 +149,29 @@ var KIT = {
     low:['hay', 'pumpkin', 'bush'], brk:'hay', haz:'slow', hazC:['#6a4e2e', '#5a4024'], lm:['barn', 'scarecrow', 'cornfield'], wall:['#8b4a1e', '#5a2e10'],
     npc:{ skin:'tan', polo:'gold', hat:'stone', pants:'navy', hair:'auburn', hairStyle:'short', cap:true, hatStyle:'cap', gender:'male' }, who:'the farmer' }
 };
+/* A WORLD'S WALKS TRAVEL WITH ITS HOLES. Pirate Cove's holes go beach, town, jungle, Skull Rock, cove (land.js), and the walks
+   between them go the same way: putt.js names the stop (spec.kitAs), and the walk is planned with that stop's kit. Only the
+   kit changes; everything that asks which world this is still reads the world (spec.theme). */
+function kitFrom(base, o){ var k = {}; for (var q in base) k[q] = base[q]; for (q in o) k[q] = o[q]; return k; }
+KIT['pirate~town'] = kitFrom(KIT.pirate, { g:['#ac9e88', '#b8a890', '#9e907a', 0.2], gpat:'cobble', nlm:5, dens:0.22, low:['rock', 'shell', 'rock'], lm:['shack', 'barrels', 'shack', 'lamps', 'shack', 'boat'] });
+KIT['pirate~jungle'] = kitFrom(KIT.pirate, { g:['#3f6a2a', '#4e7a32', '#2f5a22', 0.22], p:['#8a6a44', '#9a7a52', '#7a5a38'], plank:false, sea:false, tree:['broad', 'palm', 'broad'],
+  leaves:['#1f5a26', '#2b6e30', '#174a20'], bark:'#4a3624', low:['fern', 'bush', 'fern', 'rock'], haz:'water', hazC:['#2f8f9a', '#6fc8d0'], waterC:['#2f8f9a', '#6fc8d0'], gpat:'floor', nlm:4, lm:['falls', 'fortwall', 'falls', 'statue'], dens:1.35, wall:['#a29e8a', '#6a6658'] });
+KIT['pirate~skull'] = kitFrom(KIT.pirate, { g:['#8a867c', '#9a968a', '#7a766c', 0.25], p:['#d8c08a', '#e6d09c', '#c4aa74'], plank:false, dens:0.35, gpat:'stone', nlm:4, low:['rock', 'rock', 'shell'], lm:['skullrock', 'stacks', 'wreck', 'stacks'], wall:['#8e8a80', '#5a5650'] });
+KIT['pirate~cove'] = kitFrom(KIT.pirate, { g:['#efd89a', '#f6e4b2', '#dcc384', 0.25], dens:1.25, seaC:['#2ab4c8', '#7adce8'], nlm:3, lm:['camp', 'wreck', 'camp', 'barrels'] });
+/* a stop's own ground on the walk: GPAT[name](c, kit) gives the colour of a cell (c.ti, c.tj, an eighth of a foot each).
+   Smooth patches (vn) read well on a walk; a hashed cell is a speckle. */
+var GPAT = {};
+var LIFE_AS = { 'pirate~jungle':{ fly:['parrot', 5], mote:[['firefly', 14], ['butter', 6]] } };
 function kitOf(th){ return KIT[th] || KIT.clubhouse; }
+// the world a theme on the walk belongs to: a stop's kit is named 'world~stop', and what the world decides (stone bridges, neon) stays the world's
+function baseTh(th){ return String(th || '').split('~')[0]; }
 
 /* ---------------------------------------------------------------------------------- the plan */
 /* spec: { seed, theme, theme0 (the world being left, on a trail that crosses), cross, gateOpen, to (hole number),
    carpet: [colour, colour], flag } */
 function plan(spec){
-  var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
+  if (spec.kitAs && !KIT[spec.kitAs]) spec.kitAs = null;   // a stop with no kit of its own walks in its world's
+  var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.kitAs || spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
   var HW = spec.halfW || HALFW, b = [-HW, -18, HW, L + 16];
   /* NO TWO WALKS ARE THE SAME WALK, AND THEY DO NOT ALL WALK UP THE SCREEN. A trail is laid out the way a course
      is routed: from the hole you left to the next tee by a dogleg, by switchbacks across the whole width, by a
@@ -211,15 +231,34 @@ function plan(spec){
       for (var j = i + 1; j < n; j++) if (c[j] - c[i] > 26 && Math.hypot(p[j][0] - q[0], p[j][1] - q[1]) < MINSEP) return false; }
     return !spec.cross || gyy != null; }
   var path = null, cum = null, gy = null, style = 'straight', route = null;
-  for (var att = 0; att < 28 && !path; att++){
-    var nm = att < 24 ? pickRoute() : 'meander', flip = R() < 0.5 ? -1 : 1, jit = function(a){ return (R() - 0.5) * a; }, rt = ROUTES[nm](flip, jit);
+  /* A GYM'S TRAIL IS ROUTED ROUND ITS GYM (gyms.js). The arena is a walled box of tiles beside the walk with its gate
+     facing the camera, and a route is only taken if the box fits clear of it with the gate a few steps off the path
+     (gymFit). A trail with no gym is routed exactly as it always was: none of this is asked and no draw is taken. */
+  var GYD = null, gfit = null; try{ var GYS = spec.gym && typeof window !== 'undefined' && window.RTT_PUTT_GYMS; if (GYS && GYS.API_VERSION === 2){ var gdef = GYS.byId(spec.gym); if (gdef) GYD = GYS.parse(gdef); } }catch(e){ GYD = null; }
+  function gymFit(pp){ var T = window.RTT_PUTT_GYMS.TILE, GW = GYD.W * T, GDp = GYD.H * T, gc = GYD.gate % GYD.W, FW = Math.ceil(b[2] - b[0]) + 1, FH = Math.ceil(b[3] - b[1]) + 1, F = new Float32Array(FW * FH);
+    for (var j = 0; j < FH; j++) for (var i = 0; i < FW; i++){ var x = b[0] + i, y = b[1] + j, m = 1e9; for (var k = 0; k < pp.length - 1; k++){ var a = pp[k], c = pp[k + 1]; if (Math.abs(a[1] - y) > m + 2 && Math.abs(c[1] - y) > m + 2) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } F[j * FW + i] = m; }
+    function fd(x, y){ var i = Math.round(x - b[0]), j = Math.round(y - b[1]); if (i < 0 || j < 0 || i >= FW || j >= FH) return 0; return F[j * FW + i]; }
+    var best = null, RJ = rng(hstr('gym:' + spec.gym + ':' + seed));
+    for (var y0 = 10; y0 + GDp + 1.5 <= L - 4; y0 += 1) for (var x0 = b[0] + 3; x0 + GW <= b[2] - 3; x0 += 1){
+      var ax = x0 + (gc + 0.5) * T, ay = y0 + GDp + 0.8, dA = fd(ax, ay); if (dA > 9 || dA < PW + 0.8) continue;
+      var ok = true; for (var yy = y0 - 1; yy <= y0 + GDp + 1 && ok; yy += 1) for (var xx = x0 - 1; xx <= x0 + GW + 1; xx += 1) if (fd(xx, yy) < PW + 1.6){ ok = false; break; }
+      if (!ok) continue;
+      // the way in: from the nearest point of the path straight to the gate, never across the box
+      var bn = 1e9, np = null; for (var q = 0; q < pp.length; q++){ var dq = Math.hypot(pp[q][0] - ax, pp[q][1] - ay); if (dq < bn){ bn = dq; np = pp[q]; } }
+      for (var u = 0.1; u < 1 && ok; u += 0.1){ var sx = np[0] + (ax - np[0]) * u, sy = np[1] + (ay - np[1]) * u; if (sx > x0 - 0.6 && sx < x0 + GW + 0.6 && sy > y0 - 0.6 && sy < y0 + GDp + 0.2) ok = false; }
+      if (!ok) continue;
+      var sc0 = dA + RJ() * 1.5; if (!best || sc0 < best.sc) best = { sc:sc0, x0:x0, y0:y0, w:GW, d:GDp, ax:ax, ay:ay, np:np.slice(), T:T }; }
+    return best; }
+  for (var att = 0; att < (GYD ? 64 : 28) && !path; att++){
+    var nm = att < (GYD ? 60 : 24) ? pickRoute() : 'meander', flip = R() < 0.5 ? -1 : 1, jit = function(a){ return (R() - 0.5) * a; }, rt = ROUTES[nm](flip, jit);
     var sx = clampR(ux(rt.a), sRange), ax = clampR(ux(rt.z), aRange), ctrl = [[sx, L + 7]];
     // every bend wanders a little of its own, so two doglegs are two different doglegs, not one drawn twice
     var stretch = 0.9 + R() * 0.2; rt.p.forEach(function(q){ ctrl.push([ux(Math.max(-0.95, Math.min(0.95, q[0] * stretch + jit(0.18)))), Math.max(0.1, Math.min(0.97, q[1] + jit(0.06))) * Y0]); });
     ctrl.push([ax, 7], [ax, -1]);
     var pp = even(spline(ctrl)), cc = cumOf(pp), gg = spec.cross ? wallLine(pp) : null;
-    if (sane(pp, cc, gg, nm)){ path = pp; cum = cc; gy = gg; style = nm; route = rt; } }
-  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = spec.cross ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; }
+    if (sane(pp, cc, gg, nm) && (!GYD || (gfit = gymFit(pp)))){ path = pp; cum = cc; gy = gg; style = nm; route = rt; } }
+  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = spec.cross ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; if (GYD) gfit = gymFit(path); }
+  if (!gfit) GYD = null;   // nowhere for it: this trail walks without its gym (check-putt fails on that)
   /* ONLY A WORLD STARTS IN A PLAZA. Every walk used to set off from the same round clearing behind the hole just
      played, so every trail opened on the same picture. The owner's call: the start of a world is a circle, and
      everywhere else the walk leaves the last hole the way a path leaves a green, straight off its carpet. So the
@@ -237,6 +276,18 @@ function plan(spec){
   function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
   function themeAt(y){ return spec.cross && y > gy ? th0 : th; }
   var start = { x:path[0][0], y:L + 6, r:plaza ? 7 : 1.2 };
+  /* THE GYM, where gymFit put it: a box of TILE feet a tile, row 0 at its far (low y) side, and its own little path
+     from the walk to the gate. Nothing else stands in it, and nothing tall stands just in front of it (gymShadow), so
+     the camera always sees into it. gymCell is what each point of it is, for the ground and for run(). */
+  var GYM = null;
+  if (GYD){ var gf = gfit; GYM = { id:spec.gym, Q:GYD, G:gdef, K:GYS.kindOf(gdef), T:gf.T, x0:gf.x0, y0:gf.y0, w:gf.w, d:gf.d, ax:gf.ax, ay:gf.ay, spur:[] };
+    for (var gk2 = 0; gk2 <= 10; gk2++){ var gt = gk2 / 10; GYM.spur.push([gf.np[0] + (gf.ax - gf.np[0]) * gt, gf.np[1] + (gf.ay - gf.np[1]) * gt]); }
+    GYM.spur.push([gf.ax, gf.y0 + gf.d - 0.3]); }
+  function inGym(x, y, pad){ return !!GYM && x > GYM.x0 - pad && x < GYM.x0 + GYM.w + pad && y > GYM.y0 - pad && y < GYM.y0 + GYM.d + pad; }
+  function gymShadow(x, y){ return !!GYM && x > GYM.x0 - 3 && x < GYM.x0 + GYM.w + 3 && y > GYM.y0 + GYM.d && y < GYM.y0 + GYM.d + 9; }
+  function gymCell(x, y){ if (!inGym(x, y, 0)) return null; var Q = GYM.Q, c = Math.floor((x - GYM.x0) / GYM.T), r = Math.floor((y - GYM.y0) / GYM.T); if (c < 0 || r < 0 || c >= Q.W || r >= Q.H) return null;
+    var i = r * Q.W + c; return { i:i, c:c, r:r, k:Q.cell[i], u:(x - GYM.x0) / GYM.T - c, v:(y - GYM.y0) / GYM.T - r }; }
+  function gymSpurD(x, y){ var m = 1e9; if (!GYM) return m; for (var i = 0; i < GYM.spur.length - 1; i++) m = Math.min(m, segD(x, y, GYM.spur[i][0], GYM.spur[i][1], GYM.spur[i + 1][0], GYM.spur[i + 1][1])); return m; }
   /* the spur and its clearing, off to a side with room. Never further out than a phone's camera sees from the path
      (it was up to 22 ft, and with no spur to it that was a clearing nobody could find): 9.5 to 15 ft, so the trees
      can hide it from most of the walk but some stretch of the path always has it on screen. Never over another leg
@@ -245,6 +296,7 @@ function plan(spec){
   for (var ct = 0; ct < 120 && !clr; ct++){ var s1 = SL * (0.22 + R() * 0.56), sd = R() < 0.5 ? -1 : 1, crr = 4.5 + R() * 2, cp = beside(s1, sd, 9.5 + R() * 5.5), o = atS(s1);
     if (cp[0] < b[0] + crr + 4 || cp[0] > b[2] - crr - 4 || cp[1] < 12 || cp[1] > L - 6) continue;
     if (pathD(cp[0], cp[1]) < crr + 5 || Math.hypot(cp[0] - start.x, cp[1] - start.y) < crr + start.r + 4) continue;
+    if (GYM && (inGym(cp[0], cp[1], crr + 4) || gymShadow(cp[0], cp[1]) || inGym((cp[0] + o[0]) / 2, (cp[1] + o[1]) / 2, 1.5))) continue;
     if (gy && (Math.abs(cp[1] - gy) < crr + 6 || Math.abs(o[1] - gy) < 12 || (cp[1] - gy) * (o[1] - gy) < 0)) continue;
     var crosses = false; for (var kt = 0.4; kt <= 1; kt += 0.1) if (pathD(o[0] + (cp[0] - o[0]) * kt, o[1] + (cp[1] - o[1]) * kt) < PW + 1.4) crosses = true;
     if (crosses) continue;
@@ -254,6 +306,20 @@ function plan(spec){
   var spurOn = R() < 0.55;
   if (spurOn){ var sdx = clr.x - sx0, sdy = clr.y - ys, sl = Math.hypot(sdx, sdy) || 1, bow = (R() < 0.5 ? -1 : 1) * 2.2;
     for (var k = 0; k <= 10; k++){ var t = k / 10, bw = Math.sin(t * Math.PI) * bow; spur.push([sx0 + sdx * t - sdy / sl * bw, ys + sdy * t + sdx / sl * bw]); } }
+  /* the secret clearing: the far side of the walk from the chest's, with room for the entrance, and always a
+     path out to it so it reads as a place to go. The path ends at the doorway. */
+  var sc = null, spur2 = [];
+  if (spec.secret){ var sk = SECRET_KIND[spec.theme] || 'secretdoor', ssz = LMSIZE[sk] || [6, 4, 5.5], srr = Math.max(ssz[0], ssz[1]) / 2 + 1.5;
+    for (var st2 = 0; st2 < 200 && !sc; st2++){ var s2 = SL * (0.2 + R() * 0.6), sd2 = st2 < 120 ? -sg : (R() < 0.5 ? -1 : 1), cp2 = beside(s2, sd2, srr + 6 + R() * 6), o3 = atS(s2);
+      if (cp2[0] < b[0] + srr + 4 || cp2[0] > b[2] - srr - 4 || cp2[1] < 14 || cp2[1] > L - 8) continue;
+      if (pathD(cp2[0], cp2[1]) < srr + 4 || Math.hypot(cp2[0] - clr.x, cp2[1] - clr.y) < srr + clr.r + 6 || Math.hypot(cp2[0] - start.x, cp2[1] - start.y) < srr + start.r + 4) continue;
+      if (gy && (Math.abs(cp2[1] - gy) < srr + 6 || (cp2[1] - gy) * (o3[1] - gy) < 0)) continue;
+      if (spurD(cp2[0], cp2[1]) < srr + 3) continue;
+      if (GYM && (inGym(cp2[0], cp2[1], srr + 4) || gymShadow(cp2[0], cp2[1]) || screensGym(cp2[0], cp2[1] - 1, srr, ssz[2]))) continue;
+      sc = { x:cp2[0], y:cp2[1] - 1, r:srr, kind:sk, w:ssz[0], d:ssz[1], h:ssz[2], s:s2, ox:o3[0], oy:o3[1] }; }
+    if (sc){ var my = sk === 'mooredship' ? sc.y : sc.y + sc.d / 2 + 0.9, mx = sk === 'mooredship' ? sc.x + (sc.ox < sc.x ? -1 : 1) * (sc.w / 2 + 1.6) : sc.x;
+      sc.mx = mx; sc.my = my; var tdx = mx - sc.ox, tdy = my - sc.oy, tl = Math.hypot(tdx, tdy) || 1, bw2 = (R() < 0.5 ? -1 : 1) * 1.6;
+      for (var k2 = 0; k2 <= 12; k2++){ var t2 = k2 / 12, bb2 = Math.sin(t2 * Math.PI) * bw2; spur2.push([sc.ox + tdx * t2 - tdy / tl * bb2, sc.oy + tdy * t2 + tdx / tl * bb2]); } } }
   // what the clearing holds: a chest most often, else a pile of things to smash
   var clrKind = R() < 0.7 ? 'chest' : 'pile';
   // the key and the locked gate are the trail's little puzzle: more than half the chests are behind one
@@ -268,16 +334,17 @@ function plan(spec){
   function footAt(x, y){ for (var i = 0; i < feet.length; i++){ var o = feet[i], f = o.f, ii = Math.round((x - o.X0) / 0.25), jj = Math.round((y - o.Y0) / 0.25);
       if (ii >= 0 && jj >= 0 && ii < f.W && jj < f.H){ var c = f.codes[jj * f.W + ii]; if (c) return { c:c, i:i }; } } return null; }
   function inFoot(x, y, pad){ for (var i = 0; i < feet.length; i++){ var o = feet[i]; if (x > o.X0 - pad && x < o.X0 + o.w + pad && y > o.Y0 - pad && y < o.Y0 + o.h + pad) return true; } return false; }
-  function spurD(x, y){ var m = 1e9; if (spur.length < 2) return m; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1])); return m; }
+  function spurD(x, y){ var m = 1e9; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1]));
+    for (var i3 = 0; i3 < spur2.length - 1; i3++) m = Math.min(m, segD(x, y, spur2[i3][0], spur2[i3][1], spur2[i3 + 1][0], spur2[i3 + 1][1])); return GYM ? Math.min(m, gymSpurD(x, y)) : m; }
   // a field of how far each point is from the path, the spur and the clearings, read back smoothly
   var DS = 1, DX = Math.ceil((b[2] - b[0]) / DS) + 1, DY = Math.ceil((b[3] - b[1]) / DS) + 1, DD = new Float32Array(DX * DY);
   for (var j = 0; j < DY; j++) for (var i2 = 0; i2 < DX; i2++){ var x = b[0] + i2 * DS, yy = b[1] + j * DS; DD[j * DX + i2] = Math.min(pathD(x, yy), spurD(x, yy) + 0.4); }
   function walkD(x, y){ var fx = (x - b[0]) / DS, fy = (y - b[1]) / DS; if (fx < 0 || fy < 0 || fx >= DX - 1 || fy >= DY - 1) return 99;
     var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, q = j * DX + i; return (DD[q] * (1 - u) + DD[q + 1] * u) * (1 - v) + (DD[q + DX] * (1 - u) + DD[q + DX + 1] * u) * v; }
-  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
+  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; if (GYM && (inGym(x, y, pad + 1.2) || gymShadow(x, y))) return true; if (sc && Math.hypot(x - sc.x, y - sc.y) < sc.r + pad) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
 
-  var P = { spec:spec, seed:seed, L:L, b:b, plaza:plaza, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
-    things:[], cols:[], items:[], hazards:[] };
+  var P = { spec:spec, seed:seed, L:L, b:b, plaza:plaza, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, spur2:spur2, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
+    gym:GYM, inGym:inGym, gymCell:memo2(gymCell), things:[], cols:[], items:[], hazards:[] };
   P.near = function(x, y){ var best = 1e9, out = path[0]; for (var i = 0; i < path.length; i++){ var d = Math.hypot(path[i][0] - x, path[i][1] - y); if (d < best){ best = d; out = path[i]; } } return out; };
 
   // ---- the world's ground to keep off: ponds, lava pools, ice sheets, bogs. Never on the path or a clearing.
@@ -309,7 +376,8 @@ function plan(spec){
         if (Math.hypot(x - clr.x, yc - clr.y) < clr.r + hw + 3) ok = false;
         if (Math.abs(yc - start.y) < start.r + hw + 3 || yc < 16) ok = false;
         if (pools.some(function(o){ return Math.hypot(o.x - x, o.y - yc) < Math.max(o.rx, o.ry) + hw + 2.5; })) ok = false;
-        if (spurD(x, yc) < near + 1) ok = false; }
+        if (spurD(x, yc) < near + 1) ok = false;
+        if (GYM && (inGym(x, yc, hw + 4) || gymShadow(x, yc))) ok = false; }
       if (!ok) continue;
       // where the path crosses: each crossing has to be a fair way across, and the path is never near the water anywhere else
       var cs = [], sOf = function(i){ return path[i][1] - cyf(path[i][0]); };
@@ -342,7 +410,8 @@ function plan(spec){
       if (gy && Math.abs(sy - gy) < 6) near = Math.max(near, sd * cx(gy) + PW + 10);
       SEA[sj] = Math.max(near, Math.min(HWs - 8 + vn(sy * 0.08, 3, seed) * 4, near + vn(sy * 0.15, 9, seed) * 1.5)); } }
   function seaEdge(y){ if (!SEA) return 1e9; var f = Math.max(0, Math.min(SEA.length - 1.001, y - SEA_Y0)), i = f | 0, u = f - i; return SEA[i] * (1 - u) + SEA[i + 1] * u; }
-  function seaAt(x, y){ if (!P.sea) return false; return P.sea.side * x > seaEdge(y || 0); }
+  // a gym built out over the sea stands on its own deck, and its little path out to it is a jetty
+  function seaAt(x, y){ if (!P.sea) return false; if (GYM && (inGym(x, y, 0.5) || gymSpurD(x, y) < PW + 0.6)) return false; return P.sea.side * x > seaEdge(y || 0); }
   P.seaEdge = seaEdge;
   poolAt = memo2(poolAt); P.poolAt = poolAt; P.seaAt = seaAt;
 
@@ -352,7 +421,18 @@ function plan(spec){
   function free(x, y, r){ for (var i = 0; i < used.length; i++){ var u = used[i]; if (Math.hypot(u.x - x, u.y - y) < u.r + r) return false; } return true; }
   function okGround(x, y, r){ if (x < b[0] + 2 || x > b[2] - 2 || y < b[1] + 2 || y > b[3] - 2) return false; if (poolAt(x, y) || seaAt(x, y)) return false;
     for (var a = 0; a < 6; a++){ var ax = x + Math.cos(a) * r, ay = y + Math.sin(a) * r; if (poolAt(ax, ay) || seaAt(ax, ay)) return false; } return true; }
-  function screensPath(x, y, r, H){   // would a thing r wide and H tall at (x, y) hide much of the path from the camera?
+  /* NOTHING TALL OVER A GYM'S ROOM ON SCREEN (the owner, 2026-10-17: a tree's canopy over the room's wall). A thing r
+     round and H tall at (x, y) stands up the screen by H * CE against the ground's y * SE, so a tree a few feet nearer
+     the camera than the near wall puts its crown over the room, and one just behind the far wall stands over that wall.
+     So a tree, a landmark, a rock or a lamp is kept off the room's whole rect on screen (its floor up to the top of its
+     walls) plus m feet all round, for every gym of every kind. wh is the wall's height as the frame measures the room
+     (gymArtRect). A function, so the secret clearing (placed earlier) asks it too. */
+  function screensGym(x, y, r, H){ if (!GYM) return false; var m = 1.5, wh = 3.4, dx = Math.max(GYM.x0 - x, 0, x - GYM.x0 - GYM.w); if (dx >= r + m) return false;
+    var top = y * SE - (H || 0) * CE, bot = (y + r) * SE, rt = GYM.y0 * SE - wh * CE, rb = (GYM.y0 + GYM.d) * SE;
+    return top < rb + m * SE && bot > rt - m * SE; }
+  P.screensGym = screensGym;
+  function screensPath(x, y, r, H){   // would a thing r wide and H tall at (x, y) hide much of the path (or a gym's room) from the camera?
+    if (screensGym(x, y, r, H)) return true;
     var reach = H * CE / SE * 0.6 + 1;
     for (var i = 0; i < path.length; i++){ var p = path[i]; if (p[1] < y - reach || p[1] > y + 0.5) continue; if (Math.abs(p[0] - x) < r * 0.7 + PW) return true; }
     for (i = 0; i < spur.length; i++){ p = spur[i]; if (p[1] < y - reach || p[1] > y + 0.5) continue; if (Math.abs(p[0] - x) < r + PW + 1.2) return true; }
@@ -363,6 +443,8 @@ function plan(spec){
 
   // the end: an arch over the path at y = 0, and the hole's carpet beyond it
   place('arch', archX, 0, 0.1, 9);
+  // the gym's walls, gate and posts are one build (BUILD.gym); as a thing it keeps everything else out and blocks the walk
+  if (GYM) place('gym', GYM.x0 + GYM.w / 2, GYM.y0 + GYM.d / 2, 0.1, 1.6, { w:GYM.w, d:GYM.d, th:themeAt(GYM.y0 + GYM.d / 2) });
   // the flag still in the cup of the hole you just left, behind you
   if (spec.holeFrom && feet.length){ var fo = feet[feet.length - 1]; place('pin', fo.cup[0], fo.cup[1], 0.1, 6, { col:fo.f.T.flag }); }
   used.push({ x:archX, y:-8, r:9 });
@@ -378,8 +460,11 @@ function plan(spec){
     P.lockGate = { x:clr.x + Math.cos(gA) * fr, y:clr.y + Math.sin(gA) * fr, a:gA };
     place('fence', clr.x, clr.y, 0.1, 2.6);
   }
+  if (sc){ place(sc.kind, sc.x, sc.y, Math.max(sc.w, sc.d) / 2 + 0.3, sc.h, { w:sc.w, d:sc.d, th:themeAt(sc.y), secret:1, face:sc.ox < sc.x ? -1 : 1 });
+    if (sc.kind === 'mooredship') place('gangplank', (sc.x + sc.mx) / 2, sc.y, 0.1, 0.6, { th:themeAt(sc.y), face:sc.ox < sc.x ? -1 : 1 });
+    P.secret = { x:sc.mx, y:sc.my, r:1.5, i:spec.secret.i, kind:sc.kind, hint:SECRET_HINT[sc.kind] || SECRET_HINT.secretdoor }; used.push({ x:sc.mx, y:sc.my, r:1.6 }); }
   // landmarks: one or two of the world's, beside the path in open ground
-  var lms = kitOf(th).lm, nlm = 2 + (R() < 0.4 ? 1 : 0);
+  var lms = kitOf(th).lm, nlm = kitOf(th).nlm || (2 + (R() < 0.4 ? 1 : 0));   // a stop that is a place (a town) can ask for more
   for (var li = 0; li < nlm; li++){ var kind = lms[(seed + li) % lms.length];
     for (var tries = 0; tries < 40; tries++){ var lq = (li === 0 && midPt && !kmid.haz && tries < 6) ? [midPt[0] + (R() - 0.5) * 4, midPt[1] + (R() - 0.5) * 4] : beside(18 + R() * (SL - 30), R() < 0.5 ? -1 : 1, 8 + R() * 16), ly = lq[1], lx = lq[0], sz = LMSIZE[kind] || [5, 5, 8];
       var rr = Math.max(sz[0], sz[1]) / 2 + 0.5; if (walkD(lx, ly) < rr + 2 || inClear(lx, ly, rr + 2) || !okGround(lx, ly, rr) || !free(lx, ly, rr + 1) || (gy && Math.abs(ly - gy) < rr + 3)) continue;
@@ -396,8 +481,8 @@ function plan(spec){
       if (okGround(jx, jy, lr) && free(jx, jy, lr + 0.3) && !screensPath(jx, jy, lr, lh)) place(lk, jx, jy, lr, lh); }
   }
   // lamps along the path in the worlds that have them
-  if (kitOf(th).lm.indexOf('lamps') >= 0 || th === 'neon') for (var ls2 = 14; ls2 < SL - 6; ls2 += 22){ var sd2 = (ls2 / 22 | 0) % 2 ? 1 : -1, lq2 = beside(ls2, sd2, PW + 1.3), lx2 = lq2[0], ly2 = lq2[1];
-    if (free(lx2, ly2, 0.4) && okGround(lx2, ly2, 0.4) && !inClear(lx2, ly2, 1)) place('lamp', lx2, ly2, 0.3, 7); }
+  if (kitOf(th).lm.indexOf('lamps') >= 0 || baseTh(th) === 'neon') for (var ls2 = 14; ls2 < SL - 6; ls2 += 22){ var sd2 = (ls2 / 22 | 0) % 2 ? 1 : -1, lq2 = beside(ls2, sd2, PW + 1.3), lx2 = lq2[0], ly2 = lq2[1];
+    if (free(lx2, ly2, 0.4) && okGround(lx2, ly2, 0.4) && !inClear(lx2, ly2, 1) && !screensGym(lx2, ly2, 0.6, 7)) place('lamp', lx2, ly2, 0.3, 7); }
 
   // ---- what can be picked up and walked into
   var items = P.items, id = 0;
@@ -455,7 +540,15 @@ function plan(spec){
       if (okGround(hx, hy, 1) && free(hx, hy, 1)){ P.host = item('host', hx, hy, { th:themeAt(hy) }); used.push({ x:hx, y:hy, r:1 }); } } }
   // the local, beside the path a little before the arch (a greeter's trail has the greeter instead)
   for (var tn = 0; tn < (spec.greet ? 0 : 30); tn++){ var nq = beside(SL * (0.16 + R() * 0.7), R() < 0.5 ? -1 : 1, PW + 1.6), ny = nq[1], nx = nq[0];
-    if (free(nx, ny, 1) && okGround(nx, ny, 1)){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
+    if (free(nx, ny, 1) && okGround(nx, ny, 1) && !(GYM && (inGym(nx, ny, 1.5) || gymShadow(nx, ny)))){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
+  /* THE GYM'S CIVILIAN, the owner's call: somebody at the park standing by the gate, who says one thing about what is in
+     there (a nudge, never the answer), and a plainer thing once you have pulled the lever twice. */
+  // they stand toward the middle of the screen (on a shore the camera leans out to sea), so their bubble has room
+  if (GYM){ var cv0 = null, cs0 = P.sea ? P.sea.side : (GYM.ax > 0 ? -1 : 1); for (var cq = 0; cq < 32 && !cv0; cq++){ var sd3 = cq & 1 ? -cs0 : cs0, cxq = GYM.ax + sd3 * (2.1 + (cq >> 1) * 0.4), cyq = GYM.ay + 0.7 + (cq >> 3) * 0.6;
+      if (okGround(cxq, cyq, 0.8) && free(cxq, cyq, 0.8) && !inGym(cxq, cyq, 0.8) && gymSpurD(cxq, cyq) > 1.4) cv0 = [cxq, cyq]; }
+    cv0 = cv0 || [GYM.ax + 2.4, GYM.ay + 1.2]; P.civ = item('civ', cv0[0], cv0[1], { th:themeAt(cv0[1]) }); used.push({ x:cv0[0], y:cv0[1], r:1 });
+    // the vault chest at the far end: on the list of what this trail holds, opened by solving the gym
+    var vq = GYD.chest, vc = vq % GYD.W, vr = (vq / GYD.W) | 0; P.vault = item('vault', GYM.x0 + (vc + 0.5) * GYM.T, GYM.y0 + (vr + 0.5) * GYM.T, { gym:GYM.id }); }
 
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
   P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall' || t.k === 'bridge') return; if (PLANT[t.k]) return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
@@ -475,7 +568,7 @@ function plan(spec){
      spec.pzKind forces a kind (or 'none'), for the checks. */
   function puzzle(){
     var RQ = rng(hstr('pz:' + (spec.key || '') + ':' + seed)), roll = RQ(), force = spec.pzKind;
-    if (force === 'none' || (!force && roll >= PZ_SHARE)) return;
+    if (GYM || force === 'none' || (!force && roll >= PZ_SHARE)) return;   // a gym trail has its gym instead
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0], host = items.filter(function(t){ return t.k === 'host'; })[0];
     if (!npc && !host) return;   // nobody to give the clue: no puzzle
     var FL = P._fl, G0 = FL.flood(false);
@@ -560,7 +653,7 @@ function plan(spec){
     if (made && items.filter(function(t){ return t.id === made.prize; })[0].drops.length < PZ_COINS) made = null;
     if (!made){ back(S9); return; }
     made.th = themeAt(items.filter(function(t){ return t.id === made.prize; })[0].y);
-    made.clue = pzClue(made.k, made.th, RQ); made.name = PZ_NAME[made.k];
+    made.clue = pzClue(made.k, String(made.th).split('~')[0], RQ); made.name = PZ_NAME[made.k];
     P.puzzle = made; if (made.pen) P.pen = Object.assign({ gated:made.k === 'plate' }, made.pen);
     // the local stands near the start of the walk on a puzzle trail, so the clue comes before the puzzle does
     if (npc) for (var tn2 = 0; tn2 < 40; tn2++){ var nq2 = beside(SL * (0.06 + RQ() * 0.14), RQ() < 0.5 ? -1 : 1, PW + 1.6), nx2 = nq2[0], ny2 = nq2[1];
@@ -586,7 +679,7 @@ function plan(spec){
       var cs = CG[ck(x, y)] || []; for (var i = 0; i < cs.length; i++){ var c = cs[i]; if (c.w){ if (Math.abs(x - c.x) < c.w / 2 + RB && Math.abs(y - c.y) < c.d / 2 + RB) return true; } else if (Math.hypot(x - c.x, y - c.y) < c.r + RB) return true; }
       if (P.gate && Math.abs(y - P.gate.y) < 0.9 + RB && !(Math.abs(x - P.gate.x) < PW + 0.3)) return true;
       if (P.fence){ var F = P.fence, d = Math.hypot(x - F.x, y - F.y); if (Math.abs(d - F.r) < RB + 0.15){ var a = Math.atan2(y - F.y, x - F.x), da = Math.abs(Math.atan2(Math.sin(a - F.a), Math.cos(a - F.a))); if (!(keyed && da < F.half)) return true; } }
-      for (var j = 0; j < items.length; j++){ var t = items[j]; if (t === skip) continue; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + RB) return true; }
+      for (var j = 0; j < items.length; j++){ var t = items[j]; if (t === skip) continue; if ((t.k === 'chest' || t.k === 'npc' || t.k === 'civ') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + RB) return true; }
       return false; }
     function flood(keyed, skip){ var G = new Uint8Array(NX * NY), g0 = atS(2), i0 = Math.round((g0[0] - b[0]) / RES), j0 = Math.round((g0[1] - b[1]) / RES), st = [j0 * NX + i0]; G[st[0]] = 1;
       while (st.length){ var q = st.pop(), i = q % NX, j = (q / NX) | 0;
@@ -618,13 +711,18 @@ function plan(spec){
       var G2 = flood(!!P.fence, c); c.drops = c.drops.filter(function(d){ return near(G2, d[0], d[1], 1.2); });
       for (var tc = 0; tc < 200 && c.drops.length < c.n; tc++){ var a = R() * 6.283, r = 2.2 + R() * 2.6, dx = c.x + Math.cos(a) * r, dy = c.y + Math.sin(a) * r * 0.8;
         if (near(G2, dx, dy, 1.2) && okGround(dx, dy, 0.3) && !hitThing(dx, dy)) c.drops.push([dx, dy]); } });
+    // the secret's doorway: walkable to, or the trees and rocks along its path come out
+    if (P.secret){ var GS = flood(!!P.fence), on2 = function(x, y, r){ return P.spur2.some(function(q){ return Math.hypot(q[0] - x, q[1] - y) < r + 1.8; }) || Math.hypot(P.secret.x - x, P.secret.y - y) < r + 1.8; };
+      if (!near(GS, P.secret.x, P.secret.y, 1.3)){ P.things = P.things.filter(function(t){ return !((TREEH[t.k] || LOWR[t.k]) && on2(t.x, t.y, t.r || 0.6)); });
+        P.cols = P.cols.filter(function(c){ return c.w || (c.r || 0) > 1.6 || !on2(c.x, c.y, c.r || 0.6); }); GS = flood(!!P.fence); }
+      P.secret.reach = near(GS, P.secret.x, P.secret.y, 1.3); }
   }
   /* SHADOWS ON THE GROUND. The light comes from the upper left, the same as the golfer's, so everything tall
      throws a soft shadow down and to the right. It is what sets a tree on the ground rather than over it. */
   var SH = []; P.things.forEach(function(t){ var H = t.h || 1; if (H < 1.6 && !t.w) return; var rx, ry, cx2, cy2;
     if (t.w){ rx = t.w / 2 + H * 0.18; ry = t.d / 2 + H * 0.12; cx2 = t.x + H * 0.22; cy2 = t.y + H * 0.16; }
     else { var cr = t.cr || t.r * 1.4; rx = cr * 1.05 + 0.4; ry = cr * 0.75 + 0.3; cx2 = t.x + H * 0.2; cy2 = t.y + H * 0.14; }
-    if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence' || t.k === 'pen' || t.k === 'green') return; SH.push({ x:cx2, y:cy2, rx:rx, ry:ry }); });
+    if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence' || t.k === 'pen' || t.k === 'green' || t.k === 'gym') return; SH.push({ x:cx2, y:cy2, rx:rx, ry:ry }); });
   // keyed by a number, not a string: shadeAt is asked once for every pixel of ground
   var SG = new Map(), sgk = function(x, y){ return Math.floor(x / 6) * 65536 + Math.floor(y / 6); };
   SH.forEach(function(o){ for (var x = o.x - o.rx; x <= o.x + o.rx + 6; x += 6) for (var y = o.y - o.ry; y <= o.y + o.ry + 6; y += 6){ var k = sgk(x, y), a = SG.get(k); if (!a) SG.set(k, a = []); a.push(o); } });
@@ -641,11 +739,46 @@ var LOWH = { bush:1.8, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, ro
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
 var PLANT = { bush:1, bushf:1, fern:1, bushdry:1, bushsnow:1 };
 var BLOCKR = { pin:0.1, broad:0.6, pine:0.7, palm:0.5, cactus:0.7, dead:0.6, basalt:1.2, puff:0.8, pylon:0.8, cab:1.1, corn:0.5, lamp:0.3, shell:0, ember:0, bushf:0.9 };
+/* THE SECRET ENTRANCES. One trail a world carries a second path to a clearing on the far side of the walk with
+   a way in at the end of it: walk into the doorway and the game offers that world's secret hole. Most are a
+   landmark the world already has (the shed, the school, the factory, the igloo, the cave); Pirate Cove's is a
+   ship moored at the end of the path, and the rest a doorway in a mound of the world's own stone. The door is on
+   the side that faces back down the walk (+y), so it is always the side the camera sees. */
+/* WHAT THE TRAIL SAYS. One line a trail, picked by its seed from a pool in the world's own voice, so walking up to
+   the chest is never the same sentence twice in a row. The local on a secret trail tells you there is a secret hole
+   on it, never where; on any other trail he tells you about the golden ball if it is still out there. */
+var CHEST_SAY = {
+  any:['Is that a chest?', 'Hold on. What\'s that?', 'Something shiny, just off the path.', 'Treasure. Over there.', 'That looks worth a look.'],
+  fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
+  clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
+  neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'],
+  haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
+var SECRET_SAY = {
+  clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
+  school:'Kids say there\'s a secret hole on this trail. Don\'t tell the principal.',
+  candy:'There\'s a secret hole on this trail. The foreman doesn\'t know.',
+  neon:'There\'s a hidden level on this trail. Most players walk right past it.',
+  pirate:'There be a secret hole on this trail. That\'s all I\'ll say.',
+  temple:'The old maps mark a secret hole on this trail. Nobody\'s found it lately.',
+  canyon:'There\'s a secret hole out here on this trail. Took me years to find it.',
+  volcano:'Somewhere on this trail there\'s a secret hole. Watch your step looking.',
+  sky:'I saw a secret hole on this trail from my balloon. Can\'t say where.',
+  dino:'I dug up an old map. It says there\'s a secret hole on this trail.',
+  iceage:'The old drawings say there\'s a secret hole on this trail.',
+  any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
+var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
+var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
+function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave' };
+var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
+  mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
 var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1, 7], ruin:[10, 3, 9], statue:[3, 3, 8], columns:[8, 5, 9], wreck:[12, 5, 7], boat:[6, 3, 3], barrels:[4, 3, 2.4],
   mesa:[11, 8, 13], tower:[5, 5, 15], cart:[5, 2.5, 3.5], basaltset:[7, 6, 9], vent:[5, 5, 4], skull:[5, 4, 5], igloo:[7, 7, 5], snowman:[3, 3, 5.5], cabin:[9, 6, 11],
   balloon:[6, 6, 16], kite:[3, 3, 12], pillar:[5, 5, 12], cabinets:[8, 2.5, 6.5], sign:[8, 1.5, 11], pylons:[6, 6, 12], crypt:[8, 6, 10], graves:[9, 6, 3], fenceyard:[9, 6, 3],
-  barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5] };
+  barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5],
+  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5], secretdoor:[6, 4, 5.5], skullrock:[9, 7, 9], shack:[10, 7, 11], falls:[11, 8, 11], fortwall:[8, 2.6, 4.2], stacks:[6, 4, 7], camp:[9, 7, 9], longneck:[13, 4, 11], dinoskel:[10, 4, 4.5], nest:[6, 6, 2.8], mooredship:[5, 14, 11.5] };
 
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
@@ -653,14 +786,19 @@ function land(P){
   function kAt(y){ return kitOf(P.themeAt(y)); }
   return {
     gain:1.4,
-    bg:kitOf(sp.theme).g[0],
+    bg:kitOf(sp.kitAs || sp.theme).g[0],
     // a hole is flat ground, its rails and blocks stand up off it, its water and cup sit down in it
-    h:function(x, y){ var fc = P.footAt(x, y); if (fc) return fc.c === 10 ? 0.42 : fc.c === 11 ? 0.55 : fc.c === 12 ? -0.3 : (fc.c === 5 || fc.c === 9) ? -0.3 : 0.05;
+    // a gym's room is deck, and its kind may sink or raise a tile of it (push's holes: gymkinds/push.js floor())
+    h:function(x, y){ var gc = P.gym && P.gymCell(x, y); if (gc){ var gf = gymFloor(P, gc); return gf && gf.h != null ? gf.h : GYM_DECK; }
+      var fc = P.footAt(x, y); if (fc) return fc.c === 10 ? 0.42 : fc.c === 11 ? 0.55 : fc.c === 12 ? -0.3 : (fc.c === 5 || fc.c === 9) ? -0.3 : 0.05;
       var wd = P.walkD(x, y), z = (fbm(x * 0.045, y * 0.045, seed) - 0.45) * 2.4 * sm(PW + 0.5, PW + 7, wd);
       if (P.inClear(x, y)) z *= 0.3; if (P.deckAt(x, y)){ var dk = P.creekD(x, y) + P.creek.hw; return 0.22 + 0.4 * Math.max(0, 1 - dk * dk / ((P.creek.hw + 1.1) * (P.creek.hw + 1.1))); }
       if (P.creek){ var cd = P.creekD(x, y); if (cd < 1.4 && cd > 0) z = Math.min(z, -0.12 * (1.4 - cd)); } var o = P.poolAt(x, y); if (o) z = o.k === 'lava' ? -0.45 : o.k === 'water' ? -0.55 : o.k === 'ice' ? -0.05 : -0.12;
       if (P.seaAt(x, y)) z = -0.7; if (wd < PW) z -= 0.06; return z; },
-    mat:function(x, y){ var fc = P.footAt(x, y);
+    mat:function(x, y){ var gc = P.gym && P.gymCell(x, y);
+      if (gc){ var gf2 = gymFloor(P, gc); if (gf2 && gf2.mat) return gf2.mat;
+        return [gc.k === '#' ? 'gwall' : 'gdeck', { gu:gc.u, gv:gc.v, gc:gc.c, gr:gc.r }]; }
+      var fc = P.footAt(x, y);
       if (fc){ var c = fc.c, q = fc.i; return [c === 10 ? 'cr' + q : c === 11 ? 'cb' + q : c === 12 ? 'cup' : c === 4 ? 'sand' : (c === 5 || c === 9) ? 'water' : c === 6 ? 'ice' : c === 7 ? 'bog' : c === 3 ? 'g' : c === 2 ? 'cf' + q : 'cc' + q]; }
       if (P.deckAt(x, y)) return ['deck', { pl:Math.floor((y - P.creek.cy(x)) * 2.2 + 50) }];
       var o = P.poolAt(x, y); if (o) return [o.k === 'slow' ? 'bog' : o.k]; if (P.seaAt(x, y)) return ['water'];
@@ -668,23 +806,29 @@ function land(P){
       var wd = P.walkD(x, y), sh = P.shadeAt(x, y) * (P.fx ? 0.4 : 1), ex = sh ? { sh:sh } : null;   // under the console look the sun casts the real shadow, so the painted one is only a contact shade
       if (!P.feet.length && y < -1.5 && y > -16 && Math.abs(x - P.arch.x) < 7.5) return [Math.abs(x - P.arch.x) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
       var dc = Math.hypot(x - P.clr.x, y - P.clr.y) - P.clr.r, ds = Math.hypot(x - P.start.x, y - P.start.y) - (P.start.r - 1), dIn = Math.min(wd - PW, dc, ds);
-      if (dIn < 0){ if (dIn > -0.35){ ex = ex || {}; ex.edge = 1; } return [P.themeAt(y) === sp.theme ? 'path' : 'path0', ex]; }
+      if (dIn < 0){ if (dIn > -0.35){ ex = ex || {}; ex.edge = 1; } return [P.themeAt(y) === (sp.kitAs || sp.theme) ? 'path' : 'path0', ex]; }
       if (P.sea && P.sea.side * x > P.seaEdge(y) - 3.5) return ['sand', ex];
       if (dIn < 0.3){ ex = ex || {}; ex.edge = 1; }
       var fb = vn(x * 0.22, y * 0.22, seed + 77); if (fb > 0.74 && dIn > 1.2){ ex = ex || {}; ex.fl = Math.min(0.55, (fb - 0.74) * 4); }
-      return [P.themeAt(y) === sp.theme ? 'g' : 'g0', ex]; },
+      return [P.themeAt(y) === (sp.kitAs || sp.theme) ? 'g' : 'g0', ex]; },
     build:function(B){ P.things.forEach(function(t, i){ if (PLANT[t.k]) return; try{ (BUILD[t.k] || BUILD.rock)(B, t, i, P); }catch(e){} }); },
     mats:mats(P)
   };
 }
 function mats(P){
-  var k = kitOf(P.spec.theme), k0 = kitOf(P.themeAt(P.L)), T = P.spec.T || {};
+  var k = kitOf(P.spec.kitAs || P.spec.theme), k0 = kitOf(P.themeAt(P.L)), T = P.spec.T || {};
   // the ground darkens where something throws its shadow on it (c.sh), and grass grows flowers in beds
   function shd(col, f){ var n = parseInt(col.slice(1), 16), r = n >> 16, g2 = n >> 8 & 255, b2 = n & 255; f = 1 - f; return '#' + ((1 << 24) + (Math.round(r * f * 0.92) << 16) + (Math.round(g2 * f) << 8) + Math.round(b2 * Math.min(1, f * 1.08))).toString(16).slice(1); }
   var FL = ['#f7e36b', '#ffffff', '#f48fb1', '#b39ddb'];
   function gfn(kk){ return function(c, R, h3){ var n1 = h3(c.ti >> 1, c.tj >> 1, 11), n2 = h3(c.ti, c.tj, 12), g = kk.g, col;
     if (kk.grid && ((c.ti % 32) === 0 || (c.tj % 24) === 0)) col = '#3a2a8a';
-    else if (c.fl && !kk.grid && h3(c.ti >> 1, c.tj >> 1, 21) < c.fl){ var fq = h3(c.ti >> 1, c.tj >> 1, 22); col = kk.snow ? '#ffffff' : ((c.ti & 1) + (c.tj & 1) === 1 || fq < 0.3) ? FL[(fq * 4 * FL.length | 0) % FL.length] : shd(g[0], 0.2); }   // a bed of flowers, each a petal or two on a dark stem
+    // no flower beds on a stop's own ground (cobbles, tiles, desert): they read as flecks on it
+    else if (c.fl && !kk.grid && !kk.gpat && h3(c.ti >> 1, c.tj >> 1, 21) < c.fl){ var fq = h3(c.ti >> 1, c.tj >> 1, 22); col = kk.snow ? '#ffffff' : ((c.ti & 1) + (c.tj & 1) === 1 || fq < 0.3) ? FL[(fq * 4 * FL.length | 0) % FL.length] : shd(g[0], 0.2); }   // a bed of flowers, each a petal or two on a dark stem
+    else if (kk.gpat === 'cobble'){ var qi = c.ti >> 1, qj = c.tj >> 1, rw = Math.floor(qj / 3), of = rw % 2 ? 2 : 0;   // cobbles a foot by three quarters, as in the town's holes
+      col = (qj % 3 === 0 || (qi + of) % 4 === 0) ? '#7e7262' : (function(n){ return n < 0.3 ? '#b8a890' : n < 0.62 ? '#ac9e88' : '#9e907a'; })(hash(Math.floor((qi + of) / 4), rw, 4)); }
+    else if (kk.gpat === 'stone'){ var sa = vn(c.ti * 0.11, c.tj * 0.11, 3), sb = vn(c.ti * 0.045, c.tj * 0.045, 4); col = sb > 0.68 ? '#5f7a3a' : sa < 0.3 ? '#6e6a62' : sa > 0.68 ? '#a29e92' : '#8a867c'; }
+    else if (kk.gpat === 'floor'){ var fa = vn(c.ti * 0.055, c.tj * 0.055, 7), fb = vn(c.ti * 0.15, c.tj * 0.15, 8); col = fa > 0.66 ? '#5e5030' : fa > 0.58 ? '#4e5a2c' : fb > 0.6 ? '#48742e' : fb < 0.3 ? '#365e26' : '#3f6a2a'; }
+    else if (kk.gpat && GPAT[kk.gpat]) col = GPAT[kk.gpat](c, kk);   // a world's own ground pattern (its stops file)
     else if (n2 < 0.012) col = kk.snow ? '#ffffff' : g[1];
     else if (kk.mow) col = (Math.floor(c.tj / 14) % 2) ? (n2 < 0.3 ? g[1] : g[0]) : (n2 < 0.3 ? g[0] : g[2]);
     else col = n1 < g[3] ? (n2 < 0.5 ? g[1] : g[2]) : g[0];
@@ -700,17 +844,26 @@ function mats(P){
   function lfn(cols, rip){ return function(c, R, h3){ var n = h3(c.ti, c.tj, 7); return R(((c.ti * 3 + c.tj * 5) % rip) < 2 ? cols[1] : cols[0]); }; }
   var out = {
     g:['', '', '', 0, gfn(k)], g0:['', '', '', 0, gfn(k0)], path:['', '', '', 0, pfn(k)], path0:['', '', '', 0, pfn(k0)],
-    water:['', '', '', 0, lfn((P.sea ? ['#1f8fc8', '#5cc6ee'] : ['#3f86c8', '#6fb3e6']), 13)],
-    lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
-    sand:['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],
+    water:['', '', '', 0, lfn((P.sea ? k.seaC || ['#1f8fc8', '#5cc6ee'] : k.waterC || ['#3f86c8', '#6fb3e6']), 13)],
+    lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(k.iceC || ['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
+    sand:k.sandC || ['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],   // the shore by a sea: a stop can give its own (black sand on a volcano)
     carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
     cup:['#141414', '#202020', '#141414', 0],
     // a bridge's deck, planks laid across the walk (stone slabs in the temple and the volcano), and the creek's banks
-    deck:['', '', '', 0, function(c, R, h3){ var st = P.creek && (P.themeAt(P.creek.y0) === 'volcano' || P.themeAt(P.creek.y0) === 'temple'), n = h3(c.ti, c.tj, 31), m = ((c.pl % 2) + 2) % 2;
-      var cols = st ? ['#8a8078', '#9a9088', '#5e564f'] : P.creek && P.themeAt(P.creek.y0) === 'neon' ? ['#2a3a90', '#3a4ab0', '#151c48'] : ['#a8865a', '#b8966a', '#6e5236'];
+    deck:['', '', '', 0, function(c, R, h3){ var st = P.creek && (baseTh(P.themeAt(P.creek.y0)) === 'volcano' || baseTh(P.themeAt(P.creek.y0)) === 'temple'), n = h3(c.ti, c.tj, 31), m = ((c.pl % 2) + 2) % 2;
+      var cols = st ? ['#8a8078', '#9a9088', '#5e564f'] : P.creek && baseTh(P.themeAt(P.creek.y0)) === 'neon' ? ['#2a3a90', '#3a4ab0', '#151c48'] : ['#a8865a', '#b8966a', '#6e5236'];
       return R(n < 0.04 ? cols[2] : m ? cols[0] : cols[1]); }],
     bank:['#8a7a62', '#9a8a70', '#6e624e', 0.3], scorch:['#2a2226', '#3a2e30', '#4a2a22', 0.25]
   };
+  /* THE GYM'S FLOOR: deck planks laid across, a dark seam on every tile's edge so the grid he steps on reads at a glance,
+     and a wall's foot in its shadow. Whatever the kind sets into the floor it paints itself (mats(): push's holes, dark
+     with water glinting at the bottom, and its belts with their chevrons pointing the way they run). */
+  if (P.gym){ var GP = gymPal(P.spec.theme);
+    out.gdeck = ['', '', '', 0, function(c, R, h3){ var e = c.gu < 0.06 || c.gu > 0.94 || c.gv < 0.06 || c.gv > 0.94, pl = Math.floor((c.gv || 0) * 4), n = h3(c.ti, c.tj, 41);
+      var col = e ? GP.deck[2] : (Math.abs((c.gv || 0) * 4 - Math.round((c.gv || 0) * 4)) < 0.06 ? GP.deck[2] : ((pl + (c.gc || 0) + (c.gr || 0)) % 2 ? GP.deck[0] : GP.deck[1]));
+      if (!e && n < 0.05) col = GP.deck[2]; return R(c.dt < 0 ? GP.deck[2] : col); }];
+    out.gwall = ['', '', '', 0, function(c, R){ return R(GP.deck[2]); }];
+    if (P.gym.K.mats){ var KM2 = P.gym.K.mats(baseTh(P.spec.theme), GP.deck); for (var km in KM2) out[km] = KM2[km]; } }
   // each real hole in its own colours: carpet, fringe, rail and block
   P.feet.forEach(function(o, i){ var C = o.f.T; out['cc' + i] = [C.carpet, C.carpet2, C.carpet, 0.16]; out['cf' + i] = [C.carpet2, C.carpet2, C.carpet, 0.1];
     out['cr' + i] = [C.wall, C.wallHi, C.wall, 0.1]; out['cb' + i] = [C.block, C.wall, C.block, 0.12]; });
@@ -801,7 +954,7 @@ BUILD.pumpkin = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
     var d = Math.hypot((px - x) / 0.85, (py - y) / 0.7, (pz - zb - 0.45) / 0.5); if (d > 1) return null; return (Math.floor(Math.atan2(py - y, px - x) * 3) % 2) ? '#e8761f' : '#d0621a'; }, 0.125); };
 BUILD.hay = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
   B.solid(x - 1.2, y - 0.8, zb, x + 1.2, y + 0.8, zb + 1.5, function(px, py, pz){ if (Math.abs(px - x) > 1.1 || Math.abs(py - y) > 0.7 || pz - zb > 1.4) return null; return Math.abs(Math.abs(px - x) - 0.5) < 0.08 ? '#8a5a2a' : (hash(px * 8 | 0, pz * 8 | 0, 1) < 0.3 ? '#c8a04a' : '#e2bc5c'); }, 0.125); };
-BUILD.lamp = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), pole = t.th === 'neon' ? '#2bf0ff' : '#2a2a30', glow = t.th === 'neon' ? '#ff8ae8' : '#fff3c4';
+BUILD.lamp = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), pole = baseTh(t.th) === 'neon' ? '#2bf0ff' : '#2a2a30', glow = baseTh(t.th) === 'neon' ? '#ff8ae8' : '#fff3c4';
   B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 7.2, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, py - y);
     if (tt < 0.4 && r < 0.3) return pole; if (tt < 6 && r < 0.13) return pole; if (tt >= 6 && tt < 7 && r < 0.48) return tt > 6.88 ? pole : glow; return null; }, 0.125); };
 
@@ -817,7 +970,7 @@ BUILD.pin = function(B, t){ var fx = t.x, fy = t.y, fz = B.gz(fx, fy);
   B.solid(fx - 0.3, fy - 0.3, fz, fx + 2.2, fy + 0.3, fz + 5.6, function(px, py, pz){ var tt = pz - fz; if (Math.hypot(px - fx, py - fy) < 0.1 && tt < 5.5) return '#ffffff';
     if (px > fx && px < fx + 2 && tt > 4 && tt < 5.4 && Math.abs(py - fy) < 0.06) return t.col || '#e53935'; return null; }, 0.125); };
 /* a bridge over the creek: a rail either side of the deck, posts along it, in wood or in the world's stone */
-BUILD.bridge = function(B, t){ var x = t.x, y = t.y, tx = t.tx, ty = t.ty, hl = t.half, off = PW + 0.45, zt = B.gz(x, y), stone = t.th === 'volcano' || t.th === 'temple', neon = t.th === 'neon';
+BUILD.bridge = function(B, t){ var x = t.x, y = t.y, tx = t.tx, ty = t.ty, hl = t.half, off = PW + 0.45, zt = B.gz(x, y), stone = baseTh(t.th) === 'volcano' || baseTh(t.th) === 'temple', neon = baseTh(t.th) === 'neon';
   var post = stone ? '#6e665e' : neon ? '#ff2bd6' : '#6e5236', rail = stone ? '#9a9088' : neon ? '#2bf0ff' : '#a8865a', snow = t.th === 'frozen', ext = hl + 0.6;
   var xs = [x - tx * ext, x + tx * ext, x - ty * (off + 0.4), x + ty * (off + 0.4)], ys = [y - ty * ext, y + ty * ext, y + tx * (off + 0.4), y - tx * (off + 0.4)];
   B.solid(Math.min.apply(null, xs) - 0.5, Math.min.apply(null, ys) - 0.5, zt - 1.2, Math.max.apply(null, xs) + 0.5, Math.max.apply(null, ys) + 0.5, zt + 1.7, function(px, py, pz){
@@ -829,7 +982,7 @@ BUILD.bridge = function(B, t){ var x = t.x, y = t.y, tx = t.tx, ty = t.ty, hl = 
     if (stone && tt < 1.15 && tt > 0) return (Math.floor(u * 2) + Math.floor(tt * 3)) % 2 ? rail : post;
     return null; }, 0.125); };
 /* the wall between two worlds, the width of the land with a doorway on the path, in the new world's stone */
-BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.theme), y = t.y, gx = t.gx, b = P.b, c1 = kx.wall[0], c2 = kx.wall[1];
+BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.kitAs || P.spec.theme), y = t.y, gx = t.gx, b = P.b, c1 = kx.wall[0], c2 = kx.wall[1];
   for (var x0 = b[0]; x0 < b[2]; x0 += 8){ var x1 = Math.min(b[2], x0 + 8); (function(x0, x1){ var zb = B.gz((x0 + x1) / 2, y);
     B.solid(x0, y - 0.9, zb - 0.6, x1, y + 0.9, zb + 7.4, function(px, py, pz){ var dx = Math.abs(px - gx), tt = pz - zb; if (Math.abs(py - y) > 0.8) return null;
       if (dx < PW + 0.4) return null;   // the doorway
@@ -840,7 +993,51 @@ BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.theme), y = t.y, gx = t
 BUILD.fence = function(B, t, i, P){ ringFence(B, P.fence, t.th); };
 // a puzzle's pen: the same fence round its own centre, its gap the gate (or the crate's gap)
 BUILD.pen = function(B, t){ ringFence(B, t, t.th); };
-function ringFence(B, F, th){ var n = 40, kx = kitOf(th), post = kx === KIT.neon ? '#ff2bd6' : '#7a5a3a', rail = kx === KIT.neon ? '#2bf0ff' : '#a8865a';
+/* THE GYM (gyms.js is the registry, its kind file the rules and the layouts; plan() fits it beside the walk). Its floor is
+   ground (land.h, mats), GYM_DECK above the land, with whatever its kind sets into it (floor(): push's holes sit down
+   in it); its walls and the gate are this one build, a row of tiles a solid, in the world's wall colours: a fort's stone
+   or a ship's planks. The kind's pieces, the lever and the vault chest move, so run() draws them. */
+var GYM_DECK = 0.45, GYM_WALL = 0.95;
+var GYM_PAL = { pirate:{ deck:['#c3935f', '#b38353', '#6e4a2c'] } };
+function gymPal(th){ return GYM_PAL[baseTh(th)] || GYM_PAL.pirate; }
+// what the gym's kind sets into its floor at a point of the room (gyms.js KINDS README, floor()), or null for deck
+function gymFloor(P, gc){ var K = P.gym.K; return K && K.floor ? K.floor(gc) : null; }
+BUILD.gym = function(B, t, i, P){ var Gm = P.gym; if (!Gm) return; var Q = Gm.Q, T = Gm.T, kx = kitOf(t.th), c1 = kx.wall[0], c2 = kx.wall[1], z0 = GYM_DECK, gd = window.RTT_PUTT_GYMS.byId(Gm.id) || {};
+  var stone = (gd.look || {}).wall === 'stone', gcol = Q.gate % Q.W, grow = (Q.gate / Q.W) | 0;
+  function cellAt(c, r){ return c < 0 || r < 0 || c >= Q.W || r >= Q.H ? '#' : Q.cell[r * Q.W + c]; }
+  for (var r = 0; r < Q.H; r++) (function(r){ var y0 = Gm.y0 + r * T, y1 = y0 + T;
+    B.solid(Gm.x0, y0, z0 - 0.05, Gm.x0 + Gm.w, y1, z0 + 3.7, function(px, py, pz){ var c = Math.floor((px - Gm.x0) / T); if (c < 0 || c >= Q.W) return null; var k = Q.cell[r * Q.W + c], tt = pz - z0, u = (px - Gm.x0) / T - c, v = (py - y0) / T;
+      // the gate: a post either side of it and a beam over it, the way in
+      if (r === grow && Math.abs(c - gcol) <= 1){ var gx = (px - Gm.x0) / T - gcol;
+        if (tt > 2.85 && tt < 3.35 && gx > -0.3 && gx < 1.3 && v > 0.3 && v < 0.7) return tt > 3.2 ? c1 : c2;
+        if (k === '#' && ((gx > -0.3 && gx < 0.02) || (gx > 0.98 && gx < 1.3)) && v > 0.25 && v < 0.75 && tt < 3.35) return (tt * 3 | 0) % 2 ? c1 : c2; }
+      if (k !== '#' || tt > GYM_WALL) return null;
+      var top = tt > GYM_WALL - 0.16;
+      if (stone){ var course = Math.floor(tt / 0.42), off = course % 2 ? 0.5 : 0, bu = ((px - Gm.x0) / 0.8 + off) % 1, seam = bu < 0.08 || (tt % 0.42) < 0.05;
+        if (top) return hash(px * 4 | 0, py * 4 | 0, 5) < 0.25 ? c2 : c1; return seam ? c2 : (hash(Math.floor((px - Gm.x0) / 0.8 + off), course, 7) < 0.3 ? c2 : c1); }
+      // planks: a post at every tile's corner, boards between, a rail along the top
+      var post = (u < 0.1 || u > 0.9) && (v < 0.1 || v > 0.9); if (post) return c2;
+      if (top) return c1; var board = Math.floor(tt / 0.36); return (tt % 0.36) < 0.05 ? c2 : (hash(c, board, r) < 0.35 ? c2 : c1); }, 0.2); })(r); };
+// a lever for the reset, at two angles (0 up, 1 pulled), and a smaller vault chest for a gym (the trail chest at TILE size)
+function gymLeverFn(on){ return function(B){ var a = on ? 0.85 : -0.85, ca = Math.cos(a), sa = Math.sin(a), PZ0 = 1.15;
+  box(B, 0, 0, 3.4, 1, 3.2, function(dx, dy, tt){
+    // a post of the gym's iron with a slot in its top, and the handle swinging over in the x and z plane from its pivot
+    if (tt < PZ0 + 0.1 && Math.abs(dx) < 0.36 && Math.abs(dy) < 0.3) return Math.abs(dx) > 0.28 || tt > PZ0 ? '#4a4a52' : (tt < 0.12 ? '#2a2a30' : '#6e6e7a');
+    var hx = dx, hz = tt - PZ0, along = hx * sa + hz * ca, side = hx * ca - hz * sa; if (Math.abs(dy) < 0.1 && along > 0 && along < 1.45 && Math.abs(side) < 0.09) return '#2e2e34';
+    if (Math.abs(dy) < 0.2 && Math.hypot(hx - sa * 1.55, hz - ca * 1.55) < 0.24) return '#e5483a'; return null; }, 0.0625); }; }
+function scaleB(B, s){ var B2 = Object.create(B); B2.gz = function(x, y){ return B.gz(x * s, y * s) / s; };
+  B2.solid = function(x0, y0, z0, x1, y1, z1, fn, sv){ B.solid(x0 * s, y0 * s, z0 * s, x1 * s, y1 * s, z1 * s, function(px, py, pz){ return fn(px / s, py / s, pz / s); }, (sv || 0.25) * s); }; return B2; }
+var VAULT_K = 0.5;
+function fencePal(th){ return baseTh(th) === 'neon' ? { post:'#ff2bd6', rail:'#2bf0ff' } : { post:'#7a5a3a', rail:'#a8865a' }; }
+/* THE GAP IN A RING FENCE, as ringFence leaves it (whole segments of 40 drop out): its middle on the chord, its
+   width post to post and the chord's direction, so the gate fills the gap exactly and lies along the fence. */
+function fenceGap(F){ var n = 40, lo = 9, hi = -9;
+  for (var k = 0; k < n; k++){ var a0 = k / n * 6.2832, a1 = (k + 1) / n * 6.2832, mid = (a0 + a1) / 2, dA = Math.atan2(Math.sin(mid - F.a), Math.cos(mid - F.a)); if (Math.abs(dA) >= F.half + 0.08) continue;
+    var r0 = Math.atan2(Math.sin(a0 - F.a), Math.cos(a0 - F.a)), r1 = r0 + (a1 - a0); lo = Math.min(lo, r0); hi = Math.max(hi, r1); }
+  if (hi < lo){ lo = -F.half; hi = F.half; }
+  var e0 = [F.x + Math.cos(F.a + lo) * F.r, F.y + Math.sin(F.a + lo) * F.r], e1 = [F.x + Math.cos(F.a + hi) * F.r, F.y + Math.sin(F.a + hi) * F.r];
+  return { x:(e0[0] + e1[0]) / 2, y:(e0[1] + e1[1]) / 2, w:Math.hypot(e1[0] - e0[0], e1[1] - e0[1]), ta:Math.atan2(e1[1] - e0[1], e1[0] - e0[0]) }; }
+function ringFence(B, F, th){ var n = 40, kx = kitOf(th), pal = fencePal(th), post = pal.post, rail = pal.rail;
   for (var k = 0; k < n; k++){ var a0 = k / n * 6.2832, a1 = (k + 1) / n * 6.2832, mid = (a0 + a1) / 2, dA = Math.atan2(Math.sin(mid - F.a), Math.cos(mid - F.a)); if (Math.abs(dA) < F.half + 0.08) continue;
     (function(a0, a1){ var ax = F.x + Math.cos(a0) * F.r, ay = F.y + Math.sin(a0) * F.r, bx = F.x + Math.cos(a1) * F.r, by = F.y + Math.sin(a1) * F.r, zb = B.gz(ax, ay);
       B.solid(Math.min(ax, bx) - 0.2, Math.min(ay, by) - 0.2, zb - 0.1, Math.max(ax, bx) + 0.2, Math.max(ay, by) + 0.2, zb + 2.6, function(px, py, pz){ var tt = pz - zb, sd = segD(px, py, ax, ay, bx, by);
@@ -882,6 +1079,34 @@ BUILD.basaltset = function(B, t, i){ for (var k = 0; k < 5; k++) BUILD.basalt(B,
 BUILD.vent = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), out = 2.4 * (1 - tt / t.h * 0.6), inn = 1.1; if (r > out) return null; if (r < inn) return tt < 0.6 ? (r < 0.8 ? '#ffb43a' : '#ff5a1a') : null; return (tt * 2 | 0) % 2 ? '#3a3236' : '#2a2428'; }); };
 BUILD.skull = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 2.3, dy / 1.8, (tt - 2.6) / 2.4); if (d > 1) return null;
   if (dy > 0.9 && tt > 2.4 && tt < 3.6 && Math.abs(Math.abs(dx) - 0.9) < 0.45) return '#ff6a1a'; if (dy > 1 && tt < 1.5 && (dx * 3 | 0) % 2) return '#2a2428'; return '#d8d0c4'; }); };
+// ---- Pirate Cove's stops on the walk, the same things the holes stand among (land.js): the town's shacks, the jungle's waterfall and the
+// old fort's wall, Skull Rock's sea stacks, and the captain's treasure camp
+var SHACK_ROOF = ['#a8442e', '#2f6f8f', '#7a8a3a', '#8a5a9a'];
+BUILD.shack = function(B, t, i){ var rf = SHACK_ROOF[i % 4]; gable(B, t.x, t.y, t.w - 1, t.d - 1, 5.6, 3.2, function(dx, dy, tt){ return (Math.floor((dx + 20) * 1.4) % 2) ? '#b08a5a' : '#9a7648'; },
+  function(dx, dy, tt){ return (tt * 2.6 | 0) % 2 ? rf : '#6a2a1e'; }, '#3a2412'); };
+BUILD.falls = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (dy > 0.8){ var pd = Math.hypot(dx / 2.8, (dy - 2.1) / 1.2); if (pd < 1 && tt < 0.3) return pd > 0.86 ? '#6e6a5a' : (hash(Math.floor(dx * 4), Math.floor(dy * 4), i) < 0.12 ? '#8fdce0' : '#2f8f9a'); if (dy > 1) return null; }
+  var top = t.h * (0.75 + (vn(dx * 0.5, 2, i) - 0.5) * 0.4), d = Math.hypot(dx / (t.w / 2), (dy + 1.2) / (t.d / 2 * 0.75)) + (vn(dx * 0.9, tt * 0.9, i + 3) - 0.5) * 0.22; if (d > 1 || tt > top) return null;
+  if (Math.abs(dx) < 1 && d > 0.78) return hash(Math.floor(dx * 5), Math.floor(tt * 3 - dx * 2), i + 5) < 0.4 ? '#ffffff' : '#bfe8f4';   // the falling water down the face
+  if (tt > top - 0.5) return '#4f7a2e'; return (Math.floor(tt * 1.3) % 2) ? '#6e6a5a' : '#7e7a68'; }); };
+BUILD.fortwall = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (dy > 0.4 && Math.abs(dx - 1.6) < 1.2 && tt < 1.2){ var cx = dx - 1.6; if (Math.abs(cx) < 0.9 && Math.hypot(dy - 0.9, tt - 0.75) < 0.26) return '#45454c'; if (Math.abs(Math.abs(cx) - 0.55) < 0.12 && Math.hypot(dy - 0.9, tt - 0.4) < 0.42) return '#5a3818'; return null; }   // the cannon
+  if (Math.abs(dy) > 0.5) return null; var top = 2.8 + Math.sin(dx * 1.3) * 0.4 + (hash(Math.floor(dx * 1.5) + 9, 3, i) - 0.5) * 1 + (((dx + 9) * 1.2 | 0) % 2 ? 0.5 : 0); if (tt > top) return null;
+  var row = Math.floor(tt * 2), col = Math.floor(dx * 1.2 + (row % 2) * 0.5); if ((tt * 2) % 1 < 0.12) return '#6a6658'; if (tt > top - 0.35 && hash(col, row, i) < 0.6) return '#4f7a2e';
+  return hash(col, row, i + 1) < 0.3 ? '#8e8a78' : '#a29e8a'; }); };
+BUILD.stacks = function(B, t, i){ var P2 = [[-1.6, -0.6, 6.4, 1.2], [1.4, 0.4, 4.6, 1], [2.6, -1, 3.2, 0.7]];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var s = 0; s < 3; s++){ var q = P2[s], rr = q[3] * (1 - tt / (q[2] + 1.6) * 0.4) + (vn(dx * 2, tt * 2, i + s) - 0.5) * 0.2;
+    if (Math.hypot(dx - q[0], dy - q[1]) < rr && tt < q[2]) return tt > q[2] - 0.25 ? '#4f7a2e' : tt < 0.35 ? '#eef8f8' : (Math.floor(tt * 1.8) % 2 ? '#7a766c' : '#8e8a80'); } return null; }); };
+BUILD.camp = function(B, t, i){ var q = t.w / 6; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ dx /= q; dy /= q; tt /= q; var r = Math.hypot(dx, dy);
+  if (r < 0.9 && tt < 0.3 && r > 0.6) return '#6e665e'; if (r < 0.62 && tt < 1.4 && r < 0.55 * (1 - tt / 1.4)) return tt < 0.15 ? '#3a2412' : tt < 0.5 ? '#ffd23a' : tt < 0.9 ? '#ff8a1a' : '#e5483a';   // the fire
+  for (var c = -1; c <= 1; c += 2){ var cx = dx - c * 1.9, cy = dy + 0.6; if (Math.abs(cx) < 0.8 && Math.abs(cy) < 0.55 && tt < 1.25){ if (tt > 1.05) return '#ffd23a'; if (Math.abs(tt - 0.7) < 0.06 || Math.abs(Math.abs(cx) - 0.5) < 0.07) return '#c9a227'; return tt > 0.7 ? '#7a4a24' : '#8f5a2c'; } }   // two chests of gold
+  var fx = dx + 2.2, fy = dy - 1.4; if (Math.hypot(fx, fy) < 0.09 && tt < 5.8) return '#4a2c16';
+  if (Math.abs(fy) < 0.06 && fx > 0.05 && fx < 2 && tt > 4.4 && tt < 5.7){ var u = fx - 1, v = tt - 5.05; return (u * u + v * v < 0.1 || (Math.abs(Math.abs(u) - Math.abs(v)) < 0.07 && Math.abs(u) < 0.4 && v < -0.1)) ? '#f4efe2' : '#151218'; }   // the black flag
+  return null; }, 0.125); };
+// Skull Rock's own skull: grey stone, dark sockets, a row of teeth, grass on the crown
+BUILD.skullrock = function(B, t){ var q = t.w / 5; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ dx /= q; dy /= q; tt /= q; var d = Math.hypot(dx / 2.3, dy / 1.8, (tt - 2.6) / 2.4); if (d > 1) return null;
+  if (dy > 0.9 && tt > 2.4 && tt < 3.6 && Math.abs(Math.abs(dx) - 0.9) < 0.45) return '#1a1612'; if (dy > 1 && tt > 1 && tt < 1.6 && Math.abs(dx) < 1.2) return ((dx * 3.4 | 0) % 2) ? '#d8d0bc' : '#5a5650';
+  if (tt > 4.4) return '#4f7a2e'; return ((tt * 2 | 0) + (dx * 1.5 | 0)) % 3 ? '#8e8a80' : '#a29e92'; }); };
 BUILD.igloo = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 3.3, dy / 3.3, tt / 4.6); if (dy > 2.2 && Math.abs(dx) < 1.1 && tt < 2.6) return tt < 2 && Math.abs(dx) < 0.7 ? null : '#e8f2fb';
   if (d > 1) return null; return (Math.floor(tt / 0.8) % 2 ? (Math.floor((Math.atan2(dy, dx) + 4) * 2.5) % 2) : (Math.floor((Math.atan2(dy, dx) + 4) * 2.5 + 0.5) % 2)) ? '#f6f9fd' : '#cfdcea'; }); };
 BUILD.snowman = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
@@ -938,6 +1163,49 @@ BUILD.cave = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy,
 BUILD.tusks = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.32 || tt < 0) return null;
   for (var s = -1; s <= 1; s += 2){ var cx = s * 2.6, r = Math.hypot(dx - cx, tt); if (Math.abs(r - 3.1 + tt * 0.06) < 0.24 + (3.6 - tt) * 0.06 && s * (dx - cx) <= 0.4 && tt < 4.6) return tt < 0.5 ? '#8a7658' : '#f4ead2'; }
   return null; }, 0.125); };
+// ---- Dino Valley: a long neck standing over the trees, a skeleton half dug out of the ground, and a nest of eggs
+BUILD.longneck = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hide = function(){ var n = hash(Math.floor(dx * 4), Math.floor(tt * 4) + Math.floor(dy * 4) * 11, 3 + i); return n < 0.2 ? '#5a6e4a' : n > 0.86 ? '#8aa070' : '#6e8458'; };
+  if (tt < 3 && Math.abs(Math.abs(dx + 0.4) - 1.7) < 0.5 && Math.abs(Math.abs(dy) - 0.8) < 0.45) return tt < 0.3 ? '#3a4630' : '#5e7250';
+  if (Math.hypot((dx + 0.4) / 3, dy / 1.5, (tt - 4) / 1.7) < 1) return tt < 3.2 ? '#9aa880' : hide();
+  // the neck rises forward and up to a small head; the tail sweeps back and down
+  var nx = 2.2 + (tt - 4.5) * 0.42; if (tt > 4.5 && tt < 10.2 && Math.abs(dy) < 0.5 && Math.abs(dx - nx) < 0.62 - (tt - 4.5) * 0.04) return hide();
+  if (Math.hypot((dx - 5) / 0.95, dy / 0.5, (tt - 10.3) / 0.5) < 1) return (Math.abs(Math.abs(dy) - 0.3) < 0.1 && Math.abs(tt - 10.45) < 0.1 && dx > 5.1) ? '#1a1a10' : hide();
+  var tx = -3.2 - (tt < 4.4 ? (4.4 - tt) * 1.1 : 0); if (dx < -3 && dx > -6.5 && Math.abs(dy) < 0.42 - (-3 - dx) * 0.06 && Math.abs(dx - tx) < 0.7 && tt > 0.4 && tt < 4.6) return hide();
+  return null; }, 0.25); };
+BUILD.dinoskel = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var bone = tt < 0.3 ? '#cbbf96' : '#f4ead2';
+  if (tt < 0.14) return Math.hypot(dx / 5, dy / 2) < 1 ? '#8a6a44' : null;
+  var sy = Math.sin(dx * 0.5) * 0.3; if (Math.abs(dy - sy) < 0.2 && Math.abs(dx) < 4.2 && Math.abs(tt - (1.6 - Math.abs(dx) * 0.25)) < 0.2) return bone;
+  for (var k = -2; k <= 2; k++){ var rx = k * 0.75 + 0.4; if (Math.abs(dx - rx) < 0.14){ var rr = Math.hypot(dy - sy, tt - 0.2); if (Math.abs(rr - 1.25) < 0.16 && tt < 1.6) return bone; } }
+  if (Math.hypot((dx - 4.6) / 0.8, (dy - sy) / 0.45, (tt - 1) / 0.5) < 1) return Math.abs(tt - 1.05) < 0.08 && dx > 4.8 ? '#5a4a30' : bone;
+  return null; }, 0.125); };
+BUILD.nest = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (r > 2.2 && r < 2.9 && tt < 1.1 - (r - 2.55) * (r - 2.55) * 3) return hash(Math.floor(dx * 6), Math.floor(dy * 6) + Math.floor(tt * 6) * 7, 4 + i) < 0.5 ? '#8a6a3a' : '#6a4a26';
+  if (r < 2.3 && tt < 0.3) return '#a8875a';
+  var eggs = [[-0.8, -0.3], [0.7, -0.5], [0, 0.8]]; for (var e = 0; e < 3; e++){ var ex = dx - eggs[e][0], ey = dy - eggs[e][1]; if (Math.hypot(ex / 0.62, ey / 0.62, (tt - 0.95) / 0.85) < 1) return Math.sin(ex * 31 + tt * 17) * Math.sin(ey * 23 - tt * 13) > 0.6 ? '#6a7a3a' : (ex < -0.2 ? '#fbf4dc' : '#ece2c0'); }
+  return null; }, 0.125); };
+// ---- the secret entrances that are not a landmark already: a ship tied up beside the path, its gangplank, and a doorway
+function at(B, ox, oy){ var B2 = Object.create(B); B2.gz = function(x, y){ return B.gz(x + ox, y + oy); };
+  B2.solid = function(x0, y0, z0, x1, y1, z1, fn, sv){ return B.solid(x0 + ox, y0 + oy, z0, x1 + ox, y1 + oy, z1, function(px, py, pz){ return fn(px - ox, py - oy, pz); }, sv); }; return B2; }
+BUILD.mooredship = function(B, t){ shipFn(1)(at(B, t.x, t.y)); };
+BUILD.gangplank = function(B, t){ box(B, t.x, t.y, 3.4, 1.2, 1.6, function(dx, dy, tt){ var u = (dx * t.face + 1.7) / 3.4; if (Math.abs(dy) > 0.5 || u < 0 || u > 1) return null;
+  var top = 0.2 + u * 1.2; if (tt > top || tt < top - 0.18) return null; return (Math.floor(u * 9) % 2) ? '#8a6a44' : '#7a5a34'; }, 0.125); };
+BUILD.secretdoor = function(B, t, i){ var K = kitOf(t.th), hi = K.wall[0], lo = K.wall[1];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / (t.w / 2), dy / (t.d / 2), tt / t.h) + (vn(dx * 0.8, tt * 0.8, i + 3) - 0.5) * 0.14; if (d > 1) return null;
+    var door = dy > 0 && Math.abs(dx) < 1.1 && tt < 2.4 * (1 - Math.pow(dx / 1.1, 2) * 0.35); if (door) return d > 0.82 ? null : '#120e0c';
+    if (dy > 0 && Math.abs(dx) < 1.5 && tt < 2.9 && d > 0.8) return lo;
+    return ((tt * 1.3 + dx * 0.4) | 0) % 2 ? hi : lo; }, 0.25); };
+// ---- Candy Works: the factory with two striped chimneys, a giant gumball machine, an arch of candy canes
+BUILD.factory = function(B, t){ gable(B, t.x, t.y, t.w - 1, t.d - 1, 7, 3.4, function(dx, dy, tt){ return tt > 6.4 ? '#ffffff' : ((tt * 1.6 | 0) % 2 ? '#ff8ab8' : '#ff9cc4'); }, function(dx){ return (Math.floor(dx * 1.4 + 20) % 2) ? '#7a4422' : '#6a3a1c'; }, '#7a4422');
+  [-2.6, 2.6].forEach(function(cx){ box(B, t.x + cx, t.y - 1, 1.4, 1.4, 13, function(dx, dy, tt){ if (tt < 8 || Math.hypot(dx, dy) > 0.6) return null; return (Math.floor(tt * 1.4) % 2) ? '#e8233f' : '#fff6f0'; }, 0.125); }); };
+BUILD.gumballs = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 2.2) return r < 1.4 ? (tt > 1.9 ? '#ffd23f' : '#e8233f') : null; if (tt > 6.2) return r < 0.5 && tt < 6.6 ? '#e8233f' : null;
+  var g = Math.hypot(dx, dy, tt - 4.2); if (g > 2.05) return null; if (g > 1.95) return '#e8f8ff';
+  var k = hash(Math.floor((dx + 3) * 1.6), Math.floor(tt * 1.6) + Math.floor((dy + 3) * 1.6) * 7, 31); return ['#ff3b7a', '#ffd23f', '#3fbf9a', '#8a5cff', '#ff8a1f', '#ffffff'][Math.floor(k * 6)]; }, 0.125); };
+BUILD.canes = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.3 || tt < 0) return null;
+  for (var s = -1; s <= 1; s += 2){ var cx = s * 1.6, d;
+    if (tt < 3.6) d = Math.abs(dx - s * 3.2); else { if (s * (dx - cx) < -0.1 && tt < 3.6) return null; d = Math.abs(Math.hypot(dx - cx, tt - 3.6) - 1.6); if (s * (dx - cx) < 0 && tt < 3.6) d = 9; }
+    if (d < 0.26 && tt < 5.4) return (Math.floor((tt + dx * s) * 2.2) % 2) ? '#e8233f' : '#fff6f0'; }
+  return null; }, 0.125); };
 
 /* ------------------------------------------------------------------------------ ambient life */
 /* EVERY WORLD IS ALIVE AROUND YOU. Nothing here can be touched or picked up and none of it blocks the golfer:
@@ -954,18 +1222,20 @@ var LIFE = {
   pirate:{ fly:['gull', 4], ships:2 },
   canyon:{ fly:['vulture', 3], mote:['dust', 24], tumble:3 },
   volcano:{ mote:[['ember', 34], ['ash', 26]], smoke:true },
-  frozen:{ mote:['snow', 90], fly:['gull', 2] },
+  dino:{ fly:['ptero', 3], mote:[['firefly', 16], ['leaf', 8]] },
   sky:{ fly:['gull', 3], balloons:3 },
   neon:{ fly:['drone', 3], mote:['spark', 40] },
   haunted:{ fly:['bat', 5], ghosts:2, mote:['firefly', 8] },
   harvest:{ fly:['crow', 3], mote:['leaf', 16] },
   school:{ fly:['song', 4], mote:[['leaf', 10], ['butter', 6]] },
-  iceage:{ mote:['snow', 60], fly:['crow', 2] }
+  iceage:{ mote:['snow', 60], fly:['crow', 2] },
+  candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
 var PIX_FLY = {
   bird:[['w.....w', '.w...w.', '..wow..', '...h...'], ['..wow..', '.w.h.w.', 'w.....w']],
   bat:[['w.....w', 'ww...ww', '.wwoww.', '..h.h..'], ['..wow..', '.wwoww.', 'w.h.h.w']],
+  ptero:[['w.......w', 'ww.....ww', '.wwwoww..', '...hhh...'], ['...wow...', '.wwwoww..', 'ww..hhh.w']],
   drone:[['l.....l', 'ooooooo', '..ooo..', '...h...'], ['h.....h', 'ooooooo', '..ooo..', '...l...']]
 };
 var FLY_PAL = {
@@ -975,6 +1245,7 @@ var FLY_PAL = {
   vulture:{ base:'bird', w:'#2a2228', o:'#3a3036', h:'#d89a7a', sz:1.3, z:[13, 17], v:[4, 5], circle:true },
   crow:{ base:'bird', w:'#1a1820', o:'#24222a', h:'#d8a02a', sz:1, z:[7, 12], v:[6, 8] },
   bat:{ base:'bat', w:'#2a2230', o:'#3a2e44', h:'#ff4a3a', sz:0.9, z:[4, 9], v:[5, 9], flit:true },
+  ptero:{ base:'ptero', w:'#a0522d', o:'#7a3e22', h:'#e8a03a', sz:1.5, z:[12, 17], v:[4, 6], circle:true },
   drone:{ base:'drone', w:'#2bf0ff', o:'#2a2440', h:'#ff2bd6', l:'#2bf0ff', sz:1, z:[8, 12], v:[4, 6] }
 };
 var PIX_BUTTER = [['ww.ww', 'wwbww', '.wbw.'], ['.wbw.', '..b..']], PIX_GHOST = ['..ggg..', '.ggggg.', 'gg.g.gg', 'ggggggg', 'ggggggg', 'ggggggg', 'g.g.g.g'];
@@ -1010,12 +1281,14 @@ var BALLOON_COLS = [['#ff5a7a', '#ffd23a'], ['#2bb0ff', '#ffffff'], ['#7a5cff', 
 function sceneC(P){ var T = P.spec.T || {}; return { T:T, field:{ h:function(){ return 0; } }, poly:[[0, 0], [1, 0], [1, 1]], allPts:[[0, 0], [1, 1]], mats:{ at:function(){ return 0; } }, bounds:[1e9, 1e9, -1e9, -1e9], seed:P.seed,
   bumpers:[], blocks:[], ramps:[], loops:[], movers:[] }; }
 function slices(P){ var H3 = window.RTT_PUTT_3D; if (!H3) return null; P.fx = window.RTT_PUTT_FX !== 'off';
-  return H3.slices(sceneC(P), { elev:ELEV, art:TART, fx:P.fx, scene:{ b:P.b, land:land(P), zMax:20, clearAt:function(x, y){ return P.walkD(x, y) - PW - 0.5; } } }); }
+  return H3.slices(sceneC(P), { elev:ELEV, art:artOf(P), fine:!!P.spec.fine, tcell:TART, fx:P.fx, scene:{ b:P.b, land:land(P), zMax:20, clearAt:function(x, y){ return P.walkD(x, y) - PW - 0.5; } } }); }
 /* one dynamic thing (a chest, a crate, a gate leaf) rendered on its own, lit and outlined like the scene */
 var PROPS = {};
-function propSprite(key, P, buildFn, w, d, h){ if (PROPS[key] !== undefined) return PROPS[key]; var H3 = window.RTT_PUTT_3D; if (!H3) return null;
+// a fine walk (putt.js, FINE_WORLDS) is painted twice as finely, and its props with it, so nothing on it is coarser than the rest
+function artOf(P){ return P.spec.fine ? TART / 2 : TART; }
+function propSprite(key, P, buildFn, w, d, h){ if (P.spec.fine) key += '|fine'; if (PROPS[key] !== undefined) return PROPS[key]; var H3 = window.RTT_PUTT_3D; if (!H3) return null;
   var b = [-w / 2 - 1, -d / 2 - 1, w / 2 + 1, d / 2 + 1], land0 = { build:function(B){ buildFn(B); }, mats:{}, h:function(){ return 0; }, mat:function(){ return ['g']; } };
-  try{ var r = H3.render(sceneC(P), { elev:ELEV, art:TART, scene:{ b:b, land:land0, zMax:h + 1, noGround:true } }); var o = r.pr(0, 0, 0); PROPS[key] = { cv:r.cv, ax:o[0], ay:o[1] }; }catch(e){ PROPS[key] = null; }
+  try{ var r = H3.render(sceneC(P), { elev:ELEV, art:artOf(P), fine:!!P.spec.fine, tcell:TART, scene:{ b:b, land:land0, zMax:h + 1, noGround:true } }); var o = r.pr(0, 0, 0); PROPS[key] = { cv:r.cv, ax:o[0], ay:o[1] }; }catch(e){ PROPS[key] = null; }
   return PROPS[key]; }
 var BRK = {
   crate:function(B, x, y){ box(B, x, y, 1.6, 1.6, 1.6, function(dx, dy, tt){ var e = Math.abs(dx) > 0.62 || Math.abs(dy) > 0.62 || tt > 1.4 || tt < 0.2, cr = Math.abs(Math.abs(dx) - Math.abs(tt - 0.8)) < 0.14; if (Math.abs(dx) > 0.75 || Math.abs(dy) > 0.75 || tt > 1.55) return null; return e || cr ? '#8a5a2a' : '#c08a4e'; }, 0.125); },
@@ -1070,7 +1343,7 @@ function chestFn(lid, sv){ var th = lid * 1.8, ct = Math.cos(th), st = Math.sin(
     if (band(dx)) return w > dome - 0.08 ? IRON[2] : IRON[1];
     if (endK > 0.35) return Math.hypot(vc, w - 0.25) < 0.18 ? GOLD[1] : WOOD[0];   // the rounded end caps, a gold boss in each
     return wood(dx, vc * 1.4 + 2, 0.25); }, sv || 0.0625); }; }
-function gateFn(open, P){ var kx = kitOf(P.spec.theme), c1 = kx.wall[0], c2 = kx.wall[1];
+function gateFn(open, P){ var kx = kitOf(P.spec.kitAs || P.spec.theme), c1 = kx.wall[0], c2 = kx.wall[1];
   return function(B){ box(B, 0, 0, PW * 2 + 1, 1.2, 6.8, function(dx, dy, tt){ if (Math.abs(dy) > 0.25) return null; var half = PW + 0.4;
     if (open){ var leaf = Math.abs(Math.abs(dx) - half) < 0.25 && tt < 6.4; return leaf ? c2 : null; }
     if (Math.abs(dx) > half || tt > 6.4) return null; if (Math.abs(dx) < 0.1) return c2; return (Math.floor(dx / 0.55) % 2 && tt < 6.1 && tt > 0.3) ? '#3a2a1a' : c1; }, 0.125); }; }
@@ -1080,17 +1353,47 @@ function brazierFn(th){ var kx = kitOf(th), c1 = (kx.wall || ['#c8b890'])[0], c2
     if (tt < 1.2) return r < 0.26 ? (tt < 0.16 || tt > 1.06 ? c2 : c1) : (tt < 0.2 && r < 0.55 ? c2 : null);
     if (tt < 1.62){ var rr = 0.3 + (tt - 1.2) * 1.05; if (r > rr) return null; if (tt > 1.48 && r < rr - 0.14) return '#2a1a10'; return ((Math.atan2(dy, dx) * 4 + 10) | 0) % 2 ? c2 : '#4a3a2c'; }
     return null; }, 0.125); }; }
-function lockGateFn(open){ return function(B){ box(B, 0, 0, 3.4, 1, 3, function(dx, dy, tt){ if (Math.abs(dy) > 0.15 || tt > 2.7) return null;
-  if (open) return Math.abs(Math.abs(dx) - 1.5) < 0.15 ? '#7a5a3a' : null; if (Math.abs(dx) > 1.6) return null;
-  if (Math.abs(dx) < 0.3 && Math.abs(tt - 1.4) < 0.3) return '#ffd23a'; return (Math.abs(tt - 0.6) < 0.12 || Math.abs(tt - 2.2) < 0.12 || (dx * 2.5 | 0) % 2 === 0) ? '#7a5a3a' : null; }, 0.125); }; }
+/* THE LOCKED GATE IS PART OF ITS FENCE: the fence's own posts and rails (neon in the arcade, wood elsewhere), as
+   tall as the fence and as wide as its gap, lying along it, with a gold lock plate in the middle. Open, its two
+   leaves stand swung in toward the chest. g is fenceGap's answer. */
+function fenceGateFn(open, g, pal){ var hw = g.w / 2, cs = Math.cos(g.ta), sn = Math.sin(g.ta), S = 3 * hw + 1.2;
+  return function(B){ box(B, 0, 0, S, S, 3.2, function(dx, dy, tt){ var u = dx * cs + dy * sn, v = -dx * sn + dy * cs;
+    if (Math.abs(Math.abs(u) - hw) < 0.2 && Math.abs(v) < 0.2 && tt < 2.95) return tt > 2.75 ? pal.rail : pal.post;   // a gate post at each end, capped
+    var leaf = function(along, off){ if (tt > 2.45 || tt < 0.18) return null; if (Math.abs(tt - 1.0) < 0.13 || Math.abs(tt - 2.15) < 0.13) return pal.rail;
+      return (Math.floor(along / 0.42) % 2 === 0) && Math.abs(off) < 0.09 ? pal.post : null; };
+    if (!open){ if (Math.abs(v) > 0.12 || Math.abs(u) > hw - 0.18) return null;
+      if (Math.abs(u) < 0.34 && Math.abs(tt - 1.55) < 0.32) return Math.abs(u) < 0.07 && Math.abs(tt - 1.5) < 0.13 ? '#3a2a14' : '#ffd23a';
+      return leaf(u + hw, v); }
+    for (var sd = -1; sd <= 1; sd += 2){ var uu = u - sd * (hw - 0.3); if (Math.abs(uu) < 0.12 && v > 0.15 && v < hw - 0.25) return leaf(v, uu); }
+    return null; }, 0.125); }; }
 
 /* -------------------------------------------------------------------------------- the walk */
+/* A SMOOTHED WALK (spec.smooth): a walk is too big a scene to paint more finely in the time a player waits, so a fine world's
+   walk is painted as before and then doubled with Scale2x, which turns each pixel into four and follows the diagonals, so
+   edges stop stepping. The depth buffer is doubled with it (nearest), so what stands in front still hides the golfer. */
+var UP2 = typeof WeakMap === 'function' ? new WeakMap() : null;
+function up2(pic){ if (!pic || !pic.cv) return pic; var hit = UP2 && UP2.get(pic); if (hit) return hit;
+  var w = pic.cv.width, h = pic.cv.height, src = pic.cv.getContext('2d').getImageData(0, 0, w, h), S32 = new Uint32Array(src.data.buffer);
+  var cv = document.createElement('canvas'); cv.width = w * 2; cv.height = h * 2; var cx = cv.getContext('2d'), out = cx.createImageData(w * 2, h * 2), O = new Uint32Array(out.data.buffer), W2 = w * 2;
+  for (var y = 0; y < h; y++) for (var x = 0; x < w; x++){ var p = S32[y * w + x], a = y ? S32[(y - 1) * w + x] : p, b = x < w - 1 ? S32[y * w + x + 1] : p, c = x ? S32[y * w + x - 1] : p, d = y < h - 1 ? S32[(y + 1) * w + x] : p;
+    var o = (y * 2) * W2 + x * 2;
+    O[o] = (c === a && c !== d && a !== b) ? a : p; O[o + 1] = (a === b && a !== c && b !== d) ? b : p;
+    O[o + W2] = (d === c && d !== b && c !== a) ? c : p; O[o + W2 + 1] = (b === d && b !== a && d !== c) ? d : p; }
+  cx.putImageData(out, 0, 0);
+  var r = {}; for (var q in pic) r[q] = pic[q]; r.cv = cv; r.ART = (pic.ART || window.RTT_PUTT.ART) / 2;
+  r.pr = function(x, y, z){ var v = pic.pr(x, y, z); return [v[0] * 2, v[1] * 2]; };
+  if (pic.un) r.un = function(px, py, z){ return pic.un(px / 2, py / 2, z); };
+  if (pic.Z && pic.ZW){ var ZW = pic.ZW, ZH = Math.floor(pic.Z.length / ZW), Z2 = new Float32Array(ZW * 2 * ZH * 2);
+    for (var j = 0; j < ZH * 2; j++){ var sr = (j >> 1) * ZW, dr = j * ZW * 2; for (var i = 0; i < ZW * 2; i++) Z2[dr + i] = pic.Z[sr + (i >> 1)]; }
+    r.Z = Z2; r.ZW = ZW * 2; r.zy0 = (pic.zy0 || 0) * 2; }
+  if (UP2) UP2.set(pic, r); return r; }
 function run(box, P, pic, api){
+  if (P.spec.smooth) pic = up2(pic);
   var cv = document.createElement('canvas'); cv.className = 'pp-tcv'; box.appendChild(cv);
-  var ctx = cv.getContext('2d'), alive = true, dpr = Math.min(3, window.devicePixelRatio || 1), W = 0, H = 0, kk = 1, ox = 0, oy = 0, ART = pic.ART || window.RTT_PUTT.ART;
+  var ctx = cv.getContext('2d'), alive = true, dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, kk = 1, ox = 0, oy = 0, ART = pic.ART || window.RTT_PUTT.ART;
   var found = api.found || {}, coinsGot = 0, pick = api.pick, sp = P.spec;
   function size(){ var r = box.getBoundingClientRect(); W = cv.width = Math.max(1, Math.round(r.width * dpr)); H = cv.height = Math.max(1, Math.round(r.height * dpr)); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
-    var viewArt = VIEW_FT * SE / ART; kk = Math.max(1, Math.round(H / viewArt)); while (pic.cv.width * kk < W && kk < 40) kk++; }
+    var viewArt = VIEW_FT * SE / ART; kk = Math.max(1, Math.round(H / viewArt)); while (pic.cv.width * kk < W && kk < 40) kk++; kkBase = kk; gFree = null; }
   size(); var onRs = function(){ size(); }; window.addEventListener('resize', onRs);
   // the golfer
   // he stands just inside the start, facing the way the walk leaves it (it may set off sideways, not up the screen)
@@ -1102,7 +1405,7 @@ function run(box, P, pic, api){
      chest that were not picked up are still lying where they landed. */
   var chOpen = function(t){ return (found.ch || []).indexOf(t.id) >= 0; }, legacyK = function(t){ return t.main && found.k && !chOpen(t); };
   var items = [];
-  P.items.forEach(function(t){ var o = Object.assign({}, t); o.done = t.k === 'chest' ? chOpen(t) || legacyK(t) : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : t.k === 'prize' ? !!found.pz : false; items.push(o);
+  P.items.forEach(function(t){ var o = Object.assign({}, t); o.done = t.k === 'chest' ? chOpen(t) || legacyK(t) : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : t.k === 'prize' ? !!found.pz : t.k === 'vault' ? !!(api.gymSolved && api.gymSolved(t.gym)) : false; items.push(o);
     if (t.k === 'chest') (t.drops || []).forEach(function(d, i){ var cid = t.id + ':' + i; items.push({ k:'coin', id:cid, x:d[0], y:d[1], ch:o, done:legacyK(t) || (found.c || []).indexOf(cid) >= 0, out:chOpen(t), fly:null }); });
     if (t.k === 'prize') (t.drops || []).forEach(function(d, i){ var cid = t.id + ':' + i; items.push({ k:'coin', id:cid, x:d[0], y:d[1], ch:o, done:(found.c || []).indexOf(cid) >= 0, out:!!found.pz, fly:null }); }); });
   /* THE PUZZLE, if this trail has one (plan's puzzle()). solved is the record's (found.pz): a solved puzzle's chest is
@@ -1114,6 +1417,21 @@ function run(box, P, pic, api){
   function prizeShown(){ return !!PZ && (PZ.shown || PZ.k === 'plate' || PZ.k === 'push'); }
   function pzGateOpen(){ if (!PZ || PZ.k !== 'plate') return true; if (PZ.solved || performance.now() < PZ.openUntil) return true; var P2 = P.pen; return Math.hypot(g.x - P2.x, g.y - (P2.y + P2.r)) < 1.9; }
   var chests = items.filter(function(t){ return t.k === 'chest'; });
+  /* THE GYM, if this trail has one (gyms.js is the registry, the gym's kind file its rules, plan() put it here). Out on
+     the trail it is a box he walks round; walked into at its gate, its KIND says how it is played (a tile a step, a
+     tap on a tile, or the kind's own input) and draws its pieces (view()), and this frame owns the rest: the room, the
+     camera, the docked panel and its controls, undo, the civilian and the vault. A move's pieces animate phase by
+     phase (a push and his step together, then whatever the belts carry). A gym solved before shows as it was left
+     solved: the moves of its proof replayed, the barrels down in their holes, the vault open. */
+  var GY = P.gym, GL = GY ? window.RTT_PUTT_GYMS : null, GK = GY ? GY.K : null, gym = null, gView = null;
+  if (GY && GL){ var GD0 = GL.byId(GY.id), vIt = items.filter(function(t){ return t.k === 'vault'; })[0];
+    gym = { G:GD0, Q:GY.Q, inp:GL.input(GD0), s:GL.init(GD0), in:false, anim:null, resets:0, undos:0, n:0, hist:[], solved:!!(vIt && vIt.done), leverAt:-9, vault:vIt, stuck:false, told:{}, hold:null, lastDir:-1, marks:true };
+    if (gym.solved) gym.s = gymSolvedState(); }
+  function gymSolvedState(){ var G = gym.G, s = GL.init(G), pf = GL.proof(G); for (var q0 = 0; q0 < pf.length; q0++){ var r0 = GL.act(G, s, pf[q0]); if (r0.ev === 'open') break; s = r0.s; }
+    return GL.me(G, s) == null ? s : GL.place(G, s, GY.Q.start); }
+  function gT(i){ var Q = GY.Q, c = i % Q.W, r = (i / Q.W) | 0; return [GY.x0 + (c + 0.5) * GY.T, GY.y0 + (r + 0.5) * GY.T]; }
+  // the tile of the room at a point on the ground, or -1
+  function gymTile(x, y){ var Q = GY.Q, c = Math.floor((x - GY.x0) / GY.T), r = Math.floor((y - GY.y0) / GY.T); return c < 0 || r < 0 || c >= Q.W || r >= Q.H ? -1 : r * Q.W + c; }
   var parts = [], bubble = null, flash = 0, paused = false, ended = false;
   // the colliders, on a coarse grid
   var GRID = {}; function gk(x, y){ return (x / 6 | 0) + ',' + (y / 6 | 0); }
@@ -1125,7 +1443,7 @@ function run(box, P, pic, api){
       if (c.w){ if (Math.abs(x - c.x) < c.w / 2 + R && Math.abs(y - c.y) < c.d / 2 + R) return true; } else if (Math.hypot(x - c.x, y - c.y) < c.r + R) return true; }
     if (gate && Math.abs(y - P.gate.y) < 0.9 + R && !(gate.open && Math.abs(x - P.gate.x) < PW + 0.3)) return true;
     if (P.fence){ var d = Math.hypot(x - P.fence.x, y - P.fence.y); if (Math.abs(d - P.fence.r) < R + 0.15){ var a = Math.atan2(y - P.fence.y, x - P.fence.x), da = Math.abs(Math.atan2(Math.sin(a - P.fence.a), Math.cos(a - P.fence.a))); if (!(lockOpen && da < P.fence.half)) return true; } }
-    for (var j = 0; j < items.length; j++){ var t = items[j]; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + R) return true;
+    for (var j = 0; j < items.length; j++){ var t = items[j]; if ((t.k === 'chest' || t.k === 'npc' || t.k === 'civ') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + R) return true;
       if (t.k === 'fire' && Math.hypot(x - t.x, y - t.y) < 0.6 + R) return true; if (t.k === 'prize' && prizeShown() && Math.hypot(x - t.x, y - t.y) < 1.3 + R) return true; }
     if (P.pen){ var PN = P.pen, dp = Math.hypot(x - PN.x, y - PN.y); if (Math.abs(dp - PN.r) < R + 0.15){ var ap = Math.atan2(y - PN.y, x - PN.x), dap = Math.abs(Math.atan2(Math.sin(ap - PN.a), Math.cos(ap - PN.a))); if (!(dap < PN.half && pzGateOpen())) return true; } }
     if (PZ && PZ.crate && Math.abs(x - PZ.crate.x) < CRATE_H + R && Math.abs(y - PZ.crate.y) < CRATE_H + R) return true;
@@ -1133,7 +1451,10 @@ function run(box, P, pic, api){
   // the screen: art pixel to device pixel, through the picture's own projection
   function scr(x, y, z){ var p = pic.pr(x, y, z == null ? pic.zAt(x, y) : z); return [ox + p[0] * kk, oy + p[1] * kk]; }
   // on a shore trail the camera looks a little out to sea, where the ships are, rather than inland at more sand
-  function camAim(snap){ var lx = g.x + (P.sea && LIFE[sp.theme] && LIFE[sp.theme].ships ? P.sea.side * 4.5 : 0), p = pic.pr(lx, g.y, pic.zAt(lx, g.y)), tx = Math.round(W / 2 - p[0] * kk), ty = Math.round(H * 0.64 - p[1] * kk), iw = pic.cv.width * kk, ih = pic.cv.height * kk;
+  function camAim(snap){ var lx = g.x + (P.sea && LIFE[sp.theme] && LIFE[sp.theme].ships ? P.sea.side * 4.5 : 0), ly = g.y, fy = 0.64;
+    // in a gym the camera holds the whole room still in the board, clear of the panel (gymCam), rather than riding on him
+    if (gym && gym.in) return gymCam(snap);
+    var p = pic.pr(lx, ly, pic.zAt(lx, ly)), tx = Math.round(W / 2 - p[0] * kk), ty = Math.round(H * fy - p[1] * kk), iw = pic.cv.width * kk, ih = pic.cv.height * kk;
     tx = iw > W ? Math.max(W - iw, Math.min(0, tx)) : Math.round((W - iw) / 2); ty = ih > H ? Math.max(H - ih, Math.min(0, ty)) : Math.round((H - ih) / 2);
     if (snap){ ox = tx; oy = ty; } else { ox += Math.round((tx - ox) * 0.14); oy += Math.round((ty - oy) * 0.14); } }
   camAim(true);
@@ -1167,12 +1488,31 @@ function run(box, P, pic, api){
     ctx.drawImage(sp2.cv, rx, ry, w, h); if (!noOcc) occlude(rx, ry, w, h, x, y, z); }
   var brkKind = function(t){ return kitOf(t.th || sp.theme).brk; };
   function prop(name, fn, w, d, h){ return propSprite(name, P, fn, w, d, h); }
+  // a fence's gate, built to its gap in its own colours; the thing that drew the fence names the world it is in
+  function fenceGate(F, kind, open){ var t = P.things.filter(function(x){ return x.k === kind; })[0], th = (t && t.th) || sp.theme, g = fenceGap(F), pal = fencePal(th), S = 3 * g.w / 2 + 1.2;
+    var key = 'fgate:' + (open ? 1 : 0) + ':' + pal.post + ':' + g.w.toFixed(2) + ':' + Math.round(g.ta * 100), sp0 = prop(key, fenceGateFn(open, g, pal), S, S, 3.2);
+    // a smoothed walk doubles its land (up2), so the gate is doubled the same way, or it stands at half the fence's size
+    if (sp0 && P.spec.smooth){ var k2 = key + '|x2'; if (!PROPS[k2]){ var u = up2({ cv:sp0.cv, pr:function(){ return [0, 0]; } }); PROPS[k2] = { cv:u.cv, ax:sp0.ax * 2, ay:sp0.ay * 2 }; } sp0 = PROPS[k2]; }
+    return sp0 ? { s:sp0, x:g.x, y:g.y } : null; }
   var SPR = {
     chest:[0, 0.22, 0.5, 0.78, 1].map(function(l){ return prop('chestv4:' + l, chestFn(l), 4.4, 6.4, 5.4); }),
     gate0:P.gate ? prop('gate0:' + sp.theme, gateFn(false, P), PW * 2 + 1, 1.2, 7) : null, gate1:P.gate ? prop('gate1:' + sp.theme, gateFn(true, P), PW * 2 + 1, 1.2, 7) : null,
-    lock0:P.fence || (P.pen && P.pen.gated) ? prop('lock0', lockGateFn(false), 3.4, 1, 3) : null, lock1:P.fence || (P.pen && P.pen.gated) ? prop('lock1', lockGateFn(true), 3.4, 1, 3) : null,
+    fence0:P.fence ? fenceGate(P.fence, 'fence', false) : null, fence1:P.fence ? fenceGate(P.fence, 'fence', true) : null,
+    pen0:P.pen && P.pen.gated ? fenceGate(P.pen, 'pen', false) : null, pen1:P.pen && P.pen.gated ? fenceGate(P.pen, 'pen', true) : null,
     crate:P.puzzle && P.puzzle.crate ? prop('pzcrate', function(B){ BRK.crate(B, 0, 0); }, 1.8, 1.8, 2) : null
   };
+  /* the gym's pieces at the land's own size: a smoothed walk doubles its land (up2), so they are doubled the same way,
+     or a barrel stands at half the size of the hole it is meant to fill */
+  function big(key, sp0){ if (!sp0 || !P.spec.smooth) return sp0; var k2 = key + '|x2'; if (!PROPS[k2]){ var u = up2({ cv:sp0.cv, pr:function(){ return [0, 0]; } }); PROPS[k2] = { cv:u.cv, ax:sp0.ax * 2, ay:sp0.ay * 2 }; } return PROPS[k2]; }
+  if (gym){ SPR.lever = [0, 1].map(function(o){ return big('gymlever' + o, prop('gymlever' + o, gymLeverFn(o), 4, 1.6, 3.4)); });
+    SPR.vault = [0, 0.22, 0.5, 0.78, 1].map(function(l){ return big('vault:' + l, prop('vault:' + l, function(B){ chestFn(l)(scaleB(B, VAULT_K)); }, 4.4 * VAULT_K, 6.4 * VAULT_K, 5.4 * VAULT_K)); }); }
+  /* THE ROOM, as the gym's kind draws in it (gyms.js KINDS README, view(R)): where its tiles are, the trail's own
+     drawing calls, and a way to hand the frame a move the kind worked out itself (the trick shot's ball at rest). */
+  if (gym){ gView = GK.view({ G:gym.G, Q:GY.Q, T:GY.T, DECK:GYM_DECK, x0:GY.x0, y0:GY.y0, at:gT, tile:gymTile, scr:scr, ctx:ctx, kk:function(){ return kk; }, get reduce(){ return reduce; },
+      sprite:function(key, fn, w, d, h){ return big(key, prop(key, fn, w, d, h)); }, drawSprite:drawSprite, BRK:BRK, burst:function(x, y, z, cols, n, sz, pow){ burst(x, y, z, cols, n, sz, pow); },
+      sfx:function(n){ if (api.sfx) api.sfx(n); }, say:function(t, ms){ say(t, ms); }, ground:groundAt, busy:function(){ return gymBusy(); },
+      commit:function(s1, ev, mv){ gymApply({ s:s1, ev:ev || 'move', moves:mv || [] }, performance.now() / 1000); } });
+    gView.lay(gym.s); }
   function fireSprite(t){ return prop('pzfire:' + t.th, brazierFn(t.th), 1.6, 1.6, 2.2); }
   // a plant's sprite, three of each kind a world so a hedge of them is not one bush stamped over and over
   var plants = []; P.things.forEach(function(t, i){ if (PLANT[t.k]) plants.push({ t:t, v3:i % 3, b:0, vb:0, sq:0, in:false, x:t.x, y:t.y, r:LOWR[t.k] || 1 }); });
@@ -1204,7 +1544,18 @@ function run(box, P, pic, api){
   function drawFigure(f, x, y, see, who){ if (!f || !f.url){ if (!who || !lastFig[who]) return null; f = lastFig[who].f; }
     var im = img(f.url); if (!im.complete || !im.naturalWidth){ var lf = who && lastFig[who]; if (!lf) return null; f = lf.f; im = lf.im; } else if (who) lastFig[who] = { f:f, im:im };
     var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
-    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
+    ctx.save(); ctx.imageSmoothingEnabled = false; if (who === 'me') meGlow(k2); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore();
+    if (!(who === 'me' && calmFloor(x, y))) occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
+  /* IN A CALM ROOM (a kind with calm:true) only a wall can stand in front of him: the near wall, or an inner wall one row
+     nearer (push's rooms). Anywhere else the floor in front is flat, and painting it back over him would paint it over
+     the kind's tiles too. */
+  function calmFloor(x, y){ if (!gym || !gym.in || !GK.calm) return false; var Q = GY.Q, i = gymTile(x, y); if (i < 0) return false; var r = (i / Q.W) | 0, c = i % Q.W;
+    if (r >= Q.H - 2) return false; for (var dc = -1; dc <= 1; dc++){ var c2 = c + dc; if (c2 >= 0 && c2 < Q.W && Q.cell[(r + 1) * Q.W + c2] === '#') return false; } return true; }
+  // your aura walks with you: the course golfer's pulse (hvswGlow, 2.4 s) in its colour, k pixels to a figure pixel
+  function meGlow(k){ var a = null; try{ a = api.host.aura && api.host.aura(); }catch(e){} if (!a) return;
+    var still = false; try{ still = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+    var u = still ? 0.5 : 0.5 - 0.5 * Math.cos(performance.now() / 1000 / 2.4 * 2 * Math.PI);
+    ctx.shadowColor = a; ctx.shadowBlur = Math.max(2, (1 + 3 * u) * k); ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
   // a coin is drawn at the scene's own pixel size, so it sits in it
   function drawCoin(t, now){ var f = t.fly;
     if (f && now < f.t0 + f.dur){ if (now < f.t0) return; var u = (now - f.t0) / f.dur, fx = f.x0 + (t.x - f.x0) * u, fy = f.y0 + (t.y - f.y0) * u, fz = f.z0 + (pic.zAt(t.x, t.y) + 0.4 - f.z0) * u + Math.sin(u * Math.PI) * 3.2;
@@ -1219,7 +1570,11 @@ function run(box, P, pic, api){
      that shows over the trees, so you can see what it is and where it is from a long way off */
   function drawLoot(t, now){ var L = LOOT[t.k], rows = L.rows, pal = lootPal(t), bc = lootBeam(t), z = pic.zAt(t.x, t.y) + 1.4 + Math.sin(now * 2.2 + t.x) * 0.2, p = scr(t.x, t.y, z),
       s = Math.max(2, Math.round(kk * 1.25)), w = rows[0].length, h = rows.length, shp = scr(t.x, t.y), pu = 0.5 + 0.5 * Math.sin(now * 3 + t.y);
-    if (bc){ var bw = 9 * s, bh = Math.round(H * 0.45), gr = ctx.createLinearGradient(0, shp[1] - bh, 0, shp[1]);
+    /* a loot's beam stands up the screen from it; one in front of a gym's room is cut short at the room's near edge, so
+       no beam ever crosses a room (the golden ball's did) */
+    var bh0 = Math.round(H * 0.45); if (bc && GY){ var GA = gymArtRect(), gx0 = GA.x0 * kk + ox, gx1 = GA.x1 * kk + ox, gy0 = GA.y0 * kk + oy, gy1 = GA.y1 * kk + oy;
+      if (shp[0] + 4.5 * s > gx0 && shp[0] - 4.5 * s < gx1 && shp[1] > gy0) bh0 = Math.max(0, Math.min(bh0, Math.round(shp[1] - gy1))); }
+    if (bc && bh0 > 0){ var bw = 9 * s, bh = bh0, gr = ctx.createLinearGradient(0, shp[1] - bh, 0, shp[1]);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       gr.addColorStop(0, 'rgba(' + bc + ',0)'); gr.addColorStop(0.6, 'rgba(' + bc + ',' + (0.18 + 0.08 * pu).toFixed(2) + ')'); gr.addColorStop(1, 'rgba(' + bc + ',' + (0.4 + 0.15 * pu).toFixed(2) + ')'); ctx.fillStyle = gr; ctx.fillRect(Math.round(shp[0] - bw / 2), Math.round(shp[1] - bh), bw, bh);
       ctx.fillStyle = 'rgba(' + bc + ',' + (0.35 + 0.15 * pu).toFixed(2) + ')'; ctx.fillRect(Math.round(shp[0] - s), Math.round(shp[1] - bh), 2 * s, bh);
@@ -1250,10 +1605,12 @@ function run(box, P, pic, api){
     if (Pz.k === 'plate'){ var pl = Pz.plate, on = pzGateOpen() && !PZ.solved, h = 0.8, c = [[pl.x - h, pl.y - h], [pl.x + h, pl.y - h], [pl.x + h, pl.y + h], [pl.x - h, pl.y + h]].map(function(q){ return scr(q[0], q[1]); });
       ctx.fillStyle = on ? '#ffd23a' : '#8a8478'; ctx.strokeStyle = on ? '#fff3a8' : '#4a463e'; ctx.lineWidth = Math.max(2, kk * 0.6); ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); for (var i = 1; i < 4; i++) ctx.lineTo(c[i][0], c[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
       if (on){ ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,210,70,' + (0.18 + 0.12 * Math.sin(now * 10)).toFixed(2) + ')'; var pc = scr(pl.x, pl.y); ctx.beginPath(); ctx.ellipse(pc[0], pc[1], 8 * kk, 3.4 * kk, 0, 0, 7); ctx.fill(); ctx.restore(); } } }
-  function drawChest(t, now){ var z = pic.zAt(t.x, t.y), fr = SPR.chest, e = t.openAt != null ? now - t.openAt : (t.done ? 99 : -1), k, ox2 = 0, sy = 1, shp = scr(t.x, t.y);
+  function drawChest(t, now, frs){ var z = pic.zAt(t.x, t.y), fr = frs || SPR.chest, e = t.openAt != null ? now - t.openAt : (t.done ? 99 : -1), k, ox2 = 0, sy = 1, shp = scr(t.x, t.y), ks = frs ? VAULT_K : 1;
     if (!fr) return;
     if (e < 0){ k = 0; var pu = 0.5 + 0.5 * Math.sin(now * 2.4 + t.x);   // shut: a warm pool of light and a glint now and then
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,70,' + (0.16 + 0.12 * pu).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 13 * kk, 5 * kk, 0, 0, 7); ctx.fill(); ctx.restore(); }
+      // in a calm room (a kind with calm:true) the vault's pool stays on its own tile, so it never washes out the tiles round it
+      var prx = 13 * kk * ks, pry = 5 * kk * ks; if (frs && gym && GK.calm){ prx = Math.abs(scr(t.x + GY.T * 0.5, t.y)[0] - shp[0]); pry = prx * 0.4; }
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,70,' + (0.16 + 0.12 * pu).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], prx, pry, 0, 0, 7); ctx.fill(); ctx.restore(); }
     else if (e < CH_SHAKE){ k = 0; var a = 1 - e / CH_SHAKE; ox2 = Math.round(Math.sin(e * 70) * 1.6 * kk * a); }
     else if (e < CH_SHAKE + CH_LID){ var u = (e - CH_SHAKE) / CH_LID; k = 1 + Math.min(3, Math.floor(u * 4)); sy = 1 - 0.07 * Math.sin(u * Math.PI); }
     else k = 4;
@@ -1266,7 +1623,9 @@ function run(box, P, pic, api){
       ctx.restore(); }
     var p = scr(t.x, t.y, z), w = sp2.cv.width * kk, h = sp2.cv.height * kk, h2 = Math.round(h * sy), rx = Math.round(p[0] - sp2.ax * kk) + ox2, ry = Math.round(p[1] - sp2.ay * kk * sy);
     // a shut chest behind a tree shows through it faintly, the way the golfer does: tucked away, never invisible
-    ctx.drawImage(sp2.cv, rx, ry, w, h2); occlude(rx, ry, w, h2, t.x, t.y, z, e < 0);
+    // (in a calm room nothing stands in front of the vault, and the floor in front of it, which is where the kind draws
+    // its tiles, is not to be painted back over them)
+    ctx.drawImage(sp2.cv, rx, ry, w, h2); if (!(frs && gym && GK.calm)) occlude(rx, ry, w, h2, t.x, t.y, z, e < 0);
     if (e < 0){ var gl = (now * 0.7 + t.x * 0.13) % 1; if (gl < 0.22){ var gu = gl / 0.22, gs = Math.max(2, Math.round(kk)), gp = scr(t.x - 0.9 + gu * 1.8, t.y + 0.9, z + 1.25 + Math.sin(gu * Math.PI) * 0.3);
       ctx.fillStyle = 'rgba(255,255,255,' + Math.sin(gu * Math.PI).toFixed(2) + ')'; ctx.fillRect(Math.round(gp[0] - gs / 2), Math.round(gp[1] - 2 * gs), gs, 4 * gs); ctx.fillRect(Math.round(gp[0] - 2 * gs), Math.round(gp[1] - gs / 2), 4 * gs, gs); } } }
 
@@ -1311,7 +1670,7 @@ function run(box, P, pic, api){
 
   // ---- the life around him (LIFE): seeded where it is placed, free running once it moves
   // under cloud the new world's birds and set pieces would give it away, so the walk keeps the old world's (no ships: the sea is the new world's)
-  var lifeTh = api.clouds && sp.theme0 ? sp.theme0 : sp.theme, life = LIFE[lifeTh] || {}; if (lifeTh !== sp.theme){ life = Object.assign({}, life); delete life.ships; }
+  var lifeTh = api.clouds && sp.theme0 ? sp.theme0 : sp.theme, life = (lifeTh === sp.theme && sp.kitAs && LIFE_AS[sp.kitAs]) || LIFE[lifeTh] || {}; if (lifeTh !== sp.theme){ life = Object.assign({}, life); delete life.ships; }
   var LR = rng(P.seed ^ 0x51f3), reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   function rr(a, b){ return a + LR() * (b - a); }
   var flyers = [], motes = [], ships = [], balloons = [], tumbles = [], ghosts = [], puffs = [], puffT = 0;
@@ -1354,8 +1713,17 @@ function run(box, P, pic, api){
     if (a != null) ctx.globalAlpha = a; for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++){ var ch = rows[yy][flip ? w - 1 - xx : xx]; if (ch === '.') continue; ctx.fillStyle = pal[ch] || pal.o; ctx.fillRect(rx + xx * s, ry + yy * s, s, s); }
     if (a != null) ctx.globalAlpha = 1; return [rx, ry, w * s, h * s]; }
   function shadowAt(x, y, r, a){ var p = scr(x, y); ctx.fillStyle = 'rgba(0,0,0,' + a + ')'; ctx.beginPath(); ctx.ellipse(p[0], p[1], r * kk / ART, r * 0.4 * kk / ART, 0, 0, 7); ctx.fill(); }
+  /* A CALM ROOM (a kind with calm:true, gyms.js KINDS README; every kind on the page asks for it): while he is in its
+     gym, nothing of the world's life is drawn over the room as it stands on the screen. Not what flies, drifts or floats
+     (birds, balloons, puffs, motes), and not what roams the ground or sails past (tumbleweeds, ghosts, ships), so
+     nothing ever sits on a tile. pad is how far round its point the thing reaches, in trail feet, and never less than
+     a bird's width (8 art pixels) round the room's box. A flyer is tested at its body and at its shadow. Out on the trail, and
+     in a kind without it, the world's life is as it was. One test for all of it, here. */
+  function calmHides(x, y, z, pad){ if (!gym || !gym.in || !GK.calm) return false; var A = gymArtRect(), p = scr(x, y, z), e = Math.max(8 * kk, (pad || 1) * kk * CE / ART);
+    return p[0] > A.x0 * kk + ox - e && p[0] < A.x1 * kk + ox + e && p[1] > A.y0 * kk + oy - e && p[1] < A.y1 * kk + oy + e; }
   // what stands on the ground or the sea is sorted in with everything else; what flies is drawn over it all
-  function lifeGround(ds){ ships.forEach(function(s1, i){ var yS = shipY(s1); ds.push({ k:'ship', o:s1, x:shipX(yS), y:yS }); }); tumbles.forEach(function(t){ ds.push({ k:'tumble', o:t, x:t.x, y:t.y }); }); ghosts.forEach(function(q){ ds.push({ k:'ghost', o:q, x:q.x, y:q.y }); }); }
+  function lifeGround(ds){ ships.forEach(function(s1, i){ var yS = shipY(s1), xS = shipX(yS); if (!calmHides(xS, yS, 4, 7)) ds.push({ k:'ship', o:s1, x:xS, y:yS }); });
+    tumbles.forEach(function(t){ if (!calmHides(t.x, t.y, pic.zAt(t.x, t.y) + 1.2, 2)) ds.push({ k:'tumble', o:t, x:t.x, y:t.y }); }); ghosts.forEach(function(q){ if (!calmHides(q.x, q.y, pic.zAt(q.x, q.y) + 2, 2)) ds.push({ k:'ghost', o:q, x:q.x, y:q.y }); }); }
   function shipX(y){ return P.sea.side * Math.min((sp.halfW || HALFW) - 2.6, P.seaEdge(y) + 3); }
   function shipY(s1){ var tt = performance.now() / 1000, u = ((s1.y0 + s1.dir * s1.v * tt) - (P.b[1] - 20)) % s1.span; if (u < 0) u += s1.span; return P.b[1] - 20 + u; }
   function drawLifeThing(t, tsec){ var o = t.o;
@@ -1369,9 +1737,10 @@ function run(box, P, pic, api){
       pixAt(PIX_GHOST, { g:'#eef2ff', o:'#eef2ff' }, t.x, t.y, gz, 0.36, Math.sin(o.ph * 0.5) < 0, 0.5 + 0.15 * Math.sin(tsec * 2 + o.ph)); } }
   function lifeAir(tsec){
     if (reduce) return;
-    puffs.forEach(function(q){ var p = scr(q.x, q.y, q.z), a = 0.38 * (1 - q.t / 4.5); ctx.fillStyle = 'rgba(70,62,66,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], q.r * kk * 1.4, 0, 7); ctx.fill(); });
-    balloons.forEach(function(b2){ var cs = BALLOON_COLS[b2.c], spr = prop('balloon:' + b2.c, balloonFn(cs[0], cs[1]), 6.4, 6.4, 16); shadowAt(b2.x, b2.y, 2.4, 0.1); drawSprite(spr, b2.x, b2.y, b2.z + Math.sin(tsec * 0.8 + b2.ph) * 0.6); });
+    puffs.forEach(function(q){ if (calmHides(q.x, q.y, q.z, q.r * 1.4)) return; var p = scr(q.x, q.y, q.z), a = 0.38 * (1 - q.t / 4.5); ctx.fillStyle = 'rgba(70,62,66,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], q.r * kk * 1.4, 0, 7); ctx.fill(); });
+    balloons.forEach(function(b2){ if (calmHides(b2.x, b2.y, b2.z + 8, 9) || calmHides(b2.x, b2.y, pic.zAt(b2.x, b2.y), 3)) return; var cs = BALLOON_COLS[b2.c], spr = prop('balloon:' + b2.c, balloonFn(cs[0], cs[1]), 6.4, 6.4, 16); shadowAt(b2.x, b2.y, 2.4, 0.1); drawSprite(spr, b2.x, b2.y, b2.z + Math.sin(tsec * 0.8 + b2.ph) * 0.6); });
     motes.forEach(function(m){ var k = m.k, z = m.z + (k === 'leaf' || k === 'petal' || k === 'ash' || k === 'snow' || k === 'ember' || k === 'spark' || k === 'dust' ? 0 : pic.zAt(m.x, m.y));
+      if (calmHides(m.x, m.y, z, 1)) return;
       if (k === 'snow') sq(m.x, m.y, z, 0.3, '#ffffff', 0.95);
       else if (k === 'ash') sq(m.x, m.y, z, 0.3, '#9a9094', 0.8);
       else if (k === 'ember') sq(m.x, m.y, z, 0.32, m.life * 5 % 1 < 0.5 ? '#ffb43a' : '#ff5a1a', Math.max(0, 1 - m.z / 9));
@@ -1380,7 +1749,7 @@ function run(box, P, pic, api){
       else if (k === 'dust') sq(m.x, m.y, z, 0.22, '#f0d8b0', 0.7);
       else if (k === 'firefly'){ var gl = Math.max(0, Math.sin(m.life * 2.2 + m.ph)); if (gl > 0.05){ sq(m.x, m.y, z, 0.9, 'rgba(220,255,120,' + (gl * 0.35).toFixed(2) + ')'); sq(m.x, m.y, z, 0.3, '#f4ff9a', gl); } }
       else if (k === 'butter') pixAt(PIX_BUTTER[(Math.floor(m.life * 9 + m.ph) % 2)], { w:m.c, b:'#2a2228', o:m.c }, m.x, m.y, z, 0.24, false); });
-    flyers.forEach(function(f){ var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
+    flyers.forEach(function(f){ if (calmHides(f.x, f.y, pic.zAt(f.x, f.y) + f.z, 2) || calmHides(f.x + 1, f.y + 1, pic.zAt(f.x, f.y), 2)) return; var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' || f.kind === 'ptero' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
       shadowAt(f.x + 1, f.y + 1, 0.9 * C.sz, 0.1); pixAt(fr, C, f.x, f.y, gz + f.z, C.sz * 0.28, f.vx < 0); }); }
 
   // ---- input: a stick under the thumb, or the keys
@@ -1388,7 +1757,7 @@ function run(box, P, pic, api){
      or WASD, so a desktop gets no stick on screen and a drag does not walk him. */
   var coarse = false; try{ coarse = matchMedia('(pointer: coarse)').matches; }catch(e){}
   var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = (coarse ? '<div class="pp-stick" data-stick><i></i></div>' : '') + '<div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
-    '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
+    '<div class="pp-thud"><span data-coins>' + (api.guestCoins ? 'Sign in' : '+0') + '</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
   box.appendChild(ui);
   var stick = ui.querySelector('[data-stick]'), knob = stick && stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
   var wayB = way.querySelector('b'), wayI = way.querySelector('i'), pinB = pin.querySelector('b'), pinI = pin.querySelector('i');
@@ -1399,7 +1768,13 @@ function run(box, P, pic, api){
   var stickV = [0, 0], keys = {}, drag = null, SR = 46;
   ui.querySelector('[data-skip]').onclick = function(){ if (alive) api.skip(); };
   var KM = { ArrowUp:'u', KeyW:'u', ArrowDown:'d', KeyS:'d', ArrowLeft:'l', KeyA:'l', ArrowRight:'r', KeyD:'r' };
-  function kd(e){ var c = KM[e.code]; if (!c || !alive) return; keys[c] = 1; hint.classList.add('gone'); e.preventDefault(); }
+  function kd(e){ if (alive && gym && gym.in && !paused && gymKey(e)) return; var c = KM[e.code]; if (!c || !alive) return; keys[c] = 1; hint.classList.add('gone'); e.preventDefault(); }
+  // in a gym: Z or Backspace undoes a move, R restarts; a kind that takes over input hears the rest first
+  function gymKey(e){ if (e.ctrlKey || e.metaKey || e.altKey) return false;
+    if (e.code === 'KeyZ' || e.code === 'Backspace'){ e.preventDefault(); if (!e.repeat) gymUndo(); return true; }
+    if (e.code === 'KeyR'){ e.preventDefault(); if (!e.repeat && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); return true; }
+    if (gym.inp === 'own' && gView.key && gView.key(e)){ e.preventDefault(); return true; }
+    return false; }
   function ku(e){ var c = KM[e.code]; if (c) keys[c] = 0; }
   function pdn(e){ if (!alive || e.target.closest('button')) return; e.preventDefault(); var r = box.getBoundingClientRect();
     drag = { id:e.pointerId, x:e.clientX, y:e.clientY }; stick.style.left = (e.clientX - r.left) + 'px'; stick.style.top = (e.clientY - r.top) + 'px'; stick.classList.add('on'); knob.style.transform = ''; hint.classList.add('gone'); }
@@ -1420,15 +1795,23 @@ function run(box, P, pic, api){
   var goalS = P.cum[P.cum.length - 1];
 
   // a line said once what was just found has flown up to the top of the screen, so the bubble never sits on top of it
-  function sayLater(txt, ms, wait){ setTimeout(function(){ if (alive) say(txt, ms); }, (reduce ? 0.1 : wait) * 1000); }
-  function say(txt, ms, who){ bubble = { txt:txt, until:performance.now() + (ms || 3200), who:who || null }; bubEl.textContent = txt; bubEl.hidden = false; }
+  // the local's second thing to say: after the first has been read, and never over something else being said
+  function npcLater(txt, wait, who){ setTimeout(function(){ if (alive && (!bubble || bubble.who === who || performance.now() > bubble.until)) say(txt, 5200, who); }, wait * 1000); }
+  function sayLater(txt, ms, wait, who){ setTimeout(function(){ if (alive) say(txt, ms, who); }, (reduce ? 0.1 : wait) * 1000); }
+  // in a gym every line goes in the docked panel, never over the board
+  function say(txt, ms, who){ bubble = { txt:txt, until:performance.now() + (ms || 3200), who:who || null };
+    if (gym && gym.in){ bubEl.hidden = true; gymLine(txt, who === civIt ? 0 : ms || 3200, who === civIt); return; }
+    bubEl.textContent = txt; bubEl.hidden = false; }
   function burst(x, y, z, cols, n, sz, pow){ pow = pow || 1; for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = (2 + Math.random() * 4) * pow; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:(3 + Math.random() * 4) * pow, c:cols[i % cols.length], t:0, sz:sz ? sz * (0.6 + Math.random() * 0.8) : 0 }); } }
-  function hudCoins(){ ui.querySelector('[data-coins]').textContent = '+' + coinsGot; }
+  // a guest never sees a coin count: their coins are held for the account, and the walk says so once
+  function hudCoins(){ ui.querySelector('[data-coins]').textContent = api.guestCoins ? 'Sign in' : '+' + coinsGot; }
+  var guestTold = false;
+  function guestCoin(){ if (api.guestCoins && !guestTold){ guestTold = true; say(api.guestCoins, 3600); } }
   /* WHAT IS ON THIS TRAIL, said up front: a list of every find with its picture, ticked off as it is picked up,
      so a player always knows what they are looking for. Coins are not on it: they come out of the chest. */
   function hudList(){ var el = ui.querySelector('[data-tlist]'), fs = items.filter(function(t){ return LOOT[t.k]; });
     el.innerHTML = fs.length ? '<b>On this trail</b>' + fs.map(function(t){ var nm = t.k === 'trinket' ? t.name || 'Trinket' : t.k === 'part' ? (t.name || 'Putter part') : LOOT[t.k].name;
-      if (t.k === 'chest' && t.drops) nm = 'Chest'; if (t.k === 'prize') nm = (P.puzzle && P.puzzle.name) || 'Puzzle'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + (t.hint ? ' near' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
+      if (t.k === 'chest' && t.drops) nm = 'Chest'; if (t.k === 'prize') nm = (P.puzzle && P.puzzle.name) || 'Puzzle'; if (t.k === 'vault') nm = (gym && gym.G.name) || 'Gym'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + (t.hint ? ' near' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
   function hudChests(){}
   function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? 'Golden balls ' + gd.have + '/' + gd.total : ''; }
   hudGold(); hudChests(); hudList();
@@ -1472,6 +1855,188 @@ function run(box, P, pic, api){
     if (hs.ph === 'come'){ g.face = [-dx, -dy]; g.aimI = null; if (d > 3.25){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
     else if (hs.ph === 'idle'){ hs.moving = false; if (d < 7) hs.face = [dx, dy]; }
     talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
+  /* ---- THE GYM, PLAYED: THE FRAME. Every kind is played through the same room and the same docked panel. One move is
+     one step, one tap or one of the kind's own moves; its moves play as phases (whatever he pushes moves with him,
+     then whatever the belts carry, a tile at a time), and nothing more is asked of the input until they have played.
+     Held, the stick, a key or the pad keeps stepping; a tap on the floor steps toward it (a tap kind: acts on the tile).
+
+     NOTHING COVERS THE BOARD, the owner's call (2026-10-17, a phone screenshot of The Cargo Hold with the civilian's
+     bubble over the grid: "text should not be covering the game like this"). In the room, the civilian's lines and
+     the frame's own messages go in the docked panel, under the gym's name and its goal; the controls (Undo, Restart,
+     Leave and the pad) are in it too, with large tap targets; the stick and the trail's own buttons are hidden; and
+     the camera frames the room in what the panel and the header leave free (gymCam), zooming out a step if it has to
+     and in as far as it fits on a wide screen.
+     On a phone the panel is docked along the bottom, on a wide screen down the right. */
+  var DIR_FACE = [[0, -1], [1, 0], [0, 1], [-1, 0]], civIt = items.filter(function(t){ return t.k === 'civ'; })[0];
+  var gPanel = null, gE = {}, padDir = -1, kkBase = kk, gFree = null, gFreeAt = 0, gArt = null, gHot = null;
+  if (gym){ gPanel = document.createElement('div'); gPanel.className = 'pp-gp'; gPanel.hidden = true; gPanel.setAttribute('data-gp', '');
+    gPanel.innerHTML = '<div class="pp-gph"><b data-gname></b><i data-gkeep hidden>Gatekeeper</i><span data-gmoves></span></div><p class="pp-gpg" data-ggoal></p>' +
+      '<div class="pp-gps" data-gsay aria-live="polite"><span class="pp-gpf" data-gface></span><p data-gtext></p></div>' +
+      '<div class="pp-gpc" data-gctl><div class="pp-gpb"><button data-gundo>Undo</button><button data-grestart>Restart</button><button data-gleave>Leave</button></div>' +
+      '<div class="pp-gpd" data-gpad><button data-d="0" aria-label="Step up"></button><button data-d="3" aria-label="Step left"></button><button data-d="1" aria-label="Step right"></button><button data-d="2" aria-label="Step down"></button></div></div>' +
+      '<div class="pp-gpk" data-gkeys></div>';
+    ui.appendChild(gPanel);
+    ['name', 'keep', 'moves', 'goal', 'say', 'face', 'text', 'ctl', 'pad', 'keys', 'undo', 'restart', 'leave'].forEach(function(k){ gE[k] = gPanel.querySelector('[data-g' + k + ']'); });
+    gE.name.textContent = gym.G.name; gE.keep.hidden = !gym.G.keeper; gE.goal.textContent = GL.goal(gym.G);
+    var stepIn = gym.inp === 'step'; gE.pad.hidden = !stepIn; gPanel.classList.toggle('nopad', !stepIn);
+    gE.keys.textContent = (stepIn ? 'Arrows or WASD step · ' : gym.inp === 'tap' ? 'Click a tile · ' : '') + 'Z undo · R restart';
+    var pu = api.portrait ? api.portrait(gym.G.who.look) : ''; if (pu) gE.face.style.backgroundImage = 'url(' + pu + ')';
+    gPanel.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
+    gE.undo.onclick = function(e){ e.stopPropagation(); gymUndo(); };
+    gE.restart.onclick = function(e){ e.stopPropagation(); if (gym.in && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); };
+    gE.leave.onclick = function(e){ e.stopPropagation(); gymOut(); };
+    // the pad: a press steps at once, and held it keeps stepping, as the stick does
+    [].forEach.call(gE.pad.querySelectorAll('button'), function(bt){ var d = +bt.getAttribute('data-d');
+      bt.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); padDir = d; gym.tap = d; try{ bt.setPointerCapture(e.pointerId); }catch(e2){} });
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function(ev){ bt.addEventListener(ev, function(){ if (padDir === d) padDir = -1; }); }); }); }
+  function gymPhases(moves){ var i = 0, ph = [], first = []; while (i < moves.length){ first.push(moves[i]); if (moves[i++][0] === 'me') break; } if (first.length) ph.push(first); while (i < moves.length) ph.push([moves[i++]]); return ph; }
+  function phDur(ph){ var d = 0; ph.forEach(function(m){ d = Math.max(d, GK.dur ? GK.dur(m[3]) : 0.15); }); return reduce ? d * 0.6 : d; }
+  function gymDirIn(){ if (padDir >= 0) return padDir; var sx = stickV[0] + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), sy = stickV[1] + (keys.d ? 1 : 0) - (keys.u ? 1 : 0);
+    if (Math.max(Math.abs(sx), Math.abs(sy)) < 0.45) return -1; return Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 1 : 3) : (sy > 0 ? 2 : 0); }
+  function gymTick(tsec, dt){ var A = gym.anim, moved = 0;
+    if (A){ var P0 = A.ph[A.k], u = Math.min(1, (tsec - A.t0) / phDur(P0));
+      P0.forEach(function(m){ if (m[0] !== 'me') return gView.move(m, u, tsec); var a = gT(m[1]), b = gT(m[2]);
+        var nx = a[0] + (b[0] - a[0]) * u, ny = a[1] + (b[1] - a[1]) * u; moved += Math.hypot(nx - g.x, ny - g.y); g.x = nx; g.y = ny; });
+      if (u >= 1){ A.k++; A.t0 = tsec; if (A.k >= A.ph.length){ gym.anim = null; if (A.then) A.then(tsec); } }
+      return moved; }
+    if (gym.inp === 'own'){ gym.ownBusy = !!(gView.tick && gView.tick(tsec, dt)); return 0; }
+    if (tsec - (gym.bumpAt || -9) < 0.2) return 0;
+    if (gym.inp === 'tap'){ var ti = gym.tapTile; gym.tapTile = null; if (ti != null) gymApply(GL.tap(gym.G, gym.s, ti), tsec); return 0; }
+    var d = gym.tap != null ? gym.tap : gymDirIn(); gym.tap = null;
+    if (d >= 0) gymGo(d, tsec);
+    return 0; }
+  function gymGo(d, tsec){ g.face = DIR_FACE[d].slice(); g.aimI = null; hint.classList.add('gone'); gymApply(GL.step(gym.G, gym.s, d), tsec); }
+  /* A MOVE'S RESULT, whatever made it (a step, a tap, the kind's own input through R.commit): out, the lever, the
+     vault, nothing, or a real move, recorded for Undo and played. */
+  function gymApply(r, tsec){ var G = gym.G;
+    if (r.ev === 'exit'){ var m0 = GL.me(G, gym.s); if (m0 == null) return gymLeave(); gym.anim = { ph:[[['me', m0, GY.Q.gate, 'walk']]], k:0, t0:tsec, then:gymLeave }; return; }
+    if (r.ev === 'reset') return gymReset(tsec, r.s);
+    if (r.ev === 'open') return gymOpen(tsec);
+    if (r.ev === 'bump' || r.s === gym.s){ gym.bumpAt = tsec;
+      if (GK.tell && GK.tell[r.ev] && !gym.told[r.ev]){ gym.told[r.ev] = 1; say(GK.tell[r.ev], 2200); } return; }
+    gymKeep(); gym.n++;
+    var then = function(t2){ gym.s = r.s; gView.lay(gym.s); gymCheck(); gymPanel(); if (!gym.solved && GL.won(G, gym.s)) gymOpen(t2); };
+    var ph = gymPhases(r.moves); if (!ph.length) return then(tsec);
+    gym.anim = { ph:ph, k:0, t0:tsec, then:then }; }
+  // UNDO is a stack of the states he had (a move never changes a state in place), so a pop is the state exactly
+  function gymKeep(){ gym.hist.push({ s:gym.s, n:gym.n }); if (gym.hist.length > 400) gym.hist.shift(); }
+  // nothing is taken back, restarted or left while a move plays (a kind's own move too: its ball still rolling)
+  function gymBusy(){ return !!(gym.anim || gym.ownBusy); }
+  function gymUndo(){ if (!gym || !gym.in || gymBusy() || !gym.hist.length) return false; var h = gym.hist.pop(); gym.s = h.s; gym.n = h.n; gym.undos++;
+    gView.lay(gym.s); gymPut(); api.sfx && api.sfx('blip'); gymCheck(); gymPanel(); return true; }
+  // he stands where the state says, or (a tap kind) where he stood
+  function gymPut(){ var p = GL.me(gym.G, gym.s); if (p == null) return; var q = gT(p); g.x = q[0]; g.y = q[1]; }
+  // the lever, or Restart (and, shut in, the lit Restart): every piece back where it started, him at the door
+  function gymReset(tsec, s0){ gym.leverAt = tsec; gym.resets++; api.sfx && api.sfx('blip');
+    var tmp = []; gView.things(tmp, tsec); tmp.forEach(function(o){ var z = o.o && o.o.z != null ? o.o.z : GYM_DECK; burst(o.x, o.y, z + 1, ['rgba(230,220,200,.85)', '#c8a070'], 8, 1.4, 0.6); });
+    gymKeep(); gym.n = 0; gym.s = s0; gView.lay(gym.s); var q = gT(GY.Q.start); g.x = q[0]; g.y = q[1]; burst(q[0], q[1], GYM_DECK + 1.2, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymCheck(); gymPanel();
+    if ((gym.resets === 2 || gym.resets === 5) && civIt) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200); }
+  function gymOpen(tsec){ var V = gym.vault; if (!V) return;
+    if (gym.solved){ say('The vault\'s empty. You already cleaned it out.', 2400); return; }
+    gym.solved = true; V.done = true; V.openAt = tsec; api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
+    try{ res = api.gym ? api.gym(GY.id) : null; }catch(e){ res = null; }
+    // the coins are said in the panel: nothing floats over the board in a gym
+    setTimeout(function(){ if (!alive) return; burst(V.x, V.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff', '#c89cff'], 40, 1.5, 1.4); ring(V.x, V.y, '255,214,64');
+      if (!gym.in) floatText(res && res.coins ? res.coins.toLocaleString() + ' coins!' : 'Solved!', V.x, V.y, z + 3.2, '#ffd23a', true); }, (CH_SHAKE + 0.2) * 1000);
+    if (gPanel) gPanel.classList.add('won'); gym.wonLine = (res && res.msg) || 'Solved. The vault is yours.';
+    sayLater(gym.wonLine, 5200, 1.9); hudList(); gymCheck(); gymPanel(); }
+  /* SHUT IN, Restart lights up and the panel says so. It is asked only when the kind says nothing else leads on (push:
+     not when the lever is merely out of walking reach for a step), and a moment after the move, off the frame. */
+  function gymCheck(){ var s0 = gym.s; gym.stuck = false; gymLit(); if (!gym.in) return;
+    if (GK.onFoot && GK.onFoot(gym.G, s0)) return;
+    setTimeout(function(){ if (!alive || gym.s !== s0 || !gym.in) return; gym.stuck = GL.stuck(gym.G, s0); gymLit(); if (gym.stuck) say((GK.tell && GK.tell.stuck) || 'You\'re boxed in. Restart puts it all back.', 4200); }, 30); }
+  function gymLit(){ if (gE.restart) cls(gE.restart, 'lit', !!gym.stuck); }
+  /* THE COUNTER'S WORD is the kind's own (unit: 'step', 'tap', 'slide', 'stroke'), so the panel counts what he did, not
+     an abstract move. A kind without one counts moves. */
+  function gymUnit(n){ var u = (GK && GK.unit) || 'move'; return n === 1 ? u : u + 's'; }
+  function gymPanel(){ if (!gPanel) return; put(gE.moves, 'textContent', gym.n + ' ' + gymUnit(gym.n)); gE.undo.disabled = !gym.hist.length; gymLit(); gHot = null; }
+  function gymEnter(tsec){ gym.in = true; g.vx = g.vy = 0; var q = gT(GY.Q.gate); g.x = q[0]; g.y = q[1]; gym.hist = []; gym.n = 0; gHot = null;
+    var st = GL.place(gym.G, gym.s, GY.Q.gate), Gd = gym.G; gym.s = st;
+    gym.anim = { ph:[[['me', GY.Q.gate, GY.Q.start, 'walk']]], k:0, t0:tsec, then:function(){ gym.s = GL.place(Gd, gym.s, GY.Q.start); gymCheck(); gymPanel(); } };
+    gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
+    if (!gym.told.in){ gym.told.in = 1; sayLater(gym.solved ? 'Solved already. Have a look around.' : GK.hello || 'Undo takes one back.', 3600, 0.5); }
+    camAim(true); }
+  function gymLeave(){ gym.in = false; gym.lock = true; g.x = GY.ax; g.y = GY.ay + 0.4; g.face = [0, 1]; g.aimI = null; g.vx = g.vy = 0; gPanel.hidden = true; ui.classList.remove('ingym'); gym.stuck = false; gymLit();
+    padDir = -1; gym.hist = []; gym.pin = null; kk = kkBase; camAim(true); }
+  // Leave: out through the gate from wherever he stands, the pieces left where they are (the lever puts them back)
+  function gymOut(){ if (!gym || !gym.in || gymBusy()) return; var q = gT(GY.Q.gate); burst(q[0], q[1], GYM_DECK + 1, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymLeave(); }
+  /* THE PANEL'S LINE: what the civilian says (with their face) or what the frame says. A frame message holds for its
+     time, then the panel goes back to the civilian's current line, so the nudge is always there to read again. */
+  function gymLine(txt, ms, civ){ if (!gPanel) return; gym.line = { txt:txt, civ:!!civ, until:ms ? performance.now() + ms : 0 };
+    put(gE.text, 'textContent', txt); cls(gE.say, 'civ', !!civ); cls(gE.say, 'fresh', false); void gE.say.offsetWidth; cls(gE.say, 'fresh', true); }
+  function gymLineTick(now){ var L = gym.line; if (L && L.until && now > L.until) gymIdle(); }
+  // what the panel says between messages: the civilian's current line, or once the vault is open, what it paid
+  function gymIdle(){ if (gym.solved) gymLine(gym.wonLine || 'Solved. The vault is open.', 0, false); else gymLine(GL.clue(gym.G, gym.resets), 0, true); }
+  // a tap steps toward where it lands: whichever way, across or up and down the screen, is the further (a tap kind: that tile)
+  var gTap0 = null;
+  function gymTapDown(e){ if (!gym || !gym.in) return; gTap0 = { x:e.clientX, y:e.clientY, t:performance.now() };
+    if (gym.inp === 'own' && gView.pointer){ var pt = groundAt(e.clientX, e.clientY); gView.pointer('down', e, pt); } }
+  function gymTapMove(e){ if (!gym || !gym.in) return; var pt = groundAt(e.clientX, e.clientY);
+    if (gym.inp === 'own' && gView.pointer) return gView.pointer('move', e, pt);
+    if (gym.inp === 'tap'){ var h = gymTile(pt[0], pt[1]); if (h !== gym.hover){ gym.hover = h; gHot = null; } } }
+  function gymTapUp(e){ if (!gym || !gym.in || !gTap0 || e.target.closest('button') || e.target.closest('[data-gp]')) return; var t0 = gTap0; gTap0 = null;
+    if (gym.inp === 'own' && gView.pointer) return gView.pointer('up', e, groundAt(e.clientX, e.clientY));
+    if (Math.hypot(e.clientX - t0.x, e.clientY - t0.y) > 12 || performance.now() - t0.t > 400) return;
+    if (gym.inp === 'tap'){ var pt = groundAt(e.clientX, e.clientY), ti = gymTile(pt[0], pt[1]); if (ti >= 0 && !gym.anim) gym.tapTile = ti; return; }
+    var r = box.getBoundingClientRect(), p = scr(g.x, g.y, pic.zAt(g.x, g.y) + GH * 0.4), dx = e.clientX - r.left - p[0] / dpr, dy = e.clientY - r.top - p[1] / dpr;
+    if (Math.hypot(dx, dy) < 6) return; gym.tap = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0); }
+  if (gym){ box.addEventListener('pointerdown', gymTapDown); box.addEventListener('pointermove', gymTapMove); box.addEventListener('pointerup', gymTapUp); }
+  /* THE GROUND UNDER A POINT OF THE SCREEN, on the room's deck: the picture's projection is linear, so three points of
+     it solve for the other two. In trail feet. */
+  function groundAt(cx, cy){ var r = box.getBoundingClientRect(), ax = ((cx - r.left) * dpr - ox) / kk, ay = ((cy - r.top) * dpr - oy) / kk, z = GYM_DECK;
+    var p0 = pic.pr(0, 0, z), px = pic.pr(1, 0, z), py = pic.pr(0, 1, z), a = px[0] - p0[0], b = py[0] - p0[0], c = px[1] - p0[1], d = py[1] - p0[1], det = a * d - b * c || 1e-9, u = ax - p0[0], v = ay - p0[1];
+    return [(u * d - b * v) / det, (a * v - c * u) / det]; }
+  /* THE ROOM ON THE SCREEN. gymArtRect: the room's box, floor to the top of the gate, in the picture's pixels. gymFree:
+     what the header and the panel leave free of the box, in device pixels. gymCam centres the one in the other, at
+     the trail's own zoom when the room fits and a step out when it does not (side margins go first). */
+  function gymArtRect(){ if (gArt) return gArt; var xs = [GY.x0, GY.x0 + GY.w], ys = [GY.y0, GY.y0 + GY.d], zs = [GYM_DECK, GYM_DECK + 3.4], A = { x0:1e9, y0:1e9, x1:-1e9, y1:-1e9 };
+    xs.forEach(function(x){ ys.forEach(function(y){ zs.forEach(function(z){ var p = pic.pr(x, y, z); A.x0 = Math.min(A.x0, p[0]); A.x1 = Math.max(A.x1, p[0]); A.y0 = Math.min(A.y0, p[1]); A.y1 = Math.max(A.y1, p[1]); }); }); });
+    return gArt = A; }
+  function gymFree(){ var r = box.getBoundingClientRect(), top = 0, hd = box.parentNode && box.parentNode.querySelector('.pp-hdr');
+    if (hd){ var hr = hd.getBoundingClientRect(); if (hr.height) top = Math.max(0, hr.bottom - r.top); }
+    var pr = gPanel.getBoundingClientRect(), side = pr.width < r.width * 0.6, gap = 10;
+    var F = side ? { x0:gap, y0:top + gap, x1:pr.left - r.left - gap, y1:r.height - gap } : { x0:gap, y0:top + gap, x1:r.width - gap, y1:pr.top - r.top - gap };
+    return { x0:F.x0 * dpr, y0:F.y0 * dpr, x1:F.x1 * dpr, y1:F.y1 * dpr, edge:side ? 0 : gap * dpr }; }
+  function gymCam(snap){ if (gym.pin){ kk = gym.pin.kk; ox = gym.pin.ox; oy = gym.pin.oy; return; }
+    var now = performance.now(); if (!gFree || now - gFreeAt > 500){ gFree = gymFree(); gFreeAt = now; }
+    var F = gFree, A = gymArtRect(), aw = A.x1 - A.x0, ah = A.y1 - A.y0, k = kkBase;
+    function fits(k2, f){ return aw * k2 <= f.x1 - f.x0 && ah * k2 <= f.y1 - f.y0; }
+    // a wide screen shows the trail from further off than a phone: there the room is brought up as far as it fits
+    var wide = { x0:F.x0 - F.edge, y0:F.y0, x1:F.x1 + F.edge, y1:F.y1 }, use = fits(k, F) ? F : fits(k, wide) ? wide : null;
+    if (use === F) while (k < kkBase * 3 && k < 8 && fits(k + 1, F)) k++;
+    if (!use){ while (k > 1 && !fits(k, F)) k--; use = F; }
+    if (k !== kk){ kk = k; snap = true; }
+    var tx = Math.round((use.x0 + use.x1) / 2 - (A.x0 + A.x1) / 2 * kk), ty = Math.round((use.y0 + use.y1) / 2 - (A.y0 + A.y1) / 2 * kk);
+    if (snap){ ox = tx; oy = ty; } else { ox += Math.round((tx - ox) * 0.2); oy += Math.round((ty - oy) * 0.2); if (Math.abs(tx - ox) < 3) ox = tx; if (Math.abs(ty - oy) < 3) oy = ty; } }
+  // the room's rect on the screen in CSS pixels (the board), for the checks and for keeping the trail's bubbles off it
+  function gymBoard(){ var A = gymArtRect(), r = box.getBoundingClientRect(); return { left:r.left + (A.x0 * kk + ox) / dpr, top:r.top + (A.y0 * kk + oy) / dpr, right:r.left + (A.x1 * kk + ox) / dpr, bottom:r.top + (A.y1 * kk + oy) / dpr }; }
+  /* WHAT A MOVE WOULD CHANGE, marked: a soft gold ring round every piece a step would move (a tap kind: every tile a
+     tap changes, white where the pointer is), and a gold ring round the vault, the goal. A ring is drawn on the floor
+     under everything that stands, and its near half again over it, so a barrel stands inside its ring. */
+  function gymHot(){ if (gHot && gHot.s === gym.s && gHot.h === gym.hover) return gHot; var G = gym.G, s = gym.s, hot = {}, over = {};
+    if (gView.hot) (gView.hot(s) || []).forEach(function(i){ hot[i] = 1; });
+    // a piece's first move in a step is from where it stands now (the rest are where a belt carries it on)
+    else if (gym.inp === 'step') for (var d = 0; d < 4; d++){ var seen = {}; GL.step(G, s, d).moves.forEach(function(m){ if (m[0] === 'me' || seen[m[0]]) return; seen[m[0]] = 1; hot[m[1]] = 1; }); }
+    else if (gym.inp === 'tap') GL.moves(G, s).forEach(function(i){ var r = GL.tap(G, s, i); if (r.s === s) return; hot[i] = 1;
+      if (i === gym.hover) r.moves.forEach(function(m){ over[m[1]] = 1; over[m[2]] = 1; }); });
+    return gHot = { s:s, h:gym.hover, own:!!gView.hot, hot:Object.keys(hot).map(Number), over:Object.keys(over).map(Number) }; }
+  function gymMarks(tsec, front){ if (gym.anim) return; var H = gymHot(), T = GY.T, pul = reduce ? 0.8 : 0.6 + 0.3 * Math.sin(tsec * 3.2), lw = Math.max(2, Math.round(kk * 1.2));
+    ctx.save(); ctx.lineWidth = lw;
+    function ringAt(x, y, rr, col, a){ var c0 = scr(x, y, GYM_DECK + 0.02), cx = scr(x + rr, y, GYM_DECK + 0.02), cy = scr(x, y + rr, GYM_DECK + 0.02);
+      ctx.strokeStyle = col; ctx.globalAlpha = a; ctx.beginPath(); ctx.ellipse(c0[0], c0[1], Math.abs(cx[0] - c0[0]) || 1, Math.abs(cy[1] - c0[1]) || 1, 0, front ? 0.15 : 0, front ? Math.PI - 0.15 : 7); ctx.stroke(); }
+    H.hot.forEach(function(i){ var q = gT(i); ringAt(q[0], q[1], T * 0.47, '#ffe066', pul * (H.over.length ? 0.5 : 0.85)); });
+    H.over.forEach(function(i){ var q = gT(i); ringAt(q[0], q[1], T * 0.47, '#ffffff', 0.95); });
+    if (!gym.solved){ var V = gT(GY.Q.chest); ringAt(V[0], V[1], T * (0.6 + 0.05 * (reduce ? 0 : Math.sin(tsec * 2))), '#ffd23a', 0.9); }
+    ctx.restore(); }
+  /* THE GATE READS AS A WAY IN, out on the trail: gold chevrons on the little path to it, running toward the gate. */
+  function gymDoor(tsec){ if (!GY.spur || GY.spur.length < 3) return; var T = 0.75, lw = Math.max(2, Math.round(kk * 1.3)), ex = GY.ax, ey = GY.y0 + GY.d;
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (var k = 0; k < 3; k++){ var a = ((reduce ? 0.5 : tsec * 0.7) + k / 3) % 1, y = ey + 0.5 + (1 - a) * 2.4, z = pic.zAt(ex, y) + 0.04, al = Math.sin(a * Math.PI);
+      var l = scr(ex - T, y + T * 0.7, z), m = scr(ex, y, z), r = scr(ex + T, y + T * 0.7, z);
+      [['rgba(40,26,8,0.6)', lw + Math.max(2, Math.round(kk))], ['#ffd23a', lw]].forEach(function(st){ ctx.globalAlpha = 0.2 + 0.8 * al; ctx.strokeStyle = st[0]; ctx.lineWidth = st[1]; ctx.beginPath(); ctx.moveTo(l[0], l[1]); ctx.lineTo(m[0], m[1]); ctx.lineTo(r[0], r[1]); ctx.stroke(); }); }
+    ctx.restore(); }
+  function civFrame(t){ var G3 = window.RTT_G3D; if (!G3 || !G3.frame || !gym) return null; var a = Math.round(Math.atan2(g.x - t.x, -(g.y - t.y)) / (Math.PI / 4)) * 45;
+    try{ return G3.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, gym.G.who.look), a, 'walk', 8); }catch(e){ return null; } }
   /* PUSHING THE CRATE: walking into its side along x shoves it along with him, as far as its track allows. Toward the
      rock it jams after a little; from the rock's side it goes all the way across and clears the gap. Left half
      pushed and walked away from, it slides back, so it can never be left stuck. */
@@ -1497,8 +2062,8 @@ function run(box, P, pic, api){
     var hr = ui.querySelector('[data-tlist] [data-id="' + prizeIt.id + '"]'); if (hr) hr.classList.add('near'); }
   function take(t, now){ take0(t, now); if (LOOT[t.k]) hudList(); }
   function take0(t, now){ var z = pic.zAt(t.x, t.y);
-    if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff'], 8); collect(t, now, 'coin'); floatText('+' + COIN_V, t.x, t.y, z + 2.2); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
-    else if (t.k === 'chest'){ t.done = true; t.openAt = now; pick('chest', t.id, 0); hudChests(); api.sfx && api.sfx('coin');
+    if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff'], 8); collect(t, now, 'coin'); if (!api.guestCoins) floatText('+' + COIN_V, t.x, t.y, z + 2.2); guestCoin(); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
+    else if (t.k === 'chest'){ t.done = true; t.openAt = now; var cs0 = items.filter(function(c){ return c.k === 'coin' && c.ch === t; }), luck = pick('chest', t.id, cs0.length * COIN_V); hudChests(); api.sfx && api.sfx('coin');
       // the lock pops as it starts to rattle; the lid lifts; light, a ring and a shower of gold as it comes open
       burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
       setTimeout(function(){ if (!alive) return; burst(t.x, t.y, z + 1.5, ['#ffd23a', '#fff3a8', '#ffffff', '#ffb43a'], 26, 1.5, 1.3); ring(t.x, t.y, '255,214,64'); }, (CH_SHAKE + 0.15) * 1000);
@@ -1506,7 +2071,7 @@ function run(box, P, pic, api){
       var cs = items.filter(function(c){ return c.k === 'coin' && c.ch === t; });
       cs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + CH_COINS + i * 0.05, dur:0.6 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
       setTimeout(function(){ if (alive) floatText(cs.length ? (cs.length * COIN_V) + ' coins!' : 'Treasure!', t.x, t.y, z + 3.2, '#ffd23a', true); }, CH_COINS * 1000);
-      sayLater(cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', 2600, 1.7); }
+      sayLater(luck ? luck + (cs.length ? ' Walk over the coins too.' : '') : cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', luck ? 4200 : 2600, 1.7); }
     else if (t.k === 'prize'){ t.done = true; t.openAt = now; PZ.solved = true; pick('pz', t.id, 0); api.sfx && api.sfx('coin');
       burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
       setTimeout(function(){ if (!alive) return; burst(t.x, t.y, z + 1.5, ['#ffd23a', '#fff3a8', '#ffffff', '#7cc8ff'], 30, 1.5, 1.3); ring(t.x, t.y, '120,200,255'); }, (CH_SHAKE + 0.15) * 1000);
@@ -1521,14 +2086,15 @@ function run(box, P, pic, api){
     else if (t.k === 'part'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#cfd8e2', '#ffffff', '#ffd23a'], 22, 1.3, 1.2); collect(t, now); floatText('Putter part', t.x, t.y, z + 3, '#cfe2ff', true); sayLater(pick('part', t.id, 0) || ('A putter part: ' + t.name + '.'), 3800, 1.1); }
     else if (t.k === 'brk'){ t.done = true; var k = brkKind(t), cols = k === 'ice' ? ['#a8dcf4', '#e2f6ff'] : k === 'neoncube' ? ['#2bf0ff', '#1a1430'] : k === 'pumpkin' ? ['#e8761f', '#d0621a'] : k === 'hay' ? ['#e2bc5c', '#c8a04a'] : k === 'pot' ? ['#b8643a', '#f0e0b0'] : k === 'trashcan' ? ['#8a929c', '#cfd5dc'] : ['#c08a4e', '#8a5a2a'];
       burst(t.x, t.y, z + 0.8, cols, 10, 2.4, 1.1); burst(t.x, t.y, z + 0.6, cols, 12); burst(t.x, t.y, z + 0.2, ['rgba(220,210,190,.7)'], 8, 1.8, 0.5); ring(t.x, t.y, '230,220,200');
-      if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += BRK_V; hudCoins(); pick('brk', t.id, BRK_V); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); floatText('+' + BRK_V, t.x, t.y, z + 2); } else pick('brk', t.id, 0); } }
+      if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += BRK_V; hudCoins(); pick('brk', t.id, BRK_V); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); if (!api.guestCoins) floatText('+' + BRK_V, t.x, t.y, z + 2); guestCoin(); } else pick('brk', t.id, 0); } }
 
   var last = performance.now(), lastSafe = 0, nearNpc = false;
+  function j7(t){ return Math.round(t.x * 7 + t.y * 13); }
   function step(){ if (!alive) return; requestAnimationFrame(step);
     var now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now; var tsec = now / 1000;
     // where the stick asks him to go, on the screen, made a direction on the ground: up the screen is further than it looks
-    var sx = 0, sy = 0;
-    if (!paused){
+    var sx = 0, sy = 0, inGym = !!(gym && gym.in);
+    if (!paused && !inGym){
       sx = stickV[0] + (keys.r ? 1 : 0) - (keys.l ? 1 : 0); sy = stickV[1] + (keys.d ? 1 : 0) - (keys.u ? 1 : 0); var m = Math.hypot(sx, sy); if (m > 1){ sx /= m; sy /= m; } }
     var o = P.poolAt(g.x, g.y), ice = o && o.k === 'ice', slow = o && o.k === 'slow' ? 0.5 : 1, mag = Math.hypot(sx, sy), sp2 = SPEED * slow;
     var tvx, tvy;
@@ -1536,7 +2102,8 @@ function run(box, P, pic, api){
     var acc = ice ? 2.2 : 26; g.vx += (tvx - g.vx) * Math.min(1, acc * dt); g.vy += (tvy - g.vy) * Math.min(1, acc * dt);
     if (PZ && PZ.crate && !paused) pushCrate(dt, now);
     var nx = g.x + g.vx * dt, ny = g.y + g.vy * dt, moved = 0;
-    if (!blocked(nx, ny)){ moved = Math.hypot(nx - g.x, ny - g.y); g.x = nx; g.y = ny; }
+    if (inGym){ g.vx = g.vy = 0; moved = paused ? 0 : gymTick(tsec, dt); gymLineTick(now); }
+    else if (!blocked(nx, ny)){ moved = Math.hypot(nx - g.x, ny - g.y); g.x = nx; g.y = ny; }
     else if (!blocked(nx, g.y)){ moved = Math.abs(nx - g.x); g.x = nx; g.vy *= 0.5; }
     else if (!blocked(g.x, ny)){ moved = Math.abs(ny - g.y); g.y = ny; g.vx *= 0.5; }
     else { g.vx = 0; g.vy = 0; }
@@ -1548,8 +2115,14 @@ function run(box, P, pic, api){
     var spd = Math.hypot(g.vx, g.vy); g.moving = moved > 0.002 && (g.moving ? spd > 0.25 : spd > 0.6);
     if (spd > 0.4){ var ang = Math.atan2(g.vx, -g.vy), cur = g.aimI == null ? null : g.aimI * Math.PI / 4, dd = cur == null ? 9 : Math.abs(Math.atan2(Math.sin(ang - cur), Math.cos(ang - cur)));
       if (dd > Math.PI / 8 + 0.2){ g.aimI = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8; var a8 = g.aimI * Math.PI / 4; g.face = [Math.sin(a8), -Math.cos(a8)]; } }
+    if (inGym) g.moving = !!gym.anim;
     g.dist += moved;
     if (moved > 0.5) hint.classList.add('gone');
+    // the gym's gate: walked into from the path, he is in, a tile at a time (and once out, he has to step away first)
+    if (gym && !gym.in && !paused){ if (gym.lock){ if (Math.hypot(g.x - GY.ax, g.y - GY.ay) > 1.8) gym.lock = false; }
+      else if (Math.abs(g.x - GY.ax) < 0.95 && g.y - GY.ay < 0.4 && g.vy < -0.3) gymEnter(tsec); }
+    // the civilian by the gate says their piece as he walks up: the plainer one once he has pulled the lever twice
+    if (gym && civIt && !gym.in){ var dcv = Math.hypot(civIt.x - g.x, civIt.y - g.y); if (dcv < 3.6 && !gym.nearCiv){ gym.nearCiv = true; say(GL.clue(gym.G, gym.resets), 7000, civIt); } else if (dcv > 5.5) gym.nearCiv = false; }
     // lava sends him back to the last safe ground
     var o2 = P.poolAt(g.x, g.y);
     if (o2 && o2.k === 'lava'){ g.x = g.safe[0]; g.y = g.safe[1]; g.vx = g.vy = 0; flash = 1; say('Too hot. Back you go.', 1800); }
@@ -1561,18 +2134,30 @@ function run(box, P, pic, api){
       else if (t.k === 'chest' && d < 2.6 && (lockOpen || !P.fence || !t.main)) take(t, tsec);
       else if (t.k === 'prize' && d < 2.6 && prizeShown()) take(t, tsec);
       // warmer: the first time you come within a few strides of a shut chest it says so, and its row on the list lights
-      if (t.k === 'chest' && !t.done && !t.hint && d < 9){ t.hint = true; if (!bubble || now > bubble.until) say(t.main && P.fence && !lockOpen ? 'Something glints behind that fence.' : 'Something glints nearby.', 2200);
+      if (t.k === 'chest' && !t.done && !t.hint && d < 9){ t.hint = true; if (!bubble || now > bubble.until) say(t.main && P.fence && !lockOpen ? sayPick(CHEST_SAY.fence, P.seed) : sayPick((CHEST_SAY[P.spec.theme] || []).concat(CHEST_SAY.any), P.seed + j7(t)), 2200);
         var hr = ui.querySelector('[data-tlist] [data-id="' + t.id + '"]'); if (hr) hr.classList.add('near'); }
       else if (t.k === 'brk' && d < 1.5 && spd > 1.5) take(t, tsec); }
     if (PZ) stepPuzzle(dt, now, tsec);
     // the local talks when he walks up, and on a puzzle trail he gives the clue
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
-    if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = api.lines ? api.lines(kitOf(npc.th).who) : []; if (PZ && !PZ.solved) ls = ls.concat([P.puzzle.clue]); say(ls.join(' '), PZ && !PZ.solved ? 8200 : 5200, npc); } else if (dn > 5) nearNpc = false; }
+    if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = [], gold = items.filter(function(t){ return t.k === 'golden' && !t.done; })[0], word = '';
+        // what he knows about this trail is said on its own, and then what he knows about the hole
+        if (P.secret) word = (api.secretSeen && api.secretSeen(P.secret.i) ? SECRET_DONE : SECRET_SAY[P.spec.theme] || SECRET_SAY.any);
+        else if (gold) word = sayPick(GOLD_SAY, P.seed);
+        ls = ls.concat(api.lines ? api.lines() : []);
+        // an unsolved puzzle's clue is what you need right now, so it comes first and the rest after
+        if (PZ && !PZ.solved){ say(P.puzzle.clue, 8200, npc); var rest = (word ? [word] : []).concat(ls); if (rest.length) npcLater(rest.join(' '), 8.4, npc); }
+        else if (word){ say(word, 3600, npc); if (ls.length) npcLater(ls.join(' '), 3.7, npc); } else if (ls.length) say(ls.join(' '), 5200, npc); } else if (dn > 5) nearNpc = false; }
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
       api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000; }); }
     if (gate && gate.asked && !gate.open && Math.abs(g.y - P.gate.y) > 7) gate.asked = false;
+    // the secret entrance: a word coming near it, and walking into its doorway offers the hole
+    if (P.secret && api.secret){ var dsx = Math.hypot(g.x - P.secret.x, g.y - P.secret.y);
+      if (dsx < 9 && !P.secret.hinted){ P.secret.hinted = true; if (!bubble || now > bubble.until) say(P.secret.hint, 2600); }
+      if (dsx < P.secret.r && !P.secret.inside){ P.secret.inside = true; paused = true; g.vx = g.vy = 0; api.secret(P.secret.i, function(){ paused = false; }); }
+      else if (dsx > P.secret.r + 1.5) P.secret.inside = false; }
     // the arch: the hole
     if (g.y < 1.2 && Math.abs(g.x - P.arch.x) < 3.6 && !ended){ ended = true; api.arrive(); return; }
     if (bubble && now > bubble.until){ bubble = null; bubEl.hidden = true; }
@@ -1584,14 +2169,16 @@ function run(box, P, pic, api){
     /* only the part of the picture on the screen is drawn: the whole of it, blown up kk times, is many times the
        screen on a phone, every frame. The camera is on whole device pixels and kk is whole, so it is the same picture */
     var cw = pic.cv.width, ch = pic.cv.height, sx0 = Math.max(0, Math.floor(-ox / kk)), sy0 = Math.max(0, Math.floor(-oy / kk)), sx1 = Math.min(cw, Math.ceil((W - ox) / kk)), sy1 = Math.min(ch, Math.ceil((H - oy) / kk));
-    if (!(ox <= 0 && oy <= 0 && ox + cw * kk >= W && oy + ch * kk >= H)){ ctx.fillStyle = pic.bg || kitOf(sp.theme).g[0]; ctx.fillRect(0, 0, W, H); }
+    if (!(ox <= 0 && oy <= 0 && ox + cw * kk >= W && oy + ch * kk >= H)){ ctx.fillStyle = pic.bg || kitOf(sp.kitAs || sp.theme).g[0]; ctx.fillRect(0, 0, W, H); }
     if (sx1 > sx0 && sy1 > sy0) ctx.drawImage(pic.cv, sx0, sy0, sx1 - sx0, sy1 - sy0, ox + sx0 * kk, oy + sy0 * kk, (sx1 - sx0) * kk, (sy1 - sy0) * kk);
     if (PZ) drawPzGround(tsec);
+    if (gym){ gView.ground(tsec); if (gym.in){ if (gym.marks) gymMarks(tsec, false); } else gymDoor(tsec); }
     // everything that moves, far to near
     var ds = [];
-    items.forEach(function(t){ if (t.k === 'host') return; if (t.k === 'coin' && !t.out) return; if (t.done && t.k !== 'chest' && t.k !== 'prize' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; if (t.k === 'prize' && !prizeShown()) return; ds.push(t); });
+    items.forEach(function(t){ if (t.k === 'host') return; if (t.k === 'coin' && !t.out) return; if (t.done && t.k !== 'chest' && t.k !== 'prize' && t.k !== 'brk' && t.k !== 'vault') return; if (t.k === 'brk' && t.done) return; if (t.k === 'prize' && !prizeShown()) return; ds.push(t); });
     if (P.pen && P.pen.gated) ds.push({ k:'pzgate', x:P.pen.x, y:P.pen.y + P.pen.r });
     if (PZ && PZ.crate) ds.push({ k:'crate', x:PZ.crate.x, y:PZ.crate.y });
+    if (gym){ gView.things(ds, tsec); var lq = gT(GY.Q.lever); ds.push({ k:'glever', x:lq[0], y:lq[1] }); }
     if (P.gate) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
@@ -1601,12 +2188,16 @@ function run(box, P, pic, api){
     ds.sort(function(a, c){ return a.y - c.y; });
     for (var i = 0; i < ds.length; i++){ var t = ds[i];
       if (t.k === 'me') drawMe(tsec);
+      else if (t.kd) t.kd(t, tsec);
+      else if (t.k === 'glever') drawSprite(SPR.lever[tsec - gym.leverAt < 0.7 ? 1 : 0], t.x, t.y, GYM_DECK);
+      else if (t.k === 'vault') drawChest(t, tsec, SPR.vault);
+      else if (t.k === 'civ') drawFigure(civFrame(t), t.x, t.y, false, 'civ');
       else if (t.k === 'plant') drawPlant(t.q);
       else if (t.k === 'coin') drawCoin(t, tsec);
       else if (LOOT[t.k] && t.k !== 'chest' && t.k !== 'prize') drawLoot(t, tsec);
       else if (t.k === 'chest' || t.k === 'prize') drawChest(t, tsec);
       else if (t.k === 'fire') drawFire(t, tsec);
-      else if (t.k === 'pzgate'){ var gs = pzGateOpen() ? SPR.lock1 : SPR.lock0; if (gs) drawSprite(gs, t.x, t.y, pic.zAt(t.x, t.y)); }
+      else if (t.k === 'pzgate'){ var gs = pzGateOpen() ? SPR.pen1 : SPR.pen0; if (gs) drawSprite(gs.s, gs.x, gs.y, pic.zAt(gs.x, gs.y)); }
       else if (t.k === 'crate') drawSprite(SPR.crate, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
@@ -1615,7 +2206,8 @@ function run(box, P, pic, api){
         if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
           ctx.fillStyle = '#ffd24a'; ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] - 6 * es), 2 * es, 7 * es); ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] + 4 * es), 2 * es, 2 * es); } }
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
-      else if (t.k === 'lock'){ var ls = lockOpen ? SPR.lock1 : SPR.lock0; if (ls){ ctx.save(); drawSprite(ls, t.x, t.y, pic.zAt(t.x, t.y)); ctx.restore(); } } }
+      else if (t.k === 'lock'){ var ls = lockOpen ? SPR.fence1 : SPR.fence0; if (ls){ ctx.save(); drawSprite(ls.s, ls.x, ls.y, pic.zAt(ls.x, ls.y)); ctx.restore(); } } }
+    if (gym && gym.in){ if (gym.marks) gymMarks(tsec, true); if (gView.over) gView.over(tsec); }
     lifeAir(tsec);
     if (cloud) drawClouds(tsec);
     // bits that fly
@@ -1626,11 +2218,24 @@ function run(box, P, pic, api){
     drawFx(tsec);
     if (flash > 0){ ctx.fillStyle = 'rgba(255,120,40,' + (flash * 0.5).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); flash = Math.max(0, flash - dt * 2); }
     waypoint();
-    /* a bubble stays over WHOEVER SAID IT. A local's line is pinned to the local for as long as it shows, so walking
-       off never drags it along over the golfer; anything the walk says itself sits over the golfer. */
-    if (bubble){ var sp0 = bubble.who || g, bp = scr(sp0.x, sp0.y, pic.zAt(sp0.x, sp0.y) + GH + 0.6);
-      put(bubEl.style, 'left', (bp[0] / dpr) + 'px'); put(bubEl.style, 'top', (bp[1] / dpr) + 'px'); }
+    // the bubble, over whoever said it (bubPlace); in a gym the panel has it instead
+    if (bubble && !(gym && gym.in)) bubPlace();
   }
+  /* A BUBBLE STAYS OVER WHOEVER SAID IT. A local's line is pinned to the local for as long as it shows, so walking
+     off never drags it along over the golfer; anything the walk says itself sits over the golfer. And on a trail with a
+     gym it never sits on the gym: the bubble goes above the speaker, below them, or to either side, whichever first
+     keeps it off the room and its gate, and always inside the screen (its whole width, never squeezed at an edge). */
+  function bubPlace(){ var sp0 = bubble.who || g, z0 = pic.zAt(sp0.x, sp0.y), hp = scr(sp0.x, sp0.y, z0 + GH + 0.6);
+    if (!gym){ put(bubEl.style, 'left', (hp[0] / dpr) + 'px'); put(bubEl.style, 'top', (hp[1] / dpr) + 'px'); return; }
+    put(bubEl.style, 'transform', 'none'); put(bubEl.style, 'width', 'max-content');
+    var fp = scr(sp0.x, sp0.y, z0), Wc = W / dpr, Hc = H / dpr, m = 8, x = hp[0] / dpr, y = hp[1] / dpr, fx = fp[0] / dpr, fy = fp[1] / dpr, bw = bubEl.offsetWidth, bh = bubEl.offsetHeight;
+    var A = gymArtRect(), R0 = { l:(A.x0 * kk + ox) / dpr - 6, t:(A.y0 * kk + oy) / dpr - 6, r:(A.x1 * kk + ox) / dpr + 6, b:(A.y1 * kk + oy) / dpr + 6 };
+    var cand = [[x - bw / 2, y - bh - 4], [fx - bw / 2, fy + 10], [x + 18, (y + fy) / 2 - bh / 2], [x - 18 - bw, (y + fy) / 2 - bh / 2]], hit = function(c){ return c[0] < R0.r && c[0] + bw > R0.l && c[1] < R0.b && c[1] + bh > R0.t; };
+    var inside = function(c){ return c[0] >= m && c[1] >= m && c[0] + bw <= Wc - m && c[1] + bh <= Hc - m; }, at = null;
+    for (var i = 0; i < cand.length && !at; i++) if (!hit(cand[i]) && inside(cand[i])) at = cand[i];
+    for (var j = 0; j < cand.length && !at; j++) if (!hit(cand[j])) at = cand[j];
+    at = at || cand[1]; at = [Math.max(m, Math.min(Wc - m - bw, at[0])), Math.max(m, Math.min(Hc - m - bh, at[1]))];
+    put(bubEl.style, 'left', Math.round(at[0]) + 'px'); put(bubEl.style, 'top', Math.round(at[1]) + 'px'); }
   /* the console look's last touch, as on a hole: the low sun washing in from the upper left (none at night) and a
      vignette, drawn over the scene and under what flies to the counters. Built once per screen size. */
   var fxScr = null;
@@ -1669,12 +2274,15 @@ function run(box, P, pic, api){
   function put(o, k, v){ if (o[k] !== v) o[k] = v; }
   function cls(el, c, on){ if (el.classList.contains(c) !== on) el.classList.toggle(c, on); }
   function waypoint(){ var tx, ty, label;
+    if (gym && gym.in){ cls(way, 'on', false); cls(pin, 'on', false); return; }   // in a gym the gym is the place: no arrow
     /* THE ARROW LEADS ALONG THE WALK, not across country. A route that doglegs or doubles back puts the arch over
        the trees, so while there is more than a bend to go the arrow points at the path some way ahead of him, and
        the distance it gives is what is left to walk. Near the end, or at a shut door, it is the place itself. */
     var shut = gate && !gate.open && g.y > P.gate.y, goal = shut ? [P.gate.x, P.gate.y] : [P.arch.x, -0.5], sg0 = along(g.x, g.y), sEnd = shut && P.gate.s != null ? P.gate.s : goalS, left = Math.max(0, sEnd - sg0);
     var via = left > 30 && Math.hypot(goal[0] - g.x, goal[1] - g.y) < left * 0.8, tgt = via ? pathAtS(sg0 + 24) : goal, p = scr(tgt[0], tgt[1], pic.zAt(tgt[0], tgt[1]) + (via ? 3 : shut ? 7 : 9.5));
     tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = !via && tx > M && tx < Wc - M && ty > M + 110 && ty < Hc - M - 70;
+    // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
+    if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
     label = shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
@@ -1686,12 +2294,1254 @@ function run(box, P, pic, api){
   requestAnimationFrame(step);
   var ctl = {
     stop:function(){ alive = false; if (dlg && dlg.kill) dlg.kill(); window.removeEventListener('resize', onRs); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
-      window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
+      window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true);
+      if (gym){ box.removeEventListener('pointerdown', gymTapDown); box.removeEventListener('pointermove', gymTapMove); box.removeEventListener('pointerup', gymTapUp); if (gPanel) gPanel.remove(); } },
     // for the checks: where he is, and a way to hold the stick
-    pos:function(){ return [g.x, g.y]; }, fx:function(){ return fxs.length; }, stick:function(vx, vy){ stickV = [vx, vy]; },
-    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, blocked:function(x, y){ return blocked(x, y); }, pz:function(){ return PZ; }, bubble:function(){ return bubble ? bubble.txt : ''; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
+    // the locked gate's sprite measured on screen, in feet, against the box it was built in (a half size one is the bug it fixes)
+    lockFt:function(){ var L = SPR.fence0 || SPR.pen0, F = P.fence || P.pen; if (!L || !F) return null; var a = scr(0, 0, 0), b = scr(1, 0, 0), ppf = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      return { ft:L.s.cv.width * kk / ppf, box:3 * fenceGap(F).w / 2 + 1.2 + 2, gap:fenceGap(F).w }; },
+    pos:function(){ return [g.x, g.y]; }, warp:function(x, y){ g.x = x; g.y = y; g.vx = g.vy = 0; }, fx:function(){ return fxs.length; }, stick:function(vx, vy){ stickV = [vx, vy]; },
+    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, blocked:function(x, y){ return blocked(x, y); }, pz:function(){ return PZ; }, gym:function(){ return gym; }, gymStep:function(d){ if (gym && gym.in && !gym.anim) gymGo(d, performance.now() / 1000); }, gymBusy:function(){ return !!(gym && gym.anim); }, gymXY:function(i){ return gT(i); },
+    // the frame, for the checks: a tap on a tile, Undo, Restart, Leave, what the panel says, and where everything is on the screen
+    gymTap:function(i){ if (gym && gym.in && !gym.anim) gymApply(GL.tap(gym.G, gym.s, i), performance.now() / 1000); }, gymUndo:function(){ return gymUndo(); },
+    gymRestart:function(){ if (gym && gym.in && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); }, gymLeave:function(){ gymOut(); },
+    gymSays:function(){ return gym && gym.line ? gym.line.txt : ''; }, gymHot:function(){ return gym && gym.in ? gymHot() : null; },
+    gymRects:function(){ if (!gym) return null; var R = function(el){ if (!el || el.hidden || !el.offsetParent) return null; var r = el.getBoundingClientRect(); return { left:r.left, top:r.top, right:r.right, bottom:r.bottom }; };
+      return { board:gymBoard(), panel:R(gPanel), goal:R(gE.goal), say:R(gE.say), controls:R(gE.ctl), pad:R(gE.pad), buttons:[gE.undo, gE.restart, gE.leave].map(R), stick:R(stick), bubble:R(bubEl), kk:kk, kkBase:kkBase }; },
+    // a camera held where a check puts it, and the highlights off, so a room's pixels can be compared with an older build's
+    gymPin:function(o){ if (gym){ gym.pin = o && o.ox != null ? { ox:o.ox, oy:o.oy, kk:o.kk } : null; gym.marks = !(o && o.marks === false); } }, bubble:function(){ return bubble ? bubble.txt : ''; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }
 
+/* EACH WORLD'S STOPS ON THE WALK (golf/putt/stops/, pasted between these lines by scripts): a KIT['world~stop'] a stop, its
+   landmarks' BUILD and LMSIZE, and its life (LIFE_AS). land.js's STOPS names the stops; a stop with no kit here walks in its world's. */
+// @@WORLD STOPS BEGIN@@
+/* ---- The Clubhouse's stops on the walk, the same places its holes stand in (land.js): the first tee with the pro shop and
+   the car park, the practice range, the woods out on the course, the mill creek, and home to the big clubhouse. */
+KIT['clubhouse~tee'] = kitFrom(KIT.clubhouse, { nlm:4, dens:0.75, lm:['cluShop', 'cluCars', 'shed', 'green', 'cluCars', 'bench'] });
+KIT['clubhouse~range'] = kitFrom(KIT.clubhouse, { g:['#86bb62', '#90c46c', '#7cb05a', 0.18], dens:0.2, haz:null, nlm:4, low:['bush', 'bushf', 'bush'], tree:['broad', 'broad', 'broad', 'pine'],
+  lm:['cluBays', 'cluTarget', 'cluYard', 'cluTarget', 'cluBunker', 'cluBays'] });
+KIT['clubhouse~woods'] = kitFrom(KIT.clubhouse, { g:['#4f8a3e', '#5a9646', '#467e36', 0.2], mow:false, gpat:'cluRough', p:['#74777c', '#7e8186', '#6a6d72'], tree:['pine', 'broad', 'pine', 'broad'],
+  leaves:['#2a7438', '#358544', '#215f30'], low:['bush', 'bush', 'rock', 'fern'], dens:1.4, nlm:4, lm:['cluCart', 'cluHut', 'cluGate', 'cluBunker', 'bench'] });
+KIT['clubhouse~mill'] = kitFrom(KIT.clubhouse, { g:['#78ae56', '#84ba60', '#6ca24c', 0.2], mow:false, gpat:'cluMeadow', p:['#cfc2a2', '#dcd0b2', '#bcae8c'], tree:['broad', 'broad', 'broad'],
+  leaves:['#5f9e3e', '#74b04a', '#4e8a34'], low:['bushf', 'bush', 'rock', 'bushf'], haz:'water', hazC:['#3a82b8', '#7cc0e4'], waterC:['#3a82b8', '#7cc0e4'], nlm:3, lm:['cluMill', 'cluWindmill', 'bench', 'cluMill'] });
+KIT['clubhouse~home'] = kitFrom(KIT.clubhouse, { g:['#6eac54', '#78b85e', '#64a24c', 0.18], p:['#e2d8c0', '#ece4d0', '#c8bca0'], paved:true, hazC:['#3a8ec4', '#7cc4e8'], waterC:['#3a8ec4', '#7cc4e8'],
+  nlm:5, lm:['cluClub', 'cluStand', 'cluTerrace', 'cluFlags', 'lamps', 'cluStand'] });
+LIFE_AS['clubhouse~range'] = { fly:['crow', 3], mote:[['butter', 6]] };
+LIFE_AS['clubhouse~woods'] = { fly:['song', 6], mote:[['leaf', 12], ['butter', 4]] };
+LIFE_AS['clubhouse~mill'] = { fly:['song', 3], mote:[['butter', 18], ['petal', 8]] };
+LIFE_AS['clubhouse~home'] = { fly:['gull', 3], mote:[['petal', 12], ['butter', 6]] };
+// the woods' floor and the mill's meadow: smooth patches of green, never a speckle
+GPAT.cluRough = function(c){ var a = vn(c.ti * 0.04, c.tj * 0.04, 71), b = vn(c.ti * 0.12, c.tj * 0.12, 72); return a > 0.68 ? '#5e9a48' : a < 0.3 ? '#447a34' : b > 0.66 ? '#56923f' : '#4f8a3e'; };
+GPAT.cluMeadow = function(c){ var a = vn(c.ti * 0.035, c.tj * 0.035, 73), b = vn(c.ti * 0.14, c.tj * 0.14, 74); return a > 0.7 && b > 0.55 ? '#94c86c' : a > 0.62 ? '#84ba60' : a < 0.3 ? '#6ca24c' : '#78ae56'; };
+
+// a car seen in a bay: body, cabin, windows, wheels, nose toward +y
+function cluCarPx(dx, dy, tt, col){ if (Math.abs(dx) > 0.95 || Math.abs(dy) > 1.9) return null;
+  if (tt < 0.42) return Math.abs(Math.abs(dy) - 1.2) < 0.4 && Math.abs(dx) > 0.7 ? '#1e1e22' : (tt > 0.3 ? '#2a2a30' : null);
+  if (tt < 1.0){ if (dy > 1.75 && Math.abs(dx) > 0.55 && tt > 0.6 && tt < 0.8) return '#fff3c4'; return col; }
+  if (tt < 1.7 && dy > -1.3 && dy < 0.75 && Math.abs(dx) < 0.85 - (tt - 1) * 0.3){ if (tt > 1.58) return col; return Math.abs(dx) > 0.7 - (tt - 1) * 0.3 || dy > 0.6 || dy < -1.15 ? '#9fc8e0' : '#3a4a5a'; }
+  return null; }
+var CLU_CARS = ['#d8433a', '#3a6ec8', '#f4f4f0', '#e8b83a', '#9aa0a8', '#2f8a5a'];
+// the car park by the clubhouse: tarmac, white bays, a kerb, three cars in
+BUILD.cluCars = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2, hd = t.d / 2;
+  for (var k = 0; k < 3; k++){ if (hash(i, k, 7) < 0.25) continue; var c = cluCarPx((dx - (k - 1) * 4.5) / 1.6, (dy + 0.8) / 1.6 * (k % 2 ? 1 : -1), tt / 1.6, CLU_CARS[(i + k * 2) % 6]); if (c) return c; }
+  if (tt > 0.12) return null; if (Math.abs(dx) > hw - 0.25 || Math.abs(dy) > hd - 0.25) return '#c8c4b8';
+  if (Math.abs(((dx + 6.75) % 4.5 + 4.5) % 4.5) < 0.15 && dy < hd - 2) return '#f2f2ec'; return vn(dx * 0.6, dy * 0.6, i) > 0.6 ? '#5f6268' : '#55585e'; }, 0.125); };
+// the pro shop: cream walls, a slate roof, a striped awning over its window
+BUILD.cluShop = function(B, t, i){ gable(B, t.x, t.y, t.w - 1, t.d - 1, 5, 2.6, function(dx, dy, tt){ return tt < 0.5 ? '#b8ae98' : (tt * 1.6 | 0) % 2 ? '#efe6d2' : '#e6dcc6'; },
+  function(dx, dy, tt){ return (tt * 2 | 0) % 2 ? '#56565e' : '#4a4a52'; }, '#7a3a2a');
+  box(B, t.x, t.y + (t.d - 1) / 2 + 0.7, t.w - 1.5, 1.4, 4.6, function(dx, dy, tt){ if (Math.abs(tt - (4.3 - (dy + 0.7) * 0.8)) > 0.14) return null; return Math.floor((dx + 9) * 1.2) % 2 ? '#d8433a' : '#f8f4ec'; }, 0.125); };
+// the covered hitting bays: a green roof on posts, a low back wall, a mat and a basket of balls in each bay
+BUILD.cluBays = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2, hd = t.d / 2, roof = 4.4 + (hd - dy) * 0.18;
+  if (tt > roof && tt < roof + 0.35 && Math.abs(dx) < hw) return Math.abs(dy) > hd - 0.3 ? '#1f4a2c' : (Math.floor(dx * 0.8 + 20) % 2 ? '#2f6b3e' : '#2a6038');
+  var bay = (dx + hw) / (t.w / 4), bf = bay - Math.floor(bay);
+  if (dy < -hd + 0.4 && tt < 1.6) return (tt * 3 | 0) % 2 ? '#e8e2d0' : '#d8d0bc';
+  if ((bf < 0.04 || bf > 0.96 || Math.abs(dx) > hw - 0.25) && Math.abs(dy) > hd - 0.4 && tt < roof) return '#e8e2d0';
+  if (bf > 0.62 && bf < 0.85 && Math.abs(dy + 0.6) < 0.4 && tt < 0.8) return tt > 0.6 ? '#ffffff' : '#2a5a8a';
+  if (tt < 0.12) return bf > 0.2 && bf < 0.55 && Math.abs(dy) < 1 ? '#3f8a4a' : '#c8c0aa'; return null; }); };
+// a target green on the range: a round of short grass, a flag, the balls that landed near it
+BUILD.cluTarget = function(B, t, i){ var col = ['#e53935', '#f1d04a', '#1e88e5'][i % 3]; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx / (t.w / 2), dy / (t.d / 2));
+  if (Math.hypot(dx - 0.6, dy + 0.4) < 0.1 && tt < 5.6) return '#ffffff'; if (dx > 0.6 && dx < 2.4 && Math.abs(dy + 0.4) < 0.06 && tt > 4.3 && tt < 5.5) return col;
+  if (tt > 0.3 || r > 1) return null; if (hash(Math.floor(dx * 4), Math.floor(dy * 4), i) < 0.02) return '#ffffff'; return r > 0.9 ? '#4f9a48' : vn(dx * 0.8, dy * 0.8, i) > 0.6 ? '#66b45e' : '#5fae58'; }, 0.125); };
+// a distance board on two white legs, in its target's colour
+BUILD.cluYard = function(B, t, i){ var col = ['#e53935', '#f1d04a', '#1e88e5'][i % 3]; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.25) return null;
+  if (tt < 3) return Math.abs(Math.abs(dx) - 0.9) < 0.14 ? '#f4f4f4' : null; if (tt > 4.9 || Math.abs(dx) > 1.4) return null; if (Math.abs(dx) > 1.25 || tt < 3.15 || tt > 4.75) return '#f4f4f4';
+  return Math.abs(tt - 3.95) < 0.35 && Math.abs(dx) < 0.8 && (Math.floor((dx + 2) * 4) % 3) ? '#f4f4f4' : col; }, 0.125); };
+// a bunker: raked sand sunk in a lip of grass, the rake left lying in it
+BUILD.cluBunker = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, 1, function(dx, dy, tt){ var r = Math.hypot(dx / (t.w / 2), dy / (t.d / 2)) + (vn(dx * 0.5, dy * 0.5, i) - 0.5) * 0.2; if (r > 1) return null;
+  if (tt > 0.3 && tt < 0.42 && Math.abs(dy - 0.4) < 0.08 && Math.abs(dx - 0.5) < 1.6) return '#c8402e';
+  if (tt > 0.22) return null; if (r > 0.88) return '#5a9646'; return Math.sin(dy * 5 + vn(dx * 0.3, 1, i) * 6) > 0.8 ? '#dcc68a' : '#ecd9a0'; }, 0.125); };
+// a golf cart with its white canopy and a bag strapped on behind
+BUILD.cluCart = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (tt < 0.45) return Math.abs(Math.abs(dx) - 1.2) < 0.32 && Math.abs(Math.abs(dy) - 0.95) < 0.15 ? '#1e1e22' : null;
+  if (Math.abs(dy) > 1.05 || Math.abs(dx) > 1.9) return null; if (tt > 3.1 && tt < 3.35) return '#f4f4f0';
+  if (tt > 1 && tt < 3.1 && Math.abs(Math.abs(dx) - 1.5) < 0.08 && Math.abs(Math.abs(dy) - 0.9) < 0.1) return '#9aa0a8';
+  if (tt < 1) return '#f4f4f0'; if (tt < 1.6 && dx < 0.6 && dx > -0.8) return dx < -0.55 ? '#2a5a3a' : (tt < 1.1 ? '#f4f4f0' : null);
+  if (dx < -1.3 && tt < 2.4 && Math.abs(dy) < 0.5) return tt > 2.15 ? '#e8b83a' : '#c8402e'; return null; }, 0.125); };
+// the halfway hut: a timber kiosk, a red roof, a green and white awning over the hatch
+BUILD.cluHut = function(B, t, i){ gable(B, t.x, t.y, t.w - 1, t.d - 1, 4.4, 2.2, function(dx, dy, tt){ return (Math.floor(dx * 1.4 + 20) % 2) ? '#a8784a' : '#986a40'; }, function(dx, dy, tt){ return (tt * 2 | 0) % 2 ? '#a8442e' : '#943a26'; }, '#3a2a1e');
+  box(B, t.x, t.y + (t.d - 1) / 2 + 0.6, t.w - 1.6, 1.2, 4.2, function(dx, dy, tt){ if (Math.abs(tt - (3.9 - (dy + 0.6) * 0.7)) > 0.14) return null; return Math.floor((dx + 9) * 1.2) % 2 ? '#2f7d3e' : '#f8f4ec'; }, 0.125); };
+// a white rail fence along the woods with a five bar gate standing open in it
+BUILD.cluGate = function(B, t, i){ box(B, t.x, t.y, t.w, t.d + 2, t.h, function(dx, dy, tt){ var hw = t.w / 2;
+  if (Math.abs(dx) < 1.4){ var u = dx + 1.3, v = dy, a = 0.9, al = u * Math.cos(a) - v * Math.sin(a), ac = Math.abs(u * Math.sin(a) + v * Math.cos(a));   // the gate, swung open
+    if (ac < 0.1 && al > 0 && al < 2.5 && tt < 2.2 && (Math.abs(tt - 0.5) < 0.1 || Math.abs(tt - 1.2) < 0.1 || Math.abs(tt - 1.9) < 0.1 || al > 2.4 || Math.abs(tt - (0.5 + al * 0.55)) < 0.12)) return '#f4f4f0';
+    return Math.abs(Math.abs(dx) - 1.3) < 0.16 && Math.abs(dy) < 0.16 && tt < 2.6 ? '#dcdcd4' : null; }
+  if (Math.abs(dy) > 0.12) return null; if (((dx + hw) % 2.2 + 2.2) % 2.2 < 0.25 && tt < 2.4) return '#dcdcd4'; return Math.abs(tt - 1) < 0.12 || Math.abs(tt - 2) < 0.12 ? '#f4f4f0' : null; }, 0.125); };
+// the water mill: stone walls, a red tile roof, the wheel down in its mill race
+BUILD.cluMill = function(B, t, i){ var W = t.w - 3.4, cx = t.x - 1.4;
+  gable(B, cx, t.y, W, t.d - 1, 5.8, 3, function(dx, dy, tt){ var row = Math.floor(tt * 1.4), col = Math.floor(dx * 0.8 + (row % 2) * 0.5); if ((tt * 1.4) % 1 < 0.12) return '#8e877a'; return hash(col, row, i + 7) < 0.3 ? '#bfb6a4' : '#cfc6b2'; },
+    function(dx, dy, tt){ return (tt * 2.4 | 0) % 2 ? '#b8482e' : '#a63e28'; }, '#4a2e1c');
+  var wx = cx + W / 2 + 0.9, R = 3.2; box(B, wx, t.y + 0.5, 2, t.d, R * 2 - 0.4, function(dx, dy, tt){ var dz = tt - R + 0.6, r = Math.hypot(dy, dz);   // the wheel turns side on, in the race
+    if (tt < 0.2) return Math.abs(dy) < t.d / 2 - 0.2 && Math.abs(dx) < 0.9 ? (vn(dy, dx, 3) > 0.5 ? '#7cc0e4' : '#3a82b8') : null;
+    if (Math.abs(dx) > 0.5 || r > R) return null; if (r < 0.4) return '#3a2a1e'; if (r > R - 0.35) return Math.abs(dx) > 0.3 ? '#5a3a24' : null;
+    var a = Math.atan2(dz, dy), sp = ((a / (Math.PI / 6)) % 1 + 1) % 1; if (r > R - 1 && sp < 0.2) return '#7a5234'; return Math.abs(dx) > 0.3 && (sp < 0.07 || sp > 0.93) ? '#6a4a2e' : null; }, 0.125); };
+// the windmill on its hill: a white tapering tower, a red cap, four lattice sails facing the camera
+BUILD.cluWindmill = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), H = 10;
+  if (tt < H){ var R0 = 2.6 - tt * 0.1; if (r > R0) return null; if (dy > R0 - 0.3 && Math.abs(dx) < 0.7 && tt < 2.2) return '#4a2e1c'; if (dy > R0 - 0.3 && Math.abs(dx) < 0.45 && Math.abs(tt - 6) < 0.5) return '#9fd0e8'; return (tt * 1.6 | 0) % 2 ? '#f6f3ea' : '#e8e2d2'; }
+  if (tt < H + 2 && Math.hypot(dx, dy, (tt - H) * 1.1) < 2.1) return Math.floor(dx * 1.5 + 9) % 2 ? '#8a3a2a' : '#7a3222';
+  if (Math.abs(dy - 2.2) > 0.15) return null; var uz = tt - H - 0.9, rr = Math.hypot(dx, uz); if (rr < 0.35) return '#3a2a1e'; if (rr > 5.6) return null;
+  var an = Math.atan2(uz, dx) - 0.4 - i, k = Math.round(an / (Math.PI / 2)), da = an - k * Math.PI / 2, along = rr * Math.cos(da), across = rr * Math.sin(da);
+  if (Math.abs(across) < 0.14) return '#5a3a24'; if (along > 1 && across > 0 && across < 1){ return (along * 1.6) % 1 < 0.15 || (across * 3) % 1 < 0.25 ? '#6a4a2e' : '#f4efe2'; } return null; }, 0.125); };
+// the big clubhouse at the eighteenth: two floors of windows, a green roof, a clock in the gable, the club flag
+BUILD.cluClub = function(B, t, i){ var W = t.w - 1, D = t.d - 1;
+  gable(B, t.x, t.y, W, D, 7.4, 3.2, function(dx, dy, tt){ var wq = ((dx + W / 2) % 2.2 + 2.2) % 2.2;
+    if (dy > D / 2 - 0.3 && wq > 0.6 && wq < 1.6 && Math.abs(dx) > 1.4 && ((tt > 1.6 && tt < 3.6) || (tt > 5 && tt < 6.6))) return Math.abs(wq - 1.1) < 0.08 || Math.abs(tt - 2.6) < 0.08 ? '#ffffff' : '#9fd0e8';
+    if (Math.abs(tt - 4.4) < 0.15) return '#1f4a2c'; return tt < 0.5 ? '#cfc8b6' : (tt * 1.6 | 0) % 2 ? '#f8f5ee' : '#ece7da'; },
+    function(dx, dy, tt){ if (Math.abs(dx) < 1.4 && dy > 0 && tt < 9.4){ var cr = Math.hypot(dx, tt - 8.6); if (cr < 0.75) return cr < 0.6 ? '#fbf6e6' : '#1f4a2c'; return '#f4f1ea'; } return (tt * 2 | 0) % 2 ? '#2f6b3e' : '#2a6038'; }, '#2f5d3a');
+  box(B, t.x + W / 2 + 0.2, t.y + D / 2, 2.2, 0.6, t.h, function(dx, dy, tt){ if (Math.hypot(dx + 0.9, dy) < 0.12 && tt < t.h - 0.1) return '#f4f4f4'; if (dx > -0.85 && dx < 1 && Math.abs(dy) < 0.06 && tt > t.h - 1.6 && tt < t.h - 0.3) return tt < t.h - 0.95 ? '#f1d04a' : '#2f6b3e'; return null; }, 0.125); };
+// a grandstand, back row highest, every seat taken, the club's banner along the top
+BUILD.cluStand = function(B, t, i){ var CR = ['#e53935', '#1e88e5', '#ffffff', '#ffd23f', '#43a047', '#ff8a3c', '#1d2a44', '#f48fb1'], rows = 5, rh = 1;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2, hd = t.d / 2;
+    if (dy < -hd + 0.4 && tt > rows * rh + 1 && tt < rows * rh + 2.2) return Math.abs(dx) < hw - 0.3 ? (Math.floor(dx * 0.6 + 9) % 2 ? '#2f6b3e' : '#f4f1ea') : null;
+    if (Math.abs(Math.abs(dx) - hw + 0.2) < 0.2 && dy < -hd + 0.4 && tt < rows * rh + 2.2) return '#1d2a44';
+    var row = Math.floor((hd - dy) / (t.d / rows)), top = (row + 1) * rh; if (row < 0 || row >= rows) return null;
+    if (tt < top - 0.15) return Math.abs(dx) > hw - 0.3 ? '#1d2a44' : '#2a3a5a';
+    if (tt < top + 0.9 && ((Math.floor(dx * 1.4 + 30) + row) % 3) !== 0 && Math.abs(dx) < hw - 0.4){ var kk = hash(Math.floor(dx * 1.4 + 30), row, i); return tt > top + 0.62 ? (kk < 0.5 ? '#6a4a30' : '#e8c8a0') : CR[Math.floor(kk * CR.length)]; }
+    return null; }); };
+// the terrace: tables under striped umbrellas on a paved floor
+BUILD.cluTerrace = function(B, t, i){ var cols = ['#d8433a', '#2f6b3e', '#f1d04a', '#1e5aa8']; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  for (var k = 0; k < 3; k++){ var ux = dx - (k - 1) * 3, uy = dy - (k % 2 ? 0.8 : -0.6), r = Math.hypot(ux, uy), col = cols[(i + k) % 4];
+    if (r < 0.1 && tt < 4.4) return '#e8e8e2'; if (tt > 3.6 && tt < 4.6){ var cap = 1.5 * (1 - (tt - 3.6)); if (r < cap && r > cap - 0.3) return Math.floor((Math.atan2(uy, ux) + 4) * 2.55) % 2 ? col : '#ffffff'; }
+    if (Math.abs(tt - 1.4) < 0.1 && r < 0.8) return '#f4f4f0'; if (r > 1.1 && r < 1.4 && tt < 0.9 && Math.floor((Math.atan2(uy, ux) + 4) * 1.3) % 2) return '#7a5a3e'; }
+  if (tt < 0.15 && Math.abs(dx) < t.w / 2 && Math.abs(dy) < t.d / 2) return ((dx + 9) % 1.5 < 0.1 || (dy + 9) % 1.5 < 0.1) ? '#a89878' : '#c8b89a'; return null; }, 0.125); };
+// the club's flags in a row
+BUILD.cluFlags = function(B, t, i){ var C2 = ['#2f6b3e', '#d8433a', '#1e5aa8', '#f1d04a']; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  for (var k = 0; k < 4; k++){ var px = dx + t.w / 2 - 1 - k * 2.2; if (Math.hypot(px, dy) < 0.12 && tt < t.h - 0.2) return tt > t.h - 0.4 ? '#d8b23a' : '#f4f4f4';
+    if (px > 0.05 && px < 1.9 && Math.abs(dy) < 0.06 && tt > t.h - 1.9 - px * 0.08 && tt < t.h - 0.5 - px * 0.08) return C2[(k + i) % 4]; } return null; }, 0.125); };
+LMSIZE.cluCars = [14, 9, 3.2]; LMSIZE.cluShop = [8, 6, 9]; LMSIZE.cluBays = [12, 4.5, 6]; LMSIZE.cluTarget = [7, 6, 6]; LMSIZE.cluYard = [3, 1, 5]; LMSIZE.cluBunker = [7, 5, 1];
+LMSIZE.cluCart = [4, 2.4, 3.5]; LMSIZE.cluHut = [6, 5, 8]; LMSIZE.cluGate = [10, 1.2, 3]; LMSIZE.cluMill = [12, 7, 10]; LMSIZE.cluWindmill = [12, 6, 17];
+LMSIZE.cluClub = [14, 8, 12]; LMSIZE.cluStand = [11, 5, 8]; LMSIZE.cluTerrace = [10, 5, 5]; LMSIZE.cluFlags = [9, 1.5, 11];
+/* SCHOOLYARD'S STOPS ON THE WALK. Its holes go front steps, playground, courtyard, garden, sports field (land.js), and
+   the walks go the same way: the bus loop's blacktop and the school's front, wood chips and the climbing fort, pavers
+   between the classroom wings, the creek and the greenhouse, the track and the bleachers. Each landmark is drawn as
+   its hole twin is, in the hole's own feet, and scaled up to the walk (sch() below). */
+KIT['school~steps'] = kitFrom(KIT.school, { gpat:'schlawn', lm:['schFront', 'schBus', 'schFlag', 'schFront'], nlm:3, low:['bush', 'bush', 'rock'], dens:0.85 });
+KIT['school~play'] = kitFrom(KIT.school, { gpat:'schchips', p:['#ac7843', '#b8844c', '#9e6e3c'], lm:['schFort', 'swings', 'schMerry', 'schFort', 'slide', 'schCourt'], nlm:4, dens:0.55, low:['bush', 'bush', 'rock'], haz:null,
+  wall:['#8a8f99', '#5c6068'] });
+KIT['school~halls'] = kitFrom(KIT.school, { gpat:'schpave', p:['#cfc8ba', '#d6d0c2', '#a8a294'], paved:true, lm:['schWing', 'schTables', 'schCanopy', 'schWing', 'lamps'], nlm:4, dens:0.55, low:['bush', 'bushf', 'bush'], haz:null });
+KIT['school~garden'] = kitFrom(KIT.school, { gpat:'schmeadow', p:['#c8bca4', '#d2c6ae', '#b8ac94'], lm:['schGreenhouse', 'schBeds', 'schSunflowers', 'schBeds'], nlm:4, dens:0.8, tree:['broad', 'broad', 'broad', 'pine'],
+  low:['bushf', 'fern', 'bush', 'rock'], haz:'water', hazC:['#3f94b4', '#8acfe0'], waterC:['#3f94b4', '#8acfe0'] });
+KIT['school~field'] = kitFrom(KIT.school, { gpat:'schturf', p:['#b4553c', '#bc5e44', '#a84e36'], lm:['schBleachers', 'schScoreboard', 'schGoal', 'schFloods'], nlm:4, dens:0.25, low:['bush', 'cone', 'bush', 'rock'], haz:null });
+LIFE_AS['school~garden'] = { fly:['song', 3], mote:[['butter', 16], ['petal', 6]] };
+LIFE_AS['school~field'] = { fly:['crow', 3], mote:['leaf', 8] };
+LIFE_AS['school~halls'] = { fly:['song', 2], mote:['leaf', 10] };
+
+// the stops' ground on the walk, each in smooth patches (vn), never a hashed speckle
+GPAT.schlawn = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 31); return a > 0.7 ? '#5f9e45' : Math.floor(c.tj / 24) % 2 ? '#72b255' : '#68a84c'; };
+GPAT.schchips = function(c){ var a = vn(c.ti * 0.02, c.tj * 0.02, 32), b = vn(c.ti * 0.17, c.tj * 0.17, 33);   // grass, and the wood chip beds the equipment stands in
+  if (a > 0.6) return a < 0.63 ? '#6e4c2c' : b > 0.62 ? '#c08c52' : b < 0.3 ? '#9a6a3a' : '#ac7843'; var g = vn(c.ti * 0.05, c.tj * 0.05, 34); return g > 0.68 ? '#5f9e45' : g < 0.3 ? '#76b658' : '#6aaa4f'; };
+GPAT.schpave = function(c){ var a = vn(c.ti * 0.012, c.tj * 0.012, 35);   // pavers two feet square, with beds of lawn between the walks
+  if (a > 0.62){ var g = vn(c.ti * 0.05, c.tj * 0.05, 36); return g > 0.7 ? '#5f9e45' : Math.floor(c.tj / 24) % 2 ? '#72b255' : '#68a84c'; }
+  if (c.ti % 16 === 0 || c.tj % 16 === 0) return '#a8a294'; var n = vn((c.ti >> 4) * 0.45, (c.tj >> 4) * 0.45, 37); return n > 0.68 ? '#c2b8a6' : n < 0.3 ? '#d8d2c6' : '#cdc6b8'; };
+GPAT.schmeadow = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 38), b = vn(c.ti * 0.14, c.tj * 0.14, 39); return a > 0.7 ? '#5a9a44' : b > 0.7 ? '#7cbc5c' : a < 0.25 ? '#72b255' : '#68a84c'; };
+GPAT.schturf = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 40); return a > 0.72 ? '#5f9e45' : Math.floor(c.ti / 32) % 2 ? '#6eae52' : '#64a449'; };
+
+// a landmark drawn in its hole's feet (dx, dy from its middle, t up), s times the size on the walk
+function sch(B, t, s, w, d, h, fn){ box(B, t.x, t.y, w * s, d * s, h * s, function(dx, dy, tt){ return tt < -0.05 ? null : fn(dx / s, dy / s, tt / s); }, 0.125); }
+function schBrickW(u, t){ var row = Math.floor(t * 4), cu = u * 2 + (row % 2) * 0.5, col = Math.floor(cu);
+  if (t * 4 - row < 0.2 || cu - col < 0.09) return '#c9b49c'; var n = vn(col * 0.37, row * 0.41, 7); return n > 0.66 ? '#9a3624' : n < 0.32 ? '#bd5034' : '#ac422e'; }
+function schPaneW(u, tt){ if (Math.abs(u) > 0.4 || tt < 0.1 || tt > 1.45 || Math.abs(u) < 0.035 || Math.abs(tt - 0.95) < 0.04) return '#f2eee4'; return tt > 1.05 ? '#b8dcef' : (u + tt * 0.5 > 0.35 ? '#a6d0e8' : '#6fa4c8'); }
+
+// the school's front, as at the front steps: brick, two floors of windows, the portico over the steps, the cupola and its bell
+BUILD.schFront = function(B, t){ var w = 12, d = 4, H = 5.6, pw = 5.2;
+  sch(B, t, 1.3, w + 0.2, d + 2.1, H + 3.2, function(dx, dc, tt){ var dy = dc - (2.1 - d) / 2, ax = Math.abs(dx), m, r;
+    if (tt > H - 0.15 && ax < 1 && Math.abs(dy + d / 2) < 1){ var cy = dy + d / 2, ct = tt - H + 0.15; m = Math.max(ax, Math.abs(cy));
+      if (ct < 1.1){ if (m > 0.8) return null; r = Math.hypot(dx, ct - 0.58); if (cy > 0.7 && r < 0.36) return r > 0.3 ? '#2a2a30' : (ax < 0.04 && ct > 0.58 && ct < 0.84) || (Math.abs(ct - 0.58) < 0.04 && dx > 0 && dx < 0.18) ? '#1a1a20' : '#fbf8ee'; return '#efe9dc'; }
+      if (ct < 1.95){ if (ax > 0.56 && Math.abs(cy) > 0.56 && m < 0.74) return '#f6f2ea'; r = Math.hypot(dx, cy); return ct > 1.2 && ct < 1.85 && r < 0.1 + (1.85 - ct) * 0.36 ? '#e2b33a' : null; }
+      if (ct < 2.08) return m < 0.86 ? '#efe9dc' : null; return m < 0.86 * (1 - (ct - 2.08)) ? (ct > 2.95 ? '#e2b33a' : '#c0392b') : null; }
+    if (dy > 0){ if (ax > pw / 2) return null; var top = 0.62 - Math.floor(dy / 0.42) * 0.155; if (tt < top) return (dy % 0.42) > 0.34 ? '#b8b2a6' : '#dcd6ca';
+      if (dy < 1.55 && tt > 3.55){ if (tt < 3.95) return '#efe9dc'; var pt = 3.95 + 1.05 * (1 - ax / (pw / 2)); return tt < pt ? ((dy > 1.38 && tt < pt - 0.16 && tt > 4.04) ? '#ddd5c8' : '#efe9dc') : null; }
+      for (var c = -1.5; c <= 1.5; c++) if (Math.hypot(dx - c * 1.45, dy - 1.15) < 0.2 && tt < 3.55) return '#f6f2ea'; return null; }
+    if (ax > w / 2 || dy < -d || tt > H) return null;
+    if (tt > H - 0.3){ if (dy > -0.35 || dy < -d + 0.35 || ax > w / 2 - 0.35) return '#d8d0c0'; return tt < H - 0.12 ? '#5c6068' : null; }
+    if (dy > -0.12){ if (ax < 0.95 && tt < 2.35) return ax < 0.05 ? '#1c3450' : '#2b5a8a'; if (Math.abs(tt - 2.95) < 0.12 || tt < 0.45) return '#d0c8b8';
+      var fl = tt > 0.9 && tt < 2.45 ? 1 : tt > 3.45 && tt < 5 ? 2 : 0, u = ((dx + 100.85) % 1.7) - 0.85;
+      if (fl && Math.abs(u) < 0.42 && !(fl === 1 && ax < pw / 2 + 0.2) && ax < w / 2 - 0.6) return schPaneW(u, tt - (fl === 1 ? 0.9 : 3.45)); }
+    return schBrickW(dx + dy, tt); }); };
+// the yellow bus parked at the kerb, nose east
+BUILD.schBus = function(B, t){ var Lb = 7.6, Wb = 1.1;
+  sch(B, t, 1.4, Lb + 0.2, 2 * Wb + 0.2, 3, function(u, dy, tt){ var ay = Math.abs(dy), front = u > Lb / 2 - 1.3, w1 = Math.hypot(u - 2.3, tt - 0.4), w2 = Math.hypot(u + 2.2, tt - 0.4);
+    if (tt < 0.8 && ay > Wb - 0.38 && (w1 < 0.4 || w2 < 0.4)) return w1 < 0.16 || w2 < 0.16 ? '#8a8f99' : '#1c1c20';
+    if (tt < 0.35 || ay > Wb || Math.abs(u) > Lb / 2 || (front && tt > 1.75) || tt > 2.9) return null;
+    if (tt > 2.76) return ay < Wb - 0.12 ? '#f2f2ea' : '#e8a818'; if (front && u > Lb / 2 - 0.14 && tt > 0.5 && tt < 1.25) return ay > 0.6 && tt > 0.9 ? '#fff4c0' : '#2a2a30';
+    if (Math.abs(tt - 1.35) < 0.05 || Math.abs(tt - 0.95) < 0.05 || tt < 0.5) return '#1c1c20';
+    if (!front && tt > 1.75 && tt < 2.55){ if (u > Lb / 2 - 1.45) return '#9cc8e0'; if (((u + 20) % 0.95) > 0.13 && u > -Lb / 2 + 0.3) return tt > 2.32 ? '#9cc8e0' : '#2e4a62'; }
+    return '#f2b01e'; }); };
+// the flagpole and the school's navy and gold flag
+BUILD.schFlag = function(B, t){ var H = 7.2;
+  sch(B, t, 1.4, 2.4, 0.8, H + 0.4, function(dx, dy, tt){ dx += 1.0;
+    if (tt < 0.35) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.38 ? '#c8c0b0' : null; if (Math.hypot(dx, dy, tt - H - 0.1) < 0.14) return '#e2b33a';
+    if (Math.hypot(dx, dy) < 0.08 && tt < H) return '#d8dce2'; var v = (tt - (H - 1.35)) / 1.2;
+    if (dx > 0.06 && dx < 2.05 && v > 0 && v < 1 && Math.abs(dy - Math.sin(dx * 2.6) * 0.07 * dx) < 0.07) return dx < 0.3 ? '#f2eee4' : v > 0.36 && v < 0.64 ? '#f2c230' : '#24447e'; return null; }); };
+// the climbing fort with its red and yellow roof and the slide
+BUILD.schFort = function(B, t){ var dk = 2.3;
+  sch(B, t, 1.5, 6.3, 2.8, 5.4, function(dx, dy, tt){ dx -= 0.55; var ax = Math.abs(dx + 0.6), ay = Math.abs(dy), m = Math.max(ax, ay);
+    if (ax > 1.05 && ax < 1.25 && ay > 1.05 && ay < 1.25 && tt < 4.25) return '#2b6a95'; if (m < 1.25 && tt > dk - 0.14 && tt < dk) return '#c8964e';
+    if (m < 1.25 && m > 1.1 && tt >= dk && tt < dk + 0.95){ if (dy > 1.1 && ax < 0.9) return Math.hypot(dx + 0.6, tt - dk - 0.5) < 0.28 ? null : '#e53935'; if (dx > 0.4 && ay < 0.5) return null; return (tt > dk + 0.82 || (((dx + dy) * 4 + 40) | 0) % 2 === 0) ? '#ffd23f' : null; }
+    if (tt > 4.2 && tt < 5.35 && m < 1.45 * (1 - (tt - 4.2) / 1.15)) return ((dx + 0.6 > 0) !== (dy > 0)) ? '#e53935' : '#ffd23f';
+    var sx = dx - 0.65; if (sx > 0 && sx < 3 && ay < 0.5){ var st = dk - 0.1 - sx * (dk - 0.4) / 3; if (tt < st + 0.06 && tt > st - 0.14) return ay > 0.4 ? '#f0a400' : '#ffd23f'; if (ay > 0.4 && tt < st + 0.28 && tt > st) return '#f0a400'; if (sx > 2.6 && tt < st && ay < 0.12) return '#8a8f99'; }
+    if (dx < -1.8 && dx > -2.3){ if (ay > 0.38 && ay < 0.5 && tt < dk + 0.9) return '#8a8f99'; if (ay < 0.4 && ((tt + 0.1) % 0.42) < 0.07 && tt < dk) return '#c9ccd2'; }
+    return null; }); };
+BUILD.schMerry = function(B, t){ sch(B, t, 1.6, 2.4, 2.4, 1.05, function(dx, dy, tt){ var r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+  if (tt < 0.18) return r < 0.25 ? '#6a6e76' : null; if (tt < 0.32) return r < 1.12 ? (r > 1.02 ? '#c9ccd2' : ['#e53935', '#ffd23f', '#2b6a95', '#3f9a46'][Math.floor((a + Math.PI) / (Math.PI / 2)) % 4]) : null;
+  if (r < 0.08) return tt < 0.95 ? '#c9ccd2' : null; var q = Math.round(a / (Math.PI / 2)) * (Math.PI / 2);
+  return Math.abs(Math.sin(a - q)) * r < 0.06 && r < 0.98 && r > 0.08 && Math.abs(tt - (0.32 + 0.6 * Math.sin(r / 0.98 * Math.PI))) < 0.08 ? '#c9ccd2' : null; }); };
+// the dodgeball court on its blacktop, its lines, and two balls left on it
+BUILD.schCourt = function(B, t){ box(B, t.x, t.y, t.w, t.d, 1.2, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy);
+  for (var k = 0; k < 2; k++){ var bx = k ? 1.8 : -2.2, by = k ? 1.4 : -0.8; if (Math.hypot(dx - bx, dy - by, tt - 0.55) < 0.5) return tt > 0.75 && dx < bx ? '#ff8a7a' : '#de3a2e'; }
+  if (tt > 0.08 || ax > t.w / 2 || ay > t.d / 2) return null; if (ax > t.w / 2 - 0.5 || ay > t.d / 2 - 0.5) return '#4e525a';
+  if (ax > t.w / 2 - 0.68 || ay > t.d / 2 - 0.68 || Math.abs(dx) < 0.1 || Math.abs(Math.hypot(dx, dy) - 1.5) < 0.1) return '#f2f2ea'; return '#3f7f8a'; }, 0.125); };
+// a classroom wing: coloured doors and their numbers, lockers, a lamp by each door, the windows upstairs
+BUILD.schWing = function(B, t){ var w = 14, d = 3.4, H = 6.2, DOOR = ['#c0392b', '#2b6a95', '#3f8a4e', '#e2a52a'];
+  sch(B, t, 1.3, w, d + 0.22, H, function(dx, dc, tt){ var dy = dc - (0.22 - d) / 2, k = Math.floor((dx + 2.25) / 4.5), u = dx - k * 4.5;
+    if (dy > 0){ if (Math.abs(u - 0.85) < 0.11 && tt > 1.98 && tt < 2.36 && Math.abs(dx) < w / 2 - 1) return tt > 2.28 || tt < 2.04 ? '#2a2a30' : '#ffe6a0'; return null; }
+    if (tt > H - 0.3){ if (dy > -0.35 || dy < -d + 0.35 || Math.abs(dx) > w / 2 - 0.35) return '#d8d0c0'; return tt < H - 0.12 ? '#5c6068' : null; }
+    if (dy > -0.12 && Math.abs(dx) < w / 2 - 0.5){
+      if (tt < 2.5){ if (Math.abs(u) < 0.6 && tt < 2.12){ if (Math.abs(u) > 0.53 || tt > 2.05) return '#e8e2d4'; if (Math.abs(u - 0.16) < 0.15 && tt > 1.2 && tt < 1.85) return '#9cc8e0'; return DOOR[((k % 4) + 4) % 4]; }
+        if (Math.abs(u) < 0.7 && tt > 2.18 && tt < 2.42) return Math.abs(u) < 0.28 ? '#f6f2ea' : '#d0c8b8';
+        if (Math.abs(u) > 0.8 && Math.abs(u) < 2.05 && tt > 0.15 && tt < 1.95){ var lu = ((u + 9) % 0.42); if (lu < 0.05 || tt < 0.2) return '#22406a'; return '#3a6ea8'; } }
+      if (Math.abs(tt - 2.75) < 0.12) return '#d0c8b8';
+      if (tt > 3.25 && tt < 4.75){ var uu = ((dx + 100.85) % 1.7) - 0.85; if (Math.abs(uu) < 0.42) return schPaneW(uu, tt - 3.25); } }
+    return schBrickW(dx + dy, tt); }); };
+// a covered walkway: a green tin roof on white posts
+BUILD.schCanopy = function(B, t){ sch(B, t, 1.3, 2.6, 10, 3.05, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (tt > 2.8) return ((dy + 99) % 0.34) < 0.06 ? '#2f6448' : '#3f7a5a'; if (Math.abs(ax - 1) < 0.1 && ((dy + 5.2) % 3) < 0.2) return '#efe9dc'; return null; }); };
+// two picnic tables, green steel
+BUILD.schTables = function(B, t){ sch(B, t, 1.4, 3.6, 1.9, 0.9, function(dx, dy, tt){ var x = Math.abs(dx) - 0.95, ax = Math.abs(x), ay = Math.abs(dy);
+  if (ax < 0.85 && ay < 0.38 && tt > 0.72 && tt < 0.84) return '#3f8a5a'; if (ax < 0.85 && ay > 0.55 && ay < 0.8 && tt > 0.4 && tt < 0.5) return '#3f8a5a';
+  if (Math.abs(ax - 0.65) < 0.06 && Math.abs(ay - Math.max(0, 0.75 - tt * 0.6)) < 0.07 && tt < 0.8) return '#2f6448'; return null; }); };
+// the greenhouse: a brick base, white glazing bars, the plants green low inside, a glass roof
+BUILD.schGreenhouse = function(B, t){ var w = 5.8, d = 3.4, wh = 2.2, rh = 1.3;
+  sch(B, t, 1.5, w, d, wh + rh, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy); if (ax > w / 2 || ay > d / 2) return null;
+    if (tt > wh){ var rr = (tt - wh) / rh; if (rr > 1 || ay > (d / 2) * (1 - rr)) return null; return (((dx + 50) % 0.7) < 0.08|| rr < 0.07 || rr > 0.93) ? '#e2e4dc' : (vn(dx * 0.9, rr * 3, 4) > 0.6 ? '#6aa8a2' : '#558f8a'); }
+    if (tt < 0.45) return schBrickW(dx + dy, tt); if (dy > d / 2 - 0.12 && ax < 0.45 && tt < 1.95) return ax > 0.4 || tt > 1.9 ? '#f2f2ea' : '#9ccfc6';
+    if (((dx + 50) % 0.7) < 0.07 || ((dy + 50) % 0.7) < 0.07 || Math.abs(tt - 1.3) < 0.04 || tt > wh - 0.07) return '#f2f2ea';
+    return tt < 1.1 ? (vn(dx * 1.4, tt * 2, 5) > 0.5 ? '#5f9e6a' : '#76b27e') : (tt > 1.75 ? '#a8dcd4' : '#8ccac2'); }); };
+// two raised beds side by side: lettuces in one, tomatoes on canes in the other
+BUILD.schBeds = function(B, t, i){ sch(B, t, 1.4, 6.8, 1.6, 1.5, function(dx, dy, tt){ var side = dx < 0 ? 0 : 1, k = (side + i) % 3, bx = dx - (side ? 1.7 : -1.7), ax = Math.abs(bx), ay = Math.abs(dy);
+  if (ax > 1.55 || ay > 0.7) return null; if (ax > 1.42 || ay > 0.57) return tt < 0.45 ? (tt > 0.38 ? '#8a6436' : '#a8783e') : null; if (tt < 0.38) return '#4a3424';
+  var cx = Math.round((bx + 1.05) / 0.52) * 0.52 - 1.05, ry = dy > 0 ? 0.27 : -0.27, d0 = Math.hypot(bx - cx, dy - ry);
+  if (k === 1){ if (d0 < 0.05 && tt < 1.45) return '#b89a64'; if (d0 < 0.2 && tt > 0.6 && tt < 1.4) return vn(bx * 6, tt * 6, 3) > 0.72 ? '#e53935' : '#3f8a3e'; return null; }
+  var bump = Math.hypot((bx - cx) / 0.22, (dy - ry) / 0.22, (tt - 0.42) / (k === 2 ? 0.42 : 0.28)); if (bump > 1) return null;
+  if (k === 2) return tt > 0.62 ? ['#f48fb1', '#ffd23f', '#ffffff', '#b39ddb'][Math.floor((bx + 2) / 0.52) % 4] : '#3f8a3e'; return tt > 0.55 ? '#9ad05a' : '#6ab04a'; }); };
+BUILD.schSunflowers = function(B, t, i){ var F = []; for (var k = 0; k < 4; k++) F.push([(hash(k, i, 1) - 0.5) * 1.6, (hash(k, i, 2) - 0.5) * 0.8, 2.3 + hash(k, i, 3) * 0.9]);
+  sch(B, t, 1.4, 2.6, 1.8, 3.6, function(dx, dy, tt){ for (var k = 0; k < F.length; k++){ var f = F[k], x = dx - f[0], y = dy - f[1], dh = Math.hypot(x, tt - f[2]);
+    if (Math.abs(y - 0.12) < 0.07 && dh < 0.46) return dh < 0.2 ? '#6a4024' : '#ffc61a'; if (Math.hypot(x, y) < 0.07 && tt < f[2]) return '#4f8a2e';
+    if (Math.abs(tt - f[2] * 0.55) < 0.06 && Math.abs(y) < 0.09 && Math.abs(x) < 0.32) return '#3f8a3e'; } return null; }); };
+// the bleachers: five tiers of aluminium seats rising to the back, a rail along the top
+BUILD.schBleachers = function(B, t){ var n = 5, td = 0.62, tr = 0.5, d = n * td, w = 9;
+  sch(B, t, 1.4, w, d, n * tr + 1.1, function(dx, dy, tt){ var ax = Math.abs(dx), back = d / 2 - dy, k = Math.floor(back / td);
+    if (ax > w / 2 - 0.08) return tt < (k + 1) * tr ? '#6a6e76' : null; if (k >= n || k < 0) return null;
+    if (k === n - 1 && tt > n * tr && tt < n * tr + 1 && (tt > n * tr + 0.9 || ((dx + 99) % 1.8) < 0.1) && back > d - 0.14) return '#8a8f99';
+    var top = (k + 1) * tr; if (tt > top) return null; if (tt > top - 0.1) return (back % td) > td - 0.1 ? '#a8adb5' : '#d8dce2'; return '#5a5e66'; }); };
+// the scoreboard: HOME and GUEST lit in amber, the clock between, the school's colours on top
+BUILD.schScoreboard = function(B, t){ var b0 = 3.6;
+  sch(B, t, 1.5, 5.8, 0.6, b0 + 2.5, function(dx, dy, tt){ var ax = Math.abs(dx);
+    if (tt < b0) return Math.abs(ax - 1.9) < 0.14 && Math.abs(dy) < 0.14 ? '#5c6068' : null; if (ax > 2.8) return null;
+    if (tt > b0 + 2.05) return tt > b0 + 2.4 ? null : ax > 2.7 ? '#24447e' : '#f2c230';
+    if (dy < 0.18 || ax > 2.65 || tt < b0 + 0.15 || tt > b0 + 1.95) return '#24447e'; if (tt > b0 + 1.45) return ax > 1.1 && ax < 2.5 ? '#f2f2ea' : '#24447e';
+    var u = ax - 1.8, v = tt - b0 - 0.75; if (Math.abs(u) < 0.62 && Math.abs(v) < 0.55) return (Math.abs(Math.abs(u) - 0.2) < 0.07 && Math.abs(v) < 0.45) || (Math.abs(Math.abs(v) - 0.42) < 0.07 && Math.abs(u) < 0.2) ? '#ffc23a' : '#1c2a24';
+    if (ax < 0.7 && Math.abs(v - 0.15) < 0.35) return Math.abs(v - 0.15) < 0.07 && ax < 0.5 ? '#ffc23a' : '#1c2a24'; return '#24447e'; }); };
+// a football goal: white posts and bar, the net sloping back
+BUILD.schGoal = function(B, t){ var gw = 2.4, gh = 1.6, gd = 1.2;
+  sch(B, t, 1.6, 2 * gw + 0.2, gd + 0.2, gh + 0.1, function(dx, dc, tt){ var ax = Math.abs(dx), dy = dc - gd / 2 + 0.1;
+    if (dy > -0.1 && ((Math.abs(ax - gw) < 0.08 && tt < gh) || (Math.abs(tt - gh) < 0.08 && ax < gw))) return '#f6f6f0';
+    var back = -dy / gd; if (back < 0 || back > 1 || ax > gw) return null; var top = gh * (1 - back * 0.65); if (tt > top) return null;
+    if (!(Math.abs(tt - top) < 0.07 || Math.abs(ax - gw) < 0.05)) return null; return (((dx + 99) % 0.24) < 0.05 || ((tt + dy + 99) % 0.24) < 0.05) ? '#e8e8e2' : null; }); };
+// a floodlight tower: a grey mast, a bank of lamps at the top facing the field
+BUILD.schFloods = function(B, t){ var H = 9; sch(B, t, 1.3, 2, 0.7, H + 0.95, function(dx, dy, tt){
+  if (tt < H) return Math.hypot(dx, dy) < 0.14 + (H - tt) * 0.006 ? '#8a8f99' : null;
+  if (Math.abs(dx) < 0.95 && Math.abs(dy) < 0.15){ var u = ((dx + 9) % 0.55) - 0.275, v = ((tt - H + 9) % 0.45) - 0.225; return dy > 0.03 && Math.hypot(u, v) < 0.17 ? '#fff6d8' : '#5c6068'; } return null; }); };
+LMSIZE.schFront = [16, 8, 11.5]; LMSIZE.schBus = [11, 3.2, 4.2]; LMSIZE.schFlag = [3.4, 1.2, 10.6]; LMSIZE.schFort = [9.5, 4.2, 8.1]; LMSIZE.schMerry = [3.9, 3.9, 1.7];
+LMSIZE.schCourt = [10, 7, 1.2]; LMSIZE.schWing = [18.2, 4.7, 8.1]; LMSIZE.schCanopy = [3.4, 13, 4]; LMSIZE.schTables = [5, 2.7, 1.3]; LMSIZE.schGreenhouse = [8.7, 5.1, 5.3];
+LMSIZE.schBeds = [9.6, 2.3, 2.1]; LMSIZE.schSunflowers = [3.6, 2.5, 5]; LMSIZE.schBleachers = [12.6, 4.4, 5.1]; LMSIZE.schScoreboard = [8.7, 1, 9.2]; LMSIZE.schGoal = [8, 2.1, 2.7]; LMSIZE.schFloods = [2.6, 1, 13];
+/* ---- CANDY WORKS' STOPS ON THE WALK, the same things the holes stand among (land.js): the factory gate's yard and dock,
+   the sweet gardens and their fondue fountain, the mixing hall's vats, chutes and cake, the chocolate river's press and
+   dipping pots, and the head office under its chimneys. Each walk is planned with its stop's kit. */
+KIT['candy~gate'] = kitFrom(KIT.candy, { g:['#f6c3d5', '#fbd4e2', '#efb2c8', 0.2], gpat:'cndfrost', p:['#e2c49a', '#ead0aa', '#c8a878'], paved:true, tree:['cndlolly'],
+  low:['cndgum', 'cndgum', 'cndgum', 'cndbox'], haz:null, dens:0.6, nlm:4, lm:['factory', 'cnddock', 'gumballs', 'canes', 'lamps'] });
+KIT['candy~garden'] = kitFrom(KIT.candy, { g:['#a8e0bc', '#bdeacd', '#94d3a9', 0.2], gpat:'cndmint', p:['#fbf6ee', '#ffffff', '#ece4d8'], paved:false, tree:['cndlolly', 'broad', 'cndlolly', 'broad'],
+  leaves:['#ffa8d0', '#ffc8e2', '#f088b8'], bark:'#f6f1ea', low:['cndbonbon', 'bush', 'cndgum'], haz:'water', hazC:['#5a2a12', '#8a5030'], waterC:['#5a2a12', '#8a5030'], dens:0.95, nlm:3,
+  lm:['cndfountain', 'canes', 'cndfountain', 'gumballs'], wall:['#a8e0bc', '#4f9a6a'] });
+KIT['candy~mixing'] = kitFrom(KIT.candy, { g:['#f8eef2', '#f2c6d6', '#ddc8d0', 0.2], gpat:'cndtile', p:['#9a9ea6', '#aab0b8', '#7a7e86'], paved:true, tree:['cndvat', 'cndpipe', 'cndvat'],
+  low:['cndsack', 'cndbox', 'cndsack'], brk:'crate', haz:'slow', hazC:['#f2dc9a', '#e2c27a'], bogC:['#f2dc9a', '#e2c27a'], dens:0.3, nlm:4, lm:['cndwhisks', 'cndchute', 'cndcake', 'cndwhisks', 'cndchute'], wall:['#ff9cc4', '#5a2a3e'] });
+KIT['candy~river'] = kitFrom(KIT.candy, { g:['#e2ac68', '#ecbe80', '#d49a58', 0.2], gpat:'cndcaramel', p:['#ecc070', '#f4d088', '#b8863a'], paved:false, plank:true, tree:['cndlolly', 'cndcane', 'cndlolly'],
+  low:['cndkiss', 'cndgum', 'cndkiss'], haz:'water', hazC:['#5a2a12', '#8a5030'], waterC:['#5a2a12', '#8a5030'], dens:0.55, nlm:3, lm:['cndpress', 'cnddip', 'cndpress', 'canes'], wall:['#e0a040', '#8a5a22'] });
+KIT['candy~office'] = kitFrom(KIT.candy, { g:['#9fd8b0', '#acdfbb', '#8ccc9f', 0.2], gpat:'cndlawn', p:['#fdf3f7', '#ffffff', '#f4b8d0'], paved:true, tree:['cndlolly', 'cndlolly', 'cndcane'],
+  low:['cndpop', 'cndgum', 'cndpop'], haz:null, dens:0.45, nlm:4, lm:['cndoffice', 'cndstack', 'lamps', 'cndstack'], wall:['#ffb3cf', '#c85a8a'] });
+LIFE_AS['candy~garden'] = { fly:['song', 2], mote:[['butter', 16], ['petal', 12]] };
+LIFE_AS['candy~mixing'] = { mote:[['dust', 24], ['spark', 10]] };
+LIFE_AS['candy~river'] = { fly:['song', 4], mote:[['spark', 8], ['petal', 6]] };
+LIFE_AS['candy~office'] = { fly:['song', 3], mote:[['spark', 26]] };
+
+// the stops' ground: smooth patches of frosting, mint, caramel and lawn, and the hall's tiles (an eighth of a foot a cell)
+function cndPatch(c, sd, cols){ var a = vn(c.ti * 0.045, c.tj * 0.045, sd), b = vn(c.ti * 0.12, c.tj * 0.12, sd + 1); return a > 0.64 ? cols[1] : a < 0.34 ? cols[2] : b > 0.68 ? cols[3] : cols[0]; }
+GPAT.cndfrost = function(c){ return cndPatch(c, 51, ['#f6c3d5', '#fbd4e2', '#efb2c8', '#f9cbdc']); };
+GPAT.cndmint = function(c){ return cndPatch(c, 53, ['#a8e0bc', '#bdeacd', '#94d3a9', '#b2e4c4']); };
+GPAT.cndcaramel = function(c){ return cndPatch(c, 55, ['#e2ac68', '#ecbe80', '#d49a58', '#e8b674']); };
+GPAT.cndlawn = function(c){ var st = Math.floor(c.ti / 20) % 2, n = vn(c.ti * 0.05, c.tj * 0.05, 57); return st ? (n > 0.66 ? '#acdfbb' : '#9fd8b0') : (n > 0.66 ? '#98d2a9' : '#8ccc9f'); };
+GPAT.cndtile = function(c){ if (c.ti % 16 === 0 || c.tj % 16 === 0) return '#ddc8d0'; var ch = (Math.floor(c.ti / 16) + Math.floor(c.tj / 16)) % 2, w = vn(c.ti * 0.04, c.tj * 0.04, 59) > 0.66;
+  return ch ? (w ? '#f0e2e8' : '#f8eef2') : (w ? '#ecbccd' : '#f2c6d6'); };
+
+var CND_GUMS = ['#ff3b7a', '#ffd23f', '#3fbf9a', '#8a5cff', '#ff8a1f'], CND_SWIRL = [['#ff5fa2', '#fff4f8'], ['#ffd23f', '#ff8a1f'], ['#3fbf9a', '#e6fff6'], ['#8a5cff', '#f2e8ff']];
+function cndHi(col){ var n = parseInt(col.slice(1), 16); return '#' + ((1 << 24) + (Math.min(255, (n >> 16) + 70) << 16) + (Math.min(255, (n >> 8 & 255) + 70) << 8) + Math.min(255, (n & 255) + 70)).toString(16).slice(1); }
+function cndStripe(v){ return ((Math.floor(v) % 2) + 2) % 2 ? '#e8233f' : '#fff6f0'; }
+TREEH.cndlolly = [6, 2.5, 2.4]; TREEH.cndcane = [5.5, 1.5, 1.4]; TREEH.cndvat = [5, 1.5, 2.2]; TREEH.cndpipe = [10, 3, 1.6];
+BLOCKR.cndlolly = 0.3; BLOCKR.cndcane = 0.3; BLOCKR.cndvat = 1.6; BLOCKR.cndpipe = 1.1;
+LOWR.cndgum = 0.8; LOWH.cndgum = 1.1; LOWR.cndbox = 0.8; LOWH.cndbox = 1.5; LOWR.cndbonbon = 0.9; LOWH.cndbonbon = 1; LOWR.cndsack = 0.8; LOWH.cndsack = 1.3; LOWR.cndkiss = 0.8; LOWH.cndkiss = 1.3; LOWR.cndpop = 0.8; LOWH.cndpop = 1;
+// a lollipop: a white stick and a swirled disc turned to the camera
+BUILD.cndlolly = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h - t.cr * 0.8, R = t.cr * 0.85, cols = CND_SWIRL[i % 4];
+  B.solid(x - R, y - 0.4, zb, x + R, y + 0.4, zb + H + R, function(px, py, pz){ var dx = px - x, dy = py - y, tt = pz - zb; if (tt < H && Math.hypot(dx, dy) < 0.18) return '#f6f1ea';
+    var r = Math.hypot(dx, tt - H); if (r > R || Math.abs(dy) > 0.3) return null; if (r > R - 0.2) return cols[0]; return ((Math.atan2(tt - H, dx) + r * 1.6) % 1.2 + 1.2) % 1.2 < 0.6 ? cols[0] : cols[1]; }, 0.125); };
+// a candy cane standing like a tree, hooked one way or the other
+BUILD.cndcane = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h - 1, R = 0.9, dir = i % 2 ? 1 : -1;
+  B.solid(x - 1.3, y - 0.4, zb, x + 1.3, y + 0.4, zb + H + R + 0.4, function(px, py, pz){ var dx = (px - x) * dir, dy = py - y, tt = pz - zb, d;
+    if (tt < H) d = Math.hypot(dx, dy); else { if (Math.atan2(tt - H, dx - R) < -0.1) return null; d = Math.hypot(Math.hypot(dx - R, tt - H) - R, dy); }
+    return d < 0.3 ? cndStripe((tt + dx) * 1.4) : null; }, 0.125); };
+// a steel vat of batter, its whisk on a shaft from the motor
+BUILD.cndvat = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), R = 1.8, top = Math.min(t.h, 5.5);
+  B.solid(x - R, y - R, zb, x + R, y + R, zb + top + 2.2, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), tt = pz - zb;
+    if (tt < 3){ if (r > R) return null; if (tt > 2.75) return r > R - 0.25 ? '#e4e8ee' : (i % 2 ? '#f2dc9a' : '#6a3518'); return Math.abs(tt - 1) < 0.12 || Math.abs(tt - 2.1) < 0.12 ? '#8a8e96' : (dx < -0.6 ? '#c8ccd2' : '#b4b8c0'); }
+    if (tt > top && tt < top + 1.2) return Math.abs(dx) < 0.7 && Math.abs(dy) < 0.6 ? (tt > top + 1 ? '#e8233f' : '#ff8ab8') : null;
+    if (r < 0.15) return '#c8ccd2'; for (var w = 0; w < 3; w++){ var a = w * 1.05 + i, u = dx * Math.cos(a) + dy * Math.sin(a), v = -dx * Math.sin(a) + dy * Math.cos(a);
+      if (Math.abs(v) < 0.1 && Math.abs(Math.hypot(u / 0.8, (tt - 3) / 1.3) - 1) < 0.12) return '#dfe3ea'; } return null; }, 0.125); };
+// a sugar silo: a tall tank striped pink and white, a cap and a ladder
+BUILD.cndpipe = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = 1.3;
+  B.solid(x - R - 0.3, y - R, zb, x + R + 0.3, y + R + 0.3, zb + H + 1, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), tt = pz - zb;
+    if (tt < 1.2) return Math.abs(Math.abs(dx) - 0.9) < 0.15 && Math.abs(Math.abs(dy) - 0.9) < 0.15 ? '#8a8e96' : null;
+    if (dy > R && Math.abs(dx - 0.5) < 0.35 && tt < H){ if (Math.abs(Math.abs(dx - 0.5) - 0.3) < 0.06 || ((tt % 0.6) + 0.6) % 0.6 < 0.08) return '#7a7e86'; return null; }
+    if (tt > H){ var rr = R * (1 - (tt - H)); return r < rr ? '#e8233f' : null; } if (r > R) return null;
+    return Math.abs(tt - H + 0.3) < 0.15 ? '#fff6f0' : (Math.floor((tt - 1.2) / 1.4) % 2 ? '#ff9cc4' : '#fff4f8'); }, 0.125); };
+// the low things: a gumdrop, a box of sweets, a bonbon, a sack of sugar, a chocolate drop, a heap of popping candy
+BUILD.cndgum = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), r = 0.75, col = CND_GUMS[i % 5], hi = cndHi(col);
+  B.solid(x - r, y - r, zb - 0.05, x + r, y + r, zb + r * 1.35, function(px, py, pz){ var tt = (pz - zb) / (r * 1.35), w = r * (1 - tt * tt * 0.8), d = Math.hypot(px - x, py - y); if (d > w) return null; return tt > 0.75 && d < w * 0.7 ? hi : col; }, 0.125); };
+BUILD.cndbox = function(B, t, i){ var s = 1.3, col = ['#ff8ab8', '#8fd8f0', '#ffd23f'][i % 3];
+  box(B, t.x, t.y, s + 0.1, s + 0.1, s + 0.35, function(dx, dy, tt){ if (tt > s) return Math.abs(dy) < 0.1 && Math.abs(Math.abs(dx) - 0.22) < 0.18 && tt < s + 0.32 ? '#fff6f0' : null;
+    if (Math.abs(dx) > s / 2 || Math.abs(dy) > s / 2 || tt < 0) return null; return Math.abs(dx) < 0.12 || Math.abs(dy) < 0.12 ? '#fff6f0' : col; }, 0.125); };
+BUILD.cndbonbon = function(B, t, i){ var col = ['#e8233f', '#ffc83a', '#8a5cff', '#3fbf9a'][i % 4], r = 0.55;
+  box(B, t.x, t.y, 2.6, 1.2, 1.2, function(dx, dy, tt){ var z = tt - r; if (Math.hypot(dx, dy, z) < r) return z > r * 0.4 && dx < 0 ? cndHi(col) : col;
+    var a = Math.abs(dx) - r * 0.8; if (a > 0 && a < 0.75 && Math.hypot(dy, z) < 0.1 + a * 0.45) return a > 0.2 ? '#fff6f0' : col; return null; }, 0.125); };
+BUILD.cndsack = function(B, t, i){ box(B, t.x, t.y, 1.6, 1.4, 1.6, function(dx, dy, tt){ var w = 0.7 - Math.max(0, tt - 0.9) * 0.45; if (Math.hypot(dx / w, dy / (w * 0.85)) > 1 || tt > 1.5 || tt < 0) return null;
+  if (tt > 1.15 && tt < 1.25) return '#a8323a'; return Math.abs(tt - 0.55) < 0.22 && dy > 0.2 && Math.abs(dx) < 0.35 ? '#ff5fa2' : '#f4ead8'; }, 0.125); };
+BUILD.cndkiss = function(B, t, i){ box(B, t.x, t.y, 1.5, 1.5, 1.4, function(dx, dy, tt){ var u = tt / 1.3, w = 0.7 * (u < 0.3 ? 1 : 1 - (u - 0.3) / 0.7 * 0.95); if (tt < 0 || u > 1 || Math.hypot(dx, dy) > w) return null;
+  return u > 0.55 && dx < 0 ? '#8a5030' : '#5a2a12'; }, 0.125); };
+BUILD.cndpop = function(B, t, i){ var P = ['#ff3b7a', '#3fd0ff', '#ffd23f', '#9a6aff', '#5ae08a'];
+  box(B, t.x, t.y, 1.6, 1.6, 1.2, function(dx, dy, tt){ for (var k = 0; k < 4; k++){ var a = k * 1.9 + i, cx = Math.cos(a) * 0.4 * (k ? 1 : 0), cy = Math.sin(a) * 0.3 * (k ? 1 : 0), hh = k ? 0.65 : 1.05, u = tt / hh;
+    if (u >= 0 && u < 1 && Math.abs(dx - cx) + Math.abs(dy - cy) < 0.3 * (1 - u * 0.7)){ var col = P[(i + k) % 5]; return u > 0.6 ? cndHi(col) : col; } } return null; }, 0.125); };
+
+/* the landmarks */
+// the loading dock: a stretch of the works' pink wall with two roll doors, the dock in front of them, boxes waiting on it
+BUILD.cnddock = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2;
+  if (dy < -1.6){ if (Math.abs(dx) > hw) return null; if (tt > t.h - 0.6) return dy > -1.9 ? '#fff6f0' : '#5a2e14';
+    for (var k = -1; k <= 1; k += 2){ var ddx = dx - k * 2.1; if (Math.abs(ddx) < 1.6 && tt < 4.2 && dy > -1.9){ if (Math.abs(ddx) > 1.4 || tt > 4) return '#fff6f0'; return (Math.floor(tt * 3) % 2) ? '#e6dcd6' : '#cfc4be'; } }
+    return Math.abs(Math.abs(dx) - hw) < 0.4 ? '#fff6f0' : (Math.floor(tt / 1.2) % 2 ? '#ff9cc4' : '#ff8ab8'); }
+  if (dy < 0.6 && tt < 1.3 && Math.abs(dx) < hw - 0.3) return tt > 1.1 ? '#e2c49a' : (Math.floor(dx) % 2 ? '#c8a878' : '#d4b48a');
+  var bxs = [[-2.6, -0.6, 0], [-1.3, -0.6, 1], [1.8, -0.4, 2], [-2, -0.6, 1]];
+  for (var q = 0; q < 4; q++){ var b = bxs[q], z0 = q === 3 ? 2.4 : 1.3, s = 1.1; if (Math.abs(dx - b[0]) < s / 2 && Math.abs(dy - b[1]) < s / 2 && tt > z0 && tt < z0 + s)
+    return Math.abs(dx - b[0]) < 0.1 || Math.abs(dy - b[1]) < 0.1 ? '#fff6f0' : ['#8fd8f0', '#ffd23f', '#ff8ab8'][b[2]]; }
+  return null; }, 0.125); };
+// the fondue fountain: chocolate in a round pool, a white column, two bowls pouring
+BUILD.cndfountain = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), a = Math.atan2(dy, dx), choc = (Math.floor(a * 5 + tt) % 2) ? '#7a4422' : '#5e3018';
+  if (tt < 0.8){ if (r > 3.3) return null; if (r > 2.95) return '#f4e6d0'; return tt < 0.55 ? (vn(dx * 1.2, dy * 1.2, i) > 0.7 ? '#764020' : '#5a2a12') : null; }
+  if (r < 0.3) return '#f4e6d0';
+  if (tt > 3 && tt < 3.35 && r < 1.8) return r > 1.55 || tt < 3.12 ? '#f4e6d0' : '#5a2a12'; if (tt >= 0.8 && tt <= 3 && r > 1.55 && r < 1.75) return choc;
+  if (tt > 4.6 && tt < 4.9 && r < 1) return r > 0.82 || tt < 4.7 ? '#f4e6d0' : '#5a2a12'; if (tt >= 3.35 && tt <= 4.6 && r > 0.82 && r < 1) return choc;
+  if (tt >= 4.9 && r < 0.4 * (1 - (tt - 4.9) / 1.2)) return '#7a4422'; return null; }, 0.125); };
+// the twin whisks: two vats under a gantry, a motor over each, the whisk down on its shaft
+BUILD.cndwhisks = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2;
+  if (Math.abs(Math.abs(dx) - (hw - 0.3)) < 0.3 && Math.abs(dy + 0.2) < 0.3 && tt < 8.6) return '#e8233f';
+  if (tt > 8.2 && tt < 8.9 && Math.abs(dy + 0.2) < 0.4 && Math.abs(dx) < hw) return Math.abs(tt - 8.55) < 0.12 ? (((Math.floor((dx + tt) * 2) % 2) + 2) % 2 ? '#ffd23f' : '#2a2a2a') : '#e8233f';
+  for (var k = -1; k <= 1; k += 2){ var vx = dx - k * 2.2, r = Math.hypot(vx, dy);
+    if (tt < 3){ if (r > 1.8) continue; if (tt > 2.75) return r > 1.55 ? '#e4e8ee' : (k < 0 ? '#6a3518' : '#f2dc9a'); return Math.abs(tt - 1) < 0.12 || Math.abs(tt - 2.1) < 0.12 ? '#8a8e96' : (vx < -0.6 ? '#c8ccd2' : '#b4b8c0'); }
+    if (tt > 7 && tt < 8.2 && Math.abs(vx) < 0.7 && Math.abs(dy + 0.2) < 0.6) return '#ff8ab8';
+    if (r < 0.14 && tt < 7) return '#c8ccd2';
+    for (var w = 0; w < 3; w++){ var a = w * 1.05 + k, u = vx * Math.cos(a) + dy * Math.sin(a), v = -vx * Math.sin(a) + dy * Math.cos(a); if (Math.abs(v) < 0.1 && Math.abs(Math.hypot(u / 0.8, (tt - 3) / 1.4) - 1) < 0.12) return '#dfe3ea'; } }
+  return null; }, 0.125); };
+// a chute: a striped hopper on legs, the sweets heaped in it, a spout pouring into a bin
+BUILD.cndchute = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy + 0.3);
+  if (tt < 5.5 && Math.abs(Math.abs(dx) - 1.6) < 0.18 && Math.abs(Math.abs(dy + 0.3) - 1.6) < 0.18) return '#8a8e96';
+  if (tt > 5.5 && tt < 9){ var rr = 0.5 + (tt - 5.5) * 0.55; if (r < rr && r > rr - 0.25) return Math.floor((tt - 5.5) * 1.3) % 2 ? '#ff8ab8' : '#fff6f0'; if (r < rr && tt > 8.4 && tt < 8.4 + (1 - r / rr) * 0.8) return CND_GUMS[(Math.floor(dx * 3) + Math.floor(dy * 3) * 3 + 50) % 5]; return null; }
+  if (tt > 3 && tt <= 5.5 && r < 0.35) return '#c8ccd2';
+  if (tt < 1.6){ if (Math.abs(dx) > 1.1 || Math.abs(dy - 0.4) > 0.9) return null; if (tt > 1.2) return CND_GUMS[(Math.floor(dx * 3) + Math.floor(dy * 3) * 3 + 50) % 5]; return Math.abs(Math.abs(dx) - 1.05) < 0.06 ? '#8a8e96' : '#b4b8c0'; }
+  return null; }, 0.125); };
+// the cake stand: a pink cake in three tiers on a white stand, a cherry on top
+BUILD.cndcake = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 1.4) return r < 0.3 || (tt < 0.25 && r < 1.1) ? '#fff6f0' : null; if (tt < 1.6) return r < 2.3 ? '#fff6f0' : null;
+  var T = [[1.6, 3.1, 2], [3.1, 4.4, 1.5], [4.4, 5.5, 1]];
+  for (var q = 0; q < 3; q++){ var z = T[q]; if (tt >= z[0] && tt < z[1] && r < z[2]) return tt > z[1] - 0.22 || (Math.abs(tt - z[1] + 0.45) < 0.15 && Math.sin(Math.atan2(dy, dx) * 9) > 0) ? '#fff6f0' : (q % 2 ? '#ffd0e0' : '#ff9cc4'); }
+  return Math.hypot(r, tt - 5.85) < 0.38 ? '#e8233f' : null; }, 0.125); };
+// the stamping press: a red frame, the head on its piston over a belt of fresh stamped sweets
+BUILD.cndpress = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2;
+  if (tt < 1.6){ if (Math.abs(dx) > hw || Math.abs(dy) > 1.7) return null; return tt > 1.4 ? '#a8acb4' : (Math.abs(tt - 0.7) < 0.12 ? '#ffd23f' : '#8a8e96'); }
+  if (tt < 1.85 && Math.abs(dy) < 0.8 && Math.abs(dx) < hw) return (Math.floor(dx * 3) % 2) ? '#3a3e46' : '#2a2e36';
+  if (tt < 2.1 && Math.abs(dy) < 0.5){ var cx = ((dx + 30) % 1.4) - 0.7; if (Math.hypot(cx, dy) < 0.42 && dx > 0.3) return '#ff5fa2'; }
+  if (Math.abs(Math.abs(dx) - (hw - 0.4)) < 0.4 && Math.abs(dy) < 0.5 && tt < 7.6) return '#e8233f';
+  if (tt > 6.6 && tt < 7.8 && Math.abs(dx) < hw && Math.abs(dy) < 0.7) return Math.abs(tt - 7.2) < 0.18 ? (((Math.floor((dx + tt) * 2) % 2) + 2) % 2 ? '#ffd23f' : '#2a2a2a') : '#e8233f';
+  if (Math.hypot(dx, dy) < 0.3 && tt > 4 && tt <= 6.6) return '#c8ccd2';
+  if (Math.abs(dx) < 1.1 && Math.abs(dy) < 0.8 && tt > 3.1 && tt <= 4) return tt < 3.3 ? '#3a3e46' : '#5a5e66';
+  if (tt > 7.8 && tt < 8.4 && Math.hypot(dx, dy) < 0.35) return '#ffb02a'; return null; }, 0.125); };
+// the dipping pots: two on their burners, one of dark chocolate and one of white
+BUILD.cnddip = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = -1; k <= 1; k += 2){ var r = Math.hypot(dx - k * 1.5, dy);
+    if (tt < 0.6){ if (r < 1) return '#3a3e46'; continue; } if (r > 1.35) continue; if (tt > 2.2) return tt < 2.45 ? (r > 1.15 ? '#e4e8ee' : (k < 0 ? '#5a2a12' : '#f4e6d0')) : null;
+    return Math.abs(tt - 1.4) < 0.1 ? '#8a8e96' : '#c8ccd2'; } return null; }, 0.125); };
+// the head office: pink, white pilasters, lit windows, a clock over the gold door, a dome and a gold spire
+BUILD.cndoffice = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.4, hd = t.d / 2 - 0.6, H = 9.5, adx = Math.abs(dx);
+  if (tt > H){ var r = Math.hypot(dx, dy); if (tt < H + 0.4) return adx < hw + 0.3 && Math.abs(dy) < hd + 0.3 ? '#5a2e14' : null;
+    if (Math.hypot(r, (tt - H - 0.4) * 1.1) < 2.1) return Math.abs(Math.sin(Math.atan2(dy, dx) * 4)) < 0.15 ? '#fff6f0' : '#ff8ab8'; if (r < 0.15 && tt < t.h) return '#ffc83a'; return null; }
+  if (adx > hw || Math.abs(dy) > hd) return null; var front = dy > hd - 0.3;
+  if (front && tt > H - 0.8 - 0.6 * Math.max(0, Math.sin(dx * 1.4 + 1))) return '#fff6f0'; if (tt < 0.6) return '#c85a8a';
+  if (Math.abs(adx - hw) < 0.45 || (front && Math.abs(adx - 2) < 0.25)) return '#fff6f0';
+  if (front){ if (adx < 1.3 && tt < 3.8) return adx > 1.12 || tt > 3.6 ? '#ffc83a' : '#6a3518';
+    var cr = Math.hypot(dx, tt - 6.9); if (cr < 1.15){ if (cr > 0.95) return '#ffc83a'; if ((adx < 0.08 && tt > 6.9 && tt < 7.7) || (Math.abs(tt - 6.9) < 0.08 && dx > 0 && dx < 0.6)) return '#2a1a20'; return '#fffaf2'; }
+    if (adx > 2.4){ var wu = ((adx - 2.4) % 2.2) - 1.1; for (var q = 0; q < 2; q++){ var wz = q ? 6.4 : 2.6; if (Math.abs(wu) < 0.55 && Math.abs(tt - wz) < 0.95) return Math.abs(wu) > 0.43 || Math.abs(tt - wz) > 0.82 ? '#fff6f0' : (tt > wz ? '#ffe9a8' : '#ffd77a'); } } }
+  return Math.floor(tt / 1.3) % 2 ? '#ffb3cf' : '#ffa6c6'; }); };
+// a factory chimney striped red and white, pink smoke puffing out of it
+BUILD.cndstack = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), H = 12;
+  if (tt < H){ if (tt > H - 0.7) return r < 1.55 && r > 1 ? '#5a2e14' : null; return r < 1.2 ? cndStripe(tt / 1.3) : null; }
+  var p = Math.min(Math.hypot(dx * 1.1, (tt - 13.2) * 1.2), Math.hypot((dx - 0.6) * 0.9, (tt - 14.8) * 1.1) - 0.2) + (vn(dx * 1.5, tt * 1.5, i) - 0.5) * 0.3; if (p < 1.3 && Math.abs(dy) < 1.2) return tt > 14 ? '#fff4f8' : '#f8c8dc'; return null; }); };
+LMSIZE.cnddock = [9, 5, 6.5]; LMSIZE.cndfountain = [7, 7, 6.2]; LMSIZE.cndwhisks = [9, 4, 9]; LMSIZE.cndchute = [5, 5, 9.5]; LMSIZE.cndcake = [5, 5, 6.3];
+LMSIZE.cndpress = [7, 4, 8.5]; LMSIZE.cnddip = [6, 3, 2.6]; LMSIZE.cndoffice = [12, 7, 13.5]; LMSIZE.cndstack = [4, 3, 16];
+// ---- Neon Arcade's stops on the walk, the same places its holes stand in (land.js): the pavement out front under the marquee,
+// the cabinet rows on their carpet with the Neon River, the racing and rhythm games, the prize counter and its claw machines, and the roof
+// over the night skyline. Every kit drops the world's grid floor for its own ground.
+KIT['neon~front'] = kitFrom(KIT.neon, { g:['#3a3352', '#433c5c', '#2e2844', 0.2], grid:false, gpat:'neopave', p:['#5a5070', '#625878', '#4a4262'], paved:true,
+  tree:['neoPalm', 'neoPalm', 'pylon'], low:['neoBollard', 'cone', 'neoBollard'], dens:0.4, neoNoFl:true, nlm:4, lm:['neoMarquee', 'neoBooth', 'sign', 'neoMarquee', 'neoBooth'] });
+KIT['neon~floor'] = kitFrom(KIT.neon, { g:['#16123a', '#1c1846', '#100c2c', 0.2], grid:false, gpat:'neocarpet', p:['#6a1a52', '#7a2462', '#4e1040'],
+  tree:['cab', 'cab', 'cab', 'pylon'], low:['neoStool', 'neoStool', 'cube'], dens:0.36, neoNoFl:true, haz:'water', hazC:['#2a5ae0', '#2bf0ff'], waterC:['#2a5ae0', '#2bf0ff'],
+  nlm:5, lm:['neoCabRow', 'neoPortal', 'neoCabRow', 'neoHockey', 'neoCabRow'] });
+KIT['neon~race'] = kitFrom(KIT.neon, { g:['#18142c', '#1e1a36', '#141026', 0.2], grid:false, gpat:'neodeck', p:['#2a2836', '#323040', '#22202c'],
+  tree:['neoRacer', 'cab', 'neoRacer', 'pylon'], low:['neoPad', 'neoStool', 'cone'], dens:0.3, neoNoFl:true, nlm:4, lm:['neoGantry', 'neoRacers', 'neoDance', 'neoStart', 'neoRacers'] });
+KIT['neon~prize'] = kitFrom(KIT.neon, { g:['#0c0c2a', '#10102e', '#08081e', 0.2], grid:false, gpat:'neomaze', p:['#1a2a8a', '#22339a', '#121e6a'],
+  tree:['neoClaw', 'neoClaw', 'cab'], low:['neoGum', 'neoStool', 'cube'], dens:0.3, neoNoFl:true, nlm:4, lm:['neoCounter', 'neoClaws', 'neoCounter', 'neoClaws'] });
+KIT['neon~roof'] = kitFrom(KIT.neon, { g:['#211a32', '#26232f', '#1c162c', 0.2], grid:false, gpat:'neotar', p:['#6a5a4a', '#7a6a58', '#4a3e32'], plank:true,
+  tree:['neoMast', 'neoMast', 'pylon'], low:['neoAC', 'neoAC', 'neoVent'], dens:0.12, neoNoFl:true, nlm:4, lm:['neoTower', 'neoSign', 'neoTank', 'neoTrophy', 'neoTower'], wall:['#8a84a0', '#3a3248'] });
+LIFE_AS['neon~front'] = { fly:['drone', 3], mote:['spark', 26] };
+LIFE_AS['neon~floor'] = { fly:['drone', 2], mote:['spark', 44] };
+LIFE_AS['neon~race'] = { fly:['drone', 4], mote:['spark', 50] };
+LIFE_AS['neon~prize'] = { fly:['drone', 2], mote:[['petal', 22], ['spark', 18]] };   // confetti over the prize counter
+LIFE_AS['neon~roof'] = { fly:['bat', 4], mote:[['spark', 12], ['firefly', 10]] };
+
+// the ground of each stop, an eighth of a foot a cell
+// the pavement out front: slabs three feet square, purple at night
+GPAT.neopave = function(c){ if (c.ti % 24 === 0 || c.tj % 24 === 0) return '#2a2440'; var a = vn(c.ti * 0.03, c.tj * 0.03, 3); return a > 0.64 ? '#433c5c' : a < 0.34 ? '#342e4a' : '#3a3352'; };
+// arcade carpet: midnight blue, squiggles of cyan and pink, a yellow ring here and there
+GPAT.neocarpet = function(c){ var x = c.ti / 8, y = c.tj / 8, a = vn(x * 0.25, y * 0.25, 2), s1 = Math.abs(Math.sin(x * 0.5 + Math.sin(y * 0.32) * 2.2)), s2 = Math.abs(Math.sin(y * 0.45 + Math.sin(x * 0.3 + 1) * 2.4));
+  var gx = Math.floor(x / 3.5), gy = Math.floor(y / 3.5), rr = Math.hypot(x - gx * 3.5 - 1.75, y - gy * 3.5 - 1.75);
+  if (s1 < 0.07 && a > 0.55) return '#22b8d0'; if (s2 < 0.07 && a < 0.4) return '#d02ab0'; if (hash(gx, gy, 5) < 0.14 && rr > 0.4 && rr < 0.7) return '#ffe02b';
+  return a > 0.6 ? '#1c1846' : '#16123a'; };
+// the racing floor: dark rubber with thin violet stripes on the slant
+GPAT.neodeck = function(c){ var x = c.ti / 8, y = c.tj / 8, a = vn(x * 0.2, y * 0.2, 4); if (Math.abs(((x + y) % 8 + 8) % 8 - 4) < 0.12) return '#3a2a6a'; return a > 0.62 ? '#1e1a36' : a < 0.34 ? '#141026' : '#18142c'; };
+// a maze in blue on the floor, four feet a square, pellets down the lanes
+GPAT.neomaze = function(c){ var gi = Math.floor(c.ti / 32), gj = Math.floor(c.tj / 32), li = c.ti - gi * 32, lj = c.tj - gj * 32;
+  var e = (hash(gi, gj, 11) < 0.5 && li >= 28) || (hash(gi - 1, gj, 11) < 0.5 && li <= 3), s = (hash(gi, gj, 12) < 0.45 && lj >= 28) || (hash(gi, gj - 1, 12) < 0.45 && lj <= 3);
+  if (e || s) return ((e && (li === 28 || li === 29 || li === 2 || li === 3)) || (s && (lj === 28 || lj === 29 || lj === 2 || lj === 3))) ? '#2a3cc0' : '#0a0a24';
+  if (Math.abs(li - 16) < 2 && Math.abs(lj - 16) < 2) return '#c8a880'; return vn(c.ti * 0.02, c.tj * 0.02, 6) > 0.62 ? '#10102e' : '#0c0c2a'; };
+// the roof: tar in soft patches, a seam every five feet
+GPAT.neotar = function(c){ if (c.tj % 40 === 0) return '#1a1426'; var a = vn(c.ti * 0.02, c.tj * 0.02, 7), b = vn(c.ti * 0.07, c.tj * 0.07, 8); return a > 0.68 ? '#2a2240' : a < 0.3 ? '#1c162c' : b > 0.64 ? '#241c38' : '#211a32'; };
+
+var NEO_TFONT = { A:['.#.', '#.#', '###', '#.#', '#.#'], R:['##.', '#.#', '##.', '#.#', '#.#'], C:['.##', '#..', '#..', '#..', '.##'], D:['##.', '#.#', '#.#', '#.#', '##.'], E:['###', '#..', '##.', '#..', '###'],
+  P:['##.', '#.#', '##.', '#..', '#..'], I:['###', '.#.', '.#.', '.#.', '###'], Z:['###', '..#', '.#.', '#..', '###'], S:['.##', '#..', '.#.', '..#', '##.'] };
+// is this point of a word lit? u across from its left edge, v up from its foot, s one dot
+function neoTWord(w, u, v, s){ var i = Math.floor(u / (s * 4)), du = u - i * s * 4; if (u < 0 || i >= w.length || du >= s * 3 || v < 0 || v >= s * 5) return false;
+  return NEO_TFONT[w.charAt(i)][4 - Math.floor(v / s)].charAt(Math.floor(du / s)) === '#'; }
+var NEO_TGLOW = ['#ff2bd6', '#2bf0ff', '#ffe02b', '#7cff4a', '#ff7a2b', '#a46bff'], NEO_TPLUSH = ['#ff8ab8', '#7ec8ff', '#ffe02b', '#7cff4a', '#ffb02b', '#c8a0ff', '#ffffff'];
+TREEH.neoPalm = [9, 3, 3.2]; TREEH.neoRacer = [5, 0.2, 2.2]; TREEH.neoClaw = [6.4, 0.2, 1.8]; TREEH.neoMast = [9, 5, 1.2];
+LOWR.neoBollard = 0.5; LOWH.neoBollard = 2.2; LOWR.neoStool = 0.7; LOWH.neoStool = 2.2; LOWR.neoPad = 1.4; LOWH.neoPad = 0.4; LOWR.neoGum = 0.7; LOWH.neoGum = 3;
+LOWR.neoAC = 1.4; LOWH.neoAC = 2.4; LOWR.neoVent = 0.6; LOWH.neoVent = 2;
+
+// out front: the arcade's frontage, the doors lit, ARCADE across the marquee in bulbs, neon tubes above
+BUILD.neoMarquee = function(B, t, i){ var w2 = t.w / 2 - 0.1, wd = 23 * 0.42;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx); if (ax > w2) return null;
+    if (tt > 5 && tt < 7.8 && dy < t.d / 2 - 0.1){ if (tt < 5.3 || tt > 7.5) return ((dx * 2 + 40) | 0) % 2 ? '#fff0b0' : '#ffb02b'; return neoTWord('ARCADE', dx + wd / 2, tt - 5.35, 0.42) ? (dy > t.d / 2 - 0.6 ? '#ff2bd6' : '#ff8ae8') : '#1a0f33'; }
+    if (dy > t.d / 2 - 1.2) return null; if (tt > 9.6) return '#2bf0ff';
+    if (tt > 7.8) return Math.abs(((dx + 40) % 2.5) - 1.25) < 0.15 ? (Math.floor((dx + 40) / 2.5) % 2 ? '#2bf0ff' : '#ff2bd6') : '#221a3a';
+    if (tt < 0.4) return '#3a2f55'; var dd = Math.abs(ax - 3.4); if (dd < 1.5 && tt < 4.2){ if (dd > 1.3 || tt > 3.95 || dd < 0.1) return '#ff2bd6'; return '#ffe6c8'; }
+    return '#2a2244'; }); };
+// the ticket booth: a striped kiosk, a lit window, a striped cone of a roof with a gold knob
+BUILD.neoBooth = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (tt > 4.2){ var r = (tt - 4.2) / 1.6; if (r < 1 && Math.hypot(dx, dy) < 1.9 * (1 - r)) return (Math.floor((Math.atan2(dy, dx) + 4) * 2.5) % 2) ? '#ff2bd6' : '#fff2fa'; if (r >= 1 && Math.hypot(dx, dy) < 0.25) return '#ffe02b'; return null; }
+  if (Math.abs(dx) > 1.5 || Math.abs(dy) > 1.4) return null; if (dy > 1.2 && Math.abs(dx) < 1.0 && tt > 2 && tt < 3.6) return Math.abs(dx) > 0.88 || Math.abs(tt - 2.8) < 0.08 ? '#c9a227' : '#ffe9a0';
+  if (dy > 1.2 && Math.abs(tt - 1.9) < 0.1) return '#c9a227'; return (Math.floor((dx + 4) * 1.6) % 2) ? '#c8402e' : '#e8d8c0'; }); };
+// a neon palm: a dark trunk ringed with light, teal fronds, a planter with a glowing rim
+BUILD.neoPalm = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, lean = (hash(i, 1, 2) - 0.5) * 2, tx = x + lean, R = t.cr || 3.2, ring = pick(i, ['#ff2bd6', '#2bf0ff', '#a46bff']);
+  B.vox(x - R - 2, y - R - 1, zb - 0.1, x + R + 2, y + R + 1, zb + H + 1.5, function(set){
+    B.tube(set, x, y, zb, x, y, zb + 1, 1, 1.1, function(u){ return u > 0.85 ? ring : '#2a2440'; });
+    for (var s = 0; s < 10; s++){ var u0 = s / 10, u1 = (s + 1) / 10; B.tube(set, x + lean * u0 * u0, y, zb + 1 + (H - 1) * u0, x + lean * u1 * u1, y, zb + 1 + (H - 1) * u1, 0.4 - u0 * 0.12, 0.4 - u1 * 0.12, s % 3 === 1 ? ring : '#2a2238'); }
+    for (var f = 0; f < 7; f++){ var a = f / 7 * 6.28 + hash(i, f, 4), ex = tx + Math.cos(a) * R, ey = y + Math.sin(a) * R * 0.7, mx = tx + Math.cos(a) * R * 0.5, my = y + Math.sin(a) * R * 0.35;
+      B.tube(set, tx, y, zb + H, mx, my, zb + H + 0.8, 0.3, 0.24, f % 2 ? '#1f8a7a' : '#176a62'); B.tube(set, mx, my, zb + H + 0.8, ex, ey, zb + H - 1.2, 0.24, 0.1, f % 3 ? '#1f8a7a' : '#2bf0ff'); } }, 0.25); };
+// a bollard with a lit cap
+BUILD.neoBollard = function(B, t, i){ var c = pick(i, NEO_TGLOW); box(B, t.x, t.y, 1, 1, 2.2, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (r > 0.38) return null; return tt > 1.8 ? c : (tt * 2 | 0) % 2 ? '#2a2440' : '#3a3456'; }, 0.125); };
+// the cabinet rows: four cabinets shoulder to shoulder
+BUILD.neoCabRow = function(B, t, i){ for (var k = 0; k < 4; k++) cabinet(B, t.x - 3.6 + k * 2.4, t.y, i + k); };
+// a bar stool: a chrome post and a round seat in a neon colour
+BUILD.neoStool = function(B, t, i){ var c = pick(i, NEO_TGLOW); box(B, t.x, t.y, 1.6, 1.6, 2.2, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt > 1.8) return r < 0.7 ? (tt > 2.0 ? c : '#2a2440') : null; if (tt < 0.2) return r < 0.55 ? '#9a98b0' : null; return r < 0.15 ? '#c8c6dc' : null; }, 0.125); };
+// the warp gate: a ring on its end, gold and pink, swirling violet and cyan inside
+BUILD.neoPortal = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var z = tt - 4, r = Math.hypot(dx, z), a = Math.atan2(z, dx);
+  if (tt < 0.6) return Math.abs(dx) < 2.6 && Math.abs(dy) < 0.9 ? '#2a2440' : null; if (r > 3.4) return null;
+  if (r > 2.8) return Math.abs(dy) < 0.8 ? ((Math.floor(a * 4 + 9) % 2) ? '#ff2bd6' : '#ffe02b') : null; if (Math.abs(dy) > 0.15) return null;
+  var sw = (a + r * 1.6) / 6.283 * 3; sw = sw - Math.floor(sw); return sw < 0.33 ? '#a46bff' : sw < 0.66 ? '#2bf0ff' : '#1a0f44'; }); };
+// an air hockey table: four legs, a pink rim, an ice blue top with its centre line and circle
+BUILD.neoHockey = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy);
+  if (tt < 1.7) return Math.abs(ax - 1.8) < 0.2 && Math.abs(ay - 0.9) < 0.2 ? '#2a2440' : null; if (ax > 2.35 || ay > 1.3) return null;
+  if (ax > 2.15 || ay > 1.1) return tt > 2.1 ? '#ff2bd6' : '#2a2440'; if (tt > 2.05) return null; if (ax < 0.08 || Math.abs(Math.hypot(dx, dy) - 0.6) < 0.08) return '#e5483a'; return '#bfefff'; }, 0.125); };
+// a sit in racer seen from behind: the bucket seat, the wheel, the screen hood lit up beyond
+function neoRacerAt(B, x, y, i){ var c = pick(i, NEO_TGLOW); box(B, x, y, 2.6, 4, 4.8, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (tt < 0.5) return ax < 1.25 && Math.abs(dy) < 1.9 ? (ax > 1.05 || Math.abs(dy) > 1.7 ? c : '#2a2440') : null;
+  if (dy < -0.7){ if (ax > 1.25 || tt > 4.6) return null; if (dy > -1.0 && ax < 1.0 && tt > 2.2 && tt < 4.0) return (Math.floor((tt - 2.2) * 5 + dx * 2) % 4 === 0) ? c : tt < 2.9 ? '#2a2a40' : '#2a6ae8'; if (tt > 4.1) return '#fff2fa'; return ax > 1.05 ? c : '#1a1233'; }
+  if (dy < 0.1){ if (Math.abs(dy + 0.3) < 0.15 && Math.abs(Math.hypot(dx, tt - 2.4) - 0.5) < 0.1) return '#c8c6dc'; if (ax < 0.15 && tt < 2.3 && dy < -0.2) return '#2a2440'; return null; }
+  if (ax > 0.85) return null; if (tt < 1.6) return dy < 1.6 ? '#2a2440' : null; if (tt < 1.9 && dy < 1.5) return '#e5483a'; if (dy > 1.1 && dy < 1.6 && tt < 3.8) return ax > 0.7 ? '#141018' : '#e5483a'; return null; }, 0.25); }
+BUILD.neoRacer = function(B, t, i){ neoRacerAt(B, t.x, t.y, i); };
+BUILD.neoRacers = function(B, t, i){ neoRacerAt(B, t.x - 1.7, t.y, i); neoRacerAt(B, t.x + 1.7, t.y, i + 1); };
+// the checkered gantry over the floor, posts striped pink
+BUILD.neoGantry = function(B, t){ var w2 = t.w / 2; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (Math.abs(ax - w2 + 0.5) < 0.35) return Math.abs(dy) < 0.35 ? ((tt * 1.2 | 0) % 2 ? '#c8c6dc' : '#ff2bd6') : null;
+  if (tt < 6 || ax > w2 - 0.5 || Math.abs(dy) > 0.25) return null; if (tt > 7.6 || tt < 6.2) return '#ff2bd6'; return ((Math.floor((dx + 40) * 1.4) + Math.floor(tt * 1.4)) % 2) ? '#f4f2fa' : '#141018'; }); };
+// a dance pad: nine tiles in a steel frame, the four arrows lit
+function neoPadAt(B, x, y){ box(B, x, y, 2.8, 2.8, 0.4, function(dx, dy){ var ax = Math.abs(dx), ay = Math.abs(dy); if (ax > 1.35 || ay > 1.35) return null; if (ax > 1.2 || ay > 1.2) return '#9a98b0';
+  var iu = dx < -0.42 ? -1 : dx > 0.42 ? 1 : 0, iv = dy < -0.42 ? -1 : dy > 0.42 ? 1 : 0; if (Math.abs(ax - 0.42) < 0.06 || Math.abs(ay - 0.42) < 0.06) return '#141018';
+  if (iu && iv) return '#2a2440'; if (!iu && !iv) return '#3a3456'; var lu = dx - iu * 0.82, lv = dy - iv * 0.82, al = iu ? lu * iu : lv * iv, ac = iu ? Math.abs(lv) : Math.abs(lu);
+  return ac < 0.24 - al * 0.9 && al > -0.24 ? (iv < 0 ? '#ff2bd6' : iv > 0 ? '#2bf0ff' : iu < 0 ? '#ffe02b' : '#7cff4a') : '#2a2440'; }, 0.125); }
+BUILD.neoPad = function(B, t){ neoPadAt(B, t.x, t.y); };
+BUILD.neoDance = function(B, t){ neoPadAt(B, t.x - 1.6, t.y); neoPadAt(B, t.x + 1.6, t.y); };
+// the start lights: red, yellow, green on a chrome pole
+BUILD.neoStart = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (tt < 4.4) return r < 0.2 ? '#c8c6dc' : null;
+  if (Math.abs(dx) > 0.6 || Math.abs(dy) > 0.45) return null; var L = ['#ff3a3a', '#ffe02b', '#7cff4a']; for (var j = 0; j < 3; j++) if (Math.hypot(dx, tt - 6.4 + j * 0.8) < 0.3 && dy > 0) return L[j]; return '#141018'; }, 0.125); };
+// the prize counter: a glass case of prizes, and behind it the shelves of plush to the ceiling with PRIZES lit over them
+BUILD.neoCounter = function(B, t){ var w2 = t.w / 2 - 0.2, wd = 23 * 0.36;
+  function plush(u, v, k){ var i = Math.floor(u / 1.0), r = Math.hypot(u - i - 0.5, v - 0.45); return r < 0.45 ? NEO_TPLUSH[(hash(i, k, 3) * 7) | 0] : null; }
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx); if (ax > w2) return null;
+    if (dy > 0.2){ if (tt > 2.8) return null; if (tt < 1.5) return dy > t.d / 2 - 0.4 && Math.abs(tt - 0.8) < 0.1 ? '#2bf0ff' : '#2a1a4a';   // the counter
+      if (ax > w2 - 0.15 || tt > 2.65 || dy > t.d / 2 - 0.15) return (dy > t.d / 2 - 0.15 && tt < 2.65 && ax < w2 - 0.15) ? null : '#9fe8ff'; return tt < 2.1 ? plush(dx + 40, tt - 1.5, 9) : null; }
+    if (dy < -0.4){ if (tt > 6.4){ if (dy < -0.9) return tt > 8.6 ? '#2bf0ff' : '#1a0f33'; return neoTWord('PRIZES', dx + wd / 2, tt - 6.7, 0.36) ? '#ff2bd6' : null; }   // the wall of prizes
+      var sh = tt % 1.5; if (sh < 0.15) return '#5a3a8a'; if (dy > -0.9) return plush(dx + 40, sh - 0.15, Math.floor(tt / 1.5)); return '#2a1a4a'; }
+    return null; }); };
+// a claw machine: a lit cabinet, a glass box with a heap of plush and the claw hanging over it
+function neoClawAt(B, x, y, i){ var c = pick(i, NEO_TGLOW); box(B, x, y, 2.6, 2.6, 6.4, function(dx, dy, tt){ var m = Math.max(Math.abs(dx), Math.abs(dy)); if (m > 1.25) return null;
+  if (tt < 2.4){ if (dy > 1.0 && Math.abs(dx + 0.5) < 0.25 && Math.abs(tt - 1.0) < 0.25) return '#ffe02b'; return m > 1.08 ? c : '#2a1a4a'; }
+  if (tt > 5.6) return tt > 6.2 ? '#1a0f33' : dy > 1.0 ? '#fff2fa' : c; if (Math.abs(dx) > 1.12 && Math.abs(dy) > 1.12) return '#c8c6dc';
+  if (tt < 3.1){ var b = Math.hypot(((dx * 2) % 1 + 1) % 1 - 0.5, ((dy * 2) % 1 + 1) % 1 - 0.5); return b < 0.42 && m < 1.1 ? NEO_TPLUSH[(hash(Math.floor(dx * 2), Math.floor(dy * 2), i) * 7) | 0] : null; }
+  var rr = Math.hypot(dx, dy); if (rr < 0.08 && tt > 4.4) return '#c8c6dc'; if (tt > 3.9 && tt < 4.4 && rr < 0.42 && rr > 0.24) return '#c8c6dc'; return null; }, 0.125); }
+BUILD.neoClaw = function(B, t, i){ neoClawAt(B, t.x, t.y, i); };
+BUILD.neoClaws = function(B, t, i){ for (var k = 0; k < 3; k++) neoClawAt(B, t.x - 2.7 + k * 2.7, t.y, i + k); };
+// a gumball machine: a red stand, a glass globe of colour
+BUILD.neoGum = function(B, t, i){ box(B, t.x, t.y, 1.6, 1.6, 3, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 1.3) return r < 0.4 + (tt < 0.2 ? 0.2 : 0) ? (tt > 0.7 && tt < 1.0 && dy > 0.25 ? '#c8c6dc' : '#e5483a') : null;
+  var s = Math.hypot(r, tt - 2.0); if (s < 0.75){ if (s > 0.66) return '#e8f6ff'; return NEO_TPLUSH[(hash(Math.floor(dx * 4) + 9, Math.floor(tt * 4), Math.floor(dy * 4) + i) * 6) | 0]; }
+  if (tt > 2.65 && r < 0.22) return '#e5483a'; return null; }, 0.125); };
+// the roof: a tower across the street, its windows lit, a red light on its roof
+BUILD.neoTower = function(B, t, i){ var w2 = t.w / 2, d2 = t.d / 2; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (Math.abs(dx) > w2 - 0.2 || Math.abs(dy) > d2 - 0.2){ return null; } if (tt > t.h - 1.2) return Math.hypot(dx, dy) < 0.3 ? (tt > t.h - 0.5 ? '#ff3a3a' : '#6a6480') : null;
+  if (tt > t.h - 1.6) return '#2a2640'; var u = dx + w2, ci = Math.floor(u / 1.2), ri = Math.floor(tt / 1.6), win = (u % 1.2) > 0.4 && (tt % 1.6) > 0.6 && Math.abs(dx) < w2 - 0.6 && tt > 1.6;
+  if (win && (dy > d2 - 0.5 || Math.abs(dx) > w2 - 0.5)) return hash(ci, ri, i) < 0.42 ? (hash(ci, ri, i + 7) < 0.7 ? '#ffe2a0' : '#9ad8ff') : '#12122a'; return i % 2 ? '#1c1a30' : '#221e38'; }, 0.25); };
+// the water tower: a tank of staves on four legs, a cone of a roof
+BUILD.neoTank = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 5.2){ if (Math.abs(Math.abs(dx) - 1.6) < 0.2 && Math.abs(Math.abs(dy) - 1.6) < 0.2) return '#4a4458'; if (Math.abs(tt - 2.8) < 0.12 && Math.max(Math.abs(dx), Math.abs(dy)) < 1.75 && (Math.abs(Math.abs(dx) - 1.6) < 0.12 || Math.abs(Math.abs(dy) - 1.6) < 0.12)) return '#4a4458'; return null; }
+  if (tt < 9.6){ if (r > 2.3) return null; if (Math.abs(tt - 6.2) < 0.12 || Math.abs(tt - 8.6) < 0.12) return '#2a2440'; return (Math.floor((Math.atan2(dy, dx) + 4) * 7) % 2) ? '#6a4a34' : '#5a3e2c'; }
+  return r < 2.5 * (1 - (tt - 9.6) / 2.2) ? '#3a3248' : null; }); };
+// the grand prize: a gold cup on a plinth with pink lights
+BUILD.neoTrophy = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 2) return Math.abs(dx) < 1.6 && Math.abs(dy) < 1.5 ? (Math.abs(tt - 1.7) < 0.12 || Math.abs(tt - 0.3) < 0.12 ? '#ff2bd6' : '#2a2440') : null;
+  if (tt < 2.5) return r < 1.0 ? '#c9a227' : null; if (tt < 4.4) return r < 0.25 + Math.max(0, 3.1 - tt) * 0.9 ? '#e8c23a' : null;
+  if (tt < 7.6){ var rb = 0.5 + Math.sqrt(Math.max(0, (tt - 4.4) / 3.2)) * 1.2; if (r < rb && r > rb - 0.25) return tt > 7.35 ? '#ffe9a0' : Math.abs(tt - 6.5) < 0.15 ? '#c9a227' : '#ffd23a';
+    if (Math.abs(dy) < 0.2 && Math.abs(Math.hypot(Math.abs(dx) - rb - 0.5, tt - 6.4) - 0.6) < 0.14) return '#e8c23a'; } return null; }, 0.125); };
+// ARCADE in big letters on a lattice frame, as it stands on the arcade's roof
+BUILD.neoSign = function(B, t){ var s = 0.46, wd = 23 * s; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = dx + wd / 2;
+  if (tt < 3.6){ var q = ((u % 2) + 2) % 2; return dy < 0 && Math.abs(dy) < 0.6 && u > 0 && u < wd && (Math.abs(q - 1) < 0.12 || Math.abs(Math.abs(q - 1) - tt * 0.27) < 0.12) ? '#6a6480' : null; }
+  if (Math.abs(dy) > 0.5) return null; return neoTWord('ARCADE', u, tt - 3.8, s) ? (dy > 0.2 ? '#ff2bd6' : '#ff8ae8') : null; }, 0.25); };
+// a radio mast: a lattice of grey, a red light on top
+BUILD.neoMast = function(B, t, i){ var H = t.h; box(B, t.x, t.y, 2, 2, H + 0.5, function(dx, dy, tt){ var w = 0.7 * (1 - tt / (H + 1)), ax = Math.abs(dx), ay = Math.abs(dy);
+  if (tt > H) return Math.hypot(dx, dy) < 0.3 ? '#ff3a3a' : null; if (Math.abs(ax - w) < 0.1 && Math.abs(ay - w) < 0.1) return '#8a84a0';
+  if ((Math.abs(ax - w) < 0.08 || Math.abs(ay - w) < 0.08) && ax <= w + 0.1 && ay <= w + 0.1 && Math.abs(((tt % 1.4) + 1.4) % 1.4 - 0.7) < 0.08) return '#6a6480'; return null; }, 0.125); };
+// an air conditioner: a grey box, its fan in the top, a grille on the front
+BUILD.neoAC = function(B, t){ box(B, t.x, t.y, 3, 2.2, 2.4, function(dx, dy, tt){ if (Math.abs(dx) > 1.4 || Math.abs(dy) > 1.0) return null;
+  if (tt > 2.2){ var r = Math.hypot(dx - 0.4, dy); if (r < 0.75) return (Math.floor(Math.atan2(dy, dx - 0.4) * 1.9 + 7) % 2) ? '#2a2836' : '#6a6878'; }
+  if (dy > 0.85 && dx < -0.1 && tt > 0.4 && tt < 1.9) return (tt * 5 | 0) % 2 ? '#4a4858' : '#7a7888'; return '#8a889a'; }, 0.125); };
+// a vent pipe with its cap
+BUILD.neoVent = function(B, t){ box(B, t.x, t.y, 1.4, 1.4, 2, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (tt > 1.6) return r < 0.62 ? '#6a6878' : null; return r < 0.35 ? '#8a889a' : null; }, 0.125); };
+LMSIZE.neoMarquee = [14, 4, 10]; LMSIZE.neoBooth = [4, 4, 6]; LMSIZE.neoCabRow = [10, 2, 5.4]; LMSIZE.neoPortal = [7, 2, 7.6]; LMSIZE.neoHockey = [5, 3, 2.4];
+LMSIZE.neoRacers = [6, 4, 4.8]; LMSIZE.neoGantry = [12, 1.6, 8]; LMSIZE.neoDance = [6, 3, 0.4]; LMSIZE.neoStart = [1.4, 1.2, 7.4];
+LMSIZE.neoCounter = [12, 4, 9]; LMSIZE.neoClaws = [8, 2.6, 6.4]; LMSIZE.neoTower = [8, 6, 22]; LMSIZE.neoTank = [5, 5, 12]; LMSIZE.neoTrophy = [4, 4, 8]; LMSIZE.neoSign = [12, 2, 6.4];
+/* ---- Lost Temple's stops on the walk, the same places its holes stand in (land.js): the explorers' camp under the outer
+   gate, the overgrown ruins and the landslide, the gorge with its falls and cut stairs, the great temple and its guardians,
+   and the sanctum with its gold. Every stop is old dressed stone, moss and jade, where Pirate Cove's jungle is palms and a fort. */
+KIT['temple~camp'] = kitFrom(KIT.temple, { g:['#3b6a2e', '#42722f', '#34602b', 0.2], gpat:'tmpgrass', p:['#8a6e4a', '#9a7c54', '#7a6040'], paved:false, tree:['tmpvine', 'tmpvine', 'broad'],
+  low:['fern', 'bush', 'fern', 'rock'], hazC:['#2f8f7a', '#5cc0a0'], waterC:['#2f8f7a', '#5cc0a0'], nlm:4, lm:['tmpTent', 'tmpGate', 'tmpCamp', 'tmpTent'], dens:1.2 });
+KIT['temple~ruins'] = kitFrom(KIT.temple, { g:['#3b6a2e', '#42722f', '#34602b', 0.2], gpat:'tmpruin', tree:['tmpvine', 'broad', 'tmpvine'], low:['fern', 'rock', 'fern', 'bush'],
+  hazC:['#2fb58f', '#7fe0c0'], waterC:['#2fb58f', '#7fe0c0'], nlm:4, lm:['tmpHead', 'ruin', 'tmpScree', 'columns'], dens:1.1 });
+KIT['temple~gorge'] = kitFrom(KIT.temple, { g:['#3b6a2e', '#42722f', '#34602b', 0.2], gpat:'tmpgorge', p:['#a8987a', '#b8a888', '#8a7c62'], paved:false, tree:['tmpvine', 'broad', 'tmpvine'],
+  low:['fern', 'rock', 'fern', 'bush'], haz:'water', hazC:['#2f8f9a', '#6fc8d0'], waterC:['#2f8f9a', '#7fd0d4'], nlm:4, lm:['tmpFalls', 'tmpFalls', 'ruin', 'tmpFalls'], dens:1.1, wall:['#a8987a', '#6a604c'] });
+KIT['temple~steps'] = kitFrom(KIT.temple, { g:['#a69c72', '#b3a97e', '#958b63', 0.2], gpat:'tmpplaza', p:['#c2b78c', '#cfc49a', '#a69c72'], tree:['broad', 'tmpvine'], low:['rock', 'fern'],
+  hazC:['#2fb58f', '#7fe0c0'], waterC:['#2fb58f', '#7fe0c0'], nlm:5, lm:['tmpPyramid', 'tmpGuard', 'tmpBrazier', 'tmpSerpent', 'tmpGuard'], dens:0.45 });
+KIT['temple~sanctum'] = kitFrom(KIT.temple, { g:['#8a8060', '#958b63', '#7b7354', 0.2], gpat:'tmpsanct', p:['#cfc49a', '#ddd2a6', '#b8962e'], paved:true, tree:['tmppillar', 'tmppillar'], low:['tmpcoins', 'rock', 'tmpcoins'],
+  haz:null, nlm:5, lm:['tmpIdol', 'tmpGold', 'tmpBrazier', 'tmpGold', 'tmpBrazier'], dens:0.13, wall:['#8a8060', '#4a4436'] });
+LIFE_AS['temple~camp'] = { fly:['parrot', 4], mote:[['firefly', 14], ['butter', 6]] };
+LIFE_AS['temple~ruins'] = { fly:['song', 3], mote:[['butter', 12], ['leaf', 8]] };
+LIFE_AS['temple~gorge'] = { fly:['song', 4], mote:[['leaf', 10], ['firefly', 8]] };
+LIFE_AS['temple~steps'] = { fly:['crow', 3], mote:[['dust', 14], ['butter', 4]] };
+LIFE_AS['temple~sanctum'] = { fly:['bat', 5], mote:[['dust', 18], ['ember', 10]] };
+
+// the temple's ground on the walk: soft patches of green, an old floor coming up through it, rock and moss by the river,
+// the plaza's flagstones, and the sanctum's polished slabs
+GPAT.tmpgrass = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 7), b = vn(c.ti * 0.13, c.tj * 0.13, 8); return a > 0.7 ? '#4a6230' : b > 0.64 ? '#42722f' : b < 0.3 ? '#34602b' : '#3b6a2e'; };
+GPAT.tmpruin = function(c){ var f = vn(c.ti * 0.022, c.tj * 0.022, 11); if (f > 0.64){ var i = Math.floor(c.ti / 12), j = Math.floor(c.tj / 12), m = vn(c.ti * 0.07, c.tj * 0.07, 12);
+    if (c.ti % 12 === 0 || c.tj % 12 === 0) return m > 0.5 ? '#46682e' : '#7a7254'; return m > 0.66 ? '#5a7a3a' : vn(i * 0.7, j * 0.7, 13) > 0.5 ? '#9a9068' : '#8e8462'; }
+  return GPAT.tmpgrass(c); };
+GPAT.tmpgorge = function(c){ var r = vn(c.ti * 0.03, c.tj * 0.03, 21); if (r > 0.62){ var a = vn(c.ti * 0.1, c.tj * 0.1, 22); return a > 0.66 ? '#b4a484' : a < 0.35 ? '#968868' : '#a8987a'; } return GPAT.tmpgrass(c); };
+GPAT.tmpplaza = function(c){ var row = Math.floor(c.tj / 16), off = row % 2 ? 8 : 0, i = Math.floor((c.ti + off) / 16);
+  if (c.tj % 16 === 0 || (c.ti + off) % 16 === 0) return vn(c.ti * 0.06, c.tj * 0.06, 31) > 0.68 ? '#5a7a3a' : '#8a8260'; var n = vn(i * 0.9, row * 0.9, 32); return n > 0.66 ? '#b9ae84' : n < 0.33 ? '#958b63' : '#a69c72'; };
+GPAT.tmpsanct = function(c){ var row = Math.floor(c.tj / 16), off = row % 2 ? 8 : 0, i = Math.floor((c.ti + off) / 16);
+  if (c.tj % 16 === 0 || (c.ti + off) % 16 === 0) return '#5e5644'; var n = vn(i * 0.9, row * 0.9, 41), s = vn(c.ti * 0.05, c.tj * 0.05, 42); return s > 0.74 ? '#9e9472' : n > 0.6 ? '#9a9070' : n < 0.35 ? '#7e7456' : '#8a8060'; };
+
+// dressed stone on a landmark: courses of blocks, each its own shade, moss in soft patches
+function tmpAsh(u, t, sd){ var row = Math.floor(t / 0.8), uu = u + (row % 2) * 0.8 + 40, col = Math.floor(uu / 1.6);
+  if (t - row * 0.8 < 0.12 || uu - col * 1.6 < 0.12) return '#6a6448'; if (vn(u * 0.5, t * 0.6, sd) > 0.72) return '#56803e'; return vn(col * 0.83, row * 0.71, sd + 3) > 0.5 ? '#a69c72' : '#978d64'; }
+// a jungle tree with vines down from its crown, and a stone pillar for the sanctum's hall
+TREEH.tmpvine = [12, 5, 4.2]; TREEH.tmppillar = [9, 3, 1.4];
+BUILD.tmpvine = function(B, t, i){ BUILD.broad(B, t, i); var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr, cz = zb + H * 0.64;
+  B.vox(x - R * 1.4, y - R * 1.2, zb, x + R * 1.4, y + R * 1.2, cz, function(set){ for (var v = 0; v < 5; v++){ var a = hash(i, v, 41) * 6.28, r = R * (0.8 + hash(v, i, 42) * 0.35), vx = x + Math.cos(a) * r, vy = y + Math.abs(Math.sin(a)) * r * 0.6, len = 2.5 + hash(i, v, 43) * 3.5;
+    B.tube(set, vx, vy, cz - 0.4, vx + 0.2, vy, cz - 0.4 - len, 0.14, 0.1, v % 2 ? '#3f7a2e' : '#2f6a28'); } }, 0.25); };
+BUILD.tmppillar = function(B, t, i){ var H = t.h; box(B, t.x, t.y, 2.2, 2.2, H, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.6 || tt > H - 0.7) return Math.max(Math.abs(dx), Math.abs(dy)) < 1.05 ? (Math.abs(tt - H + 0.5) < 0.12 ? '#c9a227' : tt > H - 0.3 ? '#a69c72' : '#8a8060') : null; if (r > 0.75) return null;
+  if (Math.abs(tt - H * 0.6) < 0.18) return '#c9a227'; return (Math.floor(Math.atan2(dy, dx) * 2.6 + 9) % 2) ? '#9a9070' : '#8a8060'; }); };
+LOWR.tmpcoins = 0.8; LOWH.tmpcoins = 0.8;
+BUILD.tmpcoins = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y); B.solid(x - 0.8, y - 0.7, zb - 0.05, x + 0.8, y + 0.7, zb + 0.6, function(px, py, pz){ var d = Math.hypot((px - x) / 0.75, (py - y) / 0.6, (pz - zb) / 0.5);
+  return d < 1 ? (vn(px * 6, py * 6 + pz * 4, i) > 0.6 ? '#fff0a0' : '#e0a818') : null; }, 0.125); };
+
+// the camp: a ridge tent, its door to the camera
+BUILD.tmpTent = function(B, t, i){ var cv = i % 2 ? ['#d8c89a', '#c4b484'] : ['#c8b67e', '#b4a26c'];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = 2.4 * (1 - tt / 3.6); if (Math.abs(dx) < 0.1 && dy > 1.9 && dy < 2.5 && tt < 4) return '#5a3818';
+    if (tt > 3.6 || Math.abs(dy) > 2 || Math.abs(dx) > hw) return null; if (dy > 1.85 && Math.abs(dx) < (3.6 - tt) * 0.3 && tt < 2.7) return '#2a2016'; if (Math.abs(dx) < 0.1) return '#8a7a54'; return dx < 0 ? cv[0] : cv[1]; }); };
+// the camp's middle: the fire in its ring, crates and a barrel, a log to sit on
+BUILD.tmpCamp = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3 && r > 0.75 && r < 1.05) return (Math.floor(Math.atan2(dy, dx) * 2.6) % 2) ? '#6e665e' : '#857c70'; if (tt < 0.25 && r < 0.75) return '#3a2412';
+  if (tt >= 0.2 && r < 0.6 * (1 - tt / 1.8)) return tt < 0.6 ? '#ffd23a' : tt < 1.1 ? '#ff8a1a' : '#e5483a';
+  var cx = dx + 1.7, cy = dy + 1.2; if (Math.abs(cx) < 0.6 && Math.abs(cy) < 0.6 && tt < 1.1) return Math.max(Math.abs(cx), Math.abs(cy)) > 0.5 || tt > 1 || Math.abs(cx - cy) < 0.08 ? '#6a4420' : '#a8783e';   // a crate
+  var bx = dx - 1.8, by = dy + 0.9; if (Math.hypot(bx, by) < 0.5 && tt < 1.2) return Math.abs(tt - 0.25) < 0.08 || Math.abs(tt - 0.95) < 0.08 ? '#3a3a40' : '#8f5a2c';   // a barrel
+  if (Math.abs(dy - 1.5) < 0.32 && Math.abs(dx) < 1.3 && Math.hypot(dy - 1.5, tt - 0.3) < 0.32) return Math.abs(dx) > 1.2 ? '#c8a070' : '#6e4a2a';   // a log
+  return null; }, 0.125); };
+// the temple's outer gate: two pillars, a lintel with a face cut in it, stone doors (one pushed open), vines down the front
+BUILD.tmpGate = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), ady = Math.abs(dy);
+  if (tt > 7 && tt < 9 && ax < 6.8 && ady < 1.2){ if (dy > 1 && ax < 1.6 && tt > 7.3 && tt < 8.7){ if (Math.hypot(ax - 0.7, tt - 8.05) < 0.22) return '#3fd0a0'; if (ax < 0.9 && Math.abs(tt - 7.55) < 0.08) return '#3a3424'; if (ax > 1.45 || tt > 8.55 || tt < 7.45) return '#7b7354'; return '#c2b78c'; }
+    if (tt > 8.7 && vn(dx * 0.8, 1, i) > 0.45) return '#4f7a3a'; return tmpAsh(dx, tt, i); }
+  if (ax > 3.6 && ax < 6 && ady < 1.1 && tt < 7) return tmpAsh(dx + (dx > 0 ? dy : -dy), tt, i + 1);
+  if (dy > 1.1 && dy < 1.35 && ax < 6.2 && tt > 4 && tt < 7){ var vl = 7 - (1 + vn(dx * 1.6, 3, i + 5) * 3.6); if (tt > vl && Math.abs(Math.sin(dx * 3.2)) < 0.45) return vn(dx * 2.5, tt, 8) > 0.5 ? '#3f8a3a' : '#2f6a28'; }
+  if (ady < 0.25 && ax < 3.6 && tt < 7){ if (dx > 0.4 && dx < 1.9) return null; var p2 = dx < 0.4 ? dx + 1.6 : dx - 2.75; if (Math.abs(Math.abs(p2) - 1.55) < 0.14 || tt > 6.75 || Math.abs(tt - 3.4) < 0.1) return '#6f6a4e'; return '#958b63'; }
+  if (dy < -0.1 && ady < 0.8 && ax < 3.6 && tt < 7) return '#14110a'; return null; }); };
+// a stone head of Idol Alley, sunk to the chin: jade eyes, a band of gold, moss on the crown
+BUILD.tmpHead = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), w = tt < 3.6 ? 1.9 : 1.9 - (tt - 3.6) * 0.8;
+  if (ax > w || Math.abs(dy) > 1.5 || tt > 4.6) return null; if (tt > 3.9) return vn(dx, dy, i) > 0.45 ? '#56803e' : '#a69c72'; if (tt > 3.6) return '#c9a227';
+  if (dy > 1.3){ if (Math.abs(tt - 2.8) < 0.28 && Math.abs(ax - 0.75) < 0.32) return tt > 2.8 ? '#7fe0c0' : '#2fb58f'; if (Math.abs(tt - 3.3) < 0.09 && ax < 1.5) return '#6f6a4e';
+    if (ax < 0.22 && tt > 1.9 && tt < 2.6) return '#b3a97e'; if (Math.abs(tt - 1.4) < 0.11 && ax < 0.8) return '#3a3424'; }
+  if (vn(dx * 0.8, tt * 0.8, i + 4) > 0.7) return '#56803e'; return Math.floor(tt / 0.9) % 2 ? '#a69c72' : '#978d64'; }); };
+// the landslide: a heap of scree and boulders come down out of the jungle
+BUILD.tmpScree = function(B, t, i){ var R0 = [[-2.4, -1, 1.6], [1.2, -1.6, 1.9], [3, 0.8, 1.1], [-0.4, 1.2, 1.2], [-3.4, 1.6, 0.9]];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hp = 2.4 * (1 - Math.hypot(dx / 5, dy / 3.5)) + (vn(dx * 0.9, dy * 0.9, i) - 0.5) * 0.5; if (tt < hp) return vn(dx * 1.6, dy * 1.6 + tt, i + 2) > 0.6 ? '#a29c86' : '#8a8470';
+    for (var k = 0; k < R0.length; k++){ var q = R0[k], d = Math.hypot(dx - q[0], dy - q[1], (tt - hp * 0.6 - q[2] * 0.6) * 1.2); if (d < q[2]) return vn(dx * 2, tt * 2, i + k) > 0.55 ? '#9a9480' : '#76705e'; } return null; }); };
+// the gorge: a cliff with the falls down one side into a pool, the temple's stairs cut up the other, jungle on top
+BUILD.tmpFalls = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (dy > 0.8){ var pd = Math.hypot((dx + 2.2) / 2.8, (dy - 2.4) / 1.3); if (pd < 1 && tt < 0.3) return pd > 0.86 ? '#968868' : (pd < 0.4 ? '#ffffff' : '#2f8f9a'); if (dy > 1) return null; }
+  var top = t.h * (0.8 + (vn(dx * 0.4, 2, i) - 0.5) * 0.3), d = Math.hypot(dx / (t.w / 2), (dy + 1.2) / (t.d / 2 * 0.75)) + (vn(dx * 0.8, tt * 0.8, i + 3) - 0.5) * 0.18; if (d > 1 || tt > top) return null;
+  if (Math.abs(dx + 2.2) < 1 && d > 0.72) return vn(dx * 3, tt * 0.4, i + 5) > 0.5 ? '#ffffff' : '#bfe8f4';   // the falling water
+  if (Math.abs(dx - 2.4) < 1 && d > 0.72 && tt < top - 0.6) return (tt % 0.6) < 0.18 ? '#7b7354' : '#ddd2a6';   // the stairs
+  if (tt > top - 0.6) return '#4f7a3a'; return (Math.floor(tt * 0.9) % 3) === 0 ? '#968868' : '#a8987a'; }); };
+// the great temple: five tiers, the stair up the middle, the shrine on top with gold along its ridge
+BUILD.tmpPyramid = function(B, t, i){ var W = t.w, D = t.d, NT = 5, TH = 2, TS = (D / 2 - 1.6) / NT, top = NT * TH;
+  box(B, t.x, t.y, W, D, t.h, function(dx, dy, tt){ var ax = Math.abs(dx);
+    var sf = D / 2, sl = top / (sf - (D / 2 - NT * TS)), st = (sf - dy) * sl;
+    if (ax < 2 && dy < sf && tt < st && tt < top + 0.05 && dy > -D / 2 + 1){ if (ax > 1.55) return tt > st - 0.6 ? '#8f8766' : null; return (tt % 0.55) < 0.14 ? '#7b7354' : '#c2b78c'; }
+    var k = Math.floor(tt / TH); if (k < NT){ var hw = W / 2 - k * (W / 2 - 3) / NT, hd = D / 2 - k * TS; if (ax > hw || Math.abs(dy) > hd) return null; if (tt % TH > TH - 0.25) return '#c2b78c'; return tmpAsh(ax > hw - 0.4 ? dy : dx, tt, i); }
+    var u = tt - top; if (ax > 2.6 || Math.abs(dy) > 2 || u > 3.6) return null; if (dy > 1.6 && ax < 0.8 && u < 2.2) return '#120e08'; if (u > 3.1) return Math.abs(dy) < 0.4 ? '#c9a227' : '#a69c72'; if (u > 2.8) return '#7b7354';
+    return tmpAsh(dx, u, i + 2); }); };
+// a guardian on his plinth: a robed figure, jade eyes, a tall headdress banded in gold and jade
+BUILD.tmpGuard = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (tt < 1.2) return Math.max(ax, Math.abs(dy)) < 1.4 ? (tt > 1 ? '#c2b78c' : '#8f8766') : null; if (Math.abs(dy) > 0.8) return null; var u = tt - 1.2;
+  if (u < 3.6){ if (ax > 0.95 - u * 0.06) return null; if (Math.abs(u - 2.5) < 0.18) return '#c9a227'; return Math.floor(u * 1.6) % 2 ? '#a69c72' : '#978d64'; }
+  if (u < 4.8){ if (ax > 0.65) return null; if (dy > 0.6 && Math.abs(u - 4.2) < 0.13 && Math.abs(ax - 0.28) < 0.12) return '#3fd0a0'; return '#b3a97e'; }
+  if (ax > 0.9 - (u - 4.8) * 0.4 || u > 6.4) return null; return Math.floor(u * 3) % 2 ? '#c9a227' : '#2fb58f'; }); };
+// a brazier: a stone pedestal and bowl, and the fire in it
+BUILD.tmpBrazier = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3) return r < 0.85 ? '#8a8060' : null; if (tt < 1.9) return r < 0.4 ? (Math.floor(tt * 3) % 2 ? '#a69c72' : '#978d64') : null;
+  if (tt < 2.5) return r < 0.4 + (tt - 1.9) * 1.1 ? (r > 0.25 + (tt - 1.9) * 1.1 || tt < 2.0 ? (Math.abs(tt - 2.3) < 0.07 ? '#c9a227' : '#a69c72') : '#3a2412') : null;
+  if (r < 0.65 * (1 - (tt - 2.5) / 1.3)) return tt < 2.8 ? '#ffd23a' : tt < 3.2 ? '#ff8a1a' : '#e5483a'; return null; }, 0.125); };
+// the stone serpent: an S along the ground, its head reared up, jade eyes
+BUILD.tmpSerpent = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var cy = Math.sin(dx * 0.75) * 1.1, r = 0.5 - Math.max(0, -dx - 2.6) * 0.2;
+  if (dx < 3.4 && dx > -4.4 && Math.hypot(dy - cy, tt - r) < r) return (Math.floor((dx + 6) * 2.2) % 2) ? '#4f8a5a' : '#a69c72';
+  var hx = dx - 3.8, ht = tt - 1.7, hy = dy - Math.sin(3.8 * 0.75) * 1.1; if (Math.hypot(hx * 0.9, hy, ht) < 0.7 || (hx < 0.1 && hx > -0.6 && Math.abs(hy) < 0.45 && tt < 1.7)) return hy > 0.3 && Math.abs(ht - 0.15) < 0.15 && Math.abs(hx) < 0.35 ? '#3fd0a0' : '#8a9a6a';
+  return null; }, 0.125); };
+// the sanctum's heart: three gold edged steps, and the idol sitting on top in gold, jade in its eyes
+BUILD.tmpIdol = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), st = Math.floor(tt / 0.5);
+  if (st < 3){ if (ax > 3.8 - st * 0.6 || Math.abs(dy) > 2.8 - st * 0.5) return null; return (tt % 0.5) > 0.4 ? '#c9a227' : '#5e5644'; }
+  var u = tt - 1.5; var body = Math.hypot(dx / 1.5, dy / 1.1, (u - 1.2) / 1.4), head = Math.hypot(dx / 0.8, dy / 0.75, (u - 3.3) / 0.8);
+  if (head < 1){ if (dy > 0.5 && Math.abs(u - 3.4) < 0.14 && Math.abs(ax - 0.3) < 0.13) return '#3fd0a0'; return u > 3.7 ? '#ffe680' : '#e8b923'; }
+  if (u > 3.9 && u < 5.6 && ax < 1 - (u - 3.9) * 0.55 && Math.abs(dy) < 0.5) return Math.floor(u * 4) % 2 ? '#ffd23a' : '#c9a227';
+  if (body < 1) return Math.abs(u - 1.25) < 0.1 ? '#c9a227' : (dx < -0.3 ? '#d8a820' : '#f0c43a'); return null; }, 0.125); };
+// gold heaped on the floor, a chest open on top
+BUILD.tmpGold = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 2.8, dy / 2.2, tt / 1.8);
+  var cx = dx - 0.6, cy = dy - 0.4, cz = tt - 1.2; if (Math.abs(cx) < 0.9 && Math.abs(cy) < 0.6 && cz > 0 && cz < 1.2){ if (cz > 0.95) return '#ffd23a'; return Math.abs(cz - 0.6) < 0.07 || Math.abs(Math.abs(cx) - 0.55) < 0.07 ? '#c9a227' : '#7a4a24'; }
+  if (d > 1) return null; return vn(dx * 3, dy * 3 + tt * 2, i) > 0.62 ? '#fff0a0' : vn(dx * 1.5, dy * 1.5, i + 1) > 0.5 ? '#ffd23a' : '#e0a818'; }, 0.125); };
+LMSIZE.tmpTent = [6, 5, 4.2]; LMSIZE.tmpCamp = [6, 5, 2]; LMSIZE.tmpGate = [14, 3, 9.2]; LMSIZE.tmpHead = [4.4, 3.4, 4.8]; LMSIZE.tmpScree = [10, 7, 4.5]; LMSIZE.tmpFalls = [12, 8, 11];
+LMSIZE.tmpPyramid = [18, 12, 14]; LMSIZE.tmpGuard = [3, 3, 8]; LMSIZE.tmpBrazier = [2, 2, 3.8]; LMSIZE.tmpSerpent = [10, 4, 2.6]; LMSIZE.tmpIdol = [8, 6, 7.2]; LMSIZE.tmpGold = [6, 5, 2.6];
+/* ---- Canyon Mine's stops on the walk, the same places its holes stand in (land.js): the desert trail with its buttes and
+   trestle, the mine's mouth and headframe, the camp with its stamp mill, tents and water tower, the river gorge, and the
+   ghost town by the gold vein. The world's own ground is smooth patches now (a hashed speckle reads as grit at this scale). */
+function cnyPatch(c, sd, k){ var a = vn(c.ti * 0.018, c.tj * 0.018, sd), b = vn(c.ti * 0.05, c.tj * 0.05, sd + 1); return a > 0.7 ? k[3] : a < 0.28 ? k[2] : b > 0.64 ? k[1] : k[0]; }
+GPAT.cnysand = function(c){ return cnyPatch(c, 31, ['#c8865a', '#d49668', '#b8784e', '#c69866']); };
+GPAT.cnytail = function(c){ return cnyPatch(c, 32, ['#a8704a', '#b47e56', '#94603e', '#9a9488']); };
+GPAT.cnycamp = function(c){ return cnyPatch(c, 33, ['#c49a6a', '#d0a87a', '#b08a5c', '#a88a62']); };
+GPAT.cnybank = function(c){ return cnyPatch(c, 34, ['#c8885a', '#d49868', '#b87a4e', '#a89a5a']); };
+GPAT.cnydust = function(c){ return cnyPatch(c, 35, ['#b49a78', '#c2aa88', '#a08868', '#a89070']); };
+KIT.canyon.gpat = 'cnysand';
+KIT['canyon~trail'] = kitFrom(KIT.canyon, { lm:['cnyButte', 'cnyTrestle', 'mesa', 'cnyButte', 'cnyTrestle'], nlm:3, dens:0.6 });
+KIT['canyon~mine'] = kitFrom(KIT.canyon, { g:['#a8704a', '#b47e56', '#94603e', 0.2], gpat:'cnytail', tree:['cactus', 'dead', 'cactus', 'cactus'], bark:'#5a4030', low:['rock', 'rockdark', 'rock', 'bushdry'],
+  lm:['cnyPortal', 'cnyHead', 'cart', 'cnyTailing', 'lamps'], nlm:4, dens:0.35, wall:['#7a5040', '#4e3228'] });
+KIT['canyon~camp'] = kitFrom(KIT.canyon, { g:['#c49a6a', '#d0a87a', '#b08a5c', 0.2], gpat:'cnycamp', tree:['cactus', 'cactus', 'broad'], leaves:['#4a6a4a', '#3a5a40', '#5e7e52'], bark:'#5a4030',
+  low:['rock', 'bushdry', 'rock'], lm:['cnyMill', 'cnyTents', 'tower', 'cnyMill', 'cnyTents', 'lamps'], nlm:5, dens:0.5 });
+KIT['canyon~gorge'] = kitFrom(KIT.canyon, { g:['#c8885a', '#d49868', '#b87a4e', 0.2], gpat:'cnybank', tree:['broad', 'cactus', 'broad'], leaves:['#8aa848', '#a4bc58', '#6e9038'], bark:'#6a5440',
+  low:['bush', 'rock', 'bushdry'], haz:'water', hazC:['#3f8f8a', '#7ac4b4'], waterC:['#3f8f8a', '#7ac4b4'], lm:['cnyButte', 'mesa', 'cnyButte', 'cart'], nlm:3, dens:0.65 });
+KIT['canyon~lode'] = kitFrom(KIT.canyon, { g:['#b49a78', '#c2aa88', '#a08868', 0.2], gpat:'cnydust', p:['#9a8466', '#a89272', '#8a765a'], tree:['dead', 'cactus', 'dead', 'cactus'], bark:'#3a302c',
+  low:['bushdry', 'rock', 'rockdark'], lm:['cnyFront', 'cnyVein', 'cnyFront', 'cnyFront', 'cart'], nlm:5, dens:0.4, wall:['#5a4a42', '#2e2420'] });
+LIFE_AS['canyon~mine'] = { fly:['bat', 3], mote:['dust', 16] };
+LIFE_AS['canyon~camp'] = { fly:['crow', 3], mote:['dust', 16] };
+LIFE_AS['canyon~gorge'] = { fly:['song', 4], mote:[['butter', 8], ['dust', 8]] };
+LIFE_AS['canyon~lode'] = { fly:['vulture', 3], mote:['dust', 30], tumble:4 };
+
+var CNY_STRATA = ['#b4643c', '#c47a4a', '#9a4e30', '#d08e5a', '#a85a38'];
+function cnyStrata(tt, dx, i, cols){ var w = tt * 0.9 + (vn(dx * 0.15, tt * 0.3, i) - 0.5) * 1.1; return (cols || CNY_STRATA)[((Math.floor(w) % 5) + 5) % 5]; }
+// a butte: a red column banded with strata, its cap flat and scrubby, a skirt of scree at its foot
+BUILD.cnyButte = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = Math.hypot(dx / (t.w / 2), dy / (t.d / 2)) + (vn(dx * 0.5, dy * 0.5 + tt * 0.2, i) - 0.5) * 0.16, top = t.h * (0.92 + vn(dx * 0.3, dy * 0.3, i + 2) * 0.08);
+  if (tt > top) return null; var r = tt < t.h * 0.18 ? 1 - tt / (t.h * 0.18) * 0.38 : 0.62; if (u > r) return null;
+  if (tt > top - 0.4) return vn(dx * 0.6, dy * 0.6, i + 3) > 0.6 ? '#a89a5a' : '#c89a62'; return cnyStrata(tt, dx, i); }); };
+// a length of trestle carrying the line: timber bents braced crosswise, sleepers and two rails on top
+BUILD.cnyTrestle = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var H = t.h - 0.6, b = (((dx + t.w / 2) / 1.6) % 1 + 1) % 1;
+  if (tt > H && tt < H + 0.25 && Math.abs(dy) < 1.1) return (((dx * 1.4) % 1) + 1) % 1 < 0.45 ? '#6a4628' : Math.abs(dy) < 0.4 ? '#5a3c22' : null;
+  if (tt >= H + 0.25 && tt < H + 0.45 && Math.abs(Math.abs(dy) - 0.7) < 0.1) return '#a4a4ac';
+  if (tt <= H && (b < 0.1 || b > 0.94)){ if (Math.abs(Math.abs(dy) - 0.9 + (H - tt) * 0.06) < 0.14) return '#7a5230'; if (Math.abs(Math.abs(dy) - Math.abs(((tt / 1.4) % 1) - 0.5) * 1.8) < 0.12 && Math.abs(dy) < 0.9) return '#6a4426'; }
+  if (tt <= H && Math.abs(Math.abs(dy) - 0.85) < 0.1 && Math.abs(tt - H * 0.5) < 0.1) return '#6a4426'; return null; }); };
+// the mine's mouth: a knob of rock, the timber portal in its face, the dark way in, the rails running out
+BUILD.cnyPortal = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var fy = t.d / 2 - 1.2;
+  if (dy > fy){ if (dy < fy + 0.5 && tt < 4.2){ var ax = Math.abs(dx); if (ax < 1.4 && tt < 3.4) return dy < fy + 0.2 ? '#140e0a' : null; if (ax < 2 && tt >= 3.4) return Math.abs(tt - 3.8) < 0.06 ? '#5a3c22' : '#8a5a30'; if (ax < 2) return (Math.floor(tt * 2) % 2) ? '#7a4a24' : '#6e4220'; }
+    if (tt < 0.15 && dy >= fy + 0.5){ var ax2 = Math.abs(dx); if (Math.abs(ax2 - 0.7) < 0.1) return '#a4a4ac'; if (ax2 < 1 && (((dy * 1.4) % 1) + 1) % 1 < 0.4) return '#6a4628'; } return null; }
+  var d = Math.hypot(dx / (t.w / 2), (dy + 0.6) / (t.d / 2 - 0.6), tt / t.h) + (vn(dx * 0.6, tt * 0.6, i) - 0.5) * 0.15; if (d > 1) return null; if (tt > t.h * 0.86) return '#9a8a5a'; return cnyStrata(tt, dx, i, ['#7a5040', '#8a5e48', '#6a4436', '#9a6e52', '#5e3c30']); }); };
+// a headframe over the shaft: four timber legs leaning in, braced, and the sheave wheel on top
+BUILD.cnyHead = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h - 2;
+  B.vox(x - t.w / 2, y - t.d / 2, zb - 0.1, x + t.w / 2, y + t.d / 2, zb + t.h, function(set){
+    for (var a = 0; a < 4; a++){ var lx = x + (a & 1 ? 1 : -1) * 2, ly = y + (a & 2 ? 1 : -1) * 1.8; B.tube(set, lx, ly, zb, x + (lx - x) * 0.3, y + (ly - y) * 0.3, zb + H, 0.24, 0.2, '#6a4426'); }
+    for (var h = 2.5; h < H; h += 2.8){ var f = 1 - h / H * 0.7; B.tube(set, x - 2 * f, y + 1.8 * f, zb + h, x + 2 * f, y + 1.8 * f, zb + h, 0.14, 0.14, '#7a5230'); B.tube(set, x - 2 * f, y - 1.8 * f, zb + h, x + 2 * f, y - 1.8 * f, zb + h, 0.14, 0.14, '#7a5230'); }
+    for (var an = 0; an < 6.28; an += 0.05){ set(x + Math.cos(an) * 1.5, y, zb + H + 1.2 + Math.sin(an) * 1.5, '#3a3a40'); set(x + Math.cos(an) * 1.38, y, zb + H + 1.2 + Math.sin(an) * 1.38, '#4a4a52'); }
+    for (var sp = 0; sp < 3; sp++){ var sa = sp * 1.047; B.tube(set, x - Math.cos(sa) * 1.4, y, zb + H + 1.2 - Math.sin(sa) * 1.4, x + Math.cos(sa) * 1.4, y, zb + H + 1.2 + Math.sin(sa) * 1.4, 0.08, 0.08, '#4a4a52'); }
+    B.tube(set, x, y, zb + H + 1.2, x, y, zb + 0.5, 0.06, 0.06, '#2a2a2e'); B.blob(set, x, y, zb + 0.2, 1.4, 1.2, 0.3, '#3a2a1c'); }, 0.125); };
+// a heap of grey tailings tipped off the line, a cart left at the top of it
+BUILD.cnyTailing = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / (t.w / 2), dy / (t.d / 2)), top = t.h * (1 - d * d) * (0.9 + vn(dx, dy, i) * 0.2);
+  if (tt > top) return null; return vn(dx * 0.8, tt * 1.4, i + 1) > 0.62 ? '#b0a27a' : tt < 0.3 ? '#86807a' : '#9a9488'; }); };
+// the stamp mill: a tall plank mill stepped down the slope, a tin roof gone to rust in places, its stack, the stamps showing in the open bay
+BUILD.cnyMill = function(B, t, i){ var wall = function(dx, dy, tt){ return (Math.floor((dx + 20) * 1.3) % 2) ? '#8a6440' : '#7a5636'; }, roof = function(dx, dy, tt){ return (Math.floor((dx + 20) * 2) % 2) ? '#8a8a90' : (vn(dx * 0.6, tt * 0.6, i) > 0.6 ? '#a8603a' : '#7a7a82'); };
+  gable(B, t.x, t.y - t.d * 0.2, t.w - 2, t.d * 0.5, 6.4, 2.6, wall, roof, '#2a1a10');
+  gable(B, t.x, t.y + t.d * 0.26, t.w - 1, t.d * 0.4, 3.6, 1.6, function(dx, dy, tt){ if (dy > t.d * 0.2 - 0.4 && Math.abs(dx) < 2.6 && tt > 0.6 && tt < 3.2) return (((dx + 20) * 1.6) | 0) % 2 ? '#9a9aa2' : '#1a120c'; return wall(dx, dy, tt); }, roof, '#2a1a10');
+  box(B, t.x + t.w * 0.28, t.y - t.d * 0.3, 1, 1, t.h, function(dx, dy, tt){ return Math.hypot(dx, dy) < 0.45 ? (tt > t.h - 0.6 ? '#2a2a2e' : '#5a5a62') : null; }, 0.125); };
+// the miners' tents round a fire: two canvas A tents, their flaps open, and the fire in its ring of stones
+BUILD.cnyTents = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = -1; k <= 1; k += 2){ var cx = dx - k * 2.4, cy = dy + 0.4 * k, w = 1.7, d = 2.2, h = 3.2;
+    if (Math.abs(cy) < d && Math.abs(cx) < w){ var roof = h * (1 - Math.abs(cx) / w); if (tt < roof){ if (cy > d - 0.2 && Math.abs(cx) < (roof - tt) * 0.3 + 0.05 && tt < h * 0.8) return '#3a2a1c'; return Math.abs(cx) < 0.12 ? '#cfc2a0' : k > 0 ? '#efe6cf' : '#e6dcc0'; } } }
+  var fx = dx, fy = dy - 1.6, r = Math.hypot(fx, fy); if (tt < 0.4 && r > 0.7 && r < 1) return '#7a7068'; if (tt < 0.25 && r < 0.7) return '#3a2412'; if (tt >= 0.2 && r < 0.6 * (1 - tt / 1.6)) return tt < 0.6 ? '#ffd23a' : tt < 1 ? '#ff8a1a' : '#e5483a';
+  return null; }, 0.125); };
+// a false front on the ghost town's street: a plank house grey with age, its tall square face, the sign flaking, a sagging porch roof, no glass left
+BUILD.cnyFront = function(B, t, i){ var w = t.w - 1, d = t.d - 2.4, wh = 5.4, roofC = function(dx, dy, tt){ return (Math.floor(tt * 2.4) % 2) ? '#5a524a' : '#6a6056'; };
+  gable(B, t.x, t.y - 0.8, w, d, wh, 1.8, function(dx, dy, tt){ return (Math.floor((dx + 20) * 1.4) % 2) ? '#8a8276' : '#7a7266'; }, roofC, '#1e1814');
+  var fy = -0.8 + d / 2 + 0.25, top = wh + 2.6 + (i % 2) * 0.6;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = dy - fy;
+    if (u > -0.2 && u < 0.2){ var tp = top - (Math.abs(dx) > w * 0.3 ? 0.7 : 0); if (Math.abs(dx) > w / 2 || tt > tp) return null;
+      if (tt > wh + 0.5 && tt < wh + 1.7 && Math.abs(dx) < w * 0.38) return Math.abs(tt - wh - 1.1) < 0.12 && ((((dx + 20) * 2) | 0) % 3) ? '#5a3c2a' : vn(dx * 0.8, tt * 0.8, i + 4) > 0.55 ? '#c49a6a' : '#d8b88a';
+      if (tt < 3.6 && Math.abs(dx) < 0.9) return '#1e1814'; if (tt > 1.6 && tt < 3.6 && Math.abs(Math.abs(dx) - w * 0.32) < 0.65) return vn(dx * 2, tt * 2, i) > 0.6 ? '#3a4a52' : '#1a1612';
+      return (Math.floor((tt + 20) * 1.6) % 2) ? '#aa9e8c' : '#988c7a'; }
+    if (u >= 0.2 && u < 1.6){ if (tt > 3.9 && tt < 4.2 - u * 0.15 && Math.abs(dx) < w / 2) return (Math.floor((dx + 20) * 1.6) % 2) ? '#6a5e50' : '#5a5046';
+      if (Math.abs(Math.abs(dx) - w / 2 + 0.3) < 0.15 && Math.abs(u - 1.4) < 0.15 && tt < 4) return '#5a5046'; if (tt < 0.25) return '#6a5e50'; } return null; }); };
+// the gold vein: a dark knob of rock threaded with gold, and the riveted blast door in its face
+BUILD.cnyVein = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var fy = t.d / 2 - 1.4;
+  if (dy > fy){ var r = Math.hypot(dx, tt - 2.2); if (dy < fy + 0.6 && r < 2.2){ if (r > 1.85) return (Math.floor(Math.atan2(tt - 2.2, dx) * 3 + 9) % 2) ? '#8a8680' : '#9a968e'; if (dy > fy + 0.4) return r < 0.6 && (Math.abs(r - 0.52) < 0.08 || Math.abs(dx) < 0.07 || Math.abs(tt - 2.2) < 0.07) ? '#c9a227' : null;
+      if (Math.abs(r - 1.6) < 0.1 && Math.floor(Math.atan2(tt - 2.2, dx) * 6 + 20) % 2 === 0) return '#3a3a40'; return Math.abs(dx) < 0.06 ? '#3a3a40' : '#6a6e76'; } return null; }
+  var d = Math.hypot(dx / (t.w / 2), (dy + 0.7) / (t.d / 2 - 0.7), tt / t.h) + (vn(dx * 0.6, tt * 0.6, i) - 0.5) * 0.15; if (d > 1) return null;
+  var v = vn(dx * 0.35 + tt * 0.2, tt * 0.45 - dx * 0.1, i + 8); if (Math.abs(v - 0.5) < 0.04 || Math.abs(v - 0.3) < 0.025) return vn(dx * 2, tt * 2, 2) > 0.5 ? '#ffd23a' : '#d8a82a';
+  return cnyStrata(tt, dx, i, ['#5a4a42', '#4e403a', '#665448', '#46382e', '#54463c']); }); };
+LMSIZE.cnyButte = [9, 7, 12]; LMSIZE.cnyTrestle = [11, 3, 5]; LMSIZE.cnyPortal = [10, 8, 8]; LMSIZE.cnyHead = [5, 5, 14]; LMSIZE.cnyTailing = [7, 5, 3];
+LMSIZE.cnyMill = [10, 8, 12]; LMSIZE.cnyTents = [10, 6, 4]; LMSIZE.cnyFront = [8, 7, 9]; LMSIZE.cnyVein = [10, 8, 8];
+// ---- Volcano Island's walks go where its holes go (land.js): the black sand beach, the foothills and the tiki village, the lava
+// fields, the crater's rim, the summit. Each kit's ground, trees and landmarks are the ones round that stop's holes.
+KIT['volcano~beach'] = kitFrom(KIT.volcano, { g:['#2e2b2f', '#3c383c', '#262326', 0.2], sandC:['#2e2b2f', '#3c383c', '#262326', 0.2], gpat:'volsand', sea:true, seaC:['#1d5f86', '#3a8ab0'], tree:['palm', 'palm', 'palm', 'basalt'],
+  leaves:['#2f8139', '#3f9a46', '#246e30'], bark:'#6a5a3e', low:['rockdark', 'bush', 'rockdark', 'shell'], dens:0.75, nlm:3, lm:['basaltset', 'volCanoe', 'volTiki', 'basaltset'] });
+KIT['volcano~village'] = kitFrom(KIT.volcano, { g:['#3d5a2c', '#4f6a34', '#33482a', 0.2], gpat:'volmoss', p:['#4a3a38', '#5a4844', '#3a2c2a'], tree:['palm', 'broad', 'palm', 'broad'],
+  leaves:['#1f5a26', '#2b6e30', '#3f8a3a'], bark:'#4a3624', low:['fern', 'bush', 'rockdark', 'fern'], haz:'water', hazC:['#3a9aa0', '#8ad0d0'], waterC:['#3a9aa0', '#8ad0d0'],
+  dens:0.95, nlm:5, lm:['volHut', 'volTiki', 'volHut', 'volHut', 'volTiki'], wall:['#7a5a34', '#4a3420'] });
+KIT['volcano~fields'] = kitFrom(KIT.volcano, { g:['#2a2427', '#3a3236', '#1e1a1d', 0.2], gpat:'volrope', tree:['dead', 'basalt', 'dead'], low:['rockdark', 'ember', 'rockdark'],
+  dens:0.45, nlm:4, lm:['volCone', 'vent', 'basaltset', 'volCone'] });
+KIT['volcano~crater'] = kitFrom(KIT.volcano, { g:['#5e585c', '#6e686c', '#4e484c', 0.2], gpat:'volash', p:['#7a7276', '#8a8286', '#6a6266'], tree:['basalt', 'basalt', 'dead'],
+  low:['rockdark', 'volShard', 'rock'], dens:0.4, nlm:4, lm:['volShards', 'vent', 'volShards', 'basaltset'], wall:['#5e585c', '#2e282c'] });
+KIT['volcano~summit'] = kitFrom(KIT.volcano, { g:['#3a2a2a', '#4a2e28', '#2a2022', 0.2], gpat:'volcinder', tree:['basalt', 'basalt', 'dead'], low:['ember', 'volShard', 'rockdark'],
+  p:['#5a4440', '#6a524c', '#4a3834'], dens:0.24, nlm:3, lm:['volShrine', 'vent', 'volShards'] });
+LIFE_AS['volcano~beach'] = { fly:['gull', 4], mote:['ash', 10] };
+LIFE_AS['volcano~village'] = { fly:['parrot', 4], mote:[['butter', 6], ['ash', 8]] };
+LIFE_AS['volcano~fields'] = { fly:['vulture', 2], mote:[['ember', 34], ['ash', 22]], smoke:true };
+LIFE_AS['volcano~crater'] = { mote:[['ember', 26], ['ash', 36]], smoke:true };
+LIFE_AS['volcano~summit'] = { mote:[['ember', 50], ['ash', 20]], smoke:true };
+// the stops' ground on the walk, in smooth patches like the holes': black sand, green moss, ropey black rock with red cracks, ash with sulphur, cinder
+GPAT.volsand = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 61), b = vn(c.ti * 0.16, c.tj * 0.16, 62); return b > 0.76 ? '#3e4636' : a > 0.66 ? '#3c383c' : a < 0.3 ? '#252226' : '#2e2b2f'; };
+GPAT.volmoss = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 63), b = vn(c.ti * 0.15, c.tj * 0.15, 64); return a > 0.7 ? '#5a4a34' : a > 0.6 ? '#4f6a34' : b < 0.28 ? '#33482a' : b > 0.72 ? '#47663a' : '#3d5a2c'; };
+GPAT.volrope = function(c){ var a = vn(c.ti * 0.035, c.tj * 0.035, 65), cr = Math.abs(vn(c.ti * 0.025, c.tj * 0.025, 66) - 0.5), rope = Math.sin(c.ti * 0.25 + c.tj * 0.1 + vn(c.ti * 0.02, c.tj * 0.02, 67) * 14);
+  if (cr < 0.012 && vn(c.ti * 0.01, c.tj * 0.01, 68) > 0.45) return cr < 0.006 ? '#ffb43a' : '#e0480e'; return a > 0.68 ? (rope > 0.4 ? '#4a4044' : '#3e3539') : a < 0.3 ? '#1c181b' : rope > 0.6 ? '#332c30' : '#2a2427'; };
+GPAT.volash = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 69), s = vn(c.ti * 0.02, c.tj * 0.02, 70); return s > 0.8 ? (a > 0.55 ? '#c8b448' : '#a8983c') : a > 0.78 ? '#7a6e5a' : a > 0.6 ? '#6e686c' : a < 0.3 ? '#4e484c' : '#5e585c'; };
+GPAT.volcinder = function(c){ var a = vn(c.ti * 0.035, c.tj * 0.035, 71), b = vn(c.ti * 0.08, c.tj * 0.08, 72); return a > 0.72 ? '#5a3424' : a > 0.6 ? '#4a2e28' : b < 0.3 ? '#2a2022' : '#3a2a2a'; };
+// an obsidian shard to walk past (a low): a black glass blade with a violet sheen on its lit face
+BUILD.volShard = function(B, t, i){ var x = t.x, y = t.y, lean = (hash(i, 3, 7) - 0.5) * 0.5;
+  B.solid(x - 0.9, y - 0.7, B.gz(x, y) - 0.1, x + 0.9, y + 0.7, B.gz(x, y) + 1.5, function(px, py, pz){ var tt = pz - B.gz(x, y), dx = px - x - lean * tt, dy = py - y, w = 0.55 * (1 - tt / 1.45);
+    if (Math.abs(dx) + Math.abs(dy) * 1.2 > w) return null; return dx + dy * 0.4 > w * 0.3 ? '#6a5a8e' : dx < -w * 0.25 ? '#0c0a12' : '#221d2c'; }, 0.125); };
+LOWR.volShard = 0.7; LOWH.volShard = 1.5;
+// a tiki hut: a round wall of bamboo with its doorway to the front, the fire showing inside, a tall thatched cone with a top knot
+BUILD.volHut = function(B, t, i){ var r = 2.6, wh = 3.2, rh = 4.6, R2 = r + 0.8; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+  if (tt >= wh - 0.5){ var rr = (tt - wh + 0.5) / rh; if (d < R2 * (1 - rr)){ if (d < R2 * (1 - rr) - 0.6) return null; var ring = Math.floor(tt * 1.6 + vn(a * 4, 1, i) * 0.6);
+    return rr < 0.06 ? '#5a4020' : rr > 0.88 ? '#4a3018' : ring % 3 === 0 ? '#7a5a2c' : ring % 3 === 1 ? '#9a7638' : '#8a6830'; } return null; }
+  if (d > r || d < r - 0.35) return null; if (dy > 0 && Math.abs(dx) < 0.8 && tt < 2.6) return d < r - 0.2 ? '#ff9a2a' : null;   // the doorway, the fire's light on the far wall
+  return Math.floor((a + 4) * r * 2.4) % 2 ? '#b8945a' : '#9a7444'; }); };
+// a tiki between two torches: a carved post with a face, painted bands and a crown
+BUILD.volTiki = function(B, t, i){ var H = 6.4; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), u = tt / H;
+  if (Math.abs(ax - 1.9) < 0.12 && Math.abs(dy) < 0.12 && tt < 3.4) return (tt * 2 | 0) % 2 ? '#7a5a34' : '#5a3818';   // the torches
+  if (Math.abs(ax - 1.9) < 0.3 && Math.abs(dy) < 0.3 && tt >= 3.4 && tt < 3.7) return '#3d2614';
+  if (Math.hypot(ax - 1.9, dy) < 0.3 * (1 - (tt - 3.7) / 0.9) && tt >= 3.7) return tt > 4.1 ? '#ffd25a' : '#ff7a1a';
+  var hw = u > 0.86 ? 1.25 : 1.05; if (ax > hw || Math.abs(dy) > 0.85 || tt > H) return null;
+  if (dy > 0.6){ if (u > 0.62 && u < 0.75 && Math.abs(ax - 0.5) < 0.3) return (u > 0.66 && u < 0.71 && Math.abs(ax - 0.5) < 0.14) ? '#f4e8c8' : '#1a1210';
+    if (u > 0.49 && u < 0.62 && ax < 0.2) return '#5a3a22'; if (u > 0.36 && u < 0.47 && ax < 0.75) return Math.abs(u - 0.415) < 0.02 ? '#1a1210' : '#e8dcc0'; }
+  if (Math.abs(u - 0.84) < 0.025 || Math.abs(u - 0.28) < 0.025) return '#c8402e'; return (tt * 1.2 | 0) % 2 ? '#7a5030' : '#6a4428'; }, 0.125); };
+// an outrigger canoe drawn up on the sand
+BUILD.volCanoe = function(B, t, i){ var dir = i % 2 ? 1 : -1; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = dx * dir / 3.8, hw = 0.65 * Math.sqrt(Math.max(0, 1 - u * u));
+  if (Math.abs(dy - 0.4) < hw && tt < 1 + u * u * 0.6){ if (Math.abs(dy - 0.4) < hw - 0.18 && tt > 0.35) return null; return tt > 0.8 ? '#d8b47a' : Math.abs(tt - 0.45) < 0.08 ? '#c8402e' : '#8a5a30'; }
+  if (Math.abs(dy + 1.1) < 0.2 && Math.abs(dx) < 2.4 && tt < 0.45) return '#a07a48';
+  if (Math.abs(Math.abs(dx) - 1.3) < 0.12 && dy < 0.4 && dy > -1.1 && Math.abs(tt - 0.7) < 0.12) return '#6a4a2a'; return null; }, 0.125); };
+// a spatter cone: a heap of red black cinder with a glowing throat
+BUILD.volCone = function(B, t, i){ var R = t.w / 2, H = t.h; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx, dy), rad = R * (1 - tt / H * 0.62) + (vn(Math.atan2(dy, dx) * 2.5, tt, i) - 0.5) * 0.4;
+  if (d > rad) return null; if (d < R * 0.26 && tt > H - 1.2) return tt > H - 0.8 ? null : '#ffb43a'; if (tt > H - 0.5) return '#8a3a1e'; return vn(dx, dy + tt, i + 3) > 0.55 ? '#4a2e26' : '#33282a'; }); };
+// obsidian standing in blades: a lit face with a violet sheen, the others near black
+BUILD.volShards = function(B, t, i){ var Q = []; for (var k = 0; k < 5; k++){ var a = hash(i, k, 61) * 6.28, r = k ? 0.8 + hash(k, i, 62) * 1 : 0; Q.push([Math.cos(a) * r, Math.sin(a) * r * 0.7, k ? 2.2 + hash(k, i, 63) * 2 : 5.4, k ? 0.6 : 0.95, (hash(i, k, 64) - 0.5) * 0.5]); }
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = 0; k < Q.length; k++){ var q = Q[k]; if (tt > q[2]) continue; var ex = dx - q[0] - q[4] * tt, ey = dy - q[1], w = q[3] * (1 - tt / q[2]);
+    if (Math.abs(ex) + Math.abs(ey) < w) return ex + ey * 0.4 > w * 0.3 ? '#6a5a8e' : ex < -w * 0.25 ? '#0c0a12' : '#221d2c'; } return null; }, 0.125); };
+// the fire shrine at the summit: a stone platform, a stone tiki at the back, a brazier burning at each front corner
+BUILD.volShrine = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (tt < 0.9){ if (ax > 4.2 || Math.abs(dy) > 2.8 || (dy > 1.8 && tt > 0.45)) return null; return (Math.abs(((dx + 20) % 1.6) - 0.8) > 0.74 || Math.abs(tt - 0.45) < 0.06) ? '#2a2427' : '#4a4246'; }
+  var bx = ax - 3.2, by = dy - 1.2; if (Math.hypot(bx, by) < 0.3 && tt < 3.4) return '#3a3337';
+  if (Math.hypot(bx, by) < 0.75 && tt >= 3.4 && tt < 3.9) return '#1e1a1d'; if (Math.hypot(bx, by) < 0.6 * (1 - (tt - 3.9) / 1.4) && tt >= 3.9) return tt > 4.5 ? '#ffd25a' : '#ff7a1a';
+  var u = (tt - 0.9) / 5.6, hy = dy + 1.4; if (ax > (u > 0.86 ? 1.25 : 1.05) || Math.abs(hy) > 0.8 || u > 1) return null;
+  if (hy > 0.55){ if (u > 0.62 && u < 0.75 && Math.abs(ax - 0.5) < 0.3) return (u > 0.66 && u < 0.71 && Math.abs(ax - 0.5) < 0.14) ? '#ff7a1a' : '#141113';
+    if (u > 0.36 && u < 0.47 && ax < 0.75) return Math.abs(u - 0.415) < 0.02 ? '#141113' : '#8a8086'; }
+  return (tt * 1.4 | 0) % 2 ? '#5a5056' : '#4a4246'; }, 0.125); };
+LMSIZE.volHut = [8, 8, 8.4]; LMSIZE.volTiki = [5, 2, 6.5]; LMSIZE.volCanoe = [8, 3, 1.6]; LMSIZE.volCone = [6, 6, 4]; LMSIZE.volShards = [5, 4, 5.6]; LMSIZE.volShrine = [9, 6, 6.6];
+/* ---- Sky Islands' stops on the walk (land.js, STOPS.sky): the launch meadow, the cloud docks, the floating gardens, the old
+   sky ruins and the castle in the clouds. Each walk is on the same ground as its holes (grass, boards, garden, flagstones),
+   with the same things standing about at walk scale, and the clouds showing through where the island ends or has cracked. */
+// grass in smooth patches, the way the holes paint it: base, lighter, darker, and a fourth colour for the odd big patch
+function skyGrassAt(c, C, sd){ var a = vn(c.ti * 0.03, c.tj * 0.03, sd), b = vn(c.ti * 0.085, c.tj * 0.085, sd + 1); return a > 0.72 ? C[3] : a < 0.28 ? C[2] : b > 0.64 ? C[1] : b < 0.3 ? C[2] : C[0]; }
+GPAT.skymeadow = function(c){ return skyGrassAt(c, ['#66b952', '#74c45c', '#58a848', '#9ccc5a'], 61); };
+GPAT.skydocks = function(c){ return skyGrassAt(c, ['#62b450', '#70c05a', '#55a446', '#8cc45a'], 63); };
+GPAT.skycastle = function(c){ return skyGrassAt(c, ['#5fae4c', '#6cba56', '#529f44', '#86c25e'], 65); };
+// the gardens: grass, and beds of pink, yellow and violet flowers in drifts through it
+GPAT.skygarden = function(c){ var f = vn(c.ti * 0.035, c.tj * 0.035, 67); if (f > 0.76){ var a = vn(c.ti * 0.012, c.tj * 0.012, 68);
+  return f < 0.785 ? '#4f9a42' : a > 0.5 ? '#f48aae' : '#ffd23f'; } return skyGrassAt(c, ['#5cb24c', '#6abe56', '#4fa042', '#7cc85e'], 66); };
+// the ruins: worn white flagstones two feet by one and a half, grass winning in patches
+GPAT.skyruins = function(c){ var g = vn(c.ti * 0.03, c.tj * 0.03, 71); if (g < 0.38) return skyGrassAt(c, ['#6ab454', '#78c05e', '#5aa44a', '#94c86a'], 72);
+  var row = Math.floor(c.tj / 12), off = row % 2 ? 8 : 0; if (c.tj % 12 === 0 || (c.ti + off) % 16 === 0) return g < 0.46 ? '#7ab060' : '#c2b8a0';
+  var a = vn(c.ti * 0.05, c.tj * 0.05, 73); return a > 0.65 ? '#ece6d6' : a < 0.35 ? '#d6ceb8' : '#e2dccb'; };
+
+var SKY_LEAF = ['#3f9a46', '#5bb352', '#2f8139'], SKY_BLOSSOM = ['#f4a7c0', '#f8c4d6', '#e88aa8'];
+KIT['sky~meadow'] = kitFrom(KIT.sky, { sandC:['#f4f7fb', '#ffffff', '#e2e9f2', 0.2], g:['#66b952', '#74c45c', '#58a848', 0.2], gpat:'skymeadow', p:['#d8c48e', '#e2d09c', '#c8b07a'], tree:['broad', 'broad', 'broad'], leaves:SKY_LEAF, bark:'#6a4a2a',
+  low:['bush', 'hay', 'bush', 'rock'], dens:0.2, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:4, lm:['skyBalloonPad', 'skyHaystacks', 'skyBalloonPad', 'skyWindsock'], wall:['#e8e2d0', '#a99c7c'] });
+KIT['sky~docks'] = kitFrom(KIT.sky, { sandC:['#f4f7fb', '#ffffff', '#e2e9f2', 0.2], g:['#62b450', '#70c05a', '#55a446', 0.2], gpat:'skydocks', p:['#a8763f', '#b4824a', '#7a5230'], plank:true, tree:['broad', 'broad', 'pine'], leaves:SKY_LEAF, bark:'#6a4a2a',
+  low:['bush', 'rock', 'bush', 'hay'], dens:0.16, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:5, lm:['skyMast', 'skyOffice', 'skyCargo', 'lamps', 'skyCargo'], wall:['#e8e2d0', '#3f7fb5'] });
+KIT['sky~gardens'] = kitFrom(KIT.sky, { g:['#5cb24c', '#6abe56', '#4fa042', 0.2], gpat:'skygarden', p:['#e2dac6', '#ece6d6', '#c2b8a0'], paved:true, tree:['broad', 'broad', 'puff'], leaves:SKY_BLOSSOM, bark:'#6a4a2a',
+  low:['bush', 'fern', 'bush'], haz:'water', hazC:['#3fa8c8', '#9fe0ee'], waterC:['#3fa8c8', '#9fe0ee'], dens:0.7, nlm:4, lm:['skyTerrace', 'skyIsleTree', 'kite', 'skyIsleTree'], wall:['#e2dac6', '#9a8468'] });
+KIT['sky~ruins'] = kitFrom(KIT.sky, { g:['#e2dccb', '#ece6d6', '#d6ceb8', 0.2], gpat:'skyruins', p:['#e8e2d2', '#f2eee2', '#c8bea6'], paved:true, tree:['broad', 'broad', 'puff'], leaves:['#5aa84c', '#7cc066', '#4a9440'], bark:'#6a4a2a',
+  low:['skyStone', 'bush', 'skyStone'], haz:'water', hazC:['#e8f0f9', '#ffffff'], waterC:['#dfe9f6', '#ffffff'], dens:0.3, nlm:4, lm:['skyGate', 'skyColumns', 'skyRainbow', 'skyColumns'], wall:['#e8e2d2', '#b8ae96'] });
+KIT['sky~castle'] = kitFrom(KIT.sky, { sandC:['#f4f7fb', '#ffffff', '#e2e9f2', 0.2], g:['#5fae4c', '#6cba56', '#529f44', 0.2], gpat:'skycastle', p:['#d0c8b4', '#e2dccb', '#b0a68e'], paved:true, tree:['pine', 'broad', 'pine'], leaves:SKY_LEAF, bark:'#6a4a2a',
+  low:['bush', 'skyStone', 'bush'], dens:0.22, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:3, lm:['skyCastle', 'skyMill', 'lamps'], wall:['#f4f0e4', '#3f7fd5'] });
+LIFE_AS['sky~meadow'] = { fly:['song', 4], balloons:4, mote:['butter', 8] };
+LIFE_AS['sky~docks'] = { fly:['gull', 5], balloons:2 };
+LIFE_AS['sky~gardens'] = { fly:['song', 3], mote:[['butter', 12], ['petal', 14]], balloons:1 };
+LIFE_AS['sky~ruins'] = { fly:['crow', 3], balloons:1 };
+LIFE_AS['sky~castle'] = { fly:['gull', 4], balloons:2, mote:['butter', 6] };
+
+LMSIZE.skyBalloonPad = [7, 7, 14]; LMSIZE.skyHaystacks = [8, 5, 4]; LMSIZE.skyWindsock = [4, 2, 7]; LMSIZE.skyMast = [16, 6, 14]; LMSIZE.skyOffice = [9, 6, 13]; LMSIZE.skyCargo = [6, 4, 3];
+LMSIZE.skyTerrace = [11, 8, 7]; LMSIZE.skyIsleTree = [7, 7, 15]; LMSIZE.skyGate = [9, 2.4, 9]; LMSIZE.skyColumns = [10, 3, 7.5]; LMSIZE.skyRainbow = [17, 3, 9]; LMSIZE.skyCastle = [18, 9, 20]; LMSIZE.skyMill = [11, 6, 17];
+LOWR.skyStone = 1; LOWH.skyStone = 1.2;
+
+// a balloon's envelope in twelve gores with a band round it, its basket and ropes, at walk scale: zb is the basket's floor
+var SKY_ENV = [['#ff5a3c', '#ffd23f', '#ffffff'], ['#3fa7e0', '#ffffff', '#ffd23f'], ['#a86ad8', '#ffffff', '#ff8ab0'], ['#7dd56f', '#ffd23f', '#ff5a3c']];
+function skyEnvelope(B, x, y, zb, s, cols){ var R0 = 2.6 * s, cz = zb + 6 * s, mz = zb + 3 * s;
+  B.solid(x - R0 - 0.2, y - R0 - 0.2, zb, x + R0 + 0.2, y + R0 + 0.2, cz + R0 + 0.2, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), t = pz - zb;
+    if (t < 1.2 * s) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.8 * s ? (t > 1.05 * s ? '#5a3a1e' : (Math.floor(t / s * 5) % 2 ? '#b08a52' : '#9a7444')) : null;
+    if (pz < mz){ var k = (t - 1.2 * s) / (mz - zb - 1.2 * s), cr = 0.7 * s + k * 0.2 * s; if (k > 0.8 && r < 0.4 * s) return '#3a3a40'; return (Math.abs(Math.abs(dx) - cr) < 0.1 && Math.abs(Math.abs(dy) - cr) < 0.1) ? '#4a3a2a' : null; }
+    var rad = pz > cz ? Math.sqrt(Math.max(0, R0 * R0 - (pz - cz) * (pz - cz))) : R0 * (0.3 + 0.7 * Math.sin((pz - mz) / (cz - mz) * 1.5708)); if (r > rad) return null;
+    if (Math.abs(pz - cz + 0.6 * s) < 0.28 * s) return cols[2]; return Math.floor((Math.atan2(dy, dx) + 3.1416) / 6.2832 * 12) % 2 ? cols[0] : cols[1]; }, 0.2); }
+// a balloon standing ready on the meadow, tied down with sandbags at the corners of its basket
+BUILD.skyBalloonPad = function(B, t, i){ skyEnvelope(B, t.x, t.y, B.gz(t.x, t.y), 1, SKY_ENV[i % 4]);
+  box(B, t.x, t.y, t.w, t.d, 1, function(dx, dy, tt){ for (var k = 0; k < 4; k++){ var sx = (k & 1 ? 1 : -1) * 2.2, sy = (k & 2 ? 1 : -1) * 2.2; if (Math.hypot(dx - sx, dy - sy, (tt - 0.3) * 1.3) < 0.42) return '#c8a868'; } return null; }, 0.125); };
+// three haystacks and a round bale
+function skyStack(B, x, y, s){ box(B, x, y, 2.4 * s, 2.4 * s, 3.4 * s, function(dx, dy, tt){ var t = tt / s, r = Math.hypot(dx, dy) / s, w = 1.15 * Math.sqrt(Math.max(0, 1 - Math.pow(t / 3.2, 2.2)));
+  if (r > w) return null; if (t > 2.9) return '#c89a3a'; return Math.floor(t * 2.2 + vn(dx * 2, dy * 2, 5) * 0.8) % 2 ? '#e2bc5c' : '#d4aa48'; }, 0.125); }
+BUILD.skyHaystacks = function(B, t, i){ skyStack(B, t.x - 2.4, t.y - 0.8, 1); skyStack(B, t.x + 0.4, t.y - 1.2, 0.85); skyStack(B, t.x + 2.6, t.y + 0.4, 0.7);
+  box(B, t.x - 0.6, t.y + 1.4, 2.4, 1.6, 1.6, function(dx, dy, tt){ var r = Math.hypot(dy, tt - 0.75); if (r > 0.75 || Math.abs(dx) > 1.1) return null; if (Math.abs(dx) > 1) return Math.floor(r * 8) % 2 ? '#c89a3a' : '#e2bc5c'; return Math.abs(Math.abs(dx) - 0.45) < 0.08 ? '#8a5a2a' : '#dcb452'; }, 0.125); };
+// the launch flag: a pole and a striped windsock streaming east
+BUILD.skyWindsock = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.hypot(dx + 1.4, dy) < 0.12 && tt < 6.6) return '#e8e2d0';
+  var u = dx + 1.3, rr = 0.42 - u * 0.1; if (u > 0 && u < 3 && Math.hypot(dy, tt - 6 + u * 0.15) < rr) return Math.floor(u * 1.6) % 2 ? '#ff5a3c' : '#ffffff'; return null; }, 0.125); };
+// the mooring mast with an airship tied up to it, nose in: a cream envelope with a red band, fins, the gondola with its windows lit
+BUILD.skyMast = function(B, t, i){ var mx = t.x + t.w / 2 - 1.4, dir = -1;
+  box(B, mx, t.y, 2.4, 2.4, t.h, function(dx, dy, tt){ var w = 1 - tt * 0.05; if (tt > 11.6) return Math.hypot(dx, dy) < 0.5 ? (tt > 12.6 ? '#d8402e' : '#3a3a40') : null;
+    if (Math.abs(Math.abs(dx) - w) < 0.14 && Math.abs(Math.abs(dy) - w) < 0.14) return '#4a4a52'; if ((Math.abs(Math.abs(dx) - w) < 0.1 || Math.abs(Math.abs(dy) - w) < 0.1) && Math.abs((tt % 2) - 1) < 0.1 && Math.max(Math.abs(dx), Math.abs(dy)) <= w + 0.14) return '#5a5a62'; return null; }, 0.125);
+  var X = mx - 6.6, Z = 10.2, a = 5.6, rb = 1.9;
+  box(B, X, t.y, 2 * a + 1.2, rb * 2 + 1.6, Z + rb + 0.6, function(dx, dy, tt){ var u = dx * -dir, dz = tt - Z; var e = Math.hypot(u / a, dy / rb, dz / rb);
+    if (e < 1){ if (Math.abs(u / a - 0.55) < 0.06 || Math.abs(u / a + 0.62) < 0.05) return '#d8402e'; return Math.floor((Math.atan2(dz, dy) + 3.1416) * 2.6) % 2 ? '#f2ead8' : '#e6dcc4'; }
+    if (u < -a * 0.62 && u > -a - 0.5){ var k = (-a * 0.62 - u) / (a * 0.38 + 0.5), fh = rb * (0.5 + k * 0.7); if ((Math.abs(dy) < 0.12 && Math.abs(dz) < fh) || (Math.abs(dz) < 0.12 && Math.abs(dy) < fh)) return Math.abs(dz) > fh - 0.4 || Math.abs(dy) > fh - 0.4 ? '#d8402e' : '#c9bfa6'; }
+    var gz = dz + rb + 1; if (Math.abs(u) < 1.8 && Math.abs(dy) < 0.6 && Math.abs(gz) < 0.5){ if (dy > 0.45 && Math.abs(gz) < 0.18 && ((u + 4) % 0.8) < 0.45) return '#ffe08a'; return gz > 0.35 ? '#5a3a1e' : '#8a5a34'; }
+    if (Math.abs(dy) < 0.1 && Math.abs(Math.abs(u) - 1) < 0.1 && gz >= 0.5 && gz < 1) return '#4a3a2a'; return null; }); };
+// the dock office: a white gabled shed with a blue roof and the weather vane on its ridge
+BUILD.skyOffice = function(B, t, i){ gable(B, t.x, t.y, t.w - 1.6, t.d - 1, 5, 3, function(dx, dy, tt){ return Math.floor((dx + 20) * 1.4) % 2 ? '#e8e2d0' : '#dcd4bc'; }, function(dx, dy, tt){ return (tt * 2.6 | 0) % 2 ? '#3f7fb5' : '#346c9c'; }, '#4a2e1c');
+  box(B, t.x, t.y, 4, 2, t.h, function(dx, dy, tt){ var z = tt - 8.2; if (z < 0) return null; if (Math.hypot(dx, dy) < 0.09 && z < 3.4) return '#2a2a30';
+    if (Math.abs(z - 2) < 0.08 && ((Math.abs(dy) < 0.08 && Math.abs(dx) < 1) || (Math.abs(dx) < 0.08 && Math.abs(dy) < 0.9))) return '#2a2a30';
+    if (Math.abs(dy) < 0.08 && Math.abs(z - 2.9) < 0.1 && Math.abs(dx) < 1.6) return '#e0b040'; if (Math.abs(dy) < 0.08 && dx > 1.1 && dx < 1.9 && Math.abs(z - 2.9) < (1.9 - dx) * 0.5) return '#e0b040';
+    if (Math.abs(dy) < 0.08 && dx < -1 && dx > -1.9 && z > 2.9 && z < 2.9 + (dx + 1.9) * 0.8) return '#e0b040'; return null; }, 0.125); };
+// cargo for the airships: hay bales and crates stacked by the boards
+BUILD.skyCargo = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (dx < 0.4){ var cx = dx + 1.4, k = tt > 1.3 ? 1 : 0, ox = k ? 0.5 : 0; if (Math.abs(cx - ox) < 1.3 && Math.abs(dy) < 0.9 && tt < 1.3 + k * 1.2 && (!k || Math.abs(cx - ox) < 1)){ var r = Math.hypot(dy, (tt % 1.3) - 0.65); return Math.abs(Math.abs(cx - ox) - 0.5) < 0.07 ? '#8a5a2a' : '#dcb452'; } }
+  var qx = dx - 1.6; if (Math.abs(qx) < 0.9 && Math.abs(dy) < 0.9 && tt < 1.7){ var e = Math.max(Math.abs(qx), Math.abs(dy)) > 0.78 || tt > 1.55 || tt < 0.12; return e || Math.abs(qx - (tt - 0.85)) < 0.1 ? '#6a4420' : '#a8783e'; }
+  return null; }, 0.125); };
+// a raised garden terrace of pale rock with a pool on top, its water spilling down the front into a pool at its foot
+BUILD.skyTerrace = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var top = 4.4 + (vn(dx * 0.5, 3, i) - 0.5) * 0.8, rx = t.w / 2 - 0.4, ry = t.d / 2 - 1.8;
+  if (dy > ry - 0.2){ var pd = Math.hypot(dx / 2.6, (dy - ry - 1) / 1.1); if (pd < 1 && tt < 0.25) return pd > 0.85 ? '#cfc6b0' : (vn(dx * 3, dy * 3, i) > 0.62 ? '#9fe0ee' : '#3fa8c8'); if (dy > ry) return null; }
+  var d = Math.hypot(dx / rx, (dy + 0.6) / (ry + 0.6)) + (vn(dx * 0.8, tt * 0.8, i + 3) - 0.5) * 0.15; if (d > 1 || tt > top) return null;
+  if (Math.abs(dx) < 1 && d > 0.8) return vn(dx * 4, tt * 0.7, i + 5) > 0.55 ? '#ffffff' : '#bfe8f4';   // the water down the face
+  if (tt > top - 0.35) return Math.hypot(dx / 2.4, (dy + 0.8) / 1.4) < 1 ? '#3fa8c8' : (vn(dx * 0.6, dy * 0.6, i) > 0.62 ? '#f48aae' : '#5fae4e');
+  return Math.floor(tt * 1.3 + vn(dx, dy, i) * 0.6) % 2 ? '#c8b494' : '#b8a07e'; }); };
+// a little floating island hovering over the path's edge, a tree on it and a trickle of water off one side
+BUILD.skyIsleTree = function(B, t, i){ var zt = 5.4, r = 2.6, x = t.x, y = t.y;
+  box(B, x, y, t.w, t.d, t.h, function(dx, dy, tt){ var a = Math.atan2(dy, dx), rr = Math.hypot(dx, dy * 1.15) / (r * (0.88 + vn(a * 1.6 + 3, i, 7) * 0.24));
+    if (Math.abs(dx - 1.4) < 0.35 && dy > 1.2 && dy < 1.7 && tt < zt - 0.2 && tt > 0.4) return vn(dx * 6, tt * 0.8, i) > 0.5 ? '#ffffff' : '#bfe8f4';   // the trickle
+    if (rr > 1) return null; var dz = zt - tt, d = r * 1.6 * (1 - Math.pow(rr, 1.6)); if (dz < 0 || dz > d) return null; if (dz < 0.35) return '#5fae4e'; if (dz < 0.8) return '#6a4a2c'; return Math.floor(dz * 1.4) % 2 ? '#c8b494' : '#b8a07e'; });
+  var kx = kitOf(t.th); BUILD.broad({ vox:B.vox, tube:B.tube, blob:B.blob, solid:B.solid, gz:function(){ return B.gz(x, y) + zt; } }, { th:t.th, x:x - 0.3, y:y - 0.3, h:7, cr:2.6 }, i); };
+// the old gate: two fluted pillars and a lintel with a gold sun on it
+BUILD.skyGate = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 1) return null;
+  if (tt > 7 && tt < 8.6 && Math.abs(dx) < 4.2){ if (dy > 0.6 && Math.hypot(dx, tt - 7.8) < 0.55) return '#ffd23f'; return tt > 8.3 ? '#cfc6b0' : '#e8e2d2'; } if (tt > 6.5 && tt <= 7 && Math.abs(dx) < 3.8) return '#ddd6c4';
+  if (Math.abs(Math.abs(dx) - 3) < 0.85 && tt <= 6.5){ if (tt < 0.6) return '#cfc6b0'; var r = Math.hypot(Math.abs(dx) - 3, dy); if (r > 0.75) return null; return Math.floor((Math.atan2(dy, Math.abs(dx) - 3) + 3.1416) * 2.2) % 2 ? '#f2eee2' : '#ddd6c4'; } return null; }); };
+// a row of marble columns, two standing, the rest broken off, and a drum fallen in the grass
+BUILD.skyColumns = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = 0; k < 4; k++){ var cx = -3.6 + k * 2.4, H = k % 3 === 0 ? 7 : 2 + hash(i, k, 3) * 3, top = k % 3 === 0 ? H : H - 0.3 + vn(dx * 4, dy * 4, k) * 0.6;
+    if (Math.abs(dx - cx) < 1 && Math.abs(dy) < 1 && tt <= top){ if (tt < 0.5 || (k % 3 === 0 && tt > H - 0.5)) return Math.max(Math.abs(dx - cx), Math.abs(dy)) < 0.95 ? '#e8e2d2' : null; var r = Math.hypot(dx - cx, dy); if (r > 0.7) return null; return Math.floor((Math.atan2(dy, dx - cx) + 3.1416) * 2.2) % 2 ? '#f2eee2' : '#ddd6c4'; } }
+  if (Math.hypot(dy - 1.1, tt - 0.6) < 0.6 && Math.abs(dx - 1) < 1) return Math.abs(dx - 1) > 0.9 ? '#ddd6c4' : '#ece6d8'; return null; }); };
+var SKY_RAIN = ['#ff5a5a', '#ff9a3a', '#ffd23f', '#6ad26a', '#3fa7e0', '#7a6ad8'];
+// a rainbow standing out of a cloud at each end
+BUILD.skyRainbow = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R0 = 7.6, d = Math.hypot(dx, tt + 0.4), k = (R0 - d) / 0.55;
+  if (Math.abs(dy) < 0.3 && k >= 0 && k < 6) return SKY_RAIN[k | 0];
+  for (var s = -1; s <= 1; s += 2){ var cx = s * 6.1; if (Math.hypot((dx - cx) / 2.4, dy / 1.4, (tt - 0.6) / 1.4) < 1 || Math.hypot((dx - cx - s * 1.2) / 1.4, dy / 1.2, (tt - 1.5) / 1.1) < 1) return vn(dx * 2, tt * 2, 4) > 0.6 ? '#eef4fb' : '#ffffff'; }
+  return null; }, 0.2); };
+// the castle front: a white curtain wall with its gate and battlements, a tower at each end and two behind, blue and red spires, lit windows
+function skyTower(B, x, y, r, H, roof){ box(B, x, y, 2 * r + 0.6, 2 * r + 0.6, H + r * 2.6 + 2, function(dx, dy, tt){ var rr = Math.hypot(dx, dy);
+  if (tt < H){ if (rr > r) return null; if (dy > r * 0.6 && Math.abs(dx) < 0.3 && Math.abs(((tt + 1) % 3) - 1.5) < 0.5 && tt > 2) return '#ffd77a'; return Math.floor(tt * 1.1) % 2 ? '#f4f0e4' : '#e8e2d2'; }
+  if (tt < H + 0.6) return rr < r + 0.3 ? '#ddd6c4' : null; var k = (tt - H - 0.6) / (r * 2.4); if (k < 1) return rr < (r + 0.3) * (1 - k) ? (Math.floor(Math.atan2(dy, dx) * 2.5 + 8) % 2 ? roof[0] : roof[1]) : null;
+  if (rr < 0.1 && tt < H + r * 2.4 + 1.8) return '#3a3a40'; if (Math.abs(dy) < 0.08 && dx > 0 && dx < 1.2 && tt > H + r * 2.4 + 1.1 && tt < H + r * 2.4 + 1.7 - dx * 0.4) return '#ff5a3c'; return null; }); }
+BUILD.skyCastle = function(B, t, i){ var q = t.w / 18, hw = t.w / 2 - 1.8 * q, fy = t.y + t.d / 2 - 1.2 * q, BL = ['#3f7fd5', '#346cb8'], RD = ['#d8402e', '#b8342a'];
+  skyTower(B, t.x, t.y - 1.4 * q, 2.4 * q, 9.5 * q, BL); skyTower(B, t.x - hw * 0.55, t.y - 0.8 * q, 1.4 * q, 8 * q, RD); skyTower(B, t.x + hw * 0.55, t.y - 0.8 * q, 1.4 * q, 8 * q, RD);
+  box(B, t.x, fy, 2 * hw, 1.4 * q, 7 * q, function(dx, dy, tt){ if (Math.abs(dy) > 0.6 * q) return null; dx /= q; tt /= q; if (tt > 5.6){ if (tt > 6.6 || Math.floor((dx + 40) * 0.8) % 2) return null; }
+    if (Math.abs(dx) < 1.5 && tt < 3.8 && (tt < 2.6 || Math.hypot(dx, tt - 2.6) < 1.5)) return dy > 0.4 * q ? '#6a4a2c' : null; if (dy > 0.4 * q && Math.abs(Math.abs(dx) - 4) < 0.35 && tt > 2.6 && tt < 4.2) return '#ffd77a';
+    var row = Math.floor(tt * 1.1), col = Math.floor(dx * 0.7 + (row % 2) * 0.5); return ((tt * 1.1) % 1) < 0.1 ? '#cfc6b0' : (hash(col, row, 7) < 0.3 ? '#e8e2d2' : '#f4f0e4'); });
+  skyTower(B, t.x - hw, fy, 1.8 * q, 7.4 * q, BL); skyTower(B, t.x + hw, fy, 1.8 * q, 7.4 * q, BL); };
+// the cloud mill: a white tower, a red cap, four sails facing the path
+BUILD.skyMill = function(B, t, i){ var q = t.h / 13; box(B, t.x, t.y, 3.4 * q, 3.4 * q, 9.4 * q, function(dx, dy, tt){ dx /= q; dy /= q; tt /= q; var r = Math.hypot(dx, dy), w = 1.6 - tt / 7.6 * 0.5;
+  if (tt < 7.6){ if (r > w) return null; if (dy > w * 0.7 && Math.abs(dx) < 0.45 && tt < 1.8) return '#4a2e1c'; if (dy > w * 0.6 && Math.abs(dx) < 0.3 && Math.abs(tt - 4.4) < 0.4) return '#ffd77a'; return Math.floor(tt * 1.2) % 2 ? '#f4f0e4' : '#e8e2d2'; }
+  return r < 1.3 * (1 - (tt - 7.6) / 1.8 * 0.8) ? '#8a3a2a' : null; });
+  var hz = 7.2, ang = 0.4 + hash(i, 9, 9); box(B, t.x, t.y + 1.6 * q, 9.6 * q, 1, 13 * q, function(dx, dy, tt){ dx /= q; tt /= q; var dz = tt - hz; if (Math.abs(dy) > 0.2) return null; if (Math.hypot(dx, dz) < 0.35) return '#5a3a1e';
+    for (var s = 0; s < 4; s++){ var a = ang + s * 1.5708, ux = Math.cos(a), uz = Math.sin(a), al = dx * ux + dz * uz, ac = -dx * uz + dz * ux;
+      if (al > 0.3 && al < 4.6){ if (Math.abs(ac) < 0.12) return '#6a4a2c'; if (ac > 0.12 && ac < 1){ return Math.abs(((al * 1.5) % 1) - 0.5) < 0.1 || ac > 0.9 ? '#8a6a44' : '#f4efe2'; } } } return null; }, 0.125); };
+// a worn block of white stone, half sunk in the grass
+BUILD.skyStone = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#e4dece', '#d0c8b4', '#ece6d8'], i); };
+/* ---- Dino Valley's stops on the walk, the same places its holes stand in (land.js): the fern meadow under the bone wall,
+   the swamp below the falls, the fossil cliffs and the dig, the rex's jungle, and the long neck valley under the volcano.
+   Each walk takes its stop's ground, trees, lows, water and landmarks, so the way in looks like the holes it leads to. */
+KIT['dino~meadow'] = kitFrom(KIT.dino, { g:['#6e9a3a', '#82ac46', '#5a8430', 0.2], gpat:'dinmeadow', p:['#b8976a', '#c8a77a', '#a8875a'], tree:['dinTreefern', 'dinCycad', 'dinTreefern'],
+  leaves:['#3e7426', '#5a8a2e', '#2e6420'], bark:'#5e4428', low:['fern', 'fern', 'bush', 'rock'], hazC:['#4a7442', '#7aa65a'], waterC:['#4a7442', '#7aa65a'], dens:0.65, lm:['dinBluff', 'nest', 'dinBluff', 'nest', 'dinoskel'], nlm:3, wall:['#d8b47a', '#a8834e'] });
+KIT['dino~swamp'] = kitFrom(KIT.dino, { g:['#4e6a2e', '#5e5a30', '#3e5a26', 0.2], gpat:'dinswamp', p:['#7a6a48', '#8a7a56', '#6a5a3e'], tree:['dinCypress', 'dinCypress', 'dinTreefern'],
+  leaves:['#1e4a24', '#2e5e2c', '#4a7a3a'], bark:'#6a5640', low:['dinReeds', 'fern', 'dinReeds', 'bush'], hazC:['#2c4630', '#4a6a3e'], waterC:['#2c4630', '#4a6a3e'], dens:1.05,
+  lm:['dinLogs', 'longneck', 'falls', 'dinLogs'], nlm:4, wall:['#5a6a3c', '#3a4a2a'] });
+KIT['dino~dig'] = kitFrom(KIT.dino, { g:['#cfa46e', '#dcb684', '#bc8f5a', 0.2], gpat:'dindig', p:['#e2c89a', '#ecd4aa', '#d2b88a'], tree:['dinAraucaria', 'dinCycad'],
+  leaves:['#24502a', '#33663a', '#2e5e34'], bark:'#6e5038', low:['rock', 'dinBones', 'rock', 'bushdry', 'rock', 'bushdry'], haz:'slow', hazC:['#5e4028', '#6e4e30'], bogC:['#5e4028', '#6e4e30'], dens:0.55,
+  lm:['dinTent', 'dinPit', 'mesa', 'dinPit'], nlm:4, wall:['#b8693e', '#7a4428'] });
+KIT['dino~rex'] = kitFrom(KIT.dino, { g:['#3e6a2a', '#4a7630', '#2f5a22', 0.2], gpat:'dinrex', p:['#6a5436', '#7a6440', '#5a4630'], tree:['broad', 'dinTreefern', 'broad', 'dinCycad'],
+  leaves:['#1f5a26', '#2b6e30', '#3f8a3a'], bark:'#4a3624', low:['fern', 'fern', 'bush', 'fern', 'dinBones', 'bush'], haz:'slow', hazC:['#3a2e1c', '#4a3a24'], bogC:['#3a2e1c', '#4a3a24'], dens:1.35,
+  lm:['dinDen', 'dinRex', 'nest'], nlm:3, wall:['#6e6a5e', '#4a4640'] });
+KIT['dino~valley'] = kitFrom(KIT.dino, { g:['#9aa250', '#b0b064', '#86923e', 0.2], gpat:'dinvalley', p:['#b8a27a', '#c8b28a', '#a8926a'], tree:['dinAraucaria', 'dinAraucaria', 'dinCycad'],
+  leaves:['#24502a', '#33663a', '#2e5e34'], bark:'#6e5038', low:['rock', 'fern', 'bushdry', 'rock'], hazC:['#3a8aa0', '#7ac0cc'], waterC:['#3a8aa0', '#7ac0cc'], dens:0.45,
+  lm:['dinVolcano', 'longneck', 'longneck', 'dinBoulders'], nlm:4, wall:['#6a5e5e', '#4a4044'] });
+LIFE_AS['dino~meadow'] = { fly:['ptero', 2], mote:[['butter', 12], ['leaf', 6]] };
+LIFE_AS['dino~swamp'] = { fly:['ptero', 2], mote:[['firefly', 26], ['butter', 4]] };
+LIFE_AS['dino~dig'] = { fly:['ptero', 3], mote:['dust', 20] };
+LIFE_AS['dino~rex'] = { fly:['ptero', 2], mote:[['firefly', 14], ['leaf', 10]] };
+LIFE_AS['dino~valley'] = { fly:['ptero', 5], mote:[['ash', 18], ['leaf', 4]] };
+
+// the ground of each stop, in smooth patches the size of the holes' own
+function dinG(c, sd, cols){ var a = vn(c.ti * 0.022, c.tj * 0.022, sd), b = vn(c.ti * 0.06, c.tj * 0.06, sd + 1); return a > 0.66 ? cols[1] : a < 0.3 ? cols[2] : b > 0.64 ? cols[3] : b < 0.3 ? cols[4] : cols[0]; }
+/* the rex's tracks: lines of three toed prints walking up the screen, a line every gap feet across, each wandering a
+   little. A print is sz feet long, one every st feet, left and right in turn. */
+function dinTrack(c, gap, st, sz){ var x = c.ti / 8, y = c.tj / 8, u = x - Math.sin(y * 0.045) * 9, k = Math.round(u / gap), lx = u - k * gap;
+  if (Math.abs(lx) > st * 0.3 + sz) return false; var n = Math.round(y / st), side = (n & 1) ? 1 : -1, pu = (n * st - y) / sz, pv = (lx - side * st * 0.17) / sz;
+  if (Math.hypot(pu + 0.32, pv * 1.1) < 0.36) return true;
+  for (var t = -1; t <= 1; t++){ var an = t * 0.5, ca = Math.cos(an), sa = Math.sin(an), qu = pu * ca + pv * sa, qv = -pu * sa + pv * ca; if (qu > -0.1 && qu < 0.75 - Math.abs(t) * 0.12 && Math.abs(qv) < 0.13 * (1 - qu * 0.6)) return true; }
+  return false; }
+GPAT.dinmeadow = function(c){ return dinG(c, 11, ['#6e9a3a', '#86ae48', '#5a8632', '#78a440', '#628e36']); };
+GPAT.dinswamp = function(c){ return dinG(c, 12, ['#4e6a2e', '#5e5a30', '#3e5a26', '#58763a', '#466228']); };
+GPAT.dindig = function(c){ return dinG(c, 13, ['#cfa46e', '#dcb684', '#bc8f5a', '#d6ac74', '#c49a64']); };
+GPAT.dinrex = function(c){ return dinTrack(c, 26, 4.2, 1.7) ? '#3a2e1c' : dinG(c, 14, ['#3e6a2a', '#5a5030', '#2f5a22', '#4a7630', '#36602a']); };
+GPAT.dinvalley = function(c){ return dinG(c, 15, ['#9aa250', '#b0b064', '#86923e', '#a4aa58', '#8e9846']); };
+
+// the plants: a tree fern, a cycad, a swamp cypress, a monkey puzzle, and horsetails to walk through
+TREEH.dinTreefern = [8, 3, 3.2]; TREEH.dinCycad = [3, 1.6, 2.4]; TREEH.dinCypress = [12, 4, 3.6]; TREEH.dinAraucaria = [14, 4, 3.4];
+BLOCKR.dinTreefern = 0.5; BLOCKR.dinCycad = 0.8; BLOCKR.dinCypress = 0.8; BLOCKR.dinAraucaria = 0.6;
+LOWR.dinReeds = 0.9; LOWH.dinReeds = 2.4; PLANT.dinReeds = 1; LOWR.dinBones = 1; LOWH.dinBones = 0.8; BLOCKR.dinBones = 0;
+BUILD.dinTreefern = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr, tx = x + (hash(i, 4, 83) - 0.5) * 1.2;
+  B.vox(x - R - 1.5, y - R - 1.5, zb - 0.2, x + R + 1.5, y + R + 1.5, zb + H + 1.6, function(set){
+    B.tube(set, x, y, zb, tx, y, zb + H, 0.42, 0.32, function(u, z){ return vn(z * 1.5, i, 84) < 0.45 ? '#4a3420' : '#5e4428'; });
+    for (var f = 0; f < 9; f++){ var a = f / 9 * 6.28 + i, fx = Math.cos(a), fy = Math.sin(a) * 0.72;
+      for (var al = 0; al < R * 1.05; al += set.st){ var q = al / (R * 1.05), sag = R * (0.46 * q - 0.5 * q * q), wd = 0.75 * Math.sin(q * 3.14) + 0.08;
+        for (var o = -wd; o <= wd; o += set.st){ if (Math.abs(o) > set.st * 1.5 && ((q * 9 + Math.abs(o) * 1.4) % 1) > 0.72) continue;
+          set(tx + fx * al - fy * o, y + fy * al + fx * o, zb + H + sag, Math.abs(o) < set.st * 1.5 ? '#3c6a1e' : q > 0.6 ? '#7aae3e' : '#5c9430'); } } } }, 0.25); };
+BUILD.dinCycad = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr;
+  B.vox(x - R - 0.8, y - R - 0.8, zb - 0.2, x + R + 0.8, y + R + 0.8, zb + H + R + 0.6, function(set){
+    B.tube(set, x, y, zb, x, y, zb + H, 0.75, 0.6, function(u, z){ return (Math.floor((z - zb) * 2.4) % 2) ? '#6a5232' : '#836640'; });
+    for (var f = 0; f < 12; f++){ var a = f / 12 * 6.28 + i * 0.7, up = 0.45 + hash(f, i, 81) * 0.5, len = R * (0.9 + hash(i, f, 82) * 0.25), fx = Math.cos(a), fy = Math.sin(a) * 0.75;
+      for (var al = 0; al < len; al += set.st){ var z = zb + H + al * up - al * al * 0.09, wd = 0.42 * (1 - al / (len + 0.3));
+        for (var o = -wd; o <= wd; o += set.st) set(x + fx * al - fy * o, y + fy * al + fx * o, z, Math.abs(o) < set.st ? '#4a6a22' : al > len * 0.6 ? '#5a8a2e' : '#3e7426'); } }
+    B.blob(set, x, y, zb + H + 0.25, 0.6, 0.6, 0.5, '#b8702a'); }, 0.25); };
+BUILD.dinCypress = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr;
+  B.vox(x - R - 1.2, y - R - 1.2, zb - 0.4, x + R + 1.2, y + R + 1.2, zb + H + 1.2, function(set){
+    for (var r = 0; r < 5; r++){ var a = r * 1.26 + i; B.tube(set, x + Math.cos(a) * 1.3, y + Math.sin(a) * 1, zb - 0.2, x, y, zb + 2.6, 0.32, 0.22, '#5a4a36'); }   // the buttress roots
+    B.tube(set, x, y, zb - 0.2, x, y, zb + H * 0.92, 0.7, 0.28, '#6a5640');
+    for (var q = 0; q < 4; q++){ var cz = zb + H * (0.44 + q * 0.16), rr = R * (1.05 - q * 0.2), ox = (hash(q, i, 85) - 0.5) * 1.2;
+      B.blob(set, x + ox, y, cz, rr, rr * 0.8, 1.0, function(px, py, pz){ var n = vn(px * 0.9, py * 0.9 + pz * 1.2, 86); return n < 0.3 ? '#1e4a24' : n > 0.72 ? '#4a7a3a' : '#2e5e2c'; }); }
+    for (var m = 0; m < 8; m++){ var ma = hash(m, i, 87) * 6.28, mr = R * (0.5 + hash(i, m, 88) * 0.45), mx = x + Math.cos(ma) * mr, my = y + Math.sin(ma) * mr * 0.8, mz = zb + H * 0.44 - 0.8;   // moss hanging off the boughs
+      B.tube(set, mx, my, mz, mx, my, mz - 1.5 - hash(m, i, 89) * 1.2, 0.16, 0.07, '#94a46e'); } }, 0.25); };
+BUILD.dinAraucaria = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr;
+  B.vox(x - R - 1, y - R - 1, zb - 0.2, x + R + 1, y + R + 1, zb + H + 1.2, function(set){
+    B.tube(set, x, y, zb, x, y, zb + H, 0.55, 0.22, function(u, z){ return vn(z, i, 90) < 0.5 ? '#6e5038' : '#7e5e42'; });
+    for (var q = 0; q < 3; q++){ var z0 = zb + H * (0.62 + q * 0.13), rr = R * (1 - q * 0.24);
+      for (var b = 0; b < 7; b++){ var a = b / 7 * 6.28 + q + i, ex = x + Math.cos(a) * rr, ey = y + Math.sin(a) * rr * 0.8;
+        B.tube(set, x, y, z0, ex, ey, z0 + 0.8, 0.14, 0.1, '#5a4030');
+        B.blob(set, (x + ex * 2) / 3, (y + ey * 2) / 3, z0 + 0.9, rr * 0.42, rr * 0.36, 0.7, function(px, py, pz){ return vn(px * 1.2, py * 1.2 + pz, 91) < 0.4 ? '#24502a' : '#33663a'; }); } }
+    B.blob(set, x, y, zb + H, R * 0.38, R * 0.32, 0.8, '#2e5e34'); }, 0.25); };
+BUILD.dinReeds = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.vox(x - 1.2, y - 1, zb - 0.1, x + 1.2, y + 1, zb + 2.6, function(set){ for (var k = 0; k < 9; k++){ var a = hash(k, i, 97) * 6.28, r = hash(i, k, 98) * 0.7, sx = x + Math.cos(a) * r, sy = y + Math.sin(a) * r * 0.7, h = 1.4 + hash(k, i, 99) * 1;
+    B.tube(set, sx, sy, zb, sx + Math.cos(a) * 0.25, sy, zb + h, 0.13, 0.09, function(u, z){ return ((z - zb) * 2.6 | 0) % 3 === 0 ? '#3a4a22' : '#6a8a3a'; }); } }, 0.125); };
+// a heap of bones: a thigh bone across two ribs, and every other one a skull
+BUILD.dinBones = function(B, t, i){ var a = hash(i, 2, 77) * 3.14, ca = Math.cos(a), sa = Math.sin(a), s = 1.4;
+  box(B, t.x, t.y, 3, 3, 1.2, function(dx, dy, tt){ var u = (dx * ca + dy * sa) / s, v = (-dx * sa + dy * ca) / s, w = tt / s;
+    if (Math.abs(v) < 0.1 && Math.abs(u) < 0.8 && w < 0.2) return '#ece0c0'; if (Math.hypot(Math.abs(u) - 0.85, v) < 0.17 && w < 0.26) return '#f4ead2';
+    if (Math.abs(Math.hypot(u + 0.1, w) - 0.5) < 0.08 && Math.abs(Math.abs(v) - 0.35) < 0.08) return '#ddd0aa';
+    if (i % 2 && Math.hypot((u - 0.2) / 0.45, (v - 0.6) / 0.3, w / 0.32) < 1) return Math.hypot(u - 0.3, v - 0.8, w - 0.12) < 0.1 ? '#3a2e22' : '#f1e6c8';
+    return null; }, 0.125); };
+
+// the landmarks: the bone wall, fallen logs, the diggers' tent and their pit, the rex and his den, the volcano and its rockslide
+LMSIZE.dinBluff = [12, 5, 6]; LMSIZE.dinLogs = [10, 5, 2.4]; LMSIZE.dinTent = [7, 6, 5]; LMSIZE.dinPit = [9, 7, 2.4]; LMSIZE.dinRex = [17, 4.5, 8.6]; LMSIZE.dinDen = [10, 7, 7];
+LMSIZE.dinVolcano = [22, 16, 16]; LMSIZE.dinBoulders = [9, 5, 3];
+// the bone wall: a sandstone bluff in wandering bands, grass on its crown, and a skeleton set in its face, standing proud of it
+BUILD.dinBluff = function(B, t, i){ var hw = t.w / 2, hd = t.d / 2, H = t.h;
+  box(B, t.x, t.y, t.w, t.d + 0.6, H, function(dx, dy, tt){ var top = H - 0.6 + vn(dx * 0.4, 3, i) * 0.6, front = hd - tt * 0.1, ex = Math.pow(Math.abs(dx) / (hw - 0.3 - tt * 0.05), 4) + Math.pow(Math.abs(dy) / hd, 4);
+    var sp = H * 0.48 + Math.sin(dx * 0.5) * 0.25, fx = dx + 0.6;
+    if (dy > front - 0.4 && dy < front + 0.3 && Math.abs(dx) < hw - 0.8 && tt < top - 0.5){ var bone = (Math.abs(tt - sp) < 0.16 && Math.abs(fx) < 3.4) || Math.hypot((fx - 4) / 0.6, (tt - sp - 0.1) / 0.4) < 1;
+      for (var r = -3; r <= 3 && !bone; r++) if (Math.abs(fx - r * 0.75) < 0.12 && tt < sp && tt > sp - 1.3 + Math.abs(r) * 0.1) bone = true;
+      if (bone) return Math.hypot(fx - 4.15, tt - sp - 0.18) < 0.15 ? '#4a3a24' : '#f1e6c8'; }
+    if (ex > 1 || tt > top || dy > front) return null;
+    if (tt > top - 0.35) return vn(dx * 0.8, dy * 0.8, i + 3) > 0.45 ? '#6e9a3a' : '#5a8430';
+    var z = tt + (vn(dx * 0.35, tt * 0.2, i + 5) - 0.5) * 0.9, b = Math.floor(z * 0.9); return ['#d8b47a', '#c9a46a', '#e2c48a', '#b8935a'][((b % 4) + 4) % 4]; }); };
+// fallen logs, one across another, moss on their backs and their cut ends pale
+BUILD.dinLogs = function(B, t, i){ var zb = B.gz(t.x, t.y);
+  B.vox(t.x - 5, t.y - 2.5, zb - 0.5, t.x + 5, t.y + 2.5, zb + 2.6, function(set){ [[-4.2, -0.8, 3.6, 0.6, 0.7], [-2.6, 1.4, 2.4, -1.5, 0.5], [0.8, -1.8, 4.3, 1.4, 0.45]].forEach(function(q, k){ var r = q[4], zc = zb + r * 0.8 + (k === 1 ? 0.75 : 0);
+    B.tube(set, t.x + q[0], t.y + q[1], zc, t.x + q[2], t.y + q[3], zc, r, r * 0.85, function(u, z){ if (u <= 0.001 || u >= 0.999) return '#c8a878'; return z > zc + r * 0.55 ? (vn(u * 7, k, 95) < 0.5 ? '#5e7a32' : '#6e8a3a') : (vn(u * 12, z * 3, 96) < 0.5 ? '#5a4028' : '#6e5236'); }); }); }, 0.25); };
+// the diggers' tent, end on with its flap open, a crate beside it and a lamp on a pole
+BUILD.dinTent = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = 2.4, hd = 2.2, h = 3.6;
+  if (Math.abs(dx - 2.9) < 0.6 && Math.abs(dy - 1.8) < 0.6 && tt < 1.1) return (Math.max(Math.abs(dx - 2.9), Math.abs(dy - 1.8)) > 0.5 || tt > 1 || tt < 0.1) ? '#6a4420' : '#a8783e';
+  if (Math.hypot(dx + 2.9, dy - 2.2) < 0.1 && tt < 4.1) return '#3a3028'; if (Math.hypot(dx + 2.9, dy - 2.2, tt - 4.3) < 0.3) return '#ffcf6a';
+  if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null; var roof = h * (1 - Math.abs(dx) / hw); if (tt > roof) return null;
+  if (tt > roof - 0.22) return (Math.floor((dy + 9) * 1.1) % 2) ? '#ece2c2' : '#d8c89e';
+  if (dy > hd - 0.2) return Math.abs(dx) < roof * 0.34 ? '#2e2418' : '#e2d6b2'; return null; }); };
+// the dig: a pit strung into squares between four stakes, a rib cage lying in it, and the spoil heaped behind
+BUILD.dinPit = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = 3.6, hd = 2.2, ax = Math.abs(dx), ay = Math.abs(dy);
+  if (Math.abs(ax - hw) < 0.12 && Math.abs(ay - hd) < 0.12 && tt < 1.2) return '#a8835a';
+  if (((Math.abs(ax - hw) < 0.06 && ay < hd) || (Math.abs(ay - hd) < 0.06 && ax < hw) || (Math.abs(dx) < 0.06 && ay < hd)) && Math.abs(tt - 1) < 0.07) return '#f4efe2';
+  if (ax < hw && ay < hd){ if (tt < 0.1) return vn(dx * 0.8, dy * 0.8, i) > 0.5 ? '#8a5e3a' : '#7c5434';
+    if (Math.abs(dy) < 0.18 && ax < 2.6 && Math.abs(tt - 0.4) < 0.18) return '#f1e6c8';
+    for (var r = -3; r <= 3; r++) if (Math.abs(dx - r * 0.7) < 0.12 && Math.abs(Math.hypot(dy, tt / 1.4) - 1.3) < 0.16) return '#ece0c0';
+    if (Math.hypot((dx - 3) / 0.7, dy / 0.45, (tt - 0.35) / 0.4) < 1) return '#f4ead2'; return null; }
+  var sp = Math.max(ax - hw, ay - hd); if (sp < 1.1 && dy < 0 && tt < 0.9 * (1 - sp / 1.1) + vn(dx, dy, i + 2) * 0.3) return '#b48650';
+  return null; }); };
+// the rex: a big head and a jaw of teeth, two strong legs, little arms, the tail held out behind. q scales him
+BUILD.dinRex = function(B, t, i){ var q = 2.5, dir = i % 2 ? 1 : -1;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(px, py, pz){ var dx = px * dir / q, dy = py / q, tt = pz / q, ay = Math.abs(dy);
+    function hide(c){ if (tt < c - 0.3) return '#b8a46e'; return vn(dx * 2.4, tt * 0.6, 93) > 0.64 ? '#4a4626' : vn(px * 0.8, pz * 0.8 + py, 94) > 0.6 ? '#76703e' : '#625e32'; }
+    if (ay > 0.18 && ay < 0.58){ if (Math.hypot((dx + 0.2) / 0.6, (ay - 0.38) / 0.2, (tt - 1.55) / 0.62) < 1) return hide(1.55);
+      if (segD(dx, tt, -0.05, 1.1, -0.3, 0.2) < 0.17 && Math.abs(ay - 0.38) < 0.15) return '#5a5630'; if (tt < 0.18 && dx > -0.5 && dx < 0.2 && Math.abs(ay - 0.38) < 0.17) return '#4a4426'; }
+    var bc = 2.0 + dx * 0.18; if (Math.hypot(dx / 1.3, dy / 0.6, (tt - bc) / 0.62) < 1) return hide(bc);
+    if (Math.hypot((dx - 1.1) / 0.5, dy / 0.38, (tt - 2.45) / 0.48) < 1) return hide(2.45);
+    var hd = Math.hypot((dx - 1.75) / 0.68, dy / 0.33, (tt - 2.78) / 0.32), jw = Math.hypot((dx - 1.8) / 0.58, dy / 0.27, (tt - 2.44) / 0.15);
+    if (hd < 1 || jw < 1){ if (tt > 2.49 && tt < 2.57 && dx > 1.4) return ((dx * 12 | 0) % 2 && ay > 0.12) ? '#f4ead2' : '#3a1a14'; if (ay > 0.2 && Math.hypot(dx - 1.62, tt - 2.9) < 0.07) return '#ffcf3a'; return hide(hd < 1 ? 2.7 : 2.6); }
+    if (Math.abs(ay - 0.42) < 0.08 && segD(dx, tt, 0.85, 2.05, 1.12, 1.72) < 0.07) return '#5a5630';
+    if (dx < -0.9 && dx > -3.3){ var u = (-0.9 - dx) / 2.4, tc = 1.84 - u * 0.6, r = 0.48 * (1 - u) + 0.06; if (Math.hypot(dy, tt - tc) < r) return hide(tc); }
+    return null; }, 0.125); };
+// the den: a dome of stone, ferns on its crown, and the dark mouth of the den in its face
+BUILD.dinDen = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / (t.w / 2), (dy + 0.5) / (t.d / 2 - 0.5), tt / t.h) + (vn(dx * 0.6, tt * 0.6, i) - 0.5) * 0.16;
+  if (d > 1) return null; if (dy > 0.3 && Math.abs(dx) < 1.6 && tt < 3.2 * Math.sqrt(Math.max(0, 1 - (dx / 1.6) * (dx / 1.6)))) return '#18130f';
+  if (tt > t.h * 0.78) return vn(dx, dy, i + 3) > 0.4 ? '#3f6a2a' : '#4f7a2e'; var n = vn(dx * 0.5, tt * 0.5, i + 5); return n > 0.66 ? '#4f7a2e' : n < 0.3 ? '#5e5a50' : '#6e6a5e'; }); };
+// the volcano: a cone of basalt, the crater glowing, lava down its face, and smoke rolling off the top
+BUILD.dinVolcano = function(B, t, i){ var Hc = t.h - 4;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx / (t.w / 2), (dy + 1) / (t.d / 2 - 1));
+    if (tt > Hc - 0.3){ for (var p = 0; p < 3; p++){ var pz = Hc + 0.7 + p * 0.85, px = -p * 0.8, rr = 0.8 + p * 0.3; if (Math.hypot(dx - px, (dy + 1) * 1.2, tt - pz) < rr) return vn(dx * 1.2, tt * 1.2, i) > 0.5 ? '#8a8480' : '#a29c96'; } }
+    if (r > 1) return null; var top = r < 0.16 ? Hc - (0.16 - r) * 6 : Hc * (1 - (r - 0.16) / 0.84); if (tt > top) return null;
+    if (r < 0.16) return vn(dx * 2, dy * 2, i + 1) > 0.5 ? '#ffc23a' : '#ff6a1a';
+    if (dy > -1 && Math.abs(dx - Math.sin(tt * 0.8 + i) * 0.5) < 0.4 + (Hc - tt) * 0.03) return tt > top - 0.3 ? (vn(dx * 2, tt * 2, i + 2) > 0.5 ? '#ffc23a' : '#ff7a1a') : '#4a4044';
+    if (tt < 0.6) return '#6a7a3a'; var n = vn(dx * 0.6, tt * 0.6, i + 4); return n > 0.68 ? '#6e6262' : n < 0.3 ? '#4e4446' : '#5e5254'; }); };
+// the rockslide: boulders tumbled down together, the big ones behind
+BUILD.dinBoulders = function(B, t, i){ var R3 = [[-2.6, -0.6, 1.3], [-0.4, -1, 1.6], [1.9, -0.5, 1.1], [3.1, 0.6, 0.8], [0.8, 1.4, 0.7], [-3.3, 1.2, 0.6]];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = 0; k < R3.length; k++){ var q = R3[k], d = Math.hypot(dx - q[0], (dy - q[1]) * 1.15, tt / 0.9 - q[2] * 0.3) + (vn(dx * 1.5, tt * 1.5, i + k) - 0.5) * 0.25;
+    if (d < q[2]) return tt > q[2] * 0.95 ? '#a29a8a' : vn(dx * 2, dy * 2 + tt, k) > 0.6 ? '#7a7266' : '#8e8678'; } return null; }); };
+/* ---- Ice Age's stops on the walk, the same places its holes stand in (land.js): the thawing tundra and its herd, the
+   glacier's edge with its seracs, its ice arch and its mill, the melt lake's shore with its bergs and its tar pits, the
+   painted cliff and the cave people's camp, and Mammoth Peak with the whole herd under it. */
+KIT['iceage~tundra'] = kitFrom(KIT.iceage, { gpat:'iceTundra', low:['rocksnow', 'bushdry', 'bushsnow', 'bushdry', 'rock'], haz:'water', hazC:['#5ab4d6', '#bfe8f4'], waterC:['#5ab4d6', '#bfe8f4'],
+  dens:0.3, nlm:3, lm:['iceHerd', 'iceSaber', 'iceHerd', 'tusks'] });
+KIT['iceage~glacier'] = kitFrom(KIT.iceage, { g:['#e8f2f7', '#f6fbfd', '#cfe4ee', 0.2], gpat:'iceGlacier', p:['#c8d4dc', '#d8e2e8', '#b4c2cc'], tree:['pine', 'pine', 'pine'], low:['rocksnow', 'iceChunk', 'rocksnow'],
+  haz:'ice', iceC:['#8fcde0', '#c8ecf6'], dens:0.14, nlm:4, lm:['iceSeracs', 'iceArch', 'iceMill', 'iceErratic', 'iceSeracs'], wall:['#c8ecf6', '#5aa4c8'] });
+KIT['iceage~lake'] = kitFrom(KIT.iceage, { g:['#d8dcd8', '#e8ecec', '#c4c8c4', 0.2], gpat:'iceThaw', p:['#a89a86', '#b8aa94', '#968a76'], tree:['dead', 'pine', 'dead', 'pine'], low:['rock', 'bushdry', 'rocksnow'],
+  haz:'ice', iceC:['#6cc4e2', '#d4f0f8'], dens:0.32, nlm:4, lm:['iceTarpit', 'iceBergs', 'iceTarpit', 'iceBergs', 'tusks'] });
+KIT['iceage~caves'] = kitFrom(KIT.iceage, { gpat:'iceTrod', p:['#9a8468', '#a8927a', '#8a7458'], haz:null, dens:0.35, nlm:5, low:['rocksnow', 'rock', 'bushsnow'],
+  lm:['iceCliff', 'iceCamp', 'iceCliff', 'cave', 'iceCamp'], wall:['#a89c8c', '#5e5448'] });
+KIT['iceage~peak'] = kitFrom(KIT.iceage, { gpat:'icePow', haz:'ice', iceC:['#a8dcf0', '#e2f6ff'], dens:0.4, nlm:4, low:['rocksnow', 'bushsnow', 'bushdry'],
+  lm:['icePeakRock', 'iceHerd', 'tusks', 'iceHerd', 'icePeakRock'] });
+LIFE_AS['iceage~tundra'] = { mote:['snow', 30], fly:['crow', 3] };
+LIFE_AS['iceage~glacier'] = { mote:['snow', 70], fly:['crow', 2] };
+LIFE_AS['iceage~lake'] = { mote:['snow', 24], fly:['vulture', 3] };
+LIFE_AS['iceage~caves'] = { mote:[['snow', 40], ['ember', 12]], fly:['bat', 4] };
+LIFE_AS['iceage~peak'] = { mote:['snow', 90], fly:['crow', 2] };
+
+// the ground of each stop, in broad smooth patches (an eighth of a foot a cell, so a patch is a few feet across)
+function iceF(c, a, b, s){ return vn(c.ti * a, c.tj * a, s) * 0.65 + vn(c.ti * b, c.tj * b, s + 1) * 0.35; }
+GPAT.iceTundra = function(c){ var f = iceF(c, 0.03, 0.09, 21), b = vn(c.ti * 0.06, c.tj * 0.06, 23);   // the thaw: snow in drifts, the old grass through it, moss where it is wettest
+  return f > 0.54 ? (b > 0.62 ? '#f8fbfd' : '#eef3f7') : f > 0.5 ? '#d6dcd6' : f > 0.42 ? (b > 0.55 ? '#9c9878' : '#8e8a6a') : b > 0.6 ? '#6e7a56' : '#7e7a5a'; };
+GPAT.iceGlacier = function(c){ var a = iceF(c, 0.025, 0.08, 31), b = vn(c.ti * 0.07, c.tj * 0.07, 33);   // thin snow over blue ice
+  return a > 0.64 ? (b > 0.5 ? '#a8d8ea' : '#bfe4f0') : a > 0.59 ? '#d8eef6' : b > 0.7 ? '#f8fbfd' : '#eaf2f6'; };
+GPAT.iceThaw = function(c){ var f = iceF(c, 0.03, 0.09, 41), b = vn(c.ti * 0.06, c.tj * 0.06, 43);   // slush, mud and the last of the snow by the lake
+  return f > 0.56 ? '#eef3f7' : f > 0.5 ? '#d4dad8' : f > 0.4 ? (b > 0.55 ? '#a8a6a0' : '#b8b6ae') : b > 0.6 ? '#7e7a5a' : '#6e6052'; };
+GPAT.iceTrod = function(c){ var a = iceF(c, 0.025, 0.08, 51), b = vn(c.ti * 0.07, c.tj * 0.07, 53);   // a camp's snow, trodden through to the earth
+  return a > 0.66 ? (b > 0.5 ? '#9a8468' : '#8a7458') : a > 0.6 ? '#c8c4b8' : b > 0.7 ? '#f6f9fb' : '#e8eef2'; };
+GPAT.icePow = function(c){ var a = iceF(c, 0.025, 0.08, 61), b = vn(c.ti * 0.07, c.tj * 0.07, 63);   // deep snow under the peak, blue in its hollows
+  return a < 0.3 ? (b > 0.55 ? '#a8985e' : '#c8c2a8') : a > 0.64 ? '#dce6ef' : b > 0.7 ? '#f8fbfd' : '#eef3f7'; };
+
+// a landmark drawn at its first size (w0 across) and grown to the size LMSIZE gives it, so the walk's scale can change in one place
+function iceQ(t, w0, fn){ var q = t.w / w0; return function(dx, dy, tt){ return fn(dx / q, dy / q, tt / q); }; }
+// a woolly mammoth at s times the hole's size, facing dir: the same beast the holes have, its fur in smooth patches
+function iceMamFn(s, dir, k){ return function(dx0, dy0, tt){ var dx = dx0 * dir / s, dy = dy0 / s, t = tt / s;
+  var n = vn(dx0 * 1.3, tt * 1.3 + dy0 * 0.7, k + 5), fur = n < 0.34 ? '#5e3e24' : n > 0.7 ? '#9a6c42' : '#7a5232';
+  if (t < 0.8 && Math.abs(Math.abs(dx) - 0.55) < 0.19 && Math.abs(Math.abs(dy) - 0.3) < 0.17) return t < 0.12 ? '#3a281a' : t < 0.3 ? '#5e3e24' : fur;
+  if (Math.hypot(dx / 1.02, dy / 0.6, (t - 1.2) / 0.62) < 1) return t < 0.75 ? '#5e3e24' : fur;
+  if (Math.hypot((dx - 0.4) / 0.5, dy / 0.45, (t - 1.72) / 0.32) < 1) return '#5e3e24';
+  if (Math.hypot((dx - 1.05) / 0.44, dy / 0.4, (t - 1.48) / 0.46) < 1) return (Math.abs(Math.abs(dy) - 0.2) < 0.06 && Math.abs(t - 1.6) < 0.06 && dx > 1.25) ? '#1a120c' : fur;
+  var tc = 1.42 + (t < 0.6 ? (0.6 - t) * 0.55 : 0); if (Math.abs(dy) < 0.12 && t > 0.3 && t < 1.35 && Math.abs(dx - tc) < 0.12) return '#6a4a2e';
+  if (Math.abs(Math.abs(dy) - 0.22) < 0.07 && dx > 1.2 && dx < 1.9 && Math.abs(t - (0.95 + (dx - 1.2) * (dx - 1.2) * 1.3)) < 0.08) return '#f4ead2';
+  if (dx < -0.95 && dx > -1.25 && Math.abs(dy) < 0.06 && Math.abs(t - (1.1 - (-0.95 - dx) * 1.2)) < 0.07) return '#5e3e24';
+  return null; }; }
+// a few of the herd together, big and small, not all facing the same way
+BUILD.iceHerd = function(B, t, i){ var M = [[-3.6, -1.2, 2.5], [2.8, -2, 2.9], [0.2, 1.7, 2.1]], q = t.w / 16;
+  M.forEach(function(m, k){ var s = m[2] * q; m = [m[0] * q, m[1] * q]; dir = hash(i, k, 7) < 0.5 ? 1 : -1; box(B, t.x + m[0], t.y + m[1], 4.4 * s, 1.8 * s, 2.4 * s, iceMamFn(s, dir, i * 3 + k), 0.125); }); };
+// the saber tooth on its boulder, watching the path
+BUILD.iceSaber = function(B, t, i){ var s = 2.4 * t.w / 8, dir = hash(i, 2, 9) < 0.5 ? 1 : -1;
+  box(B, t.x, t.y, 3.4 * s, 2.2 * s, 2.2 * s, function(dx0, dy0, tt){ var dx = dx0 * dir / s, dy = dy0 / s, t2 = tt / s;
+    var d = Math.hypot(dx / 1.2, dy, t2 / 0.95) + (vn(dx0 * 0.9, tt * 0.9, 7) - 0.5) * 0.14;
+    if (d < 1) return t2 > 0.82 ? '#e8f0f6' : vn(dx0 * 0.7, tt * 0.7 + dy0, 3) < 0.4 ? '#6e7480' : '#868c96';
+    if (Math.hypot(dx / 0.62, dy / 0.3, (t2 - 1.13) / 0.2) < 1) return t2 < 1.02 ? '#a8804a' : '#c8a064';
+    if (Math.hypot((dx - 0.6) / 0.24, dy / 0.22, (t2 - 1.32) / 0.2) < 1) return (Math.abs(Math.abs(dy) - 0.09) < 0.04 && t2 > 1.36 && dx > 0.72) ? '#2a201a' : '#c8a064';
+    if (Math.abs(Math.abs(dy) - 0.07) < 0.035 && dx > 0.74 && dx < 0.82 && t2 > 1.04 && t2 < 1.2) return '#ffffff';
+    if (Math.abs(dy - 0.28) < 0.06 && dx < -0.5 && dx > -0.95 && Math.abs(t2 - 1.02) < 0.06) return '#a8804a';
+    return null; }, 0.125); };
+// seracs: blocks of glacier ice standing where the ice broke, leaning, cracked, snow on their tops
+function iceBlockFn(w, h, k){ var lean = (hash(k, 3, 9) - 0.5) * 0.5; return function(dx0, dy, tt){ var t = tt / h, dx = dx0 - lean * tt * 0.3, r = w * (1 - t * 0.35);
+  if (t > 1 || Math.abs(dx) + Math.abs(dy) * 0.6 > r * 1.15 || Math.max(Math.abs(dx), Math.abs(dy)) > r) return null;
+  if (t > 0.9 - vn(dx0 * 0.6, dy * 0.6, k) * 0.12) return '#f6fbfd'; if (Math.abs(Math.sin(dx * 0.9 + tt * 0.6 + k)) < 0.05) return '#5aa4c4';
+  return vn(dx0 * 0.5, tt * 0.5 + dy, k + 2) < 0.45 ? '#9fd8ea' : '#bfe6f2'; }; }
+BUILD.iceSeracs = function(B, t, i){ var S = [[-3.2, -0.8, 1.6, 7.5], [0, -1.4, 2, 9], [3.1, -0.4, 1.5, 6], [-1.4, 1.4, 1, 3.6], [1.8, 1.6, 0.8, 2.6]];
+  var g = t.w / 11; S.forEach(function(q, k){ box(B, t.x + q[0] * g, t.y + q[1] * g, (q[2] * 2 + 1.2) * g, q[2] * 2 * g, q[3] * g, iceBlockFn(q[2] * g, q[3] * g, i * 5 + k), 0.125); }); };
+BUILD.iceChunk = function(B, t, i){ box(B, t.x, t.y, 1.8, 1.4, 1.4, iceBlockFn(0.7, 1.3, i), 0.125); };
+LOWR.iceChunk = 0.9; LOWH.iceChunk = 1.4;
+// the ice bridge: an arch of blue ice the meltwater cut, snow along its back
+BUILD.iceArch = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 9, function(dx, dy, tt){ if (Math.abs(dy) > 0.9 - tt * 0.05) return null;
+  var o = Math.hypot(dx / 4.3, tt / 4.2), n = Math.hypot(dx / 2.9, tt / 2.8); if (o > 1 || n < 1) return null; if (o > 0.92 && tt > 1.2) return '#f6fbfd';
+  return vn(dx * 0.8, tt * 0.8, i) < 0.42 ? '#8fd0e6' : '#b8e4f2'; }), 0.125); };
+// the glacier mill: a shaft in the ice, the meltwater swirling round and down it, a rim of ice round its lip
+BUILD.iceMill = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 6, function(dx, dy, tt){ var r = Math.hypot(dx, dy * 1.2), a = Math.atan2(dy, dx); if (r > 2.7) return null;
+  if (r > 2.1) return tt < 0.55 - (r - 2.1) * 0.8 ? (vn(a * 2, tt, i) < 0.5 ? '#c8ecf6' : '#a8dcea') : null; if (tt > 0.1) return null;
+  var sw = ((a / 6.283 * 2 + r * 0.6) % 1 + 1) % 1; return r < 0.5 ? '#123a5a' : sw < 0.2 ? '#8fd8ee' : r < 1.2 ? '#1a5a84' : '#2a8ab8'; }), 0.125); };
+// a boulder the ice carried here and left: grey granite, rounded, snow on its crown
+BUILD.iceErratic = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 5, function(dx, dy, tt){ var d = Math.hypot(dx / 2.3, dy / 1.8, tt / 3.4) + (vn(dx * 0.8, tt * 0.8, i + 4) - 0.5) * 0.12;
+  if (d > 1) return null; if (tt > 2.6 + vn(dx, dy, i) * 0.5) return '#f2f7fa'; return vn(dx * 0.6, tt * 0.6 + dy, i) < 0.42 ? '#7a7a82' : '#9a9aa2'; }), 0.125); };
+// a tar pit on the lake shore, and the bones of a mammoth that went in and never came out
+BUILD.iceTarpit = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 8, function(dx, dy, tt){ var e = Math.hypot(dx / 3.6, dy / 2.5);
+  var m = dx - 0.6, s = 2;
+  if (Math.hypot((m - 0.5 * s) / (0.42 * s), dy / (0.36 * s), tt / (0.4 * s)) < 1) return Math.abs(Math.abs(dy) - 0.13 * s) < 0.1 && tt > 0.3 && m > 0.7 * s ? '#3a3028' : '#e6dcc0';
+  if (Math.abs(Math.abs(dy) - 0.2 * s) < 0.12 && m > 0.7 * s && m < 1.5 * s && Math.abs(tt - (0.1 * s + (m / s - 0.7) * (m / s - 0.7) * 1.6 * s)) < 0.14) return '#f4ead2';
+  for (var r = 0; r < 4; r++){ var rx = (-0.2 - r * 0.32) * s; if (Math.abs(m - rx) < 0.1 && Math.abs(Math.hypot(dy, tt + 0.4) - 1.24) < 0.12 && tt > 0) return '#d8ccae'; }
+  if (e > 1 || tt > 0.12) return null; if (e > 0.88) return '#4a3c2e'; return vn(dx * 0.7, dy * 0.7, i + 2) > 0.7 ? '#3a3a46' : '#1a1714'; }), 0.125); };
+// a frozen pond with the bergs it caught standing in it
+BUILD.iceBergs = function(B, t, i){ var G = [[-1.5, -0.6, 1.4, 4], [1.8, 0.5, 1, 2.6]];
+  box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 9, function(dx, dy, tt){ for (var k = 0; k < 2; k++){ var g = G[k], x = dx - g[0], y = dy - g[1], u = tt / g[3];
+      var rr = g[2] * (1 - Math.pow(Math.max(0, u), 1.6) * 0.65) * (0.85 + vn(Math.atan2(y, x) * 1.3 + 3, tt * 0.4, i + k) * 0.3); if (u <= 1 && Math.hypot(x, y * 1.15) < rr) return u > 0.78 || vn(x * 0.6, y * 0.6 + tt, k + 4) > 0.72 ? '#f6fbfd' : vn(x * 0.5, tt * 0.7, k) < 0.42 ? '#a8dcee' : '#d4f0f8'; }
+    var e = Math.hypot(dx / 4.4, dy / 3.3); if (e > 1 || tt > 0.1) return null; return e > 0.9 ? '#e4f4fa' : vn(dx * 0.4, dy * 0.4, i + 7) > 0.6 ? '#bfe8f4' : '#8fd0e6'; }), 0.125); };
+// the painted cliff: a crag with a cave mouth in it, the herd painted on its face in ochre and soot, torches at the mouth
+BUILD.iceCliff = function(B, t, i){ var ink = hash(i, 3, 5) < 0.6 ? '#c8582e' : '#2a201a';
+  box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 12, function(dx, dy, tt){
+    for (var s = -1; s <= 1; s += 2){ var tx = dx - (1.6 + s * 2), ty = dy - 1.9; var r = Math.hypot(tx, ty); if (r < 0.1 && tt < 2.6) return '#e8dcc0'; if (r < 0.26 * (1 - (tt - 2.6) / 0.7) && tt >= 2.6 && tt < 3.3) return tt < 2.9 ? '#ffd23a' : '#ff8a1a'; }   // the torches
+    var top = 6.6 * Math.sqrt(Math.max(0, 1 - Math.pow(dx / 6, 2))) + (vn(dx * 0.5, 1, i) - 0.5) * 1.2; if (tt > top || dy > 1.2 || dy < -2.4 + tt * 0.15) return null;
+    if (Math.abs(dx) > 5.8 * (1 - Math.pow(tt / 7.5, 2) * 0.3)) return null;
+    var mouth = Math.hypot((dx - 1.6) / 1.3, tt / 2.6) < 1; if (mouth) return dy > 0.6 ? null : '#14100e';
+    if (tt > top - 0.6) return '#f2f6f9';
+    if (dy > 0.95){ var m = dx + 3; if (Math.hypot(m / 1.2, (tt - 2.4) / 0.6) < 1 || Math.hypot((m + 0.45) / 0.5, (tt - 2.9) / 0.42) < 1 || Math.hypot((m - 1.25) / 0.42, (tt - 2.5) / 0.42) < 1) return ink;
+      if (tt > 1.3 && tt < 2 && [-0.85, -0.45, 0.35, 0.7].some(function(q){ return Math.abs(m - q) < 0.12; })) return ink;
+      if (Math.abs(tt - (2.1 + (m - 1.35) * (m - 1.35) * 1.1)) < 0.08 && m > 1.35 && m < 2.05) return '#efe6d0';
+      var hx = dx + 5, hz = tt - 3.4; if (Math.hypot(hx / 0.2, hz / 0.24) < 1) return '#b8502e'; }
+    return vn(dx * 0.5, tt * 0.6, i + 3) < 0.4 ? '#7a6e62' : vn(dx * 1.1, tt, i) > 0.62 ? '#a89c8c' : '#8e8274'; }), 0.125); };
+// the cave people's camp: two tents of hide on poles of bone, the fire between them, a skin stretched on a rack
+function iceTentFn(R, H, k){ return function(dx, dy, tt){ var r = Math.hypot(dx, dy), rr = R * (1 - tt / H);
+  if (tt > H * 0.85){ for (var q = 0; q < 4; q++){ var qa = q * 1.57 + 0.4; if (Math.hypot(dx - Math.cos(qa) * (tt - H * 0.85) * 0.5, dy - Math.sin(qa) * (tt - H * 0.85) * 0.5) < 0.1 && tt < H + 0.7) return '#efe4c8'; } }
+  if (r > rr || r < rr - 0.25 || tt > H) return null; if (dy > 0 && Math.abs(dx) < 0.5 * (1 - tt / 2) && tt < 2) return '#2a1c12';
+  var a = Math.atan2(dy, dx); if (Math.abs(Math.sin(a * 3 + k)) < 0.05 || Math.abs(tt - H * 0.35) < 0.06) return '#5a3c22'; return vn(a * 2 + k, tt * 0.8, k) < 0.4 ? '#a8865a' : '#bc9a6a'; }; }
+BUILD.iceCamp = function(B, t, i){ var q = t.w / 10; function bx(ox, oy, w, d, h, fn){ box(B, t.x + ox * q, t.y + oy * q, w * q, d * q, h * q, function(dx, dy, tt){ return fn(dx / q, dy / q, tt / q); }, 0.125); }
+  bx(-2.6, -1.2, 4, 4, 4.4, iceTentFn(1.9, 3.8, i)); bx(2.5, -1.6, 3.6, 3.6, 3.8, iceTentFn(1.7, 3.3, i + 3));
+  bx(0, 1.4, 1.6, 1.6, 1.4, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (tt < 0.3 && r > 0.5 && r < 0.75) return '#6e665e'; if (tt < 0.18 && r < 0.55) return '#3a2412';
+    if (tt >= 0.15 && r < 0.45 * (1 - tt / 1.3)) return tt < 0.45 ? '#ffd23a' : tt < 0.85 ? '#ff8a1a' : '#e5483a'; return null; });
+  bx(3.6, 1.6, 2.4, 0.5, 2.6, function(dx, dy, tt){ if (Math.abs(dy) > 0.15) return null; if (Math.abs(Math.abs(dx) - 1) < 0.08 && tt < 2.4) return '#e8dcc0'; if (tt > 2.25 && tt < 2.4 && Math.abs(dx) < 1.1) return '#e8dcc0';
+    if (Math.abs(dx) < 0.85 && tt > 0.8 && tt < 2.25 && Math.abs(dx) < 0.85 - Math.abs(tt - 1.5) * 0.35) return vn(dx * 1.5, tt * 1.5, i) < 0.45 ? '#8a6038' : '#a8784a'; return null; }); };
+// a crag of the peak itself: rock low down in bands, snow from its shoulders up
+BUILD.icePeakRock = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var a = Math.atan2(dy, dx), u = tt / t.h;
+  var rr = t.w * 0.5 * (1 - u) * (0.82 + vn(a * 1.6 + 4, tt * 0.35, i) * 0.36); if (Math.hypot(dx, dy * 1.25) > rr || u > 1) return null;
+  if (u > 0.5 - vn(a * 2, 1, i) * 0.15) return vn(dx * 0.5, tt * 0.5, i + 2) > 0.66 ? '#dce8f2' : '#f6fbfd';
+  return vn(a * 3, tt * 0.9, i + 5) < 0.38 ? '#6e7280' : vn(dx * 0.8, tt * 0.8, i) > 0.6 ? '#a8acb6' : '#8a8e9a'; }, 0.25); };
+// the walk is drawn bigger than a hole (a shed is 9 by 6 by 11), and these stand among pines twice a man's height and more
+LMSIZE.iceHerd = [21, 10.5, 10]; LMSIZE.iceSaber = [10, 6.8, 6.8]; LMSIZE.iceSeracs = [15, 8, 12.3]; LMSIZE.iceArch = [13.5, 3, 6.6]; LMSIZE.iceMill = [8.4, 7, 0.8]; LMSIZE.iceErratic = [7.5, 6, 5.4];
+LMSIZE.iceTarpit = [13, 9.8, 5.5]; LMSIZE.iceBergs = [15, 11.7, 7]; LMSIZE.iceCliff = [17, 7, 10.5]; LMSIZE.iceCamp = [15, 10.5, 7.5]; LMSIZE.icePeakRock = [16, 13, 19];
+// @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

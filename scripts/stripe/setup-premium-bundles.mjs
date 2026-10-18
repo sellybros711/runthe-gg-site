@@ -34,7 +34,7 @@
  * before repeating it in any copy.
  */
 
-import { BUCKETS } from '../../functions/api/stripe/_bundles.js';
+import { BUCKETS, PUTT_LIVES } from '../../functions/api/stripe/_bundles.js';
 
 const CATALOG = [
   {
@@ -111,6 +111,19 @@ const CATALOG = [
       name: 'Run The Floor: ' + b.name,
       description: b.coins.toLocaleString('en-US') + ' coins in Run The Floor' + (b.packs.length ? ', plus ' + b.packs.length + ' pack' + (b.packs.length === 1 ? '' : 's') : '') + '. Coins are spent in the game and are not money.',
       metadata: { site_bundle: key },
+    },
+  })),
+  /* Putt Putt lives, SHIPPED DARK until PUTT_LIVES_ENABLED and 149. Two packs,
+   * $4.99 for nine and $2.99 for three, one-time, bought as often as anybody
+   * runs out. */
+  ...Object.entries(PUTT_LIVES).map(([key, p]) => ({
+    lookupKey: p.lookupKey,
+    envVar: p.envPrice,
+    amountCents: p.cents,
+    product: {
+      name: p.name,
+      description: p.lives + ' lives back in Putt Putt Tour, right away. For when you are out of lives.',
+      metadata: { site_bundle: 'putt-lives-' + key },
     },
   })),
 ];

@@ -1,0 +1,6 @@
+{
+ "_about": "What the pitch library holds: every pitch of these seasons (regular season and postseason), trimmed to savant.LIB. 'priority' is only the fetch order: the seasons the ten scenarios and their batters need come first. 'slices' takes extra date ranges if one is ever needed.",
+ "seasons": "2008-2025",
+ "priority": [2025, 2024, 2022, 2016, 2019, 2011, 2023, 2021, 2018, 2015, 2010, 2017, 2020, 2012, 2013, 2014, 2009, 2008],
+ "slices": []
+}

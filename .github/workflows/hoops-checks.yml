@@ -5,6 +5,7 @@ name: Hoops checks
 # workflow is what that buys. Every command runs locally, unchanged:
 #
 #   node hoops/check-posture.mjs        the game stays out of the indexed site
+#   node hoops/build/bundle.mjs --check   career.js and page.js are built from their parts
 #   node hoops/build/check-fetch.mjs    the scraper's parsers, against fixtures
 #   node hoops/verify.mjs               draft rules, replay, and the calibration
 #   node hoops/check-badges.mjs         every badge is reachable, against real runs
@@ -67,6 +68,12 @@ jobs:
       - name: Discoverability posture
         run: node hoops/check-posture.mjs
 
+      # career.js is built from hoops/career/ and page.js from hoops/page/. A
+      # hand edit to a built file, or a part the bundler does not list, fails
+      # here before anything runs them.
+      - name: The built scripts are their parts
+        run: node hoops/build/bundle.mjs --check
+
       # The fetcher can only run where Basketball-Reference is reachable, which
       # is not the dev sandbox, so its parsers are tested against saved markup.
       # A BBRef redesign that moves a column fails here rather than silently
@@ -122,6 +129,14 @@ jobs:
       # and pose, stays on the grid, and never dresses a real player.
       - name: The wardrobe
         run: node hoops/check-wardrobe.mjs
+
+      # The browser checks below load the repo's own playwright, and a sandbox
+      # falls back to its global one. Pinned to the sandbox's version, so the
+      # two run the same browser code.
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
 
       # Every idle frame paints on four bodies inside the grid, every loop
       # closes and moves, and the page plays it live (the still under

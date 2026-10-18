@@ -152,6 +152,100 @@ const tr = await pg.evaluate(() => {
 ok('a tee shot draws the 3D golfer', tr.live !== '' && tr.live !== tr.off, tr);
 ok('with the kill switch, a tee shot keeps the old sprite', tr.off !== '' && tr.live !== tr.off, tr);
 
+head('4. ONE GOLFER IN EVERY MODE: the putter you equipped, your aura and your age, wherever you are drawn');
+const md = await pg.evaluate(() => {
+  const r = {}, keepCos = cosOwned, keepAge = playerAge, keepYear = S.year;
+  cosOwned = (cat, id) => cat === 'putter' || keepCos(cat, id);          // own every putter for the test
+  const pu = PUTTERS.filter(p => p.id !== 'stock' && p.shape !== 'wand' && PXG_CLUBS['pu_' + p.id]);
+  const a = pu[0], z = pu.find(p => p.shape !== a.shape) || pu[1];
+  S.look = Object.assign({}, DEFLOOK, { putter: a.id, fx: 'gold' });
+  const H = puttHost();
+  // the walk carries the equipped putter: two putters walk differently, and the walk's look names it
+  r.walkClub = modeLook(S.look, 'walk').club;
+  const w1 = H.golferWalk(0, 1, 2).url; S.look.putter = z.id; const w2 = H.golferWalk(0, 1, 2).url; S.look.putter = a.id;
+  r.walkDiffers = w1 !== w2; r.a = a.id; r.z = z.id;
+  // the putt and the flat golfer (the map, the header and the fallback) hold it too
+  r.puttClub = modeLook(S.look, 'putt').club;
+  const flat = H.golfer().toDataURL(), club = pxGolferCanvas(S.look, { noBall: true }).toDataURL(); r.flatPutter = flat !== club;
+  // the aura: the figure on the map wears it, and a canvas golfer is handed its colour
+  const fig = H.figure('x'); r.figAura = /pxfxwrap/.test(fig) && /class="x pxfigsm/.test(fig) && !/height:56px/.test(fig);
+  r.auraCol = H.aura(); r.gold = PXFX_BY.gold.col; S.look.fx = 'none'; r.noAura = H.aura(); S.look.fx = 'gold';
+  // the age reaches a putt (a copy of the look) and a walk, and turns the 3D cache over at a birthday
+  playerAge = () => 52; r.puttAge = modeLook(S.look, 'putt').age; r.walkAge = modeLook(S.look, 'walk').age;
+  const old = H.golfer3(1, 0).urls[0]; playerAge = () => 22; const young = H.golfer3(1, 0).urls[0]; r.ageDraws = old !== young;
+  // the ball you wear is the ball you putt with in Putt Putt; no ball is the white one. The celebration's frame stands facing you.
+  { const kb = S.look.ball; S.look.ball = 'flamingo'; const ba = H.ballArt(); r.ballArt = !!(ba && ba.cv && ba.cv.width > 0 && ba.tint);
+    S.look.ball = 'none'; r.noBall = H.ballArt() === null; S.look.ball = kb; const ch = H.golferCheer(); r.cheer = !!(ch && ch.url && ch.fig > 0); }
+  // a leaderboard look carries the putter, so other players see the one you putt with
+  r.board = lookForBoard(S.look).putter;
+  cosOwned = keepCos; playerAge = keepAge; S.year = keepYear; S.look = Object.assign({}, DEFLOOK);
+  return r; });
+ok('a walk carries the equipped putter, not the club set', md.walkClub === 'pu_' + md.a && md.walkDiffers, md);
+ok('a putt holds the equipped putter', md.puttClub === 'pu_' + md.a, md.puttClub);
+ok('the flat golfer (map, header, fallback) holds the putter too', md.flatPutter === true);
+ok('the golfer on the Putt Putt map wears its aura, sized by its class', md.figAura === true);
+ok('a golfer drawn on a canvas is handed its aura colour, and none without one', md.auraCol === md.gold && md.noAura === null, [md.auraCol, md.noAura]);
+ok('the age reaches the putt and the walk', md.puttAge === 52 && md.walkAge === 52, [md.puttAge, md.walkAge]);
+ok('a birthday draws a new 3D golfer rather than the cached one', md.ageDraws === true);
+ok('the ball you wear is painted for the Putt Putt green, and no ball is the white one', md.ballArt === true && md.noBall === true, [md.ballArt, md.noBall]);
+ok('the hole-out celebration has a golfer facing you', md.cheer === true);
+ok('a leaderboard look carries the putter', md.board === md.a, md.board);
+
+head('5. THE MENU GOLFER: everybody on the First Tee switch (testers only with the kill switch thrown), every item drawn alone, nothing magenta');
+const mn = await pg.evaluate(async () => {
+  const r = { ex: [], none: [], magenta: [], n: 0 }, keepU = sbUser, keepN = sbUsername;
+  sbUser = null; sbUsername = ''; r.out = g3dMenuOn();
+  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.other = g3dMenuOn();
+  // the kill switch (PUTT_LIVE=false) puts everybody but the testers back on today's flat golfer
+  const live = PUTT_LIVE; PUTT_LIVE = false; r.killed = g3dMenuOn(); r.otherFig = /pxidle/.test(pxFigureHTML(DEFLOOK, 60));
+  sbUser = null; sbUsername = ''; r.killedOut = g3dMenuOn(); PUTT_LIVE = live;
+  sbUser = { id: 't' }; sbUsername = 'CSel8'; r.tester = g3dMenuOn();
+  const magenta = (url) => new Promise(res => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+    const x = c.getContext('2d'); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data; let m = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] === 255 && d[i + 1] === 0 && d[i + 2] === 255 && d[i + 3]) m++; res(m); }; im.src = url; });
+  const jobs = [];
+  for (const h of ['cap', 'visor'].concat(Object.keys(PXG_HATS))) jobs.push(['hat', g3dItemLook({ cap: true, hatStyle: h }), h]);
+  for (const e of Object.keys(PXG_EYEWEAR)) jobs.push(['ew', g3dItemLook({ eyewear: e }), e]);
+  for (const c of Object.keys(PXG_CLUBS)) jobs.push(['club', g3dItemLook({ club: c }), c]);
+  for (const t of Object.keys(PXG_TOPS)) jobs.push(['top', g3dItemLook({ top: t }), t]);
+  for (const t of Object.keys(PXG_LEGS)) jobs.push(['leg', g3dItemLook({ leg: t }), t]);
+  for (const t of Object.keys(PXG_BALL)) jobs.push(['ball', g3dItemLook({ ball: t }), t]);
+  for (const t of Object.keys(PXPAT_BY)) jobs.push(['shirt', g3dItemLook({ shirtPat: t }), 'pattern ' + t]);
+  for (const o of allShirts().slice(0, 12)) jobs.push(['shirt', g3dItemLook({ polo: o.id, shirtPat: 'none' }), 'shirt ' + o.id]);
+  for (const o of PANTS) jobs.push(['pants', g3dItemLook({ pants: o.id }), 'trousers ' + o.id]);
+  // every novelty club in the hand is a real object: its tile is no smaller than a stock club's head
+  for (const c of ['scepter','candycane','excalibur','wand','hockey','glizzy','poolnoodle','coffin','broomstick','pitchfork']) jobs.push(['fig', Object.assign({}, DEFLOOK, { club: c }), 'holding ' + c]);
+  for (const t of Object.keys(PXG_TOPS)) jobs.push(['fig', Object.assign({}, DEFLOOK, { top: t }), 'wearing ' + t]);
+  for (const c of Object.keys(PXG_CLEATS)) jobs.push(['shoe', g3dItemLook({ cleats: c }), c]);
+  const hairs = Object.keys(PXG_HAIR), tops = Object.keys(PXG_TOPS);
+  hairs.forEach((h, i) => { const L = Object.assign({}, DEFLOOK, { hairStyle: h, cap: i % 2 === 0, top: i % 3 === 1 ? tops[i % tops.length] : '', lefty: i % 2 === 1 }); jobs.push(['fig', L, h]); jobs.push(['chip', L, h]); });
+  for (const [part, L, id] of jobs) { let p; try { p = RTT_G3D.pic(L, part); } catch (e) { r.ex.push(part + ':' + id + ' ' + e); continue; }
+    r.n++; if (!p) { r.none.push(part + ':' + id); continue; } if (await magenta(p.url)) r.magenta.push(part + ':' + id); }
+  r.tile = /data:image\/png/.test(pxItemThumb('hw', 'cowboy')) && /data:image\/png/.test(pxClubThumb('driver')) && /data:image\/png/.test(pxItemThumb('top', 'cape'))
+    && /data:image\/png/.test(pxBallThumb('eight')) && /data:image\/png/.test(pxClubThumb('pu_milled')) && /data:image\/png/.test(pxClubThumb('coffin'));
+  // a top, a novelty club or a ball must change the picture (the cape and the floatie once drew nothing on the menu golfer)
+  const base = RTT_G3D.pic(DEFLOOK, 'fig').url; r.same = [];
+  for (const L of [{ top: 'cape' }, { top: 'duckfloatie' }, { club: 'coffin' }, { club: 'excalibur' }, { ball: 'eight' }]) if (RTT_G3D.pic(Object.assign({}, DEFLOOK, L), 'fig').url === base) r.same.push(L);
+  // Putt Putt's header ring and Daily Hole rows draw the menus' 3D head chip; a player without it keeps the flat picture
+  const H = puttHost(); r.ppChip = /^<img src="data:image\/(png|gif)/.test(H.chip()) && /^<img /.test(H.chip({ polo: 'red' }));
+  // the career card on Me reads both tours' records
+  const pp = window.RTT_PUTT.achStats(H), rec = ftRecord().textContent;
+  r.rec = /Pro Tour/.test(rec) && /Putt Putt/.test(rec) && rec.includes(Number(pp.pp_stars || 0).toLocaleString() + (pp.pp_stars === 1 ? 'star' : 'stars'));
+  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; { const live = PUTT_LIVE; PUTT_LIVE = false; r.ppFlat = H.chip() === ''; PUTT_LIVE = live; }
+  sbUser = keepU; sbUsername = keepN; return r; });
+ok('Putt Putt\'s header ring and Daily Hole rows draw the 3D head chip for a tester', mn.ppChip === true);
+ok('with the kill switch thrown, a player without the 3D menu golfer keeps the flat picture in Putt Putt', mn.ppFlat === true);
+ok('the career card on Me shows the Pro Tour and Putt Putt records', mn.rec === true);
+ok('with Putt Putt live, signed out gets the 3D menu golfer', mn.out === true);
+ok('with Putt Putt live, a player who is not a tester gets the 3D menu golfer', mn.other === true);
+ok('with the kill switch thrown, signed out and non-testers keep today\'s flat menu golfer', mn.killed === false && mn.killedOut === false && mn.otherFig === true);
+ok('a tester gets the 3D menu golfer', mn.tester === true);
+ok(`every hat, pair of glasses, club, putter, top, legwear, ball, pattern, shirt, trousers, pair of cleats, hairstyle and chip draws (${mn.n})`, mn.ex.length === 0, mn.ex.slice(0, 4));
+ok('only paint (eyeblack) has nothing to draw alone, so its tile keeps today\'s art', mn.none.every(x => !/^(hat|club|shoe|fig|chip):/.test(x)), mn.none);
+ok('no menu picture has a magenta (unknown material) pixel', mn.magenta.length === 0, mn.magenta);
+ok('the closet tiles use the 3D pictures for a tester (hats, clubs, putters, the cape, balls, the scythe)', mn.tile === true);
+ok('the cape, the floatie, the scythe, the sword and a ball each show on the menu golfer', mn.same.length === 0, mn.same);
+
 ok('no page errors', errs.length === 0, errs.slice(0, 3));
 await b.close();
 console.log(bad ? `\n${bad} failed` : '\nall good');

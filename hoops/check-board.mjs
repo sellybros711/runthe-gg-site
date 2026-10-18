@@ -31,6 +31,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -322,7 +323,7 @@ const main = async () => {
      asserted here is that the stub is real, that it does not throw, and that
      it says which half is missing. */
   {
-    const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+    const src = pageSource();
     const need = /var NEED_BOARD = (\d+);/.exec(src);
     const have = /const BOARD_API_VERSION = (\d+);/
       .exec(fs.readFileSync(path.join(HERE, 'board.js'), 'utf8'));

@@ -49,8 +49,8 @@ var RARITY_ORDER = { common: 0, rare: 1, epic: 2, legendary: 3 };
 var EARN = { draft_first: 'Go 1st overall', title: 'Win a title', hof: 'Hall of Fame', career_first: 'First career' };
 function earnText(it){ var m = /^pass:(\d+)$/.exec(it.earn || ''); if (m) return 'Floor Pass, Season ' + m[1]; return /^drop:/.test(it.earn) ? 'Finish the drop' : EARN[it.earn] || 'Earned'; }
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function money(n){ return Math.round(n).toLocaleString('en-US'); }
+var esc = window.RTF_UTIL.esc;
+var money = window.RTF_UTIL.coins;
 /* a tile is half a phone wide: 275,000 does not fit beside the rarity, 275K does */
 function short(n){ return n >= 10000 ? Math.round(n / 1000) + 'K' : money(n); }
 
@@ -211,9 +211,12 @@ function pane(host, o){
   cur = { host: host, draw: draw };
 }
 var SRC = { run: 'Draft run', dd: 'Daily Draft', fx: 'Fix History', ps: 'Six Passes', endless: 'Endless puzzle',
-  cq: 'Conquest win', cqclear: 'Conquest cleared', welcome: 'Welcome to the Floor' };
+  cq: 'Conquest win', cqclear: 'Conquest cleared', welcome: 'Welcome to the Floor',
+  daily: 'Daily reward', login: 'Daily login', streak: 'Streak reward', wheel: 'Prize wheel', pass: 'Floor Pass',
+  refund: 'Duplicate refund', exchange: 'Legendary exchange', paid: 'Coins bought' };
 function coinLabel(r){
   if (r.a < 0) { var it = CAT && CAT.item(r.src); return it ? it.name : (r.src || 'Spent'); }
+  if (r.src === 'quest') return /^qw/.test(r.k) ? 'Weekly quest' : 'Daily quest';
   if (r.src === 'career') return /^cf:/.test(r.k) ? 'Career finished' : 'Career season';
   if (r.src === 'badge') {
     var id = r.k.slice(3), BD = window.RTF_BADGES, b = null;
@@ -254,7 +257,9 @@ var CSS = [
 '.cl-figcard .pc-card.pc-mini{width:100px;}',
 '@media (min-height:760px){.cl-figcard .pc-card.pc-mini{width:120px;}}',
 '.cl-side{display:flex;flex-direction:column;gap:6px;min-width:0;text-align:left;font:600 12.5px/1.3 var(--k-f-text);color:var(--k-ink-2);}',
-'.cl-coins{display:flex;align-items:center;gap:6px;}',
+/* the word wraps under the number in a narrow column rather than running off
+   the sheet ("196,900 coin" at 390) */
+'.cl-coins{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;min-width:0;}',
 '.cl-coin{width:18px;height:18px;image-rendering:pixelated;filter:drop-shadow(0 0 5px rgba(242,194,58,.5));}',
 '.cl-coins b{font:400 15px var(--k-f-pixel);color:var(--k-gold);margin-right:4px;text-shadow:0 2px 0 #5a3e0a;}',
 '.cl-try{position:relative;display:flex;flex-direction:column;gap:6px;align-items:stretch;padding:9px 9px 6px;color:var(--k-ink);overflow:hidden;background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 24%,#1a1f32),#121625 80%);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--rc) 70%,transparent),0 0 18px -8px var(--rc);}',
@@ -301,8 +306,10 @@ var CSS = [
 '.cl-ic{width:40px;height:40px;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5));}',
 '.cl-tile.lock .cl-ic{opacity:.75;}',
 '.cl-none .cl-sw{background:repeating-linear-gradient(45deg,var(--k-panel-3) 0 4px,transparent 4px 8px);}',
-'.cl-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-'.cl-p{font:600 11px var(--k-f-text);color:var(--k-ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+/* a name takes two lines before it is cut, and the status line wraps: two
+   columns of "Everyday Hoo..." and "In pa..." on a phone read as unfinished */
+'.cl-n{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;line-height:1.2;overflow-wrap:anywhere;}',
+'.cl-p{font:600 11px var(--k-f-text);color:var(--k-ink-3);line-height:1.3;}',
 '.cl-r{font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-right:6px;font-size:9.5px;}',
 '.r-common .cl-r{color:#aeb4bf;}.r-rare .cl-r{color:#6fa8ff;}.r-epic .cl-r{color:#c08cff;}.r-legendary .cl-r{color:var(--k-gold);}',
 '.cl-tile.lock .cl-n{color:var(--k-ink-2);}',

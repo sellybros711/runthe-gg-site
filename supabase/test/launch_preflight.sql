@@ -87,7 +87,8 @@ has_table as (
     'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
     'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
-    'sportegories_rulings','stumpire_rulings'
+    'sportegories_rulings','stumpire_rulings',
+    'shutdoor_outings','shutdoor_streaks','putt_daily'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -693,7 +694,66 @@ check_rows(sort, migration, what, breaks, ok) as (
        where n.nspname = 'public' and c.relname = 'premium_unlocks'
          and a.privilege_type = 'SELECT'
          and (a.grantee = 0
-              or a.grantee = (select oid from pg_roles where rolname = 'authenticated'))))
+              or a.grantee = (select oid from pg_roles where rolname = 'authenticated')))),
+
+  -- NINE PUTT PUTT LIVES, EACH ON ITS OWN CLOCK. Without it the page reads the
+  -- 138 answer as a heart a life and one clock for them all. Nothing throws.
+  (59, '146_putt_lives_nine',
+      'Putt Putt lives are three hearts of three, each life back 24 hours after it went',
+      'Lives still work on 138: three a heart, and none come back until all are gone.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'back_at')
+      and (select count(*) > 0 from proc where name = 'putt_lives_state' and body like '%back_at%')),
+  -- PUTT PUTT LIVES FOR SALE (nine for $4.99, three for $2.99), shipped dark.
+  -- Without it a paid session 500s in the webhook and Stripe retries until it runs.
+  (60, '149_putt_lives_buy',
+      'Bought Putt Putt lives are filed once a checkout session and handed back on the server',
+      'A paid lives checkout is charged and the webhook fails until this runs.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'given')
+      and (select count(*) > 0 from proc where name = 'putt_lives_buy')
+      -- and the webhook may call it: without this a paid buy 500s with "permission denied"
+      and (not exists (select 1 from pg_roles where rolname = 'service_role')
+           or has_function_privilege('service_role', 'public.putt_lives_buy(text, uuid, int)', 'execute'))),
+  -- SPARE LIVES FILL THE HEARTS. Without it a signed in player's spares are never
+  -- spent: they wait as +N and come out only from the out of lives sheet. Nothing throws.
+  (61, '150_putt_lives_spares',
+      'A Putt Putt spare life fills a heart on the server, once a spare',
+      'Spares do not fill the hearts. They wait until the player is out of lives.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_spares' and name = 'spare_id')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spare')),
+  -- PUTT PUTT LIVES OVER THE MAX. Without it the checkout cannot read `extra`
+  -- and answers 503 to every lives buy, so nothing is sold it could not deliver.
+  (62, '151_putt_lives_extra',
+      'Bought Putt Putt lives can go over the max, and are lost first',
+      'Every Putt Putt lives checkout answers try again, and nothing sells.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'extra')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spend' and body like '%extra%')),
+  -- A REFUNDED LIVES BUY TAKES ITS LIVES BACK. Without it the webhook 500s on that refund
+  -- and Stripe retries for three days; nothing else is touched.
+  (63, '152_putt_lives_refund',
+      'A refunded or charged-back Putt Putt lives buy takes its lives back, once',
+      'A lives refund is retried by Stripe and the lives stay until this runs.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'reclaimed')
+      and (select count(*) > 0 from proc where name = 'putt_lives_reclaim')
+      and (not exists (select 1 from pg_roles where rolname = 'service_role')
+           or has_function_privilege('service_role', 'public.putt_lives_reclaim(text)', 'execute'))),
+  -- SHUT THE DOOR'S DAILY, signed in. Without it the outing plays and finishes
+  -- and the submit is refused: no streak, no board row, nothing said.
+  (64, '153_shut_the_door',
+      'Shut The Door keeps a signed in daily outing, the doors shut streak and the day''s board',
+      'A signed in daily is played and never recorded. The streak and the board stay empty.',
+      (select count(*) > 0 from has_table where name = 'shutdoor_outings')
+      and (select count(*) > 0 from has_table where name = 'shutdoor_streaks')
+      and (select count(*) > 0 from proc where name = 'shutdoor_submit')
+      and (select count(*) > 0 from proc where name = 'shutdoor_board')
+      and (select count(*) > 0 from proc where name = 'shutdoor_my_stats')),
+  -- THE PUTT PUTT DAILY HOLE BOARD. Without it the Daily Hole plays and pays, and the
+  -- round is never posted: the board stays empty and nothing is said.
+  (65, '148_putt_daily_board',
+      'A signed in player''s first Daily Hole round of the day posts to the Putt Putt board',
+      'The Daily Hole board is empty for everybody. Rounds play and pay, and none is posted.',
+      (select count(*) > 0 from has_table where name = 'putt_daily')
+      and (select count(*) > 0 from proc where name = 'putt_daily_submit')
+      and (select count(*) > 0 from proc where name = 'putt_daily_board'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

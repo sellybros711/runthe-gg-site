@@ -50,6 +50,7 @@ function play(L, n, extraFor) {
 function loadCourt() {
   const src = fs.readFileSync(path.join(HERE, 'court.js'), 'utf8');
   const win = { RTF_BALLER: B, RTF_KIT: {}, matchMedia: () => ({ matches: false }), RTF_SOUND: { cue() {}, crowd() {} } };
+  new Function('window', 'module', fs.readFileSync(path.join(HERE, 'util.js'), 'utf8'))(win, undefined);
   new Function('window', 'document', src)(win, { getElementById: () => null, createElement: () => ({ style: {} }), head: { appendChild() {} } });
   return win.RTF_COURT;
 }
@@ -155,18 +156,16 @@ section('2c. the hold, the launch and the lane, as rules');
   ok(CT.laneWindow(90) > w && w > CT.laneWindow(40), 'a better defender sees the hands sooner');
 }
 
-section('3. moments are for careers started since they existed');
+section('3. every career has moments, an old save too');
 {
   const FX = JSON.parse(fs.readFileSync(path.join(HERE, 'build/fixtures/career-v1-saves.json'), 'utf8'));
   let dealt = 0;
   for (const k in FX.saves) {
     const L = play(C.migrate(clone(FX.saves[k])), 600);
-    ok(!L.opt.moments, `${k}: a migrated save is not given moments`);
+    ok(L.opt.moments === true, `${k}: a migrated save plays with moments, like every career (the original engine retired, 2026-10-15)`);
     dealt += (L.log || []).filter((e) => /at the horn|Dunked on|chase-down|last stop|free throws to beat/.test(e.t)).length;
   }
-  ok(dealt === 0, `and none is ever dealt to one (${dealt})`);
-  const off = play(C.newLife({ seed: 'nomo', start: 'draft', moments: false }), 1500);
-  ok(off.opt.moments === false, 'a career can be started without them');
+  ok(dealt > 0, `and they come up in one (${dealt})`);
   let n = 0, two = 0;
   for (let k = 0; k < 60; k++) {
     const L = C.newLife({ seed: 'mo' + k, start: 'draft' });
@@ -183,7 +182,7 @@ section('3. moments are for careers started since they existed');
 section('3b. a duel career: the game is the team\'s, the moment is yours');
 {
   ok(C.newLife({ seed: 'd0', start: 'draft' }).opt.duel === 1, 'a new story career is a duel career');
-  ok(!C.newLife({ seed: 'd0', start: 'draft', story: false }).opt.duel, 'a story-off career is not (the replay of 1,000 careers stays byte identical)');
+  ok(C.migrate(clone(JSON.parse(fs.readFileSync(path.join(HERE, 'build/fixtures/career-v1-saves.json'), 'utf8')).saves.nba_mid)).opt.duel === 1, 'and so is a career from before the story engine, once it loads');
   let nights = 0, match = 0, g7 = { MW: 0, ML: 0, mW: 0, mL: 0 }, read = { best: 0, bestN: 0, worst: 0, worstN: 0 }, looks = 0;
   for (let k = 0; k < 500 && (nights < 120 || g7.ML + g7.mW < 20); k++) {
     const L = C.newLife({ seed: 'dl' + k, start: k % 4 ? 'draft' : 'hs' });
@@ -308,7 +307,7 @@ async function browser() {
       return r.fulfill({ body: SHELL, contentType: 'text/html; charset=utf-8' });
     });
     await page.goto('http://local.test/shell.html');
-    for (const s of ['hoops/career-kit.js', 'hoops/baller.js', 'hoops/sound.js', 'hoops/court.js', 'hoops/ticker.js']) await page.addScriptTag({ url: 'http://local.test/' + s });
+    for (const s of ['hoops/util.js', 'hoops/career-kit.js', 'hoops/baller.js', 'hoops/sound.js', 'hoops/court.js', 'hoops/ticker.js']) await page.addScriptTag({ url: 'http://local.test/' + s });
     return { ctx, page, boom };
   }
   const ME = { look: { skin: 5, hair: 'braids', hc: 0, build: 'strong', shoes: 'club' }, c1: '#00471B', c2: '#EEE1C6', num: 34, age: 26 };
@@ -396,6 +395,29 @@ async function browser() {
     ok(names.length >= 8, `the ceremonies are there (${names.join(', ')})`);
     ok(out.every((r) => r.ms > 0 && r.ms < 9000), `${reduced ? 'reduced motion' : 'with motion'}: every ceremony ends (${out.map((r) => r.name + ' ' + Math.round(r.ms)).join(', ')})`);
     ok(out.every((r) => r.l3 === 'Test Name'), 'and names the player on the lower third');
+    /* THE ROOM IS NEVER SQUEEZED. A ceremony drew its whole room into the top
+       of the frame and then its floor again below, so the walkout and the
+       enshrinement showed two floors with a seam between. Every draw of the
+       room's picture keeps its height. */
+    if (!reduced) {
+      const sq = await page.evaluate(({ ME }) => new Promise((done) => {
+        const host = document.getElementById('h'); host.innerHTML = '';
+        const P = CanvasRenderingContext2D.prototype, orig = P.drawImage, bad = [];
+        let st = null;
+        P.drawImage = function(img){
+          if (st && (img === st.room || img === st.soft)) {
+            const a = arguments, R = img === st.soft ? st.R : 1;
+            const sh = a.length >= 9 ? a[4] : img.height, dh = a.length >= 9 ? a[8] : a.length >= 5 ? a[4] : img.height / R;
+            if (Math.abs(sh / R - dh) > 0.5) bad.push(Math.round(sh / R) + ' into ' + Math.round(dh));
+          }
+          return orig.apply(this, arguments);
+        };
+        const live = window.RTF_COURT.ceremony(host, 'debut', { name: 'Test Name', num: 34, pick: 7, teamName: 'Milwaukee Bucks', nick: 'Bucks', year: 2030, c1: ME.c1, c2: ME.c2, commish: 'Invented Person', from: 2025, to: 2040 }, { room: 'nba', me: ME, done: () => {} });
+        st = live.stage;
+        setTimeout(() => { P.drawImage = orig; live.stop(); done({ bad, soft: !!st.soft }); }, 900);
+      }), { ME });
+      ok(sq.bad.length === 0 && !sq.soft, `a ceremony draws its room once, unsqueezed and sharp (${sq.bad.slice(0, 2).join(', ') || 'never squeezed'}${sq.soft ? ', blurred' : ''})`);
+    }
     const tk = await page.evaluate(() => new Promise((done) => {
       const games = []; for (let g = 1; g <= 27; g++) games.push({ n: g, opp: 'BOS', home: g % 2 === 0, won: g % 3 !== 0, pts: g === 9 ? 41 : 18, reb: 6, ast: 4, out: g === 14, key: g === 9 });
       const d = { kind: 'rs', label: 'Games 1 to 27', team: 'MIL', c1: '#00471B', c2: '#EEE1C6', w0: 0, l0: 0, games, news: ['the Lakers fire their coach.'] };
@@ -534,6 +556,61 @@ async function browser() {
     ok(tall.fy / tall.ch <= 0.4, `on a 390x844 phone the stands are at most 40% of the court (${(tall.fy / tall.ch * 100).toFixed(0)}%)`);
     ok(tall.fy < tall.rim, `and the floor line is above the rim, so the basket stands on the floor (${tall.fy} against ${tall.rim})`);
     ok(Math.abs(wide.fy / wide.ch - 0.46) < 0.02, `a landscape screen keeps its broadcast floor line (${(wide.fy / wide.ch * 100).toFixed(0)}%)`);
+  }
+
+  section('13. inside a scene: the floor never jumps and nobody leaves it');
+  {
+    /* Found playing the game, with every check above green. In a scene the
+       meter lives in the caption under the court, so it coming and going
+       changed the court's box: the floor line dropped a quarter of a phone
+       screen the moment you let go, with the ball in the air. And the
+       reaction drew only you, so the man guarding you vanished at the end of
+       every play, and a stop that lost shouted LOCKED UP over a tip it never
+       showed. This plays every kind in that layout and samples the stage. */
+    const { ctx, page, boom } = await open(390, 844, false, 1);
+    const kinds = ['three', 'mid', 'drive', 'pass', 'buzzer', 'ft', 'poster', 'stop', 'block', 'post', 'lob', 'steal', 'stop:lose', 'block:lose'];
+    const res = [];
+    for (const kind of kinds) {
+      res.push(await page.evaluate(({ kind, ME }) => new Promise((done) => {
+        const [k0, lose] = kind.split(':');
+        const h = document.getElementById('h'); h.innerHTML = '';
+        h.style.cssText = 'position:relative;width:100vw;height:100vh;display:flex;flex-direction:column';
+        h.innerHTML = '<div id="cs" style="position:relative;flex:1;min-height:0"></div><div style="padding:12px;color:#fff">A caption line.<div id="cc"></div></div>';
+        const host = document.getElementById('cs');
+        const key = (a) => a.who === 'me' ? 'me' : JSON.stringify([a.who.look, a.who.c1]);
+        const S = [];
+        let iv = 0;
+        const m = window.RTF_COURT.moment(host, { kind: k0, rating: 72, rateName: 'Shooting', room: 'nba', c1: ME.c1, c2: ME.c2, oc: '#C8102E', me: ME, mate: { look: { skin: 2, hair: 'fade' }, num: 11 },
+          bug: { home: 'MIL', away: 'CHI', clock: '0:07' }, intro: 'Here we go.', makeCall: 'Yes!', missCall: 'No.', seed: 'cont-' + kind, ctlHost: document.getElementById('cc') },
+          { resolve: () => ({ made: k0 === 'ft' ? 2 : true, won: !lose }), done: () => { clearInterval(iv); m.stop(); done({ kind, S }); } });
+        const cv = host.querySelector('canvas');
+        iv = setInterval(() => {
+          const st = m.stage, kk = cv.offsetHeight / st.ch;
+          const armed = !!document.querySelector('#cc .ct-ctl[data-armed]');
+          S.push({ armed, cast: st.castDrawn || 0, line: Math.round((host.getBoundingClientRect().top + cv.offsetTop + st.fy * kk) * 10) / 10, who: (st.state.actors || []).map(key) });
+          const ctl = document.querySelector('#cc .ct-ctl[data-armed]');
+          if (ctl && !ctl.dataset.hit) { ctl.dataset.hit = '1'; setTimeout(() => { ctl.querySelector('.ct-go').click(); delete ctl.dataset.hit; }, 450); }
+        }, 40);
+      }), { kind, ME }));
+    }
+    for (const r of res) {
+      const a0 = r.S.findIndex((x) => x.armed), lines = r.S.slice(a0).map((x) => x.line);
+      const moved = a0 < 0 ? -1 : Math.max(...lines) - Math.min(...lines);
+      /* the people on the floor when the last press went in */
+      const lastArmed = r.S.map((x) => x.armed).lastIndexOf(true), at = r.S[lastArmed + 1] || r.S[lastArmed];
+      const lost = r.S.slice(lastArmed + 1).find((x) => !at.who.every((w) => x.who.includes(w)));
+      r.moved = moved; r.lost = lost ? at.who.filter((w) => !lost.who.includes(w)).length : 0;
+      r.most = Math.max(...r.S.slice(lastArmed + 1).map((x) => x.who.length)); r.atPress = at.who.length;
+    }
+    ok(res.every((r) => r.moved === 0), `13 the floor line holds from the first press to the end (${res.filter((r) => r.moved !== 0).map((r) => r.kind + ' ' + r.moved + 'px').join(', ') || 'every kind'})`);
+    ok(res.every((r) => r.lost === 0), `13 nobody on the floor at the press leaves it before the end (${res.filter((r) => r.lost).map((r) => r.kind).join(', ') || 'every kind'})`);
+    ok(res.filter((r) => /:lose/.test(r.kind)).every((r) => r.most > r.atPress), `13 a stop that still loses shows their man tipping it in (${res.filter((r) => /:lose/.test(r.kind)).map((r) => r.kind + ' ' + r.atPress + '->' + r.most).join(', ')})`);
+    /* AND THE REST OF THE FLOOR IS THERE: the other men, both kits, behind
+       the play (a free throw was one man and a hoop) */
+    const castMax = (r) => Math.max(0, ...r.S.map((x) => x.cast));
+    ok(res.every((r) => castMax(r) >= (/^steal/.test(r.kind) ? 2 : 4)), `13 the rest of the floor is on it (${res.map((r) => r.kind + ' ' + castMax(r)).join(', ')})`);
+    ok(!boom.length, '13 and nothing threw (' + boom.join(' | ') + ')');
+    await ctx.close();
   }
 
   await b.close();

@@ -81,6 +81,11 @@ async function open(products, label) {
     p.logs.push(t.slice(0, 160));
   });
   await p.addInitScript(arm + stub(products));
+  /* /api/stripe/offer is a Pages Function, and the static server here has none, so store.js's
+     offer fetch 404s and the console check above reads it as this mode's fault. Answered the
+     way test_clock.mjs answers it. */
+  await p.route('**/api/stripe/offer', (r) => r.fulfill({ status: 200,
+    contentType: 'application/json', body: JSON.stringify({ plan: 'year' }) }));
   await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
   await p.waitForTimeout(2600);
   console.log('\n=== ' + label + ' ===');

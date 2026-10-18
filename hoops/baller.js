@@ -50,7 +50,10 @@ var BUILDS = [['lean', 'Lean'], ['standard', 'Standard'], ['strong', 'Muscular']
    id stays 'strong' because it is in saves; only the label changed. */
 var BODY = { lean: { bw: -1.5, am: -0.42, dl: 1.45 }, standard: { bw: -0.95, am: -0.26, dl: 1.65 }, strong: { bw: 0.1, am: 0.06, dl: 2.2 } };
 function bodyOf(b){ return BODY[b] || BODY.standard; }
-var FACELESS = '#4a5266';
+/* A real man's skin: one warm mid tone, the same for every real player, so
+   none is given a skin of his own (the owner, 2026-10-16). It was slate grey,
+   which read as a mannequin on the court. */
+var FACELESS = '#9a6b4f';
 var FIXED = { white: '#f2f2f0', black: '#1d1f24', red: '#d13a32', gold: '#e8b33c' };
 
 function ids(list){ return list.map(function(x){ return x[0]; }); }
@@ -1827,8 +1830,12 @@ function getWorker(){
    can go to the front of it. Off the main thread if we can, one per idle
    moment if not. */
 var QUEUE = [], qBusy = false;
+/* first: true for the front, 2 for soon (behind everything asked for the
+   front or soon, ahead of the background), anything else for the back */
 function paintAsync(look, o, cb, first){
-  QUEUE[first ? 'unshift' : 'push']({ look: look, o: o, cb: cb });
+  var j = { look: look, o: o, cb: cb, u: !!first };
+  if (first === 2) { var i = 0; while (i < QUEUE.length && QUEUE[i].u) i++; QUEUE.splice(i, 0, j); }
+  else QUEUE[first ? 'unshift' : 'push'](j);
   pump();
 }
 function pump(){

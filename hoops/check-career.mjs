@@ -122,17 +122,30 @@ const fired = {};
   console.log(`  ${all.length} careers, ${cards} cards answered`);
 }
 
+/* Section 2's free careers, for the All-Star band section 8 holds. */
+const FREE = [];
 // ── 2. the shape of a life ─────────────────────────────────────────────────
 section('2. most careers are good ones, a few are great, and the bands hold');
 {
-  /* Two hundred careers put a margin of about two and a half points on a
-     share near fifteen percent, which made the All-Star floor a coin flip on
-     the seed. The bands are read over six hundred random careers. */
-  const rnd = all.filter((x) => x.pol === 'random');
-  for (let i = 200; i < 600; i++) {
-    const r = play('random:' + i, 'random', { pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6], bg: C.BG_KEYS[(i >> 1) % 4] });
-    if (r && r.L) rnd.push({ L: r.L, pol: 'random', f: r.L.final });
+  /* THE BANDS ARE READ OFF THE CAREERS PLAYERS START. A free career begins
+     on draft night from a generated road (C.generateRoad), and a Pro one in
+     high school (section 8 holds that one to the same bands). Section 1's
+     draft night with a background card is a door no player has had since
+     Phase E, so it is played for coverage and never measured: it read 15%
+     All-Star while the careers people play read 20 to 23%. Six hundred
+     careers, because two hundred put a margin of about two and a half
+     points on the share. */
+  const rnd = [];
+  for (let i = 0; i < 600; i++) {
+    const L = C.generateRoad({ seed: 'gen:' + i, league, pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] });
+    let guard = 0;
+    while (!L.retired && guard++ < 3000) {
+      if (L.pending.length) C.choose(L, pickFor('random', L, L.pending[0]));
+      else C.step(L);
+    }
+    if (L.retired) rnd.push({ L, pol: 'random', f: L.final });
   }
+  FREE.push(...rnd);
   const share = (f) => rnd.filter(f).length / rnd.length;
   const pct = (a, q) => { const s = a.slice().sort((x, y) => x - y); return s[Math.floor(q * (s.length - 1))]; };
   const mvp = share((x) => x.f.totals.mvp > 0);
@@ -144,10 +157,9 @@ section('2. most careers are good ones, a few are great, and the bands hold');
   const verdicts = new Set(all.map((x) => x.f.verdict));
   console.log(`  MVP ${(mvp * 100).toFixed(1)}%  All-Star ${(star * 100).toFixed(0)}%  Hall ${(hof * 100).toFixed(0)}%`
     + `  seasons p50 ${seasons}  peak ppg p50 ${peakPts}  rookie ppg p50 ${rookie}`);
-  /* An MVP is rare and real, an All-Star is a career's high point for about
-     a third of players, and the Hall is earned. Measured: 1.0%, 30% and 27%. */
+  /* An MVP is rare and real and the Hall is earned. The All-Star band is
+     held in section 8, over free and Pro careers together. */
   ok(mvp > 0.002 && mvp < 0.06, `an MVP is rare but reachable (${(mvp * 100).toFixed(1)}%)`);
-  ok(star > 0.15 && star < 0.5, `All-Star is a high point, not a given (${(star * 100).toFixed(2)}%)`);
   ok(hof > 0.08 && hof < 0.42, `the Hall is earned (${(hof * 100).toFixed(0)}%)`);
   ok(seasons >= 8 && seasons <= 18, `a career runs a decade or so (${seasons})`);
   ok(peakPts >= 12 && peakPts <= 24, `a typical best season is a starter's (${peakPts})`);
@@ -359,10 +371,10 @@ section('5c. real people: on the court, and in the room on a story career');
   /* The invented locker room: three a club, named, never a real player. */
   const L = C.newLife({ seed: 'locker', league });
   L.team = 'BOS';
-  L.opt.story = 0; /* a career from before the story engine: no real room to read */
+  L.stage = 'col'; /* off the league there is no real room to read */
   const lk = C.lockerOf(L);
   const realNames = new Set(ROWS.map((r) => r.n || r.name));
-  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `off a story career, every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `off the league, every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
   /* A story career in the league reads the REAL room instead (the owner's
      call, 2026-10): the oldest man, the youngest, and the best of the rest,
      all on the club's roster right now, and {topp} a real man elsewhere. */
@@ -541,7 +553,17 @@ section('8. three hundred careers from high school, and where they land');
   const drafted = picks.filter((p) => p <= 60).length / picks.length;
   console.log(`  MVP ${(mvp * 100).toFixed(1)}%  All-Star ${(star * 100).toFixed(0)}%  Hall ${(hof * 100).toFixed(0)}%  drafted ${(drafted * 100).toFixed(0)}%`);
   ok(mvp < 0.07, `an MVP from the road is as rare as from draft night (${(mvp * 100).toFixed(1)}%)`);
-  ok(hof > 0.08 && hof < 0.42 && star > 0.15 && star < 0.5, 'the Hall and All-Star rates sit in the same bands');
+  ok(hof > 0.08 && hof < 0.42, `the Hall rate sits in section 2's band (${(hof * 100).toFixed(0)}%)`);
+  /* ABOUT ONE CAREER IN FIVE IS AN ALL-STAR: the owner's call, 2026-10-15,
+     20 to 25%. A career is a free one (section 2, the generated road) or a
+     Pro one (here, the road from high school), counted equally. They sit
+     about five points apart, because a played road beats one the game plays
+     for you, so each alone sits on an edge of a five point band. Never move
+     the band to meet the game: tune the game (BAL.star) to the band. */
+  const free = FREE.filter((x) => x.f.totals.star > 0).length / Math.max(1, FREE.length);
+  const both = (free + star) / 2;
+  ok(FREE.length >= 500, `section 2 measured its free careers (${FREE.length})`);
+  ok(both >= 0.20 && both <= 0.25, `about one career in five makes an All-Star team (${(both * 100).toFixed(2)}%: free ${(free * 100).toFixed(2)}, Pro ${(star * 100).toFixed(2)}; band 20 to 25)`);
   ok(drafted > 0.8 && drafted < 1, `most of them are drafted, not all (${(drafted * 100).toFixed(0)}%)`);
   /* A COLLEGE SUMMER IS NOT A PRO SUMMER. The summer card was the league's and
      colYear deals it too, so a freshman read "Your first summer as a pro" over
@@ -755,8 +777,6 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(C.recall(son, 'origin.father').v === T.pts, 'and the points to pass are his father\'s real points');
   const coachDad = JSON.stringify(dad.league.coach), coachSon = JSON.stringify(son.league.coach);
   ok(coachDad !== coachSon && Object.keys(son.league.coach).length === 30, 'the league he starts in is his father\'s, played forward');
-  const noSon = C.newLife({ seed: 'x', league, parent: par, story: false });
-  ok(!noSon.parent, 'a career from before the story engine never takes a father');
   /* Every challenge reads the career, and a challenge that fixes the
      difficulty fixes it. */
   const hard = C.newLife({ seed: 'ch', league, challenge: 'ch_hard', diff: 'easy' });
@@ -791,8 +811,8 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   const small = C.newLife({ seed: 'size', pos: 'C', arch: 'c_rim', ht: 81, wt: 225, league });
   ok(tall.rt.reb > small.rt.reb && tall.rt.ath < small.rt.ath && tall.dur < small.dur, `a big center rebounds more, moves less and breaks down sooner (reb ${tall.rt.reb}/${small.rt.reb}, ath ${tall.rt.ath}/${small.rt.ath}, dur ${tall.dur}/${small.dur})`);
   ok(tall.ht === 88 && tall.wt === 290 && C.newLife({ seed: 'size', pos: 'PG', ht: 90, league }).ht === 78, 'a size outside the position is held to its range');
-  const old = C.newLife({ seed: 'size:old', pos: 'SF', arch: 'twoway', league, story: false });
-  ok(old.ht == null && C.ARCHES[old.arch].name === 'Two-way wing', 'a career without a size or with an old archetype is the same player it was');
+  const old = C.newLife({ seed: 'size:old', pos: 'SF', arch: 'twoway', league });
+  ok(old.ht === 79 && C.ARCHES[old.arch].name === 'Two-way wing', `a career with no size picked stands at the middle of its position, and an old archetype still reads (${old.ht})`);
 }
 
 /* The rotation adds up, you are in it once, and the league moves around you. */
@@ -1295,6 +1315,111 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(Object.keys(C.TEAM_KINDS).every((k) => C.TEAM_KINDS[k].every((id) => C.TEAM_EV[id])), 'every situation has its cards');
 }
 
+section('18. your moves: every one is open somewhere, does what it says, and a career still ends');
+{
+  /* MOVES (the owner's call, 2026-10-16). A player who takes every move he is
+     offered, the first time each is open and then now and then, must reach
+     every one, never read a broken line, and still come to an end. */
+  const N = QUICK ? 60 : 150;
+  const took = {}, bad = [], groups = new Set(['team', 'court', 'body', 'brand', 'life']);
+  /* THE MOVES SCREEN SAYS WHICH MOVES PUT A DECISION ON THE TABLE ("Then you
+     decide", career-ui.js MOVE_CARD) and which card each leaves. It reads that
+     from its own table, so the table is held here to what C.act really does:
+     every move in it leaves its card, and no other move leaves one. */
+  const UI_SRC = fs.readFileSync(path.join(HERE, 'career-ui.js'), 'utf8');
+  const mcm = UI_SRC.match(/var MOVE_CARD = (\{[^}]*\});/);
+  const MOVE_CARD = mcm ? Function('return ' + mcm[1])() : null;
+  ok(!!MOVE_CARD && Object.keys(MOVE_CARD).length >= 5, `the moves screen's table of moves that leave a card is found (${MOVE_CARD ? Object.keys(MOVE_CARD).join(', ') : 'missing'})`);
+  const leaves = {};
+  let ended = 0, chaseOffer = 0, contenderTo = 0, contenderAsk = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'mv' + i, league, start: i % 3 ? 'draft' : 'hs', pos: C.POS[i % 5] });
+    let g = 0;
+    try {
+      while (!L.retired && g++ < 5000) {
+        if (!L.pending.length) {
+          const open = C.actsOpen(L).filter((a) => a.ok && a.id !== 'coach' && a.id !== 'trade');
+          for (const a of open) if (!groups.has(a.group)) bad.push(a.id + ' has no group');
+          const a = open.find((x) => !took[x.id]) || open[(L.steps + L.age) % Math.max(1, open.length)];
+          if (a && (L.steps % 3 === 0 || !took[a.id])) {
+            if (a.id === 'contender') contenderAsk++;
+            const p0 = L.pending.length;
+            const r = C.act(L, a.id);
+            if (r) { const c = L.pending.length > p0 ? L.pending[L.pending.length - 1] : null; (leaves[a.id] = leaves[a.id] || new Set()).add(c ? (c.id === 'extension' ? c.key : c.id) : '-'); }
+            if (!r) bad.push(a.id + ' was open and did nothing');
+            else { took[a.id] = (took[a.id] || 0) + 1; if (DASH.test(r.text) || /undefined|NaN|\{[a-z]/.test(r.text)) bad.push(a.id + ': ' + r.text); }
+            continue;
+          }
+          const t0 = L.team, asked = L.flags.tradeAsk === 'contender';
+          C.step(L);
+          if (asked && L.team !== t0 && L.team && C.clubTier && L.flags.tradeAsk === false) contenderTo++;
+        } else {
+          const c = L.pending[0];
+          if (c.id === 'fa' && c.ctx && c.ctx.offers.some((f) => f.chase)) chaseOffer++;
+          C.choose(L, (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length);
+          if (L.last && (DASH.test(L.last.text || '') || /undefined|NaN|\{[a-z]/.test(L.last.text || ''))) bad.push(c.id + ': ' + L.last.text);
+        }
+      }
+    } catch (e) { bad.push('crash: ' + e.message); }
+    if (L.retired) ended++;
+  }
+  const moves = Object.keys(C.ACTS).filter((k) => k !== 'coach' && k !== 'trade'), dark = moves.filter((k) => !took[k]);
+  ok(moves.length >= 20, `there are moves to make (${moves.length})`);
+  ok(!dark.length, `every move is open to somebody (${dark.join(', ') || 'all ' + moves.length})`);
+  ok(ended === N, `a career of moves still ends (${ended} of ${N})`);
+  ok(!bad.length, `every move reads clean and does something (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  if (MOVE_CARD) {
+    const lie = Object.keys(leaves).filter((id) => { const s = [...leaves[id]]; return MOVE_CARD[id] ? !(s.length === 1 && s[0] === MOVE_CARD[id]) : !(s.length === 1 && s[0] === '-'); });
+    ok(!lie.length, `"Then you decide" is on exactly the moves that leave a card, and it is the card the screen says (${lie.map((id) => id + ': ' + [...leaves[id]].join('/')).join(', ') || 'all ' + Object.keys(leaves).length})`);
+  }
+  ok(chaseOffer > 0, `chasing a ring brings a contender's call in free agency (${chaseOffer})`);
+  ok(contenderAsk > 0 && contenderTo > 0, `asking out to a contender gets you traded in the summer (${contenderTo} of ${contenderAsk})`);
+}
+
+section('19. deals from who you are, more ways out, and goals asked some years');
+{
+  /* Stage D, E and F of the paths (the owner's calls, 2026-10-16). Played by
+     the plain answering bot, so the careers are the careers anyone gets. */
+  const N = 300;
+  const how = {}, brands = {}, bad = [];
+  let deals = 0, seasons = 0, summers = 0, goals = 0, careerInj = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'en' + i, league, start: i % 2 ? 'hs' : 'draft' });
+    let g = 0;
+    while (!L.retired && g++ < 6000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (c.id === 'deal') { deals++; for (const o of c.options) if (o.label.length > 40) bad.push(o.label); }
+        if (c.id === 'training' && L.stage === 'nba') summers++;
+        if (c.id === 'goal') goals++;
+        if (c.id === 'careerinj') careerInj++;
+        if (c.id === 'ontop') how.topOffered = (how.topOffered || 0) + 1;
+        C.choose(L, (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length);
+        if (L.last && (DASH.test(L.last.text || '') || /undefined|NaN|\{[a-z]/.test(L.last.text || ''))) bad.push(c.id + ': ' + L.last.text);
+      } else C.step(L);
+    }
+    seasons += L.history.length;
+    for (const x of L.deals || []) brands[x.n] = 1;
+    const t = (L.log.filter((l) => /injury ended|Walked away on top|Cut, and never|one last season in Europe/.test(l.t)).pop() || {}).t || '';
+    const k = /injury ended/.test(t) ? 'injury' : /Walked away/.test(t) ? 'top' : /Cut, and never/.test(t) ? 'cut' : /Europe/.test(t) ? 'finale' : '';
+    if (k) how[k] = (how[k] || 0) + 1;
+  }
+  ok(!bad.length, `deals and endings read clean (${bad.slice(0, 2).join(' | ') || 'all'})`);
+  ok(deals / N > 0.5 && deals / N < 4, `the brands call some summers, not every one (${(deals / N).toFixed(2)} a career)`);
+  ok(Object.keys(brands).length >= 10, `the brands that sign a player are many (${Object.keys(brands).length} of ${C.DEALS.length})`);
+  ok(C.DEALS.every((d) => !/^(Nike|Adidas|Gatorade|State Farm|Taco Bell|Subway|Kia|Geico|Crocs|Peloton|Airbnb|DoorDash|Bose|Old Spice|Wheaties)$/i.test(d.n)), 'no brand is a real brand\'s name');
+  /* Walking away on top is the player's call, so it is held to being asked;
+     the rest are held to happening. */
+  ok(['injury', 'cut', 'finale', 'topOffered'].every((k) => how[k]), `every new way out happens or is offered (${JSON.stringify(how)})`);
+  /* The owner's call: a career ending injury is likelier the worse the
+     body. Read off the engine's own chance at a sound and a worn body. */
+  const P = (dur, health) => C.careerEndP({ dur, m: { health }, age: 29, mem: {}, traits: {} });
+  ok(P(40, 60) > P(65, 90) * 2.5 && P(65, 90) > P(90, 100), `a worn body is far likelier to end on an injury (${P(40, 60).toFixed(3)}, ${P(65, 90).toFixed(3)}, ${P(90, 100).toFixed(3)})`);
+  ok(careerInj > 0, `the career ending injury card is dealt (${careerInj})`);
+  ok(summers / seasons > 0.9, `the summer is asked every year (${(summers / seasons).toFixed(2)} a season)`);
+  ok(goals / seasons > 0.45 && goals / seasons < 0.85, `the goal is asked some years, not every year (${(goals / seasons).toFixed(2)} a season)`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');
@@ -1493,6 +1618,7 @@ async function browser() {
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
   let rosAsked = false, rosSigned = false, arcSeen = false;
+  const cutFacts = [];
   let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false, trayed = false, trayBad = [];
   /* The career starts in high school (asserted above), and the double tap
      arm before this loop can press through all of it on a short high school
@@ -1502,10 +1628,12 @@ async function browser() {
     const st = await page.evaluate(() => {
       const s = RTF_CAREER_UI.state();
       const t = document.querySelector('#s-car').innerText;
-      return { cur: !!s.cur, last: !!s.last, junk: /\bundefined\b|\bNaN\b|\[object/.test(t), steps: s.cur ? s.cur.steps : 0, stage: s.cur && s.cur.stage,
+      const cut = [...document.querySelectorAll('#s-car .cr-fact b')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent);
+      return { cut, cur: !!s.cur, last: !!s.last, junk: /\bundefined\b|\bNaN\b|\[object/.test(t), steps: s.cur ? s.cur.steps : 0, stage: s.cur && s.cur.stage,
         card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null, cid: s.cur && s.cur.pending[0] ? s.cur.pending[0].id : null };
     });
     if (st.junk && junk.length < 3) junk.push('press ' + presses);
+    if (st.cut && st.cut.length && cutFacts.length < 3) cutFacts.push(st.cut.join(', '));
     if (st.stage) stagesSeen[st.stage] = 1;
     if (!st.cur) break;
     /* Once, mid-career: reload and land on the same card. */
@@ -1546,6 +1674,9 @@ async function browser() {
         offOpened = true;
         await off.click();
         await page.waitForSelector('#cr-sheet:not([hidden])');
+        /* The sheet is your moves (7c holds it): a move is opened, then made. */
+        const tile = await page.$('#cr-sheet [data-mv]:not(.is-off)');
+        if (tile) await tile.click();
         const btn = await page.$('#cr-sheet [data-oact]:not([disabled])');
         if (btn) {
           await btn.click();
@@ -1703,6 +1834,7 @@ async function browser() {
     }
   }
   ok(junk.length === 0, `no field ever printed as undefined or NaN (${junk.join(', ') || 'none'})`);
+  ok(cutFacts.length === 0, `no figure on the career's fact tiles is ever cut short (${cutFacts.join(' | ') || 'none'})`);
   ok(reloaded, 'the reload arm ran');
   ok(tall, 'the tall receipt arm ran');
   ok(trayed, 'the tray arm ran');
@@ -1746,6 +1878,8 @@ async function browser() {
   console.log(`  ${presses} presses to retirement`);
   ok(arcSeen, 'the walk reached a career long enough to read the arc');
   await scenesWalk(b, serve);
+  await pathsWalk(b, serve);
+  await deskWalk(b, serve);
   await b.close();
 
   /* PHASE E, through the page: the Vault, the share card, a son, and an Easy
@@ -1810,6 +1944,310 @@ async function browser() {
     ok(tree === 2, `the family tree draws both generations (${tree})`);
   }
 
+  /* ── 7c. CAREER PATHS ON THE SCREEN (the owner's brief, 2026-10-17) ───────
+     The engine's step 6 had moves, real comparisons, brands and new endings
+     that the page showed as one flat list and paragraphs. Each claim here is
+     what a player sees: every open move is on the moves screen under its own
+     group, with the reason when it cannot be taken; a move is one decision
+     and its card wears it; the shades the log names are the ones revealed;
+     the brands paying you are listed as they pay; the Hall card's two new
+     chapters are rows; and every ending card is drawn as one. Careers are
+     found by playing the engine in the page, then shown the way a press
+     shows them. */
+  async function pathsWalk(b, serve) {
+    section('7c. career paths: the moves screen, shades of, deals, the card back and the endings');
+    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    const boom = [];
+    page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+    await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+    await page.route('**/*', serve);
+    await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+    await page.evaluate(() => document.querySelector('#b-career').click());
+    await page.waitForSelector('#cr-go');
+    await page.click('#cr-go');
+    /* SHADES OF, on the first screen: the three names the log says, in order,
+       and gone after the first press. */
+    const sh = await page.evaluate(() => {
+      const L = RTF_CAREER_UI.state().cur, el = document.querySelector('#cr-shades');
+      const line = (L.log.find((l) => /^Scouts see shades of /.test(l.t)) || {}).t || '';
+      return { names: el ? [...el.querySelectorAll('.cr-shl .nm')].map((x) => x.textContent) : [], shades: L.shades || [], line,
+        top: el ? Math.round(el.getBoundingClientRect().bottom) : 0, figs: el ? el.querySelectorAll('img,canvas,.rtf-baller').length : -1 };
+    });
+    ok(sh.shades.length === 3 && sh.names.join('|') === sh.shades.join('|'), `a new career opens on the three shades of, the career's own (${sh.names.join(', ') || 'none shown'})`);
+    ok(sh.shades.length === 3 && sh.line === 'Scouts see shades of ' + sh.shades[0] + ', ' + sh.shades[1] + ' and ' + sh.shades[2] + '.', `and they are the names the Story log says ("${sh.line}")`);
+    ok(sh.figs === 0, 'the reveal draws nobody: a real player is a name there');
+    ok(sh.top > 0 && sh.top <= 844 * 0.55, `the reveal sits above the tray on a phone (bottom ${sh.top})`);
+    await page.evaluate(() => { const c = document.querySelector('.cr-choice') || document.querySelector('#cr-next'); c.click(); });
+    ok(!(await page.$('#cr-shades')), 'the first press puts the reveal away');
+    /* A career is found by playing the engine here; then it is the page's. */
+    const find = (kind, extra) => page.evaluate(({ kind, extra }) => {
+      const C = window.RTF_CAREER, st = RTF_CAREER_UI.state(), lg = st.cur.league;
+      const P = {
+        moves: (L) => !L.pending.length && L.stage === 'nba' && L.phase === 'off' && L.history.length >= 3 && C.actsOpen(L).filter((a) => a.ok).length >= 6 && (L.deals || []).length,
+        deal: (L) => L.pending[0] && L.pending[0].id === 'deal' && L.pending[0].ctx.list.length >= 2,
+        careerinj: (L) => L.pending[0] && L.pending[0].id === 'careerinj',
+        ontop: (L) => L.pending[0] && L.pending[0].id === 'ontop',
+        tenday: (L) => L.pending[0] && L.pending[0].id === 'nooffer' && L.pending[0].options.some((o) => o.act === 'tenday'),
+        europe: (L) => L.pending[0] && L.pending[0].id === 'retire' && L.pending[0].options.some((o) => o.act === 'finale'),
+        hall: (L) => !L.pending.length && L.history.length >= 6 && (L.deals || []).filter((x) => !x.dropped).length >= 1,
+        act: (L) => !L.pending.length && C.actsOpen(L).some((a) => a.id === extra && a.ok),
+      };
+      for (let i = 0; i < 400; i++) {
+        const L = C.newLife({ seed: (kind === 'ontop' ? 'top' : 'pw' + kind) + i, league: lg, start: 'draft', pos: C.POS[i % 5] });
+        let g = 0;
+        while (!L.retired && g++ < 6000) {
+          if (P[kind](L)) { st.cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); return true; }
+          if (L.pending.length) { const c = L.pending[0]; const k = c.options.findIndex((o) => /one more|keep playing|come back|ten day|overseas/i.test(o.label)); C.choose(L, k < 0 ? 0 : k); }
+          else { const a = C.actsOpen(L).find((x) => x.ok && /^(podcast|speak|proam)$/.test(x.id)); if (a) C.act(L, a.id); else C.step(L); }
+        }
+      }
+      return false;
+    }, { kind, extra });
+    /* YOUR MOVES. Every open move is a tile in its group's tab; a tab counts
+       the moves you can make; a move you cannot make says why, in the words
+       of the reason: done this season, or what it costs against the bank. */
+    if (await find('moves')) {
+      await page.evaluate(() => { const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur; const a = C.actsOpen(L).find((x) => x.ok && x.group === 'life' && x.cost > 0); if (a) C.act(L, a.id); L.cash = 0.12; RTF_CAREER_UI.paintPress({ beats: [], result: null }); });
+      const btn = await page.evaluate(() => { const b = document.querySelector('#cr-off'); return b ? b.textContent : ''; });
+      await page.click('#cr-off');
+      await page.waitForSelector('#cr-sheet:not([hidden])');
+      const mv = await page.evaluate(async () => {
+        const C = window.RTF_CAREER, L = RTF_CAREER_UI.state().cur;
+        const open = C.actsOpen(L).filter((a) => a.id !== 'coach' && a.id !== 'trade');
+        const tabs = [...document.querySelectorAll('#cr-sheet [data-mgroup]')].map((t) => t.getAttribute('data-mgroup'));
+        const seen = {}, bad = [], counts = [];
+        for (const g of tabs) {
+          document.querySelector(`#cr-sheet [data-mgroup="${g}"]`).click();
+          const n = +((document.querySelector(`#cr-sheet [data-mgroup="${g}"] i`) || {}).textContent || 0);
+          const want = open.filter((a) => a.group === g && a.ok).length;
+          if (n !== want) counts.push(g + ' ' + n + ' of ' + want);
+          for (const t of document.querySelectorAll('#cr-sheet [data-mv]')) {
+            const id = t.getAttribute('data-mv'), a = open.find((x) => x.id === id);
+            seen[id] = 1;
+            if (!a) { bad.push(id + ' is not open'); continue; }
+            if (t.getAttribute('data-g') !== a.group || g !== a.group) bad.push(id + ' under ' + g);
+            const why = (t.querySelector('.cr-mvchip.why') || {}).textContent || '';
+            const want2 = a.ok ? '' : a.used ? 'Done this season' : 'Costs ' + C.money(a.cost) + '.';
+            if (a.ok ? why || t.classList.contains('is-off') : !t.classList.contains('is-off') || why.indexOf(want2) !== 0) bad.push(id + ': "' + why + '"');
+            if (/undefined|NaN/.test(t.textContent)) bad.push(id + ' prints undefined');
+          }
+        }
+        const missing = open.filter((a) => !seen[a.id]).map((a) => a.id);
+        return { tabs, missing, bad, counts, used: open.filter((a) => a.used).length, broke: open.filter((a) => !a.ok && !a.used).length, n: open.length };
+      });
+      ok(mv.tabs.join(',') === 'team,court,body,brand,life', `the moves screen is the five groups (${mv.tabs.join(', ')})`);
+      ok(mv.n > 5 && !mv.missing.length, `every open move is on it (${mv.n} open, missing ${mv.missing.join(', ') || 'none'})`);
+      ok(!mv.bad.length, `each under its own group, and one that cannot be taken says why (${mv.bad.slice(0, 3).join(' | ') || 'all'})`);
+      ok(mv.used > 0 && mv.broke > 0, `the walk saw both reasons, done this season and too dear (${mv.used} done, ${mv.broke} too dear)`);
+      ok(!mv.counts.length && /Your moves/.test(btn), `each tab counts the moves you can make (${mv.counts.join(', ') || 'all right'})`);
+      /* the deals the brand tab lists are the ones paying you */
+      const dl = await page.evaluate(() => {
+        const bt = document.querySelector('#cr-sheet [data-mgroup="brand"]'); if (bt) bt.click();
+        const L = RTF_CAREER_UI.state().cur, C = window.RTF_CAREER, now = (L.deals || []).filter((x) => !x.dropped && x.until >= L.year);
+        const rows = [...document.querySelectorAll('#cr-sheet .cr-deal[data-deal]')].map((r) => r.querySelector('.who b').textContent + '|' + r.querySelector('.pay b').textContent + '|' + r.querySelector('.end b').textContent);
+        const want = now.map((x) => x.n + '|' + C.money(x.pay) + '|' + (x.until - 1) + '-' + String(x.until).slice(2));
+        return { rows, want, marks: document.querySelectorAll('#cr-sheet .cr-deal .cr-bmark img').length };
+      });
+      ok(dl.want.length > 0 && dl.rows.join(',') === dl.want.join(',') && dl.marks >= dl.want.length, `the Brand tab lists every deal paying you: the brand, what it pays and its last season (${dl.rows.join(', ') || 'none'})`);
+      await page.evaluate(() => { const x = document.querySelector('#cr-sheet-x'); if (x) x.click(); });
+      await page.evaluate(() => { const t = document.querySelector('[data-tab="trophies"]'); if (t) t.click(); });
+      const tr = await page.evaluate(() => document.querySelectorAll('.cr-tabsec .cr-deal[data-deal]').length);
+      ok(tr === dl.want.length, `and so does the Trophies tab (${tr})`);
+    } else ok(false, 'the moves walk found a career with moves and a deal');
+    /* A MOVE IS ONE DECISION: a tap opens it, Make the move runs it, and a
+       move that leaves a card hands it to the tray in the move's colour. */
+    if (await find('act', 'legend')) {
+      await page.click('#cr-off');
+      await page.evaluate(() => { const t = document.querySelector('#cr-sheet [data-mgroup="body"]'); if (t) t.click(); });
+      const before = await page.evaluate(() => RTF_CAREER_UI.state().cur.pending.length);
+      await page.evaluate(() => { const t = document.querySelector('#cr-sheet [data-mv="legend"]'); if (t) t.click(); });
+      const dec = await page.evaluate(() => ({ h: (document.querySelector('#cr-mv-h') || {}).textContent || '', go: !!document.querySelector('#cr-sheet [data-oact="legend"]:not([disabled])'),
+        then: /decision comes next/.test(document.querySelector('#cr-sheet').textContent), still: RTF_CAREER_UI.state().cur.pending.length }));
+      ok(/Train with a legend/i.test(dec.h) && dec.go && dec.then && dec.still === before, `a tap opens the move as a decision and runs nothing yet ("${dec.h}")`);
+      await page.evaluate(() => { const t = document.querySelector('#cr-sheet [data-oact="legend"]'); if (t) t.click(); });
+      const card = await page.evaluate(() => { const c = document.querySelector('#cr-card'); return c ? { id: RTF_CAREER_UI.state().cur.pending[0].id, cls: c.className, tag: (c.querySelector('.cr-mvtag') || {}).textContent || '',
+        edge: getComputedStyle(c).getPropertyValue('--cr-edge').trim(), res: (document.querySelector('.cr-result .cr-you') || {}).textContent || '', shut: document.querySelector('#cr-sheet').hidden } : null; });
+      ok(card && card.id === 'legendcamp' && card.shut && /Train with a legend/i.test(card.res), `Make the move runs it, and the card it leaves is on top (${card && card.id})`);
+      ok(card && /cr-mvcard/.test(card.cls) && card.tag === 'Your move · Body' && card.edge === '#3ecf8e', `and that card wears the move: its group and its colour (${card && card.tag}, ${card && card.edge})`);
+    } else ok(false, 'the walk found a career that can train with a legend');
+    /* THE DEAL CARD: every brand answer wears its mark. */
+    if (await find('deal')) {
+      const d = await page.evaluate(() => { const L = RTF_CAREER_UI.state().cur, c = L.pending[0];
+        return { n: c.ctx.list.length, marks: [...document.querySelectorAll('#cr-card .cr-choice')].map((b) => b.querySelectorAll('.cr-bmark img').length), cls: document.querySelector('#cr-card').className }; });
+      ok(/cr-dealcard/.test(d.cls) && d.marks.slice(0, d.n).every((m) => m === 1) && d.marks.slice(d.n).every((m) => m === 0), `on the deal card each brand wears its mark and turning them down wears none (${d.marks.join(',')})`);
+    } else ok(false, 'the walk found a deal card');
+    /* THE ENDINGS. Each is drawn as an ending, the answer that ends the
+       career is marked, and the ending is no taller than the tray allows. */
+    const ENDS = { careerinj: 'end-inj', ontop: 'end-top', tenday: 'end-wait', europe: 'end-ret' };
+    for (const k of Object.keys(ENDS)) {
+      if (!(await find(k))) { ok(false, `the walk found a ${k} card`); continue; }
+      const e = await page.evaluate(() => { const c = document.querySelector('#cr-card'), L = RTF_CAREER_UI.state().cur, card = L.pending[0];
+        const opts = [...c.querySelectorAll('.cr-choice')];
+        return { cls: c.className, eye: (c.querySelector('.cr-eye') || {}).textContent || '', h: c.getBoundingClientRect().height,
+          last: opts.map((b, i) => b.classList.contains('cr-last') ? i : -1).filter((i) => i >= 0),
+          ends: card.options.map((o, i) => o.act === 'retire' || /^Retire$/.test(o.label) || /on top/i.test(o.label) ? i : -1).filter((i) => i >= 0),
+          tags: opts.map((b) => (b.querySelector('.cr-etag') || {}).textContent || ''), acts: card.options.map((o) => o.act || '') }; });
+      ok(e.cls.indexOf(ENDS[k]) >= 0 && e.cls.indexOf('cr-end') >= 0 && e.eye.length > 4, `the ${k} card is drawn as an ending ("${e.eye}")`);
+      ok(e.last.length === 1 && e.last.join() === e.ends.join(), `on the ${k} card the answer that ends it is the one marked (${e.last.join()} of ${e.ends.join()})`);
+      if (k === 'tenday') ok(e.tags[e.acts.indexOf('tenday')] === 'One more call', `the ten day wait is its own kind of answer ("${e.tags[e.acts.indexOf('tenday')]}")`);
+      if (k === 'europe') ok(e.tags[e.acts.indexOf('finale')] === 'One last year', `one last year in Europe is its own kind of answer ("${e.tags[e.acts.indexOf('finale')]}")`);
+      ok(e.h <= 844 * 0.46, `the ${k} card fits the tray (${Math.round(e.h)}px)`);
+    }
+    const sc = await page.evaluate(() => ['careerinj', 'ontop'].filter((id) => window.RTF_SCENES.PRESENTABLE.indexOf(id) < 0));
+    ok(!sc.length, `the injury that ends it and the walk away are told in a scene first (${sc.join(', ') || 'both'})`);
+    /* THE BACK OF THE CARD: the two chapters are rows, the same names the
+       chapters say, and the story does not tell them twice. */
+    if (await find('hall')) {
+      await page.click('#cr-quit'); await page.click('#cr-retire-yes');
+      for (let k = 0; k < 8 && !(await page.evaluate(() => !!RTF_CAREER_UI.state().last)); k++) { await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) c.click(); }); await page.waitForTimeout(100); }
+      const h = await page.evaluate(() => { const card = RTF_CAREER_UI.state().last, el = document.querySelector('.cr-cback');
+        const ch = (n) => ((card.story || []).find((x) => x.h === n) || {}).p || '';
+        return { comps: el ? [...el.querySelectorAll('.cr-cbcomps .nm')].map((x) => x.textContent) : [], brands: el ? [...el.querySelectorAll('.cr-cbbrands .who b')].map((x) => x.textContent) : [],
+          cc: card.comps || [], bb: (card.brands || []).map((x) => x.n), like: ch('Who you were like'), sold: ch('Your face sold'),
+          twice: [...document.querySelectorAll('.cr-story .cr-sub')].filter((x) => /Who you were like|Your face sold/.test(x.textContent)).length,
+          junk: el ? /undefined|NaN/.test(el.textContent) : true }; });
+      ok(h.comps.length === 3 && h.comps.join('|') === h.cc.join('|') && h.comps.every((n) => h.like.indexOf(n) >= 0), `the card back lists who you were like, the chapter's names in order (${h.comps.join(', ')})`);
+      ok(h.brands.length > 0 && h.brands.join('|') === h.bb.join('|') && h.brands.every((n) => h.sold.indexOf(n) >= 0), `and every brand your face sold (${h.brands.join(', ')})`);
+      ok(h.twice === 0 && !h.junk, 'the story does not tell those two chapters twice, and the card back prints nothing empty');
+    } else ok(false, 'the walk found a career with a deal to retire');
+    ok(boom.length === 0, `no page errors on the paths walk (${boom.join(' | ') || 'none'})`);
+    await ctx.close();
+  }
+
+  /* THE DESKTOP LAYOUT. Career was a phone column stranded on a wide
+     screen: the builder one long form across 1,000px, the Hall card a strip
+     of art in the middle of a wide frame, the shades reveal pushing the card
+     down across both columns. On a desktop the builder, the life view and
+     the Hall card are two columns side by side, nothing scrolls sideways and
+     nothing is cut, and a held column taller than the window still shows its
+     foot. The Hall card's set is drawn at the card's own shape, whole pixels
+     a cell, on a desktop and on a phone. */
+  async function deskWalk(b, serve) {
+    section('7d. the desktop layout and the Hall card');
+    const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    const boom = [];
+    page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+    await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+    await page.route('**/*', serve);
+    await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+    await page.evaluate(() => document.querySelector('#b-career').click());
+    await page.waitForSelector('#cr-go');
+    /* what every screen must keep: no sideways scroll, and no control or
+       line of copy that runs out of the panel it sits in */
+    const sound = () => page.evaluate(() => {
+      const de = document.documentElement, cut = [];
+      for (const el of document.querySelectorAll('#s-car button, #s-car input, #s-car .k-panel h3, #s-car .cr-final .v, #s-car .cr-final p, #s-car .cr-tot > div')) {
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height) continue;
+        const box = el.parentElement.closest('.k-panel, .cr-final, .k-sheet') || document.querySelector('#s-car');
+        const q = box.getBoundingClientRect();
+        if (r.left < q.left - 1 || r.right > q.right + 1 || r.left < 0 || r.right > de.clientWidth) cut.push((el.id || el.className || el.tagName).toString().slice(0, 30));
+        if (el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflowX !== 'visible' && el.tagName !== 'INPUT') cut.push((el.id || el.className || el.tagName) + ' clips its text');
+      }
+      return { side: de.scrollWidth - de.clientWidth, cut };
+    });
+    const beside = (a, b2) => page.evaluate(([a, b2]) => {
+      const x = document.querySelector(a), y = document.querySelector(b2);
+      if (!x || !y) return { ok: false, why: 'missing ' + (!x ? a : b2) };
+      const p = x.getBoundingClientRect(), q = y.getBoundingClientRect();
+      return { ok: p.right <= q.left + 1 && Math.abs(p.top - q.top) < 40 && p.width > 300 && q.width > 300, why: Math.round(p.left) + '-' + Math.round(p.right) + ' | ' + Math.round(q.left) + '-' + Math.round(q.right) };
+    }, [a, b2]);
+    /* THE BUILDER: the player and his ratings on the left, the steps on the
+       right, the player drawn whole-number big, the start button on screen
+       at every step */
+    const bs = await beside('.cr-build .cr-preview', '.cr-build .cr-steps');
+    ok(bs.ok, `on a desktop the builder's player sits beside its steps (${bs.why})`);
+    for (const st of ['player', 'look', 'story', 'start']) {
+      await page.click(`[data-bstep="${st}"]`);
+      const m = await page.evaluate(() => {
+        const go = document.querySelector('#cr-go').getBoundingClientRect(), f = document.querySelector('.cr-pfig .rtf-baller'), set = document.querySelector('.cr-pfig .k-px'), box = document.querySelector('.cr-pfig').getBoundingClientRect();
+        const fr = f ? f.getBoundingClientRect() : null, sr = set ? set.getBoundingClientRect() : null;
+        return { go: go.top >= 0 && go.bottom <= innerHeight, fw: fr ? fr.width : 0, cover: !!sr && sr.left <= box.left + 1 && sr.right >= box.right - 1 && Math.abs(sr.height - box.height) < 1 && Number.isInteger(sr.height / 80) };
+      });
+      const s = await sound();
+      ok(m.go, `on a desktop the start button is on screen on the ${st} step`);
+      ok(m.fw >= 44 * 4 && m.fw % 44 === 0 && m.cover, `on the ${st} step the player is drawn whole-number big on a set that fills his frame (${m.fw}px)`);
+      ok(s.side <= 0 && !s.cut.length, `the ${st} step scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+    }
+    await page.click('[data-bstep="player"]');
+    /* THE LIFE VIEW: the card beside the stage, and the shades reveal over
+       the stage rather than across both columns */
+    await page.click('#cr-go');
+    await page.waitForSelector('#cr-shades');
+    const lv = await beside('.cr-grid > .cr-side', '.cr-grid .cr-shades');
+    ok(lv.ok, `on a desktop the shades reveal sits beside the player card, over the stage (${lv.why})`);
+    const lm = await page.evaluate(() => { const s = document.querySelector('.cr-side').getBoundingClientRect(), m = document.querySelector('.cr-main').getBoundingClientRect(); return s.right <= m.left + 1 && m.width >= 560; });
+    ok(lm, 'and the stage and the card on top are the right column, at least 560px wide');
+    let s = await sound();
+    ok(s.side <= 0 && !s.cut.length, `the life view scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+    /* a short window: the held column still shows its foot */
+    await page.setViewportSize({ width: 1280, height: 560 });
+    await page.evaluate(() => { const c = document.querySelector('.cr-choice') || document.querySelector('#cr-next'); if (c) c.click(); });
+    await page.waitForTimeout(400);
+    const foot = await page.evaluate(async () => {
+      const side = document.querySelector('.cr-grid > .cr-side'), sh = side.getBoundingClientRect().height, y0 = side.getBoundingClientRect().top + scrollY;
+      window.scrollTo(0, y0 + sh - innerHeight + 40);
+      await new Promise((d) => setTimeout(d, 150));
+      const r = side.getBoundingClientRect();
+      return { b: Math.round(r.bottom), h: innerHeight, tall: Math.round(sh), room: document.documentElement.scrollHeight - innerHeight - scrollY };
+    });
+    ok(foot.tall > 560 - 64 && foot.room > 0 && foot.b <= foot.h + 1, `in a 1280x560 window the player card's column (${foot.tall}px) shows its foot once scrolled past it (bottom ${foot.b} of ${foot.h})`);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    /* THE HALL CARD, found by playing the engine, then retired through the page */
+    const found = await page.evaluate(() => {
+      const C = window.RTF_CAREER, st = RTF_CAREER_UI.state(), lg = st.cur.league;
+      for (let i = 0; i < 200; i++) {
+        const L = C.newLife({ seed: 'desk' + i, league: lg, start: 'draft', pos: C.POS[i % 5] });
+        let g = 0;
+        while (!L.retired && g++ < 6000) {
+          if (!L.pending.length && L.history.length >= 8) { st.cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); return true; }
+          if (L.pending.length) { const c = L.pending[0]; const k = c.options.findIndex((o) => /one more|keep playing|come back|ten day|overseas/i.test(o.label)); C.choose(L, k < 0 ? 0 : k); }
+          else C.step(L);
+        }
+      }
+      return false;
+    });
+    if (found) {
+      await page.click('#cr-quit'); await page.click('#cr-retire-yes');
+      for (let k = 0; k < 8 && !(await page.evaluate(() => !!RTF_CAREER_UI.state().last)); k++) { await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) c.click(); }); await page.waitForTimeout(100); }
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(300);
+      const hb = await beside('.cr-final', '.cr-epi, .cr-cback, .cr-story');
+      ok(hb.ok, `on a desktop the Hall card sits beside its back (${hb.why})`);
+      /* the set fills the card, whole pixels a cell, the floor under his feet */
+      const art = () => page.evaluate(() => {
+        const card = document.querySelector('.cr-final'), img = card.querySelector('.cr-hset img'), fig = card.querySelector('.cr-hin .rtf-baller');
+        const inner = (card.querySelector('.cr-hcard') || card).getBoundingClientRect(), r = img.getBoundingClientRect();
+        const px = r.width / img.naturalWidth;
+        return { cover: r.left <= inner.left + 1 && r.top <= inner.top + 1 && r.right >= inner.right - 1 && r.bottom >= inner.bottom - 1,
+          whole: Number.isInteger(Math.round(px * 1000) / 1000) && px >= 3, px: Math.round(px * 100) / 100, w: Math.round(r.width), cw: Math.round(inner.width),
+          frame: getComputedStyle(card).backgroundImage.indexOf('gradient') >= 0, foil: !!card.querySelector('.cr-foil'), feet: fig ? Math.round(fig.getBoundingClientRect().bottom - inner.top) : -1 };
+      });
+      let a = await art();
+      ok(a.cover && a.whole, `the Hall card's set fills the card at whole pixels a cell (${a.w}px over ${a.cw}, ${a.px}px a cell)`);
+      ok(a.frame && a.foil, 'the Hall card wears a cast frame and a foil sheen');
+      s = await sound();
+      ok(s.side <= 0 && !s.cut.length, `the Hall card scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+      await page.setViewportSize({ width: 1280, height: 640 });
+      await page.waitForTimeout(300);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
+      await page.waitForTimeout(200);
+      const sh = await page.evaluate(() => { const r = document.querySelector('#cr-again').getBoundingClientRect(); return { b: Math.round(r.bottom), h: innerHeight }; });
+      ok(sh.b > 0 && sh.b <= sh.h, `in a 1280x640 window New career is on screen halfway down the Hall card's back (bottom ${sh.b} of ${sh.h})`);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(400);
+      a = await art();
+      s = await sound();
+      ok(a.cover && a.whole, `on a phone the Hall card's set fills the card at whole pixels a cell (${a.w}px over ${a.cw}, ${a.px}px a cell)`);
+      ok(s.side <= 0 && !s.cut.length, `on a phone the Hall card scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+    } else ok(false, 'the desktop walk found a career to retire');
+    ok(boom.length === 0, `no page errors on the desktop walk (${boom.join(' | ') || 'none'})`);
+    await ctx.close();
+  }
   async function boardWalk(fin) {
   await toBoard.click();
   await page.waitForSelector('#s-board.active .bd-ent');
@@ -1872,6 +2310,9 @@ async function scenesWalk(b, serve) {
   await page.fill('#cr-name', 'Scene McTest');
   await page.click('#cr-go');
   const look = await page.evaluate(() => RTF_CAREER_UI.state().cur.look);
+  /* a live life, kept for the trade plates below: the Hall record at the end
+     of the walk carries no league, and a trade is only played on a live one */
+  await page.evaluate(() => { window.__liveL = JSON.parse(JSON.stringify(RTF_CAREER_UI.state().cur)); });
   ok(look && look.hair === 'afro', `the builder's look is the career's (${JSON.stringify(look)})`);
   const pic = await page.evaluate(() => !!document.querySelector('.cr-id .rtf-baller'));
   ok(pic, 'the identity card draws the player');
@@ -1986,6 +2427,35 @@ async function scenesWalk(b, serve) {
   ok(underneath, 'and the card a scene asks is on the plain screen underneath');
   const fin = await page.evaluate(() => RTF_CAREER_UI.state().last);
   ok(fin && fin.look && fin.look.hair === 'afro', 'the Hall card keeps the look');
+  /* A TRADE'S GM IS NAMED ON HIS PLATE. The page plays a chained scene over
+     the career's opening context, which has no trade in it, so a plate read
+     there said "General manager, undefined" over no name. Every way a trade
+     reaches you is played here the way the page plays it. */
+  {
+    const plates = await page.evaluate(async () => {
+      const S = window.RTF_SCENES, L = window.__liveL, out = [];
+      const ways = [{ when: 'summer' }, { when: 'deadline' }, { when: 'season' }, { how: 'ask' }];
+      for (let k = 0; k < 12; k++) {
+        const w = ways[k % ways.length];
+        const b = Object.assign({ kind: 'trade', from: 'BRK', to: 'MIA', oldgm: 'Gary Oldfield', newgm: 'Ned Newman', agent: 'Tess Rowe', fam: 'Mom', famRole: 'mom', oldmate: 'Sam Pike' }, w);
+        const L2 = Object.assign({}, L, { year: L.year + k, team: 'MIA' });
+        const pick = S.pickScene({ beats: [b] }, L2);
+        if (!pick) continue;
+        const beats = S.build(L2, pick, null).beats, ctx = S.build(L2, null, null).ctx;
+        S.play(beats, ctx, {});
+        for (let i = 0; i < beats.length; i++) {
+          await new Promise((d) => setTimeout(d, 60));
+          const who = document.querySelector('#scov .sc-who');
+          if (who && /gm$/.test(beats[i].who || '')) out.push(who.innerText.replace(/\s+/g, ' '));
+          const st = document.querySelector('#scov .sc-stage'); if (st) st.click();
+        }
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await new Promise((d) => setTimeout(d, 60));
+      }
+      return out;
+    });
+    ok(plates.length > 0 && plates.every((p) => /General manager, \w/i.test(p) && !/undefined/i.test(p) && /Oldfield|Newman/i.test(p)), `every trade GM's plate names him and his club (${plates.slice(0, 2).join(' | ') || 'none seen'})`);
+  }
   /* Off means off. */
   await page.evaluate(() => { localStorage.setItem('rtf.scenes.v1', 'off'); const a = document.querySelector('#cr-again'); if (a) a.click(); });
   await page.waitForSelector('#cr-go');

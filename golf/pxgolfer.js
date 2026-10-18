@@ -1383,7 +1383,8 @@ function pxGolferURL(look){
 }
 
 function _pick(a){return a[Math.floor(Math.random()*a.length)];}
-function _k(o){return Object.keys(o);}
+// earned items (the Putt Putt rewards, ids pp... and pu_pp...) are worn only by the players who won them
+function _k(o){return Object.keys(o).filter(function(k){return !/^(pu_)?pp/.test(k);});}
 function randomLook(){
   var L={ skinTone:Math.floor(Math.random()*101), hair:_pick(HAIRS).id, hairStyle:_pick(HAIRSTYLES).id,
     polo:_pick(POLOS).id, hat:_pick(POLOS).id, pants:_pick(PANTS).id, shoes:_pick(SHOES).id,

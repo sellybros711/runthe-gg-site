@@ -64,7 +64,9 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 const SYSTEM = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'interview', 'pworkout', 'nooffer', 'offers',
   'allstar', 'retire', 'declare', 'portal', 'commit', 'signing', 'build_arch', 'build_pos', 'build_sig', 'goal', 'nickname',
   // the front office and the bench: a deadline, a talk and a review come every season they apply
-  'deadline', 'coach_talk', 'coach_review']);
+  'deadline', 'coach_talk', 'coach_review',
+  // a career's own moves and the brands that call some summers (moves.js, deals.js)
+  'deal', 'holdout', 'posmove', 'legendcamp', 'bodymove', 'shoemove']);
 /* Your club's moments (career.js TEAM_EV) come back whenever the club gives
    the career something to answer, which is the point of them. */
 const RECURS = { has: (id) => SYSTEM.has(id) || C.recurs(id) || !!(C.TEAM_EV && C.TEAM_EV[id]) };
@@ -237,6 +239,19 @@ if (!SCRIPT && !ONLY) for (let i = 0; i < Math.min(300, Math.ceil(N / 10)); i++)
   try { OFF.push(run('off' + i, i % 2 ? 'hs' : 'draft', 'random', null, false)); } catch (e) { crashes++; }
 }
 const T = (x) => C.totals(x.L);
+/* THE RARE ENDINGS ARE COUNTED ON MORE CAREERS (the owner's call,
+   2026-10-16). A band under one percent read off 1,000 careers turns on two
+   or three of them: the GOAT ending read 0.1% to 0.3% on careers whose best
+   legacies were unchanged. Its band stays where it was; it is counted over
+   the first sweep plus RARE_X times as many careers again, on their own
+   seeds, keeping only the ending of each. */
+const RARE_X = 2;
+const rareEnds = results.map(endOf);
+if (!SCRIPT && !ONLY) for (let i = 0; i < N * RARE_X; i++) {
+  const pol = POLICIES[i % POLICIES.length];
+  try { rareEnds.push(endOf(run('rare' + i, i % 2 ? 'hs' : 'draft', pol))); } catch (e) { crashes++; if (crashes <= 3) console.error('crash rare' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
+}
+const rarePct = (f) => 100 * rareEnds.filter(f).length / Math.max(1, rareEnds.length);
 const hs = results.filter((x) => routeOf(x.L).start === 'hs');
 const routes = {}, slots = {}, pros = {}, verdicts = {};
 for (const x of results) {
@@ -252,15 +267,18 @@ const M = {
   'route: G League, overseas or gap year': 100 * hs.filter((x) => /gleague|overseas/.test(routeOf(x.L).pre)).length / Math.max(1, hs.length),
   'lottery pick': pct(slots.lottery || 0),
   'second round or undrafted': pct((slots.second || 0) + (slots.undrafted || 0)),
-  'All-Star at least once': pct(count((x) => T(x).star > 0)),
+  /* Read off the careers players start, counted equally: high school (Pro)
+     and the generated road on Normal (free). Draft night with a background
+     card, half of the main sweep, is a door no player has had since Phase E. */
+  'All-Star at least once': (() => { const sh = (a) => a.filter((x) => T(x).star > 0).length / Math.max(1, a.length); const g = EX.gen.normal; return 100 * (g.length ? (sh(hs) + sh(g)) / 2 : sh(hs)); })(),
   'MVP at least once': pct(count((x) => T(x).mvp > 0)),
   'a ring': pct(count((x) => T(x).rings > 0)),
   'route: juco or walk-on': 100 * hs.filter((x) => /juco|walkon/.test(routeOf(x.L).pre)).length / Math.max(1, hs.length),
   'route: undrafted or rec league': 100 * hs.filter((x) => routeOf(x.L).pre === 'rec' || routeOf(x.L).slot === 'undrafted').length / Math.max(1, hs.length),
   'Hall of Fame (any tier)': pct(count((x) => endOf(x).hof)),
   'first ballot or better': pct(count((x) => endOf(x).tier === 'hof_first')),
-  'GOAT debate ending': pct(count((x) => endOf(x).outcomes.indexOf('lo_goat') >= 0)),
-  'a secret ending': pct(count((x) => !!endOf(x).secret)),
+  'GOAT debate ending': rarePct((e) => e.outcomes.indexOf('lo_goat') >= 0),
+  'a secret ending': rarePct((e) => !!e.secret),
   'a legend event (switch on)': pct(count((x) => x.legendSeen.length > 0)),
   'a legend event (switch off)': OFF.length ? 100 * OFF.filter((x) => x.legendSeen.length > 0).length / OFF.length : 0,
   'events in the catalog': allIds.size,
@@ -315,7 +333,7 @@ const TARGETS = [
   ['route: G League, overseas or gap year', 8, 18, 'D'],
   ['lottery pick', 20, 32, 'D'],
   ['second round or undrafted', 30, 45, 'D'],
-  ['All-Star at least once', 22, 35, 'C'],
+  ['All-Star at least once', 20, 25, 'C'],   // the owner's call, 2026-10-15
   ['MVP at least once', 1, 3, 'C'],
   ['a ring', 18, 30, 'C'],
   ['route: juco or walk-on', 4, 10, 'D'],
@@ -353,6 +371,7 @@ const TARGETS = [
 const out = [];
 const P = (s) => { out.push(s); console.log(s); };
 P(`# Career simulator report\n\n${n} careers (${POLICIES.join(', ')}), ${secs}s, phase ${PHASE}.\n`);
+P(`The rare endings (GOAT debate, a secret ending) are counted on ${rareEnds.length} careers.\n`);
 const problems = [];
 if (crashes) problems.push(crashes + ' careers crashed');
 for (const x of results.concat(exAll)) for (const p of x.problems) problems.push(x.L.seed + ' ' + x.pol + ': ' + p);

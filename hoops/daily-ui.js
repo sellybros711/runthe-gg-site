@@ -29,8 +29,8 @@ var PCOL = { street: '#e8660f', league: '#3a6fd8', hof: '#e3a92f', season: '#8a4
 var SPIN_MS = 5200;
 
 function $(id){ return document.getElementById(id); }
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function money(n){ return Math.round(n).toLocaleString('en-US'); }
+var esc = window.RTF_UTIL.esc;
+var money = window.RTF_UTIL.coins;
 function short(n){ return n >= 1000 ? (n / 1000).toFixed(n % 1000 ? 1 : 0).replace(/\.0$/, '') + 'k' : String(n); }
 function reduced(){ try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
 function signed(){ return D.signedIn(); }
@@ -173,7 +173,10 @@ function face(pz, idx){
     x.save(); x.translate(c, c); x.rotate(mid + Math.PI / 2);
     x.fillStyle = '#fff6e0'; x.font = '24px "Press Start 2P", monospace'; x.textAlign = 'center';
     x.shadowColor = 'rgba(0,0,0,.7)'; x.shadowOffsetY = 3;
-    x.fillText(label, 0, -R + 58);
+    /* a wedge in the bottom half turns its word over, so the wheel at rest
+       never reads upside down ("009" for 600); same place on the rim */
+    if (Math.sin(mid) > 0.15) { x.rotate(Math.PI); x.fillText(label, 0, R - 34); }
+    else x.fillText(label, 0, -R + 58);
     x.restore();
     var im = new Image(); pending++;
     im.onload = function(){ x.save(); x.translate(c, c); x.rotate(mid + Math.PI / 2); var w = p.kind === 'pack' ? 30 : 40, hh = p.kind === 'pack' ? 45 : 40; x.drawImage(im, -w / 2, -R + 76, w, hh); x.restore(); done(); };

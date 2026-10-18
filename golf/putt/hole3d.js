@@ -40,6 +40,14 @@ function* steps(C, opt){
   var T = C.T, F = C.field, elev = opt.elev || 42;
   var D2R = Math.PI / 180, se = Math.sin(elev * D2R), ce = Math.cos(elev * D2R);
   var SC = opt.scene || null;   // a scene with no course in it (a trail, or one prop): its own bounds and land
+  /* FINE (opt.fine): a picture painted on a finer grid (opt.art, a twelfth of a foot) so a hole reads as clearly as the
+     golfer does. The textures keep their size in the world, not in pixels: the land's cells (ti, tj) stay a quarter foot,
+     and the carpet's tufts and the water's glints are worked out on that cell (TR pixels across) with a glint one pixel
+     wide inside it. The ground is laid one point a pixel (its rows still overlap at this camera), and no solid is
+     sampled coarser than its pixels. Without opt.fine every one of these is exactly what it was. */
+  var FINE = !!opt.fine, TCELL = opt.tcell || (FINE ? 0.25 : ART), TR = Math.max(1, Math.round(TCELL / ART));
+  // a twelfth of a foot is not exact in floating point, so a point laid on column i can land a hair under it and leave a gap
+  var EPS = FINE ? 1e-6 : 0;
   var AP = C.allPts || C.poly, pxs = AP.map(function(p){ return p[0]; }), pys = AP.map(function(p){ return p[1]; });
   var TZ = C.tierAt || function(){ return 0; };
   var b = [Math.min.apply(null, pxs) - 11, Math.min.apply(null, pys) - 15, Math.max.apply(null, pxs) + 11, Math.max.apply(null, pys) + 5];
@@ -62,16 +70,20 @@ function* steps(C, opt){
   // the ground's own splat: the same cell splat() makes with { ti, tj, dt, nl } and the land's extras laid over it,
   // built only once the pixel is known to be in front, so a hidden one costs no object
   function splatG(x, y, z, m, n, ti, tj, dt, nl, ge){
-    var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
+    var sx = Math.floor((x - b[0]) / ART + EPS), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return;
     if (FX){ var hi = Math.round((x - b[0]) / HMS), hj = Math.round((y - b[1]) / HMS); if (hi >= 0 && hj >= 0 && hi < HX && hj < HY && z > HM[hj * HX + hi]) HM[hj * HX + hi] = z; }
     var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp; if (FX) WZ[k] = z;
     var c = { m:m, n:null, z:Dp, dt:dt, gloss:0, bias:0, t:null, tag:'', nv:n, ti:ti, tj:tj, nl:nl };
     if (ge) for (var q in ge) c[q] = ge[q];
     S.g[sy][sx] = c;
+    /* A FINE PICTURE LAYS ONE GROUND POINT A PIXEL, so on a slope that rises away from the camera (rise over run about 0.45
+       to 1.4) its rows draw further apart than a pixel and the stage showed through between them as stripes. A pixel left
+       empty right under a point takes that point, a hair further away, so any real point there still wins. */
+    if (FINE && sy + 1 < Hh){ var k2 = k + W; if (Z[k2] < -1e8){ Z[k2] = Dp - 0.01; if (FX) WZ[k2] = z; S.g[sy + 1][sx] = c; } }
   }
   function splat(x, y, z, m, n, extra){
-    var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
+    var sx = Math.floor((x - b[0]) / ART + EPS), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return;
     if (FX){ var hi = Math.round((x - b[0]) / HMS), hj = Math.round((y - b[1]) / HMS); if (hi >= 0 && hj >= 0 && hi < HX && hj < HY && z > HM[hj * HX + hi]) HM[hj * HX + hi] = z; }
     var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp; if (FX) WZ[k] = z;
@@ -81,7 +93,7 @@ function* steps(C, opt){
   }
 
   // ---- the distance to the rail, worked out once on the ground grid rather than at every question
-  var st = SC ? ART : ART / 2, GX = Math.round((b[2] - b[0]) / st) + 1, GY = Math.round((b[3] - b[1]) / st) + 1, GY0 = GY;
+  var st = SC || FINE ? ART : ART / 2, GX = Math.round((b[2] - b[0]) / st) + 1, GY = Math.round((b[3] - b[1]) / st) + 1, GY0 = GY;
   var SD = new Float32Array(GX * GY), Q = C.poly;
   // the signed distance to the course's outline: the union of its rooms, so a mouth between two is open
   var PS = C.polys || [Q], ED = C.edges;
@@ -131,7 +143,7 @@ function* steps(C, opt){
     var zx = (gzI(i + 1, j) - gzI(i - 1, j)) / (2 * st), zy = (gzI(i, j + 1) - gzI(i, j - 1)) / (2 * st);
     var terr = typeof mm === 'string' && mm.charAt(0) === 't';
     var flat = (mm === 'rail' || mm === 'ground') ? 0 : 1, gn = terr ? (LD.gain || 1) : 1, n = camN(-zx * flat * gn, -zy * flat * gn, 1);
-    var ti = Math.floor((x - b[0]) / ART), tj = Math.floor((y - b[1]) / ART);
+    var ti = Math.floor((x - b[0]) / TCELL), tj = Math.floor((y - b[1]) / TCELL);
     var key = terr ? mm : mm === 'rail' ? 'rail' : mm === 'ground' ? 'ground' : mm === M.WATER ? 'haz' : mm === M.ICE ? 'ice' : mm === M.MUD ? 'slow' : mm === M.SAND ? 'sand' : mm === M.BELT ? 'belt' : mm === M.FLOW ? 'flow' : 'carpet';
     splatG(x, y, z, key, n, ti, tj, key === 'ground' ? -1 : 0, terr, GE[kk]);
     if (z > zs + 0.12){ var ex3 = { ti:ti, tj:tj, nl:terr, dt:-1 }; if (GE[kk]) for (qq in GE[kk]) ex3[qq] = GE[kk][qq];
@@ -143,10 +155,12 @@ function* steps(C, opt){
   // ---- solids: a voxel grid, each surface voxel lit by which way its empty neighbours lie
   var NB = []; (function(){ for (var dk = -1; dk <= 1; dk++) for (var dj = -1; dj <= 1; dj++) for (var di = -1; di <= 1; di++) if (di || dj || dk) NB.push([di, dj, dk]);
     NB.push([2, 0, 0], [-2, 0, 0], [0, 2, 0], [0, -2, 0], [0, 0, 2], [0, 0, -2]); })();
-  function emit(A, nx, ny, nz, x0, y0, z0, sv){
+  // a generator, so a big solid is built a few rows a step (the owner, 2026-10-18: a whole solid in one step held a phone's
+  // frame for 300 ms while a hole was rendered ahead during a walk). The voxels and their order are exactly as before.
+  function* emit(A, nx, ny, nz, x0, y0, z0, sv){
     var id = function(i, j, k){ return (k * ny + j) * nx + i; };
     var occ = function(i, j, k){ return i >= 0 && j >= 0 && k >= 0 && i < nx && j < ny && k < nz && A[id(i, j, k)] ? 1 : 0; };
-    for (var k = 0; k < nz; k++) for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++){
+    for (var k = 0; k < nz; k++) for (var j = 0; j < ny; j++){ if ((j & 3) === 3) yield; for (var i = 0; i < nx; i++){
       var c = A[id(i, j, k)]; if (!c) continue;
       if (occ(i, j + 1, k) && occ(i, j, k + 1) && occ(i - 1, j, k) && occ(i + 1, j, k)) continue;   // hidden from the camera
       var gx = 0, gy = 0, gz2 = 0;
@@ -155,27 +169,27 @@ function* steps(C, opt){
       if (sv > ART * 1.01){ var nb = Math.ceil(sv / ART), fs = sv / nb;   // a voxel bigger than an art pixel covers its whole face, not one dot
         for (var d0 = 0; d0 < nb; d0++) for (var d1 = 0; d1 < nb; d1++) for (var d2 = 0; d2 < nb; d2++) splat(x0 + i * sv + d0 * fs, y0 + j * sv + d1 * fs, z0 + k * sv + d2 * fs, 'x:' + c, nn); }
       else splat(x0 + i * sv, y0 + j * sv, z0 + k * sv, 'x:' + c, nn);
-    }
+    } }
   }
   // solid(box, fn): asks fn(x, y, z) for a colour at every voxel. Fine for small things.
   // every solid is queued and built later, one a step, so no one piece of land holds a frame
   var JOBS = [];
-  function solid(){ var a = arguments; JOBS.push(function(){ solidNow.apply(null, a); }); }
-  function vox(){ var a = arguments; JOBS.push(function(){ voxNow.apply(null, a); }); }
-  function solidNow(x0, y0, z0, x1, y1, z1, fn, sv){
-    sv = sv || ART / 2;
+  function solid(){ var a = arguments; JOBS.push(function(){ return solidNow.apply(null, a); }); }
+  function vox(){ var a = arguments; JOBS.push(function(){ return voxNow.apply(null, a); }); }
+  function* solidNow(x0, y0, z0, x1, y1, z1, fn, sv){
+    sv = sv || ART / 2; if (FINE && sv > ART * 0.7) sv = ART * 0.7;
     var nx = Math.ceil((x1 - x0) / sv) + 1, ny = Math.ceil((y1 - y0) / sv) + 1, nz = Math.ceil((z1 - z0) / sv) + 1, A = new Array(nx * ny * nz);
-    for (var k = 0; k < nz; k++) for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) A[(k * ny + j) * nx + i] = fn(x0 + i * sv, y0 + j * sv, z0 + k * sv);
-    emit(A, nx, ny, nz, x0, y0, z0, sv);
+    for (var k = 0; k < nz; k++){ for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) A[(k * ny + j) * nx + i] = fn(x0 + i * sv, y0 + j * sv, z0 + k * sv); yield; }
+    yield* emit(A, nx, ny, nz, x0, y0, z0, sv);
   }
   // vox(box, draw): draw(set) writes voxels itself, so a tree is the cost of its branches rather than its box.
-  function voxNow(x0, y0, z0, x1, y1, z1, draw, sv){
-    sv = sv || ART / 2;
+  function* voxNow(x0, y0, z0, x1, y1, z1, draw, sv){
+    sv = sv || ART / 2; if (FINE && sv > ART * 0.7) sv = ART * 0.7;
     var nx = Math.ceil((x1 - x0) / sv) + 1, ny = Math.ceil((y1 - y0) / sv) + 1, nz = Math.ceil((z1 - z0) / sv) + 1, A = new Array(nx * ny * nz);
     var set = function(x, y, z, c){ var i = Math.round((x - x0) / sv), j = Math.round((y - y0) / sv), k = Math.round((z - z0) / sv);
       if (i < 0 || j < 0 || k < 0 || i >= nx || j >= ny || k >= nz) return; A[(k * ny + j) * nx + i] = c; };
-    set.st = sv; draw(set);
-    emit(A, nx, ny, nz, x0, y0, z0, sv);
+    set.st = sv; draw(set); yield;
+    yield* emit(A, nx, ny, nz, x0, y0, z0, sv);
   }
   // a tapered tube from a to b, coloured col(t) along it
   function tube(set, ax, ay, az, bx, by, bz, r0, r1, col){
@@ -190,10 +204,12 @@ function* steps(C, opt){
     for (var z = cz - rz; z <= cz + rz; z += s) for (var y = cy - ry; y <= cy + ry; y += s) for (var x = cx - rx; x <= cx + rx; x += s){
       var u = (x - cx) / rx, v = (y - cy) / ry, w = (z - cz) / rz; if (u * u + v * v + w * w < 1) set(x, y, z, typeof col === 'function' ? col(x, y, z) : col); }
   }
-  var B = { solid:solid, vox:vox, tube:tube, blob:blob, gz:gz, ART:ART, clearAt:clearAt, T:T };
+  // a lamp, a torch or a fire says where it is (B.light), so a living hole (putt.js, drawAmbient) can make its glow flicker
+  var LIGHTS = [];
+  var B = { solid:solid, vox:vox, tube:tube, blob:blob, gz:gz, ART:ART, clearAt:clearAt, T:T, light:function(x, y, z, col){ LIGHTS.push([x, y, z, col || '#ffb84a']); } };
 
   // ---- the hole's own pieces
-  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, kickball:1, clover:0, star:0 };
+  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, kickball:1, gumball:1, dinoegg:1, clover:0, star:0 };
   var LIFT = { bat:1.4, ghost:0.5 };
   function base(x, y){ return CARP + F.h(x, y) * K + TZ(x, y); }
   function skinCol(name){ var fn = SK[name] || SK.stone, n = {}, best = null, bn = 0;
@@ -244,7 +260,7 @@ function* steps(C, opt){
     mill = bl ? { x:bl.x, y:bl.y, z:CARP + bl.hz, r:bl.r, w:bl.sw } : { x:mx, y:my + 1.25, z:mzb + Ht * 0.78, r:3.2 };
   }
 
-  for (var jb = 0; jb < JOBS.length; jb++){ JOBS[jb](); yield; }
+  for (var jb = 0; jb < JOBS.length; jb++){ var gj = JOBS[jb](); while (!gj.next().done) yield; yield; }
   // ---- paint, with the theme's colours on the golfer's ramps
   var R = PX.ramp, h3 = P.hash3;
   var y0 = 0; while (y0 < Hh - 1 && S.g[y0].every(function(c){ return !c; })) y0++;
@@ -367,12 +383,14 @@ function* steps(C, opt){
         if (sh > 0 && sh < 1) sh = ((px + py) & 1) ? Math.min(1, sh * 1.4) : sh * 0.6;
         // a trail is seen from close in, among trees taller than the golfer: its shadows are lighter, or a wood is a lake of blue
         if (SC) sh *= 0.55;
+        // on a fine picture a tall thing's shadow on open water read as a hard slab of blue: water takes it faintly
+        if (FINE && (cm === 't:sea' || cm === 't:lagoon' || cm === 't:sea0' || cm === 't:foam')) sh *= 0.3;
         // light is warm and bright, shadow is cool and blue, the way a low sun reads
         var sr = 1.07 - sh * 0.47, sg = 1.05 - sh * 0.31, sb = 1.0 - sh * 0.12;
         r = r * sr * ao; g = g * sg * ao; bl = bl * sb * ao;
         // THE CARPET HAS A NAP: it is laid in broad strips that catch the light a little differently, with a tuft here
         // and there, so it reads as a surface under the sun and not as a flat fill
-        if (cm === 'carpet'){ var nap = ((Math.floor(wy / 2.4) & 1) ? 0.965 : 1.03) * (hq(px, py, 41) < 0.09 ? 0.93 : 1); r *= nap; g *= nap; bl *= nap; }
+        if (cm === 'carpet'){ var nap = ((Math.floor(wy / 2.4) & 1) ? 0.965 : 1.03) * (hq((px / TR) | 0, (py / TR) | 0, 41) < 0.09 ? 0.93 : 1); r *= nap; g *= nap; bl *= nap; }
         // the sun's wash across the scene
         var wsh = Math.max(-1, Math.min(1, ((wx - mx0) * lx + (wy - my0) * ly) / span)) * (night ? 0.03 : 0.07) + 1; r *= wsh; g *= wsh; bl *= wsh;
         // A LIT RIM ALONG WHAT STANDS UP. Where something stands in front of what is behind it (the scene two
@@ -385,8 +403,8 @@ function* steps(C, opt){
             if (face > 0.1){ var rimA = Math.min(0.42, face * 0.5) * (sh > 0.5 ? 0.3 : 1) * (night ? 0.6 : 1); r += (255 - r) * rimA; g += (238 - g) * rimA; bl += (200 - bl) * rimA; } } }
         // WATER AND ICE TAKE THE SKY: a sheen of it, stronger toward the far bank where the angle is low, and a few
         // glints where the sun catches a ripple
-        if (cm === 'haz' || cm === 'flow' || cm === 'ice' || cm === 't:water' || cm === 't:ice' || cm === 't:sea' || cm === 't:sea0'){ var fr = 0.1 + 0.16 * (1 - py / HH2); r += (hr - r) * fr; g += (hg - g) * fr; bl += (hb - bl) * fr;
-          if (sh < 0.3 && hq(px >> 1, py, 31) < (cm === 'ice' || cm === 't:ice' ? 0.02 : 0.03) && (px & 1)){ r = 250; g = 250; bl = 255; } }
+        if (cm === 'haz' || cm === 'flow' || cm === 'ice' || cm === 't:water' || cm === 't:ice' || cm === 't:sea' || cm === 't:sea0' || cm === 't:lagoon' || cm === 't:jpool'){ var fr = 0.1 + 0.16 * (1 - py / HH2); r += (hr - r) * fr; g += (hg - g) * fr; bl += (hb - bl) * fr;
+          if (sh < 0.3 && hq(((px / TR) | 0) >> 1, (py / TR) | 0, 31) < (cm === 'ice' || cm === 't:ice' ? 0.02 : 0.03) && (((px / TR) | 0) & 1) && px % TR === 0 && py % TR === 0){ r = 250; g = 250; bl = 255; } }
         // haze over the far land (the top of the picture) and nothing on the course
         var far = Math.max(0, Math.min(1, (0.42 - py / HH2) / 0.42)), hzA = far * far * 0.26 * (clearAt(wx, wy) > 0.5 ? 1 : 0.35);
         r += (hr - r) * hzA; g += (hg - g) * hzA; bl += (hb - bl) * hzA;
@@ -427,7 +445,14 @@ function* steps(C, opt){
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return false; return Z[sy * W + sx] > y * ce + z * se + 0.2; };
   /* the depth of every pixel (Z, W wide, starting y0 rows down), so a trail can draw the golfer and anything
      that moves behind whatever stands in front of it */
-  return { ART:ART, cv:cv, bg:fxBg, sky:fxSky, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b,
+  /* WHAT A LIVING HOLE MOVES (a fine picture only): a sample of the water's pixels, which glint in turn, and the lights. The
+     picture itself is never touched again; putt.js draws over it. */
+  var amb = null;
+  // a land may name more that moves (land.js anim: a waterfall, a river's flow, steam): handed on as it is, never touched here
+  if (FINE && !SC){ amb = { water:[], lights:LIGHTS, anim:(LD && LD.anim) || null }; var WSET = { haz:1, flow:1, 't:sea':1, 't:lagoon':1, 't:jpool':1, 't:water':1, 't:sea0':1 }, nr = Math.min(S.g.length, cv.height);
+    for (var ay = 0; ay < nr; ay++){ var grow = S.g[ay]; if (!grow) continue; for (var ax = 0; ax < W; ax++){ var gc = grow[ax]; if (!gc || !WSET[gc.m]) continue;
+      var hh = Math.imul(ax, 374761393) + Math.imul(ay, 668265263) | 0; hh = Math.imul(hh ^ (hh >>> 13), 1274126177); if (((hh ^ (hh >>> 16)) >>> 0) / 4294967296 < 0.01) amb.water.push(ax, ay); } } }
+  return { amb:amb, ART:ART, cv:cv, bg:fxBg, sky:fxSky, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b,
     // what a scene needs to be put back without rendering it again (pack, unpack): a trail is the same picture every
     // time it is opened, so putt.js keeps it on the device
     raw:SC ? { W:W, Hh:Hh, y0:y0, oy:oy, b:b.slice(), ART:ART, se:se, ce:ce, K:K, carp:CARP, GX:GX, GY:GY, st:st, GZ:GZ, Z:Z, bg:fxBg, sky:fxSky, night:FX && fxNight } : null };

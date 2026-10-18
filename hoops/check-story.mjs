@@ -69,17 +69,20 @@ section('1. every event is data the picker can read');
   ok(threw, 'an unknown prerequisite is refused, never silently true');
 }
 
-section('2. a save from before plays without any of it');
+section('2. a save from before becomes a story career and grows a story');
 {
+  /* The original engine retired on 2026-10-15 (the owner's call): an old
+     save loads as a story career and the story starts from where it is. */
   for (const k in FX.saves) {
+    if (FX.saves[k].retired) continue;
     const L = C.migrate(clone(FX.saves[k]));
+    ok(C.storyOn(L), `${k}: it loads as a story career`);
     let g = 0;
-    while (!L.retired && g++ < 120) { if (L.pending.length) C.choose(L, 0); else C.step(L); }
-    ok(!C.storyOn(L) && !L.evlog && !L.feed && !L.arcs && !L.badges && !L.goals, `${k}: no story ledger, feed, arcs, badges or goals`);
+    while (!L.retired && g++ < 400) { if (L.pending.length) C.choose(L, 0); else C.step(L); }
+    const evs = Object.keys(L.evlog || {}).length, fl = (L.feed || []).length;
+    ok(evs > 0 && fl > 0, `${k}: and keeps a story ledger and a feed from there (${evs} events, ${fl} feed lines)`);
   }
-  const off = C.newLife({ seed: 'off', league, story: false });
-  ok(!C.storyOn(off) && !('story' in off.opt), 'a career started with story off carries no story flag at all');
-  ok(C.storyOn(C.newLife({ seed: 'on', league })), 'a new career is a story career');
+  ok(C.storyOn(C.newLife({ seed: 'on', league })) && C.storyOn(C.newLife({ seed: 'off', league, story: false })), 'every new career is a story career, whatever it is asked');
 }
 
 const runs = [];
@@ -366,10 +369,6 @@ section('14. the game narrates, and a card that comes back comes back different'
   ok(withTakes.length >= 25 && !dark.length, `${withTakes.length} cards carry other takes, and each one dealt four times or more here showed more than one (${dark.join(', ') || 'all'})`);
   const one = ['clutch', 'retire', 'injury', 'coach_review'].filter((id) => titles[id] && titles[id].size < 2);
   ok(!one.length, `the system cards are put more than one way (${['clutch', 'retire', 'injury', 'coach_review'].map((id) => id + ' ' + (titles[id] ? titles[id].size : 0)).join(', ')})`);
-  /* Off a story career: none of it. */
-  let offLead = 0, offTake = 0;
-  for (let i = 0; i < 6; i++) for (const k of play('narroff' + i, i % 2 ? 'hs' : 'draft', null, { story: false }).cards) { if (k.c.lead) offLead++; if (k.c.take != null || k.c.varied) offTake++; }
-  ok(!offLead && !offTake, `a career from before the story engine hears no narrator and sees no take (${offLead} lines, ${offTake} takes)`);
 }
 
 section('15. nothing reads the same twice: the summer, the goal and the answers');
@@ -422,10 +421,44 @@ section('15. nothing reads the same twice: the summer, the goal and the answers'
   ok(!rookAgain, `a rookie is never offered Summer League "again" (${rookAgain})`);
   ok(!rookTwice, `a rookie already sent to Vegas this summer is not offered it again (${rookTwice})`);
   ok(rookPlain > 0 && laterAgain > 0, `the first summer offers it plain and a later one says again (${rookPlain} plain, ${laterAgain} again)`);
-  /* A story career only: an old save reads exactly what it always read. */
-  let offVu = 0;
-  for (let i = 0; i < 4; i++) { const x = play('freshoff' + i, 'draft', null, { story: false }); if (x.L && x.L.vu) offVu++; }
-  ok(!offVu, `a career from before the story engine keeps no memory of what it read (${offVu})`);
+}
+
+section('17. an answer matters later: every remembered answer is read, every arc forks on it');
+{
+  /* ANSWERS THAT MATTER (the owner's call, 2026-10-16). Measured before:
+     81 of 103 keys an answer remembers were never read again, and 14 arcs
+     started the same way whatever the player said. Read off the parts, so a
+     new card that remembers something nobody reads fails here. */
+  const DIR = path.join(HERE, 'career');
+  const src = fs.readdirSync(DIR).filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
+  const set = new Set();
+  for (const m of src.matchAll(/\bset: '([^']+)'/g)) set.add(m[1]);
+  for (const m of src.matchAll(/\bset: \[([^\]]*)\]/g)) for (const k of m[1].matchAll(/'([^']+)'/g)) set.add(k[1]);
+  const read = new Set(Object.keys(C.CALLBACKS));
+  for (const m of src.matchAll(/recall\(L, '([^']+)'/g)) read.add(m[1]);
+  for (const m of src.matchAll(/\bcb: '([^']+)'/g)) read.add(m[1]);
+  for (const m of src.matchAll(/\b(?:mem|notMem): \[([^\]]*)\]/g)) for (const k of m[1].matchAll(/'([^']+)'/g)) read.add(k[1]);
+  const unread = [...set].filter((k) => !read.has(k)).sort();
+  ok(set.size > 80, `the answers' memories are found (${set.size})`);
+  ok(!unread.length, `every memory an answer leaves is read again (${unread.join(', ') || 'all ' + set.size})`);
+  /* A card whose every answer starts the same arc must start it differently
+     (its data, or what it remembers), and every field an answer hands an arc
+     is read by the arc. */
+  const blocks = src.split(/\n  (?=[a-z][a-z0-9_]*: \{)/);
+  const same = [], fields = [];
+  for (const b of blocks) {
+    const id = b.slice(0, b.indexOf(':'));
+    const opts = b.split(/\bO\(/).slice(1);
+    if (opts.length < 2) continue;
+    const starts = opts.map((o) => { const m = o.match(/start: \[('[a-z0-9]+')[^\]]*?(\{[^}]*\})?\]/); return m ? { arc: m[1], d: m[2] || '', set: (o.match(/\bset: (\[[^\]]*\]|'[^']+')/) || [])[1] || '' } : null; });
+    for (const st of starts) if (st && st.d) for (const f of st.d.matchAll(/([a-z]+): /g)) fields.push([id, st.arc.slice(1, -1), f[1]]);
+    if (starts.every(Boolean) && new Set(starts.map((x) => x.arc)).size === 1 && new Set(starts.map((x) => x.d + '|' + x.set)).size === 1) same.push(id);
+  }
+  ok(blocks.length > 300, `the cards are found (${blocks.length})`);
+  ok(!same.length, `no card starts the same arc the same way whatever you answer (${same.join(', ') || 'none'})`);
+  const unreadF = fields.filter(([, arc, f]) => !new RegExp("arcData\\(L, '" + arc + "'\\)\\." + f + '\\b|arcData\\(L, \'' + arc + "'\\);?[^\\n]*\\b" + f + '\\b').test(src)).map((x) => x.join('.'));
+  ok(fields.length > 20, `the data answers hand to arcs is found (${fields.length})`);
+  ok(!unreadF.length, `every field an answer hands an arc is read by it (${[...new Set(unreadF)].join(', ') || 'all'})`);
 }
 
 section('16. the bracket is the one the engine played');
@@ -585,7 +618,15 @@ await (async () => {
   await s1.ctx.close();
   const s2 = await open(old);
   const tabs2 = await s2.page.$$eval('.cr-tabs [data-tab]', (a) => a.map((x) => x.getAttribute('data-tab')));
-  ok(tabs2.length === 3, `an old save keeps its three tabs (${tabs2.join(', ')})`);
+  /* An old save is a story career once it loads (the original engine
+     retired, 2026-10-15), so it gets the story tabs, and each has to draw
+     for a career that started without them. */
+  ok(['people', 'legacy', 'news'].every((t) => tabs2.indexOf(t) >= 0), `an old save opens with the story tabs too (${tabs2.join(', ')})`);
+  for (const t of ['people', 'legacy', 'news']) {
+    await s2.page.click('[data-tab="' + t + '"]');
+    const html = await s2.page.$eval('.cr-tabs + [role="tabpanel"]', (e) => e.textContent);
+    ok(html.length > 20 && !/undefined|NaN|\{[a-z]+\}/.test(html), `an old save's ${t} tab draws (${html.slice(0, 50).replace(/\s+/g, ' ')})`);
+  }
   ok(s2.errs.length === 0, `an old save opens without an error (${s2.errs.join(' | ') || 'none'})`);
   await s2.ctx.close();
   await b.close();
