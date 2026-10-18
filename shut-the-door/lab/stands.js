@@ -117,8 +117,19 @@ export function buildStands(scene, tex, renderer) {
     cell[k * 2] = it.v % COLS; cell[k * 2 + 1] = Math.floor(it.v / COLS);
   });
   quad.setAttribute('cell', new THREE.InstancedBufferAttribute(cell, 2));
+  // a crowd is never still: each fan sways and shifts a little on his own clock
+  const phase = new Float32Array(count);
+  instances.forEach((it, k) => { phase[k] = it.phase; });
+  quad.setAttribute('phase', new THREE.InstancedBufferAttribute(phase, 1));
+  const uTime = { value: 0 };
+  group.userData.tick = (t) => { uTime.value = t; };
   mesh.material.onBeforeCompile = (sh) => {
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 cell;')
+    sh.uniforms.uTime = uTime;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 cell;\nattribute float phase;\nuniform float uTime;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        float sw = sin(uTime * (0.6 + fract(phase * 3.1) * 0.9) + phase) * 0.018;
+        transformed.x += sw * position.y;
+        transformed.y += max(0.0, sin(uTime * 0.35 + phase * 5.0) - 0.96) * 0.6;`)
       .replace('#include <uv_vertex>', `#include <uv_vertex>\nvMapUv = (vec2(cell.x, ${CROWS - 1}.0 - cell.y) + uv) / vec2(${COLS}.0, ${CROWS}.0);`);
   };
   mesh.frustumCulled = false;

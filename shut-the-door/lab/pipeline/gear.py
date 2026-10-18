@@ -1,6 +1,6 @@
 """Soft gear made from the body itself: a region of the skin lifted off along its normals and given
 thickness, skinned with the same weights, so it bends with the body. The catcher's chest protector
-and shin guards, the umpire's chest protector under his shirt, the coach's jacket.
+and shin guards, the umpire's chest protector under his shirt.
 
 Rigid gear (helmets, masks, the bat, the mitt) is built in the browser (gear3d.js)."""
 import numpy as np

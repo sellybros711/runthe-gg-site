@@ -43,7 +43,7 @@ Every one is resized and re-encoded as WebP.
 The layout of the field (dirt circle, chalk, damp, scuffs), the bat, the helmets, caps, masks, the
 mitt, shin guards, chest protector and the ball are modelled in code (`field.js`, `gear3d.js`).
 
-## The people (`assets/batter.glb`, `catcher.glb`, `umpire.glb`, `coach.glb`, made by `pipeline/build_people.py`, packed by `pipeline/pack.sh`)
+## The people (`assets/batter.glb`, `catcher.glb`, `umpire.glb`, made by `pipeline/build_people.py`, packed by `pipeline/pack.sh`)
 
 ### Bodies, clothes and hair: MakeHuman, CC0
 
@@ -87,7 +87,7 @@ file `CMU_EcstasyMotion_BVH-Poser-friendly-2012.zip`, downloaded through https:/
 |---|---|---|---|
 | `swing` (batter) | 124_07, frames 22-140 | a batter's stance, load, stride and swing | fitted to the MakeHuman rig, mirrored left to right (the capture is a right handed hitter), fixed finger grip added; the take reuses the same capture up to the stride |
 | `idle` (catcher) | 120_21, frames 90-280 | breathing and weight shift under the procedural crouch | fitted to the rig |
-| `idle` (umpire, coach) | 142_03, frames 90-280 | the same, for the umpire and the coach | fitted to the rig |
+| `idle` (umpire) | 142_03, frames 90-280 | the same, for the umpire | fitted to the rig |
 
 The catcher's crouch, the umpire's slot stance and strike call, and the catcher's reach for the
 ball are procedural (two bone IK in `people.js`) laid over those idles.

@@ -167,21 +167,6 @@ function headFrame(p) {
   return { c, s, top: box.max.y };
 }
 
-/** Tuck the hair under a cap or helmet: hair above the band is pulled in toward the skull. */
-export function tuckHair(p, band = 0.075, k = 0.82) {
-  const { c, top } = headFrame(p);
-  for (const m of p.meshes) {
-    if (m.material.name !== 'hair') continue;
-    const pos = m.geometry.attributes.position, inv = m.matrixWorld.clone().invert(), v = new THREE.Vector3();
-    const cl = c.clone().applyMatrix4(inv);
-    for (let i = 0; i < pos.count; i++) {
-      v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
-      if (v.y > top - band) { v.sub(c).multiplyScalar(k).add(c); v.applyMatrix4(inv); pos.setXYZ(i, v.x, v.y, v.z); }
-    }
-    pos.needsUpdate = true;
-  }
-}
-
 export function fitOnHead(p, obj, opts = {}) {
   const { c, s, top } = headFrame(p);
   // gear is modelled for a head 0.155 m wide; scale to this head, and sit the crown on the top
@@ -372,7 +357,12 @@ export class People {
     if (b) {
       const ct = t - pt.tPlate + b.tContact;
       if (!b.take) {
-        pose(b, { [b.clip]: [ct, 1] });
+        // after the follow through the capture's batter walks off and drops the bat; a real hitter
+        // holds his finish, so time slows to a near hold half a second after contact
+        const hold = b.tContact + 0.42;
+        const cw = ct < hold ? ct : hold + (1 - Math.exp(-(ct - hold) / 0.5)) * 0.18;
+        b.batTime = cw;
+        pose(b, { [b.clip]: [cw, 1] });
       } else {
         // the take: the same capture through his load and stride, then he holds the hands back as
         // the ball goes by and lets the bat settle toward his stance again
@@ -380,14 +370,14 @@ export class People {
         const k = smooth(clamp01((ct - launch - 0.25) / 0.9));
         pose(b, [[b.clip, Math.min(ct, launch), 1], [b.clip, 0.4 + Math.max(0, ct - launch) * 0.3, k * 0.75]]);
       }
-      b.batTime = b.take ? Math.min(ct, b.tContact - 0.2) : null;
+      if (b.take) b.batTime = Math.min(ct, b.tContact - 0.2);
       this.poseBat(b);
     }
     if (c) {
       pose(c, { idle: [1.5 + t, 1] });
       crouch(c, 1);
       this.catcherArms(c, t);
-      lookAt(c, this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.8);
+      lookAt(c, this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
     }
     if (u) {
       pose(u, { idle: [2.0 + t, 1] });
@@ -397,11 +387,11 @@ export class People {
 
   catcherArms(c, t) {
     const B = c.bones;
-    // the bare hand tucked behind his right hip, out of harm's way
+    // the bare hand, a loose fist, resting on the outside of his right knee
     const f = c.fwd, l = c.left;
-    const hip = wpos(B.thigh_r);
-    const tuck = hip.clone().addScaledVector(f, -0.16).addScaledVector(l, -0.06).add(new THREE.Vector3(0, 0.08, 0));
-    const pole = wpos(B.lowerarm_r).addScaledVector(l, -0.6).addScaledVector(f, -0.3);
+    const knee = wpos(B.calf_r);
+    const tuck = knee.clone().addScaledVector(l, -0.09).addScaledVector(f, -0.05).add(new THREE.Vector3(0, 0.07, 0));
+    const pole = wpos(B.lowerarm_r).addScaledVector(l, -0.6).addScaledVector(f, -0.4);
     twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tuck, pole, 1);
     this.catcherReach(c, t);
   }

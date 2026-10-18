@@ -17,8 +17,8 @@ OUT="$TOOLS/out"
 mkdir -p "$OUT"
 node "$HERE/extract_pitch.mjs"
 python3 -I "$HERE/prep_textures.py" "$ASSETS/polyhaven-textures/files" "$LAB/assets/tex"
-"$TOOLS/venv/bin/python" -I "$HERE/build_people.py" "$ASSETS" "$OUT" batter catcher umpire coach
-for n in batter catcher umpire coach; do
+"$TOOLS/venv/bin/python" -I "$HERE/build_people.py" "$ASSETS" "$OUT" batter catcher umpire
+for n in batter catcher umpire; do
   # meshopt compression, names kept (the scene finds bones and materials by name)
   (cd "$TOOLS" && npx gltfpack -i "$OUT/$n.glb" -o "$LAB/assets/$n.glb" -cc -kn -km)
 done

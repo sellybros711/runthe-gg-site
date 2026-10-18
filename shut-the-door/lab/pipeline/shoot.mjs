@@ -104,8 +104,6 @@ if (WHAT === 'shots') {
     await still('', sw.plate, w, h, `${tag}-5-swing-contact`);
     await still('take=1', tk.catch + 0.05, w, h, `${tag}-6-take-receive`);
     await still('take=1', tk.plate + 1.0, w, h, `${tag}-7-take-call`);
-    await still('coach=1', 1.0, w, h, `${tag}-8-coach`);
-    await still('coach=1&frame=34', 1.0, w, h, `${tag}-9-coach-three-quarter`);
   }
 }
 
@@ -143,7 +141,6 @@ if (WHAT === 'perf') {
     ['desktop 1440x900', 1440, 900, 1, 'dpr=1'],
     ['phone 390x844 dpr 2, CPU 4x', 390, 844, 4, ''],
     ['phone 390x844 dpr 1, CPU 4x', 390, 844, 4, 'dpr=1'],
-    ['phone 390x844 dpr 2, CPU 4x, coach', 390, 844, 4, 'coach=1'],
   ]) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: w < 800 ? 2 : 1 });
     const page = await ctx.newPage();

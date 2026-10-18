@@ -8,7 +8,7 @@ ASSETS holds the downloads (see LICENSES.md for every source):
   ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps)
   ASSETS/polyhaven-textures/files/...   the CC0 Poly Haven cloth and leather maps
 OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into lab/assets.
-who: batter catcher umpire coach (all four when left out).
+who: batter catcher umpire (all three when left out).
 """
 import os, sys, math, json
 import numpy as np
@@ -23,7 +23,7 @@ import retarget      # noqa: E402
 import textures      # noqa: E402
 
 ASSETS, OUT = sys.argv[1], sys.argv[2]
-WHO = sys.argv[3:] or ['batter', 'catcher', 'umpire', 'coach']
+WHO = sys.argv[3:] or ['batter', 'catcher', 'umpire']
 MHA = f'{ASSETS}/makehuman'
 BVH = f'{ASSETS}/cmu-bvh'
 PH = f'{ASSETS}/polyhaven-textures/files'
@@ -42,10 +42,9 @@ def _lin(hexs):
     return tuple((x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4) for x in c) + (1,)
 
 
-# the closer's side (the catcher's gear, the coach): the pack's team colour, no logo
+# the closer's side (the catcher's gear): the pack's team colour, no logo
 _FACTS = json.load(open(os.path.join(HERE, '..', 'assets', 'pitch.json')))
 TEAM = _lin(_FACTS['pitcher']['teamColors'][0])
-COACH_BLUE = TEAM
 
 
 def reset():
@@ -66,6 +65,22 @@ def cloth_material(name, color, mhclo_dir, base, pattern='jogging_melange', uv_s
     m = mh.principled(name, base_tex=tex['color'], normal_tex=tex['normal'], rough=rough, normal_strength=1.0)
     m['color_png'] = tex['color']
     return m
+
+
+def tuck_shirt(ob, waist=None):
+    """This outfit's shirt hangs to the hip and flares out when the body bends; a jersey is tucked
+    in. Drop the shirt faces below the belt (the shirt is the part of the UV map above v 0.55)."""
+    import bmesh as _bm
+    me = ob.data
+    zs = [v.co.z for v in me.vertices]
+    waist = waist or (min(zs) + (max(zs) - min(zs)) * 0.64)
+    bm = _bm.new(); bm.from_mesh(me)
+    uvl = bm.loops.layers.uv.active
+    shirt = [f for f in bm.faces if all(l[uvl].uv[1] > 0.55 for l in f.loops)]
+    kill = [f for f in shirt if all(l.vert.co.z < waist for l in f.loops)]
+    print(f'  tuck: {len(kill)} of {len(shirt)} shirt faces below {waist:.2f} m (shirt from {min(l.vert.co.z for f in shirt for l in f.loops):.2f})')
+    _bm.ops.delete(bm, geom=kill, context='FACES')
+    bm.to_mesh(me); bm.free()
 
 
 def paint_trim(ob, trim, placket=False, width=0.022):
@@ -97,6 +112,8 @@ def body(cfg):
         d = f'{MHA}/clothes/{c["id"]}'
         mat = None if c.get('own') else cloth_material(c['id'], c['color'], d, c['id'], c.get('pattern', 'jogging_melange'), color2=c.get('color2'))
         ob = h.proxy(f'{d}/{c["id"]}.mhclo', c['id'], mat, offset_scale=c.get('offset', 1.0))
+        if c['id'] == 'male_casualsuit06':
+            tuck_shirt(ob)
         if c.get('trim'):
             paint_trim(ob, c['trim'], placket=c.get('placket', False))
         parts.append(ob)
@@ -159,14 +176,6 @@ PEOPLE = {
             dict(id='male_casualsuit06', color=UMP_NAVY, color2=UMP_SLACKS, pattern='cotton_jersey'),
             dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1)),
         ],
-        gear=[],
-        clips=[('idle', '142/142_03.bvh', 90, 280, False, 'relaxed')],
-    ),
-    'coach': dict(
-        name='coach', skin='middleage_caucasian_male', skin_size=2048,
-        shape=dict(age=0.74, muscle=0.45, weight=0.62, height=0.5, race={'caucasian': 0.75, 'african': 0.15, 'asian': 0.1}),
-        hair='hair/short02/short02',
-        clothes=[dict(id='male_casualsuit06', color=COACH_BLUE, color2=(0.2, 0.21, 0.23, 1), pattern='cotton_jersey')],
         gear=[],
         clips=[('idle', '142/142_03.bvh', 90, 280, False, 'relaxed')],
     ),

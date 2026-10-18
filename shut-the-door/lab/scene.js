@@ -2,7 +2,6 @@
  *
  *   index.html            the swing: Yamamoto's splitter, Varsho's side chases it
  *   index.html?take=1     the take: the curveball, called strike
- *   index.html?coach=1    the pitching coach, close up (?coach=1&frame=34 for the three quarter shot)
  *   &t=1.2                freeze at a moment (seconds from the set), for screenshots
  *   &stats=1              frame rate in the corner
  *
@@ -18,11 +17,10 @@ import { buildField } from './field.js';
 import { buildStands } from './stands.js';
 import { People } from './people.js';
 import { Pitch } from './pitch.js';
-import { Coach } from './coach.js';
 import { FT, P, smooth } from './units.js';
 
 const Q = new URLSearchParams(location.search);
-const MODE = Q.has('coach') ? 'coach' : Q.get('take') === '1' ? 'take' : 'swing';
+const MODE = Q.get('take') === '1' ? 'take' : 'swing';
 const FREEZE = Q.has('t') ? parseFloat(Q.get('t')) : null;
 
 const canvas = document.getElementById('c');
@@ -55,21 +53,13 @@ async function main() {
   scene.environmentRotation.y = SUN.envRot;
   scene.environmentIntensity = 0.45;
 
-  if (MODE === 'coach') {
-    const coach = new Coach({ scene, camera, renderer, loader, hdr, Q });
-    lab.coach = coach; lab.THREE = THREE;
-    await coach.load();
-    start((t, dt) => coach.update(t, dt), () => coach.resize());
-    return;
-  }
-
   scene.background = new THREE.Color(0x8fa6bf);
   scene.backgroundRotation.y = SUN.envRot;
   scene.fog = new THREE.Fog(0xb9c2c8, 90, 420);
   addSun();
   const tex = new THREE.TextureLoader();
   buildField(scene, tex, renderer);
-  buildStands(scene, tex, renderer);
+  const stands = buildStands(scene, tex, renderer);
   const pitch = new Pitch({ scene, facts, mode: MODE });
   const people = new People({ scene, loader, facts, mode: MODE, pitch });
   await people.load();
@@ -81,6 +71,7 @@ async function main() {
     shot.update(t);
     pitch.update(t, camera);
     people.update(t, dt);
+    stands.userData.tick(t);
   }, () => shot.resize());
 }
 
@@ -171,6 +162,14 @@ function start(update, resize) {
     lab.updMs = (lab.updMs ?? (b - a)) * 0.9 + (b - a) * 0.1;
     lab.rndMs = (lab.rndMs ?? (c - b)) * 0.9 + (c - b) * 0.1;
     lab.calls = renderer.info.render.calls; lab.tris = renderer.info.render.triangles;
+    // a phone that cannot hold 30 fps at its full pixel ratio drops to a lower one (never below 1)
+    if (!Q.has('dpr') && clock.playing) {
+      const ft = (lab.ft = (lab.ft ?? 16) * 0.95 + dt * 1000 * 0.05);
+      lab.since = (lab.since ?? 0) + 1;
+      if (lab.since > 90 && ft > 36 && renderer.getPixelRatio() > 1) {
+        renderer.setPixelRatio(Math.max(1, renderer.getPixelRatio() - 0.25)); resize(); lab.ft = 16; lab.since = 0;
+      }
+    }
     if (lab.firstFrameMs == null) {
       lab.firstFrameMs = performance.now() - T0;
       document.getElementById('load').classList.add('off');
