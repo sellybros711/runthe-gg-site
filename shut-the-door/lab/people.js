@@ -11,7 +11,7 @@ import * as G from './gear3d.js?v=1';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=1';
-import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=2';
+import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=3';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
@@ -271,7 +271,7 @@ export class People {
   setupChain(b) {
     const clip = b.clips[b.clip], front = b.lefty ? 'r' : 'l';
     const hs = [];
-    for (let t = 0; t <= b.tContact + 0.05; t += 1 / 60) { pose(b, { [b.clip]: [t, 1] }); hs.push([t, wpos(b.bones[`foot_${front}`]).y]); }
+    for (let t = 0; t <= b.tContact + 0.05; t += 1 / 30) { pose(b, { [b.clip]: [t, 1] }); hs.push([t, wpos(b.bones[`foot_${front}`]).y]); }
     let top = 0; for (let i = 0; i < hs.length; i++) if (hs[i][1] > hs[top][1]) top = i;
     const low = Math.min(...hs.slice(top).map((h) => h[1]));
     let k = top; while (k < hs.length - 1 && hs[k][1] > low + 0.01) k++;

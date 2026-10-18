@@ -18,7 +18,7 @@ import { wpos, wquat, twoBoneIK, rotateWorld, aimBone } from './rig.js?v=1';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const SIDES = ['l', 'r'];
-const DT = 1 / 60;
+const DT = 1 / 30;   // the plan is sampled at the capture's own rate
 const BLEND = 0.08;   // seconds a foot takes to settle onto its spot, or come off it
 
 /** Where the ball of each foot sits, relative to the ankle, in the foot's own frame. */
