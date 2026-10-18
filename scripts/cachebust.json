@@ -2933,8 +2933,8 @@
       "sha": "3619a23768894990"
     },
     "menus.js": {
-      "v": "4",
-      "sha": "c2e6ac5824c5ccb6"
+      "v": "5",
+      "sha": "ad41a77f0e0b3634"
     },
     "rng.js": {
       "v": "1",
@@ -2965,16 +2965,16 @@
       "sha": "ab71bd0e6b681469"
     },
     "mock-api.js": {
-      "v": "4",
-      "sha": "18c9b3c93901ab9a"
+      "v": "5",
+      "sha": "d3870779c34494eb"
     },
     "coach.js": {
-      "v": "1",
+      "v": "2",
       "sha": "7eddfba072520e94"
     },
     "ui.js": {
-      "v": "4",
-      "sha": "fca1ae3f9789ddb4"
+      "v": "5",
+      "sha": "d30b17322ef20621"
     }
   },
   "soccer/index.html": {
