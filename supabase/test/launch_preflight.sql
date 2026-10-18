@@ -88,7 +88,7 @@ has_table as (
     'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
     'sportegories_rulings','stumpire_rulings',
-    'shutdoor_outings','shutdoor_streaks'
+    'shutdoor_outings','shutdoor_streaks','putt_daily'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
