@@ -3963,17 +3963,23 @@ function dailyFinish(s, par, ms){
   psave(st); coins(got, 'Daily Hole');
   if (!late){ hq('ppDaily', 1); try{ S.host.questDaily && S.host.questDaily(); }catch(e){} try{ S.host.dayPlayed && S.host.dayPlayed(); }catch(e){}
     // the day's shared board (148_putt_daily_board.sql): the first round of the day stands, a late one never posts
-    try{ if (S.host.signedIn && S.host.signedIn() && S.host.rpc) S.host.rpc('putt_daily_submit', { p_day:dk, p_strokes:s, p_par:par, p_ms:ms == null ? null : Math.round(ms), p_look:S.host.boardLook ? S.host.boardLook() : null }); }catch(e){} }
+    // the board waits for this post (S.dailyPost), or it is read before the round lands and says nobody has posted
+    try{ if (S.host.signedIn && S.host.signedIn() && S.host.rpc) S.dailyPost = S.host.rpc('putt_daily_submit', { p_day:dk, p_strokes:s, p_par:par, p_ms:ms == null ? null : Math.round(ms), p_look:S.host.boardLook ? S.host.boardLook() : null }); }catch(e){} }
   if (s < par) try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
   dailyResult(got, dk);
 }
 /* THE DAILY HOLE BOARD. The day's top ten and the player's own row, off the server (putt_daily_board). Signed out
-   it says to sign in; a server that does not answer yet (148 not run) says the board is coming, and nothing breaks. */
-function dailyBoard(dk){ var box = S.ov && S.ov.querySelector('[data-rows]'); if (!box) return; var h = S.host;
+   it says to sign in; a server that does not answer yet (148 not run) says the board is coming, and nothing breaks.
+   It is LIVE (the owner, 2026-10-18): read once the player's own post has landed, then again every 20 seconds while
+   the result is on screen, so rounds posted by others come in without leaving and coming back. */
+var BOARD_EVERY = 20000;
+function dailyBoard(dk, again){ var box = S.ov && S.ov.querySelector('[data-rows]'); if (!box) return; var h = S.host;
   if (!(h.signedIn && h.signedIn())){ box.innerHTML = '<div class="m">Sign in to see how you stack up.</div>'; return; }
-  box.innerHTML = '<div class="m">Loading the board.</div>';
-  var p = null; try{ p = h.rpc('putt_daily_board', { p_day:dk, p_limit:10 }); }catch(e){}
-  Promise.resolve(p).then(function(rows){ if (!S || !S.ov || !S.ov.contains(box)) return;
+  if (!again) box.innerHTML = '<div class="m">Loading the board.</div>';
+  var post = S.dailyPost; S.dailyPost = null;
+  var p = Promise.resolve(post).catch(function(){ return null; }).then(function(){ try{ return h.rpc('putt_daily_board', { p_day:dk, p_limit:10 }); }catch(e){ return null; } });
+  p.then(function(rows){ if (!S || !S.ov || !S.ov.contains(box)) return;
+    clearTimeout(S.boardT); S.boardT = setTimeout(function(){ if (S && S.ov && S.ov.contains(box)) dailyBoard(dk, true); }, BOARD_EVERY);
     if (!rows || !rows.length){ box.innerHTML = '<div class="m">' + (rows ? 'Nobody has posted yet. Be the first.' : 'The board is on its way.') + '</div>'; return; }
     var n = rows[0].players || rows.length;
     box.innerHTML = rows.map(function(r){ var im = '', g = r.look ? chipImg(r.look) : ''; if (g) im = '<i class="pp-dav g3">' + g + '</i>';
