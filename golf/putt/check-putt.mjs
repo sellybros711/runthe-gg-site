@@ -17,8 +17,9 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { replay as replayRoute } from './solve.mjs';
-import { hazardRates } from './fair.mjs';
+import { hazardRates, NOISE as FAIR_NOISE } from './fair.mjs';
 import { loadGyms, kindFiles } from './gyms-node.mjs';
+import { replayTrick, trickRates, NOISE as TRICK_NOISE } from './trick.mjs';
 const require = createRequire(import.meta.url);
 const P = require('./putt.js');
 const M = P.M;
@@ -407,7 +408,10 @@ const GYMS = loadGyms(), KFILES = kindFiles(), PAGE = fs.readFileSync(new URL('.
     /* the lever (and Restart, which is the same reset) puts every piece back: from a state with pieces moved, a step
        into the lever is the start again, and the start is the solvable one. A kind with no steps has only Restart. */
     { let s1 = s0; for (const m of pf.slice(0, Math.min(12, pf.length - 1))) s1 = GYMS.act(G, s1, m).s;
-      const moved = GYMS.key(G, GYMS.place(G, s1, Q.start)) !== k0;
+      /* moved: some piece is out of its place. In a room where he is the only piece (the ice slide: the start with him
+         stood somewhere else is the whole state), what the lever puts back is him, so that counts */
+      const him = GYMS.me(G, s1), onlyHim = him != null && him !== Q.start && GYMS.key(G, GYMS.place(G, s0, him)) === GYMS.key(G, s1);
+      const moved = GYMS.key(G, GYMS.place(G, s1, Q.start)) !== k0 || onlyHim;
       let back = GYMS.key(G, GYMS.init(G)) === k0;
       if (GYMS.input(G) === 'step'){ const lv = Q.lever, adj = [0, 1, 2, 3].map(d => { const c = lv % Q.W + GYMS.DIRS[d][0], r = ((lv / Q.W) | 0) + GYMS.DIRS[d][1]; return [d, r * Q.W + c]; })
           .filter(x => x[1] >= 0 && x[1] < Q.cell.length && x[1] !== Q.gate && Q.cell[x[1]] !== '#' && (!K.deck || K.deck(G, s1, x[1])));
@@ -417,8 +421,8 @@ const GYMS = loadGyms(), KFILES = kindFiles(), PAGE = fs.readFileSync(new URL('.
     { const gl = GYMS.goal(G); claim(typeof gl === 'string' && gl.length >= 8 && gl.length <= 70 && /\.$/.test(gl) && !gl.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212), `${G.id}: its goal line, always in the panel, is one short line ("${gl}")`); }
     if (G.world === 'pirate'){ claim(G.mech[0] === 'barrel', `${G.id}: Pirate Cove's gyms are its barrels first`); claim(G.kind === 'push', `${G.id}: Pirate Cove's gyms are the push kind`); } }
   for (const w in byWorld){ const gs = byWorld[w], legs = gs.map(g => g.leg).sort((a, b) => a - b), keep = gs.find(g => g.leg === 18), mid = gs.find(g => g.leg !== 18);
-    claim(gs.length === 2 && legs[1] === 18 && legs[0] >= 7 && legs[0] <= 11 && keep.keeper && keep.mech.length === 2 && mid.mech.length === 1,
-      `${w}: two gyms, one mid-world (hole ${legs[0]}) and a gatekeeper on the trail into hole 18 that pairs its barrels with an earlier world's ${keep.mech[1]}`);
+    claim(gs.length === 2 && legs[1] === 18 && legs[0] >= 7 && legs[0] <= 11 && keep.keeper && keep.mech.length === 2 && mid.mech.length === 1 && keep.mech[0] === mid.mech[0],
+      `${w}: two gyms, one mid-world (hole ${legs[0]}) and a gatekeeper on the trail into hole 18 that pairs its ${mid.mech[0]} with an earlier world's ${keep.mech[1]}`);
     claim(mid.pay === 500 && keep.pay === 1000 && keep.moves > mid.moves, `${w}: the vaults pay ${mid.pay} and ${keep.pay} coins, and the gatekeeper is the longer solve (${mid.moves}, ${keep.moves})`); }
   // EVERY WORLD A DIFFERENT KIND (the owner, 2026-10-17): a world's two gyms are one kind, and no kind is in two worlds
   { const ws = Object.keys(kindsOf), one = ws.every(w => kindsOf[w].size === 1), all = ws.map(w => [...kindsOf[w]][0]);
@@ -432,8 +436,67 @@ const GYMS = loadGyms(), KFILES = kindFiles(), PAGE = fs.readFileSync(new URL('.
     const live = (K.gyms || []).some(g => g.world), tag = new RegExp('<script defer src="putt/gymkinds/' + f.replace('.', '\\.') + '\\?v=[^"]+"></script>').test(PAGE);
     claim(added.length === 1 && added[0] === 'RTT_GYMKIND_' + String(K.id).toUpperCase() && f === K.id + '.js' && iface && (K.gyms || []).every(g => g.kind === K.id),
       `gymkinds/${f}: one function wrapper publishing one global, ${added.join(', ')}, the ${K.input} kind '${K.id}' with the frame's interface`);
-    claim(live ? tag : !tag && K.gyms.every(g => g.test && !g.world), `gymkinds/${f}: ` + (live ? 'its gyms are in a world, and golf/index.html loads it' : 'a test kind in no world, and the page does not load it')); }
+    claim(live ? tag : !tag && K.gyms.every(g => g.test && !g.world), `gymkinds/${f}: ` + (live ? 'its gyms are in a world, and golf/index.html loads it' : 'a test kind in no world, and the page does not load it'));
+    /* ITS OWN WORDS (gyms.js KINDS README): the line said as he walks in (hello), the word the panel counts in (unit),
+       and a calm room (calm) for every kind on the page. The hello says how it is played: a short line, no dashes. */
+    const hi = K.hello, okLine = typeof hi === 'string' && hi.length >= 12 && hi.length <= 90 && /\.$/.test(hi) && !hi.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212);
+    claim(okLine && /^[a-z]+$/.test(K.unit || '') && (!live || K.calm === true), `gymkinds/${f}: its own entry line ("${hi}"), its own unit (${K.unit})` + (live ? ', and a calm room' : '')); }
+  { const TRAIL = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
+    claim(!/One tile a step|Tap a piece to change it|' moves'/.test(TRAIL) && /GK\.hello/.test(TRAIL) && /GK\.unit/.test(TRAIL), 'the frame has no entry line or counter word of its own: each kind says how it is played (hello) and names what the panel counts (unit)'); }
   claim(GYMS.MASTER.badges === 22 && GYMS.MASTER.wired === false, 'all 22 badges unlock the Puzzle Master, recorded and not yet wired (its art waits for the owner)'); }
+/* ============================================================== 5c. THE TRICK SHOT ROOMS, PROVEN */
+/* THE CLUBHOUSE'S GYMS ARE TRICK SHOT ROOMS (gymkinds/trickshot.js): a putting puzzle with the real ball. Numbered bottles
+   go down only in order, and the cup's lid comes off once the last one is down and the ball has stopped. The rules are
+   the putting game's physics (the targets in putt.js's simulate), so they are played here on a bare room; then each
+   room's recorded route (trick.mjs, at full precision) is held to a birdie putt's room for error and to fair.mjs's
+   person on every putt. 5b has already solved each room again and replayed its proof. */
+head('5c. THE TRICK SHOT ROOMS, PROVEN');
+{ const ROUTES = JSON.parse(fs.readFileSync(new URL('./routes.json', import.meta.url), 'utf8')), GT = loadGyms(), TK = GT.kind('trickshot');
+  const bare = () => { const C = P.finishCourse({ kind:'mini', bounds:[-8, -24, 8, 4], comps:[], stimp:9, cup:[0, -16], cupR:P.CUP_R_MINI, tee:[0, -2], matFn:(x, y) => Math.abs(x) < 6 && y < 0 && y > -20 ? M.GREEN : M.OUT,
+    walls:[[-6, 0, 6, 0, 0, 0.72], [6, 0, 6, -20, 0, 0.72], [6, -20, -6, -20, 0, 0.72], [-6, -20, -6, 0, 0, 0.72]] });
+    C.targets = [{ x:-2.5, y:-8, r:P.TGT_R, n:1 }, { x:2.5, y:-8, r:P.TGT_R, n:2 }]; return C; };
+  const at = (C, x, y, tx, ty, ft, tk) => { const v = P.speedFor(C, ft), a = Math.atan2(ty - y, tx - x); C.tk = tk; const r = P.simulate(C, x, y, Math.cos(a) * v, Math.sin(a) * v, 0); C.tk = 0; return r; };
+  { const C = bare(), two = at(C, 2.5, -2, 2.5, -8, 12, 0), one = at(C, -2.5, -2, -2.5, -8, 12, 0), twoNow = at(C, 2.5, -2, 2.5, -8, 12, 1);
+    claim(two.tk === 0 && two.ev.some(e => e[1] === 'ring' && e[2] === 1) && !two.ev.some(e => e[1] === 'topple') && two.rest[1] > -8, `a bottle hit out of order rings and stays up, and the ball comes back off it (it rests at y ${two.rest[1].toFixed(1)})`);
+    claim(one.tk === 1 && one.ev.some(e => e[1] === 'topple' && e[2] === 0) && one.rest[1] < -8.5, 'the next bottle in order topples, and the ball runs on through where it stood');
+    claim(twoNow.tk === 2 && twoNow.ev.some(e => e[1] === 'topple' && e[2] === 1), 'with bottle 1 down, the same putt at bottle 2 knocks it over: bottles topple only in order');
+    const over = at(C, -2.5, -2, -2.5, -8, 12, 1);
+    claim(over.tk === 1 && !over.ev.some(e => e[1] === 'ring' || e[1] === 'topple') && over.rest[1] < -8.5, 'a bottle that is down lies flat on the felt: the ball rolls over its spot');
+    const shut = at(C, 0, -10, 0, -16, 9, 1), open = at(C, 0, -10, 0, -16, 9, 2);
+    claim(!shut.holed && shut.rest[1] < -16.3 && open.holed, `the cup is shut under its lid until the last bottle is down, then the same putt drops (shut, it rolls on to y ${shut.rest[1].toFixed(1)})`);
+    C.targets = [{ x:0, y:-12, r:P.TGT_R, n:1 }]; const combo = at(C, 0, -4, 0, -16, 17, 0), after = at(C, combo.rest[0], combo.rest[1], 0, -16, 6, 1);
+    claim(combo.tk === 1 && !combo.holed && after.holed, 'the cup opens only after the last bottle: a putt that knocks it over and runs on over the cup rolls past, and the next putt can drop');
+    const plain = P.buildLevel(1, 'main'), r0 = P.simulate(plain, plain.tee[0], plain.tee[1], 0, -6, 0);
+    claim(r0.tk === undefined && !plain.targets, 'a hole with no bottles never reads any of it');
+    claim(JSON.stringify(TRICK_NOISE) === JSON.stringify(FAIR_NOISE), 'the rooms are judged with the same person as the tours (trick.mjs and fair.mjs share one noise)'); }
+  for (const G of GT.GYMS.filter(g => g.kind === 'trickshot')){ const name = `${G.id} ${G.name}`, pf = GT.proof(G), line = ROUTES['trick:' + G.id], why = replayTrick(G, pf), C = TK.course(G);
+    claim(!!line && JSON.stringify(line) === G.proof, `${name}: its route is recorded in routes.json as trick:${G.id}, the same putts as its proof`);
+    claim(!why, `${name}: the recorded route downs every bottle in order and drops in ${pf.length}, inside the limit of ${G.limit}, with a birdie putt's room for error on every putt` + (why ? ': ' + why : ''));
+    claim(G.limit === G.moves + 2, `${name}: the stroke limit is the fewest plus two (${G.limit}, the fewest ${G.moves})`);
+    claim(G.bottles.length >= 3 && C.targets.every((q, i) => q.n === i + 1) && C.blocks.length + C.bumpers.length + C.movers.length > 0 && (!G.keeper || C.movers.length > 0), `${name}: ${G.bottles.length} numbered bottles, ${C.blocks.length} boards and blocks, ${C.bumpers.length} ${C.bumpers.length === 1 ? 'keg' : 'kegs'}` + (G.keeper ? ` and a moving rack (${C.movers.length})` : ''));
+    if (!why){ const hz = trickRates(G, pf), worst = Math.max(...hz);
+      claim(worst <= 0.34, `${name}: no putt of the route fails a person more than a third of the time (${hz.map(h => Math.round(h * 100) + '%').join(' ')})`);
+      if (G.banks){ let s = GT.init(G); const bk = []; pf.forEach(m => { const o = TK.after(G, s, m); if (!o.r.holed) bk.push(TK.banksOf(o.r)); s = o.s; });
+        claim(bk.length === G.bottles.length && bk.every(b => b === G.banks), `${name}: it teaches the bank: each bottle is one putt off one wall (${bk.join(' ')})`); } }
+    if (G.keeper){ const q = G.bottles[0], r = TK.roll(G, G.tee[0], G.tee[1], 0, { a:Math.atan2(q[1] - G.tee[1], q[0] - G.tee[0]), ft:14, t:0 });
+      claim((r.tk | 0) === 0 && r.ev.some(e => e[1] === 'ring' && e[2] > 0), `${name}: the obvious line at bottle 1 hits a later one out of order (it rings bottle ${(r.ev.find(e => e[1] === 'ring') || [0, 0, -1])[2] + 1})`); }
+    claim(!/bank|wall|rail|first putt/i.test(GT.goal(G)), `${name}: its goal line says what to do, never how ("${GT.goal(G)}")`);
+    /* NEVER OVER A BOTTLE OR THE CUP (the owner, 2026-10-17). Wherever the ball comes to rest, along the route and over
+       600 seeded careless putts, the tile he walks to at address leaves every standing bottle and the cup in sight. */
+    { let seed = 11, n = 0, bad = []; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }, look = s => { if (s.h) return; n++; const i = TK.me(G, s); if (TK.cover(G, s, i)) bad.push([+s.x.toFixed(2), +s.y.toFixed(2), s.tk]); };
+      { let s = GT.init(G); look(s); for (const m of pf){ s = GT.act(G, s, m).s; look(s); } }
+      for (let k = 0; k < 200; k++){ let s = GT.init(G); for (let j = 0; j < 3 && !s.h; j++){ s = GT.act(G, s, { a:rnd() * 2 * Math.PI, ft:3 + rnd() * 20, t:s.t }).s; look(s); } }
+      claim(!bad.length, `${name}: at address he never stands over a standing bottle or the cup (${n} rests, ${bad.length} covered${bad.length ? ': ' + JSON.stringify(bad.slice(0, 4)) : ''})`); }
+    /* NOT SOLVED BY BLASTING. Two careless players, 300 rooms each and seeded: one putts anywhere at any pace, one goes
+       straight at the next bottle (or the cup) at any pace. Inside the limit, a room is a puzzle only if neither lucks
+       through it more than one time in twenty. */
+    { let seed = 7; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }, rate = {};
+      for (const mode of ['anywhere', 'straight']){ let wins = 0; for (let k = 0; k < 300; k++){ let s = GT.init(G);
+          while (!s.h && s.n < G.limit){ const nx = G.bottles[s.tk] || G.cup, a = mode === 'anywhere' ? rnd() * 2 * Math.PI : Math.atan2(nx[1] - s.y, nx[0] - s.x) + (rnd() - 0.5) * 0.07;
+            s = GT.act(G, s, { a, ft:4 + rnd() * 28, t:s.t + rnd() * 3 }).s; }
+          if (s.h) wins++; } rate[mode] = wins / 300; }
+      claim(rate.anywhere <= 0.05 && rate.straight <= 0.05, `${name}: a careless player does not luck through it inside ${G.limit} strokes (putting anywhere ${(rate.anywhere * 100).toFixed(1)}%, straight at the next one ${(rate.straight * 100).toFixed(1)}%)`); } }
+}
 /* ============================================================== 6. THE PAGE, IN A BROWSER */
 /* The node half proves the module. This half proves the door: that it is shut for everybody but
    the testers, that the greens are built off the page's REAL hvGeom for every course in the
@@ -467,12 +530,15 @@ if (!args.includes('--no-browser')){
     // while every claim in this file stayed green because none of them redraws the home screen.
     // So: once every deferred module has run, the game must still be able to draw a screen and move to another.
     await pg.waitForFunction(() => window.RTT_PUTT_3D && window.RTT_PUTT_LAND && window.PXHD, null, { timeout:30000 });
-    claim(await pg.evaluate(() => { try{ const n0 = errs0(); S.overlay = null; S.screen = 'title'; render(); document.querySelector('#rttnav [data-nav="daily"]').click(); return S.screen !== 'title' && document.body.innerText.length > 0; }catch(e){ return false; } function errs0(){ return 0; } }),
+    claim(await pg.evaluate(() => { try{ const n0 = errs0(); S.overlay = null; S.screen = 'title'; render(); document.querySelector('#rttnav [data-nav="protour"]').click(); return S.screen !== 'title' && document.body.innerText.length > 0; }catch(e){ return false; } function errs0(){ return 0; } }),
       'with every module loaded, the game still draws its home screen and a tab still moves it on');
-    claim(await pg.evaluate(() => !puttOn() && !homeModeList().some(m => m.id === 'putt')), 'signed out: no door');
+    // LIVE: the door is everybody's. The kill switch (PUTT_LIVE=false) still shuts it on all but the testers.
+    claim(await pg.evaluate(() => typeof PUTT_LIVE !== 'undefined' && PUTT_LIVE === true), 'PUTT_LIVE is true: Putt Putt is live');
+    claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt') && ftLive()), 'signed out: the door is there, on the First Tee');
     await pg.evaluate(() => { sbUser = { id:'x' }; sbUsername = 'somebody'; });
-    claim(await pg.evaluate(() => !puttOn() && !homeModeList().some(m => m.id === 'putt')), 'signed in as anybody else: no door');
-    claim(await pg.evaluate(() => typeof PUTT_LIVE !== 'undefined' && PUTT_LIVE === false), 'PUTT_LIVE is false, so this is still a preview');
+    claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as anybody: the door is there');
+    claim(await pg.evaluate(() => { PUTT_LIVE = false; const shut = !puttOn() && !ftLive(); PUTT_LIVE = true; return shut; }),
+      'the kill switch shuts it for anybody else');
     // a tester who is NOT on PUTT_ALL_ACCESS, so every gate below is the one an ordinary player meets
     await pg.evaluate(() => { sbUsername = 'SlimeyB3'; });
     claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as a tester: the door is there');
@@ -690,24 +756,34 @@ if (!args.includes('--no-browser')){
     claim(cr.n >= 25 && Object.keys(cr.kinds).length >= 3 && cr.wet === 0 && cr.inWater === 0 && cr.bridges === cr.crossings && cr.dryDeck,
       `creeks cross ${cr.n} trails of the tour in ${Object.keys(cr.kinds).join(', ')}: the walk is never wet, nothing lies in the water, and every crossing has a dry bridge (${cr.wet} wet, ${cr.inWater} in water, ${cr.bridges}/${cr.crossings} bridged)`);
     claim(cr.over && cr.held, `he walks across a bridge, and the water beside the deck holds him (${cr.over}, ${cr.held}, ${JSON.stringify(cr.hi)})`);
-    /* THE PUZZLES (trail.js puzzle()). About half the trails carry one, of four kinds, and each pays its coin bonus out of
-       its own chest. Every kind is played here for real: the three lights lit, the spot dug, the plate stepped on and
-       the pen's gate beaten, the crate jammed against its rock and then pushed the right way. Each asks the thing it is
-       about, never only that it ended: a prize that turns up before its puzzle is done, a gate that never shuts, a crate
-       that goes either way, all fail here. And the local on a puzzle trail gives its clue. */
-    const pzr = await pg.evaluate(async () => { const out = { n:0, pz:0, kinds:{}, drops:true, solo:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, TR = window.RTT_PUTT_TRAIL;
-      for (let n = 1; n <= 198; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
+    /* THE SMALL PUZZLES (trail.js puzzle()). A world with gyms carries none of them (the owner, 2026-10-17): its trails
+       have their gyms instead, so no main tour trail in a gym world has a puzzle, and its plan says so (pzKind 'none').
+       The small puzzles live on where there are no gyms (the Members Tour's worlds, and any main world still without
+       its gyms), and each kind pays its coin bonus out of its own chest. Every kind is played here for real, on its
+       first trail there: the three lights lit, the spot dug, the plate stepped on and the pen's gate beaten, the crate
+       jammed against its rock and then pushed the right way. Each asks the thing it is about, never only that it
+       ended: a prize that turns up before its puzzle is done, a gate that never shuts, a crate that goes either way,
+       all fail here. And the local on a puzzle trail gives its clue. */
+    const pzr = await pg.evaluate(async () => { const out = { gymTrails:0, gymWorlds:{}, gymPz:0, gymNotNone:0, n:0, pz:0, kinds:{}, drops:true, solo:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, bm = {}, TR = window.RTT_PUTT_TRAIL, GLz = window.RTT_PUTT_GYMS;
+      for (let n = 1; n <= 198; n++) best[n] = 3; for (let n = 1; n <= 18; n++) bm[n] = 3;
+      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy', 'haunted', 'harvest'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} }, members:{ lv:18, best:bm, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'pzl' }; openPutt(); await sleep(300);
       const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@pzl')).trail || {}), first = {};
-      for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f); out.n++; const pz = P.puzzle; if (!pz) continue; out.pz++; out.kinds[pz.k] = (out.kinds[pz.k] || 0) + 1;
+      // the main tour: a gym world's trails carry no puzzle
+      for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f), th = P.spec.theme; if (!GLz.GYMS.some(g => g.world === th)) continue;
+        out.gymTrails++; out.gymWorlds[th] = 1; if (P.puzzle) out.gymPz++; if (!P.spec.cross && P.spec.pzKind !== 'none') out.gymNotNone++; }
+      // where they live on: the Members Tour first, then a main world with no gyms yet
+      const where = [];
+      for (let f = 1; f < window.RTT_PUTT.TOURS.members.levels.length; f++) where.push(['members', f, 9]);
+      for (let f = 1; f < 198; f++) where.push(['main', f, 18]);
+      for (const [tid, f, per] of where){ const P = window.RTT_PUTT._trailPlan(f, tid); if (tid === 'main' && GLz.GYMS.some(g => g.world === P.spec.theme)) continue; out.n++; const pz = P.puzzle; if (!pz) continue; out.pz++; out.kinds[pz.k] = (out.kinds[pz.k] || 0) + 1;
         const pr = P.items.filter(t => t.k === 'prize'); if (pr.length !== 1 || pr[0].drops.length !== TR.PZ_COINS) out.drops = false;
         if (!pz.clue || P.items.filter(t => t.k === 'chest').length !== 1) out.solo = false;
-        if (!first[pz.k] && f % 18 && !P.spec.greet && P.items.some(t => t.k === 'npc')) first[pz.k] = f; }
+        if (!first[pz.k] && f % per && !P.spec.greet && P.items.some(t => t.k === 'npc')) first[pz.k] = [tid, f]; }
       out.first = first;
       // reopening the mode makes a new host, so the payout is watched on whichever host is current
       const paid = []; let hk = null, hc = null; const hook = () => { const h = S().host; if (h !== hk){ if (hk) hk.coins = hc; hk = h; hc = h.coins; h.coins = n => { paid.push(n); }; } };
-      const open = async n => { window.RTT_PUTT.close(); openPutt(); await sleep(200); hook(); window.RTT_PUTT._walkTo(n); for (let i = 0; i < 600 && !T(); i++) await sleep(50); await sleep(200); hook(); return T(); };
+      const open = async w => { window.RTT_PUTT.close(); openPutt(); await sleep(200); hook(); window.RTT_PUTT._walkTo(w[1], w[0]); for (let i = 0; i < 600 && !T(); i++) await sleep(50); await sleep(200); hook(); return T(); };
       const visit = async (t, x, y, ms) => { t.goTo(x, y); await sleep(ms || 140); };
       const collectAll = async (t, prize) => { await sleep(2600); const cs = t.items().filter(c => c.k === 'coin' && c.ch && c.ch.id === prize.id); for (const c of cs) await visit(t, c.x, c.y, 90); return cs; };
       const away = t => { const P = t.plan(); t.goTo(P.path[0][0], P.path[0][1]); };
@@ -724,7 +800,7 @@ if (!args.includes('--no-browser')){
         for (let i = 0; i < 2; i++) await visit(t, fires[i].x, fires[i].y + 1.2); await visit(t, prize.x, prize.y + 2); out.twoLit = !t.pz().shown && !prize.done;
         await visit(t, fires[2].x, fires[2].y + 1.2); out.allLit = t.pz().shown; paid.length = 0;
         await visit(t, prize.x, prize.y + 2); out.fireOpen = prize.done; const cs = await collectAll(t, prize);
-        out.firePaid = paid.reduce((a, b) => a + b, 0); out.fireWant = cs.length * TR.COIN_V; out.fireRec = (rec()['main:' + (first.fire + 1)] || {}).pz === 1;
+        out.firePaid = paid.reduce((a, b) => a + b, 0); out.fireWant = cs.length * TR.COIN_V; out.fireRec = (rec()[first.fire[0] + ':' + (first.fire[1] + 1)] || {}).pz === 1;
         // and it stays solved
         const t2 = await open(first.fire); out.fireKept = t2.pz().solved && t2.items().find(i => i.k === 'prize').done; }
       // the dig: stand where the footprints stop and the chest comes up
@@ -745,7 +821,8 @@ if (!args.includes('--no-browser')){
         await visit(t, C.x + C.rock * (H + 0.06), C.y); t.stick(-C.rock, 0); await sleep(1800); t.stick(0, 0); out.pushed = +Math.abs(C.x - C.x0).toFixed(2); out.cleared = !t.blocked(gx, gyy);
         paid.length = 0; await visit(t, pen.x, pen.y + 1.9, 200); out.pushOpen = prize.done; const cs = await collectAll(t, prize); out.pushPaid = paid.reduce((a, b) => a + b, 0) === cs.length * TR.COIN_V && cs.length > 0; }
       if (hk) hk.coins = hc; window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
-    claim(pzr.pz / pzr.n > 0.4 && pzr.pz / pzr.n < 0.65 && Object.keys(pzr.kinds).length === 4 && Object.values(pzr.kinds).every(v => v >= 8), `about half the trails carry a puzzle, of all four kinds (${pzr.pz} of ${pzr.n}: ${JSON.stringify(pzr.kinds)})`);
+    claim(pzr.gymTrails > 0 && pzr.gymPz === 0 && pzr.gymNotNone === 0, `no world with gyms carries a small puzzle: none on the ${pzr.gymTrails} trails of ${Object.keys(pzr.gymWorlds).length} gym worlds, each planned with none (${pzr.gymPz} puzzles, ${pzr.gymNotNone} not none)`);
+    claim(Object.keys(pzr.kinds).length === 4 && ['fire', 'dig', 'plate', 'push'].every(k => pzr.first[k]), `the small puzzles live on where there are no gyms, all four kinds (${pzr.pz} of ${pzr.n} trails: ${JSON.stringify(pzr.kinds)})`);
     claim(pzr.drops && pzr.solo, `every puzzle has a clue and its own chest of coins, and its trail still has its one chest`);
     claim(pzr.clue, `the local on a puzzle trail gives its clue`);
     claim(pzr.bubStays, `a local's speech bubble stays over the local when the golfer walks away, never following the golfer`);
@@ -755,7 +832,7 @@ if (!args.includes('--no-browser')){
     claim(pzr.blockedAtFirst && pzr.jam <= 0.65 && pzr.stillShut && pzr.pushed >= 1.7 && pzr.cleared && pzr.pushOpen && pzr.pushPaid, `the crate: pushed toward its rock it jams (${pzr.jam} ft), pushed from the rock's side it clears the gap (${pzr.pushed} ft), and the chest pays (${JSON.stringify([pzr.blockedAtFirst, pzr.stillShut, pzr.cleared, pzr.pushOpen, pzr.pushPaid])})`);
     /* THE GYMS ON THEIR TRAILS (gyms.js, trail.js, putt.js). Every gym the tour carries stands on its trail clear of the
        walk, its gate a few steps off the path and reachable, the trail still walkable from start to arch, with its
-       civilian at the gate and its vault on the list; and a world with gyms has none of the small puzzles. Then a gym is
+       civilian at the gate and its vault on the list, and nothing tall over its room on screen. Then a gym is
        played for real: walked into at its gate, a wrong push undone with the lever (twice, so the civilian's plainer
        line comes), walked out of and back into, and solved by its recorded proof, one tile a step. The vault pays its
        coins once and the badge is kept; opened again the gym shows as it was left solved. */
@@ -764,13 +841,20 @@ if (!args.includes('--no-browser')){
       localStorage.setItem('bag_ppt_v1@gyc', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'gyc' }; openPutt(); await sleep(300);
       const segMin = (P, x, y) => { let m = 1e9; for (let i = 0; i < P.path.length - 1; i++){ const a = P.path[i], c = P.path[i + 1], dx = c[0] - a[0], dy = c[1] - a[1], L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / L)); m = Math.min(m, Math.hypot(x - a[0] - dx * u, y - a[1] - dy * u)); } return m; };
-      const want = GL.GYMS.map(g => g.id).sort().join(), got = []; out.pzGymWorld = 0;
-      for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f); if (P.puzzle && GL.GYMS.some(g => g.world === P.spec.theme)) out.pzGymWorld++; if (!P.spec.gym) continue; got.push(P.spec.gym);
+      const want = GL.GYMS.map(g => g.id).sort().join(), got = [];
+      for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f); if (!P.spec.gym) continue; got.push(P.spec.gym);
         const G = P.gym, o = { f, id:P.spec.gym, has:!!G }; out.trails.push(o); if (!G) continue;
         let near = 1e9; for (let y = G.y0; y <= G.y0 + G.d; y += 0.5) for (let x = G.x0; x <= G.x0 + G.w; x += 0.5) near = Math.min(near, segMin(P, x, y));
         o.clear = +near.toFixed(2); o.gateOff = +segMin(P, G.ax, G.ay).toFixed(2);
         const FL = P._fl, G0 = FL.flood(false); o.gateReach = FL.near(G0, G.ax, G.ay + 0.3, 0.9); o.archReach = FL.near(G0, P.arch.x, 1.2, 2);
         o.inside = P.items.filter(t => t.k !== 'vault' && P.inGym(t.x, t.y, 0.3)).length + P.things.filter(t => t.k !== 'gym' && P.inGym(t.x, t.y, 0.3)).length;
+        /* nothing tall over the room on screen: the camera's 42 degrees stand a thing H tall up the screen by H cos 42
+           against the ground's y sin 42. The room's rect (floor to the top of its walls, 3.4 ft) plus 1.5 ft all round is
+           kept clear of every tree, landmark, rock and lamp, measured here on its own from each thing's footprint */
+        { const SE = Math.sin(42 * Math.PI / 180), CE = Math.cos(42 * Math.PI / 180), m = 1.5, rt = G.y0 * SE - 3.4 * CE, rb = (G.y0 + G.d) * SE;
+          o.over = P.things.filter(t => t.k !== 'gym' && t.k !== 'bridge' && (t.h || 0) > 0.2).filter(t => { const rx = t.w ? t.w / 2 : (t.cr || t.r || 0.5), ry = t.d ? t.d / 2 : (t.r || 0.5);
+            const dx = Math.max(G.x0 - t.x, 0, t.x - G.x0 - G.w); if (dx >= rx + m) return false;
+            return t.y * SE - t.h * CE < rb + m * SE && (t.y + ry) * SE > rt - m * SE; }).map(t => t.k); }
         o.civ = !!P.civ && FL.near(G0, P.civ.x, P.civ.y + 1.4, 1.2); o.vault = P.items.some(t => t.k === 'vault'); o.leftNames = window.RTT_PUTT._trailLeft ? window.RTT_PUTT._trailLeft(f + 1) : null; }
       out.all = got.sort().join() === want;
       // play the first gym
@@ -783,7 +867,8 @@ if (!args.includes('--no-browser')){
       // the way to the lever from where he stands: a search over the gym's own steps, ending in a reset
       const toLever = t => { const g = t.gym(), seen = new Set([GL.key(g.G, g.s)]), q = [[g.s, []]];
         while (q.length){ const [s, ds] = q.shift(); for (let d = 0; d < 4; d++){ const r = GL.step(g.G, s, d); if (r.ev === 'reset') return ds.concat([d]); if (r.ev !== 'walk' || seen.has(GL.key(g.G, r.s))) continue; seen.add(GL.key(g.G, r.s)); q.push([r.s, ds.concat([d])]); } } return null; };
-      const f0 = out.trails.find(o => o.has); if (!f0) return out;
+      // the first gym of a step kind: walked in tile by tile, the lever stepped into (a tap kind is played by taps below)
+      const f0 = out.trails.find(o => o.has && GL.input(GL.byId(o.id)) === 'step'); if (!f0) return out;
       const t = await open(f0.f), G = t.gym().G, proof = GL.proof(G);
       out.entered = await enter(t); out.startOk = t.gym().s.p === GL.parse(G).start;
       await play(t, proof.slice(0, 10)); const moved = t.gym().s.b.join() !== GL.init(G).b.join();
@@ -808,8 +893,8 @@ if (!args.includes('--no-browser')){
       if (hk){ hk.coins = hc; delete hk.pack; } window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
     claim(gyr.all && gyr.trails.length && gyr.trails.every(o => o.has), `every gym in gyms.js stands on its trail (${gyr.trails.map(o => o.id + ' on the trail into ' + (o.f + 1)).join(', ')})`);
     claim(gyr.trails.every(o => o.clear > 2.2 + 1.2 && o.gateOff < 9.5 && o.inside === 0), `each gym is clear of the walk, its gate a few steps off the path, and nothing else stands in it (${JSON.stringify(gyr.trails.map(o => [o.clear, o.gateOff, o.inside]))})`);
+    claim(gyr.trails.every(o => !o.over.length), `nothing tall stands over a gym's room on screen: no tree, landmark, rock or lamp within its walls' rect plus a margin (${JSON.stringify(gyr.trails.filter(o => o.over.length).map(o => [o.id, o.over]))})`);
     claim(gyr.trails.every(o => o.gateReach && o.archReach && o.civ && o.vault), `each gym's gate and civilian can be walked to and its trail is still walkable to the arch, its vault on the list (${JSON.stringify(gyr.trails.map(o => [o.gateReach, o.archReach, o.civ, o.vault]))})`);
-    claim(gyr.pzGymWorld === 0, `a world with gyms carries none of the small trail puzzles (${gyr.pzGymWorld})`);
     claim(gyr.trails.every(o => !o.leftNames || o.leftNames.indexOf('a gym') >= 0) && gyr.leftAfter && gyr.leftAfter.indexOf('a gym') < 0, `skipping a gym's trail warns that its gym is left, and not once it is solved (${JSON.stringify(gyr.leftAfter)})`);
     claim(gyr.entered && gyr.startOk && gyr.reset, `walked into at its gate he moves a tile a step, and the lever puts every piece back (${JSON.stringify([gyr.entered, gyr.startOk, gyr.reset])})`);
     claim(gyr.plain && gyr.civSays, `after two resets the civilian's plainer line comes, in the gym's docked panel and at the gate (${JSON.stringify([gyr.plain, gyr.civSays])})`);
@@ -842,27 +927,32 @@ if (!args.includes('--no-browser')){
     claim(gk.fallback && gk.fallback.coins === 1200 && gk.packMsg && gk.packMsg.coins === 0 && /pack/.test(gk.packMsg.msg), `a lucky pack that cannot land is a big haul instead (${JSON.stringify([gk.fallback, gk.packMsg])})`);
     /* NOTHING COVERS THE BOARD (the owner, 2026-10-17, of a phone screenshot of The Cargo Hold with the civilian's
        bubble over the grid: "text should not be covering the game like this"). On a phone (390 x 844, touch) and a
-       desktop (1440 x 900), in a gatekeeper's room: out on the trail the civilian's bubble stays off the room and its
-       gate; in the room the docked panel, its goal line, its controls and the pad sit outside the board (the room as
-       drawn), the stick and the bubble are not shown, the whole room is on the screen and the buttons are big enough to
-       hit. UNDO puts back the state before the last move exactly and is not a reset (the civilian counts resets);
-       RESTART is the start, and is undone like any move; Z and R do the same from the keys. On the desktop the gym is
-       then solved from its start, and nothing the vault pays with lands over the board. */
-    const lay = {};
+       desktop (1440 x 900), in the gatekeeper's room of EVERY KIND on the page (a step kind's and a tap kind's): out on
+       the trail the civilian's bubble stays off the room and its gate; in the room the docked panel, its goal line, its
+       controls and (a step kind) the pad sit outside the board (the room as drawn), the stick and the bubble are not
+       shown, the whole room is on the screen and the buttons are big enough to hit. UNDO puts back the state before
+       the last move exactly and is not a reset (the civilian counts resets); RESTART is the start, and is undone like
+       any move; Z and R do the same from the keys. A step kind's pad steps him; a tap kind shows no pad, and a real
+       tap on the screen over a tile acts on it (a tap kind's whole sequence is played by real taps where its tiles are
+       drawn). On the desktop the gym is then solved from its start, and nothing the vault pays with lands over the board. */
+    const lay = {}, KEEPS = await pg.evaluate(() => window.RTT_PUTT_GYMS.kinds().filter(k => k.input !== 'own').map(k => (k.gyms || []).find(g => g.keeper && g.world)).filter(Boolean).map(g => g.id));
     for (const [vw, vh, touch] of [[390, 844, true], [1440, 900, false]]){
       const cx = await b.newContext({ viewport:{ width:vw, height:vh }, hasTouch:touch, isMobile:touch, deviceScaleFactor:touch ? 2 : 1 }), p2 = await cx.newPage();
       p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
       await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
       await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
-      lay[vw] = await p2.evaluate(async (desk) => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@lay', best = {};
+      for (const gid of KEEPS) lay[vw + ' ' + gid] = await p2.evaluate(async ([desk, gid]) => { const out = { id:gid }, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@lay', best = {};
         for (let n = 1; n <= 198; n++) best[n] = 3;
         localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
-        window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'lay' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
-        const G = GL.GYMS.find(g => g.keeper && g.world); let f = 0; for (let i = 1; i < 198 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
+        window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'lay' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
+        const G = GL.byId(gid), tapIn = GL.input(G) === 'tap'; let f = 0; for (let i = 1; i < 198 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
         const t = T(), hit = (a, c) => !!a && !!c && a.left < c.right && a.right > c.left && a.top < c.bottom && a.bottom > c.top;
-        const idle = async () => { for (let i = 0; i < 200 && t.gymBusy(); i++) await sleep(20); };
-        const play = async ds => { for (const d of ds){ await idle(); t.gymStep(d); await sleep(30); } await idle(); };
+        const idle = async () => { for (let i = 0; i < 1000 && t.gymBusy(); i++) await sleep(20); };
+        // a step kind is stepped; a tap kind is played by real taps on each tile where it is drawn on the screen
+        const tapAt = async i => { const box = document.querySelector('.pp-tbox').getBoundingClientRect(), q = t.gymXY(i), p = t.scr(q[0], q[1], 0.45), dpr = t.view().W / box.width, o = { bubbles:true, clientX:box.left + p[0] / dpr, clientY:box.top + p[1] / dpr, pointerId:9, isPrimary:true };
+          const el = document.elementFromPoint(o.clientX, o.clientY); el.dispatchEvent(new PointerEvent('pointerdown', o)); await sleep(40); el.dispatchEvent(new PointerEvent('pointerup', o)); await sleep(80); };
+        const play = async ms => { for (const m of ms){ await idle(); if (tapIn) await tapAt(m); else t.gymStep(m); await sleep(30); } await idle(); };
         const key = code => { window.dispatchEvent(new KeyboardEvent('keydown', { code, key:code.slice(3).toLowerCase(), bubbles:true })); window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles:true })); };
         // out on the trail, walked up to the civilian
         const cv = t.plan().civ; t.goTo(cv.x + 5, cv.y + 4); await sleep(250); t.goTo(cv.x - 1.6, cv.y + 1.2); await sleep(900);
@@ -871,10 +961,10 @@ if (!args.includes('--no-browser')){
         const Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0); await idle(); await sleep(1200);
         R = t.gymRects(); out.in = t.gym().in; out.board = R.board; out.kk = [R.kk, R.kkBase];
         out.covered = ['panel', 'goal', 'say', 'controls', 'pad', 'stick', 'bubble'].filter(k => hit(R[k], R.board)).concat(R.buttons.filter(x => hit(x, R.board)).map(() => 'a button'));
-        out.missing = ['panel', 'goal', 'say', 'controls', 'pad'].filter(k => !R[k]).concat(R.buttons.some(x => !x) ? ['a button'] : []);
+        out.missing = ['panel', 'goal', 'say', 'controls'].concat(tapIn ? [] : ['pad']).filter(k => !R[k]).concat(R.buttons.some(x => !x) ? ['a button'] : []);
         out.hidden = !R.stick && !R.bubble && [...document.querySelectorAll('.pp-rbar,.pp-tgoal')].every(e => !e.offsetParent);
         out.onScreen = R.board.left >= 0 && R.board.top >= 0 && R.board.right <= innerWidth && R.board.bottom <= innerHeight;
-        out.goal = document.querySelector('[data-ggoal]').textContent === GL.goal(G); out.big = R.buttons.every(x => x && x.bottom - x.top >= 44) && [...document.querySelectorAll('[data-gpad] button')].every(e => e.getBoundingClientRect().height >= 40);
+        out.goal = document.querySelector('[data-ggoal]').textContent === GL.goal(G); out.big = R.buttons.every(x => x && x.bottom - x.top >= 44) && [...document.querySelectorAll('[data-gpad] button')].every(e => tapIn || e.getBoundingClientRect().height >= 40);
         // undo: one move back, exactly, and no reset counted
         const pf = GL.proof(G), g = () => t.gym(), k = () => GL.key(G, g().s), k0 = GL.key(G, GL.init(G));
         await play(pf.slice(0, 3)); const before = k(), r0 = g().resets, n0 = g().n; await play(pf.slice(3, 5)); const mid = k();
@@ -885,20 +975,53 @@ if (!args.includes('--no-browser')){
         if (desk) key('KeyR'); else document.querySelector('[data-grestart]').click(); await sleep(150);
         out.restart = { start:k() === k0, resets:g().resets === r0 + 1, moves:g().n === 0 };
         if (desk) key('KeyZ'); else document.querySelector('[data-gundo]').click(); await sleep(120); out.restart.undone = k() === before;
-        // the pad steps him (a press, as a thumb does)
-        { const s1 = k(), bt = document.querySelector('[data-gpad] [data-d="' + pf[3] + '"]'), r1 = bt.getBoundingClientRect(), o = { bubbles:true, clientX:r1.left + 10, clientY:r1.top + 10, pointerId:9 };
+        // a step kind: the pad steps him (a press, as a thumb does). A tap kind: no pad, and a real tap on the screen over a tile acts on it
+        if (!tapIn){ const s1 = k(), bt = document.querySelector('[data-gpad] [data-d="' + pf[3] + '"]'), r1 = bt.getBoundingClientRect(), o = { bubbles:true, clientX:r1.left + 10, clientY:r1.top + 10, pointerId:9 };
           bt.dispatchEvent(new PointerEvent('pointerdown', o)); await sleep(60); bt.dispatchEvent(new PointerEvent('pointerup', o)); await idle(); await sleep(60); out.pad = k() !== s1 && g().n === n0 + 1; }
-        if (desk){ document.querySelector('[data-grestart]').click(); await sleep(150); await play(pf); await sleep(2800);
+        else { const s1 = k(), q = t.gymXY(pf[3]), p = t.scr(q[0], q[1], 0.45), v = t.view(), box = document.querySelector('.pp-tbox').getBoundingClientRect(), dpr = v.W / box.width;
+          const o = { bubbles:true, clientX:box.left + p[0] / dpr, clientY:box.top + p[1] / dpr, pointerId:9, isPrimary:true }, el = document.elementFromPoint(o.clientX, o.clientY);
+          el.dispatchEvent(new PointerEvent('pointerdown', o)); await sleep(40); el.dispatchEvent(new PointerEvent('pointerup', o)); for (let w = 0; w < 100 && k() === s1; w++) await sleep(20); await idle(); await sleep(60); out.pad = !R.pad && k() !== s1 && g().n === n0 + 1; }
+        if (desk){ document.querySelector('[data-grestart]').click(); await sleep(150); await play(pf); for (let i = 0; i < 40 && !g().solved; i++) await sleep(100); await sleep(2800);
           const toasts = [...document.querySelectorAll('[role=status]')].map(e => e.getBoundingClientRect());
           out.won = g().solved; out.toastsOver = toasts.filter(x => hit(x, R.board)).length; out.wonLine = /solved/.test(t.gymSays()) && document.querySelector('.pp-bub').hidden; }
-        window.RTT_PUTT.close(); localStorage.removeItem(K); return out; }, !touch);
+        window.RTT_PUTT.close(); localStorage.removeItem(K); return out; }, [!touch, gid]);
       await cx.close(); }
-    for (const w of [390, 1440]){ const L = lay[w], nm = w === 390 ? 'on a 390 x 844 phone' : 'on a 1440 x 900 desktop';
+    for (const lk in lay){ const L = lay[lk], w = +lk.split(' ')[0], nm = (w === 390 ? 'on a 390 x 844 phone' : 'on a 1440 x 900 desktop') + ', in ' + L.id;
       claim(L.civ.says && L.civ.clear, `${nm}, out on the trail the civilian's bubble stays off the gym's room and gate (${JSON.stringify(L.civ)})`);
       claim(L.in && !L.covered.length && !L.missing.length && L.hidden && L.onScreen && L.goal && L.big, `${nm}, in the room nothing covers the board: the panel, goal line, controls and pad sit outside it, the stick is hidden, the whole room is on screen at zoom ${L.kk[0]} (${JSON.stringify({ covered:L.covered, missing:L.missing, hidden:L.hidden, onScreen:L.onScreen, goal:L.goal, big:L.big, board:L.board })})`);
       claim(L.undo.moved && L.undo.stepped && L.undo.back && L.undo.resets && L.undo.n, `${nm}, Undo (${w === 390 ? 'the button' : 'Z'}) puts back the state before each move exactly and is not counted as a reset (${JSON.stringify(L.undo)})`);
-      claim(L.restart.start && L.restart.resets && L.restart.moves && L.restart.undone && L.pad, `${nm}, Restart (${w === 390 ? 'the button' : 'R'}) is the start and counts as a reset, Undo takes it back, and the pad steps him (${JSON.stringify([L.restart, L.pad])})`); }
-    claim(lay[1440].won && lay[1440].toastsOver === 0 && lay[1440].wonLine, `solved, the vault says what it paid in the panel, and no toast lands over the board (${JSON.stringify([lay[1440].won, lay[1440].toastsOver, lay[1440].wonLine])})`);
+      claim(L.restart.start && L.restart.resets && L.restart.moves && L.restart.undone && L.pad, `${nm}, Restart (${w === 390 ? 'the button' : 'R'}) is the start and counts as a reset, Undo takes it back, and the pad steps him or a tap on a tile acts (${JSON.stringify([L.restart, L.pad])})`);
+      if (w === 1440) claim(L.won && L.toastsOver === 0 && L.wonLine, `${nm}, solved, the vault says what it paid in the panel, and no toast lands over the board (${JSON.stringify([L.won, L.toastsOver, L.wonLine])})`); }
+    claim(KEEPS.length >= 1 && Object.keys(lay).length === KEEPS.length * 2, `the room of every kind's gatekeeper is measured on the phone and the desktop (${KEEPS.join(', ')})`);
+    /* THE SAME FOR THE CLUBHOUSE'S GATEKEEPER, the trick shot kind (input 'own': no pad, a putt is a pull on the board):
+       on the phone and the desktop, in The Back Bar the panel, its goal line and its controls sit outside the board, the
+       stick and the bubble are hidden, the whole room is on screen, the buttons are big enough to hit, and the room is
+       calm (the kind asks the frame to keep the world's flyers and motes off it). */
+    const layT = {};
+    for (const [vw, vh, touch] of [[390, 844, true], [1440, 900, false]]){
+      const cx = await b.newContext({ viewport:{ width:vw, height:vh }, hasTouch:touch, isMobile:touch, deviceScaleFactor:touch ? 2 : 1 }), p2 = await cx.newPage();
+      p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
+      await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
+      await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && window.RTT_GYMKIND_TRICKSHOT && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
+      layT[vw] = await p2.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@layt', best = {};
+        for (let n = 1; n <= 198; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
+        window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'layt' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
+        const G = GL.byId('clubhouse2'); let f = 0; for (let i = 1; i < 198 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i;
+        window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
+        const t = T(), hit = (a, c) => !!a && !!c && a.left < c.right && a.right > c.left && a.top < c.bottom && a.bottom > c.top;
+        const Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);
+        for (let i = 0; i < 200 && t.gymBusy(); i++) await sleep(20); await sleep(1200);
+        const R = t.gymRects(); out.f = f; out.in = t.gym().in; out.keeper = !!G.keeper; out.board = R.board;
+        out.covered = ['panel', 'goal', 'say', 'controls', 'pad', 'stick', 'bubble'].filter(k => hit(R[k], R.board)).concat(R.buttons.filter(x => hit(x, R.board)).map(() => 'a button'));
+        out.missing = ['panel', 'goal', 'say', 'controls'].filter(k => !R[k]).concat(R.buttons.some(x => !x) ? ['a button'] : []);
+        out.hidden = !R.stick && !R.bubble; out.onScreen = R.board.left >= 0 && R.board.top >= 0 && R.board.right <= innerWidth && R.board.bottom <= innerHeight;
+        out.goal = document.querySelector('[data-ggoal]').textContent === GL.goal(G); out.big = R.buttons.every(x => x && x.bottom - x.top >= 44);
+        out.calm = !!window.RTT_GYMKIND_TRICKSHOT.calm;
+        window.RTT_PUTT.close(); localStorage.removeItem(K); return out; });
+      await cx.close(); }
+    for (const w of [390, 1440]){ const L = layT[w], nm = w === 390 ? 'on a 390 x 844 phone' : 'on a 1440 x 900 desktop';
+      claim(L.in && L.keeper && !L.covered.length && !L.missing.length && L.hidden && L.onScreen && L.goal && L.big && L.calm, `${nm}, in the Clubhouse's gatekeeper (The Back Bar, a trick shot room) nothing covers the board and the room is calm (${JSON.stringify({ covered:L.covered, missing:L.missing, hidden:L.hidden, onScreen:L.onScreen, goal:L.goal, big:L.big, calm:L.calm })})`); }
     /* A KIND OF ANOTHER INPUT, PLAYED BY TAPS: the worked example (gymkinds/example.js, a tap kind in no world) is put
        on Pirate Cove's mid-world trail for the length of this check and played in a real room by tapping its tiles on
        the screen: the frame highlights what a tap changes, Undo takes a tap back, and the winning tap opens the vault. */
@@ -910,7 +1033,9 @@ if (!args.includes('--no-browser')){
         window.RTT_PUTT.close(); sbUser = { id:'ex' }; openPutt(); await sleep(300); const h = window.RTT_PUTT._state().host, hc = h.coins, hp = h.pack; h.coins = () => {}; h.pack = () => 1;
         let f = 0; for (let i = 1; i < 198 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === E.id) f = i; out.f = f;
         window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(500);
-        const t = T(), Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0); await sleep(600);
+        const t = T(), Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);
+        // a tap is taken only once he has finished walking in (on a busy machine 600 ms is not always enough)
+        for (let i = 0; i < 300 && t.gymBusy(); i++) await sleep(20); await sleep(600);
         const g = () => t.gym(), k = () => GL.key(E, g().s), box = document.querySelector('.pp-tbox').getBoundingClientRect();
         const tap = async i => { const q = t.gymXY(i), p = t.scr(q[0], q[1], 0.45), v = t.view(), dpr = v.W / box.width, o = { bubbles:true, clientX:box.left + p[0] / dpr, clientY:box.top + p[1] / dpr, pointerId:5, isPrimary:true };
           const el = document.elementFromPoint(o.clientX, o.clientY); el.dispatchEvent(new PointerEvent('pointerdown', o)); await sleep(40); el.dispatchEvent(new PointerEvent('pointerup', o)); await sleep(300); };
@@ -921,6 +1046,47 @@ if (!args.includes('--no-browser')){
       finally { E.world = w0[0]; E.leg = w0[1]; M.leg = w0[2]; window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; }
       return out; });
     claim(ex.f > 0 && ex.inp === 'tap' && ex.hot && ex.tapped && ex.undone && ex.won, `the worked example kind plays in a real room by tapping: what a tap changes is lit, Undo takes a tap back, the winning tap opens the vault (${JSON.stringify(ex)})`);
+    /* EVERY TAP KIND'S GYMS, PLAYED FOR REAL by taps on the screen (Candy Works' pipes, Neon Arcade's lasers, and any tap
+       kind after them): walked into at the gate, what a tap changes is lit (or the kind marks its own), a tap is a move and Undo takes it back, two
+       restarts bring the civilian's plainer line into the panel and five the warmer one, out through Leave and in again,
+       and the recorded proof tapped tile by tile opens the vault: it pays its coins and its pack once, the badge is
+       kept, and opened again the gym shows solved and pays nothing. */
+    const tapG = await pg.evaluate(() => window.RTT_PUTT_GYMS.GYMS.filter(g => g.world && window.RTT_PUTT_GYMS.input(g) === 'tap').map(g => g.id));
+    for (const gid of tapG){
+      const tp = await pg.evaluate(async (gid) => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@tp', best = {}, G = GL.byId(gid);
+        for (let n = 1; n <= 198; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
+        const paid = [], packs = [], S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(); let hk = null, hc = null, hp = null;
+        const hook = () => { const h = S().host; if (h !== hk){ if (hk){ hk.coins = hc; hk.pack = hp; } hk = h; hc = h.coins; hp = h.pack; h.coins = n => { paid.push(n); }; h.pack = tier => { packs.push(tier); return 1; }; } };
+        let f = 0; for (let i = 1; i < 198 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === gid) f = i; out.f = f;
+        const open = async () => { window.RTT_PUTT.close(); sbUser = { id:'tp' }; openPutt(); await sleep(300); hook(); window.RTT_PUTT._walkTo(f); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(500); hook(); return T(); };
+        const idle = async t => { for (let i = 0; i < 300 && t.gymBusy(); i++) await sleep(20); };
+        const enter = async t => { const Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0); await idle(t); await sleep(300); return t.gym().in; };
+        const tap = async (t, i) => { await idle(t); const box = document.querySelector('.pp-tbox').getBoundingClientRect(), q = t.gymXY(i), p = t.scr(q[0], q[1], 0.45), dpr = t.view().W / box.width;
+          const o = { bubbles:true, clientX:box.left + p[0] / dpr, clientY:box.top + p[1] / dpr, pointerId:5, isPrimary:true }, el = document.elementFromPoint(o.clientX, o.clientY);
+          const n0 = t.gym().n; el.dispatchEvent(new PointerEvent("pointerdown", o)); await sleep(40); el.dispatchEvent(new PointerEvent("pointerup", o)); for (let w = 0; w < 100 && t.gym().n === n0 && t.gym().in; w++) await sleep(20); await idle(t); };
+        try {
+          let t = await open(); out.entered = await enter(t); const g = () => t.gym(), k = () => GL.key(G, g().s), k0 = GL.key(G, GL.init(G)), pf = GL.proof(G);
+          out.inp = g().inp; { const H = t.gymHot(); out.hot = H.hot.includes(pf[0]) || (H.own && !H.hot.length); }   // lit, or a kind that marks its own tiles (lights: no rings, the chalk is the mark)
+          await tap(t, pf[0]); out.tapped = k() !== k0 && g().n === 1; t.gymUndo(); await sleep(100); out.undone = k() === k0 && g().resets === 0;
+          for (let r = 0; r < 2; r++){ await tap(t, pf[0]); t.gymRestart(); await sleep(150); }
+          out.plain = g().resets === 2 && t.gymSays() === G.say[1] && k() === k0;
+          for (let r = 0; r < 3; r++){ await tap(t, pf[0]); t.gymRestart(); await sleep(150); }
+          out.warm = g().resets === 5 && t.gymSays() === G.say[2];
+          document.querySelector('[data-gleave]').click(); await sleep(300); out.left = !g().in;
+          t.goTo(t.plan().gym.ax, t.plan().gym.ay + 3); await sleep(300); out.reentered = await enter(t); paid.length = 0; packs.length = 0;
+          for (const i of pf) await tap(t, i); await sleep(2400);
+          out.won = GL.won(G, g().s) && g().solved && /solved/.test(t.gymSays()) && t.items().find(i => i.k === 'vault').done;
+          out.paid = paid.reduce((a, b) => a + b, 0); out.pay = G.pay; out.packs = packs.slice(); out.keeper = !!G.keeper;
+          const rec = JSON.parse(localStorage.getItem(K)); out.badge = (rec.gym || []).indexOf(G.id) >= 0;
+          paid.length = 0; t = await open(); const g2 = t.gym(); out.kept = g2.solved && GL.won(G, g2.s) && t.items().find(i => i.k === 'vault').done;
+          await enter(t); await sleep(200); out.paidAgain = paid.reduce((a, b) => a + b, 0); }
+        finally { if (hk){ hk.coins = hc; hk.pack = hp; } window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; }
+        return out; }, gid);
+      claim(tp.f > 0 && tp.entered && tp.inp === 'tap' && tp.hot && tp.tapped && tp.undone, `${gid}, played by taps: walked in at its gate, what a tap changes is lit (or the kind marks its own), a tap is a move and Undo takes it back (${JSON.stringify([tp.f, tp.entered, tp.hot, tp.tapped, tp.undone])})`);
+      claim(tp.plain && tp.warm, `${gid}: after two restarts the civilian's plainer line is in the panel, after five the warmer one (${JSON.stringify([tp.plain, tp.warm])})`);
+      claim(tp.left && tp.reentered && tp.won && tp.paid === tp.pay && tp.badge && tp.packs.length === 1 && tp.packs[0] === (tp.keeper ? 'tour' : 'base'), `${gid}: out through Leave and in again, its proof tapped tile by tile opens the vault: ${tp.paid} of ${tp.pay} coins, ${JSON.stringify(tp.packs)} and the badge`);
+      claim(tp.kept && tp.paidAgain === 0, `${gid}: opened again it shows solved, and the vault never pays twice (${JSON.stringify([tp.kept, tp.paidAgain])})`); }
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.
@@ -1183,7 +1349,7 @@ if (!args.includes('--no-browser')){
       return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives, clocks:(after.back || []).length }; });
     claim(lvs.first === 0 && lvs.wound === 0, `a fresh browser takes the server's lives, and a wound clock does not refill them (${lvs.first}, then ${lvs.wound})`);
     claim(lvs.spent && lvs.srv === 1 && lvs.after === 1 && lvs.clocks === 8, `a lost life is spent on the server, with a clock of its own (server ${lvs.srv}, browser ${lvs.after}, ${lvs.clocks} clocks)`);
-    // A GUEST WALKS THE OPENING WORLD AND PLAYS NO TOUR HOLE (the owner, 2026-10-16). A hole asks them to sign in,
+    // A GUEST WALKS TO HOLE 1 ONLY AND PLAYS NO TOUR HOLE (the owner, 2026-10-16; story mode 2026-10-18). Hole 1 asks them to sign in,
     // the Daily Hole stays open, and a guest never sees a coin count.
     const gst = await pg.evaluate(async () => {
       localStorage.removeItem('bag_ppt_v1'); sbUser = null; window.RTT_PUTT.open(puttHost());
@@ -1207,8 +1373,8 @@ if (!args.includes('--no-browser')){
       localStorage.removeItem('bag_ppt_v1'); localStorage.removeItem('bag_ppt_v1@chk'); sbUser = { id:'chk' }; openPutt();
       return { pill, txt, walkBtn, notPlayed, tap, card, res, daily, deep, toAcct }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && gst.walkBtn, `a guest's hole 1 asks them to sign in and offers to keep walking (${JSON.stringify(gst.txt.slice(0, 60))})`);
-    claim(gst.tap === 'trail' || gst.tap === 'sheet', `a guest tapping hole 3 on the map walks to it, never plays it (${gst.tap})`);
+    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && !gst.walkBtn, `a guest's hole 1 asks them to sign in, with no walk on past it (${JSON.stringify(gst.txt.slice(0, 60))})`);
+    claim(gst.tap !== 'trail' && gst.tap !== 'sheet', `story mode: a guest tapping hole 3 on the map stays on the map (${gst.tap})`);
     claim(gst.deep && gst.toAcct, `past the opening world the sheet offers no walk, and Sign in opens the sign in sheet (${gst.deep}, ${gst.toAcct})`);
     claim(gst.daily, `a guest can still play the Daily Hole (${gst.daily})`);
     claim(!gst.pill && !/\bcoins?\b|\+\d/i.test(gst.card) && /Sign in to collect your coins/.test(gst.res) && !/\+\d+ coins/.test(gst.res), `a guest sees no coin count: no wallet, the Daily card ${JSON.stringify(gst.card.slice(-30))}, the result says sign in`);
@@ -1376,7 +1542,8 @@ if (!args.includes('--no-browser')){
       claim(v3.fxMed < 900, `with the console look a Tour hole renders in ${v3.fxMed}ms at the median, on this machine`);
     }
     // a hole in 3D, through the game; and a render that throws draws the hole flat rather than nothing
-    await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); window.RTT_PUTT._level(23); });
+    // hole 23 is past this record's frontier: an account on PUTT_ALL_ACCESS opens it (story mode refuses it to anybody else)
+    await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); const u0 = sbUsername; sbUsername = 'RunnyJ'; window.RTT_PUTT._level(23); sbUsername = u0; });
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
     claim(await pg.evaluate(() => !!window.RTT_PUTT._state().play.v3), 'a Tour hole plays in 3D');
     await pg.setViewportSize({ width:1280, height:760 }); await pg.waitForTimeout(2600);
@@ -1388,7 +1555,7 @@ if (!args.includes('--no-browser')){
       return { par, rows, ok:rows.length >= 2 && rows.every(r => T.starsOf(r[1], par, L.three) === r[0]) && rows[rows.length - 1][1] === par && rows[0][0] === 3 }; });
     claim(tgt.ok, `a Tour hole shows the strokes each star costs, and each row matches the stars rule (${JSON.stringify(tgt)})`);
     await pg.setViewportSize({ width:390, height:844 }); await pg.waitForTimeout(300);
-    await pg.evaluate(() => { const D3 = window.RTT_PUTT_3D; window.__keep = D3.render; D3.render = () => { throw new Error('probe'); }; window.RTT_PUTT._state().v3c = {}; window.RTT_PUTT._state().v3job = null; window.RTT_PUTT._level(34); });
+    await pg.evaluate(() => { const D3 = window.RTT_PUTT_3D; window.__keep = D3.render; D3.render = () => { throw new Error('probe'); }; window.RTT_PUTT._state().v3c = {}; window.RTT_PUTT._state().v3job = null; const u0 = sbUsername; sbUsername = 'RunnyJ'; window.RTT_PUTT._level(34); sbUsername = u0; });
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
     claim(await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return !P.v3 && !!P.art; }), 'a 3D render that throws falls back to the flat hole');
     await pg.evaluate(() => { window.RTT_PUTT_3D.render = window.__keep; });
@@ -1435,18 +1602,22 @@ if (!args.includes('--no-browser')){
        board yet says so instead of breaking. */
     const db = await pg.evaluate(async () => { const keepSb = sb, keepU = sbUser, keepOn = puttOn, calls = []; let mode = 'rows';
       sb = { rpc:(fn, args) => { calls.push([fn, args]); if (mode === 'down') return Promise.resolve({ error:{ message:'no such function' } });
+        // the post takes a moment to land, as a real one does: the board must not be read before it has
+        if (fn === 'putt_daily_submit') return new Promise(res => setTimeout(() => { calls.push(['posted']); res({ data:true }); }, 120));
         return Promise.resolve({ data: fn === 'putt_daily_board' ? [{ rank:1, username:'one', strokes:1, par:3, ms:5000, look:null, mine:false, players:2 }, { rank:2, username:'me', strokes:2, par:3, ms:9000, look:null, mine:true, players:2 }] : true }); } };
       sbUser = { id:'dchk' }; puttOn = () => true; const T = window.RTT_PUTT, S = T._state(), k = String(todayKey()), day = /^\d{8}$/.test(k) ? k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8) : k;
       const clear = () => Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).forEach(k0 => { const s0 = JSON.parse(localStorage.getItem(k0)); s0.daily = {}; localStorage.setItem(k0, JSON.stringify(s0)); });
       const r = {}; clear(); S.round = { mode:'pdaily', day:day }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       const sub = calls.filter(c => c[0] === 'putt_daily_submit'); r.posted = sub.length === 1 && sub[0][1].p_day === day && sub[0][1].p_strokes === 2 && !!sub[0][1].p_look;
       r.rows = S.ov.querySelectorAll('.pp-drow').length === 2 && !!S.ov.querySelector('.pp-drow.me');
+      const ix = n => calls.findIndex(c => c[0] === n); r.after = ix('posted') >= 0 && ix('putt_daily_board') > ix('posted');
       clear(); calls.length = 0; const y = new Date(Date.parse(day + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10); S.round = { mode:'pdaily', day:y }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       r.lateQuiet = !calls.some(c => c[0] === 'putt_daily_submit');
       clear(); mode = 'down'; S.round = { mode:'pdaily', day:day }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       r.down = /on its way/.test((S.ov.querySelector('[data-rows]') || {}).textContent || '');
       clear(); sb = keepSb; sbUser = keepU; puttOn = keepOn; return r; });
     claim(db.posted && db.rows, `a Daily Hole played on its day posts to the board once, with the golfer's look, and the card shows the day's rows (${JSON.stringify(db)})`);
+    claim(db.after, 'the board is read once the round has landed, so the player is on it (it was read alongside the post and said nobody had posted)');
     claim(db.lateQuiet, 'a Daily Hole played late from the calendar never posts');
     claim(db.down, 'a server without the board yet says it is on its way, and nothing breaks');
     // THE LOCKED GATE IS PART OF ITS FENCE: built to the gap and drawn at the land's size on a smoothed walk (it once stood at half)
@@ -1463,6 +1634,44 @@ if (!args.includes('--no-browser')){
         if (c0 != null && (S.screen !== 'play' || st === 'done')) return res({ saw, ms:Math.round(performance.now() - c0), sunk:!!S.play.sunk }); requestAnimationFrame(tick); }; requestAnimationFrame(tick); }));
     claim(ch.saw && ch.ms >= 1800 && ch.ms < 4000, `a hole in one is celebrated for about two seconds before the card (${JSON.stringify(ch)})`);
     claim(ch.sunk === true, 'a ball that dropped stays gone: it is never drawn back on the cup behind the card');
+    /* THE CLUBHOUSE'S TRICK SHOT ROOM IN A REAL ROOM (gymkinds/trickshot.js, input 'own'): on a phone, walked into from
+       the trail into hole 9, nothing covers the board; the recorded route, putted in the room, knocks the bottles down in
+       order and drops, the vault opens, and no life is spent; Undo takes a putt back; Restart sets it up again; and out
+       of strokes lights Restart, again with no life spent. */
+    { const cx = await b.newContext({ viewport:{ width:390, height:844 }, hasTouch:true, isMobile:true, deviceScaleFactor:2 }), p2 = await cx.newPage();
+      p2.on('pageerror', e => errs.push(e.message)); await p2.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
+      await p2.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
+      await p2.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D && window.RTT_PUTT_GYMS && window.RTT_GYMKIND_TRICKSHOT && typeof puttOn === 'function' && document.readyState === 'complete', null, { timeout:60000 });
+      const ts = await p2.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, KT = window.RTT_GYMKIND_TRICKSHOT, K = 'bag_ppt_v1@ts', best = {};
+        for (let n = 1; n <= 198; n++) best[n] = 3;
+        localStorage.setItem(K, JSON.stringify({ v:2, lives:9, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
+        window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'ts' }; sbUsername = 'SlimeyB3'; passTester = () => false; openPutt(); await sleep(400);
+        const h = window.RTT_PUTT._state().host, hc = h.coins, hp = h.pack; h.coins = () => {}; h.pack = () => 1;
+        const G = GL.byId('clubhouse1'); let f = 0; for (let i = 1; i < 198 && !f; i++) if (window.RTT_PUTT._trailPlan(i).spec.gym === G.id) f = i; out.f = f;
+        const lives0 = window.RTT_PUTT.summary(puttHost()).lives;
+        window.RTT_PUTT._walkTo(f); const T = () => window.RTT_PUTT._trail(); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(600);
+        const t = T(), Gp = t.plan().gym; t.goTo(Gp.ax, Gp.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0);
+        const idle = async () => { for (let i = 0; i < 600 && (t.gymBusy() || (KT.test.view() && KT.test.view().state().rolling)); i++) await sleep(30); }; await idle(); await sleep(900);
+        const hit = (a, c) => !!a && !!c && a.left < c.right && a.right > c.left && a.top < c.bottom && a.bottom > c.top, R = t.gymRects();
+        out.in = t.gym().in; out.inp = t.gym().inp; out.covered = ['panel', 'goal', 'say', 'controls', 'pad', 'stick', 'bubble'].filter(k => hit(R[k], R.board)).concat(R.buttons.filter(x => hit(x, R.board)).map(() => 'a button'));
+        out.onScreen = R.board.left >= 0 && R.board.top >= 0 && R.board.right <= innerWidth && R.board.bottom <= innerHeight;
+        out.goal = document.querySelector('[data-ggoal]').textContent === GL.goal(G);
+        const V = () => KT.test.view(), k = () => GL.key(G, t.gym().s), pf = GL.proof(G), putt = async m => { await idle(); V().shoot(m.a, m.ft, m.t); await sleep(60); await idle(); await sleep(60); };
+        await putt(pf[0]); const one = k(); out.down1 = t.gym().s.tk === 1 && V().state().tkSeen === 1;
+        t.gymUndo(); await sleep(150); out.undo = k() === GL.key(G, GL.init(G)) && V().state().tkSeen === 0;
+        for (const m of pf) await putt(m); await sleep(2600);
+        out.won = GL.won(G, t.gym().s) && t.gym().solved && t.gym().n === pf.length; out.sunk = V().state().sunk;
+        t.gymRestart(); await sleep(200); out.restart = k() === GL.key(G, GL.init(G)) && !V().state().sunk && V().state().tkSeen === 0;
+        for (let i = 0; i < G.limit; i++) await putt({ a:Math.PI / 2, ft:2.2 });
+        await sleep(300); out.out = { n:t.gym().n, stuck:t.gym().stuck, lit:document.querySelector('[data-grestart]').classList.contains('lit'), more:V().shoot(0, 10) === false };
+        out.lives = [lives0, window.RTT_PUTT.summary(puttHost()).lives];
+        h.coins = hc; h.pack = hp; window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
+      await cx.close();
+      claim(ts.f > 0 && ts.in && ts.inp === 'own' && !ts.covered.length && ts.onScreen && ts.goal, `the Trophy Room is a gym on the trail into hole ${ts.f + 1}, played with the ball, and nothing covers its board on a phone (${JSON.stringify({ covered:ts.covered, onScreen:ts.onScreen, goal:ts.goal })})`);
+      claim(ts.down1 && ts.undo, `a putt in the room knocks bottle 1 down, and Undo takes the putt back (${JSON.stringify([ts.down1, ts.undo])})`);
+      claim(ts.won && ts.sunk && ts.restart, `the recorded route, putted in the room, downs the bottles in order, drops and opens the vault; Restart sets it up again (${JSON.stringify([ts.won, ts.sunk, ts.restart])})`);
+      claim(ts.out.n === 6 && ts.out.stuck && ts.out.lit && ts.out.more, `out of strokes, no more putts, and Restart lights up (${JSON.stringify(ts.out)})`);
+      claim(ts.lives[0] === ts.lives[1], `a trick shot room never costs a life, won or out of strokes (${ts.lives.join(' then ')})`); }
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }

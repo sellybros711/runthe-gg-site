@@ -326,6 +326,8 @@ function finishOuting(o, extra) {
     vsReal: vsReal(o.outcome, runs, reveal),
     runs,
     lesson: L ? L.lessonFor(o) : null,
+    // the closer pool's outing scores in this spot, sorted, for the end screen's chart (B11)
+    pool: { scores: (o.pack.pool && o.pack.pool.scores) || [] },
     share: (extra && extra.share) || '',
   };
 }

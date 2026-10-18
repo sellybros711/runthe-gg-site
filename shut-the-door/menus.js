@@ -273,6 +273,15 @@ function renderAuth() {
   });
 }
 
+/* the menu's three tiles: the streak, the best, the last percentile */
+function renderMenuTiles() {
+  var h = ctx.hist(), st = streakOf(h, ctx.today), days = Object.keys(h).sort();
+  var last = days.length ? h[days[days.length - 1]] : null;
+  function tl(v, l) { return '<div class="tl"><b>' + (v == null ? '-' : esc(v)) + '</b><span>' + l + '</span></div>'; }
+  $('menu-tiles').innerHTML = tl(st.cur, 'doors shut in a row') + tl(st.best, 'best streak') +
+    tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
+}
+
 var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {} };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
@@ -290,7 +299,7 @@ var api = {
     else if (which === 'past') { renderPast(ctx.scn); openSheet('sheet-past'); }
     else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
     else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }
-    else if (which === 'menu') openSheet('sheet-menu');
+    else if (which === 'menu') { renderMenuTiles(); openSheet('sheet-menu'); }
   },
 };
 window.STD_MENUS = api;

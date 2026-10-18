@@ -71,6 +71,18 @@
                   Optional: the default searches up to 40,000 states from s, so a kind that can tell sooner says so.
      goal(G)      -> the one line goal, always shown in the panel. What to do, never how: 'Make the floor one colour.'
      tell         { ev:'a line' }: said once, the first time the kind's own event ev happens ('edge' for push).
+                  tell.stuck, if the kind has it, is said in place of the frame's own line when Restart lights
+                  ('Chocolate on the floor. Undo it, or Restart.' for pipes, where stuck means a spill).
+     hello        the line said once as he walks in: how this kind is played, never how it is solved ('One tile a
+                  step. Undo takes one back.' for push, 'You slide till something stops you.' for the ice slide).
+                  Every kind on the page has one; the frame has no line of its own for it.
+     unit         the word the panel counts in: 'step' (push, mimic), 'slide' (ice), 'tap' (the tap kinds),
+                  'stroke' (the trick shot). The frame adds the s: '1 step', '7 steps'. Without it, 'move'.
+     calm         true: while he is in the room the frame draws none of the world's life over the room on the
+                  screen (birds, balloons, puffs and motes, tumbleweeds, ghosts, ships), so nothing ever sits on a
+                  tile. The shut vault's pool of light stays on its own tile, and the floor in front of the vault
+                  and of him is not painted back over the kind's tiles (only a wall can stand in front of him there).
+                  Every kind on the page asks for it. Out on the trail the life is as it was.
      dur(how)     -> seconds a move of that how takes to play (default 0.15).
      floor(gc)    -> null, or { h, mat } for a floor tile: gc is { i, c, r, k, u, v } (k the layout character, u and
                   v where in the tile, 0 to 1). h is the height (the deck is 0.45, its holes sit at -0.5), mat a
@@ -94,7 +106,10 @@
      move(m, u, tsec)  play move m ([who, from, to, how], not 'me') at u, 0 to 1
      things(ds, tsec)  push what stands in the room into the scene's far to near list: { x, y, kd:function(t, tsec) }
                        is drawn in its turn (t is that entry), behind what is nearer the camera
-     ground(tsec)      draw on the floor, over the picture and under everything that stands (belt chevrons)
+     ground(tsec)      draw on the floor, over the picture and under everything that stands (belt chevrons). Only
+                       for what may be lost for a moment: a sprite drawn later (the vault, a balloon passing high
+                       over the room) has the scene drawn back over it wherever the scene is nearer, and that takes
+                       ground() paint with it. A tile's colour or a bridge belongs in things() (lights, islands).
      over(tsec)        optional: draw over the scene (an aim line), still inside the room
      hot(s)            optional: the tiles worth a subtle highlight. Without it the frame highlights, for a step
                        kind, every piece a step would move, and for a tap kind every tile a tap would change.

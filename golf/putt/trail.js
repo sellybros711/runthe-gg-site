@@ -315,7 +315,7 @@ function plan(spec){
       if (pathD(cp2[0], cp2[1]) < srr + 4 || Math.hypot(cp2[0] - clr.x, cp2[1] - clr.y) < srr + clr.r + 6 || Math.hypot(cp2[0] - start.x, cp2[1] - start.y) < srr + start.r + 4) continue;
       if (gy && (Math.abs(cp2[1] - gy) < srr + 6 || (cp2[1] - gy) * (o3[1] - gy) < 0)) continue;
       if (spurD(cp2[0], cp2[1]) < srr + 3) continue;
-      if (GYM && (inGym(cp2[0], cp2[1], srr + 4) || gymShadow(cp2[0], cp2[1]))) continue;
+      if (GYM && (inGym(cp2[0], cp2[1], srr + 4) || gymShadow(cp2[0], cp2[1]) || screensGym(cp2[0], cp2[1] - 1, srr, ssz[2]))) continue;
       sc = { x:cp2[0], y:cp2[1] - 1, r:srr, kind:sk, w:ssz[0], d:ssz[1], h:ssz[2], s:s2, ox:o3[0], oy:o3[1] }; }
     if (sc){ var my = sk === 'mooredship' ? sc.y : sc.y + sc.d / 2 + 0.9, mx = sk === 'mooredship' ? sc.x + (sc.ox < sc.x ? -1 : 1) * (sc.w / 2 + 1.6) : sc.x;
       sc.mx = mx; sc.my = my; var tdx = mx - sc.ox, tdy = my - sc.oy, tl = Math.hypot(tdx, tdy) || 1, bw2 = (R() < 0.5 ? -1 : 1) * 1.6;
@@ -421,7 +421,18 @@ function plan(spec){
   function free(x, y, r){ for (var i = 0; i < used.length; i++){ var u = used[i]; if (Math.hypot(u.x - x, u.y - y) < u.r + r) return false; } return true; }
   function okGround(x, y, r){ if (x < b[0] + 2 || x > b[2] - 2 || y < b[1] + 2 || y > b[3] - 2) return false; if (poolAt(x, y) || seaAt(x, y)) return false;
     for (var a = 0; a < 6; a++){ var ax = x + Math.cos(a) * r, ay = y + Math.sin(a) * r; if (poolAt(ax, ay) || seaAt(ax, ay)) return false; } return true; }
-  function screensPath(x, y, r, H){   // would a thing r wide and H tall at (x, y) hide much of the path from the camera?
+  /* NOTHING TALL OVER A GYM'S ROOM ON SCREEN (the owner, 2026-10-17: a tree's canopy over the room's wall). A thing r
+     round and H tall at (x, y) stands up the screen by H * CE against the ground's y * SE, so a tree a few feet nearer
+     the camera than the near wall puts its crown over the room, and one just behind the far wall stands over that wall.
+     So a tree, a landmark, a rock or a lamp is kept off the room's whole rect on screen (its floor up to the top of its
+     walls) plus m feet all round, for every gym of every kind. wh is the wall's height as the frame measures the room
+     (gymArtRect). A function, so the secret clearing (placed earlier) asks it too. */
+  function screensGym(x, y, r, H){ if (!GYM) return false; var m = 1.5, wh = 3.4, dx = Math.max(GYM.x0 - x, 0, x - GYM.x0 - GYM.w); if (dx >= r + m) return false;
+    var top = y * SE - (H || 0) * CE, bot = (y + r) * SE, rt = GYM.y0 * SE - wh * CE, rb = (GYM.y0 + GYM.d) * SE;
+    return top < rb + m * SE && bot > rt - m * SE; }
+  P.screensGym = screensGym;
+  function screensPath(x, y, r, H){   // would a thing r wide and H tall at (x, y) hide much of the path (or a gym's room) from the camera?
+    if (screensGym(x, y, r, H)) return true;
     var reach = H * CE / SE * 0.6 + 1;
     for (var i = 0; i < path.length; i++){ var p = path[i]; if (p[1] < y - reach || p[1] > y + 0.5) continue; if (Math.abs(p[0] - x) < r * 0.7 + PW) return true; }
     for (i = 0; i < spur.length; i++){ p = spur[i]; if (p[1] < y - reach || p[1] > y + 0.5) continue; if (Math.abs(p[0] - x) < r + PW + 1.2) return true; }
@@ -471,7 +482,7 @@ function plan(spec){
   }
   // lamps along the path in the worlds that have them
   if (kitOf(th).lm.indexOf('lamps') >= 0 || baseTh(th) === 'neon') for (var ls2 = 14; ls2 < SL - 6; ls2 += 22){ var sd2 = (ls2 / 22 | 0) % 2 ? 1 : -1, lq2 = beside(ls2, sd2, PW + 1.3), lx2 = lq2[0], ly2 = lq2[1];
-    if (free(lx2, ly2, 0.4) && okGround(lx2, ly2, 0.4) && !inClear(lx2, ly2, 1)) place('lamp', lx2, ly2, 0.3, 7); }
+    if (free(lx2, ly2, 0.4) && okGround(lx2, ly2, 0.4) && !inClear(lx2, ly2, 1) && !screensGym(lx2, ly2, 0.6, 7)) place('lamp', lx2, ly2, 0.3, 7); }
 
   // ---- what can be picked up and walked into
   var items = P.items, id = 0;
@@ -1379,7 +1390,7 @@ function up2(pic){ if (!pic || !pic.cv) return pic; var hit = UP2 && UP2.get(pic
 function run(box, P, pic, api){
   if (P.spec.smooth) pic = up2(pic);
   var cv = document.createElement('canvas'); cv.className = 'pp-tcv'; box.appendChild(cv);
-  var ctx = cv.getContext('2d'), alive = true, dpr = Math.min(3, window.devicePixelRatio || 1), W = 0, H = 0, kk = 1, ox = 0, oy = 0, ART = pic.ART || window.RTT_PUTT.ART;
+  var ctx = cv.getContext('2d'), alive = true, dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, kk = 1, ox = 0, oy = 0, ART = pic.ART || window.RTT_PUTT.ART;
   var found = api.found || {}, coinsGot = 0, pick = api.pick, sp = P.spec;
   function size(){ var r = box.getBoundingClientRect(); W = cv.width = Math.max(1, Math.round(r.width * dpr)); H = cv.height = Math.max(1, Math.round(r.height * dpr)); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
     var viewArt = VIEW_FT * SE / ART; kk = Math.max(1, Math.round(H / viewArt)); while (pic.cv.width * kk < W && kk < 40) kk++; kkBase = kk; gFree = null; }
@@ -1533,7 +1544,13 @@ function run(box, P, pic, api){
   function drawFigure(f, x, y, see, who){ if (!f || !f.url){ if (!who || !lastFig[who]) return null; f = lastFig[who].f; }
     var im = img(f.url); if (!im.complete || !im.naturalWidth){ var lf = who && lastFig[who]; if (!lf) return null; f = lf.f; im = lf.im; } else if (who) lastFig[who] = { f:f, im:im };
     var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
-    ctx.save(); ctx.imageSmoothingEnabled = false; if (who === 'me') meGlow(k2); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
+    ctx.save(); ctx.imageSmoothingEnabled = false; if (who === 'me') meGlow(k2); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore();
+    if (!(who === 'me' && calmFloor(x, y))) occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
+  /* IN A CALM ROOM (a kind with calm:true) only a wall can stand in front of him: the near wall, or an inner wall one row
+     nearer (push's rooms). Anywhere else the floor in front is flat, and painting it back over him would paint it over
+     the kind's tiles too. */
+  function calmFloor(x, y){ if (!gym || !gym.in || !GK.calm) return false; var Q = GY.Q, i = gymTile(x, y); if (i < 0) return false; var r = (i / Q.W) | 0, c = i % Q.W;
+    if (r >= Q.H - 2) return false; for (var dc = -1; dc <= 1; dc++){ var c2 = c + dc; if (c2 >= 0 && c2 < Q.W && Q.cell[(r + 1) * Q.W + c2] === '#') return false; } return true; }
   // your aura walks with you: the course golfer's pulse (hvswGlow, 2.4 s) in its colour, k pixels to a figure pixel
   function meGlow(k){ var a = null; try{ a = api.host.aura && api.host.aura(); }catch(e){} if (!a) return;
     var still = false; try{ still = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
@@ -1553,7 +1570,11 @@ function run(box, P, pic, api){
      that shows over the trees, so you can see what it is and where it is from a long way off */
   function drawLoot(t, now){ var L = LOOT[t.k], rows = L.rows, pal = lootPal(t), bc = lootBeam(t), z = pic.zAt(t.x, t.y) + 1.4 + Math.sin(now * 2.2 + t.x) * 0.2, p = scr(t.x, t.y, z),
       s = Math.max(2, Math.round(kk * 1.25)), w = rows[0].length, h = rows.length, shp = scr(t.x, t.y), pu = 0.5 + 0.5 * Math.sin(now * 3 + t.y);
-    if (bc){ var bw = 9 * s, bh = Math.round(H * 0.45), gr = ctx.createLinearGradient(0, shp[1] - bh, 0, shp[1]);
+    /* a loot's beam stands up the screen from it; one in front of a gym's room is cut short at the room's near edge, so
+       no beam ever crosses a room (the golden ball's did) */
+    var bh0 = Math.round(H * 0.45); if (bc && GY){ var GA = gymArtRect(), gx0 = GA.x0 * kk + ox, gx1 = GA.x1 * kk + ox, gy0 = GA.y0 * kk + oy, gy1 = GA.y1 * kk + oy;
+      if (shp[0] + 4.5 * s > gx0 && shp[0] - 4.5 * s < gx1 && shp[1] > gy0) bh0 = Math.max(0, Math.min(bh0, Math.round(shp[1] - gy1))); }
+    if (bc && bh0 > 0){ var bw = 9 * s, bh = bh0, gr = ctx.createLinearGradient(0, shp[1] - bh, 0, shp[1]);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       gr.addColorStop(0, 'rgba(' + bc + ',0)'); gr.addColorStop(0.6, 'rgba(' + bc + ',' + (0.18 + 0.08 * pu).toFixed(2) + ')'); gr.addColorStop(1, 'rgba(' + bc + ',' + (0.4 + 0.15 * pu).toFixed(2) + ')'); ctx.fillStyle = gr; ctx.fillRect(Math.round(shp[0] - bw / 2), Math.round(shp[1] - bh), bw, bh);
       ctx.fillStyle = 'rgba(' + bc + ',' + (0.35 + 0.15 * pu).toFixed(2) + ')'; ctx.fillRect(Math.round(shp[0] - s), Math.round(shp[1] - bh), 2 * s, bh);
@@ -1587,7 +1608,9 @@ function run(box, P, pic, api){
   function drawChest(t, now, frs){ var z = pic.zAt(t.x, t.y), fr = frs || SPR.chest, e = t.openAt != null ? now - t.openAt : (t.done ? 99 : -1), k, ox2 = 0, sy = 1, shp = scr(t.x, t.y), ks = frs ? VAULT_K : 1;
     if (!fr) return;
     if (e < 0){ k = 0; var pu = 0.5 + 0.5 * Math.sin(now * 2.4 + t.x);   // shut: a warm pool of light and a glint now and then
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,70,' + (0.16 + 0.12 * pu).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 13 * kk * ks, 5 * kk * ks, 0, 0, 7); ctx.fill(); ctx.restore(); }
+      // in a calm room (a kind with calm:true) the vault's pool stays on its own tile, so it never washes out the tiles round it
+      var prx = 13 * kk * ks, pry = 5 * kk * ks; if (frs && gym && GK.calm){ prx = Math.abs(scr(t.x + GY.T * 0.5, t.y)[0] - shp[0]); pry = prx * 0.4; }
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,70,' + (0.16 + 0.12 * pu).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], prx, pry, 0, 0, 7); ctx.fill(); ctx.restore(); }
     else if (e < CH_SHAKE){ k = 0; var a = 1 - e / CH_SHAKE; ox2 = Math.round(Math.sin(e * 70) * 1.6 * kk * a); }
     else if (e < CH_SHAKE + CH_LID){ var u = (e - CH_SHAKE) / CH_LID; k = 1 + Math.min(3, Math.floor(u * 4)); sy = 1 - 0.07 * Math.sin(u * Math.PI); }
     else k = 4;
@@ -1600,7 +1623,9 @@ function run(box, P, pic, api){
       ctx.restore(); }
     var p = scr(t.x, t.y, z), w = sp2.cv.width * kk, h = sp2.cv.height * kk, h2 = Math.round(h * sy), rx = Math.round(p[0] - sp2.ax * kk) + ox2, ry = Math.round(p[1] - sp2.ay * kk * sy);
     // a shut chest behind a tree shows through it faintly, the way the golfer does: tucked away, never invisible
-    ctx.drawImage(sp2.cv, rx, ry, w, h2); occlude(rx, ry, w, h2, t.x, t.y, z, e < 0);
+    // (in a calm room nothing stands in front of the vault, and the floor in front of it, which is where the kind draws
+    // its tiles, is not to be painted back over them)
+    ctx.drawImage(sp2.cv, rx, ry, w, h2); if (!(frs && gym && GK.calm)) occlude(rx, ry, w, h2, t.x, t.y, z, e < 0);
     if (e < 0){ var gl = (now * 0.7 + t.x * 0.13) % 1; if (gl < 0.22){ var gu = gl / 0.22, gs = Math.max(2, Math.round(kk)), gp = scr(t.x - 0.9 + gu * 1.8, t.y + 0.9, z + 1.25 + Math.sin(gu * Math.PI) * 0.3);
       ctx.fillStyle = 'rgba(255,255,255,' + Math.sin(gu * Math.PI).toFixed(2) + ')'; ctx.fillRect(Math.round(gp[0] - gs / 2), Math.round(gp[1] - 2 * gs), gs, 4 * gs); ctx.fillRect(Math.round(gp[0] - 2 * gs), Math.round(gp[1] - gs / 2), 4 * gs, gs); } } }
 
@@ -1688,8 +1713,17 @@ function run(box, P, pic, api){
     if (a != null) ctx.globalAlpha = a; for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++){ var ch = rows[yy][flip ? w - 1 - xx : xx]; if (ch === '.') continue; ctx.fillStyle = pal[ch] || pal.o; ctx.fillRect(rx + xx * s, ry + yy * s, s, s); }
     if (a != null) ctx.globalAlpha = 1; return [rx, ry, w * s, h * s]; }
   function shadowAt(x, y, r, a){ var p = scr(x, y); ctx.fillStyle = 'rgba(0,0,0,' + a + ')'; ctx.beginPath(); ctx.ellipse(p[0], p[1], r * kk / ART, r * 0.4 * kk / ART, 0, 0, 7); ctx.fill(); }
+  /* A CALM ROOM (a kind with calm:true, gyms.js KINDS README; every kind on the page asks for it): while he is in its
+     gym, nothing of the world's life is drawn over the room as it stands on the screen. Not what flies, drifts or floats
+     (birds, balloons, puffs, motes), and not what roams the ground or sails past (tumbleweeds, ghosts, ships), so
+     nothing ever sits on a tile. pad is how far round its point the thing reaches, in trail feet, and never less than
+     a bird's width (8 art pixels) round the room's box. A flyer is tested at its body and at its shadow. Out on the trail, and
+     in a kind without it, the world's life is as it was. One test for all of it, here. */
+  function calmHides(x, y, z, pad){ if (!gym || !gym.in || !GK.calm) return false; var A = gymArtRect(), p = scr(x, y, z), e = Math.max(8 * kk, (pad || 1) * kk * CE / ART);
+    return p[0] > A.x0 * kk + ox - e && p[0] < A.x1 * kk + ox + e && p[1] > A.y0 * kk + oy - e && p[1] < A.y1 * kk + oy + e; }
   // what stands on the ground or the sea is sorted in with everything else; what flies is drawn over it all
-  function lifeGround(ds){ ships.forEach(function(s1, i){ var yS = shipY(s1); ds.push({ k:'ship', o:s1, x:shipX(yS), y:yS }); }); tumbles.forEach(function(t){ ds.push({ k:'tumble', o:t, x:t.x, y:t.y }); }); ghosts.forEach(function(q){ ds.push({ k:'ghost', o:q, x:q.x, y:q.y }); }); }
+  function lifeGround(ds){ ships.forEach(function(s1, i){ var yS = shipY(s1), xS = shipX(yS); if (!calmHides(xS, yS, 4, 7)) ds.push({ k:'ship', o:s1, x:xS, y:yS }); });
+    tumbles.forEach(function(t){ if (!calmHides(t.x, t.y, pic.zAt(t.x, t.y) + 1.2, 2)) ds.push({ k:'tumble', o:t, x:t.x, y:t.y }); }); ghosts.forEach(function(q){ if (!calmHides(q.x, q.y, pic.zAt(q.x, q.y) + 2, 2)) ds.push({ k:'ghost', o:q, x:q.x, y:q.y }); }); }
   function shipX(y){ return P.sea.side * Math.min((sp.halfW || HALFW) - 2.6, P.seaEdge(y) + 3); }
   function shipY(s1){ var tt = performance.now() / 1000, u = ((s1.y0 + s1.dir * s1.v * tt) - (P.b[1] - 20)) % s1.span; if (u < 0) u += s1.span; return P.b[1] - 20 + u; }
   function drawLifeThing(t, tsec){ var o = t.o;
@@ -1703,9 +1737,10 @@ function run(box, P, pic, api){
       pixAt(PIX_GHOST, { g:'#eef2ff', o:'#eef2ff' }, t.x, t.y, gz, 0.36, Math.sin(o.ph * 0.5) < 0, 0.5 + 0.15 * Math.sin(tsec * 2 + o.ph)); } }
   function lifeAir(tsec){
     if (reduce) return;
-    puffs.forEach(function(q){ var p = scr(q.x, q.y, q.z), a = 0.38 * (1 - q.t / 4.5); ctx.fillStyle = 'rgba(70,62,66,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], q.r * kk * 1.4, 0, 7); ctx.fill(); });
-    balloons.forEach(function(b2){ var cs = BALLOON_COLS[b2.c], spr = prop('balloon:' + b2.c, balloonFn(cs[0], cs[1]), 6.4, 6.4, 16); shadowAt(b2.x, b2.y, 2.4, 0.1); drawSprite(spr, b2.x, b2.y, b2.z + Math.sin(tsec * 0.8 + b2.ph) * 0.6); });
+    puffs.forEach(function(q){ if (calmHides(q.x, q.y, q.z, q.r * 1.4)) return; var p = scr(q.x, q.y, q.z), a = 0.38 * (1 - q.t / 4.5); ctx.fillStyle = 'rgba(70,62,66,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], q.r * kk * 1.4, 0, 7); ctx.fill(); });
+    balloons.forEach(function(b2){ if (calmHides(b2.x, b2.y, b2.z + 8, 9) || calmHides(b2.x, b2.y, pic.zAt(b2.x, b2.y), 3)) return; var cs = BALLOON_COLS[b2.c], spr = prop('balloon:' + b2.c, balloonFn(cs[0], cs[1]), 6.4, 6.4, 16); shadowAt(b2.x, b2.y, 2.4, 0.1); drawSprite(spr, b2.x, b2.y, b2.z + Math.sin(tsec * 0.8 + b2.ph) * 0.6); });
     motes.forEach(function(m){ var k = m.k, z = m.z + (k === 'leaf' || k === 'petal' || k === 'ash' || k === 'snow' || k === 'ember' || k === 'spark' || k === 'dust' ? 0 : pic.zAt(m.x, m.y));
+      if (calmHides(m.x, m.y, z, 1)) return;
       if (k === 'snow') sq(m.x, m.y, z, 0.3, '#ffffff', 0.95);
       else if (k === 'ash') sq(m.x, m.y, z, 0.3, '#9a9094', 0.8);
       else if (k === 'ember') sq(m.x, m.y, z, 0.32, m.life * 5 % 1 < 0.5 ? '#ffb43a' : '#ff5a1a', Math.max(0, 1 - m.z / 9));
@@ -1714,7 +1749,7 @@ function run(box, P, pic, api){
       else if (k === 'dust') sq(m.x, m.y, z, 0.22, '#f0d8b0', 0.7);
       else if (k === 'firefly'){ var gl = Math.max(0, Math.sin(m.life * 2.2 + m.ph)); if (gl > 0.05){ sq(m.x, m.y, z, 0.9, 'rgba(220,255,120,' + (gl * 0.35).toFixed(2) + ')'); sq(m.x, m.y, z, 0.3, '#f4ff9a', gl); } }
       else if (k === 'butter') pixAt(PIX_BUTTER[(Math.floor(m.life * 9 + m.ph) % 2)], { w:m.c, b:'#2a2228', o:m.c }, m.x, m.y, z, 0.24, false); });
-    flyers.forEach(function(f){ var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' || f.kind === 'ptero' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
+    flyers.forEach(function(f){ if (calmHides(f.x, f.y, pic.zAt(f.x, f.y) + f.z, 2) || calmHides(f.x + 1, f.y + 1, pic.zAt(f.x, f.y), 2)) return; var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' || f.kind === 'ptero' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
       shadowAt(f.x + 1, f.y + 1, 0.9 * C.sz, 0.1); pixAt(fr, C, f.x, f.y, gz + f.z, C.sz * 0.28, f.vx < 0); }); }
 
   // ---- input: a stick under the thumb, or the keys
@@ -1909,14 +1944,17 @@ function run(box, P, pic, api){
      not when the lever is merely out of walking reach for a step), and a moment after the move, off the frame. */
   function gymCheck(){ var s0 = gym.s; gym.stuck = false; gymLit(); if (!gym.in) return;
     if (GK.onFoot && GK.onFoot(gym.G, s0)) return;
-    setTimeout(function(){ if (!alive || gym.s !== s0 || !gym.in) return; gym.stuck = GL.stuck(gym.G, s0); gymLit(); if (gym.stuck) say('You\'re boxed in. Restart puts it all back.', 4200); }, 30); }
+    setTimeout(function(){ if (!alive || gym.s !== s0 || !gym.in) return; gym.stuck = GL.stuck(gym.G, s0); gymLit(); if (gym.stuck) say((GK.tell && GK.tell.stuck) || 'You\'re boxed in. Restart puts it all back.', 4200); }, 30); }
   function gymLit(){ if (gE.restart) cls(gE.restart, 'lit', !!gym.stuck); }
-  function gymPanel(){ if (!gPanel) return; put(gE.moves, 'textContent', gym.n === 1 ? '1 move' : gym.n + ' moves'); gE.undo.disabled = !gym.hist.length; gymLit(); gHot = null; }
+  /* THE COUNTER'S WORD is the kind's own (unit: 'step', 'tap', 'slide', 'stroke'), so the panel counts what he did, not
+     an abstract move. A kind without one counts moves. */
+  function gymUnit(n){ var u = (GK && GK.unit) || 'move'; return n === 1 ? u : u + 's'; }
+  function gymPanel(){ if (!gPanel) return; put(gE.moves, 'textContent', gym.n + ' ' + gymUnit(gym.n)); gE.undo.disabled = !gym.hist.length; gymLit(); gHot = null; }
   function gymEnter(tsec){ gym.in = true; g.vx = g.vy = 0; var q = gT(GY.Q.gate); g.x = q[0]; g.y = q[1]; gym.hist = []; gym.n = 0; gHot = null;
     var st = GL.place(gym.G, gym.s, GY.Q.gate), Gd = gym.G; gym.s = st;
     gym.anim = { ph:[[['me', GY.Q.gate, GY.Q.start, 'walk']]], k:0, t0:tsec, then:function(){ gym.s = GL.place(Gd, gym.s, GY.Q.start); gymCheck(); gymPanel(); } };
     gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
-    if (!gym.told.in){ gym.told.in = 1; sayLater(gym.solved ? 'Solved already. Have a look around.' : gym.inp === 'tap' ? 'Tap a piece to change it. Undo takes one back.' : 'One tile a step. Undo takes one back.', 3600, 0.5); }
+    if (!gym.told.in){ gym.told.in = 1; sayLater(gym.solved ? 'Solved already. Have a look around.' : GK.hello || 'Undo takes one back.', 3600, 0.5); }
     camAim(true); }
   function gymLeave(){ gym.in = false; gym.lock = true; g.x = GY.ax; g.y = GY.ay + 0.4; g.face = [0, 1]; g.aimI = null; g.vx = g.vy = 0; gPanel.hidden = true; ui.classList.remove('ingym'); gym.stuck = false; gymLit();
     padDir = -1; gym.hist = []; gym.pin = null; kk = kkBase; camAim(true); }
@@ -1981,7 +2019,7 @@ function run(box, P, pic, api){
     else if (gym.inp === 'step') for (var d = 0; d < 4; d++){ var seen = {}; GL.step(G, s, d).moves.forEach(function(m){ if (m[0] === 'me' || seen[m[0]]) return; seen[m[0]] = 1; hot[m[1]] = 1; }); }
     else if (gym.inp === 'tap') GL.moves(G, s).forEach(function(i){ var r = GL.tap(G, s, i); if (r.s === s) return; hot[i] = 1;
       if (i === gym.hover) r.moves.forEach(function(m){ over[m[1]] = 1; over[m[2]] = 1; }); });
-    return gHot = { s:s, h:gym.hover, hot:Object.keys(hot).map(Number), over:Object.keys(over).map(Number) }; }
+    return gHot = { s:s, h:gym.hover, own:!!gView.hot, hot:Object.keys(hot).map(Number), over:Object.keys(over).map(Number) }; }
   function gymMarks(tsec, front){ if (gym.anim) return; var H = gymHot(), T = GY.T, pul = reduce ? 0.8 : 0.6 + 0.3 * Math.sin(tsec * 3.2), lw = Math.max(2, Math.round(kk * 1.2));
     ctx.save(); ctx.lineWidth = lw;
     function ringAt(x, y, rr, col, a){ var c0 = scr(x, y, GYM_DECK + 0.02), cx = scr(x + rr, y, GYM_DECK + 0.02), cy = scr(x, y + rr, GYM_DECK + 0.02);

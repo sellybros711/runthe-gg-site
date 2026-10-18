@@ -1104,16 +1104,12 @@ function modeChip(r){
 var DAILY_EPOCH = '2026-09-18';          // day 1
 var DAILYKEY = 'rtf.daily.v1';
 
+/* The Eastern calendar day is economy.js's dayOf, the one clock every daily on
+   this site rolls on. Without it (the file failed to load) the page answers
+   the local date, which is what dayOf answers with no time zone data. */
 function easternISO(now){
-  var d = now || new Date();
-  try {
-    /* en-CA formats as YYYY-MM-DD, which is the one locale that gives the
-       shape wanted without reassembling parts. Tested rather than trusted:
-       anything else falls through to the local date below. */
-    var s = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
-      year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  } catch (e) {}
+  var X = window.RTF_ECON, d = now || new Date();
+  if (X) return X.dayOf(d);
   var p = function(n){ return (n < 10 ? '0' : '') + n; };
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
 }
@@ -5593,18 +5589,11 @@ var BD_FLAME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 4 5
 
 function isPlayDoor(d){ return !!PLAY_DOORS[d]; }
 
-/* The instant an Eastern calendar day starts, as ISO. Asks the zone for its
-   offset at noon that day rather than assuming one, so a clock change is
-   right. Run The Diamond's, for the same reason: the day rolls where the
-   daily's does. */
+/* The instant an Eastern calendar day starts, as ISO: economy.js's dayStart,
+   so the boards' day rolls where the daily's does. */
 function easternStart(iso){
-  var noon = Date.parse(iso + 'T12:00:00Z');
-  var h = 12;
-  try {
-    h = +new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
-      hour: '2-digit', hourCycle: 'h23' }).format(new Date(noon));
-  } catch (e) {}
-  return new Date(Date.parse(iso + 'T00:00:00Z') + (12 - h) * 3600e3).toISOString();
+  var X = window.RTF_ECON;
+  return new Date(X ? X.dayStart(iso) : Date.parse(iso + 'T00:00:00Z')).toISOString();
 }
 function boardSince(win){
   if (win !== 'day' && win !== 'week') return null;
@@ -7541,12 +7530,8 @@ function renderAccount(){
 /* The account row is the one thing on this page that prints text somebody
    else chose, so it is the one place that needs this. A username is validated
    server side and an email is the player's own, and neither is a reason to
-   put an unescaped string into innerHTML. */
-function esc(s){
-  return String(s).replace(/[&<>"']/g, function(c){
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-  });
-}
+   put an unescaped string into innerHTML. The one copy is util.js's. */
+var esc = window.RTF_UTIL.esc;
 
 /* ── THE CABINET ───────────────────────────────────────────────────────────
  *
