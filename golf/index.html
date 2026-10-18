@@ -23671,12 +23671,11 @@ function cutscenesOn(){
   }catch(e){ return false; }
 }
 /* ---- THE PUTTING GREEN (golf/putt/putt.js): a game you PLAY, on the real greens and on themed
-   mini-golf courses. NOT LAUNCHED. The door is drawn for the tester accounts and nobody else, by
-   the same server-attributed username the cutscene gate reads; there is deliberately no local
-   override, because a localStorage flag is a switch any visitor can flip from the console.
-   To LAUNCH: set PUTT_LIVE to true. The module draws nothing until it is opened, so the script tag
-   costs everybody else one cached download and no screen. -------------------------------------- */
-var PUTT_LIVE=false;   // the launch: Putt Putt Tour and the First Tee home go live together
+   mini-golf courses. LIVE for everybody, signed in or not. PUTT_LIVE=false is the kill switch: it puts
+   Putt Putt and the First Tee back to the tester accounts only, read off the same server-attributed
+   username the cutscene gate reads, and everybody else back to the classic home. There is
+   deliberately no local override, because a localStorage flag is a switch any visitor can flip. ---- */
+var PUTT_LIVE=true;    // the launch: Putt Putt Tour and the First Tee home, live together
 const PUTT_API=1;                                         // the putt.js API this page was written against
 var PUTT_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];      // tester accounts (lowercased usernames)
 var PUTT_ALL_ACCESS=['csel8','runnyj','malikwillislover'];   // every Putt Putt hole open for good, whatever the record says (lowercased usernames)

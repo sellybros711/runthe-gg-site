@@ -109,11 +109,12 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
   `hole3d.js` once replaced the site's own painter and froze the whole site.
 - Every unlock check goes through `opened()`, never `tp.lv` directly.
 - `pmerge` only adds, and every server call fails soft (null is no opinion).
-- `PUTT_LIVE` is the launch. There is no localStorage override, on purpose.
-- **The First Tee home rides the same switch.** `ftLive()` is `puttOn()`: Putt Putt testers (and everybody once
-  `PUTT_LIVE` is true) get the First Tee, its hubs (`protour`, `putthub`, `me`) and its phone bar (Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me); everybody else gets
-  the classic home (`scrTitleClassic`, the seven tabs, `tourStepsClassic`, `maybeLoginBonusClassic`). Change the
-  classic home only for a fix: it is retired at launch. The closet (`setup` with `setupEdit`) wears the Me
+- `PUTT_LIVE` is true: Putt Putt and the First Tee are live. False is the kill switch, back to the testers only.
+  There is no localStorage override, on purpose.
+- **The First Tee home rides the same switch.** `ftLive()` is `puttOn()`: everybody (only the Putt Putt testers
+  with the kill switch thrown) gets the First Tee, its hubs (`protour`, `putthub`, `me`) and its phone bar (Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me); everybody else gets
+  the classic home (`scrTitleClassic`, the seven tabs, `tourStepsClassic`, `maybeLoginBonusClassic`). The classic home
+  is kept only as the kill switch's fallback, and is removed once the launch has held. The closet (`setup` with `setupEdit`) wears the Me
   page's dressing room on the same switch (`ftClosetOn`, `body.ftcloset`); a new career's setup does not.
 - The login gift on the First Tee waits to be claimed (`bag_login_pend`, `claimLoginGift`). Never pay it on sight there.
 - **No guide or tour opens by itself** on the First Tee either: its guided tour starts from How to play only.

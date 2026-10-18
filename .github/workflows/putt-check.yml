@@ -4,8 +4,8 @@ name: Putting Green checks
 # and two weeks of Daily Holes are PLAYED by a solver to par, both tours' 108
 # holes are beaten under par by replaying the routes golf/putt/solve.mjs recorded
 # in routes.json (the search itself is an hour, so it is not run here), the real greens
-# are built off the page's own hvGeom in a browser, and the tester gate is
-# asserted shut for everybody else. Every themed hole is drawn in 3D (hole3d.js,
+# are built off the page's own hvGeom in a browser, and the launch switch
+# is asserted on, with its kill switch shutting the door again. Every themed hole is drawn in 3D (hole3d.js,
 # land.js) and its projection checked against the picture. The course golfer has its own workflow
 # (golfer3d-check.yml). Runs locally, unchanged:
 #
