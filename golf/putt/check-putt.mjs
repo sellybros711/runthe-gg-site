@@ -1602,18 +1602,22 @@ if (!args.includes('--no-browser')){
        board yet says so instead of breaking. */
     const db = await pg.evaluate(async () => { const keepSb = sb, keepU = sbUser, keepOn = puttOn, calls = []; let mode = 'rows';
       sb = { rpc:(fn, args) => { calls.push([fn, args]); if (mode === 'down') return Promise.resolve({ error:{ message:'no such function' } });
+        // the post takes a moment to land, as a real one does: the board must not be read before it has
+        if (fn === 'putt_daily_submit') return new Promise(res => setTimeout(() => { calls.push(['posted']); res({ data:true }); }, 120));
         return Promise.resolve({ data: fn === 'putt_daily_board' ? [{ rank:1, username:'one', strokes:1, par:3, ms:5000, look:null, mine:false, players:2 }, { rank:2, username:'me', strokes:2, par:3, ms:9000, look:null, mine:true, players:2 }] : true }); } };
       sbUser = { id:'dchk' }; puttOn = () => true; const T = window.RTT_PUTT, S = T._state(), k = String(todayKey()), day = /^\d{8}$/.test(k) ? k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8) : k;
       const clear = () => Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).forEach(k0 => { const s0 = JSON.parse(localStorage.getItem(k0)); s0.daily = {}; localStorage.setItem(k0, JSON.stringify(s0)); });
       const r = {}; clear(); S.round = { mode:'pdaily', day:day }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       const sub = calls.filter(c => c[0] === 'putt_daily_submit'); r.posted = sub.length === 1 && sub[0][1].p_day === day && sub[0][1].p_strokes === 2 && !!sub[0][1].p_look;
       r.rows = S.ov.querySelectorAll('.pp-drow').length === 2 && !!S.ov.querySelector('.pp-drow.me');
+      const ix = n => calls.findIndex(c => c[0] === n); r.after = ix('posted') >= 0 && ix('putt_daily_board') > ix('posted');
       clear(); calls.length = 0; const y = new Date(Date.parse(day + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10); S.round = { mode:'pdaily', day:y }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       r.lateQuiet = !calls.some(c => c[0] === 'putt_daily_submit');
       clear(); mode = 'down'; S.round = { mode:'pdaily', day:day }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       r.down = /on its way/.test((S.ov.querySelector('[data-rows]') || {}).textContent || '');
       clear(); sb = keepSb; sbUser = keepU; puttOn = keepOn; return r; });
     claim(db.posted && db.rows, `a Daily Hole played on its day posts to the board once, with the golfer's look, and the card shows the day's rows (${JSON.stringify(db)})`);
+    claim(db.after, 'the board is read once the round has landed, so the player is on it (it was read alongside the post and said nobody had posted)');
     claim(db.lateQuiet, 'a Daily Hole played late from the calendar never posts');
     claim(db.down, 'a server without the board yet says it is on its way, and nothing breaks');
     // THE LOCKED GATE IS PART OF ITS FENCE: built to the gap and drawn at the land's size on a smoothed walk (it once stood at half)

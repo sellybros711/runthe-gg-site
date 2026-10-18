@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=104"></script>
+<script defer src="putt/putt.js?v=105"></script>
 <script defer src="putt/land.js?v=13"></script>
 <script defer src="putt/hole3d.js?v=18"></script>
 <script defer src="putt/gyms.js?v=4"></script>
@@ -15734,7 +15734,10 @@ const FT_PLATE_V=2;              // golf/home/putt-<theme>-*.jpg (golf/build-hom
 const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage'];
 // THE SWITCH. The First Tee goes live with Putt Putt Tour, on the same flag (PUTT_LIVE) and for the same testers
 // before it (PUTT_TESTERS): owner, 2026-10-15, everything goes live at once. Everybody else keeps the classic home.
-function ftLive(){ try{ return puttOn(); }catch(e){ return false; } }
+// The First Tee does not wait for putt.js: with PUTT_LIVE on, the very first screen is the First Tee (its Putt Putt
+// side is drawn once the module has run), so the classic home is never painted, not even for a frame (the owner,
+// 2026-10-18: "I don't want the old ones to be visible"). With the kill switch thrown it is the testers' again.
+function ftLive(){ try{ return PUTT_LIVE===true || puttOn(); }catch(e){ return false; } }
 function ftOn(){ return FT_SCREENS.includes(S.screen) && ftLive(); }
 function ftClosetOn(){ try{ return S.screen==='setup' && !!S.setupEdit && ftLive(); }catch(e){ return false; } }
 function ftDesk(){ try{ return matchMedia('(min-width: 900px) and (min-height: 560px)').matches; }catch(e){ return false; } }
@@ -44954,9 +44957,14 @@ render();
 // Milestones 3 & 4: the first screen is built, then the browser has actually PAINTED it (two frames
 // out, so the canvases/pixel art on it have drawn). Only then does the loading screen step aside -
 // so the player never watches the page assemble itself.
+// The deferred modules (putt.js and the 3D golfer) run only after this script, so the screen drawn above is
+// missing their parts. The loading screen therefore waits for them (DOMContentLoaded fires once every deferred
+// script has run), draws the home again with them in, and only then steps aside.
 try{
   window.rttBoot && rttBoot.step('Setting the pins');
-  if(window.rttBoot) requestAnimationFrame(()=>requestAnimationFrame(()=>{ try{ rttBoot.done(); }catch(e){} }));
+  const bootOut=()=>{ if(window.rttBoot) requestAnimationFrame(()=>requestAnimationFrame(()=>{ try{ rttBoot.done(); }catch(e){} })); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ try{ if(!S.overlay) render(); }catch(e){} bootOut(); },{once:true});
+  else bootOut();
 }catch(e){ try{ window.rttBoot && rttBoot.done(); }catch(e2){} }
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
 </script>
