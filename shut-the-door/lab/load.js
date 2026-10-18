@@ -15,9 +15,9 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 /* stamp:begin (pipeline/stamp.mjs rewrites this block; do not edit by hand) */
 export const ASSETS = {
-  'batter.glb': '177e387fd7',
+  'batter.glb': '4c39b11178',
   'bio.json': '3ce6273c86',
-  'catcher.glb': 'e6176f0da9',
+  'catcher.glb': '3b5c36def3',
   'env_256.hdr': 'b069d60e9b',
   'pitch.json': 'da06753b1a',
   'poster-desktop.webp': '179185beca',

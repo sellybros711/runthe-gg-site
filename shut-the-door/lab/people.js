@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import * as M from './materials.js?v=2';
-import * as G from './gear3d.js?v=1';
+import * as G from './gear3d.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=2';
@@ -47,6 +47,7 @@ export function kitFor(facts, side) {
 
 /** Put a kit on a person: the uniform's trim mask coloured, the number drawn on the back. */
 export function dress(p, kit, numberText, weave) {
+  p.kit = kit;
   for (const o of p.meshes) {
     const part = o.userData.part;
     if (!part) continue;
@@ -316,7 +317,9 @@ export class People {
     b.lefty = lefty;
     b.clip = 'swing';
     b.take = this.mode === 'take';
-    fitOnHead(b, G.battingHelmet(NAVY, lefty ? -1 : 1), { drop: 0.105, fwd: 0.012, tilt: 0.06 });
+    // the helmet in his club's colour; the jaw guard where the batter's appearance says he wears one
+    for (const m of b.meshes) if (m.material.name === 'hair') m.visible = false; // under the helmet
+    fitOnHead(b, G.battingHelmet(b.kit ? b.kit.trim : NAVY, lefty ? -1 : 1, { jaw: !!this.facts.batter.jawGuard }), { drop: 0.105, fwd: 0.012, tilt: 0.06 });
     b.bat = G.bat();
     this.scene.add(b.bat);
     // grips: bottom hand near the knob. A left handed hitter's bottom hand is his right.

@@ -53,44 +53,82 @@ function skullShell(rx, ry, rz, edge, mat, seg = 48) {
   return m;
 }
 
-/** Batting helmet. Ear flap on one side: flapSide -1 = the wearer's right (a left handed batter's
-    front ear, the one toward the pitcher), +1 = his left. Modelled for a 0.155 m wide head. */
-export function battingHelmet(color, flapSide) {
-  const mat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.42, clearcoat: 0.45, clearcoatRoughness: 0.2 });
+/** Batting helmet: a hard glossy shell with vent holes over the crown, a short stiff bill, one ear
+    flap on the side toward the pitcher (flapSide -1 = the wearer's right: a left handed batter's
+    front ear), with its ear hole, and, when jaw is set, the jaw guard that some hitters wear on the
+    flap. Matte black padding inside. Modelled for a 0.155 m wide head, facing +z. */
+export function battingHelmet(color, flapSide, opts = {}) {
+  const mat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x0b0b0c, roughness: 0.9 });
   const g = new THREE.Group();
   const D = Math.PI / 180;
+  const RX = 0.106, RY = 0.112, RZ = 0.124;
+  const flapAt = (phi) => (flapSide < 0 ? phi < 0 : phi > 0);
   // the lower edge: brow at the front, over the ears, low at the back of the skull; the flap side
-  // comes down over the ear and the jaw hinge
+  // comes down over the ear to the jaw hinge, the other side is cut out round the ear
   const edge = (phi) => {
-    const a = Math.abs(phi), side = Math.sign(phi) === Math.sign(-flapSide) ? 0 : 1; // x>0 is his left
-    const flapHere = (flapSide < 0 ? phi < 0 : phi > 0);
+    const a = Math.abs(phi);
     let t = 78 * D + (a / Math.PI) * 42 * D;                 // 78 deg at the brow, 120 at the back
-    const ear = Math.exp(-Math.pow((a - 95 * D) / (28 * D), 2));
-    if (flapHere) t += ear * 34 * D; else t -= ear * 6 * D;  // the flap; an ear cut-out on the other side
+    const ear = Math.exp(-Math.pow((a - 95 * D) / (30 * D), 2));
+    if (flapAt(phi)) t += ear * 38 * D; else t -= ear * 6 * D;
     return t;
   };
-  g.add(skullShell(0.106, 0.112, 0.124, edge, mat));
-  const inner = skullShell(0.1, 0.105, 0.117, (phi) => edge(phi) - 0.02, new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.95, side: THREE.BackSide }));
-  g.add(inner);
+  g.add(skullShell(RX, RY, RZ, edge, mat));
+  g.add(skullShell(RX - 0.007, RY - 0.007, RZ - 0.007, (phi) => edge(phi) - 0.02, new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.95, side: THREE.BackSide })));
+  const onShell = (phi, th, k = 1.0) => new THREE.Vector3(Math.sin(phi) * Math.sin(th) * RX * k, Math.cos(th) * RY * k, Math.cos(phi) * Math.sin(th) * RZ * k);
+  // vents: dark slots sunk into the crown (two over the brow, two behind, one each side at the back)
+  // each a dark slot lying on the shell, long along the crown's front to back line
+  for (const [phDeg, thDeg, len, wid] of [[-14, 24, 0.034, 0.008], [14, 24, 0.034, 0.008], [-22, 58, 0.03, 0.007], [22, 58, 0.03, 0.007], [-160, 52, 0.026, 0.007], [160, 52, 0.026, 0.007]]) {
+    const ph = phDeg * D, th = thDeg * D;
+    const at = onShell(ph, th, 1.002), ahead = onShell(ph, th - 0.05, 1.002);
+    const n = at.clone().normalize(), along = ahead.sub(at).normalize();
+    const side = new THREE.Vector3().crossVectors(n, along).normalize();
+    const v = new THREE.Mesh(new THREE.CircleGeometry(1, 16), dark);
+    v.matrix.makeBasis(side.multiplyScalar(wid / 2), along.multiplyScalar(len / 2), n).setPosition(at);
+    v.matrixAutoUpdate = false;
+    g.add(v);
+  }
+  // the ear hole in the flap, and the flap's rubber edge
+  const earPhi = (flapSide < 0 ? -1 : 1) * 95 * D;
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16), dark);
+  const hp = onShell(earPhi, 106 * D, 1.004);
+  hole.position.copy(hp); hole.lookAt(hp.clone().add(new THREE.Vector3(Math.sin(earPhi), 0, Math.cos(earPhi)))); g.add(hole);
   // the bill: short, stiff, a little down
   const pts = [];
   for (let i = 0; i <= 20; i++) {
     const phi = (-52 + (104 * i) / 20) * D;
     const th = edge(phi);
     const r = Math.sin(th);
-    const base = new THREE.Vector3(Math.sin(phi) * r * 0.106, Math.cos(th) * 0.112, Math.cos(phi) * r * 0.124);
+    const base = new THREE.Vector3(Math.sin(phi) * r * RX, Math.cos(th) * RY, Math.cos(phi) * r * RZ);
     const out = new THREE.Vector3(Math.sin(phi), 0, Math.cos(phi)).multiplyScalar(0.05 * Math.cos(phi * 0.9));
     pts.push([base, base.clone().add(out).add(new THREE.Vector3(0, -0.012 * Math.cos(phi), 0))]);
   }
+  g.add(strip(pts, mat));
+  if (opts.jaw) {
+    // the jaw guard: a band from the flap's lower front edge forward along the jaw toward the chin
+    const sx = flapSide < 0 ? -1 : 1, jp = [];
+    for (let i = 0; i <= 14; i++) {
+      const k = i / 14;
+      const x = sx * (0.098 - 0.05 * k * k), y = -0.075 - 0.035 * k, z = 0.02 + 0.105 * k;
+      jp.push([new THREE.Vector3(x, y + 0.022, z), new THREE.Vector3(x * 0.99, y - 0.012, z)]);
+    }
+    g.add(strip(jp, mat));
+  }
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+
+/** A band of quads between pairs of points (a bill, a guard), double sided. */
+function strip(pts, mat) {
   const pos = [], idx = [];
   for (const [a, b] of pts) pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
   for (let i = 0; i < pts.length - 1; i++) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
   const bg = new THREE.BufferGeometry();
   bg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); bg.setIndex(idx); bg.computeVertexNormals();
-  const bill = new THREE.Mesh(bg, new THREE.MeshPhysicalMaterial({ color, roughness: 0.42, clearcoat: 0.45, side: THREE.DoubleSide }));
-  bill.castShadow = true;
-  g.add(bill);
-  return g;
+  const m2 = mat.clone(); m2.side = THREE.DoubleSide;
+  const mesh = new THREE.Mesh(bg, m2);
+  mesh.castShadow = true;
+  return mesh;
 }
 
 /** A ball cap: a six panel crown (higher at the front), a curved brim. Modelled for a 0.155 m wide
@@ -224,16 +262,30 @@ export function chestProtector(color, w = 0.38, h = 0.56) {
   return g;
 }
 
+/** The umpire's traditional mask: a black wire cage on a frame, tan leather pads round the face and
+    a chin pad, the harness over the head. Worn under his cap. Facing +z. */
 export function umpireMask() {
   const metal = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.5, metalness: 0.5 });
-  const pad = new THREE.MeshStandardMaterial({ color: 0x2a211c, roughness: 0.85 });
+  const pad = new THREE.MeshStandardMaterial({ color: 0x6b4a32, roughness: 0.8 });
+  const strap = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
   const g = new THREE.Group();
   const m = cage(metal, 0.08, 0.125, 0.05);
   m.position.set(0, -0.05, 0.085);
   g.add(m);
-  const p = shell(0.09, 0.11, 0.05, Math.PI * 0.5, pad, -Math.PI * 0.5, Math.PI);
-  p.rotation.x = Math.PI / 2; p.position.set(0, -0.05, 0.09); p.scale.set(1, 0.4, 1);
-  g.add(p);
+  // the frame: a loop round the cage's edge
+  const frame = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 6, 28), metal);
+  frame.scale.set(0.082, 0.095, 0.08); frame.position.set(0, -0.05, 0.1); g.add(frame);
+  // pads: a horseshoe of leather inside the frame, a chin pad below
+  const p = new THREE.Mesh(new THREE.TorusGeometry(1, 0.17, 8, 24, Math.PI * 1.6), pad);
+  p.rotation.z = -Math.PI * 0.3 - Math.PI / 2; p.scale.set(0.07, 0.085, 0.05); p.position.set(0, -0.045, 0.078); g.add(p);
+  const chin = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), pad);
+  chin.scale.set(0.045, 0.02, 0.025); chin.position.set(0, -0.135, 0.075); g.add(chin);
+  // the harness: straps from the frame's sides back over the head
+  for (const sx of [-1, 1]) {
+    const c = new THREE.CatmullRomCurve3([new THREE.Vector3(sx * 0.082, -0.02, 0.07), new THREE.Vector3(sx * 0.1, 0.01, 0.0), new THREE.Vector3(sx * 0.085, 0.03, -0.08)]);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(c, 8, 0.008, 4), strap));
+  }
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
 

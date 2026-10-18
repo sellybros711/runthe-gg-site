@@ -13,8 +13,8 @@ import * as THREE from 'three';
 import { preload } from './load.js?v=2';
 import { buildField } from './field.js?v=2';
 import { buildStands } from './stands.js?v=2';
-import { People } from './people.js?v=6';
-import { Pitch } from './pitch.js?v=1';
+import { People } from './people.js?v=7';
+import { Pitch } from './pitch.js?v=2';
 import { FT, P, smooth } from './units.js?v=1';
 
 const Q = new URLSearchParams(location.search);

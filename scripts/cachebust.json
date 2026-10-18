@@ -2927,8 +2927,8 @@
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "6",
-      "sha": "e371139d45ec0900"
+      "v": "7",
+      "sha": "f7cc8ea7661d029f"
     }
   },
   "soccer/index.html": {
@@ -3044,7 +3044,7 @@
   "shut-the-door/lab/scene.js": {
     "load.js": {
       "v": "2",
-      "sha": "8b202fc548a12219"
+      "sha": "b98ce0cce24dbda3"
     },
     "field.js": {
       "v": "2",
@@ -3055,12 +3055,12 @@
       "sha": "e773d6b22fe8361a"
     },
     "people.js": {
-      "v": "6",
-      "sha": "490a700441705239"
+      "v": "7",
+      "sha": "527ba93a950ae437"
     },
     "pitch.js": {
-      "v": "1",
-      "sha": "13ca119f71763485"
+      "v": "2",
+      "sha": "43e8e23ddcfa886b"
     },
     "units.js": {
       "v": "1",
@@ -3108,7 +3108,7 @@
     },
     "load.js": {
       "v": "2",
-      "sha": "8b202fc548a12219"
+      "sha": "b98ce0cce24dbda3"
     }
   },
   "shut-the-door/lab/stands.js": {
@@ -3122,7 +3122,7 @@
     },
     "load.js": {
       "v": "2",
-      "sha": "8b202fc548a12219"
+      "sha": "b98ce0cce24dbda3"
     }
   },
   "shut-the-door/lab/people.js": {
@@ -3131,8 +3131,8 @@
       "sha": "d2cdb436fb1dbab8"
     },
     "gear3d.js": {
-      "v": "1",
-      "sha": "67974bdea4708def"
+      "v": "2",
+      "sha": "c9b7b3768467a326"
     },
     "rig.js": {
       "v": "1",
@@ -3144,7 +3144,7 @@
     },
     "load.js": {
       "v": "2",
-      "sha": "8b202fc548a12219"
+      "sha": "b98ce0cce24dbda3"
     },
     "motion.js": {
       "v": "4",
@@ -3157,8 +3157,8 @@
       "sha": "e771dbef0b67350e"
     },
     "gear3d.js": {
-      "v": "1",
-      "sha": "67974bdea4708def"
+      "v": "2",
+      "sha": "c9b7b3768467a326"
     }
   },
   "wrestling/ring3d/arena.js": {

@@ -102,6 +102,11 @@ class Garment:
             for a, b in zip(ids, ids[1:] + ids[:1]):
                 nb.setdefault(a, set()).add(b); nb.setdefault(b, set()).add(a)
         rimset = set(self.rim.tolist())
+        rn = {}
+        for (a, b), k in cnt.items():
+            if k == 1:
+                rn.setdefault(a, []).append(b); rn.setdefault(b, []).append(a)
+        self.rim_nb = {i: v for i, v in rn.items() if len(v) == 2}
         self.inner = [i for i in used if i not in rimset]
         self.inner_nb = [np.array(sorted(nb[i])) for i in self.inner]
 
@@ -115,6 +120,11 @@ class Garment:
             return G + N * extra
         P, N = self.cut.geom(V)
         G = P + N * self.ease[:, None]
+        # every opening relaxed along itself: a rim cut along the mesh's faces is a staircase
+        if self.rim_nb:
+            ids = np.array(list(self.rim_nb.keys())); nb = np.array(list(self.rim_nb.values()))
+            for _ in range(8):
+                G[ids] = G[ids] * 0.5 + (G[nb[:, 0]] + G[nb[:, 1]]) * 0.25
         if getattr(self, 'snap', None):
             self.snap(G)
         inner = np.array(self.inner, dtype=np.int64)
@@ -303,7 +313,8 @@ def garments(h, who):
         if not len(vrim): return
         half = (G[vrim, 2] - (vtop - 0.085)) * 0.75 + 0.012
         G[vrim, 0] = np.sign(G[vrim, 0] + 1e-9) * np.maximum(half, 0.004)
-    jg.snap = snap
+    # (snapping only the rim to the V left the next ring of faces folded into a saw tooth; the rim
+    # relaxed along itself, as every opening is, makes the cleaner V)
     out['jersey'] = jg
 
     # the number: a patch of the jersey's back, a millimetre proud of it, with its own flat UVs (the

@@ -8,7 +8,7 @@
  */
 import * as THREE from 'three';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import * as G from './gear3d.js?v=1';
+import * as G from './gear3d.js?v=2';
 
 const G_FT = 32.17;
 export const T_RELEASE = 0.8;
