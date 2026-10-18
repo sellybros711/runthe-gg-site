@@ -189,6 +189,30 @@ var DIG35 = {
   9: ['111', '101', '111', '001', '111'],
 };
 var CX = 22;
+/* PRINTS: what an art key's print:NAME lays on cloth, one character a print
+   cell: 1 the print's ink, 2 its shadow ink. Invented motifs only, never a
+   real club's or brand's mark. A cell is laid at least a fine pixel wide, so
+   at the closet's trace a print is a shape and on court a patch of colour. */
+var PRINTS = {
+  star: ['..1..', '.111.', '11111', '.111.', '1...1'],
+  ball: ['.111.', '1.1.1', '11111', '1.1.1', '.111.'],
+  crown: ['1.1.1', '11111', '11111', '.222.'],
+  pumpkin: ['1...1', '11.11', '.....', '1.1.1', '.111.'],
+  heart: ['.11.11.', '1221111', '1211111', '.11111.', '..111..', '...1...'],
+  ghost: ['.111.', '11111', '1.1.1', '11111', '11111', '1.1.1'],
+  owl: ['1...1', '11111', '2.1.2', '11111', '.111.'],
+  bolt: ['..11', '.11.', '1111', '.11.', '11..'],
+  crest: ['11111', '12221', '11211', '.111.', '..1..'],
+  wings: ['11...11', '.11.11.', '..111..', '...1...'],
+};
+function printAt(name, u, v){
+  var P = PRINTS[name]; if (!P || u < 0 || v < 0) return 0;
+  var r = P[Math.floor(v)], ch = r ? r[Math.floor(u)] : null;
+  return ch === '1' ? 1 : ch === '2' ? 2 : 0;
+}
+/* prints drawn big across the chest; the rest sit small on the near chest */
+var PRINT_BIG = { pumpkin: 1, ghost: 1, heart: 1, owl: 1 };
+function printSize(name){ var P = PRINTS[name]; return P ? [P[0].length, P.length] : [0, 0]; }
 
 /* ── each club's jersey design ──
    Keyed by the club's own two colours, which is all a caller hands the
@@ -237,6 +261,20 @@ function ramp(hex, o){
   r = o.skin ? [dk(0.30, 0.22), dk(0.13, 0.10), hex, lt(0.12, 0.10), lt(0.26, 0.20)]
     : [sat(dk(0.34, 0.20), 1.08), sat(dk(0.15, 0.10), 1.05), hex, lt(0.16, 0.10), lt(0.34, 0.24)];
   if (Object.keys(RAMPS).length > 600) RAMPS = {};
+  RAMPS[key] = r;
+  return r;
+}
+/* WEAR'S PALETTE (the item pass): a worn colour keeps its own hue into the
+   shadow. The shared ramp drifts every shadow toward one cool navy, which is
+   right for skin and the uniform's light, but it made a black, a navy, a
+   charcoal and a dark brown meet in the folds, so pieces in those colours
+   could not be told apart (review 9). The uniform keeps ramp(). */
+function wramp(hex){
+  var key = hex + '|w', r = RAMPS[key];
+  if (r) return r;
+  var dk = function(a, c){ return mix(mix(hex, '#000000', a), '#2a2a68', c); }, lt = function(a, w){ return mix(mix(hex, '#ffffff', a), '#fff7dc', w); };
+  var sat = function(c, k){ var t = rgbHsl(rgb(c)); return hslHex(t[0], Math.min(1, t[1] * k), t[2]); };
+  r = [sat(dk(0.36, 0.05), 1.12), sat(dk(0.17, 0.025), 1.06), hex, lt(0.16, 0.10), lt(0.34, 0.24)];
   RAMPS[key] = r;
   return r;
 }
@@ -492,7 +530,7 @@ var TOPS = {
   tee: { neck: 'crew', sleeve: 1, infl: 0.3, hem: 3.6 },
   longsleeve: { neck: 'crew', sleeve: 2, infl: 0.32, hem: 3.6 },
   tank: { neck: 'scoop', sleeve: 0, infl: 0.25, hem: 3.8 },
-  jersey: { neck: 'vee', sleeve: 0, infl: 0.6, hem: 5.0 },
+  jersey: { neck: 'crew', sleeve: 0, infl: 0.6, hem: 5.0 },
   polo: { neck: 'collar', sleeve: 1, infl: 0.32, hem: 3.6 },
   buttonup: { neck: 'collar', sleeve: 2, infl: 0.38, hem: 4.0 },
   flannel: { neck: 'collar', sleeve: 2, infl: 0.45, hem: 4.0 },
@@ -511,6 +549,33 @@ var OUTERS = {
   trench: { open: 1, infl: 0.85, hem: 6.4, lapel: 1, long: 1 },
   track: { open: 0, infl: 0.7, hem: 4.2, stripe: 1 },
 };
+
+/* WHAT EACH THING IS MADE OF (the item pass, R4). Cloth is matte: the light
+   never gives it the top tone, so a tee does not shine like a shoe. Gloss is
+   for leather, metal, satin, patent and plastic, and how hard it shines is
+   the material's, read here by paint and nowhere else (a part's own gloss
+   flag is ignored for wear). gloss 1 catches the light only where a surface
+   faces it squarely; 2 is a hard highlight. Satin has a sheen as well: a
+   streak of light down the side turned toward the light, so a satin sleeve
+   or stripe shines even standing upright. A durag's silk keeps its light in
+   the streaks drawn on it, or it reads as a helmet. */
+var MATS = {
+  cloth: { gloss: 0 }, fleece: { gloss: 0 }, knit: { gloss: 0 }, denim: { gloss: 0 }, mesh: { gloss: 0 }, terry: { gloss: 0 },
+  velvet: { gloss: 0 }, suede: { gloss: 0 }, rubber: { gloss: 0 }, paper: { gloss: 0 },
+  leather: { gloss: 1 }, plastic: { gloss: 1 },
+  satin: { gloss: 2, sheen: 1 }, silk: { gloss: 2 }, patent: { gloss: 2 }, metal: { gloss: 2 }, glass: { gloss: 2 },
+};
+/* each shape's own material; an item's mat: key overrides it */
+var SHAPE_MAT = {
+  top: 'cloth', 'top:hoodie': 'fleece', 'top:knit': 'knit', 'top:turtleneck': 'knit', 'top:jersey': 'mesh',
+  outer: 'cloth', 'outer:denim': 'denim', bottom: 'cloth', 'bottom:jeans': 'denim', 'bottom:sweats': 'fleece',
+  shoes: 'leather', 'shoes:runner': 'mesh', 'shoes:slide': 'rubber', hat: 'cloth', 'hat:beanie': 'knit', 'hat:durag': 'silk',
+  eyes: 'plastic', chain: 'metal', socks: 'knit', watch: 'leather', bag: 'cloth', phones: 'plastic', held: 'plastic', 'held:coffee': 'paper',
+  band: 'terry', wrist: 'terry', tape: 'cloth', sleeveL: 'cloth', sleeveR: 'cloth', tights: 'cloth', knee: 'cloth', ankle: 'cloth',
+  csocks: 'knit', under: 'cloth', goggles: 'plastic', guard: 'plastic', cshoes: 'leather', 'cshoes:runner': 'mesh',
+};
+function artIn(it, p){ if (!it || !it.a) return null; for (var i = 0; i < it.a.length; i++) { var t = it.a[i]; if (t === p) return true; if (t.indexOf(p + ':') === 0) return t.slice(p.length + 1); } return null; }
+function wearMat(slot, it){ var m = artIn(it, 'mat'); if (m && MATS[m]) return m; return SHAPE_MAT[slot + ':' + (it && it.k)] || SHAPE_MAT[slot] || 'cloth'; }
 
 /* ── the model for one pose and one look ── */
 function build(L, o, J){
@@ -552,41 +617,86 @@ function build(L, o, J){
     }
     /* the shoe: a rounded toe box on a flat sole */
     var a = G.ank, fx = a[0] + s * 0.3, fy = a[1] + 2.4, fz = a[2] + 1.3, fl = a[1] + 4.0;
-    var shoeF, shoeM, sk = ST && ST.shoes ? ST.shoes.k : CW && CW.cshoes ? CW.cshoes.k : '';
+    var shoeF, shoeM, sk = ST && ST.shoes ? ST.shoes.k : CW && CW.cshoes ? CW.cshoes.k : '', SH = ST && ST.shoes ? ST.shoes : CW && CW.cshoes ? CW.cshoes : null;
+    var shTrim = artIn(SH, 'trim'), shPat = artIn(SH, 'pat'), shSig = artIn(SH, 'sig');
+    /* a signature in metal, or in the accent when the shoe is gold itself */
+    var sigK = SH && contrast(SH.c[0] || '#ffffff', '#e3a92f') < 1.5 ? 'trim' : 'gold';
     if (sk === 'boot') {
       /* a work boot: a lugged sole, a round toe, a shaft to above the ankle,
-         laced through hooks, with a padded collar */
+         laced up the front, with a padded collar. R5: the lugs are one line
+         and the laces a strip with its crossings, not alternating pixels. */
       var bSole = rbox([fx, fl - 0.6, fz + 0.1], [2.25, 0.65, 3.75], 0.4), bToe = ell([fx, fl - 1.6, fz + 1.5], [2.1, 1.5, 2.5]), bShaft = cone([fx, fl - 2.0, fz - 0.9], [fx, a[1] - 2.4, a[2] - 0.2], 2.15, 2.0);
       shoeF = function(p){ return Math.min(bSole(p), smin(bToe(p), bShaft(p), 1.2)); };
       shoeM = function(p){ var ly = p[1] - a[1], dz = p[2] - fz, dx = Math.abs(p[0] - fx);
-        if (ly > 2.75) return Math.floor(p[2] * 1.6) % 2 ? 'sole' : { m: 'sole', dt: -1 };
-        if (ly < -1.6) return 'trim';
-        if (dx < 0.6 && dz > -1.2 && ly < 1.8) return Math.floor((ly + 4) * 1.6) % 2 ? { m: 'lace', t: 3 } : { m: 'trim', t: 2 };
+        if (ly > 2.75) return ly > 3.4 ? { m: 'sole', dt: -1 } : 'sole';
+        if (ly < -1.6) return shTrim ? { m: 'trim', dt: 1 } : 'trim';
+        if (dx < 0.7 && dz > -1.2 && ly < 1.8) return Math.abs(((ly + 4) * 0.8) % 1 - 0.5) < 0.22 ? { m: 'trim', t: 1 } : { m: 'lace', t: 3 };
         if (Math.abs(ly - 2.5) < 0.25) return { m: 'shoe', dt: -1 };
+        if (shPat === 'split' && dz > 1.2) return 'trim';
         return 'shoe'; };
     } else if (sk === 'slide') {
-      /* a slide: a footbed and one wide strap over the instep, the foot (or a sock) showing */
-      var fb = rbox([fx, fl - 0.4, fz + 0.15], [2.05, 0.42, 3.6], 0.35), strap = rbox([fx, fl - 1.25, fz + 0.5], [2.2, 0.95, 1.5], 0.6);
-      var footF = smf(ell([fx, fl - 1.15, fz + 1.2], [1.7, 0.95, 2.6]), cone([fx, fl - 1.0, fz - 1.4], [a[0], a[1] - 0.4, a[2]], 1.55, 1.3), 1.0);
+      /* a slide: a thick footbed and one wide strap over the instep, the foot
+         (or a sock) showing; the strap carries a band in the accent */
+      var fb = rbox([fx, fl - 0.5, fz + 0.15], [2.15, 0.55, 3.7], 0.35), strap = rbox([fx, fl - 1.4, fz + 0.6], [2.35, 1.05, 1.7], 0.6);
+      var footF = smf(ell([fx, fl - 1.25, fz + 1.2], [1.7, 0.95, 2.6]), cone([fx, fl - 1.1, fz - 1.4], [a[0], a[1] - 0.4, a[2]], 1.55, 1.3), 1.0);
       shoeF = function(p){ return Math.min(fb(p), Math.min(strap(p), footF(p))); };
       shoeM = function(p){ var ly = p[1] - a[1];
-        if (ly > 3.55) return 'sole';
-        if (strap(p) < 0.05) return Math.abs(p[2] - (fz + 0.5)) < 0.35 ? 'trim' : 'shoe';
+        if (ly > 3.35) return ly > 3.75 ? { m: 'sole', dt: -1 } : 'sole';
+        if (strap(p) < 0.05) return Math.abs(p[2] - (fz + 0.6)) < (shTrim ? 0.75 : 0.45) ? 'trim' : 'shoe';
         return ST.socks ? 'sock' : 'skin'; };
     } else if (sk === 'runner') {
-      /* a runner: low, a thick foam midsole, a mesh upper and a sweep of colour */
+      /* a runner: low, a thick foam midsole, a smooth upper and a sweep of colour (R5: no mesh dither) */
       var rSole = rbox([fx, fl - 0.7, fz + 0.1], [2.1, 0.75, 3.7], 0.6), rToe = ell([fx, fl - 1.7, fz + 1.4], [1.95, 1.25, 2.5]), rHeel = rbox([fx, fl - 2.2, fz - 1.0], [1.9, 1.5, 2.2], 1.0);
       shoeF = function(p){ return Math.min(rSole(p), smin(rToe(p), rHeel(p), 1.3)); };
       shoeM = function(p){ var ly = p[1] - a[1], dz = p[2] - fz, dx = Math.abs(p[0] - fx);
         if (ly > 3.65) return { m: 'sole', dt: -1 };
-        if (ly > 2.6) return 'sole';
-        if (dx < 0.5 && dz > -0.6 && dz < 1.8) return Math.floor((dz + 3) * 1.6) % 2 ? { m: 'lace', t: 4 } : { m: 'lace', t: 2 };
-        if (dx > 1.3 && Math.abs(ly - (2.4 - (dz + 2) * 0.28)) < 0.5 && dz > -2.4 && dz < 2.2) return 'trim';
-        return (Math.floor(p[0] * 3) + Math.floor(p[1] * 3)) % 3 === 0 ? { m: 'shoe', dt: -1 } : 'shoe'; };
-    } else if (suit || sk === 'dress') {
+        if (ly > 2.6) return shPat === 'split' && dz < 0 ? 'trim' : 'sole';
+        if (dx < 0.55 && dz > -0.6 && dz < 1.8) return Math.abs(((dz + 3) * 1.3) % 1 - 0.5) < 0.2 ? { m: 'lace', t: 1 } : { m: 'lace', t: 3 };
+        if (dx > 1.3 && Math.abs(ly - (2.4 - (dz + 2) * 0.28)) < 0.55 && dz > -2.4 && dz < 2.2) return 'trim';
+        if (shSig && dx > 1.3 && dz < -0.8 && dz > -3.0 && ly > 0.9 && ly < 2.2) return { m: sigK, dt: 0 };
+        return 'shoe'; };
+    } else if (sk === 'dress') {
+      /* A DRESS SHOE ON A LAST: a slim upper, a toe cap stitched across it,
+         and a welt round the sole in its own colour, so a gold welt shows
+         (Patent Oxfords were Oxfords plus one pixel). pat:wingtip runs the
+         wing seam back from the cap; sig:welt makes the welt metal. trim is a
+         loafer's strap across the instep. */
+      var dUp = cut(ell([fx, fy - 0.25, fz + 0.2], [2.2, 1.75, 3.9]), function(p){ return p[1] - (fl - 0.6); }), dWelt = rbox([fx, fl - 0.4, fz + 0.25], [2.38, 0.4, 4.08], 0.36);
+      shoeF = function(p){ return Math.min(dUp(p), dWelt(p)); };
+      shoeM = function(p){ var ly = p[1] - a[1], dz = p[2] - fz;
+        if (dWelt(p) < 0.04 && dUp(p) > 0.02) return shSig === 'welt' ? { m: 'gold', dt: ly > 3.7 ? -1 : 0 } : ly > 3.7 ? { m: 'sole', dt: -1 } : 'sole';
+        if (Math.abs(dz - 1.8) < 0.3 && ly > 0.4) return { m: 'trim', dt: 1 };
+        if (shPat === 'wingtip' && Math.abs(Math.abs(p[0] - fx) - (1.0 + (1.8 - dz) * 0.5)) < 0.28 && dz < 1.8 && dz > -0.6) return { m: 'trim', dt: 1 };
+        if (shTrim && Math.abs(dz - 0.9) < 0.6 && ly < 2.4) return 'trim';
+        if (dz > -1.6 && dz < 0.4 && Math.abs(p[0] - fx) < 0.45 && ly < 1.6) return { m: 'lace', t: 1 };
+        return 'shoe'; };
+    } else if (sk === 'sneaker' || sk === 'hitop') {
+      /* THE WORN SNEAKER. A low top shows the ankle (and the sock); a hi-top
+         has a padded collar up past the ankle bone with a strap across it, so
+         the two read apart. A trim is the heel tab and the strap in the
+         accent; pat:split a two-tone toe; sig:wing a metal tab at the heel. */
+      var hi = sk === 'hitop';
+      var soleF2 = rbox([fx, fl - 0.5, fz + 0.05], [2.1, 0.5, 3.6], 0.45), toeF2 = ell([fx, fl - 1.45, fz + 1.45], [2.0, 1.3, 2.4]);
+      var heelF2 = rbox([fx, fl - 2.3, fz - 1.0], [1.95, 1.8, 2.25], 1.0);
+      var colF2 = hi ? cone([fx, a[1] + 0.6, fz - 1.1], [fx, a[1] - 2.9, fz - 1.3], 2.2, 2.05) : ell([fx, a[1] + 0.5, fz - 1.3], [1.95, 1.4, 1.95]);
+      shoeF = function(p){ return Math.min(soleF2(p), smin(smin(toeF2(p), heelF2(p), 1.3), colF2(p), 0.9)); };
+      shoeM = function(p){
+        var ly = p[1] - a[1], dz = p[2] - fz, dx = Math.abs(p[0] - fx);
+        if (ly > 3.62) return { m: 'sole', dt: -1 };
+        if (ly > 2.95) return 'sole';
+        if (hi && ly < -2.3) return { m: 'shoe', dt: 1 };
+        if (hi && Math.abs(ly + 0.6) < 0.5 && dz < 0.6) return shTrim ? 'trim' : { m: 'shoe', dt: -1 };
+        if (!hi && ly < 0.8) return shTrim ? 'trim' : { m: 'shoe', dt: -1 };
+        if (shSig && dx > 1.35 && dz < -0.9 && dz > -3.2 && ly > 0.7 && ly < 2.3 - (dz + 3.2) * 0.25) return { m: sigK, dt: ly < 1.3 ? 1 : 0 };
+        if (dz < -3.0 && ly < 2.4) return 'trim';
+        if (dx < 0.55 && dz > -0.8 && dz < 1.6 && ly < 2.4) return Math.abs(((dz + 3) * 1.4) % 1 - 0.5) < 0.2 ? { m: 'lace', t: 1 } : { m: 'lace', t: 4 };
+        if (dx > 1.45 && dz > -2.2 && dz < 2.6 && Math.abs(ly - (2.3 - dz * 0.32)) < 0.5) return 'trim';
+        if (shPat === 'split' && dz > 1.0) return 'trim';
+        return 'shoe';
+      };
+    } else if (suit) {
       shoeF = cut(ell([fx, fy, fz], [2.4, 1.9, 3.9]), function(p){ return p[1] - fl; });
-      shoeM = sk === 'dress' ? function(p){ var ly = p[1] - a[1]; return ly > 3.35 ? 'sole' : ly > 2.9 ? 'trim' : { m: 'shoe', gloss: 2 }; }
-        : function(p){ return p[1] - a[1] > 3.35 ? 'sole' : { m: 'shoe', gloss: 2 }; };
+      shoeM = function(p){ return p[1] - a[1] > 3.35 ? 'sole' : { m: 'shoe', gloss: 2 }; };
     } else {
       /* A BASKETBALL SNEAKER, NOT AN EGG: a flat cupsole with a rounded toe,
          a low toe box, a tall heel counter and a padded high-top collar
@@ -611,7 +721,13 @@ function build(L, o, J){
     }
     /* on court the jersey keeps its trim: a shoe's accent is its own colour */
     if (CW && CW.cshoes) shoeM = (function(m){ return function(p){ var r = m(p); return r === 'trim' ? 'strim' : r && r.m === 'trim' ? Object.assign({}, r, { m: 'strim' }) : r; }; })(shoeM);
-    add('shoe' + s, 'shoe' + s, shoeM, shoeF, [fx, fy, fz], 6.2, { gloss: 1 });
+    /* A BIGGER FOOT (the item pass): a worn shoe off court is drawn 15% bigger,
+       grown from the heel on the floor, so a shoe reads at its price. On court
+       a shoe stays the uniform's size, so his feet match his teammates'. */
+    var SF = ST && ST.shoes ? 1.15 : 1;
+    if (SF !== 1) shoeF = (function(f0, m0, o){ var sc = function(p){ return [o[0] + (p[0] - o[0]) / SF, o[1] + (p[1] - o[1]) / SF, o[2] + (p[2] - o[2]) / SF]; };
+      shoeM = typeof m0 === 'function' ? function(p){ return m0(sc(p)); } : m0; return function(p){ return SF * f0(sc(p)); }; })(shoeF, shoeM, [fx, fl, fz - 1.6]);
+    add('shoe' + s, 'shoe' + s, shoeM, shoeF, [fx, fy, fz + (SF - 1) * 3], 6.2 * SF, { gloss: 1 });
   });
 
   /* the torso: a chest and a waist, one smooth body */
@@ -757,9 +873,18 @@ function build(L, o, J){
     } : mat, armF, A.el, 10);
     /* a hand grows with the man: a fixed size was lost inside a big man's jacket */
     var hk = sw * (1 + Math.max(0, g) * 0.05);
-    add('hand' + s, 'arm' + s, CW && CW.tape ? function(p){ var v = p[1] - A.hand[1]; return v > -1.4 && Math.floor((v + 4) * 1.1) % 2 ? 'tape' : 'skin'; } : 'skin', ell(A.hand, [1.55 * hk, 2.0 * hk, 1.4 * hk]), A.hand, 3 * hk, { hand: s });
-    if (CW && CW.wrist && !suit) add('wrist' + s, 'arm' + s, function(p){ return Math.floor(p[1] * 2.2) % 3 === 0 ? { m: 'wrist', dt: -1 } : 'wrist'; },
-      ringF([A.wr[0] + (A.el[0] - A.wr[0]) * 0.1, A.wr[1] + (A.el[1] - A.wr[1]) * 0.1, A.wr[2] + (A.el[2] - A.wr[2]) * 0.1], [A.wr[0] - A.el[0], A.wr[1] - A.el[1], A.wr[2] - A.el[2]], r2 * 0.8 + 0.35, 0.7), A.wr, 3);
+    /* FINGER TAPE wraps the fingers in strips with a hairline of skin between
+       them, and a wrap round the wrist: 6 pixels on court before */
+    var tpT = CW && CW.tape && artIn(CW.tape, 'trim');
+    add('hand' + s, 'arm' + s, CW && CW.tape ? function(p){ var v = p[1] - A.hand[1], q = Math.abs(((v + 4) * 1.1) % 1 - 0.5); var tpS = artIn(CW.tape, 'pat') === 'stripe'; return v > -1.9 && q > 0.13 ? ((tpT || tpS) && q < (tpS ? 0.2 : 0.24) ? (tpS ? { m: 'tape', t: 4 } : 'tapei') : 'tape') : 'skin'; } : 'skin', ell(A.hand, [1.55 * hk, 2.0 * hk, 1.4 * hk]), A.hand, 3 * hk, { hand: s });
+    var wAt = function(t){ return [A.wr[0] + (A.el[0] - A.wr[0]) * t, A.wr[1] + (A.el[1] - A.wr[1]) * t, A.wr[2] + (A.el[2] - A.wr[2]) * t]; };
+    if (CW && CW.tape && !suit && !(CW.wrist)) add('tapew' + s, 'arm' + s, function(p){ return Math.abs(((p[1] + 40) * 1.6) % 1 - 0.5) < 0.12 ? { m: 'tape', dt: -1 } : 'tape'; }, cone(wAt(-0.02), wAt(0.12), r2 * 0.82 + 0.3, r2 * 0.86 + 0.3), A.wr, 3);
+    /* A WRISTBAND is a terry band as long as a hand is wide, its ribs as
+       lines; a trim runs one stripe round it in ink, pat:stripe two */
+    if (CW && CW.wrist && !suit) { var WB = CW.wrist, wbT = artIn(WB, 'trim'), wbS = artIn(WB, 'pat') === 'stripe', w0 = wAt(0.02), w1 = wAt(0.24);
+      add('wrist' + s, 'arm' + s, function(p){ var ax = [w1[0] - w0[0], w1[1] - w0[1], w1[2] - w0[2]], l2 = ax[0] * ax[0] + ax[1] * ax[1] + ax[2] * ax[2] || 1, t = ((p[0] - w0[0]) * ax[0] + (p[1] - w0[1]) * ax[1] + (p[2] - w0[2]) * ax[2]) / l2;
+        if (wbT && Math.abs(t - 0.5) < 0.16) return 'wink'; if (wbS && (Math.abs(t - 0.28) < 0.13 || Math.abs(t - 0.72) < 0.13)) return 'wink';
+        return Math.abs(((t * 5) % 1) - 0.5) < 0.12 ? { m: 'wrist', dt: -1 } : 'wrist'; }, cone(w0, w1, r2 * 0.82 + 0.62, r2 * 0.86 + 0.62), A.wr, 3.6); }
   });
 
   if (ST) streetGear();
@@ -929,50 +1054,61 @@ function build(L, o, J){
   /* where rolled jeans end, over a pair of socks */
   function jeansCuffY(G){ return G.ank[1] - 3.6; }
   function streetLegMat(G, s){
-    var kd = streetBottom();
+    var kd = streetBottom(), Bt = ST.bottom, bTrim = artIn(Bt, 'trim'), bPat = artIn(Bt, 'pat'), bSig = artIn(Bt, 'sig'), bGold = artIn(Bt, 'gold');
     return function(p){
       var tA = clamp01((p[1] - G.hip[1]) / Math.max(1, G.ank[1] - G.hip[1])), ax = G.hip[0] + (G.ank[0] - G.hip[0]) * tA, lx = (p[0] - ax) * s, toAnk = G.ank[1] - p[1];
+      var fz = p[2] - G.kn[2] * tA * 0.6;
       if (kd === 'shorts') {
         /* below the shorts: skin, and the socks the sock slot asks for */
         var y = p[1] - (G.ank[1] - 57.4), sl = ST.socks ? ST.socks.k : 'crew';
         var top = sl === 'high' ? 50.4 : sl === 'ankle' ? 55.6 : 53.4;
-        if (y > top) return y < top + 0.6 ? { m: 'sock', dt: 1 } : 'sock';
+        if (y > top) { if (ST.socks && artIn(ST.socks, 'trim') && (Math.abs(y - top - 1.0) < 0.3 || Math.abs(y - top - 1.8) < 0.3)) return 'sink'; return y < top + 0.6 ? { m: 'sock', dt: 1 } : 'sock'; }
         return 'skin';
       }
+      /* a signature down the outside of the near leg: a satin stripe (sig:stripe) */
+      if (bSig === 'stripe' && lx > 1.3 && Math.abs(p[2] - G.kn[2] * tA) < 0.75) return Math.abs(p[2] - G.kn[2] * tA) < 0.25 ? { m: 'btm2', t: 4 } : { m: 'btm2', dt: 0 };
+      /* any other signature is struck in metal on the front of the near thigh */
+      if (bSig && bSig !== 'stripe' && s < 0 && p[2] > 1.0) { var bz = printSize(bSig), bk2 = printAt(bSig, (p[0] - ax) / 0.62 + bz[0] / 2, (p[1] - G.hip[1] - 2.6) / 0.62); if (bk2) return { m: 'gold', dt: bk2 > 1 ? -1 : 0 }; }
       if (kd === 'sweats') {
-        if (toAnk < 1.3) return { m: 'btm', dt: Math.floor(p[0] * 2) % 2 ? -1 : 0 };
+        if (toAnk < 1.3) return bTrim ? 'btm2' : { m: 'btm', dt: -1 };
         /* one stripe down the outside of the leg, as wide as a finger, only
-           when the item gives a second colour: without one they are joggers */
+           when the item gives a second colour: without one they are joggers.
+           A trim doubles it; metal hardware zips the ankle */
         var rr = 2.85 - 0.9 * tA + g * 0.3;
-        if (ST.bottom.c[1] && lx > rr - 0.6 && Math.abs(p[2] - G.kn[2] * tA) < 1.25) return 'btm2';
+        if (bGold && toAnk < 3.0 && lx > rr - 0.7 && Math.abs(p[2] - G.kn[2] * tA) < 0.5) return { m: 'gold', t: 4 };
+        if (Bt.c[1] && lx > rr - 0.6 && Math.abs(p[2] - G.kn[2] * tA) < (bTrim ? 1.5 : 1.25)) return bTrim && Math.abs(p[2] - G.kn[2] * tA) < 0.45 ? 'btm' : 'btm2';
         return 'btm';
       }
       if (kd === 'cargos') {
-        /* a bellows pocket on the side of each thigh, with its flap */
-        if (lx > 1.6 && tA > 0.28 && tA < 0.5) return tA < 0.31 ? { m: 'btm', dt: -1 } : Math.abs(p[2]) < 0.4 ? { m: 'btm', dt: -1 } : { m: 'btm', dt: 0 };
+        /* a bellows pocket on the side of each thigh, with its flap; a trim stitches it in a light thread */
+        if (lx > 1.6 && tA > 0.28 && tA < 0.5) { if (bTrim && (Math.abs(tA - 0.31) < 0.012 || Math.abs(tA - 0.49) < 0.012)) return 'btm3'; return tA < 0.31 ? { m: 'btm', dt: -1 } : Math.abs(p[2]) < 0.4 ? { m: 'btm', dt: -1 } : { m: 'btm', dt: 0 }; }
         if (toAnk < 0.8) return { m: 'btm', dt: -1 };
         /* a second colour on cargos is a woodland print: broad blotches laid
            on the leg in its own frame, so they ride with the leg in every pose.
            Woodland Cargos named it and were drawn as Olive Cargos. */
-        if (ST.bottom.c[1]) { var cm = camoAt(lx, p[1] - G.hip[1], p[2] - G.kn[2] * tA, s); if (cm) return cm > 1 ? 'btm2' : { m: 'btm', dt: 1 }; }
+        if (bPat === 'camo' && Bt.c[1]) { var cm = camoAt(lx, p[1] - G.hip[1], p[2] - G.kn[2] * tA, s); if (cm) return cm > 1 ? 'btm2' : { m: 'btm', dt: 1 }; }
         return 'btm';
       }
       if (kd === 'trousers') {
-        /* a pressed crease down the front of each leg */
-        var fz = p[2] - G.kn[2] * tA * 0.6;
+        /* a pressed crease down the front of each leg; a check on an epic */
         if (fz > 1.6 && Math.abs(p[0] - ax) < 0.3) return { m: 'btm', dt: 1 };
+        if (bPat === 'check' && (Math.abs(((p[1] / 2.8) % 1 + 1) % 1 - 0.5) * 2.8 < 0.32 || Math.abs(((lx / 2.4) % 1 + 1) % 1 - 0.5) * 2.4 < 0.3)) return 'btm3';
         return 'btm';
       }
-      /* jeans: a rolled cuff, a lighter fade down the front of the thigh, and the outer seam */
+      /* jeans: a rolled cuff, the fade down the front of the thigh, and the outer seam */
       if (ST.socks) {
         /* rolled over socks: under the cuff the sock, its top a lit rib; an ankle sock leaves skin above it */
         var cy = jeansCuffY(G), ys = p[1] - cy;
-        if (ys > 0.15) { var stop = ST.socks.k === 'ankle' ? 1.9 : 0.15; return ys < stop ? 'skin' : ys < stop + 0.55 ? { m: 'sock', dt: 1 } : 'sock'; }
-        if (ys > -1.0) return { m: 'btm', dt: 1 };
+        if (ys > 0.15) { var stop = ST.socks.k === 'ankle' ? 1.9 : 0.15; if (artIn(ST.socks, 'trim') && Math.abs(ys - stop - 0.95) < 0.3) return 'sink'; return ys < stop ? 'skin' : ys < stop + 0.55 ? { m: 'sock', dt: 1 } : 'sock'; }
+        if (ys > -1.0) return bPat === 'selvedge' && ys > -0.45 && lx > 0.6 ? 'btm3' : { m: 'btm', dt: 1 };
       }
-      else if (toAnk < 0.9) return { m: 'btm', dt: 1 };
-      if (lx > 1.95 && Math.abs(p[2]) < 0.7) return { m: 'btm', dt: -1 };
-      if (p[2] > 1.4 && tA > 0.12 && tA < 0.45 && (Math.floor(p[0] * 1.7) + Math.floor(p[1] * 1.1)) % 3 === 0) return { m: 'btm', dt: 1 };
+      else if (toAnk < (bPat === 'selvedge' ? 1.8 : 0.9)) return bPat === 'selvedge' ? (Math.abs(toAnk - 0.9) < 0.3 ? 'btm3' : toAnk > 1.4 ? { m: 'btm', dt: -1 } : { m: 'btm', dt: 1 }) : { m: 'btm', dt: 1 };
+      /* the outer seam, a light thread on a trim */
+      if (lx > 1.95 && Math.abs(p[2]) < 0.7) return bTrim ? 'btm3' : { m: 'btm', dt: -1 };
+      /* R5: THE FADE IS ONE CALM PANEL, a tone up over the front of the
+         thigh with a soft lower edge. It was a 1 in 3 dither: noise at every
+         size. */
+      if (p[2] > 1.2 && tA > 0.1 && tA < (0.42 + Math.max(0, 1.6 - Math.abs(lx)) * 0.03)) return { m: 'btm', dt: 1 };
       return 'btm';
     };
   }
@@ -992,70 +1128,141 @@ function build(L, o, J){
       return Math.max((e - 1) * Math.min(rx, rz) * 0.9, yT - p[1]);
     };
     var dome = ell([CX, yT + 0.4, -0.3], [shX + off * 0.6, 2.4 * ts + off * 0.5, cR[2] * 0.82 + off * 0.8]);
-    return cut(smf(dome, colF, 1.6), function(q){ return q[1] - hemY; });
+    /* THE FAR SHOULDER (as far as wear can fix it). The camera looks down, so
+       cloth behind the neck climbs the screen, and the dome's back rose to the
+       jaw on the far side: the head sat in a cowl. The cloth behind the neck
+       is cut down to the shoulder line, lowest at the back. The rest of the
+       cowl is the rig's (a far shoulder as high as the ear): the character pass. */
+    var backCut = function(q){ return (J.neck[1] + 1.5 * ts + Math.max(0, -q[2] - 0.6) * 0.42) - q[1]; };
+    return cut(cut(smf(dome, colF, 1.6), function(q){ return q[1] - hemY; }), backCut);
   }
   /* the y the torso material reads (29.2 at the chest's centre) and the
      neckline: a curve a little lower at the front than the back */
   function tY(p){ return 29.2 + (p[1] - C0[1]) / ts; }
   function neckAt(dx, front, w, depth){ var t = dx / w; return t < 1 ? 23.9 + (front ? (depth || 1.0) : 0.3) * (1 - t * t) : -1; }
+  /* A PRINT ON THE CHEST (art keys print: and sig:). A placed print sits small
+     on the near side of the chest, where this camera sees it squarely (R7); a
+     big one (an epic's, a legendary's signature) fills the middle of it. A
+     cell is never under a fine pixel and a half at the closet's trace (R8). */
+  function chestAt(name, sx, y, big){
+    var sz = printSize(name), cw = big ? 0.92 : 0.7, ch = big ? 0.95 : 0.72;
+    var u = (sx - (big ? -0.5 : -3.1)) / cw + sz[0] / 2, v = (y - (big ? 25.9 : 26.0)) / ch;
+    return printAt(name, u, v);
+  }
   function topMat(kd, D){
+    var T = ST.top, tPrint = artIn(T, 'print'), tPat = artIn(T, 'pat'), tSig = artIn(T, 'sig'), tTrim = artIn(T, 'trim'), tGold = artIn(T, 'gold');
+    var bigPrint = tPrint && PRINT_BIG[tPrint];
+    /* a signature is struck in metal, or in the second colour when the piece is gold itself */
+    var sigInk = contrast(T.c[0] || '#ffffff', '#e3a92f') < 1.5 ? 'foil' : 'gold';
     return function(p){
       var sx = p[0] - CX, dx = Math.abs(sx), y = tY(p), front = p[2] > 0.6, hemY = W0[1] + D.hem * ts;
       var N = function(w, d){ return neckAt(dx, front, w, d); };
-      if (D.neck === 'turtle') { if (y < N(2.6) - 1.2) return 'skin'; if (y < N(3.4) + 1.2) return { m: 'top2', dt: Math.floor(y * 2.4) % 2 ? -1 : 0 }; }
-      else if (D.neck === 'vee') { if (front && dx < Math.max(0, 27.4 - y) * 0.7) return y < 23.6 ? 'skin' : 'skin'; if (y < N(2.9)) return 'skin'; if (front && y < 28.2 && dx < Math.max(0, 28.2 - y) * 0.7 + 0.6) return 'top2'; if (y < N(3.5) + 0.5) return 'top2'; }
+      if (D.neck === 'turtle') { if (y < N(2.6) - 1.2) return 'skin'; if (y < N(3.4) + 1.2) return { m: 'top2', dt: Math.floor(y * 2.4) % 3 === 0 ? -1 : 0 }; }
       else if (D.neck === 'scoop') { if (y < N(3.0, 2.2)) return 'skin'; if (y < N(3.6, 2.2) + 0.45) return 'top2'; }
-      else { if (y < N(2.7)) return 'skin'; if (D.neck === 'crew' && y < N(3.4) + 0.65) return 'top2'; if (D.neck === 'hood' && y < N(3.4) + 0.45) return { m: 'top', dt: -1 }; }
+      else { if (y < N(2.7)) return 'skin';
+        /* a ringer's collar is a band you can see, not a line */
+        if (D.neck === 'crew' && y < N(3.4) + (tTrim && kd === 'tee' ? 1.25 : kd === 'jersey' ? 0.95 : 0.65)) return y > N(3.4) + 0.4 && tTrim ? { m: 'top2', dt: -1 } : 'top2';
+        if (D.neck === 'hood' && y < N(3.4) + 0.45) return { m: tTrim ? 'top2' : 'top', dt: -1 }; }
       /* armholes, for a top with no sleeves: the jersey's and the tank's cut */
       if (!D.sleeve) { var edge = cR[0] + 0.3, ax = edge + 0.9, rx = ax - Math.min(6.2, edge - 1.4), ae = Math.pow((dx - ax) / rx, 2) + Math.pow((y - 24.8) / 5.2, 2);
-        if (ae < 1) return 'skin'; if (ae < 1.3) return 'top2'; }
+        if (ae < 1) return 'skin'; if (ae < (kd === 'jersey' ? 1.42 : 1.36)) return 'top2'; }
       if (D.neck === 'collar') {
-        /* a shirt collar, its two points, and the button placket */
-        if (y < N(3.3) + 1.3 && !(front && dx < 0.7)) return { m: 'top', dt: y < N(3.3) + 0.4 ? 1 : -1 };
-        if (front && dx < 0.55 && y > 24) return Math.floor(y * 0.9) % 3 === 0 && dx < 0.35 ? { m: 'top2', t: 3 } : { m: 'top', dt: -1 };
-        if (kd === 'polo' && front && y > 27.6 && dx < 0.6) return 'top';
+        /* A COLLAR THAT READS: two points that come down onto the chest and
+           stand off it (lit on top, a shadow under), and a placket: a line
+           with its buttons. They read as shoulder bumps before. trim tips the
+           collar's edge in the second colour, the way a polo is tipped. */
+        var cpt = N(3.3) + 1.5 + Math.max(0, 2.7 - dx) * 0.95;
+        if (front && dx < 3.3 && dx > 0.45 && y < cpt + 0.7) return y > cpt - 0.1 ? (tTrim && y < cpt + 0.3 ? 'top2' : { m: 'top', dt: -2 }) : { m: 'top', dt: 1 };
+        if (!front && y < N(3.3) + 1.4) return y > N(3.3) + 0.85 ? { m: 'top', dt: -2 } : { m: 'top', dt: 1 };
+        var pl = kd === 'polo' ? 28.6 : hemY;
+        if (front && dx < 0.95 && y > 24 && y < pl) return dx < 0.5 && Math.floor((y - 24) * 0.55) % 2 === 1 && Math.abs(((y - 24) * 0.55) % 1 - 0.5) < 0.36 ? { m: 'top2', t: contrast(T.c[0] || '#fff', T.c[1] || '#000') >= 1.6 ? 2 : 3 } : dx > 0.62 ? { m: 'top', dt: -1 } : 'top';
       }
-      if (p[1] > hemY - 0.8) return kd === 'knit' ? 'top2' : { m: 'top', dt: kd === 'hoodie' ? (Math.floor(p[0] * 2) % 2 ? -1 : 0) : -1 };
+      if (p[1] > hemY - 0.8) return kd === 'knit' || (tTrim && kd === 'knit') ? 'top2' : tTrim && (kd === 'hoodie' || kd === 'tee') ? 'top2' : { m: 'top', dt: -1 };
       if (kd === 'hoodie' && front) {
-        /* the drawstrings, and the kangaroo pocket across the belly */
-        if (Math.abs(dx - 1.25) < 0.32 && y > 24.4 && y < 28.6) return { m: 'top2', t: y > 28.0 ? 3 : 2 };
+        /* the drawstrings (metal tipped on a legendary), and the kangaroo pocket */
+        if (Math.abs(dx - 1.25) < 0.34 && y > 24.4 && y < 29.2) return y > 28.3 ? (tGold ? { m: 'gold', t: 4 } : { m: 'top2', t: 3 }) : { m: 'top2', t: 2 };
         if (y > 33.2 && y < 37.4 && dx < 4.2) return (Math.abs(y - 33.2) < 0.42 || Math.abs(dx - (3.4 + (y - 33.2) * 0.2)) < 0.38) ? { m: 'top', dt: -1 } : 'top';
       }
-      if (kd === 'flannel') { var gx = ((p[0] * 0.55) % 2 + 2) % 2 < 0.55, gy = ((p[1] * 0.55) % 2 + 2) % 2 < 0.55; if (gx && gy) return { m: 'top2', dt: -1 }; if (gx || gy) return 'top2'; }
-      if (kd === 'knit' && Math.abs(((sx * 0.5) % 2 + 2) % 2 - 1) < 0.18 && front) return { m: 'top', dt: -1 };
-      /* a mesh jersey: the weave as a fine dither, and a side panel in the second colour */
-      if (kd === 'jersey') { if ((Math.floor(p[0] * 2) + Math.floor(p[1] * 2)) % 4 === 0) return { m: 'top', dt: -1 }; if (dx > cR[0] - 0.3) return 'top2'; }
+      /* the art keys on the chest: a signature in metal, a print, a pattern */
+      if (front) {
+        var pk = tSig && kd !== 'jersey' ? chestAt(tSig, sx, y, 1) : tPrint ? chestAt(tPrint, sx, y, bigPrint) : 0;
+        if (pk) return tSig ? { m: sigInk, dt: pk > 1 ? -1 : 0 } : { m: 'print', dt: pk > 1 ? -1 : 0 };
+        if (tPat === 'pixel' && y > 25.4 && y < hemY - 1.0) { var bx = Math.floor((sx + 20) / 1.25), by = Math.floor((y - 25.4) / 1.25), hsh = (bx * 7 + by * 13 + bx * by) % 6;
+          if (hsh === 0) return 'top2'; if (hsh === 3 && by % 2) return { m: 'print', dt: 0 }; }
+      }
+      if (tPat === 'stripe' && (Math.abs(y - 29.0) < 0.6 || Math.abs(y - 31.4) < 0.6)) return 'top2';
+      if (tPat === 'rib' && Math.abs(((sx * 0.9) % 1 + 1) % 1 - 0.5) < 0.16) return { m: 'top', dt: -1 };
+      if (tPat === 'cable' && front && dx < 4.6) { var cbl = (((sx + 4.6) % 2.3) + 2.3) % 2.3; if (cbl < 0.5) return { m: 'top', dt: -1 }; if (cbl > 0.75 && cbl < 1.95) return Math.abs(((y + cbl * 0.6) % 2.6) - 1.3) < 0.45 ? { m: 'top', dt: -1 } : { m: 'top', dt: 1 }; }
+      if (tTrim && kd === 'knit' && Math.abs(y - (hemY - 2.2)) < 0.4) return 'top2';
+      if (kd === 'flannel') { var gx = ((p[0] * 0.55) % 2 + 2) % 2 < 0.6, gy = ((p[1] * 0.55) % 2 + 2) % 2 < 0.6; if (gx || gy) return 'top2';
+        if (tTrim && front && dx > 1.4 && dx < 4.0 && y > 26.0 && y < 29.4) return y < 26.9 ? { m: 'top', dt: 1 } : Math.abs(dx - 1.4) < 0.4 || Math.abs(dx - 4.0) < 0.4 ? { m: 'top', dt: -1 } : 'top'; }
+      if (kd === 'knit' && !tPat && Math.abs(((sx * 0.5) % 2 + 2) % 2 - 1) < 0.18 && front) return { m: 'top', dt: -1 };
+      if (kd === 'jersey') {
+        /* THE STREET JERSEY IS A CREW NECK, AS THE CLUB KIT IS (the owner,
+           2026-10-17), with the number its tile shows, a side panel, and no
+           mesh dither: the mesh is matte cloth (R4, R5). pat:pin pinstripes it. */
+        var onNum = front && y > 26.1 && y < 33.6 && sx > -3.0 && sx < 1.9;
+        if (tPat === 'pin' && !onNum && Math.abs(((sx / 2.1) % 1 + 1) % 1 - 0.5) * 2.1 < 0.32) return 'top2';
+        /* the number sits in the middle of the chest, toward the camera; a
+           legendary's signature (a star) is struck in its place, in metal */
+        if (front && tSig) { var jk = printAt(tSig, (sx + 2.5) / 0.95, (y - 26.8) / 0.95); if (jk) return { m: sigInk, dt: jk > 1 ? -1 : 0 }; }
+        else if (front && y > 26.6 && y < 26.6 + 5 * 1.35) { var nu = (sx + 2.6) / 1.35, nv = (y - 26.6) / 1.35;
+          if (nu >= 0 && nu < 3 && DIG35[1][Math.floor(nv)][Math.floor(nu)] === '1') return { m: 'top2', dt: 0 }; }
+        if (dx > cR[0] - 0.4) return 'top2';
+      }
       return 'top';
     };
   }
   function outMat(kd, D, topK){
-    var hemY = W0[1] + D.hem * ts;
+    var hemY = W0[1] + D.hem * ts, O = ST.outer, oTrim = artIn(O, 'trim'), oPat = artIn(O, 'pat'), oSig = artIn(O, 'sig'), oGold = artIn(O, 'gold'), oPrint = artIn(O, 'print');
+    /* a signature on a jacket sits on the near chest, outside a lapel */
+    var oInk = contrast(O.c[0] || '#ffffff', '#e3a92f') < 1.5 ? 'ofoil' : 'gold';
+    var sigAt = function(name, sx, y){ var sz = printSize(name); return printAt(name, (sx + 4.4) / 0.7 + sz[0] / 2, (y - 27.0) / 0.72); };
     return function(p){
       var sx = p[0] - CX, dx = Math.abs(sx), y = tY(p), front = p[2] > 0.8, N = function(w){ return neckAt(dx, front, w); };
       if (y < N(3.0)) return 'skin';
-      if (D.rib && y < N(3.9) + 0.9) return (Math.floor(y * 2.2) % 2) ? 'out3' : 'out2';
+      /* a bomber's knit collar: ribs as lines, tipped in the accent on a trim */
+      if (D.rib && y < N(3.9) + 0.9) return oTrim && Math.abs(y - (N(3.9) + 0.45)) < 0.28 ? 'out2' : Math.floor(y * 2.2) % 3 === 0 ? { m: 'out3', dt: -1 } : 'out3';
       if (D.quilt && y < N(3.9) + 1.6) return { m: 'out2', dt: y < N(3.9) + 0.6 ? 1 : 0 };
       if (D.collar && y < N(4.0) + 1.1) return { m: 'out1', dt: y < N(4.0) + 0.4 ? 1 : -1 };
+      if (front && oSig) { var sk = sigAt(oSig, sx, y); if (sk) return { m: oInk, dt: sk > 1 ? -1 : 0 }; }
       if (D.open) {
-        /* worn open: the front shows the top underneath, widening to the
-           collar; lapels fold back on a blazer and a trench */
-        var open = (D.lapel ? 0.6 : 1.05) + Math.max(0, (D.lapel ? 31.6 : 27.4) - y) * (D.lapel ? 0.62 : 0.55);
+        /* WORN OPEN. A blazer's V is narrow and its lapels are notched bands
+           that fold back, lit on the near side: the old cut opened to the
+           shoulders and read as a white bib. */
+        var lap = D.lapel, open = lap ? 0.5 + Math.max(0, 31.0 - y) * 0.34 : 1.05 + Math.max(0, 27.4 - y) * 0.55;
         if (front && dx < open) return 'top';
-        if (D.lapel && front && dx < open + 1.3 && y < 31.6) return { m: 'out2', dt: sx < 0 ? 1 : -1 };
+        if (lap && front && dx < open + 1.7 && y < 31.4) {
+          if (Math.abs(y - 26.4) < 0.4 && dx > open + 0.9) return { m: 'out1', dt: -1 };
+          return dx > open + 1.35 ? { m: 'out1', dt: -1 } : { m: 'out2', dt: sx < 0 ? 1 : -1 };
+        }
         if (front && dx < open + 0.5) return { m: 'out1', dt: -1 };
-        if (!D.lapel && front && Math.abs(dx - (open + 1.1)) < 0.35 && Math.floor(y) % 3 === 0) return { m: 'out3', t: 3 };
-        if (D.lapel && front && Math.abs(dx - (open + 0.9)) < 0.4 && (Math.abs(y - 33.4) < 0.45 || Math.abs(y - 35.8) < 0.45)) return { m: 'out3', t: 3 };
+        if (!lap && front && Math.abs(dx - (open + 1.1)) < 0.5 && Math.floor(y * 0.5) % 2 === 0 && Math.abs((y * 0.5) % 1 - 0.5) < 0.3) return oGold ? { m: 'gold', t: 4 } : { m: 'out3', t: 3 };
+        if (lap && front && Math.abs(dx - (open + 0.9)) < 0.45 && (Math.abs(y - 33.4) < 0.5 || Math.abs(y - 35.8) < 0.5)) return oGold ? { m: 'gold', t: 4 } : { m: 'out3', t: 3 };
+        /* a pocket square on the near breast */
+        if (oSig === 'square' && front && sx < -3.4 && sx > -5.0 && y > 27.4 && y < 28.6) return { m: 'out3', dt: y < 27.9 ? 1 : 0 };
       } else {
-        /* closed with a zip up the middle */
-        if (front && dx < 0.32) return { m: 'out3', t: Math.floor(y * 2) % 2 ? 3 : 2 };
+        /* closed with a zip up the middle, its pull in metal on a legendary */
+        if (front && dx < 0.34) return oGold && y > N(3.9) + (D.quilt ? 1.7 : 0.9) && y < N(3.9) + (D.quilt ? 3.6 : 2.6) ? { m: 'gold', t: 4 } : { m: 'out3', t: 3 };
+        /* a bomber's lining (its second colour) shows along the zip, the way an MA-1's orange does */
+        if (kd === 'bomber' && front && dx < 0.72) return { m: 'out2', dt: -1 };
       }
-      if (D.rib && p[1] > hemY - 1.5) return Math.floor((p[1] - hemY) * 2.4) % 2 ? 'out3' : 'out2';
-      if (D.quilt) { var q = ((y - 24) / 2.3) % 1; if (q < 0.18) return { m: 'out1', dt: -1 }; if (q > 0.5 && q < 0.8) return { m: 'out1', dt: 1 }; }
+      if (D.rib && p[1] > hemY - 1.5) return oTrim && Math.abs(p[1] - (hemY - 0.75)) < 0.3 ? 'out2' : Math.floor((p[1] - hemY) * 2.4) % 3 === 0 ? { m: 'out3', dt: -1 } : 'out3';
+      /* R5: a puffer's baffles are seams, a line in the shadow tone */
+      if (D.quilt) { var q = ((y - 24) / 2.3) % 1; if (q < 0.26) return { m: 'out1', dt: -1 }; if (oTrim && p[1] > hemY - 1.0) return 'out2'; }
       if (D.stripe && front && dx > 2.3 && dx < 2.8 && y < 27.2) return 'out2';
+      if (kd === 'track' && oPat === 'panel' && y < 28.4) return 'out2';
+      if (kd === 'track' && oTrim && y < N(3.9) + 1.0) return 'out2';
       if (D.collar && front && dx > 2.0 && dx < 4.3 && y > 25.8 && y < 28.6) return Math.abs(y - 25.8) < 0.45 || Math.abs(dx - 3.1) < 0.25 ? { m: 'out1', dt: -1 } : 'out1';
-      if (D.collar && (Math.abs(dx - 2.0) < 0.2 || Math.abs(dx - 4.3) < 0.2)) return { m: 'out2', t: 3 };
-      if (kd === 'varsity' && front && sx > 2.4 && sx < 5.0 && y > 25.6 && y < 28.8) return (sx < 2.8 || sx > 4.6 || y < 26.0 || y > 28.4) ? 'out3' : 'out2';
-      if (kd === 'trench' && Math.abs(p[1] - (W0[1] + 0.4 * ts)) < 0.7) return { m: 'out1', dt: -1 };
+      if (D.collar && (Math.abs(dx - 2.0) < 0.2 || Math.abs(dx - 4.3) < 0.2)) return oTrim ? { m: 'out3', t: 4 } : { m: 'out2', t: 3 };
+      if (kd === 'denim' && oPat === 'bleach') { var cm = camoAt(sx * 0.8, y * 0.8, p[2], 1); if (cm === 2) return { m: 'out1', dt: 1 }; }
+      if (kd === 'blazer' && oPat === 'check' && (Math.abs(((sx / 2.6) % 1 + 1) % 1 - 0.5) * 2.6 < 0.34 || Math.abs((((y - 24) / 2.6) % 1 + 1) % 1 - 0.5) * 2.6 < 0.34)) return 'out3';
+      /* the varsity patch, on the near chest, and its chenille letter on an epic */
+      if (kd === 'varsity' && front && sx < -2.0 && sx > -5.0 && y > 26.4 && y < 29.6) {
+        var vp = oPrint ? printAt(oPrint, (sx + 4.9) / 0.6, (y - 26.6) / 0.6) : 0;
+        if (vp) return { m: 'out2', dt: vp > 1 ? -1 : 1 };
+        return (sx > -2.4 || sx < -4.6 || y < 26.8 || y > 29.2) ? 'out3' : 'out2'; }
+      if (kd === 'trench' && Math.abs(p[1] - (W0[1] + 0.4 * ts)) < 0.7) return oGold && front && dx < 1.1 ? { m: 'gold', t: 4 } : { m: 'out1', dt: -1 };
       if (p[1] > hemY - 0.7) return { m: 'out1', dt: -1 };
       return 'out1';
     };
@@ -1071,7 +1278,11 @@ function build(L, o, J){
     if (bk === 'shorts') [-1, 1].forEach(function(s){
       /* shorts: a straight, loose leg to just above the knee */
       var G = J.leg[s], t0 = [G.hip[0] - s * 0.4, G.hip[1] - 2.4, 0], t1 = [G.hip[0] + (G.kn[0] - G.hip[0]) * 0.72, G.hip[1] + (G.kn[1] - G.hip[1]) * 0.72, G.kn[2] * 0.6];
-      add('short' + s, 'seat', function(p){ return p[1] > t1[1] - 0.7 ? { m: 'btm', dt: -1 } : 'btm'; }, cone(t0, t1, 3.2 + g * 0.3, 3.0 + g * 0.2), t1, 9);
+      var shT = artIn(ST.bottom, 'trim'), shP = artIn(ST.bottom, 'pat');
+      add('short' + s, 'seat', function(p){ if (p[1] > t1[1] - (shT ? 1.2 : 0.7)) return shT ? 'btm3' : { m: 'btm', dt: -1 };
+        /* a tropic print: broad leaves in the light shade, laid on the leg */
+        if (shP === 'tropic') { var cm = camoAt(p[0] - t1[0], p[1] - G.hip[1], p[2], s + 3); if (cm) return cm > 1 ? 'btm3' : { m: 'btm', dt: 1 }; }
+        return 'btm'; }, cone(t0, t1, 3.2 + g * 0.3, 3.0 + g * 0.2), t1, 9);
     });
     var OD = outDef();
     if (OD) {
@@ -1093,26 +1304,38 @@ function build(L, o, J){
     var along = function(p){ var ux = el[0] - sh[0], uy = el[1] - sh[1], uz = el[2] - sh[2], L2 = ux * ux + uy * uy + uz * uz || 1;
       return ((p[0] - sh[0]) * ux + (p[1] - sh[1]) * uy + (p[2] - sh[2]) * uz) / L2; };
     var nearWr = function(p, r){ return Math.hypot(p[0] - wr[0], p[1] - wr[1], p[2] - wr[2]) < r; };
-    var rib = function(p){ return Math.floor(p[1] * 2.6) % 2; };
+    /* cuff ribs: a line every third row, not every other (R5) */
+    var rib = function(p){ return Math.floor(p[1] * 2.6) % 3 === 0; };
     if (OD) {
       var ok_ = ST.outer.k, r = Math.min(1.2, OD.infl * 0.8 + 0.25);
+      var aoT = artIn(ST.outer, 'trim'), aoP = artIn(ST.outer, 'pat');
       return { r: r, d: ok_ === 'varsity' ? 'out2' : 'out1', m: function(p){
-        if (ok_ === 'varsity') return nearWr(p, 1.5) ? (rib(p) ? 'out3' : 'out2') : 'out2';
-        if (OD.rib && nearWr(p, 1.5)) return rib(p) ? 'out3' : { m: 'out1', dt: -1 };
-        if (OD.quilt) { var t = along(p); return nearWr(p, 1.3) ? 'out2' : (t * 4) % 1 < 0.2 || ((t - 1) * 3 + 10) % 1 < 0.12 ? { m: 'out1', dt: -1 } : 'out1'; }
+        if (ok_ === 'varsity') return nearWr(p, 1.5) ? (rib(p) ? 'out3' : { m: 'out3', dt: -1 }) : 'out2';
+        if (OD.rib && nearWr(p, 1.5)) return aoT && nearWr(p, 1.0) && !nearWr(p, 0.6) ? 'out2' : rib(p) ? 'out3' : { m: 'out3', dt: -1 };
+        if (OD.quilt) { var t = along(p); return nearWr(p, 1.3) ? 'out2' : ((t * 3.0) % 1 + 1) % 1 < 0.26 ? { m: 'out1', dt: -1 } : 'out1'; }
+        if (ok_ === 'track' && (aoT || aoP === 'panel') && nearWr(p, 1.4)) return 'out2';
         if (OD.stripe) {
           /* a stripe down the outside of each sleeve: the axis is read at this point along the arm */
           var t2 = clamp01(along(p) * 0.5), axX = sh[0] + (wr[0] - sh[0]) * t2, lx2 = (p[0] - axX) * (sh[0] < CX ? -1 : 1);
           if (lx2 > 0.85 && lx2 < 2.6 && Math.abs(p[2] - (sh[2] + (wr[2] - sh[2]) * t2)) < 0.75) return 'out2';
         }
         if (OD.lapel && nearWr(p, 1.1)) return { m: 'out1', dt: -1 };
+        if (ok_ === 'blazer' && aoP === 'check') { var t4 = along(p); if (Math.abs(((t4 * 4.0) % 1) - 0.5) < 0.16) return 'out3'; }
         return 'out1'; } };
     }
-    if (D.sleeve === 2) return { r: kd === 'hoodie' ? 0.55 : D.infl * 0.6, d: 'top', m: function(p){
-      if (nearWr(p, 1.5)) return kd === 'hoodie' || kd === 'knit' || kd === 'longsleeve' || kd === 'turtleneck' ? { m: 'top', dt: rib(p) ? -1 : 0 } : { m: 'top', dt: -1 };
-      if (kd === 'flannel') { var gx = ((p[0] * 0.55) % 2 + 2) % 2 < 0.55, gy = ((p[1] * 0.55) % 2 + 2) % 2 < 0.55; if (gx && gy) return { m: 'top2', dt: -1 }; if (gx || gy) return 'top2'; }
+    var aT = ST.top, aTrim = artIn(aT, 'trim'), aPat = artIn(aT, 'pat');
+    if (D.sleeve === 2) return { r: kd === 'hoodie' ? 0.55 : D.infl * 0.6, d: aPat === 'raglan' ? 'top2' : 'top', m: function(p){
+      if (nearWr(p, aTrim ? 1.9 : 1.5)) return aTrim && (kd === 'hoodie' || kd === 'longsleeve' || kd === 'knit') ? { m: 'top2', dt: rib(p) ? -1 : 0 } : kd === 'hoodie' || kd === 'knit' || kd === 'longsleeve' || kd === 'turtleneck' ? { m: 'top', dt: rib(p) ? -1 : 0 } : { m: 'top', dt: -1 };
+      /* raglan sleeves are the second colour, shoulder to cuff; stripes ring the sleeve */
+      if (aPat === 'raglan') return 'top2';
+      if (aPat === 'stripe') { var t3 = along(p); if (Math.abs(((t3 * 3.2) % 1) - 0.5) < 0.16) return 'top2'; }
+      if (kd === 'flannel') { var gx = ((p[0] * 0.55) % 2 + 2) % 2 < 0.6, gy = ((p[1] * 0.55) % 2 + 2) % 2 < 0.6; if (gx || gy) return 'top2'; }
       return 'top'; } };
-    if (D.sleeve === 1) return { r: 0.12, d: 'top', m: function(p){ var t = along(p); return t < 0.5 ? 'top' : t < 0.6 ? (kd === 'polo' || kd === 'tee' ? { m: 'top2' } : { m: 'top', dt: -1 }) : 'skin'; } };
+    if (D.sleeve === 1) return { r: 0.12, d: 'top', m: function(p){ var t = along(p);
+      /* a ringer's sleeve band is as wide as a finger, and it reads */
+      if (aTrim && kd === 'tee') return t < 0.42 ? 'top' : t < 0.6 ? 'top2' : 'skin';
+      if (aTrim && kd === 'polo') return t < 0.47 ? 'top' : t < 0.52 ? 'top2' : t < 0.6 ? 'top' : 'skin';
+      return t < 0.5 ? 'top' : t < 0.6 ? (kd === 'polo' || kd === 'tee' ? { m: 'top2' } : { m: 'top', dt: -1 }) : 'skin'; } };
     return { r: 0, d: 'skin', m: 'skin' };
   }
   function streetNeck(){
@@ -1124,7 +1347,7 @@ function build(L, o, J){
     }
     if (streetTop() === 'turtleneck') {
       /* the roll of a turtleneck, standing up round the neck */
-      add('turtle', 'torso', function(p){ return Math.floor(p[1] * 2.2) % 2 ? { m: 'top2', dt: -1 } : 'top2'; },
+      add('turtle', 'torso', function(p){ return Math.floor(p[1] * 2.2) % 3 === 0 ? { m: 'top2', dt: -1 } : 'top2'; },
         cone([CX, J.neck[1] + 0.8 * ts, -0.4], [CX, J.neck[1] - 1.4, -0.4], 2.9 + g * 0.15, 2.5 + g * 0.1), J.neck, 5);
     }
     var OD = outDef();
@@ -1138,54 +1361,94 @@ function build(L, o, J){
          dropping onto the chest, with a pendant where it falls lowest */
       var lift = OD && !OD.open ? 1.6 : 0;
       var cc = [CX, J.neck[1] + 1.4 * ts, 2.0 + lift + Math.max(0, bw) * 0.6 + Math.max(0, g) * 0.4], R = 3.9 * sw + Math.max(0, g) * 0.25, a = 0.82, ca = Math.cos(a), sa = Math.sin(a);
-      var th = ck === 'cuban' ? 0.62 : ck === 'beads' ? 0.55 : 0.42;
+      var th = ck === 'cuban' ? 0.72 : ck === 'beads' ? 0.55 : 0.42;
       add('chain', 'chain', function(p){
-        if (ck === 'beads') return Math.floor(Math.atan2(p[0] - cc[0], p[2] - cc[2]) * 9 + 40) % 2 ? 'chainc' : { m: 'chainc', dt: -1 };
+        if (ck === 'beads') return Math.floor(Math.atan2(p[0] - cc[0], p[2] - cc[2]) * 9 + 40) % 2 ? 'chainc' : { m: ST.chain && artIn(ST.chain, 'trim') ? 'gold' : 'chainc', dt: -1 };
+        if (ST.chain && artIn(ST.chain, 'pat') === 'rope') return Math.floor((p[0] + p[2] + p[1] * 0.8) * 2.0) % 2 ? { m: 'chainc', dt: 1 } : { m: 'chainc', dt: -1 };
         return Math.floor((p[0] + p[2]) * (ck === 'cuban' ? 1.5 : 2.2)) % 2 ? { m: 'chainc', dt: 1 } : 'chainc'; }, function(p){
         var x = p[0] - cc[0], y = p[1] - cc[1], z = p[2] - cc[2], yy = y * ca - z * sa, zz = y * sa + z * ca;
         return Math.hypot(Math.hypot(x, zz) - R, yy) - th; }, cc, R + 1.5, { gloss: 2 });
-      if (ck === 'chain') { var pc = [CX, cc[1] + R * sa + 1.0, cc[2] + R * ca + 0.2]; add('pendant', 'chain', 'chainc', rbox(pc, [0.95, 1.2, 0.4], 0.35), pc, 1.9, { gloss: 2 }); }
+      /* a pendant where it hangs lowest. A legendary chain carries one
+         signature (R9): a title ring, a ball, a lock clasp, so three gold
+         cubans read as three pieces. pat:rope twists a chain's links. */
+      var CH = ST.chain, cSig = artIn(CH, 'sig'), pc = [CX, cc[1] + R * sa + 1.0, cc[2] + R * ca + 0.2];
+      if (ck === 'chain') add('pendant', 'chain', 'chainc', rbox(pc, [0.95, 1.2, 0.4], 0.35), pc, 1.9);
+      if (cSig === 'ring') { var rc = [pc[0], pc[1] + 1.4, pc[2] + 0.3];
+        add('pendant', 'chain', function(p){ return p[1] < rc[1] - 0.5 && Math.abs(p[0] - rc[0]) < 0.7 ? { m: 'gem', t: 4 } : 'chainc'; }, torusV(rc, 1.8, 0.66), rc, 2.8); }
+      if (cSig === 'ball') { var bc2 = [pc[0], pc[1] + 1.5, pc[2] + 0.4];
+        add('pendant', 'chain', function(p){ var u = p[0] - bc2[0], v = p[1] - bc2[1]; return Math.abs(u) < 0.22 || Math.abs(v) < 0.22 ? { m: 'chainc', dt: -1 } : 'chainc'; }, sph(bc2, 2.0), bc2, 2.3); }
+      if (cSig === 'lock') { var lc = [pc[0], pc[1] + 1.1, pc[2] + 0.3];
+        add('pendant', 'chain', function(p){ return Math.abs(p[0] - lc[0]) < 0.3 && p[1] > lc[1] - 0.2 ? { m: 'chainc', dt: -1 } : 'chainc'; }, rbox(lc, [1.7, 1.4, 0.5], 0.35), lc, 2.4);
+        add('shackle', 'chain', 'chainc', torusV([lc[0], lc[1] - 1.4, lc[2]], 0.95, 0.32), lc, 2.4); }
     }
   }
   function streetHat(kd, shellF, local, hx, hy, hz){
     if (kd === 'beanie') {
       var bF = smf(cut(shellF(1.25), function(p){ var l = local(p); return l[1] + 1.5 - Math.max(0, -l[2]) * 0.45; }), ell([hx, hy - 7.4, hz - 0.4], [5.8, 3.6, 5.6]), 1.6);
-      add('hat', 'hat', function(p){ var l = local(p);
-        if (l[1] > -4.6) return { m: 'hat2', dt: Math.floor(Math.atan2(l[0], l[2]) * 7 + 50) % 2 ? -1 : 0 };
-        return (Math.floor(l[0] * 0.9 + 30) + Math.floor(l[1] * 1.2 + 30)) % 3 === 0 ? { m: 'hat', dt: -1 } : 'hat'; }, bF, [hx, hy - 4, hz], 11, { bias: -0.05 });
+      /* R5: the knit is rib LINES running up from the cuff, in the shadow
+         tone, and the cuff has a fold along its top. It was a 1 in 3 dither,
+         which read as mottled rather than ribbed. pat:stripe rings the crown
+         in the second colour. */
+      var bStripe = artIn(ST.hat, 'pat') === 'stripe';
+      add('hat', 'hat', function(p){ var l = local(p), an = Math.atan2(l[0], l[2]), rib = Math.abs(((an * 1.8) % 1 + 1) % 1 - 0.5) < 0.22;
+        if (l[1] > -3.9) return { m: 'hat2', dt: rib ? -1 : 0 };
+        if (l[1] > -4.7) return { m: 'hat2', dt: l[1] > -4.3 ? 1 : -1 };
+        if (bStripe && l[1] > -8.6 && l[1] < -5.2) { var sp = Math.abs(((l[1] + 40) % 2.6) - 1.3); if (sp < 0.62) return 'hat2'; if (sp < 0.95) return 'hat'; }
+        return rib && l[1] > -8.6 && !bStripe ? { m: 'hat', dt: -1 } : 'hat'; }, bF, [hx, hy - 4, hz], 11, { bias: -0.05 });
       return;
     }
     if (kd === 'bucket') {
       add('hat', 'hat', function(p){ var l = local(p); return Math.abs(l[1] + 4.2) < 0.5 ? 'hat2' : 'hat'; },
         cut(smf(shellF(1.6), ell([hx, hy - 8.0, hz - 0.3], [6.4, 3.0, 6.0]), 1.4), function(p){ return local(p)[1] + 3.6; }), [hx, hy - 5, hz], 11);
-      add('brim', 'hat', { m: 'hat', dt: -1 }, function(p){ var l = local(p), rr = Math.hypot(l[0], (l[2] - 0.4) / 0.96), ys = -3.9 + (rr - 7.6) * 0.62;
+      var bkT = artIn(ST.hat, 'trim');
+      add('brim', 'hat', function(p){ if (!bkT) return { m: 'hat', dt: -1 }; var l = local(p), rr = Math.hypot(l[0], (l[2] - 0.4) / 0.96); return Math.abs(rr - 8.6) < 0.3 || Math.abs(rr - 9.9) < 0.3 ? 'hat2' : { m: 'hat', dt: -1 }; }, function(p){ var l = local(p), rr = Math.hypot(l[0], (l[2] - 0.4) / 0.96), ys = -3.9 + (rr - 7.6) * 0.62;
         return Math.max(Math.abs(l[1] - ys) - 0.42, Math.max(7.2 - rr, rr - 11.0)) * 0.6; }, [hx, hy - 3, hz], 12.5);
     }
   }
   /* ON COURT. Every piece here is drawn only when an on-court outfit is
      passed (o.cw), so the uniform with nothing on it is the uniform it was. */
   function courtLegMat(y, s, p){
-    var sk = CW.csocks ? CW.csocks.k : 'crew', top = sk === 'high' ? 47.6 : sk === 'low' ? 56.4 : 53.4;
+    /* worn crew socks come up the calf (the uniform's own sock is lower), a
+       no-show leaves a lip over the shoe, pat:stripe rings a sock in ink,
+       and a signature is woven on the outside of the calf in metal thread */
+    var CS = CW.csocks, sk = CS ? CS.k : 'crew', top = sk === 'high' ? 47.6 : sk === 'low' ? 54.0 : CS ? 51.6 : 53.4;
     var ti = CW.tights, tlo = ti ? (ti.k === 'three' ? 49.8 : top) : -1e9;
-    if (y > top) { if (sk === 'low') return 'sock';
-      var r = y - top; return r < 0.8 ? 'sock' : r < 1.5 ? 'jersey' : r < 2.2 ? 'trim' : 'sock'; }
+    if (y > top) { if (sk === 'low') return y - top < 0.75 ? (CS && artIn(CS, 'trim') ? 'wink2' : { m: 'sock', dt: 1 }) : y - top < 1.25 ? { m: 'sock', dt: -1 } : 'sock';
+      var r = y - top;
+      if (CS && artIn(CS, 'sig') && r > 1.2 && r < 3.6 && (p[0] - J.leg[s].ank[0]) * s > 0.6) return { m: contrast(CS.c[0] || '#ffffff', '#e3a92f') < 1.5 ? 'cfoil' : 'gold', t: Math.floor(r * 2) % 2 ? 4 : 2 };
+      if (CS && artIn(CS, 'pat') === 'stripe') return (Math.abs(r - 0.9) < 0.35 || Math.abs(r - 1.9) < 0.35) ? 'wink2' : 'sock';
+      if (CS && artIn(CS, 'trim')) return r > 0.6 && r < 1.7 ? 'wink2' : 'sock';
+      return r < 0.8 ? 'sock' : r < 1.5 ? 'jersey' : r < 2.2 ? 'trim' : 'sock'; }
     /* under the shorts the leg is hidden, except where a stride pokes it
        through the cloth: there it stays skin, as it always was */
-    if (ti && y < tlo && p[1] > J.waist[1] - 0.2 + 3.6 * ts + 7.0 * ls - 1.2) return Math.floor(y * 1.4) % 7 === 0 ? { m: 'tight', dt: -1 } : 'tight';
+    if (ti && y < tlo && p[1] > J.waist[1] - 0.2 + 3.6 * ts + 7.0 * ls - 1.2) {
+      /* pat:stripe runs a stripe down the outside of the leg */
+      if (artIn(ti, 'pat') === 'stripe' && (p[0] - J.leg[s].kn[0]) * s > 0.9) return 'tighti';
+      return Math.floor(y * 1.4) % 7 === 0 ? { m: 'tight', dt: -1 } : 'tight'; }
     return 'skin';
   }
   function courtLeg(G, s, cr){
     var kn = CW.knee;
+    if (CW.csocks && CW.csocks.k === 'low') {
+      /* a no-show's cuff bunches at the shoe line, a ring standing just off the ankle */
+      var la = G.ank, ly0 = la[1] - 57.4 + 54.25;
+      add('nocuff' + s, 'leg' + s, CW.csocks && artIn(CW.csocks, 'trim') ? 'wink2' : { m: 'sock', dt: 1 }, ringF([la[0], ly0, la[2]], [0, 1, 0], Math.max(1.0, 1.45 + am * 0.5 + g * 0.08) + 0.15, 0.32), [la[0], ly0, la[2]], 2.4);
+    }
     if (kn && (kn.k === 'pad' || s === -1)) {
       /* a padded knee sleeve: thick at the cap, a seam ringed round it */
       var kc = [G.kn[0], G.kn[1] + 0.4, G.kn[2] + 0.2];
-      add('knee' + s, 'leg' + s, function(p){ var v = p[1] - kc[1]; return Math.abs(v) < 0.35 ? { m: 'kpad', dt: -1 } : Math.abs(v) > 2.6 ? { m: 'kpad', dt: 1 } : 'kpad'; },
+      var knT = artIn(kn, 'trim'), knS = artIn(kn, 'pat') === 'stripe';
+      add('knee' + s, 'leg' + s, function(p){ var v = p[1] - kc[1];
+        if (knT && Math.abs(Math.abs(v) - 2.15) < 0.32) return 'kpadi';
+        if (knS && (Math.abs(v - 1.5) < 0.3 || Math.abs(v + 1.5) < 0.3)) return 'kpadi';
+        return Math.abs(v) < 0.35 ? { m: 'kpad', dt: -1 } : Math.abs(v) > 2.6 ? { m: 'kpad', dt: 1 } : 'kpad'; },
         cut(cone([kc[0], kc[1] - 3.4 * ls, kc[2]], [kc[0], kc[1] + 3.4 * ls, kc[2] - 0.2], cr * 1.05 + 0.75, cr * 0.95 + 0.7), function(p){ return Math.abs(p[1] - kc[1]) - 3.3 * ls; }), kc, 5 * ls);
     }
     if (CW.ankle) {
       /* an ankle brace laced over the sock, a strap crossing the front */
       var a = G.ank;
-      add('brace' + s, 'leg' + s, function(p){ var v = p[1] - a[1], f = p[2] - a[2]; return f > 0.8 && Math.abs(v + 1.2 - (p[0] - a[0]) * 0.6 * s) < 0.4 ? { m: 'abrace', dt: 1 } : 'abrace'; },
+      var abT = artIn(CW.ankle, 'trim');
+      add('brace' + s, 'leg' + s, function(p){ var v = p[1] - a[1], f = p[2] - a[2]; return f > 0.8 && Math.abs(v + 1.2 - (p[0] - a[0]) * 0.6 * s) < (abT ? 0.6 : 0.4) ? (abT ? 'abracei' : { m: 'abrace', dt: 1 }) : abT && Math.abs(v + 3.0) < 0.3 ? 'abracei' : 'abrace'; },
         cone([a[0], a[1] - 3.4, a[2] - 0.4], [a[0], a[1] + 0.4, a[2] + 0.2], 1.85 + am * 0.4 + g * 0.06, 2.0 + am * 0.4 + g * 0.06), [a[0], a[1] - 1.5, a[2]], 3.2);
     }
   }
@@ -1195,9 +1458,21 @@ function build(L, o, J){
     var tOf = function(p){ return ((p[0] - A.sh[0]) * (A.wr[0] - A.sh[0]) + (p[1] - A.sh[1]) * (A.wr[1] - A.sh[1]) + (p[2] - A.sh[2]) * (A.wr[2] - A.sh[2])) / (L2 * L2); };
     if (!sl && !un) return null;
     var tee = un && un.k === 'tee' ? 0.34 : un ? 0.97 : 0, sleeveFrom = sl ? (sl.k === 'half' ? 0.36 : 0) : 2;
+    /* the art keys on a sleeve: a trim is a band in ink near the cuff,
+       pat:stripe two, and a signature (a crown) sits on the outside of the
+       upper arm in metal thread. An undershirt's trim bands its sleeve hem. */
+    var slT = artIn(sl, 'trim'), slS = artIn(sl, 'pat') === 'stripe', slSig = artIn(sl, 'sig'), unT = artIn(un, 'trim'), unS = artIn(un, 'pat') === 'stripe';
     var m = function(p){ var t = tOf(p);
-      if (t > sleeveFrom && t < 0.98) return t < sleeveFrom + 0.05 || t > 0.93 ? { m: nm, dt: -1 } : nm;
-      if (un && t < tee) return t > tee - 0.04 && un.k === 'tee' ? { m: 'under', dt: -1 } : 'under';
+      if (t > sleeveFrom && t < 0.98) {
+        if (t < sleeveFrom + 0.05 || t > 0.93) return { m: nm, dt: -1 };
+        if (slT && Math.abs(t - 0.86) < 0.035) return nm + 'i';
+        if (slS && (Math.abs(t - 0.8) < 0.03 || Math.abs(t - 0.87) < 0.03)) return nm + 'i';
+        if (slSig && t > sleeveFrom + 0.08 && t < sleeveFrom + 0.3 && (p[0] - A.sh[0]) * s > 0.3) { var su = (t - sleeveFrom - 0.08) / 0.044, sv = ((p[2] - A.sh[2]) + 1.4) / 0.62; if (printAt(slSig, sv, su)) return { m: contrast(sl.c[0] || '#fff', '#e3a92f') < 1.5 ? 'cfoil' : 'gold', t: 3 }; }
+        return nm; }
+      if (un && t < tee) {
+        if (t > tee - 0.04 && un.k === 'tee') return unT ? 'underi' : { m: 'under', dt: -1 };
+        if (unS && (Math.abs(t - 0.62) < 0.03 || Math.abs(t - 0.7) < 0.03)) return 'underi';
+        return 'under'; }
       return mat; };
     return { m: m, d: sl && sl.k !== 'half' ? nm : un ? 'under' : mat };
   }
@@ -1214,7 +1489,7 @@ function build(L, o, J){
          just above the brows at the front, dropping a little toward the back,
          where a big style simply covers it. Its top edge is lit and its bottom
          edge in shadow, so it reads on hair of its own colour (R6). */
-      var bw2 = b.k === 'wide' ? 2.0 : 1.3, TILT = 0.28, FRONT = 7.6;
+      var bw2 = b.k === 'wide' ? 2.0 : b.k === 'tied' ? 1.4 : 1.3, TILT = 0.28, FRONT = 7.6;
       var bY = -2.9 - bw2;                                     /* the centre line at the front */
       var mid = function(l){ return bY + TILT * (FRONT - l[2]); };
       var skullF = P.slice(headFrom).filter(function(q){ return q.n === 'head'; })[0].f;
@@ -1230,28 +1505,39 @@ function build(L, o, J){
       }
       var off = Math.min(1.5, Math.max(0.55, thick)) + 0.3;
       var bandF = cut(function(p){ return skullF(p) - off; }, function(p){ var l = local(p); return Math.abs(l[1] - mid(l)) - bw2; });
-      add('band', 'band', function(p){ var l = local(p), e = l[1] - mid(l); return e < -bw2 + 0.9 ? { m: 'cband', t: 4 } : e > bw2 - 0.7 ? { m: 'cband', t: 0 } : 'cband'; },
+      /* a trim runs one stripe round it in ink, pat:stripe two; the Crown Band's signature is a crown struck in metal on the front */
+      var bT = artIn(b, 'trim'), bS = artIn(b, 'pat') === 'stripe', bSig = artIn(b, 'sig');
+      add('band', 'band', function(p){ var l = local(p), e = l[1] - mid(l);
+        if (bSig && l[2] > 4.2) { var cu = (l[0] + 3.0) / 1.2, cv = (e + bw2 - 0.1) / (2 * bw2 / 4.2); if (printAt(bSig, cu, cv)) return { m: contrast(b.c[0] || '#ffffff', '#e3a92f') < 1.5 ? 'cfoil' : 'gold', t: printAt(bSig, cu, cv) > 1 ? 1 : 3 }; }
+        if (e < -bw2 + 0.9) return { m: 'cband', t: 4 };
+        if (e > bw2 - 0.7) return { m: 'cband', t: 0 };
+        if (bT && Math.abs(e) < 0.38) return 'bink';
+        if (bS && Math.abs(Math.abs(e) - 0.55) < 0.22) return 'bink';
+        return 'cband'; },
         bandF, H, 12.5);
       if (b.k === 'tied') {
         /* the knot sits on the band at the back, at the band's own height */
         var kd = [-0.694, -0.72], kat = function(r){ var q = [hx + kd[0] * r, 0, hz + kd[1] * r]; q[1] = hy + mid(local(q)); return q; };
         var kr = 3; while (kr < 16 && bandF(kat(kr)) < 0) kr += 0.05;
         var K = kat(kr), t0 = [hx - 5.4, hy - 4.6, hz - 5.6], ko = [K[0] - t0[0] + 0.3, K[1] - t0[1], K[2] - t0[2] + 0.3];
-        add('tails', 'band', 'cband', smf(cone([hx - 5.4 + ko[0], hy - 4.6 + ko[1], hz - 5.6 + ko[2]], [hx - 8.6 + ko[0], hy + 1.6 + ko[1], hz - 6.4 + ko[2]], 0.8, 0.6), cone([hx - 5.0 + ko[0], hy - 4.6 + ko[1], hz - 6.0 + ko[2]], [hx - 7.6 + ko[0], hy + 2.6 + ko[1], hz - 7.6 + ko[2]], 0.8, 0.6), 0.5), [hx - 7 + ko[0], hy - 1.5 + ko[1], hz - 6.5 + ko[2]], 5.5);
+        /* the tails swing out from the knot past the near side of the head and down onto the shoulder, where the camera sees them */
+        add('tails', 'band', function(p){ return Math.abs(((p[1] - K[1]) * 0.7) % 1 - 0.5) < 0.12 ? { m: 'cband', dt: -1 } : 'cband'; }, smf(cone(K, [K[0] - 4.4, K[1] + 10.6, K[2] + 2.6], 1.4, 1.15), cone([K[0] + 0.3, K[1], K[2] - 0.3], [K[0] - 2.0, K[1] + 11.6, K[2] + 0.4], 1.35, 1.1), 0.5), [K[0] - 2, K[1] + 4.5, K[2] + 1], 7);
       }
     }
     if (CW.goggles) {
-      /* rec specs: two round lenses in a thick frame on a strap round the head */
+      /* rec specs: two round lenses in a thick frame on a strap round the
+         head, sat over the eyes (they sat a pixel low) and big enough to read */
       [-1, 1].forEach(function(s){
-        add('glens' + s, 'eyes', { m: 'glens', t: 3 }, ell([hx + s * 2.85, hy + 0.35, hz + 7.4], [1.9, 1.75, 0.5]), [hx + s * 2.85, hy, hz + 7.4], 2.2, { gloss: 2 });
-        add('gframe' + s, 'eyes', 'gframe', torusV([hx + s * 2.85, hy + 0.35, hz + 7.55], 2.0, 0.55), [hx + s * 2.85, hy, hz + 7.5], 2.8);
+        add('glens' + s, 'eyes', { m: 'glens', t: 3 }, ell([hx + s * 2.95, hy - 0.75, hz + 7.55], [2.2, 2.0, 0.5]), [hx + s * 2.95, hy - 0.8, hz + 7.5], 2.4);
+        add('gframe' + s, 'eyes', 'gframe', torusV([hx + s * 2.95, hy - 0.75, hz + 7.7], 2.3, 0.72), [hx + s * 2.95, hy - 0.8, hz + 7.6], 3.2);
       });
-      add('gbridge', 'eyes', 'gframe', rbox([hx, hy + 0.1, hz + 8.0], [1.0, 0.4, 0.45], 0.3), [hx, hy, hz + 8], 1.4);
-      add('gstrap', 'eyes', 'gframe', cut(shellF(0.55), function(p){ var l = local(p); return Math.max(Math.abs(l[1] - 0.2) - 0.55, l[2] - 5.6); }), H, 9.5);
+      add('gbridge', 'eyes', 'gframe', rbox([hx, hy - 1.0, hz + 8.2], [1.0, 0.45, 0.45], 0.3), [hx, hy - 1, hz + 8.2], 1.5);
+      var gSig = artIn(CW.goggles, 'sig');
+      add('gstrap', 'eyes', function(p){ var l = local(p); if (gSig && l[0] < -5.6 && l[2] > -2.2 && l[2] < 3.6 && printAt(gSig, (l[2] + 1.9) / 1.08, (l[1] + 3.9) / 1.08)) return { m: 'gold', t: 4 }; return 'gframe'; }, cut(shellF(1.4), function(p){ var l = local(p); return Math.max(Math.abs(l[1] + 1.3) - 0.75, l[2] - 5.6); }), H, 9.8);
     }
     /* a mouthguard, chewed half out of the mouth: the owner's call (2026-10-17) was to draw it bigger
        and accept it is a close-up item. It was 1 pixel on court and 5 in the closet, all four alike. */
-    if (CW.guard) add('guard', 'head', function(p){ return p[1] - hy < 3.3 ? { m: 'guard', t: 4 } : 'guard'; }, ell([hx, hy + 4.3, hz + 7.7], [3.8, 1.6, 1.7]), [hx, hy + 4.3, hz + 7.7], 4.2, { gloss: 2 });
+    if (CW.guard) add('guard', 'head', function(p){ if (artIn(CW.guard, 'trim') && Math.abs(((p[0] - hx + 20) * 1.0) % 1 - 0.5) < 0.14) return { m: 'guard', dt: -1 }; return p[1] - hy < 3.3 ? { m: 'guard', t: 4 } : 'guard'; }, ell([hx, hy + 4.3, hz + 7.7], [3.8, 1.6, 1.7]), [hx, hy + 4.3, hz + 7.7], 4.2, { gloss: 2 });
   }
   /* a ring of radius R round an axis through c */
   function ringF(c, ax, R, r){ var l = Math.hypot(ax[0], ax[1], ax[2]) || 1, u = [ax[0] / l, ax[1] / l, ax[2] / l];
@@ -1259,87 +1545,182 @@ function build(L, o, J){
   function streetGear(){
     var off = topDef().infl + (outDef() ? outDef().infl : 0), fz = cR[2] * 0.85 + off;
     if (ST.watch) {
-      /* a watch on the left wrist, its face turned out */
-      var A = J.arm[-1], ax = [A.wr[0] - A.el[0], A.wr[1] - A.el[1], A.wr[2] - A.el[2]], wc = [A.wr[0] - ax[0] * 0.12, A.wr[1] - ax[1] * 0.12, A.wr[2] - ax[2] * 0.12];
-      add('watch', 'arm-1', 'wband', ringF(wc, ax, 1.55 + am * 0.5 + Math.max(0, g) * 0.06, 0.42), wc, 2.4);
-      add('wface', 'arm-1', 'wface', rbox([wc[0] - 1.3, wc[1], wc[2] + 0.6], [0.6, 0.85, 0.75], 0.25), wc, 1.6, { gloss: 2 });
+      /* A WATCH THAT READS: on the near wrist (the left, toward the camera), a
+         thick band and a big face turned to the camera, with a lit crown. It
+         was a 0.4 ring with its face edge on: 5 pixels on court. pat:link
+         rings the band in links; sig:ice studs the bezel. */
+      var Wt = ST.watch, A = J.arm[-1], ax = [A.wr[0] - A.el[0], A.wr[1] - A.el[1], A.wr[2] - A.el[2]], wc = [A.wr[0] - ax[0] * 0.14, A.wr[1] - ax[1] * 0.14, A.wr[2] - ax[2] * 0.14];
+      var wR = 1.55 + am * 0.5 + Math.max(0, g) * 0.06, wLink = artIn(Wt, 'pat') === 'link', wIce = artIn(Wt, 'sig') === 'ice';
+      var wMetal = artIn(Wt, 'mat') === 'metal';
+      add('watch', 'arm-1', function(p){ if (wLink) return Math.floor((p[1] + p[2]) * 1.6) % 2 ? { m: 'wband', t: 4 } : { m: 'wband', dt: -1 }; return wMetal && p[1] < wc[1] - 0.35 ? { m: 'wband', t: 4 } : 'wband'; }, ringF(wc, ax, wR + 0.15, 0.62), wc, 2.8);
+      var fc = [wc[0] - (wR + 0.7) * 0.72, wc[1], wc[2] + (wR + 0.7) * 0.7];
+      add('wface', 'arm-1', function(p){ var d = Math.hypot(p[0] - fc[0], p[1] - fc[1], p[2] - fc[2]);
+        if (wIce && d > 0.75) return Math.floor((p[1] + p[0]) * 3) % 2 ? { m: 'wface', t: 4 } : { m: 'wface', t: 2 };
+        if (artIn(Wt, 'trim') && d > 0.8) return { m: 'wband', dt: 1 };
+        return d < 0.55 ? { m: 'wdial', dt: 0 } : 'wface'; }, sph(fc, 1.12), fc, 1.4);
     }
     var bk = ST.bag && ST.bag.k, shY = J.arm[1].sh[1];
     if (bk === 'backpack') {
       /* a backpack: the pack behind the back and a strap over each shoulder */
-      add('pack', 'bag', function(p){ return Math.abs(p[1] - (C0[1] + 1.5)) < 0.4 ? 'bag2' : 'bag'; }, rbox([CX, C0[1] + 1.2, -cR[2] - off - 2.0], [4.3 * sw, 5.4 * ts, 1.9], 1.1), [CX, C0[1], -cR[2] - 2], 8);
-      [-1, 1].forEach(function(s){ add('strap' + s, 'bag', 'bag2', uni([cone([CX + s * 3.2 * sw, shY - 0.6, 0.2], [CX + s * 3.4 * sw, shY + 0.6, fz * 0.9], 0.5, 0.5), cone([CX + s * 3.4 * sw, shY + 0.6, fz * 0.9], [CX + s * 3.9 * sw, W0[1] - 1.0, fz * 0.95], 0.5, 0.45)]), [CX + s * 3.5, C0[1], fz], 9); });
+      /* the pack rides high, so its top and the grab loop show over the shoulders (R7) */
+      var pkc = [CX, C0[1] - 0.6, -cR[2] - off - 2.0];
+      add('pack', 'bag', function(p){ var v = p[1] - (pkc[1] - 6.0 * ts); return v < 1.0 ? { m: 'bag2', dt: v < 0.4 ? 1 : 0 } : Math.abs(p[1] - (C0[1] + 1.0)) < 0.4 ? 'bag2' : 'bag'; }, rbox(pkc, [4.3 * sw, 6.0 * ts, 2.0], 1.2), pkc, 9);
+      add('loop', 'bag', 'bag2', torusV([CX, pkc[1] - 6.0 * ts - 0.4, pkc[2] + 0.4], 1.1, 0.38), [CX, pkc[1] - 6.0 * ts, pkc[2]], 1.8);
+      var bgT = artIn(ST.bag, 'trim'), bgP = artIn(ST.bag, 'pat');
+      [-1, 1].forEach(function(s){ add('strap' + s, 'bag', function(p){ return bgP === 'reflect' && Math.abs(((p[1] + 40) * 0.45) % 1 - 0.5) < 0.12 ? { m: 'bag', t: 4 } : 'bag2'; }, uni([cone([CX + s * 3.2 * sw, shY - 0.6, 0.2], [CX + s * 3.4 * sw, shY + 0.6, fz * 0.9], 0.55, 0.55), cone([CX + s * 3.4 * sw, shY + 0.6, fz * 0.9], [CX + s * 3.9 * sw, W0[1] - 1.0, fz * 0.95], 0.55, 0.5)]), [CX + s * 3.5, C0[1], fz], 9); });
+      /* a sternum strap across the chest, with a buckle (a trim) */
+      if (bgT || bgP) { var sy2 = C0[1] - 0.6; add('sternum', 'bag', function(p){ return Math.abs(p[0] - CX) < 0.6 ? { m: 'bag', dt: 1 } : 'bag2'; }, cone([CX - 3.45 * sw, sy2, fz * 0.92 + 0.2], [CX + 3.45 * sw, sy2, fz * 0.92 + 0.2], 0.42, 0.42), [CX, sy2, fz], 4.5); }
     } else if (bk === 'crossbody') {
       /* a crossbody: a strap from the right shoulder to the left hip, and its pouch */
-      add('strap', 'bag', 'bag2', uni([cone([CX + 3.4 * sw, shY - 0.6, 0.5], [CX + 2.6 * sw, shY + 1.4, fz], 0.45, 0.45), cone([CX + 2.6 * sw, shY + 1.4, fz], [CX - 4.2 * sw, W0[1] + 1.4 * ts, fz * 0.92 + 0.4], 0.45, 0.45)]), [CX, C0[1] + 2, fz], 11);
+      /* a trim is a metal buckle on the strap across the chest */
+      var cbT = artIn(ST.bag, 'trim'), bkc = [CX - 0.4 * sw, (shY + 1.4 + W0[1] + 1.4 * ts) / 2, fz * 0.96 + 0.3];
+      add('strap', 'bag', function(p){ return cbT && Math.hypot(p[0] - bkc[0], p[1] - bkc[1]) < 1.25 ? { m: 'gold', t: Math.hypot(p[0] - bkc[0], p[1] - bkc[1]) < 0.6 ? 2 : 4 } : 'bag2'; }, uni([cone([CX + 3.4 * sw, shY - 0.6, 0.5], [CX + 2.6 * sw, shY + 1.4, fz], 0.45, 0.45), cone([CX + 2.6 * sw, shY + 1.4, fz], [CX - 4.2 * sw, W0[1] + 1.4 * ts, fz * 0.92 + 0.4], 0.45, 0.45)]), [CX, C0[1] + 2, fz], 11);
       add('pouch', 'bag', function(p){ return Math.abs(p[1] - (W0[1] + 1.0 * ts)) < 0.35 ? 'bag2' : 'bag'; }, rbox([CX - 3.8 * sw, W0[1] + 2.2 * ts, fz * 0.92 + 1.0], [2.0, 1.4 * ts, 0.85], 0.5), [CX - 4, W0[1] + 2, fz], 3.2);
     } else if (bk === 'duffel') {
       /* a duffel on a shoulder strap, carried at the right hip */
       var dc = [CX - cR[0] - off - 2.8, W0[1] + 4.0 * ts, 0.6];
-      add('duffel', 'bag', function(p){ return Math.abs(p[0] - dc[0]) < 0.3 ? 'bag2' : Math.abs(p[2] - dc[2]) > 3.0 ? 'bag2' : 'bag'; }, rbox(dc, [2.1, 2.3, 4.6], 1.8), dc, 6.2);
+      var dfT = artIn(ST.bag, 'trim');
+      add('duffel', 'bag', function(p){ return Math.abs(p[0] - dc[0]) < 0.3 ? 'bag2' : Math.abs(p[2] - dc[2]) > 3.0 ? 'bag2' : dfT && Math.abs(p[2] - dc[2]) < 0.8 ? 'bag2' : 'bag'; }, rbox(dc, [2.1, 2.3, 4.6], 1.8), dc, 6.2);
       add('dstrap', 'bag', 'bag2', uni([cone([CX + 3.4 * sw, shY - 0.6, 0.5], [CX + 2.4 * sw, shY + 1.6, fz], 0.45, 0.45), cone([CX + 2.4 * sw, shY + 1.6, fz], [dc[0] + 1.0, dc[1] - 2.0, fz * 0.6 + 1.0], 0.45, 0.45)]), [CX, C0[1] + 3, fz], 12);
     }
     var hk = ST.held && ST.held.k, hd = J.arm[1].hand;
     if (hk && !ballIn && pose !== 'trophy' && !J.arm[1].hand.up) {
       if (hk === 'coffee') {
         /* a coffee: a cup with a sleeve and a lid, held upright */
-        var cb = [hd[0] + 0.4, hd[1] - 0.2, hd[2] + 1.6];
-        add('cup', 'held', function(p){ var y = cb[1] - p[1]; return y > 2.6 ? 'cup2' : y > 0.6 && y < 1.8 ? 'cup2' : 'cup'; }, cone(cb, [cb[0], cb[1] - 3.0, cb[2]], 0.95, 1.2), [cb[0], cb[1] - 1.5, cb[2]], 2.6);
+        /* a coffee: a tall cup with its sleeve and a lid, held upright, big enough to read */
+        var cb = [hd[0] + 0.5, hd[1] + (hd[1] < J.arm[1].sh[1] ? 3.6 : 0.4), hd[2] + 1.9];
+        add('cup', 'held', function(p){ var y = cb[1] - p[1]; return y > 3.7 ? { m: 'cup', dt: y > 4.0 ? 1 : -1 } : y > 1.0 && y < 2.7 ? 'cup2' : 'cup'; }, uni([cone(cb, [cb[0], cb[1] - 3.8, cb[2]], 1.2, 1.55), cone([cb[0], cb[1] - 3.8, cb[2]], [cb[0], cb[1] - 4.3, cb[2]], 1.7, 1.4)]), [cb[0], cb[1] - 2, cb[2]], 3.4);
       } else if (hk === 'phone') {
         /* a phone in his hand, its screen lit */
-        var pc2 = [hd[0] + 0.2, hd[1] + 0.4, hd[2] + 1.4];
-        add('phone', 'held', function(p){ return p[2] > pc2[2] + 0.1 ? { m: 'phone2', t: 3 } : 'phone'; }, rbox(pc2, [0.85, 1.6, 0.2], 0.25), pc2, 2, { gloss: 2 });
+        /* a phone in his hand, its lit screen turned to the camera, phone sized against his hand */
+        var pc2 = [hd[0] - 0.2, hd[1] + 0.6, hd[2] + 1.7];
+        add('phone', 'held', function(p){ var lx = p[0] - pc2[0], ly = p[1] - pc2[1];
+          if (p[2] > pc2[2] + 0.12 && Math.abs(lx) < 0.95 && Math.abs(ly) < 1.95) return ly < -1.3 ? { m: 'phone2', t: 4 } : { m: 'phone2', t: 3 };
+          return artIn(ST.held, 'trim') && Math.abs(Math.abs(lx) - 1.1) < 0.2 ? { m: 'phone2', dt: -1 } : 'phone'; }, rbox(pc2, [1.25, 2.3, 0.28], 0.3), pc2, 2.8);
       }
     }
   }
   function streetCapAndRag(kd, shellF, local, hx, hy, hz){
     if (kd === 'cap') {
-      /* a snapback: six panels, a button on top, a flat brim straight ahead */
+      /* A SNAPBACK, BUILT FOR THIS CAMERA (R7). Six panels with a seam down
+         the middle and a button on top. The brim is long and pitched down, so
+         from above the camera sees its whole top and the dark underside shows
+         as a rim along its front edge. A light accent is the front patch; a
+         dark one is the brim and the button instead, because a dark patch on
+         a bright crown read as a hole in the forehead. trim pipes the brim's
+         edge in the accent; a print is embroidered across the front panels. */
+      var HC = ST.hat.c, lightAcc = !!HC[1] && hl(HC[1]) > hl(HC[0]) + 0.08, capPrint = artIn(ST.hat, 'print'), capTrim = artIn(ST.hat, 'trim');
+      var brimK = (lightAcc && !capPrint) || !HC[1] ? 'hat' : 'hat2';
       add('hat', 'hat', function(p){ var l = local(p);
-        if (l[2] > 4.0 && Math.abs(l[0]) < 2.6 && l[1] > -7.6 && l[1] < -4.4) return Math.abs(l[0]) > 2.2 || l[1] < -7.2 || l[1] > -4.8 ? { m: 'hat2', dt: -1 } : 'hat2';
-        if (l[1] < -9.2 && Math.abs(l[0]) < 0.9 && Math.abs(l[2]) < 0.9) return 'hat2';
-        return Math.abs(l[0]) < 0.25 || Math.abs(Math.atan2(l[0], l[2])) % 1.05 < 0.06 ? { m: 'hat', dt: -1 } : 'hat'; },
-        cut(shellF(1.7), function(p){ return local(p)[1] + 2.4; }), [hx, hy - 4, hz], 10, { gloss: 1 });
-      add('brim', 'hat', function(p){ return local(p)[1] > -2.0 ? { m: 'hat2', dt: -1 } : 'hat2'; }, cut(ell([hx, hy - 2.5, hz + 6.4], [6.6, 0.75, 5.0]), function(p){ return -(local(p)[2] - 3.4); }), [hx, hy - 2.6, hz + 7.5], 8);
+        if (l[1] < -9.0 && Math.abs(l[0]) < 1.0 && Math.abs(l[2]) < 1.0) return HC[1] ? 'hat2' : { m: 'hat', dt: -1 };
+        if (l[2] > 3.6 && l[1] > -8.4 && l[1] < -3.3) {
+          var ps = printSize(capPrint), pu = (l[0] + 1.3) / 0.95 + ps[0] / 2, pv = (l[1] + 8.2) / 0.95 + Math.max(0, 5 - ps[1]) * -0.5;
+          var pk = capPrint ? printAt(capPrint, pu, pv) : 0;
+          if (pk) return { m: 'hprint', dt: pk > 1 ? -1 : 0 };
+          if (!capPrint && lightAcc && Math.hypot((l[0] + 1.3) / 2.3, (l[1] + 5.9) / 1.5) < 1) return Math.hypot((l[0] + 1.3) / 2.3, (l[1] + 5.9) / 1.5) > 0.72 ? { m: 'hat2', dt: -1 } : 'hat2';
+        }
+        if (l[1] > -3.2) return { m: 'hat', dt: -1 };
+        return Math.abs(l[0]) < 0.25 && l[2] > -3 || Math.abs(Math.abs(Math.atan2(l[0], l[2])) - 1.05) < 0.07 ? { m: 'hat', dt: -1 } : 'hat'; },
+        cut(shellF(1.6), function(p){ return local(p)[1] + 2.4; }), [hx, hy - 4, hz], 10);
+      var bY = function(l){ return -2.6 + Math.max(0, l[2] - 3.0) * 0.16; }, bE = function(l){ return Math.hypot(l[0] / 6.2, (l[2] - 5.6) / 5.8); };
+      add('brim', 'hat', function(p){ var l = local(p), e = bE(l);
+        if (l[1] > bY(l) + 0.1) return { m: 'hat3', t: e > 0.9 ? 0 : 1 };
+        if (capTrim && e > 0.82) return { m: brimK === 'hat2' ? 'hat' : 'hat2', dt: 1 };
+        if (l[2] < 5.0) return { m: brimK === 'hat' ? 'hat3' : brimK, t: 1 };
+        return e > 0.9 ? { m: brimK, dt: 1 } : brimK; },
+        function(p){ var l = local(p); return Math.max(Math.abs(l[1] - bY(l)) - 0.6, (bE(l) - 1) * 6.0, 3.2 - l[2]); }, [hx, hy - 0.2, hz + 8.6], 8.6);
       return;
     }
     if (kd === 'durag') {
-      /* a durag: silk pulled tight over the head, a seam down the middle, the tails hanging behind */
-      add('hat', 'hat', function(p){ var l = local(p); return Math.abs(l[0]) < 0.3 && l[2] > -2 ? { m: 'hat', dt: -1 } : 'hat'; },
-        cut(shellF(0.7), function(p){ var l = local(p); return l[1] + 3.2 - Math.max(0, -l[2]) * 0.65; }), [hx, hy - 4, hz], 10, { gloss: 2 });
-      add('tail', 'hat', 'hat', smf(cone([hx - 1.0, hy - 1.0, hz - 7.4], [hx - 1.4, hy + 8.4, hz - 7.8], 1.25, 0.95), cone([hx + 1.0, hy - 1.0, hz - 7.4], [hx + 1.5, hy + 7.6, hz - 7.6], 1.25, 0.95), 0.6), [hx, hy + 3, hz - 7.5], 7, { gloss: 2 });
+      /* A DURAG: satin pulled tight over the head. It read as a skullcap, or
+         in gold as a hard hat: the tails hung straight down behind the head
+         where this camera never looks, and one big highlight made it a shell.
+         Now the front hem crosses the brow with a seam over it, a seam runs
+         down the middle, the sheen is streaks of light along the cloth, and
+         the tails are tied at the back and swing out past the head on the
+         near side, down over the shoulder. pat:wave lays waves in the satin. */
+      var dWave = artIn(ST.hat, 'pat') === 'wave', dTrim = artIn(ST.hat, 'trim');
+      add('hat', 'hat', function(p){ var l = local(p), hem = -l[1] - 3.2 + Math.max(0, -l[2]) * 0.65 + Math.max(0, l[2] - 3) * 0.12;
+        if (hem < 0.75) return { m: 'hat', dt: dTrim ? 1 : hem < 0.35 ? -1 : 0 };
+        if (hem < 1.35 && l[2] > -2) return { m: 'hat', dt: -1 };
+        if (Math.abs(l[0]) < 0.3 && l[2] > -3) return { m: 'hat', dt: -1 };
+        if (dWave && Math.abs(((l[1] + Math.sin(l[0] * 1.1) * 0.6) % 1.5 + 1.5) % 1.5 - 0.75) < 0.2 && l[2] > -1) return { m: 'hat', dt: -1 };
+        var st = (l[0] * 0.7 + l[1] * 0.45 + 40) % 3.2;
+        if (l[1] < -4.2) return { m: 'hat', dt: !dWave && st > 2.55 ? 0 : -1 };
+        return 'hat'; },
+        cut(shellF(0.75), function(p){ var l = local(p); return l[1] + 3.2 - Math.max(0, -l[2]) * 0.65 - Math.max(0, l[2] - 3) * 0.12; }), [hx, hy - 4, hz], 10);
+      /* the knot at the back, and two tails out past the near side of the head */
+      var kn = [hx - 3.0, hy - 2.4, hz - 7.0];
+      add('knot', 'hat', { m: 'hat', dt: -1 }, ell(kn, [1.7, 1.3, 1.2]), kn, 2.2);
+      var tl1 = [hx - 8.6, hy + 9.6, hz - 4.6], tl2 = [hx - 6.4, hy + 10.6, hz - 6.8];
+      add('tail', 'hat', function(p){ var a = Math.abs(p[1] - kn[1]); return Math.floor(a * 0.8) % 3 === 2 ? { m: 'hat', dt: 1 } : 'hat'; },
+        smf(cone(kn, tl1, 1.3, 1.05), cone([kn[0] + 0.6, kn[1], kn[2] - 0.4], tl2, 1.25, 1.0), 0.6), [hx - 6, hy + 4, hz - 6], 9);
     }
   }
   function streetPhones(hx, hy, hz){
     if (!ST.phones || ST.phones.k !== 'over') return;
     /* over-ear headphones: a band across the crown and two cups over the ears */
-    add('band2', 'phones', 'phn2', cut(torusV([hx, hy - 0.4, hz - 0.8], 9.1, 0.8), function(p){ return p[1] - (hy - 1.4); }), [hx, hy - 5, hz], 10.5);
-    [-1, 1].forEach(function(s){ add('cup' + s, 'phones', function(p){ return Math.abs(p[0] - hx) > 9.3 ? 'phn2' : 'phn'; }, ell([hx + s * 8.6, hy + 0.8, hz - 0.6], [1.7, 2.9, 2.7]), [hx + s * 8.6, hy + 0.8, hz], 3.6, { gloss: 1 }); });
+    /* the band's top edge is lit, so black cans read on black hair (R6);
+       pat:split makes the cup's outer plate the second colour; sig:crown
+       strikes a crown on it */
+    var PH = ST.phones, phSplit = artIn(PH, 'pat') === 'split', phSig = artIn(PH, 'sig');
+    add('band2', 'phones', function(p){ return p[1] < hy - 9.2 ? { m: 'phn2', dt: 1 } : 'phn2'; }, cut(torusV([hx, hy - 0.4, hz - 0.8], 9.1, 0.8), function(p){ return p[1] - (hy - 1.4); }), [hx, hy - 5, hz], 10.5);
+    [-1, 1].forEach(function(s){ add('cup' + s, 'phones', function(p){ var ox = Math.abs(p[0] - hx);
+      if (phSig && ox > 9.6 && printAt(phSig, (p[2] - hz + 3.1) / 1.1, (p[1] - hy + 1.3) / 1.0)) return { m: 'gold', t: 4 };
+      return ox > (phSplit ? 8.9 : 9.3) ? 'phn2' : 'phn'; }, ell([hx + s * 8.6, hy + 0.8, hz - 0.6], [1.7, 2.9, 2.7]), [hx + s * 8.6, hy + 0.8, hz], 3.6); });
   }
   function streetEyes(hx, hy, hz){
-    var ek = ST.eyes.k;
-    if (ek === 'frames') {
-      /* glasses: only the rims, so the eyes show through the lenses */
-      [-1, 1].forEach(function(s){
-        add('rim' + s, 'eyes', 'frame', torusV([hx + s * 2.85, hy + 0.35, hz + 7.5], 1.95, 0.34), [hx + s * 2.85, hy, hz + 7.5], 2.6);
-        add('temple' + s, 'eyes', 'frame', cone([hx + s * 4.8, hy - 0.2, hz + 6.6], [hx + s * 7.35, hy + 0.5, hz - 0.8], 0.32, 0.28), [hx + s * 6, hy, hz + 3], 4.6);
-      });
-      add('bridge', 'eyes', 'frame', rbox([hx, hy, hz + 7.9], [0.9, 0.24, 0.28], 0.2), [hx, hy, hz + 7.9], 1.2);
-      return;
-    }
+    /* GLASSES, DRAWN BIG ENOUGH TO READ. They were 4 pixels on court and two
+       shapes away from each other, so four pairs read as one. Every pair now
+       has one frame that runs across the brow and round the side of the head
+       to the ear (the read on court is that dark line), bigger lenses, and its
+       own silhouette: a flat-topped wayfarer, a teardrop aviator, rimmed
+       clear frames that show the eye through glass, and a one-piece wrap.
+       trim studs the frame's corners in metal (a bar across the brow on
+       frames); mat:metal makes the frame metal; cut:aviator the teardrop;
+       sig:bridge the aviator's double bridge; pat:mirror a mirrored wrap. */
+    var E = ST.eyes, ek = E.k, metalF = artIn(E, 'mat') === 'metal', avi = artIn(E, 'cut') === 'aviator', trimE = artIn(E, 'trim');
+    var front = shellF(0.7), side = shellF(1.55);
+    /* the frame's line: across the brow, dropping a little to the ear */
+    var yc = function(l){ return -2.25 + clamp01((4.5 - l[2]) / 5.5) * 1.9; };
+    var bw = ek === 'sport' ? 0.7 : ek === 'frames' ? 0.5 : metalF && !avi ? 0.45 : 0.62;
+    var frameF = function(p){ var l = local(p), w = clamp01((4.2 - l[2]) / 3.4), d = front(p) * (1 - w) + side(p) * w;
+      return Math.max(d, Math.abs(l[1] - yc(l)) - bw, -l[2] - 1.0, ek === 'sport' ? -1e9 : 0.9 - Math.abs(l[0])); };
+    var fm = metalF ? { m: 'frame', gloss: 2 } : 'frame';
+    var stud = function(l){ return trimE && ek !== 'frames' && Math.abs(Math.abs(l[0]) - 5.2) < 1.0 && l[2] > 2.6 && l[1] < yc(l) + 0.25; };
+    add('frame', 'eyes', function(p){ var l = local(p);
+      if (stud(l)) return { m: 'gold', t: 4 };
+      if (trimE && ek === 'frames' && l[2] > 2.5) return { m: 'gold', dt: l[1] < yc(l) ? 1 : 0 };
+      return l[1] < yc(l) - bw * 0.4 ? (metalF ? { m: 'frame', t: 4 } : { m: 'frame', dt: 1 }) : fm; }, frameF, [hx, hy - 0.6, hz + 3.5], 9.5);
     if (ek === 'sport') {
-      /* wraparound sport shades: one lens across both eyes */
-      /* the frame is the catalogue's first colour: a bar along the top of the lens. It was never drawn. */
-      add('lens0', 'eyes', function(p){ var v = p[1] - hy; return v < -0.75 ? 'frame' : v < -0.3 ? { m: 'lens', t: 4 } : 'lens'; }, cut(ell([hx, hy + 0.2, hz + 1.2], [8.0, 1.65, 7.0]), function(p){ return -(local(p)[2] - 3.0); }), [hx, hy, hz + 6], 8.4, { gloss: 2 });
-      [-1, 1].forEach(function(s){ add('temple' + s, 'eyes', 'frame', cone([hx + s * 7.0, hy - 0.4, hz + 3.6], [hx + s * 7.45, hy + 0.4, hz - 0.8], 0.4, 0.32), [hx + s * 7.2, hy, hz + 1.4], 3.4); });
+      /* the wrap: one lens across both eyes, under the frame */
+      var mir = artIn(E, 'pat') === 'mirror';
+      add('lens0', 'eyes', function(p){ var l = local(p), v = l[1] - yc(l);
+        if (mir) return v < 0.9 ? { m: 'lens', t: 4 } : v < 1.6 ? { m: 'frame', t: 3 } : { m: 'lens', t: 2 };
+        return v < 0.95 ? { m: 'lens', t: 3 } : 'lens'; },
+        cut(shellF(0.95), function(p){ var l = local(p); return Math.max(l[1] - (yc(l) + 2.6 - Math.abs(l[0]) * 0.12), yc(l) - l[1], 2.2 - l[2]); }), [hx, hy - 0.6, hz + 5.5], 8.6);
       return;
     }
-    if (ek !== 'shades') return;
     [-1, 1].forEach(function(s){
-      add('lens' + s, 'eyes', function(p){ return p[1] - hy < -0.55 ? { m: 'lens', t: 4 } : p[1] - hy < 0.1 ? { m: 'lens', t: 2 } : 'lens'; }, ell([hx + s * 2.85, hy + 0.35, hz + 7.4], [2.5, 1.55, 0.6]), [hx + s * 2.75, hy, hz + 7.3], 2.4, { gloss: 2 });
-      add('temple' + s, 'eyes', 'frame', cone([hx + s * 4.7, hy - 0.2, hz + 6.4], [hx + s * 7.35, hy + 0.5, hz - 0.8], 0.36, 0.3), [hx + s * 6, hy, hz + 3], 4.6);
+      var cx = hx + s * 2.95;
+      if (ek === 'frames') {
+        /* clear glass with a glint, inside a rim as thick as the frame */
+        var lF = rbox([cx, hy - 0.6, hz + 7.65], [2.5, 1.95, 0.25], 0.9), hole = rbox([cx, hy - 0.6, hz + 7.6], [2.5, 1.95, 3.0], 0.9), rimF = function(p){ return Math.max(rbox([cx, hy - 0.6, hz + 7.6], [3.15, 2.6, 0.42], 1.0)(p), -hole(p)); };
+        add('rim' + s, 'eyes', fm, rimF, [cx, hy + 0.5, hz + 7.5], 3.4);
+        add('clens' + s, 'eyes', function(p){ var l = local(p); return l[1] < -1.4 && Math.abs(l[0] - s * 2.95 + 1.0) < 0.55 ? { m: 'clear', t: 4 } : { m: 'clear', dt: 0 }; }, lF, [cx, hy + 0.5, hz + 7.5], 2.8);
+        return;
+      }
+      var lensF = avi ? smf(ell([cx + s * 0.25, hy - 0.2, hz + 7.6], [2.85, 2.55, 0.55]), ell([cx + s * 0.9, hy + 0.9, hz + 7.45], [1.9, 1.8, 0.5]), 0.8)
+        : ell([cx, hy - 0.45, hz + 7.65], [3.1, 2.4, 0.55]);
+      var lensC = function(p){ return Math.max(lensF(p), local(p)[1] - (avi ? 2.4 : 1.4)); };
+      /* how far in from the lens's outline, seen from the front: 1 at the centre, 0 at the edge */
+      var inner = avi ? function(l){ return 1 - Math.min(Math.hypot((l[0] - s * 3.2) / 2.85, (l[1] + 0.2) / 2.55), Math.hypot((l[0] - s * 3.85) / 1.9, (l[1] - 0.9) / 1.8)); }
+        : function(l){ return 1 - Math.hypot((l[0] - s * 2.95) / 3.1, (l[1] + 0.45) / 2.4); };
+      add('lens' + s, 'eyes', function(p){ var l = local(p), v = l[1] - yc(l);
+        if ((metalF || avi) && inner(l) < 0.2) return metalF && l[1] < -0.9 ? { m: 'frame', t: 4 } : fm;
+        return v < 1.0 ? { m: 'lens', t: 3 } : v < 1.5 ? { m: 'lens', t: 2 } : 'lens'; }, lensC, [cx, hy + 0.9, hz + 7.4], 3.2);
     });
-    add('bridge', 'eyes', 'frame', rbox([hx, hy - 0.1, hz + 7.85], [0.95, 0.28, 0.32], 0.2), [hx, hy, hz + 7.8], 1.2);
+    if (artIn(E, 'sig') === 'bridge') add('bridge2', 'eyes', { m: 'frame', gloss: 2, dt: 1 }, rbox([hx, hy - 3.15, hz + 8.6], [2.1, 0.38, 0.38], 0.2), [hx, hy - 3.15, hz + 8.6], 2.4);
   }
   var k = MX.k;
   var shrink = function(q){ return [H[0] + (q[0] - H[0]) / k, H[1] + (q[1] - H[1]) / k, H[2] + (q[2] - H[2]) / k]; };
@@ -1392,6 +1773,7 @@ function toneOf(c, part, dt){
   var gl = c.gloss != null ? c.gloss : part.gloss || 0;
   var t = d > 0.94 ? (gl ? 4 : 3) : d > 0.80 ? 3 : d > 0.40 ? 2 : d > 0.08 ? 1 : 0;
   if (gl > 1 && d > 0.88) t = 4;
+  if (c.sheen && d > 0.70) t = 4;
   return Math.max(0, Math.min(4, t + (dt || 0)));
 }
 
@@ -1412,11 +1794,21 @@ var WEAR_KINDS = {
 };
 var WEAR_BASE = { top: { k: 'tee', c: ['#f1f0ea', '#dcdad2'] }, bottom: { k: 'jeans', c: ['#3d5a86'] } };
 var HEX = /^#[0-9a-f]{6}$/i;
+/* THE ART KEYS (the item pass, R9): what an item adds to its plain shape, so
+   rarity shows on the body. The catalogue names them (catalog.js, a) and this
+   file draws them; anything it does not know is dropped, a key at a time.
+     trim        a trim, or a second colour placed (rare)
+     print:NAME  a print from PRINTS; pat:NAME a pattern (epic)
+     mat:NAME    a material from MATS (epic, or legendary when it is glossy)
+     sig:NAME    a legendary piece's one signature detail
+     gold        metal hardware: tips, pulls, buttons, eyelets */
+var ART = /^(trim|gold|(print|pat|mat|sig|cut):[a-z]+)$/;
+function artNorm(a){ var out = (Array.isArray(a) ? a : []).filter(function(x){ return typeof x === 'string' && ART.test(x); }).slice(0, 5); return out.length ? out : null; }
 function wearNorm(w){
   var out = {};
   for (var slot in WEAR_KINDS) {
     var it = w && w[slot];
-    if (it && WEAR_KINDS[slot].indexOf(it.k) >= 0) out[slot] = { k: it.k, c: (Array.isArray(it.c) ? it.c : []).filter(function(x){ return HEX.test(x); }).slice(0, 3) };
+    if (it && WEAR_KINDS[slot].indexOf(it.k) >= 0) { out[slot] = { k: it.k, c: (Array.isArray(it.c) ? it.c : []).filter(function(x){ return HEX.test(x); }).slice(0, 3) }; var a = artNorm(it.a); if (a) out[slot].a = a; }
     else if (WEAR_BASE[slot]) out[slot] = WEAR_BASE[slot];
   }
   return out;
@@ -1435,6 +1827,7 @@ function cwearNorm(w){
     var it = w[slot], to = slot === 'shoes' ? 'cshoes' : slot, ks = CWEAR_KINDS[to];
     if (!ks || !it || ks.indexOf(it.k) < 0) continue;
     out[to] = { k: it.k, c: (Array.isArray(it.c) ? it.c : []).filter(function(x){ return HEX.test(x); }).slice(0, 4) }; n++;
+    var a = artNorm(it.a); if (a) out[to].a = a;
   }
   return n ? out : null;
 }
@@ -1508,38 +1901,86 @@ function paint0(look, o){
        the catalogue gives one colour */
     var cc = function(slot, i, d){ var it = ST[slot]; return it && it.c[i] ? it.c[i] : d; };
     var t0 = cc('top', 0, '#f1f0ea'), o0 = cc('outer', 0, '#1f3a6b'), b0 = cc('bottom', 0, '#3d5a86');
-    R.top = ramp(t0); R.top2 = ramp(cc('top', 1, mix(t0, '#000000', 0.18)));
-    R.out1 = ramp(o0); R.out2 = ramp(cc('outer', 1, '#f1ede2')); R.out3 = ramp(cc('outer', 2, mix(o0, '#f4f2ec', 0.6)));
-    R.btm = ramp(b0); R.btm2 = ramp(cc('bottom', 1, mix(b0, '#f4f2ec', 0.7)));
-    var hk = cc('hat', 0, '#2a2e38'); R.hat = ramp(hk); R.hat2 = ramp(cc('hat', 1, mix(hk, '#000000', 0.2)));
-    R.lens = ramp(cc('eyes', 1, '#1a1c22')); R.frame = ramp(cc('eyes', 0, '#16181d'));
-    R.chainc = ramp(cc('chain', 0, '#e3a92f'));
-    R.sock = ramp(cc('socks', 0, '#f1f0ea'));
-    R.wband = ramp(cc('watch', 1, '#2a2e38')); R.wface = ramp(cc('watch', 0, '#c9ccd3'));
-    var bg0 = cc('bag', 0, '#2a2e38'); R.bag = ramp(bg0); R.bag2 = ramp(cc('bag', 1, mix(bg0, '#000000', 0.3)));
-    var ph0 = cc('phones', 0, '#1d1f24'); R.phn = ramp(ph0); R.phn2 = ramp(cc('phones', 1, mix(ph0, '#f4f2ec', 0.25)));
-    var hl0 = cc('held', 0, '#f1f0ea'); R.cup = ramp(hl0); R.cup2 = ramp(cc('held', 1, '#8a5a32')); R.phone = ramp(cc('held', 0, '#1d1f24')); R.phone2 = ramp(cc('held', 1, '#5b8fe6'));
-    if (ST.shoes) { R.shoe = ramp(cc('shoes', 0, shoeHex)); R.trim = ramp(cc('shoes', 1, '#16181f')); R.sole = ramp(cc('shoes', 2, '#e8e2d4')); }
+    var t1 = cc('top', 1, mix(t0, '#000000', 0.18));
+    R.top = wramp(t0); R.top2 = wramp(t1); R.print = wramp(contrast(t0, t1) >= 1.6 ? t1 : inkOn(t0)); R.foil = wramp(contrast(t0, t1) >= 1.6 ? t1 : inkOn(t0));
+    R.out1 = wramp(o0); R.out2 = wramp(cc('outer', 1, '#f1ede2')); R.out3 = wramp(cc('outer', 2, mix(o0, '#f4f2ec', 0.6)));
+    var oc = (ST.outer && ST.outer.c) || [], oInkHex = oc.slice(1).filter(function(h){ return contrast(h, o0) >= 1.8; })[0] || inkOn(o0); R.ofoil = wramp(oInkHex);
+    R.btm = wramp(b0); R.btm2 = wramp(cc('bottom', 1, mix(b0, '#f4f2ec', 0.7)));
+    /* a light thread or a selvedge's edge, from the trouser's own colour */
+    R.btm3 = wramp(mix(b0, hl(b0) > 0.55 ? '#2a2e38' : '#f4f2ec', 0.62));
+    var hk = cc('hat', 0, '#2a2e38'), hk2 = cc('hat', 1, mix(hk, '#000000', 0.2)); R.hat = wramp(hk); R.hat2 = wramp(hk2);
+    /* a brim's underside, in the shadow of the brim's own colour; a print in the accent, or in ink when the accent will not show */
+    var lightA = ST.hat && ST.hat.c[1] && hl(ST.hat.c[1]) > hl(hk) + 0.08;
+    R.hat3 = wramp(mix(lightA || !(ST.hat && ST.hat.c[1]) ? hk : hk2, '#0c0d12', 0.55)); R.hprint = wramp(contrast(hk, hk2) >= 1.8 ? hk2 : inkOn(hk));
+    R.lens = wramp(cc('eyes', 1, '#1a1c22')); R.frame = wramp(cc('eyes', 0, '#16181d'));
+    /* clear glass: the skin seen through a cool tint */
+    R.clear = skinRamp(mix(skinHex, '#cfe2f2', 0.3)); R.clear[4] = '#f4fbff';
+    R.chainc = wramp(cc('chain', 0, '#e3a92f'));
+    R.sock = wramp(cc('socks', 0, '#f1f0ea')); R.sink = wramp(inkOn(cc('socks', 0, '#f1f0ea')));
+    R.wband = wramp(cc('watch', 1, '#2a2e38')); R.wface = wramp(cc('watch', 0, '#c9ccd3')); R.wdial = wramp(hl(cc('watch', 0, '#c9ccd3')) > 0.6 ? '#2a2e38' : '#f4f2ec');
+    R.gem = wramp('#e8f4ff');
+    var bg0 = cc('bag', 0, '#2a2e38'); R.bag = wramp(bg0); R.bag2 = wramp(cc('bag', 1, mix(bg0, '#000000', 0.3)));
+    var ph0 = cc('phones', 0, '#1d1f24'); R.phn = wramp(ph0); R.phn2 = wramp(cc('phones', 1, mix(ph0, '#f4f2ec', 0.25)));
+    var hl0 = cc('held', 0, '#f1f0ea'); R.cup = wramp(hl0); R.cup2 = wramp(cc('held', 1, '#8a5a32')); R.phone = wramp(cc('held', 0, '#1d1f24')); R.phone2 = wramp(cc('held', 1, '#5b8fe6'));
+    if (ST.shoes) { R.shoe = wramp(cc('shoes', 0, shoeHex)); R.trim = wramp(cc('shoes', 1, '#16181f')); R.sole = wramp(cc('shoes', 2, '#e8e2d4')); }
   }
+  /* metal hardware (the gold art key): tips, pulls, studs, a crown */
+  R.gold = ramp('#e3a92f');
   if (CW) {
     var cq = function(slot, i, d){ var it = CW[slot]; return it && it.c[i] ? it.c[i] : d; };
-    R.cband = ramp(cq('band', 0, '#f4f2ec')); R.glens = ramp(cq('goggles', 1, '#b9d8f0')); R.gframe = ramp(cq('goggles', 0, '#1d1f24'));
-    R.guard = ramp(cq('guard', 0, '#f4f2ec')); R.cslL = ramp(cq('sleeveL', 0, '#16181f')); R.cslR = ramp(cq('sleeveR', 0, '#16181f'));
-    R.wrist = ramp(cq('wrist', 0, '#f4f2ec')); R.tape = ramp(cq('tape', 0, '#f4f2ec')); R.tight = ramp(cq('tights', 0, '#16181f'));
-    R.kpad = ramp(cq('knee', 0, '#16181f')); R.abrace = ramp(cq('ankle', 0, '#16181f')); R.under = ramp(cq('under', 0, '#16181f'));
-    if (CW.csocks) R.sock = ramp(cq('csocks', 0, '#f1f0ea'));
-    if (CW.cshoes) { R.shoe = ramp(cq('cshoes', 0, shoeHex)); R.strim = ramp(cq('cshoes', 1, '#16181f')); R.sole = ramp(cq('cshoes', 2, '#e8e2d4')); }
+    R.cband = wramp(cq('band', 0, '#f4f2ec')); R.bink = wramp(inkOn(cq('band', 0, '#f4f2ec'))); R.cfoil = wramp('#5a3a12'); R.glens = wramp(cq('goggles', 1, '#b9d8f0')); R.gframe = wramp(cq('goggles', 0, '#1d1f24'));
+    R.guard = wramp(cq('guard', 0, '#f4f2ec')); R.cslL = wramp(cq('sleeveL', 0, '#16181f')); R.cslR = wramp(cq('sleeveR', 0, '#16181f'));
+    R.wrist = wramp(cq('wrist', 0, '#f4f2ec')); R.wink = wramp(inkOn(cq('wrist', 0, '#f4f2ec'))); R.wink2 = wramp(inkOn(cq('csocks', 0, '#f1f0ea'))); R.tape = wramp(cq('tape', 0, '#f4f2ec')); R.tight = wramp(cq('tights', 0, '#16181f'));
+    R.kpad = wramp(cq('knee', 0, '#16181f')); R.abrace = wramp(cq('ankle', 0, '#16181f')); R.under = wramp(cq('under', 0, '#16181f'));
+    /* each court piece's ink: white on a dark piece, black on a light one */
+    var ink = function(slot, d){ return wramp(inkOn(cq(slot, 0, d))); };
+    R.cslLi = ink('sleeveL', '#16181f'); R.cslRi = ink('sleeveR', '#16181f'); R.kpadi = ink('knee', '#16181f'); R.abracei = ink('ankle', '#16181f');
+    R.underi = ink('under', '#16181f'); R.tighti = ink('tights', '#16181f'); R.tapei = ink('tape', '#f4f2ec');
+    if (CW.csocks) R.sock = wramp(cq('csocks', 0, '#f1f0ea'));
+    if (CW.cshoes) { R.shoe = wramp(cq('cshoes', 0, shoeHex)); R.strim = wramp(cq('cshoes', 1, '#16181f')); R.sole = wramp(cq('cshoes', 2, '#e8e2d4')); }
+  }
+  /* what each worn colour is made of (R4): the material table decides its
+     gloss, and cloth never takes the top tone from the light. Only wear's own
+     colours are listed, so the uniform is lit exactly as it always was. */
+  var MK = null;
+  if (ST || CW) {
+    MK = {};
+    var mk = function(keys, mat){ keys.split(' ').forEach(function(k){ MK[k] = mat; }); };
+    if (ST) {
+      var sm = function(slot){ return ST[slot] ? wearMat(slot, ST[slot]) : null; };
+      mk('top top2', sm('top')); if (ST.outer) { mk('out1 out3', sm('outer')); MK.out2 = ST.outer.k === 'varsity' && !artIn(ST.outer, 'mat') ? 'leather' : sm('outer'); }
+      mk('btm btm2 btm3', sm('bottom')); if (ST.bottom && artIn(ST.bottom, 'sig') === 'stripe') MK.btm2 = 'satin';
+      if (ST.hat) mk('hat hat2 hat3 hprint', sm('hat')); if (ST.eyes) { MK.frame = sm('eyes'); MK.lens = 'glass'; MK.clear = 'glass'; }
+      if (ST.chain) { MK.chainc = sm('chain'); MK.gem = 'glass'; } if (ST.watch) { MK.wband = sm('watch'); MK.wface = 'metal'; MK.wdial = 'glass'; }
+      if (ST.bag) mk('bag bag2', sm('bag')); if (ST.phones) mk('phn phn2', sm('phones'));
+      if (ST.held) { mk('cup cup2', 'paper'); MK.phone = 'plastic'; MK.phone2 = 'glass'; }
+      if (ST.shoes) { mk('shoe trim', sm('shoes')); MK.sole = 'rubber'; MK.lace = 'cloth'; MK.metal = 'metal'; }
+      MK.sock = MK.sink = 'knit'; MK.print = MK.top; MK.gold = 'metal'; MK.foil = 'metal'; MK.ofoil = 'metal';
+    }
+    if (CW) {
+      var cm = function(slot){ return CW[slot] ? wearMat(slot, CW[slot]) : null; };
+      if (CW.band) MK.cband = MK.bink = cm('band'); if (CW.goggles) { MK.gframe = cm('goggles'); MK.glens = 'glass'; }
+      if (CW.guard) MK.guard = cm('guard'); if (CW.sleeveL) MK.cslL = MK.cslLi = cm('sleeveL'); if (CW.sleeveR) MK.cslR = MK.cslRi = cm('sleeveR');
+      if (CW.wrist) MK.wrist = MK.wink = cm('wrist'); if (CW.csocks) MK.wink2 = cm('csocks'); if (CW.tape) MK.tape = MK.tapei = cm('tape'); if (CW.tights) MK.tight = MK.tighti = cm('tights');
+      if (CW.knee) MK.kpad = MK.kpadi = cm('knee'); if (CW.ankle) MK.abrace = MK.abracei = cm('ankle'); if (CW.under) MK.under = MK.underi = cm('under');
+      if (CW.csocks) MK.sock = cm('csocks');
+      if (CW.cshoes) { MK.shoe = MK.strim = cm('cshoes'); MK.sole = 'rubber'; MK.lace = 'cloth'; }
+      MK.gold = 'metal'; MK.cfoil = 'metal';
+    }
+    for (var mkk in MK) if (!MK[mkk] || !MATS[MK[mkk]]) delete MK[mkk];
   }
   /* tones, and what each pixel is made of */
-  var T = [], M = [];
-  for (var y = 0; y < HH; y++) { T.push([]); M.push([]); for (var x = 0; x < WW; x++) {
+  var T = [], M = [], X = [], DT = o.mats ? [] : null;
+  for (var y = 0; y < HH; y++) { T.push([]); M.push([]); X.push([]); if (DT) DT.push([]); for (var x = 0; x < WW; x++) {
     var c = hit[y][x];
-    if (!c) { T[y].push(-1); M[y].push(null); continue; }
+    if (!c) { T[y].push(-1); M[y].push(null); X[y].push(0); if (DT) DT[y].push(0); continue; }
     var part = model[c.i], mm = typeof part.m === 'function' ? part.m(c.p) : part.m;
     if (typeof mm === 'string') mm = { m: mm };
-    c.gloss = mm.gloss;
-    M[y].push(mm.m);
-    T[y].push(mm.t != null ? mm.t : toneOf(c, part, mm.dt));
+    var mat = MK && MK[mm.m];
+    c.gloss = mm.gloss != null ? mm.gloss : mat ? MATS[mat].gloss : undefined; c.sheen = mat && MATS[mat].sheen;
+    M[y].push(mm.m); X[y].push(mm.t != null ? 1 : 0); if (DT) DT[y].push(mm.t != null ? 't' + mm.t : mm.dt || 0);
+    var tn = mm.t != null ? mm.t : toneOf(c, part, mm.dt);
+    T[y].push(mat && !MATS[mat].gloss && mm.t == null ? Math.min(tn, 3) : tn);
   } }
   var g = function(x, y){ return y >= 0 && y < HH && x >= 0 && x < WW ? hit[y][x] : null; };
   var gid = function(c){ return model[c.i].g; };
@@ -1549,6 +1990,11 @@ function paint0(look, o){
     var dirs = [[0, -1], [1, 0], [-1, 0]];
     for (var k = 0; k < 3; k++) { var q = g(x2 + dirs[k][0], y2 + dirs[k][1]);
       if (q && gid(q) !== gid(c2_) && q.z > c2_.z + 1.2) { T[y2][x2] = Math.max(0, T[y2][x2] - 1); break; } } }
+  /* for the wardrobe's guards: each pixel's colour key, its tone, whether the
+     tone was set by hand rather than by the light, the pattern's own step
+     (d: a hand set tone, or the shift a material function asked for, with the
+     light left out: R5 reads texture from it), and the material table (R4) */
+  if (o.mats) return { m: M, t: T, x: X, d: DT, k: MK || {} };
   var out = [];
   for (var y3 = 0; y3 < HH; y3++) { out.push(new Array(WW).fill(null)); for (var x3 = 0; x3 < WW; x3++) {
     if (!hit[y3][x3]) continue; var r = R[M[y3][x3]] || R.skin; out[y3][x3] = r[T[y3][x3]]; } }
@@ -1598,7 +2044,8 @@ function paint0(look, o){
      small dark eye, a nose that is only its shadow side, and a mouth. */
   var k = MX.k, H0 = J.head;
   var at = function(lx, ly, lz){ var v = toView([H0[0] + lx * k, H0[1] + ly * k, H0[2] + lz * k]); return [Math.floor(v[0] * res), Math.floor(v[1] * res)]; };
-  var onHead = function(x, y){ var c = g(x, y); return c && model[c.i].n === 'head'; };
+  /* the eye shows through clear glass */
+  var onHead = function(x, y){ var c = g(x, y); return c && (model[c.i].n === 'head' || model[c.i].n.slice(0, 5) === 'clens'); };
   var put = function(x, y, col){ if (onHead(x, y)) out[y][x] = col; };
   var block = function(x, y, w, h, col){ for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++) put(x + xx, y + yy, col); };
   var pupil = mix(SK[0], '#120a0c', 0.55), brow = L.hair === 'bald' || L.hc === 5 ? mix(SK[0], '#120a0c', 0.25) : mix(HRm[0], '#120a0c', 0.2);
@@ -2117,7 +2564,7 @@ var API = {
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
   paint: paint, canvas: canvas, url: url, img: img, breathe: breathe, live: live, warm: warm, _gridData: gridData,
   prop: prop, propCanvas: propCanvas, paintAsync: paintAsync, gridCanvas: toCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
-  WEAR_KINDS: WEAR_KINDS, wearNorm: wearNorm, CWEAR_KINDS: CWEAR_KINDS, cwearNorm: cwearNorm,
+  WEAR_KINDS: WEAR_KINDS, wearNorm: wearNorm, CWEAR_KINDS: CWEAR_KINDS, cwearNorm: cwearNorm, MATS: MATS, SHAPE_MAT: SHAPE_MAT, wearMat: wearMat,
   /* 1 is the first version with the street look. A page that needs it pins
      this, the way it pins board.js: a stale cached copy would ignore ctx and
      draw the uniform with nothing thrown. */

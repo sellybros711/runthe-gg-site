@@ -16,9 +16,12 @@
  *   8. a real player is never dressed (faceless drops the street look)
  *   9. the item pass's rules (the owner's call, 2026-10-17, review 9):
  *      R1 an item reads at size, R2 every catalogue colour is drawn,
- *      R3 no two items in a slot look alike. What waits for the item
- *      redraws (PR 2) is listed in WAITS and printed on every run.
+ *      R3 no two items in a slot look alike. What still waits is listed in
+ *      WAITS, with the rules it waits on, and printed on every run.
  *      9b: a headband is worn across the forehead, on every hair style.
+ *  10. the redraws' rules (PR 2, review 12): R4 every material is the
+ *      table's and cloth is matte, R5 texture is lines and not dither, R9
+ *      rarity shows on the body.
  */
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -31,6 +34,8 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
    nameplate and a card backdrop dress the player card, not the man:
    hoops/check-card.mjs holds those. */
 const WEAR = CAT.ITEMS.filter((i) => !(CAT.NOWEAR || { idle: 1 })[i.slot]);
+/* an item as baller.js is handed it: its shape, its colours and its art keys (catalog.js resolve) */
+const W_ = (it, c) => Object.assign({ k: it.k, c: c || it.c }, it.a ? { a: it.a } : {});
 const LOOK = { skin: 4, hair: 'fade', hc: 0, beard: 'stubble', build: 'standard' };
 
 /* 1 */
@@ -85,14 +90,14 @@ const underOf = (it) => it.slot === 'socks' ? { bottom: { k: 'shorts', c: ['#3a3
 for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand', 'walk1', 'cheer1', 'ball']) {
   const L = Object.assign({}, LOOK, { build });
   for (const it of firstOf(STREET)) {
-    const wear = Object.assign({}, base, underOf(it), { [it.slot]: { k: it.k, c: it.c } });
+    const wear = Object.assign({}, base, underOf(it), { [it.slot]: W_(it) });
     let e = null;
     try { e = edgeOf(L, { ctx: 'street', wear, pose }); } catch (x) { ok(false, '2 ' + it.slot + ':' + it.k + ' paints on ' + build + ' ' + pose + ': ' + x.message); continue; }
     ok(!e, '2 ' + it.slot + ':' + it.k + ' stays inside the grid on ' + build + ' ' + pose + (e ? ' (' + e + ')' : ''));
   }
   /* a hand holding a ball holds nothing else: a held item is dropped, not drawn through the ball */
   if (pose === 'ball') for (const it of firstOf(STREET.filter((i) => i.slot === 'held'))) {
-    ok(same(B.paint(L, { ctx: 'street', wear: Object.assign({}, base, { held: { k: it.k, c: it.c } }), pose }), B.paint(L, { ctx: 'street', wear: base, pose })), '3 ' + it.k + ' is not drawn while he holds the ball');
+    ok(same(B.paint(L, { ctx: 'street', wear: Object.assign({}, base, { held: W_(it) }), pose }), B.paint(L, { ctx: 'street', wear: base, pose })), '3 ' + it.k + ' is not drawn while he holds the ball');
   }
 }
 {
@@ -101,7 +106,7 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
     if (it.free) continue;
     const under = underOf(it), rk = JSON.stringify(under);
     refs[rk] = refs[rk] || JSON.stringify(B.paint(LOOK, { ctx: 'street', wear: Object.assign({}, base, under) }));
-    ok(JSON.stringify(B.paint(LOOK, { ctx: 'street', wear: Object.assign({}, base, under, { [it.slot]: { k: it.k, c: it.c } }) })) !== refs[rk], '3 ' + it.id + ' changes the picture');
+    ok(JSON.stringify(B.paint(LOOK, { ctx: 'street', wear: Object.assign({}, base, under, { [it.slot]: W_(it) }) })) !== refs[rk], '3 ' + it.id + ' changes the picture');
   }
   /* two items are never the same look under two names */
   const looks = new Map();
@@ -110,7 +115,7 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
 /* a heavy, tall man in everything at once */
 {
   const all = {};
-  for (const it of STREET) if (!it.free) all[it.slot] = { k: it.k, c: it.c };
+  for (const it of STREET) if (!it.free) all[it.slot] = W_(it);
   for (const L of [Object.assign({}, LOOK, { ht: 92, wt: 360, build: 'strong' }), Object.assign({}, LOOK, { ht: 66, wt: 140, build: 'lean' })]) for (const pose of ['stand', 'walk2', 'cheer0', 'wave1']) {
     const e = edgeOf(L, { ctx: 'street', wear: all, pose });
     ok(!e, '2 the whole fit stays inside the grid at ' + L.ht + '" ' + L.wt + 'lb ' + pose + (e ? ' (' + e + ')' : ''));
@@ -122,7 +127,7 @@ const UNI = { c1: '#1d428a', c2: '#ffc72c', num: '23' };
 for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand', 'walk1', 'cheer1', 'ball']) {
   const L = Object.assign({}, LOOK, { build });
   for (const it of firstOf(COURT)) {
-    const o = Object.assign({ pose, cwear: { [it.slot]: { k: it.k, c: it.c } } }, UNI);
+    const o = Object.assign({ pose, cwear: { [it.slot]: W_(it) } }, UNI);
     let e = null;
     try { e = edgeOf(L, o); } catch (x) { ok(false, '2c ' + it.slot + ':' + it.k + ' paints on court on ' + build + ' ' + pose + ': ' + x.message); continue; }
     ok(!e, '2c ' + it.slot + ':' + it.k + ' stays inside the grid on court on ' + build + ' ' + pose + (e ? ' (' + e + ')' : ''));
@@ -130,12 +135,12 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
 }
 {
   const ref = JSON.stringify(B.paint(LOOK, UNI));
-  for (const it of COURT) if (!it.free) ok(JSON.stringify(B.paint(LOOK, Object.assign({ cwear: { [it.slot]: { k: it.k, c: it.c } } }, UNI))) !== ref, '3c ' + it.id + ' changes the court picture');
+  for (const it of COURT) if (!it.free) ok(JSON.stringify(B.paint(LOOK, Object.assign({ cwear: { [it.slot]: W_(it) } }, UNI))) !== ref, '3c ' + it.id + ' changes the court picture');
 }
 {
   /* everything at once, on the biggest and smallest man */
   const all = {};
-  for (const it of COURT) if (it.ctx === 'court') all[it.slot] = { k: it.k, c: it.c };
+  for (const it of COURT) if (it.ctx === 'court') all[it.slot] = W_(it);
   all.shoes = { k: 'hitop', c: ['#c8352e', '#f2f2f0', '#f2efe6'] };
   for (const L of [Object.assign({}, LOOK, { ht: 92, wt: 360, build: 'strong' }), Object.assign({}, LOOK, { ht: 66, wt: 140, build: 'lean' })]) for (const pose of ['stand', 'walk2', 'cheer0', 'ball']) {
     const e = edgeOf(L, Object.assign({ pose, cwear: all }, UNI));
@@ -234,31 +239,35 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
    drawn bigger and accepted as a close-up item, so it is held to the most a
    mouth can show, not to a jacket's numbers.
 
-   WAITS is the work the owner approved for the item redraws (PR 2), and only
-   that. An item on it is excused from R1, and a look-alike pair only when both
-   items are on the same line. It is printed on every run, and an item that no
-   longer needs its excuse fails until it comes off the list, so the list only
-   shrinks. */
+   WAITS is work that waits on the owner or a later PR, and only that. Each
+   line names the rules it waits on: an item is excused from R1 only if its
+   line names R1, and a look-alike pair only when both items are on one line
+   that names R3. It is printed on every run, an item that no longer needs its
+   excuse fails until it comes off the list, and nothing goes on it that was
+   not waiting after PR 1, so the list only shrinks. */
 {
   const STARTER = { top: { k: 'tee', c: ['#f1f0ea', '#d8d6cc'] }, bottom: { k: 'jeans', c: ['#3d5a86'] } };
   const R1_COURT = 15, R1_CLOSET = 60, R3_PX = 40, R3_RGB = 40;
   const CLOSE_UP = { guard: { court: 5, closet: 20, apart: 15 } };
+  /* After PR 2 one line is left, and it is the owner's to decide (review
+     12): glasses, a watch and a phone are drawn as big as a face, a wrist
+     and a hand allow, and still come short of a jacket's numbers on a
+     7 pixel face. Like the mouthguard (decision 5) they are close-up items,
+     or the owner says how big. Each line names the rules it waits on; every
+     other rule holds for its items. */
   const WAITS = {
-    'PR 2 glasses: bigger lenses, a brow bar, thicker rims, each shape its own silhouette': ['shades_night', 'shades_tort', 'shades_gold', 'ps1_shades', 'frames_tort', 'frames_black', 'frames_gold', 'sport_smoke', 'sport_ice'],
-    'PR 2 watch: moved to the near wrist, where the camera sees its face': ['watch_gold', 'watch_steel', 'watch_field', 'watch_ice'],
-    'PR 2 held items: the phone and the coffee drawn bigger': ['phone_blue', 'phone_spooky', 'coffee_cup'],
-    'PR 2 shoes: a bigger foot for all, a welt and toe cap on dress shoes': ['st_sneaker_white', 'st_sneaker_black', 'hitop_white', 'hitop_ice', 'hitop_black', 'dress_oxford', 'dress_patent', 'slide_black', 'slide_gold'],
-    'PR 2 tees: a chest print for rare and up, a ringer trim that reads': ['st_tee_white', 'tee_cream', 'tee_black', 'tee_navy', 'tee_tour', 'tee_pixel', 'tee_ringer', 'tee_pumpkin', 'ex_rookie_tee', 'longsleeve_white', 'ps1_long'],
-    'PR 2 materials and palette: satin, fleece and mesh drawn, navy told from black and charcoal': ['st_hoodie_navy', 'hoodie_black', 'ex_hallows_hoodie', 'ps1_hoodie', 'puffer_black', 'puffer_navy', 'blazer_charcoal', 'blazer_navy', 'bomber_black', 'bomber_navy', 'bomber_satin', 'jeans_raw', 'jeans_black', 'jeans_selvedge', 'ex_draft_trousers', 'sweats_charcoal', 'sweats_navy', 'shorts_navy', 'shorts_mesh'],
-    'PR 2 rarity on the body: a signature detail for a legendary chain': ['ex_ring_cuban', 'cuban_gold', 'ps1_chain'],
-    'PR 2 small court pieces: tails past the head, and bands, tape, socks and specs drawn bigger': ['st_band_white', 'band_black', 'band_tied_black', 'band_tied_white', 'st_wrist_white', 'wrist_gold', 'wrist_black', 'wrist_red', 'wrist_royal', 'wrist_orange', 'tape_white', 'tape_black', 'tape_gold', 'csocks_crew_black', 'csocks_crew_purple', 'csocks_low_white', 'csocks_low_black', 'goggles_specs', 'goggles_white', 'goggles_gold'],
+    'owner to decide (review 12): glasses, a watch and a phone as close-up items, like the mouthguard': { rules: ['R1', 'R3'],
+      ids: ['shades_night', 'shades_tort', 'ps1_shades', 'frames_tort', 'frames_black', 'frames_gold', 'sport_smoke', 'sport_ice', 'watch_gold', 'watch_steel', 'watch_field', 'watch_ice', 'phone_blue', 'phone_spooky'] },
   };
   const waitOf = {};
-  for (const why in WAITS) for (const id of WAITS[why]) { ok(!!CAT.item(id), '9 the PR 2 list names a real item (' + id + ')'); ok(!waitOf[id], '9 ' + id + ' is on one PR 2 line only'); waitOf[id] = why; }
+  /* the list only shrinks: nothing waits that was not on PR 1's list (review 11) */
+  const PR1_WAITS = 'shades_night shades_tort shades_gold ps1_shades frames_tort frames_black frames_gold sport_smoke sport_ice watch_gold watch_steel watch_field watch_ice phone_blue phone_spooky coffee_cup st_sneaker_white st_sneaker_black hitop_white hitop_ice hitop_black dress_oxford dress_patent slide_black slide_gold st_tee_white tee_cream tee_black tee_navy tee_tour tee_pixel tee_ringer tee_pumpkin ex_rookie_tee longsleeve_white ps1_long st_hoodie_navy hoodie_black ex_hallows_hoodie ps1_hoodie puffer_black puffer_navy blazer_charcoal blazer_navy bomber_black bomber_navy bomber_satin jeans_raw jeans_black jeans_selvedge ex_draft_trousers sweats_charcoal sweats_navy shorts_navy shorts_mesh ex_ring_cuban cuban_gold ps1_chain st_band_white band_black band_tied_black band_tied_white st_wrist_white wrist_gold wrist_black wrist_red wrist_royal wrist_orange tape_white tape_black tape_gold csocks_crew_black csocks_crew_purple csocks_low_white csocks_low_black goggles_specs goggles_white goggles_gold'.split(' ');
+  const waitRules = {};
+  for (const why in WAITS) for (const id of WAITS[why].ids) { ok(!!CAT.item(id), '9 the waiting list names a real item (' + id + ')'); ok(!waitOf[id], '9 ' + id + ' is on one waiting line only'); ok(PR1_WAITS.indexOf(id) >= 0, '9 ' + id + ' was waiting after PR 1: the list only shrinks'); waitOf[id] = why; waitRules[id] = WAITS[why].rules; }
   const KIT = { c1: '#1d428a', c2: '#ffc72c', num: '23' };
   const isCourt = (it) => it.ctx === 'court';
   const fig = (it, res, c) => { const o = Object.assign({}, KIT, { pose: 'stand', res });
-    if (it) { const w = { [it.slot]: { k: it.k, c: c || it.c } }; if (isCourt(it)) o.cwear = w; else { o.ctx = 'street'; o.wear = Object.assign({}, STARTER, w); } }
+    if (it) { const w = { [it.slot]: W_(it, c) }; if (isCourt(it)) o.cwear = w; else { o.ctx = 'street'; o.wear = Object.assign({}, STARTER, w); } }
     else if (c === 'street') { o.ctx = 'street'; o.wear = STARTER; }
     return B.paint(LOOK, o); };
   const flat = (g) => { const a = new Int32Array(g.length * g[0].length); let i = 0; for (const r of g) for (const c of r) a[i++] = c ? parseInt(c.slice(1), 16) : -1; return a; };
@@ -278,7 +287,7 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
     const lim = CLOSE_UP[it.slot] || { court: R1_COURT, closet: R1_CLOSET };
     const d1 = moved(base[ctx][0], flat(fig(it, 1))), d2 = moved(base[ctx][1], g2), pass = d1 >= lim.court && d2 >= lim.closet;
     r1[it.id] = [d1, d2];
-    if (!pass && waitOf[it.id]) { excused.r1.push(it.id); needed[it.id] = 1; continue; }
+    if (!pass && waitOf[it.id] && waitRules[it.id].indexOf('R1') >= 0) { excused.r1.push(it.id); needed[it.id] = 1; continue; }
     r1n++; ok(pass, '9 R1 ' + it.id + ' (' + it.name + ') reads at size: ' + d1 + ' court pixels (needs ' + lim.court + '), ' + d2 + ' in the closet (needs ' + lim.closet + ')');
   }
   /* R2: a shape asked once for each number of colours */
@@ -295,15 +304,110 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
   for (const g in groups) { const L = groups[g];
     for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
       const a = L[i], b = L[j], need = (CLOSE_UP[a.slot] || {}).apart || R3_PX, d = apart(closet[a.id], closet[b.id]);
-      if (d < need && waitOf[a.id] && waitOf[a.id] === waitOf[b.id]) { excused.r3.push(a.id + ' ~ ' + b.id + ' (' + d + ')'); needed[a.id] = needed[b.id] = 1; continue; }
+      if (d < need && waitOf[a.id] && waitOf[a.id] === waitOf[b.id] && waitRules[a.id].indexOf('R3') >= 0) { excused.r3.push(a.id + ' ~ ' + b.id + ' (' + d + ')'); needed[a.id] = needed[b.id] = 1; continue; }
       r3n++; ok(d >= need, '9 R3 ' + a.id + ' (' + a.name + ') and ' + b.id + ' (' + b.name + ') are told apart: ' + d + ' closet pixels differ (needs ' + need + ')');
     } }
+  /* 10: THE REDRAWS' RULES (PR 2, the owner's rules from review 9).
+     R4 MATERIALS: one table says what each thing is made of, and paint reads
+        it. Cloth is matte: no cloth pixel takes the top tone from the light
+        (a tone set by hand, like a headband's lit rim for R6, is an edge and
+        not a shine). Every glossy material an item names shows a highlight.
+     R5 LINES, NOT DITHER: texture is 1 pixel lines in the shadow tone. A
+        dither leaves crumbs in the pattern, so an item's crumbs stay within 6
+        and 1.5% of what it changes, and the starter jeans' fade is a panel.
+     R9 RARITY ON THE BODY (decision 3): common is the plain shape and names
+        no art key; every art key an item names draws something; in a shape,
+        a rarer item painted in a commoner one's colours still differs, so a
+        step is a shape or a material and never only a hue; and a legendary
+        carries a signature and shows metal or gloss. */
+  const R5_BASE = 6, R5_SHARE = 0.015, R9_PX = 6, R9_CLOSE = 4;
+  const artOf = (it, p) => (it.a || []).filter((t) => t === p || t.indexOf(p + ':') === 0).map((t) => t.split(':')[1] || true)[0] || null;
+  const matsOf = (it) => { const o = Object.assign({}, KIT, { pose: 'stand', res: 2, mats: 1 }), w = { [it.slot]: W_(it) };
+    if (isCourt(it)) o.cwear = w; else { o.ctx = 'street'; o.wear = Object.assign({}, STARTER, w); } return B.paint(LOOK, o); };
+  const MT = B.MATS || null;
+  ok(!!MT && Object.keys(MT).length >= 8 && Object.keys(MT).every((k) => [0, 1, 2].indexOf(MT[k].gloss) >= 0) && ['cloth', 'leather', 'metal', 'satin', 'patent', 'plastic'].every((k) => MT[k]),
+    '10 R4 the material table is there: cloth, leather, metal, satin, patent and plastic, each with a gloss of 0, 1 or 2');
+  let r4n = 0, r5n = 0, r9n = 0;
+  if (MT) {
+    for (const it of WEAR) {
+      const mat = B.wearMat(it.slot, it);
+      ok(!!MT[mat], '10 R4 ' + it.id + ' is made of a material in the table (' + mat + ')');
+      const R = matsOf(it); let shine = 0, lit = 0;
+      R.m.forEach((row, y) => row.forEach((key, x) => { const m = key && R.k[key]; if (!m) return;
+        if (!MT[m].gloss && !R.x[y][x] && R.t[y][x] > 3) shine++;
+        if (MT[m].gloss && R.t[y][x] === 4) lit++; }));
+      r4n++; ok(shine === 0, '10 R4 ' + it.id + ' (' + it.name + ') is matte where it is cloth: ' + shine + ' cloth pixels take the top tone from the light');
+      const gm = artOf(it, 'mat');
+      if (gm && MT[gm] && MT[gm].gloss) ok(lit > 0, '10 R4 ' + it.id + ' (' + it.name + ') shows its ' + gm + ' highlight');
+      if (it.rarity === 'legendary') { r9n++; ok(lit >= 2 && !!artOf(it, 'sig'), '10 R9 the legendary ' + it.id + ' (' + it.name + ') carries a signature (' + (artOf(it, 'sig') || 'none') + ') and shows metal or gloss (' + lit + ' highlight pixels)'); }
+    }
+  }
+  /* R5: TEXTURE IS READ OFF THE PATTERN, NOT THE LIGHT. paint reports each
+     pixel's colour key and the tone step its material asked for (mats: d),
+     so shading on a small round shoe is not mistaken for texture. A crumb is
+     a patch of one pattern no bigger than two pixels, inside a part, that
+     the item changed. The step of a 1 pixel diagonal line touches the next
+     step at a corner, along one diagonal, and is a line; a checker's crumbs
+     touch on both diagonals and count. */
+  const patOf = (it) => { const o = Object.assign({}, KIT, { pose: 'stand', res: 2, mats: 1 });
+    if (it) { const w = { [it.slot]: W_(it) }; if (isCourt(it)) o.cwear = w; else { o.ctx = 'street'; o.wear = Object.assign({}, STARTER, w); } }
+    else { o.ctx = 'street'; o.wear = STARTER; }
+    const R = B.paint(LOOK, o); return R && R.d ? R : null; };
+  const partsOf = (it) => { const o = Object.assign({}, KIT, { pose: 'stand', res: 2, parts: 1 });
+    if (it) { const w = { [it.slot]: W_(it) }; if (isCourt(it)) o.cwear = w; else { o.ctx = 'street'; o.wear = Object.assign({}, STARTER, w); } }
+    else { o.ctx = 'street'; o.wear = STARTER; }
+    return B.paint(LOOK, o); };
+  const crumbs = (R, P, keep) => { const G = R.m.map((row, y) => row.map((k, x) => k == null ? null : k + '|' + R.d[y][x]));
+    const H = G.length, Wd = G[0].length, seen = new Uint8Array(H * Wd); let n = 0, all = 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < Wd; x++) { if (G[y][x] == null || !keep(x, y)) continue; all++; if (seen[y * Wd + x]) continue;
+      const c = G[y][x], st = [[x, y]], comp = []; seen[y * Wd + x] = 1;
+      while (st.length) { const [px, py] = st.pop(); comp.push([px, py]);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const qx = px + dx, qy = py + dy;
+          if (qx < 0 || qy < 0 || qx >= Wd || qy >= H || seen[qy * Wd + qx] || G[qy][qx] !== c) continue; seen[qy * Wd + qx] = 1; st.push([qx, qy]); } }
+      if (comp.length > 2) continue;
+      const inC = (qx, qy) => comp.some(([u, v]) => u === qx && v === qy); let d1 = 0, d2 = 0;
+      for (const [cx, cy] of comp) for (const [i, j] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) { const qx = cx + i, qy = cy + j; if (G[qy] && G[qy][qx] === c && !inC(qx, qy)) { if (i === j) d1++; else d2++; } }
+      if ((d1 > 0) !== (d2 > 0)) continue;
+      for (const [cx, cy] of comp) { if (!keep(cx, cy)) continue; let inner = true;
+        for (let j = -1; j <= 1 && inner; j++) for (let i = -1; i <= 1; i++) if (!P[cy + j] || P[cy + j][cx + i] !== P[cy][cx]) { inner = false; break; }
+        if (inner) n++; } }
+    return [n, all]; };
+  const baseG = { street: fig(null, 2, 'street'), court: fig(null, 2) };
+  {
+    /* the starter jeans' fade is one calm panel on each thigh (and the cuff): it was a 1 in 3 hatch */
+    const R = patOf(null), P = partsOf(null);
+    ok(!!R, '10 R5 paint reports the pattern each pixel was given (mats: d)');
+    if (R) { const H = R.m.length, Wd = R.m[0].length, seen = new Uint8Array(H * Wd), sizes = [], on = (x, y) => /^trouser/.test(P[y][x] || '') && R.m[y][x] === 'btm' && R.d[y][x] === 1;
+      for (let y = 0; y < H; y++) for (let x = 0; x < Wd; x++) { if (!on(x, y) || seen[y * Wd + x]) continue; let n = 0; const st = [[x, y]]; seen[y * Wd + x] = 1;
+        while (st.length) { const [u, v] = st.pop(); n++; for (const [i, j] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const qx = u + i, qy = v + j; if (qx >= 0 && qy >= 0 && qx < Wd && qy < H && !seen[qy * Wd + qx] && on(qx, qy)) { seen[qy * Wd + qx] = 1; st.push([qx, qy]); } } }
+        sizes.push(n); }
+      r5n++; ok(sizes.length > 0 && sizes.length <= 4 && Math.max(...sizes) >= 40, '10 R5 the starter jeans fade as a calm panel: ' + sizes.length + ' patches of the fade (at most 4, a panel and a cuff a leg), the biggest ' + (sizes.length ? Math.max(...sizes) : 0) + ' pixels (at least 40)'); }
+  }
+  for (const it of WEAR) {
+    if (isBase(it)) continue;
+    const g = fig(it, 2), b0 = baseG[isCourt(it) ? 'court' : 'street'], R = patOf(it); if (!R) continue;
+    const [n, all] = crumbs(R, partsOf(it), (x, y) => g[y][x] !== b0[y][x]);
+    r5n++; ok(n <= R5_BASE + R5_SHARE * all, '10 R5 ' + it.id + ' (' + it.name + ') is lines, not dither: ' + n + ' crumbs in the ' + all + ' pixels it changes (at most ' + Math.floor(R5_BASE + R5_SHARE * all) + ')');
+  }
+  /* R9 */
+  const RANK = { common: 0, rare: 1, epic: 2, legendary: 3 };
+  for (const it of WEAR) {
+    if (it.rarity === 'common') { r9n++; ok(!it.a, '10 R9 the common ' + it.id + ' (' + it.name + ') is the plain shape: it names no art key (' + (it.a || []).join(' ') + ')'); }
+    for (const key of it.a || []) { const rest = it.a.filter((k) => k !== key), bare = Object.assign({}, it, { a: rest.length ? rest : undefined });
+      r9n++; ok(moved(closet[it.id], flat(fig(bare, 2))) >= 2, '10 R9 ' + it.id + ' (' + it.name + ') draws its art key ' + key); }
+  }
+  for (const g in groups) { const L = groups[g];
+    for (const a of L) for (const b of L) { if (a.k !== b.k || RANK[b.rarity] <= RANK[a.rarity]) continue;
+      const c = a.c.slice(); while (c.length < b.c.length) c.push(b.c[c.length]);
+      const need = CLOSE_UP[a.slot] ? R9_CLOSE : R9_PX, d = moved(flat(fig(b, 2, c)), flat(fig(a, 2, c)));
+      r9n++; ok(d >= need, '10 R9 ' + b.id + ' (' + b.name + ', ' + b.rarity + ') is a step up from ' + a.id + ' (' + a.name + ', ' + a.rarity + '): in its colours ' + d + ' closet pixels differ (needs ' + need + ')'); } }
+  console.log('the redraws: R4 ' + r4n + ' items matte where cloth, R5 ' + r5n + ' textures, R9 ' + r9n + ' rarity checks');
   /* the list only shrinks */
-  for (const id in waitOf) ok(needed[id], '9 ' + id + ' reads at size and has no look-alike now: take it off the PR 2 list');
+  for (const id in waitOf) ok(needed[id], '9 ' + id + ' reads at size and has no look-alike now: take it off the waiting list');
   console.log('item pass: R1 ' + r1n + ' items, R2 ' + r2n + ' colours, R3 ' + r3n + ' pairs held');
-  console.log('WAITING FOR PR 2 (the owner approved these redraws, review 9): ' + excused.r1.length + ' items excused from R1, ' + excused.r3.length + ' look-alike pairs excused from R3');
+  console.log('WAITING (' + Object.keys(WAITS).length + ' line, ' + Object.keys(waitOf).length + ' items): ' + excused.r1.length + ' items excused from R1, ' + excused.r3.length + ' look-alike pairs excused from R3');
   for (const why in WAITS) {
-    const ids = WAITS[why], s1 = excused.r1.filter((id) => ids.indexOf(id) >= 0), s3 = excused.r3.filter((p) => ids.indexOf(p.split(' ')[0]) >= 0);
+    const ids = WAITS[why].ids, s1 = excused.r1.filter((id) => ids.indexOf(id) >= 0), s3 = excused.r3.filter((p) => ids.indexOf(p.split(' ')[0]) >= 0);
     console.log('  ' + why + ':');
     if (s1.length) console.log('    R1: ' + s1.map((id) => id + ' ' + r1[id].join('/')).join(', '));
     if (s3.length) console.log('    R3: ' + s3.join(', '));
