@@ -13,8 +13,9 @@
  * (the crotch seam as the legs part, the armpit as the arm lifts) and only a cloth simulation
  * would hold those to 1.6x.
  *   the shirt's collar moves more than 2 cm off the skin under it (the neck coming away)
- *   a spine, neck or head joint leaves its anatomical limit (twist about its own axis, swing):
- *     each spine segment 15 deg twist and 30 swing, neck and head 40 each, neck plus head 70 twist
+ *   a spine, neck, head or shoulder joint leaves its anatomical limit (twist about its own axis,
+ *     swing): each spine segment 15 deg twist and 30 swing, neck and head 40 each, neck plus head
+ *     70 twist, a collar bone 35 swing, the ball and socket of the shoulder 120 swing and 70 roll
  * And the body moving as one (added after the owner's next test, 2026-10-18: "the shoulders and hip
  * movements need to be corrected"):
  *   the width across the deltoids stays within 8% of its bind pose (no collapsed or pinched shoulder)

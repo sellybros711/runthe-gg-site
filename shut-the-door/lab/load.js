@@ -15,8 +15,8 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 /* stamp:begin (pipeline/stamp.mjs rewrites this block; do not edit by hand) */
 export const ASSETS = {
-  'batter.glb': 'e85cca774c',
-  'catcher.glb': 'b91958a054',
+  'batter.glb': 'd02696aba0',
+  'catcher.glb': '63f179287e',
   'env_256.hdr': 'b069d60e9b',
   'pitch.json': 'da06753b1a',
   'poster-desktop.webp': '179185beca',
@@ -30,7 +30,7 @@ export const ASSETS = {
   'tex/leather_normal.webp': '187c773393',
   'tex/pad_color.webp': '3292b8fc9d',
   'tex/pad_normal.webp': '65ee1616a5',
-  'umpire.glb': '26175a41bb'
+  'umpire.glb': '1041f97c12'
 };
 /* stamp:end */
 

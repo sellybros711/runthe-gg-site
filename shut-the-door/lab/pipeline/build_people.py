@@ -108,11 +108,14 @@ def body(cfg):
     arm = h.build_armature(f'{MHA}/rigs/standard/rig.game_engine.json', cfg['name'])
     h.load_weights(f'{MHA}/rigs/standard/weights.game_engine.json')
     h.add_twist_bones()
+    h.add_deltoid_bones()
     # wide, smooth joints where the swing bends hardest: the neck, the elbows
     # the neck band only: up to the skull's base (the jaw line), never into the face
     h.smooth_weights(['spine_03', 'neck_01', 'head'], iterations=8, below=h.cube('joint-head')[1] + 0.1)
     for side in ('l', 'r'):
         h.smooth_weights([f'upperarm_twist_{side}', f'lowerarm_{side}'], iterations=6)
+        # the shoulder: collar bone, helper and arm blended over several rings (no seam at the socket)
+        h.smooth_weights([f'clavicle_{side}', f'deltoid_{side}', f'upperarm_{side}'], iterations=4)
         h.smooth_weights([f'lowerarm_twist_{side}', f'hand_{side}'], iterations=4)
     parts = []
     for c in cfg.get('clothes', []):

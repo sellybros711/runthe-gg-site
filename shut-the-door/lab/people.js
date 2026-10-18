@@ -11,7 +11,7 @@ import * as G from './gear3d.js?v=1';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=1';
-import { planFeet, plantFeet, reach, clavicles, chestTo, yawOf, footGeom } from './motion.js?v=1';
+import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=2';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
@@ -478,6 +478,7 @@ export class People {
         b.batTime = Math.min(ct, b.tContact - 0.2);
       }
       clavicles(b);
+      deltoids(b);
       this.poseBat(b);
     }
     if (c) {
@@ -486,11 +487,13 @@ export class People {
       this.catcherArms(c, t);
       lookAt(c, this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
       clavicles(c);
+      deltoids(c);
     }
     if (u) {
       pose(u, { idle: [2.0 + t, 1] });
       this.umpireMove(u, t);
       clavicles(u);
+      deltoids(u);
     }
   }
 

@@ -10,6 +10,11 @@ window.__deformProbe = (opts) => {
   const LIMITS = {
     spine_01: { twist: 15, swing: 30 }, spine_02: { twist: 15, swing: 30 }, spine_03: { twist: 15, swing: 30 },
     neck_01: { twist: 35, swing: 40 }, head: { twist: 30, swing: 30 }, neckhead: { twist: 70, swing: 70 },
+    // the shoulder, from the bind pose (arms 45 degrees down and out): the collar bone lifts and
+    // reaches up to about 35 degrees; the ball and socket swings up to 120 (the rest of a full arm
+    // raise is the shoulder blade's) and keeps under 70 of roll (its twist bone takes the rest)
+    clavicle_l: { twist: 25, swing: 35 }, clavicle_r: { twist: 25, swing: 35 },
+    upperarm_l: { twist: 70, swing: 120 }, upperarm_r: { twist: 70, swing: 120 },
   };
   const out = {};
   for (const who of opts.people) {
@@ -65,7 +70,7 @@ window.__deformProbe = (opts) => {
       const es = new Set();
       for (let f = 0; f < cidx.count; f += 3) { const a = cidx.getX(f), b = cidx.getX(f + 1), c = cidx.getX(f + 2); for (const [x, y] of [[a, b], [b, c], [c, a]]) es.add(x < y ? x * cn + y : y * cn + x); }
       const ce = [...es].map((k) => [Math.floor(k / cn), k % cn]);
-      return { m, cn, ce, len: ce.map(([a, b]) => Math.hypot(r[a * 3] - r[b * 3], r[a * 3 + 1] - r[b * 3 + 1], r[a * 3 + 2] - r[b * 3 + 2])) };
+      return { m, cn, ce, r, len: ce.map(([a, b]) => Math.hypot(r[a * 3] - r[b * 3], r[a * 3 + 1] - r[b * 3 + 1], r[a * 3 + 2] - r[b * 3 + 2])) };
     });
     const si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight;
     const boneOf = (i) => { let bi = 0, bw = -1; for (let k = 0; k < 4; k++) { const w = sw.getComponent(i, k); if (w > bw) { bw = w; bi = si.getComponent(i, k); } } return body.skeleton.bones[bi].name; };
@@ -113,7 +118,8 @@ window.__deformProbe = (opts) => {
     }
     // joint axes in the bind pose
     const axisOf = {};
-    for (const name of ['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head']) {
+    const JOINTS = ['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head', 'clavicle_l', 'clavicle_r', 'upperarm_l', 'upperarm_r'];
+    for (const name of JOINTS) {
       const b = p.bones[name];
       const child = b.children.find((c) => c.isBone);
       axisOf[name] = child ? child.position.clone().normalize() : new T.Vector3(0, 1, 0);
@@ -129,35 +135,31 @@ window.__deformProbe = (opts) => {
       const swing = 2 * Math.acos(Math.min(1, Math.abs(swq.w))) * 180 / Math.PI;
       return { twist, swing, signedTwist: Math.sign(pr.dot(ax) * (tw.w >= 0 ? 1 : -1)) * twist };
     };
-    // the deltoids: the skin within 16 cm of each shoulder joint (on the clavicle, upper arm and
-    // its twist bone), and how far out it reaches along the line between the two joints. That
-    // silhouette width, across both caps, is what a collapsing or pinched deltoid shrinks.
-    const delt = {};
-    for (const sd of ['l', 'r']) {
-      const ids = [];
-      for (let i = 0; i < n; i++) {
-        const w = wOn(i, `upperarm_${sd}`) + (bi[`upperarm_twist_${sd}`] !== undefined ? wOn(i, `upperarm_twist_${sd}`) : 0) + wOn(i, `clavicle_${sd}`);
-        if (w >= 0.3) ids.push(i);
-      }
-      delt[sd] = ids;
-    }
+    // the deltoids: how far the skin stands out over each shoulder joint, along the line between
+    // the two joints. A ray from each joint outward along that line leaves the body through the
+    // deltoid; the first skin it meets (within 4 cm of the ray) is the cap. Across both caps and
+    // the joints between them is the width across the shoulders, and a collapsing or pinched
+    // deltoid shows as that width shrinking.
+    // the visible surface: skin and garments (skin under a shirt is deleted in the build)
+    const surf = (skin, cloth) => { const parts = [skin, ...cloth]; const out = new Float32Array(parts.reduce((a, x) => a + x.length, 0)); let o = 0; for (const x of parts) { out.set(x, o); o += x.length; } return out; };
     const capWidth = (arr) => {
       const jl = p.bones.upperarm_l.getWorldPosition(new T.Vector3()), jr = p.bones.upperarm_r.getWorldPosition(new T.Vector3());
       const u = jl.clone().sub(jr).normalize();
-      const side = (sd, j, sign) => {
-        let m = 0;
-        for (const i of delt[sd]) {
-          const dx = arr[i * 3] - j.x, dy = arr[i * 3 + 1] - j.y, dz = arr[i * 3 + 2] - j.z;
-          if (dx * dx + dy * dy + dz * dz > 0.16 * 0.16) continue;
+      const side = (j, sign) => {
+        let m = Infinity;
+        for (let i = 0; i < arr.length; i += 3) {
+          const dx = arr[i] - j.x, dy = arr[i + 1] - j.y, dz = arr[i + 2] - j.z;
           const o = (dx * u.x + dy * u.y + dz * u.z) * sign;
-          if (o > m) m = o;
+          if (o <= 0 || o > 0.2) continue;
+          const off2 = dx * dx + dy * dy + dz * dz - o * o;
+          if (off2 < 0.04 * 0.04 && o < m) m = o;
         }
-        return m;
+        return Number.isFinite(m) ? m : 0;
       };
-      const l = side('l', jl, 1), r = side('r', jr, -1);
+      const l = side(jl, 1), r = side(jr, -1);
       return { w: jl.distanceTo(jr) + l + r, l, r };
     };
-    const restCap = capWidth(rest);
+    const restCap = capWidth(surf(rest, clothJ.map((c) => c.r)));
     const restWidth = restCap.w;
     const kin = [];
     const wp = (name) => { const q = new T.Vector3(); p.bones[name].getWorldPosition(q); return q; };
@@ -183,8 +185,10 @@ window.__deformProbe = (opts) => {
       if (chi2 > worst.creaseStretch.v) worst.creaseStretch = { v: chi2, t, bone: boneOf(E[chE][0]) + '/' + boneOf(E[chE][1]) };
       if (clo2 < worst.creaseSquash.v) worst.creaseSquash = { v: clo2, t, bone: boneOf(E[clE][0]) + '/' + boneOf(E[clE][1]) };
       let chi = 1, clo = 1;
+      const clothNow = [];
       for (const c of clothJ) {
         const cp = new Float32Array(c.cn * 3);
+        clothNow.push(cp);
         for (let i = 0; i < c.cn; i++) { c.m.getVertexPosition(i, v).applyMatrix4(c.m.matrixWorld); cp[i * 3] = v.x; cp[i * 3 + 1] = v.y; cp[i * 3 + 2] = v.z; }
         for (let k = 0; k < c.ce.length; k++) {
           const [a, b] = c.ce[k];
@@ -208,7 +212,7 @@ window.__deformProbe = (opts) => {
       if (gap > worst.collar.v) worst.collar = { v: gap, t };
       const js = {};
       let neckTw = 0, neckSw = 0;
-      for (const name of ['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head']) {
+      for (const name of JOINTS) {
         const r = twistSwing(p.bones[name]);
         js[name] = r;
         const lim = LIMITS[name];
@@ -220,7 +224,7 @@ window.__deformProbe = (opts) => {
       if (oN > worst.joint.v) worst.joint = { v: oN, t, bone: 'neck_01+head', twist: +neckTw.toFixed(1), swing: +neckSw.toFixed(1) };
       {
         const tl = wp('thigh_l'), tr = wp('thigh_r'), ul = wp('upperarm_l'), ur = wp('upperarm_r'), pel = wp('pelvis');
-        const cw = capWidth(now), width = cw.w / restWidth;
+        const cw = capWidth(surf(now, clothNow)), width = cw.w / restWidth;
         kin.push({ t, hip: Math.atan2(tl.x - tr.x, tl.z - tr.z), sh: Math.atan2(ul.x - ur.x, ul.z - ur.z),
           tilt: Math.atan2(tl.y - tr.y, Math.hypot(tl.x - tr.x, tl.z - tr.z)) * 180 / Math.PI, pel: [pel.x, pel.y, pel.z], width,
           capL: cw.l / restCap.l, capR: cw.r / restCap.r,
@@ -262,7 +266,7 @@ function kinematics(kin, p, who) {
       plantedFrames++;
       // the heel is judged from the frame it comes down (a heel settling onto the ground swings
       // round the ball as it lowers; that is not a slide)
-      const heelDown = a[i][1] < ay0 + 0.02;
+      const heelDown = a[i][1] < ay0 + 0.01;   // on the ground: within 1 cm of its lowest
       if (!heelDown) heel = -1; else if (heel < 0) heel = i;
       if (start < 0) { start = i; continue; }
       const db = Math.hypot(b[i][0] - b[start][0], b[i][2] - b[start][2]);

@@ -199,6 +199,41 @@ class Human:
             self.wmat[f'{seg}_twist_{side}'] = w * f
             self.wmat[bone] = w * (1 - f)
 
+    def add_deltoid_bones(self, share=0.9, reach=0.4):
+        """A helper bone at each shoulder joint, a sibling of the upper arm (child of the collar bone,
+        same head, same rest), that the scene turns half as far as the upper arm. Linear blend
+        skinning pulls the cap of the shoulder straight through the joint as the arm swings (the
+        deltoid collapses with the arm down, pinches with it across the chest); skin carried by a
+        bone that turns half as far stays out over the socket, as the muscle does. The upper arm's
+        weight near the joint is shared with it: share at and above the joint, fading to none a
+        third of the way down the arm."""
+        arm = self.arm
+        bpy.context.view_layer.objects.active = arm
+        bpy.ops.object.mode_set(mode='EDIT')
+        eb = arm.data.edit_bones
+        spans = {}
+        for side in ('l', 'r'):
+            ua = eb[f'upperarm_{side}']
+            d = eb.new(f'deltoid_{side}')
+            d.head = ua.head.copy(); d.tail = ua.head + (ua.tail - ua.head) * 0.3
+            d.roll = ua.roll
+            d.parent = ua.parent
+            d.use_connect = False
+            spans[side] = (np.array(ua.head), np.array(ua.tail))
+        bpy.ops.object.mode_set(mode='OBJECT')
+        vb = to_blender(self.v)
+        for side, (a, b) in spans.items():
+            n = f'upperarm_{side}'
+            if n not in self.wmat:
+                continue
+            axis = b - a
+            t = ((vb - a) @ axis) / (axis @ axis)
+            f = 1 - np.clip(t / reach, 0, 1)
+            f = f * f * (3 - 2 * f) * share
+            w = self.wmat[n]
+            self.wmat[f'deltoid_{side}'] = w * f
+            self.wmat[n] = w * (1 - f)
+
     def smooth_weights(self, bones, iterations=6, rate=0.5, below=None):
         """Relax the weights among a set of bones over the skin's own edges (Laplacian), only on
         vertices that use those bones (and, with below, only under that height). A sharp change of bone at a joint puts all of the joint's

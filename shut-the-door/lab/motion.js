@@ -126,7 +126,7 @@ function ankleFor(p, s, ball, q) {
     where both legs reach. A leg is never stretched. */
 export function reach(p, plan, t) {
   const i = at(plan, t), pel = p.bones.pelvis;
-  for (let pass = 0; pass < 6; pass++) {
+  for (let pass = 0; pass < 16; pass++) {
     let moved = false;
     for (const s of SIDES) {
       const F = plan.feet[s], L = F.lock[i];
@@ -266,5 +266,24 @@ export function chestTo(p, q, axis = null) {
     const along = wpos(B[c]).sub(wpos(B[n])).normalize();
     if (along.dot(axis) < 0) along.negate();
     rotateWorld(B[n], new THREE.Quaternion().setFromAxisAngle(along, ang / 3));
+  }
+}
+
+/** The deltoid helpers (pipeline/mh.py add_deltoid_bones): each turns 15% as far as its upper arm,
+    so the skin over the shoulder's cap stays out over the socket, riding with the collar bone, while
+    the arm turns under it. Measured on the batter's front shoulder across his chest: the cap stands
+    4 cm off the joint when the helper follows the arm all the way, 5.4 at 30%, 5.8 at 15%, against
+    7.7 in the bind pose. Last, every frame. */
+const DELTOID = 0.15;
+export function deltoids(p) {
+  if (!p.deltBind) {
+    p.deltBind = {};
+    for (const [b, , q] of p.bind) if (/^deltoid_[lr]$/.test(b.name)) p.deltBind[b.name] = q.clone();
+  }
+  for (const s of SIDES) {
+    const d = p.bones[`deltoid_${s}`], ua = p.bones[`upperarm_${s}`];
+    if (!d || !ua) continue;
+    d.quaternion.copy(p.deltBind[d.name]).slerp(ua.quaternion, DELTOID);
+    d.updateMatrixWorld(true);
   }
 }
