@@ -1349,7 +1349,7 @@ if (!args.includes('--no-browser')){
       return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives, clocks:(after.back || []).length }; });
     claim(lvs.first === 0 && lvs.wound === 0, `a fresh browser takes the server's lives, and a wound clock does not refill them (${lvs.first}, then ${lvs.wound})`);
     claim(lvs.spent && lvs.srv === 1 && lvs.after === 1 && lvs.clocks === 8, `a lost life is spent on the server, with a clock of its own (server ${lvs.srv}, browser ${lvs.after}, ${lvs.clocks} clocks)`);
-    // A GUEST WALKS THE OPENING WORLD AND PLAYS NO TOUR HOLE (the owner, 2026-10-16). A hole asks them to sign in,
+    // A GUEST WALKS TO HOLE 1 ONLY AND PLAYS NO TOUR HOLE (the owner, 2026-10-16; story mode 2026-10-18). Hole 1 asks them to sign in,
     // the Daily Hole stays open, and a guest never sees a coin count.
     const gst = await pg.evaluate(async () => {
       localStorage.removeItem('bag_ppt_v1'); sbUser = null; window.RTT_PUTT.open(puttHost());
@@ -1373,8 +1373,8 @@ if (!args.includes('--no-browser')){
       localStorage.removeItem('bag_ppt_v1'); localStorage.removeItem('bag_ppt_v1@chk'); sbUser = { id:'chk' }; openPutt();
       return { pill, txt, walkBtn, notPlayed, tap, card, res, daily, deep, toAcct }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && gst.walkBtn, `a guest's hole 1 asks them to sign in and offers to keep walking (${JSON.stringify(gst.txt.slice(0, 60))})`);
-    claim(gst.tap === 'trail' || gst.tap === 'sheet', `a guest tapping hole 3 on the map walks to it, never plays it (${gst.tap})`);
+    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && !gst.walkBtn, `a guest's hole 1 asks them to sign in, with no walk on past it (${JSON.stringify(gst.txt.slice(0, 60))})`);
+    claim(gst.tap !== 'trail' && gst.tap !== 'sheet', `story mode: a guest tapping hole 3 on the map stays on the map (${gst.tap})`);
     claim(gst.deep && gst.toAcct, `past the opening world the sheet offers no walk, and Sign in opens the sign in sheet (${gst.deep}, ${gst.toAcct})`);
     claim(gst.daily, `a guest can still play the Daily Hole (${gst.daily})`);
     claim(!gst.pill && !/\bcoins?\b|\+\d/i.test(gst.card) && /Sign in to collect your coins/.test(gst.res) && !/\+\d+ coins/.test(gst.res), `a guest sees no coin count: no wallet, the Daily card ${JSON.stringify(gst.card.slice(-30))}, the result says sign in`);
@@ -1542,7 +1542,8 @@ if (!args.includes('--no-browser')){
       claim(v3.fxMed < 900, `with the console look a Tour hole renders in ${v3.fxMed}ms at the median, on this machine`);
     }
     // a hole in 3D, through the game; and a render that throws draws the hole flat rather than nothing
-    await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); window.RTT_PUTT._level(23); });
+    // hole 23 is past this record's frontier: an account on PUTT_ALL_ACCESS opens it (story mode refuses it to anybody else)
+    await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); const u0 = sbUsername; sbUsername = 'RunnyJ'; window.RTT_PUTT._level(23); sbUsername = u0; });
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
     claim(await pg.evaluate(() => !!window.RTT_PUTT._state().play.v3), 'a Tour hole plays in 3D');
     await pg.setViewportSize({ width:1280, height:760 }); await pg.waitForTimeout(2600);

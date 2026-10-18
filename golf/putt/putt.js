@@ -2768,7 +2768,10 @@ function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p
    guest never sees a coin count: what they pick up is held for the account (the host's held coins) and the game
    says so. A host that cannot say who is signed in gates nobody. GUEST_WALK is how many holes of the main tour a
    guest may walk to (the opening world). */
-var GUEST_WALK = 18;
+// STORY MODE (the owner, 2026-10-18): everybody starts on hole 1 and opens the next only by beating the one before.
+// A guest walks the trail to hole 1 and nothing past it; hole 1 asks them to sign in. GUEST_WALK was 18 (the
+// opening world, 2026-10-16).
+var GUEST_WALK = 1;
 function isGuest(){ try{ var h = hostOf(); return !!(h.signedIn && !h.signedIn()); }catch(e){ return false; } }
 var GUEST_COINS = 'Sign in to collect your coins and open packs.';
 function guestSheet(n, tid){
@@ -3058,7 +3061,7 @@ function drawMap(st, TR){
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id];
-    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK){ return trailOk() ? openTrail(TR.id, n - 1) : guestSheet(n, TR.id); }   // a guest walks the opening world
+    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK && opened(TR, tq, n)){ return trailOk() ? openTrail(TR.id, n - 1) : guestSheet(n, TR.id); }   // a guest walks the opening world
     if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? wLabel(TR, pw + 1) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
   box.querySelectorAll('[data-cw]').forEach(function(c){ c.onclick = function(){ var w = +c.getAttribute('data-cw'), tq = pload().tours[TR.id], have = starsThrough(tq, TR, w - 1), need = worldGate(TR, w - 1);
@@ -3773,6 +3776,8 @@ function startLevel(n, tid){
   if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
   if (isGuest() && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays no Tour hole
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
+  // STORY MODE: a hole not yet reached never starts, from any door (the map already refuses it; this is the backstop)
+  var TRo = tourOf(tid); if (!back && !TRo.lab && !TRo.secret && !opened(TRo, (st.tours || {})[tid], n)) return showHub(tid);
   var kp = !back && keeperBlocks(st, n, tid); if (kp) return keeperSheet(kp, n);
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
   if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !tourOf(tid).secret && !allAccess()) return outOfLives();
