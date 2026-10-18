@@ -1341,6 +1341,7 @@ window.GA_ID='G-L29P5MRWKE';
   .botnav button .navdot.num{width:auto; min-width:17px; height:17px; border-radius:9px; padding:0 4px;
     font:900 10px/17px var(--mono); color:#fff; text-align:center; letter-spacing:0}
   .navfab .navdot.num{top:-3px!important; right:2px}
+  .botnav button .navdot.new{background:#f1d04a; color:#1a1206; border-color:#04160b; box-shadow:0 0 6px rgba(241,208,74,.8); left:calc(50% + 2px)}
   /* 8: real tap targets + pressed states on the small home controls */
   .om-btn,.howtop,.wheelbtn{min-height:44px}
   .navtile{min-height:62px}
@@ -13076,12 +13077,13 @@ function navSetActive(nav){
     b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
     let gift=false; try{ gift=!!loginPend(); }catch(e){}
     const want=(id==='me' && (newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo)
-      || (id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='daily' && dailyTodo);
-    const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : '';
+      || (id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='daily' && dailyTodo) || (id==='putthub' && puttNewTag());
+    const fresh=id==='putthub' && puttNewTag();
+    const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : fresh ? 'NEW' : '';
     let dot=b.querySelector('.navdot');
     if(want && !dot){ dot=document.createElement('span'); dot.className='navdot'; b.appendChild(dot); }
     else if(!want && dot){ dot.remove(); dot=null; }
-    if(dot){ dot.classList.toggle('num', !!num); dot.textContent=num; } });
+    if(dot){ dot.classList.toggle('num', !!num); dot.classList.toggle('new', fresh); dot.textContent=num; } });
 }
 function openRules(){ if(S.screen==='rules')return; S.rulesReturn=S.screen; S.overlay=null; S.screen='rules'; render(); }
 function scrRules(){
@@ -15736,7 +15738,7 @@ function ftLive(){ try{ return puttOn(); }catch(e){ return false; } }
 function ftOn(){ return FT_SCREENS.includes(S.screen) && ftLive(); }
 function ftClosetOn(){ try{ return S.screen==='setup' && !!S.setupEdit && ftLive(); }catch(e){ return false; } }
 function ftDesk(){ try{ return matchMedia('(min-width: 900px) and (min-height: 560px)').matches; }catch(e){ return false; } }
-function ftGo(scr){ S.overlay=null; S.screen=scr; render(); }
+function ftGo(scr){ if(scr==='putthub'){ try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} } S.overlay=null; S.screen=scr; render(); }
 // the pixel check, drawn on the game's 18 by 18 icon grid and shaded by its medal renderer
 const FT_CHECK=["..................","..................","..................","..............hh..",".............hmm..","............hmmd..","...........hmmd...","..hh......hmmd....","..mmh....hmmd.....","..dmmh..hmmd......","...dmmhhmmd.......","....dmmmmd........",".....dmmd.........","......dd..........","..................","..................","..................",".................."];
 function ftIcon(k){ try{
@@ -16160,7 +16162,7 @@ function scrTitle(){
   pro.querySelector('.ft-dbtn').onclick=()=>ftGo('protour'); pro.querySelector('.ft-play').onclick=pp.go; root.appendChild(pro);
   if(putt){ let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
     const hearts=m?ftHearts(m.lives,m.max):'';
-    const door=$(`<div class="ft-door putt" data-side="putt"><button type="button" class="ft-dbtn" aria-label="Putt Putt: worlds, stars and the Members Tour"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>`:''}</span><span class="ft-go">Into the world ›</span></button><button type="button" class="ft-play" aria-label="Play Putt Putt"><i class="ft-tri"></i><span>Play</span><small>${m?'Hole '+m.lv:'Putt Putt'}</small></button></div>`);
+    const door=$(`<div class="ft-door putt" data-side="putt"><button type="button" class="ft-dbtn" aria-label="Putt Putt: worlds, stars and the Members Tour"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt${puttNewTag()?'<span class="ft-new">New</span>':''}</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>`:''}</span><span class="ft-go">Into the world ›</span></button><button type="button" class="ft-play" aria-label="Play Putt Putt"><i class="ft-tri"></i><span>Play</span><small>${m?'Hole '+m.lv:'Putt Putt'}</small></button></div>`);
     door.querySelector('.ft-dbtn').onclick=()=>ftGo('putthub');
     door.querySelector('.ft-play').onclick=()=>{ try{ track('home_play_putt'); }catch(e){} openPutt(); }; root.appendChild(door); }
   // desktop: the seam leans toward the other side while you hover one
@@ -16432,6 +16434,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-long{display:none} .ft-short{display:inline}
 .ft-dk{font:800 9px var(--body);white-space:nowrap;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.6)}
 .ft-dt{font:400 clamp(30px,9.5vw,40px)/.92 var(--display);text-transform:uppercase;text-shadow:0 6px 24px rgba(0,0,0,.6)}
+.ft-new{display:inline-block;vertical-align:top;margin-left:6px;padding:3px 6px 2px;border-radius:7px;background:#f1d04a;color:#1a1206;font:900 11px/1 var(--mono);letter-spacing:.08em;text-shadow:none;box-shadow:0 0 10px rgba(241,208,74,.6)}
 .ft-row{display:flex;flex-wrap:wrap;gap:5px}
 .ft-door.putt .ft-row{justify-content:flex-end}
 .ft-chip{display:inline-flex;align-items:center;gap:4px;font:700 11px var(--body);background:rgba(6,20,14,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(244,227,201,.14);border-radius:7px;padding:3px 7px;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -23870,7 +23873,11 @@ function puttLivesReturn(){
     try{ toast('Paid. Your lives are on the way. They show up in a minute.', 5200); }catch(e){}
   }); })();
 }
-function openPutt(o){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&o.go?o:undefined); }
+// THE NEW TAG on the Putt Putt tab and the home's Putt Putt door: until this browser has opened Putt Putt once,
+// and for the launch weeks only (PUTT_NEW_UNTIL, midnight Eastern on that day).
+const PUTT_NEW_UNTIL=Date.parse('2026-11-16T05:00:00Z');
+function puttNewTag(){ try{ return puttOn() && Date.now()<PUTT_NEW_UNTIL && !localStorage.getItem('bag_putt_seen'); }catch(e){ return false; } }
+function openPutt(o){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&o.go?o:undefined); }
 function openPuttDaily(){ openPutt({go:'daily'}); }
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){
@@ -28772,7 +28779,7 @@ function tourRetroNode(){
    knockout. This is that record. Newest first, one entry per feature, each saying plainly what it is and
    where to go and find it. Adding a feature = adding one row at the TOP of NEWS_ENTRIES; everything else
    (the unread count, the badges, the pill) is derived.                                                  */
-const NEWS_CATS={tour:{name:'The Tour',col:'#F1D04A'}, career:{name:'Your Career',col:'#35d6a0'},
+const NEWS_CATS={putt:{name:'Putt Putt',col:'#7ee2a8'}, tour:{name:'The Tour',col:'#F1D04A'}, career:{name:'Your Career',col:'#35d6a0'},
                  team:{name:'Team Golf',col:'#8fd3ff'}, sim:{name:'Playing It',col:'#c99bff'}};
 // Entries are grouped under the date they shipped, so an issue reads as an issue. Everything up to and
 // including the split-cup fix went out together; a later feature just carries its own date string.
@@ -28781,7 +28788,26 @@ const NEWS_DATE2='8/22/26';
 const NEWS_DATE3='8/27/26';
 const NEWS_DATE4='10/1/26';
 const NEWS_DATE5='10/5/26';
+const NEWS_DATE6='10/18/26';   // the Putt Putt Tour launch
 const NEWS_ENTRIES=[
+  {id:'putt-launch', date:NEWS_DATE6, cat:'putt', icon:'⛳', title:'Putt Putt Tour is here',
+   blurb:'A whole mini golf game, right inside Run The Tour. Walk themed worlds. Make par or better for stars. Stars open the next world. Your golfer and your putter come with you.',
+   where:'The Putt Putt tab, or the Putt Putt side of Home.'},
+  {id:'first-tee', date:NEWS_DATE6, cat:'putt', icon:'🏠', title:'A new home: The First Tee',
+   blurb:'Your golfer stands on the tee. Pro Tour is on one side. Putt Putt is on the other. Today\'s dailies sit on one pin sheet. Your login gift waits there to be claimed.',
+   where:'The Home tab.'},
+  {id:'putt-daily', date:NEWS_DATE6, cat:'putt', icon:'⏱', title:'The Daily Hole',
+   blurb:'A new hole every day. You get one try, and it never costs a life. Fewest strokes tops the board. The clock breaks ties.',
+   where:'Tap Daily Hole on the pin sheet.'},
+  {id:'putt-gyms', date:NEWS_DATE6, cat:'putt', icon:'🔐', title:'Puzzle gyms on the trails',
+   blurb:'The trails hide puzzle gyms. No two worlds play the same kind of puzzle. Solve one for coins and a free pack. Beat the Gatekeeper to reach a world\'s last hole.',
+   where:'Walk the trails between holes in Putt Putt.'},
+  {id:'putt-lives', date:NEWS_DATE6, cat:'putt', icon:'❤', title:'Hearts and lives',
+   blurb:'Going over par costs a life. Each life comes back a day after you lose it. The Daily Hole is always free. A Tour Pass doubles your hearts.',
+   where:'The hearts at the top of Putt Putt.'},
+  {id:'putt-gear', date:NEWS_DATE6, cat:'putt', icon:'🏅', title:'Win gear in Putt Putt',
+   blurb:'Clear a world to win its named items. They boost your golfer in both games. Find putter parts on the trails and build a new putter.',
+   where:'Putt Putt. Wear what you win from the Closet.'},
   {id:'menu-grouped', date:NEWS_DATE5, cat:'tour', icon:'📖', title:'A tidier menu',
    blurb:'The menu is grouped now: Play, Progress, Records, Shop, Help, Account and Settings. On a computer the groups sit side by side. A badge shows when a spin or a pass reward is waiting.',
    where:'The ≡ button at the top of any screen.'},
@@ -29051,7 +29077,7 @@ function overlayWhatsNew(app){
   const fresh=new Set(S._newsFresh||[]);
   const ov=$(`<div class="ov"></div>`);
   ov.appendChild($(`<h3 style="margin:0 0 2px">What's New</h3>`));
-  ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:0 0 14px">Everything new in Career Mode, newest first.</p>`));
+  ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted);margin:0 0 14px">Everything new in Run The Tour and Putt Putt, newest first.</p>`));
   if(fresh.size) ov.appendChild($(`<div class="nw-bar"><b style="color:var(--gold)">${fresh.size} new</b> since you last looked.</div>`));
   // grouped under the date each batch shipped, so it reads as an issue rather than a flat list
   const groups=[]; NEWS_ENTRIES.forEach(e=>{ const d=e.date||NEWS_DATE;
