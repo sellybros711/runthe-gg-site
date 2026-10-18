@@ -11,6 +11,7 @@ import * as G from './gear3d.js?v=1';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=1';
+import { planFeet, plantFeet, reach, clavicles, chestTo, yawOf, footGeom } from './motion.js?v=1';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
@@ -87,6 +88,19 @@ export function pose(p, spec) {
   p.root.updateMatrixWorld(true);
 }
 
+/** Lay one clip's rotations on a set of bones only, at another time (the rest stays as posed). */
+const LOWER = new Set(['pelvis', 'thigh_l', 'calf_l', 'foot_l', 'thigh_r', 'calf_r', 'foot_r']);
+function sampleRot(p, clip, time, set) {
+  const a = p.actions[clip];
+  const tt = THREE.MathUtils.clamp(time, 0, a.clip.duration - 1e-3);
+  for (const s of p.samplers[clip]) {
+    if (!s.q || !set.has(s.bone.name)) continue;
+    const v = s.interp.evaluate(tt);
+    s.bone.quaternion.set(v[0], v[1], v[2], v[3]);
+  }
+  p.root.updateMatrixWorld(true);
+}
+
 /** Turn a person to face the mound (+z) and put his pelvis over the given ground point. */
 export function face(p, at) {
   const clip = Object.keys(p.clips)[0];
@@ -120,7 +134,12 @@ function stance(p) {
     const yaw = new THREE.Quaternion().setFromAxisAngle(UP, sign * c.toeOut);
     const side = new THREE.Vector3(1, 0, 0).applyQuaternion(yaw);
     const pitch = new THREE.Quaternion().setFromAxisAngle(side, -c.heel);
-    p.feet[s] = { pos: a.add(new THREE.Vector3(0, c.heel * 0.06, 0)), q: pitch.multiply(yaw).multiply(q0) };
+    const flat = yaw.clone().multiply(q0);
+    const q = pitch.multiply(yaw).multiply(q0);
+    const pos = a.add(new THREE.Vector3(0, c.heel * 0.06, 0));
+    // the ball of the foot is the spot that never moves; the heel lifts and settles around it
+    const ball = pos.clone().add(footGeom(p)[s].off.clone().applyQuaternion(q));
+    p.feet[s] = { pos, q, flat, ball };
   }
 }
 
@@ -133,13 +152,14 @@ function crouch(p, k) {
   pel.position.copy(pel.parent.worldToLocal(w));
   pel.updateMatrixWorld(true);
   for (const [s, sign] of [['l', 1], ['r', -1]]) {
+    // planted on the ball of the foot whether he is crouched or rising: the heel comes down as he
+    // stands, the foot never slides
     const f = p.feet[s];
-    const cur = wpos(B[`foot_${s}`]);
-    const tgt = cur.clone().lerp(f.pos, k);
+    const want = f.flat.clone().slerp(f.q, k);
+    const tgt = f.ball.clone().sub(p.footGeom[s].off.clone().applyQuaternion(want));
     const pole = wpos(B[`calf_${s}`]).add(new THREE.Vector3(sign * c.kneeOut, 0, 1.2));
     twoBoneIK(B[`thigh_${s}`], B[`calf_${s}`], B[`foot_${s}`], tgt, pole, 1);
     const q = wquat(B[`foot_${s}`]);
-    const want = q.clone().slerp(f.q, k);
     rotateWorld(B[`foot_${s}`], want.multiply(q.invert()));
   }
   const lean = c.lean * k;
@@ -233,6 +253,84 @@ export class People {
     b.root.position.x += want.x - mid.x; b.root.position.z += want.z - mid.z;
     b.root.updateMatrixWorld(true);
     ground(b);
+    this.setupChain(b);
+  }
+
+  /* The swing as a kinetic chain. The capture's hips and shoulders turn almost together (its hips
+     peak 33 ms before the shoulders, 24 degrees apart at foot strike), and the actor's pelvis
+     travels 66 cm with both feet sliding under it. A big league swing strides, lands, and fires
+     the hips first: at foot strike the shoulders are still closed 30 to 50 degrees against hips
+     that have begun to open, and the shoulders catch up only as the bat comes through.
+       lead   the hips and legs run ahead of the trunk (sampled up to 20 ms later in the capture),
+              from the leg lift to just after contact
+       coil   the shoulders turn back against the hips through the stride and let go between foot
+              strike and contact (the chest is put back exactly at contact, so the bat path is the
+              capture's where it meets the ball)
+       trim   the pelvis travels 60% of the actor's distance toward the mound
+     The feet are then locked to the ground where they land (motion.js). */
+  setupChain(b) {
+    const clip = b.clips[b.clip], front = b.lefty ? 'r' : 'l';
+    const hs = [];
+    for (let t = 0; t <= b.tContact + 0.05; t += 1 / 60) { pose(b, { [b.clip]: [t, 1] }); hs.push([t, wpos(b.bones[`foot_${front}`]).y]); }
+    let top = 0; for (let i = 0; i < hs.length; i++) if (hs[i][1] > hs[top][1]) top = i;
+    const low = Math.min(...hs.slice(top).map((h) => h[1]));
+    let k = top; while (k < hs.length - 1 && hs[k][1] > low + 0.01) k++;
+    let lift = top; while (lift > 0 && hs[lift][1] > hs[0][1] + 0.01) lift--;
+    pose(b, { [b.clip]: [0, 1] });
+    const y0 = yawOf(b, 'thigh_r', 'thigh_l');
+    const p0 = wpos(b.bones.pelvis);
+    pose(b, { [b.clip]: [b.tContact + 0.3, 1] });
+    let dy = yawOf(b, 'thigh_r', 'thigh_l') - y0; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
+    const tTop = hs[top][0], tStrike = hs[k][0], tC = b.tContact;
+    const ramp = (x, a, c) => smooth(clamp01((x - a) / Math.max(1e-3, c - a)));
+    b.chain = {
+      tTop, tStrike, dirn: Math.sign(dy) || 1, p0, trim: 0.6,
+      lead: (t) => 0.02 * ramp(t, tTop - 0.25, tStrike - 0.05) * (1 - ramp(t, tC, tC + 0.35)),
+      coil: (t) => THREE.MathUtils.degToRad(10) * ramp(t, tTop - 0.45, tStrike) * (1 - ramp(t, tStrike, tC - 0.03)),
+    };
+    // the feet: where they are down in this motion, for the swing (by capture time) and the take
+    // (by the clock relative to the plate)
+    // the back foot never leaves the ground: it pivots on its ball as the hips open. The front
+    // foot lifts, lands on its ball and settles flat, and stays
+    const back = b.lefty ? 'l' : 'r', tLift = hs[lift][0];
+    const feet = (t0, t1) => ({ [back]: [[t0, t1, 'pivot']], [front]: [[t0, tLift, 'land'], [tStrike, t1, 'flat']] });
+    if (!b.take) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, clip.duration, feet(0, clip.duration));
+    else { const ct0 = -this.pitch.tPlate + b.tContact - 0.1; b.feetTake = planFeet(b, (t) => this.takeBase(b, t), ct0, ct0 + 3.8, feet(ct0, ct0 + 3.8)); }
+  }
+
+  /** The swing at capture time t, before the feet are planted. */
+  swingBase(b, t) {
+    pose(b, { [b.clip]: [t, 1] });
+    const ch = b.chain;
+    if (!ch) return;
+    const chest = wquat(b.bones.spine_03);
+    const lead = ch.lead(t);
+    if (lead > 1e-4) sampleRot(b, b.clip, t + lead, LOWER);
+    const coil = ch.coil(t);
+    chestTo(b, new THREE.Quaternion().setFromAxisAngle(UP, -ch.dirn * coil).multiply(chest), UP);
+    this.trimPelvis(b);
+  }
+
+  /** The take at clock time ct (relative to the swing's contact), before the feet are planted:
+      the same capture through his load and stride, then he holds the hands back as the ball goes
+      by and lets the bat settle toward his stance again. */
+  takeBase(b, ct) {
+    const launch = b.tContact - 0.2;
+    const k = smooth(clamp01((ct - launch - 0.25) / 0.9));
+    pose(b, [[b.clip, Math.min(ct, launch), 1], [b.clip, 0.4 + Math.max(0, ct - launch) * 0.3, k * 0.75]]);
+    const ch = b.chain;
+    if (!ch) return;
+    const coil = ch.coil(Math.min(ct, launch)) * (1 - k);
+    if (coil > 1e-4) chestTo(b, new THREE.Quaternion().setFromAxisAngle(UP, -ch.dirn * coil).multiply(wquat(b.bones.spine_03)), UP);
+    this.trimPelvis(b);
+  }
+
+  trimPelvis(b) {
+    const ch = b.chain, pel = b.bones.pelvis;
+    const w = wpos(pel);
+    w.x = ch.p0.x + (w.x - ch.p0.x) * ch.trim; w.z = ch.p0.z + (w.z - ch.p0.z) * ch.trim;
+    pel.position.copy(pel.parent.worldToLocal(w));
+    pel.updateMatrixWorld(true);
   }
 
   /** The bat in the bottom hand's frame, sampled through the clip and smoothed (the capture has
@@ -370,15 +468,16 @@ export class People {
         const hold = b.tContact + 0.42;
         const cw = ct < hold ? ct : hold + (1 - Math.exp(-(ct - hold) / 0.5)) * 0.18;
         b.batTime = cw;
-        pose(b, { [b.clip]: [cw, 1] });
+        this.swingBase(b, cw);
+        reach(b, b.feetSwing, cw);
+        plantFeet(b, b.feetSwing, cw);
       } else {
-        // the take: the same capture through his load and stride, then he holds the hands back as
-        // the ball goes by and lets the bat settle toward his stance again
-        const launch = b.tContact - 0.2;
-        const k = smooth(clamp01((ct - launch - 0.25) / 0.9));
-        pose(b, [[b.clip, Math.min(ct, launch), 1], [b.clip, 0.4 + Math.max(0, ct - launch) * 0.3, k * 0.75]]);
+        this.takeBase(b, ct);
+        reach(b, b.feetTake, ct);
+        plantFeet(b, b.feetTake, ct);
+        b.batTime = Math.min(ct, b.tContact - 0.2);
       }
-      if (b.take) b.batTime = Math.min(ct, b.tContact - 0.2);
+      clavicles(b);
       this.poseBat(b);
     }
     if (c) {
@@ -386,10 +485,12 @@ export class People {
       crouch(c, 1);
       this.catcherArms(c, t);
       lookAt(c, this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
+      clavicles(c);
     }
     if (u) {
       pose(u, { idle: [2.0 + t, 1] });
       this.umpireMove(u, t);
+      clavicles(u);
     }
   }
 

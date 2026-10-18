@@ -2927,8 +2927,8 @@
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "1",
-      "sha": "099c6fe4647382ee"
+      "v": "2",
+      "sha": "553a71edc573d79c"
     }
   },
   "soccer/index.html": {
@@ -3055,8 +3055,8 @@
       "sha": "1e240ea7fe77b8cb"
     },
     "people.js": {
-      "v": "1",
-      "sha": "c825c8db99fd0dd1"
+      "v": "2",
+      "sha": "1a8904d74fe7033d"
     },
     "pitch.js": {
       "v": "1",
@@ -3145,6 +3145,10 @@
     "load.js": {
       "v": "1",
       "sha": "850071804208ee3f"
+    },
+    "motion.js": {
+      "v": "1",
+      "sha": "c77863e8f262d642"
     }
   },
   "shut-the-door/lab/pitch.js": {
@@ -3161,6 +3165,12 @@
     "dims.js": {
       "v": "1",
       "sha": "0b9524a162e9ef96"
+    }
+  },
+  "shut-the-door/lab/motion.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "34647a01ead672d6"
     }
   }
 }

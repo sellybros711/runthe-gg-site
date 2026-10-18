@@ -31,21 +31,28 @@ window.__deformProbe = (opts) => {
       for (const [x, y] of [[a, b], [b, c], [c, a]]) edges.add(x < y ? x * n + y : y * n + x);
     }
     let E = [...edges].map((k) => [Math.floor(k / n), k % n]);
-    // what a viewer sees: skin that is not under a garment (more than 4.5 cm from any cloth vertex)
-    // and the garments themselves. Skin kept under a collar or hem only to close the gap is hidden,
+    // what a viewer sees: skin that is not under a garment, and the garments themselves. Skin kept under a collar or hem only to close the gap is hidden,
     // and is not judged.
     const cloths = p.meshes.filter((m) => m.isSkinnedMesh && m !== body && m.visible && /casualsuit|shoes/.test(m.material.name || ''));
     const clothPts = [];
     for (const m of cloths) { const cp = m.geometry.attributes.position; for (let i = 0; i < cp.count; i += 1) { m.getVertexPosition(i, v).applyMatrix4(m.matrixWorld); clothPts.push(v.x, v.y, v.z); } }
     const grid = new Map(), G = 0.05, key = (x, y, z) => `${Math.floor(x / G)},${Math.floor(y / G)},${Math.floor(z / G)}`;
     for (let i = 0; i < clothPts.length; i += 3) { const k = key(clothPts[i], clothPts[i + 1], clothPts[i + 2]); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(i); }
+    // covered: a garment within 4.5 cm, or within 9 cm straight out over the skin (a loose pant leg
+    // or sleeve hangs further off the skin than a shirt does, and still hides it)
     const covered = new Uint8Array(n);
+    const nrm = geo.attributes.normal, nm = new T.Matrix3().getNormalMatrix(body.matrixWorld), nv = new T.Vector3();
     for (let i = 0; i < n; i++) {
       const x = rest[i * 3], y = rest[i * 3 + 1], z = rest[i * 3 + 2];
+      nv.fromBufferAttribute(nrm, i).applyMatrix3(nm).normalize();
       let hit = false;
-      for (let dx = -1; dx <= 1 && !hit; dx++) for (let dy = -1; dy <= 1 && !hit; dy++) for (let dz = -1; dz <= 1 && !hit; dz++) {
+      for (let dx = -2; dx <= 2 && !hit; dx++) for (let dy = -2; dy <= 2 && !hit; dy++) for (let dz = -2; dz <= 2 && !hit; dz++) {
         const l = grid.get(`${Math.floor(x / G) + dx},${Math.floor(y / G) + dy},${Math.floor(z / G) + dz}`);
-        if (l) for (const j of l) if ((clothPts[j] - x) ** 2 + (clothPts[j + 1] - y) ** 2 + (clothPts[j + 2] - z) ** 2 < 0.045 ** 2) { hit = true; break; }
+        if (l) for (const j of l) {
+          const ex = clothPts[j] - x, ey = clothPts[j + 1] - y, ez = clothPts[j + 2] - z, d2 = ex * ex + ey * ey + ez * ez;
+          if (d2 < 0.045 ** 2) { hit = true; break; }
+          if (d2 < 0.09 ** 2 && ex * nv.x + ey * nv.y + ez * nv.z > 0.8 * Math.sqrt(d2)) { hit = true; break; }
+        }
       }
       covered[i] = hit ? 1 : 0;
     }
@@ -122,6 +129,38 @@ window.__deformProbe = (opts) => {
       const swing = 2 * Math.acos(Math.min(1, Math.abs(swq.w))) * 180 / Math.PI;
       return { twist, swing, signedTwist: Math.sign(pr.dot(ax) * (tw.w >= 0 ? 1 : -1)) * twist };
     };
+    // the deltoids: the skin within 16 cm of each shoulder joint (on the clavicle, upper arm and
+    // its twist bone), and how far out it reaches along the line between the two joints. That
+    // silhouette width, across both caps, is what a collapsing or pinched deltoid shrinks.
+    const delt = {};
+    for (const sd of ['l', 'r']) {
+      const ids = [];
+      for (let i = 0; i < n; i++) {
+        const w = wOn(i, `upperarm_${sd}`) + (bi[`upperarm_twist_${sd}`] !== undefined ? wOn(i, `upperarm_twist_${sd}`) : 0) + wOn(i, `clavicle_${sd}`);
+        if (w >= 0.3) ids.push(i);
+      }
+      delt[sd] = ids;
+    }
+    const capWidth = (arr) => {
+      const jl = p.bones.upperarm_l.getWorldPosition(new T.Vector3()), jr = p.bones.upperarm_r.getWorldPosition(new T.Vector3());
+      const u = jl.clone().sub(jr).normalize();
+      const side = (sd, j, sign) => {
+        let m = 0;
+        for (const i of delt[sd]) {
+          const dx = arr[i * 3] - j.x, dy = arr[i * 3 + 1] - j.y, dz = arr[i * 3 + 2] - j.z;
+          if (dx * dx + dy * dy + dz * dz > 0.16 * 0.16) continue;
+          const o = (dx * u.x + dy * u.y + dz * u.z) * sign;
+          if (o > m) m = o;
+        }
+        return m;
+      };
+      const l = side('l', jl, 1), r = side('r', jr, -1);
+      return { w: jl.distanceTo(jr) + l + r, l, r };
+    };
+    const restCap = capWidth(rest);
+    const restWidth = restCap.w;
+    const kin = [];
+    const wp = (name) => { const q = new T.Vector3(); p.bones[name].getWorldPosition(q); return q; };
     const worst = { stretch: { v: 1 }, squash: { v: 1 }, collar: { v: 0 }, joint: { v: 0 }, clothStretch: { v: 1 }, clothSquash: { v: 1 }, creaseStretch: { v: 1 }, creaseSquash: { v: 1 }, fingerStretch: { v: 1 }, fingerSquash: { v: 1 } };
     const series = [];
     for (let t = opts.t0; t <= opts.t1 + 1e-6; t += opts.dt) {
@@ -159,7 +198,7 @@ window.__deformProbe = (opts) => {
       if (clo < worst.clothSquash.v) worst.clothSquash = { v: clo, t };
       const nameOf = (e) => (e == null ? '-' : typeof e === 'string' ? e : boneOf(E[e][0]) + '/' + boneOf(E[e][1]));
       if (hi > worst.stretch.v) worst.stretch = { v: hi, t, bone: nameOf(hiE) };
-      if (lo < worst.squash.v) worst.squash = { v: lo, t, bone: nameOf(loE) };
+      if (lo < worst.squash.v) worst.squash = { v: lo, t, bone: nameOf(loE), at: loE == null ? null : [now[E[loE][0] * 3], now[E[loE][0] * 3 + 1], now[E[loE][0] * 3 + 2]].map((x) => +x.toFixed(3)) };
       let gap = 0;
       for (const [si2, bj, d0] of collar) {
         shirt.getVertexPosition(si2, v).applyMatrix4(shirt.matrixWorld);
@@ -179,9 +218,87 @@ window.__deformProbe = (opts) => {
       }
       const oN = Math.max(Math.abs(neckTw) / LIMITS.neckhead.twist, neckSw / LIMITS.neckhead.swing);
       if (oN > worst.joint.v) worst.joint = { v: oN, t, bone: 'neck_01+head', twist: +neckTw.toFixed(1), swing: +neckSw.toFixed(1) };
+      {
+        const tl = wp('thigh_l'), tr = wp('thigh_r'), ul = wp('upperarm_l'), ur = wp('upperarm_r'), pel = wp('pelvis');
+        const cw = capWidth(now), width = cw.w / restWidth;
+        kin.push({ t, hip: Math.atan2(tl.x - tr.x, tl.z - tr.z), sh: Math.atan2(ul.x - ur.x, ul.z - ur.z),
+          tilt: Math.atan2(tl.y - tr.y, Math.hypot(tl.x - tr.x, tl.z - tr.z)) * 180 / Math.PI, pel: [pel.x, pel.y, pel.z], width,
+          capL: cw.l / restCap.l, capR: cw.r / restCap.r,
+          feet: Object.fromEntries(['l', 'r'].map((sd) => [sd, { a: wp(`foot_${sd}`).toArray(), b: wp(`ball_${sd}`).toArray() }])) });
+      }
       series.push([+t.toFixed(3), +hi.toFixed(2), +lo.toFixed(2), +gap.toFixed(3), +js.neck_01.twist.toFixed(0), +js.head.twist.toFixed(0), +js.spine_03.twist.toFixed(0)]);
     }
-    out[who] = { worst, collarVerts: collar.length, edges: E.length, series: opts.series ? series : undefined };
+    out[who] = { worst, collarVerts: collar.length, edges: E.length, series: opts.series ? series : undefined, kin: kinematics(kin, p, who) };
   }
   return out;
 };
+
+/* The body moving as a body: from the per frame bone positions.
+     width      the distance across the deltoids over its bind pose value (worst frame)
+     feet       a planted foot must not skate: while the ball of a foot is on the ground and still,
+                it (and the ankle, while the heel is down too) must stay within 1 cm of where it landed
+     pelvis     its tilt to the side, and how far it travels toward the mound
+     sequence   (the batter's swing) the hips' turn must peak before the shoulders', and the
+                shoulders must still be closed against the hips by 30 to 50 degrees at foot strike */
+function kinematics(kin, p, who) {
+  const out = {};
+  let wLo = { v: 9 }, wHi = { v: 0 };
+  let cap = { v: 9 };
+  for (const k of kin) {
+    if (k.width < wLo.v) wLo = { v: k.width, t: k.t }; if (k.width > wHi.v) wHi = { v: k.width, t: k.t };
+    for (const [sd, c] of [['l', k.capL], ['r', k.capR]]) if (c < cap.v) cap = { v: c, t: k.t, side: sd };
+  }
+  out.width = { lo: wLo, hi: wHi, cap };
+  // feet: phases where the ball is down (within 2.5 cm of its lowest height) and slow
+  out.feet = {};
+  for (const sd of ['l', 'r']) {
+    const b = kin.map((k) => k.feet[sd].b), a = kin.map((k) => k.feet[sd].a);
+    const by0 = Math.min(...b.map((x) => x[1])), ay0 = Math.min(...a.map((x) => x[1]));
+    let worst = { v: 0 }, start = -1, heel = -1, plantedFrames = 0;
+    for (let i = 0; i < kin.length; i++) {
+      const v = i ? Math.hypot(b[i][0] - b[i - 1][0], b[i][2] - b[i - 1][2]) / (kin[i].t - kin[i - 1].t) : 0;
+      const down = b[i][1] < by0 + 0.025 && v < 0.3;
+      if (!down) { start = -1; heel = -1; continue; }
+      plantedFrames++;
+      // the heel is judged from the frame it comes down (a heel settling onto the ground swings
+      // round the ball as it lowers; that is not a slide)
+      const heelDown = a[i][1] < ay0 + 0.02;
+      if (!heelDown) heel = -1; else if (heel < 0) heel = i;
+      if (start < 0) { start = i; continue; }
+      const db = Math.hypot(b[i][0] - b[start][0], b[i][2] - b[start][2]);
+      const da = heel >= 0 ? Math.hypot(a[i][0] - a[heel][0], a[i][2] - a[heel][2]) : 0;
+      const d = Math.max(db, da);
+      if (d > worst.v) worst = { v: d, t: kin[i].t, from: kin[start].t, part: db >= da ? 'ball' : 'heel' };
+    }
+    out.feet[sd] = { skate: worst, plantedFrames };
+  }
+  const tilt = kin.map((k) => Math.abs(k.tilt));
+  const it = tilt.indexOf(Math.max(...tilt));
+  const z = kin.map((k) => k.pel[2]);
+  out.pelvis = { tilt: { v: tilt[it], t: kin[it].t }, travel: Math.max(...z) - Math.min(...z) };
+  if (who === 'batter' && p.lefty !== undefined && !p.take) {
+    const unwrap = (arr) => { const o = [arr[0]]; for (let i = 1; i < arr.length; i++) { let d = arr[i] - arr[i - 1]; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; o.push(o[i - 1] + d); } return o; };
+    const hip = unwrap(kin.map((k) => k.hip)), sh = unwrap(kin.map((k) => k.sh));
+    const vel = (y) => y.map((_, i) => { const a = Math.max(0, i - 1), c = Math.min(y.length - 1, i + 1); return (y[c] - y[a]) / (kin[c].t - kin[a].t); });
+    const hv = vel(hip), sv = vel(sh);
+    const dirn = Math.sign(hip[hip.length - 1] - hip[0]);   // the way he opens
+    let ih = 0, is = 0;
+    for (let i = 0; i < kin.length; i++) { if (hv[i] * dirn > hv[ih] * dirn) ih = i; if (sv[i] * dirn > sv[is] * dirn) is = i; }
+    // foot strike: the front foot's first landing after it is highest
+    const front = p.lefty ? 'r' : 'l';
+    // (the ball of the foot touching down: the heel may follow later)
+    const fy = kin.map((k) => k.feet[front].a[1]), by = kin.map((k) => k.feet[front].b[1]);
+    let top = 0; for (let i = 0; i < fy.length; i++) if (fy[i] > fy[top]) top = i;
+    const low = Math.min(...by.slice(top));
+    let strike = top; while (strike < by.length - 1 && by[strike] > low + 0.01) strike++;
+    const deg = 180 / Math.PI;
+    out.sequence = {
+      hipPeak: { t: kin[ih].t, v: Math.abs(hv[ih]) * deg }, shoulderPeak: { t: kin[is].t, v: Math.abs(sv[is]) * deg },
+      leadMs: (kin[is].t - kin[ih].t) * 1000, strike: kin[strike].t,
+      separation: (sh[strike] - hip[strike]) * -dirn * deg,
+      maxSeparation: Math.max(...kin.map((_, i) => (sh[i] - hip[i]) * -dirn * deg)),
+      hipTurn: Math.abs(hip[hip.length - 1] - hip[0]) * deg, shoulderTurn: Math.abs(sh[sh.length - 1] - sh[0]) * deg,
+    };
+  }
+  return out;
+}
