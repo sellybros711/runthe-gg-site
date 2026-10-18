@@ -3044,7 +3044,7 @@
   "shut-the-door/lab/scene.js": {
     "load.js": {
       "v": "3",
-      "sha": "3f3f146b0ca95324"
+      "sha": "d2668b1dea0a207b"
     },
     "field.js": {
       "v": "3",
@@ -3112,7 +3112,7 @@
     },
     "load.js": {
       "v": "3",
-      "sha": "3f3f146b0ca95324"
+      "sha": "d2668b1dea0a207b"
     }
   },
   "shut-the-door/lab/stands.js": {
@@ -3126,7 +3126,7 @@
     },
     "load.js": {
       "v": "3",
-      "sha": "3f3f146b0ca95324"
+      "sha": "d2668b1dea0a207b"
     }
   },
   "shut-the-door/lab/people.js": {
@@ -3148,7 +3148,7 @@
     },
     "load.js": {
       "v": "3",
-      "sha": "3f3f146b0ca95324"
+      "sha": "d2668b1dea0a207b"
     },
     "motion.js": {
       "v": "5",
