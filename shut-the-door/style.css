@@ -226,6 +226,10 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .pitch { flex: 1 1 0; min-width: 0; border: 1.5px solid var(--line-2); background: var(--panel); border-radius: 14px; padding: 7px 4px 6px; display: flex; flex-direction: column; align-items: center; min-height: 54px; position: relative; overflow: hidden; }
 .pitch b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 18px; line-height: 1.05; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .pitch span { font-size: 11.5px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.arsenal[data-n="4"] .pitch b { font-size: 16px; }
+.arsenal[data-n="5"] .pitch, .arsenal[data-n="6"] .pitch { padding: 7px 2px 6px; }
+.arsenal[data-n="5"] .pitch b, .arsenal[data-n="6"] .pitch b { font-size: 14px; letter-spacing: -.01em; }
+.arsenal[data-n="5"] .pitch span, .arsenal[data-n="6"] .pitch span { font-size: 10.5px; }
 .pitch.sel { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .pitch.sel::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--signal); }
 .pitch.sel span { color: var(--bg); opacity: .75; }

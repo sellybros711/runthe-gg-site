@@ -251,6 +251,7 @@ function buildMound() {
   $('m-scene').insertBefore(S.grid.el, $('m-scout'));
   var ars = $('m-arsenal');
   ars.innerHTML = '';
+  ars.dataset.n = S.scn.pitcher.arsenal.length;
   S.scn.pitcher.arsenal.forEach(function (a, i) {
     var b = document.createElement('button');
     b.type = 'button';
