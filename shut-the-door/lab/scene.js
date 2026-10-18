@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { preload } from './load.js?v=1';
 import { buildField } from './field.js?v=1';
 import { buildStands } from './stands.js?v=1';
-import { People } from './people.js?v=4';
+import { People } from './people.js?v=5';
 import { Pitch } from './pitch.js?v=1';
 import { FT, P, smooth } from './units.js?v=1';
 

@@ -56,7 +56,7 @@ export function planFeet(p, poseAt, t0, t1, spans = null) {
   for (const s of SIDES) {
     const r = raw[s];
     let list;
-    if (spans && spans[s]) list = spans[s].map(([a, b, how]) => [idx(a), idx(b), how]);
+    if (spans && spans[s]) list = spans[s].map(([a, b, how, open]) => [idx(a), idx(b), how, open]);
     else {
       const down = r.map((x, i) => {
         const j = Math.min(n - 1, i + 1), k = Math.max(0, i - 1);
@@ -74,7 +74,7 @@ export function planFeet(p, poseAt, t0, t1, spans = null) {
     }
     const lock = new Array(n).fill(null);
     const flat = r[0].ankle.y - r[0].ball.y;
-    for (const [a, b, how] of list) {
+    for (const [a, b, how, open] of list) {
       const ball = r[a].ball.clone(); ball.y = ground;
       // flat: the stance's tilt (sole on the ground) with the yaw it landed with (a foot that
       // landed closed stays closed; turning it now would sweep the heel)
@@ -91,6 +91,21 @@ export function planFeet(p, poseAt, t0, t1, spans = null) {
           q = r[a].q.clone().slerp(r[i].q, lift);
         }
         lock[i] = { ball, q };
+        // open: after contact the front foot spins open on its heel, as most big leaguers' does
+        // (open = { at, deg, dir }: from capture time at, up to deg degrees, turning the way the
+        // hips open). The heel stays where it is; the toe comes off the ground a little as it turns
+        if (open && how === 'flat') {
+          const t = t0 + i * DT;
+          const k = smooth01((t - open.at) / 0.3);
+          if (k > 0) {
+            const q0 = q.clone(), heel = ball.clone().sub(p.footGeom[s].off.clone().applyQuaternion(q0));
+            const turn = new THREE.Quaternion().setFromAxisAngle(UP, open.dir * THREE.MathUtils.degToRad(open.deg) * k);
+            const side = new THREE.Vector3(1, 0, 0).applyQuaternion(q0);
+            const lift = new THREE.Quaternion().setFromAxisAngle(side, -THREE.MathUtils.degToRad(5) * Math.sin(Math.PI * Math.min(1, k * 1.2)));
+            const q1 = turn.multiply(lift).multiply(q0);
+            lock[i] = { ball: heel.clone().add(p.footGeom[s].off.clone().applyQuaternion(q1)), q: q1, heel };
+          }
+        }
       }
     }
     // weights: 1 inside a span, ramping over BLEND seconds outside it
@@ -132,7 +147,7 @@ export function reach(p, plan, t) {
       const F = plan.feet[s], L = F.lock[i];
       if (!L || F.w[i] <= 0) continue;
       const hip = wpos(p.bones[`thigh_${s}`]);
-      const ankle = ankleFor(p, s, L.ball, L.q).lerp(wpos(p.bones[`foot_${s}`]), 1 - F.w[i]);
+      const ankle = (L.heel ? L.heel.clone() : ankleFor(p, s, L.ball, L.q)).lerp(wpos(p.bones[`foot_${s}`]), 1 - F.w[i]);
       const d = hip.distanceTo(ankle), max = p.footGeom[s].leg * 0.985;
       if (d <= max) continue;
       const w = wpos(pel).add(ankle.clone().sub(hip).multiplyScalar((d - max) / d));
@@ -154,7 +169,7 @@ export function plantFeet(p, plan, t) {
     const B = p.bones, foot = B[`foot_${s}`];
     const q0 = wquat(foot);
     const q = q0.clone().slerp(L.q, w);
-    const tgt = ankleFor(p, s, L.ball, q).lerp(wpos(foot), 1 - w);
+    const tgt = (L.heel && w >= 1 ? L.heel.clone() : ankleFor(p, s, L.ball, q)).lerp(wpos(foot), 1 - w);
     const knee = wpos(B[`calf_${s}`]), hip = wpos(B[`thigh_${s}`]);
     // the pole: the capture's knee, pushed well out in front of the hip to ankle line
     const mid = hip.clone().lerp(wpos(foot), 0.5);

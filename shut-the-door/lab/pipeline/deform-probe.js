@@ -239,8 +239,8 @@ window.__deformProbe = (opts) => {
 
 /* The body moving as a body: from the per frame bone positions.
      width      the distance across the deltoids over its bind pose value (worst frame)
-     feet       a planted foot must not skate: while the ball of a foot is on the ground and still,
-                it (and the ankle, while the heel is down too) must stay within 1 cm of where it landed
+     feet       a planted foot must not skate: the ball of the foot or the heel, whichever is on the
+                ground (both, when both are), stays within 1 cm of where it came down
      pelvis     its tilt to the side, and how far it travels toward the mound
      sequence   (the batter's swing) the hips' turn must peak before the shoulders', and the
                 shoulders must still be closed against the hips by 30 to 50 degrees at foot strike */
@@ -253,26 +253,33 @@ function kinematics(kin, p, who) {
     for (const [sd, c] of [['l', k.capL], ['r', k.capR]]) if (c < cap.v) cap = { v: c, t: k.t, side: sd };
   }
   out.width = { lo: wLo, hi: wHi, cap };
-  // feet: phases where the ball is down (within 2.5 cm of its lowest height) and slow
+  // feet: the ball of the foot and the heel (the ankle over it) each have their own spans on the
+  // ground (low and still); within a span a point must stay where it came down. A foot turning on
+  // its ball or on its heel keeps that point still while the other moves, which is not a slide:
+  // a frame's skate is the smallest drift among the points that are down (a slide moves them all)
   out.feet = {};
   for (const sd of ['l', 'r']) {
-    const b = kin.map((k) => k.feet[sd].b), a = kin.map((k) => k.feet[sd].a);
-    const by0 = Math.min(...b.map((x) => x[1])), ay0 = Math.min(...a.map((x) => x[1]));
-    let worst = { v: 0 }, start = -1, heel = -1, plantedFrames = 0;
+    const track = (pts, lift) => {
+      const y0 = Math.min(...pts.map((x) => x[1]));
+      const drift = new Array(pts.length).fill(null);
+      let start = -1;
+      for (let i = 0; i < pts.length; i++) {
+        const j = Math.max(0, i - 1);
+        const v = i ? Math.hypot(pts[i][0] - pts[j][0], pts[i][2] - pts[j][2]) / (kin[i].t - kin[j].t) : 0;
+        if (!(pts[i][1] < y0 + lift && v < 0.3)) { start = -1; continue; }
+        if (start < 0) start = i;
+        drift[i] = [Math.hypot(pts[i][0] - pts[start][0], pts[i][2] - pts[start][2]), start];
+      }
+      return drift;
+    };
+    const db = track(kin.map((k) => k.feet[sd].b), 0.025), da = track(kin.map((k) => k.feet[sd].a), 0.01);
+    let worst = { v: 0 }, plantedFrames = 0;
     for (let i = 0; i < kin.length; i++) {
-      const v = i ? Math.hypot(b[i][0] - b[i - 1][0], b[i][2] - b[i - 1][2]) / (kin[i].t - kin[i - 1].t) : 0;
-      const down = b[i][1] < by0 + 0.025 && v < 0.3;
-      if (!down) { start = -1; heel = -1; continue; }
+      const c = [db[i] && [db[i][0], db[i][1], 'ball'], da[i] && [da[i][0], da[i][1], 'heel']].filter(Boolean);
+      if (!c.length) continue;
       plantedFrames++;
-      // the heel is judged from the frame it comes down (a heel settling onto the ground swings
-      // round the ball as it lowers; that is not a slide)
-      const heelDown = a[i][1] < ay0 + 0.01;   // on the ground: within 1 cm of its lowest
-      if (!heelDown) heel = -1; else if (heel < 0) heel = i;
-      if (start < 0) { start = i; continue; }
-      const db = Math.hypot(b[i][0] - b[start][0], b[i][2] - b[start][2]);
-      const da = heel >= 0 ? Math.hypot(a[i][0] - a[heel][0], a[i][2] - a[heel][2]) : 0;
-      const d = Math.max(db, da);
-      if (d > worst.v) worst = { v: d, t: kin[i].t, from: kin[start].t, part: db >= da ? 'ball' : 'heel' };
+      c.sort((x, y) => x[0] - y[0]);
+      if (c[0][0] > worst.v) worst = { v: c[0][0], t: kin[i].t, from: kin[c[0][1]].t, part: c[0][2] };
     }
     out.feet[sd] = { skate: worst, plantedFrames };
   }

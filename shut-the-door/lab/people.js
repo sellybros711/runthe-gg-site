@@ -11,7 +11,7 @@ import * as G from './gear3d.js?v=1';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=1';
-import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=3';
+import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=4';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
@@ -293,9 +293,11 @@ export class People {
     // the back foot never leaves the ground: it pivots on its ball as the hips open. The front
     // foot lifts, lands on its ball and settles flat, and stays
     const back = b.lefty ? 'l' : 'r', tLift = hs[lift][0];
-    const feet = (t0, t1) => ({ [back]: [[t0, t1, 'pivot']], [front]: [[t0, tLift, 'land'], [tStrike, t1, 'flat']] });
-    if (!b.take) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, clip.duration, feet(0, clip.duration));
-    else { const ct0 = -this.pitch.tPlate + b.tContact - 0.1; b.feetTake = planFeet(b, (t) => this.takeBase(b, t), ct0, ct0 + 3.8, feet(ct0, ct0 + 3.8)); }
+    // after contact the front foot spins open on its heel (35 degrees, the way the hips open)
+    const open = { at: tC - 0.02, deg: 35, dir: Math.sign(dy) || 1 };
+    const feet = (t0, t1, swing) => ({ [back]: [[t0, t1, 'pivot']], [front]: [[t0, tLift, 'land'], [tStrike, t1, 'flat', swing ? open : null]] });
+    if (!b.take) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, clip.duration, feet(0, clip.duration, true));
+    else { const ct0 = -this.pitch.tPlate + b.tContact - 0.1; b.feetTake = planFeet(b, (t) => this.takeBase(b, t), ct0, ct0 + 3.8, feet(ct0, ct0 + 3.8, false)); }
   }
 
   /** The swing at capture time t, before the feet are planted. */
