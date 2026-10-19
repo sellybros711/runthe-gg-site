@@ -5,7 +5,7 @@
  *
  * Plays the game's own 3D mound (3d/stage.js) in headless Chromium, without drawing: for every pack
  * in data/packs, every hitter in it (his height, weight and side, so every build the game shows),
- * and every kind of pitch result (the swing, the take, the check, the flinch from a hit by pitch,
+ * and every kind of pitch result (the swing, the take, the check, the flinch and the fall from a hit by pitch,
  * fouls, balls in play), it poses each frame (10 a second, to the end of the play) and measures
  * each worn piece (3d/headgear.js fitNow) against the skin the head bone carries in that frame:
  *   the largest gap from the piece's resting surface (the padding, the mask's pads, the cap's
@@ -75,6 +75,9 @@ for (const file of QUICK ? packs.slice(-1) : packs) {
       ['in_play', 'swing', 7, { b: 0, s: 0 }, { bb: 'fly', ev: 99, la: 31, spray: 25 }, { x: 0.0, zn: 0.8 }],
       ['in_play', 'swing', 7, { b: 0, s: 0 }, { bb: 'popup', ev: 80, la: 58, spray: 5 }, { x: 0.1, zn: 0.9 }],
       ['hit_by_pitch', 'take', 14, { b: 0, s: 0 }, null, { x: 0, zn: 0.4 }],
+      // above the belt, with no drawn pitch id: he is knocked down (play.js, m.fall), and the helmet
+      // must ride the fall
+      ['hit_by_pitch', 'take', 14, { b: 0, s: 0 }, null, { x: 0, zn: 0.85 }],
     ];
     const firstL = scn.batters.find((b) => b.bats === 'L'), firstR = scn.batters.find((b) => b.bats === 'R');
     const hitters = quick ? [firstL, firstR].filter(Boolean) : scn.batters;

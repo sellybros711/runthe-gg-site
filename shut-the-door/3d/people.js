@@ -170,6 +170,10 @@ export function pose(p, spec) {
 // catcher, and in frame
 const FALL_TURN = { L: THREE.MathUtils.degToRad(-80), R: THREE.MathUtils.degToRad(55) };
 
+// the flesh round each bone the fall can land on (metres, on the model at its own size)
+const FALL_FLESH = [['head', 0.1], ['spine_03', 0.12], ['spine_02', 0.12], ['pelvis', 0.11],
+  ...['l', 'r'].flatMap((s) => [[`upperarm_${s}`, 0.06], [`lowerarm_${s}`, 0.05], [`hand_${s}`, 0.035], [`thigh_${s}`, 0.08]])];
+
 // how much further each swing's shoulders stay closed into foot strike (degrees): Mixamo's third
 // swing is a shorter, flatter one, and is given more
 const COIL = { swing: 3, swing2: 3, swing3: 9, miss: 3 };
@@ -1121,6 +1125,17 @@ export class People {
         bone.position.copy(pos).lerp(fp, w);
       }
       b.root.updateMatrixWorld(true);
+    }
+    // the capture was taken on its own floor, and turned and fitted to his body it can put an elbow
+    // or a shoulder a few centimetres into the dirt as he lands: he is lifted out of it (each bone's
+    // depth less the flesh round it, FALL_FLESH, at his size)
+    const sc = b.root.scale.y;
+    let low = 0;
+    for (const [n, r] of FALL_FLESH) low = Math.min(low, wpos(b.bones[n]).y - r * sc);
+    if (low < 0) {
+      const p2 = wpos(pel); p2.y -= low;
+      pel.position.copy(pel.parent.worldToLocal(p2));
+      pel.updateMatrixWorld(true);
     }
   }
 

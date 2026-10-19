@@ -2977,14 +2977,14 @@
       "sha": "fe3f363f84400fc3"
     },
     "3d/boot.js": {
-      "v": "12",
-      "sha": "869006c7048bfff1"
+      "v": "13",
+      "sha": "0194f03e80867425"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "23",
-      "sha": "0f72fcb8d852dbb5"
+      "v": "24",
+      "sha": "239839da328609b7"
     }
   },
   "soccer/index.html": {
@@ -3099,8 +3099,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "15",
-      "sha": "59eb677f5a2389b3"
+      "v": "16",
+      "sha": "1f869595d1b2c83c"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3147,8 +3147,8 @@
       "sha": "5a84454de3c08f14"
     },
     "people.js": {
-      "v": "21",
-      "sha": "8e3f35de0b26e96f"
+      "v": "22",
+      "sha": "ff5b806687711de8"
     },
     "pitch.js": {
       "v": "7",
