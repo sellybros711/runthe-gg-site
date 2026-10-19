@@ -98,7 +98,7 @@ ${Array.from({ length: 70 }, (_, i) => { const r = (n) => { const x = Math.sin(i
 /* A TITLE CARD: a big Anton line with a gold rule, and a Barlow line under it. */
 const CARD = (W, c, k) => `${BASE}<style>
   body{width:${W}px;padding:${20 * k}px ${40 * k}px;text-align:center;color:#fff}
-  .kick{font:800 ${22 * k}px 'Barlow Semi Condensed',system-ui;letter-spacing:.32em;text-transform:uppercase;color:var(--gold)}
+  .kick{font:800 ${(c.kickSize || 22) * k}px 'Barlow Semi Condensed',system-ui;letter-spacing:.32em;text-transform:uppercase;color:var(--gold)}
   .big{font-family:Anton,Impact,sans-serif;font-size:${(c.size || 92) * k}px;line-height:1.02;text-transform:uppercase;letter-spacing:.015em;
     text-shadow:0 ${4 * k}px 0 rgba(0,0,0,.35),0 0 ${30 * k}px rgba(0,0,0,.35)}
   .big em{font-style:normal;color:var(--gold);}
@@ -146,7 +146,9 @@ export async function draw(dir, { formats, cards }) {
     out.bg[id] = save(`bg-${id}.png`, await shot(pw, browser, BG(bw, bh), { width: bw, height: bh, sel: 'body' }));
     for (const [cid, c] of Object.entries(cards)) {
       const k = f.textScale || 1;
-      out.cards[id + ':' + cid] = save(`card-${id}-${cid}.png`, await shot(pw, browser, CARD(f.W, c, k), { width: f.W, height: 900, sel: '#card' }));
+      // a size can be per format ({ x, reels }), where one size would not fit both on one line
+      const cc = typeof c.size === 'object' ? { ...c, size: c.size[id] } : c;
+      out.cards[id + ':' + cid] = save(`card-${id}-${cid}.png`, await shot(pw, browser, CARD(f.W, cc, k), { width: f.W, height: 900, sel: '#card' }));
     }
   }
   await browser.close();

@@ -29,16 +29,18 @@ export const CLIPS = {
 };
 
 const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'golf/logo.png')).toString('base64');
+const BIG = { x: 150, reels: 124 };
 export const cards = {
   // the owner's opening (2026-10-19): "New in Run The Tour" over the game people know, then the name on green
   newin: { img: logo, imgH: 150, big: 'New in<br><em>Run The Tour</em>', rule: false, size: 120 },
   // one plain line each, in the lobby's type over its sky (the owner, 2026-10-19: the kicker over the
   // title read oddly, and the green did not feel like the game). The worlds scene names the game
   // instead: the worlds explain themselves on the screens, and it replaces the reveal on its own page.
-  worlds: { style: 'lobby', kick: 'Introducing', big: 'Putt Putt <em>Tour</em>', rule: false },
-  holes: { style: 'lobby', big: 'Special <em>holes</em>', rule: false },
-  puzzles: { style: 'lobby', big: 'Solve <em>puzzles</em>', rule: false },
-  chests: { style: 'lobby', big: 'Hidden <em>chests</em>', rule: false },
+  // much bigger than the first cut's 92 (the owner, 2026-10-19), as big as one line allows in each format
+  worlds: { style: 'lobby', kick: 'Introducing', kickSize: 32, big: 'Putt Putt <em>Tour</em>', rule: false, size: BIG },
+  holes: { style: 'lobby', big: 'Special <em>holes</em>', rule: false, size: BIG },
+  puzzles: { style: 'lobby', big: 'Solve <em>puzzles</em>', rule: false, size: BIG },
+  chests: { style: 'lobby', big: 'Hidden <em>chests</em>', rule: false, size: BIG },
   end: { img: logo, imgH: 120, big: 'Play for free<br><em>Run The Tour</em>', sub: 'No download required', url: 'runthe.gg/golf', size: 104 },
 };
 
@@ -49,7 +51,7 @@ export const cards = {
 const I = 2.3, WD = 6.0, HD = 9.0, PZ = 6.0, CH = 5.0, EN = 6.0;
 /* Where the Pro Tour round (rtt-x.mp4, rtt-reels.mp4, the rtt-round shot) is picked up for the intro: each
    cut's own take, so each has its own moment. */
-const RTT_FROM = { x: 10.2, reels: 25.4 };
+const RTT_FROM = { x: 13.0, reels: 13.9 };   // a putt dropping on the green, with no camera cut in it
 export const scenes = [
   { dur: I, card: 'newin', cardIn: 0.35, cardOut: 0.05, cine: true, backdrop: { clip: 'rtt', from: RTT_FROM, dim: 0.42, push: 0.07, vignette: true } },
   { dur: WD, card: 'worlds', flash: true,
