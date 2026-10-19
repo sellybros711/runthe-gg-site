@@ -257,6 +257,10 @@ if (!QUICK){
   }
   head('3b. BOTH TOURS: EVERY HOLE BEATEN UNDER PAR, WITHOUT LUCK, BY ITS RECORDED ROUTE');
   const ROUTES = JSON.parse(fs.readFileSync(new URL('./routes.json', import.meta.url), 'utf8'));
+  /* NO ROUTE IS STRONGER THAN A PLAYER CAN HIT. The power bar tops out at P.MAX_FT on a mini hole, and a route at 44 ft
+     once showed an ace on Double Loop that full power could not make (the owner, 2026-10-19). */
+  { const over = []; for (const [k, L] of Object.entries(ROUTES)) (L || []).forEach((u, i) => { if (Array.isArray(u) && u[1] > P.MAX_FT + 1e-9) over.push(k + ' putt ' + (i + 1) + ' at ' + u[1] + ' ft'); });
+    claim(P.MAX_FT === 42 && over.length === 0, `every recorded putt is within the power bar (${P.MAX_FT} ft)` + (over.length ? ': ' + over.slice(0, 6).join(', ') + (over.length > 6 ? ' and ' + (over.length - 6) + ' more' : '') : '')); }
   /* THREE STARS HAS TO BE MAKEABLE. It is two under par, so on a par 3 it is the ace. Of the routes a
      hole carries (the obvious one, the secret one, and the ace the solver looks for apart, :3), one has
      to reach three stars and replay with the room for error every recorded putt gets. A star a player

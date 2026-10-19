@@ -43,6 +43,9 @@ var STOP_V = 0.05;          // ft/s
 var DROP = BALL_R * 1.25;   // how far a ball must fall before the far lip catches it
 var MAX_T = 24;             // s, a putt that is still rolling after this has found a perpetual slope
 var V_MAX = 15;             // ft/s
+// THE HARDEST PULL. A mini hole's power bar tops out at MAX_FT; the solver, the ace search and every recorded route are
+// held to it too (the owner, 2026-10-19: a route at 44 ft showed an ace on Double Loop that full power could not make).
+var MAX_FT = 42;
 var TGT_R = 0.4;            // a trick shot target (a bottle and its coaster): what the ball has to touch to knock it over
 var TGT_KEEP = 0.7;         // one that topples keeps the ball going at this share of its speed
 var TGT_E = 0.55;           // and one hit out of order rings and stays up: the ball bounces off it this hard
@@ -1214,9 +1217,11 @@ var LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-8, -13.9, 12, -19.1), rm(6, -18.9, 12, -38)], [0, -2.5], [9, -34]); zoneR(H, M.WATER, -8, -14, 6, -19);
     jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1);
     ferry(H, -8, -13.6, -3.6, -19, 10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[2, -7, 0.6], [7.5, -27, 0.6]]); bowl(H, 9, -34, 1.7, 0.12); return H; } },
-  // Double Loop: two loops in a row, one pace for both.
-  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.6], [-0.8, -13.6]]), rm(-0.8, -13.5, 0.8, -24), rm(-4, -23.9, 4, -36)], [0, -2.5], [0, -32]);
-    loopAt(H, 0, -15.6, 0, -1, 0.7, 1.6); loopAt(H, 0, -20.5, 0, -1, 0.7, 1.6); bumps(H, T, [[2.6, -28.5, 0.6]]); return H; } },
+  // Double Loop: angle up into the loop lane on the right, one pace for both loops, then round the prize shelf to the
+  // cup tucked in the far left corner. Not a straight putt (the owner, 2026-10-19): the tee is off the lane's line and
+  // the cup is off its exit.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -10), pg([[-6, -10], [6, -10], [4.2, -13.6], [2, -13.6]]), rm(2, -13.5, 4.2, -24), rm(-6, -23.9, 6, -36)], [-3.5, -2.5], [-3.5, -33]);
+    loopAt(H, 3.1, -15.6, 0, -1, 0.7, 1.6); loopAt(H, 3.1, -20.5, 0, -1, 0.7, 1.6); blk(H, T, -6, -27.6, 0.6, -28.8); bumps(H, T, [[2, -31.5, 0.6]]); return H; } },
   // Pac Maze: zig and zag through the maze past the ghosts, two putts.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-3, 0], [3, 0], [3, -10], [8, -16], [8, -26], [2, -32], [2, -40], [-4, -40], [-4, -30], [2, -24], [2, -18], [-3, -12]])], [0, -2.5], [-1, -36]);
     bumps(H, T, [[0.5, -14.5, 0.55], [5, -21, 0.6], [-1, -29, 0.55]]); zoneR(H, M.MUD, 2, -22, 8, -24);
@@ -1838,7 +1843,7 @@ function scoreName(strokes, par){
 /* =================================================================================== the export */
 var RTT_PUTT = {
   API_VERSION:API_VERSION,
-  M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, V_STIMP:V_STIMP, ART:ART,
+  M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, MAX_FT:MAX_FT, V_STIMP:V_STIMP, ART:ART,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
   simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
@@ -4292,7 +4297,7 @@ function onKey(e){
    number in the physics changing: the solver, the pars and every replay stay exactly as they were. */
 var PLAY_RATE = 1.45;
 function gnow(){ return performance.now() * PLAY_RATE; }
-function maxFt(C){ return C.kind === 'real' ? 60 : 42; }
+function maxFt(C){ return C.kind === 'real' ? 60 : MAX_FT; }
 function strike(){
   var P = S.play, C = P.C, ft = P.pow * maxFt(C), v = speedFor(C, ft), a = C.kind === 'real' ? Math.atan2(P.target[1] - P.ball[1], P.target[0] - P.ball[0]) : P.aimAng;
   var t0 = gnow() / 1000 - P.clock0;
