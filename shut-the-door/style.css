@@ -162,23 +162,36 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 /* a hand hung scoreboard, slatted, in the brand's ink */
 .scorebar { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: #f4f5f7; border-radius: 14px; padding: 6px 12px;
   background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 24px), linear-gradient(180deg, #1a2130, #0b0f17); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), var(--shadow); }
-.sb-score { display: flex; align-items: baseline; gap: 6px; }
-.sb-score b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 28px; line-height: 1; }
-.sb-score .tm { font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8a93a6; }
-.sb-inn { font-family: var(--display); font-weight: 600; font-size: 16px; letter-spacing: .04em; text-transform: uppercase; }
+/* two clubs as two bars: each bar is the club's own two colours, or grey for the side with no colours
+   on this page. The numbers are tabular, so a changing score never shifts the bug. */
+.scorebar * { font-variant-numeric: tabular-nums; }
+.sb-teams { display: grid; gap: 4px; }
+.sb-team { display: flex; align-items: center; gap: 7px; height: 22px; }
+.sb-club { display: block; width: 4px; height: 20px; border-radius: 2px; background: linear-gradient(180deg, var(--club, #5b6478) 0 55%, var(--club2, #5b6478) 55% 100%); box-shadow: 0 0 0 1px rgba(255, 255, 255, .1); }
+.sb-team .tm { font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #8a93a6; min-width: 34px; }
+.sb-team b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; line-height: 1; min-width: 14px; text-align: right; }
+.sb-inn { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; background: rgba(255, 255, 255, .07); border-radius: 6px; padding: 5px 8px; line-height: 1; white-space: nowrap; }
 .sb-inn b { color: var(--signal); font-style: italic; font-weight: 900; }
 .sb-bases { width: 36px; height: 27px; overflow: visible; }
-.sb-bases rect { fill: none; stroke: #6b7487; stroke-width: 1.6; transition: fill .4s; }
-.sb-bases rect.on { fill: var(--signal); stroke: var(--signal); }
-.sb-bases.running rect.on { fill: none; stroke: #6b7487; }
+.sb-path { fill: none; stroke: #2a3346; stroke-width: 1.2; }
+.sb-bases rect { fill: #121826; stroke: #4a5366; stroke-width: 1.2; transition: fill .4s, stroke .4s; }
+.sb-bases rect.on { fill: #f4f5f7; stroke: #f4f5f7; }
+.sb-bases.running rect.on { fill: #f4f5f7; stroke: #f4f5f7; }
 .sb-bases circle { fill: #f4f5f7; stroke: #0b0f17; stroke-width: 1; }
 .sb-bases circle.out { fill: var(--red); }
-.sb-outs { display: flex; gap: 4px; }
-.sb-outs i { width: 10px; height: 10px; border-radius: 50%; border: 1.6px solid #6b7487; transition: background .3s; }
+.sb-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.sb-outs-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.sb-outs { display: flex; gap: 5px; height: 10px; align-items: center; }
+.sb-outs i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #4a5366; transition: background .3s, border-color .3s; }
 .sb-outs i.on { background: var(--signal); border-color: var(--signal); }
-.sb-count, .sb-pn { display: flex; flex-direction: column; align-items: center; line-height: 1; }
-.sb-count b, .sb-pn b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; }
-.sb-count span, .sb-pn span { font-family: var(--display); font-weight: 600; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #8a93a6; margin-top: 2px; }
+.sb-lbl { font-family: var(--display); font-weight: 600; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #8a93a6; line-height: 1; }
+/* the count: a row of balls, a row of strikes. Filled is on. */
+.sb-count { display: grid; gap: 4px; justify-items: start; }
+.sb-count .row { display: flex; align-items: center; gap: 4px; }
+.sb-count .row em { font-style: normal; font-family: var(--display); font-weight: 700; font-size: 11px; color: #8a93a6; width: 9px; }
+.sb-count .row i { width: 8px; height: 8px; border-radius: 50%; border: 1.4px solid #4a5366; transition: background .3s, border-color .3s; }
+.sb-count .row i.on { background: #f4f5f7; border-color: #f4f5f7; }
+.sb-pn b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; line-height: 1; }
 .pbp { margin: 5px 4px 0; min-height: 19px; font-size: 13.5px; font-weight: 500; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pbp.new { animation: pbpIn .35s ease-out; }
 @keyframes pbpIn { from { opacity: .2; } to { opacity: 1; } }
@@ -190,6 +203,25 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .batterbar.on .bb-scout { background: var(--signal); color: #fff; border-color: var(--signal); }
 .scene { position: relative; flex: 1 1 auto; min-height: 260px; overflow: hidden; background: #0b1020; touch-action: manipulation; }
 .scene canvas { position: absolute; left: 0; top: 0; image-rendering: pixelated; }
+
+/* the live field minimap (minimap.js): a small dark card in the scene's top corner. It never takes a tap. */
+.mini { position: absolute; top: 8px; right: 8px; z-index: 4; width: 74px; padding: 3px 3px 1px; border-radius: 10px; pointer-events: none;
+  background: linear-gradient(180deg, #1a2130, #0b0f17); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07), 0 4px 14px rgba(0, 0, 0, .35); }
+.mini[hidden] { display: none; }
+.mini svg { display: block; width: 100%; height: auto; }
+.mm-grass { fill: #1d4632; }
+.mm-dirt { fill: #6e4f33; }
+.mm-line, .mm-fence { fill: none; stroke: #e8ebf2; stroke-width: 4; stroke-opacity: .55; }
+.mm-fence { stroke-opacity: .8; stroke-width: 5; }
+.mm-path { fill: none; stroke: #e8ebf2; stroke-opacity: .35; stroke-width: 3; }
+.mm-base { fill: #e8ebf2; fill-opacity: .8; }
+.mm-mound { fill: #8a5e3c; }
+.mm-plate { fill: #e8ebf2; fill-opacity: .8; }
+/* a dot is the ball's landing spot. The newest is bright for a moment, then fades to the record. */
+.mm-dot { fill: var(--signal); stroke: #0b0f17; stroke-width: 4; opacity: .34; transform-box: fill-box; transform-origin: center; transition: opacity 1.2s ease-out; }
+.mm-dot.now { opacity: 1; animation: mmPop .3s ease-out; }
+@keyframes mmPop { from { transform: scale(.4); } to { transform: scale(1); } }
+@media (min-width: 700px) { .mini { width: 128px; top: 12px; right: 12px; } }
 
 /* the grid: throw grid and heat map, one component, mirrored by screenCol() */
 .grid { position: absolute; z-index: 3; }

@@ -305,6 +305,8 @@ function buildMound() {
   S.grid = new M.Grid($('m-scene'), { onPick: pickCell });
   /* the grid sits over the canvas, under the scout card and the callout */
   $('m-scene').insertBefore(S.grid.el, $('m-scout'));
+  /* the live field minimap: built into its slot, shown after the first play of the outing */
+  S.mini = window.STD_MINIMAP ? window.STD_MINIMAP.create($('m-mini')) : null;
   var ars = $('m-arsenal');
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
@@ -336,6 +338,7 @@ function enterMound() {
   buildMound();
   S.scene.setScenario(S.scn);
   S.type = null; S.cell = null; S.lastMarker = null;
+  if (S.mini) S.mini.reset();
   show('s-mound');
   setBatter(true);
   renderHud(S.outing);
@@ -357,12 +360,25 @@ function setBatter(first) {
   if (!first) pbp(b.name + ' up.');
 }
 
+/* the closer's club, from the scenario's own colours. Without them the bar is the grey default. */
+function setClub(el, colors) {
+  if (colors && colors[0]) el.style.setProperty('--club', colors[0]); else el.style.removeProperty('--club');
+  if (colors && colors[1]) el.style.setProperty('--club2', colors[1]); else el.style.removeProperty('--club2');
+}
 function renderHud(st) {
   var sit = S.scn.situation;
+  setClub($('m-usclub'), S.scn.pitcher.teamColors);
   $('m-us').textContent = st.score.us;
   $('m-them').textContent = st.score.them;
   $('m-inn').innerHTML = '<b>' + (sit.half === 'bottom' ? 'bot' : 'top') + '</b> ' + sit.inning;
-  $('m-count').textContent = st.count.b + '-' + st.count.s;
+  var cnt = $('m-count');
+  var row = function (letter, n, max) {
+    var h = '<span class="row"><em>' + letter + '</em>';
+    for (var i = 0; i < max; i++) h += '<i class="' + (i < n ? 'on' : '') + '"></i>';
+    return h + '</span>';
+  };
+  cnt.innerHTML = row('B', st.count.b, 3) + row('S', st.count.s, 2);
+  cnt.setAttribute('aria-label', st.count.b + ' balls, ' + st.count.s + ' strikes');
   $('m-pn').textContent = st.status === 'live' ? st.pitchNo + 1 : st.pitchNo;
   var bs = $('m-bases');
   bs.querySelector('.b1').classList.toggle('on', !!(st.bases & 1));
@@ -490,6 +506,7 @@ function throwIt() {
       S.grid.setMarks({ target: pr.call.cell, actual: pr.actualCell });
       hudRunners(null);
       renderHud(res.state);
+      if (S.mini) S.mini.show(pr);
       S.outing = res.state;
       S.busy = false;
       S.grid.setDisabled(false);

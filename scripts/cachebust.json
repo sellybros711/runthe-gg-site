@@ -2932,6 +2932,10 @@
       "v": "3",
       "sha": "8ab8f0d81c6c1f34"
     },
+    "minimap.js": {
+      "v": "1",
+      "sha": "8d8bbd62d19c78da"
+    },
     "menus.js": {
       "v": "5",
       "sha": "ad41a77f0e0b3634"
@@ -2973,8 +2977,8 @@
       "sha": "7eddfba072520e94"
     },
     "ui.js": {
-      "v": "8",
-      "sha": "fe3f363f84400fc3"
+      "v": "9",
+      "sha": "18711842de7c7f83"
     },
     "3d/boot.js": {
       "v": "18",

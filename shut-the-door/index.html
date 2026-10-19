@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -103,18 +103,25 @@
 <!-- 2 AND 3. THE MOUND AND THE PITCH -->
 <section class="screen" id="s-mound" aria-label="On the mound">
   <div class="hud">
-    <div class="scorebar">
-      <div class="sb-score"><span class="tm">us</span><b id="m-us">0</b><span class="tm">them</span><b id="m-them">0</b></div>
+    <div class="scorebar" role="group" aria-label="Scoreboard">
+      <div class="sb-teams">
+        <div class="sb-team"><i class="sb-club" id="m-usclub"></i><span class="tm">us</span><b id="m-us">0</b></div>
+        <div class="sb-team"><i class="sb-club"></i><span class="tm">them</span><b id="m-them">0</b></div>
+      </div>
       <div class="sb-inn" id="m-inn"></div>
       <svg class="sb-bases" id="m-bases" viewBox="0 0 40 30" aria-label="Bases">
-        <rect class="b2" x="15" y="2" width="9" height="9" transform="rotate(45 19.5 6.5)"/>
-        <rect class="b3" x="4" y="13" width="9" height="9" transform="rotate(45 8.5 17.5)"/>
-        <rect class="b1" x="26" y="13" width="9" height="9" transform="rotate(45 30.5 17.5)"/>
+        <path class="sb-path" d="M19.5 6.5 L30.5 17.5 L19.5 28.5 L8.5 17.5 Z"/>
+        <rect class="b2" x="16" y="3" width="7" height="7" transform="rotate(45 19.5 6.5)"/>
+        <rect class="b3" x="5" y="14" width="7" height="7" transform="rotate(45 8.5 17.5)"/>
+        <rect class="b1" x="27" y="14" width="7" height="7" transform="rotate(45 30.5 17.5)"/>
         <g id="m-runners"></g>
       </svg>
-      <div class="sb-outs" id="m-outs" aria-label="Outs"><i></i><i></i></div>
-      <div class="sb-count"><b id="m-count">0-0</b><span>count</span></div>
-      <div class="sb-pn"><b id="m-pn">1</b><span>pitch</span></div>
+      <div class="sb-stat sb-outs-wrap">
+        <div class="sb-outs" id="m-outs" role="img" aria-label="Outs"><i></i><i></i></div>
+        <span class="sb-lbl">outs</span>
+      </div>
+      <div class="sb-count" id="m-count" role="img" aria-label="0 balls, 0 strikes"></div>
+      <div class="sb-stat sb-pn"><b id="m-pn">1</b><span class="sb-lbl">pitch</span></div>
     </div>
     <p class="pbp" id="m-pbp" aria-live="polite"></p>
   </div>
@@ -128,6 +135,7 @@
     <div class="scout" id="m-scout" hidden></div>
     <div class="dbg" id="m-dbg" hidden></div>
     <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
+    <div class="mini" id="m-mini" hidden></div>
   </div>
   <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
   <button class="btn throw" id="m-throw" type="button" disabled>pick a pitch</button>
@@ -220,6 +228,7 @@
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=3"></script>
 <script src="anim.js?v=3"></script>
+<script src="minimap.js?v=1"></script>
 <script src="menus.js?v=5"></script>
 <script src="rng.js?v=1"></script>
 <script src="grade.js?v=2"></script>
@@ -231,7 +240,7 @@
 <script src="api.js?v=2"></script>
 <script src="mock-api.js?v=5"></script>
 <script src="coach.js?v=1"></script>
-<script src="ui.js?v=8"></script>
+<script src="ui.js?v=9"></script>
 <script type="module" src="3d/boot.js?v=18"></script>
 </body>
 </html>
