@@ -744,6 +744,7 @@ export class People {
 
   poseBat(b) {
     if (b.dropAt != null) { this.dropBat(b, b.dropAt); return; }
+    b.batDrop = null;   // in his hands: the next drop starts from wherever they are then
     b.batDrop = null;
     const { gb, handQ } = this.grips(b);
     const ct = THREE.MathUtils.clamp(b.batTime ?? b.actions[b.clip].time, 0, b.clips[b.clip].duration);

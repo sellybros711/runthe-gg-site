@@ -18,7 +18,7 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=6';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
-import { People } from './people.js?v=24';
+import { People } from './people.js?v=25';
 import { Pitch } from './pitch.js?v=7';
 import { fromResult, motion } from './play.js?v=6';
 import { look } from './looks.js?v=2';
@@ -104,8 +104,13 @@ class Stage {
   }
 
   setBatter(b) {
-    // the same hitter again (the home screen dressed him already): only the frame
-    if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) { this.layout(); return; }
+    // the same hitter again (the home screen dressed him already): only the frame, from the set (a
+    // play may have run since: framed where it ended, a hitter knocked down was framed lying there)
+    if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) {
+      if (this.dirty && this.loaded) { this.dirty = false; this.preview(); }
+      this.layout();
+      return;
+    }
     this.batterId = b.id;
     this.bat = b;
     this.zone = { szTop: b.szTop, szBot: b.szBot, bats: b.bats };
