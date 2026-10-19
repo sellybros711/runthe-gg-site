@@ -168,6 +168,29 @@ export function pose(p, spec) {
 // how far a take settles back toward his stance after the pitch goes by (the stride stays planted)
 const TAKE_SETTLE = 0.4;
 
+/** Keep an elbow from folding shut: its inside angle at least minDeg (the hand moves out along the
+    line from the shoulder, the elbow keeps its side). */
+function openElbow(p, s, minDeg) {
+  const B = p.bones, ua = B[`upperarm_${s}`], la = B[`lowerarm_${s}`], hd = B[`hand_${s}`];
+  const S = wpos(ua), E = wpos(la), H = wpos(hd);
+  const a = S.distanceTo(E), b = E.distanceTo(H);
+  const ang = S.clone().sub(E).angleTo(H.clone().sub(E));
+  const min = THREE.MathUtils.degToRad(minDeg);
+  if (ang >= min) return;
+  const L = Math.sqrt(a * a + b * b - 2 * a * b * Math.cos(min));
+  const dir = H.clone().sub(S); if (dir.lengthSq() < 1e-8) return;
+  const q = wquat(hd);
+  twoBoneIK(ua, la, hd, S.clone().addScaledVector(dir.normalize(), L), E.clone().add(E.clone().sub(S.clone().lerp(H, 0.5))), 1);
+  rotateWorld(hd, q.multiply(wquat(hd).invert()));
+}
+
+/** A looping clip's time (an idle plays round and round, back and forth so it never jumps). */
+function loop(p, name, t) {
+  const d = p.clips[name].duration - 1e-3, k = t / d;
+  const f = k - Math.floor(k);
+  return (Math.floor(k) % 2 ? 1 - f : f) * d;
+}
+
 /** Lay one clip's rotations on a set of bones only, at another time (the rest stays as posed). */
 const LOWER = new Set(['pelvis', 'thigh_l', 'calf_l', 'foot_l', 'thigh_r', 'calf_r', 'foot_r']);
 function sampleRot(p, clip, time, set) {
@@ -183,7 +206,7 @@ function sampleRot(p, clip, time, set) {
 
 /** Turn a person to face the mound (+z) and put his pelvis over the given ground point. */
 export function face(p, at) {
-  const clip = Object.keys(p.clips)[0];
+  const clip = p.clips.idle ? 'idle' : Object.keys(p.clips)[0];
   pose(p, { [clip]: [0, 1] });
   const l = wpos(p.bones.thigh_l), r = wpos(p.bones.thigh_r);
   const left = l.clone().sub(r).setY(0).normalize();
@@ -202,7 +225,7 @@ export function face(p, at) {
 /** Where his feet go in the crouch: planted wide, toes out (worked out once). */
 function stance(p) {
   const c = p.crouch;
-  const clip = Object.keys(p.clips)[0];
+  const clip = p.clips.idle ? 'idle' : Object.keys(p.clips)[0];
   pose(p, { [clip]: [0, 1] });
   const pel = wpos(p.bones.pelvis);
   p.feet = {};
@@ -221,6 +244,29 @@ function stance(p) {
     const ball = pos.clone().add(footGeom(p)[s].off.clone().applyQuaternion(q));
     p.feet[s] = { pos, q, flat, ball };
   }
+}
+
+/** The crouch was designed on a standing capture (CMU): drop the hips by c.drop, lean the trunk by
+    c.lean. A Mixamo clip that already squats (the catcher's set, the crouching idle) gets what is
+    left of each: the drop less the clip's own, the lean less the clip's own pitch of the chest, so
+    the set ends where it was designed and the clip's life rides on it. */
+function crouchFromClip(p) {
+  const c = p.crouch, B = p.bones, clip = p.clips.idle ? 'idle' : Object.keys(p.clips)[0];
+  for (const [b, pos, q] of p.bind) { b.position.copy(pos); b.quaternion.copy(q); }
+  p.root.updateMatrixWorld(true);
+  const y0 = wpos(B.pelvis).y, up0 = UP.clone().applyQuaternion(wquat(B.spine_03));
+  pose(p, { [clip]: [0, 1] });
+  const y1 = wpos(B.pelvis).y, up1 = UP.clone().applyQuaternion(wquat(B.spine_03));
+  const left = p.left || new THREE.Vector3(1, 0, 0);
+  const pitch = Math.atan2(new THREE.Vector3().crossVectors(up0, up1).dot(left), up0.dot(up1));
+  p.crouchOff = { drop: (y0 - y1) / p.root.scale.y, lean: pitch };
+  p.crouch = { ...c, drop: c.drop - p.crouchOff.drop, lean: c.lean - p.crouchOff.lean };
+}
+
+/** The block's crouch for this person (less what his clip already does). */
+function blockOf(p) {
+  const o = p.crouchOff || { drop: 0, lean: 0 };
+  return { ...BLOCK, drop: BLOCK.drop - o.drop, lean: BLOCK.lean - o.lean };
 }
 
 /** Crouch by amount k (0 standing, 1 full): drop and push back the hips, plant the feet, lean. */
@@ -253,7 +299,8 @@ function crouch(p, k) {
 const BLOCK = { drop: 0.7, back: -0.1, heel: 1.0, lean: 0.55, kneeOut: 0.55 };   // same width and turn: his feet stay put
 function blockCrouch(p, k) {
   const c0 = p.crouch, f0 = p.feet;
-  p.crouch = Object.fromEntries(Object.keys(c0).map((n) => [n, c0[n] + ((BLOCK[n] ?? c0[n]) - c0[n]) * k]));
+  const BL = blockOf(p);
+  p.crouch = Object.fromEntries(Object.keys(c0).map((n) => [n, c0[n] + ((BL[n] ?? c0[n]) - c0[n]) * k]));
   p.feet = {};
   for (const s of ['l', 'r']) {
     const a = p.feetN[s], b = p.feetB[s];
@@ -371,7 +418,7 @@ export class People {
       stance(c);
       c.feetN = c.feet;
       const c0 = c.crouch;
-      c.crouch = { ...c0, ...BLOCK }; stance(c); c.feetB = c.feet;
+      c.crouch = { ...c0, ...blockOf(c) }; stance(c); c.feetB = c.feet;
       c.crouch = c0; c.feet = c.feetN;
     }
     this.wireBall();
@@ -491,7 +538,7 @@ export class People {
     // (by the clock relative to the plate)
     // the back foot never leaves the ground: it pivots on its ball as the hips open. The front
     // foot lifts, lands on its ball and settles flat, and stays
-    const back = b.lefty ? 'l' : 'r', tLift = hs[lift][0];
+    const back = b.lefty ? 'l' : 'r', tLift = hs[lift][0] + 1 / 30;   // (held a frame longer: it leaves the ground, it does not slide off it)
     // after contact the front foot spins open on its heel (35 degrees, the way the hips open)
     const open = { at: tC - 0.02, deg: 35, dir: Math.sign(dy) || 1 };
     b.feetSpec = (t0, t1, swing) => ({ [back]: [[t0, t1, 'pivot']], [front]: [[t0, tLift, 'land'], [tStrike, t1, 'flat', swing ? open : null]] });
@@ -517,7 +564,7 @@ export class People {
     if (!b.feetSpec) return;
     const clip = b.clips[b.clip];
     if (!b.take) { if (!b.feetSwing) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, clip.duration, b.feetSpec(0, clip.duration, true)); }
-    else if (this.pitch) { const ct0 = -this.pitch.tPlate + b.tContact - 0.1; b.feetTake = planFeet(b, (t) => this.takeBase(b, t), ct0, ct0 + 3.8, b.feetSpec(ct0, ct0 + 3.8, false)); }
+    else if (this.pitch) { const ct0 = Math.min(0, -this.pitch.tPlate + b.tContact - 0.1); b.feetTake = planFeet(b, (t) => this.takeBase(b, t), ct0, ct0 + 3.8, b.feetSpec(ct0, ct0 + 3.8, false)); }
   }
 
   /** The swing at capture time t, before the feet are planted. */
@@ -672,11 +719,12 @@ export class People {
     face(c, P(0.1 + 0.4 * this.aimX(), -2.85, 0));
     // a catcher's crouch: hips just above the heels, knees wide, on the balls of his feet
     c.crouch = { drop: 0.5, back: 0.02, width: 0.27, toeOut: 0.42, heel: 0.35, lean: 0.18, kneeOut: 0.9 };
+    crouchFromClip(c);
     stance(c);
     // the block's stance, for a ball in the dirt
     c.feetN = c.feet;
     const c0 = c.crouch;
-    c.crouch = { ...c0, ...BLOCK }; stance(c); c.feetB = c.feet;
+    c.crouch = { ...c0, ...blockOf(c) }; stance(c); c.feetB = c.feet;
     c.crouch = c0; c.feet = c.feetN;
   }
 
@@ -693,6 +741,7 @@ export class People {
     // the slot: between the catcher and a left handed hitter, his chin over the catcher's shoulder
     // directly behind the catcher, his head over the catcher's inside shoulder
     u.crouch = { drop: 0.4, back: 0.16, width: 0.36, toeOut: 0.3, heel: 0.05, lean: 0.62, kneeOut: 0.6 };
+    crouchFromClip(u);
     this.placeUmpire(u);
   }
 
@@ -733,7 +782,7 @@ export class People {
       this.poseBat(b);
     }
     if (c) {
-      pose(c, { idle: [1.5 + t, 1] });
+      pose(c, { idle: [loop(c, 'idle', 1.5 + t), 1] });
       const cm = this.m.catcher;
       if (cm === 'block' && pt.bounce) {
         // a ball in the dirt: he drops to his knees, squares up and smothers it
@@ -752,10 +801,12 @@ export class People {
       deltoids(c);
     }
     if (u) {
-      pose(u, { idle: [2.0 + t, 1] });
+      pose(u, { idle: [loop(u, 'idle', 2.0 + t), 1] });
       this.umpireMove(u, t);
       clavicles(u);
       deltoids(u);
+      // no elbow folds shut (the capture's fist pump closes it further than a forearm allows)
+      for (const s of ['l', 'r']) openElbow(u, s, 105);
     }
   }
 
@@ -865,6 +916,17 @@ export class People {
     const up = sig === 'strike' ? smooth(clamp01((t - pt.tCatch - 0.18) / 0.45))
       : sig ? smooth(clamp01((t - after - 0.25) / 0.45))
         : smooth(clamp01((t - pt.tCatch - 0.5) / 0.6)) * 0.35;
+    // a strike: Mixamo's umpire calls it, his whole body rising into the punch (the capture's
+    // punch peaks a second in; it is timed to land half a second after the catch)
+    const callClip = sig === 'strike' && u.clips.call;
+    if (callClip) {
+      pose(u, [['idle', loop(u, 'idle', 2.0 + t), 1], ['call', THREE.MathUtils.clamp(0.55 + (t - pt.tCatch), 0, u.clips.call.duration), up]]);
+      // the capture rolls his upper arms on their twist bones as he bends the elbows: the skin of a
+      // bent elbow pinches on a rolled arm, so the twist goes back toward the bind pose
+      if (!u.bindQ) u.bindQ = new Map(u.bind.map(([bb, , q]) => [bb, q]));
+      for (const s of ['l', 'r']) { const tb = B[`upperarm_twist_${s}`]; tb.quaternion.slerp(u.bindQ.get(tb), up); }
+      u.root.updateMatrixWorld(true);
+    }
     crouch(u, 1 - up * 0.85);
     const kneeL = wpos(B.calf_l), kneeR = wpos(B.calf_r);
     const handOn = (side, knee) => {
@@ -876,7 +938,11 @@ export class People {
     const [tl, pl] = handOn(1, kneeL), [tr, pr] = handOn(-1, kneeR);
     const shL = wpos(B.upperarm_l), shR = wpos(B.upperarm_r);
     const sc = u.root.scale.y;
-    if (sig === 'strike') {
+    if (callClip) {
+      // his hands come off his knees as he rises into the capture's call
+      twoBoneIK(B.upperarm_l, B.lowerarm_l, B.hand_l, tl, pl, w);
+      twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tr, pr, w);
+    } else if (sig === 'strike') {
       // the strike call: right arm out to his side, elbow bent, a short punch
       twoBoneIK(B.upperarm_l, B.lowerarm_l, B.hand_l, tl, pl, w);
       const k = smooth(clamp01((t - pt.tCatch - 0.42) / 0.16)) * (1 - smooth(clamp01((t - pt.tCatch - 1.4) / 0.5)));

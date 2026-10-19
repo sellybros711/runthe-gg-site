@@ -108,7 +108,11 @@ def hand_shape(arm, shape):
 def import_fbx(path):
     """A Mixamo FBX, read as data by Blender's importer. Its names lose the mixamorig: prefix here."""
     before = set(bpy.data.objects)
+    sc = bpy.context.scene
+    fps = (sc.render.fps, sc.render.fps_base)
     bpy.ops.import_scene.fbx(filepath=path, use_anim=True, automatic_bone_orientation=False, ignore_leaf_bones=True)
+    # the importer sets the scene to the file's 60 fps; our clips are keyed and exported at 30
+    sc.render.fps, sc.render.fps_base = fps
     new = [o for o in bpy.data.objects if o not in before]
     ob = [o for o in new if o.type == 'ARMATURE'][0]
     for o in new:

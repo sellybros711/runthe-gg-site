@@ -18,7 +18,7 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=6';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
-import { People } from './people.js?v=17';
+import { People } from './people.js?v=18';
 import { Pitch } from './pitch.js?v=7';
 import { fromResult, motion } from './play.js?v=5';
 import { look } from './looks.js?v=2';

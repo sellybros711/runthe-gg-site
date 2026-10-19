@@ -254,7 +254,10 @@ PEOPLE = {
         uniform=True,
         clothes=[dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1))],
         gear=[],
-        clips=[('idle', '120/120_21.bvh', 90, 280, False, {'l': 'grip', 'r': 'relaxed'})],
+        # Mixamo's catcher: his set in the crouch (the stretch after he squats again, a loop of small
+        # moves), and his rise to his feet with the glove (after a ball in play)
+        clips=[('idle', 'mixamo/Baseball Catcher.fbx', 430, 550, False, {'l': 'grip', 'r': 'relaxed'}),
+               ('rise', 'mixamo/Baseball Catcher.fbx', 60, 150, False, {'l': 'grip', 'r': 'relaxed'})],
     ),
     'umpire': dict(
         name='umpire', skin='middleage_caucasian_male', skin_size=1024,
@@ -265,7 +268,10 @@ PEOPLE = {
             dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1)),
         ],
         gear=[],
-        clips=[('idle', '142/142_03.bvh', 90, 280, False, 'relaxed')],
+        # life in his crouch (weight shifts, breathing) from Mixamo's crouching idle, under the set the
+        # scene holds; and Mixamo's umpire for the strike call
+        clips=[('idle', 'mixamo/Crouching Idle.fbx', 1, 151, False, 'relaxed'),
+               ('call', 'mixamo/Baseball Umpire.fbx', 1, 158, False, 'relaxed')],
     ),
 }
 
