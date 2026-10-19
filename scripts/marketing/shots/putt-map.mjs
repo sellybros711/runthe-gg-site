@@ -2,7 +2,7 @@
 import { open } from './lib/putt.mjs';
 export { page, hide } from './lib/putt.mjs';
 export const seconds = 20;
-const RISE_MS = +process.env.MAP_MS || 6500;
+const RISE_MS = +process.env.MAP_MS || 10000;
 export async function setup(page, t) {
   await open(page, t);
   await page.evaluate(() => { const b = [...document.querySelectorAll('button')].find((x) => /^\s*map\s*$/i.test(x.textContent)); b.click(); });

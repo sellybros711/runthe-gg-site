@@ -33,11 +33,11 @@ export const cards = {
   // the owner's opening (2026-10-19): "New in Run The Tour" over the game people know, then the name on green
   newin: { img: logo, imgH: 150, big: 'New in<br><em>Run The Tour</em>', rule: false, size: 120 },
   // in the lobby's own type, over the lobby's sky (the owner, 2026-10-19)
-  intro: { style: 'lobby', kick: 'Introducing', big: 'Putt Putt Tour', sub: 'Mini golf you actually play.', rule: false, size: 108 },
-  worlds: { kick: 'Explore', big: 'Worlds to <em>walk</em>', sub: 'Walk the trail from hole to hole.' },
-  holes: { kick: 'Play', big: 'Special <em>holes</em>', sub: 'Every hole has a twist.' },
-  puzzles: { kick: 'Solve', big: 'Puzzle <em>gyms</em>', sub: 'Crack the room. Open the vault.' },
-  chests: { kick: 'Find', big: 'Hidden <em>chests</em>', sub: 'Treasure off the path.' },
+  intro: { style: 'lobby', kick: 'Introducing', big: 'Putt Putt Tour', rule: false, size: 108 },
+  worlds: { kick: 'Explore', big: 'Worlds to <em>walk</em>' },
+  holes: { kick: 'Play', big: 'Special <em>holes</em>' },
+  puzzles: { kick: 'Solve', big: 'Puzzle <em>gyms</em>' },
+  chests: { kick: 'Find', big: 'Hidden <em>chests</em>' },
   end: { img: logo, imgH: 120, big: 'Play for free<br><em>Run The Tour</em>', sub: 'No download required', url: 'runthe.gg/golf', size: 104 },
 };
 
@@ -53,7 +53,7 @@ export const scenes = [
   { dur: 2.3, card: 'newin', cardIn: 0.35, cardOut: 0.05, cine: true, backdrop: { clip: 'rtt', from: RTT_FROM, dim: 0.42, push: 0.07, vignette: true } },
   { dur: I - 2.3, card: 'intro', cardIn: 0, flash: true, cine: true, backdrop: { clip: 'lobby', from: 0.3, dim: 1, push: 0.05, vignette: true } },
   { dur: WD, card: 'worlds',
-    laptop: [{ clip: 'map', from: 0.6, speed: 1 }],   // real speed: a little slower than the first cut (the owner, 2026-10-19)
+    laptop: [{ clip: 'map', from: 0.6, speed: 1 }],   // real speed, on a 10 s scroll (the owner, 2026-10-19: slower)
     phone: [{ clip: 'w-candy', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-neon', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-sky', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-ice', from: 0.9, speed: 1.15 }] },
   { dur: HD, card: 'holes',
     // two aces a screen, each from the end of the hold to just after the card lands
