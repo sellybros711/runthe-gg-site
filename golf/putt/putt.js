@@ -2485,6 +2485,8 @@ function open(host, o){
   document.body.style.overflow = 'hidden';
   // the page behind is covered: it stops painting and animating while Putt Putt is open (CSS: body.pt-open)
   document.body.classList.add('pt-open');
+  // this tab has Putt Putt open: a reload (iOS drops a tab that grows too big) comes straight back in (index.html puttReopen)
+  try{ sessionStorage.setItem('ppt_open', '1'); }catch(e){}
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
   // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
   ov.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-pass]'); if (!b) return; var h = S && S.host; if (h && h.pass){ close(); try{ h.pass(); }catch(x){} } });
@@ -2512,7 +2514,7 @@ function close(){
   if (!S) return;
   stopTrail();
   cancelAnimationFrame(S.raf); clearInterval(S.tick); window.removeEventListener('keydown', S.onKey); if (S.onResize) window.removeEventListener('resize', S.onResize);
-  document.body.style.overflow = S.prevOverflow || ''; document.body.classList.remove('pt-open'); S.ov.remove();
+  document.body.style.overflow = S.prevOverflow || ''; document.body.classList.remove('pt-open'); try{ sessionStorage.removeItem('ppt_open'); }catch(e){} S.ov.remove();
   var h = S.host; S = null; try{ if (h.onClose) h.onClose(); }catch(e){}
 }
 function top(title, sub, right){
@@ -2771,10 +2773,14 @@ function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p
    says so. A host that cannot say who is signed in gates nobody. GUEST_WALK is how many holes of the main tour a
    guest may walk to (the opening world). */
 // STORY MODE (the owner, 2026-10-18): everybody starts on hole 1 and opens the next only by beating the one before.
-// A guest walks the trail to hole 1 and nothing past it; hole 1 asks them to sign in. GUEST_WALK was 18 (the
-// opening world, 2026-10-16).
-var GUEST_WALK = 1;
+// A guest walks the trail to hole 1 and nothing past it. GUEST_WALK was 18 (the opening world, 2026-10-16).
+// A GUEST PLAYS HOLE 1 (the owner, 2026-10-19): one real hole before the ask, so a new player putts once before
+// being asked for an account. The ask moves to hole 2. GUEST_PLAY is how many holes of the main tour a guest may
+// play; it never passes GUEST_WALK.
+var GUEST_WALK = 1, GUEST_PLAY = 1;
 function isGuest(){ try{ var h = hostOf(); return !!(h.signedIn && !h.signedIn()); }catch(e){ return false; } }
+// a guest is asked to sign in before this hole of this tour (the Daily Hole and the lab never ask)
+function guestAsks(tid, n){ return isGuest() && !(tid === 'main' && n <= GUEST_PLAY); }
 var GUEST_COINS = 'Sign in to collect your coins and open packs.';
 function guestSheet(n, tid){
   var walk = tid === 'main' && n && n < Math.min(GUEST_WALK, tourOf('main').levels.length);
@@ -3063,7 +3069,7 @@ function drawMap(st, TR){
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id];
-    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK && opened(TR, tq, n)){ return trailOk() ? openTrail(TR.id, n - 1) : guestSheet(n, TR.id); }   // a guest walks the opening world
+    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK && opened(TR, tq, n)){ return trailOk() ? openTrail(TR.id, n - 1) : startLevel(n, TR.id); }   // a guest walks to hole 1 (and startLevel says whether they may play it)
     if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? wLabel(TR, pw + 1) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
   box.querySelectorAll('[data-cw]').forEach(function(c){ c.onclick = function(){ var w = +c.getAttribute('data-cw'), tq = pload().tours[TR.id], have = starsThrough(tq, TR, w - 1), need = worldGate(TR, w - 1);
@@ -3499,7 +3505,11 @@ function trailPlan(sp){ var k = trailKey(sp); if (!TRP[k]){ TRP[k] = window.RTT_
    render in progress, kept here too, so leaving the mode part way through a render does not throw the work away.
    The disk copy is keyed on the trail and on the versions of the files that draw it (TRAIL_V), so a change to any
    of them renders afresh rather than showing an old picture. Every disk call fails soft: null is "render it". */
-var TRC = {}, TRJ = null, TRC_KEEP = 4, TIDB = null, TIDB_KEEP = 3, TRAIL_V = null;
+/* MEMORY (the owner, 2026-10-18: on a phone the game "gets overwhelmed and refreshes"). A rendered trail or hole holds
+   its picture and its height grids, about 55 MB each, and iOS Safari reloads a tab that grows too big. So only two of
+   each are kept: the one in play and the one rendered ahead. A trail left behind is still on the device (TIDB). */
+var V3C_KEEP = 2;
+var TRC = {}, TRJ = null, TRC_KEEP = 2, TIDB = null, TIDB_KEEP = 3, TRAIL_V = null;
 function trcPut(k, pic){ TRC[k] = pic; var ks = Object.keys(TRC); if (ks.length > TRC_KEEP) delete TRC[ks[0]]; }
 function trailV(){ if (TRAIL_V) return TRAIL_V;
   var v = ['putt.js', 'trail.js', 'hole3d.js', 'gyms.js'].map(function(f){ try{ var e = document.querySelector('script[src*="putt/' + f + '"]'), m = e && /[?&]v=([^&]+)/.exec(e.src); return m ? m[1] : '?'; }catch(e){ return '?'; } });
@@ -3617,12 +3627,12 @@ function openTrail(tid, from){
       arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove();
         // a walker without the pass reaches the hole and is asked, over the trail they are standing on
         if (TR.members && !membersCanPlay()){ stopTrail(); return membersSheet({ n:to, trail:true }); }
-        if (TR.id === 'main' && isGuest()){ stopTrail(); return guestSheet(to, tid); }
+        if (TR.id === 'main' && guestAsks(tid, to)){ stopTrail(); return guestSheet(to, tid); }
         stopTrail(); if (opened(TR, tp, to)) startLevel(to, tid); else showHub(tid); },
       // Skip keeps its button, and says what it leaves behind first: the same list the map's warning reads, off
       // the record as it stands now, so anything already picked up on this walk is not named.
       skip:function(){ var tp = pload().tours[TR.id], play = opened(TR, tp, to) && !(sp.cross && !sp.gateOpen);
-        function leave(){ stopTrail(); if (TR.id === 'main' && isGuest()) return guestSheet(to, tid); if (play) startLevel(to, tid); else showHub(tid); }
+        function leave(){ stopTrail(); if (TR.id === 'main' && guestAsks(tid, to)) return guestSheet(to, tid); if (play) startLevel(to, tid); else showHub(tid); }
         var left = trailLeft(tid, to); if (!left.length || S.ov.querySelector('.pp-skipw')) return leave();
         var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
         var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE TRAIL?</div><div class="t">Bonus rewards</div><div class="m">This trail still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-n>Keep walking</button><button class="pt-bt pp-wide" data-skip>' + (play ? 'Skip to Hole ' + to : 'Skip to the map') + '</button></div></div>');
@@ -3751,7 +3761,7 @@ function trailLeft(tid, n){ try{ if (tid !== 'main' || n < 2 || !trailOk()) retu
 function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[tid] || {};
   // only a hole being reached for the first time can forfeit anything: its trail is gone once it is beaten. A gate
   // that would refuse the hole anyway (a guest, the Members Tour, no lives) speaks first, from startLevel.
-  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (isGuest() && !tourOf(tid).lab) || livesNow(st) <= 0) return startLevel(n, tid);
+  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (guestAsks(tid, n) && !tourOf(tid).lab) || livesNow(st) <= 0) return startLevel(n, tid);
   var left = trailLeft(tid, n); if (!left.length) return startLevel(n, tid);
   var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
   var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE WALK?</div><div class="t">Hole ' + n + '</div><div class="m">The trail to Hole ' + n + ' still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-walk>Walk to Hole ' + n + '</button><button class="pt-bt pp-wide" data-skip>Play now and forfeit the rewards</button><button class="pt-bt pp-wide" data-n>Cancel</button></div></div>');
@@ -3776,7 +3786,7 @@ function startLevel(n, tid){
   if (tourOf(tid).members && !membersCanPlay()) return membersSheet({ n:n, trail:S.screen === 'trail' });
   if (tourOf(tid).lab && !labOpen()) return showHub('main');
   if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
-  if (isGuest() && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays no Tour hole
+  if (guestAsks(tid, n) && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays hole 1 of the Tour and no other
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
   // STORY MODE: a hole not yet reached never starts, from any door (the map already refuses it; this is the backstop)
   var TRo = tourOf(tid); if (!back && !TRo.lab && !TRo.secret && !opened(TRo, (st.tours || {})[tid], n)) return showHub(tid);
@@ -3908,10 +3918,11 @@ function tourOut(holed){
     return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
       <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? (threeOf(par, th) >= par - 1 ? 'Beat par for 3 stars.' : 'Beat par for 2 stars, ' + threeLine(par, th) + ' for 3.') : threeLine(par, th).replace(/^./, function(c){ return c.toUpperCase(); }) + ' for 3 stars.') + '</div>' : '') + '\
       <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + fmtPar(s - par) + '</b>To par</span></div>' +
-      (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + (TT && gw === TT.w && !tp.treat[n] ? '<div class="s">Beat par here for a trick or treat bonus.</div>' : '') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
+      (isGuest() ? '<div class="s">' + GUEST_COINS + '</div>' : got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + (TT && gw === TT.w && !tp.treat[n] ? '<div class="s">Beat par here for a trick or treat bonus.</div>' : '') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
       (openLine ? '<div class="s">' + openLine + '</div>' : '') +
       '<div class="row"><button class="pt-bt" data-a="again">Replay</button>' + (nextOpen ? '<button class="pt-go" data-a="next">Next hole</button>' : '<button class="pt-go" data-a="map">Map</button>') + '</div>',
-      { again:function(){ startLevel(n, tid); }, next:function(){ walkTo(n, tid); }, map:function(){ showHub(tid); } });
+      // a guest goes no further than the holes they may play: the next one asks them to sign in, where they stand
+      { again:function(){ startLevel(n, tid); }, next:function(){ if (guestAsks(tid, n + 1)) return guestSheet(n + 1, tid); walkTo(n, tid); }, map:function(){ showHub(tid); } });
   }
   // over par: the moment par strokes are gone with the ball still out
   if (TR.lab) return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down. The Lab costs no lives.</div>\
@@ -4051,7 +4062,7 @@ function v3Get(d, C){
   // the hole being asked for is half rendered already: finish that rather than start again
   if (S.v3job && S.v3job.k === k){ var J = S.v3job, o = null; S.v3job = null; try{ while (!(o = J.step(1e9))); S.v3c[k] = o; }catch(e){ S.v3c[k] = null; } }
   if (S.v3c[k] === undefined){ try{ S.v3c[k] = window.RTT_PUTT_3D.render(C || buildFrom(d), v3Opt(d)); }catch(e){ try{ console.warn('putt 3D hole failed, drawing it flat', e); }catch(_){} S.v3c[k] = null; }
-    var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
+    var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; }
   return S.v3c[k];
 }
 // render the next hole while this one is played, so moving on does not wait. It is done a few
@@ -4075,12 +4086,12 @@ function capDpr(w, h){ var d = Math.min(2, window.devicePixelRatio || 1), MAX = 
 function holeAhead(tid, n){ if (!v3Ok() || S.v3job) return; var d; try{ d = tourDesc(n, S.host, tid); }catch(e){ return; } if (!d || d.real || (S.v3c && S.v3c[v3Key(d)] !== undefined)) return;
   try{ S.v3job = { k:v3Key(d), step:window.RTT_PUTT_3D.slices(buildFrom(d), v3Opt(d)) }; }catch(e){ S.v3job = null; return; }
   (function tick(){ var J = S && S.v3job; if (!J || S.screen !== 'trail') return; if (!bgSlack()) return requestAnimationFrame(tick); var out = null; try{ out = J.step(3); }catch(e){ S.v3job = null; return; }
-    if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; return; } requestAnimationFrame(tick); })(); }
+    if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; return; } requestAnimationFrame(tick); })(); }
 function v3Tick(){
   var J = S.v3job; if (!J) return;
   var P = S.play; if (P && (P.state !== 'aim' || S.held)) return;   // never while the ball rolls or a pull back is held: those are the frames that matter
   var out = null; try{ out = J.step(2.5); }catch(e){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = null; return; }
-  if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
+  if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; }
 }
 
 function buildHole(d){
@@ -4903,6 +4914,7 @@ RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._chestRoll = chestRoll; RTT_PUTT._chestLuck = chestLuck; RTT_PUTT._keeperBlocks = function(n){ return keeperBlocks(pload(), n, 'main'); };
 RTT_PUTT._overPar = function(){ if (S && S.play && S.round && S.round.mode === 'ppt'){ S.play.strokes = S.play.C.par; S.play.state = 'done'; return tourOut(false); } };   // checks: a hole lost to par
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
+RTT_PUTT._holed = function(n){ if (S && S.play && S.round && S.round.mode === 'ppt'){ S.play.strokes = n; S.play.state = 'done'; return tourOut(true); } };   // checks: a Tour hole holed in n
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
 RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };
 // a hole built from a function, for trying out a layout in the browser: RTT_PUTT._try(function(T){ return H; }, 'clubhouse')
