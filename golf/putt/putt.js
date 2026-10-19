@@ -121,7 +121,21 @@ function inClimb(C, x, y){ var Z = C.climbs; for (var i = 0; i < Z.length; i++){
 /* It pulls away gently and stops hard. Pulling away it gathers speed slower than the carpet's grip can
    follow, so a ball sitting on the deck stays put; at the far dock it stops dead and the ball rolls on off
    the leading edge. (A deck that started with a jerk would throw the ball off its back edge.) */
-function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w;
+/* A MOVING DECK HOLDS THE BALL (the owner, 2026-10-19: "it's almost impossible to land it on it right now. The ball
+   rolls off as it moves"). On carpet's grip a ball coming down on a moving deck needed far more than the deck's length
+   to settle. So while the deck moves it grips DECK_GRIP times harder, and a ball that lands on it stops on it and rides.
+   A deck standing at a dock is carpet again, so a ball rolled onto a waiting deck plays as it always has.
+   That grip would have the ball ride at the deck's full speed into the dock and be thrown off it, so the deck now eases
+   in: it leaves gently, runs, and slows to its landing speed (f.e, set where the hole is built: the speed at which a ball
+   anywhere on the deck slides a foot clear of it on the carpet's grip), then stops. The ball keeps that speed and is put
+   ashore, and never rests on the deck. k = (3 - e)w^2 + (e - 2)w^3: no jerk leaving, e times the mean speed arriving. */
+var DECK_GRIP = 8;
+function ferryEase(e, w){ return { k:(3 - e) * w * w + (e - 2) * w * w * w, d:2 * (3 - e) * w + 3 * (e - 2) * w * w }; }
+function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w, z;
+  if (f.e != null){
+    if (u < f.dwell){ k = 0; v = 0; } else if (u < f.dwell + f.move){ z = ferryEase(f.e, (u - f.dwell) / f.move); k = z.k; v = z.d / f.move; }
+    else if (u < 2 * f.dwell + f.move){ k = 1; v = 0; } else { z = ferryEase(f.e, (u - 2 * f.dwell - f.move) / f.move); k = 1 - z.k; v = -z.d / f.move; }
+    return { ox:f.dx * k, oy:f.dy * k, vx:f.dx * v, vy:f.dy * v, k:k }; }
   if (u < f.dwell){ k = 0; v = 0; } else if (u < f.dwell + f.move){ w = (u - f.dwell) / f.move; k = w * w; v = 2 * w / f.move; }
   else if (u < 2 * f.dwell + f.move){ k = 1; v = 0; } else { w = (u - 2 * f.dwell - f.move) / f.move; k = 1 - w * w; v = -2 * w / f.move; }
   return { ox:f.dx * k, oy:f.dy * k, vx:f.dx * v, vy:f.dy * v, k:k }; }
@@ -320,7 +334,7 @@ function simulate(C, x, y, vx, vy, t0){
       s.vx += rv.ty * rv.lat * 5 * DT; s.vy -= rv.tx * rv.lat * 5 * DT;
     } else if (deck){
       // on the ferry: friction works against the ball's speed relative to the deck, so a ball that settles rides it
-      var fvx = deck.q.vx, fvy = deck.q.vy, rfx = s.vx - fvx, rfy = s.vy - fvy, rfs = Math.hypot(rfx, rfy), aff = fricOf(C, M.GREEN);
+      var fvx = deck.q.vx, fvy = deck.q.vy, rfx = s.vx - fvx, rfy = s.vy - fvy, rfs = Math.hypot(rfx, rfy), aff = fricOf(C, M.GREEN) * (fvx || fvy ? DECK_GRIP : 1);
       if (rfs > 1e-9){ var df = Math.min(rfs, aff * DT); rfx -= rfx / rfs * df; rfy -= rfy / rfs * df; }
       s.vx = rfx + fvx; s.vy = rfy + fvy;
     } else if (disc){
@@ -807,7 +821,9 @@ function courseFromH(H, tplName, seed, themeId, label){
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
     secret:H.secret || [], loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
-    rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ return { x0:f.x0, y0:f.y0, x1:f.x1, y1:f.y1, dx:f.dx, dy:f.dy, move:f.move / PACE, dwell:f.dwell / PACE, phase:f.phase || 0 }; }), turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:(u.omega || 1.2) * PACE }; }),
+    rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ var st = H.stimp || (themeId === 'winter' ? 9.5 : 9), D = Math.hypot(f.dx, f.dy) || 1, L = Math.abs(f.dx) >= Math.abs(f.dy) ? f.x1 - f.x0 : f.y1 - f.y0,
+      ve = Math.sqrt(2 * (V_STIMP * V_STIMP / (2 * st)) * (L + 1)), mv = f.move / PACE;
+      return { x0:f.x0, y0:f.y0, x1:f.x1, y1:f.y1, dx:f.dx, dy:f.dy, move:mv, dwell:f.dwell / PACE, phase:f.phase || 0, e:Math.max(0.2, Math.min(1.4, ve * mv / D)) }; }), turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:(u.omega || 1.2) * PACE }; }),
     climbs:(H.climbs || []).slice(),
     belts:(H.belts || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), ax:z.ax, ay:z.ay }; }) };
   C.matFn = function(x, y){
