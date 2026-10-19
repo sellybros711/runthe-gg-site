@@ -2485,6 +2485,8 @@ function open(host, o){
   document.body.style.overflow = 'hidden';
   // the page behind is covered: it stops painting and animating while Putt Putt is open (CSS: body.pt-open)
   document.body.classList.add('pt-open');
+  // this tab has Putt Putt open: a reload (iOS drops a tab that grows too big) comes straight back in (index.html puttReopen)
+  try{ sessionStorage.setItem('ppt_open', '1'); }catch(e){}
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
   // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
   ov.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-pass]'); if (!b) return; var h = S && S.host; if (h && h.pass){ close(); try{ h.pass(); }catch(x){} } });
@@ -2512,7 +2514,7 @@ function close(){
   if (!S) return;
   stopTrail();
   cancelAnimationFrame(S.raf); clearInterval(S.tick); window.removeEventListener('keydown', S.onKey); if (S.onResize) window.removeEventListener('resize', S.onResize);
-  document.body.style.overflow = S.prevOverflow || ''; document.body.classList.remove('pt-open'); S.ov.remove();
+  document.body.style.overflow = S.prevOverflow || ''; document.body.classList.remove('pt-open'); try{ sessionStorage.removeItem('ppt_open'); }catch(e){} S.ov.remove();
   var h = S.host; S = null; try{ if (h.onClose) h.onClose(); }catch(e){}
 }
 function top(title, sub, right){
@@ -3499,7 +3501,11 @@ function trailPlan(sp){ var k = trailKey(sp); if (!TRP[k]){ TRP[k] = window.RTT_
    render in progress, kept here too, so leaving the mode part way through a render does not throw the work away.
    The disk copy is keyed on the trail and on the versions of the files that draw it (TRAIL_V), so a change to any
    of them renders afresh rather than showing an old picture. Every disk call fails soft: null is "render it". */
-var TRC = {}, TRJ = null, TRC_KEEP = 4, TIDB = null, TIDB_KEEP = 3, TRAIL_V = null;
+/* MEMORY (the owner, 2026-10-18: on a phone the game "gets overwhelmed and refreshes"). A rendered trail or hole holds
+   its picture and its height grids, about 55 MB each, and iOS Safari reloads a tab that grows too big. So only two of
+   each are kept: the one in play and the one rendered ahead. A trail left behind is still on the device (TIDB). */
+var V3C_KEEP = 2;
+var TRC = {}, TRJ = null, TRC_KEEP = 2, TIDB = null, TIDB_KEEP = 3, TRAIL_V = null;
 function trcPut(k, pic){ TRC[k] = pic; var ks = Object.keys(TRC); if (ks.length > TRC_KEEP) delete TRC[ks[0]]; }
 function trailV(){ if (TRAIL_V) return TRAIL_V;
   var v = ['putt.js', 'trail.js', 'hole3d.js', 'gyms.js'].map(function(f){ try{ var e = document.querySelector('script[src*="putt/' + f + '"]'), m = e && /[?&]v=([^&]+)/.exec(e.src); return m ? m[1] : '?'; }catch(e){ return '?'; } });
@@ -4051,7 +4057,7 @@ function v3Get(d, C){
   // the hole being asked for is half rendered already: finish that rather than start again
   if (S.v3job && S.v3job.k === k){ var J = S.v3job, o = null; S.v3job = null; try{ while (!(o = J.step(1e9))); S.v3c[k] = o; }catch(e){ S.v3c[k] = null; } }
   if (S.v3c[k] === undefined){ try{ S.v3c[k] = window.RTT_PUTT_3D.render(C || buildFrom(d), v3Opt(d)); }catch(e){ try{ console.warn('putt 3D hole failed, drawing it flat', e); }catch(_){} S.v3c[k] = null; }
-    var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
+    var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; }
   return S.v3c[k];
 }
 // render the next hole while this one is played, so moving on does not wait. It is done a few
@@ -4075,12 +4081,12 @@ function capDpr(w, h){ var d = Math.min(2, window.devicePixelRatio || 1), MAX = 
 function holeAhead(tid, n){ if (!v3Ok() || S.v3job) return; var d; try{ d = tourDesc(n, S.host, tid); }catch(e){ return; } if (!d || d.real || (S.v3c && S.v3c[v3Key(d)] !== undefined)) return;
   try{ S.v3job = { k:v3Key(d), step:window.RTT_PUTT_3D.slices(buildFrom(d), v3Opt(d)) }; }catch(e){ S.v3job = null; return; }
   (function tick(){ var J = S && S.v3job; if (!J || S.screen !== 'trail') return; if (!bgSlack()) return requestAnimationFrame(tick); var out = null; try{ out = J.step(3); }catch(e){ S.v3job = null; return; }
-    if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; return; } requestAnimationFrame(tick); })(); }
+    if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; return; } requestAnimationFrame(tick); })(); }
 function v3Tick(){
   var J = S.v3job; if (!J) return;
   var P = S.play; if (P && (P.state !== 'aim' || S.held)) return;   // never while the ball rolls or a pull back is held: those are the frames that matter
   var out = null; try{ out = J.step(2.5); }catch(e){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = null; return; }
-  if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
+  if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; }
 }
 
 function buildHole(d){

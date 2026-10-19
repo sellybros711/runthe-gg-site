@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=106"></script>
+<script defer src="putt/putt.js?v=107"></script>
 <script defer src="putt/land.js?v=13"></script>
 <script defer src="putt/hole3d.js?v=18"></script>
 <script defer src="putt/gyms.js?v=4"></script>
@@ -23541,6 +23541,15 @@ function puttLivesReturn(){
 // and for the launch weeks only (PUTT_NEW_UNTIL, midnight Eastern on that day).
 const PUTT_NEW_UNTIL=Date.parse('2026-11-16T05:00:00Z');
 function puttNewTag(){ try{ return puttOn() && Date.now()<PUTT_NEW_UNTIL && !localStorage.getItem('bag_putt_seen'); }catch(e){ return false; } }
+// BACK INTO PUTT PUTT AFTER A RELOAD. iOS Safari reloads a tab that grows too big, and the player landed on the home
+// screen (the owner, 2026-10-18). putt.js marks this tab while Putt Putt is open (sessionStorage 'ppt_open', which a
+// reload keeps and a new tab does not), and once the account is known the page opens it again: a hole in progress
+// resumes where it was. Once a page load only, and never over a sheet that is already up.
+let _puttReopened=false;
+function puttReopen(){ if(_puttReopened) return; _puttReopened=true;
+  try{ if(sessionStorage.getItem('ppt_open')!=='1' || S.overlay || !puttOn()) return; }catch(e){ return; }
+  setTimeout(()=>{ try{ if(!document.querySelector('.pt-ov')) openPutt(); }catch(e){} }, 0); }
+try{ document.addEventListener('DOMContentLoaded',()=>setTimeout(puttReopen,6000),{once:true}); }catch(e){}   // no answer from the accounts in time
 function openPutt(o){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&o.go?o:undefined); }
 function openPuttDaily(){ openPutt({go:'daily'}); }
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
@@ -42261,6 +42270,7 @@ async function sbApply(session){
   S.authPending=false;   // OAuth round-trip resolved (success or not), drop the "finishing" pill
   try{ flushFeedback(); }catch(e){}   // post any feedback queued while offline / before the migration went live (guests too)
   sbUser=(session&&session.user)||null; sbUsername=null; sbProfile=null;
+  if(!sbUser) puttReopen();
   try{
     /* MIRRORING IS ONE WAY, AND ONLY UPWARD. Signing in here hands the session to the key
        the rest of the site reads, so RunTheTour carries you into Football and the Arcade.
@@ -42280,6 +42290,7 @@ async function sbApply(session){
   if(sbUser&&sb){
     // small, fast query, needed to decide signed-in vs username-picker
     try{ const {data}=await sb.from('profiles').select('username').eq('id',sbUser.id).maybeSingle(); sbUsername=(data&&data.username)||null; }catch(e){}
+    puttReopen();
     S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
     flushPendingSeasons();   // post every season queued while signed out / offline (fire-and-forget)
     migrateLegacyCareerSave();   // claim a pre-scoping career for this account, drop the unscoped copy
