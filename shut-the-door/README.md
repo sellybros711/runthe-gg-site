@@ -25,7 +25,7 @@ the shape. This file has the formulas.
 | `scenarios/` | `CANDIDATES.md` (the verified list) and `scenarios.json` (the approved ten) |
 | `test/` | `engine.mjs` (synthetic pack), `packs.mjs` (every real pack), `api.mjs` (the four calls) |
 | `3d/` | the mound in 3D. `boot.js` (`window.STD_STAGE`, tiny) imports `stage.js` from the home screen; it draws every pitch from the engine's PitchResult (`play.js`). Assets in `3d/assets/`, licences in `lab/LICENSES.md` |
-| `lab/` | the 3D dev page and its pipeline (`check-deform.mjs`, `check-load.mjs --game`, `shoot.mjs`, `stamp.mjs`) |
+| `lab/` | the 3D dev page and its pipeline (`check-deform.mjs`, `check-fit.mjs` for the headgear, `check-load.mjs --game`, `shoot.mjs`, `stamp.mjs`) |
 | `mound.js`, `sprites.js`, `anim.js` | the old drawn mound, used only where WebGL is missing (`anim.js` also times the scorebar's runners) |
 
 ## The pipeline

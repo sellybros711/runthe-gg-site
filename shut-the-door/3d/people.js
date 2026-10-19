@@ -6,8 +6,10 @@
  * and squat blended, his strike call layered on top.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=3';
-import * as G from './gear3d.js?v=2';
+import * as M from './materials.js?v=4';
+import * as G from './gear3d.js?v=3';
+import * as HG from './headgear.js?v=2';
+import { measureHead, wear, wornShade } from './headgear.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=6';
@@ -63,6 +65,19 @@ export function dress(p, kit, numberText, weave) {
 }
 
 export function loadPerson(g, scene) {
+  // the same parsed glTF can be set up again (a new scenario): first put its skeleton back as it
+  // came, without the gear the last setup hung on it
+  const first = !g.scene.userData.asLoaded;
+  if (first) {
+    const asLoaded = [];
+    g.scene.traverse((o) => { if (o.isBone) asLoaded.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone(), [...o.children]]); });
+    g.scene.userData.asLoaded = asLoaded;
+  } else {
+    for (const [b, pos, q, sc, kids] of g.scene.userData.asLoaded) {
+      b.position.copy(pos); b.quaternion.copy(q); b.scale.copy(sc);
+      for (const c of [...b.children]) if (!kids.includes(c)) b.remove(c);
+    }
+  }
   const root = new THREE.Group();
   root.add(g.scene);
   scene.add(root);
@@ -286,26 +301,6 @@ function lookAt(p, pt, w) {
   limitSwing(p, 'head', 27);
 }
 
-function headFrame(p) {
-  // the skull's box in the bind pose: centre, size
-  const box = boneBox(p.meshes.filter((m) => m.material.name === 'skin'), 'head', 0.6);
-  const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
-  return { c, s, top: box.max.y };
-}
-
-export function fitOnHead(p, obj, opts = {}) {
-  const { c, s, top } = headFrame(p);
-  // gear is modelled for a head 0.155 m wide; scale to this head, and sit the crown on the top
-  // gear is modelled for an average head; the skin box (it includes the ears) only places it
-  const k = opts.scale ?? 1;
-  obj.scale.setScalar(k);
-  const m = new THREE.Matrix4().compose(
-    new THREE.Vector3(c.x, top - (opts.drop ?? 0.112) * k, c.z + (opts.fwd ?? 0.0) * k),
-    new THREE.Quaternion().setFromEuler(new THREE.Euler(opts.tilt ?? 0, 0, 0)), new THREE.Vector3(k, k, k));
-  attach(p.bones.head, obj, m);
-  obj.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  return obj;
-}
 
 export class People {
   constructor({ scene, facts, mode, pitch, play, m }) {
@@ -335,7 +330,11 @@ export class People {
     const b = this.batter;
     if (!b) return;
     this.facts.batter = f;
-    if (b.helmet) { b.helmet.parent && b.helmet.parent.remove(b.helmet); b.helmet = null; }
+    if (b.helmet) {
+      b.helmet.parent && b.helmet.parent.remove(b.helmet);
+      b.helmet.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+      b.helmet = null;
+    }
     if (b.bat) { this.scene.remove(b.bat); b.bat = null; }
     for (const [bone, pos, q] of b.bind) { bone.position.copy(pos); bone.quaternion.copy(q); }
     b.root.position.set(0, 0, 0); b.root.rotation.set(0, 0, 0); b.root.scale.setScalar(1);
@@ -414,8 +413,10 @@ export class People {
     b.motion = this.m.batter;
     b.batTilt = 0;
     // the helmet in his club's colour; the jaw guard where the batter's appearance says he wears one
-    for (const m of b.meshes) if (m.material.name === 'hair') m.visible = false; // under the helmet
-    b.helmet = fitOnHead(b, G.battingHelmet(b.kit ? b.kit.trim : NAVY, lefty ? -1 : 1, { jaw: !!this.facts.batter.jawGuard }), { drop: 0.105, fwd: 0.012, tilt: 0.06 });
+    // built for his head (headgear.js): measured with his build and height, in the bind pose
+    measureHead(b);
+    b.helmet = wear(b, HG.battingHelmet(b.head, b.kit ? b.kit.trim : NAVY, lefty ? -1 : 1, { jaw: !!this.facts.batter.jawGuard }));
+    wornShade(b, b.helmet, b.helmet.userData.edge, { brim: b.helmet.userData.brim });
     b.bat = G.bat();
     this.scene.add(b.bat);
     // grips: bottom hand near the knob. A left handed hitter's bottom hand is his right.
@@ -612,7 +613,9 @@ export class People {
     this.build(c, 72, 210);
     // catcher's gear: charcoal, as most big league gear is; the team colour stays off it (no marks)
     const team = new THREE.Color(0x1d1f22);
-    fitOnHead(c, G.catcherHelmet(team), { drop: 0.118, fwd: 0.0 });
+    measureHead(c);
+    c.helmet = wear(c, HG.catcherHelmet(c.head, team));
+    wornShade(c, c.helmet, c.helmet.userData.edge);
     // shin guards along each calf, front toward his front (+z in the bind pose)
     for (const s of ['l', 'r']) {
       const knee = wpos(c.bones[`calf_${s}`]), ankle = wpos(c.bones[`foot_${s}`]);
@@ -629,7 +632,6 @@ export class People {
     const tc = torso.getCenter(new THREE.Vector3());
     const cp = G.chestProtector(team, 0.33, 0.47);
     attach(c.bones.spine_03, cp, new THREE.Matrix4().setPosition(tc.x, tc.y - 0.17, torso.max.z + 0.088));   // out over the jersey
-    for (const m of c.meshes) if (m.material.name === 'hair') m.visible = false; // under the helmet
     // the mitt on his left hand, pocket toward the palm
     const hb = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'hand_l', 0.5);
     const hc = hb.getCenter(new THREE.Vector3());
@@ -659,9 +661,11 @@ export class People {
   /* ---------------------------------------------------------------- umpire */
   setupUmpire(u) {
     this.build(u, 73, 225);
-    fitOnHead(u, G.cap(0x0a0a0c), { drop: 0.07, fwd: 0.0, tilt: 0.05 });
-    fitOnHead(u, G.umpireMask(), { drop: 0.12 });
-    for (const m of u.meshes) if (m.material.name === 'hair') m.visible = false; // under the cap
+    // his cap sits on his hair, pressed flat under it (the hair shows below the band); the mask under it
+    measureHead(u);
+    u.cap = wear(u, HG.cap(u.head, 0x0a0a0c));
+    u.mask = wear(u, HG.umpireMask(u.head, u.cap.userData.edge));
+    wornShade(u, u.cap, u.cap.userData.edge, { brim: u.cap.userData.brim, hairFrom: 70 * Math.PI / 180 });
     // the slot: between the catcher and a left handed hitter, his chin over the catcher's shoulder
     // directly behind the catcher, his head over the catcher's inside shoulder
     u.crouch = { drop: 0.4, back: 0.16, width: 0.36, toeOut: 0.3, heel: 0.05, lean: 0.62, kneeOut: 0.6 };

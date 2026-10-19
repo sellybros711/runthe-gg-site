@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=6';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
-import { People } from './people.js?v=14';
-import { Pitch } from './pitch.js?v=6';
-import { fromResult, motion } from './play.js?v=4';
+import { People } from './people.js?v=16';
+import { Pitch } from './pitch.js?v=7';
+import { fromResult, motion } from './play.js?v=5';
 import { look } from './looks.js?v=1';
 import { P } from './units.js?v=1';
 
@@ -104,6 +104,8 @@ class Stage {
   }
 
   setBatter(b) {
+    // the same hitter again (the home screen dressed him already): only the frame
+    if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) { this.layout(); return; }
     this.batterId = b.id;
     this.bat = b;
     this.zone = { szTop: b.szTop, szBot: b.szBot, bats: b.bats };
@@ -133,7 +135,7 @@ class Stage {
     const play = { call: { type: this.facts.pitcher.arsenal[0].type, cell }, actual: { x: tg.x, z }, velo: null, batter: 'take', result: 'ball', inPlay: null };
     this.setPitch(play);
     this.pose(0);
-    if (this.loaded) this.render();
+    if (this.loaded) this.soon();
   }
 
   setPitch(play) {
@@ -153,21 +155,30 @@ class Stage {
 
   render() { this.renderer.render(this.scene, this.camera); }
 
+  /** A frame on the next animation frame, once, however many changes asked for one (a tap on take
+      the mound sizes, frames and sets the hitter: one frame, not one each). */
+  soon() {
+    if (this.soonId) return;
+    this.soonId = requestAnimationFrame(() => {
+      this.soonId = 0;
+      this.render();
+      if (!window.STD_STAGE.marks.drawn && this.canvas.clientWidth) window.STD_STAGE.marks.drawn = Math.round(performance.now());
+    });
+  }
+
   layout() {
     const w = this.canvas.clientWidth || this.canvas.width, h = this.canvas.clientHeight || this.canvas.height;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     this.eye.resize(w, h);
     this.eye.update(this.t);
-    if (this.loaded) { this.fit(); this.render(); }
+    if (this.loaded) { this.fit(); this.soon(); }
   }
 
   /** frame (ignored: the 3D scene keeps its own state). After a pitch, back to the set. */
   draw() {
     if (!this.loaded) return;
-    if (this.dirty && this.facts && this.facts.batter) { this.dirty = false; this.preview(); } else this.render();
-    // check-load's mark: the first frame of the mound drawn where it can be seen
-    if (!window.STD_STAGE.marks.drawn && this.canvas.clientWidth) window.STD_STAGE.marks.drawn = Math.round(performance.now());
+    if (this.dirty && this.facts && this.facts.batter) { this.dirty = false; this.preview(); } else this.soon();
   }
 
   /** A plate point (catcher's view x in feet, zn normalised to this hitter) on the canvas, in CSS px. */
@@ -291,6 +302,15 @@ class Stage {
     this.pose(when === 'crossed' ? pt.tPlate + 0.35 : pt.tRel + 0.8 * (pt.tPlate - pt.tRel));
     this.render();
     this.dirty = true;
+  }
+
+  /** A pitch set up but not played (for check-fit.mjs, which poses it frame by frame itself):
+      its end time. */
+  prepare(pr) {
+    this.setPitch(fromResult(pr, this.facts.batter));
+    const pt = this.pitch, resultAt = pt.after ? pt.tRel + pt.after.t0 : pt.tCatch;
+    this.dirty = true;
+    return { tEnd: resultAt + 2.0, resultAt };
   }
 
   /** One pitch to the call. */
