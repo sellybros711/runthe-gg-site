@@ -46,8 +46,8 @@ for (const f of fs.readdirSync(PACKS).filter((x) => x.endsWith('.json')).sort())
     popup: pick((e) => e[2] === 'in_play' && e[3] === 'popup' && e[4] != null),
   };
   const facts = {
-    source: `data/packs/${f}`, scenarioId: sc.id,
-    pitcher: { name: p.name, throws: p.throws, teamColors: p.teamColors,
+    source: `data/packs/${f}`, scenarioId: sc.id, title: sc.title,
+    pitcher: { name: p.name, team: p.team, throws: p.throws, teamColors: p.teamColors,
       arsenal: p.arsenal.map((a) => ({ type: a.type, name: a.name, velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, shape: a.shape, sigmaFt: a.sigmaFt })) },
     situation: { usHome: !!sc.situation.usHome, inning: sc.situation.inning, half: sc.situation.half },
     release: { x: p.throws === 'L' ? 1.9 : -1.9, y: 54.0, z: 5.6, assumed: 'not in the pack: a stand in release for his hand, feet, catcher view' },

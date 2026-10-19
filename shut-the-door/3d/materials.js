@@ -112,6 +112,53 @@ export function hair(src, color) {
   return m;
 }
 
+/* The club's name on the chest: the nickname in Barlow Condensed Black Italic (SIL OFL, fonts/),
+   drawn on a canvas 4 to 1 and laid on the jersey as a decal (people.js sets the box, uniform() reads
+   it in the bind pose, facing forward only). The font is fetched once: a canvas drawn before it lands
+   is drawn again when it does. Without the font the words still draw, in the system's fallback. */
+export const WORD_ASPECT = 4;
+const WORD_W = 1024, WORD_H = WORD_W / WORD_ASPECT;
+const KIT_FONT = 'ShutKitWords';
+const words = new Map();
+let fontLoaded = false;
+function drawWords(e) {
+  const cv = e.canvas, g = cv.getContext('2d');
+  const fam = (fontLoaded ? `"${KIT_FONT}", ` : '') + '"Arial Narrow", Arial, sans-serif';
+  g.clearRect(0, 0, WORD_W, WORD_H);
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  // the largest size that fits the width (a margin each side) and the cap height (most of the height)
+  const pad = WORD_W * 0.03;
+  g.font = `900 italic 200px ${fam}`;
+  const m0 = g.measureText(e.text);
+  const cap0 = m0.actualBoundingBoxAscent || 140;
+  const size = 200 * Math.min((WORD_W - 2 * pad) / m0.width, (WORD_H * 0.8) / cap0);
+  g.font = `900 italic ${size.toFixed(2)}px ${fam}`;
+  if ('letterSpacing' in g) g.letterSpacing = `${(size * 0.03).toFixed(2)}px`;
+  const m = g.measureText(e.text);
+  const cap = m.actualBoundingBoxAscent || size * 0.7;
+  g.fillStyle = '#ffffff';
+  g.fillText(e.text, WORD_W / 2, WORD_H / 2 + cap / 2);
+  e.tex.needsUpdate = true;
+}
+/** The words' texture for a text (drawn once per text, cached). */
+export function wordsTexture(text) {
+  if (words.has(text)) return words.get(text).tex;
+  const canvas = document.createElement('canvas');
+  canvas.width = WORD_W; canvas.height = WORD_H;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.NoColorSpace; tex.anisotropy = 8; tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  const e = { text, canvas, tex };
+  words.set(text, e);
+  drawWords(e);
+  return tex;
+}
+if (typeof FontFace !== 'undefined' && typeof document !== 'undefined' && document.fonts) {
+  const url = new URL('../fonts/barlowcondensed-900italic.woff2', import.meta.url).href;
+  new FontFace(KIT_FONT, `url(${url}) format('woff2')`, { weight: '900', style: 'italic' }).load()
+    .then((f) => { document.fonts.add(f); fontLoaded = true; for (const e of words.values()) drawWords(e); })
+    .catch(() => { /* no font: the fallback stays */ });
+}
+
 /* The uniform: the glTF's map is a trim mask in the body's UV layout (pipeline/uniform.py), not a
    colour. R is the jersey's piping, G the pants' side stripe, B the sock's white slot or the glove's
    back. The colours are the club's, set per team at run time (colors below, all THREE.Color), and a
@@ -134,19 +181,25 @@ export function uniform(src, colors, opts = {}) {
     uStripe: { value: colors.stripe ?? colors.base }, uSlot: { value: colors.slot ?? colors.base },
     uNumber: { value: opts.number ?? null }, uNumberColor: { value: colors.number ?? colors.trim ?? colors.base },
     uHasNumber: { value: opts.number ? 1 : 0 }, uWeave: { value: opts.weave ?? null }, uHasWeave: { value: opts.weave ? 1 : 0 },
+    // the club's name on the chest: a decal in the bind pose, box = [x, y, w, h] in the mesh's own units
+    uWords: { value: opts.words ? wordsTexture(opts.words.text) : null }, uHasWords: { value: opts.words ? 1 : 0 },
+    uWordBox: { value: opts.words ? new THREE.Vector4(...opts.words.box) : new THREE.Vector4() },
+    uWordCol: { value: opts.words ? new THREE.Color(opts.words.color) : new THREE.Color(0) },
   };
   m.userData.u = u;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec2 vUvU;\nuniform mat3 uMaskT;')
-      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvUvU = (uMaskT * vec3(uv, 1.0)).xy;');
+      .replace('#include <common>', '#include <common>\nvarying vec2 vUvU;\nuniform mat3 uMaskT;\nvarying vec3 vWordP, vWordN;')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvUvU = (uMaskT * vec3(uv, 1.0)).xy;\nvWordP = position; vWordN = normal;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         varying vec2 vUvU;
-        uniform sampler2D uMask, uNumber, uWeave;
-        uniform vec3 uBase, uTrim, uStripe, uSlot, uNumberColor;
-        uniform float uHasNumber, uHasWeave;`)
+        varying vec3 vWordP, vWordN;
+        uniform sampler2D uMask, uNumber, uWeave, uWords;
+        uniform vec3 uBase, uTrim, uStripe, uSlot, uNumberColor, uWordCol;
+        uniform vec4 uWordBox;
+        uniform float uHasNumber, uHasWeave, uHasWords;`)
       .replace('#include <map_fragment>', `
         vec3 mk = texture2D(uMask, vUvU).rgb;
         vec3 col = uBase;
@@ -154,6 +207,12 @@ export function uniform(src, colors, opts = {}) {
         col = mix(col, uSlot, mk.b);
         col = mix(col, uTrim, mk.r);
         if (uHasNumber > 0.5) col = mix(col, uNumberColor, texture2D(uNumber, vUvU).a);
+        if (uHasWords > 0.5) {
+          vec2 wt = (vWordP.xy - uWordBox.xy) / uWordBox.zw;
+          vec2 inside = step(vec2(0.0), wt) * step(wt, vec2(1.0));
+          float facing = smoothstep(0.2, 0.6, normalize(vWordN).z);   // the front, turned up to about 70 degrees
+          col = mix(col, uWordCol, texture2D(uWords, wt).a * inside.x * inside.y * facing);
+        }
         if (uHasWeave > 0.5) col *= 0.88 + 0.24 * texture2D(uWeave, vUvU * 48.0).r;
         diffuseColor.rgb *= col;`);
   };

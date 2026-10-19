@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import { P, FT } from './units.js?v=1';
-import { assetUrl } from './load.js?v=6';
+import { assetUrl } from './load.js?v=7';
 
 const MASK_FT = 120;        // the mask covers 120 x 120 ft centred on the plate
 const MASK_PX = 2048;
