@@ -6,8 +6,8 @@
  * and squat blended, his strike call layered on top.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=3';
-import * as G from './gear3d.js?v=2';
+import * as M from './materials.js?v=4';
+import * as G from './gear3d.js?v=3';
 import * as HG from './headgear.js?v=1';
 import { measureHead, wear, wornShade } from './headgear.js?v=1';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
@@ -65,6 +65,19 @@ export function dress(p, kit, numberText, weave) {
 }
 
 export function loadPerson(g, scene) {
+  // the same parsed glTF can be set up again (a new scenario): first put its skeleton back as it
+  // came, without the gear the last setup hung on it
+  const first = !g.scene.userData.asLoaded;
+  if (first) {
+    const asLoaded = [];
+    g.scene.traverse((o) => { if (o.isBone) asLoaded.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone(), [...o.children]]); });
+    g.scene.userData.asLoaded = asLoaded;
+  } else {
+    for (const [b, pos, q, sc, kids] of g.scene.userData.asLoaded) {
+      b.position.copy(pos); b.quaternion.copy(q); b.scale.copy(sc);
+      for (const c of [...b.children]) if (!kids.includes(c)) b.remove(c);
+    }
+  }
   const root = new THREE.Group();
   root.add(g.scene);
   scene.add(root);

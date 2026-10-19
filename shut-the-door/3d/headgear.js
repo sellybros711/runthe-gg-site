@@ -64,6 +64,9 @@ export function measureHead(p, opts = {}) {
   const F = new THREE.Matrix4().compose(c, rot, new THREE.Vector3(1, 1, 1));
   const Finv = F.clone().invert();
   const pts = idx.map((i) => worldVertex(skin, i, new THREE.Vector3()).applyMatrix4(Finv));
+  // each one's outward normal in the frame (the bind pose's; the skull turns with the frame)
+  const nm = new THREE.Matrix3().getNormalMatrix(new THREE.Matrix4().multiplyMatrices(Finv, skin.matrixWorld));
+  const nrm = idx.map((i) => new THREE.Vector3().fromBufferAttribute(skin.geometry.attributes.normal, i).applyMatrix3(nm).normalize());
   // the brows: the top of the eyebrow meshes, in the frame
   let brow = null;
   for (const m of p.meshes) {
@@ -80,7 +83,7 @@ export function measureHead(p, opts = {}) {
     const pc = m.geometry.attributes.position.count;
     for (let i = 0; i < pc; i++) hairPts.push(worldVertex(m, i, new THREE.Vector3()).applyMatrix4(Finv));
   }
-  const head = { skin, idx, wts, F, Finv, pts, brow, hair: !!opts.hair, map: scalpMap(pts.concat(hairPts)) };
+  const head = { skin, idx, wts, nrm, F, Finv, pts, brow, hair: !!opts.hair, map: scalpMap(pts.concat(hairPts), wts) };
   p.head = head;
   return head;
 }
@@ -96,14 +99,14 @@ const binP = (ph) => ((Math.floor(((ph + Math.PI) / TAU) * NP) % NP) + NP) % NP;
 const binT = (th) => Math.min(NT - 1, Math.max(0, Math.floor((th / Math.PI) * NT)));
 
 /** The outermost skin in every direction: a radius per bin, the gaps filled from their neighbours. */
-export function scalpMap(pts) {
-  const R = new Float32Array(NP * NT), has = new Uint8Array(NP * NT);
-  for (const q of pts) {
+export function scalpMap(pts, wts) {
+  const R = new Float32Array(NP * NT), has = new Uint8Array(NP * NT), skull = new Uint8Array(NP * NT);
+  pts.forEach((q, i) => {
     const { r, th, ph } = polar(q);
     const k = binT(th) * NP + binP(ph);
-    if (r > R[k]) R[k] = r;
+    if (r > R[k]) { R[k] = r; skull[k] = wts && wts[i] >= 0.9 ? 1 : 0; }
     has[k] = 1;
-  }
+  });
   // fill the empty bins: a few passes of the mean of filled neighbours (phi wraps)
   const filled = has.slice();
   for (let pass = 0; pass < 40; pass++) {
@@ -123,7 +126,7 @@ export function scalpMap(pts) {
     R.set(R2); filled.set(f2);
     if (!changed) break;
   }
-  return { R, has, filled };
+  return { R, has, filled, skull };
 }
 
 /** The scalp's radius toward (phi, theta), bilinear between bin centres. */
@@ -256,6 +259,13 @@ export function wornShade(p, gear, edge, opts = {}) {
     m.visible = true;
     m.onBeforeRender = () => { gear.updateWorldMatrix(true, false); u.uGearM.value.copy(inv.copy(gear.matrixWorld).invert()); };
   }
+}
+
+/** The nearest skin vertex of the head to a point (frame coordinates). */
+export function snapToSkin(head, q) {
+  let best = null, bd = Infinity;
+  for (const v of head.pts) { const d = v.distanceToSquared(q); if (d < bd) { bd = d; best = v; } }
+  return best.clone();
 }
 
 /** The face: its radius toward (phi, theta) smoothed over the nose and lips, for a cage. */
@@ -444,14 +454,21 @@ function faceCage(head, L, metal, padMat, opts) {
     else { ph = -half; th = bottom - (bottom - top) * ((s - 0.75) / 0.25); }
     ring.push([ph, th]);
   }
-  const framePts = ring.map(([ph, th]) => at(ph, th, 0.009));
+  // where the frame meets the face: the skin itself under each point of the ring (the nearest skin
+  // vertex to the radial point), so the pads rest on the face even where it falls away (the jaw)
+  const contact = ring.map(([ph, th]) => snapToSkin(head, dirOf(ph, th).multiplyScalar(radiusAt(head.map, ph, th))));
+  const out = (q, d) => q.clone().addScaledVector(q.clone().normalize(), d);
+  const framePts = ring.map(([ph, th], i) => {
+    const a = at(ph, th, 0.009), b = out(contact[i], PAD + 0.012);
+    return a.length() < b.length() ? b : a;
+  });
   const fr = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(framePts, true), 80, opts.frameR ?? 0.006, 8, true), metal);
   g.add(fr);
-  const padPts = ring.map(([ph, th]) => dirOf(ph, th).multiplyScalar(radiusAt(head.map, ph, th) + PAD + 0.006));
+  const padPts = contact.map((q) => out(q, PAD + 0.006));
   const pads = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(padPts, true), 80, 0.006, 8, true), padMat);
   g.add(pads);
   // the pads rest on the face: their inner side
-  const fit = ring.map(([ph, th]) => dirOf(ph, th).multiplyScalar(radiusAt(head.map, ph, th) + PAD));
+  const fit = contact.map((q) => out(q, PAD));
   g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return { group: g, fit, top, bottom, half, at };
 }
@@ -464,13 +481,17 @@ export function catcherHelmet(head, color) {
   const mat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.15 });
   const padMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
   const metal = new THREE.MeshStandardMaterial({ color: 0x18181a, roughness: 0.45, metalness: 0.6 });
-  // open at the face (to 6 mm over the brows), down past the ears to the jaw at the sides and back
+  // open at the face (to 6 mm over the brows), down past the ears to the jaw at the sides
   const sstep = (a, b, x) => { const t = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
-  const yF = L.yBrow + 0.006, yLow = L.earBot - 0.022;
-  const edge = rimAtHeights(head, (ph) => yF + (yLow - yF) * sstep(54 * D, 88 * D, Math.abs(ph)));
+  // (at the back it comes up to the ear's middle, clear of the nape as the head tips back)
+  const yF = L.yBrow + 0.006, yLow = L.earBot - 0.022, yBack = L.earY - 0.006;
+  const edge = rimAtHeights(head, (ph) => {
+    const a = Math.abs(ph);
+    return yF + (yLow - yF) * sstep(54 * D, 88 * D, a) + (yBack - yLow) * sstep(96 * D, 132 * D, a);
+  });
   const sh = wornShell(head, edge, { mat, padMat, thick: 0.016, smooth: 120 });
   const g = sh.group;
-  const cage = faceCage(head, L, metal, padMat, { top: edge(0), chin: L.earBot - 0.07, half: 58 * D, noseClr: 0.032, frameClr: 0.004, bar: 0.0052 });
+  const cage = faceCage(head, L, metal, padMat, { top: edge(0), chin: L.earBot - 0.055, half: 58 * D, noseClr: 0.032, frameClr: 0.004, bar: 0.0052 });
   g.add(cage.group);
   // the throat guard: hangs from the cage's bottom bar
   const tgAt = cage.at(0, cage.bottom, 0.012);
@@ -499,7 +520,7 @@ export function cap(head, color, opts = {}) {
     return y + (Math.max(y, L.earTop + 0.004) - y) * gauss(a - L.earPh, 30 * D);
   });
   const front = edge(0);
-  const sh = wornShell(head, edge, { mat, padMat, thick: 0.006, pad: 0.005, smooth: 60, roll: 0.002 });   // over the hair, pressed flat
+  const sh = wornShell(head, edge, { mat, padMat, thick: 0.006, pad: 0.004, smooth: 60, roll: 0.002 });   // over the hair, pressed flat
   const g = sh.group;
   // the front panels stand up: lift the crown's outside over the forehead
   const outerMesh = g.children[0], p = outerMesh.geometry.attributes.position;
@@ -541,7 +562,7 @@ export function umpireMask(head, capEdge) {
   const metal = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.5, metalness: 0.5 });
   const pad = new THREE.MeshStandardMaterial({ color: 0x6b4a32, roughness: 0.8 });
   const strap = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
-  const cage = faceCage(head, L, metal, pad, { top: thetaAtY(head, 0, L.yBrow + 0.012), chin: L.earBot - 0.075, half: 56 * D, noseClr: 0.034, frameClr: 0.005, bar: 0.004, frameR: 0.0055 });
+  const cage = faceCage(head, L, metal, pad, { top: thetaAtY(head, 0, L.yBrow + 0.012), chin: L.earBot - 0.058, half: 56 * D, noseClr: 0.034, frameClr: 0.005, bar: 0.004, frameR: 0.0055 });
   const g = cage.group;
   // the harness: a strap each side from the frame back round the head, below the cap's band
   const fit = cage.fit.slice();
@@ -584,23 +605,46 @@ export function fitNow(p, gear) {
   gear.updateWorldMatrix(true, false);
   inv.copy(gear.matrixWorld).invert();
   const pts = head.idx.map((i) => worldVertex(head.skin, i, new THREE.Vector3()).applyMatrix4(inv));
-  // into the head: any skin the head bone carries (even the part the neck shares); resting on the
-  // head: the skull's own skin (the head bone carries 90% of it or more)
-  const live = scalpMap(pts), skull = scalpMap(pts.filter((q, k) => head.wts[k] >= 0.9));
+  // the head's skin in 1 cm cells, for the nearest skin to a point
+  const C = 0.01, key = (x, y, z) => `${x},${y},${z}`;
+  const grid = (keep) => {
+    const cells = new Map();
+    pts.forEach((q, k) => {
+      if (!keep(k)) return;
+      const kk = key(Math.floor(q.x / C), Math.floor(q.y / C), Math.floor(q.z / C));
+      (cells.get(kk) || cells.set(kk, []).get(kk)).push(k);
+    });
+    return (q) => {
+      const cx = Math.floor(q.x / C), cy = Math.floor(q.y / C), cz = Math.floor(q.z / C);
+      let best = -1, bd = Infinity;
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
+        const l = cells.get(key(cx + a, cy + b, cz + c));
+        if (l) for (const k of l) { const d = pts[k].distanceToSquared(q); if (d < bd) { bd = d; best = k; } }
+      }
+      return best;
+    };
+  };
+  const nearSkull = grid((k) => head.wts[k] >= 0.9), nearAny = grid(() => true);
   let maxGap = -Infinity, minGap = Infinity, n = 0, worstAt = null, deepAt = null;
+  const at = (q) => { const { th, ph } = polar(q); return [Math.round(ph / D), Math.round(th / D)]; };
   for (const q of gear.userData.fit) {
-    const { r, th, ph } = polar(q);
-    const k = binT(th) * NP + binP(ph);
-    if (!head.map.has[k]) continue;
-    if (live.has[k]) {
-      const d = r - radiusAt(live, ph, th);
-      if (d < minGap) { minGap = d; deepAt = [Math.round(ph / D), Math.round(th / D)]; }
+    const { th, ph } = polar(q);
+    // into the head: the side of the nearest skin (any the head bone carries) the point is on
+    const ka = nearAny(q);
+    if (ka >= 0) {
+      const d = _v.copy(q).sub(pts[ka]).dot(head.nrm[ka]);
+      if (d < minGap) { minGap = d; deepAt = at(q); }
     }
-    if (skull.has[k]) {
-      const g = r - radiusAt(skull, ph, th);
-      n++;
-      if (g > maxGap) { maxGap = g; worstAt = [Math.round(ph / D), Math.round(th / D)]; }
-    }
+    // resting on the head: the nearest skin of the skull itself, where it was the outermost skin
+    // when the piece was fitted
+    if (!head.map.skull[binT(th) * NP + binP(ph)]) continue;
+    const ks = nearSkull(q);
+    if (ks < 0) continue;
+    // the distance off the skin's surface there (the nearest vertex's tangent plane: the mesh's
+    // vertices are a few millimetres apart, its surface is between them)
+    const g = _v.copy(q).sub(pts[ks]).dot(head.nrm[ks]);
+    n++;
+    if (g > maxGap) { maxGap = g; worstAt = at(q); }
   }
   const a = gear.matrix.elements, b = gear.userData.bindLocal.elements;
   let drift = 0;
