@@ -17,6 +17,20 @@ import { cellPoint } from './pitch.js?v=7';
 
 export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'hbp_fall', 'dirt'];
 
+/* Where the bat meets the ball, as feet in front of the plate's front face (toward the mound; the
+   ball is met at the plate's face when this is 0). A ball on the outside corner is met out in front
+   and a ball on the inside is met later, closer to him; a pull is met earlier still. The first
+   version set the contact in hundredths of a second: at 90 mph that is 4 ft, a long way out. */
+export function meetDepth(play, lefty) {
+  const ip = play.inPlay;
+  const away = (lefty ? -1 : 1) * play.actual.x;        // feet away from him (catcher's view)
+  const pull = ip && ip.spray != null ? Math.max(-1, Math.min(1, (lefty ? 1 : -1) * ip.spray / 45)) : 0;
+  return Math.max(0.15, Math.min(1.3, 0.6 + 0.22 * Math.max(-1.2, Math.min(1.2, away)) + 0.25 * pull));
+}
+
+/** Ball speed at the plate, feet per second (pitch.js flight: the plate speed is 0.92 of release). */
+export function plateFps(play) { return (play.velo || 90) * 1.46667 * 0.92; }
+
 /** The scene's reading of a play: the batter's motion, the ball's path after the plate, the calls. */
 export function motion(play, batter) {
   const r = play.result, ip = play.inPlay;
@@ -24,20 +38,22 @@ export function motion(play, batter) {
   const m = { batter: 'take', ball: 'glove', ump: null, catcher: 'receive', contactShift: 0 };
   if (play.batter === 'swing') {
     m.batter = 'swing';
-    if (r === 'swinging_strike') { m.ball = 'glove'; m.miss = true; }
-    else if (r === 'foul_tip') { m.ball = 'tip'; }
+    // contactShift: when the bat meets the ball, in seconds from the plate (negative: before it)
+    if (r === 'swinging_strike') {
+      // the bat passes the spot the ball was in a moment before, and misses it (people.js contactPlan)
+      m.ball = 'glove'; m.miss = true; m.passLag = 0.006;
+    }
+    else if (r === 'foul_tip') { m.ball = 'tip'; m.contactShift = -0.2 / plateFps(play); }
     else if (r === 'foul') {
       // a foul with a low launch angle is pulled foul down the line, a steep or unmeasured one goes
       // back into the screen
       const back = play.foul === 'back' || ip == null || ip.la == null || ip.la > 40;
       m.ball = back ? 'back' : 'pulled';
-      m.contactShift = back ? 0.004 : -0.045;            // a pulled foul is met early
+      m.contactShift = back ? 0 : -1.1 / plateFps(play);   // a pulled foul is met out in front, a back one at the plate
       m.ump = 'foul';
     } else if (r === 'in_play' && ip) {
       m.ball = 'play';
-      // met early to pull it, late to go the other way: a few hundredths of a second over the field
-      const pull = (lefty ? 1 : -1) * (ip.spray ?? 0) / 45;
-      m.contactShift = -0.03 * Math.max(-1, Math.min(1, pull));
+      m.contactShift = -meetDepth(play, lefty) / plateFps(play);
       m.catcher = 'rise';
     }
   } else {
