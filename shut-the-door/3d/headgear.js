@@ -160,8 +160,13 @@ function smoothMap(map, passes) {
 export function wornShell(head, edge, opts) {
   const thick = opts.thick ?? 0.014, pad = opts.pad ?? PAD;
   const smooth = smoothMap(head.map, opts.smooth ?? 6);
-  const inner = (ph, th) => dirOf(ph, th).multiplyScalar(radiusAt(head.map, ph, th) + pad);
-  const outer = (ph, th) => dirOf(ph, th).multiplyScalar(Math.max(radiusAt(smooth, ph, th) + pad + thick, radiusAt(head.map, ph, th) + pad + thick * 0.6));
+  // near the crown every azimuth meets at one point: blend toward the crown's mean radius there, so
+  // the shell closes smoothly instead of in a fan of slightly different radii
+  const crown = (m) => { let s = 0; for (let i = 0; i < 24; i++) s += radiusAt(m, -Math.PI + (TAU * i) / 24, 0.05); return s / 24; };
+  const c0 = crown(head.map), c1 = crown(smooth);
+  const rad = (m, c, ph, th) => { const k = Math.min(1, th / (12 * D)); return c + (radiusAt(m, ph, th) - c) * k * k * (3 - 2 * k); };
+  const inner = (ph, th) => dirOf(ph, th).multiplyScalar(rad(head.map, c0, ph, th) + pad);
+  const outer = (ph, th) => dirOf(ph, th).multiplyScalar(Math.max(rad(smooth, c1, ph, th) + pad + thick, rad(head.map, c0, ph, th) + pad + thick * 0.6));
   const SP = opts.segPhi ?? 72, ST = opts.segTheta ?? 30;
   const surf = (fn, shrink) => {
     const pos = [], idx = [];
@@ -344,9 +349,8 @@ export function battingHelmet(head, color, flapSide, opts = {}) {
   const edge = rimAtHeights(head, (ph) => {
     const a = Math.abs(ph);
     let y = yF + (yB - yF) * Math.pow(a / Math.PI, 0.9);
-    const ear = gauss(a - L.earPh, 26 * D);
-    if (flapAt(ph)) y = y + (Math.min(y, L.earBot - 0.01) - y) * ear;
-    else y = y + (Math.max(y, L.earTop + 0.006) - y) * ear;
+    if (flapAt(ph)) y = y + (Math.min(y, L.earBot - 0.01) - y) * gauss(a - L.earPh, 26 * D);
+    else y = y + (Math.max(y, L.earTop + 0.002) - y) * gauss(a - L.earPh - 4 * D, 17 * D);
     return y;
   });
   const front = edge(0);

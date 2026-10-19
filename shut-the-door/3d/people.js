@@ -8,8 +8,8 @@
 import * as THREE from 'three';
 import * as M from './materials.js?v=4';
 import * as G from './gear3d.js?v=3';
-import * as HG from './headgear.js?v=1';
-import { measureHead, wear, wornShade } from './headgear.js?v=1';
+import * as HG from './headgear.js?v=2';
+import { measureHead, wear, wornShade } from './headgear.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=6';

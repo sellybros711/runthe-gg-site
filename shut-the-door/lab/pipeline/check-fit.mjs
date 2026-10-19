@@ -57,7 +57,8 @@ let fails = 0, worst = { gap: -1, deep: 1 };
 for (const file of QUICK ? packs.slice(-1) : packs) {
   const scn = JSON.parse(fs.readFileSync(path.join(ROOT, 'shut-the-door', 'data', 'packs', file), 'utf8')).scenario;
   const r = await page.evaluate(async ({ scn, quick, GAP, DEEP }) => {
-    const HG = await import(document.querySelector('script[src*="3d/boot.js"]') ? new URL('3d/headgear.js?v=1', location.href).href : '');
+    // the very module the stage loaded (its URL, version and all)
+    const HG = await import(performance.getEntriesByType('resource').map((e) => e.name).find((n) => /\/3d\/headgear\.js/.test(n)));
     const st = window.STD_STAGE.current, C = window.STD_CONTRACT;
     st.setScenario(scn);
     const plays = [
