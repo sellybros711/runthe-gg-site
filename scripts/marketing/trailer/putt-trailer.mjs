@@ -43,7 +43,8 @@ export const cards = {
 
 /* The scenes. Each screen plays clips back to back; `to` (negative: from the clip's end) sets the speed. */
 // Cut on the beat of the 120 BPM track (chiptune.mjs): a beat is 0.5 s, a bar 2 s.
-const I = 4.0, WD = 6.0, HD = 9.0, PZ = 6.0, CH = 5.0, EN = 6.0;
+// The opening is 6 s: 2.3 on the Pro Tour, 3.7 on the Putt Putt reveal (a bar longer than the first cut's 1.7).
+const I = 6.0, WD = 6.0, HD = 9.0, PZ = 6.0, CH = 5.0, EN = 6.0;
 /* Where the Pro Tour round (rtt-x.mp4, rtt-reels.mp4, the rtt-round shot) is picked up for the intro: each
    cut's own take, so each has its own moment. */
 const RTT_FROM = { x: 10.2, reels: 25.4 };

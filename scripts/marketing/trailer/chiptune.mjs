@@ -10,13 +10,17 @@
 import fs from 'node:fs';
 
 const SR = 44100, BPM = 120, BEAT = 60 / BPM, BAR = BEAT * 4;
-const LEN = +(process.argv[3] || 36);
+const LEN = +(process.argv[3] || 38);
 const N = Math.round(LEN * SR);
 const mix = new Float32Array(N);
 const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
 // the scenes, in seconds (putt-trailer.mjs): intro 4, worlds 6, holes 9, puzzles 6, chests 5, end 6
-const S = { flash: 2.3, drop: 4, hook: 10, puzz: 19, chest: 25, end: 30, hit: 30.6 };
+/* The build from the reveal to the drop is BUILD seconds (the owner, 2026-10-19: the Putt Putt reveal went by
+   too fast, so it is a bar longer than the first cut's 1.7 s). Everything from the drop on is the same music
+   as before, moved later by SHIFT, so it reads its bars and chords on the old clock (tb below). */
+const BUILD = 3.7, SHIFT = BUILD - 1.7;
+const S = { flash: 2.3, drop: 2.3 + BUILD, hook: 10 + SHIFT, puzz: 19 + SHIFT, chest: 25 + SHIFT, end: 30 + SHIFT, hit: 30.6 + SHIFT };
 const CHORDS = [[60, 64, 67], [55, 59, 62], [57, 60, 64], [53, 57, 60]];   // C G Am F
 const chordAt = (t) => CHORDS[Math.floor(t / BAR) % 4];
 const HOOK = [[76, 79, 84, 83], [86, 83, 79, 74], [81, 84, 88, 86], [84, 81, 77, 79]];
@@ -45,8 +49,9 @@ function riser(t0, t1, vol = 0.08) { const i0 = Math.round(t0 * SR), n = Math.ro
   for (let i = 0; i < n; i++) { const k = i / n; lp += (noise() - lp) * (0.02 + 0.5 * k * k); mix[i0 + i] += lp * k * vol; } }
 
 for (let t = 0; t < S.end; t += BEAT / 4) {
-  const bar = Math.floor(t / BAR), inBar = t - bar * BAR, beat = Math.floor(inBar / BEAT + 1e-6), sub = Math.round((inBar % BEAT) / (BEAT / 4));
-  const ch = chordAt(t), on16 = Math.round(t / (BEAT / 4));
+  const tb = t >= S.drop ? t - SHIFT : t;   // the old clock, so the body is note for note the first cut's
+  const bar = Math.floor(tb / BAR), inBar = tb - bar * BAR, beat = Math.floor(inBar / BEAT + 1e-6), sub = Math.round((inBar % BEAT) / (BEAT / 4));
+  const ch = chordAt(tb), on16 = Math.round(tb / (BEAT / 4));
   // the intro: a quiet arpeggio and hats, rising into the drop
   if (t < S.drop) {
     // before the flash only the swell (below); after it the arpeggio climbs into the drop
