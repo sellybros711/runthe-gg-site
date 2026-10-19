@@ -296,14 +296,18 @@ function blockOf(p) {
   return { ...BLOCK, drop: BLOCK.drop - o.drop, lean: BLOCK.lean - o.lean };
 }
 
-/** Crouch by amount k (0 standing, 1 full): drop and push back the hips, plant the feet, lean. */
-function crouch(p, k) {
+/** Crouch by amount k (0 standing, 1 full): drop and push back the hips, plant the feet, lean.
+    Under a clip that already squats (crouchOff), standing undoes the clip's own squat as well, by
+    the share undo (0 when a clip of his rising is playing and stands him itself). */
+function crouch(p, k, undo = 1) {
   const c = p.crouch, B = p.bones;
+  const o = p.crouchOff || { drop: 0, lean: 0 };
   const pel = B.pelvis;
   const w = wpos(pel);
   // the crouch's distances were set on the model at its own size: they scale with the body
   const sc = p.root.scale.y;
-  w.y -= c.drop * sc * k; w.z -= c.back * sc * k;
+  const drop = c.drop * k - o.drop * (1 - k) * undo;
+  w.y -= drop * sc; w.z -= c.back * sc * k;
   pel.position.copy(pel.parent.worldToLocal(w));
   pel.updateMatrixWorld(true);
   // never higher than his legs reach to his planted feet (a clip that stands him up, the catcher's
@@ -333,7 +337,7 @@ function crouch(p, k) {
     const q = wquat(B[`foot_${s}`]);
     rotateWorld(B[`foot_${s}`], want.multiply(q.invert()));
   }
-  const lean = c.lean * k;
+  const lean = c.lean * k - o.lean * (1 - k) * undo;
   for (const [b, part] of [['spine_01', 0.35], ['spine_02', 0.35], ['spine_03', 0.3]]) bendWorld(B[b], p.left, lean * part);
 }
 
@@ -351,6 +355,26 @@ function blockCrouch(p, k) {
   }
   crouch(p, 1);
   p.crouch = c0; p.feet = f0;
+}
+
+/** Keep a joint's twist (about its own length, from the bind pose) inside maxDeg; its swing stays. */
+function limitTwist(p, name, maxDeg) {
+  const bone = p.bones[name];
+  if (!p.bindQ) p.bindQ = new Map(p.bind.map(([b, , q]) => [b, q]));
+  const q0 = p.bindQ.get(bone);
+  const rel = q0.clone().invert().multiply(bone.quaternion);
+  const child = bone.children.find((c) => c.isBone);
+  const ax = child ? child.position.clone().normalize() : new THREE.Vector3(0, 1, 0);
+  const pr = ax.clone().multiplyScalar(rel.x * ax.x + rel.y * ax.y + rel.z * ax.z);
+  let tw = new THREE.Quaternion(pr.x, pr.y, pr.z, rel.w).normalize();
+  if (tw.w < 0) tw.set(-tw.x, -tw.y, -tw.z, -tw.w);
+  const sw = rel.clone().multiply(tw.clone().invert());
+  const ang = 2 * Math.acos(Math.min(1, tw.w));
+  const lim = THREE.MathUtils.degToRad(maxDeg);
+  if (ang <= lim) return;
+  tw = new THREE.Quaternion().slerp(tw, lim / ang);
+  bone.quaternion.copy(q0).multiply(sw).multiply(tw);
+  bone.updateMatrixWorld(true);
 }
 
 /** Turn the head (and a little of the neck) toward a world point, never more than a neck can:
@@ -375,7 +399,7 @@ function limitSwing(p, name, maxDeg) {
   bone.updateMatrixWorld(true);
 }
 
-function lookAt(p, pt, w) {
+function lookAt(p, pt, w, neck = 36, head = 27) {
   const B = p.bones;
   for (const [b, part, max] of [['neck_01', 0.4, 12], ['head', 0.6, 15]]) {
     const bone = B[b];
@@ -390,8 +414,8 @@ function lookAt(p, pt, w) {
     rotateWorld(bone, q);
   }
   // however far the ball has gone (back over his head into the screen), the neck stays in range
-  limitSwing(p, 'neck_01', 36);
-  limitSwing(p, 'head', 27);
+  limitSwing(p, 'neck_01', neck);
+  limitSwing(p, 'head', head);
 }
 
 
@@ -857,6 +881,9 @@ export class People {
         b.batTime = Math.min(ct, b.tContact - (b.motion === 'check' ? 0.075 : 0.2));
         b.dropAt = fall && t > hitT ? t - hitT : null;
       }
+      // the Mixamo swings turn the head hard on the neck to keep the eyes on the pitch: past about
+      // 24 degrees of twist the skin under the jaw pinches
+      limitTwist(b, 'head', 24);
       clavicles(b);
       deltoids(b);
       this.poseBat(b);
@@ -876,7 +903,7 @@ export class People {
         // a ball in play: he comes up out of his crouch the way Mixamo's catcher does
         // (his trunk and legs: the glove arm stays his own, catcherArms reaches it)
         if (k > 0 && c.clips.rise) layer(c, 'rise', THREE.MathUtils.clamp(t - contact - 0.2, 0, c.clips.rise.duration), k, ARMS);
-        crouch(c, 1 - (c.clips.rise ? 0.8 : 0.5) * k);
+        crouch(c, 1 - (c.clips.rise ? 0.8 : 0.5) * k, c.clips.rise ? 0 : 1);
         this.catcherArms(c, t);
       }
       lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
@@ -915,7 +942,9 @@ export class People {
     const k0 = smooth(clamp01((t + 0.4) / 0.6));                  // sets up the target
     const k1 = smooth(clamp01((t - (catchT - 0.32)) / 0.3));     // reaches for the ball
     const give = pt.after ? 0 : smooth(clamp01((t - catchT) / 0.12)) * (1 - smooth(clamp01((t - catchT - 0.5) / 0.6)));
-    const target = aim.clone().lerp(ball, k1);
+    // a pitch into the batter he only starts after: it is gone before he gets there (and one high
+    // and inside is past where his shoulder goes)
+    const target = aim.clone().lerp(ball, k1 * (this.m.ball === 'hbp' ? 0.5 : 1));
     target.z -= give * 0.06;
     // framing: a pitch caught near the edge of the zone, he brings the mitt a few centimetres back
     // toward the zone as he holds it (never a pitch well off the plate, never one he did not catch)
@@ -1008,7 +1037,7 @@ export class People {
     if (!u.bindQ) u.bindQ = new Map(u.bind.map(([bb, , q]) => [bb, q]));
     for (const s of ['l', 'r']) { const tb = B[`upperarm_twist_${s}`]; tb.quaternion.copy(u.bindQ.get(tb)); }
     u.root.updateMatrixWorld(true);
-    crouch(u, 1 - up * 0.85);
+    crouch(u, 1 - up * 0.85, callClip ? 0 : 1);
     const kneeL = wpos(B.calf_l), kneeR = wpos(B.calf_r);
     const handOn = (side, knee) => {
       const tgt = knee.clone().add(new THREE.Vector3(0, 0.1, 0)).addScaledVector(u.fwd, 0.04).addScaledVector(u.left, side * -0.03);
@@ -1062,8 +1091,13 @@ export class People {
       twoBoneIK(B.upperarm_l, B.lowerarm_l, B.hand_l, tl, pl, w);
       twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tr, pr, w);
     }
-    // his eyes on the ball, wherever it goes
-    lookAt(u, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.7);
+    // the crouching capture holds his chin up to see over the catcher: standing, he lets it go
+    // (the look below then has its whole range, and the neck is never stretched past it)
+    for (const n of ['neck_01', 'head']) B[n].quaternion.slerp(u.bindQ.get(B[n]), up);
+    u.root.updateMatrixWorld(true);
+    // his eyes on the ball, wherever it goes. The crouching capture already lifts his chin, so the
+    // look gets less range on top of it (at the full range his neck skin stretched)
+    lookAt(u, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.7, 30, 22);
   }
 
   /** The fall (Mixamo's shoulder hit and fall, mirrored to the shoulder toward the pitcher), dt
