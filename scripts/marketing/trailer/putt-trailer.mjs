@@ -10,7 +10,8 @@
    THE WORDS. Every line is something the game does today: worlds walked hole to hole, a twist on every
    hole (an obstacle, a puzzle or a moving part, which check-putt asserts), the trail gyms and their
    vaults, chests off the path. Never "every world" or "all the worlds" (the owner, 2026-10-15): the tour
-   keeps growing. No counts, so nothing goes stale when a world is added. Rivals are not in it: they are
+   keeps growing. No counts, so nothing goes stale when a world is added, except the owner's "180+ holes
+   (and counting!)" (2026-10-19), a floor the main tour's 198 holes clear. Rivals are not in it: they are
    decided (the vault, 2026-10-16) but not yet in the game. */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,7 +39,8 @@ export const cards = {
   // instead: the worlds explain themselves on the screens, and it replaces the reveal on its own page.
   // much bigger than the first cut's 92 (the owner, 2026-10-19), as big as one line allows in each format
   worlds: { style: 'lobby', kick: 'Introducing', kickSize: 32, big: 'Putt Putt <em>Tour</em>', rule: false, size: BIG },
-  holes: { style: 'lobby', big: 'Special <em>holes</em>', rule: false, size: BIG },
+  // the owner's words (2026-10-19). The main tour is 198 holes (check-putt asserts it), so 180+ stays true
+  holes: { style: 'lobby', big: '180+ <em>holes</em>', sub: '(and counting!)', subSize: 46, rule: false, size: BIG },
   puzzles: { style: 'lobby', big: 'Solve <em>puzzles</em>', rule: false, size: BIG },
   chests: { style: 'lobby', big: 'Hidden <em>chests</em>', rule: false, size: BIG },
   end: { img: logo, imgH: 120, big: 'Play for free<br><em>Run The Tour</em>', sub: 'No download required', url: 'runthe.gg/golf', size: 104 },

@@ -103,7 +103,7 @@ const CARD = (W, c, k) => `${BASE}<style>
     text-shadow:0 ${4 * k}px 0 rgba(0,0,0,.35),0 0 ${30 * k}px rgba(0,0,0,.35)}
   .big em{font-style:normal;color:var(--gold);}
   .rule{width:${110 * k}px;height:${5 * k}px;border-radius:${3 * k}px;background:linear-gradient(90deg,var(--gold),var(--gold2));margin:${14 * k}px auto ${12 * k}px}
-  .sub{font:600 ${30 * k}px 'Barlow Semi Condensed',system-ui;color:#e3efe7;letter-spacing:.02em}
+  .sub{font:600 ${(c.subSize || 30) * k}px 'Barlow Semi Condensed',system-ui;color:#e3efe7;letter-spacing:.02em}
   .url{display:inline-block;margin-top:${16 * k}px;padding:${10 * k}px ${26 * k}px;border-radius:${40 * k}px;background:var(--gold);color:#07140e;
     font:800 ${34 * k}px 'Barlow Semi Condensed',system-ui;letter-spacing:.02em}
   /* the lobby's own type (.ft-dt, .ft-dk on the First Tee): cream Anton with a soft shadow, a gold kicker */
