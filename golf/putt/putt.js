@@ -2182,6 +2182,7 @@ var CSS = '\
 .pp-hdr .pp-hearts{gap:4px}.pp-h{width:20px;height:20px;background:none;clip-path:none;display:block}.pp-h svg{display:block;width:20px;height:20px}.pp-h.on{background:none}\
 .pp-hclock{font-size:12px;font-weight:900;color:#ffd0c8;font-variant-numeric:tabular-nums;background:rgba(0,0,0,.45);border-radius:999px;padding:3px 8px}.pp-hclock:empty{display:none}\
 .pp-sp{flex:1}.pp-x2s{color:#ffd23a;font-weight:800}.pp-x2b{margin:14px auto 4px;max-width:340px;padding:10px 14px;border-radius:12px;background:rgba(241,182,42,.12);border:1px solid rgba(241,182,42,.45);color:#ffe9a8;font-size:13px;line-height:1.35;text-align:center}.pp-x2b b{display:block;font-size:17px;letter-spacing:.02em;color:#ffd23a;margin-bottom:2px}.pp-x2h{display:inline-block;width:14px;height:14px;vertical-align:-3px;margin-right:4px}.pp-x2h svg{display:block;width:100%;height:100%}.pp-x2b .pp-x2h{width:30px;height:30px;margin:0 auto 4px;display:block}.pp-x2s .pp-x2h{width:16px;height:16px;vertical-align:-3px}@media (min-width:900px){.pp-x2 .pp-x2h{width:18px;height:18px}}.pp-x2{border:0;border-radius:999px;padding:4px 9px;font:900 11px/1 inherit;letter-spacing:.04em;color:#2a1a04;background:linear-gradient(#ffe27a,#f1b62a);box-shadow:0 2px 8px rgba(241,182,42,.35);cursor:pointer;white-space:nowrap}@media (min-width:900px){.pp-x2{font-size:14px;padding:6px 12px}}.pp-cpill{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-cpill:before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a8,#f1c232 55%,#b8860b)}\
+.pp-home{flex:none;width:34px;height:34px;border-radius:50%;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.18);background:rgba(10,18,26,.82);cursor:pointer}.pp-home:active{opacity:.7}\
 .pp-cx{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(10,18,26,.82);color:#fff;font:inherit;font-size:16px;font-weight:900;cursor:pointer;padding:0}\
 .pp-hub .pp-daily{position:absolute;z-index:2;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 58px);margin:0;max-width:536px;margin:0 auto;grid-template-columns:auto 1fr auto;gap:2px 12px;background:linear-gradient(160deg,#2c1d46,#1a1230)!important;color:#fff!important;border:2px solid #f08a24!important;border-radius:18px;padding:12px}\
 .pp-daily .th{grid-column:1;grid-row:1/4;width:44px;height:66px;border-radius:7px;background:#0d1a12;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}.pp-daily .th canvas{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:block}\
@@ -2446,6 +2447,8 @@ function skinCss(){
     chip('.pt-ov .pp-rb[data-skip]', 'flag', 36),
     '.pt-ov .pp-rb[data-skip]::before{background-color:rgba(255,255,255,.45);border-radius:12px}',
     '.pt-ov .pp-talkb{background:' + G + '!important}', chip('.pt-ov .pp-talkb', 'talk', 32),
+    // a phone is narrow for the hub header: the Home and Close buttons stay on the screen (the owner, 2026-10-19)
+    '@media (max-width:430px){.pt-ov .pp-hdr{gap:3px;padding-left:6px;padding-right:6px}.pt-ov .pp-x2{padding:4px 6px;font-size:11px;gap:3px}.pt-ov .pp-av{width:34px;height:34px}.pt-ov .pp-home,.pt-ov .pp-cx{width:30px;height:30px}}@media (max-width:380px){.pt-ov .pp-hdr{padding-right:4px}.pt-ov .pp-hdr .pp-cpill{padding:5px 6px}.pt-ov .pp-x2{padding:4px 4px}}',
     '.pt-ov .pp-stick{border-color:rgba(248,239,214,.6);background:rgba(13,32,22,.35)}',
     '.pt-ov .pp-stick i{border-color:#2a1c05;background:radial-gradient(circle at 38% 34%,#fff6d6,#ffe07a 55%,#c98e14)}',
     '.pt-ov .pp-rhint{' + glass + ';border-radius:999px}',
@@ -2502,7 +2505,9 @@ function open(host, o){
   document.body.appendChild(ov);
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
   // the hearts in the header and the play bar open the Lives sheet, where lives are bought (the owner, 2026-10-17)
-  ov.addEventListener('click', function(e){ var hs = e.target && e.target.closest && e.target.closest('.pp-hearts'); if (hs && ov.contains(hs)) livesSheet(); });
+  ov.addEventListener('click', function(e){ var hs = e.target && e.target.closest && e.target.closest('.pp-hearts'); if (hs && ov.contains(hs)) livesSheet();
+    // Home, on every screen of Putt Putt: out to the First Tee home (the owner, 2026-10-19: there was no way back)
+    if (e.target && e.target.closest && e.target.closest('[data-home]') && ov.contains(e.target.closest('[data-home]'))) goHome(); });
   document.body.style.overflow = 'hidden';
   // the page behind is covered: it stops painting and animating while Putt Putt is open (CSS: body.pt-open)
   document.body.classList.add('pt-open');
@@ -2531,6 +2536,9 @@ function pulled(){
   var t = S.trailTo.tid, TR = tourOf(t), n = Math.min(TR.levels.length, frontier(st.tours[TR.id], TR));
   if (n !== S.trailTo.to) home(t);
 }
+// Home: close Putt Putt and go to the First Tee home. A hole in progress is saved, so it waits for the next visit.
+function homeBtn(){ return '<button class="pp-home" data-home title="Home" aria-label="Home"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 11.2L12 4l9 7.2V20h-6.5v-5.5h-5V20H3z" fill="#fff8e6"/></svg></button>'; }
+function goHome(){ if (!S) return; var h = S.host; close(); try{ if (h.goHome) h.goHome(); }catch(e){} }
 function close(){
   if (!S) return;
   stopTrail();
@@ -2539,7 +2547,7 @@ function close(){
   var h = S.host; S = null; try{ if (h.onClose) h.onClose(); }catch(e){}
 }
 function top(title, sub, right){
-  return '<div class="pt-top"><button class="pt-x" data-x>' + (S.screen === 'menu' ? 'Close' : 'Back') + '</button><div class="pt-hd"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div><div class="pt-sc">' + (right || '') + '</div></div>';
+  return '<div class="pt-top"><button class="pt-x" data-x>' + (S.screen === 'menu' ? 'Close' : 'Back') + '</button><div class="pt-hd"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div><div class="pt-sc">' + (right || '') + '</div>' + homeBtn() + '</div>';
 }
 
 /* ============================================================================ THE TOUR, PLAYED */
@@ -2928,7 +2936,7 @@ function balStr(){ if (isGuest()) return '';   // a guest sees no coin count (th
 function hdr(right){ var b = balStr();
   return '<div class="pp-hdr">' + avRing() + '<span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span>' +
     (membersOpen() ? '' : '<button class="pp-x2" data-pass aria-label="' + esc(passLivesLine()) + '"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i>2× lives</button>') + '<span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
-    (right != null ? right : (b !== '' ? '<span class="pp-cpill" data-bal>' + b + '</span>' : '')) + '<button class="pp-cx" data-x aria-label="Close">✕</button></div>'; }
+    (right != null ? right : (b !== '' ? '<span class="pp-cpill" data-bal>' + b + '</span>' : '')) + homeBtn() + '<button class="pp-cx" data-x aria-label="Close">✕</button></div>'; }
 // a small top view of a hole, off the flat painter, for the Daily card
 var THUMBS = {};
 function thumb(box, d, key){ if (!box) return; var c = THUMBS[key];
