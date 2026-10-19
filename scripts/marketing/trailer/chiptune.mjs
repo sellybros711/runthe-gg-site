@@ -10,16 +10,16 @@
 import fs from 'node:fs';
 
 const SR = 44100, BPM = 120, BEAT = 60 / BPM, BAR = BEAT * 4;
-const LEN = +(process.argv[3] || 38);
+const LEN = +(process.argv[3] || 34.3);
 const N = Math.round(LEN * SR);
 const mix = new Float32Array(N);
 const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
-// the scenes, in seconds (putt-trailer.mjs): intro 4, worlds 6, holes 9, puzzles 6, chests 5, end 6
-/* The build from the reveal to the drop is BUILD seconds (the owner, 2026-10-19: the Putt Putt reveal went by
-   too fast, so it is a bar longer than the first cut's 1.7 s). Everything from the drop on is the same music
-   as before, moved later by SHIFT, so it reads its bars and chords on the old clock (tb below). */
-const BUILD = 3.7, SHIFT = BUILD - 1.7;
+// the scenes, in seconds (putt-trailer.mjs): intro 2.3, worlds 6, holes 9, puzzles 6, chests 5, end 6
+/* The build from the boom to the drop is BUILD seconds. The reveal on its own page is gone (the owner,
+   2026-10-19), so the boom and the drop land together as the devices arrive. Everything from the drop on is
+   the first cut's music, moved by SHIFT, so it reads its bars and chords on the old clock (tb below). */
+const BUILD = 0, SHIFT = BUILD - 1.7;
 const S = { flash: 2.3, drop: 2.3 + BUILD, hook: 10 + SHIFT, puzz: 19 + SHIFT, chest: 25 + SHIFT, end: 30 + SHIFT, hit: 30.6 + SHIFT };
 const CHORDS = [[60, 64, 67], [55, 59, 62], [57, 60, 64], [53, 57, 60]];   // C G Am F
 const chordAt = (t) => CHORDS[Math.floor(t / BAR) % 4];

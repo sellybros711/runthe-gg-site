@@ -32,11 +32,10 @@ const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'golf/lo
 export const cards = {
   // the owner's opening (2026-10-19): "New in Run The Tour" over the game people know, then the name on green
   newin: { img: logo, imgH: 150, big: 'New in<br><em>Run The Tour</em>', rule: false, size: 120 },
-  // in the lobby's own type, over the lobby's sky (the owner, 2026-10-19)
-  intro: { style: 'lobby', kick: 'Introducing', big: 'Putt Putt Tour', rule: false, size: 108 },
   // one plain line each, in the lobby's type over its sky (the owner, 2026-10-19: the kicker over the
-  // title read oddly, and the green did not feel like the game)
-  worlds: { style: 'lobby', big: 'Explore <em>worlds</em>', rule: false },
+  // title read oddly, and the green did not feel like the game). The worlds scene names the game
+  // instead: the worlds explain themselves on the screens, and it replaces the reveal on its own page.
+  worlds: { style: 'lobby', kick: 'Introducing', big: 'Putt Putt <em>Tour</em>', rule: false },
   holes: { style: 'lobby', big: 'Special <em>holes</em>', rule: false },
   puzzles: { style: 'lobby', big: 'Solve <em>puzzles</em>', rule: false },
   chests: { style: 'lobby', big: 'Hidden <em>chests</em>', rule: false },
@@ -45,16 +44,15 @@ export const cards = {
 
 /* The scenes. Each screen plays clips back to back; `to` (negative: from the clip's end) sets the speed. */
 // Cut on the beat of the 120 BPM track (chiptune.mjs): a beat is 0.5 s, a bar 2 s.
-// The opening is 6 s: 2.3 on the Pro Tour, 3.7 on the Putt Putt reveal (a bar longer than the first cut's 1.7).
-const I = 6.0, WD = 6.0, HD = 9.0, PZ = 6.0, CH = 5.0, EN = 6.0;
+// The opening is 2.3 s on the Pro Tour, then the devices land on the boom (the owner, 2026-10-19: the
+// reveal on its own page is gone).
+const I = 2.3, WD = 6.0, HD = 9.0, PZ = 6.0, CH = 5.0, EN = 6.0;
 /* Where the Pro Tour round (rtt-x.mp4, rtt-reels.mp4, the rtt-round shot) is picked up for the intro: each
    cut's own take, so each has its own moment. */
 const RTT_FROM = { x: 10.2, reels: 25.4 };
 export const scenes = [
-  // the intro is two beats inside the same 4 s, so everything after 0:04 stays where it was
-  { dur: 2.3, card: 'newin', cardIn: 0.35, cardOut: 0.05, cine: true, backdrop: { clip: 'rtt', from: RTT_FROM, dim: 0.42, push: 0.07, vignette: true } },
-  { dur: I - 2.3, card: 'intro', cardIn: 0, flash: true, cine: true, backdrop: { clip: 'lobby', from: 0.3, dim: 1, push: 0.05, vignette: true } },
-  { dur: WD, card: 'worlds',
+  { dur: I, card: 'newin', cardIn: 0.35, cardOut: 0.05, cine: true, backdrop: { clip: 'rtt', from: RTT_FROM, dim: 0.42, push: 0.07, vignette: true } },
+  { dur: WD, card: 'worlds', flash: true,
     laptop: [{ clip: 'map', from: 0.6, speed: 1 }],   // real speed, on a 10 s scroll (the owner, 2026-10-19: slower)
     phone: [{ clip: 'w-candy', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-neon', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-sky', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-ice', from: 0.9, speed: 1.15 }] },
   { dur: HD, card: 'holes',
@@ -75,7 +73,7 @@ export const scenes = [
    sky plays behind everything instead of the green. It is one take (sky-x.mp4, sky-reels.mp4: the
    putt-lobby shot with --arg sky, LOBBY_MS=33500), picked up where the last scene left it, so its clouds
    drift on across the cuts. */
-{ let at = 0; for (const s of scenes.slice(2)) { s.backdrop = { clip: 'sky', from: at, dim: 1 }; at += s.dur; } }
+{ let at = 0; for (const s of scenes.slice(1)) { s.backdrop = { clip: 'sky', from: at, dim: 1 }; at += s.dur; } }
 const T = scenes.reduce((a, s) => a + s.dur, 0), END = T - EN;
 /* CINEMATIC (the owner, 2026-10-19: "a cinematic movie trailer"): the opening and the close are framed
    like a film, letterboxed, with slow push ins and titles that settle. The bars leave as the devices
@@ -88,10 +86,10 @@ export const letterbox = [[-1, I + 0.35], [END - 0.2, T + 1]];
    the end card. */
 const off = (keys, x) => keys.map(([t, cx, y], i) => [t, (i < 2 || i > 3) ? x : cx, y]);
 export const formats = {
-  x: { W: 1350, H: 1080, textScale: 0.82, cardY: 34, bar: 96, cardAt: { newin: 'mid', intro: 150, end: 'mid' },
+  x: { W: 1350, H: 1080, textScale: 0.82, cardY: 34, bar: 96, cardAt: { newin: 'mid', end: 'mid' },
     laptop: { screenW: 800, keys: off([[0, 0, 352], [I - 0.2, 0, 352], [I + 0.6, 440, 352], [END, 440, 352], [END + 0.6, 0, 352], [T, 0, 352]], -700) },
     phone: { screenH: 690, keys: off([[0, 0, 336], [I, 0, 336], [I + 0.75, 1080, 336], [END, 1080, 336], [END + 0.55, 0, 336], [T, 0, 336]], 1700) } },
-  reels: { W: 1080, H: 1920, textScale: 1.22, cardY: 70, bar: 170, cardAt: { newin: 'mid', intro: 300, end: 'mid' },
+  reels: { W: 1080, H: 1920, textScale: 1.22, cardY: 70, bar: 170, cardAt: { newin: 'mid', end: 'mid' },
     laptop: { screenW: 820, keys: off([[0, 0, 400], [I - 0.2, 0, 400], [I + 0.6, 540, 400], [END, 540, 400], [END + 0.6, 0, 400], [T, 0, 400]], -700) },
     phone: { screenH: 820, keys: (([a, b]) => [[0, 540, 2000], [I, 540, 2000], [I + 0.75, 540, 1035], [END, 540, 1035], [END + 0.55, 540, 2000], [T, 540, 2000]])([0, 0]) } },
 };
