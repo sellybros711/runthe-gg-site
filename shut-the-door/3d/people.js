@@ -6,13 +6,14 @@
  * are our own posing laid over each capture's idle, and the umpire's strike call is blended in.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=4';
+import * as M from './materials.js?v=6';
+import { battingClub, clubNamed } from './clubs.js?v=2';
 import * as G from './gear3d.js?v=3';
 import * as HG from './headgear.js?v=2';
 import { measureHead, wear, wornShade } from './headgear.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import { assetUrl } from './load.js?v=6';
+import { assetUrl } from './load.js?v=7';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -20,41 +21,71 @@ const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
 
 const UNIFORM = new Set(['uniform', 'socks', 'gloves', 'undershirt', 'belt', 'number']);
 
-/* Team kits. Our side (the catcher) wears the closer's club colours from the pack; the hitters wear
-   a generic palette picked per pack (two colours that read as a club, no club's marks or names).
-   Home whites, road greys: the home side is the pack's (usHome). */
+/* Team kits. The closer's side (the catcher) wears the pack's club colours (pitcher.teamColors). The
+   hitters wear their own club's real colours (clubs.js): the other club of the scenario's title, or of
+   the series. Home whites, road greys: the home side is the pack's (usHome). The chest carries the
+   club's nickname in words, and nothing else: no logos, no crests, no wordmark artwork. */
 const WHITE = '#f2f1ec', GREY = '#a3a6aa';
-const PALETTES = [['#0c2340', '#bf0d3e'], ['#1d4d2b', '#d4a017'], ['#5c1a2b', '#9fa3a8'], ['#13274f', '#e35205'],
-  ['#111111', '#c4ced4'], ['#4b2c6f', '#e8b923'], ['#8a1c1c', '#0c2340'], ['#00594f', '#e7e3d4']];
-const hashStr = (str) => { let h = 2166136261; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const FALLBACK = ['#1b2a4a', '#c4ced4'];          // a scenario that names no second club (no words)
+const hsl = (c) => new THREE.Color(c).getHSL({}, THREE.SRGBColorSpace);   // perceptual: the lightness is sRGB's
+const lum = (c) => hsl(c).l;
+/** Two colours look alike: both saturated and within 0.06 of the hue round the wheel, or both black or both white. */
+function alike(a, b) {
+  const A = hsl(a), B = hsl(b);
+  if (A.s > 0.25 && B.s > 0.25) { const d = Math.abs(A.h - B.h); return Math.min(d, 1 - d) < 0.06; }
+  return (A.l < 0.2 && B.l < 0.2) || (A.l > 0.8 && B.l > 0.8);
+}
+/** Contrast ratio (WCAG) of two colours: how well a trim shows on a base. */
+function contrast(a, b) {
+  const rel = (c) => { const k = new THREE.Color(c); return 0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b; };
+  const x = rel(a), y = rel(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+/** A club's pair as [trim, other]: the darker colour trims the uniform (a white secondary would vanish on whites). */
+const darkFirst = (c) => (lum(c[0]) <= lum(c[1]) ? [c[0], c[1]] : [c[1], c[0]]);
 export function kitFor(facts, side) {
   const ours = facts.pitcher.teamColors || ['#0c2340', '#ffffff'];
   const usHome = !!(facts.situation && facts.situation.usHome);
-  let cols;
-  if (side === 'us') cols = ours;
-  else {
-    const h = hashStr(facts.scenarioId || facts.pitcher.name);
-    const dist = (a, b) => new THREE.Color(a).getHSL({}).h - new THREE.Color(b).getHSL({}).h;
-    cols = PALETTES[h % PALETTES.length];
-    for (let k = 1; k < PALETTES.length && Math.abs(dist(cols[0], ours[0])) < 0.06; k++) cols = PALETTES[(h + k) % PALETTES.length];
-  }
+  const club = side === 'us' ? clubNamed(facts.pitcher.team) : battingClub(facts);
+  const cols = side === 'us' ? ours : (club ? [club.pri, club.sec] : FALLBACK);
+  let [trim, other] = darkFirst(cols);
   const home = side === 'us' ? usHome : !usHome;
-  // the darker of the two club colours trims the uniform (a white secondary would vanish on whites)
-  const lum = (c) => new THREE.Color(c).getHSL({}).l;
-  const [dark, light] = lum(cols[0]) <= lum(cols[1]) ? [cols[0], cols[1]] : [cols[1], cols[0]];
+  // the two sides never look alike: where the hitters' trim would match the closer's, the club's other
+  // colour trims them, if it shows on the base (the nameplate is large type, so 1.8 to 1 will do)
+  const ourTrim = darkFirst(ours)[0];
+  if (side !== 'us' && alike(trim, ourTrim) && !alike(other, ourTrim) && contrast(other, home ? WHITE : GREY) >= 1.8) [trim, other] = [other, trim];
   const C = (x) => new THREE.Color(x);
-  return { base: C(home ? WHITE : GREY), trim: C(dark), stripe: C(dark), sock: C(dark), slot: C(WHITE), number: C(dark),
-    undershirt: C(dark), belt: C('#111111'), glove: C(lum(light) > 0.85 ? '#f2f2f2' : light), gloveAccent: C(dark), home };
+  const words = club && club.nick ? (club.as || club.nick).toUpperCase() : null;
+  return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim),
+    undershirt: C(trim), belt: C('#111111'), glove: C(lum(other) > 0.85 ? '#f2f2f2' : other), gloveAccent: C(trim), home, words };
 }
 
-/** Put a kit on a person: the uniform's trim mask coloured, the number drawn on the back. */
+// the nameplate on the jersey's front, as shares of the jersey's own box (x across, y up from the hem):
+// its top about 9 cm under the neck's V (the V's point is at about 0.90 of the box's height)
+const WORD_AT = { x: 0.5, y: 0.69, w: 0.36 };
+/** The box [x, y, w, h] the club's words fill, in the jersey mesh's own units (bind pose, facing +z). */
+function wordBox(geo) {
+  if (!geo.boundingBox) geo.computeBoundingBox();
+  const b = geo.boundingBox;
+  const W = (b.max.x - b.min.x) * WORD_AT.w, H = W / M.WORD_ASPECT;
+  const cx = b.min.x + (b.max.x - b.min.x) * WORD_AT.x, cy = b.min.y + (b.max.y - b.min.y) * WORD_AT.y;
+  return [cx - W / 2, cy - H / 2, W, H];
+}
+
+/** Put a kit on a person: the uniform's trim mask coloured, the club's name on the jersey's front, the
+    number drawn on the back. */
 export function dress(p, kit, numberText, weave) {
   p.kit = kit;
   for (const o of p.meshes) {
     const part = o.userData.part;
     if (!part) continue;
     const src = o.userData.src;
-    if (part === 'uniform') o.material = M.uniform(src, { base: kit.base, trim: kit.trim, stripe: kit.stripe, slot: kit.base }, { weave });
+    if (part === 'uniform') {
+      // the pants are a 'uniform' too: only the jersey (its node is named so) carries the words
+      const jersey = !!(o.parent && /jersey/i.test(o.parent.name));
+      const words = jersey && kit.words ? { text: kit.words, color: kit.trim, box: wordBox(o.geometry) } : null;
+      o.material = M.uniform(src, { base: kit.base, trim: kit.trim, stripe: kit.stripe, slot: kit.base }, { weave, words });
+    }
     else if (part === 'number') { o.material = M.numberMaterial(numberText, kit.number, kit.base, src); o.visible = !!numberText; }
     else if (part === 'socks') o.material = M.uniform(src, { base: kit.sock, trim: kit.sock, stripe: kit.sock, slot: kit.slot }, { weave });
     else if (part === 'gloves') o.material = M.uniform(src, { base: kit.glove, trim: kit.glove, stripe: kit.glove, slot: kit.gloveAccent }, { roughness: 0.55 });

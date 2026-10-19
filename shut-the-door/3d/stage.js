@@ -16,9 +16,9 @@
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
  */
 import * as THREE from 'three';
-import { preload } from './load.js?v=6';
+import { preload } from './load.js?v=7';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
-import { People } from './people.js?v=26';
+import { People } from './people.js?v=30';
 import { Pitch } from './pitch.js?v=7';
 import { fromResult, motion } from './play.js?v=7';
 import { look } from './looks.js?v=2';
@@ -34,8 +34,8 @@ const TEST = () => window.STD_STAGE_TEST;
 function factsFrom(scn, extra) {
   const p = scn.pitcher;
   return {
-    scenarioId: scn.id,
-    pitcher: { name: p.name, throws: p.throws, teamColors: p.teamColors,
+    scenarioId: scn.id, title: scn.title,
+    pitcher: { name: p.name, team: p.team, throws: p.throws, teamColors: p.teamColors,
       arsenal: p.arsenal.map((a) => ({ type: a.type, name: a.name, velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, shape: a.shape || (C() && C().SHAPE_OF[a.type]), sigmaFt: a.sigmaFt })) },
     situation: { usHome: !!scn.situation.usHome, inning: scn.situation.inning, half: scn.situation.half },
     release: { x: p.throws === 'L' ? 1.9 : -1.9, y: 54.0, z: 5.6, assumed: 'a stand in release for his hand' },
