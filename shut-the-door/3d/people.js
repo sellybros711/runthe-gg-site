@@ -165,6 +165,18 @@ export function pose(p, spec) {
   p.root.updateMatrixWorld(true);
 }
 
+// the knocked down hitter spins away as he falls (radians, about the spot he stood on): each side's
+// turn found by eye from the pitcher's view, so he lands beside the box, clear of the plate and the
+// catcher, and in frame
+const FALL_TURN = { L: THREE.MathUtils.degToRad(-80), R: THREE.MathUtils.degToRad(55) };
+
+// how much further each swing's shoulders stay closed into foot strike (degrees): Mixamo's third
+// swing is a shorter, flatter one, and is given more
+const COIL = { swing: 3, swing2: 3, swing3: 9, miss: 3 };
+
+// the most the hips tip to the side (degrees; check-deform holds them under 12)
+const PELVIS_TILT = 10.5;
+
 // how far a take settles back toward his stance after the pitch goes by (the stride stays planted)
 const TAKE_SETTLE = 0.4;
 
@@ -182,6 +194,21 @@ function openElbow(p, s, minDeg) {
   const q = wquat(hd);
   twoBoneIK(ua, la, hd, S.clone().addScaledVector(dir.normalize(), L), E.clone().add(E.clone().sub(S.clone().lerp(H, 0.5))), 1);
   rotateWorld(hd, q.multiply(wquat(hd).invert()));
+}
+
+/** Lay a clip over the pose by weight w (rotations slerped, the pelvis's place lerped), leaving out
+    the bones in skip. */
+const ARMS = new Set(['clavicle_l', 'upperarm_l', 'upperarm_twist_l', 'lowerarm_l', 'lowerarm_twist_l', 'hand_l',
+  'clavicle_r', 'upperarm_r', 'upperarm_twist_r', 'lowerarm_r', 'lowerarm_twist_r', 'hand_r']);
+function layer(p, clip, time, w, skip) {
+  const tt = THREE.MathUtils.clamp(time, 0, p.clips[clip].duration - 1e-3);
+  for (const s of p.samplers[clip]) {
+    if (skip && skip.has(s.bone.name)) continue;
+    const v = s.interp.evaluate(tt);
+    if (s.q) { _qa.set(v[0], v[1], v[2], v[3]); s.bone.quaternion.slerp(_qa, w); }
+    else { s.bone.position.x += (v[0] - s.bone.position.x) * w; s.bone.position.y += (v[1] - s.bone.position.y) * w; s.bone.position.z += (v[2] - s.bone.position.z) * w; }
+  }
+  p.root.updateMatrixWorld(true);
 }
 
 /** A looping clip's time (an idle plays round and round, back and forth so it never jumps). */
@@ -279,6 +306,22 @@ function crouch(p, k) {
   w.y -= c.drop * sc * k; w.z -= c.back * sc * k;
   pel.position.copy(pel.parent.worldToLocal(w));
   pel.updateMatrixWorld(true);
+  // never higher than his legs reach to his planted feet (a clip that stands him up, the catcher's
+  // rise, would lift the feet off the dirt)
+  const fg = footGeom(p);
+  for (let pass = 0; pass < 3; pass++) {
+    let low = 0;
+    for (const s of ['l', 'r']) {
+      const f = p.feet[s], want = f.flat.clone().slerp(f.q, k);
+      const ankle = f.ball.clone().sub(fg[s].off.clone().applyQuaternion(want));
+      const hip = wpos(B[`thigh_${s}`]), d = hip.distanceTo(ankle), max = fg[s].leg * 0.985;
+      if (d > max) { const dy = hip.y - ankle.y, flat2 = d * d - dy * dy; low = Math.max(low, dy - Math.sqrt(Math.max(0, max * max - flat2))); }
+    }
+    if (low <= 1e-4) break;
+    const w2 = wpos(pel); w2.y -= low;
+    pel.position.copy(pel.parent.worldToLocal(w2));
+    pel.updateMatrixWorld(true);
+  }
   for (const [s, sign] of [['l', 1], ['r', -1]]) {
     // planted on the ball of the foot whether he is crouched or rising: the heel comes down as he
     // stands, the foot never slides
@@ -531,8 +574,8 @@ export class People {
     b.chain = {
       tTop, tStrike, dirn: Math.sign(dy) || 1, p0, trim: 0.6,
       lead: (t) => 0.02 * ramp(t, tTop - 0.25, tStrike - 0.05) * (1 - ramp(t, tC, tC + 0.35)),
-      // (the Mixamo swings keep their own coil: 3 degrees more, where the CMU capture took 10)
-      coil: (t) => THREE.MathUtils.degToRad(3) * ramp(t, tTop - 0.45, tStrike) * (1 - ramp(t, tStrike, tC - 0.03)),
+      // (the Mixamo swings keep most of their own coil: COIL degrees more, where the CMU capture took 10)
+      coil: (t) => THREE.MathUtils.degToRad(COIL[b.clip.replace(/R$/, '')] ?? 3) * ramp(t, tTop - 0.45, tStrike) * (1 - ramp(t, tStrike, tC - 0.03)),
     };
     // the feet: where they are down in this motion, for the swing (by capture time) and the take
     // (by the clock relative to the plate)
@@ -602,6 +645,17 @@ export class People {
     w.x = ch.p0.x + (w.x - ch.p0.x) * ch.trim; w.z = ch.p0.z + (w.z - ch.p0.z) * ch.trim;
     pel.position.copy(pel.parent.worldToLocal(w));
     pel.updateMatrixWorld(true);
+    // the hips tip to the side by at most PELVIS_TILT degrees (the Mixamo finishes drop the back hip
+    // further); the spine takes the difference back, so the chest stays where the capture has it
+    const tl = wpos(b.bones.thigh_l), tr = wpos(b.bones.thigh_r), across = tl.clone().sub(tr);
+    const flat = Math.hypot(across.x, across.z), tilt = Math.atan2(across.y, flat), lim = THREE.MathUtils.degToRad(PELVIS_TILT);
+    if (Math.abs(tilt) > lim && flat > 1e-4) {
+      const fwd = new THREE.Vector3(across.z, 0, -across.x).normalize();
+      const q = new THREE.Quaternion().setFromAxisAngle(fwd, tilt - Math.sign(tilt) * lim);
+      const chest = wquat(b.bones.spine_01);
+      rotateWorld(pel, q);
+      rotateWorld(b.bones.spine_01, chest.multiply(wquat(b.bones.spine_01).invert()));
+    }
   }
 
   /** The bat in the bottom hand's frame, sampled through the clip and smoothed (the capture has
@@ -660,6 +714,8 @@ export class People {
   }
 
   poseBat(b) {
+    if (b.dropAt != null) { this.dropBat(b, b.dropAt); return; }
+    b.batDrop = null;
     const { gb, handQ } = this.grips(b);
     const ct = THREE.MathUtils.clamp(b.batTime ?? b.actions[b.clip].time, 0, b.clips[b.clip].duration);
     const f = ct / b.batDt, i = Math.min(b.batTrack.length - 2, Math.floor(f));
@@ -675,6 +731,21 @@ export class People {
     const axis = UP.clone().applyQuaternion(q);
     b.bat.quaternion.copy(q);
     b.bat.position.copy(gb).addScaledVector(axis, -0.055);
+    b.bat.updateMatrixWorld(true);
+  }
+
+  /** Knocked down, he lets go of the bat: it falls from where it was to the dirt and lies there. */
+  dropBat(b, dt) {
+    if (!b.batDrop) b.batDrop = { pos: b.bat.position.clone(), q: b.bat.quaternion.clone() };
+    const d = b.batDrop, g = 9.8;
+    const ax = UP.clone().applyQuaternion(d.q);
+    const flat = new THREE.Vector3(ax.x, 0, ax.z);
+    if (flat.lengthSq() < 1e-6) flat.set(1, 0, 0);
+    const lie = new THREE.Quaternion().setFromUnitVectors(UP, flat.normalize());
+    const k = smooth(clamp01(dt / 0.55));
+    b.bat.quaternion.copy(d.q).slerp(lie, k);
+    const y = Math.max(0.035, d.pos.y - 0.5 * g * dt * dt);
+    b.bat.position.set(d.pos.x + flat.x * 0.25 * k, y, d.pos.z + flat.z * 0.25 * k);
     b.bat.updateMatrixWorld(true);
   }
 
@@ -771,11 +842,20 @@ export class People {
         reach(b, b.feetSwing, cw);
         plantFeet(b, b.feetSwing, cw);
       } else {
-        this.takeBase(b, ct);
-        if (b.motion === 'hbp') this.flinch(b, t);
-        reach(b, b.feetTake, ct);
-        plantFeet(b, b.feetTake, ct);
+        // a pitch on the shoulder puts him down (play.js motion, m.fall): the take until the ball
+        // is on him, then Mixamo's shoulder hit and fall, its blow timed to the ball
+        const fall = b.motion === 'hbp' && this.m.fall && b.clips['hbpFall' + b.side];
+        const hitT = pt.after ? pt.tRel + pt.after.t0 : pt.tPlate;
+        const wf = fall ? smooth(clamp01((t - (hitT - 0.08)) / 0.12)) : 0;
+        if (wf < 1) {
+          this.takeBase(b, ct);
+          if (b.motion === 'hbp' && !fall) this.flinch(b, t);
+          reach(b, b.feetTake, ct);
+          plantFeet(b, b.feetTake, ct);
+        }
+        if (wf > 0) this.fallOn(b, t - hitT, wf);
         b.batTime = Math.min(ct, b.tContact - (b.motion === 'check' ? 0.075 : 0.2));
+        b.dropAt = fall && t > hitT ? t - hitT : null;
       }
       clavicles(b);
       deltoids(b);
@@ -793,7 +873,10 @@ export class People {
       } else {
         const contact = pt.after ? pt.tRel + pt.after.t0 : Infinity;
         const k = cm === 'rise' ? smooth(clamp01((t - contact - 0.2) / 0.5)) : 0;
-        crouch(c, 1 - 0.5 * k);
+        // a ball in play: he comes up out of his crouch the way Mixamo's catcher does
+        // (his trunk and legs: the glove arm stays his own, catcherArms reaches it)
+        if (k > 0 && c.clips.rise) layer(c, 'rise', THREE.MathUtils.clamp(t - contact - 0.2, 0, c.clips.rise.duration), k, ARMS);
+        crouch(c, 1 - (c.clips.rise ? 0.8 : 0.5) * k);
         this.catcherArms(c, t);
       }
       lookAt(c, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.4);
@@ -919,14 +1002,12 @@ export class People {
     // a strike: Mixamo's umpire calls it, his whole body rising into the punch (the capture's
     // punch peaks a second in; it is timed to land half a second after the catch)
     const callClip = sig === 'strike' && u.clips.call;
-    if (callClip) {
-      pose(u, [['idle', loop(u, 'idle', 2.0 + t), 1], ['call', THREE.MathUtils.clamp(0.55 + (t - pt.tCatch), 0, u.clips.call.duration), up]]);
-      // the capture rolls his upper arms on their twist bones as he bends the elbows: the skin of a
-      // bent elbow pinches on a rolled arm, so the twist goes back toward the bind pose
-      if (!u.bindQ) u.bindQ = new Map(u.bind.map(([bb, , q]) => [bb, q]));
-      for (const s of ['l', 'r']) { const tb = B[`upperarm_twist_${s}`]; tb.quaternion.slerp(u.bindQ.get(tb), up); }
-      u.root.updateMatrixWorld(true);
-    }
+    if (callClip) pose(u, [['idle', loop(u, 'idle', 2.0 + t), 1], ['call', THREE.MathUtils.clamp(0.55 + (t - pt.tCatch), 0, u.clips.call.duration), up]]);
+    // the Mixamo captures roll his upper arms on their twist bones: the skin of a bent elbow pinches
+    // on a rolled arm, so the twist goes back to the bind pose (his signals are our own posing)
+    if (!u.bindQ) u.bindQ = new Map(u.bind.map(([bb, , q]) => [bb, q]));
+    for (const s of ['l', 'r']) { const tb = B[`upperarm_twist_${s}`]; tb.quaternion.copy(u.bindQ.get(tb)); }
+    u.root.updateMatrixWorld(true);
     crouch(u, 1 - up * 0.85);
     const kneeL = wpos(B.calf_l), kneeR = wpos(B.calf_r);
     const handOn = (side, knee) => {
@@ -985,6 +1066,30 @@ export class People {
     lookAt(u, this.pitch.ball.visible ? this.pitch.ball.position.clone() : this.pitch.pointAt(Math.max(0, Math.min(t - pt.tRel, pt.tCatch - pt.tRel))), 0.7);
   }
 
+  /** The fall (Mixamo's shoulder hit and fall, mirrored to the shoulder toward the pitcher), dt
+      seconds after the ball reaches him, blended in by w over the pose he is in. The capture's blow
+      lands 0.27 s in; he goes down backward, away from the plate, and stays down. */
+  fallOn(b, dt, w) {
+    const name = 'hbpFall' + b.side;
+    const saved = w < 1 ? b.bind.map(([bone]) => [bone, bone.quaternion.clone(), bone.position.clone()]) : null;
+    pose(b, { [name]: [THREE.MathUtils.clamp(0.27 + dt, 0, b.clips[name].duration), 1] });
+    // the capture falls straight back; he spins away as he goes (FALL_TURN, over his first stumble)
+    // and lands beside the box, in the pitcher's view, clear of the plate and the catcher
+    const pel = b.bones.pelvis, o = wpos(b.root), rq = new THREE.Quaternion().setFromAxisAngle(UP, (b.lefty ? -FALL_TURN.L : FALL_TURN.R) * smooth(clamp01(dt / 0.7)));
+    const pw = wpos(pel).sub(o).applyQuaternion(rq).add(o);
+    rotateWorld(pel, rq);
+    pel.position.copy(pel.parent.worldToLocal(pw));
+    pel.updateMatrixWorld(true);
+    if (saved) {
+      for (const [bone, q, pos] of saved) {
+        const fq = bone.quaternion.clone(), fp = bone.position.clone();
+        bone.quaternion.copy(q).slerp(fq, w);
+        bone.position.copy(pos).lerp(fp, w);
+      }
+      b.root.updateMatrixWorld(true);
+    }
+  }
+
   /** Hit by the pitch: as the ball arrives he turns his back to it and tucks his head, then
       comes back out of it once it has hit him. */
   flinch(b, t) {
@@ -993,11 +1098,11 @@ export class People {
     const hit = pt.after ? pt.tRel + pt.after.t0 : pt.tPlate;
     const k = smooth(clamp01((t - (hit - 0.26)) / 0.22)) * (1 - 0.6 * smooth(clamp01((t - hit - 0.35) / 0.8)));
     if (k <= 0) return;
-    // turn away: further closed than his coil, the hips taking 60% of it and the spine the rest
+    // turn away: further closed than his coil, the hips taking two thirds of it and the spine the rest
     // (the feet are planted after this, so they stay where they are)
-    const ang = -ch.dirn * THREE.MathUtils.degToRad(55) * k;
+    const ang = -ch.dirn * THREE.MathUtils.degToRad(48) * k;
     const chest = wquat(b.bones.spine_03);
-    rotateWorld(b.bones.pelvis, new THREE.Quaternion().setFromAxisAngle(UP, ang * 0.6));
+    rotateWorld(b.bones.pelvis, new THREE.Quaternion().setFromAxisAngle(UP, ang * 0.66));
     chestTo(b, new THREE.Quaternion().setFromAxisAngle(UP, ang).multiply(chest), UP);
     const across = wpos(b.bones.upperarm_l).sub(wpos(b.bones.upperarm_r)).normalize();
     bendWorld(b.bones.neck_01, across, 0.3 * k * (b.lefty ? 1 : -1));

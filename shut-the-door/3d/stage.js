@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=6';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
-import { People } from './people.js?v=18';
+import { People } from './people.js?v=19';
 import { Pitch } from './pitch.js?v=7';
-import { fromResult, motion } from './play.js?v=5';
+import { fromResult, motion } from './play.js?v=6';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 
@@ -323,7 +323,8 @@ class Stage {
     const speed = opts.quick ? 1.8 : 1;
     const resultAt = pt.after ? pt.tRel + pt.after.t0 : pt.tCatch;
     const inPlay = pr.result === 'in_play';
-    const tail = inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? 1.5 : m.ump === 'strike' ? 1.3 : 0.9;
+    // (knocked down by a pitch, he stays down for a beat)
+    const tail = inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
     const tEnd = resultAt + tail;
     // the runners on the scorebar diamond, on the same clock the old drawing used (ms from the start)
     const track = AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
