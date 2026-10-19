@@ -22,8 +22,11 @@
  *   7. run it back is practice; a reload shows today as done
  *   8. ?debug=1 shows the seed
  *   9. no page error and no console error anywhere
- *  10. the framing: the whole batter, catcher and umpire are in frame for a
- *      left and a right handed hitter
+ *  10. the framing: the whole batter, catcher and umpire (and in 3D home plate)
+ *      are in frame for a left and a right handed hitter, cells 38 px or more
+ *  14. the 3D mound: the canvas renders, and every kind of result plays its
+ *      motion (from a trace of each play), with the pitch's trail and its aimed
+ *      and actual markers, and no 3D grid
  *  11. all three endings, forced through the mock (?mockEnd=): door shut,
  *      door's open (a runner put out on a double play, then the tying run)
  *      and walk-off (runners moving up, then scoring), with the runners on
@@ -151,15 +154,20 @@ function expectedMotion(tr) {
   return { batter, ball, ump };
 }
 /* Read one play's trace (the stage keeps it): the reading matches the result, and the frames show
-   it: the ball flies, a swing moves the bat, a ball in play leaves, the umpire signals, and nothing
-   but the field is drawn. Returns what is wrong, or an empty list. */
+   it: the ball flies with its trail, the aimed and actual markers show, a swing moves the bat, a
+   ball in play leaves, the umpire signals, and no 3D grid is drawn. Returns what is wrong, or an
+   empty list. */
 function motionProblems(tr) {
   const out = [], e = expectedMotion(tr), name = tr.result + (tr.bb ? ' ' + tr.bb : '') + (tr.check ? ' (check)' : '') + (tr.dirt ? ' (dirt)' : '');
   if (tr.m.batter !== e.batter) out.push(name + ': the hitter does ' + tr.m.batter + ', not ' + e.batter);
   if (!e.ball.includes(tr.m.ball)) out.push(name + ': the ball goes ' + tr.m.ball + ', not ' + e.ball.join(' or '));
   if ((tr.m.ump || null) !== e.ump) out.push(name + ': the umpire signals ' + tr.m.ump + ', not ' + e.ump);
-  if (tr.s.some((x) => x.overlay)) out.push(name + ': an overlay was drawn on the field');
+  if (tr.s.some((x) => x.grid)) out.push(name + ': the 3D grid was drawn in play (the game draws its own, while aiming)');
   if (tr.skipped) return out;
+  // the pitch's own picture (not a grade): its trail, and where it was aimed against where it went
+  if (!tr.s.some((x) => x.trail > 0.1)) out.push(name + ': no trail behind the pitch');
+  if (!tr.s.some((x) => x.aimed > 0.1)) out.push(name + ': no aimed marker');
+  if (!tr.s.some((x) => x.actual > 0.1)) out.push(name + ': no marker where it crossed');
   if (tr.frames < 5) out.push(name + ': only ' + tr.frames + ' frames');
   const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
   const balls = tr.s.filter((x) => x.ball);
@@ -478,14 +486,14 @@ async function run(w, h, theme) {
       return { f, cell: [c.width, c.height], was: S.scn.batters.indexOf(was) };
     }, hand);
     const inside = (bx) => bx.x0 >= 0 && bx.x1 <= fr.f.W && bx.y0 >= 0 && bx.y1 <= fr.f.H;
-    /* the 3D set is to scale, so on a narrow phone a thumb sized cell wins over the catcher's far
-       side: the hitter is whole, the catcher and the umpire are whole top to bottom and mostly in
-       across (the top of the bat may leave the frame) */
-    const mostly = (bx) => bx.y0 >= 0 && bx.y1 <= fr.f.H && (Math.min(bx.x1, fr.f.W) - Math.max(bx.x0, 0)) / (bx.x1 - bx.x0) >= 0.8;
-    const R = (v) => Math.round(v);
-    ok(inside(fr.f.batter) && (fr.f.bat ? mostly(fr.f.catcher) && mostly(fr.f.umpire) : inside(fr.f.catcher) && inside(fr.f.umpire)),
-      '10 a ' + (hand === 'L' ? 'left' : 'right') + ' handed hitter, the catcher and the umpire are all in frame (batter ' + R(fr.f.batter.x0) + '-' + R(fr.f.batter.x1) + ', catcher ' + R(fr.f.catcher.x0) + '-' + R(fr.f.catcher.x1) + ' of ' + fr.f.W + ')');
-    ok(fr.cell[0] >= 44 && fr.cell[1] >= 44, '10 cells stay tappable with him in frame (' + Math.round(fr.cell[0]) + 'x' + Math.round(fr.cell[1]) + ')');
+    /* the 3D set frames like the lab the owner approved: the hitter, the catcher, the umpire and
+       home plate whole (the top of the bat may leave the frame), and a cell no smaller than 38 px.
+       The old drawing keeps its own rule: everyone in, cells 44 */
+    const R = (v) => Math.round(v), is3d = !!fr.f.plate;
+    ok(inside(fr.f.batter) && inside(fr.f.catcher) && inside(fr.f.umpire) && (!is3d || inside(fr.f.plate)),
+      '10 a ' + (hand === 'L' ? 'left' : 'right') + ' handed hitter, the catcher' + (is3d ? ', the umpire and the plate' : ' and the umpire') + ' are all in frame (batter ' + R(fr.f.batter.x0) + '-' + R(fr.f.batter.x1) + ', catcher ' + R(fr.f.catcher.x0) + '-' + R(fr.f.catcher.x1) + (is3d ? ', plate ' + R(fr.f.plate.x0) + '-' + R(fr.f.plate.x1) + ', ' + R(fr.f.plate.y1) : '') + ' of ' + fr.f.W + 'x' + fr.f.H + ')');
+    const minCell = is3d ? 38 : 44;
+    ok(fr.cell[0] >= minCell && fr.cell[1] >= minCell, '10 cells stay tappable with him in frame (' + Math.round(fr.cell[0]) + 'x' + Math.round(fr.cell[1]) + ', ' + minCell + ' at least)');
     await shot('framing-' + hand);
     await page.evaluate((i) => { const S = window.STD_UI.state; S.scene.setBatter(S.scn.batters[i]); S.grid.place(S.scene.gridRect()); S.scene.draw({}); }, fr.was);
   }
@@ -496,6 +504,19 @@ async function run(w, h, theme) {
     const probs = ev.errors.concat(...ev.traces.map(motionProblems));
     ok(ev.traces.length === 26 && probs.length === 0, '14 every pitch result plays its motion (' + ev.traces.length + ' plays: ' + [...new Set(ev.kinds.map((k) => k.slice(2)))].join(', ') + ')' + (probs.length ? ': ' + probs.slice(0, 4).join(' | ') : ''));
     await shot('after-every-result');
+    /* stills of one pitch for the record: in flight with its trail, and just after the plate with
+       the aimed and actual markers (a called strike that missed its spot a little) */
+    for (const when of ['flight', 'crossed']) {
+      await page.evaluate((when) => {
+        const S = window.STD_UI.state, st = window.STD_STAGE.current, C = window.STD_CONTRACT, a = S.scn.pitcher.arsenal[0];
+        const pr = { n: 99, call: { type: a.type, cell: 18 }, actual: { x: 0.35, zn: 0.15 }, actualCell: C.cellAt(0.35, 0.15), velo: a.velo, batter: 'take', result: 'called_strike',
+          inPlay: null, countBefore: { b: 0, s: 0 }, count: { b: 0, s: 1 }, outs: 0, bases: 0, runnerMoves: [], runs: 0, paOver: false };
+        document.getElementById('m-scene').classList.add('flying');
+        st.still(pr, when);
+      }, when);
+      await shot('still-' + when);
+    }
+    await page.evaluate(() => { document.getElementById('m-scene').classList.remove('flying'); window.STD_STAGE.current.draw(); });
   }
 
   /* 5 */

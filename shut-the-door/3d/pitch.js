@@ -50,9 +50,9 @@ export function flight(rel, plate, velo, pfxX, pfxZ) {
 
 export class Pitch {
   /** play: see play.js (call, actual, velo); batter: the hitter's facts (zone); m: motion(play). */
-  /** opts.overlays false: no grid, no aimed and actual markers, no trail (the game draws its own
-      grid, and nothing on the field tips where the pitch went). */
-  constructor({ scene, facts, play, batter, m, overlays = true }) {
+  /** opts.overlays false: no aimed and actual markers and no trail. opts.grid false: no 3D grid (the
+      game draws its own, while aiming only); it follows overlays unless given. */
+  constructor({ scene, facts, play, batter, m, overlays = true, grid = overlays }) {
     this.scene = scene;
     this.overlays = overlays;
     const a = facts.pitcher.arsenal.find((x) => x.type === play.call.type) || facts.pitcher.arsenal[0];
@@ -79,7 +79,8 @@ export class Pitch {
     this.buildTracer();
     this.buildMarkers();
     this.buildGrid(batter);
-    if (!overlays) for (const o of [...this.grid, this.aimRing, this.hitDot, this.tracer]) o.visible = false;
+    if (!grid) for (const o of this.grid) o.visible = false;
+    if (!overlays) for (const o of [this.aimRing, this.hitDot, this.tracer]) o.visible = false;
     this.spin = new THREE.Vector3(1, 0, 0);
     // backspin for the riding pitches, topspin for the drops, little for a splitter
     const sh = a.shape;

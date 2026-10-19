@@ -19,14 +19,14 @@ import * as THREE from 'three';
 import { preload } from './load.js?v=6';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
 import { People } from './people.js?v=14';
-import { Pitch } from './pitch.js?v=5';
-import { fromResult, motion } from './play.js?v=3';
+import { Pitch } from './pitch.js?v=6';
+import { fromResult, motion } from './play.js?v=4';
 import { look } from './looks.js?v=1';
 import { P } from './units.js?v=1';
 
 const C = () => window.STD_CONTRACT;
 // the grid: a column is CELL_FT wide at the plate, and a cell is never under CELL_PX on screen
-const CELL_FT = 0.553, CELL_PX = 44.5, MARGIN = 0.02;
+const CELL_FT = 0.553, CELL_PX = 38, MARGIN = 0.03, ROOM = 1.04;
 const AN = () => window.STD_ANIM;
 const TEST = () => window.STD_STAGE_TEST;
 
@@ -139,7 +139,7 @@ class Stage {
   setPitch(play) {
     if (this.pitch) this.pitch.dispose();
     const m = motion(play, this.facts.batter);
-    this.pitch = new Pitch({ scene: this.scene, facts: this.facts, play, batter: this.facts.batter, m, overlays: false });
+    this.pitch = new Pitch({ scene: this.scene, facts: this.facts, play, batter: this.facts.batter, m, grid: false });
     this.people.setPlay(this.pitch, play, m);
     this.m = m;
   }
@@ -209,14 +209,24 @@ class Stage {
       });
       return b;
     };
-    const P = this.people;
-    return { batter: box([P.batter.root]), bat: box([P.batter.bat]), catcher: box([P.catcher.root]), umpire: box([P.umpire.root]), W: w, H: h };
+    const pp = this.people;
+    // home plate: its five corners (feet, catcher's view; y toward the mound)
+    const plate = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity }, hp = 17 / 24;
+    for (const [x, y] of [[-hp, 2 * hp], [hp, 2 * hp], [hp, hp], [-hp, hp], [0, 0]]) {
+      const q = P(x, y, 0).project(this.camera), sx = (q.x + 1) / 2 * w, sy = (1 - q.y) / 2 * h;
+      plate.x0 = Math.min(plate.x0, sx); plate.x1 = Math.max(plate.x1, sx); plate.y0 = Math.min(plate.y0, sy); plate.y1 = Math.max(plate.y1, sy);
+    }
+    // and the dirt in front of it, so the plate sits in the frame and not on its edge
+    const a = P(0, 2 * hp + 1.5, 0).project(this.camera), ax = (a.x + 1) / 2 * w, ay = (1 - a.y) / 2 * h;
+    const apron = { x0: ax, x1: ax, y0: ay, y1: ay };
+    return { batter: box([pp.batter.root]), bat: box([pp.batter.bat]), catcher: box([pp.catcher.root]), umpire: box([pp.umpire.root]), plate, apron, W: w, H: h };
   }
 
-  /** Fit the frame to the people in the set: everyone in, with a margin, and as close as that
-      allows, but never so wide that a cell of the grid is under CELL_PX (a thumb). On a narrow
-      phone that wins: the frame keeps the hitter and his feet, and lets the top of the bat and
-      the catcher's far side go first. On a short screen the bodies win: nobody loses his head. */
+  /** Fit the frame to the set: the hitter, the catcher, the umpire and home plate all in, with a
+      margin and a little room, as the lab frames it, but never so wide that a cell of the grid is
+      under CELL_PX (38 px; the owner approved the lab's looser frame over a thumb sized 44). If a
+      phone is too narrow even so, the hitter stays whole and the catcher's far side goes first. On
+      a short screen the bodies win over the cell size: nobody loses his head. */
   fit() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     if (!w || !h || !this.people || !this.people.batter || !this.people.batter.chain) return;
@@ -227,7 +237,7 @@ class Stage {
       eye.resize(w, h); eye.update(0);
       const f = { ...eye.frame }, fb = this.figureBoxes(800);
       const u = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
-      for (const k of ['batter', 'bat', 'catcher', 'umpire']) {
+      for (const k of ['batter', 'bat', 'catcher', 'umpire', 'plate', 'apron']) {
         const b = fb[k];
         u.x0 = Math.min(u.x0, b.x0); u.x1 = Math.max(u.x1, b.x1); u.y0 = Math.min(u.y0, b.y0); u.y1 = Math.max(u.y1, b.y1);
       }
@@ -235,9 +245,9 @@ class Stage {
       const o = P(f.x, 0, f.z).project(this.camera), ox = P(f.x + 1, 0, f.z).project(this.camera), oz = P(f.x, 0, f.z + 1).project(this.camera);
       const kx = (ox.x - o.x) / 2 * w, kz = -(oz.y - o.y) / 2 * h;
       const ftPx = f.fw / w;
-      const need = Math.max((u.x1 - u.x0) * ftPx / (1 - 2 * MARGIN), (u.y1 - u.y0) * ftPx / (1 - 2 * MARGIN) * w / h);
+      const need = ROOM * Math.max((u.x1 - u.x0) * ftPx / (1 - 2 * MARGIN), (u.y1 - u.y0) * ftPx / (1 - 2 * MARGIN) * w / h);
       // the bodies (not the bat) always fit top to bottom, even if a short screen's cells get smaller
-      const by0 = Math.min(fb.batter.y0, fb.catcher.y0, fb.umpire.y0), by1 = Math.max(fb.batter.y1, fb.catcher.y1, fb.umpire.y1);
+      const by0 = Math.min(fb.batter.y0, fb.catcher.y0, fb.umpire.y0), by1 = Math.max(fb.batter.y1, fb.catcher.y1, fb.umpire.y1, fb.apron.y1);
       const needBody = (by1 - by0) * ftPx / (1 - 2 * MARGIN) * w / h;
       const fw = Math.max(Math.min(need, maxFw), needBody), sc = f.fw / fw;
       // the content's box after the zoom (it scales about the canvas centre)
@@ -255,7 +265,8 @@ class Stage {
   }
 
   /** Where things are this frame, for the browser check's trace of a play: the ball, the bat's
-      tip, the hitter's pelvis, the umpire's hands, and whether any overlay is up. */
+      tip, the hitter's pelvis, the umpire's hands, whether the 3D grid is up (never, in the game),
+      and the opacity of the trail and of the aimed and actual markers. */
   sample(t) {
     const B = this.people.batter, U = this.people.umpire, pt = this.pitch;
     const r = (v) => v.toArray().map((n) => Math.round(n * 1000) / 1000);
@@ -265,8 +276,21 @@ class Stage {
       ball: pt.ball.visible ? at(pt.ball) : null,
       tip: B.bat ? r(new THREE.Vector3(0, 0.75, 0).applyMatrix4(B.bat.matrixWorld)) : null,
       pel: at(B.bones.pelvis), uR: at(U.bones.hand_r), uL: at(U.bones.hand_l),
-      overlay: [pt.tracer, pt.aimRing, pt.hitDot, ...(pt.grid || [])].some((o) => o && o.visible),
+      grid: (pt.grid || []).some((o) => o.visible),
+      trail: pt.tracer.visible ? Math.round(pt.tracer.material.uniforms.uOpacity.value * 100) / 100 : 0,
+      aimed: pt.aimRing.visible ? Math.round(pt.aimRing.material.opacity * 100) / 100 : 0,
+      actual: pt.hitDot.visible ? Math.round(pt.hitDot.material.opacity * 100) / 100 : 0,
     };
+  }
+
+  /** A still of one pitch from its PitchResult, for screenshots: 'flight' is most of the way to the
+      plate (the trail behind it), 'crossed' just after it (aimed against actual). */
+  still(pr, when) {
+    this.setPitch(fromResult(pr, this.facts.batter));
+    const pt = this.pitch;
+    this.pose(when === 'crossed' ? pt.tPlate + 0.35 : pt.tRel + 0.8 * (pt.tPlate - pt.tRel));
+    this.render();
+    this.dirty = true;
   }
 
   /** One pitch to the call. */
