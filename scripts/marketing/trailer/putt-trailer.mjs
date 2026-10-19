@@ -45,7 +45,7 @@ export const cards = {
 const I = 4.0, WD = 6.0, HD = 9.0, PZ = 6.0, CH = 5.0, EN = 6.0;
 /* Where the Pro Tour round (rtt-x.mp4, rtt-reels.mp4, the rtt-round shot) is picked up for the intro: each
    cut's own take, so each has its own moment. */
-const RTT_FROM = { x: 26.4, reels: 25.4 };
+const RTT_FROM = { x: 10.2, reels: 25.4 };
 export const scenes = [
   // the intro is two beats inside the same 4 s, so everything after 0:04 stays where it was
   { dur: 2.3, card: 'newin', cardIn: 0.3, cardOut: 0.05, backdrop: { clip: 'rtt', from: RTT_FROM, dim: 0.45 } },
