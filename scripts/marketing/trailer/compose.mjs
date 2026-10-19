@@ -49,6 +49,9 @@ export function compose({ spec, art, format, foot, out, music }) {
       const B = s.backdrop, ii = add(['-i', path.join(foot, `${B.clip}-${format}.mp4`)]), sp = B.speed || 1, from = typeof B.from === 'object' ? B.from[format] : B.from;
       filters.push(`[${ii}:v]trim=start=${r2(from || 0)}:duration=${r2(s.dur * sp + 0.1)},setpts=(PTS-STARTPTS)/${sp},fps=${FPS},`
         + `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1,format=rgba,`
+        // a slow push in, the way a film camera creeps toward its subject, and a vignette
+        + (B.push ? `scale=w='trunc(${W}*(1+${B.push}*t/${r2(s.dur)})/2)*2':h=-2:eval=frame,crop=${W}:${H},` : '')
+        + (B.vignette ? `vignette=angle=PI/5,` : '')
         + `colorchannelmixer=rr=${B.dim ?? 0.5}:gg=${B.dim ?? 0.5}:bb=${B.dim ?? 0.5},setpts=PTS+${r2(ts)}/TB[bd${k}]`,
         `[${bgl}][bd${k}]overlay=0:0:enable='between(t,${r2(ts)},${r2(ts + s.dur)})':eof_action=pass[bgb${k}]`);
       bgl = `bgb${k}`;
@@ -117,10 +120,18 @@ export function compose({ spec, art, format, foot, out, music }) {
       const a = r2(t0 + (s.cardIn || 0.15)), b = r2(t0 + s.dur - (s.cardOut ?? 0.1));
       const x = Math.round((W - C.w) / 2), place = (F.cardAt && F.cardAt[s.card]) || F.cardY;
       const y = place === 'mid' ? Math.round((H - C.h) / 2) : place;
+      if (s.cine) {
+        // CINEMATIC: the title fades up slowly and settles from a touch larger, centred where it sits
+        const fin = s.flash ? 0.04 : 0.9, cy = y + C.h / 2;
+        filters.push(`[${ci}:v]format=rgba,scale=w='trunc(iw*(1.07-0.07*clip((t-${a})/1.6,0,1))/2)*2':h=-2:eval=frame,`
+          + `fade=t=in:st=${a}:d=${fin}:alpha=1,fade=t=out:st=${r2(b - 0.4)}:d=0.4:alpha=1[cd${n}]`,
+          `[${last}][cd${n}]overlay=x='(main_w-overlay_w)/2':y='${cy}-overlay_h/2':enable='between(t,${a},${b})':eval=frame:shortest=1[lc${n}]`);
+      } else {
       // a card rises and fades in; a FLASH card is simply there when the white flash clears
       const fin = s.flash ? 0.04 : 0.35, rise = s.flash ? 0 : 40;
       filters.push(`[${ci}:v]format=rgba,fade=t=in:st=${a}:d=${fin}:alpha=1,fade=t=out:st=${r2(b - 0.3)}:d=0.3:alpha=1[cd${n}]`,
         `[${last}][cd${n}]overlay=x=${x}:y='${y}+${rise}*(1-clip((t-${a})/0.45,0,1))*(1-clip((t-${a})/0.45,0,1))':enable='between(t,${a},${b})':eval=frame:shortest=1[lc${n}]`);
+      }
       last = 'lc' + n; n++;
       if (s.flash) {
         // the white flash the scene opens on
@@ -131,6 +142,17 @@ export function compose({ spec, art, format, foot, out, music }) {
       t0 += s.dur; continue;
     }
     t0 += s.dur;
+  }
+
+  /* LETTERBOX: black bars that slide in over the windows the spec names ([from, to] in seconds) and out
+     again, the frame of a film. A window that starts before 0 starts with the bars already in. */
+  if (spec.letterbox && F.bar) {
+    const bh = F.bar, sm = (k) => `(${k})*(${k})*(3-2*(${k}))`;
+    const e = spec.letterbox.map(([a, b]) => `${sm(`clip((t-${r2(a)})/0.6,0,1)`)}*(1-${sm(`clip((t-${r2(b - 0.6)})/0.6,0,1)`)})`).join('+');
+    filters.push(`color=c=black:s=${W}x${bh}:r=${FPS}:d=${r2(T)}[lbt]`, `color=c=black:s=${W}x${bh}:r=${FPS}:d=${r2(T)}[lbb]`,
+      `[${last}][lbt]overlay=x=0:y='-${bh}+${bh}*(${e})':eval=frame:shortest=1[lb1]`,
+      `[lb1][lbb]overlay=x=0:y='${H}-${bh}*(${e})':eval=frame:shortest=1[lb2]`);
+    last = 'lb2';
   }
 
   // a fade from and to black, and the picture out

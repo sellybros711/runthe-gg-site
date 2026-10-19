@@ -106,8 +106,13 @@ const CARD = (W, c, k) => `${BASE}<style>
   .sub{font:600 ${30 * k}px 'Barlow Semi Condensed',system-ui;color:#e3efe7;letter-spacing:.02em}
   .url{display:inline-block;margin-top:${16 * k}px;padding:${10 * k}px ${26 * k}px;border-radius:${40 * k}px;background:var(--gold);color:#07140e;
     font:800 ${34 * k}px 'Barlow Semi Condensed',system-ui;letter-spacing:.02em}
+  /* the lobby's own type (.ft-dt, .ft-dk on the First Tee): cream Anton with a soft shadow, a gold kicker */
+  .lobby .kick{color:#f1d04a;letter-spacing:.24em;text-shadow:0 ${2 * k}px ${6 * k}px rgba(0,0,0,.6)}
+  .lobby .big{color:#f4e8d6;text-shadow:0 ${6 * k}px ${24 * k}px rgba(0,0,0,.6)}
+  .lobby .big em{color:#f4e8d6}
+  .lobby .sub{color:#f4e8d6;text-shadow:0 ${2 * k}px ${8 * k}px rgba(0,0,0,.7)}
   .logo{display:block;margin:0 auto ${18 * k}px;height:${(c.imgH || 120) * k}px;image-rendering:pixelated}
-</style><div id="card">${c.img ? `<img class="logo" src="${c.img}">` : ''}${c.kick ? `<div class="kick">${c.kick}</div>` : ''}<div class="big">${c.big}</div>${c.rule === false ? '' : '<div class="rule"></div>'}${c.sub ? `<div class="sub">${c.sub}</div>` : ''}${c.url ? `<div class="url">${c.url}</div>` : ''}</div>`;
+</style><div id="card" class="${c.style || ''}">${c.img ? `<img class="logo" src="${c.img}">` : ''}${c.kick ? `<div class="kick">${c.kick}</div>` : ''}<div class="big">${c.big}</div>${c.rule === false ? '' : '<div class="rule"></div>'}${c.sub ? `<div class="sub">${c.sub}</div>` : ''}${c.url ? `<div class="url">${c.url}</div>` : ''}</div>`;
 
 async function shot(pw, browser, html, { width = 1600, height = 1200, sel = '#dev' } = {}) {
   const page = await browser.newPage({ viewport: { width, height } });

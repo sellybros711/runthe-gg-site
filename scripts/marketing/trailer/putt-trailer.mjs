@@ -32,12 +32,13 @@ const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'golf/lo
 export const cards = {
   // the owner's opening (2026-10-19): "New in Run The Tour" over the game people know, then the name on green
   newin: { img: logo, imgH: 150, big: 'New in<br><em>Run The Tour</em>', rule: false, size: 120 },
-  intro: { kick: 'Introducing', big: 'Putt Putt <em>Tour</em>', sub: 'Mini golf you actually play.', size: 130 },
+  // in the lobby's own type, over the lobby's sky (the owner, 2026-10-19)
+  intro: { style: 'lobby', kick: 'Introducing', big: 'Putt Putt Tour', sub: 'Mini golf you actually play.', rule: false, size: 108 },
   worlds: { kick: 'Explore', big: 'Worlds to <em>walk</em>', sub: 'Walk the trail from hole to hole.' },
   holes: { kick: 'Play', big: 'Special <em>holes</em>', sub: 'Every hole has a twist.' },
   puzzles: { kick: 'Solve', big: 'Puzzle <em>gyms</em>', sub: 'Crack the room. Open the vault.' },
   chests: { kick: 'Find', big: 'Hidden <em>chests</em>', sub: 'Treasure off the path.' },
-  end: { img: logo, imgH: 120, big: 'Play now for free<br><em>in Run The Tour</em>', sub: 'No download necessary.', url: 'runthe.gg/golf', size: 104 },
+  end: { img: logo, imgH: 120, big: 'Play for free<br><em>Run The Tour</em>', sub: 'No download required', url: 'runthe.gg/golf', size: 104 },
 };
 
 /* The scenes. Each screen plays clips back to back; `to` (negative: from the clip's end) sets the speed. */
@@ -48,8 +49,8 @@ const I = 4.0, WD = 6.0, HD = 9.0, PZ = 6.0, CH = 5.0, EN = 6.0;
 const RTT_FROM = { x: 10.2, reels: 25.4 };
 export const scenes = [
   // the intro is two beats inside the same 4 s, so everything after 0:04 stays where it was
-  { dur: 2.3, card: 'newin', cardIn: 0.3, cardOut: 0.05, backdrop: { clip: 'rtt', from: RTT_FROM, dim: 0.45 } },
-  { dur: I - 2.3, card: 'intro', cardIn: 0, flash: true },
+  { dur: 2.3, card: 'newin', cardIn: 0.35, cardOut: 0.05, cine: true, backdrop: { clip: 'rtt', from: RTT_FROM, dim: 0.42, push: 0.07, vignette: true } },
+  { dur: I - 2.3, card: 'intro', cardIn: 0, flash: true, cine: true, backdrop: { clip: 'lobby', from: 0.3, dim: 1, push: 0.05, vignette: true } },
   { dur: WD, card: 'worlds',
     laptop: [{ clip: 'map', from: 0.6, speed: 1 }],   // real speed: a little slower than the first cut (the owner, 2026-10-19)
     phone: [{ clip: 'w-candy', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-neon', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-sky', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-ice', from: 0.9, speed: 1.15 }] },
@@ -63,11 +64,15 @@ export const scenes = [
   { dur: CH, card: 'chests',
     laptop: [{ clip: 'chest', from: 0.3, to: -0.2 }],
     phone: [{ clip: 'chest', from: 0.3, to: -0.2 }] },
-  { dur: EN, card: 'end', cardIn: 0.6,
+  { dur: EN, card: 'end', cardIn: 0.6, cine: true,
     laptop: [{ clip: 'w-pirate', from: 0.4, speed: 1 }],
     phone: [{ clip: 'a-candy', from: 0.7, to: -0.4 }] },
 ];
 const T = scenes.reduce((a, s) => a + s.dur, 0), END = T - EN;
+/* CINEMATIC (the owner, 2026-10-19: "a cinematic movie trailer"): the opening and the close are framed
+   like a film, letterboxed, with slow push ins and titles that settle. The bars leave as the devices
+   arrive at 0:04 and come back as they go, so 0:04 to 0:30 is exactly the cut the owner approved. */
+export const letterbox = [[-1, I + 0.35], [END - 0.2, T + 1]];
 
 /* Where things sit. Devices come in after the title, hold, and leave for the end card. */
 /* Where things sit, by SCREEN: a laptop's screen width, a phone's screen height, each screen's centre line
@@ -75,10 +80,10 @@ const T = scenes.reduce((a, s) => a + s.dur, 0), END = T - EN;
    the end card. */
 const off = (keys, x) => keys.map(([t, cx, y], i) => [t, (i < 2 || i > 3) ? x : cx, y]);
 export const formats = {
-  x: { W: 1350, H: 1080, textScale: 0.82, cardY: 34, cardAt: { newin: 'mid', intro: 'mid', end: 'mid' },
+  x: { W: 1350, H: 1080, textScale: 0.82, cardY: 34, bar: 96, cardAt: { newin: 'mid', intro: 150, end: 'mid' },
     laptop: { screenW: 800, keys: off([[0, 0, 352], [I - 0.2, 0, 352], [I + 0.6, 440, 352], [END, 440, 352], [END + 0.6, 0, 352], [T, 0, 352]], -700) },
     phone: { screenH: 690, keys: off([[0, 0, 336], [I, 0, 336], [I + 0.75, 1080, 336], [END, 1080, 336], [END + 0.55, 0, 336], [T, 0, 336]], 1700) } },
-  reels: { W: 1080, H: 1920, textScale: 1.22, cardY: 70, cardAt: { newin: 'mid', intro: 'mid', end: 'mid' },
+  reels: { W: 1080, H: 1920, textScale: 1.22, cardY: 70, bar: 170, cardAt: { newin: 'mid', intro: 300, end: 'mid' },
     laptop: { screenW: 820, keys: off([[0, 0, 400], [I - 0.2, 0, 400], [I + 0.6, 540, 400], [END, 540, 400], [END + 0.6, 0, 400], [T, 0, 400]], -700) },
     phone: { screenH: 820, keys: (([a, b]) => [[0, 540, 2000], [I, 540, 2000], [I + 0.75, 540, 1035], [END, 540, 1035], [END + 0.55, 540, 2000], [T, 540, 2000]])([0, 0]) } },
 };
@@ -92,7 +97,7 @@ if (process.argv[1] && process.argv[1].endsWith('putt-trailer.mjs')) {
   const art = await draw(path.join(out, 'art'), { formats, cards });
   for (const f of Object.keys(formats)) {
     if (only && only !== f) continue;
-    const r = compose({ spec: { formats, scenes }, art, format: f, foot, out: path.join(out, `putt-trailer-${f}.mp4`), music: opt('--music', null) });
+    const r = compose({ spec: { formats, scenes, letterbox }, art, format: f, foot, out: path.join(out, `putt-trailer-${f}.mp4`), music: opt('--music', null) });
     console.log(`${path.relative(process.cwd(), r.out)}: ${r.T.toFixed(1)}s`);
   }
 }
