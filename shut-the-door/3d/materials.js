@@ -25,13 +25,21 @@ export function skin(src, opts = {}) {
   // a look per player: tone mixes the model's skin map toward a darker one; facial hair darkens the
   // beard area (a mask in the same UV layout) with a stubble grain. Both read through the map's own
   // UV transform (vMapUv). Off until look() sets them.
-  const u = { uDark: { value: null }, uTone: { value: 0 }, uBeard: { value: null }, uBeardAmt: { value: 0 }, uHairCol: { value: new THREE.Color(0x1a120c) } };
+  // and the headgear's contact shading (headgear.js wornShade): the skin darkens just under the rim
+  // where the shell rests on it, and under a brim; the rim comes as a texture over phi, read in the
+  // gear's own frame (uGearM, set each frame)
+  const u = { uDark: { value: null }, uTone: { value: 0 }, uBeard: { value: null }, uBeardAmt: { value: 0 }, uHairCol: { value: new THREE.Color(0x1a120c) },
+    uGearOn: { value: 0 }, uGearM: { value: new THREE.Matrix4() }, uGearRim: { value: null } };
   m.userData.u = u;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
+        uniform mat4 uGearM; varying vec3 vGearP;`)
+      .replace('#include <skinning_vertex>', `#include <skinning_vertex>
+        vGearP = (uGearM * modelMatrix * vec4(transformed, 1.0)).xyz;`);
     sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_pars_fragment>', SKIN_CHUNK)
       .replace('#include <common>', `#include <common>
-        uniform sampler2D uDark, uBeard; uniform float uTone, uBeardAmt; uniform vec3 uHairCol;`)
+        uniform sampler2D uDark, uBeard, uGearRim; uniform float uTone, uBeardAmt, uGearOn; uniform vec3 uHairCol; varying vec3 vGearP;`)
       .replace('#include <map_fragment>', `#include <map_fragment>
         #ifdef USE_MAP
           if (uTone > 0.001) diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(uDark, vMapUv).rgb * diffuse, uTone);
@@ -40,7 +48,17 @@ export function skin(src, opts = {}) {
             float b = texture2D(uBeard, vMapUv).r * uBeardAmt * (0.55 + 0.45 * grain);
             diffuseColor.rgb = mix(diffuseColor.rgb, uHairCol, clamp(b, 0.0, 0.85));
           }
-        #endif`);
+        #endif
+        if (uGearOn > 0.5) {
+          float gr = length(vGearP);
+          float gth = acos(clamp(vGearP.y / max(gr, 1e-4), -1.0, 1.0)), gph = atan(vGearP.x, vGearP.z);
+          vec4 rim = texture2D(uGearRim, vec2(gph / 6.2831853 + 0.5, 0.5));
+          float below = (gth - rim.r * 3.14159265) * gr;          // metres down the head from the rim
+          float near = gr < 0.2 ? 1.0 : 0.0;
+          float ao = below < 0.0 ? 0.45 : 1.0 - 0.5 * exp(-below / 0.01);
+          ao *= 1.0 - 0.3 * rim.g * exp(-max(below, 0.0) / 0.035);   // the brim's shade on the brow and eyes
+          diffuseColor.rgb *= mix(1.0, ao, near);
+        }`);
   };
   m.customProgramCacheKey = () => 'skin';
   return m;
@@ -70,6 +88,27 @@ export function hair(src, color) {
     side: THREE.DoubleSide, alphaToCoverage: true,
   });
   m.name = src.name;
+  // under headgear (headgear.js wornShade) only the hair below the rim shows, and only where the
+  // rim texture's blue says hair may show (the back and sides, not a fringe under a brim)
+  const u = { uGearOn: { value: 0 }, uGearM: { value: new THREE.Matrix4() }, uGearRim: { value: null } };
+  m.userData.u = u;
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, u);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
+        uniform mat4 uGearM; varying vec3 vGearP;`)
+      .replace('#include <skinning_vertex>', `#include <skinning_vertex>
+        vGearP = (uGearM * modelMatrix * vec4(transformed, 1.0)).xyz;`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+        uniform sampler2D uGearRim; uniform float uGearOn; varying vec3 vGearP;`)
+      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+        if (uGearOn > 0.5) {
+          float gr = length(vGearP);
+          float gth = acos(clamp(vGearP.y / max(gr, 1e-4), -1.0, 1.0)), gph = atan(vGearP.x, vGearP.z);
+          vec4 rim = texture2D(uGearRim, vec2(gph / 6.2831853 + 0.5, 0.5));
+          if ((gth - rim.r * 3.14159265) * gr < 0.004 || rim.b < 0.5) discard;
+        }`);
+  };
+  m.customProgramCacheKey = () => 'hair';
   return m;
 }
 

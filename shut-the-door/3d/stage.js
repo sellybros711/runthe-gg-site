@@ -293,6 +293,15 @@ class Stage {
     this.dirty = true;
   }
 
+  /** A pitch set up but not played (for check-fit.mjs, which poses it frame by frame itself):
+      its end time. */
+  prepare(pr) {
+    this.setPitch(fromResult(pr, this.facts.batter));
+    const pt = this.pitch, resultAt = pt.after ? pt.tRel + pt.after.t0 : pt.tCatch;
+    this.dirty = true;
+    return { tEnd: resultAt + 2.0, resultAt };
+  }
+
   /** One pitch to the call. */
   async play(opts) {
     await this.ready;

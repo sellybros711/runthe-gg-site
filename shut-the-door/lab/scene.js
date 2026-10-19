@@ -67,9 +67,9 @@ async function main() {
   const note = document.getElementById('note');
   const resultAt = pitch.after ? pitch.tRel + pitch.after.t0 : pitch.tCatch;
   const update = (t, dt) => {
-    shot.update(t);
     pitch.update(t, camera);
     people.update(t, dt);
+    shot.update(t);                     // after the people: the head camera follows a head
     stands.userData.tick(t);
     const show = t > resultAt + 0.3 && !Q.has('nopbp');
     if (show !== lab.pbpShown) { note.textContent = show ? lab.pbp : ''; lab.pbpShown = show; }
@@ -90,10 +90,29 @@ function setupCamera(facts) {
     eye.resize(innerWidth, innerHeight);
     if (cam === 'side') camera.fov = 22;
     if (cam === 'free') camera.fov = parseFloat(Q.get('fov') || 30);
+    if (cam === 'head') camera.fov = parseFloat(Q.get('fov') || 16);
     camera.updateProjectionMatrix();
   }
   function update(t) {
     if (cam === 'side') { camera.position.copy(P(-14, 1.5, 4)); camera.lookAt(P(1.5, 0, 3)); return; }
+    if (cam === 'head' && lab.people) {
+      // a close up on one head (?who=batter|catcher|umpire), from the pitcher's eye (?view=pitcher)
+      // or three quarters from the front on the pitcher's side (?view=34), ?dist metres off
+      const p = lab.people[Q.get('who') || 'batter'];
+      const h = new THREE.Vector3(); p.bones.head.getWorldPosition(h); h.y += 0.06;
+      const dist = parseFloat(Q.get('dist') || '1.2');
+      let dir;
+      if ((Q.get('view') || 'pitcher') === 'pitcher') dir = P(-0.45, 59.2, 6.05).sub(h).normalize();
+      else {
+        const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(p.root.quaternion); fwd.y = 0; fwd.normalize();
+        const toMound = P(0, 60, 0).sub(h); toMound.y = 0; toMound.normalize();
+        dir = fwd.clone().add(toMound).normalize();
+        dir.y = 0.15; dir.normalize();
+      }
+      camera.position.copy(h).addScaledVector(dir, dist);
+      camera.lookAt(h);
+      return;
+    }
     if (cam === 'free') {
       const v = (Q.get('pos') || '0,20,6').split(',').map(Number), l = (Q.get('at') || '0,0,3').split(',').map(Number);
       camera.position.copy(P(...v)); camera.lookAt(P(...l)); return;
