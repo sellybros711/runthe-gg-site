@@ -125,7 +125,7 @@
     <div class="scorebar" role="group" aria-label="Scoreboard">
       <div class="sb-teams">
         <div class="sb-team"><i class="sb-club" id="m-usclub"></i><span class="tm">us</span><b id="m-us">0</b></div>
-        <div class="sb-team"><i class="sb-club"></i><span class="tm">them</span><b id="m-them">0</b></div>
+        <div class="sb-team"><i class="sb-club" id="m-themclub"></i><span class="tm">them</span><b id="m-them">0</b></div>
       </div>
       <div class="sb-inn" id="m-inn"></div>
       <svg class="sb-bases" id="m-bases" viewBox="0 0 40 30" aria-label="Bases">
@@ -259,7 +259,8 @@
 <script src="api.js?v=2"></script>
 <script src="mock-api.js?v=5"></script>
 <script src="coach.js?v=1"></script>
-<script src="ui.js?v=9"></script>
+<script src="ui.js?v=10"></script>
 <script type="module" src="3d/boot.js?v=18"></script>
+<script type="module">import { battingClub } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub;</script>
 </body>
 </html>
