@@ -90,9 +90,11 @@ export const letterbox = [[-1, I + 0.35], [END - 0.2, T + 1]];
    the end card. */
 const off = (keys, x) => keys.map(([t, cx, y], i) => [t, (i < 2 || i > 3) ? x : cx, y]);
 export const formats = {
+  // the pair centred as one (the owner, 2026-10-19): the laptop's base spans 927 px, the phone 347, 4 px apart,
+  // so 36 px of sky either side
   x: { W: 1350, H: 1080, textScale: 0.82, cardY: 34, bar: 96, cardAt: { newin: 'mid', end: 'mid' },
-    laptop: { screenW: 800, keys: off([[0, 0, 352], [I - 0.2, 0, 352], [I + 0.6, 440, 352], [END, 440, 352], [END + 0.6, 0, 352], [T, 0, 352]], -700) },
-    phone: { screenH: 690, keys: off([[0, 0, 336], [I, 0, 336], [I + 0.75, 1080, 336], [END, 1080, 336], [END + 0.55, 0, 336], [T, 0, 336]], 1700) } },
+    laptop: { screenW: 800, keys: off([[0, 0, 352], [I - 0.2, 0, 352], [I + 0.6, 497, 352], [END, 497, 352], [END + 0.6, 0, 352], [T, 0, 352]], -700) },
+    phone: { screenH: 690, keys: off([[0, 0, 336], [I, 0, 336], [I + 0.75, 1137, 336], [END, 1137, 336], [END + 0.55, 0, 336], [T, 0, 336]], 1700) } },
   reels: { W: 1080, H: 1920, textScale: 1.22, cardY: 70, bar: 170, cardAt: { newin: 'mid', end: 'mid' },
     laptop: { screenW: 820, keys: off([[0, 0, 400], [I - 0.2, 0, 400], [I + 0.6, 540, 400], [END, 540, 400], [END + 0.6, 0, 400], [T, 0, 400]], -700) },
     phone: { screenH: 820, keys: (([a, b]) => [[0, 540, 2000], [I, 540, 2000], [I + 0.75, 540, 1035], [END, 540, 1035], [END + 0.55, 540, 2000], [T, 540, 2000]])([0, 0]) } },
