@@ -6,6 +6,7 @@
 ASSETS holds the downloads (see LICENSES.md for every source):
   ASSETS/makehuman/...         the CC0 MakeHuman files (3dobjs, targets, rigs, skins, clothes, ...)
   ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps)
+  ASSETS/mixamo/...            the owner's Mixamo FBX downloads (60 fps; never in the repo)
   ASSETS/polyhaven-textures/files/...   the CC0 Poly Haven cloth and leather maps
 OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into shut-the-door/3d/assets.
 who: batter catcher umpire (all three when left out).
@@ -234,8 +235,17 @@ PEOPLE = {
         uniform=True,
         clothes=[dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1))],
         gear=[],
-        # the capture is a right handed hitter: as it is for a right handed batter, mirrored for a left
-        clips=[('swing', '124/124_07.bvh', 22, 140, True, 'grip'), ('swingR', '124/124_07.bvh', 22, 140, False, 'grip')],
+        # Mixamo's baseball hitter is right handed: as he is for a right handed batter (R), mirrored
+        # for a left. Three swings (each hitter gets one of them), the swing and miss with its
+        # reaction, and the fall after a pitch on the shoulder. Frames at 60 fps, cut before each
+        # clip's hitter drops the bat and runs.
+        clips=[(n + sfx, f, a, b, mir, 'grip') for (n, f, a, b) in (
+            ('swing', 'mixamo/Baseball Hit.fbx', 1, 124),
+            ('swing2', 'mixamo/Baseball Hit-2.fbx', 1, 150),
+            ('swing3', 'mixamo/Baseball Hit-3.fbx', 1, 74),
+            ('miss', 'mixamo/Baseball Strike.fbx', 1, 230),
+            ('hbpFall', 'mixamo/Shoulder Hit And Fall.fbx', 1, 187),
+        ) for (sfx, mir) in (('', True), ('R', False))],
     ),
     'catcher': dict(
         name='catcher', skin='young_african_male', skin_size=1024,
@@ -274,7 +284,10 @@ def build(who):
             fn(h, arm, full, color=UMP_NAVY if g == 'ump_bulk' else TEAM)
         bpy.data.objects.remove(full, do_unlink=True)
     for (clip, path, a, b, mirror, hands) in cfg['clips']:
-        retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands)
+        if path.endswith('.fbx'):
+            retarget.apply_fbx(arm, f'{ASSETS}/{path}', clip, a, b, mirror=mirror, hands=hands)
+        else:
+            retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands)
     export(who)
     # the model's own height, for the scene to scale each player to his real one
     fn = os.path.join(HERE, '..', '..', '3d', 'assets', 'uniform.json')

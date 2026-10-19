@@ -1,4 +1,6 @@
-"""Fit a CMU BVH clip onto the MakeHuman game_engine rig, in Blender.
+"""Fit a motion clip onto the MakeHuman game_engine rig, in Blender: a CMU BVH clip, or a Mixamo
+FBX clip (the Mixamo skeleton, mixamorig:* bones; the raw files are never in the repo, only the
+clips baked onto our rig inside our glb files ship, see ../LICENSES.md).
 
 Every mapped bone takes the source bone's change of world rotation from its own rest pose,
 applied on top of the target bone first swung to point the way the source bone points at rest
@@ -21,8 +23,36 @@ MAP = {
 BLEND = {'spine_02': ('abdomen', 'chest', 0.5)}
 MX = Matrix(((-1, 0, 0), (0, 1, 0), (0, 0, 1)))
 
+# A source skeleton: which of its bones drive ours, its limb segments for the rest alignment, its
+# hip, its thighs (to face it -Y), and how its left and right names swap.
+CMU = dict(map=MAP, blend=BLEND, hip='hip', thighs=('lThigh', 'rThigh'), seg={
+    'clavicle_{s}': ('upperarm_{s}', '{S}Collar', '{S}Shldr'),
+    'upperarm_{s}': ('lowerarm_{s}', '{S}Shldr', '{S}ForeArm'),
+    'lowerarm_{s}': ('hand_{s}', '{S}ForeArm', '{S}Hand'),
+    'thigh_{s}': ('calf_{s}', '{S}Thigh', '{S}Shin'),
+    'calf_{s}': ('foot_{s}', '{S}Shin', '{S}Foot'),
+}, side=('l', 'r'), hip_height='first')
+_MXP = 'mixamorig:'
+MIXAMO = dict(map={
+    'pelvis': 'Hips', 'spine_01': 'Spine', 'spine_02': 'Spine1', 'spine_03': 'Spine2', 'neck_01': 'Neck', 'head': 'Head',
+    'clavicle_l': 'LeftShoulder', 'upperarm_l': 'LeftArm', 'lowerarm_l': 'LeftForeArm', 'hand_l': 'LeftHand',
+    'clavicle_r': 'RightShoulder', 'upperarm_r': 'RightArm', 'lowerarm_r': 'RightForeArm', 'hand_r': 'RightHand',
+    'thigh_l': 'LeftUpLeg', 'calf_l': 'LeftLeg', 'foot_l': 'LeftFoot', 'ball_l': 'LeftToeBase',
+    'thigh_r': 'RightUpLeg', 'calf_r': 'RightLeg', 'foot_r': 'RightFoot', 'ball_r': 'RightToeBase',
+}, blend={}, hip='Hips', thighs=('LeftUpLeg', 'RightUpLeg'), seg={
+    'clavicle_{s}': ('upperarm_{s}', '{S}Shoulder', '{S}Arm'),
+    'upperarm_{s}': ('lowerarm_{s}', '{S}Arm', '{S}ForeArm'),
+    'lowerarm_{s}': ('hand_{s}', '{S}ForeArm', '{S}Hand'),
+    'thigh_{s}': ('calf_{s}', '{S}UpLeg', '{S}Leg'),
+    'calf_{s}': ('foot_{s}', '{S}Leg', '{S}Foot'),
+}, side=('Left', 'Right'), hip_height='rest')
+
 
 def swap(name):
+    if name.startswith('Left'):
+        return 'Right' + name[4:]
+    if name.startswith('Right'):
+        return 'Left' + name[5:]
     if name.startswith('l') and name[1:2].isupper():
         return 'r' + name[1:]
     if name.startswith('r') and name[1:2].isupper():
@@ -42,12 +72,12 @@ def import_bvh(path):
     return ob
 
 
-def face_minus_y(src):
+def face_minus_y(src, thighs=('lThigh', 'rThigh')):
     """Turn the source so its rest pose faces -Y like the MakeHuman body (its left side toward +X)."""
-    bl, br = src.data.bones['lThigh'].head_local, src.data.bones['rThigh'].head_local
+    bl, br = src.data.bones[thighs[0]].head_local, src.data.bones[thighs[1]].head_local
     left = Vector((bl.x - br.x, bl.y - br.y, 0)).normalized()
     ang = math.atan2(left.y, left.x)
-    src.rotation_euler = (0, 0, -ang)
+    src.rotation_euler = (src.rotation_euler[0], src.rotation_euler[1], -ang)
     bpy.context.view_layer.update()
 
 
@@ -74,10 +104,35 @@ def hand_shape(arm, shape):
     return out
 
 
+def import_fbx(path):
+    """A Mixamo FBX, read as data by Blender's importer. Its names lose the mixamorig: prefix here."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=path, use_anim=True, automatic_bone_orientation=False, ignore_leaf_bones=True)
+    new = [o for o in bpy.data.objects if o not in before]
+    ob = [o for o in new if o.type == 'ARMATURE'][0]
+    for o in new:
+        if o is not ob:
+            bpy.data.objects.remove(o, do_unlink=True)
+    for bn in ob.data.bones:
+        if bn.name.startswith(_MXP):
+            bn.name = bn.name[len(_MXP):]
+    return ob
+
+
 def apply_bvh(arm, path, clip, a, b, mirror=False, hands='relaxed', speed=1.0):
+    return apply_src(arm, import_bvh(path), CMU, path, clip, a, b, mirror, hands, speed)
+
+
+def apply_fbx(arm, path, clip, a, b, mirror=False, hands='relaxed', speed=2.0, fingers=False):
+    """A Mixamo clip (keyed at 60 fps): frames a..b, every second frame by default (our clips run
+    at 30 fps)."""
+    return apply_src(arm, import_fbx(path), MIXAMO, path, clip, a, b, mirror, hands, speed)
+
+
+def apply_src(arm, src, spec, path, clip, a, b, mirror=False, hands='relaxed', speed=1.0):
     scene = bpy.context.scene
-    src = import_bvh(path)
-    face_minus_y(src)
+    MAPS, BLENDS = spec['map'], spec['blend']
+    face_minus_y(src, spec['thighs'])
     sb = src.pose.bones
     W = src.matrix_world
 
@@ -115,17 +170,11 @@ def apply_bvh(arm, path, clip, a, b, mirror=False, hands='relaxed', speed=1.0):
     # (joint to next joint) onto the source's segment, measured between joint positions (never
     # between Blender's bone tails, which for the BVH root point at the average of its children and
     # once turned the pelvis 110 degrees off its rest, tearing the skin at the waist and neck).
-    SEG = {  # target bone: (target next joint, source joint, source next joint)
-        'clavicle_{s}': ('upperarm_{s}', '{S}Collar', '{S}Shldr'),
-        'upperarm_{s}': ('lowerarm_{s}', '{S}Shldr', '{S}ForeArm'),
-        'lowerarm_{s}': ('hand_{s}', '{S}ForeArm', '{S}Hand'),
-        'thigh_{s}': ('calf_{s}', '{S}Thigh', '{S}Shin'),
-        'calf_{s}': ('foot_{s}', '{S}Shin', '{S}Foot'),
-    }
+    SEG = spec['seg']  # target bone: (target next joint, source joint, source next joint)
     def sjoint(name):
         return mir_vec((W @ src.data.bones[name].head_local.to_4d()).to_3d())
     align = {t: Matrix.Identity(3) for t in order}
-    for side, S in (('l', 'l'), ('r', 'r')):
+    for side, S in (('l', spec['side'][0]), ('r', spec['side'][1])):
         for tk, (tn, ja, jb) in SEG.items():
             t = tk.format(s=side)
             sa_, sb_ = get(ja.format(S=S)), get(jb.format(S=S))
@@ -134,9 +183,13 @@ def apply_bvh(arm, path, clip, a, b, mirror=False, hands='relaxed', speed=1.0):
             align[t] = tdir.rotation_difference(sdir).to_matrix()
         align[f'hand_{side}'] = align[f'lowerarm_{side}']
 
-    # hip height ratio, from the first frame of the file (the T pose)
-    scene.frame_set(int(src.animation_data.action.frame_range[0]))
-    src_hip_h = src_world('hip').translation.z
+    # hip height ratio: from the first frame of the file (a CMU file starts in its T pose) or from
+    # the skeleton's rest (a Mixamo clip starts in the motion)
+    if spec['hip_height'] == 'rest':
+        src_hip_h = (W @ src.data.bones[spec['hip']].head_local.to_4d()).z
+    else:
+        scene.frame_set(int(src.animation_data.action.frame_range[0]))
+        src_hip_h = src_world(spec['hip']).translation.z
     tgt_hip_h = bones['pelvis'].head_local.z
     k = tgt_hip_h / max(1e-6, src_hip_h)
 
@@ -163,19 +216,19 @@ def apply_bvh(arm, path, clip, a, b, mirror=False, hands='relaxed', speed=1.0):
             else:
                 base = Mw[p.name] @ p.matrix_local.inverted() @ L
             q = None
-            if t in MAP:
-                s = get(MAP[t])
+            if t in MAPS:
+                s = get(MAPS[t])
                 D = mir_rot(rot3(src_world(s)) @ rest_src[s].inverted())
                 q = D @ align[t] @ L.to_3x3().normalized()
-            elif t in BLEND:
-                s1, s2, w = BLEND[t]
+            elif t in BLENDS:
+                s1, s2, w = BLENDS[t]
                 D1 = mir_rot(rot3(src_world(get(s1))) @ rest_src[get(s1)].inverted()).to_quaternion()
                 D2 = mir_rot(rot3(src_world(get(s2))) @ rest_src[get(s2)].inverted()).to_quaternion()
                 q = D1.slerp(D2, w).to_matrix() @ align[t] @ L.to_3x3().normalized()
             if q is not None:
                 pos = base.translation.copy()
                 if t == 'pelvis':
-                    pos = mir_vec(src_world(get('hip')).translation * k)
+                    pos = mir_vec(src_world(get(spec['hip'])).translation * k)
                 M = Matrix.Translation(pos) @ q.to_4x4()
                 if p is None:
                     B = L.inverted() @ M
