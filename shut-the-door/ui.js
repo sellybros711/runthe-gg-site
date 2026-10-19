@@ -117,7 +117,6 @@ function toast(msg) {
 function stripHTML(strip, big) {
   return (strip || []).map(function (b, i) { return '<i class="sq ' + b + '" title="pitch ' + (i + 1) + ': ' + b + '">' + (big ? i + 1 : '') + '</i>'; }).join('');
 }
-var NUM_WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
 function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; return ['th', 'st', 'nd', 'rd'][n % 10] || 'th'; }
 /* the colours of the break chart and the arsenal list, in usage order */
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
@@ -173,15 +172,50 @@ function setTheme(t) {
 
 /* ---- home ------------------------------------------------------------------------- */
 
+/* The spot in plain words, read from the pack's own fields: "bottom of the 9th. up 1.
+   nobody out. runner on second." Each part comes from a field the pack has; a part it
+   does not have is left out, never filled in. */
+function situationLine(sit) {
+  var parts = [];
+  if (sit.inning != null) {
+    var half = sit.half === 'top' || sit.half === 'bottom' ? sit.half + ' of the ' : '';
+    parts.push(half + sit.inning + ordSuffix(sit.inning));
+  }
+  if (sit.score) {
+    var m = sit.score.us - sit.score.them;
+    parts.push(m > 0 ? 'up ' + m : m < 0 ? 'down ' + -m : 'tied');
+  }
+  if (sit.outs != null) parts.push(sit.outs === 0 ? 'nobody out' : sit.outs === 1 ? 'one out' : 'two outs');
+  if (sit.bases != null) parts.push(runnersLine(sit.bases | 0));
+  return parts.join('. ') + '.';
+}
+function runnersLine(b) {
+  var on = [];
+  if (b & 1) on.push('first'); if (b & 2) on.push('second'); if (b & 4) on.push('third');
+  if (!on.length) return 'nobody on';
+  if (on.length === 3) return 'bases loaded';
+  return (on.length > 1 ? 'runners on ' : 'runner on ') + on.join(' and ');
+}
+
 function renderHome() {
   var s = S.scn, sit = s.situation, p = s.pitcher;
-  var margin = sit.score.us - sit.score.them;
-  $('h-day').innerHTML = '<span class="chip-s hot">#' + esc(s.number) + ' \u00b7 today</span><span class="chip-s">' + esc(fmtDay(s.day)) + '</span>' +
-    '<span class="chip-s quiet">' + (s.resolution === 'proxy' ? 'modern pitch data' : 'real spot') + '</span>';
+  /* the chips: only what the pack has. A null number or day is left out, never printed as "#" */
+  var chips = ['<span class="chip-s hot">real save</span>'];
+  if (s.number != null) chips.push('<span class="chip-s">#' + esc(s.number) + ' \u00b7 today</span>');
+  if (s.day) chips.push('<span class="chip-s">' + esc(fmtDay(s.day)) + '</span>');
+  if (s.resolution === 'proxy') chips.push('<span class="chip-s quiet">modern pitch data</span>');
+  $('h-day').innerHTML = chips.join('');
   $('h-title').textContent = s.title.toLowerCase();
-  $('h-head').innerHTML = esc((sit.half === 'bottom' ? 'bottom ' : 'top ') + sit.inning + '. up ' + (NUM_WORD[margin] || margin) + '.') +
-    '<br>' + esc('three outs to ') + '<em>' + (sit.inning >= 9 ? 'win it.' : 'hold it.') + '</em>';
+  $('h-head').textContent = situationLine(sit);
+  var b = sit.bases | 0;
+  $('h-b1').classList.toggle('on', !!(b & 1));
+  $('h-b2').classList.toggle('on', !!(b & 2));
+  $('h-b3').classList.toggle('on', !!(b & 4));
   $('h-setup').textContent = s.setup;
+  var bat = s.batters[0];
+  $('h-bat').innerHTML = bat ? '<p class="lbl">at the plate</p><p class="hb-name"><b>' + esc(bat.name) + '</b>' +
+    (bat.bats ? ' <span class="hand">' + esc(bat.bats) + '</span>' : '') + '</p>' +
+    (bat.line ? '<p class="quiet">' + esc(bat.line) + '</p>' : '') : '';
   var on = sit.bases === 0 ? 'none' : sit.bases === 7 ? 'loaded' : [1, 2, 4].filter(function (b) { return sit.bases & b; }).map(function (b) { return { 1: '1st', 2: '2nd', 4: '3rd' }[b]; }).join(', ');
   $('h-sit').innerHTML =
     '<div class="tl"><b>' + esc(sit.score.us) + '-' + esc(sit.score.them) + '</b><span>your lead</span></div>' +
@@ -194,9 +228,11 @@ function renderHome() {
       '<span class="av">' + esc(a.velo.toFixed(1)) + '</span><span class="ap">' + esc(pct(a.usage)) + '</span></li>';
   }).join('');
   var chart = breakChart(ordered, p.throws);
+  var club = [p.team, p.year, p.throws ? 'throws ' + handWord(p.throws) : ''].filter(Boolean).map(esc).join(' \u00b7 ');
   $('h-pitcher').innerHTML =
+    '<p class="lbl">the real pitcher</p>' +
     '<div class="pc-top"><span class="swatch" style="background:' + esc(p.teamColors[0]) + ';border-color:' + esc(p.teamColors[1]) + '"></span>' +
-    '<div><p class="pc-name">' + esc(p.name) + '</p><p class="quiet">' + esc(p.team) + ' \u00b7 ' + esc(p.year) + ' \u00b7 throws ' + esc(handWord(p.throws)) + '</p></div></div>' +
+    '<div><p class="pc-name">' + esc(p.name) + '</p><p class="quiet">' + club + '</p></div></div>' +
     '<div class="pc-body' + (chart ? '' : ' flat') + '">' + (chart ? '<div class="brk">' + chart + '</div>' : '') + '<ul class="ars">' + ars + '</ul></div>';
   var due = s.batters.slice(0, 3).map(function (b) {
     return '<li><b>' + esc(b.name) + '</b><span class="hand">' + esc(b.bats) + '</span><span class="quiet">' + esc(b.line) + '</span></li>';

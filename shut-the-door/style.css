@@ -85,20 +85,33 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .hero { position: relative; height: 330px; border-radius: 24px; overflow: hidden; background: #0b1020; box-shadow: var(--shadow); }
 .hero canvas { position: absolute; left: 0; top: 0; image-rendering: pixelated; }
 .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5, 7, 12, .35) 0%, rgba(5, 7, 12, 0) 22%, rgba(5, 7, 12, 0) 45%, rgba(5, 7, 12, .88) 100%); pointer-events: none; }
-.hero-chips { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; }
+.hero-chips { position: absolute; left: 12px; right: 110px; top: 12px; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-s { font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: rgba(255, 255, 255, .92); color: #0b0f17; }
 .chip-s.hot { background: var(--signal); color: #fff; }
 .chip-s.quiet { background: rgba(11, 15, 23, .6); color: #e6e9ef; }
 .hero-text { position: absolute; left: 18px; right: 18px; bottom: 16px; z-index: 2; color: #fff; }
-.h-title { margin: 0 0 2px; font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, .78); }
+.h-eyebrow { display: inline-block; margin: 0 0 8px; padding: 5px 9px 4px; border-radius: 6px; background: var(--signal); color: #fff; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 15px; line-height: 1; letter-spacing: .12em; text-transform: uppercase; }
+.h-title { margin: 6px 0 0; font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, .8); }
 .hero-head { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 35px; line-height: .98; text-transform: uppercase; letter-spacing: .005em; }
-.hero-head em { font-style: italic; color: var(--signal); }
+/* the field: a diamond, with the bases the real spot has runners on lit in signal orange */
+.h-field { position: absolute; right: 12px; top: 12px; z-index: 2; width: 84px; height: 84px; padding: 6px; border-radius: 16px; background: rgba(5, 7, 12, .55); border: 1px solid rgba(255, 255, 255, .16); }
+.h-field .h-lines { fill: none; stroke: rgba(255, 255, 255, .5); stroke-width: 1.6; stroke-linejoin: round; }
+.h-field .h-mound { fill: rgba(255, 255, 255, .3); }
+.h-field .h-base { fill: none; stroke: rgba(255, 255, 255, .55); stroke-width: 1.6; }
+.h-field .h-base.on { fill: var(--signal); stroke: var(--signal); }
+.h-field .h-plate { fill: rgba(255, 255, 255, .7); }
 .tiles4 { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 8px; margin: 12px 0 6px; }
 .tl { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; box-shadow: var(--shadow); min-width: 0; }
 .tl b { display: block; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 26px; line-height: 1; }
 .tl span { display: block; font-size: 12px; color: var(--dim); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tl.hot b { color: var(--signal); }
 .setup { margin: 12px 2px; font-size: 15px; color: var(--dim); }
+.h-col { min-width: 0; }
+.h-bat { margin: 12px 0 0; padding: 12px 16px; }
+.h-bat .lbl { margin: 0 0 4px; }
+.hb-name { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; line-height: 1.05; text-transform: uppercase; }
+.hb-name .hand { font-size: 13px; margin-left: 6px; vertical-align: 3px; }
+.h-bat .quiet { margin: 4px 0 0; }
 /* the call to action, cut like a ticket: two notches and a perforation */
 .go-wrap { position: relative; margin: 16px 0 6px; background: var(--night); border-radius: 20px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
 .go-wrap::before, .go-wrap::after { content: ''; position: absolute; top: 50%; width: 18px; height: 18px; margin-top: -9px; border-radius: 50%; background: var(--bg); }
@@ -452,6 +465,18 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .hero-head { font-size: 34px; }
   .outcome { font-size: 64px; }
   .tiles4 { grid-template-columns: repeat(2, 1fr); }
+}
+/* the home on a desk: a wider page, the spot and the take on the left, the pitcher and the due up on the right */
+@media (min-width: 880px) {
+  body:not([data-screen]) .app, body[data-screen="s-home"] .app { max-width: 1040px; }
+  #s-home .hero { height: 420px; }
+  #s-home .hero-chips { right: 140px; }
+  #s-home .h-field { width: 112px; height: 112px; right: 16px; top: 16px; padding: 8px; }
+  #s-home .hero-text { left: 28px; right: 28px; bottom: 24px; }
+  #s-home .hero-head { font-size: 60px; }
+  #s-home .h-eyebrow { font-size: 20px; }
+  #s-home .h-title { font-size: 16px; }
+  #s-home .h-cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sh-in, .toast, .load-mark { transition: none; animation: none; }
