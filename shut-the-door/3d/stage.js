@@ -331,7 +331,7 @@ class Stage {
     if (hooks.sound) hooks.sound('whoosh', pt.tRel * 1000 / speed);
     // what the browser check reads back: the play's reading and a few frames of it
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
-      bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
+      zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
     return new Promise((done) => {
       let start = null, lastT = -1, raf = 0, finished = false, popped = false, called = false;
