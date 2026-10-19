@@ -1,4 +1,5 @@
-/* A hitter's look, from his id alone: skin tone, facial hair, jaw guard and a generic number. Never
+/* A hitter's look, from his id alone: skin tone, facial hair, jaw guard, a generic number and his
+ * swing (one of the three captured). Never
  * his real look or number (no likeness): a hash spreads the looks across the roster, the same on
  * every device. Used by the game (stage.js) and the lab's pack facts (lab/pipeline/extract_lab.mjs).
  */
@@ -12,5 +13,6 @@ export function look(id) {
     beard: [0, 0, 0.45, 0.9][(h >>> 10) & 3],                  // none (twice as likely), stubble, full
     jawGuard: ((h >>> 12) % 100) < 35,
     number: String(((h >>> 16) % 79) + 1),
+    swing: ['swing', 'swing2', 'swing3'][(h >>> 23) % 3],      // which of the three captured swings is his
   };
 }

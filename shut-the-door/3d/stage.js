@@ -18,10 +18,10 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=6';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
-import { People } from './people.js?v=16';
+import { People } from './people.js?v=26';
 import { Pitch } from './pitch.js?v=7';
-import { fromResult, motion } from './play.js?v=5';
-import { look } from './looks.js?v=1';
+import { fromResult, motion } from './play.js?v=7';
+import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 
 const C = () => window.STD_CONTRACT;
@@ -104,8 +104,13 @@ class Stage {
   }
 
   setBatter(b) {
-    // the same hitter again (the home screen dressed him already): only the frame
-    if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) { this.layout(); return; }
+    // the same hitter again (the home screen dressed him already): only the frame, from the set (a
+    // play may have run since: framed where it ended, a hitter knocked down was framed lying there)
+    if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) {
+      if (this.dirty && this.loaded) { this.dirty = false; this.preview(); }
+      this.layout();
+      return;
+    }
     this.batterId = b.id;
     this.bat = b;
     this.zone = { szTop: b.szTop, szBot: b.szBot, bats: b.bats };
@@ -211,6 +216,10 @@ class Stage {
         if (!m.isMesh || !m.visible) return;
         const pos = m.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / samples));
         m.updateMatrixWorld();
+        // a skinned vertex is read through the skeleton's bone matrices, which three.js refreshes
+        // only when it draws: without this the box was the last frame drawn (after a fall, the
+        // hitter lying on the ground, and the frame fitted to him there)
+        if (m.isSkinnedMesh) m.skeleton.update();
         for (let i = 0; i < pos.count; i += step) {
           m.getVertexPosition(i, v);
           v.applyMatrix4(m.matrixWorld).project(this.camera);
@@ -323,14 +332,15 @@ class Stage {
     const speed = opts.quick ? 1.8 : 1;
     const resultAt = pt.after ? pt.tRel + pt.after.t0 : pt.tCatch;
     const inPlay = pr.result === 'in_play';
-    const tail = inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? 1.5 : m.ump === 'strike' ? 1.3 : 0.9;
+    // (knocked down by a pitch, he stays down for a beat)
+    const tail = inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
     const tEnd = resultAt + tail;
     // the runners on the scorebar diamond, on the same clock the old drawing used (ms from the start)
     const track = AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
     if (hooks.sound) hooks.sound('whoosh', pt.tRel * 1000 / speed);
     // what the browser check reads back: the play's reading and a few frames of it
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
-      bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
+      zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
     return new Promise((done) => {
       let start = null, lastT = -1, raf = 0, finished = false, popped = false, called = false;

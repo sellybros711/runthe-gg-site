@@ -1,11 +1,12 @@
-"""Build the lab's people as glTF: MakeHuman body, clothes, gear, and CMU motion fitted on.
+"""Build the lab's people as glTF: MakeHuman body, clothes, gear, and Mixamo motion fitted on.
 
   uv venv --python /usr/bin/python3.11 venv && uv pip install bpy==4.2.0 numpy
   venv/bin/python -I shut-the-door/lab/pipeline/build_people.py ASSETS OUT [who ...]
 
 ASSETS holds the downloads (see LICENSES.md for every source):
   ASSETS/makehuman/...         the CC0 MakeHuman files (3dobjs, targets, rigs, skins, clothes, ...)
-  ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps)
+  ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps; no longer used)
+  ASSETS/mixamo/...            the owner's Mixamo FBX downloads (60 fps; never in the repo)
   ASSETS/polyhaven-textures/files/...   the CC0 Poly Haven cloth and leather maps
 OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into shut-the-door/3d/assets.
 who: batter catcher umpire (all three when left out).
@@ -234,8 +235,17 @@ PEOPLE = {
         uniform=True,
         clothes=[dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1))],
         gear=[],
-        # the capture is a right handed hitter: as it is for a right handed batter, mirrored for a left
-        clips=[('swing', '124/124_07.bvh', 22, 140, True, 'grip'), ('swingR', '124/124_07.bvh', 22, 140, False, 'grip')],
+        # Mixamo's baseball hitter is right handed: as he is for a right handed batter (R), mirrored
+        # for a left. Three swings (each hitter gets one of them), the swing and miss with its
+        # reaction, and the fall after a pitch on the shoulder. Frames at 60 fps; each swing is cut
+        # at its finish (the hands at rest, before the capture's hitter drops the bat and runs).
+        clips=[(n + sfx, f, a, b, mir, 'grip') for (n, f, a, b) in (
+            ('swing', 'mixamo/Baseball Hit.fbx', 1, 104),
+            ('swing2', 'mixamo/Baseball Hit-2.fbx', 1, 100),
+            ('swing3', 'mixamo/Baseball Hit-3.fbx', 1, 78),
+            ('miss', 'mixamo/Baseball Strike.fbx', 1, 230),
+            ('hbpFall', 'mixamo/Shoulder Hit And Fall.fbx', 1, 187),
+        ) for (sfx, mir) in (('', True), ('R', False))],
     ),
     'catcher': dict(
         name='catcher', skin='young_african_male', skin_size=1024,
@@ -244,7 +254,10 @@ PEOPLE = {
         uniform=True,
         clothes=[dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1))],
         gear=[],
-        clips=[('idle', '120/120_21.bvh', 90, 280, False, {'l': 'grip', 'r': 'relaxed'})],
+        # Mixamo's catcher: his set in the crouch (the stretch after he squats again, a loop of small
+        # moves), and his rise to his feet with the glove (after a ball in play)
+        clips=[('idle', 'mixamo/Baseball Catcher.fbx', 430, 550, False, {'l': 'grip', 'r': 'relaxed'}),
+               ('rise', 'mixamo/Baseball Catcher.fbx', 60, 150, False, {'l': 'grip', 'r': 'relaxed'})],
     ),
     'umpire': dict(
         name='umpire', skin='middleage_caucasian_male', skin_size=1024,
@@ -255,7 +268,10 @@ PEOPLE = {
             dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1)),
         ],
         gear=[],
-        clips=[('idle', '142/142_03.bvh', 90, 280, False, 'relaxed')],
+        # life in his crouch (weight shifts, breathing) from Mixamo's crouching idle, under the set the
+        # scene holds; and Mixamo's umpire for the strike call
+        clips=[('idle', 'mixamo/Crouching Idle.fbx', 1, 151, False, 'relaxed'),
+               ('call', 'mixamo/Baseball Umpire.fbx', 1, 158, False, 'relaxed')],
     ),
 }
 
@@ -274,7 +290,10 @@ def build(who):
             fn(h, arm, full, color=UMP_NAVY if g == 'ump_bulk' else TEAM)
         bpy.data.objects.remove(full, do_unlink=True)
     for (clip, path, a, b, mirror, hands) in cfg['clips']:
-        retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands)
+        if path.endswith('.fbx'):
+            retarget.apply_fbx(arm, f'{ASSETS}/{path}', clip, a, b, mirror=mirror, hands=hands)
+        else:
+            retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands)
     export(who)
     # the model's own height, for the scene to scale each player to his real one
     fn = os.path.join(HERE, '..', '..', '3d', 'assets', 'uniform.json')

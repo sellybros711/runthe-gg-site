@@ -9,12 +9,13 @@
  * own real outcomes (assets/packs/<pack>.json, plays): a sample, never an engine draw.
  *
  *   ?play=swinging_strike|foul|foul_back|foul_tip|ground|line|fly|popup|called_strike|ball|check|
- *         hit_by_pitch|dirt     (default swinging_strike; take=1 is called_strike)
+ *         hit_by_pitch|hbp_fall|dirt     (default swinging_strike; take=1 is called_strike; hbp_fall is
+ *         a pitch on the shoulder, the fall)
  *   &type=FF &cell=12 &mx=0.1 &mz=-0.1   override the pitch, the aimed cell, the miss (feet)
  */
 import { cellPoint } from './pitch.js?v=7';
 
-export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'dirt'];
+export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'hbp_fall', 'dirt'];
 
 /** The scene's reading of a play: the batter's motion, the ball's path after the plate, the calls. */
 export function motion(play, batter) {
@@ -41,17 +42,28 @@ export function motion(play, batter) {
     }
   } else {
     if (play.check) m.batter = 'check';
-    if (r === 'hit_by_pitch') { m.batter = 'hbp'; m.ball = 'hbp'; m.ump = 'hbp'; m.catcher = 'rise'; }
+    if (r === 'hit_by_pitch') {
+      // the catcher stays in his crouch: the ball is not caught, and he does not stand up for it
+      m.batter = 'hbp'; m.ball = 'hbp'; m.ump = 'hbp';
+      // a pitch on the upper body (above his belt) puts him down: Mixamo's shoulder hit and fall,
+      // for four of every five such pitches, picked from the drawn pitch's own id (never the
+      // engine's random stream), so a replay falls the same way. The rest turn away (the flinch)
+      const belt = (batter.szBot + batter.szTop) / 2;
+      m.fall = play.actual.z > belt && (play.drawnId == null || hashId(play.drawnId) % 5 !== 0);
+    }
     if (r === 'called_strike') m.ump = 'strike';
   }
   if (play.dirt) { m.ball = 'dirt'; m.catcher = 'block'; }
   return m;
 }
 
+/** FNV-1a of an id (a drawn pitch's game_pk:at_bat:pitch), for picks that must replay the same. */
+function hashId(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+
 /** From the engine's PitchResult (the game, phase C). actual.zn is normalised to this batter. */
 export function fromResult(r, batter) {
   const z = batter.szBot + r.actual.zn * (batter.szTop - batter.szBot);
-  return { call: r.call, actual: { x: r.actual.x, z }, velo: r.velo, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null,
+  return { call: r.call, actual: { x: r.actual.x, z }, velo: r.velo, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null, drawnId: r.drawn ? r.drawn.id : null,
     dirt: z < 0.35, check: r.batter === 'take' && r.result === 'ball' && Math.abs(r.actual.x) < 1.2 && r.countBefore && r.countBefore.s === 2 };
 }
 
@@ -76,6 +88,7 @@ export function labPlay(facts, batter, q) {
     ball: [byShape('ride', 'run'), 5 + awayOff, { x: 0.12, z: 0.05 }, 'take', 'ball'],
     check: [byShape('slide', 'sweep', 'drop', 'split'), 20 + awayOff, { x: 0.05, z: 0.05 }, 'take', 'ball'],
     hit_by_pitch: [byShape('run', 'ride'), 15 + inside, { x: (lefty ? 1 : -1) * 0.75, z: -0.1 }, 'take', 'hit_by_pitch'],
+    hbp_fall: [byShape('run', 'ride'), 5 + inside, { x: (lefty ? 1 : -1) * 0.7, z: 0.35 }, 'take', 'hit_by_pitch'],
     dirt: [byShape('split', 'drop', 'slide', 'sweep'), 22, { x: 0.05, z: -1.2 }, 'take', 'ball'],
   }[kind] || null;
   if (!S) throw new Error(`no such play: ${kind}`);
@@ -85,7 +98,7 @@ export function labPlay(facts, batter, q) {
   if (q.has('mx')) miss = { ...miss, x: +q.get('mx') };
   if (q.has('mz')) miss = { ...miss, z: +q.get('mz') };
   const aim = cellPoint(cell, batter.szTop, batter.szBot);
-  const real = P[kind === 'foul_back' ? 'foul' : kind === 'check' ? 'ball' : kind === 'dirt' ? 'ball' : ['ground', 'line', 'fly', 'popup'].includes(kind) ? kind : kind] || null;
+  const real = P[kind === 'foul_back' ? 'foul' : kind === 'check' ? 'ball' : kind === 'dirt' ? 'ball' : kind === 'hbp_fall' ? 'hit_by_pitch' : ['ground', 'line', 'fly', 'popup'].includes(kind) ? kind : kind] || null;
   const inPlay = ['ground', 'line', 'fly', 'popup', 'foul'].includes(kind) && real
     ? { bb: real.bb || kind, ev: real.ev, la: real.la, spray: real.spray, result: null, text: null } : null;
   return {

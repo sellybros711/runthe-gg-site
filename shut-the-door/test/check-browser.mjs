@@ -158,7 +158,11 @@ function expectedMotion(tr) {
   const batter = swing ? 'swing' : r === 'hit_by_pitch' ? 'hbp' : tr.check ? 'check' : 'take';
   const ball = tr.dirt ? ['dirt'] : r === 'foul_tip' ? ['tip'] : r === 'foul' ? ['back', 'pulled'] : r === 'in_play' ? ['play'] : r === 'hit_by_pitch' ? ['hbp'] : ['glove'];
   const ump = r === 'called_strike' ? 'strike' : r === 'foul' ? 'foul' : r === 'hit_by_pitch' ? 'hbp' : null;
-  return { batter, ball, ump };
+  // a pitch above the belt (the zone's middle) knocks him down, four in five, picked from the drawn
+  // pitch's id (FNV-1a, never the engine's random stream); with no drawn pitch, always
+  const fnv = (s) => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const fall = r === 'hit_by_pitch' && tr.zn > 0.5 && (tr.drawn == null || fnv(tr.drawn) % 5 !== 0);
+  return { batter, ball, ump, fall };
 }
 /* Read one play's trace (the stage keeps it): the reading matches the result, and the frames show
    it: the ball flies with its trail, the aimed and actual markers show, a swing moves the bat, a
@@ -169,6 +173,7 @@ function motionProblems(tr) {
   if (tr.m.batter !== e.batter) out.push(name + ': the hitter does ' + tr.m.batter + ', not ' + e.batter);
   if (!e.ball.includes(tr.m.ball)) out.push(name + ': the ball goes ' + tr.m.ball + ', not ' + e.ball.join(' or '));
   if ((tr.m.ump || null) !== e.ump) out.push(name + ': the umpire signals ' + tr.m.ump + ', not ' + e.ump);
+  if (!!tr.m.fall !== e.fall) out.push(name + (e.fall ? ': the hitter should go down' : ': the hitter went down'));
   if (tr.s.some((x) => x.grid)) out.push(name + ': the 3D grid was drawn in play (the game draws its own, while aiming)');
   if (tr.skipped) return out;
   // the pitch's own picture (not a grade): its trail, and where it was aimed against where it went
@@ -187,6 +192,12 @@ function motionProblems(tr) {
   if (e.batter === 'swing' && batMove < 0.8) out.push(name + ': the bat moved ' + batMove.toFixed(2) + ' m in a swing');
   if (e.batter === 'check' && batMove < 0.12) out.push(name + ': the bat moved ' + batMove.toFixed(2) + ' m in a check swing');
   if (e.batter === 'hbp' && Math.max(...tr.s.map((x) => d(x.pel, s0.pel))) < 0.05) out.push(name + ': the hitter did not flinch');
+  if (e.fall) {
+    // down, and clear of the plate (its middle is the origin; he started in the box beside it)
+    const end = tr.s[tr.s.length - 1].pel;
+    if (end[1] > 0.45) out.push(name + ': the hitter is not down (hips ' + end[1].toFixed(2) + ' m up)');
+    if (Math.hypot(end[0], end[2]) < Math.hypot(s0.pel[0], s0.pel[2])) out.push(name + ': the hitter fell toward the plate');
+  }
   const ballAt = (t) => { const b = balls.filter((x) => x.t >= t); return b.length ? b : null; };
   if (tr.m.ball === 'play' || tr.m.ball === 'back' || tr.m.ball === 'pulled') {
     const b = ballAt(tr.resultAt);
@@ -231,6 +242,7 @@ async function everyResult(page) {
       ['in_play', 'swing', 7, { b: 0, s: 0 }, { bb: 'fly', ev: 99, la: 31, spray: 25, result: 'out', text: 'flies out to right' }, { x: 0.0, zn: 0.8 }],
       ['in_play', 'swing', 7, { b: 0, s: 0 }, { bb: 'popup', ev: 80, la: 58, spray: 5, result: 'out', text: 'pops out to second' }, { x: 0.1, zn: 0.9 }],
       ['hit_by_pitch', 'take', 14, { b: 0, s: 0 }, null, { x: 0, zn: 0.4 }],
+      ['hit_by_pitch', 'take', 14, { b: 0, s: 0 }, null, { x: 0, zn: 0.85 }],
     ];
     const out = [];
     for (const hand of ['L', 'R']) {
@@ -511,7 +523,7 @@ async function run(w, h, theme) {
   if (is3d) {
     const ev = await everyResult(page);
     const probs = ev.errors.concat(...ev.traces.map(motionProblems));
-    ok(ev.traces.length === 26 && probs.length === 0, '14 every pitch result plays its motion (' + ev.traces.length + ' plays: ' + [...new Set(ev.kinds.map((k) => k.slice(2)))].join(', ') + ')' + (probs.length ? ': ' + probs.slice(0, 4).join(' | ') : ''));
+    ok(ev.traces.length === 28 && probs.length === 0, '14 every pitch result plays its motion (' + ev.traces.length + ' plays: ' + [...new Set(ev.kinds.map((k) => k.slice(2)))].join(', ') + ')' + (probs.length ? ': ' + probs.slice(0, 4).join(' | ') : ''));
     await shot('after-every-result');
     /* stills of one pitch for the record: in flight with its trail, and just after the plate with
        the aimed and actual markers (a called strike that missed its spot a little) */

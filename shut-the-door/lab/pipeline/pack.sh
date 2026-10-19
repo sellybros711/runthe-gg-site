@@ -6,7 +6,8 @@
 #
 # ASSETS layout (sources and licences in ../LICENSES.md):
 #   makehuman/                     MakeHuman CC0 files (fetch: see LICENSES.md for each URL)
-#   cmu-bvh/                       the CMU BVH clips, one folder per subject
+#   mixamo/                        the owner's Mixamo FBX downloads (never in the repo: LICENSES.md)
+#   cmu-bvh/                       the CMU BVH clips (read by retarget.py, no longer shipped)
 #   polyhaven-textures/files/      Poly Haven CC0 maps (1k jpg)
 #   polyhaven-stadium_01-1k/       Poly Haven CC0 HDRI stadium_01_1k.hdr
 # TOOLS holds a uv venv with bpy 4.2.0, numpy, pillow and scipy (venv/), and npm's gltfpack 0.25.

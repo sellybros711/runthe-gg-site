@@ -59,11 +59,13 @@ let failed = 0;
 // every motion the scene plays: the swing (a miss), the take (a called strike), a ground ball, a
 // foul back, a check swing, a hit by pitch, a ball in the dirt (the catcher's block); and two other
 // hitters, for both sides and the spread of builds
+const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null;   // ONLY=fall,righty: those plays alone
 const PLAYS = process.argv.includes('--quick') ? [['swing', ''], ['take', 'take=1']]
-  : [['swing', ''], ['take', 'take=1'], ['ground', 'play=ground'], ['foul', 'play=foul_back'], ['check', 'play=check'], ['hbp', 'play=hit_by_pitch'], ['dirt', 'play=dirt'],
+  : [['swing', ''], ['take', 'take=1'], ['ground', 'play=ground'], ['foul', 'play=foul_back'], ['check', 'play=check'], ['hbp', 'play=hit_by_pitch'], ['fall', 'play=hbp_fall'], ['dirt', 'play=dirt'],
     // a right handed hitter, heavy (6 ft 0, 245 lb), and a small left handed one (5 ft 9, 175 lb)
     ['righty', 'slot=0&play=line'], ['small', 'pack=std-2025-diaz-cin&slot=2&play=swinging_strike']];
 for (const [label, q] of PLAYS) {
+  if (ONLY && !ONLY.includes(label)) continue;
   const page = await browser.newPage({ viewport: { width: 200, height: 300 } });
   page.on('pageerror', (e) => { console.log('page error', String(e)); failed++; });
   await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/lab/index.html?${q}&t=0&dpr=1`);
@@ -82,8 +84,10 @@ for (const [label, q] of PLAYS) {
     const k = x.kin;
     if (1 - k.width.lo.v > LIM.width || k.width.hi.v - 1 > LIM.width) bad.push('shoulder width');
     for (const sd of ['l', 'r']) if (k.feet[sd].skate.v > LIM.skate) bad.push(`foot ${sd} skates`);
-    if (k.pelvis.tilt.v > LIM.tilt) bad.push('pelvis tilt');
-    if (k.pelvis.travel > LIM.travel) bad.push('pelvis slides');
+    // (knocked down by a pitch, the hitter's hips tip and travel as he falls: not a stance)
+    const down = label === 'fall' && who === 'batter';
+    if (!down && k.pelvis.tilt.v > LIM.tilt) bad.push('pelvis tilt');
+    if (!down && k.pelvis.travel > LIM.travel) bad.push('pelvis slides');
     const q = k.sequence;
     if (q) {
       if (q.leadMs <= 0) bad.push('shoulders peak before hips');
