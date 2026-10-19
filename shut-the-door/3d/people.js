@@ -1,9 +1,9 @@
 /* The batter, the catcher and the umpire: loaded, dressed, placed, and moved in time with the ball.
  *
- * Motion is the CMU capture fitted onto each body in the pipeline (pipeline/build_people.py). Here
- * it is placed and timed: the swing is slid in time so the bat arrives with the ball, the catcher's
- * glove arm reaches for the ball with two bone IK, and the umpire's crouch is the capture's stand
- * and squat blended, his strike call layered on top.
+ * Motion is Mixamo's captures fitted onto each body in the pipeline (pipeline/build_people.py,
+ * sources in lab/LICENSES.md). Here it is placed and timed: the swing is slid in time so the bat
+ * arrives with the ball, the catcher's glove arm reaches for the ball with two bone IK, the crouches
+ * are our own posing laid over each capture's idle, and the umpire's strike call is blended in.
  */
 import * as THREE from 'three';
 import * as M from './materials.js?v=4';

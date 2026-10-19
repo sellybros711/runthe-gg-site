@@ -1,11 +1,11 @@
-"""Build the lab's people as glTF: MakeHuman body, clothes, gear, and CMU motion fitted on.
+"""Build the lab's people as glTF: MakeHuman body, clothes, gear, and Mixamo motion fitted on.
 
   uv venv --python /usr/bin/python3.11 venv && uv pip install bpy==4.2.0 numpy
   venv/bin/python -I shut-the-door/lab/pipeline/build_people.py ASSETS OUT [who ...]
 
 ASSETS holds the downloads (see LICENSES.md for every source):
   ASSETS/makehuman/...         the CC0 MakeHuman files (3dobjs, targets, rigs, skins, clothes, ...)
-  ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps)
+  ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps; no longer used)
   ASSETS/mixamo/...            the owner's Mixamo FBX downloads (60 fps; never in the repo)
   ASSETS/polyhaven-textures/files/...   the CC0 Poly Haven cloth and leather maps
 OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into shut-the-door/3d/assets.

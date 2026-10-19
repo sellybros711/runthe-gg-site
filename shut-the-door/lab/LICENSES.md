@@ -3,8 +3,9 @@
 The scene's runtime (modules, `vendor/`, `assets/`) lives in `shut-the-door/3d/`, which the game
 loads; the paths below are relative to it. This folder keeps the lab page and the pipeline.
 
-Nothing here is loaded from a CDN. Everything is free and open: CC0, MIT, or CMU's own terms
-("free for all uses"). No asset carries a real person's likeness, a team name or a logo.
+Nothing here is loaded from a CDN. Everything is free and open (CC0 or MIT) except the motion,
+which is Adobe Mixamo's: royalty free inside the game, never shipped as raw files (see Motion). No
+asset carries a real person's likeness, a team name or a logo.
 
 ## Code
 
@@ -92,24 +93,35 @@ clothes' own AO; navy piping painted on the batter's jersey; the skin maps given
 contrast and a normal map derived from their own detail; all images re-encoded as WebP; meshes
 compressed with meshopt.
 
-### Motion: Carnegie Mellon University motion capture
+### Motion: Adobe Mixamo
 
-"The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with
-funding from NSF EIA-0196217." CMU's terms: free for all uses. Taken from the BVH conversion in the
-Internet Archive item `cmu-ecstasy-motion-bvh-poser-friendly-2012`
-(https://archive.org/details/cmu-ecstasy-motion-bvh-poser-friendly-2012, marked Public Domain Mark 1.0),
-file `CMU_EcstasyMotion_BVH-Poser-friendly-2012.zip`, downloaded through https://archive.org/cors/.
+Every clip the people play is a Mixamo animation (https://www.mixamo.com), downloaded by the owner
+from his own Adobe account as FBX at 60 fps, without skin (only the motion: no Mixamo character is
+used). Mixamo's terms let these animations be used royalty free inside a game, personal or
+commercial. They do not let the raw files be redistributed on their own. So:
 
-| clip | CMU take | used for | changed |
+- the raw FBX files are never committed, here or anywhere public. They stay outside the repo, and
+  `shut-the-door/.gitignore` refuses any `*.fbx` under this folder;
+- only the retargeted, baked clips inside our own `batter.glb`, `catcher.glb` and `umpire.glb` ship:
+  fitted to the MakeHuman rig (rest pose aligned, limbs only, the collar bones left to `people.js`),
+  resampled to 30 fps and compressed with the meshes. They cannot be pulled back out as Mixamo files.
+
+| clip | Mixamo animation (frames, at 60 fps) | used for | changed |
 |---|---|---|---|
-| `swing` (batter) | 124_07, frames 22-140 | a left handed batter's stance, load, stride and swing | fitted to the MakeHuman rig, mirrored left to right (the capture is a right handed hitter), fixed finger grip added; the take, check swing and hit by pitch reuse the same capture up to the stride |
-| `swingR` (batter) | 124_07, frames 22-140 | a right handed batter's | fitted to the rig as it is, fixed finger grip added |
-| `idle` (catcher) | 120_21, frames 90-280 | breathing and weight shift under the procedural crouch | fitted to the rig |
-| `idle` (umpire) | 142_03, frames 90-280 | the same, for the umpire | fitted to the rig |
+| `swing`, `swing2`, `swing3` (batter) | Baseball Hit (1-104), Baseball Hit-2 (1-100), Baseball Hit-3 (1-78) | three swings: each hitter gets one, drawn from a hash of his id (`looks.js`); the take, check swing and hit by pitch use the same capture up to the stride | the capture is a right handed hitter: mirrored left to right for a lefty, as is for a righty (`R`); cut at the finish, which the scene holds; fixed finger grip added |
+| `miss`, `missR` (batter) | Baseball Strike (1-230) | a swing and miss, and his reaction | as above |
+| `hbpFall`, `hbpFallR` (batter) | Shoulder Hit And Fall (1-187) | a pitch on the upper body knocks him down (four in five, picked from the drawn pitch's id) | as above (so the blow is always on the shoulder toward the pitcher, which is the one a pitch hits); turned away from the plate at run time |
+| `idle` (catcher) | Baseball Catcher (430-550) | life in the set: breathing, weight shift | grip on the glove hand; the set's depth and lean, the reach, framing and block are our own posing over it |
+| `rise` (catcher) | Baseball Catcher (60-150) | coming up out of the crouch after a ball in play or a hit batsman | trunk and legs only (the glove arm is our own) |
+| `idle` (umpire) | Crouching Idle (1-151) | life in the slot stance | the stance's depth and lean are our own posing over it; the twist bones of the upper arms held at rest |
+| `call` (umpire) | Baseball Umpire (1-158) | rising into the strike call | blended in from the stance |
 
-The catcher's crouch, reach, framing and block, the umpire's slot stance and his strike, foul and
-hit batsman signals, the hit batter's flinch, the swing's kinetic chain, planted feet and collar
-bones are procedural (`people.js`, `motion.js`) laid over those clips.
+The catcher's crouch, reach, framing and block, the umpire's slot stance and his foul and hit
+batsman signals, the hit batter's flinch, the swing's kinetic chain, planted feet and collar bones
+are procedural (`people.js`, `motion.js`) laid over those clips.
+
+The pipeline still reads CMU motion capture BVH (`retarget.py`, spec `CMU`), which these files used
+before Mixamo. No CMU clip ships any more.
 
 ## Data
 
