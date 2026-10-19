@@ -301,6 +301,9 @@ function kinematics(kin, p, who) {
   if (who === 'batter' && p.lefty !== undefined && !p.take && p.motion === 'swing') {
     const unwrap = (arr) => { const o = [arr[0]]; for (let i = 1; i < arr.length; i++) { let d = arr[i] - arr[i - 1]; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; o.push(o[i - 1] + d); } return o; };
     const hip = unwrap(kin.map((k) => k.hip)), sh = unwrap(kin.map((k) => k.sh));
+    // the gap between the two is an angle: wrapped, so the start of each series on the seam of the
+    // circle (the root turns, and the batter may start with a shoulder just past it) adds no full turn
+    const wrapPi = (d) => { while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
     const vel = (y) => y.map((_, i) => { const a = Math.max(0, i - 1), c = Math.min(y.length - 1, i + 1); return (y[c] - y[a]) / (kin[c].t - kin[a].t); });
     const hv = vel(hip), sv = vel(sh);
     const dirn = Math.sign(hip[hip.length - 1] - hip[0]);   // the way he opens
@@ -317,8 +320,8 @@ function kinematics(kin, p, who) {
     out.sequence = {
       hipPeak: { t: kin[ih].t, v: Math.abs(hv[ih]) * deg }, shoulderPeak: { t: kin[is].t, v: Math.abs(sv[is]) * deg },
       leadMs: (kin[is].t - kin[ih].t) * 1000, strike: kin[strike].t,
-      separation: (sh[strike] - hip[strike]) * -dirn * deg,
-      maxSeparation: Math.max(...kin.map((_, i) => (sh[i] - hip[i]) * -dirn * deg)),
+      separation: wrapPi(sh[strike] - hip[strike]) * -dirn * deg,
+      maxSeparation: Math.max(...kin.map((_, i) => wrapPi(sh[i] - hip[i]) * -dirn * deg)),
       hipTurn: Math.abs(hip[hip.length - 1] - hip[0]) * deg, shoulderTurn: Math.abs(sh[sh.length - 1] - sh[0]) * deg,
     };
   }

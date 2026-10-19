@@ -552,18 +552,17 @@ export class People {
     b.bottom = lefty ? 'r' : 'l'; b.top = lefty ? 'l' : 'r';
     b.batRel = null;
     this.bakeBat(b);
-    // place: stance at the start of the clip, the stride pointed at the pitcher
+    // place: stance at the start of the clip, his lead shoulder aimed at the pitcher. A real hitter's
+    // shoulders line up with the mound, the front one nearer it, so the line from his back shoulder
+    // to his lead shoulder goes toward +z
     pose(b, { [b.clip]: [0, 1] });
     const front = lefty ? 'r' : 'l';
-    const f0 = wpos(b.bones[`foot_${front}`]), back0 = wpos(b.bones[`foot_${lefty ? 'l' : 'r'}`]);
-    pose(b, { [b.clip]: [Math.max(0, b.tContact - 0.05), 1] });
-    const f1 = wpos(b.bones[`foot_${front}`]);
-    const stride = f1.clone().sub(f0); stride.y = 0;
-    let dir = stride.lengthSq() > 0.01 ? stride.normalize() : f0.clone().sub(back0).setY(0).normalize();
-    const ang = Math.atan2(dir.x, dir.z); // rotate so dir -> +z (toward the mound)
+    const shoulder = wpos(b.bones[`upperarm_${front}`]).sub(wpos(b.bones[`upperarm_${lefty ? 'l' : 'r'}`])).setY(0);
+    const ang = Math.atan2(shoulder.x, shoulder.z); // rotate so the shoulder line -> +z (toward the mound)
     b.root.rotation.y = -ang;
     b.root.updateMatrixWorld(true);
     pose(b, { [b.clip]: [0, 1] });
+    const f0 = wpos(b.bones[`foot_${front}`]), back0 = wpos(b.bones[`foot_${lefty ? 'l' : 'r'}`]);
     const mid = wpos(b.bones[`foot_${front}`]).add(wpos(b.bones[`foot_${lefty ? 'l' : 'r'}`])).multiplyScalar(0.5);
     // the feet straddle a point 2.9 ft off the plate's centre on his side, level with the plate
     const want = P(lefty ? 2.95 : -2.95, 0.55, 0);

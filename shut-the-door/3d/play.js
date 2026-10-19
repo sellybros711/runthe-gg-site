@@ -43,7 +43,8 @@ export function motion(play, batter) {
   } else {
     if (play.check) m.batter = 'check';
     if (r === 'hit_by_pitch') {
-      m.batter = 'hbp'; m.ball = 'hbp'; m.ump = 'hbp'; m.catcher = 'rise';
+      // the catcher stays in his crouch: the ball is not caught, and he does not stand up for it
+      m.batter = 'hbp'; m.ball = 'hbp'; m.ump = 'hbp';
       // a pitch on the upper body (above his belt) puts him down: Mixamo's shoulder hit and fall,
       // for four of every five such pitches, picked from the drawn pitch's own id (never the
       // engine's random stream), so a replay falls the same way. The rest turn away (the flinch)
