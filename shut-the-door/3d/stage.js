@@ -211,6 +211,10 @@ class Stage {
         if (!m.isMesh || !m.visible) return;
         const pos = m.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / samples));
         m.updateMatrixWorld();
+        // a skinned vertex is read through the skeleton's bone matrices, which three.js refreshes
+        // only when it draws: without this the box was the last frame drawn (after a fall, the
+        // hitter lying on the ground, and the frame fitted to him there)
+        if (m.isSkinnedMesh) m.skeleton.update();
         for (let i = 0; i < pos.count; i += step) {
           m.getVertexPosition(i, v);
           v.applyMatrix4(m.matrixWorld).project(this.camera);
