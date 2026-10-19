@@ -31,7 +31,17 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
+<script type="importmap">
+{ "imports": {
+  "three": "./3d/vendor/three-0.170.0/three.module.min.js",
+  "three/addons/": "./3d/vendor/three-0.170.0/addons/"
+} }
+</script>
+<!-- the mound's 3D scene: its modules and downloads start with the page (shut-the-door/lab/pipeline/stamp.mjs writes this list) -->
+<!-- stamp:preload:begin -->
+<link rel="preload" as="image" href="3d/assets/hero.webp?h=a8b96e3af7">
+<!-- stamp:preload:end -->
 </head>
 <body>
 <div class="app">
@@ -60,6 +70,7 @@
   <div id="h-main" hidden>
     <div class="hero" id="h-hero">
       <canvas id="h-canvas" aria-hidden="true"></canvas>
+      <img class="h-poster" id="h-poster" src="3d/assets/hero.webp?h=a8b96e3af7" alt="" hidden>
       <div class="hero-chips" id="h-day"></div>
       <div class="hero-text"><p class="h-title" id="h-title"></p><h1 class="hero-head" id="h-head"></h1></div>
     </div>
@@ -208,7 +219,7 @@
 <script src="contract.js?v=2"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=3"></script>
-<script src="anim.js?v=2"></script>
+<script src="anim.js?v=3"></script>
 <script src="menus.js?v=5"></script>
 <script src="rng.js?v=1"></script>
 <script src="grade.js?v=2"></script>
@@ -220,6 +231,7 @@
 <script src="api.js?v=2"></script>
 <script src="mock-api.js?v=5"></script>
 <script src="coach.js?v=1"></script>
-<script src="ui.js?v=6"></script>
+<script src="ui.js?v=8"></script>
+<script type="module" src="3d/boot.js?v=3"></script>
 </body>
 </html>

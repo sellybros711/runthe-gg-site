@@ -2929,8 +2929,8 @@
       "sha": "ce6189371fc459dd"
     },
     "anim.js": {
-      "v": "2",
-      "sha": "3619a23768894990"
+      "v": "3",
+      "sha": "8ab8f0d81c6c1f34"
     },
     "menus.js": {
       "v": "5",
@@ -2973,8 +2973,18 @@
       "sha": "7eddfba072520e94"
     },
     "ui.js": {
-      "v": "6",
-      "sha": "b8a4319daf6fd51d"
+      "v": "8",
+      "sha": "fe3f363f84400fc3"
+    },
+    "3d/boot.js": {
+      "v": "3",
+      "sha": "b45a25953e5b84bf"
+    }
+  },
+  "shut-the-door/lab/index.html": {
+    "./scene.js": {
+      "v": "16",
+      "sha": "4b6325f0501efe1f"
     }
   },
   "soccer/index.html": {
@@ -3087,6 +3097,12 @@
       "sha": "36afe06c5ac503d0"
     }
   },
+  "shut-the-door/3d/boot.js": {
+    "stage.js": {
+      "v": "6",
+      "sha": "5a7a86ca0607bf71"
+    }
+  },
   "wrestling/ring3d/boot.js": {
     "stage.js": {
       "v": "1",
@@ -3121,10 +3137,126 @@
       "sha": "3f9b02fb2d13517d"
     }
   },
+  "shut-the-door/3d/stage.js": {
+    "load.js": {
+      "v": "6",
+      "sha": "9895e0b392fd40e9"
+    },
+    "park.js": {
+      "v": "3",
+      "sha": "5a84454de3c08f14"
+    },
+    "people.js": {
+      "v": "14",
+      "sha": "f5f16034692401c2"
+    },
+    "pitch.js": {
+      "v": "6",
+      "sha": "756af42671100841"
+    },
+    "play.js": {
+      "v": "4",
+      "sha": "ff1ca05f32f8ec36"
+    },
+    "looks.js": {
+      "v": "1",
+      "sha": "e503f8ef833c7af9"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    }
+  },
   "wrestling/ring3d/arena.js": {
     "dims.js": {
       "v": "1",
       "sha": "0b9524a162e9ef96"
+    }
+  },
+  "shut-the-door/3d/park.js": {
+    "field.js": {
+      "v": "6",
+      "sha": "75dbd9e4aa746d87"
+    },
+    "stands.js": {
+      "v": "6",
+      "sha": "9f9a0f1f480a23a3"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    }
+  },
+  "shut-the-door/3d/people.js": {
+    "materials.js": {
+      "v": "3",
+      "sha": "018184e6d42a88ee"
+    },
+    "gear3d.js": {
+      "v": "2",
+      "sha": "c9b7b3768467a326"
+    },
+    "rig.js": {
+      "v": "1",
+      "sha": "34647a01ead672d6"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "load.js": {
+      "v": "6",
+      "sha": "9895e0b392fd40e9"
+    },
+    "motion.js": {
+      "v": "5",
+      "sha": "52a92db2282b7ce5"
+    }
+  },
+  "shut-the-door/3d/pitch.js": {
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "gear3d.js": {
+      "v": "2",
+      "sha": "c9b7b3768467a326"
+    }
+  },
+  "shut-the-door/3d/play.js": {
+    "pitch.js": {
+      "v": "6",
+      "sha": "756af42671100841"
+    }
+  },
+  "shut-the-door/3d/field.js": {
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "load.js": {
+      "v": "6",
+      "sha": "9895e0b392fd40e9"
+    }
+  },
+  "shut-the-door/3d/stands.js": {
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "field.js": {
+      "v": "6",
+      "sha": "75dbd9e4aa746d87"
+    },
+    "load.js": {
+      "v": "6",
+      "sha": "9895e0b392fd40e9"
+    }
+  },
+  "shut-the-door/3d/motion.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "34647a01ead672d6"
     }
   }
 }

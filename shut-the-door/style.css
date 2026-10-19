@@ -424,3 +424,9 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 @media (prefers-reduced-motion: reduce) {
   .sh-in, .toast, .load-mark { transition: none; animation: none; }
 }
+
+/* the mound in 3D (3d/stage.js): a smooth canvas filling the scene, and the grid only while aiming */
+.scene.s3d canvas { image-rendering: auto; width: 100%; height: 100%; }
+.scene.s3d.flying .grid { opacity: 0; transition: opacity .15s; }
+.hero .h-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 70%; }
+.hero .h-poster[hidden] { display: none; }

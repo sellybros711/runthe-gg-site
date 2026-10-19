@@ -24,6 +24,47 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 var Q = new URLSearchParams(location.search);
 var DEBUG = Q.get('debug') === '1';
 
+/* ---- the mound's scene: 3D, or the old drawing -----------------------------------
+   The 3D scene (3d/boot.js, window.STD_STAGE, which imports 3d/stage.js when asked) is a module,
+   so it arrives after this script.
+   use3d(): WebGL here and the module on the page. The mound's scene object keeps the old
+   drawing's calls (setScenario, setBatter, layout, gridRect, toScreen, cellCenter, draw), plus
+   setTarget and play for the 3D one. Until the module has run, Pending keeps the calls and hands
+   them over when it does. Without WebGL the old drawing stays, the only place it is used. */
+function use3d() {
+  if (window.STD_STAGE) return window.STD_STAGE.supported();
+  if (!document.querySelector('script[src*="3d/boot.js"]')) return false;
+  try { var c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
+}
+function Pending(canvas) {
+  this.is3d = true; this.canvas = canvas; this.calls = []; this.real = null;
+  var self = this;
+  this.arrived = new Promise(function (res) {
+    function go() {
+      window.STD_STAGE.create(canvas).then(function (st) {
+        self.real = st;
+        self.calls.forEach(function (c) { st[c[0]].apply(st, c[1]); });
+        self.calls = null;
+        res(st);
+      });
+    }
+    if (window.STD_STAGE) go(); else window.addEventListener('std-stage', go, { once: true });
+  });
+}
+['setScenario', 'setBatter', 'setTarget', 'layout', 'draw'].forEach(function (n) {
+  Pending.prototype[n] = function () { if (this.real) return this.real[n].apply(this.real, arguments); this.calls.push([n, [].slice.call(arguments)]); };
+});
+Pending.prototype.gridRect = function () {
+  if (this.real) return this.real.gridRect();
+  var w = this.canvas.clientWidth, h = this.canvas.clientHeight, gw = Math.min(w * 0.6, h * 0.5);
+  return { x: (w - gw) / 2, y: h * 0.32, w: gw, h: gw };
+};
+Pending.prototype.toScreen = function (p) { return this.real ? this.real.toScreen(p) : { x: 0, y: 0 }; };
+Pending.prototype.cellCenter = function (c) { return this.real ? this.real.cellCenter(c) : { x: 0, y: 0 }; };
+Pending.prototype.figureBoxes = function () { return this.real.figureBoxes(); };
+Object.defineProperty(Pending.prototype, 'bat', { get: function () { return this.real ? this.real.bat : null; } });
+Pending.prototype.play = function (opts) { return this.arrived.then(function (st) { return st.play(opts); }); };
+
 /* ---- what the page keeps ---------------------------------------------------- */
 
 var PREF_KEY = 'std_ui_v1', HIST_KEY = 'std_ui_hist_v1';
@@ -234,6 +275,8 @@ function renderHomeState() {
 
 /* the hero: the same scene as the mound, small, with the first batter in */
 function drawHero() {
+  /* with the 3D scene, the hero is a still of it (and its downloads are already on the way) */
+  if (use3d()) { $('h-canvas').hidden = true; $('h-poster').hidden = false; warm3d(); return; }
   if (!S.hero) S.hero = new M.Scene($('h-canvas'), { hero: true });
   S.hero.setScenario(S.scn);
   S.hero.setBatter(S.scn.batters[0]);
@@ -241,11 +284,24 @@ function drawHero() {
   S.hero.draw({ pitcher: 'set', batter: 'stance' });
 }
 
+/* The 3D mound starts on the home screen: its downloads, the people for today's spot and the
+   first hitter, and its shaders, all while the player reads the spot. Take the mound then only
+   sizes it and draws. */
+function warm3d() {
+  if (S.scene || !S.scn) return;
+  S.scene = new Pending($('m-canvas'));
+  S.scene.setScenario(S.scn);
+  S.scene.setBatter(S.scn.batters[0]);
+}
+
 /* ---- the mound ----------------------------------------------------------------------- */
 
 function buildMound() {
-  if (S.scene) return;
-  S.scene = new M.Scene($('m-canvas'));
+  if (S.grid) return;
+  if (!S.scene) S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas'));
+  $('m-scene').classList.toggle('s3d', !!S.scene.is3d);
+  /* the 3D module lands after this: put the grid on its zone then */
+  if (S.scene.arrived) S.scene.arrived.then(function (st) { return st.ready; }).then(function () { if (document.body.dataset.screen === 's-mound') relayout(); });
   S.grid = new M.Grid($('m-scene'), { onPick: pickCell });
   /* the grid sits over the canvas, under the scout card and the callout */
   $('m-scene').insertBefore(S.grid.el, $('m-scout'));
@@ -342,6 +398,7 @@ function pickCell(c) {
   S.grid.setSelected(c);
   S.lastMarker = null;
   S.grid.setMarks({});
+  if (S.scene.setTarget) S.scene.setTarget(c);
   S.scene.draw(idleFrame());
   updateThrow();
 }
@@ -423,10 +480,11 @@ function throwIt() {
   $('m-scene').classList.add('flying');
   API.throwPitch(S.outing.outingId, call).then(function (res) {
     var pr = res.pitchResult, batter = batterAt(S.outing.batterIndex);
-    return AN.play(S.scene, {
+    var opts = {
       pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick,
       hooks: { call: function () { pbp(playText(pr, batter)); }, sound: sound, field: hudRunners },
-    }).then(function () {
+    };
+    return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       S.lastMarker = S.scene.toScreen(pr.actual);
       $('m-scene').classList.remove('flying');
       S.grid.setMarks({ target: pr.call.cell, actual: pr.actualCell });
@@ -439,6 +497,7 @@ function throwIt() {
       S.cell = null; S.type = null;
       document.querySelectorAll('#m-arsenal .pitch').forEach(function (b) { b.classList.remove('sel'); b.setAttribute('aria-pressed', 'false'); });
       if (S.outing.status === 'over') return finish();
+      if (S.scene.setTarget) S.scene.setTarget(null);
       if (pr.paOver) { S.lastMarker = null; S.grid.setMarks({}); setBatter(false); } else S.scene.draw(idleFrame());
       if (heatWas) { S.heat = heatWas; renderScout(); }
       renderHud(S.outing);
