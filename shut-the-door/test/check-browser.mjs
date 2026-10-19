@@ -120,6 +120,13 @@ async function quietProblems(page) {
 
 /* The 3D mound (3d/stage.js). Waits for its downloads, then reads pixels straight off the WebGL
    canvas after a draw: the park, the people and the zone's surroundings, not a blank or one color. */
+/* The home screen gets the 3D mound ready (ui.js warm3d): wait for that before the tap on take the
+   mound, as a player reading the spot would. Software GL compiles shaders on the main thread for
+   seconds, and a tap while it does waits on it. */
+async function homeWarm(page) {
+  await page.waitForFunction(() => !(window.STD_STAGE && window.STD_STAGE.supported()) || (window.STD_STAGE.current && window.STD_STAGE.current.loaded), null, { timeout: 120000 });
+}
+
 async function stageReady(page) {
   const on = await page.evaluate(() => !!(window.STD_STAGE && window.STD_STAGE.supported()));
   if (!on) return false;
@@ -372,6 +379,7 @@ async function run(w, h, theme) {
   /* 1 */
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await homeWarm(page);
   await page.waitForSelector('#b-take', { state: 'visible' });
   const home = await page.evaluate(() => ({
     title: document.getElementById('h-title').textContent,
@@ -446,7 +454,8 @@ async function run(w, h, theme) {
   await page.click('#b-theme');
 
   /* 3 and 4 */
-  await page.click('#b-take');
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });   // software GL: the first frame of the mound takes seconds
   await page.waitForSelector('#s-mound.on .grid .cell', { timeout: 5000 });
   /* 14: the mound is 3D */
   const is3d = await stageReady(page);
@@ -546,13 +555,14 @@ async function run(w, h, theme) {
   ok(practice === 'practice', '7 run it back starts a practice outing');
   await shot('practice');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-done:not([hidden])', { timeout: 8000 });
+  await page.waitForSelector('#h-done:not([hidden])', { timeout: 20000 });
   ok(await page.isHidden('#b-take'), '7 after a reload today shows as done');
   await shot('home-done', true);
 
   /* 8 */
   await page.goto(BASE + '?debug=1', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#h-main:not([hidden])');
+  await homeWarm(page);
   await page.click('#d-again');
   await page.waitForSelector('#s-mound.on');
   const dbg = await page.evaluate(() => { const d = document.getElementById('m-dbg'); return !d.hidden && /seed/.test(d.textContent); });
@@ -589,7 +599,8 @@ async function ending(w, h, end, extra) {
     ok(await page.isVisible('#h-proxy'), '11 ' + end + ': the proxy note is on the home screen');
     await shot('home-proxy', true);
   }
-  await page.click('#b-take');
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });   // software GL: the first frame of the mound takes seconds
   await page.waitForSelector('#s-mound.on .grid .cell');
   const is3d = await stageReady(page);
   if (proxy) ok(await page.isVisible('#m-proxy'), '11 ' + end + ': the proxy note is on the mound, small');
