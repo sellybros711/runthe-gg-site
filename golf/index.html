@@ -15836,6 +15836,7 @@ function scrTitle(){
     const box=$(`<div class="ft-sheetbox" role="dialog" aria-label="Today's pin sheet"><div class="ft-grab"></div></div>`); box.appendChild(ftSheet(false));
     root.appendChild(scrim); root.appendChild(box); }
   add(root);
+  if(!desk) ftFitHome(root);
   // seasonal finds keep their spots on the home screen
   if(decorLive()==='spooky'){ try{ spkStyleOnce(); spookyHomeEggs().forEach(b=>app.appendChild(b)); }catch(e){} }
   // the popups the home has always owed (welcome, season launch, roster arrow, and so on); the login gift is no longer one of them
@@ -15854,6 +15855,38 @@ function ftProPlay(){
   }catch(e){}
   return {what:'Pro Tour', go:()=>ftGo('protour')}; }
 // the phone's bottom inset (the home indicator), which the tab bar sits above
+// A short phone screen (an in-app browser from a social link loses a toolbar or two) must still fit the
+// golfer, the tag and the pin strip above the doors. The golfer's height above is only a guess from the
+// window, so measure the real gap once laid out and give way in steps: a smaller golfer, then the
+// compact doors and tag (ft-tight), then no golfer at all (ft-tighter). Runs again when the window
+// changes height, which an in-app browser does as its bars slide in and out.
+function ftFitHome(root){
+  const fit=()=>{ try{
+    if(!root.isConnected) return;
+    const fig=root.querySelector('.ft-fig img.pxfigsm'), tee=root.querySelector('.ft-tee');
+    const doors=[...root.querySelectorAll('.ft-door')]; if(!tee || !doors.length) return;
+    root.classList.remove('ft-tight','ft-tighter');
+    if(fig){ if(!fig.dataset.h0) fig.dataset.h0=parseFloat(fig.style.height)||0; fig.style.height=fig.dataset.h0+'px'; }
+    const gap=()=>Math.min(...doors.map(d=>d.getBoundingClientRect().top))-tee.getBoundingClientRect().bottom-16;
+    const shrink=(min)=>{ const g=gap(); if(g>=0 || !fig) return; const cur=parseFloat(fig.style.height)||0; fig.style.height=Math.max(min,Math.floor(cur+g))+'px'; };
+    shrink(120); if(gap()>=0) return;
+    root.classList.add('ft-tight');
+    // the compact doors free room: hand it back to the golfer, up to the size it was drawn at
+    if(fig && gap()>0) fig.style.height=Math.min(+fig.dataset.h0||0, Math.floor((parseFloat(fig.style.height)||0)+gap()))+'px';
+    shrink(64); if(gap()>=0) return;
+    root.classList.add('ft-tighter');
+  }catch(e){} };
+  fit();
+  // the web fonts and the Putt Putt chips can land after the first look, and an in-app browser's bars slide in
+  // and out: watch the doors and the tee themselves, so the fit always answers to the final layout. One fit
+  // per frame; a fit that settles on the same layout changes no size, so it cannot wake the observer again.
+  let raf=0; const soon=()=>{ if(!raf) raf=requestAnimationFrame(()=>{ raf=0; fit(); }); };
+  try{ ftFitHome._ro && ftFitHome._ro.disconnect(); ftFitHome._ro=new ResizeObserver(soon);
+    root.querySelectorAll('.ft-door,.ft-tee').forEach(e=>ftFitHome._ro.observe(e)); }catch(e){}
+  try{ document.fonts && document.fonts.ready.then(soon); }catch(e){}
+  window.removeEventListener('resize', ftFitHome._on); ftFitHome._on=soon;
+  window.addEventListener('resize', soon, {passive:true});
+}
 function ftSafeB(){ try{ const p=document.createElement('div'); p.style.cssText='position:fixed;visibility:hidden;height:env(safe-area-inset-bottom,0px)'; document.body.appendChild(p); const h=p.offsetHeight; p.remove(); return h||0; }catch(e){ return 0; } }
 function ftHearts(lives,max){ lives=lives|0; max=max||9; const nh=Math.ceil(Math.max(max,lives)/3); let o='';
   for(let i=0;i<nh;i++){ const k=Math.max(0,Math.min(3,lives-i*3)); o+=`<span class="ft-heart" style="opacity:${k?0.45+0.55*k/3:0.3}">♥</span>`; }
@@ -16176,6 +16209,16 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-tee .ft-strip,.ft-tee .ft-giftnote{position:relative;left:auto;right:auto;top:auto;bottom:auto;width:calc(100vw - 24px);max-width:520px;margin-top:10px}
 .ft-tee .ft-giftnote{margin-top:8px;padding:6px 12px 6px 9px}
 .ft-tee .ft-giftnote b{font-size:15px}
+
+/* a short phone screen (ftFitHome): compact doors and tag first, then the golfer steps off the tee */
+.ft-home.ft-tight .ft-tee{top:calc(env(safe-area-inset-top,0px) + 62px)}
+.ft-home.ft-tight .ft-dk,.ft-home.ft-tight .ft-meta{display:none}
+.ft-home.ft-tight .ft-dt{font-size:30px}
+.ft-home.ft-tight .ft-door{gap:6px}
+.ft-home.ft-tight .ft-tag{padding:6px 12px 6px 9px}
+.ft-home.ft-tight .ft-tee .ft-strip{margin-top:6px}
+.ft-home.ft-tighter .ft-fig,.ft-home.ft-tighter .ft-teebox{display:none}
+.ft-home.ft-tighter .ft-tag{margin-top:0}
 
 /* hubs */
 .ft-hub .ft-body{position:absolute;z-index:10;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 56px);bottom:var(--ftnav);overflow-x:hidden;overflow-y:auto;overscroll-behavior-x:none;-webkit-overflow-scrolling:touch;padding:6px max(14px,env(safe-area-inset-right,0px)) 26px max(14px,env(safe-area-inset-left,0px))}
