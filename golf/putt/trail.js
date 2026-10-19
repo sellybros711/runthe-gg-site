@@ -1392,7 +1392,8 @@ function run(box, P, pic, api){
   var cv = document.createElement('canvas'); cv.className = 'pp-tcv'; box.appendChild(cv);
   var ctx = cv.getContext('2d'), alive = true, dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, kk = 1, ox = 0, oy = 0, ART = pic.ART || window.RTT_PUTT.ART;
   var found = api.found || {}, coinsGot = 0, pick = api.pick, sp = P.spec;
-  function size(){ var r = box.getBoundingClientRect(); W = cv.width = Math.max(1, Math.round(r.width * dpr)); H = cv.height = Math.max(1, Math.round(r.height * dpr)); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
+  // about 1.6 million pixels at most (putt.js capDpr): a computer screen at 2x was 4.3 million to fill every frame
+  function size(){ var r = box.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1); if (r.width * r.height * dpr * dpr > 1.6e6) dpr = Math.max(1, Math.sqrt(1.6e6 / Math.max(1, r.width * r.height))); W = cv.width = Math.max(1, Math.round(r.width * dpr)); H = cv.height = Math.max(1, Math.round(r.height * dpr)); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
     var viewArt = VIEW_FT * SE / ART; kk = Math.max(1, Math.round(H / viewArt)); while (pic.cv.width * kk < W && kk < 40) kk++; kkBase = kk; gFree = null; }
   size(); var onRs = function(){ size(); }; window.addEventListener('resize', onRs);
   // the golfer
