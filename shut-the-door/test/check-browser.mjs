@@ -16,7 +16,8 @@
  *      and none is needed. Between the first pitch and the last nothing is
  *      graded or tipped: no grade card, no strip square, no band word, no
  *      banner, flash or sheet, and nothing over the field (the owner,
- *      2026-10-17). One quiet play by play line under the scoreboard.
+ *      2026-10-17). One quiet play by play line under the scoreboard. The live
+ *      field minimap shows after the first play, with a dot only for a ball in play.
  *   6. the end reveal: outcome, strip, percentile, pitched like and the real
  *      pitcher's night, on screen together; share
  *   7. run it back is practice; a reload shows today as done
@@ -109,7 +110,7 @@ async function quietProblems(page) {
     if ([...document.querySelectorAll('.gcard, .callout, .flash, #toast.on')].some(vis)) out.push('a banner or card');
     if ([...document.querySelectorAll('.sheet')].some((s) => !s.hidden)) out.push('a sheet');
     const sc = document.getElementById('m-scene').getBoundingClientRect();
-    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('.grid') || el.id === 'm-proxy' || el.id === 'm-dbg');
+    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('.grid') || el.id === 'm-proxy' || el.id === 'm-dbg' || el.closest('#m-mini'));
     for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) {
       const el = document.elementFromPoint(sc.left + sc.width * i / 6, sc.top + sc.height * j / 6);
       if (!fine(el)) { out.push('over the field: ' + (el ? el.id || el.className || el.tagName : 'nothing')); return out; }
@@ -547,6 +548,33 @@ async function run(w, h, theme) {
   ok(play.problems.length === 0, '5 nothing graded, tipped or over the field from the first pitch to the last' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
   if (is3d) traceCheck('5', play);
   ok(play.pbp.length && play.pbp.every((x) => x && x.length > 3), '5 one line of play by play after each pitch ("' + (play.pbp[0] || '') + '")');
+
+  /* the minimap (minimap.js): the field shows after the first play; a dot only for a ball in play, and
+     never for a take, a strike or a foul; no text on it (the distance is an estimate, never a number) */
+  const mini = await page.evaluate(() => {
+    const el = document.getElementById('m-mini'), M = window.STD_MINIMAP;
+    return {
+      shown: !el.hidden,
+      dots: [...el.querySelectorAll('.mm-dot')].map((d) => ({ n: d.dataset.n, bb: d.dataset.bb })),
+      texts: el.querySelectorAll('text').length,
+      fly: M.spot({ bb: 'fly', ev: 100, la: 30, spray: -20 }),
+      foulSide: M.spot({ bb: 'fly', ev: 100, la: 30, spray: -60 }),
+      popup: M.spot({ bb: 'popup', ev: 70, la: 60, spray: 0 }),
+      hud: { lit: document.querySelectorAll('#m-count .row i.on').length, aria: document.getElementById('m-count').getAttribute('aria-label') },
+    };
+  });
+  const inPlayNs = play.traces.filter((t) => t.result === 'in_play').map((t) => String(t.n));
+  const comparable = is3d && play.traces.length > 0;
+  ok(mini.shown, '5 the minimap shows after the first play');
+  ok(mini.texts === 0, '5 the minimap has no text: no distance is shown');
+  ok(mini.fly && mini.fly.x < 0 && mini.fly.y > 0, '5 spray -20 lands left of centre, out from home (' + JSON.stringify(mini.fly) + ')');
+  ok(mini.foulSide === null, '5 a spray past the foul line gets no dot');
+  ok(mini.popup && mini.popup.y < 150, '5 a popup comes down near the infield (' + JSON.stringify(mini.popup) + ')');
+  if (comparable) {
+    ok(mini.dots.every((d) => inPlayNs.includes(d.n)), '5 every dot is a ball in play, none for a take (' + mini.dots.length + ' dots, ' + inPlayNs.length + ' in play)');
+    ok(!inPlayNs.length || mini.dots.length > 0, '5 an in-play pitch draws a dot on the field');
+  }
+  ok(/^\d balls, \d strikes$/.test(mini.hud.aria || '') && mini.hud.lit <= 5, '5 the scorebug count is lit as balls and strikes (' + mini.hud.aria + ')');
 
   /* 6 */
   await revealCheck(page, '6', play.pitches);
