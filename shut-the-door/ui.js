@@ -404,6 +404,9 @@ function setClub(el, colors) {
 function renderHud(st) {
   var sit = S.scn.situation;
   setClub($('m-usclub'), S.scn.pitcher.teamColors);
+  // the hitters' club, from the same rule the 3D kit uses (clubs.js, loaded by index.html); grey until it is
+  var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: S.scn.title, scenarioId: S.scn.id, pitcher: S.scn.pitcher }) : null;
+  setClub($('m-themclub'), them ? [them.pri, them.sec] : null);
   $('m-us').textContent = st.score.us;
   $('m-them').textContent = st.score.them;
   $('m-inn').innerHTML = '<b>' + (sit.half === 'bottom' ? 'bot' : 'top') + '</b> ' + sit.inning;
