@@ -39,7 +39,23 @@ export function compose({ spec, art, format, foot, out, music }) {
   // the background, drifting slowly across its extra 12%
   const bg = art.bg[format], bgi = still(bg.file);
   const dx = bg.w - W, dy = bg.h - H;
-  filters.push(`[${bgi}:v]crop=${W}:${H}:x='${dx / 2}+${dx / 2 - 2}*sin(t*0.22)':y='${dy / 2}+${dy / 2 - 2}*cos(t*0.17)',format=rgba[bg]`);
+  filters.push(`[${bgi}:v]crop=${W}:${H}:x='${dx / 2}+${dx / 2 - 2}*sin(t*0.22)':y='${dy / 2}+${dy / 2 - 2}*cos(t*0.17)',format=rgba[bg0]`);
+  /* A scene's BACKDROP: footage filling the whole frame instead of the green (the intro's "New in Run The
+     Tour" over the Pro Tour round), dimmed so the card reads over it. It is <clip>-<format>.mp4, filmed at
+     the frame's own shape. */
+  let bgl = 'bg0', ts = 0;
+  spec.scenes.forEach((s, k) => {
+    if (s.backdrop) {
+      const B = s.backdrop, ii = add(['-i', path.join(foot, `${B.clip}-${format}.mp4`)]), sp = B.speed || 1, from = typeof B.from === 'object' ? B.from[format] : B.from;
+      filters.push(`[${ii}:v]trim=start=${r2(from || 0)}:duration=${r2(s.dur * sp + 0.1)},setpts=(PTS-STARTPTS)/${sp},fps=${FPS},`
+        + `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1,format=rgba,`
+        + `colorchannelmixer=rr=${B.dim ?? 0.5}:gg=${B.dim ?? 0.5}:bb=${B.dim ?? 0.5},setpts=PTS+${r2(ts)}/TB[bd${k}]`,
+        `[${bgl}][bd${k}]overlay=0:0:enable='between(t,${r2(ts)},${r2(ts + s.dur)})':eof_action=pass[bgb${k}]`);
+      bgl = `bgb${k}`;
+    }
+    ts += s.dur;
+  });
+  filters.push(`[${bgl}]null[bg]`);
 
   // each device: its screen, scene by scene, under its drawing
   const devs = {};
@@ -101,9 +117,18 @@ export function compose({ spec, art, format, foot, out, music }) {
       const a = r2(t0 + (s.cardIn || 0.15)), b = r2(t0 + s.dur - (s.cardOut ?? 0.1));
       const x = Math.round((W - C.w) / 2), place = (F.cardAt && F.cardAt[s.card]) || F.cardY;
       const y = place === 'mid' ? Math.round((H - C.h) / 2) : place;
-      filters.push(`[${ci}:v]format=rgba,fade=t=in:st=${a}:d=0.35:alpha=1,fade=t=out:st=${r2(b - 0.3)}:d=0.3:alpha=1[cd${n}]`,
-        `[${last}][cd${n}]overlay=x=${x}:y='${y}+40*(1-clip((t-${a})/0.45,0,1))*(1-clip((t-${a})/0.45,0,1))':enable='between(t,${a},${b})':eval=frame:shortest=1[lc${n}]`);
+      // a card rises and fades in; a FLASH card is simply there when the white flash clears
+      const fin = s.flash ? 0.04 : 0.35, rise = s.flash ? 0 : 40;
+      filters.push(`[${ci}:v]format=rgba,fade=t=in:st=${a}:d=${fin}:alpha=1,fade=t=out:st=${r2(b - 0.3)}:d=0.3:alpha=1[cd${n}]`,
+        `[${last}][cd${n}]overlay=x=${x}:y='${y}+${rise}*(1-clip((t-${a})/0.45,0,1))*(1-clip((t-${a})/0.45,0,1))':enable='between(t,${a},${b})':eval=frame:shortest=1[lc${n}]`);
       last = 'lc' + n; n++;
+      if (s.flash) {
+        // the white flash the scene opens on
+        filters.push(`color=c=white:s=${W}x${H}:r=${FPS}:d=0.45,format=rgba,fade=t=out:st=0.05:d=0.4:alpha=1,setpts=PTS+${r2(t0)}/TB[fl${n}]`,
+          `[${last}][fl${n}]overlay=0:0:enable='between(t,${r2(t0)},${r2(t0 + 0.45)})':eof_action=pass[lf${n}]`);
+        last = 'lf' + n;
+      }
+      t0 += s.dur; continue;
     }
     t0 += s.dur;
   }

@@ -30,21 +30,28 @@ export const CLIPS = {
 
 const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'golf/logo.png')).toString('base64');
 export const cards = {
-  intro: { img: logo, imgH: 150, kick: 'New in Run The Tour', big: 'Putt Putt <em>Tour</em>', sub: 'Mini golf you actually play.', size: 120 },
+  // the owner's opening (2026-10-19): "New in Run The Tour" over the game people know, then the name on green
+  newin: { img: logo, imgH: 150, big: 'New in<br><em>Run The Tour</em>', rule: false, size: 120 },
+  intro: { kick: 'Introducing', big: 'Putt Putt <em>Tour</em>', sub: 'Mini golf you actually play.', size: 130 },
   worlds: { kick: 'Explore', big: 'Worlds to <em>walk</em>', sub: 'Walk the trail from hole to hole.' },
   holes: { kick: 'Play', big: 'Special <em>holes</em>', sub: 'Every hole has a twist.' },
   puzzles: { kick: 'Solve', big: 'Puzzle <em>gyms</em>', sub: 'Crack the room. Open the vault.' },
   chests: { kick: 'Find', big: 'Hidden <em>chests</em>', sub: 'Treasure off the path.' },
-  end: { img: logo, imgH: 120, big: 'Free to play<br><em>in your browser</em>', sub: 'No download. On your phone or your laptop.', url: 'runthe.gg/golf', size: 104 },
+  end: { img: logo, imgH: 120, big: 'Play now for free<br><em>in Run The Tour</em>', sub: 'No download necessary.', url: 'runthe.gg/golf', size: 104 },
 };
 
 /* The scenes. Each screen plays clips back to back; `to` (negative: from the clip's end) sets the speed. */
 // Cut on the beat of the 120 BPM track (chiptune.mjs): a beat is 0.5 s, a bar 2 s.
 const I = 4.0, WD = 6.0, HD = 9.0, PZ = 6.0, CH = 5.0, EN = 6.0;
+/* Where the Pro Tour round (rtt-x.mp4, rtt-reels.mp4, the rtt-round shot) is picked up for the intro: each
+   cut's own take, so each has its own moment. */
+const RTT_FROM = { x: 26.4, reels: 25.4 };
 export const scenes = [
-  { dur: I, card: 'intro', cardIn: 0.35 },
+  // the intro is two beats inside the same 4 s, so everything after 0:04 stays where it was
+  { dur: 2.3, card: 'newin', cardIn: 0.3, cardOut: 0.05, backdrop: { clip: 'rtt', from: RTT_FROM, dim: 0.45 } },
+  { dur: I - 2.3, card: 'intro', cardIn: 0, flash: true },
   { dur: WD, card: 'worlds',
-    laptop: [{ clip: 'map', from: 0.6, to: 7.3 }],
+    laptop: [{ clip: 'map', from: 0.6, speed: 1 }],   // real speed: a little slower than the first cut (the owner, 2026-10-19)
     phone: [{ clip: 'w-candy', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-neon', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-sky', from: 0.9, speed: 1.15, dur: 1.5 }, { clip: 'w-ice', from: 0.9, speed: 1.15 }] },
   { dur: HD, card: 'holes',
     // two aces a screen, each from the end of the hold to just after the card lands
@@ -68,10 +75,10 @@ const T = scenes.reduce((a, s) => a + s.dur, 0), END = T - EN;
    the end card. */
 const off = (keys, x) => keys.map(([t, cx, y], i) => [t, (i < 2 || i > 3) ? x : cx, y]);
 export const formats = {
-  x: { W: 1350, H: 1080, textScale: 0.82, cardY: 34, cardAt: { intro: 'mid', end: 'mid' },
+  x: { W: 1350, H: 1080, textScale: 0.82, cardY: 34, cardAt: { newin: 'mid', intro: 'mid', end: 'mid' },
     laptop: { screenW: 800, keys: off([[0, 0, 352], [I - 0.2, 0, 352], [I + 0.6, 440, 352], [END, 440, 352], [END + 0.6, 0, 352], [T, 0, 352]], -700) },
     phone: { screenH: 690, keys: off([[0, 0, 336], [I, 0, 336], [I + 0.75, 1080, 336], [END, 1080, 336], [END + 0.55, 0, 336], [T, 0, 336]], 1700) } },
-  reels: { W: 1080, H: 1920, textScale: 1.22, cardY: 70, cardAt: { intro: 'mid', end: 'mid' },
+  reels: { W: 1080, H: 1920, textScale: 1.22, cardY: 70, cardAt: { newin: 'mid', intro: 'mid', end: 'mid' },
     laptop: { screenW: 820, keys: off([[0, 0, 400], [I - 0.2, 0, 400], [I + 0.6, 540, 400], [END, 540, 400], [END + 0.6, 0, 400], [T, 0, 400]], -700) },
     phone: { screenH: 820, keys: (([a, b]) => [[0, 540, 2000], [I, 540, 2000], [I + 0.75, 540, 1035], [END, 540, 1035], [END + 0.55, 540, 2000], [T, 540, 2000]])([0, 0]) } },
 };
