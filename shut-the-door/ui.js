@@ -339,8 +339,8 @@ function enterMound() {
   show('s-mound');
   setBatter(true);
   renderHud(S.outing);
-  if (S.outing.pitchNo === 0) pbp(batterAt(S.outing.batterIndex).name + ' leads off.');
-  else pbp('pitch ' + (S.outing.pitchNo + 1) + '. ' + batterAt(S.outing.batterIndex).name + ' up.');
+  if (S.outing.pitchNo === 0) pbp('', batterAt(S.outing.batterIndex).name + ' leads off.');
+  else pbp('', 'pitch ' + (S.outing.pitchNo + 1) + '. ' + batterAt(S.outing.batterIndex).name + ' up.');
   updateThrow();
   if (DEBUG) { $('m-dbg').hidden = false; $('m-dbg').textContent = 'seed ' + S.outing.seed + ' · ' + S.outing.mode; }
 }
@@ -354,7 +354,7 @@ function setBatter(first) {
   $('m-bline').textContent = b.line;
   relayout();
   if (S.heat) { S.grid.setHeat(b.profile, S.heat); renderScout(); }
-  if (!first) pbp(b.name + ' up.');
+  if (!first) pbp('', b.name + ' up.');
 }
 
 function renderHud(st) {
@@ -450,22 +450,27 @@ function renderScout() {
 /* The play by play: one quiet line under the scoreboard. It covers nothing
    and needs no tap. No grade, no colour, no tip ever shows during play (the
    owner, 2026-10-17): that all waits for the coach at the end. */
-function pbp(text) {
+/* A tag (the result, in capitals) and the rest of the line. The tag is the thing a player reads
+   first: the swing's result under the scoreboard, in the same place after every pitch. */
+function pbp(tag, rest) {
   var el = $('m-pbp');
-  el.textContent = text;
+  el.innerHTML = '<b class="pbp-tag">' + esc(tag || '') + '</b> <span class="pbp-rest">' + esc(rest || '') + '</span>';
   el.classList.remove('new'); void el.offsetWidth; el.classList.add('new');
 }
 var COUNT_WORD = ['', 'one', 'two', 'three'];
+var HIT_TAG = { single: 'single', double: 'double', triple: 'triple', home_run: 'home run', error: 'error',
+  out_ground: 'ground out', out_line: 'line out', out_fly: 'fly out', out_popup: 'pop out' };
 function playText(pr, batter) {
-  var who = lastName(batter.name), res = pr.result, c = pr.count, line;
-  if (res === 'in_play' && pr.inPlay) line = who + ': ' + pr.inPlay.text + '.';
-  else if (res === 'hit_by_pitch') line = who + ' is hit by the pitch.';
-  else if (res === 'ball') line = pr.paOver ? who + ' walks.' : 'ball. ' + c.b + '-' + c.s + '.';
-  else if (res === 'foul') line = 'foul. ' + c.b + '-' + c.s + '.';
-  else if (pr.paOver) line = who + ' strikes out ' + (res === 'called_strike' ? 'looking.' : 'swinging.');
-  else line = (res === 'called_strike' ? 'called strike. ' : res === 'foul_tip' ? 'foul tip. ' : 'swinging strike. ') + c.b + '-' + c.s + '.';
-  if (pr.runs) line += ' ' + (pr.runs === 1 ? 'a run scores.' : (COUNT_WORD[pr.runs] || pr.runs) + ' runs score.');
-  return line;
+  var who = lastName(batter.name), res = pr.result, c = pr.count, tag, rest;
+  var count = c.b + '-' + c.s;
+  if (res === 'in_play' && pr.inPlay) { tag = HIT_TAG[pr.inPlay.result] || 'in play'; rest = who + ': ' + pr.inPlay.text + '.'; }
+  else if (res === 'hit_by_pitch') { tag = 'hit by pitch'; rest = who + '. ' + count; }
+  else if (res === 'ball') { tag = pr.paOver ? 'walk' : 'ball'; rest = pr.paOver ? who + '. ' + count : count; }
+  else if (res === 'foul') { tag = 'foul'; rest = count; }
+  else if (pr.paOver) { tag = 'strikeout'; rest = who + ', ' + (res === 'called_strike' ? 'looking' : 'swinging'); }
+  else { tag = res === 'called_strike' ? 'called strike' : res === 'foul_tip' ? 'foul tip' : 'swinging strike'; rest = count; }
+  if (pr.runs) rest += ' · ' + (pr.runs === 1 ? 'a run scores' : (COUNT_WORD[pr.runs] || pr.runs) + ' runs score');
+  return { tag: tag, rest: rest };
 }
 
 function throwIt() {
@@ -482,7 +487,7 @@ function throwIt() {
     var pr = res.pitchResult, batter = batterAt(S.outing.batterIndex);
     var opts = {
       pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick,
-      hooks: { call: function () { pbp(playText(pr, batter)); }, sound: sound, field: hudRunners },
+      hooks: { call: function () { var t = playText(pr, batter); pbp(t.tag, t.rest); }, sound: sound, field: hudRunners },
     };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       S.lastMarker = S.scene.toScreen(pr.actual);
@@ -639,7 +644,7 @@ function practice() {
     S.mode = 'practice';
     S.outing = st;
     enterMound();
-    pbp('practice. not scored.');
+    pbp('practice', 'not scored.');
   });
 }
 
