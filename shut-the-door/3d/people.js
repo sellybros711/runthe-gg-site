@@ -165,10 +165,11 @@ export function pose(p, spec) {
   p.root.updateMatrixWorld(true);
 }
 
-// the knocked down hitter spins away as he falls (radians, about the spot he stood on): each side's
-// turn found by eye from the pitcher's view, so he lands beside the box, clear of the plate and the
-// catcher, and in frame
-const FALL_TURN = { L: THREE.MathUtils.degToRad(-80), R: THREE.MathUtils.degToRad(55) };
+// the knocked down hitter spins away as he falls (radians, about the spot he stood on), so he lands
+// clear of the plate and the catcher: a lefty ends about 1.2 m to his side and 1.5 m back, a righty
+// 1.5 m to his side. Measured, not judged from the pitcher's view (a righty turned the other way,
+// tuned there by eye, landed behind the plate; the browser check now holds the direction)
+const FALL_TURN = { L: THREE.MathUtils.degToRad(-80), R: THREE.MathUtils.degToRad(-80) };
 
 // the flesh round each bone the fall can land on (metres, on the model at its own size)
 const FALL_FLESH = [['head', 0.1], ['spine_03', 0.12], ['spine_02', 0.12], ['pelvis', 0.11],
