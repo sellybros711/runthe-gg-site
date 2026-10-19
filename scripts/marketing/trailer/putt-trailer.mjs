@@ -34,10 +34,12 @@ export const cards = {
   newin: { img: logo, imgH: 150, big: 'New in<br><em>Run The Tour</em>', rule: false, size: 120 },
   // in the lobby's own type, over the lobby's sky (the owner, 2026-10-19)
   intro: { style: 'lobby', kick: 'Introducing', big: 'Putt Putt Tour', rule: false, size: 108 },
-  worlds: { kick: 'Explore', big: 'Worlds to <em>walk</em>' },
-  holes: { kick: 'Play', big: 'Special <em>holes</em>' },
-  puzzles: { kick: 'Solve', big: 'Puzzle <em>gyms</em>' },
-  chests: { kick: 'Find', big: 'Hidden <em>chests</em>' },
+  // one plain line each, in the lobby's type over its sky (the owner, 2026-10-19: the kicker over the
+  // title read oddly, and the green did not feel like the game)
+  worlds: { style: 'lobby', big: 'Explore <em>worlds</em>', rule: false },
+  holes: { style: 'lobby', big: 'Special <em>holes</em>', rule: false },
+  puzzles: { style: 'lobby', big: 'Solve <em>puzzles</em>', rule: false },
+  chests: { style: 'lobby', big: 'Hidden <em>chests</em>', rule: false },
   end: { img: logo, imgH: 120, big: 'Play for free<br><em>Run The Tour</em>', sub: 'No download required', url: 'runthe.gg/golf', size: 104 },
 };
 
@@ -69,6 +71,11 @@ export const scenes = [
     laptop: [{ clip: 'w-pirate', from: 0.4, speed: 1 }],
     phone: [{ clip: 'a-candy', from: 0.7, to: -0.4 }] },
 ];
+/* THE SKY (the owner, 2026-10-19: "match the feel of the game"): from the devices on, the lobby's own dusk
+   sky plays behind everything instead of the green. It is one take (sky-x.mp4, sky-reels.mp4: the
+   putt-lobby shot with --arg sky, LOBBY_MS=33500), picked up where the last scene left it, so its clouds
+   drift on across the cuts. */
+{ let at = 0; for (const s of scenes.slice(2)) { s.backdrop = { clip: 'sky', from: at, dim: 1 }; at += s.dur; } }
 const T = scenes.reduce((a, s) => a + s.dur, 0), END = T - EN;
 /* CINEMATIC (the owner, 2026-10-19: "a cinematic movie trailer"): the opening and the close are framed
    like a film, letterboxed, with slow push ins and titles that settle. The bars leave as the devices
