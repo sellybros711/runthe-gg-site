@@ -55,8 +55,10 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - Routes are recorded at full precision. Never round them.
 - A Hallows Night hole has at most two moving or wet pieces and par 3 (the signature 4).
 - Every hole stays under 34% wet or out in `fair.mjs`, and each tour's mean under 10%.
-- **A ball never comes to rest on a ferry.** A deck pulls away gently and stops hard, so the ball is put
-  ashore; a ferry hole's deck overlaps the land at each dock and its channel is walled on its long sides.
+- **A ball never comes to rest on a ferry.** A moving deck grips the ball (`DECK_GRIP`), so a ball that lands on it
+  rides. The deck pulls away gently and eases into the dock at its landing speed (`f.e`), so the ball slides ashore;
+  a standing deck is carpet. A ferry hole's deck overlaps the land at each dock and its channel is walled on its long
+  sides. Change the grip or the ease and re-solve every ferry hole with `--write`.
 - **A skin name is global.** A second `snowman` in `SKIN` silently replaces the first everywhere.
 - Never put a real course name on screen.
 
