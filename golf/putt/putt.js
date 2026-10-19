@@ -2368,10 +2368,11 @@ var ICO = {
   heart:'<path d="M12 20.5s-8.5-5.2-8.5-11A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8.5 2.5c0 5.8-8.5 11-8.5 11z" fill="#ff5a6a" stroke="#6a0c18" stroke-width="1.3"/><path d="M7.4 9.6a2.2 2.2 0 0 1 2.1-2" stroke="#ffd6dc" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
   share:'<path d="M12 3.5v11M7.5 8L12 3.5 16.5 8" fill="none" stroke="#fff8e6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 11.5v8h13v-8" fill="none" stroke="#fff8e6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
   play:'<path d="M8 5l11 7-11 7z" fill="#2a1c05"/>',
+  daily:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.2" fill="#fff8e6"/><path d="M3.5 7.2A2.2 2.2 0 0 1 5.7 5h12.6a2.2 2.2 0 0 1 2.2 2.2V9.5h-17z" fill="#e2463f"/><path d="M8 3.2v3.6M16 3.2v3.6" stroke="#fff8e6" stroke-width="2" stroke-linecap="round"/><ellipse cx="11" cy="18.4" rx="3.6" ry="1.1" fill="#2f8a4a"/><path d="M11 18.4V11.4" stroke="#3a2a14" stroke-width="1.4" stroke-linecap="round"/><path d="M11.5 11.4l4.4 1.6-4.4 1.6z" fill="#e2463f"/>',
   walk:'<ellipse cx="8.5" cy="8.5" rx="2.7" ry="4.2" fill="#fff8e6" transform="rotate(-12 8.5 8.5)"/><ellipse cx="8" cy="15" rx="1.9" ry="1.5" fill="#fff8e6"/><ellipse cx="15.5" cy="11" rx="2.7" ry="4.2" fill="#fff8e6" transform="rotate(12 15.5 11)"/><ellipse cx="16.2" cy="17.5" rx="1.9" ry="1.5" fill="#fff8e6"/>' };
 // each icon chip's colour, top and bottom of its gradient and the dark edge under it
 var ICOL = { map:['#f6dea6','#cf9a3e','#7a5212'], bag:['#d0945a','#7e4718','#3e1f06'], closet:['#bd8aea','#6c3aa0','#3a1660'],
-  reset:['#ffbe5c','#e06a16','#7a3204'], view:['#78c8ff','#2a76cc','#123c6e'], talk:['#56d8c0','#1d8c7a','#0c4a40'],
+  reset:['#ffbe5c','#e06a16','#7a3204'], daily:['#7fe0ff','#2a9ad6','#0e4a70'], view:['#78c8ff','#2a76cc','#123c6e'], talk:['#56d8c0','#1d8c7a','#0c4a40'],
   heart:['#ff8a98','#c42a42','#5e0c18'], share:['#56d8c0','#1d8c7a','#0c4a40'], walk:['#8ad66a','#2f8a3e','#14401c'],
   close:null, left:null, right:null, flag:null, play:null };
 function icoUrl(n){ return 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' + ICO[n] + '</svg>') + '")'; }
@@ -2393,6 +2394,9 @@ function skinCss(){
     '.pt-ov .pt-bt:active,.pt-ov .pp-bagb:active,.pt-ov .pp-cx:active,.pt-ov .pt-x:active,.pt-ov .pp-mapb:active,.pt-ov .pp-rb:active{' + press + '}',
     '.pt-ov .pt-bt.on{background:linear-gradient(#ffe07a,#ebb02e);color:#2a1c05;border-color:transparent}',
     '.pt-ov button:focus-visible{outline:3px solid #ffe07a;outline-offset:2px}',
+    // a hidden thing stays hidden: these glass buttons set their own display, and that beat [hidden] (the Talk button
+    // showed, empty and dead, on every trail with nobody to talk to)
+    '.pt-ov [hidden]{display:none!important}',
     // the header over the map and the trail: glass pieces on a soft shade
     '.pt-ov .pp-hdr{background:linear-gradient(rgba(4,12,8,.55),rgba(4,12,8,0))}',
     '.pt-ov .pp-hearts{' + glass + ';border-radius:999px;padding:5px 8px;gap:2px;align-items:center}',
@@ -2409,10 +2413,11 @@ function skinCss(){
     // Bag and Closet stand down the right side, each its own colour and picture
     '.pt-ov .pp-bagb{' + ibtn + ';flex-direction:column;gap:3px;width:62px;min-height:62px;padding:6px 4px 5px;border-radius:18px;font-size:11px;right:12px}',
     '.pt-ov .pp-bagb.pp-closb{right:12px}',
-    '.pt-ov .pp-wv>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 132px)}.pt-ov .pp-wv>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 202px)}',
+    // the trail: the Daily Hole on top (the owner, 2026-10-19), then Bag, then Closet
+    '.pt-ov .pp-wv>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 132px)}.pt-ov .pp-wv>.pp-bagb[data-bag]{top:calc(env(safe-area-inset-top,0px) + 202px)}.pt-ov .pp-wv>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 272px)}',
     '.pt-ov .pp-hub>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 70px)}.pt-ov .pp-hub>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 140px)}',
     '.pt-ov .pp-hub:has(.pp-daily)>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 186px)}.pt-ov .pp-hub:has(.pp-daily)>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 256px)}',
-    chip('.pt-ov .pp-bagb[data-bag]', 'bag', 34), chip('.pt-ov .pp-bagb.pp-closb', 'closet', 34),
+    chip('.pt-ov .pp-bagb[data-bag]', 'bag', 34), chip('.pt-ov .pp-bagb.pp-closb', 'closet', 34), chip('.pt-ov .pp-bagb[data-dly]', 'daily', 34),
     // the trail: what you are walking to is a glass plate, what is on it sits in glass chips
     '.pt-ov .pp-tgoal{' + glass + ';border-radius:16px;padding:6px 14px}',
     '.pt-ov .pp-tgoal i{color:#e7c66c}.pt-ov .pp-tgoal b{font-family:var(--display,inherit);font-size:17px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}',
@@ -3562,12 +3567,15 @@ function openTrail(tid, from){
   S.ov.innerHTML = '<div class="pp-trail pp-wv" data-wv="' + (clouded ? sp.theme0 : Wd.theme) + '">' + hdr((b0 !== '' ? '<span class="pp-cpill" data-bal>' + b0 + '</span>' : '') + '<button class="pp-mapb" data-mapb aria-label="Open the map"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2z" fill="#f6ead2" stroke="#3a2a14" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 2v14M13 4v14" stroke="#3a2a14" stroke-width="1.4"/><circle cx="10" cy="9" r="1.8" fill="#e5483a"/></svg><b>Map</b></button>') +
     '<div class="pp-tbox" data-tbox></div>' +
     '<div class="pp-tgoal">' + goalHtml() + '</div>' +
+    '<button class="pp-bagb" data-dly aria-label="Today\'s Daily Hole">Daily</button>' +
     (TR.id === 'main' ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') + '<button class="pp-bagb pp-closb" data-closet aria-label="Your closet">Closet</button>' +
     (seen ? '' : banHtml()) + '</div>';
   S.ov.querySelector('[data-x]').onclick = close;
   S.ov.querySelector('[data-mapb]').onclick = function(){ stopTrail(); showHub(tid); };
   var bgw = S.ov.querySelector('[data-bag]'); if (bgw) bgw.onclick = bagSheet;
   var clw = S.ov.querySelector('[data-closet]'); if (clw) clw.onclick = closetSheet;
+  // today's Daily Hole, straight from the trail (or its result, once played); it ends on the map, as the map's own Daily card does
+  var dyw = S.ov.querySelector('[data-dly]'); if (dyw) dyw.onclick = function(){ stopTrail(); startDaily(); };
   // the world's title card holds while the world loads, and leaves once you are standing in it
   var wbn = S.ov.querySelector('.pp-wban'); function banOut(){ if (wbn) setTimeout(function(){ if (wbn.isConnected) wbn.classList.add('out'); setTimeout(function(){ if (wbn.isConnected) wbn.remove(); }, 700); }, 2200); }
   var box = S.ov.querySelector('[data-tbox]'), P = trailPlan(sp);
