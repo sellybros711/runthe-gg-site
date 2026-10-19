@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -72,17 +72,36 @@
       <canvas id="h-canvas" aria-hidden="true"></canvas>
       <img class="h-poster" id="h-poster" src="3d/assets/hero.webp?h=a8b96e3af7" alt="" hidden>
       <div class="hero-chips" id="h-day"></div>
-      <div class="hero-text"><p class="h-title" id="h-title"></p><h1 class="hero-head" id="h-head"></h1></div>
+      <svg class="h-field" id="h-field" viewBox="0 0 100 100" aria-hidden="true">
+        <polygon class="h-lines" points="50,88 88,50 50,12 12,50"/>
+        <circle class="h-mound" cx="50" cy="50" r="3.2"/>
+        <rect class="h-base" id="h-b1" x="82" y="44" width="12" height="12" transform="rotate(45 88 50)"/>
+        <rect class="h-base" id="h-b2" x="44" y="6" width="12" height="12" transform="rotate(45 50 12)"/>
+        <rect class="h-base" id="h-b3" x="6" y="44" width="12" height="12" transform="rotate(45 12 50)"/>
+        <path class="h-plate" d="M44 84H56V88L50 93L44 88Z"/>
+      </svg>
+      <div class="hero-text">
+        <p class="h-eyebrow">you are the closer</p>
+        <h1 class="hero-head" id="h-head"></h1>
+        <p class="h-title" id="h-title"></p>
+      </div>
     </div>
-    <div class="tiles4" id="h-sit"></div>
-    <p class="setup" id="h-setup"></p>
-    <div class="go-wrap" id="h-go">
-      <button class="btn take" id="b-take" type="button">take the mound</button>
-      <p class="streak" id="h-streak"></p>
+    <div class="h-cols">
+      <div class="h-col">
+        <div class="tiles4" id="h-sit"></div>
+        <p class="setup" id="h-setup"></p>
+        <div class="card h-bat" id="h-bat"></div>
+        <div class="go-wrap" id="h-go">
+          <button class="btn take" id="b-take" type="button">take the mound</button>
+          <p class="streak" id="h-streak"></p>
+        </div>
+        <div class="card done" id="h-done" hidden></div>
+      </div>
+      <div class="h-col">
+        <div class="card pcard" id="h-pitcher"></div>
+        <div class="card due" id="h-due"></div>
+      </div>
     </div>
-    <div class="card done" id="h-done" hidden></div>
-    <div class="card pcard" id="h-pitcher"></div>
-    <div class="card due" id="h-due"></div>
     <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
     <nav class="h-links" aria-label="More">
       <button type="button" data-open="how">how to play</button>
@@ -231,7 +250,7 @@
 <script src="api.js?v=2"></script>
 <script src="mock-api.js?v=5"></script>
 <script src="coach.js?v=1"></script>
-<script src="ui.js?v=8"></script>
+<script src="ui.js?v=9"></script>
 <script type="module" src="3d/boot.js?v=18"></script>
 </body>
 </html>
