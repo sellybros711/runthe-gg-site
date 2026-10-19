@@ -514,6 +514,7 @@ async function run(w, h, theme) {
         document.getElementById('m-scene').classList.add('flying');
         st.still(pr, when);
       }, when);
+      await page.waitForTimeout(400);   // the game's grid fades out in flight (.15 s)
       await shot('still-' + when);
     }
     await page.evaluate(() => { document.getElementById('m-scene').classList.remove('flying'); window.STD_STAGE.current.draw(); });
