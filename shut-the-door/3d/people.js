@@ -165,6 +165,9 @@ export function pose(p, spec) {
   p.root.updateMatrixWorld(true);
 }
 
+// how far a take settles back toward his stance after the pitch goes by (the stride stays planted)
+const TAKE_SETTLE = 0.4;
+
 /** Lay one clip's rotations on a set of bones only, at another time (the rest stays as posed). */
 const LOWER = new Set(['pelvis', 'thigh_l', 'calf_l', 'foot_l', 'thigh_r', 'calf_r', 'foot_r']);
 function sampleRot(p, clip, time, set) {
@@ -356,6 +359,8 @@ export class People {
     if (b && b.chain) {
       b.take = this.mode === 'take';
       b.motion = this.m.batter;              // swing, take, check or hbp
+      // a swing and miss is its own capture (the whiff, then his reaction); the rest use his swing
+      this.useClip(b, !b.take && this.m.miss && b.clips['miss' + b.side] ? 'miss' + b.side : b.mainClip);
       const la = play && play.inPlay && play.inPlay.la;
       b.batTilt = la == null ? 0 : THREE.MathUtils.clamp((la - 12) / 30, -1, 1) * 9;
       this.planBatterFeet(b);
@@ -407,8 +412,13 @@ export class People {
     this.build(b, this.facts.batter.heightIn ?? 72, this.facts.batter.weightLb ?? 200);
     const lefty = this.facts.batter.bats === 'L';
     b.lefty = lefty;
-    // the swing for his side: the capture mirrored for a left handed hitter, as it is for a right
-    b.clip = lefty || !b.clips.swingR ? 'swing' : 'swingR';
+    // his swing (one of the three captured, by his id: looks.js), for his side: the capture as it is
+    // for a right handed hitter, mirrored for a left
+    b.side = lefty ? '' : 'R';
+    const sw = this.facts.batter.swing && b.clips[this.facts.batter.swing + b.side] ? this.facts.batter.swing : 'swing';
+    b.mainClip = b.clips[sw + b.side] ? sw + b.side : 'swing';
+    b.clip = b.mainClip;
+    b.clipData = {};
     b.take = this.mode === 'take';
     b.motion = this.m.batter;
     b.batTilt = 0;
@@ -474,7 +484,8 @@ export class People {
     b.chain = {
       tTop, tStrike, dirn: Math.sign(dy) || 1, p0, trim: 0.6,
       lead: (t) => 0.02 * ramp(t, tTop - 0.25, tStrike - 0.05) * (1 - ramp(t, tC, tC + 0.35)),
-      coil: (t) => THREE.MathUtils.degToRad(10) * ramp(t, tTop - 0.45, tStrike) * (1 - ramp(t, tStrike, tC - 0.03)),
+      // (the Mixamo swings keep their own coil: 3 degrees more, where the CMU capture took 10)
+      coil: (t) => THREE.MathUtils.degToRad(3) * ramp(t, tTop - 0.45, tStrike) * (1 - ramp(t, tStrike, tC - 0.03)),
     };
     // the feet: where they are down in this motion, for the swing (by capture time) and the take
     // (by the clock relative to the plate)
@@ -485,6 +496,19 @@ export class People {
     const open = { at: tC - 0.02, deg: 35, dir: Math.sign(dy) || 1 };
     b.feetSpec = (t0, t1, swing) => ({ [back]: [[t0, t1, 'pivot']], [front]: [[t0, tLift, 'land'], [tStrike, t1, 'flat', swing ? open : null]] });
     this.planBatterFeet(b);
+  }
+
+  /** Make a clip his motion for this play (his own swing, or the swing and miss): its bat track,
+      contact, chain and feet are worked out the first time and kept. */
+  useClip(b, name) {
+    if (!b.clips[name] || (b.clip === name && b.chain)) return;
+    const KEYS = ['batTrack', 'batDt', 'tContact', 'peakBatSpeed', 'chain', 'feetSpec', 'feetSwing'];
+    if (b.chain) b.clipData[b.clip] = Object.fromEntries(KEYS.map((k) => [k, b[k]]));
+    b.clip = name;
+    if (b.clipData[name]) { Object.assign(b, b.clipData[name]); return; }
+    b.chain = null; b.feetSwing = null; b.feetSpec = null;
+    this.bakeBat(b);
+    this.setupChain(b);
   }
 
   /** The feet for this pitch's motion: the swing's plan is his own (once per hitter); a take's
@@ -517,7 +541,7 @@ export class People {
     const check = b.motion === 'check';
     const launch = b.tContact - (check ? 0.075 : 0.2);
     const k = smooth(clamp01((ct - launch - (check ? 0.12 : 0.25)) / (check ? 0.6 : 0.9)));
-    pose(b, [[b.clip, Math.min(ct, launch), 1], [b.clip, 0.4 + Math.max(0, ct - launch) * 0.3, k * 0.75]]);
+    pose(b, [[b.clip, Math.min(ct, launch), 1], [b.clip, 0.4 + Math.max(0, ct - launch) * 0.3, k * TAKE_SETTLE]]);
     const ch = b.chain;
     if (!ch) return;
     const coil = ch.coil(Math.min(ct, launch)) * (1 - k);
@@ -688,9 +712,10 @@ export class People {
       // met early to pull it (contactShift < 0), late to go the other way
       const ct = t - (pt.tPlate + (b.take ? 0 : this.m.contactShift)) + b.tContact;
       if (!b.take) {
-        // after the follow through the capture's batter walks off and drops the bat; a real hitter
-        // holds his finish, so time slows to a near hold half a second after contact
-        const hold = b.tContact + 0.42;
+        // a real hitter holds his finish: time slows to a near hold at the end of the swing (each
+        // capture is cut at its finish); a swing and miss plays on through his reaction
+        const dur = b.clips[b.clip].duration;
+        const hold = b.clip.startsWith('miss') ? dur - 0.05 : Math.min(b.tContact + 0.42, dur - 0.05);
         const cw = ct < hold ? ct : hold + (1 - Math.exp(-(ct - hold) / 0.5)) * 0.18;
         b.batTime = cw;
         this.swingBase(b, cw);

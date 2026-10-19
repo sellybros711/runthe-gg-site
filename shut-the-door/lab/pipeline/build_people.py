@@ -237,12 +237,12 @@ PEOPLE = {
         gear=[],
         # Mixamo's baseball hitter is right handed: as he is for a right handed batter (R), mirrored
         # for a left. Three swings (each hitter gets one of them), the swing and miss with its
-        # reaction, and the fall after a pitch on the shoulder. Frames at 60 fps, cut before each
-        # clip's hitter drops the bat and runs.
+        # reaction, and the fall after a pitch on the shoulder. Frames at 60 fps; each swing is cut
+        # at its finish (the hands at rest, before the capture's hitter drops the bat and runs).
         clips=[(n + sfx, f, a, b, mir, 'grip') for (n, f, a, b) in (
-            ('swing', 'mixamo/Baseball Hit.fbx', 1, 124),
-            ('swing2', 'mixamo/Baseball Hit-2.fbx', 1, 150),
-            ('swing3', 'mixamo/Baseball Hit-3.fbx', 1, 74),
+            ('swing', 'mixamo/Baseball Hit.fbx', 1, 104),
+            ('swing2', 'mixamo/Baseball Hit-2.fbx', 1, 100),
+            ('swing3', 'mixamo/Baseball Hit-3.fbx', 1, 78),
             ('miss', 'mixamo/Baseball Strike.fbx', 1, 230),
             ('hbpFall', 'mixamo/Shoulder Hit And Fall.fbx', 1, 187),
         ) for (sfx, mir) in (('', True), ('R', False))],

@@ -35,12 +35,13 @@ CMU = dict(map=MAP, blend=BLEND, hip='hip', thighs=('lThigh', 'rThigh'), seg={
 _MXP = 'mixamorig:'
 MIXAMO = dict(map={
     'pelvis': 'Hips', 'spine_01': 'Spine', 'spine_02': 'Spine1', 'spine_03': 'Spine2', 'neck_01': 'Neck', 'head': 'Head',
-    'clavicle_l': 'LeftShoulder', 'upperarm_l': 'LeftArm', 'lowerarm_l': 'LeftForeArm', 'hand_l': 'LeftHand',
-    'clavicle_r': 'RightShoulder', 'upperarm_r': 'RightArm', 'lowerarm_r': 'RightForeArm', 'hand_r': 'RightHand',
+    # (the clavicles are not taken: Mixamo's shoulder bones swing far, and the scene raises each
+    # collar bone from its arm's own lift, motion.js clavicles)
+    'upperarm_l': 'LeftArm', 'lowerarm_l': 'LeftForeArm', 'hand_l': 'LeftHand',
+    'upperarm_r': 'RightArm', 'lowerarm_r': 'RightForeArm', 'hand_r': 'RightHand',
     'thigh_l': 'LeftUpLeg', 'calf_l': 'LeftLeg', 'foot_l': 'LeftFoot', 'ball_l': 'LeftToeBase',
     'thigh_r': 'RightUpLeg', 'calf_r': 'RightLeg', 'foot_r': 'RightFoot', 'ball_r': 'RightToeBase',
 }, blend={}, hip='Hips', thighs=('LeftUpLeg', 'RightUpLeg'), seg={
-    'clavicle_{s}': ('upperarm_{s}', '{S}Shoulder', '{S}Arm'),
     'upperarm_{s}': ('lowerarm_{s}', '{S}Arm', '{S}ForeArm'),
     'lowerarm_{s}': ('hand_{s}', '{S}ForeArm', '{S}Hand'),
     'thigh_{s}': ('calf_{s}', '{S}UpLeg', '{S}Leg'),
