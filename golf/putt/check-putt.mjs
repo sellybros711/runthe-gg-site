@@ -1347,13 +1347,21 @@ if (!args.includes('--no-browser')){
       return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives, clocks:(after.back || []).length }; });
     claim(lvs.first === 0 && lvs.wound === 0, `a fresh browser takes the server's lives, and a wound clock does not refill them (${lvs.first}, then ${lvs.wound})`);
     claim(lvs.spent && lvs.srv === 1 && lvs.after === 1 && lvs.clocks === 8, `a lost life is spent on the server, with a clock of its own (server ${lvs.srv}, browser ${lvs.after}, ${lvs.clocks} clocks)`);
-    // A GUEST WALKS TO HOLE 1 ONLY AND PLAYS NO TOUR HOLE (the owner, 2026-10-16; story mode 2026-10-18). Hole 1 asks them to sign in,
-    // the Daily Hole stays open, and a guest never sees a coin count.
+    // A GUEST WALKS TO HOLE 1 ONLY AND PLAYS HOLE 1 AND NO OTHER TOUR HOLE (the owner, 2026-10-16; story mode 2026-10-18;
+    // hole 1 playable 2026-10-19). Hole 2 asks them to sign in, the Daily Hole stays open, and a guest never sees a coin count.
     const gst = await pg.evaluate(async () => {
-      localStorage.removeItem('bag_ppt_v1'); sbUser = null; window.RTT_PUTT.open(puttHost());
-      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="1"]'); t++) await new Promise(r => setTimeout(r, 50));
-      const S0 = window.RTT_PUTT._state(), pill = !!document.querySelector('.pp-hdr [data-bal]');
-      window.RTT_PUTT._level(1, 'main'); const sh = document.querySelector('.pp-sheet'), txt = sh ? sh.innerText : '';
+      const mapUp = async () => { for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="1"]'); t++) await new Promise(r => setTimeout(r, 50)); };
+      localStorage.removeItem('bag_ppt_v1'); sbUser = null; window.RTT_PUTT.open(puttHost()); await mapUp();
+      const pill = !!document.querySelector('.pp-hdr [data-bal]');
+      // hole 1 plays, and holed it says the coins wait for an account and its Next hole asks for one
+      window.RTT_PUTT._level(1, 'main'); const Sp = window.RTT_PUTT._state();
+      const play1 = Sp.screen === 'play' && !!Sp.round && Sp.round.lv === 1 && !document.querySelector('.pp-sheet [data-in]');
+      if (play1) window.RTT_PUTT._holed(2); const won1 = (Sp.ov || document.body).innerText;
+      const nx = document.querySelector('[data-a="next"]'); if (nx) nx.click(); await new Promise(r => setTimeout(r, 100));
+      const nextAsks = !!document.querySelector('.pp-sheet [data-in]') && window.RTT_PUTT._state().screen !== 'trail';
+      window.RTT_PUTT.close(); window.RTT_PUTT.open(puttHost()); await mapUp();
+      const S0 = window.RTT_PUTT._state();
+      window.RTT_PUTT._level(2, 'main'); const sh = document.querySelector('.pp-sheet'), txt = sh ? sh.innerText : '';
       const walkBtn = !!document.querySelector('.pp-sheet [data-walk]'), notPlayed = S0.screen !== 'play';
       document.querySelector('.pp-sheet [data-n]').click();
       document.querySelector('.pp-map [data-lv="3"]').click(); await new Promise(r => setTimeout(r, 100));
@@ -1369,9 +1377,11 @@ if (!args.includes('--no-browser')){
       document.querySelector('.pp-sheet [data-in]').click();
       const toAcct = !document.querySelector('.pt-ov') && S.overlay === 'account' && S.acctMode === 'signin'; S.overlay = null; render();
       localStorage.removeItem('bag_ppt_v1'); localStorage.removeItem('bag_ppt_v1@chk'); sbUser = { id:'chk' }; openPutt();
-      return { pill, txt, walkBtn, notPlayed, tap, card, res, daily, deep, toAcct }; });
+      return { pill, play1, won1, nextAsks, txt, walkBtn, notPlayed, tap, card, res, daily, deep, toAcct }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && !gst.walkBtn, `a guest's hole 1 asks them to sign in, with no walk on past it (${JSON.stringify(gst.txt.slice(0, 60))})`);
+    claim(gst.play1, 'a guest plays hole 1 of the Tour, with no sign in asked');
+    claim(/Sign in to collect your coins/.test(gst.won1) && !/\+\d+ coins/.test(gst.won1) && gst.nextAsks, `a guest who holes hole 1 sees no coin count, and Next hole asks them to sign in where they stand (${gst.nextAsks})`);
+    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && !gst.walkBtn, `a guest's hole 2 asks them to sign in, with no walk on past it (${JSON.stringify(gst.txt.slice(0, 60))})`);
     claim(gst.tap !== 'trail' && gst.tap !== 'sheet', `story mode: a guest tapping hole 3 on the map stays on the map (${gst.tap})`);
     claim(gst.deep && gst.toAcct, `past the opening world the sheet offers no walk, and Sign in opens the sign in sheet (${gst.deep}, ${gst.toAcct})`);
     claim(gst.daily, `a guest can still play the Daily Hole (${gst.daily})`);
