@@ -94,5 +94,29 @@ const pr = await api.startOuting(sc.id, 12345, { mode: 'practice' });
 await api.throwPitch(pr.outingId, { type: types[0], cell: 12 });
 check('practice is never stored', mem[C.OUTING_KEY] === before && pr.mode === 'practice' && pr.seed === 12345);
 
+/* the tie rule through the four calls: a run that ties leaves the state live,
+   and three outs then end it tie_held, in the result and its share text */
+{
+  const submitted = submits.length;
+  let seen = null;
+  for (let seed = 1; seed <= 300 && !seen; seed++) {
+    const p = await api.startOuting(sc.id, seed, { mode: 'practice' });
+    let s = p, tiedLive = false, g = 0;
+    while (s.status === 'live' && g++ < 150) {
+      s = (await api.throwPitch(p.outingId, { type: types[seed % types.length], cell: [12, 7, 17, 6, 18, 16, 8][seed % 7] })).state;
+      if (s.status === 'live' && s.score.us === s.score.them) tiedLive = true;
+    }
+    if (tiedLive && s.status === 'over' && s.score.us === s.score.them) seen = { s, res: await api.finishOuting(p.outingId), seed };
+  }
+  check('a run that ties leaves the outing live', !!seen);
+  if (seen) {
+    const { s, res } = seen;
+    check(`a tie, then three outs: the outing ends tie_held (practice seed ${seen.seed}, ${s.score.us}-${s.score.them})`, res.outcome === 'tie_held', res.outcome);
+    check('the result is one of the contract\'s outcomes, and its share text says it',
+      C.OUTCOMES.includes(res.outcome) && res.share.includes(C.OUTCOME_LABEL[res.outcome].toLowerCase()), res.share);
+    check('practice after a tie is never submitted', submits.length === submitted);
+  }
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);

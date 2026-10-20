@@ -11,6 +11,15 @@ door's open. A go-ahead run is a walk-off only when the home team is batting in 
 One swing that ties and goes ahead is decided by the go-ahead rule. So a real outcome here can
 differ from how the game is remembered (see flag 1).
 
+**The end rules changed on 2026-10-20 (the owner's call).** A run that ties no longer ends the
+outing: three outs with the game still tied is a held tie (`tie_held`), and a later go-ahead run is
+a walk-off or door's open as before. This list is the record of the 2026-10-17 approval and keeps
+the old results. Under the new rules, from the same play by play in `data/verify`, three of the ten
+change: #4 Chapman is a held tie (Crisp singled, Gomes struck out: 21 pitches, 3 runs, faced 4),
+#6 Feliz is a held tie (Molina lined out: 22 pitches, 2 runs, faced 6), and #10 Rivera is a
+walk-off (Counsell hit by a pitch, Gonzalez singled: 14 pitches, 2 runs, faced 6). The packs'
+reveals and the verify files carry the new results.
+
 ## The list
 
 | # | spot | pitcher | hand | start | faced | real result (end rules) | pitches | verified |

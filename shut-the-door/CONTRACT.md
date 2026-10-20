@@ -35,7 +35,7 @@ No bundler and no build step, as for every top-level game.
 | day | the Eastern calendar day, `YYYY-MM-DD` (`America/New_York`), like every daily on the site |
 | daily number | `floor((day - EPOCH) / 1 day) + 1`, EPOCH = the first day it is playable |
 | hold | the outing ends with 3 outs and our lead intact |
-| hold% | the probability of a hold from a state, under best play from here on. The grading unit |
+| hold% | the probability of a hold from a state, under best play from here on. The grading unit. After a tie, the same number for the tie's goal: 3 outs before they go ahead (section 7) |
 | pts | percentage points of hold%. `0.5 pts` = half a point of hold chance |
 
 ## 2. The grid (one geometry for throwing and for the scouting heat map)
@@ -137,7 +137,7 @@ Statcast codes. The shape tells the UI how to draw the flight.
 
 /**
  * @typedef {Object} Reveal          withheld from the browser until the outing is finished
- * @property {'door_shut'|'doors_open'|'walk_off'} outcome
+ * @property {'door_shut'|'tie_held'|'doors_open'|'walk_off'} outcome   under the end rules (section 8)
  * @property {number|null} pitches  what the real pitcher threw in this spot; null when the record
  *                                  is incomplete (then pitchesNote says what is known)
  * @property {string} [pitchesNote]  'at least 13 pitches' when pitches is null
@@ -229,6 +229,7 @@ the best call available in that state. The outcome never changes the grade.
  * @property {string} reason         one line, from the batter's profile or the state:
  *                                   'chases sliders down and away 48% with two strikes'
  * @property {number} reDelta        run expectancy of the call minus the best, runs (shown in debug)
+ * @property {boolean} tied          graded after a tie: value, best, lost and rel are on the tie's goal
  */
 ```
 
@@ -246,6 +247,13 @@ set from `pipeline/band_sweep.mjs --relative`:
 | red | `> 1.5` |
 
 `PitchGrade` carries `rel` beside `lost`. The score and the percentile stay on absolute `lost`.
+
+**After a tie** (the owner's call, 2026-10-20) the objective is no longer the lead, it is not
+letting them go ahead. Every call after a tie is graded on the probability that the inning ends
+without a go-ahead run, under best play, with the same relative bands. It is one value function over
+one state space: the state carries the margin (0 once tied), and a state's goal is the least margin
+that meets it (1 with the lead, 0 tied). With the lead, a move into a tie is worth 0, exactly as
+before, so every grade before a tie is unchanged.
 
 Why hold% and not run expectancy: for a closer only the hold matters. Hold% already sees the cases
 where run expectancy misleads (tying run on third with one out, a three-run lead with nobody on), so
@@ -275,7 +283,7 @@ one unit covers every state. Run expectancy is kept as `reDelta` for debug.
 
 /**
  * @typedef {Object} OutingResult
- * @property {'door_shut'|'doors_open'|'walk_off'} outcome
+ * @property {'door_shut'|'tie_held'|'doors_open'|'walk_off'} outcome
  * @property {number} pitches
  * @property {Band[]} strip
  * @property {number} score          higher is better: hold% kept across the outing plus the result
@@ -283,7 +291,8 @@ one unit covers every state. Run expectancy is kept as `reDelta` for debug.
  * @property {number} percentile     0..100: share of the closer pool's outings this beats
  * @property {{name: string, reason: string}} pitchedLike
  * @property {Reveal} reveal
- * @property {'beat'|'matched'|'lost'} vsReal   outcome first (door_shut > doors_open > walk_off),
+ * @property {'beat'|'matched'|'lost'} vsReal   outcome first, by contract.js OUTCOME_RANK
+ *                                              (door_shut 3 > tie_held 2 > doors_open 1 > walk_off 0),
  *                                              then fewer runs allowed, then fewer pitches when
  *                                              his count is known (reveal.pitches a number).
  *                                              Equal pitches, or his count null, is matched.
@@ -294,9 +303,17 @@ one unit covers every state. Run expectancy is kept as `reDelta` for debug.
  */
 ```
 
-End rules: three outs with our lead intact is `door_shut`. A run that ties is `doors_open` and
-ends the outing. A run that puts them ahead is `walk_off` when `walkOffLive`, otherwise
-`doors_open`. If one play ties it and goes ahead, the go-ahead rule decides.
+End rules (the owner's call, 2026-10-20: "blowing the save but holding the tie"):
+
+- Three outs with our lead intact: `door_shut`.
+- A run that ties does not end the outing. Play goes on in the same inning.
+- After a tie, three outs with the game still tied: `tie_held` (label `HELD THE TIE`, in
+  `contract.js OUTCOME_LABEL` so it is renamed in one place).
+- A run that puts them ahead, before or after a tie: `walk_off` when `walkOffLive`, otherwise
+  `doors_open`.
+- If one play ties it and goes ahead, the go-ahead rule decides.
+
+A held tie is a blown save: it ranks under `door_shut` and breaks the streak (section 12).
 
 ## 9. The engine API (the only thing the UI calls)
 
@@ -390,7 +407,9 @@ The calls are stored with every result, so `check-replays.mjs` can replay any ro
 engine and flag a score the calls do not produce.
 
 The streak is "doors shut in a row": a door shut on consecutive days. A blown save or a missed day
-resets it.
+resets it. A held tie is a blown save, so it resets it too. `155_shut_the_door_tie_held.sql` lets
+`tie_held` into the outcome check and the submit's guard, and adds `tieHeld` to
+`shutdoor_my_stats()`.
 
 ## 13. The mock
 
@@ -407,6 +426,8 @@ G7 (proxy). The verified facts are in `scenarios/CANDIDATES.md`.
 
 - **Starters' arsenals** (Yamamoto, Buehler): the owner chose their postseason mix that October.
 - **Rivera** is `doors_open` under the end rules (Womack's double ties it). The reveal tells the rest.
+  Superseded 2026-10-20 by the tie rule (section 8): Gonzalez's single scores the go-ahead run after
+  the tie, so Rivera is `walk_off`. Chapman 2016 and Feliz 2011 are `tie_held`.
 - **Eckersley**: `reveal.pitches` is null with `pitchesNote`, since Retrosheet lacks two at-bats' pitches.
 - **Bunts**: none in v1. A real bunt shows only in the reveal.
 - **Clase**: not used. Savant's pitch labels stand as published (Hader's sinker draws as `run`).
@@ -443,6 +464,7 @@ modal: it is a card on the result screen, read or skipped.
  * @property {{b: number, s: number}} count
  * @property {number} outs
  * @property {number} bases
+ * @property {boolean} tied             the pitch came after a tie: its numbers are on the tie's goal
  * @property {string} batter
  * @property {Principle} principle
  * @property {string} headline          'ahead 0-2, make him chase'

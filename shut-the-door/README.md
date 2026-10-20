@@ -102,13 +102,20 @@ within 3 mph (tier `batter`), else a similar batter's (`similar`), else the leag
 
 ## Hold%, and the grade
 
-States are (batter index, balls, strikes, outs, bases, margin) with margin = us minus them. Three
-outs with the lead hold (1). A margin of 0 or less is lost (0): door's open and walk-off both lose
-the hold. Hold% of a state is the best call's, by a recursion that ends because the count only
+States are (batter index, balls, strikes, outs, bases, margin) with margin = us minus them, from
+0 (tied) to the starting lead. A run that ties does not end the outing (the owner's call,
+2026-10-20), so a tied game is a state like any other. Each state has a goal: with the lead, hold
+it (three outs at margin 1 or more); once tied, keep them from going ahead (three outs at margin
+0). `goalOf(st)` is that least margin. A state's value is its goal's chance: three outs are 1, a
+go-ahead run is 0, and with the lead a move into a tie is 0 (a blown save), exactly as when a tie
+ended the outing, so every grade before a tie is unchanged. After a tie the same recursion, the
+same `lost` and the same relative bands grade every call on the tie's goal, and the grade says
+`tied: true`. Hold% of a state is the best call's, by a recursion that ends because the count only
 moves forward within a plate appearance (a two-strike foul is a self-loop, solved in closed form)
 and between plate appearances outs, runs or runners only climb (the advancement table keeps
 runners: after + runs + outs = before + 1). `pool.js` solves every state and stores the table
-dense in the pack (`hold.h`, `hold.r` expected runs, `hold.b` the best call); the browser grades
+dense in the pack (`hold.h` the goal's chance, `hold.r` expected runs to the end of the outing,
+`hold.b` the best call; `margins + 1` slots per base-out-count, pack format 2); the browser grades
 from it.
 
 A call's value is the mix over the miss table of each outcome's next state. `lost = best - value`
@@ -135,8 +142,12 @@ pitcher's miss per axis): Statcast does not record the catcher's target, so it i
 ## The outing score and percentile
 
 ```
-score = max(0, 700 - 20 * total pts lost) + {door_shut: 300, doors_open: 100, walk_off: 0}
+score = max(0, 700 - 20 * total pts lost) + {door_shut: 300, tie_held: 200, doors_open: 100, walk_off: 0}
 ```
+
+The result's part is 100 points a rank (`contract.js OUTCOME_RANK`). A held tie is a blown save, a
+full step under a door shut, and the game goes on level, a full step over door's open. After a tie
+the points lost are points of the tie's goal.
 
 So the hold% kept across the outing decides most of it, and the result decides the rest. The
 percentile is the share of the closer pool's outings for that scenario this beats (ties count
@@ -206,6 +217,8 @@ that type, hand and velocity band (2021-2025); the similar tier is matched on se
 score, percentile, pitched like, strip), `shutdoor_streaks`, and three functions, all security
 definer: `shutdoor_submit` (Eastern day within one, the first submit stands, streak of doors shut on
 consecutive days, a blown save or a missed day resets it, returns `{taken, streak, best, rank,
-players}`), `shutdoor_board(day, limit)` and `shutdoor_my_stats()`. Its test is
+players}`), `shutdoor_board(day, limit)` and `shutdoor_my_stats()`.
+`supabase/155_shut_the_door_tie_held.sql` lets `tie_held` in (the check, the submit's guard) and
+adds `tieHeld` to the stats; a held tie resets the streak like any blown save. Its test is
 `supabase/test/shut_the_door_test.sql`. The page needs supabase-js loaded with `defer` (as
 `baseball/index.html` loads it) for `auth.js` to come alive; without it the game plays as a guest.

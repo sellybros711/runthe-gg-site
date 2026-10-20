@@ -108,8 +108,9 @@ function opener(r) {
   var ps = p + (p === 1 ? ' pitch' : ' pitches');
   var rs = runs == null ? '' : runs === 0 ? ' no runs.' : ' ' + runs + (runs === 1 ? ' run.' : ' runs.');
   var a = r.outcome === 'door_shut' ? 'you shut the door. ' + ps + '.' + rs
+    : r.outcome === 'tie_held' ? 'they tied it. you held the tie. ' + ps + '.' + rs
     : r.outcome === 'walk_off' ? 'walk-off. ' + ps + '.' + rs
-    : 'the tying run got home. ' + ps + '.' + rs;
+    : 'the go-ahead run got home. ' + ps + '.' + rs;
   var b = r.percentile != null ? ' that beat ' + Math.round(r.percentile) + '% of closers in this spot.' : '';
   return a + b;
 }
@@ -130,7 +131,7 @@ function lessonCard(L) {
     (pr ? '<p class="cc-pr"><b>' + esc(pr.title) + '.</b> ' + esc(pr.line) + '</p>' : '') +
     (why ? '<ul class="cc-why">' + why + '</ul>' : '') +
     '<p class="cc-next">' + esc(L.nextTime) + '</p>' +
-    (n.callValue != null ? '<p class="cc-num">hold ' + n.callValue.toFixed(1) + '% with your pitch. ' + n.bestValue.toFixed(1) + '% with the best. ' + n.lostPts.toFixed(1) + ' pts lost.</p>' : '') +
+    (n.callValue != null ? '<p class="cc-num">' + (L.tied ? 'kept it tied ' : 'hold ') + n.callValue.toFixed(1) + '% with your pitch. ' + n.bestValue.toFixed(1) + '% with the best. ' + n.lostPts.toFixed(1) + ' pts lost.</p>' : '') +
     '</div>';
 }
 function proCard(p) {
@@ -167,10 +168,10 @@ function review() {
     if (p.paOver) bi++;
     var same = g.bestCall && g.bestCall.type === p.call.type && g.bestCall.cell === p.call.cell;
     var best = !same && g.bestCall ? '<p class="rv-best">best: ' + esc(typeName(g.bestCall.type)) + ', ' + esc(M.cellWords(g.bestCall.cell, b.bats)) +
-      '. it kept ' + g.lost.toFixed(1) + ' pts more hold.</p>' : '';
+      '. it kept ' + g.lost.toFixed(1) + (g.tied ? ' pts more of the tie.</p>' : ' pts more hold.</p>') : '';
     return '<li class="rv-p ' + esc(g.band) + '" data-band="' + esc(g.band) + '">' +
       '<div class="rv-h"><span class="sq ' + esc(g.band) + '"></span><b>' + (i + 1) + '</b>' +
-      '<span>' + esc(X.lastName(b.name)) + ' · ' + cb.b + '-' + cb.s + '</span><span class="rv-band">' + esc(g.band) + '</span></div>' +
+      '<span>' + esc(X.lastName(b.name)) + ' · ' + cb.b + '-' + cb.s + (g.tied ? ' · tied' : '') + '</span><span class="rv-band">' + esc(g.band) + '</span></div>' +
       '<p class="rv-call">' + esc(typeName(p.call.type)) + ', ' + esc(M.cellWords(p.call.cell, b.bats)) + '</p>' +
       '<p class="rv-why">' + esc(g.reason) + '</p>' + best + '</li>';
   }).join('');

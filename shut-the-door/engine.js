@@ -22,15 +22,18 @@
  *      the current outs and bases, chosen by the runner draw.
  *
  * END RULES (CONTRACT.md section 8): three outs with the lead is door_shut. A
- * run that ties ends it doors_open. A run that puts them ahead ends it walk_off
- * when walkOffLive, otherwise doors_open. One play that ties and goes ahead is
- * decided by the go-ahead rule.
+ * run that ties does NOT end it (the owner's call, 2026-10-20): the inning goes
+ * on, and three outs with the game still tied is tie_held. A run that puts them
+ * ahead, before or after a tie, ends it walk_off when walkOffLive, otherwise
+ * doors_open. One play that ties and goes ahead is decided by the go-ahead
+ * rule. After a tie every call is graded on the tie's goal (grade.js THE GOAL).
  *
  * THE OUTING SCORE (higher is better)
  *   score = max(0, 700 - SCORE_PER_PT * total pts lost) + RESULT_BONUS[outcome]
  *   The first part is the hold% kept across the outing (20 points of score per
- *   point of hold% given away), the second the result. Tuned against the closer
- *   pool when the pool exists; reported to the lead before it changes.
+ *   point of hold% given away; after a tie, points of the tie's goal), the
+ *   second the result. Tuned against the closer pool when the pool exists;
+ *   reported to the lead before it changes.
  */
 
 'use strict';
@@ -43,11 +46,19 @@ const G = NODE ? require('./grade.js') : window.STD_GRADE;
 /* lesson.js is optional at load: without it the result has lesson null */
 const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
 
-const ENGINE_VERSION = 1;
-const PACK_VERSION = 1;
+const ENGINE_VERSION = 2;
+/* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
+   for the old end rules is refused rather than misread. */
+const PACK_VERSION = 2;
 const SCORE_BASE = 700;
 const SCORE_PER_PT = 20;
-const RESULT_BONUS = Object.freeze({ door_shut: 300, doors_open: 100, walk_off: 0 });
+/* The result's part of the score: 100 points a rank (contract.js OUTCOME_RANK).
+   tie_held is 200. It is a blown save, so it sits a full step under door_shut
+   (300): holding the tie never pays like holding the lead. The game goes on
+   level, not behind, so it sits a full step over doors_open (100). The even
+   steps keep the old three where they were, so an outing with no tie scores
+   exactly what it scored before the tie rule. */
+const RESULT_BONUS = Object.freeze({ door_shut: 300, tie_held: 200, doors_open: 100, walk_off: 0 });
 const TIER_NAME = Object.freeze(['batter', 'similar', 'league']);
 
 /* Edge cells: the zone's ring (every zone cell but the heart). Used for the
@@ -153,8 +164,8 @@ function throwPitch(o, call) {
 
   if (t2.end) {
     o.status = 'over';
-    if (t2.end === 'hold') o.outcome = 'door_shut';
-    else o.outcome = o.score.them > o.score.us && sc.situation.walkOffLive ? 'walk_off' : 'doors_open';
+    if (t2.end === 'hold') o.outcome = o.score.us > o.score.them ? 'door_shut' : 'tie_held';
+    else o.outcome = sc.situation.walkOffLive ? 'walk_off' : 'doors_open';   // 'lost': they went ahead
   }
 
   const res = pitch[2];

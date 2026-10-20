@@ -34,8 +34,11 @@
  *                 runners after + runs + outs added = runners before + 1. A row
  *                 that makes the third out carries runs 0
  *   hold          the solved table, dense: {margins, h, r, b}: per state index
- *                 (stateIndex below) hold (0..1), expected runs allowed, and the
- *                 best call (typeIndex * 25 + cell). Solved here when absent
+ *                 (stateIndex below) the goal's chance (0..1, see THE GOAL), the
+ *                 expected runs allowed until the outing ends, and the best call
+ *                 (typeIndex * 25 + cell). margins is the starting lead; the
+ *                 table has a slot for every margin from 0 (tied) to it. Solved
+ *                 here when absent
  *
  * THE DRAW AND THE GRADE ARE ONE TABLE
  *   The grade mixes p over the miss table. The engine draws the outcome key from
@@ -43,9 +46,24 @@
  *   chance of anything happening is exactly the chance the grade priced in.
  *
  * STATES
- *   (batter index, balls, strikes, outs, bases, margin), margin = us - them >= 1.
- *   Terminal: three outs with the lead (hold 1); margin <= 0 (hold 0: door's
- *   open or walk-off, both lose the hold). The batter index wraps.
+ *   (batter index, balls, strikes, outs, bases, margin), margin = us - them >= 0.
+ *   A run that ties does not end the outing (the owner's call, 2026-10-20): the
+ *   inning goes on at margin 0. Terminal: three outs (the margin stands), and
+ *   a run that puts them ahead (margin < 0: door's open or walk-off). The
+ *   batter index wraps.
+ *
+ * THE GOAL, AND WHAT hold MEANS
+ *   A state's value is the chance of its goal under best play from there on:
+ *     margin >= 1   the hold: three outs with the lead. A tie is a blown save,
+ *                   so a move into margin 0 is worth 0 here, exactly as it was
+ *                   when a tie ended the outing. Grading before a tie is
+ *                   unchanged.
+ *     margin 0      after the tie: three outs before they go ahead.
+ *   goalOf(st) is that least margin (1 or 0), and a move into a state below it
+ *   is worth 0. A state's goal never changes while the margin stays at or
+ *   above it, so the recursion stays one value function over one state space,
+ *   and the grade, the bands (rel) and the lesson read it the same way in
+ *   both. The field keeps its name, `hold`, in the table and in the API.
  *
  * WHY THE RECURSION TERMINATES
  *   Within a plate appearance the count only moves forward, except a two-strike
@@ -116,9 +134,14 @@ function forceWalk(bases) {
 
 /* ---- the state index (the dense hold table) ---------------------------- */
 
+/* M is the starting lead: margins 0..M, so M + 1 slots per (batter, count, outs, bases). */
 function stateIndex(N, M, bi, b, s, outs, bases, margin) {
-  return ((((bi % N) * 12 + b * 3 + s) * 3 + outs) * 8 + bases) * M + (margin - 1);
+  return ((((bi % N) * 12 + b * 3 + s) * 3 + outs) * 8 + bases) * (M + 1) + margin;
 }
+
+/* The least margin that meets a state's goal: 1 (hold the lead) or, once it is
+   tied, 0 (keep them from going ahead). See THE GOAL above. */
+function goalOf(st) { return st.margin >= 1 ? 1 : 0; }
 
 /* ---- the model over one pack ------------------------------------------ */
 
@@ -181,9 +204,11 @@ Model.prototype.transitions = function (st, cls) {
   const next = (bi + 1) % this.N;
   const pa = (o, nb, runs) => {
     const m = margin - runs;
-    if (m <= 0) return { end: 'lost', runs };
-    if (o >= 3) return { end: 'hold', runs: 0 };
-    return { st: { bi: next, b: 0, s: 0, outs: o, bases: nb, margin: m }, runs };
+    if (m < 0) return { end: 'lost', runs };        // they go ahead: the go-ahead rule decides
+    if (o >= 3) return { end: 'hold', runs: 0 };    // three outs: the margin stands (a row that makes the third out scores none)
+    const r = { st: { bi: next, b: 0, s: 0, outs: o, bases: nb, margin: m }, runs };
+    if (m === 0 && margin > 0) r.tie = true;        // this play tied it, and the inning goes on
+    return r;
   };
   if (cls === 'ball') {
     if (b < 3) return [[1, { st: { ...st, b: b + 1 }, runs: 0 }]];
@@ -205,7 +230,17 @@ Model.prototype.transitions = function (st, cls) {
   return rows.map(([p, nb, runs, oa, label, moves]) => [p, { ...pa(outs + oa, nb, runs), label, moves }]);
 };
 
-/* Hold (0..1) and expected runs of one call in one state. */
+/* The goal's chance after one transition out of st (not a self-loop): 1 for
+   three outs, 0 when they go ahead, 0 for a state below st's goal (a tie from
+   a lead), else that state's own value. Shared by callValue and the lesson. */
+Model.prototype.after = function (st, t) {
+  if (t.end === 'hold') return 1;
+  if (t.end === 'lost') return 0;
+  return t.st.margin >= goalOf(st) ? this.solve(t.st).hold : 0;
+};
+
+/* The goal's chance (0..1) and the expected runs of one call in one state.
+   The runs follow the outing on through a tie, to its real end. */
 Model.prototype.callValue = function (st, type, target) {
   const mix = this.mixed(st.bi, type, target, bucketOf(st.b, st.s));
   let v = 0, r = 0, pself = 0;
@@ -213,11 +248,9 @@ Model.prototype.callValue = function (st, type, target) {
     for (const [q, t] of this.transitions(st, cls)) {
       const w = p * q;
       if (t.self) { pself += w; continue; }
-      if (t.end === 'hold') { v += w; continue; }
-      if (t.end === 'lost') { r += w * t.runs; continue; }
-      const sub = this.solve(t.st);
-      v += w * sub.hold;
-      r += w * (t.runs + sub.runs);
+      v += w * this.after(st, t);
+      if (t.end === 'lost') r += w * t.runs;
+      else if (t.st) r += w * (t.runs + this.solve(t.st).runs);
     }
   }
   if (pself > 0) { v /= (1 - pself); r /= (1 - pself); }
@@ -269,10 +302,10 @@ Model.prototype.startState = function () {
    places, and the browser reads the rounded numbers, so every device grades
    from the same table. */
 Model.prototype.holdTable = function () {
-  const size = this.N * 12 * 3 * 8 * this.M;
+  const size = this.N * 12 * 3 * 8 * (this.M + 1);
   const h = new Array(size).fill(null), r = new Array(size).fill(null), b = new Array(size).fill(null);
   for (let bi = 0; bi < this.N; bi++) for (let bb = 0; bb < 4; bb++) for (let s = 0; s < 3; s++)
-    for (let o = 0; o < 3; o++) for (let bs = 0; bs < 8; bs++) for (let m = 1; m <= this.M; m++) {
+    for (let o = 0; o < 3; o++) for (let bs = 0; bs < 8; bs++) for (let m = 0; m <= this.M; m++) {
       const st = { bi, b: bb, s, outs: o, bases: bs, margin: m };
       const v = this.solve(st);
       const i = stateIndex(this.N, this.M, bi, bb, s, o, bs, m);
@@ -305,6 +338,9 @@ function pitchName(model, type) {
   return a ? a.name : type;
 }
 function pct(x) { return Math.round(x * 1000) / 10; }
+/* The goal's chance in words: 'holds 64.2%' with the lead, 'keeps it tied
+   71.3%' after a tie (the value is a different goal there, THE GOAL above). */
+function keeps(st, x) { return (st.margin >= 1 ? 'holds ' : 'keeps it tied ') + pct(x) + '%'; }
 function fmt3(x) { return x.toFixed(3).replace(/^0/, ''); }
 
 /* The reason line: one fact from the batter's profile or the state, with its
@@ -318,8 +354,8 @@ function reasonFor(model, st, call, best, value, lost, band) {
   if (band === 'green') {
     const n = noteAbout(call.type, call.cell, true);
     if (n) return n.text + '.';
-    if (call.type === best.type && call.cell === best.cell) return `the best call here. it holds ${pct(best.hold)}%.`;
-    return `as good as the best call. ${bestTxt} holds ${pct(best.hold)}%.`;
+    if (call.type === best.type && call.cell === best.cell) return `the best call here. it ${keeps(st, best.hold)}.`;
+    return `as good as the best call. ${bestTxt} ${keeps(st, best.hold)}.`;
   }
   // not green: why this call cost, or why the best call was better
   const bad = noteAbout(call.type, call.cell, false);
@@ -334,10 +370,12 @@ function reasonFor(model, st, call, best, value, lost, band) {
   if (st.s === 2 && pr.whiff && pr.whiff[best.type] != null && best.type !== call.type) {
     return `two strikes. he whiffs on ${Math.round(pr.whiff[best.type] * 100)}% of his swings at the ${pitchName(model, best.type)}.`;
   }
-  return `${bestTxt} holds ${pct(best.hold)}%. this holds ${pct(value)}%.`;
+  return `${bestTxt} ${keeps(st, best.hold)}. this ${keeps(st, value)}.`;
 }
 
-/* The PitchGrade of a call in a state, before it resolves. */
+/* The PitchGrade of a call in a state, before it resolves. After a tie,
+   value, best, lost and rel are on the tie's goal (three outs before they go
+   ahead), and tied says so. */
 function gradeCall(model, st, call) {
   const best = model.solve(st);
   const cv = model.callValue(st, call.type, call.cell);
@@ -354,12 +392,13 @@ function gradeCall(model, st, call) {
     bestCall: { type: best.type, cell: best.cell },
     reason: reasonFor(model, st, call, best, cv.hold, lostR, band),
     reDelta: Math.round((cv.runs - best.runs) * 1000) / 1000,
+    tied: st.margin === 0,
   };
 }
 
 const publicAPI = Object.freeze({
-  BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, forceWalk, stateIndex, Model, gradeCall,
-  placeOf, bucketOf,
+  BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, forceWalk, stateIndex, goalOf, Model, gradeCall,
+  placeOf, bucketOf, keeps,
 });
 if (NODE) module.exports = publicAPI;
 if (typeof window !== 'undefined') window.STD_GRADE = publicAPI;

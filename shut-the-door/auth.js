@@ -191,7 +191,7 @@
     return null;
   }
 
-  /* This account's record: {played, doorShut, doorsOpen, walkOff,
+  /* This account's record: {played, doorShut, tieHeld, doorsOpen, walkOff,
      avgPercentile, bestScore, streak, best, lastDay}, or null. */
   async function myStats() {
     if (!sb || !session) return null;

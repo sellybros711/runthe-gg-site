@@ -112,7 +112,23 @@ function shapeChecks(pack, file) {
     }
   }
   const model = new G.Model(pack);
-  if (pack.hold.h.length !== model.N * 12 * 3 * 8 * model.M) errs.push('hold table size');
+  if (pack.v !== E.PACK_VERSION) errs.push(`pack format ${pack.v}, the engine reads ${E.PACK_VERSION}`);
+  // a slot for every margin from 0 (tied: the inning goes on) to the starting lead
+  if (pack.hold.h.length !== model.N * 12 * 3 * 8 * (model.M + 1)) errs.push('hold table size');
+  if (pack.hold.h.some(v => v == null)) errs.push('hold table has a hole');
+  // a tied state is valued on the tie's goal: three outs before they go ahead
+  const tieStart = { ...model.startState(), margin: 0 };
+  const tv = model.solve(tieStart).hold;
+  if (!(tv > 0 && tv < 1)) errs.push('a tied start is not a probability: ' + tv);
+  // the reveal: the end rules say the real outing ran to its result
+  if (rv.outcome === 'tie_held' && rv.runs !== lead) errs.push('a held tie whose runs are not the lead');
+  if (rv.outcome === 'door_shut' && !(rv.runs < lead)) errs.push('a door shut that gave up the lead');
+  if ((rv.outcome === 'walk_off' || rv.outcome === 'doors_open') && !(rv.runs > lead)) errs.push('a blown lead that never went behind');
+  if (rv.outcome === 'walk_off' && !s.walkOffLive) errs.push('a walk-off with the walk-off off');
+  if (rv.outcome === 'doors_open' && s.walkOffLive) errs.push("door's open with the walk-off live");
+  if (sc.realFaced !== rv.plateAppearances.length) errs.push(`realFaced ${sc.realFaced}, the reveal has ${rv.plateAppearances.length}`);
+  const po = pack.build && pack.build.pool && pack.build.pool.outcomes;
+  if (!po || K.OUTCOMES.some(k => !(k in po))) errs.push('the pool report lacks an outcome');
   if (!(pack.pool.scores.length >= 2000)) errs.push('pool has ' + pack.pool.scores.length + ' runs');
   for (let i = 1; i < pack.pool.scores.length; i++) if (pack.pool.scores[i] < pack.pool.scores[i - 1]) { errs.push('pool scores unsorted'); break; }
   const bytes = statSync(file).size;

@@ -114,7 +114,8 @@ what `test/check-browser.mjs` uses to play every ending:
 | switch | does |
 |---|---|
 | `?mockEnd=door_shut` | every pitch a swinging strike: nine pitches, door shut |
-| `?mockEnd=doors_open` | single, double play (two runners `to: -1`), solo home run: the tying run |
+| `?mockEnd=tie_held` | solo home run ties it, play goes on, then every pitch a swinging strike: held the tie |
+| `?mockEnd=doors_open` | single, double play (two runners `to: -1`), solo home run ties it, solo home run goes ahead, with the walk-off off (the end rules of 2026-10-20) |
 | `?mockEnd=walk_off` | single, single, three-run home run: the winning run |
 | `?mockProxy=1` | `resolution: 'proxy'`, so the quiet "modern pitch data" note shows |
 | `?mockNull=1` | `reveal.pitches` null with `pitchesNote: 'at least 13 pitches'` |
