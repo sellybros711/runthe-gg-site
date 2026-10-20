@@ -487,13 +487,17 @@ async function run(w, h, theme) {
   ok(mirror.c20 > mirror.c0t, '3 row 0 is high, row 4 is low');
   ok(mirror.w >= 36 && mirror.hgt >= 36, '3 a cell is big enough to tap (' + Math.round(mirror.w) + 'x' + Math.round(mirror.hgt) + ')');
   await shot('mound');
+  /* the heat map is always on: 25 painted cells before any tap, and the card opens over it */
+  const heat = await page.evaluate(() => [...document.querySelectorAll('#m-scene .grid .cell')].filter((c) => c.style.background).length);
+  ok(heat === 25, '4 the heat map is on the grid before any tap, on the same 25 cells');
   await page.click('#m-batter');
   await page.waitForSelector('#m-scout:not([hidden])');
-  const heat = await page.evaluate(() => [...document.querySelectorAll('#m-scene .grid .cell')].filter((c) => c.style.background).length);
-  ok(heat === 25, '4 scouting paints the heat map on the same 25 cells');
   await shot('scout');
-  await page.click('#m-scout [data-heat="swing"]');
+  await page.click('#m-heat [data-heat="swing"]');
+  const swingOn = await page.evaluate(() => document.querySelector('#m-heat [data-heat="swing"]').getAttribute('aria-selected') === 'true');
+  ok(swingOn, '4 the damage and swings switch is on the mound, outside the card');
   await shot('scout-swings');
+  await page.click('#m-heat [data-heat="damage"]');
   await page.click('#m-batter');
   ok(await page.evaluate(() => document.getElementById('m-scout').hidden), '4 scouting closes on a second tap');
 

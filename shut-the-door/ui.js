@@ -86,7 +86,7 @@ function record(day, number, r) {
 var S = {
   day: C.easternDay(), scn: null, daily: null, dailyResult: null,
   outing: null, mode: 'daily', type: null, cell: null, busy: false,
-  heat: null, scene: null, grid: null, mini: null, hero: null, result: null,
+  heat: 'damage', scout: false, scene: null, grid: null, mini: null, hero: null, result: null,
 };
 
 /* ---- small things ------------------------------------------------------------- */
@@ -339,8 +339,8 @@ function buildMound() {
   /* the 3D module lands after this: put the grid on its zone then */
   if (S.scene.arrived) S.scene.arrived.then(function (st) { return st.ready; }).then(function () { if (document.body.dataset.screen === 's-mound') relayout(); });
   S.grid = new M.Grid($('m-scene'), { onPick: pickCell });
-  /* the grid sits over the canvas, under the scout card and the callout */
-  $('m-scene').insertBefore(S.grid.el, $('m-scout'));
+  /* the grid sits over the canvas, under the mini map and the dot key */
+  $('m-scene').insertBefore(S.grid.el, $('m-dbg'));
   /* the live field minimap: built into its slot, shown after the first play of the outing */
   S.mini = window.STD_MINIMAP ? window.STD_MINIMAP.create($('m-mini')) : null;
   var ars = $('m-arsenal');
@@ -358,6 +358,12 @@ function buildMound() {
   });
   $('m-throw').addEventListener('click', throwIt);
   $('m-batter').addEventListener('click', toggleScout);
+  $('m-heat').addEventListener('click', function (e) {
+    var x = e.target.closest('[data-heat]');
+    if (!x) return;
+    S.heat = x.dataset.heat;
+    renderScout();
+  });
   window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); if (S.hero) drawHero(); });
 }
 
@@ -392,7 +398,7 @@ function setBatter(first) {
   $('m-bhand').textContent = 'bats ' + handWord(b.bats);
   $('m-bline').textContent = b.line;
   relayout();
-  if (S.heat) { S.grid.setHeat(b.profile, S.heat); renderScout(); }
+  renderScout();
   if (!first) pbp('', b.name + ' up.');
 }
 
@@ -407,6 +413,12 @@ function renderHud(st) {
   // the hitters' club, from the same rule the 3D kit uses (clubs.js, loaded by index.html); grey until it is
   var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: S.scn.title, scenarioId: S.scn.id, pitcher: S.scn.pitcher }) : null;
   setClub($('m-themclub'), them ? [them.pri, them.sec] : null);
+  var usName = closerName(S.scn.pitcher), themName = them ? (them.as || them.nick) : '';
+  $('m-usname').textContent = usName || 'us';
+  $('m-themname').textContent = themName ? themName.toUpperCase() : 'them';
+  $('m-usname').title = usName ? S.scn.pitcher.team : '';
+  $('m-themname').title = them ? (them.city + ' ' + them.nick) : '';
+  S.grid.setPitches(st.log, paStart(st.log));
   $('m-us').textContent = st.score.us;
   $('m-them').textContent = st.score.them;
   $('m-inn').innerHTML = '<b>' + (sit.half === 'bottom' ? 'bot' : 'top') + '</b> ' + sit.inning;
@@ -473,33 +485,89 @@ function updateThrow() {
 }
 
 function toggleScout() {
-  S.heat = S.heat ? null : 'damage';
+  S.scout = !S.scout;
   renderScout();
 }
+
+/* The heat map is always on the grid (S.heat is its mode); the scout card is the reading of
+   the hitter, opened by the batter bar. It is a sheet over the lower HUD, under the grid. */
 function renderScout() {
-  var b = batterAt(S.outing.batterIndex), pr = b.profile, box = $('m-scout');
-  $('m-batter').setAttribute('aria-expanded', S.heat ? 'true' : 'false');
-  $('m-batter').classList.toggle('on', !!S.heat);
-  S.grid.setHeat(pr, S.heat);
-  if (!S.heat) { box.hidden = true; return; }
-  var wh = S.scn.pitcher.arsenal.map(function (a) {
-    var v = pr.whiff[a.type];
-    return '<span><b>' + (v == null ? '-' : pct(v)) + '</b> ' + esc(a.name) + '</span>';
-  }).join('');
-  var H = M.HEAT[S.heat];
-  box.hidden = false;
-  box.innerHTML =
-    '<div class="sc-row"><span><b>' + pct(pr.chase) + '</b> chase</span><span><b>' + pct(pr.zoneSwing) + '</b> zone swing</span></div>' +
-    '<div class="sc-row wh"><span class="lbl">whiffs</span>' + wh + '</div>' +
-    '<div class="sc-row"><div class="seg sm" role="tablist">' +
-    '<button type="button" data-heat="damage" aria-selected="' + (S.heat === 'damage') + '">damage</button>' +
-    '<button type="button" data-heat="swing" aria-selected="' + (S.heat === 'swing') + '">swings</button></div>' +
-    '<span class="legend"><i class="lo"></i>' + esc(H.fmt(H.lo)) + '<i class="hi"></i>' + esc(H.fmt(H.hi)) + '</span></div>' +
-    (pr.notes && pr.notes[0] ? '<p class="sc-note">' + esc(pr.notes[0]) + '</p>' : '') +
-    (b.profileTier !== 'batter' ? '<p class="sc-note quiet">profile from ' + (b.profileTier === 'similar' ? 'similar hitters' : 'the league') + '</p>' : '');
-  box.querySelectorAll('[data-heat]').forEach(function (x) {
-    x.addEventListener('click', function (e) { e.stopPropagation(); S.heat = x.dataset.heat; renderScout(); });
+  var b = batterAt(S.outing.batterIndex), box = $('m-scout');
+  S.grid.setHeat(b.profile, S.heat);
+  $('m-batter').setAttribute('aria-expanded', S.scout ? 'true' : 'false');
+  $('m-batter').classList.toggle('on', !!S.scout);
+  document.querySelectorAll('#m-heat [data-heat]').forEach(function (x) {
+    x.setAttribute('aria-selected', x.dataset.heat === S.heat ? 'true' : 'false');
   });
+  var H = M.HEAT[S.heat];
+  $('m-heat-legend').innerHTML = '<i class="lo"></i>' + esc(H.fmt(H.lo)) + '<i class="hi"></i>' + esc(H.fmt(H.hi));
+  if (!S.scout) { box.hidden = true; return; }
+  box.innerHTML = scoutCard(b);
+  box.hidden = false;
+  /* a sheet over the lower HUD: it stops just under the grid's last row, so the zone is never covered */
+  var gb = S.grid.el.getBoundingClientRect().bottom, sb = $('s-mound').getBoundingClientRect().bottom;
+  box.style.maxHeight = Math.max(120, sb - gb - 12) + 'px';
+}
+
+/* The card: one sentence, the hitter's rates as bars, and his line against each pitch of the
+   closer's arsenal. Built only from the profile and the arsenal. A field the data does not have
+   is left out, never shown as zero. The league marker draws only if the profile carries a league
+   value (no pack does yet). */
+function scoutCard(b) {
+  var pr = b.profile, lg = pr.league || {};
+  var rows = S.scn.pitcher.arsenal.map(function (a) {
+    var w = pr.whiff ? pr.whiff[a.type] : null, l = lg.whiff ? lg.whiff[a.type] : null;
+    return { name: a.name, usage: a.usage, whiff: w == null ? null : w, lg: l == null ? null : l };
+  });
+  var bars = '';
+  if (pr.zoneSwing != null) bars += barRow('zone swing', pr.zoneSwing, lg.zoneSwing);
+  if (pr.chase != null) bars += barRow('chase', pr.chase, lg.chase);
+  var table = rows.map(function (r) {
+    return '<div class="pr"><span class="pn">' + esc(r.name) + '</span>' +
+      '<span class="cell">' + track(r.usage, null, 'mx') + '<b>' + pct(r.usage) + '</b></span>' +
+      '<span class="cell">' + (r.whiff != null ? track(r.whiff, r.lg, 'wh') + '<b>' + pct(r.whiff) + '</b>' : '') + '</span></div>';
+  }).join('');
+  var note = b.profileTier !== 'batter' ? '<p class="sc-note">profile from ' + (b.profileTier === 'similar' ? 'similar hitters' : 'the league') + '</p>' : '';
+  return '<p class="sc-say">' + esc(scoutSentence(pr, rows)) + '</p>' +
+    (bars ? '<div class="sc-bars">' + bars + '</div>' : '') +
+    '<div class="sc-pitches"><div class="pr hd"><span class="pn"></span><span class="cell">mix</span><span class="cell">whiffs</span></div>' + table + '</div>' + note;
+}
+function barRow(label, v, lgv) {
+  return '<div class="bar"><span class="bl">' + esc(label) + '</span>' + track(v, lgv, 'bt') + '<b>' + pct(v) + '</b></div>';
+}
+/* a 0-100% track: the fill is the rate, a thin tick is the league's rate when there is one */
+function track(v, lgv, cls) {
+  var w = Math.max(0, Math.min(1, v)) * 100;
+  return '<span class="trk ' + cls + '"><i style="width:' + w.toFixed(1) + '%"></i>' +
+    (lgv != null ? '<em style="left:' + (Math.max(0, Math.min(1, lgv)) * 100).toFixed(1) + '%" title="league ' + pct(lgv) + '"></em>' : '') + '</span>';
+}
+/* one sentence from the hitter's own numbers; the whiff clause needs two pitches to compare */
+function scoutSentence(pr, rows) {
+  var parts = [];
+  if (pr.zoneSwing != null) parts.push('swings at ' + pct(pr.zoneSwing) + ' in the zone');
+  if (pr.chase != null) parts.push('chases ' + pct(pr.chase) + ' out');
+  var seen = rows.filter(function (r) { return r.whiff != null; });
+  if (seen.length >= 2) {
+    var worst = seen.reduce(function (m, r) { return r.whiff > m.whiff ? r : m; });
+    parts.push('misses the ' + worst.name + ' most');
+  }
+  if (!parts.length) return '';
+  var s = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + (parts.length === 2 ? ' and ' : ', and ') + parts[parts.length - 1];
+  return s.charAt(0).toUpperCase() + s.slice(1) + '.';
+}
+
+/* the closer's club in capitals, from the club table: the nickname, or the last word of a name
+   the table does not know (never the city) */
+function closerName(p) {
+  var c = window.STD_CLUB_NAMED ? window.STD_CLUB_NAMED(p.team) : null;
+  if (c) return c.nick.toUpperCase();
+  var parts = String(p.team || '').trim().split(/\s+/);
+  return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '';
+}
+/* the first pitch to the hitter now up: the pitches before it are the outing's, the rest his */
+function paStart(log) {
+  for (var i = log.length - 1; i >= 0; i--) if (log[i].paOver) return i + 1;
+  return 0;
 }
 
 /* The play by play: one quiet line under the scoreboard. It covers nothing
@@ -535,8 +603,8 @@ function throwIt() {
   var call = { type: S.type, cell: S.cell };
   updateThrow();
   S.grid.setDisabled(true);
-  var heatWas = S.heat;
-  if (S.heat) { S.heat = null; renderScout(); }
+  var scoutWas = S.scout;
+  if (S.scout) { S.scout = false; renderScout(); }
   $('m-scene').classList.add('flying');
   API.throwPitch(S.outing.outingId, call).then(function (res) {
     var pr = res.pitchResult, batter = batterAt(S.outing.batterIndex);
@@ -547,7 +615,7 @@ function throwIt() {
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       S.lastMarker = S.scene.toScreen(pr.actual);
       $('m-scene').classList.remove('flying');
-      S.grid.setMarks({ target: pr.call.cell, actual: pr.actualCell });
+      S.grid.setMarks({ target: pr.call.cell });
       hudRunners(null);
       renderHud(res.state);
       if (S.mini) S.mini.show(pr);
@@ -560,7 +628,7 @@ function throwIt() {
       if (S.outing.status === 'over') return finish();
       if (S.scene.setTarget) S.scene.setTarget(null);
       if (pr.paOver) { S.lastMarker = null; S.grid.setMarks({}); setBatter(false); } else S.scene.draw(idleFrame());
-      if (heatWas) { S.heat = heatWas; renderScout(); }
+      if (scoutWas) { S.scout = true; renderScout(); }
       renderHud(S.outing);
       updateThrow();
     });
