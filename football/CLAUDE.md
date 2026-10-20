@@ -28,6 +28,7 @@ node football/check-fullteam.mjs      Full Team: the door, the gate, the save, t
 node football/check-dynasty.mjs       Dynasty
 node football/check-cloudsave.mjs     the dynasty saved both directions
 node football/check-premium.mjs       what each product unlocks
+node football/check-daylock.mjs       a daily lock opens when its countdown ends (fake clock)
 node football/check-popups.mjs        the guide, the rules sheets, two devices
 node football/check-badges.mjs        every badge proved reachable (--quick: fewer runs)
 node football/check-gameday.mjs       the Game Day shelf
@@ -58,6 +59,14 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
   real database after any migration. Cloudflare deploys from main on its own, so the deploy and the
   schema move independently.
 - The fantasy SQL goes through `.github/workflows/fantasy-sql.yml` (dry run by default).
+
+**The daily locks**
+
+- A cached meter answer runs out at its own `resetsAt` (`dailyLapse`), and a cached one-new-dynasty
+  refusal at its `nextAt`. A gate reads the meter through `dailyShut`, `dailyLeft`, `dailyResetsAt`
+  and `dailyAllow`, which retire it, never off `dailyState` directly.
+- `ps_attempt_day_end` never stamps a lock that has already run out (`154_dynasty_day_end_lapsed.sql`).
+  Stamping one turned a countdown at zero into a fresh 24 hours.
 
 **The Fantasy Challenge**
 
