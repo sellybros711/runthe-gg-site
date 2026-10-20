@@ -10830,8 +10830,32 @@ const dailyOn=()=>dailyLimited()&&!!authState.signedIn
   &&premiumSet!==null&&!dynastyOwned();
 /* How many are left today, and 1 whenever the page has no answer. What one of them buys is
    dailyUnit's question, not this one. */
+/* A CACHED ANSWER RUNS OUT AT ITS OWN resetsAt, and this is what says so.
+ *
+ * The meter is asked once per sign-in and then read off the cache, so without this the page
+ * goes on holding "used 3 of 3, locked until T" long after T. Reported by a signed in player:
+ * the spent sheet read 1s, they closed it, opened it again, and it read 24 hours. Past T the
+ * countdown has nothing left to count, dailyShut still answered true off the stale `used`, and
+ * the sheet fell through to its fallback line. Worse, a results screen painted from that cache
+ * reports the day over AGAIN, and a database on 105 answered an expired lock by stamping a
+ * fresh 24 hours (154_dynasty_day_end_lapsed.sql is the server half).
+ *
+ * So past T the cache is replaced with what ps_attempts_state itself answers for a lapsed
+ * window: nothing used, no clock. The allowance is left null, which every reader here takes
+ * as no opinion (so permission), and the boot read is re-armed to fill it in. The same is
+ * true of a calendar-day mode at Eastern midnight, so this is not Dynasty's alone.
+ * Written through dailyPut, because that is the one writer and its count is what tells a read
+ * that was already in flight that it describes the old window. */
+function dailyLapse(mode){
+  const s=dailyState[mode];
+  const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
+  if(!Number.isFinite(t)||t>Date.now()) return;
+  dailyPut(mode,{used:0,allowance:null,resetsAt:null,unit:s.unit,ended:false});
+  dailyAsked[mode]=false; dailyTried[mode]=0;
+}
 function dailyLeft(mode){
   if(!dailyOn()) return 1;
+  dailyLapse(mode);
   const s=dailyState[mode];
   if(!s||s.used==null||s.allowance==null) return 1;
   return Math.max(0,s.allowance-s.used);
@@ -10841,7 +10865,7 @@ function dailyLeft(mode){
 const dailyUnit=(mode)=>((dailyState[mode]&&dailyState[mode].unit)||'run');
 const dailySeasons=(mode)=>dailyUnit(mode)==='season';
 /* The day is over because the run is, which only season metering has a notion of. */
-const dailyEnded=(mode)=>!!(dailyState[mode]&&dailyState[mode].ended);
+const dailyEnded=(mode)=>{ dailyLapse(mode); return !!(dailyState[mode]&&dailyState[mode].ended); };
 /* Nothing more today, for either reason. The one question every gate asks. */
 const dailyShut=(mode)=>dailyOn()&&(dailyEnded(mode)||dailyLeft(mode)<=0);
 /* AND WHETHER A CLOCK IS ACTUALLY RUNNING ON IT, which is a separate question under the
@@ -10855,10 +10879,12 @@ const dailyTicking=(mode)=>dailyResetsAt(mode)!=null;
    the fallback for a page that has not been answered yet. */
 const DYN_DAY_SEASONS=3;
 const dailyAllow=(mode)=>{
+  dailyLapse(mode);
   const s=dailyState[mode];
   return (s&&s.allowance!=null)?s.allowance:(mode==='dynasty'?DYN_DAY_SEASONS:1);
 };
 const dailyResetsAt=(mode)=>{
+  dailyLapse(mode);
   const s=dailyState[mode];
   const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
   return Number.isFinite(t)?t:null;
@@ -10963,8 +10989,14 @@ function runDayEnsure(){
     paintHomeStart();
   }).catch(()=>{ missed(); });
 }
-/* Shut only on a definite refusal. An owner answers pro and is never shut. */
-const runDayShut=()=>!!(dailyOn()&&runDayState&&runDayState.ok===false&&!runDayState.pro);
+/* Shut only on a definite refusal. An owner answers pro and is never shut.
+   AND ONLY UNTIL nextAt. The refusal is cached for the session, so past that moment it
+   describes a day that is over; the same stale cache dailyLapse retires on the season meter.
+   No re-ask is needed: dynRunStart is the write and it asks the server anyway. */
+const runDayShut=()=>{
+  const t=runDayNext();
+  return !!(dailyOn()&&runDayState&&runDayState.ok===false&&!runDayState.pro&&!(t!=null&&t<=Date.now()));
+};
 const runDayNext=()=>{
   const t=runDayState&&runDayState.nextAt?Date.parse(runDayState.nextAt):NaN;
   return isNaN(t)?null:t;
