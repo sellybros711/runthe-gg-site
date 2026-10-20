@@ -753,7 +753,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       'The Daily Hole board is empty for everybody. Rounds play and pay, and none is posted.',
       (select count(*) > 0 from has_table where name = 'putt_daily')
       and (select count(*) > 0 from proc where name = 'putt_daily_submit')
-      and (select count(*) > 0 from proc where name = 'putt_daily_board'))
+      and (select count(*) > 0 from proc where name = 'putt_daily_board')),
+  -- THE DYNASTY WAIT ENDS WHEN IT SAYS. Asked of the body, because 154 restates a
+  -- function 105 already created and the name alone reads yes on either.
+  (66, '154_dynasty_day_end_lapsed',
+      'a Dynasty wait that has run out is never started again',
+      'A free player whose countdown reaches zero can be locked out for another 24 hours by reopening their finished season.',
+      (select count(*) > 0 from proc
+        where name = 'ps_attempt_day_end' and body like '%v_lapsed%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

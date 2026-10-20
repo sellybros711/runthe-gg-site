@@ -10,7 +10,7 @@ const C0 = build(null), TM = S.timed(C0), [cx, cy] = C0.cup, tx = C0.tee[0], ty 
 const T0 = TM ? [0, 0.45, 0.9, 1.35, 1.8, 2.25, 2.7, 3.15] : [0];
 const near = r => { let m = 1e9, k = -1; r.pts.forEach((p, i) => { const d = Math.hypot(p[0] - cx, p[1] - cy); if (d < m){ m = d; k = i; } }); return [m, k]; };
 const fine = (C, a0, f0b, t0) => { for (const dt of TM ? [-0.2, -0.1, 0, 0.1, 0.2] : [0]) for (let da = -1.2; da <= 1.2; da += 0.15) for (let df = -2; df <= 2; df += 0.25){
-  const a = a0 + da * Math.PI / 180, ft = Math.min(44, Math.max(3, f0b + df)), tt = Math.max(0, t0 + dt);
+  const a = a0 + da * Math.PI / 180, ft = Math.min(P.MAX_FT, Math.max(3, f0b + df)), tt = Math.max(0, t0 + dt);
   if (S.shot(C, tx, ty, a, ft, tt).holed && S.robust(C, tx, ty, a, ft, tt)) return [[a, ft, tt]]; } return null; };
 const cand = [];
 for (const t0 of T0) for (let d = 0; d < 360; d++) for (let ft = 4; ft <= 38; ft += 2){ const a = d * Math.PI / 180, r = S.shot(C0, tx, ty, a, ft, t0);
@@ -42,7 +42,7 @@ if (!res){ const R = JSON.parse(createRequire(import.meta.url)('fs').readFileSyn
         const kit = { bank:[+(bx - ux * half).toFixed(2), +(by - uy * half).toFixed(2), +(bx + ux * half).toFixed(2), +(by + uy * half).toFixed(2)], back, len, bs, ba, dx:+ox.toFixed(3), dy:+oy.toFixed(3) };
         const ex = (H, T) => { h.board(H, T, kit.bank[0], kit.bank[1], kit.bank[2], kit.bank[3], 0.35); const qx = cx + kit.dx * back, qy = cy + kit.dy * back; h.board(H, T, qx - kit.dy * len, qy + kit.dx * len, qx + kit.dy * len, qy - kit.dx * len, 0.35); h.bowl(H, cx, cy, bs, ba); };
         const C = build(ex);
-        outer: for (const dt of TM ? [-0.3, -0.15, 0, 0.15, 0.3] : [0]) for (let da = -1.5; da <= 1.5; da += 0.15) for (let ft = f1 + 2; ft <= 44; ft += 0.5){
+        outer: for (const dt of TM ? [-0.3, -0.15, 0, 0.15, 0.3] : [0]) for (let da = -1.5; da <= 1.5; da += 0.15) for (let ft = f1 + 2; ft <= P.MAX_FT; ft += 0.5){
           const a = a1 + da * Math.PI / 180, tt = Math.max(0, t1 + dt), r = S.shot(C, tx, ty, a, ft, tt);
           if (r.holed && S.robust(C, tx, ty, a, ft, tt)){ res = [[a, ft, tt]]; used = kit; break outer; } } } } } }
 console.log(JSON.stringify({ k:tour + ':' + n, ace:res, kit:used, cup:[cx, cy], s:Math.round((Date.now() - t) / 1000) }));

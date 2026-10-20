@@ -203,7 +203,10 @@ const sample = (p) => p.evaluate(() => {
 
 head('1-3. A RUN THAT REACHES A DECIDING GAME, WATCHED WITHOUT SKIPPING');
 let found = null;
-for (let attempt = 0; attempt < 10 && !found; attempt++) {
+/* ABOUT ONE RUN IN FOUR HAS A DECIDER, so ten tries missed about one time in 25
+   with nothing wrong. Twenty-four make that about one in a thousand, and the loop
+   stops at the first decider, so a passing run costs what it always did. */
+for (let attempt = 0; attempt < 24 && !found; attempt++) {
   const { ctx, p } = await openPage({});
   await p.evaluate(() => { try { localStorage.setItem('rtd_po_speed', '2'); } catch (_) {} });
   const d = await draft(p);
