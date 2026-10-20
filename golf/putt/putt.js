@@ -1247,7 +1247,7 @@ var LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [0, -32]); pads(H, [[-2.5, -12, 0.75], [2.5, -15, 0.75], [-1, -20, 0.75], [3, -24.5, 0.7], [-3.2, -26, 0.7]]); zoneR(H, M.WATER, -6, -17, -4.5, -23); zoneR(H, M.WATER, 4.5, -17, 6, -23);
     blk(H, T, -4.8, -17, -4.5, -23); blk(H, T, 4.5, -17, 4.8, -23); bowl(H, 0, -32, 1.8, 0.13); return H; } },
   // Walk the Plank: off the kicker over the lagoon, up the railed lane, putt out.
-  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -12), rm(-4, -11.9, 4, -15.1), rm(-4, -15, 4, -30)], [0, -2.5], [0, -26]); jump(H, 0, -12, 0, -1, 2.8, 8, { h:0.7, ang:38 }); zoneR(H, M.WATER, -4, -15, -2.4, -30); zoneR(H, M.WATER, 2.4, -15, 4, -30);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -12), rm(-4, -11.9, 4, -15.1), rm(-4, -15, 4, -30)], [0, -2.5], [0, -26]); jump(H, 0, -12, 0, -1, 2.8, 8, { h:0.7, ang:38 }); zoneR(H, M.WATER, -4, -15, -2.4, -30); zoneR(H, M.WATER, 2.4, -15, 4, -30);
     blk(H, T, -2.7, -16, -2.4, -30); blk(H, T, 2.4, -16, 2.7, -30); bowl(H, 0, -26, 1.8, 0.13); return H; } },
   // Harbor Gates: through two gates, with the water between them railed off, two putts.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -40)], [0, -2.5], [0, -36]); gateWall(H, T, -12, -5, 5, -1.1, 1.1, 2.2, 0, 1); zoneR(H, M.WATER, -5, -18, -1.4, -24); zoneR(H, M.WATER, 1.4, -18, 5, -24); gateWall(H, T, -27, -5, 5, -1.1, 1.1, 2.6, 0.5, -1);
@@ -1258,15 +1258,15 @@ var LEVELS = [
   // Sandbar: through the gaps in the soft sand, round the pools, two putts.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [-3, -2.5], [4, -34.2]); zoneR(H, M.MUD, -6, -13, 6, -15); zoneR(H, M.GREEN, -1.2, -13, 0.8, -15); zoneR(H, M.MUD, -6, -24, 6, -26); zoneR(H, M.GREEN, 1.2, -24, 3.2, -26); zoneC(H, M.WATER, 2.6, -19, 1.2); zoneC(H, M.WATER, -2.6, -20, 1.2); zoneC(H, M.WATER, -1.2, -29.5, 1.1); bowl(H, 4, -34.2, 1.8, 0.13); return H; } },
   // Whirlpool: through the loop, between the pools, putt out.
-  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -11), pg([[-4, -11], [4, -11], [0.8, -14.6], [-0.8, -14.6]]), rm(-0.8, -14.5, 0.8, -19), rm(-5, -18.9, 5, -36)], [0, -2.5], [-0.3, -32]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -11), pg([[-4, -11], [4, -11], [0.8, -14.6], [-0.8, -14.6]]), rm(-0.8, -14.5, 0.8, -19), rm(-5, -18.9, 5, -36)], [0, -2.5], [-0.3, -32]);
     loopAt(H, 0, -16.8, 0, -1, 0.8, 1.6); zoneR(H, M.WATER, -5, -22, -1.2, -26); zoneR(H, M.WATER, 1.2, -22, 5, -26); zoneR(H, M.WATER, 1.5, -26, 5, -36); blk(H, T, 1.2, -26, 1.5, -36); bowl(H, -0.3, -32, 1.6, 0.12); return H; } },
   // Rope Bridges: two bridges on two clocks, curbs on both channels, two putts.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.6), rm(-5, -15.5, 5, -24), rm(-5, -23.9, 5, -27.6), rm(-5, -27.5, 5, -38)], [0, -2.5], [3, -34]);
     zoneR(H, M.WATER, -5, -12, 5, -15.5); drawb(H, -0.4, -12, 2.6, -15.5, 2.6, 0, 0.55); zoneR(H, M.WATER, -5, -24, 5, -27.5); drawb(H, 1.5, -24, 4.5, -27.5, 2.4, 0.35, 0.55); bumps(H, T, [[-1.5, -20, 0.6]]);
     blk(H, T, -5, -11.4, -0.4, -12); blk(H, T, 2.6, -11.4, 5, -12); blk(H, T, -5, -23.4, 1.5, -24); blk(H, T, 4.5, -23.4, 5, -24); board(H, T, 1.4, -35.4, 3, -36.3); board(H, T, 3, -36.3, 4.6, -35.4); bowl(H, 3, -34, 1.8, 0.13); return H; } },
   // Cannon Fire: under three swinging booms, rails along the water, two putts. The secret: a firm putt banks off the back rail and drops.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -40)], [0, -2.5], [0, -36]); spinner(H, T, -1.6, -13, 2.2, 1.7, 2); spinner(H, T, 1.6, -21, 2.2, -1.7, 2); spinner(H, T, -1.6, -29, 2.2, 1.9, 3);
-    zoneR(H, M.WATER, -5, -11, -4.6, -32); zoneR(H, M.WATER, 4.6, -11, 5, -32); blk(H, T, -4.6, -11, -4, -32); blk(H, T, 4, -11, 4.6, -32); bowl(H, 0, -36, 1.3, 0.12); secret(H, -0.24, -39.1, 1.36, -40.7); return H; } },
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -38)], [0, -2.5], [0, -35.5]); spinner(H, T, -1.6, -13, 2.2, 1.7, 2); spinner(H, T, 1.6, -21, 2.2, -1.7, 2); spinner(H, T, -1.6, -29, 2.2, 1.9, 3);
+    zoneR(H, M.WATER, -5, -11, -4.6, -32); zoneR(H, M.WATER, 4.6, -11, 5, -32); blk(H, T, -4.6, -11, -4, -32); blk(H, T, 4, -11, 4.6, -32); bowl(H, 0, -35.5, 1.3, 0.12); secret(H, -0.24, -37.1, 1.36, -38.7); return H; } },
   // Ship Decks: the right ramp to the middle deck, the narrow one in the middle up again, between the water, putt out.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -14), rm(-7, -18, 7, -30, 0.8), rm(-7, -34, 7, -46, 1.6)], [0, -2.5], [0, -42]);
     climb(H, 4, -14, -18, 2.2); climb(H, 0, -30, -34, 1.8);
@@ -1372,7 +1372,7 @@ var LEVELS = [
   // Turntables: two turntables turning opposite ways. Ride them or go round.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [-1, -34]); disc(H, -2.5, -14, 2.2, 1.2); disc(H, 2.5, -24, 2.2, -1.3); bumps(H, T, [[3.5, -12, 0.55], [-3.6, -27, 0.55], [-0.6, -30.4, 0.55]]); bowl(H, -1, -34); zoneR(H, M.MUD, 4, -34, 7, -38); zoneR(H, M.MUD, -7, -6, -4, -9); return H; } },
   // Boulder Field: bounce off the boulders, keeping off the shaft down the left side.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [3.5, -31]); pads(H, [[-4, -12, 0.75], [0, -14, 0.75], [4, -12, 0.75], [-2, -20, 0.7], [2.5, -20.5, 0.7], [0, -26, 0.7]]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [3.5, -31]); pads(H, [[-4, -12, 0.75], [0, -14, 0.75], [4, -12, 0.75], [-2, -20, 0.7], [2.5, -20.5, 0.7], [0, -26, 0.7]]);
     zoneR(H, M.WATER, -7, -22, -5.3, -30); blk(H, T, -5.3, -22, -5, -30); bowl(H, 3.5, -31); zoneR(H, M.MUD, 4.5, -35, 7, -36); return H; } },
   // Stamp Mill: the mill on the ledge's edge, wall to wall, then the lane between two shafts.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -42)], [0, -2.5], [0, -37]); millAt(H, T, -16, 7, 1.4); zoneR(H, M.WATER, -7, -24, -2, -29); zoneR(H, M.WATER, 2, -24, 7, -29); blk(H, T, -2.3, -24, -2, -29); blk(H, T, 2, -24, 2.3, -29);
@@ -1387,7 +1387,7 @@ var LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -40)], [0, -2.5], [0, -36]); slider(H, T, -12, -3.2, 3.2, 2.2, 0); slider(H, T, -20, 3.2, -3.2, 2.6, 0.4); slider(H, T, -28, -3.2, 3.2, 3.0, 0.7);
     zoneR(H, M.WATER, -5, -10, -4.4, -31); zoneR(H, M.WATER, 4.4, -10, 5, -31); blk(H, T, -4.4, -10, -4.1, -31); blk(H, T, 4.1, -10, 4.4, -31); bowl(H, 0, -36); bumps(H, T, [[2.5, -5.5, 0.5]]); return H; } },
   // Two Belts: two belts running opposite ways, one after the other.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [2, -33]); belt(H, -7, -10, 7, -14, 5, 0); belt(H, -7, -20, 7, -24, -5, 0); zoneR(H, M.WATER, -7, -27, -4.3, -31); blk(H, T, -4.3, -27, -4, -31);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [2, -33]); belt(H, -7, -10, 7, -14, 5, 0); belt(H, -7, -20, 7, -24, -5, 0); zoneR(H, M.WATER, -7, -27, -4.3, -31); blk(H, T, -4.3, -27, -4, -31);
     bumps(H, T, [[0, -17, 0.55]]); bowl(H, 2, -33); bumps(H, T, [[-4, -5, 0.55]]); zoneR(H, M.MUD, 4, -36, 7, -38); return H; } },
   // Mesa Hop: two jumps, mesa to mesa to mesa.
   { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -11), rm(-5, -10.9, 5, -14.1), rm(-5, -14, 5, -22), rm(-5, -21.9, 5, -25.1), rm(-6, -25, 6, -38)], [0, -2.5], [2, -33]);
@@ -1602,8 +1602,8 @@ var LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.1), rm(-6, -15, 6, -36)], [0, -2.5], [3.5, -31]); jump(H, 0, -12, 0, -1, 2.6, 10, { h:0.7, ang:36 });
     pen(H, T, 3.5, -31); slider(H, T, -22, -4, 4, 2.6, 0.2); bumps(H, T, [[-3, -26, 0.6], [-1, -33, 0.5], [3, -6, 0.5]]); pads(H, [[-4.5, -19, 0.6]]); zoneR(H, M.ICE, -6, -17, 6, -18); zoneR(H, M.MUD, -6, -34, -3.5, -36); return H; } },
   // Cave Doors: two doors, two plates. Each putt has to roll over its plate on the way through its door.
-  { par:4, three:3, f:function(T){ var H = hole([rm(-6, 0, 6, -44)], [2.5, -2.5], [-3, -40]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2); switchDoor(H, T, -18.6, -1.4, 1.4, 5.1, -5.9, 3.5);
-    blk(H, T, -6, -32, -1.4, -33.2); blk(H, T, 1.4, -32, 6, -33.2); switchDoor(H, T, -32.6, -1.4, 1.4, -2.2, -27, 3.5); bumps(H, T, [[-4.4, -11, 0.6], [3.6, -27, 0.6]]); zoneR(H, M.ICE, -6, -21, 6, -22.5); zoneR(H, M.MUD, 3, -42, 6, -44); bowl(H, -3, -40); return H; } },
+  { par:4, three:3, f:function(T){ var H = hole([rm(-6, 0, 6, -44)], [2.5, -2.5], [-3, -40]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2); switchDoor(H, T, -18.6, -1.4, 1.4, 5.1, -5.9, 4.5);
+    blk(H, T, -6, -32, -1.4, -33.2); blk(H, T, 1.4, -32, 6, -33.2); switchDoor(H, T, -32.6, -1.4, 1.4, -2.2, -27, 4.5); bumps(H, T, [[-4.4, -11, 0.6], [3.6, -27, 0.6]]); zoneR(H, M.ICE, -6, -21, 6, -22.5); zoneR(H, M.MUD, 3, -42, 6, -44); bowl(H, -3, -40); return H; } },
   // Glacier Steps: three tiers of glacier. Soft off each step, and the middle one is ice.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [-3, -2.5], [3, -34]); H.comps.push({ k:'ridge', x:0, y:-10, nx:0, ny:-1, w:0.9, a:-0.6 }, { k:'ridge', x:0, y:-25, nx:0, ny:-1, w:0.9, a:-0.6 });
     zoneR(H, M.ICE, -6, -13, 6, -22); blk(H, T, -2.2, -17, 6, -18.2); bumps(H, T, [[-4, -21, 0.55], [0, -30, 0.55], [4.5, -6, 0.5]]); pads(H, [[-4.5, -29, 0.6]]); zoneR(H, M.MUD, -6, -36, -3, -38); bowl(H, 3, -34); return H; } },
@@ -1696,17 +1696,17 @@ var LAB_LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 1, -26), rm(-7, -15, 14, -26)], [-3, -2.5], [8.5, -22.4]); zoneC(H, M.WATER, 1.6, -14.2, 3.6);
     board(H, T, -7.2, -20.7, -1.8, -25.3); bumps(H, T, [[5.4, -17.4, 0.55]]); bowl(H, 8.5, -22.4, 1.7, 0.12); return H; } },
   // Biarritz: a deep swale across the middle. Too soft and it stays in the hollow; firm enough and it climbs out onto the back plateau.
-  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [-2.2, -29.8]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [-2.2, -29.8]);
     H.comps.push({ k:'ridge', x:0, y:-12, nx:0, ny:-1, w:1.3, a:-0.5 }, { k:'ridge', x:0, y:-19.5, nx:0, ny:-1, w:1.3, a:0.5 });
     bumps(H, T, [[-2.4, -15.8, 0.6], [2.6, -15.8, 0.6]]); blk(H, T, -4.5, -25.6, 0.6, -26.8); bowl(H, -2.2, -29.8, 2.0, 0.14); return H; } },
   // Hairpin: up the left lane, off two angled boards at the top, and back down the right lane to the cup. The classic two-bank ace.
-  { par:3, f:function(T){ var H = hole([rm(-6.5, 0, 6.5, -20)], [-3.6, -2.5], [2.6, -9.5]); blk(H, T, -0.8, 0, 0.8, -10);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6.5, 0, 6.5, -20)], [-3.6, -2.5], [2.6, -9.5]); blk(H, T, -0.8, 0, 0.8, -10);
     board(H, T, -6.5, -13.5, -0.5, -19.5); board(H, T, 0.5, -19.5, 6.5, -13.5); bumps(H, T, [[0, -13, 0.55]]); bowl(H, 2.6, -9.5, 1.7, 0.12); return H; } },
   // The Switch: the door in the wall is shut. Roll over the plate and it opens for a few seconds; the line has to find the plate on its way, and the ace banks off the right wall to do it.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [2.5, -2.5], [-4.2, -27.5]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2);
     switchDoor(H, T, -18.6, -1.4, 1.4, 5.1, -5.9, 3.5); bumps(H, T, [[-4.4, -11, 0.6], [2.6, -24, 0.6]]); bowl(H, -4.2, -27.5, 1.7, 0.12); return H; } },
   // The Drop: three tiers. Down the first step, along the middle terrace to its open end, and down again to the cup.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [-3, -2.5], [-3, -32]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [-3, -2.5], [-3, -32]);
     H.comps.push({ k:'ridge', x:0, y:-10, nx:0, ny:-1, w:0.9, a:-0.6 }, { k:'ridge', x:0, y:-24, nx:0, ny:-1, w:0.9, a:-0.6 });
     blk(H, T, -6, -17, 2.2, -18.2); bumps(H, T, [[4, -21, 0.55]]); board(H, T, 1, -36, 6, -31); bowl(H, -3, -32, 1.7, 0.12); return H; } },
   // The Ferry: the owner's sketch. Roll up off the tee strip onto the ferry while it waits at the right dock; it carries the ball across the
