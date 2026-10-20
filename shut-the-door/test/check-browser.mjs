@@ -18,8 +18,8 @@
  *      banner, flash or sheet, and nothing over the field (the owner,
  *      2026-10-17). One quiet play by play line under the scoreboard. The live
  *      field minimap shows after the first play, with a dot only for a ball in play.
- *   6. the end reveal: outcome, strip, percentile, pitched like and the real
- *      pitcher's night, on screen together; share
+ *   6. the end reveal: outcome, strip, percentile, pitched like, the verdict
+ *      against the real pitcher and the side by side card, on screen together; share
  *   7. run it back is practice; a reload shows today as done
  *   8. ?debug=1 shows the seed
  *   9. no page error and no console error anywhere
@@ -320,8 +320,10 @@ async function revealCheck(page, label, pitches) {
     const vis = (id) => { const el = document.getElementById(id); const b = el && el.getBoundingClientRect(); return !!(b && b.width > 0 && b.height > 0); };
     return { outcome: vis('r-outcome') && document.getElementById('r-outcome').textContent, strip: document.querySelectorAll('#r-strip .sq').length,
       pct: vis('r-pct') && document.getElementById('r-pct').textContent, like: vis('r-like'), real: vis('r-reveal'), coachBtn: vis('r-coach'),
-      sheetOpen: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden), labels: Object.values(window.STD_CONTRACT.OUTCOME_LABEL) };
+      sheetOpen: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden), labels: Object.values(window.STD_CONTRACT.OUTCOME_LABEL),
+      cmp: document.querySelectorAll('#r-reveal .cmp-row').length, bats: document.querySelectorAll('#r-reveal .cmp-bat').length, vs: vis('r-real') && document.getElementById('r-real').className };
   });
+  ok(rv.cmp >= 4 && rv.bats >= 1 && /beat|matched|lost/.test(rv.vs), label + ': the side by side card (' + (rv.cmp - 1) + ' rows, ' + rv.bats + ' batters) and the verdict (' + rv.vs + ')');
   ok(rv.labels.includes(rv.outcome) && rv.strip === pitches && /^\d+(st|nd|rd|th)$/.test(rv.pct) && rv.like && rv.real,
     label + ': the end reveals the outcome (' + rv.outcome + '), the strip (' + rv.strip + '), the percentile (' + rv.pct + '), pitched like and the real one together');
   ok(rv.coachBtn && !rv.sheetOpen, label + ': "talk to pitching coach" is there and nothing opened by itself');

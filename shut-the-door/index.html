@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=10">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -72,34 +72,25 @@
       <canvas id="h-canvas" aria-hidden="true"></canvas>
       <img class="h-poster" id="h-poster" src="3d/assets/hero.webp?h=a8b96e3af7" alt="" hidden>
       <div class="hero-chips" id="h-day"></div>
-      <svg class="h-field" id="h-field" viewBox="0 0 100 100" aria-hidden="true">
-        <polygon class="h-lines" points="50,88 88,50 50,12 12,50"/>
-        <circle class="h-mound" cx="50" cy="50" r="3.2"/>
-        <rect class="h-base" id="h-b1" x="82" y="44" width="12" height="12" transform="rotate(45 88 50)"/>
-        <rect class="h-base" id="h-b2" x="44" y="6" width="12" height="12" transform="rotate(45 50 12)"/>
-        <rect class="h-base" id="h-b3" x="6" y="44" width="12" height="12" transform="rotate(45 12 50)"/>
-        <path class="h-plate" d="M44 84H56V88L50 93L44 88Z"/>
-      </svg>
       <div class="hero-text">
         <p class="h-eyebrow">you are the closer</p>
         <h1 class="hero-head" id="h-head"></h1>
-        <p class="h-title" id="h-title"></p>
+        <p class="h-occ"><span class="h-title" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
       </div>
     </div>
     <div class="h-cols">
       <div class="h-col">
-        <div class="tiles4" id="h-sit"></div>
-        <p class="setup" id="h-setup"></p>
-        <div class="card h-bat" id="h-bat"></div>
+        <div class="hbug-wrap" id="h-sit" role="group"></div>
+        <p class="stakes" id="h-setup"></p>
         <div class="go-wrap" id="h-go">
           <button class="btn take" id="b-take" type="button">take the mound</button>
           <p class="streak" id="h-streak"></p>
         </div>
-        <div class="card done" id="h-done" hidden></div>
+        <div class="done" id="h-done" hidden></div>
       </div>
       <div class="h-col">
-        <div class="card pcard" id="h-pitcher"></div>
-        <div class="card due" id="h-due"></div>
+        <div class="dcard pcard" id="h-pitcher"></div>
+        <div class="dcard due" id="h-due"></div>
       </div>
     </div>
     <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
@@ -170,33 +161,39 @@
 
 <!-- 5. THE RESULT -->
 <section class="screen" id="s-result" aria-labelledby="r-outcome">
-  <p class="eyebrow" id="r-eyebrow"></p>
-  <h2 class="outcome" id="r-outcome"></h2>
-  <div class="seam" aria-hidden="true"></div>
-  <p class="r-line" id="r-line"></p>
-  <div class="card graded">
-    <div class="ch"><b>your calls, graded</b><span id="r-npitch"></span></div>
-    <div class="strip big" id="r-strip"></div>
-    <div class="legend" id="r-legend"></div>
+ <div class="r-cols">
+  <div class="r-col">
+    <div class="r-hero" id="r-hero">
+      <p class="eyebrow" id="r-eyebrow"></p>
+      <h2 class="outcome" id="r-outcome"></h2>
+      <div class="seam" aria-hidden="true"></div>
+      <div class="r-facts" id="r-line"></div>
+      <div class="r-graded">
+        <p class="rg-h"><b>your calls, graded</b><span id="r-npitch"></span></p>
+        <div class="strip big" id="r-strip"></div>
+        <div class="legend" id="r-legend"></div>
+      </div>
+    </div>
+    <div class="vsbar" id="r-real"></div>
+    <div class="card pool">
+      <div class="ch"><b>vs every closer in this spot</b><span id="r-score"></span></div>
+      <div class="pool-top"><b class="pct" id="r-pct"></b><p id="r-pctline"></p></div>
+      <div class="chart" id="r-chart"></div>
+    </div>
   </div>
-  <div class="card pool">
-    <div class="ch"><b>vs every closer in this spot</b><span id="r-score"></span></div>
-    <div class="pool-top"><b class="pct" id="r-pct"></b><p id="r-pctline"></p></div>
-    <div class="chart" id="r-chart"></div>
+  <div class="r-col">
+    <div class="card r-like"><i class="rl-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></i><div class="rl-t"><small>pitched like</small><b class="nm" id="r-like"></b><span id="r-why"></span></div></div>
+    <button class="coach-go" id="r-coach" type="button"><span class="cg-t"><b>talk to pitching coach</b><span>your costliest pitch, then every pitch</span></span><i class="cg-arrow" aria-hidden="true"></i></button>
+    <div class="card cmp" id="r-reveal"></div>
+    <div class="r-actions">
+      <button class="btn go" id="r-share" type="button">share</button>
+      <button class="btn ghost" id="r-again" type="button">run it back</button>
+      <button class="btn ghost" id="r-home" type="button">home</button>
+    </div>
+    <p class="streak" id="r-streak"></p>
+    <p class="quiet center" id="r-tomorrow"></p>
   </div>
-  <div class="r-two">
-    <div class="card r-stat"><small>pitched like</small><b class="nm" id="r-like"></b><span id="r-why"></span></div>
-    <div class="card r-stat" id="r-real"></div>
-  </div>
-  <button class="coach-go" id="r-coach" type="button"><span class="cg-t"><b>talk to pitching coach</b><span>your costliest pitch, then every pitch</span></span><i class="cg-arrow" aria-hidden="true"></i></button>
-  <div class="card reveal" id="r-reveal"></div>
-  <div class="r-actions">
-    <button class="btn go" id="r-share" type="button">share</button>
-    <button class="btn ghost" id="r-again" type="button">run it back</button>
-    <button class="btn ghost" id="r-home" type="button">home</button>
-  </div>
-  <p class="streak" id="r-streak"></p>
-  <p class="quiet center" id="r-tomorrow"></p>
+ </div>
 </section>
 
 </main>
@@ -260,15 +257,15 @@
 <script src="rng.js?v=1"></script>
 <script src="grade.js?v=2"></script>
 <script src="lesson.js?v=1"></script>
-<script src="engine.js?v=3"></script>
+<script src="engine.js?v=4"></script>
 <script src="share.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=2"></script>
 <script src="api.js?v=2"></script>
-<script src="mock-api.js?v=5"></script>
+<script src="mock-api.js?v=6"></script>
 <script src="coach.js?v=1"></script>
-<script src="ui.js?v=11"></script>
+<script src="ui.js?v=13"></script>
 <script type="module" src="3d/boot.js?v=18"></script>
-<script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed;</script>
+<script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
 </html>

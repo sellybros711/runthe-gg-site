@@ -420,7 +420,9 @@ function finishOuting(outingId) {
     if (MOCK.nullPitches) { rv.pitches = null; rv.pitchesNote = 'at least 13 pitches'; }
     var runs = st.score.them - o.scn.situation.score.them;
     var mine = C.OUTCOME_RANK[st.outcome], his = C.OUTCOME_RANK[rv.outcome];
-    var vs = mine > his ? 'beat' : mine < his ? 'lost' : runs < rv.runs ? 'beat' : runs > rv.runs ? 'lost' : 'matched';
+    var hp = typeof rv.pitches === 'number' ? rv.pitches : null;
+    var vs = mine > his ? 'beat' : mine < his ? 'lost' : runs < rv.runs ? 'beat' : runs > rv.runs ? 'lost' :
+      hp == null || st.pitchNo === hp ? 'matched' : st.pitchNo < hp ? 'beat' : 'lost';
     var r = {
       outcome: st.outcome, pitches: st.pitchNo, strip: st.strip.slice(), score: score,
       percentile: Math.round(below / sc.length * 100), pitchedLike: { name: pl.name, reason: pl.reason },

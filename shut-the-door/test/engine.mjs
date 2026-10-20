@@ -178,5 +178,15 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('a walk-off loses to a real door shut', fin.vsReal === 'lost');
 }
 
+{ // vsReal: outcome, then runs, then pitches when his count is known
+  const real = { outcome: 'door_shut', runs: 0, pitches: 14 };
+  check('vsReal: same outcome and runs, 7 pitches to his 14 beats him', E.vsReal('door_shut', 0, real, 7) === 'beat');
+  check('vsReal: same outcome and runs, more pitches loses to him', E.vsReal('door_shut', 0, real, 20) === 'lost');
+  check('vsReal: equal pitches is matched', E.vsReal('door_shut', 0, real, 14) === 'matched');
+  check('vsReal: his count unknown is matched', E.vsReal('door_shut', 0, Object.assign({}, real, { pitches: null }), 7) === 'matched');
+  check('vsReal: runs come before pitches', E.vsReal('door_shut', 1, real, 3) === 'lost');
+  check('vsReal: outcome comes before pitches', E.vsReal('doors_open', 0, real, 3) === 'lost');
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);
