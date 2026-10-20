@@ -2,8 +2,9 @@ name: Baseball checks
 
 # Run The Diamond's October decides nothing on screen: generatePlayoffs() settles
 # the player's path, and both the bracket and the at-bat simulator are built around
-# it. The failures that follow from that are all invisible in a screenshot, which
-# is what these two check.
+# it. The one exception is a Pro player's call to change pitchers, which
+# check-calls.mjs holds. The failures that follow from all of that are invisible in
+# a screenshot, which is what these check.
 #
 #   node baseball/check-atbats.mjs    the line score adds up to the score it was handed
 #   node baseball/check-bracket.mjs   the field agrees with the run it was built from
@@ -181,6 +182,16 @@ jobs:
       # saved anyway. The server half is supabase/test/baseball_profile_test.sql.
       - name: The profile, Customize and the career on the server
         run: node baseball/check-profile.mjs
+
+      # THE MANAGER'S CALL. A Pro player can change pitchers in the October games
+      # they watch, and the call really decides the rest of that game, so it is the
+      # one place a watched game decides anything. Held: a game nobody called is
+      # byte for byte the old one, the coach's own arm changes nothing, the same
+      # calls are the same October, a flipped game carries October on correctly,
+      # and a reload cannot take a call back. The balance band is --balance, which
+      # is minutes long and is run by hand when the model moves.
+      - name: The manager's call
+        run: node baseball/check-calls.mjs
 
       # 127 in SQL: the career only ever adds, a season held is never replaced,
       # every row is filed under its caller, and every choice is held to its list.
