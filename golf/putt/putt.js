@@ -1265,8 +1265,8 @@ var LEVELS = [
     zoneR(H, M.WATER, -5, -12, 5, -15.5); drawb(H, -0.4, -12, 2.6, -15.5, 2.6, 0, 0.55); zoneR(H, M.WATER, -5, -24, 5, -27.5); drawb(H, 1.5, -24, 4.5, -27.5, 2.4, 0.35, 0.55); bumps(H, T, [[-1.5, -20, 0.6]]);
     blk(H, T, -5, -11.4, -0.4, -12); blk(H, T, 2.6, -11.4, 5, -12); blk(H, T, -5, -23.4, 1.5, -24); blk(H, T, 4.5, -23.4, 5, -24); board(H, T, 1.4, -35.4, 3, -36.3); board(H, T, 3, -36.3, 4.6, -35.4); bowl(H, 3, -34, 1.8, 0.13); return H; } },
   // Cannon Fire: under three swinging booms, rails along the water, two putts. The secret: a firm putt banks off the back rail and drops.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -36)], [0, -2.5], [0, -32]); spinner(H, T, -1.6, -13, 2.2, 1.7, 2); spinner(H, T, 1.6, -21, 2.2, -1.7, 2); spinner(H, T, -1.6, -29, 2.2, 1.9, 3);
-    zoneR(H, M.WATER, -5, -11, -4.6, -32); zoneR(H, M.WATER, 4.6, -11, 5, -32); blk(H, T, -4.6, -11, -4, -32); blk(H, T, 4, -11, 4.6, -32); bowl(H, 0, -32, 1.8, 0.13); secret(H, -0.24, -35.1, 1.36, -36.7); return H; } },
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -36)], [0, -2.25], [0, -32.4]); spinner(H, T, -1.6, -11.7, 2.2, 1.7, 2); spinner(H, T, 1.6, -18.9, 2.2, -1.7, 2); spinner(H, T, -1.6, -26.1, 2.2, 1.9, 3);
+    zoneR(H, M.WATER, -5, -9.9, -4.6, -28.8); zoneR(H, M.WATER, 4.6, -9.9, 5, -28.8); blk(H, T, -4.6, -9.9, -4, -28.8); blk(H, T, 4, -9.9, 4.6, -28.8); bowl(H, 0, -32.4, 1.3, 0.12); secret(H, -0.24, -35.19, 1.36, -36.63); return H; } },
   // Ship Decks: the right ramp to the middle deck, the narrow one in the middle up again, between the water, putt out.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -14), rm(-7, -18, 7, -30, 0.8), rm(-7, -34, 7, -46, 1.6)], [0, -2.5], [0, -42]);
     climb(H, 4, -14, -18, 2.2); climb(H, 0, -30, -34, 1.8);
