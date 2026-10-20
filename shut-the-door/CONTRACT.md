@@ -284,7 +284,9 @@ one unit covers every state. Run expectancy is kept as `reDelta` for debug.
  * @property {{name: string, reason: string}} pitchedLike
  * @property {Reveal} reveal
  * @property {'beat'|'matched'|'lost'} vsReal   outcome first (door_shut > doors_open > walk_off),
- *                                              then fewer runs allowed
+ *                                              then fewer runs allowed, then fewer pitches when
+ *                                              his count is known (reveal.pitches a number).
+ *                                              Equal pitches, or his count null, is matched.
  * @property {string} share          the share text, built by share.js
  * @property {{scores: number[]}} pool   the closer pool's outing scores here, sorted (B11)
  * @property {{streak: number, best: number, rank: number|null, players: number}} [account]

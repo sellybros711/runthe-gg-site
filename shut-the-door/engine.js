@@ -302,11 +302,16 @@ function likeReason(v, closer, closers, o) {
   return `${fam} on ${pc(v[pick])}% of your pitches ${when}. he throws ${pc(his)}%.`;
 }
 
-function vsReal(outcome, runs, reveal) {
+function vsReal(outcome, runs, reveal, pitches) {
   if (!reveal) return null;
   const a = K.OUTCOME_RANK[outcome], b = K.OUTCOME_RANK[reveal.outcome];
   if (a !== b) return a > b ? 'beat' : 'lost';
   if (runs !== reveal.runs) return runs < reveal.runs ? 'beat' : 'lost';
+  // the third tiebreak: same outcome, same runs, so fewer pitches is the better outing.
+  // Only when his count is on record (reveal.pitches is a number).
+  if (typeof pitches === 'number' && typeof reveal.pitches === 'number' && pitches !== reveal.pitches) {
+    return pitches < reveal.pitches ? 'beat' : 'lost';
+  }
   return 'matched';
 }
 
@@ -323,7 +328,7 @@ function finishOuting(o, extra) {
     percentile: percentileOf(score, o.pack.pool && o.pack.pool.scores),
     pitchedLike: pitchedLike(o),
     reveal,
-    vsReal: vsReal(o.outcome, runs, reveal),
+    vsReal: vsReal(o.outcome, runs, reveal, o.log.length),
     runs,
     lesson: L ? L.lessonFor(o) : null,
     // the closer pool's outing scores in this spot, sorted, for the end screen's chart (B11)

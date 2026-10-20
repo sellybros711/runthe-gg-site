@@ -197,6 +197,92 @@ function runnersLine(b) {
   return (on.length > 1 ? 'runners on ' : 'runner on ') + on.join(' and ');
 }
 
+/* A short name for a few spots, under the matchup on the home screen. Spoiler free: each one says
+   what was at stake before the first pitch, never what happened (that is the end screen's). A spot
+   with no entry shows the matchup and the occasion only. Sources:
+   yamamoto  he started and won Game 6 on October 31, 2025, the night before Game 7 (MLB Stats API,
+             2025 World Series schedule and box scores)
+   feliz     Texas led the 2011 World Series 3-2 going into Game 6 (MLB Stats API, 2011 World Series)
+   pressly   Houston led the 2022 World Series 3-2 going into Game 6 (MLB Stats API, 2022 World Series)
+   buehler   Los Angeles led the 2024 World Series 3-1 going into Game 5 (MLB Stats API, 2024 World Series) */
+var MOMENT = {
+  'std-2025-ws7-yamamoto': 'he started game 6 last night',
+  'std-2011-ws6-feliz': 'a win from the title',
+  'std-2022-ws6-pressly': 'a win from the title',
+  'std-2024-ws5-buehler': 'a win from the title',
+};
+
+/* The two clubs: the closer's from the pack (name from the club table, colours from the pack), the
+   hitters' from clubs.js (window.STD_BATTING_CLUB, a module that may land after the first render). */
+function clubsOf(s) {
+  var p = s.pitcher, u = window.STD_CLUB_NAMED ? window.STD_CLUB_NAMED(p.team) : null;
+  var parts = String(p.team || '').trim().split(/\s+/);
+  var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: s.title, scenarioId: s.id, pitcher: p }) : null;
+  return {
+    us: { name: u ? u.nick : parts[parts.length - 1] || 'us', pri: p.teamColors && p.teamColors[0], sec: p.teamColors && p.teamColors[1] },
+    them: them ? { name: them.as || them.nick, full: them.city + ' ' + (them.as || them.nick), pri: them.pri, sec: them.sec } : null,
+  };
+}
+function clubStyle(t) {
+  if (!t) return '';
+  return ' style="' + (t.pri ? '--club:' + esc(t.pri) + ';' : '') + (t.sec ? '--club2:' + esc(t.sec) : '') + '"';
+}
+/* The occasion: "game 7 \u00b7 2025 world series", or the date of a regular season game ("Dodgers at
+   Royals, June 27, 2025" says the clubs already, the matchup line shows them) */
+function occasionOf(title) {
+  var m = /^(.*?)\s+at\s+(.*?),\s*(.*)$/i.exec(title || '');
+  if (m) return m[3].toLowerCase();
+  return String(title || '').toLowerCase().split(/,\s*/).join(' \u00b7 ');
+}
+/* The stakes, from the pack's own setup: "three outs and the door is shut. two runs and it is over." */
+function stakesOf(setup) {
+  return String(setup || '').split(/\.\s+/).filter(function (x) { return /door is shut|is over/.test(x); })
+    .map(function (x) { return x.replace(/\.$/, '') + '.'; }).join(' ');
+}
+
+function renderMatchup() {
+  var s = S.scn, c = clubsOf(s), sit = s.situation;
+  var tag = function (t) { return '<span class="mu-team"><i class="mu-bar"' + clubStyle(t) + '></i>' + esc(t.name) + '</span>'; };
+  if (c.them) {
+    var away = sit.usHome ? c.them : c.us, home = sit.usHome ? c.us : c.them;
+    $('h-head').innerHTML = tag(away) + '<span class="mu-home"><span class="mu-at">at</span>' + tag(home) + '</span>';
+  } else $('h-head').innerHTML = tag(c.us);
+  $('h-sit').innerHTML = homeBug(s, c);
+  $('h-sit').setAttribute('aria-label', situationLine(sit));
+  var due = $('h-due').querySelector('.dc-band');
+  if (due) { due.setAttribute('style', clubStyle(c.them).replace(/^ style="|"$/g, '')); due.querySelector('.dc-club').textContent = c.them ? c.them.full.toLowerCase() : 'the lineup'; }
+}
+
+/* The spot as the mound's scorebug: the two clubs with their colour bars and the score, the inning,
+   the bases and the outs. Under it the same facts in words, one chip each. */
+function homeBug(s, c) {
+  var sit = s.situation, b = sit.bases | 0, m = sit.score.us - sit.score.them;
+  var team = function (t, n) {
+    return '<div class="sb-team"><i class="sb-club"' + clubStyle(t) + '></i><span class="tm">' + esc((t ? t.name : 'them').toUpperCase()) + '</span><b>' + esc(n) + '</b></div>';
+  };
+  var outs = '';
+  for (var i = 0; i < 2; i++) outs += '<i class="' + (i < sit.outs ? 'on' : '') + '"></i>';
+  var chips = ['<span class="sc-chip">lead by ' + esc(m) + '</span>',
+    '<span class="sc-chip">' + esc(sit.outs === 0 ? 'nobody out' : outsWords(sit.outs)) + '</span>',
+    '<span class="sc-chip">' + esc(runnersLine(b)) + '</span>'];
+  return '<div class="scorebar hb">' +
+    '<div class="sb-teams">' + team(c.us, sit.score.us) + team(c.them, sit.score.them) + '</div>' +
+    '<div class="sb-innw"><div class="sb-inn"><b>' + (sit.half === 'bottom' ? 'bot' : 'top') + '</b> ' + esc(sit.inning) + '</div>' +
+    (sit.walkOffLive ? '<span class="sb-wo">walk-off live</span>' : '') + '</div>' +
+    '<svg class="sb-bases" viewBox="0 0 40 30" aria-hidden="true"><path class="sb-path" d="M19.5 6.5 L30.5 17.5 L19.5 28.5 L8.5 17.5 Z"/>' +
+    '<rect class="' + (b & 2 ? 'on' : '') + '" x="16" y="3" width="7" height="7" transform="rotate(45 19.5 6.5)"/>' +
+    '<rect class="' + (b & 4 ? 'on' : '') + '" x="5" y="14" width="7" height="7" transform="rotate(45 8.5 17.5)"/>' +
+    '<rect class="' + (b & 1 ? 'on' : '') + '" x="27" y="14" width="7" height="7" transform="rotate(45 30.5 17.5)"/></svg>' +
+    '<div class="sb-stat"><div class="sb-outs">' + outs + '</div><span class="sb-lbl">outs</span></div>' +
+    '</div><div class="sc-chips">' + chips.join('') + '</div>';
+}
+
+/* "R" and the line split into the slash and the homers, when the line has that shape */
+function lineParts(line) {
+  var m = /^([\d.]+\/[\d.]+\/[\d.]+)(?:,\s*(\d+)\s*HR)?$/.exec(String(line || '').trim());
+  return m ? { slash: m[1], hr: m[2] == null ? null : m[2] } : null;
+}
+
 function renderHome() {
   var s = S.scn, sit = s.situation, p = s.pitcher;
   /* the chips: only what the pack has. A null number or day is left out, never printed as "#" */
@@ -205,39 +291,35 @@ function renderHome() {
   if (s.day) chips.push('<span class="chip-s">' + esc(fmtDay(s.day)) + '</span>');
   if (s.resolution === 'proxy') chips.push('<span class="chip-s quiet">modern pitch data</span>');
   $('h-day').innerHTML = chips.join('');
-  $('h-title').textContent = s.title.toLowerCase();
-  $('h-head').textContent = situationLine(sit);
-  var b = sit.bases | 0;
-  $('h-b1').classList.toggle('on', !!(b & 1));
-  $('h-b2').classList.toggle('on', !!(b & 2));
-  $('h-b3').classList.toggle('on', !!(b & 4));
-  $('h-setup').textContent = s.setup;
-  var bat = s.batters[0];
-  $('h-bat').innerHTML = bat ? '<p class="lbl">at the plate</p><p class="hb-name"><b>' + esc(bat.name) + '</b>' +
-    (bat.bats ? ' <span class="hand">' + esc(bat.bats) + '</span>' : '') + '</p>' +
-    (bat.line ? '<p class="quiet">' + esc(bat.line) + '</p>' : '') : '';
-  var on = sit.bases === 0 ? 'none' : sit.bases === 7 ? 'loaded' : [1, 2, 4].filter(function (b) { return sit.bases & b; }).map(function (b) { return { 1: '1st', 2: '2nd', 4: '3rd' }[b]; }).join(', ');
-  $('h-sit').innerHTML =
-    '<div class="tl"><b>' + esc(sit.score.us) + '-' + esc(sit.score.them) + '</b><span>your lead</span></div>' +
-    '<div class="tl"><b>' + esc(sit.outs) + '</b><span>' + (sit.outs === 1 ? 'out' : 'outs') + '</span></div>' +
-    '<div class="tl"><b>' + esc(on) + '</b><span>on base</span></div>' +
-    '<div class="tl' + (sit.walkOffLive ? ' hot' : '') + '"><b>' + (sit.walkOffLive ? 'live' : 'no') + '</b><span>walk-off</span></div>';
+  $('h-title').textContent = occasionOf(s.title);
+  var mo = MOMENT[s.id];
+  $('h-moment').textContent = mo || '';
+  $('h-moment').hidden = !mo;
+  $('h-setup').innerHTML = '<i class="st-mark" aria-hidden="true"></i><span>' + esc(stakesOf(s.setup) || s.setup) + '</span>';
   var ordered = p.arsenal.slice().sort(function (a, b) { return b.usage - a.usage; });
   var ars = ordered.map(function (a, i) {
     return '<li><i class="dot" style="background:' + PITCH_COLORS[i % PITCH_COLORS.length] + '"></i><span class="an">' + esc(a.name) + '</span>' +
       '<span class="av">' + esc(a.velo.toFixed(1)) + '</span><span class="ap">' + esc(pct(a.usage)) + '</span></li>';
   }).join('');
   var chart = breakChart(ordered, p.throws);
-  var club = [p.team, p.year, p.throws ? 'throws ' + handWord(p.throws) : ''].filter(Boolean).map(esc).join(' \u00b7 ');
+  var meta = [p.team, p.year].filter(Boolean).map(esc).join(' \u00b7 ');
   $('h-pitcher').innerHTML =
-    '<p class="lbl">the real pitcher</p>' +
-    '<div class="pc-top"><span class="swatch" style="background:' + esc(p.teamColors[0]) + ';border-color:' + esc(p.teamColors[1]) + '"></span>' +
-    '<div><p class="pc-name">' + esc(p.name) + '</p><p class="quiet">' + club + '</p></div></div>' +
-    '<div class="pc-body' + (chart ? '' : ' flat') + '">' + (chart ? '<div class="brk">' + chart + '</div>' : '') + '<ul class="ars">' + ars + '</ul></div>';
-  var due = s.batters.slice(0, 3).map(function (b) {
-    return '<li><b>' + esc(b.name) + '</b><span class="hand">' + esc(b.bats) + '</span><span class="quiet">' + esc(b.line) + '</span></li>';
+    '<div class="dc-band"' + clubStyle({ pri: p.teamColors[0], sec: p.teamColors[1] }) + '>' +
+    '<p class="dc-lbl">you pitch as</p><p class="pc-name">' + esc(p.name) + '</p>' +
+    '<p class="dc-meta"><span>' + meta + '</span>' + (p.throws ? '<em class="dc-tag">throws ' + esc(handWord(p.throws)) + '</em>' : '') + '</p></div>' +
+    '<div class="dc-body"><p class="dc-h"><b>his arsenal</b><span>mph \u00b7 usage</span></p>' +
+    '<div class="pc-body' + (chart ? '' : ' flat') + '">' + (chart ? '<div class="brk">' + chart + '</div>' : '') + '<ul class="ars">' + ars + '</ul></div></div>';
+  var due = s.batters.slice(0, 3).map(function (b, i) {
+    var lp = lineParts(b.line);
+    var stats = lp ? '<span class="du-slash">' + esc(lp.slash) + '</span>' + (lp.hr != null ? '<span class="du-hr"><b>' + esc(lp.hr) + '</b> hr</span>' : '')
+      : '<span class="du-slash">' + esc(b.line || '') + '</span>';
+    return '<li' + (i === 0 ? ' class="now"' : '') + '><span class="du-n">' + (i + 1) + '</span>' +
+      '<span class="du-who"><b>' + esc(b.name) + '</b>' + (b.bats ? '<em class="hand">' + esc(b.bats) + '</em>' : '') +
+      (i === 0 ? '<em class="du-now">at the plate</em>' : '') + '</span><span class="du-stats">' + stats + '</span></li>';
   }).join('');
-  $('h-due').innerHTML = '<div class="ch"><b>due up</b><span>the real order</span></div><ol>' + due + '</ol>';
+  $('h-due').innerHTML = '<div class="dc-band"><p class="dc-lbl">you face</p><p class="pc-name dc-club"></p><p class="dc-meta"><span>due up, the real order</span></p></div>' +
+    '<ol class="du">' + due + '</ol>';
+  renderMatchup();
   $('h-proxy').hidden = s.resolution !== 'proxy';
   $('m-proxy').hidden = s.resolution !== 'proxy';
   renderStreak();
@@ -288,21 +370,26 @@ function renderHomeState() {
   var take = $('b-take');
   if (r) {
     $('h-go').hidden = true;
+    $('h-setup').hidden = true;
     var done = $('h-done');
     done.hidden = false;
+    var dp = Math.round(r.percentile);
     done.innerHTML =
-      '<p class="lbl">today</p><p class="d-out ' + r.outcome + '">' + esc(C.OUTCOME_LABEL[r.outcome]) + '</p>' +
-      '<div class="strip">' + stripHTML(r.strip) + '</div>' +
-      '<p>' + esc(r.pitches) + ' pitches. better than ' + esc(Math.round(r.percentile)) + '% of closers.</p>' +
-      '<div class="d-act"><button class="btn go" type="button" id="d-share">share</button>' +
-      '<button class="btn ghost" type="button" id="d-see">see it again</button>' +
-      '<button class="btn ghost" type="button" id="d-again">run it back</button></div>' +
-      '<p class="quiet">back tomorrow for #' + esc(S.scn.number + 1) + '.</p>';
+      '<div class="d-top"><div><p class="dc-lbl">today · #' + esc(S.scn.number) + '</p><p class="d-out ' + r.outcome + '">' + esc(C.OUTCOME_LABEL[r.outcome]) + '</p></div>' +
+      (r.vsReal ? '<span class="vs-pill ' + esc(r.vsReal) + '">' + esc(VS_SHORT[r.vsReal]) + '</span>' : '') + '</div>' +
+      '<div class="d-mid"><div class="strip">' + stripHTML(r.strip) + '</div>' +
+      '<div class="d-stats"><span><b>' + esc(r.pitches) + '</b> ' + (r.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
+      '<span><b>' + esc(dp) + '<sup>' + ordSuffix(dp) + '</sup></b> of closers</span></div></div>' +
+      '<div class="d-act"><button class="btn take sm" type="button" id="d-see">see it again</button>' +
+      '<button class="btn dk" type="button" id="d-share">share</button>' +
+      '<button class="btn dk" type="button" id="d-again">run it back</button></div>' +
+      '<p class="d-tmrw">back tomorrow for #' + esc(S.scn.number + 1) + '.</p>';
     $('d-share').addEventListener('click', function () { share(r); });
     $('d-see').addEventListener('click', function () { S.mode = 'daily'; S.result = r; renderResult(); show('s-result'); });
     $('d-again').addEventListener('click', practice);
   } else {
     $('h-go').hidden = false;
+    $('h-setup').hidden = false;
     $('h-done').hidden = true;
     take.textContent = d && d.pitchNo > 0 ? 'back to the mound · pitch ' + (d.pitchNo + 1) : 'take the mound';
   }
@@ -582,11 +669,18 @@ function pbp(tag, rest) {
 }
 var COUNT_WORD = ['', 'one', 'two', 'three'];
 var HIT_TAG = { single: 'single', double: 'double', triple: 'triple', home_run: 'home run', error: 'error',
+  double_play: 'double play', sac_fly: 'sac fly', fielders_choice: "fielder's choice",
   out_ground: 'ground out', out_line: 'line out', out_fly: 'fly out', out_popup: 'pop out' };
+/* the in-play tag: the engine labels a plain out 'out', and the batted ball says which kind */
+function inPlayTag(ip) {
+  if (HIT_TAG[ip.result]) return HIT_TAG[ip.result];
+  if (ip.result === 'out') return HIT_TAG['out_' + (ip.bb || 'fly')] || 'out';
+  return 'in play';
+}
 function playText(pr, batter) {
   var who = lastName(batter.name), res = pr.result, c = pr.count, tag, rest;
   var count = c.b + '-' + c.s;
-  if (res === 'in_play' && pr.inPlay) { tag = HIT_TAG[pr.inPlay.result] || 'in play'; rest = who + ': ' + pr.inPlay.text + '.'; }
+  if (res === 'in_play' && pr.inPlay) { tag = inPlayTag(pr.inPlay); rest = who + ': ' + String(pr.inPlay.text).replace(/\.+$/, '') + '.'; }
   else if (res === 'hit_by_pitch') { tag = 'hit by pitch'; rest = who + '. ' + count; }
   else if (res === 'ball') { tag = pr.paOver ? 'walk' : 'ball'; rest = pr.paOver ? who + '. ' + count : count; }
   else if (res === 'foul') { tag = 'foul'; rest = count; }
@@ -665,34 +759,99 @@ function renderResult() {
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
-  $('r-line').textContent = r.pitches + ' pitches.' + (runs != null ? ' ' + runs + (runs === 1 ? ' run.' : ' runs.') : '');
+  $('r-hero').className = 'r-hero ' + r.outcome;
+  var p = Math.round(r.percentile);
+  $('r-line').innerHTML =
+    '<span class="fact"><b>' + esc(r.pitches) + '</b>' + (r.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
+    (runs != null ? '<span class="fact"><b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') + '</span>' : '');
   $('r-npitch').textContent = r.pitches + (r.pitches === 1 ? ' pitch' : ' pitches');
   $('r-strip').innerHTML = stripHTML(r.strip, true);
   var WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
   $('r-legend').innerHTML = C.BANDS.map(function (b) { return '<span><i class="sq ' + b.band + '"></i>' + WORD[b.band] + '</span>'; }).join('');
-  var p = Math.round(r.percentile);
   $('r-pct').innerHTML = p + '<sup>' + ordSuffix(p) + '</sup>';
-  $('r-pctline').textContent = 'better than ' + p + '% of the closer pool in this spot.';
+  $('r-pctline').innerHTML = 'better than <b>' + esc(p) + '%</b> of the closer pool in this spot.';
   $('r-score').textContent = r.score != null ? 'score ' + r.score : '';
   $('r-chart').innerHTML = poolChart(r);
   $('r-like').textContent = r.pitchedLike ? r.pitchedLike.name : '-';
   $('r-why').textContent = r.pitchedLike ? r.pitchedLike.reason : '';
-  var rv = r.reveal || {};
-  var VS = { beat: 'you beat him', matched: 'you matched him', lost: 'he did better' };
-  var rvPitches = rv.pitches == null ? (rv.pitchesNote || 'pitch count unknown') : rv.pitches + ' pitches';
-  $('r-real').innerHTML = '<small>the real one</small><b class="vs ' + esc(r.vsReal) + '">' + esc(VS[r.vsReal] || '-') + '</b>' +
-    '<span>' + esc(lastName(s.pitcher.name)) + ': ' + esc((C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase()) + '. ' + esc(rvPitches) + '. ' + esc(rv.runs) + (rv.runs === 1 ? ' run.' : ' runs.') + '</span>';
-  var pas = (rv.plateAppearances || []).map(function (pa) {
-    return '<li><b>' + esc(pa.batter) + '</b><span>' + esc(pa.result) + '</span><span class="quiet">' + esc(pa.pitches) + ' p</span></li>';
-  }).join('');
-  $('r-reveal').innerHTML =
-    '<div class="ch"><b>what ' + esc(s.pitcher.name.toLowerCase()) + ' did</b><span>' + esc(rvPitches) + '</span></div>' +
-    '<p class="rv-out ' + esc(rv.outcome) + '">' + esc(C.OUTCOME_LABEL[rv.outcome] || '') + '<span class="quiet"> \u00b7 ' + esc(rv.runs) + (rv.runs === 1 ? ' run' : ' runs') + '</span></p>' +
-    '<p>' + esc(rv.summary) + '.</p>' +
-    (pas ? '<ul class="pas">' + pas + '</ul>' : '');
+  var rv = r.reveal || {}, his = lastName(s.pitcher.name);
+  $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
+  $('r-real').innerHTML = '<div class="vs-t"><small>you vs the real ' + esc(his.toLowerCase()) + '</small>' +
+    '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal, his)) + '</b>' +
+    '<span>' + esc(vsWhy(r, rv, runs)) + '</span></div><i class="vs-ic" aria-hidden="true"></i>';
+  $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
   renderStreak();
+}
+
+/* ---- you against the real pitcher ------------------------------------------------------------
+   The verdict is the engine's (vsReal: the outcome, then runs, then pitches when his count is
+   known). The line under it says which of the three decided it, in the result's own numbers. */
+var VS_SHORT = { beat: 'beat him', matched: 'matched him', lost: 'he won' };
+function vsHead(v, his) {
+  return v === 'beat' ? 'you beat ' + his : v === 'matched' ? 'you matched ' + his : v === 'lost' ? his + ' did better' : '-';
+}
+function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+function vsWhy(r, rv, runs) {
+  var mine = (C.OUTCOME_LABEL[r.outcome] || '').toLowerCase(), hisOut = (C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase();
+  if (r.outcome !== rv.outcome) return mine + ' to his ' + hisOut + '.';
+  var a = mine + ' both times.';
+  if (runs == null || rv.runs == null) return a;
+  if (runs !== rv.runs) return a + ' ' + plural(runs, 'run', 'runs') + ' to his ' + rv.runs + '.';
+  a += ' ' + plural(runs, 'run', 'runs') + ' each.';
+  if (typeof rv.pitches !== 'number') return a + ' his pitch count is not on record.';
+  if (r.pitches === rv.pitches) return a + ' ' + plural(r.pitches, 'pitch', 'pitches') + ' each.';
+  return a + ' ' + plural(r.pitches, 'pitch', 'pitches') + ' to his ' + rv.pitches + '.';
+}
+
+/* Your plate appearances from the outing's log: one per batter, in order. The word is the play by
+   play's tag on the pitch that ended it. */
+function myPAs(log) {
+  var out = [], start = 0, bi = 0, runs = 0;
+  (log || []).forEach(function (pr, i) {
+    runs += pr.runs || 0;
+    if (!pr.paOver && i < log.length - 1) return;
+    var b = batterAt(bi);
+    out.push({ batter: b.name, word: playText(pr, b).tag, pitches: i - start + 1, runs: runs });
+    start = i + 1; runs = 0;
+    if (pr.paOver) bi++;
+  });
+  return out;
+}
+
+/* Two columns, you and him. The outcome, runs and pitches, then one row per batter faced in the
+   real order. A batter one side never faced is a quiet dash. Only an unambiguous edge is marked:
+   the better outcome, fewer runs, fewer pitches. A plate appearance is never judged. */
+function compareCard(r, rv, runs, st) {
+  var s = S.scn, his = lastName(s.pitcher.name);
+  var none = '<span class="v none">-</span>';
+  var cell = function (html, win, cls) { return '<span class="v' + (cls ? ' ' + cls : '') + (win ? ' win' : '') + '">' + html + '</span>'; };
+  var row = function (k, a, b) { return '<div class="cmp-row"><span class="k">' + k + '</span>' + a + b + '</div>'; };
+  var rk = C.OUTCOME_RANK, mineO = rk[r.outcome], hisO = rk[rv.outcome];
+  var hp = typeof rv.pitches === 'number' ? rv.pitches : null;
+  var rows =
+    row('result', cell('<b class="o ' + esc(r.outcome) + '">' + esc((C.OUTCOME_LABEL[r.outcome] || '').toLowerCase()) + '</b>', mineO > hisO),
+      rv.outcome ? cell('<b class="o ' + esc(rv.outcome) + '">' + esc((C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase()) + '</b>', hisO > mineO) : none) +
+    row('runs', runs == null ? none : cell('<b>' + esc(runs) + '</b>', rv.runs != null && runs < rv.runs),
+      rv.runs == null ? none : cell('<b>' + esc(rv.runs) + '</b>', runs != null && rv.runs < runs)) +
+    row('pitches', cell('<b>' + esc(r.pitches) + '</b>', hp != null && r.pitches < hp),
+      hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(rv.pitchesNote || 'not on record'), false, 'note'));
+  var mine = myPAs(st && st.log), real = rv.plateAppearances || [];
+  var n = Math.max(mine.length, real.length), bats = '';
+  for (var i = 0; i < n; i++) {
+    var a = mine[i], b = real[i], name = a ? a.batter : b.batter;
+    var side = function (pa, word) {
+      if (!pa) return none;
+      return '<span class="v">' + esc(word) + (pa.pitches != null ? '<small>' + plural(pa.pitches, 'pitch', 'pitches') + '</small>' : '') + '</span>';
+    };
+    bats += '<div class="cmp-bat"><span class="k"><i>' + (i + 1) + '</i></span><b class="nm">' + esc(name) + '</b>' +
+      side(a, a && a.word) + side(b, b && b.result) + '</div>';
+  }
+  return '<div class="cmp-h"><b>you vs the real one</b><span>side by side</span></div>' +
+    '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">you</span><span class="who him">' + esc(his) + '</span></div>' +
+    rows + (bats ? '<p class="cmp-sub">batter by batter</p>' + bats : '') +
+    (rv.summary ? '<p class="cmp-sum"><b>his night</b> ' + esc(rv.summary) + '.</p>' : '');
 }
 
 /* Your score on the real distribution of the closer pool's outings in this
@@ -811,6 +970,8 @@ function boot() {
   $('r-home').addEventListener('click', function () { renderHomeState(); show('s-home'); drawHero(); });
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
   $('r-coach').addEventListener('click', openCoach);
+  /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
+  window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
 
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
