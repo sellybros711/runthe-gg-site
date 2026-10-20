@@ -9,7 +9,9 @@
  * no Save button to forget. A piece he does not own is TRIED ON: the figure
  * wears it, the panel says which pack holds it and the odds of one open
  * pulling it, and "Back to my fit" takes it off. Nothing he does not own is
- * ever saved (wardrobe.js refuses it), so trying on is free and safe.
+ * ever saved (wardrobe.js refuses it), so trying on is free and safe. A
+ * press on a tile's picture shows the piece big (the zoom, below), with the
+ * same Put it on or Try it on.
  *
  * EVERY PIECE IS PACK ONLY (Run The Tour's rule): there is no Buy. The odds
  * are hoops/packs.js chance(), the arithmetic an open rolls, so the "1 in N"
@@ -32,6 +34,21 @@ var RCOL = { common: '#aeb4bf', rare: '#5b9bff', epic: '#b47cff', legendary: '#f
 /* the pixel art is hoops/itemart.js; a page without it draws the old swatch */
 function art(){ return window.RTF_ART || null; }
 function slotIcon(s){ var A = art(); return A ? '<img class="cl-si" alt="" src="' + A.iconURL({ id: 'slot:' + s, slot: s, k: '', c: ['#c9ccd6', '#7d8396'] }) + '">' : ''; }
+
+/* THE ZOOM'S SCALE: the most whole CSS pixels a cell that fit the screen,
+   between 8 and 16. 16 cells at 16 is 256px; a 390 phone gets that too. */
+function zoomScale(){
+  var w = (typeof innerWidth === 'number' ? innerWidth : 390) - 80, h = (typeof innerHeight === 'number' ? innerHeight : 844) * 0.42;
+  return Math.max(8, Math.min(16, Math.floor(Math.min(w, h) / 16)));
+}
+/* the zoom key's glyph and the zoom's arrows, in the art's own pixels */
+var ZG = ['.kkk...', 'kwwwk..', 'kwwwk..', 'kwwwk..', '.kkkk..', '....kk.', '.....kk'];
+function zoomGlyph(){ var A = art(); return A && A.spriteURL ? '<img class="cl-zg" alt="" draggable="false" src="' + A.spriteURL('cl-zoom', ZG, { k: '#e9ecf5', w: 'rgba(233,236,245,.18)' }, 2) + '">' : '+'; }
+var ZA = ['..k..', '.kk..', 'kkk..', '.kk..', '..k..'];
+function zArrow(d){
+  var A = art(), rows = d < 0 ? ZA : ZA.map(function(r){ return r.split('').reverse().join(''); });
+  return A && A.spriteURL ? '<img class="cl-za" alt="" draggable="false" src="' + A.spriteURL('cl-za' + d, rows, { k: '#e9ecf5' }, 2) + '">' : (d < 0 ? '&lt;' : '&gt;');
+}
 
 var LABEL = {
   hat: 'Hat', eyes: 'Glasses', top: 'Top', outer: 'Jacket', bottom: 'Pants', shoes: 'Shoes', socks: 'Socks',
@@ -91,6 +108,8 @@ function pane(host, o){
   if (slots.indexOf(v.slot) < 0) v.slot = slots[0];
   /* what is on the figure: the saved fit, with any try-on laid over it */
   var trying = null;
+  /* the pieces on screen, in order, for the zoom's previous and next */
+  var shownList = [];
 
   function draw(){
     var om = W.ownedMap(), lo = W.loadout(ctx), shown = Object.assign({}, lo);
@@ -136,12 +155,14 @@ function pane(host, o){
     var tiles = list.map(function(it){
       var own = !!om[it.id], on = shown[v.slot] === it.id;
       var a = it.c[0], b = it.c[1] || it.c[0];
-      return '<button type="button" class="cl-tile r-' + it.rarity + (it.excl ? ' excl' : '') + (own ? ' own' : ' lock') + (on ? ' is-on' : '') + '" data-id="' + it.id + '" aria-pressed="' + on + '">'
+      return '<div class="cl-cell"><button type="button" class="cl-tile r-' + it.rarity + (it.excl ? ' excl' : '') + (own ? ' own' : ' lock') + (on ? ' is-on' : '') + '" data-id="' + it.id + '" aria-pressed="' + on + '">'
         + '<span class="cl-sw" style="--a:' + a + ';--b:' + b + ';--rc:' + RCOL[it.rarity] + '">' + (art() ? art().icon(it, 'cl-ic') : '') + '</span>'
         + '<span class="cl-n">' + esc(it.name) + '</span>'
-        + '<span class="cl-p">' + (it.excl && !own ? '<b class="cl-x">' + esc(earnText(it)) + '</b>' : '<b class="cl-r">' + it.rarity + '</b>' + esc(priceText(it, own))) + '</span>'
-        + (own ? '<span class="cl-ck" aria-hidden="true"></span>' : '') + '</button>';
+        + '<span class="cl-p">' + (it.excl && !own ? '<b class="cl-x">' + esc(earnText(it)) + '</b>' : '<b class="cl-r">' + it.rarity + '</b> <span class="cl-pt">' + esc(priceText(it, own)) + '</span>') + '</span>'
+        + (own ? '<span class="cl-ck" aria-hidden="true"></span>' : '') + '</button>'
+        + (art() ? '<button type="button" class="cl-zoomb" data-zoom="' + it.id + '" aria-label="See ' + esc(it.name) + ' up close">' + zoomGlyph() + '</button>' : '') + '</div>';
     }).join('');
+    shownList = list;
 
     var fits = W.fits().filter(function(f){ return f.ctx === ctx; });
     var fitsHtml = fits.map(function(f){
@@ -190,8 +211,83 @@ function pane(host, o){
     if (own) own.onclick = function(){ v.owned = !v.owned; draw(); };
     host.querySelectorAll('[data-fit]').forEach(function(b){ b.onclick = function(){ trying = null; W.applyFit(b.getAttribute('data-fit')); draw(); }; });
     host.querySelectorAll('[data-fitx]').forEach(function(b){ b.onclick = function(){ W.delFit(b.getAttribute('data-fitx')); draw(); }; });
+    host.querySelectorAll('[data-zoom]').forEach(function(b){ b.onclick = function(e){ e.stopPropagation(); zoom(b.getAttribute('data-zoom'), b); }; });
     var sf = host.querySelector('.cl-savefit');
     if (sf) sf.onclick = function(){ W.saveFit('Fit ' + (W.fits().length + 1), ctx); draw(); };
+  }
+
+  /* THE ZOOM: one piece, big enough that its pixel art reads. The icon is
+     the same 16 cell picture as the tile's, shown at a whole number of CSS
+     pixels a cell (zoomScale), so every cell is a square of one size on
+     every screen. Previous and next walk the pieces the grid is showing.
+     The button does what the tile does: puts on a piece he owns, tries on
+     one he does not. It lives on the body, over the sheet, like the shop's
+     show, and Escape closes it without closing the sheet under it. */
+  var zov = null, zback = null;
+  function zoomClose(){
+    if (zov && zov.parentNode) zov.parentNode.removeChild(zov);
+    zov = null; document.removeEventListener('keydown', zKey, true);
+    var fb = zback && host.querySelector('[data-zoom="' + zback + '"]'); if (fb) fb.focus();
+  }
+  function zKey(e){
+    if (!zov) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); zoomClose(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); zStep(e.key === 'ArrowLeft' ? -1 : 1); }
+  }
+  function zStep(d){
+    if (!zov || !shownList.length) return;
+    var id = zov.getAttribute('data-id'), i = shownList.map(function(x){ return x.id; }).indexOf(id);
+    var nx = shownList[(i + d + shownList.length) % shownList.length]; if (nx) zoomDraw(nx.id);
+  }
+  function zoomDraw(id){
+    var it = CAT.item(id), A = art(); if (!it || !A || !zov) return;
+    zback = id;
+    var own = W.owns(id), on = W.loadout(ctx)[it.slot] === id, k = zoomScale(), px = A.ICON * k;
+    var act = own ? (on ? '<button type="button" class="k-btn cl-zgo" disabled>On him now</button>' : '<button type="button" class="k-btn cl-zgo" data-zgo="wear">Put it on</button>')
+      : '<button type="button" class="k-btn cl-zgo" data-zgo="try">Try it on</button>';
+    var status = own ? priceText(it, true) : it.excl ? earnText(it) : 'In packs';
+    var many = shownList.length > 1;
+    zov.setAttribute('data-id', id); zov.setAttribute('aria-label', it.name);
+    zov.style.setProperty('--rc', RCOL[it.rarity]);
+    zov.innerHTML = '<div class="cl-zbox r-' + it.rarity + '">'
+      + (window.RTF_KIT && window.RTF_KIT.closeX ? window.RTF_KIT.closeX('Close', 'cl-zx') : '<button type="button" class="cl-zx" aria-label="Close">x</button>')
+      + '<span class="cl-zrib">' + RLABEL[it.rarity] + '</span>'
+      + '<div class="cl-zstage"><span class="cl-zrays" aria-hidden="true"></span>'
+      + '<img class="cl-zimg" alt="' + esc(it.name) + '" draggable="false" src="' + A.iconURL(it) + '" width="' + px + '" height="' + px + '" style="width:' + px + 'px;height:' + px + 'px" data-cell="' + k + '"></div>'
+      + '<div class="cl-zname">' + esc(it.name) + '</div>'
+      + '<div class="cl-zmeta">' + esc(LABEL[it.slot] || it.slot) + ' · ' + (ctx === 'court' ? 'On court' : 'Off court') + ' · <b>' + esc(status) + '</b></div>'
+      + '<div class="cl-zrow">' + (many ? '<button type="button" class="cl-zstep" data-zstep="-1" aria-label="Previous piece">' + zArrow(-1) + '</button>' : '')
+      + act + (many ? '<button type="button" class="cl-zstep" data-zstep="1" aria-label="Next piece">' + zArrow(1) + '</button>' : '') + '</div></div>';
+    snap();
+    zov.querySelector('.cl-zx').onclick = zoomClose;
+    zov.querySelectorAll('[data-zstep]').forEach(function(b){ b.onclick = function(){ zStep(+b.getAttribute('data-zstep')); }; });
+    var go = zov.querySelector('[data-zgo]');
+    if (go) go.onclick = function(){
+      if (go.getAttribute('data-zgo') === 'wear') { trying = null; W.equip(ctx, it.slot, id); draw(); zoomDraw(id); }
+      else { trying = { slot: it.slot, id: id }; draw(); zoomClose(); }
+    };
+  }
+  /* centring puts the box on a fraction of a pixel (its text has fractional
+     line heights): the box is nudged so the picture starts on a whole device
+     pixel and every cell stays the same size */
+  function snap(){
+    var bx = zov && zov.querySelector('.cl-zbox'), im = zov && zov.querySelector('.cl-zimg'); if (!bx || !im) return;
+    bx.style.transform = '';
+    var d = window.devicePixelRatio || 1, r = im.getBoundingClientRect();
+    var fx = (Math.round(r.left * d) - r.left * d) / d, fy = (Math.round(r.top * d) - r.top * d) / d;
+    if (fx || fy) bx.style.transform = 'translate(' + fx + 'px,' + fy + 'px)';
+  }
+  function zoom(id, from){
+    if (!art() || !CAT.item(id)) return;
+    if (zov && zov.parentNode) zov.parentNode.removeChild(zov);
+    zov = document.createElement('div');
+    zov.className = 'cl-zoom';
+    zov.setAttribute('role', 'dialog'); zov.setAttribute('aria-modal', 'true');
+    zov.onclick = function(e){ if (e.target === zov) zoomClose(); };
+    document.body.appendChild(zov);
+    document.addEventListener('keydown', zKey, true);
+    zoomDraw(id);
+    var x = zov.querySelector('.cl-zgo:not([disabled])') || zov.querySelector('.cl-zx'); if (x) x.focus();
   }
 
   /* WHERE THE COINS CAME FROM, newest first. A folded entry (economy.js
@@ -208,7 +304,7 @@ function pane(host, o){
   }
 
   draw();
-  cur = { host: host, draw: draw };
+  cur = { host: host, draw: draw, zoom: zoom };
 }
 var SRC = { run: 'Draft run', dd: 'Daily Draft', fx: 'Fix History', ps: 'Six Passes', endless: 'Endless puzzle',
   cq: 'Conquest win', cqclear: 'Conquest cleared', welcome: 'Welcome to the Floor',
@@ -260,7 +356,7 @@ var CSS = [
 /* the word wraps under the number in a narrow column rather than running off
    the sheet ("196,900 coin" at 390) */
 '.cl-coins{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;min-width:0;}',
-'.cl-coin{width:18px;height:18px;image-rendering:pixelated;filter:drop-shadow(0 0 5px rgba(242,194,58,.5));}',
+'.cl-coin{width:24px;height:24px;image-rendering:pixelated;filter:drop-shadow(0 0 5px rgba(242,194,58,.5));}',
 '.cl-coins b{font:400 15px var(--k-f-pixel);color:var(--k-gold);margin-right:4px;text-shadow:0 2px 0 #5a3e0a;}',
 '.cl-try{position:relative;display:flex;flex-direction:column;gap:6px;align-items:stretch;padding:9px 9px 6px;color:var(--k-ink);overflow:hidden;background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 24%,#1a1f32),#121625 80%);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--rc) 70%,transparent),0 0 18px -8px var(--rc);}',
 /* the crimp along the top, the pack's sealed edge */
@@ -270,7 +366,7 @@ var CSS = [
 '.cl-pk{position:relative;z-index:1;display:grid;grid-template-columns:46px minmax(0,1fr);column-gap:8px;row-gap:6px;align-items:center;}',
 '.cl-pkart{position:relative;height:58px;display:flex;align-items:center;justify-content:center;}',
 '.cl-pkrays{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;opacity:.4;background:repeating-conic-gradient(from 0deg,var(--pa) 0deg 8deg,transparent 8deg 24deg);-webkit-mask:radial-gradient(circle,#000 14%,transparent 64%);mask:radial-gradient(circle,#000 14%,transparent 64%);animation:cl-spin 16s linear infinite;}',
-'.cl-pkimg{position:relative;width:38px;image-rendering:pixelated;filter:drop-shadow(0 0 6px var(--pa));animation:cl-bob 2.8s ease-in-out infinite;}',
+'.cl-pkimg{position:relative;width:40px;image-rendering:pixelated;filter:drop-shadow(0 0 6px var(--pa));animation:cl-bob 2.8s ease-in-out infinite;}',
 '@keyframes cl-bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-4px) rotate(3deg);}}',
 '.cl-pkt{display:flex;flex-direction:column;gap:1px;min-width:0;line-height:1.2;}',
 '.cl-pkt i{font:800 9px var(--k-f-text);font-style:normal;text-transform:uppercase;letter-spacing:.12em;color:var(--k-ink-3);}',
@@ -284,14 +380,14 @@ var CSS = [
 '.cl-slots{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -4px 8px;padding:2px 4px 6px;}',
 '.cl-slots::-webkit-scrollbar{display:none;}',
 '.cl-slot{flex:0 0 auto;min-height:38px;padding:6px 12px 6px 8px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}',
-'.cl-si{width:20px;height:20px;image-rendering:pixelated;opacity:.85;}',
+'.cl-si{width:16px;height:16px;image-rendering:pixelated;opacity:.85;}',
 '.cl-slot[aria-pressed="true"] .cl-si{opacity:1;filter:drop-shadow(0 0 4px rgba(242,194,58,.6));}',
 '.cl-slot i{font-style:normal;color:var(--k-gold);margin-left:3px;}',
 '.cl-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px;}',
 '.cl-own{border:0;background:none;color:var(--k-ink-3);font:700 12px var(--k-f-text);cursor:pointer;min-height:36px;padding:0 4px;text-decoration:underline;text-underline-offset:3px;}',
 '.cl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}',
 '@media (min-width:560px){.cl-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}',
-'.cl-tile{display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;min-height:56px;padding:8px;border:0;cursor:pointer;',
+'.cl-tile{display:grid;grid-template-columns:52px minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;min-height:56px;padding:8px;border:0;cursor:pointer;',
 ' background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--rc,#3a4058) 70%,transparent) 0 3px,transparent 3px 6px) top / 100% 3px no-repeat,linear-gradient(180deg,color-mix(in srgb,var(--rc,#3a4058) 13%,#1a1f32),#131725);color:var(--k-ink);font:700 12.5px/1.25 var(--k-f-text);position:relative;padding-right:20px;box-shadow:inset 3px 0 0 var(--rc,#3a4058);overflow:hidden;}',
 '.cl-tile.r-common{--rc:#aeb4bf;}.cl-tile.r-rare{--rc:#5b9bff;}.cl-tile.r-epic{--rc:#b47cff;}.cl-tile.r-legendary{--rc:#f2c23a;}',
 '.cl-tile.r-epic::after,.cl-tile.r-legendary::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 40%,rgba(255,236,170,.13) 50%,transparent 60%);background-size:260% 100%;animation:cl-foil 4s ease-in-out infinite;}',
@@ -301,16 +397,19 @@ var CSS = [
 '.cl-tile:hover{background:var(--k-panel-3);}',
 '.cl-tile.is-on{background:linear-gradient(180deg,#3a2f12,#221c0c);box-shadow:0 -2px 0 0 var(--k-gold),0 2px 0 0 var(--k-gold),-2px 0 0 0 var(--k-gold),2px 0 0 0 var(--k-gold);}',
 '.cl-tile:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
-'.cl-sw{grid-row:1 / span 2;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--rc,#aeb4bf) 30%,#121625),#0d1019 75%);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc,#aeb4bf) 55%,transparent);}',
+'.cl-sw{grid-row:1 / span 2;width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--rc,#aeb4bf) 30%,#121625),#0d1019 75%);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc,#aeb4bf) 55%,transparent);}',
 '.cl-sw:not(:has(img)){background:linear-gradient(135deg,var(--a,#3a3f4a) 0 55%,var(--b,#22242b) 55% 100%);}',
-'.cl-ic{width:40px;height:40px;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5));}',
+/* 16 cells at 3px a cell: an icon is never drawn between whole pixels */
+'.cl-ic{width:48px;height:48px;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5));}',
 '.cl-tile.lock .cl-ic{opacity:.75;}',
 '.cl-none .cl-sw{background:repeating-linear-gradient(45deg,var(--k-panel-3) 0 4px,transparent 4px 8px);}',
 /* a name takes two lines before it is cut, and the status line wraps: two
    columns of "Everyday Hoo..." and "In pa..." on a phone read as unfinished */
 '.cl-n{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;line-height:1.2;overflow-wrap:anywhere;}',
 '.cl-p{font:600 11px var(--k-f-text);color:var(--k-ink-3);line-height:1.3;}',
-'.cl-r{font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-right:6px;font-size:9.5px;}',
+/* "In packs" wraps as one, never "In" over "packs" */
+'.cl-pt{display:inline-block;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;}',
+'.cl-r{font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-right:3px;font-size:9.5px;}',
 '.r-common .cl-r{color:#aeb4bf;}.r-rare .cl-r{color:#6fa8ff;}.r-epic .cl-r{color:#c08cff;}.r-legendary .cl-r{color:var(--k-gold);}',
 '.cl-tile.lock .cl-n{color:var(--k-ink-2);}',
 '.cl-tile.lock .cl-sw{filter:saturate(.55) brightness(.85);}',
@@ -327,6 +426,32 @@ var CSS = [
 '.cl-fits{margin:14px 0 4px;}',
 '.cl-fitrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}',
 '.cl-fit{display:inline-flex;}',
+/* THE PICTURE IS THE ZOOM KEY: a button the size of the swatch laid over it,
+   a sibling of the tile and never inside it. A tap on the picture shows it
+   big; a tap on the name does what it always did. The glass in its corner
+   says so. */
+'.cl-cell{position:relative;display:grid;min-width:0;}',
+'.cl-zoomb{position:absolute;left:8px;top:50%;width:52px;height:52px;margin-top:-26px;padding:0;border:0;cursor:zoom-in;background:none;}',
+'.cl-zoomb:hover,.cl-zoomb:focus-visible{outline:2px solid var(--k-gold);outline-offset:0;}',
+'.cl-zg{position:absolute;right:0;bottom:0;width:14px;height:14px;padding:2px;box-sizing:content-box;background:rgba(5,7,13,.78);image-rendering:pixelated;}',
+/* the zoom: the piece alone, big, on a stand in its rarity's light */
+'.cl-zoom{position:fixed;inset:0;z-index:92;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,7,13,.82);animation:cl-zin .18s ease-out;}',
+'@keyframes cl-zin{from{opacity:0;}}',
+'.cl-zbox{position:relative;width:min(100%,380px);display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px 16px 16px;text-align:center;color:var(--k-ink);font:600 13px/1.35 var(--k-f-text);',
+' background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 20%,#161a2a),#0f1220 70%);box-shadow:inset 0 0 0 2px var(--rc),0 0 40px -10px var(--rc),0 8px 0 0 #05070d;}',
+'.cl-zx{position:absolute;top:6px;right:6px;}',
+'.cl-zrib{position:absolute;top:0;left:50%;transform:translateX(-50%);background:var(--rc);color:#10131d;font:800 10.5px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;padding:4px 16px;}',
+'.cl-zstage{position:relative;display:grid;place-items:center;padding:12px;overflow:hidden;width:100%;background:radial-gradient(60% 60% at 50% 50%,color-mix(in srgb,var(--rc) 26%,transparent),transparent 72%);}',
+'.cl-zrays{position:absolute;left:50%;top:50%;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;pointer-events:none;opacity:.22;background:repeating-conic-gradient(from 0deg,var(--rc) 0deg 7deg,transparent 7deg 22deg);-webkit-mask:radial-gradient(circle,#000 12%,transparent 64%);mask:radial-gradient(circle,#000 12%,transparent 64%);animation:cl-spin 30s linear infinite;}',
+'.cl-zimg{position:relative;display:block;image-rendering:pixelated;filter:drop-shadow(0 8px 0 rgba(0,0,0,.35));}',
+'.cl-zname{font:400 26px/1.05 var(--k-f-display);text-transform:uppercase;letter-spacing:.01em;}',
+'.cl-zmeta{font:600 12px var(--k-f-text);color:var(--k-ink-3);}.cl-zmeta b{color:var(--rc);font-weight:800;}',
+'.cl-zrow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;width:100%;}',
+'.cl-zrow .k-btn{min-height:46px;padding:12px 20px;flex:1 1 auto;max-width:220px;}',
+'.cl-zstep{width:46px;height:46px;flex:none;border:0;cursor:pointer;display:grid;place-items:center;background:#1a1f32;box-shadow:inset 0 0 0 2px #2c3350;}',
+'.cl-zstep:hover,.cl-zstep:focus-visible{box-shadow:inset 0 0 0 2px var(--rc);outline:none;}',
+'.cl-za{width:10px;height:10px;image-rendering:pixelated;}',
+'@media (prefers-reduced-motion:reduce){.cl-zoom,.cl-zrays{animation:none!important;}}',
 '.cl-fitx{border:0;background:var(--k-panel-3);color:var(--k-ink-3);min-width:32px;min-height:40px;margin:2px 2px 2px -4px;cursor:pointer;font:700 12px var(--k-f-text);}',
 ].join('\n');
 if (typeof document !== 'undefined' && !document.getElementById('rtf-closet-css')) {

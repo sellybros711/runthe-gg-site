@@ -1043,7 +1043,9 @@ var CSS = [
 '.k-coin{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px 0 6px;border:0;cursor:pointer;font:400 11px/1 var(--k-f-pixel);color:#ffe28a;font-variant-numeric:tabular-nums;',
 '  background:linear-gradient(180deg,#2a2210,#15110a);box-shadow:inset 0 0 0 2px #8a6a1c,inset 0 2px 0 2px rgba(255,226,138,.12),0 2px 0 0 #05070d;}',
 '.k-coin:hover{box-shadow:inset 0 0 0 2px var(--k-gold),inset 0 2px 0 2px rgba(255,226,138,.16),0 2px 0 0 #05070d;}',
-'.k-coin .k-cb{width:18px;height:18px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff3b0,#e8b923 55%,#9a6f0c);box-shadow:inset 0 0 0 2px #7a560a;}',
+/* the coin is itemart.js's pixel coin (--rtf-coin), 12 cells at 2px a cell;
+   a page without itemart.js keeps the old round fill */
+'.k-coin .k-cb{width:24px;height:24px;margin-left:-2px;flex:none;background:center / 100% 100% no-repeat;background-image:var(--rtf-coin,radial-gradient(circle at 35% 30%,#fff3b0,#e8b923 55%,#9a6f0c 70%,transparent 72%));image-rendering:pixelated;}',
 '.k-coin.bump{animation:k-coin-bump .5s var(--k-e-move);}',
 '@keyframes k-coin-bump{30%{transform:scale(1.12);}}',
 
