@@ -79,17 +79,14 @@
     return out;
   }
 
-  /* The hold% after each key, from this state. */
+  /* The value after each key, from this state: hold% with the lead, the
+     tie's goal once it is tied (grade.js THE GOAL; model.after scores a tie
+     from a lead as 0, as the grade does). */
   function keyValues(model, st) {
     const here = model.solve(st).hold;
     return G.KEYS.map((key, k) => {
       let v = 0;
-      for (const [q, t] of model.transitions(st, G.CLASS[k])) {
-        if (t.self) v += q * here;
-        else if (t.end === 'hold') v += q;
-        else if (t.end === 'lost') v += 0;
-        else v += q * model.solve(t.st).hold;
-      }
+      for (const [q, t] of model.transitions(st, G.CLASS[k])) v += q * (t.self ? here : model.after(st, t));
       return v;
     });
   }
@@ -129,6 +126,9 @@
     return `at ${b}-${s}`;
   }
   function runnersAfterWalk(bases) { return Math.min(3, [1, 2, 4].filter(m => bases & m).length + 1); }
+  /* The run that matters: the tying run with the lead, the go-ahead run once
+     it is tied. need = how many runs it takes to score it. */
+  function keyRun(st) { return st.margin >= 1 ? { need: st.margin, word: 'tying' } : { need: 1, word: 'go-ahead' }; }
 
   /* ---- the principle ------------------------------------------------------- */
 
@@ -147,7 +147,7 @@
     const cands = [];
     for (const g of order) {
       if (g === 'walk') {
-        if (st.b === 3 || (runnersAfterWalk(st.bases) + 1 >= st.margin && st.b >= 2)) cands.push('dont_walk_the_tying_run');
+        if (st.b === 3 || (runnersAfterWalk(st.bases) + 1 >= keyRun(st).need && st.b >= 2)) cands.push('dont_walk_the_tying_run');
         if (st.b === 0 && st.s === 0) cands.push('first_pitch_strike');
         if (behind || st.b === st.s) cands.push('strike_when_behind');
       } else if (g === 'strike') {
@@ -272,13 +272,16 @@
         why.push(`the ${bn} ${bp} gets a whiff ${pct(fb.whiff)}% of the time. your ${cn} ${cp}: ${pct(fc.whiff)}%.`);
         next = `next time with a man on third, go for the whiff: the ${bn} ${bp}.`;
         break;
-      case 'dont_walk_the_tying_run':
-        headline = "don't walk the tying run.";
-        why.push(st.bases === 7 && st.margin === 1 ? `${cw} with the bases loaded, a walk forces in the tying run.`
-          : `${cw}, a walk puts the tying run ${st.margin <= runnersAfterWalk(st.bases) ? 'on base' : 'at the plate'}.`);
+      case 'dont_walk_the_tying_run': {
+        // the principle's id stays; once it is tied, the run is the go-ahead run
+        const kr = keyRun(st);
+        headline = `don't walk the ${kr.word} run.`;
+        why.push(st.bases === 7 && kr.need === 1 ? `${cw} with the bases loaded, a walk forces in the ${kr.word} run.`
+          : `${cw}, a walk puts the ${kr.word} run ${kr.need <= runnersAfterWalk(st.bases) ? 'on base' : 'at the plate'}.`);
         why.push(`your ${cn} ${cp} is a ball ${pct(fc.ball)}% of the time. the ${bn} ${bp}: ${pct(fb.ball)}%.`);
         next = `next time ${cw}, make him hit the ${bn} ${bp}.`;
         break;
+      }
       case 'use_your_best_pitch': {
         const top = model.arsenal.find(a => a.type === best.type);
         headline = `go to your best pitch: the ${bn}.`;
@@ -288,7 +291,8 @@
         break;
       }
     }
-    why.push(`your call held ${fmt1(grade.value)}%. the best held ${fmt1(grade.best)}%.`);
+    why.push(st.margin >= 1 ? `your call held ${fmt1(grade.value)}%. the best held ${fmt1(grade.best)}%.`
+      : `your call kept it tied ${fmt1(grade.value)}%. the best kept it tied ${fmt1(grade.best)}%.`);
     return { headline, why: why.slice(0, 3), nextTime: next };
   }
 
@@ -365,7 +369,7 @@
     const words = copy(principle, ctx);
     const lesson = {
       pitchN: n + 1, call: { type: call.type, cell: call.cell }, bestCall: { type: best.type, cell: best.cell },
-      count: { b: st.b, s: st.s }, outs: st.outs, bases: st.bases, batter: batter.name, principle,
+      count: { b: st.b, s: st.s }, outs: st.outs, bases: st.bases, tied: st.margin === 0, batter: batter.name, principle,
       headline: words.headline, why: words.why, nextTime: words.nextTime,
       numbers: { lostPts: grade.lost, callValue: grade.value, bestValue: grade.best },
       pro: proFor(pack, principle, st, best, batter, pack.scenario.pitcher.throws),

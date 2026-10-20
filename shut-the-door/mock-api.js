@@ -30,10 +30,10 @@ if (!C) return;
 
 /* ---- share text (section 11) ------------------------------------------- */
 
-var OUTCOME_WORDS = { door_shut: 'door shut', doors_open: "door's open", walk_off: 'walk-off' };
+/* the outcome in words: contract.js's label, in lower case, as share.js has it */
 function shareText(r, number) {
   var lines = [C.SHARE_TITLE + ' #' + number];
-  lines.push(OUTCOME_WORDS[r.outcome] + ' · better than ' + Math.round(r.percentile) + '% of closers');
+  lines.push(String(C.OUTCOME_LABEL[r.outcome] || '').toLowerCase() + ' · better than ' + Math.round(r.percentile) + '% of closers');
   if (r.pitchedLike && r.pitchedLike.name) lines.push('pitched like ' + r.pitchedLike.name);
   var sq = (r.strip || []).map(function (b) { return C.SQUARE[b]; });
   for (var i = 0; i < sq.length; i += C.SQUARES_PER_LINE) lines.push(sq.slice(i, i + C.SQUARES_PER_LINE).join(''));
@@ -58,15 +58,17 @@ if (!window.STD_AUTH || FORCE) {
     onChange: function () { return function () {}; },
     signIn: none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
-    /* the shape assumed for shutdoor_my_stats(): CONTRACT_REQUESTS.md B8 */
+    /* shutdoor_my_stats()'s shape (153, and tieHeld from 155), plus the
+       bands and recent rows the device history also carries */
     myStats: function () {
       if (!mockIn) return Promise.resolve(null);
       return Promise.resolve({
-        played: 12, shut: 7, streak: 3, best: 5, avgPercentile: 61,
+        played: 12, doorShut: 7, tieHeld: 2, doorsOpen: 1, walkOff: 2, streak: 3, best: 5, avgPercentile: 61,
         bands: { green: 71, yellow: 30, orange: 14, red: 6 },
         recent: [
           { day: '2026-10-16', number: 12, outcome: 'door_shut', strip: ['green', 'green', 'yellow', 'green', 'green'] },
-          { day: '2026-10-15', number: 11, outcome: 'walk_off', strip: ['yellow', 'orange', 'green', 'red'] },
+          { day: '2026-10-15', number: 11, outcome: 'tie_held', strip: ['yellow', 'orange', 'green', 'red', 'green', 'green'] },
+          { day: '2026-10-14', number: 10, outcome: 'walk_off', strip: ['yellow', 'orange', 'green', 'red'] },
         ],
       });
     },
@@ -76,19 +78,25 @@ if (!window.STD_AUTH || FORCE) {
 if (window.STD_API && !FORCE) return;
 
 /* Test switches, read off the page's own address. Mock only; they never
-   reach the real API. ?mockEnd= door_shut | doors_open | walk_off forces a
-   scripted outing that ends that way (the second and third run a runner put
-   out, runs scoring, the end rules); ?mockProxy=1 marks the spot proxy;
+   reach the real API. ?mockEnd= door_shut | tie_held | doors_open | walk_off
+   forces a scripted outing that ends that way (the end rules: a solo home run
+   ties it and play goes on; tie_held then strikes out the side; doors_open
+   runs a runner put out on a double play, ties it, then goes ahead with the
+   walk-off off, as in an 8th inning; walk_off scores runners for the lead);
+   ?mockProxy=1 marks the spot proxy;
    ?mockNull=1 gives the reveal no pitch count, only its note;
    ?mockLesson=none and ?mockPro=none give the result no lesson, or a
    lesson with no pro example (CONTRACT.md section 15). */
 var QS = (function () { try { return new URLSearchParams(location.search); } catch (e) { return { get: function () { return null; } }; } })();
 var SCRIPTS = {
   door_shut: ['K'],
-  doors_open: ['single', 'double_play', 'home_run'],
+  tie_held: ['home_run', 'K'],
+  doors_open: ['single', 'double_play', 'home_run', 'home_run'],
   walk_off: ['single', 'single', 'home_run'],
 };
-var MOCK = { lessonNone: QS.get('mockLesson') === 'none', proNone: QS.get('mockPro') === 'none', script: SCRIPTS[QS.get('mockEnd')] || null, proxy: QS.get('mockProxy') === '1', nullPitches: QS.get('mockNull') === '1' };
+var MOCK = { lessonNone: QS.get('mockLesson') === 'none', proNone: QS.get('mockPro') === 'none', script: SCRIPTS[QS.get('mockEnd')] || null, proxy: QS.get('mockProxy') === '1', nullPitches: QS.get('mockNull') === '1',
+  /* a go-ahead run is door's open only with the walk-off off (the fixture's 9th has it on) */
+  noWalkOff: QS.get('mockEnd') === 'doors_open' };
 
 /* ---- the seeded stream ---------------------------------------------------- */
 
@@ -115,7 +123,7 @@ function load() {
   if (FIX) return Promise.resolve(FIX);
   return fetch('fixtures/mock-scenario.json', { cache: 'no-store' })
     .then(function (r) { if (!r.ok) throw new Error('the mock scenario did not load'); return r.json(); })
-    .then(function (j) { FIX = j; return j; });
+    .then(function (j) { if (MOCK.noWalkOff) j.scenario.situation.walkOffLive = false; FIX = j; return j; });
 }
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
@@ -195,6 +203,7 @@ function gradeCall(scn, st, call) {
   return {
     band: C.bandOf(lost), value: Math.round(value * 10) / 10, best: Math.round(best * 10) / 10,
     lost: lost, bestCall: bestCall, reason: reason, reDelta: -Math.round(lost * 10) / 1000,
+    tied: st.score.us === st.score.them,
   };
 }
 
@@ -338,10 +347,10 @@ function apply(scn, st, call, rng) {
   st.strip.push(grade.band);
   st.log.push(pr); st.grades.push(grade);
   st.debug.tiers.push(pr.drawn.tier);
+  /* the end rules (CONTRACT.md section 8): a tie plays on */
   var sit = scn.situation;
   if (st.score.them > st.score.us) { st.status = 'over'; st.outcome = sit.walkOffLive ? 'walk_off' : 'doors_open'; }
-  else if (st.score.them === st.score.us) { st.status = 'over'; st.outcome = 'doors_open'; }
-  else if (st.outs >= 3) { st.status = 'over'; st.outcome = 'door_shut'; }
+  else if (st.outs >= 3) { st.status = 'over'; st.outcome = st.score.them === st.score.us ? 'tie_held' : 'door_shut'; }
   st.shutItLive = st.status === 'live' && st.count.s === 2 && st.outs === 2;
   return { pitchResult: pr, pitchGrade: grade };
 }
@@ -409,7 +418,7 @@ function finishOuting(outingId) {
     if (o.result) return clone(o.result);
     var st = o.st, j = FIX;
     var q = st.grades.reduce(function (a, g) { return a + Math.max(0, 100 - g.lost * 9); }, 0) / Math.max(1, st.grades.length);
-    var score = Math.round(q * 6 + { door_shut: 320, doors_open: 110, walk_off: 0 }[st.outcome]);
+    var score = Math.round(q * 6 + { door_shut: 320, tie_held: 215, doors_open: 110, walk_off: 0 }[st.outcome]);
     var sc = j.pool.scores, below = 0;
     for (var i = 0; i < sc.length; i++) if (sc[i] < score) below++;
     var fam = { hard: 0, breaking: 0, offspeed: 0 };
@@ -457,7 +466,7 @@ function mockLesson(o) {
   var p;
   if ((pre.bases & 4) && pre.outs < 2) p = 'strikeout_with_runner_on_third';
   else if ((pre.bases & 1) && pre.outs < 2 && C.rowOf(best.cell) >= 3) p = 'double_play_ball';
-  else if (c.b === 3 && pre.margin <= 1) p = 'dont_walk_the_tying_run';
+  else if (c.b === 3 && pre.margin <= 1) p = 'dont_walk_the_tying_run';   // tied, it is the go-ahead run
   else if (c.b > c.s) p = 'strike_when_behind';
   else if (c.s > c.b && !C.inZone(best.cell)) p = 'chase_when_ahead';
   else if (c.b === 0 && c.s === 0) p = 'first_pitch_strike';
@@ -469,7 +478,7 @@ function mockLesson(o) {
   var T = {
     strikeout_with_runner_on_third: ['runner on third. go for the strikeout', 'next time, with a man on third, throw the pitch he misses.'],
     double_play_ball: ['runner on first. get the ground ball', 'next time, with a man on first, keep it down.'],
-    dont_walk_the_tying_run: [cnt + '. do not walk the tying run', 'next time at three balls, make him hit his way on.'],
+    dont_walk_the_tying_run: [cnt + '. do not walk the ' + (pre.margin === 0 ? 'go-ahead' : 'tying') + ' run', 'next time at three balls, make him hit his way on.'],
     strike_when_behind: ['behind ' + cnt + '. throw a strike', 'next time behind in the count, come back to the zone.'],
     chase_when_ahead: ['ahead ' + cnt + '. make him chase', 'next time ahead ' + cnt + ', put the ' + bp.name + ' just off the plate.'],
     first_pitch_strike: ['0-0. get strike one', 'next time, start him with a strike he does not hit.'],
@@ -487,7 +496,7 @@ function mockLesson(o) {
   if (o.calls.length >= 5 && fam.hard / o.calls.length >= 0.6) pattern = 'you threw ' + fam.hard + ' of ' + o.calls.length + ' fastballs. this lineup chased breaking balls.';
   return {
     pitchN: worst + 1, call: { type: call.type, cell: call.cell }, bestCall: { type: best.type, cell: best.cell },
-    count: { b: c.b, s: c.s }, outs: pre.outs, bases: pre.bases, batter: bt.name, principle: p,
+    count: { b: c.b, s: c.s }, outs: pre.outs, bases: pre.bases, tied: pre.margin === 0, batter: bt.name, principle: p,
     headline: T[0], why: why.slice(0, 3), nextTime: T[1],
     numbers: { lostPts: g.lost, callValue: g.value, bestValue: g.best },
     pro: MOCK.proNone ? null : {

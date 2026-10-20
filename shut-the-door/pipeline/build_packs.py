@@ -346,7 +346,8 @@ def build_one(spec, adv):
         'resolution': 'proxy' if proxy else 'real',
         'sources': sources,
     }
-    pack = {'v': 1, 'keys': prep.KEYS, 'scenario': sc, 'kernelZoneFt': zone_ft, 'pitches': pitches,
+    # v: the engine's pack format (engine.js PACK_VERSION; 2 has a hold slot for a tied game, pool.js stamps it too)
+    pack = {'v': 2, 'keys': prep.KEYS, 'scenario': sc, 'kernelZoneFt': zone_ft, 'pitches': pitches,
             'library': library, 'advance': adv, 'reveal': reveal,
             'build': {'window': window, 'batterWindow': bat_window, 'tiers': dict(tiers_used),
                       'leaguePitches': int(len(lg)), 'arsenalSource': ars_src}}

@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url);
 const K = require('../contract.js');
 const R = require('../rng.js');
 const G = require('../grade.js');
+const E = require('../engine.js');
 
 const TYPES = [
   { type: 'FF', name: 'four-seam', usage: 0.55, velo: 97.5, pfxX: -7, pfxZ: 16, shape: 'ride', command: 55, sigmaFt: 0.42 },
@@ -106,7 +107,7 @@ export function synthPack(opts = {}) {
     batters, realFaced: 3, resolution: 'real', sources: ['synthetic'],
   };
   return {
-    v: 1, keys: G.KEYS.slice(), scenario, kernelZoneFt: 1.9, pitches, library, advance: synthAdvance(),
+    v: E.PACK_VERSION, keys: G.KEYS.slice(), scenario, kernelZoneFt: 1.9, pitches, library, advance: synthAdvance(),
     pool: { scores: opts.poolScores || [], closers: opts.closers || [] },
     reveal: { outcome: 'door_shut', pitches: 12, runs: 0, summary: 'synthetic', plateAppearances: [] },
   };

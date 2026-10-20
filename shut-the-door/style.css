@@ -135,7 +135,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .d-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .dc-lbl { font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 4px; color: rgba(244, 245, 247, .7); }
 .done .d-out { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 42px; line-height: .9; margin: 0; text-transform: uppercase; color: #fff; }
-.done .d-out.doors_open { color: var(--orange); } .done .d-out.walk_off { color: var(--red); }
+.done .d-out.tie_held { color: var(--yellow); } .done .d-out.doors_open { color: var(--orange); } .done .d-out.walk_off { color: var(--red); }
 .vs-pill { flex: none; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; padding: 6px 10px 5px; border-radius: 10px; background: rgba(255, 255, 255, .12); color: #fff; }
 .vs-pill.beat { background: var(--signal); } .vs-pill.matched { background: var(--data); }
 .d-mid { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin: 10px 0 0; }
@@ -221,6 +221,9 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .sb-team b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; line-height: 1; min-width: 14px; text-align: right; }
 .sb-inn { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; background: rgba(255, 255, 255, .07); border-radius: 6px; padding: 5px 8px; line-height: 1; white-space: nowrap; }
 .sb-inn b { color: var(--signal); font-style: italic; font-weight: 900; }
+/* a tie plays on: the bar says so, no popup */
+.sb-tied { display: block; margin-top: 3px; font-style: normal; font-size: 10px; letter-spacing: .12em; text-align: center; color: var(--yellow); }
+.scorebar.tied .sb-team b { color: var(--yellow); }
 .sb-bases { width: 36px; height: 27px; overflow: visible; }
 .sb-path { fill: none; stroke: #2a3346; stroke-width: 1.2; }
 .sb-bases rect { fill: #121826; stroke: #4a5366; stroke-width: 1.2; transition: fill .4s, stroke .4s; }
@@ -369,7 +372,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .eyebrow { font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: rgba(244, 245, 247, .65); margin: 0 0 6px; position: relative; z-index: 1; }
 .outcome { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 74px; line-height: .9; margin: 4px 0 6px; text-transform: uppercase; letter-spacing: -.005em; color: #fff; }
 .outcome::after { content: '.'; color: var(--signal); }
-.outcome.doors_open { color: var(--orange); } .outcome.walk_off { color: var(--red); }
+.outcome.tie_held { color: var(--yellow); } .outcome.doors_open { color: var(--orange); } .outcome.walk_off { color: var(--red); }
 .seam { height: 16px; background: var(--seam) repeat-x left center; margin: 2px 0 12px; width: 62%; }
 .r-facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 .fact { display: flex; flex-direction: column; min-width: 84px; padding: 8px 14px 9px; border-radius: 14px; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .1); font-size: 12px; font-weight: 600; letter-spacing: .04em; color: rgba(244, 245, 247, .7); }
@@ -441,7 +444,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .cmp .v { text-align: center; padding: 9px 6px; border-radius: 12px; background: var(--panel-2); font-size: 13px; min-width: 0; }
 .cmp .v b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 26px; line-height: 1; }
 .cmp .v b.o { font-size: 18px; text-transform: uppercase; }
-.cmp .v b.o.doors_open { color: var(--orange); } .cmp .v b.o.walk_off { color: var(--red); }
+.cmp .v b.o.tie_held { color: var(--data); } .cmp .v b.o.doors_open { color: var(--orange); } .cmp .v b.o.walk_off { color: var(--red); }
 .cmp .v.win { background: var(--signal-soft); box-shadow: inset 0 0 0 2px var(--signal); }
 .cmp .v.win b { color: var(--signal); }
 .cmp .v.none { background: none; color: var(--faint); font-weight: 700; }

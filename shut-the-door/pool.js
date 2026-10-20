@@ -13,7 +13,13 @@
  *      for pitched like
  *   4. keeps the lesson's pro examples this pack can show (attachPros)
  *   5. reports the calibration the brief asks for (band spread, the pool's
- *      hold rate) in pack.build.pool, and writes the pack minified
+ *      hold rate, its outcome mix) in pack.build.pool, and writes the pack
+ *      minified, stamped with the engine's pack format (E.PACK_VERSION)
+ *
+ * Rebuilding a committed pack (no staged pack or pros cache at hand) works the
+ * same way: pass the pack itself as the staged pack. The hold table, the pool
+ * and the build report are solved again; without --pros the pack's own pros
+ * are kept as they are.
  *
  * A CLOSER'S CALL
  *   His pitch family from his share by count bucket; the scenario pitcher's
@@ -100,7 +106,7 @@ function runPool(pack, closers, runs, model) {
   const scores = [];
   const lostAll = [], bandAll = [];
   let holds = 0, n = 0, pitches = 0;
-  const outcomes = { door_shut: 0, doors_open: 0, walk_off: 0 };
+  const outcomes = Object.fromEntries(K.OUTCOMES.map(k => [k, 0]));
   closers.forEach((c, ci) => {
     for (let r = 0; r < per; r++) {
       const seed = R.hashSeed(`${pack.scenario.id}|pool|${ci}|${r}`);
@@ -146,7 +152,7 @@ function attachPros(pack, pros, model) {
     const bats = pack.scenario.batters[bi].bats;
     const platoon = bats === thr ? 'same' : 'opp';
     for (let b = 0; b < 4; b++) for (let s = 0; s < 3; s++) for (let o = 0; o < 3; o++) for (let bs = 0; bs < 8; bs++)
-      for (let m = 1; m <= model.M; m++) {
+      for (let m = 0; m <= model.M; m++) {
         const i = G.stateIndex(model.N, model.M, bi, b, s, o, bs, m);
         const bc = h.b[i];
         if (bc == null) continue;
@@ -179,6 +185,8 @@ function attachPros(pack, pros, model) {
 
 function build(pack, closersFile, opts) {
   const runs = (opts && opts.runs) || 2000;
+  // the hold table's layout is the engine's pack format (a slot for a tied game since 2)
+  pack.v = E.PACK_VERSION;
   const t0 = Date.now();
   const fresh = new G.Model(pack, { fresh: true });
   pack.hold = fresh.holdTable();

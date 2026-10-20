@@ -152,28 +152,82 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('a pitch result carries the contract fields', ['n', 'call', 'actual', 'actualCell', 'velo', 'batter', 'result', 'countBefore', 'count', 'outs', 'bases', 'runnerMoves', 'runs', 'paOver', 'drawn'].every(k => k in p));
 }
 {
-  // end rules: every pitch a home run. Lead 1, a man on: the first pitch
-  // puts them ahead. walkOffLive decides walk-off against door's open.
-  const allHr = (walkOffLive, lead, bases = 1) => {
-    const hrIdx = G.KEYS.indexOf('home_run');
-    const p = synthPack({ walkOffLive, lead, bases, override: (library, pitches, pitchFor) => {
-      for (const lib of library) for (const t in lib) {
-        const ref = pitchFor(t, 'home_run') * 3;
-        for (let cell = 0; cell < 25; cell++) {
-          lib[t].p[cell] = [0, 1, 2, 3].map(() => G.KEYS.map((k, i) => (i === hrIdx ? 1000 : 0)));
-          lib[t].x[cell] = G.KEYS.map((k, i) => (i === hrIdx ? ref : -1));
-        }
+  // end rules: a scripted pack. A four-seam is always a home run and a
+  // slider always a swinging strike, wherever it lands, so the calls write
+  // the inning: the four-seam scores the batter and every runner.
+  const HR = G.KEYS.indexOf('home_run'), SW = G.KEYS.indexOf('swinging_strike');
+  const scripted = (walkOffLive, lead, bases = 0) => synthPack({ walkOffLive, lead, bases, override: (library, pitches, pitchFor) => {
+    for (const lib of library) for (const t in lib) {
+      const hr = pitchFor(t, 'home_run') * 3, sw = pitchFor(t, 'swinging_strike') * 3;
+      for (let cell = 0; cell < 25; cell++) {
+        const k = t === 'FF' ? HR : SW, ref = t === 'FF' ? hr : sw;
+        lib[t].p[cell] = [0, 1, 2, 3].map(() => G.KEYS.map((x, i) => (i === k ? 1000 : 0)));
+        lib[t].x[cell] = G.KEYS.map((x, i) => (i === k ? ref : -1));
       }
-    } });
-    const o = E.createOuting(p, { seed: 1 });
-    E.throwPitch(o, { type: 'FF', cell: 12 });
+    }
+  } });
+  const HOMER = { type: 'FF', cell: 12 }, STRIKE = { type: 'SL', cell: 12 };
+  const run = (pack, calls) => {
+    const o = E.createOuting(pack, { seed: 1 });
+    for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
     return o;
   };
-  check('a go-ahead run with walkOffLive is a walk-off', allHr(true, 1).outcome === 'walk_off');
-  check('a go-ahead run without walkOffLive is door\'s open', allHr(false, 1).outcome === 'doors_open');
-  check('a tying run is door\'s open', allHr(true, 1, 0).outcome === 'doors_open');
-  check('one swing that ties and goes ahead is a walk-off when walkOffLive', allHr(true, 1, 1).outcome === 'walk_off');
-  const fin = E.finishOuting(allHr(true, 1));
+  const strikes = n => Array.from({ length: n }, () => STRIKE);
+
+  check('a go-ahead run with walkOffLive is a walk-off', run(scripted(true, 1, 1), [HOMER]).outcome === 'walk_off');
+  check('a go-ahead run without walkOffLive is door\'s open', run(scripted(false, 1, 1), [HOMER]).outcome === 'doors_open');
+  check('one swing that ties and goes ahead: the go-ahead rule decides', run(scripted(true, 1, 1), [HOMER]).outcome === 'walk_off'
+    && run(scripted(false, 2, 3), [HOMER]).outcome === 'doors_open');
+
+  // a tie does not end it
+  const tieP = scripted(true, 1);
+  const tied = run(tieP, [HOMER]);
+  check('a run that ties keeps the outing live', tied.status === 'live' && tied.score.us === tied.score.them && tied.outcome === null,
+    JSON.stringify({ status: tied.status, score: tied.score }));
+  check('the inning goes on after a tie: the next batter, the same outs', tied.st.bi === 1 && tied.st.outs === 0 && tied.st.margin === 0);
+
+  // three outs with it still tied: a held tie
+  const held = run(tieP, [HOMER, ...strikes(9)]);
+  check('a tie, then three outs: tie_held', held.status === 'over' && held.outcome === 'tie_held', held.outcome);
+  const heldR = E.finishOuting(held);
+  check('a held tie scores the tie_held bonus',
+    heldR.score === Math.max(0, Math.round(E.SCORE_BASE - E.SCORE_PER_PT * held.grades.reduce((a, g) => a + g.lost, 0))) + E.RESULT_BONUS.tie_held,
+    String(heldR.score));
+  check('the held tie\'s runs are the runs that tied it', heldR.runs === 1);
+  check('a held tie is HELD THE TIE', K.OUTCOME_LABEL[heldR.outcome] === 'HELD THE TIE');
+
+  // a tie, then a go-ahead run
+  check('a tie, then a go-ahead run with walkOffLive: walk-off', run(tieP, [HOMER, STRIKE, HOMER]).outcome === 'walk_off');
+  const noWo = run(scripted(false, 1), [HOMER, STRIKE, HOMER]);
+  check('a tie, then a go-ahead run without walkOffLive: door\'s open', noWo.outcome === 'doors_open' && noWo.score.them === noWo.score.us + 1);
+  check('a lead of two, one run: still door shut on three outs', run(scripted(true, 2), [HOMER, ...strikes(9)]).outcome === 'door_shut');
+
+  // the grade after a tie is on the tie's goal
+  const m = new G.Model(tieP);
+  const lead1 = m.startState(), tie0 = { ...m.startState(), bi: 1, margin: 0 };
+  check('with the lead, a call that ties is worth 0 to the hold (a blown save)', m.callValue(lead1, 'FF', 12).hold === 0);
+  check('tied, a call that goes ahead is worth 0 and a strike keeps it tied', m.callValue(tie0, 'FF', 12).hold === 0 && Math.abs(m.callValue(tie0, 'SL', 12).hold - 1) < 1e-9);
+  check('the goal: 1 with the lead, 0 once it is tied', G.goalOf(lead1) === 1 && G.goalOf(tie0) === 0);
+  const gTie = tied.grades.length === 1 && G.gradeCall(m, tied.st, HOMER);
+  check('after a tie the grade says tied, and the homer is red', gTie.tied === true && gTie.band === 'red' && gTie.value === 0 && gTie.best === 100, JSON.stringify(gTie));
+  check('before the tie it does not', tied.grades[0].tied === false);
+  check('after a tie the reason speaks of the tie', /keeps it tied/.test(G.gradeCall(m, tied.st, STRIKE).reason), G.gradeCall(m, tied.st, STRIKE).reason);
+  check('the stored hold table has a slot for a tied game', m.holdTable().h.length === m.N * 12 * 3 * 8 * (m.M + 1));
+
+  // the rank and vsReal
+  check('the outcomes rank door shut, held the tie, door\'s open, walk-off',
+    K.OUTCOMES.join() === 'door_shut,tie_held,doors_open,walk_off'
+    && K.OUTCOME_RANK.door_shut === 3 && K.OUTCOME_RANK.tie_held === 2 && K.OUTCOME_RANK.doors_open === 1 && K.OUTCOME_RANK.walk_off === 0);
+  check('every outcome has a label and a result bonus, in rank order',
+    K.OUTCOMES.every(k => K.OUTCOME_LABEL[k] && E.RESULT_BONUS[k] != null)
+    && K.OUTCOMES.every((k, i) => i === 0 || E.RESULT_BONUS[k] < E.RESULT_BONUS[K.OUTCOMES[i - 1]]));
+  const rv = (outcome, runs) => ({ outcome, runs });
+  check('a held tie loses to a real door shut', E.vsReal('tie_held', 1, rv('door_shut', 0)) === 'lost');
+  check('a held tie beats a real door\'s open and a real walk-off', E.vsReal('tie_held', 2, rv('doors_open', 1)) === 'beat' && E.vsReal('tie_held', 3, rv('walk_off', 2)) === 'beat');
+  check('a walk-off loses to a real held tie', E.vsReal('walk_off', 2, rv('tie_held', 2)) === 'lost');
+  check('two held ties: fewer runs wins, the same runs match', E.vsReal('tie_held', 2, rv('tie_held', 3)) === 'beat' && E.vsReal('tie_held', 3, rv('tie_held', 3)) === 'matched');
+
+  const fin = E.finishOuting(run(scripted(true, 1, 1), [HOMER]));
   check('finishOuting returns the contract fields', ['outcome', 'pitches', 'strip', 'score', 'percentile', 'pitchedLike', 'reveal', 'vsReal'].every(k => k in fin));
   check('a walk-off loses to a real door shut', fin.vsReal === 'lost');
 }

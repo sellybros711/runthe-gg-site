@@ -76,9 +76,14 @@ function bandOf(rel) { for (const b of BANDS) if (rel <= b.maxLost) return b.ban
 const SQUARE = Object.freeze({ green: '🟩', yellow: '🟨', orange: '🟧', red: '🟥' });
 const SQUARES_PER_LINE = 10;
 
-const OUTCOMES = Object.freeze(['door_shut', 'doors_open', 'walk_off']);
-const OUTCOME_RANK = Object.freeze({ door_shut: 2, doors_open: 1, walk_off: 0 });
-const OUTCOME_LABEL = Object.freeze({ door_shut: 'DOOR SHUT', doors_open: "DOOR'S OPEN", walk_off: 'WALK-OFF' });
+/* The end of an outing (CONTRACT.md section 8). tie_held is the owner's call
+   (2026-10-20): a run that ties no longer ends it, and three outs with the
+   game still tied is a held tie. It is a blown save, so it ranks under
+   door_shut and never counts toward the streak. The label lives here only, so
+   it can be renamed in one place. */
+const OUTCOMES = Object.freeze(['door_shut', 'tie_held', 'doors_open', 'walk_off']);
+const OUTCOME_RANK = Object.freeze({ door_shut: 3, tie_held: 2, doors_open: 1, walk_off: 0 });
+const OUTCOME_LABEL = Object.freeze({ door_shut: 'DOOR SHUT', tie_held: 'HELD THE TIE', doors_open: "DOOR'S OPEN", walk_off: 'WALK-OFF' });
 
 /* Bases bitmask. */
 const BASE = Object.freeze({ FIRST: 1, SECOND: 2, THIRD: 4 });

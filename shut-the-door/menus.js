@@ -79,12 +79,15 @@ function renderHow(ctx) {
     '<p>the ball misses by his command. then a real pitch from that spot plays out: take, swing, foul or in play.</p>' +
     '<h3>the grade</h3>' +
     '<p>every pitch is graded before it lands. the grade is the hold chance your call kept, against the best call you had. a good pitch that gets hit stays good.</p>' +
+    '<p>once they tie it, the grade is the chance they never go ahead.</p>' +
     '<p>colors are measured against the moment. in a tight spot a small miss shows. with a big lead it takes a big one.</p>' +
     '<ul class="bands">' + bands + '</ul>' +
     '<h3>how it ends</h3>' +
     '<ul class="ends"><li><b>' + esc(C.OUTCOME_LABEL.door_shut) + '</b> three outs with the lead</li>' +
-    '<li><b>' + esc(C.OUTCOME_LABEL.doors_open) + '</b> the tying run scores</li>' +
+    '<li><b>' + esc(C.OUTCOME_LABEL.tie_held) + '</b> they tie it, then you get three outs before they go ahead</li>' +
+    '<li><b>' + esc(C.OUTCOME_LABEL.doors_open) + '</b> the go-ahead run scores</li>' +
     '<li><b>' + esc(C.OUTCOME_LABEL.walk_off) + '</b> the winning run scores in their last at-bat</li></ul>' +
+    '<p>a tie does not end it. keep pitching. only a door shut keeps your streak.</p>' +
     '<h3>scouting</h3>' +
     '<p>tap the batter\'s name. the grid turns into his map: where he does damage, and where he swings.</p>' +
     '<h3>one a day</h3>' +
@@ -152,13 +155,25 @@ function deviceStats(hist, today) {
   rows.forEach(function (r) { (r.strip || []).forEach(function (b) { if (tally[b] != null) tally[b]++; }); });
   return {
     src: 'device', played: rows.length, shut: rows.filter(function (r) { return r.outcome === 'door_shut'; }).length,
+    outcomes: C.OUTCOMES.reduce(function (a, k) { a[k] = rows.filter(function (r) { return r.outcome === k; }).length; return a; }, {}),
     streak: st.cur, best: st.best,
     avgPercentile: rows.length ? Math.round(rows.reduce(function (a, r) { return a + (r.percentile || 0); }, 0) / rows.length) : null,
     bands: tally, recent: rows.slice(-7).reverse(),
   };
 }
+/* the four results, from the account (doorShut, tieHeld, doorsOpen, walkOff) or the device's history */
+var OUTCOME_KEY = { door_shut: 'doorShut', tie_held: 'tieHeld', doors_open: 'doorsOpen', walk_off: 'walkOff' };
+function outcomeCounts(m) {
+  var out = {};
+  C.OUTCOMES.forEach(function (k) { var v = m.outcomes ? m.outcomes[k] : m[OUTCOME_KEY[k]]; out[k] = v == null ? null : v | 0; });
+  return out;
+}
 function renderStats(m) {
-  var n = m.played || 0, shut = m.shut || 0;
+  var counts = outcomeCounts(m);
+  var n = m.played || 0, shut = m.shut != null ? m.shut : counts.door_shut || 0;
+  var ends = C.OUTCOMES.filter(function (k) { return counts[k] != null; }).map(function (k) {
+    return counts[k] + ' ' + C.OUTCOME_LABEL[k].toLowerCase();
+  }).join(' \u00b7 ');
   var tally = m.bands || {}, all = 0;
   C.BANDS.forEach(function (b) { all += tally[b.band] || 0; });
   function tile(v, l) { return '<div class="tile"><b>' + (v == null ? '-' : esc(v)) + '</b><span>' + l + '</span></div>'; }
@@ -174,6 +189,7 @@ function renderStats(m) {
     '<p class="src-tag ' + m.src + '">' + (m.src === 'account' ? 'your account' : 'this device') + '</p>' +
     '<div class="tiles">' + tile(n, 'played') + tile(shut, 'doors shut') + tile(n ? Math.round(shut / n * 100) + '%' : null, 'shut rate') +
     tile(m.streak, 'streak') + tile(m.best, 'best streak') + tile(m.avgPercentile, 'avg percentile') + '</div>' +
+    (n && ends ? '<p class="quiet ends-tally">' + esc(ends) + '</p>' : '') +
     '<h3>your pitches</h3>' +
     (all ? '<div class="bandbar">' + bar + '</div><p class="quiet">' + C.BANDS.map(function (b) { return (tally[b.band] || 0) + ' ' + b.band; }).join(' \u00b7 ') + '</p>'
       : '<p class="quiet">no pitches graded yet.</p>') +

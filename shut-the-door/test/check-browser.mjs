@@ -28,8 +28,10 @@
  *  14. the 3D mound: the canvas renders, and every kind of result plays its
  *      motion (from a trace of each play), with the pitch's trail and its aimed
  *      and actual markers, and no 3D grid
- *  11. all three endings, forced through the mock (?mockEnd=): door shut,
- *      door's open (a runner put out on a double play, then the tying run)
+ *  11. all four endings, forced through the mock (?mockEnd=): door shut,
+ *      held the tie (a solo home run ties it, play goes on, the scorebar
+ *      says tied, then three outs), door's open (a runner put out on a double
+ *      play, the tying run, then the go-ahead run with the walk-off off)
  *      and walk-off (runners moving up, then scoring), with the runners on
  *      the field and on the scorebar's diamond; the proxy note and a reveal
  *      with no pitch count; the stats sheet from the account and from the
@@ -663,6 +665,11 @@ async function ending(w, h, end, extra) {
     ok(sawRun, '11 ' + end + ': runs score (' + res.start + ' to ' + res.them + ')');
   }
   if (end === 'doors_open') ok(sawOut, '11 doors_open: the double play shows a runner put out');
+  if (end === 'tie_held') {
+    const bug = await page.evaluate(() => ({ tied: document.querySelector('#s-mound .scorebar').classList.contains('tied'), inn: document.getElementById('m-inn').textContent, pbp: document.getElementById('m-pbp').textContent }));
+    ok(bug.tied && /tied/i.test(bug.inn), '11 tie_held: the scorebar says tied (' + bug.inn + ')');
+    ok(res.them === res.start + 1, '11 tie_held: the tying run scored and the outing went on to three outs');
+  }
   if (/mockNull/.test(extra || '')) ok(/at least 13 pitches/.test(res.rv), '11 ' + end + ': a reveal with no pitch count shows its note');
   const auth = /mockAuth/.test(extra || '');
   if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
@@ -685,11 +692,13 @@ async function ending(w, h, end, extra) {
 try {
   await run(390, 844, 'light');
   await run(1440, 900, 'dark');
-  console.log('\nthe three endings');
+  console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
+  await ending(390, 844, 'tie_held', '&mockAuth=1');
   await ending(390, 844, 'doors_open', '&mockPro=none');
   await ending(390, 844, 'walk_off', '&mockProxy=1&mockNull=1&mockAuth=1');
   await ending(1440, 900, 'door_shut', '&mockLesson=none');
+  await ending(1440, 900, 'tie_held', '&mockPro=none');
   await ending(1440, 900, 'doors_open', '&mockAuth=1');
   await ending(1440, 900, 'walk_off', '&mockPro=none');
 } catch (e) {

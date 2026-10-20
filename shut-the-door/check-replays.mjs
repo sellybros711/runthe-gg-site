@@ -11,6 +11,17 @@
  * outcome, pitches, score, the strip. (The percentile is compared too, against
  * the pack as it is now.)
  *
+ * ROWS FROM BEFORE THE TIE RULE (2026-10-20). A run that tied used to end the
+ * outing as doors_open; now the inning goes on. Every other row replays as it
+ * was: grades before a tie are unchanged and the result bonus of door_shut,
+ * doors_open and walk_off is unchanged, so the score is the same. A row that
+ * ended on its tying run is still live when its calls run out under the new
+ * rules. Such a row (outcome doors_open, the calls end with the score tied by
+ * the last pitch) is replayed under the old rule: the same pitches, grades
+ * and strip, scored as doors_open (legacy). Its percentile is not compared,
+ * since the pool was replayed under the new rules. The percentile of any row
+ * submitted before the new packs can move for the same reason.
+ *
  * Export the rows from the Supabase SQL editor, for example:
  *   select json_agg(o) from shutdoor_outings o where day >= current_date - 7;
  * and save the array as rows.json. Exit code 1 when a row is flagged.
@@ -24,6 +35,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const G = require('./grade.js');
 const E = require('./engine.js');
 const R = require('./rng.js');
+const K = require('./contract.js');
 
 const cache = {};
 function packOf(id) {
@@ -40,22 +52,37 @@ export function replayRow(row) {
   if (!p) return { ok: false, why: 'no pack ' + row.scenario_id };
   const calls = typeof row.calls === 'string' ? JSON.parse(row.calls) : row.calls;
   const o = E.replay(p.pack, E.seedFor('daily', row.day), calls, { mode: 'daily', model: p.model });
-  if (o.status !== 'over') return { ok: false, why: 'the calls do not finish the outing' };
   if (o.calls.length !== calls.length) return { ok: false, why: 'calls after the outing ended' };
-  const res = E.finishOuting(o);
+  const legacy = o.status === 'live' && endedOnTheTie(o, row);
+  if (o.status !== 'over' && !legacy) return { ok: false, why: 'the calls do not finish the outing' };
+  const res = legacy ? legacyResult(o) : E.finishOuting(o);
   const strip = typeof row.strip === 'string' ? JSON.parse(row.strip) : row.strip;
   const diffs = [];
   if (res.outcome !== row.outcome) diffs.push(`outcome ${row.outcome} replays as ${res.outcome}`);
   if (res.pitches !== row.pitches) diffs.push(`pitches ${row.pitches} replays as ${res.pitches}`);
   if (res.score !== row.score) diffs.push(`score ${row.score} replays as ${res.score}`);
   if (JSON.stringify(res.strip) !== JSON.stringify(strip)) diffs.push('the strip differs');
-  if (res.percentile != null && Math.abs(res.percentile - row.percentile) > 1) diffs.push(`percentile ${row.percentile} replays as ${res.percentile}`);
-  return { ok: !diffs.length, why: diffs.join('; '), res };
+  if (!legacy && res.percentile != null && Math.abs(res.percentile - row.percentile) > 1) diffs.push(`percentile ${row.percentile} replays as ${res.percentile}`);
+  return { ok: !diffs.length, why: diffs.join('; '), res, legacy };
+}
+
+/* A row from before the tie rule that ended on its tying run: stored as
+   doors_open, and its last pitch tied the game. */
+function endedOnTheTie(o, row) {
+  const last = o.log[o.log.length - 1];
+  return row.outcome === 'doors_open' && !!last && last.runs > 0 && o.score.us === o.score.them;
+}
+/* That row's result under the old rule: the tie ended it, doors_open. */
+function legacyResult(o) {
+  const outcome = 'doors_open';
+  const score = E.outingScore({ grades: o.grades, outcome });
+  return { outcome, pitches: o.log.length, strip: o.grades.map(g => g.band), score, percentile: null };
 }
 
 function selfTest() {
   const ids = ['std-2025-ws7-yamamoto', 'std-2016-ws7-chapman'];
   let fails = 0;
+  const say = (ok, what) => { console.log((ok ? 'ok   ' : 'FAIL ') + what); if (!ok) fails++; };
   for (const id of ids) {
     const p = packOf(id);
     if (!p) { console.log('skip ' + id + ' (no pack)'); continue; }
@@ -74,6 +101,39 @@ function selfTest() {
     const b = replayRow(Object.assign({}, row, { score: row.score + 50 }));
     console.log((!b.ok ? 'ok   ' : 'FAIL ') + `${id}: a doctored score is flagged`);
     if (b.ok) fails++;
+  }
+  /* the tie rule: a held tie replays, and a row from before it that ended on
+     its tying run still replays against its stored score */
+  {
+    const id = 'std-2025-ws7-yamamoto', p = packOf(id);
+    let found = null;
+    for (let d = 1; d <= 400 && !found; d++) {
+      const day = `2026-${String(10 + Math.floor((d - 1) / 28)).padStart(2, '0')}-${String(1 + ((d - 1) % 28)).padStart(2, '0')}`;
+      const rng = R.mulberry32(R.hashSeed(id + '|tie|' + d));
+      const o = E.createOuting(p.pack, { seed: E.seedFor('daily', day), mode: 'daily', model: p.model });
+      let tieAt = -1;
+      while (o.status === 'live') {
+        E.throwPitch(o, { type: p.model.types[Math.floor(rng() * p.model.types.length)], cell: Math.floor(rng() * 25) });
+        if (tieAt < 0 && o.score.us === o.score.them) tieAt = o.log.length;
+      }
+      if (o.outcome === 'tie_held') found = { day, o, tieAt };
+    }
+    say(!!found, `${id}: a random outing that holds a tie exists`);
+    if (found) {
+      const { day, o, tieAt } = found;
+      const res = E.finishOuting(o);
+      const row = { day, scenario_id: id, calls: o.calls, outcome: 'tie_held', pitches: res.pitches, score: res.score, percentile: res.percentile, strip: res.strip };
+      say(replayRow(row).ok, `${id}: a held tie replays to its own row (${res.pitches} pitches, tied on pitch ${tieAt})`);
+      // the same outing as the old rule stored it: it ended on the tying run, doors_open
+      const old = E.replay(p.pack, E.seedFor('daily', day), o.calls.slice(0, tieAt), { mode: 'daily', model: p.model });
+      const oldScore = Math.max(0, Math.round(E.SCORE_BASE - E.SCORE_PER_PT * old.grades.reduce((a, g) => a + g.lost, 0))) + E.RESULT_BONUS.doors_open;
+      const oldRow = { day, scenario_id: id, calls: old.calls, outcome: 'doors_open', pitches: tieAt, score: oldScore, percentile: 0, strip: old.grades.map(g => g.band) };
+      const a = replayRow(oldRow);
+      say(a.ok && a.legacy, `${id}: a row from before the tie rule, ended on its tying run, replays against its stored score (legacy)` + (a.ok ? '' : ': ' + a.why));
+      say(!replayRow(Object.assign({}, oldRow, { score: oldScore + 50 })).ok, `${id}: a doctored legacy row is flagged`);
+      say(!replayRow(Object.assign({}, oldRow, { outcome: 'door_shut' })).ok, `${id}: a cut-short row that claims a door shut is flagged`);
+      say(K.OUTCOMES.includes(row.outcome), `${id}: tie_held is an outcome`);
+    }
   }
   process.exit(fails ? 1 : 0);
 }

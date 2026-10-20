@@ -82,7 +82,7 @@
    "feedDescription": "Coco Crisp singles on a ground ball to left fielder Ben Zobrist.",
    "runs": 0,
    "outs": 0,
-   "inSpot": false,
+   "inSpot": true,
    "name": "Coco Crisp",
    "batSideListed": "S",
    "seasonLine": ".231/.302/.397, 13 HR"
@@ -102,16 +102,16 @@
    "feedDescription": "Yan Gomes strikes out swinging.",
    "runs": 0,
    "outs": 1,
-   "inSpot": false,
+   "inSpot": true,
    "name": "Yan Gomes",
    "batSideListed": "R",
    "seasonLine": ".167/.201/.327, 9 HR"
   }
  ],
- "realFaced": 2,
+ "realFaced": 4,
  "real": {
-  "outcome": "doors_open",
-  "pitches": 14,
+  "outcome": "tie_held",
+  "pitches": 21,
   "runs": 3,
   "otherPitchersInSpot": []
  },
