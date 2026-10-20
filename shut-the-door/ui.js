@@ -254,17 +254,14 @@ function renderMatchup() {
 }
 
 /* The spot as the mound's scorebug: the two clubs with their colour bars and the score, the inning,
-   the bases and the outs. Under it the same facts in words, one chip each. */
+   the bases and the outs. */
 function homeBug(s, c) {
-  var sit = s.situation, b = sit.bases | 0, m = sit.score.us - sit.score.them;
+  var sit = s.situation, b = sit.bases | 0;
   var team = function (t, n) {
     return '<div class="sb-team"><i class="sb-club"' + clubStyle(t) + '></i><span class="tm">' + esc((t ? t.name : 'them').toUpperCase()) + '</span><b>' + esc(n) + '</b></div>';
   };
   var outs = '';
   for (var i = 0; i < 2; i++) outs += '<i class="' + (i < sit.outs ? 'on' : '') + '"></i>';
-  var chips = ['<span class="sc-chip">lead by ' + esc(m) + '</span>',
-    '<span class="sc-chip">' + esc(sit.outs === 0 ? 'nobody out' : outsWords(sit.outs)) + '</span>',
-    '<span class="sc-chip">' + esc(runnersLine(b)) + '</span>'];
   return '<div class="scorebar hb">' +
     '<div class="sb-teams">' + team(c.us, sit.score.us) + team(c.them, sit.score.them) + '</div>' +
     '<div class="sb-innw"><div class="sb-inn"><b>' + (sit.half === 'bottom' ? 'bot' : 'top') + '</b> ' + esc(sit.inning) + '</div>' +
@@ -274,7 +271,7 @@ function homeBug(s, c) {
     '<rect class="' + (b & 4 ? 'on' : '') + '" x="5" y="14" width="7" height="7" transform="rotate(45 8.5 17.5)"/>' +
     '<rect class="' + (b & 1 ? 'on' : '') + '" x="27" y="14" width="7" height="7" transform="rotate(45 30.5 17.5)"/></svg>' +
     '<div class="sb-stat"><div class="sb-outs">' + outs + '</div><span class="sb-lbl">outs</span></div>' +
-    '</div><div class="sc-chips">' + chips.join('') + '</div>';
+    '</div>';
 }
 
 /* "R" and the line split into the slash and the homers, when the line has that shape */
@@ -778,7 +775,7 @@ function renderResult() {
   $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
   $('r-real').innerHTML = '<div class="vs-t"><small>you vs the real ' + esc(his.toLowerCase()) + '</small>' +
     '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal, his)) + '</b>' +
-    '<span>' + esc(vsWhy(r, rv, runs)) + '</span></div><i class="vs-ic" aria-hidden="true"></i>';
+    '<span>' + esc(vsWhy(r, rv, runs)) + '</span></div>';
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
