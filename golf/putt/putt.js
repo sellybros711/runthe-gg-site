@@ -1766,7 +1766,7 @@ var SECRET_LEVELS = [
   { par:3, f:function(T){ var H = hole([pg([[-3, 0], [3, 0], [7, -5], [8, -14], [7, -23], [3, -28], [-3, -28], [-7, -23], [-8, -14], [-7, -5]])], [0, -2.5], [0, -24]);
     zoneR(H, M.ICE, -6, -8, 6, -20); blk(H, T, -1.5, -13, 1.5, -15); bumps(H, T, [[-5, -10, 0.55], [5, -18, 0.55], [-3, -21, 0.5]]); blk(H, T, -3, -20.2, 3, -21.2); zoneR(H, M.MUD, -2, -26, 2, -28); bowl(H, 0, -24, 1.7, 0.12); return H; } },
   // The Painted Cave: stalagmites to thread, a patch of ice, and a mammoth asleep across the back, rolling over now and then.
-  { par:3, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -10], [6, -24], [2, -34], [-3, -34], [-7, -22], [-6, -8]])], [0, -2.5], [-1, -30]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -10], [6, -24], [2, -34], [-3, -34], [-7, -22], [-6, -8]])], [0, -2.5], [-1, -30]);
     bumps(H, T, [[-2.5, -9, 0.5], [2.5, -12, 0.5], [-3.5, -16, 0.45], [3.5, -19, 0.45]]); blk(H, T, -4, -26.2, 2, -27.2); zoneR(H, M.ICE, -6, -20, 6, -22.5); slider(H, T, -25.5, -4, 3, 3.0, 0.2, 2.4);
     zoneR(H, M.MUD, 2, -32, 5, -34); bowl(H, -1, -30, 1.7, 0.12); return H; } }
 ];
