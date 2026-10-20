@@ -80,7 +80,7 @@ export function robust(C, x, y, ang, ft, t0){
 export function safe(C, x, y, ang, ft, t0){
   const D = 1.5 * Math.PI / 180, F = Math.max(0.8, ft * 0.08), nb = [[D, 0, 0], [-D, 0, 0], [0, F, 0], [0, -F, 0]];
   if (timed(C)) nb.push([0, 0, 0.15], [0, 0, -0.15]);
-  for (const [da, df, dt] of nb){ const r = shot(C, x, y, ang + da, Math.min(44, Math.max(2, ft + df)), t0 + dt); if (r.water || r.out) return false; }
+  for (const [da, df, dt] of nb){ const r = shot(C, x, y, ang + da, Math.min(P.MAX_FT, Math.max(2, ft + df)), t0 + dt); if (r.water || r.out) return false; }
   return true;
 }
 /* the fewest strokes with room for error, up to cap, and the line that does it */
@@ -97,7 +97,7 @@ export function solve(C, cap, stats, avoid){
       if (fine) for (let a = -1.0; a <= 1.0; a += 0.014) angs.push(base + a);
       for (let a = 0; a < 360; a += fine ? 5 : (timed(C) ? 2 : 1)) angs.push(a * Math.PI / 180);
       for (const dt of T0){ const t0 = f.t + dt;
-        for (const ang of angs) for (let ft = 2; ft <= 44; ft += 1){
+        for (const ang of angs) for (let ft = 2; ft <= P.MAX_FT; ft += 1){
           const r = shot(C, f.x, f.y, ang, ft, t0); total++;
           if (stats){ if (r.out) stats.out++; if (r.t > 23.9) stats.stuck++; }
           if (avoid && touches(C, r)) continue;
@@ -129,14 +129,14 @@ export function aceSearch(C){
   const TM = timed(C), T0 = TM ? [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1, 2.4, 2.7] : [0], [cx, cy] = C.cup, tx = C.tee[0], ty = C.tee[1];
   const near = r => { let m = 1e9; for (const p of r.pts){ const d = Math.hypot(p[0] - cx, p[1] - cy); if (d < m) m = d; } return m; };
   const cand = []; let total = 0;
-  for (const t0 of T0) for (let d = 0; d < 360; d++) for (let ft = 2; ft <= 44; ft++){ const a = d * Math.PI / 180, r = shot(C, tx, ty, a, ft, t0); total++;
+  for (const t0 of T0) for (let d = 0; d < 360; d++) for (let ft = 2; ft <= P.MAX_FT; ft++){ const a = d * Math.PI / 180, r = shot(C, tx, ty, a, ft, t0); total++;
     if (r.water || r.out) continue; const m = r.holed ? 0 : near(r); if (m < 2) cand.push([m, a, ft, t0]); }
   cand.sort((p, q) => p[0] - q[0]);
   const seen = [];
   for (const [, a0, f0, t0] of cand.slice(0, 80)){
     if (seen.some(q => Math.abs(q[0] - a0) < 0.03 && Math.abs(q[1] - f0) < 2 && q[2] === t0)) continue; seen.push([a0, f0, t0]);
     for (const dt of TM ? [-0.2, -0.1, 0, 0.1, 0.2] : [0]) for (let da = -1.5; da <= 1.5; da += 0.15) for (let df = -1.5; df <= 1.5; df += 0.25){
-      const a = a0 + da * Math.PI / 180, ft = Math.min(44, f0 + df), t = Math.max(0, t0 + dt); total++;
+      const a = a0 + da * Math.PI / 180, ft = Math.min(P.MAX_FT, f0 + df), t = Math.max(0, t0 + dt); total++;
       if (shot(C, tx, ty, a, ft, t).holed && robust(C, tx, ty, a, ft, t)) return { strokes:1, total, line:[[a, ft, t]] }; } }
   return { strokes:Infinity, total };
 }
