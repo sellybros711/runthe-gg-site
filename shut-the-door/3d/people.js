@@ -11,29 +11,13 @@ import { battingClub, clubNamed } from './clubs.js?v=2';
 import * as G from './gear3d.js?v=3';
 import * as HG from './headgear.js?v=2';
 import { measureHead, wear, wornShade } from './headgear.js?v=2';
-import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld, aimBone } from './rig.js?v=1';
+import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=7';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
-// the bat (gear3d.js, 34 in long, the knob at its origin): the sweet spot is 28 in up it, 6 in from the
-// end; the bottom grip sits 0.055 m up it from the knob (poseBat)
-const SWEET = 28 * 0.0254, KNOB_GRIP = 0.055;
-// the most an upper arm may roll about its own length while the bat is put on the ball (degrees; the
-// shoulder's roll limit is 70 in check-deform.mjs)
-const ARM_TWIST = 60;
-// and the most an upper arm may swing from its bind pose while the bat is put on the ball (degrees; the
-// shoulder's ball and socket limit is 120 in check-deform.mjs)
-const ARM_SWING = 112;
-// the most his pelvis leans toward a ball beyond his arms' reach (metres: about 8 in)
-const LEAN_MAX = 0.2;
-// the parts of the turn from the bat's own line to the ball that the contact plan may take (contactPlan)
-const AIM = [0, 0.25, 0.5, 0.75, 1];
-// how far the contact correction is on at t seconds from the contact: it is taken on the way in (0.1 s
-// wide) and let go quickly after, so the follow through (the shoulders, the deltoids) is the capture's
-const contactWindow = (dt) => Math.exp(-((dt / (dt < 0 ? 0.1 : 0.05)) ** 2));
 
 const UNIFORM = new Set(['uniform', 'socks', 'gloves', 'undershirt', 'belt', 'number']);
 
@@ -525,10 +509,8 @@ export class People {
     if (b && b.chain) {
       b.take = this.mode === 'take';
       b.motion = this.m.batter;              // swing, take, check or hbp
-      // every swing is his own swing, misses too: the bat is put where the ball is (contactPlan). The
-      // whiff capture (miss + side) sits about two feet behind the plate, so it cannot be put on the
-      // ball without bending the arms into the chest, and it is no longer used
-      this.useClip(b, b.mainClip);
+      // a swing and miss is its own capture (the whiff, then his reaction); the rest use his swing
+      this.useClip(b, !b.take && this.m.miss && b.clips['miss' + b.side] ? 'miss' + b.side : b.mainClip);
       const la = play && play.inPlay && play.inPlay.la;
       b.batTilt = la == null ? 0 : THREE.MathUtils.clamp((la - 12) / 30, -1, 1) * 9;
       this.planBatterFeet(b);
@@ -597,10 +579,8 @@ export class People {
     wornShade(b, b.helmet, b.helmet.userData.edge, { brim: b.helmet.userData.brim });
     b.bat = G.bat();
     this.scene.add(b.bat);
-    // grips: the rear hand holds the knob, the lead hand is on top. A right handed hitter's lead hand is
-    // his left (the front shoulder, see the stance below), so his bottom hand is his right: the reverse
-    // of a left handed one's
-    b.bottom = lefty ? 'l' : 'r'; b.top = lefty ? 'r' : 'l';
+    // grips: bottom hand near the knob. A left handed hitter's bottom hand is his right.
+    b.bottom = lefty ? 'r' : 'l'; b.top = lefty ? 'l' : 'r';
     b.batRel = null;
     this.bakeBat(b);
     // place: stance at the start of the clip, his lead shoulder aimed at the pitcher. A real hitter's
@@ -782,122 +762,14 @@ export class People {
     b.peakBatSpeed = best;
   }
 
-  /** The point on the bat a hand holds (its grip), from the hand's own bones. */
-  gripOf(b, s) {
-    const h = wpos(b.bones[`hand_${s}`]), m = wpos(b.bones[`middle_01_${s}`]), tip = wpos(b.bones[`middle_03_${s}`]);
-    const along = m.clone().sub(h).normalize();
-    const palm = tip.clone().sub(m); palm.addScaledVector(along, -palm.dot(along)).normalize();
-    return h.lerp(m, 0.75).addScaledVector(palm, 0.03);
-  }
-
   grips(b) {
-    return { gb: this.gripOf(b, b.bottom), gt: this.gripOf(b, b.top), handQ: wquat(b.bones[`hand_${b.bottom}`]) };
-  }
-
-  /* The bat meets the ball. The capture has no bat, and the bat is where its hands put it: at contact
-     the sweet spot was 2 to 5 feet from the ball's place. So each swing gets a contact plan, worked out
-     once from the capture's own pose at contact:
-       M       the point the bat must meet: where the ball is when it is met (play.js motion:
-               contactShift). A swing and miss meets the spot the ball was in a moment before.
-       s       how far up the bat that point is from the knob: near the sweet spot (SWEET), a little
-               either side, so the arms reach for it rather than the bat being moved
-       the bat aims from the knob at M, the knob sits s short of M, and the hands move there
-       lean    when M is beyond the arms' reach, the pelvis leans toward it (up to LEAN_MAX)
-     reachBat() moves the hands by the plan's change over the contact (contactWindow), and the
-     capture's own swing carries on either side of it. Inside pitches are met closer to him and
-     outside ones out in front and further across, so the arms and the bat go different ways. */
-  contactPlan(b) {
-    const pt = this.pitch, m = this.m;
-    if (b.plan && b.plan.pt === pt && b.plan.m === m) return b.plan;
-    const tC = b.tContact, T = pt.tPlate + m.contactShift;
-    const M = pt.pointAt(m.miss ? T - pt.tRel - m.passLag : T - pt.tRel);
-    // the swing at contact, posed without and then with the lean (below); the bat's grips are read off it
-    const at = (lean) => {
-      this.swingBase(b, tC);
-      if (lean) this.leanBody(b, lean);
-      reach(b, b.feetSwing, tC);
-      plantFeet(b, b.feetSwing, tC);
-      b.batTime = tC;
-      this.poseBat(b);
-      // each arm's shoulder and its length (upper plus lower arm): what a hand can be moved to
-      const arm = Object.fromEntries([b.bottom, b.top].map((s) => {
-        const S = wpos(b.bones[`upperarm_${s}`]), E = wpos(b.bones[`lowerarm_${s}`]), H = wpos(b.bones[`hand_${s}`]);
-        return [s, { S, L: S.distanceTo(E) + E.distanceTo(H) }];
-      }));
-      return { gr: this.grips(b), K: b.bat.position.clone(), A: UP.clone().applyQuaternion(b.bat.quaternion), arm };
+    const grip = (s) => {
+      const h = wpos(b.bones[`hand_${s}`]), m = wpos(b.bones[`middle_01_${s}`]), tip = wpos(b.bones[`middle_03_${s}`]);
+      const along = m.clone().sub(h).normalize();
+      const palm = tip.clone().sub(m); palm.addScaledVector(along, -palm.dot(along)).normalize();
+      return h.lerp(m, 0.75).addScaledVector(palm, 0.03);
     };
-    // a ball beyond what the arms reach is met by his body too: the pelvis leans toward it, up to
-    // LEAN_MAX (a far outside or a low pitch), and the arms take the rest
-    const first = at(null);
-    const need = M.clone().sub(first.K).length() - (SWEET + 0.15);
-    const lean = need > 0 ? M.clone().sub(first.K).setLength(Math.min(LEAN_MAX, 0.5 * need)) : null;
-    const { gr, K: K0, A: A0, arm } = lean ? at(lean) : first;
-    const gb0 = gr.gb, gt0 = gr.gt;
-    // the bat's aim: each fraction of the turn from its own line to the ball (AIM), with the knob set so
-    // the sweet spot is on the ball whatever the aim. The one that moves the hands least is taken: a
-    // full turn can drag the lead arm round, a small one can leave the knob out of reach
-    const toM = M.clone().sub(K0), d = toM.length();
-    const s = THREE.MathUtils.clamp(d, SWEET - 0.12, SWEET + 0.15);
-    const dir = toM.clone().normalize();
-    // a hand held beyond its arm's length costs as much as it is beyond (a straight arm pulled past its
-    // reach swings the upper arm past the shoulder's limit)
-    const beyond = (P, side) => Math.max(0, P.distanceTo(arm[side].S) - 0.97 * arm[side].L);
-    const plans = AIM.map((a) => {
-      const u = A0.clone().lerp(dir, a).normalize();
-      const Kc = M.clone().addScaledVector(u, -s);
-      const R = new THREE.Quaternion().setFromUnitVectors(A0, u);
-      const gbC = Kc.clone().addScaledVector(u, KNOB_GRIP);
-      const gtC = gbC.clone().add(gt0.clone().sub(gb0).applyQuaternion(R));
-      const cost = gbC.distanceTo(gb0) + gtC.distanceTo(gt0) + 4 * (beyond(gbC, b.bottom) + beyond(gtC, b.top));
-      return { R, gbC, gtC, cost };
-    });
-    const best = plans.reduce((x, y) => (y.cost < x.cost ? y : x));
-    const { R, gbC, gtC } = best;
-    b.plan = { pt, m, T, M, R, s, lean, reach: d - s, gb0, gbC: gbC.clone(), dB: gbC.clone().sub(gb0), dT: gtC.clone().sub(gt0) };
-    return b.plan;
-  }
-
-  /** The pelvis moves toward the ball by the plan's lean, over the same window as the arms (it is
-      set before the legs are reached and the feet planted, so the legs bend and the feet stay). */
-  leanBody(b, lean, w = 1) {
-    if (!lean || w <= 0) return;
-    const pel = b.bones.pelvis;
-    const p = wpos(pel).addScaledVector(lean, w);
-    pel.position.copy(pel.parent.worldToLocal(p));
-    pel.updateMatrixWorld(true);
-  }
-
-  /** Move the hands by the contact plan's change, weighted by how near the contact is (t is the
-      pitch's clock), and let the arms follow. Each hand is held to its grip's place and turn. */
-  reachBat(b, t, pl) {
-    const w = contactWindow(t - pl.T);
-    if (w < 1e-3) return;
-    const B = b.bones, hs = [b.bottom, b.top];
-    const gr = this.grips(b);
-    const want = { [b.bottom]: gr.gb.addScaledVector(pl.dB, w), [b.top]: gr.gt.addScaledVector(pl.dT, w) };
-    const Rw = new THREE.Quaternion().slerp(pl.R, w);
-    const q0 = Object.fromEntries(hs.map((s) => [s, wquat(B[`hand_${s}`])]));
-    for (let it = 0; it < 3; it++) {
-      for (const s of hs) {
-        const hand = B[`hand_${s}`], ua = B[`upperarm_${s}`], la = B[`lowerarm_${s}`];
-        const err = want[s].clone().sub(this.gripOf(b, s));
-        const tgt = wpos(hand).add(err);
-        // the elbow drops: its pole is below the line from the shoulder to the hand (a straight arm on a
-        // high ball otherwise folds its elbow up and out, past the shoulder's swing limit)
-        const S = wpos(ua), H = wpos(hand);
-        const pole = S.clone().lerp(H, 0.5).add(new THREE.Vector3(0, -1, 0));
-        twoBoneIK(ua, la, hand, tgt, pole, 1);
-        // the aim rolls the upper arm about its own length (past the shoulder's 70 degree limit at a
-        // full swing). Rolling it back leaves the elbow where it is, so the lower arm is aimed at the
-        // hand's target again and the hand lands on it
-        limitTwist(b, `upperarm_${s}`, ARM_TWIST);
-        // and its swing: a straight arm reaching up and forward past the shoulder's limit is held at it,
-        // the hand then lands as near the bat as the arm allows
-        limitSwing(b, `upperarm_${s}`, ARM_SWING);
-        aimBone(la, hand, tgt.clone().sub(wpos(la)));
-        rotateWorld(hand, Rw.clone().multiply(q0[s]).multiply(wquat(hand).invert()));
-      }
-    }
+    return { gb: grip(b.bottom), gt: grip(b.top), handQ: wquat(b.bones[`hand_${b.bottom}`]) };
   }
 
   poseBat(b) {
@@ -1021,22 +893,14 @@ export class People {
       const ct = t - (pt.tPlate + (b.take ? 0 : this.m.contactShift)) + b.tContact;
       if (!b.take) {
         // a real hitter holds his finish: time slows to a near hold at the end of the swing (each
-        // capture is cut at its finish)
+        // capture is cut at its finish); a swing and miss plays on through his reaction
         const dur = b.clips[b.clip].duration;
-        const hold = Math.min(b.tContact + 0.42, dur - 0.05);
+        const hold = b.clip.startsWith('miss') ? dur - 0.05 : Math.min(b.tContact + 0.42, dur - 0.05);
         const cw = ct < hold ? ct : hold + (1 - Math.exp(-(ct - hold) / 0.5)) * 0.18;
-        // the contact plan poses the swing at contact itself, so it is made before this frame is posed
-        const plan = this.contactPlan(b);
         b.batTime = cw;
         this.swingBase(b, cw);
-        this.leanBody(b, plan.lean, contactWindow(t - plan.T));
         reach(b, b.feetSwing, cw);
         plantFeet(b, b.feetSwing, cw);
-        // the girdle follows the capture's own arms, as it does in every swing; the bat is then put on
-        // the ball by the forearms and hands (reachBat), which leaves the shoulders' turn alone (the
-        // kinetic chain, check-deform). Reaching for the ball by the girdle turned them early.
-        clavicles(b);
-        this.reachBat(b, t, plan);
       } else {
         // a pitch on the shoulder puts him down (play.js motion, m.fall): the take until the ball
         // is on him, then Mixamo's shoulder hit and fall, its blow timed to the ball
@@ -1052,11 +916,11 @@ export class People {
         if (wf > 0) this.fallOn(b, t - hitT, wf);
         b.batTime = Math.min(ct, b.tContact - (b.motion === 'check' ? 0.075 : 0.2));
         b.dropAt = fall && t > hitT ? t - hitT : null;
-        clavicles(b);
       }
       // the Mixamo swings turn the head hard on the neck to keep the eyes on the pitch: past about
       // 24 degrees of twist the skin under the jaw pinches
       limitTwist(b, 'head', 24);
+      clavicles(b);
       deltoids(b);
       this.poseBat(b);
     }
