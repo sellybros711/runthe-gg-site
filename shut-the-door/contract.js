@@ -103,10 +103,14 @@ function easternDay(date) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit' })
     .format(date || new Date());
 }
-function dayNumberOf(day) {
+/* Days from the epoch: 0 on EPOCH, negative before it (the preview days before launch). */
+function dayOffsetOf(day) {
   const ms = Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10))
     - Date.UTC(+EPOCH.slice(0, 4), +EPOCH.slice(5, 7) - 1, +EPOCH.slice(8, 10));
-  return Math.max(1, Math.floor(ms / 86400000) + 1);
+  return Math.round(ms / 86400000);
+}
+function dayNumberOf(day) {
+  return Math.max(1, dayOffsetOf(day) + 1);
 }
 const DAILY_SEED_PREFIX = 'shut-the-door-';
 const OUTING_KEY = 'std_outing_v1';
@@ -118,7 +122,7 @@ const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, BASE, countBucket,
-  ZONE, EPOCH, easternDay, dayNumberOf, DAILY_SEED_PREFIX, OUTING_KEY,
+  ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });
 

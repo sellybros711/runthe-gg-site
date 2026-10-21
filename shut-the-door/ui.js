@@ -284,7 +284,8 @@ function renderHome() {
   var s = S.scn, sit = s.situation, p = s.pitcher;
   /* the chips: only what the pack has. A null number or day is left out, never printed as "#" */
   var chips = ['<span class="chip-s hot">real save</span>'];
-  if (s.number != null) chips.push('<span class="chip-s">#' + esc(s.number) + ' \u00b7 today</span>');
+  if (s.preview) chips.push('<span class="chip-s">preview \u00b7 launch 26 oct</span>');
+  else if (s.number != null) chips.push('<span class="chip-s">#' + esc(s.number) + ' \u00b7 today</span>');
   if (s.day) chips.push('<span class="chip-s">' + esc(fmtDay(s.day)) + '</span>');
   if (s.resolution === 'proxy') chips.push('<span class="chip-s quiet">modern pitch data</span>');
   $('h-day').innerHTML = chips.join('');
@@ -763,7 +764,7 @@ function finish() {
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
   var runs = r.runs != null ? r.runs : st ? st.score.them - s.situation.score.them : null;
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice \u00b7 not scored' : '#' + s.number + ' \u00b7 final \u00b7 ' + s.title.toLowerCase();
+  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice \u00b7 not scored' : (s.preview ? 'preview' : '#' + s.number) + ' \u00b7 final \u00b7 ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
