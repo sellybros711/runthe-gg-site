@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import * as M from './materials.js?v=6';
 import { battingClub, clubNamed } from './clubs.js?v=2';
+import { capFor } from './uniforms.js?v=1';
 import * as G from './gear3d.js?v=3';
 import * as HG from './headgear.js?v=2';
 import { measureHead, wear, wornShade } from './headgear.js?v=2';
@@ -56,7 +57,7 @@ export function kitFor(facts, side) {
   if (side !== 'us' && alike(trim, ourTrim) && !alike(other, ourTrim) && contrast(other, home ? WHITE : GREY) >= 1.8) [trim, other] = [other, trim];
   const C = (x) => new THREE.Color(x);
   const words = club && club.nick ? (club.as || club.nick).toUpperCase() : null;
-  return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim),
+  return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim), cap: C(capFor(facts.scenarioId, side) || trim),
     undershirt: C(trim), belt: C('#111111'), glove: C(lum(other) > 0.85 ? '#f2f2f2' : other), gloveAccent: C(trim), home, words };
 }
 
@@ -575,7 +576,7 @@ export class People {
     // the helmet in his club's colour; the jaw guard where the batter's appearance says he wears one
     // built for his head (headgear.js): measured with his build and height, in the bind pose
     measureHead(b);
-    b.helmet = wear(b, HG.battingHelmet(b.head, b.kit ? b.kit.trim : NAVY, lefty ? -1 : 1, { jaw: !!this.facts.batter.jawGuard }));
+    b.helmet = wear(b, HG.battingHelmet(b.head, b.kit ? b.kit.cap : NAVY, lefty ? -1 : 1, { jaw: !!this.facts.batter.jawGuard }));
     wornShade(b, b.helmet, b.helmet.userData.edge, { brim: b.helmet.userData.brim });
     b.bat = G.bat();
     this.scene.add(b.bat);
