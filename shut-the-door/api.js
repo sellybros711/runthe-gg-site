@@ -79,8 +79,11 @@
   /* The day's entry: the schedule's own, or the rotation past its end. */
   function entryFor(sch, day) {
     if (sch.days && sch.days[day]) return sch.days[day];
+    // the rotation runs from the epoch, and backwards before it: the days before launch show the
+    // scenarios before #1 in turn, so a new game each day now. number stays 1 there for the server
+    const offset = C.dayOffsetOf(day), L = sch.rotation.length;
     const number = C.dayNumberOf(day);
-    return { pack: sch.rotation[(number - 1) % sch.rotation.length], number };
+    return { pack: sch.rotation[((offset % L) + L) % L], number, preview: offset < 0 };
   }
 
   async function loadPack(id) {
@@ -103,6 +106,7 @@
     delete sc.reveal;
     sc.day = d;
     sc.number = e.number;
+    sc.preview = !!e.preview;
     current[sc.id] = { day: d, number: e.number };
     return sc;
   }

@@ -2918,7 +2918,7 @@
   "shut-the-door/index.html": {
     "contract.js": {
       "v": "3",
-      "sha": "6ebe7b26c92c2ac7"
+      "sha": "0e4141f7c6c4ac33"
     },
     "sprites.js": {
       "v": "2",
@@ -2966,7 +2966,7 @@
     },
     "api.js": {
       "v": "3",
-      "sha": "fd41c1a7f54b15c4"
+      "sha": "fb1771d6e9794bb3"
     },
     "mock-api.js": {
       "v": "7",
@@ -2978,7 +2978,7 @@
     },
     "ui.js": {
       "v": "14",
-      "sha": "7fab09e3d74e052b"
+      "sha": "7311cfb030ff356a"
     },
     "3d/boot.js": {
       "v": "18",
