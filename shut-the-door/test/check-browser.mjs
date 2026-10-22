@@ -769,6 +769,11 @@ async function run(w, h, theme) {
       const s0 = navigator.share.bind(navigator);
       navigator.share = (d) => { note('share sheet called'); return s0(d); };
     }
+    // where the tap lands: what is under the button's centre now, and every pointerdown and click
+    const name = (el) => el ? (el.id ? '#' + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : '')) : 'none';
+    const b = document.getElementById('r-share').getBoundingClientRect();
+    note('before: button ' + [b.left, b.top, b.width, b.height].map(Math.round).join(',') + ' scroll ' + Math.round(scrollY) + ' under its centre ' + name(document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)));
+    for (const ev of ['pointerdown', 'click']) document.addEventListener(ev, (e) => note(ev + ' on ' + name(e.target) + ' at ' + Math.round(e.clientX) + ',' + Math.round(e.clientY)), true);
   });
   await page.click('#r-share');
   const toastSeen = await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 }).then(() => true, () => false);
