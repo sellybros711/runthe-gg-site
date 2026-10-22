@@ -2491,8 +2491,8 @@
   },
   "football/index.html": {
     "engine.js": {
-      "v": "100",
-      "sha": "2d0a530c274d0aa3"
+      "v": "101",
+      "sha": "acb77b5add408631"
     },
     "run.js": {
       "v": "103",
@@ -2989,8 +2989,8 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "18",
-      "sha": "e6647acf70717b55"
+      "v": "19",
+      "sha": "6e865caecd7421b4"
     },
     "3d/boot.js": {
       "v": "24",
