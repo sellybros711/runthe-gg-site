@@ -1,5 +1,6 @@
 -- ---------------------------------------------------------------------------
--- 157_shut_the_door_effort.sql : Shut The Door's effort, the meter's first stop.
+-- 157_shut_the_door_effort.sql : Shut The Door's effort (the meter's first stop)
+--                                 and the free aim point.
 --
 -- Safe to run more than once. Needs 153_shut_the_door.sql,
 -- 155_shut_the_door_tie_held.sql and 156_shut_the_door_release.sql.
@@ -11,12 +12,21 @@
 -- e is his ordinary pitch: every row already stored, and every call thrown
 -- with the meter off, has none.
 --
--- 156's guard already lets e through (a jsonb call keeps every key), so the
--- page works before this runs. This file makes the guard check e: absent, or
--- null, or a number between 0 and 1 on a call that also carries a number q
--- (the engine refuses an effort without a timed release, and so does this).
--- Anything else (a string, a 2, an e with no q) is refused with the same
--- message as a bad cell. Run it any time, before or after the page ships.
+-- The same day, the owner let the aim sit anywhere in its cell: a call may
+-- carry at, [u, v], the aim's place inside the cell as fractions of its width
+-- and height, each -0.5..0.5 (CONTRACT.md section 5d, contract.js aimAt). It
+-- moves where the pitch is aimed, so check-replays.mjs needs it too. A call
+-- without at aims at the cell's centre, as every stored row did.
+--
+-- 156's guard already lets e and at through (a jsonb call keeps every key), so
+-- the page works before this runs. This file makes the guard check them:
+--   e    absent, or null, or a number between 0 and 1 on a call that also
+--        carries a number q (the engine refuses an effort without a timed
+--        release, and so does this)
+--   at   absent, or null, or an array of exactly two numbers, each between
+--        -0.5 and 0.5
+-- Anything else (a string, a 2, an e with no q, an at of three) is refused with
+-- the same message as a bad cell. Run it any time, before or after the page ships.
 --
 -- What changes:
 --   shutdoor_submit   one more clause in its calls guard. Everything else is
@@ -57,7 +67,15 @@ begin
                          when 'number' then (c->>'e')::numeric not between 0 and 1
                                             or jsonb_typeof(c->'q') is distinct from 'number'
                          when 'null' then false
-                         else c ? 'e' end) then
+                         else c ? 'e' end
+                    -- the free aim point (157): absent or null is the cell's centre; present, two
+                    -- numbers -0.5..0.5. Each read as a number only once it is one
+                    or case jsonb_typeof(c->'at')
+                         when 'array' then jsonb_array_length(c->'at') <> 2
+                                           or exists (select 1 from jsonb_array_elements(c->'at') a
+                                                       where jsonb_typeof(a) <> 'number' or (a #>> '{}')::numeric not between -0.5 and 0.5)
+                         when 'null' then false
+                         else c ? 'at' end) then
     raise exception 'the calls do not make an outing';
   end if;
   if jsonb_typeof(p_strip) is distinct from 'array' or jsonb_array_length(p_strip) <> p_pitches

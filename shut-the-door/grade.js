@@ -460,7 +460,10 @@ function fatigueOf(pitchNo, bases) {
  *      engine draws from is multiplied key by key (EFFORT.BINS, interpolated
  *      between fifths). A measured association, not a controlled experiment:
  *      a pitcher throws his hardest when he chooses to, and the count and the
- *      spot are held, but his intent is not.
+ *      spot are held, but his intent is not. What it says: a harder fastball
+ *      misses more bats and gives up fewer home runs, a harder breaking ball
+ *      whiffs a little more and is called a strike less, and a harder changeup
+ *      or splitter whiffs less (velocity separation is the pitch).
  *   2. THE WINDOW (a game rule, meter.js EFFORT_WINDOW): more effort makes the
  *      accuracy stop's window smaller, less makes it bigger. The real data
  *      shows no such cost: a pitcher's location spread is within 2% of his

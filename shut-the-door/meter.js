@@ -70,6 +70,16 @@ function effortAt(t) {
    (contract.js stuffAt). velo in mph, pfx in inches, catcher's view. */
 function stuffFor(arsenalPitch, e) { return C.stuffAt(arsenalPitch, e); }
 function veloFor(arsenalPitch, e) { return C.stuffAt(arsenalPitch, e).velo; }
+/* The names the two bar meter feature-detects (the UI agent's ask, 2026-10-22):
+   EFFORT      true: effort exists. A call without e is the neutral effort, C.EFFORT.MID (0.5).
+   windowOf(e, command)  the bright band (q >= BEST_Q) as [lo, hi], fractions of the bar from
+               the left, at effort e and the pitch's command (50 when left out). The band's
+               q is always BEST_Q..1; what effort moves is how wide it sits on the bar.
+   veloOf(pitch, e)      the mph to show for that arsenal pitch at effort e (veloFor). */
+function windowOf(e, command) {
+  var half = (1 - BEST_Q) * windowMs(command == null ? 50 : command, e) / SWEEP_MS;
+  return [Math.max(0, MARK - half), Math.min(1, MARK + half)];
+}
 /* The needle at t ms after the start: its place on the bar and its way. */
 function needleAt(t) {
   var ph = (t / SWEEP_MS) % 2;
@@ -187,6 +197,7 @@ function create(el) {
 }
 
 var api = { SWEEP_MS: SWEEP_MS, MARK: MARK, WINDOW_AT_50: WINDOW_AT_50, TIMING: TIMING, GOOD_Q: GOOD_Q, BEST_Q: BEST_Q,
+  EFFORT: true, windowOf: windowOf, veloOf: veloFor,
   EFFORT_WINDOW: EFFORT_WINDOW, EFFORT_SWEEP_MS: EFFORT_SWEEP_MS, windowScale: windowScale, effortAt: effortAt,
   stuffFor: stuffFor, veloFor: veloFor, windowMs: windowMs, qOf: qOf, needleAt: needleAt, errAt: errAt, wordOf: wordOf, bandsFor: bandsFor, create: create };
 if (NODE) module.exports = api;

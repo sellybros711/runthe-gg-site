@@ -44,6 +44,8 @@
  * pitch, so every rules 2 row from before effort replays exactly (the
  * self-test holds three such rows, made by main's engine before effort, in
  * fixtures/replays-rules2-pre-effort.json, to every pitch, speed and arm).
+ * The free aim point (CONTRACT.md 5d) rides the same way: at, where inside its
+ * cell a call was aimed; a call without at aims at the centre.
  *
  * Export the rows from the Supabase SQL editor, for example:
  *   select json_agg(o) from shutdoor_outings o where day >= current_date - 7;
@@ -221,7 +223,7 @@ function selfTest() {
       const day = `2026-12-${String(d % 28 + 1).padStart(2, '0')}`;
       const rng = R.mulberry32(R.hashSeed(id + '|effort|' + d));
       const o = E.createOuting(p.pack, { seed: E.seedFor('daily', day), mode: 'daily', model: p.model });
-      while (o.status === 'live') E.throwPitch(o, { type: p.model.types[Math.floor(rng() * p.model.types.length)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100, e: Math.round(rng() * 4) / 4 });
+      while (o.status === 'live') E.throwPitch(o, { type: p.model.types[Math.floor(rng() * p.model.types.length)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100, e: Math.round(rng() * 4) / 4, at: [Math.round(rng() * 100 - 50) / 100, Math.round(rng() * 100 - 50) / 100] });
       const res = E.finishOuting(o);
       const row = { day, scenario_id: id, calls: JSON.parse(JSON.stringify(o.calls)), outcome: res.outcome, pitches: res.pitches, score: res.score, percentile: res.percentile, strip: res.strip };
       const stripped = Object.assign({}, row, { calls: row.calls.map(c => { const x = Object.assign({}, c); delete x.e; return x; }) });
@@ -229,8 +231,10 @@ function selfTest() {
     }
     say(!!pair, `${id}: an outing whose effort changed what happened exists`);
     if (pair) {
-      say(replayRow(pair.row).ok && pair.row.calls.every(c => typeof c.e === 'number'), `${id}: a row with e replays exactly (${pair.row.pitches} pitches)`);
+      say(replayRow(pair.row).ok && pair.row.calls.every(c => typeof c.e === 'number'), `${id}: a row with e and at replays exactly (${pair.row.pitches} pitches)`);
       say(!replayRow(pair.stripped).ok, `${id}: the same row with its e taken out is flagged`);
+      const noAt = Object.assign({}, pair.row, { calls: pair.row.calls.map(c => { const x = Object.assign({}, c); delete x.at; return x; }) });
+      say(pair.row.calls.every(c => Array.isArray(c.at)) && !replayRow(noAt).ok, `${id}: a row with free aim points replays exactly, and with them taken out it is flagged`);
     }
     const noQ = { day: '2026-12-01', scenario_id: id, calls: [{ type: p.model.types[0], cell: 12, e: 1, r: 2 }], outcome: 'door_shut', pitches: 1, score: 0, percentile: 0, strip: ['green'] };
     let refused = false;

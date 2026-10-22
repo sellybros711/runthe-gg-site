@@ -178,7 +178,10 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {Cell} cell
  * @property {number} [q]             the release, 0..1, kept to two places. Absent = 1.0x
  * @property {number} [e]             the effort, 0..1, kept to two places (section 5c). Only with q,
- *                                    only under rules 2. Absent = his ordinary pitch
+ *                                    only under rules 2. Absent = his ordinary pitch (e 0.5)
+ * @property {[number, number]} [at] the free aim point inside the cell (section 5d): [u, v], each
+ *                                    -0.5..0.5, catcher's view, u to the catcher's right, v up.
+ *                                    Rules 2 only. Absent = the cell's centre ([0, 0])
  * @property {number} [r]             the rules it was played under, set by the engine on the kept
  *                                    call: 2 since 2026-10-22. Absent = rules 1 (section 5b)
  */
@@ -311,11 +314,29 @@ no effort term; effort reaches it through what happens, as the release does.
 **Determinism.** Still four draws a pitch in the same order. `e` changes the weights of the row the
 library draw reads and the arm on later pitches, never which draws are taken.
 
-**What the UI reads** (`meter.js`): `windowScale(e)`, `windowMs(command, e)`, `qOf(err, command, e)`
+**What the UI reads** (`meter.js`, `window.STD_METER`): `EFFORT === true` once effort exists;
+`windowOf(e, command)`, the bright band (q of `BEST_Q` and up) as `[lo, hi]` fractions of the bar
+(command 50 when left out); `veloOf(pitch, e)`, the mph to show. Under them: `windowScale(e)`, `windowMs(command, e)`, `qOf(err, command, e)`
 and `bandsFor(command, e)` for the accuracy bar at that effort; `veloFor(arsenalPitch, e)` and
 `stuffFor(arsenalPitch, e)` for the speed and break to show; `effortAt(t)` if the effort needle
 sweeps (`EFFORT_SWEEP_MS`); `run({command, effort, ...})` draws the accuracy bar at that effort. A
 `PitchResult` with `e` carries `stuff: {velo, pfxX, pfxZ, src}`, and its `velo` is that speed.
+
+## 5d. The free aim point (the owner's call, 2026-10-22)
+
+The player can aim anywhere in the zone, not only at a cell's centre. A call carries `at: [u, v]`,
+the aim's place inside its cell as fractions of the cell's width and height, each -0.5..0.5,
+catcher's view: `u` toward the catcher's right (+x), `v` up (+zn). `[0, 0]` is the centre, and a
+call without `at` aims there, so every stored outing replays exactly. `contract.js aimAt` clamps it
+to the cell and keeps two places; `aimPoint(cell, at)` is the point the engine aims at, and the miss
+is added to it as before (the same two draws). Rules 2 calls only (`shutdoor_submit` checks it in
+157: absent, null, or two numbers -0.5..0.5).
+
+**The cell decides every metric** (the owner: "the squares determine all of the metrics"). The grade,
+the best call, the scouting, the hitter's history (where pitches crossed is still the actual cell,
+and where he aimed is still `call.cell`) and the lesson read the cell. `at` moves only where the ball
+is aimed, inside the miss. So the grade still prices the cell's centre: an aim at a cell's corner
+is graded as that cell. How much it moves outcomes is in the README (Effort and the free aim).
 
 ## 6. Pitch result
 

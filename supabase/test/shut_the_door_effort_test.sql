@@ -1,4 +1,4 @@
--- Shut The Door's effort (157). Chain, after the 153, 155 and 156 chains and their tests:
+-- Shut The Door's effort and free aim point (157). Chain, after the 153, 155 and 156 chains and their tests:
 --   psql -d std -f supabase/157_shut_the_door_effort.sql
 --   psql -d std -f supabase/157_shut_the_door_effort.sql   (twice: it is safe to rerun)
 --   psql -d std -f supabase/test/shut_the_door_effort_test.sql
@@ -50,6 +50,17 @@ select pg_temp.claim(pg_temp.fails($$select pg_temp.post(shutdoor_today(), 10, '
 select pg_temp.claim(pg_temp.fails($$select pg_temp.post(shutdoor_today(), 10, '0.7', '[1]')$$), 'an effort that is a list is refused');
 select pg_temp.claim(pg_temp.fails($$select pg_temp.post(shutdoor_today(), 10, null, '1')$$), 'an effort without a release (the meter off) is refused');
 select pg_temp.claim(pg_temp.fails($$select pg_temp.post(shutdoor_today(), 10, 'null', '1')$$), 'an effort with a null release is refused');
+-- the free aim point
+create or replace function pg_temp.aimed(d date, at jsonb) returns json language sql as $$
+  select shutdoor_submit(d, 1, 'std-2025-ws7-yamamoto',
+    jsonb_build_array(jsonb_build_object('type', 'FF', 'cell', 12, 'q', 0.6, 'e', 0.5, 'r', 2, 'at', at)),
+    'door_shut', 1, 820, 50, null, '["green"]')
+$$;
+select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '[0.6, 0]')$$), 'an aim past the cell is refused');
+select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '[0.1]')$$), 'an aim of one number is refused');
+select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '[0.1, 0.2, 0.3]')$$), 'an aim of three numbers is refused');
+select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '["0.1", 0]')$$), 'an aim with a string is refused');
+select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '{"u": 0}')$$), 'an aim that is an object is refused');
 select pg_temp.claim(not exists (select 1 from shutdoor_outings where user_id = '00000000-0000-0000-0000-0000000000e3'), 'nothing was stored for the refused posts');
 -- the rest of the guard is 156's
 select pg_temp.claim(pg_temp.fails($$select pg_temp.post(shutdoor_today(), 10, '1.5', '0.5')$$), 'a release over 1 is still refused');
@@ -57,4 +68,10 @@ select pg_temp.claim(pg_temp.fails($$select shutdoor_submit(shutdoor_today(), 1,
   'a bad cell is still refused');
 select pg_temp.claim((select shutdoor_submit(shutdoor_today(), 1, 'x', '[{"type":"FF","cell":12,"q":0.5,"e":1,"r":2}]', 'tie_held', 1, 600, 50, null, '["green"]')->>'taken')::boolean,
   'a held tie with an effort is taken');
+set test.uid = '00000000-0000-0000-0000-0000000000e2';
+delete from public.shutdoor_outings where user_id = '00000000-0000-0000-0000-0000000000e2';
+select pg_temp.claim((pg_temp.aimed(shutdoor_today(), '[-0.5, 0.5]')->>'taken')::boolean, 'an aim at the cell''s corner is taken');
+select pg_temp.claim((select calls->0->'at' from shutdoor_outings where user_id = '00000000-0000-0000-0000-0000000000e2' and day = shutdoor_today()) = '[-0.5, 0.5]'::jsonb,
+  'and the aim is stored with the call');
+select pg_temp.claim((pg_temp.aimed(shutdoor_today() - 1, 'null')->>'taken')::boolean, 'a null aim is taken as the centre');
 set test.uid = '';

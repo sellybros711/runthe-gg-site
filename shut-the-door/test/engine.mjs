@@ -435,5 +435,37 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('effort: without e, or without stuff, the speed is his average', MT.veloFor(a, null) === 95 && MT.veloFor({ type: 'FF', velo: 95, pfxX: 0, pfxZ: 0 }, 1) === 95);
 }
 
+/* ---- the names the two bar meter feature-detects ---- */
+{
+  const MT = require('../meter.js');
+  const a = { type: 'FF', velo: 95, pfxX: -7, pfxZ: 16, stuff: { src: 'his', n: 500, velo: [93.4, 94.5, 95.1, 95.7, 96.6], pfxX: [-7, -7, -7, -7, -7], pfxZ: [16, 16, 16, 16, 16] } };
+  check('meter: EFFORT is true, and the neutral effort is 0.5', MT.EFFORT === true && K.EFFORT.MID === 0.5);
+  const w = e => MT.windowOf(e), width = e => w(e)[1] - w(e)[0];
+  check('meter: windowOf(e) is the bright band [lo, hi] on the bar, around the mark, narrower with effort',
+    w(0.5)[0] < MT.MARK && w(0.5)[1] > MT.MARK && width(1) < width(0.5) && width(0.5) < width(0) && Math.abs(width(0.5) - 2 * MT.bandsFor(50).best) < 1e-12);
+  check('meter: veloOf(pitch, e) is the speed the engine reports', MT.veloOf(a, 1) === 96.6 && MT.veloOf(a, 0) === 93.4 && MT.veloOf(a, null) === 95);
+}
+
+/* ---- the free aim point (2026-10-22, CONTRACT.md 5d) ---- */
+{
+  check('aim: at is clamped to the cell and kept to two places', JSON.stringify(K.aimAt([0.123, -0.9])) === '[0.12,-0.5]' && K.aimAt(null) === null && JSON.stringify(K.aimAt([-0.001, 0])) === '[0,0]');
+  check('aim: an at that is not [u, v] numbers is refused', [[1], 'x', [0, 'a'], [NaN, 0], {}].every(at => { try { E.replay(pack, 1, [{ type: 'FF', cell: 12, at }], { model, rules: 2 }); return false; } catch (e) { return true; } }));
+  check('aim: an aim point is a rules 2 call', (() => { try { E.replay(pack, 1, [{ type: 'FF', cell: 12, at: [0.2, 0] }], { model, rules: 1 }); return false; } catch (e) { return true; } })());
+  const p = K.aimPoint(12, [0.5, 0.5]), t = K.targetOf(12);
+  check('aim: u moves toward the catcher\'s right (+x), v up (+zn), by half a cell at 0.5', Math.abs(p.x - t.x - K.GRID.COL_FT / 2) < 1e-12 && Math.abs(p.zn - t.zn - K.GRID.ROW_ZN / 2) < 1e-12);
+  const rng = testRng(71);
+  const base = Array.from({ length: 40 }, () => ({ type: model.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25), q: 0.6 }));
+  const shape = o => JSON.stringify({ l: o.log.map(x => [x.actual, x.actualCell, x.result]), g: o.grades });
+  const none = E.replay(pack, 515, base, { model, rules: 2 }), zero = E.replay(pack, 515, base.map(c => Object.assign({}, c, { at: [0, 0] })), { model, rules: 2 });
+  check('aim: [0, 0] plays exactly as no at (the cell\'s centre)', shape(none) === shape(zero) && none.calls.every(c => !('at' in c)));
+  const o1 = E.createOuting(pack, { seed: 9, model }), o2 = E.createOuting(pack, { seed: 9, model });
+  const r1 = E.throwPitch(o1, { type: 'FF', cell: 12, q: 0.5 }), r2 = E.throwPitch(o2, { type: 'FF', cell: 12, q: 0.5, at: [0.4, -0.3] });
+  check('aim: the same draws, moved by the offset; the grade is the cell\'s',
+    Math.abs(r2.pitchResult.actual.x - r1.pitchResult.actual.x - 0.4 * K.GRID.COL_FT) < 0.002 && Math.abs(r2.pitchResult.actual.zn - r1.pitchResult.actual.zn + 0.3 * K.GRID.ROW_ZN) < 0.002
+    && JSON.stringify(r1.pitchGrade) === JSON.stringify(r2.pitchGrade) && o1.rng() === o2.rng());
+  const again = E.replay(pack, 515, JSON.parse(JSON.stringify(E.replay(pack, 515, base.map(c => Object.assign({}, c, { at: [0.3, 0.3] })), { model, rules: 2 }).calls)), { model: new G.Model(pack) });
+  check('aim: determinism, the kept calls through JSON replay the outing exactly', shape(again) === shape(E.replay(pack, 515, base.map(c => Object.assign({}, c, { at: [0.3, 0.3] })), { model, rules: 2 })));
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);

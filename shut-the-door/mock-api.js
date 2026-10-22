@@ -272,7 +272,7 @@ function forced(bases) {
 
 function resolve(scn, st, call, rng) {
   var bt = batterOf(scn, st.batterIndex), pr = bt.profile, ap = pitchOf(scn, call.type);
-  var tgt = C.targetOf(call.cell), zr = bt.szTop - bt.szBot;
+  var tgt = C.aimPoint ? C.aimPoint(call.cell, call.at) : C.targetOf(call.cell), zr = bt.szTop - bt.szBot;
   /* the fixed order: miss x, miss z, the library draw, the runner draw */
   /* the release scales the miss, as in the engine (contract.js spreadOf; no q is 1.0x) */
   var sg = ap.sigmaFt * (C.spreadOf ? C.spreadOf(call.q) : 1);
@@ -439,6 +439,7 @@ function throwPitch(outingId, call) {
     var c = { type: call.type, cell: call.cell | 0 };
     if (call.q != null && C.releaseQ) c.q = C.releaseQ(call.q);
     if (call.e != null && C.effortE) c.e = C.effortE(call.e);
+    if (call.at != null && C.aimAt) c.at = C.aimAt(call.at);
     o.calls.push(c);
     var r = apply(o.scn, o.st, c, o.rng);
     saveDaily(o);

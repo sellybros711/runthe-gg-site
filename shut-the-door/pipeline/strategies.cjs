@@ -11,6 +11,9 @@
  *                 breaking ball with two strikes, easy on the changeup or splitter (a harder
  *                 one whiffs less) and at three balls (the strike matters more than the stuff),
  *                 ordinary otherwise, and no harder than ordinary past 15 pitches
+ *        AIMS=centre,random,out,in the free aim point (CONTRACT.md 5d; default centre):
+ *          centre  no at (the cell's centre); random  anywhere in the cell;
+ *          out     the cell's far corner from the heart of the plate; in  its near corner
  *        With a timed release, e narrows or widens the window the tap model is timed in
  *        (meter.js qOf(err, command, e)); a perfect release is q 1 whatever the window.
  *
@@ -133,6 +136,14 @@ function tapQ(rng, command, eff) {
   return MT.qOf(e, command, eff);
 }
 const EFFORTS = (process.env.EFFORTS || 'none').split(',');
+const AIMS = (process.env.AIMS || 'centre').split(',');
+function aimOf(policy, o, c) {
+  if (policy === 'centre') return null;
+  if (policy === 'random') return [Math.round((o.aimRng() - 0.5) * 100) / 100, Math.round((o.aimRng() - 0.5) * 100) / 100];   // its own stream, so the calls stay paired
+  const dc = Math.sign(K.colOf(c.cell) - 2), dr = Math.sign(2 - K.rowOf(c.cell));   // away from the heart: +x right of it, +zn above it
+  const k = policy === 'out' ? 0.5 : -0.5;
+  return [dc * k, dr * k];
+}
 function effortOf(policy, o, c) {
   if (policy === 'none') return null;
   if (policy === 'min') return 0;
@@ -149,7 +160,7 @@ function effortOf(policy, o, c) {
   return e;
 }
 
-function play(pack, model, sname, strat, release, runs, effort) {
+function play(pack, model, sname, strat, release, runs, effort, aim) {
   const out = { door_shut: 0, tie_held: 0, doors_open: 0, walk_off: 0 };
   let ra = 0, pitches = 0, n = 0, walks = 0, pa = 0;
   const scores = [], bands = { green: 0, yellow: 0, orange: 0, red: 0 };
@@ -160,12 +171,15 @@ function play(pack, model, sname, strat, release, runs, effort) {
     o.fixed = pack._fixed;
     o.pol = R.mulberry32(R.hashSeed(`${pack.scenario.id}|pol|${r}`));
     o.closer = closers[r % closers.length];
+    o.aimRng = R.mulberry32(R.hashSeed(`${pack.scenario.id}|aim|${r}`));
     let guard = 0;
     while (o.status === 'live' && guard++ < 200) {
       const c = strat(o);
       const cmd = pack.scenario.pitcher.arsenal.find(a => a.type === c.type).command;
       const eff = release === 'none' ? null : effortOf(effort || 'none', o, c);
       if (eff != null) c.e = eff;
+      const at = aimOf(aim || 'centre', o, c);
+      if (at) c.at = at;
       if (release === 'perfect') c.q = 1;
       else if (release === 'ordinary') c.q = tapQ(tap, cmd, eff);
       const res = E.throwPitch(o, c).pitchResult;
@@ -198,7 +212,9 @@ for (const f of packs) {
   for (const sn of WANT) {
     for (const rel of (sn === 'pool' ? ['none'] : RELS)) {
       for (const ef of (sn === 'pool' || rel === 'none' ? ['none'] : EFFORTS)) {
-        rows.push(Object.assign({ pack: pack.scenario.id.replace('std-', ''), strat: sn, release: rel, effort: ef }, play(pack, model, sn, S[sn], rel, RUNS, ef)));
+        for (const am of (sn === 'pool' ? ['centre'] : AIMS)) {
+          rows.push(Object.assign({ pack: pack.scenario.id.replace('std-', ''), strat: sn, release: rel, effort: ef, aim: am }, play(pack, model, sn, S[sn], rel, RUNS, ef, am)));
+        }
       }
     }
   }

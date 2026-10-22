@@ -37,6 +37,30 @@ function targetOf(cell) {
   return { x: (c - 2) * GRID.COL_FT, zn: 1 - (r - 0.5) * GRID.ROW_ZN };
 }
 
+/* The free aim point (the owner's call, 2026-10-22; CONTRACT.md 5d). A call
+   may carry at: [u, v], where inside its cell the player aimed, as fractions
+   of the cell's width and height, each -0.5..0.5, catcher's view: u toward
+   the catcher's right (+x), v up (+zn). [0, 0] is the cell's centre, which is
+   what a call without at aims at. Clamped to the cell and kept to two places,
+   so a stored call replays exactly. It moves only where the ball is aimed:
+   the cell still decides everything the grade, the scouting and the hitter's
+   history read. */
+const AIM = Object.freeze({ MAX: 0.5, STEPS: 100 });
+function aimAt(at) {
+  if (at == null) return null;
+  if (!Array.isArray(at) || at.length !== 2 || !at.every(x => typeof x === 'number' && isFinite(x))) {
+    throw new Error('an aim point at is [u, v], two numbers');
+  }
+  return at.map(x => Math.round(Math.max(-AIM.MAX, Math.min(AIM.MAX, x)) * AIM.STEPS) / AIM.STEPS + 0);
+}
+/* The point a call aims at: its cell's centre, moved by at. */
+function aimPoint(cell, at) {
+  const t = targetOf(cell);
+  const a = aimAt(at);
+  if (!a) return t;
+  return { x: t.x + a[0] * GRID.COL_FT, zn: t.zn + a[1] * GRID.ROW_ZN };
+}
+
 /* The cell a point lands in. Anything past the chase band stays in it. */
 function cellAt(x, zn) {
   const c = Math.max(0, Math.min(4, Math.floor(x / GRID.COL_FT + 2.5)));
@@ -183,7 +207,7 @@ const SHARE_TITLE = 'Shut The Door';
 const SHARE_URL = 'runthe.gg/shut-the-door';
 
 const publicAPI = Object.freeze({
-  API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, cellAt, screenCol,
+  API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,

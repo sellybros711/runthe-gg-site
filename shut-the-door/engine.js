@@ -65,7 +65,9 @@ const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
    so every outing stored before plays exactly as it did.
    5: effort (CONTRACT.md 5c): a rules 2 call may carry e beside q. It moves
    the pitch along his own real speed (grade.js EFFORT) and loads the arm. A
-   call without e plays exactly as under 4. */
+   call without e plays exactly as under 4. And the free aim point (CONTRACT.md
+   5d): a rules 2 call may carry at, where inside its cell it was aimed. A call
+   without at aims at the centre, as under 4. */
 const ENGINE_VERSION = 5;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread. */
@@ -137,6 +139,7 @@ function validCall(o, call) {
   }
   if (!o.model.types.includes(call.type)) throw new Error(`${call.type} is not in the arsenal`);
   K.releaseQ(call.q);   // throws unless q is absent or a number 0..1
+  if (K.aimAt(call.at) != null && o.rules < 2) throw new Error('an aim point is a rules 2 call');   // throws unless at is absent or [u, v]
   if (K.effortE(call.e) != null) {   // throws unless e is absent or a number 0..1
     if (o.rules < 2) throw new Error('effort is a rules 2 call');
     if (call.q == null) throw new Error('an effort needs a timed release (q)');
@@ -153,6 +156,8 @@ function keptCall(call, rules) {
   if (q != null) c.q = q;
   const e = K.effortE(call.e);
   if (e != null) c.e = e;
+  const at = K.aimAt(call.at);
+  if (at != null) c.at = at;
   if (rules >= 2) c.r = rules;
   return c;
 }
@@ -191,7 +196,7 @@ function throwPitch(o, call) {
   const spread = K.spreadOf(kept.q, repeat);
   const arm = ctx ? ctx.fatigue : 1;
   const sigma = arsenal.sigmaFt * spread * arm;
-  const t = K.targetOf(call.cell);
+  const t = K.aimPoint(call.cell, kept.at);   // the cell's centre, or the free aim point inside it
   const actual = { x: t.x + d.missX * sigma, zn: t.zn + d.missZ * sigma / pack.kernelZoneFt };
   const actualCell = K.cellAt(actual.x, actual.zn);
 
