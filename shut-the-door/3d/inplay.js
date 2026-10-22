@@ -8,7 +8,9 @@
  *
  *   const ip = new InPlay({ scene, renderer, people, facts })   once the people are set up
  *   const run = ip.begin(pr, pitch, { hooks })                   a ball in play: the plan and its clock
- *     run.realDur, run.resolveReal (seconds after contact), run.sceneAt(r) (plan time at real r)
+ *     run.realDur, run.resolveReal (seconds after contact), run.sceneAt(r) (plan time at real r),
+ *     run.land { s, real, how, fair } (the ball's first landing, catch, pick up or home run)
+ *   ip.prime()                                                    its textures up to the GPU at load (stage.js)
  *   ip.update(s, camera)                                          every frame after contact (s: plan time)
  *   ip.fieldAt(s)                                                 the runners for the scorebar diamond
  *   ip.end(camera)                                                back to the set (the next pitch)
@@ -19,6 +21,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, warp, realAt, BASE, wallDist } from './inplay-plan.js?v=2';
 import { Crew } from './fielders.js?v=1';
 import { buildBallpark } from './ballpark.js?v=2';
+// (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=34';
 import { look } from './looks.js?v=2';
 import { P, FT } from './units.js?v=1';
@@ -79,6 +82,29 @@ export class InPlay {
     this.trail.visible = on;
   }
 
+  /** The broadcast's textures up to the GPU at load (stage.js init, behind the home screen): the
+      park's 2048 px infield mask, its dirt and seats, the shadow blob. Measured in Chromium (software
+      GL), the first broadcast frame uploaded 14 textures and 12 buffers on top of its draw; drawn
+      ahead into a target instead, it still compiled a shader per variant the canvas never uses, so
+      this only uploads (renderer.initTexture: no draw, nothing on screen). It takes six of the
+      fourteen off that frame; the rest are the bodies' bone textures (made on their first draw)
+      and textures still loading. A small hitch at the cut remains: stage.js's clock pauses for it. */
+  prime() {
+    const r = this.renderer, seen = new Set();
+    const up = (o) => o.traverse((m) => {
+      if (!m.isMesh) return;
+      for (const mat of [].concat(m.material)) for (const v of Object.values(mat)) {
+        if (!v || !v.isTexture || seen.has(v)) continue;
+        seen.add(v);
+        if (v.image && (v.image.width || v.image.data)) r.initTexture(v);
+      }
+    });
+    up(this.park);
+    for (const f of this.crew.figures) up(f.root);
+    up(this.crew.blobs);
+    return seen.size;
+  }
+
   /** A ball in play: plan it from the engine's PitchResult and the pitch as the scene threw it. */
   begin(pr, pitch, o = {}) {
     const b = this.facts.batter;
@@ -103,8 +129,13 @@ export class InPlay {
         if (close || (r.out && r.outAt != null && r.arrive - r.outAt < 0.5)) r.slide = r.arrive;
       }
     });
+    // the moment the ball first lands, is caught or fielded, or leaves the park (plan time), never
+    // after the play is decided: the game's play by play waits for it
+    const oc = plan.outcome, ft = oc.firstTouch || {};
+    const landS = Math.min(ft.landAt ?? ft.s ?? plan.resolveAt, plan.resolveAt);
     return {
       plan,
+      land: { s: landS, real: realAt(plan.edit, landS), how: oc.ball, fair: true },
       realDur: plan.realDur,
       resolveReal: realAt(plan.edit, plan.resolveAt),
       sceneAt: (r) => warp(plan.edit, r).s,
