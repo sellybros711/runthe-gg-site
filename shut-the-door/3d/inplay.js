@@ -21,9 +21,8 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, warp, realAt, BASE, wallDist } from './inplay-plan.js?v=2';
 import { Crew } from './fielders.js?v=1';
 import { buildBallpark } from './ballpark.js?v=2';
-// (the same URL stage.js imports, so both share one copy of people.js: it read v=31, a second copy,
-// and a phone that had the old file cached ran last week's people.js for the kits)
-import { kitFor } from './people.js?v=33';
+// (the same URL stage.js imports, so both share one copy of people.js)
+import { kitFor } from './people.js?v=34';
 import { look } from './looks.js?v=2';
 import { P, FT } from './units.js?v=1';
 

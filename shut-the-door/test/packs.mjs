@@ -153,7 +153,7 @@ function calibration(pack) {
   let allGreen = true;
   for (let seed = 1; seed <= 40; seed++) {
     for (const g of playOut(pack, model, seed, () => ({ type: hard.type, cell: 12 })).grades) mid[g.band]++;
-    const ob = playOut(pack, model, 1000 + seed, o => { const b = model.solve(o.st); return { type: b.type, cell: b.cell }; });
+    const ob = playOut(pack, model, 1000 + seed, o => E.bestCall(o));   // rules 2: the grade's best call, with the history
     if (!ob.grades.every(g => g.band === 'green')) allGreen = false;
   }
   const tot = mid.green + mid.yellow + mid.orange + mid.red;
