@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -145,6 +145,7 @@
       <button type="button" data-heat="damage" aria-selected="true">damage</button>
       <button type="button" data-heat="swing" aria-selected="false">swings</button>
     </div>
+    <button class="guide-tog" id="m-guide-b" type="button" aria-expanded="false" aria-controls="m-guide">pitch guide</button>
     <span class="legend" id="m-heat-legend"></span>
   </div>
   <div class="scene" id="m-scene">
@@ -155,6 +156,7 @@
     <div class="dotkey" aria-hidden="true"><span><i class="pd ball"></i>ball</span><span><i class="pd called"></i>called</span><span><i class="pd swing"></i>swinging</span><span><i class="pd foul"></i>foul</span><span><i class="pd inplay"></i>in play</span></div>
   </div>
   <div class="scout" id="m-scout" hidden></div>
+  <div class="guide" id="m-guide" role="region" aria-label="Pitch guide" hidden></div>
   <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
   <button class="btn throw" id="m-throw" type="button" disabled>pick a pitch</button>
 </section>
@@ -264,8 +266,8 @@
 <script src="api.js?v=3"></script>
 <script src="mock-api.js?v=7"></script>
 <script src="coach.js?v=2"></script>
-<script src="ui.js?v=14"></script>
-<script type="module" src="3d/boot.js?v=19"></script>
+<script src="ui.js?v=15"></script>
+<script type="module" src="3d/boot.js?v=20"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
 </html>
