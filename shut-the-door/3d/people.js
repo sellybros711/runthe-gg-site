@@ -19,6 +19,11 @@ import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGe
 
 const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
+// the bat's sweet spot: 28 in up it from the knob (gear3d.js bat, 34 in long, the knob at its origin)
+const SWEET = 28 * 0.0254;
+// how far the swing may be slid to meet the ball (seconds of capture time, from its fastest barrel:
+// the three swings measured 0.04 to 0.21 s late)
+const MEET = [-0.05, 0.25];
 
 const UNIFORM = new Set(['uniform', 'socks', 'gloves', 'undershirt', 'belt', 'number']);
 
@@ -515,6 +520,8 @@ export class People {
       const la = play && play.inPlay && play.inPlay.la;
       b.batTilt = la == null ? 0 : THREE.MathUtils.clamp((la - 12) / 30, -1, 1) * 9;
       this.planBatterFeet(b);
+      // a swing that meets the ball is slid in time so the bat gets there with it (meetTime)
+      b.meet = !b.take && !this.m.miss && pitch ? this.meetTime(b) : 0;
     }
     if (c && c.crouch) {
       // he sets up where the pitch is aimed
@@ -681,6 +688,51 @@ export class People {
     const coil = ch.coil(t);
     chestTo(b, new THREE.Quaternion().setFromAxisAngle(UP, -ch.dirn * coil).multiply(chest), UP);
     this.trimPelvis(b);
+  }
+
+  /** The swing at capture time t, all of it: the chain, the planted feet, the shoulders and the bat
+      (update() poses a swing this way every frame). */
+  swingPose(b, t) {
+    b.batTime = t;
+    this.swingBase(b, t);
+    reach(b, b.feetSwing, t);
+    plantFeet(b, b.feetSwing, t);
+    this.finishBatter(b);
+  }
+
+  /** The last of every batter frame, a swing or a take. */
+  finishBatter(b) {
+    // the Mixamo swings turn the head hard on the neck to keep the eyes on the pitch: past about
+    // 24 degrees of twist the skin under the jaw pinches
+    limitTwist(b, 'head', 24);
+    clavicles(b);
+    deltoids(b);
+    this.poseBat(b);
+  }
+
+  /* When his swing meets the ball. tContact is the capture's fastest barrel, and that comes before
+     the bat is out where the ball is: timed on it, the sweet spot was 3 to 5 ft behind the ball's
+     contact point when the ball left the bat, and got there 0.04 to 0.21 s of capture time later. So the swing is slid in time, nothing else:
+     the capture time is found at which his sweet spot is nearest the point where the ball is met
+     (pitch.js flight, at the play's contactShift), and that moment is put on the contact. Every
+     pose is his own, only when it comes changes. Returns the slide in seconds of capture time. */
+  meetTime(b) {
+    const pt = this.pitch, M = pt.pointAt(pt.f.T + this.m.contactShift), tC = b.tContact;
+    const sweet = new THREE.Vector3();
+    const miss = (u) => {
+      this.swingPose(b, u);
+      return sweet.set(0, SWEET, 0).applyMatrix4(b.bat.matrixWorld).distanceTo(M);
+    };
+    const lo = tC + MEET[0], hi = tC + MEET[1];
+    let best = tC, bestD = Infinity;
+    for (let u = lo; u <= hi + 1e-9; u += 1 / 120) { const d = miss(u); if (d < bestD) { bestD = d; best = u; } }
+    const c = best;
+    for (let u = c - 1 / 120; u <= c + 1 / 120 + 1e-9; u += 1 / 960) {
+      const uu = THREE.MathUtils.clamp(u, lo, hi), d = miss(uu);
+      if (d < bestD) { bestD = d; best = uu; }
+    }
+    b.meetMiss = bestD;
+    return best - tC;
   }
 
   /** The take at clock time ct (relative to the swing's contact), before the feet are planted:
@@ -890,18 +942,16 @@ export class People {
     const pt = this.pitch;
     const b = this.batter, c = this.catcher, u = this.umpire;
     if (b) {
-      // met early to pull it (contactShift < 0), late to go the other way
-      const ct = t - (pt.tPlate + (b.take ? 0 : this.m.contactShift)) + b.tContact;
+      // met early to pull it (contactShift < 0), late to go the other way; a swing is slid by its
+      // meet (meetTime) so the bat is on the ball at the contact
+      const ct = t - (pt.tPlate + (b.take ? 0 : this.m.contactShift)) + b.tContact + (b.take ? 0 : b.meet || 0);
       if (!b.take) {
         // a real hitter holds his finish: time slows to a near hold at the end of the swing (each
         // capture is cut at its finish); a swing and miss plays on through his reaction
         const dur = b.clips[b.clip].duration;
         const hold = b.clip.startsWith('miss') ? dur - 0.05 : Math.min(b.tContact + 0.42, dur - 0.05);
         const cw = ct < hold ? ct : hold + (1 - Math.exp(-(ct - hold) / 0.5)) * 0.18;
-        b.batTime = cw;
-        this.swingBase(b, cw);
-        reach(b, b.feetSwing, cw);
-        plantFeet(b, b.feetSwing, cw);
+        this.swingPose(b, cw);
       } else {
         // a pitch on the shoulder puts him down (play.js motion, m.fall): the take until the ball
         // is on him, then Mixamo's shoulder hit and fall, its blow timed to the ball
@@ -917,13 +967,8 @@ export class People {
         if (wf > 0) this.fallOn(b, t - hitT, wf);
         b.batTime = Math.min(ct, b.tContact - (b.motion === 'check' ? 0.075 : 0.2));
         b.dropAt = fall && t > hitT ? t - hitT : null;
+        this.finishBatter(b);
       }
-      // the Mixamo swings turn the head hard on the neck to keep the eyes on the pitch: past about
-      // 24 degrees of twist the skin under the jaw pinches
-      limitTwist(b, 'head', 24);
-      clavicles(b);
-      deltoids(b);
-      this.poseBat(b);
     }
     if (c) {
       pose(c, { idle: [loop(c, 'idle', 1.5 + t), 1] });
