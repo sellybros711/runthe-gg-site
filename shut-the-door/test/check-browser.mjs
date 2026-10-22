@@ -20,6 +20,7 @@
  *      field minimap shows after the first play, with a dot only for a ball in play.
  *   6. the end reveal: outcome, strip, percentile, pitched like, the verdict
  *      against the real pitcher and the side by side card, on screen together; share
+ *      opens the share sheet, the result card draws, and "copy the text" copies it
  *   7. run it back is practice; a reload shows today as done
  *   8. ?debug=1 shows the seed
  *   9. no page error and no console error anywhere
@@ -747,53 +748,36 @@ async function run(w, h, theme) {
   at('6 the result');
   await revealCheck(page, '6', play.pitches);
   await shot('result', true);
-  /* The toast is up for 2.2 s (ui.js toast). page.click returns only once the page has taken the
-     input, and under software GL that can wait behind the GPU for longer than that (step 8 measured a
-     click that took 83 s at load 50), so a wait that starts after the click can miss a toast that
-     came and went: CI failed "Timeout 3000ms" here on 2026-10-22. The watch starts before the tap,
-     and reads what the toast said. */
-  /* It also notes which way share went (the share sheet on a touch screen, else the clipboard, else
-     a hidden textarea) and how that ended, so a miss says why instead of timing out. */
+  /* Share (PR #652): the button opens the share sheet, which draws the result card (card.js) and
+     offers the image and the text. The sheet opens from the button, the card draws, and "copy the
+     text" copies the share text. Before #652 the button copied at once, and this step waited for that
+     toast; on main after #652 it timed out, and the sheet left open then covered the coach button
+     (CI, 2026-10-22).
+     The toast is up for 2.2 s (ui.js toast). A click returns only once the page has taken the input,
+     which under software GL can wait behind the GPU for longer than that, so the watch starts before
+     the tap and keeps what the toast said. */
   await page.evaluate(() => {
     const t = document.getElementById('toast');
     window.STD_CHECK_TOAST = '';
-    window.STD_CHECK_SHARE = [];
-    const note = (s) => window.STD_CHECK_SHARE.push(s);
     new MutationObserver(() => { if (t.classList.contains('on') && !window.STD_CHECK_TOAST) window.STD_CHECK_TOAST = t.textContent; }).observe(t, { attributes: true, attributeFilter: ['class'] });
-    const cb = navigator.clipboard;
-    if (cb && cb.writeText) {
-      const w = cb.writeText.bind(cb);
-      cb.writeText = (s) => { note('clipboard called'); return w(s).then((v) => { note('clipboard resolved'); return v; }, (e) => { note('clipboard rejected: ' + String(e && e.message || e).slice(0, 80)); throw e; }); };
-    }
-    if (navigator.share) {
-      const s0 = navigator.share.bind(navigator);
-      navigator.share = (d) => { note('share sheet called'); return s0(d); };
-    }
-    // where the tap lands: what is under the button's centre now, and every pointerdown and click
-    const name = (el) => el ? (el.id ? '#' + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : '')) : 'none';
-    const b = document.getElementById('r-share').getBoundingClientRect();
-    note('before: button ' + [b.left, b.top, b.width, b.height].map(Math.round).join(',') + ' scroll ' + Math.round(scrollY) + ' under its centre ' + name(document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)));
-    for (const ev of ['pointerdown', 'click']) document.addEventListener(ev, (e) => note(ev + ' on ' + name(e.target) + ' at ' + Math.round(e.clientX) + ',' + Math.round(e.clientY)), true);
   });
   await page.click('#r-share');
+  await page.waitForSelector('#sheet-share.on', { timeout: 5000 });
+  const card = await page.waitForFunction(() => {
+    const i = document.getElementById('sh-img');
+    if (/did not draw/.test(document.getElementById('share-body').textContent)) return 'the image did not draw';
+    return i && i.complete && i.naturalWidth > 0 ? i.naturalWidth + 'x' + i.naturalHeight : null;
+  }, null, { timeout: 60000 }).then((hd) => hd.jsonValue(), () => 'no image in 60 s');
+  ok(/^\d+x\d+$/.test(card), '6 share opens the share sheet and the card draws (' + card + ')');
+  await shot('share-sheet');
+  await page.click('#sh-text');
   const toastSeen = await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 }).then(() => true, () => false);
-  const sh = await page.evaluate(() => ({ said: window.STD_CHECK_TOAST, path: window.STD_CHECK_SHARE.join(', ') || 'nothing called',
-    coarse: matchMedia('(pointer: coarse)').matches, share: !!navigator.share, focus: document.hasFocus(), result: !!(window.STD_UI && window.STD_UI.state && window.STD_UI.state.result) }));
+  const said = await page.evaluate(() => window.STD_CHECK_TOAST);
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
-  if (!toastSeen) {
-    // a miss: does the button answer a click from script? (separates a handler that never runs from a tap that never lands)
-    sh.path += '; then a script click: ' + await page.evaluate(async () => { const n = window.STD_CHECK_SHARE.length; document.getElementById('r-share').click(); await new Promise((r) => setTimeout(r, 1500)); return (window.STD_CHECK_SHARE.slice(n).join(', ') || 'nothing') + ', toast "' + window.STD_CHECK_TOAST + '"'; });
-    sh.path += '; ' + await page.evaluate(async () => {
-      const out = [];
-      out.push('writeText wrapped ' + !/native code/.test(String(navigator.clipboard && navigator.clipboard.writeText)));
-      try { out.push('share text ' + window.STD_SHARE.text(window.STD_UI.state.result, window.STD_UI.state.scn.number).length + ' chars, result.share ' + typeof window.STD_UI.state.result.share); } catch (e) { out.push('share text threw: ' + String(e).slice(0, 80)); }
-      const w = navigator.clipboard ? Clipboard.prototype.writeText.call(navigator.clipboard, 'probe').then(() => 'resolved', (e) => 'rejected: ' + String(e && e.message || e).slice(0, 80)) : Promise.resolve('no clipboard');
-      out.push('a direct writeText ' + await Promise.race([w, new Promise((r) => setTimeout(() => r('still pending after 3 s'), 3000))]));
-      return out.join(', ');
-    });
-  }
-  ok(toastSeen && /^copied/.test(sh.said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
-    '6 share copies the share text (toast "' + sh.said + '"' + (toastSeen ? '' : '; no toast in 10 s: ' + sh.path + ', pointer coarse ' + sh.coarse + ', share sheet ' + sh.share + ', focus ' + sh.focus + ', a result ' + sh.result + ', clipboard "' + clip.slice(0, 60) + '", page errors so far: ' + (errors.slice(-3).join(' | ') || 'none')) + ')');
+  ok(toastSeen && /^copied/.test(said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
+    '6 copy the text copies the share text (toast "' + (said || 'none in 10 s') + '", ' + clip.split('\n').length + ' lines)');
+  await page.click('#sheet-share .sh-x');
+  await page.waitForSelector('#sheet-share', { state: 'hidden', timeout: 3000 });
   await shot('shared');
 
   /* 12, on the real engine */
