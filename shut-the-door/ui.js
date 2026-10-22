@@ -932,9 +932,12 @@ function finish() {
   });
 }
 
+/* runs allowed: the result's own, or the outing's score against the spot's */
+function runsOf(r, st) { return r.runs != null ? r.runs : st && st.score ? st.score.them - S.scn.situation.score.them : null; }
+
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
-  var runs = r.runs != null ? r.runs : st ? st.score.them - s.situation.score.them : null;
+  var runs = runsOf(r, st);
   $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice \u00b7 not scored' : (s.preview ? 'preview' : '#' + s.number) + ' \u00b7 final \u00b7 ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
@@ -1081,8 +1084,13 @@ function openCoach() {
   });
 }
 
-function share(r) {
-  var text = r.share || (window.STD_SHARE && window.STD_SHARE.text(r, S.scn.number)) || '';
+/* ---- share: the card as an image, the text as before ------------------------------------------
+   The share sheet opens from a share button only. It draws the card (card.js) at both sizes as it
+   opens, so the share button inside it hands the file over in the same tap: a browser only lets
+   navigator.share run straight off a tap. Where files cannot be shared, the image is saved instead,
+   and the text is always one tap away. */
+function shareText(r) { return r.share || (window.STD_SHARE && window.STD_SHARE.text(r, S.scn.number)) || ''; }
+function copyText(text) {
   function copied() { toast('copied. paste it anywhere.'); }
   function fallback() {
     try {
@@ -1091,13 +1099,112 @@ function share(r) {
       document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); copied();
     } catch (e) { toast('could not copy.'); }
   }
-  var touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-  if (navigator.share && touch) {
-    navigator.share({ text: text }).catch(function () {});
-    return;
-  }
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(copied, fallback);
   else fallback();
+}
+/* the old share: the text, through the share sheet on a phone, else copied */
+function shareTextOnly(text) {
+  var touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  if (navigator.share && touch) { navigator.share({ text: text }).catch(function () {}); return; }
+  copyText(text);
+}
+/* what the card shows, every piece from the result */
+function cardOf(r) {
+  var s = S.scn, st = S.daily || S.outing, his = lastName(s.pitcher.name);
+  var rv = r.reveal || {};
+  return {
+    outcome: r.outcome, strip: r.strip || [], pitches: r.pitches, percentile: r.percentile,
+    label: s.preview ? 'preview' : '#' + s.number, title: s.title,
+    vsReal: r.vsReal || null, vsLabel: 'you vs the real ' + his.toLowerCase(),
+    vsHead: r.vsReal ? vsHead(r.vsReal, his) : null, vsWhy: r.vsReal && rv.outcome ? vsWhy(r, rv, runsOf(r, st)) : null,
+    pitchedLike: r.pitchedLike && r.pitchedLike.name || null,
+  };
+}
+var SH = { size: 'tall', files: {}, text: '', n: 0 };
+function share(r) {
+  var CARD = window.STD_CARD, text = shareText(r);
+  if (!CARD || !document.createElement('canvas').getContext) { shareTextOnly(text); return; }
+  var my = ++SH.n;
+  SH.text = text; SH.files = {}; SH.urls = SH.urls || {};
+  Object.keys(SH.urls).forEach(function (k) { try { URL.revokeObjectURL(SH.urls[k]); } catch (e) {} });
+  SH.urls = {};
+  var name = 'shut-the-door-' + (S.scn.preview ? 'preview' : S.scn.number);
+  renderShare('loading');
+  MN.open('sheet-share');
+  var c = cardOf(r);
+  ['tall', 'wide'].reduce(function (p, size) {
+    return p.then(function () { return CARD.render(c, size); }).then(CARD.blob).then(function (b) {
+      if (my !== SH.n) return;
+      SH.files[size] = new File([b], name + (size === 'wide' ? '-wide' : '') + '.png', { type: 'image/png' });
+      SH.urls[size] = URL.createObjectURL(b);
+      if (size === SH.size || !SH.urls[SH.size]) renderShare();
+    });
+  }, Promise.resolve()).catch(function (e) {
+    if (my !== SH.n) return;
+    if (window.console) console.warn(e);
+    renderShare('fail');
+  });
+}
+function canShareFile(f) {
+  try { return !!(f && navigator.share && navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; }
+}
+function saveFile(f) {
+  var a = document.createElement('a');
+  a.href = SH.urls[SH.size]; a.download = f.name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('saved. post it anywhere.');
+}
+function renderShare(state) {
+  var body = $('share-body');
+  if (state === 'fail') {
+    body.innerHTML = '<p class="quiet">the image did not draw. the text still works.</p>' +
+      '<button class="btn go" type="button" id="sh-text">copy the text</button>';
+    $('sh-text').addEventListener('click', function () { copyText(SH.text); });
+    return;
+  }
+  var f = SH.files[SH.size], url = SH.urls[SH.size];
+  var canFile = canShareFile(f);
+  body.innerHTML =
+    '<div class="seg sh-seg" role="tablist" aria-label="Image size">' +
+    '<button type="button" role="tab" data-size="tall" aria-selected="' + (SH.size === 'tall') + '">post</button>' +
+    '<button type="button" role="tab" data-size="wide" aria-selected="' + (SH.size === 'wide') + '">wide</button></div>' +
+    '<div class="sh-prev ' + SH.size + '">' + (url ? '<img id="sh-img" src="' + url + '" alt="your result card">' : '<span class="load-mark" aria-hidden="true"></span><span>drawing your card</span>') + '</div>' +
+    '<div class="sh-act">' +
+    '<button class="btn go" type="button" id="sh-go"' + (f ? '' : ' disabled') + '>' + (canFile ? 'share image' : 'save image') + '</button>' +
+    (canFile ? '<button class="btn ghost" type="button" id="sh-save">save image</button>' : '') +
+    '<button class="btn ghost" type="button" id="sh-text">copy the text</button></div>';
+  body.querySelectorAll('[data-size]').forEach(function (b) {
+    b.addEventListener('click', function () { SH.size = b.getAttribute('data-size'); renderShare(); });
+  });
+  $('sh-go').addEventListener('click', function () {
+    var file = SH.files[SH.size];
+    if (!file) return;
+    if (canShareFile(file)) {
+      navigator.share({ files: [file], text: SH.text }).catch(function (e) {
+        if (e && e.name === 'AbortError') return;
+        saveFile(file);
+      });
+    } else saveFile(file);
+  });
+  if ($('sh-save')) $('sh-save').addEventListener('click', function () { if (SH.files[SH.size]) saveFile(SH.files[SH.size]); });
+  $('sh-text').addEventListener('click', function () { copyText(SH.text); });
+}
+
+/* ---- the board: its own screen, from a button ------------------------------------------------- */
+var boardFrom = 's-home';
+function showBoard() {
+  var cur = document.body.dataset.screen;
+  if (cur && cur !== 's-board' && cur !== 's-mound') boardFrom = cur;
+  if (MN.isOpen()) MN.close(true);
+  show('s-board');
+  window.STD_BOARD.load();
+}
+/* a daily finished signed out is posted when you sign in: finishOuting posts it once */
+function postIfOwed() {
+  var A = window.STD_AUTH, st = {};
+  try { st = (A && A.state && A.state()) || {}; } catch (e) {}
+  if (!st.signedIn || !S.daily || S.daily.status !== 'over' || (S.dailyResult && S.dailyResult.account)) return null;
+  return API.finishOuting(S.daily.outingId).then(function (r) { S.dailyResult = r; if (S.mode === 'daily' && S.result) S.result = r; });
 }
 
 function practice() {
@@ -1132,10 +1239,18 @@ function boot() {
       $('b-profile').classList.toggle('in', !!st.signedIn);
       $('b-profile').setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
       if (MN.current() === 'sheet-auth') MN.renderAuth();
+      if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
     });
   } catch (e) {}
+  window.STD_BOARD.init({
+    day: S.day, before: postIfOwed,
+    played: function () { return !!S.dailyResult; },
+    onBack: function () { show(boardFrom); if (boardFrom === 's-home') { renderHomeState(); drawHero(); } },
+    onSignIn: function () { MN.show('auth'); },
+    onPlay: function () { show('s-home'); takeMound(); },
+  });
   MN.init({
-    hist: hist, today: S.day, prefs: prefs,
+    hist: hist, today: S.day, prefs: prefs, board: showBoard,
     onPref: function (k, v) {
       if (k === 'theme') { setTheme(v); return; }
       prefs[k] = v; savePrefs();
@@ -1150,12 +1265,14 @@ function boot() {
   $('r-home').addEventListener('click', function () { renderHomeState(); show('s-home'); drawHero(); });
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
   $('r-coach').addEventListener('click', openCoach);
+  $('r-board').addEventListener('click', showBoard);
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
 
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
     MN.init({ scn: scn });
+    window.STD_BOARD.init({ scn: scn });
     renderHome();
     /* learn today's state: startOuting returns the stored outing if there is
        one, and nothing is written until a pitch is thrown */

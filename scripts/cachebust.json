@@ -2937,8 +2937,8 @@
       "sha": "8d8bbd62d19c78da"
     },
     "menus.js": {
-      "v": "6",
-      "sha": "d28336b601d3c38c"
+      "v": "7",
+      "sha": "fb61f7a20a1e01eb"
     },
     "rng.js": {
       "v": "1",
@@ -2960,6 +2960,10 @@
       "v": "2",
       "sha": "7a13d168ba82631e"
     },
+    "card.js": {
+      "v": "1",
+      "sha": "cf3a8386db1e749a"
+    },
     "auth.js": {
       "v": "3",
       "sha": "843bad6d39ae5e64"
@@ -2969,16 +2973,20 @@
       "sha": "fb1771d6e9794bb3"
     },
     "mock-api.js": {
-      "v": "7",
-      "sha": "d08f4b29d104f948"
+      "v": "8",
+      "sha": "bc3aebdcff30fa25"
     },
     "coach.js": {
       "v": "2",
       "sha": "076fe0032a7f0ce0"
     },
+    "board.js": {
+      "v": "1",
+      "sha": "75aebc9cd981db13"
+    },
     "ui.js": {
-      "v": "15",
-      "sha": "66a9f89bbddb445a"
+      "v": "16",
+      "sha": "ae9410ec40fc5af6"
     },
     "3d/boot.js": {
       "v": "20",
