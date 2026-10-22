@@ -752,16 +752,31 @@ async function run(w, h, theme) {
      click that took 83 s at load 50), so a wait that starts after the click can miss a toast that
      came and went: CI failed "Timeout 3000ms" here on 2026-10-22. The watch starts before the tap,
      and reads what the toast said. */
+  /* It also notes which way share went (the share sheet on a touch screen, else the clipboard, else
+     a hidden textarea) and how that ended, so a miss says why instead of timing out. */
   await page.evaluate(() => {
     const t = document.getElementById('toast');
     window.STD_CHECK_TOAST = '';
+    window.STD_CHECK_SHARE = [];
+    const note = (s) => window.STD_CHECK_SHARE.push(s);
     new MutationObserver(() => { if (t.classList.contains('on') && !window.STD_CHECK_TOAST) window.STD_CHECK_TOAST = t.textContent; }).observe(t, { attributes: true, attributeFilter: ['class'] });
+    const cb = navigator.clipboard;
+    if (cb && cb.writeText) {
+      const w = cb.writeText.bind(cb);
+      cb.writeText = (s) => { note('clipboard called'); return w(s).then((v) => { note('clipboard resolved'); return v; }, (e) => { note('clipboard rejected: ' + String(e && e.message || e).slice(0, 80)); throw e; }); };
+    }
+    if (navigator.share) {
+      const s0 = navigator.share.bind(navigator);
+      navigator.share = (d) => { note('share sheet called'); return s0(d); };
+    }
   });
   await page.click('#r-share');
-  await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 });
-  const toastSaid = await page.evaluate(() => window.STD_CHECK_TOAST);
-  const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
-  ok(/^copied/.test(toastSaid) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014), '6 share copies the share text ("' + toastSaid + '")');
+  const toastSeen = await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 }).then(() => true, () => false);
+  const sh = await page.evaluate(() => ({ said: window.STD_CHECK_TOAST, path: window.STD_CHECK_SHARE.join(', ') || 'nothing called',
+    coarse: matchMedia('(pointer: coarse)').matches, share: !!navigator.share, focus: document.hasFocus() }));
+  const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
+  ok(toastSeen && /^copied/.test(sh.said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
+    '6 share copies the share text (toast "' + sh.said + '"' + (toastSeen ? '' : '; no toast in 10 s: ' + sh.path + ', pointer coarse ' + sh.coarse + ', share sheet ' + sh.share + ', focus ' + sh.focus + ', clipboard "' + clip.slice(0, 60) + '"') + ')');
   await shot('shared');
 
   /* 12, on the real engine */
