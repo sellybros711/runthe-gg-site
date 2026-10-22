@@ -63,7 +63,6 @@ function mulberry(a){ a = a >>> 0; return function(){ a = (a + 0x6D2B79F5) >>> 0
 function hash3(a, b, c){ var h = (2166136261 ^ (a | 0)) >>> 0; h = Math.imul(h ^ (b | 0), 16777619) >>> 0; h = Math.imul(h ^ ((c | 0) + 0x9e37), 16777619) >>> 0; h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995) >>> 0; h ^= h >>> 15; return (h >>> 0) / 4294967296; }
 function clamp(v, a, b){ return v < a ? a : v > b ? b : v; }
 function sstep(a, b, x){ var t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
-function dsstep(a, b, x){ var t = (x - a) / (b - a); if (t <= 0 || t >= 1) return 0; return 6 * t * (1 - t) / (b - a); }
 function inPoly(P, x, y){ var c = false; for (var i = 0, j = P.length - 1; i < P.length; j = i++){ var a = P[i], b = P[j];
   if (((a[1] > y) !== (b[1] > y)) && (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])) c = !c; } return c; }
 function segDist(px, py, ax, ay, bx, by){ var ex = bx - ax, ey = by - ay, l2 = ex * ex + ey * ey || 1e-9;
@@ -2005,7 +2004,6 @@ var SKIN = {
     if (Math.abs(v - 0.5) < 0.05) return '#5a3818'; return u < -0.15 ? '#a0703c' : '#8a5e30'; }
 };
 RTT_PUTT.SKIN = SKIN; RTT_PUTT.riverAt = riverAt; RTT_PUTT.bridgeDown = bridgeDown; RTT_PUTT.bridgeLift = bridgeLift; RTT_PUTT.inAny = inAny; RTT_PUTT.edgeDist = edgeDist;   // hole3d.js builds a bumper's 3D shape from the same skin the flat painter uses
-function moverCol(k, T){ return rgb(k === 'blade' ? T.spinner : T.wallLo); }
 
 function paintCourse(C){
   var mats = C.mats, nx = mats.nx, ny = mats.ny, b = C.bounds, cv = mkCanvas(nx, ny), ctx = cv.getContext('2d'), img = ctx.createImageData(nx, ny), D = img.data;
@@ -2964,8 +2962,6 @@ function revealed(TR, w, st){ if (!TR || TR.lab || w <= 0 || allAccess()) return
   var tp = st.tours[TR.id] || {}, K = TR.per || PER; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) if ((tp.best || {})[n] != null) return true; return false; }
 function reveal(TR, w){ if (revealed(TR, w)) return false; var st = pload(); st.rv = st.rv || []; st.rv.push(TR.id + ':' + w); psave(st); return true; }
 var CLOUD_NAME = 'In the clouds';
-// what a world is called where the player can read it: its name once revealed, and nothing about it before
-function wName(TR, w, st){ return revealed(TR, w, st) ? TR.worlds[w].name : CLOUD_NAME; }
 function wLabel(TR, w, st){ return TR.members ? (revealed(TR, w, st) ? TR.worlds[w].name : 'The next Members world') : 'World ' + (w + 1); }
 function worldOk(tid){ var TR = TOURS[tid]; if (!TR || TR.lab || tid === 'daily' || !trailOk()) return false;
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){} return !reduce; }
