@@ -2917,12 +2917,12 @@
   },
   "shut-the-door/index.html": {
     "contract.js": {
-      "v": "4",
-      "sha": "7b6a792536e385b5"
+      "v": "5",
+      "sha": "f039cc59b7609bb5"
     },
     "meter.js": {
-      "v": "1",
-      "sha": "7d060615adcfe0ad"
+      "v": "2",
+      "sha": "6c875b65fad06ab0"
     },
     "sprites.js": {
       "v": "2",
@@ -2949,16 +2949,16 @@
       "sha": "07b7ca2277fe8038"
     },
     "grade.js": {
-      "v": "4",
-      "sha": "03bbe8bdba813533"
+      "v": "5",
+      "sha": "e35cc6dff6b506a9"
     },
     "lesson.js": {
-      "v": "2",
-      "sha": "1fcb87c4a8b51460"
+      "v": "3",
+      "sha": "d6666cfadb7a64b6"
     },
     "engine.js": {
-      "v": "6",
-      "sha": "e10e157d22dbe9cc"
+      "v": "7",
+      "sha": "0efc8cc24f910270"
     },
     "share.js": {
       "v": "2",
@@ -2973,8 +2973,8 @@
       "sha": "843bad6d39ae5e64"
     },
     "api.js": {
-      "v": "4",
-      "sha": "97fcf1d51fa278b6"
+      "v": "5",
+      "sha": "23d764ac3d1ec612"
     },
     "mock-api.js": {
       "v": "9",
@@ -2989,8 +2989,8 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "19",
-      "sha": "6e865caecd7421b4"
+      "v": "20",
+      "sha": "13fff2732d7d49d1"
     },
     "3d/boot.js": {
       "v": "24",

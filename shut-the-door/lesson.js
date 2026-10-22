@@ -66,7 +66,8 @@
   /* ---- the numbers ------------------------------------------------------- */
 
   /* P(key | target): the pack's rows through the miss table. */
-  function keyMix(model, bi, type, target, bucket) {
+  function keyMix(model, bi, type, target, bucket, st, hctx) {
+    if (hctx) return Array.from(model.keyMixCtx(st, type, target, hctx));   // rules 2: what he had seen, and the arm
     const ker = model.kernel[type];
     const e = model.entry(bi, type);
     const out = new Array(G.KEYS.length).fill(0);
@@ -82,8 +83,8 @@
   /* The value after each key, from this state: hold% with the lead, the
      tie's goal once it is tied (grade.js THE GOAL; model.after scores a tie
      from a lead as 0, as the grade does). */
-  function keyValues(model, st) {
-    const here = model.solve(st).hold;
+  function keyValues(model, st, hctx) {
+    const here = model.bestCtx(st, hctx).hold;
     return G.KEYS.map((key, k) => {
       let v = 0;
       for (const [q, t] of model.transitions(st, G.CLASS[k])) v += q * (t.self ? here : model.after(st, t));
@@ -356,9 +357,10 @@
     const best = grade.bestCall;
     const batter = pack.scenario.batters[st.bi % model.N];
     const bucket = G.bucketOf(st.b, st.s);
-    const mc = keyMix(model, st.bi, call.type, call.cell, bucket);
-    const mb = keyMix(model, st.bi, best.type, best.cell, bucket);
-    const vals = keyValues(model, st);
+    const hctx = (o.ctxs && o.ctxs[n]) || null;
+    const mc = keyMix(model, st.bi, call.type, call.cell, bucket, st, hctx);
+    const mb = keyMix(model, st.bi, best.type, best.cell, bucket, st, hctx);
+    const vals = keyValues(model, st, hctx);
     const vc = mc.reduce((a, p, k) => a + p * vals[k], 0);
     const contrib = { walk: 0, strike: 0, damage: 0, outs: 0 };
     G.KEYS.forEach((key, k) => { contrib[GROUP[key]] += (mb[k] - mc[k]) * (vals[k] - vc); });

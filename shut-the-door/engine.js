@@ -56,8 +56,12 @@ const G = NODE ? require('./grade.js') : window.STD_GRADE;
 const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
 
 /* 3: a call may carry q, the release (contract.js RELEASE). Without q a call
-   plays exactly as it did under 2. */
-const ENGINE_VERSION = 3;
+   plays exactly as it did under 2.
+   4: rules 2 (grade.js RULES): the hitter adjusts, the arm tires, a repeat
+   loses some of the release, and the screen scouts coarser. A new outing
+   plays rules 2 and its kept calls carry r: 2. A call without r is rules 1,
+   so every outing stored before plays exactly as it did. */
+const ENGINE_VERSION = 4;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread. */
 const PACK_VERSION = 2;
@@ -86,6 +90,7 @@ function publicState(o) {
     outingId: o.outingId,
     scenarioId: o.pack.scenario.id,
     mode: o.mode,
+    rules: o.rules,
     seed: o.seed,
     status: o.status,
     pitchNo: o.log.length,
@@ -108,13 +113,15 @@ function createOuting(pack, opts) {
   const model = opts.model || new G.Model(pack);
   const seed = opts.seed >>> 0;
   const st = model.startState();
+  const rules = opts.rules == null ? G.RULES : opts.rules;
+  if (rules !== 1 && rules !== G.RULES) throw new Error('rules ' + rules + ', engine plays 1 or ' + G.RULES);
   const o = {
-    pack, model, seed, mode: opts.mode || 'practice',
+    pack, model, seed, rules, mode: opts.mode || 'practice',
     outingId: opts.outingId || `${sc.id}:${seed}`,
     rng: R.mulberry32(seed),
     st, status: 'live', outcome: null,
     score: { us: sc.situation.score.us, them: sc.situation.score.them },
-    log: [], grades: [], calls: [], before: [],
+    log: [], grades: [], calls: [], before: [], ctxs: [],
   };
   return o;
 }
@@ -125,16 +132,31 @@ function validCall(o, call) {
   }
   if (!o.model.types.includes(call.type)) throw new Error(`${call.type} is not in the arsenal`);
   K.releaseQ(call.q);   // throws unless q is absent or a number 0..1
+  if (call.r != null && call.r !== o.rules) throw new Error(`a rules ${call.r} call in a rules ${o.rules} outing`);
 }
 
 /* A call as the engine keeps it: {type, cell}, plus q (two places) when the
    release was timed. A call without q stays without it, so an old outing's
    stored calls come back exactly as they went in. */
-function keptCall(call) {
+function keptCall(call, rules) {
   const c = { type: call.type, cell: call.cell };
   const q = K.releaseQ(call.q);
   if (q != null) c.q = q;
+  if (rules >= 2) c.r = rules;
   return c;
+}
+
+/* The rules an outing's calls were played under: r on the calls, else 1. */
+function rulesOf(calls) {
+  const c = (calls || []).find(x => x && x.r != null);
+  return c ? c.r : 1;
+}
+
+/* The best call in the live state, the way the grade sees it (with the
+   history under rules 2). What a scripted best play throws. */
+function bestCall(o) {
+  const b = o.model.bestCtx(o.st, G.contextOf(o.log, o.st, o.rules, o.model.center, o.model.zone0));
+  return { type: b.type, cell: b.cell };
 }
 
 function throwPitch(o, call) {
@@ -143,16 +165,21 @@ function throwPitch(o, call) {
   const pack = o.pack, model = o.model, sc = pack.scenario;
   const st = o.st;
 
-  // 1. the grade, before anything is drawn
-  const grade = G.gradeCall(model, st, call);
+  // 1. the grade, before anything is drawn (rules 2: with what the hitter has seen, and the arm)
+  const ctx = G.contextOf(o.log, st, o.rules, model.center, model.zone0);
+  const grade = G.gradeCall(model, st, call, ctx);
   o.before.push({ bi: st.bi, b: st.b, s: st.s, outs: st.outs, bases: st.bases, margin: st.margin });
+  o.ctxs.push(ctx);
 
   // 2. the four draws, always all four
   const d = R.pitchDraws(o.rng);
   const arsenal = sc.pitcher.arsenal.find(a => a.type === call.type);
-  const kept = keptCall(call);
-  const spread = K.spreadOf(kept.q);
-  const sigma = arsenal.sigmaFt * spread;
+  const kept = keptCall(call, o.rules);
+  // rules 2: a repeat keeps less of a good release, and the arm (fatigue, runners on) scales his miss
+  const repeat = ctx && ctx.last === call.type ? ctx.streak : 0;
+  const spread = K.spreadOf(kept.q, repeat);
+  const arm = ctx ? ctx.fatigue : 1;
+  const sigma = arsenal.sigmaFt * spread * arm;
   const t = K.targetOf(call.cell);
   const actual = { x: t.x + d.missX * sigma, zn: t.zn + d.missZ * sigma / pack.kernelZoneFt };
   const actualCell = K.cellAt(actual.x, actual.zn);
@@ -161,8 +188,8 @@ function throwPitch(o, call) {
   //    that key's real pitch
   const bucket = G.bucketOf(st.b, st.s);
   const entry = model.entry(st.bi, call.type);
-  const row = entry.p[actualCell][bucket];
-  const u = d.library * 1000;
+  const row = ctx ? model.rowsCtx(st.bi, call.type, bucket, ctx)[actualCell] : entry.p[actualCell][bucket];
+  const u = d.library * (ctx ? row.reduce((a, x) => a + x, 0) : 1000);
   let k = -1, acc = 0;
   for (let i = 0; i < row.length; i++) { if (!row[i]) continue; acc += row[i]; k = i; if (u < acc) break; }
   const ref = entry.x[actualCell][k];
@@ -216,6 +243,7 @@ function throwPitch(o, call) {
     const label = t2.label || 'out';
     pr.inPlay = { bb: pitch[3], ev: pitch[4], la: pitch[5], spray: pitch[6], result: label, text: inPlayText(label, pitch[3], pitch[6], runs) };
   }
+  if (ctx) pr.arm = arm;     // rules 2: the arm's scale on his miss (fatigue and runners on)
   o.log.push(pr);
   o.grades.push(grade);
   o.calls.push(Object.assign({}, kept));
@@ -377,14 +405,15 @@ function finishOuting(o, extra) {
 /* Replay a list of calls from the start: how a reload resumes and how
    check-replays recomputes a stored result. */
 function replay(pack, seed, calls, opts) {
-  const o = createOuting(pack, { seed, mode: (opts && opts.mode) || 'practice', model: opts && opts.model });
+  const rules = opts && opts.rules != null ? opts.rules : rulesOf(calls);
+  const o = createOuting(pack, { seed, rules, mode: (opts && opts.mode) || 'practice', model: opts && opts.model });
   for (const c of calls) { if (o.status !== 'live') break; throwPitch(o, c); }
   return o;
 }
 
 const publicAPI = Object.freeze({
   ENGINE_VERSION, PACK_VERSION, SCORE_BASE, SCORE_PER_PT, RESULT_BONUS,
-  seedFor, createOuting, throwPitch, finishOuting, publicState, replay,
+  seedFor, createOuting, throwPitch, finishOuting, publicState, replay, rulesOf, bestCall,
   outingScore, percentileOf, styleVector, vsReal,
 });
 if (NODE) module.exports = publicAPI;

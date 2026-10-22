@@ -31,6 +31,14 @@
  * rows this prints the players' mean spread (the number meter.js is tuned
  * on) and notes, without flagging, a row whose every release is near perfect.
  *
+ * RULES 2 (2026-10-22). The hitter adjusts, the arm tires (CONTRACT.md 5b). A
+ * new outing's calls carry r: 2 and replay under rules 2. A row whose calls
+ * carry no r was played under rules 1 and replays under rules 1, exactly:
+ * the same pitches, grades, strip, outcome and score (the self-test holds the
+ * three pre-meter rows to every pitch). Its percentile is not compared: the
+ * packs' closer pool was replayed under rules 2, so a rules 1 row's
+ * percentile against today's pool can move.
+ *
  * Export the rows from the Supabase SQL editor, for example:
  *   select json_agg(o) from shutdoor_outings o where day >= current_date - 7;
  * and save the array as rows.json. Exit code 1 when a row is flagged.
@@ -78,7 +86,8 @@ export function replayRow(row) {
   if (res.pitches !== row.pitches) diffs.push(`pitches ${row.pitches} replays as ${res.pitches}`);
   if (res.score !== row.score) diffs.push(`score ${row.score} replays as ${res.score}`);
   if (JSON.stringify(res.strip) !== JSON.stringify(strip)) diffs.push('the strip differs');
-  if (!legacy && res.percentile != null && Math.abs(res.percentile - row.percentile) > 1) diffs.push(`percentile ${row.percentile} replays as ${res.percentile}`);
+  // the pool plays the current rules, so a rules 1 row's percentile is not compared (RULES 2 above)
+  if (!legacy && o.rules === G.RULES && res.percentile != null && Math.abs(res.percentile - row.percentile) > 1) diffs.push(`percentile ${row.percentile} replays as ${res.percentile}`);
   return { ok: !diffs.length, why: diffs.join('; '), res, legacy };
 }
 
@@ -117,6 +126,12 @@ function selfTest() {
     const b = replayRow(Object.assign({}, row, { score: row.score + 50 }));
     console.log((!b.ok ? 'ok   ' : 'FAIL ') + `${id}: a doctored score is flagged`);
     if (b.ok) fails++;
+    // rules 2: the row's calls carry r 2; the same calls without it replay under rules 1, a different outing
+    const noR = Object.assign({}, row, { calls: row.calls.map(c => { const x = Object.assign({}, c); delete x.r; return x; }) });
+    const c2 = replayRow(noR);
+    const okR = row.calls.every(c => c.r === G.RULES) && !c2.ok;
+    console.log((okR ? 'ok   ' : 'FAIL ') + `${id}: a rules 2 row carries r 2, and with r taken out it is flagged`);
+    if (!okR) fails++;
   }
   /* the tie rule: a held tie replays, and a row from before it that ended on
      its tying run still replays against its stored score */

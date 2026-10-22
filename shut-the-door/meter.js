@@ -105,7 +105,7 @@ function create(el) {
     el.classList.add('done');
     el.classList.toggle('best', q >= BEST_Q);
     el.classList.toggle('good', q >= GOOD_Q && q < BEST_Q);
-    var extra = live.opts.practice ? ' · miss ' + C.spreadOf(q).toFixed(2) + 'x' : '';
+    var extra = live.opts.practice ? ' · miss ' + C.spreadOf(q, live.opts.repeat).toFixed(2) + 'x' : '';
     word.textContent = w + extra;
     if (q >= BEST_Q && live.opts.onSnap) live.opts.onSnap(q);
     var res = live.resolve;

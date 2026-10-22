@@ -93,19 +93,25 @@ const OUTCOME_LABEL = Object.freeze({ door_shut: 'DOOR SHUT', tie_held: 'HELD TH
    stored before the meter replays unchanged. The meter off throws Q_AVG.
    q is kept to two places (STEPS), so a stored call replays exactly. The
    grade never reads q: it prices the call at his own command. */
-const RELEASE = Object.freeze({ Q_AVG: 0.5, SPREAD_BEST: 0.6, SPREAD_WORST: 1.5, STEPS: 100 });
+const RELEASE = Object.freeze({ Q_AVG: 0.5, SPREAD_BEST: 0.6, SPREAD_WORST: 1.5, STEPS: 100, REPEAT_KEEP: 0.5 });
 function releaseQ(q) {
   if (q == null) return null;
   if (typeof q !== 'number' || !isFinite(q) || q < 0 || q > 1) throw new Error('a release q is a number 0..1');
   return Math.round(q * RELEASE.STEPS) / RELEASE.STEPS;
 }
-function spreadOf(q) {
+/* repeat (rules 2, the owner's call 2026-10-22): how many pitches in a row
+   before this one were the same type. A good release on a repeat helps less:
+   the tightening below 1.0x keeps REPEAT_KEEP of itself per repeat (0.6x, then
+   0.8x, 0.9x at best). A game rule on the meter, not a measurement. A bad
+   release costs the same, and the meter off (no q) is 1.0x either way. */
+function spreadOf(q, repeat) {
   if (q == null) return 1;
   const r = releaseQ(q);
   if (r === RELEASE.Q_AVG) return 1;
-  return r < RELEASE.Q_AVG
-    ? 1 + (RELEASE.SPREAD_WORST - 1) * (RELEASE.Q_AVG - r) / RELEASE.Q_AVG
-    : 1 - (1 - RELEASE.SPREAD_BEST) * (r - RELEASE.Q_AVG) / (1 - RELEASE.Q_AVG);
+  if (r < RELEASE.Q_AVG) return 1 + (RELEASE.SPREAD_WORST - 1) * (RELEASE.Q_AVG - r) / RELEASE.Q_AVG;
+  let keep = 1;
+  for (let i = 0; i < (repeat | 0); i++) keep *= RELEASE.REPEAT_KEEP;   // a product, not Math.pow: the same bits on every device
+  return 1 - (1 - RELEASE.SPREAD_BEST) * keep * (r - RELEASE.Q_AVG) / (1 - RELEASE.Q_AVG);
 }
 
 /* Bases bitmask. */
