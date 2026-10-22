@@ -2989,14 +2989,14 @@
       "sha": "74fcb39dabc7e571"
     },
     "3d/boot.js": {
-      "v": "19",
-      "sha": "bb149c6f8fbe93e2"
+      "v": "20",
+      "sha": "6447a2e9026dba5c"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "27",
-      "sha": "4bb58894603fd0ac"
+      "v": "28",
+      "sha": "c357a2446c9b5c1c"
     }
   },
   "soccer/index.html": {
@@ -3111,8 +3111,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "23",
-      "sha": "372d333eda2beb30"
+      "v": "24",
+      "sha": "002f5951a5e5446f"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3177,6 +3177,10 @@
     "units.js": {
       "v": "1",
       "sha": "e771dbef0b67350e"
+    },
+    "inplay.js": {
+      "v": "1",
+      "sha": "c6a2265c0e10cd08"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3253,6 +3257,32 @@
       "sha": "b3c09012b97461ee"
     }
   },
+  "shut-the-door/3d/inplay.js": {
+    "inplay-plan.js": {
+      "v": "2",
+      "sha": "ddbe7fccd08368c1"
+    },
+    "fielders.js": {
+      "v": "1",
+      "sha": "cccc92e96f946769"
+    },
+    "ballpark.js": {
+      "v": "2",
+      "sha": "d248f650bea5c8e2"
+    },
+    "people.js": {
+      "v": "31",
+      "sha": "efbf2500c8c7f3d0"
+    },
+    "looks.js": {
+      "v": "2",
+      "sha": "9bbdbd7d0efa0afd"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    }
+  },
   "shut-the-door/3d/field.js": {
     "units.js": {
       "v": "1",
@@ -3281,6 +3311,30 @@
     "rig.js": {
       "v": "1",
       "sha": "34647a01ead672d6"
+    }
+  },
+  "shut-the-door/3d/fielders.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "34647a01ead672d6"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    }
+  },
+  "shut-the-door/3d/ballpark.js": {
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "load.js": {
+      "v": "7",
+      "sha": "a971ef0884621f51"
+    },
+    "inplay-plan.js": {
+      "v": "2",
+      "sha": "ddbe7fccd08368c1"
     }
   }
 }

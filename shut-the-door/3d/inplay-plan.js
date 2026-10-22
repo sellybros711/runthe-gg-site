@@ -1079,7 +1079,7 @@ function planEdit(ctx) {
     const realOf = (pcs) => pcs.reduce((acc, x) => acc + (x.s1 - x.s0), 0);
     let list = beats.slice();
     let pcs = build(list);
-    const BUDGET = 6.2;
+    const BUDGET = 5.4;
     while (realOf(pcs) > BUDGET && list.some((x) => x.pri < 9)) {
       const lo = Math.min(...list.map((x) => x.pri));
       if (lo >= 9) break;
