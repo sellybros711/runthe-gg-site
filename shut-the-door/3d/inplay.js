@@ -8,7 +8,9 @@
  *
  *   const ip = new InPlay({ scene, renderer, people, facts })   once the people are set up
  *   const run = ip.begin(pr, pitch, { hooks })                   a ball in play: the plan and its clock
- *     run.realDur, run.resolveReal (seconds after contact), run.sceneAt(r) (plan time at real r)
+ *     run.realDur, run.resolveReal (seconds after contact), run.sceneAt(r) (plan time at real r),
+ *     run.land { s, real, how, fair } (the ball's first landing, catch, pick up or home run)
+ *   ip.prime(camera)                                              one draw of it all at load (stage.js)
  *   ip.update(s, camera)                                          every frame after contact (s: plan time)
  *   ip.fieldAt(s)                                                 the runners for the scorebar diamond
  *   ip.end(camera)                                                back to the set (the next pitch)
@@ -19,7 +21,9 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, warp, realAt, BASE, wallDist } from './inplay-plan.js?v=2';
 import { Crew } from './fielders.js?v=1';
 import { buildBallpark } from './ballpark.js?v=2';
-import { kitFor } from './people.js?v=31';
+// (the same URL stage.js imports, so both share one copy of people.js: it read v=31, a second copy,
+// and a phone that had the old file cached ran last week's people.js for the kits)
+import { kitFor } from './people.js?v=33';
 import { look } from './looks.js?v=2';
 import { P, FT } from './units.js?v=1';
 
@@ -79,6 +83,25 @@ export class InPlay {
     this.trail.visible = on;
   }
 
+  /** One draw of everything the broadcast shows, at load (stage.js init, on the hidden home screen):
+      the park's 2048 px infield mask and its textures, thirteen bodies' bone textures and buffers go
+      up to the GPU now, and a phone's driver builds its pipelines now, not on the first frame of the
+      first ball in play. Nothing is culled for this one draw; what it drew is put back. */
+  prime(camera) {
+    const was = [];
+    const all = (o) => o.traverse((m) => { if (m.isMesh) { was.push([m, m.frustumCulled]); m.frustumCulled = false; } });
+    this.warm(true);
+    all(this.park);
+    for (const f of this.crew.figures) all(f.root);
+    all(this.trail);
+    const n0 = this.crew.blobs.count;
+    this.crew.blobs.count = 1;
+    this.renderer.render(this.scene, camera);
+    this.crew.blobs.count = n0;
+    for (const [m, c] of was) m.frustumCulled = c;
+    this.warm(false);
+  }
+
   /** A ball in play: plan it from the engine's PitchResult and the pitch as the scene threw it. */
   begin(pr, pitch, o = {}) {
     const b = this.facts.batter;
@@ -103,8 +126,13 @@ export class InPlay {
         if (close || (r.out && r.outAt != null && r.arrive - r.outAt < 0.5)) r.slide = r.arrive;
       }
     });
+    // the moment the ball first lands, is caught or fielded, or leaves the park (plan time), never
+    // after the play is decided: the game's play by play waits for it
+    const oc = plan.outcome, ft = oc.firstTouch || {};
+    const landS = Math.min(ft.landAt ?? ft.s ?? plan.resolveAt, plan.resolveAt);
     return {
       plan,
+      land: { s: landS, real: realAt(plan.edit, landS), how: oc.ball, fair: true },
       realDur: plan.realDur,
       resolveReal: realAt(plan.edit, plan.resolveAt),
       sceneAt: (r) => warp(plan.edit, r).s,

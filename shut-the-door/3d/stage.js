@@ -12,14 +12,49 @@
  *   st.setPreview({ type, cell })   the break preview: a ghost trail from the hand to the cell's
  *                                    centre, the pitch's real shape (preview.js); null hides it
  *   st.previewPoints()               that trail on the canvas in CSS px, for the grid's thin line
- *   st.play({ pr, quick, hooks })    one pitch, driven by the engine's PitchResult (play.js), to
- *                                    the call: hooks.sound(name, delayMs), hooks.call(), and
- *                                    hooks.field(runners) for the scorebar diamond as they run.
- *                                    A tap skips to the end. Resolves when it is over.
- *                                    A ball in play is followed into the field (inplay.js): the
- *                                    broadcast cut, the fielders, the runners, hooks.call when the
- *                                    plan says the play is decided, hooks.field from the 3D runners.
+ *   st.play({ pr, quick, hooks })    one pitch, driven by the engine's PitchResult (play.js). A ball
+ *                                    in play is followed into the field (inplay.js): the broadcast
+ *                                    cut, the fielders, the runners. See THE PLAY'S TIMELINE below.
+ *   st.playing                       the promise of the pitch on now (null between pitches)
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
+ *
+ * THE PLAY'S TIMELINE (what the game, ui.js, can wait on). Every hook is optional and fires at most
+ * once a pitch, in this order:
+ *   hooks.sound(name, delayMs)       'whoosh' at the throw, 'pop' | 'crack' | 'thud' at the plate,
+ *                                    'pop' on every catch in the field
+ *   hooks.land({ fair, how, t })     the ball's first moment after contact, on screen:
+ *                                      a ball in play (fair: true): when it lands, is caught or
+ *                                      fielded, or clears the wall. how: 'fell' | 'caught' |
+ *                                      'dropped' | 'fielded' | 'through' | 'over'. Never after
+ *                                      hooks.call (a ground ball that gets through fires both at
+ *                                      the decision at the latest)
+ *                                      a foul (fair: false, how: 'foul'): when it is called foul
+ *                                      no other pitch fires it
+ *   hooks.field(runners)             the scorebar diamond's runners, every frame from contact on
+ *   hooks.call()                     the play is decided: a ball in play when the plan says so
+ *                                    (the catch, the out, the ball landing safe, the home run over
+ *                                    the wall), any other pitch just after it reaches the plate.
+ *                                    The play by play line goes up here
+ *   hooks.done(summary)              the pitch is over, the in-play broadcast included (its last
+ *                                    frame is still on screen; the next setBatter, setTarget or
+ *                                    draw goes back to the pitcher's view)
+ *   the promise resolves             right after hooks.done, with the same summary (always: a
+ *                                    frame that throws is said on the console, which the browser
+ *                                    check fails on, and ends the pitch, so the game never hangs):
+ *                                    { n, result, inPlay, land, skipped, seconds }
+ *                                    inPlay: the broadcast ran; land: what hooks.land got (or null);
+ *                                    skipped: a tap ended it early; seconds: how long it played
+ * t in hooks.land is seconds since the throw on the play's clock. A tap anywhere but the header or
+ * a sheet skips to the end: whatever has not fired yet fires then, in order, before done. So the
+ * result screen waits for the promise (it already does: ui.js fire awaits play), and the play by
+ * play for a ball in play waits for hooks.call (or hooks.land, for the moment it lands).
+ *
+ * THE CLOCK. A frame moves the play on by the time since the last one, at most MAX_STEP. On a phone
+ * the first frame of the broadcast can stall (its park and thirteen bodies going up to the GPU, and
+ * the driver building their pipelines): on the wall clock a stall jumped the play forward by as long as
+ * it lasted, and one as long as the play (a few seconds) skipped it whole: the camera never left the
+ * pitcher's view. Now a stall pauses the play, and init primes the
+ * broadcast at load (inplay.js prime) so the stall is not there either.
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=7';
@@ -29,7 +64,7 @@ import { Pitch } from './pitch.js?v=7';
 import { fromResult, motion } from './play.js?v=7';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=1';
+import { InPlay } from './inplay.js?v=2';
 import { Ghost } from './preview.js?v=1';
 
 const C = () => window.STD_CONTRACT;
@@ -37,6 +72,8 @@ const C = () => window.STD_CONTRACT;
 const CELL_FT = 0.553, CELL_PX = 38, MARGIN = 0.03, ROOM = 1.04;
 const AN = () => window.STD_ANIM;
 const TEST = () => window.STD_STAGE_TEST;
+// the most a frame moves the play on, in real seconds (see THE CLOCK above)
+const MAX_STEP = 0.1;
 
 /** The scene's facts from the game's scenario (the same shape as the lab's pack facts). */
 function factsFrom(scn, extra) {
@@ -83,6 +120,9 @@ class Stage {
     mk('people');
     if (this.inplay) this.inplay.warm(true);
     await this.renderer.compileAsync(this.scene, this.camera);
+    // and one draw of the broadcast, so its first frame in a game uploads nothing (the set is drawn
+    // over it just below, in the same task: it is never on screen)
+    if (this.inplay) this.inplay.prime(this.camera);
     if (this.inplay) this.inplay.warm(false);
     // one draw now compiles what compileAsync leaves (the shadow pass); on the home screen the canvas
     // is hidden, so nobody sees it
@@ -370,8 +410,15 @@ class Stage {
     return { tEnd: resultAt + 2.0, resultAt };
   }
 
-  /** One pitch to the call. */
-  async play(opts) {
+  /** One pitch, to the end of its play (THE PLAY'S TIMELINE, in the header). */
+  play(opts) {
+    const p = this.playing = this.playOnce(opts);
+    const clear = () => { if (this.playing === p) this.playing = null; };
+    p.then(clear, clear);
+    return p;
+  }
+
+  async playOnce(opts) {
     await this.ready;
     const pr = opts.pr, hooks = opts.hooks || {};
     // the preview is the aim, not the pitch: gone before the ball leaves the hand
@@ -385,7 +432,12 @@ class Stage {
     const inPlay = pr.result === 'in_play';
     // a ball in play: the broadcast of the plan (inplay.js) runs from contact, on its own clock
     // (slow motion and jump cuts), real seconds after contact to plan seconds through run.sceneAt
-    const run = inPlay && this.inplay && pt.after ? this.inplay.begin(pr, pt, { hooks }) : null;
+    // (a broadcast that cannot be planned is said on the console, which the browser check fails on,
+    // and the pitch plays on in the pitcher's view: the game never hangs on it)
+    let run = null;
+    if (inPlay && this.inplay && pt.after) {
+      try { run = this.inplay.begin(pr, pt, { hooks }); } catch (e) { console.error('the ball in play could not be staged', e); this.inplay.active = null; }
+    }
     // (knocked down by a pitch, he stays down for a beat)
     const tail = run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
     const tEnd = resultAt + tail;
@@ -400,33 +452,65 @@ class Stage {
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
       zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
+    // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, its call
+    const landAt = run ? resultAt + run.land.real : pr.result === 'foul' ? resultAt : null;
+    let landed = null;
+    const land = (t) => {
+      if (landed || landAt == null) return;
+      landed = run ? { fair: true, how: run.land.how, t: Math.round(Math.min(t, landAt) * 1000) / 1000 } : { fair: false, how: 'foul', t: Math.round(Math.min(t, landAt) * 1000) / 1000 };
+      if (hooks.land) hooks.land(landed);
+    };
     return new Promise((done) => {
-      let start = null, lastT = -1, raf = 0, finished = false, popped = false, called = false;
-      const finish = () => {
+      let prev = null, clock = 0, lastT = -1, raf = 0, finished = false, popped = false, called = false;
+      // the end of the pitch: whatever has not fired fires, in order, and the promise always resolves
+      // (broken: a frame threw, so the scene is left as it is)
+      const finish = (broken) => {
         if (finished) return;
         finished = true;
         cancelAnimationFrame(raf);
         document.removeEventListener('pointerdown', skip, true);
-        if (!called) { called = true; if (hooks.call) hooks.call(); }
-        if (track && track.running && hooks.field) hooks.field(track.at(tEnd * 1000).runners);
-        trace.skipped = lastT < tEnd;
-        const te = sceneT(tEnd);
-        if (run) this.inplay.skipTo(te - resultAt);
-        this.pose(te);
-        if (run) this.inplay.update(te - resultAt, this.camera);
-        this.render();
-        keep(te);
+        try {
+          land(Math.max(lastT, 0));
+          if (!called) { called = true; if (hooks.call) hooks.call(); }
+          if (track && track.running && hooks.field) hooks.field(track.at(tEnd * 1000).runners);
+          trace.skipped = lastT < tEnd;
+          if (!broken) {
+            const te = sceneT(tEnd);
+            if (run) this.inplay.skipTo(te - resultAt);
+            this.pose(te);
+            if (run) this.inplay.update(te - resultAt, this.camera);
+            this.render();
+            keep(te);
+          }
+        } catch (e) { console.error('the end of the pitch failed', e); trace.error = String(e && e.message || e); }
         this.dirty = true;
-        done();
+        const summary = { n: pr.n, result: pr.result, inPlay: !!run, land: landed, skipped: trace.skipped, seconds: Math.round(Math.max(0, Math.min(lastT, tEnd)) / speed * 1000) / 1000 };
+        trace.summary = summary;
+        try { if (hooks.done) hooks.done(summary); } catch (e) { console.error('hooks.done failed', e); }
+        done(summary);
       };
-      const skip = (e) => { if (e && e.target && e.target.closest && e.target.closest('header, .sheet')) return; finish(); };
+      const skip = (e) => { if (e && e.target && e.target.closest && e.target.closest('header, .sheet')) return; finish(false); };
       const tick = (now) => {
         if (finished) return;
-        if (start == null) start = now;
+        try { frame(now); } catch (e) {
+          // said, never swallowed (the browser check fails on a console error), and the pitch ends so
+          // the game goes on
+          console.error('the pitch failed mid play', e);
+          trace.error = String(e && e.message || e);
+          finish(true);
+        }
+      };
+      const frame = (now) => {
+        // the play's clock: the time since the last frame, never more than MAX_STEP (a stall pauses the
+        // play; on the wall clock it jumped it forward, a ball in play to its end)
+        if (prev == null) prev = now;
+        clock += Math.min(MAX_STEP, Math.max(0, (now - prev) / 1000));
+        prev = now;
         // the browser check can step the clock (window.STD_STAGE_TEST = { step, renderEvery }): a software
         // GL draws a frame in a second, so a real clock would show it two frames of a pitch
-        const t = TEST() ? trace.frames * TEST().step * speed : (now - start) / 1000 * speed;
+        const t = TEST() ? trace.frames * TEST().step * speed : clock * speed;
         lastT = t;
+        if (landAt != null && t >= landAt) land(t);
         if (!popped && t >= resultAt) {
           popped = true;
           const caught = ['ball', 'called_strike', 'swinging_strike', 'foul_tip'].includes(pr.result);
@@ -440,7 +524,7 @@ class Stage {
         if (!TEST() || trace.frames % (TEST().renderEvery || 1) === 0) this.render();
         trace.frames++;
         keep(ts);
-        if (t >= tEnd) { finish(); return; }
+        if (t >= tEnd) { finish(false); return; }
         raf = requestAnimationFrame(tick);
       };
       document.addEventListener('pointerdown', skip, true);
