@@ -444,6 +444,105 @@ function fatigueOf(pitchNo, bases) {
   return Math.round(f * (bases ? R2.PRESSURE.on : R2.PRESSURE.empty) * 10000) / 10000;
 }
 
+/* ---- effort (the owner's call, 2026-10-22; CONTRACT.md 5c) -----------------
+ *
+ * The meter's first stop: how hard he throws it, e 0..1 on the call. It does
+ * three things, and nothing else:
+ *   1. THE PITCH (measured). A pitch at effort e is one from further up (or
+ *      down) his own velocity for that type: e 0 his slowest fifth, 0.5 the
+ *      middle fifth, 1 his fastest fifth. Its speed and break are his own
+ *      (contract.js stuffAt). What a pitch from each fifth does is measured
+ *      on every 2024 regular season pitch (pipeline/effort.py, effort.json):
+ *      key by key, observed over what that family does in the same cell, exact
+ *      count and platoon, and every pitcher puts a fifth of his pitches in each
+ *      bin, so who is pitching cancels. Each bin is shrunk toward 1 by its own
+ *      standard error, then set so the middle fifth is exactly 1. The row the
+ *      engine draws from is multiplied key by key (EFFORT.BINS, interpolated
+ *      between fifths). A measured association, not a controlled experiment:
+ *      a pitcher throws his hardest when he chooses to, and the count and the
+ *      spot are held, but his intent is not.
+ *   2. THE WINDOW (a game rule, meter.js EFFORT_WINDOW): more effort makes the
+ *      accuracy stop's window smaller, less makes it bigger. The real data
+ *      shows no such cost: a pitcher's location spread is within 2% of his
+ *      middle fifth at his fastest, and his slowest fifth is the widest (2 to
+ *      6%, effort.json). A real pitcher's misses at max effort are already in
+ *      his numbers. It is the meter's trade, as in MLB The Show.
+ *   3. THE ARM (a model): a pitch at e counts 1 + LOAD x (2e - 1) pitches on
+ *      the arm for every pitch after it (fatigueOf), so e 1 tires like one and
+ *      a half pitches and e 0 like half of one. Real relievers' velocity holds
+ *      flat across an outing (effort.json), because tired arms are taken out,
+ *      so this strength cannot be measured; it is tuned with the strategy runs.
+ * e 0.5 (or no e) changes none of the three: the same row, window and arm.
+ * THE GRADE NEVER READS THIS PITCH'S e: like q it is how he throws it, and it
+ * cannot be priced without assuming how well the player times (the window)
+ * or a horizon past one pitch (the arm). The arm of earlier efforts is part
+ * of the history the grade prices, as fatigue always was.
+ */
+const EFFORT = Object.freeze({
+  /* observed / expected for each fifth of his velocity, slowest first, per family. Measured. */
+  BINS: Object.freeze({
+    hard: Object.freeze({
+      ball: [1.012, 1.0, 1.0, 1.0, 1.0],
+      called: [1.008, 1.001, 1.0, 0.999, 0.984],
+      whiff: [0.849, 0.943, 1.0, 1.058, 1.099],
+      foul: [0.952, 1.0, 1.0, 1.001, 1.033],
+      hit: [1.058, 1.0, 1.0, 1.0, 0.952],
+      hr: [1.187, 1.041, 1.0, 0.915, 0.803],
+      out: [1.089, 1.036, 1.0, 0.963, 0.92],
+    }),
+    breaking: Object.freeze({
+      ball: [1.012, 1.003, 1.0, 1.003, 1.003],
+      called: [1.063, 1.029, 1.0, 0.967, 0.903],
+      whiff: [0.898, 0.946, 1.0, 1.051, 1.029],
+      foul: [0.968, 1.0, 1.0, 1.0, 1.027],
+      hit: [1.0, 1.0, 1.0, 1.0, 1.0],
+      hr: [1.008, 0.985, 1.0, 1.008, 1.008],
+      out: [0.995, 1.014, 1.0, 0.985, 0.975],
+    }),
+    offspeed: Object.freeze({
+      ball: [1.004, 1.001, 1.0, 1.004, 1.042],
+      called: [1.047, 1.0, 1.0, 1.0, 0.923],
+      whiff: [0.982, 1.036, 1.0, 0.982, 0.934],
+      foul: [0.982, 0.997, 1.0, 0.997, 0.996],
+      hit: [0.989, 1.0, 1.0, 1.0, 1.042],
+      hr: [1.0, 1.0, 1.0, 1.0, 1.0],
+      out: [1.022, 0.993, 1.0, 1.003, 1.003],
+    }),
+  }),
+  /* the key groups the bins are measured in: ball, called strike, whiff, foul, hits but the home run, home run, outs in play */
+  GROUP: Object.freeze({ ball: [0], called: [1], whiff: [2], foul: [3], hit: [5, 6, 7], hr: [8], out: [10, 11, 12, 13] }),
+  LOAD: 0.5,
+});
+
+/* The 14 multipliers (KEYS order) of a pitch of this type at effort e. All 1 at e 0.5. */
+function effortMult(type, e) {
+  const m = KEYS.map(() => 1);
+  const ee = K.effortE(e);
+  if (ee == null || ee === K.EFFORT.MID) return m;
+  const bins = EFFORT.BINS[K.FAMILY_OF[type]] || {};
+  const pos = ee * 4, i = Math.min(3, Math.floor(pos)), f = pos - i;
+  for (const g of Object.keys(EFFORT.GROUP)) {
+    const b = bins[g];
+    if (!b) continue;
+    const v = b[i] * (1 - f) + b[i + 1] * f;
+    for (const k of EFFORT.GROUP[g]) m[k] = v;
+  }
+  return m;
+}
+/* A row (per mille, one actual cell) at effort e: key by key. Not renormalised:
+   the engine draws against the row's own sum. */
+function effortRow(row, type, e) {
+  const ee = K.effortE(e);
+  if (ee == null || ee === K.EFFORT.MID) return row;
+  const m = effortMult(type, ee);
+  return row.map((x, i) => x * m[i]);
+}
+/* What one pitch at effort e puts on the arm, in pitches. */
+function loadOf(e) {
+  const ee = K.effortE(e);
+  return ee == null ? 1 : 1 + EFFORT.LOAD * (2 * ee - 1);
+}
+
 /* The history one call is priced against, from the outing's log: the pitches
    of this plate appearance (type, the cell each actually crossed), the
    pitches of each type thrown to earlier batters, and the arm. */
@@ -458,9 +557,14 @@ function contextOf(log, st, rules, center, zone0) {
   const last = log.length ? log[log.length - 1].call.type : null;
   for (let j = log.length - 1; j >= 0 && log[j].call.type === last; j--) streak++;
   const pitchNo = log.length + 1;
+  /* the arm's count: each earlier pitch at its effort's load (no e: 1, so a
+     log without effort gives exactly pitchNo), then this pitch as 1 */
+  let arm = 1;
+  for (const p of log) arm += loadOf(p.call.e);
+  arm = Math.round(arm * 100) / 100;
   let zone = 0;
   for (const p of log) if (K.inZone(p.call.cell)) zone++;     // his plan: where he aimed, so a sharp release never reads as pounding the zone
-  return { rules, bi: st.bi, pa, before, last, streak, zone, seen: log.length, pitchNo, fatigue: fatigueOf(pitchNo, st.bases),
+  return { rules, bi: st.bi, pa, before, last, streak, zone, seen: log.length, pitchNo, arm, fatigue: fatigueOf(arm, st.bases),
     center: center == null ? DEFAULT_CENTER : center, z0: zone0 == null ? R2.ZONE.z0 : zone0 };
 }
 
@@ -715,7 +819,7 @@ function gradeCall(model, st, call, ctx) {
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, forceWalk, stateIndex, goalOf, Model, gradeCall,
   placeOf, bucketOf, keeps, RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
-  scoutView, SCOUT_STEP,
+  scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, loadOf,
 });
 if (NODE) module.exports = publicAPI;
 if (typeof window !== 'undefined') window.STD_GRADE = publicAPI;

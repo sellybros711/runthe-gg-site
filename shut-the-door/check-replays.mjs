@@ -39,6 +39,12 @@
  * packs' closer pool was replayed under rules 2, so a rules 1 row's
  * percentile against today's pool can move.
  *
+ * EFFORT (2026-10-22, CONTRACT.md 5c). A rules 2 call may carry e beside q.
+ * It replays like the rest of the call. A call without e is his ordinary
+ * pitch, so every rules 2 row from before effort replays exactly (the
+ * self-test holds three such rows, made by main's engine before effort, in
+ * fixtures/replays-rules2-pre-effort.json, to every pitch, speed and arm).
+ *
  * Export the rows from the Supabase SQL editor, for example:
  *   select json_agg(o) from shutdoor_outings o where day >= current_date - 7;
  * and save the array as rows.json. Exit code 1 when a row is flagged.
@@ -194,6 +200,42 @@ function selfTest() {
       say(replayRow(pair.row).ok, `${id}: a row with q replays exactly (${pair.row.pitches} pitches, ${releaseOf(pair.row.calls).timed} timed)`);
       say(!replayRow(pair.stripped).ok, `${id}: the same row with its q taken out is flagged`);
     }
+  }
+  /* effort: rules 2 rows made before effort (no e, by main's engine at 73e228d) replay exactly,
+     pitch by pitch, and a row with e replays exactly too */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules2-pre-effort.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.velo)) === JSON.stringify(row.velo)
+        && JSON.stringify(o.log.map(x => x.arm)) === JSON.stringify(row.arm)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result);
+      say(a.ok && same && o.rules === 2 && row.calls.every(c => !('e' in c)), `${row.scenario_id}: a rules 2 row from before effort (no e) replays exactly, every pitch, speed and arm (${row.pitches} pitches)` + (a.ok ? '' : ': ' + a.why));
+    }
+    const id = 'std-2025-ws7-yamamoto', p = packOf(id);
+    let pair = null;
+    for (let d = 1; d <= 60 && !pair; d++) {
+      const day = `2026-12-${String(d % 28 + 1).padStart(2, '0')}`;
+      const rng = R.mulberry32(R.hashSeed(id + '|effort|' + d));
+      const o = E.createOuting(p.pack, { seed: E.seedFor('daily', day), mode: 'daily', model: p.model });
+      while (o.status === 'live') E.throwPitch(o, { type: p.model.types[Math.floor(rng() * p.model.types.length)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100, e: Math.round(rng() * 4) / 4 });
+      const res = E.finishOuting(o);
+      const row = { day, scenario_id: id, calls: JSON.parse(JSON.stringify(o.calls)), outcome: res.outcome, pitches: res.pitches, score: res.score, percentile: res.percentile, strip: res.strip };
+      const stripped = Object.assign({}, row, { calls: row.calls.map(c => { const x = Object.assign({}, c); delete x.e; return x; }) });
+      if (!replayRow(stripped).ok) pair = { row, stripped };
+    }
+    say(!!pair, `${id}: an outing whose effort changed what happened exists`);
+    if (pair) {
+      say(replayRow(pair.row).ok && pair.row.calls.every(c => typeof c.e === 'number'), `${id}: a row with e replays exactly (${pair.row.pitches} pitches)`);
+      say(!replayRow(pair.stripped).ok, `${id}: the same row with its e taken out is flagged`);
+    }
+    const noQ = { day: '2026-12-01', scenario_id: id, calls: [{ type: p.model.types[0], cell: 12, e: 1, r: 2 }], outcome: 'door_shut', pitches: 1, score: 0, percentile: 0, strip: ['green'] };
+    let refused = false;
+    try { refused = !replayRow(noQ).ok; } catch (e) { refused = true; }
+    say(refused, `${id}: a row with an effort and no release is refused`);
   }
   process.exit(fails ? 1 : 0);
 }

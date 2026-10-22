@@ -98,6 +98,9 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {Shape}  shape
  * @property {number} command       20..80 scouting scale; drives the miss size
  * @property {number} sigmaFt       miss size in feet (one standard deviation, each axis), from command
+ * @property {{src: 'his'|'league', n: number, velo: number[], pfxX: number[], pfxZ: number[]}} [stuff]
+ *                                  his own pitches of this type in each fifth of his velocity,
+ *                                  slowest first: mean mph and break (section 5c, effort)
  */
 
 /**
@@ -170,10 +173,12 @@ Statcast codes. The shape tells the UI how to draw the flight.
 
 ```js
 /**
- * @typedef {Object} PitchCall        two taps and a release, nothing else
+ * @typedef {Object} PitchCall        a type, an aim, then the meter's two stops, nothing else
  * @property {PitchType} type         must be in the pitcher's arsenal
  * @property {Cell} cell
  * @property {number} [q]             the release, 0..1, kept to two places. Absent = 1.0x
+ * @property {number} [e]             the effort, 0..1, kept to two places (section 5c). Only with q,
+ *                                    only under rules 2. Absent = his ordinary pitch
  * @property {number} [r]             the rules it was played under, set by the engine on the kept
  *                                    call: 2 since 2026-10-22. Absent = rules 1 (section 5b)
  */
@@ -266,6 +271,52 @@ are used as measured. The strengths of the adjustment, the zone effect and fatig
 are a labelled model, tuned so a strong player who reads the screen and mixes his pitches holds
 about what the closer pool holds (README).
 
+## 5c. Effort: the meter's first stop (the owner's call, 2026-10-22)
+
+A pitch is now a pitch type, an aim (a cell), then two stops on the meter: **effort** (`e`), then
+**accuracy** (`q`, the release above). The effort stop says how hard he throws it: `e = 0` his
+softest, `0.5` his ordinary pitch, `1` his hardest. A call carries `e` beside `q`, kept to two places
+(`contract.js effortE`). An `e` rides only with a `q` (the meter off has neither) and only under
+rules 2. A call without `e` is his ordinary pitch, so every rules 1 and rules 2 outing stored before
+replays exactly. Rules stay 2: `e` 0.5 and no `e` play the same pitch (only the speed shown differs).
+
+1. **The pitch (measured).** More effort throws a pitch from further up his own velocity for that
+   type: `e = 0` his slowest fifth, `0.5` his middle fifth, `1` his fastest fifth, straight between.
+   The speed and break shown are the mean of his own real pitches in that fifth, from the same
+   Savant search his arsenal came from (`arsenal[i].stuff`, `pipeline/effort.py`,
+   `contract.js stuffAt`). A pitch with fewer than 40 tracked pitches of his own, or a pitcher with
+   none (Eckersley 1988), shows his average plus the league's typical spread (`src: 'league'`).
+   What a pitch from each fifth does is measured on every 2024 regular season pitch (643,123): key
+   by key, observed over what the same family does in the same cell, exact count and platoon. Every
+   pitcher puts a fifth of his pitches in each bin, so who is pitching cancels. The engine multiplies
+   the drawn row by those ratios (`grade.js EFFORT.BINS`). A harder fastball misses more bats and is
+   hit less hard (fastest fifth: whiffs x1.10, home runs x0.80). A harder breaking ball whiffs a
+   little more, is taken for a strike less, and breaks less. A harder changeup or splitter whiffs
+   less: velocity separation is the pitch. Real, so effort is a choice per pitch, not a dial to max.
+2. **The window (a game rule).** The accuracy stop's window is scaled by `meter.js windowScale(e)`:
+   x1.25 at `e = 0`, x1 at `0.5`, x0.6 at `1`, straight between. Both bands shrink with it. The real
+   data shows no such cost (a pitcher's spread at his fastest is within 2% of his middle), so this is
+   the meter's trade, labelled as a rule.
+3. **The arm (a model).** A pitch at `e` counts `1 + 0.5 x (2e - 1)` pitches on the arm for every
+   pitch after it (`grade.js loadOf`, `fatigueOf`): 1.5 at max, 0.5 at the softest, 1 without `e`.
+   Real relievers' velocity is flat across an outing (tired arms are taken out), so the strength is
+   tuned, not measured.
+
+**The grade never reads this pitch's `e`.** Like `q`, it is how he throws the call, not the call:
+pricing it would mean assuming how well the player times the smaller window and looking past one
+pitch for the arm. The grade prices the call at his ordinary stuff and his own command. The arm that
+earlier efforts left is part of the history the grade prices, as fatigue always was. The score has
+no effort term; effort reaches it through what happens, as the release does.
+
+**Determinism.** Still four draws a pitch in the same order. `e` changes the weights of the row the
+library draw reads and the arm on later pitches, never which draws are taken.
+
+**What the UI reads** (`meter.js`): `windowScale(e)`, `windowMs(command, e)`, `qOf(err, command, e)`
+and `bandsFor(command, e)` for the accuracy bar at that effort; `veloFor(arsenalPitch, e)` and
+`stuffFor(arsenalPitch, e)` for the speed and break to show; `effortAt(t)` if the effort needle
+sweeps (`EFFORT_SWEEP_MS`); `run({command, effort, ...})` draws the accuracy bar at that effort. A
+`PitchResult` with `e` carries `stuff: {velo, pfxX, pfxZ, src}`, and its `velo` is that speed.
+
 ## 6. Pitch result
 
 ```js
@@ -280,7 +331,9 @@ about what the closer pool holds (README).
  * @property {number} spread          the release's scale on his miss (1 without q; section 5b on a repeat)
  * @property {number} [arm]           rules 2: the arm's scale on his miss (fatigue, runners on)
  * @property {Cell} actualCell
- * @property {number} velo            the drawn real pitch's mph
+ * @property {number} velo            the drawn real pitch's mph; with e, his speed at that effort
+ * @property {{velo: number, pfxX: number, pfxZ: number, src: 'his'|'league'|'average'}} [stuff]
+ *                                    with e only: the pitch at that effort (section 5c)
  * @property {'take'|'swing'} batter
  * @property {PitchCallResult} result
  * @property {{bb: 'ground'|'line'|'fly'|'popup', ev: number, la: number, spray: number,
@@ -431,7 +484,8 @@ finishOuting(outingId)
 Deterministic: the same scenario, seed and calls give the same results on any device. One seeded
 stream (`mulberry32`), drawn in a fixed order per pitch: miss x, miss z, the library draw, the
 runner draw. No `Math.random`, no wall clock. A call's `q` (section 5) scales the two miss draws
-and never adds or moves a draw.
+and never adds or moves a draw. A call's `e` (section 5c) weights the row the library draw reads and
+loads the arm, and never adds or moves a draw.
 
 How it runs:
 

@@ -114,6 +114,41 @@ function spreadOf(q, repeat) {
   return 1 - (1 - RELEASE.SPREAD_BEST) * keep * (r - RELEASE.Q_AVG) / (1 - RELEASE.Q_AVG);
 }
 
+/* Effort (the owner's call, 2026-10-22; CONTRACT.md 5c). A call may carry e,
+   the meter's first stop, 0..1, kept to two places. 0 is his softest, 1 his
+   hardest, MID (0.5) his ordinary pitch: a call with e 0.5 plays exactly like
+   a call without e except for the speed it shows. e only rides with a timed
+   release (q), since its cost is a smaller window on the meter's second stop.
+   What e does lives in grade.js EFFORT (the pitch and the arm) and meter.js
+   (the window). The grade never reads this pitch's e: like q, it prices the
+   call at his ordinary stuff. */
+const EFFORT = Object.freeze({ MID: 0.5, STEPS: 100 });
+function effortE(e) {
+  if (e == null) return null;
+  if (typeof e !== 'number' || !isFinite(e) || e < 0 || e > 1) throw new Error('an effort e is a number 0..1');
+  return Math.round(e * EFFORT.STEPS) / EFFORT.STEPS;
+}
+
+/* What a pitch looks like at effort e: his own real pitches of that type,
+   from the pack (arsenal[i].stuff, pipeline/effort.py): the mean speed (mph)
+   and break (pfx inches, catcher's view) of each fifth of his velocity,
+   slowest first. e walks those five points (0 the slowest fifth, 0.5 the
+   middle, 1 the fastest), straight between them. Without e, or for a pack
+   with no stuff, it is his arsenal average. src: 'his' (his own pitches),
+   'league' (too few of his own: his average plus the league's spread), or
+   'average' (the arsenal's own numbers). One place, so the speed the UI
+   shows is the speed the engine reports. */
+function stuffAt(a, e) {
+  const s = a && a.stuff;
+  const ee = effortE(e);
+  if (!s || ee == null || !Array.isArray(s.velo) || s.velo.length !== 5) {
+    return { velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, src: 'average' };
+  }
+  const pos = ee * 4, i = Math.min(3, Math.floor(pos)), f = pos - i;
+  const at = arr => Math.round((arr[i] * (1 - f) + arr[i + 1] * f) * 10) / 10;
+  return { velo: at(s.velo), pfxX: at(s.pfxX), pfxZ: at(s.pfxZ), src: s.src };
+}
+
 /* Bases bitmask. */
 const BASE = Object.freeze({ FIRST: 1, SECOND: 2, THIRD: 4 });
 
@@ -150,7 +185,7 @@ const SHARE_URL = 'runthe.gg/shut-the-door';
 const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
-  OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, BASE, countBucket,
+  OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

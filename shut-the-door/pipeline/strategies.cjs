@@ -2,7 +2,17 @@
  *
  *   node shut-the-door/pipeline/strategies.cjs [game dir] [runs] [rules 1|2] [strategies] > rows.json
  *   env: PACKS=yamamoto,... only those packs; RELS=none,ordinary,perfect the releases;
- *        FUZZ=0 the screen strategies read the exact profile instead of the scouting view
+ *        FUZZ=0 the screen strategies read the exact profile instead of the scouting view;
+ *        EFFORTS=none,min,mid,max,smart the effort policies (CONTRACT.md 5c; default none):
+ *          none   no e (the meter's one stop, as before effort)
+ *          min, mid, max   e 0, 0.5, 1 every pitch
+ *          smart  effort by the pitch and the moment, as the measured bins read: max on a
+ *                 fastball with two strikes, firm on a fastball when even or ahead and on a
+ *                 breaking ball with two strikes, easy on the changeup or splitter (a harder
+ *                 one whiffs less) and at three balls (the strike matters more than the stuff),
+ *                 ordinary otherwise, and no harder than ordinary past 15 pitches
+ *        With a timed release, e narrows or widens the window the tap model is timed in
+ *        (meter.js qOf(err, command, e)); a perfect release is q 1 whatever the window.
  *
  * The measurements behind grade.js R2 (README, Rules 2). Each strategy plays
  * every pack RUNS times with each release (none: the meter off; ordinary: the
@@ -117,13 +127,29 @@ function fixedTop(pack) {
   return top;
 }
 
-function tapQ(rng, command) {
+function tapQ(rng, command, eff) {
   let e = R.probit(rng()) * MT.TIMING.sdMs;
   if (rng() < MT.TIMING.slip) e = rng() * MT.TIMING.slipMaxMs;
-  return MT.qOf(e, command);
+  return MT.qOf(e, command, eff);
+}
+const EFFORTS = (process.env.EFFORTS || 'none').split(',');
+function effortOf(policy, o, c) {
+  if (policy === 'none') return null;
+  if (policy === 'min') return 0;
+  if (policy === 'mid') return 0.5;
+  if (policy === 'max') return 1;
+  const st = o.st, fam = K.FAMILY_OF[c.type];
+  let e;
+  if (st.b === 3) e = 0.25;
+  else if (fam === 'offspeed') e = 0.25;
+  else if (st.s === 2) e = fam === 'hard' ? 1 : 0.75;
+  else if (fam === 'hard' && st.s >= st.b) e = 0.75;
+  else e = 0.5;
+  if (o.log.length >= 15) e = Math.min(e, 0.5);
+  return e;
 }
 
-function play(pack, model, sname, strat, release, runs) {
+function play(pack, model, sname, strat, release, runs, effort) {
   const out = { door_shut: 0, tie_held: 0, doors_open: 0, walk_off: 0 };
   let ra = 0, pitches = 0, n = 0, walks = 0, pa = 0;
   const scores = [], bands = { green: 0, yellow: 0, orange: 0, red: 0 };
@@ -138,8 +164,10 @@ function play(pack, model, sname, strat, release, runs) {
     while (o.status === 'live' && guard++ < 200) {
       const c = strat(o);
       const cmd = pack.scenario.pitcher.arsenal.find(a => a.type === c.type).command;
+      const eff = release === 'none' ? null : effortOf(effort || 'none', o, c);
+      if (eff != null) c.e = eff;
       if (release === 'perfect') c.q = 1;
-      else if (release === 'ordinary') c.q = tapQ(tap, cmd);
+      else if (release === 'ordinary') c.q = tapQ(tap, cmd, eff);
       const res = E.throwPitch(o, c).pitchResult;
       if (res.paOver) { pa++; if (res.result === 'ball' || res.result === 'hit_by_pitch') walks++; }
     }
@@ -169,7 +197,9 @@ for (const f of packs) {
   if (WANT.includes('fixed')) pack._fixed = fixedTop(pack);
   for (const sn of WANT) {
     for (const rel of (sn === 'pool' ? ['none'] : RELS)) {
-      rows.push(Object.assign({ pack: pack.scenario.id.replace('std-', ''), strat: sn, release: rel }, play(pack, model, sn, S[sn], rel, RUNS)));
+      for (const ef of (sn === 'pool' || rel === 'none' ? ['none'] : EFFORTS)) {
+        rows.push(Object.assign({ pack: pack.scenario.id.replace('std-', ''), strat: sn, release: rel, effort: ef }, play(pack, model, sn, S[sn], rel, RUNS, ef)));
+      }
     }
   }
   rows.push({ pack: pack.scenario.id.replace('std-', ''), strat: 'POOL(pack)', release: '', hold: Math.round(pack.build.pool.holdRate * 1000) / 10, real: `${pack.reveal.outcome} ${pack.reveal.runs}r` });

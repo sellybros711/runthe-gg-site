@@ -299,7 +299,7 @@ function resolve(scn, st, call, rng) {
   if (forcedR) res.result = forcedR === 'K' ? 'swinging_strike' : 'in_play';
 
   var out = { n: st.pitchNo + 1, call: { type: call.type, cell: call.cell }, actual: actual, actualCell: cell,
-    velo: Math.round((ap.velo + gauss(u4) * 0.8) * 10) / 10, batter: res.batter, result: res.result,
+    velo: call.e != null && C.stuffAt ? C.stuffAt(ap, call.e).velo : Math.round((ap.velo + gauss(u4) * 0.8) * 10) / 10, batter: res.batter, result: res.result,
     countBefore: { b: b, s: s }, runnerMoves: [], runs: 0, paOver: false,
     drawn: { id: 'mock:' + st.pitchNo + ':' + Math.floor(lib * 1e6), tier: u3 < 0.6 ? 'batter' : u3 < 0.9 ? 'similar' : 'league' } };
   var outs = st.outs, bases = st.bases, nb = b, ns = s;
@@ -438,6 +438,7 @@ function throwPitch(outingId, call) {
     if (!(call.cell >= 0 && call.cell < C.GRID.CELLS)) throw new Error('no such cell');
     var c = { type: call.type, cell: call.cell | 0 };
     if (call.q != null && C.releaseQ) c.q = C.releaseQ(call.q);
+    if (call.e != null && C.effortE) c.e = C.effortE(call.e);
     o.calls.push(c);
     var r = apply(o.scn, o.st, c, o.rng);
     saveDaily(o);

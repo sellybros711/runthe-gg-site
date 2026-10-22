@@ -375,5 +375,65 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('meter: the word is execution only (no band name)', [0, 0.1, 0.3, 0.6, 0.8, 0.95].every(q => !/green|yellow|orange|red|grade/.test(MT.wordOf(q, -1) + MT.wordOf(q, 1))));
 }
 
+/* ---- effort (2026-10-22, CONTRACT.md 5c): the meter's first stop ---- */
+{
+  const MT = require('../meter.js');
+  const KI = Object.fromEntries(G.KEYS.map((k, i) => [k, i]));
+  const refused = (calls, opts) => { try { E.replay(pack, 1, calls, Object.assign({ model }, opts)); return false; } catch (e) { return true; } };
+  check('effort: an e that is not a number 0..1 is refused', [-0.1, 1.2, '1', NaN, {}].every(e => refused([{ type: 'FF', cell: 12, q: 0.5, e }], { rules: 2 })));
+  check('effort: an e needs a timed release, and is a rules 2 call', refused([{ type: 'FF', cell: 12, e: 1 }], { rules: 2 }) && refused([{ type: 'FF', cell: 12, q: 0.5, e: 1 }], { rules: 1 }));
+  check('effort: e is kept to two places, beside q and r', (c => c.e === 0.12 && c.q === 0.5 && c.r === 2)(E.replay(pack, 5, [{ type: 'FF', cell: 12, q: 0.5, e: 0.123456 }], { model, rules: 2 }).calls[0]));
+
+  const rng = testRng(57);
+  const base = Array.from({ length: 50 }, () => ({ type: model.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100 }));
+  const withE = e => base.map(c => Object.assign({}, c, { e }));
+  const plain = E.replay(pack, 4242, base, { model, rules: 2 }), mid = E.replay(pack, 4242, withE(0.5), { model, rules: 2 });
+  const shape = o => JSON.stringify({ l: o.log.map(p => [p.actual, p.actualCell, p.result, p.runs, p.arm, p.spread]), g: o.grades, out: o.outcome });
+  check('effort: e 0.5 plays exactly as no e (the same pitches, arm, grades and outcome)', shape(plain) === shape(mid));
+  check('effort: a call without e is kept without e and shows no stuff', plain.calls.every(c => !('e' in c)) && plain.log.every(p => !('stuff' in p)));
+  check('effort: a call with e shows the speed it was thrown at', mid.log.every(p => p.stuff && p.velo === p.stuff.velo));
+  check('effort: the same four draws a pitch whatever e', (() => {
+    const a = E.createOuting(pack, { seed: 91, model }), b = E.createOuting(pack, { seed: 91, model });
+    const pa = E.throwPitch(a, { type: 'FF', cell: 12, q: 0.7, e: 0 }).pitchResult, pb = E.throwPitch(b, { type: 'FF', cell: 12, q: 0.7, e: 1 }).pitchResult;
+    return a.rng() === b.rng() && JSON.stringify(pa.actual) === JSON.stringify(pb.actual);
+  })());
+  check('effort: the grade never reads this pitch\'s e', (() => {
+    const g = e => { const o = E.createOuting(pack, { seed: 99, model }); return JSON.stringify(E.throwPitch(o, { type: 'SL', cell: 19, q: 0.6, e }).pitchGrade); };
+    return g(0) === g(0.5) && g(1) === g(0.5);
+  })());
+  const again = E.replay(pack, 4242, JSON.parse(JSON.stringify(E.replay(pack, 4242, withE(1), { model, rules: 2 }).calls)), { model: new G.Model(pack) });
+  check('effort: determinism, the kept calls through JSON replay the outing exactly', shape(again) === shape(E.replay(pack, 4242, withE(1), { model, rules: 2 })));
+
+  // the pitch: all 1 at e 0.5; a harder fastball misses more bats and gives up fewer hits (measured)
+  check('effort: the row is untouched at e 0.5 and without e', G.effortMult('FF', 0.5).every(x => x === 1) && G.effortMult('FF', null).every(x => x === 1));
+  const m0 = G.effortMult('FF', 0), m1 = G.effortMult('FF', 1);
+  check('effort: a max effort fastball whiffs more and is hit less than a soft one (EFFORT.BINS, measured)',
+    m1[KI.swinging_strike] > 1 && m0[KI.swinging_strike] < 1 && m1[KI.single] < m0[KI.single] && m1[KI.home_run] < m0[KI.home_run], `${m0[KI.swinging_strike]} ${m1[KI.swinging_strike]}`);
+  let mono = true;
+  for (let i = 1; i <= 100; i++) if (G.effortMult('FF', i / 100)[KI.swinging_strike] < G.effortMult('FF', (i - 1) / 100)[KI.swinging_strike] - 1e-12) mono = false;
+  check('effort: a fastball\'s whiffs rise with e', mono);
+
+  // the arm: e 1 counts one and a half pitches, e 0 half of one, for every pitch after it
+  check('effort: the arm load is 0.5, 1 and 1.5 pitches at e 0, 0.5 and 1 (1 without e)', G.loadOf(0) === 0.5 && G.loadOf(0.5) === 1 && G.loadOf(1) === 1.5 && G.loadOf(null) === 1);
+  const hard = E.replay(pack, 4242, withE(1), { model, rules: 2 }), soft = E.replay(pack, 4242, withE(0), { model, rules: 2 });
+  const n = Math.min(hard.log.length, soft.log.length, plain.log.length);
+  check('effort: max effort tires the arm faster, an easy pitch slower', n < 14 || (hard.ctxs[13].arm === 20.5 && soft.ctxs[13].arm === 7.5 && plain.ctxs[13].arm === 14), n >= 14 ? `${hard.ctxs[13].arm} ${soft.ctxs[13].arm}` : 'short');
+
+  // the window: a game rule on the meter
+  check('effort: the window is SOFT at e 0, 1 at e 0.5 and without e, HARD at e 1', MT.windowScale(0) === MT.EFFORT_WINDOW.SOFT && MT.windowScale(0.5) === 1 && MT.windowScale(null) === 1 && MT.windowScale(1) === MT.EFFORT_WINDOW.HARD);
+  check('effort: the bright band shrinks as e rises', MT.bandsFor(50, 1).best < MT.bandsFor(50, 0.5).best && MT.bandsFor(50, 0.5).best < MT.bandsFor(50, 0).best && MT.bandsFor(50).best === MT.bandsFor(50, 0.5).best);
+  const mr = R.mulberry32(23);
+  const meanSpread = e => { let s = 0; const N = 40000; for (let i = 0; i < N; i++) { let x = R.probit(mr()) * MT.TIMING.sdMs; if (mr() < MT.TIMING.slip) x = mr() * MT.TIMING.slipMaxMs; s += K.spreadOf(MT.qOf(x, 50, e)); } return s / N; };
+  const s0 = meanSpread(0), s5 = meanSpread(0.5), s1 = meanSpread(1);
+  console.log(`     effort, an ordinary tap at command 50: mean spread ${s0.toFixed(3)}x at e 0, ${s5.toFixed(3)}x at 0.5, ${s1.toFixed(3)}x at 1`);
+  check('effort: an ordinary tap misses wider at max effort and tighter at an easy one', s1 > s5 && s5 > s0);
+  check('effort: the effort needle runs 0 to 1 and back', MT.effortAt(0) === 0 && MT.effortAt(MT.EFFORT_SWEEP_MS) === 1 && MT.effortAt(MT.EFFORT_SWEEP_MS * 1.5) === 0.5);
+
+  // the speed shown: his own pitches, slowest fifth to fastest
+  const a = { type: 'FF', velo: 95, pfxX: -7, pfxZ: 16, stuff: { src: 'his', n: 500, velo: [93.4, 94.5, 95.1, 95.7, 96.6], pfxX: [-6.8, -7, -7, -7.1, -7.3], pfxZ: [15.5, 15.9, 16, 16.2, 16.5] } };
+  check('effort: the speed at e 0, 0.5 and 1 is his slowest, middle and fastest fifth', MT.veloFor(a, 0) === 93.4 && MT.veloFor(a, 0.5) === 95.1 && MT.veloFor(a, 1) === 96.6 && MT.veloFor(a, 0.75) === 95.7);
+  check('effort: without e, or without stuff, the speed is his average', MT.veloFor(a, null) === 95 && MT.veloFor({ type: 'FF', velo: 95, pfxX: 0, pfxZ: 0 }, 1) === 95);
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);

@@ -1,0 +1,855 @@
+{
+ "_about": "Per scenario pitcher and arsenal pitch: the mean velocity (mph) and break (pfx inches, catcher's view) of his own pitches in each fifth of his velocity for that type, slowest first. src his: his own pitches from the arsenal source; src league: his arsenal mean plus the league's typical spread (pipeline/effort.json), when he has fewer than 40 tracked pitches of it. Built by pipeline/effort.py arsenal.",
+ "packs": {
+  "std-2025-ws7-yamamoto": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=808967",
+   "arsenal": {
+    "FS": {
+     "n": 149,
+     "velo": [
+      90.4,
+      91.3,
+      91.8,
+      92.2,
+      92.9
+     ],
+     "pfxX": [
+      -8.8,
+      -9.6,
+      -11.2,
+      -11.8,
+      -13.6
+     ],
+     "pfxZ": [
+      1.7,
+      1.0,
+      0.4,
+      0.7,
+      1.1
+     ],
+     "src": "his"
+    },
+    "FF": {
+     "n": 146,
+     "velo": [
+      95.1,
+      95.9,
+      96.3,
+      96.7,
+      97.1
+     ],
+     "pfxX": [
+      -6.9,
+      -6.9,
+      -7.3,
+      -8.0,
+      -6.9
+     ],
+     "pfxZ": [
+      16.3,
+      16.2,
+      16.3,
+      15.6,
+      16.5
+     ],
+     "src": "his"
+    },
+    "CU": {
+     "n": 117,
+     "velo": [
+      75.6,
+      77.2,
+      78.0,
+      78.7,
+      79.9
+     ],
+     "pfxX": [
+      12.8,
+      12.9,
+      12.5,
+      12.6,
+      13.8
+     ],
+     "pfxZ": [
+      -16.7,
+      -16.3,
+      -15.9,
+      -16.3,
+      -15.1
+     ],
+     "src": "his"
+    },
+    "FC": {
+     "n": 63,
+     "velo": [
+      89.7,
+      90.8,
+      91.4,
+      92.1,
+      93.1
+     ],
+     "pfxX": [
+      6.2,
+      5.6,
+      4.6,
+      3.9,
+      2.6
+     ],
+     "pfxZ": [
+      3.1,
+      5.3,
+      6.8,
+      8.2,
+      9.5
+     ],
+     "src": "his"
+    },
+    "SI": {
+     "n": 37,
+     "src": "league",
+     "velo": [
+      93.7,
+      94.7,
+      95.3,
+      95.9,
+      96.8
+     ],
+     "pfxX": [
+      -13.9,
+      -13.9,
+      -14.0,
+      -14.0,
+      -14.2
+     ],
+     "pfxZ": [
+      13.0,
+      13.0,
+      13.1,
+      13.1,
+      13.3
+     ]
+    }
+   }
+  },
+  "std-2011-ws6-feliz": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2011%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=491703",
+   "arsenal": {
+    "FF": {
+     "n": 790,
+     "velo": [
+      94.2,
+      96.1,
+      97.1,
+      97.9,
+      99.3
+     ],
+     "pfxX": [
+      -7.7,
+      -6.6,
+      -6.7,
+      -6.9,
+      -7.2
+     ],
+     "pfxZ": [
+      16.9,
+      17.6,
+      17.8,
+      17.7,
+      17.4
+     ],
+     "src": "his"
+    },
+    "SL": {
+     "n": 128,
+     "velo": [
+      76.8,
+      78.7,
+      79.5,
+      80.3,
+      82.3
+     ],
+     "pfxX": [
+      20.2,
+      17.4,
+      18.0,
+      17.2,
+      14.8
+     ],
+     "pfxZ": [
+      -2.6,
+      -3.3,
+      -2.1,
+      1.1,
+      0.3
+     ],
+     "src": "his"
+    },
+    "SI": {
+     "n": 48,
+     "velo": [
+      92.6,
+      94.7,
+      96.7,
+      97.8,
+      99.3
+     ],
+     "pfxX": [
+      -13.5,
+      -14.1,
+      -13.6,
+      -12.9,
+      -11.9
+     ],
+     "pfxZ": [
+      8.4,
+      8.8,
+      10.8,
+      10.0,
+      8.6
+     ],
+     "src": "his"
+    },
+    "FC": {
+     "n": 43,
+     "velo": [
+      85.0,
+      86.0,
+      86.6,
+      87.2,
+      88.4
+     ],
+     "pfxX": [
+      9.7,
+      11.0,
+      8.6,
+      6.5,
+      5.6
+     ],
+     "pfxZ": [
+      2.9,
+      3.7,
+      0.9,
+      6.7,
+      7.1
+     ],
+     "src": "his"
+    },
+    "CH": {
+     "n": 42,
+     "velo": [
+      86.5,
+      88.4,
+      89.4,
+      90.4,
+      91.7
+     ],
+     "pfxX": [
+      -10.3,
+      -9.9,
+      -11.0,
+      -9.9,
+      -5.3
+     ],
+     "pfxZ": [
+      8.8,
+      9.5,
+      8.0,
+      10.2,
+      10.2
+     ],
+     "src": "his"
+    }
+   }
+  },
+  "std-2025-diaz-cin": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=621242",
+   "arsenal": {
+    "FF": {
+     "n": 561,
+     "velo": [
+      95.3,
+      96.7,
+      97.4,
+      97.9,
+      98.8
+     ],
+     "pfxX": [
+      -12.9,
+      -13.1,
+      -13.0,
+      -13.1,
+      -13.2
+     ],
+     "pfxZ": [
+      13.0,
+      12.9,
+      12.7,
+      12.9,
+      13.0
+     ],
+     "src": "his"
+    },
+    "SL": {
+     "n": 505,
+     "velo": [
+      87.1,
+      88.4,
+      89.2,
+      90.0,
+      91.0
+     ],
+     "pfxX": [
+      2.0,
+      1.6,
+      1.8,
+      1.8,
+      1.2
+     ],
+     "pfxZ": [
+      3.4,
+      3.6,
+      3.6,
+      4.0,
+      4.4
+     ],
+     "src": "his"
+    }
+   }
+  },
+  "std-1988-ws1-eckersley": {
+   "source": "none: no tracked pitches (public reporting)",
+   "arsenal": {
+    "FF": {
+     "n": 0,
+     "src": "league",
+     "velo": [
+      89.4,
+      90.4,
+      91.0,
+      91.6,
+      92.5
+     ],
+     "pfxX": [
+      -5.9,
+      -6.0,
+      -6.0,
+      -6.0,
+      -6.0
+     ],
+     "pfxZ": [
+      14.9,
+      15.0,
+      15.0,
+      15.0,
+      15.1
+     ]
+    },
+    "SL": {
+     "n": 0,
+     "src": "league",
+     "velo": [
+      81.0,
+      82.3,
+      83.0,
+      83.8,
+      84.9
+     ],
+     "pfxX": [
+      3.2,
+      3.1,
+      3.0,
+      2.9,
+      2.8
+     ],
+     "pfxZ": [
+      1.1,
+      1.0,
+      1.0,
+      1.0,
+      0.9
+     ]
+    }
+   }
+  },
+  "std-2016-ws7-chapman": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2016%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=547973",
+   "arsenal": {
+    "FF": {
+     "n": 792,
+     "velo": [
+      98.5,
+      100.1,
+      101.1,
+      102.1,
+      103.6
+     ],
+     "pfxX": [
+      7.1,
+      7.5,
+      7.8,
+      8.3,
+      8.6
+     ],
+     "pfxZ": [
+      19.0,
+      18.5,
+      18.5,
+      17.9,
+      18.2
+     ],
+     "src": "his"
+    },
+    "SL": {
+     "n": 153,
+     "velo": [
+      86.0,
+      87.8,
+      88.7,
+      89.9,
+      91.7
+     ],
+     "pfxX": [
+      -10.0,
+      -9.4,
+      -7.3,
+      -8.8,
+      -9.3
+     ],
+     "pfxZ": [
+      4.6,
+      5.7,
+      6.8,
+      6.7,
+      6.8
+     ],
+     "src": "his"
+    },
+    "CH": {
+     "n": 31,
+     "src": "league",
+     "velo": [
+      87.8,
+      89.0,
+      89.6,
+      90.3,
+      91.3
+     ],
+     "pfxX": [
+      15.9,
+      16.0,
+      16.1,
+      16.2,
+      16.3
+     ],
+     "pfxZ": [
+      10.3,
+      10.5,
+      10.5,
+      10.6,
+      10.7
+     ]
+    }
+   }
+  },
+  "std-2024-ws5-buehler": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=621111",
+   "arsenal": {
+    "FF": {
+     "n": 95,
+     "velo": [
+      93.2,
+      93.9,
+      94.6,
+      95.1,
+      95.9
+     ],
+     "pfxX": [
+      -4.5,
+      -3.8,
+      -4.3,
+      -4.6,
+      -4.8
+     ],
+     "pfxZ": [
+      19.6,
+      18.5,
+      17.8,
+      18.4,
+      17.9
+     ],
+     "src": "his"
+    },
+    "KC": {
+     "n": 55,
+     "velo": [
+      76.3,
+      77.2,
+      77.9,
+      78.3,
+      78.9
+     ],
+     "pfxX": [
+      12.0,
+      11.7,
+      13.0,
+      11.3,
+      13.0
+     ],
+     "pfxZ": [
+      -16.5,
+      -16.8,
+      -17.2,
+      -16.2,
+      -17.7
+     ],
+     "src": "his"
+    },
+    "FC": {
+     "n": 42,
+     "velo": [
+      90.0,
+      90.8,
+      91.5,
+      92.1,
+      92.8
+     ],
+     "pfxX": [
+      7.4,
+      4.8,
+      4.3,
+      4.4,
+      3.2
+     ],
+     "pfxZ": [
+      10.0,
+      9.7,
+      11.3,
+      12.7,
+      12.1
+     ],
+     "src": "his"
+    },
+    "ST": {
+     "n": 37,
+     "src": "league",
+     "velo": [
+      79.2,
+      80.3,
+      81.0,
+      81.7,
+      82.8
+     ],
+     "pfxX": [
+      20.3,
+      19.9,
+      19.5,
+      19.1,
+      18.3
+     ],
+     "pfxZ": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "SI": {
+     "n": 20,
+     "src": "league",
+     "velo": [
+      92.6,
+      93.6,
+      94.2,
+      94.8,
+      95.7
+     ],
+     "pfxX": [
+      -16.3,
+      -16.3,
+      -16.4,
+      -16.4,
+      -16.6
+     ],
+     "pfxZ": [
+      12.7,
+      12.8,
+      12.8,
+      12.8,
+      12.9
+     ]
+    }
+   }
+  },
+  "std-2025-scott-kc": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=656945",
+   "arsenal": {
+    "FF": {
+     "n": 479,
+     "velo": [
+      95.1,
+      96.0,
+      96.6,
+      97.1,
+      97.8
+     ],
+     "pfxX": [
+      6.0,
+      6.2,
+      6.2,
+      6.0,
+      6.4
+     ],
+     "pfxZ": [
+      16.9,
+      16.7,
+      16.9,
+      16.7,
+      16.4
+     ],
+     "src": "his"
+    },
+    "SL": {
+     "n": 430,
+     "velo": [
+      86.6,
+      88.1,
+      89.0,
+      89.9,
+      91.1
+     ],
+     "pfxX": [
+      -6.9,
+      -5.8,
+      -5.5,
+      -5.1,
+      -5.0
+     ],
+     "pfxZ": [
+      -1.4,
+      -0.1,
+      0.9,
+      2.0,
+      3.4
+     ],
+     "src": "his"
+    }
+   }
+  },
+  "std-2019-nlwc-hader": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2019%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623352",
+   "arsenal": {
+    "SI": {
+     "n": 960,
+     "velo": [
+      93.6,
+      94.8,
+      95.6,
+      96.2,
+      97.2
+     ],
+     "pfxX": [
+      9.9,
+      9.8,
+      9.5,
+      9.5,
+      9.1
+     ],
+     "pfxZ": [
+      17.4,
+      16.9,
+      16.9,
+      16.7,
+      16.9
+     ],
+     "src": "his"
+    },
+    "SL": {
+     "n": 176,
+     "velo": [
+      79.6,
+      81.0,
+      81.8,
+      82.7,
+      84.2
+     ],
+     "pfxX": [
+      -10.7,
+      -9.4,
+      -8.0,
+      -5.9,
+      -3.5
+     ],
+     "pfxZ": [
+      -0.5,
+      0.9,
+      1.4,
+      3.2,
+      4.0
+     ],
+     "src": "his"
+    }
+   }
+  },
+  "std-2022-ws6-pressly": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2022%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=519151",
+   "arsenal": {
+    "SL": {
+     "n": 262,
+     "velo": [
+      88.0,
+      89.1,
+      89.7,
+      90.3,
+      91.3
+     ],
+     "pfxX": [
+      5.5,
+      5.3,
+      4.9,
+      5.0,
+      4.9
+     ],
+     "pfxZ": [
+      1.6,
+      2.0,
+      3.3,
+      3.4,
+      3.8
+     ],
+     "src": "his"
+    },
+    "FF": {
+     "n": 229,
+     "velo": [
+      92.8,
+      93.8,
+      94.5,
+      95.2,
+      96.1
+     ],
+     "pfxX": [
+      -1.5,
+      -3.1,
+      -3.6,
+      -4.0,
+      -3.8
+     ],
+     "pfxZ": [
+      17.8,
+      18.3,
+      18.3,
+      17.9,
+      17.9
+     ],
+     "src": "his"
+    },
+    "CU": {
+     "n": 192,
+     "velo": [
+      79.5,
+      80.4,
+      81.0,
+      81.6,
+      82.6
+     ],
+     "pfxX": [
+      14.9,
+      14.1,
+      15.2,
+      14.6,
+      15.3
+     ],
+     "pfxZ": [
+      -14.0,
+      -14.2,
+      -13.5,
+      -13.9,
+      -13.4
+     ],
+     "src": "his"
+    },
+    "CH": {
+     "n": 25,
+     "src": "league",
+     "velo": [
+      87.3,
+      88.5,
+      89.1,
+      89.8,
+      90.8
+     ],
+     "pfxX": [
+      -14.4,
+      -14.6,
+      -14.7,
+      -14.8,
+      -15.0
+     ],
+     "pfxZ": [
+      3.7,
+      3.8,
+      3.8,
+      3.8,
+      3.9
+     ]
+    }
+   }
+  },
+  "std-2001-ws7-rivera": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=121250",
+   "arsenal": {
+    "FC": {
+     "n": 876,
+     "velo": [
+      92.1,
+      93.0,
+      93.6,
+      94.1,
+      94.8
+     ],
+     "pfxX": [
+      2.4,
+      2.1,
+      2.1,
+      2.3,
+      3.0
+     ],
+     "pfxZ": [
+      12.0,
+      13.0,
+      12.7,
+      13.5,
+      13.1
+     ],
+     "src": "his"
+    },
+    "FF": {
+     "n": 93,
+     "velo": [
+      92.3,
+      93.4,
+      94.0,
+      94.6,
+      95.4
+     ],
+     "pfxX": [
+      -12.0,
+      -10.2,
+      -11.7,
+      -11.6,
+      -12.2
+     ],
+     "pfxZ": [
+      10.7,
+      9.2,
+      9.3,
+      10.5,
+      8.5
+     ],
+     "src": "his"
+    }
+   }
+  }
+ }
+}
