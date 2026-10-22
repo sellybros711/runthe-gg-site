@@ -52,7 +52,7 @@ function Pending(canvas) {
     if (window.STD_STAGE) go(); else window.addEventListener('std-stage', go, { once: true });
   });
 }
-['setScenario', 'setBatter', 'setTarget', 'layout', 'draw'].forEach(function (n) {
+['setScenario', 'setBatter', 'setTarget', 'setPreview', 'layout', 'draw'].forEach(function (n) {
   Pending.prototype[n] = function () { if (this.real) return this.real[n].apply(this.real, arguments); this.calls.push([n, [].slice.call(arguments)]); };
 });
 Pending.prototype.gridRect = function () {
@@ -62,6 +62,7 @@ Pending.prototype.gridRect = function () {
 };
 Pending.prototype.toScreen = function (p) { return this.real ? this.real.toScreen(p) : { x: 0, y: 0 }; };
 Pending.prototype.cellCenter = function (c) { return this.real ? this.real.cellCenter(c) : { x: 0, y: 0 }; };
+Pending.prototype.previewPoints = function () { return this.real ? this.real.previewPoints() : null; };
 Pending.prototype.figureBoxes = function () { return this.real.figureBoxes(); };
 Object.defineProperty(Pending.prototype, 'bat', { get: function () { return this.real ? this.real.bat : null; } });
 Pending.prototype.play = function (opts) { return this.arrived.then(function (st) { return st.play(opts); }); };
@@ -89,7 +90,7 @@ function record(day, number, r) {
 var S = {
   day: C.easternDay(), scn: null, daily: null, dailyResult: null,
   outing: null, mode: 'daily', type: null, cell: null, busy: false,
-  heat: 'damage', scout: false, scene: null, grid: null, mini: null, hero: null, result: null,
+  heat: 'damage', scout: false, guide: null, hover: null, scene: null, grid: null, mini: null, hero: null, result: null,
 };
 
 /* ---- small things ------------------------------------------------------------- */
@@ -338,15 +339,18 @@ function renderHome() {
    break up, horizontal break with arm side marked. pfx is catcher's view in
    the data, so x is mirrored, as the grid is. Dots sized by usage. Null when
    the pack has no movement. */
-function breakChart(ars, throws) {
+function breakChart(ars, throws, sel) {
   if (!ars.length || ars.some(function (a) { return a.pfxX == null || a.pfxZ == null; })) return '';
   var m = 20;
   ars.forEach(function (a) { m = Math.max(m, Math.abs(a.pfxX) + 3, Math.abs(a.pfxZ) + 3); });
   var c = 74, r = 60, k = r / m;
+  /* sel (the pitch guide): that pitch's dot ringed and on top, the rest quieter */
   var dots = ars.map(function (a, i) {
     var x = c - a.pfxX * k, y = c - a.pfxZ * k, rad = 5 + Math.sqrt(a.usage) * 13;
-    return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + PITCH_COLORS[i % PITCH_COLORS.length] + '" fill-opacity=".92"><title>' + esc(a.name) + '</title></circle>';
-  }).reverse().join('');
+    var on = sel === a.type, op = sel == null || on ? '.92' : '.45';
+    var ring = on ? ' stroke="currentColor" stroke-width="2.5"' : '';
+    return { on: on, svg: '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + PITCH_COLORS[i % PITCH_COLORS.length] + '" fill-opacity="' + op + '"' + ring + '><title>' + esc(a.name) + '</title></circle>' };
+  }).reverse().sort(function (a, b) { return a.on - b.on; }).map(function (d) { return d.svg; }).join('');
   var armRight = throws !== 'L';
   return '<svg viewBox="0 0 148 148" role="img" aria-label="his pitches by movement">' +
     '<line x1="' + c + '" y1="10" x2="' + c + '" y2="138" stroke="currentColor" stroke-opacity=".18"/>' +
@@ -439,19 +443,30 @@ function buildMound() {
   var ars = $('m-arsenal');
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
+  var big = maxBreak(S.scn.pitcher.arsenal);
   S.scn.pitcher.arsenal.forEach(function (a, i) {
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'pitch';
     b.dataset.type = a.type;
     b.setAttribute('aria-pressed', 'false');
-    b.innerHTML = '<b>' + esc(a.name) + '</b><span>' + esc(Math.round(a.velo)) + ' · ' + esc(pct(a.usage)) + '</span>';
-    b.addEventListener('click', function () { pickType(a.type); });
+    b.innerHTML = '<b>' + esc(a.name) + '</b><span>' + breakGlyph(a, colorOf(a), big) + esc(Math.round(a.velo)) + ' · ' + esc(pct(a.usage)) + '</span>';
+    var held = holdToLearn(b, a.type);
+    b.addEventListener('click', function () { if (!held()) pickType(a.type); });
     ars.appendChild(b);
+  });
+  /* the grid: a mouse over a cell shows the path to it (a touch has no hover, the tap picks it) */
+  S.grid.cells.forEach(function (el, i) {
+    el.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse') return; S.hover = i; drawPreview(); });
+    el.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'mouse') return; if (S.hover === i) { S.hover = null; drawPreview(); } });
   });
   $('m-throw').addEventListener('click', throwIt);
   S.meter = METER && $('m-meter') ? METER.create($('m-meter')) : null;
   $('m-batter').addEventListener('click', toggleScout);
+  $('m-guide-b').addEventListener('click', function () { setGuide(S.guide ? null : S.type || S.scn.pitcher.arsenal[0].type); });
+  $('m-guide').addEventListener('click', function (e) {
+    if (e.target.closest('.gd-x')) setGuide(null);
+  });
   $('m-heat').addEventListener('click', function (e) {
     var x = e.target.closest('[data-heat]');
     if (!x) return;
@@ -459,12 +474,25 @@ function buildMound() {
     renderScout();
   });
   window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); if (S.hero) drawHero(); });
+  /* The scene's box moves without a window resize (a line wraps, a button grows): the canvas then
+     shows a stretched frame and the grid sits off the zone, so lay out again. Never mid pitch. */
+  if (window.ResizeObserver) {
+    var seen = '';
+    new ResizeObserver(function () {
+      var c = $('m-canvas'), k = c.clientWidth + 'x' + c.clientHeight;
+      if (k === seen || !c.clientWidth || document.body.dataset.screen !== 's-mound') return;
+      seen = k;
+      if (S.busy) S.sizeDue = true; else relayout();
+    }).observe($('m-canvas'));
+  }
 }
 
 function relayout() {
   S.scene.layout();
   S.grid.place(S.scene.gridRect());
   S.scene.draw(idleFrame());
+  drawPreview();
+  renderGuide();
 }
 function idleFrame() {
   return { pitcher: 'set', batter: 'stance', umpire: 'set', mitt: S.cell != null ? S.scene.cellCenter(S.cell) : null, marker: S.lastMarker || null };
@@ -562,6 +590,8 @@ function pickType(t) {
   document.querySelectorAll('#m-arsenal .pitch').forEach(function (b) {
     var on = b.dataset.type === t; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
+  if (S.guide) setGuide(t);
+  drawPreview();
   updateThrow();
 }
 function pickCell(c) {
@@ -573,6 +603,7 @@ function pickCell(c) {
   S.grid.setMarks({});
   if (S.scene.setTarget) S.scene.setTarget(c);
   S.scene.draw(idleFrame());
+  drawPreview();
   updateThrow();
 }
 function updateThrow() {
@@ -592,6 +623,7 @@ function updateThrow() {
 
 function toggleScout() {
   S.scout = !S.scout;
+  if (S.scout && S.guide) setGuide(null);
   renderScout();
 }
 
@@ -660,6 +692,149 @@ function scoutSentence(pr, rows) {
   if (!parts.length) return '';
   var s = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + (parts.length === 2 ? ' and ' : ', and ') + parts[parts.length - 1];
   return s.charAt(0).toUpperCase() + s.slice(1) + '.';
+}
+
+/* ---- what each pitch does ---------------------------------------------------------------
+   The break preview (a ghost trail from the hand to the spot, drawn by the 3D stage, and the same
+   path as a thin line on the grid), the glyph on each pitch button and the pitch guide. All of it
+   comes from the arsenal's own numbers: velo, pfxX and pfxZ (catcher's view inches, so mirrored on
+   screen like the grid), usage, and the shape from the contract. The preview is the aim, never
+   the outcome: it ends on the cell's centre, wherever the engine's command draw puts the ball. */
+
+/* the colour a pitch has on the break chart (usage order), so the buttons and the chart agree */
+function colorOf(a) {
+  var ord = S.scn.pitcher.arsenal.slice().sort(function (x, y) { return y.usage - x.usage; });
+  return PITCH_COLORS[Math.max(0, ord.indexOf(a)) % PITCH_COLORS.length];
+}
+function maxBreak(ars) {
+  var m = 10;
+  ars.forEach(function (a) { if (a.pfxX != null && a.pfxZ != null) m = Math.max(m, Math.sqrt(a.pfxX * a.pfxX + a.pfxZ * a.pfxZ)); });
+  return m;
+}
+/* A tiny arrow: the way the pitch breaks from the pitcher's side (x mirrored, up is up), its
+   length the size of the break against his biggest. */
+function breakGlyph(a, color, big) {
+  if (a.pfxX == null || a.pfxZ == null) return '';
+  var mag = Math.sqrt(a.pfxX * a.pfxX + a.pfxZ * a.pfxZ), L = mag < 3 ? 0 : 3 + 3.5 * mag / big;
+  var ex = -a.pfxX / (mag || 1) * L, ey = -a.pfxZ / (mag || 1) * L;
+  if (L < 0.5) return '<svg class="glyph" viewBox="-8 -8 16 16" aria-hidden="true"><circle r="3.4" fill="' + color + '"/></svg>';
+  var ux = ex / L, uy = ey / L, f = function (v) { return v.toFixed(1); };
+  var hx = ex - ux * 3.4, hy = ey - uy * 3.4;
+  return '<svg class="glyph" viewBox="-8 -8 16 16" aria-hidden="true"><circle r="1.6" fill="' + color + '" fill-opacity=".55"/>' +
+    '<path d="M0 0L' + f(hx) + ' ' + f(hy) + '" stroke="' + color + '" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M' + f(ex) + ' ' + f(ey) + 'L' + f(hx - uy * 2.6) + ' ' + f(hy + ux * 2.6) + 'L' + f(hx + uy * 2.6) + ' ' + f(hy - ux * 2.6) + 'Z" fill="' + color + '"/></svg>';
+}
+
+/* A long press on a pitch button opens its guide (and does not pick it). Returns a test for the
+   click that follows a long press, so that click is not a pick. */
+function holdToLearn(b, type) {
+  var t = null, at = -1e9;
+  var now = function () { return window.performance ? performance.now() : Date.now(); };
+  b.addEventListener('pointerdown', function (e) {
+    if (e.button > 0 || S.busy) return;
+    clearTimeout(t);
+    t = setTimeout(function () { at = now(); setGuide(type); }, 450);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(t); }); });
+  b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  return function () { return now() - at < 900; };
+}
+
+/* The preview: with a pitch picked, its path to the hovered cell, the picked cell, or the middle
+   of the zone before a cell is picked. Gone while a pitch is in the air. */
+function drawPreview() {
+  if (!S.grid || !S.scene) return;
+  var cell = S.hover != null ? S.hover : S.cell;
+  var live = S.type && !S.busy && S.outing && S.outing.status === 'live';
+  var spec = live ? { type: S.type, cell: cell == null ? 12 : cell } : null;
+  if (S.scene.setPreview) S.scene.setPreview(spec);
+  var svg = gridLine(), pp = spec && S.scene.previewPoints ? S.scene.previewPoints() : null;
+  if (!pp || pp.path.length < 2) { svg.style.display = 'none'; return; }
+  var r = S.scene.gridRect();
+  var line = function (pts) { return pts.map(function (q, i) { return (i ? 'L' : 'M') + (q.x - r.x).toFixed(1) + ' ' + (q.y - r.y).toFixed(1); }).join(''); };
+  var end = function (el, pts) { var e = pts[pts.length - 1]; el.setAttribute('cx', (e.x - r.x).toFixed(1)); el.setAttribute('cy', (e.y - r.y).toFixed(1)); };
+  svg.setAttribute('viewBox', '0 0 ' + r.w.toFixed(1) + ' ' + r.h.toFixed(1));
+  var d = line(pp.path);
+  svg.querySelector('.gp-rim').setAttribute('d', d);
+  svg.querySelector('.gp-core').setAttribute('d', d);
+  end(svg.querySelector('.gp-end'), pp.path);
+  var hasRef = pp.ref && pp.ref.length > 1;
+  svg.querySelector('.gp-ref').setAttribute('d', hasRef ? line(pp.ref) : '');
+  if (hasRef) end(svg.querySelector('.gp-refend'), pp.ref);
+  svg.querySelector('.gp-refend').style.display = hasRef ? '' : 'none';
+  svg.style.display = '';
+}
+function gridLine() {
+  var svg = S.grid.el.querySelector('.gpath');
+  if (svg) return svg;
+  svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'gpath');
+  svg.setAttribute('aria-hidden', 'true');
+  /* the no spin line under the path: the gap between their ends is the break */
+  svg.innerHTML = '<path class="gp-ref"/><circle class="gp-refend" r="3.5"/><path class="gp-rim"/><path class="gp-core"/><circle class="gp-end" r="3"/>';
+  S.grid.el.appendChild(svg);
+  return svg;
+}
+
+/* What the pitch does, in a line, from its shape (the contract's SHAPE_OF) and its numbers.
+   Sideways is said for this hitter: in on him or away from him, from his hand (a righty stands
+   on the catcher's left, the negative pfxX side). */
+function pitchSay(a, bats) {
+  if (a.pfxX == null || a.pfxZ == null) return '';
+  var x = a.pfxX, z = a.pfxZ, ax = Math.abs(x), shape = a.shape || C.SHAPE_OF[a.type];
+  var toward = bats === 'L' ? x > 0 : x < 0;
+  var dir = (toward ? 'in on ' : 'away from ') + (bats === 'L' ? 'a lefty' : 'a righty');
+  var side = function (verb, min) { return ax >= min ? ' ' + verb + ' ' + dir + '.' : ''; };
+  switch (shape) {
+    case 'ride': return (z >= 15 ? 'Rises.' : 'Stays up.') + side('Tails', 6);
+    case 'run': return 'Sinks and runs ' + dir + '.';
+    case 'cut': return ax >= 3 ? 'Cuts ' + dir + ' late.' : 'Stays up. Cuts late.';
+    case 'slide': return 'Slides ' + dir + '.' + (z <= 2 ? ' Drops some.' : '');
+    case 'sweep': return 'Sweeps ' + dir + '.';
+    case 'drop': return (z <= -12 ? 'Drops hard.' : 'Drops.') + side('Breaks', 8);
+    case 'fade': return 'Fades ' + dir + '.' + (z <= 6 ? ' Dies late.' : '');
+    case 'split': return (z <= 3 ? 'Drops hard late.' : 'Drops late.') + side('Fades', 8);
+    case 'float': return 'Floats. No spin, no plan.';
+  }
+  return '';
+}
+
+/* The pitch guide: a small sheet over the top of the field (the stands, above the grid), opened
+   only by its button or a long press on a pitch, never by itself. It blocks nothing: the grid and
+   the buttons stay live, and picking a pitch turns the guide to it. */
+function setGuide(type) {
+  S.guide = type || null;
+  if (S.guide && S.scout) { S.scout = false; renderScout(); }
+  $('m-guide-b').setAttribute('aria-expanded', S.guide ? 'true' : 'false');
+  $('m-guide-b').classList.toggle('on', !!S.guide);
+  renderGuide();
+}
+function renderGuide() {
+  var box = $('m-guide');
+  if (!box) return;
+  var a = S.guide && pitchOf(S.guide);
+  if (!a || !S.outing) { box.hidden = true; return; }
+  var b = batterAt(S.outing.batterIndex), p = S.scn.pitcher, lefty = b.bats === 'L';
+  var ordered = p.arsenal.slice().sort(function (x, y) { return y.usage - x.usage; });
+  var chart = breakChart(ordered, p.throws, a.type);
+  var nums = '<span><b>' + esc(a.velo.toFixed(1)) + '</b>mph</span>';
+  if (a.pfxX != null && a.pfxZ != null) {
+    var toward = lefty ? a.pfxX > 0 : a.pfxX < 0, hx = Math.round(Math.abs(a.pfxX));
+    nums += '<span><b>' + esc(Math.round(Math.abs(a.pfxZ))) + '"</b>' + (a.pfxZ >= 0 ? 'up' : 'down') + '</span>' +
+      '<span><b>' + esc(hx) + '"</b>' + (hx === 0 ? 'sideways' : toward ? 'in' : 'away') + '</span>';
+  }
+  nums += '<span><b>' + esc(pct(a.usage)) + '</b>thrown</span>';
+  box.innerHTML = '<div class="gd-head"><i class="dot" style="background:' + colorOf(a) + '"></i><b>' + esc(a.name) + '</b>' +
+    '<span>vs ' + (lefty ? 'a lefty' : 'a righty') + '</span><button class="gd-x" type="button" aria-label="Close the pitch guide">\u00d7</button></div>' +
+    '<div class="gd-body">' + (chart ? '<div class="brk gd-brk">' + chart + '</div>' : '') +
+    '<div class="gd-txt"><p class="gd-say">' + esc(pitchSay(a, b.bats)) + '</p><div class="gd-nums">' + nums + '</div>' +
+    '<p class="gd-foot">inches of break against no spin (the dotted line).</p></div></div>';
+  box.hidden = false;
+  /* at the top of the field, over the stands, and off the grid when the screen has the room */
+  var host = $('s-mound').getBoundingClientRect(), sc = $('m-scene').getBoundingClientRect();
+  var gt = S.grid.el.getBoundingClientRect().top;
+  box.style.top = (sc.top - host.top + 4) + 'px';
+  box.style.maxHeight = Math.max(118, gt - sc.top - 8) + 'px';
 }
 
 /* the closer's club in capitals, from the club table: the nickname, or the last word of a name
@@ -752,8 +927,11 @@ function fire(call) {
   audio();
   updateThrow();
   S.grid.setDisabled(true);
-  var scoutWas = S.scout;
+  var scoutWas = S.scout, guideWas = S.guide;
   if (S.scout) { S.scout = false; renderScout(); }
+  if (S.guide) setGuide(null);
+  S.hover = null;
+  drawPreview();
   $('m-scene').classList.add('flying');
   API.throwPitch(S.outing.outingId, call).then(function (res) {
     var pr = res.pitchResult, batter = batterAt(S.outing.batterIndex);
@@ -780,14 +958,18 @@ function fire(call) {
       if (S.scene.setTarget) S.scene.setTarget(null);
       if (pr.paOver) { S.lastMarker = null; S.grid.setMarks({}); setBatter(false); } else S.scene.draw(idleFrame());
       if (scoutWas) { S.scout = true; renderScout(); }
-      renderHud(S.outing);
+      if (guideWas) setGuide(guideWas);
       updateThrow();
+      if (S.sizeDue) { S.sizeDue = false; relayout(); } else drawPreview();
+      renderHud(S.outing);
     });
   }).catch(function (e) {
     S.busy = false;
     meterDone();
     S.grid.setDisabled(false);
     $('m-scene').classList.remove('flying');
+    if (guideWas) setGuide(guideWas);
+    drawPreview();
     updateThrow();
     toast('that pitch did not go. try again.');
     if (window.console) console.warn(e);
