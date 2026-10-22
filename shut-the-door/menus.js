@@ -73,11 +73,14 @@ function renderHow(ctx) {
     '<button type="button" class="btn ghost p101-go" data-open-101>pitching 101: the ideas behind the grade</button>' +
     '<h3>you are the closer</h3>' +
     '<p>one real save spot a day. the real batters, in order. his real pitches. the same spot for everybody.</p>' +
-    '<h3>two taps a pitch</h3>' +
-    '<p>pick a pitch from his arsenal. pick a spot on the grid. throw it.</p>' +
+    '<h3>two taps and a release</h3>' +
+    '<p>pick a pitch from his arsenal. pick a spot on the grid. hit throw.</p>' +
+    '<p>a needle sweeps the meter. tap when it hits the mark. that is the release.</p>' +
+    '<p>a clean release misses less than his usual. a bad one misses more. the grade never sees it. it grades the call.</p>' +
+    '<p>timing is hard for some. turn the meter off in settings. every pitch then goes with his usual command.</p>' +
     '<p>the grid is what you see from the mound. the middle nine are the zone. the ring around it is for chasing. inside and away are the batter\'s.</p>' +
     '<h3>where it goes</h3>' +
-    '<p>the ball misses by his command. then a real pitch from that spot plays out: take, swing, foul or in play.</p>' +
+    '<p>the ball misses by his command and your release. then a real pitch from that spot plays out: take, swing, foul or in play.</p>' +
     '<h3>the grade</h3>' +
     '<p>every pitch is graded before it lands. the grade is the hold chance your call kept, against the best call you had. a good pitch that gets hit stays good.</p>' +
     '<p>once they tie it, the grade is the chance they never go ahead.</p>' +
@@ -93,6 +96,7 @@ function renderHow(ctx) {
     '<p>tap the batter\'s name. the grid turns into his map: where he does damage, and where he swings.</p>' +
     '<h3>one a day</h3>' +
     '<p>the daily counts once. run it back to practice. practice is never scored.</p>' +
+    '<p>practice is the place to learn the meter. after each release it shows how much the miss grew or shrank.</p>' +
     (ctx && ctx.proxy ? '<p class="quiet">older spots have no pitch tracking. their pitches come from modern pitch data.</p>' : '');
 }
 
@@ -231,9 +235,11 @@ function renderSettings(prefs, onChange) {
   $('set-body').innerHTML =
     row('set-sound', 'sound', 'the glove, the bat, the call', !!prefs.sound) +
     row('set-quick', 'quick pitches', 'shorter animation', !!prefs.quick) +
+    row('set-meter', 'release meter', 'time each release. off throws his usual command', prefs.meter !== false) +
     row('set-dark', 'dark mode', 'shared with every runthe.gg game', theme === 'dark');
   $('set-sound').addEventListener('change', function (e) { onChange('sound', e.target.checked); });
   $('set-quick').addEventListener('change', function (e) { onChange('quick', e.target.checked); });
+  $('set-meter').addEventListener('change', function (e) { onChange('meter', e.target.checked); });
   $('set-dark').addEventListener('change', function (e) { onChange('theme', e.target.checked ? 'dark' : 'light'); });
 }
 

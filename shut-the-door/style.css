@@ -710,6 +710,42 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .hero .h-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 70%; }
 .hero .h-poster[hidden] { display: none; }
 
+/* ---- the release meter (meter.js): the throw button's slot, a needle sweeping to the mark.
+   One tap is the release. The soft band is a release tighter than his command, the bright one the
+   best release. Execution only: no grade colours (the bands use signal and data, not green to red). */
+/* the throw button's exact height, so swapping one for the other never moves the scene (a moved
+   scene stretches the 3D frame under a grid laid out for the old size) */
+.relm { box-sizing: border-box; margin: 0 10px 10px; margin-bottom: max(10px, env(safe-area-inset-bottom)); min-height: 64px; padding: 8px 14px 10px; border-radius: 14px;
+  background: var(--night); color: var(--on-night); display: flex; flex-direction: column; justify-content: center; gap: 6px; cursor: pointer;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; outline: none; box-shadow: 0 3px 0 var(--signal); }
+.relm[hidden] { display: none; }
+.relm:focus-visible { box-shadow: 0 3px 0 var(--signal), 0 0 0 3px var(--data); }
+.rm-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 12px; line-height: 1.1; min-width: 0; }
+.rm-what { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .85; }
+.rm-what b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 15px; letter-spacing: .02em; text-transform: uppercase; margin-right: 4px; opacity: 1; }
+.rm-word { flex: none; font-weight: 600; opacity: .7; white-space: nowrap; }
+.rm-bar { position: relative; height: 20px; border-radius: 10px; background: rgba(255, 255, 255, .1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.rm-good, .rm-best { position: absolute; top: 0; bottom: 0; border-radius: 10px; }
+.rm-good { background: rgba(91, 130, 255, .38); }
+.rm-best { background: var(--signal); box-shadow: 0 0 10px rgba(255, 79, 31, .55); }
+.rm-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: #fff; opacity: .9; border-radius: 1px; }
+.rm-needle { position: absolute; top: -5px; bottom: -5px; width: 5px; margin-left: -2.5px; border-radius: 3px; background: #fff;
+  box-shadow: 0 0 0 1.5px var(--night), 0 0 8px rgba(255, 255, 255, .6); will-change: left; }
+.relm.done .rm-needle { transition: transform .12s ease-out; transform: scaleY(1.25); }
+.relm.done .rm-word { opacity: 1; }
+/* the tap lands like a button press */
+.relm.done { transform: translateY(2px); box-shadow: 0 1px 0 var(--signal); transition: transform .06s, box-shadow .06s; }
+.relm.good .rm-word { color: #a9bdff; }
+.relm.best .rm-word { color: #ffb59c; }
+.relm.best .rm-bar { animation: rm-glow .5s ease-out; }
+.relm.best .rm-needle { background: #ffd2c2; box-shadow: 0 0 0 1.5px var(--night), 0 0 14px 3px rgba(255, 79, 31, .8); }
+@keyframes rm-glow { 0% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 0 0 0 rgba(255, 79, 31, .7); } 100% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 0 0 12px rgba(255, 79, 31, 0); } }
+/* the ball landed in the cell that was called: a quiet ring, once */
+.grid .cell.m-painted::after { content: ''; position: absolute; inset: 6%; width: auto; height: auto; background: none; border-radius: 6px; box-shadow: 0 0 0 2px #fff, 0 0 12px 2px var(--signal); animation: rm-paint 1.3s ease-out forwards; pointer-events: none; }
+@keyframes rm-paint { 0% { opacity: 0; transform: scale(.7); } 18% { opacity: 1; transform: scale(1.04); } 100% { opacity: 0; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .relm.best .rm-bar, .grid .cell.m-painted::after { animation: none; }
+}
 /* ---- what each pitch does: the break preview's line on the grid, the glyph on each pitch
    button, and the pitch guide. The line sits under the zone numbers (they keep their place above
    it) and under the pitch dots, and takes no taps. */

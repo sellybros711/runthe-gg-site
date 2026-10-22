@@ -9,8 +9,8 @@
  * the grade card over it, the result. The sheets live in menus.js.
  *
  * What the page keeps for itself, in localStorage, all small:
- *   std_ui_v1        settings, and whether the "the grade is the decision"
- *                    line has been shown
+ *   std_ui_v1        settings (sound, quick, meter), and whether the "the
+ *                    grade is the decision" line has been shown
  *   std_ui_hist_v1   one row per finished daily (outcome, strip, percentile)
  *                    for the stats sheet and a guest's streak. The outing
  *                    itself is the API's to keep (std_outing_v1), never this
@@ -19,6 +19,7 @@
 (function () {
 'use strict';
 var C = window.STD_CONTRACT, API = window.STD_API, M = window.STD_MOUND, AN = window.STD_ANIM, MN = window.STD_MENUS;
+var METER = window.STD_METER || null;
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 var Q = new URLSearchParams(location.search);
@@ -73,6 +74,8 @@ function readJSON(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'n
 function writeJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 var prefs = readJSON(PREF_KEY, {});
 if (prefs.sound == null) prefs.sound = true;
+/* the release meter is on unless the player turns it off (settings). Off throws an average release. */
+if (prefs.meter == null) prefs.meter = true;
 function savePrefs() { writeJSON(PREF_KEY, prefs); }
 function hist() { return readJSON(HIST_KEY, {}); }
 function record(day, number, r) {
@@ -152,6 +155,11 @@ function sound(name, delay) {
       og.gain.setValueAtTime(0.35, t0); og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1); o.connect(og); og.connect(ac.destination); o.start(t0); o.stop(t0 + 0.12);
     } else if (name === 'crack') {
       src = noise(ac, 0.05); f.type = 'highpass'; f.frequency.value = 1400; g.gain.setValueAtTime(0.6, t0);
+    } else if (name === 'snap') {
+      /* the best release: a short bright click, quieter than the glove */
+      src = noise(ac, 0.035); f.type = 'highpass'; f.frequency.value = 2600; g.gain.setValueAtTime(0.32, t0);
+      var so = ac.createOscillator(), sg = ac.createGain(); so.type = 'triangle'; so.frequency.setValueAtTime(1500, t0); so.frequency.exponentialRampToValueAtTime(900, t0 + 0.06);
+      sg.gain.setValueAtTime(0.12, t0); sg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08); so.connect(sg); sg.connect(ac.destination); so.start(t0); so.stop(t0 + 0.1);
     } else if (name === 'thud') {
       src = noise(ac, 0.09); f.type = 'lowpass'; f.frequency.value = 400; g.gain.setValueAtTime(0.5, t0);
     } else {
@@ -453,6 +461,7 @@ function buildMound() {
     el.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'mouse') return; if (S.hover === i) { S.hover = null; drawPreview(); } });
   });
   $('m-throw').addEventListener('click', throwIt);
+  S.meter = METER && $('m-meter') ? METER.create($('m-meter')) : null;
   $('m-batter').addEventListener('click', toggleScout);
   $('m-guide-b').addEventListener('click', function () { setGuide(S.guide ? null : S.type || S.scn.pitcher.arsenal[0].type); });
   $('m-guide').addEventListener('click', function (e) {
@@ -491,6 +500,7 @@ function idleFrame() {
 
 function enterMound() {
   buildMound();
+  stopMeter(); meterDone();
   S.scene.setScenario(S.scn);
   S.type = null; S.cell = null; S.lastMarker = null;
   if (S.mini) S.mini.reset();
@@ -575,6 +585,7 @@ function hudRunners(list) {
 
 function pickType(t) {
   if (S.busy) return;
+  stopMeter();
   S.type = t;
   document.querySelectorAll('#m-arsenal .pitch').forEach(function (b) {
     var on = b.dataset.type === t; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -585,6 +596,7 @@ function pickType(t) {
 }
 function pickCell(c) {
   if (S.busy) return;
+  stopMeter();
   S.cell = c;
   S.grid.setSelected(c);
   S.lastMarker = null;
@@ -874,11 +886,45 @@ function playText(pr, batter, after) {
   return { tag: tag, rest: rest };
 }
 
+/* THE RELEASE. A pitch is a type, a cell and a release (the owner's call, 2026-10-22). The
+   throw button starts the meter (meter.js) in its place; the tap that stops it is the release,
+   and its q rides on the call. Picking another pitch or spot, or Escape, puts the meter away.
+   With the meter off (settings) there is no q: the engine plays his own command (1.0x). The
+   word after the tap is execution, never the grade: no popup, no colour band. */
+function meterOn() { return !!(S.meter && prefs.meter !== false); }
+function stopMeter() { if (S.meter && S.meter.running()) S.meter.cancel(); }
 function throwIt() {
   if (S.busy || !S.type || S.cell == null || S.outing.status !== 'live') return;
+  if (!meterOn()) return fire({ type: S.type, cell: S.cell });
+  if (S.meter.running()) return;
+  audio();
+  var ap = pitchOf(S.type), bt = batterAt(S.outing.batterIndex);
+  var type = S.type, cell = S.cell;
+  $('m-throw').hidden = true;
+  S.meter.run({
+    command: ap.command, practice: S.mode === 'practice',
+    verb: S.outing.shutItLive ? 'shut it' : 'release',
+    label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
+    hint: 'tap on the mark',
+    onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
+  }).then(function (r) {
+    if (!r) { $('m-throw').hidden = false; updateThrow(); return; }
+    fire({ type: type, cell: cell, q: r.q });
+  });
+}
+function meterDone() { if (S.meter) S.meter.hide(); $('m-throw').hidden = false; }
+/* the ball landed in the cell that was called: a quiet ring on that cell, after the play */
+function paintedCue(pr) {
+  if (pr.actualCell !== pr.call.cell || !S.grid || !S.grid.cells) return;
+  var c = S.grid.cells[pr.call.cell];
+  if (!c) return;
+  c.classList.remove('m-painted'); void c.offsetWidth; c.classList.add('m-painted');
+  setTimeout(function () { c.classList.remove('m-painted'); }, 1400);
+}
+function fire(call) {
+  if (S.busy) return;
   S.busy = true;
   audio();
-  var call = { type: S.type, cell: S.cell };
   updateThrow();
   S.grid.setDisabled(true);
   var scoutWas = S.scout, guideWas = S.guide;
@@ -891,12 +937,14 @@ function throwIt() {
     var pr = res.pitchResult, batter = batterAt(S.outing.batterIndex);
     var opts = {
       pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick,
-      hooks: { call: function () { var t = playText(pr, batter, res.state); pbp(t.tag, t.rest); }, sound: sound, field: hudRunners },
+      hooks: { call: function () { var t = playText(pr, batter, res.state); pbp(t.tag, t.rest + (pr.actualCell === pr.call.cell ? ' \u00b7 painted' : '')); }, sound: sound, field: hudRunners },
     };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       S.lastMarker = S.scene.toScreen(pr.actual);
       $('m-scene').classList.remove('flying');
       S.grid.setMarks({ target: pr.call.cell });
+      paintedCue(pr);
+      meterDone();
       hudRunners(null);
       renderHud(res.state);
       if (S.mini) S.mini.show(pr);
@@ -917,6 +965,7 @@ function throwIt() {
     });
   }).catch(function (e) {
     S.busy = false;
+    meterDone();
     S.grid.setDisabled(false);
     $('m-scene').classList.remove('flying');
     if (guideWas) setGuide(guideWas);

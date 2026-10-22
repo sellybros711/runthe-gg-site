@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=15">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -160,6 +160,7 @@
   <div class="guide" id="m-guide" role="region" aria-label="Pitch guide" hidden></div>
   <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
   <button class="btn throw" id="m-throw" type="button" disabled>pick a pitch</button>
+  <div id="m-meter" hidden></div>
 </section>
 
 <!-- 5. THE RESULT -->
@@ -232,7 +233,7 @@
       <button type="button" data-open="board"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="mt"><b>today's board</b><span>every closer who posted today.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="stats"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="mt"><b>stats</b><span>every outing, every grade.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="past"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></i><span class="mt"><b>past dailies</b><span>every spot so far.</span></span><em class="tag">locked</em><i class="chev" aria-hidden="true"></i></button>
-      <button type="button" data-open="settings"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="mt"><b>settings</b><span>sound, speed, theme.</span></span><i class="chev" aria-hidden="true"></i></button>
+      <button type="button" data-open="settings"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="mt"><b>settings</b><span>sound, speed, meter, theme.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="auth"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></i><span class="mt"><b>account</b><span>sign in to keep your streak.</span></span><i class="chev" aria-hidden="true"></i></button>
     </div>
   </div>
@@ -273,25 +274,26 @@
      takes over when the address carries a mock test switch (?mockEnd= and
      the rest, used by test/check-browser.mjs); a player always gets the real
      engine. -->
-<script src="contract.js?v=3"></script>
+<script src="contract.js?v=4"></script>
+<script src="meter.js?v=1"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=4"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
-<script src="menus.js?v=7"></script>
+<script src="menus.js?v=8"></script>
 <script src="rng.js?v=1"></script>
-<script src="grade.js?v=3"></script>
+<script src="grade.js?v=4"></script>
 <script src="lesson.js?v=2"></script>
-<script src="engine.js?v=5"></script>
+<script src="engine.js?v=6"></script>
 <script src="share.js?v=2"></script>
 <script src="card.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
-<script src="api.js?v=3"></script>
-<script src="mock-api.js?v=8"></script>
+<script src="api.js?v=4"></script>
+<script src="mock-api.js?v=9"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=1"></script>
-<script src="ui.js?v=17"></script>
+<script src="ui.js?v=18"></script>
 <script type="module" src="3d/boot.js?v=22"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>

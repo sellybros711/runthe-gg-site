@@ -7,15 +7,20 @@
  * One outing: a pack, a seed, and the calls. The same three give the same
  * outing on any device: one mulberry32 stream, four draws per pitch in a fixed
  * order (miss x, miss z, the library draw, the runner draw), no Math.random,
- * no clock.
+ * no clock. A call is {type, cell} and, since the release meter (2026-10-22),
+ * an optional q (contract.js RELEASE): q scales the miss and nothing else.
  *
  * A PITCH
  *   1. It is graded first (grade.js), on hold% against the best call. The
  *      outcome never touches the grade.
  *   2. The miss: the target cell's centre plus a normal miss of the pitch's
- *      sigmaFt in x, and sigmaFt / kernelZoneFt in normalised height. The cell
+ *      sigmaFt in x, and sigmaFt / kernelZoneFt in normalised height, both
+ *      times the release's spread (contract.js spreadOf(q): 0.6x for a
+ *      perfect release, 1.5x for a bad one, exactly 1.0x without q). The cell
  *      it lands in is the actual cell. The grade's miss table is the same
- *      normal, so what is graded is what is played.
+ *      normal at 1.0x: the grade prices the decision at his own command, and
+ *      the release is execution, which the grade never sees. The two draws are
+ *      the same draws whatever q is; only the spread they are scaled by moves.
  *   3. A real pitch is drawn from the library list for (batter, type, actual
  *      cell, count bucket). Its result happens.
  *   4. In play: the advancement table for the drawn batted ball's category at
@@ -34,6 +39,10 @@
  *   point of hold% given away; after a tie, points of the tie's goal), the
  *   second the result. Tuned against the closer pool when the pool exists;
  *   reported to the lead before it changes.
+ *   The release (q) has no term of its own. It reaches the score only the way
+ *   it reaches the game: a tighter miss changes what happens, so the result
+ *   part moves. The closer pool pitched at 1.0x, his real command, and the
+ *   meter is tuned so an average timing is about 1.0x (CONTRACT.md section 5).
  */
 
 'use strict';
@@ -46,7 +55,9 @@ const G = NODE ? require('./grade.js') : window.STD_GRADE;
 /* lesson.js is optional at load: without it the result has lesson null */
 const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
 
-const ENGINE_VERSION = 2;
+/* 3: a call may carry q, the release (contract.js RELEASE). Without q a call
+   plays exactly as it did under 2. */
+const ENGINE_VERSION = 3;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread. */
 const PACK_VERSION = 2;
@@ -113,6 +124,17 @@ function validCall(o, call) {
     throw new Error('a call needs a cell 0..24');
   }
   if (!o.model.types.includes(call.type)) throw new Error(`${call.type} is not in the arsenal`);
+  K.releaseQ(call.q);   // throws unless q is absent or a number 0..1
+}
+
+/* A call as the engine keeps it: {type, cell}, plus q (two places) when the
+   release was timed. A call without q stays without it, so an old outing's
+   stored calls come back exactly as they went in. */
+function keptCall(call) {
+  const c = { type: call.type, cell: call.cell };
+  const q = K.releaseQ(call.q);
+  if (q != null) c.q = q;
+  return c;
 }
 
 function throwPitch(o, call) {
@@ -128,8 +150,11 @@ function throwPitch(o, call) {
   // 2. the four draws, always all four
   const d = R.pitchDraws(o.rng);
   const arsenal = sc.pitcher.arsenal.find(a => a.type === call.type);
+  const kept = keptCall(call);
+  const spread = K.spreadOf(kept.q);
+  const sigma = arsenal.sigmaFt * spread;
   const t = K.targetOf(call.cell);
-  const actual = { x: t.x + d.missX * arsenal.sigmaFt, zn: t.zn + d.missZ * arsenal.sigmaFt / pack.kernelZoneFt };
+  const actual = { x: t.x + d.missX * sigma, zn: t.zn + d.missZ * sigma / pack.kernelZoneFt };
   const actualCell = K.cellAt(actual.x, actual.zn);
 
   // 3. the outcome key, from the same per mille row the grade priced, then
@@ -171,7 +196,8 @@ function throwPitch(o, call) {
   const res = pitch[2];
   const pr = {
     n: o.log.length + 1,
-    call: { type: call.type, cell: call.cell },
+    call: kept,
+    spread: Math.round(spread * 1000) / 1000,
     actual: { x: round3(actual.x), zn: round3(actual.zn) },
     actualCell,
     velo: pitch[1],
@@ -192,7 +218,7 @@ function throwPitch(o, call) {
   }
   o.log.push(pr);
   o.grades.push(grade);
-  o.calls.push({ type: call.type, cell: call.cell });
+  o.calls.push(Object.assign({}, kept));
   return { pitchResult: pr, pitchGrade: grade, state: publicState(o) };
 }
 

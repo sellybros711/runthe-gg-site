@@ -170,11 +170,53 @@ Statcast codes. The shape tells the UI how to draw the flight.
 
 ```js
 /**
- * @typedef {Object} PitchCall        two taps, nothing else
+ * @typedef {Object} PitchCall        two taps and a release, nothing else
  * @property {PitchType} type         must be in the pitcher's arsenal
  * @property {Cell} cell
+ * @property {number} [q]             the release, 0..1, kept to two places. Absent = 1.0x
  */
 ```
+
+### The release (the owner's call, 2026-10-22)
+
+After the type and the cell, the throw button starts the release meter (`meter.js`): a needle
+sweeps a bar, and the tap that stops it is the release. How close the tap is to the mark is `q`.
+
+- **What q does.** It scales the pitch's miss, `sigmaFt`, by `spreadOf(q)` (`contract.js RELEASE`):
+  `q = 1` is 0.6x, `q = 0.5` is exactly 1.0x, `q = 0` is 1.5x, linear on each side. A call without
+  `q` is 1.0x. The four draws per pitch are the same draws in the same order whatever `q` is; only
+  the spread the two miss draws are multiplied by changes. So a stored outing from before the meter
+  replays unchanged, and an outing with `q` replays exactly from its calls.
+- **The meter.** `q = 1 - |error| / window`, at least 0. The window is 110 ms at command 50 and
+  grows with the pitch's command (89 ms at 35, 151 ms at 80), so control pitchers are easier to
+  time. The bar shows the band where `q >= 0.5` (tighter than his command) and the band where
+  `q >= 0.8`. The needle runs back and forth until the tap, so nobody is rushed. Escape, or picking
+  another pitch or spot, puts it away. One quiet word after the tap (`sharp`, `a bit late`): that is
+  execution, never a grade. Practice adds the spread (`miss 0.72x`) so a player can learn it.
+- **Off.** A setting turns the meter off (on by default): the call carries no `q`, which is 1.0x,
+  his own command. Off is the average release, not a penalty.
+- **The grade never sees q.** Every call is still graded before it resolves, on the miss table at
+  1.0x: the decision at his own command. A perfect release on a bad call is still a bad call.
+- **The score has no execution term.** The score stays `700 - 20 x pts lost` plus the result bonus
+  (section 8). The release reaches it only through what happens (a tighter miss changes outcomes,
+  and the result bonus follows), the same way luck does. Why no term of its own: the closer pool
+  that sets the percentile has no release to score (each closer is played at 1.0x, his real
+  command, which already holds his real execution), so a release term would be points the pool can
+  never earn, and every timed outing would drift up the percentile for no decision. Through the
+  outcome, a player who times well does genuinely better, and the skill shows where it is real.
+- **Keeping the pool honest.** The pool stays at 1.0x and is not rebuilt. The meter is tuned so an
+  ordinary tap (about 60 ms off, one tap in ten a real slip) averages 1.0x at command 50, so the
+  average player meets the pool on level ground, and turning the meter off is exactly level. A
+  typical execution spread was considered for the pool and left out: it would not move the pool's
+  mean spread (tuned to 1.0x), it would add a guess (our model of a phone tap) to real closers'
+  numbers, and it would rebuild every pack for no change a player could see. Across the packs'
+  commands (35-72) the model's mean spread runs 1.06x to 0.93x: timing a control pitcher is a
+  little easier, as the owner asked. `check-replays.mjs` prints the real players' mean spread from
+  stored calls; if it drifts off 1.0, `WINDOW_AT_50` in `meter.js` is retuned, never the pool.
+- **How much it is worth** (measured 2026-10-22: the pool's own calls replayed on all ten packs,
+  15 outings per closer each): every release perfect lifts the mean percentile about 3 points, every
+  release at its worst costs about 6, and the model's ordinary tap lands within about a point of the
+  meter off. Execution matters, and the call still matters more.
 
 ## 6. Pitch result
 
@@ -186,7 +228,8 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @typedef {Object} PitchResult
  * @property {number} n               pitch number in the outing, from 1
  * @property {PitchCall} call
- * @property {PlatePoint} actual      after command noise
+ * @property {PlatePoint} actual      after command noise, scaled by the release
+ * @property {number} spread          the release's scale on his miss (1 without q)
  * @property {Cell} actualCell
  * @property {number} velo            the drawn real pitch's mph
  * @property {'take'|'swing'} batter
@@ -337,7 +380,8 @@ finishOuting(outingId)
 
 Deterministic: the same scenario, seed and calls give the same results on any device. One seeded
 stream (`mulberry32`), drawn in a fixed order per pitch: miss x, miss z, the library draw, the
-runner draw. No `Math.random`, no wall clock.
+runner draw. No `Math.random`, no wall clock. A call's `q` (section 5) scales the two miss draws
+and never adds or moves a draw.
 
 How it runs:
 
@@ -404,7 +448,9 @@ Eastern day, keeps the first submit, updates the streak and returns `{streak, be
 `shutdoor_board(day, limit)` and `shutdoor_my_stats()` read. Trophies: a marked v2 hook.
 
 The calls are stored with every result, so `check-replays.mjs` can replay any row offline with the
-engine and flag a score the calls do not produce.
+engine and flag a score the calls do not produce. Each call carries its release `q` when it was
+timed (section 5). `156_shut_the_door_release.sql` makes the submit's guard check it: absent, null,
+or a number 0..1.
 
 The streak is "doors shut in a row": a door shut on consecutive days. A blown save or a missed day
 resets it. A held tie is a blown save, so it resets it too. `155_shut_the_door_tie_held.sql` lets
