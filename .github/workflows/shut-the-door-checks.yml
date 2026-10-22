@@ -14,7 +14,8 @@ name: Shut The Door checks
 #              dash ban and the copy rules on the files that hold player copy
 #   migration  supabase/153_shut_the_door.sql applied TWICE to a real Postgres,
 #              then supabase/test/shut_the_door_test.sql; then
-#              155_shut_the_door_tie_held.sql (the held tie) twice and its test
+#              155_shut_the_door_tie_held.sql (the held tie) twice and its test;
+#              then 156_shut_the_door_release.sql (the release's q) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -65,7 +66,7 @@ jobs:
         run: node scripts/check-dashes.mjs shut-the-door
       - name: The copy rules, on the files that hold player copy
         run: |
-          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js; do
+          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js; do
             node scripts/check-copy.mjs "$f"
           done
 
@@ -94,3 +95,9 @@ jobs:
           $P -f supabase/155_shut_the_door_tie_held.sql
           $P -f supabase/155_shut_the_door_tie_held.sql
           $P -f supabase/test/shut_the_door_tie_held_test.sql
+      - name: 156 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/156_shut_the_door_release.sql
+          $P -f supabase/156_shut_the_door_release.sql
+          $P -f supabase/test/shut_the_door_release_test.sql

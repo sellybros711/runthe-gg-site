@@ -30,11 +30,16 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
 - **Grade the decision, never the outcome.** Every call is graded before it resolves. The band is
   relative to the moment (`rel` = lost over the state's mean lost); score and percentile use absolute
   hold% lost. `BANDS` in `contract.js` changes only with `band_sweep.mjs` evidence.
-- **Two taps a pitch.** A pitch type and a cell. Nothing else.
+- **Two taps and a release a pitch.** A pitch type, a cell, then one tap on the release meter
+  (`meter.js`). Nothing else. The release (q) scales the miss and never the grade. The meter can be
+  turned off in settings (no q: his own command, 1.0x). No grade or popup between pitches; the
+  meter's one quiet word is execution, not a grade.
 - **The grid is catcher's view in data, pitcher's view on screen.** Mirror with `screenCol()` only.
   Copy says inside and away, never left and right.
 - **Deterministic.** One seeded stream, four draws per pitch in a fixed order. The daily seed is the
-  day's, the same for everyone. No `Math.random` in the engine.
+  day's, the same for everyone. No `Math.random` in the engine. q changes only the spread the two
+  miss draws are scaled by, never which draws are taken. A call without q is exactly 1.0x, so old
+  stored outings replay unchanged (`fixtures/replays-pre-meter.json` holds that).
 - **Every scenario fact and every pro example is real and sourced.** Proxy spots (before 2008) are
   flagged in the data and the UI. Nothing is invented to fill a gap: a missing pro example is null.
 - **The lesson** picks the worst pitch, and only a principle its own numbers show.

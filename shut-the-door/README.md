@@ -13,6 +13,7 @@ the shape. This file has the formulas.
 | `grade.js` | the miss tables, the outcome mix, hold% for every state, the grade and its reason |
 | `engine.js` | an outing: the draw, the runner moves, the end rules, the result and its score |
 | `api.js` | `window.STD_API`, the four async calls, localStorage, the submit |
+| `meter.js` | `window.STD_METER`, the release meter: the timing to q, and the bar on the mound |
 | `share.js` | `window.STD_SHARE.text(result, dailyNumber)` |
 | `auth.js` | `window.STD_AUTH`, the site's account client, plus `submit`, `board`, `myStats` |
 | `pool.js` | node only, at build time: hold tables into the pack, the closer pool's outings |
@@ -62,8 +63,10 @@ one at a time per worker. `prefetch.py` fills chunks from a second process.
 1. **The grade, first.** Hold% of the call against hold% of the best call in that state
    (`grade.js` `gradeCall`). The outcome never touches it.
 2. **The miss.** The target cell's centre plus a normal miss of `sigmaFt` in x and
-   `sigmaFt / kernelZoneFt` in normalised height. The grade's miss table (`kernelFor`) is the same
-   normal, integrated over each cell, so what is graded is what is played.
+   `sigmaFt / kernelZoneFt` in normalised height, both times the release's spread
+   (`contract.js spreadOf(q)`: 0.6x for a perfect release, 1.5x for a bad one, 1.0x without `q`).
+   The grade's miss table (`kernelFor`) is the same normal at 1.0x, integrated over each cell: the
+   grade prices the call at his own command, and the release is execution (CONTRACT.md section 5).
 3. **The outcome.** The pack holds, for this batter, this pitch type, the cell it crossed and the
    count bucket, the chance of each of 14 outcome keys (ball, called strike, swinging strike, foul,
    hit by pitch, single, double, triple, home run, error, and an out on the ground, a line, a fly or
