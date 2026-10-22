@@ -620,7 +620,10 @@ export class People {
     b.root.position.x += want.x - mid.x; b.root.position.z += want.z - mid.z;
     b.root.updateMatrixWorld(true);
     ground(b);
+    b.meetPath = null;
     this.setupChain(b);
+    // his swing's path through the zone, while he walks up (not on the tap that throws the pitch)
+    this.meetPath(b);
   }
 
   /* The swing as a kinetic chain. The capture's hips and shoulders turn almost together (its hips
@@ -671,11 +674,11 @@ export class People {
       contact, chain and feet are worked out the first time and kept. */
   useClip(b, name) {
     if (!b.clips[name] || (b.clip === name && b.chain)) return;
-    const KEYS = ['batTrack', 'batDt', 'tContact', 'peakBatSpeed', 'chain', 'feetSpec', 'feetSwing'];
+    const KEYS = ['batTrack', 'batDt', 'tContact', 'peakBatSpeed', 'chain', 'feetSpec', 'feetSwing', 'meetPath'];
     if (b.chain) b.clipData[b.clip] = Object.fromEntries(KEYS.map((k) => [k, b[k]]));
     b.clip = name;
     if (b.clipData[name]) { Object.assign(b, b.clipData[name]); return; }
-    b.chain = null; b.feetSwing = null; b.feetSpec = null;
+    b.chain = null; b.feetSwing = null; b.feetSpec = null; b.meetPath = null;
     this.bakeBat(b);
     this.setupChain(b);
   }
@@ -735,11 +738,23 @@ export class People {
     const s0 = pt.timeAtY(yF + MEET_DEPTH[0]) - f.T, s1 = pt.timeAtY(yF + MEET_DEPTH[1]) - f.T, N = 24;
     const path = [];
     for (let i = 0; i <= N; i++) { const s = s0 + (s1 - s0) * i / N; path.push([s, pt.pointAt(f.T + s)]); }
+    // the bat through MEET (meetPath, once per hitter and swing), between its samples, with this
+    // pitch's launch tilt put on as poseBat puts it (the tilt is centred on the contact, so it is
+    // whole there)
+    const B = this.meetPath(b), dt = B.dt, n = B.at.length;
+    const tilt = THREE.MathUtils.degToRad(b.batTilt || 0);
     const sweet = new THREE.Vector3(), seg = new THREE.Vector3(), rel = new THREE.Vector3();
+    const ax = new THREE.Vector3(), across = new THREE.Vector3(), q = new THREE.Quaternion(), tq = new THREE.Quaternion();
     const near = (u) => {
-      b.tiltAt = u;                     // the bat's launch tilt is centred on the contact
-      this.swingPose(b, u);
-      sweet.set(0, SWEET, 0).applyMatrix4(b.bat.matrixWorld);
+      const x = THREE.MathUtils.clamp((u - B.lo) / dt, 0, n - 1), i = Math.min(n - 2, Math.floor(x)), k = x - i;
+      q.copy(B.at[i].q).slerp(B.at[i + 1].q, k);
+      if (tilt) {
+        ax.copy(UP).applyQuaternion(q); across.crossVectors(ax, UP);
+        if (across.lengthSq() > 1e-6) q.premultiply(tq.setFromAxisAngle(across.normalize(), tilt));
+      }
+      // poseBat: the knob 5.5 cm below the bottom grip, along the bat
+      ax.copy(UP).applyQuaternion(q);
+      sweet.copy(B.at[i].gb).lerp(B.at[i + 1].gb, k).addScaledVector(ax, SWEET - 0.055);
       let d = Infinity, s = 0;
       for (let i = 0; i < N; i++) {
         const [sa, a] = path[i], [sb, c] = path[i + 1];
@@ -762,6 +777,22 @@ export class People {
     b.meet = best.u - tC;
     b.meetBall = best.s;
     b.tiltAt = best.u;
+  }
+
+  /** The bat through MEET for his swing, without the launch tilt: the bottom grip and the bat's
+      turn every 1/120 s of capture time. Posed once per hitter and swing (about 36 poses), so a
+      pitch's meetTime is arithmetic. */
+  meetPath(b) {
+    if (b.meetPath) return b.meetPath;
+    const lo = b.tContact + MEET[0], hi = b.tContact + MEET[1], dt = 1 / 120, at = [];
+    const tilt = b.batTilt;
+    b.batTilt = 0;
+    for (let u = lo; u <= hi + dt / 2; u += dt) {
+      this.swingPose(b, u);
+      at.push({ gb: this.grips(b).gb, q: b.bat.quaternion.clone() });
+    }
+    b.batTilt = tilt;
+    return (b.meetPath = { lo, dt, at });
   }
 
   /** The take at clock time ct (relative to the swing's contact), before the feet are planted:
