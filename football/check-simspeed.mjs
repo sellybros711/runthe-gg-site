@@ -63,9 +63,12 @@ const r = await page.evaluate(() => {
   const out = { games: 0 };
   const sum = (segs) => segs.reduce((t, s) => t + s.ms, 0);
   let normalOff = 0, minDrive = Infinity, holdsOk = true, slowLess = true, playsOk = true;
-  for (let g = 0; g < 12; g++) {
+  let otGames = 0;
+  for (let g = 0; g < 40; g++) {
     const seed = 'speed|' + g;
-    const script = E.scoringScript(17 + g, 20 + (g % 5) * 3, E.createSeededRNG(E.hashSeed(seed)));
+    /* A three point final can go to overtime, so plenty of these do. */
+    const script = E.scoringScript(24, 21, E.createSeededRNG(E.hashSeed(seed)));
+    if (script.ot) otGames++;
     const drives = T.generateDrives(script, E.createSeededRNG(E.hashSeed(seed + '|d')), {});
     const pace = T.PACE['Wild Card'];
     RTG_SPEED.set('normal');
@@ -81,9 +84,11 @@ const r = await page.evaluate(() => {
     if (!(plain < slow && slow < slower)) slowLess = false;
     /* Every drive that did not score has a stop of its own, and every drive on the field takes
        at least its share of the drive time. */
-    /* REGULATION ONLY. The broadcast timeline runs four quarters at every speed, so an
-       overtime drive gets no stop because it gets no time at all (a known gap, reported). */
-    const quiet = drives.filter((d) => d.tEnd <= 3600 && d.at == null
+    /* Overtime included: it plays out on the timeline now, possession by possession. */
+    /* A game that ends in regulation is shown to 60:00, and the drive picture can run its
+       last filler drive a little past that. That tail is never on screen at any speed. */
+    const shown = (d) => script.ot || d.tEnd <= 3600;
+    const quiet = drives.filter((d) => shown(d) && d.at == null
       && !['safety', 'touchdown', 'field goal'].includes(d.result));
     const holds = slowerSegs.filter((s) => s.kind === 'drive');
     if (holds.length !== quiet.length || holds.some((s) => s.ms !== T.SLOW_DRIVE.slower.hold)) holdsOk = false;
@@ -93,7 +98,7 @@ const r = await page.evaluate(() => {
         const mid = (a + b) / 2;
         return t + (d.tStart <= mid && mid < d.tEnd ? s.ms : 0);
       }, 0);
-      if (d.tEnd - d.tStart > 20 && d.tEnd <= 3600) minDrive = Math.min(minDrive, ms);
+      if (shown(d) && d.tEnd - d.tStart > 20) minDrive = Math.min(minDrive, ms);
     }
     out.games++;
     out.last = { plain: Math.round(plain), slow: Math.round(slow), slower: Math.round(slower) };
@@ -105,7 +110,7 @@ const r = await page.evaluate(() => {
   RTG_SPEED.set('slower');
   const kept = segs[0].ms === first;
   RTG_SPEED.set('normal');
-  return Object.assign(out, { normalOff, minDrive: Math.round(minDrive), holdsOk, slowLess, kept,
+  return Object.assign(out, { otGames, normalOff, minDrive: Math.round(minDrive), holdsOk, slowLess, kept,
     floor: Math.round(T.SLOW_DRIVE.slower.drive * 0.6) });
 });
 
@@ -114,7 +119,7 @@ ok('Normal is exactly the pace it was', r.normalOff < 1, r.normalOff.toFixed(3) 
 ok('Slow is slower than Normal, and Slower slower than Slow', r.slowLess, JSON.stringify(r.last));
 ok('at Slower every drive gets real time on the field', r.minDrive >= r.floor - 1,
   'shortest ' + r.minDrive + 'ms, floor ' + r.floor + 'ms');
-ok('and every drive that did not score stops for its call', r.holdsOk);
+ok('and every drive that did not score stops for its call, overtime included', r.holdsOk, r.otGames + ' overtime games');
 ok('a change of setting never moves a segment already started', r.kept);
 ok('no page errors', !boom.length, boom.join(' | '));
 
