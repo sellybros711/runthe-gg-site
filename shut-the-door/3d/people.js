@@ -784,6 +784,9 @@ export class People {
       pitch's meetTime is arithmetic. */
   meetPath(b) {
     if (b.meetPath) return b.meetPath;
+    // his swing's planted feet (planBatterFeet plans them only once he swings; a take comes first)
+    const dur = b.clips[b.clip].duration;
+    if (!b.feetSwing) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, dur, b.feetSpec(0, dur, true));
     const lo = b.tContact + MEET[0], hi = b.tContact + MEET[1], dt = 1 / 120, at = [];
     const tilt = b.batTilt;
     b.batTilt = 0;
