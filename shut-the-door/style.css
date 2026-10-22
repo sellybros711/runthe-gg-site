@@ -849,15 +849,16 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .relm.is-best .rm-acc .rm-lock { border-color: var(--signal); }
 .relm.is-best .rm-best { animation: rm-best .5s ease-out; }
 @keyframes rm-best { 0% { background: #fff; box-shadow: 0 0 26px 6px rgba(255, 79, 31, .9); } 100% { } }
-/* the one word, stamped over the lock. Execution, never a grade. */
-.rm-word { position: absolute; z-index: 4; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
-  font-family: var(--display); font-weight: 900; font-style: italic; font-size: 16px; letter-spacing: .05em; text-transform: uppercase; line-height: 1;
-  padding: 4px 9px 3px; border-radius: 6px; background: #f4f5f7; color: #0b0f17; box-shadow: 0 2px 8px rgba(0, 0, 0, .4); opacity: 0; }
+/* the one word, stamped in the head in place of the call. Execution, never a grade. */
+.rm-word { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; align-self: center;
+  font-family: var(--display); font-weight: 900; font-style: italic; font-size: 17px; letter-spacing: .05em; text-transform: uppercase; line-height: 1;
+  padding: 4px 9px 3px; border-radius: 6px; background: #f4f5f7; color: #0b0f17; }
 .rm-word:empty { display: none; }
-.relm.is-done .rm-word { opacity: 1; animation: rm-stamp .26s cubic-bezier(.2, 1.6, .4, 1); }
+.relm.is-done .rm-call { display: none; }
+.relm.is-done .rm-word { margin-right: auto; animation: rm-stamp .26s cubic-bezier(.2, 1.6, .4, 1); }
 .relm.is-good .rm-word { background: var(--data); color: #fff; }
 .relm.is-best .rm-word { background: var(--signal); color: #fff; }
-@keyframes rm-stamp { 0% { opacity: 0; transform: translateX(-50%) scale(1.5); } 100% { opacity: 1; transform: translateX(-50%) scale(1); } }
+@keyframes rm-stamp { 0% { opacity: 0; transform: scale(1.5); } 100% { opacity: 1; transform: none; } }
 /* the ball landed in the cell that was called: a quiet ring, once */
 .aim .cell.m-painted::after { content: ''; position: absolute; inset: 6%; width: auto; height: auto; background: none; border-radius: 6px; box-shadow: 0 0 0 2px #fff, 0 0 12px 2px var(--signal); animation: rm-paint 1.3s ease-out forwards; pointer-events: none; }
 @keyframes rm-paint { 0% { opacity: 0; transform: scale(.7); } 18% { opacity: 1; transform: scale(1.04); } 100% { opacity: 0; transform: scale(1); } }

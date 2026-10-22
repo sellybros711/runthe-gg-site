@@ -22,7 +22,8 @@
  *
  * THE STOP. The needle (or the fill) locks where it was stopped: a short flash, a ring that opens
  * from the lock, the bar's value held. The word after the release is meter.js wordOf, execution
- * only, never a grade. No popup: it sits in the panel, which goes away when the pitch is over.
+ * only, never a grade, stamped in the head in place of the call. No popup: it sits in the panel,
+ * which goes away when the pitch is over.
  *
  * create(el) -> { el, run(opts), cancel(), hide(), running(), stage() }
  *   run({ command, pitch, verb, label, practice, repeat, onSnap, onStage }) resolves
@@ -64,7 +65,7 @@ function create(el) {
   el.setAttribute('role', 'button');
   el.setAttribute('tabindex', '-1');
   el.innerHTML =
-    '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-velo"><em></em> mph</span></div>' +
+    '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span><span class="rm-velo"><em></em> mph</span></div>' +
     '<div class="rm-row rm-eff">' +
       '<span class="rm-lbl">effort</span>' +
       '<div class="rm-track rm-etrack"><i class="rm-efill"></i>' +
@@ -74,7 +75,7 @@ function create(el) {
     '<div class="rm-row rm-acc">' +
       '<span class="rm-lbl">accuracy</span>' +
       '<div class="rm-track rm-atrack"><i class="rm-good"></i><i class="rm-best"></i><i class="rm-mark"></i>' +
-        '<i class="rm-needle"></i><i class="rm-lock"></i><span class="rm-word" aria-live="polite"></span></div>' +
+        '<i class="rm-needle"></i><i class="rm-lock"></i></div>' +
     '</div>';
   var q = function (s) { return el.querySelector(s); };
   var verb = q('.rm-verb'), call = q('.rm-call'), velo = q('.rm-velo em'), veloBox = q('.rm-velo');
@@ -149,7 +150,6 @@ function create(el) {
     el.classList.toggle('is-good', qq >= MT.GOOD_Q && qq < MT.BEST_Q);
     var extra = live.opts.practice && C.spreadOf ? ' · miss ' + C.spreadOf(qq, live.opts.repeat).toFixed(2) + 'x' : '';
     word.textContent = w + extra;
-    word.style.left = pct(Math.max(0.12, Math.min(0.88, n.pos)));
     if (qq >= MT.BEST_Q && live.opts.onSnap) live.opts.onSnap(qq);
     var res = live.resolve, out = { q: qq, err: Math.round(err), word: w };
     if (live.e != null) out.e = live.e;
