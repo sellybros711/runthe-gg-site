@@ -10,7 +10,7 @@
  *   const run = ip.begin(pr, pitch, { hooks })                   a ball in play: the plan and its clock
  *     run.realDur, run.resolveReal (seconds after contact), run.sceneAt(r) (plan time at real r),
  *     run.land { s, real, how, fair } (the ball's first landing, catch, pick up or home run)
- *   ip.prime(camera)                                              one draw of it all at load (stage.js)
+ *   ip.prime()                                                    its textures up to the GPU at load (stage.js)
  *   ip.update(s, camera)                                          every frame after contact (s: plan time)
  *   ip.fieldAt(s)                                                 the runners for the scorebar diamond
  *   ip.end(camera)                                                back to the set (the next pitch)
@@ -83,23 +83,27 @@ export class InPlay {
     this.trail.visible = on;
   }
 
-  /** One draw of everything the broadcast shows, at load (stage.js init, on the hidden home screen):
-      the park's 2048 px infield mask and its textures, thirteen bodies' bone textures and buffers go
-      up to the GPU now, and a phone's driver builds its pipelines now, not on the first frame of the
-      first ball in play. Nothing is culled for this one draw; what it drew is put back. */
-  prime(camera) {
-    const was = [];
-    const all = (o) => o.traverse((m) => { if (m.isMesh) { was.push([m, m.frustumCulled]); m.frustumCulled = false; } });
-    this.warm(true);
-    all(this.park);
-    for (const f of this.crew.figures) all(f.root);
-    all(this.trail);
-    const n0 = this.crew.blobs.count;
-    this.crew.blobs.count = 1;
-    this.renderer.render(this.scene, camera);
-    this.crew.blobs.count = n0;
-    for (const [m, c] of was) m.frustumCulled = c;
-    this.warm(false);
+  /** The broadcast's textures up to the GPU at load (stage.js init, behind the home screen): the
+      park's 2048 px infield mask, its dirt and seats, the shadow blob. Measured in Chromium (software
+      GL), the first broadcast frame uploaded 14 textures and 12 buffers on top of its draw; drawn
+      ahead into a target instead, it still compiled a shader per variant the canvas never uses, so
+      this only uploads (renderer.initTexture: no draw, nothing on screen). It takes six of the
+      fourteen off that frame; the rest are the bodies' bone textures (made on their first draw)
+      and textures still loading. A small hitch at the cut remains: stage.js's clock pauses for it. */
+  prime() {
+    const r = this.renderer, seen = new Set();
+    const up = (o) => o.traverse((m) => {
+      if (!m.isMesh) return;
+      for (const mat of [].concat(m.material)) for (const v of Object.values(mat)) {
+        if (!v || !v.isTexture || seen.has(v)) continue;
+        seen.add(v);
+        if (v.image && (v.image.width || v.image.data)) r.initTexture(v);
+      }
+    });
+    up(this.park);
+    for (const f of this.crew.figures) up(f.root);
+    up(this.crew.blobs);
+    return seen.size;
   }
 
   /** A ball in play: plan it from the engine's PitchResult and the pitch as the scene threw it. */

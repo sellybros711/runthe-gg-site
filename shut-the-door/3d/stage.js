@@ -55,8 +55,8 @@
  * the first frame of the broadcast can stall (its park and thirteen bodies going up to the GPU, and
  * the driver building their pipelines): on the wall clock a stall jumped the play forward by as long as
  * it lasted, and one as long as the play (a few seconds) skipped it whole: the camera never left the
- * pitcher's view. Now a stall pauses the play, and init primes the
- * broadcast at load (inplay.js prime) so the stall is not there either.
+ * pitcher's view. Now a stall pauses the play, and init uploads the
+ * broadcast's textures at load (inplay.js prime) so the stall is shorter too.
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=7';
@@ -124,9 +124,8 @@ class Stage {
     mk('people');
     if (this.inplay) this.inplay.warm(true);
     await this.renderer.compileAsync(this.scene, this.camera);
-    // and one draw of the broadcast, so its first frame in a game uploads nothing (the set is drawn
-    // over it just below, in the same task: it is never on screen)
-    if (this.inplay) this.inplay.prime(this.camera);
+    // and the broadcast's textures up now, not on its first frame in a game
+    if (this.inplay) this.inplay.prime();
     if (this.inplay) this.inplay.warm(false);
     // one draw now compiles what compileAsync leaves (the shadow pass); on the home screen the canvas
     // is hidden, so nobody sees it
