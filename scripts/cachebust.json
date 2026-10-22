@@ -2595,8 +2595,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "115",
-      "sha": "756372e745bb8517"
+      "v": "116",
+      "sha": "53832ea0f587d3e5"
     },
     "putt/land.js": {
       "v": "14",
@@ -2917,12 +2917,12 @@
   },
   "shut-the-door/index.html": {
     "contract.js": {
-      "v": "4",
-      "sha": "7b6a792536e385b5"
+      "v": "5",
+      "sha": "f039cc59b7609bb5"
     },
     "meter.js": {
-      "v": "1",
-      "sha": "7d060615adcfe0ad"
+      "v": "2",
+      "sha": "6c875b65fad06ab0"
     },
     "sprites.js": {
       "v": "2",
@@ -2953,16 +2953,16 @@
       "sha": "07b7ca2277fe8038"
     },
     "grade.js": {
-      "v": "4",
-      "sha": "03bbe8bdba813533"
+      "v": "5",
+      "sha": "e35cc6dff6b506a9"
     },
     "lesson.js": {
-      "v": "2",
-      "sha": "1fcb87c4a8b51460"
+      "v": "3",
+      "sha": "d6666cfadb7a64b6"
     },
     "engine.js": {
-      "v": "6",
-      "sha": "e10e157d22dbe9cc"
+      "v": "7",
+      "sha": "0efc8cc24f910270"
     },
     "share.js": {
       "v": "2",
@@ -2977,8 +2977,8 @@
       "sha": "843bad6d39ae5e64"
     },
     "api.js": {
-      "v": "4",
-      "sha": "97fcf1d51fa278b6"
+      "v": "5",
+      "sha": "23d764ac3d1ec612"
     },
     "mock-api.js": {
       "v": "9",
@@ -2993,18 +2993,18 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "20",
-      "sha": "fe386f7f485a3827"
+      "v": "21",
+      "sha": "fc8d3e88910d43d6"
     },
     "3d/boot.js": {
-      "v": "23",
-      "sha": "02407f086bb97580"
+      "v": "24",
+      "sha": "7b328b4c25d1f85b"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "30",
-      "sha": "e1088d59056d5bed"
+      "v": "31",
+      "sha": "63a76e878bfdf028"
     }
   },
   "soccer/index.html": {
@@ -3119,8 +3119,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "27",
-      "sha": "2914ac61c1bace88"
+      "v": "28",
+      "sha": "5a31be742af788aa"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3167,8 +3167,8 @@
       "sha": "5a84454de3c08f14"
     },
     "people.js": {
-      "v": "33",
-      "sha": "c24a336376ce586e"
+      "v": "34",
+      "sha": "c5df6c7f1dc73f03"
     },
     "pitch.js": {
       "v": "7",
@@ -3187,8 +3187,8 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "1",
-      "sha": "7831feb0fe5ba14a"
+      "v": "2",
+      "sha": "10457534a26bdcf6"
     },
     "preview.js": {
       "v": "1",
@@ -3283,8 +3283,8 @@
       "sha": "d248f650bea5c8e2"
     },
     "people.js": {
-      "v": "31",
-      "sha": "c24a336376ce586e"
+      "v": "34",
+      "sha": "c5df6c7f1dc73f03"
     },
     "looks.js": {
       "v": "2",

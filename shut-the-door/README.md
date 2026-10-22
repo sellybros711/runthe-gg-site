@@ -79,6 +79,55 @@ one at a time per worker. `prefetch.py` fills chunks from a second process.
 Four draws a pitch, always, in that order (miss x, miss z, the outcome, the runners), from one
 mulberry32 stream per outing. Daily seed: `hashSeed('shut-the-door-' + day)`.
 
+Under rules 2 (below) steps 1 to 3 also read the outing's log: the grade prices the history, the miss
+is also scaled by the arm (`fatigueOf`) and a repeat keeps less release (`spreadOf(q, repeat)`), and
+the row is the pack's row adjusted for what the hitter has seen (`rowsCtx`). Same four draws.
+
+## Rules 2: the hitter adjusts, the arm tires (2026-10-22)
+
+The owner: "I've never given up a run yet. Can we up the difficulty?" CONTRACT.md 5b is the rule;
+`grade.js R2` holds every setting. A new outing plays rules 2 and its calls carry `r: 2`; a call
+without `r` replays as rules 1, exactly.
+
+**Why it was easy (measured on main, 400 outings a strategy a pack, an ordinary release).** Mean hold%
+over the ten packs. The closer pool holds 78.2, real 2015-2025 spots about 83.
+
+| player | rules 1 | rules 2 |
+|---|---|---|
+| the same pitch to the same spot every pitch (the best such call per pack) | 84.1 | 63.7 |
+| the screen's top call every pitch (heat map, swing map, scout card) | 82.0 | 61.7 |
+| the screen's top six, at random | 82.5 | 72.4 |
+| the screen's top call, mixing types and spots and not leaning on the zone (strong) | 81.9 | 76.4 |
+| his pitches at their usage, a random strike, a chase pitch with two strikes | 82.0 | 78.1 |
+| the closer pool (real closers' choices) | 78.2 | 76.1 |
+| the grade's best call every pitch (the ceiling) | 91.7 | 92.2 |
+
+Nothing in rules 1 answered a pitcher who repeats himself: each pitch's outcome came from the pack
+row for that pitch, cell and count, the same however often the batter had seen it. Any steady
+strategy beat the real closers, and a single repeated call beat them in all ten packs.
+
+**Each effect alone** (rules 2 with only that effect, mean change against rules 1 in hold%, ordinary
+release; the strong player, the screen's top call, the repeated call, the pool): the hitter adjusting
+to the pitch +2.6, -9.0, -10.0, -2.0 (the fresh look pays, the repeat costs); where he has aimed
+-8.2, -8.1, -7.3, -0.1; the arm -0.6, +1.3, +0.8, +0.6 (centred: it bites only in long outings);
+a repeat keeping less release, with a perfect release, 0.2, -2.6, -2.1, 0.3; coarser scouting -0.7,
+-1.0, 0.4, 0.3. Runs of 300 outings, so a point is noise.
+
+**Measured and modelled.** `pipeline/effects.py` (2024, `pipeline/effects.json`): within about 5%
+key by key for repeats, a flat spread by pitch count, 1% wider with runners on, because the data is
+chosen by the pitchers. So the shares, the pitch counts and the runners-on spread are used as
+measured, and the strengths (`FAMILIAR`, `EFFECT`, `ZONE`, `FATIGUE.rate`) are a labelled model
+tuned to the owner's target: a strong player who reads the screen and mixes holds about what the
+pool holds. Change them only with these runs (`pipeline/strategies.cjs`) and
+rebuild every pack with `pool.js` (the pool and `pack.seq`).
+
+**The pool.** `pool.js` plays it under rules 2, maps a closer's pitch family onto every pitch the
+scenario pitcher has in it by usage (not only the most used), and stores `pack.seq`: the familiarity
+(`L`) and zone share of aims (`Z`) its calls show, which rules 2 centres on. The pool held 79.5 and
+holds 76.8 (pack builds); its calls band 19/28/33/21, from 22/33/30/15, because the grade now prices
+the history the pool's calls ignore. `BANDS` did not change: heart fastballs grade mostly orange and
+red in 10 of 10 packs (9 of 10 before; Chapman's three-run lead now 66%).
+
 ## The tiers (that batter, similar batters, league)
 
 `pipeline/model.py`. For each arsenal pitch:
