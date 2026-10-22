@@ -8522,7 +8522,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=100"></script>
+<script src="engine.js?v=101"></script>
 <script src="run.js?v=103"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -19594,7 +19594,8 @@ const LIVE_PACE={'Wild Card':0.18,'Divisional':0.25,
 const QNAME=['1ST','2ND','3RD','4TH'];
 /* Anything past the fourth is overtime, which is not a fifth quarter: a live game that goes
    to overtime reads OT on the bug and in the log, never undefined or 4TH 0:00. */
-const qLabel=(q)=>q>4?'OT':QNAME[q-1];
+/* And a second overtime period is 2OT, the way a broadcast says it. */
+const qLabel=(q)=>q>5?(q-4)+'OT':q>4?'OT':QNAME[q-1];
 const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
 
 /* How the score bug dresses for each rung, and what its right-hand cell says. Slate,
@@ -19705,6 +19706,25 @@ function buildTimeline(script,pace,drives){
     pushRun(segs,q,from,0,Math.max(200,from/900*pace.quarterMs),drives);
     if(q<4) segs.push(paced({kind:'break',q},q===2?pace.half:pace.qbreak));
   }
+  /* OVERTIME, PLAYED OUT. Fifteen minute periods, and the game ends when the engine's plan
+     says it did: at the walk-off, or when the side that had to answer a first-possession
+     score did not. Not at 0:00, because nothing in overtime waits for the clock. */
+  const plan=script.ot;
+  if(plan&&plan.poss){
+    const periods=Math.floor(Math.max(0,plan.end-1)/900)+1;
+    for(let k=0;k<periods;k++){
+      const q=5+k;
+      segs.push(paced({kind:'break',q:q-1,otStart:q},pace.half,(L)=>L.score));
+      const endHere=k===periods-1?900-(plan.end-k*900):0;
+      let from=900;
+      for(const e of script.filter(x=>x.q===q)){
+        pushRun(segs,q,from,e.sec,Math.max(200,(from-e.sec)/900*pace.quarterMs),drives);
+        segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold,(L)=>L.score));
+        from=e.sec;
+      }
+      if(from>endHere) pushRun(segs,q,from,endHere,Math.max(200,(from-endHere)/900*pace.quarterMs),drives);
+    }
+  }
   return segs;
 }
 
@@ -19719,7 +19739,7 @@ function buildTimeline(script,pace,drives){
 
 /* "Q1".."Q4", then "OT". The extra period is not a fifth quarter and calling it Q5 on the
    play log would read as a bug rather than as overtime. */
-function periodLabel(e){ return e.q>4?'OT':'Q'+e.q; }
+function periodLabel(e){ return e.q>4?qLabel(e.q):'Q'+e.q; }
 
 /*
  * THE TAKEAWAYS, ON THE FIELD.
@@ -19751,11 +19771,16 @@ function generateDrives(script,rng,opts){
      produces. Halftime and overtime are pushed into this same list and the whole thing is
      then sorted, so a tick's position here stops being the script's the moment that happens,
      and the kick distances below are keyed on exactly that. */
-  script.forEach((e,i)=>ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}));
+  /* AN OVERTIME THE ENGINE PLANNED is drawn from its plan below, possession by possession,
+     so regulation here stops at 60:00. See otPlanFor in engine.js. */
+  const otPlan=script&&script.ot&&Array.isArray(script.ot.poss)?script.ot:null;
+  script.forEach((e,i)=>{ if(otPlan&&e.ot) return;
+    ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}); });
   /* THE GAME IS AS LONG AS IT TOOK. Fixed at 3600 this walked off the end of an overtime:
      the last gap came out negative and the extra period drew no drives at all. */
   const REG=3600;
-  const GAME=ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
+  /* With an overtime plan, regulation is exactly sixty minutes and the plan has the rest. */
+  const GAME=otPlan?REG:ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
   /* HALFTIME IS AN EVENT, not a line the clock happens to pass. Without it the ball simply
      stayed with whoever had it when the second quarter ran out and play carried straight on
      into the third, so a team could finish the half with a punt and open the second half
@@ -19912,6 +19937,29 @@ function generateDrives(script,rng,opts){
     if(ns&&ns.ot){pos=otReceiver;at=pos==='you'?youKO():themKO();}
     t=tE;
   }
+  /* THE OVERTIME, ONE DRIVE PER POSSESSION OF THE ENGINE'S PLAN. Declared inside, so the
+     tests that lift generateDrives out of this page by its source get it too. Every possession starts off a
+     kickoff or a change of hands, so the ball is placed fresh each time rather than chained:
+     what has to be true here is who had it, in what order, and how it ended, and the plan is
+     the authority on all three. Same frame as above: you advance toward 100. */
+  function otDrives(plan,REG,rng){
+    const out=[];
+    for(const p of plan.poss){
+      const you=p.team==='you';
+      const rel0=20+Math.floor(rng()*16);                 // own 20 to 35
+      let rel1;
+      if(p.result==='touchdown') rel1=100;
+      else if(p.result==='field goal'||p.result==='miss') rel1=60+Math.floor(rng()*25);
+      else if(p.result==='safety') rel1=0;
+      else rel1=Math.min(95,rel0+5+Math.floor(rng()*40));
+      const start=p.result==='safety'?2+Math.floor(rng()*8):rel0;
+      const abs=(r)=>you?r:100-r;
+      out.push({team:p.team,startYard:abs(start),endYard:abs(rel1),result:p.result,
+        tStart:REG+p.start,tEnd:REG+p.end,...(p.at!=null?{at:p.at}:{})});
+    }
+    return out;
+  }
+  if(otPlan) drives.push(...otDrives(otPlan,REG,rng));
   return drives;
 }
 
@@ -20325,11 +20373,12 @@ function playPlayoffGame(r,after){
       .concat(quiet)
       .sort((a,b)=>a.t-b.t);
     all.forEach(x=>x.d?logDrive(x.d):x.tk?logTakeaway(x.tk):logScore(x.e,x.i));
-    paintField(3600);
+    paintField(script.ot?3600+script.ot.end:3600);
     $('po-cap').innerHTML='<div class="call '+(r.won?'you':'them')+
       (r.won&&round==='Super Bowl'?' big':'')+'"><b>'+
       (r.won?(round==='Super Bowl'?'CHAMPIONS':'YOU ADVANCE'):'SEASON OVER')+
-      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+'</span></div>';
+      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+
+      (script.ot?' in '+(script.ot.end>900?'double overtime':'overtime'):'')+'</span></div>';
     if(r.won&&round==='Super Bowl'){
       const perfectRun=run.season.results.every(x=>x.won);
       fireConfetti(confettiTheme(perfectRun));
@@ -20378,12 +20427,14 @@ function playPlayoffGame(r,after){
     :d.takeaway==='INTERCEPTION'?'INTERCEPTED'
     :d.takeaway?'FUMBLE'
     :d.result==='turnover'?'TURNOVER'
+    :d.result==='downs'?'TURNOVER ON DOWNS'
+    :d.result==='miss'?'NO GOOD'
     :String(d.result).toUpperCase();
   const logDrive=(d)=>{
-    const q=Math.floor(d.tEnd/900)+1;
-    const clock=clockText(Math.max(0,900-(d.tEnd-(Math.min(q,5)-1)*900)));
+    const q=Math.floor(Math.max(0,d.tEnd-1)/900)+1;
+    const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
     $('po-log').insertAdjacentHTML('afterbegin',
-      '<div class="pl '+d.team+' quiet"><span class="t">'+(q>4?'OT':'Q'+q)+' '+clock+'</span>'+
+      '<div class="pl '+d.team+' quiet"><span class="t">'+(q>4?qLabel(q):'Q'+q)+' '+clock+'</span>'+
       '<span class="w">'+esc(driveWho(d))+' &middot; '+esc(driveHead(d).toLowerCase())+
       '<i class="plsub">'+esc(driveLine(d))+'</i></span><span class="n"></span></div>');
   };
@@ -20393,7 +20444,7 @@ function playPlayoffGame(r,after){
     if(i>=segs.length){ finish(); return; }
     const seg=segs[i++];
     if(seg.kind==='run'){
-      $('po-q').textContent=QNAME[seg.q-1];
+      $('po-q').textContent=qLabel(seg.q);
       $('po-ck').textContent=clockText(seg.from);
       const t0=(window.performance||Date).now();
       const step=()=>{
@@ -20412,7 +20463,7 @@ function playPlayoffGame(r,after){
             '<span>'+esc(t.blurb)+'</span></div>';
           logTakeaway(t);
         }
-        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        bug.classList.toggle('urgent',seg.q>=4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(step); return; }
         next();
       };
@@ -20460,6 +20511,18 @@ function playPlayoffGame(r,after){
       }
       poTimer=setTimeout(next,ms);
       return;
+    }
+    if(seg.kind==='break'&&seg.otStart){
+      /* THE TOSS, said out loud. Who has the ball first is the whole shape of overtime under
+         these rules, so it is the first thing the period says. */
+      const rcv=script.ot.receiver==='you'?'You':oppCode;
+      $('po-q').textContent=qLabel(seg.otStart);
+      $('po-ck').textContent='15:00';
+      $('po-cap').innerHTML='<div class="call '+script.ot.receiver+'"><b>'+
+        (seg.otStart>5?'DOUBLE OVERTIME':'OVERTIME')+'</b><span>'+
+        (seg.otStart>5?'Still tied. Next score wins.'
+          :esc(rcv)+(rcv==='You'?' win the toss. You get the ball first.'
+            :' wins the toss and takes the ball.'))+'</span></div>';
     }
     poTimer=setTimeout(next,seg.ms);
   };
@@ -23305,11 +23368,11 @@ function bowlBroadcast(cfg){
     if(i>=segs.length){ finish(); return; }
     const seg=segs[i++];
     if(seg.kind==='run'){
-      $('bowl-q').textContent=QNAME[seg.q-1]; $('bowl-ck').textContent=clockText(seg.from);
+      $('bowl-q').textContent=qLabel(seg.q); $('bowl-ck').textContent=clockText(seg.from);
       const t0=(window.performance||Date).now();
       const stepf=()=>{ const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
         const sec=seg.from+(seg.to-seg.from)*k; $('bowl-ck').textContent=clockText(sec);
-        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        bug.classList.toggle('urgent',seg.q>=4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(stepf); return; } next(); };
       poRaf=requestAnimationFrame(stepf); return;
     }
