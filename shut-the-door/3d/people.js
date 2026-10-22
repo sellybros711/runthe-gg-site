@@ -24,9 +24,15 @@ const SWEET = 28 * 0.0254;
 // how far the swing may be slid to meet the ball (seconds of capture time, from its fastest barrel).
 // The sweet spot reaches the ball 0.04 to 0.21 s late, but past about +0.07 s the capture's bat has
 // slowed to a near stop (swing3R at +0.21 s: 11 mph, from 25 at its peak), so the bat stalls on the
-// ball in motion. The cap keeps contact in the fast part of the swing; what is left of the miss is
-// where the bat is in his hands, not when.
+// ball in motion. The cap keeps contact in the fast part of the swing. What is left of the miss is
+// not where the bat sits in his hands: on a pulled ball a right handed hitter's bottom grip is still
+// 1.2 m from the ball at +0.07 s on swing2 and swing3, past what a 34 in bat can reach.
 const MEET = [-0.05, 0.07];
+// the bat in his hands (bakeBat): the top hand counts as off the bat once the grips are GRIP_OFF
+// (m) apart, and the bat is then the bottom hand's alone, over GRIP_LET seconds; GRIP_HOLD is the
+// gap between the grips (m) at which the line through them and his grip count the same;
+// GRIP_SMOOTH the smoothing's width (samples at 60 Hz)
+const GRIP_OFF = 0.2, GRIP_LET = 0.1, GRIP_HOLD = 0.05, GRIP_SMOOTH = 2;
 
 const UNIFORM = new Set(['uniform', 'socks', 'gloves', 'undershirt', 'belt', 'number']);
 
@@ -774,31 +780,59 @@ export class People {
     }
   }
 
-  /** The bat in the bottom hand's frame, sampled through the clip and smoothed (the capture has
-      no bat; two wrist joints a hand apart give a noisy axis, so it is averaged over 0.2 s). Contact
-      is where the smoothed barrel moves fastest. */
+  /** The bat in his hands, as a turn in the bottom hand's frame for every 1/60 s of the clip (the
+      capture has no bat). It runs from the bottom grip through the top one. Where the hands come
+      together that line says little (two grips a few cm apart turn it anywhere: the bat flipped
+      upright after contact), so it is held toward his grip there; after the top hand lets go the bat
+      stays as it was in the bottom hand. Lightly smoothed. Contact is where the barrel moves fastest. */
   bakeBat(b) {
     const clip = b.clips[b.clip], dt = 1 / 60;
-    const raw = [];
-    let last = null;
+    // every sample: the line from the bottom grip to the top one, in the bottom hand's frame, and
+    // when the top hand lets go (the grips more than GRIP_OFF apart: on the bat they stay 6 to 18 cm)
+    const S = [];
+    let tOff = Infinity;
     for (let t = 0; t <= clip.duration + 1e-6; t += dt) {
       pose(b, { [b.clip]: [t, 1] });
       const { gb, gt, handQ } = this.grips(b);
-      const sep = gb.distanceTo(gt);
-      let local = last;
-      if (sep < 0.3 || !last) {
-        const axis = gt.clone().sub(gb).normalize();
-        const q = new THREE.Quaternion().setFromUnitVectors(UP, axis);
-        local = handQ.clone().invert().multiply(q);
-      }
-      if (last && local.dot(last) < 0) local.set(-local.x, -local.y, -local.z, -local.w);
-      raw.push(local); last = local;
+      if (tOff === Infinity && gb.distanceTo(gt) > GRIP_OFF) tOff = t;
+      S.push({ t, d: gt.clone().sub(gb).applyQuaternion(handQ.clone().invert()) });
     }
+    // his grip: the one line through the bottom fist that the top grip stays nearest while both
+    // hands are on (the principal direction of the hand to hand line, weighted by its length
+    // squared, so the long, sure lines count most)
+    const both = S.filter((s) => s.t < tOff);
+    const grip = new THREE.Vector3();
+    for (const s of both) grip.add(s.d);
+    for (let k = 0; k < 24; k++) {
+      const n = new THREE.Vector3();
+      for (const s of both) n.addScaledVector(s.d, s.d.dot(grip));
+      grip.copy(n.lengthSq() > 1e-12 ? n.normalize() : UP);
+    }
+    // each sample: the hand to hand line, turned toward his grip as the hands close up (half way at
+    // a GRIP_HOLD gap). As the top hand lets go the bat stays as it was in the bottom hand, taken
+    // over in GRIP_LET seconds from just before the break
+    const toward = (dir, to, w) => {
+      const ax = new THREE.Vector3().crossVectors(dir, to);
+      if (ax.lengthSq() > 1e-12) dir.applyAxisAngle(ax.normalize(), dir.angleTo(to) * w);
+      return dir;
+    };
+    const held = S.map((s) => {
+      const sep = s.d.length();
+      const dir = sep > 1e-6 ? s.d.clone().divideScalar(sep) : grip.clone();
+      return toward(dir, grip, 1 / (1 + Math.pow(sep / GRIP_HOLD, 4)));
+    });
+    const tLet = tOff - GRIP_LET / 2;
+    const kept = held[Math.max(0, Math.min(held.length - 1, Math.round(tLet / dt)))];
+    const raw = held.map((dir, i) => {
+      const k = smooth(clamp01((S[i].t - tLet) / GRIP_LET));
+      return new THREE.Quaternion().setFromUnitVectors(UP, k > 0 ? toward(dir.clone(), kept, k) : dir);
+    });
+    for (let i = 1; i < raw.length; i++) if (raw[i].dot(raw[i - 1]) < 0) raw[i].set(-raw[i].x, -raw[i].y, -raw[i].z, -raw[i].w);
     const W = 6;
     b.batTrack = raw.map((_, i) => {
-      const acc = new THREE.Vector4();
+      const acc = new THREE.Vector4(0, 0, 0, 0);
       for (let k = -W; k <= W; k++) {
-        const q = raw[Math.min(raw.length - 1, Math.max(0, i + k))], w = Math.exp(-(k * k) / (2 * 9));
+        const q = raw[Math.min(raw.length - 1, Math.max(0, i + k))], w = Math.exp(-(k * k) / (2 * GRIP_SMOOTH * GRIP_SMOOTH));
         acc.x += q.x * w; acc.y += q.y * w; acc.z += q.z * w; acc.w += q.w * w;
       }
       return new THREE.Quaternion(acc.x, acc.y, acc.z, acc.w).normalize();
