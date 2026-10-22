@@ -22,6 +22,15 @@
  * since the pool was replayed under the new rules. The percentile of any row
  * submitted before the new packs can move for the same reason.
  *
+ * THE RELEASE (2026-10-22). A call may carry q, the release meter's timing
+ * (contract.js RELEASE). It is replayed like the rest of the call: q scales
+ * the miss of the same draws. A call without q is 1.0x, so every row from
+ * before the meter replays exactly as it was (the self-test holds three such
+ * rows, made by the engine before the meter, in fixtures/replays-pre-meter.json).
+ * The server cannot see a tap, so q is trusted like the score. Over a file of
+ * rows this prints the players' mean spread (the number meter.js is tuned
+ * on) and notes, without flagging, a row whose every release is near perfect.
+ *
  * Export the rows from the Supabase SQL editor, for example:
  *   select json_agg(o) from shutdoor_outings o where day >= current_date - 7;
  * and save the array as rows.json. Exit code 1 when a row is flagged.
@@ -38,6 +47,13 @@ const R = require('./rng.js');
 const K = require('./contract.js');
 
 const cache = {};
+
+/* The releases of one row: how many calls were timed, and their mean spread. */
+export function releaseOf(calls) {
+  const timed = (calls || []).filter(c => c && c.q != null);
+  const spread = timed.reduce((a, c) => a + K.spreadOf(c.q), 0);
+  return { timed: timed.length, of: (calls || []).length, spread, perfect: timed.filter(c => c.q >= 0.95).length };
+}
 function packOf(id) {
   if (cache[id]) return cache[id];
   const path = join(HERE, 'data', 'packs', id + '.json');
@@ -135,6 +151,35 @@ function selfTest() {
       say(K.OUTCOMES.includes(row.outcome), `${id}: tie_held is an outcome`);
     }
   }
+  /* the release: rows made before the meter (no q) replay exactly, pitch by pitch, and a
+     row with q replays exactly too */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-pre-meter.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual);
+      say(a.ok && same && row.calls.every(c => !('q' in c)), `${row.scenario_id}: a row from before the meter (no q) replays exactly, every pitch where it was (${row.pitches} pitches)` + (a.ok ? '' : ': ' + a.why));
+    }
+    const id = 'std-2025-ws7-yamamoto', p = packOf(id);
+    let pair = null;
+    for (let d = 1; d <= 60 && !pair; d++) {
+      const day = `2026-11-${String(d % 28 + 1).padStart(2, '0')}`;
+      const rng = R.mulberry32(R.hashSeed(id + '|release|' + d));
+      const o = E.createOuting(p.pack, { seed: E.seedFor('daily', day), mode: 'daily', model: p.model });
+      while (o.status === 'live') E.throwPitch(o, { type: p.model.types[Math.floor(rng() * p.model.types.length)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100 });
+      const res = E.finishOuting(o);
+      const row = { day, scenario_id: id, calls: JSON.parse(JSON.stringify(o.calls)), outcome: res.outcome, pitches: res.pitches, score: res.score, percentile: res.percentile, strip: res.strip };
+      const stripped = Object.assign({}, row, { calls: row.calls.map(c => ({ type: c.type, cell: c.cell })) });
+      if (!replayRow(stripped).ok) pair = { row, stripped };
+    }
+    say(!!pair, `${id}: an outing whose release changed what happened exists`);
+    if (pair) {
+      say(replayRow(pair.row).ok, `${id}: a row with q replays exactly (${pair.row.pitches} pitches, ${releaseOf(pair.row.calls).timed} timed)`);
+      say(!replayRow(pair.stripped).ok, `${id}: the same row with its q taken out is flagged`);
+    }
+  }
   process.exit(fails ? 1 : 0);
 }
 
@@ -145,11 +190,17 @@ if (process.argv[1] && process.argv[1].endsWith('check-replays.mjs')) {
     if (!a[0]) { console.log('usage: node shut-the-door/check-replays.mjs rows.json | --self-test'); process.exit(2); }
     const rows = JSON.parse(readFileSync(a[0], 'utf8'));
     let bad = 0;
+    const rel = { timed: 0, of: 0, spread: 0 };
     for (const r of rows) {
       const x = replayRow(r);
       if (!x.ok) { bad++; console.log(`FLAG ${r.user_id || '?'} ${r.day} ${r.scenario_id}: ${x.why}`); }
+      const calls = typeof r.calls === 'string' ? JSON.parse(r.calls) : r.calls;
+      const q = releaseOf(calls);
+      rel.timed += q.timed; rel.of += q.of; rel.spread += q.spread;
+      if (q.timed >= 8 && q.perfect === q.timed) console.log(`note ${r.user_id || '?'} ${r.day} ${r.scenario_id}: every release near perfect (${q.timed} timed)`);
     }
     console.log(`${rows.length} rows replayed, ${bad} flagged`);
+    if (rel.of) console.log(`release: ${rel.timed} of ${rel.of} pitches timed` + (rel.timed ? `, mean spread ${(rel.spread / rel.timed).toFixed(3)}x (meter.js is tuned for 1.0)` : ''));
     process.exit(bad ? 1 : 0);
   }
 }

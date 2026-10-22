@@ -242,5 +242,76 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('vsReal: outcome comes before pitches', E.vsReal('doors_open', 0, real, 3) === 'lost');
 }
 
+/* ---- the release (the owner's call, 2026-10-22): q scales the miss, nothing else ---- */
+{
+  check('release: q 1 is 0.6x, q 0.5 is 1.0x, q 0 is 1.5x, no q is 1.0x',
+    K.spreadOf(1) === K.RELEASE.SPREAD_BEST && K.spreadOf(K.RELEASE.Q_AVG) === 1 && K.spreadOf(0) === K.RELEASE.SPREAD_WORST
+    && K.spreadOf(undefined) === 1 && K.spreadOf(null) === 1 && K.RELEASE.SPREAD_BEST === 0.6 && K.RELEASE.SPREAD_WORST === 1.5);
+  let mono = true;
+  for (let i = 1; i <= 100; i++) if (!(K.spreadOf(i / 100) < K.spreadOf((i - 1) / 100))) mono = false;
+  check('release: a better release always means a tighter miss', mono);
+  const bad = [1.01, -0.01, NaN, Infinity, '0.5', {}];
+  check('release: a q that is not a number 0..1 is refused', bad.every(q => { try { E.replay(pack, 1, [{ type: 'FF', cell: 12, q }], { model }); return false; } catch (e) { return true; } }));
+
+  const rng = testRng(21);
+  const base = Array.from({ length: 60 }, () => ({ type: model.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25) }));
+  const withQ = q => base.map(c => Object.assign({}, c, { q }));
+  const plain = E.replay(pack, 4321, base, { model });
+  const avg = E.replay(pack, 4321, withQ(0.5), { model });
+  const strip = o => JSON.stringify(o.log.map(p => Object.assign({}, p, { call: { type: p.call.type, cell: p.call.cell } })));
+  check('release: a missing q plays exactly as q 0.5 (1.0x): the same outing', strip(plain) === strip(avg) && plain.outcome === avg.outcome);
+  check('release: a call without q is kept without q, and plays at 1.0x', plain.calls.every(c => !('q' in c)) && plain.log.every(p => p.spread === 1 && !('q' in p.call)));
+  check('release: a timed call keeps its q', avg.calls.every(c => c.q === 0.5) && avg.log.every(p => p.call.q === 0.5));
+
+  /* the same draws, scaled: the miss of q 1 is 0.6 of the miss of 1.0x, pitch by pitch,
+     for as long as the two outings throw the same calls (they do: the calls are a list) */
+  const tight = E.replay(pack, 4321, withQ(1), { model }), wide = E.replay(pack, 4321, withQ(0), { model });
+  const n = Math.min(plain.log.length, tight.log.length, wide.log.length);
+  let worst = 0, cmp = 0;
+  for (let i = 0; i < n; i++) {
+    const t = K.targetOf(base[i].cell), a = plain.log[i].actual;
+    for (const [o, f] of [[tight, 0.6], [wide, 1.5]]) {
+      const b = o.log[i].actual;
+      worst = Math.max(worst, Math.abs((b.x - t.x) - f * (a.x - t.x)), Math.abs((b.zn - t.zn) - f * (a.zn - t.zn)));
+      cmp++;
+    }
+  }
+  check(`release: q scales the same draws (q 1 is 0.6x, q 0 is 1.5x of each miss, ${cmp} misses)`, n > 0 && worst < 0.0021, 'worst ' + worst);
+
+  /* the spread over many pitches: q 1 lands in the called cell more often, q 0 less */
+  const hitRate = q => { let hit = 0, n2 = 0; for (let seed = 1; seed <= 400; seed++) { const o = E.createOuting(pack, { seed, model }); const pr = E.throwPitch(o, { type: 'FF', cell: 12, q }).pitchResult; n2++; if (pr.actualCell === 12) hit++; } return hit / n2; };
+  const h1 = hitRate(1), h5 = hitRate(0.5), h0 = hitRate(0);
+  check(`release: a perfect release paints the cell more often (${(h1 * 100).toFixed(0)}% / ${(h5 * 100).toFixed(0)}% / ${(h0 * 100).toFixed(0)}%)`, h1 > h5 && h5 > h0);
+
+  /* the grade never sees q: the same state graded the same whatever the release */
+  const g = q => { const o = E.createOuting(pack, { seed: 99, model }); return JSON.stringify(E.throwPitch(o, { type: 'SL', cell: 19, q }).pitchGrade); };
+  check('release: the grade is the call, whatever the release', g(undefined) === g(0) && g(0) === g(1) && g(1) === g(0.37));
+
+  /* determinism with q: the same seed, calls and releases give the same outing */
+  const qr = testRng(31);
+  const mixed = base.map((c, i) => (i % 3 === 0 ? c : Object.assign({}, c, { q: Math.round(qr() * 100) / 100 })));
+  const run = () => { const o = E.replay(pack, 777, mixed, { model: new G.Model(pack) }); return JSON.stringify({ log: o.log, grades: o.grades, outcome: o.outcome, calls: o.calls }); };
+  check('release: determinism with q (mixed timed and untimed calls)', run() === run());
+  const again = E.replay(pack, 777, JSON.parse(JSON.stringify(E.replay(pack, 777, mixed, { model }).calls)), { model });
+  check('release: the kept calls, through JSON, replay the outing exactly', JSON.stringify(again.log) === JSON.stringify(E.replay(pack, 777, mixed, { model }).log));
+  check('release: q is kept to two places', E.replay(pack, 5, [{ type: 'FF', cell: 12, q: 0.123456 }], { model }).calls[0].q === 0.12);
+}
+
+/* ---- the meter's numbers (meter.js): an average tap is about his own command ---- */
+{
+  const MT = require('../meter.js');
+  check('meter: a tap on the mark is q 1, a tap a full window off is q 0', MT.qOf(0, 50) === 1 && MT.qOf(MT.windowMs(50), 50) === 0 && MT.qOf(-MT.windowMs(50) * 2, 50) === 0);
+  check('meter: the window grows with command (control pitchers are easier to time)', MT.windowMs(35) < MT.windowMs(50) && MT.windowMs(50) < MT.windowMs(72));
+  check('meter: early is negative, late is positive', MT.errAt(MT.MARK * MT.SWEEP_MS - 30) < 0 && MT.errAt(MT.MARK * MT.SWEEP_MS + 30) > 0
+    && MT.errAt(MT.SWEEP_MS * (2 - MT.MARK) - 30) < 0 && MT.errAt(MT.SWEEP_MS * (2 - MT.MARK) + 30) > 0);
+  const mr = R.mulberry32(17);
+  const meanSpread = cmd => { let s = 0; const n = 40000; for (let i = 0; i < n; i++) { let e = R.probit(mr()) * MT.TIMING.sdMs; if (mr() < MT.TIMING.slip) e = mr() * MT.TIMING.slipMaxMs; s += K.spreadOf(MT.qOf(e, cmd)); } return s / n; };
+  const m50 = meanSpread(50), m35 = meanSpread(35), m72 = meanSpread(72);
+  console.log(`     meter, an ordinary tap (sd ${MT.TIMING.sdMs} ms, ${MT.TIMING.slip * 100}% slips): mean spread ${m35.toFixed(3)}x at command 35, ${m50.toFixed(3)}x at 50, ${m72.toFixed(3)}x at 72`);
+  check('meter: an ordinary tap averages his own command at command 50 (within 3%)', Math.abs(m50 - 1) < 0.03, m50.toFixed(3));
+  check('meter: across the packs\' commands (35-72) an ordinary tap stays within 10% of 1.0x', Math.abs(m35 - 1) < 0.1 && Math.abs(m72 - 1) < 0.1, `${m35.toFixed(3)} ${m72.toFixed(3)}`);
+  check('meter: the word is execution only (no band name)', [0, 0.1, 0.3, 0.6, 0.8, 0.95].every(q => !/green|yellow|orange|red|grade/.test(MT.wordOf(q, -1) + MT.wordOf(q, 1))));
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);

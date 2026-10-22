@@ -9,6 +9,9 @@
  *   st.gridRect(), st.toScreen(pp), st.cellCenter(cell)   where the zone is on screen, for the
  *                                    game's own grid and marker (the grid is the game's, shown
  *                                    only while aiming)
+ *   st.setPreview({ type, cell })   the break preview: a ghost trail from the hand to the cell's
+ *                                    centre, the pitch's real shape (preview.js); null hides it
+ *   st.previewPoints()               that trail on the canvas in CSS px, for the grid's thin line
  *   st.play({ pr, quick, hooks })    one pitch, driven by the engine's PitchResult (play.js), to
  *                                    the call: hooks.sound(name, delayMs), hooks.call(), and
  *                                    hooks.field(runners) for the scorebar diamond as they run.
@@ -21,12 +24,13 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=7';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
-import { People } from './people.js?v=31';
+import { People } from './people.js?v=33';
 import { Pitch } from './pitch.js?v=7';
 import { fromResult, motion } from './play.js?v=7';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=1';
+import { Ghost } from './preview.js?v=1';
 
 const C = () => window.STD_CONTRACT;
 // the grid: a column is CELL_FT wide at the plate, and a cell is never under CELL_PX on screen
@@ -88,6 +92,7 @@ class Stage {
     this.layout();
     mk('framed');
     this.draw();
+    this.applyGhost();
     return this;
   }
 
@@ -136,11 +141,35 @@ class Stage {
     this.facts.batter = f;
     this.people.setBatter(f);
     this.preview();
+    this.applyGhost();
   }
 
   setTarget(cell) {
     this.cell = cell;
     if (this.loaded && this.facts && this.facts.batter) this.preview();
+  }
+
+  /** The break preview (the intended path, never the outcome): spec { type, cell } or null. */
+  setPreview(spec) {
+    this.ghostSpec = spec || null;
+    this.applyGhost();
+  }
+
+  applyGhost() {
+    if (!this.loaded || !this.facts || !this.facts.batter) return;
+    const s = this.ghostSpec;
+    if (!s) { if (this.ghost && this.ghost.visible) { this.ghost.hide(); this.soon(); } return; }
+    const a = this.facts.pitcher.arsenal.find((x) => x.type === s.type);
+    if (!a) return;
+    if (!this.ghost) this.ghost = new Ghost(this.scene);
+    const b = this.facts.batter;
+    this.ghost.set({ release: this.facts.release, pitch: a, cell: s.cell == null ? 12 : s.cell, szTop: b.szTop, szBot: b.szBot });
+    this.soon();
+  }
+
+  previewPoints() {
+    if (!this.ghost || !this.ghost.visible) return null;
+    return this.ghost.screen(this.camera, this.canvas.clientWidth, this.canvas.clientHeight);
   }
 
   /** The set: everyone in their stance, the catcher set up on the target, no ball yet. */
@@ -171,7 +200,10 @@ class Stage {
     if (this.people && this.people.batter && this.people.batter.chain) this.people.update(t, 0);
   }
 
-  render() { this.renderer.render(this.scene, this.camera); }
+  render() {
+    if (this.ghost && this.ghost.visible) this.ghost.orient(this.camera, this.canvas.clientHeight);
+    this.renderer.render(this.scene, this.camera);
+  }
 
   /** A frame on the next animation frame, once, however many changes asked for one (a tap on take
       the mound sizes, frames and sets the hitter: one frame, not one each). */
@@ -215,7 +247,9 @@ class Stage {
   gridRect() {
     const zb = this.zone || { szTop: 3.4, szBot: 1.6 };
     const third = 1 / 3, cw = CELL_FT;
-    const a = this.toScreen({ x: -2.5 * cw, zn: -third }), b = this.toScreen({ x: 2.5 * cw, zn: 1 + 2 * third });
+    // five rows of a third each, from a third under the zone to a third over it (it read 1 + 2 * third,
+    // a grid a fifth too tall, so a cell's centre sat off the zone's: the break preview ends on it)
+    const a = this.toScreen({ x: -2.5 * cw, zn: -third }), b = this.toScreen({ x: 2.5 * cw, zn: 1 + third });
     void zb;
     return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
   }
@@ -340,6 +374,9 @@ class Stage {
   async play(opts) {
     await this.ready;
     const pr = opts.pr, hooks = opts.hooks || {};
+    // the preview is the aim, not the pitch: gone before the ball leaves the hand
+    this.ghostSpec = null;
+    if (this.ghost) this.ghost.hide();
     const play = fromResult(pr, this.facts.batter);
     this.setPitch(play);
     const pt = this.pitch, m = this.m;
