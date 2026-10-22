@@ -34,6 +34,7 @@ node football/check-badges.mjs        every badge proved reachable (--quick: few
 node football/check-gameday.mjs       the Game Day shelf
 node football/check-boss.mjs          the boss battle (add go: going for it on fourth down)
 node football/check-overtime.mjs      a tie goes to overtime
+node football/check-simspeed.mjs      Slow and Slower pace by the drive, Normal untouched
 node football/check-fantasy.mjs       the Fantasy Challenge (--quick: the engine, no browser)
 psql ... -f supabase/test/launch_preflight.sql    the live modes' migrations are applied
 ```
