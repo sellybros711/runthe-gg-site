@@ -2993,14 +2993,14 @@
       "sha": "e6647acf70717b55"
     },
     "3d/boot.js": {
-      "v": "22",
-      "sha": "d8237dd3d90b6b67"
+      "v": "23",
+      "sha": "02407f086bb97580"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "29",
-      "sha": "4c559496e3c6009e"
+      "v": "30",
+      "sha": "e1088d59056d5bed"
     }
   },
   "soccer/index.html": {
@@ -3115,8 +3115,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "26",
-      "sha": "4d0a989017ed441e"
+      "v": "27",
+      "sha": "2914ac61c1bace88"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3181,6 +3181,10 @@
     "units.js": {
       "v": "1",
       "sha": "e771dbef0b67350e"
+    },
+    "inplay.js": {
+      "v": "1",
+      "sha": "7831feb0fe5ba14a"
     },
     "preview.js": {
       "v": "1",
@@ -3261,6 +3265,32 @@
       "sha": "b3c09012b97461ee"
     }
   },
+  "shut-the-door/3d/inplay.js": {
+    "inplay-plan.js": {
+      "v": "2",
+      "sha": "1f4526bf69c74b61"
+    },
+    "fielders.js": {
+      "v": "1",
+      "sha": "0d6ae9623acf0a2b"
+    },
+    "ballpark.js": {
+      "v": "2",
+      "sha": "d248f650bea5c8e2"
+    },
+    "people.js": {
+      "v": "31",
+      "sha": "c24a336376ce586e"
+    },
+    "looks.js": {
+      "v": "2",
+      "sha": "9bbdbd7d0efa0afd"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    }
+  },
   "shut-the-door/3d/preview.js": {
     "pitch.js": {
       "v": "7",
@@ -3299,6 +3329,30 @@
     "rig.js": {
       "v": "1",
       "sha": "34647a01ead672d6"
+    }
+  },
+  "shut-the-door/3d/fielders.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "34647a01ead672d6"
+    },
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    }
+  },
+  "shut-the-door/3d/ballpark.js": {
+    "units.js": {
+      "v": "1",
+      "sha": "e771dbef0b67350e"
+    },
+    "load.js": {
+      "v": "7",
+      "sha": "a971ef0884621f51"
+    },
+    "inplay-plan.js": {
+      "v": "2",
+      "sha": "1f4526bf69c74b61"
     }
   }
 }

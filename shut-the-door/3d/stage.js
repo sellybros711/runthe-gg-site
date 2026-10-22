@@ -16,6 +16,9 @@
  *                                    the call: hooks.sound(name, delayMs), hooks.call(), and
  *                                    hooks.field(runners) for the scorebar diamond as they run.
  *                                    A tap skips to the end. Resolves when it is over.
+ *                                    A ball in play is followed into the field (inplay.js): the
+ *                                    broadcast cut, the fielders, the runners, hooks.call when the
+ *                                    plan says the play is decided, hooks.field from the 3D runners.
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
  */
 import * as THREE from 'three';
@@ -26,6 +29,7 @@ import { Pitch } from './pitch.js?v=7';
 import { fromResult, motion } from './play.js?v=7';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
+import { InPlay } from './inplay.js?v=1';
 import { Ghost } from './preview.js?v=1';
 
 const C = () => window.STD_CONTRACT;
@@ -77,7 +81,9 @@ class Stage {
     mk('lit');
     if (this.scn) this.applyScenario();
     mk('people');
+    if (this.inplay) this.inplay.warm(true);
     await this.renderer.compileAsync(this.scene, this.camera);
+    if (this.inplay) this.inplay.warm(false);
     // one draw now compiles what compileAsync leaves (the shadow pass); on the home screen the canvas
     // is hidden, so nobody sees it
     this.render();
@@ -105,6 +111,12 @@ class Stage {
     this.facts = factsFrom(this.scn, this.extra);
     this.people = new People({ scene: this.scene, facts: this.facts });
     this.people.setup(this.gltfs);
+    // the fielders and runners for a ball in play: built once from the catcher's body, dressed for
+    // this scenario's two clubs
+    if (!this.inplay) {
+      this.inplay = new InPlay({ scene: this.scene, renderer: this.renderer, people: this.people, facts: this.facts });
+      if (this.loaded) { this.inplay.warm(true); this.renderer.compile(this.scene, this.camera); this.inplay.warm(false); }
+    } else { this.inplay.people = this.people; this.inplay.setFacts(this.facts); }
     if (this.batterId != null) this.applyBatter();
   }
 
@@ -162,6 +174,7 @@ class Stage {
 
   /** The set: everyone in their stance, the catcher set up on the target, no ball yet. */
   preview() {
+    if (this.inplay && this.inplay.active) this.inplay.end(this.camera);
     const f = this.facts.batter, c = C();
     const cell = this.cell == null ? 12 : this.cell;
     const tg = c ? c.targetOf(cell) : { x: 0, zn: 0.5 };
@@ -208,6 +221,7 @@ class Stage {
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     this.eye.resize(w, h);
+    this.camera.userData.cssH = h;
     this.eye.update(this.t);
     if (this.loaded) { this.fit(); this.soon(); }
   }
@@ -369,11 +383,18 @@ class Stage {
     const speed = opts.quick ? 1.8 : 1;
     const resultAt = pt.after ? pt.tRel + pt.after.t0 : pt.tCatch;
     const inPlay = pr.result === 'in_play';
+    // a ball in play: the broadcast of the plan (inplay.js) runs from contact, on its own clock
+    // (slow motion and jump cuts), real seconds after contact to plan seconds through run.sceneAt
+    const run = inPlay && this.inplay && pt.after ? this.inplay.begin(pr, pt, { hooks }) : null;
     // (knocked down by a pitch, he stays down for a beat)
-    const tail = inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
+    const tail = run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
     const tEnd = resultAt + tail;
-    // the runners on the scorebar diamond, on the same clock the old drawing used (ms from the start)
-    const track = AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
+    const callAt = run ? resultAt + run.resolveReal : resultAt + 0.12;
+    const sceneT = (t) => (run && t > resultAt ? resultAt + run.sceneAt(t - resultAt) : t);
+    // the runners on the scorebar diamond: the 3D runners themselves after a ball in play, else the
+    // clock the old drawing used (ms from the start)
+    const track = run ? { running: true, at: (ms) => ({ runners: this.inplay.fieldAt(Math.max(0, sceneT(ms / 1000) - resultAt)) }) }
+      : AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
     if (hooks.sound) hooks.sound('whoosh', pt.tRel * 1000 / speed);
     // what the browser check reads back: the play's reading and a few frames of it
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
@@ -387,11 +408,14 @@ class Stage {
         cancelAnimationFrame(raf);
         document.removeEventListener('pointerdown', skip, true);
         if (!called) { called = true; if (hooks.call) hooks.call(); }
-        if (track && track.running && hooks.field) hooks.field(track.at(1e9).runners);
+        if (track && track.running && hooks.field) hooks.field(track.at(tEnd * 1000).runners);
         trace.skipped = lastT < tEnd;
-        this.pose(tEnd);
+        const te = sceneT(tEnd);
+        if (run) this.inplay.skipTo(te - resultAt);
+        this.pose(te);
+        if (run) this.inplay.update(te - resultAt, this.camera);
         this.render();
-        keep(tEnd);
+        keep(te);
         this.dirty = true;
         done();
       };
@@ -408,12 +432,14 @@ class Stage {
           const caught = ['ball', 'called_strike', 'swinging_strike', 'foul_tip'].includes(pr.result);
           if (hooks.sound) hooks.sound(caught ? 'pop' : pr.result === 'hit_by_pitch' ? 'thud' : 'crack');
         }
-        if (!called && t >= resultAt + 0.12) { called = true; if (hooks.call) hooks.call(); }
+        if (!called && t >= callAt) { called = true; if (hooks.call) hooks.call(); }
         if (track && track.running && t >= resultAt && hooks.field) hooks.field(track.at(t * 1000).runners);
-        this.pose(Math.min(t, tEnd));
+        const ts = sceneT(Math.min(t, tEnd));
+        this.pose(ts);
+        if (run && ts > resultAt) this.inplay.update(ts - resultAt, this.camera);
         if (!TEST() || trace.frames % (TEST().renderEvery || 1) === 0) this.render();
         trace.frames++;
-        keep(Math.min(t, tEnd));
+        keep(ts);
         if (t >= tEnd) { finish(); return; }
         raf = requestAnimationFrame(tick);
       };
