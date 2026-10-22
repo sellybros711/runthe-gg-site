@@ -174,6 +174,8 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {PitchType} type         must be in the pitcher's arsenal
  * @property {Cell} cell
  * @property {number} [q]             the release, 0..1, kept to two places. Absent = 1.0x
+ * @property {number} [r]             the rules it was played under, set by the engine on the kept
+ *                                    call: 2 since 2026-10-22. Absent = rules 1 (section 5b)
  */
 ```
 
@@ -218,6 +220,52 @@ sweeps a bar, and the tap that stops it is the release. How close the tap is to 
   release at its worst costs about 6, and the model's ordinary tap lands within about a point of the
   meter off. Execution matters, and the call still matters more.
 
+## 5b. Rules 2: the hitter adjusts, the arm tires (the owner's call, 2026-10-22)
+
+The owner found the game too easy ("I've never given up a run yet") and chose four changes. A new
+outing plays rules 2 (`grade.js RULES`), and the engine writes `r: 2` on every kept call. A call
+without `r` is rules 1: every row stored before, and every saved outing begun before, replays and
+finishes exactly as it was played. One outing never mixes the two (a call with the other `r` is
+refused). Nothing new is drawn: the four draws per pitch stay the same draws in the same order, and
+every effect is a function of the outing's own log.
+
+1. **The hitter adjusts.** Each pitch's outcome row (the pack's per mille row for the cell it
+   crossed) is scaled key by key and renormalised, by how familiar the batter is with it: how many
+   pitches of that type he has seen this plate appearance, whether one crossed within one cell of
+   this one, and (weaker) how many of that type went to earlier batters in the outing. A fresh look
+   is the pitcher's best chance; a third look at the same pitch in the same spot is missed less and
+   hit harder. And where the pitcher has aimed: once the outing's aims lean on the zone, a zone pitch
+   is hit more and taken for a strike less, and a chase pitch is chased more (nibbling, the
+   reverse). Both are centred on the closer pool's real sequencing in that pack (`pack.seq`), so a
+   pitcher who mixes like the real closers meets the library's own numbers.
+2. **A repeat keeps less of the release.** `spreadOf(q, repeat)`: on the second pitch of a type in a
+   row, a good release keeps half its tightening (0.8x at best), on the third a quarter (0.9x). A bad
+   release and the meter off are unchanged. A game rule on the meter.
+3. **Coarser scouting.** The heat map and the scout card read `grade.js scoutView(profile)`: the 16
+   chase cells as Statcast's four out-of-zone quadrants, every value in steps (damage .050, swing
+   rate 10 points, chase, zone swing and whiffs 5 points). The engine and the grade read the profile
+   as it is.
+4. **The arm.** His miss is scaled by `fatigueOf(pitch number, bases)`: tighter than his average
+   early, wider past 12 pitches (2% a pitch, up to 1.4x), centred on 2024 relievers' real pitch
+   counts, and about 1% wider with runners on (measured). It rides on the result as `arm`.
+
+**The grade stays the decision.** Every call is graded before it resolves, with what the hitter has
+seen and the arm as it is: the call's adjusted outcome mix through the miss table at the arm's
+spread, then the hold table's values for the state that follows. The best call and the state's mean
+lost are taken over every legal call priced the same way, so the band is still relative to the
+moment. The hold table is solved without history (no table holds every sequence), so the grade looks
+one pitch ahead with the history and leans on the table after it. The release is still never read.
+
+**What is measured and what is a model.** `pipeline/effects.py` read every 2024 regular season pitch
+(`pipeline/effects.json`). Against the same pitch family, cell, exact count and platoon, repeats
+within a plate appearance do within about 5% of the rest, and a reliever's spread is flat with his
+pitch count. Both are small because the data is chosen by the pitchers (a pitch is repeated when it
+works, a tired arm is taken out), so they cannot say what happens to a pitcher who repeats himself
+or stays in. The shares of each kind of repeat, relievers' pitch counts and the runners-on spread
+are used as measured. The strengths of the adjustment, the zone effect and fatigue past 12 pitches
+are a labelled model, tuned so a strong player who reads the screen and mixes his pitches holds
+about what the closer pool holds (README).
+
 ## 6. Pitch result
 
 ```js
@@ -229,7 +277,8 @@ sweeps a bar, and the tap that stops it is the release. How close the tap is to 
  * @property {number} n               pitch number in the outing, from 1
  * @property {PitchCall} call
  * @property {PlatePoint} actual      after command noise, scaled by the release
- * @property {number} spread          the release's scale on his miss (1 without q)
+ * @property {number} spread          the release's scale on his miss (1 without q; section 5b on a repeat)
+ * @property {number} [arm]           rules 2: the arm's scale on his miss (fatigue, runners on)
  * @property {Cell} actualCell
  * @property {number} velo            the drawn real pitch's mph
  * @property {'take'|'swing'} batter
@@ -250,13 +299,14 @@ sweeps a bar, and the tap that stops it is the release. How close the tap is to 
  */
 ```
 
-v1 has no stolen bases, pickoffs, wild pitches, balks, intentional walks or fatigue. Errors and
+v1 has no stolen bases, pickoffs, wild pitches, balks or intentional walks. Fatigue came with rules 2
+(section 5b). Errors and
 hit-by-pitches happen because the drawn real pitch had one.
 
 ## 7. Pitch grade
 
 Every call is graded **before** the pitch resolves: the hold% the call is worth on average, against
-the best call available in that state. The outcome never changes the grade.
+the best call available in that state (under rules 2, in that state with that history: section 5b). The outcome never changes the grade.
 
 ```js
 /**

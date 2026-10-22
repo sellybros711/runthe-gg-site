@@ -89,7 +89,7 @@ function oneCall(st, call) {
 }
 {
   const o = E.createOuting(pack, { seed: 3, model });
-  while (o.status === 'live') { const b = model.solve(o.st); E.throwPitch(o, { type: b.type, cell: b.cell }); }
+  while (o.status === 'live') E.throwPitch(o, E.bestCall(o));
   check('an all-green outing has no lesson', E.finishOuting(o).lesson === null);
 }
 check('every principle has a one-line explanation', L.PRINCIPLES.every(p => typeof L.ONE_LINE[p] === 'string'));

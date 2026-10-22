@@ -40,7 +40,7 @@
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 3;
+  const SCHEDULE_V = 4;
   const STORE_V = 1;
   const BASE = 'data/';
 
@@ -126,13 +126,16 @@
     const id = 'daily:' + cur.day + ':' + scenarioId;
     if (outings[id]) return clone(E.publicState(outings[id].o));
     const s = E.seedFor('daily', cur.day);
-    const o = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id });
-    const rec = { o, day: cur.day, number: cur.number, result: null, submitted: false };
     const saved = readSaved();
-    if (saved && saved.day === cur.day && saved.scenarioId === scenarioId && Array.isArray(saved.calls)) {
-      for (const c of saved.calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
-      rec.result = saved.result || null;
-      rec.submitted = !!saved.submitted;
+    const resume = saved && saved.day === cur.day && saved.scenarioId === scenarioId && Array.isArray(saved.calls) ? saved : null;
+    // an outing begun before rules 2 shipped (its calls carry no r) finishes under the rules it began with
+    const rules = resume && resume.calls.length ? E.rulesOf(resume.calls) : undefined;
+    const o = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id, rules });
+    const rec = { o, day: cur.day, number: cur.number, result: null, submitted: false };
+    if (resume) {
+      for (const c of resume.calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
+      rec.result = resume.result || null;
+      rec.submitted = !!resume.submitted;
     }
     outings[id] = rec;
     return clone(E.publicState(o));     // nothing written at pitch 0

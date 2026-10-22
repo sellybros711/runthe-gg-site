@@ -48,6 +48,12 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
   day's, the same for everyone. No `Math.random` in the engine. q changes only the spread the two
   miss draws are scaled by, never which draws are taken. A call without q is exactly 1.0x, so old
   stored outings replay unchanged (`fixtures/replays-pre-meter.json` holds that).
+- **Rules 2** (2026-10-22, CONTRACT.md 5b): the hitter adjusts, the arm tires, a repeat keeps less
+  release, coarser scouting. Every effect is a function of the outing's log, never a new draw. A new
+  outing's kept calls carry `r: 2`; a call without `r` replays as rules 1, exactly. The grade prices
+  the history (one pitch ahead, then the table). The strengths live in `grade.js R2`; change them only
+  with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
+  `pack.seq`) when they move.
 - **Every scenario fact and every pro example is real and sourced.** Proxy spots (before 2008) are
   flagged in the data and the UI. Nothing is invented to fill a gap: a missing pro example is null.
 - **The lesson** picks the worst pitch, and only a principle its own numbers show.

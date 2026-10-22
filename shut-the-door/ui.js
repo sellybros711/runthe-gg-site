@@ -631,7 +631,10 @@ function toggleScout() {
    the hitter, opened by the batter bar. It is a sheet over the lower HUD, under the grid. */
 function renderScout() {
   var b = batterAt(S.outing.batterIndex), box = $('m-scout');
-  S.grid.setHeat(b.profile, S.heat);
+  /* rules 2: the screen reads the scouting view (grade.js scoutView: the chase area in four quadrants,
+     values in steps), never the exact profile the engine plays */
+  var G = window.STD_GRADE, view = G && G.scoutView && S.outing.rules >= 2 ? G.scoutView(b.profile) : b.profile;
+  S.grid.setHeat(view, S.heat);
   $('m-batter').setAttribute('aria-expanded', S.scout ? 'true' : 'false');
   $('m-batter').classList.toggle('on', !!S.scout);
   document.querySelectorAll('#m-heat [data-heat]').forEach(function (x) {
@@ -640,7 +643,7 @@ function renderScout() {
   var H = M.HEAT[S.heat];
   $('m-heat-legend').innerHTML = '<i class="lo"></i>' + esc(H.fmt(H.lo)) + '<i class="hi"></i>' + esc(H.fmt(H.hi));
   if (!S.scout) { box.hidden = true; return; }
-  box.innerHTML = scoutCard(b);
+  box.innerHTML = scoutCard(b, view);
   box.hidden = false;
   /* a sheet over the lower HUD: it stops just under the grid's last row, so the zone is never covered */
   var gb = S.grid.el.getBoundingClientRect().bottom, sb = $('s-mound').getBoundingClientRect().bottom;
@@ -651,8 +654,8 @@ function renderScout() {
    closer's arsenal. Built only from the profile and the arsenal. A field the data does not have
    is left out, never shown as zero. The league marker draws only if the profile carries a league
    value (no pack does yet). */
-function scoutCard(b) {
-  var pr = b.profile, lg = pr.league || {};
+function scoutCard(b, view) {
+  var pr = view || b.profile, lg = pr.league || {};
   var rows = S.scn.pitcher.arsenal.map(function (a) {
     var w = pr.whiff ? pr.whiff[a.type] : null, l = lg.whiff ? lg.whiff[a.type] : null;
     return { name: a.name, usage: a.usage, whiff: w == null ? null : w, lg: l == null ? null : l };
@@ -902,7 +905,7 @@ function throwIt() {
   var type = S.type, cell = S.cell;
   $('m-throw').hidden = true;
   S.meter.run({
-    command: ap.command, practice: S.mode === 'practice',
+    command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type),
     verb: S.outing.shutItLive ? 'shut it' : 'release',
     label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
     hint: 'tap on the mark',
@@ -911,6 +914,12 @@ function throwIt() {
     if (!r) { $('m-throw').hidden = false; updateThrow(); return; }
     fire({ type: type, cell: cell, q: r.q });
   });
+}
+/* rules 2: how many pitches in a row before this one were this type (a good release helps less on a repeat) */
+function repeatOf(type) {
+  var log = (S.outing && S.outing.rules >= 2 && S.outing.log) || [], n = 0;
+  for (var i = log.length - 1; i >= 0 && log[i].call.type === type; i--) n++;
+  return n;
 }
 function meterDone() { if (S.meter) S.meter.hide(); $('m-throw').hidden = false; }
 /* the ball landed in the cell that was called: a quiet ring on that cell, after the play */
