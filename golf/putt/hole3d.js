@@ -212,10 +212,7 @@ function* steps(C, opt){
   var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, kickball:1, gumball:1, dinoegg:1, clover:0, star:0 };
   var LIFT = { bat:1.4, ghost:0.5 };
   function base(x, y){ return CARP + F.h(x, y) * K + TZ(x, y); }
-  function skinCol(name){ var fn = SK[name] || SK.stone, n = {}, best = null, bn = 0;
-    for (var v = -0.8; v <= 0.8; v += 0.2) for (var u = -0.8; u <= 0.8; u += 0.2){ var c = fn(u, v); if (c){ n[c] = (n[c] || 0) + 1; if (n[c] > bn){ bn = n[c]; best = c; } } }
-    return best || T.wallLo; }
-  function prop(cx, cy, s, kind, zb){
+    function prop(cx, cy, s, kind, zb){
     var fn = SK[kind] || SK.stone, lathe = LATHE[kind], H = 2 * s, lift = (LIFT[kind] || 0) * s, R = {};
     if (lathe) for (var r = 0; r <= 40; r++){ var vv = -1 + r / 20, mx = 0; for (var u = 0; u <= 1; u += 0.02) if (fn(u, vv) || fn(-u, vv)) mx = u; R[r] = mx; }
     solid(cx - s, cy - s, zb + lift, cx + s, cy + s, zb + lift + H, function(x, y, z){
