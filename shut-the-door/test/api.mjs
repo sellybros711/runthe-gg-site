@@ -63,12 +63,20 @@ check('the daily seed is the day\'s', st.seed === require('../engine.js').seedFo
 const types = sc.pitcher.arsenal.map(a => a.type);
 const r1 = await api.throwPitch(st.outingId, { type: types[0], cell: 12 });
 check('a pitch is stored', JSON.parse(mem[C.OUTING_KEY]).calls.length === 1);
-const r2 = await api.throwPitch(st.outingId, { type: types[types.length - 1], cell: 22 });
+const r2 = await api.throwPitch(st.outingId, { type: types[types.length - 1], cell: 22, q: 0.83 });
+{
+  const kept = JSON.parse(mem[C.OUTING_KEY]).calls;
+  check('the release rides on the call: a timed pitch is stored with its q, an untimed one without', kept[1].q === 0.83 && !('q' in kept[0]));
+  check('the pitch result carries the call\'s q and its spread', r2.pitchResult.call.q === 0.83 && r2.pitchResult.spread === C.spreadOf(0.83) && r1.pitchResult.spread === 1);
+  let refused = false;
+  try { await api.throwPitch(st.outingId, { type: types[0], cell: 12, q: 2 }); } catch (e) { refused = true; }
+  check('a q outside 0..1 is refused and nothing is stored', refused && JSON.parse(mem[C.OUTING_KEY]).calls.length === 2);
+}
 
 api = freshApi();
 await api.getScenario(day);
 const again = await api.startOuting(sc.id, null, { mode: 'daily' });
-check('a reload replays the stored calls to the same state', JSON.stringify(again.log) === JSON.stringify(r2.state.log) && again.pitchNo === 2);
+check('a reload replays the stored calls to the same state (the release too)', JSON.stringify(again.log) === JSON.stringify(r2.state.log) && again.pitchNo === 2 && again.log[1].call.q === 0.83);
 
 let guard = 0, last = again;
 while (last.status === 'live' && guard++ < 150) last = (await api.throwPitch(again.outingId, { type: types[0], cell: 18 })).state;
@@ -83,6 +91,7 @@ const c = await api.finishOuting(again.outingId);
 const d = await api.finishOuting(again.outingId);
 check('a guest who signs in is submitted once', submits.length === 1 && c.account && d.account && c.account.streak === 1);
 check('what is submitted is the outing', submits[0].calls.length === a.pitches && submits[0].day === day && submits[0].score === a.score);
+check('the submitted calls carry the release', submits[0].calls[1].q === 0.83 && !('q' in submits[0].calls[0]));
 api = freshApi();
 await api.getScenario(day);
 const st3 = await api.startOuting(sc.id, null, { mode: 'daily' });

@@ -783,8 +783,7 @@ var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1,
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
   var b = P.b, seed = P.seed, L = P.L, cx = P.cx, sp = P.spec;
-  function kAt(y){ return kitOf(P.themeAt(y)); }
-  return {
+    return {
     gain:1.4,
     bg:kitOf(sp.kitAs || sp.theme).g[0],
     // a hole is flat ground, its rails and blocks stand up off it, its water and cup sit down in it

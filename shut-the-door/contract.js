@@ -85,6 +85,29 @@ const OUTCOMES = Object.freeze(['door_shut', 'tie_held', 'doors_open', 'walk_off
 const OUTCOME_RANK = Object.freeze({ door_shut: 3, tie_held: 2, doors_open: 1, walk_off: 0 });
 const OUTCOME_LABEL = Object.freeze({ door_shut: 'DOOR SHUT', tie_held: 'HELD THE TIE', doors_open: "DOOR'S OPEN", walk_off: 'WALK-OFF' });
 
+/* The release (the owner's call, 2026-10-22). A call may carry q, the release
+   quality from the timing meter, 0..1. It scales the pitch's miss (sigmaFt):
+   q 1 is a perfect release at SPREAD_BEST of his miss, q 0 a bad one at
+   SPREAD_WORST, and Q_AVG is exactly his own miss (1.0x), the closer pool's.
+   Linear on each side of Q_AVG. A call without q is 1.0x, so every outing
+   stored before the meter replays unchanged. The meter off throws Q_AVG.
+   q is kept to two places (STEPS), so a stored call replays exactly. The
+   grade never reads q: it prices the call at his own command. */
+const RELEASE = Object.freeze({ Q_AVG: 0.5, SPREAD_BEST: 0.6, SPREAD_WORST: 1.5, STEPS: 100 });
+function releaseQ(q) {
+  if (q == null) return null;
+  if (typeof q !== 'number' || !isFinite(q) || q < 0 || q > 1) throw new Error('a release q is a number 0..1');
+  return Math.round(q * RELEASE.STEPS) / RELEASE.STEPS;
+}
+function spreadOf(q) {
+  if (q == null) return 1;
+  const r = releaseQ(q);
+  if (r === RELEASE.Q_AVG) return 1;
+  return r < RELEASE.Q_AVG
+    ? 1 + (RELEASE.SPREAD_WORST - 1) * (RELEASE.Q_AVG - r) / RELEASE.Q_AVG
+    : 1 - (1 - RELEASE.SPREAD_BEST) * (r - RELEASE.Q_AVG) / (1 - RELEASE.Q_AVG);
+}
+
 /* Bases bitmask. */
 const BASE = Object.freeze({ FIRST: 1, SECOND: 2, THIRD: 4 });
 
@@ -121,7 +144,7 @@ const SHARE_URL = 'runthe.gg/shut-the-door';
 const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
-  OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, BASE, countBucket,
+  OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

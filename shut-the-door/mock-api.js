@@ -274,7 +274,9 @@ function resolve(scn, st, call, rng) {
   var bt = batterOf(scn, st.batterIndex), pr = bt.profile, ap = pitchOf(scn, call.type);
   var tgt = C.targetOf(call.cell), zr = bt.szTop - bt.szBot;
   /* the fixed order: miss x, miss z, the library draw, the runner draw */
-  var mx = gauss(rng()) * ap.sigmaFt, mz = gauss(rng()) * ap.sigmaFt / zr;
+  /* the release scales the miss, as in the engine (contract.js spreadOf; no q is 1.0x) */
+  var sg = ap.sigmaFt * (C.spreadOf ? C.spreadOf(call.q) : 1);
+  var mx = gauss(rng()) * sg, mz = gauss(rng()) * sg / zr;
   var lib = rng(), run = rng();
   var actual = { x: Math.round((tgt.x + mx) * 1000) / 1000, zn: Math.round((tgt.zn + mz) * 1000) / 1000 };
   var cell = C.cellAt(actual.x, actual.zn), z = C.inZone(cell);
@@ -435,6 +437,7 @@ function throwPitch(outingId, call) {
     if (!pitchOf(o.scn, call.type)) throw new Error('not in his arsenal: ' + call.type);
     if (!(call.cell >= 0 && call.cell < C.GRID.CELLS)) throw new Error('no such cell');
     var c = { type: call.type, cell: call.cell | 0 };
+    if (call.q != null && C.releaseQ) c.q = C.releaseQ(call.q);
     o.calls.push(c);
     var r = apply(o.scn, o.st, c, o.rng);
     saveDaily(o);

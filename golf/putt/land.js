@@ -127,9 +127,7 @@ window.RTT_PUTT_LAND = (function(){
   function lamp(B, x, y, pole, glow){ var zb = B.gz(x, y); if (B.light) B.light(x, y, zb + 1.6, glow);
     B.solid(x - 0.3, y - 0.3, zb, x + 0.3, y + 0.3, zb + 1.8, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y);
       if (t < 1.45 && r < 0.07) return pole; if (t >= 1.45 && t < 1.75 && r < 0.17) return t > 1.68 || r > 0.13 ? pole : glow; return null; }); }
-  // a ground colour that varies in patches: base, two alternates, and how often the alternates show
-  function patchy(c, R, h3, t){ var n1 = h3(c.ti >> 1, c.tj >> 1, 11), n2 = h3(c.ti, c.tj, 12); return R(n1 < t[3] ? (n2 < 0.5 ? t[1] : t[2]) : t[0]); }
-
+  
   function bush(B, x, y, r, cols){ var zb = B.gz(x, y);
     B.solid(x - r - 0.1, y - r - 0.1, zb - 0.05, x + r + 0.1, y + r + 0.1, zb + r * 1.6, function(px, py, pz){ var d = Math.hypot((px - x) / r, (py - y) / r, (pz - zb - r * 0.55) / (r * 0.85));
       return d < 1 ? cols[(Math.floor(px * 6) + Math.floor(pz * 6) + Math.floor(py * 6)) % cols.length] : null; }); }

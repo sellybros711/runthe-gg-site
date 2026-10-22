@@ -806,6 +806,10 @@ function scoringScript(you, them, rng) {
     const at = pool.findIndex((s) => s.points === absMargin);
     if (at >= 0) otScore = pool.splice(at, 1)[0];
   }
+  /* HOW THE OVERTIME WENT, decided here because one version of it takes a score from each
+     side's regulation. See otPlanFor below. Drawn only for an overtime game, so every other
+     game's script is exactly what it was. */
+  const otPlan = otScore ? otPlanFor(otScore, winner, yParts, tParts, rng) : null;
 
   /* NOT EVERY ONE-SCORE GAME IS DECIDED LATE. Holding the winner's last score back in all
      of them meant the winner had almost always been behind just before it, so 70.6% of
@@ -975,21 +979,138 @@ function scoringScript(you, them, rng) {
      construction. Fifteen minutes, which is the playoff length; both sides get a
      possession before it can end, so the score that settles it is never on the opening
      drive of the period and lands a couple of minutes in at the earliest. */
-  if (otScore) {
-    const OT_SEC = 15 * 60;
-    const elapsed = 120 + Math.floor(rng() * (OT_SEC - 240));
-    const sec = Math.max(1, OT_SEC - elapsed);
-    if (otScore.team === 'you') ry += otScore.points; else rt += otScore.points;
-    out.push({
-      q: QUARTERS + 1,
-      ot: true,
-      sec,
-      clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
-      team: otScore.team, kind: otScore.kind, note: otScore.note || null, points: otScore.points,
-      you: ry, them: rt,
-    });
+  if (otPlan) {
+    /* Every score in the plan, in possession order, on the period clock: OT is the fifth
+       period and 2OT the sixth, fifteen minutes each. `plan.poss[i].at` is the score's
+       index in the script, which is how the drive picture finds it. */
+    for (const p of otPlan.poss) {
+      if (!p.score) continue;
+      const e = p.score;
+      const per = Math.floor(p.end / OT_PERIOD);
+      const sec = Math.max(1, Math.min(OT_PERIOD - 1, OT_PERIOD - (p.end - per * OT_PERIOD)));
+      if (e.team === 'you') ry += e.points; else rt += e.points;
+      p.at = out.length;
+      out.push({
+        q: QUARTERS + 1 + per,
+        ot: true,
+        sec,
+        clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
+        team: e.team, kind: e.kind, note: e.note || null, points: e.points,
+        you: ry, them: rt,
+      });
+    }
+    /* Carried on the array rather than in it, because every reader of a script treats each
+       entry as a score. The broadcast reads it for the possessions that did not score and
+       for when the game actually ended, which is not always the last score. */
+    out.ot = otPlan;
   }
   return out;
+}
+
+/*
+ * ─── OVERTIME, UNDER THE NFL'S PLAYOFF RULES ───────────────────────────────────────────
+ *
+ * The owner's call (2026-10-22): overtime plays out under the current playoff rules.
+ *
+ *   A coin toss, and the winner receives.
+ *   Fifteen minute periods, as many as it takes. A playoff game cannot end level.
+ *   Both sides get a possession, whatever the first one does. A touchdown on the opening
+ *   drive does not end it: the other side gets the ball and has to answer.
+ *   The one exception is a score by the defense on that first possession: a safety ends it.
+ *   Once both have had the ball, the next score wins, and a winning touchdown takes no try.
+ *
+ * The final is already settled, so this decides only HOW it was reached, from the score that
+ * settled it (`otScore`, worth exactly the margin):
+ *
+ *   'first'    the winner receives and scores, and the other side then has the ball and does
+ *              not answer. A 7 or 8 point margin can only be this: a walk-off touchdown takes
+ *              no try, so it is worth 6.
+ *   'matched'  both sides score the same on their first possessions, then sudden death. The
+ *              two matching scores come out of each side's regulation, so the tie it went to
+ *              overtime on is lower and the final is unchanged.
+ *   'walk'     nobody answers the first possessions, or nobody scores at all, and the winner
+ *              scores on a later one. A safety is always this, and can land on the first.
+ *
+ * A scoring possession takes about 2 to 4.5 minutes of clock and a failed one 1 to 3, the
+ * NFL's own overtime drives. Past fifteen minutes the game rolls into 2OT: about one overtime
+ * in fifty here, which is rare, as it is in the league.
+ */
+const OT_PERIOD = 15 * 60;
+function otPlanFor(otScore, winner, yParts, tParts, rng) {
+  const loser = winner === 'you' ? 'them' : 'you';
+  const other = (t) => (t === 'you' ? 'them' : 'you');
+  const safety = otScore.kind === 'SAFETY';
+  /* A touchdown worth 6 is either a missed kick on the first possession or a walk-off with no
+     kick at all. 7 and 8 had their try, so they were never a walk-off. */
+  const walkable = safety || otScore.kind === 'FIELD GOAL' || otScore.points === 6;
+  let mode;
+  if (!walkable) mode = 'first';
+  else if (safety) mode = 'walk';
+  else mode = rng() < 0.4 ? 'first' : 'walk';
+  /* A matched pair needs both sides to own a score of the same value to give up. */
+  let pair = null;
+  if (mode === 'walk' && !safety && rng() < 0.35) {
+    for (const pts of [3, 7]) {
+      const iy = yParts.findIndex((k) => k.points === pts && !k.note);
+      const it = tParts.findIndex((k) => k.points === pts && !k.note);
+      if (iy >= 0 && it >= 0) {
+        pair = { you: yParts.splice(iy, 1)[0], them: tParts.splice(it, 1)[0] };
+        break;
+      }
+    }
+    if (pair) mode = 'matched';
+  }
+  const receiver = mode === 'first' ? winner : (rng() < 0.5 ? 'you' : 'them');
+  /* A trailing side has this possession and no other, so it never punts. */
+  const fail = (behind) => (behind ? (rng() < 0.6 ? 'downs' : 'turnover')
+    : (rng() < 0.65 ? 'punt' : 'turnover'));
+  const poss = [];
+  const add = (team, result, score) => poss.push({ team, result, score: score || null });
+  if (mode === 'first') {
+    add(winner, otScore.kind === 'FIELD GOAL' ? 'field goal' : 'touchdown', otScore);
+    add(loser, otScore.kind === 'FIELD GOAL' && rng() < 0.3 ? 'miss' : fail(true));
+  } else {
+    let team = receiver;
+    if (pair) {
+      add(team, pair[team].points === 3 ? 'field goal' : 'touchdown', { ...pair[team], team });
+      team = other(team);
+      add(team, pair[team].points === 3 ? 'field goal' : 'touchdown', { ...pair[team], team });
+      team = other(team);
+    }
+    /* The possession the winning score comes on. For a field goal or touchdown it is the
+       winner's, and never the very first of overtime unless the first two were answered. For a
+       safety it is the loser's, and the first one is allowed: a defensive score ends it. */
+    const scorerHasBall = !safety;
+    const need = scorerHasBall ? winner : loser;
+    const minIdx = (pair || safety) ? 0 : 1;
+    let extra = rng() < 0.55 ? 0 : (rng() < 0.7 ? 1 : 2);
+    let i = 0;
+    while (true) {
+      if (team === need && i >= minIdx) {
+        if (extra === 0) break;
+        extra--;
+      }
+      add(team, fail(false));
+      team = other(team); i++;
+    }
+    const walkoff = { ...otScore };
+    if (!safety && otScore.kind === 'TOUCHDOWN') { walkoff.points = 6; walkoff.note = 'no kick needed'; }
+    add(team, safety ? 'safety' : (otScore.kind === 'FIELD GOAL' ? 'field goal' : 'touchdown'), walkoff);
+  }
+  /* The clock. A scoring drive is longer than a failed one, on average. */
+  let t = 0;
+  for (const p of poss) {
+    const len = p.score && p.result !== 'safety' ? 110 + Math.floor(rng() * 160)
+      : 45 + Math.floor(rng() * 120);
+    p.start = t; p.end = t + len; t = p.end;
+  }
+  /* Two full periods is the most this ever draws: the scores have to fit somewhere. */
+  if (t > 2 * OT_PERIOD - 30) {
+    const k = (2 * OT_PERIOD - 30) / t;
+    for (const p of poss) { p.start = Math.floor(p.start * k); p.end = Math.floor(p.end * k); }
+    t = poss[poss.length - 1].end;
+  }
+  return { receiver, mode, poss, end: t };
 }
 
 /* ─── WHOSE TOUCHDOWN IT WAS ──────────────────────────────────────────────────
@@ -1434,7 +1555,9 @@ function takeawayScript(men, rng, opts = {}) {
       let best = -1, bestGap = Infinity;
       for (let i = 0; i < script.length; i++) {
         const e = script[i];
-        if (e.team !== 'you' || e.kind !== 'TOUCHDOWN' || claimed.has(i)) continue;
+        /* Never an overtime touchdown: the plan already says which offense had the ball on
+           it, and a return would be the other side's possession. */
+        if (e.team !== 'you' || e.kind !== 'TOUCHDOWN' || e.ot || claimed.has(i)) continue;
         const gap = Math.abs(at(e.q, e.sec) - when);
         if (gap <= TAKEAWAY_TD_WINDOW && gap < bestGap) { best = i; bestGap = gap; }
       }

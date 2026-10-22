@@ -7,6 +7,11 @@
  *                              called_strike)   &type=FF &cell=12 &mx= &mz= to change the pitch
  *   &t=1.2                     freeze at a moment (seconds from the set), for screenshots
  *   &stats=1                   frame rate in the corner
+ *   &ip=single                 a ball in play followed into the field (inplay.js): the engine's result
+ *                              label (single, double, triple, home_run, out, double_play, sac_fly,
+ *                              fielders_choice, error), with &bb= &ev= &la= &spray= the batted ball,
+ *                              &mv=0:1,1:3 the runners' moves (from:to, 4 scored, -1 out), &on=5 the
+ *                              bases before (a bitmask), &outs= the outs after. The play= kind follows bb.
  *
  * Coordinates: the world is in metres, y up. The plate is at the origin; Statcast's catcher view
  * (x to the catcher's right, y toward the mound, z up, feet) maps through P() below, so the mirror
@@ -15,10 +20,11 @@
 import * as THREE from 'three';
 import { preload } from '../3d/load.js?v=7';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=3';
-import { People } from '../3d/people.js?v=31';
+import { People } from '../3d/people.js?v=33';
 import { Pitch } from '../3d/pitch.js?v=7';
 import { labPlay, motion, describe } from '../3d/play.js?v=7';
 import { FT, P, smooth } from '../3d/units.js?v=1';
+import { InPlay } from '../3d/inplay.js?v=1';
 
 const Q = new URLSearchParams(location.search);
 const MODE = Q.get('take') === '1' ? 'take' : 'swing';   // kept for the checks' URLs (take=1)
@@ -47,7 +53,10 @@ async function main() {
   // the hitter (?slot, default the pack's first left handed one, as the lab always showed) and the play
   const slot = Q.has('slot') ? +Q.get('slot') : Math.max(0, facts.batters.findIndex((b) => b.bats === 'L'));
   facts.batter = facts.batters[Math.min(facts.batters.length - 1, slot)];
+  if (Q.has('ip') && !Q.has('play')) Q.set('play', Q.get('bb') || 'line');
   const play = labPlay(facts, facts.batter, Q);
+  const pr = Q.has('ip') ? inPlayResult(play) : null;
+  if (pr) play.inPlay = pr.inPlay;
   const m = motion(play, facts.batter);
   lab.playFacts = play; lab.motion = m;
   const pitch = new Pitch({ scene, facts, play, batter: facts.batter, m, overlays: Q.get('overlays') !== '0' });
@@ -57,28 +66,70 @@ async function main() {
   people.setup(gltfs);
   people.wireBall();
   mark('people');
-  lab.people = people; lab.pitch = pitch; lab.THREE = THREE;
+  lab.people = people; lab.pitch = pitch; lab.THREE = THREE; lab.camera = camera;
   // for pipeline/check-deform.mjs: pose everyone at a moment without drawing a frame
   lab.poseAt = (t) => { pitch.update(t, camera); people.update(t, 0); };
   lab.times = { release: pitch.tRel, flight: pitch.f.T, plate: pitch.tPlate, catch: pitch.tCatch };
 
+  // the ball in play: the fielders, the runners and the broadcast, built once (inplay.js)
+  const ipl = pr ? new InPlay({ scene, renderer, people, facts }) : null;
+  const run = ipl ? ipl.begin(pr, pitch, {}) : null;
+  if (ipl && (Q.has('cam') || Q.has('watch'))) ipl.ownCamera = false;      // the lab's own camera (cam=free) watches the play
+  if (run) { lab.plan = run.plan; lab.realDur = run.realDur; lab.ipl = ipl; }
   const shot = setupCamera(facts);
   // the play by play line (the game shows its own under the scoreboard): once the pitch has its result
   const note = document.getElementById('note');
   const resultAt = pitch.after ? pitch.tRel + pitch.after.t0 : pitch.tCatch;
+  if (run) lab.dur = resultAt + run.realDur + 0.8;
   const update = (t, dt) => {
-    pitch.update(t, camera);
-    people.update(t, dt);
-    shot.update(t);                     // after the people: the head camera follows a head
-    stands.userData.tick(t);
+    // after contact the clock runs through the broadcast cut (slow motion and jump cuts)
+    const s = run && t > resultAt ? run.sceneAt(t - resultAt) : null;
+    const ts = s == null ? t : resultAt + s;
+    pitch.update(ts, camera);
+    people.update(ts, dt);
+    shot.update(ts);                    // after the people: the head camera follows a head
+    if (s != null) ipl.update(s, camera);
+    if (s != null && Q.has('watch')) watch(ipl, Q.get('watch'));
+    stands.userData.tick(ts);
     const show = t > resultAt + 0.3 && !Q.has('nopbp');
     if (show !== lab.pbpShown) { note.textContent = show ? lab.pbp : ''; lab.pbpShown = show; }
   };
   // pose the first moment and compile every shader before the first frame, without blocking
   update(FREEZE ?? 0, 0);
+  if (ipl) { await ipl.motion; ipl.warm(true); }
   await renderer.compileAsync(scene, camera);
+  if (ipl) { ipl.warm(false); update(FREEZE ?? 0, 0); }
   mark('compiled');
   start(update, () => shot.resize());
+}
+
+/** A close look at one body of the ball in play (&watch=f6 a fielder by scoring number, r0 the
+    first runner): the camera beside him, ?wd metres off, ?wa degrees round from his right side. */
+function watch(ipl, id) {
+  const f = id[0] === 'r' ? ipl.runnerFigs[+id.slice(1)] : ipl.fielders[+id.slice(1)];
+  if (!f) return;
+  const p = f.root.position, d = parseFloat(Q.get('wd') || '6'), a = THREE.MathUtils.degToRad(parseFloat(Q.get('wa') || '0'));
+  const yaw = -(f.yaw || 0), side = new THREE.Vector3(Math.cos(yaw + a), 0, -Math.sin(yaw + a));
+  camera.position.set(p.x + side.x * d, 1.3, p.z + side.z * d);
+  camera.lookAt(p.x, 0.95, p.z);
+  camera.fov = 30; camera.updateProjectionMatrix();
+}
+
+/** The engine's PitchResult for a ball in play, from the URL (see the header): the result label and
+    the runners' moves are given, as a row of a pack's advancement table would give them. */
+function inPlayResult(play) {
+  const ip = play.inPlay || {};
+  const num = (k, d) => (Q.has(k) ? +Q.get(k) : d);
+  const moves = (Q.get('mv') || '0:-1').split(',').filter(Boolean).map((m) => { const [from, to] = m.split(':').map(Number); return { from, to }; });
+  const before = num('on', 0);
+  let bases = before;
+  for (const m of moves) { if (m.from >= 1) bases &= ~(1 << (m.from - 1)); }
+  for (const m of moves) { if (m.to >= 1 && m.to <= 3) bases |= 1 << (m.to - 1); }
+  return {
+    result: 'in_play', n: 0, drawn: { id: Q.get('id') || 'lab' },
+    inPlay: { bb: Q.get('bb') || ip.bb || 'line', ev: num('ev', ip.ev), la: num('la', ip.la), spray: num('spray', ip.spray), result: Q.get('ip') },
+    runnerMoves: moves, bases, outs: num('outs', 1),
+  };
 }
 
 function setupCamera(facts) {
@@ -88,6 +139,7 @@ function setupCamera(facts) {
   function resize() {
     renderer.setSize(innerWidth, innerHeight, false);
     eye.resize(innerWidth, innerHeight);
+    camera.userData.cssH = innerHeight;
     if (cam === 'side') camera.fov = 22;
     if (cam === 'free') camera.fov = parseFloat(Q.get('fov') || 30);
     if (cam === 'head') camera.fov = parseFloat(Q.get('fov') || 16);
@@ -128,12 +180,16 @@ function start(update, resize) {
   resize();
   const clock = { last: performance.now(), t: FREEZE ?? 0, playing: FREEZE == null };
   lab.setTime = (t) => { clock.t = t; clock.playing = false; };
+  // for pipeline/shoot.mjs: one frame at a moment, drawn now, the page's own loop held (a frame read
+  // straight off the canvas costs a draw; a screenshot waits on the compositor)
+  lab.renderAt = (t) => { lab.hold = true; clock.t = t; clock.playing = false; lab.t = t; update(t, 0); renderer.render(scene, camera); return canvas.toDataURL('image/png'); };
   lab.play = (t = 0) => { clock.t = t; clock.playing = true; };
   const hint = document.getElementById('hint');
   canvas.addEventListener('click', () => { if (clock.t > 2.6) { lab.play(0); hint.classList.add('off'); } });
   const stats = Q.has('stats') ? makeStats() : null;
-  const LOOP = 3.6;
+  const LOOP = lab.dur || 3.6;
   function frame(now) {
+    if (lab.hold) { requestAnimationFrame(frame); return; }
     const dt = Math.min(0.05, (now - clock.last) / 1000);
     clock.last = now;
     if (clock.playing) {

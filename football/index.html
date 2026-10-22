@@ -8522,7 +8522,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=100"></script>
+<script src="engine.js?v=101"></script>
 <script src="run.js?v=103"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -19594,7 +19594,8 @@ const LIVE_PACE={'Wild Card':0.18,'Divisional':0.25,
 const QNAME=['1ST','2ND','3RD','4TH'];
 /* Anything past the fourth is overtime, which is not a fifth quarter: a live game that goes
    to overtime reads OT on the bug and in the log, never undefined or 4TH 0:00. */
-const qLabel=(q)=>q>4?'OT':QNAME[q-1];
+/* And a second overtime period is 2OT, the way a broadcast says it. */
+const qLabel=(q)=>q>5?(q-4)+'OT':q>4?'OT':QNAME[q-1];
 const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
 
 /* How the score bug dresses for each rung, and what its right-hand cell says. Slate,
@@ -19625,13 +19626,69 @@ function recordBefore(r){
    halfway through one: re-read every frame, a slower setting would wind the clock back, and
    the field reads a clock going backwards as a new game. */
 const simMul=()=>(window.RTG_SPEED&&RTG_SPEED.mul)?RTG_SPEED.mul():1;
-function paced(seg,base){
+/*
+ * SLOW AND SLOWER ARE PACED BY THE DRIVE, NOT BY THE CLOCK. The owner's call (2026-10-22):
+ * the slower settings still went too fast, and they should be slow enough to follow each
+ * drive if you want to. A multiplier on the game clock could not do that. A three minute drive
+ * is a third of a second at Normal, so even 2.4 times that is under a second, and the field's
+ * snap by snap picture of it went by as a smear.
+ *
+ * So below Normal every drive gets its own time on the field (`drive`, stretched for a long
+ * march and cut for a three and out by driveSpan), a stop after it with one line saying what
+ * happened (`hold`), and a longer hold on a score (`score`). NORMAL IS UNTOUCHED, timing and
+ * detail both: it is for somebody who wants the result, and every timed check measures it.
+ *
+ * Football's own numbers, keyed on the setting's id rather than its multiplier, because
+ * simspeed.js is shared with the college game and this changes nothing there.
+ */
+const SLOW_DRIVE={
+  slow:  {drive:2600, hold:1000, score:1800},
+  slower:{drive:5200, hold:1900, score:2800},
+};
+const speedLevel=()=>{
+  const id=(window.RTG_SPEED&&RTG_SPEED.id)?RTG_SPEED.id():'normal';
+  return SLOW_DRIVE[id]?id:'normal';
+};
+/* A drive's share of the standard time: 2:30 of game clock is one drive's worth. */
+const driveSpan=(secs)=>Math.max(0.6,Math.min(1.5,secs/150));
+/* `slow` is how long the segment lasts below Normal, given that setting's numbers. It is read
+   at the same moment the multiplier always was, so a change still lands on the next segment. */
+function paced(seg,base,slow){
   seg.base=base;
   Object.defineProperty(seg,'ms',{enumerable:true,
-    get(){ if(this._ms==null) this._ms=this.base*simMul(); return this._ms; }});
+    get(){
+      if(this._ms==null){
+        const L=SLOW_DRIVE[speedLevel()];
+        this._ms=(L&&slow)?slow(L):this.base*simMul();
+      }
+      return this._ms;
+    }});
   return seg;
 }
-function buildTimeline(script,pace){
+/* A run of the clock, cut where a drive ends, so each piece knows whose drive it is. Normal
+   keeps exactly the length it had: the pieces share the run's own time in proportion. Below
+   Normal each piece is its slice of the drive's time, and a drive that ended without a score
+   gets a stop of its own (a score already has one). */
+function pushRun(segs,q,from,to,base,drives){
+  const a=(q-1)*900+(900-from), b=(q-1)*900+(900-to);
+  if(!drives||!drives.length||b<=a){ segs.push(paced({kind:'run',q,from,to},base)); return; }
+  const cuts=[a];
+  for(const d of drives) if(d.tEnd>a&&d.tEnd<b) cuts.push(d.tEnd);
+  cuts.sort((x,y)=>x-y); cuts.push(b);
+  for(let k=0;k+1<cuts.length;k++){
+    const x=cuts[k], y=cuts[k+1];
+    if(y<=x) continue;
+    const mid=(x+y)/2, d=drives.find(v=>v.tStart<=mid&&mid<v.tEnd);
+    const len=d?Math.max(1,d.tEnd-d.tStart):1;
+    segs.push(paced({kind:'run',q,from:900-(x-(q-1)*900),to:900-(y-(q-1)*900)},
+      base*(y-x)/(b-a), d?(L)=>L.drive*driveSpan(len)*(y-x)/len:null));
+    const ended=drives.find(v=>v.tEnd===y);
+    if(ended&&ended.at==null&&ended.result!=='safety'&&ended.result!=='touchdown'
+      &&ended.result!=='field goal')
+      segs.push(paced({kind:'drive',d:ended},0,(L)=>L.hold));
+  }
+}
+function buildTimeline(script,pace,drives){
   const segs=[];
   /* THE SCORE'S PLACE IN THE SCRIPT, carried through onto the segment. The timeline is
      rebuilt quarter by quarter out of a filtered copy, so by the time a segment is played
@@ -19642,12 +19699,31 @@ function buildTimeline(script,pace){
   for(let q=1;q<=4;q++){
     let from=900;
     for(const e of script.filter(x=>x.q===q)){
-      segs.push(paced({kind:'run',q,from,to:e.sec},Math.max(200,(from-e.sec)/900*pace.quarterMs)));
-      segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold));
+      pushRun(segs,q,from,e.sec,Math.max(200,(from-e.sec)/900*pace.quarterMs),drives);
+      segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold,(L)=>L.score));
       from=e.sec;
     }
-    segs.push(paced({kind:'run',q,from,to:0},Math.max(200,from/900*pace.quarterMs)));
+    pushRun(segs,q,from,0,Math.max(200,from/900*pace.quarterMs),drives);
     if(q<4) segs.push(paced({kind:'break',q},q===2?pace.half:pace.qbreak));
+  }
+  /* OVERTIME, PLAYED OUT. Fifteen minute periods, and the game ends when the engine's plan
+     says it did: at the walk-off, or when the side that had to answer a first-possession
+     score did not. Not at 0:00, because nothing in overtime waits for the clock. */
+  const plan=script.ot;
+  if(plan&&plan.poss){
+    const periods=Math.floor(Math.max(0,plan.end-1)/900)+1;
+    for(let k=0;k<periods;k++){
+      const q=5+k;
+      segs.push(paced({kind:'break',q:q-1,otStart:q},pace.half,(L)=>L.score));
+      const endHere=k===periods-1?900-(plan.end-k*900):0;
+      let from=900;
+      for(const e of script.filter(x=>x.q===q)){
+        pushRun(segs,q,from,e.sec,Math.max(200,(from-e.sec)/900*pace.quarterMs),drives);
+        segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold,(L)=>L.score));
+        from=e.sec;
+      }
+      if(from>endHere) pushRun(segs,q,from,endHere,Math.max(200,(from-endHere)/900*pace.quarterMs),drives);
+    }
   }
   return segs;
 }
@@ -19663,7 +19739,7 @@ function buildTimeline(script,pace){
 
 /* "Q1".."Q4", then "OT". The extra period is not a fifth quarter and calling it Q5 on the
    play log would read as a bug rather than as overtime. */
-function periodLabel(e){ return e.q>4?'OT':'Q'+e.q; }
+function periodLabel(e){ return e.q>4?qLabel(e.q):'Q'+e.q; }
 
 /*
  * THE TAKEAWAYS, ON THE FIELD.
@@ -19695,11 +19771,16 @@ function generateDrives(script,rng,opts){
      produces. Halftime and overtime are pushed into this same list and the whole thing is
      then sorted, so a tick's position here stops being the script's the moment that happens,
      and the kick distances below are keyed on exactly that. */
-  script.forEach((e,i)=>ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}));
+  /* AN OVERTIME THE ENGINE PLANNED is drawn from its plan below, possession by possession,
+     so regulation here stops at 60:00. See otPlanFor in engine.js. */
+  const otPlan=script&&script.ot&&Array.isArray(script.ot.poss)?script.ot:null;
+  script.forEach((e,i)=>{ if(otPlan&&e.ot) return;
+    ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}); });
   /* THE GAME IS AS LONG AS IT TOOK. Fixed at 3600 this walked off the end of an overtime:
      the last gap came out negative and the extra period drew no drives at all. */
   const REG=3600;
-  const GAME=ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
+  /* With an overtime plan, regulation is exactly sixty minutes and the plan has the rest. */
+  const GAME=otPlan?REG:ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
   /* HALFTIME IS AN EVENT, not a line the clock happens to pass. Without it the ball simply
      stayed with whoever had it when the second quarter ran out and play carried straight on
      into the third, so a team could finish the half with a punt and open the second half
@@ -19856,6 +19937,29 @@ function generateDrives(script,rng,opts){
     if(ns&&ns.ot){pos=otReceiver;at=pos==='you'?youKO():themKO();}
     t=tE;
   }
+  /* THE OVERTIME, ONE DRIVE PER POSSESSION OF THE ENGINE'S PLAN. Declared inside, so the
+     tests that lift generateDrives out of this page by its source get it too. Every possession starts off a
+     kickoff or a change of hands, so the ball is placed fresh each time rather than chained:
+     what has to be true here is who had it, in what order, and how it ended, and the plan is
+     the authority on all three. Same frame as above: you advance toward 100. */
+  function otDrives(plan,REG,rng){
+    const out=[];
+    for(const p of plan.poss){
+      const you=p.team==='you';
+      const rel0=20+Math.floor(rng()*16);                 // own 20 to 35
+      let rel1;
+      if(p.result==='touchdown') rel1=100;
+      else if(p.result==='field goal'||p.result==='miss') rel1=60+Math.floor(rng()*25);
+      else if(p.result==='safety') rel1=0;
+      else rel1=Math.min(95,rel0+5+Math.floor(rng()*40));
+      const start=p.result==='safety'?2+Math.floor(rng()*8):rel0;
+      const abs=(r)=>you?r:100-r;
+      out.push({team:p.team,startYard:abs(start),endYard:abs(rel1),result:p.result,
+        tStart:REG+p.start,tEnd:REG+p.end,...(p.at!=null?{at:p.at}:{})});
+    }
+    return out;
+  }
+  if(otPlan) drives.push(...otDrives(otPlan,REG,rng));
   return drives;
 }
 
@@ -20173,7 +20277,6 @@ function playPlayoffGame(r,after){
   const pace=PACE[round]||PACE['Wild Card'];
   const seedStr=run.seed+'|'+round+'|'+r.shownYou+'-'+r.shownThem;
   const script=E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(E.hashSeed(seedStr)));
-  const segs=buildTimeline(script,pace);
   /* WHO SCORED THEM, on the same script the timeline is built from, so the name in the call
      belongs to the play the clock just stopped for. Passing the script in rather than
      letting gameCredits build its own is what makes the box score afterwards agree with the
@@ -20217,6 +20320,10 @@ function playPlayoffGame(r,after){
     const out=d.team==='you'?100-d.endYard:d.endYard;
     fgYards.set(d.at,Math.max(18,Math.min(63,Math.round(out)+17)));
   }
+  /* Built off the drives, so Slow and Slower can give each one its own time. See SLOW_DRIVE. */
+  const segs=buildTimeline(script,pace,drives);
+  const driveAt=new Map();
+  for(const d of drives) if(d.at!=null) driveAt.set(d.at,d);
   const fieldCtx=initFieldCanvas('po-fcanvas');
   const fcv=$('po-fcanvas');
   const cDist=(a,b)=>{const x=parseInt(a.slice(1),16),y=parseInt(b.slice(1),16);
@@ -20256,15 +20363,22 @@ function playPlayoffGame(r,after){
     $('po-log').innerHTML='';
     /* The whole game, in one pass, in time order: the takeaways belong between the scores
        rather than in a block after them, so the log reads as the game happened. */
+    /* Below Normal the drives that did not score stay in the log at the end too. */
+    const quiet=speedLevel()!=='normal'
+      ? drives.filter(d=>d.at==null&&d.result!=='safety'&&d.result!=='touchdown'
+          &&d.result!=='field goal'&&!d.takeaway).map(d=>({t:d.tEnd,d}))
+      : [];
     const all=script.map((e,i)=>({t:(e.q-1)*900+(900-e.sec),e,i}))
       .concat(takeaways.map(t=>({t:(t.q-1)*900+(900-t.sec),tk:t})))
+      .concat(quiet)
       .sort((a,b)=>a.t-b.t);
-    all.forEach(x=>x.tk?logTakeaway(x.tk):logScore(x.e,x.i));
-    paintField(3600);
+    all.forEach(x=>x.d?logDrive(x.d):x.tk?logTakeaway(x.tk):logScore(x.e,x.i));
+    paintField(script.ot?3600+script.ot.end:3600);
     $('po-cap').innerHTML='<div class="call '+(r.won?'you':'them')+
       (r.won&&round==='Super Bowl'?' big':'')+'"><b>'+
       (r.won?(round==='Super Bowl'?'CHAMPIONS':'YOU ADVANCE'):'SEASON OVER')+
-      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+'</span></div>';
+      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+
+      (script.ot?' in '+(script.ot.end>900?'double overtime':'overtime'):'')+'</span></div>';
     if(r.won&&round==='Super Bowl'){
       const perfectRun=run.season.results.every(x=>x.won);
       fireConfetti(confettiTheme(perfectRun));
@@ -20301,12 +20415,36 @@ function playPlayoffGame(r,after){
       '<span class="n">'+(t.kind==='INTERCEPTION'?'INT':'FUM')+'</span></div>');
   };
 
+  /* A DRIVE IN ONE LINE, for Slow and Slower: who had it, how far it went, how long it took.
+     Read off the drive the field has just drawn, so the words and the bar cannot disagree. */
+  const driveWho=(d)=>d.team==='you'?'You':oppCode;
+  const driveLine=(d)=>{
+    const yds=Math.round(d.team==='you'?d.endYard-d.startYard:d.startYard-d.endYard);
+    const went=yds<0?'lost '+(-yds)+(yds===-1?' yard':' yards'):yds+(yds===1?' yard':' yards');
+    return driveWho(d)+' · '+went+' in '+clockText(Math.max(0,d.tEnd-d.tStart));
+  };
+  const driveHead=(d)=>d.result==='punt'?'PUNT'
+    :d.takeaway==='INTERCEPTION'?'INTERCEPTED'
+    :d.takeaway?'FUMBLE'
+    :d.result==='turnover'?'TURNOVER'
+    :d.result==='downs'?'TURNOVER ON DOWNS'
+    :d.result==='miss'?'NO GOOD'
+    :String(d.result).toUpperCase();
+  const logDrive=(d)=>{
+    const q=Math.floor(Math.max(0,d.tEnd-1)/900)+1;
+    const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
+    $('po-log').insertAdjacentHTML('afterbegin',
+      '<div class="pl '+d.team+' quiet"><span class="t">'+(q>4?qLabel(q):'Q'+q)+' '+clock+'</span>'+
+      '<span class="w">'+esc(driveWho(d))+' &middot; '+esc(driveHead(d).toLowerCase())+
+      '<i class="plsub">'+esc(driveLine(d))+'</i></span><span class="n"></span></div>');
+  };
+
   let i=0;
   const next=()=>{
     if(i>=segs.length){ finish(); return; }
     const seg=segs[i++];
     if(seg.kind==='run'){
-      $('po-q').textContent=QNAME[seg.q-1];
+      $('po-q').textContent=qLabel(seg.q);
       $('po-ck').textContent=clockText(seg.from);
       const t0=(window.performance||Date).now();
       const step=()=>{
@@ -20325,7 +20463,7 @@ function playPlayoffGame(r,after){
             '<span>'+esc(t.blurb)+'</span></div>';
           logTakeaway(t);
         }
-        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        bug.classList.toggle('urgent',seg.q>=4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(step); return; }
         next();
       };
@@ -20352,8 +20490,39 @@ function playPlayoffGame(r,after){
         '<span>'+(c?esc(c.blurb):(e.team==='you'?'You':esc(r.opponent)))+
         (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
       logScore(e,seg.i);
+      /* Below Normal the call also says how the drive got there. */
+      const sd=speedLevel()!=='normal'?driveAt.get(seg.i):null;
+      const callEl=sd?$('po-cap').querySelector('.call'):null;
+      if(callEl) callEl.insertAdjacentHTML('beforeend','<span>'+esc(driveLine(sd))+'</span>');
       poTimer=setTimeout(next,seg.ms);
       return;
+    }
+    if(seg.kind==='drive'){
+      /* A stop after a drive that did not score, below Normal only. At Normal it lasts no
+         time and says nothing, which is how Normal stays exactly what it was. */
+      const ms=seg.ms;
+      /* A takeaway already flashed its own call and log row as the clock passed it, so its
+         stop holds the picture and says nothing twice. */
+      if(ms>0&&!seg.d.takeaway){
+        const d=seg.d;
+        $('po-cap').innerHTML='<div class="call '+d.team+(d.takeaway?' tk':'')+'"><b>'+
+          esc(driveHead(d))+'</b><span>'+esc(driveLine(d))+'</span></div>';
+        logDrive(d);
+      }
+      poTimer=setTimeout(next,ms);
+      return;
+    }
+    if(seg.kind==='break'&&seg.otStart){
+      /* THE TOSS, said out loud. Who has the ball first is the whole shape of overtime under
+         these rules, so it is the first thing the period says. */
+      const rcv=script.ot.receiver==='you'?'You':oppCode;
+      $('po-q').textContent=qLabel(seg.otStart);
+      $('po-ck').textContent='15:00';
+      $('po-cap').innerHTML='<div class="call '+script.ot.receiver+'"><b>'+
+        (seg.otStart>5?'DOUBLE OVERTIME':'OVERTIME')+'</b><span>'+
+        (seg.otStart>5?'Still tied. Next score wins.'
+          :esc(rcv)+(rcv==='You'?' win the toss. You get the ball first.'
+            :' wins the toss and takes the ball.'))+'</span></div>';
     }
     poTimer=setTimeout(next,seg.ms);
   };
@@ -21522,7 +21691,11 @@ function bossAnimateDrive(d,cb){
    */
   const from=Math.max(d.tStart,bossShownTo);
   const span=Math.max(0,d.tEnd-from), full=Math.max(1,d.tEnd-d.tStart);
-  const whole=bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260))*simMul();
+  /* Below Normal a drive gets at least its SLOW_DRIVE time, the same as the playoff broadcast,
+     and a stop after it whether it scored or not. Normal keeps the pace it had. */
+  const SL=SLOW_DRIVE[speedLevel()];
+  const whole=Math.max(bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260))*simMul(),
+    SL?SL.drive*driveSpan(full):0);
   const floor=(from>d.tStart?Math.max(120,240*bossPace):Math.max(220,900*bossPace))*simMul();
   const dur=span<=0?0:Math.max(floor,whole*(span/full));
   const anchor=(from>d.tStart&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
@@ -21544,7 +21717,8 @@ function bossAnimateDrive(d,cb){
     /* A BEAT ON A SCORE, and only on a score. The drives run back to back otherwise, and a
        touchdown that is gone before the number under it has finished moving is the thing
        this screen was asked to stop doing. */
-    if(scored){ bossTimer=setTimeout(cb,Math.max(300,700*bossPace)*simMul()); return; }
+    if(scored){ bossTimer=setTimeout(cb,Math.max(Math.max(300,700*bossPace)*simMul(),SL?SL.score:0)); return; }
+    if(SL){ bossTimer=setTimeout(cb,SL.hold); return; }
     cb();
   };
   bossRaf=requestAnimationFrame(tick);
@@ -23194,11 +23368,11 @@ function bowlBroadcast(cfg){
     if(i>=segs.length){ finish(); return; }
     const seg=segs[i++];
     if(seg.kind==='run'){
-      $('bowl-q').textContent=QNAME[seg.q-1]; $('bowl-ck').textContent=clockText(seg.from);
+      $('bowl-q').textContent=qLabel(seg.q); $('bowl-ck').textContent=clockText(seg.from);
       const t0=(window.performance||Date).now();
       const stepf=()=>{ const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
         const sec=seg.from+(seg.to-seg.from)*k; $('bowl-ck').textContent=clockText(sec);
-        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        bug.classList.toggle('urgent',seg.q>=4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(stepf); return; } next(); };
       poRaf=requestAnimationFrame(stepf); return;
     }

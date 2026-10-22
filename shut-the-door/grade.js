@@ -14,7 +14,8 @@
  *   keys          the outcome keys, in order (KEYS below; the pack carries its own copy)
  *   kernelZoneFt  the zone height (ft) the vertical miss is scaled by. The engine
  *                 draws the miss with the same number, so the grade's miss table
- *                 and the miss that is played are one normal
+ *                 and the miss that is played are one normal (at 1.0x: a call's
+ *                 release q scales the played miss, never this table; engine.js)
  *   kernel        {type: number[625]}: row target * 25 + actual. For reference and
  *                 the pack check; the engine rebuilds it from sigmaFt
  *   pitches       [[id, velo, res, bb, ev, la, spray], ...] the real pitches the

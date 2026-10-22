@@ -49,7 +49,7 @@ async function open(query, w, h, extra = {}) {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.text()); });
   bytes = 0;
-  await page.goto(`${BASE}?${query}`);
+  await page.goto(`${BASE}?${query}`, { timeout: 0 });   // a busy machine can take a while
   const failed = new Promise((_, rej) => page.on('pageerror', (e) => rej(e)));
   await Promise.race([page.waitForFunction(() => window.__lab && window.__lab.ready, null, { timeout: 180000 }), failed]);
   return { ctx, page, errors };
@@ -125,24 +125,22 @@ if (WHAT === 'shots') {
 
 if (WHAT === 'video') {
   // Software GL draws about one frame a second here, so a live screen recording would be a slide
-  // show. Instead the clock steps 1/30 s per frame, each frame is captured, and ffmpeg plays them
-  // back at 30 fps: true speed, every frame. Playwright's recordVideo of the same stepped run is
-  // kept beside it (raw.webm) as the literal capture; it runs slow.
-  // node shoot.mjs OUT video [QUERY] [NAME]
+  // show. Instead the clock steps 1/30 s per frame, each frame is drawn and read off the canvas, and
+  // ffmpeg plays them back at 30 fps: true speed, every frame.
+  // node shoot.mjs OUT video [QUERY] [NAME]   (a lab ?ip= ball in play runs to its end)
   const q = process.argv[4] || '', name = process.argv[5] || 'pitch';
   const frames = path.join(OUT, `${name}-frames`);
   fs.mkdirSync(frames, { recursive: true });
-  const { ctx, page } = await open(`${q}&t=0&once=1`, 390, 844, { dsf: 2, ctx: { recordVideo: { dir: OUT, size: { width: 390, height: 844 } } } });
-  const N = Math.round(3.3 * 30);
+  const { ctx, page } = await open(`${q}&t=0&once=1`, 390, 844, { dsf: +(process.env.DSF || 2) });
+  // a ball in play runs as long as its broadcast (the lab says how long: __lab.dur)
+  const N = Math.round((await page.evaluate(() => window.__lab.dur || 3.3)) * 30);
   for (let i = 0; i <= N; i++) {
-    await page.evaluate((t) => window.__lab.setTime(t), i / 30);
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-    await page.screenshot({ path: path.join(frames, `f${String(i).padStart(4, '0')}.png`) });
+    // each frame drawn in the page and read off its canvas (lab.renderAt): far quicker than a
+    // screenshot on a busy machine, and the same pixels
+    const url = await page.evaluate((t) => window.__lab.renderAt(t), i / 30);
+    fs.writeFileSync(path.join(frames, `f${String(i).padStart(4, '0')}.png`), Buffer.from(url.split(',')[1], 'base64'));
   }
-  const v = page.video();
   await ctx.close();
-  const raw = await v.path();
-  fs.renameSync(raw, path.join(OUT, `${name}-raw.webm`));
   const { execFileSync } = await import('node:child_process');
   const src = path.join(frames, 'f%04d.png');
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', '30', '-i', src, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20', path.join(OUT, `${name}.mp4`)]);

@@ -9,20 +9,28 @@
  *   st.gridRect(), st.toScreen(pp), st.cellCenter(cell)   where the zone is on screen, for the
  *                                    game's own grid and marker (the grid is the game's, shown
  *                                    only while aiming)
+ *   st.setPreview({ type, cell })   the break preview: a ghost trail from the hand to the cell's
+ *                                    centre, the pitch's real shape (preview.js); null hides it
+ *   st.previewPoints()               that trail on the canvas in CSS px, for the grid's thin line
  *   st.play({ pr, quick, hooks })    one pitch, driven by the engine's PitchResult (play.js), to
  *                                    the call: hooks.sound(name, delayMs), hooks.call(), and
  *                                    hooks.field(runners) for the scorebar diamond as they run.
  *                                    A tap skips to the end. Resolves when it is over.
+ *                                    A ball in play is followed into the field (inplay.js): the
+ *                                    broadcast cut, the fielders, the runners, hooks.call when the
+ *                                    plan says the play is decided, hooks.field from the 3D runners.
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=7';
 import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
-import { People } from './people.js?v=31';
+import { People } from './people.js?v=33';
 import { Pitch } from './pitch.js?v=7';
 import { fromResult, motion } from './play.js?v=7';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
+import { InPlay } from './inplay.js?v=1';
+import { Ghost } from './preview.js?v=1';
 
 const C = () => window.STD_CONTRACT;
 // the grid: a column is CELL_FT wide at the plate, and a cell is never under CELL_PX on screen
@@ -73,7 +81,9 @@ class Stage {
     mk('lit');
     if (this.scn) this.applyScenario();
     mk('people');
+    if (this.inplay) this.inplay.warm(true);
     await this.renderer.compileAsync(this.scene, this.camera);
+    if (this.inplay) this.inplay.warm(false);
     // one draw now compiles what compileAsync leaves (the shadow pass); on the home screen the canvas
     // is hidden, so nobody sees it
     this.render();
@@ -82,6 +92,7 @@ class Stage {
     this.layout();
     mk('framed');
     this.draw();
+    this.applyGhost();
     return this;
   }
 
@@ -100,6 +111,12 @@ class Stage {
     this.facts = factsFrom(this.scn, this.extra);
     this.people = new People({ scene: this.scene, facts: this.facts });
     this.people.setup(this.gltfs);
+    // the fielders and runners for a ball in play: built once from the catcher's body, dressed for
+    // this scenario's two clubs
+    if (!this.inplay) {
+      this.inplay = new InPlay({ scene: this.scene, renderer: this.renderer, people: this.people, facts: this.facts });
+      if (this.loaded) { this.inplay.warm(true); this.renderer.compile(this.scene, this.camera); this.inplay.warm(false); }
+    } else { this.inplay.people = this.people; this.inplay.setFacts(this.facts); }
     if (this.batterId != null) this.applyBatter();
   }
 
@@ -124,6 +141,7 @@ class Stage {
     this.facts.batter = f;
     this.people.setBatter(f);
     this.preview();
+    this.applyGhost();
   }
 
   setTarget(cell) {
@@ -131,8 +149,32 @@ class Stage {
     if (this.loaded && this.facts && this.facts.batter) this.preview();
   }
 
+  /** The break preview (the intended path, never the outcome): spec { type, cell } or null. */
+  setPreview(spec) {
+    this.ghostSpec = spec || null;
+    this.applyGhost();
+  }
+
+  applyGhost() {
+    if (!this.loaded || !this.facts || !this.facts.batter) return;
+    const s = this.ghostSpec;
+    if (!s) { if (this.ghost && this.ghost.visible) { this.ghost.hide(); this.soon(); } return; }
+    const a = this.facts.pitcher.arsenal.find((x) => x.type === s.type);
+    if (!a) return;
+    if (!this.ghost) this.ghost = new Ghost(this.scene);
+    const b = this.facts.batter;
+    this.ghost.set({ release: this.facts.release, pitch: a, cell: s.cell == null ? 12 : s.cell, szTop: b.szTop, szBot: b.szBot });
+    this.soon();
+  }
+
+  previewPoints() {
+    if (!this.ghost || !this.ghost.visible) return null;
+    return this.ghost.screen(this.camera, this.canvas.clientWidth, this.canvas.clientHeight);
+  }
+
   /** The set: everyone in their stance, the catcher set up on the target, no ball yet. */
   preview() {
+    if (this.inplay && this.inplay.active) this.inplay.end(this.camera);
     const f = this.facts.batter, c = C();
     const cell = this.cell == null ? 12 : this.cell;
     const tg = c ? c.targetOf(cell) : { x: 0, zn: 0.5 };
@@ -158,7 +200,10 @@ class Stage {
     if (this.people && this.people.batter && this.people.batter.chain) this.people.update(t, 0);
   }
 
-  render() { this.renderer.render(this.scene, this.camera); }
+  render() {
+    if (this.ghost && this.ghost.visible) this.ghost.orient(this.camera, this.canvas.clientHeight);
+    this.renderer.render(this.scene, this.camera);
+  }
 
   /** A frame on the next animation frame, once, however many changes asked for one (a tap on take
       the mound sizes, frames and sets the hitter: one frame, not one each). */
@@ -176,6 +221,7 @@ class Stage {
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     this.eye.resize(w, h);
+    this.camera.userData.cssH = h;
     this.eye.update(this.t);
     if (this.loaded) { this.fit(); this.soon(); }
   }
@@ -201,7 +247,9 @@ class Stage {
   gridRect() {
     const zb = this.zone || { szTop: 3.4, szBot: 1.6 };
     const third = 1 / 3, cw = CELL_FT;
-    const a = this.toScreen({ x: -2.5 * cw, zn: -third }), b = this.toScreen({ x: 2.5 * cw, zn: 1 + 2 * third });
+    // five rows of a third each, from a third under the zone to a third over it (it read 1 + 2 * third,
+    // a grid a fifth too tall, so a cell's centre sat off the zone's: the break preview ends on it)
+    const a = this.toScreen({ x: -2.5 * cw, zn: -third }), b = this.toScreen({ x: 2.5 * cw, zn: 1 + third });
     void zb;
     return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
   }
@@ -326,17 +374,27 @@ class Stage {
   async play(opts) {
     await this.ready;
     const pr = opts.pr, hooks = opts.hooks || {};
+    // the preview is the aim, not the pitch: gone before the ball leaves the hand
+    this.ghostSpec = null;
+    if (this.ghost) this.ghost.hide();
     const play = fromResult(pr, this.facts.batter);
     this.setPitch(play);
     const pt = this.pitch, m = this.m;
     const speed = opts.quick ? 1.8 : 1;
     const resultAt = pt.after ? pt.tRel + pt.after.t0 : pt.tCatch;
     const inPlay = pr.result === 'in_play';
+    // a ball in play: the broadcast of the plan (inplay.js) runs from contact, on its own clock
+    // (slow motion and jump cuts), real seconds after contact to plan seconds through run.sceneAt
+    const run = inPlay && this.inplay && pt.after ? this.inplay.begin(pr, pt, { hooks }) : null;
     // (knocked down by a pitch, he stays down for a beat)
-    const tail = inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
+    const tail = run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
     const tEnd = resultAt + tail;
-    // the runners on the scorebar diamond, on the same clock the old drawing used (ms from the start)
-    const track = AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
+    const callAt = run ? resultAt + run.resolveReal : resultAt + 0.12;
+    const sceneT = (t) => (run && t > resultAt ? resultAt + run.sceneAt(t - resultAt) : t);
+    // the runners on the scorebar diamond: the 3D runners themselves after a ball in play, else the
+    // clock the old drawing used (ms from the start)
+    const track = run ? { running: true, at: (ms) => ({ runners: this.inplay.fieldAt(Math.max(0, sceneT(ms / 1000) - resultAt)) }) }
+      : AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
     if (hooks.sound) hooks.sound('whoosh', pt.tRel * 1000 / speed);
     // what the browser check reads back: the play's reading and a few frames of it
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
@@ -350,11 +408,14 @@ class Stage {
         cancelAnimationFrame(raf);
         document.removeEventListener('pointerdown', skip, true);
         if (!called) { called = true; if (hooks.call) hooks.call(); }
-        if (track && track.running && hooks.field) hooks.field(track.at(1e9).runners);
+        if (track && track.running && hooks.field) hooks.field(track.at(tEnd * 1000).runners);
         trace.skipped = lastT < tEnd;
-        this.pose(tEnd);
+        const te = sceneT(tEnd);
+        if (run) this.inplay.skipTo(te - resultAt);
+        this.pose(te);
+        if (run) this.inplay.update(te - resultAt, this.camera);
         this.render();
-        keep(tEnd);
+        keep(te);
         this.dirty = true;
         done();
       };
@@ -371,12 +432,14 @@ class Stage {
           const caught = ['ball', 'called_strike', 'swinging_strike', 'foul_tip'].includes(pr.result);
           if (hooks.sound) hooks.sound(caught ? 'pop' : pr.result === 'hit_by_pitch' ? 'thud' : 'crack');
         }
-        if (!called && t >= resultAt + 0.12) { called = true; if (hooks.call) hooks.call(); }
+        if (!called && t >= callAt) { called = true; if (hooks.call) hooks.call(); }
         if (track && track.running && t >= resultAt && hooks.field) hooks.field(track.at(t * 1000).runners);
-        this.pose(Math.min(t, tEnd));
+        const ts = sceneT(Math.min(t, tEnd));
+        this.pose(ts);
+        if (run && ts > resultAt) this.inplay.update(ts - resultAt, this.camera);
         if (!TEST() || trace.frames % (TEST().renderEvery || 1) === 0) this.render();
         trace.frames++;
-        keep(Math.min(t, tEnd));
+        keep(ts);
         if (t >= tEnd) { finish(); return; }
         raf = requestAnimationFrame(tick);
       };
