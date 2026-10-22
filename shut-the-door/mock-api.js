@@ -436,7 +436,7 @@ function throwPitch(outingId, call) {
     if (o.st.status !== 'live') throw new Error('the outing is over');
     if (!pitchOf(o.scn, call.type)) throw new Error('not in his arsenal: ' + call.type);
     if (!(call.cell >= 0 && call.cell < C.GRID.CELLS)) throw new Error('no such cell');
-    var c = { type: call.type, cell: call.cell | 0 };
+    var c = { type: call.type, cell: call.cell | 0 }; if (Array.isArray(call.at)) c.at = [+call.at[0], +call.at[1]];
     if (call.q != null && C.releaseQ) c.q = C.releaseQ(call.q);
     o.calls.push(c);
     var r = apply(o.scn, o.st, c, o.rng);

@@ -1,20 +1,27 @@
 /* Shut The Door: aim on the field (the owner's call, 2026-10-22).
  *
  * window.STD_AIM. The player aims on the strike zone the 3D stage draws, not on a separate grid:
- * a crosshair dragged or tapped over the zone, snapping to the same 25 cells the engine plays, so
- * the call is still { type, cell, q }. The batter's heat colours, the outing's pitch dots and the
- * break preview's thin line are drawn in the same box, so scouting and aiming are one place.
+ * a crosshair dragged or tapped over the zone. The batter's heat colours, the outing's pitch dots
+ * and the break preview's thin line are drawn in the same box, so scouting and aiming are one place.
+ *
+ * FREE AIM (the owner, 2026-10-22: "tap anywhere in the strike zone and not just in the squares").
+ * The crosshair goes exactly where the finger is, anywhere in the 25 cells, and never snaps. The
+ * cell under it is still the call's cell (the heat, the tag, the scouting and the grade all read
+ * that cell). The point inside it rides on the call as at: [u, v], fractions of the cell's width
+ * and height in [-0.5, 0.5], catcher's view: u toward the catcher's right, v up, [0, 0] the centre.
  *
  * GEOMETRY. The box is the stage's own projection of the zone (stage.js gridRect, placed with
  * place()), five columns and five rows of a third. Data is catcher's view; the screen is the
  * pitcher's: a cell's column on screen is STD_CONTRACT.screenCol(cell), and a point on screen is
- * turned back into a cell through screenCol() too, never by flipping x here.
+ * turned back into a cell through screenCol() too, never by flipping x here. The sign of u on
+ * screen is read from screenCol() the same way (SCREEN_U), so at stays in catcher's view.
  *
- * INPUT. One pointer: a tap picks the cell under it, a drag moves the crosshair cell by cell and
- * picks where it is let go (a drag that leaves the box keeps to the nearest edge cell). The box
+ * INPUT. One pointer: a tap picks the point under it, a drag moves the crosshair smoothly with the
+ * finger and picks where it is let go (a drag that leaves the box keeps to its edge). The box
  * takes touch-action none, so a drag never scrolls the page. A mouse with no button down only
  * hovers (opts.onHover), for the break preview. The cells stay real buttons, each named in inside
- * and away words, so a keyboard or a screen reader picks one too, and the arrow keys move the aim.
+ * and away words, so a keyboard or a screen reader picks one too (at the cell's centre), and the
+ * arrow keys move the aim a cell at a time.
  *
  * The surface is the old Grid's (place, setHand, setDisabled, setSelected, setMarks, setPitches,
  * setHeat, cells, el), so ui.js drives it the same way. The coach's mini grid stays mound.js Grid.
@@ -23,6 +30,24 @@
 'use strict';
 var C = window.STD_CONTRACT, M = window.STD_MOUND;
 var N = 5;
+/* +1 when a cell one column to the catcher's right is drawn further right on screen, -1 when the
+   screen is mirrored (the pitcher's view). Read from screenCol(), the one mirror. */
+var SCREEN_U = C.screenCol(C.cellOf(0, 1)) - C.screenCol(C.cellOf(0, 0)) > 0 ? 1 : -1;
+var r2 = function (x) { return Math.round(x * 100) / 100 || 0; };
+var clamp = function (x, lo, hi) { return Math.max(lo, Math.min(hi, x)); };
+
+/* A point in the box (fractions 0..1 from the top left, as drawn) to its cell and at. */
+function aimAt(fx, fy) {
+  var sx = clamp(fx, 0, 1) * N, sy = clamp(fy, 0, 1) * N;
+  var sc = clamp(Math.floor(sx), 0, N - 1), row = clamp(Math.floor(sy), 0, N - 1);
+  var cell = cellAtScreen(row, sc);
+  return { cell: cell, at: [r2(clamp((sx - sc - 0.5) * SCREEN_U, -0.5, 0.5)), r2(clamp(0.5 - (sy - row), -0.5, 0.5))] };
+}
+/* A cell and at back to the point in the box, as drawn */
+function pointOf(cell, at) {
+  var u = at ? at[0] : 0, v = at ? at[1] : 0;
+  return [(C.screenCol(cell) + 0.5 + u * SCREEN_U) / N, (C.rowOf(cell) + 0.5 - v) / N];
+}
 
 /* the cell in this row whose column on screen is sc: through screenCol(), the one mirror */
 function cellAtScreen(row, sc) {
@@ -30,7 +55,7 @@ function cellAtScreen(row, sc) {
   return C.cellOf(row, 2);
 }
 
-/* opts: { onPick(cell), onHover(cell | null), label(cell) for the tag over the crosshair } */
+/* opts: { onPick(cell, at), onHover(cell | null, at), label(cell) for the tag over the crosshair } */
 function create(host, opts) {
   opts = opts || {};
   var el = document.createElement('div');
@@ -69,7 +94,7 @@ function create(host, opts) {
     b.tabIndex = -1;
     b.addEventListener('click', (function (c) {
       /* a pointer picks on its own (below); this is the keyboard's Enter or Space */
-      return function (e) { if (e.detail === 0 && !api.disabled && opts.onPick) opts.onPick(c); };
+      return function (e) { if (e.detail === 0 && !api.disabled && opts.onPick) opts.onPick(c, [0, 0]); };
     })(cell));
     el.appendChild(b);
     cells.push(b);
@@ -87,7 +112,7 @@ function create(host, opts) {
   host.appendChild(el);
 
   var api = {
-    el: el, cells: cells, tiles: tiles, bats: 'R', disabled: false, sel: null, shown: null, drag: null,
+    el: el, cells: cells, tiles: tiles, bats: 'R', disabled: false, sel: null, at: null, shown: null, drag: null,
     place: function (r) {
       var s = el.style;
       s.left = r.x + 'px'; s.top = r.y + 'px'; s.width = r.w + 'px'; s.height = r.h + 'px';
@@ -99,8 +124,9 @@ function create(host, opts) {
       paint();
     },
     setDisabled: function (d) { api.disabled = !!d; el.classList.toggle('off', !!d); if (d) endDrag(); },
-    setSelected: function (c) {
+    setSelected: function (c, at) {
       api.sel = c == null ? null : c;
+      api.at = c == null ? null : (at || [0, 0]);
       for (var i = 0; i < cells.length; i++) {
         cells[i].classList.toggle('sel', i === api.sel);
         cells[i].setAttribute('aria-pressed', i === api.sel ? 'true' : 'false');
@@ -117,15 +143,16 @@ function create(host, opts) {
     setHeat: setHeat,
   };
 
-  /* the crosshair sits on the shown cell: the one being dragged over, else the picked one */
+  /* the crosshair sits on the shown point: the one being dragged, else the picked one. Never snapped. */
   function paint() {
-    var c = api.drag ? api.drag.cell : api.sel;
+    var c = api.drag ? api.drag.cell : api.sel, at = api.drag ? api.drag.at : api.at;
     api.shown = c;
     el.classList.toggle('aiming', c != null);
     el.classList.toggle('dragging', !!api.drag);
     if (c == null) return;
-    cross.style.left = ((C.screenCol(c) + 0.5) * 20) + '%';
-    cross.style.top = ((C.rowOf(c) + 0.5) * 20) + '%';
+    var p = pointOf(c, at);
+    cross.style.left = (p[0] * 100).toFixed(2) + '%';
+    cross.style.top = (p[1] * 100).toFixed(2) + '%';
     cross.classList.toggle('low', C.rowOf(c) === 0);
     /* the tag keeps to the field: from the crosshair's edge on the outer columns */
     cross.classList.toggle('sl', C.screenCol(c) === 0);
@@ -136,13 +163,11 @@ function create(host, opts) {
     for (var i = 0; i < cells.length; i++) cells[i].tabIndex = i === c ? 0 : -1;
   }
 
-  /* a point on screen to a cell: the nearest, so a drag past the edge keeps to the edge */
-  function cellFrom(e) {
+  /* a point on screen to its cell and at: held to the box, so a drag past the edge keeps to the edge */
+  function aimFrom(e) {
     var r = el.getBoundingClientRect();
     if (!r.width || !r.height) return null;
-    var sc = Math.max(0, Math.min(N - 1, Math.floor((e.clientX - r.left) / r.width * N)));
-    var row = Math.max(0, Math.min(N - 1, Math.floor((e.clientY - r.top) / r.height * N)));
-    return cellAtScreen(row, sc);
+    return aimAt((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
   }
   function endDrag() {
     if (!api.drag) return;
@@ -153,29 +178,32 @@ function create(host, opts) {
   el.addEventListener('pointerdown', function (e) {
     if (api.disabled || (e.pointerType === 'mouse' && e.button !== 0)) return;
     e.preventDefault();
-    var c = cellFrom(e);
-    if (c == null) return;
-    api.drag = { id: e.pointerId, cell: c };
+    var a = aimFrom(e);
+    if (!a) return;
+    api.drag = { id: e.pointerId, cell: a.cell, at: a.at };
     try { el.setPointerCapture(e.pointerId); } catch (x) {}
     paint();
-    if (opts.onHover) opts.onHover(c);
+    if (opts.onHover) opts.onHover(a.cell, a.at);
   });
   el.addEventListener('pointermove', function (e) {
     if (api.disabled) return;
-    var c = cellFrom(e);
+    var a = aimFrom(e);
+    if (!a) return;
+    /* the crosshair follows the finger every move; the preview hears every move too */
     if (api.drag && e.pointerId === api.drag.id) {
-      if (c != null && c !== api.drag.cell) { api.drag.cell = c; paint(); if (opts.onHover) opts.onHover(c); }
+      api.drag.cell = a.cell; api.drag.at = a.at; paint();
+      if (opts.onHover) opts.onHover(a.cell, a.at);
       return;
     }
     /* a mouse over the zone with no button down: the preview follows it */
-    if (e.pointerType === 'mouse' && !e.buttons && c !== api.hover) { api.hover = c; if (opts.onHover) opts.onHover(c); }
+    if (e.pointerType === 'mouse' && !e.buttons) { api.hover = a.cell; if (opts.onHover) opts.onHover(a.cell, a.at); }
   });
   el.addEventListener('pointerup', function (e) {
     if (!api.drag || e.pointerId !== api.drag.id) return;
-    var c = api.drag.cell;
+    var c = api.drag.cell, at = api.drag.at;
     endDrag();
     if (opts.onHover) opts.onHover(null);
-    if (!api.disabled && opts.onPick) opts.onPick(c);
+    if (!api.disabled && opts.onPick) opts.onPick(c, at);
   });
   el.addEventListener('pointercancel', function () { endDrag(); if (opts.onHover) opts.onHover(null); });
   el.addEventListener('pointerleave', function (e) {
@@ -190,7 +218,7 @@ function create(host, opts) {
     var c = api.sel == null ? 12 : api.sel;
     var row = Math.max(0, Math.min(N - 1, C.rowOf(c) + d[0])), sc = Math.max(0, Math.min(N - 1, C.screenCol(c) + d[1]));
     var next = cellAtScreen(row, sc);
-    if (opts.onPick) opts.onPick(next);
+    if (opts.onPick) opts.onPick(next, [0, 0]);
     try { cells[next].focus({ preventScroll: true }); } catch (x) {}
   });
 
@@ -233,5 +261,5 @@ function create(host, opts) {
   return api;
 }
 
-window.STD_AIM = { create: create, cellAtScreen: cellAtScreen };
+window.STD_AIM = { create: create, cellAtScreen: cellAtScreen, aimAt: aimAt, pointOf: pointOf, SCREEN_U: SCREEN_U };
 })();
