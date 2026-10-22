@@ -7,7 +7,7 @@
 # ASSETS layout (sources and licences in ../LICENSES.md):
 #   makehuman/                     MakeHuman CC0 files (fetch: see LICENSES.md for each URL)
 #   mixamo/                        the owner's Mixamo FBX downloads (never in the repo: LICENSES.md)
-#   cmu-bvh/                       the CMU BVH clips (read by retarget.py, no longer shipped)
+#   cmu-bvh/                       the CMU BVH clips (read by retarget.py: the fielders' throw, 124_01)
 #   polyhaven-textures/files/      Poly Haven CC0 maps (1k jpg)
 #   polyhaven-stadium_01-1k/       Poly Haven CC0 HDRI stadium_01_1k.hdr
 # TOOLS holds a uv venv with bpy 4.2.0, numpy, pillow and scipy (venv/), and npm's gltfpack 0.25.
@@ -19,8 +19,8 @@ OUT="$TOOLS/out"
 mkdir -p "$OUT"
 node "$HERE/extract_lab.mjs"           # needs assets/bio.json (fetch_bio.mjs, a network step, run apart)
 python3 -I "$HERE/prep_textures.py" "$ASSETS/polyhaven-textures/files" "$RT/assets/tex"
-"$TOOLS/venv/bin/python" -I "$HERE/build_people.py" "$ASSETS" "$OUT" batter catcher umpire
-for n in batter catcher umpire; do
+"$TOOLS/venv/bin/python" -I "$HERE/build_people.py" "$ASSETS" "$OUT" batter catcher umpire fielder
+for n in batter catcher umpire fielder; do   # (fielder: motion only, for the ball in play)
   # meshopt compression, names kept (the scene finds bones and materials by name)
   (cd "$TOOLS" && npx gltfpack -i "$OUT/$n.glb" -o "$RT/assets/$n.glb" -cc -kn -km)
 done

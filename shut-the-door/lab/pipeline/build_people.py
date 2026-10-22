@@ -5,11 +5,11 @@
 
 ASSETS holds the downloads (see LICENSES.md for every source):
   ASSETS/makehuman/...         the CC0 MakeHuman files (3dobjs, targets, rigs, skins, clothes, ...)
-  ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps; no longer used)
-  ASSETS/mixamo/...            the owner's Mixamo FBX downloads (60 fps; never in the repo)
+  ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps; the fielders' throw)
+  ASSETS/mixamo/...            the owner's Mixamo FBX downloads (60 fps, the runs 30; never in the repo)
   ASSETS/polyhaven-textures/files/...   the CC0 Poly Haven cloth and leather maps
 OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into shut-the-door/3d/assets.
-who: batter catcher umpire (all three when left out).
+who: batter catcher umpire fielder (all four when left out).
 """
 import os, sys, math, json
 import numpy as np
@@ -25,7 +25,7 @@ import textures      # noqa: E402
 import uniform       # noqa: E402
 
 ASSETS, OUT = sys.argv[1], sys.argv[2]
-WHO = sys.argv[3:] or ['batter', 'catcher', 'umpire']
+WHO = sys.argv[3:] or ['batter', 'catcher', 'umpire', 'fielder']
 MHA = f'{ASSETS}/makehuman'
 BVH = f'{ASSETS}/cmu-bvh'
 PH = f'{ASSETS}/polyhaven-textures/files'
