@@ -112,7 +112,7 @@ function play(seed, chooser) {
   while (o.status === 'live' && guard++ < 200) E.throwPitch(o, chooser(o));
   return o;
 }
-const bestCall = o => { const b = model.solve(o.st); return { type: b.type, cell: b.cell }; };
+const bestCall = o => E.bestCall(o);   // rules 2: the grade's best call, with the history
 const heartFastball = () => ({ type: 'FF', cell: 12 });
 
 {
@@ -295,6 +295,68 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   const again = E.replay(pack, 777, JSON.parse(JSON.stringify(E.replay(pack, 777, mixed, { model }).calls)), { model });
   check('release: the kept calls, through JSON, replay the outing exactly', JSON.stringify(again.log) === JSON.stringify(E.replay(pack, 777, mixed, { model }).log));
   check('release: q is kept to two places', E.replay(pack, 5, [{ type: 'FF', cell: 12, q: 0.123456 }], { model }).calls[0].q === 0.12);
+}
+
+/* ---- rules 2 (2026-10-22): the hitter adjusts, the arm tires, a repeat keeps less release ---- */
+{
+  const rng = testRng(41);
+  const calls = Array.from({ length: 60 }, () => ({ type: model.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25) }));
+  const o2 = E.replay(pack, 2468, calls, { model, rules: 2 });
+  check('rules 2: a new outing plays rules 2 and its kept calls carry r 2', E.createOuting(pack, { seed: 1, model }).rules === 2 && o2.calls.every(c => c.r === 2));
+  check('rules 2: calls without r replay as rules 1, calls with r 2 as rules 2', E.replay(pack, 2468, calls, { model }).rules === 1 && E.replay(pack, 2468, o2.calls, { model }).rules === 2);
+  const again = E.replay(pack, 2468, JSON.parse(JSON.stringify(o2.calls)), { model: new G.Model(pack) });
+  check('rules 2: determinism, the kept calls through JSON replay the outing exactly', JSON.stringify({ l: again.log, g: again.grades }) === JSON.stringify({ l: o2.log, g: o2.grades }));
+  check('rules 2: a rules 2 call in a rules 1 outing is refused', (() => { try { E.replay(pack, 1, [{ type: 'FF', cell: 12, r: 2 }], { model, rules: 1 }); return false; } catch (e) { return true; } })());
+  const o1 = E.replay(pack, 2468, calls, { model });
+  check('rules 1: no arm on a pitch result, no history in the grade (the shape stored rows were made with)', o1.log.every(p => !('arm' in p)) && o1.calls.every(c => !('r' in c)));
+  check('rules 2: the same four draws a pitch (the stream never depends on the rules)', (() => {
+    const a = E.createOuting(pack, { seed: 77, model, rules: 1 }), b = E.createOuting(pack, { seed: 77, model, rules: 2 });
+    E.throwPitch(a, { type: 'FF', cell: 12 }); E.throwPitch(b, { type: 'FF', cell: 12 });
+    return a.rng() === b.rng();
+  })());
+
+  // the hitter adjusts: the same pitch to the same spot, again and again, loses whiffs and gives up hits
+  const ctx0 = G.contextOf([], model.startState(), 2);
+  const seen = { ...ctx0, pa: [{ type: 'SL', cell: 22 }, { type: 'SL', cell: 22 }], before: {} };
+  const a0 = G.adjustOf(ctx0, 'SL', 22), a2 = G.adjustOf(seen, 'SL', 22);
+  const KI = Object.fromEntries(G.KEYS.map((k, i) => [k, i]));
+  check('rules 2: a pitch he has seen twice there is missed less and hit more than a first look',
+    a2[KI.swinging_strike] < a0[KI.swinging_strike] && a2[KI.single] > a0[KI.single] && a2[KI.home_run] > a0[KI.home_run]);
+  const st0 = model.startState();
+  const fresh = model.callValue(st0, 'SL', 22, G.contextOf([], st0, 2));
+  const twice = model.callValue(st0, 'SL', 22, seen);
+  check('rules 2: and the grade prices it: the repeat is worth less', twice.hold < fresh.hold, `${(fresh.hold * 100).toFixed(2)} to ${(twice.hold * 100).toFixed(2)}`);
+  const other = model.callValue(st0, 'FF', 6, seen);
+  check('rules 2: a different pitch elsewhere is not marked down by it', Math.abs(other.hold - model.callValue(st0, 'FF', 6, G.contextOf([], st0, 2)).hold) < 0.05);
+  // where he has aimed: pounding the zone makes a zone pitch easier to hit and a chase pitch easier to chase
+  const pound = { ...ctx0, zone: 12, seen: 12 }, nibble = { ...ctx0, zone: 0, seen: 12 };
+  check('rules 2: after twelve aims in the zone, a zone pitch gives up more hits and a chase pitch draws more whiffs',
+    G.adjustOf(pound, 'FF', 12)[KI.single] > G.adjustOf(nibble, 'FF', 12)[KI.single] && G.adjustOf(pound, 'FF', 22)[KI.swinging_strike] > G.adjustOf(nibble, 'FF', 22)[KI.swinging_strike]);
+
+  // the arm: centred on real relievers' pitch counts, wider late and with runners on
+  check('rules 2: the arm is tighter early, wider late, a little wider with runners on',
+    G.fatigueOf(1, 0) < 1 && G.fatigueOf(30, 0) > G.fatigueOf(15, 0) && G.fatigueOf(5, 1) > G.fatigueOf(5, 0), [1, 15, 30].map(n => G.fatigueOf(n, 0)).join(' '));
+  const late = E.createOuting(pack, { seed: 3, model });
+  for (let i = 0; i < 40 && late.status === 'live'; i++) E.throwPitch(late, { type: model.types[i % 3], cell: (i * 7) % 25 });
+  check('rules 2: each pitch result carries the arm it was thrown with', late.log.every((p, i) => p.arm === G.fatigueOf(i + 1, late.before[i].bases)));
+
+  // a repeat keeps less of a good release; a bad one and the meter off are unchanged
+  check('release: on a repeat a perfect release helps less (0.6x, 0.8x, 0.9x)', K.spreadOf(1, 0) === 0.6 && Math.abs(K.spreadOf(1, 1) - 0.8) < 1e-12 && Math.abs(K.spreadOf(1, 2) - 0.9) < 1e-12);
+  check('release: a bad release and no release are the same on a repeat', K.spreadOf(0, 3) === 1.5 && K.spreadOf(null, 3) === 1 && K.spreadOf(0.5, 2) === 1);
+  const rep = E.createOuting(pack, { seed: 8, model });
+  const sp = [];
+  for (let i = 0; i < 3 && rep.status === 'live'; i++) sp.push(E.throwPitch(rep, { type: 'FF', cell: 12, q: 1 }).pitchResult.spread);
+  check('release: three perfect fastballs in a row play 0.6x, 0.8x, 0.9x', sp.length < 3 || (sp[0] === 0.6 && sp[1] === 0.8 && sp[2] === 0.9), sp.join(' '));
+
+  // the scouting view: coarser than the profile, never read by the engine
+  const pr = pack.scenario.batters[0].profile;
+  const v = G.scoutView(pr);
+  const quadCells = [0, 1, 5];   // up and to the catcher's left: one quadrant, one value
+  check('scout: the chase area reads in Statcast\'s four quadrants', quadCells.every(c => v.heat[c] === v.heat[0]));
+  check('scout: values come in steps (damage .050, swing 10 points, rates 5 points)',
+    v.heat.every(x => Math.abs(x / 0.05 - Math.round(x / 0.05)) < 1e-6) && v.swing.every(x => Math.abs(x / 0.1 - Math.round(x / 0.1)) < 1e-6) &&
+    Math.abs(v.chase / 0.05 - Math.round(v.chase / 0.05)) < 1e-6);
+  check('scout: the profile itself is untouched', JSON.stringify(pr) === JSON.stringify(pack.scenario.batters[0].profile) && v !== pr);
 }
 
 /* ---- the meter's numbers (meter.js): an average tap is about his own command ---- */

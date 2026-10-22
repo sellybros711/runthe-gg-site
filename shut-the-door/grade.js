@@ -161,6 +161,8 @@ function Model(pack, opts) {
   this._mixed = new Map();
   this._V = new Map();
   this.table = (!(opts && opts.fresh) && pack.hold && pack.hold.h) ? pack.hold : null;
+  this.center = pack.seq && typeof pack.seq.L === 'number' ? pack.seq.L : null;   // rules 2 (see DEFAULT_CENTER)
+  this.zone0 = pack.seq && typeof pack.seq.Z === 'number' ? pack.seq.Z : null;
 }
 
 Model.prototype.entry = function (bi, type) {
@@ -242,7 +244,8 @@ Model.prototype.after = function (st, t) {
 
 /* The goal's chance (0..1) and the expected runs of one call in one state.
    The runs follow the outing on through a tie, to its real end. */
-Model.prototype.callValue = function (st, type, target) {
+Model.prototype.callValue = function (st, type, target, ctx) {
+  if (ctx) return this.callValueCtx(st, type, target, ctx);
   const mix = this.mixed(st.bi, type, target, bucketOf(st.b, st.s));
   let v = 0, r = 0, pself = 0;
   for (const [cls, p] of mix) {
@@ -282,7 +285,8 @@ Model.prototype.solve = function (st) {
 /* The mean hold% points lost over every legal call in a state: what a
    typical call costs here. Bands are measured against it (CONTRACT.md
    section 7), so a tight spot and a quiet one both grade in real colours. */
-Model.prototype.meanLost = function (st) {
+Model.prototype.meanLost = function (st, ctx) {
+  if (ctx) { this.bestCtx(st, ctx); return ctx._meanLost; }
   const idx = stateIndex(this.N, this.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin);
   if (!this._ML) this._ML = new Map();
   if (this._ML.has(idx)) return this._ML.get(idx);
@@ -317,6 +321,312 @@ Model.prototype.holdTable = function () {
   return { margins: this.M, h, r, b };
 };
 
+/* ---- rules 2: the hitter adjusts, the arm tires (the owner's call, 2026-10-22) ----
+ *
+ * A call is graded and resolved in the light of what came before it in the
+ * outing. Rules 1 (every outing stored before rules 2 shipped: every call
+ * without r) has none of this and plays exactly as it did.
+ *
+ * WHAT IS MEASURED AND WHAT IS A MODEL. pipeline/effects.py read every 2024
+ * regular season pitch (705,748 after prep; the numbers in
+ * pipeline/effects.json). Against what the same pitch family does in the same
+ * cell, at the same exact count and platoon, a pitch the batter has already
+ * seen in the plate appearance (the same type, even in the same spot) does
+ * within about 5% of the rest, key by key; a reliever's location spread is
+ * flat with his pitch count (within 1%) and about 1% wider with runners on.
+ * Those are real numbers, and they are small because the data is chosen by
+ * the pitchers: a pitcher repeats a pitch when it is working, and a tired one
+ * is taken out. They cannot say what happens to a pitcher who repeats himself
+ * or stays in. So:
+ *   - real and used as they are: how often each kind of repeat happens
+ *     (PA_SHARE, OUTING.mean), relievers' pitch counts (FATIGUE.mean), and the
+ *     spread with runners on (PRESSURE)
+ *   - a labelled model, its strength tuned so a strong player who reads the
+ *     screen and mixes his pitches holds about what the closer pool holds
+ *     (the README has the measurements): FAMILIAR and EFFECT (the hitter
+ *     adjusts to a pitch he has seen), ZONE (he sits on strikes against a
+ *     pitcher who keeps aiming in the zone, and lays off one who nibbles),
+ *     and FATIGUE's rate (the arm past 12 pitches)
+ * Every effect is centred on real pitching: on the closer pool's own
+ * sequencing in that pack (pack.seq, pool.js seqCenter), so a pitcher who
+ * mixes like the real closers meets the library's numbers on average, and a
+ * predictable one pays.
+ *
+ * THE GRADE STAYS THE DECISION. Every call is still graded before it resolves,
+ * now with what the hitter has seen and the arm as it is: the call's value is
+ * this pitch's adjusted outcome mix through the miss table at the arm's
+ * spread, followed by the hold table's values for whatever state comes next.
+ * The best call is the best of every legal call priced the same way, and the
+ * band is relative to their mean, as always. The table itself is solved
+ * without history (it cannot hold every sequence), so the grade looks one
+ * pitch ahead with the history and leans on the table after that. The
+ * release (q) is still never read: it is execution.
+ */
+const RULES = 2;
+/* The settings of rules 2, in one place.
+   FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
+              type the batter has seen this plate appearance (1, 2, 3 or more)
+              and whether one crossed within one cell of where this one crosses
+   PA_SHARE   how often each happens in real 2024 pitching (measured)
+   OUTING     more level from the same type thrown to earlier batters in the
+              outing: per pitch, up to cap. mean: 2024 relievers (measured)
+   EFFECT     what a level above the centre does to the row, key by key: a
+              swinging strike x (1 - whiff L), a ball x (1 + take L), a hit
+              x (1 + hit L), a home run x (1 + hr L), each at least FLOOR.
+              Below the centre (a fresh look) the same lines run the other way
+   ZONE       where he has aimed: the share of the outing's aims in the zone,
+              shrunk toward the centre by k pitches, minus the centre (the pool's
+              aims, pack.seq.Z; z0 is the league's crossings, the fallback).
+              Above it a zone pitch's hits x (1 + zoneHit dz) and called
+              strikes x (1 - zoneTake dz), a chase pitch's balls
+              x (1 - chaseTake dz) and whiffs x (1 + chaseWhiff dz)
+   FATIGUE    his miss x (1 + rate x pitches past from), capped, divided by
+              its mean over 2024 relievers' real pitch counts (measured)
+   PRESSURE   his miss with the bases empty and with runners on (measured) */
+const R2 = Object.freeze({
+  FAMILIAR: Object.freeze({ seen0: 0, seen1_far: 0.5, seen1_near: 1, seen2_far: 1, seen2_near: 2, seen3_far: 1.5, seen3_near: 3 }),
+  PA_SHARE: Object.freeze({ seen0: 0.5656, seen1_far: 0.1443, seen1_near: 0.1229, seen2_far: 0.0358, seen2_near: 0.0739, seen3_far: 0.011, seen3_near: 0.0464 }),
+  OUTING: Object.freeze({ per: 0.05, cap: 0.5, mean: 0.1603 }),
+  EFFECT: Object.freeze({ whiff: 0.3, take: 0.15, hit: 0.3, hr: 0.45, FLOOR: 0.2 }),
+  ZONE: Object.freeze({ z0: 0.4551, k: 4, zoneHit: 2, zoneTake: 1.5, chaseTake: 1, chaseWhiff: 1 }),
+  FATIGUE: Object.freeze({ from: 12, rate: 0.02, cap: 1.4, mean: 1.0724 }),
+  PRESSURE: Object.freeze({ empty: 0.9974, on: 1.0058 }),
+});
+/* The familiarity real pitching shows on average, which rules 2 centres on.
+   A pack carries its own (pack.seq.L: the mean the closer pool's real
+   sequencing shows against that pitcher's arsenal, pool.js seqCenter), since a
+   two-pitch closer repeats himself more than the league and his real
+   numbers already live with it. Without one: the league's (2024 shares). */
+const PA_MEAN = Object.keys(R2.FAMILIAR).reduce((a, k) => a + R2.FAMILIAR[k] * R2.PA_SHARE[k], 0)
+  / Object.keys(R2.FAMILIAR).reduce((a, k) => a + R2.PA_SHARE[k], 0);
+
+const DEFAULT_CENTER = PA_MEAN + R2.OUTING.mean;
+
+function near1(a, b) { return Math.max(Math.abs(K.rowOf(a) - K.rowOf(b)), Math.abs(K.colOf(a) - K.colOf(b))) <= 1; }
+const KI_ = Object.freeze(Object.fromEntries(KEYS.map((k, i) => [k, i])));
+
+/* How familiar the batter is with this type crossing this cell, centred so
+   real 2024 mixing is 0 on average. Negative is a fresh look. */
+function familiarRaw(ctx, type, cell) {
+  const same = ctx.pa.filter(p => p.type === type);
+  const n = Math.min(3, same.length);
+  const key = n === 0 ? 'seen0' : `seen${n}_${same.some(p => near1(p.cell, cell)) ? 'near' : 'far'}`;
+  const seen = ctx.before[type] || 0;
+  return R2.FAMILIAR[key] + Math.min(R2.OUTING.cap, seen * R2.OUTING.per);
+}
+function familiarOf(ctx, type, cell) { return familiarRaw(ctx, type, cell) - ctx.center; }
+
+/* The multipliers on one row, in KEYS order. */
+function adjustOf(ctx, type, cell) {
+  const L = familiarOf(ctx, type, cell), E = R2.EFFECT, Z = R2.ZONE;
+  const f = x => Math.max(E.FLOOR, x);
+  /* where he has been: the share of the outing's pitches that crossed in the
+     zone, shrunk toward the league's (z0) by k pitches. Above it the hitter
+     sits on strikes: a zone pitch is hit more and taken less, a chase pitch
+     is chased more. Below it (nibbling) the reverse. */
+  const dz = (ctx.zone + Z.k * ctx.z0) / (ctx.seen + Z.k) - ctx.z0;
+  const inz = K.inZone(cell);
+  const m = KEYS.map(() => 1);
+  m[KI_.swinging_strike] = f((1 - E.whiff * L) * (inz ? 1 : 1 + Z.chaseWhiff * dz));
+  m[KI_.ball] = f((1 + E.take * L) * (inz ? 1 : 1 - Z.chaseTake * dz));
+  m[KI_.called_strike] = f(inz ? 1 - Z.zoneTake * dz : 1);
+  const hit = f((1 + E.hit * L) * (inz ? 1 + Z.zoneHit * dz : 1));
+  m[KI_.single] = m[KI_.double] = m[KI_.triple] = hit;
+  m[KI_.home_run] = f((1 + E.hr * L) * (inz ? 1 + Z.zoneHit * dz : 1));
+  return m;
+}
+
+/* The spread multiplier of the arm on this pitch: his pitch count in the
+   outing (this pitch's number) and runners on. */
+function fatigueOf(pitchNo, bases) {
+  const F = R2.FATIGUE;
+  const f = Math.min(F.cap, 1 + F.rate * Math.max(0, pitchNo - F.from)) / F.mean;
+  return Math.round(f * (bases ? R2.PRESSURE.on : R2.PRESSURE.empty) * 10000) / 10000;
+}
+
+/* The history one call is priced against, from the outing's log: the pitches
+   of this plate appearance (type, the cell each actually crossed), the
+   pitches of each type thrown to earlier batters, and the arm. */
+function contextOf(log, st, rules, center, zone0) {
+  if (!rules || rules < 2) return null;
+  let i = log.length;
+  while (i > 0 && !log[i - 1].paOver) i--;
+  const pa = log.slice(i).map(p => ({ type: p.call.type, cell: p.actualCell }));
+  const before = {};
+  for (let j = 0; j < i; j++) before[log[j].call.type] = (before[log[j].call.type] || 0) + 1;
+  let streak = 0;
+  const last = log.length ? log[log.length - 1].call.type : null;
+  for (let j = log.length - 1; j >= 0 && log[j].call.type === last; j--) streak++;
+  const pitchNo = log.length + 1;
+  let zone = 0;
+  for (const p of log) if (K.inZone(p.call.cell)) zone++;     // his plan: where he aimed, so a sharp release never reads as pounding the zone
+  return { rules, bi: st.bi, pa, before, last, streak, zone, seen: log.length, pitchNo, fatigue: fatigueOf(pitchNo, st.bases),
+    center: center == null ? DEFAULT_CENTER : center, z0: zone0 == null ? R2.ZONE.z0 : zone0 };
+}
+
+/* The miss table at a multiple of his sigmaFt. */
+Model.prototype.kernelAt = function (type, f) {
+  if (f === 1) return this.kernel[type];
+  if (!this._kf) this._kf = new Map();
+  const k = type + '|' + f;
+  let ker = this._kf.get(k);
+  if (!ker) {
+    ker = kernelFor(this.arsenal.find(a => a.type === type).sigmaFt * f, this.zoneFt);
+    this._kf.set(k, ker);
+  }
+  return ker;
+};
+
+/* The 25 rows (one per actual cell) of a type in a count bucket, adjusted for
+   what the hitter has seen. Per mille, as floats, each summing to 1000. */
+Model.prototype.rowsCtx = function (bi, type, bucket, ctx) {
+  if (!ctx._rows) ctx._rows = new Map();
+  const k = type + '|' + bucket;
+  let rows = ctx._rows.get(k);
+  if (rows) return rows;
+  const e = this.entry(bi, type);
+  rows = [];
+  for (let a = 0; a < 25; a++) {
+    const base = e.p[a][bucket], m = adjustOf(ctx, type, a);
+    const r = base.map((x, i) => x * m[i]);
+    const s = r.reduce((x, y) => x + y, 0);
+    rows.push(s > 0 ? r.map(x => x * 1000 / s) : base.slice());
+  }
+  ctx._rows.set(k, rows);
+  return rows;
+};
+
+/* What each outcome key is worth from one state, whatever the call: the
+   goal's chance and the runs after it, and the chance it is a two-strike
+   foul (the self-loop). The same sums callValue does, grouped by key so a
+   call under rules 2 is one pass over its mix. Cached per state. */
+Model.prototype.keyValues = function (st) {
+  const idx = stateIndex(this.N, this.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin);
+  if (!this._KV) this._KV = new Map();
+  let kv = this._KV.get(idx);
+  if (kv) return kv;
+  const byCls = {};
+  kv = { v: new Float64Array(KEYS.length), r: new Float64Array(KEYS.length), self: new Float64Array(KEYS.length) };
+  for (let i = 0; i < KEYS.length; i++) {
+    const cls = CLASS[i];
+    if (!byCls[cls]) {
+      let v = 0, r = 0, self = 0;
+      for (const [q, t] of this.transitions(st, cls)) {
+        if (t.self) { self += q; continue; }
+        v += q * this.after(st, t);
+        if (t.end === 'lost') r += q * t.runs;
+        else if (t.st) r += q * (t.runs + this.solve(t.st).runs);
+      }
+      byCls[cls] = [v, r, self];
+    }
+    [kv.v[i], kv.r[i], kv.self[i]] = byCls[cls];
+  }
+  this._KV.set(idx, kv);
+  return kv;
+};
+
+/* P(key | target) with the history and the arm: the adjusted rows through
+   the miss table at the tired spread. */
+Model.prototype.keyMixCtx = function (st, type, target, ctx) {
+  const ker = this.kernelAt(type, ctx.fatigue);
+  const rows = this.rowsCtx(st.bi, type, bucketOf(st.b, st.s), ctx);
+  const out = new Float64Array(KEYS.length);
+  for (let a = 0; a < 25; a++) {
+    const w = ker[target * 25 + a];
+    if (w < 1e-9) continue;
+    const row = rows[a];
+    for (let i = 0; i < KEYS.length; i++) if (row[i]) out[i] += w * row[i] / 1000;
+  }
+  return out;
+};
+
+/* A call's value under rules 2: its key mix, each key's value from here. */
+Model.prototype.callValueCtx = function (st, type, target, ctx) {
+  const mix = this.keyMixCtx(st, type, target, ctx);
+  const kv = this.keyValues(st);
+  let v = 0, r = 0, pself = 0;
+  for (let i = 0; i < KEYS.length; i++) {
+    const p = mix[i];
+    if (!p) continue;
+    pself += p * kv.self[i];
+    v += p * kv.v[i];
+    r += p * kv.r[i];
+  }
+  if (pself > 0) { v /= (1 - pself); r /= (1 - pself); }
+  return { hold: v, runs: r };
+};
+
+/* The best call with the history, and the mean points lost over every call:
+   one pitch ahead, then the table. Cached on the context. */
+Model.prototype.bestCtx = function (st, ctx) {
+  if (!ctx) return this.solve(st);
+  if (ctx._best) return ctx._best;
+  let best = null, sum = 0, n = 0;
+  const vals = [];
+  for (const type of this.types) for (let cell = 0; cell < 25; cell++) {
+    const cv = this.callValue(st, type, cell, ctx);
+    vals.push(cv.hold);
+    if (!best || cv.hold > best.hold + 1e-12) best = { hold: cv.hold, runs: cv.runs, type, cell };
+  }
+  for (const v of vals) { sum += (best.hold - v) * 100; n++; }
+  ctx._best = best;
+  ctx._meanLost = sum / n;
+  return best;
+};
+
+/* ---- the scouting view (rules 2: fuzzier scouting) ----------------------
+ *
+ * What the heat map and the scout card show, from the batter's profile. Real
+ * scouting does not hand a pitcher the exact soft spot: Statcast's own zone
+ * chart reads the zone in nine cells and everything outside it in four
+ * quadrants, and a report talks in rough rates. So the view does the same:
+ *   - the 16 chase cells show the mean of the profile over Statcast's four
+ *     out-of-zone quadrants (up and in, up and away, down and in, down and
+ *     away; a cell on a quadrant line shows the mean of its two)
+ *   - every cell's value is rounded to a step: damage to .050 of xwOBA,
+ *     swing rate to 10 points
+ *   - chase, zone swing and whiff by pitch round to 5 points
+ * The engine and the grade read the profile as it is; only the screen reads
+ * the view. The coach, after the outing, may quote the exact numbers.
+ */
+const SCOUT_STEP = Object.freeze({ heat: 0.05, swing: 0.1, rate: 0.05 });
+/* catcher's view quadrants: 0 up and to the catcher's left, 1 up right, 2 down left, 3 down right */
+const QUAD_OF = (function () {
+  const q = [];
+  for (let c = 0; c < 25; c++) {
+    if (K.inZone(c)) { q.push(null); continue; }
+    const r = K.rowOf(c), k = K.colOf(c);
+    const up = r < 2 ? [true] : r > 2 ? [false] : [true, false];
+    const left = k < 2 ? [true] : k > 2 ? [false] : [true, false];
+    const out = [];
+    for (const u of up) for (const l of left) out.push((u ? 0 : 2) + (l ? 0 : 1));
+    q.push(out);
+  }
+  return q;
+})();
+function stepOf(x, step) { return x == null ? x : Math.round(Math.round(x / step) * step * 1000) / 1000; }
+function coarseCells(arr, step) {
+  if (!Array.isArray(arr) || arr.length !== 25) return arr;
+  const qs = [0, 0, 0, 0], qn = [0, 0, 0, 0];
+  for (let c = 0; c < 25; c++) if (QUAD_OF[c] && arr[c] != null) for (const q of QUAD_OF[c]) { qs[q] += arr[c]; qn[q]++; }
+  return arr.map((v, c) => {
+    if (v == null) return v;
+    if (!QUAD_OF[c]) return stepOf(v, step);
+    const qv = QUAD_OF[c].filter(q => qn[q]).map(q => qs[q] / qn[q]);
+    return stepOf(qv.reduce((a, b) => a + b, 0) / qv.length, step);
+  });
+}
+function scoutView(profile) {
+  if (!profile) return profile;
+  const v = Object.assign({}, profile);
+  v.heat = coarseCells(profile.heat, SCOUT_STEP.heat);
+  v.swing = coarseCells(profile.swing, SCOUT_STEP.swing);
+  if (profile.chase != null) v.chase = stepOf(profile.chase, SCOUT_STEP.rate);
+  if (profile.zoneSwing != null) v.zoneSwing = stepOf(profile.zoneSwing, SCOUT_STEP.rate);
+  if (profile.whiff) v.whiff = Object.fromEntries(Object.entries(profile.whiff).map(([t, x]) => [t, stepOf(x, SCOUT_STEP.rate)]));
+  return v;
+}
+
 /* ---- the grade ---------------------------------------------------------- */
 
 /* Where a cell is, in words relative to the batter: inside and away, never
@@ -346,7 +656,7 @@ function fmt3(x) { return x.toFixed(3).replace(/^0/, ''); }
 
 /* The reason line: one fact from the batter's profile or the state, with its
    number from the pack. House voice: lowercase, short. */
-function reasonFor(model, st, call, best, value, lost, band) {
+function reasonFor(model, st, call, best, value, lost, band, ctx) {
   const batter = model.pack.scenario.batters[st.bi % model.N];
   const pr = batter.profile || {};
   const bestTxt = `${pitchName(model, best.type)} ${placeOf(best.cell, batter.bats)}`;
@@ -359,6 +669,11 @@ function reasonFor(model, st, call, best, value, lost, band) {
     return `as good as the best call. ${bestTxt} ${keeps(st, best.hold)}.`;
   }
   // not green: why this call cost, or why the best call was better
+  // rules 2: he has already seen that pitch there this at bat
+  const seen = ctx ? ctx.pa.filter(p => p.type === call.type && near1(p.cell, call.cell)).length : 0;
+  if (seen && !(call.type === best.type && near1(call.cell, best.cell))) {
+    return `he saw that ${pitchName(model, call.type)} there ${seen === 1 ? 'once' : seen + ' times'} this at bat. ${bestTxt} was the call.`;
+  }
   const bad = noteAbout(call.type, call.cell, false);
   if (bad) return `he hurts you there. ${bad.text}. ${bestTxt} was the call.`;
   const nb = noteAbout(best.type, best.cell, true);
@@ -377,12 +692,12 @@ function reasonFor(model, st, call, best, value, lost, band) {
 /* The PitchGrade of a call in a state, before it resolves. After a tie,
    value, best, lost and rel are on the tie's goal (three outs before they go
    ahead), and tied says so. */
-function gradeCall(model, st, call) {
-  const best = model.solve(st);
-  const cv = model.callValue(st, call.type, call.cell);
+function gradeCall(model, st, call, ctx) {
+  const best = model.bestCtx(st, ctx);
+  const cv = model.callValue(st, call.type, call.cell, ctx);
   const lost = Math.max(0, (best.hold - cv.hold) * 100);
   const lostR = Math.round(lost * 100) / 100;
-  const rel = lost <= 1e-9 ? 0 : Math.round(lost / Math.max(1e-9, model.meanLost(st)) * 1000) / 1000;
+  const rel = lost <= 1e-9 ? 0 : Math.round(lost / Math.max(1e-9, model.meanLost(st, ctx)) * 1000) / 1000;
   const band = K.bandOf(rel);
   return {
     band,
@@ -391,7 +706,7 @@ function gradeCall(model, st, call) {
     best: Math.round(best.hold * 1000) / 10,
     lost: lostR,
     bestCall: { type: best.type, cell: best.cell },
-    reason: reasonFor(model, st, call, best, cv.hold, lostR, band),
+    reason: reasonFor(model, st, call, best, cv.hold, lostR, band, ctx),
     reDelta: Math.round((cv.runs - best.runs) * 1000) / 1000,
     tied: st.margin === 0,
   };
@@ -399,7 +714,8 @@ function gradeCall(model, st, call) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps,
+  placeOf, bucketOf, keeps, RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  scoutView, SCOUT_STEP,
 });
 if (NODE) module.exports = publicAPI;
 if (typeof window !== 'undefined') window.STD_GRADE = publicAPI;
