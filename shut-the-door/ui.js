@@ -465,6 +465,17 @@ function buildMound() {
     renderScout();
   });
   window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); if (S.hero) drawHero(); });
+  /* The scene's box moves without a window resize (a line wraps, a button grows): the canvas then
+     shows a stretched frame and the grid sits off the zone, so lay out again. Never mid pitch. */
+  if (window.ResizeObserver) {
+    var seen = '';
+    new ResizeObserver(function () {
+      var c = $('m-canvas'), k = c.clientWidth + 'x' + c.clientHeight;
+      if (k === seen || !c.clientWidth || document.body.dataset.screen !== 's-mound') return;
+      seen = k;
+      if (S.busy) S.sizeDue = true; else relayout();
+    }).observe($('m-canvas'));
+  }
 }
 
 function relayout() {
@@ -694,7 +705,7 @@ function breakGlyph(a, color, big) {
   if (a.pfxX == null || a.pfxZ == null) return '';
   var mag = Math.sqrt(a.pfxX * a.pfxX + a.pfxZ * a.pfxZ), L = mag < 3 ? 0 : 3 + 3.5 * mag / big;
   var ex = -a.pfxX / (mag || 1) * L, ey = -a.pfxZ / (mag || 1) * L;
-  if (L < 0.5) return '<svg class="glyph" viewBox="-8 -8 16 16" aria-hidden="true"><circle r="2.4" fill="' + color + '"/></svg>';
+  if (L < 0.5) return '<svg class="glyph" viewBox="-8 -8 16 16" aria-hidden="true"><circle r="3.4" fill="' + color + '"/></svg>';
   var ux = ex / L, uy = ey / L, f = function (v) { return v.toFixed(1); };
   var hx = ex - ux * 3.4, hy = ey - uy * 3.4;
   return '<svg class="glyph" viewBox="-8 -8 16 16" aria-hidden="true"><circle r="1.6" fill="' + color + '" fill-opacity=".55"/>' +
@@ -900,9 +911,9 @@ function throwIt() {
       if (pr.paOver) { S.lastMarker = null; S.grid.setMarks({}); setBatter(false); } else S.scene.draw(idleFrame());
       if (scoutWas) { S.scout = true; renderScout(); }
       if (guideWas) setGuide(guideWas);
-      drawPreview();
-      renderHud(S.outing);
       updateThrow();
+      if (S.sizeDue) { S.sizeDue = false; relayout(); } else drawPreview();
+      renderHud(S.outing);
     });
   }).catch(function (e) {
     S.busy = false;
