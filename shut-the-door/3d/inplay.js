@@ -19,7 +19,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, warp, realAt, BASE, wallDist } from './inplay-plan.js?v=2';
 import { Crew } from './fielders.js?v=1';
 import { buildBallpark } from './ballpark.js?v=2';
-import { kitFor } from './people.js?v=31';
+import { kitFor } from './people.js?v=34';
 import { look } from './looks.js?v=2';
 import { P, FT } from './units.js?v=1';
 
