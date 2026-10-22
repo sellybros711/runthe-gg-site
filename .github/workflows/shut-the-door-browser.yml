@@ -1,0 +1,50 @@
+name: Shut The Door browser check
+
+# The whole game in Chromium, at 390x844 and 1440x900 (shut-the-door/test/check-browser.mjs):
+# home, the sheets, the 3D mound, every pitch result's motion, a whole outing on the real
+# engine, the result screen with the you-vs-him card, the coach, and the four endings forced
+# through the mock (door_shut, tie_held, doors_open, walk_off).
+#
+# Its own workflow, with a path filter, unlike shut-the-door-checks.yml: that one has no filter
+# on purpose (the posture check must see every PR) and its jobs take seconds. This one takes
+# minutes, so it runs when the game, its 3D, or this file changes.
+#
+# The runner has no GPU: Chromium draws WebGL with SwiftShader, on the CPU. The check draws
+# only where it reads pixels (its header says why and how), which is what lets it finish here.
+#
+# Runs locally, unchanged:
+#   node shut-the-door/test/check-browser.mjs
+#
+# No secrets, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'shut-the-door/**'
+      - '.github/workflows/shut-the-door-browser.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'shut-the-door/**'
+      - '.github/workflows/shut-the-door-browser.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: shut-the-door-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The whole game in Chromium
+        run: node shut-the-door/test/check-browser.mjs

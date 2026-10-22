@@ -47,6 +47,42 @@
  *
  * Steps 1 to 10 play the real engine (no mock switch). Step 11 forces each
  * ending through mock-api.js.
+ *
+ * SOFTWARE GL, AND WHY THE CHECK DRAWS ONLY WHERE IT LOOKS. Headless Chromium
+ * here and on CI draws WebGL with SwiftShader, on the CPU. Measured in this
+ * container (2026-10-22): an animation frame with no draw costs about 14 ms,
+ * but one draw of the mound costs 5 to 8 s at 390x844 and 1440x900 (2.5 s at
+ * device pixel ratio 1, still 1.4 s at a quarter of the pixels: the skinned
+ * people and the park are the cost, not the pixels). The stage drew every third
+ * play frame, once more at the end of the pitch and again for the set after
+ * it, so one pitch cost 30 s to a minute and more on a busy machine. Nothing
+ * hung: no await waited on an event that never came. It was only slow. Step
+ * 14's 28 plays took 14 to 18 minutes, and the outing of step 5 prints nothing
+ * until its last pitch, so the run looked stalled right after step 14. Add the
+ * second screen size and the eight forced endings and it needed hours, so the
+ * job's timeout killed it every time, and nothing after the first pitch was
+ * ever checked. The outing's own loop also waited a fixed 80 polls a pitch,
+ * not until the pitch was over.
+ *
+ * So the check keeps everything the game computes and skips only the
+ * rasterising nobody reads:
+ *   - the stage's clock is stepped (window.STD_STAGE_TEST, which stage.js
+ *     reads): a pitch plays every frame of its motion at 30 a second, whatever
+ *     the wall clock does
+ *   - once the stage is loaded, its renderer's draw call is wrapped
+ *     (fastDraw): the game's own draws are counted and skipped. Every pose, bone,
+ *     ball, trail, marker and umpire signal is still computed each frame, and
+ *     the trace reads those (people.js updates its matrices itself, so a
+ *     sample never needs a draw)
+ *   - where the check reads pixels (canvasRenders) it draws for real and reads
+ *     the canvas back: on the mound, after the 28 plays of step 14, after the
+ *     whole outing of step 5 and at the end of every forced ending, so a broken
+ *     shader or scene still fails
+ *   - with SHOTS set, nothing is skipped (the screenshots need real frames):
+ *     slow, for a person looking at the pictures
+ * Every step has a deadline and a name (step(), and a watchdog). A step that
+ * runs past it fails and names itself, so a stall shows where it is. Each line
+ * carries the seconds since the start.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -67,7 +103,23 @@ function loadPlaywright() {
 const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
 
 let passes = 0, fails = 0;
-function ok(c, m) { if (c) { passes++; console.log('  ok ' + m); } else { fails++; console.log('  FAIL ' + m); } }
+const T0 = Date.now();
+const secs = () => ((Date.now() - T0) / 1000).toFixed(0).padStart(4) + 's';
+function ok(c, m) { if (c) { passes++; console.log(secs() + '  ok ' + m); } else { fails++; console.log(secs() + '  FAIL ' + m); } }
+
+/* The watchdog: the step in hand, and when it began. A step that runs past its deadline ends the
+   run as a failure that names it, instead of a hang (step() is called at each numbered step). */
+let STEP = { name: 'start', at: Date.now(), limit: 420 };
+function step(name, limit = 420) { STEP = { name, at: Date.now(), limit: SHOTS ? limit * 10 : limit }; }
+const watchdog = setInterval(() => {
+  const s = (Date.now() - STEP.at) / 1000;
+  if (s < STEP.limit) return;
+  fails++;
+  console.log(secs() + '  FAIL stalled: "' + STEP.name + '" ran ' + Math.round(s) + ' s, past its ' + STEP.limit + ' s');
+  console.log(`\n${passes} ok, ${fails} failed`);
+  process.exit(1);
+}, 5000);
+watchdog.unref();
 
 const TYPES = { '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
 const server = http.createServer((req, res) => {
@@ -90,10 +142,31 @@ const browser = await pw.chromium.launch(CHROME ? { executablePath: CHROME } : {
 
 /* ---- shared steps ------------------------------------------------------- */
 
-/* Headless Chromium draws WebGL in software, a frame in a large fraction of a second, so on a real
-   clock a pitch would show two frames. The 3D mound takes a stepped clock for the check: a pitch
-   plays every frame of its motion at 15 a second, and draws every third. */
-const STAGE_TEST = () => { window.STD_STAGE_TEST = { step: 1 / 15, renderEvery: 3 }; };
+/* Headless Chromium draws WebGL in software, a frame in seconds, so on a real clock a pitch would
+   show two frames. The 3D mound takes a stepped clock for the check: a pitch plays every frame of
+   its motion at 30 a second (quick play runs 1.8 times as fast, so a sample every 0.06 s of the
+   game's time). At 15 a second the first sample of the ball could land almost 2 m past the
+   release, and the flight check below read a slider's 16 m flight as 13.7. With SHOTS set it draws
+   every sixth frame, as many draws as before; otherwise fastDraw skips them all. */
+const STAGE_TEST = () => { window.STD_STAGE_TEST = { step: 1 / 30, renderEvery: 6 }; };
+
+/* The fast path (see the header): once the stage is loaded, its renderer's draws are counted and
+   skipped, unless the check asks for one (window.STD_CHECK_DRAW). With SHOTS set every draw is
+   real. Idempotent: homeWarm and stageReady both call it. */
+async function fastDraw(page) {
+  if (SHOTS) return;
+  await page.evaluate(() => {
+    const st = window.STD_STAGE && window.STD_STAGE.current;
+    if (!st || !st.renderer || st.renderer.realRender) return;
+    const r = st.renderer;
+    r.realRender = r.render;
+    window.STD_CHECK_SKIPPED = 0;
+    r.render = function (scene, camera) {
+      if (window.STD_CHECK_DRAW) return r.realRender.call(r, scene, camera);
+      window.STD_CHECK_SKIPPED++;
+    };
+  });
+}
 
 /* The owner's rule while pitching: nothing graded, nothing tipped, nothing
    over the field. Returns what broke it, or an empty list. */
@@ -127,20 +200,25 @@ async function quietProblems(page) {
    mound, as a player reading the spot would. Software GL compiles shaders on the main thread for
    seconds, and a tap while it does waits on it. */
 async function homeWarm(page) {
-  await page.waitForFunction(() => !(window.STD_STAGE && window.STD_STAGE.supported()) || (window.STD_STAGE.current && window.STD_STAGE.current.loaded), null, { timeout: 120000 });
+  // the warm compiles every shader in software: seconds alone, minutes on a loaded machine
+  await page.waitForFunction(() => !(window.STD_STAGE && window.STD_STAGE.supported()) || (window.STD_STAGE.current && window.STD_STAGE.current.loaded), null, { timeout: 240000 });
+  await fastDraw(page);
 }
 
 async function stageReady(page) {
   const on = await page.evaluate(() => !!(window.STD_STAGE && window.STD_STAGE.supported()));
   if (!on) return false;
-  await page.waitForFunction(() => window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 90000 });
+  await page.waitForFunction(() => window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 240000 });
   await page.evaluate(() => window.STD_UI.state.scene.real.ready);
+  await fastDraw(page);
   return true;
 }
+/* A real draw of the stage as it stands, read back off the canvas: not blank, not one color. */
 async function canvasRenders(page) {
   return page.evaluate(() => {
     const st = window.STD_STAGE.current, gl = st.renderer.getContext();
-    st.render();
+    window.STD_CHECK_DRAW = true;
+    try { st.render(); } finally { window.STD_CHECK_DRAW = false; }
     const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, px = new Uint8Array(4), seen = new Set();
     let lit = 0, n = 0;
     for (let i = 1; i < 12; i++) for (let j = 1; j < 12; j++) {
@@ -152,6 +230,10 @@ async function canvasRenders(page) {
     const cv = document.getElementById('m-canvas'), r = cv.getBoundingClientRect();
     return { W, H, css: [Math.round(r.width), Math.round(r.height)], colors: seen.size, lit: lit / n, s3d: document.getElementById('m-scene').classList.contains('s3d') };
   });
+}
+
+function pixelsOk(label, cv) {
+  ok(cv.s3d && cv.W >= cv.css[0] && cv.colors >= 12 && cv.lit > 0.9, label + ' (' + cv.W + 'x' + cv.H + ' for ' + cv.css.join('x') + ' css px, ' + cv.colors + ' colors and ' + Math.round(cv.lit * 100) + '% lit in 121 samples' + (cv.s3d ? '' : ', not the 3D scene') + ')');
 }
 
 /* What a PitchResult must look like on the field (3d/play.js reads it; this is the spec, written
@@ -274,6 +356,7 @@ async function everyResult(page) {
 /* Throw a whole outing. The first pitch gets no tap at all, to show the game
    goes on by itself; later ones are skipped with a tap. The quiet rule is
    checked through each flight and after it. */
+const PITCH_MS = SHOTS ? 300000 : 60000;
 async function playOuting(page, o) {
   const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
   const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
@@ -289,21 +372,25 @@ async function playOuting(page, o) {
     await page.click('#m-throw');
     r.pitches++;
     const tapless = i === 0 || !!o.noSkip;
-    let shotTaken = false;
-    for (let t = 0; t < 80; t++) {
+    let shotTaken = false, ended = false;
+    /* until the pitch is over, by a deadline and not a count of polls: a slow pitch must not leave
+       the loop clicking on through a busy mound, and one that never ends fails by name */
+    const deadline = Date.now() + PITCH_MS;
+    for (let t = 0; Date.now() < deadline; t++) {
       await page.waitForTimeout(tapless ? 90 : 60);
       if (!tapless && t === 2) await page.mouse.click(o.w / 2, Math.round(o.h * 0.5));
       const s = await page.evaluate(() => ({ dots: document.querySelectorAll('#m-runners circle').length, outs: document.querySelectorAll('#m-runners circle.out').length,
         busy: /pitching/.test(document.getElementById('m-throw').textContent), over: document.getElementById('s-result').classList.contains('on') }));
       if (s.dots) r.sawMove = true;
       if (s.outs) r.sawOut = true;
-      if (s.over) break;
+      if (s.over) { ended = true; break; }
       const q = await quietProblems(page);
       if (q.length) r.problems.push('pitch ' + r.pitches + ': ' + q.join(', '));
       if (i === 0 && t === 8 && o.shot && !shotTaken && !o.runnerShots) { shotTaken = true; await o.shot('pitch-flight'); }
       if (o.runnerShots && s.dots && !shotTaken && t > 6) { shotTaken = true; await o.shot('runners-p' + r.pitches); }
-      if (!s.busy) break;
+      if (!s.busy) { ended = true; break; }
     }
+    if (!ended) { r.problems.push('pitch ' + r.pitches + ' was still playing after ' + PITCH_MS / 1000 + ' s'); break; }
     const tr = await page.evaluate(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.trace);
     if (tr && tr.n !== r.lastN) { r.traces.push(tr); r.lastN = tr.n; }
     if (await done()) break;
@@ -371,6 +458,8 @@ async function coachCheck(page, label, pitches, expect, shot) {
 async function run(w, h, theme) {
   console.log(`\n${w}x${h}, ${theme}`);
   const tag = w + '-' + theme;
+  const at = (n, lim) => step(w + 'x' + h + ' ' + n, lim);
+  at('open the page');
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE.replace(/\/shut-the-door\/$/, '') });
   const page = await ctx.newPage();
@@ -394,18 +483,35 @@ async function run(w, h, theme) {
   };
 
   /* 1 */
+  at('1 home');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
   await homeWarm(page);
   await page.waitForSelector('#b-take', { state: 'visible' });
-  const home = await page.evaluate(() => ({
-    title: document.getElementById('h-title').textContent,
-    ars: document.querySelectorAll('#h-pitcher .ars li:not(.hd)').length,
-    sit: document.getElementById('h-sit').textContent,
-    openSheets: [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden).length,
-    robots: document.querySelector('meta[name=robots]').content,
-  }));
-  ok(home.title.length > 0 && home.ars >= 2 && /lead/.test(home.sit) && /out/.test(home.sit), '1 home shows the spot, the situation and the arsenal (' + home.ars + ' pitches)');
+  const home = await page.evaluate(() => {
+    const sit = window.STD_UI.state.scn.situation, bug = document.querySelector('#h-sit .scorebar');
+    const q = (s) => (bug && bug.querySelector(s)) || null;
+    return {
+      title: document.getElementById('h-title').textContent,
+      ars: document.querySelectorAll('#h-pitcher .ars li:not(.hd)').length,
+      sit, aria: document.getElementById('h-sit').getAttribute('aria-label') || '',
+      // the scorebug (PR #642): both clubs with their runs, the half and the inning, the outs lit, the bases
+      runs: bug ? [...bug.querySelectorAll('.sb-team b')].map((b) => +b.textContent) : [],
+      inn: (q('.sb-inn') || {}).textContent || '', outsLit: bug ? bug.querySelectorAll('.sb-outs i.on').length : -1,
+      bases: bug ? [...bug.querySelectorAll('.sb-bases rect')].filter((r) => r.classList.contains('on')).length : -1,
+      stakes: (document.getElementById('h-setup') || {}).textContent || '',
+      stakesShown: !!document.getElementById('h-setup') && document.getElementById('h-setup').getBoundingClientRect().height > 0,
+      openSheets: [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden).length,
+      robots: document.querySelector('meta[name=robots]').content,
+    };
+  });
+  ok(home.title.length > 0 && home.ars >= 2, '1 home shows the spot and the arsenal (' + home.ars + ' pitches)');
+  const pop = (n) => { let c = 0; for (; n; n >>= 1) c += n & 1; return c; };
+  ok(home.runs.length === 2 && home.runs[0] === home.sit.score.us && home.runs[1] === home.sit.score.them
+    && new RegExp('^(top|bot) ' + home.sit.inning + '$').test(home.inn.trim()) && home.outsLit === home.sit.outs && home.bases === pop(home.sit.bases | 0)
+    && /(up|down) \d|tied/.test(home.aria) && /out/.test(home.aria),
+    '1 the scorebug has the score (' + home.runs.join('-') + '), the inning (' + home.inn.trim() + '), the outs and the bases, as the pack has them ("' + home.aria + '")');
+  ok(home.stakesShown && /door is shut/.test(home.stakes), '1 the stakes line is under it ("' + home.stakes.trim() + '")');
   ok(home.openSheets === 0, '1 no sheet or tutorial opened by itself');
   ok(/noindex/.test(home.robots), '1 the page is noindexed');
   await shot('home', true);
@@ -432,6 +538,7 @@ async function run(w, h, theme) {
   ok(['32x32=32x32', '16x16=16x16', 'touch=180x180'].every((x) => brand.heads.includes(x)), '13 favicon 32 and 16 and the apple touch icon 180 are linked and the right size');
 
   /* 2 */
+  at('2 the sheets');
   for (const [btn, id, name] of [['#b-menu', 'sheet-menu', 'menu'], ['[data-open="how"]', 'sheet-how', 'how'], ['[data-open="stats"]', 'sheet-stats', 'stats'],
     ['@menu [data-open="past"]', 'sheet-past', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
     /* past dailies lives in the menu only */
@@ -471,6 +578,7 @@ async function run(w, h, theme) {
   await page.click('#b-theme');
 
   /* 3 and 4 */
+  at('3 take the mound');
   await homeWarm(page);
   await page.click('#b-take', { timeout: 120000 });   // software GL: the first frame of the mound takes seconds
   await page.waitForSelector('#s-mound.on .grid .cell', { timeout: 5000 });
@@ -478,8 +586,7 @@ async function run(w, h, theme) {
   const is3d = await stageReady(page);
   ok(is3d, '14 the mound is the 3D scene (WebGL here)');
   if (is3d) {
-    const cv = await canvasRenders(page);
-    ok(cv.s3d && cv.W >= cv.css[0] && cv.colors >= 12 && cv.lit > 0.9, '14 the 3D canvas renders (' + cv.W + 'x' + cv.H + ' for ' + cv.css.join('x') + ' css px, ' + cv.colors + ' colors in 121 samples)');
+    pixelsOk('14 the 3D canvas renders', await canvasRenders(page));
   }
   await page.waitForTimeout(200);
   const mirror = await page.evaluate(() => {
@@ -506,6 +613,7 @@ async function run(w, h, theme) {
   ok(await page.evaluate(() => document.getElementById('m-scout').hidden), '4 scouting closes on a second tap');
 
   /* 10 */
+  at('10 the framing');
   for (const hand of ['L', 'R']) {
     const fr = await page.evaluate((hand) => {
       const S = window.STD_UI.state, was = S.scene.bat;
@@ -530,6 +638,7 @@ async function run(w, h, theme) {
 
   /* 14: every kind of result plays its own motion, for a hitter from each side */
   if (is3d) {
+    at('14 every pitch result');
     const ev = await everyResult(page);
     const probs = ev.errors.concat(...ev.traces.map(motionProblems));
     ok(ev.traces.length === 28 && probs.length === 0, '14 every pitch result plays its motion (' + ev.traces.length + ' plays: ' + [...new Set(ev.kinds.map((k) => k.slice(2)))].join(', ') + ')' + (probs.length ? ': ' + probs.slice(0, 4).join(' | ') : ''));
@@ -548,10 +657,13 @@ async function run(w, h, theme) {
       await shot('still-' + when);
     }
     await page.evaluate(() => { document.getElementById('m-scene').classList.remove('flying'); window.STD_STAGE.current.draw(); });
+    pixelsOk('14 after the 28 plays the canvas still draws', await canvasRenders(page));
   }
 
   /* 5 */
+  at('5 the outing', 900);
   const play = await playOuting(page, { w, h, shot });
+  if (is3d) pixelsOk('5 after the outing the canvas still draws', await canvasRenders(page));
   ok(play.pitches > 0, '5 a whole outing on the real engine (' + play.pitches + ' pitches)');
   ok(play.problems.length === 0, '5 nothing graded, tipped or over the field from the first pitch to the last' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
   if (is3d) traceCheck('5', play);
@@ -585,6 +697,7 @@ async function run(w, h, theme) {
   ok(/^\d balls, \d strikes$/.test(mini.hud.aria || '') && mini.hud.lit <= 5, '5 the scorebug count is lit as balls and strikes (' + mini.hud.aria + ')');
 
   /* 6 */
+  at('6 the result');
   await revealCheck(page, '6', play.pitches);
   await shot('result', true);
   await page.click('#r-share');
@@ -594,9 +707,11 @@ async function run(w, h, theme) {
   await shot('shared');
 
   /* 12, on the real engine */
+  at('12 the coach');
   await coachCheck(page, '12', play.pitches, null, shot);
 
   /* 7 */
+  at('7 run it back');
   await page.click('#r-again');
   await page.waitForSelector('#s-mound.on');
   const practice = await page.evaluate(() => window.STD_UI.state.outing.mode);
@@ -608,6 +723,7 @@ async function run(w, h, theme) {
   await shot('home-done', true);
 
   /* 8 */
+  at('8 debug');
   await page.goto(BASE + '?debug=1', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#h-main:not([hidden])');
   await homeWarm(page);
@@ -625,6 +741,7 @@ async function run(w, h, theme) {
 /* 11: one forced outing per ending */
 async function ending(w, h, end, extra) {
   const tag = String(w);
+  step(w + 'x' + h + ' 11 ' + end + ': open the page');
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   await page.addInitScript(STAGE_TEST);
@@ -652,11 +769,14 @@ async function ending(w, h, end, extra) {
   await page.waitForSelector('#s-mound.on .grid .cell');
   const is3d = await stageReady(page);
   if (proxy) ok(await page.isVisible('#m-proxy'), '11 ' + end + ': the proxy note is on the mound, small');
+  step(w + 'x' + h + ' 11 ' + end + ': the outing', 900);
   const play = await playOuting(page, { w, h, shot, runnerShots: end !== 'door_shut', type0: true, cell: 12, noSkip: end !== 'door_shut' });
   const k = play.pitches, sawMove = play.sawMove, sawOut = play.sawOut;
   ok(play.problems.length === 0, '11 ' + end + ': nothing graded, tipped or over the field during play' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
   ok(is3d, '11 ' + end + ': on the 3D mound');
   if (is3d) traceCheck('11 ' + end, play);
+  if (is3d) pixelsOk('11 ' + end + ': at the end the canvas still draws', await canvasRenders(page));
+  step(w + 'x' + h + ' 11 ' + end + ': the result and the coach');
   const res = await page.evaluate(() => ({ o: document.getElementById('r-outcome').textContent, cls: document.getElementById('r-outcome').className, rv: document.getElementById('r-reveal').textContent, st: document.getElementById('r-streak').textContent, them: window.STD_UI.state.outing.score.them, start: window.STD_UI.state.scn.situation.score.them }));
   const sawRun = res.them > res.start;
   ok(res.cls.includes(end), '11 ' + end + ': the outing ends ' + res.o + ' after ' + k + ' pitches');
@@ -690,6 +810,7 @@ async function ending(w, h, end, extra) {
 }
 
 try {
+  if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
   await run(1440, 900, 'dark');
   console.log('\nthe four endings');
