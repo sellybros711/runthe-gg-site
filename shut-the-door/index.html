@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -97,6 +97,7 @@
     <nav class="h-links" aria-label="More">
       <button type="button" data-open="how">how to play</button>
       <button type="button" data-open="101">pitching 101</button>
+      <button type="button" data-open="board">today's board</button>
       <button type="button" data-open="stats">stats</button>
       <button type="button" data-open="settings">settings</button>
     </nav>
@@ -184,6 +185,7 @@
   <div class="r-col">
     <div class="card r-like"><i class="rl-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></i><div class="rl-t"><small>pitched like</small><b class="nm" id="r-like"></b><span id="r-why"></span></div></div>
     <button class="coach-go" id="r-coach" type="button"><span class="cg-t"><b>talk to pitching coach</b><span>your costliest pitch, then every pitch</span></span><i class="cg-arrow" aria-hidden="true"></i></button>
+    <button class="coach-go board-go" id="r-board" type="button"><span class="cg-t"><b>today's board</b><span>where your outing ranks today</span></span><i class="cg-arrow" aria-hidden="true"></i></button>
     <div class="card cmp" id="r-reveal"></div>
     <div class="r-actions">
       <button class="btn go" id="r-share" type="button">share</button>
@@ -196,9 +198,26 @@
  </div>
 </section>
 
+<!-- 6. THE BOARD. From the result, the home links and the menu. board.js fills it. -->
+<section class="screen" id="s-board" aria-labelledby="bd-head">
+  <button class="bd-back" id="bd-back" type="button"><i aria-hidden="true"></i>back</button>
+  <div class="bd-grid">
+    <div class="bd-side">
+      <div class="bd-hero">
+        <p class="eyebrow" id="bd-eyebrow"></p>
+        <h2 class="bd-head" id="bd-head">the board</h2>
+        <div class="seam" aria-hidden="true"></div>
+        <div id="bd-you"></div>
+      </div>
+      <p class="quiet bd-note">today's daily only. ranked by score. a tie goes to whoever posted first.</p>
+    </div>
+    <div class="card bd-list" id="bd-list" aria-live="polite"></div>
+  </div>
+</section>
+
 </main>
 
-<!-- 6. THE SHEETS. Every one opens from a button. None opens by itself. -->
+<!-- 7. THE SHEETS. Every one opens from a button. None opens by itself. -->
 <div class="sheet" id="sheet-menu" hidden aria-hidden="true" role="dialog" aria-label="Menu">
   <div class="sh-in">
     <div class="sh-h"><h2>you</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div>
@@ -208,6 +227,7 @@
       <button type="button" data-open="101"><i class="mi data"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></i><span class="mt"><b>pitching 101</b><span>the ideas the coach uses.</span></span><i class="chev" aria-hidden="true"></i></button>
     </div>
     <div class="menu-list">
+      <button type="button" data-open="board"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="mt"><b>today's board</b><span>every closer who posted today.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="stats"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="mt"><b>stats</b><span>every outing, every grade.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="past"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></i><span class="mt"><b>past dailies</b><span>every spot so far.</span></span><em class="tag">locked</em><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="settings"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="mt"><b>settings</b><span>sound, speed, theme.</span></span><i class="chev" aria-hidden="true"></i></button>
@@ -236,6 +256,9 @@
 <div class="sheet" id="sheet-settings" hidden aria-hidden="true" role="dialog" aria-label="Settings">
   <div class="sh-in"><div class="sh-h"><h2>settings</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="set-body"></div></div>
 </div>
+ <div class="sheet" id="sheet-share" hidden aria-hidden="true" role="dialog" aria-label="Share">
+  <div class="sh-in"><div class="sh-h"><h2>share</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body share" id="share-body"></div></div>
+</div>
 <div class="sheet" id="sheet-auth" hidden aria-hidden="true" role="dialog" aria-label="Account">
   <div class="sh-in"><div class="sh-h"><h2>account</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body auth" id="auth-body"></div></div>
 </div>
@@ -253,18 +276,20 @@
 <script src="mound.js?v=4"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
-<script src="menus.js?v=6"></script>
+<script src="menus.js?v=7"></script>
 <script src="rng.js?v=1"></script>
 <script src="grade.js?v=3"></script>
 <script src="lesson.js?v=2"></script>
 <script src="engine.js?v=5"></script>
 <script src="share.js?v=2"></script>
+<script src="card.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
 <script src="api.js?v=3"></script>
-<script src="mock-api.js?v=7"></script>
+<script src="mock-api.js?v=8"></script>
 <script src="coach.js?v=2"></script>
-<script src="ui.js?v=14"></script>
+<script src="board.js?v=1"></script>
+<script src="ui.js?v=15"></script>
 <script type="module" src="3d/boot.js?v=19"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>

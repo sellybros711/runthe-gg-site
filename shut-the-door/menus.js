@@ -1,7 +1,8 @@
 /* Shut The Door: the sheets.
  *
  * window.STD_MENUS. The menu, how to play, stats, past dailies, settings and
- * the sign-in sheet. Every one of them opens from a button and nothing here
+ * the sign-in sheet. The menu's board row hands over to the board screen
+ * (board.js) through ctx.board. Every one of them opens from a button and nothing here
  * opens by itself: no tutorial, no first-visit tour (the owner's call,
  * 2026-10-13). A sheet closes on its backdrop, its close button or Escape.
  *
@@ -298,7 +299,7 @@ function renderMenuTiles() {
     tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
 }
 
-var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {} };
+var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   open: openSheet,
@@ -316,6 +317,7 @@ var api = {
     else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
     else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }
     else if (which === 'menu') { renderMenuTiles(); openSheet('sheet-menu'); }
+    else if (which === 'board') { closeSheet(true); if (ctx.board) ctx.board(); }
   },
 };
 window.STD_MENUS = api;
