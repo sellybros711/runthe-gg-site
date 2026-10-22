@@ -66,7 +66,7 @@ async function main() {
   people.setup(gltfs);
   people.wireBall();
   mark('people');
-  lab.people = people; lab.pitch = pitch; lab.THREE = THREE;
+  lab.people = people; lab.pitch = pitch; lab.THREE = THREE; lab.camera = camera;
   // for pipeline/check-deform.mjs: pose everyone at a moment without drawing a frame
   lab.poseAt = (t) => { pitch.update(t, camera); people.update(t, 0); };
   lab.times = { release: pitch.tRel, flight: pitch.f.T, plate: pitch.tPlate, catch: pitch.tCatch };

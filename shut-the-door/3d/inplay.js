@@ -463,7 +463,8 @@ export class InPlay {
 
   /** The camera of a piece of the cut at plan time s, smoothed over a few samples inside the piece. */
   cameraAt(piece, s, aspect) {
-    const offs = [-0.24, -0.12, 0, 0.12, 0.24];
+    // (a liner or a climbing ball moves fast: its cameras smooth over less time, so it stays in frame)
+    const offs = piece.cam === 'track' || piece.cam === 'sky' ? [-0.1, -0.05, 0, 0.05, 0.1] : [-0.24, -0.12, 0, 0.12, 0.24];
     let pos = { x: 0, y: 0, z: 0 }, lk = { x: 0, y: 0, z: 0 }, fov = 0, n = 0;
     for (const o of offs) {
       const t = clamp(s + o, piece.s0, piece.s1);
@@ -545,7 +546,9 @@ export class InPlay {
       for (const r of plan.runners) {
         if (r.out && s > (r.outAt ?? 0) + 0.4) continue;
         const q = r.track.at(s);
-        if (Math.hypot(q.x - ball.x, q.y - ball.y) < 75 || (r.arrive != null && Math.abs(r.arrive - s) < 0.8)) pts.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 });
+        // every runner still in the play (the batter pulling into his base above all)
+        if (r.scoreAt != null && s > r.scoreAt + 0.3) continue;
+        pts.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 });
       }
       return this.fit(pos, pts, 0.35, aspect, 1.3, 12);
     }
