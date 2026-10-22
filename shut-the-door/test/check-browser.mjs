@@ -205,7 +205,7 @@ async function quietProblems(page) {
     if ([...document.querySelectorAll('.sheet')].some((s) => !s.hidden)) out.push('a sheet');
     const sc = document.getElementById('m-scene').getBoundingClientRect();
     if (sc.width < 1 || sc.height < 1) { out.push('the field has no size on the mound (' + Math.round(sc.width) + 'x' + Math.round(sc.height) + ')'); return { out, gone: false, over: false }; }
-    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('.grid') || el.id === 'm-proxy' || el.id === 'm-dbg' || el.closest('#m-mini'));
+    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('#m-aim') || el.id === 'm-proxy' || el.id === 'm-dbg' || el.closest('#m-mini'));
     samples: for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) {
       const el = document.elementFromPoint(sc.left + sc.width * i / 6, sc.top + sc.height * j / 6);
       if (!fine(el)) { out.push('over the field: ' + (el ? el.id || el.className || el.tagName : 'nothing')); break samples; }
@@ -404,7 +404,7 @@ async function playOuting(page, o) {
     if (await done()) break;
     const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
     await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
-    await page.click(`#m-scene .grid .cell[data-cell="${o.cell != null ? o.cell : CELLS[i % CELLS.length]}"]`);
+    await page.click(`#m-aim .cell[data-cell="${o.cell != null ? o.cell : CELLS[i % CELLS.length]}"]`);
     if (i === 0 && o.shot) await o.shot('ready');
     const label = await page.textContent('#m-throw');
     if (!/throw|shut it/.test(label)) { r.problems.push('the throw button was not ready: ' + label); break; }
@@ -421,6 +421,9 @@ async function playOuting(page, o) {
       const shown = await page.waitForSelector('#m-meter:not([hidden])', { timeout: 10000 }).then(() => true, () => false);
       if (!shown) { r.problems.push('pitch ' + (r.pitches + 1) + ': the release meter did not show after throw'); break; }
       await page.waitForTimeout(200);
+      // the step line under the meter says how to stop it (the owner, 2026-10-22)
+      const say = await page.textContent('#m-say');
+      if (say !== 'stop it in the bright band') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
       await page.click('#m-meter');
     }
     r.pitches++;
@@ -643,7 +646,7 @@ async function run(w, h, theme) {
   at('3 take the mound');
   await homeWarm(page);
   await page.click('#b-take', { timeout: 120000 });   // software GL: the first frame of the mound takes seconds
-  await page.waitForSelector('#s-mound.on .grid .cell', { timeout: 5000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 5000 });
   /* 14: the mound is 3D */
   const is3d = await stageReady(page);
   ok(is3d, '14 the mound is the 3D scene (WebGL here)');
@@ -652,7 +655,7 @@ async function run(w, h, theme) {
   }
   await page.waitForTimeout(200);
   const mirror = await page.evaluate(() => {
-    const r = (c) => document.querySelector('#m-scene .grid .cell[data-cell="' + c + '"]').getBoundingClientRect();
+    const r = (c) => document.querySelector('#m-aim .cell[data-cell="' + c + '"]').getBoundingClientRect();
     const C = window.STD_CONTRACT;
     return { c0: r(0).left, c4: r(4).left, c20: r(20).top, c0t: r(0).top, sc: C.screenCol(0), w: r(12).width, hgt: r(12).height };
   });
@@ -660,9 +663,52 @@ async function run(w, h, theme) {
   ok(mirror.c20 > mirror.c0t, '3 row 0 is high, row 4 is low');
   ok(mirror.w >= 36 && mirror.hgt >= 36, '3 a cell is big enough to tap (' + Math.round(mirror.w) + 'x' + Math.round(mirror.hgt) + ')');
   await shot('mound');
-  /* the heat map is always on: 25 painted cells before any tap, and the card opens over it */
-  const heat = await page.evaluate(() => [...document.querySelectorAll('#m-scene .grid .cell')].filter((c) => c.style.background).length);
-  ok(heat === 25, '4 the heat map is on the grid before any tap, on the same 25 cells');
+  /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number, the
+     name and the pack's speed; one throw button; the step line. A drag over the zone moves the
+     crosshair cell by cell and picks where it is let go, through screenCol(); the break preview
+     follows it; the zone takes touch-action none, so a drag never scrolls the page. */
+  const pad = await page.evaluate(() => {
+    const S = window.STD_UI.state, ars = S.scn.pitcher.arsenal;
+    const btns = [...document.querySelectorAll('#m-arsenal .pitch')];
+    return {
+      buttons: btns.every((b, i) => b.querySelector('.pk').textContent === String(i + 1) && b.querySelector('.pt b').textContent === ars[i].name &&
+        b.querySelector('.pv em').textContent === String(Math.round(ars[i].velo))),
+      tall: Math.min(...btns.map((b) => b.getBoundingClientRect().height)),
+      throwWord: document.querySelector('#m-throw b').textContent, say: document.getElementById('m-say').textContent,
+      touch: getComputedStyle(document.getElementById('m-aim')).touchAction, grids: document.querySelectorAll('#m-scene .grid').length,
+    };
+  });
+  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number, its name and the pack\'s speed (' + Math.round(pad.tall) + ' px tall)');
+  ok(pad.throwWord === 'throw' && pad.say === 'pick a pitch', '3 one throw button, and the step line says what to do ("' + pad.say + '")');
+  ok(pad.touch === 'none' && pad.grids === 0, '3 the aim is on the field (no separate grid) and a drag there never scrolls the page');
+  await page.click('#m-arsenal .pitch >> nth=0');
+  ok(await page.textContent('#m-say') === 'aim: drag or tap the zone', '3 with a pitch picked, the step line says aim');
+  const at12 = await page.evaluate(() => { const r = document.querySelector('#m-aim .cell[data-cell="12"]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width, r.height]; });
+  const scroll0 = await page.evaluate(() => [window.scrollY, document.querySelector('main').scrollTop]);
+  await page.mouse.move(at12[0], at12[1]);
+  await page.mouse.down();
+  // two columns right and one row down on screen, then let go
+  await page.mouse.move(at12[0] + at12[2], at12[1] + at12[3] * 0.5, { steps: 4 });
+  await page.mouse.move(at12[0] + at12[2] * 2, at12[1] + at12[3], { steps: 4 });
+  const mid = await page.evaluate(() => ({ dragging: document.getElementById('m-aim').classList.contains('dragging'), cell: window.STD_UI.state.cell, hover: window.STD_UI.state.hover }));
+  await page.mouse.up();
+  const drag = await page.evaluate(() => {
+    const S = window.STD_UI.state, C = window.STD_CONTRACT, st = window.STD_STAGE && window.STD_STAGE.current;
+    const x = document.querySelector('#m-aim .aim-x').getBoundingClientRect(), c = document.querySelector('#m-aim .cell[data-cell="' + S.cell + '"]').getBoundingClientRect();
+    return { cell: S.cell, row: C.rowOf(S.cell), sc: C.screenCol(S.cell), on: Math.abs(x.left + x.width / 2 - (c.left + c.width / 2)) < 2 && Math.abs(x.top + x.height / 2 - (c.top + c.height / 2)) < 2,
+      ghost: st && st.ghostSpec ? st.ghostSpec.cell : null, is3d: !!st, say: document.getElementById('m-say').textContent, ready: !document.getElementById('m-throw').disabled,
+      tag: document.querySelector('#m-aim .aim-tag').textContent, words: window.STD_UI.cellWords(S.cell, S.scn.batters[S.outing.batterIndex].bats),
+      scroll: [window.scrollY, document.querySelector('main').scrollTop] };
+  });
+  ok(mid.dragging && mid.cell == null && mid.hover != null, '3 mid drag the crosshair moves and the preview follows, nothing picked yet');
+  ok(drag.row === 3 && drag.sc === 4 && drag.on, '3 a drag picks the cell it ends on, through screenCol() (row ' + drag.row + ', screen column ' + drag.sc + '), the crosshair on it');
+  ok(!drag.is3d || drag.ghost === drag.cell, '3 the break preview aims where the crosshair is (' + drag.ghost + ')');
+  ok(drag.tag.indexOf(drag.words) === 0 && !/\b(left|right)\b/.test(drag.tag), '3 the crosshair says where in inside and away words ("' + drag.tag + '")');
+  ok(drag.ready && drag.say === 'tap throw' && drag.scroll.join() === scroll0.join(), '3 the throw button is ready, the step line says throw, and the page did not scroll');
+  await shot('aimed');
+  /* the heat map is always on: 25 painted tiles in the on-field aim before any tap, and the card opens over it */
+  const heat = await page.evaluate(() => [...document.querySelectorAll('#m-aim .aim-heat i')].filter((c) => c.style.background).length);
+  ok(heat === 25, '4 the heat map is in the on-field zone before any tap, on the same 25 cells');
   await page.click('#m-batter');
   await page.waitForSelector('#m-scout:not([hidden])');
   await shot('scout');
@@ -682,7 +728,7 @@ async function run(w, h, theme) {
       const b = S.scn.batters.find((x) => x.bats === hand);
       S.scene.setBatter(b); S.grid.place(S.scene.gridRect()); S.scene.draw({});
       const f = S.scene.figureBoxes();
-      const c = document.querySelector('#m-scene .grid .cell[data-cell="12"]').getBoundingClientRect();
+      const c = document.querySelector('#m-aim .cell[data-cell="12"]').getBoundingClientRect();
       return { f, cell: [c.width, c.height], was: S.scn.batters.indexOf(was) };
     }, hand);
     const inside = (bx) => bx.x0 >= 0 && bx.x1 <= fr.f.W && bx.y0 >= 0 && bx.y1 <= fr.f.H;
@@ -854,7 +900,7 @@ async function ending(w, h, end, extra) {
   }
   await homeWarm(page);
   await page.click('#b-take', { timeout: 120000 });   // software GL: the first frame of the mound takes seconds
-  await page.waitForSelector('#s-mound.on .grid .cell');
+  await page.waitForSelector('#s-mound.on #m-aim .cell');
   const is3d = await stageReady(page);
   if (proxy) ok(await page.isVisible('#m-proxy'), '11 ' + end + ': the proxy note is on the mound, small');
   step(w + 'x' + h + ' 11 ' + end + ': the outing', 900);
