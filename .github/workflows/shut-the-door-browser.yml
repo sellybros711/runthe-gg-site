@@ -46,5 +46,15 @@ jobs:
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
+      # Each FAIL line and the tally also go up as annotations, so a red run says what broke on
+      # the PR itself (and through the checks API) without opening the log.
       - name: The whole game in Chromium
-        run: node shut-the-door/test/check-browser.mjs
+        run: |
+          set -o pipefail
+          node shut-the-door/test/check-browser.mjs 2>&1 | tee check-browser.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          [ -f check-browser.txt ] || exit 0
+          grep -E 'FAIL' check-browser.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-browser::/' || true
+          tail -n 1 check-browser.txt | sed 's/^/::notice title=check-browser::/'

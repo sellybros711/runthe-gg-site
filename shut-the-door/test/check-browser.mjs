@@ -169,7 +169,15 @@ async function fastDraw(page) {
 }
 
 /* The owner's rule while pitching: nothing graded, nothing tipped, nothing
-   over the field. Returns what broke it, or an empty list. */
+   over the field. Returns { out: what broke it (or an empty list), gone, over }.
+   gone: the mound is not on screen, so there is no field to judge. The field samples are read off
+   #m-scene's box, and a hidden screen's box is 0x0 at (0,0), where every sample lands on the
+   header. That is how a run once failed "over the field: hdr" (390x844, doors_open, pitch 4,
+   2026-10-22): the go-ahead run ended the outing between the loop's look at the result screen and
+   this sample, and finish() had already hidden the mound (show('s-result')). The header was never
+   over the field. So the answer comes from one snapshot: the mound on screen and judged, or gone,
+   with whether the result is up (over). The caller fails a mound that left with no result, and
+   a mound on screen with a field of no size fails here. */
 async function quietProblems(page) {
   return page.evaluate(() => {
     const vis = (el) => {
@@ -178,6 +186,7 @@ async function quietProblems(page) {
       return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.05;
     };
     const mound = document.getElementById('s-mound'), out = [];
+    if (!mound.classList.contains('on')) return { out, gone: true, over: document.getElementById('s-result').classList.contains('on') };
     if ([...mound.querySelectorAll('.sq, .pill, .strip')].some(vis)) out.push('a grade square');
     const text = mound.innerText;
     if (/\b(green|yellow|orange|red)\b/i.test(text)) out.push('a band word');
@@ -185,12 +194,13 @@ async function quietProblems(page) {
     if ([...document.querySelectorAll('.gcard, .callout, .flash, #toast.on')].some(vis)) out.push('a banner or card');
     if ([...document.querySelectorAll('.sheet')].some((s) => !s.hidden)) out.push('a sheet');
     const sc = document.getElementById('m-scene').getBoundingClientRect();
+    if (sc.width < 1 || sc.height < 1) { out.push('the field has no size on the mound (' + Math.round(sc.width) + 'x' + Math.round(sc.height) + ')'); return { out, gone: false, over: false }; }
     const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('.grid') || el.id === 'm-proxy' || el.id === 'm-dbg' || el.closest('#m-mini'));
-    for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) {
+    samples: for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) {
       const el = document.elementFromPoint(sc.left + sc.width * i / 6, sc.top + sc.height * j / 6);
-      if (!fine(el)) { out.push('over the field: ' + (el ? el.id || el.className || el.tagName : 'nothing')); return out; }
+      if (!fine(el)) { out.push('over the field: ' + (el ? el.id || el.className || el.tagName : 'nothing')); break samples; }
     }
-    return out;
+    return { out, gone: false, over: false };
   });
 }
 
@@ -370,6 +380,20 @@ async function playOuting(page, o) {
     const label = await page.textContent('#m-throw');
     if (!/throw|shut it/.test(label)) { r.problems.push('the throw button was not ready: ' + label); break; }
     await page.click('#m-throw');
+    /* The release meter (draft PR #658, the owner's call 2026-10-22): where the page has one and
+       the setting is on, the throw button starts a needle and the next tap on it is the release.
+       That page must show it, and it gets its tap here (after its own 120 ms guard against the tap
+       that started it). A page with no meter, or with it off, throws on the button as before. */
+    const wantsMeter = await page.evaluate(() => {
+      let p = {}; try { p = JSON.parse(localStorage.getItem('std_ui_v1') || '{}') || {}; } catch (e) {}
+      return !!(window.STD_METER && document.getElementById('m-meter')) && p.meter !== false;
+    });
+    if (wantsMeter) {
+      const shown = await page.waitForSelector('#m-meter:not([hidden])', { timeout: 10000 }).then(() => true, () => false);
+      if (!shown) { r.problems.push('pitch ' + (r.pitches + 1) + ': the release meter did not show after throw'); break; }
+      await page.waitForTimeout(200);
+      await page.click('#m-meter');
+    }
     r.pitches++;
     const tapless = i === 0 || !!o.noSkip;
     let shotTaken = false, ended = false;
@@ -385,7 +409,12 @@ async function playOuting(page, o) {
       if (s.outs) r.sawOut = true;
       if (s.over) { ended = true; break; }
       const q = await quietProblems(page);
-      if (q.length) r.problems.push('pitch ' + r.pitches + ': ' + q.join(', '));
+      if (q.gone) {
+        // the outing ended between the look above and this sample (see quietProblems), or worse
+        if (!q.over) r.problems.push('pitch ' + r.pitches + ': the mound left the screen with no result');
+        ended = true; break;
+      }
+      if (q.out.length) r.problems.push('pitch ' + r.pitches + ': ' + q.out.join(', '));
       if (i === 0 && t === 8 && o.shot && !shotTaken && !o.runnerShots) { shotTaken = true; await o.shot('pitch-flight'); }
       if (o.runnerShots && s.dots && !shotTaken && t > 6) { shotTaken = true; await o.shot('runners-p' + r.pitches); }
       if (!s.busy) { ended = true; break; }
@@ -395,7 +424,11 @@ async function playOuting(page, o) {
     if (tr && tr.n !== r.lastN) { r.traces.push(tr); r.lastN = tr.n; }
     if (await done()) break;
     const after = await quietProblems(page);
-    if (after.length) r.problems.push('after pitch ' + r.pitches + ': ' + after.join(', '));
+    if (after.gone) {
+      if (!after.over) r.problems.push('after pitch ' + r.pitches + ': the mound left the screen with no result');
+      break;
+    }
+    if (after.out.length) r.problems.push('after pitch ' + r.pitches + ': ' + after.out.join(', '));
     r.pbp.push(await page.textContent('#m-pbp'));
     if (i === 0 && o.shot) await o.shot('after-pitch');
   }
