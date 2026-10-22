@@ -221,7 +221,12 @@ async function quietProblems(page) {
    seconds, and a tap while it does waits on it. */
 async function homeWarm(page) {
   // the warm compiles every shader in software: seconds alone, minutes on a loaded machine
-  await page.waitForFunction(() => !(window.STD_STAGE && window.STD_STAGE.supported()) || (window.STD_STAGE.current && window.STD_STAGE.current.loaded), null, { timeout: 240000 });
+  await page.waitForFunction(() => !(window.STD_STAGE && window.STD_STAGE.supported()) || (window.STD_STAGE.current && window.STD_STAGE.current.loaded), null, { timeout: 240000 })
+    .catch(async (e) => {
+      // say how far the stage got (stage.js marks each phase) and whether the context was lost on the way
+      const at = await page.evaluate(() => JSON.stringify({ marks: window.STD_STAGE && window.STD_STAGE.marks, lost: window.STD_CHECK_CTXLOST || 0, now: Math.round(performance.now()) })).catch(() => 'the page did not answer');
+      throw new Error('the 3D warm did not finish in 240 s: ' + at + '\n' + e.message);
+    });
   await gpuSettled(page);
   await fastDraw(page);
 }
