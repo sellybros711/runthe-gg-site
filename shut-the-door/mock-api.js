@@ -47,6 +47,37 @@ if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true
 /* ?mockAuth=1 signs the stub in as a fictional player, so the account paths
    (the stats sheet's myStats(), the result's account block) can be built and
    checked before auth.js lands. */
+/* shutdoor_board()'s rows (153), FICTIONAL: made up handles, scores and
+   outcomes, so the board screen can be built and checked without a server.
+   ?mockBoard=empty answers no rows, fail answers null (the call failed),
+   deep puts your row far below the top, anything else a full board.
+   ?mockAuth=1 makes one of the rows yours. */
+var BOARD_NAMES = ['paintsblack', 'highcheese', 'backdoorslider', 'ninthinning', 'lockdownlefty', 'gasmonkey', 'splitfinger', 'bullpencart',
+  'framejob', 'chinmusic', 'upstairs', 'sweeperking', 'knucklepuck', 'tunnelvision', 'fullcount', 'corners', 'runnersonsecond', 'pitchclock'];
+function mockBoard(day, limit) {
+  var mode = (/[?&]mockBoard=([^&]*)/.exec(location.search) || [])[1] || 'full';
+  if (mode === 'fail') return Promise.resolve(null);
+  if (mode === 'empty') return Promise.resolve([]);
+  var signed = /[?&]mockAuth=1(&|$)/.test(location.search);
+  var players = 240, mine = signed ? (mode === 'deep' ? 131 : 18) : 0, lim = Math.max(1, Math.min(100, limit || 50));
+  var rows = [];
+  for (var rk = 1; rk <= players; rk++) {
+    if (rk > lim && rk !== mine) continue;
+    var f = rk / players;
+    /* in score order, as the real scores fall: doors shut, held ties, doors open, walk-offs */
+    var outcome = rk <= 24 ? 'door_shut' : rk <= 34 ? 'tie_held' : rk <= 44 ? 'doors_open' : 'walk_off';
+    var pitches = 8 + ((rk * 7) % 17);
+    var score = Math.round(940 - f * 860);
+    var strip = [];
+    for (var i = 0; i < pitches; i++) strip.push(['green', 'green', 'yellow', 'orange', 'red'][(rk + i * 3) % (f < 0.3 ? 3 : 5)]);
+    rows.push({
+      rank: rk, username: rk === mine ? 'mockplayer' : BOARD_NAMES[rk % BOARD_NAMES.length] + (rk > BOARD_NAMES.length ? rk : ''),
+      outcome: outcome, pitches: pitches, score: score, percentile: Math.round((1 - f) * 100), pitched_like: null,
+      strip: strip, mine: rk === mine, players: players,
+    });
+  }
+  return Promise.resolve(rows);
+}
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
   var mockIn = /[?&]mockAuth=1(&|$)/.test(location.search);
@@ -58,6 +89,7 @@ if (!window.STD_AUTH || FORCE) {
     onChange: function () { return function () {}; },
     signIn: none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
+    board: mockBoard,
     /* shutdoor_my_stats()'s shape (153, and tieHeld from 155), plus the
        bands and recent rows the device history also carries */
     myStats: function () {

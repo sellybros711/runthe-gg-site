@@ -462,6 +462,78 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .cmp-sum b { margin-right: 6px; font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
 .r-actions .btn.go { background: var(--signal); color: #fff; }
 
+/* the way to the board: the coach's card, its arrow in data blue */
+.coach-go.board-go { margin-top: 12px; background: linear-gradient(115deg, #26304a 0%, var(--night) 70%); }
+.board-go .cg-arrow { background: var(--data); }
+
+/* ---- the board: the ink panel with your rank, then the rows ---- */
+#s-board { padding: 4px 16px 32px; }
+.bd-back { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 8px 4px; margin: 0 0 4px; font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.bd-back i { width: 9px; height: 9px; border: solid currentColor; border-width: 0 0 2px 2px; transform: rotate(45deg); }
+.bd-hero { position: relative; overflow: hidden; padding: 18px 18px 18px; border-radius: 24px; color: var(--on-night); box-shadow: var(--shadow);
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 26px), linear-gradient(180deg, #1a2130, #0b0f17); }
+:root[data-theme="dark"] .bd-hero { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), var(--shadow); }
+.bd-hero > * { position: relative; }
+.bd-hero::before { content: ''; position: absolute; right: -46px; top: -44px; width: 150px; height: 150px; background: url(brand/mark.svg?v=1) center / contain no-repeat; opacity: .06; transform: rotate(-10deg); pointer-events: none; }
+.bd-head { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 64px; line-height: .9; margin: 4px 0 6px; text-transform: uppercase; color: #fff; }
+.bd-head::after { content: '.'; color: var(--signal); }
+.bd-hero .seam { margin-bottom: 14px; }
+.bd-rank { display: flex; align-items: baseline; gap: 10px; }
+.bd-rank b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 64px; line-height: .9; color: var(--signal); }
+.bd-rank span { font-family: var(--display); font-weight: 600; font-size: 16px; letter-spacing: .12em; text-transform: uppercase; color: rgba(244, 245, 247, .75); }
+.bd-me { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; }
+.bd-me .oc { font-size: 17px; padding: 8px 12px 7px; }
+.bd-me .fact { min-width: 76px; padding: 6px 12px 7px; flex-direction: row; align-items: baseline; gap: 6px; }
+.bd-me .fact b { font-size: 26px; }
+.bd-count { margin: 0 0 10px; font-size: 14px; color: rgba(244, 245, 247, .75); }
+.bd-count b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; color: #fff; margin-right: 2px; }
+.bd-in { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; padding-top: 12px; border-top: 1.5px dashed rgba(255, 255, 255, .16); }
+.bd-in p { margin: 0; flex: 1 1 180px; font-size: 14px; color: rgba(244, 245, 247, .85); }
+.bd-in .btn { min-height: 42px; padding: 8px 16px; }
+.bd-in .btn.take { width: auto; min-height: 46px; font-size: 21px; box-shadow: 0 2px 0 #c43a12; }
+/* the outcome as a chip, in the result screen's colours */
+.oc { display: inline-block; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 14px; line-height: 1; letter-spacing: .03em; text-transform: uppercase; padding: 5px 8px 4px; border-radius: 8px; white-space: nowrap; color: #fff; background: var(--green); }
+.oc.tie_held { background: var(--yellow); color: #2a2000; } .oc.doors_open { background: var(--orange); } .oc.walk_off { background: var(--red); }
+.oc.none { background: var(--panel-2); color: var(--faint); }
+.bd-list { padding: 14px 10px 8px; }
+.bd-lh { display: flex; align-items: baseline; justify-content: space-between; padding: 0 8px; margin: 0 0 8px; }
+.bd-lh b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 21px; text-transform: uppercase; }
+.bd-lh span { color: var(--dim); font-size: 13px; }
+.bd-cols-h, .bd-rows li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto 26px 40px; gap: 8px; align-items: center; }
+.bd-cols-h { padding: 0 8px 6px; border-bottom: 1px solid var(--line); font-family: var(--display); font-weight: 600; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+.bd-cols-h span:nth-child(n+4) { text-align: right; }
+.bd-rows { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; }
+.bd-rows li { padding: 9px 8px; border-bottom: 1px solid var(--line); border-radius: 12px; }
+.bd-rows li:last-child { border-bottom: 0; }
+.bd-rows .rk { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--panel-2); font-family: var(--display); font-style: italic; font-weight: 900; font-size: 16px; }
+.bd-rows li.top .rk { background: var(--ink); color: var(--bg); }
+.bd-rows .nm { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd-rows .nm em { font-style: normal; margin-left: 6px; font-family: var(--display); font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--signal); }
+.bd-rows .n { text-align: right; font-size: 14px; color: var(--dim); }
+.bd-rows .n.sc { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 19px; color: var(--ink); }
+.bd-rows li.mine { background: var(--signal-soft); box-shadow: inset 0 0 0 2px var(--signal); border-bottom-color: transparent; }
+.bd-rows li.mine .rk { background: var(--signal); color: #fff; }
+.bd-rows li.mine .n.sc { color: var(--signal); }
+.bd-rows li.gap { display: block; text-align: center; padding: 2px 0; color: var(--faint); letter-spacing: .3em; }
+.bd-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 34px 16px 30px; }
+.bd-empty img { border-radius: 14px; margin-bottom: 8px; }
+.bd-empty b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 26px; text-transform: uppercase; }
+.bd-empty p { margin: 0; color: var(--dim); font-size: 14px; }
+.bd-empty .btn { margin-top: 12px; }
+.bd-grid > .card { margin-top: 12px; }
+.bd-note { margin: 10px 4px 0; }
+
+/* ---- the share sheet: the card as drawn, its two sizes, then share, save and the text ---- */
+.share .sh-seg { margin: 0 0 12px; }
+.sh-prev { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-radius: 18px; overflow: hidden; background: var(--night); color: var(--on-night); font-size: 13px; box-shadow: var(--shadow); margin: 0 auto; max-width: 340px; }
+.sh-prev.tall { aspect-ratio: 1080 / 1350; }
+.sh-prev.wide { aspect-ratio: 1200 / 630; max-width: 100%; }
+.sh-prev img { display: block; width: 100%; height: 100%; }
+.sh-prev .load-mark { width: 44px; height: 44px; border-radius: 12px; background: url(brand/mark.svg?v=1) center / cover no-repeat; }
+.sh-act { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; }
+.sh-act .btn.go { background: var(--signal); color: #fff; }
+.sh-act .btn:disabled { opacity: .5; }
+
 /* ---- sheets ---- */
 .sheet { position: fixed; inset: 0; z-index: 50; background: rgba(5, 7, 12, .45); display: flex; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); }
 .sh-in { width: 100%; max-width: 520px; max-height: 88vh; max-height: 88dvh; overflow: auto; background: var(--bg); border-radius: 26px 26px 0 0; padding: 0 16px 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); box-shadow: var(--shadow); transform: translateY(30px); opacity: 0; transition: transform .22s, opacity .22s; }
@@ -617,6 +689,14 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   .r-hero { margin-top: 0; }
   .r-col > .card.r-like { margin-top: 0; }
   .outcome { font-size: 92px; }
+  /* the board on a desk: the panel on the left, the rows on the right */
+  body[data-screen="s-board"] .app { max-width: 1040px; }
+  #s-board { padding-top: 8px; }
+  .bd-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
+  .bd-grid > .card { margin-top: 0; }
+  .bd-side { position: sticky; top: 12px; }
+  .bd-head { font-size: 84px; }
+  .bd-list { padding: 18px 14px 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sh-in, .toast, .load-mark { transition: none; animation: none; }
