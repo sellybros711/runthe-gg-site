@@ -778,10 +778,10 @@ async function run(w, h, theme) {
   await page.click('#r-share');
   const toastSeen = await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 }).then(() => true, () => false);
   const sh = await page.evaluate(() => ({ said: window.STD_CHECK_TOAST, path: window.STD_CHECK_SHARE.join(', ') || 'nothing called',
-    coarse: matchMedia('(pointer: coarse)').matches, share: !!navigator.share, focus: document.hasFocus() }));
+    coarse: matchMedia('(pointer: coarse)').matches, share: !!navigator.share, focus: document.hasFocus(), result: !!(window.STD_UI && window.STD_UI.state && window.STD_UI.state.result) }));
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
   ok(toastSeen && /^copied/.test(sh.said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
-    '6 share copies the share text (toast "' + sh.said + '"' + (toastSeen ? '' : '; no toast in 10 s: ' + sh.path + ', pointer coarse ' + sh.coarse + ', share sheet ' + sh.share + ', focus ' + sh.focus + ', clipboard "' + clip.slice(0, 60) + '"') + ')');
+    '6 share copies the share text (toast "' + sh.said + '"' + (toastSeen ? '' : '; no toast in 10 s: ' + sh.path + ', pointer coarse ' + sh.coarse + ', share sheet ' + sh.share + ', focus ' + sh.focus + ', a result ' + sh.result + ', clipboard "' + clip.slice(0, 60) + '", page errors so far: ' + (errors.slice(-3).join(' | ') || 'none')) + ')');
   await shot('shared');
 
   /* 12, on the real engine */
