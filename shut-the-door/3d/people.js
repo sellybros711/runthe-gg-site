@@ -21,9 +21,12 @@ const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
 // the bat's sweet spot: 28 in up it from the knob (gear3d.js bat, 34 in long, the knob at its origin)
 const SWEET = 28 * 0.0254;
-// how far the swing may be slid to meet the ball (seconds of capture time, from its fastest barrel:
-// the three swings measured 0.04 to 0.21 s late)
-const MEET = [-0.05, 0.25];
+// how far the swing may be slid to meet the ball (seconds of capture time, from its fastest barrel).
+// The sweet spot reaches the ball 0.04 to 0.21 s late, but past about +0.07 s the capture's bat has
+// slowed to a near stop (swing3R at +0.21 s: 11 mph, from 25 at its peak), so the bat stalls on the
+// ball in motion. The cap keeps contact in the fast part of the swing; what is left of the miss is
+// where the bat is in his hands, not when.
+const MEET = [-0.05, 0.07];
 
 const UNIFORM = new Set(['uniform', 'socks', 'gloves', 'undershirt', 'belt', 'number']);
 
@@ -712,9 +715,10 @@ export class People {
 
   /* When his swing meets the ball. tContact is the capture's fastest barrel, and that comes before
      the bat is out where the ball is: timed on it, the sweet spot was 3 to 5 ft behind the ball's
-     contact point when the ball left the bat, and got there 0.04 to 0.21 s of capture time later. So the swing is slid in time, nothing else:
-     the capture time is found at which his sweet spot is nearest the point where the ball is met
-     (pitch.js flight, at the play's contactShift), and that moment is put on the contact. Every
+     contact point when the ball left the bat, and got there 0.04 to 0.21 s of capture time later.
+     So the swing is slid in time, nothing else: within MEET, the capture time is found at which his
+     sweet spot is nearest the point where the ball is met (pitch.js flight, at the play's
+     contactShift), and that moment is put on the contact. Every
      pose is his own, only when it comes changes. Returns the slide in seconds of capture time. */
   meetTime(b) {
     const pt = this.pitch, M = pt.pointAt(pt.f.T + this.m.contactShift), tC = b.tContact;
