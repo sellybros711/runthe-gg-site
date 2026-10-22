@@ -69,6 +69,13 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
 - `ps_attempt_day_end` never stamps a lock that has already run out (`154_dynasty_day_end_lapsed.sql`).
   Stamping one turned a countdown at zero into a fresh 24 hours.
 
+**Overtime**
+
+- Overtime follows the NFL's playoff rules (the owner's call, 2026-10-22): a toss, 15 minute periods,
+  both sides possess, then the next score wins, and a defensive score on the first possession ends it.
+  `otPlanFor` in `engine.js` is the one place that decides it; the broadcast and the drive picture play
+  its plan (`script.ot`) and never invent a possession of their own.
+
 **The Fantasy Challenge**
 
 - **A price never moves once anybody has drafted against it.** The board is written on the Tuesday
