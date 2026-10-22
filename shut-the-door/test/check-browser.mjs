@@ -780,6 +780,10 @@ async function run(w, h, theme) {
   const sh = await page.evaluate(() => ({ said: window.STD_CHECK_TOAST, path: window.STD_CHECK_SHARE.join(', ') || 'nothing called',
     coarse: matchMedia('(pointer: coarse)').matches, share: !!navigator.share, focus: document.hasFocus(), result: !!(window.STD_UI && window.STD_UI.state && window.STD_UI.state.result) }));
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
+  if (!toastSeen) {
+    // a miss: does the button answer a click from script? (separates a handler that never runs from a tap that never lands)
+    sh.path += '; then a script click: ' + await page.evaluate(async () => { const n = window.STD_CHECK_SHARE.length; document.getElementById('r-share').click(); await new Promise((r) => setTimeout(r, 1500)); return (window.STD_CHECK_SHARE.slice(n).join(', ') || 'nothing') + ', toast "' + window.STD_CHECK_TOAST + '"'; });
+  }
   ok(toastSeen && /^copied/.test(sh.said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
     '6 share copies the share text (toast "' + sh.said + '"' + (toastSeen ? '' : '; no toast in 10 s: ' + sh.path + ', pointer coarse ' + sh.coarse + ', share sheet ' + sh.share + ', focus ' + sh.focus + ', a result ' + sh.result + ', clipboard "' + clip.slice(0, 60) + '", page errors so far: ' + (errors.slice(-3).join(' | ') || 'none')) + ')');
   await shot('shared');
@@ -903,6 +907,8 @@ try {
 } catch (e) {
   fails++;
   console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));
+  // Playwright's call log says why an action waited (not visible, not stable, another element on top)
+  if (e && e.message && e.message.includes('\n')) console.log('       ' + e.message.split('\n').slice(1).filter((l) => l.trim()).slice(-6).map((l) => l.trim()).join(' / '));
 }
 await browser.close();
 server.close();
