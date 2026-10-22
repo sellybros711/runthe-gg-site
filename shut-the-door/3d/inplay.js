@@ -14,7 +14,9 @@
  *   ip.end(camera)                                                back to the set (the next pitch)
  */
 import * as THREE from 'three';
-import { planPlay, warp, realAt, BASE } from './inplay-plan.js?v=2';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { planPlay, warp, realAt, BASE, wallDist } from './inplay-plan.js?v=2';
 import { Crew } from './fielders.js?v=1';
 import { buildBallpark } from './ballpark.js?v=2';
 import { kitFor } from './people.js?v=31';
@@ -26,6 +28,9 @@ const smooth = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
 const ramp = (s, a, b) => smooth((s - a) / (b - a));
 const bump = (s, a, b, c, d) => ramp(s, a, b) * (1 - ramp(s, c, d));
 const D2R = Math.PI / 180;
+// the fielders' and runners' clips (lab/pipeline/build_people.py 'fielder'), with their content hash
+// as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
+const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).href;
 const OF = [7, 8, 9];
 const CYCLE = { fielder: 13.5, runner: 14.5 };          // feet run per full stride cycle (two steps)
 
@@ -47,6 +52,10 @@ export class InPlay {
     this.trail = makeTrail(scene);
     this.setFacts(facts);
     this.active = null;
+    // the clips come after the scene is up; until then (or without them) the motion is procedural
+    this.motion = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(MOTION)
+      .then((g) => { this.crew.setMotion(g); return true; })
+      .catch(() => false);
   }
 
   /** The kits: the fielders in the closer's club (kitFor 'us'), the runners in the hitters' club. */
@@ -103,11 +112,23 @@ export class InPlay {
     };
   }
 
+  /** Each body's stride phase over the play, from its speed (fielders and runners): made once the
+      clips are in (their strides set it). */
+  phases() {
+    const A = this.active, plan = A.plan;
+    if (A.phased === !!this.crew.clips) return;
+    A.phased = !!this.crew.clips;
+    const T1 = plan.dur + 3, trot = plan.kind === 'hr';
+    for (let n = 1; n <= 9; n++) { const tr = plan.fielders[n]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); }
+    for (const r of plan.runners) r.phase = this.crew.phaseTable((t) => r.track.at(t).spd, 0, T1, trot);
+  }
+
   /** The play at plan time s (seconds after contact): everyone placed and posed, the ball, the cut. */
   update(s, camera) {
     const A = this.active;
     if (!A) return;
     const plan = A.plan;
+    this.phases();
     const piece = pieceAt(plan.edit, s);
     const broadcast = piece.cam !== 'pitcher';
     // ---- the cut: the broadcast hides the set's own hitter (a runner takes his place) and, when the
@@ -128,8 +149,8 @@ export class InPlay {
     this.renderer.shadowMap.autoUpdate = !broadcast;
     // ---- the ball
     const b = plan.ballAt(s);
-    // ---- the camera
-    if (broadcast) {
+    // ---- the camera (a page with its own camera, the lab's free one, keeps it: ip.ownCamera = false)
+    if (broadcast && this.ownCamera !== false) {
       if (A.fov0 == null) A.fov0 = camera.fov;
       const c = this.cameraAt(piece, s, camera.aspect);
       camera.position.copy(P(c.pos.x, c.pos.y, c.pos.z));
@@ -137,13 +158,13 @@ export class InPlay {
       camera.fov = c.fov;
       camera.updateProjectionMatrix();
       camera.updateMatrixWorld();
-    } else if (A.fov0 != null) { camera.fov = A.fov0; camera.updateProjectionMatrix(); A.fov0 = null; }
+    } else if (this.ownCamera !== false && A.fov0 != null) { camera.fov = A.fov0; camera.updateProjectionMatrix(); A.fov0 = null; }
     // only the bodies in the frame are posed (and whoever has the ball, or is about to)
     _frustum.setFromProjectionMatrix(_mat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     const nx = this.nextCatch(s);
     // (nobody is drawn within a few strides of the lens: a body filling the frame is never the shot)
     const camF = { x: -camera.position.x / FT, y: camera.position.z / FT };
-    const inView = (x, y, n) => Math.hypot(x - camF.x, y - camF.y) > 14 && (n === b.by || (nx && n === nx.by) || _frustum.intersectsSphere(_sph.set(P(x, y, 3), 2.2)));
+    const inView = (x, y, n) => this.ownCamera === false || Math.hypot(x - camF.x, y - camF.y) > 14 && (n === b.by || (nx && n === nx.by) || _frustum.intersectsSphere(_sph.set(P(x, y, 3), 2.2)));
     // ---- the fielders
     for (let n = 1; n <= 9; n++) {
       const f = this.fielders[n];
@@ -216,9 +237,22 @@ export class InPlay {
     const plan = this.active.plan, tr = plan.fielders[n];
     const st = tr.at(s);
     const acts = tr.acts;
-    const find = (kind) => acts.filter((a) => a.kind === kind);
+    // a run that ends at full speed (an outfielder running a ball down) does not stop dead: he
+    // carries on a few strides and slows (short of the wall)
+    let glide = 0;
+    if (tr.legs.length && s > tr.free) {
+      const e = tr.at(tr.free - 1e-3);
+      if (e.spd > 4 && e.head != null) {
+        const k = s - tr.free, tau = 0.32, d = e.spd * tau * (1 - Math.exp(-k / tau));
+        const nx = st.x + Math.sin(e.head) * d, ny = st.y + Math.cos(e.head) * d;
+        const r = Math.hypot(nx, ny), lim = wallDist(Math.atan2(nx, ny) / D2R) - 2.5;
+        const kk = r > lim ? Math.max(0, (lim - Math.hypot(st.x, st.y)) / Math.max(1e-3, r - Math.hypot(st.x, st.y))) : 1;
+        st.x += (nx - st.x) * kk; st.y += (ny - st.y) * kk;
+        st.spd = e.spd * Math.exp(-k / tau) * kk; st.head = e.head; glide = d * kk;
+      }
+    }
     const spd = st.spd;
-    const spec = { run: { phase: 2 * Math.PI * st.run / CYCLE.fielder, amp: clamp(spd / 26, 0, 1.1) }, crouch: 0, lean: 0, look: { x: ball.x, y: ball.y, z: ball.z } };
+    const spec = { run: { phase: this.crew.clips ? tr.phase.at(s) + 2 * Math.PI * glide / this.crew.clips.run.strideFt : 2 * Math.PI * st.run / CYCLE.fielder, amp: clamp(spd / 26, 0, 1.1) }, crouch: 0, lean: 0, idleT: s + n * 0.83, look: { x: ball.x, y: ball.y, z: ball.z }, lookW: spd > 6 ? 0.55 : 1 };
     // ready at the pitch, standing tall once he is out of it
     const inf = !OF.includes(n);
     spec.crouch = (inf ? 0.32 : 0.18) * (1 - ramp(s, 0.15, 0.6));
@@ -284,7 +318,9 @@ export class InPlay {
           spec.twist = k < 1 ? -1.0 + 1.4 * smooth(clamp((k - 0.3) / 0.7, 0, 1)) : 0.4 + 0.5 * smooth(k - 1);
           spec.twist *= w;
           spec.lean = Math.max(spec.lean, (k < 1 ? 0.1 + 0.3 * smooth(k) : 0.4 + 0.25 * smooth(k - 1)) * w);
-          spec.stride = { l: 0.45 * smooth(clamp(k, 0, 1)) * w, r: -0.35 * smooth(clamp(k, 0, 1)) * w };
+          // the stride toward the target and the weight onto it (a crow hop is not built yet)
+          spec.stride = { l: 0.62 * smooth(clamp(k, 0, 1)) * w, r: -0.45 * smooth(clamp(k, 0, 1)) * w };
+          spec.crouch = Math.max(spec.crouch, 0.16 * w * Math.sin(Math.PI * clamp(k / 2, 0, 1)));
           if (f.glove === 'r') spec.stride = { l: spec.stride.r, r: spec.stride.l };
           faceYaw = heading(st, a.to);
           spec.look = { x: a.to.x, y: a.to.y, z: 4 };
@@ -358,7 +394,8 @@ export class InPlay {
       spd = 9 * Math.exp(-k / 0.9) / 0.9 + (k > 0.6 ? 3.5 : 0); head = d0; run = st.run + dist;
     }
     const lead = s < 0.25 && r.from >= 1;
-    const spec = { run: { phase: 2 * Math.PI * run / CYCLE.runner + r.from, amp: walk ? 0.22 : clamp(spd / 26, 0, 1.1) }, crouch: lead ? 0.3 : 0, wide: lead ? 0.6 : 0, lean: walk ? 0.1 : 0, look: { x: ball.x, y: ball.y, z: ball.z } };
+    const ph = this.crew.clips ? r.phase.at(ss) + 2 * Math.PI * (run - st.run) / this.crew.clips.jog.strideFt : 2 * Math.PI * run / CYCLE.runner + r.from;
+    const spec = { idleT: s + r.from * 1.1, run: { phase: ph, trot: this.active.plan.kind === 'hr', amp: walk ? 0.22 : clamp(spd / 26, 0, 1.1) }, crouch: lead ? 0.3 : 0, wide: lead ? 0.6 : 0, lean: walk ? 0.1 : 0, look: { x: ball.x, y: ball.y, z: ball.z } };
     // the slide: feet first over his last few strides, down a beat, then up
     if (r.slide != null) {
       const t = r.slide, k = bump(s, t - 0.5, t - 0.28, t + 0.55, t + 1.0);
@@ -462,7 +499,7 @@ export class InPlay {
     }
     if (cam === 'follow') {
       // a throw coming: its target is in the frame
-      const ahead = plan.kind === 'ground_play' ? 1.5 : 0.9;
+      const ahead = 0.6;
       const th = plan.segs.find((sg) => sg.kind === 'throw' && sg.t0 > s - 0.1 && sg.t0 < s + ahead);
       if (th) pts.push({ x: th.b.x, y: th.b.y, z: 0 }, { x: th.b.x, y: th.b.y, z: 6 });
       // a ball in the air: where it comes down (or leaves the park) is in the frame, so the sky has

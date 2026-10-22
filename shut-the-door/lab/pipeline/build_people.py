@@ -259,6 +259,25 @@ PEOPLE = {
         clips=[('idle', 'mixamo/Baseball Catcher.fbx', 430, 550, False, {'l': 'grip', 'r': 'relaxed'}),
                ('rise', 'mixamo/Baseball Catcher.fbx', 60, 150, False, {'l': 'grip', 'r': 'relaxed'})],
     ),
+    # The fielders' and runners' motion, on the catcher's body and rig (the scene draws the fielders
+    # from the catcher's meshes: 3d/fielders.js). Motion only: the meshes are dropped before export.
+    # The owner's Mixamo runs (30 fps files, so every frame: speed 1), one stride cycle each (the
+    # last frame is the first again), and the CMU Graphics Lab's baseball pitch (subject 124, take 1,
+    # a right hander) from the cocked arm to the follow through, for the throwing trunk and arms.
+    'fielder': dict(
+        name='fielder', skin='young_african_male', skin_size=1024,
+        shape=dict(age=0.55, muscle=0.72, weight=0.68, height=0.6, race={'african': 0.6, 'caucasian': 0.3, 'asian': 0.1}),
+        hair='hair/short04/short04',
+        uniform=True,
+        clothes=[dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1))],
+        gear=[],
+        motion_only=True,
+        clips=[('sprint', 'mixamo/Sprint.fbx', 1, 17, False, 'relaxed', 1.0),
+               ('run', 'mixamo/Fast_Run.fbx', 1, 17, False, 'relaxed', 1.0),
+               ('jog', 'mixamo/Jog_Forward.fbx', 1, 26, False, 'relaxed', 1.0),
+               ('idle', 'mixamo/Baseball_Milling_Idle.fbx', 121, 201, False, 'relaxed', 1.0),
+               ('throw', '124/124_01.bvh', 85, 140, False, {'l': 'relaxed', 'r': 'grip'}, 1.0)],
+    ),
     'umpire': dict(
         name='umpire', skin='middleage_caucasian_male', skin_size=1024,
         shape=dict(age=0.68, muscle=0.5, weight=0.72, height=0.7, race={'caucasian': 0.7, 'african': 0.2, 'asian': 0.1}),
@@ -289,11 +308,18 @@ def build(who):
             fn = getattr(gear, g)
             fn(h, arm, full, color=UMP_NAVY if g == 'ump_bulk' else TEAM)
         bpy.data.objects.remove(full, do_unlink=True)
-    for (clip, path, a, b, mirror, hands) in cfg['clips']:
+    for (clip, path, a, b, mirror, hands, *rest) in cfg['clips']:
+        kw = {'speed': rest[0]} if rest else {}
         if path.endswith('.fbx'):
-            retarget.apply_fbx(arm, f'{ASSETS}/{path}', clip, a, b, mirror=mirror, hands=hands)
+            retarget.apply_fbx(arm, f'{ASSETS}/{path}', clip, a, b, mirror=mirror, hands=hands, **kw)
         else:
-            retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands)
+            retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands, **kw)
+    if cfg.get('motion_only'):
+        # the skeleton and its clips only (the scene has the body already)
+        for o in [o for o in bpy.data.objects if o.type != 'ARMATURE']:
+            bpy.data.objects.remove(o, do_unlink=True)
+        export(who)
+        return
     export(who)
     # the model's own height, for the scene to scale each player to his real one
     fn = os.path.join(HERE, '..', '..', '3d', 'assets', 'uniform.json')

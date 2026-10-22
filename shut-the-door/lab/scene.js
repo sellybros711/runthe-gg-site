@@ -74,7 +74,8 @@ async function main() {
   // the ball in play: the fielders, the runners and the broadcast, built once (inplay.js)
   const ipl = pr ? new InPlay({ scene, renderer, people, facts }) : null;
   const run = ipl ? ipl.begin(pr, pitch, {}) : null;
-  if (run) { lab.plan = run.plan; lab.realDur = run.realDur; }
+  if (ipl && (Q.has('cam') || Q.has('watch'))) ipl.ownCamera = false;      // the lab's own camera (cam=free) watches the play
+  if (run) { lab.plan = run.plan; lab.realDur = run.realDur; lab.ipl = ipl; }
   const shot = setupCamera(facts);
   // the play by play line (the game shows its own under the scoreboard): once the pitch has its result
   const note = document.getElementById('note');
@@ -88,17 +89,30 @@ async function main() {
     people.update(ts, dt);
     shot.update(ts);                    // after the people: the head camera follows a head
     if (s != null) ipl.update(s, camera);
+    if (s != null && Q.has('watch')) watch(ipl, Q.get('watch'));
     stands.userData.tick(ts);
     const show = t > resultAt + 0.3 && !Q.has('nopbp');
     if (show !== lab.pbpShown) { note.textContent = show ? lab.pbp : ''; lab.pbpShown = show; }
   };
   // pose the first moment and compile every shader before the first frame, without blocking
   update(FREEZE ?? 0, 0);
-  if (ipl) ipl.warm(true);
+  if (ipl) { await ipl.motion; ipl.warm(true); }
   await renderer.compileAsync(scene, camera);
   if (ipl) { ipl.warm(false); update(FREEZE ?? 0, 0); }
   mark('compiled');
   start(update, () => shot.resize());
+}
+
+/** A close look at one body of the ball in play (&watch=f6 a fielder by scoring number, r0 the
+    first runner): the camera beside him, ?wd metres off, ?wa degrees round from his right side. */
+function watch(ipl, id) {
+  const f = id[0] === 'r' ? ipl.runnerFigs[+id.slice(1)] : ipl.fielders[+id.slice(1)];
+  if (!f) return;
+  const p = f.root.position, d = parseFloat(Q.get('wd') || '6'), a = THREE.MathUtils.degToRad(parseFloat(Q.get('wa') || '0'));
+  const yaw = -(f.yaw || 0), side = new THREE.Vector3(Math.cos(yaw + a), 0, -Math.sin(yaw + a));
+  camera.position.set(p.x + side.x * d, 1.3, p.z + side.z * d);
+  camera.lookAt(p.x, 0.95, p.z);
+  camera.fov = 30; camera.updateProjectionMatrix();
 }
 
 /** The engine's PitchResult for a ball in play, from the URL (see the header): the result label and

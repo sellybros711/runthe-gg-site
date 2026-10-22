@@ -102,7 +102,8 @@ commercial. They do not let the raw files be redistributed on their own. So:
 
 - the raw FBX files are never committed, here or anywhere public. They stay outside the repo, and
   `shut-the-door/.gitignore` refuses any `*.fbx` under this folder;
-- only the retargeted, baked clips inside our own `batter.glb`, `catcher.glb` and `umpire.glb` ship:
+- only the retargeted, baked clips inside our own `batter.glb`, `catcher.glb`, `umpire.glb` and
+  `fielder.glb` (motion only, no mesh) ship:
   fitted to the MakeHuman rig (rest pose aligned, limbs only, the collar bones left to `people.js`),
   resampled to 30 fps and compressed with the meshes. They cannot be pulled back out as Mixamo files.
 
@@ -115,13 +116,31 @@ commercial. They do not let the raw files be redistributed on their own. So:
 | `rise` (catcher) | Baseball Catcher (60-150) | coming up out of the crouch after a ball in play or a hit batsman | trunk and legs only (the glove arm is our own) |
 | `idle` (umpire) | Crouching Idle (1-151) | life in the slot stance | the stance's depth and lean are our own posing over it; the twist bones of the upper arms held at rest |
 | `call` (umpire) | Baseball Umpire (1-158) | rising into the strike call | blended in from the stance |
+| `sprint` (fielder) | Sprint (1-17, a 30 fps file, every frame) | fielders and runners at full speed (a ball in play) | one stride cycle; its forward travel taken out at run time (in place, the bob kept) and its phase driven by the distance run (`fielders.js`) |
+| `run` (fielder) | Fast Run (1-17, 30 fps) | the same, between a jog and a sprint | as above, blended by speed |
+| `jog` (fielder) | Jog Forward (1-26, 30 fps) | starting off, backing up a play, the home run trot | as above |
+| `idle` (fielder) | Baseball Milling Idle, the second download (121-201, 30 fps) | a little life on the trunk, arms and head of a standing fielder | at 45% over the standing pose, never on the legs (its feet wander) |
 
 The catcher's crouch, reach, framing and block, the umpire's slot stance and his foul and hit
 batsman signals, the hit batter's flinch, the swing's kinetic chain, planted feet and collar bones
 are procedural (`people.js`, `motion.js`) laid over those clips.
 
-The pipeline still reads CMU motion capture BVH (`retarget.py`, spec `CMU`), which these files used
-before Mixamo. No CMU clip ships any more.
+Mixamo has no fielding clips (its baseball set is batting only), so fielding a grounder, the
+catch (two bone IK puts the glove's pocket on the ball), taking a throw, the tag, the dive, the leap
+at the wall and the slide are procedural (`3d/fielders.js`), laid over the runs and the idle.
+
+### Motion: Carnegie Mellon University motion capture (the throw)
+
+"The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with
+funding from NSF EIA-0196217." CMU's terms: free for all uses. Taken from the BVH conversion in the
+Internet Archive item `cmu-ecstasy-motion-bvh-poser-friendly-2012`
+(https://archive.org/details/cmu-ecstasy-motion-bvh-poser-friendly-2012, marked Public Domain Mark 1.0),
+the same files this lab used before Mixamo. The pipeline reads them with `retarget.py` (spec `CMU`).
+
+| clip | CMU take | used for | changed |
+|---|---|---|---|
+| `throw` (fielder) | 124_01 "Baseball Pitch", frames 85-140 (the arm cocked, the release at frame 112, the follow through) | a fielder's throw: the trunk and arms only, the release laid on the plan's | fitted to the MakeHuman rig as it is (a right handed thrower); quickened about 1.5 times (a fielder's throw, not a pitch); the legs' stride is procedural |
+
 
 ## Data
 

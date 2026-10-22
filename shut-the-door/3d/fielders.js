@@ -9,10 +9,18 @@
  * distance they are a pixel or two. Shadows are soft blobs on the grass (the sun's shadow map covers
  * the plate only).
  *
- * The motion is procedural (no clip yet: the Mixamo list in the pull request says which would
- * replace each part): a run cycle timed to the distance covered (the feet move as far as the body),
- * the ready crouch, fielding a grounder, a catch, a throw, taking a throw, a dive, a leap at the wall.
- * Every pose is a pure function of the plan's time, so slow motion and a skip land on the same frame.
+ * The motion (crew.setMotion, assets/fielder.glb, built by lab/pipeline/build_people.py 'fielder'):
+ *   the run      Mixamo's Jog Forward, Fast Run and Sprint (the owner's downloads), blended by speed,
+ *                in place (the clip's own travel taken out), the stride's phase advanced by the
+ *                distance covered, so the feet move as far as the body does
+ *   standing     a little of Mixamo's Baseball Milling Idle on the trunk, arms and head
+ *   the throw    the trunk and arms of the CMU Graphics Lab's baseball pitch (subject 124, take 1),
+ *                its release on the plan's release, quickened for a fielder
+ * and procedural posing for everything Mixamo has no clip of: the ready crouch, fielding a grounder,
+ * a catch (two bone IK puts the glove's pocket on the ball), taking a throw, a tag, a dive, a leap at
+ * the wall, a slide, the legs' stride in a throw. Without the clips the run and the throw are
+ * procedural too. Every pose is a pure function of the plan's time, so slow motion and a skip land
+ * on the same frame.
  *
  *   const crew = new Crew(scene, catcherPerson)
  *   const f = crew.figure()            a new body (hidden), crew.dress(f, kit, { tone, glove, helmet })
@@ -84,8 +92,18 @@ function buildTemplate(person) {
     g.applyMatrix4(m.bindMatrix);              // into skeleton space
     parts.push(g);
   }
-  // the bones' bind pose in skeleton space, from the inverse bind matrices
-  const world = sk.boneInverses.map((m) => m.clone().invert());
+  // the bones' bind pose in skeleton space, from the inverse bind matrices. gltfpack quantizes the
+  // positions (the skeleton space is then in its integer units): everything is brought to metres
+  // here (a 1.8 m body), so the glove, the cap and every offset below can be said in metres
+  let world = sk.boneInverses.map((m) => m.clone().invert());
+  const box0 = new THREE.Box3();
+  for (const g of parts) { g.computeBoundingBox(); box0.union(g.boundingBox); }
+  const S = 1.8 / (box0.max.y - box0.min.y);
+  const Sm = new THREE.Matrix4().makeScale(S, S, S);
+  for (const g of parts) g.applyMatrix4(Sm);
+  // (the skeleton space scaled: every bone's frame keeps its own units, so a clip's pelvis travel,
+  // given in the root bone's frame, still means what it meant)
+  world = world.map((m) => Sm.clone().multiply(m));
   // measure the head and the left hand from the skin they carry (bind pose)
   const merged0 = mergeGeometries(parts.map((g) => (g.index ? g : g)));
   const box = (boneName, minW = 0.5) => {
@@ -116,9 +134,10 @@ function buildTemplate(person) {
     const along = mp.clone().sub(hp).normalize();
     const out = V(s === 'l' ? 1 : -1, 0, 0);           // the A pose: the palm faces the body
     const side = V().crossVectors(along, out).normalize();
-    const g = new THREE.SphereGeometry(1, 12, 8);
-    g.scale(0.085, 0.13, 0.05);
-    g.applyMatrix4(new THREE.Matrix4().makeBasis(side, along, out).setPosition(c.clone().addScaledVector(along, 0.06).addScaledVector(out, -0.03)));
+    // a fielder's glove is far bigger than the hand: about 28 cm long, 20 wide, a pocket in front of the palm
+    const g = new THREE.SphereGeometry(1, 14, 10);
+    g.scale(0.09, 0.135, 0.05);
+    g.applyMatrix4(new THREE.Matrix4().makeBasis(side, along, out).setPosition(c.clone().addScaledVector(along, 0.075).addScaledVector(out, -0.045)));
     g.deleteAttribute('uv');
     parts.push(rigid(g, index[`hand_${s}`], s === 'l' ? PART.gloveL : PART.gloveR));
   }
@@ -135,7 +154,7 @@ function buildTemplate(person) {
     const hb = box(`hand_${s}`, 0.3), c = hb.getCenter(V());
     return c.applyMatrix4(world[index[`hand_${s}`]].clone().invert());
   };
-  return { geometry, names, index, parents: sk.bones.map((b) => names.indexOf(b.parent && b.parent.name)), world, inverses: sk.boneInverses.map((m) => m.clone()), modelH, foot: Math.min(world[index.foot_l].elements[13], world[index.foot_r].elements[13]) - all.min.y, minY: all.min.y, pocketL: pocket('l'), pocketR: pocket('r') };
+  return { geometry, names, index, parents: sk.bones.map((b) => names.indexOf(b.parent && b.parent.name)), world, inverses: world.map((m) => m.clone().invert()), modelH, foot: Math.min(world[index.foot_l].elements[13], world[index.foot_r].elements[13]) - all.min.y, minY: all.min.y, pocketL: pocket('l'), pocketR: pocket('r') };
 }
 
 /** The material all figures share the program of: a standard material coloured per part. */
@@ -184,6 +203,62 @@ export class Crew {
     this.blobs.visible = false;
     scene.add(this.blobs);
     this._m = new THREE.Matrix4();
+  }
+
+  /** The clips (assets/fielder.glb, parsed): their tracks by bone, and for each run its stride (the
+      distance its own capture travels in one cycle, taken out so it runs in place). */
+  setMotion(gltf) {
+    const names = this.t.names, idx = Object.fromEntries(names.map((n, i) => [n, i]));
+    const LOOP = { sprint: 16 / 30, run: 16 / 30, jog: 25 / 30 };
+    const clips = {};
+    for (const a of gltf.animations) {
+      const tracks = [];
+      for (const tr of a.tracks) {
+        const [node, prop] = tr.name.split('.');
+        if (!(node in idx) || (prop !== 'quaternion' && prop !== 'position')) continue;
+        if (prop === 'position' && node !== 'pelvis') continue;
+        tracks.push({ i: idx[node], q: prop === 'quaternion', interp: tr.createInterpolant() });
+      }
+      const c = { name: a.name, dur: a.duration, period: LOOP[a.name] || a.duration, tracks };
+      // the pelvis' travel over one cycle (a run goes forward; it is taken out, the bob kept)
+      const pt = tracks.find((x) => !x.q);
+      if (pt) {
+        const p0 = V().fromArray(pt.interp.evaluate(0)), p1 = V().fromArray(pt.interp.evaluate(c.period));
+        c.p0 = p0; c.drift = LOOP[a.name] ? p1.clone().sub(p0) : V();
+      }
+      clips[a.name] = c;
+    }
+    this.clips = clips;
+    // a stride (two steps) in field feet, at this body's size
+    const rs = new THREE.Vector3().setFromMatrixScale(this.t.world[this.t.index.Root]).x;   // the root bone's frame
+    const sc = rs * HEIGHT_M / this.t.modelH;
+    for (const k of ['sprint', 'run', 'jog']) if (clips[k]) clips[k].strideFt = clips[k].drift.length() * sc / FT;
+  }
+
+  /** The run's mix at a speed (feet a second): weights of jog, run and sprint, and the stride that
+      mix covers. A trot is the jog whatever the speed. */
+  runMix(v, trot) {
+    const C = this.clips;
+    let w;
+    if (trot) w = { jog: 1, run: 0, sprint: 0 };
+    else if (v < 9) w = { jog: 1, run: 0, sprint: 0 };
+    else if (v < 16) { const k = smooth((v - 9) / 7); w = { jog: 1 - k, run: k, sprint: 0 }; }
+    else { const k = smooth((v - 16) / 7); w = { jog: 0, run: 1 - k, sprint: k }; }
+    const stride = w.jog * C.jog.strideFt + w.run * C.run.strideFt + w.sprint * C.sprint.strideFt;
+    return { w, stride };
+  }
+
+  /** A body's phase through its stride at each moment (radians), from its speed along the plan: a
+      table over the play, so the phase advances with the distance at the stride its speed calls for. */
+  phaseTable(speedAt, t0, t1, trot) {
+    const dt = 1 / 60, n = Math.ceil((t1 - t0) / dt) + 2, out = new Float32Array(n);
+    let ph = 0;
+    for (let i = 0; i < n; i++) {
+      out[i] = ph;
+      const v = speedAt(t0 + i * dt);
+      if (this.clips) ph += 2 * Math.PI * v * dt / this.runMix(v, trot).stride;
+    }
+    return { t0, dt, out, at: (t) => { const x = clamp((t - t0) / dt, 0, n - 1.001), i = Math.floor(x); return out[i] + (out[i + 1] - out[i]) * (x - i); } };
   }
 
   /** A new body on its own skeleton (hidden until placed). */
@@ -257,12 +332,18 @@ export class Crew {
 /* ------------------------------------------------------------------ one body */
 
 const X = V(1, 0, 0), Y = V(0, 1, 0);
+// the trunk, arms and head: what the throw and the idle lay on (the legs stay the run's or our own)
+const UPPER = new Set(['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head', 'clavicle_l', 'clavicle_r', 'deltoid_l', 'deltoid_r',
+  ...['l', 'r'].flatMap((s) => ['upperarm', 'upperarm_twist', 'lowerarm', 'lowerarm_twist', 'hand', 'index_01', 'index_02', 'index_03', 'middle_01', 'middle_02', 'middle_03', 'ring_01', 'ring_02', 'ring_03', 'pinky_01', 'pinky_02', 'pinky_03', 'thumb_01', 'thumb_02', 'thumb_03'].map((b) => `${b}_${s}`))]);
 const _q = new THREE.Quaternion();
 
 export class Figure {
   constructor(crew, root, mesh, bones) {
     Object.assign(this, { crew, root, mesh, bones });
     this.bind = Object.values(bones).map((b) => [b, b.position.clone(), b.quaternion.clone()]);
+    this.list = crew.t.names.map((n) => bones[n]);
+    this.qa = this.list.map(() => new THREE.Quaternion()); this.qb = this.list.map(() => new THREE.Quaternion());
+    this.qp = this.list.map(() => new THREE.Quaternion());
     this.at = { x: 0, y: 0 };
     this.scale = HEIGHT_M / crew.t.modelH;
     root.updateMatrixWorld(true);
@@ -324,12 +405,15 @@ export class Figure {
     root.position.set(0, 0, 0); root.quaternion.identity(); root.scale.setScalar(1);
     root.updateMatrixWorld(true);
     const sp = spec;
+    const clips = this.crew.clips;
     const run = sp.run || { phase: 0, amp: 0 };
-    const a = clamp(run.amp, 0, 1.2);
+    // with the clips the stride is the capture's (laid over this standing pose below)
+    const aRun = clamp(run.amp, 0, 1.2), a = clips ? 0 : aRun;
+    const useThrowClip = clips && clips.throw && sp.throwW > 0 && this.glove !== 'r';   // (the capture throws right handed)
     const crouch = sp.crouch || 0, wide = sp.wide || 0;
     const lean = (sp.lean || 0) + 0.2 * a - 0.95 * (sp.slide || 0);
     // ---- the trunk: lean forward, turn
-    const tw = (sp.twist || 0), runTw = 0.12 * a * Math.sin(run.phase);
+    const tw = useThrowClip ? 0 : (sp.twist || 0), runTw = 0.12 * a * Math.sin(run.phase);
     rotY(B.pelvis, tw * 0.35 - runTw * 0.6);
     rotX(B.spine_01, lean * 0.35); rotX(B.spine_02, lean * 0.35); rotX(B.spine_03, lean * 0.3);
     rotY(B.spine_02, tw * 0.35 + runTw * 0.5); rotY(B.spine_03, tw * 0.3 + runTw * 0.5);
@@ -371,7 +455,7 @@ export class Figure {
     }
     // a throw: the throwing arm is the one without the glove
     const thr = this.glove === 'r' ? 'l' : 'r', gl = thr === 'l' ? 'r' : 'l', ts = thr === 'l' ? 1 : -1;
-    if (sp.throwW > 0) {
+    if (sp.throwW > 0 && !useThrowClip) {
       const k = clamp(sp.throw, 0, 2);
       // three keys: cocked (behind, up), release (high in front), follow (across, down)
       const U0 = V(0.85 * ts, 0.35, -0.55), F0 = V(0.1 * ts, 1, -0.25);
@@ -396,6 +480,8 @@ export class Figure {
         blendAim(B[`lowerarm_${s}`], B[`hand_${s}`], V(0.05 * side, 1, 0.1), sp.armsUp);
       }
     }
+    // ---- the clips over the standing pose: the run by speed, a little idle life, the throw's trunk and arms
+    if (clips) this.layerClips(sp, aRun, useThrowClip);
     // ---- on the ground: where the soles are in this pose (the lowest foot at its bind height)
     root.updateMatrixWorld(true);
     const low = Math.min(wpos(B.foot_l).y, wpos(B.foot_r).y, wpos(B.ball_l).y + 0.03, wpos(B.ball_r).y + 0.03);
@@ -420,6 +506,62 @@ export class Figure {
     if (dive > 0) root.quaternion.multiply(_q.setFromAxisAngle(X, dive * 1.32));
     root.position.set(w.x, -this.g0 * sc + this.lift, w.z);
     root.updateMatrixWorld(true);
+  }
+
+  /** Sample a clip at time t into q (local quaternions by bone index); its pelvis position into pos. */
+  sample(c, t, q, pos) {
+    for (const tr of c.tracks) {
+      const v = tr.interp.evaluate(t);
+      if (tr.q) q[tr.i].set(v[0], v[1], v[2], v[3]);
+      else if (pos) pos.set(v[0], v[1], v[2]);
+    }
+  }
+
+  layerClips(sp, aRun, useThrow) {
+    const C = this.crew.clips, L = this.list, n = L.length;
+    const qp = this.qp, qa = this.qa, qb = this.qb;
+    for (let i = 0; i < n; i++) qp[i].copy(L[i].quaternion);
+    const pel = this.bones.pelvis, pelP = pel.position.clone();
+    const runW = smooth(aRun * 4) * (1 - (sp.slide || 0));
+    let any = false;
+    if (runW > 0.001) {
+      // the mix of runs at this speed, each at the same share of its cycle
+      const v = aRun * 26, mix = this.crew.runMix(v, sp.run.trot);
+      const u = ((sp.run.phase / (2 * Math.PI)) % 1 + 1) % 1;
+      let wsum = 0;
+      const pos = V(), pa = V();
+      for (const k of ['jog', 'run', 'sprint']) {
+        const w = mix.w[k], c = C[k];
+        if (!(w > 0.001) || !c) continue;
+        for (let i = 0; i < n; i++) qb[i].copy(qp[i]);
+        this.sample(c, u * c.period, qb, pa);
+        // in place: the cycle's travel out, the bob kept
+        pa.sub(c.drift.clone().multiplyScalar(u)).sub(c.p0);
+        const k2 = w / (wsum + w);
+        for (let i = 0; i < n; i++) { if (wsum === 0) qa[i].copy(qb[i]); else qa[i].slerp(qb[i], k2); }
+        pos.lerp(pa, wsum === 0 ? 1 : k2);
+        wsum += w;
+      }
+      for (let i = 0; i < n; i++) L[i].quaternion.copy(qp[i]).slerp(qa[i], runW);
+      pel.position.copy(pelP).addScaledVector(pos, runW);
+      any = true;
+    } else if (C.idle && !(sp.crouch > 0.15) && !(sp.throwW > 0)) {
+      // standing: a little of the idle's life on the trunk, arms and head (its feet wander, so not those)
+      const t = ((sp.idleT || 0) % (2 * C.idle.dur));
+      for (let i = 0; i < n; i++) qa[i].copy(qp[i]);
+      this.sample(C.idle, t < C.idle.dur ? t : 2 * C.idle.dur - t, qa, null);
+      for (let i = 0; i < n; i++) if (UPPER.has(L[i].name)) L[i].quaternion.slerp(qa[i], 0.45);
+      any = true;
+    }
+    if (useThrow) {
+      // the pitch's trunk and arms, its release (0.9 s into the clip) on the plan's
+      const c = C.throw, t = clamp(0.9 + (sp.throw - 1) * 0.55, 0, c.dur);
+      for (let i = 0; i < n; i++) qa[i].copy(L[i].quaternion);
+      this.sample(c, t, qa, null);
+      for (let i = 0; i < n; i++) if (UPPER.has(L[i].name)) L[i].quaternion.slerp(qa[i], sp.throwW);
+      any = true;
+    }
+    if (any) this.root.updateMatrixWorld(true);
   }
 
   /** Two bone IK of one arm to a model frame point, the glove's pocket (or the hand) on it. */
