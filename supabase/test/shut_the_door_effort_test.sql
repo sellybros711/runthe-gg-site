@@ -61,6 +61,8 @@ select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '[0.
 select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '[0.1, 0.2, 0.3]')$$), 'an aim of three numbers is refused');
 select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '["0.1", 0]')$$), 'an aim with a string is refused');
 select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '{"u": 0}')$$), 'an aim that is an object is refused');
+select pg_temp.claim(pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '["x", 0]')$$)
+  and pg_temp.fails($$select pg_temp.aimed(shutdoor_today(), '[null, 0]')$$), 'an aim with a word or a null in it is refused');
 select pg_temp.claim(not exists (select 1 from shutdoor_outings where user_id = '00000000-0000-0000-0000-0000000000e3'), 'nothing was stored for the refused posts');
 -- the rest of the guard is 156's
 select pg_temp.claim(pg_temp.fails($$select pg_temp.post(shutdoor_today(), 10, '1.5', '0.5')$$), 'a release over 1 is still refused');

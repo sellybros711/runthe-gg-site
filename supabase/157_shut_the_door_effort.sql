@@ -73,7 +73,9 @@ begin
                     or case jsonb_typeof(c->'at')
                          when 'array' then jsonb_array_length(c->'at') <> 2
                                            or exists (select 1 from jsonb_array_elements(c->'at') a
-                                                       where jsonb_typeof(a) <> 'number' or (a #>> '{}')::numeric not between -0.5 and 0.5)
+                                                       where case when jsonb_typeof(a) = 'number'
+                                                                  then (a #>> '{}')::numeric not between -0.5 and 0.5
+                                                                  else true end)
                          when 'null' then false
                          else c ? 'at' end) then
     raise exception 'the calls do not make an outing';
