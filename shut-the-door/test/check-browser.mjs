@@ -783,6 +783,14 @@ async function run(w, h, theme) {
   if (!toastSeen) {
     // a miss: does the button answer a click from script? (separates a handler that never runs from a tap that never lands)
     sh.path += '; then a script click: ' + await page.evaluate(async () => { const n = window.STD_CHECK_SHARE.length; document.getElementById('r-share').click(); await new Promise((r) => setTimeout(r, 1500)); return (window.STD_CHECK_SHARE.slice(n).join(', ') || 'nothing') + ', toast "' + window.STD_CHECK_TOAST + '"'; });
+    sh.path += '; ' + await page.evaluate(async () => {
+      const out = [];
+      out.push('writeText wrapped ' + !/native code/.test(String(navigator.clipboard && navigator.clipboard.writeText)));
+      try { out.push('share text ' + window.STD_SHARE.text(window.STD_UI.state.result, window.STD_UI.state.scn.number).length + ' chars, result.share ' + typeof window.STD_UI.state.result.share); } catch (e) { out.push('share text threw: ' + String(e).slice(0, 80)); }
+      const w = navigator.clipboard ? Clipboard.prototype.writeText.call(navigator.clipboard, 'probe').then(() => 'resolved', (e) => 'rejected: ' + String(e && e.message || e).slice(0, 80)) : Promise.resolve('no clipboard');
+      out.push('a direct writeText ' + await Promise.race([w, new Promise((r) => setTimeout(() => r('still pending after 3 s'), 3000))]));
+      return out.join(', ');
+    });
   }
   ok(toastSeen && /^copied/.test(sh.said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
     '6 share copies the share text (toast "' + sh.said + '"' + (toastSeen ? '' : '; no toast in 10 s: ' + sh.path + ', pointer coarse ' + sh.coarse + ', share sheet ' + sh.share + ', focus ' + sh.focus + ', a result ' + sh.result + ', clipboard "' + clip.slice(0, 60) + '", page errors so far: ' + (errors.slice(-3).join(' | ') || 'none')) + ')');

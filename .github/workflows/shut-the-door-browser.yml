@@ -58,5 +58,5 @@ jobs:
           [ -f check-browser.txt ] || exit 0
           grep -E 'FAIL' check-browser.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-browser::/' || true
           tail -n 1 check-browser.txt | sed 's/^/::notice title=check-browser::/'
-          # the whole output as one more notice (newlines escaped), for a reader with no access to the log
-          printf '::notice title=check-browser output::%s\n' "$(tail -c 60000 check-browser.txt | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
+          # the whole output as one more notice (its last 3900 bytes, as an annotation keeps 4 KB; newlines escaped), for a reader with no access to the log
+          printf '::notice title=check-browser output::%s\n' "$(tail -c 3900 check-browser.txt | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
