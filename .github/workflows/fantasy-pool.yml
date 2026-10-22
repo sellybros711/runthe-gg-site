@@ -45,6 +45,11 @@ on:
         description: 'Week to build. Leave blank to use the first unplayed week.'
         required: false
         default: ''
+      catchup:
+        description: 'Only build if the week is not live yet (what the watchdog sends).'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -100,8 +105,9 @@ jobs:
       # every Wednesday and Thursday, and on a normal week the Tuesday run has already opened
       # this week: rebuilding it would reprice a board people have drafted against, which is
       # the one thing this mode must never do. So a scheduled run whose week is the one
-      # fantasy_now.json already points at stops here. A manual run still builds, because a
-      # person asked for it.
+      # fantasy_now.json already points at stops here, and so does a run the watchdog
+      # dispatched (catchup), which may land just after another build opened the week. A
+      # plain manual run still builds, because a person asked for it.
       - name: Is it already open
         id: open
         if: steps.when.outputs.go == 'yes'
@@ -109,7 +115,9 @@ jobs:
           LIVE=$(node -e 'const n=require("./football/data/fantasy_now.json");console.log(n.season+" "+n.week)')
           WANT='${{ steps.week.outputs.season }} ${{ steps.week.outputs.week }}'
           echo "live: $LIVE, this week: $WANT"
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$LIVE" = "$WANT" ]; then
+          GUARDED=no
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.catchup }}" = "true" ]; then GUARDED=yes; fi
+          if [ "$GUARDED" = "yes" ] && [ "$LIVE" = "$WANT" ]; then
             echo "week $WANT is already open. Nothing to do."
             echo "done=yes" >> "$GITHUB_OUTPUT"
           else
