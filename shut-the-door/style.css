@@ -356,7 +356,8 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .pitch.sel { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .pitch.sel::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--signal); }
 .pitch.sel span { color: var(--bg); opacity: .75; }
-.btn.throw { margin: 0 10px 10px; margin-bottom: max(10px, env(safe-area-inset-bottom)); min-height: 58px; background: var(--signal); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1;
+/* one height for every state (a word, or a verb over the call) so the scene above never jumps */
+.btn.throw { margin: 0 10px 10px; margin-bottom: max(10px, env(safe-area-inset-bottom)); min-height: 64px; background: var(--signal); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1;
   font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; text-transform: uppercase; box-shadow: 0 3px 0 #c43a12; }
 .btn.throw span { font-family: var(--sans); font-style: normal; font-size: 12px; font-weight: 600; text-transform: none; opacity: .9; }
 .btn.throw:disabled { background: var(--panel); color: var(--dim); border: 1px solid var(--line-2); font-family: var(--sans); font-style: normal; font-size: 14px; font-weight: 600; text-transform: none; box-shadow: none; }
@@ -711,7 +712,9 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 /* ---- the release meter (meter.js): the throw button's slot, a needle sweeping to the mark.
    One tap is the release. The soft band is a release tighter than his command, the bright one the
    best release. Execution only: no grade colours (the bands use signal and data, not green to red). */
-.relm { margin: 0 10px 10px; margin-bottom: max(10px, env(safe-area-inset-bottom)); min-height: 58px; padding: 7px 14px 9px; border-radius: 14px;
+/* the throw button's exact height, so swapping one for the other never moves the scene (a moved
+   scene stretches the 3D frame under a grid laid out for the old size) */
+.relm { box-sizing: border-box; margin: 0 10px 10px; margin-bottom: max(10px, env(safe-area-inset-bottom)); min-height: 64px; padding: 8px 14px 10px; border-radius: 14px;
   background: var(--night); color: var(--on-night); display: flex; flex-direction: column; justify-content: center; gap: 6px; cursor: pointer;
   touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; outline: none; box-shadow: 0 3px 0 var(--signal); }
 .relm[hidden] { display: none; }
@@ -720,15 +723,17 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .rm-what { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .85; }
 .rm-what b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 15px; letter-spacing: .02em; text-transform: uppercase; margin-right: 4px; opacity: 1; }
 .rm-word { flex: none; font-weight: 600; opacity: .7; white-space: nowrap; }
-.rm-bar { position: relative; height: 16px; border-radius: 8px; background: rgba(255, 255, 255, .1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
-.rm-good, .rm-best { position: absolute; top: 0; bottom: 0; border-radius: 8px; }
+.rm-bar { position: relative; height: 20px; border-radius: 10px; background: rgba(255, 255, 255, .1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.rm-good, .rm-best { position: absolute; top: 0; bottom: 0; border-radius: 10px; }
 .rm-good { background: rgba(91, 130, 255, .38); }
 .rm-best { background: var(--signal); box-shadow: 0 0 10px rgba(255, 79, 31, .55); }
 .rm-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: #fff; opacity: .9; border-radius: 1px; }
-.rm-needle { position: absolute; top: -6px; bottom: -6px; width: 4px; margin-left: -2px; border-radius: 2px; background: #fff;
+.rm-needle { position: absolute; top: -5px; bottom: -5px; width: 5px; margin-left: -2.5px; border-radius: 3px; background: #fff;
   box-shadow: 0 0 0 1.5px var(--night), 0 0 8px rgba(255, 255, 255, .6); will-change: left; }
 .relm.done .rm-needle { transition: transform .12s ease-out; transform: scaleY(1.25); }
 .relm.done .rm-word { opacity: 1; }
+/* the tap lands like a button press */
+.relm.done { transform: translateY(2px); box-shadow: 0 1px 0 var(--signal); transition: transform .06s, box-shadow .06s; }
 .relm.good .rm-word { color: #a9bdff; }
 .relm.best .rm-word { color: #ffb59c; }
 .relm.best .rm-bar { animation: rm-glow .5s ease-out; }
