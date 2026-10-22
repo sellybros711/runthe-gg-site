@@ -433,10 +433,13 @@ function buildMound() {
   if (S.grid) return;
   if (!S.scene) S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas'));
   $('m-scene').classList.toggle('s3d', !!S.scene.is3d);
-  /* the 3D module lands after this: put the grid on its zone then */
+  /* the 3D module lands after this: put the aim on its zone then */
   if (S.scene.arrived) S.scene.arrived.then(function (st) { return st.ready; }).then(function () { if (document.body.dataset.screen === 's-mound') relayout(); });
-  S.grid = new M.Grid($('m-scene'), { onPick: pickCell });
-  /* the grid sits over the canvas, under the mini map and the dot key */
+  /* AIM ON THE FIELD (the owner, 2026-10-22): the crosshair on the stage's own zone (aim.js), with
+     the heat, the pitch dots and the preview's line in the same box. S.grid keeps its old name: it
+     is the aim, the only grid on the mound. A drag or a mouse over it moves the break preview. */
+  S.grid = window.STD_AIM.create($('m-scene'), { onPick: pickCell, onHover: hoverCell, label: aimLabel });
+  /* the aim sits over the canvas, under the mini map and the dot key */
   $('m-scene').insertBefore(S.grid.el, $('m-dbg'));
   /* the live field minimap: built into its slot, shown after the first play of the outing */
   S.mini = window.STD_MINIMAP ? window.STD_MINIMAP.create($('m-mini')) : null;
@@ -444,21 +447,32 @@ function buildMound() {
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
   var big = maxBreak(S.scn.pitcher.arsenal);
+  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name and its speed. The
+     speed is the pack's velo, rounded, never typed. The number is the key that picks it. */
   S.scn.pitcher.arsenal.forEach(function (a, i) {
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'pitch';
     b.dataset.type = a.type;
     b.setAttribute('aria-pressed', 'false');
-    b.innerHTML = '<b>' + esc(a.name) + '</b><span>' + breakGlyph(a, colorOf(a), big) + esc(Math.round(a.velo)) + ' · ' + esc(pct(a.usage)) + '</span>';
+    b.setAttribute('aria-label', (i + 1) + ', ' + a.name + ', ' + Math.round(a.velo) + ' mph');
+    b.innerHTML = '<span class="pk" aria-hidden="true">' + (i + 1) + '</span><span class="pt" aria-hidden="true"><b>' + esc(a.name) + '</b>' +
+      '<span class="pv">' + breakGlyph(a, colorOf(a), big) + '<em>' + esc(Math.round(a.velo)) + '</em> mph</span></span>';
     var held = holdToLearn(b, a.type);
     b.addEventListener('click', function () { if (!held()) pickType(a.type); });
     ars.appendChild(b);
   });
-  /* the grid: a mouse over a cell shows the path to it (a touch has no hover, the tap picks it) */
-  S.grid.cells.forEach(function (el, i) {
-    el.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse') return; S.hover = i; drawPreview(); });
-    el.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'mouse') return; if (S.hover === i) { S.hover = null; drawPreview(); } });
+  fitNames();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
+  /* the number keys pick a pitch, on the mound, between pitches */
+  document.addEventListener('keydown', function (e) {
+    if (document.body.dataset.screen !== 's-mound' || S.busy || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (S.meter && S.meter.running()) return;
+    if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
+    var k = /^[1-9]$/.test(e.key) ? +e.key - 1 : -1, a = S.scn.pitcher.arsenal[k];
+    if (!a) return;
+    e.preventDefault();
+    pickType(a.type);
   });
   $('m-throw').addEventListener('click', throwIt);
   S.meter = METER && $('m-meter') ? METER.create($('m-meter')) : null;
@@ -487,7 +501,22 @@ function buildMound() {
   }
 }
 
+/* A pitch's name on its button, whole: five in a row are narrow (curveball, four-seam), so a name
+   that does not fit steps down half a pixel at a time, never under 12 px, before it would cut. */
+function fitNames() {
+  document.querySelectorAll('#m-arsenal .pt b').forEach(function (b) {
+    b.style.fontSize = '';
+    var cs = getComputedStyle(b), px = parseFloat(cs.fontSize) || 16;
+    var room = b.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - 1;
+    if (room <= 0) return;
+    /* the text's own width (an italic overhangs its box by a pixel or two) */
+    var r = document.createRange();
+    r.selectNodeContents(b);
+    while (r.getBoundingClientRect().width > room && px > 12) { px -= 0.5; b.style.fontSize = px + 'px'; }
+  });
+}
 function relayout() {
+  fitNames();
   S.scene.layout();
   S.grid.place(S.scene.gridRect());
   S.scene.draw(idleFrame());
@@ -594,8 +623,20 @@ function pickType(t) {
   drawPreview();
   updateThrow();
 }
+/* a drag over the zone, or a mouse over it: the preview follows, nothing is picked yet */
+function hoverCell(c) {
+  if (S.busy) return;
+  S.hover = c;
+  drawPreview();
+}
+/* the tag over the crosshair: the spot in inside and away words, and the heat's number there */
+function aimLabel(c) {
+  var bt = batterAt(S.outing.batterIndex), v = S.grid.heatOf(c);
+  return M.cellWords(c, bt.bats) + (v ? ' \u00b7 ' + v : '');
+}
 function pickCell(c) {
   if (S.busy) return;
+  S.hover = null;
   stopMeter();
   S.cell = c;
   S.grid.setSelected(c);
@@ -606,19 +647,29 @@ function pickCell(c) {
   drawPreview();
   updateThrow();
 }
+/* ONE CLEAR THROW BUTTON (the owner, 2026-10-22). It always says throw; it lights up when a pitch
+   and a spot are picked, and says which under the word. What to do next is the step line's job. */
 function updateThrow() {
   var b = $('m-throw'), bt = batterAt(S.outing.batterIndex);
   var ready = S.type && S.cell != null && !S.busy;
   b.disabled = !ready;
   b.classList.toggle('shut', !!(ready && S.outing.shutItLive));
-  if (S.busy) { b.textContent = 'pitching'; return; }
-  if (!S.type && S.cell == null) b.textContent = 'pick a pitch and a spot';
-  else if (!S.type) b.textContent = 'pick a pitch';
-  else if (S.cell == null) b.textContent = 'pick a spot';
-  else {
-    var verb = S.outing.shutItLive ? 'shut it' : 'throw';
-    b.innerHTML = '<b>' + verb + '</b><span>' + esc(pitchOf(S.type).name) + ' · ' + esc(M.cellWords(S.cell, bt.bats)) + '</span>';
-  }
+  if (S.busy) b.innerHTML = '<b>pitching</b>';
+  else b.innerHTML = '<b>throw</b>' + (ready ? '<span>' + esc(pitchOf(S.type).name) + ' \u00b7 ' + esc(M.cellWords(S.cell, bt.bats)) + '</span>' : '');
+  stepLine();
+}
+/* THE STEP LINE (the owner, 2026-10-22): one short line under the throw button and the release
+   meter, saying the next thing to do. It never grades and is empty while the pitch plays. */
+function stepLine() {
+  var el = $('m-say');
+  if (!el) return;
+  var say = '';
+  if (S.busy || !S.outing || S.outing.status !== 'live') say = '';
+  else if (S.meter && S.meter.running()) say = 'stop it in the bright band';
+  else if (!S.type) say = 'pick a pitch';
+  else if (S.cell == null) say = 'aim: drag or tap the zone';
+  else say = 'tap throw';
+  if (el.textContent !== say) el.textContent = say;
 }
 
 function toggleScout() {
@@ -901,13 +952,16 @@ function throwIt() {
   var ap = pitchOf(S.type), bt = batterAt(S.outing.batterIndex);
   var type = S.type, cell = S.cell;
   $('m-throw').hidden = true;
-  S.meter.run({
+  var run = S.meter.run({
     command: ap.command, practice: S.mode === 'practice',
     verb: S.outing.shutItLive ? 'shut it' : 'release',
     label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
-    hint: 'tap on the mark',
+    /* the step line under the meter says what to do; the meter's own corner keeps its word for after the tap */
+    hint: ' ',
     onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
-  }).then(function (r) {
+  });
+  stepLine();
+  run.then(function (r) {
     if (!r) { $('m-throw').hidden = false; updateThrow(); return; }
     fire({ type: type, cell: cell, q: r.q });
   });
