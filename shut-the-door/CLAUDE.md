@@ -9,6 +9,14 @@ must obey. The why, the history and the full design live in the knowledge base.
 lists every note and every decision. `CONTRACT.md` here is the shared contract the engine and the UI
 are built against, and `README.md` is the engine, data and pipeline.
 
+## Specialist agents
+
+Work on this game goes to three agents in `.claude/agents/`, each owning one group:
+`shut-the-door-3d` (motion, rendering, the ball in play, phone performance), `shut-the-door-game`
+(rules, grading, scoring, data, scenarios, SQL) and `shut-the-door-ui` (screens, HUD, menus, the
+result, the board and the share card). The `qa` agent owns the checks across the site. Each opens a
+PR and never merges it.
+
 ## Commands
 
 ```
