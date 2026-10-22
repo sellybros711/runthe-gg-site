@@ -21,13 +21,14 @@ const UP = new THREE.Vector3(0, 1, 0);
 const NAVY = 0x0d1a33, ROYAL = 0x174a8c;
 // the bat's sweet spot: 28 in up it from the knob (gear3d.js bat, 34 in long, the knob at its origin)
 const SWEET = 28 * 0.0254;
-// how far the swing may be slid to meet the ball (seconds of capture time, from its fastest barrel).
-// The sweet spot reaches the ball 0.04 to 0.21 s late, but past about +0.07 s the capture's bat has
-// slowed to a near stop (swing3R at +0.21 s: 11 mph, from 25 at its peak), so the bat stalls on the
-// ball in motion. The cap keeps contact in the fast part of the swing. What is left of the miss is
-// not where the bat sits in his hands: on a pulled ball a right handed hitter's bottom grip is still
-// 1.2 m from the ball at +0.07 s on swing2 and swing3, past what a 34 in bat can reach.
-const MEET = [-0.05, 0.07];
+// When the bat meets the ball (meetTime), on both clocks. MEET: the capture frames searched, in
+// seconds from tContact (the swing's anchor for the chain and the take). The capture's sweet spot
+// crosses the ball's line 0.04 to 0.22 s after it, still in the fast part of the swing. MEET_DEPTH:
+// where along its flight the ball may be met, in feet out in front of the plate's front edge (4 ft
+// out front to 1 ft over the plate). Each capture crosses the ball's line near the front edge, so a
+// ball met where play.js once put it (up to 5 ft out front for a pulled ball, behind the plate the
+// other way) was 0.4 to 1.9 m from the sweet spot.
+const MEET = [-0.05, 0.25], MEET_DEPTH = [4, -1];
 // the bat in his hands (bakeBat): the top hand counts as off the bat once the grips are GRIP_OFF
 // (m) apart, and the bat is then the bottom hand's alone, over GRIP_LET seconds; GRIP_HOLD is the
 // gap between the grips (m) at which the line through them and his grip count the same;
@@ -529,8 +530,10 @@ export class People {
       const la = play && play.inPlay && play.inPlay.la;
       b.batTilt = la == null ? 0 : THREE.MathUtils.clamp((la - 12) / 30, -1, 1) * 9;
       this.planBatterFeet(b);
-      // a swing that meets the ball is slid in time so the bat gets there with it (meetTime)
-      b.meet = !b.take && !this.m.miss && pitch ? this.meetTime(b) : 0;
+      // a swing that meets the ball is timed so the bat gets there with it (meetTime); a take or a
+      // swing and miss keeps the play's own timing
+      if (!b.take && !this.m.miss && pitch) this.meetTime(b);
+      else { b.meet = 0; b.meetBall = this.m.contactShift; b.tiltAt = b.tContact; }
     }
     if (c && c.crouch) {
       // he sets up where the pitch is aimed
@@ -719,30 +722,46 @@ export class People {
     this.poseBat(b);
   }
 
-  /* When his swing meets the ball. tContact is the capture's fastest barrel, and that comes before
-     the bat is out where the ball is: timed on it, the sweet spot was 3 to 5 ft behind the ball's
-     contact point when the ball left the bat, and got there 0.04 to 0.21 s of capture time later.
-     So the swing is slid in time, nothing else: within MEET, the capture time is found at which his
-     sweet spot is nearest the point where the ball is met (pitch.js flight, at the play's
-     contactShift), and that moment is put on the contact. Every
-     pose is his own, only when it comes changes. Returns the slide in seconds of capture time. */
+  /* When his swing meets the ball, from the barrel's real path. The capture's sweet spot sweeps
+     through the zone and crosses the ball's line once, near the front of the plate. Within MEET
+     (capture time) and MEET_DEPTH (the ball's flight), the pair is found at which his sweet spot is
+     nearest the ball: that capture frame is put on the moment the ball gets there, and the ball
+     leaves the bat from there (wireBall). Every pose is his own; only when it comes changes.
+     Sets b.meet (the slide in capture time from tContact) and b.meetBall (the ball's moment, in
+     seconds from the plate's front edge). */
   meetTime(b) {
-    const pt = this.pitch, M = pt.pointAt(pt.f.T + this.m.contactShift), tC = b.tContact;
-    const sweet = new THREE.Vector3();
-    const miss = (u) => {
+    const pt = this.pitch, f = pt.f, tC = b.tContact, yF = f.at(f.T).y;
+    // the ball's line through the depths it may be met at, as short straight pieces
+    const s0 = pt.timeAtY(yF + MEET_DEPTH[0]) - f.T, s1 = pt.timeAtY(yF + MEET_DEPTH[1]) - f.T, N = 24;
+    const path = [];
+    for (let i = 0; i <= N; i++) { const s = s0 + (s1 - s0) * i / N; path.push([s, pt.pointAt(f.T + s)]); }
+    const sweet = new THREE.Vector3(), seg = new THREE.Vector3(), rel = new THREE.Vector3();
+    const near = (u) => {
+      b.tiltAt = u;                     // the bat's launch tilt is centred on the contact
       this.swingPose(b, u);
-      return sweet.set(0, SWEET, 0).applyMatrix4(b.bat.matrixWorld).distanceTo(M);
+      sweet.set(0, SWEET, 0).applyMatrix4(b.bat.matrixWorld);
+      let d = Infinity, s = 0;
+      for (let i = 0; i < N; i++) {
+        const [sa, a] = path[i], [sb, c] = path[i + 1];
+        seg.subVectors(c, a);
+        const k = clamp01(rel.subVectors(sweet, a).dot(seg) / seg.lengthSq());
+        const di = rel.copy(a).addScaledVector(seg, k).distanceTo(sweet);
+        if (di < d) { d = di; s = sa + (sb - sa) * k; }
+      }
+      return { d, s };
     };
     const lo = tC + MEET[0], hi = tC + MEET[1];
-    let best = tC, bestD = Infinity;
-    for (let u = lo; u <= hi + 1e-9; u += 1 / 120) { const d = miss(u); if (d < bestD) { bestD = d; best = u; } }
-    const c = best;
+    let best = { d: Infinity, s: 0, u: tC };
+    for (let u = lo; u <= hi + 1e-9; u += 1 / 120) { const r = near(u); if (r.d < best.d) best = { ...r, u }; }
+    const c = best.u;
     for (let u = c - 1 / 120; u <= c + 1 / 120 + 1e-9; u += 1 / 960) {
-      const uu = THREE.MathUtils.clamp(u, lo, hi), d = miss(uu);
-      if (d < bestD) { bestD = d; best = uu; }
+      const uu = THREE.MathUtils.clamp(u, lo, hi), r = near(uu);
+      if (r.d < best.d) best = { ...r, u: uu };
     }
-    b.meetMiss = bestD;
-    return best - tC;
+    b.meetMiss = best.d;
+    b.meet = best.u - tC;
+    b.meetBall = best.s;
+    b.tiltAt = best.u;
   }
 
   /** The take at clock time ct (relative to the swing's contact), before the feet are planted:
@@ -784,7 +803,7 @@ export class People {
       capture has no bat). It runs from the bottom grip through the top one. Where the hands come
       together that line says little (two grips a few cm apart turn it anywhere: the bat flipped
       upright after contact), so it is held toward his grip there; after the top hand lets go the bat
-      stays as it was in the bottom hand. Lightly smoothed. Contact is where the barrel moves fastest. */
+      stays as it was in the bottom hand. Lightly smoothed. Also finds tContact, the swing's anchor. */
   bakeBat(b) {
     const clip = b.clips[b.clip], dt = 1 / 60;
     // every sample: the line from the bottom grip to the top one, in the bottom hand's frame, and
@@ -838,8 +857,11 @@ export class People {
       return new THREE.Quaternion(acc.x, acc.y, acc.z, acc.w).normalize();
     });
     b.batDt = dt;
-    // contact: the fastest barrel, sampled at the capture's own 30 Hz, skipping the frames where the
-    // top hand lets go and the bat flips (an artifact, not a swing)
+    // tContact, the swing's anchor: the take, the check swing, the chain and the finish are timed
+    // from it. Not where the bat meets the ball (meetTime finds that from the barrel's path, 0.04 to
+    // 0.25 s later). It is the fastest barrel at the capture's 30 Hz, skipping frames where the bat
+    // turns over 0.45 rad: that skips some real fast frames too, but moving the anchor would retime
+    // every take
     let best = 0, bestT = clip.duration * 0.6, prev = null, prevAx = null;
     for (let t = 0.9; t < clip.duration - 0.3; t += 1 / 30) {
       pose(b, { [b.clip]: [t, 1] });
@@ -875,7 +897,7 @@ export class People {
     // the bat's plane through contact follows the ball's launch: a little under it for a fly ball,
     // on top of it for a grounder (b.batTilt degrees at contact, easing in and out over 0.15 s)
     if (b.batTilt) {
-      const w = Math.exp(-Math.pow((ct - b.tContact) / 0.09, 2));
+      const w = Math.exp(-Math.pow((ct - (b.tiltAt ?? b.tContact)) / 0.09, 2));
       const ax = UP.clone().applyQuaternion(q), across = new THREE.Vector3().crossVectors(ax, UP);
       if (across.lengthSq() > 1e-6) q.premultiply(new THREE.Quaternion().setFromAxisAngle(across.normalize(), THREE.MathUtils.degToRad(b.batTilt) * w));
     }
@@ -980,9 +1002,18 @@ export class People {
     const pt = this.pitch;
     const b = this.batter, c = this.catcher, u = this.umpire;
     if (b) {
-      // met early to pull it (contactShift < 0), late to go the other way; a swing is slid by its
-      // meet (meetTime) so the bat is on the ball at the contact
-      const ct = t - (pt.tPlate + (b.take ? 0 : this.m.contactShift)) + b.tContact + (b.take ? 0 : b.meet || 0);
+      // the take's clock (capture time): what he stands in while the pitch is aimed. A swing puts
+      // its contact frame (tContact + meet) on the moment the ball is met (meetBall, from the
+      // plate's front edge: meetTime), so it runs up to 0.3 s ahead of the take. It starts on the
+      // take's clock and gains that lead through his stance and stride, all of it by the time his
+      // front foot lands, so nothing jumps when the pitch starts and the bat path is the capture's
+      let ct = t - pt.tPlate + b.tContact;
+      if (!b.take) {
+        const lead = (b.meet || 0) - (b.meetBall ?? this.m.contactShift);
+        const tMeet = pt.tPlate + (b.meetBall ?? this.m.contactShift);
+        const tE = Math.max(0.2, Math.min(pt.tPlate + b.chain.tStrike - b.tContact - lead, tMeet - 0.1));
+        ct += lead * smooth(clamp01(t / tE));
+      }
       if (!b.take) {
         // a real hitter holds his finish: time slows to a near hold at the end of the swing (each
         // capture is cut at its finish); a swing and miss plays on through his reaction
@@ -1129,7 +1160,7 @@ export class People {
     const pt = this.pitch, m = this.m, b = this.batter;
     if (!pt || !b) return;
     if (m.batter === 'swing' && ['play', 'back', 'pulled'].includes(m.ball)) {
-      pt.setAfter(m.ball, pt.f.T + m.contactShift, { inPlay: this.play && this.play.inPlay, lefty: b.lefty });
+      pt.setAfter(m.ball, pt.f.T + (b.meetBall ?? m.contactShift), { inPlay: this.play && this.play.inPlay, lefty: b.lefty });
     } else if (m.ball === 'hbp') {
       // where his hip is, in the catcher's view feet the flight uses
       pose(b, { [b.clip]: [Math.max(0, b.tContact - 0.2), 1] });
