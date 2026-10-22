@@ -19,7 +19,7 @@
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
  *
  * THE PLAY'S TIMELINE (what the game, ui.js, can wait on). Every hook is optional and fires at most
- * once a pitch, in this order:
+ * once a pitch, in this order (but for a foul, whose land comes after its call):
  *   hooks.sound(name, delayMs)       'whoosh' at the throw, 'pop' | 'crack' | 'thud' at the plate,
  *                                    'pop' on every catch in the field
  *   hooks.land({ fair, how, t })     the ball's first moment after contact, on screen:
@@ -28,7 +28,9 @@
  *                                      'dropped' | 'fielded' | 'through' | 'over'. Never after
  *                                      hooks.call (a ground ball that gets through fires both at
  *                                      the decision at the latest)
- *                                      a foul (fair: false, how: 'foul'): when it is called foul
+ *                                      a foul (fair: false, how: 'foul'): when it is seen foul,
+ *                                      the umpire's arms starting up (FOUL_SIGNAL after contact,
+ *                                      people.js umpireMove), after hooks.call
  *                                      no other pitch fires it
  *   hooks.field(runners)             the scorebar diamond's runners, every frame from contact on
  *   hooks.call()                     the play is decided: a ball in play when the plan says so
@@ -74,6 +76,8 @@ const AN = () => window.STD_ANIM;
 const TEST = () => window.STD_STAGE_TEST;
 // the most a frame moves the play on, in real seconds (see THE CLOCK above)
 const MAX_STEP = 0.1;
+// a foul is seen foul when the umpire starts his signal: 0.6 s after contact (people.js umpireMove)
+const FOUL_SIGNAL = 0.6;
 
 /** The scene's facts from the game's scenario (the same shape as the lab's pack facts). */
 function factsFrom(scn, extra) {
@@ -452,8 +456,9 @@ class Stage {
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
       zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
-    // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, its call
-    const landAt = run ? resultAt + run.land.real : pr.result === 'foul' ? resultAt : null;
+    // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, the
+    // umpire's signal
+    const landAt = run ? resultAt + run.land.real : pr.result === 'foul' ? resultAt + FOUL_SIGNAL : null;
     let landed = null;
     const land = (t) => {
       if (landed || landAt == null) return;
@@ -470,8 +475,9 @@ class Stage {
         cancelAnimationFrame(raf);
         document.removeEventListener('pointerdown', skip, true);
         try {
-          land(Math.max(lastT, 0));
+          if (run) land(Math.max(lastT, 0));
           if (!called) { called = true; if (hooks.call) hooks.call(); }
+          land(Math.max(lastT, 0));
           if (track && track.running && hooks.field) hooks.field(track.at(tEnd * 1000).runners);
           trace.skipped = lastT < tEnd;
           if (!broken) {
