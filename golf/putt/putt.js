@@ -2523,6 +2523,8 @@ function open(host, o){
   ov.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-pass]'); if (!b) return; var h = S && S.host; if (h && h.pass){ close(); try{ h.pass(); }catch(x){} } });
   syncPutters();
   if (o && o.go === 'daily'){ showMenu(); startDaily(); }
+  // a door that names its tour (the First Tee's "Into the world", which shows the main tour's place) opens that tour's frontier
+  else if (o && o.tour && worldOk(o.tour)) home(o.tour);
   else if (!resumeCur()) showMenu();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
   cloudPull().then(function(moved){ if (moved) syncPutters(); if (moved) pulled(); });
