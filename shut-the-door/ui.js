@@ -502,7 +502,7 @@ function enterMound() {
   buildMound();
   stopMeter(); meterDone();
   S.scene.setScenario(S.scn);
-  S.type = null; S.cell = null; S.lastMarker = null;
+  S.type = null; S.cell = null; S.lastMarker = null; S.paintedN = null;
   if (S.mini) S.mini.reset();
   show('s-mound');
   setBatter(true);
@@ -922,14 +922,64 @@ function repeatOf(type) {
   return n;
 }
 function meterDone() { if (S.meter) S.meter.hide(); $('m-throw').hidden = false; }
-/* the ball landed in the cell that was called: a quiet ring on that cell, after the play */
+
+/* PAINTED is rare and earned (the owner, 2026-10-22: "it always says painted"). All three:
+   the meter's best tier (q at or over STD_METER.BEST_Q, the bright band), a called cell on the
+   zone's edge or corner (in the zone, not the middle cell: the shadow), and the ball landing in
+   that cell. Never on two pitches in a row in an outing. With the meter off there is no q, so
+   never. The cue stays quiet: a ring on the cell and a word after the line. */
+function isPainted(pr, call) {
+  var best = window.STD_METER ? window.STD_METER.BEST_Q : 0.8;
+  if (call.q == null || call.q < best) return false;
+  if (pr.actualCell !== call.cell || !C.inZone(call.cell) || call.cell === C.cellOf(2, 2)) return false;
+  return S.paintedN == null || pr.n !== S.paintedN + 1;
+}
+/* the ring on the called cell, after the play */
 function paintedCue(pr) {
-  if (pr.actualCell !== pr.call.cell || !S.grid || !S.grid.cells) return;
+  if (!S.grid || !S.grid.cells) return;
   var c = S.grid.cells[pr.call.cell];
   if (!c) return;
   c.classList.remove('m-painted'); void c.offsetWidth; c.classList.add('m-painted');
   setTimeout(function () { c.classList.remove('m-painted'); }, 1400);
 }
+/* after a pitch: the mound takes taps again, nothing picked */
+function settle() {
+  S.busy = false;
+  S.grid.setDisabled(false);
+  S.grid.setSelected(null);
+  S.cell = null; S.type = null;
+  document.querySelectorAll('#m-arsenal .pitch').forEach(function (b) { b.classList.remove('sel'); b.setAttribute('aria-pressed', 'false'); });
+}
+function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+
+/* THE REVEAL (the owner, 2026-10-22: "I want to be able to see the ball fly and then it should
+   come up foul"). The result tag and the scorebug (count, outs, bases, score) change together, at
+   the moment the player has seen it happen, never before:
+     a take, a called strike, a ball   the ball in the mitt
+     a swinging strike, a foul tip     after the swing, the ball in the mitt
+     a hit by pitch                     the ball hits him
+     a foul                             the ball seen going foul, a beat into its flight
+     a ball in play                     the play decided: the catch, the throw beating him, the
+                                        ball down for a hit, the home run over the wall
+   The stage's hooks.call already fires at those moments for everything but a foul (stage.js
+   callAt: the catch + 0.12 s, or the in-play plan's resolveAt), so a foul holds FOUL_SEEN_MS past
+   it. The 2D drawing (anim.js) calls at the plate for everything, so there a foul and a ball in
+   play wait for the drawing to end. A tap that skips the play reveals at once, and the play's end
+   always reveals. No popup, no grade: one line and the scorebug.
+   When the 3D stage exposes its own seen-fair-or-foul and play-decided signal, wire it here: this
+   function is the one place that says when the tag goes up. */
+var FOUL_SEEN_MS = 700, END_BEAT_MS = 900;
+function revealer(pr, show) {
+  var done = false, hold = 0;
+  var now = function () { if (done) return; done = true; clearTimeout(hold); show(); };
+  var waitsForEnd = !S.scene.is3d && (pr.result === 'in_play' || pr.result === 'foul');
+  var after = S.scene.is3d && pr.result === 'foul' ? FOUL_SEEN_MS / (prefs.quick ? 1.8 : 1) : 0;
+  return {
+    call: function () { if (waitsForEnd || done) return; if (after) hold = setTimeout(now, after); else now(); },
+    now: now,
+  };
+}
+
 function fire(call) {
   if (S.busy) return;
   S.busy = true;
@@ -944,26 +994,27 @@ function fire(call) {
   $('m-scene').classList.add('flying');
   API.throwPitch(S.outing.outingId, call).then(function (res) {
     var pr = res.pitchResult, batter = batterAt(S.outing.batterIndex);
-    var opts = {
-      pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick,
-      hooks: { call: function () { var t = playText(pr, batter, res.state); pbp(t.tag, t.rest + (pr.actualCell === pr.call.cell ? ' \u00b7 painted' : '')); }, sound: sound, field: hudRunners },
-    };
+    var painted = isPainted(pr, call);
+    if (painted) S.paintedN = pr.n;
+    var rv = revealer(pr, function () {
+      var t = playText(pr, batter, res.state);
+      pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
+      renderHud(res.state);
+    });
+    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, sound: sound, field: hudRunners } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
+      rv.now();
       S.lastMarker = S.scene.toScreen(pr.actual);
       $('m-scene').classList.remove('flying');
       S.grid.setMarks({ target: pr.call.cell });
-      paintedCue(pr);
+      if (painted) paintedCue(pr);
       meterDone();
       hudRunners(null);
-      renderHud(res.state);
       if (S.mini) S.mini.show(pr);
       S.outing = res.state;
-      S.busy = false;
-      S.grid.setDisabled(false);
-      S.grid.setSelected(null);
-      S.cell = null; S.type = null;
-      document.querySelectorAll('#m-arsenal .pitch').forEach(function (b) { b.classList.remove('sel'); b.setAttribute('aria-pressed', 'false'); });
-      if (S.outing.status === 'over') return finish();
+      // the last pitch: the play has finished on screen, then a beat, then the result (still busy)
+      if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { settle(); return finish(); });
+      settle();
       if (S.scene.setTarget) S.scene.setTarget(null);
       if (pr.paOver) { S.lastMarker = null; S.grid.setMarks({}); setBatter(false); } else S.scene.draw(idleFrame());
       if (scoutWas) { S.scout = true; renderScout(); }
