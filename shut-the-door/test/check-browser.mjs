@@ -212,7 +212,21 @@ async function quietProblems(page) {
 async function homeWarm(page) {
   // the warm compiles every shader in software: seconds alone, minutes on a loaded machine
   await page.waitForFunction(() => !(window.STD_STAGE && window.STD_STAGE.supported()) || (window.STD_STAGE.current && window.STD_STAGE.current.loaded), null, { timeout: 240000 });
+  await gpuSettled(page);
   await fastDraw(page);
+}
+/* loaded means the warm's GL work is issued, not done: the GPU process (SwiftShader, on the CPU) still
+   owes the shader compiles and the warm's two draws. The next tap waits behind all of it, because the
+   page takes an input only with a frame, so a click on the home screen once took 83 s to return, past
+   Playwright's 30 s (step 8, load 50, 2026-10-22). One read of a pixel waits for the GPU to finish
+   (measured: the read took 86 s, and the click after it 0.3 s). On a phone's GPU it is instant. */
+async function gpuSettled(page) {
+  await page.evaluate(() => {
+    const st = window.STD_STAGE && window.STD_STAGE.current;
+    if (!st || !st.renderer) return;
+    const gl = st.renderer.getContext();
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+  });
 }
 
 async function stageReady(page) {
@@ -733,10 +747,21 @@ async function run(w, h, theme) {
   at('6 the result');
   await revealCheck(page, '6', play.pitches);
   await shot('result', true);
+  /* The toast is up for 2.2 s (ui.js toast). page.click returns only once the page has taken the
+     input, and under software GL that can wait behind the GPU for longer than that (step 8 measured a
+     click that took 83 s at load 50), so a wait that starts after the click can miss a toast that
+     came and went: CI failed "Timeout 3000ms" here on 2026-10-22. The watch starts before the tap,
+     and reads what the toast said. */
+  await page.evaluate(() => {
+    const t = document.getElementById('toast');
+    window.STD_CHECK_TOAST = '';
+    new MutationObserver(() => { if (t.classList.contains('on') && !window.STD_CHECK_TOAST) window.STD_CHECK_TOAST = t.textContent; }).observe(t, { attributes: true, attributeFilter: ['class'] });
+  });
   await page.click('#r-share');
-  await page.waitForSelector('#toast.on', { timeout: 3000 });
+  await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 });
+  const toastSaid = await page.evaluate(() => window.STD_CHECK_TOAST);
   const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
-  ok(/Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014), '6 share copies the share text');
+  ok(/^copied/.test(toastSaid) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014), '6 share copies the share text ("' + toastSaid + '")');
   await shot('shared');
 
   /* 12, on the real engine */
@@ -857,7 +882,7 @@ try {
   await ending(1440, 900, 'walk_off', '&mockPro=none');
 } catch (e) {
   fails++;
-  console.log('  FAIL ' + (e && e.message ? e.message.split('\n')[0] : e));
+  console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));
 }
 await browser.close();
 server.close();
