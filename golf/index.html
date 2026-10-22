@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=115"></script>
+<script defer src="putt/putt.js?v=116"></script>
 <script defer src="putt/land.js?v=14"></script>
 <script defer src="putt/hole3d.js?v=19"></script>
 <script defer src="putt/gyms.js?v=4"></script>
@@ -15678,7 +15678,7 @@ function scrPuttHub(){
       <div class="ft-pp-tile wide" data-k="lives"><div><b>Lives</b><span>${ftHearts(m.lives,m.max)}</span><span>${out&&m.refillAt?`Next life in ${esc(hmShort(m.refillAt-Date.now()))}`:'Each one comes back 24 hours after you lose it.'}${PL&&m.max<PL.pass?` A Tour Pass doubles them: ${PL.pass}.`:''}</span></div><em>${m.lives}/${m.max}</em></div>
     </div>
   </div>`);
-  card.querySelector('.ft-big').onclick=openPutt;
+  card.querySelector('.ft-big').onclick=function(){ openPutt({tour:'main'}); };
   card.querySelector('[data-k="daily"]').onclick=openPuttDaily;
   card.querySelector('[data-k="members"]').onclick=()=>{ if(m.members) openPutt(); else { S.overlay='tourpass'; render(); } };
   body.appendChild(card); root.appendChild(body); add(root);
@@ -23091,7 +23091,7 @@ function puttReopen(){ if(_puttReopened) return; _puttReopened=true;
   try{ if(sessionStorage.getItem('ppt_open')!=='1' || S.overlay || !puttOn()) return; }catch(e){ return; }
   setTimeout(()=>{ try{ if(!document.querySelector('.pt-ov')) openPutt(); }catch(e){} }, 0); }
 try{ document.addEventListener('DOMContentLoaded',()=>setTimeout(puttReopen,6000),{once:true}); }catch(e){}   // no answer from the accounts in time
-function openPutt(o){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&o.go?o:undefined); }
+function openPutt(o){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&(o.go||o.tour)?o:undefined); }
 function openPuttDaily(){ openPutt({go:'daily'}); }
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){
