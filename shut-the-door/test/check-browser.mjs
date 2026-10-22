@@ -149,7 +149,16 @@ const browser = await pw.chromium.launch(CHROME ? { executablePath: CHROME } : {
    game's time). At 15 a second the first sample of the ball could land almost 2 m past the
    release, and the flight check below read a slider's 16 m flight as 13.7. With SHOTS set it draws
    every sixth frame, as many draws as before; otherwise fastDraw skips them all. */
-const STAGE_TEST = () => { window.STD_STAGE_TEST = { step: 1 / 30, renderEvery: 6 }; };
+/* It also counts WebGL context losses on the page (the event does not bubble; a capture listener on
+   the document still hears it). The game does not rebuild what it made with render targets after a
+   restore (the environment light, at least): forced on purpose, the mound then draws 29 colors and
+   40% lit, with a black sky. A loaded machine can lose the context on its own, so the pixel check says
+   when one happened. (QA issue 2026-10-22-shut-the-door-context-loss-dark-mound.) */
+const STAGE_TEST = () => {
+  window.STD_STAGE_TEST = { step: 1 / 30, renderEvery: 6 };
+  window.STD_CHECK_CTXLOST = 0;
+  document.addEventListener('webglcontextlost', () => { window.STD_CHECK_CTXLOST++; }, true);
+};
 
 /* The fast path (see the header): once the stage is loaded, its renderer's draws are counted and
    skipped, unless the check asks for one (window.STD_CHECK_DRAW). With SHOTS set every draw is
@@ -253,12 +262,12 @@ async function canvasRenders(page) {
       n++;
     }
     const cv = document.getElementById('m-canvas'), r = cv.getBoundingClientRect();
-    return { W, H, css: [Math.round(r.width), Math.round(r.height)], colors: seen.size, lit: lit / n, s3d: document.getElementById('m-scene').classList.contains('s3d') };
+    return { W, H, css: [Math.round(r.width), Math.round(r.height)], colors: seen.size, lit: lit / n, s3d: document.getElementById('m-scene').classList.contains('s3d'), lost: window.STD_CHECK_CTXLOST || 0 };
   });
 }
 
 function pixelsOk(label, cv) {
-  ok(cv.s3d && cv.W >= cv.css[0] && cv.colors >= 12 && cv.lit > 0.9, label + ' (' + cv.W + 'x' + cv.H + ' for ' + cv.css.join('x') + ' css px, ' + cv.colors + ' colors and ' + Math.round(cv.lit * 100) + '% lit in 121 samples' + (cv.s3d ? '' : ', not the 3D scene') + ')');
+  ok(cv.s3d && cv.W >= cv.css[0] && cv.colors >= 12 && cv.lit > 0.9, label + ' (' + cv.W + 'x' + cv.H + ' for ' + cv.css.join('x') + ' css px, ' + cv.colors + ' colors and ' + Math.round(cv.lit * 100) + '% lit in 121 samples' + (cv.s3d ? '' : ', not the 3D scene') + (cv.lost ? ', after ' + cv.lost + ' WebGL context loss' + (cv.lost > 1 ? 'es' : '') + ' on this page' : '') + ')');
 }
 
 /* What a PitchResult must look like on the field (3d/play.js reads it; this is the spec, written
