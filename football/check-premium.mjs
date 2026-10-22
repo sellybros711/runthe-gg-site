@@ -953,6 +953,8 @@ const CK_INJECT = 'checkoutReturn,checkoutThanks,unlockedSheet,premiumSheet,prof
      itself a reason premiumPitch() stands down. Cleared rather than worked around, so the
      section below is testing the ownership rule and not that one. */
   + 'setPaid:(v)=>{justPaid=v;},goHome,paintSeed,seasonTag,runPlayoffs,R:R,'
+  /* Stops a broadcast this file started, so it cannot finish inside a later section. */
+  + 'stopPo:()=>{clearTimeout(poTimer);cancelAnimationFrame(poRaf);poSkip=null;},'
   + 'dataNow,LEAGUE:()=>LEAGUE,CAL:()=>CAL,D:()=>DATA,'
   + 'setAuthState:(v)=>{authState=Object.assign({},authState,v);},'
   + "clearAuth:()=>{authState={ready:false,signedIn:false};premiumSet=null;},"
@@ -1902,8 +1904,13 @@ const po = await ck.page.evaluate(async () => {
       if (b && b.offsetParent) b.click();
       await new Promise((r) => setTimeout(r, 200));
     }
-    return { seedEye, brkEye,
-      poEye: (document.getElementById('po-round').textContent || '').trim() };
+    /* STOPPED HERE, because this walk only reads headings. Left running, the broadcast plays
+       on and starts the next round after a later section has swapped the run out, and the
+       TypeError it throws lands in that section's "none of it threw". It did, once the slower
+       speeds added steps to every game and moved where it ends. */
+    const poEye = (document.getElementById('po-round').textContent || '').trim();
+    T.stopPo();
+    return { seedEye, brkEye, poEye };
   };
   let found = null, run = null;
   for (let seed = 1; seed <= 40 && !run; seed++) { run = toSeeding(seed); if (run) found = seed; }
