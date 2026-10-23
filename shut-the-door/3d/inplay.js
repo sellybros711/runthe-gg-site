@@ -8,7 +8,9 @@
  *
  *   const ip = new InPlay({ scene, renderer, people, facts })   once the people are set up
  *   const run = ip.begin(pr, pitch, { hooks })                   a ball in play: the plan and its clock
- *     run.realDur, run.resolveReal (seconds after contact), run.sceneAt(r) (plan time at real r)
+ *     run.realDur, run.resolveReal (seconds after contact), run.sceneAt(r) (plan time at real r),
+ *     run.land { s, real, how, fair } (the ball's first landing, catch, pick up or home run)
+ *   ip.prime()                                                    its textures up to the GPU at load (stage.js)
  *   ip.update(s, camera)                                          every frame after contact (s: plan time)
  *   ip.fieldAt(s)                                                 the runners for the scorebar diamond
  *   ip.end(camera)                                                back to the set (the next pitch)
@@ -16,9 +18,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, BASE, wallDist } from './inplay-plan.js?v=2';
+import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=2';
 import { Crew } from './fielders.js?v=1';
 import { buildBallpark } from './ballpark.js?v=2';
+// (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=34';
 import { look } from './looks.js?v=2';
 import { P, FT } from './units.js?v=1';
@@ -50,6 +53,7 @@ export class InPlay {
     for (let n = 1; n <= 9; n++) this.fielders[n] = this.crew.figure();
     this.runnerFigs = [0, 1, 2, 3].map(() => this.crew.figure());
     this.trail = makeTrail(scene);
+    this.marker = makeMarker(scene);
     this.setFacts(facts);
     this.active = null;
     // the clips come after the scene is up; until then (or without them) the motion is procedural
@@ -77,6 +81,30 @@ export class InPlay {
     for (const f of this.crew.figures) { f.root.visible = on; if (on) f.place(0, 150, 0); }
     this.crew.blobs.visible = on;
     this.trail.visible = on;
+    this.marker.visible = on;
+  }
+
+  /** The broadcast's textures up to the GPU at load (stage.js init, behind the home screen): the
+      park's 2048 px infield mask, its dirt and seats, the shadow blob. Measured in Chromium (software
+      GL), the first broadcast frame uploaded 14 textures and 12 buffers on top of its draw; drawn
+      ahead into a target instead, it still compiled a shader per variant the canvas never uses, so
+      this only uploads (renderer.initTexture: no draw, nothing on screen). It takes six of the
+      fourteen off that frame; the rest are the bodies' bone textures (made on their first draw)
+      and textures still loading. A small hitch at the cut remains: stage.js's clock pauses for it. */
+  prime() {
+    const r = this.renderer, seen = new Set();
+    const up = (o) => o.traverse((m) => {
+      if (!m.isMesh) return;
+      for (const mat of [].concat(m.material)) for (const v of Object.values(mat)) {
+        if (!v || !v.isTexture || seen.has(v)) continue;
+        seen.add(v);
+        if (v.image && (v.image.width || v.image.data)) r.initTexture(v);
+      }
+    });
+    up(this.park);
+    for (const f of this.crew.figures) up(f.root);
+    up(this.crew.blobs);
+    return seen.size;
   }
 
   /** A ball in play: plan it from the engine's PitchResult and the pitch as the scene threw it. */
@@ -103,8 +131,13 @@ export class InPlay {
         if (close || (r.out && r.outAt != null && r.arrive - r.outAt < 0.5)) r.slide = r.arrive;
       }
     });
+    // the moment the ball first lands, is caught or fielded, or leaves the park (plan time), never
+    // after the play is decided: the game's play by play waits for it
+    const oc = plan.outcome, ft = oc.firstTouch || {};
+    const landS = Math.min(ft.landAt ?? ft.s ?? plan.resolveAt, plan.resolveAt);
     return {
       plan,
+      land: { s: landS, real: realAt(plan.edit, landS), how: oc.ball, fair: true },
       realDur: plan.realDur,
       resolveReal: realAt(plan.edit, plan.resolveAt),
       sceneAt: (r) => warp(plan.edit, r).s,
@@ -201,7 +234,9 @@ export class InPlay {
       const px = (0.0738 / (2 * d * Math.tan(camera.fov * D2R / 2))) * H;
       this.ball.scale.setScalar(this.ballScale0 * Math.max(1, 4.5 / Math.max(0.01, px)));
     } else this.ball.scale.setScalar(this.ballScale0);
-    this.crew.shadows(broadcast ? { x: b.x, y: b.y, z: b.by ? 99 : b.z } : null);
+    // the figures' soft shadows (the ball has its marker instead)
+    this.crew.shadows(broadcast ? { x: b.x, y: b.y, z: 999 } : null);
+    this.updateMarker(bp, broadcast, camera);
     if (!broadcast) this.crew.blobs.visible = false;
     // ---- the trail behind a ball in the air
     this.updateTrail(s, camera, broadcast);
@@ -425,6 +460,37 @@ export class InPlay {
     return list;
   }
 
+  /* ---------------------------------------------------------------- the ball's ground marker */
+
+  /** The marker on the ground under the ball (the owner, 2026-10-22: the ball is hard to follow in
+      the air and on throws): a soft dark disc and a thin bright ring, straight under the ball every
+      frame, wherever it is (in flight, bouncing, thrown, in a glove). High, it is wide and soft; as
+      the ball comes down it shrinks and sharpens, so its size reads the height. Only in the broadcast
+      of a ball in play, never on the pitch. Over the wall (the seats are not the field) it goes. One
+      quad, no shadow pass. bp: the ball as drawn, field feet. */
+  updateMarker(bp, broadcast, camera) {
+    const mk = this.marker;
+    const out = Math.hypot(bp.x, bp.y) > wallDist(Math.atan2(bp.x, bp.y) / D2R) - 1;
+    if (!broadcast || out) { mk.visible = false; return; }
+    mk.visible = true;
+    // height 0 (on the grass) to 1 (90 ft up and higher)
+    const h = clamp(bp.z / 90, 0, 1);
+    let dM = 0.55 + 2.6 * Math.sqrt(h);
+    // never under a dozen pixels across, so a far camera still shows it
+    const H = camera.userData.cssH || 800;
+    // on the ground, and on the mound where the ball is over it (ballpark.js: a cone 9 ft round and
+    // 10 in high, its 2.6 ft top flat, centred 1.5 ft behind the rubber)
+    const dm = Math.hypot(bp.x - MOUND.x, bp.y - MOUND.y - 1.5);
+    const g = dm < 2.6 ? 10 / 12 : dm < 9 ? (10 / 12) * (9 - dm) / 6.4 : 0;
+    mk.position.copy(P(bp.x, bp.y, g + 0.06));
+    const d = camera.position.distanceTo(mk.position);
+    const px = dM / (2 * d * Math.tan(camera.fov * D2R / 2)) * H;
+    if (px < 12) dM *= 12 / Math.max(0.01, px);
+    mk.scale.set(dM, 1, dM);
+    mk.material.uniforms.uH.value = h;
+    mk.updateMatrixWorld();
+  }
+
   /* ---------------------------------------------------------------- the trail */
 
   updateTrail(s, camera, broadcast) {
@@ -593,6 +659,7 @@ export class InPlay {
     this.park.visible = false;
     this.renderer.shadowMap.autoUpdate = true;
     this.trail.visible = false;
+    this.marker.visible = false;
     const pp = this.people;
     pp.batter.root.visible = true;
     pp.catcher.root.visible = true;
@@ -625,6 +692,34 @@ function pathPlace(q, b0) {
     if (d < best.d - 1e-6) best = { d, p: k + u };
   }
   return best.p;
+}
+
+/** The ball's ground marker: one flat quad, a dark disc with a bright ring, its softness on uH. */
+function makeMarker(scene) {
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -8,
+    uniforms: { uH: { value: 0 }, uRing: { value: new THREE.Color(1.0, 0.96, 0.82) } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: [
+      'uniform float uH; uniform vec3 uRing; varying vec2 vUv;',
+      'void main(){',
+      '  float r = length(vUv - 0.5) * 2.0;',
+      // the disc: soft edged when the ball is high, crisp as it comes down
+      '  float soft = mix(0.06, 0.5, uH);',
+      '  float disc = (1.0 - smoothstep(0.7 - soft, 0.7, r)) * mix(0.6, 0.35, uH);',
+      // the ring: thin and bright low, wider and fainter high
+      '  float rw = mix(0.05, 0.11, uH);',
+      '  float ring = (1.0 - smoothstep(rw * 0.45, rw, abs(r - 0.84))) * mix(0.9, 0.5, uH);',
+      '  float a = clamp(disc + ring, 0.0, 1.0);',
+      '  if (a < 0.004) discard;',
+      '  gl_FragColor = vec4(uRing * (ring / max(1e-3, ring + disc)), a);',
+      '}',
+    ].join('\n'),
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat);
+  m.renderOrder = 4; m.frustumCulled = false; m.visible = false;
+  scene.add(m);
+  return m;
 }
 
 function makeTrail(scene) {
