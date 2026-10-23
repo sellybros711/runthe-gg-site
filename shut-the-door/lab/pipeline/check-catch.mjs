@@ -11,7 +11,8 @@
  * staged the way the game stages it (inplay.js begin), and at every moment a fielder takes the ball
  * (each 'glove' event: a catch in the air, a throw taken at a bag) the scene is posed at that moment
  * (inplay.js update, every body) and the distance from the glove's pocket (Figure.handPoint) to the ball
- * the plan has there, an instant before, is measured. A ground ball fielded or picked up is measured
+ * the plan has there, an instant before, is measured. Every throw is measured at its release too: the
+ * throwing hand an instant before against the ball as drawn an instant after. A ground ball fielded or picked up is measured
  * too (the 'field' and 'pickup' moments, the glove against the ball on the ground), as todo until the
  * fielding motion is built (HELD). A hit that falls in must land clear of every glove (CLEAR_M). Over
  * LIMIT_M on a held moment is a failure.
@@ -34,7 +35,7 @@ export const LIMIT_M = 0.15;
 export const CLEAR_M = 0.5;
 // the moments held to LIMIT_M. A ground ball fielded or picked up is measured and printed as todo:
 // the fielding motion is the next change (the owner's step 2, 2026-10-22), and it joins this list then
-const HELD = ['catch in the air', 'drop', 'throw taken'];
+const HELD = ['catch in the air', 'drop', 'throw taken', 'release'];
 const FT = 0.3048;
 
 function loadPlaywright() {
@@ -89,6 +90,8 @@ for (let i = 0; i < cases.length; i += CHUNK) {
       try { run = ip.begin(c.pr, stub, {}); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
       const plan = run.plan, seen = new Set();
       const moments = plan.events.filter((e) => e.kind === 'glove').map((e) => ({ s: e.s, n: e.by, what: plan.events.some((x) => x.kind === 'catch' && Math.abs(x.s - e.s) < 1e-6) ? 'catch in the air' : plan.events.some((x) => x.kind === 'drop' && Math.abs(x.s - e.s) < 1e-6) ? 'drop' : 'throw taken' }));
+      // every throw leaves from his hand: the hand an instant before the release, the ball an instant after
+      for (const sg of plan.segs) if (sg.kind === 'throw') moments.push({ s: sg.t0, n: sg.from, what: 'release', release: sg });
       for (let n = 1; n <= 9; n++) for (const a of plan.fielders[n].acts) if (a.kind === 'field' || a.kind === 'pickup') moments.push({ s: a.t, n, what: a.kind === 'field' ? 'ground ball fielded' : 'picked up', at: a.ball });
       // a hit that falls in: where it lands, every glove is clear of it
       const ft = plan.outcome.firstTouch || {};
@@ -104,11 +107,13 @@ for (let i = 0; i < cases.length; i += CHUNK) {
         const k = m.n + ':' + m.s.toFixed(4);
         if (seen.has(k)) continue;
         seen.add(k);
-        ip.update(m.s, st.camera);
+        ip.update(m.release ? m.s - 1e-3 : m.s, st.camera);
         const f = ip.fielders[m.n];
         f.root.updateMatrixWorld(true);
-        const g = f.handPoint('glove');
-        const b = m.at ? { ...m.at, z: m.at.z ?? 0.12 } : plan.ballAt(m.s - 1e-3);
+        const g = f.handPoint(m.release ? 'hand' : 'glove');
+        let b = m.at ? { ...m.at, z: m.at.z ?? 0.12 } : plan.ballAt(m.s - 1e-3);
+        // a release: the ball as drawn an instant after it, against the hand an instant before
+        if (m.release) { ip.update(m.s + 1e-3, st.camera); const v = ip.ball.position; b = { x: -v.x / 0.3048, y: v.z / 0.3048, z: v.y / 0.3048 }; }
         const fp = plan.fielders[m.n].at(m.s);
         out.push({ tag: c.tag, what: m.what, n: m.n, s: +m.s.toFixed(3), dFt: Math.hypot(g.x - b.x, g.y - b.y, g.z - b.z), ballZ: +b.z.toFixed(2), bodyToBallFt: +Math.hypot(fp.x - b.x, fp.y - b.y).toFixed(2), glove: [g.x, g.y, g.z].map((v) => +v.toFixed(2)), ball: [b.x, b.y, b.z].map((v) => +v.toFixed(2)) });
       }
