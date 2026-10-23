@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -43,7 +43,7 @@
 <link rel="preload" as="image" href="3d/assets/hero.webp?h=a8b96e3af7">
 <!-- stamp:preload:end -->
 </head>
-<body>
+<body data-screen="s-home">
 <div class="app">
 
 <header class="hdr">
@@ -64,43 +64,40 @@
 
 <main>
 
-<!-- 1. HOME -->
+<!-- 1. HOME: a title screen. A slow stadium behind, the header, today's spot, one button, the menu. -->
 <section class="screen on" id="s-home" aria-labelledby="h-head">
+  <div class="t-bg" id="h-bg" aria-hidden="true">
+    <img class="t-bgi" src="home-bg/wide.webp" alt="" width="2048" height="1024" decoding="async" fetchpriority="high">
+    <img class="t-bgi" data-src="home-bg/stands.webp" alt="" width="2048" height="1024" decoding="async">
+    <img class="t-bgi" data-src="home-bg/seats.webp" alt="" width="2048" height="1024" decoding="async">
+    <img class="t-bgi" data-src="home-bg/outfield.webp" alt="" width="2048" height="1024" decoding="async">
+  </div>
+  <div class="t-scrim" aria-hidden="true"></div>
   <div class="load" id="h-load"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><span>warming up</span></div>
-  <div id="h-main" hidden>
-    <div class="hero" id="h-hero">
-      <canvas id="h-canvas" aria-hidden="true"></canvas>
-      <img class="h-poster" id="h-poster" src="3d/assets/hero.webp?h=a8b96e3af7" alt="" hidden>
-      <div class="hero-chips" id="h-day"></div>
-      <div class="hero-text">
-        <p class="h-eyebrow">you are the closer</p>
-        <h1 class="hero-head" id="h-head"></h1>
-        <p class="h-occ"><span class="h-title" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
-      </div>
+  <div class="title" id="h-main" hidden>
+    <h1 class="t-head" id="h-head"><span class="t-l1">YOU ARE THE CLOSER.</span> <span class="t-l2">CAN YOU SHUT THE DOOR?</span></h1>
+    <div class="t-sit">
+      <p class="h-occ"><span class="h-title" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
+      <div class="hbug-wrap" id="h-sit" role="group"></div>
+      <div class="t-who" id="h-pitcher"></div>
+      <div class="t-who due" id="h-due"></div>
+      <p class="stakes" id="h-setup"></p>
+      <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
     </div>
-    <div class="h-cols">
-      <div class="h-col">
-        <div class="hbug-wrap" id="h-sit" role="group"></div>
-        <p class="stakes" id="h-setup"></p>
-        <div class="go-wrap" id="h-go">
-          <button class="btn take" id="b-take" type="button">take the mound</button>
-          <p class="streak" id="h-streak"></p>
-        </div>
-        <div class="done" id="h-done" hidden></div>
+    <div class="t-menu" id="h-menu">
+      <div class="t-go" id="h-go">
+        <button class="btn take" id="b-take" type="button">take the mound</button>
+        <p class="streak" id="h-streak"></p>
       </div>
-      <div class="h-col">
-        <div class="dcard pcard" id="h-pitcher"></div>
-        <div class="dcard due" id="h-due"></div>
-      </div>
+      <div class="done" id="h-done" hidden></div>
+      <nav class="t-list" aria-label="More">
+        <button type="button" data-open="how"><span>how to play</span></button>
+        <button type="button" data-open="101"><span>pitching 101</span></button>
+        <button type="button" data-open="board"><span>today's board</span></button>
+        <button type="button" data-open="stats"><span>stats</span></button>
+        <button type="button" data-open="settings"><span>settings</span></button>
+      </nav>
     </div>
-    <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
-    <nav class="h-links" aria-label="More">
-      <button type="button" data-open="how">how to play</button>
-      <button type="button" data-open="101">pitching 101</button>
-      <button type="button" data-open="board">today's board</button>
-      <button type="button" data-open="stats">stats</button>
-      <button type="button" data-open="settings">settings</button>
-    </nav>
     <footer class="legal">
       <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=1" alt="Shut The Door" width="160" height="63">
       <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=1" alt="" width="160" height="63">
@@ -301,7 +298,7 @@
 <script src="mock-api.js?v=10"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=1"></script>
-<script src="ui.js?v=25"></script>
+<script src="ui.js?v=26"></script>
 <script type="module" src="3d/boot.js?v=29"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
