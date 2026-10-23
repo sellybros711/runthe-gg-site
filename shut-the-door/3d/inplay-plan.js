@@ -488,15 +488,11 @@ function holdThenThrow(ctx, n, s, at, late) {
     } else {
       const ready = coverArrive(ctx, cov, o.base, t);
       const fly = dist(pos, tgtPt) / (OF.includes(holder) ? 125 : 118) + 0.06;
-      const transfer = done.length ? 0.32 : 0.42;
-      let rel = Math.max(t + transfer, ready - fly + 0.05);
-      if (o.from === 0 && o.base === 1) {
-        // a routine play is not hurried: the throw to first beats the batter by a step or two, not
-        // by half the base path (he is about 4.4 s down the line; the fielder sets his feet)
-        const box = { x: ctx.bats === 'L' ? 2.95 : -2.95, y: 0.4 };
-        const runner = 0.28 + runTime(dist(box, BASE[1]), 26.5, 16, true, false);
-        rel = Math.max(rel, runner - fly - (0.3 + 0.45 * rnd(ctx.id, 'step')));
-      }
+      // the glove to the hand and his feet set (a pivot is quicker): then it goes. He never stands
+      // holding it (it waited to beat the batter by only a step, so a routine grounder sat in his
+      // hand for a second and a half; the owner, 2026-10-22: the players need to throw the ball)
+      const transfer = done.length ? 0.32 : 0.5 + 0.2 * rnd(ctx.id, 'step');
+      const rel = Math.max(t + transfer, ready - fly + 0.05);
       throwBall(ctx, holder, cov, rel, pos, tgtPt, fly);
       ctx.T[cov].act(rel + fly, o.base === 4 ? 'tag' : 'receive', { base: o.base });
       o.ballAt = rel + fly; o.by = cov;

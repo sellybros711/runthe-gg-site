@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=3';
+import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=4';
 import { Crew } from './fielders.js?v=2';
-import { buildBallpark } from './ballpark.js?v=3';
+import { buildBallpark } from './ballpark.js?v=4';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=34';
 import { look } from './looks.js?v=2';
@@ -216,6 +216,21 @@ export class InPlay {
       const thr = f.root.visible && f.throwing ? 'hand' : 'glove';
       if (f.root.visible) bp = f.handPoint(thr);
     } else {
+      // a throw leaves from his hand: the hand where it was at the release (posed once, at that
+      // moment), its gap to the plan's path closed over the flight, so the ball never jumps out of
+      // his hand and still ends in the glove
+      const sg = plan.segs.find((x) => x.kind === 'throw' && s >= x.t0 && s < x.t1);
+      if (sg) {
+        if (!sg.hand) {
+          const f = this.fielders[sg.from], seen = f.root.visible;
+          this.poseFielder(sg.from, f, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3));
+          f.root.updateMatrixWorld(true);
+          sg.hand = f.handPoint('hand');
+          if (seen) this.poseFielder(sg.from, f, s, b); else f.root.visible = false;
+        }
+        const k = clamp((s - sg.t0) / (sg.t1 - sg.t0), 0, 1), w = Math.pow(1 - k, 1.5);
+        bp = { x: bp.x + (sg.hand.x - sg.a.x) * w, y: bp.y + (sg.hand.y - sg.a.y) * w, z: bp.z + (sg.hand.z - sg.a.z) * w };
+      }
       const nx = this.nextCatch(s);
       if (nx && nx.t - s < 0.06 && nx.t > s) {
         const f = this.fielders[nx.by];
@@ -343,6 +358,14 @@ export class InPlay {
           const q = seg ? seg.b : { x: st.x, y: st.y, z: 4.6 };
           glove = { x: q.x, y: q.y, z: q.z }; gloveW = Math.max(gloveW, k);
           if (seg) { const kw = ramp(s, t - 0.45, t - 0.08) * (1 - ramp(s, t + 0.4, t + 1.0)); if (kw > takeW) { take = { ...glove, t }; takeW = kw; } }
+          // at first base on a force: the stretch, the glove side foot out toward the throw, the
+          // other on the bag, low and long
+          if (a.kind === 'receive' && a.base === 1) {
+            const kk = bump(s, t - 0.4, t - 0.12, t + 0.2, t + 0.6);
+            const gl = f.glove === 'r' ? 'r' : 'l', ot = gl === 'l' ? 'r' : 'l';
+            spec.stride = { [gl]: 0.75 * kk, [ot]: -0.15 * kk };
+            spec.crouch = Math.max(spec.crouch, 0.3 * kk); spec.lean = Math.max(spec.lean, 0.45 * kk); spec.wide = Math.max(spec.wide || 0, 0.5 * kk);
+          }
           if (seg) faceYaw = heading(st, seg.a);
           f.reaching = s < t + 0.02;
           if (a.kind === 'tag') { const k3 = bump(s, t, t + 0.12, t + 0.5, t + 0.8); spec.crouch = Math.max(spec.crouch, 0.7 * k3); if (k3 > 0) { glove = { x: st.x - 1.5, y: st.y + 1.5, z: 0.6 }; gloveW = Math.max(gloveW, k3); } }
