@@ -417,18 +417,22 @@ async function playOuting(page, o) {
       const f = await page.evaluate((c) => {
         const A = window.STD_API;
         if (!A.__rec) { const t = A.throwPitch; window.__calls = []; A.throwPitch = function (id, call) { window.__calls.push(JSON.parse(JSON.stringify(call))); return t.apply(this, arguments); }; A.__rec = true; }
-        const b = document.querySelector('#m-aim .cell[data-cell="' + c + '"]').getBoundingClientRect();
-        return [b.left + b.width * 0.8, b.top + b.height * 0.3];
+        const b = document.querySelector('#m-aim .cell[data-cell="' + c + '"]').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
+        const x = b.left + b.width * 0.8, y = b.top + b.height * 0.3;
+        return [x, y, (x - z.left) / z.width, (y - z.top) / z.height];
       }, cellNo);
       await page.mouse.click(f[0], f[1]);
       const a = await page.evaluate(() => {
-        const S = window.STD_UI.state, C = window.STD_CONTRACT, x = document.querySelector('#m-aim .aim-x').getBoundingClientRect();
-        return { cell: S.cell, at: S.at, cx: x.left + x.width / 2, cy: x.top + x.height / 2, dir: C.screenCol(C.cellOf(0, 1)) - C.screenCol(C.cellOf(0, 0)) };
+        const S = window.STD_UI.state, C = window.STD_CONTRACT, x = document.querySelector('#m-aim .aim-x').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
+        /* in the zone's own frame: a layout after the tap (the 3D stage landing) moves the zone, and the crosshair with it */
+        return { cell: S.cell, at: S.at, fx: (x.left + x.width / 2 - z.left) / z.width, fy: (x.top + x.height / 2 - z.top) / z.height, zw: z.width, zh: z.height,
+          dir: C.screenCol(C.cellOf(0, 1)) - C.screenCol(C.cellOf(0, 0)) };
       });
       const want = [0.3 * a.dir, 0.2];
       ok(a.cell === cellNo && a.at && Math.abs(a.at[0] - want[0]) <= 0.02 && Math.abs(a.at[1] - want[1]) <= 0.02,
         '5 a free tap keeps its cell (' + a.cell + ') and its point in it, catcher\'s view (at ' + JSON.stringify(a.at) + ', ' + JSON.stringify(want) + ' wanted)');
-      ok(Math.abs(a.cx - f[0]) < 1.5 && Math.abs(a.cy - f[1]) < 1.5, '5 the crosshair sits where the finger was, not on the cell\'s centre');
+      const dx = (a.fx - f[2]) * a.zw, dy = (a.fy - f[3]) * a.zh;
+      ok(Math.abs(dx) < 1.5 && Math.abs(dy) < 1.5, '5 the crosshair sits where the finger was in the zone, not on the cell\'s centre (off by ' + dx.toFixed(1) + ', ' + dy.toFixed(1) + ' px)');
     } else {
       await page.click(`#m-aim .cell[data-cell="${cellNo}"]`);
     }
