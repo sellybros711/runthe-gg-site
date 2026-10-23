@@ -488,10 +488,10 @@ function holdThenThrow(ctx, n, s, at, late) {
     } else {
       const ready = coverArrive(ctx, cov, o.base, t);
       const fly = dist(pos, tgtPt) / (OF.includes(holder) ? 125 : 118) + 0.06;
-      // the glove to the hand and his feet set (a pivot is quicker): then it goes. He never stands
+      // the glove to the hand, a crow hop and his feet set (a pivot is quicker): then it goes. He never stands
       // holding it (it waited to beat the batter by only a step, so a routine grounder sat in his
       // hand for a second and a half; the owner, 2026-10-22: the players need to throw the ball)
-      const transfer = done.length ? 0.32 : 0.5 + 0.2 * rnd(ctx.id, 'step');
+      const transfer = done.length ? 0.32 : 0.65 + 0.25 * rnd(ctx.id, 'step');
       const rel = Math.max(t + transfer, ready - fly + 0.05);
       throwBall(ctx, holder, cov, rel, pos, tgtPt, fly);
       ctx.T[cov].act(rel + fly, o.base === 4 ? 'tag' : 'receive', { base: o.base });
