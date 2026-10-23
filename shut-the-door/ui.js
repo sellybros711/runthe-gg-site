@@ -176,7 +176,6 @@ function setTheme(t) {
   try { localStorage.setItem('runthegrid_theme', t); } catch (e) {}
   var m = $('themeMeta'); if (m) m.setAttribute('content', t === 'dark' ? '#0f131a' : '#eee6d6');
   if (S.scene && S.scene.L) S.scene.draw(S.scene.frame);
-  if (S.hero && S.hero.L) S.hero.draw(S.hero.frame);
 }
 
 /* ---- home ------------------------------------------------------------------------- */
@@ -389,9 +388,9 @@ function startHomeBg() {
   document.addEventListener('visibilitychange', function () { bg.classList.toggle('paused', document.hidden); });
 }
 
-/* the 3D mound warms up while the player reads the spot */
+/* the 3D mound warms up while the player reads the spot (the 2D mound needs no warm) */
 function drawHero() {
-  warm3d();
+  if (use3d()) warm3d();
 }
 
 /* The 3D mound starts on the home screen: its downloads, the people for today's spot and the
@@ -465,7 +464,7 @@ function buildMound() {
     S.heat = x.dataset.heat;
     renderScout();
   });
-  window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); if (S.hero) drawHero(); });
+  window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); });
   /* The scene's box moves without a window resize (a line wraps, a button grows): the canvas then
      shows a stretched frame and the grid sits off the zone, so lay out again. Never mid pitch. */
   if (window.ResizeObserver) {
