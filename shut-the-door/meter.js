@@ -18,7 +18,7 @@
  *   qOf        q = 1 - |error| / windowMs, at least 0, kept to two places
  *              (contract.js releaseQ).
  *   The bar shows two bands: the soft one where q >= 0.5 (tighter than his
- *   own command) and the bright one where q >= 0.8 (the best release).
+ *   own command) and the bright one where q >= 0.85 (the best release).
  *
  * TUNED SO AN AVERAGE TAP IS HIS OWN COMMAND. A tap on a moving mark misses by
  * about 60 ms (one standard deviation) for an ordinary player on a phone, and
@@ -36,7 +36,14 @@ var SWEEP_MS = 850;
 var MARK = 0.7;
 var WINDOW_AT_50 = 110;
 var TIMING = Object.freeze({ sdMs: 60, slip: 0.1, slipMaxMs: 450 });
-var GOOD_Q = 0.5, BEST_Q = 0.8;
+/* THE BRIGHT BAND (the owner, 2026-10-23: the timing is too easy). BEST_Q was 0.8: the bright band
+   is the tap within 20% of the window, +/-22 ms at command 50. It is now 0.85: within 15%, +/-16.5
+   ms. Measured on the ordinary tap model (TIMING) at command 50: an ordinary tap lands in the
+   bright band 21% of the time (27% at 0.8), a good timer (half the miss, a third of the slips)
+   42% (53%), max power 13% (16%). Only the bright band narrows. The release's spread (spreadOf,
+   q 0.5 is 1.0x) is unchanged, so no outcome moves and the pool is not rebuilt. The PAINTED cue
+   and the ring read it too (ui.js isPainted). */
+var GOOD_Q = 0.5, BEST_Q = 0.85;
 
 /* EFFORT, the first stop (the owner's call, 2026-10-22; CONTRACT.md 5c).
    e 0..1 (contract.js effortE): 0 his softest, 0.5 his ordinary pitch, 1 his
@@ -48,6 +55,9 @@ var GOOD_Q = 0.5, BEST_Q = 0.8;
    EFFORT_SWEEP_MS is one pass of the effort needle, if the UI sweeps one:
    effortAt(t) is the e a stop at t ms gives (0 at the left, 1 at the right). */
 var EFFORT_WINDOW = Object.freeze({ SOFT: 1.25, HARD: 0.6 });
+/* The first stop is shown to the player as POWER (the owner, 2026-10-23: "effort" is the team's word,
+   "power" is the player's). POWER and EFFORT are the same flag: the stored field stays e. */
+var POWER_ON = true;
 var EFFORT_SWEEP_MS = 900;
 function windowScale(e) {
   var ee = C.effortE(e);
@@ -197,7 +207,7 @@ function create(el) {
 }
 
 var api = { SWEEP_MS: SWEEP_MS, MARK: MARK, WINDOW_AT_50: WINDOW_AT_50, TIMING: TIMING, GOOD_Q: GOOD_Q, BEST_Q: BEST_Q,
-  EFFORT: true, windowOf: windowOf, veloOf: veloFor,
+  EFFORT: POWER_ON, POWER: POWER_ON, windowOf: windowOf, veloOf: veloFor,
   EFFORT_WINDOW: EFFORT_WINDOW, EFFORT_SWEEP_MS: EFFORT_SWEEP_MS, windowScale: windowScale, effortAt: effortAt,
   stuffFor: stuffFor, veloFor: veloFor, windowMs: windowMs, qOf: qOf, needleAt: needleAt, errAt: errAt, wordOf: wordOf, bandsFor: bandsFor, create: create };
 if (NODE) module.exports = api;

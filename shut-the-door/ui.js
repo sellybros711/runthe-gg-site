@@ -678,7 +678,7 @@ function stepLine() {
   if (!el) return;
   var say = '';
   if (S.busy || !S.outing || S.outing.status !== 'live') say = '';
-  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your effort' : 'stop it in the bright band';
+  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your power' : 'stop it in the bright band';
   else if (!S.type) say = 'pick a pitch';
   else if (S.cell == null) say = 'aim: drag or tap the zone';
   else say = 'tap throw';
@@ -1005,7 +1005,7 @@ function meterDone() { if (S.meter) S.meter.hide(); $('m-pad').classList.remove(
    that cell. Never on two pitches in a row in an outing. With the meter off there is no q, so
    never. The cue stays quiet: a ring on the cell and a word after the line. */
 function isPainted(pr, call) {
-  var best = window.STD_METER ? window.STD_METER.BEST_Q : 0.8;
+  var best = window.STD_METER ? window.STD_METER.BEST_Q : 0.85;
   if (call.q == null || call.q < best) return false;
   if (pr.actualCell !== call.cell || !C.inZone(call.cell) || call.cell === C.cellOf(2, 2)) return false;
   return S.paintedN == null || pr.n !== S.paintedN + 1;
