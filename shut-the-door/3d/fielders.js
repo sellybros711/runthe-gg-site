@@ -402,7 +402,8 @@ export class Figure {
       look     a field point he looks at
       dive     0..1    the body laid out forward (the root pitched), arms out to the glove
       armsUp   0..1    a leap: arms straight up
-      slide    0..1    feet first into a bag: legs out in front, the trunk laid back, the seat on the dirt */
+      slide    0..1    feet first into a bag: legs out in front, the trunk laid back, the seat on the dirt
+      settle   0..1    the run's capture gives way to this pose (getting down to field a ball) */
   pose(spec) {
     const B = this.bones, root = this.root;
     for (const [b, p, q] of this.bind) { b.position.copy(p); b.quaternion.copy(q); }
@@ -526,7 +527,8 @@ export class Figure {
     const qp = this.qp, qa = this.qa, qb = this.qb;
     for (let i = 0; i < n; i++) qp[i].copy(L[i].quaternion);
     const pel = this.bones.pelvis, pelP = pel.position.clone();
-    const runW = smooth(aRun * 4) * (1 - (sp.slide || 0));
+    // (settle: the stride gives way to a set pose, getting down to field a ball)
+    const runW = smooth(aRun * 4) * (1 - (sp.slide || 0)) * (1 - clamp(sp.settle || 0, 0, 1));
     let any = false;
     if (runW > 0.001) {
       // the mix of runs at this speed, each at the same share of its cycle

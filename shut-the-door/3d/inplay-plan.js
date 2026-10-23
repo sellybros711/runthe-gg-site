@@ -467,7 +467,7 @@ function holdThenThrow(ctx, n, s, at, late) {
       const ready = coverArrive(ctx, cov, target, t);
       const fly = dist(pos, tgtPt) / 118 + 0.06;
       const runnerAt = ctx.batterArrival ?? 4.4;
-      const rel = Math.max(t + 0.42, ready - fly + 0.05, runnerAt + 0.12 - fly);
+      const rel = Math.max(t + 0.6, ready - fly + 0.05, runnerAt + 0.12 - fly);
       throwBall(ctx, holder, cov, rel, pos, tgtPt, fly);
       ctx.lateThrow = { base: target, arrive: rel + fly };
       holder = cov; t = rel + fly;
