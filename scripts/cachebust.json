@@ -2953,16 +2953,16 @@
       "sha": "07b7ca2277fe8038"
     },
     "grade.js": {
-      "v": "6",
-      "sha": "5a861492773ea7a4"
+      "v": "7",
+      "sha": "516364606ab7d353"
     },
     "lesson.js": {
-      "v": "3",
-      "sha": "d6666cfadb7a64b6"
+      "v": "4",
+      "sha": "97757da0db8cd9f0"
     },
     "engine.js": {
-      "v": "8",
-      "sha": "658d9975ef75be53"
+      "v": "9",
+      "sha": "2e39baaa5dac816b"
     },
     "share.js": {
       "v": "2",
@@ -2977,8 +2977,8 @@
       "sha": "843bad6d39ae5e64"
     },
     "api.js": {
-      "v": "6",
-      "sha": "e69ba9610407369d"
+      "v": "7",
+      "sha": "c2e3a1108d288e19"
     },
     "mock-api.js": {
       "v": "10",

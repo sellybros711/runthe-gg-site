@@ -1,16 +1,14 @@
 /* Shut The Door: player strategies against every pack (rules 2, 2026-10-22).
  *
  *   node shut-the-door/pipeline/strategies.cjs [game dir] [runs] [rules 1|2] [strategies] > rows.json
- *   env: PACKS=yamamoto,... only those packs; RELS=none,ordinary,perfect the releases;
+ *   env: PACKS=yamamoto,... only those packs; RELS=none,ordinary,good,perfect the releases
+ *        (good: the tap model at half the miss and a third of the slips);
  *        FUZZ=0 the screen strategies read the exact profile instead of the scouting view;
  *        EFFORTS=none,min,mid,max,smart the effort policies (CONTRACT.md 5c; default none):
  *          none   no e (the meter's one stop, as before effort)
  *          min, mid, max   e 0, 0.5, 1 every pitch
- *          smart  effort by the pitch and the moment, as the measured bins read: max on a
- *                 fastball with two strikes, firm on a fastball when even or ahead and on a
- *                 breaking ball with two strikes, easy on the changeup or splitter (a harder
- *                 one whiffs less) and at three balls (the strike matters more than the stuff),
- *                 ordinary otherwise, and no harder than ordinary past 15 pitches
+ *          smart  save it for the put-away: max with two strikes, easy early in the count, at
+ *                 three balls and on the changeup or splitter, ordinary otherwise
  *        AIMS=centre,random,out,in the free aim point (CONTRACT.md 5d; default centre):
  *          centre  no at (the cell's centre); random  anywhere in the cell;
  *          out     the cell's far corner from the heart of the plate; in  its near corner
@@ -130,9 +128,12 @@ function fixedTop(pack) {
   return top;
 }
 
-function tapQ(rng, command, eff) {
-  let e = R.probit(rng()) * MT.TIMING.sdMs;
-  if (rng() < MT.TIMING.slip) e = rng() * MT.TIMING.slipMaxMs;
+/* good: a player who times well (half the ordinary miss, a third of the slips) */
+const GOOD = Object.freeze({ sdMs: MT.TIMING.sdMs / 2, slip: MT.TIMING.slip / 3, slipMaxMs: MT.TIMING.slipMaxMs });
+function tapQ(rng, command, eff, t) {
+  t = t || MT.TIMING;
+  let e = R.probit(rng()) * t.sdMs;
+  if (rng() < t.slip) e = rng() * t.slipMaxMs;
   return MT.qOf(e, command, eff);
 }
 const EFFORTS = (process.env.EFFORTS || 'none').split(',');
@@ -149,15 +150,14 @@ function effortOf(policy, o, c) {
   if (policy === 'min') return 0;
   if (policy === 'mid') return 0.5;
   if (policy === 'max') return 1;
+  // smart: save it for the put-away. Max with two strikes (fastball or breaking ball), easy early in
+  // the count and at three balls (a wider window, and the arm gets its strain back), easy on the
+  // changeup and splitter (a harder one whiffs less), ordinary otherwise
   const st = o.st, fam = K.FAMILY_OF[c.type];
-  let e;
-  if (st.b === 3) e = 0.25;
-  else if (fam === 'offspeed') e = 0.25;
-  else if (st.s === 2) e = fam === 'hard' ? 1 : 0.75;
-  else if (fam === 'hard' && st.s >= st.b) e = 0.75;
-  else e = 0.5;
-  if (o.log.length >= 15) e = Math.min(e, 0.5);
-  return e;
+  if (st.b === 3 || fam === 'offspeed') return 0.25;
+  if (st.s === 2) return 1;
+  if (st.b + st.s <= 1) return 0.25;
+  return 0.5;
 }
 
 function play(pack, model, sname, strat, release, runs, effort, aim) {
@@ -182,6 +182,7 @@ function play(pack, model, sname, strat, release, runs, effort, aim) {
       if (at) c.at = at;
       if (release === 'perfect') c.q = 1;
       else if (release === 'ordinary') c.q = tapQ(tap, cmd, eff);
+      else if (release === 'good') c.q = tapQ(tap, cmd, eff, GOOD);
       const res = E.throwPitch(o, c).pitchResult;
       if (res.paOver) { pa++; if (res.result === 'ball' || res.result === 'hit_by_pitch') walks++; }
     }

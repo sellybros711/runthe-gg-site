@@ -274,36 +274,48 @@ are used as measured. The strengths of the adjustment, the zone effect and fatig
 are a labelled model, tuned so a strong player who reads the screen and mixes his pitches holds
 about what the closer pool holds (README).
 
-## 5c. Effort: the meter's first stop (the owner's call, 2026-10-22)
+## 5c. Effort: the meter's first stop (the owner's calls, 2026-10-22 and 2026-10-23)
 
-A pitch is now a pitch type, an aim (a cell), then two stops on the meter: **effort** (`e`), then
-**accuracy** (`q`, the release above). The effort stop says how hard he throws it: `e = 0` his
-softest, `0.5` his ordinary pitch, `1` his hardest. A call carries `e` beside `q`, kept to two places
-(`contract.js effortE`). An `e` rides only with a `q` (the meter off has neither) and only under
-rules 2. A call without `e` is his ordinary pitch, so every rules 1 and rules 2 outing stored before
-replays exactly. Rules stay 2: `e` 0.5 and no `e` play the same pitch (only the speed shown differs).
+A pitch is now a pitch type, an aim (a cell and a point in it, section 5d), then two stops on the
+meter: **effort** (`e`), then **accuracy** (`q`, the release above). The effort stop says how hard
+he throws it: `e = 0` his softest, `0.5` his ordinary pitch, `1` his hardest. A call carries `e`
+beside `q`, kept to two places (`contract.js effortE`). An `e` rides only with a `q` (the meter off
+has neither) and only under rules 2. A call without `e` is his ordinary pitch (`e` 0.5), so every
+rules 1 and rules 2 outing stored before replays exactly. Rules stay 2.
 
-1. **The pitch (measured).** More effort throws a pitch from further up his own velocity for that
-   type: `e = 0` his slowest fifth, `0.5` his middle fifth, `1` his fastest fifth, straight between.
-   The speed and break shown are the mean of his own real pitches in that fifth, from the same
+Each part is marked **data**, **game choice (not data)**, **game rule** or **model**.
+
+1. **The speed shown (data).** `e` walks five slices of his own speed for that pitch type: his
+   slowest 5%, the second fifth, the middle fifth, the fourth fifth and his fastest 5%, straight
+   between. The speed and break shown are the mean of his own real pitches in that slice, from the
    Savant search his arsenal came from (`arsenal[i].stuff`, `pipeline/effort.py`,
-   `contract.js stuffAt`). A pitch with fewer than 40 tracked pitches of his own, or a pitcher with
-   none (Eckersley 1988), shows his average plus the league's typical spread (`src: 'league'`).
-   What a pitch from each fifth does is measured on every 2024 regular season pitch (643,123): key
-   by key, observed over what the same family does in the same cell, exact count and platoon. Every
-   pitcher puts a fifth of his pitches in each bin, so who is pitching cancels. The engine multiplies
-   the drawn row by those ratios (`grade.js EFFORT.BINS`). A harder fastball misses more bats and is
-   hit less hard (fastest fifth: whiffs x1.10, home runs x0.80). A harder breaking ball whiffs a
-   little more, is taken for a strike less, and breaks less. A harder changeup or splitter whiffs
-   less: velocity separation is the pitch. Real, so effort is a choice per pitch, not a dial to max.
-2. **The window (a game rule).** The accuracy stop's window is scaled by `meter.js windowScale(e)`:
-   x1.25 at `e = 0`, x1 at `0.5`, x0.6 at `1`, straight between. Both bands shrink with it. The real
-   data shows no such cost (a pitcher's spread at his fastest is within 2% of his middle), so this is
-   the meter's trade, labelled as a rule.
-3. **The arm (a model).** A pitch at `e` counts `1 + 0.5 x (2e - 1)` pitches on the arm for every
-   pitch after it (`grade.js loadOf`, `fatigueOf`): 1.5 at max, 0.5 at the softest, 1 without `e`.
-   Real relievers' velocity is flat across an outing (tired arms are taken out), so the strength is
-   tuned, not measured.
+   `contract.js stuffAt`). Chapman 2016's four-seam reads 97.4 at `e = 0`, 101.1 at 0.5, 104.4 at 1.
+   A pitch type with fewer than 40 of his own tracked pitches, or a pitcher with none (Eckersley
+   1988), shows his average plus the league's typical spread (`src: 'league'`).
+2. **What the pitch does (data, then a game choice).** Measured on every 2024 regular season pitch
+   (643,123) for each slice: key by key, observed over what the same family does in the same cell,
+   exact count and platoon (`grade.js EFFORT.BINS`). His fastest 5% of fastballs: whiffs x1.13,
+   home runs x0.75, hits x0.92. A harder breaking ball is called a strike less (x0.81) and breaks
+   less. A harder changeup or splitter whiffs less (x0.86). **Game choice, not data:** above the
+   middle, each ratio's distance from 1 is multiplied by `EFFORT.GAME` (8), floored at 0.2, so a
+   max effort fastball whiffs about 2x and gives up a fifth of the home runs. A max effort breaking
+   ball or changeup is punished the same way, in the data's direction. Below the middle the ratios
+   are used as measured (`GAME_DOWN` 1).
+3. **The miss (data, then a game choice).** His fastest slice misses wider than his middle one:
+   fastballs 3%, breaking balls 11%, offspeed 6% (`EFFORT.SPREAD`). **Game choice:** that is
+   doubled (`SPREAD_GAME` 2), and applies above the middle only.
+4. **The window (a game rule).** The accuracy window is x1.25 at `e = 0`, x1 at 0.5 and x0.6 at 1,
+   straight between (`meter.js windowScale`). Both bands shrink with it.
+5. **The arm (a model, tuned).** A pitch counts `1 + 1 x (2e - 1)` pitches on the arm above the
+   middle (2 at max) and `1 - 0.5 x (1 - 2e)` below (0.5 at the softest) for every later pitch
+   (`grade.js loadOf`, `fatigueOf`). The extra over 1 builds a **strain** that easier pitches pay
+   back: the arm's miss is x `(1 + 0.05 x strain)`. Max every pitch for ten pitches is about 1.5x the
+   miss. Real relievers' speed is flat across an outing (tired arms are taken out), so this is tuned
+   with `pipeline/strategies.cjs`, not measured.
+
+The game choices were set so that max effort is a weapon and never a dial to leave at max. Measured
+(README): a good timer who saves max effort for the put-away holds about 4 points more than one who
+never changes it, and max on every pitch is worse than both.
 
 **The grade never reads this pitch's `e`.** Like `q`, it is how he throws the call, not the call:
 pricing it would mean assuming how well the player times the smaller window and looking past one
@@ -312,7 +324,8 @@ earlier efforts left is part of the history the grade prices, as fatigue always 
 no effort term; effort reaches it through what happens, as the release does.
 
 **Determinism.** Still four draws a pitch in the same order. `e` changes the weights of the row the
-library draw reads and the arm on later pitches, never which draws are taken.
+library draw reads, the miss above the middle and the arm on later pitches, never which draws are
+taken.
 
 **What the UI reads** (`meter.js`, `window.STD_METER`): `EFFORT === true` once effort exists;
 `windowOf(e, command)`, the bright band (q of `BEST_Q` and up) as `[lo, hi]` fractions of the bar
@@ -320,9 +333,10 @@ library draw reads and the arm on later pitches, never which draws are taken.
 and `bandsFor(command, e)` for the accuracy bar at that effort; `veloFor(arsenalPitch, e)` and
 `stuffFor(arsenalPitch, e)` for the speed and break to show; `effortAt(t)` if the effort needle
 sweeps (`EFFORT_SWEEP_MS`); `run({command, effort, ...})` draws the accuracy bar at that effort. A
-`PitchResult` with `e` carries `stuff: {velo, pfxX, pfxZ, src}`, and its `velo` is that speed.
+`PitchResult` with `e` carries `stuff: {velo, pfxX, pfxZ, src, spread}`, and its `velo` is that
+speed.
 
-## 5d. The free aim point (the owner's call, 2026-10-22)
+## 5d. The free aim point (the owner's calls, 2026-10-22 and 2026-10-23)
 
 The player can aim anywhere in the zone, not only at a cell's centre. A call carries `at: [u, v]`,
 the aim's place inside its cell as fractions of the cell's width and height, each -0.5..0.5,
@@ -332,11 +346,15 @@ to the cell and keeps two places; `aimPoint(cell, at)` is the point the engine a
 is added to it as before (the same two draws). Rules 2 calls only (`shutdoor_submit` checks it in
 157: absent, null, or two numbers -0.5..0.5).
 
-**The cell decides every metric** (the owner: "the squares determine all of the metrics"). The grade,
-the best call, the scouting, the hitter's history (where pitches crossed is still the actual cell,
-and where he aimed is still `call.cell`) and the lesson read the cell. `at` moves only where the ball
-is aimed, inside the miss. So the grade still prices the cell's centre: an aim at a cell's corner
-is graded as that cell. How much it moves outcomes is in the README (Effort and the free aim).
+**The grade prices the exact spot** (the owner, 2026-10-23). The call's value is the miss table
+centred on `aimPoint(cell, at)` (`grade.js kernelRowAt`, `Model.keyMixCtx(..., at)`), so an aim at
+the edge of a chase cell is priced as the near strike it is. The best call and the state's mean lost
+stay over every cell's centre, so the band is relative to the same moment, and an aim that beats
+the best centre is green with nothing lost. The lesson prices the same spot.
+
+**Everything the player reads stays on the cell** ("the squares determine the metrics"): the
+scouting, the heat map, the tag, and the hitter's history (where pitches crossed is the actual cell,
+where he aimed is `call.cell`).
 
 ## 6. Pitch result
 

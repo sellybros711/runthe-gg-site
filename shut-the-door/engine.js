@@ -195,7 +195,8 @@ function throwPitch(o, call) {
   const repeat = ctx && ctx.last === call.type ? ctx.streak : 0;
   const spread = K.spreadOf(kept.q, repeat);
   const arm = ctx ? ctx.fatigue : 1;
-  const sigma = arsenal.sigmaFt * spread * arm;
+  const effSpread = kept.e != null ? G.effortSpread(call.type, kept.e) : 1;   // effort: a harder pitch misses wider
+  const sigma = arsenal.sigmaFt * spread * arm * effSpread;
   const t = K.aimPoint(call.cell, kept.at);   // the cell's centre, or the free aim point inside it
   const actual = { x: t.x + d.missX * sigma, zn: t.zn + d.missZ * sigma / pack.kernelZoneFt };
   const actualCell = K.cellAt(actual.x, actual.zn);
@@ -263,7 +264,7 @@ function throwPitch(o, call) {
   if (ctx) pr.arm = arm;     // rules 2: the arm's scale on his miss (fatigue and runners on)
   if (kept.e != null) {      // effort: what the pitch was, from his own real pitches (contract.js stuffAt)
     const s = K.stuffAt(arsenal, kept.e);
-    pr.stuff = { velo: s.velo, pfxX: s.pfxX, pfxZ: s.pfxZ, src: s.src };
+    pr.stuff = { velo: s.velo, pfxX: s.pfxX, pfxZ: s.pfxZ, src: s.src, spread: effSpread };
   }
   o.log.push(pr);
   o.grades.push(grade);

@@ -40,10 +40,11 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
   hold% lost. `BANDS` in `contract.js` changes only with `band_sweep.mjs` evidence.
 - **A pitch is a type, an aim, then two stops on the meter.** Pick the pitch type, aim anywhere in
   the zone (the cell, plus the free aim point `at` inside it), stop the effort bar (e), then stop the
-  accuracy bar (q, the release). Nothing else. The cell decides every metric (grade, scouting, the
-  hitter's history); `at` moves only where the ball is aimed (CONTRACT.md 5d). Effort moves the
-  pitch along his own real speed, shrinks or widens the accuracy window and loads the arm
-  (CONTRACT.md 5c). The release scales the miss. Neither touches the grade. The meter can be turned
+  accuracy bar (q, the release). Nothing else. The grade prices the exact aim point; everything the
+  player reads (scouting, the heat map, the tag, the hitter's history) stays on the cell (CONTRACT.md
+  5d). Effort moves the pitch along his own real speed, with measured effects scaled by a labelled
+  game multiplier (`grade.js EFFORT`), shrinks or widens the accuracy window and loads the arm
+  (CONTRACT.md 5c). The release scales the miss. Neither stop touches the grade. The meter can be turned
   off in settings: no effort stop and no q (his ordinary pitch at his own command, 1.0x); an e never
   rides without a q. No grade or popup between pitches; the meter's one quiet word is execution, not
   a grade.

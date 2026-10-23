@@ -66,8 +66,8 @@
   /* ---- the numbers ------------------------------------------------------- */
 
   /* P(key | target): the pack's rows through the miss table. */
-  function keyMix(model, bi, type, target, bucket, st, hctx) {
-    if (hctx) return Array.from(model.keyMixCtx(st, type, target, hctx));   // rules 2: what he had seen, and the arm
+  function keyMix(model, bi, type, target, bucket, st, hctx, at) {
+    if (hctx) return Array.from(model.keyMixCtx(st, type, target, hctx, at));   // rules 2: what he had seen, and the arm; at: the exact spot
     const ker = model.kernel[type];
     const e = model.entry(bi, type);
     const out = new Array(G.KEYS.length).fill(0);
@@ -358,7 +358,7 @@
     const batter = pack.scenario.batters[st.bi % model.N];
     const bucket = G.bucketOf(st.b, st.s);
     const hctx = (o.ctxs && o.ctxs[n]) || null;
-    const mc = keyMix(model, st.bi, call.type, call.cell, bucket, st, hctx);
+    const mc = keyMix(model, st.bi, call.type, call.cell, bucket, st, hctx, call.at);
     const mb = keyMix(model, st.bi, best.type, best.cell, bucket, st, hctx);
     const vals = keyValues(model, st, hctx);
     const vc = mc.reduce((a, p, k) => a + p * vals[k], 0);

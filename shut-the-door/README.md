@@ -128,72 +128,90 @@ holds 76.8 (pack builds); its calls band 19/28/33/21, from 22/33/30/15, because 
 the history the pool's calls ignore. `BANDS` did not change: heart fastballs grade mostly orange and
 red in 10 of 10 packs (9 of 10 before; Chapman's three-run lead now 66%).
 
-## Effort and the free aim point (2026-10-22)
+## Effort and the free aim point (2026-10-22, retuned 2026-10-23)
 
 The owner's two stop meter: a pitch is a type, an aim, an effort stop (`e`) and an accuracy stop
 (`q`). CONTRACT.md 5c and 5d are the rules; `grade.js EFFORT` and `meter.js EFFORT_WINDOW` hold the
-settings. Rules stay 2: a call without `e` or `at` plays exactly as before (e 0.5 and [0, 0] are the
-neutral values), so no stored outing moves (`check-replays.mjs --self-test` holds rules 1 rows and
-rules 2 rows made before effort, every pitch, speed and arm).
+settings, each marked data, game choice, game rule or model. Rules stay 2: a call without `e` or `at`
+plays exactly as before (`e` 0.5 and `[0, 0]` are the neutral values), so no stored outing moves
+(`check-replays.mjs --self-test` holds rules 1 rows and rules 2 rows made before effort, every pitch,
+speed and arm).
 
-**Where the speed comes from (real).** `pipeline/effort.py arsenal` reads each scenario pitcher's own
+**Where the speed comes from (data).** `pipeline/effort.py arsenal` reads each scenario pitcher's own
 pitches from the Savant search his arsenal came from, ranks each type by speed and keeps the mean
-speed and break of each fifth (`arsenal[i].stuff`, `data/effort_arsenal.json`). Chapman's four-seam
-reads 98.5, 100.1, 101.1, 102.1, 103.6. A type with fewer than 40 tracked pitches of his own, and
-Eckersley 1988 (no tracking), shows his average plus the league's typical spread (`src: 'league'`).
-More effort is a pitch from further up his own distribution; nothing is typed.
+speed and break of five slices: his slowest 5%, the second, middle and fourth fifths, his fastest 5%
+(`arsenal[i].stuff`, `data/effort_arsenal.json`). Chapman 2016's four-seam reads 97.4, 100.1, 101.1,
+102.1, 104.4. A type with fewer than 40 tracked pitches of his own, and Eckersley 1988 (no
+tracking), shows his average plus the league's typical spread (`src: 'league'`). Every speed shown
+is one he threw.
 
-**What a harder pitch does (measured).** `pipeline/effort.py league` on every 2024 regular season
-pitch (643,123 in groups of 100 or more by pitcher, type and season; `pipeline/effort.json`). By
-fifth of his own speed, slowest to fastest, observed over the same family in the same cell, exact
-count and platoon:
+**What a harder pitch does (data).** `pipeline/effort.py league` on every 2024 regular season pitch
+(643,123 in groups of 100 or more by pitcher, type and season; `pipeline/effort.json`). By slice of
+his own speed, slowest to fastest, observed over the same family in the same cell, exact count and
+platoon:
 
-| family | speed against his mean (mph) | whiffs | home runs | outs in play | called strikes |
-|---|---|---|---|---|---|
-| fastballs | -1.7 to +1.5 | x0.85 to x1.10 | x1.19 to x0.80 | x1.09 to x0.92 | flat |
-| breaking | -1.9 to +1.8 | x0.90 to x1.03 (x1.05 at the fourth fifth) | flat | flat | x1.06 to x0.90 |
-| offspeed | -1.8 to +1.7 | x0.98 to x0.93 | flat | flat | x1.05 to x0.92 |
+| family | speed against his mean (mph) | whiffs | home runs | hits | called strikes | location spread |
+|---|---|---|---|---|---|---|
+| fastballs | -2.5 to +2.2 | x0.78 to x1.13 | x1.34 to x0.75 | x1.08 to x0.92 | flat | his fastest +3% |
+| breaking | -2.9 to +2.6 | x0.83 to x0.99 (x1.05 at the fourth fifth) | flat to x0.79 | flat | x1.06 to x0.81 | his fastest +11% |
+| offspeed | -2.7 to +2.4 | flat to x0.86 | flat | flat to x1.07 | flat to x0.92 | his fastest +6% |
 
-A harder breaking ball breaks less (about 0.6 in) and a harder changeup or splitter whiffs less
-(velocity separation is the pitch). Location spread is within 2% of his middle at his fastest; his
-slowest fifth is the widest (2 to 6%). Relievers' speed is flat across an outing (within 0.2 mph).
-A measured association: the count and the spot are held, his intent is not.
+A harder breaking ball breaks about 1 in less; a harder changeup whiffs less (separation is the
+pitch). Relievers' speed is flat across an outing (within 0.2 mph). A measured association: the
+count and the spot are held, his intent is not.
 
-**What is a rule or a model.** The window (x1.25 at e 0, x0.6 at e 1) is a game rule: the data shows
-no cost to throwing hard, because a real pitcher's misses at max effort are in his numbers. The arm
-load (1 + 0.5 x (2e - 1) pitches) is a model, since tired arms are taken out of the data.
+**What is a game choice, not data** (the owner, 2026-10-23: effort should be a real weapon, and max
+every pitch still not the best play). Above the middle, every measured ratio's distance from 1 is
+multiplied by `EFFORT.GAME` = 8 (floored at 0.2), and the spread's by `SPREAD_GAME` = 2. So a max
+effort fastball whiffs about 2x and gives up a fifth of the home runs, and a max effort breaking
+ball is rarely called a strike and misses 22% wider. The direction is always the data's. Below the
+middle the data is used as measured. **Game rule:** the window, x1.25 at `e` 0 and x0.6 at `e` 1.
+**Model (tuned):** a pitch counts 2 pitches on the arm at max and 0.5 at the softest; the load over
+1 builds a strain that easier pitches pay back, and the arm's miss is x (1 + 0.05 x strain).
 
 **Measured effect** (`pipeline/strategies.cjs`, 1,000 outings a strategy a pack, ten packs, rules
-2; mean hold%, then the median outing's percentile). `none` is the meter as it was, one stop.
+2; mean hold%, then the median outing's percentile). `none` is the meter as it was, one stop. The
+releases: ordinary (the meter's tap model), good (half its miss, a third of its slips), perfect.
 
 | player, release | none | always e 0 | always e 0.5 | always e 1 | smart mix |
 |---|---|---|---|---|---|
-| strong (smart), ordinary tap | 76.6 · 56th | 76.9 · 57th | 76.6 · 56th | 76.3 · 54th | 76.9 · 55th |
-| strong (smart), perfect release | 79.0 · 62nd | 78.4 · 62nd | 79.0 · 62nd | 78.9 · 61st | 79.7 · 61st |
-| average, ordinary tap | 78.0 · 58th | 78.5 · 61st | 78.0 · 58th | 76.9 · 54th | 77.8 · 58th |
-| average, perfect release | 80.5 · 63rd | 79.6 · 64th | 80.5 · 63rd | 80.5 · 62nd | 80.5 · 63rd |
-| screen's top call, ordinary tap | 61.5 · 30th | 61.3 · 31st | 61.5 · 30th | 60.6 · 29th | 61.3 · 30th |
+| strong, ordinary | 76.6 · 56th | 75.7 · 57th | 76.6 · 56th | 70.6 · 43rd | 81.1 · 55th |
+| strong, good | 78.4 · 58th | 77.0 · 59th | 78.4 · 58th | 76.7 · 49th | 81.6 · 56th |
+| strong, perfect | 79.0 · 62nd | 77.7 · 63rd | 79.0 · 62nd | 81.6 · 56th | 82.7 · 60th |
+| average, ordinary | 78.0 · 58th | 77.1 · 60th | 78.0 · 58th | 59.0 · 32nd | 80.1 · 58th |
+| average, good | 79.9 · 62nd | 77.7 · 62nd | 79.9 · 62nd | 67.5 · 40th | 81.2 · 62nd |
+| average, perfect | 80.5 · 63rd | 78.5 · 64th | 80.5 · 63rd | 75.9 · 50th | 82.7 · 63rd |
+| screen's top call, good | 61.7 · 31st | 60.9 · 32nd | 61.7 · 31st | 55.7 · 24th | 65.3 · 30th |
 
-Max effort never wins: an ordinary tap in the smaller window walks more (4.9% to 6.9% of batters for
-the strong player, 6.6% to 9.6% for the average one) and the arm tires sooner. An easy pitch helps a
-player who times like the model (a wider window) and costs one who times perfectly (softer stuff).
-The smart mix (max on a fastball with two strikes, firm on a fastball when even or ahead, easy on the
-changeup and at three balls) is the best for the strong player with a perfect release (79.7) and ties
-the best for the average one. Differences under a point are near
-the noise (paired seeds). The closer pool plays without effort and is unchanged (76.8).
+The smart mix saves it for the put-away: max with two strikes, easy early in the count, at three
+balls and on the changeup or splitter, ordinary otherwise. For a strong player who times well it
+holds 3.2 points more than never changing effort (3.7 with a perfect release); max on every pitch
+is worse than the smart mix for every player and release, and worse than never changing it for all
+but the strong player with a perfect release (more walks: 22% of batters for a good timer at max, the strain, and a breaking
+ball that will not get a called strike). The median percentile moves less than hold: the smart mix
+throws about a pitch more an outing, and the score adds up points lost per pitch. The closer pool
+plays without effort and is unchanged (76.8).
 
-**Bands and percentiles.** The grade never reads this pitch's `e` or `at`, so `band_sweep --relative`
-reads exactly as on main (pool calls 19/28/33/21, heart fastballs orange and red in 10 of 10, lowest
-66%). The pool, `pack.seq`, the hold tables and the pros rebuilt identical (`pool.js`). The bands of
-each strategy move under a point with effort. Percentiles move with what happens: always e 1 costs
-the median outing 1 to 4 points, e 0 gains 1 to 3 for an ordinary tap.
+**The free aim point: the grade prices the exact spot** (the owner, 2026-10-23). A call's value is the
+miss table centred on its aim point; the best call and the state's mean stay the cells' centres, and
+what the player reads stays on the cell. The same runs, no effort, ordinary release (hold and walks
+do not depend on the grade; the percentile does):
 
-**The free aim point** (`AIMS` in `strategies.cjs`, the same runs, no effort). Anywhere in the cell at
-random: no change (76.9 and 77.9 hold). But a steady aim moves outcomes a lot, because the grade
-prices the cell's centre: every pitch at the cell's far corner from the heart walks 21 to 28% of
-batters (hold 69.2 and 71.2); every pitch at the near corner walks under 2%, ends outings in fewer
-pitches (fewer points lost) and lifts the median percentile from the 56th to the 63rd (strong) and
-the 58th to the 68th (average). The owner's ruling keeps every metric on the cell; this is the cost.
+| aim, every pitch | strong: hold · walks · median pct (graded at the centre, before) | average: hold · walks · median pct (before) |
+|---|---|---|
+| the centre | 76.6 · 4.9% · 56th | 78.0 · 6.6% · 58th |
+| random in the cell | 76.9 · 5.9% · 54th (54th) | 77.9 · 7.7% · 56th (57th) |
+| far corner from the heart | 69.2 · 27.7% · 43rd (34th) | 71.2 · 20.6% · 42nd (37th) |
+| near corner to the heart | 74.9 · 0.7% · 50th (63rd) | 78.7 · 1.6% · 59th (68th) |
+
+The near corner's edge (7 to 10 percentile points when the grade priced the centre) is gone: -6 for
+the strong player, +0.2 for the average one. Those calls now grade as the near strikes they are (the
+strong player's band mix goes from 11/35/37/17 to 13/12/22/54).
+
+**Bands.** `band_sweep --relative` reads exactly as on main (pool calls 19/28/33/21, heart fastballs
+orange or red in 10 of 10 packs, lowest 66%): the grade reads neither stop, and the pool aims at
+centres. The pool, `pack.seq`, the hold tables and the pros rebuilt identical (`pool.js`). `BANDS`
+did not change.
 
 ## The tiers (that batter, similar batters, league)
 

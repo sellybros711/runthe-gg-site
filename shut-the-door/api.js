@@ -40,7 +40,7 @@
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 5;
+  const SCHEDULE_V = 6;
   const STORE_V = 1;
   const BASE = 'data/';
 

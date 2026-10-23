@@ -5,6 +5,9 @@ A call may carry e, the effort, 0..1 (CONTRACT.md 5c). More effort throws the
 pitch from further up HIS OWN velocity distribution for that pitch type, so
 every speed a player reads is a real one. This script measures the two halves:
 
+  The five points are slices of his own speed (SLICES): his slowest 5%, the
+  second, middle and fourth fifths, and his fastest 5%.
+
   league    python3 effort.py league season.csv.gz [more ...] > effort.json
             Every 2024 regular season pitch (savant.fetch_range in chunks, the
             same pull as effects.py). Each pitch's place in its own pitcher's
@@ -47,6 +50,19 @@ import savant
 from common import DATA, GAME, log
 
 BINS = 5
+# The five points effort walks, as slices of his own speed for a type (percentiles): his slowest
+# 5%, the second fifth, the middle fifth, the fourth fifth, his fastest 5%. The ends are the tails
+# (the owner, 2026-10-23: max effort should show more speed), every speed still one he threw.
+SLICES = [(0.0, 0.05), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.95, 1.0)]
+
+
+def slice_of(pct):
+    """The slice 0..4 of each percentile, or -1 between slices."""
+    pct = np.asarray(pct, dtype=float)
+    out = np.full(pct.shape, -1)
+    for i, (lo, hi) in enumerate(SLICES):
+        out[(pct > lo) & (pct <= hi) if lo > 0 else (pct <= hi)] = i
+    return out
 MIN_GROUP = 100     # pitches of one type by one pitcher in one season, for a percentile to mean something
 MIN_OWN = 40        # below this many of his own pitches of a type, his bins are his mean plus the league's spread
 GROUPS = {'ball': [0], 'called': [1], 'whiff': [2], 'foul': [3], 'hbp': [4], 'hit': [5, 6, 7], 'hr': [8],
@@ -85,9 +101,9 @@ def league(files):
     df = df[df['pitch_type'].isin(prep.PITCH_TYPES) & df['release_speed'].notna()].copy()
     df['platoon'] = (df['stand'] == df['p_throws']).astype(int)
     by = ['pitcher', 'pitch_type', 'game_year']
-    df['pct'], df['vbin'], df['gn'] = velo_bin(df, by)
+    df['pct'], _, df['gn'] = velo_bin(df, by)
     df = df[df['gn'] >= MIN_GROUP].copy()
-    df['vbin'] = df['vbin'].astype(int)
+    df['vbin'] = slice_of(df['pct'].values)
     df['dvelo'] = df['release_speed'] - df.groupby(by)['release_speed'].transform('mean')
     df['brk'], df['brk0'] = along(df, by)
     df['dbrk'] = df['brk'] - df['brk0']
@@ -134,7 +150,7 @@ def league(files):
         }
 
     out = {'pitches': int(len(df)), 'seasons': sorted(int(y) for y in df['game_year'].unique()),
-           'groups_of': GROUPS, 'bins': BINS, 'minGroup': MIN_GROUP}
+           'groups_of': GROUPS, 'bins': BINS, 'slices': SLICES, 'minGroup': MIN_GROUP}
     fams = {}
     for fam in ('hard', 'breaking', 'offspeed'):
         fm = (df['family'] == fam).values
@@ -178,7 +194,7 @@ def own_bins(df, ptype):
     if not len(g):
         return None
     g['pct'] = g['release_speed'].rank(method='average', pct=True)
-    g['b'] = np.minimum(BINS - 1, np.floor((g['pct'] - 1e-9) * BINS)).astype(int)
+    g['b'] = slice_of(g['pct'].values)
     by = g.groupby('b')
     return {'n': int(len(g)),
             'velo': [round(float(by['release_speed'].mean().get(b, np.nan)), 1) for b in range(BINS)],
@@ -204,8 +220,8 @@ def arsenal(ids):
     lg = json.load(open(os.path.join(os.path.dirname(__file__), 'effort.json')))
     specs = {s['id']: s for s in json.load(open(os.path.join(GAME, 'scenarios', 'scenarios.json')))['scenarios']}
     out = {'_about': 'Per scenario pitcher and arsenal pitch: the mean velocity (mph) and break (pfx inches, '
-                     "catcher's view) of his own pitches in each fifth of his velocity for that type, slowest "
-                     'first. src his: his own pitches from the arsenal source; src league: his arsenal mean plus '
+                     "catcher's view) of his own pitches in each slice of his velocity for that type, slowest "
+                     'first (his slowest 5%, second fifth, middle fifth, fourth fifth, fastest 5%). src his: his own pitches from the arsenal source; src league: his arsenal mean plus '
                      "the league's typical spread (pipeline/effort.json), when he has fewer than "
                      f'{MIN_OWN} tracked pitches of it. Built by pipeline/effort.py arsenal.', 'packs': {}}
     for pid in ids or specs:
@@ -262,9 +278,14 @@ def constants(path):
                 d = r - 1
                 k = max(0.0, 1 - (se * se) / (d * d)) if d else 0.0
                 raw.append(1 + d * k)
-            mid = (raw[1] + raw[2] + raw[3]) / 3      # the middle three, so one noisy bin cannot tilt the rest
+            mid = (raw[1] + raw[2] + raw[3]) / 3      # the middle three, so one noisy slice cannot tilt the rest
             rows[g] = [round(x / mid, 3) for x in raw]
             rows[g][2] = 1.0                            # e 0.5 is his ordinary pitch, exactly
+        # the location spread above the middle (harder than his ordinary pitch), against the middle
+        # slice, never under 1. Below the middle it is left at 1: the data's slowest slice is wider,
+        # but that is a slipped pitch more than an eased one (a game choice, README)
+        sp = [b['spread'] for b in v['all']]
+        rows['spread'] = [1.0, 1.0, 1.0] + [round(max(1.0, sp[i] / sp[2]), 3) for i in (3, 4)]
         out[fam] = rows
     return out
 
