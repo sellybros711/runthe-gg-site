@@ -457,7 +457,10 @@ function holdThenThrow(ctx, n, s, at, late) {
   if (!outs.length) {
     // nobody is out: a throw that is too late (to first on an infield hit or a fielder's choice), or
     // nothing (he holds it)
-    const target = infieldHit || ctx.label === 'fielders_choice' || ctx.label === 'error' ? 1 : null;
+    // (never to first when the batter is already out on a catch: on an error with the ball caught,
+    // that throw went while the play's own throw was still to come, and the ball left his hand twice)
+    const batterOut = moves.some((m) => m.from === 0 && m.to === -1);
+    const target = (infieldHit || ctx.label === 'fielders_choice' || ctx.label === 'error') && !batterOut ? 1 : null;
     if (target && !late) {
       const cov = coverer(ctx, target, holder);
       const tgtPt = basePoint(target, 'in');
@@ -485,15 +488,11 @@ function holdThenThrow(ctx, n, s, at, late) {
     } else {
       const ready = coverArrive(ctx, cov, o.base, t);
       const fly = dist(pos, tgtPt) / (OF.includes(holder) ? 125 : 118) + 0.06;
-      const transfer = done.length ? 0.32 : 0.42;
-      let rel = Math.max(t + transfer, ready - fly + 0.05);
-      if (o.from === 0 && o.base === 1) {
-        // a routine play is not hurried: the throw to first beats the batter by a step or two, not
-        // by half the base path (he is about 4.4 s down the line; the fielder sets his feet)
-        const box = { x: ctx.bats === 'L' ? 2.95 : -2.95, y: 0.4 };
-        const runner = 0.28 + runTime(dist(box, BASE[1]), 26.5, 16, true, false);
-        rel = Math.max(rel, runner - fly - (0.3 + 0.45 * rnd(ctx.id, 'step')));
-      }
+      // the glove to the hand, a crow hop and his feet set (a pivot is quicker): then it goes. He never stands
+      // holding it (it waited to beat the batter by only a step, so a routine grounder sat in his
+      // hand for a second and a half; the owner, 2026-10-22: the players need to throw the ball)
+      const transfer = done.length ? 0.32 : 0.65 + 0.25 * rnd(ctx.id, 'step');
+      const rel = Math.max(t + transfer, ready - fly + 0.05);
       throwBall(ctx, holder, cov, rel, pos, tgtPt, fly);
       ctx.T[cov].act(rel + fly, o.base === 4 ? 'tag' : 'receive', { base: o.base });
       o.ballAt = rel + fly; o.by = cov;
@@ -1020,7 +1019,9 @@ function planEdit(ctx) {
   const runnerDone = Math.max(0, ...p.runners.filter((r) => !r.out && r.arrive != null && r.arrive < 100).map((r) => r.arrive));
   const throws = ev.filter((e) => e.kind === 'throw').map((e) => e.s);
   const ballDone = Math.max(ft.s, ...ev.filter((e) => e.kind === 'glove').map((e) => e.s));
-  const CUT = 0.3;
+  // the pitcher's view holds a beat after contact, but the cut comes before anyone touches the ball
+  // (a comeback liner caught at a quarter second was caught off screen)
+  const CUT = Math.min(0.3, Math.max(0.1, ft.s - 0.15));
   const pieces = [{ s0: 0, s1: CUT, cam: 'pitcher', rate: 1 }];
   let decisive = null, slow = null;
   const add = (cam, s0, s1) => { if (s1 > s0 + 0.05) pieces.push({ s0, s1, cam, rate: 1 }); };
@@ -1213,6 +1214,9 @@ export function verify(pr, plan) {
   const hit = HITS[label] || 0;
   const moves = pr.runnerMoves || [];
   const batterOut = moves.some((m) => m.from === 0 && m.to === -1) || !moves.some((m) => m.from === 0);
+  // every throw leaves the hand of the man holding the ball (never a second throw from a man whose
+  // first is still in the air)
+  for (const sg of plan.segs) if (sg.kind === 'throw') { const b = ballAt(plan, sg.t0 - 1e-3); if (b.by !== sg.from) bad.push(`a throw from ${NAME[sg.from]} at ${sg.t0.toFixed(2)} s while ${b.by ? NAME[b.by] : 'nobody'} has the ball`); }
   // the ball
   if (label === 'home_run') {
     if (o.ball !== 'over' || !o.wall || o.wall.z <= WALL_H + BALL_R) bad.push('home run does not clear the wall');

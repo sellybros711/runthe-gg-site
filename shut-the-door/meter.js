@@ -13,7 +13,8 @@
  *   MARK       where the mark sits on the bar, 0..1 from the left.
  *   windowMs   how far off (ms) a tap may be before q reaches 0. It grows with
  *              the pitch's command, so control pitchers are easier to time:
- *              110 ms at command 50, 89 at 35, 151 at 80.
+ *              110 ms at command 50, 89 at 35, 151 at 80. Times the effort's
+ *              windowScale(e) (EFFORT below): 1 without e.
  *   qOf        q = 1 - |error| / windowMs, at least 0, kept to two places
  *              (contract.js releaseQ).
  *   The bar shows two bands: the soft one where q >= 0.5 (tighter than his
@@ -37,12 +38,47 @@ var WINDOW_AT_50 = 110;
 var TIMING = Object.freeze({ sdMs: 60, slip: 0.1, slipMaxMs: 450 });
 var GOOD_Q = 0.5, BEST_Q = 0.8;
 
-function windowMs(command) {
-  var c = Math.max(20, Math.min(80, typeof command === 'number' ? command : 50));
-  return WINDOW_AT_50 * (1 + (c - 50) / 80);
+/* EFFORT, the first stop (the owner's call, 2026-10-22; CONTRACT.md 5c).
+   e 0..1 (contract.js effortE): 0 his softest, 0.5 his ordinary pitch, 1 his
+   hardest. A game rule on the meter: the accuracy window is scaled by
+   windowScale(e), SOFT at e 0, 1 at e 0.5, HARD at e 1, straight between.
+   So max effort shrinks both bands (the bright one too), and an easy pitch
+   widens them. What e does to the pitch and the arm is grade.js EFFORT. An
+   effort stop is only offered with the meter on (an e needs a q).
+   EFFORT_SWEEP_MS is one pass of the effort needle, if the UI sweeps one:
+   effortAt(t) is the e a stop at t ms gives (0 at the left, 1 at the right). */
+var EFFORT_WINDOW = Object.freeze({ SOFT: 1.25, HARD: 0.6 });
+var EFFORT_SWEEP_MS = 900;
+function windowScale(e) {
+  var ee = C.effortE(e);
+  if (ee == null || ee === C.EFFORT.MID) return 1;
+  return ee < C.EFFORT.MID ? 1 + (EFFORT_WINDOW.SOFT - 1) * (C.EFFORT.MID - ee) / C.EFFORT.MID
+    : 1 - (1 - EFFORT_WINDOW.HARD) * (ee - C.EFFORT.MID) / (1 - C.EFFORT.MID);
 }
-function qOf(errMs, command) {
-  return C.releaseQ(Math.max(0, 1 - Math.abs(errMs) / windowMs(command)));
+function windowMs(command, e) {
+  var c = Math.max(20, Math.min(80, typeof command === 'number' ? command : 50));
+  return WINDOW_AT_50 * (1 + (c - 50) / 80) * windowScale(e);
+}
+function qOf(errMs, command, e) {
+  return C.releaseQ(Math.max(0, 1 - Math.abs(errMs) / windowMs(command, e)));
+}
+function effortAt(t) {
+  var ph = (t / EFFORT_SWEEP_MS) % 2;
+  return C.effortE(ph < 1 ? ph : 2 - ph);
+}
+/* The speed and break a pitch shows at effort e: his own real pitches
+   (contract.js stuffAt). velo in mph, pfx in inches, catcher's view. */
+function stuffFor(arsenalPitch, e) { return C.stuffAt(arsenalPitch, e); }
+function veloFor(arsenalPitch, e) { return C.stuffAt(arsenalPitch, e).velo; }
+/* The names the two bar meter feature-detects (the UI agent's ask, 2026-10-22):
+   EFFORT      true: effort exists. A call without e is the neutral effort, C.EFFORT.MID (0.5).
+   windowOf(e, command)  the bright band (q >= BEST_Q) as [lo, hi], fractions of the bar from
+               the left, at effort e and the pitch's command (50 when left out). The band's
+               q is always BEST_Q..1; what effort moves is how wide it sits on the bar.
+   veloOf(pitch, e)      the mph to show for that arsenal pitch at effort e (veloFor). */
+function windowOf(e, command) {
+  var half = (1 - BEST_Q) * windowMs(command == null ? 50 : command, e) / SWEEP_MS;
+  return [Math.max(0, MARK - half), Math.min(1, MARK + half)];
 }
 /* The needle at t ms after the start: its place on the bar and its way. */
 function needleAt(t) {
@@ -64,8 +100,8 @@ function wordOf(q, err) {
   return q >= 0.2 ? 'a bit ' + side : side;
 }
 /* The two bands as halves of the bar, from the window. */
-function bandsFor(command) {
-  var w = windowMs(command);
+function bandsFor(command, e) {
+  var w = windowMs(command, e);
   return { good: (1 - GOOD_Q) * w / SWEEP_MS, best: (1 - BEST_Q) * w / SWEEP_MS };
 }
 
@@ -73,7 +109,7 @@ function bandsFor(command) {
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
-/* create(el): the meter in its slot. run({command, verb, label, hint, practice, onSnap}) shows it, sweeps,
+/* create(el): the meter in its slot. run({command, effort, verb, label, hint, practice, onSnap}) shows it, sweeps,
    and resolves {q, err, word} on the tap, or null when cancelled. hide() puts it away. */
 function create(el) {
   el.classList.add('relm');
@@ -101,7 +137,7 @@ function create(el) {
     live.done = true;
     cancelAnimationFrame(live.raf);
     place(needleAt(t));
-    var err = errAt(t), q = qOf(err, live.opts.command), w = wordOf(q, err);
+    var err = errAt(t), q = qOf(err, live.opts.command, live.opts.effort), w = wordOf(q, err);
     el.classList.add('done');
     el.classList.toggle('best', q >= BEST_Q);
     el.classList.toggle('good', q >= GOOD_Q && q < BEST_Q);
@@ -140,7 +176,7 @@ function create(el) {
   function hide() { el.hidden = true; el.classList.remove('done', 'best', 'good'); live = null; }
   function run(opts) {
     if (live) cancel();
-    var b = bandsFor(opts.command);
+    var b = bandsFor(opts.command, opts.effort);
     mark.style.left = (MARK * 100) + '%';
     good.style.left = ((MARK - b.good) * 100).toFixed(2) + '%'; good.style.width = (2 * b.good * 100).toFixed(2) + '%';
     best.style.left = ((MARK - b.best) * 100).toFixed(2) + '%'; best.style.width = (2 * b.best * 100).toFixed(2) + '%';
@@ -161,7 +197,9 @@ function create(el) {
 }
 
 var api = { SWEEP_MS: SWEEP_MS, MARK: MARK, WINDOW_AT_50: WINDOW_AT_50, TIMING: TIMING, GOOD_Q: GOOD_Q, BEST_Q: BEST_Q,
-  windowMs: windowMs, qOf: qOf, needleAt: needleAt, errAt: errAt, wordOf: wordOf, bandsFor: bandsFor, create: create };
+  EFFORT: true, windowOf: windowOf, veloOf: veloFor,
+  EFFORT_WINDOW: EFFORT_WINDOW, EFFORT_SWEEP_MS: EFFORT_SWEEP_MS, windowScale: windowScale, effortAt: effortAt,
+  stuffFor: stuffFor, veloFor: veloFor, windowMs: windowMs, qOf: qOf, needleAt: needleAt, errAt: errAt, wordOf: wordOf, bandsFor: bandsFor, create: create };
 if (NODE) module.exports = api;
 if (typeof window !== 'undefined') window.STD_METER = api;
 })();

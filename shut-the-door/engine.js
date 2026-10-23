@@ -9,6 +9,8 @@
  * order (miss x, miss z, the library draw, the runner draw), no Math.random,
  * no clock. A call is {type, cell} and, since the release meter (2026-10-22),
  * an optional q (contract.js RELEASE): q scales the miss and nothing else.
+ * Since effort (2026-10-22), an optional e beside q (grade.js EFFORT): e
+ * scales the drawn row key by key and loads the arm; never a draw.
  *
  * A PITCH
  *   1. It is graded first (grade.js), on hold% against the best call. The
@@ -60,8 +62,13 @@ const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
    4: rules 2 (grade.js RULES): the hitter adjusts, the arm tires, a repeat
    loses some of the release, and the screen scouts coarser. A new outing
    plays rules 2 and its kept calls carry r: 2. A call without r is rules 1,
-   so every outing stored before plays exactly as it did. */
-const ENGINE_VERSION = 4;
+   so every outing stored before plays exactly as it did.
+   5: effort (CONTRACT.md 5c): a rules 2 call may carry e beside q. It moves
+   the pitch along his own real speed (grade.js EFFORT) and loads the arm. A
+   call without e plays exactly as under 4. And the free aim point (CONTRACT.md
+   5d): a rules 2 call may carry at, where inside its cell it was aimed. A call
+   without at aims at the centre, as under 4. */
+const ENGINE_VERSION = 5;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread. */
 const PACK_VERSION = 2;
@@ -132,6 +139,11 @@ function validCall(o, call) {
   }
   if (!o.model.types.includes(call.type)) throw new Error(`${call.type} is not in the arsenal`);
   K.releaseQ(call.q);   // throws unless q is absent or a number 0..1
+  if (K.aimAt(call.at) != null && o.rules < 2) throw new Error('an aim point is a rules 2 call');   // throws unless at is absent or [u, v]
+  if (K.effortE(call.e) != null) {   // throws unless e is absent or a number 0..1
+    if (o.rules < 2) throw new Error('effort is a rules 2 call');
+    if (call.q == null) throw new Error('an effort needs a timed release (q)');
+  }
   if (call.r != null && call.r !== o.rules) throw new Error(`a rules ${call.r} call in a rules ${o.rules} outing`);
 }
 
@@ -142,6 +154,10 @@ function keptCall(call, rules) {
   const c = { type: call.type, cell: call.cell };
   const q = K.releaseQ(call.q);
   if (q != null) c.q = q;
+  const e = K.effortE(call.e);
+  if (e != null) c.e = e;
+  const at = K.aimAt(call.at);
+  if (at != null) c.at = at;
   if (rules >= 2) c.r = rules;
   return c;
 }
@@ -179,8 +195,9 @@ function throwPitch(o, call) {
   const repeat = ctx && ctx.last === call.type ? ctx.streak : 0;
   const spread = K.spreadOf(kept.q, repeat);
   const arm = ctx ? ctx.fatigue : 1;
-  const sigma = arsenal.sigmaFt * spread * arm;
-  const t = K.targetOf(call.cell);
+  const effSpread = kept.e != null ? G.effortSpread(call.type, kept.e) : 1;   // effort: a harder pitch misses wider
+  const sigma = arsenal.sigmaFt * spread * arm * effSpread;
+  const t = K.aimPoint(call.cell, kept.at);   // the cell's centre, or the free aim point inside it
   const actual = { x: t.x + d.missX * sigma, zn: t.zn + d.missZ * sigma / pack.kernelZoneFt };
   const actualCell = K.cellAt(actual.x, actual.zn);
 
@@ -188,7 +205,8 @@ function throwPitch(o, call) {
   //    that key's real pitch
   const bucket = G.bucketOf(st.b, st.s);
   const entry = model.entry(st.bi, call.type);
-  const row = ctx ? model.rowsCtx(st.bi, call.type, bucket, ctx)[actualCell] : entry.p[actualCell][bucket];
+  let row = ctx ? model.rowsCtx(st.bi, call.type, bucket, ctx)[actualCell] : entry.p[actualCell][bucket];
+  if (kept.e != null) row = G.effortRow(row, call.type, kept.e);   // effort: a pitch from further up (or down) his own speed
   const u = d.library * (ctx ? row.reduce((a, x) => a + x, 0) : 1000);
   let k = -1, acc = 0;
   for (let i = 0; i < row.length; i++) { if (!row[i]) continue; acc += row[i]; k = i; if (u < acc) break; }
@@ -227,7 +245,7 @@ function throwPitch(o, call) {
     spread: Math.round(spread * 1000) / 1000,
     actual: { x: round3(actual.x), zn: round3(actual.zn) },
     actualCell,
-    velo: pitch[1],
+    velo: kept.e != null ? K.stuffAt(arsenal, kept.e).velo : pitch[1],
     batter: (res === 'ball' || res === 'called_strike' || res === 'hit_by_pitch') ? 'take' : 'swing',
     result: res,
     countBefore,
@@ -244,6 +262,10 @@ function throwPitch(o, call) {
     pr.inPlay = { bb: pitch[3], ev: pitch[4], la: pitch[5], spray: pitch[6], result: label, text: inPlayText(label, pitch[3], pitch[6], runs) };
   }
   if (ctx) pr.arm = arm;     // rules 2: the arm's scale on his miss (fatigue and runners on)
+  if (kept.e != null) {      // effort: what the pitch was, from his own real pitches (contract.js stuffAt)
+    const s = K.stuffAt(arsenal, kept.e);
+    pr.stuff = { velo: s.velo, pfxX: s.pfxX, pfxZ: s.pfxZ, src: s.src, spread: effSpread };
+  }
   o.log.push(pr);
   o.grades.push(grade);
   o.calls.push(Object.assign({}, kept));
