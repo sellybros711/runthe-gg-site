@@ -13,9 +13,8 @@
  * (inplay.js update, every body) and the distance from the glove's pocket (Figure.handPoint) to the ball
  * the plan has there, an instant before, is measured. Every throw is measured at its release too: the
  * throwing hand an instant before against the ball as drawn an instant after. A ground ball fielded or picked up is measured
- * too (the 'field' and 'pickup' moments, the glove against the ball on the ground), as todo until the
- * fielding motion is built (HELD). A hit that falls in must land clear of every glove (CLEAR_M). Over
- * LIMIT_M on a held moment is a failure.
+ * too (the 'field' and 'pickup' moments, the glove against the ball on the ground). A hit that falls
+ * in must land clear of every glove (CLEAR_M). Over LIMIT_M on a held moment (HELD) is a failure.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,9 +32,8 @@ const JSON_OUT = process.argv.includes('--json') ? process.argv[process.argv.ind
 export const LIMIT_M = 0.15;
 // a hit that falls in lands at least this far from every glove
 export const CLEAR_M = 0.5;
-// the moments held to LIMIT_M. A ground ball fielded or picked up is measured and printed as todo:
-// the fielding motion is the next change (the owner's step 2, 2026-10-22), and it joins this list then
-const HELD = ['catch in the air', 'drop', 'throw taken', 'release'];
+// the moments held to LIMIT_M (a kind left out is measured and printed as todo)
+const HELD = ['catch in the air', 'drop', 'throw taken', 'release', 'ground ball fielded', 'picked up'];
 const FT = 0.3048;
 
 function loadPlaywright() {

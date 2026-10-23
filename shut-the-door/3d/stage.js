@@ -66,7 +66,7 @@ import { Pitch } from './pitch.js?v=7';
 import { fromResult, motion } from './play.js?v=7';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=6';
+import { InPlay } from './inplay.js?v=7';
 import { Ghost } from './preview.js?v=1';
 
 const C = () => window.STD_CONTRACT;
