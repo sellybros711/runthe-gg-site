@@ -3008,7 +3008,7 @@
   "shut-the-door/lab/index.html": {
     "./scene.js": {
       "v": "36",
-      "sha": "d5a98d87ab2143d2"
+      "sha": "452d71b43ca70e1e"
     }
   },
   "soccer/index.html": {
@@ -3124,7 +3124,7 @@
   "shut-the-door/3d/boot.js": {
     "stage.js": {
       "v": "33",
-      "sha": "f9a9bbfef431f91e"
+      "sha": "c97486ca88839d7b"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3171,8 +3171,8 @@
       "sha": "5a84454de3c08f14"
     },
     "people.js": {
-      "v": "34",
-      "sha": "c5df6c7f1dc73f03"
+      "v": "35",
+      "sha": "204fbeff9e7d6108"
     },
     "pitch.js": {
       "v": "7",
@@ -3192,7 +3192,7 @@
     },
     "inplay.js": {
       "v": "7",
-      "sha": "a8aaab8490ab43fd"
+      "sha": "7e05004c631d6a77"
     },
     "preview.js": {
       "v": "1",
@@ -3287,8 +3287,8 @@
       "sha": "09158b4691994a7c"
     },
     "people.js": {
-      "v": "34",
-      "sha": "c5df6c7f1dc73f03"
+      "v": "35",
+      "sha": "204fbeff9e7d6108"
     },
     "looks.js": {
       "v": "2",
