@@ -176,7 +176,6 @@ function setTheme(t) {
   try { localStorage.setItem('runthegrid_theme', t); } catch (e) {}
   var m = $('themeMeta'); if (m) m.setAttribute('content', t === 'dark' ? '#0f131a' : '#eee6d6');
   if (S.scene && S.scene.L) S.scene.draw(S.scene.frame);
-  if (S.hero && S.hero.L) S.hero.draw(S.hero.frame);
 }
 
 /* ---- home ------------------------------------------------------------------------- */
@@ -251,15 +250,10 @@ function stakesOf(setup) {
 
 function renderMatchup() {
   var s = S.scn, c = clubsOf(s), sit = s.situation;
-  var tag = function (t) { return '<span class="mu-team"><i class="mu-bar"' + clubStyle(t) + '></i>' + esc(t.name) + '</span>'; };
-  if (c.them) {
-    var away = sit.usHome ? c.them : c.us, home = sit.usHome ? c.us : c.them;
-    $('h-head').innerHTML = tag(away) + '<span class="mu-home"><span class="mu-at">at</span>' + tag(home) + '</span>';
-  } else $('h-head').innerHTML = tag(c.us);
   $('h-sit').innerHTML = homeBug(s, c);
   $('h-sit').setAttribute('aria-label', situationLine(sit));
-  var due = $('h-due').querySelector('.dc-band');
-  if (due) { due.setAttribute('style', clubStyle(c.them).replace(/^ style="|"$/g, '')); due.querySelector('.dc-club').textContent = c.them ? c.them.full.toLowerCase() : 'the lineup'; }
+  var due = $('h-due').querySelector('.tw-band');
+  if (due) due.setAttribute('style', clubStyle(c.them).replace(/^ style="|"$/g, ''));
 }
 
 /* The spot as the mound's scorebug: the two clubs with their colour bars and the score, the inning,
@@ -290,48 +284,24 @@ function lineParts(line) {
 }
 
 function renderHome() {
-  var s = S.scn, sit = s.situation, p = s.pitcher;
-  /* the chips: only what the pack has. A null number or day is left out, never printed as "#" */
-  var chips = ['<span class="chip-s hot">real save</span>'];
-  if (s.preview) chips.push('<span class="chip-s">preview \u00b7 launch 26 oct</span>');
-  else if (s.number != null) chips.push('<span class="chip-s">#' + esc(s.number) + ' \u00b7 today</span>');
-  if (s.day) chips.push('<span class="chip-s">' + esc(fmtDay(s.day)) + '</span>');
-  if (s.resolution === 'proxy') chips.push('<span class="chip-s quiet">modern pitch data</span>');
-  $('h-day').innerHTML = chips.join('');
+  var s = S.scn, p = s.pitcher;
   $('h-title').textContent = occasionOf(s.title);
   var mo = MOMENT[s.id];
   $('h-moment').textContent = mo || '';
   $('h-moment').hidden = !mo;
   $('h-setup').innerHTML = '<i class="st-mark" aria-hidden="true"></i><span>' + esc(stakesOf(s.setup) || s.setup) + '</span>';
-  var ordered = p.arsenal.slice().sort(function (a, b) { return b.usage - a.usage; });
-  var ars = ordered.map(function (a, i) {
-    return '<li><i class="dot" style="background:' + PITCH_COLORS[i % PITCH_COLORS.length] + '"></i><span class="an">' + esc(a.name) + '</span>' +
-      '<span class="av">' + esc(a.velo.toFixed(1)) + '</span><span class="ap">' + esc(pct(a.usage)) + '</span></li>';
-  }).join('');
-  var chart = breakChart(ordered, p.throws);
-  var meta = [p.team, p.year].filter(Boolean).map(esc).join(' \u00b7 ');
-  $('h-pitcher').innerHTML =
-    '<div class="dc-band"' + clubStyle({ pri: p.teamColors[0], sec: p.teamColors[1] }) + '>' +
-    '<p class="dc-lbl">you pitch as</p><p class="pc-name">' + esc(p.name) + '</p>' +
-    '<p class="dc-meta"><span>' + meta + '</span>' + (p.throws ? '<em class="dc-tag">throws ' + esc(handWord(p.throws)) + '</em>' : '') + '</p></div>' +
-    '<div class="dc-body"><p class="dc-h"><b>his arsenal</b><span>mph \u00b7 usage</span></p>' +
-    '<div class="pc-body' + (chart ? '' : ' flat') + '">' + (chart ? '<div class="brk">' + chart + '</div>' : '') + '<ul class="ars">' + ars + '</ul></div></div>';
-  var due = s.batters.slice(0, 3).map(function (b, i) {
-    var lp = lineParts(b.line);
-    var stats = lp ? '<span class="du-slash">' + esc(lp.slash) + '</span>' + (lp.hr != null ? '<span class="du-hr"><b>' + esc(lp.hr) + '</b> hr</span>' : '')
-      : '<span class="du-slash">' + esc(b.line || '') + '</span>';
-    return '<li' + (i === 0 ? ' class="now"' : '') + '><span class="du-n">' + (i + 1) + '</span>' +
-      '<span class="du-who"><b>' + esc(b.name) + '</b>' + (b.bats ? '<em class="hand">' + esc(b.bats) + '</em>' : '') +
-      (i === 0 ? '<em class="du-now">at the plate</em>' : '') + '</span><span class="du-stats">' + stats + '</span></li>';
-  }).join('');
-  $('h-due').innerHTML = '<div class="dc-band"><p class="dc-lbl">you face</p><p class="pc-name dc-club"></p><p class="dc-meta"><span>due up, the real order</span></p></div>' +
-    '<ol class="du">' + due + '</ol>';
+  var meta = [clubsOf(s).us.name, p.year].filter(Boolean).map(esc).join(' \u00b7 ');
+  $('h-pitcher').innerHTML = '<span class="tw-lbl">you pitch as</span><span class="tw-name">' + esc(p.name) + '</span><span class="tw-meta">' + meta + '</span>';
+  var bt = s.batters[0], lp = lineParts(bt.line);
+  $('h-due').innerHTML = '<i class="tw-band"></i><span class="tw-lbl">due up</span><span class="tw-name">' + esc(bt.name) + '</span>' +
+    '<span class="tw-meta">' + (bt.bats ? '<em class="hand">' + esc(bt.bats) + '</em>' : '') + esc(lp ? lp.slash : bt.line || '') + '</span>';
   renderMatchup();
   $('h-proxy').hidden = s.resolution !== 'proxy';
   $('m-proxy').hidden = s.resolution !== 'proxy';
   renderStreak();
   $('h-load').hidden = true;
   $('h-main').hidden = false;
+  startHomeBg();
   drawHero();
 }
 
@@ -406,15 +376,21 @@ function renderHomeState() {
   renderStreak();
 }
 
-/* the hero: the same scene as the mound, small, with the first batter in */
+/* the home's stadium: the stills, one after another, slowly. CSS does the pan and the fade (transform
+   and opacity only). This loads the other three when the page is idle, and holds the clock while the
+   tab is hidden. */
+function startHomeBg() {
+  var bg = $('h-bg');
+  if (!bg || bg.dataset.on) return;
+  bg.dataset.on = '1';
+  var load = function () { bg.querySelectorAll('img[data-src]').forEach(function (im) { im.src = im.dataset.src; im.removeAttribute('data-src'); }); };
+  if (window.requestIdleCallback) requestIdleCallback(load, { timeout: 4000 }); else setTimeout(load, 1500);
+  document.addEventListener('visibilitychange', function () { bg.classList.toggle('paused', document.hidden); });
+}
+
+/* the 3D mound warms up while the player reads the spot (the 2D mound needs no warm) */
 function drawHero() {
-  /* with the 3D scene, the hero is a still of it (and its downloads are already on the way) */
-  if (use3d()) { $('h-canvas').hidden = true; $('h-poster').hidden = false; warm3d(); return; }
-  if (!S.hero) S.hero = new M.Scene($('h-canvas'), { hero: true });
-  S.hero.setScenario(S.scn);
-  S.hero.setBatter(S.scn.batters[0]);
-  S.hero.layout();
-  S.hero.draw({ pitcher: 'set', batter: 'stance' });
+  if (use3d()) warm3d();
 }
 
 /* The 3D mound starts on the home screen: its downloads, the people for today's spot and the
@@ -488,7 +464,7 @@ function buildMound() {
     S.heat = x.dataset.heat;
     renderScout();
   });
-  window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); if (S.hero) drawHero(); });
+  window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); });
   /* The scene's box moves without a window resize (a line wraps, a button grows): the canvas then
      shows a stretched frame and the grid sits off the zone, so lay out again. Never mid pitch. */
   if (window.ResizeObserver) {
