@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=4';
-import { Crew } from './fielders.js?v=2';
-import { buildBallpark } from './ballpark.js?v=4';
+import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=5';
+import { Crew } from './fielders.js?v=3';
+import { buildBallpark } from './ballpark.js?v=5';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=35';
 import { look } from './looks.js?v=2';
@@ -316,7 +316,7 @@ export class InPlay {
     // a ball he takes (a catch in the air, a throw at a bag): the point, and how far his body is
     // moved so the glove is on it (catchFit, below)
     let take = null, takeW = 0;
-    const takingNow = acts.some((a) => (a.kind === 'catch' || a.kind === 'drop' || a.kind === 'receive' || a.kind === 'catch_throw') && s > a.t - 0.5 && s < a.t + 0.08);
+    const takingNow = acts.some((a) => (a.kind === 'catch' || a.kind === 'drop' || a.kind === 'receive' || a.kind === 'catch_throw' || a.kind === 'field' || a.kind === 'pickup') && s > a.t - 0.5 && s < a.t + 0.08);
     // the moments he acts
     for (const a of acts) {
       const t = a.t;
@@ -326,7 +326,9 @@ export class InPlay {
         if (k > 0) {
           spec.crouch = Math.max(spec.crouch, 0.95 * k); spec.wide = 0.8 * k; spec.lean = Math.max(spec.lean, 0.75 * k);
           const bp = a.ball || ball;
-          glove = { x: bp.x, y: bp.y, z: 0.35 }; gloveW = Math.max(gloveW, k);
+          glove = { x: bp.x, y: bp.y, z: 0.2 }; gloveW = Math.max(gloveW, k);
+          const kw = ramp(s, t - 0.45, t - 0.05) * (1 - ramp(s, t + 0.3, t + 0.9));
+          if (kw > takeW) { take = { ...glove, t }; takeW = kw; }
           hand = { x: bp.x, y: bp.y, z: 1.0 }; handW = 0.7 * k;
           faceYaw = heading(st, plan.ballAt(t - 0.3));
           f.reaching = true;
@@ -423,7 +425,15 @@ export class InPlay {
       take = { ...glove, t }; takeW = kw;
     }
     // a low one (a liner at his shins, a sinking fly): he gets down to it
-    if (take && take.z < 3.2) spec.crouch = Math.max(spec.crouch, Math.min(1, (3.4 - take.z) / 2.6) * takeW);
+    // the throw's windup waits for the ball he is still taking
+    if (take && spec.throwW > 0) { spec.throwW *= 1 - takeW; spec.twist = (spec.twist || 0) * (1 - takeW); }
+    // a ground ball picked up: up from any dive first
+    if (take && take.z < 1) dive *= 1 - takeW;
+    if (take && take.z < 3.2) {
+      spec.crouch = Math.max(spec.crouch, Math.min(1, (3.4 - take.z) / 2.6) * takeW);
+      // (the run's capture gives way: he gets down to it, his stride broken down into the set)
+      spec.settle = takeW;
+    }
     // the ball held: glove and ball together in front of his chest, whatever reach is easing off
     if (ball.by === n && !f.throwing) {
       const fw = { x: Math.sin(faceYaw), y: Math.cos(faceYaw) };
@@ -456,6 +466,15 @@ export class InPlay {
     // second before and goes over the second after, as a gather step, never a jump.
     // A ball above what his arm reaches from there (the arm straight, the glove under it): he steps
     // in under it, his shoulder near enough that the arm reaches it.
+    // a ground ball: he fields it out in front of him, a long arm's reach ahead of his feet (the
+    // glove on the grass, his back flat), not curled over a ball under his own body
+    if (take && takeW > 0 && take.z < 1 && !dive) {
+      const D = 1.9, fx = take.x - Math.sin(yaw) * D, fy = take.y - Math.cos(yaw) * D;
+      at = { x: at.x + (fx - at.x) * takeW, y: at.y + (fy - at.y) * takeW };
+      spec.crouch = Math.max(spec.crouch, 0.9 * takeW); spec.lean = Math.max(spec.lean, 0.95 * takeW); spec.wide = Math.max(spec.wide || 0, 0.9 * takeW);
+      f.place(at.x, at.y, yaw, { lift });
+      f.pose(spec);
+    }
     if (take && takeW > 0) {
       for (let i = 0; i < 4; i++) {
         f.root.updateMatrixWorld(true);
@@ -469,7 +488,7 @@ export class InPlay {
         }
         at = { x: at.x + mx * takeW, y: at.y + my * takeW };
         // a ball under his glove: he gets lower (knees, then the waist)
-        if (g.z - take.z > 0.05 && !dive) { spec.crouch = Math.min(1, (spec.crouch || 0) + (g.z - take.z) / 2.2 * takeW); spec.lean = Math.min(1.35, (spec.lean || 0) + (g.z - take.z) / 2.2 * takeW); }
+        if (g.z - take.z > 0.05 && !dive) { spec.lean = Math.min(1.4, (spec.lean || 0) + (g.z - take.z) / 1.8 * takeW); spec.crouch = Math.min(1.35, (spec.crouch || 0) + (g.z - take.z) / 3 * takeW); }
         // still under it with the arm at full stretch: up on his toes, a small hop for a high one
         if (i === 3 && !dive && take.z - g.z > 0.05) lift = Math.max(lift, Math.min(1.5, (take.z - g.z) * 1.05) * takeW);
         f.place(at.x, at.y, yaw, { lift });

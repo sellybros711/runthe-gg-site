@@ -3192,7 +3192,7 @@
     },
     "inplay.js": {
       "v": "7",
-      "sha": "2132184d4d715d96"
+      "sha": "7e05004c631d6a77"
     },
     "preview.js": {
       "v": "1",
@@ -3275,16 +3275,16 @@
   },
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
-      "v": "4",
-      "sha": "6a3e08c0470d1071"
+      "v": "5",
+      "sha": "92a19aeae5e4fa81"
     },
     "fielders.js": {
-      "v": "2",
-      "sha": "149fc1430c2e2bcc"
+      "v": "3",
+      "sha": "490301afd557dd4d"
     },
     "ballpark.js": {
-      "v": "4",
-      "sha": "04f1155161bcc41f"
+      "v": "5",
+      "sha": "09158b4691994a7c"
     },
     "people.js": {
       "v": "35",
@@ -3359,8 +3359,8 @@
       "sha": "a971ef0884621f51"
     },
     "inplay-plan.js": {
-      "v": "4",
-      "sha": "6a3e08c0470d1071"
+      "v": "5",
+      "sha": "92a19aeae5e4fa81"
     }
   }
 }
