@@ -89,7 +89,7 @@ function record(day, number, r) {
 
 var S = {
   day: C.easternDay(), scn: null, daily: null, dailyResult: null,
-  outing: null, mode: 'daily', type: null, cell: null, busy: false,
+  outing: null, mode: 'daily', type: null, cell: null, at: null, busy: false,
   heat: 'damage', scout: false, guide: null, hover: null, scene: null, grid: null, mini: null, hero: null, result: null,
 };
 
@@ -176,7 +176,6 @@ function setTheme(t) {
   try { localStorage.setItem('runthegrid_theme', t); } catch (e) {}
   var m = $('themeMeta'); if (m) m.setAttribute('content', t === 'dark' ? '#0f131a' : '#eee6d6');
   if (S.scene && S.scene.L) S.scene.draw(S.scene.frame);
-  if (S.hero && S.hero.L) S.hero.draw(S.hero.frame);
 }
 
 /* ---- home ------------------------------------------------------------------------- */
@@ -251,15 +250,10 @@ function stakesOf(setup) {
 
 function renderMatchup() {
   var s = S.scn, c = clubsOf(s), sit = s.situation;
-  var tag = function (t) { return '<span class="mu-team"><i class="mu-bar"' + clubStyle(t) + '></i>' + esc(t.name) + '</span>'; };
-  if (c.them) {
-    var away = sit.usHome ? c.them : c.us, home = sit.usHome ? c.us : c.them;
-    $('h-head').innerHTML = tag(away) + '<span class="mu-home"><span class="mu-at">at</span>' + tag(home) + '</span>';
-  } else $('h-head').innerHTML = tag(c.us);
   $('h-sit').innerHTML = homeBug(s, c);
   $('h-sit').setAttribute('aria-label', situationLine(sit));
-  var due = $('h-due').querySelector('.dc-band');
-  if (due) { due.setAttribute('style', clubStyle(c.them).replace(/^ style="|"$/g, '')); due.querySelector('.dc-club').textContent = c.them ? c.them.full.toLowerCase() : 'the lineup'; }
+  var due = $('h-due').querySelector('.tw-band');
+  if (due) due.setAttribute('style', clubStyle(c.them).replace(/^ style="|"$/g, ''));
 }
 
 /* The spot as the mound's scorebug: the two clubs with their colour bars and the score, the inning,
@@ -290,48 +284,24 @@ function lineParts(line) {
 }
 
 function renderHome() {
-  var s = S.scn, sit = s.situation, p = s.pitcher;
-  /* the chips: only what the pack has. A null number or day is left out, never printed as "#" */
-  var chips = ['<span class="chip-s hot">real save</span>'];
-  if (s.preview) chips.push('<span class="chip-s">preview \u00b7 launch 26 oct</span>');
-  else if (s.number != null) chips.push('<span class="chip-s">#' + esc(s.number) + ' \u00b7 today</span>');
-  if (s.day) chips.push('<span class="chip-s">' + esc(fmtDay(s.day)) + '</span>');
-  if (s.resolution === 'proxy') chips.push('<span class="chip-s quiet">modern pitch data</span>');
-  $('h-day').innerHTML = chips.join('');
+  var s = S.scn, p = s.pitcher;
   $('h-title').textContent = occasionOf(s.title);
   var mo = MOMENT[s.id];
   $('h-moment').textContent = mo || '';
   $('h-moment').hidden = !mo;
   $('h-setup').innerHTML = '<i class="st-mark" aria-hidden="true"></i><span>' + esc(stakesOf(s.setup) || s.setup) + '</span>';
-  var ordered = p.arsenal.slice().sort(function (a, b) { return b.usage - a.usage; });
-  var ars = ordered.map(function (a, i) {
-    return '<li><i class="dot" style="background:' + PITCH_COLORS[i % PITCH_COLORS.length] + '"></i><span class="an">' + esc(a.name) + '</span>' +
-      '<span class="av">' + esc(a.velo.toFixed(1)) + '</span><span class="ap">' + esc(pct(a.usage)) + '</span></li>';
-  }).join('');
-  var chart = breakChart(ordered, p.throws);
-  var meta = [p.team, p.year].filter(Boolean).map(esc).join(' \u00b7 ');
-  $('h-pitcher').innerHTML =
-    '<div class="dc-band"' + clubStyle({ pri: p.teamColors[0], sec: p.teamColors[1] }) + '>' +
-    '<p class="dc-lbl">you pitch as</p><p class="pc-name">' + esc(p.name) + '</p>' +
-    '<p class="dc-meta"><span>' + meta + '</span>' + (p.throws ? '<em class="dc-tag">throws ' + esc(handWord(p.throws)) + '</em>' : '') + '</p></div>' +
-    '<div class="dc-body"><p class="dc-h"><b>his arsenal</b><span>mph \u00b7 usage</span></p>' +
-    '<div class="pc-body' + (chart ? '' : ' flat') + '">' + (chart ? '<div class="brk">' + chart + '</div>' : '') + '<ul class="ars">' + ars + '</ul></div></div>';
-  var due = s.batters.slice(0, 3).map(function (b, i) {
-    var lp = lineParts(b.line);
-    var stats = lp ? '<span class="du-slash">' + esc(lp.slash) + '</span>' + (lp.hr != null ? '<span class="du-hr"><b>' + esc(lp.hr) + '</b> hr</span>' : '')
-      : '<span class="du-slash">' + esc(b.line || '') + '</span>';
-    return '<li' + (i === 0 ? ' class="now"' : '') + '><span class="du-n">' + (i + 1) + '</span>' +
-      '<span class="du-who"><b>' + esc(b.name) + '</b>' + (b.bats ? '<em class="hand">' + esc(b.bats) + '</em>' : '') +
-      (i === 0 ? '<em class="du-now">at the plate</em>' : '') + '</span><span class="du-stats">' + stats + '</span></li>';
-  }).join('');
-  $('h-due').innerHTML = '<div class="dc-band"><p class="dc-lbl">you face</p><p class="pc-name dc-club"></p><p class="dc-meta"><span>due up, the real order</span></p></div>' +
-    '<ol class="du">' + due + '</ol>';
+  var meta = [clubsOf(s).us.name, p.year].filter(Boolean).map(esc).join(' \u00b7 ');
+  $('h-pitcher').innerHTML = '<span class="tw-lbl">you pitch as</span><span class="tw-name">' + esc(p.name) + '</span><span class="tw-meta">' + meta + '</span>';
+  var bt = s.batters[0], lp = lineParts(bt.line);
+  $('h-due').innerHTML = '<i class="tw-band"></i><span class="tw-lbl">due up</span><span class="tw-name">' + esc(bt.name) + '</span>' +
+    '<span class="tw-meta">' + (bt.bats ? '<em class="hand">' + esc(bt.bats) + '</em>' : '') + esc(lp ? lp.slash : bt.line || '') + '</span>';
   renderMatchup();
   $('h-proxy').hidden = s.resolution !== 'proxy';
   $('m-proxy').hidden = s.resolution !== 'proxy';
   renderStreak();
   $('h-load').hidden = true;
   $('h-main').hidden = false;
+  startHomeBg();
   drawHero();
 }
 
@@ -406,15 +376,21 @@ function renderHomeState() {
   renderStreak();
 }
 
-/* the hero: the same scene as the mound, small, with the first batter in */
+/* the home's stadium: the stills, one after another, slowly. CSS does the pan and the fade (transform
+   and opacity only). This loads the other three when the page is idle, and holds the clock while the
+   tab is hidden. */
+function startHomeBg() {
+  var bg = $('h-bg');
+  if (!bg || bg.dataset.on) return;
+  bg.dataset.on = '1';
+  var load = function () { bg.querySelectorAll('img[data-src]').forEach(function (im) { im.src = im.dataset.src; im.removeAttribute('data-src'); }); };
+  if (window.requestIdleCallback) requestIdleCallback(load, { timeout: 4000 }); else setTimeout(load, 1500);
+  document.addEventListener('visibilitychange', function () { bg.classList.toggle('paused', document.hidden); });
+}
+
+/* the 3D mound warms up while the player reads the spot (the 2D mound needs no warm) */
 function drawHero() {
-  /* with the 3D scene, the hero is a still of it (and its downloads are already on the way) */
-  if (use3d()) { $('h-canvas').hidden = true; $('h-poster').hidden = false; warm3d(); return; }
-  if (!S.hero) S.hero = new M.Scene($('h-canvas'), { hero: true });
-  S.hero.setScenario(S.scn);
-  S.hero.setBatter(S.scn.batters[0]);
-  S.hero.layout();
-  S.hero.draw({ pitcher: 'set', batter: 'stance' });
+  if (use3d()) warm3d();
 }
 
 /* The 3D mound starts on the home screen: its downloads, the people for today's spot and the
@@ -475,7 +451,8 @@ function buildMound() {
     pickType(a.type);
   });
   $('m-throw').addEventListener('click', throwIt);
-  S.meter = METER && $('m-meter') ? METER.create($('m-meter')) : null;
+  /* the meter on the page is meter-ui.js (the look); meter.js keeps the numbers */
+  S.meter = METER && $('m-meter') ? (window.STD_METER_UI || METER).create($('m-meter')) : null;
   $('m-batter').addEventListener('click', toggleScout);
   $('m-guide-b').addEventListener('click', function () { setGuide(S.guide ? null : S.type || S.scn.pitcher.arsenal[0].type); });
   $('m-guide').addEventListener('click', function (e) {
@@ -487,7 +464,7 @@ function buildMound() {
     S.heat = x.dataset.heat;
     renderScout();
   });
-  window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); if (S.hero) drawHero(); });
+  window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); });
   /* The scene's box moves without a window resize (a line wraps, a button grows): the canvas then
      shows a stretched frame and the grid sits off the zone, so lay out again. Never mid pitch. */
   if (window.ResizeObserver) {
@@ -524,14 +501,21 @@ function relayout() {
   renderGuide();
 }
 function idleFrame() {
-  return { pitcher: 'set', batter: 'stance', umpire: 'set', mitt: S.cell != null ? S.scene.cellCenter(S.cell) : null, marker: S.lastMarker || null };
+  return { pitcher: 'set', batter: 'stance', umpire: 'set', mitt: S.cell != null ? aimPoint(S.cell, S.at) : null, marker: S.lastMarker || null };
+}
+/* FREE AIM: the exact point on screen for a cell and its at (catcher's view fractions of the cell),
+   through the scene's own projection. The 2D drawing's mitt sets up there. */
+function aimPoint(cell, at) {
+  var t = C.targetOf(cell);
+  if (!at) return S.scene.cellCenter(cell);
+  return S.scene.toScreen({ x: t.x + at[0] * C.GRID.COL_FT, zn: t.zn + at[1] * C.GRID.ROW_ZN });
 }
 
 function enterMound() {
   buildMound();
   stopMeter(); meterDone();
   S.scene.setScenario(S.scn);
-  S.type = null; S.cell = null; S.lastMarker = null; S.paintedN = null;
+  S.type = null; S.cell = null; S.at = null; S.lastMarker = null; S.paintedN = null;
   if (S.mini) S.mini.reset();
   show('s-mound');
   setBatter(true);
@@ -623,26 +607,31 @@ function pickType(t) {
   drawPreview();
   updateThrow();
 }
-/* a drag over the zone, or a mouse over it: the preview follows, nothing is picked yet */
-function hoverCell(c) {
+/* a drag over the zone, or a mouse over it: the preview follows, nothing is picked yet. A drag
+   reports every move, so the preview is drawn once a frame at most. */
+function hoverCell(c, at) {
   if (S.busy) return;
   S.hover = c;
-  drawPreview();
+  S.hoverAt = c == null ? null : at || null;
+  if (S.hoverRaf) return;
+  S.hoverRaf = requestAnimationFrame(function () { S.hoverRaf = 0; drawPreview(); });
 }
 /* the tag over the crosshair: the spot in inside and away words, and the heat's number there */
 function aimLabel(c) {
   var bt = batterAt(S.outing.batterIndex), v = S.grid.heatOf(c);
   return M.cellWords(c, bt.bats) + (v ? ' \u00b7 ' + v : '');
 }
-function pickCell(c) {
+function pickCell(c, at) {
   if (S.busy) return;
-  S.hover = null;
+  S.hover = null; S.hoverAt = null;
   stopMeter();
   S.cell = c;
-  S.grid.setSelected(c);
+  S.at = at || [0, 0];
+  S.grid.setSelected(c, S.at);
   S.lastMarker = null;
   S.grid.setMarks({});
-  if (S.scene.setTarget) S.scene.setTarget(c);
+  /* the stage takes (cell) today; at is for the stage hook that aims the catcher at the exact point */
+  if (S.scene.setTarget) S.scene.setTarget(c, S.at);
   S.scene.draw(idleFrame());
   drawPreview();
   updateThrow();
@@ -665,7 +654,7 @@ function stepLine() {
   if (!el) return;
   var say = '';
   if (S.busy || !S.outing || S.outing.status !== 'live') say = '';
-  else if (S.meter && S.meter.running()) say = 'stop it in the bright band';
+  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your power' : 'stop it in the bright band';
   else if (!S.type) say = 'pick a pitch';
   else if (S.cell == null) say = 'aim: drag or tap the zone';
   else say = 'tap throw';
@@ -749,11 +738,11 @@ function scoutSentence(pr, rows) {
 }
 
 /* ---- what each pitch does ---------------------------------------------------------------
-   The break preview (a ghost trail from the hand to the spot, drawn by the 3D stage, and the same
-   path as a thin line on the grid), the glyph on each pitch button and the pitch guide. All of it
+   The break preview (the animated indicator the 3D stage draws from the hand to the spot; the thin
+   line on the grid only without WebGL), the glyph on each pitch button and the pitch guide. All of it
    comes from the arsenal's own numbers: velo, pfxX and pfxZ (catcher's view inches, so mirrored on
    screen like the grid), usage, and the shape from the contract. The preview is the aim, never
-   the outcome: it ends on the cell's centre, wherever the engine's command draw puts the ball. */
+   the outcome: it ends on the exact aim point, wherever the engine's command draw puts the ball. */
 
 /* the colour a pitch has on the break chart (usage order), so the buttons and the chart agree */
 function colorOf(a) {
@@ -798,11 +787,15 @@ function holdToLearn(b, type) {
    of the zone before a cell is picked. Gone while a pitch is in the air. */
 function drawPreview() {
   if (!S.grid || !S.scene) return;
-  var cell = S.hover != null ? S.hover : S.cell;
+  var hov = S.hover != null, cell = hov ? S.hover : S.cell, at = hov ? S.hoverAt : S.at;
   var live = S.type && !S.busy && S.outing && S.outing.status === 'live';
-  var spec = live ? { type: S.type, cell: cell == null ? 12 : cell } : null;
+  /* at rides on the spec, so the stage ends the ghost on the exact point */
+  var spec = live ? (cell == null ? { type: S.type, cell: 12 } : { type: S.type, cell: cell, at: at || [0, 0] }) : null;
   if (S.scene.setPreview) S.scene.setPreview(spec);
-  var svg = gridLine(), pp = spec && S.scene.previewPoints ? S.scene.previewPoints() : null;
+  var svg = gridLine();
+  /* the 3D stage draws its own animated indicator; this 2D line is only for the no WebGL drawing */
+  if (S.scene.is3d) { svg.style.display = 'none'; return; }
+  var pp = spec && S.scene.previewPoints ? S.scene.previewPoints() : null;
   if (!pp || pp.path.length < 2) { svg.style.display = 'none'; return; }
   var r = S.scene.gridRect();
   var line = function (pts) { return pts.map(function (q, i) { return (i ? 'L' : 'M') + (q.x - r.x).toFixed(1) + ' ' + (q.y - r.y).toFixed(1); }).join(''); };
@@ -949,14 +942,20 @@ function meterOn() { return !!(S.meter && prefs.meter !== false); }
 function stopMeter() { if (S.meter && S.meter.running()) S.meter.cancel(); }
 function throwIt() {
   if (S.busy || !S.type || S.cell == null || S.outing.status !== 'live') return;
-  if (!meterOn()) return fire({ type: S.type, cell: S.cell });
+  if (!meterOn()) return fire({ type: S.type, cell: S.cell, at: S.at || [0, 0] });
   if (S.meter.running()) return;
   audio();
   var ap = pitchOf(S.type), bt = batterAt(S.outing.batterIndex);
-  var type = S.type, cell = S.cell;
-  $('m-throw').hidden = true;
+  var type = S.type, cell = S.cell, at = S.at || [0, 0];
+  /* the meter is one panel over the pitch buttons and the throw button: from the buttons' top to
+     the throw button's foot, so it is big to hit and the scene above never moves */
+  var padEl = $('m-pad'), ars = $('m-arsenal').getBoundingClientRect(), tb = $('m-throw').getBoundingClientRect();
+  var arsTop = ars.top + (parseFloat(getComputedStyle($('m-arsenal')).paddingTop) || 0) - 3;
+  padEl.style.setProperty('--meter-h', Math.max(tb.height, Math.round(tb.bottom - arsTop)) + 'px');
+  padEl.classList.add('metering');
   var run = S.meter.run({
-    command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type),
+    command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type), pitch: ap,
+    onStage: stepLine,
     verb: S.outing.shutItLive ? 'shut it' : 'release',
     label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
     /* the step line under the meter says what to do; the meter's own corner keeps its word for after the tap */
@@ -965,8 +964,10 @@ function throwIt() {
   });
   stepLine();
   run.then(function (r) {
-    if (!r) { $('m-throw').hidden = false; updateThrow(); return; }
-    fire({ type: type, cell: cell, q: r.q });
+    if (!r) { $('m-pad').classList.remove('metering'); updateThrow(); return; }
+    var call = { type: type, cell: cell, at: at, q: r.q };
+    if (r.e != null) call.e = r.e;      // effort: only when the meter offered it (STD_METER.EFFORT)
+    fire(call);
   });
 }
 /* rules 2: how many pitches in a row before this one were this type (a good release helps less on a repeat) */
@@ -975,7 +976,7 @@ function repeatOf(type) {
   for (var i = log.length - 1; i >= 0 && log[i].call.type === type; i--) n++;
   return n;
 }
-function meterDone() { if (S.meter) S.meter.hide(); $('m-throw').hidden = false; }
+function meterDone() { if (S.meter) S.meter.hide(); $('m-pad').classList.remove('metering'); }
 
 /* PAINTED is rare and earned (the owner, 2026-10-22: "it always says painted"). All three:
    the meter's best tier (q at or over STD_METER.BEST_Q, the bright band), a called cell on the
@@ -983,7 +984,7 @@ function meterDone() { if (S.meter) S.meter.hide(); $('m-throw').hidden = false;
    that cell. Never on two pitches in a row in an outing. With the meter off there is no q, so
    never. The cue stays quiet: a ring on the cell and a word after the line. */
 function isPainted(pr, call) {
-  var best = window.STD_METER ? window.STD_METER.BEST_Q : 0.8;
+  var best = window.STD_METER ? window.STD_METER.BEST_Q : 0.85;
   if (call.q == null || call.q < best) return false;
   if (pr.actualCell !== call.cell || !C.inZone(call.cell) || call.cell === C.cellOf(2, 2)) return false;
   return S.paintedN == null || pr.n !== S.paintedN + 1;
@@ -1001,7 +1002,7 @@ function settle() {
   S.busy = false;
   S.grid.setDisabled(false);
   S.grid.setSelected(null);
-  S.cell = null; S.type = null;
+  S.cell = null; S.at = null; S.type = null;
   document.querySelectorAll('#m-arsenal .pitch').forEach(function (b) { b.classList.remove('sel'); b.setAttribute('aria-pressed', 'false'); });
 }
 function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
@@ -1015,21 +1016,26 @@ function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); });
      a foul                             the ball seen going foul, a beat into its flight
      a ball in play                     the play decided: the catch, the throw beating him, the
                                         ball down for a hit, the home run over the wall
-   The stage's hooks.call already fires at those moments for everything but a foul (stage.js
-   callAt: the catch + 0.12 s, or the in-play plan's resolveAt), so a foul holds FOUL_SEEN_MS past
-   it. The 2D drawing (anim.js) calls at the plate for everything, so there a foul and a ball in
-   play wait for the drawing to end. A tap that skips the play reveals at once, and the play's end
-   always reveals. No popup, no grade: one line and the scorebug.
-   When the 3D stage exposes its own seen-fair-or-foul and play-decided signal, wire it here: this
-   function is the one place that says when the tag goes up. */
-var FOUL_SEEN_MS = 700, END_BEAT_MS = 900;
+   The stage's hooks.call fires at those moments for everything but a foul (stage.js THE PLAY'S
+   TIMELINE: the catch + 0.12 s, or the in-play plan's resolveAt). A foul goes up on hooks.land with
+   fair false, which the stage fires when it is seen foul (the umpire's arms starting up), after its
+   call; a skip fires it before done. FOUL_BACKSTOP_MS past the call is only a safety net for a stage
+   that never fires land. The 2D drawing (anim.js) calls at the plate for everything, so there a foul
+   and a ball in play wait for the drawing to end. A tap that skips the play reveals at once, and the
+   play's end always reveals. No popup, no grade: one line and the scorebug. This function is the one
+   place that says when the tag goes up. */
+var FOUL_BACKSTOP_MS = 1600, END_BEAT_MS = 900;
 function revealer(pr, show) {
   var done = false, hold = 0;
   var now = function () { if (done) return; done = true; clearTimeout(hold); show(); };
+  var foul3d = S.scene.is3d && pr.result === 'foul';
   var waitsForEnd = !S.scene.is3d && (pr.result === 'in_play' || pr.result === 'foul');
-  var after = S.scene.is3d && pr.result === 'foul' ? FOUL_SEEN_MS / (prefs.quick ? 1.8 : 1) : 0;
   return {
-    call: function () { if (waitsForEnd || done) return; if (after) hold = setTimeout(now, after); else now(); },
+    call: function () {
+      if (waitsForEnd || done) return;
+      if (foul3d) hold = setTimeout(now, FOUL_BACKSTOP_MS / (prefs.quick ? 1.8 : 1)); else now();
+    },
+    land: function (info) { if (foul3d && info && info.fair === false) now(); },
     now: now,
   };
 }
@@ -1055,7 +1061,7 @@ function fire(call) {
       pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
       renderHud(res.state);
     });
-    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, sound: sound, field: hudRunners } };
+    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: sound, field: hudRunners } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       rv.now();
       S.lastMarker = S.scene.toScreen(pr.actual);

@@ -11,11 +11,12 @@ name: Shut The Door checks
 #              sitemap or the newsletter)
 #   engine     the engine on a synthetic pack, every built pack against the
 #              contract with the brief's three tests, the replay check, the
-#              dash ban and the copy rules on the files that hold player copy
+#              pitch paths (lab/pipeline/check-pitches.mjs), the dash ban and the copy rules on the files that hold player copy
 #   migration  supabase/153_shut_the_door.sql applied TWICE to a real Postgres,
 #              then supabase/test/shut_the_door_test.sql; then
 #              155_shut_the_door_tie_held.sql (the held tie) twice and its test;
-#              then 156_shut_the_door_release.sql (the release's q) twice and its test
+#              then 156_shut_the_door_release.sql (the release's q) twice and its test; then
+#              157_shut_the_door_effort.sql (the effort's e) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -62,6 +63,8 @@ jobs:
         run: node shut-the-door/test/lesson.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
+      - name: Every pitch moves like the real pitch (break side, size, crossing point, preview against flight)
+        run: node shut-the-door/lab/pipeline/check-pitches.mjs
       - name: No em or en dashes
         run: node scripts/check-dashes.mjs shut-the-door
       - name: The copy rules, on the files that hold player copy
@@ -101,3 +104,9 @@ jobs:
           $P -f supabase/156_shut_the_door_release.sql
           $P -f supabase/156_shut_the_door_release.sql
           $P -f supabase/test/shut_the_door_release_test.sql
+      - name: 157 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/157_shut_the_door_effort.sql
+          $P -f supabase/157_shut_the_door_effort.sql
+          $P -f supabase/test/shut_the_door_effort_test.sql

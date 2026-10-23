@@ -1,8 +1,19 @@
 /* Shut The Door: player strategies against every pack (rules 2, 2026-10-22).
  *
  *   node shut-the-door/pipeline/strategies.cjs [game dir] [runs] [rules 1|2] [strategies] > rows.json
- *   env: PACKS=yamamoto,... only those packs; RELS=none,ordinary,perfect the releases;
- *        FUZZ=0 the screen strategies read the exact profile instead of the scouting view
+ *   env: PACKS=yamamoto,... only those packs; RELS=none,ordinary,good,perfect the releases
+ *        (good: the tap model at half the miss and a third of the slips);
+ *        FUZZ=0 the screen strategies read the exact profile instead of the scouting view;
+ *        EFFORTS=none,min,mid,max,smart the effort policies (CONTRACT.md 5c; default none):
+ *          none   no e (the meter's one stop, as before effort)
+ *          min, mid, max   e 0, 0.5, 1 every pitch
+ *          smart  save it for the put-away: max with two strikes, easy early in the count, at
+ *                 three balls and on the changeup or splitter, ordinary otherwise
+ *        AIMS=centre,random,out,in the free aim point (CONTRACT.md 5d; default centre):
+ *          centre  no at (the cell's centre); random  anywhere in the cell;
+ *          out     the cell's far corner from the heart of the plate; in  its near corner
+ *        With a timed release, e narrows or widens the window the tap model is timed in
+ *        (meter.js qOf(err, command, e)); a perfect release is q 1 whatever the window.
  *
  * The measurements behind grade.js R2 (README, Rules 2). Each strategy plays
  * every pack RUNS times with each release (none: the meter off; ordinary: the
@@ -117,13 +128,39 @@ function fixedTop(pack) {
   return top;
 }
 
-function tapQ(rng, command) {
-  let e = R.probit(rng()) * MT.TIMING.sdMs;
-  if (rng() < MT.TIMING.slip) e = rng() * MT.TIMING.slipMaxMs;
-  return MT.qOf(e, command);
+/* good: a player who times well (half the ordinary miss, a third of the slips) */
+const GOOD = Object.freeze({ sdMs: MT.TIMING.sdMs / 2, slip: MT.TIMING.slip / 3, slipMaxMs: MT.TIMING.slipMaxMs });
+function tapQ(rng, command, eff, t) {
+  t = t || MT.TIMING;
+  let e = R.probit(rng()) * t.sdMs;
+  if (rng() < t.slip) e = rng() * t.slipMaxMs;
+  return MT.qOf(e, command, eff);
+}
+const EFFORTS = (process.env.EFFORTS || 'none').split(',');
+const AIMS = (process.env.AIMS || 'centre').split(',');
+function aimOf(policy, o, c) {
+  if (policy === 'centre') return null;
+  if (policy === 'random') return [Math.round((o.aimRng() - 0.5) * 100) / 100, Math.round((o.aimRng() - 0.5) * 100) / 100];   // its own stream, so the calls stay paired
+  const dc = Math.sign(K.colOf(c.cell) - 2), dr = Math.sign(2 - K.rowOf(c.cell));   // away from the heart: +x right of it, +zn above it
+  const k = policy === 'out' ? 0.5 : -0.5;
+  return [dc * k, dr * k];
+}
+function effortOf(policy, o, c) {
+  if (policy === 'none') return null;
+  if (policy === 'min') return 0;
+  if (policy === 'mid') return 0.5;
+  if (policy === 'max') return 1;
+  // smart: save it for the put-away. Max with two strikes (fastball or breaking ball), easy early in
+  // the count and at three balls (a wider window, and the arm gets its strain back), easy on the
+  // changeup and splitter (a harder one whiffs less), ordinary otherwise
+  const st = o.st, fam = K.FAMILY_OF[c.type];
+  if (st.b === 3 || fam === 'offspeed') return 0.25;
+  if (st.s === 2) return 1;
+  if (st.b + st.s <= 1) return 0.25;
+  return 0.5;
 }
 
-function play(pack, model, sname, strat, release, runs) {
+function play(pack, model, sname, strat, release, runs, effort, aim) {
   const out = { door_shut: 0, tie_held: 0, doors_open: 0, walk_off: 0 };
   let ra = 0, pitches = 0, n = 0, walks = 0, pa = 0;
   const scores = [], bands = { green: 0, yellow: 0, orange: 0, red: 0 };
@@ -134,12 +171,18 @@ function play(pack, model, sname, strat, release, runs) {
     o.fixed = pack._fixed;
     o.pol = R.mulberry32(R.hashSeed(`${pack.scenario.id}|pol|${r}`));
     o.closer = closers[r % closers.length];
+    o.aimRng = R.mulberry32(R.hashSeed(`${pack.scenario.id}|aim|${r}`));
     let guard = 0;
     while (o.status === 'live' && guard++ < 200) {
       const c = strat(o);
       const cmd = pack.scenario.pitcher.arsenal.find(a => a.type === c.type).command;
+      const eff = release === 'none' ? null : effortOf(effort || 'none', o, c);
+      if (eff != null) c.e = eff;
+      const at = aimOf(aim || 'centre', o, c);
+      if (at) c.at = at;
       if (release === 'perfect') c.q = 1;
-      else if (release === 'ordinary') c.q = tapQ(tap, cmd);
+      else if (release === 'ordinary') c.q = tapQ(tap, cmd, eff);
+      else if (release === 'good') c.q = tapQ(tap, cmd, eff, GOOD);
       const res = E.throwPitch(o, c).pitchResult;
       if (res.paOver) { pa++; if (res.result === 'ball' || res.result === 'hit_by_pitch') walks++; }
     }
@@ -169,7 +212,11 @@ for (const f of packs) {
   if (WANT.includes('fixed')) pack._fixed = fixedTop(pack);
   for (const sn of WANT) {
     for (const rel of (sn === 'pool' ? ['none'] : RELS)) {
-      rows.push(Object.assign({ pack: pack.scenario.id.replace('std-', ''), strat: sn, release: rel }, play(pack, model, sn, S[sn], rel, RUNS)));
+      for (const ef of (sn === 'pool' || rel === 'none' ? ['none'] : EFFORTS)) {
+        for (const am of (sn === 'pool' ? ['centre'] : AIMS)) {
+          rows.push(Object.assign({ pack: pack.scenario.id.replace('std-', ''), strat: sn, release: rel, effort: ef, aim: am }, play(pack, model, sn, S[sn], rel, RUNS, ef, am)));
+        }
+      }
     }
   }
   rows.push({ pack: pack.scenario.id.replace('std-', ''), strat: 'POOL(pack)', release: '', hold: Math.round(pack.build.pool.holdRate * 1000) / 10, real: `${pack.reveal.outcome} ${pack.reveal.runs}r` });

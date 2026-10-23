@@ -1,12 +1,23 @@
 /* One pitch: release, flight, the plate, the glove.
  *
- * The flight uses the arsenal's real numbers from the pack (velo and pfx, through assets/packs/):
- * the spin's push is a constant acceleration sized so the pitch moves pfx inches against a spinless
- * pitch over its last 40 ft (Statcast's definition), gravity on top, and drag takes about 8% of the
- * speed by the plate. The release point is a stand in (not in the pack). In the lab the aimed cell and
- * the miss are a sample (play.js, labelled so); in the game they are the engine's. Cells follow
- * CONTRACT.md section 2, catcher's view. After the plate the ball goes where the play sends it: into
- * the glove, off the bat (the real exit velocity, launch angle and spray), off the dirt, off the hitter.
+ * The flight is Statcast's own model of a pitch: the 9 parameter fit is a constant acceleration in
+ * each axis (x(t) = x0 + vx0 t + ax t^2 / 2, the same for y and z), and that is what flight() is.
+ * Catcher's view, feet: x toward the catcher's right (the first base side), y toward the mound, z up.
+ * ax and az come from the arsenal's real pfx (the pack's pfxX and pfxZ, inches): Statcast's pfx is the
+ * spin's push measured over the whole flight, so ax = 2 pfx / T^2 for the flight time T (fitted on
+ * real 2024 and 2025 Statcast pitches: pfx sits within about 10% of ax T^2 / 2 from the release,
+ * and the old reading, over the last 40 ft only, gave 60% of it and drew every break 1.6x too big).
+ * az adds gravity. ay is the drag: about 8% of the speed is gone by the plate (real ay is 25 to 34
+ * ft/s^2). vx0 and vz0 are solved so the ball crosses the front of the plate exactly on the given
+ * point: the engine's actual for a thrown pitch, the aim point for the preview (preview.js), so both
+ * draw one shape. Arm side or glove side is the sign of pfxX and nothing else (a righty's arm side is
+ * x < 0); the pitcher's view mirror comes from the camera through P().
+ *
+ * The release point is the pitcher's own when the pack carries it (facts.release); today it is a
+ * stand in for his hand (releaseOf). In the lab the aimed cell and the miss are a sample (play.js,
+ * labelled so); in the game they are the engine's. Cells follow CONTRACT.md section 2, catcher's view.
+ * After the plate the ball goes where the play sends it: into the glove, off the bat (the real exit
+ * velocity, launch angle and spray), off the dirt, off the hitter.
  */
 import * as THREE from 'three';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
@@ -15,28 +26,38 @@ import * as G from './gear3d.js?v=3';
 const G_FT = 32.17;
 export const T_RELEASE = 0.8;
 
-/** Contract section 2: a cell's centre, catcher's view, x in feet, z in feet for this batter. */
-export function cellPoint(cell, szTop, szBot) {
+/** Contract section 2: a cell's centre, moved by the free aim point at = [u, v] inside it
+    (contract.js aimPoint: x + u * 0.553 ft, zn + v / 3), catcher's view, x in feet, z in feet for
+    this batter. No at: the centre. */
+export function cellPoint(cell, szTop, szBot, at) {
   const r = Math.floor(cell / 5), c = cell % 5;
-  const x = (c - 2) * 0.553;
-  const zn = (3.5 - r) / 3; // row 0: 7/6, row 1: 5/6, row 2: 1/2, row 3: 1/6, row 4: -1/6
+  const u = at ? clampAim(at[0]) : 0, v = at ? clampAim(at[1]) : 0;
+  const x = (c - 2 + u) * 0.553;
+  const zn = (3.5 - r + v) / 3; // row 0: 7/6, row 1: 5/6, row 2: 1/2, row 3: 1/6, row 4: -1/6
   return { x, z: szBot + zn * (szTop - szBot) };
 }
+const clampAim = (k) => (Number.isFinite(k) ? Math.max(-0.5, Math.min(0.5, k)) : 0);
 
+/** Where his hand lets the ball go, catcher's view feet. His own when the pack carries it (release
+    { x, z, ext }: Statcast's release_pos_x, release_pos_z and release_extension, the plate's back
+    tip 60.5 ft from the rubber); until then a typical release for his hand, labelled so: a lefty
+    lets go on the first base side (x > 0), a righty on the third base side. */
+export function releaseOf(p) {
+  const r = p.release;
+  if (r && [r.x, r.z, r.ext].every(Number.isFinite)) return { x: r.x, y: 60.5 - r.ext, z: r.z, assumed: null };
+  return { x: p.throws === 'L' ? 1.9 : -1.9, y: 54.0, z: 5.6, assumed: 'a stand in release for his hand' };
+}
+
+/** The flight from rel (release, feet) to plate (the crossing point at the front of the plate), at
+    velo mph out of the hand, with pfxX and pfxZ inches of spin movement over the whole flight. */
 export function flight(rel, plate, velo, pfxX, pfxZ) {
   const yPlate = 17 / 12;
   const v0 = velo * 1.46667, v1 = v0 * 0.92;
   const dist = rel.y - yPlate;
   const T = dist / ((v0 + v1) / 2);
   const ay = (v1 - v0) / T;                   // deceleration along y (toward the plate is -y)
-  // time spent in the last 40 ft
-  const tAt = (y) => { // solve rel.y - v0 t - 0.5 ay t^2 = y  (ay < 0 slows it)
-    const a = -0.5 * ay, b = -v0, c = rel.y - y; // a t^2 + b t + c = 0 with motion toward -y
-    const disc = b * b - 4 * a * c;
-    return (-b - Math.sqrt(Math.max(0, disc))) / (2 * a);
-  };
-  const t40 = T - tAt(40);
-  const sx = 2 * (pfxX / 12) / (t40 * t40), sz = 2 * (pfxZ / 12) / (t40 * t40);
+  // the spin's push, constant over the flight, sized so it moves the ball pfx against no spin
+  const sx = 2 * (pfxX / 12) / (T * T), sz = 2 * (pfxZ / 12) / (T * T);
   const ax = sx, az = sz - G_FT;
   const vx = (plate.x - rel.x - 0.5 * ax * T * T) / T;
   const vz = (plate.z - rel.z - 0.5 * az * T * T) / T;
@@ -45,7 +66,7 @@ export function flight(rel, plate, velo, pfxX, pfxZ) {
     y: rel.y - v0 * t - 0.5 * ay * t * t,
     z: rel.z + vz * t + 0.5 * az * t * t,
   });
-  return { T, at, ax, az, vx, vz };
+  return { T, at, ax, az, vx, vz, sx, sz };
 }
 
 export class Pitch {
@@ -59,10 +80,11 @@ export class Pitch {
     this.p = { ...a, aimCell: play.call.cell, velo: play.velo ?? a.velo };
     this.play = play; this.m = m || { ball: 'glove' };
     const { szTop, szBot } = batter;
-    const aim = cellPoint(play.call.cell, szTop, szBot);
+    const aim = cellPoint(play.call.cell, szTop, szBot, play.call.at);
     this.aim = aim;
     this.actual = { x: play.actual.x, z: play.actual.z };
-    this.f = flight(facts.release, this.actual, this.p.velo, a.pfxX, a.pfxZ);
+    // the movement of the pitch he threw: the engine's (its effort slice, play.pfxX) or his average
+    this.f = flight(facts.release, this.actual, this.p.velo, play.pfxX ?? a.pfxX, play.pfxZ ?? a.pfxZ);
     // the glove: about 3 ft behind the front of the plate, out in front of the catcher's knees
     const yGlove = -1.45;
     const tg = this.timeAtY(yGlove);

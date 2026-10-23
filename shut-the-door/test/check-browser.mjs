@@ -18,6 +18,10 @@
  *      banner, flash or sheet, and nothing over the field (the owner,
  *      2026-10-17). One quiet play by play line under the scoreboard. The live
  *      field minimap shows after the first play, with a dot only for a ball in play.
+ *      The first pitch is a free tap off a cell's centre (the crosshair there, the
+ *      call's cell and at right, catcher's view) and checks the meter: one panel
+ *      over the pitch buttons and the throw button, the effort bar only with
+ *      STD_METER.EFFORT, the stop locks, and the call carries cell, at and q.
  *   6. the end reveal: outcome, strip, percentile, pitched like, the verdict
  *      against the real pitcher and the side by side card, on screen together; share
  *      opens the share sheet, the result card draws, and "copy the text" copies it
@@ -404,7 +408,34 @@ async function playOuting(page, o) {
     if (await done()) break;
     const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
     await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
-    await page.click(`#m-aim .cell[data-cell="${o.cell != null ? o.cell : CELLS[i % CELLS.length]}"]`);
+    const cellNo = o.cell != null ? o.cell : CELLS[i % CELLS.length];
+    const freeTap = i === 0 && !o.type0;
+    if (freeTap) {
+      /* FREE AIM (the owner, 2026-10-22): a tap off the cell's centre puts the crosshair exactly there,
+         keeps that cell, and its at is the point in the cell in catcher's view: u toward the catcher's
+         right (its sign on screen read from screenCol()), v up. Every call the UI sends is recorded. */
+      const f = await page.evaluate((c) => {
+        const A = window.STD_API;
+        if (!A.__rec) { const t = A.throwPitch; window.__calls = []; A.throwPitch = function (id, call) { window.__calls.push(JSON.parse(JSON.stringify(call))); return t.apply(this, arguments); }; A.__rec = true; }
+        const b = document.querySelector('#m-aim .cell[data-cell="' + c + '"]').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
+        const x = b.left + b.width * 0.8, y = b.top + b.height * 0.3;
+        return [x, y, (x - z.left) / z.width, (y - z.top) / z.height];
+      }, cellNo);
+      await page.mouse.click(f[0], f[1]);
+      const a = await page.evaluate(() => {
+        const S = window.STD_UI.state, C = window.STD_CONTRACT, x = document.querySelector('#m-aim .aim-x').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
+        /* in the zone's own frame: a layout after the tap (the 3D stage landing) moves the zone, and the crosshair with it */
+        return { cell: S.cell, at: S.at, fx: (x.left + x.width / 2 - z.left) / z.width, fy: (x.top + x.height / 2 - z.top) / z.height, zw: z.width, zh: z.height,
+          dir: C.screenCol(C.cellOf(0, 1)) - C.screenCol(C.cellOf(0, 0)) };
+      });
+      const want = [0.3 * a.dir, 0.2];
+      ok(a.cell === cellNo && a.at && Math.abs(a.at[0] - want[0]) <= 0.02 && Math.abs(a.at[1] - want[1]) <= 0.02,
+        '5 a free tap keeps its cell (' + a.cell + ') and its point in it, catcher\'s view (at ' + JSON.stringify(a.at) + ', ' + JSON.stringify(want) + ' wanted)');
+      const dx = (a.fx - f[2]) * a.zw, dy = (a.fy - f[3]) * a.zh;
+      ok(Math.abs(dx) < 1.5 && Math.abs(dy) < 1.5, '5 the crosshair sits where the finger was in the zone, not on the cell\'s centre (off by ' + dx.toFixed(1) + ', ' + dy.toFixed(1) + ' px)');
+    } else {
+      await page.click(`#m-aim .cell[data-cell="${cellNo}"]`);
+    }
     if (i === 0 && o.shot) await o.shot('ready');
     const label = await page.textContent('#m-throw');
     if (!/throw|shut it/.test(label)) { r.problems.push('the throw button was not ready: ' + label); break; }
@@ -421,10 +452,40 @@ async function playOuting(page, o) {
       const shown = await page.waitForSelector('#m-meter:not([hidden])', { timeout: 10000 }).then(() => true, () => false);
       if (!shown) { r.problems.push('pitch ' + (r.pitches + 1) + ': the release meter did not show after throw'); break; }
       await page.waitForTimeout(200);
+      /* the meter (the owner, 2026-10-22: rebuilt): one panel over the pitch buttons and the throw
+         button, so the scene never moves; the effort bar only when STD_METER.EFFORT is true */
+      const eff = await page.evaluate(() => window.STD_METER.EFFORT === true);
+      if (freeTap) {
+        const lay = await page.evaluate(() => {
+          const m = document.getElementById('m-meter').getBoundingClientRect(), b = document.querySelector('#m-arsenal .pitch').getBoundingClientRect();
+          const t = document.getElementById('m-throw').getBoundingClientRect(), sc = document.getElementById('m-scene').getBoundingClientRect();
+          return { over: m.top <= b.top + 1 && m.bottom >= t.bottom - 1 && m.top >= sc.bottom - 1, h: m.height, effRow: !document.querySelector('#m-meter .rm-eff').hidden };
+        });
+        ok(lay.over && lay.h >= 90, '5 the meter is one panel over the pitch buttons and the throw button, under the scene (' + Math.round(lay.h) + ' px tall)');
+        ok(lay.effRow === eff, '5 the effort bar shows only when STD_METER.EFFORT is true (' + eff + ')');
+      }
+      if (eff) {
+        const say0 = await page.textContent('#m-say');
+        if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
+        await page.click('#m-meter');
+        await page.waitForTimeout(450);
+      }
       // the step line under the meter says how to stop it (the owner, 2026-10-22)
       const say = await page.textContent('#m-say');
       if (say !== 'stop it in the bright band') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
       await page.click('#m-meter');
+      if (freeTap) {
+        /* the stop locks: the needle holds where it was stopped, the word goes up, and the call
+           carries the cell, the free aim's at, the release q (and e with effort) */
+        const n0 = await page.evaluate(() => document.querySelector('#m-meter .rm-needle').style.left);
+        await page.waitForTimeout(150);
+        const st = await page.evaluate(() => ({ n1: document.querySelector('#m-meter .rm-needle').style.left, done: document.getElementById('m-meter').classList.contains('is-done'),
+          word: document.querySelector('#m-meter .rm-word').textContent, call: (window.__calls || []).slice(-1)[0] }));
+        ok(st.done && st.n1 === n0 && st.word.length > 0, '5 the meter locks on the stop: the needle holds at ' + n0 + ' and says "' + st.word + '"');
+        const c = st.call || {};
+        ok(c.cell === cellNo && Array.isArray(c.at) && c.at.length === 2 && typeof c.q === 'number' && c.q >= 0 && c.q <= 1 && (eff ? typeof c.e === 'number' : !('e' in c)),
+          '5 the call carries the cell, at, q' + (eff ? ' and e' : '') + ' (' + JSON.stringify(c) + ')');
+      }
     }
     r.pitches++;
     const tapless = i === 0 || !!o.noSkip;
@@ -558,7 +619,14 @@ async function run(w, h, theme) {
     const q = (s) => (bug && bug.querySelector(s)) || null;
     return {
       title: document.getElementById('h-title').textContent,
-      ars: document.querySelectorAll('#h-pitcher .ars li:not(.hd)').length,
+      pitcher: (document.getElementById('h-pitcher') || {}).textContent || '',
+      due: (document.getElementById('h-due') || {}).textContent || '',
+      head: (document.getElementById('h-head') || {}).textContent.replace(/\s+/g, ' ').trim(),
+      pills: document.querySelectorAll('#h-day, .hero-chips, .chip-s').length,
+      mph: /mph/i.test(document.getElementById('h-main').textContent),
+      scrollX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      bgs: document.querySelectorAll('#h-bg .t-bgi').length,
+      pack: { pitcher: window.STD_UI.state.scn.pitcher.name, batter: window.STD_UI.state.scn.batters[0].name, line: window.STD_UI.state.scn.batters[0].line },
       sit, aria: document.getElementById('h-sit').getAttribute('aria-label') || '',
       // the scorebug (PR #642): both clubs with their runs, the half and the inning, the outs lit, the bases
       runs: bug ? [...bug.querySelectorAll('.sb-team b')].map((b) => +b.textContent) : [],
@@ -570,7 +638,14 @@ async function run(w, h, theme) {
       robots: document.querySelector('meta[name=robots]').content,
     };
   });
-  ok(home.title.length > 0 && home.ars >= 2, '1 home shows the spot and the arsenal (' + home.ars + ' pitches)');
+  ok(home.title.length > 0, '1 home shows the occasion ("' + home.title + '")');
+  ok(home.head === 'YOU ARE THE CLOSER. CAN YOU SHUT THE DOOR?', '1 the header is the owner\'s words ("' + home.head + '")');
+  ok(home.pills === 0, '1 no pills above the header (' + home.pills + ' found)');
+  ok(home.pitcher.includes(home.pack.pitcher) && home.due.includes(home.pack.batter) && (!home.pack.line || home.due.includes(home.pack.line.split(',')[0])),
+    '1 the situation block names the closer and the batter due up, from the pack ("' + home.pitcher.trim() + '", "' + home.due.trim() + '")');
+  ok(!home.mph, '1 no speed on the home screen: it is revealed after the throw');
+  ok(home.scrollX <= 0, '1 no horizontal scroll (' + home.scrollX + ' px over)');
+  ok(home.bgs === 4, '1 the stadium background has its four views (' + home.bgs + ')');
   const pop = (n) => { let c = 0; for (; n; n >>= 1) c += n & 1; return c; };
   ok(home.runs.length === 2 && home.runs[0] === home.sit.score.us && home.runs[1] === home.sit.score.them
     && new RegExp('^(top|bot) ' + home.sit.inning + '$').test(home.inn.trim()) && home.outsLit === home.sit.outs && home.bases === pop(home.sit.bases | 0)
@@ -665,8 +740,9 @@ async function run(w, h, theme) {
   await shot('mound');
   /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number, the
      name and the pack's speed; one throw button; the step line. A drag over the zone moves the
-     crosshair cell by cell and picks where it is let go, through screenCol(); the break preview
-     follows it; the zone takes touch-action none, so a drag never scrolls the page. */
+     crosshair with the pointer (free aim, never snapped) and picks the cell it is let go in,
+     through screenCol(); the break preview follows it; the zone takes touch-action none, so a drag
+     never scrolls the page. The drag ends on a cell's centre, so the crosshair is there. */
   const pad = await page.evaluate(() => {
     const S = window.STD_UI.state, ars = S.scn.pitcher.arsenal;
     const btns = [...document.querySelectorAll('#m-arsenal .pitch')];
@@ -701,7 +777,7 @@ async function run(w, h, theme) {
       scroll: [window.scrollY, document.querySelector('main').scrollTop] };
   });
   ok(mid.dragging && mid.cell == null && mid.hover != null, '3 mid drag the crosshair moves and the preview follows, nothing picked yet');
-  ok(drag.row === 3 && drag.sc === 4 && drag.on, '3 a drag picks the cell it ends on, through screenCol() (row ' + drag.row + ', screen column ' + drag.sc + '), the crosshair on it');
+  ok(drag.row === 3 && drag.sc === 4 && drag.on, '3 a drag picks the cell it ends in, through screenCol() (row ' + drag.row + ', screen column ' + drag.sc + '), the crosshair where it was let go');
   ok(!drag.is3d || drag.ghost === drag.cell, '3 the break preview aims where the crosshair is (' + drag.ghost + ')');
   ok(drag.tag.indexOf(drag.words) === 0 && !/\b(left|right)\b/.test(drag.tag), '3 the crosshair says where in inside and away words ("' + drag.tag + '")');
   ok(drag.ready && drag.say === 'tap throw' && drag.scroll.join() === scroll0.join(), '3 the throw button is ready, the step line says throw, and the page did not scroll');

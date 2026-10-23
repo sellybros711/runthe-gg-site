@@ -375,5 +375,134 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('meter: the word is execution only (no band name)', [0, 0.1, 0.3, 0.6, 0.8, 0.95].every(q => !/green|yellow|orange|red|grade/.test(MT.wordOf(q, -1) + MT.wordOf(q, 1))));
 }
 
+/* ---- effort (2026-10-22, CONTRACT.md 5c): the meter's first stop ---- */
+{
+  const MT = require('../meter.js');
+  const KI = Object.fromEntries(G.KEYS.map((k, i) => [k, i]));
+  const refused = (calls, opts) => { try { E.replay(pack, 1, calls, Object.assign({ model }, opts)); return false; } catch (e) { return true; } };
+  check('effort: an e that is not a number 0..1 is refused', [-0.1, 1.2, '1', NaN, {}].every(e => refused([{ type: 'FF', cell: 12, q: 0.5, e }], { rules: 2 })));
+  check('effort: an e needs a timed release, and is a rules 2 call', refused([{ type: 'FF', cell: 12, e: 1 }], { rules: 2 }) && refused([{ type: 'FF', cell: 12, q: 0.5, e: 1 }], { rules: 1 }));
+  check('effort: e is kept to two places, beside q and r', (c => c.e === 0.12 && c.q === 0.5 && c.r === 2)(E.replay(pack, 5, [{ type: 'FF', cell: 12, q: 0.5, e: 0.123456 }], { model, rules: 2 }).calls[0]));
+
+  const rng = testRng(57);
+  const base = Array.from({ length: 50 }, () => ({ type: model.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100 }));
+  const withE = e => base.map(c => Object.assign({}, c, { e }));
+  const plain = E.replay(pack, 4242, base, { model, rules: 2 }), mid = E.replay(pack, 4242, withE(0.5), { model, rules: 2 });
+  const shape = o => JSON.stringify({ l: o.log.map(p => [p.actual, p.actualCell, p.result, p.runs, p.arm, p.spread]), g: o.grades, out: o.outcome });
+  check('effort: e 0.5 plays exactly as no e (the same pitches, arm, grades and outcome)', shape(plain) === shape(mid));
+  check('effort: a call without e is kept without e and shows no stuff', plain.calls.every(c => !('e' in c)) && plain.log.every(p => !('stuff' in p)));
+  check('effort: a call with e shows the speed it was thrown at', mid.log.every(p => p.stuff && p.velo === p.stuff.velo));
+  check('reveal: an effort call\'s PitchResult.velo is veloOf(his arsenal pitch, e), the speed the UI reveals after the throw', mid.log.every(p => {
+    const ap = pack.scenario.pitcher.arsenal.find(x => x.type === p.call.type);
+    return p.velo === require('../meter.js').veloOf(ap, p.call.e);
+  }));
+  check('effort: the same four draws a pitch whatever e; up to ordinary the same miss, harder a wider one', (() => {
+    const a = E.createOuting(pack, { seed: 91, model }), b = E.createOuting(pack, { seed: 91, model }), c = E.createOuting(pack, { seed: 91, model });
+    const pa = E.throwPitch(a, { type: 'FF', cell: 12, q: 0.7, e: 0 }).pitchResult, pb = E.throwPitch(b, { type: 'FF', cell: 12, q: 0.7, e: 0.5 }).pitchResult;
+    const pc = E.throwPitch(c, { type: 'FF', cell: 12, q: 0.7, e: 1 }).pitchResult;
+    const t = K.targetOf(12), k = G.effortSpread('FF', 1);
+    const ra = a.rng(), rb = b.rng(), rc = c.rng();
+    return ra === rb && rb === rc && JSON.stringify(pa.actual) === JSON.stringify(pb.actual)
+      && k > 1 && pc.stuff.spread === k && Math.abs((pc.actual.x - t.x) - k * (pb.actual.x - t.x)) < 0.002;
+  })());
+  check('effort: the grade never reads this pitch\'s e', (() => {
+    const g = e => { const o = E.createOuting(pack, { seed: 99, model }); return JSON.stringify(E.throwPitch(o, { type: 'SL', cell: 19, q: 0.6, e }).pitchGrade); };
+    return g(0) === g(0.5) && g(1) === g(0.5);
+  })());
+  const again = E.replay(pack, 4242, JSON.parse(JSON.stringify(E.replay(pack, 4242, withE(1), { model, rules: 2 }).calls)), { model: new G.Model(pack) });
+  check('effort: determinism, the kept calls through JSON replay the outing exactly', shape(again) === shape(E.replay(pack, 4242, withE(1), { model, rules: 2 })));
+
+  // the pitch: all 1 at e 0.5; a harder fastball misses more bats and gives up fewer hits (measured)
+  check('effort: the row is untouched at e 0.5 and without e', G.effortMult('FF', 0.5).every(x => x === 1) && G.effortMult('FF', null).every(x => x === 1));
+  const m0 = G.effortMult('FF', 0), m1 = G.effortMult('FF', 1);
+  check('effort: a max effort fastball whiffs more and is hit less than a soft one (EFFORT.BINS, measured)',
+    m1[KI.swinging_strike] > 1 && m0[KI.swinging_strike] < 1 && m1[KI.single] < m0[KI.single] && m1[KI.home_run] < m0[KI.home_run], `${m0[KI.swinging_strike]} ${m1[KI.swinging_strike]}`);
+  let mono = true;
+  for (let i = 1; i <= 100; i++) if (G.effortMult('FF', i / 100)[KI.swinging_strike] < G.effortMult('FF', (i - 1) / 100)[KI.swinging_strike] - 1e-12) mono = false;
+  check('effort: a fastball\'s whiffs rise with e', mono);
+
+  // the arm: e 1 counts one and a half pitches, e 0 half of one, for every pitch after it
+  check('effort: the arm load is under 1 below e 0.5, 1 at 0.5 and without e, over 1 above',
+    G.loadOf(0) === 1 - G.EFFORT.LOAD_DOWN && G.loadOf(0.5) === 1 && G.loadOf(1) === 1 + G.EFFORT.LOAD_UP && G.loadOf(null) === 1);
+  const hard = E.replay(pack, 4242, withE(1), { model, rules: 2 }), soft = E.replay(pack, 4242, withE(0), { model, rules: 2 });
+  const n = Math.min(hard.log.length, soft.log.length, plain.log.length);
+  check('effort: max effort tires the arm faster, an easy pitch slower', n < 14 || (hard.ctxs[13].arm === 1 + 13 * G.loadOf(1) && soft.ctxs[13].arm === 1 + 13 * G.loadOf(0) && plain.ctxs[13].arm === 14), n >= 14 ? `${hard.ctxs[13].arm} ${soft.ctxs[13].arm}` : 'short');
+  check('effort: max effort builds strain, which widens the arm; easy pitches pay it back; none without e',
+    n < 14 || (hard.ctxs[13].strain === 13 * G.EFFORT.LOAD_UP && hard.ctxs[13].fatigue > plain.ctxs[13].fatigue && soft.ctxs[13].strain === 0 && plain.ctxs.every(c => c.strain === 0)));
+  {
+    const log = [1, 1, 0, 0, 0, 0].map(e => ({ call: { type: 'FF', cell: 12, e }, actualCell: 12, paOver: false }));
+    const c = G.contextOf(log, model.startState(), 2);
+    check('effort: two max pitches then four easy ones leave no strain', c.strain === 0, String(c.strain));
+  }
+
+  // the window: a game rule on the meter
+  check('effort: the window is SOFT at e 0, 1 at e 0.5 and without e, HARD at e 1', MT.windowScale(0) === MT.EFFORT_WINDOW.SOFT && MT.windowScale(0.5) === 1 && MT.windowScale(null) === 1 && MT.windowScale(1) === MT.EFFORT_WINDOW.HARD);
+  check('effort: the bright band shrinks as e rises', MT.bandsFor(50, 1).best < MT.bandsFor(50, 0.5).best && MT.bandsFor(50, 0.5).best < MT.bandsFor(50, 0).best && MT.bandsFor(50).best === MT.bandsFor(50, 0.5).best);
+  const mr = R.mulberry32(23);
+  const meanSpread = e => { let s = 0; const N = 40000; for (let i = 0; i < N; i++) { let x = R.probit(mr()) * MT.TIMING.sdMs; if (mr() < MT.TIMING.slip) x = mr() * MT.TIMING.slipMaxMs; s += K.spreadOf(MT.qOf(x, 50, e)); } return s / N; };
+  const s0 = meanSpread(0), s5 = meanSpread(0.5), s1 = meanSpread(1);
+  console.log(`     effort, an ordinary tap at command 50: mean spread ${s0.toFixed(3)}x at e 0, ${s5.toFixed(3)}x at 0.5, ${s1.toFixed(3)}x at 1`);
+  check('effort: an ordinary tap misses wider at max effort and tighter at an easy one', s1 > s5 && s5 > s0);
+  check('effort: the effort needle runs 0 to 1 and back', MT.effortAt(0) === 0 && MT.effortAt(MT.EFFORT_SWEEP_MS) === 1 && MT.effortAt(MT.EFFORT_SWEEP_MS * 1.5) === 0.5);
+
+  // the speed shown: his own pitches, slowest fifth to fastest
+  const a = { type: 'FF', velo: 95, pfxX: -7, pfxZ: 16, stuff: { src: 'his', n: 500, velo: [93.4, 94.5, 95.1, 95.7, 96.6], pfxX: [-6.8, -7, -7, -7.1, -7.3], pfxZ: [15.5, 15.9, 16, 16.2, 16.5] } };
+  check('effort: the speed at e 0, 0.5 and 1 is his slowest, middle and fastest fifth', MT.veloFor(a, 0) === 93.4 && MT.veloFor(a, 0.5) === 95.1 && MT.veloFor(a, 1) === 96.6 && MT.veloFor(a, 0.75) === 95.7);
+  check('effort: without e, or without stuff, the speed is his average', MT.veloFor(a, null) === 95 && MT.veloFor({ type: 'FF', velo: 95, pfxX: 0, pfxZ: 0 }, 1) === 95);
+}
+
+/* ---- the names the two bar meter feature-detects ---- */
+{
+  const MT = require('../meter.js');
+  const a = { type: 'FF', velo: 95, pfxX: -7, pfxZ: 16, stuff: { src: 'his', n: 500, velo: [93.4, 94.5, 95.1, 95.7, 96.6], pfxX: [-7, -7, -7, -7, -7], pfxZ: [16, 16, 16, 16, 16] } };
+  check('meter: EFFORT is true, and the neutral effort is 0.5', MT.EFFORT === true && K.EFFORT.MID === 0.5);
+  check('meter: POWER is the player\'s name for EFFORT (the same flag)', MT.POWER === true && MT.POWER === MT.EFFORT);
+  {
+    /* the bright band (BEST_Q 0.85) on the ordinary tap model, seeded: about one tap in five lands in it */
+    const rb = R.mulberry32(29), N = 60000; let hit = 0;
+    for (let i = 0; i < N; i++) { let x = R.probit(rb()) * MT.TIMING.sdMs; if (rb() < MT.TIMING.slip) x = rb() * MT.TIMING.slipMaxMs; if (MT.qOf(x, 50) >= MT.BEST_Q) hit++; }
+    const rate = hit / N;
+    console.log(`     bright band, an ordinary tap at command 50: ${(rate * 100).toFixed(1)}% (the owner's ask: most miss it, a good timer still gets it)`);
+    check('meter: the bright band is q 0.85 and up, and an ordinary tap lands in it about one time in five', MT.BEST_Q === 0.85 && rate > 0.15 && rate < 0.28, rate.toFixed(3));
+  }
+  const w = e => MT.windowOf(e), width = e => w(e)[1] - w(e)[0];
+  check('meter: windowOf(e) is the bright band [lo, hi] on the bar, around the mark, narrower with effort',
+    w(0.5)[0] < MT.MARK && w(0.5)[1] > MT.MARK && width(1) < width(0.5) && width(0.5) < width(0) && Math.abs(width(0.5) - 2 * MT.bandsFor(50).best) < 1e-12);
+  check('meter: veloOf(pitch, e) is the speed the engine reports', MT.veloOf(a, 1) === 96.6 && MT.veloOf(a, 0) === 93.4 && MT.veloOf(a, null) === 95);
+}
+
+/* ---- the free aim point (2026-10-22, CONTRACT.md 5d) ---- */
+{
+  check('aim: at is clamped to the cell and kept to two places', JSON.stringify(K.aimAt([0.123, -0.9])) === '[0.12,-0.5]' && K.aimAt(null) === null && JSON.stringify(K.aimAt([-0.001, 0])) === '[0,0]');
+  check('aim: an at that is not [u, v] numbers is refused', [[1], 'x', [0, 'a'], [NaN, 0], {}].every(at => { try { E.replay(pack, 1, [{ type: 'FF', cell: 12, at }], { model, rules: 2 }); return false; } catch (e) { return true; } }));
+  check('aim: an aim point is a rules 2 call', (() => { try { E.replay(pack, 1, [{ type: 'FF', cell: 12, at: [0.2, 0] }], { model, rules: 1 }); return false; } catch (e) { return true; } })());
+  const p = K.aimPoint(12, [0.5, 0.5]), t = K.targetOf(12);
+  check('aim: u moves toward the catcher\'s right (+x), v up (+zn), by half a cell at 0.5', Math.abs(p.x - t.x - K.GRID.COL_FT / 2) < 1e-12 && Math.abs(p.zn - t.zn - K.GRID.ROW_ZN / 2) < 1e-12);
+  const rng = testRng(71);
+  const base = Array.from({ length: 40 }, () => ({ type: model.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25), q: 0.6 }));
+  const shape = o => JSON.stringify({ l: o.log.map(x => [x.actual, x.actualCell, x.result]), g: o.grades });
+  const none = E.replay(pack, 515, base, { model, rules: 2 }), zero = E.replay(pack, 515, base.map(c => Object.assign({}, c, { at: [0, 0] })), { model, rules: 2 });
+  check('aim: [0, 0] plays exactly as no at (the cell\'s centre)', shape(none) === shape(zero) && none.calls.every(c => !('at' in c)));
+  const o1 = E.createOuting(pack, { seed: 9, model }), o2 = E.createOuting(pack, { seed: 9, model });
+  const r1 = E.throwPitch(o1, { type: 'FF', cell: 12, q: 0.5 }), r2 = E.throwPitch(o2, { type: 'FF', cell: 12, q: 0.5, at: [0.4, -0.3] });
+  check('aim: the same draws, moved by the offset',
+    Math.abs(r2.pitchResult.actual.x - r1.pitchResult.actual.x - 0.4 * K.GRID.COL_FT) < 0.002 && Math.abs(r2.pitchResult.actual.zn - r1.pitchResult.actual.zn + 0.3 * K.GRID.ROW_ZN) < 0.002
+    && o1.rng() === o2.rng());
+  // the grade prices the exact spot (the owner, 2026-10-23); the best call and the mean stay the cells' centres
+  check('aim: the grade prices the exact spot, against the same best call', r1.pitchGrade.best === r2.pitchGrade.best
+    && JSON.stringify(r1.pitchGrade.bestCall) === JSON.stringify(r2.pitchGrade.bestCall) && r1.pitchGrade.value !== r2.pitchGrade.value);
+  {
+    const st = model.startState(), ctx = G.contextOf([], st, 2);
+    const near = (cell, at) => model.callValue(st, 'SL', cell, ctx, at).hold;
+    // an aim at the corner of a chase cell nearest the zone prices between that chase cell and the zone cell beside it
+    const chase = 23, zone = 18, toward = [0, 0.5];   // cell 23 is below 18; v up is toward the zone
+    const v0 = near(chase), v1 = near(chase, toward), vz = near(zone);
+    check('aim: a chase cell aimed at its zone edge is priced between the chase cell and the zone cell', Math.min(v0, vz) - 1e-9 <= v1 && v1 <= Math.max(v0, vz) + 1e-9 && v1 !== v0, `${v0} ${v1} ${vz}`);
+    check('aim: [0, 0] prices exactly as the cell', near(chase, [0, 0]) === v0);
+  }
+  const again = E.replay(pack, 515, JSON.parse(JSON.stringify(E.replay(pack, 515, base.map(c => Object.assign({}, c, { at: [0.3, 0.3] })), { model, rules: 2 }).calls)), { model: new G.Model(pack) });
+  check('aim: determinism, the kept calls through JSON replay the outing exactly', shape(again) === shape(E.replay(pack, 515, base.map(c => Object.assign({}, c, { at: [0.3, 0.3] })), { model, rules: 2 })));
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);
