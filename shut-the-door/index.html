@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=16">
+<link rel="stylesheet" href="style.css?v=19">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -159,9 +159,9 @@
   <div class="scout" id="m-scout" hidden></div>
   <div class="guide" id="m-guide" role="region" aria-label="Pitch guide" hidden></div>
   <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
-  <!-- the pad: the throw button, the release meter in its place after the tap on throw, and one
-       step line under them. The meter is one bar today; its panel takes a second above it when
-       the effort stop lands (a rule change, the game agent's). -->
+  <!-- the pad: the throw button, the release meter (meter-ui.js) as one panel over the pitch
+       buttons and the throw button after the tap on throw, and one step line under them. The
+       meter shows its effort bar only when STD_METER.EFFORT is true (the game agent's rule). -->
   <div class="pad" id="m-pad">
     <button class="btn throw" id="m-throw" type="button" disabled><b>throw</b></button>
     <div id="m-meter" hidden></div>
@@ -282,9 +282,10 @@
      engine. -->
 <script src="contract.js?v=6"></script>
 <script src="meter.js?v=3"></script>
+<script src="meter-ui.js?v=2"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=4"></script>
-<script src="aim.js?v=1"></script>
+<script src="aim.js?v=2"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
 <script src="menus.js?v=8"></script>
@@ -300,7 +301,7 @@
 <script src="mock-api.js?v=10"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=1"></script>
-<script src="ui.js?v=21"></script>
+<script src="ui.js?v=23"></script>
 <script type="module" src="3d/boot.js?v=28"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
