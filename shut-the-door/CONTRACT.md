@@ -98,6 +98,9 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {Shape}  shape
  * @property {number} command       20..80 scouting scale; drives the miss size
  * @property {number} sigmaFt       miss size in feet (one standard deviation, each axis), from command
+ * @property {{src: 'his'|'league', n: number, velo: number[], pfxX: number[], pfxZ: number[]}} [stuff]
+ *                                  his own pitches of this type in each fifth of his velocity,
+ *                                  slowest first: mean mph and break (section 5c, effort)
  */
 
 /**
@@ -170,10 +173,15 @@ Statcast codes. The shape tells the UI how to draw the flight.
 
 ```js
 /**
- * @typedef {Object} PitchCall        two taps and a release, nothing else
+ * @typedef {Object} PitchCall        a type, an aim, then the meter's two stops, nothing else
  * @property {PitchType} type         must be in the pitcher's arsenal
  * @property {Cell} cell
  * @property {number} [q]             the release, 0..1, kept to two places. Absent = 1.0x
+ * @property {number} [e]             the effort, 0..1, kept to two places (section 5c). Only with q,
+ *                                    only under rules 2. Absent = his ordinary pitch (e 0.5)
+ * @property {[number, number]} [at] the free aim point inside the cell (section 5d): [u, v], each
+ *                                    -0.5..0.5, catcher's view, u to the catcher's right, v up.
+ *                                    Rules 2 only. Absent = the cell's centre ([0, 0])
  * @property {number} [r]             the rules it was played under, set by the engine on the kept
  *                                    call: 2 since 2026-10-22. Absent = rules 1 (section 5b)
  */
@@ -266,6 +274,88 @@ are used as measured. The strengths of the adjustment, the zone effect and fatig
 are a labelled model, tuned so a strong player who reads the screen and mixes his pitches holds
 about what the closer pool holds (README).
 
+## 5c. Effort: the meter's first stop (the owner's calls, 2026-10-22 and 2026-10-23)
+
+A pitch is now a pitch type, an aim (a cell and a point in it, section 5d), then two stops on the
+meter: **effort** (`e`), then **accuracy** (`q`, the release above). The effort stop says how hard
+he throws it: `e = 0` his softest, `0.5` his ordinary pitch, `1` his hardest. A call carries `e`
+beside `q`, kept to two places (`contract.js effortE`). An `e` rides only with a `q` (the meter off
+has neither) and only under rules 2. A call without `e` is his ordinary pitch (`e` 0.5), so every
+rules 1 and rules 2 outing stored before replays exactly. Rules stay 2.
+
+Each part is marked **data**, **game choice (not data)**, **game rule** or **model**.
+
+1. **The speed shown (data).** `e` walks five slices of his own speed for that pitch type: his
+   slowest 5%, the second fifth, the middle fifth, the fourth fifth and his fastest 5%, straight
+   between. The speed and break shown are the mean of his own real pitches in that slice, from the
+   Savant search his arsenal came from (`arsenal[i].stuff`, `pipeline/effort.py`,
+   `contract.js stuffAt`). Chapman 2016's four-seam reads 97.4 at `e = 0`, 101.1 at 0.5, 104.4 at 1.
+   A pitch type with fewer than 40 of his own tracked pitches, or a pitcher with none (Eckersley
+   1988), shows his average plus the league's typical spread (`src: 'league'`).
+2. **What the pitch does (data, then a game choice).** Measured on every 2024 regular season pitch
+   (643,123) for each slice: key by key, observed over what the same family does in the same cell,
+   exact count and platoon (`grade.js EFFORT.BINS`). His fastest 5% of fastballs: whiffs x1.13,
+   home runs x0.75, hits x0.92. A harder breaking ball is called a strike less (x0.81) and breaks
+   less. A harder changeup or splitter whiffs less (x0.86). **Game choice, not data:** above the
+   middle, each ratio's distance from 1 is multiplied by `EFFORT.GAME` (8), floored at 0.2, so a
+   max effort fastball whiffs about 2x and gives up a fifth of the home runs. A max effort breaking
+   ball or changeup is punished the same way, in the data's direction. Below the middle the ratios
+   are used as measured (`GAME_DOWN` 1).
+3. **The miss (data, then a game choice).** His fastest slice misses wider than his middle one:
+   fastballs 3%, breaking balls 11%, offspeed 6% (`EFFORT.SPREAD`). **Game choice:** that is
+   doubled (`SPREAD_GAME` 2), and applies above the middle only.
+4. **The window (a game rule).** The accuracy window is x1.25 at `e = 0`, x1 at 0.5 and x0.6 at 1,
+   straight between (`meter.js windowScale`). Both bands shrink with it.
+5. **The arm (a model, tuned).** A pitch counts `1 + 1 x (2e - 1)` pitches on the arm above the
+   middle (2 at max) and `1 - 0.5 x (1 - 2e)` below (0.5 at the softest) for every later pitch
+   (`grade.js loadOf`, `fatigueOf`). The extra over 1 builds a **strain** that easier pitches pay
+   back: the arm's miss is x `(1 + 0.05 x strain)`. Max every pitch for ten pitches is about 1.5x the
+   miss. Real relievers' speed is flat across an outing (tired arms are taken out), so this is tuned
+   with `pipeline/strategies.cjs`, not measured.
+
+The game choices were set so that max effort is a weapon and never a dial to leave at max. Measured
+(README): a good timer who saves max effort for the put-away holds about 4 points more than one who
+never changes it, and max on every pitch is worse than both.
+
+**The grade never reads this pitch's `e`.** Like `q`, it is how he throws the call, not the call:
+pricing it would mean assuming how well the player times the smaller window and looking past one
+pitch for the arm. The grade prices the call at his ordinary stuff and his own command. The arm that
+earlier efforts left is part of the history the grade prices, as fatigue always was. The score has
+no effort term; effort reaches it through what happens, as the release does.
+
+**Determinism.** Still four draws a pitch in the same order. `e` changes the weights of the row the
+library draw reads, the miss above the middle and the arm on later pitches, never which draws are
+taken.
+
+**What the UI reads** (`meter.js`, `window.STD_METER`): `EFFORT === true` once effort exists;
+`windowOf(e, command)`, the bright band (q of `BEST_Q` and up) as `[lo, hi]` fractions of the bar
+(command 50 when left out); `veloOf(pitch, e)`, the mph to show. Under them: `windowScale(e)`, `windowMs(command, e)`, `qOf(err, command, e)`
+and `bandsFor(command, e)` for the accuracy bar at that effort; `veloFor(arsenalPitch, e)` and
+`stuffFor(arsenalPitch, e)` for the speed and break to show; `effortAt(t)` if the effort needle
+sweeps (`EFFORT_SWEEP_MS`); `run({command, effort, ...})` draws the accuracy bar at that effort. A
+`PitchResult` with `e` carries `stuff: {velo, pfxX, pfxZ, src, spread}`, and its `velo` is that
+speed.
+
+## 5d. The free aim point (the owner's calls, 2026-10-22 and 2026-10-23)
+
+The player can aim anywhere in the zone, not only at a cell's centre. A call carries `at: [u, v]`,
+the aim's place inside its cell as fractions of the cell's width and height, each -0.5..0.5,
+catcher's view: `u` toward the catcher's right (+x), `v` up (+zn). `[0, 0]` is the centre, and a
+call without `at` aims there, so every stored outing replays exactly. `contract.js aimAt` clamps it
+to the cell and keeps two places; `aimPoint(cell, at)` is the point the engine aims at, and the miss
+is added to it as before (the same two draws). Rules 2 calls only (`shutdoor_submit` checks it in
+157: absent, null, or two numbers -0.5..0.5).
+
+**The grade prices the exact spot** (the owner, 2026-10-23). The call's value is the miss table
+centred on `aimPoint(cell, at)` (`grade.js kernelRowAt`, `Model.keyMixCtx(..., at)`), so an aim at
+the edge of a chase cell is priced as the near strike it is. The best call and the state's mean lost
+stay over every cell's centre, so the band is relative to the same moment, and an aim that beats
+the best centre is green with nothing lost. The lesson prices the same spot.
+
+**Everything the player reads stays on the cell** ("the squares determine the metrics"): the
+scouting, the heat map, the tag, and the hitter's history (where pitches crossed is the actual cell,
+where he aimed is `call.cell`).
+
 ## 6. Pitch result
 
 ```js
@@ -280,7 +370,9 @@ about what the closer pool holds (README).
  * @property {number} spread          the release's scale on his miss (1 without q; section 5b on a repeat)
  * @property {number} [arm]           rules 2: the arm's scale on his miss (fatigue, runners on)
  * @property {Cell} actualCell
- * @property {number} velo            the drawn real pitch's mph
+ * @property {number} velo            the drawn real pitch's mph; with e, his speed at that effort
+ * @property {{velo: number, pfxX: number, pfxZ: number, src: 'his'|'league'|'average'}} [stuff]
+ *                                    with e only: the pitch at that effort (section 5c)
  * @property {'take'|'swing'} batter
  * @property {PitchCallResult} result
  * @property {{bb: 'ground'|'line'|'fly'|'popup', ev: number, la: number, spray: number,
@@ -431,7 +523,8 @@ finishOuting(outingId)
 Deterministic: the same scenario, seed and calls give the same results on any device. One seeded
 stream (`mulberry32`), drawn in a fixed order per pitch: miss x, miss z, the library draw, the
 runner draw. No `Math.random`, no wall clock. A call's `q` (section 5) scales the two miss draws
-and never adds or moves a draw.
+and never adds or moves a draw. A call's `e` (section 5c) weights the row the library draw reads and
+loads the arm, and never adds or moves a draw.
 
 How it runs:
 
