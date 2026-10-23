@@ -10,9 +10,9 @@
  *   st.gridRect(), st.toScreen(pp), st.cellCenter(cell)   where the zone is on screen, for the
  *                                    game's own grid and marker (the grid is the game's, shown
  *                                    only while aiming)
- *   st.setPreview({ type, cell, at }) the pitch indicator: an animated break trail from the hand to
- *                                    the aim point, the pitch's real shape, and a landing marker
- *                                    (preview.js); null fades it out
+ *   st.setPreview({ type, cell, at }) the aim ball: a small baseball on the aim point, spinning like
+ *                                    the pitch (preview.js); the page hears the pitch's colour as a
+ *                                    'std-pitch-color' event (aim.js tints the crosshair); null fades it
  *   st.previewPoints()               that trail on the canvas in CSS px, for the grid's thin line
  *   st.play({ pr, quick, hooks })    one pitch, driven by the engine's PitchResult (play.js). A ball
  *                                    in play is followed into the field (inplay.js): the broadcast
@@ -69,9 +69,11 @@ import { fromResult, motion } from './play.js?v=8';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=7';
-import { Ghost, PITCH_COLORS } from './preview.js?v=3';
+import { Ghost, PITCH_COLORS } from './preview.js?v=4';
 
 const C = () => window.STD_CONTRACT;
+/* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
+const tint = (color) => { try { window.dispatchEvent(new CustomEvent('std-pitch-color', { detail: color })); } catch (e) { /* no page */ } };
 // the grid: a column is CELL_FT wide at the plate, and a cell is never under CELL_PX on screen
 const CELL_FT = 0.553, CELL_PX = 38, MARGIN = 0.03, ROOM = 1.04;
 const AN = () => window.STD_ANIM;
@@ -204,7 +206,7 @@ class Stage {
   applyGhost() {
     if (!this.loaded || !this.facts || !this.facts.batter) return;
     const s = this.ghostSpec;
-    if (!s) { if (this.ghost && this.ghost.on) { this.ghost.release(); this.animate(); } return; }
+    if (!s) { tint(null); if (this.ghost && this.ghost.on) { this.ghost.release(); this.animate(); } return; }
     const a = this.facts.pitcher.arsenal.find((x) => x.type === s.type);
     if (!a) return;
     if (!this.ghost) this.ghost = new Ghost(this.scene);
@@ -212,7 +214,8 @@ class Stage {
     // the pitch's colour on the break chart and its button (ui.js colorOf: by usage)
     const ord = this.facts.pitcher.arsenal.slice().sort((x, y) => (y.usage || 0) - (x.usage || 0));
     const color = PITCH_COLORS[Math.max(0, ord.indexOf(a)) % PITCH_COLORS.length];
-    this.ghost.set({ release: this.facts.release, pitch: a, cell: s.cell == null ? 12 : s.cell, at: s.cell == null ? null : s.at, szTop: b.szTop, szBot: b.szBot, color });
+    tint(color);
+    this.ghost.set({ pitch: a, hand: this.facts.pitcher.throws, cell: s.cell == null ? 12 : s.cell, at: s.cell == null ? null : s.at, szTop: b.szTop, szBot: b.szBot, color });
     this.soon();
     this.animate();
   }
@@ -449,6 +452,7 @@ class Stage {
     // the indicator is the aim, not the pitch: a quick fade on the throw, long before the ball
     // leaves the hand (preview.js OUT_S), so the real ball is the star
     this.ghostSpec = null;
+    tint(null);
     if (this.ghost) this.ghost.release();
     const play = fromResult(pr, this.facts.batter);
     this.setPitch(play);
