@@ -200,7 +200,8 @@ sweeps a bar, and the tap that stops it is the release. How close the tap is to 
 - **The meter.** `q = 1 - |error| / window`, at least 0. The window is 110 ms at command 50 and
   grows with the pitch's command (89 ms at 35, 151 ms at 80), so control pitchers are easier to
   time. The bar shows the band where `q >= 0.5` (tighter than his command) and the band where
-  `q >= 0.8`. The needle runs back and forth until the tap, so nobody is rushed. Escape, or picking
+  `q >= 0.85` (the bright band, the owner's call 2026-10-23: it was 0.8, now 0.85, so an ordinary tap
+  lands in it about 1 time in 5; `meter.js BEST_Q`). The needle runs back and forth until the tap, so nobody is rushed. Escape, or picking
   another pitch or spot, puts it away. One quiet word after the tap (`sharp`, `a bit late`): that is
   execution, never a grade. Practice adds the spread (`miss 0.72x`) so a player can learn it.
 - **Off.** A setting turns the meter off (on by default): the call carries no `q`, which is 1.0x,
@@ -335,6 +336,17 @@ and `bandsFor(command, e)` for the accuracy bar at that effort; `veloFor(arsenal
 sweeps (`EFFORT_SWEEP_MS`); `run({command, effort, ...})` draws the accuracy bar at that effort. A
 `PitchResult` with `e` carries `stuff: {velo, pfxX, pfxZ, src, spread}`, and its `velo` is that
 speed.
+
+**The speed reveal (the owner, 2026-10-23).** The speed is shown after the throw, never before. Before
+the release's last tap the UI shows no mph: not on the pitch buttons, the arsenal list or the scout
+card's speed, and not in the meter's head. The only speed the UI reveals is the `PitchResult` of the
+call it threw: `velo` (always, with or without `e`) and `stuff` (with `e`). `veloOf` and `veloFor` are
+the same numbers as `PitchResult.velo` for that `e` (tested), kept for the tests and the lab, and are
+not needed before the throw. The arsenal's `velo` in the pack is his average and stays in the pack:
+the UI must not show it before the throw.
+
+`STD_METER.POWER` is the player's name for `EFFORT` (the same flag, `true` in the build). The copy
+says power. The stored field and every call still say `e`.
 
 ## 5d. The free aim point (the owner's calls, 2026-10-22 and 2026-10-23)
 

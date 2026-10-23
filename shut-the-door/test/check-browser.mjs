@@ -466,7 +466,7 @@ async function playOuting(page, o) {
       }
       if (eff) {
         const say0 = await page.textContent('#m-say');
-        if (say0 !== 'set your effort') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
+        if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
         await page.click('#m-meter');
         await page.waitForTimeout(450);
       }
@@ -619,7 +619,14 @@ async function run(w, h, theme) {
     const q = (s) => (bug && bug.querySelector(s)) || null;
     return {
       title: document.getElementById('h-title').textContent,
-      ars: document.querySelectorAll('#h-pitcher .ars li:not(.hd)').length,
+      pitcher: (document.getElementById('h-pitcher') || {}).textContent || '',
+      due: (document.getElementById('h-due') || {}).textContent || '',
+      head: (document.getElementById('h-head') || {}).textContent.replace(/\s+/g, ' ').trim(),
+      pills: document.querySelectorAll('#h-day, .hero-chips, .chip-s').length,
+      mph: /mph/i.test(document.getElementById('h-main').textContent),
+      scrollX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      bgs: document.querySelectorAll('#h-bg .t-bgi').length,
+      pack: { pitcher: window.STD_UI.state.scn.pitcher.name, batter: window.STD_UI.state.scn.batters[0].name, line: window.STD_UI.state.scn.batters[0].line },
       sit, aria: document.getElementById('h-sit').getAttribute('aria-label') || '',
       // the scorebug (PR #642): both clubs with their runs, the half and the inning, the outs lit, the bases
       runs: bug ? [...bug.querySelectorAll('.sb-team b')].map((b) => +b.textContent) : [],
@@ -631,7 +638,14 @@ async function run(w, h, theme) {
       robots: document.querySelector('meta[name=robots]').content,
     };
   });
-  ok(home.title.length > 0 && home.ars >= 2, '1 home shows the spot and the arsenal (' + home.ars + ' pitches)');
+  ok(home.title.length > 0, '1 home shows the occasion ("' + home.title + '")');
+  ok(home.head === 'YOU ARE THE CLOSER. CAN YOU SHUT THE DOOR?', '1 the header is the owner\'s words ("' + home.head + '")');
+  ok(home.pills === 0, '1 no pills above the header (' + home.pills + ' found)');
+  ok(home.pitcher.includes(home.pack.pitcher) && home.due.includes(home.pack.batter) && (!home.pack.line || home.due.includes(home.pack.line.split(',')[0])),
+    '1 the situation block names the closer and the batter due up, from the pack ("' + home.pitcher.trim() + '", "' + home.due.trim() + '")');
+  ok(!home.mph, '1 no speed on the home screen: it is revealed after the throw');
+  ok(home.scrollX <= 0, '1 no horizontal scroll (' + home.scrollX + ' px over)');
+  ok(home.bgs === 4, '1 the stadium background has its four views (' + home.bgs + ')');
   const pop = (n) => { let c = 0; for (; n; n >>= 1) c += n & 1; return c; };
   ok(home.runs.length === 2 && home.runs[0] === home.sit.score.us && home.runs[1] === home.sit.score.them
     && new RegExp('^(top|bot) ' + home.sit.inning + '$').test(home.inn.trim()) && home.outsLit === home.sit.outs && home.bases === pop(home.sit.bases | 0)

@@ -392,6 +392,10 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('effort: e 0.5 plays exactly as no e (the same pitches, arm, grades and outcome)', shape(plain) === shape(mid));
   check('effort: a call without e is kept without e and shows no stuff', plain.calls.every(c => !('e' in c)) && plain.log.every(p => !('stuff' in p)));
   check('effort: a call with e shows the speed it was thrown at', mid.log.every(p => p.stuff && p.velo === p.stuff.velo));
+  check('reveal: an effort call\'s PitchResult.velo is veloOf(his arsenal pitch, e), the speed the UI reveals after the throw', mid.log.every(p => {
+    const ap = pack.scenario.pitcher.arsenal.find(x => x.type === p.call.type);
+    return p.velo === require('../meter.js').veloOf(ap, p.call.e);
+  }));
   check('effort: the same four draws a pitch whatever e; up to ordinary the same miss, harder a wider one', (() => {
     const a = E.createOuting(pack, { seed: 91, model }), b = E.createOuting(pack, { seed: 91, model }), c = E.createOuting(pack, { seed: 91, model });
     const pa = E.throwPitch(a, { type: 'FF', cell: 12, q: 0.7, e: 0 }).pitchResult, pb = E.throwPitch(b, { type: 'FF', cell: 12, q: 0.7, e: 0.5 }).pitchResult;
@@ -452,6 +456,15 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   const MT = require('../meter.js');
   const a = { type: 'FF', velo: 95, pfxX: -7, pfxZ: 16, stuff: { src: 'his', n: 500, velo: [93.4, 94.5, 95.1, 95.7, 96.6], pfxX: [-7, -7, -7, -7, -7], pfxZ: [16, 16, 16, 16, 16] } };
   check('meter: EFFORT is true, and the neutral effort is 0.5', MT.EFFORT === true && K.EFFORT.MID === 0.5);
+  check('meter: POWER is the player\'s name for EFFORT (the same flag)', MT.POWER === true && MT.POWER === MT.EFFORT);
+  {
+    /* the bright band (BEST_Q 0.85) on the ordinary tap model, seeded: about one tap in five lands in it */
+    const rb = R.mulberry32(29), N = 60000; let hit = 0;
+    for (let i = 0; i < N; i++) { let x = R.probit(rb()) * MT.TIMING.sdMs; if (rb() < MT.TIMING.slip) x = rb() * MT.TIMING.slipMaxMs; if (MT.qOf(x, 50) >= MT.BEST_Q) hit++; }
+    const rate = hit / N;
+    console.log(`     bright band, an ordinary tap at command 50: ${(rate * 100).toFixed(1)}% (the owner's ask: most miss it, a good timer still gets it)`);
+    check('meter: the bright band is q 0.85 and up, and an ordinary tap lands in it about one time in five', MT.BEST_Q === 0.85 && rate > 0.15 && rate < 0.28, rate.toFixed(3));
+  }
   const w = e => MT.windowOf(e), width = e => w(e)[1] - w(e)[0];
   check('meter: windowOf(e) is the bright band [lo, hi] on the bar, around the mark, narrower with effort',
     w(0.5)[0] < MT.MARK && w(0.5)[1] > MT.MARK && width(1) < width(0.5) && width(0.5) < width(0) && Math.abs(width(0.5) - 2 * MT.bandsFor(50).best) < 1e-12);

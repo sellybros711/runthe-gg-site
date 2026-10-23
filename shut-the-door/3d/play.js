@@ -13,7 +13,7 @@
  *         a pitch on the shoulder, the fall)
  *   &type=FF &cell=12 &mx=0.1 &mz=-0.1   override the pitch, the aimed cell, the miss (feet)
  */
-import { cellPoint } from './pitch.js?v=7';
+import { cellPoint } from './pitch.js?v=8';
 
 export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'hbp_fall', 'dirt'];
 
@@ -63,7 +63,9 @@ function hashId(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.c
 /** From the engine's PitchResult (the game, phase C). actual.zn is normalised to this batter. */
 export function fromResult(r, batter) {
   const z = batter.szBot + r.actual.zn * (batter.szTop - batter.szBot);
-  return { call: r.call, actual: { x: r.actual.x, z }, velo: r.velo, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null, drawnId: r.drawn ? r.drawn.id : null,
+  // the movement of the pitch he threw: his effort slice of his own pitches (pr.stuff), else his average
+  const st = r.stuff || {};
+  return { call: r.call, actual: { x: r.actual.x, z }, velo: r.velo, pfxX: st.pfxX ?? null, pfxZ: st.pfxZ ?? null, batter: r.batter, result: r.result, inPlay: r.inPlay ?? null, drawnId: r.drawn ? r.drawn.id : null,
     dirt: z < 0.35, check: r.batter === 'take' && r.result === 'ball' && Math.abs(r.actual.x) < 1.2 && r.countBefore && r.countBefore.s === 2 };
 }
 

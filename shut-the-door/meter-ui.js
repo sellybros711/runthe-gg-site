@@ -11,7 +11,7 @@
  * looking. The head says the verb (release, or shut it), the pitch and the spot, and the speed.
  *
  * TWO BARS, ONE WHEN EFFORT IS NOT A RULE YET.
- *   effort    (top) shown only when STD_METER.EFFORT === true. A fill runs left to right through
+ *   power     (top) shown only when STD_METER.POWER (= EFFORT) === true. The player's word for the e stop. A fill runs left to right through
  *             three zones, soft, normal and max, and back; the tap stops it. e is where it stopped,
  *             0..1. The speed in the head turns to STD_METER.veloOf(pitch, e).
  *   accuracy  (bottom) the needle sweeps; the tap stops it. The soft band is a release tighter than
@@ -67,7 +67,7 @@ function create(el) {
   el.innerHTML =
     '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span><span class="rm-velo"><em></em> mph</span></div>' +
     '<div class="rm-row rm-eff">' +
-      '<span class="rm-lbl">effort</span>' +
+      '<span class="rm-lbl">power</span>' +
       '<div class="rm-track rm-etrack"><i class="rm-efill"></i>' +
         '<span class="rm-zones"><b data-z="soft">soft</b><b data-z="normal">normal</b><b data-z="max">max</b></span>' +
         '<i class="rm-eneedle"></i><i class="rm-lock"></i></div>' +
@@ -85,7 +85,7 @@ function create(el) {
 
   function setStage(s) {
     el.dataset.stage = s;
-    el.setAttribute('aria-label', s === 'effort' ? 'Effort. Tap to set it.' : 'Release. Tap when the needle is in the bright band.');
+    el.setAttribute('aria-label', s === 'effort' ? 'Power. Tap to set it.' : 'Release. Tap when the needle is in the bright band.');
     if (live && live.opts.onStage) live.opts.onStage(s);
   }
   function placeBands(e) {
