@@ -738,11 +738,11 @@ function scoutSentence(pr, rows) {
 }
 
 /* ---- what each pitch does ---------------------------------------------------------------
-   The break preview (a ghost trail from the hand to the spot, drawn by the 3D stage, and the same
-   path as a thin line on the grid), the glyph on each pitch button and the pitch guide. All of it
+   The break preview (the animated indicator the 3D stage draws from the hand to the spot; the thin
+   line on the grid only without WebGL), the glyph on each pitch button and the pitch guide. All of it
    comes from the arsenal's own numbers: velo, pfxX and pfxZ (catcher's view inches, so mirrored on
    screen like the grid), usage, and the shape from the contract. The preview is the aim, never
-   the outcome: it ends on the cell's centre, wherever the engine's command draw puts the ball. */
+   the outcome: it ends on the exact aim point, wherever the engine's command draw puts the ball. */
 
 /* the colour a pitch has on the break chart (usage order), so the buttons and the chart agree */
 function colorOf(a) {
@@ -789,10 +789,13 @@ function drawPreview() {
   if (!S.grid || !S.scene) return;
   var hov = S.hover != null, cell = hov ? S.hover : S.cell, at = hov ? S.hoverAt : S.at;
   var live = S.type && !S.busy && S.outing && S.outing.status === 'live';
-  /* at rides on the spec for the stage hook that ends the ghost on the exact point; today it ends on the cell's centre */
+  /* at rides on the spec, so the stage ends the ghost on the exact point */
   var spec = live ? (cell == null ? { type: S.type, cell: 12 } : { type: S.type, cell: cell, at: at || [0, 0] }) : null;
   if (S.scene.setPreview) S.scene.setPreview(spec);
-  var svg = gridLine(), pp = spec && S.scene.previewPoints ? S.scene.previewPoints() : null;
+  var svg = gridLine();
+  /* the 3D stage draws its own animated indicator; this 2D line is only for the no WebGL drawing */
+  if (S.scene.is3d) { svg.style.display = 'none'; return; }
+  var pp = spec && S.scene.previewPoints ? S.scene.previewPoints() : null;
   if (!pp || pp.path.length < 2) { svg.style.display = 'none'; return; }
   var r = S.scene.gridRect();
   var line = function (pts) { return pts.map(function (q, i) { return (i ? 'L' : 'M') + (q.x - r.x).toFixed(1) + ' ' + (q.y - r.y).toFixed(1); }).join(''); };
