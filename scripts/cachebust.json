@@ -2924,6 +2924,10 @@
       "v": "3",
       "sha": "1fb6e91e2d647473"
     },
+    "meter-ui.js": {
+      "v": "2",
+      "sha": "e34a68b93a82e451"
+    },
     "sprites.js": {
       "v": "2",
       "sha": "20a348fc8d984cf5"
@@ -2933,8 +2937,8 @@
       "sha": "5a8530bc11408f24"
     },
     "aim.js": {
-      "v": "1",
-      "sha": "00afdcec4efdd30a"
+      "v": "2",
+      "sha": "72ed9d3115eff661"
     },
     "anim.js": {
       "v": "3",
@@ -2978,11 +2982,11 @@
     },
     "api.js": {
       "v": "7",
-      "sha": "c2e3a1108d288e19"
+      "sha": "b890bff73b595a93"
     },
     "mock-api.js": {
       "v": "10",
-      "sha": "383a02617d208a65"
+      "sha": "fefb1fac6175c089"
     },
     "coach.js": {
       "v": "2",
@@ -2993,8 +2997,8 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "21",
-      "sha": "fc8d3e88910d43d6"
+      "v": "23",
+      "sha": "17a9cf8b7b069596"
     },
     "3d/boot.js": {
       "v": "29",
