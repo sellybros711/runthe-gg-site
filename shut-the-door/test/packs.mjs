@@ -54,6 +54,11 @@ function shapeChecks(pack, file) {
     if (!K.PITCH_TYPES.includes(a.type)) errs.push('pitch type ' + a.type);
     if (K.SHAPE_OF[a.type] !== a.shape) errs.push('shape of ' + a.type);
     if (!(a.command >= 20 && a.command <= 80)) errs.push('command ' + a.command);
+    // effort (CONTRACT.md 5c): his own five fifths of speed, slowest first, or the league's spread on his average
+    const st = a.stuff;
+    if (!st || !['his', 'league'].includes(st.src) || !['velo', 'pfxX', 'pfxZ'].every(k => Array.isArray(st[k]) && st[k].length === 5 && st[k].every(x => typeof x === 'number'))) errs.push('stuff of ' + a.type);
+    else if (!st.velo.every((v, i) => i === 0 || v >= st.velo[i - 1]) || Math.abs(st.velo[2] - a.velo) > 1.5) errs.push('stuff speeds of ' + a.type + ' ' + st.velo.join(' '));
+    else if (st.src === 'his' && !(st.n >= 40)) errs.push('stuff of ' + a.type + ' is his own on ' + st.n + ' pitches');
   }
   const s = sc.situation;
   const lead = s.score.us - s.score.them;
