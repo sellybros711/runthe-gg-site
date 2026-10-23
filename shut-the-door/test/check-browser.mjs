@@ -466,7 +466,7 @@ async function playOuting(page, o) {
       }
       if (eff) {
         const say0 = await page.textContent('#m-say');
-        if (say0 !== 'set your effort') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
+        if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
         await page.click('#m-meter');
         await page.waitForTimeout(450);
       }
