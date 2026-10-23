@@ -10,8 +10,9 @@
  *   st.gridRect(), st.toScreen(pp), st.cellCenter(cell)   where the zone is on screen, for the
  *                                    game's own grid and marker (the grid is the game's, shown
  *                                    only while aiming)
- *   st.setPreview({ type, cell, at }) the break preview: a ghost trail from the hand to the aim
- *                                    point, the pitch's real shape (preview.js); null hides it
+ *   st.setPreview({ type, cell, at }) the pitch indicator: an animated break trail from the hand to
+ *                                    the aim point, the pitch's real shape, and a landing marker
+ *                                    (preview.js); null fades it out
  *   st.previewPoints()               that trail on the canvas in CSS px, for the grid's thin line
  *   st.play({ pr, quick, hooks })    one pitch, driven by the engine's PitchResult (play.js). A ball
  *                                    in play is followed into the field (inplay.js): the broadcast
@@ -68,7 +69,7 @@ import { fromResult, motion } from './play.js?v=8';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=7';
-import { Ghost } from './preview.js?v=2';
+import { Ghost, PITCH_COLORS } from './preview.js?v=3';
 
 const C = () => window.STD_CONTRACT;
 // the grid: a column is CELL_FT wide at the plate, and a cell is never under CELL_PX on screen
@@ -86,7 +87,7 @@ function factsFrom(scn, extra) {
   return {
     scenarioId: scn.id, title: scn.title,
     pitcher: { name: p.name, team: p.team, throws: p.throws, teamColors: p.teamColors,
-      arsenal: p.arsenal.map((a) => ({ type: a.type, name: a.name, velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, shape: a.shape || (C() && C().SHAPE_OF[a.type]), sigmaFt: a.sigmaFt })) },
+      arsenal: p.arsenal.map((a) => ({ type: a.type, name: a.name, usage: a.usage, velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, shape: a.shape || (C() && C().SHAPE_OF[a.type]), sigmaFt: a.sigmaFt })) },
     situation: { usHome: !!scn.situation.usHome, inning: scn.situation.inning, half: scn.situation.half },
     release: releaseOf(p),
     batters: scn.batters.map((b) => {
@@ -203,13 +204,31 @@ class Stage {
   applyGhost() {
     if (!this.loaded || !this.facts || !this.facts.batter) return;
     const s = this.ghostSpec;
-    if (!s) { if (this.ghost && this.ghost.visible) { this.ghost.hide(); this.soon(); } return; }
+    if (!s) { if (this.ghost && this.ghost.on) { this.ghost.release(); this.animate(); } return; }
     const a = this.facts.pitcher.arsenal.find((x) => x.type === s.type);
     if (!a) return;
     if (!this.ghost) this.ghost = new Ghost(this.scene);
     const b = this.facts.batter;
-    this.ghost.set({ release: this.facts.release, pitch: a, cell: s.cell == null ? 12 : s.cell, at: s.cell == null ? null : s.at, szTop: b.szTop, szBot: b.szBot });
+    // the pitch's colour on the break chart and its button (ui.js colorOf: by usage)
+    const ord = this.facts.pitcher.arsenal.slice().sort((x, y) => (y.usage || 0) - (x.usage || 0));
+    const color = PITCH_COLORS[Math.max(0, ord.indexOf(a)) % PITCH_COLORS.length];
+    this.ghost.set({ release: this.facts.release, pitch: a, cell: s.cell == null ? 12 : s.cell, at: s.cell == null ? null : s.at, szTop: b.szTop, szBot: b.szBot, color });
     this.soon();
+    this.animate();
+  }
+
+  /** Frames while the pitch indicator moves (its draw, comet, breathing and fades), at most 30 a
+      second, and none once it settles: an idle aim draws nothing. A pitch in the air has its own loop. */
+  animate() {
+    if (this.animId || !this.ghost) return;
+    let last = 0;
+    const step = (ms) => {
+      this.animId = 0;
+      if (!this.ghost || this.playing || !this.ghost.busy()) { if (this.ghost && !this.playing) this.soon(); return; }
+      if (ms - last >= 32) { last = ms; this.render(); }
+      this.animId = requestAnimationFrame(step);
+    };
+    this.animId = requestAnimationFrame(step);
   }
 
   previewPoints() {
@@ -247,7 +266,7 @@ class Stage {
   }
 
   render() {
-    if (this.ghost && this.ghost.visible) this.ghost.orient(this.camera, this.canvas.clientHeight);
+    if (this.ghost && (this.ghost.on || this.ghost.busy())) { this.ghost.tick(); this.ghost.orient(this.camera, this.canvas.clientHeight); }
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -427,9 +446,10 @@ class Stage {
   async playOnce(opts) {
     await this.ready;
     const pr = opts.pr, hooks = opts.hooks || {};
-    // the preview is the aim, not the pitch: gone before the ball leaves the hand
+    // the indicator is the aim, not the pitch: a quick fade on the throw, long before the ball
+    // leaves the hand (preview.js OUT_S), so the real ball is the star
     this.ghostSpec = null;
-    if (this.ghost) this.ghost.hide();
+    if (this.ghost) this.ghost.release();
     const play = fromResult(pr, this.facts.batter);
     this.setPitch(play);
     const pt = this.pitch, m = this.m;
