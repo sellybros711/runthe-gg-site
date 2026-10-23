@@ -372,7 +372,11 @@ export class Figure {
     const c = Math.cos(this.yaw), s = Math.sin(this.yaw);
     // world: -x right... the figure faces field heading yaw: forward f = (sin yaw, cos yaw), its left l = (-cos yaw, sin yaw)
     const fwd = dx * s + dy * c, left = -dx * c + dy * s;
-    return V(left * FT / this.scale, ((fieldPt.z ?? 0) * FT - (this.lift || 0)) / this.scale + (this.g0 || 0), fwd * FT / this.scale);
+    const v = V(left * FT / this.scale, ((fieldPt.z ?? 0) * FT - (this.lift || 0)) / this.scale + (this.g0 || 0), fwd * FT / this.scale);
+    // a dive pitches the body about the root: a target is aimed at in that pitched frame (the glove
+    // reached the right spot before the body was laid out, and the dive then carried it off)
+    if (this.pitch) v.applyAxisAngle(X, -this.pitch);
+    return v;
   }
 
   /** Model frame point to field feet (x, y, z). */
@@ -492,6 +496,7 @@ export class Figure {
       this.g0 += (seat - this.g0) * sp.slide;
     }
     this.lift = ((this.o && this.o.lift) || 0) * FT;
+    this.pitch = (sp.dive || 0) * 1.32;
     // ---- hands to points (two bone IK), the glove's pocket on its target
     if (sp.glove && sp.gloveW > 0 && this.glove) this.reachTo(this.glove, this.toModel(sp.glove), sp.gloveW, true);
     if (sp.hand && sp.handW > 0) this.reachTo(this.glove === 'r' ? 'l' : 'r', this.toModel(sp.hand), sp.handW, false);
@@ -502,8 +507,7 @@ export class Figure {
     const sc = this.scale, w = P(this.at.x, this.at.y, 0);
     root.scale.setScalar(sc);
     root.quaternion.setFromAxisAngle(Y, -this.yaw);
-    const dive = sp.dive || 0;
-    if (dive > 0) root.quaternion.multiply(_q.setFromAxisAngle(X, dive * 1.32));
+    if (this.pitch > 0) root.quaternion.multiply(_q.setFromAxisAngle(X, this.pitch));
     root.position.set(w.x, -this.g0 * sc + this.lift, w.z);
     root.updateMatrixWorld(true);
   }
@@ -585,6 +589,12 @@ export class Figure {
       const pk = off.clone().applyMatrix4(B[`hand_${s}`].matrixWorld);
       tgt.add(target.clone().sub(pk).multiplyScalar(w));
     }
+  }
+
+  /** A bone's joint, in field feet, as posed (the shoulder, for the reach at a catch). */
+  jointPoint(name) {
+    const v = new THREE.Vector3().setFromMatrixPosition(this.bones[name].matrixWorld);
+    return { x: -v.x / FT, y: v.z / FT, z: v.y / FT };
   }
 
   /** The glove's pocket (or the throwing hand), in field feet, as posed. */

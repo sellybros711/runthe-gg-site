@@ -457,7 +457,10 @@ function holdThenThrow(ctx, n, s, at, late) {
   if (!outs.length) {
     // nobody is out: a throw that is too late (to first on an infield hit or a fielder's choice), or
     // nothing (he holds it)
-    const target = infieldHit || ctx.label === 'fielders_choice' || ctx.label === 'error' ? 1 : null;
+    // (never to first when the batter is already out on a catch: on an error with the ball caught,
+    // that throw went while the play's own throw was still to come, and the ball left his hand twice)
+    const batterOut = moves.some((m) => m.from === 0 && m.to === -1);
+    const target = (infieldHit || ctx.label === 'fielders_choice' || ctx.label === 'error') && !batterOut ? 1 : null;
     if (target && !late) {
       const cov = coverer(ctx, target, holder);
       const tgtPt = basePoint(target, 'in');
@@ -1020,7 +1023,9 @@ function planEdit(ctx) {
   const runnerDone = Math.max(0, ...p.runners.filter((r) => !r.out && r.arrive != null && r.arrive < 100).map((r) => r.arrive));
   const throws = ev.filter((e) => e.kind === 'throw').map((e) => e.s);
   const ballDone = Math.max(ft.s, ...ev.filter((e) => e.kind === 'glove').map((e) => e.s));
-  const CUT = 0.3;
+  // the pitcher's view holds a beat after contact, but the cut comes before anyone touches the ball
+  // (a comeback liner caught at a quarter second was caught off screen)
+  const CUT = Math.min(0.3, Math.max(0.1, ft.s - 0.15));
   const pieces = [{ s0: 0, s1: CUT, cam: 'pitcher', rate: 1 }];
   let decisive = null, slow = null;
   const add = (cam, s0, s1) => { if (s1 > s0 + 0.05) pieces.push({ s0, s1, cam, rate: 1 }); };
@@ -1213,6 +1218,9 @@ export function verify(pr, plan) {
   const hit = HITS[label] || 0;
   const moves = pr.runnerMoves || [];
   const batterOut = moves.some((m) => m.from === 0 && m.to === -1) || !moves.some((m) => m.from === 0);
+  // every throw leaves the hand of the man holding the ball (never a second throw from a man whose
+  // first is still in the air)
+  for (const sg of plan.segs) if (sg.kind === 'throw') { const b = ballAt(plan, sg.t0 - 1e-3); if (b.by !== sg.from) bad.push(`a throw from ${NAME[sg.from]} at ${sg.t0.toFixed(2)} s while ${b.by ? NAME[b.by] : 'nobody'} has the ball`); }
   // the ball
   if (label === 'home_run') {
     if (o.ball !== 'over' || !o.wall || o.wall.z <= WALL_H + BALL_R) bad.push('home run does not clear the wall');
