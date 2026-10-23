@@ -314,8 +314,8 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 @media (hover: hover) { .aim:not(.dragging) .cell:hover { background: rgba(255, 255, 255, .12); } }
 /* after a pitch, the cell that was called: a thin signal frame until the next pick */
 .aim .cell.m-target { box-shadow: inset 0 0 0 2px rgba(255, 79, 31, .9); }
-.aim-x { position: absolute; z-index: 4; width: calc(var(--cw) * 1.3); height: calc(var(--cw) * 1.3); transform: translate(-50%, -50%); pointer-events: none; display: none;
-  transition: left .08s ease-out, top .08s ease-out; }
+/* free aim: no glide on left and top, so the crosshair is under the finger on every move */
+.aim-x { position: absolute; z-index: 4; width: calc(var(--cw) * 1.3); height: calc(var(--cw) * 1.3); transform: translate(-50%, -50%); pointer-events: none; display: none; }
 .aim.aiming .aim-x { display: block; }
 .aim-x svg { display: block; width: 100%; height: 100%; overflow: visible; transition: transform .12s ease-out; }
 .aim.dragging .aim-x svg { transform: scale(1.14); }
