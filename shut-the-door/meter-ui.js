@@ -11,9 +11,9 @@
  * looking. The head says the verb (release, or shut it), the pitch and the spot, and the speed.
  *
  * TWO BARS, ONE WHEN EFFORT IS NOT A RULE YET.
- *   effort    (top) shown only when STD_METER.EFFORT === true. A fill runs left to right through
+ *   power     (top, the label the player reads; the field is still e) shown only when STD_METER.EFFORT === true. A fill runs left to right through
  *             three zones, soft, normal and max, and back; the tap stops it. e is where it stopped,
- *             0..1. The speed in the head turns to STD_METER.veloOf(pitch, e).
+ *             0..1. The meter shows no speed: the speed is revealed after the throw (the play by play).
  *   accuracy  (bottom) the needle sweeps; the tap stops it. The soft band is a release tighter than
  *             his command, the bright band the best release. With effort, the bright band is
  *             STD_METER.windowOf(e) ([lo, hi], fractions of the bar) and q is qOf(err, command, e).
@@ -65,9 +65,9 @@ function create(el) {
   el.setAttribute('role', 'button');
   el.setAttribute('tabindex', '-1');
   el.innerHTML =
-    '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span><span class="rm-velo"><em></em> mph</span></div>' +
+    '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span></div>' +
     '<div class="rm-row rm-eff">' +
-      '<span class="rm-lbl">effort</span>' +
+      '<span class="rm-lbl">power</span>' +
       '<div class="rm-track rm-etrack"><i class="rm-efill"></i>' +
         '<span class="rm-zones"><b data-z="soft">soft</b><b data-z="normal">normal</b><b data-z="max">max</b></span>' +
         '<i class="rm-eneedle"></i><i class="rm-lock"></i></div>' +
@@ -78,14 +78,14 @@ function create(el) {
         '<i class="rm-needle"></i><i class="rm-lock"></i></div>' +
     '</div>';
   var q = function (s) { return el.querySelector(s); };
-  var verb = q('.rm-verb'), call = q('.rm-call'), velo = q('.rm-velo em'), veloBox = q('.rm-velo');
+  var verb = q('.rm-verb'), call = q('.rm-call');
   var effRow = q('.rm-eff'), efill = q('.rm-efill'), eneedle = q('.rm-eneedle'), elock = q('.rm-eff .rm-lock');
   var needle = q('.rm-needle'), good = q('.rm-good'), best = q('.rm-best'), mark = q('.rm-mark'), alock = q('.rm-acc .rm-lock'), word = q('.rm-word');
   var live = null;
 
   function setStage(s) {
     el.dataset.stage = s;
-    el.setAttribute('aria-label', s === 'effort' ? 'Effort. Tap to set it.' : 'Release. Tap when the needle is in the bright band.');
+    el.setAttribute('aria-label', s === 'effort' ? 'Power. Tap to set it.' : 'Release. Tap when the needle is in the bright band.');
     if (live && live.opts.onStage) live.opts.onStage(s);
   }
   function placeBands(e) {
@@ -130,8 +130,6 @@ function create(el) {
       placeEffort(e);
       lockAt(elock, e);
       el.classList.add('is-edone');
-      var v = live.opts.pitch && typeof MT.veloOf === 'function' ? MT.veloOf(live.opts.pitch, e) : null;
-      if (v != null && isFinite(v)) { velo.textContent = Math.round(v); veloBox.classList.remove('tick'); void veloBox.offsetWidth; veloBox.classList.add('tick'); }
       live.lockT = setTimeout(startAcc, LOCK_MS);
       if (live.opts.onStage) live.opts.onStage('acc');
       return;
@@ -184,7 +182,7 @@ function create(el) {
   function hide() {
     el.hidden = true;
     el.classList.remove('is-done', 'is-best', 'is-good', 'is-edone');
-    el.querySelectorAll('.rm-lock, .rm-velo').forEach(function (x) { x.classList.remove('go', 'tick'); });
+    el.querySelectorAll('.rm-lock').forEach(function (x) { x.classList.remove('go'); });
     word.textContent = '';
     live = null;
   }
@@ -197,9 +195,6 @@ function create(el) {
     word.textContent = '';
     verb.textContent = opts.verb || 'release';
     call.textContent = opts.label || '';
-    var p = opts.pitch;
-    velo.textContent = p && p.velo != null ? Math.round(p.velo) : '';
-    veloBox.hidden = !(p && p.velo != null);
     el.hidden = false;
     /* the fill's colours run the whole track, so the zone it reaches has its own colour */
     if (eff) el.style.setProperty('--tw', Math.max(0, q('.rm-etrack').clientWidth - 6) + 'px');

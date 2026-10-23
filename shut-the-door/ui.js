@@ -306,7 +306,7 @@ function renderHome() {
   var ordered = p.arsenal.slice().sort(function (a, b) { return b.usage - a.usage; });
   var ars = ordered.map(function (a, i) {
     return '<li><i class="dot" style="background:' + PITCH_COLORS[i % PITCH_COLORS.length] + '"></i><span class="an">' + esc(a.name) + '</span>' +
-      '<span class="av">' + esc(a.velo.toFixed(1)) + '</span><span class="ap">' + esc(pct(a.usage)) + '</span></li>';
+      '<span class="ap">' + esc(pct(a.usage)) + '</span></li>';
   }).join('');
   var chart = breakChart(ordered, p.throws);
   var meta = [p.team, p.year].filter(Boolean).map(esc).join(' \u00b7 ');
@@ -314,7 +314,7 @@ function renderHome() {
     '<div class="dc-band"' + clubStyle({ pri: p.teamColors[0], sec: p.teamColors[1] }) + '>' +
     '<p class="dc-lbl">you pitch as</p><p class="pc-name">' + esc(p.name) + '</p>' +
     '<p class="dc-meta"><span>' + meta + '</span>' + (p.throws ? '<em class="dc-tag">throws ' + esc(handWord(p.throws)) + '</em>' : '') + '</p></div>' +
-    '<div class="dc-body"><p class="dc-h"><b>his arsenal</b><span>mph \u00b7 usage</span></p>' +
+    '<div class="dc-body"><p class="dc-h"><b>his arsenal</b><span>usage</span></p>' +
     '<div class="pc-body' + (chart ? '' : ' flat') + '">' + (chart ? '<div class="brk">' + chart + '</div>' : '') + '<ul class="ars">' + ars + '</ul></div></div>';
   var due = s.batters.slice(0, 3).map(function (b, i) {
     var lp = lineParts(b.line);
@@ -332,6 +332,8 @@ function renderHome() {
   renderStreak();
   $('h-load').hidden = true;
   $('h-main').hidden = false;
+  /* the slide in, once: the class is taken off when it has played (style.css #h-main.intro) */
+  if (!S.homeIntro) { S.homeIntro = true; $('h-main').classList.add('intro'); setTimeout(function () { $('h-main').classList.remove('intro'); }, 900); }
   drawHero();
 }
 
@@ -401,7 +403,7 @@ function renderHomeState() {
     $('h-go').hidden = false;
     $('h-setup').hidden = false;
     $('h-done').hidden = true;
-    take.textContent = d && d.pitchNo > 0 ? 'back to the mound · pitch ' + (d.pitchNo + 1) : 'take the mound';
+    take.textContent = d && d.pitchNo > 0 ? 'play · pitch ' + (d.pitchNo + 1) : 'play';
   }
   renderStreak();
 }
@@ -447,17 +449,17 @@ function buildMound() {
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
   var big = maxBreak(S.scn.pitcher.arsenal);
-  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name and its speed. The
-     speed is the pack's velo, rounded, never typed. The number is the key that picks it. */
+  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name and its break. The
+     speed is not shown until the pitch is thrown (the radar gun, in the play by play). */
   S.scn.pitcher.arsenal.forEach(function (a, i) {
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'pitch';
     b.dataset.type = a.type;
     b.setAttribute('aria-pressed', 'false');
-    b.setAttribute('aria-label', (i + 1) + ', ' + a.name + ', ' + Math.round(a.velo) + ' mph');
+    b.setAttribute('aria-label', (i + 1) + ', ' + a.name);
     b.innerHTML = '<span class="pk" aria-hidden="true">' + (i + 1) + '</span><span class="pt" aria-hidden="true"><b>' + esc(a.name) + '</b>' +
-      '<span class="pv">' + breakGlyph(a, colorOf(a), big) + '<em>' + esc(Math.round(a.velo)) + '</em> mph</span></span>';
+      '<span class="pv">' + breakGlyph(a, colorOf(a), big) + '</span></span>';
     var held = holdToLearn(b, a.type);
     b.addEventListener('click', function () { if (!held()) pickType(a.type); });
     ars.appendChild(b);
@@ -678,7 +680,7 @@ function stepLine() {
   if (!el) return;
   var say = '';
   if (S.busy || !S.outing || S.outing.status !== 'live') say = '';
-  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your effort' : 'stop it in the bright band';
+  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your power' : 'stop it in the bright band';
   else if (!S.type) say = 'pick a pitch';
   else if (S.cell == null) say = 'aim: drag or tap the zone';
   else say = 'tap throw';
@@ -885,7 +887,7 @@ function renderGuide() {
   var b = batterAt(S.outing.batterIndex), p = S.scn.pitcher, lefty = b.bats === 'L';
   var ordered = p.arsenal.slice().sort(function (x, y) { return y.usage - x.usage; });
   var chart = breakChart(ordered, p.throws, a.type);
-  var nums = '<span><b>' + esc(a.velo.toFixed(1)) + '</b>mph</span>';
+  var nums = '';
   if (a.pfxX != null && a.pfxZ != null) {
     var toward = lefty ? a.pfxX > 0 : a.pfxX < 0, hx = Math.round(Math.abs(a.pfxX));
     nums += '<span><b>' + esc(Math.round(Math.abs(a.pfxZ))) + '"</b>' + (a.pfxZ >= 0 ? 'up' : 'down') + '</span>' +
@@ -951,6 +953,8 @@ function playText(pr, batter, after) {
   if (pr.runs) rest += ' · ' + (pr.runs === 1 ? 'a run scores' : (COUNT_WORD[pr.runs] || pr.runs) + ' runs score');
   // the run that tied it: the outing goes on, so the line says so
   if (pr.runs && isTied(after)) rest += ' · tied ' + after.score.us + '-' + after.score.them;
+  // the radar gun, after the throw: the drawn pitch's own speed (PitchResult.velo), first on the line
+  if (typeof pr.velo === 'number' && isFinite(pr.velo)) rest = Math.round(pr.velo) + ' mph' + (rest ? ' \u00b7 ' + rest : '');
   return { tag: tag, rest: rest };
 }
 
@@ -1145,9 +1149,13 @@ function renderResult() {
   o.className = 'outcome ' + r.outcome;
   $('r-hero').className = 'r-hero ' + r.outcome;
   var p = Math.round(r.percentile);
+  /* the radar gun: the fastest pitch of the outing, each one read off its own PitchResult.velo */
+  var top = null;
+  ((st && st.log) || []).forEach(function (x) { if (x && typeof x.velo === 'number' && isFinite(x.velo) && (top == null || x.velo > top)) top = x.velo; });
   $('r-line').innerHTML =
     '<span class="fact"><b>' + esc(r.pitches) + '</b>' + (r.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
-    (runs != null ? '<span class="fact"><b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') + '</span>' : '');
+    (runs != null ? '<span class="fact"><b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') + '</span>' : '') +
+    (top != null ? '<span class="fact"><b>' + esc(Math.round(top)) + ' mph</b>fastest</span>' : '');
   $('r-npitch').textContent = r.pitches + (r.pitches === 1 ? ' pitch' : ' pitches');
   $('r-strip').innerHTML = stripHTML(r.strip, true);
   var WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
@@ -1430,6 +1438,30 @@ function takeMound() {
   });
 }
 
+/* THE MAIN MENU'S CURSOR. The play button and the list are one column: the cursor is the item with
+   the highlight. Arrow keys move it (and focus with it), a tap or a focus moves it too, Enter is the
+   button's own click. It moves only on the home screen with no sheet open. */
+function menuCursor() {
+  var items = Array.prototype.slice.call(document.querySelectorAll('.h-menu .btn.take.play, .h-menu .menu-rows button'));
+  var cur = 0;
+  function set(i) {
+    cur = (i + items.length) % items.length;
+    items.forEach(function (b, j) { b.classList.toggle('cur', j === cur); });
+  }
+  items.forEach(function (b, j) {
+    b.addEventListener('pointerdown', function () { set(j); });
+    b.addEventListener('focus', function () { set(j); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (document.body.dataset.screen !== 's-home' || MN.isOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    set(cur + (e.key === 'ArrowDown' ? 1 : -1));
+    items[cur].focus({ preventScroll: true });
+  });
+  set(0);
+}
+
 /* ---- boot --------------------------------------------------------------------------------- */
 
 function boot() {
@@ -1462,6 +1494,7 @@ function boot() {
     setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
   $('b-take').addEventListener('click', takeMound);
+  menuCursor();
   $('r-again').addEventListener('click', practice);
   $('r-home').addEventListener('click', function () { renderHomeState(); show('s-home'); drawHero(); });
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });

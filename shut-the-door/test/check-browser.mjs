@@ -466,7 +466,7 @@ async function playOuting(page, o) {
       }
       if (eff) {
         const say0 = await page.textContent('#m-say');
-        if (say0 !== 'set your effort') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
+        if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the power bar read "' + say0 + '"');
         await page.click('#m-meter');
         await page.waitForTimeout(450);
       }
@@ -523,6 +523,8 @@ async function playOuting(page, o) {
     }
     if (after.out.length) r.problems.push('after pitch ' + r.pitches + ': ' + after.out.join(', '));
     r.pbp.push(await page.textContent('#m-pbp'));
+    /* the radar gun: the speed shows on the play by play after the throw, never on the buttons before it */
+    if (!/\d+ mph/.test(r.pbp[r.pbp.length - 1])) r.problems.push('pitch ' + r.pitches + ': the play by play has no speed after the throw ("' + r.pbp[r.pbp.length - 1] + '")');
     if (i === 0 && o.shot) await o.shot('after-pitch');
   }
   await page.waitForSelector('#s-result.on', { timeout: 6000 });
@@ -724,8 +726,8 @@ async function run(w, h, theme) {
   ok(mirror.c20 > mirror.c0t, '3 row 0 is high, row 4 is low');
   ok(mirror.w >= 36 && mirror.hgt >= 36, '3 a cell is big enough to tap (' + Math.round(mirror.w) + 'x' + Math.round(mirror.hgt) + ')');
   await shot('mound');
-  /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number, the
-     name and the pack's speed; one throw button; the step line. A drag over the zone moves the
+  /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number and the
+     name (no speed until the pitch is thrown, 2026-10-23); one throw button; the step line. A drag over the zone moves the
      crosshair with the pointer (free aim, never snapped) and picks the cell it is let go in,
      through screenCol(); the break preview follows it; the zone takes touch-action none, so a drag
      never scrolls the page. The drag ends on a cell's centre, so the crosshair is there. */
@@ -734,13 +736,13 @@ async function run(w, h, theme) {
     const btns = [...document.querySelectorAll('#m-arsenal .pitch')];
     return {
       buttons: btns.every((b, i) => b.querySelector('.pk').textContent === String(i + 1) && b.querySelector('.pt b').textContent === ars[i].name &&
-        b.querySelector('.pv em').textContent === String(Math.round(ars[i].velo))),
+        !b.querySelector('.pv em') && !/mph/.test(b.textContent) && !/mph/.test(b.getAttribute('aria-label'))),
       tall: Math.min(...btns.map((b) => b.getBoundingClientRect().height)),
       throwWord: document.querySelector('#m-throw b').textContent, say: document.getElementById('m-say').textContent,
       touch: getComputedStyle(document.getElementById('m-aim')).touchAction, grids: document.querySelectorAll('#m-scene .grid').length,
     };
   });
-  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number, its name and the pack\'s speed (' + Math.round(pad.tall) + ' px tall)');
+  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number and its name, and no speed before the throw (' + Math.round(pad.tall) + ' px tall)');
   ok(pad.throwWord === 'throw' && pad.say === 'pick a pitch', '3 one throw button, and the step line says what to do ("' + pad.say + '")');
   ok(pad.touch === 'none' && pad.grids === 0, '3 the aim is on the field (no separate grid) and a drag there never scrolls the page');
   await page.click('#m-arsenal .pitch >> nth=0');

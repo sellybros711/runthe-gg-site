@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -68,39 +68,46 @@
 <section class="screen on" id="s-home" aria-labelledby="h-head">
   <div class="load" id="h-load"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><span>warming up</span></div>
   <div id="h-main" hidden>
-    <div class="hero" id="h-hero">
-      <canvas id="h-canvas" aria-hidden="true"></canvas>
-      <img class="h-poster" id="h-poster" src="3d/assets/hero.webp?h=a8b96e3af7" alt="" hidden>
-      <div class="hero-chips" id="h-day"></div>
-      <div class="hero-text">
+    <!-- THE SCENE: the ballpark still behind everything, the broadcast bug at its top, the matchup
+         title over its foot. One frame style and one spacing system below it (style.css). -->
+    <div class="h-stage" id="h-stage">
+      <div class="hero" id="h-hero" aria-hidden="true">
+        <canvas id="h-canvas" aria-hidden="true"></canvas>
+        <img class="h-poster" id="h-poster" src="3d/assets/hero.webp?h=a8b96e3af7" alt="" hidden>
+      </div>
+      <div class="hbug-wrap" id="h-sit" role="group" aria-label="Scoreboard"></div>
+      <div class="h-tl">
+        <div class="hero-chips" id="h-day"></div>
         <p class="h-eyebrow">you are the closer</p>
         <h1 class="hero-head" id="h-head"></h1>
-        <p class="h-occ"><span class="h-title" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
+        <p class="h-occ"><span class="h-title-line" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
       </div>
     </div>
     <div class="h-cols">
-      <div class="h-col">
-        <div class="hbug-wrap" id="h-sit" role="group"></div>
-        <p class="stakes" id="h-setup"></p>
-        <div class="go-wrap" id="h-go">
-          <button class="btn take" id="b-take" type="button">take the mound</button>
+      <!-- THE MENU PANEL: the play button (the one primary action), the stakes, then the list.
+           The first row is the cursor; arrow keys move it (ui.js). -->
+      <section class="frame h-menu" aria-label="Main menu">
+        <div class="h-go" id="h-go">
+          <p class="stakes" id="h-setup"></p>
+          <button class="btn take play" id="b-take" type="button">play</button>
           <p class="streak" id="h-streak"></p>
         </div>
         <div class="done" id="h-done" hidden></div>
-      </div>
-      <div class="h-col">
-        <div class="dcard pcard" id="h-pitcher"></div>
-        <div class="dcard due" id="h-due"></div>
-      </div>
+        <nav class="menu-rows" aria-label="More">
+          <button type="button" data-open="how"><span class="mr-t">how to play</span><i class="mr-chev" aria-hidden="true"></i></button>
+          <button type="button" data-open="101"><span class="mr-t">pitching 101</span><i class="mr-chev" aria-hidden="true"></i></button>
+          <button type="button" data-open="board"><span class="mr-t">today's board</span><i class="mr-chev" aria-hidden="true"></i></button>
+          <button type="button" data-open="stats"><span class="mr-t">stats</span><i class="mr-chev" aria-hidden="true"></i></button>
+          <button type="button" data-open="settings"><span class="mr-t">settings</span><i class="mr-chev" aria-hidden="true"></i></button>
+        </nav>
+      </section>
+      <!-- THE MATCHUP PANEL: the same frame, two sections. -->
+      <section class="frame h-match" aria-label="The matchup">
+        <div class="mrow" id="h-pitcher"></div>
+        <div class="mrow" id="h-due"></div>
+      </section>
     </div>
     <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
-    <nav class="h-links" aria-label="More">
-      <button type="button" data-open="how">how to play</button>
-      <button type="button" data-open="101">pitching 101</button>
-      <button type="button" data-open="board">today's board</button>
-      <button type="button" data-open="stats">stats</button>
-      <button type="button" data-open="settings">settings</button>
-    </nav>
     <footer class="legal">
       <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=1" alt="Shut The Door" width="160" height="63">
       <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=1" alt="" width="160" height="63">
@@ -113,6 +120,10 @@
 
 <!-- 2 AND 3. THE MOUND AND THE PITCH -->
 <section class="screen" id="s-mound" aria-label="On the mound">
+  <!-- ONE FRAME FOR THE MOUND (the console HUD): the top plate holds the scoreboard, the play by play,
+       the batter and the heat bar; the bottom plate holds the pitch buttons and the pad. The scene is
+       the window between them. Both plates share one surface, one line and one spacing (style.css). -->
+  <div class="plate top">
   <div class="hud">
     <div class="scorebar" role="group" aria-label="Scoreboard">
       <div class="sb-teams">
@@ -149,6 +160,7 @@
     <button class="guide-tog" id="m-guide-b" type="button" aria-expanded="false" aria-controls="m-guide">pitch guide</button>
     <span class="legend" id="m-heat-legend"></span>
   </div>
+  </div>
   <div class="scene" id="m-scene">
     <canvas id="m-canvas" aria-hidden="true"></canvas>
     <div class="dbg" id="m-dbg" hidden></div>
@@ -158,14 +170,16 @@
   </div>
   <div class="scout" id="m-scout" hidden></div>
   <div class="guide" id="m-guide" role="region" aria-label="Pitch guide" hidden></div>
-  <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
-  <!-- the pad: the throw button, the release meter (meter-ui.js) as one panel over the pitch
-       buttons and the throw button after the tap on throw, and one step line under them. The
-       meter shows its effort bar only when STD_METER.EFFORT is true (the game agent's rule). -->
-  <div class="pad" id="m-pad">
-    <button class="btn throw" id="m-throw" type="button" disabled><b>throw</b></button>
-    <div id="m-meter" hidden></div>
-    <p class="pad-say" id="m-say" aria-live="polite"></p>
+  <div class="plate bottom">
+    <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
+    <!-- the pad: the throw button, the release meter (meter-ui.js) as one panel over the pitch
+         buttons and the throw button after the tap on throw, and one step line under them. The
+         meter shows its power bar only when STD_METER.EFFORT is true (the game agent's rule). -->
+    <div class="pad" id="m-pad">
+      <button class="btn throw" id="m-throw" type="button" disabled><b>throw</b></button>
+      <div id="m-meter" hidden></div>
+      <p class="pad-say" id="m-say" aria-live="polite"></p>
+    </div>
   </div>
 </section>
 
@@ -282,7 +296,7 @@
      engine. -->
 <script src="contract.js?v=6"></script>
 <script src="meter.js?v=3"></script>
-<script src="meter-ui.js?v=2"></script>
+<script src="meter-ui.js?v=3"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=4"></script>
 <script src="aim.js?v=2"></script>
@@ -301,7 +315,7 @@
 <script src="mock-api.js?v=10"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=1"></script>
-<script src="ui.js?v=23"></script>
+<script src="ui.js?v=24"></script>
 <script type="module" src="3d/boot.js?v=28"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
