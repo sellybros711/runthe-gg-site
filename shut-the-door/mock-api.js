@@ -272,7 +272,7 @@ function forced(bases) {
 
 function resolve(scn, st, call, rng) {
   var bt = batterOf(scn, st.batterIndex), pr = bt.profile, ap = pitchOf(scn, call.type);
-  var tgt = C.targetOf(call.cell), zr = bt.szTop - bt.szBot;
+  var tgt = C.aimPoint ? C.aimPoint(call.cell, call.at) : C.targetOf(call.cell), zr = bt.szTop - bt.szBot;
   /* the fixed order: miss x, miss z, the library draw, the runner draw */
   /* the release scales the miss, as in the engine (contract.js spreadOf; no q is 1.0x) */
   var sg = ap.sigmaFt * (C.spreadOf ? C.spreadOf(call.q) : 1);
@@ -299,7 +299,7 @@ function resolve(scn, st, call, rng) {
   if (forcedR) res.result = forcedR === 'K' ? 'swinging_strike' : 'in_play';
 
   var out = { n: st.pitchNo + 1, call: { type: call.type, cell: call.cell }, actual: actual, actualCell: cell,
-    velo: Math.round((ap.velo + gauss(u4) * 0.8) * 10) / 10, batter: res.batter, result: res.result,
+    velo: call.e != null && C.stuffAt ? C.stuffAt(ap, call.e).velo : Math.round((ap.velo + gauss(u4) * 0.8) * 10) / 10, batter: res.batter, result: res.result,
     countBefore: { b: b, s: s }, runnerMoves: [], runs: 0, paOver: false,
     drawn: { id: 'mock:' + st.pitchNo + ':' + Math.floor(lib * 1e6), tier: u3 < 0.6 ? 'batter' : u3 < 0.9 ? 'similar' : 'league' } };
   var outs = st.outs, bases = st.bases, nb = b, ns = s;
@@ -438,6 +438,8 @@ function throwPitch(outingId, call) {
     if (!(call.cell >= 0 && call.cell < C.GRID.CELLS)) throw new Error('no such cell');
     var c = { type: call.type, cell: call.cell | 0 };
     if (call.q != null && C.releaseQ) c.q = C.releaseQ(call.q);
+    if (call.e != null && C.effortE) c.e = C.effortE(call.e);
+    if (call.at != null && C.aimAt) c.at = C.aimAt(call.at);
     o.calls.push(c);
     var r = apply(o.scn, o.st, c, o.rng);
     saveDaily(o);

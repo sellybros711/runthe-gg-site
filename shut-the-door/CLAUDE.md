@@ -38,16 +38,24 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
 - **Grade the decision, never the outcome.** Every call is graded before it resolves. The band is
   relative to the moment (`rel` = lost over the state's mean lost); score and percentile use absolute
   hold% lost. `BANDS` in `contract.js` changes only with `band_sweep.mjs` evidence.
-- **Two taps and a release a pitch.** A pitch type, a cell, then one tap on the release meter
-  (`meter.js`). Nothing else. The release (q) scales the miss and never the grade. The meter can be
-  turned off in settings (no q: his own command, 1.0x). No grade or popup between pitches; the
-  meter's one quiet word is execution, not a grade.
+- **A pitch is a type, an aim, then two stops on the meter.** Pick the pitch type, aim anywhere in
+  the zone (the cell, plus the free aim point `at` inside it), stop the effort bar (e), then stop the
+  accuracy bar (q, the release). Nothing else. The grade prices the exact aim point; everything the
+  player reads (scouting, the heat map, the tag, the hitter's history) stays on the cell (CONTRACT.md
+  5d). Effort moves the pitch along his own real speed, with measured effects scaled by a labelled
+  game multiplier (`grade.js EFFORT`), shrinks or widens the accuracy window and loads the arm
+  (CONTRACT.md 5c). The release scales the miss. Neither stop touches the grade. The meter can be turned
+  off in settings: no effort stop and no q (his ordinary pitch at his own command, 1.0x); an e never
+  rides without a q. No grade or popup between pitches; the meter's one quiet word is execution, not
+  a grade.
 - **The grid is catcher's view in data, pitcher's view on screen.** Mirror with `screenCol()` only.
   Copy says inside and away, never left and right.
 - **Deterministic.** One seeded stream, four draws per pitch in a fixed order. The daily seed is the
   day's, the same for everyone. No `Math.random` in the engine. q changes only the spread the two
-  miss draws are scaled by, never which draws are taken. A call without q is exactly 1.0x, so old
-  stored outings replay unchanged (`fixtures/replays-pre-meter.json` holds that).
+  miss draws are scaled by, never which draws are taken. e changes only the drawn row's weights and
+  the arm, never which draws are taken. A call without q is exactly 1.0x and a call without e is his
+  ordinary pitch, so old stored outings replay unchanged (`fixtures/replays-pre-meter.json` holds
+  that, and the self-test holds a rules 2 row without e).
 - **Rules 2** (2026-10-22, CONTRACT.md 5b): the hitter adjusts, the arm tires, a repeat keeps less
   release, coarser scouting. Every effect is a function of the outing's log, never a new draw. A new
   outing's kept calls carry `r: 2`; a call without `r` replays as rules 1, exactly. The grade prices

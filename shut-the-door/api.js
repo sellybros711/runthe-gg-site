@@ -40,7 +40,7 @@
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 4;
+  const SCHEDULE_V = 6;
   const STORE_V = 1;
   const BASE = 'data/';
 
@@ -151,6 +151,8 @@
     if (!rec) throw new Error('no such outing');
     const c = { type: call && call.type, cell: call && call.cell };
     if (call && call.q != null) c.q = call.q;     // the release (contract.js RELEASE); absent is 1.0x
+    if (call && call.e != null) c.e = call.e;     // the effort (contract.js EFFORT); absent is his ordinary pitch
+    if (call && call.at != null) c.at = call.at;  // the free aim point (contract.js aimAt); absent is the cell's centre
     const r = E.throwPitch(rec.o, c);
     save(rec);
     return clone(r);

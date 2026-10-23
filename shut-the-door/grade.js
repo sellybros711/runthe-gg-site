@@ -109,6 +109,16 @@ function axisProbs(centre, sigma, edges) {
 const X_EDGES = [1, 2, 3, 4].map(k => (k - 2.5) * K.GRID.COL_FT);
 const ZN_EDGES = [0, 1 / 3, 2 / 3, 1];
 
+/* The miss table's row for one aim point (x ft, zn): the chance of each of
+   the 25 cells. kernelFor is this at every cell's centre. */
+function kernelRowAt(sigmaFt, zoneFt, x, zn) {
+  const px = axisProbs(x, sigmaFt, X_EDGES);
+  const pz = axisProbs(zn, sigmaFt / zoneFt, ZN_EDGES).reverse();
+  const out = new Array(25).fill(0);
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) out[K.cellOf(r, c)] = pz[r] * px[c];
+  return out;
+}
+
 function kernelFor(sigmaFt, zoneFt) {
   const out = new Array(625).fill(0);
   const sz = sigmaFt / zoneFt;
@@ -244,8 +254,8 @@ Model.prototype.after = function (st, t) {
 
 /* The goal's chance (0..1) and the expected runs of one call in one state.
    The runs follow the outing on through a tie, to its real end. */
-Model.prototype.callValue = function (st, type, target, ctx) {
-  if (ctx) return this.callValueCtx(st, type, target, ctx);
+Model.prototype.callValue = function (st, type, target, ctx, at) {
+  if (ctx) return this.callValueCtx(st, type, target, ctx, at);
   const mix = this.mixed(st.bi, type, target, bucketOf(st.b, st.s));
   let v = 0, r = 0, pself = 0;
   for (const [cls, p] of mix) {
@@ -444,6 +454,147 @@ function fatigueOf(pitchNo, bases) {
   return Math.round(f * (bases ? R2.PRESSURE.on : R2.PRESSURE.empty) * 10000) / 10000;
 }
 
+/* ---- effort (the owner's calls, 2026-10-22 and 2026-10-23; CONTRACT.md 5c) ----
+ *
+ * The meter's first stop: how hard he throws it, e 0..1 on the call. What is
+ * DATA and what is a GAME CHOICE is marked on every line below.
+ *   1. THE PITCH. DATA: a pitch at effort e is one from further along his own
+ *      velocity for that type. e walks five slices of it: his slowest 5%, the
+ *      second fifth, the middle fifth, the fourth fifth, his fastest 5%. Its
+ *      speed and break are the mean of his own pitches in that slice
+ *      (contract.js stuffAt). What a pitch from each slice does is measured on
+ *      every 2024 regular season pitch (pipeline/effort.py, effort.json): key by
+ *      key, observed over what that family does in the same cell, exact count
+ *      and platoon; every pitcher has the same share of his pitches in each
+ *      slice, so who is pitching cancels. Each is shrunk toward 1 by its own
+ *      standard error and set so the middle slice is exactly 1 (EFFORT.BINS).
+ *      A measured association: the count and the spot are held, his intent is
+ *      not. It says: a harder fastball misses more bats and gives up fewer
+ *      home runs, a harder breaking ball whiffs about the same and is called a
+ *      strike less, a harder changeup or splitter whiffs less.
+ *      GAME CHOICE, NOT DATA: above the middle every measured ratio's distance
+ *      from 1 is multiplied by EFFORT.GAME (the owner: max effort should be a
+ *      real weapon). Below the middle by GAME_DOWN (1: the data as it is).
+ *      The direction is always the data's; the size is the game's.
+ *   2. THE MISS. DATA: his fastest slice misses wider than his middle one
+ *      (EFFORT.SPREAD: fastballs 3%, breaking balls 11%, offspeed 6%).
+ *      GAME CHOICE: scaled by SPREAD_GAME. Below the middle it is 1.
+ *   3. THE WINDOW. GAME RULE (meter.js EFFORT_WINDOW): more effort makes the
+ *      accuracy stop's window smaller, less makes it bigger.
+ *   4. THE ARM. MODEL: a pitch counts loadOf(e) pitches on the arm for every
+ *      pitch after it, and the extra over 1 builds a strain that easy pitches
+ *      pay back; the arm's miss is x (1 + STRAIN x strain). Real relievers'
+ *      velocity is flat across an outing (tired arms are taken out), so these
+ *      are tuned with pipeline/strategies.cjs, not measured.
+ * e 0.5 (or no e) changes none of them: the same row, miss, window and arm.
+ * THE GRADE NEVER READS THIS PITCH'S e: like q it is how he throws it, and it
+ * cannot be priced without assuming how well the player times (the window)
+ * or a horizon past one pitch (the arm). The arm and strain of earlier efforts
+ * are history the grade prices, as fatigue always was.
+ */
+const EFFORT = Object.freeze({
+  /* DATA: observed / expected for each slice of his velocity, slowest first, per family */
+  BINS: Object.freeze({
+    hard: Object.freeze({
+      ball: [1.011, 1.0, 1.0, 1.0, 1.0],
+      called: [1.002, 1.001, 1.0, 0.999, 0.984],
+      whiff: [0.78, 0.943, 1.0, 1.058, 1.131],
+      foul: [0.943, 1.0, 1.0, 1.001, 1.045],
+      hit: [1.077, 1.0, 1.0, 1.0, 0.917],
+      hr: [1.343, 1.041, 1.0, 0.915, 0.749],
+      out: [1.111, 1.036, 1.0, 0.963, 0.87],
+    }),
+    breaking: Object.freeze({
+      ball: [1.041, 1.003, 1.0, 1.003, 1.024],
+      called: [1.062, 1.029, 1.0, 0.967, 0.809],
+      whiff: [0.834, 0.946, 1.0, 1.051, 0.992],
+      foul: [0.901, 1.0, 1.0, 1.0, 1.057],
+      hit: [1.0, 1.0, 1.0, 1.0, 0.965],
+      hr: [1.008, 0.985, 1.0, 1.008, 0.791],
+      out: [0.995, 1.014, 1.0, 0.985, 0.984],
+    }),
+    offspeed: Object.freeze({
+      ball: [1.004, 1.001, 1.0, 1.004, 1.088],
+      called: [1.035, 1.0, 1.0, 1.0, 0.923],
+      whiff: [0.982, 1.036, 1.0, 0.982, 0.86],
+      foul: [0.988, 0.997, 1.0, 0.997, 0.997],
+      hit: [1.0, 1.0, 1.0, 1.0, 1.066],
+      hr: [1.0, 1.0, 1.0, 1.0, 0.957],
+      out: [1.003, 0.993, 1.0, 1.003, 0.972],
+    }),
+  }),
+  /* DATA: his location spread at each slice, against his middle slice, above the middle only.
+     Below it 1, a game choice: the data's slowest slice is wider, but that is a slipped pitch more
+     than an eased one. Scaled by SPREAD_GAME */
+  SPREAD: Object.freeze({ hard: [1.0, 1.0, 1.0, 1.002, 1.034], breaking: [1.0, 1.0, 1.0, 1.0, 1.108], offspeed: [1.0, 1.0, 1.0, 1.0, 1.064] }),
+  /* the key groups the bins are measured in: ball, called strike, whiff, foul, hits but the home run, home run, outs in play */
+  GROUP: Object.freeze({ ball: [0], called: [1], whiff: [2], foul: [3], hit: [5, 6, 7], hr: [8], out: [10, 11, 12, 13] }),
+  /* MODEL, the arm: a pitch at e above 0.5 counts 1 + LOAD_UP x (2e - 1) pitches on the arm for
+     every pitch after it, below 0.5 1 - LOAD_DOWN x (1 - 2e) */
+  LOAD_UP: 1,
+  LOAD_DOWN: 0.5,
+  /* MODEL, the strain: the extra load of pitches above ordinary builds up, and pitches under
+     it pay it back (never below 0). The arm's miss is x (1 + STRAIN x strain). Without e (or at e
+     0.5 and under, from a fresh arm) the strain is 0 and the arm is rules 2's exactly */
+  STRAIN: 0.05,
+  /* GAME CHOICE, NOT DATA (the owner, 2026-10-23: effort should feel like a real weapon).
+     Above the middle, every measured ratio's distance from 1 is multiplied by GAME before it is used:
+     m = max(FLOOR, 1 + GAME x (measured - 1)). GAME 1 would be the data as measured. The
+     direction of every effect is the data's; only its size is the game's. */
+  GAME: 8,
+  /* GAME CHOICE: the same below the middle (an easy pitch). 1 is the data as measured */
+  GAME_DOWN: 1,
+  /* GAME CHOICE, NOT DATA: the same for the measured spread (SPREAD), so a max effort pitch
+     misses wider than the data alone says */
+  SPREAD_GAME: 2,
+  FLOOR: 0.2,
+});
+
+/* The 14 multipliers (KEYS order) of a pitch of this type at effort e. All 1 at e 0.5. */
+function effortMult(type, e) {
+  const m = KEYS.map(() => 1);
+  const ee = K.effortE(e);
+  if (ee == null || ee === K.EFFORT.MID) return m;
+  const bins = EFFORT.BINS[K.FAMILY_OF[type]] || {};
+  const pos = ee * 4, i = Math.min(3, Math.floor(pos)), f = pos - i;
+  const gain = ee > K.EFFORT.MID ? EFFORT.GAME : EFFORT.GAME_DOWN;
+  for (const g of Object.keys(EFFORT.GROUP)) {
+    const b = bins[g];
+    if (!b) continue;
+    const v = b[i] * (1 - f) + b[i + 1] * f;
+    const amp = Math.max(EFFORT.FLOOR, 1 + gain * (v - 1));   // game choice, not data (EFFORT.GAME, GAME_DOWN)
+    for (const k of EFFORT.GROUP[g]) m[k] = amp;
+  }
+  return m;
+}
+/* His miss at effort e, as a multiple of his own: harder than ordinary misses
+   wider (measured, scaled by GAME). 1 at e 0.5 and below, and without e.
+   The engine multiplies the played miss by it; the grade never reads it. */
+function effortSpread(type, e) {
+  const ee = K.effortE(e);
+  if (ee == null || ee <= K.EFFORT.MID) return 1;
+  const sp = EFFORT.SPREAD[K.FAMILY_OF[type]];
+  if (!sp) return 1;
+  const pos = ee * 4, i = Math.min(3, Math.floor(pos)), f = pos - i;
+  const v = sp[i] * (1 - f) + sp[i + 1] * f;
+  return Math.round((1 + EFFORT.SPREAD_GAME * (v - 1)) * 10000) / 10000;   // game choice, not data (EFFORT.SPREAD_GAME)
+}
+
+/* A row (per mille, one actual cell) at effort e: key by key. Not renormalised:
+   the engine draws against the row's own sum. */
+function effortRow(row, type, e) {
+  const ee = K.effortE(e);
+  if (ee == null || ee === K.EFFORT.MID) return row;
+  const m = effortMult(type, ee);
+  return row.map((x, i) => x * m[i]);
+}
+/* What one pitch at effort e puts on the arm, in pitches. */
+function loadOf(e) {
+  const ee = K.effortE(e);
+  if (ee == null) return 1;
+  return ee >= K.EFFORT.MID ? 1 + EFFORT.LOAD_UP * (2 * ee - 1) : 1 - EFFORT.LOAD_DOWN * (1 - 2 * ee);
+}
+
 /* The history one call is priced against, from the outing's log: the pitches
    of this plate appearance (type, the cell each actually crossed), the
    pitches of each type thrown to earlier batters, and the arm. */
@@ -458,9 +609,16 @@ function contextOf(log, st, rules, center, zone0) {
   const last = log.length ? log[log.length - 1].call.type : null;
   for (let j = log.length - 1; j >= 0 && log[j].call.type === last; j--) streak++;
   const pitchNo = log.length + 1;
+  /* the arm's count: each earlier pitch at its effort's load (no e: 1, so a
+     log without effort gives exactly pitchNo), then this pitch as 1 */
+  let arm = 1, strain = 0;
+  for (const p of log) { const l = loadOf(p.call.e); arm += l; strain = Math.max(0, strain + l - 1); }
+  arm = Math.round(arm * 100) / 100;
+  strain = Math.round(strain * 100) / 100;
   let zone = 0;
   for (const p of log) if (K.inZone(p.call.cell)) zone++;     // his plan: where he aimed, so a sharp release never reads as pounding the zone
-  return { rules, bi: st.bi, pa, before, last, streak, zone, seen: log.length, pitchNo, fatigue: fatigueOf(pitchNo, st.bases),
+  return { rules, bi: st.bi, pa, before, last, streak, zone, seen: log.length, pitchNo, arm, strain,
+    fatigue: strain > 0 ? Math.round(fatigueOf(arm, st.bases) * (1 + EFFORT.STRAIN * strain) * 10000) / 10000 : fatigueOf(arm, st.bases),
     center: center == null ? DEFAULT_CENTER : center, z0: zone0 == null ? R2.ZONE.z0 : zone0 };
 }
 
@@ -525,14 +683,34 @@ Model.prototype.keyValues = function (st) {
   return kv;
 };
 
+/* The miss table's row for a call aimed at a free point inside its cell (the
+   owner's call, 2026-10-23: the grade prices the exact spot), at a multiple
+   of his sigmaFt. Cached per type, spread, cell and point. */
+Model.prototype.kernelRowAim = function (type, f, cell, at) {
+  if (!this._ka) this._ka = new Map();
+  const k = type + '|' + f + '|' + cell + '|' + at[0] + '|' + at[1];
+  let row = this._ka.get(k);
+  if (!row) {
+    const p = K.aimPoint(cell, at);
+    row = kernelRowAt(this.arsenal.find(a => a.type === type).sigmaFt * f, this.zoneFt, p.x, p.zn);
+    this._ka.set(k, row);
+  }
+  return row;
+};
+
 /* P(key | target) with the history and the arm: the adjusted rows through
-   the miss table at the tired spread. */
-Model.prototype.keyMixCtx = function (st, type, target, ctx) {
-  const ker = this.kernelAt(type, ctx.fatigue);
+   the miss table at the tired spread. With at (a free aim point, CONTRACT.md
+   5d), the miss table centred on that exact spot; [0, 0] or none is the cell's
+   centre, the same numbers as before. */
+Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
+  const a0 = K.aimAt(at);
+  const off = a0 && (a0[0] !== 0 || a0[1] !== 0);
+  const ker = off ? this.kernelRowAim(type, ctx.fatigue, target, a0) : this.kernelAt(type, ctx.fatigue);
+  const base = off ? 0 : target * 25;
   const rows = this.rowsCtx(st.bi, type, bucketOf(st.b, st.s), ctx);
   const out = new Float64Array(KEYS.length);
   for (let a = 0; a < 25; a++) {
-    const w = ker[target * 25 + a];
+    const w = ker[base + a];
     if (w < 1e-9) continue;
     const row = rows[a];
     for (let i = 0; i < KEYS.length; i++) if (row[i]) out[i] += w * row[i] / 1000;
@@ -541,8 +719,8 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx) {
 };
 
 /* A call's value under rules 2: its key mix, each key's value from here. */
-Model.prototype.callValueCtx = function (st, type, target, ctx) {
-  const mix = this.keyMixCtx(st, type, target, ctx);
+Model.prototype.callValueCtx = function (st, type, target, ctx, at) {
+  const mix = this.keyMixCtx(st, type, target, ctx, at);
   const kv = this.keyValues(st);
   let v = 0, r = 0, pself = 0;
   for (let i = 0; i < KEYS.length; i++) {
@@ -694,7 +872,9 @@ function reasonFor(model, st, call, best, value, lost, band, ctx) {
    ahead), and tied says so. */
 function gradeCall(model, st, call, ctx) {
   const best = model.bestCtx(st, ctx);
-  const cv = model.callValue(st, call.type, call.cell, ctx);
+  // the exact spot (CONTRACT.md 5d): the call is priced where it was aimed; the best call and the
+  // state's mean lost stay over every cell's centre, so an aim better than the best centre is lost 0
+  const cv = model.callValue(st, call.type, call.cell, ctx, ctx ? call.at : null);
   const lost = Math.max(0, (best.hold - cv.hold) * 100);
   const lostR = Math.round(lost * 100) / 100;
   const rel = lost <= 1e-9 ? 0 : Math.round(lost / Math.max(1e-9, model.meanLost(st, ctx)) * 1000) / 1000;
@@ -713,9 +893,9 @@ function gradeCall(model, st, call, ctx) {
 }
 
 const publicAPI = Object.freeze({
-  BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, forceWalk, stateIndex, goalOf, Model, gradeCall,
+  BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
   placeOf, bucketOf, keeps, RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
-  scoutView, SCOUT_STEP,
+  scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;
 if (typeof window !== 'undefined') window.STD_GRADE = publicAPI;
