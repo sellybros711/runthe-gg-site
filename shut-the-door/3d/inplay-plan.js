@@ -492,7 +492,19 @@ function holdThenThrow(ctx, n, s, at, late) {
       // holding it (it waited to beat the batter by only a step, so a routine grounder sat in his
       // hand for a second and a half; the owner, 2026-10-22: the players need to throw the ball)
       const transfer = done.length ? 0.32 : 0.65 + 0.25 * rnd(ctx.id, 'step');
-      const rel = Math.max(t + transfer, ready - fly + 0.05);
+      let rel = Math.max(t + transfer, ready - fly + 0.05);
+      // a runner already on, thrown out further round: by a step or two at the bag, not standing
+      // half a base path away when the ball gets there (the owner, 2026-10-22: the out visible at the
+      // base). The throw waits on his run, never on the batter's (that one is a routine out)
+      // (the hitter too, when he is out past first, trying for one more)
+      if (o.from >= 1 && o.base > o.from || o.from === 0 && o.base > 1) {
+        const bat = o.from === 0;
+        let d = 0, prev = bat ? { x: ctx.bats === 'L' ? 2.95 : -2.95, y: 0.4 } : leadOff(o.from);
+        for (const q of bat ? [...roundFirst(), ...basePath(1, o.base)] : basePath(o.from, o.base)) { d += dist(prev, q); prev = q; }
+        const go = ctx.catchAt && ctx.kind === 'air_out' ? ctx.catchAt.s + 0.08 : bat ? 0.28 : 0.15;
+        const eta = go + runTime(d, bat ? 26.5 : 27, 16, true, false);
+        rel = Math.max(rel, eta - fly - (0.25 + 0.35 * rnd(ctx.id, 'bag' + o.from)));
+      }
       throwBall(ctx, holder, cov, rel, pos, tgtPt, fly);
       ctx.T[cov].act(rel + fly, o.base === 4 ? 'tag' : 'receive', { base: o.base });
       o.ballAt = rel + fly; o.by = cov;
@@ -1059,38 +1071,66 @@ function planEdit(ctx) {
     // every putout: the throw and the tag or the bag
     for (const po of (ctx.putouts || [])) {
       const thr = ev.filter((e) => e.kind === 'throw' && e.s <= po.ballAt + 1e-6).pop();
-      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: po.ballAt + 0.45, cam: po.base === 4 ? 'plate' : 'follow', pri: 8 });
+      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: po.ballAt + 0.45, cam: po.base === 4 ? 'plate' : 'follow', pri: 8, m: po.ballAt });
     }
     // runs that score
-    for (const r of runs) beats.push({ s0: r - 0.9, s1: r + 0.4, cam: 'plate', pri: 7 });
-    // where the last safe runner ends (a hit: the batter pulling into his base)
-    const lastSafe = p.runners.filter((r) => !r.out && r.to >= 1 && r.to <= 3 && r.arrive != null).sort((a, b) => b.arrive - a.arrive)[0];
-    if (lastSafe && lastSafe.arrive > touch + 0.6) beats.push({ s0: lastSafe.arrive - 1.1, s1: lastSafe.arrive + 0.4, cam: 'wide', pri: ctx.hit ? 6 : 2 });
+    for (const r of runs) beats.push({ s0: r - 0.9, s1: r + 0.4, cam: 'plate', pri: 7, m: r });
+    // every runner pulling into his base safe (the hitter on a hit above all): the owner, 2026-10-22,
+    // wants to see the play unfold, the out or the safe at the base
+    for (const r of p.runners) {
+      if (r.out || !(r.to >= 1 && r.to <= 3) || r.arrive == null || r.from === r.to || r.arrive <= 0.8) continue;
+      beats.push({ s0: r.arrive - 1.1, s1: r.arrive + 0.4, cam: 'wide', pri: r.from === 0 && ctx.hit ? 7 : 6, m: r.arrive });
+    }
     const build = (list) => {
       list = list.slice().sort((x, y) => x.s0 - y.s0);
       const out = [{ s0: 0, s1: CUT, cam: 'pitcher', rate: 1 }];
       for (const bt of list) {
         const cur = out[out.length - 1];
-        if (bt.s1 <= cur.s1 + 0.05) continue;
-        if (bt.s0 <= cur.s1 + 0.6) {
+        if (bt.s1 <= cur.s1 + 0.05) {
+          // a deciding moment inside a longer shot from another camera (a run scoring while the
+          // follow camera stays on the ball): cut to it, then back
+          // (unless the shot it would cut holds its own deciding moment there: that one stays)
+          if (bt.cam !== cur.cam && bt.pri >= 6 && !(cur.m != null && cur.m >= bt.s0 - 0.2 && cur.m <= bt.s1 + 0.2)) {
+            const tail = { ...cur, s0: bt.s1 };
+            if (bt.s0 > cur.s0 + 0.4) { cur.s1 = bt.s0; out.push({ s0: bt.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m }); }
+            // (it starts with the shot: it opens the shot, the rest follows)
+            else { out.pop(); out.push({ s0: cur.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m }); }
+            if (tail.s1 - tail.s0 > 0.4) out.push(tail);
+          }
+          continue;
+        }
+        if (bt.s0 <= cur.s1 + 1.0) {
           // continuous: the same camera runs on; a new one takes over from where the last ended
-          if (bt.cam === cur.cam || cur.cam === 'pitcher' && false) cur.s1 = bt.s1;
-          else out.push({ s0: cur.s1, s1: bt.s1, cam: bt.cam, rate: 1 });
+          if (bt.cam === cur.cam || cur.cam === 'pitcher' && false) { cur.s1 = bt.s1; if (bt.m != null) cur.m = bt.m; }
+          else if (cur.m != null && bt.m != null && bt.m > cur.m + 0.3) {
+            // two deciding moments in two shots: the cut between them, each moment in its own
+            const cutAt = Math.min(cur.s1, Math.max(cur.m + 0.15, (cur.m + bt.m) / 2));
+            cur.s1 = cutAt;
+            out.push({ s0: cutAt, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m });
+          } else if (cur.m == null && bt.m != null && bt.s0 < cur.s1 && bt.s0 > cur.s0 + 0.3) {
+            // the ball's shot gives way when a deciding moment's shot begins
+            cur.s1 = bt.s0;
+            out.push({ s0: bt.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m });
+          } else out.push({ s0: cur.s1, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m });
         } else {
           let cam = bt.cam;
-          if (cam === cur.cam) cam = cam === 'wide' ? 'follow' : 'wide';
-          out.push({ s0: bt.s0, s1: bt.s1, cam, rate: 1 });
+          // (a jump cut changes camera, but a deciding moment keeps the one that shows it)
+          if (cam === cur.cam && bt.m == null) cam = cam === 'wide' ? 'follow' : 'wide';
+          out.push({ s0: bt.s0, s1: bt.s1, cam, rate: 1, m: bt.m });
         }
       }
       return out;
     };
     const realOf = (pcs) => pcs.reduce((acc, x) => acc + (x.s1 - x.s0), 0);
     let list = beats.slice();
+    if (globalThis.__BEATS) globalThis.__BEATS.push(beats.map((b) => ({ ...b })));
     let pcs = build(list);
-    const BUDGET = 5.4;
-    while (realOf(pcs) > BUDGET && list.some((x) => x.pri < 9)) {
+    // (5.4 s cut the hitter's run to first and the runs off the end of most hits: now the whole play)
+    const BUDGET = 7.2;
+    // (a deciding moment, pri 6 and up: an out, a run, a runner safe at his base, is never dropped)
+    while (realOf(pcs) > BUDGET && list.some((x) => x.pri < 6)) {
       const lo = Math.min(...list.map((x) => x.pri));
-      if (lo >= 9) break;
+      if (lo >= 6) break;
       const drop = list.filter((x) => x.pri === lo).pop();
       list = list.filter((x) => x !== drop);
       pcs = build(list);
@@ -1099,7 +1139,9 @@ function planEdit(ctx) {
     if (realOf(pcs) > BUDGET + 0.6) {
       const over = realOf(pcs) - BUDGET;
       const main = pcs.find((x) => x.cam !== 'pitcher' && x.cam !== 'sky' && x.s1 - x.s0 > 2.2);
-      if (main) main.s0 = Math.min(main.s1 - 1.6, main.s0 + over);
+      // (never past a deciding moment in it: the trim takes only the run up to it)
+      const ms = list.filter((b) => b.m != null && main && b.m >= main.s0 && b.m <= main.s1).map((b) => b.m);
+      if (main) main.s0 = Math.min(main.s1 - 1.6, main.s0 + over, ms.length ? Math.min(...ms) - 0.7 : Infinity);
     }
     pieces.splice(0, pieces.length, ...pcs);
     const lastOut2 = lastOut;
@@ -1254,6 +1296,6 @@ export function verify(pr, plan) {
   if (pr.outs < 3 && shown !== pr.bases) bad.push(`bases shown ${shown} but the engine has ${pr.bases}`);
   const movesScored = moves.filter((m) => m.to === 4).length;
   if (scored !== movesScored) bad.push(`${scored} cross the plate, the moves have ${movesScored}`);
-  if (!(plan.realDur > 1.5 && plan.realDur < 9)) bad.push(`it runs ${plan.realDur.toFixed(1)} s`);
+  if (!(plan.realDur > 1.5 && plan.realDur < 12)) bad.push(`it runs ${plan.realDur.toFixed(1)} s`);
   return bad;
 }
