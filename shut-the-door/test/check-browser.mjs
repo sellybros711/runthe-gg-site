@@ -404,6 +404,13 @@ async function playOuting(page, o) {
   const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
   const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
   const done = () => page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
+  /* every text the play by play line takes, in order: a pitch that ends a plate appearance puts the
+     next batter's line over its result at once, so the speed is read from the lines it passed through */
+  await page.evaluate(() => {
+    window.__pbpSeen = [];
+    const el = document.getElementById('m-pbp');
+    new MutationObserver(() => window.__pbpSeen.push(el.textContent)).observe(el, { childList: true, subtree: true, characterData: true });
+  });
   for (let i = 0; i < 80; i++) {
     if (await done()) break;
     const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
@@ -524,7 +531,8 @@ async function playOuting(page, o) {
     if (after.out.length) r.problems.push('after pitch ' + r.pitches + ': ' + after.out.join(', '));
     r.pbp.push(await page.textContent('#m-pbp'));
     /* the radar gun: the speed shows on the play by play after the throw, never on the buttons before it */
-    if (!/\d+ mph/.test(r.pbp[r.pbp.length - 1])) r.problems.push('pitch ' + r.pitches + ': the play by play has no speed after the throw ("' + r.pbp[r.pbp.length - 1] + '")');
+    const seen = await page.evaluate(() => window.__pbpSeen.splice(0));
+    if (!seen.some((t) => /\d+ mph/.test(t))) r.problems.push('pitch ' + r.pitches + ': the play by play never showed a speed after the throw (' + seen.length + ' lines)');
     if (i === 0 && o.shot) await o.shot('after-pitch');
   }
   await page.waitForSelector('#s-result.on', { timeout: 6000 });
