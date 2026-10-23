@@ -1,0 +1,161 @@
+/* Every pitch moves like the real pitch: every arsenal pitch in every pack, thrown by either hand.
+ *
+ *   node shut-the-door/lab/pipeline/check-pitches.mjs            the check
+ *   node shut-the-door/lab/pipeline/check-pitches.mjs --list     every pitch's numbers, passing or not
+ *   node shut-the-door/lab/pipeline/check-pitches.mjs --dir D    measure another copy of 3d/ (D holds
+ *                                                                pitch.js, preview.js, units.js), for a
+ *                                                                before and after
+ *
+ * The rules are written in arm side and glove side (a righty's arm side is the third base side,
+ * Statcast's x < 0; a lefty's is the first base side, x > 0) and mapped to the screen through the
+ * game's own camera (park.js pitcherEye) and P(), the one mirror of the 3D scene. For each pitch:
+ *
+ *   1. side   the horizontal break goes the way its family goes, and the way the sign of his own pfxX
+ *             goes. Arm side: four-seam, sinker, changeup, splitter, forkball. Glove side: cutter,
+ *             slider, sweeper, slurve, curveball, knuckle curve. Under SIDE_MIN_IN either way is
+ *             real (a cutting four-seamer, a gyro slider), so only the pfxX sign is held there.
+ *             On screen, from behind the pitcher, glove side is to the right for a lefty and to the
+ *             left for a righty: measured on the projected path, so a flip in P(), the camera or
+ *             the flight fails here.
+ *   2. size   the break the flight draws against the same pitch with no spin out of the same hand
+ *             (Statcast's pfx, over the whole flight) is his pfxX and pfxZ within SIZE_TOL.
+ *   3. aim    the flight crosses the front of the plate on the aim point (the cell plus at) within
+ *             CROSS_IN, and the preview ends on it too.
+ *   4. agree  the preview (preview.js Ghost) and the flight (pitch.js flight) are one path: every
+ *             point within AGREE_IN.
+ *
+ * A failure prints the pack, the pitcher, the hand and the pitch, and the exit code is 1.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { register } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const GAME = path.resolve(HERE, '..', '..');
+const VENDOR = pathToFileURL(path.join(GAME, '3d/vendor/three-0.170.0/')).href;
+// the page's import map, for node: 'three' and 'three/addons/' are the vendored build
+register('data:text/javascript,' + encodeURIComponent(`const V = ${JSON.stringify(VENDOR)};
+export async function resolve(s, c, n) {
+  if (s === 'three') return { url: V + 'three.module.min.js', shortCircuit: true };
+  if (s.startsWith('three/addons/')) return { url: V + 'addons/' + s.slice(13), shortCircuit: true };
+  return n(s, c);
+}`));
+
+const argv = process.argv.slice(2);
+const LIST = argv.includes('--list');
+const DIR = argv.includes('--dir') ? path.resolve(argv[argv.indexOf('--dir') + 1]) : path.join(GAME, '3d');
+
+export const SIDE_MIN_IN = 2;       // under this much run, a pitch of any family can go either way
+export const SIZE_TOL = 0.1;        // the drawn break against his pfx: 10% (and at least SIZE_MIN_IN)
+export const SIZE_MIN_IN = 0.5;
+export const CROSS_IN = 0.1;        // the crossing point against the aim point, inches
+export const AGREE_IN = 0.05;       // the preview against the flight, inches, at every point
+
+const ARM = new Set(['FF', 'SI', 'CH', 'FS', 'FO']);
+const GLOVE = new Set(['FC', 'SL', 'ST', 'SV', 'CU', 'KC']);
+
+const url = (f, v) => pathToFileURL(path.join(DIR, f)).href + (v ? '?v=' + v : '');
+const THREE = await import('three');
+const pitchMod = await import(url('pitch.js', 'check'));
+const { Ghost } = await import(url('preview.js', 'check'));
+const { P, FT } = await import(url('units.js', 'check'));
+const { pitcherEye } = await import(pathToFileURL(path.join(GAME, '3d/park.js')).href);
+const { flight, cellPoint } = pitchMod;
+const releaseOf = pitchMod.releaseOf || ((p) => ({ x: p.throws === 'L' ? 1.9 : -1.9, y: 54.0, z: 5.6 }));
+
+const SZ = { szTop: 3.4, szBot: 1.6 };
+// where the player aims: every row and column, centres and the corners of the free aim
+const AIMS = [[12, null], [0, null], [4, null], [20, null], [24, null], [6, [0.5, 0.5]], [8, [-0.5, 0.5]], [16, [0.5, -0.5]], [18, [-0.5, -0.5]], [11, [0.3, -0.2]], [13, [-0.25, 0.4]]];
+const IN = 12;
+
+/** The game's camera, framed for a hitter on this side, on a 390x844 phone. */
+function camera(bats) {
+  const cam = new THREE.PerspectiveCamera(10, 1, 0.05, 900);
+  const eye = pitcherEye(cam);
+  eye.setSide(bats);
+  eye.resize(390, 844);
+  eye.update(0.8);
+  cam.updateMatrixWorld(true);
+  return cam;
+}
+const cams = { R: camera('R'), L: camera('L') };
+const screenX = (cam, v) => v.clone().project(cam).x;
+
+const packsDir = path.join(GAME, 'data/packs');
+const fails = [];
+let n = 0, wrongWay = 0, wrongSize = 0;
+const scene = new THREE.Scene();
+const ghost = new Ghost(scene);
+
+for (const f of fs.readdirSync(packsDir).filter((x) => x.endsWith('.json')).sort()) {
+  const pk = JSON.parse(fs.readFileSync(path.join(packsDir, f), 'utf8'));
+  const pit = pk.scenario.pitcher;
+  for (const hand of ['R', 'L']) {
+    // the other hand: the same pitch mirrored (his pfxX and his release side flip), so both are held
+    const mirror = hand !== pit.throws ? -1 : 1;
+    const rel0 = releaseOf({ ...pit, throws: pit.throws });
+    const rel = { ...rel0, x: rel0.x * mirror };
+    const armSign = hand === 'R' ? -1 : 1;          // Statcast x of the arm side
+    for (const a0 of pit.arsenal) {
+      const a = { ...a0, pfxX: a0.pfxX * mirror };
+      const tag = `${f.replace('.json', '')} ${pit.name} as a ${hand === 'R' ? 'righty' : 'lefty'}: ${a.name} (${a.type}, pfx ${a.pfxX} x ${a.pfxZ} in)`;
+      n++;
+      const bad = [];
+      const want = ARM.has(a.type) ? 'arm' : GLOVE.has(a.type) ? 'glove' : null;
+      const dataSide = Math.abs(a.pfxX) < 1e-9 ? null : Math.sign(a.pfxX) === armSign ? 'arm' : 'glove';
+      if (want && dataSide && Math.abs(a.pfxX) >= SIDE_MIN_IN && dataSide !== want) bad.push(`his pfxX runs ${dataSide} side, a ${a.name} runs ${want} side (data)`);
+      let worstSize = 0;
+      for (const [cell, at] of AIMS) {
+        const aim = cellPoint(cell, SZ.szTop, SZ.szBot, at);
+        const ux = at ? at[0] : 0, vz = at ? at[1] : 0;
+        const r = Math.floor(cell / 5), c = cell % 5;
+        const wantAim = { x: (c - 2 + ux) * 0.553, z: SZ.szBot + ((3.5 - r + vz) / 3) * (SZ.szTop - SZ.szBot) };
+        if (Math.hypot(aim.x - wantAim.x, aim.z - wantAim.z) * IN > CROSS_IN) { bad.push(`cell ${cell} at ${JSON.stringify(at)}: the aim point is the cell's centre, not the tap`); break; }
+        const fl = flight(rel, aim, a.velo, a.pfxX, a.pfxZ);
+        const end = fl.at(fl.T);
+        const cross = Math.hypot(end.x - aim.x, end.z - aim.z) * IN;
+        if (cross > CROSS_IN) bad.push(`cell ${cell}: the flight crosses ${cross.toFixed(2)} in off the aim point`);
+        // the same pitch with no spin, out of the same hand at the same speed and angle
+        const vx0 = (fl.at(1e-4).x - fl.at(0).x) / 1e-4, vz0 = (fl.at(1e-4).z - fl.at(0).z) / 1e-4;
+        const nsx = rel.x + vx0 * fl.T, nsz = rel.z + vz0 * fl.T - 0.5 * 32.17 * fl.T * fl.T;
+        const bx = (end.x - nsx) * IN, bz = (end.z - nsz) * IN;
+        const tol = (v) => Math.max(SIZE_MIN_IN, Math.abs(v) * SIZE_TOL);
+        const ex = Math.abs(bx - a.pfxX), ez = Math.abs(bz - a.pfxZ);
+        worstSize = Math.max(worstSize, Math.abs(a.pfxX) > 0.5 ? bx / a.pfxX : 1);
+        if (ex > tol(a.pfxX) || ez > tol(a.pfxZ)) bad.push(`cell ${cell}: the flight breaks ${bx.toFixed(1)} x ${bz.toFixed(1)} in, his pfx is ${a.pfxX} x ${a.pfxZ}`);
+        // the break on screen, from behind the pitcher: the flight's end against the no spin end
+        for (const bats of ['R', 'L']) {
+          const cam = cams[bats];
+          const sx = screenX(cam, P(end.x, 17 / 12, end.z)) - screenX(cam, P(nsx, 17 / 12, nsz));
+          if (Math.abs(a.pfxX) < 0.5) continue;
+          const onScreen = sx > 0 ? 'right' : 'left';
+          // glove side is screen right for a lefty, screen left for a righty (the arm side the other way)
+          const sideNow = (onScreen === 'right') === (hand === 'L') ? 'glove' : 'arm';
+          if (sideNow !== dataSide) bad.push(`cell ${cell}, a ${bats === 'R' ? 'righty' : 'lefty'} hitting: it breaks ${sideNow} side on screen (to the ${onScreen}), his pfxX says ${dataSide}`);
+        }
+        // the preview: one path with the flight, ending on the aim point
+        ghost.set({ release: rel, pitch: a, cell, at, ...SZ });
+        const pts = ghost.path.pts, NP = pts.length;
+        let worst = 0;
+        for (let i = 0; i < NP; i++) {
+          const p = fl.at(fl.T * i / (NP - 1)), q = P(p.x, p.y, p.z);
+          worst = Math.max(worst, q.distanceTo(pts[i]) / FT * IN);
+        }
+        if (worst > AGREE_IN) bad.push(`cell ${cell}: the preview leaves the flight by ${worst.toFixed(2)} in`);
+        const ge = pts[NP - 1], ae = P(aim.x, 17 / 12, aim.z);
+        if (Math.hypot(ge.x - ae.x, ge.y - ae.y) / FT * IN > CROSS_IN) bad.push(`cell ${cell}: the preview ends ${(Math.hypot(ge.x - ae.x, ge.y - ae.y) / FT * IN).toFixed(2)} in off the aim point`);
+      }
+      const uniq = [...new Set(bad.map((b) => b.replace(/^cell \d+(?: at [^:,]*)?[:,] /, '')))];
+      if (bad.some((b) => /side/.test(b))) wrongWay++;
+      if (bad.some((b) => /breaks .* his pfx/.test(b))) wrongSize++;
+      if (LIST || bad.length) console.log(`${bad.length ? 'FAIL' : 'ok  '} ${tag}  drawn ${worstSize.toFixed(2)}x his pfxX`);
+      for (const b of uniq.slice(0, 4)) console.log('       ' + b);
+      if (bad.length) fails.push(tag);
+    }
+  }
+}
+console.log(`\n${n} pitches (every arsenal pitch in every pack, both hands, ${AIMS.length} aim points each, both sides of the plate on screen)`);
+console.log(`wrong way: ${wrongWay}   wrong size: ${wrongSize}   failing: ${fails.length}`);
+if (fails.length) { console.log('check-pitches: FAIL'); process.exit(1); }
+console.log('check-pitches: ok');

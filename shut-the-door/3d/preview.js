@@ -2,13 +2,15 @@
  *
  * It is the intended path, never the outcome. The flight is pitch.js's own (flight() and
  * cellPoint(), the same math the real pitch flies on) with the arsenal's real velo, pfxX and pfxZ
- * from the pack, aimed at the cell's centre. The real pitch still lands where the engine's command
- * draw puts it, so nothing here can tell the player where the ball will go.
+ * from the pack, aimed at the exact point the player aims at (the cell plus at). The real pitch
+ * still lands where the engine's command draw puts it, so nothing here can tell the player where
+ * the ball will go. check-pitches.mjs holds the two to one shape.
  *
  * From straight behind, a path that bends mostly bends along the line of sight, so a second, fainter
- * line shows what the bend is against: the same pitch with no spin from 40 ft out (Statcast's
- * definition of pfx, and pitch.js's), which ends pfx inches from the spot. The two split over the
- * last 40 ft, and the gap between them is the break the pitch guide prints.
+ * line shows what the bend is against: the same pitch with no spin, out of the same hand at the same
+ * speed and angle (Statcast's pfx is measured over the whole flight, as pitch.js reads it), which
+ * ends pfx inches from the spot. The two leave the hand together and split toward the plate, and the
+ * gap between their ends is the break the pitch guide prints.
  *
  * Each line is a ribbon kept a constant width on screen (its width grows with the distance from the
  * camera), drawn over everything, so it reads as a thin quiet line near the plate and never as a fat
@@ -16,10 +18,10 @@
  * the game draws on its own grid.
  */
 import * as THREE from 'three';
-import { flight, cellPoint } from './pitch.js?v=7';
+import { flight, cellPoint } from './pitch.js?v=8';
 import { P } from './units.js?v=1';
 
-const N = 56, G_FT = 32.17;
+const N = 56;
 
 class Ribbon {
   /** px: width on screen in CSS px; op: opacity; fadeIn: fade in over the first part; dashes: along it */
@@ -91,26 +93,20 @@ export class Ghost {
   constructor(scene) {
     this.scene = scene;
     this.path = new Ribbon(scene, { px: 3.2, op: 0.85, fadeIn: true, dashes: 22, order: 9 });
-    this.ref = new Ribbon(scene, { px: 2.0, op: 0.4, fadeIn: false, dashes: 9, order: 8 });
+    this.ref = new Ribbon(scene, { px: 2.0, op: 0.4, fadeIn: true, dashes: 9, order: 8 });
   }
 
-  /** The path from the release to the centre of a cell, for this pitch (an arsenal entry: velo,
-      pfxX, pfxZ) and this hitter's zone, and the same pitch with no spin from 40 ft out. */
-  set({ release, pitch, cell, szTop, szBot }) {
-    const aim = cellPoint(cell, szTop, szBot);
-    const f = flight(release, aim, pitch.velo, pitch.pfxX || 0, pitch.pfxZ || 0);
-    // the spin's push (flight() keeps it constant) and the moment the ball is 40 ft out
-    const sx = f.ax, sz = f.az + G_FT;
-    let lo = 0, hi = f.T;
-    for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (f.at(m).y > 40) lo = m; else hi = m; }
-    const t40 = (lo + hi) / 2;
+  /** The path from the release to the aim point (a cell, plus at = [u, v] inside it), for this
+      pitch (an arsenal entry: velo, pfxX, pfxZ) and this hitter's zone, and the same pitch with no
+      spin out of the same hand. */
+  set({ release, pitch, cell, at, szTop, szBot }) {
+    const f = flight(release, cellPoint(cell, szTop, szBot, at), pitch.velo, pitch.pfxX || 0, pitch.pfxZ || 0);
     this.path.pts = [];
     this.ref.pts = [];
     for (let i = 0; i < N; i++) {
-      const p = f.at(f.T * i / (N - 1));
+      const t = f.T * i / (N - 1), p = f.at(t), d = 0.5 * t * t;
       this.path.pts.push(P(p.x, p.y, p.z));
-      const t = t40 + (f.T - t40) * i / (N - 1), q = f.at(t), d = 0.5 * (t - t40) * (t - t40);
-      this.ref.pts.push(P(q.x - sx * d, q.y, q.z - sz * d));
+      this.ref.pts.push(P(p.x - f.sx * d, p.y, p.z - f.sz * d));
     }
     this.path.mesh.visible = this.ref.mesh.visible = true;
   }
