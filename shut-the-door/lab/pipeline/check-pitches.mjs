@@ -23,6 +23,8 @@
  *             CROSS_IN, and the preview ends on it too.
  *   4. agree  the preview (preview.js Ghost) and the flight (pitch.js flight) are one path: every
  *             point within AGREE_IN.
+ *   5. colour the indicator's palette (preview.js PITCH_COLORS) is ui.js PITCH_COLORS, the break
+ *             chart's and the buttons', so a pitch is one colour everywhere.
  *
  * A failure prints the pack, the pitcher, the hand and the pitch, and the exit code is 1.
  */
@@ -58,7 +60,8 @@ const GLOVE = new Set(['FC', 'SL', 'ST', 'SV', 'CU', 'KC']);
 const url = (f, v) => pathToFileURL(path.join(DIR, f)).href + (v ? '?v=' + v : '');
 const THREE = await import('three');
 const pitchMod = await import(url('pitch.js', 'check'));
-const { Ghost } = await import(url('preview.js', 'check'));
+const previewMod = await import(url('preview.js', 'check'));
+const { Ghost } = previewMod;
 const { P, FT } = await import(url('units.js', 'check'));
 const { pitcherEye } = await import(pathToFileURL(path.join(GAME, '3d/park.js')).href);
 const { flight, cellPoint } = pitchMod;
@@ -154,6 +157,12 @@ for (const f of fs.readdirSync(packsDir).filter((x) => x.endsWith('.json')).sort
       if (bad.length) fails.push(tag);
     }
   }
+}
+// 5. colour: the indicator's palette is the break chart's and the buttons' (ui.js PITCH_COLORS)
+if (previewMod.PITCH_COLORS) {
+  const m = fs.readFileSync(path.join(GAME, 'ui.js'), 'utf8').match(/var PITCH_COLORS = (\[[^\]]*\]);/);
+  const ui = m ? JSON.parse(m[1].replace(/'/g, '"')) : null;
+  if (!ui || JSON.stringify(ui) !== JSON.stringify(previewMod.PITCH_COLORS)) { console.log('FAIL the indicator palette (preview.js PITCH_COLORS) is not ui.js PITCH_COLORS'); fails.push('palette'); }
 }
 console.log(`\n${n} pitches (every arsenal pitch in every pack, both hands, ${AIMS.length} aim points each, both sides of the plate on screen)`);
 console.log(`wrong way: ${wrongWay}   wrong size: ${wrongSize}   failing: ${fails.length}`);
