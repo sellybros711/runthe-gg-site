@@ -183,7 +183,8 @@ async function fastDraw(page) {
 }
 
 /* The owner's rule while pitching: nothing graded, nothing tipped, nothing
-   over the field. Returns { out: what broke it (or an empty list), gone, over }.
+   over the field but the HUD's own panels (the owner, 2026-10-24: the scene is full screen and the
+   HUD floats over it; every panel carries data-hud), and nothing at all over the zone. Returns { out: what broke it (or an empty list), gone, over }.
    gone: the mound is not on screen, so there is no field to judge. The field samples are read off
    #m-scene's box, and a hidden screen's box is 0x0 at (0,0), where every sample lands on the
    header. That is how a run once failed "over the field: hdr" (390x844, doors_open, pitch 4,
@@ -209,7 +210,10 @@ async function quietProblems(page) {
     if ([...document.querySelectorAll('.sheet')].some((s) => !s.hidden)) out.push('a sheet');
     const sc = document.getElementById('m-scene').getBoundingClientRect();
     if (sc.width < 1 || sc.height < 1) { out.push('the field has no size on the mound (' + Math.round(sc.width) + 'x' + Math.round(sc.height) + ')'); return { out, gone: false, over: false }; }
-    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('#m-aim') || el.id === 'm-proxy' || el.id === 'm-dbg' || el.closest('#m-mini'));
+    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('#m-aim') || el.id === 'm-proxy' || el.id === 'm-dbg' || el.closest('#m-mini') || el.closest('[data-hud]'));
+    const z = document.getElementById('m-aim').getBoundingClientRect();
+    const onZone = [...mound.querySelectorAll('[data-hud]')].filter(vis).find((el) => { const b = el.getBoundingClientRect(); return b.left < z.right - 1 && b.right > z.left + 1 && b.top < z.bottom - 1 && b.bottom > z.top + 1; });
+    if (onZone) out.push('a HUD panel over the zone: ' + (onZone.id || onZone.className));
     samples: for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) {
       const el = document.elementFromPoint(sc.left + sc.width * i / 6, sc.top + sc.height * j / 6);
       if (!fine(el)) { out.push('over the field: ' + (el ? el.id || el.className || el.tagName : 'nothing')); break samples; }
@@ -458,10 +462,11 @@ async function playOuting(page, o) {
       if (freeTap) {
         const lay = await page.evaluate(() => {
           const m = document.getElementById('m-meter').getBoundingClientRect(), b = document.querySelector('#m-arsenal .pitch').getBoundingClientRect();
-          const t = document.getElementById('m-throw').getBoundingClientRect(), sc = document.getElementById('m-scene').getBoundingClientRect();
-          return { over: m.top <= b.top + 1 && m.bottom >= t.bottom - 1 && m.top >= sc.bottom - 1, h: m.height, effRow: !document.querySelector('#m-meter .rm-eff').hidden };
+          const t = document.getElementById('m-throw').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
+          const offZone = m.right <= z.left + 1 || m.left >= z.right - 1 || m.bottom <= z.top + 1 || m.top >= z.bottom - 1;
+          return { over: m.top <= b.top + 1 && m.bottom >= t.bottom - 1 && offZone, h: m.height, effRow: !document.querySelector('#m-meter .rm-eff').hidden };
         });
-        ok(lay.over && lay.h >= 90, '5 the meter is one panel over the pitch buttons and the throw button, under the scene (' + Math.round(lay.h) + ' px tall)');
+        ok(lay.over && lay.h >= 90, '5 the meter is one panel over the pitch buttons and the throw button, off the zone (' + Math.round(lay.h) + ' px tall)');
         ok(lay.effRow === eff, '5 the effort bar shows only when STD_METER.EFFORT is true (' + eff + ')');
       }
       if (eff) {
@@ -738,8 +743,8 @@ async function run(w, h, theme) {
   ok(mirror.c20 > mirror.c0t, '3 row 0 is high, row 4 is low');
   ok(mirror.w >= 36 && mirror.hgt >= 36, '3 a cell is big enough to tap (' + Math.round(mirror.w) + 'x' + Math.round(mirror.hgt) + ')');
   await shot('mound');
-  /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number, the
-     name and the pack's speed; one throw button; the step line. A drag over the zone moves the
+  /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number and
+     the name, and no speed (it is revealed after the throw, the owner 2026-10-23); one throw button; the step line. A drag over the zone moves the
      crosshair with the pointer (free aim, never snapped) and picks the cell it is let go in,
      through screenCol(); the break preview follows it; the zone takes touch-action none, so a drag
      never scrolls the page. The drag ends on a cell's centre, so the crosshair is there. */
@@ -748,13 +753,29 @@ async function run(w, h, theme) {
     const btns = [...document.querySelectorAll('#m-arsenal .pitch')];
     return {
       buttons: btns.every((b, i) => b.querySelector('.pk').textContent === String(i + 1) && b.querySelector('.pt b').textContent === ars[i].name &&
-        b.querySelector('.pv em').textContent === String(Math.round(ars[i].velo))),
+        !/mph|\b\d{2,3}\b/.test(b.textContent.replace(/^\d/, '') + ' ' + b.getAttribute('aria-label').replace(/^\d+,/, ''))),
       tall: Math.min(...btns.map((b) => b.getBoundingClientRect().height)),
       throwWord: document.querySelector('#m-throw b').textContent, say: document.getElementById('m-say').textContent,
       touch: getComputedStyle(document.getElementById('m-aim')).touchAction, grids: document.querySelectorAll('#m-scene .grid').length,
     };
   });
-  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number, its name and the pack\'s speed (' + Math.round(pad.tall) + ' px tall)');
+  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number and its name, and no speed before the throw (' + Math.round(pad.tall) + ' px tall)');
+  /* 3: FULL SCREEN (the owner, 2026-10-24). The 3D canvas is the viewport, the site header is gone
+     but a menu button stays, no HUD panel covers the zone, no sideways scroll, and every control
+     on the HUD is a thumb's size (44 px on a phone; the desk's are 40). */
+  const full = await page.evaluate(() => {
+    const r = (el) => el.getBoundingClientRect(), cv = r(document.getElementById('m-canvas')), z = r(document.getElementById('m-aim'));
+    const vis = (el) => { const b = r(el), cs = getComputedStyle(el); return b.width > 0 && b.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden'; };
+    const over = [...document.querySelectorAll('#s-mound [data-hud]')].filter(vis).filter((el) => { const b = r(el); return b.left < z.right - 1 && b.right > z.left + 1 && b.top < z.bottom - 1 && b.bottom > z.top + 1; });
+    const taps = [...document.querySelectorAll('#s-mound .mhud button')].filter(vis).map((b) => Math.min(r(b).width, r(b).height));
+    return { cv: [cv.left, cv.top, cv.width, cv.height].map(Math.round), vw: innerWidth, vh: innerHeight, over: over.map((el) => el.id || el.className),
+      scroll: document.documentElement.scrollWidth - innerWidth, hdr: vis(document.querySelector('.hdr')), menu: !!document.querySelector('#s-mound .mhud [data-open="menu"]'), tap: Math.min(...taps) };
+  });
+  ok(full.cv.join() === [0, 0, full.vw, full.vh].join(), '3 the 3D scene fills the screen (' + full.cv.join(',') + ' for ' + full.vw + 'x' + full.vh + ')');
+  ok(!full.over.length, '3 no HUD panel covers the zone' + (full.over.length ? ' (' + full.over.join(', ') + ')' : ''));
+  ok(full.scroll <= 0, '3 no sideways scroll on the mound (' + full.scroll + ' px)');
+  ok(!full.hdr && full.menu, '3 the site header is hidden while pitching, and the menu button stays on the HUD');
+  ok(full.tap >= (w < 700 ? 44 : 38), '3 every HUD control is a thumb\'s size (' + Math.round(full.tap) + ' px at the smallest)');
   ok(pad.throwWord === 'throw' && pad.say === 'pick a pitch', '3 one throw button, and the step line says what to do ("' + pad.say + '")');
   ok(pad.touch === 'none' && pad.grids === 0, '3 the aim is on the field (no separate grid) and a drag there never scrolls the page');
   await page.click('#m-arsenal .pitch >> nth=0');
@@ -852,6 +873,7 @@ async function run(w, h, theme) {
   ok(play.problems.length === 0, '5 nothing graded, tipped or over the field from the first pitch to the last' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
   if (is3d) traceCheck('5', play);
   ok(play.pbp.length && play.pbp.every((x) => x && x.length > 3), '5 one line of play by play after each pitch ("' + (play.pbp[0] || '') + '")');
+  ok(play.pbp.some((x) => /\b\d{2,3} mph\b/.test(x)), '5 the speed shows after the throw, on the play by play (the radar gun)');
 
   /* the minimap (minimap.js): the field shows after the first play; a dot only for a ball in play, and
      never for a take, a strike or a foul; no text on it (the distance is an estimate, never a number) */
