@@ -132,6 +132,8 @@ export class Track {
     for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (runTime(d, m, this.a, true, o.toRest ?? true) > t1 - t0) lo = m; else hi = m; }
     return this.run(t0, [p], { ...o, v: hi });
   }
+  /** Stay where he is until t (whatever comes next starts no sooner). */
+  hold(t) { const e = this.end; if (t > this.free) this.run(t, [{ x: e.x + 0.02, y: e.y }], { v: 1 }); }
   act(t, kind, extra = {}) { this.acts.push({ t, kind, ...extra }); this.acts.sort((a, b) => a.t - b.t); return t; }
   /** Position, speed (ft/s), heading (radians, 0 = +y, toward +x positive) and distance run so far. */
   at(s) {
@@ -308,6 +310,13 @@ export function planPlay(pr, o = {}) {
     if (sc && OF.includes(ctx.catchAt.n)) {
       const from = ctx.catchAt.q, home = basePoint(4, 'bag'), fly = dist(from, home) / 125 + 0.1;
       const rel = Math.max(ctx.catchAt.s + 0.55, sc.scoreAt + 0.3 - fly);
+      // the catcher out to the plate for it, and the cutoff man in line between them
+      ctx.T[2].run(Math.max(0.6, ctx.T[2].free === -Infinity ? 0.6 : ctx.T[2].free), [home], { toRest: true, v: 12 });
+      if (dist(from, home) > 150) {
+        const cm = cutMan(ctx.catchAt.n, 4, 2), cp = lerp(from, home, 0.68);
+        ctx.T[cm].arrive(SPEED(cm).react, cp, Math.max(SPEED(cm).react + 1.2, rel + 0.2), { toRest: true });
+        ctx.T[cm].act(rel + fly * 0.68, 'cover', { cutoff: true, from });
+      }
       throwBall(ctx, ctx.catchAt.n, 2, rel, from, home, fly);
       ctx.lastHolder = 2;
     }
@@ -483,7 +492,8 @@ function holdThenThrow(ctx, n, s, at, late) {
     if (cov === holder || dist(pos, tgtPt) < 22) {
       // close enough to take it himself
       const arr = ctx.T[holder].run(t + 0.05, [tgtPt], { v: 22 });
-      ctx.T[holder].act(arr, 'step', { base: o.base });
+      o.force = isForce(ctx, o);
+      ctx.T[holder].act(arr, o.force ? 'step' : 'tag', { base: o.base, self: true, force: o.force, runner: o.from });
       o.ballAt = arr; o.by = holder;
       t = arr; pos = tgtPt;
       p.segs.push({ kind: 'held', t0: t, by: holder, t1: null });
@@ -512,17 +522,82 @@ function holdThenThrow(ctx, n, s, at, late) {
         }
         rel = Math.max(rel, eta - fly - (0.25 + 0.35 * rnd(ctx.id, 'bag' + o.from)));
       }
-      throwBall(ctx, holder, cov, rel, pos, tgtPt, fly);
-      ctx.T[cov].act(rel + fly, o.base === 4 ? 'tag' : 'receive', { base: o.base });
-      o.ballAt = rel + fly; o.by = cov;
-      holder = cov; t = rel + fly; pos = tgtPt;
+      o.force = isForce(ctx, o);
+      const far = OF.includes(holder) ? dist(pos, tgtPt) : 0;
+      if (far > 240) {
+        // a long one: the relay man goes out in line, takes it chest high, turns and throws on
+        const rm = cutMan(holder, o.base, cov), rp = lerp(pos, tgtPt, 0.45);
+        const rArr = ctx.T[rm].run(SPEED(rm).react, [rp], { toRest: true });
+        ctx.T[rm].act(rArr, 'cover', { relay: true });
+        const f1 = dist(pos, rp) / 125 + 0.06, f2 = dist(rp, tgtPt) / 118 + 0.06;
+        rel = Math.max(rel - (f1 + 0.32 + f2 - fly), rArr - f1 + 0.05, t + transfer);
+        throwBall(ctx, holder, rm, rel, pos, rp, f1);
+        const rel2 = rel + f1 + 0.32;
+        ctx.T[rm].hold(rel2);
+        ctx.forceTo = o.force ? o.base : null;
+        throwBall(ctx, rm, cov, rel2, rp, tgtPt, f2);
+        ctx.forceTo = null;
+        ctx.T[cov].act(rel2 + f2, o.force ? 'receive' : 'tag', { base: o.base, force: o.force, runner: o.from });
+        o.ballAt = rel2 + f2; o.by = cov;
+        holder = cov; t = rel2 + f2; pos = tgtPt;
+      } else {
+        if (far > 150) {
+          // the cutoff man in line, a third of the way from the bag: the throw comes through him
+          const cm = cutMan(holder, o.base, cov), cp = lerp(pos, tgtPt, 0.68);
+          ctx.T[cm].arrive(SPEED(cm).react, cp, Math.max(SPEED(cm).react + 1.2, rel + 0.2), { toRest: true });
+          ctx.T[cm].act(rel + fly * 0.68, 'cover', { cutoff: true, from: pos });
+          ctx.T[cm].hold(rel + fly * 0.68 + 0.2);
+        }
+        ctx.forceTo = o.force ? o.base : null;
+        throwBall(ctx, holder, cov, rel, pos, tgtPt, fly);
+        ctx.forceTo = null;
+        ctx.T[cov].act(rel + fly, o.force ? 'receive' : 'tag', { base: o.base, force: o.force, runner: o.from });
+        o.ballAt = rel + fly; o.by = cov;
+        holder = cov; t = rel + fly; pos = tgtPt;
+      }
+      backUp(ctx, o.base, holder, pos, t);
     }
     done.push(o);
-    p.events.push({ s: o.ballAt, kind: 'out', base: o.base, runner: o.from, by: o.by });
+    p.events.push({ s: o.ballAt, kind: 'out', base: o.base, runner: o.from, by: o.by, force: !!o.force });
   }
   ctx.putouts = done;
   ctx.lastHolder = holder;
   void moves;
+}
+
+/** Is the out at base o.base a force (a foot on the bag) or a tag (the glove on the runner)? The hitter
+    at first is forced; a runner on is forced to the next base when every base behind him is taken;
+    a runner doubled off his own bag after a catch is put out at the bag too. Anything else is a tag. */
+function isForce(ctx, o) {
+  if (o.from === 0) return o.base === 1;
+  if (o.base === o.from) return true;
+  if (o.base !== o.from + 1 || ctx.kind === 'air_out') return false;
+  for (let b = 1; b < o.from; b++) if (!(ctx.before & (1 << (b - 1)))) return false;
+  return true;
+}
+
+/** A man backing up a throw to base b: behind the bag in line with the throw, if he is free. First:
+    the right fielder (the catcher with the bases empty on a ball on the ground); second: the centre
+    fielder; third: the left fielder; home: the pitcher. */
+function backUp(ctx, b, receiver, at, tArrive) {
+  const pick = b === 1 ? (ctx.before ? [9] : [2, 9]) : b === 2 ? [8] : b === 3 ? [7] : [1];
+  // (never a man who has a part with the ball in this play)
+  const busy = (x) => x === receiver || ctx.T[x].acts.some((a) => ['catch', 'drop', 'field', 'pickup', 'receive', 'catch_throw', 'tag', 'step', 'throw', 'reach'].includes(a.kind));
+  const n = pick.find((x) => !busy(x));
+  if (!n) return;
+  const T = ctx.T[n];
+  if (T.free > tArrive - 0.4 && T.legs.length) return;
+  const ball = ctx.firstTouch ? ctx.firstTouch.at : { x: 0, y: 150 };
+  const dir = { x: at.x - ball.x, y: at.y - ball.y }, L = Math.hypot(dir.x, dir.y) || 1;
+  const q = { x: at.x + dir.x / L * 35, y: at.y + dir.y / L * 35 };
+  T.run(Math.max(SPEED(n).react, T.free === -Infinity ? 0 : T.free), [q], { toRest: true });
+  T.act(tArrive, 'cover', { backup: b });
+}
+
+/** The cutoff or relay man for a throw from outfielder n to base b, never the man covering it. */
+function cutMan(n, b, cov) {
+  const pick = b === 4 ? (n === 7 ? [5, 6, 1] : [3, 1, 4]) : b === 3 ? [6, 4, 1] : n === 9 ? [4, 6, 1] : [6, 4, 1];
+  return pick.find((x) => x !== cov && x !== n);
 }
 
 /** The base a fielder stands on to take a throw (first base: the inside corner, toward home). */
@@ -557,9 +632,16 @@ function coverArrive(ctx, n, b, from) {
 }
 
 function throwBall(ctx, from, to, rel, a, b, fly) {
+  // a throw to a man on a bag for a force: to his glove out in front of the bag toward the throw,
+  // chest high, where he takes it with a foot on the bag
+  const fb = [1, 2, 3, 4].find((k) => dist(b, basePoint(k, 'bag')) < 0.5 || (k === 1 && dist(b, basePoint(1, 'in')) < 0.5));
+  if (fb && ctx.forceTo === fb) {
+    const bag = fb === 4 ? { x: 0, y: 0.7 } : BASE[fb], L = dist(a, bag) || 1;
+    b = { x: bag.x + (a.x - bag.x) / L * 1.5, y: bag.y + (a.y - bag.y) / L * 1.5, z: 4.4 };
+  }
   const T = ctx.T[from];
   T.act(rel - 0.32, 'throw', { rel, to: b, dur: 0.6 });
-  ctx.p.segs.push({ kind: 'throw', t0: rel, t1: rel + fly, a: { ...a, z: 6 }, b: { ...b, z: 4.6 }, from, to });
+  ctx.p.segs.push({ kind: 'throw', t0: rel, t1: rel + fly, a: { ...a, z: 6 }, b: { ...b, z: b.z ?? 4.6 }, from, to });
   ctx.p.segs.push({ kind: 'held', t0: rel + fly, by: to, t1: null });
   ctx.T[to].act(rel + fly, ctx.T[to].acts.some((x) => x.kind === 'receive' && Math.abs(x.t - rel - fly) < 1e-3) ? 'receive' : 'catch_throw', { from: a });
   ctx.p.events.push({ s: rel, kind: 'throw', from, to });
@@ -921,12 +1003,12 @@ function planRunners(ctx) {
           const wentTo = lerp(BASE[m.from], BASE[m.from + 1], 0.42);
           tr.run(go0, [wentTo], { toRest: true });
           const back = po && po.ballAt ? po.ballAt + 0.18 + 0.25 * rnd(ctx.id, 'dbl') : ctx.catchAt.s + 1.6;
-          tr.arrive(Math.max(ctx.catchAt.s + 0.15, tr.free), basePoint(m.from, 'bag'), back, { v: 26 });
+          tr.arrive(Math.max(ctx.catchAt.s + 0.15, tr.free), BASE[m.from], back, { v: 26 });
           r.arrive = back; r.outAt = po ? po.ballAt : back; r.outBase = m.from;
         } else {
           // tagged and went: thrown out at the next base
           const tAt = po && po.ballAt ? po.ballAt + 0.15 + 0.3 * rnd(ctx.id, 'tag') : ctx.catchAt.s + 3;
-          tr.arrive(ctx.catchAt.s + 0.08, basePoint(ob, 'bag'), tAt, { v: 27, toRest: true });
+          tr.arrive(ctx.catchAt.s + 0.08, BASE[ob], tAt, { v: 27, toRest: true });
           r.arrive = tAt; r.outAt = po ? po.ballAt : tAt; r.outBase = ob;
         }
         continue;
@@ -1033,6 +1115,19 @@ function planRunners(ctx) {
     if (r.batter) ctx.batterArrival = r.firstAt ?? r.arrive;
   }
   p.runners = runners;
+  // a tag play: the ball beats him, the fielder waits on the bag and the out is the tag itself, as the
+  // runner gets there (a force is out the moment the ball is in the glove on the bag)
+  for (const e of p.events) {
+    if (e.kind !== 'out' || e.force) continue;
+    const r = runners.find((x) => x.from === e.runner);
+    if (!r || r.arrive == null) continue;
+    const tagAt = Math.max(e.s + 0.12, r.arrive - 0.06);
+    const a = ctx.T[e.by].acts.find((x) => x.kind === 'tag' && Math.abs(x.t - e.s) < 1e-3);
+    if (a) a.tagAt = tagAt;
+    const po = (ctx.putouts || []).find((x) => x.from === e.runner);
+    if (po) po.tagAt = tagAt;
+    e.ballAt = e.s; e.s = tagAt; r.outAt = tagAt;
+  }
   void o;
 }
 
@@ -1160,7 +1255,14 @@ function planEdit(ctx) {
     // every putout: the throw and the tag or the bag
     for (const po of (ctx.putouts || [])) {
       const thr = ev.filter((e) => e.kind === 'throw' && e.s <= po.ballAt + 1e-6).pop();
-      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: po.ballAt + 0.45, cam: po.base === 4 ? 'plate' : 'follow', pri: 8, m: po.ballAt });
+      // (a tag play: until the tag, after the ball is in)
+      const outT = po.tagAt ?? po.ballAt;
+      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: po.base === 4 ? 'plate' : 'follow', pri: 8, m: outT });
+    }
+    // a tag-up: the catch, then straight to the runner leaving his bag on it (the umpire's look)
+    if (ctx.catchAt && kind === 'air_out') {
+      const tg = p.runners.filter((r) => !r.batter && r.to > r.from);
+      if (tg.length) beats.push({ s0: ctx.catchAt.s + 0.12, s1: ctx.catchAt.s + 1.2, cam: 'wide', pri: 7, m: ctx.catchAt.s + 0.3, tagUp: true });
     }
     // runs that score
     for (const r of runs) beats.push({ s0: r - 0.9, s1: r + 0.4, cam: 'plate', pri: 7, m: r });
@@ -1374,6 +1476,13 @@ export function verify(pr, plan) {
       if (!live(back, t) || !live(front, t)) continue;
       if (pb > pf + 0.02) { bad.push(`the runner from ${back.from} passes the runner from ${front.from} at ${t.toFixed(2)} s`); break passing; }
     }
+  }
+  // every throw is taken by a man already there: at the bag (or his spot in line) before it arrives
+  for (const sg of plan.segs) if (sg.kind === 'throw') {
+    const q = plan.fielders[sg.to].at(sg.t1 - 0.1);
+    // (on a bag he takes it out in front: where the throw ends, or the bag itself)
+    const d = Math.min(Math.hypot(q.x - sg.b.x, q.y - sg.b.y), ...BASE.map((b) => Math.hypot(q.x - b.x, q.y - b.y) + (Math.hypot(sg.b.x - b.x, sg.b.y - b.y) < 3 ? 0 : 99)));
+    if (d > 3) bad.push(`${NAME[sg.to]} is ${d.toFixed(1)} ft from where the throw arrives, a beat before it does`);
   }
   // every throw leaves the hand of the man holding the ball (never a second throw from a man whose
   // first is still in the air)

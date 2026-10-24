@@ -32,6 +32,9 @@ const JSON_OUT = process.argv.includes('--json') ? process.argv[process.argv.ind
 export const LIMIT_M = 0.15;
 // a hit that falls in lands at least this far from every glove
 export const CLEAR_M = 0.5;
+// an out on a force: a foot within this of the bag's middle (a base is 15 in square); on a tag, the glove
+// within this of the runner
+export const FOOT_FT = 1.3, TAG_M = 0.45;
 // the moments held to LIMIT_M (a kind left out is measured and printed as todo)
 const HELD = ['catch in the air', 'drop', 'throw taken', 'release', 'ground ball fielded', 'picked up'];
 const FT = 0.3048;
@@ -101,6 +104,26 @@ for (let i = 0; i < cases.length; i += CHUNK) {
         for (let n = 1; n <= 9; n++) { const f = ip.fielders[n]; if (!f.root.visible) continue; f.root.updateMatrixWorld(true); const g = f.handPoint('glove'); const d = Math.hypot(g.x - b.x, g.y - b.y, g.z - b.z); if (d < near) { near = d; who = n; } }
         out.push({ tag: c.tag, what: 'hit lands', n: who, s: +s.toFixed(3), clearFt: near, ball: [b.x, b.y, b.z].map((v) => +v.toFixed(2)) });
       }
+      // every out: a force has the man with the ball on the bag (a foot within FOOT_FT of its middle), a
+      // tag has his glove on the runner (within TAG_M of the runner's hips or feet)
+      const BASES = [{ x: 0, y: 0.7 }, { x: 63.64, y: 63.64 }, { x: 0, y: 127.28 }, { x: -63.64, y: 63.64 }, { x: 0, y: 0.7 }];
+      for (const e of plan.events) if (e.kind === 'out' && e.by && e.base) {
+        ip.update(e.s, st.camera);
+        const f = ip.fielders[e.by];
+        f.root.updateMatrixWorld(true);
+        if (e.force) {
+          const bag = BASES[e.base];
+          const d = Math.min(...['foot_l', 'foot_r', 'ball_l', 'ball_r'].map((j) => { const q = f.jointPoint(j); return Math.hypot(q.x - bag.x, q.y - bag.y); }));
+          out.push({ tag: c.tag, what: 'force: foot on the bag', n: e.by, s: +e.s.toFixed(3), footFt: d, base: e.base });
+        } else {
+          const r = plan.runners.find((x) => x.from === e.runner);
+          if (!r || !r.fig || !r.fig.root.visible) { out.push({ tag: c.tag, what: 'tag: glove on the runner', n: e.by, s: +e.s.toFixed(3), tagFt: 99, base: e.base, why: 'runner not drawn' }); continue; }
+          r.fig.root.updateMatrixWorld(true);
+          const g = f.handPoint('glove');
+          const d = Math.min(...['pelvis', 'thigh_l', 'thigh_r', 'calf_l', 'calf_r', 'foot_l', 'foot_r', 'hand_l', 'hand_r', 'spine_02'].map((j) => { const q = r.fig.jointPoint(j); return Math.hypot(q.x - g.x, q.y - g.y, q.z - g.z); }));
+          out.push({ tag: c.tag, what: 'tag: glove on the runner', n: e.by, s: +e.s.toFixed(3), tagFt: d, base: e.base });
+        }
+      }
       for (const m of moments) {
         const k = m.n + ':' + m.s.toFixed(4);
         if (seen.has(k)) continue;
@@ -126,7 +149,8 @@ for (let i = 0; i < cases.length; i += CHUNK) {
 console.log('');
 const errs = rows.filter((r) => r.err);
 const hits = rows.filter((r) => r.what === 'hit lands');
-const meas = rows.filter((r) => !r.err && r.what !== 'hit lands');
+const outsF = rows.filter((r) => r.footFt != null), outsT = rows.filter((r) => r.tagFt != null);
+const meas = rows.filter((r) => !r.err && r.what !== 'hit lands' && r.footFt == null && r.tagFt == null);
 const by = {};
 for (const r of meas) (by[r.what] ||= []).push(r.dFt * FT);
 let fails = 0;
@@ -139,6 +163,15 @@ for (const [w, d] of Object.entries(by).sort()) {
   if (held) fails += over;
   console.log(`  ${over ? (held ? 'FAIL' : 'todo') : 'ok  '} ${w.padEnd(20)} ${String(d.length).padStart(7)}  median ${q(0.5)}  90th ${q(0.9)}  99th ${q(0.99)}  worst ${q(1)}  over ${over}`);
 }
+// the outs: a foot on the bag for a force, the glove on the runner for a tag
+for (const [rs, key, lim, name] of [[outsF, 'footFt', FOOT_FT * FT, 'force: foot on bag'], [outsT, 'tagFt', TAG_M, 'tag: glove on runner']]) {
+  const d = rs.map((r) => r[key] * FT).sort((a, b) => a - b);
+  if (!d.length) continue;
+  const over = d.filter((x) => x > lim).length;
+  fails += over;
+  console.log(`  ${over ? 'FAIL' : 'ok  '} ${name.padEnd(20)} ${String(d.length).padStart(7)}  median ${d[Math.floor(0.5 * (d.length - 1))].toFixed(3)}  90th ${d[Math.floor(0.9 * (d.length - 1))].toFixed(3)}  worst ${d[d.length - 1].toFixed(3)}  over ${lim.toFixed(2)} m: ${over}`);
+}
+if (SHOW) for (const r of [...outsF.filter((r) => r.footFt > FOOT_FT), ...outsT.filter((r) => r.tagFt * FT > TAG_M)].slice(0, SHOW)) console.log(JSON.stringify(r));
 // a hit falls in clear of every glove
 const cl = hits.map((r) => r.clearFt * FT).sort((a, b) => a - b);
 const tooNear = cl.filter((x) => x < CLEAR_M).length;

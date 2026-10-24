@@ -198,6 +198,9 @@ export class InPlay {
     // (nobody is drawn within a few strides of the lens: a body filling the frame is never the shot)
     const camF = { x: -camera.position.x / FT, y: camera.position.z / FT };
     const inView = (x, y, n) => this.ownCamera === false || Math.hypot(x - camF.x, y - camF.y) > 14 && (n === b.by || (nx && n === nx.by) || _frustum.intersectsSphere(_sph.set(P(x, y, 3), 2.2)));
+    // ---- the runners first (a tag reaches for the runner where he is drawn)
+    this.runnerFigs.forEach((f) => { f.root.visible = false; });
+    if (broadcast) for (const r of plan.runners) if (r.fig) { const q = r.track.at(s); if (inView(q.x, q.y, -1)) this.poseRunner(r, s, b); }
     // ---- the fielders
     for (let n = 1; n <= 9; n++) {
       const f = this.fielders[n];
@@ -206,9 +209,6 @@ export class InPlay {
       if (!inView(q.x, q.y, n)) { f.root.visible = false; f.at = { x: q.x, y: q.y }; continue; }
       this.poseFielder(n, f, s, b);
     }
-    // ---- the runners
-    this.runnerFigs.forEach((f) => { f.root.visible = false; });
-    if (broadcast) for (const r of plan.runners) if (r.fig) { const q = r.track.at(s); if (inView(q.x, q.y, -1)) this.poseRunner(r, s, b); }
     // the ball in a glove or a hand, or in flight (eased into the glove over its last few hundredths)
     let bp = { x: b.x, y: b.y, z: b.z };
     if (b.by) {
@@ -370,7 +370,25 @@ export class InPlay {
           }
           if (seg) faceYaw = heading(st, seg.a);
           f.reaching = s < t + 0.02;
-          if (a.kind === 'tag') { const k3 = bump(s, t, t + 0.12, t + 0.5, t + 0.8); spec.crouch = Math.max(spec.crouch, 0.7 * k3); if (k3 > 0) { glove = { x: st.x - 1.5, y: st.y + 1.5, z: 0.6 }; gloveW = Math.max(gloveW, k3); } }
+        }
+      }
+      if (a.kind === 'tag') {
+        {
+          // the tag: down to the runner as he slides in, the glove (and the ball in it) on him at
+          // the moment of the out, then up to show the umpire
+          const tt = a.tagAt ?? t, k3 = bump(s, tt - 0.35, tt - 0.05, tt + 0.25, tt + 0.6);
+          const r = plan.runners.find((x) => x.from === a.runner);
+          if (k3 > 0 && r) {
+            const q = r.track.at(Math.min(s, tt));
+            spec.crouch = Math.max(spec.crouch, 0.8 * k3);
+            // (his hips as he is drawn, sliding in: the tag goes on him there)
+            let tg = { x: q.x, y: q.y, z: 0.7 };
+            if (r.fig && r.fig.root.visible && s <= tt + 0.02) { r.fig.root.updateMatrixWorld(true); const pj = r.fig.jointPoint('pelvis'); tg = { x: pj.x, y: pj.y, z: Math.max(0.5, pj.z) }; }
+            glove = tg; gloveW = Math.max(gloveW, k3);
+            // (once the ball is in his glove the tag is what he reaches for)
+            const kw = ramp(s, tt - 0.35, tt - 0.03) * (1 - ramp(s, tt + 0.3, tt + 0.8));
+            if (s > t + 0.02 && kw > 0) { take = { ...tg, t: tt }; takeW = Math.max(kw, takeW); }
+          }
         }
       }
       if (a.kind === 'cover') {
@@ -496,6 +514,32 @@ export class InPlay {
       }
       // the hop needs one more pose with the glove at its height
       if (lift > 0) { f.root.updateMatrixWorld(true); const g = f.handPoint('glove'); if (take.z - g.z > 0.05) { lift += Math.min(1.5, take.z - g.z) * takeW; f.place(at.x, at.y, yaw, { lift }); f.pose(spec); } }
+    }
+    // a force at a bag: a foot stays on it (the pivot foot, or the back foot of a stretch): the body
+    // slides so the nearer foot is on the bag's middle, and the arm reaches from there
+    const fa = acts.find((x) => (x.kind === 'receive' || x.kind === 'step') && x.force && x.base && s > x.t - 0.6 && s < x.t + 0.35);
+    if (fa) {
+      const bag = fa.base === 4 ? { x: 0, y: 0.7 } : BASE[fa.base];
+      const kf = ramp(s, fa.t - 0.6, fa.t - 0.15) * (1 - ramp(s, fa.t + 0.1, fa.t + 0.35));
+      for (let i = 0; i < 4 && kf > 0; i++) {
+        // (the glove to the ball again, then the foot back on the bag: the two settle together)
+        if (i && take && takeW > 0) {
+          f.root.updateMatrixWorld(true);
+          const g = f.handPoint('glove');
+          at = { x: at.x + (take.x - g.x) * takeW, y: at.y + (take.y - g.y) * takeW };
+          f.place(at.x, at.y, yaw, { lift });
+          f.pose(spec);
+        }
+        f.root.updateMatrixWorld(true);
+        const fl = f.jointPoint('foot_l'), fr = f.jointPoint('foot_r');
+        const foot = Math.hypot(fl.x - bag.x, fl.y - bag.y) < Math.hypot(fr.x - bag.x, fr.y - bag.y) ? fl : fr;
+        // (on the bag: within half a foot of its middle; past that, back onto it)
+        const off = Math.hypot(bag.x - foot.x, bag.y - foot.y), need = Math.max(0, off - 0.5) / Math.max(1e-3, off);
+        if (need <= 0) continue;
+        at = { x: at.x + (bag.x - foot.x) * need * kf, y: at.y + (bag.y - foot.y) * need * kf };
+        f.place(at.x, at.y, yaw, { lift });
+        f.pose(spec);
+      }
     }
   }
 
@@ -658,6 +702,12 @@ export class InPlay {
       const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.from !== r.to ? r.arrive : null;
       if (tq == null || s < tq - 0.9 || s > tq + 0.35) continue;
       const q = r.track.at(s), bag = BASE[r.out ? r.outBase : Math.min(4, r.to)] || BASE[4];
+      keys.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }, { x: bag.x, y: bag.y, z: 0 });
+    }
+    // a tag-up: from the catch, the runner leaving his bag
+    const ca = plan.kind === 'air_out' && plan.events.find((e) => e.kind === 'catch');
+    if (ca && s > ca.s - 0.2 && s < ca.s + 1.3) for (const r of plan.runners) if (!r.batter && r.to > r.from) {
+      const q = r.track.at(s), bag = BASE[r.from];
       keys.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }, { x: bag.x, y: bag.y, z: 0 });
     }
     let pos, wBall = 0.6;
