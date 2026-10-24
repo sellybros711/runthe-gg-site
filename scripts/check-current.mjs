@@ -81,10 +81,14 @@ async function open(game, flags, at) {
   const page = await ctx.newPage();
   // A fixed day, when the claim is about one board. Timers still run.
   if (at) await page.clock.setFixedTime(new Date(at + 'T12:00:00'));
-  for (const pat of ['**cdn.jsdelivr.net**', '**supabase.co**', '**googlesyndication.com**', '**googletagmanager.com**',
-                     '**google-analytics.com**', '**doubleclick.net**', '**fonts.googleapis.com**', '**fonts.gstatic.com**']) {
-    await page.route(pat, (r) => r.abort());
-  }
+  /* BY HOSTNAME, NOT A GLOB. These were '**cdn.jsdelivr.net**' and the like. Under the
+     Playwright CI pins (1.49.1) that glob matches nothing, so supabase-js loaded from jsDelivr,
+     threw out the fake session below and signed the page out, and Roll Call met the Arcade Card
+     sheet instead of its board. A newer Playwright matches it, and a proxy that refuses every
+     outside host hides it too, so it only ever failed in CI. */
+  const BLOCK = ['cdn.jsdelivr.net', 'supabase.co', 'googlesyndication.com', 'googletagmanager.com',
+                 'google-analytics.com', 'doubleclick.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+  await page.route((u) => BLOCK.some((h) => u.hostname === h || u.hostname.endsWith('.' + h)), (r) => r.abort());
   await page.goto('http://localhost:' + PORT + '/arcade/' + game + '/?flags=' + flags, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForTimeout(1500);
   return { page, close: () => ctx.close() };
@@ -103,7 +107,12 @@ console.log('\n1. Career Path, flag eras');
   for (const sp of ['all']) {
     // `current` is on for everybody from 2026-10-06 and would deal the
     // modern pool on both sides, so the eras gate is asked with it off
-    const { page, close } = await open('career', 'eras,-current');
+    /* ON A FIXED DAY. The gate only reorders a deal that needs it, and some days the ungated
+       opening already reaches the 1990s (2026-10-23 and 10-24 did), so on those days the two
+       deals match and "the gate does nothing" fails with nothing wrong. 2026-10-15 deals Babe
+       Ruth, Warren Spahn and Ralph Terry early with the flag off. */
+    const ERAS_DAY = '2026-10-15';
+    const { page, close } = await open('career', 'eras,-current', ERAS_DAY);
     const deal = await page.evaluate(() => window.__rtgDeal(30).map((r) => ({ n: r.target.name, d: r.target.decade || [] })));
     const steps = await page.evaluate(() => window.RTGFame.ERA_STEPS);
     const early = deal.filter((r, k) => {
@@ -115,7 +124,7 @@ console.log('\n1. Career Path, flag eras');
     else ok('the first ' + steps[0][0] + ' cards reached the ' + steps[0][1] + 's, the next to ' + steps[1][0] + ' the ' + steps[1][1] + 's: ' + deal.slice(0, 4).map((r) => r.n).join(', ') + ' ...');
     await close();
     // and the gate is what did it: with the flag off the opening is not held
-    const off = await open('career', '-eras,-current');
+    const off = await open('career', '-eras,-current', ERAS_DAY);
     const offDeal = await off.page.evaluate(() => window.__rtgDeal(30).map((r) => r.target.name));
     if (JSON.stringify(offDeal) === JSON.stringify(deal.map((r) => r.n))) fail('the deal is the same with the flag off: the gate does nothing');
     else ok('with the flag off the day deals as it did');
@@ -262,12 +271,31 @@ console.log('\n5. Roll Call, flag fullroster');
     const P = R.RTG_ROSTERS_NBA_2010, roster = P.r[P.teams.indexOf('Dallas Mavericks')][2010].map((x) => P.names[x[0]]);
     for (const [flags, full] of [['fullroster', true], ['-fullroster', false]]) {
       const { page, close } = await open('rollcall', flags, day);
+      const rcErrs = []; page.on('pageerror', (e) => rcErrs.push(String(e)));
+      page.on('console', (m) => { if (m.type() === 'error' && !/ERR_FAILED|net::/.test(m.text())) rcErrs.push(m.text().slice(0, 160)); });
       await page.waitForFunction(() => /\d+ names to find/.test((document.getElementById('setupBlurb') || {}).textContent || ''));
       await page.waitForTimeout(600);
       // the first-visit rules card sits over the page until it is dismissed
       if (await page.$('#rtgpgGo')) { await page.click('#rtgpgGo'); await page.waitForTimeout(500); }
       if (await page.$eval('#panelPlay', (el) => !el.classList.contains('on')).catch(() => true)) await page.click('#startBtn');
-      await page.waitForSelector('#slots .slot');
+      /* A timeout here says what was on screen. That is how the blocking above was found:
+         CI printed the Arcade Card sheet and a "Sign in" header. */
+      await page.waitForSelector('#slots .slot').catch(async (e) => {
+        const seen = await page.evaluate(() => {
+          const vis = (el) => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+            return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity > 0; };
+          const panels = [...document.querySelectorAll('[id^="panel"]')].map((el) => el.id + (el.classList.contains('on') ? ' on' : ''));
+          const start = document.getElementById('startBtn');
+          const over = [...document.querySelectorAll('body *')].filter((el) => { const cs = getComputedStyle(el);
+            return (cs.position === 'fixed' || cs.position === 'absolute') && +cs.zIndex > 10 && vis(el); })
+            .map((el) => (el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' "' + (el.innerText || '').replace(/\s+/g, ' ').slice(0, 80) + '"').slice(0, 6);
+          return { panels, start: start ? { visible: vis(start), disabled: start.disabled, text: start.innerText.trim() } : null,
+            slots: document.querySelectorAll('#slots .slot').length, overlays: over,
+            text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 300) };
+        }).catch((x) => ({ evaluate: String(x) }));
+        console.error('  roll call never drew its board. On screen: ' + JSON.stringify(seen) + '\n  page errors: ' + JSON.stringify(rcErrs));
+        throw e;
+      });
       const slots = await page.$$eval('#slots .slot', (els) => els.length);
       await page.fill('#ask', 'DeShawn Stevenson');
       await page.press('#ask', 'Enter');
