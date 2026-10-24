@@ -108,11 +108,18 @@ try {
     console.log('  recorded', Object.keys(now).length, 'boosts'); process.exit(0);
   }
   const base = JSON.parse(fs.readFileSync(BASE, 'utf8')).boosts;
+  // The owner's own exceptions to the boost rule, each with its date. The baseline file is never rewritten: a
+  // boost the owner retired is listed here, checked to be gone, and every other one still has to stand.
+  const RETIRED = { '2026-10-17 patterns carry no boost': ['pinstripe', 'polka', 'gingham', 'argyle', 'tartan', 'houndstooth', 'chevron', 'colorblock'].map((id) => 'cos sp:' + id) };
+  const retired = new Set(Object.values(RETIRED).flat());
   const lost = [];
-  for (const k in base) { const was = base[k], is = now[k];
+  for (const k in base) { if (retired.has(k)) continue; const was = base[k], is = now[k];
     if (!is) { lost.push(k + ' removed'); continue; }
     for (const s in was) { if (is[s] == null) lost.push(k + ' lost ' + s); else if (is[s] < was[s]) lost.push(k + ' ' + s + ' ' + was[s] + ' -> ' + is[s]); } }
-  ok(Object.keys(base).length + ' recorded boosts all stand, none lower', lost.length === 0, lost);
+  ok((Object.keys(base).length - retired.size) + ' recorded boosts all stand, none lower', lost.length === 0, lost);
+  for (const why in RETIRED) { const back = RETIRED[why].filter((k) => now[k]);
+    ok('retired by the owner (' + why + '): ' + RETIRED[why].length + ' boosts are gone', back.length === 0, back); }
+  ok('no pattern carries a boost', !Object.keys(now).some((k) => / sp:/.test(k)), Object.keys(now).filter((k) => / sp:/.test(k)));
   const added = Object.keys(now).filter((k) => !base[k] || Object.keys(now[k]).some((s) => (now[k][s] || 0) > (base[k][s] || 0)));
   info('new or raised since the baseline', added.length);
 
@@ -442,9 +449,9 @@ try {
       // worn alone, a won world item moves its own stat by its boost
       set({ v: 2, tours: { main: { wpaid: { 0: 1 } } } }); __B.raw(80); __B.naked(); const a = __B.stats(); __B.wear('hw', 'ppvisor'); const z = __B.stats(); out.wear = z.st.acc - a.st.acc;
       set(null); __B.naked(); __B.wear('hw', 'ppvisor'); out.wearLocked = __B.stats().st.acc - a.st.acc; __B.naked();
-      // shown locked only once Putt Putt is open to the player
-      const live = PUTT_LIVE; PUTT_LIVE = false; out.hidden = cosTileHTML('hw', { id: 'ppvisor', name: 'Clubhouse Visor' }) === '';
-      PUTT_LIVE = true; const h = cosTileHTML('hw', { id: 'ppvisor', name: 'Clubhouse Visor' }); out.shown = /Clear The Clubhouse in Putt Putt/.test(h); PUTT_LIVE = live;
+      // shown locked only once Putt Putt is open to the player (a blocked or stale putt.js hides it)
+      const on0 = puttOn; puttOn = () => false; out.hidden = cosTileHTML('hw', { id: 'ppvisor', name: 'Clubhouse Visor' }) === '';
+      puttOn = () => true; const h = cosTileHTML('hw', { id: 'ppvisor', name: 'Clubhouse Visor' }); out.shown = /Clear The Clubhouse in Putt Putt/.test(h); puttOn = on0;
       return out; }, WANT);
     ok('every name the tours pay (' + R.paid + ') is a Putt Putt reward item', R.unmapped.length === 0, R.unmapped);
     ok('the 29 items are the owner\'s 29', R.keys);
@@ -459,7 +466,21 @@ try {
     ok('a locked reward is hidden before Putt Putt is open, and shows where to win it after', R.hidden && R.shown, [R.hidden, R.shown]);
   }
 
-  head('ICON: the tier above ELITE, 100 and up, on the First Tee switch');
+  head('The Pro Shop line: real golf gear in the common and rare tiers');
+  {
+    const PL = await page.evaluate(() => { const out = { bad: [] }, has = (o) => (cosmeticItems(o.cat) || []).some((x) => x.id === o.id);
+      const pool = packPool();
+      PRO_LINE.forEach((o) => { const rar = packRarityOf(cosmeticPriceBase(o.cat, o.id)), b = cosBoost(o.cat, o.id);
+        const pts = b ? Object.values(b).filter((v) => v > 0).reduce((a, v) => a + v, 0) : 0, want = (o.cat === 'top' || o.cat === 'leg') ? 0 : rar === 'common' ? 1 : 2;
+        const art = { hw: [PXG_HATS, PXG_HERITAGE_HAT_PAL], top: [PXG_TOPS, PXG_TOP_PAL], leg: [PXG_LEGS, PXG_LEG_PAL], cleats: [PXG_CLEATS, PXG_CLEATS_PAL], ball: [PXG_BALL, PXG_BALL_PAL] }[o.cat];
+        const pe = pool.find((e) => e.cat === o.cat && e.id === o.id), row = { key: o.cat + ':' + o.id, rar, pts, want, listed: has(o), pool: pe ? pe.rarity : null,
+          packOnly: cosPackOnly(o.cat, o.id), art: !!(art && art[0][o.id] && art[1][o.id]), drop: !!itemDropLocked(o.cat, o.id) };
+        if (!(rar === 'common' || rar === 'rare') || pts !== want || !row.listed || row.pool !== rar || !row.packOnly || !row.art || row.drop) out.bad.push(row); });
+      out.n = PRO_LINE.length; out.common = PRO_LINE.filter((o) => packRarityOf(o.price) === 'common').length; return out; });
+    ok('all ' + PL.n + ' are common or rare (' + PL.common + ' common), listed, pack only, in the pool at their rarity, drawn, with the ladder\'s power (outerwear and legwear none)', PL.bad.length === 0, PL.bad.slice(0, 4));
+  }
+
+  head('ICON: the tier above ELITE, 100 and up');
   {
     const T = await page.evaluate(() => { const r = {}, kU = sbUser, kN = sbUsername;
       sbUser = { id: 't' }; sbUsername = 'CSel8';
@@ -469,7 +490,7 @@ try {
       sbUser = kU; sbUsername = kN; return r; });
     ok('a tester: 99 is ELITE, 100 and 112 are ICON', T.t99 === 'ELITE' && T.t100 === 'ICON' && T.t112 === 'ICON', T);
     ok('a tester\'s player card wears the ICON badge at 103', T.card === true);
-    ok('anybody else keeps ELITE until the switch flips', T.other === 'ELITE', T.other);
+    ok('anybody else is ICON at 103 too', T.other === 'ICON', T.other);
   }
 
   head('SERVER: what the boards store');

@@ -62,7 +62,8 @@ var LOOT = {
   trinket:{ rows:PIX_GEM, pal:{ r:'#b48cff', h:'#ffffff', o:'#2a1a40' }, beam:'190,150,255', name:'Trinket' },
   part:{ rows:PIX_PART, pal:{ r:'#7fa0c4', h:'#e6eef8', o:'#1e2a38', g:'#2a2a2a' }, beam:'120,190,255', name:'Putter part' },
   chest:{ rows:PIX_CHEST, pal:{ r:'#a8662e', h:'#d8944a', g:'#ffd23a', o:'#3a2410' }, beam:null, name:'Chest' },
-  prize:{ rows:PIX_CHEST, pal:{ r:'#3a78b8', h:'#7cc8ff', g:'#ffd23a', o:'#14304a' }, beam:null, name:'Puzzle' }
+  prize:{ rows:PIX_CHEST, pal:{ r:'#3a78b8', h:'#7cc8ff', g:'#ffd23a', o:'#14304a' }, beam:null, name:'Puzzle' },
+  vault:{ rows:PIX_CHEST, pal:{ r:'#7a3ab8', h:'#c89cff', g:'#ffd23a', o:'#2a1440' }, beam:null, name:'Gym' }
 };
 function lootPal(t){ var L = LOOT[t.k]; return t.k === 'trinket' && t.col ? Object.assign({}, L.pal, { r:t.col }) : L.pal; }
 function lootBeam(t){ if (t.k === 'trinket' && t.col){ var n = parseInt(t.col.slice(1), 16); return (n >> 16) + ',' + (n >> 8 & 255) + ',' + (n & 255); } return LOOT[t.k].beam; }
@@ -230,15 +231,34 @@ function plan(spec){
       for (var j = i + 1; j < n; j++) if (c[j] - c[i] > 26 && Math.hypot(p[j][0] - q[0], p[j][1] - q[1]) < MINSEP) return false; }
     return !spec.cross || gyy != null; }
   var path = null, cum = null, gy = null, style = 'straight', route = null;
-  for (var att = 0; att < 28 && !path; att++){
-    var nm = att < 24 ? pickRoute() : 'meander', flip = R() < 0.5 ? -1 : 1, jit = function(a){ return (R() - 0.5) * a; }, rt = ROUTES[nm](flip, jit);
+  /* A GYM'S TRAIL IS ROUTED ROUND ITS GYM (gyms.js). The arena is a walled box of tiles beside the walk with its gate
+     facing the camera, and a route is only taken if the box fits clear of it with the gate a few steps off the path
+     (gymFit). A trail with no gym is routed exactly as it always was: none of this is asked and no draw is taken. */
+  var GYD = null, gfit = null; try{ var GYS = spec.gym && typeof window !== 'undefined' && window.RTT_PUTT_GYMS; if (GYS && GYS.API_VERSION === 2){ var gdef = GYS.byId(spec.gym); if (gdef) GYD = GYS.parse(gdef); } }catch(e){ GYD = null; }
+  function gymFit(pp){ var T = window.RTT_PUTT_GYMS.TILE, GW = GYD.W * T, GDp = GYD.H * T, gc = GYD.gate % GYD.W, FW = Math.ceil(b[2] - b[0]) + 1, FH = Math.ceil(b[3] - b[1]) + 1, F = new Float32Array(FW * FH);
+    for (var j = 0; j < FH; j++) for (var i = 0; i < FW; i++){ var x = b[0] + i, y = b[1] + j, m = 1e9; for (var k = 0; k < pp.length - 1; k++){ var a = pp[k], c = pp[k + 1]; if (Math.abs(a[1] - y) > m + 2 && Math.abs(c[1] - y) > m + 2) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } F[j * FW + i] = m; }
+    function fd(x, y){ var i = Math.round(x - b[0]), j = Math.round(y - b[1]); if (i < 0 || j < 0 || i >= FW || j >= FH) return 0; return F[j * FW + i]; }
+    var best = null, RJ = rng(hstr('gym:' + spec.gym + ':' + seed));
+    for (var y0 = 10; y0 + GDp + 1.5 <= L - 4; y0 += 1) for (var x0 = b[0] + 3; x0 + GW <= b[2] - 3; x0 += 1){
+      var ax = x0 + (gc + 0.5) * T, ay = y0 + GDp + 0.8, dA = fd(ax, ay); if (dA > 9 || dA < PW + 0.8) continue;
+      var ok = true; for (var yy = y0 - 1; yy <= y0 + GDp + 1 && ok; yy += 1) for (var xx = x0 - 1; xx <= x0 + GW + 1; xx += 1) if (fd(xx, yy) < PW + 1.6){ ok = false; break; }
+      if (!ok) continue;
+      // the way in: from the nearest point of the path straight to the gate, never across the box
+      var bn = 1e9, np = null; for (var q = 0; q < pp.length; q++){ var dq = Math.hypot(pp[q][0] - ax, pp[q][1] - ay); if (dq < bn){ bn = dq; np = pp[q]; } }
+      for (var u = 0.1; u < 1 && ok; u += 0.1){ var sx = np[0] + (ax - np[0]) * u, sy = np[1] + (ay - np[1]) * u; if (sx > x0 - 0.6 && sx < x0 + GW + 0.6 && sy > y0 - 0.6 && sy < y0 + GDp + 0.2) ok = false; }
+      if (!ok) continue;
+      var sc0 = dA + RJ() * 1.5; if (!best || sc0 < best.sc) best = { sc:sc0, x0:x0, y0:y0, w:GW, d:GDp, ax:ax, ay:ay, np:np.slice(), T:T }; }
+    return best; }
+  for (var att = 0; att < (GYD ? 64 : 28) && !path; att++){
+    var nm = att < (GYD ? 60 : 24) ? pickRoute() : 'meander', flip = R() < 0.5 ? -1 : 1, jit = function(a){ return (R() - 0.5) * a; }, rt = ROUTES[nm](flip, jit);
     var sx = clampR(ux(rt.a), sRange), ax = clampR(ux(rt.z), aRange), ctrl = [[sx, L + 7]];
     // every bend wanders a little of its own, so two doglegs are two different doglegs, not one drawn twice
     var stretch = 0.9 + R() * 0.2; rt.p.forEach(function(q){ ctrl.push([ux(Math.max(-0.95, Math.min(0.95, q[0] * stretch + jit(0.18)))), Math.max(0.1, Math.min(0.97, q[1] + jit(0.06))) * Y0]); });
     ctrl.push([ax, 7], [ax, -1]);
     var pp = even(spline(ctrl)), cc = cumOf(pp), gg = spec.cross ? wallLine(pp) : null;
-    if (sane(pp, cc, gg, nm)){ path = pp; cum = cc; gy = gg; style = nm; route = rt; } }
-  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = spec.cross ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; }
+    if (sane(pp, cc, gg, nm) && (!GYD || (gfit = gymFit(pp)))){ path = pp; cum = cc; gy = gg; style = nm; route = rt; } }
+  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = spec.cross ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; if (GYD) gfit = gymFit(path); }
+  if (!gfit) GYD = null;   // nowhere for it: this trail walks without its gym (check-putt fails on that)
   /* ONLY A WORLD STARTS IN A PLAZA. Every walk used to set off from the same round clearing behind the hole just
      played, so every trail opened on the same picture. The owner's call: the start of a world is a circle, and
      everywhere else the walk leaves the last hole the way a path leaves a green, straight off its carpet. So the
@@ -256,6 +276,18 @@ function plan(spec){
   function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
   function themeAt(y){ return spec.cross && y > gy ? th0 : th; }
   var start = { x:path[0][0], y:L + 6, r:plaza ? 7 : 1.2 };
+  /* THE GYM, where gymFit put it: a box of TILE feet a tile, row 0 at its far (low y) side, and its own little path
+     from the walk to the gate. Nothing else stands in it, and nothing tall stands just in front of it (gymShadow), so
+     the camera always sees into it. gymCell is what each point of it is, for the ground and for run(). */
+  var GYM = null;
+  if (GYD){ var gf = gfit; GYM = { id:spec.gym, Q:GYD, G:gdef, K:GYS.kindOf(gdef), T:gf.T, x0:gf.x0, y0:gf.y0, w:gf.w, d:gf.d, ax:gf.ax, ay:gf.ay, spur:[] };
+    for (var gk2 = 0; gk2 <= 10; gk2++){ var gt = gk2 / 10; GYM.spur.push([gf.np[0] + (gf.ax - gf.np[0]) * gt, gf.np[1] + (gf.ay - gf.np[1]) * gt]); }
+    GYM.spur.push([gf.ax, gf.y0 + gf.d - 0.3]); }
+  function inGym(x, y, pad){ return !!GYM && x > GYM.x0 - pad && x < GYM.x0 + GYM.w + pad && y > GYM.y0 - pad && y < GYM.y0 + GYM.d + pad; }
+  function gymShadow(x, y){ return !!GYM && x > GYM.x0 - 3 && x < GYM.x0 + GYM.w + 3 && y > GYM.y0 + GYM.d && y < GYM.y0 + GYM.d + 9; }
+  function gymCell(x, y){ if (!inGym(x, y, 0)) return null; var Q = GYM.Q, c = Math.floor((x - GYM.x0) / GYM.T), r = Math.floor((y - GYM.y0) / GYM.T); if (c < 0 || r < 0 || c >= Q.W || r >= Q.H) return null;
+    var i = r * Q.W + c; return { i:i, c:c, r:r, k:Q.cell[i], u:(x - GYM.x0) / GYM.T - c, v:(y - GYM.y0) / GYM.T - r }; }
+  function gymSpurD(x, y){ var m = 1e9; if (!GYM) return m; for (var i = 0; i < GYM.spur.length - 1; i++) m = Math.min(m, segD(x, y, GYM.spur[i][0], GYM.spur[i][1], GYM.spur[i + 1][0], GYM.spur[i + 1][1])); return m; }
   /* the spur and its clearing, off to a side with room. Never further out than a phone's camera sees from the path
      (it was up to 22 ft, and with no spur to it that was a clearing nobody could find): 9.5 to 15 ft, so the trees
      can hide it from most of the walk but some stretch of the path always has it on screen. Never over another leg
@@ -264,6 +296,7 @@ function plan(spec){
   for (var ct = 0; ct < 120 && !clr; ct++){ var s1 = SL * (0.22 + R() * 0.56), sd = R() < 0.5 ? -1 : 1, crr = 4.5 + R() * 2, cp = beside(s1, sd, 9.5 + R() * 5.5), o = atS(s1);
     if (cp[0] < b[0] + crr + 4 || cp[0] > b[2] - crr - 4 || cp[1] < 12 || cp[1] > L - 6) continue;
     if (pathD(cp[0], cp[1]) < crr + 5 || Math.hypot(cp[0] - start.x, cp[1] - start.y) < crr + start.r + 4) continue;
+    if (GYM && (inGym(cp[0], cp[1], crr + 4) || gymShadow(cp[0], cp[1]) || inGym((cp[0] + o[0]) / 2, (cp[1] + o[1]) / 2, 1.5))) continue;
     if (gy && (Math.abs(cp[1] - gy) < crr + 6 || Math.abs(o[1] - gy) < 12 || (cp[1] - gy) * (o[1] - gy) < 0)) continue;
     var crosses = false; for (var kt = 0.4; kt <= 1; kt += 0.1) if (pathD(o[0] + (cp[0] - o[0]) * kt, o[1] + (cp[1] - o[1]) * kt) < PW + 1.4) crosses = true;
     if (crosses) continue;
@@ -282,6 +315,7 @@ function plan(spec){
       if (pathD(cp2[0], cp2[1]) < srr + 4 || Math.hypot(cp2[0] - clr.x, cp2[1] - clr.y) < srr + clr.r + 6 || Math.hypot(cp2[0] - start.x, cp2[1] - start.y) < srr + start.r + 4) continue;
       if (gy && (Math.abs(cp2[1] - gy) < srr + 6 || (cp2[1] - gy) * (o3[1] - gy) < 0)) continue;
       if (spurD(cp2[0], cp2[1]) < srr + 3) continue;
+      if (GYM && (inGym(cp2[0], cp2[1], srr + 4) || gymShadow(cp2[0], cp2[1]) || screensGym(cp2[0], cp2[1] - 1, srr, ssz[2]))) continue;
       sc = { x:cp2[0], y:cp2[1] - 1, r:srr, kind:sk, w:ssz[0], d:ssz[1], h:ssz[2], s:s2, ox:o3[0], oy:o3[1] }; }
     if (sc){ var my = sk === 'mooredship' ? sc.y : sc.y + sc.d / 2 + 0.9, mx = sk === 'mooredship' ? sc.x + (sc.ox < sc.x ? -1 : 1) * (sc.w / 2 + 1.6) : sc.x;
       sc.mx = mx; sc.my = my; var tdx = mx - sc.ox, tdy = my - sc.oy, tl = Math.hypot(tdx, tdy) || 1, bw2 = (R() < 0.5 ? -1 : 1) * 1.6;
@@ -301,16 +335,16 @@ function plan(spec){
       if (ii >= 0 && jj >= 0 && ii < f.W && jj < f.H){ var c = f.codes[jj * f.W + ii]; if (c) return { c:c, i:i }; } } return null; }
   function inFoot(x, y, pad){ for (var i = 0; i < feet.length; i++){ var o = feet[i]; if (x > o.X0 - pad && x < o.X0 + o.w + pad && y > o.Y0 - pad && y < o.Y0 + o.h + pad) return true; } return false; }
   function spurD(x, y){ var m = 1e9; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1]));
-    for (var i3 = 0; i3 < spur2.length - 1; i3++) m = Math.min(m, segD(x, y, spur2[i3][0], spur2[i3][1], spur2[i3 + 1][0], spur2[i3 + 1][1])); return m; }
+    for (var i3 = 0; i3 < spur2.length - 1; i3++) m = Math.min(m, segD(x, y, spur2[i3][0], spur2[i3][1], spur2[i3 + 1][0], spur2[i3 + 1][1])); return GYM ? Math.min(m, gymSpurD(x, y)) : m; }
   // a field of how far each point is from the path, the spur and the clearings, read back smoothly
   var DS = 1, DX = Math.ceil((b[2] - b[0]) / DS) + 1, DY = Math.ceil((b[3] - b[1]) / DS) + 1, DD = new Float32Array(DX * DY);
   for (var j = 0; j < DY; j++) for (var i2 = 0; i2 < DX; i2++){ var x = b[0] + i2 * DS, yy = b[1] + j * DS; DD[j * DX + i2] = Math.min(pathD(x, yy), spurD(x, yy) + 0.4); }
   function walkD(x, y){ var fx = (x - b[0]) / DS, fy = (y - b[1]) / DS; if (fx < 0 || fy < 0 || fx >= DX - 1 || fy >= DY - 1) return 99;
     var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, q = j * DX + i; return (DD[q] * (1 - u) + DD[q + 1] * u) * (1 - v) + (DD[q + DX] * (1 - u) + DD[q + DX + 1] * u) * v; }
-  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; if (sc && Math.hypot(x - sc.x, y - sc.y) < sc.r + pad) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
+  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; if (GYM && (inGym(x, y, pad + 1.2) || gymShadow(x, y))) return true; if (sc && Math.hypot(x - sc.x, y - sc.y) < sc.r + pad) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
 
   var P = { spec:spec, seed:seed, L:L, b:b, plaza:plaza, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, spur2:spur2, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
-    things:[], cols:[], items:[], hazards:[] };
+    gym:GYM, inGym:inGym, gymCell:memo2(gymCell), things:[], cols:[], items:[], hazards:[] };
   P.near = function(x, y){ var best = 1e9, out = path[0]; for (var i = 0; i < path.length; i++){ var d = Math.hypot(path[i][0] - x, path[i][1] - y); if (d < best){ best = d; out = path[i]; } } return out; };
 
   // ---- the world's ground to keep off: ponds, lava pools, ice sheets, bogs. Never on the path or a clearing.
@@ -342,7 +376,8 @@ function plan(spec){
         if (Math.hypot(x - clr.x, yc - clr.y) < clr.r + hw + 3) ok = false;
         if (Math.abs(yc - start.y) < start.r + hw + 3 || yc < 16) ok = false;
         if (pools.some(function(o){ return Math.hypot(o.x - x, o.y - yc) < Math.max(o.rx, o.ry) + hw + 2.5; })) ok = false;
-        if (spurD(x, yc) < near + 1) ok = false; }
+        if (spurD(x, yc) < near + 1) ok = false;
+        if (GYM && (inGym(x, yc, hw + 4) || gymShadow(x, yc))) ok = false; }
       if (!ok) continue;
       // where the path crosses: each crossing has to be a fair way across, and the path is never near the water anywhere else
       var cs = [], sOf = function(i){ return path[i][1] - cyf(path[i][0]); };
@@ -375,7 +410,8 @@ function plan(spec){
       if (gy && Math.abs(sy - gy) < 6) near = Math.max(near, sd * cx(gy) + PW + 10);
       SEA[sj] = Math.max(near, Math.min(HWs - 8 + vn(sy * 0.08, 3, seed) * 4, near + vn(sy * 0.15, 9, seed) * 1.5)); } }
   function seaEdge(y){ if (!SEA) return 1e9; var f = Math.max(0, Math.min(SEA.length - 1.001, y - SEA_Y0)), i = f | 0, u = f - i; return SEA[i] * (1 - u) + SEA[i + 1] * u; }
-  function seaAt(x, y){ if (!P.sea) return false; return P.sea.side * x > seaEdge(y || 0); }
+  // a gym built out over the sea stands on its own deck, and its little path out to it is a jetty
+  function seaAt(x, y){ if (!P.sea) return false; if (GYM && (inGym(x, y, 0.5) || gymSpurD(x, y) < PW + 0.6)) return false; return P.sea.side * x > seaEdge(y || 0); }
   P.seaEdge = seaEdge;
   poolAt = memo2(poolAt); P.poolAt = poolAt; P.seaAt = seaAt;
 
@@ -385,7 +421,18 @@ function plan(spec){
   function free(x, y, r){ for (var i = 0; i < used.length; i++){ var u = used[i]; if (Math.hypot(u.x - x, u.y - y) < u.r + r) return false; } return true; }
   function okGround(x, y, r){ if (x < b[0] + 2 || x > b[2] - 2 || y < b[1] + 2 || y > b[3] - 2) return false; if (poolAt(x, y) || seaAt(x, y)) return false;
     for (var a = 0; a < 6; a++){ var ax = x + Math.cos(a) * r, ay = y + Math.sin(a) * r; if (poolAt(ax, ay) || seaAt(ax, ay)) return false; } return true; }
-  function screensPath(x, y, r, H){   // would a thing r wide and H tall at (x, y) hide much of the path from the camera?
+  /* NOTHING TALL OVER A GYM'S ROOM ON SCREEN (the owner, 2026-10-17: a tree's canopy over the room's wall). A thing r
+     round and H tall at (x, y) stands up the screen by H * CE against the ground's y * SE, so a tree a few feet nearer
+     the camera than the near wall puts its crown over the room, and one just behind the far wall stands over that wall.
+     So a tree, a landmark, a rock or a lamp is kept off the room's whole rect on screen (its floor up to the top of its
+     walls) plus m feet all round, for every gym of every kind. wh is the wall's height as the frame measures the room
+     (gymArtRect). A function, so the secret clearing (placed earlier) asks it too. */
+  function screensGym(x, y, r, H){ if (!GYM) return false; var m = 1.5, wh = 3.4, dx = Math.max(GYM.x0 - x, 0, x - GYM.x0 - GYM.w); if (dx >= r + m) return false;
+    var top = y * SE - (H || 0) * CE, bot = (y + r) * SE, rt = GYM.y0 * SE - wh * CE, rb = (GYM.y0 + GYM.d) * SE;
+    return top < rb + m * SE && bot > rt - m * SE; }
+  P.screensGym = screensGym;
+  function screensPath(x, y, r, H){   // would a thing r wide and H tall at (x, y) hide much of the path (or a gym's room) from the camera?
+    if (screensGym(x, y, r, H)) return true;
     var reach = H * CE / SE * 0.6 + 1;
     for (var i = 0; i < path.length; i++){ var p = path[i]; if (p[1] < y - reach || p[1] > y + 0.5) continue; if (Math.abs(p[0] - x) < r * 0.7 + PW) return true; }
     for (i = 0; i < spur.length; i++){ p = spur[i]; if (p[1] < y - reach || p[1] > y + 0.5) continue; if (Math.abs(p[0] - x) < r + PW + 1.2) return true; }
@@ -396,6 +443,8 @@ function plan(spec){
 
   // the end: an arch over the path at y = 0, and the hole's carpet beyond it
   place('arch', archX, 0, 0.1, 9);
+  // the gym's walls, gate and posts are one build (BUILD.gym); as a thing it keeps everything else out and blocks the walk
+  if (GYM) place('gym', GYM.x0 + GYM.w / 2, GYM.y0 + GYM.d / 2, 0.1, 1.6, { w:GYM.w, d:GYM.d, th:themeAt(GYM.y0 + GYM.d / 2) });
   // the flag still in the cup of the hole you just left, behind you
   if (spec.holeFrom && feet.length){ var fo = feet[feet.length - 1]; place('pin', fo.cup[0], fo.cup[1], 0.1, 6, { col:fo.f.T.flag }); }
   used.push({ x:archX, y:-8, r:9 });
@@ -433,7 +482,7 @@ function plan(spec){
   }
   // lamps along the path in the worlds that have them
   if (kitOf(th).lm.indexOf('lamps') >= 0 || baseTh(th) === 'neon') for (var ls2 = 14; ls2 < SL - 6; ls2 += 22){ var sd2 = (ls2 / 22 | 0) % 2 ? 1 : -1, lq2 = beside(ls2, sd2, PW + 1.3), lx2 = lq2[0], ly2 = lq2[1];
-    if (free(lx2, ly2, 0.4) && okGround(lx2, ly2, 0.4) && !inClear(lx2, ly2, 1)) place('lamp', lx2, ly2, 0.3, 7); }
+    if (free(lx2, ly2, 0.4) && okGround(lx2, ly2, 0.4) && !inClear(lx2, ly2, 1) && !screensGym(lx2, ly2, 0.6, 7)) place('lamp', lx2, ly2, 0.3, 7); }
 
   // ---- what can be picked up and walked into
   var items = P.items, id = 0;
@@ -491,7 +540,15 @@ function plan(spec){
       if (okGround(hx, hy, 1) && free(hx, hy, 1)){ P.host = item('host', hx, hy, { th:themeAt(hy) }); used.push({ x:hx, y:hy, r:1 }); } } }
   // the local, beside the path a little before the arch (a greeter's trail has the greeter instead)
   for (var tn = 0; tn < (spec.greet ? 0 : 30); tn++){ var nq = beside(SL * (0.16 + R() * 0.7), R() < 0.5 ? -1 : 1, PW + 1.6), ny = nq[1], nx = nq[0];
-    if (free(nx, ny, 1) && okGround(nx, ny, 1)){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
+    if (free(nx, ny, 1) && okGround(nx, ny, 1) && !(GYM && (inGym(nx, ny, 1.5) || gymShadow(nx, ny)))){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
+  /* THE GYM'S CIVILIAN, the owner's call: somebody at the park standing by the gate, who says one thing about what is in
+     there (a nudge, never the answer), and a plainer thing once you have pulled the lever twice. */
+  // they stand toward the middle of the screen (on a shore the camera leans out to sea), so their bubble has room
+  if (GYM){ var cv0 = null, cs0 = P.sea ? P.sea.side : (GYM.ax > 0 ? -1 : 1); for (var cq = 0; cq < 32 && !cv0; cq++){ var sd3 = cq & 1 ? -cs0 : cs0, cxq = GYM.ax + sd3 * (2.1 + (cq >> 1) * 0.4), cyq = GYM.ay + 0.7 + (cq >> 3) * 0.6;
+      if (okGround(cxq, cyq, 0.8) && free(cxq, cyq, 0.8) && !inGym(cxq, cyq, 0.8) && gymSpurD(cxq, cyq) > 1.4) cv0 = [cxq, cyq]; }
+    cv0 = cv0 || [GYM.ax + 2.4, GYM.ay + 1.2]; P.civ = item('civ', cv0[0], cv0[1], { th:themeAt(cv0[1]) }); used.push({ x:cv0[0], y:cv0[1], r:1 });
+    // the vault chest at the far end: on the list of what this trail holds, opened by solving the gym
+    var vq = GYD.chest, vc = vq % GYD.W, vr = (vq / GYD.W) | 0; P.vault = item('vault', GYM.x0 + (vc + 0.5) * GYM.T, GYM.y0 + (vr + 0.5) * GYM.T, { gym:GYM.id }); }
 
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
   P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall' || t.k === 'bridge') return; if (PLANT[t.k]) return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
@@ -511,7 +568,7 @@ function plan(spec){
      spec.pzKind forces a kind (or 'none'), for the checks. */
   function puzzle(){
     var RQ = rng(hstr('pz:' + (spec.key || '') + ':' + seed)), roll = RQ(), force = spec.pzKind;
-    if (force === 'none' || (!force && roll >= PZ_SHARE)) return;
+    if (GYM || force === 'none' || (!force && roll >= PZ_SHARE)) return;   // a gym trail has its gym instead
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0], host = items.filter(function(t){ return t.k === 'host'; })[0];
     if (!npc && !host) return;   // nobody to give the clue: no puzzle
     var FL = P._fl, G0 = FL.flood(false);
@@ -622,7 +679,7 @@ function plan(spec){
       var cs = CG[ck(x, y)] || []; for (var i = 0; i < cs.length; i++){ var c = cs[i]; if (c.w){ if (Math.abs(x - c.x) < c.w / 2 + RB && Math.abs(y - c.y) < c.d / 2 + RB) return true; } else if (Math.hypot(x - c.x, y - c.y) < c.r + RB) return true; }
       if (P.gate && Math.abs(y - P.gate.y) < 0.9 + RB && !(Math.abs(x - P.gate.x) < PW + 0.3)) return true;
       if (P.fence){ var F = P.fence, d = Math.hypot(x - F.x, y - F.y); if (Math.abs(d - F.r) < RB + 0.15){ var a = Math.atan2(y - F.y, x - F.x), da = Math.abs(Math.atan2(Math.sin(a - F.a), Math.cos(a - F.a))); if (!(keyed && da < F.half)) return true; } }
-      for (var j = 0; j < items.length; j++){ var t = items[j]; if (t === skip) continue; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + RB) return true; }
+      for (var j = 0; j < items.length; j++){ var t = items[j]; if (t === skip) continue; if ((t.k === 'chest' || t.k === 'npc' || t.k === 'civ') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + RB) return true; }
       return false; }
     function flood(keyed, skip){ var G = new Uint8Array(NX * NY), g0 = atS(2), i0 = Math.round((g0[0] - b[0]) / RES), j0 = Math.round((g0[1] - b[1]) / RES), st = [j0 * NX + i0]; G[st[0]] = 1;
       while (st.length){ var q = st.pop(), i = q % NX, j = (q / NX) | 0;
@@ -665,7 +722,7 @@ function plan(spec){
   var SH = []; P.things.forEach(function(t){ var H = t.h || 1; if (H < 1.6 && !t.w) return; var rx, ry, cx2, cy2;
     if (t.w){ rx = t.w / 2 + H * 0.18; ry = t.d / 2 + H * 0.12; cx2 = t.x + H * 0.22; cy2 = t.y + H * 0.16; }
     else { var cr = t.cr || t.r * 1.4; rx = cr * 1.05 + 0.4; ry = cr * 0.75 + 0.3; cx2 = t.x + H * 0.2; cy2 = t.y + H * 0.14; }
-    if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence' || t.k === 'pen' || t.k === 'green') return; SH.push({ x:cx2, y:cy2, rx:rx, ry:ry }); });
+    if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence' || t.k === 'pen' || t.k === 'green' || t.k === 'gym') return; SH.push({ x:cx2, y:cy2, rx:rx, ry:ry }); });
   // keyed by a number, not a string: shadeAt is asked once for every pixel of ground
   var SG = new Map(), sgk = function(x, y){ return Math.floor(x / 6) * 65536 + Math.floor(y / 6); };
   SH.forEach(function(o){ for (var x = o.x - o.rx; x <= o.x + o.rx + 6; x += 6) for (var y = o.y - o.ry; y <= o.y + o.ry + 6; y += 6){ var k = sgk(x, y), a = SG.get(k); if (!a) SG.set(k, a = []); a.push(o); } });
@@ -726,17 +783,21 @@ var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1,
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
   var b = P.b, seed = P.seed, L = P.L, cx = P.cx, sp = P.spec;
-  function kAt(y){ return kitOf(P.themeAt(y)); }
-  return {
+    return {
     gain:1.4,
     bg:kitOf(sp.kitAs || sp.theme).g[0],
     // a hole is flat ground, its rails and blocks stand up off it, its water and cup sit down in it
-    h:function(x, y){ var fc = P.footAt(x, y); if (fc) return fc.c === 10 ? 0.42 : fc.c === 11 ? 0.55 : fc.c === 12 ? -0.3 : (fc.c === 5 || fc.c === 9) ? -0.3 : 0.05;
+    // a gym's room is deck, and its kind may sink or raise a tile of it (push's holes: gymkinds/push.js floor())
+    h:function(x, y){ var gc = P.gym && P.gymCell(x, y); if (gc){ var gf = gymFloor(P, gc); return gf && gf.h != null ? gf.h : GYM_DECK; }
+      var fc = P.footAt(x, y); if (fc) return fc.c === 10 ? 0.42 : fc.c === 11 ? 0.55 : fc.c === 12 ? -0.3 : (fc.c === 5 || fc.c === 9) ? -0.3 : 0.05;
       var wd = P.walkD(x, y), z = (fbm(x * 0.045, y * 0.045, seed) - 0.45) * 2.4 * sm(PW + 0.5, PW + 7, wd);
       if (P.inClear(x, y)) z *= 0.3; if (P.deckAt(x, y)){ var dk = P.creekD(x, y) + P.creek.hw; return 0.22 + 0.4 * Math.max(0, 1 - dk * dk / ((P.creek.hw + 1.1) * (P.creek.hw + 1.1))); }
       if (P.creek){ var cd = P.creekD(x, y); if (cd < 1.4 && cd > 0) z = Math.min(z, -0.12 * (1.4 - cd)); } var o = P.poolAt(x, y); if (o) z = o.k === 'lava' ? -0.45 : o.k === 'water' ? -0.55 : o.k === 'ice' ? -0.05 : -0.12;
       if (P.seaAt(x, y)) z = -0.7; if (wd < PW) z -= 0.06; return z; },
-    mat:function(x, y){ var fc = P.footAt(x, y);
+    mat:function(x, y){ var gc = P.gym && P.gymCell(x, y);
+      if (gc){ var gf2 = gymFloor(P, gc); if (gf2 && gf2.mat) return gf2.mat;
+        return [gc.k === '#' ? 'gwall' : 'gdeck', { gu:gc.u, gv:gc.v, gc:gc.c, gr:gc.r }]; }
+      var fc = P.footAt(x, y);
       if (fc){ var c = fc.c, q = fc.i; return [c === 10 ? 'cr' + q : c === 11 ? 'cb' + q : c === 12 ? 'cup' : c === 4 ? 'sand' : (c === 5 || c === 9) ? 'water' : c === 6 ? 'ice' : c === 7 ? 'bog' : c === 3 ? 'g' : c === 2 ? 'cf' + q : 'cc' + q]; }
       if (P.deckAt(x, y)) return ['deck', { pl:Math.floor((y - P.creek.cy(x)) * 2.2 + 50) }];
       var o = P.poolAt(x, y); if (o) return [o.k === 'slow' ? 'bog' : o.k]; if (P.seaAt(x, y)) return ['water'];
@@ -793,6 +854,15 @@ function mats(P){
       return R(n < 0.04 ? cols[2] : m ? cols[0] : cols[1]); }],
     bank:['#8a7a62', '#9a8a70', '#6e624e', 0.3], scorch:['#2a2226', '#3a2e30', '#4a2a22', 0.25]
   };
+  /* THE GYM'S FLOOR: deck planks laid across, a dark seam on every tile's edge so the grid he steps on reads at a glance,
+     and a wall's foot in its shadow. Whatever the kind sets into the floor it paints itself (mats(): push's holes, dark
+     with water glinting at the bottom, and its belts with their chevrons pointing the way they run). */
+  if (P.gym){ var GP = gymPal(P.spec.theme);
+    out.gdeck = ['', '', '', 0, function(c, R, h3){ var e = c.gu < 0.06 || c.gu > 0.94 || c.gv < 0.06 || c.gv > 0.94, pl = Math.floor((c.gv || 0) * 4), n = h3(c.ti, c.tj, 41);
+      var col = e ? GP.deck[2] : (Math.abs((c.gv || 0) * 4 - Math.round((c.gv || 0) * 4)) < 0.06 ? GP.deck[2] : ((pl + (c.gc || 0) + (c.gr || 0)) % 2 ? GP.deck[0] : GP.deck[1]));
+      if (!e && n < 0.05) col = GP.deck[2]; return R(c.dt < 0 ? GP.deck[2] : col); }];
+    out.gwall = ['', '', '', 0, function(c, R){ return R(GP.deck[2]); }];
+    if (P.gym.K.mats){ var KM2 = P.gym.K.mats(baseTh(P.spec.theme), GP.deck); for (var km in KM2) out[km] = KM2[km]; } }
   // each real hole in its own colours: carpet, fringe, rail and block
   P.feet.forEach(function(o, i){ var C = o.f.T; out['cc' + i] = [C.carpet, C.carpet2, C.carpet, 0.16]; out['cf' + i] = [C.carpet2, C.carpet2, C.carpet, 0.1];
     out['cr' + i] = [C.wall, C.wallHi, C.wall, 0.1]; out['cb' + i] = [C.block, C.wall, C.block, 0.12]; });
@@ -922,6 +992,41 @@ BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.kitAs || P.spec.theme),
 BUILD.fence = function(B, t, i, P){ ringFence(B, P.fence, t.th); };
 // a puzzle's pen: the same fence round its own centre, its gap the gate (or the crate's gap)
 BUILD.pen = function(B, t){ ringFence(B, t, t.th); };
+/* THE GYM (gyms.js is the registry, its kind file the rules and the layouts; plan() fits it beside the walk). Its floor is
+   ground (land.h, mats), GYM_DECK above the land, with whatever its kind sets into it (floor(): push's holes sit down
+   in it); its walls and the gate are this one build, a row of tiles a solid, in the world's wall colours: a fort's stone
+   or a ship's planks. The kind's pieces, the lever and the vault chest move, so run() draws them. */
+var GYM_DECK = 0.45, GYM_WALL = 0.95;
+var GYM_PAL = { pirate:{ deck:['#c3935f', '#b38353', '#6e4a2c'] } };
+function gymPal(th){ return GYM_PAL[baseTh(th)] || GYM_PAL.pirate; }
+// what the gym's kind sets into its floor at a point of the room (gyms.js KINDS README, floor()), or null for deck
+function gymFloor(P, gc){ var K = P.gym.K; return K && K.floor ? K.floor(gc) : null; }
+BUILD.gym = function(B, t, i, P){ var Gm = P.gym; if (!Gm) return; var Q = Gm.Q, T = Gm.T, kx = kitOf(t.th), c1 = kx.wall[0], c2 = kx.wall[1], z0 = GYM_DECK, gd = window.RTT_PUTT_GYMS.byId(Gm.id) || {};
+  var stone = (gd.look || {}).wall === 'stone', gcol = Q.gate % Q.W, grow = (Q.gate / Q.W) | 0;
+  function cellAt(c, r){ return c < 0 || r < 0 || c >= Q.W || r >= Q.H ? '#' : Q.cell[r * Q.W + c]; }
+  for (var r = 0; r < Q.H; r++) (function(r){ var y0 = Gm.y0 + r * T, y1 = y0 + T;
+    B.solid(Gm.x0, y0, z0 - 0.05, Gm.x0 + Gm.w, y1, z0 + 3.7, function(px, py, pz){ var c = Math.floor((px - Gm.x0) / T); if (c < 0 || c >= Q.W) return null; var k = Q.cell[r * Q.W + c], tt = pz - z0, u = (px - Gm.x0) / T - c, v = (py - y0) / T;
+      // the gate: a post either side of it and a beam over it, the way in
+      if (r === grow && Math.abs(c - gcol) <= 1){ var gx = (px - Gm.x0) / T - gcol;
+        if (tt > 2.85 && tt < 3.35 && gx > -0.3 && gx < 1.3 && v > 0.3 && v < 0.7) return tt > 3.2 ? c1 : c2;
+        if (k === '#' && ((gx > -0.3 && gx < 0.02) || (gx > 0.98 && gx < 1.3)) && v > 0.25 && v < 0.75 && tt < 3.35) return (tt * 3 | 0) % 2 ? c1 : c2; }
+      if (k !== '#' || tt > GYM_WALL) return null;
+      var top = tt > GYM_WALL - 0.16;
+      if (stone){ var course = Math.floor(tt / 0.42), off = course % 2 ? 0.5 : 0, bu = ((px - Gm.x0) / 0.8 + off) % 1, seam = bu < 0.08 || (tt % 0.42) < 0.05;
+        if (top) return hash(px * 4 | 0, py * 4 | 0, 5) < 0.25 ? c2 : c1; return seam ? c2 : (hash(Math.floor((px - Gm.x0) / 0.8 + off), course, 7) < 0.3 ? c2 : c1); }
+      // planks: a post at every tile's corner, boards between, a rail along the top
+      var post = (u < 0.1 || u > 0.9) && (v < 0.1 || v > 0.9); if (post) return c2;
+      if (top) return c1; var board = Math.floor(tt / 0.36); return (tt % 0.36) < 0.05 ? c2 : (hash(c, board, r) < 0.35 ? c2 : c1); }, 0.2); })(r); };
+// a lever for the reset, at two angles (0 up, 1 pulled), and a smaller vault chest for a gym (the trail chest at TILE size)
+function gymLeverFn(on){ return function(B){ var a = on ? 0.85 : -0.85, ca = Math.cos(a), sa = Math.sin(a), PZ0 = 1.15;
+  box(B, 0, 0, 3.4, 1, 3.2, function(dx, dy, tt){
+    // a post of the gym's iron with a slot in its top, and the handle swinging over in the x and z plane from its pivot
+    if (tt < PZ0 + 0.1 && Math.abs(dx) < 0.36 && Math.abs(dy) < 0.3) return Math.abs(dx) > 0.28 || tt > PZ0 ? '#4a4a52' : (tt < 0.12 ? '#2a2a30' : '#6e6e7a');
+    var hx = dx, hz = tt - PZ0, along = hx * sa + hz * ca, side = hx * ca - hz * sa; if (Math.abs(dy) < 0.1 && along > 0 && along < 1.45 && Math.abs(side) < 0.09) return '#2e2e34';
+    if (Math.abs(dy) < 0.2 && Math.hypot(hx - sa * 1.55, hz - ca * 1.55) < 0.24) return '#e5483a'; return null; }, 0.0625); }; }
+function scaleB(B, s){ var B2 = Object.create(B); B2.gz = function(x, y){ return B.gz(x * s, y * s) / s; };
+  B2.solid = function(x0, y0, z0, x1, y1, z1, fn, sv){ B.solid(x0 * s, y0 * s, z0 * s, x1 * s, y1 * s, z1 * s, function(px, py, pz){ return fn(px / s, py / s, pz / s); }, (sv || 0.25) * s); }; return B2; }
+var VAULT_K = 0.5;
 function fencePal(th){ return baseTh(th) === 'neon' ? { post:'#ff2bd6', rail:'#2bf0ff' } : { post:'#7a5a3a', rail:'#a8865a' }; }
 /* THE GAP IN A RING FENCE, as ringFence leaves it (whole segments of 40 drop out): its middle on the chord, its
    width post to post and the chord's direction, so the gate fills the gap exactly and lies along the fence. */
@@ -1284,10 +1389,11 @@ function up2(pic){ if (!pic || !pic.cv) return pic; var hit = UP2 && UP2.get(pic
 function run(box, P, pic, api){
   if (P.spec.smooth) pic = up2(pic);
   var cv = document.createElement('canvas'); cv.className = 'pp-tcv'; box.appendChild(cv);
-  var ctx = cv.getContext('2d'), alive = true, dpr = Math.min(3, window.devicePixelRatio || 1), W = 0, H = 0, kk = 1, ox = 0, oy = 0, ART = pic.ART || window.RTT_PUTT.ART;
+  var ctx = cv.getContext('2d'), alive = true, dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, kk = 1, ox = 0, oy = 0, ART = pic.ART || window.RTT_PUTT.ART;
   var found = api.found || {}, coinsGot = 0, pick = api.pick, sp = P.spec;
-  function size(){ var r = box.getBoundingClientRect(); W = cv.width = Math.max(1, Math.round(r.width * dpr)); H = cv.height = Math.max(1, Math.round(r.height * dpr)); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
-    var viewArt = VIEW_FT * SE / ART; kk = Math.max(1, Math.round(H / viewArt)); while (pic.cv.width * kk < W && kk < 40) kk++; }
+  // about 1.6 million pixels at most (putt.js capDpr): a computer screen at 2x was 4.3 million to fill every frame
+  function size(){ var r = box.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1); if (r.width * r.height * dpr * dpr > 1.6e6) dpr = Math.max(1, Math.sqrt(1.6e6 / Math.max(1, r.width * r.height))); W = cv.width = Math.max(1, Math.round(r.width * dpr)); H = cv.height = Math.max(1, Math.round(r.height * dpr)); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
+    var viewArt = VIEW_FT * SE / ART; kk = Math.max(1, Math.round(H / viewArt)); while (pic.cv.width * kk < W && kk < 40) kk++; kkBase = kk; gFree = null; }
   size(); var onRs = function(){ size(); }; window.addEventListener('resize', onRs);
   // the golfer
   // he stands just inside the start, facing the way the walk leaves it (it may set off sideways, not up the screen)
@@ -1299,7 +1405,7 @@ function run(box, P, pic, api){
      chest that were not picked up are still lying where they landed. */
   var chOpen = function(t){ return (found.ch || []).indexOf(t.id) >= 0; }, legacyK = function(t){ return t.main && found.k && !chOpen(t); };
   var items = [];
-  P.items.forEach(function(t){ var o = Object.assign({}, t); o.done = t.k === 'chest' ? chOpen(t) || legacyK(t) : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : t.k === 'prize' ? !!found.pz : false; items.push(o);
+  P.items.forEach(function(t){ var o = Object.assign({}, t); o.done = t.k === 'chest' ? chOpen(t) || legacyK(t) : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : t.k === 'prize' ? !!found.pz : t.k === 'vault' ? !!(api.gymSolved && api.gymSolved(t.gym)) : false; items.push(o);
     if (t.k === 'chest') (t.drops || []).forEach(function(d, i){ var cid = t.id + ':' + i; items.push({ k:'coin', id:cid, x:d[0], y:d[1], ch:o, done:legacyK(t) || (found.c || []).indexOf(cid) >= 0, out:chOpen(t), fly:null }); });
     if (t.k === 'prize') (t.drops || []).forEach(function(d, i){ var cid = t.id + ':' + i; items.push({ k:'coin', id:cid, x:d[0], y:d[1], ch:o, done:(found.c || []).indexOf(cid) >= 0, out:!!found.pz, fly:null }); }); });
   /* THE PUZZLE, if this trail has one (plan's puzzle()). solved is the record's (found.pz): a solved puzzle's chest is
@@ -1311,6 +1417,21 @@ function run(box, P, pic, api){
   function prizeShown(){ return !!PZ && (PZ.shown || PZ.k === 'plate' || PZ.k === 'push'); }
   function pzGateOpen(){ if (!PZ || PZ.k !== 'plate') return true; if (PZ.solved || performance.now() < PZ.openUntil) return true; var P2 = P.pen; return Math.hypot(g.x - P2.x, g.y - (P2.y + P2.r)) < 1.9; }
   var chests = items.filter(function(t){ return t.k === 'chest'; });
+  /* THE GYM, if this trail has one (gyms.js is the registry, the gym's kind file its rules, plan() put it here). Out on
+     the trail it is a box he walks round; walked into at its gate, its KIND says how it is played (a tile a step, a
+     tap on a tile, or the kind's own input) and draws its pieces (view()), and this frame owns the rest: the room, the
+     camera, the docked panel and its controls, undo, the civilian and the vault. A move's pieces animate phase by
+     phase (a push and his step together, then whatever the belts carry). A gym solved before shows as it was left
+     solved: the moves of its proof replayed, the barrels down in their holes, the vault open. */
+  var GY = P.gym, GL = GY ? window.RTT_PUTT_GYMS : null, GK = GY ? GY.K : null, gym = null, gView = null;
+  if (GY && GL){ var GD0 = GL.byId(GY.id), vIt = items.filter(function(t){ return t.k === 'vault'; })[0];
+    gym = { G:GD0, Q:GY.Q, inp:GL.input(GD0), s:GL.init(GD0), in:false, anim:null, resets:0, undos:0, n:0, hist:[], solved:!!(vIt && vIt.done), leverAt:-9, vault:vIt, stuck:false, told:{}, hold:null, lastDir:-1, marks:true };
+    if (gym.solved) gym.s = gymSolvedState(); }
+  function gymSolvedState(){ var G = gym.G, s = GL.init(G), pf = GL.proof(G); for (var q0 = 0; q0 < pf.length; q0++){ var r0 = GL.act(G, s, pf[q0]); if (r0.ev === 'open') break; s = r0.s; }
+    return GL.me(G, s) == null ? s : GL.place(G, s, GY.Q.start); }
+  function gT(i){ var Q = GY.Q, c = i % Q.W, r = (i / Q.W) | 0; return [GY.x0 + (c + 0.5) * GY.T, GY.y0 + (r + 0.5) * GY.T]; }
+  // the tile of the room at a point on the ground, or -1
+  function gymTile(x, y){ var Q = GY.Q, c = Math.floor((x - GY.x0) / GY.T), r = Math.floor((y - GY.y0) / GY.T); return c < 0 || r < 0 || c >= Q.W || r >= Q.H ? -1 : r * Q.W + c; }
   var parts = [], bubble = null, flash = 0, paused = false, ended = false;
   // the colliders, on a coarse grid
   var GRID = {}; function gk(x, y){ return (x / 6 | 0) + ',' + (y / 6 | 0); }
@@ -1322,7 +1443,7 @@ function run(box, P, pic, api){
       if (c.w){ if (Math.abs(x - c.x) < c.w / 2 + R && Math.abs(y - c.y) < c.d / 2 + R) return true; } else if (Math.hypot(x - c.x, y - c.y) < c.r + R) return true; }
     if (gate && Math.abs(y - P.gate.y) < 0.9 + R && !(gate.open && Math.abs(x - P.gate.x) < PW + 0.3)) return true;
     if (P.fence){ var d = Math.hypot(x - P.fence.x, y - P.fence.y); if (Math.abs(d - P.fence.r) < R + 0.15){ var a = Math.atan2(y - P.fence.y, x - P.fence.x), da = Math.abs(Math.atan2(Math.sin(a - P.fence.a), Math.cos(a - P.fence.a))); if (!(lockOpen && da < P.fence.half)) return true; } }
-    for (var j = 0; j < items.length; j++){ var t = items[j]; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + R) return true;
+    for (var j = 0; j < items.length; j++){ var t = items[j]; if ((t.k === 'chest' || t.k === 'npc' || t.k === 'civ') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + R) return true;
       if (t.k === 'fire' && Math.hypot(x - t.x, y - t.y) < 0.6 + R) return true; if (t.k === 'prize' && prizeShown() && Math.hypot(x - t.x, y - t.y) < 1.3 + R) return true; }
     if (P.pen){ var PN = P.pen, dp = Math.hypot(x - PN.x, y - PN.y); if (Math.abs(dp - PN.r) < R + 0.15){ var ap = Math.atan2(y - PN.y, x - PN.x), dap = Math.abs(Math.atan2(Math.sin(ap - PN.a), Math.cos(ap - PN.a))); if (!(dap < PN.half && pzGateOpen())) return true; } }
     if (PZ && PZ.crate && Math.abs(x - PZ.crate.x) < CRATE_H + R && Math.abs(y - PZ.crate.y) < CRATE_H + R) return true;
@@ -1330,7 +1451,10 @@ function run(box, P, pic, api){
   // the screen: art pixel to device pixel, through the picture's own projection
   function scr(x, y, z){ var p = pic.pr(x, y, z == null ? pic.zAt(x, y) : z); return [ox + p[0] * kk, oy + p[1] * kk]; }
   // on a shore trail the camera looks a little out to sea, where the ships are, rather than inland at more sand
-  function camAim(snap){ var lx = g.x + (P.sea && LIFE[sp.theme] && LIFE[sp.theme].ships ? P.sea.side * 4.5 : 0), p = pic.pr(lx, g.y, pic.zAt(lx, g.y)), tx = Math.round(W / 2 - p[0] * kk), ty = Math.round(H * 0.64 - p[1] * kk), iw = pic.cv.width * kk, ih = pic.cv.height * kk;
+  function camAim(snap){ var lx = g.x + (P.sea && LIFE[sp.theme] && LIFE[sp.theme].ships ? P.sea.side * 4.5 : 0), ly = g.y, fy = 0.64;
+    // in a gym the camera holds the whole room still in the board, clear of the panel (gymCam), rather than riding on him
+    if (gym && gym.in) return gymCam(snap);
+    var p = pic.pr(lx, ly, pic.zAt(lx, ly)), tx = Math.round(W / 2 - p[0] * kk), ty = Math.round(H * fy - p[1] * kk), iw = pic.cv.width * kk, ih = pic.cv.height * kk;
     tx = iw > W ? Math.max(W - iw, Math.min(0, tx)) : Math.round((W - iw) / 2); ty = ih > H ? Math.max(H - ih, Math.min(0, ty)) : Math.round((H - ih) / 2);
     if (snap){ ox = tx; oy = ty; } else { ox += Math.round((tx - ox) * 0.14); oy += Math.round((ty - oy) * 0.14); } }
   camAim(true);
@@ -1377,6 +1501,18 @@ function run(box, P, pic, api){
     pen0:P.pen && P.pen.gated ? fenceGate(P.pen, 'pen', false) : null, pen1:P.pen && P.pen.gated ? fenceGate(P.pen, 'pen', true) : null,
     crate:P.puzzle && P.puzzle.crate ? prop('pzcrate', function(B){ BRK.crate(B, 0, 0); }, 1.8, 1.8, 2) : null
   };
+  /* the gym's pieces at the land's own size: a smoothed walk doubles its land (up2), so they are doubled the same way,
+     or a barrel stands at half the size of the hole it is meant to fill */
+  function big(key, sp0){ if (!sp0 || !P.spec.smooth) return sp0; var k2 = key + '|x2'; if (!PROPS[k2]){ var u = up2({ cv:sp0.cv, pr:function(){ return [0, 0]; } }); PROPS[k2] = { cv:u.cv, ax:sp0.ax * 2, ay:sp0.ay * 2 }; } return PROPS[k2]; }
+  if (gym){ SPR.lever = [0, 1].map(function(o){ return big('gymlever' + o, prop('gymlever' + o, gymLeverFn(o), 4, 1.6, 3.4)); });
+    SPR.vault = [0, 0.22, 0.5, 0.78, 1].map(function(l){ return big('vault:' + l, prop('vault:' + l, function(B){ chestFn(l)(scaleB(B, VAULT_K)); }, 4.4 * VAULT_K, 6.4 * VAULT_K, 5.4 * VAULT_K)); }); }
+  /* THE ROOM, as the gym's kind draws in it (gyms.js KINDS README, view(R)): where its tiles are, the trail's own
+     drawing calls, and a way to hand the frame a move the kind worked out itself (the trick shot's ball at rest). */
+  if (gym){ gView = GK.view({ G:gym.G, Q:GY.Q, T:GY.T, DECK:GYM_DECK, x0:GY.x0, y0:GY.y0, at:gT, tile:gymTile, scr:scr, ctx:ctx, kk:function(){ return kk; }, get reduce(){ return reduce; },
+      sprite:function(key, fn, w, d, h){ return big(key, prop(key, fn, w, d, h)); }, drawSprite:drawSprite, BRK:BRK, burst:function(x, y, z, cols, n, sz, pow){ burst(x, y, z, cols, n, sz, pow); },
+      sfx:function(n){ if (api.sfx) api.sfx(n); }, say:function(t, ms){ say(t, ms); }, ground:groundAt, busy:function(){ return gymBusy(); },
+      commit:function(s1, ev, mv){ gymApply({ s:s1, ev:ev || 'move', moves:mv || [] }, performance.now() / 1000); } });
+    gView.lay(gym.s); }
   function fireSprite(t){ return prop('pzfire:' + t.th, brazierFn(t.th), 1.6, 1.6, 2.2); }
   // a plant's sprite, three of each kind a world so a hedge of them is not one bush stamped over and over
   var plants = []; P.things.forEach(function(t, i){ if (PLANT[t.k]) plants.push({ t:t, v3:i % 3, b:0, vb:0, sq:0, in:false, x:t.x, y:t.y, r:LOWR[t.k] || 1 }); });
@@ -1408,7 +1544,13 @@ function run(box, P, pic, api){
   function drawFigure(f, x, y, see, who){ if (!f || !f.url){ if (!who || !lastFig[who]) return null; f = lastFig[who].f; }
     var im = img(f.url); if (!im.complete || !im.naturalWidth){ var lf = who && lastFig[who]; if (!lf) return null; f = lf.f; im = lf.im; } else if (who) lastFig[who] = { f:f, im:im };
     var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
-    ctx.save(); ctx.imageSmoothingEnabled = false; if (who === 'me') meGlow(k2); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
+    ctx.save(); ctx.imageSmoothingEnabled = false; if (who === 'me') meGlow(k2); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore();
+    if (!(who === 'me' && calmFloor(x, y))) occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
+  /* IN A CALM ROOM (a kind with calm:true) only a wall can stand in front of him: the near wall, or an inner wall one row
+     nearer (push's rooms). Anywhere else the floor in front is flat, and painting it back over him would paint it over
+     the kind's tiles too. */
+  function calmFloor(x, y){ if (!gym || !gym.in || !GK.calm) return false; var Q = GY.Q, i = gymTile(x, y); if (i < 0) return false; var r = (i / Q.W) | 0, c = i % Q.W;
+    if (r >= Q.H - 2) return false; for (var dc = -1; dc <= 1; dc++){ var c2 = c + dc; if (c2 >= 0 && c2 < Q.W && Q.cell[(r + 1) * Q.W + c2] === '#') return false; } return true; }
   // your aura walks with you: the course golfer's pulse (hvswGlow, 2.4 s) in its colour, k pixels to a figure pixel
   function meGlow(k){ var a = null; try{ a = api.host.aura && api.host.aura(); }catch(e){} if (!a) return;
     var still = false; try{ still = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
@@ -1428,7 +1570,11 @@ function run(box, P, pic, api){
      that shows over the trees, so you can see what it is and where it is from a long way off */
   function drawLoot(t, now){ var L = LOOT[t.k], rows = L.rows, pal = lootPal(t), bc = lootBeam(t), z = pic.zAt(t.x, t.y) + 1.4 + Math.sin(now * 2.2 + t.x) * 0.2, p = scr(t.x, t.y, z),
       s = Math.max(2, Math.round(kk * 1.25)), w = rows[0].length, h = rows.length, shp = scr(t.x, t.y), pu = 0.5 + 0.5 * Math.sin(now * 3 + t.y);
-    if (bc){ var bw = 9 * s, bh = Math.round(H * 0.45), gr = ctx.createLinearGradient(0, shp[1] - bh, 0, shp[1]);
+    /* a loot's beam stands up the screen from it; one in front of a gym's room is cut short at the room's near edge, so
+       no beam ever crosses a room (the golden ball's did) */
+    var bh0 = Math.round(H * 0.45); if (bc && GY){ var GA = gymArtRect(), gx0 = GA.x0 * kk + ox, gx1 = GA.x1 * kk + ox, gy0 = GA.y0 * kk + oy, gy1 = GA.y1 * kk + oy;
+      if (shp[0] + 4.5 * s > gx0 && shp[0] - 4.5 * s < gx1 && shp[1] > gy0) bh0 = Math.max(0, Math.min(bh0, Math.round(shp[1] - gy1))); }
+    if (bc && bh0 > 0){ var bw = 9 * s, bh = bh0, gr = ctx.createLinearGradient(0, shp[1] - bh, 0, shp[1]);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       gr.addColorStop(0, 'rgba(' + bc + ',0)'); gr.addColorStop(0.6, 'rgba(' + bc + ',' + (0.18 + 0.08 * pu).toFixed(2) + ')'); gr.addColorStop(1, 'rgba(' + bc + ',' + (0.4 + 0.15 * pu).toFixed(2) + ')'); ctx.fillStyle = gr; ctx.fillRect(Math.round(shp[0] - bw / 2), Math.round(shp[1] - bh), bw, bh);
       ctx.fillStyle = 'rgba(' + bc + ',' + (0.35 + 0.15 * pu).toFixed(2) + ')'; ctx.fillRect(Math.round(shp[0] - s), Math.round(shp[1] - bh), 2 * s, bh);
@@ -1459,10 +1605,12 @@ function run(box, P, pic, api){
     if (Pz.k === 'plate'){ var pl = Pz.plate, on = pzGateOpen() && !PZ.solved, h = 0.8, c = [[pl.x - h, pl.y - h], [pl.x + h, pl.y - h], [pl.x + h, pl.y + h], [pl.x - h, pl.y + h]].map(function(q){ return scr(q[0], q[1]); });
       ctx.fillStyle = on ? '#ffd23a' : '#8a8478'; ctx.strokeStyle = on ? '#fff3a8' : '#4a463e'; ctx.lineWidth = Math.max(2, kk * 0.6); ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); for (var i = 1; i < 4; i++) ctx.lineTo(c[i][0], c[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
       if (on){ ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,210,70,' + (0.18 + 0.12 * Math.sin(now * 10)).toFixed(2) + ')'; var pc = scr(pl.x, pl.y); ctx.beginPath(); ctx.ellipse(pc[0], pc[1], 8 * kk, 3.4 * kk, 0, 0, 7); ctx.fill(); ctx.restore(); } } }
-  function drawChest(t, now){ var z = pic.zAt(t.x, t.y), fr = SPR.chest, e = t.openAt != null ? now - t.openAt : (t.done ? 99 : -1), k, ox2 = 0, sy = 1, shp = scr(t.x, t.y);
+  function drawChest(t, now, frs){ var z = pic.zAt(t.x, t.y), fr = frs || SPR.chest, e = t.openAt != null ? now - t.openAt : (t.done ? 99 : -1), k, ox2 = 0, sy = 1, shp = scr(t.x, t.y), ks = frs ? VAULT_K : 1;
     if (!fr) return;
     if (e < 0){ k = 0; var pu = 0.5 + 0.5 * Math.sin(now * 2.4 + t.x);   // shut: a warm pool of light and a glint now and then
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,70,' + (0.16 + 0.12 * pu).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 13 * kk, 5 * kk, 0, 0, 7); ctx.fill(); ctx.restore(); }
+      // in a calm room (a kind with calm:true) the vault's pool stays on its own tile, so it never washes out the tiles round it
+      var prx = 13 * kk * ks, pry = 5 * kk * ks; if (frs && gym && GK.calm){ prx = Math.abs(scr(t.x + GY.T * 0.5, t.y)[0] - shp[0]); pry = prx * 0.4; }
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,70,' + (0.16 + 0.12 * pu).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], prx, pry, 0, 0, 7); ctx.fill(); ctx.restore(); }
     else if (e < CH_SHAKE){ k = 0; var a = 1 - e / CH_SHAKE; ox2 = Math.round(Math.sin(e * 70) * 1.6 * kk * a); }
     else if (e < CH_SHAKE + CH_LID){ var u = (e - CH_SHAKE) / CH_LID; k = 1 + Math.min(3, Math.floor(u * 4)); sy = 1 - 0.07 * Math.sin(u * Math.PI); }
     else k = 4;
@@ -1475,7 +1623,9 @@ function run(box, P, pic, api){
       ctx.restore(); }
     var p = scr(t.x, t.y, z), w = sp2.cv.width * kk, h = sp2.cv.height * kk, h2 = Math.round(h * sy), rx = Math.round(p[0] - sp2.ax * kk) + ox2, ry = Math.round(p[1] - sp2.ay * kk * sy);
     // a shut chest behind a tree shows through it faintly, the way the golfer does: tucked away, never invisible
-    ctx.drawImage(sp2.cv, rx, ry, w, h2); occlude(rx, ry, w, h2, t.x, t.y, z, e < 0);
+    // (in a calm room nothing stands in front of the vault, and the floor in front of it, which is where the kind draws
+    // its tiles, is not to be painted back over them)
+    ctx.drawImage(sp2.cv, rx, ry, w, h2); if (!(frs && gym && GK.calm)) occlude(rx, ry, w, h2, t.x, t.y, z, e < 0);
     if (e < 0){ var gl = (now * 0.7 + t.x * 0.13) % 1; if (gl < 0.22){ var gu = gl / 0.22, gs = Math.max(2, Math.round(kk)), gp = scr(t.x - 0.9 + gu * 1.8, t.y + 0.9, z + 1.25 + Math.sin(gu * Math.PI) * 0.3);
       ctx.fillStyle = 'rgba(255,255,255,' + Math.sin(gu * Math.PI).toFixed(2) + ')'; ctx.fillRect(Math.round(gp[0] - gs / 2), Math.round(gp[1] - 2 * gs), gs, 4 * gs); ctx.fillRect(Math.round(gp[0] - 2 * gs), Math.round(gp[1] - gs / 2), 4 * gs, gs); } } }
 
@@ -1563,8 +1713,17 @@ function run(box, P, pic, api){
     if (a != null) ctx.globalAlpha = a; for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++){ var ch = rows[yy][flip ? w - 1 - xx : xx]; if (ch === '.') continue; ctx.fillStyle = pal[ch] || pal.o; ctx.fillRect(rx + xx * s, ry + yy * s, s, s); }
     if (a != null) ctx.globalAlpha = 1; return [rx, ry, w * s, h * s]; }
   function shadowAt(x, y, r, a){ var p = scr(x, y); ctx.fillStyle = 'rgba(0,0,0,' + a + ')'; ctx.beginPath(); ctx.ellipse(p[0], p[1], r * kk / ART, r * 0.4 * kk / ART, 0, 0, 7); ctx.fill(); }
+  /* A CALM ROOM (a kind with calm:true, gyms.js KINDS README; every kind on the page asks for it): while he is in its
+     gym, nothing of the world's life is drawn over the room as it stands on the screen. Not what flies, drifts or floats
+     (birds, balloons, puffs, motes), and not what roams the ground or sails past (tumbleweeds, ghosts, ships), so
+     nothing ever sits on a tile. pad is how far round its point the thing reaches, in trail feet, and never less than
+     a bird's width (8 art pixels) round the room's box. A flyer is tested at its body and at its shadow. Out on the trail, and
+     in a kind without it, the world's life is as it was. One test for all of it, here. */
+  function calmHides(x, y, z, pad){ if (!gym || !gym.in || !GK.calm) return false; var A = gymArtRect(), p = scr(x, y, z), e = Math.max(8 * kk, (pad || 1) * kk * CE / ART);
+    return p[0] > A.x0 * kk + ox - e && p[0] < A.x1 * kk + ox + e && p[1] > A.y0 * kk + oy - e && p[1] < A.y1 * kk + oy + e; }
   // what stands on the ground or the sea is sorted in with everything else; what flies is drawn over it all
-  function lifeGround(ds){ ships.forEach(function(s1, i){ var yS = shipY(s1); ds.push({ k:'ship', o:s1, x:shipX(yS), y:yS }); }); tumbles.forEach(function(t){ ds.push({ k:'tumble', o:t, x:t.x, y:t.y }); }); ghosts.forEach(function(q){ ds.push({ k:'ghost', o:q, x:q.x, y:q.y }); }); }
+  function lifeGround(ds){ ships.forEach(function(s1, i){ var yS = shipY(s1), xS = shipX(yS); if (!calmHides(xS, yS, 4, 7)) ds.push({ k:'ship', o:s1, x:xS, y:yS }); });
+    tumbles.forEach(function(t){ if (!calmHides(t.x, t.y, pic.zAt(t.x, t.y) + 1.2, 2)) ds.push({ k:'tumble', o:t, x:t.x, y:t.y }); }); ghosts.forEach(function(q){ if (!calmHides(q.x, q.y, pic.zAt(q.x, q.y) + 2, 2)) ds.push({ k:'ghost', o:q, x:q.x, y:q.y }); }); }
   function shipX(y){ return P.sea.side * Math.min((sp.halfW || HALFW) - 2.6, P.seaEdge(y) + 3); }
   function shipY(s1){ var tt = performance.now() / 1000, u = ((s1.y0 + s1.dir * s1.v * tt) - (P.b[1] - 20)) % s1.span; if (u < 0) u += s1.span; return P.b[1] - 20 + u; }
   function drawLifeThing(t, tsec){ var o = t.o;
@@ -1578,9 +1737,10 @@ function run(box, P, pic, api){
       pixAt(PIX_GHOST, { g:'#eef2ff', o:'#eef2ff' }, t.x, t.y, gz, 0.36, Math.sin(o.ph * 0.5) < 0, 0.5 + 0.15 * Math.sin(tsec * 2 + o.ph)); } }
   function lifeAir(tsec){
     if (reduce) return;
-    puffs.forEach(function(q){ var p = scr(q.x, q.y, q.z), a = 0.38 * (1 - q.t / 4.5); ctx.fillStyle = 'rgba(70,62,66,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], q.r * kk * 1.4, 0, 7); ctx.fill(); });
-    balloons.forEach(function(b2){ var cs = BALLOON_COLS[b2.c], spr = prop('balloon:' + b2.c, balloonFn(cs[0], cs[1]), 6.4, 6.4, 16); shadowAt(b2.x, b2.y, 2.4, 0.1); drawSprite(spr, b2.x, b2.y, b2.z + Math.sin(tsec * 0.8 + b2.ph) * 0.6); });
+    puffs.forEach(function(q){ if (calmHides(q.x, q.y, q.z, q.r * 1.4)) return; var p = scr(q.x, q.y, q.z), a = 0.38 * (1 - q.t / 4.5); ctx.fillStyle = 'rgba(70,62,66,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], q.r * kk * 1.4, 0, 7); ctx.fill(); });
+    balloons.forEach(function(b2){ if (calmHides(b2.x, b2.y, b2.z + 8, 9) || calmHides(b2.x, b2.y, pic.zAt(b2.x, b2.y), 3)) return; var cs = BALLOON_COLS[b2.c], spr = prop('balloon:' + b2.c, balloonFn(cs[0], cs[1]), 6.4, 6.4, 16); shadowAt(b2.x, b2.y, 2.4, 0.1); drawSprite(spr, b2.x, b2.y, b2.z + Math.sin(tsec * 0.8 + b2.ph) * 0.6); });
     motes.forEach(function(m){ var k = m.k, z = m.z + (k === 'leaf' || k === 'petal' || k === 'ash' || k === 'snow' || k === 'ember' || k === 'spark' || k === 'dust' ? 0 : pic.zAt(m.x, m.y));
+      if (calmHides(m.x, m.y, z, 1)) return;
       if (k === 'snow') sq(m.x, m.y, z, 0.3, '#ffffff', 0.95);
       else if (k === 'ash') sq(m.x, m.y, z, 0.3, '#9a9094', 0.8);
       else if (k === 'ember') sq(m.x, m.y, z, 0.32, m.life * 5 % 1 < 0.5 ? '#ffb43a' : '#ff5a1a', Math.max(0, 1 - m.z / 9));
@@ -1589,7 +1749,7 @@ function run(box, P, pic, api){
       else if (k === 'dust') sq(m.x, m.y, z, 0.22, '#f0d8b0', 0.7);
       else if (k === 'firefly'){ var gl = Math.max(0, Math.sin(m.life * 2.2 + m.ph)); if (gl > 0.05){ sq(m.x, m.y, z, 0.9, 'rgba(220,255,120,' + (gl * 0.35).toFixed(2) + ')'); sq(m.x, m.y, z, 0.3, '#f4ff9a', gl); } }
       else if (k === 'butter') pixAt(PIX_BUTTER[(Math.floor(m.life * 9 + m.ph) % 2)], { w:m.c, b:'#2a2228', o:m.c }, m.x, m.y, z, 0.24, false); });
-    flyers.forEach(function(f){ var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' || f.kind === 'ptero' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
+    flyers.forEach(function(f){ if (calmHides(f.x, f.y, pic.zAt(f.x, f.y) + f.z, 2) || calmHides(f.x + 1, f.y + 1, pic.zAt(f.x, f.y), 2)) return; var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' || f.kind === 'ptero' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
       shadowAt(f.x + 1, f.y + 1, 0.9 * C.sz, 0.1); pixAt(fr, C, f.x, f.y, gz + f.z, C.sz * 0.28, f.vx < 0); }); }
 
   // ---- input: a stick under the thumb, or the keys
@@ -1608,7 +1768,13 @@ function run(box, P, pic, api){
   var stickV = [0, 0], keys = {}, drag = null, SR = 46;
   ui.querySelector('[data-skip]').onclick = function(){ if (alive) api.skip(); };
   var KM = { ArrowUp:'u', KeyW:'u', ArrowDown:'d', KeyS:'d', ArrowLeft:'l', KeyA:'l', ArrowRight:'r', KeyD:'r' };
-  function kd(e){ var c = KM[e.code]; if (!c || !alive) return; keys[c] = 1; hint.classList.add('gone'); e.preventDefault(); }
+  function kd(e){ if (alive && gym && gym.in && !paused && gymKey(e)) return; var c = KM[e.code]; if (!c || !alive) return; keys[c] = 1; hint.classList.add('gone'); e.preventDefault(); }
+  // in a gym: Z or Backspace undoes a move, R restarts; a kind that takes over input hears the rest first
+  function gymKey(e){ if (e.ctrlKey || e.metaKey || e.altKey) return false;
+    if (e.code === 'KeyZ' || e.code === 'Backspace'){ e.preventDefault(); if (!e.repeat) gymUndo(); return true; }
+    if (e.code === 'KeyR'){ e.preventDefault(); if (!e.repeat && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); return true; }
+    if (gym.inp === 'own' && gView.key && gView.key(e)){ e.preventDefault(); return true; }
+    return false; }
   function ku(e){ var c = KM[e.code]; if (c) keys[c] = 0; }
   function pdn(e){ if (!alive || e.target.closest('button')) return; e.preventDefault(); var r = box.getBoundingClientRect();
     drag = { id:e.pointerId, x:e.clientX, y:e.clientY }; stick.style.left = (e.clientX - r.left) + 'px'; stick.style.top = (e.clientY - r.top) + 'px'; stick.classList.add('on'); knob.style.transform = ''; hint.classList.add('gone'); }
@@ -1632,7 +1798,10 @@ function run(box, P, pic, api){
   // the local's second thing to say: after the first has been read, and never over something else being said
   function npcLater(txt, wait, who){ setTimeout(function(){ if (alive && (!bubble || bubble.who === who || performance.now() > bubble.until)) say(txt, 5200, who); }, wait * 1000); }
   function sayLater(txt, ms, wait, who){ setTimeout(function(){ if (alive) say(txt, ms, who); }, (reduce ? 0.1 : wait) * 1000); }
-  function say(txt, ms, who){ bubble = { txt:txt, until:performance.now() + (ms || 3200), who:who || null }; bubEl.textContent = txt; bubEl.hidden = false; }
+  // in a gym every line goes in the docked panel, never over the board
+  function say(txt, ms, who){ bubble = { txt:txt, until:performance.now() + (ms || 3200), who:who || null };
+    if (gym && gym.in){ bubEl.hidden = true; gymLine(txt, who === civIt ? 0 : ms || 3200, who === civIt); return; }
+    bubEl.textContent = txt; bubEl.hidden = false; }
   function burst(x, y, z, cols, n, sz, pow){ pow = pow || 1; for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = (2 + Math.random() * 4) * pow; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:(3 + Math.random() * 4) * pow, c:cols[i % cols.length], t:0, sz:sz ? sz * (0.6 + Math.random() * 0.8) : 0 }); } }
   // a guest never sees a coin count: their coins are held for the account, and the walk says so once
   function hudCoins(){ ui.querySelector('[data-coins]').textContent = api.guestCoins ? 'Sign in' : '+' + coinsGot; }
@@ -1642,7 +1811,7 @@ function run(box, P, pic, api){
      so a player always knows what they are looking for. Coins are not on it: they come out of the chest. */
   function hudList(){ var el = ui.querySelector('[data-tlist]'), fs = items.filter(function(t){ return LOOT[t.k]; });
     el.innerHTML = fs.length ? '<b>On this trail</b>' + fs.map(function(t){ var nm = t.k === 'trinket' ? t.name || 'Trinket' : t.k === 'part' ? (t.name || 'Putter part') : LOOT[t.k].name;
-      if (t.k === 'chest' && t.drops) nm = 'Chest'; if (t.k === 'prize') nm = (P.puzzle && P.puzzle.name) || 'Puzzle'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + (t.hint ? ' near' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
+      if (t.k === 'chest' && t.drops) nm = 'Chest'; if (t.k === 'prize') nm = (P.puzzle && P.puzzle.name) || 'Puzzle'; if (t.k === 'vault') nm = (gym && gym.G.name) || 'Gym'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + (t.hint ? ' near' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
   function hudChests(){}
   function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? 'Golden balls ' + gd.have + '/' + gd.total : ''; }
   hudGold(); hudChests(); hudList();
@@ -1686,6 +1855,188 @@ function run(box, P, pic, api){
     if (hs.ph === 'come'){ g.face = [-dx, -dy]; g.aimI = null; if (d > 3.25){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
     else if (hs.ph === 'idle'){ hs.moving = false; if (d < 7) hs.face = [dx, dy]; }
     talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
+  /* ---- THE GYM, PLAYED: THE FRAME. Every kind is played through the same room and the same docked panel. One move is
+     one step, one tap or one of the kind's own moves; its moves play as phases (whatever he pushes moves with him,
+     then whatever the belts carry, a tile at a time), and nothing more is asked of the input until they have played.
+     Held, the stick, a key or the pad keeps stepping; a tap on the floor steps toward it (a tap kind: acts on the tile).
+
+     NOTHING COVERS THE BOARD, the owner's call (2026-10-17, a phone screenshot of The Cargo Hold with the civilian's
+     bubble over the grid: "text should not be covering the game like this"). In the room, the civilian's lines and
+     the frame's own messages go in the docked panel, under the gym's name and its goal; the controls (Undo, Restart,
+     Leave and the pad) are in it too, with large tap targets; the stick and the trail's own buttons are hidden; and
+     the camera frames the room in what the panel and the header leave free (gymCam), zooming out a step if it has to
+     and in as far as it fits on a wide screen.
+     On a phone the panel is docked along the bottom, on a wide screen down the right. */
+  var DIR_FACE = [[0, -1], [1, 0], [0, 1], [-1, 0]], civIt = items.filter(function(t){ return t.k === 'civ'; })[0];
+  var gPanel = null, gE = {}, padDir = -1, kkBase = kk, gFree = null, gFreeAt = 0, gArt = null, gHot = null;
+  if (gym){ gPanel = document.createElement('div'); gPanel.className = 'pp-gp'; gPanel.hidden = true; gPanel.setAttribute('data-gp', '');
+    gPanel.innerHTML = '<div class="pp-gph"><b data-gname></b><i data-gkeep hidden>Gatekeeper</i><span data-gmoves></span></div><p class="pp-gpg" data-ggoal></p>' +
+      '<div class="pp-gps" data-gsay aria-live="polite"><span class="pp-gpf" data-gface></span><p data-gtext></p></div>' +
+      '<div class="pp-gpc" data-gctl><div class="pp-gpb"><button data-gundo>Undo</button><button data-grestart>Restart</button><button data-gleave>Leave</button></div>' +
+      '<div class="pp-gpd" data-gpad><button data-d="0" aria-label="Step up"></button><button data-d="3" aria-label="Step left"></button><button data-d="1" aria-label="Step right"></button><button data-d="2" aria-label="Step down"></button></div></div>' +
+      '<div class="pp-gpk" data-gkeys></div>';
+    ui.appendChild(gPanel);
+    ['name', 'keep', 'moves', 'goal', 'say', 'face', 'text', 'ctl', 'pad', 'keys', 'undo', 'restart', 'leave'].forEach(function(k){ gE[k] = gPanel.querySelector('[data-g' + k + ']'); });
+    gE.name.textContent = gym.G.name; gE.keep.hidden = !gym.G.keeper; gE.goal.textContent = GL.goal(gym.G);
+    var stepIn = gym.inp === 'step'; gE.pad.hidden = !stepIn; gPanel.classList.toggle('nopad', !stepIn);
+    gE.keys.textContent = (stepIn ? 'Arrows or WASD step · ' : gym.inp === 'tap' ? 'Click a tile · ' : '') + 'Z undo · R restart';
+    var pu = api.portrait ? api.portrait(gym.G.who.look) : ''; if (pu) gE.face.style.backgroundImage = 'url(' + pu + ')';
+    gPanel.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
+    gE.undo.onclick = function(e){ e.stopPropagation(); gymUndo(); };
+    gE.restart.onclick = function(e){ e.stopPropagation(); if (gym.in && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); };
+    gE.leave.onclick = function(e){ e.stopPropagation(); gymOut(); };
+    // the pad: a press steps at once, and held it keeps stepping, as the stick does
+    [].forEach.call(gE.pad.querySelectorAll('button'), function(bt){ var d = +bt.getAttribute('data-d');
+      bt.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); padDir = d; gym.tap = d; try{ bt.setPointerCapture(e.pointerId); }catch(e2){} });
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function(ev){ bt.addEventListener(ev, function(){ if (padDir === d) padDir = -1; }); }); }); }
+  function gymPhases(moves){ var i = 0, ph = [], first = []; while (i < moves.length){ first.push(moves[i]); if (moves[i++][0] === 'me') break; } if (first.length) ph.push(first); while (i < moves.length) ph.push([moves[i++]]); return ph; }
+  function phDur(ph){ var d = 0; ph.forEach(function(m){ d = Math.max(d, GK.dur ? GK.dur(m[3]) : 0.15); }); return reduce ? d * 0.6 : d; }
+  function gymDirIn(){ if (padDir >= 0) return padDir; var sx = stickV[0] + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), sy = stickV[1] + (keys.d ? 1 : 0) - (keys.u ? 1 : 0);
+    if (Math.max(Math.abs(sx), Math.abs(sy)) < 0.45) return -1; return Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 1 : 3) : (sy > 0 ? 2 : 0); }
+  function gymTick(tsec, dt){ var A = gym.anim, moved = 0;
+    if (A){ var P0 = A.ph[A.k], u = Math.min(1, (tsec - A.t0) / phDur(P0));
+      P0.forEach(function(m){ if (m[0] !== 'me') return gView.move(m, u, tsec); var a = gT(m[1]), b = gT(m[2]);
+        var nx = a[0] + (b[0] - a[0]) * u, ny = a[1] + (b[1] - a[1]) * u; moved += Math.hypot(nx - g.x, ny - g.y); g.x = nx; g.y = ny; });
+      if (u >= 1){ A.k++; A.t0 = tsec; if (A.k >= A.ph.length){ gym.anim = null; if (A.then) A.then(tsec); } }
+      return moved; }
+    if (gym.inp === 'own'){ gym.ownBusy = !!(gView.tick && gView.tick(tsec, dt)); return 0; }
+    if (tsec - (gym.bumpAt || -9) < 0.2) return 0;
+    if (gym.inp === 'tap'){ var ti = gym.tapTile; gym.tapTile = null; if (ti != null) gymApply(GL.tap(gym.G, gym.s, ti), tsec); return 0; }
+    var d = gym.tap != null ? gym.tap : gymDirIn(); gym.tap = null;
+    if (d >= 0) gymGo(d, tsec);
+    return 0; }
+  function gymGo(d, tsec){ g.face = DIR_FACE[d].slice(); g.aimI = null; hint.classList.add('gone'); gymApply(GL.step(gym.G, gym.s, d), tsec); }
+  /* A MOVE'S RESULT, whatever made it (a step, a tap, the kind's own input through R.commit): out, the lever, the
+     vault, nothing, or a real move, recorded for Undo and played. */
+  function gymApply(r, tsec){ var G = gym.G;
+    if (r.ev === 'exit'){ var m0 = GL.me(G, gym.s); if (m0 == null) return gymLeave(); gym.anim = { ph:[[['me', m0, GY.Q.gate, 'walk']]], k:0, t0:tsec, then:gymLeave }; return; }
+    if (r.ev === 'reset') return gymReset(tsec, r.s);
+    if (r.ev === 'open') return gymOpen(tsec);
+    if (r.ev === 'bump' || r.s === gym.s){ gym.bumpAt = tsec;
+      if (GK.tell && GK.tell[r.ev] && !gym.told[r.ev]){ gym.told[r.ev] = 1; say(GK.tell[r.ev], 2200); } return; }
+    gymKeep(); gym.n++;
+    var then = function(t2){ gym.s = r.s; gView.lay(gym.s); gymCheck(); gymPanel(); if (!gym.solved && GL.won(G, gym.s)) gymOpen(t2); };
+    var ph = gymPhases(r.moves); if (!ph.length) return then(tsec);
+    gym.anim = { ph:ph, k:0, t0:tsec, then:then }; }
+  // UNDO is a stack of the states he had (a move never changes a state in place), so a pop is the state exactly
+  function gymKeep(){ gym.hist.push({ s:gym.s, n:gym.n }); if (gym.hist.length > 400) gym.hist.shift(); }
+  // nothing is taken back, restarted or left while a move plays (a kind's own move too: its ball still rolling)
+  function gymBusy(){ return !!(gym.anim || gym.ownBusy); }
+  function gymUndo(){ if (!gym || !gym.in || gymBusy() || !gym.hist.length) return false; var h = gym.hist.pop(); gym.s = h.s; gym.n = h.n; gym.undos++;
+    gView.lay(gym.s); gymPut(); api.sfx && api.sfx('blip'); gymCheck(); gymPanel(); return true; }
+  // he stands where the state says, or (a tap kind) where he stood
+  function gymPut(){ var p = GL.me(gym.G, gym.s); if (p == null) return; var q = gT(p); g.x = q[0]; g.y = q[1]; }
+  // the lever, or Restart (and, shut in, the lit Restart): every piece back where it started, him at the door
+  function gymReset(tsec, s0){ gym.leverAt = tsec; gym.resets++; api.sfx && api.sfx('blip');
+    var tmp = []; gView.things(tmp, tsec); tmp.forEach(function(o){ var z = o.o && o.o.z != null ? o.o.z : GYM_DECK; burst(o.x, o.y, z + 1, ['rgba(230,220,200,.85)', '#c8a070'], 8, 1.4, 0.6); });
+    gymKeep(); gym.n = 0; gym.s = s0; gView.lay(gym.s); var q = gT(GY.Q.start); g.x = q[0]; g.y = q[1]; burst(q[0], q[1], GYM_DECK + 1.2, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymCheck(); gymPanel();
+    if ((gym.resets === 2 || gym.resets === 5) && civIt) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200); }
+  function gymOpen(tsec){ var V = gym.vault; if (!V) return;
+    if (gym.solved){ say('The vault\'s empty. You already cleaned it out.', 2400); return; }
+    gym.solved = true; V.done = true; V.openAt = tsec; api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
+    try{ res = api.gym ? api.gym(GY.id) : null; }catch(e){ res = null; }
+    // the coins are said in the panel: nothing floats over the board in a gym
+    setTimeout(function(){ if (!alive) return; burst(V.x, V.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff', '#c89cff'], 40, 1.5, 1.4); ring(V.x, V.y, '255,214,64');
+      if (!gym.in) floatText(res && res.coins ? res.coins.toLocaleString() + ' coins!' : 'Solved!', V.x, V.y, z + 3.2, '#ffd23a', true); }, (CH_SHAKE + 0.2) * 1000);
+    if (gPanel) gPanel.classList.add('won'); gym.wonLine = (res && res.msg) || 'Solved. The vault is yours.';
+    sayLater(gym.wonLine, 5200, 1.9); hudList(); gymCheck(); gymPanel(); }
+  /* SHUT IN, Restart lights up and the panel says so. It is asked only when the kind says nothing else leads on (push:
+     not when the lever is merely out of walking reach for a step), and a moment after the move, off the frame. */
+  function gymCheck(){ var s0 = gym.s; gym.stuck = false; gymLit(); if (!gym.in) return;
+    if (GK.onFoot && GK.onFoot(gym.G, s0)) return;
+    setTimeout(function(){ if (!alive || gym.s !== s0 || !gym.in) return; gym.stuck = GL.stuck(gym.G, s0); gymLit(); if (gym.stuck) say((GK.tell && GK.tell.stuck) || 'You\'re boxed in. Restart puts it all back.', 4200); }, 30); }
+  function gymLit(){ if (gE.restart) cls(gE.restart, 'lit', !!gym.stuck); }
+  /* THE COUNTER'S WORD is the kind's own (unit: 'step', 'tap', 'slide', 'stroke'), so the panel counts what he did, not
+     an abstract move. A kind without one counts moves. */
+  function gymUnit(n){ var u = (GK && GK.unit) || 'move'; return n === 1 ? u : u + 's'; }
+  function gymPanel(){ if (!gPanel) return; put(gE.moves, 'textContent', gym.n + ' ' + gymUnit(gym.n)); gE.undo.disabled = !gym.hist.length; gymLit(); gHot = null; }
+  function gymEnter(tsec){ gym.in = true; g.vx = g.vy = 0; var q = gT(GY.Q.gate); g.x = q[0]; g.y = q[1]; gym.hist = []; gym.n = 0; gHot = null;
+    var st = GL.place(gym.G, gym.s, GY.Q.gate), Gd = gym.G; gym.s = st;
+    gym.anim = { ph:[[['me', GY.Q.gate, GY.Q.start, 'walk']]], k:0, t0:tsec, then:function(){ gym.s = GL.place(Gd, gym.s, GY.Q.start); gymCheck(); gymPanel(); } };
+    gPanel.hidden = false; cls(gPanel, 'won', !!gym.solved); ui.classList.add('ingym'); bubble = null; bubEl.hidden = true; gFree = null; gymPanel(); gymIdle();
+    if (!gym.told.in){ gym.told.in = 1; sayLater(gym.solved ? 'Solved already. Have a look around.' : GK.hello || 'Undo takes one back.', 3600, 0.5); }
+    camAim(true); }
+  function gymLeave(){ gym.in = false; gym.lock = true; g.x = GY.ax; g.y = GY.ay + 0.4; g.face = [0, 1]; g.aimI = null; g.vx = g.vy = 0; gPanel.hidden = true; ui.classList.remove('ingym'); gym.stuck = false; gymLit();
+    padDir = -1; gym.hist = []; gym.pin = null; kk = kkBase; camAim(true); }
+  // Leave: out through the gate from wherever he stands, the pieces left where they are (the lever puts them back)
+  function gymOut(){ if (!gym || !gym.in || gymBusy()) return; var q = gT(GY.Q.gate); burst(q[0], q[1], GYM_DECK + 1, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymLeave(); }
+  /* THE PANEL'S LINE: what the civilian says (with their face) or what the frame says. A frame message holds for its
+     time, then the panel goes back to the civilian's current line, so the nudge is always there to read again. */
+  function gymLine(txt, ms, civ){ if (!gPanel) return; gym.line = { txt:txt, civ:!!civ, until:ms ? performance.now() + ms : 0 };
+    put(gE.text, 'textContent', txt); cls(gE.say, 'civ', !!civ); cls(gE.say, 'fresh', false); void gE.say.offsetWidth; cls(gE.say, 'fresh', true); }
+  function gymLineTick(now){ var L = gym.line; if (L && L.until && now > L.until) gymIdle(); }
+  // what the panel says between messages: the civilian's current line, or once the vault is open, what it paid
+  function gymIdle(){ if (gym.solved) gymLine(gym.wonLine || 'Solved. The vault is open.', 0, false); else gymLine(GL.clue(gym.G, gym.resets), 0, true); }
+  // a tap steps toward where it lands: whichever way, across or up and down the screen, is the further (a tap kind: that tile)
+  var gTap0 = null;
+  function gymTapDown(e){ if (!gym || !gym.in) return; gTap0 = { x:e.clientX, y:e.clientY, t:performance.now() };
+    if (gym.inp === 'own' && gView.pointer){ var pt = groundAt(e.clientX, e.clientY); gView.pointer('down', e, pt); } }
+  function gymTapMove(e){ if (!gym || !gym.in) return; var pt = groundAt(e.clientX, e.clientY);
+    if (gym.inp === 'own' && gView.pointer) return gView.pointer('move', e, pt);
+    if (gym.inp === 'tap'){ var h = gymTile(pt[0], pt[1]); if (h !== gym.hover){ gym.hover = h; gHot = null; } } }
+  function gymTapUp(e){ if (!gym || !gym.in || !gTap0 || e.target.closest('button') || e.target.closest('[data-gp]')) return; var t0 = gTap0; gTap0 = null;
+    if (gym.inp === 'own' && gView.pointer) return gView.pointer('up', e, groundAt(e.clientX, e.clientY));
+    if (Math.hypot(e.clientX - t0.x, e.clientY - t0.y) > 12 || performance.now() - t0.t > 400) return;
+    if (gym.inp === 'tap'){ var pt = groundAt(e.clientX, e.clientY), ti = gymTile(pt[0], pt[1]); if (ti >= 0 && !gym.anim) gym.tapTile = ti; return; }
+    var r = box.getBoundingClientRect(), p = scr(g.x, g.y, pic.zAt(g.x, g.y) + GH * 0.4), dx = e.clientX - r.left - p[0] / dpr, dy = e.clientY - r.top - p[1] / dpr;
+    if (Math.hypot(dx, dy) < 6) return; gym.tap = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0); }
+  if (gym){ box.addEventListener('pointerdown', gymTapDown); box.addEventListener('pointermove', gymTapMove); box.addEventListener('pointerup', gymTapUp); }
+  /* THE GROUND UNDER A POINT OF THE SCREEN, on the room's deck: the picture's projection is linear, so three points of
+     it solve for the other two. In trail feet. */
+  function groundAt(cx, cy){ var r = box.getBoundingClientRect(), ax = ((cx - r.left) * dpr - ox) / kk, ay = ((cy - r.top) * dpr - oy) / kk, z = GYM_DECK;
+    var p0 = pic.pr(0, 0, z), px = pic.pr(1, 0, z), py = pic.pr(0, 1, z), a = px[0] - p0[0], b = py[0] - p0[0], c = px[1] - p0[1], d = py[1] - p0[1], det = a * d - b * c || 1e-9, u = ax - p0[0], v = ay - p0[1];
+    return [(u * d - b * v) / det, (a * v - c * u) / det]; }
+  /* THE ROOM ON THE SCREEN. gymArtRect: the room's box, floor to the top of the gate, in the picture's pixels. gymFree:
+     what the header and the panel leave free of the box, in device pixels. gymCam centres the one in the other, at
+     the trail's own zoom when the room fits and a step out when it does not (side margins go first). */
+  function gymArtRect(){ if (gArt) return gArt; var xs = [GY.x0, GY.x0 + GY.w], ys = [GY.y0, GY.y0 + GY.d], zs = [GYM_DECK, GYM_DECK + 3.4], A = { x0:1e9, y0:1e9, x1:-1e9, y1:-1e9 };
+    xs.forEach(function(x){ ys.forEach(function(y){ zs.forEach(function(z){ var p = pic.pr(x, y, z); A.x0 = Math.min(A.x0, p[0]); A.x1 = Math.max(A.x1, p[0]); A.y0 = Math.min(A.y0, p[1]); A.y1 = Math.max(A.y1, p[1]); }); }); });
+    return gArt = A; }
+  function gymFree(){ var r = box.getBoundingClientRect(), top = 0, hd = box.parentNode && box.parentNode.querySelector('.pp-hdr');
+    if (hd){ var hr = hd.getBoundingClientRect(); if (hr.height) top = Math.max(0, hr.bottom - r.top); }
+    var pr = gPanel.getBoundingClientRect(), side = pr.width < r.width * 0.6, gap = 10;
+    var F = side ? { x0:gap, y0:top + gap, x1:pr.left - r.left - gap, y1:r.height - gap } : { x0:gap, y0:top + gap, x1:r.width - gap, y1:pr.top - r.top - gap };
+    return { x0:F.x0 * dpr, y0:F.y0 * dpr, x1:F.x1 * dpr, y1:F.y1 * dpr, edge:side ? 0 : gap * dpr }; }
+  function gymCam(snap){ if (gym.pin){ kk = gym.pin.kk; ox = gym.pin.ox; oy = gym.pin.oy; return; }
+    var now = performance.now(); if (!gFree || now - gFreeAt > 500){ gFree = gymFree(); gFreeAt = now; }
+    var F = gFree, A = gymArtRect(), aw = A.x1 - A.x0, ah = A.y1 - A.y0, k = kkBase;
+    function fits(k2, f){ return aw * k2 <= f.x1 - f.x0 && ah * k2 <= f.y1 - f.y0; }
+    // a wide screen shows the trail from further off than a phone: there the room is brought up as far as it fits
+    var wide = { x0:F.x0 - F.edge, y0:F.y0, x1:F.x1 + F.edge, y1:F.y1 }, use = fits(k, F) ? F : fits(k, wide) ? wide : null;
+    if (use === F) while (k < kkBase * 3 && k < 8 && fits(k + 1, F)) k++;
+    if (!use){ while (k > 1 && !fits(k, F)) k--; use = F; }
+    if (k !== kk){ kk = k; snap = true; }
+    var tx = Math.round((use.x0 + use.x1) / 2 - (A.x0 + A.x1) / 2 * kk), ty = Math.round((use.y0 + use.y1) / 2 - (A.y0 + A.y1) / 2 * kk);
+    if (snap){ ox = tx; oy = ty; } else { ox += Math.round((tx - ox) * 0.2); oy += Math.round((ty - oy) * 0.2); if (Math.abs(tx - ox) < 3) ox = tx; if (Math.abs(ty - oy) < 3) oy = ty; } }
+  // the room's rect on the screen in CSS pixels (the board), for the checks and for keeping the trail's bubbles off it
+  function gymBoard(){ var A = gymArtRect(), r = box.getBoundingClientRect(); return { left:r.left + (A.x0 * kk + ox) / dpr, top:r.top + (A.y0 * kk + oy) / dpr, right:r.left + (A.x1 * kk + ox) / dpr, bottom:r.top + (A.y1 * kk + oy) / dpr }; }
+  /* WHAT A MOVE WOULD CHANGE, marked: a soft gold ring round every piece a step would move (a tap kind: every tile a
+     tap changes, white where the pointer is), and a gold ring round the vault, the goal. A ring is drawn on the floor
+     under everything that stands, and its near half again over it, so a barrel stands inside its ring. */
+  function gymHot(){ if (gHot && gHot.s === gym.s && gHot.h === gym.hover) return gHot; var G = gym.G, s = gym.s, hot = {}, over = {};
+    if (gView.hot) (gView.hot(s) || []).forEach(function(i){ hot[i] = 1; });
+    // a piece's first move in a step is from where it stands now (the rest are where a belt carries it on)
+    else if (gym.inp === 'step') for (var d = 0; d < 4; d++){ var seen = {}; GL.step(G, s, d).moves.forEach(function(m){ if (m[0] === 'me' || seen[m[0]]) return; seen[m[0]] = 1; hot[m[1]] = 1; }); }
+    else if (gym.inp === 'tap') GL.moves(G, s).forEach(function(i){ var r = GL.tap(G, s, i); if (r.s === s) return; hot[i] = 1;
+      if (i === gym.hover) r.moves.forEach(function(m){ over[m[1]] = 1; over[m[2]] = 1; }); });
+    return gHot = { s:s, h:gym.hover, own:!!gView.hot, hot:Object.keys(hot).map(Number), over:Object.keys(over).map(Number) }; }
+  function gymMarks(tsec, front){ if (gym.anim) return; var H = gymHot(), T = GY.T, pul = reduce ? 0.8 : 0.6 + 0.3 * Math.sin(tsec * 3.2), lw = Math.max(2, Math.round(kk * 1.2));
+    ctx.save(); ctx.lineWidth = lw;
+    function ringAt(x, y, rr, col, a){ var c0 = scr(x, y, GYM_DECK + 0.02), cx = scr(x + rr, y, GYM_DECK + 0.02), cy = scr(x, y + rr, GYM_DECK + 0.02);
+      ctx.strokeStyle = col; ctx.globalAlpha = a; ctx.beginPath(); ctx.ellipse(c0[0], c0[1], Math.abs(cx[0] - c0[0]) || 1, Math.abs(cy[1] - c0[1]) || 1, 0, front ? 0.15 : 0, front ? Math.PI - 0.15 : 7); ctx.stroke(); }
+    H.hot.forEach(function(i){ var q = gT(i); ringAt(q[0], q[1], T * 0.47, '#ffe066', pul * (H.over.length ? 0.5 : 0.85)); });
+    H.over.forEach(function(i){ var q = gT(i); ringAt(q[0], q[1], T * 0.47, '#ffffff', 0.95); });
+    if (!gym.solved){ var V = gT(GY.Q.chest); ringAt(V[0], V[1], T * (0.6 + 0.05 * (reduce ? 0 : Math.sin(tsec * 2))), '#ffd23a', 0.9); }
+    ctx.restore(); }
+  /* THE GATE READS AS A WAY IN, out on the trail: gold chevrons on the little path to it, running toward the gate. */
+  function gymDoor(tsec){ if (!GY.spur || GY.spur.length < 3) return; var T = 0.75, lw = Math.max(2, Math.round(kk * 1.3)), ex = GY.ax, ey = GY.y0 + GY.d;
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (var k = 0; k < 3; k++){ var a = ((reduce ? 0.5 : tsec * 0.7) + k / 3) % 1, y = ey + 0.5 + (1 - a) * 2.4, z = pic.zAt(ex, y) + 0.04, al = Math.sin(a * Math.PI);
+      var l = scr(ex - T, y + T * 0.7, z), m = scr(ex, y, z), r = scr(ex + T, y + T * 0.7, z);
+      [['rgba(40,26,8,0.6)', lw + Math.max(2, Math.round(kk))], ['#ffd23a', lw]].forEach(function(st){ ctx.globalAlpha = 0.2 + 0.8 * al; ctx.strokeStyle = st[0]; ctx.lineWidth = st[1]; ctx.beginPath(); ctx.moveTo(l[0], l[1]); ctx.lineTo(m[0], m[1]); ctx.lineTo(r[0], r[1]); ctx.stroke(); }); }
+    ctx.restore(); }
+  function civFrame(t){ var G3 = window.RTT_G3D; if (!G3 || !G3.frame || !gym) return null; var a = Math.round(Math.atan2(g.x - t.x, -(g.y - t.y)) / (Math.PI / 4)) * 45;
+    try{ return G3.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, gym.G.who.look), a, 'walk', 8); }catch(e){ return null; } }
   /* PUSHING THE CRATE: walking into its side along x shoves it along with him, as far as its track allows. Toward the
      rock it jams after a little; from the rock's side it goes all the way across and clears the gap. Left half
      pushed and walked away from, it slides back, so it can never be left stuck. */
@@ -1712,7 +2063,7 @@ function run(box, P, pic, api){
   function take(t, now){ take0(t, now); if (LOOT[t.k]) hudList(); }
   function take0(t, now){ var z = pic.zAt(t.x, t.y);
     if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff'], 8); collect(t, now, 'coin'); if (!api.guestCoins) floatText('+' + COIN_V, t.x, t.y, z + 2.2); guestCoin(); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
-    else if (t.k === 'chest'){ t.done = true; t.openAt = now; pick('chest', t.id, 0); hudChests(); api.sfx && api.sfx('coin');
+    else if (t.k === 'chest'){ t.done = true; t.openAt = now; var cs0 = items.filter(function(c){ return c.k === 'coin' && c.ch === t; }), luck = pick('chest', t.id, cs0.length * COIN_V); hudChests(); api.sfx && api.sfx('coin');
       // the lock pops as it starts to rattle; the lid lifts; light, a ring and a shower of gold as it comes open
       burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
       setTimeout(function(){ if (!alive) return; burst(t.x, t.y, z + 1.5, ['#ffd23a', '#fff3a8', '#ffffff', '#ffb43a'], 26, 1.5, 1.3); ring(t.x, t.y, '255,214,64'); }, (CH_SHAKE + 0.15) * 1000);
@@ -1720,7 +2071,7 @@ function run(box, P, pic, api){
       var cs = items.filter(function(c){ return c.k === 'coin' && c.ch === t; });
       cs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + CH_COINS + i * 0.05, dur:0.6 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
       setTimeout(function(){ if (alive) floatText(cs.length ? (cs.length * COIN_V) + ' coins!' : 'Treasure!', t.x, t.y, z + 3.2, '#ffd23a', true); }, CH_COINS * 1000);
-      sayLater(cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', 2600, 1.7); }
+      sayLater(luck ? luck + (cs.length ? ' Walk over the coins too.' : '') : cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', luck ? 4200 : 2600, 1.7); }
     else if (t.k === 'prize'){ t.done = true; t.openAt = now; PZ.solved = true; pick('pz', t.id, 0); api.sfx && api.sfx('coin');
       burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
       setTimeout(function(){ if (!alive) return; burst(t.x, t.y, z + 1.5, ['#ffd23a', '#fff3a8', '#ffffff', '#7cc8ff'], 30, 1.5, 1.3); ring(t.x, t.y, '120,200,255'); }, (CH_SHAKE + 0.15) * 1000);
@@ -1742,8 +2093,8 @@ function run(box, P, pic, api){
   function step(){ if (!alive) return; requestAnimationFrame(step);
     var now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now; var tsec = now / 1000;
     // where the stick asks him to go, on the screen, made a direction on the ground: up the screen is further than it looks
-    var sx = 0, sy = 0;
-    if (!paused){
+    var sx = 0, sy = 0, inGym = !!(gym && gym.in);
+    if (!paused && !inGym){
       sx = stickV[0] + (keys.r ? 1 : 0) - (keys.l ? 1 : 0); sy = stickV[1] + (keys.d ? 1 : 0) - (keys.u ? 1 : 0); var m = Math.hypot(sx, sy); if (m > 1){ sx /= m; sy /= m; } }
     var o = P.poolAt(g.x, g.y), ice = o && o.k === 'ice', slow = o && o.k === 'slow' ? 0.5 : 1, mag = Math.hypot(sx, sy), sp2 = SPEED * slow;
     var tvx, tvy;
@@ -1751,7 +2102,8 @@ function run(box, P, pic, api){
     var acc = ice ? 2.2 : 26; g.vx += (tvx - g.vx) * Math.min(1, acc * dt); g.vy += (tvy - g.vy) * Math.min(1, acc * dt);
     if (PZ && PZ.crate && !paused) pushCrate(dt, now);
     var nx = g.x + g.vx * dt, ny = g.y + g.vy * dt, moved = 0;
-    if (!blocked(nx, ny)){ moved = Math.hypot(nx - g.x, ny - g.y); g.x = nx; g.y = ny; }
+    if (inGym){ g.vx = g.vy = 0; moved = paused ? 0 : gymTick(tsec, dt); gymLineTick(now); }
+    else if (!blocked(nx, ny)){ moved = Math.hypot(nx - g.x, ny - g.y); g.x = nx; g.y = ny; }
     else if (!blocked(nx, g.y)){ moved = Math.abs(nx - g.x); g.x = nx; g.vy *= 0.5; }
     else if (!blocked(g.x, ny)){ moved = Math.abs(ny - g.y); g.y = ny; g.vx *= 0.5; }
     else { g.vx = 0; g.vy = 0; }
@@ -1763,8 +2115,14 @@ function run(box, P, pic, api){
     var spd = Math.hypot(g.vx, g.vy); g.moving = moved > 0.002 && (g.moving ? spd > 0.25 : spd > 0.6);
     if (spd > 0.4){ var ang = Math.atan2(g.vx, -g.vy), cur = g.aimI == null ? null : g.aimI * Math.PI / 4, dd = cur == null ? 9 : Math.abs(Math.atan2(Math.sin(ang - cur), Math.cos(ang - cur)));
       if (dd > Math.PI / 8 + 0.2){ g.aimI = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8; var a8 = g.aimI * Math.PI / 4; g.face = [Math.sin(a8), -Math.cos(a8)]; } }
+    if (inGym) g.moving = !!gym.anim;
     g.dist += moved;
     if (moved > 0.5) hint.classList.add('gone');
+    // the gym's gate: walked into from the path, he is in, a tile at a time (and once out, he has to step away first)
+    if (gym && !gym.in && !paused){ if (gym.lock){ if (Math.hypot(g.x - GY.ax, g.y - GY.ay) > 1.8) gym.lock = false; }
+      else if (Math.abs(g.x - GY.ax) < 0.95 && g.y - GY.ay < 0.4 && g.vy < -0.3) gymEnter(tsec); }
+    // the civilian by the gate says their piece as he walks up: the plainer one once he has pulled the lever twice
+    if (gym && civIt && !gym.in){ var dcv = Math.hypot(civIt.x - g.x, civIt.y - g.y); if (dcv < 3.6 && !gym.nearCiv){ gym.nearCiv = true; say(GL.clue(gym.G, gym.resets), 7000, civIt); } else if (dcv > 5.5) gym.nearCiv = false; }
     // lava sends him back to the last safe ground
     var o2 = P.poolAt(g.x, g.y);
     if (o2 && o2.k === 'lava'){ g.x = g.safe[0]; g.y = g.safe[1]; g.vx = g.vy = 0; flash = 1; say('Too hot. Back you go.', 1800); }
@@ -1814,11 +2172,13 @@ function run(box, P, pic, api){
     if (!(ox <= 0 && oy <= 0 && ox + cw * kk >= W && oy + ch * kk >= H)){ ctx.fillStyle = pic.bg || kitOf(sp.kitAs || sp.theme).g[0]; ctx.fillRect(0, 0, W, H); }
     if (sx1 > sx0 && sy1 > sy0) ctx.drawImage(pic.cv, sx0, sy0, sx1 - sx0, sy1 - sy0, ox + sx0 * kk, oy + sy0 * kk, (sx1 - sx0) * kk, (sy1 - sy0) * kk);
     if (PZ) drawPzGround(tsec);
+    if (gym){ gView.ground(tsec); if (gym.in){ if (gym.marks) gymMarks(tsec, false); } else gymDoor(tsec); }
     // everything that moves, far to near
     var ds = [];
-    items.forEach(function(t){ if (t.k === 'host') return; if (t.k === 'coin' && !t.out) return; if (t.done && t.k !== 'chest' && t.k !== 'prize' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; if (t.k === 'prize' && !prizeShown()) return; ds.push(t); });
+    items.forEach(function(t){ if (t.k === 'host') return; if (t.k === 'coin' && !t.out) return; if (t.done && t.k !== 'chest' && t.k !== 'prize' && t.k !== 'brk' && t.k !== 'vault') return; if (t.k === 'brk' && t.done) return; if (t.k === 'prize' && !prizeShown()) return; ds.push(t); });
     if (P.pen && P.pen.gated) ds.push({ k:'pzgate', x:P.pen.x, y:P.pen.y + P.pen.r });
     if (PZ && PZ.crate) ds.push({ k:'crate', x:PZ.crate.x, y:PZ.crate.y });
+    if (gym){ gView.things(ds, tsec); var lq = gT(GY.Q.lever); ds.push({ k:'glever', x:lq[0], y:lq[1] }); }
     if (P.gate) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
@@ -1828,6 +2188,10 @@ function run(box, P, pic, api){
     ds.sort(function(a, c){ return a.y - c.y; });
     for (var i = 0; i < ds.length; i++){ var t = ds[i];
       if (t.k === 'me') drawMe(tsec);
+      else if (t.kd) t.kd(t, tsec);
+      else if (t.k === 'glever') drawSprite(SPR.lever[tsec - gym.leverAt < 0.7 ? 1 : 0], t.x, t.y, GYM_DECK);
+      else if (t.k === 'vault') drawChest(t, tsec, SPR.vault);
+      else if (t.k === 'civ') drawFigure(civFrame(t), t.x, t.y, false, 'civ');
       else if (t.k === 'plant') drawPlant(t.q);
       else if (t.k === 'coin') drawCoin(t, tsec);
       else if (LOOT[t.k] && t.k !== 'chest' && t.k !== 'prize') drawLoot(t, tsec);
@@ -1843,6 +2207,7 @@ function run(box, P, pic, api){
           ctx.fillStyle = '#ffd24a'; ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] - 6 * es), 2 * es, 7 * es); ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] + 4 * es), 2 * es, 2 * es); } }
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
       else if (t.k === 'lock'){ var ls = lockOpen ? SPR.fence1 : SPR.fence0; if (ls){ ctx.save(); drawSprite(ls.s, ls.x, ls.y, pic.zAt(ls.x, ls.y)); ctx.restore(); } } }
+    if (gym && gym.in){ if (gym.marks) gymMarks(tsec, true); if (gView.over) gView.over(tsec); }
     lifeAir(tsec);
     if (cloud) drawClouds(tsec);
     // bits that fly
@@ -1853,11 +2218,24 @@ function run(box, P, pic, api){
     drawFx(tsec);
     if (flash > 0){ ctx.fillStyle = 'rgba(255,120,40,' + (flash * 0.5).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); flash = Math.max(0, flash - dt * 2); }
     waypoint();
-    /* a bubble stays over WHOEVER SAID IT. A local's line is pinned to the local for as long as it shows, so walking
-       off never drags it along over the golfer; anything the walk says itself sits over the golfer. */
-    if (bubble){ var sp0 = bubble.who || g, bp = scr(sp0.x, sp0.y, pic.zAt(sp0.x, sp0.y) + GH + 0.6);
-      put(bubEl.style, 'left', (bp[0] / dpr) + 'px'); put(bubEl.style, 'top', (bp[1] / dpr) + 'px'); }
+    // the bubble, over whoever said it (bubPlace); in a gym the panel has it instead
+    if (bubble && !(gym && gym.in)) bubPlace();
   }
+  /* A BUBBLE STAYS OVER WHOEVER SAID IT. A local's line is pinned to the local for as long as it shows, so walking
+     off never drags it along over the golfer; anything the walk says itself sits over the golfer. And on a trail with a
+     gym it never sits on the gym: the bubble goes above the speaker, below them, or to either side, whichever first
+     keeps it off the room and its gate, and always inside the screen (its whole width, never squeezed at an edge). */
+  function bubPlace(){ var sp0 = bubble.who || g, z0 = pic.zAt(sp0.x, sp0.y), hp = scr(sp0.x, sp0.y, z0 + GH + 0.6);
+    if (!gym){ put(bubEl.style, 'left', (hp[0] / dpr) + 'px'); put(bubEl.style, 'top', (hp[1] / dpr) + 'px'); return; }
+    put(bubEl.style, 'transform', 'none'); put(bubEl.style, 'width', 'max-content');
+    var fp = scr(sp0.x, sp0.y, z0), Wc = W / dpr, Hc = H / dpr, m = 8, x = hp[0] / dpr, y = hp[1] / dpr, fx = fp[0] / dpr, fy = fp[1] / dpr, bw = bubEl.offsetWidth, bh = bubEl.offsetHeight;
+    var A = gymArtRect(), R0 = { l:(A.x0 * kk + ox) / dpr - 6, t:(A.y0 * kk + oy) / dpr - 6, r:(A.x1 * kk + ox) / dpr + 6, b:(A.y1 * kk + oy) / dpr + 6 };
+    var cand = [[x - bw / 2, y - bh - 4], [fx - bw / 2, fy + 10], [x + 18, (y + fy) / 2 - bh / 2], [x - 18 - bw, (y + fy) / 2 - bh / 2]], hit = function(c){ return c[0] < R0.r && c[0] + bw > R0.l && c[1] < R0.b && c[1] + bh > R0.t; };
+    var inside = function(c){ return c[0] >= m && c[1] >= m && c[0] + bw <= Wc - m && c[1] + bh <= Hc - m; }, at = null;
+    for (var i = 0; i < cand.length && !at; i++) if (!hit(cand[i]) && inside(cand[i])) at = cand[i];
+    for (var j = 0; j < cand.length && !at; j++) if (!hit(cand[j])) at = cand[j];
+    at = at || cand[1]; at = [Math.max(m, Math.min(Wc - m - bw, at[0])), Math.max(m, Math.min(Hc - m - bh, at[1]))];
+    put(bubEl.style, 'left', Math.round(at[0]) + 'px'); put(bubEl.style, 'top', Math.round(at[1]) + 'px'); }
   /* the console look's last touch, as on a hole: the low sun washing in from the upper left (none at night) and a
      vignette, drawn over the scene and under what flies to the counters. Built once per screen size. */
   var fxScr = null;
@@ -1896,12 +2274,15 @@ function run(box, P, pic, api){
   function put(o, k, v){ if (o[k] !== v) o[k] = v; }
   function cls(el, c, on){ if (el.classList.contains(c) !== on) el.classList.toggle(c, on); }
   function waypoint(){ var tx, ty, label;
+    if (gym && gym.in){ cls(way, 'on', false); cls(pin, 'on', false); return; }   // in a gym the gym is the place: no arrow
     /* THE ARROW LEADS ALONG THE WALK, not across country. A route that doglegs or doubles back puts the arch over
        the trees, so while there is more than a bend to go the arrow points at the path some way ahead of him, and
        the distance it gives is what is left to walk. Near the end, or at a shut door, it is the place itself. */
     var shut = gate && !gate.open && g.y > P.gate.y, goal = shut ? [P.gate.x, P.gate.y] : [P.arch.x, -0.5], sg0 = along(g.x, g.y), sEnd = shut && P.gate.s != null ? P.gate.s : goalS, left = Math.max(0, sEnd - sg0);
     var via = left > 30 && Math.hypot(goal[0] - g.x, goal[1] - g.y) < left * 0.8, tgt = via ? pathAtS(sg0 + 24) : goal, p = scr(tgt[0], tgt[1], pic.zAt(tgt[0], tgt[1]) + (via ? 3 : shut ? 7 : 9.5));
     tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = !via && tx > M && tx < Wc - M && ty > M + 110 && ty < Hc - M - 70;
+    // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
+    if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
     label = shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
@@ -1913,13 +2294,22 @@ function run(box, P, pic, api){
   requestAnimationFrame(step);
   var ctl = {
     stop:function(){ alive = false; if (dlg && dlg.kill) dlg.kill(); window.removeEventListener('resize', onRs); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
-      window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
+      window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true);
+      if (gym){ box.removeEventListener('pointerdown', gymTapDown); box.removeEventListener('pointermove', gymTapMove); box.removeEventListener('pointerup', gymTapUp); if (gPanel) gPanel.remove(); } },
     // for the checks: where he is, and a way to hold the stick
     // the locked gate's sprite measured on screen, in feet, against the box it was built in (a half size one is the bug it fixes)
     lockFt:function(){ var L = SPR.fence0 || SPR.pen0, F = P.fence || P.pen; if (!L || !F) return null; var a = scr(0, 0, 0), b = scr(1, 0, 0), ppf = Math.hypot(b[0] - a[0], b[1] - a[1]);
       return { ft:L.s.cv.width * kk / ppf, box:3 * fenceGap(F).w / 2 + 1.2 + 2, gap:fenceGap(F).w }; },
     pos:function(){ return [g.x, g.y]; }, warp:function(x, y){ g.x = x; g.y = y; g.vx = g.vy = 0; }, fx:function(){ return fxs.length; }, stick:function(vx, vy){ stickV = [vx, vy]; },
-    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, blocked:function(x, y){ return blocked(x, y); }, pz:function(){ return PZ; }, bubble:function(){ return bubble ? bubble.txt : ''; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
+    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, blocked:function(x, y){ return blocked(x, y); }, pz:function(){ return PZ; }, gym:function(){ return gym; }, gymStep:function(d){ if (gym && gym.in && !gym.anim) gymGo(d, performance.now() / 1000); }, gymBusy:function(){ return !!(gym && gym.anim); }, gymXY:function(i){ return gT(i); },
+    // the frame, for the checks: a tap on a tile, Undo, Restart, Leave, what the panel says, and where everything is on the screen
+    gymTap:function(i){ if (gym && gym.in && !gym.anim) gymApply(GL.tap(gym.G, gym.s, i), performance.now() / 1000); }, gymUndo:function(){ return gymUndo(); },
+    gymRestart:function(){ if (gym && gym.in && !gymBusy()) gymReset(performance.now() / 1000, GL.init(gym.G)); }, gymLeave:function(){ gymOut(); },
+    gymSays:function(){ return gym && gym.line ? gym.line.txt : ''; }, gymHot:function(){ return gym && gym.in ? gymHot() : null; },
+    gymRects:function(){ if (!gym) return null; var R = function(el){ if (!el || el.hidden || !el.offsetParent) return null; var r = el.getBoundingClientRect(); return { left:r.left, top:r.top, right:r.right, bottom:r.bottom }; };
+      return { board:gymBoard(), panel:R(gPanel), goal:R(gE.goal), say:R(gE.say), controls:R(gE.ctl), pad:R(gE.pad), buttons:[gE.undo, gE.restart, gE.leave].map(R), stick:R(stick), bubble:R(bubEl), kk:kk, kkBase:kkBase }; },
+    // a camera held where a check puts it, and the highlights off, so a room's pixels can be compared with an older build's
+    gymPin:function(o){ if (gym){ gym.pin = o && o.ox != null ? { ox:o.ox, oy:o.oy, kk:o.kk } : null; gym.marks = !(o && o.marks === false); } }, bubble:function(){ return bubble ? bubble.txt : ''; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }
 

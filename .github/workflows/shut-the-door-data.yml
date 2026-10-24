@@ -1,0 +1,163 @@
+name: Shut The Door data
+
+# Builds Shut The Door's data on GitHub's runners: the reproducible build of
+# everything the game downloads. The same steps run locally from
+# shut-the-door/pipeline (README.md has them).
+#
+#   build_library.py     the trimmed Statcast pitch library, 2008 to 2025
+#                        (pipeline/slices.json), as cached gzipped chunks and a
+#                        SQLite file rebuilt from them
+#   verify_scenarios.py  every candidate spot's facts (data/verify)
+#   closers.py           the regular-season scenario search (data/verify)
+#   closer_pool.py       the 2015+ closer pool's policies (data/closers.json)
+#   pros.py              the lesson's pro examples, real pitches (cache/pros.json)
+#   build_packs.py       the ten packs, staged
+#   pool.js              hold% tables, the closer pool's 2,000+ outings per pack
+#                        (data/packs)
+#   build_schedule.mjs   data/schedule.json
+#   calibrate.py         the model's hold% against how real 2015+ spots ended
+#   test/packs.mjs       every pack against the contract, and the three tests
+#
+# THE LIBRARY NEVER GOES IN GIT. Pages refuses any file over 25 MB. The chunks
+# and the HTTP cache live in actions/cache, restored at the start and saved at
+# the end, EVEN ON A FAILURE, so a long fetch is never asked for twice: a cold
+# first run is several hours of polite Savant requests and may need a second
+# run to finish, which then reads what the first one saved. Only small outputs
+# are committed back: shut-the-door/data/** and shut-the-door/pipeline/report.md.
+
+on:
+  push:
+    branches: [claude/shut-the-door-engine]
+    paths: ['shut-the-door/pipeline/**', 'shut-the-door/scenarios/scenarios.json']
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Build only these pack ids (space separated); empty for all'
+        type: string
+        default: ''
+      seasons:
+        description: 'Library seasons, e.g. 2015-2025 for a quicker run; empty for slices.json'
+        type: string
+        default: ''
+
+concurrency:
+  group: shut-the-door-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    defaults:
+      run:
+        working-directory: shut-the-door/pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Restore the library chunks
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            shut-the-door/pipeline/cache/chunks
+            shut-the-door/pipeline/cache/http
+          key: std-chunks-v2-${{ github.run_id }}
+          restore-keys: std-chunks-v2-
+
+      - name: The grid is contract.js's grid
+        run: python3 prep.py
+
+      - name: The library
+        run: python3 build_library.py --workers 4 ${{ inputs.seasons && format('--seasons {0}', inputs.seasons) || '' }}
+
+      - name: Verify the candidate scenarios
+        run: python3 verify_scenarios.py
+
+      - name: The regular-season search
+        run: python3 closers.py
+
+      - name: The closer pool, and the lesson's pro examples
+        run: |
+          python3 closer_pool.py
+          python3 pros.py
+
+      - name: The packs
+        run: |
+          python3 build_packs.py ${{ inputs.only }}
+          mkdir -p ../data/packs
+          for f in cache/stage/*.json; do
+            node ../pool.js "$f" ../data/closers.json "../data/packs/$(basename "$f")" --runs 2000 --pros cache/pros.json
+          done
+          node build_schedule.mjs
+          python3 calibrate.py
+
+      - name: Every pack against the contract, and the three tests
+        working-directory: shut-the-door
+        run: |
+          node test/packs.mjs | tee pipeline/packs-test.txt || true
+          node test/api.mjs
+          node test/lesson.mjs
+          node check-replays.mjs --self-test
+          cd pipeline && python3 check_pros.py
+
+      - name: Report
+        if: ${{ always() }}
+        run: python3 report.py
+
+      - name: Save the library chunks
+        if: ${{ always() }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            shut-the-door/pipeline/cache/chunks
+            shut-the-door/pipeline/cache/http
+          key: std-chunks-v2-${{ github.run_id }}
+
+      - name: Keep the outputs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: shut-the-door-data
+          path: |
+            shut-the-door/data
+            shut-the-door/pipeline/report.md
+          retention-days: 7
+
+  commit:
+    needs: build
+    if: ${{ always() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: shut-the-door-data
+          path: shut-the-door
+      - name: Commit the small outputs, if they moved
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add shut-the-door/data shut-the-door/pipeline/report.md
+          if git diff --cached --quiet; then
+            echo "Nothing moved."
+            exit 0
+          fi
+          git commit -m "Shut The Door: data and report from shut-the-door-data.yml"
+          for i in 1 2 3 4 5; do
+            git push && exit 0
+            echo "push rejected, rebasing (attempt $i)"
+            git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+          done
+          exit 1

@@ -9,7 +9,7 @@
  * What it holds:
  *   1. the page's switch, packs, lives and prices are the server's, in the same order
  *   2. off, the checkout sells nothing; on (a scratch copy), it sells each pack
- *      correctly, and only to a signed in player missing at least its lives
+ *      correctly, to a signed in player at any time, up to the cap on extra lives
  *   3. the webhook files the catalog's lives for the pack, keyed on the session,
  *      and only paid
  *   4. the setup script mints each price the catalog sells at
@@ -62,16 +62,21 @@ const env = {
   SITE_URL: 'https://runthe.gg', STRIPE_PRICE_PUTT_LIVES_9: 'price_lives9', STRIPE_PRICE_PUTT_LIVES_3: 'price_lives3',
 };
 const later = (h) => new Date(Date.now() + h * 3600e3).toISOString();
-let lives = null, livesFail = false, signedIn = true, sessions = [], posts = [], escaped = [];
+const sessionsByPI = {};
+let lives = null, extra = 0, livesFail = false, signedIn = true, sessions = [], posts = [], escaped = [];
 globalThis.fetch = async (url, init = {}) => {
   const u = new URL(String(url));
   const J = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
   if (u.host === 'supabase.check') {
     if (u.pathname === '/auth/v1/user') return signedIn ? J(200, { id: 'u-1', email: 'a@b.c' }) : J(401, {});
-    if (u.pathname === '/rest/v1/putt_lives') return livesFail ? J(500, {}) : J(200, lives ? [{ back_at: lives }] : []);
+    if (u.pathname === '/rest/v1/putt_lives') return livesFail ? J(500, {}) : J(200, lives ? [{ back_at: lives, extra }] : []);
     if (u.pathname === '/rest/v1/premium_subscriptions' || u.pathname === '/rest/v1/subscriptions') return J(200, []);
     if (init.method === 'POST') { posts.push({ path: u.pathname, body: JSON.parse(String(init.body || 'null')) }); return J(200, true); }
     return J(200, []);
+  }
+  if (u.host === 'api.stripe.com' && u.pathname === '/v1/checkout/sessions' && (init.method || 'GET') === 'GET') {
+    const pi = u.searchParams.get('payment_intent');
+    return J(200, { data: sessionsByPI[pi] ? [sessionsByPI[pi]] : [] });
   }
   if (u.host === 'api.stripe.com' && u.pathname === '/v1/checkout/sessions' && init.method === 'POST') {
     sessions.push(new URLSearchParams(String(init.body)));
@@ -124,27 +129,32 @@ try {
   }
   ok('on: and none of those reached Stripe', sessions.length === n0);
 
-  // THE RULE: a pack is sold only when every life in it would land
+  // THE RULE (the owner, 2026-10-17): sold at any time, over the max too, up to the cap on extra lives
   const missing = (n) => Array.from({ length: n }, (_, i) => later(i + 1));
-  const sold = async (pack, n) => { lives = missing(n); const k = sessions.length; const x = await press(on.co, { putt_lives: pack }); return x.status === 200 && sessions.length === k + 1 ? true : (x.status === 409 && x.body.error === 'lives_left' ? false : x.status); };
-  ok('on: nine, missing nine, sold', (await sold('nine', 9)) === true);
-  ok('on: nine, missing eight, refused lives_left', (await sold('nine', 8)) === false);
-  ok('on: three, missing three, sold', (await sold('three', 3)) === true);
-  ok('on: three, missing two, refused lives_left', (await sold('three', 2)) === false);
-  ok('on: three, missing eight, sold (a player not out yet may top up)', (await sold('three', 8)) === true);
-  ok('on: a Tour Pass holder missing twelve may buy nine', (await sold('nine', 12)) === true);
-  ok('on: and three', (await sold('three', 12)) === true);
+  const sold = async (pack, n, x0 = 0) => { lives = missing(n); extra = x0; const k = sessions.length; const x = await press(on.co, { putt_lives: pack }); extra = 0;
+    return x.status === 200 && sessions.length === k + 1 ? true : (x.status === 409 && x.body.error === 'lives_full' ? false : x.status); };
+  ok('on: nine, out of lives, sold', (await sold('nine', 9)) === true);
+  ok('on: nine, missing one, sold (eight go over the max)', (await sold('nine', 1)) === true);
+  ok('on: three, full, sold (all three go over)', (await sold('three', 0)) === true);
+  ok('on: nine, full with 90 extra, sold (99 is the cap)', (await sold('nine', 0, 90)) === true);
+  ok('on: nine, full with 91 extra, refused lives_full', (await sold('nine', 0, 91)) === false);
+  ok('on: three, full with 97 extra, refused lives_full', (await sold('three', 0, 97)) === false);
+  ok('on: nine, missing nine with 99 extra, sold (all nine come off clocks)', (await sold('nine', 9, 99)) === true);
+  ok('on: the cap is the server\'s, 99', B.PUTT_LIVES_EXTRA_MAX === 99);
 
   const n2 = sessions.length;
-  lives = out.slice(0, 2).concat([new Date(Date.now() - 60e3).toISOString()]);
+  // two clocks running and one run out, 99 extra: three would put one over the cap. Counting the run out clock as
+  // missing would wrongly make room for all three.
+  lives = out.slice(0, 2).concat([new Date(Date.now() - 60e3).toISOString()]); extra = 99;
   r = await press(on.co, { putt_lives: 'three' });
-  ok('on: a life whose clock has run out is a life held', r.status === 409);
+  ok('on: a life whose clock has run out is a life held, so it makes no room', r.status === 409 && r.body.error === 'lives_full', r.status + ' ' + JSON.stringify(r.body));
+  extra = 0;
   lives = null;
   r = await press(on.co, { putt_lives: 'three' });
-  ok('on: an account the server has no lives for has lost none', r.status === 409);
+  ok('on: an account the server has no row for may buy', r.status === 200);
   lives = out; livesFail = true;
   r = await press(on.co, { putt_lives: 'nine' });
-  ok('on: a lives read that fails sells nothing (503)', r.status === 503, String(r.status));
+  ok('on: a lives read that fails sells nothing (503), which is a database without 151 too', r.status === 503, String(r.status));
   livesFail = false; signedIn = false;
   r = await press(on.co, { putt_lives: 'three' });
   ok('on: a guest is refused (401)', r.status === 401);
@@ -155,7 +165,7 @@ try {
   ok('on: and the nine-pack still sells on its own price', r.status === 200);
   r = await press(on.co, { putt_lives: 'nine' }, Object.assign({}, env, { STRIPE_PRICE_PUTT_LIVES_9: '' }));
   ok('on: the nine-pack with no price set sells nothing (503)', r.status === 503);
-  ok('on: none of the refusals reached Stripe', sessions.length === n2 + 1, (sessions.length - n2) + ' sessions');
+  ok('on: none of the refusals reached Stripe', sessions.length === n2 + 2, (sessions.length - n2) + ' sessions');
 
   /* ─── 3. the webhook ─────────────────────────────────────────────────── */
   console.log('3. the webhook files what the catalog says, not what the session says');
@@ -181,6 +191,27 @@ try {
   posts = [];
   await off.wh.handleEvent(env, 'checkout.session.completed', { id: 'cs_live_lives3', mode: 'payment', payment_status: 'paid', client_reference_id: 'u-1', metadata: { putt_lives: 'nine' } });
   ok('a session paid before the switch went off is still delivered', posts.some((p) => p.path === '/rest/v1/rpc/putt_lives_buy'));
+  /* ─── 3b. a refund or a chargeback takes the lives back (152) ─────────── */
+  console.log('3b. a full refund or a chargeback takes a lives buy back; nothing else does');
+  sessionsByPI.pi_lives = { id: 'cs_live_three', mode: 'payment', metadata: { putt_lives: 'three', supabase_user_id: 'u-1' } };
+  sessionsByPI.pi_bundle = { id: 'cs_live_bundle', mode: 'payment', metadata: { bundle: 'perfect-season', supabase_user_id: 'u-1' } };
+  const reclaims = () => posts.filter((p) => p.path === '/rest/v1/rpc/putt_lives_reclaim');
+  posts = [];
+  await on.wh.handleEvent(env, 'charge.refunded', { id: 'ch_1', object: 'charge', invoice: null, payment_intent: 'pi_lives', amount: 299, amount_refunded: 299, refunded: true });
+  ok('a full refund of a lives buy is taken back, keyed on its session', reclaims().length === 1 && reclaims()[0].body.p_session === 'cs_live_three', JSON.stringify(posts));
+  posts = [];
+  await on.wh.handleEvent(env, 'charge.refunded', { id: 'ch_2', object: 'charge', invoice: null, payment_intent: 'pi_lives', amount: 299, amount_refunded: 100, refunded: false });
+  ok('a partial refund takes nothing', reclaims().length === 0);
+  posts = [];
+  await on.wh.handleEvent(env, 'charge.dispute.created', { id: 'dp_1', object: 'dispute', charge: { id: 'ch_1', object: 'charge', invoice: null, payment_intent: 'pi_lives', amount: 299 } });
+  ok('a chargeback takes it back too', reclaims().length === 1 && reclaims()[0].body.p_session === 'cs_live_three');
+  posts = [];
+  await on.wh.handleEvent(env, 'charge.refunded', { id: 'ch_3', object: 'charge', invoice: null, payment_intent: 'pi_bundle', amount: 1999, amount_refunded: 1999, refunded: true });
+  ok('a refunded bundle is still left alone', reclaims().length === 0 && posts.length === 0, JSON.stringify(posts));
+  posts = [];
+  await off.wh.handleEvent(env, 'charge.refunded', { id: 'ch_4', object: 'charge', invoice: null, payment_intent: 'pi_lives', amount: 299, amount_refunded: 299, refunded: true });
+  ok('a refund still takes lives back with the switch off', reclaims().length === 1);
+  ok('the migration that does it grants the webhook', /grant execute on function public\.putt_lives_reclaim\(text\) to service_role/.test(read('supabase/152_putt_lives_refund.sql')));
 } finally {
   rmSync(off.dir, { recursive: true, force: true });
   rmSync(on.dir, { recursive: true, force: true });
@@ -195,24 +226,28 @@ ok('each pack has its own lookup key', new Set(Object.values(B.PUTT_LIVES).map((
 ok('the webhook\'s migration is in the repo', /create or replace function public\.putt_lives_buy\(p_session text, p_user uuid, p_lives int\)/.test(read('supabase/149_putt_lives_buy.sql')));
 
 /* ─── 5. the buttons ─────────────────────────────────────────────────────── */
-console.log('5. the out of lives sheet offers a pack only when all of it would land');
+console.log('5. the page offers a pack at any time, up to the cap, on all three screens');
 const canSrc = /function canBuyLives\(st, p\)\{[^\n]*\}/.exec(puttSrc);
 ok('the page has the rule', !!canSrc);
 if (canSrc) {
-  const make = (enabled, host, max) => new Function('PUTT_LIVES_ENABLED', 'hostOf', 'livesMax', canSrc[0] + '; return canBuyLives;')(
-    enabled, () => host, () => max);
+  const make = (enabled, host, max) => new Function('PUTT_LIVES_ENABLED', 'hostOf', 'livesMax', 'LIVES_EXTRA_MAX', canSrc[0] + '; return canBuyLives;')(
+    enabled, () => host, () => max, 99);
   const h = { buyLives() {} }, P9 = { lives: 9 }, P3 = { lives: 3 };
   ok('dark, never', !make(false, h, 9)({ lives: 0 }, P9) && !make(false, h, 9)({ lives: 0 }, P3));
   ok('out of nine, both offered', make(true, h, 9)({ lives: 0 }, P9) && make(true, h, 9)({ lives: 0 }, P3));
-  ok('one left of nine, three offered and nine not', !make(true, h, 9)({ lives: 1 }, P9) && make(true, h, 9)({ lives: 1 }, P3));
-  ok('seven left of nine, neither', !make(true, h, 9)({ lives: 7 }, P3));
-  ok('nine left of a pass\'s eighteen, both offered', make(true, h, 18)({ lives: 9 }, P9) && make(true, h, 18)({ lives: 9 }, P3));
-  ok('ten left of eighteen, three only', !make(true, h, 18)({ lives: 10 }, P9) && make(true, h, 18)({ lives: 10 }, P3));
+  ok('full, both offered', make(true, h, 9)({ lives: 9 }, P9) && make(true, h, 9)({ lives: 9 }, P3));
+  ok('a pass holder full, both offered', make(true, h, 18)({ lives: 18 }, P9) && make(true, h, 18)({ lives: 18 }, P3));
+  ok('99 over the max: neither', !make(true, h, 9)({ lives: 108 }, P3));
+  ok('91 over: three only', make(true, h, 9)({ lives: 100 }, P3) && !make(true, h, 9)({ lives: 100 }, P9));
   ok('a host with no checkout, never', !make(true, {}, 9)({ lives: 0 }, P3));
 }
-const copy = />Get ' \+ p\.lives \+ ' lives back · \$' \+ \(p\.cents \/ 100\)\.toFixed\(2\)/.test(puttSrc);
+const copy = /function buyLabel\(p\)\{ return 'Get ' \+ p\.lives \+ ' lives · \$' \+ \(p\.cents \/ 100\)\.toFixed\(2\); \}/.test(puttSrc) && /'">' \+ buyLabel\(p\) \+ \(p\.tag \? '<small>'/.test(puttSrc);
 ok('each button\'s lives and price come from LIVES_BUY', copy);
 ok('the buttons are drawn in LIVES_BUY\'s order, which is nine first', /LIVES_BUY\.map\(function\(p\)\{ return canBuyLives\(st, p\)/.test(puttSrc) && page[0] && page[0].pack === 'nine');
+ok('the page\'s cap is the server\'s', /^var LIVES_EXTRA_MAX = 99;$/m.test(puttSrc) && /check \(extra between 0 and 99\)/.test(read('supabase/151_putt_lives_extra.sql')));
+ok('the buttons are on all three screens: out of lives, over par, the Lives sheet', (puttSrc.match(/buyRow\(st\)/g) || []).length >= 3 && /wireBuy\(over\)/.test(puttSrc) && /function livesSheet\(\)/.test(puttSrc));
+ok('the hearts open the Lives sheet', /closest\('\.pp-hearts'\)[^\n]*livesSheet\(\)/.test(puttSrc));
+ok('a bought life over the max is lost first and starts no clock', /if \(st\.lives > livesMax\(\)\)\{ st\.lives--; st\.lt = Date\.now\(\); psave\(st\); livesCall\('putt_lives_spend'\); return; \}/.test(puttSrc));
 ok('a press sends the pack to the host', /S\.host\.buyLives\(pack\)/.test(puttSrc));
 const hostSrc = read('golf/index.html');
 ok('the host posts the pack it was handed', /buyLives:function\(pack\)\{ return puttBuyLives\(pack\); \}/.test(hostSrc) && /putt_lives:pack, return_path:'\/golf\/'/.test(hostSrc));

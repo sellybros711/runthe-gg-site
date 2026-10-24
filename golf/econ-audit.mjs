@@ -3,6 +3,7 @@
  *   (nohup python3 -m http.server 8099 &)
  *   node golf/econ-audit.mjs                 prints a summary
  *   node golf/econ-audit.mjs --json FILE     writes every item, pack and price as JSON
+ *   (--launch is accepted and does nothing: Putt Putt and the Pro Shop line are live for everybody)
  *
  * Nothing here is a copy of a number: every row is asked of the page's own functions (cosmeticItems,
  * cosmeticPriceBase, cosmeticPrice, cosPackOnly, cosRewardOnly, passItemOf, packPool, cosBoost), so the

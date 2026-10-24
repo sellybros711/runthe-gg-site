@@ -29,8 +29,8 @@ var PCOL = { street: '#e8660f', league: '#3a6fd8', hof: '#e3a92f', season: '#8a4
 var PACKNAME = { street: 'Streetball Pack', league: 'League Pack', hof: 'Hall of Fame Pack', season: 'Seasonal Pack' };
 
 function $(id){ return document.getElementById(id); }
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function money(n){ return Math.round(n).toLocaleString('en-US'); }
+var esc = window.RTF_UTIL.esc;
+var money = window.RTF_UTIL.coins;
 function reduced(){ try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
 function signed(){ return PD.signedIn(); }
 function confetti(){ try { if (window.RTF_PAGE && window.RTF_PAGE.confetti) window.RTF_PAGE.confetti(); } catch (e) {} }

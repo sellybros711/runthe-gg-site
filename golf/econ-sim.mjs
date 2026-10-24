@@ -18,6 +18,7 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import { readEconomy, openPage } from './econ-audit.mjs';
+import { loadGyms } from './putt/gyms-node.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const RUNS = +arg('--runs', 200), DAYS = +arg('--days', 60);
@@ -39,6 +40,20 @@ const PROFILES = {
              passTier: 60, pro: true, buy: 'champ', note: 'the regular\'s play with the Tour Pass bought (x1.5 play coins, 30,000 coins, 2 seasonal packs, the Pro lane)' },
 };
 const PUTT_WORLDS = 11, PUTT_WORLD_COINS = 4000 + 13000;
+/* THE TRAIL GYMS (golf/putt/gyms.js) replace a world's small trail puzzles: its two vaults pay (read off gyms.js) and
+   its puzzles, each 6 coins of 50, no longer do. PZ_WORLD is how many puzzles each world's trails carried, counted off
+   the plans on 2026-10-17 (103 over the tour, 30,900 coins). A world with no gyms yet is as it was. */
+const PZ_WORLD = { clubhouse: 7, school: 6, candy: 12, neon: 7, pirate: 11, temple: 10, canyon: 12, volcano: 9, sky: 12, dino: 10, iceage: 7 }, PZ_PAY = 6 * 50;
+const WORLD_ORDER = ['clubhouse', 'school', 'candy', 'neon', 'pirate', 'temple', 'canyon', 'volcano', 'sky', 'dino', 'iceage'];
+// every gym of every kind (gyms.js and gymkinds/, loaded as the page loads them), the test kind's out of every world
+const GYMS = (() => { try { return loadGyms().GYMS.filter((g) => g.world); } catch (e) { return []; } })();
+const gymDelta = (w) => { const gs = GYMS.filter((g) => g.world === WORLD_ORDER[w]); return gs.length ? gs.reduce((a, g) => a + g.pay, 0) - PZ_WORLD[WORLD_ORDER[w]] * PZ_PAY : 0; };
+/* THE GYM VAULTS PAY A PACK and CHESTS ROLL ODDS (the owner, 2026-10-17; CHEST_ODDS in putt.js). A world's first gym
+   pays a free Pro Shop pack and its gatekeeper a Tour pack. A chest rolls a big haul (twice its coins again) 15% of
+   the time, a common item 5% and a Pro Shop pack 2%: over a world's ~13,000 chest coins (about 20 chests) that is
+   ~3,900 coins, ~1 common item and 0.4 packs on average. Items and packs that cannot land fall back to the haul. */
+const CHEST_HAUL_EV = 0.15 * 2 * 13000, CHEST_PACKS = 0.02 * 20;
+const gymPacks = (w) => { const gs = GYMS.filter((g) => g.world === WORLD_ORDER[w]); return { base: gs.filter((g) => !g.keeper).length, tour: gs.filter((g) => g.keeper).length }; };
 // Tour Pass lane packs over 60 tiers (passTierReward, Season 2): free 6 base + 2 seasonal + 1 tour; Pro 3 tour + 4 champ
 const LANE_PACKS = { free: { base: 6, tour: 3 }, prem: { tour: 3, champ: 4 } };
 
@@ -129,7 +144,7 @@ export function simulate(E, M, prof, seed, days = 60) {
     pay(prof.coinsDay);
     // Putt Putt worlds, one-time
     const want = Math.min(PUTT_WORLDS, Math.floor(d * prof.puttWorldsWeek / 7));
-    while (worldsDone < want) { worldsDone++; pay(PUTT_WORLD_COINS); }
+    while (worldsDone < want) { pay(PUTT_WORLD_COINS + gymDelta(worldsDone) + CHEST_HAUL_EV); const gp = gymPacks(worldsDone); credits.base += gp.base + CHEST_PACKS; credits.tour += gp.tour; worldsDone++; }
     if (worldsDone >= 3) ppPutters.slice(0, Math.min(3, worldsDone - 2)).forEach((r) => owned.add(r.key));
     // free packs and shards, spread evenly over the week
     for (const t in prof.packsWeek) { const n = prof.packsWeek[t] / 7; credits[t] += n; }

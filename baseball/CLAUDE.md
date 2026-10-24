@@ -42,6 +42,7 @@ node baseball/check-resume.mjs       a run survives leaving the page
 node baseball/check-profile.mjs      the profile and the career on the server
 node baseball/check-leaderboard.mjs  the boards
 node baseball/check-pro.mjs          the Pro gate, sheet and checkout
+node baseball/check-calls.mjs        the manager's call (--engine, --page, --balance)
 psql ... -f supabase/test/launch_preflight.sql    the migrations are applied
 ```
 
@@ -61,8 +62,15 @@ The data pipeline is in `baseball/pipeline/`, and `baseball/pipeline/DATA_RUNBOO
 
 **The engine**
 
-- **Neither the bracket nor the at-bat simulator decides anything.** `generatePlayoffs()` decides.
-  Both run on their own seeded RNG so the season's stream is untouched.
+- **Neither the bracket nor the at-bat simulator decides anything, except a Pro player's call.**
+  `generatePlayoffs()` decides every October game, and both run on their own seeded RNG so the
+  season's stream is untouched. The one exception (the owner's call, 2026-10-20): in a game a Pro
+  player watches, changing pitchers decides the rest of that game, and October carries on from it
+  (`settleOctober` in `run.js`). A call only rescales the other side's runs from that point; it
+  never re-rolls the game. So a game nobody called is byte for byte the old one, and taking the
+  coach's own arm changes nothing. `check-calls.mjs` holds both.
+- **Calls come in watched games only**: every October game in the six modes, the deciding game in
+  Classic and the daily. Free players watch the coach make the call. A recorded run takes none.
 - **Two ratings, two jobs: never merge them.** `squadRating()` ranks against real team-seasons and is
   blind to chemistry, shape and the closer. The season runs on the other number.
 - The data is bWAR only, with Lahman positions. There is no FanGraphs blend.

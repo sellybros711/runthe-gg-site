@@ -1,0 +1,5 @@
+# The pitch library and the HTTP cache. Kept by actions/cache, never in git:
+# Pages refuses any file over 25 MB.
+cache/
+__pycache__/
+packs-test.txt

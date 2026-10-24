@@ -4,12 +4,18 @@ name: Putting Green checks
 # and two weeks of Daily Holes are PLAYED by a solver to par, both tours' 108
 # holes are beaten under par by replaying the routes golf/putt/solve.mjs recorded
 # in routes.json (the search itself is an hour, so it is not run here), the real greens
-# are built off the page's own hvGeom in a browser, and the tester gate is
-# asserted shut for everybody else. Every themed hole is drawn in 3D (hole3d.js,
+# are built off the page's own hvGeom in a browser, and the launch switch
+# is asserted on, with its kill switch shutting the door again. Every themed hole is drawn in 3D (hole3d.js,
 # land.js) and its projection checked against the picture. The course golfer has its own workflow
 # (golfer3d-check.yml). Runs locally, unchanged:
 #
 #   node golf/putt/check-putt.mjs
+#
+# check-safe-top.mjs holds every close and back button pinned near the top of a full screen
+# layer below the phone's notch (env(safe-area-inset-top)).
+#
+# The lives job builds the server's lives (138, 146, 149, 150) in a real Postgres and
+# runs supabase/test/putt_lives_spare_test.sql: a spare life fills a heart once.
 #
 # No secrets, no deploy.
 
@@ -18,12 +24,16 @@ on:
     paths:
       - 'golf/putt/**'
       - 'golf/index.html'
+      - 'supabase/1[3-5][0-9]_putt_lives*.sql'
+      - 'supabase/test/putt_lives_*.sql'
       - '.github/workflows/putt-check.yml'
   push:
     branches: [main]
     paths:
       - 'golf/putt/**'
       - 'golf/index.html'
+      - 'supabase/1[3-5][0-9]_putt_lives*.sql'
+      - 'supabase/test/putt_lives_*.sql'
       - '.github/workflows/putt-check.yml'
   workflow_dispatch: {}
 
@@ -39,9 +49,33 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Close and back buttons clear the phone's top
+        run: node golf/check-safe-top.mjs
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.47.2
           npx playwright install --with-deps chromium
       - name: The physics, the greens, every hole played to par
         run: node golf/putt/check-putt.mjs --days 14
+
+  lives:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # The runner image ships PostgreSQL stopped. Start it, and let the runner's own user create databases.
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+      - name: A spare life fills a heart, once (supabase/150)
+        run: |
+          createdb pspare
+          P="psql -X -q -v ON_ERROR_STOP=1 -d pspare"
+          $P -f supabase/test/baseball_pro_base.sql
+          $P -f supabase/138_putt_lives.sql
+          $P -f supabase/146_putt_lives_nine.sql
+          $P -f supabase/149_putt_lives_buy.sql
+          $P -f supabase/150_putt_lives_spares.sql
+          $P -f supabase/150_putt_lives_spares.sql
+          $P -f supabase/test/putt_lives_spare_test.sql

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Building a college roster with an NIL budget: RunThe.GG</title>
+  <meta name="description" content="How to split the $11M NIL budget across six spots in Perfect Season College Football, when to re-spin, and what wins a 12-game season.">
+  <link rel="canonical" href="https://runthe.gg/guides/college-football-nil-budget.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="RunThe.GG">
+  <meta property="og:url" content="https://runthe.gg/guides/college-football-nil-budget.html">
+  <meta property="og:title" content="Building a college roster with an NIL budget">
+  <meta property="og:description" content="How to split the $11M NIL budget across six spots in Perfect Season College Football, when to re-spin, and what wins a 12-game season.">
+  <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=4">
+  <meta name="theme-color" content="#06182e">
+  <link rel="icon" href="/assets/runthegames-icon_48.png?v=5" sizes="any">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-icon_180.png?v=5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0a1626;--card:#122a44;--cardb:#1e3d5c;--ink:#eaf1f8;--mut:#93a7bd;--coral:#F85858;--teal:#66D3DE;--green:#6EE84E;}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;padding:0;}
+    body{font-family:'Archivo',system-ui,-apple-system,sans-serif;line-height:1.6;color:var(--ink);
+      min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+      background:
+        radial-gradient(1100px 520px at 50% -8%, rgba(102,211,222,.16), transparent 60%),
+        radial-gradient(900px 460px at 88% 4%, rgba(248,88,88,.12), transparent 55%),
+        linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+      background-attachment:fixed;}
+    .wrap{max-width:680px;margin:0 auto;padding:26px 18px 56px;}
+    .mast{text-align:center;margin:4px 0 22px;}
+    .mast img{display:block;width:100%;max-width:440px;height:auto;margin:0 auto;filter:drop-shadow(0 6px 26px rgba(0,0,0,.45));}
+    .crumb{font-size:12.5px;color:#6f829a;margin:0 0 10px;}
+    .crumb a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .card{background:linear-gradient(180deg,var(--card),#0f2338);border:1px solid var(--cardb);border-radius:10px;padding:24px 22px 28px;}
+    h1{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;
+      font-size:clamp(28px,7.5vw,42px);line-height:1.05;margin:0 0 8px;}
+    .sub{font-weight:900;color:var(--teal);text-transform:uppercase;letter-spacing:2px;font-size:11.5px;margin:0 0 18px;}
+    h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
+      font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
+    h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .card p,.card li{font-size:15px;color:var(--mut);}
+    .card p{margin:0 0 14px;}
+    .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
+    .card li{margin:0 0 6px;}
+    .card b{color:var(--ink);font-weight:800;}
+    .card a{color:var(--teal);font-weight:700;text-decoration:none;}
+    .card a:hover{text-decoration:underline;}
+    .tbl{overflow-x:auto;margin:0 0 14px;}
+    .tbl table{border-collapse:collapse;width:100%;font-size:14px;color:var(--mut);}
+    .tbl th,.tbl td{text-align:left;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top;}
+    .tbl th{color:var(--ink);font-weight:800;}
+    .card .list{list-style:none;padding:0;margin:0;}
+    .list li{border-top:1px solid rgba(255,255,255,.08);padding:14px 0;margin:0;}
+    .list li:first-child{border-top:0;}
+    .list .t{display:block;font-size:16px;}
+    .list .d{display:block;font-size:14px;color:var(--mut);}
+    .play-row{margin-top:24px;text-align:center;}
+    .cta{display:inline-block;background:linear-gradient(180deg,#FF6B6B,#F04A44);color:#fff!important;font-weight:800;
+      text-transform:uppercase;letter-spacing:.5px;font-size:15px;padding:13px 26px;border-radius:7px;
+      text-decoration:none!important;box-shadow:0 8px 22px -12px rgba(248,88,88,.9);}
+    .foot{margin-top:28px;text-align:center;font-size:12.5px;color:#6f829a;line-height:2;}
+    .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .foot a:hover{color:var(--ink);}
+    .foot .sep{margin:0 7px;color:#3c4c60;}
+  </style>
+  <script>
+  window.dataLayer=window.dataLayer||[];
+  window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  /* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+  </script>
+  <script>
+  window.GA_ID='G-L29P5MRWKE';
+  (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+    window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
+    gtag('js',new Date());gtag('set',{game_name:'Guides'}); gtag('config',id);
+    var s=document.createElement('script');s.async=true;
+    s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+    document.head.appendChild(s);})();
+  </script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
+       crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mast"><a href="/"><img src="/assets/wm-stacked.png?v=1" alt="Run The Games" width="1200" height="431" /></a></div>
+
+    <main class="card">
+      <p class="crumb"><a href="/guides/">Guides</a> · College Football: Perfect Season</p>
+      <h1>Building a college roster with an NIL budget</h1>
+      <p class="sub">A guide to College Football: Perfect Season</p>
+
+      <p>Perfect Season: College Football gives you six spins, six signings and one NIL budget. Then it plays a 12-game season with the team you built. This guide covers how to split the money and why.</p>
+
+      <h2>The six spots and the money</h2>
+
+      <p>You fill six spots: <b>QB, RB, WR, WR, FLEX, FLEX</b>. A flex takes a running back, a receiver or a tight end. There's no tight end spot of its own.</p>
+
+      <p>You get <b>$11M</b> for all six. The cheapest player on any board costs <b>$300K</b>. The dearest costs <b>$4.8M</b>. Do the math and the average spot gets about <b>$1.8M</b>. That's the number to keep in your head.</p>
+
+      <p>Each spin lands on a year, then a school. You sign one player off that roster. Two limits shape every board:</p>
+
+      <ul>
+        <li><b>Two running backs at most.</b> One in the RB spot, one in a flex. A third has nowhere to go.</li>
+        <li><b>You can't strand yourself.</b> The game won't let you sign a man if what's left can't fill your open spots. Those players grey out.</li>
+      </ul>
+
+      <p>The line under your budget shows what's left per open spot. It turns red under <b>$600K</b> a spot.</p>
+
+      <h2>How your team is scored</h2>
+
+      <p>This is the part that decides how to spend. Your team overall is three things multiplied:</p>
+
+      <ol>
+        <li><b>What your six score a game.</b> Each player's points a game from his real season.</li>
+        <li><b>Chemistry.</b> Links between your players.</li>
+        <li><b>Fit.</b> How well the six work together.</li>
+      </ol>
+
+      <p>All three are on your results screen. The trap is item 1. Buying the biggest number on every board ignores fit, and fit checks four things:</p>
+
+      <ul>
+        <li><b>Does your QB throw?</b> A real passer lifts every catch your receivers make. A quarterback who can't throw drags them down. This is the biggest of the four.</li>
+        <li><b>Run and pass balance.</b> Too much of either costs you. Mixing backs and receivers keeps it free.</li>
+        <li><b>One star carrying it.</b> If one player is too big a share of your points, you pay for it.</li>
+        <li><b>Your two weakest players.</b> If they're far below your average, you pay for that too.</li>
+      </ul>
+
+      <p>So stars next to nobody get found out.</p>
+
+      <h2>How to split the money</h2>
+
+      <p>Start with the quarterback. He's the one spot that multiplies other spots. A quarterback who can really throw is worth a big share.</p>
+
+      <p>Then think in tiers, not names. Prices climb faster than production at the top. The last few points of a superstar cost the most. A very good player is often far better value than a great one.</p>
+
+      <p>A shape that holds up:</p>
+
+      <ul>
+        <li><b>One or two big signings.</b> The QB and maybe your best receiver.</li>
+        <li><b>Three or four solid players.</b> Near the $1.8M average, give or take.</li>
+        <li><b>No passengers.</b> Your cheapest two still have to pull their weight. Two $300K signings beside four stars is exactly what the floor check punishes.</li>
+      </ul>
+
+      <p>Order matters too. A star early is paid for by bargains later. Wait, and the star you wanted may never come back. Neither is wrong.</p>
+
+      <p>Don't leave money on the table. Finish with <b>$3M</b> or more not spent on players and the coach's report calls it a wasted player. Spend inside <b>$500K</b> of the budget and it calls it a strength.</p>
+
+      <h2>Re-spins</h2>
+
+      <p>You get <b>three re-spins</b> a run. They cost <b>$500K</b>, then <b>$1M</b>, then <b>$1.5M</b>. That's <b>$3M</b> if you use all three, off the same budget.</p>
+
+      <p>There are two buttons:</p>
+
+      <ul>
+        <li><b>New year</b> keeps the school and spins a different season.</li>
+        <li><b>New team</b> keeps the year and spins a different school.</li>
+      </ul>
+
+      <p>Use one when the board has nobody you can use, not to chase a name. The fee comes out of the money you still need.</p>
+
+      <p>New year has a hidden use. Two players from the same school in different years earn a chemistry link.</p>
+
+      <h2>Chemistry</h2>
+
+      <p>Players with a history together lift the whole roster. From strongest to weakest:</p>
+
+      <ol>
+        <li>A quarterback and the receiver he really threw to.</li>
+        <li>Teammates on the same team, same year.</li>
+        <li>Brothers.</li>
+        <li>The same school, different years.</li>
+        <li>The same head coach.</li>
+        <li>The same home state.</li>
+        <li>The same conference.</li>
+      </ol>
+
+      <p>Each pair counts only its best link. Chemistry flattens as it grows and tops out at <b>+8%</b>. So it's a tiebreaker. When two players cost about the same, take the one who links.</p>
+
+      <h2>Schemes and the tight end</h2>
+
+      <p>Skip the tight end for a third receiver with a big-arm QB and you can run the <b>Air Raid</b>. Sign a real tight end beside a real back for <b>Pro Style</b> or <b>Power Run</b>. A scheme adds a small bonus to fit. Don't force one.</p>
+
+      <h2>How the season is decided</h2>
+
+      <p>Your 12 opponents are real team seasons, balanced so no slate is far harder than another. Each week your six score from their real averages, with some swing, against that team's defense and offense.</p>
+
+      <p>After 12 games your season is ranked against the country. Record comes first. Then how far you won by and who you played. The top <b>12</b> make the College Football Playoff. The top <b>4</b> seeds skip the first round. One playoff loss ends it.</p>
+
+      <p>Miss the field with <b>6</b> wins or more and you go to a bowl. Where you ranked decides which one.</p>
+
+      <p>Two more rules matter for the money:</p>
+
+      <ul>
+        <li><b>Good teams get everybody's best game.</b> From an overall of <b>84</b> up, your strongest opponents raise their game. The better you are, the more they raise it.</li>
+        <li><b>The title has a floor.</b> Under <b>84</b> overall the national title is out of reach. Above it, every point helps.</li>
+      </ul>
+
+      <div class="play-row">
+        <a class="cta" href="/cfb/">Play College Football: Perfect Season</a>
+      </div>
+    </main>
+
+    <footer class="foot">
+      <a href="/">Home</a><span class="sep">·</span>
+      <a href="/guides/">Guides</a><span class="sep">·</span>
+      <a href="/about.html">About</a><span class="sep">·</span>
+      <a href="/privacy.html">Privacy</a><span class="sep">·</span>
+      <a href="/terms.html">Terms</a><span class="sep">·</span>
+      <a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span>
+      <a href="/contact.html">Contact</a>
+    </footer>
+  </div>
+</body>
+</html>

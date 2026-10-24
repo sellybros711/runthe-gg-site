@@ -1,0 +1,32 @@
+name: Guides check
+
+# The guides at runthe.gg/guides/ state numbers the games play by. A guide cannot read
+# them from the engine, so guides/numbers.json pins each one to the code it comes from,
+# and this fails when a game changes a number its guide still states. Any PR can do
+# that from any game file, so it runs on every PR rather than on a path filter. It is
+# a few file reads: no install, no browser.
+#
+# It also holds the pages to their sources (scripts/guides/build-guides.mjs), the
+# sitemap to the guides, and the owner's rule that only the home page links to them.
+#
+#   node scripts/guides/check-guides.mjs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: guides-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/guides/check-guides.mjs

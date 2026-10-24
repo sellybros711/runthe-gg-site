@@ -127,9 +127,7 @@ window.RTT_PUTT_LAND = (function(){
   function lamp(B, x, y, pole, glow){ var zb = B.gz(x, y); if (B.light) B.light(x, y, zb + 1.6, glow);
     B.solid(x - 0.3, y - 0.3, zb, x + 0.3, y + 0.3, zb + 1.8, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y);
       if (t < 1.45 && r < 0.07) return pole; if (t >= 1.45 && t < 1.75 && r < 0.17) return t > 1.68 || r > 0.13 ? pole : glow; return null; }); }
-  // a ground colour that varies in patches: base, two alternates, and how often the alternates show
-  function patchy(c, R, h3, t){ var n1 = h3(c.ti >> 1, c.tj >> 1, 11), n2 = h3(c.ti, c.tj, 12); return R(n1 < t[3] ? (n2 < 0.5 ? t[1] : t[2]) : t[0]); }
-
+  
   function bush(B, x, y, r, cols){ var zb = B.gz(x, y);
     B.solid(x - r - 0.1, y - r - 0.1, zb - 0.05, x + r + 0.1, y + r + 0.1, zb + r * 1.6, function(px, py, pz){ var d = Math.hypot((px - x) / r, (py - y) / r, (pz - zb - r * 0.55) / (r * 0.85));
       return d < 1 ? cols[(Math.floor(px * 6) + Math.floor(pz * 6) + Math.floor(py * 6)) % cols.length] : null; }); }
@@ -1310,14 +1308,191 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ lino:['#d8d4c8', '#e4e0d4', '#c8c4b8', 0.06, function(c, R){ return R(((c.ti >> 2) + (c.tj >> 2)) % 2 ? '#d8d4c8' : '#a8b4c0'); }],
         cwallp:['#e8dcc0', '#f2e8d0', '#d8ccb0', 0.06, function(c, R){ var z = c.z || 0; if (c.n && z > 2 && z < 5){ if (hash(c.ti, c.tj >> 1, 3) < 0.05) return R('#f4f4ee'); return R('#2f5a40'); } return R(z < 1 ? '#8a7a5a' : '#e8dcc0'); }] } }; };
 
-  // Secret Recipe: steel plate underfoot, pink brick walls, chocolate vats and the pipes between them
-  BUILD['s-recipe'] = function(L){ var R0 = room(L, { floor:'plate', wall:'pbrick', wallH:7.5, gap:2.6 });
-    return { h:R0.h, mat:R0.mat,
-      build:function(B){ byWall(L, 4, 14, 4).forEach(function(q){ cyl(B, q[0], q[1], 1.5, 3.2, function(d, t){ if (t > 3) return d < 0.86 ? '#5a2e14' : '#c8ccd2'; return (Math.floor(t * 2) % 2) ? '#c8ccd2' : '#a8acb4'; }); });
-        byWall(L, 3, 24, 2.4).forEach(function(q){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 0.3, y - 0.3, zb, x + 0.3, y + 0.3, zb + 6, function(px, py){ return Math.hypot(px - x, py - y) < 0.25 ? '#ff5fa2' : null; }); }); },
-      bg:'#3a1c2a', gain:1.7,
-      mats:{ plate:['#8a8e96', '#9a9ea6', '#7a7e86', 0.06, function(c, R){ return R(((c.ti + c.tj) % 4 === 0 || (c.ti - c.tj + 400) % 4 === 0) ? '#a8acb4' : '#8a8e96'); }],
-        pbrick:['#d8487a', '#e8588a', '#c8386a', 0.1, function(c, R){ var z = c.z || 0, row = (z * 3) | 0; return R(((c.ti + (row % 2) * 2) % 4 === 0 || Math.abs(z * 3 - row) < 0.12) ? '#f4d8e0' : '#d8487a'); }] } }; };
+  /* SECRET RECIPE: the inner room of the Candy Works, where the recipe is made. A chocolate waterfall pours off a fudge
+     cliff straight into the river behind the candy boat's dock and churns it, the river runs through the hole's own
+     channel and on out under the far landing to the left, the great kettle mixes the recipe under its whisk behind the
+     cup, copper vats bubble beside it, striped candy pipes run overhead along the back wall and down into the kettle and
+     the head of the falls, and a candy garden of giant lollipops, candy cane trees, swirled mushrooms and gumdrops grows
+     between the river and the back wall and along the top of the cliff. The taffy puller and the press work out front.
+     A phone sees about the width of the course, so the pieces that matter stand inside it; the sides are for a wide
+     screen. What moves (the falls, the river, the spray, the steam, the bubbles, the whisk, the puller's arms) is handed
+     to putt.js as anim and drawn over the picture every frame. */
+  BUILD['s-recipe'] = function(L){
+    var E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, ca = L.clearAt, F = (L.C.ferries || [])[0];
+    // the channel the boat runs in, read off the ferry, so the falls and the river outside meet the one inside
+    var chY = F ? (F.y0 + F.y1 - 0.4) / 2 : L.cy, chW = F ? (F.y1 - 0.4 - F.y0) / 2 : 2, xE = F ? Math.max(F.x1, F.x1 + F.dx) : P1[0], xW = F ? Math.min(F.x0, F.x0 + F.dx) + 0.4 : P0[0];
+    var WL = 0, RIV = -0.18, CZ = 0.73;                           // the floor, the river outside the course, the course's own water
+    var fX0 = xE - 5.4, fX1 = xE - 0.3, fY = chY - chW - 0.95, CH = 7.6, cX0 = fX0 - 1.6;   // the falls behind the dock, and its cliff
+    var bY = P0[1] - 15, BH = 12;                                 // the back wall's face, and how tall it stands
+    var kX = (P0[0] + xW) / 2, kY = P0[1] - 6.5;                  // the great kettle, behind the cup
+    function westY(x){ return chY + Math.sin((x - P0[0]) * 0.22 + seed) * 0.5; }
+    // the river out to the west, past the far landing: how deep in it a point is
+    function choc(x, y){ if (x > P0[0] + 0.2) return -1; return (chW + 0.1 - Math.abs(y - westY(x))) / chW; }
+    // the fudge cliff: from just behind the channel to the back wall, right of the island, a steep face toward the camera
+    function cliffK(x, y){ return sm(0, 0.9, fY - y) * sm(0, 0.5, x - cX0); }
+    // the stream along the cliff top, from the pipe's mouth at the back to the lip of the falls
+    var sX = (fX0 + fX1) / 2, stream = [[sX + 1.4, bY + 2.4], [sX + 0.4, bY + 9], [sX - 0.8, (bY + fY) / 2 + 3], [sX - 0.2, fY - 3], [sX, fY - 0.2]], dS = L.dist(stream);
+    function back(x, y){ return sm(bY + 0.6, bY - 0.6, y); }       // 0 in the room, 1 in the back wall
+    function apron(x, y){ var c = ca(x, y); return c < 1.7 || (y > P1[1] - 0.5 && c < 5 && Math.abs(x - (xE - 3)) < 7); }
+    var path = [[xW + 1.6, chY - chW - 1.2], [xW + 2.2, chY - 9], [xW + 1.4, kY + 3.4], [kX + 3.3, kY + 1.5]], dP = L.dist(path);
+
+    /* what stands in the room, placed by hand against the course, the river, the cliff and the walls */
+    var put = [];
+    function free(x, y, r, top){ if (ca(x, y) < r + 0.4 || choc(x, y) > -0.3 || back(x, y) > 0.02 || x < E[0] + r || x > E[2] - r || y > E[3] - r) return false;
+      var cl = cliffK(x, y); if (top ? (cl < 0.99 || cliffK(x, y + r + 0.4) < 0.99 || dS(x, y) < r + 0.7 || x < cX0 + r + 0.6) : cl > 0.01 || cliffK(x - r, y) > 0.01 || cliffK(x, y - r) > 0.01) return false;
+      return put.every(function(q){ return Math.hypot(q[0] - x, q[1] - y) > q[2] + r; }); }
+    function place(x, y, r, top){ if (!free(x, y, r, top)) return false; put.push([x, y, r]); L.used.push({ x:x, y:y, r:r }); return true; }
+    put.push([kX, kY, 2.7]);
+    var vats = []; [[xW + 3.5, chY - 9.6, 0], [xW + 3.9, chY - 19.5, 1], [P0[0] - 6, chY - 6, 2], [P0[0] - 6.5, chY - 16, 0]].forEach(function(v){ if (place(v[0], v[1], 1.75)) vats.push(v); });
+    var puller = [P0[0] + 4.2, (chY + chW + P1[1]) / 2 - 0.6], press = [xW + 4.2, (chY + chW + P1[1]) / 2 + 0.6];
+    if (!place(puller[0], puller[1], 1.6)) puller = null; if (!place(press[0], press[1], 1.8)) press = null;
+    var garden = [];
+    function grow(kind, x, y, r, s, top){ if (place(x, y, r, top)) garden.push([kind, x, y, s]); }
+    // the island between the river and the back wall: tall things to the back, lower toward the river
+    var I0 = xW + 1.3, I1 = cX0 - 0.4, J0 = bY + 2, J1 = chY - chW - 1.2;
+    for (var gi = 0; gi < 120; gi++){ var gx = I0 + hash(gi, 3, seed) * (I1 - I0), gy = J0 + hash(gi, 5, seed) * (J1 - J0), dep = (J1 - gy) / (J1 - J0), k = hash(gi, 7, seed);
+      if (dep > 0.35 && k < 0.36) grow('lolly', gx, gy, 1.3, 0.75 + dep * 0.75);
+      else if (dep > 0.2 && k < 0.58) grow('cane', gx, gy, 1.25, 0.75 + dep * 0.55);
+      else if (k < 0.84) grow('shroom', gx, gy, 0.9, 0.5 + dep * 0.7);
+      else grow('gum', gx, gy, 0.5, 0.34 + hash(gi, 9, seed) * 0.12); }
+    // along the top of the cliff, either side of the stream
+    for (gi = 0; gi < 50; gi++){ var tx = cX0 + 1 + hash(gi, 61, seed) * (E[2] - cX0 - 1.5), ty = bY + 2.4 + hash(gi, 63, seed) * (fY - bY - 3.6), k5 = hash(gi, 65, seed);
+      if (k5 < 0.35) grow('lolly', tx, ty, 1.3, 0.8 + hash(gi, 67, seed) * 0.5, true); else if (k5 < 0.55) grow('cane', tx, ty, 1.25, 0.85, true); else grow(k5 < 0.85 ? 'shroom' : 'gum', tx, ty, k5 < 0.85 ? 0.9 : 0.5, k5 < 0.85 ? 0.6 + hash(gi, 69, seed) * 0.4 : 0.36, true); }
+    // the left side, for a wide screen
+    for (gi = 0; gi < 36; gi++){ var lx = E[0] + 1 + hash(gi, 13, seed) * (P0[0] - 2 - E[0]), ly = bY + 2 + hash(gi, 15, seed) * (P1[1] - bY - 2), k2 = hash(gi, 17, seed);
+      if (ly > chY + chW + 1) grow(k2 < 0.6 ? 'gum' : 'shroom', lx, ly, k2 < 0.6 ? 0.5 : 0.8, k2 < 0.6 ? 0.34 : 0.5);
+      else if (k2 < 0.3) grow('lolly', lx, ly, 1.3, 0.9 + hash(gi, 19, seed) * 0.4); else if (k2 < 0.55) grow('cane', lx, ly, 1.25, 0.9); else grow(k2 < 0.85 ? 'shroom' : 'gum', lx, ly, k2 < 0.85 ? 0.9 : 0.5, k2 < 0.85 ? 0.7 : 0.36); }
+    // the garden comes round in front too, tall only where it stands clear of the tee strip, so it hides nothing of the course
+    for (gi = 0; gi < 48; gi++){ var side = gi % 3 === 2, ox = side ? xE + 2.6 + hash(gi, 71, seed) * (E[2] - xE - 3.4) : E[0] + 1 + hash(gi, 71, seed) * (xE - 7.5 - E[0]), oy = side ? chY + chW + 2.5 + hash(gi, 73, seed) * (E[3] - chY - chW - 3.5) : P1[1] + 3.2 + hash(gi, 73, seed) * (E[3] - P1[1] - 4), k6 = hash(gi, 75, seed);
+      if (k6 < 0.3) grow('lolly', ox, oy, 1.3, 0.75 + hash(gi, 77, seed) * 0.5); else if (k6 < 0.5) grow('cane', ox, oy, 1.25, 0.8); else if (k6 < 0.8) grow('shroom', ox, oy, 0.9, 0.55 + hash(gi, 79, seed) * 0.5); else grow('gum', ox, oy, 0.5, 0.36); }
+    // in front of the channel and the course only low things, in beds rather than a scatter
+    var beds = [[xW - 1, P1[1] + 3.2], [xE + 2.2, P1[1] + 2.6], [xW + 3.5, P1[1] + 6.5], [xE - 2.5, P1[1] + 8], [P0[0] - 2.5, P1[1] + 5], [xE + 4, chY + chW + 4], [P0[0] + 1.6, chY + chW + 2.2]];
+    beds.forEach(function(b, bi){ for (var q = 0; q < 9; q++){ var a = q * 2.4 + bi, rr = q ? 0.55 + (q % 3) * 0.45 : 0, x = b[0] + Math.cos(a) * rr, y = b[1] + Math.sin(a) * rr * 0.7;
+      grow(q === 0 ? 'shroom' : q % 4 === 1 ? 'bonbon' : 'gum', x, y, q === 0 ? 0.7 : 0.42, q === 0 ? 0.5 : 0.36); } });
+    var lamps = [[xW - 1.6, P1[1] + 1.2], [xE + 1.3, P1[1] + 1.2], [P0[0] - 1.4, chY + chW + 1.2], [I0 + 0.2, J1 + 0.5]].filter(function(p){ return ca(p[0], p[1]) > 0.7 && choc(p[0], p[1]) < -0.2 && cliffK(p[0], p[1]) < 0.01; });
+    lamps.forEach(function(p){ L.used.push({ x:p[0], y:p[1], r:0.5 }); });
+
+    /* the moving things, for putt.js to draw every frame: all in the world's feet, z up */
+    var anim = { falls:{ x0:fX0 + 0.2, x1:fX1 - 0.2, y:fY + 0.27, bow:0.45, z0:CH + 0.1, z1:CZ }, foam:{ x0:fX0 - 0.2, x1:fX1 + 0.1, y:chY - chW + 0.5, z:CZ + 0.02 },
+      spray:[], flow:[], steam:[], bubbles:[], whisk:null, puller:null, col:{ foam:'#f6e6cc', steam:'#ffffff' } };
+    for (var sp = fX0 + 0.4; sp < fX1; sp += 0.9) anim.spray.push([sp, fY + 0.55, 1.7]);
+    anim.flow.push({ pts:stream.map(function(p){ return [p[0], p[1], CH - 0.2]; }), w:0.8, v:2.2 });
+    anim.flow.push({ pts:[[xE - 0.3, chY, CZ], [xW, chY, CZ]], w:chW * 1.5, v:1.5, inside:true });
+    var west = []; for (var wx = P0[0] - 0.8; wx > E[0] - 1; wx -= 1.2) west.push([wx, westY(wx), RIV + 0.02]); anim.flow.push({ pts:west, w:chW * 1.4, v:1.5 });
+
+    function shroom(B, x, y, s, k){ var zb = B.gz(x, y), H = 1.5 * s, R = 1.0 * s, cols = [['#ff5fa2', '#fff4f8'], ['#8a5cff', '#f2e8ff'], ['#3fbf9a', '#e6fff6'], ['#ffd23f', '#ff8a1f'], ['#e8233f', '#fff6f0']][k % 5];
+      B.solid(x - R, y - R, zb, x + R, y + R, zb + H + R * 0.7, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), t = pz - zb;
+        if (t < H){ var sw = 0.2 * s * (1 + (H - t) / H * 0.35); if (r < sw) return t > H - 0.25 * s && r > sw * 0.6 ? '#f4e6d0' : (Math.floor(t / s * 5) % 2 ? '#fff8ee' : '#f6ecdc'); }
+        var u = (t - H) / (R * 0.7); if (u < 0 || u > 1) return null; var w = R * Math.sqrt(1 - u * u) * (u < 0.15 ? (0.85 + u) : 1); if (r > w) return null;
+        if (u < 0.12) return r < w - 0.12 ? '#f6ecdc' : cols[0];
+        var a = Math.atan2(dy, dx) + r / s * 2.6; return ((a % 1.57) + 1.57) % 1.57 < 0.78 ? cols[0] : cols[1]; }); }
+    function caneTree(B, x, y, s, k){ var zb = B.gz(x, y), H = 3.2 * s, R = 1.15 * s, crown = [['#ffa8d0', '#ffc8e2', '#f088b8'], ['#a8f0d0', '#c8f8e4', '#80d8b0'], ['#e0b8ff', '#f0d8ff', '#c898f0']][k % 3];
+      B.vox(x - R * 1.6, y - R * 1.4, zb - 0.1, x + R * 1.6, y + R * 1.4, zb + H + R * 1.2, function(set){
+        B.tube(set, x, y, zb, x, y, zb + H, 0.2 * s, 0.14 * s, function(t, z){ return (Math.floor((z - zb) * 3.2) % 2) ? '#e8233f' : '#fff6f0'; });
+        for (var q = 0; q < 4; q++){ var a = q * 1.57 + k, rr = R * 0.5; B.blob(set, x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.6, zb + H + (q % 2) * 0.25 * s, R * 0.75, R * 0.65, R * 0.62, function(px, py, pz){ return hash(px * 6 | 0, pz * 6 | 0, 3) < 0.2 ? crown[1] : hash(px * 5 | 0, py * 5 | 0, 4) < 0.15 ? crown[2] : crown[0]; }); }
+        B.blob(set, x, y, zb + H + 0.45 * s, R * 0.8, R * 0.7, R * 0.7, function(px, py, pz){ return hash(px * 6 | 0, pz * 6 | 0, 5) < 0.25 ? crown[1] : crown[0]; }); }); }
+    // a striped pipe through a list of points, a collar of steel at every joint
+    function pipe(B, pts, r, cols){ for (var i = 0; i < pts.length - 1; i++){ var a = pts[i], c = pts[i + 1];
+      B.vox(Math.min(a[0], c[0]) - r - 0.2, Math.min(a[1], c[1]) - r - 0.2, Math.min(a[2], c[2]) - r - 0.2, Math.max(a[0], c[0]) + r + 0.2, Math.max(a[1], c[1]) + r + 0.2, Math.max(a[2], c[2]) + r + 0.2, function(set){
+        var Ls = Math.hypot(c[0] - a[0], c[1] - a[1], c[2] - a[2]);
+        B.tube(set, a[0], a[1], a[2], c[0], c[1], c[2], r, r, function(t){ return (Math.floor(t * Ls * 1.4 + i * 0.5) % 2) ? cols[0] : cols[1]; });
+        B.blob(set, c[0], c[1], c[2], r * 1.15, r * 1.15, r * 1.15, cols[2] || '#e4e8ee'); }); } }
+
+    return {
+      anim:anim,
+      h:function(x, y){ var bk = back(x, y); if (y < bY - 2.2) return -30;            // nothing beyond the back wall: the room ends there
+        if (bk > 0) return WL + bk * BH;
+        var cl = cliffK(x, y); if (cl > 0){ var top = CH; if (cl > 0.99 && dS(x, y) < 0.9) top = CH - 0.28 * sm(0.9, 0.3, dS(x, y)); return WL + cl * top; }
+        var c = choc(x, y); if (c > 0) return RIV - Math.min(0.2, c * 0.3); if (c > -0.18) return RIV + (WL - RIV) * (-c / 0.18);
+        return WL; },
+      mat:function(x, y){ var bk = back(x, y); if (bk > 0.02) return ['pwall', { z:bk * BH, wx:x }];
+        var cl = cliffK(x, y); if (cl > 0.02){ if (cl > 0.99 && dS(x, y) < 0.7) return ['jpool', { dep:0.4 }]; if (cl > 0.99 && dS(x, y) < 0.95) return ['crumb']; if (cl > 0.985) return [fY - y < 1.25 ? 'crumb' : 'lawn']; return ['fudge', { z:cl * CH, wx:x }]; }
+        var c = choc(x, y); if (c > 0) return ['jpool', { dep:c }]; if (c > -0.2) return ['crumb'];
+        if (apron(x, y)) return ['rtile'];
+        if (dP(x, y) < 0.6) return ['mintp'];
+        return ['lawn']; },
+      build:function(B){
+        // THE FALLS: a sheet of chocolate off the lip of the cliff, bowing out as it falls, down behind the channel's rail into the river
+        B.solid(fX0, fY - 0.2, CZ - 0.1, fX1, fY + 0.9, CH + 0.15, function(px, py, pz){ var u = (pz - CZ) / (CH - CZ), d = py - (fY + 0.15 + 0.45 * (1 - u) * (1 - u));
+          var edge = Math.min(px - fX0, fX1 - px); if (edge < 0 || Math.abs(d) > (edge < 0.25 ? 0.07 : 0.12)) return null;
+          var band = vn(px * 3.4, pz * 0.28, seed + 41); if (u > 0.94 && vn(px * 6, 0, seed + 45) > 0.4) return '#f4d0a0'; if (u < 0.08) return band > 0.5 ? '#f4e2c8' : '#e0b888';
+          return band > 0.74 ? '#f0c088' : band > 0.6 ? '#d0965e' : band > 0.42 ? '#b07444' : band < 0.2 ? '#7a4422' : '#94582e'; });
+        // the cliff's lip, a rounded edge of caramel, and the foot of the cliff where it meets the floor
+        B.solid(cX0 - 0.2, fY - 0.6, CH - 0.3, E[2], fY + 0.1, CH + 0.35, function(px, py, pz){ if (px > fX0 - 0.05 && px < fX1 + 0.05) return null; var d = Math.hypot(py - (fY - 0.25), pz - CH);
+          return d < 0.3 ? (pz > CH + 0.1 ? '#f2c27a' : '#d89a4a') : null; });
+        // OVERHEAD: striped candy pipes along the back wall, one down into the great kettle, one to the head of the falls, one across to the vats
+        pipe(B, [[E[0] - 1, bY + 0.7, 9.6], [E[2] + 1, bY + 0.7, 9.6]], 0.45, ['#e8233f', '#fff6f0', '#c8ccd2']);
+        pipe(B, [[E[0] - 1, bY + 0.6, 7.7], [E[2] + 1, bY + 0.6, 7.7]], 0.32, ['#3fbf9a', '#f2fff8', '#c8ccd2']);
+        pipe(B, [[kX, bY + 0.7, 9.6], [kX, kY - 1, 10.5], [kX, kY, 8.7]], 0.42, ['#ff5fa2', '#fff4f8', '#e4e8ee']);
+        pipe(B, [[stream[0][0] + 0.2, bY + 0.7, 9.6], [stream[0][0] + 0.2, bY + 2.2, CH + 1.2]], 0.5, ['#8a5cff', '#f2e8ff', '#e4e8ee']);
+        pipe(B, [[xW + 3.7, bY + 0.6, 7.7], [xW + 3.7, chY - 19.5, 6.2], [xW + 3.9, chY - 19.5, 3.4]], 0.28, ['#ffd23f', '#fff8e0', '#e4e8ee']);
+        // THE GREAT KETTLE behind the cup: copper on gold feet, the recipe in it, and the whisk on its shaft from the pipe above
+        (function(){ var X = kX, Y = kY, zb = B.gz(X, Y), KR = 2.3, KH = 3.4;
+          B.solid(X - KR - 0.3, Y - KR - 0.3, zb, X + KR + 0.3, Y + KR + 0.3, zb + KH + 0.2, function(px, py, pz){ var dx = px - X, dy = py - Y, r = Math.hypot(dx, dy), t = pz - zb;
+            if (t < 0.6){ var fa = ((Math.atan2(dy, dx) / 6.283 * 4) % 1 + 1) % 1; return r < KR * 0.85 && r > KR * 0.6 && fa < 0.22 ? '#d8a830' : (r < 0.5 ? '#b88a20' : null); }
+            var bulge = KR * (0.82 + 0.18 * Math.sin((t - 0.6) / (KH - 0.6) * Math.PI)); if (r > bulge + 0.12) return null;
+            if (t > KH - 0.18) return r > bulge - 0.18 ? '#ffd23f' : null;
+            if (t > KH - 0.5 && r < bulge - 0.15) return '#ff8ab8';
+            if (r < bulge - 0.2) return null;
+            if (Math.abs(t - 1.4) < 0.1 || Math.abs(t - 2.6) < 0.1) return '#ffd23f';
+            return (Math.floor((Math.atan2(dy, dx) + 3.2) * 3) % 2) ? '#c8743e' : '#b8642e'; }, B.ART * 0.7);
+          if (B.light) B.light(X, Y, zb + KH, '#ffb0d0');
+          anim.whisk = { x:X, y:Y, z0:zb + KH - 0.3, z1:8.3, r:1.1 };
+          anim.steam.push([X - 0.9, Y + 0.4, zb + KH], [X + 1.0, Y - 0.2, zb + KH]);
+          anim.bubbles.push([X, Y, zb + KH - 0.35, KR - 0.6, '#ffd0e4']); })();
+        // the copper vats, each of its own candy, bubbling and steaming
+        var VC = [['#ff7ab0', '#ffd0e4'], ['#7fe0b8', '#d8fff0'], ['#ffe066', '#fff6c8']];
+        vats.forEach(function(v){ var X = v[0], Y = v[1], k = v[2], zb = B.gz(X, Y), VR = 1.45, VH = 2.4;
+          B.solid(X - VR - 0.2, Y - VR - 0.2, zb, X + VR + 0.2, Y + VR + 0.2, zb + VH + 0.2, function(px, py, pz){ var dx = px - X, dy = py - Y, r = Math.hypot(dx, dy), t = pz - zb;
+            if (r > VR) return null; if (t > VH - 0.12) return r > VR - 0.16 ? '#e4e8ee' : VC[k][0];
+            if (t > VH - 0.3 && r < VR - 0.15) return VC[k][0]; if (r < VR - 0.15) return null;
+            if (Math.abs(t - 0.5) < 0.08 || Math.abs(t - VH + 0.55) < 0.08) return '#8a5a2e'; return dx < -0.4 ? '#d88a4e' : '#c0703a'; }, B.ART * 0.7);
+          if (B.light) B.light(X, Y, zb + VH, VC[k][1]);
+          anim.steam.push([X + 0.3, Y, zb + VH]); anim.bubbles.push([X, Y, zb + VH - 0.05, VR - 0.5, VC[k][1]]); });
+        // the taffy puller: a red post with a hub on a pink tray, its arms drawn turning by putt.js
+        if (puller){ var X = puller[0], Y = puller[1], zb = B.gz(X, Y);
+          B.solid(X - 1.4, Y - 0.9, zb, X + 1.4, Y + 0.9, zb + 3.1, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+            if (t < 0.7){ if (Math.abs(dx) > 1.3 || Math.abs(dy) > 0.8) return null; if (t > 0.55) return Math.abs(dx) < 1.1 && Math.abs(dy) < 0.6 ? '#ffb3cf' : '#e4e8ee'; return Math.abs(t - 0.3) < 0.06 ? '#ffd23f' : '#e8233f'; }
+            if (Math.abs(dx) < 0.18 && Math.abs(dy) < 0.18 && t < 2.6) return (Math.floor(t * 3) % 2) ? '#e8233f' : '#c81a32';
+            if (Math.hypot(dx, t - 2.7) < 0.32 && Math.abs(dy - 0.1) < 0.2) return '#ffd23f'; return null; }, B.ART * 0.7);
+          anim.puller = { x:X, y:Y + 0.35, z:zb + 2.75, r:1.35 }; }
+        // the taffy press: a frame in candy red, its head over a tray of fresh stamped sweets
+        if (press){ var PX = press[0], PY = press[1], pz0 = B.gz(PX, PY);
+          if (B.light) B.light(PX, PY, pz0 + 4.2, '#ffb02a');
+          B.solid(PX - 1.7, PY - 1.1, pz0, PX + 1.7, PY + 1.1, pz0 + 4.5, function(px, py, pz){ var dx = px - PX, dy = py - PY, t = pz - pz0;
+            if (t < 0.9){ if (Math.abs(dx) > 1.6 || Math.abs(dy) > 1) return null; return t > 0.76 ? '#ffb3cf' : (Math.abs(t - 0.4) < 0.07 ? '#ffd23f' : '#c8ccd2'); }
+            if (t < 1.1 && Math.abs(dy) < 0.32){ var cx2 = ((dx + 9) % 0.8) - 0.4; if (Math.hypot(cx2, dy) < 0.24) return CND_GUM[Math.floor((dx + 9) / 0.8) % 5]; }
+            if (Math.abs(Math.abs(dx) - 1.35) < 0.22 && Math.abs(dy) < 0.26 && t < 4) return (Math.floor(t * 2.5) % 2) ? '#e8233f' : '#fff6f0';
+            if (t > 3.3 && t < 4.0 && Math.abs(dx) < 1.6 && Math.abs(dy) < 0.4) return Math.abs(t - 3.65) < 0.1 ? '#fff6f0' : '#e8233f';
+            if (Math.abs(dx) < 0.55 && Math.abs(dy) < 0.4 && t > 1.6 && t <= 2.2) return t < 1.72 ? '#8a5cff' : '#a88aff';
+            if (Math.hypot(dx, dy) < 0.15 && t > 2.2 && t <= 3.3) return '#c8ccd2';
+            if (t > 4 && t < 4.35 && Math.hypot(dx, dy) < 0.18) return '#ffb02a'; return null; }, B.ART * 0.7);
+          anim.steam.push([PX + 1.1, PY, pz0 + 4]); }
+        // the garden
+        garden.forEach(function(g, i){ var kind = g[0], x = g[1], y = g[2], s = g[3];
+          if (kind === 'lolly') cndLolly(B, x, y, 2.6 * s + 1.2, 0.75 + s * 0.6, CND_LOLLY[Math.abs(i + seed) % 4]);
+          else if (kind === 'cane'){ if (hash(i, 41, seed) < 0.35) cndCane(B, x, y, 2.4 * s + 0.6, hash(i, 43, seed) < 0.5 ? 1 : -1); else caneTree(B, x, y, s, i); }
+          else if (kind === 'shroom') shroom(B, x, y, s, i);
+          else if (kind === 'bonbon') cndBonbon(B, x, y, ['#e8233f', '#ffc83a', '#8a5cff', '#3fbf9a'][i % 4]);
+          else cndGum(B, x, y, s, CND_GUM[i % 5]); });
+        lamps.forEach(function(p){ lamp(B, p[0], p[1], '#e8233f', '#ffe9b0'); });
+      },
+      bg:'#f0b8d0', gain:1.7,
+      mats:{
+        rtile:['#f8eef2', '#fff8fb', '#ecd8e0', 0.06, function(c, R){ if (c.ti % 6 === 0 || c.tj % 6 === 0) return R('#ecd2dc'); var ch = ((Math.floor(c.ti / 6) + Math.floor(c.tj / 6)) % 2 + 2) % 2; return R(ch ? '#ffd6e4' : '#fff4f8'); }],
+        lawn:['#a8e0bc', '#bfead0', '#93d4aa', 0.1, function(c, R){ return R(cndBlot(c, seed + 7, ['#a8e0bc', '#bdeacd', '#94d3a9', '#b2e4c4'])); }],
+        mintp:['#fbf6ee', '#ffffff', '#ece4d8', 0.1, function(c, R){ var n = blot(c, 0.3, seed + 11); return R(n > 0.7 ? '#ffffff' : n < 0.3 ? '#f4e0ea' : '#f8f2e8'); }],
+        crumb:['#c8945a', '#d8a868', '#a87a48', 0.1, function(c, R){ var n = blot(c, 0.35, seed + 23); return R(n > 0.6 ? '#d8a868' : n < 0.35 ? '#ae7e4a' : '#c8945a'); }],
+        jpool:['#5a2a12', '#8a5030', '#4a2410', 0.05, function(c, R){ var d = c.dep || 0, n = blot(c, 0.12, seed + 21); return R(d < 0.18 ? '#8c4416' : n > 0.66 ? '#7c3610' : d < 0.6 ? '#6c2a08' : '#5c2206'); }],
+        // the cliff is layered like a candy bar: dark chocolate with bands of strawberry wafer and cream
+        fudge:['#6a3518', '#7a4422', '#5a2a12', 0.1, function(c, R){ var z = c.z || 0;
+          var b = (z + (vn((c.wx || 0) * 0.6, 0, seed) - 0.5) * 0.7 + 4) % 2.4; return R(b < 0.5 ? '#ff9cc4' : b < 0.68 ? '#fff0e0' : b < 1.5 ? '#4a2410' : b < 1.66 ? '#fff0e0' : '#5a2a12'); }],
+        // the back wall: pink and white candy stripes, a gold rail at the pipes, round windows glowing warm
+        pwall:['#ff9cc4', '#ffb3cf', '#c85a8a', 0.06, function(c, R){ var z = c.z || 0, x = c.wx || 0; if (z > BH - 0.3) return R('#7a2a4e'); if (z < 0.5) return R('#fff6f0');
+          var wu = ((x % 3.6) + 3.6) % 3.6 - 1.8, wr = Math.hypot(wu, (z - 4.2) * 0.9); if (wr < 0.8) return R(wr > 0.64 ? '#ffd23f' : '#ffe9b0');
+          if (Math.abs(z - 6.4) < 0.12) return R('#ffd23f'); return R(((Math.floor(x * 1.2) % 2) + 2) % 2 ? '#ff9cc4' : '#fff0f6'); }] }
+    };
+  };
 
   // Glitch Level: no ground at all, a neon grid in the dark, and blocks of glitch hanging in it
   BUILD['s-glitch'] = function(L){ var seed = L.seed;

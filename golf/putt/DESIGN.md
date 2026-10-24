@@ -1,7 +1,7 @@
 # The Putting Green
 
 A tester preview inside Run The Tour. Not launched. The door is drawn only for the accounts in
-`PUTT_TESTERS` in `golf/index.html`, and flipping `PUTT_LIVE` to true is the launch.
+`PUTT_TESTERS` in `golf/index.html` (tester tools only). Putt Putt is live for everybody; the launch switch was removed on 2026-10-18.
 
 ```
 node golf/putt/check-putt.mjs             physics, the real greens, every themed hole, 21 dailies

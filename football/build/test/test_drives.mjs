@@ -32,6 +32,9 @@ const generateDrives=eval('('+html.slice(i,j).replace('function generateDrives',
    out of the page the same way rather than being retyped here. */
 const pl=html.indexOf('function periodLabel');
 const periodLabel=eval('('+html.slice(pl,html.indexOf('\n',pl)).replace('function periodLabel','function')+')');
+/* periodLabel names overtime through qLabel (OT, then 2OT), so that comes out too. */
+const ql=html.indexOf('const qLabel=');
+const qLabel=eval(html.slice(ql+'const qLabel='.length,html.indexOf(';\n',ql)));
 
 const cal=JSON.parse(fs.readFileSync(`${ROOT}/football/data/display_calibration.json`,'utf8'));
 let bad=0;
@@ -75,23 +78,27 @@ console.log('\n=== overtime ===');
    chart has to get right is that the extra period is its own period -- no drive drawn
    across the end of regulation, and the ball starting with whoever won the overtime toss
    rather than with whoever happened to have it when the fourth quarter ran out. */
-let otSeen=0, otSpanning=0, otNoDrives=0, badLabel=0;
+let otSeen=0, otSpanning=0, otNoDrives=0, badLabel=0, otOffPlan=0;
 const rng2=E.createSeededRNG(31415);
 for(let k=0;k<4000;k++){
   const [hi,lo,]=cal.real_pairs[Math.floor(rng2()*cal.real_pairs.length)];
   const you=rng2()<0.5?hi:lo, them=you===hi?lo:hi;
   const sc=E.scoringScript(you,them,rng2);
-  if(!sc.some(e=>e.q===5)) continue;
+  if(!sc.some(e=>e.ot)) continue;
   otSeen++;
-  for(const e of sc) if(periodLabel(e)!==(e.q>4?'OT':'Q'+e.q)) badLabel++;
+  for(const e of sc) if(periodLabel(e)!==(e.q>5?(e.q-4)+'OT':e.q>4?'OT':'Q'+e.q)) badLabel++;
   const dr=generateDrives(sc,E.createSeededRNG(Math.floor(rng2()*1e9)));
   if(dr.some(d=>d.tStart<3600&&d.tEnd>3600.0001)) otSpanning++;
   if(!dr.some(d=>d.tStart>=3600)) otNoDrives++;
+  /* ONE DRIVE PER POSSESSION OF THE ENGINE'S PLAN, by the side the plan says had it. */
+  const ot=dr.filter(d=>d.tStart>=3600);
+  if(ot.length!==sc.ot.poss.length||ot.some((d,i)=>d.team!==sc.ot.poss[i].team||d.result!==sc.ot.poss[i].result)) otOffPlan++;
 }
 ok('overtime games turn up at all', otSeen>50, otSeen+' of 4000');
-ok('the extra period is labelled OT, not Q5', badLabel===0, badLabel);
+ok('the extra period is labelled OT (and 2OT), not Q5', badLabel===0, badLabel);
 ok('no drive runs across the end of regulation', otSpanning===0, otSpanning);
 ok('the extra period actually gets drives', otNoDrives===0, otNoDrives);
+ok('one overtime drive per possession of the plan, by the side that had it', otOffPlan===0, otOffPlan);
 
 console.log(bad?'\n'+bad+' FAILED':'\nall clear');
 process.exit(bad?1:0);

@@ -31,7 +31,7 @@ the summary.
 ## Never
 
 - Change a hole, a world, par, the solver, trails or gameplay. That is the Golf Course Agent's.
-- Take Putt Putt Tour live or change who can see it (`PUTT_LIVE`, `PUTT_TESTERS`). The owner's call.
+- Change who gets Putt Putt's tester tools (`PUTT_TESTERS`). The owner's call.
 - Open a guide or tour by itself: every tutorial is behind a button.
 - Merge a site PR, or use an em or en dash anywhere.
 

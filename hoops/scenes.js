@@ -37,7 +37,7 @@ if (!E || !C || !B) return;
 
 var KEY = 'rtf.scenes.v1';
 var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var esc = window.RTF_UTIL.esc;
 /* SCENES ARE ALWAYS ON, the owner's call. There is no switch a player can
    reach. The stored 'off' is read only under automation (navigator.webdriver),
    because the walks that answer a hundred cards would otherwise sit through a
@@ -795,6 +795,21 @@ var CARD_INTROS = {
     board: 'TIED', tx: vary(['Tied. Last possession. Everybody knows who is getting the ball.', 'All square, six seconds. The student section is on its feet.', 'Last shot. Win or go home.']) },
     { who: c.level === 'High school' ? 'greer' : 'hollis', room: c.level === 'High school' ? 'gym' : 'arena', pic: 'me', pose: 'ball', board: 'TIED', tx: function(){ return LOOK_SAY[card.ctx && card.ctx.look] || 'Here it comes.'; } }]; },
   offers: function(card, c){ return [{ who: 'greer', room: 'gym', pic: 'me', pose: 'stand', tx: 'The offers are on the table. Every coach in the gym is pretending not to look at you.' }]; },
+  /* THE ENDINGS (career/endings.js) are the biggest moments in a career, so
+     they are told before they are asked: the injury in an office with the
+     scans on the wall, the walk away at home with what he just won. No line
+     here is anybody's but the narrator's: the surgeon is the card's. */
+  careerinj: function(card, c){ return [
+    { who: 'narr', room: 'office', pic: 'me', pose: 'sad1', name: 'Injury report', role: 'The scans',
+      tx: vary(['The scans are on the light board. Nobody in the room is looking at them anymore.', 'Three doctors in the room. Nobody is smiling.']) },
+    { who: 'narr', room: 'office', pic: 'me', pose: 'sad1', name: 'Injury report', role: 'The question',
+      tx: function(){ return 'It is worse than a ' + ((card.ctx && card.ctx.kind) || 'bad injury') + '. ' + c.last + ' already knows the question.'; } }]; },
+  ontop: function(card, c){ var ring = card.ctx && /ring/.test(card.ctx.won || ''); return [
+    { who: 'narr', room: 'home', pic: 'me', pose: ring ? 'trophy' : 'stand', name: 'The summer', role: 'Home',
+      tx: ring ? vary(['The trophy is on the coffee table. ' + c.last + ' looks at it for a long time.', 'The parade was a week ago. The confetti is still in the car.'])
+        : 'The MVP trophy is on the shelf. The phone has not stopped since.' },
+    { who: 'narr', room: 'home', pic: 'me', pose: 'stand', name: 'The summer', role: 'Home',
+      tx: 'The best ones know when. Most of them only know after.' }]; },
   commit: function(card, c){ return [{ who: 'greer', room: 'gym', pic: 'me', pose: 'stand', tx: 'Decision day. The hats are on the table. The cameras are rolling.' }]; },
   signing: function(card, c){ return [{ who: 'greer', room: 'gym', pic: 'me', pose: 'stand', tx: 'Signing day. The pen is right there.' }]; },
   declare: function(card, c){ return [{ who: 'hollis', room: 'studio', pic: 'me', pose: 'stand', tx: function(){ return 'The deadline is here. Does ' + c.last + ' stay, or is he gone?'; } }]; },

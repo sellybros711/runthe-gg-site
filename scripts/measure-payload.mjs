@@ -34,6 +34,13 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import path from 'node:path';
 
+/* BY HOSTNAME, NOT A GLOB. '**cdn.jsdelivr.net**' and the like match nothing under the
+   Playwright CI pins (1.49.1), so these hosts were never blocked there. Same fix as
+   check-current.mjs (site PR 691). */
+const BLOCKED_HOSTS = ['cdn.jsdelivr.net', 'supabase.co', 'googlesyndication.com', 'googletagmanager.com',
+  'google-analytics.com', 'doubleclick.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const blockedHost = (u) => BLOCKED_HOSTS.some((h) => u.hostname === h || u.hostname.endsWith('.' + h));
+
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 const PW = '/opt/node22/lib/node_modules/playwright/index.js';
 const EXE = '/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell';
@@ -89,11 +96,7 @@ for (const name of pages) {
   const ctx = await browser.newContext({ bypassCSP: true });
   const page = await ctx.newPage();
   /* Third parties are not this site's payload and their latency is not ours. */
-  for (const pat of ['**cdn.jsdelivr.net**', '**supabase.co**', '**googlesyndication.com**',
-                     '**google-analytics.com**', '**googletagmanager.com**', '**doubleclick.net**',
-                     '**fonts.googleapis.com**', '**fonts.gstatic.com**']) {
-    await page.route(pat, (r) => r.abort());
-  }
+  await page.route(blockedHost, (r) => r.abort());
   /* The fonts have to be blocked BEFORE anything is timed, not because they
      are cheap but because they are somebody else's server. Left in, the
      Google Fonts stylesheet is unreachable from this sandbox and holds

@@ -100,6 +100,14 @@ function dayOf(t){
   var p = function(n){ return (n < 10 ? '0' : '') + n; };
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
 }
+/* The instant an Eastern calendar day ('2026-10-17') starts, in ms. It asks
+   the zone for its hour at noon UTC that day rather than assuming an offset,
+   so a clock change is right. With no time zone data it is UTC midnight. */
+function dayStart(day){
+  var base = Date.parse(day + 'T00:00:00Z'), h = 12;
+  try { h = +new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(new Date(base + 12 * 36e5)); } catch (x) {}
+  return base + (12 - h) * 36e5;
+}
 
 /* ─── the wallet ────────────────────────────────────────────────────────── */
 
@@ -299,7 +307,7 @@ var API = {
   RARITIES: RARITIES, PRICE: PRICE, DUPE_REFUND: DUPE_REFUND, EXCHANGE_COST: EXCHANGE_COST, LEG_EXCHANGE_COINS: LEG_EXCHANGE_COINS,
   BUCKETS_ENABLED: BUCKETS_ENABLED, BUCKETS: BUCKETS,
   PACKS: PACKS, BUNDLE_N: BUNDLE_N, BUNDLE_PAY: BUNDLE_PAY, WELCOME: WELCOME, RATE: RATE, FULL_A_DAY: FULL_A_DAY, CQ_DAY_CAP: CQ_DAY_CAP, TAIL: TAIL,
-  dayOf: dayOf, fresh: fresh, clean: clean, earned: earned, spent: spent, balance: balance,
+  dayOf: dayOf, dayStart: dayStart, fresh: fresh, clean: clean, earned: earned, spent: spent, balance: balance,
   award: award, spend: spend, mark: mark, baseline: baseline, lasting: lasting, HALL_TIER: HALL_TIER, merge: merge, compact: compact, history: history,
   seasonCoins: seasonCoins, finishCoins: finishCoins, runCoins: runCoins, dailyDraftCoins: dailyDraftCoins,
   fixCoins: fixCoins, passesCoins: passesCoins, badgeCoins: badgeCoins, priceOf: priceOf,

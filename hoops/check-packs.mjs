@@ -241,6 +241,13 @@ async function browser(){
   const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
   const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.css': 'text/css', '.woff2': 'font/woff2' };
   const out = [];
+  /* THE SHELF HANGS ON THE DATE: a live drop adds the seasonal pack. So the
+     pages run on a pinned day, the day before the first drop, and it is
+     asserted outside every drop. On the real clock this section failed the
+     day the first drop went live. */
+  const first = CAT.DROPS.map((d) => d.from).sort()[0];
+  const offDay = new Date(Date.parse(first + 'T16:00:00Z') - 864e5);
+  ok(!P.available('season', X.dayOf(+offDay)), '12 the pinned day (' + X.dayOf(+offDay) + ') is outside every drop');
   async function serve(route){
     const u = new URL(route.request().url());
     if (/stripe|checkout/.test(u.pathname)) { out.push(u.href); return route.abort(); }
@@ -258,6 +265,7 @@ async function browser(){
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
   await page.route('**/*', serve);
+  await page.clock.setSystemTime(offDay);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
   ok(await page.evaluate(() => !!(window.RTF_PACKS && window.RTF_SHOP && window.RTF_WARD.shop)), '12 the shop\'s modules load on the page');
@@ -367,6 +375,7 @@ async function browser(){
   mp.on('pageerror', (e) => mboom.push(String(e).slice(0, 200)));
   await mp.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
   await mp.route('**/*', serve);
+  await mp.clock.setSystemTime(offDay);
   await mp.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
   await mp.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
   await mp.locator('#ch-title').click();

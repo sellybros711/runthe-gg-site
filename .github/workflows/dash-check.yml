@@ -24,6 +24,8 @@ on:
       - 'assets/**'
       - 'baseball/**'
       - 'arcade/**'
+      - '4th-and-what/**'
+      - 'guides/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   push:
@@ -38,6 +40,8 @@ on:
       - 'assets/**'
       - 'baseball/**'
       - 'arcade/**'
+      - '4th-and-what/**'
+      - 'guides/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   workflow_dispatch: {}
