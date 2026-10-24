@@ -35,7 +35,7 @@ No bundler and no build step, as for every top-level game.
 | day | the Eastern calendar day, `YYYY-MM-DD` (`America/New_York`), like every daily on the site |
 | daily number | `floor((day - EPOCH) / 1 day) + 1`, EPOCH = the first day it is playable |
 | hold | the outing ends with 3 outs and our lead intact |
-| hold% | the probability of a hold from a state, under best play from here on. The grading unit |
+| hold% | the probability of a hold from a state, under best play from here on. The grading unit. After a tie, the same number for the tie's goal: 3 outs before they go ahead (section 7) |
 | pts | percentage points of hold%. `0.5 pts` = half a point of hold chance |
 
 ## 2. The grid (one geometry for throwing and for the scouting heat map)
@@ -98,6 +98,9 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {Shape}  shape
  * @property {number} command       20..80 scouting scale; drives the miss size
  * @property {number} sigmaFt       miss size in feet (one standard deviation, each axis), from command
+ * @property {{src: 'his'|'league', n: number, velo: number[], pfxX: number[], pfxZ: number[]}} [stuff]
+ *                                  his own pitches of this type in each fifth of his velocity,
+ *                                  slowest first: mean mph and break (section 5c, effort)
  */
 
 /**
@@ -137,7 +140,7 @@ Statcast codes. The shape tells the UI how to draw the flight.
 
 /**
  * @typedef {Object} Reveal          withheld from the browser until the outing is finished
- * @property {'door_shut'|'doors_open'|'walk_off'} outcome
+ * @property {'door_shut'|'tie_held'|'doors_open'|'walk_off'} outcome   under the end rules (section 8)
  * @property {number|null} pitches  what the real pitcher threw in this spot; null when the record
  *                                  is incomplete (then pitchesNote says what is known)
  * @property {string} [pitchesNote]  'at least 13 pitches' when pitches is null
@@ -170,11 +173,211 @@ Statcast codes. The shape tells the UI how to draw the flight.
 
 ```js
 /**
- * @typedef {Object} PitchCall        two taps, nothing else
+ * @typedef {Object} PitchCall        a type, an aim, then the meter's two stops, nothing else
  * @property {PitchType} type         must be in the pitcher's arsenal
  * @property {Cell} cell
+ * @property {number} [q]             the release, 0..1, kept to two places. Absent = 1.0x
+ * @property {number} [e]             the effort, 0..1, kept to two places (section 5c). Only with q,
+ *                                    only under rules 2. Absent = his ordinary pitch (e 0.5)
+ * @property {[number, number]} [at] the free aim point inside the cell (section 5d): [u, v], each
+ *                                    -0.5..0.5, catcher's view, u to the catcher's right, v up.
+ *                                    Rules 2 only. Absent = the cell's centre ([0, 0])
+ * @property {number} [r]             the rules it was played under, set by the engine on the kept
+ *                                    call: 2 since 2026-10-22, 3 since 2026-10-24 (section 5e).
+ *                                    Absent = rules 1 (section 5b)
  */
 ```
+
+### The release (the owner's call, 2026-10-22)
+
+After the type and the cell, the throw button starts the release meter (`meter.js`): a needle
+sweeps a bar, and the tap that stops it is the release. How close the tap is to the mark is `q`.
+
+- **What q does.** It scales the pitch's miss, `sigmaFt`, by `spreadOf(q)` (`contract.js RELEASE`):
+  `q = 1` is 0.6x, `q = 0.5` is exactly 1.0x, `q = 0` is 1.5x, linear on each side. A call without
+  `q` is 1.0x. The four draws per pitch are the same draws in the same order whatever `q` is; only
+  the spread the two miss draws are multiplied by changes. So a stored outing from before the meter
+  replays unchanged, and an outing with `q` replays exactly from its calls.
+- **The meter.** `q = 1 - |error| / window`, at least 0. The window is 110 ms at command 50 and
+  grows with the pitch's command (89 ms at 35, 151 ms at 80), so control pitchers are easier to
+  time. The bar shows the band where `q >= 0.5` (tighter than his command) and the band where
+  `q >= 0.85` (the bright band, the owner's call 2026-10-23: it was 0.8, now 0.85, so an ordinary tap
+  lands in it about 1 time in 5; `meter.js BEST_Q`). The needle runs back and forth until the tap, so nobody is rushed. Escape, or picking
+  another pitch or spot, puts it away. One quiet word after the tap (`sharp`, `a bit late`): that is
+  execution, never a grade. Practice adds the spread (`miss 0.72x`) so a player can learn it.
+- **Off.** A setting turns the meter off (on by default): the call carries no `q`, which is 1.0x,
+  his own command. Off is the average release, not a penalty.
+- **The grade never sees q.** Every call is still graded before it resolves, on the miss table at
+  1.0x: the decision at his own command. A perfect release on a bad call is still a bad call.
+- **The score has no execution term.** The score stays `700 - 20 x pts lost` plus the result bonus
+  (section 8). The release reaches it only through what happens (a tighter miss changes outcomes,
+  and the result bonus follows), the same way luck does. Why no term of its own: the closer pool
+  that sets the percentile has no release to score (each closer is played at 1.0x, his real
+  command, which already holds his real execution), so a release term would be points the pool can
+  never earn, and every timed outing would drift up the percentile for no decision. Through the
+  outcome, a player who times well does genuinely better, and the skill shows where it is real.
+- **Keeping the pool honest.** The pool stays at 1.0x and is not rebuilt. The meter is tuned so an
+  ordinary tap (about 60 ms off, one tap in ten a real slip) averages 1.0x at command 50, so the
+  average player meets the pool on level ground, and turning the meter off is exactly level. A
+  typical execution spread was considered for the pool and left out: it would not move the pool's
+  mean spread (tuned to 1.0x), it would add a guess (our model of a phone tap) to real closers'
+  numbers, and it would rebuild every pack for no change a player could see. Across the packs'
+  commands (35-72) the model's mean spread runs 1.06x to 0.93x: timing a control pitcher is a
+  little easier, as the owner asked. `check-replays.mjs` prints the real players' mean spread from
+  stored calls; if it drifts off 1.0, `WINDOW_AT_50` in `meter.js` is retuned, never the pool.
+- **How much it is worth** (measured 2026-10-22: the pool's own calls replayed on all ten packs,
+  15 outings per closer each): every release perfect lifts the mean percentile about 3 points, every
+  release at its worst costs about 6, and the model's ordinary tap lands within about a point of the
+  meter off. Execution matters, and the call still matters more.
+
+## 5b. Rules 2: the hitter adjusts, the arm tires (the owner's call, 2026-10-22)
+
+The owner found the game too easy ("I've never given up a run yet") and chose four changes. A new
+outing plays rules 2 (`grade.js RULES`), and the engine writes `r: 2` on every kept call (since
+2026-10-24 rules 3 and `r: 3`, section 5e: rules 2 plus the third out). A call
+without `r` is rules 1: every row stored before, and every saved outing begun before, replays and
+finishes exactly as it was played. One outing never mixes the two (a call with the other `r` is
+refused). Nothing new is drawn: the four draws per pitch stay the same draws in the same order, and
+every effect is a function of the outing's own log.
+
+1. **The hitter adjusts.** Each pitch's outcome row (the pack's per mille row for the cell it
+   crossed) is scaled key by key and renormalised, by how familiar the batter is with it: how many
+   pitches of that type he has seen this plate appearance, whether one crossed within one cell of
+   this one, and (weaker) how many of that type went to earlier batters in the outing. A fresh look
+   is the pitcher's best chance; a third look at the same pitch in the same spot is missed less and
+   hit harder. And where the pitcher has aimed: once the outing's aims lean on the zone, a zone pitch
+   is hit more and taken for a strike less, and a chase pitch is chased more (nibbling, the
+   reverse). Both are centred on the closer pool's real sequencing in that pack (`pack.seq`), so a
+   pitcher who mixes like the real closers meets the library's own numbers.
+2. **A repeat keeps less of the release.** `spreadOf(q, repeat)`: on the second pitch of a type in a
+   row, a good release keeps half its tightening (0.8x at best), on the third a quarter (0.9x). A bad
+   release and the meter off are unchanged. A game rule on the meter.
+3. **Coarser scouting.** The heat map and the scout card read `grade.js scoutView(profile)`: the 16
+   chase cells as Statcast's four out-of-zone quadrants, every value in steps (damage .050, swing
+   rate 10 points, chase, zone swing and whiffs 5 points). The engine and the grade read the profile
+   as it is.
+4. **The arm.** His miss is scaled by `fatigueOf(pitch number, bases)`: tighter than his average
+   early, wider past 12 pitches (2% a pitch, up to 1.4x), centred on 2024 relievers' real pitch
+   counts, and about 1% wider with runners on (measured). It rides on the result as `arm`.
+
+**The grade stays the decision.** Every call is graded before it resolves, with what the hitter has
+seen and the arm as it is: the call's adjusted outcome mix through the miss table at the arm's
+spread, then the hold table's values for the state that follows. The best call and the state's mean
+lost are taken over every legal call priced the same way, so the band is still relative to the
+moment. The hold table is solved without history (no table holds every sequence), so the grade looks
+one pitch ahead with the history and leans on the table after it. The release is still never read.
+
+**What is measured and what is a model.** `pipeline/effects.py` read every 2024 regular season pitch
+(`pipeline/effects.json`). Against the same pitch family, cell, exact count and platoon, repeats
+within a plate appearance do within about 5% of the rest, and a reliever's spread is flat with his
+pitch count. Both are small because the data is chosen by the pitchers (a pitch is repeated when it
+works, a tired arm is taken out), so they cannot say what happens to a pitcher who repeats himself
+or stays in. The shares of each kind of repeat, relievers' pitch counts and the runners-on spread
+are used as measured. The strengths of the adjustment, the zone effect and fatigue past 12 pitches
+are a labelled model, tuned so a strong player who reads the screen and mixes his pitches holds
+about what the closer pool holds (README).
+
+## 5c. Effort: the meter's first stop (the owner's calls, 2026-10-22 and 2026-10-23)
+
+A pitch is now a pitch type, an aim (a cell and a point in it, section 5d), then two stops on the
+meter: **effort** (`e`), then **accuracy** (`q`, the release above). The effort stop says how hard
+he throws it: `e = 0` his softest, `0.5` his ordinary pitch, `1` his hardest. A call carries `e`
+beside `q`, kept to two places (`contract.js effortE`). An `e` rides only with a `q` (the meter off
+has neither) and only under rules 2. A call without `e` is his ordinary pitch (`e` 0.5), so every
+rules 1 and rules 2 outing stored before replays exactly. Rules stay 2.
+
+Each part is marked **data**, **game choice (not data)**, **game rule** or **model**.
+
+1. **The speed shown (data).** `e` walks five slices of his own speed for that pitch type: his
+   slowest 5%, the second fifth, the middle fifth, the fourth fifth and his fastest 5%, straight
+   between. The speed and break shown are the mean of his own real pitches in that slice, from the
+   Savant search his arsenal came from (`arsenal[i].stuff`, `pipeline/effort.py`,
+   `contract.js stuffAt`). Chapman 2016's four-seam reads 97.4 at `e = 0`, 101.1 at 0.5, 104.4 at 1.
+   A pitch type with fewer than 40 of his own tracked pitches, or a pitcher with none (Eckersley
+   1988), shows his average plus the league's typical spread (`src: 'league'`).
+2. **What the pitch does (data, then a game choice).** Measured on every 2024 regular season pitch
+   (643,123) for each slice: key by key, observed over what the same family does in the same cell,
+   exact count and platoon (`grade.js EFFORT.BINS`). His fastest 5% of fastballs: whiffs x1.13,
+   home runs x0.75, hits x0.92. A harder breaking ball is called a strike less (x0.81) and breaks
+   less. A harder changeup or splitter whiffs less (x0.86). **Game choice, not data:** above the
+   middle, each ratio's distance from 1 is multiplied by `EFFORT.GAME` (8), floored at 0.2, so a
+   max effort fastball whiffs about 2x and gives up a fifth of the home runs. A max effort breaking
+   ball or changeup is punished the same way, in the data's direction. Below the middle the ratios
+   are used as measured (`GAME_DOWN` 1).
+3. **The miss (data, then a game choice).** His fastest slice misses wider than his middle one:
+   fastballs 3%, breaking balls 11%, offspeed 6% (`EFFORT.SPREAD`). **Game choice:** that is
+   doubled (`SPREAD_GAME` 2), and applies above the middle only.
+4. **The window (a game rule).** The accuracy window is x1.25 at `e = 0`, x1 at 0.5 and x0.6 at 1,
+   straight between (`meter.js windowScale`). Both bands shrink with it.
+5. **The arm (a model, tuned).** A pitch counts `1 + 1 x (2e - 1)` pitches on the arm above the
+   middle (2 at max) and `1 - 0.5 x (1 - 2e)` below (0.5 at the softest) for every later pitch
+   (`grade.js loadOf`, `fatigueOf`). The extra over 1 builds a **strain** that easier pitches pay
+   back: the arm's miss is x `(1 + 0.05 x strain)`. Max every pitch for ten pitches is about 1.5x the
+   miss. Real relievers' speed is flat across an outing (tired arms are taken out), so this is tuned
+   with `pipeline/strategies.cjs`, not measured.
+
+The game choices were set so that max effort is a weapon and never a dial to leave at max. Measured
+(README): a good timer who saves max effort for the put-away holds about 4 points more than one who
+never changes it, and max on every pitch is worse than both.
+
+**The grade never reads this pitch's `e`.** Like `q`, it is how he throws the call, not the call:
+pricing it would mean assuming how well the player times the smaller window and looking past one
+pitch for the arm. The grade prices the call at his ordinary stuff and his own command. The arm that
+earlier efforts left is part of the history the grade prices, as fatigue always was. The score has
+no effort term; effort reaches it through what happens, as the release does.
+
+**Determinism.** Still four draws a pitch in the same order. `e` changes the weights of the row the
+library draw reads, the miss above the middle and the arm on later pitches, never which draws are
+taken.
+
+**What the UI reads** (`meter.js`, `window.STD_METER`): `EFFORT === true` once effort exists;
+`windowOf(e, command)`, the bright band (q of `BEST_Q` and up) as `[lo, hi]` fractions of the bar
+(command 50 when left out); `veloOf(pitch, e)`, the mph to show. Under them: `windowScale(e)`, `windowMs(command, e)`, `qOf(err, command, e)`
+and `bandsFor(command, e)` for the accuracy bar at that effort; `veloFor(arsenalPitch, e)` and
+`stuffFor(arsenalPitch, e)` for the speed and break to show; `effortAt(t)` if the effort needle
+sweeps (`EFFORT_SWEEP_MS`); `run({command, effort, ...})` draws the accuracy bar at that effort. A
+`PitchResult` with `e` carries `stuff: {velo, pfxX, pfxZ, src, spread}`, and its `velo` is that
+speed.
+
+**The speed reveal (the owner, 2026-10-23).** The speed is shown after the throw, never before. Before
+the release's last tap the UI shows no mph: not on the pitch buttons, the arsenal list or the scout
+card's speed, and not in the meter's head. The only speed the UI reveals is the `PitchResult` of the
+call it threw: `velo` (always, with or without `e`) and `stuff` (with `e`). `veloOf` and `veloFor` are
+the same numbers as `PitchResult.velo` for that `e` (tested), kept for the tests and the lab, and are
+not needed before the throw. The arsenal's `velo` in the pack is his average and stays in the pack:
+the UI must not show it before the throw.
+
+`STD_METER.POWER` is the player's name for `EFFORT` (the same flag, `true` in the build). The copy
+says power. The stored field and every call still say `e`.
+
+## 5d. The free aim point (the owner's calls, 2026-10-22 and 2026-10-23)
+
+The player can aim anywhere in the zone, not only at a cell's centre. A call carries `at: [u, v]`,
+the aim's place inside its cell as fractions of the cell's width and height, each -0.5..0.5,
+catcher's view: `u` toward the catcher's right (+x), `v` up (+zn). `[0, 0]` is the centre, and a
+call without `at` aims there, so every stored outing replays exactly. `contract.js aimAt` clamps it
+to the cell and keeps two places; `aimPoint(cell, at)` is the point the engine aims at, and the miss
+is added to it as before (the same two draws). Rules 2 calls only (`shutdoor_submit` checks it in
+157: absent, null, or two numbers -0.5..0.5).
+
+**The grade prices the exact spot** (the owner, 2026-10-23). The call's value is the miss table
+centred on `aimPoint(cell, at)` (`grade.js kernelRowAt`, `Model.keyMixCtx(..., at)`), so an aim at
+the edge of a chase cell is priced as the near strike it is. The best call and the state's mean lost
+stay over every cell's centre, so the band is relative to the same moment, and an aim that beats
+the best centre is green with nothing lost. The lesson prices the same spot.
+
+**Everything the player reads stays on the cell** ("the squares determine the metrics"): the
+scouting, the heat map, the tag, and the hitter's history (where pitches crossed is the actual cell,
+where he aimed is `call.cell`).
+
+## 5e. Rules 3: the third out (2026-10-24)
+
+Rules 2 and everything after it, plus MLB's third out: a run that crosses before a third out that is
+neither a force nor the batter before he reaches first counts (Official Baseball Rules 5.08(a)). If
+it puts them ahead it is the go-ahead run; if it ties it, the half ends tied (`tie_held`). Every
+in-play row is a legal play from the real play by play (`check-rules.mjs`, README). A new outing's
+calls carry `r: 3`; one with `r: 2` or none replays under its own rules, where a third out scores
+none, exactly as it was played. Nothing new is drawn.
 
 ## 6. Pitch result
 
@@ -186,9 +389,13 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @typedef {Object} PitchResult
  * @property {number} n               pitch number in the outing, from 1
  * @property {PitchCall} call
- * @property {PlatePoint} actual      after command noise
+ * @property {PlatePoint} actual      after command noise, scaled by the release
+ * @property {number} spread          the release's scale on his miss (1 without q; section 5b on a repeat)
+ * @property {number} [arm]           rules 2: the arm's scale on his miss (fatigue, runners on)
  * @property {Cell} actualCell
- * @property {number} velo            the drawn real pitch's mph
+ * @property {number} velo            the drawn real pitch's mph; with e, his speed at that effort
+ * @property {{velo: number, pfxX: number, pfxZ: number, src: 'his'|'league'|'average'}} [stuff]
+ *                                    with e only: the pitch at that effort (section 5c)
  * @property {'take'|'swing'} batter
  * @property {PitchCallResult} result
  * @property {{bb: 'ground'|'line'|'fly'|'popup', ev: number, la: number, spray: number,
@@ -199,7 +406,9 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {number} outs           after
  * @property {number} bases          after
  * @property {{from: number, to: number}[]} runnerMoves   0 = batter, 1..3 bases, 4 = scored,
- *                                    -1 = put out on the play
+ *                                    -1 = put out on the play. A legal MLB play: nobody passes
+ *                                    anybody, a runner with no move stayed (left on after the third
+ *                                    out), and every move to 4 is a run counted in runs
  * @property {number} runs           scored on this pitch
  * @property {boolean} paOver
  * @property {{id: string, tier: 'batter'|'similar'|'league'}} drawn   the real pitch used
@@ -207,13 +416,14 @@ Statcast codes. The shape tells the UI how to draw the flight.
  */
 ```
 
-v1 has no stolen bases, pickoffs, wild pitches, balks, intentional walks or fatigue. Errors and
+v1 has no stolen bases, pickoffs, wild pitches, balks or intentional walks. Fatigue came with rules 2
+(section 5b). Errors and
 hit-by-pitches happen because the drawn real pitch had one.
 
 ## 7. Pitch grade
 
 Every call is graded **before** the pitch resolves: the hold% the call is worth on average, against
-the best call available in that state. The outcome never changes the grade.
+the best call available in that state (under rules 2, in that state with that history: section 5b). The outcome never changes the grade.
 
 ```js
 /**
@@ -229,6 +439,7 @@ the best call available in that state. The outcome never changes the grade.
  * @property {string} reason         one line, from the batter's profile or the state:
  *                                   'chases sliders down and away 48% with two strikes'
  * @property {number} reDelta        run expectancy of the call minus the best, runs (shown in debug)
+ * @property {boolean} tied          graded after a tie: value, best, lost and rel are on the tie's goal
  */
 ```
 
@@ -246,6 +457,13 @@ set from `pipeline/band_sweep.mjs --relative`:
 | red | `> 1.5` |
 
 `PitchGrade` carries `rel` beside `lost`. The score and the percentile stay on absolute `lost`.
+
+**After a tie** (the owner's call, 2026-10-20) the objective is no longer the lead, it is not
+letting them go ahead. Every call after a tie is graded on the probability that the inning ends
+without a go-ahead run, under best play, with the same relative bands. It is one value function over
+one state space: the state carries the margin (0 once tied), and a state's goal is the least margin
+that meets it (1 with the lead, 0 tied). With the lead, a move into a tie is worth 0, exactly as
+before, so every grade before a tie is unchanged.
 
 Why hold% and not run expectancy: for a closer only the hold matters. Hold% already sees the cases
 where run expectancy misleads (tying run on third with one out, a three-run lead with nobody on), so
@@ -275,7 +493,7 @@ one unit covers every state. Run expectancy is kept as `reDelta` for debug.
 
 /**
  * @typedef {Object} OutingResult
- * @property {'door_shut'|'doors_open'|'walk_off'} outcome
+ * @property {'door_shut'|'tie_held'|'doors_open'|'walk_off'} outcome
  * @property {number} pitches
  * @property {Band[]} strip
  * @property {number} score          higher is better: hold% kept across the outing plus the result
@@ -283,17 +501,29 @@ one unit covers every state. Run expectancy is kept as `reDelta` for debug.
  * @property {number} percentile     0..100: share of the closer pool's outings this beats
  * @property {{name: string, reason: string}} pitchedLike
  * @property {Reveal} reveal
- * @property {'beat'|'matched'|'lost'} vsReal   outcome first (door_shut > doors_open > walk_off),
- *                                              then fewer runs allowed
+ * @property {'beat'|'matched'|'lost'} vsReal   outcome first, by contract.js OUTCOME_RANK
+ *                                              (door_shut 3 > tie_held 2 > doors_open 1 > walk_off 0),
+ *                                              then fewer runs allowed, then fewer pitches when
+ *                                              his count is known (reveal.pitches a number).
+ *                                              Equal pitches, or his count null, is matched.
  * @property {string} share          the share text, built by share.js
+ * @property {{scores: number[]}} pool   the closer pool's outing scores here, sorted (B11)
  * @property {{streak: number, best: number, rank: number|null, players: number}} [account]
  *                                   daily mode, signed in: what the server recorded
  */
 ```
 
-End rules: three outs with our lead intact is `door_shut`. A run that ties is `doors_open` and
-ends the outing. A run that puts them ahead is `walk_off` when `walkOffLive`, otherwise
-`doors_open`. If one play ties it and goes ahead, the go-ahead rule decides.
+End rules (the owner's call, 2026-10-20: "blowing the save but holding the tie"):
+
+- Three outs with our lead intact: `door_shut`.
+- A run that ties does not end the outing. Play goes on in the same inning.
+- After a tie, three outs with the game still tied: `tie_held` (label `HELD THE TIE`, in
+  `contract.js OUTCOME_LABEL` so it is renamed in one place).
+- A run that puts them ahead, before or after a tie: `walk_off` when `walkOffLive`, otherwise
+  `doors_open`.
+- If one play ties it and goes ahead, the go-ahead rule decides.
+
+A held tie is a blown save: it ranks under `door_shut` and breaks the streak (section 12).
 
 ## 9. The engine API (the only thing the UI calls)
 
@@ -317,7 +547,9 @@ finishOuting(outingId)
 
 Deterministic: the same scenario, seed and calls give the same results on any device. One seeded
 stream (`mulberry32`), drawn in a fixed order per pitch: miss x, miss z, the library draw, the
-runner draw. No `Math.random`, no wall clock.
+runner draw. No `Math.random`, no wall clock. A call's `q` (section 5) scales the two miss draws
+and never adds or moves a draw. A call's `e` (section 5c) weights the row the library draw reads and
+loads the arm, and never adds or moves a draw.
 
 How it runs:
 
@@ -384,10 +616,14 @@ Eastern day, keeps the first submit, updates the streak and returns `{streak, be
 `shutdoor_board(day, limit)` and `shutdoor_my_stats()` read. Trophies: a marked v2 hook.
 
 The calls are stored with every result, so `check-replays.mjs` can replay any row offline with the
-engine and flag a score the calls do not produce.
+engine and flag a score the calls do not produce. Each call carries its release `q` when it was
+timed (section 5). `156_shut_the_door_release.sql` makes the submit's guard check it: absent, null,
+or a number 0..1.
 
 The streak is "doors shut in a row": a door shut on consecutive days. A blown save or a missed day
-resets it.
+resets it. A held tie is a blown save, so it resets it too. `155_shut_the_door_tie_held.sql` lets
+`tie_held` into the outcome check and the submit's guard, and adds `tieHeld` to
+`shutdoor_my_stats()`.
 
 ## 13. The mock
 
@@ -404,6 +640,8 @@ G7 (proxy). The verified facts are in `scenarios/CANDIDATES.md`.
 
 - **Starters' arsenals** (Yamamoto, Buehler): the owner chose their postseason mix that October.
 - **Rivera** is `doors_open` under the end rules (Womack's double ties it). The reveal tells the rest.
+  Superseded 2026-10-20 by the tie rule (section 8): Gonzalez's single scores the go-ahead run after
+  the tie, so Rivera is `walk_off`. Chapman 2016 and Feliz 2011 are `tie_held`.
 - **Eckersley**: `reveal.pitches` is null with `pitchesNote`, since Retrosheet lacks two at-bats' pitches.
 - **Bunts**: none in v1. A real bunt shows only in the reveal.
 - **Clase**: not used. Savant's pitch labels stand as published (Hader's sinker draws as `run`).
@@ -440,6 +678,7 @@ modal: it is a card on the result screen, read or skipped.
  * @property {{b: number, s: number}} count
  * @property {number} outs
  * @property {number} bases
+ * @property {boolean} tied             the pitch came after a tie: its numbers are on the tie's goal
  * @property {string} batter
  * @property {Principle} principle
  * @property {string} headline          'ahead 0-2, make him chase'

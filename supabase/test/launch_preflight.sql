@@ -88,7 +88,7 @@ has_table as (
     'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
     'sportegories_rulings','stumpire_rulings',
-    'shutdoor_outings','shutdoor_streaks'
+    'shutdoor_outings','shutdoor_streaks','putt_daily'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -745,7 +745,22 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from has_table where name = 'shutdoor_streaks')
       and (select count(*) > 0 from proc where name = 'shutdoor_submit')
       and (select count(*) > 0 from proc where name = 'shutdoor_board')
-      and (select count(*) > 0 from proc where name = 'shutdoor_my_stats'))
+      and (select count(*) > 0 from proc where name = 'shutdoor_my_stats')),
+  -- THE PUTT PUTT DAILY HOLE BOARD. Without it the Daily Hole plays and pays, and the
+  -- round is never posted: the board stays empty and nothing is said.
+  (65, '148_putt_daily_board',
+      'A signed in player''s first Daily Hole round of the day posts to the Putt Putt board',
+      'The Daily Hole board is empty for everybody. Rounds play and pay, and none is posted.',
+      (select count(*) > 0 from has_table where name = 'putt_daily')
+      and (select count(*) > 0 from proc where name = 'putt_daily_submit')
+      and (select count(*) > 0 from proc where name = 'putt_daily_board')),
+  -- THE DYNASTY WAIT ENDS WHEN IT SAYS. Asked of the body, because 154 restates a
+  -- function 105 already created and the name alone reads yes on either.
+  (66, '154_dynasty_day_end_lapsed',
+      'a Dynasty wait that has run out is never started again',
+      'A free player whose countdown reaches zero can be locked out for another 24 hours by reopening their finished season.',
+      (select count(*) > 0 from proc
+        where name = 'ps_attempt_day_end' and body like '%v_lapsed%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

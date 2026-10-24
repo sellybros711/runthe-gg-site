@@ -33,6 +33,7 @@ node golf/putt/solve.mjs --tour main        search every hole for the par it sho
 node golf/putt/solve.mjs --tour members --only 3,7 --write    re-solve edited holes and record their routes
 node golf/putt/ace.mjs <tour> <n>           build an ace for one hole, then verify it with robust()
 node golf/putt/fair.mjs --tour main         how often each hole's route goes wet or out with a person's error
+node golf/putt/trick.mjs --only <id> --write  record a trick shot gym's fewest strokes and fairest route (kind file and routes.json)
 node golf/putt/build-cards.mjs              re-cut the home cards from the signature holes (then bump CARD_V)
 node golf/check-golfer3d.mjs                every look, every aim, every shot (server on :8099)
 node golf/check-tracer3d.mjs                every course draws, nothing the ball rests on moves (server on :8099)
@@ -54,24 +55,43 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - Routes are recorded at full precision. Never round them.
 - A Hallows Night hole has at most two moving or wet pieces and par 3 (the signature 4).
 - Every hole stays under 34% wet or out in `fair.mjs`, and each tour's mean under 10%.
-- **A ball never comes to rest on a ferry.** A deck pulls away gently and stops hard, so the ball is put
-  ashore; a ferry hole's deck overlaps the land at each dock and its channel is walled on its long sides.
+- **A ball never comes to rest on a ferry.** A moving deck grips the ball (`DECK_GRIP`), so a ball that lands on it
+  rides. The deck pulls away gently and eases into the dock at its landing speed (`f.e`), so the ball slides ashore;
+  a standing deck is carpet. A ferry hole's deck overlaps the land at each dock and its channel is walled on its long
+  sides. Change the grip or the ease and re-solve every ferry hole with `--write`.
 - **A skin name is global.** A second `snowman` in `SKIN` silently replaces the first everywhere.
 - Never put a real course name on screen.
 
-**Trail gyms** (`golf/putt/gyms.js` the kind registry, a kind a world in `golf/putt/gymkinds/`, pilot: Pirate Cove's `push`)
+**Trail gyms and their kinds** (`golf/putt/gyms.js` the registry and its KINDS README, a kind a file in `golf/putt/gymkinds/`)
 
-- Every world's gyms are a different KIND of puzzle, each kind in its own file publishing one global
-  (`RTT_GYMKIND_<ID>`) and touching nothing shared. The KINDS README at the top of `gyms.js` is the interface;
-  `gymkinds/example.js` is the worked example. A new kind file needs its script tag in `golf/index.html`.
-- A gym is hand designed, never random. check-putt solves every one (section 5b) and fails on an unsolvable gym,
-  a softlock, or a stale `moves`/`proof`: change a layout and record both again from `solve()`.
-- **Nothing covers the board in a gym** (the owner, 2026-10-17). Lines and messages go in the docked panel; the
-  controls (Undo, Restart, Leave, the pad) live there too. check-putt measures it at 390 x 844 and 1440 x 900.
+- **Every world's gyms are a different KIND of puzzle**: Pirate Cove `push`, the Clubhouse `trickshot`, the Schoolyard
+  `lights`, Sky Islands `islands`, Candy Works `pipes`, Neon Arcade `lasers`, Ice Age `ice`, Dino Valley `mimic`, Canyon Mine `railyard`, Lost Temple `runes`, Volcano Island `rock`. check-putt
+  fails a world with two kinds or a kind in two worlds.
+- **One kind a file, one global a file.** `gymkinds/<id>.js` is one function wrapper publishing `RTT_GYMKIND_<ID>`, its gyms
+  in the same file, touching nothing shared and never calling another kind. The registry finds kinds by that prefix, so
+  there is no list to edit. A new kind is its file, its script tag in `golf/index.html` (after gyms.js, before trail.js),
+  `check-cachebust --update`, and check-putt. `gymkinds/example.js` is the worked example and is not on the page.
+- **The frame is one place** (trail.js): the room, the camera, the civilian, the docked panel, Undo, Restart, Leave, the
+  vault and the pack are the same for every kind. A kind never pays, saves or draws outside its room.
+- **A kind speaks for itself.** `hello` is the line said as he walks in (how it is played, never how it is solved), `unit`
+  is the word the panel counts in (`step`, `slide`, `tap`, `stroke`), `tell` its one time lines and `tell.stuck` its line
+  when Restart lights. The frame has no entry line or counter word of its own.
+- **Nothing covers the board in a gym** (the owner, 2026-10-17). Every kind on the page is `calm:true`: while he is in the
+  room nothing of the world's life (birds, motes, balloons, tumbleweeds, ships) is drawn over it, and the plan keeps every
+  tree, landmark, rock and lamp off the room's whole rect on screen plus a margin (`screensGym`). Lines, messages and the
+  controls go in the docked panel. check-putt measures every kind's gatekeeper at 390 x 844 and 1440 x 900.
+- **A gym is hand designed, never random.** check-putt 5b solves every one, replays its proof, audits it and fails an
+  unsolvable gym, a softlock or a stale `moves`/`proof`: change a layout and record both again from `solve()`.
 - A change to a room that should not alter its picture (a refactor of the frame or a kind) is held pixel for pixel:
   pin the camera with the trail's `gymPin` and hash the room's pixels before and after.
-- The civilian's lines nudge, never solve: no step order, no positions.
-- A world with gyms carries none of the small trail puzzles (`pzKind:'none'`). A vault pays once (`st.gym`).
+- The civilian's three lines nudge, never solve: no step order, no positions.
+- **A world with gyms carries none of the small trail puzzles** (`pzKind:'none'`); they live on only where there are no
+  gyms (the Members Tour). A vault pays once (`st.gym`). No loot's beam crosses a gym's room on screen.
+- **The trick shot kind** plays the real ball: putt.js's `simulate` knocks `C.targets` down only in order, and the cup's
+  lid is on until the last is down. Change a room and run `trick.mjs --only <id> --write` (it records `moves`, `proof`
+  and `trick:<id>`); `limit` is the fewest plus two. check-putt 5c holds every putt of the route to a birdie putt's room
+  for error and under 34% for a person, and keeps him off every standing bottle and the cup at address. A room never
+  costs a life.
 
 **A new world, all in one commit**
 
@@ -91,12 +111,12 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
   `hole3d.js` once replaced the site's own painter and froze the whole site.
 - Every unlock check goes through `opened()`, never `tp.lv` directly.
 - `pmerge` only adds, and every server call fails soft (null is no opinion).
-- `PUTT_LIVE` is the launch. There is no localStorage override, on purpose.
-- **The First Tee home rides the same switch.** `ftLive()` is `puttOn()`: Putt Putt testers (and everybody once
-  `PUTT_LIVE` is true) get the First Tee, its hubs (`protour`, `putthub`, `me`) and its phone bar (Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me); everybody else gets
-  the classic home (`scrTitleClassic`, the seven tabs, `tourStepsClassic`, `maybeLoginBonusClassic`). Change the
-  classic home only for a fix: it is retired at launch. The closet (`setup` with `setupEdit`) wears the Me
-  page's dressing room on the same switch (`ftClosetOn`, `body.ftcloset`); a new career's setup does not.
+- Putt Putt and the First Tee are live for everybody (2026-10-18). The launch switch (`PUTT_LIVE`, `ftLive()`) and
+  the classic home are gone, so there is no kill switch: a fix ships as a fix. `puttOn()` only asks that putt.js
+  loaded at the API this page expects. `PUTT_TESTERS` keeps the tester tools, with no localStorage override.
+- **The First Tee is the home**: its hubs (`protour`, `putthub`, `me`) and its phone bar (Home, Pro Tour, Shop, the
+  Pass, Putt Putt, Leaders, Me). The closet (`setup` with `setupEdit`) wears the Me page's dressing room
+  (`ftClosetOn`, `body.ftcloset`); a new career's setup does not.
 - The login gift on the First Tee waits to be claimed (`bag_login_pend`, `claimLoginGift`). Never pay it on sight there.
 - **No guide or tour opens by itself** on the First Tee either: its guided tour starts from How to play only.
 - `putt_lives_refill` carries its own copy of `PUTT_TESTERS`: keep the two lists in step.
@@ -119,10 +139,9 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - A screen claims the full screen tracer only through `hvFullSet(mode)`. Change a chip's height and
   change its row in `HV_FULL_SIZE`.
 - `G3D_LIVE = false` is the 3D golfer's kill switch.
-- **ICON is the tier for an overall of 100 and up** (`ovrIcon`, `ovrTier`): the player's own career golfer only, on the
-  First Tee switch. `check-boosts.mjs` holds it. Never give it to world golfers or the Daily.
+- **ICON is the tier for an overall of 100 and up** (`ovrIcon`, `ovrTier`): the player's own career golfer only. `check-boosts.mjs` holds it. Never give it to world golfers or the Daily.
 - **The 3D menu golfer** (`RTT_G3D.pic`, `g3dPic` in index.html) draws the golfer and the hat, glasses, club and
-  cleat tiles in the menus. It rides the First Tee switch (`g3dMenuOn` asks `ftLive()`), and anything it cannot
+  cleat tiles in the menus. It is everybody's (`g3dMenuOn`), and anything it cannot
   draw falls back to today's picture. Every menu change in `golfer3d.js` runs only while `MO` is set: the course
   golfer must stay the same pixel for pixel (hash its frames before and after).
 - **One golfer in every mode.** A mode draws your golfer through `modeLook(look, kind)`: the equipped putter on

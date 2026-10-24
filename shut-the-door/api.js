@@ -5,7 +5,9 @@
  *   getScenario(day)                       the day's scenario, without the reveal
  *   startOuting(scenarioId, seed, {mode})  daily: the day's seed, and the stored
  *                                          outing replayed if there is one
- *   throwPitch(outingId, call)             one pitch, graded before it resolves
+ *   throwPitch(outingId, call)             one pitch, graded before it resolves. call is
+ *                                          {type, cell} plus q, the release, when timed,
+ *                                          and at, the free aim's point in the cell
  *   finishOuting(outingId)                 the result; daily and signed in, submitted once
  *
  * All of it runs in the browser from the day's pack (data/schedule.json, then
@@ -39,7 +41,7 @@
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 2;
+  const SCHEDULE_V = 7;
   const STORE_V = 1;
   const BASE = 'data/';
 
@@ -79,8 +81,11 @@
   /* The day's entry: the schedule's own, or the rotation past its end. */
   function entryFor(sch, day) {
     if (sch.days && sch.days[day]) return sch.days[day];
+    // the rotation runs from the epoch, and backwards before it: the days before launch show the
+    // scenarios before #1 in turn, so a new game each day now. number stays 1 there for the server
+    const offset = C.dayOffsetOf(day), L = sch.rotation.length;
     const number = C.dayNumberOf(day);
-    return { pack: sch.rotation[(number - 1) % sch.rotation.length], number };
+    return { pack: sch.rotation[((offset % L) + L) % L], number, preview: offset < 0 };
   }
 
   async function loadPack(id) {
@@ -103,6 +108,7 @@
     delete sc.reveal;
     sc.day = d;
     sc.number = e.number;
+    sc.preview = !!e.preview;
     current[sc.id] = { day: d, number: e.number };
     return sc;
   }
@@ -121,13 +127,16 @@
     const id = 'daily:' + cur.day + ':' + scenarioId;
     if (outings[id]) return clone(E.publicState(outings[id].o));
     const s = E.seedFor('daily', cur.day);
-    const o = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id });
-    const rec = { o, day: cur.day, number: cur.number, result: null, submitted: false };
     const saved = readSaved();
-    if (saved && saved.day === cur.day && saved.scenarioId === scenarioId && Array.isArray(saved.calls)) {
-      for (const c of saved.calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
-      rec.result = saved.result || null;
-      rec.submitted = !!saved.submitted;
+    const resume = saved && saved.day === cur.day && saved.scenarioId === scenarioId && Array.isArray(saved.calls) ? saved : null;
+    // an outing begun before rules 2 shipped (its calls carry no r) finishes under the rules it began with
+    const rules = resume && resume.calls.length ? E.rulesOf(resume.calls) : undefined;
+    const o = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id, rules });
+    const rec = { o, day: cur.day, number: cur.number, result: null, submitted: false };
+    if (resume) {
+      for (const c of resume.calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
+      rec.result = resume.result || null;
+      rec.submitted = !!resume.submitted;
     }
     outings[id] = rec;
     return clone(E.publicState(o));     // nothing written at pitch 0
@@ -141,7 +150,12 @@
   async function throwPitch(outingId, call) {
     const rec = outings[outingId];
     if (!rec) throw new Error('no such outing');
-    const r = E.throwPitch(rec.o, { type: call && call.type, cell: call && call.cell });
+    // at, the free aim's point in the cell (catcher's view [u, v]), rides along for the engine to keep or refuse
+    const c = Object.assign({ type: call && call.type, cell: call && call.cell }, call && call.at != null ? { at: call.at } : null);
+    if (call && call.q != null) c.q = call.q;     // the release (contract.js RELEASE); absent is 1.0x
+    if (call && call.e != null) c.e = call.e;     // the effort (contract.js EFFORT); absent is his ordinary pitch
+    if (call && call.at != null) c.at = call.at;  // the free aim point (contract.js aimAt); absent is the cell's centre
+    const r = E.throwPitch(rec.o, c);
     save(rec);
     return clone(r);
   }

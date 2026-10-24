@@ -49,6 +49,8 @@
   <script>
   window.dataLayer=window.dataLayer||[];
   window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  /* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
   gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
   </script>
   <script>
@@ -69,7 +71,7 @@
 
     <main class="card">
       <h1>Privacy <span class="a">Policy</span></h1>
-      <p class="date">Last updated: September 27, 2026</p>
+      <p class="date">Last updated: October 24, 2026</p>
 
       <p>RunThe.GG ("we", "us") respects your privacy. This policy explains, in plain
          terms, what information is and isn't collected when you use runthe.gg and any
@@ -136,15 +138,19 @@
         <li>A full list of the companies that may set cookies for advertising on this site is
             available in Google's
             <a href="https://business.safety.google/adscontrollerterms/vendors/" target="_blank" rel="noopener">list of ad technology providers</a>.</li>
+        <li>How Google uses information from sites that use its ad services is explained on Google's
+            <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">partner sites page</a>.</li>
       </ul>
       <p>Where required by law, including in the European Economic Area, the United Kingdom and
          Switzerland, we use a <b>Google-certified consent management platform</b> to ask for your
          consent before any advertising or analytics cookie is set. Until you make a choice, our
-         pages send Google Consent Mode signals that deny advertising storage by default. You can
+         pages send Google Consent Mode signals that deny advertising storage, and in those places
+         analytics storage too, by default. You can
          change or withdraw your consent at any time through the privacy settings link the consent
          tool provides.</p>
-      <p>In addition, visitors who are not confirmed to be 18 or over, including everyone playing
-         as a guest, are served <b>non-personalised ads only</b>.</p>
+      <p>Today every visitor is served <b>non-personalised ads only</b>. If that changes, visitors who
+         are not confirmed to be 18 or over, including everyone playing as a guest, will still be served
+         non-personalised ads only.</p>
 
       <h2>Analytics</h2>
       <p>We use Google Analytics to understand general, aggregated patterns such as how many
@@ -155,10 +161,13 @@
 
       <h2>Other services we rely on</h2>
       <p>Accounts, leaderboards and saved progress are stored with <b>Supabase</b>, our database and
-         authentication provider. The site is hosted on <b>GitHub Pages</b>, and we load web fonts from
+         authentication provider. The site is hosted on <b>Cloudflare Pages</b>, and we load web fonts from
          Google Fonts and some code libraries from the jsDelivr CDN. Release news emails are sent through
          <b>Resend</b>, which receives your email address only to deliver them. Each of these providers may
          process technical data such as your IP address in order to deliver the content you requested.</p>
+      <p>Payments (the Arcade Card, bundles and Putt Putt lives) are processed by <b>Stripe</b>. We send
+         Stripe your account email and an account ID. Your card details go straight to Stripe and never
+         reach our servers. We keep a record of what you bought and your Stripe customer ID.</p>
 
       <h2>Where your data is held and how long we keep it</h2>
       <p>Our providers store data on servers in the United States and other countries, so your

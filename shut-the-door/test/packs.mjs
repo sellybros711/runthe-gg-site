@@ -54,6 +54,11 @@ function shapeChecks(pack, file) {
     if (!K.PITCH_TYPES.includes(a.type)) errs.push('pitch type ' + a.type);
     if (K.SHAPE_OF[a.type] !== a.shape) errs.push('shape of ' + a.type);
     if (!(a.command >= 20 && a.command <= 80)) errs.push('command ' + a.command);
+    // effort (CONTRACT.md 5c): his own five fifths of speed, slowest first, or the league's spread on his average
+    const st = a.stuff;
+    if (!st || !['his', 'league'].includes(st.src) || !['velo', 'pfxX', 'pfxZ'].every(k => Array.isArray(st[k]) && st[k].length === 5 && st[k].every(x => typeof x === 'number'))) errs.push('stuff of ' + a.type);
+    else if (!st.velo.every((v, i) => i === 0 || v >= st.velo[i - 1]) || Math.abs(st.velo[2] - a.velo) > 1.5) errs.push('stuff speeds of ' + a.type + ' ' + st.velo.join(' '));
+    else if (st.src === 'his' && !(st.n >= 40)) errs.push('stuff of ' + a.type + ' is his own on ' + st.n + ' pitches');
   }
   const s = sc.situation;
   const lead = s.score.us - s.score.them;
@@ -112,7 +117,23 @@ function shapeChecks(pack, file) {
     }
   }
   const model = new G.Model(pack);
-  if (pack.hold.h.length !== model.N * 12 * 3 * 8 * model.M) errs.push('hold table size');
+  if (pack.v !== E.PACK_VERSION) errs.push(`pack format ${pack.v}, the engine reads ${E.PACK_VERSION}`);
+  // a slot for every margin from 0 (tied: the inning goes on) to the starting lead
+  if (pack.hold.h.length !== model.N * 12 * 3 * 8 * (model.M + 1)) errs.push('hold table size');
+  if (pack.hold.h.some(v => v == null)) errs.push('hold table has a hole');
+  // a tied state is valued on the tie's goal: three outs before they go ahead
+  const tieStart = { ...model.startState(), margin: 0 };
+  const tv = model.solve(tieStart).hold;
+  if (!(tv > 0 && tv < 1)) errs.push('a tied start is not a probability: ' + tv);
+  // the reveal: the end rules say the real outing ran to its result
+  if (rv.outcome === 'tie_held' && rv.runs !== lead) errs.push('a held tie whose runs are not the lead');
+  if (rv.outcome === 'door_shut' && !(rv.runs < lead)) errs.push('a door shut that gave up the lead');
+  if ((rv.outcome === 'walk_off' || rv.outcome === 'doors_open') && !(rv.runs > lead)) errs.push('a blown lead that never went behind');
+  if (rv.outcome === 'walk_off' && !s.walkOffLive) errs.push('a walk-off with the walk-off off');
+  if (rv.outcome === 'doors_open' && s.walkOffLive) errs.push("door's open with the walk-off live");
+  if (sc.realFaced !== rv.plateAppearances.length) errs.push(`realFaced ${sc.realFaced}, the reveal has ${rv.plateAppearances.length}`);
+  const po = pack.build && pack.build.pool && pack.build.pool.outcomes;
+  if (!po || K.OUTCOMES.some(k => !(k in po))) errs.push('the pool report lacks an outcome');
   if (!(pack.pool.scores.length >= 2000)) errs.push('pool has ' + pack.pool.scores.length + ' runs');
   for (let i = 1; i < pack.pool.scores.length; i++) if (pack.pool.scores[i] < pack.pool.scores[i - 1]) { errs.push('pool scores unsorted'); break; }
   const bytes = statSync(file).size;
@@ -137,7 +158,7 @@ function calibration(pack) {
   let allGreen = true;
   for (let seed = 1; seed <= 40; seed++) {
     for (const g of playOut(pack, model, seed, () => ({ type: hard.type, cell: 12 })).grades) mid[g.band]++;
-    const ob = playOut(pack, model, 1000 + seed, o => { const b = model.solve(o.st); return { type: b.type, cell: b.cell }; });
+    const ob = playOut(pack, model, 1000 + seed, o => E.bestCall(o));   // rules 2: the grade's best call, with the history
     if (!ob.grades.every(g => g.band === 'green')) allGreen = false;
   }
   const tot = mid.green + mid.yellow + mid.orange + mid.red;

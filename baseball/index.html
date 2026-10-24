@@ -55,6 +55,8 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
@@ -1051,6 +1053,54 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
   font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim-2);
   text-transform:uppercase;letter-spacing:.08em;text-decoration:underline;text-underline-offset:3px}
 .sr-all:hover{color:var(--ink)}
+/* The manager's call: the Mound button, the call sheet, and the coach's line in the feed. */
+.gm-sp.gm-mound{background:var(--grad-gold);color:#fff;border-color:transparent}
+.gm-sp.gm-mound:disabled{opacity:.4;cursor:default}
+.gm-call{position:fixed;left:0;right:0;bottom:0;z-index:140;max-height:72vh;overflow-y:auto;
+  background:var(--grad-panel);border-top:1px solid rgba(var(--edge),.14);border-radius:18px 18px 0 0;
+  box-shadow:0 -14px 40px -10px rgba(0,0,0,.35);padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:gcup .28s cubic-bezier(.2,1,.4,1) both}
+.gm-call[hidden]{display:none}
+@keyframes gcup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.gm-call .gc-grab{width:40px;height:4px;border-radius:99px;background:rgba(var(--edge),.18);margin:0 auto 10px}
+.gm-call .gc-k{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.gm-call .gc-sit{font-family:var(--fp);font-size:15px;line-height:1.4;margin:4px 0 10px}
+.gc-opts{display:flex;flex-direction:column;gap:7px}
+.gc-opt{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;width:100%;text-align:left;cursor:pointer;
+  padding:8px 12px;border-radius:12px;border:1px solid rgba(var(--edge),.16);background:var(--cream);color:var(--ink);font:inherit}
+.gc-opt:hover,.gc-opt:focus-visible{border-color:var(--gold);outline:none;box-shadow:0 0 0 3px rgba(184,134,11,.2)}
+.gc-opt .gc-nm{font-family:var(--fn);font-size:14px;font-weight:800;letter-spacing:.02em}
+.gc-opt small{display:block;font-family:var(--fp);font-size:12px;color:var(--dim);margin-top:1px}
+.gc-opt .gc-r{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim);text-align:right;white-space:nowrap}
+.gc-opt .gc-coach{display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.gc-opt.tired small{color:var(--red)}
+.gc-opt[hidden]{display:none}
+.gc-more{background:none;border:1px dashed rgba(var(--edge),.2);border-radius:12px;padding:8px;cursor:pointer;
+  font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.gm-call .gc-foot{display:flex;justify-content:center;margin-top:10px}
+.gm-call .gc-off{background:none;border:0;cursor:pointer;font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--dim);text-decoration:underline;text-underline-offset:3px;padding:6px}
+@media(min-width:1360px){.gm-call{left:calc(50% + 430px);right:auto;bottom:auto;top:150px;width:min(320px,calc(50% - 450px));
+  border-radius:16px;border:1px solid var(--gold);max-height:calc(100vh - 180px)}
+  .gm-call .gc-grab{display:none}}
+@media(prefers-reduced-motion:reduce){.gm-call{animation:none}}
+.gm-play.note{background:var(--warm);border-color:rgba(184,134,11,.45)}
+.gm-play.note .tag{background:var(--grad-gold);color:#fff}
+.gm-play .gc-pro{margin-left:auto;flex:0 0 auto;border:0;cursor:pointer;border-radius:99px;padding:3px 10px;
+  background:var(--grad-gold);color:#fff;font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.gm-arm .gm-pc{font-weight:800;color:var(--ink)}
+.gm-arm .gm-pc.hot{color:var(--red)}
+.sr-calls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:11px 14px;
+  border-radius:14px;border:1px solid rgba(184,134,11,.5);background:var(--grad-panel);cursor:pointer;font-family:var(--fp);font-size:13px;color:var(--dim)}
+.sr-calls[hidden]{display:none}
+.sr-calls b{display:block;font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.sr-calls input{position:absolute;opacity:0;pointer-events:none}
+.sr-calls i{flex:0 0 auto;width:42px;height:24px;border-radius:99px;background:rgba(var(--edge),.2);position:relative;transition:background .2s}
+.sr-calls i::after{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.sr-calls input:checked+i{background:var(--gold)}
+.sr-calls input:checked+i::after{transform:translateX(18px)}
+.sr-calls input:focus-visible+i{box-shadow:0 0 0 3px rgba(184,134,11,.35)}
+
 
 /* ─── one game, at bat by at bat ─── */
 .gm-top{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
@@ -2774,6 +2824,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
     <button class="btn ball" id="sr-play"><svg class="bs bs-l" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><svg class="bs bs-r" viewBox="0 0 100 100" aria-hidden="true"><use href="#seam"/></svg><span>Play ball</span></button>
     <button class="btn ghost" id="sr-sim">Sim the series</button>
   </div>
+  <label class="sr-calls" id="sr-calls" hidden><span><b>Make the calls</b>The game stops when the bullpen’s in play.</span>
+    <input type="checkbox" id="sr-calls-on" checked><i aria-hidden="true"></i></label>
   <button class="sr-all" id="sr-simall">Sim the rest of October</button>
 </div>
 
@@ -2783,6 +2835,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   <div class="gm-top">
     <div class="gm-where" id="gm-where"></div>
     <div class="gm-speeds">
+      <button class="gm-sp gm-wide gm-mound" id="gm-mound" hidden title="Change pitchers">Mound</button>
       <button class="gm-sp gm-wide" id="gm-pause" title="Pause">Pause</button>
       <button class="gm-sp" id="gm-speed" title="Speed">1&times;</button>
       <button class="gm-sp gm-wide" id="gm-skipgame">Skip</button>
@@ -2810,6 +2863,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
   <div class="gm-final" id="gm-final" hidden></div>
   <button class="sr-all" id="gm-simall">Sim the rest of October</button>
+  <div class="gm-call" id="gm-call" hidden role="dialog" aria-modal="false" aria-labelledby="gc-k"></div>
 </div>
 
 <div class="screen" id="s-over">
@@ -3003,8 +3057,8 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </div>
 </div>
 
-<script src="engine.js?v=39"></script>
-<script src="run.js?v=31"></script>
+<script src="engine.js?v=40"></script>
+<script src="run.js?v=32"></script>
 <script src="achievements.js?v=14"></script>
 <script src="parks.js?v=9"></script>
 <script src="crest.js?v=2"></script>
@@ -3087,6 +3141,8 @@ let lastNewParks=[];
    rather than listing badges nobody is allowed to keep. */
 function recordRun(o){
   dropSavedRun();
+  /* Recorded is final: October can be watched again, never managed again. */
+  if(RUN)RUN.recorded=true;
   if(!ACH){lastNewBadges=[];return;}
   const prev=loadHistory();
   const row=rowFromRun(o);
@@ -6080,7 +6136,7 @@ function saveRunNow(){
   try{const {_simState,...rest}=RUN;
     localStorage.setItem(RUN_KEY,JSON.stringify({v:1,u:acctId()||null,at:Date.now(),run:rest}));}catch(e){}
 }
-function dropSavedRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}paintResume();}
+function dropSavedRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}dropCalls();paintResume();}
 function savedRun(){
   try{const o=JSON.parse(localStorage.getItem(RUN_KEY)||'null');
     if(!o||o.v!==1||!o.run||!o.run.phase)return null;
@@ -7144,31 +7200,21 @@ const myTagged=()=>R.tagged(RUN);
 const myClub=()=>RUN.franchise?teamFullName(RUN.franchise):'Your All-Stars';
 const myClubShort=()=>RUN.franchise||'YOU';
 
+/* The game as it is played: the coach's game off its own seed, plus any call a Pro
+   player made in it. run.js builds it, so a check can play the same game headless. */
 function gameScript(ri,gi){
-  const round=RUN.playoffs.rounds[ri],g=round.games[gi];
-  const rng=E.createSeededRNG(E.hashSeed(String(RUN.seed)+'|po|'+ri+'|'+gi));
-  const homes=E.homeGames(round.bestOf||7,!!round.homeField);
-  const tagged=myTagged();
-  const oppRoster=(round.oppTeam&&round.oppSeason&&DATA&&DATA.byTeamSeason)
-    ?DATA.byTeamSeason[E.teamSeasonId(round.oppTeam,round.oppSeason)]:null;
-  return E.simGameScript({
-    yourRuns:g.yourRuns,oppRuns:g.oppRuns,won:g.won,
-    youHome:!!homes[gi],
-    yourName:myClubShort(),oppName:round.oppName||'The field',
-    yourLineup:E.lineupFromRoster(tagged),
-    oppLineup:E.lineupFromTeamSeason(oppRoster)||E.lineupFromRoster([]),
-    yourStaff:E.staffFromRoster(tagged,gi),
-    oppStaff:E.staffFromTeamSeason(oppRoster,gi),
-    rng,
-  });
+  return R.octoberScript(RUN,ri,gi);
 }
 
 function octoberStart(quick,returnTo){
   const saved=parseInt(localStorage.getItem('rtd_po_speed')||'',10);
   PO={round:0,game:0,speed:saved===2||saved===4?saved:(reduceMotion()?4:1),
       paused:false,timer:null,returnTo:returnTo||null,quick:!!quick,
-      events:null,idx:-1,script:null};
+      events:null,idx:-1,script:null,asked:{},noStops:null};
   BRK=null;
+  /* The calls this run already made come back with it; a replay of a finished run
+     makes none. */
+  if(!returnTo)loadCalls();
   paintSpeed();
   setTimeout(()=>openRound(0),returnTo?0:600);
 }
@@ -7236,7 +7282,7 @@ function seriesReveal(i){
     $('pt-sub').textContent=sub||'';};
   const pip=(k,cls,txt)=>{const e=$('pt-'+k);if(!e)return;e.className='pt-pip '+cls;e.querySelector('.r').textContent=txt||'\u00a0';};
   let k=0;
-  const land=(g,kk)=>pip(kk,g.won?'w':'l',(g.won?'W ':'L ')+g.yourRuns+'-'+g.oppRuns);
+  const land=(g,kk)=>{seenAll(i,kk);pip(kk,g.won?'w':'l',(g.won?'W ':'L ')+g.yourRuns+'-'+g.oppRuns);};
   const over=()=>{
     for(let q=r.games.length;q<n;q++)pip(q,'off','');
     const won=r.won;
@@ -7296,6 +7342,10 @@ function openSeries(i){
   PO.round=i;PO.game=0;
   const r=rounds[i];
   show('s-series');
+  /* Pro's one switch: stop for the calls, or just watch. */
+  const sw=$('sr-calls');
+  sw.hidden=!(isPro()&&PO.returnTo!=='result'&&!RUN.recorded);
+  $('sr-calls-on').checked=callsStop();
   /* The BRACKET, not the rounds that were played. RUN.playoffs.rounds stops at
      the round you went out in, so counting it would tell a player on the series
      card that this is the last one they will see. */
@@ -7331,17 +7381,19 @@ function openSeries(i){
 /* ─── one game ─── */
 function flattenScript(s){
   const ev=[];let a=0,h=0;
-  for(const hf of s.halves){
-    ev.push({type:'half',hf,a,h});
-    for(const p of hf.plays){
-      ev.push({type:'pa',hf,p,
+  s.halves.forEach((hf,hi)=>{
+    ev.push({type:'half',hf,a,h,hi});
+    hf.plays.forEach((p,k)=>{
+      ev.push({type:'pa',hf,p,hi,k,
         a:hf.half==='top'?a+p.runs:a,
         h:hf.half==='bot'?h+p.runs:h});
-    }
+    });
     a=hf.away;h=hf.home;
-  }
+  });
   return ev;
 }
+/* How many innings the line score shows: nine, or more when a call sent it on. */
+const gmCols=()=>Math.max(9,(PO&&PO.script&&PO.script.line.length)||9);
 
 function playGame(){
   poClear();brkSkip=null;
@@ -7350,6 +7402,9 @@ function playGame(){
   PO.script=gameScript(PO.round,PO.game);
   PO.events=flattenScript(PO.script);
   PO.idx=-1;
+  /* What the game has already stopped for, and whether the Pro chip has shown. */
+  PO.asked={};PO.chip=false;PO.calling=false;
+  closeCall();
   /* A pause belongs to the game it was called in. Carrying it into the next one
      leaves the screen frozen with no obvious reason why. */
   PO.paused=false;
@@ -7365,6 +7420,7 @@ function playGame(){
   $('gm-feed').innerHTML='';
   $('gm-field').classList.remove('tense');
   paintGameChrome();
+  paintMound();
   if(PO.g7)g7Intro(r,()=>{if(PO&&PO.g7)nextPlay();});
   else nextPlay();
 }
@@ -7395,12 +7451,13 @@ function paintGameChrome(){
     ' &middot; '+(s.youHome?'at home':'on the road')+'</b>';
 
   const rows=[['aw',s.away.name,!s.youHome],['hm',s.home.name,s.youHome]];
+  const cols=gmCols();
   let html='<tr><th class="tm"></th>';
-  for(let i=1;i<=9;i++)html+='<th id="lh-'+i+'">'+i+'</th>';
+  for(let i=1;i<=cols;i++)html+='<th id="lh-'+i+'">'+i+'</th>';
   html+='<th class="rhe">R</th><th class="rhe">H</th></tr>';
   for(const [k,name,mine] of rows){
     html+='<tr class="'+(mine?'you':'')+'"><td class="tm">'+esc(name)+'</td>';
-    for(let i=0;i<9;i++)html+='<td id="ln-'+k+'-'+i+'"></td>';
+    for(let i=0;i<cols;i++)html+='<td id="ln-'+k+'-'+i+'"></td>';
     html+='<td class="rhe" id="ln-'+k+'-R">0</td><td class="rhe" id="ln-'+k+'-H">0</td></tr>';
   }
   $('gm-line').innerHTML=html;
@@ -7429,6 +7486,9 @@ const PLAY_TAG={BB:'BB',HBP:'HBP','1B':'1B','2B':'2B','3B':'3B',HR:'HR',
    always produces the same card, which is what lets the feed be rebuilt rather
    than appended to. */
 function feedCard(ev){
+  if(ev.type==='note')
+    return '<div class="gm-play note"><span class="tag">'+esc(ev.tag||'Call')+'</span><span>'+esc(ev.text)+'</span>'+
+      (ev.pro?'<button type="button" class="gc-pro" data-pro="1">Get Pro</button>':'')+'</div>';
   if(ev.type==='half')
     return '<div class="gm-play beat">'+(ev.hf.half==='top'?'Top of the ':'Bottom of the ')+
       HALF_LABEL(ev.hf.inning)+' &middot; '+esc(ev.hf.team)+' batting</div>';
@@ -7466,17 +7526,20 @@ function paintFeed(){
     if(ev)out.push(feedCard(ev));
   }
   $('gm-feed').innerHTML=out.join('');
+  const pro=$('gm-feed').querySelector('[data-pro]');
+  if(pro)pro.onclick=()=>{if(PO&&!PO.paused){PO.paused=true;poClear();paintSpeed();}openPro();};
 }
 
 function renderEvent(ev){
   const s=PO.script;
+  if(ev.type==='note'){paintFeed();return;}
   if(ev.type==='half'){
     setBases([null,null,null]);
     setOuts(0,(ev.hf.half==='top'?'Top ':'Bot ')+HALF_LABEL(ev.hf.inning));
     paintFeed();
-    for(let i=1;i<=9;i++)$('lh-'+i).classList.toggle('now',i===ev.hf.inning);
+    for(let i=1;i<=gmCols();i++){const th=$('lh-'+i);if(th)th.classList.toggle('now',i===ev.hf.inning);}
     const first=ev.hf.plays[0];
-    if(first)paintUp(first,ev.hf);
+    if(first)paintUp(first,ev.hf,ev.hi,0);
     return;
   }
   const p=ev.p,hf=ev.hf;
@@ -7496,7 +7559,9 @@ function renderEvent(ev){
   paintFeed();
 
   const nx=PO.events[PO.idx+1];
-  if(nx&&nx.type==='pa')paintUp(nx.p,nx.hf);
+  if(nx&&nx.type==='pa')paintUp(nx.p,nx.hf,nx.hi,nx.k);
+  else if(nx&&nx.type==='note'){const n2=PO.events[PO.idx+2];if(n2&&n2.type==='pa')paintUp(n2.p,n2.hf,n2.hi,n2.k);}
+  paintMound();
 }
 
 /* Hits are cumulative across the game, and the script only carries them per half,
@@ -7511,11 +7576,18 @@ function liveHits(hf,p){
   return n;
 }
 
-function paintUp(p,hf){
+function paintUp(p,hf,hi,k){
   const b=p.batter||{};
   $('gm-up').innerHTML='<span class="spot">'+esc(hf.team)+' batting</span>'+esc(b.name||'');
   const arm=p.pitcher;
-  $('gm-arm').textContent=arm?('Pitching: '+arm.name+(arm.slot?' ('+arm.slot+')':'')):'';
+  /* Your own pitcher wears his pitch count, read off the plate appearances he has
+     faced (engine.js, pitchCounts). The other club's arm is the coach's business. */
+  let pc='';
+  if(arm&&hi!=null&&hf.half===E.fieldingHalf(PO.script.youHome)){
+    const n=E.pitchCounts(PO.script,hi,k)[arm.slot]||0;
+    pc=' &middot; <span class="gm-pc'+(n>=E.CALLS.TIRE_FROM?' hot':'')+'">'+n+' pitch'+(n===1?'':'es')+'</span>';
+  }
+  $('gm-arm').innerHTML=arm?('Pitching: '+esc(arm.name)+(arm.slot&&arm.slot!==E.PEN_SLOT?' ('+esc(arm.slot)+')':'')+pc):'';
 }
 
 /* HOW MUCH A PLATE APPEARANCE MATTERS, read off the game state before it: late
@@ -7543,6 +7615,7 @@ function leverage(ev){
 }
 function delayFor(ev){
   const sp=PO.speed||1;
+  if(ev.type==='note')return 1300/sp;
   if(ev.type==='half')return (PO.g7&&ev.hf.inning>=7?900:360)/sp;
   const p=ev.p;
   let d=320;
@@ -7576,8 +7649,14 @@ function pitchBeat(ev,lv){
 function nextPlay(){
   poClear();
   if(!PO||PO.paused)return;
+  if(PO.calling)return;
   const ev=PO.events[PO.idx+1];
   if(!ev){PO.idx++;finishGame();return;}
+  if(ev.type==='pa'){
+    const c=maybeCall(ev);
+    if(c==='stop')return;
+    if(c==='note'){nextPlay();return;}
+  }
   const lv=leverage(ev);
   const field=$('gm-field');
   field.classList.toggle('tense',lv>=2);
@@ -7590,6 +7669,7 @@ function nextPlay(){
   }
   $('gm-arm').classList.remove('sit');
   PO.idx++;
+  callSeen(PO.idx);
   renderEvent(ev);
   /* The last play of a deciding game holds before the final lands. */
   const last=PO.idx===PO.events.length-1;
@@ -7605,30 +7685,22 @@ function jumpToEnd(){
   if(!PO||!PO.events||PO.idx>=PO.events.length)return;
   poClear();
   $('gm-g7').hidden=true;
+  closeCall();
   const s=PO.script;
-  for(let i=0;i<9;i++){
-    const t=s.line[i];
-    $('ln-aw-'+i).textContent=t.top;
-    $('ln-hm-'+i).textContent=t.bot==null?'X':t.bot;
-  }
+  paintLine(s);
   $('ln-aw-R').textContent=s.final.away;$('ln-hm-R').textContent=s.final.home;
-  $('ln-aw-H').textContent=s.away.hits;$('ln-hm-H').textContent=s.home.hits;
-  for(let i=1;i<=9;i++)$('lh-'+i).classList.remove('now');
   setBases([null,null,null]);setOuts(3);
   PO.idx=PO.events.length;
+  callSeen(1e9);
   finishGame();
 }
 
 function finishGame(){
   poClear();
   const s=PO.script,r=RUN.playoffs.rounds[PO.round],g=r.games[PO.game];
-  for(let i=0;i<9;i++){
-    const t=s.line[i];
-    $('ln-aw-'+i).textContent=t.top;
-    $('ln-hm-'+i).textContent=t.bot==null?'X':t.bot;
-  }
-  $('ln-aw-H').textContent=s.away.hits;$('ln-hm-H').textContent=s.home.hits;
-  for(let i=1;i<=9;i++)$('lh-'+i).classList.remove('now');
+  closeCall();callSeen(1e9);
+  $('gm-mound').hidden=true;
+  paintLine(s);
   /* Leaving the last hitter under "batting", with an inning still lit beside
      him, reads as though the game is going on. */
   $('gm-up').innerHTML='<span class="spot">Final</span>'+
@@ -7659,6 +7731,201 @@ function finishGame(){
     PO.game++;
     if(PO.game>=r.games.length)endSeries();else playGame();
   },hold);
+}
+
+/* The whole line score, from the script, however many innings it ran. */
+function paintLine(s){
+  if(s.line.length>gmCols()||!$('ln-aw-'+(s.line.length-1)))paintGameChrome();
+  for(let i=0;i<s.line.length;i++){
+    const t=s.line[i];
+    $('ln-aw-'+i).textContent=t.top;
+    $('ln-hm-'+i).textContent=t.bot==null?'X':t.bot;
+  }
+  $('ln-aw-H').textContent=s.away.hits;$('ln-hm-H').textContent=s.home.hits;
+  for(let i=1;i<=gmCols();i++){const th=$('lh-'+i);if(th)th.classList.remove('now');}
+}
+
+/* ─── the manager's call ───
+   A Pro player changes pitchers in the October games they watch: every game in
+   the six modes that play October out, and the deciding game in Classic and the
+   daily. engine.js ("the manager's call") holds the model and run.js the record of
+   every call; this asks, draws and remembers. A free player watches the coach
+   make the same call, said in one line in the feed, and the game is today's. */
+const CALLS_KEY='rtd_calls_v1';
+function callsLive(){
+  if(!PO||!RUN||PO.returnTo==='result'||RUN.recorded)return false;
+  if(!(liveOctober()||PO.g7))return false;
+  return R.canCall(RUN,PO.round,PO.game);
+}
+function callsStop(){try{return localStorage.getItem('rtd_calls_stop')!=='0';}catch(_){return true;}}
+/* A reload replays the same October, so a game's furthest point already watched is
+   kept: no call can be made before it, or leaving the page would buy a second look
+   at a game you already saw go wrong. */
+function seenKey(){return PO.round+'|'+PO.game;}
+function callSeen(i){
+  if(!RUN||!PO||PO.returnTo==='result'||RUN.recorded)return;
+  const s=RUN.seen||(RUN.seen={}),k=seenKey();
+  if(!(s[k]>=i)){s[k]=i;saveCalls();}
+}
+function seenAll(ri,gi){
+  if(!RUN||RUN.recorded)return;
+  const s=RUN.seen||(RUN.seen={});
+  if(!(s[ri+'|'+gi]>=1e9)){s[ri+'|'+gi]=1e9;saveCalls();}
+}
+function poPrint(){
+  const po=RUN.playoffs;
+  return E.hashSeed(JSON.stringify((po.path||po.rounds).map(r=>(r.baseGames||r.games).map(g=>[g.yourRuns,g.oppRuns]))));
+}
+function saveCalls(){
+  if(!RUN||RUN.poPrint==null)return;
+  try{localStorage.setItem(CALLS_KEY,JSON.stringify({v:1,u:acctId()||null,seed:RUN.seed,fp:RUN.poPrint,
+    calls:RUN.calls||[],seen:RUN.seen||{}}));}catch(_){}
+}
+function dropCalls(){try{localStorage.removeItem(CALLS_KEY);}catch(_){}}
+/* Put back the calls this run already made, if the October on screen is the one
+   they were made in. Anything else is somebody else's October and is ignored. */
+function loadCalls(){
+  if(!RUN||!RUN.playoffs)return;
+  if(RUN.poPrint==null)RUN.poPrint=poPrint();
+  let o=null;
+  try{o=JSON.parse(localStorage.getItem(CALLS_KEY)||'null');}catch(_){o=null;}
+  if(!o||o.v!==1||o.seed!==RUN.seed||o.fp!==RUN.poPrint||(o.u||null)!==(acctId()||null))return;
+  RUN.seen=o.seen&&typeof o.seen==='object'?o.seen:{};
+  if(Array.isArray(o.calls)&&o.calls.length&&!(RUN.calls&&RUN.calls.length))R.restoreCalls(RUN,o.calls);
+}
+/* Should the game stop before this plate appearance? 'stop' when a Pro sheet is up,
+   'note' when the coach's call went into the feed, null to play on. */
+function maybeCall(ev){
+  if(!callsLive())return null;
+  const seen=(RUN.seen||{})[seenKey()];
+  if(seen!=null&&seen>=PO.idx+1)return null;
+  const c=R.callAt(RUN,PO.round,PO.game,ev.hi,ev.k,PO.asked);
+  if(!c)return null;
+  c.keys.forEach(x=>{PO.asked[x]=1;});
+  if(isPro()&&callsStop()&&PO.noStops!==PO.round){openCall(c,ev);return 'stop';}
+  /* The coach's call, said. A change of pitcher is news; staying put only matters
+     when it is the call a Pro player would have been asked to make. */
+  const changed=c.sched.slot!==c.onMound.slot;
+  const text=changed?'Pitching change. '+armName(c.sched)+' comes in.'
+    :'The coach leaves '+armName(c.onMound)+' in.';
+  const pro=!isPro()&&!PO.chip;
+  if(pro)PO.chip=true;
+  PO.events.splice(PO.idx+1,0,{type:'note',tag:'Coach',text:text+(pro?' Pro makes this call.':''),pro});
+  return 'note';
+}
+const armName=a=>a.slot===E.PEN_SLOT?'the bullpen':a.name;
+const ARM_ROLE={sp:'Starter',rp:'Reliever',cl:'Closer',pen:'League-average arm'};
+function callSituation(c,ev){
+  const p=ev.p,o=p.outsBefore;
+  const outs=o===0?'No outs':o===1?'One out':'Two outs';
+  const bases=BASE_WORD(p.basesBefore);
+  const who=c.onMound.slot===E.PEN_SLOT?'The bullpen':c.onMound.name;
+  /* A club with no name in the data for a spot bats its position: "Their LF is up." */
+  const up=!c.batter?'':c.batterGeneric?' Their '+c.batter+' is up.':' '+c.batter+'\u2019s up.';
+  if(c.kind==='change')return 'The coach wants '+armName(c.sched)+'. '+who+' has thrown '+c.pitches+'.'+up;
+  if(c.kind==='save')return 'Up '+c.lead+' in the '+HALF_LABEL(c.inning)+'. Closer now?'+up;
+  if(c.kind==='tying')return 'Tying run '+(c.lead<=c.on?'on base':'at the plate')+'. '+outs+'.'+up;
+  if(c.kind==='tired')return who+' is at '+c.pitches+'. '+bases+', '+outs.toLowerCase()+'.'+up;
+  return who+' has thrown '+c.pitches+'. '+bases+', '+outs.toLowerCase()+'.'+up;
+}
+function openCall(c,ev){
+  poClear();
+  PO.calling=true;
+  const el=$('gm-call');
+  /* The sheet names who is out there now, not the man the coach is about to send. */
+  $('gm-arm').classList.remove('sit');
+  $('gm-arm').innerHTML='Pitching: '+esc(c.onMound.slot===E.PEN_SLOT?'Bullpen':c.onMound.name)+
+    ' &middot; <span class="gm-pc'+(c.pitches>=E.CALLS.TIRE_FROM?' hot':'')+'">'+c.pitches+' pitches</span>';
+  /* All-Time Staff has a dozen arms. The sheet leads with the man out there, the
+     coach's man and the best three rested; the rest are a tap away. */
+  const SHOW=5;
+  const opts=c.options.map((o,i)=>{
+    const sub=o.stay?(o.slot===E.PEN_SLOT?'The bullpen':o.name)+', '+o.pitches+' pitches'
+      :(ARM_ROLE[o.role]||'Reliever')+(o.rest==='tired'?', tired from yesterday':o.rest==='started'?', started yesterday':o.role==='pen'?'':', rested');
+    return '<button type="button" class="gc-opt'+(o.rest!=='rested'&&!o.stay?' tired':'')+'"'+(i>=SHOW?' hidden':'')+' data-slot="'+esc(o.slot)+'" data-i="'+(i+1)+'">'+
+      '<span><span class="gc-nm">'+esc(o.stay?'Leave him in':o.name)+'</span><small>'+esc(sub)+'</small></span>'+
+      '<span class="gc-r">'+(o.coach?'<span class="gc-coach">Coach</span>':'')+(o.stay?o.pitches+' pitches':o.era.toFixed(2)+' ERA')+'</span></button>';
+  }).join('');
+  el.innerHTML='<div class="gc-grab"></div><div class="gc-k" id="gc-k">Your call</div>'+
+    '<div class="gc-sit">'+esc(callSituation(c,ev))+'</div><div class="gc-opts">'+opts+
+    (c.options.length>SHOW?'<button type="button" class="gc-more" id="gc-more">More arms ('+(c.options.length-SHOW)+')</button>':'')+'</div>'+
+    '<div class="gc-foot"><button type="button" class="gc-off" id="gc-off">Let the coach manage this series</button></div>';
+  el.hidden=false;
+  el.querySelectorAll('.gc-opt').forEach(b=>b.onclick=()=>chooseCall(c,ev,b.dataset.slot));
+  $('gc-off').onclick=()=>{PO.noStops=PO.round;chooseCall(c,ev,c.sched.slot);};
+  const more=$('gc-more');
+  if(more)more.onclick=()=>{el.querySelectorAll('.gc-opt[hidden]').forEach(b=>{b.hidden=false;});more.remove();};
+  const first=el.querySelector('.gc-opt');if(first)try{first.focus({preventScroll:true});}catch(_){}
+  paintMound();
+}
+function closeCall(){const el=$('gm-call');if(el){el.hidden=true;el.innerHTML='';}if(PO)PO.calling=false;}
+function chooseCall(c,ev,slot){
+  if(!PO||!PO.calling)return;
+  closeCall();
+  const pick=c.options.find(o=>o.slot===slot)||{name:slot,slot};
+  let text;
+  if(slot===c.sched.slot){
+    text=slot===c.onMound.slot?'You leave '+armName(c.onMound)+' in.':'Pitching change. '+armName(c.sched)+' comes in.';
+  }else{
+    const was=PO.script.final.won;
+    const s=R.makeCall(RUN,PO.round,PO.game,ev.hi,ev.k,slot);
+    if(s){
+      PO.script=s;
+      const fresh=flattenScript(s);
+      const at=fresh.findIndex(e=>e.type==='pa'&&e.hi===ev.hi&&e.k===ev.k);
+      PO.events=PO.events.slice(0,PO.idx+1).concat(at>=0?fresh.slice(at):[]);
+      ga('october_call',{kind:c.kind,flipped:was!==s.final.won?1:0});
+      brkSync();
+      saveCalls();
+    }
+    text=slot===c.onMound.slot?'You leave '+armName(c.onMound)+' in.'
+      :'Pitching change. '+(pick.slot===E.PEN_SLOT?'The bullpen':pick.name)+' in for '+armName(c.onMound)+'.';
+  }
+  PO.events.splice(PO.idx+1,0,{type:'note',tag:'Call',text});
+  if(PO.script.line.length>gmCols()||!$('ln-aw-'+(PO.script.line.length-1))){
+    paintGameChrome();
+    for(let i=0;i<=PO.idx;i++){const e=PO.events[i];if(e&&e.type!=='note')renderEvent(e);}
+  }
+  PO.timer=setTimeout(nextPlay,250/(PO.speed||1));
+}
+/* The Mound button: a change between any two batters while your arm is out there. */
+function moundEvent(){
+  if(!PO||!PO.events)return null;
+  for(let i=PO.idx+1;i<PO.events.length&&i<PO.idx+3;i++){
+    const e=PO.events[i];
+    if(e.type==='pa')return e.hf.half===E.fieldingHalf(PO.script.youHome)?e:null;
+  }
+  return null;
+}
+function paintMound(){
+  const b=$('gm-mound');if(!b)return;
+  const on=!!(PO&&isPro()&&callsLive());
+  b.hidden=!on;
+  if(!on)return;
+  const ev=moundEvent();
+  const seen=(RUN.seen||{})[seenKey()];
+  b.disabled=!!(PO.calling||!ev||(seen!=null&&seen>=PO.idx+1));
+}
+function openMound(){
+  if(!PO||PO.calling||!isPro()||!callsLive())return;
+  const ev=moundEvent();if(!ev)return;
+  const seen=(RUN.seen||{})[seenKey()];
+  if(seen!=null&&seen>=PO.idx+1)return;
+  const c=R.mound(RUN,PO.round,PO.game,ev.hi,ev.k);
+  if(!c)return;
+  /* The Mound button is a way into the same sheet, so play the next event's header
+     first if it is the half's: the sheet then reads the half that is under way. */
+  while(PO.events[PO.idx+1]&&PO.events[PO.idx+1]!==ev){PO.idx++;renderEvent(PO.events[PO.idx]);}
+  openCall(c,ev);
+}
+/* After a call the October behind the bracket can change: a series that now runs
+   on, or a round you now reach. The bracket keeps every seat it has shown and
+   takes the run's new opponents. */
+function brkSync(){
+  if(!BRK)return;
+  BRK.repin((RUN.playoffs.rounds||[]).map(r=>r.oppTeam?{
+    code:r.oppTeam,season:r.oppSeason,rating:r.oppRating,
+    id:r.oppSeason?E.teamSeasonId(r.oppTeam,r.oppSeason):r.oppTeam}:null));
 }
 
 /* ─── between series ─── */
@@ -7695,9 +7962,13 @@ function simRestOfOctober(){
   poClear();
   $('gm-g7').hidden=true;$('s-game').classList.remove('g7');
   if(PO&&PO.g7){PO.speed=PO.speedWas||PO.speed;PO.g7=false;}
+  closeCall();
   if(PO.done){octoberOver();return;}
   const rounds=RUN.playoffs.rounds;
-  for(let i=PO.round;i<rounds.length;i++)brkSettleMine(i,rounds[i].won);
+  for(let i=PO.round;i<rounds.length;i++){
+    brkSettleMine(i,rounds[i].won);
+    rounds[i].games.forEach((g,gi)=>seenAll(i,gi));
+  }
   octoberDone();
 }
 
@@ -7742,8 +8013,18 @@ function paintSpeed(){
   $('sr-simall').onclick=()=>simRestOfOctober();
   $('gm-simall').onclick=()=>simRestOfOctober();
   $('gm-skipgame').onclick=()=>{if(PO&&PO.script)jumpToEnd();};
+  $('gm-mound').onclick=()=>openMound();
+  $('sr-calls-on').onchange=e=>{try{localStorage.setItem('rtd_calls_stop',e.target.checked?'1':'0');}catch(_){}};
+  /* The sheet's keys: 1 to 9 pick, Escape takes the coach's man. */
+  document.addEventListener('keydown',e=>{
+    const el=$('gm-call');
+    if(!el||el.hidden||!PO||!PO.calling)return;
+    if(e.key==='Escape'){const b=[...el.querySelectorAll('.gc-opt')].find(x=>x.querySelector('.gc-coach'));if(b){e.preventDefault();b.click();}return;}
+    const n=parseInt(e.key,10);
+    if(n>=1&&n<=9){const b=el.querySelector('.gc-opt[data-i="'+n+'"]:not([hidden])');if(b){e.preventDefault();b.click();}}
+  });
   $('gm-pause').onclick=()=>{
-    if(!PO)return;
+    if(!PO||PO.calling)return;
     PO.paused=!PO.paused;paintSpeed();
     if(!PO.paused)nextPlay();else poClear();
   };

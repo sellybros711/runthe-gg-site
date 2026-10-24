@@ -18,6 +18,13 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+
+/* BY HOSTNAME, NOT A GLOB. '**cdn.jsdelivr.net**' and the like match nothing under the
+   Playwright CI pins (1.49.1), so these hosts were never blocked there. Same fix as
+   check-current.mjs (site PR 691). */
+const BLOCKED_HOSTS = ['cdn.jsdelivr.net', 'supabase.co', 'googlesyndication.com', 'googletagmanager.com',
+  'google-analytics.com', 'doubleclick.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const blockedHost = (u) => BLOCKED_HOSTS.some((h) => u.hostname === h || u.hostname.endsWith('.' + h));
 /* Playwright from node_modules first, then from the sandbox's global install,
    and the browser from the sandbox's cache if it is there. Same order
    wrestling/verify.mjs uses, so this runs unchanged here and on a runner. */
@@ -182,11 +189,7 @@ for (const p of PAGES) {
        and the threshold turns on the computed font SIZE and WEIGHT, which the
        page declares itself; a fallback face renders at the same 14px 800 the
        webfont would. */
-    for (const pat of ['**cdn.jsdelivr.net**', '**supabase.co**', '**googlesyndication.com**',
-                       '**googletagmanager.com**', '**google-analytics.com**', '**doubleclick.net**',
-                       '**fonts.googleapis.com**', '**fonts.gstatic.com**']) {
-      await page.route(pat, (r) => r.abort());
-    }
+    await page.route(blockedHost, (r) => r.abort());
     /* A page that never settles must not take the whole audit with it. Before
        this had a timeout, one hung run looked exactly like a slow one and the
        check simply never returned, which is its own way of not running. */
@@ -251,10 +254,7 @@ for (const p of PAGES) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   await ctx.addInitScript(() => { try { localStorage.setItem('runthegrid_pro', '1'); } catch (e) {} });
   const page = await ctx.newPage();
-  for (const pat of ['**cdn.jsdelivr.net**', '**supabase.co**', '**googlesyndication.com**', '**googletagmanager.com**',
-                     '**google-analytics.com**', '**doubleclick.net**', '**fonts.googleapis.com**', '**fonts.gstatic.com**']) {
-    await page.route(pat, (r) => r.abort());
-  }
+  await page.route(blockedHost, (r) => r.abort());
   try { await page.goto('http://localhost:' + PORT + '/arcade/' + p, { waitUntil: 'domcontentloaded', timeout: 15000 }); }
   catch (e) { await ctx.close(); continue; }
   await page.waitForTimeout(1200);

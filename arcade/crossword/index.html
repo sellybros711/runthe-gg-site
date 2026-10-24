@@ -394,6 +394,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
@@ -494,7 +496,7 @@ window.GA_ID='G-L29P5MRWKE';
 <ul>
   <li>Fill in what you know first and skip the rest. The crossing letters will crack the hard ones for you.</li>
   <li>Short answers come back a lot. Team codes and nicknames show up most weeks. After a couple weeks they’re free squares.</li>
-  <li>You get 1 Reveal per play, not per day. The board never sees it. Time is the only score, so don’t sit on it. Holding onto a Reveal just costs you seconds.</li>
+  <li>You get 1 Reveal per play, not per day. Each one adds time to your board score. A square you’re stuck on can cost you more, so use it when you need it.</li>
 </ul>
 <p>Want more? Try <a href="/arcade/rankit/">Rank It</a> or <a href="/arcade/match/">Common Ground</a>.</p>
 </div>
@@ -582,7 +584,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
 <script src="/arcade/cluebank.js?v=3"></script>
-<script src="/arcade/primary.js?v=48"></script>
+<script src="/arcade/primary.js?v=55"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=9"></script>
 <script src="/arcade/flags.js?v=8"></script>

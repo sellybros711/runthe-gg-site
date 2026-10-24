@@ -142,16 +142,16 @@
    "feedDescription": "Yadier Molina lines out to right fielder Nelson Cruz.",
    "runs": 0,
    "outs": 1,
-   "inSpot": false,
+   "inSpot": true,
    "name": "Yadier Molina",
    "batSideListed": "R",
    "seasonLine": ".305/.349/.465, 14 HR"
   }
  ],
- "realFaced": 5,
+ "realFaced": 6,
  "real": {
-  "outcome": "doors_open",
-  "pitches": 20,
+  "outcome": "tie_held",
+  "pitches": 22,
   "runs": 2,
   "otherPitchersInSpot": []
  },

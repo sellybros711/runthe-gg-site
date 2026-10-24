@@ -35,6 +35,36 @@ function breakPx(ap, ppf) {
 
 function ease(t) { return 1 - Math.pow(1 - t, 1.55); }
 
+/* The runners of a play, on the base paths over time (the scorebar diamond and the field share it;
+   the 3D stage uses it too). T_RUN is when they start, RUN how long they take, both in ms.
+   at(t) -> {runners: [{p, out, alpha, from, to}], runs}: p is a place on the paths, 0 home, 1..3
+   the bases, 4 home again. Where everybody started: every move's base, plus anybody on a base after
+   the play that no move reached (he stood still). */
+function runnerTrack(pr, T_RUN, RUN) {
+  var inPlay = pr.result === 'in_play';
+  var moves = (pr.runnerMoves || []).slice();
+  if (inPlay && !moves.some(function (m) { return m.from === 0; })) moves.push({ from: 0, to: -1 });
+  var stay = [];
+  [1, 2, 3].forEach(function (bs) {
+    if ((pr.bases & (1 << (bs - 1))) && !moves.some(function (m) { return m.to === bs; })) stay.push(bs);
+  });
+  var running = moves.length > 0 && (inPlay || moves.some(function (m) { return m.from > 0; }));
+  function at(t) {
+    var u = Math.max(0, Math.min(1, (t - T_RUN) / RUN));
+    var e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+    var list = stay.map(function (bs) { return { p: bs }; }), runs = 0;
+    moves.forEach(function (m) {
+      var dest = m.to === -1 ? m.from + (m.from === 0 ? 0.85 : 0.55) : m.to;
+      var p = m.from + (dest - m.from) * e;
+      var out = m.to === -1 && u >= 1;
+      if (m.to === 4 && p >= 4) runs++;
+      list.push({ p: p, out: out, alpha: out ? Math.max(0.35, 1 - (t - T_RUN - RUN) / 600) : (m.to === 4 && p >= 4 ? 0.5 : 1), from: m.from, to: m.to });
+    });
+    return { runners: list, runs: runs };
+  }
+  return { running: running, at: at };
+}
+
 /* opts: {pr: PitchResult, ap: ArsenalPitch, hooks: {call(text, kind), sound(name)}, quick} */
 function play(scene, opts) {
   var pr = opts.pr, ap = opts.ap || {}, hooks = opts.hooks || {};
@@ -51,17 +81,9 @@ function play(scene, opts) {
   var T_ARR = T_REL + FLIGHT;
   var inPlay = pr.result === 'in_play';
   var caught = pr.result === 'ball' || pr.result === 'called_strike' || pr.result === 'swinging_strike' || pr.result === 'foul_tip';
-  /* The runners. Where everybody started: every move's base, plus anybody
-     on a base after the play that no move reached (he stood still). */
-  var moves = (pr.runnerMoves || []).slice();
-  if (inPlay && !moves.some(function (m) { return m.from === 0; })) moves.push({ from: 0, to: -1 });
-  var stay = [];
-  [1, 2, 3].forEach(function (bs) {
-    if ((pr.bases & (1 << (bs - 1))) && !moves.some(function (m) { return m.to === bs; })) stay.push(bs);
-  });
-  var running = moves.length > 0 && (inPlay || moves.some(function (m) { return m.from > 0; }));
   var T_RUN = T_ARR + (inPlay ? 260 : 220) * speed;
   var RUN = (inPlay ? 1150 : 700) * speed;
+  var track = runnerTrack(pr, T_RUN, RUN), running = track.running, runnersAt = track.at;
   var T_END = T_ARR + (inPlay ? 1700 : pr.result === 'foul' ? 1000 : running ? 1050 : 900) * speed;
   var row = C.rowOf(pr.actualCell);
   var swingPose = row <= 1 ? 'swingHi' : row >= 3 ? 'swingLo' : 'swingMid';
@@ -125,21 +147,6 @@ function play(scene, opts) {
     var u = Math.max(0, Math.min(1, (t - T_ARR + FLIGHT * 0.35) / (FLIGHT * 0.35)));
     var m = { x: target.x + (land.x - target.x) * u, y: target.y + (land.y - target.y) * u };
     return caught ? m : target;
-  }
-
-  /* a runner's place on the base paths at time t: 0 home, 1..3 bases, 4 home */
-  function runnersAt(t) {
-    var u = Math.max(0, Math.min(1, (t - T_RUN) / RUN));
-    var e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
-    var list = stay.map(function (bs) { return { p: bs }; }), runs = 0;
-    moves.forEach(function (m) {
-      var dest = m.to === -1 ? m.from + (m.from === 0 ? 0.85 : 0.55) : m.to;
-      var p = m.from + (dest - m.from) * e;
-      var out = m.to === -1 && u >= 1;
-      if (m.to === 4 && p >= 4) runs++;
-      list.push({ p: p, out: out, alpha: out ? Math.max(0.35, 1 - (t - T_RUN - RUN) / 600) : (m.to === 4 && p >= 4 ? 0.5 : 1), from: m.from, to: m.to });
-    });
-    return { runners: list, runs: runs, u: u };
   }
 
   function frameAt(t) {
@@ -234,5 +241,5 @@ function play(scene, opts) {
   });
 }
 
-window.STD_ANIM = { play: play, breakPx: breakPx };
+window.STD_ANIM = { play: play, breakPx: breakPx, runnerTrack: runnerTrack };
 })();

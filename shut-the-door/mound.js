@@ -383,7 +383,10 @@ Scene.prototype.draw = function (frame) {
   var P = this.pitcherBox();
   blit(ctx, SP.get('pitcher', frame.pitcher || 'set', colors, 'us'), P.x, P.y, b, P.flip);
   if (frame.ball && !ballFirst) drawBall(ctx, frame.ball, b);
-  if (frame.field) drawField(ctx, frame.field, L);
+  /* The runner inset is off: nothing is drawn over the field during play
+     (the owner, 2026-10-17). The scorebar's diamond carries the runners. A
+     page can turn it back on with scene.fieldInset = true. */
+  if (frame.field && this.fieldInset) drawField(ctx, frame.field, L);
   ctx.restore();
 };
 
@@ -552,6 +555,31 @@ Grid.prototype.setMarks = function (m) {
     c.classList.toggle('m-actual', m.actual === i);
     c.classList.toggle('m-best', m.best === i);
   }
+};
+/* The outing's pitches as dots, where each crossed the plate (the catcher's view, mirrored on
+   screen like the cells). log: the state's pitch results. from: the index of the first pitch to
+   this batter; the pitches before it are the outing's, drawn quieter. Colour is the result's kind,
+   the neutral palette, never a grade band. */
+var DOT_KIND = { ball: 'ball', hit_by_pitch: 'ball', called_strike: 'called', swinging_strike: 'swing', foul: 'foul' };
+Grid.prototype.setPitches = function (log, from) {
+  if (this.opts.mini) return;
+  if (!this.dots) {
+    this.dots = document.createElement('div');
+    this.dots.className = 'dots';
+    this.dots.setAttribute('aria-hidden', 'true');
+    this.el.appendChild(this.dots);
+  }
+  var html = '';
+  (log || []).forEach(function (p, i) {
+    if (!p.actual) return;
+    /* continuous position in cells (0 to 5 each way): the column in data (catcher's view) and
+       its mirror on screen, the row from the top. A pitch past the chase band sits on the edge. */
+    var cx = Math.max(0, Math.min(5, p.actual.x / C.GRID.COL_FT + 2.5));
+    var ry = Math.max(0, Math.min(5, (1 - p.actual.zn) / C.GRID.ROW_ZN + 1));
+    var kind = DOT_KIND[p.result] || 'inplay';
+    html += '<i class="pd ' + kind + (i >= from ? ' cur' : '') + '" style="left:' + ((5 - cx) * 20).toFixed(2) + '%;top:' + (ry * 20).toFixed(2) + '%"></i>';
+  });
+  this.dots.innerHTML = html;
 };
 /* mode: 'damage' | 'swing' | null, from the batter's profile */
 Grid.prototype.setHeat = function (profile, mode) {

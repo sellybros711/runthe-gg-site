@@ -76,6 +76,18 @@ for (const file of walk(ROOT).sort()) {
     }
     const adTag = src.indexOf(PUB);
     if (adTag !== -1 && adTag < consent) fail('AdSense tag loads before the Consent Mode defaults');
+
+    /* Europe gets its own default, with analytics denied too: GA4 sets cookies, and in the
+     * EEA, the UK and Switzerland a cookie waits for consent. The worldwide default above
+     * keeps analytics granted everywhere else. Added 2026-10-24 (agents/ads/ in the vault). */
+    const europe = src.match(/gtag\('consent','default',\{[^}]*analytics_storage:'denied',region:\[([^\]]*)\]/);
+    if (!europe) fail('no Europe Consent Mode default (analytics_storage denied, with a region list)');
+    else {
+      for (const cc of ['DE', 'FR', 'IE', 'NO', 'GB', 'CH']) {
+        if (!europe[1].includes(`'${cc}'`)) fail(`the Europe consent default leaves out ${cc}`);
+      }
+      if (adTag !== -1 && adTag < europe.index) fail('AdSense tag loads before the Europe consent default');
+    }
   }
   if (!/rel=["']canonical["']/i.test(src)) fail('no canonical');
   if (!/<title>\s*\S/i.test(src)) fail('no title');

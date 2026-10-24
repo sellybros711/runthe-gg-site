@@ -50,9 +50,11 @@ function meanLost(model, st) {
   meanCache.get(model).set(k, sum / n);
   return sum / n;
 }
-/* the lost of each pitch, absolute or relative to the state's mean lost */
+/* the lost of each pitch, absolute or relative to the state's mean lost. Under
+   rules 2 the state's mean lost depends on the history, so the relative lost
+   is the grade's own rel (grade.js gradeCall), which is exactly that ratio. */
 function losses(o, model) {
-  return o.grades.map((g, i) => (REL ? g.lost / Math.max(1e-6, meanLost(model, o.before[i])) : g.lost));
+  return o.grades.map((g, i) => (REL ? (o.rules >= 2 ? g.rel : g.lost / Math.max(1e-6, meanLost(model, o.before[i]))) : g.lost));
 }
 const data = [];
 for (const f of files) {
@@ -93,7 +95,7 @@ function show(e, label) {
   for (const r of e.rows) console.log(`    ${r.id.padEnd(26)} heart o+r ${pc(r.heartOR)}%   pool ${r.pool.map(pc).join('/')}`);
 }
 
-if (!REL) show(evaluate(K.BANDS.slice(0, 3).map(b => b.maxLost)), 'current');
+show(evaluate(K.BANDS.slice(0, 3).map(b => b.maxLost)), REL ? 'current (relative, the game\'s BANDS)' : 'current');
 const cands = [];
 const GS = REL ? [0.05, 0.1, 0.15, 0.2, 0.25] : [0.1, 0.15, 0.2, 0.25, 0.3, 0.4];
 const YS = REL ? [0.2, 0.3, 0.4, 0.5] : [0.3, 0.4, 0.5, 0.6, 0.75, 1.0];
