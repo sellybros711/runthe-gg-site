@@ -1141,7 +1141,7 @@ function renderResult() {
   $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
   $('r-real').innerHTML = '<div class="vs-t"><small>you vs the real ' + esc(his.toLowerCase()) + '</small>' +
     '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal, his)) + '</b>' +
-    '<span>' + esc(vsWhy(r, rv, runs)) + '</span></div>';
+    vsWhy(r, rv, runs) + '</div>';
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
@@ -1156,16 +1156,28 @@ function vsHead(v, his) {
   return v === 'beat' ? 'you beat ' + his : v === 'matched' ? 'you matched ' + his : v === 'lost' ? his + ' did better' : '-';
 }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+/* two labelled lines, like the side by side card: your result, his result. The outcome first, then
+   runs when the outcomes tie, then pitches when the runs tie too (the order vsReal decides by). */
+function vsParts(r, rv, runs) {
+  var label = function (o) { return (C.OUTCOME_LABEL[o] || '').toLowerCase(); };
+  if (!label(r.outcome) || !label(rv.outcome)) return null;
+  var mine = [label(r.outcome)], his = [label(rv.outcome)];
+  if (r.outcome === rv.outcome && runs != null && rv.runs != null) {
+    mine.push(plural(runs, 'run', 'runs')); his.push(plural(rv.runs, 'run', 'runs'));
+    if (runs === rv.runs && typeof rv.pitches === 'number') {
+      mine.push(plural(r.pitches, 'pitch', 'pitches')); his.push(plural(rv.pitches, 'pitch', 'pitches'));
+    }
+  }
+  return { mine: mine.join(' · '), his: his.join(' · ') };
+}
 function vsWhy(r, rv, runs) {
-  var mine = (C.OUTCOME_LABEL[r.outcome] || '').toLowerCase(), hisOut = (C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase();
-  if (r.outcome !== rv.outcome) return mine + ' to his ' + hisOut + '.';
-  var a = mine + ' both times.';
-  if (runs == null || rv.runs == null) return a;
-  if (runs !== rv.runs) return a + ' ' + plural(runs, 'run', 'runs') + ' to his ' + rv.runs + '.';
-  a += ' ' + plural(runs, 'run', 'runs') + ' each.';
-  if (typeof rv.pitches !== 'number') return a + ' his pitch count is not on record.';
-  if (r.pitches === rv.pitches) return a + ' ' + plural(r.pitches, 'pitch', 'pitches') + ' each.';
-  return a + ' ' + plural(r.pitches, 'pitch', 'pitches') + ' to his ' + rv.pitches + '.';
+  var p = vsParts(r, rv, runs);
+  return p ? '<span class="vs-l"><i>your result</i>' + esc(p.mine) + '</span><span class="vs-l"><i>his result</i>' + esc(p.his) + '</span>' : '';
+}
+/* the same two lines as plain text, for the share card's canvas */
+function vsText(r, rv, runs) {
+  var p = vsParts(r, rv, runs);
+  return p ? 'your result: ' + p.mine + '. his result: ' + p.his + '.' : null;
 }
 
 /* Your plate appearances from the outing's log: one per batter, in order. The word is the play by
@@ -1296,7 +1308,7 @@ function cardOf(r) {
     outcome: r.outcome, strip: r.strip || [], pitches: r.pitches, percentile: r.percentile,
     label: s.preview ? 'preview' : '#' + s.number, title: s.title,
     vsReal: r.vsReal || null, vsLabel: 'you vs the real ' + his.toLowerCase(),
-    vsHead: r.vsReal ? vsHead(r.vsReal, his) : null, vsWhy: r.vsReal && rv.outcome ? vsWhy(r, rv, runsOf(r, st)) : null,
+    vsHead: r.vsReal ? vsHead(r.vsReal, his) : null, vsWhy: r.vsReal && rv.outcome ? vsText(r, rv, runsOf(r, st)) : null,
     pitchedLike: r.pitchedLike && r.pitchedLike.name || null,
   };
 }
