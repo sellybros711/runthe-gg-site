@@ -29,6 +29,32 @@ const SWEET = 28 * 0.0254;
 // ball met where play.js once put it (up to 5 ft out front for a pulled ball, behind the plate the
 // other way) was 0.4 to 1.9 m from the sweet spot.
 const MEET = [-0.05, 0.25], MEET_DEPTH = [4, -1];
+// the whiff capture's fastest barrel (its anchor) can come after it has crossed the zone (the lefty's
+// is 0.33 s later than the righty's), so its search runs wider
+const MEET_MISS = [-0.45, 0.25];
+const meetWindow = (b) => (b.clip.startsWith('miss') ? MEET_MISS : MEET);
+// The swing aimed at the pitch (aimSwing): a layer on his own swing, whole at the frame that meets
+// the ball, eased in from the top of his leg lift and out over AIM.out seconds into his finish. Its
+// parts, each with its range here: drop (m) the pelvis lowered, so the planted feet bend his knees;
+// side (degrees over three spine joints) the trunk tipped about his own shoulder line, the back
+// shoulder down for a low pitch; lean (degrees) the trunk out over the plate, the arms keeping their
+// line so the hands go with the shoulders; shift (m) the pelvis toward the plate; dip and yaw
+// (degrees) the barrel laid down or lifted, and turned in or out, in his wrists about the bottom
+// grip; hands (m) both hands carrying the bat, rigid in them. R_BALL is the ball's radius; MISS the
+// bat's centre line from the ball's on a swing and a miss (over the top of a low or breaking pitch,
+// under a high one); TIP how far a foul tip runs into the wood (a graze).
+const AIM = { out: 0.4, drop: 0.2, side: [-8, 24], lean: [-8, 28], dip: [-55, 35], yaw: 30, hands: 0.25, shift: [-0.06, 0.2] };
+const R_BALL = 0.0366, MISS = 0.34, TIP = 0.008;
+// the most poses one pitch's aim may take (about half a millisecond each on a desktop, a few on a
+// phone): it runs once, as the pitch is set up
+const AIM_POSES = 200;
+// the bat's radius along it (gear3d.js bat), inches from the knob: [inches up, radius]
+const BAT_R = [[0, 0.62], [9, 0.47], [13, 0.5], [17, 0.62], [21, 0.9], [24, 1.18], [27, 1.28], [31, 1.3], [33.4, 1.3], [34, 0.9]];
+function batRadius(y) {
+  const yi = y / 0.0254;
+  for (let i = 1; i < BAT_R.length; i++) if (yi <= BAT_R[i][0]) { const [y0, r0] = BAT_R[i - 1], [y1, r1] = BAT_R[i]; return (r0 + (r1 - r0) * clamp01((yi - y0) / (y1 - y0))) * 0.0254; }
+  return 0.9 * 0.0254;
+}
 // the bat in his hands (bakeBat): the top hand counts as off the bat once the grips are GRIP_OFF
 // (m) apart, and the bat is then the bottom hand's alone, over GRIP_LET seconds; GRIP_HOLD is the
 // gap between the grips (m) at which the line through them and his grip count the same;
@@ -532,7 +558,10 @@ export class People {
       this.planBatterFeet(b);
       // a swing that meets the ball is timed so the bat gets there with it (meetTime); a take or a
       // swing and miss keeps the play's own timing
-      if (!b.take && !this.m.miss && pitch) this.meetTime(b);
+      // and then aimed at it (aimSwing): to meet it where the engine says it was met, or on a swing
+      // and a miss, to go by it
+      b.aim = null;
+      if (!b.take && pitch) { this.meetTime(b); this.aimSwing(b); }
       else { b.meet = 0; b.meetBall = this.m.contactShift; b.tiltAt = b.tContact; }
     }
     if (c && c.crouch) {
@@ -710,6 +739,7 @@ export class People {
   swingPose(b, t) {
     b.batTime = t;
     this.swingBase(b, t);
+    this.aimBody(b, t);
     reach(b, b.feetSwing, t);
     plantFeet(b, b.feetSwing, t);
     this.finishBatter(b);
@@ -720,6 +750,7 @@ export class People {
     // the Mixamo swings turn the head hard on the neck to keep the eyes on the pitch: past about
     // 24 degrees of twist the skin under the jaw pinches
     limitTwist(b, 'head', 24);
+    if (b.aim && !b.take) this.aimHands(b, b.batTime);
     clavicles(b);
     deltoids(b);
     this.poseBat(b);
@@ -765,7 +796,7 @@ export class People {
       }
       return { d, s };
     };
-    const lo = tC + MEET[0], hi = tC + MEET[1];
+    const W = meetWindow(b), lo = tC + W[0], hi = tC + W[1];
     let best = { d: Infinity, s: 0, u: tC };
     for (let u = lo; u <= hi + 1e-9; u += 1 / 120) { const r = near(u); if (r.d < best.d) best = { ...r, u }; }
     const c = best.u;
@@ -777,6 +808,15 @@ export class People {
     b.meet = best.u - tC;
     b.meetBall = best.s;
     b.tiltAt = best.u;
+    // the next best frames either side of it, for a pitch the aim cannot reach from this one
+    // (aimSwing tries them in turn)
+    b.meetAlt = [];
+    for (const du of [-0.04, 0.04, -0.08, 0.08]) {
+      const uu = best.u + du;
+      if (uu < lo || uu > hi) continue;
+      const r = near(uu);
+      b.meetAlt.push({ meet: uu - tC, meetBall: r.s });
+    }
   }
 
   /** The bat through MEET for his swing, without the launch tilt: the bottom grip and the bat's
@@ -787,7 +827,7 @@ export class People {
     // his swing's planted feet (planBatterFeet plans them only once he swings; a take comes first)
     const dur = b.clips[b.clip].duration;
     if (!b.feetSwing) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, dur, b.feetSpec(0, dur, true));
-    const lo = b.tContact + MEET[0], hi = b.tContact + MEET[1], dt = 1 / 120, at = [];
+    const W = meetWindow(b), lo = b.tContact + W[0], hi = b.tContact + W[1], dt = 1 / 120, at = [];
     const tilt = b.batTilt;
     b.batTilt = 0;
     for (let u = lo; u <= hi + dt / 2; u += dt) {
@@ -796,6 +836,236 @@ export class People {
     }
     b.batTilt = tilt;
     return (b.meetPath = { lo, dt, at });
+  }
+
+  /** How much of the aim is on at capture time u: none until the top of his leg lift, all of it at
+      the frame that meets the ball, gone AIM.out seconds into his finish. */
+  aimWeight(b, u) {
+    const a = b.aim;
+    if (!a || u == null) return 0;
+    if (u <= a.u) return smooth(clamp01((u - a.u0) / Math.max(1e-3, a.u - a.u0)));
+    return 1 - smooth(clamp01((u - a.u) / AIM.out));
+  }
+
+  /** The legs and the trunk: the pelvis lowered (the planted feet then bend the knees), the trunk
+      tipped back over the catcher (the back shoulder drops) and out over the plate. */
+  aimBody(b, u) {
+    const w = this.aimWeight(b, u), a = b.aim;
+    b.aimPre = null;
+    if (w <= 0) return;
+    // the hands and the bat as the capture has them: the trunk carries the hands, never turns the bat
+    b.aimPre = { gb: this.grips(b).gb, hands: [b.bottom, b.top].map((s) => [s, wpos(b.bones[`hand_${s}`]), wquat(b.bones[`hand_${s}`])]) };
+    const pel = b.bones.pelvis, p = wpos(pel);
+    p.y -= a.drop * w;
+    p.x += (b.lefty ? 1 : -1) * a.shift * w;
+    pel.position.copy(pel.parent.worldToLocal(p));
+    pel.updateMatrixWorld(true);
+    const D = THREE.MathUtils.degToRad;
+    // the back shoulder drops: the trunk tipped about the line square to his shoulders (he has
+    // turned to the pitcher by contact, so it is his own line, never the world's)
+    const back = wpos(b.bones[`upperarm_${b.lefty ? 'l' : 'r'}`]).sub(wpos(b.bones[`upperarm_${b.lefty ? 'r' : 'l'}`])).setY(0);
+    const q = new THREE.Quaternion();
+    if (back.lengthSq() > 1e-6) q.setFromAxisAngle(back.normalize().cross(UP).normalize(), -D(a.side) * w / 3);
+    q.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -(b.lefty ? 1 : -1) * D(a.lean) * w / 3));
+    // the arms keep their line as the trunk tips under them, so the hands go where the shoulders go
+    // (out over the plate, down to the ball) instead of swinging about the waist with the trunk
+    const arms = ['l', 'r'].map((s) => [b.bones[`upperarm_${s}`], wquat(b.bones[`upperarm_${s}`])]);
+    for (const n of ['spine_01', 'spine_02', 'spine_03']) rotateWorld(b.bones[n], q);
+    for (const [bone, wq] of arms) rotateWorld(bone, wq.multiply(wquat(bone).invert()));
+  }
+
+  /** The bat and both hands together, as one rigid piece: turned about the bottom grip (the barrel
+      laid down or lifted in his wrists, about the line across the bat) and carried by a.hands. Each
+      arm reaches its hand's new place (two bone IK, the elbow kept on its side) and the hand is
+      turned as the bat is, so the bat never leaves either hand. */
+  aimHands(b, u) {
+    const w = this.aimWeight(b, u), a = b.aim, pre = b.aimPre;
+    if (w <= 0 || !pre) return;
+    // the capture's bat, turned in the wrists (yaw, then dip about the line across it) about the
+    // bottom grip where the trunk has carried it, then moved by the hands
+    const gb = this.grips(b).gb;
+    const ax = UP.clone().applyQuaternion(pre.hands[0][2].clone().multiply(this.batLocal(b, u))), across = new THREE.Vector3().crossVectors(ax, UP);
+    const R = new THREE.Quaternion().setFromAxisAngle(UP, THREE.MathUtils.degToRad(a.yaw) * w);
+    if (across.lengthSq() > 1e-6) R.multiply(new THREE.Quaternion().setFromAxisAngle(across.normalize(), THREE.MathUtils.degToRad(a.dip) * w));
+    const at = gb.add(a.hands.clone().multiplyScalar(w));
+    for (const [s, hp, hq] of pre.hands) {
+      const B = b.bones, sh = wpos(B[`upperarm_${s}`]), el = wpos(B[`lowerarm_${s}`]), hd = wpos(B[`hand_${s}`]);
+      const pole = el.clone().add(el.clone().sub(sh.clone().lerp(hd, 0.5)).multiplyScalar(3));
+      twoBoneIK(B[`upperarm_${s}`], B[`lowerarm_${s}`], B[`hand_${s}`], at.clone().add(hp.clone().sub(pre.gb).applyQuaternion(R)), pole, 1);
+      rotateWorld(B[`hand_${s}`], R.clone().multiply(hq).multiply(wquat(B[`hand_${s}`]).invert()));
+    }
+  }
+
+  /** Aim the swing at this pitch. At the frame that meets the ball (meetTime) the bat is put where the
+      engine's result says the ball meets it: the sweet spot for a ball in play, the nearest of the
+      barrel for a foul, a graze for a foul tip, and for a swing and a miss MISS over the top or under
+      it. The bat's point there sits on the side of the ball it is struck from (the ball's surface on
+      the wood, the way it leaves). Solved on the posed body (aimAt), the legs, trunk and wrists cheap
+      and the hands dear. A pitch it cannot reach from the first frame tries the frames beside it. */
+  aimSwing(b) {
+    b.aimPoses = 0;
+    const first = { meet: b.meet, meetBall: b.meetBall };
+    let best = null;
+    for (const c of [first, ...(b.meetAlt || [])]) {
+      b.meet = c.meet; b.meetBall = c.meetBall; b.tiltAt = b.tContact + c.meet;
+      const r = this.aimAt(b, best && best.solved);
+      // the closest, and of two that both reach, the smaller aim
+      const score = Math.max(0, r.err - 0.004) * 50 + r.size;
+      if (!best || score < best.score) best = { score, c, aim: b.aim, err: r.err, poses: b.aimPoses, solved: r.solved };
+      if ((r.err < 0.006 && r.size < 4) || b.aimPoses > AIM_POSES * 0.6) break;
+    }
+    b.meet = best.c.meet; b.meetBall = best.c.meetBall; b.tiltAt = b.tContact + best.c.meet;
+    b.aim = best.aim; b.aimErr = best.err;
+  }
+
+  /** The aim from one meet frame (b.meet, b.meetBall): sets b.aim, returns how near and how much. */
+  aimAt(b, warm) {
+    const pt = this.pitch, m = this.m, f = pt.f;
+    const u = b.tContact + b.meet, sB = f.T + b.meetBall;
+    const ball = pt.pointAt(sB), vel = pt.pointAt(sB + 0.002).sub(ball).normalize();
+    const lefty = b.lefty, IN = 0.0254;
+    const ip = this.play && this.play.inPlay;
+    const kind = m.miss ? 'miss' : m.ball === 'tip' ? 'tip' : m.ball === 'play' ? 'play' : 'foul';
+    // the way the ball leaves (catcher's view feet to the scene, as pitch.js setAfter launches it)
+    let out = null;
+    if (kind === 'play' || kind === 'foul') {
+      const la = THREE.MathUtils.degToRad(kind === 'play' ? ip?.la ?? 10 : m.ball === 'back' ? 62 : ip?.la ?? 8);
+      const sp = THREE.MathUtils.degToRad(kind === 'play' ? ip?.spray ?? 0 : m.ball === 'back' ? 180 + (lefty ? -12 : 12) : (lefty ? 1 : -1) * 54);
+      out = P(Math.cos(la) * Math.sin(sp), Math.cos(la) * Math.cos(sp), Math.sin(la)).normalize();
+    }
+    // over the top of a low or breaking pitch, under a high one
+    const zb = this.facts.batter, zn = (pt.actual.z - zb.szBot) / Math.max(0.1, zb.szTop - zb.szBot);
+    const pfz = this.play && this.play.pfxZ != null ? this.play.pfxZ : 0;
+    const over = zn < 0.55 || pfz < -0.25;
+    b.aim = { u, u0: b.chain ? Math.min(b.chain.tTop, u - 0.2) : u - 0.4, drop: 0, side: 0, lean: 0, dip: 0, yaw: 0, shift: 0, hands: new THREE.Vector3() };
+    const a = b.aim, perp = (v, axis) => v.clone().addScaledVector(axis, -v.dot(axis));
+    // where on the bat it is met (inches from the knob): the sweet spot, sliding along the barrel
+    // only as far as it must; a foul or a tip anywhere on the barrel
+    const yLo = kind === 'play' || kind === 'miss' ? 22.5 : 18, yHi = kind === 'miss' ? 28 : 33;
+    // the error at the meet frame: from the bat's point to where it must be (on the ball's side)
+    // A solve pose is light: his swing at u is posed once and put back each time, then only what
+    // moves the bat is redone (the aim, the legs' reach, the bat). The feet, collar bones and
+    // deltoids leave the hands where they are, so the full pose is only checked at the end, and any
+    // small difference it makes is solved away (bias).
+    let base = null;
+    const bias = new THREE.Vector3();
+    const errAt = (yT, full = false) => {
+      b.aimPoses++;
+      if (full) this.swingPose(b, u);
+      else {
+        if (!base) { this.swingBase(b, u); base = b.bind.map(([bone]) => [bone, bone.position.clone(), bone.quaternion.clone()]); }
+        else { for (const [bone, bp, bq] of base) { bone.position.copy(bp); bone.quaternion.copy(bq); } b.root.updateMatrixWorld(true); }
+        b.batTime = u;
+        this.aimBody(b, u);
+        reach(b, b.feetSwing, u);
+        this.aimHands(b, u);
+        this.poseBat(b);
+      }
+      const axis = UP.clone().applyQuaternion(b.bat.quaternion), knob = b.bat.position;
+      let n;
+      if (out) n = perp(out, axis).normalize().add(perp(vel, axis).normalize().multiplyScalar(-0.6));
+      else n = perp(UP, axis).normalize().multiplyScalar(kind === 'miss' && over ? -1 : 1).add(kind === 'tip' ? perp(vel, axis).normalize().multiplyScalar(-0.3) : new THREE.Vector3());
+      n = perp(n, axis).normalize();
+      const dist = kind === 'miss' ? MISS : batRadius(yT * IN) + R_BALL - (kind === 'tip' ? TIP : 0);
+      const e = ball.clone().addScaledVector(n, -dist).sub(knob.clone().addScaledVector(axis, yT * IN));
+      return { e: full ? e : e.add(bias), axis };
+    };
+    // The parameters, each in units of what reads as an ordinary amount of it (S), within its range
+    // (LO, HI). Solved by damped least squares from none of it: the smallest aim, so measured, that
+    // puts the bat on the ball. The legs, trunk and wrists come cheap, the hands dear (the arms are
+    // near straight at contact, and pulling them is what made #639 look wrong).
+    const S = [0.08, 12, 10, 25, 15, 0.05, 0.05, 0.05, 0.06, kind === 'play' ? 2.5 : 6];
+    const LO = [0, AIM.side[0], AIM.lean[0], AIM.dip[0], -AIM.yaw, -AIM.hands, -AIM.hands, -AIM.hands, AIM.shift[0], yLo];
+    const HI = [AIM.drop, AIM.side[1], AIM.lean[1], AIM.dip[1], AIM.yaw, AIM.hands, AIM.hands, AIM.hands, AIM.shift[1], yHi];
+    // (the last is from the sweet spot)
+    const y0 = SWEET / IN;
+    LO[9] -= y0; HI[9] -= y0;
+    // (a frame beside one already solved starts from that solution and its Jacobian)
+    const p = warm ? warm.p.slice() : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const set = (v) => { a.drop = v[0]; a.side = v[1]; a.lean = v[2]; a.dip = v[3]; a.yaw = v[4]; a.hands.set(v[5], v[6], v[7]); a.shift = v[8]; };
+    let mu = 1e-4, J = warm ? warm.J.map((c) => c.clone()) : null;
+    const M = new THREE.Matrix3(), N = p.length;
+    // the Jacobian by a step of a tenth of each (in the scaled units), the last column exact; then
+    // kept up to date by Broyden's rule from each step taken, so a pitch costs some 20 poses
+    const jacobian = () => {
+      J = [];
+      for (let i = 0; i < N - 1; i++) {
+        const q = p.slice(); q[i] += 0.1 * S[i] * (p[i] + 0.1 * S[i] > HI[i] ? -1 : 1);
+        set(q);
+        J.push(errAt(y0 + p[9]).e.sub(cur.e).multiplyScalar(S[i] / (q[i] - p[i])));
+      }
+      J.push(cur.axis.clone().multiplyScalar(-S[9] * IN));
+    };
+    let cur, fresh = false;
+    const solve = () => {
+      set(p);
+      cur = errAt(y0 + p[9]);
+      for (let it = 0; it < 24 && cur.e.length() > 0.003 && mu < 1 && b.aimPoses < AIM_POSES - 10; it++) {
+        if (!J) { jacobian(); fresh = true; }
+        // q_new = -J^T (J J^T + mu I)^-1 (e - J q): the smallest aim (in the scaled units) that the
+        // linear model says puts the bat on the ball, each kept within its range
+        // (an active set: a parameter the solution pushes past its range is held at the limit and the
+        // rest solved again, so the others take up what it cannot)
+        const qv = p.map((v, i) => v / S[i]), fixed = new Array(N).fill(null);
+        let want = null;
+        for (let pass = 0; pass < 4; pass++) {
+          const r = cur.e.clone();
+          J.forEach((c, i) => r.addScaledVector(c, (fixed[i] != null ? fixed[i] / S[i] : 0) - qv[i]));
+          const e = M.set(0, 0, 0, 0, 0, 0, 0, 0, 0).elements;
+          J.forEach((c, j) => { if (fixed[j] != null) return; const v = [c.x, c.y, c.z]; for (let i = 0; i < 3; i++) for (let k = 0; k < 3; k++) e[k * 3 + i] += v[i] * v[k]; });
+          e[0] += mu; e[4] += mu; e[8] += mu;
+          const y = r.applyMatrix3(M.invert());
+          const raw = p.map((_, i) => (fixed[i] != null ? fixed[i] : -J[i].dot(y) * S[i]));
+          let more = false;
+          want = raw.map((v, i) => {
+            const c = THREE.MathUtils.clamp(v, LO[i], HI[i]);
+            if (fixed[i] == null && c !== v) { fixed[i] = c; more = true; }
+            return c;
+          });
+          if (!more) break;
+        }
+        const hl = Math.hypot(want[5], want[6], want[7]);
+        if (hl > AIM.hands) for (const i of [5, 6, 7]) want[i] *= AIM.hands / hl;
+        set(want);
+        const next = errAt(y0 + want[9]);
+        if (next.e.length() < cur.e.length()) {
+          // Broyden: J += (de - J dq) dq^T / |dq|^2, in the scaled units
+          const dq = want.map((v, i) => (v - p[i]) / S[i]), dd = dq.reduce((t, v) => t + v * v, 0);
+          if (dd > 1e-12) {
+            const res = next.e.clone().sub(cur.e);
+            J.forEach((c, i) => res.addScaledVector(c, -dq[i]));
+            J.forEach((c, i) => { if (i < N - 1) c.addScaledVector(res, dq[i] / dd); });
+          }
+          p.splice(0, N, ...want);
+          cur = next;
+          mu = Math.max(1e-5, mu / 3);
+          fresh = false;
+        } else if (!fresh) J = null;            // (a stale model: measure it again)
+        else mu *= 8;                            // (a fresh one: a shorter, more cautious step)
+      }
+    };
+    solve();
+    // the full pose; what it differs by from the light one is solved away (twice at most)
+    for (let k = 0; k < 2; k++) {
+      set(p);
+      const fe = errAt(y0 + p[9], true).e;
+      if (fe.length() < 0.004) break;
+      bias.add(fe.sub(errAt(y0 + p[9]).e));
+      mu = 1e-4;
+      solve();
+    }
+    set(p);
+    cur = errAt(y0 + p[9], true);
+    a.yT = y0 + p[9];
+    // how much aim it took, in the scaled units (one is an ordinary amount of each)
+    return { err: cur.e.length(), size: Math.sqrt(p.reduce((t, v, i) => t + (v / S[i]) ** 2, 0)), solved: J && { p: p.slice(), J } };
+  }
+
+  /** The bat's turn in the bottom hand at capture time u (poseBat's track). */
+  batLocal(b, u) {
+    const ct = THREE.MathUtils.clamp(u ?? 0, 0, b.clips[b.clip].duration);
+    const f = ct / b.batDt, i = Math.min(b.batTrack.length - 2, Math.floor(f));
+    return b.batTrack[i].clone().slerp(b.batTrack[i + 1], Math.min(1, f - i));
   }
 
   /** The take at clock time ct (relative to the swing's contact), before the feet are planted:
