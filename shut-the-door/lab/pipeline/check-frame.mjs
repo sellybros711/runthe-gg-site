@@ -13,6 +13,8 @@
  *   safe   a runner (the hitter above all) pulls into his base safe: the runner and the bag
  *   catch  a ball caught in the air: the ball
  *   tag-up a runner leaving his bag on a catch, a beat after it: the runner and the bag
+ * and how big the man who decides it is on the phone (his feet to 6 ft, in px of the 457 px field):
+ * the 10th percentile of each moment is held to FLOOR. Every case's cut is checked for a flash too.
  * and the broadcast camera the cut has at that moment (inplay.js cameraAt, the phone's 390x457 field)
  * must hold every point inside the frame (a margin of 4% each side). Two moments at once in two places
  * cannot share one camera: a moment is covered when one within 0.8 s of it is on screen. A
@@ -31,11 +33,16 @@ const ROOT = path.resolve(HERE, '..', '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
 const ASPECT = 390 / 457, MARGIN = 0.04;
-// What is still missed, all of it measured (2026-10-24): a ceiling that only comes down. Outs are all
-// on screen. The rest are camera solves at the frame's edge (a foul pop caught behind the plate with a
-// runner doubled off at first; two runners safe at two bases a second apart). A change that misses
-// more fails; one that misses fewer lowers the number here in the same commit.
-const CEILING = { catch: 72, out: 0, run: 1, safe: 96, 'tag-up': 22 };
+// What is still missed, all of it measured (2026-10-24, the framing pass): a ceiling that only comes
+// down. Catches, outs and tag-ups are all on screen. The rest are camera solves at the frame's edge (two
+// runners safe at two bases a moment apart). A flash is a cut under 0.2 s, or one that runs backwards,
+// where the slow motion beat splits the cut (3,915 before the framing pass): the next fix. A change that
+// misses more fails; one that misses fewer lowers the number here in the same commit.
+const CEILING = { catch: 0, out: 0, run: 1, safe: 9, 'tag-up': 0, flash: 3718 };
+// How big the man who decides it is, the 10th percentile of his height on the phone's 457 px field: a
+// floor that only goes up. Before the framing pass (2026-10-24) it was out 10.6, run 20.6, safe 10.4,
+// tag-up 10.5, a speck in a frame of the whole infield.
+const FLOOR = { out: 34, run: 44, safe: 12, 'tag-up': 70 };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }
@@ -65,6 +72,7 @@ await page.route('**/*', (route) => {
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {}; });
+if (process.env.SMALL) await page.evaluate(() => { window.__SMALL = []; });
 
 const cases = [];
 for (const c of inplayCases()) { if (cases.length >= LIMIT) break; cases.push(c); }
@@ -125,7 +133,18 @@ for (let i = 0; i < cases.length; i += CHUNK) {
           if (o > worst) { worst = o; bad = p; }
         }
         m.framed = worst <= 1 - MARGIN;
-        out.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, worst: +worst.toFixed(3), miss: m.framed ? null : 'out of frame', at: bad, k: m.framed ? undefined : { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, m, edit: m.framed ? undefined : plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | '), when: m.framed ? undefined : moments.map((o) => o.what + '@' + o.s.toFixed(2)).join(' ') });
+        // how tall the man who decides it stands on the phone (px on the 457 px field, his feet to 6 ft)
+        const man = m.pts.findIndex((p, i) => p.z === 6 && i > 0 && m.pts[i - 1].z === 0 && m.pts[i - 1].x === p.x && m.pts[i - 1].y === p.y);
+        const tall = man > 0 && m.framed ? Math.abs(V(m.pts[man]).project(cam).y - V(m.pts[man - 1]).project(cam).y) / 2 * 457 : null;
+        if (window.__SMALL && tall != null && tall < 14) window.__SMALL.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, tall: +tall.toFixed(1), k: { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, pts: m.pts, edit: plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | ') });
+        out.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, worst: +worst.toFixed(3), tall, miss: m.framed ? null : 'out of frame', at: bad, k: m.framed ? undefined : { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, m, edit: m.framed ? undefined : plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | '), when: m.framed ? undefined : moments.map((o) => o.what + '@' + o.s.toFixed(2)).join(' ') });
+      }
+      // a flash: a piece of the cut that runs backwards, or one under 0.2 s whose camera is neither
+      // neighbour's (a cut there and straight back again is a blink on a phone, not a shot)
+      const ed = plan.edit;
+      for (let i = 1; i < ed.length; i++) {
+        const p = ed[i], a = ed[i - 1], b = ed[i + 1];
+        if (p.s1 < p.s0 - 1e-6 || (p.s1 - p.s0 < 0.2 && p.cam !== a.cam && (!b || p.cam !== b.cam))) { out.push({ tag: c.tag, what: 'flash', s: +p.s0.toFixed(2), miss: 'a ' + (p.s1 - p.s0).toFixed(2) + ' s ' + p.cam + ' shot', edit: ed.map((x) => x.cam + ' ' + x.s0.toFixed(2) + '-' + x.s1.toFixed(2)).join(' | ') }); break; }
       }
       // two things at once in two places (a run scores as the hitter reaches first): one camera can
       // hold only one, so a moment is covered when one within 0.8 s of it is on screen
@@ -140,6 +159,7 @@ for (let i = 0; i < cases.length; i += CHUNK) {
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
 console.log('');
+if (process.env.SMALL) for (const r of (await page.evaluate(() => window.__SMALL)).slice(0, +process.env.SMALL)) console.log('SMALL', JSON.stringify(r));
 const by = {};
 for (const r of rows) if (!r.err) { const b = (by[r.what] ||= { n: 0, miss: {} }); b.n++; if (r.miss) b.miss[r.miss] = (b.miss[r.miss] || 0) + 1; }
 let fails = 0;
@@ -152,10 +172,21 @@ for (const [w, b] of Object.entries(by).sort()) {
   if (over) fails += m - cap;
   console.log(`  ${over ? 'FAIL' : 'ok  '} ${w.padEnd(6)} ${String(b.n).padStart(7)}  missed ${m}${cap !== Infinity ? ' (ceiling ' + cap + ')' : ''}${m ? ' (' + Object.entries(b.miss).map(([k, v]) => v + ' ' + k).join(', ') + ')' : ''}`);
 }
+// how big the man is: the 10th percentile and the median of his height on screen, each moment
+console.log('\nthe man who decides it, his height on the phone (px of the 457 px field)');
+const pct = (a, q) => a[Math.min(a.length - 1, Math.floor(a.length * q))];
+for (const w of Object.keys(by).sort()) {
+  const t = rows.filter((r) => r.what === w && r.tall != null).map((r) => r.tall).sort((a, b) => a - b);
+  if (!t.length) continue;
+  const p10 = pct(t, 0.1), cap = LIMIT === Infinity ? FLOOR[w] : undefined, under = cap != null && p10 < cap;
+  if (under) fails++;
+  console.log(`  ${under ? 'FAIL' : 'ok  '} ${w.padEnd(6)} ${String(t.length).padStart(7)}  10th ${p10.toFixed(1)}${cap != null ? ' (floor ' + cap + ')' : ''}  median ${pct(t, 0.5).toFixed(1)}`);
+}
+if (SHOW) for (const cm of [...new Set(rows.map((r) => r.cam).filter(Boolean))]) { const t = rows.filter((r) => r.cam === cm && r.tall != null).map((r) => r.tall).sort((a, b) => a - b); if (t.length) console.log(`     by camera ${cm.padEnd(7)} ${String(t.length).padStart(7)}  10th ${pct(t, 0.1).toFixed(1)}  median ${pct(t, 0.5).toFixed(1)}`); }
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 if (SHOW) for (const r of rows.filter((x) => x.miss).slice(0, SHOW)) console.log(JSON.stringify(r));
-console.log(`\n${cases.length} cases, ${rows.length - errs.length} moments, ${fails} over the ceiling`);
+console.log(`\n${cases.length} cases, ${rows.filter((r) => !r.err && r.what !== 'flash').length} moments, ${fails} over the ceiling`);
 await browser.close();
 server.close();
 process.exit(fails || errs.length ? 1 : 0);
