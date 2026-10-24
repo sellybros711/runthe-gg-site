@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Commissioner Mode: running the sport for a term: RunThe.GG</title>
+  <meta name="description" content="How Commissioner Mode in College Football works. What you rule on, who can fire you, how the sport grows and what a term really is.">
+  <link rel="canonical" href="https://runthe.gg/guides/college-football-commissioner-mode.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="RunThe.GG">
+  <meta property="og:url" content="https://runthe.gg/guides/college-football-commissioner-mode.html">
+  <meta property="og:title" content="Commissioner Mode: running the sport for a term">
+  <meta property="og:description" content="How Commissioner Mode in College Football works. What you rule on, who can fire you, how the sport grows and what a term really is.">
+  <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=4">
+  <meta name="theme-color" content="#06182e">
+  <link rel="icon" href="/assets/runthegames-icon_48.png?v=5" sizes="any">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-icon_180.png?v=5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0a1626;--card:#122a44;--cardb:#1e3d5c;--ink:#eaf1f8;--mut:#93a7bd;--coral:#F85858;--teal:#66D3DE;--green:#6EE84E;}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;padding:0;}
+    body{font-family:'Archivo',system-ui,-apple-system,sans-serif;line-height:1.6;color:var(--ink);
+      min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+      background:
+        radial-gradient(1100px 520px at 50% -8%, rgba(102,211,222,.16), transparent 60%),
+        radial-gradient(900px 460px at 88% 4%, rgba(248,88,88,.12), transparent 55%),
+        linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+      background-attachment:fixed;}
+    .wrap{max-width:680px;margin:0 auto;padding:26px 18px 56px;}
+    .mast{text-align:center;margin:4px 0 22px;}
+    .mast img{display:block;width:100%;max-width:440px;height:auto;margin:0 auto;filter:drop-shadow(0 6px 26px rgba(0,0,0,.45));}
+    .crumb{font-size:12.5px;color:#6f829a;margin:0 0 10px;}
+    .crumb a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .card{background:linear-gradient(180deg,var(--card),#0f2338);border:1px solid var(--cardb);border-radius:10px;padding:24px 22px 28px;}
+    h1{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;
+      font-size:clamp(28px,7.5vw,42px);line-height:1.05;margin:0 0 8px;}
+    .sub{font-weight:900;color:var(--teal);text-transform:uppercase;letter-spacing:2px;font-size:11.5px;margin:0 0 18px;}
+    h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
+      font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
+    h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .card p,.card li{font-size:15px;color:var(--mut);}
+    .card p{margin:0 0 14px;}
+    .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
+    .card li{margin:0 0 6px;}
+    .card b{color:var(--ink);font-weight:800;}
+    .card a{color:var(--teal);font-weight:700;text-decoration:none;}
+    .card a:hover{text-decoration:underline;}
+    .tbl{overflow-x:auto;margin:0 0 14px;}
+    .tbl table{border-collapse:collapse;width:100%;font-size:14px;color:var(--mut);}
+    .tbl th,.tbl td{text-align:left;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top;}
+    .tbl th{color:var(--ink);font-weight:800;}
+    .card .list{list-style:none;padding:0;margin:0;}
+    .list li{border-top:1px solid rgba(255,255,255,.08);padding:14px 0;margin:0;}
+    .list li:first-child{border-top:0;}
+    .list .t{display:block;font-size:16px;}
+    .list .d{display:block;font-size:14px;color:var(--mut);}
+    .play-row{margin-top:24px;text-align:center;}
+    .cta{display:inline-block;background:linear-gradient(180deg,#FF6B6B,#F04A44);color:#fff!important;font-weight:800;
+      text-transform:uppercase;letter-spacing:.5px;font-size:15px;padding:13px 26px;border-radius:7px;
+      text-decoration:none!important;box-shadow:0 8px 22px -12px rgba(248,88,88,.9);}
+    .foot{margin-top:28px;text-align:center;font-size:12.5px;color:#6f829a;line-height:2;}
+    .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .foot a:hover{color:var(--ink);}
+    .foot .sep{margin:0 7px;color:#3c4c60;}
+  </style>
+  <script>
+  window.dataLayer=window.dataLayer||[];
+  window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  /* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+  </script>
+  <script>
+  window.GA_ID='G-L29P5MRWKE';
+  (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+    window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
+    gtag('js',new Date());gtag('set',{game_name:'Guides'}); gtag('config',id);
+    var s=document.createElement('script');s.async=true;
+    s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+    document.head.appendChild(s);})();
+  </script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
+       crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mast"><a href="/"><img src="/assets/wm-stacked.png?v=1" alt="Run The Games" width="1200" height="431" /></a></div>
+
+    <main class="card">
+      <p class="crumb"><a href="/guides/">Guides</a> · College Football: Perfect Season</p>
+      <h1>Commissioner Mode: running the sport for a term</h1>
+      <p class="sub">A guide to College Football: Perfect Season</p>
+
+      <p>In Commissioner Mode you don't coach a team. You run college football. You decide who's in which conference, how many teams play for the title, what a player is owed and where the money goes. Here's what you can change and what a term means.</p>
+
+      <h2>Getting in</h2>
+
+      <p>The door is the card with the man in the navy suit on the College Football front page. You need an account to play. Your term is saved to it, so it's there on any device.</p>
+
+      <p>A free account plays a whole first term. You get one season a day. When the wait is on, the screen shows a countdown to your next season. Pro plays every season back to back. It's part of the same bundle as the NFL game, and the free term is the full game, not a demo.</p>
+
+      <h2>How a season runs</h2>
+
+      <p>Every term opens on the real sport as it stands in 2025. A season is nine beats, from Winter meetings through the playoff. Most beats put an item on your desk. You read it, pick an option and rule.</p>
+
+      <p>Some rulings come with a dial. Set a revenue share or a playoff field size, and the numbers under it move as you change it. On a free account some settings on a dial are shown in purple and locked. Everything else is yours.</p>
+
+      <p>Media days is different. You stand at a lectern and answer three questions. What you say goes on the record.</p>
+
+      <p>Then the games get played, under your rules.</p>
+
+      <h2>What you're watching</h2>
+
+      <p>Three meters sit at the top of the office:</p>
+
+      <ul>
+        <li><b>Revenue:</b> what the sport makes.</li>
+        <li><b>The state of the game:</b> whether it's still worth watching. This one slips quietly when you chase money.</li>
+        <li><b>Your standing:</b> whether the room still wants you.</li>
+      </ul>
+
+      <p>The room is nine blocs: the SEC, the Big Ten, the ACC, the Big 12, the Group of Five, the networks, the players, the presidents and the fans. Each has a bar from 0 to 100. You can't set standing directly. It's built from the blocs that vote, and the SEC and the Big Ten count double.</p>
+
+      <p>There are also three fuses: legal exposure, Washington and the players organizing. Keep taking the risky option and one lights.</p>
+
+      <h2>How you lose the job</h2>
+
+      <p>Two ways, and neither is a bar hitting zero.</p>
+
+      <ul>
+        <li><b>The coalition.</b> If the SEC and the Big Ten both fall below 25, you're gone. Nothing else matters.</li>
+        <li><b>The vote.</b> If more than half the voting weight is below 25, the presidents call a vote. It isn't close.</li>
+      </ul>
+
+      <h2>What a term is</h2>
+
+      <p>Your first term is five seasons. At the end you get a report card. It grades six things on their own: the books, the audience, the room, who won, who got in and the map. A term can pay for itself and still fail the sport.</p>
+
+      <p>What happens next depends on your account.</p>
+
+      <ul>
+        <li><b>Free:</b> you get one contract. When it's up, it's up.</li>
+        <li><b>Pro:</b> the room offers an extension, and you keep the sport you built. The playoff you grew, the money you moved and the bloc that hates you all carry over. The length is the room's verdict on you, read off your standing. A happy room signs you for 8 years. A room that barely tolerates you gives you 3 and watches.</li>
+        <li><b>Sacked:</b> there's no extension. A Pro account can take another job, which means a fresh 2025 and somebody else's sport.</li>
+      </ul>
+
+      <p>A renewed term is graded on its own work.</p>
+
+      <h2>How the sport grows</h2>
+
+      <p>Most rulings move a part of the sport that already exists. A few change what the sport is. Say yes to one of those and somebody new gets a seat in the room, new parts of the sport appear and new kinds of item reach your desk. None of it unwinds.</p>
+
+      <p>The game never tells you this has happened. There's no tech tree and no &quot;unlocked&quot; banner. The room just gets bigger and the arguments get stranger.</p>
+
+      <p>These choices are never forced. There's always another option. Turn one down and it goes quiet for 4 years before the sport asks again.</p>
+
+      <h2>Pro extras</h2>
+
+      <p>On top of back to back seasons, Pro adds:</p>
+
+      <ul>
+        <li><b>Test it on the room:</b> a forecast of how some blocs will react. You start reading 3 of them and earn more seats by ruling. The SEC comes last.</li>
+        <li><b>Your own agenda:</b> free puts one item of its choice on the desk each off-season. Pro picks all winter.</li>
+        <li><b>Take over a mess:</b> start on a sport somebody else already broke.</li>
+        <li><b>A note on each ruling,</b> the full dial range and a shelf of every term you've served.</li>
+      </ul>
+
+      <h2>Tips</h2>
+
+      <ul>
+        <li><b>Mind the big two.</b> The SEC and the Big Ten falling together ends you on the spot. Everyone else can be angry for a while.</li>
+        <li><b>Watch the state of the game.</b> Nobody in the room is paid to care about it. That's why a sport run by the room loses it.</li>
+        <li><b>Leave on a high.</b> Your standing at the end of a term sets the next contract. Don't let it slide in the last season.</li>
+        <li><b>Watch the fuses.</b> A careful run doesn't light them. A habit of risk does.</li>
+      </ul>
+
+      <div class="play-row">
+        <a class="cta" href="/cfb/">Play College Football: Perfect Season</a>
+      </div>
+    </main>
+
+    <footer class="foot">
+      <a href="/">Home</a><span class="sep">·</span>
+      <a href="/guides/">Guides</a><span class="sep">·</span>
+      <a href="/about.html">About</a><span class="sep">·</span>
+      <a href="/privacy.html">Privacy</a><span class="sep">·</span>
+      <a href="/terms.html">Terms</a><span class="sep">·</span>
+      <a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span>
+      <a href="/contact.html">Contact</a>
+    </footer>
+  </div>
+</body>
+</html>

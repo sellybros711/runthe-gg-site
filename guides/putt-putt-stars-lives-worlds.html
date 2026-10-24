@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How Putt Putt stars, lives and worlds work: RunThe.GG</title>
+  <meta name="description" content="How stars open new worlds in Putt Putt Tour, what costs a life, how lives come back, and how to keep climbing the tour.">
+  <link rel="canonical" href="https://runthe.gg/guides/putt-putt-stars-lives-worlds.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="RunThe.GG">
+  <meta property="og:url" content="https://runthe.gg/guides/putt-putt-stars-lives-worlds.html">
+  <meta property="og:title" content="How Putt Putt stars, lives and worlds work">
+  <meta property="og:description" content="How stars open new worlds in Putt Putt Tour, what costs a life, how lives come back, and how to keep climbing the tour.">
+  <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=4">
+  <meta name="theme-color" content="#06182e">
+  <link rel="icon" href="/assets/runthegames-icon_48.png?v=5" sizes="any">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-icon_180.png?v=5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0a1626;--card:#122a44;--cardb:#1e3d5c;--ink:#eaf1f8;--mut:#93a7bd;--coral:#F85858;--teal:#66D3DE;--green:#6EE84E;}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;padding:0;}
+    body{font-family:'Archivo',system-ui,-apple-system,sans-serif;line-height:1.6;color:var(--ink);
+      min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+      background:
+        radial-gradient(1100px 520px at 50% -8%, rgba(102,211,222,.16), transparent 60%),
+        radial-gradient(900px 460px at 88% 4%, rgba(248,88,88,.12), transparent 55%),
+        linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+      background-attachment:fixed;}
+    .wrap{max-width:680px;margin:0 auto;padding:26px 18px 56px;}
+    .mast{text-align:center;margin:4px 0 22px;}
+    .mast img{display:block;width:100%;max-width:440px;height:auto;margin:0 auto;filter:drop-shadow(0 6px 26px rgba(0,0,0,.45));}
+    .crumb{font-size:12.5px;color:#6f829a;margin:0 0 10px;}
+    .crumb a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .card{background:linear-gradient(180deg,var(--card),#0f2338);border:1px solid var(--cardb);border-radius:10px;padding:24px 22px 28px;}
+    h1{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;
+      font-size:clamp(28px,7.5vw,42px);line-height:1.05;margin:0 0 8px;}
+    .sub{font-weight:900;color:var(--teal);text-transform:uppercase;letter-spacing:2px;font-size:11.5px;margin:0 0 18px;}
+    h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
+      font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
+    h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .card p,.card li{font-size:15px;color:var(--mut);}
+    .card p{margin:0 0 14px;}
+    .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
+    .card li{margin:0 0 6px;}
+    .card b{color:var(--ink);font-weight:800;}
+    .card a{color:var(--teal);font-weight:700;text-decoration:none;}
+    .card a:hover{text-decoration:underline;}
+    .tbl{overflow-x:auto;margin:0 0 14px;}
+    .tbl table{border-collapse:collapse;width:100%;font-size:14px;color:var(--mut);}
+    .tbl th,.tbl td{text-align:left;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top;}
+    .tbl th{color:var(--ink);font-weight:800;}
+    .card .list{list-style:none;padding:0;margin:0;}
+    .list li{border-top:1px solid rgba(255,255,255,.08);padding:14px 0;margin:0;}
+    .list li:first-child{border-top:0;}
+    .list .t{display:block;font-size:16px;}
+    .list .d{display:block;font-size:14px;color:var(--mut);}
+    .play-row{margin-top:24px;text-align:center;}
+    .cta{display:inline-block;background:linear-gradient(180deg,#FF6B6B,#F04A44);color:#fff!important;font-weight:800;
+      text-transform:uppercase;letter-spacing:.5px;font-size:15px;padding:13px 26px;border-radius:7px;
+      text-decoration:none!important;box-shadow:0 8px 22px -12px rgba(248,88,88,.9);}
+    .foot{margin-top:28px;text-align:center;font-size:12.5px;color:#6f829a;line-height:2;}
+    .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .foot a:hover{color:var(--ink);}
+    .foot .sep{margin:0 7px;color:#3c4c60;}
+  </style>
+  <script>
+  window.dataLayer=window.dataLayer||[];
+  window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  /* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+  </script>
+  <script>
+  window.GA_ID='G-L29P5MRWKE';
+  (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+    window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
+    gtag('js',new Date());gtag('set',{game_name:'Guides'}); gtag('config',id);
+    var s=document.createElement('script');s.async=true;
+    s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+    document.head.appendChild(s);})();
+  </script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
+       crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mast"><a href="/"><img src="/assets/wm-stacked.png?v=1" alt="Run The Games" width="1200" height="431" /></a></div>
+
+    <main class="card">
+      <p class="crumb"><a href="/guides/">Guides</a> · Run The Tour</p>
+      <h1>How Putt Putt stars, lives and worlds work</h1>
+      <p class="sub">A guide to Run The Tour</p>
+
+      <p>Putt Putt Tour is the mini golf game inside Run The Tour. You walk a trail from hole to hole and play each one yourself. It runs in your browser on a phone or a computer. This guide covers the three things that decide how far you get: stars, lives and worlds.</p>
+
+      <h2>Stars: what each hole pays</h2>
+
+      <p>Every hole has a par. Your score against it decides your stars.</p>
+
+      <ul>
+        <li><b>Par:</b> 1 star.</li>
+        <li><b>One under par:</b> 2 stars.</li>
+        <li><b>Two under par:</b> 3 stars. On a par 3 that means an ace.</li>
+      </ul>
+
+      <p>A few holes set their own score for 3 stars. When they do, the stage shows it in the top right corner before you putt. Look there first.</p>
+
+      <p>Your best score on a hole is the one that counts. You can go back and beat it later. A 1-star hole today can be a 3-star hole next week.</p>
+
+      <p>Par or better clears the hole. Clearing it opens the next hole in the world. It's a story mode, so nobody skips ahead. You open each hole by beating the one before it.</p>
+
+      <h2>Worlds: how stars open the next one</h2>
+
+      <p>A world is 18 holes. That's 54 stars if you take 3 on every hole.</p>
+
+      <p>You don't need 54. Worlds open on a running total of stars:</p>
+
+      <ul>
+        <li><b>40 stars</b> opens the second world.</li>
+        <li><b>80 stars</b> opens the third.</li>
+        <li>Every world after that needs 40 more.</li>
+      </ul>
+
+      <p>The total counts every world you've played so far. So stars you pick up in one world help open the next. If you're stuck short of a gate, go back to an earlier world. Turn a 1-star hole into a 2-star hole and the total moves.</p>
+
+      <p>A perfect world is never required. It would mean an ace on nearly every hole. Some luck goes into an ace, so the gate leaves room for it.</p>
+
+      <h2>Lives: what costs one</h2>
+
+      <p>You start with <b>9 lives</b>. They show as three hearts. Each heart holds three lives and empties from the top down.</p>
+
+      <p>A life goes when:</p>
+
+      <ul>
+        <li><b>You go over par.</b> The hole is decided the moment you've used par strokes and the ball is still out. You don't have to putt out a hole you've already lost.</li>
+        <li><b>You restart or quit after your first putt.</b> Before your first putt, a restart is free.</li>
+      </ul>
+
+      <p>Two kinds of hole never cost a life:</p>
+
+      <ul>
+        <li><b>The Daily Hole.</b></li>
+        <li><b>Secret holes.</b></li>
+      </ul>
+
+      <h2>Lives: how they come back</h2>
+
+      <p>Every life comes back <b>24 hours after you lost it</b>. Each one has its own clock.</p>
+
+      <p>So if you lose three lives at 10am, all three are back at 10am tomorrow. If you lose one at 10am and one at 4pm, they come back at 10am and 4pm.</p>
+
+      <p>When your hearts are empty, the screen tells you when the next life returns. You can wait it out. The Daily Hole is still open while you wait.</p>
+
+      <p>A <b>Tour Pass</b> doubles your lives to <b>18</b>, in six hearts. A pass is for one season. You can also buy lives back from the game. The Out of Lives screen shows what's on offer.</p>
+
+      <h2>Spare lives on the trail</h2>
+
+      <p>You can find spare lives on the trails between holes. A spare goes straight into your hearts if any are empty. If your hearts are already full, the game keeps it. It shows as +1 next to your hearts and fills the next life you lose.</p>
+
+      <h2>The Daily Hole</h2>
+
+      <p>The Daily Hole is one hole from the tour, dressed up for the day. Everybody gets the same one.</p>
+
+      <ul>
+        <li>It never costs a life.</li>
+        <li>You get one scored try a day.</li>
+        <li>Playing pays <b>40 coins</b>. Finishing under par pays <b>40 more</b>.</li>
+        <li>It's timed. The clock runs from when the hole appears to when the ball drops.</li>
+        <li>Signed in, your first round posts to the day's board. Fewest strokes wins. The clock breaks ties.</li>
+      </ul>
+
+      <p>Playing it also keeps your Run The Tour streak going.</p>
+
+      <h2>Playing as a guest</h2>
+
+      <p>You can try Putt Putt Tour without an account. A guest plays the Daily Hole and the first hole of the tour. From hole 2 on, you'll need a free account. Anything a guest earns on hole 1 is kept and paid when you sign in.</p>
+
+      <h2>Tips for climbing faster</h2>
+
+      <ul>
+        <li><b>Read the star line before you putt.</b> It tells you the score for each star on that hole.</li>
+        <li><b>Don't force the ace.</b> Par keeps your lives. A third star can wait for a replay.</li>
+        <li><b>Spend lives where stars are cheap.</b> Short of a gate? Replay holes where you only took 1 star.</li>
+        <li><b>Play the Daily Hole on a bad day.</b> It's free of lives and it still pays coins.</li>
+        <li><b>Walk the trail.</b> Chests, coins and spare lives sit between the holes.</li>
+      </ul>
+
+      <div class="play-row">
+        <a class="cta" href="/golf/">Play Run The Tour</a>
+      </div>
+    </main>
+
+    <footer class="foot">
+      <a href="/">Home</a><span class="sep">·</span>
+      <a href="/guides/">Guides</a><span class="sep">·</span>
+      <a href="/about.html">About</a><span class="sep">·</span>
+      <a href="/privacy.html">Privacy</a><span class="sep">·</span>
+      <a href="/terms.html">Terms</a><span class="sep">·</span>
+      <a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span>
+      <a href="/contact.html">Contact</a>
+    </footer>
+  </div>
+</body>
+</html>
