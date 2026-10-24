@@ -1,17 +1,159 @@
 {
   "_note": "Every number a guide states, pinned to the game code it comes from. check-guides fails if the code no longer gives that value, or if the guide stops saying it. A changed rule means a changed guide: edit guides/src, rebuild, and update the pin here in the same commit.",
   "putt-putt-stars-lives-worlds": [
-    { "say": "A world is 18 holes", "file": "golf/putt/putt.js", "re": "var PER = (\\d+);", "want": 18 },
-    { "say": "That's 54 stars", "file": "golf/putt/putt.js", "re": "worldMax\\(TR, w\\)\\{[^}]*\\* (\\d+); \\}", "want": 3, "why": "54 is 18 holes times the 3 stars worldMax gives each" },
-    { "say": "40 stars", "file": "golf/putt/putt.js", "re": "worldMax\\(TR, i\\) \\* (\\d+) / 54", "want": 40 },
-    { "say": "80 stars", "file": "golf/putt/putt.js", "re": "worldMax\\(TR, i\\) \\* \\d+ / (\\d+)", "want": 54, "why": "the gate is 40 of every 54, summed per world, so the second gate is 80" },
-    { "say": "You start with **9 lives**", "file": "golf/putt/putt.js", "re": "LIVES_FREE = (\\d+)", "want": 9 },
-    { "say": "doubles your lives to **18**", "file": "golf/putt/putt.js", "re": "LIVES_PASS = (\\d+)", "want": 18 },
-    { "say": "Each heart holds three lives", "file": "golf/putt/putt.js", "re": "var PER_HEART = (\\d+);", "want": 3 },
-    { "say": "**24 hours after you lost it**", "file": "golf/putt/putt.js", "re": "var LIFE_MS = (\\d+) \\* 3600 \\* 1000;", "want": 24 },
-    { "say": "Playing pays **40 coins**", "file": "golf/putt/putt.js", "re": "COIN_DAILY = (\\d+)", "want": 40 },
-    { "say": "under par pays **40 more**", "file": "golf/putt/putt.js", "re": "COIN_DAILY_PAR = (\\d+)", "want": 40 },
-    { "say": "the first hole of the tour", "file": "golf/putt/putt.js", "re": "GUEST_PLAY = (\\d+)", "want": 1 },
-    { "say": "**Two under par:** 3 stars", "file": "golf/putt/putt.js", "re": "Math\\.max\\(1, par - (\\d+)\\)", "want": 2 }
+    {
+      "say": "A world is 18 holes",
+      "file": "golf/putt/putt.js",
+      "re": "var PER = (\\d+);",
+      "want": 18
+    },
+    {
+      "say": "That's 54 stars",
+      "file": "golf/putt/putt.js",
+      "re": "worldMax\\(TR, w\\)\\{[^}]*\\* (\\d+); \\}",
+      "want": 3,
+      "why": "54 is 18 holes times the 3 stars worldMax gives each"
+    },
+    {
+      "say": "40 stars",
+      "file": "golf/putt/putt.js",
+      "re": "worldMax\\(TR, i\\) \\* (\\d+) / 54",
+      "want": 40
+    },
+    {
+      "say": "80 stars",
+      "file": "golf/putt/putt.js",
+      "re": "worldMax\\(TR, i\\) \\* \\d+ / (\\d+)",
+      "want": 54,
+      "why": "the gate is 40 of every 54, summed per world, so the second gate is 80"
+    },
+    {
+      "say": "You start with **9 lives**",
+      "file": "golf/putt/putt.js",
+      "re": "LIVES_FREE = (\\d+)",
+      "want": 9
+    },
+    {
+      "say": "doubles your lives to **18**",
+      "file": "golf/putt/putt.js",
+      "re": "LIVES_PASS = (\\d+)",
+      "want": 18
+    },
+    {
+      "say": "Each heart holds three lives",
+      "file": "golf/putt/putt.js",
+      "re": "var PER_HEART = (\\d+);",
+      "want": 3
+    },
+    {
+      "say": "**24 hours after you lost it**",
+      "file": "golf/putt/putt.js",
+      "re": "var LIFE_MS = (\\d+) \\* 3600 \\* 1000;",
+      "want": 24
+    },
+    {
+      "say": "Playing pays **40 coins**",
+      "file": "golf/putt/putt.js",
+      "re": "COIN_DAILY = (\\d+)",
+      "want": 40
+    },
+    {
+      "say": "under par pays **40 more**",
+      "file": "golf/putt/putt.js",
+      "re": "COIN_DAILY_PAR = (\\d+)",
+      "want": 40
+    },
+    {
+      "say": "the first hole of the tour",
+      "file": "golf/putt/putt.js",
+      "re": "GUEST_PLAY = (\\d+)",
+      "want": 1
+    },
+    {
+      "say": "**Two under par:** 3 stars",
+      "file": "golf/putt/putt.js",
+      "re": "Math\\.max\\(1, par - (\\d+)\\)",
+      "want": 2
+    }
+  ],
+  "putt-putt-off-the-trail": [
+    {
+      "say": "Every coin is worth **50**",
+      "file": "golf/putt/trail.js",
+      "re": "var COIN_V = (\\d+),",
+      "want": 50
+    },
+    {
+      "say": "it pays **25**",
+      "file": "golf/putt/trail.js",
+      "re": "BRK_V = (\\d+),",
+      "want": 25
+    },
+    {
+      "say": "**78%:**",
+      "file": "golf/putt/putt.js",
+      "re": "\\['coins', (\\d+)\\]",
+      "want": 78
+    },
+    {
+      "say": "**15%:**",
+      "file": "golf/putt/putt.js",
+      "re": "\\['haul', (\\d+)\\]",
+      "want": 15
+    },
+    {
+      "say": "**5%:**",
+      "file": "golf/putt/putt.js",
+      "re": "\\['item', (\\d+)\\]",
+      "want": 5
+    },
+    {
+      "say": "**2%:**",
+      "file": "golf/putt/putt.js",
+      "re": "\\['pack', (\\d+)\\]",
+      "want": 2
+    },
+    {
+      "say": "at least 300",
+      "file": "golf/putt/putt.js",
+      "re": "CHEST_MIN = (\\d+);",
+      "want": 300
+    },
+    {
+      "say": "you get **500 coins**",
+      "file": "golf/putt/putt.js",
+      "re": "var TRAIL_GOLD_COINS = (\\d+);",
+      "want": 500
+    },
+    {
+      "say": "three for **300 coins**",
+      "file": "golf/putt/putt.js",
+      "re": "var TRINKET_SET_COINS = (\\d+);",
+      "want": 300
+    },
+    {
+      "say": "the aim line reaches four feet further",
+      "file": "golf/putt/putt.js",
+      "re": "puttEquipped\\(\\) === 'scope' \\? (\\d+) : 0",
+      "want": 4
+    },
+    {
+      "say": "pays 280 coins",
+      "file": "golf/putt/putt.js",
+      "re": "secret:\\{ hole:(\\d+),",
+      "want": 280
+    },
+    {
+      "say": "Beat 10 of them",
+      "file": "golf/putt/putt.js",
+      "re": "secret:\\{[^}]*ten:(\\d+),",
+      "want": 10
+    },
+    {
+      "say": "Diamond Putter and 1,000 coins",
+      "file": "golf/putt/putt.js",
+      "re": "secret:\\{[^}]*all:(\\d+),",
+      "want": 1000
+    }
   ]
 }

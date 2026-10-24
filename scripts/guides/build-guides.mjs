@@ -60,7 +60,7 @@ export function parse(file) {
   const meta = {};
   for (const line of m[1].split('\n')) {
     const kv = line.match(/^(\w+):\s*(.*)$/);
-    if (kv) meta[kv[1]] = kv[2].trim();
+    if (kv) meta[kv[1]] = kv[2].trim().replace(/^"(.*)"$/, '$1');
   }
   for (const k of ['slug', 'title', 'description', 'game', 'play_url']) {
     if (!meta[k]) throw new Error(`${file}: front matter has no ${k}`);
@@ -76,11 +76,18 @@ export function parse(file) {
 function bodyHtml(body, where) {
   const out = [];
   let list = null, para = [];
+  /* A list item may carry one level of sub items, written two spaces in ("  - "). */
+  const li = (it) => `        <li>${inline(it.text, where)}` +
+    (it.kids.length ? '\n          <ul>\n' + it.kids.map((k) => `            <li>${inline(k, where)}</li>`).join('\n') + '\n          </ul>\n        ' : '') + '</li>';
   const flushP = () => { if (para.length) { out.push(`      <p>${inline(para.join(' '), where)}</p>`); para = []; } };
-  const flushL = () => { if (list) { out.push('      <ul>\n' + list.map((li) => `        <li>${inline(li, where)}</li>`).join('\n') + '\n      </ul>'); list = null; } };
+  const flushL = () => { if (list) { out.push('      <ul>\n' + list.map(li).join('\n') + '\n      </ul>'); list = null; } };
   for (const line of body.split('\n')) {
     if (/^##\s+/.test(line)) { flushP(); flushL(); out.push(`      <h2>${inline(line.replace(/^##\s+/, ''), where)}</h2>`); }
-    else if (/^- /.test(line)) { flushP(); (list = list || []).push(line.slice(2)); }
+    else if (/^- /.test(line)) { flushP(); (list = list || []).push({ text: line.slice(2), kids: [] }); }
+    else if (/^ {2}- /.test(line)) {
+      if (!list) throw new Error(`${where}: a sub item with no item above it: "${line.trim().slice(0, 60)}"`);
+      list[list.length - 1].kids.push(line.replace(/^ {2}- /, ''));
+    }
     else if (!line.trim()) { flushP(); flushL(); }
     else if (/^(#|\||>|\d+\.)/.test(line)) throw new Error(`${where}: markdown the builder does not handle: "${line.slice(0, 60)}"`);
     else { flushL(); para.push(line.trim()); }
