@@ -129,14 +129,16 @@ for (const band of BANDS) {
   console.log();
 }
 
-// The game is deliberately reachable only by URL while it is being tested:
-// listed in the sitemap so it can be found, but linked from nowhere.
+// The game is deliberately reachable only by URL while it is being tested: linked from
+// nowhere, out of the sitemap, noindexed and carrying no ad tag. It was in the sitemap until
+// 2026-10-24, when the owner took it out of search and ads until launch: an unreleased game
+// carries no ads, and AdSense reviews whatever is indexable. Launching it moves all four.
 console.log('discoverability');
 const home = read('index.html');
 check(!/setlist/i.test(home), 'homepage does not link the game');
 
 const sitemap = read('sitemap.xml');
-check(sitemap.includes('<loc>https://runthe.gg/setlist/</loc>'), 'sitemap lists /setlist/');
+check(!sitemap.includes('runthe.gg/setlist/'), 'sitemap does not list /setlist/');
 
 const game = read('setlist/index.html');
 /* THE SAME FILE WITH ITS COMMENTS REMOVED, and it exists because this suite has
@@ -149,7 +151,8 @@ const game = read('setlist/index.html');
 const gameBare = game
   .replace(/\/\*[\s\S]*?\*\//g, '')     // CSS and JS block comments
   .replace(/<!--[\s\S]*?-->/g, '');    // HTML comments
-check(!/noindex/i.test(game), 'game page is indexable (no noindex)');
+check(/<meta name="robots" content="noindex">/.test(gameBare), 'game page is noindexed until launch');
+check(!/googlesyndication/.test(gameBare), 'game page carries no AdSense tag until launch');
 
 console.log();
 

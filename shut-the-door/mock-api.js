@@ -30,10 +30,10 @@ if (!C) return;
 
 /* ---- share text (section 11) ------------------------------------------- */
 
-var OUTCOME_WORDS = { door_shut: 'door shut', doors_open: "door's open", walk_off: 'walk-off' };
+/* the outcome in words: contract.js's label, in lower case, as share.js has it */
 function shareText(r, number) {
   var lines = [C.SHARE_TITLE + ' #' + number];
-  lines.push(OUTCOME_WORDS[r.outcome] + ' · better than ' + Math.round(r.percentile) + '% of closers');
+  lines.push(String(C.OUTCOME_LABEL[r.outcome] || '').toLowerCase() + ' · better than ' + Math.round(r.percentile) + '% of closers');
   if (r.pitchedLike && r.pitchedLike.name) lines.push('pitched like ' + r.pitchedLike.name);
   var sq = (r.strip || []).map(function (b) { return C.SQUARE[b]; });
   for (var i = 0; i < sq.length; i += C.SQUARES_PER_LINE) lines.push(sq.slice(i, i + C.SQUARES_PER_LINE).join(''));
@@ -47,6 +47,37 @@ if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true
 /* ?mockAuth=1 signs the stub in as a fictional player, so the account paths
    (the stats sheet's myStats(), the result's account block) can be built and
    checked before auth.js lands. */
+/* shutdoor_board()'s rows (153), FICTIONAL: made up handles, scores and
+   outcomes, so the board screen can be built and checked without a server.
+   ?mockBoard=empty answers no rows, fail answers null (the call failed),
+   deep puts your row far below the top, anything else a full board.
+   ?mockAuth=1 makes one of the rows yours. */
+var BOARD_NAMES = ['paintsblack', 'highcheese', 'backdoorslider', 'ninthinning', 'lockdownlefty', 'gasmonkey', 'splitfinger', 'bullpencart',
+  'framejob', 'chinmusic', 'upstairs', 'sweeperking', 'knucklepuck', 'tunnelvision', 'fullcount', 'corners', 'runnersonsecond', 'pitchclock'];
+function mockBoard(day, limit) {
+  var mode = (/[?&]mockBoard=([^&]*)/.exec(location.search) || [])[1] || 'full';
+  if (mode === 'fail') return Promise.resolve(null);
+  if (mode === 'empty') return Promise.resolve([]);
+  var signed = /[?&]mockAuth=1(&|$)/.test(location.search);
+  var players = 240, mine = signed ? (mode === 'deep' ? 131 : 18) : 0, lim = Math.max(1, Math.min(100, limit || 50));
+  var rows = [];
+  for (var rk = 1; rk <= players; rk++) {
+    if (rk > lim && rk !== mine) continue;
+    var f = rk / players;
+    /* in score order, as the real scores fall: doors shut, held ties, doors open, walk-offs */
+    var outcome = rk <= 24 ? 'door_shut' : rk <= 34 ? 'tie_held' : rk <= 44 ? 'doors_open' : 'walk_off';
+    var pitches = 8 + ((rk * 7) % 17);
+    var score = Math.round(940 - f * 860);
+    var strip = [];
+    for (var i = 0; i < pitches; i++) strip.push(['green', 'green', 'yellow', 'orange', 'red'][(rk + i * 3) % (f < 0.3 ? 3 : 5)]);
+    rows.push({
+      rank: rk, username: rk === mine ? 'mockplayer' : BOARD_NAMES[rk % BOARD_NAMES.length] + (rk > BOARD_NAMES.length ? rk : ''),
+      outcome: outcome, pitches: pitches, score: score, percentile: Math.round((1 - f) * 100), pitched_like: null,
+      strip: strip, mine: rk === mine, players: players,
+    });
+  }
+  return Promise.resolve(rows);
+}
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
   var mockIn = /[?&]mockAuth=1(&|$)/.test(location.search);
@@ -58,15 +89,18 @@ if (!window.STD_AUTH || FORCE) {
     onChange: function () { return function () {}; },
     signIn: none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
-    /* the shape assumed for shutdoor_my_stats(): CONTRACT_REQUESTS.md B8 */
+    board: mockBoard,
+    /* shutdoor_my_stats()'s shape (153, and tieHeld from 155), plus the
+       bands and recent rows the device history also carries */
     myStats: function () {
       if (!mockIn) return Promise.resolve(null);
       return Promise.resolve({
-        played: 12, shut: 7, streak: 3, best: 5, avgPercentile: 61,
+        played: 12, doorShut: 7, tieHeld: 2, doorsOpen: 1, walkOff: 2, streak: 3, best: 5, avgPercentile: 61,
         bands: { green: 71, yellow: 30, orange: 14, red: 6 },
         recent: [
           { day: '2026-10-16', number: 12, outcome: 'door_shut', strip: ['green', 'green', 'yellow', 'green', 'green'] },
-          { day: '2026-10-15', number: 11, outcome: 'walk_off', strip: ['yellow', 'orange', 'green', 'red'] },
+          { day: '2026-10-15', number: 11, outcome: 'tie_held', strip: ['yellow', 'orange', 'green', 'red', 'green', 'green'] },
+          { day: '2026-10-14', number: 10, outcome: 'walk_off', strip: ['yellow', 'orange', 'green', 'red'] },
         ],
       });
     },
@@ -76,19 +110,25 @@ if (!window.STD_AUTH || FORCE) {
 if (window.STD_API && !FORCE) return;
 
 /* Test switches, read off the page's own address. Mock only; they never
-   reach the real API. ?mockEnd= door_shut | doors_open | walk_off forces a
-   scripted outing that ends that way (the second and third run a runner put
-   out, runs scoring, the end rules); ?mockProxy=1 marks the spot proxy;
+   reach the real API. ?mockEnd= door_shut | tie_held | doors_open | walk_off
+   forces a scripted outing that ends that way (the end rules: a solo home run
+   ties it and play goes on; tie_held then strikes out the side; doors_open
+   runs a runner put out on a double play, ties it, then goes ahead with the
+   walk-off off, as in an 8th inning; walk_off scores runners for the lead);
+   ?mockProxy=1 marks the spot proxy;
    ?mockNull=1 gives the reveal no pitch count, only its note;
    ?mockLesson=none and ?mockPro=none give the result no lesson, or a
    lesson with no pro example (CONTRACT.md section 15). */
 var QS = (function () { try { return new URLSearchParams(location.search); } catch (e) { return { get: function () { return null; } }; } })();
 var SCRIPTS = {
   door_shut: ['K'],
-  doors_open: ['single', 'double_play', 'home_run'],
+  tie_held: ['home_run', 'K'],
+  doors_open: ['single', 'double_play', 'home_run', 'home_run'],
   walk_off: ['single', 'single', 'home_run'],
 };
-var MOCK = { lessonNone: QS.get('mockLesson') === 'none', proNone: QS.get('mockPro') === 'none', script: SCRIPTS[QS.get('mockEnd')] || null, proxy: QS.get('mockProxy') === '1', nullPitches: QS.get('mockNull') === '1' };
+var MOCK = { lessonNone: QS.get('mockLesson') === 'none', proNone: QS.get('mockPro') === 'none', script: SCRIPTS[QS.get('mockEnd')] || null, proxy: QS.get('mockProxy') === '1', nullPitches: QS.get('mockNull') === '1',
+  /* a go-ahead run is door's open only with the walk-off off (the fixture's 9th has it on) */
+  noWalkOff: QS.get('mockEnd') === 'doors_open' };
 
 /* ---- the seeded stream ---------------------------------------------------- */
 
@@ -115,7 +155,7 @@ function load() {
   if (FIX) return Promise.resolve(FIX);
   return fetch('fixtures/mock-scenario.json', { cache: 'no-store' })
     .then(function (r) { if (!r.ok) throw new Error('the mock scenario did not load'); return r.json(); })
-    .then(function (j) { FIX = j; return j; });
+    .then(function (j) { if (MOCK.noWalkOff) j.scenario.situation.walkOffLive = false; FIX = j; return j; });
 }
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
@@ -195,6 +235,7 @@ function gradeCall(scn, st, call) {
   return {
     band: C.bandOf(lost), value: Math.round(value * 10) / 10, best: Math.round(best * 10) / 10,
     lost: lost, bestCall: bestCall, reason: reason, reDelta: -Math.round(lost * 10) / 1000,
+    tied: st.score.us === st.score.them,
   };
 }
 
@@ -231,9 +272,11 @@ function forced(bases) {
 
 function resolve(scn, st, call, rng) {
   var bt = batterOf(scn, st.batterIndex), pr = bt.profile, ap = pitchOf(scn, call.type);
-  var tgt = C.targetOf(call.cell), zr = bt.szTop - bt.szBot;
+  var tgt = C.aimPoint ? C.aimPoint(call.cell, call.at) : C.targetOf(call.cell), zr = bt.szTop - bt.szBot;
   /* the fixed order: miss x, miss z, the library draw, the runner draw */
-  var mx = gauss(rng()) * ap.sigmaFt, mz = gauss(rng()) * ap.sigmaFt / zr;
+  /* the release scales the miss, as in the engine (contract.js spreadOf; no q is 1.0x) */
+  var sg = ap.sigmaFt * (C.spreadOf ? C.spreadOf(call.q) : 1);
+  var mx = gauss(rng()) * sg, mz = gauss(rng()) * sg / zr;
   var lib = rng(), run = rng();
   var actual = { x: Math.round((tgt.x + mx) * 1000) / 1000, zn: Math.round((tgt.zn + mz) * 1000) / 1000 };
   var cell = C.cellAt(actual.x, actual.zn), z = C.inZone(cell);
@@ -256,7 +299,7 @@ function resolve(scn, st, call, rng) {
   if (forcedR) res.result = forcedR === 'K' ? 'swinging_strike' : 'in_play';
 
   var out = { n: st.pitchNo + 1, call: { type: call.type, cell: call.cell }, actual: actual, actualCell: cell,
-    velo: Math.round((ap.velo + gauss(u4) * 0.8) * 10) / 10, batter: res.batter, result: res.result,
+    velo: call.e != null && C.stuffAt ? C.stuffAt(ap, call.e).velo : Math.round((ap.velo + gauss(u4) * 0.8) * 10) / 10, batter: res.batter, result: res.result,
     countBefore: { b: b, s: s }, runnerMoves: [], runs: 0, paOver: false,
     drawn: { id: 'mock:' + st.pitchNo + ':' + Math.floor(lib * 1e6), tier: u3 < 0.6 ? 'batter' : u3 < 0.9 ? 'similar' : 'league' } };
   var outs = st.outs, bases = st.bases, nb = b, ns = s;
@@ -338,10 +381,10 @@ function apply(scn, st, call, rng) {
   st.strip.push(grade.band);
   st.log.push(pr); st.grades.push(grade);
   st.debug.tiers.push(pr.drawn.tier);
+  /* the end rules (CONTRACT.md section 8): a tie plays on */
   var sit = scn.situation;
   if (st.score.them > st.score.us) { st.status = 'over'; st.outcome = sit.walkOffLive ? 'walk_off' : 'doors_open'; }
-  else if (st.score.them === st.score.us) { st.status = 'over'; st.outcome = 'doors_open'; }
-  else if (st.outs >= 3) { st.status = 'over'; st.outcome = 'door_shut'; }
+  else if (st.outs >= 3) { st.status = 'over'; st.outcome = st.score.them === st.score.us ? 'tie_held' : 'door_shut'; }
   st.shutItLive = st.status === 'live' && st.count.s === 2 && st.outs === 2;
   return { pitchResult: pr, pitchGrade: grade };
 }
@@ -393,7 +436,10 @@ function throwPitch(outingId, call) {
     if (o.st.status !== 'live') throw new Error('the outing is over');
     if (!pitchOf(o.scn, call.type)) throw new Error('not in his arsenal: ' + call.type);
     if (!(call.cell >= 0 && call.cell < C.GRID.CELLS)) throw new Error('no such cell');
-    var c = { type: call.type, cell: call.cell | 0 };
+    var c = { type: call.type, cell: call.cell | 0 }; if (Array.isArray(call.at)) c.at = [+call.at[0], +call.at[1]];
+    if (call.q != null && C.releaseQ) c.q = C.releaseQ(call.q);
+    if (call.e != null && C.effortE) c.e = C.effortE(call.e);
+    if (call.at != null && C.aimAt) c.at = C.aimAt(call.at);
     o.calls.push(c);
     var r = apply(o.scn, o.st, c, o.rng);
     saveDaily(o);
@@ -409,7 +455,7 @@ function finishOuting(outingId) {
     if (o.result) return clone(o.result);
     var st = o.st, j = FIX;
     var q = st.grades.reduce(function (a, g) { return a + Math.max(0, 100 - g.lost * 9); }, 0) / Math.max(1, st.grades.length);
-    var score = Math.round(q * 6 + { door_shut: 320, doors_open: 110, walk_off: 0 }[st.outcome]);
+    var score = Math.round(q * 6 + { door_shut: 320, tie_held: 215, doors_open: 110, walk_off: 0 }[st.outcome]);
     var sc = j.pool.scores, below = 0;
     for (var i = 0; i < sc.length; i++) if (sc[i] < score) below++;
     var fam = { hard: 0, breaking: 0, offspeed: 0 };
@@ -420,13 +466,17 @@ function finishOuting(outingId) {
     if (MOCK.nullPitches) { rv.pitches = null; rv.pitchesNote = 'at least 13 pitches'; }
     var runs = st.score.them - o.scn.situation.score.them;
     var mine = C.OUTCOME_RANK[st.outcome], his = C.OUTCOME_RANK[rv.outcome];
-    var vs = mine > his ? 'beat' : mine < his ? 'lost' : runs < rv.runs ? 'beat' : runs > rv.runs ? 'lost' : 'matched';
+    var hp = typeof rv.pitches === 'number' ? rv.pitches : null;
+    var vs = mine > his ? 'beat' : mine < his ? 'lost' : runs < rv.runs ? 'beat' : runs > rv.runs ? 'lost' :
+      hp == null || st.pitchNo === hp ? 'matched' : st.pitchNo < hp ? 'beat' : 'lost';
     var r = {
       outcome: st.outcome, pitches: st.pitchNo, strip: st.strip.slice(), score: score,
       percentile: Math.round(below / sc.length * 100), pitchedLike: { name: pl.name, reason: pl.reason },
       reveal: rv, vsReal: vs,
     };
     r.lesson = MOCK.lessonNone ? null : mockLesson(o);
+    /* the pool's scores for the end screen's chart (CONTRACT_REQUESTS.md B11) */
+    r.pool = { scores: sc.slice() };
     r.share = window.STD_SHARE.text(r, o.scn.number);
     var au = window.STD_AUTH && window.STD_AUTH.state && window.STD_AUTH.state();
     if (o.st.mode === 'daily' && au && au.signedIn) r.account = { streak: st.outcome === 'door_shut' ? 4 : 0, best: 5, rank: 18, players: 240 };
@@ -453,7 +503,7 @@ function mockLesson(o) {
   var p;
   if ((pre.bases & 4) && pre.outs < 2) p = 'strikeout_with_runner_on_third';
   else if ((pre.bases & 1) && pre.outs < 2 && C.rowOf(best.cell) >= 3) p = 'double_play_ball';
-  else if (c.b === 3 && pre.margin <= 1) p = 'dont_walk_the_tying_run';
+  else if (c.b === 3 && pre.margin <= 1) p = 'dont_walk_the_tying_run';   // tied, it is the go-ahead run
   else if (c.b > c.s) p = 'strike_when_behind';
   else if (c.s > c.b && !C.inZone(best.cell)) p = 'chase_when_ahead';
   else if (c.b === 0 && c.s === 0) p = 'first_pitch_strike';
@@ -465,7 +515,7 @@ function mockLesson(o) {
   var T = {
     strikeout_with_runner_on_third: ['runner on third. go for the strikeout', 'next time, with a man on third, throw the pitch he misses.'],
     double_play_ball: ['runner on first. get the ground ball', 'next time, with a man on first, keep it down.'],
-    dont_walk_the_tying_run: [cnt + '. do not walk the tying run', 'next time at three balls, make him hit his way on.'],
+    dont_walk_the_tying_run: [cnt + '. do not walk the ' + (pre.margin === 0 ? 'go-ahead' : 'tying') + ' run', 'next time at three balls, make him hit his way on.'],
     strike_when_behind: ['behind ' + cnt + '. throw a strike', 'next time behind in the count, come back to the zone.'],
     chase_when_ahead: ['ahead ' + cnt + '. make him chase', 'next time ahead ' + cnt + ', put the ' + bp.name + ' just off the plate.'],
     first_pitch_strike: ['0-0. get strike one', 'next time, start him with a strike he does not hit.'],
@@ -483,7 +533,7 @@ function mockLesson(o) {
   if (o.calls.length >= 5 && fam.hard / o.calls.length >= 0.6) pattern = 'you threw ' + fam.hard + ' of ' + o.calls.length + ' fastballs. this lineup chased breaking balls.';
   return {
     pitchN: worst + 1, call: { type: call.type, cell: call.cell }, bestCall: { type: best.type, cell: best.cell },
-    count: { b: c.b, s: c.s }, outs: pre.outs, bases: pre.bases, batter: bt.name, principle: p,
+    count: { b: c.b, s: c.s }, outs: pre.outs, bases: pre.bases, tied: pre.margin === 0, batter: bt.name, principle: p,
     headline: T[0], why: why.slice(0, 3), nextTime: T[1],
     numbers: { lostPts: g.lost, callValue: g.value, bestValue: g.best },
     pro: MOCK.proNone ? null : {

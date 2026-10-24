@@ -191,12 +191,13 @@ ok('the ball you wear is painted for the Putt Putt green, and no ball is the whi
 ok('the hole-out celebration has a golfer facing you', md.cheer === true);
 ok('a leaderboard look carries the putter', md.board === md.a, md.board);
 
-head('5. THE MENU GOLFER: testers only on the First Tee switch, every item drawn alone, nothing magenta');
+head('5. THE MENU GOLFER: everybody, every item drawn alone, nothing magenta');
 const mn = await pg.evaluate(async () => {
   const r = { ex: [], none: [], magenta: [], n: 0 }, keepU = sbUser, keepN = sbUsername;
   sbUser = null; sbUsername = ''; r.out = g3dMenuOn();
   sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.other = g3dMenuOn();
-  r.otherFig = /pxidle/.test(pxFigureHTML(DEFLOOK, 60));
+  // without the 3D golfer (a blocked or stale golfer3d.js), the menus keep today's flat golfer
+  { const g0 = g3dOn; g3dOn = () => false; r.killed = g3dMenuOn(); r.otherFig = /pxidle/.test(pxFigureHTML(DEFLOOK, 60)); g3dOn = g0; }
   sbUser = { id: 't' }; sbUsername = 'CSel8'; r.tester = g3dMenuOn();
   const magenta = (url) => new Promise(res => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
     const x = c.getContext('2d'); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data; let m = 0;
@@ -229,13 +230,14 @@ const mn = await pg.evaluate(async () => {
   // the career card on Me reads both tours' records
   const pp = window.RTT_PUTT.achStats(H), rec = ftRecord().textContent;
   r.rec = /Pro Tour/.test(rec) && /Putt Putt/.test(rec) && rec.includes(Number(pp.pp_stars || 0).toLocaleString() + (pp.pp_stars === 1 ? 'star' : 'stars'));
-  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.ppFlat = H.chip() === '';
+  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; { const g0 = g3dOn; g3dOn = () => false; r.ppFlat = H.chip() === ''; g3dOn = g0; }
   sbUser = keepU; sbUsername = keepN; return r; });
 ok('Putt Putt\'s header ring and Daily Hole rows draw the 3D head chip for a tester', mn.ppChip === true);
-ok('a player without the 3D menu golfer keeps the flat picture in Putt Putt', mn.ppFlat === true);
+ok('without the 3D golfer module, Putt Putt keeps the flat picture', mn.ppFlat === true);
 ok('the career card on Me shows the Pro Tour and Putt Putt records', mn.rec === true);
-ok('signed out keeps today\'s menu golfer', mn.out === false);
-ok('a player who is not a tester keeps today\'s menu golfer', mn.other === false && mn.otherFig === true);
+ok('signed out gets the 3D menu golfer', mn.out === true);
+ok('a player who is not a tester gets the 3D menu golfer', mn.other === true);
+ok('without the 3D golfer module, the menus keep today\'s flat golfer', mn.killed === false && mn.otherFig === true);
 ok('a tester gets the 3D menu golfer', mn.tester === true);
 ok(`every hat, pair of glasses, club, putter, top, legwear, ball, pattern, shirt, trousers, pair of cleats, hairstyle and chip draws (${mn.n})`, mn.ex.length === 0, mn.ex.slice(0, 4));
 ok('only paint (eyeblack) has nothing to draw alone, so its tile keeps today\'s art', mn.none.every(x => !/^(hat|club|shoe|fig|chip):/.test(x)), mn.none);

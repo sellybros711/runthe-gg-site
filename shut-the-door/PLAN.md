@@ -167,7 +167,7 @@ side for his hand, the catcher and umpire behind. The grid is drawn mirrored fro
    short result with runners moving on the diamond. Under about 3 seconds, skip on tap.
 4. Grade card: band pill, best call, reason, tap anywhere to dismiss. The first time a green pitch
    gets hit: "good pitch. the grade is the decision, not the result."
-5. Result: DOOR SHUT, DOOR'S OPEN or WALK-OFF, strip, percentile, pitched like, the reveal, beat,
+5. Result: DOOR SHUT, HELD THE TIE (since 2026-10-20), DOOR'S OPEN or WALK-OFF, strip, percentile, pitched like, the reveal, beat,
    matched or lost, share, "run it back" (practice), streak.
 6. Menus: how to play (behind a button, never opened by itself), stats, past dailies (locked shell),
    settings (sound). `?debug=1` shows seed and tier per pitch.

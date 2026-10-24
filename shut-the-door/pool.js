@@ -13,11 +13,18 @@
  *      for pitched like
  *   4. keeps the lesson's pro examples this pack can show (attachPros)
  *   5. reports the calibration the brief asks for (band spread, the pool's
- *      hold rate) in pack.build.pool, and writes the pack minified
+ *      hold rate, its outcome mix) in pack.build.pool, and writes the pack
+ *      minified, stamped with the engine's pack format (E.PACK_VERSION)
+ *
+ * Rebuilding a committed pack (no staged pack or pros cache at hand) works the
+ * same way: pass the pack itself as the staged pack. The hold table, the pool
+ * and the build report are solved again; without --pros the pack's own pros
+ * are kept as they are.
  *
  * A CLOSER'S CALL
  *   His pitch family from his share by count bucket; the scenario pitcher's
- *   pitch of that family (the most used one; a family he lacks goes to the
+ *   pitch of that family (under rules 2 one of his pitches of that family by
+ *   their usage, before it the most used one; a family he lacks goes to the
  *   nearest he has: offspeed to breaking to hard); the target from where that
  *   closer's pitches of that family went in that count, in the batter-relative
  *   grid, mirrored back for a left-handed batter, with his misses taken out
@@ -42,10 +49,20 @@ function pick(probs, u) {
   return probs.length - 1;
 }
 
-function typeForFamily(arsenal, fam) {
+/* The scenario pitcher's pitch for a closer's family. With u (0..1), one of
+   his pitches of that family by their real usage (rules 2: a closer's choice
+   of family is carried onto this pitcher's whole mix, so a five-pitch
+   starter is not played as a three-pitch one, and the familiarity centre,
+   seqCenter, is the real mix's). Without u, the most used, as before. */
+function typeForFamily(arsenal, fam, u) {
   for (const f of FALLBACK[fam]) {
     const own = arsenal.filter(a => K.FAMILY_OF[a.type] === f).sort((a, b) => b.usage - a.usage);
-    if (own.length) return own[0].type;
+    if (!own.length) continue;
+    if (u == null || own.length === 1) return own[0].type;
+    const tot = own.reduce((x, a) => x + a.usage, 0);
+    let acc = 0;
+    for (const a of own) { acc += a.usage / tot; if (u < acc) return a.type; }
+    return own[own.length - 1].type;
   }
   return arsenal[0].type;
 }
@@ -88,7 +105,7 @@ function closerCall(closer, o, rng) {
   const st = o.st;
   const bk = G.bucketOf(st.b, st.s);
   const fi = pick(closer.fam[bk], rng());
-  const type = typeForFamily(o.pack.scenario.pitcher.arsenal, FAMS[fi]);
+  const type = typeForFamily(o.pack.scenario.pitcher.arsenal, FAMS[fi], o.rules >= 2 ? rng() : undefined);
   let cell = pick(aimOf(closer, o.pack)[fi][bk], rng());
   const bats = o.pack.scenario.batters[st.bi % o.model.N].bats;
   if (bats === 'L') cell = K.rowOf(cell) * 5 + (4 - K.colOf(cell));
@@ -100,7 +117,7 @@ function runPool(pack, closers, runs, model) {
   const scores = [];
   const lostAll = [], bandAll = [];
   let holds = 0, n = 0, pitches = 0;
-  const outcomes = { door_shut: 0, doors_open: 0, walk_off: 0 };
+  const outcomes = Object.fromEntries(K.OUTCOMES.map(k => [k, 0]));
   closers.forEach((c, ci) => {
     for (let r = 0; r < per; r++) {
       const seed = R.hashSeed(`${pack.scenario.id}|pool|${ci}|${r}`);
@@ -119,6 +136,33 @@ function runPool(pack, closers, runs, model) {
   });
   scores.sort((a, b) => a - b);
   return { scores, lostAll, bandAll, holdRate: holds / n, outcomes, runs: n, meanPitches: pitches / n };
+}
+
+/* RULES 2: the familiarity real sequencing shows against this pitcher's
+   arsenal (grade.js DEFAULT_CENTER). The closer pool's real pitch choices,
+   played through the scenario, and the mean familiarity of their calls: the
+   level the hitter-adjustment is centred on, so a pitcher who sequences like
+   the real closers meets the library's numbers on average and only a more
+   predictable one pays. Z, the share of their aims in the zone, is the same
+   for where he has been (grade.js R2.ZONE). Its own seeded streams, apart from the pool's runs. */
+function seqCenter(pack, closers, model, runs) {
+  let sum = 0, n = 0, zone = 0;
+  const per = Math.max(1, Math.ceil((runs || 400) / closers.length));
+  closers.forEach((c, ci) => {
+    for (let r = 0; r < per; r++) {
+      const o = E.createOuting(pack, { seed: R.hashSeed(`${pack.scenario.id}|seq|${ci}|${r}`), mode: 'practice', model });
+      const policy = R.mulberry32(R.hashSeed(`${pack.scenario.id}|seqpolicy|${ci}|${r}`));
+      let guard = 0;
+      while (o.status === 'live' && guard++ < 150) {
+        const call = closerCall(c, o, policy);
+        sum += G.familiarRaw(G.contextOf(o.log, o.st, G.RULES, 0), call.type, call.cell);
+        if (K.inZone(call.cell)) zone++;
+        n++;
+        E.throwPitch(o, call);
+      }
+    }
+  });
+  return { L: Math.round(sum / n * 10000) / 10000, Z: Math.round(zone / n * 10000) / 10000, pitches: n };
 }
 
 function bandsOf(bandList) {
@@ -146,7 +190,7 @@ function attachPros(pack, pros, model) {
     const bats = pack.scenario.batters[bi].bats;
     const platoon = bats === thr ? 'same' : 'opp';
     for (let b = 0; b < 4; b++) for (let s = 0; s < 3; s++) for (let o = 0; o < 3; o++) for (let bs = 0; bs < 8; bs++)
-      for (let m = 1; m <= model.M; m++) {
+      for (let m = 0; m <= model.M; m++) {
         const i = G.stateIndex(model.N, model.M, bi, b, s, o, bs, m);
         const bc = h.b[i];
         if (bc == null) continue;
@@ -179,10 +223,15 @@ function attachPros(pack, pros, model) {
 
 function build(pack, closersFile, opts) {
   const runs = (opts && opts.runs) || 2000;
+  // the hold table's layout is the engine's pack format (a slot for a tied game since 2)
+  pack.v = E.PACK_VERSION;
   const t0 = Date.now();
   const fresh = new G.Model(pack, { fresh: true });
   pack.hold = fresh.holdTable();
   const solveMs = Date.now() - t0;
+  // rules 2: the familiarity the real closers' sequencing shows here (the centre the hitter adjusts from)
+  delete pack.seq;
+  pack.seq = seqCenter(pack, closersFile.closers, new G.Model(pack), opts && opts.seqRuns);
   const model = new G.Model(pack);
   attachPros(pack, opts && opts.pros, model);
   const closers = closersFile.closers;
@@ -222,4 +271,4 @@ if (NODE && require.main === module) {
     `pool ${b.pool.runs} runs, hold rate ${b.pool.holdRate}, bands ${JSON.stringify(b.pool.bands)}, solve ${b.solveMs} ms`);
 }
 
-if (NODE) module.exports = { build, runPool, closerCall, typeForFamily, bandsOf };
+if (NODE) module.exports = { build, runPool, closerCall, typeForFamily, bandsOf, seqCenter };

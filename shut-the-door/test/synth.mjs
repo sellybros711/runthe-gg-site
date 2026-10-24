@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url);
 const K = require('../contract.js');
 const R = require('../rng.js');
 const G = require('../grade.js');
+const E = require('../engine.js');
 
 const TYPES = [
   { type: 'FF', name: 'four-seam', usage: 0.55, velo: 97.5, pfxX: -7, pfxZ: 16, shape: 'ride', command: 55, sigmaFt: 0.42 },
@@ -106,7 +107,7 @@ export function synthPack(opts = {}) {
     batters, realFaced: 3, resolution: 'real', sources: ['synthetic'],
   };
   return {
-    v: 1, keys: G.KEYS.slice(), scenario, kernelZoneFt: 1.9, pitches, library, advance: synthAdvance(),
+    v: E.PACK_VERSION, keys: G.KEYS.slice(), scenario, kernelZoneFt: 1.9, pitches, library, advance: synthAdvance(),
     pool: { scores: opts.poolScores || [], closers: opts.closers || [] },
     reveal: { outcome: 'door_shut', pitches: 12, runs: 0, summary: 'synthetic', plateAppearances: [] },
   };
@@ -149,7 +150,8 @@ export function synthAdvance() {
       P('out_fly', 0.4, play(b, f => (f === 0 ? -1 : f), 'out'));
     } else P('out_fly', 1, play(b, f => (f === 0 ? -1 : f), 'out'));
     if (on(b, 1) && outs < 2) {
-      P('out_ground', 0.45, play(b, f => (f === 0 || f === 1 ? -1 : f === 3 && outs === 0 ? 4 : f === 2 ? 3 : f), 'double_play'));
+      // (the runner from second moves up only to a base the runner from third has left)
+      P('out_ground', 0.45, play(b, f => (f === 0 || f === 1 ? -1 : f === 3 && outs === 0 ? 4 : f === 2 && (outs === 0 || !on(b, 3)) ? 3 : f), 'double_play'));
       P('out_ground', 0.55, play(b, f => (f === 1 ? -1 : f === 0 ? 1 : f), 'fielders_choice'));
     } else {
       P('out_ground', 1, play(b, f => (f === 0 ? -1 : f === 3 && outs < 2 ? 4 : f === 2 && !on(b, 3) ? 3 : f), 'out'));

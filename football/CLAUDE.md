@@ -28,11 +28,13 @@ node football/check-fullteam.mjs      Full Team: the door, the gate, the save, t
 node football/check-dynasty.mjs       Dynasty
 node football/check-cloudsave.mjs     the dynasty saved both directions
 node football/check-premium.mjs       what each product unlocks
+node football/check-daylock.mjs       a daily lock opens when its countdown ends (fake clock)
 node football/check-popups.mjs        the guide, the rules sheets, two devices
 node football/check-badges.mjs        every badge proved reachable (--quick: fewer runs)
 node football/check-gameday.mjs       the Game Day shelf
 node football/check-boss.mjs          the boss battle (add go: going for it on fourth down)
 node football/check-overtime.mjs      a tie goes to overtime
+node football/check-simspeed.mjs      Slow and Slower pace by the drive, Normal untouched
 node football/check-fantasy.mjs       the Fantasy Challenge (--quick: the engine, no browser)
 psql ... -f supabase/test/launch_preflight.sql    the live modes' migrations are applied
 ```
@@ -59,6 +61,21 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
   schema move independently.
 - The fantasy SQL goes through `.github/workflows/fantasy-sql.yml` (dry run by default).
 
+**The daily locks**
+
+- A cached meter answer runs out at its own `resetsAt` (`dailyLapse`), and a cached one-new-dynasty
+  refusal at its `nextAt`. A gate reads the meter through `dailyShut`, `dailyLeft`, `dailyResetsAt`
+  and `dailyAllow`, which retire it, never off `dailyState` directly.
+- `ps_attempt_day_end` never stamps a lock that has already run out (`154_dynasty_day_end_lapsed.sql`).
+  Stamping one turned a countdown at zero into a fresh 24 hours.
+
+**Overtime**
+
+- Overtime follows the NFL's playoff rules (the owner's call, 2026-10-22): a toss, 15 minute periods,
+  both sides possess, then the next score wins, and a defensive score on the first possession ends it.
+  `otPlanFor` in `engine.js` is the one place that decides it; the broadcast and the drive picture play
+  its plan (`script.ot`) and never invent a possession of their own.
+
 **The Fantasy Challenge**
 
 - **A price never moves once anybody has drafted against it.** The board is written on the Tuesday
@@ -68,6 +85,11 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
 - **The entry is the server's, and it fails CLOSED.** `football/fantasy/entries.js` is the only thing
   that talks to `109_fantasy_challenge.sql`.
 - A published week's cap is that week's. The constant is only the next week's.
+- **The week opens Tuesday, and three things make sure of it** (the owner's rule, 2026-10-22):
+  `fantasy-pool.yml` (Tuesday 11am Eastern, catch-ups Wednesday and Thursday morning),
+  `fantasy-watchdog.yml` (every two hours Tuesday afternoon to Thursday, dispatches the build
+  if the week is not live), and the issue "Fantasy Challenge: the week did not open". A
+  scheduled or watchdog run never rebuilds a week that is already live.
 - Pro buys drafts, never a price, a board or a score. One entry each.
 
 **Accounts and money**

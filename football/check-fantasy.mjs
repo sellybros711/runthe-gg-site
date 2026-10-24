@@ -383,7 +383,12 @@ console.log('\nA RELOAD CANNOT RE-ROLL THE WHEEL');
   ok('  and a different chance does not', a !== other);
   /* Proving the check has teeth: a board that ignored the seed would pass the first
      assertion by accident only if it were constant, which the second rules out. */
-  const after = D.boardFor(POOL.pool, { seed: 123456789, men: [POOL.pool[0]] }, 0)
+  /* SIGNED OFF THE BOARD ITSELF, never POOL.pool[0]. The first man in the file is only on
+     this seed's board by luck: week 6's happened to be and week 7's was not, so the board was
+     identical, this failed, and the Tuesday job published nothing. Signing a man the board
+     actually offered is the claim being made. */
+  const first = D.boardFor(POOL.pool, c, 0)[0];
+  const after = D.boardFor(POOL.pool, { seed: 123456789, men: [first] }, 0)
     .map((m) => m.player_id).join(',');
   ok('  and signing somebody changes what is left', after !== a);
 }
