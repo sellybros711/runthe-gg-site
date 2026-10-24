@@ -3455,9 +3455,9 @@ window.GA_ID='G-L29P5MRWKE';
   .mn-ch{color:var(--muted); flex:0 0 auto; font-size:18px; line-height:1}
   .mn-card .mn-news{margin:0; border-top:1px solid rgba(255,255,255,.065); border-radius:0}
   .mn-links{display:flex; flex-wrap:wrap; gap:4px 16px; padding:2px 4px 0}
-  .mn-links button{appearance:none; background:none; border:0; padding:6px 0; color:#cfe0d4; font:700 13px/1.2 var(--body); cursor:pointer;
+  .mn-links button, .mn-links a{appearance:none; background:none; border:0; padding:6px 0; color:#cfe0d4; font:700 13px/1.2 var(--body); cursor:pointer;
     text-decoration:underline; text-decoration-color:rgba(255,255,255,.25); text-underline-offset:3px}
-  .mn-links button:hover{color:var(--gold)}
+  .mn-links button:hover, .mn-links a:hover{color:var(--gold)}
   .ov-menu .mn-close{max-width:420px; margin:6px auto 0}
   @media (min-width:700px){ .ov-menu .mnu{column-count:2; column-gap:16px} .ov-menu .mn-g{display:inline-block; width:100%} }
   @media (min-width:1000px){ .ov-menu .mnu{column-count:3; column-gap:18px} .ov-menu .mn-close{display:none} }
@@ -14639,8 +14639,12 @@ function overlayMenu(screen){
       mnPref('📳','Haptics','Android only','bag_sfx_haptic',true) ])); }
   // ABOUT: small links, not five more rows
   const about=$(`<section class="mn-g"><div class="mn-h">About</div><div class="mn-links"></div></section>`), al=about.querySelector('.mn-links');
-  [['About',go(()=>{S.overlay='about';})],['Privacy',go(()=>{S.overlay='privacy';})],['Terms',go(()=>{S.overlay='terms';})],
-   ['Send Feedback',go(()=>{ fbReset(); })],['Add to Home Screen',()=>{ S.overlay=null; render(); installApp(); }]].forEach(([t,fn])=>{ const b=$(`<button>${esc(t)}</button>`); b.onclick=fn; al.appendChild(b); });
+  /* About, Privacy and Terms are real anchors (an AdSense reviewer and a crawler follow the href) that still
+     open the overlay on a plain click, exactly as footer()'s mkLink does. Modified clicks fall through to the href. */
+  [['About',go(()=>{S.overlay='about';}),'/about.html'],['Privacy',go(()=>{S.overlay='privacy';}),'/privacy.html'],['Terms',go(()=>{S.overlay='terms';}),'/terms.html'],
+   ['Send Feedback',go(()=>{ fbReset(); })],['Add to Home Screen',()=>{ S.overlay=null; render(); installApp(); }]].forEach(([t,fn,href])=>{
+     if(href){ const a=$(`<a href="${href}">${esc(t)}</a>`); a.onclick=(e)=>{ if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button) return; e.preventDefault(); fn(); }; al.appendChild(a); return; }
+     const b=$(`<button>${esc(t)}</button>`); b.onclick=fn; al.appendChild(b); });
   mnu.appendChild(about);
   ov.appendChild($(`<button class="btn red mn-close">Close</button>`));
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
@@ -15689,6 +15693,8 @@ function hmShort(ms){ const m=Math.max(0,Math.round(ms/60000)); return Math.floo
 
 /* ── ME: the dressing room. Your golfer on a plinth, the eight things they wear around them, the closet
    one tap away, and everything that is not a tour underneath, settings and the site's links last. ── */
+var _rttAbout=null;
+function rttAboutNode(){ try{ return _rttAbout||(_rttAbout=document.querySelector('details.rtt-about')); }catch(e){ return null; } }
 function scrMe(){
   ftStyleOnce();
   const si=sbSignedIn(), L=S.look||DEFLOOK;
@@ -15732,6 +15738,11 @@ function scrMe(){
   rows.forEach(r=>{ const b=$(`<button type="button" class="ft-mrow"><span class="ft-mi">${ftIcon(r[0])}</span><span class="ft-mt">${r[1]}${r[2]?`<small>${esc(r[2])}</small>`:''}</span>${r[4]?'<span class="ft-dot"></span>':''}</button>`); b.onclick=r[3]; ml.appendChild(b); });
   body.appendChild(ml);
   const mad=ftAd('me'); if(mad) body.appendChild(mad);
+  /* ABOUT RUN THE TOUR, folded, just above the policy links. The one copy lives in the page's markup
+     (details.rtt-about at the foot of the file, so a crawler reads it without running anything), where the
+     full screen First Tee covers it. Me MOVES that node in rather than copying it, so the text is never on
+     the page twice, and its open or shut state survives a re-render. It starts shut. */
+  const ab=rttAboutNode(); if(ab) body.appendChild(ab);
   body.appendChild(footer({noAd:true}));
   root.appendChild(body); add(root);
 }
@@ -43896,6 +43907,12 @@ try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course
 .rtt-about>summary::-webkit-details-marker{display:none;}
 .rtt-about>summary .ab-chev{margin-left:auto;width:8px;height:8px;flex:0 0 auto;border-right:2px solid #9cbfa8;border-bottom:2px solid #9cbfa8;transform:rotate(45deg);transition:transform .2s ease;margin-right:4px;}
 .rtt-about[open]>summary .ab-chev{transform:rotate(-135deg);}
+/* on Me (scrMe moves it there): a quiet label above the policy links, not a headline */
+.ft-mescr .rtt-about{grid-column:1/-1;width:100%;max-width:420px;margin:22px auto 0;padding:0 4px;border-top:0;color:rgba(244,227,201,.72);}
+.ft-mescr .rtt-about>summary{justify-content:center;gap:8px;font:700 11px/1.2 'Barlow Semi Condensed',system-ui,sans-serif;letter-spacing:1.2px;color:rgba(244,227,201,.6);padding:8px 0;}
+.ft-mescr .rtt-about>summary .ab-chev{margin:0 0 3px;width:6px;height:6px;border-color:currentColor;}
+.ft-mescr .rtt-about p{font-size:13px!important;line-height:1.55!important;}
+@media (min-width:900px) and (min-height:560px){ .ft-mescr .rtt-about{max-width:640px;} }
 </style>
 <details class="rtt-about">
   <summary>About Run The Tour<span class="ab-chev" aria-hidden="true"></span></summary>
