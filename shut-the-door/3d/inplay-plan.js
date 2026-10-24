@@ -1248,7 +1248,13 @@ function planEdit(ctx) {
       const thr = ev.filter((e) => e.kind === 'throw' && e.s <= po.ballAt + 1e-6).pop();
       // (a tag play: until the tag, after the ball is in)
       const outT = po.tagAt ?? po.ballAt;
-      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: po.base === 4 ? 'plate' : 'follow', pri: 8, m: outT });
+      // (the relay of a double play is seen from the side: down the line, the pivot man and the man
+      // taking it one behind the other in a narrow frame, not side by side across a phone, so the
+      // pivot's tight shot cuts to it as the ball leaves instead of pulling back to the whole infield)
+      const sg = thr && p.segs.find((x) => x.kind === 'throw' && Math.abs(x.t0 - thr.s) < 1e-6);
+      const relay = (ctx.putouts || []).indexOf(po) > 0;
+      const long = relay && sg && Math.hypot(sg.b.x - sg.a.x, sg.b.y - sg.a.y) > 70;
+      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: po.base === 4 ? 'plate' : long ? 'wide' : 'follow', pri: 8, m: outT });
     }
     // a tag-up: the catch, then straight to the runner leaving his bag on it (the umpire's look)
     if (ctx.catchAt && kind === 'air_out') {

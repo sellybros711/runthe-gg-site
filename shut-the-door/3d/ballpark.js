@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { FT } from './units.js?v=1';
 import { assetUrl } from './load.js?v=7';
-import { BASE, MOUND, WALL_H, wallDist } from './inplay-plan.js?v=7';
+import { BASE, MOUND, WALL_H, wallDist } from './inplay-plan.js?v=8';
 
 const W = (x, y, h = 0) => new THREE.Vector3(-x * FT, h * FT, y * FT);   // field feet to world metres
 const D2R = Math.PI / 180;
