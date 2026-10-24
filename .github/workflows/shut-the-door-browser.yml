@@ -12,8 +12,12 @@ name: Shut The Door browser check
 # The runner has no GPU: Chromium draws WebGL with SwiftShader, on the CPU. The check draws
 # only where it reads pixels (its header says why and how), which is what lets it finish here.
 #
+# A second job, contact, runs beside it: every swing the engine says met the ball, posed in the
+# game page, the ball on the bat (shut-the-door/lab/pipeline/check-contact.mjs).
+#
 # Runs locally, unchanged:
 #   node shut-the-door/test/check-browser.mjs
+#   node shut-the-door/lab/pipeline/check-contact.mjs
 #
 # No secrets, no deploy.
 
@@ -60,3 +64,26 @@ jobs:
           tail -n 1 check-browser.txt | sed 's/^/::notice title=check-browser::/'
           # the whole output as one more notice (its last 3900 bytes, as an annotation keeps 4 KB; newlines escaped), for a reader with no access to the log
           printf '::notice title=check-browser output::%s\n' "$(tail -c 3900 check-browser.txt | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
+
+  contact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Every contact meets the bat, every whiff misses it
+        run: |
+          set -o pipefail
+          node shut-the-door/lab/pipeline/check-contact.mjs 2>&1 | tr '\r' '\n' | grep -v ' cases *$' | tee check-contact.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          [ -f check-contact.txt ] || exit 0
+          grep -E 'FAIL' check-contact.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-contact::/' || true
+          tail -n 1 check-contact.txt | sed 's/^/::notice title=check-contact::/'
