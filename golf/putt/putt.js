@@ -2206,6 +2206,7 @@ var CSS = '\
 .pp-pop .row{flex-wrap:nowrap}.pp-pop .row>*{flex:1;padding:13px 10px;border-radius:13px;font-size:15px}.pp-pop .pt-bt{background:#0c1628;border-color:rgba(255,255,255,.16);color:#fff}\
 .pp-pop .pt-go{background:#12a08f;color:#fff}.pp-pop.par .pt-go{background:#F1D04A;color:#1c1606}.pp-pop.over .pt-go{background:#e5483a;color:#fff}\
 .pp-pop .pp-lives{gap:6px}.pp-pop .pp-lives .pp-h,.pp-pop .pp-lives .pp-h svg{width:28px;height:28px}\
+.pt-ov .pp-buys{display:flex;flex-direction:column;gap:10px;width:100%;margin:6px 0 14px}.pt-ov .pp-buys .pp-buy{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;margin:0;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:16px;font-weight:900;letter-spacing:.03em;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px rgba(0,0,0,.28);transition:transform .12s,border-color .12s}.pt-ov .pp-buys .pp-buy:hover{border-color:#F1D04A}.pt-ov .pp-buys .pp-buy:active{transform:scale(.98)}.pt-ov .pp-buys .pp-buy:focus-visible{outline:2px solid #F1D04A;outline-offset:2px}.pt-ov .pp-buys .pp-buy:disabled{opacity:.55}.pt-ov .pp-buys .pp-buy small{display:inline-block;margin:0;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.3);color:#ffe27a;font-size:10.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;opacity:1}.pt-ov .pp-buys .pp-buy[data-buy="nine"]{background:linear-gradient(180deg,#ffe27a,#f1b62a);color:#2a1a04;border-color:#fff3b0;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 22px rgba(241,182,42,.35)}.pt-ov .pp-buys .pp-buy[data-buy="nine"] small{background:#2a1a04;color:#ffe27a}\
 .pp-sheet.pp-oolf{background:linear-gradient(#173226,#0a1a24);align-items:stretch;justify-content:flex-start;flex-direction:column;padding:0;overflow:auto}\
 .pp-oolf .pp-hdr{position:relative;background:none}.pp-oolb{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 18px calc(env(safe-area-inset-bottom,0px) + 24px);max-width:420px;width:100%;margin:0 auto;box-sizing:border-box;text-align:center}\
 .pp-oolb .k{font-size:13px;letter-spacing:.18em;font-weight:900;color:#ff6a55;margin-top:18px}.pp-oolb .pp-lives{gap:10px}.pp-oolb .pp-lives .pp-h,.pp-oolb .pp-lives .pp-h svg{width:42px;height:42px}\
@@ -3762,8 +3763,9 @@ function outOfLives(){
    and comes back to /golf/?putt=lives_paid, where the host asks for lives again (RTT_PUTT.livesRefresh). */
 function canBuyLives(st, p){ var h = hostOf(); return PUTT_LIVES_ENABLED && !!h.buyLives && (st.lives || 0) + p.lives - livesMax() <= LIVES_EXTRA_MAX; }
 function buyRow(st){ var any = LIVES_BUY.some(function(p){ return canBuyLives(st, p); });
-  return LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide" data-buy="' + p.pack + '">' + buyLabel(p) + (p.tag ? '<small>' + p.tag + '</small>' : '') + '</button>' : ''; }).join('') +
-    (any ? '<div class="m" data-buym hidden></div>' : ''); }
+  if (!any) return '';
+  return '<div class="pp-buys">' + LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide pp-buy" data-buy="' + p.pack + '">' + buyLabel(p) + (p.tag ? '<small>' + p.tag + '</small>' : '') + '</button>' : ''; }).join('') +
+    '<div class="m" data-buym hidden></div></div>'; }
 function wireBuy(sh){ sh.querySelectorAll('[data-buy]').forEach(function(bb){ bb.onclick = function(){ buyLives(sh, bb, bb.getAttribute('data-buy')); }; }); }
 /* THE LIVES SHEET, opened by tapping the hearts anywhere in Putt Putt: what is held, the next life's clock, the buttons. */
 function livesSheet(){ if (S.ov.querySelector('.pp-livesh')) return; var st = pload(), n = livesNow(st);

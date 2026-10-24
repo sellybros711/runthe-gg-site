@@ -189,6 +189,12 @@ if (previewMod.PITCH_COLORS) {
   const ui = m ? JSON.parse(m[1].replace(/'/g, '"')) : null;
   if (!ui || JSON.stringify(ui) !== JSON.stringify(previewMod.PITCH_COLORS)) { console.log('FAIL the indicator palette (preview.js PITCH_COLORS) is not ui.js PITCH_COLORS'); fails.push('palette'); }
 }
+// 5b. each pitch type's own colour is the same map on the page and in the stage (ui.js TYPE_COLORS)
+if (previewMod.TYPE_COLORS) {
+  const m = fs.readFileSync(path.join(GAME, 'ui.js'), 'utf8').match(/var TYPE_COLORS = (\{[^}]*\});/);
+  const ui = m ? JSON.parse(m[1].replace(/'/g, '"').replace(/(\w+):/g, '"$1":')) : null;
+  if (!ui || JSON.stringify(ui) !== JSON.stringify(previewMod.TYPE_COLORS)) { console.log('FAIL the type colours (preview.js TYPE_COLORS) are not ui.js TYPE_COLORS'); fails.push('type colours'); }
+}
 console.log(`\n${n} pitches (every arsenal pitch in every pack, both hands, ${AIMS.length} aim points each, both sides of the plate on screen)`);
 console.log(`wrong way: ${wrongWay}   wrong size: ${wrongSize}   failing: ${fails.length}`);
 if (fails.length) { console.log('check-pitches: FAIL'); process.exit(1); }
