@@ -26,19 +26,24 @@ const ROOT = path.join(HERE, '../..');
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const problems = [];
 
-/* 1. Nothing public names it. Every file the deploy could serve, which is
-   everything but the code under functions/ and the repo's own tooling. Only
-   these may mention the game. */
-const ALLOWED = ['functions/_lastshot/', 'functions/last-shot/', '.claude/agents/last-shot.md', '.github/workflows/last-shot-checks.yml'];
-const SKIP_DIRS = new Set(['.git', 'node_modules']);
+/* 1. Nothing public names it. Every file the deploy could serve as a page or
+   an asset, which is everything but:
+     functions/   Pages Function code, never served as files (check 3 holds
+                  that). Other gated tools live there too and may name the
+                  game: the Sky World draws every game as an island.
+     .claude/, .github/   the repo's own tooling (agents, skills, workflows).
+   A public Function that rendered the game would still be caught: it would
+   have to answer a path, and test/gate.test.mjs and check 4 hold the one
+   Function that does. */
+const SKIP_TOP = new Set(['functions', '.claude', '.github']);
+const SKIP_ANY = new Set(['.git', 'node_modules']);
 /* Not last_shot: hoops names its own buzzer beater variables that way. */
 const NAMES = [/Last Shot/, /last-shot/i, /lastshot/i];
 const TEXT = /\.(html?|js|mjs|cjs|json|xml|txt|md|css|svg|webmanifest|ya?ml|toml)$|^_redirects$|^_headers$|^CNAME$/i;
 function walk(dir) {
   for (const e of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
     const rel = dir ? dir + '/' + e.name : e.name;
-    if (SKIP_DIRS.has(e.name)) continue;
-    if (ALLOWED.some(a => rel === a || rel.startsWith(a) || (a.endsWith('/') && rel + '/' === a))) continue;
+    if (SKIP_ANY.has(e.name) || (!dir && SKIP_TOP.has(e.name))) continue;
     if (e.isDirectory()) {
       if (NAMES.some(n => n.test(e.name))) problems.push(rel + '/ is a folder named for the game; a folder at the site root is public');
       walk(rel); continue;
