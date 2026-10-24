@@ -213,7 +213,10 @@ for (let attempt = 0; attempt < 24 && !found; attempt++) {
   if (d.stalled != null || !(await toOctober(p))) { await ctx.close(); continue; }
   const tl = [];
   const t0 = Date.now();
-  while (Date.now() - t0 < 300000) {
+  /* Fifteen minutes, because a GitHub runner is slow: five ran out there before a
+     watched October reached the results screen (2026-10-15). The loop stops the
+     moment October is over, so a passing run costs what it always did. */
+  while (Date.now() - t0 < 900000) {
     const s = await sample(p);
     tl.push(s);
     if (s.over) break;

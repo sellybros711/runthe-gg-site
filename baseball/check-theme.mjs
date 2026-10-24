@@ -130,7 +130,8 @@ const PROBE = () => {
         const size = parseFloat(cs.fontSize), bold = (parseInt(cs.fontWeight, 10) || 400) >= 700;
         const large = size >= 24 || (size >= 18.66 && bold);
         text.push({ t: txt.slice(0, 40), r: +r.toFixed(2), need: large ? 3 : 4.5,
-          cls: (el.className || '').toString().slice(0, 36) });
+          cls: (el.className || '').toString().slice(0, 36),
+          up: ((el.parentElement && el.parentElement.className) || '').toString().slice(0, 36) });
       }
     }
 
@@ -352,8 +353,14 @@ console.log('\n3. The dark theme never reads worse than the light one');
     });
     all.push(...(await page.evaluate(PROBE)).text);
     /* Keyed on the WORDS plus the rule, because the two runs are two drafts and
-       the players are not the same; the chrome is. */
-    by[theme] = new Map(all.map((x) => [x.cls + '|' + x.t, x]));
+       the players are not the same; the chrome is. AND ON THE PARENT'S CLASSES,
+       because one rule and one word can be two different things: the lineup
+       card's "3B" chip is grey on an empty slot and gold with white type on a
+       filled one, and the two drafts do not leave the same slots empty. Keyed
+       without it, the light run's empty 3B (4.56:1) was set against the dark run's
+       filled 3B (3.5:1, gold in both themes) and failed about two runs in three on
+       an untouched main. */
+    by[theme] = new Map(all.map((x) => [x.cls + '|' + x.up + '|' + x.t, x]));
     claim(all.length > 120, `${theme}: read enough text to mean something`, `${all.length} elements`);
     await ctx.close();
   }

@@ -1248,7 +1248,13 @@ function planEdit(ctx) {
       const thr = ev.filter((e) => e.kind === 'throw' && e.s <= po.ballAt + 1e-6).pop();
       // (a tag play: until the tag, after the ball is in)
       const outT = po.tagAt ?? po.ballAt;
-      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: po.base === 4 ? 'plate' : 'follow', pri: 8, m: outT });
+      // (the relay of a double play is seen from the side: down the line, the pivot man and the man
+      // taking it one behind the other in a narrow frame, not side by side across a phone, so the
+      // pivot's tight shot cuts to it as the ball leaves instead of pulling back to the whole infield)
+      const sg = thr && p.segs.find((x) => x.kind === 'throw' && Math.abs(x.t0 - thr.s) < 1e-6);
+      const relay = (ctx.putouts || []).indexOf(po) > 0;
+      const long = relay && sg && Math.hypot(sg.b.x - sg.a.x, sg.b.y - sg.a.y) > 70;
+      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: po.base === 4 ? 'plate' : long ? 'wide' : 'follow', pri: 8, m: outT });
     }
     // a tag-up: the catch, then straight to the runner leaving his bag on it (the umpire's look)
     if (ctx.catchAt && kind === 'air_out') {
@@ -1339,6 +1345,13 @@ function planEdit(ctx) {
     if (!inCut(p.resolveAt)) p.resolveAt = pieces[pieces.length - 1].s0;
     void throws; void ballDone; void runnerDone;
   }
+  // no flash, no rewind: a shot under 0.4 s that follows straight on from another is no shot on a phone,
+  // just a blink of another camera (two deciding moments a few hundredths apart in two cameras left one
+  // a 0.06 s tail), so the shot before holds on through it; and the cut never runs scene time
+  // backwards (a cut placed between two moments before its own shot began made a piece that ended
+  // before it started, and the next one replayed the play). The shot that holds on frames the moment
+  // it took in (inplay.js brings each deciding moment into whatever shot is on).
+  tidyCut(pieces);
   // the slow motion piece: split whatever piece holds it
   if (slow) {
     const out = [];
@@ -1359,6 +1372,36 @@ function planEdit(ctx) {
   if (decisive) p.events.push({ s: decisive.s, kind: 'crowd', cue: decisive.kind === 'over' || decisive.kind === 'run' ? 'roar' : 'big' });
   for (const e of p.events) if (e.kind === 'out') e.crowd = true;
   p.events.sort((a, b) => a.s - b.s);
+}
+
+/** The cut, in order: never backwards, no shot under MIN_SHOT (folded into the one before it, or
+    lengthened back into the gap before a jump cut). Pieces are { s0, s1, cam, rate, m }. */
+const MIN_SHOT = 0.4;
+function tidyCut(pieces) {
+  const out = [pieces[0]];
+  for (const src of pieces.slice(1)) {
+    const pc = { ...src }, prev = out[out.length - 1];
+    if (pc.s0 < prev.s1) pc.s0 = prev.s1;                       // (never back over what was shown)
+    if (pc.s1 - pc.s0 >= MIN_SHOT) { out.push(pc); continue; }
+    if (pc.s1 <= pc.s0) continue;                               // (nothing left of it)
+    if (pc.s0 - prev.s1 < 1e-6 && prev.cam !== 'pitcher') {
+      // straight on from the shot before: that camera holds on through it
+      prev.s1 = pc.s1;
+      if (pc.m != null && prev.m == null) prev.m = pc.m;
+      continue;
+    }
+    // after a jump cut (or the pitcher's view): it starts earlier, into the gap, to make a shot
+    pc.s0 = Math.max(prev.s1, pc.s1 - MIN_SHOT);
+    if (pc.s1 - pc.s0 < MIN_SHOT && pc.s0 - prev.s1 < 1e-6 && prev.cam !== 'pitcher') { prev.s1 = pc.s1; continue; }
+    out.push(pc);
+  }
+  // (a short one straight after the pitcher's view, with nothing before it to hold on: the shot after
+  // it starts where it did instead)
+  for (let i = 1; i < out.length - 1; i++) {
+    const pc = out[i], nx = out[i + 1];
+    if (pc.s1 - pc.s0 < MIN_SHOT && out[i - 1].cam === 'pitcher' && nx.s0 - pc.s1 < 1e-6) { nx.s0 = pc.s0; if (pc.m != null && nx.m == null) nx.m = pc.m; out.splice(i, 1); i--; }
+  }
+  pieces.splice(0, pieces.length, ...out);
 }
 
 function apexTime(ctx) {
