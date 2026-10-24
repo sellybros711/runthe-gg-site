@@ -40,7 +40,9 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&family=Russo+One&display=swap" rel="stylesheet" />
+<!-- The font sheet loads without blocking the first paint: text shows in the fallback face, then swaps. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Russo+One&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Russo+One&display=swap" /></noscript>
 
 <!-- Google Consent Mode v2 defaults: deny advertising storage until the certified CMP (loaded by the
      AdSense tag) records the user's choice, then updates these signals. Analytics storage defaults to
@@ -58,9 +60,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
 <!-- RunThe.GG accounts (same Supabase project + keys as the games; the session
      lives in localStorage on this origin, so signing in here carries into every game) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter: the box a signed-in player ticks. See supabase/121_newsletter.sql. -->
-<script src="/assets/newsletter.js?v=2"></script>
+<script defer src="/assets/newsletter.js?v=2"></script>
 
 <style>
   /* =====================================================================
@@ -74,7 +76,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   :root{
     --bg:#0d1128; --bg-2:#11163a; --surf:#161c3f; --surf-2:#1c2350; --surf-3:#252e63;
     --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
-    --ink:#f1f5fb; --ink-2:#c3cedd; --mut:#8e9bb1; --mut-2:#6b7890;
+    --ink:#f1f5fb; --ink-2:#c3cedd; --mut:#8e9bb1; --mut-2:#7f8da6;
     --brand:#6EE84E; --brand-2:#3fcf6b; --teal:#66D3DE; --gold:#6EE84E; --green:#6EE84E;
     --cfb:#18c38a; --nfl:#ef4a4a; --golf:#f2b63c; --arcade:#ff8a3d; --pitch:#3fd0d8; --base:#e8394a;
     --r-lg:20px; --r-md:14px; --r-sm:10px;
@@ -301,7 +303,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .spot .ribbon:before{content:"";width:7px;height:7px;border-radius:50%;background:#6EE84E;animation:livePulse 2.4s ease-out infinite;}
   /* The spot is the launch slot, pinned to the newest game. When the next game
      ships, point the spot's markup at it and keep this ribbon. */
-  .spot .ribbon.new{background:#e8394a;color:#fff;padding-left:6px;box-shadow:0 0 0 3px rgba(232,57,74,.28),0 8px 20px -6px rgba(232,57,74,.8);}
+  .spot .ribbon.new{background:#cf2d3f;color:#fff;padding-left:6px;box-shadow:0 0 0 3px rgba(232,57,74,.28),0 8px 20px -6px rgba(232,57,74,.8);}
   .spot .ribbon.new:before{display:none;}
   .spot .ribbon.new b{background:#fff;color:#c21f30;border-radius:999px;padding:2px 7px;font-weight:900;animation:newPop 2.4s ease-in-out infinite;}
   @keyframes newPop{0%,70%,100%{transform:scale(1);}80%{transform:scale(1.12);}}
@@ -1034,9 +1036,9 @@ window.GA_ID='G-L29P5MRWKE';
           <span class="beams" aria-hidden="true"><i></i><i></i></span>
           <span class="tagline"><span class="pill hot">World Cup</span><span class="pill">Draft</span></span>
           <a class="shots" href="/soccer/" aria-label="Play Run The Pitch">
-            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip2.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Building your starting XI in Run The Pitch"><source src="/assets/screens/soccer-clip2.webm" type="video/webm" /><source src="/assets/screens/soccer-clip2.mp4" type="video/mp4" /></video></span>
-            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip1.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Spinning a nation and year in Run The Pitch"><source src="/assets/screens/soccer-clip1.webm" type="video/webm" /><source src="/assets/screens/soccer-clip1.mp4" type="video/mp4" /></video></span>
-            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip3.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Simulating a World Cup match in Run The Pitch"><source src="/assets/screens/soccer-clip3.webm" type="video/webm" /><source src="/assets/screens/soccer-clip3.mp4" type="video/mp4" /></video></span>
+            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip2.jpg" width="440" height="954" muted loop playsinline preload="metadata" aria-label="Building your starting XI in Run The Pitch"><source src="/assets/screens/soccer-clip2.webm" type="video/webm" /><source src="/assets/screens/soccer-clip2.mp4" type="video/mp4" /></video></span>
+            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip1.jpg" width="440" height="954" muted loop playsinline preload="metadata" aria-label="Spinning a nation and year in Run The Pitch"><source src="/assets/screens/soccer-clip1.webm" type="video/webm" /><source src="/assets/screens/soccer-clip1.mp4" type="video/mp4" /></video></span>
+            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip3.jpg" width="440" height="954" muted loop playsinline preload="metadata" aria-label="Simulating a World Cup match in Run The Pitch"><source src="/assets/screens/soccer-clip3.webm" type="video/webm" /><source src="/assets/screens/soccer-clip3.mp4" type="video/mp4" /></video></span>
           </a>
         </div>
         <div class="feat-info">
@@ -1085,11 +1087,6 @@ window.GA_ID='G-L29P5MRWKE';
         <h2>More sports are coming</h2>
         <p class="sub">New games are in the works. Your one RunThe.GG account will play every one of them.</p>
       </div>
-    </div>
-    <div class="deck">
-      <div class="dk hoops rv"><div class="lg an-bounce"><svg viewBox="0 0 48 48" width="58" height="58" aria-hidden="true"><circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M9 24h30M24 9v30M13 13c6 6 6 16 0 22M35 13c-6 6-6 16 0 22" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><div class="sport">Basketball</div><div class="nm">Coming soon</div><p>A new way to run the hardwood.</p></div>
-      <div class="dk wrest rv"><div class="lg an-shine"><svg viewBox="0 0 48 48" width="58" height="58" aria-hidden="true"><rect x="8" y="16" width="32" height="16" rx="5" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="24" cy="24" r="5.5" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M4 24h4M40 24h4" stroke="currentColor" stroke-width="2.5"/></svg></div><div class="sport">Wrestling</div><div class="nm">Coming soon</div><p>Title shots are on the way.</p></div>
-      <div class="dk myth rv"><div class="lg an-pulse"><svg viewBox="0 0 48 48" width="58" height="58" aria-hidden="true"><path d="M24 10v28M10 24h28" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></div><div class="sport">And more</div><div class="nm">In the works</div><p>New sports join the lineup over time.</p></div>
     </div>
     <div class="news rv" id="news">
       <div class="nf-copy">
@@ -1195,7 +1192,7 @@ window.GA_ID='G-L29P5MRWKE';
           <img src="/assets/wm-runthegg.png?v=1" alt="Runthe.GG" width="1200" height="171" loading="lazy" />
           <p>Free to play, funded by players. Help us keep building.</p>
           <div class="foot-actions">
-            <a class="kofi" href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi">&#9829; Support us</a>
+            <a class="kofi" href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support us on Ko-fi">&#9829; Support us</a>
             <a class="xlink follow" href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b></a>
           </div>
         </div>
@@ -1907,29 +1904,48 @@ document.querySelectorAll('.feat-link').forEach(function(a){
 })();
 </script>
 
-<script src="/golf/pxgolfer.js?v=3"></script>
+<!-- Not run by the browser (the type is unknown). The golf card script below copies this src, so the version is pinned in one place and check-cachebust still sees it. -->
+<script type="text/lazy" src="/golf/pxgolfer.js?v=3"></script>
 <script>
 /* Golf card: four golfers rendered by Run The Tour's own pixel-golfer engine (golf/pxgolfer.js),
    reshuffling to a new random look every 5s so visitors see the exact characters, outfits and
-   accessories they can design in the game. Reduce-motion shows a static line-up. */
+   accessories they can design in the game. Reduce-motion shows a static line-up.
+   The engine is 350 KB and the card is below the fold, so it loads when the card is about to
+   show (or after the page is idle on a browser with no IntersectionObserver). */
 (function(){
   var slots=[].slice.call(document.querySelectorAll('.golfer-slot'));
-  if(!slots.length || !window.RTGolfer) return;
+  if(!slots.length) return;
   var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   function paint(el){
     var img=el.firstChild;
     if(!img){ img=new Image(); img.alt=''; img.decoding='async'; el.appendChild(img); }
     try{ img.src=RTGolfer.url(RTGolfer.randomLook()); }catch(e){}
   }
-  slots.forEach(paint);
-  if(reduce) return;
-  function rerollAll(){
-    slots.forEach(function(el,i){ setTimeout(function(){
-      el.classList.add('rolling');
-      setTimeout(function(){ paint(el); el.classList.remove('rolling'); }, 210);
-    }, i*150); });
+  function start(){
+    if(!window.RTGolfer) return;
+    slots.forEach(paint);
+    if(reduce) return;
+    function rerollAll(){
+      slots.forEach(function(el,i){ setTimeout(function(){
+        el.classList.add('rolling');
+        setTimeout(function(){ paint(el); el.classList.remove('rolling'); }, 210);
+      }, i*150); });
+    }
+    setInterval(rerollAll, 5000);
   }
-  setInterval(rerollAll, 5000);
+  var loaded=false;
+  function load(){
+    if(loaded) return; loaded=true;
+    var tag=document.querySelector('script[type="text/lazy"][src*="pxgolfer"]'); if(!tag) return;
+    var sc=document.createElement('script'); sc.src=tag.getAttribute('src'); sc.onload=start;
+    document.head.appendChild(sc);
+  }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      if(es.some(function(e){ return e.isIntersecting; })){ io.disconnect(); load(); }
+    },{rootMargin:'600px 0px'});
+    slots.forEach(function(el){ io.observe(el); });
+  } else setTimeout(load,3000);
 })();
 </script>
 <script>
