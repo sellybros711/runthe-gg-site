@@ -7,8 +7,9 @@
  *                                            small renderer: the idle glove draws here alone, at 30
  *                                            frames a second, and the park is never drawn again for it
  *   fp.setPitcher(facts, kit)               his hand, his arm slot, his skin tone, his club's sleeve
- *   fp.layout(w, h, safe, zone)             the canvas in CSS px, the HUD's safe rect, the zone's grid
- *                                            box on screen (the glove keeps out of both)
+ *   fp.layout(w, h, safe, zone, panels)     the canvas in CSS px, the HUD's safe rect, the zone's grid
+ *                                            box on screen, the HUD's panels on the canvas (without a
+ *                                            safe rect): the glove keeps out of all of them
  *   fp.pose(t)                              play time t (0: the set; T_RELEASE: the ball leaves his hand)
  *   fp.render(camera)                       the scene's camera, for the sun's direction
  *   fp.lensFor(pitch, eye, camera)          the ball out of his hand (THE LENS, below)
@@ -280,9 +281,9 @@ export class FirstPerson {
 
   /** Where things go on this screen. safe: the HUD's insets (CSS px) or null; zone: the aim grid's
       box on the canvas (stage.gridRect). */
-  layout(w, h, safe, zone) {
+  layout(w, h, safe, zone, panels) {
     if (!this.ok || !w || !h) return;
-    this.w = w; this.h = h; this.safe = safe || null; this.zone = zone || null;
+    this.w = w; this.h = h; this.safe = safe || null; this.zone = zone || null; this.panels = panels || null;
     this.renderer.setSize(w, h, false);
     this.unit = Math.min(w, h) / 2;
     this.camera.aspect = w / h;
@@ -301,11 +302,27 @@ export class FirstPerson {
   place() {
     if (!this.w) return;
     const { w, h, unit, side } = this;
-    const bottom = h - (this.safe ? Math.max(0, this.safe.bottom || 0) : 0);
+    let bottom = h - (this.safe ? Math.max(0, this.safe.bottom || 0) : 0);
     // the glove: a third of a phone's width, a quarter of a wide screen's height, in his glove side
     // corner, two thirds of it over the bottom (or the HUD's dock)
     const s = Math.min(0.36 * w, 0.26 * h);
-    let gx = side > 0 ? 0.42 * s : w - 0.42 * s, gy = bottom - 0.16 * s;
+    let gx = side > 0 ? 0.42 * s : w - 0.42 * s;
+    // no safe rect from the page: keep off the HUD's own panels (layout's panels). A dock along the
+    // bottom, it stands on; a tall panel in the corner, it goes beside, toward the middle
+    if (!this.safe && this.panels && this.panels.length) {
+      const over = (x, floor) => this.panels.filter((p) => p.x1 > x - 0.5 * s && p.x0 < x + 0.5 * s && p.y1 > floor - 0.7 * s && p.y0 < floor);
+      const hit = over(gx, h);
+      if (hit.length) {
+        const top = Math.min(...hit.map((p) => p.y0));
+        if (h - top <= 0.3 * h) bottom = top;
+        else {
+          gx = side > 0 ? Math.max(...hit.map((p) => p.x1)) + 0.5 * s : Math.min(...hit.map((p) => p.x0)) - 0.5 * s;
+          const again = over(gx, h);
+          if (again.length) bottom = Math.min(...again.map((p) => p.y0));
+        }
+      }
+    }
+    let gy = bottom - 0.16 * s;
     // never over the zone's grid: lower it until it clears
     const z = this.zone;
     if (z && gx + 0.5 * s > z.x && gx - 0.5 * s < z.x + z.w) gy = Math.max(gy, z.y + z.h + 10 + 0.5 * s);

@@ -326,6 +326,21 @@ class Stage {
     if (off !== this.fp.hidden) { this.fp.hidden = off; this.fp.pose(this.t); }
   }
 
+  /** The HUD's panels over the canvas (the page marks them data-hud), in canvas CSS px: the glove
+      keeps off them when the page gives no safe rect. */
+  hudPanels() {
+    try {
+      const c = this.canvas.getBoundingClientRect(), out = [];
+      for (const el of document.querySelectorAll('[data-hud]')) {
+        const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+        if (!r.width || !r.height || cs.display === 'none' || cs.visibility === 'hidden') continue;
+        if (r.right < c.left || r.left > c.right || r.bottom < c.top || r.top > c.bottom) continue;
+        out.push({ x0: r.left - c.left, x1: r.right - c.left, y0: r.top - c.top, y1: r.bottom - c.top });
+      }
+      return out;
+    } catch (e) { return []; }
+  }
+
   /** The HUD's insets in CSS px ({ top, right, bottom, left }, or null): the frame centres the zone in
       what is left (fit). ui.js calls it before gridRect(). */
   setSafeRect(r) {
@@ -362,7 +377,7 @@ class Stage {
     this.cam0.aspect = this.camera.aspect; this.cam0.fov = this.camera.fov; this.cam0.updateProjectionMatrix();
     this.cam0.userData.cssH = h;
     if (this.fp) {
-      this.fp.layout(w, h, this.safe, this.loaded ? this.gridRect() : null);
+      this.fp.layout(w, h, this.safe, this.loaded ? this.gridRect() : null, this.hudPanels());
       if (this.pitch && this.loaded) this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera);
       this.fp.pose(this.t);
     }

@@ -3124,7 +3124,7 @@
   "shut-the-door/3d/boot.js": {
     "stage.js": {
       "v": "44",
-      "sha": "8ae6528b0ba6a947"
+      "sha": "82e048ec4c923788"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3200,7 +3200,7 @@
     },
     "firstperson.js": {
       "v": "1",
-      "sha": "de5c0ddac00ee697"
+      "sha": "386ac885356a2151"
     }
   },
   "wrestling/ring3d/arena.js": {
