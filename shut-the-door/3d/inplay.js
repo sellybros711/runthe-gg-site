@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=5';
+import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=6';
 import { Crew } from './fielders.js?v=3';
-import { buildBallpark } from './ballpark.js?v=5';
+import { buildBallpark } from './ballpark.js?v=6';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=36';
 import { look } from './looks.js?v=2';
@@ -643,7 +643,7 @@ export class InPlay {
     lk = { x: lk.x / n, y: lk.y / n, z: lk.z / n };
     fov /= n;
     if (piece.rate < 1) fov *= 0.86;           // the slow motion beat pushes in
-    return { pos, look: lk, fov: clamp(fov, 4, 62) };
+    return { pos, look: lk, fov: clamp(fov, 4, 72) };
   }
 
   /** One camera, unsmoothed: where it is, what it looks at, the field of view that holds the points
@@ -655,6 +655,15 @@ export class InPlay {
     const fp = by ? plan.fielders[by].at(s) : null;
     const pts = [{ x: ball.x, y: ball.y, z: ball.z }];
     if (fp) pts.push({ x: fp.x, y: fp.y, z: 0 }, { x: fp.x, y: fp.y, z: 6.5 });
+    // the play's deciding moments near now (an out, a run, a runner pulling into his base safe): the
+    // runner and his bag are in the shot from a little before until just after
+    const keys = [];
+    for (const r of plan.runners) {
+      const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.from !== r.to ? r.arrive : null;
+      if (tq == null || s < tq - 0.9 || s > tq + 0.35) continue;
+      const q = r.track.at(s), bag = BASE[r.out ? r.outBase : Math.min(4, r.to)] || BASE[4];
+      keys.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }, { x: bag.x, y: bag.y, z: 0 });
+    }
     let pos, wBall = 0.6;
     const spray = plan.spray;
     if (cam === 'sky') {
@@ -691,15 +700,20 @@ export class InPlay {
       if (thNow) pts.push({ x: thNow.b.x, y: thNow.b.y, z: 6 }, { x: thNow.a.x, y: thNow.a.y, z: 0 });
       // from behind the plate, high, trailing the action at about half its distance (a camera on a
       // wire): close enough that a fielder is a figure, not a speck
+      pts.push(...keys);
+      if (keys.length) wBall = 0.3;
       const c = centre(pts, wBall);
       const r = Math.hypot(c.x, c.y);
-      pos = { x: c.x * 0.42, y: c.y * 0.42 - 48, z: 30 + r * 0.07 };
-      return this.fit(pos, pts, wBall, aspect, 1.3, 12);
+      // (with a deciding moment near, the wire pulls back and up: the bag and the runner beside the ball)
+      const kk = keys.length ? 1 : 0;
+      pos = { x: c.x * (0.42 - 0.17 * kk), y: c.y * (0.42 - 0.17 * kk) - 48 - 27 * kk, z: 30 + 12 * kk + r * 0.07 };
+      return this.fit(pos, pts, wBall, aspect, keys.length ? 1.55 : 1.3, 12);
     }
     if (cam === 'track') {
       // low behind the plate, off to the side away from the ball, panning with the liner
       const sd = spray >= 0 ? -1 : 1;
       pos = { x: sd * 40, y: -34, z: 15 };
+      pts.push(...keys);
       return this.fit(pos, pts, wBall, aspect, 1.4, 10);
     }
     if (cam === 'wide') {
@@ -716,7 +730,8 @@ export class InPlay {
         if (r.scoreAt != null && s > r.scoreAt + 0.3) continue;
         pts.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 });
       }
-      return this.fit(pos, pts, 0.35, aspect, 1.3, 12);
+      pts.push(...keys);
+      return this.fit(pos, pts, keys.length ? 0.15 : 0.35, aspect, keys.length ? 1.55 : 1.3, 12);
     }
     if (cam === 'plate') {
       // low on the first base side, the plate and the runner coming home
@@ -726,6 +741,7 @@ export class InPlay {
       pts.push({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 6 });
       for (const r of home) { const q = r.track.at(s); if (Math.hypot(q.x, q.y) < 70) pts.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }); }
       if (ball && Math.hypot(ball.x, ball.y) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
+      pts.push(...keys.filter((k) => Math.hypot(k.x, k.y) < 75));
       return this.fit(pos, pts, 0.2, aspect, 1.4, 24);
     }
     return this.fit({ x: 0, y: -52, z: 36 }, pts, wBall, aspect, 1.35, 12);
