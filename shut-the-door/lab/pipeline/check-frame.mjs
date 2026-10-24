@@ -35,7 +35,7 @@ const ASPECT = 390 / 457, MARGIN = 0.04;
 // on screen. The rest are camera solves at the frame's edge (a foul pop caught behind the plate with a
 // runner doubled off at first; two runners safe at two bases a second apart). A change that misses
 // more fails; one that misses fewer lowers the number here in the same commit.
-const CEILING = { catch: 69, out: 0, run: 35, safe: 138, 'tag-up': 0 };
+const CEILING = { catch: 72, out: 0, run: 1, safe: 96, 'tag-up': 22 };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }

@@ -521,6 +521,7 @@ function holdThenThrow(ctx, n, s, at, late) {
           eta = Math.max(go + runTime(half, 22, 16, true, true), ctx.landAt - 0.7) + runTime(d - half, 27, 16, true, false);
         }
         rel = Math.max(rel, eta - fly - (0.25 + 0.35 * rnd(ctx.id, 'bag' + o.from)));
+        o.eta = eta;
       }
       o.force = isForce(ctx, o);
       const far = OF.includes(holder) ? dist(pos, tgtPt) : 0;
@@ -557,6 +558,8 @@ function holdThenThrow(ctx, n, s, at, late) {
       }
       backUp(ctx, o.base, holder, pos, t);
     }
+    // (a tag: the next throw waits for the tag itself, as the runner gets there)
+    if (!o.force && o.eta != null) t = Math.max(t, o.eta + 0.05);
     done.push(o);
     p.events.push({ s: o.ballAt, kind: 'out', base: o.base, runner: o.from, by: o.by, force: !!o.force });
   }
@@ -962,17 +965,6 @@ function planRunners(ctx) {
       // two out: he runs on contact whatever the ball. When the play makes the third out (the catch,
       // or the throw beating the hitter) he pulls up short of the next bag and jogs back to his own
       const third = ctx.outs0 === 2 && (pr.outs ?? 0) >= 3 ? (caught ? ctx.catchAt.s : Math.max(0, ...(ctx.putouts || []).map((x) => x.ballAt ?? 0))) : 0;
-      // a runner behind him thrown out further round (the hitter out stretching): he ran ahead of him
-      // to that base and stops on it, so nobody passes him (the inning is over: where he ends does not
-      // count, and the engine keeps him on his own bag)
-      const behind = Math.max(0, ...(ctx.putouts || []).filter((x) => x.from < m.from && x.base != null).map((x) => x.base));
-      if (third > 0.5 && behind > m.from) {
-        const to = Math.min(3, behind), path = to > m.from ? basePath(m.from, to) : [];
-        // (the hitter out at the plate: he is most of the way home, short of it: no run is shown)
-        if (behind >= 4) path.push(lerp(BASE[3], BASE[4], 0.85));
-        r.arrive = tr.run(0.15, path, { toRest: true });
-        continue;
-      }
       if (third > 0.5) {
         tr.arrive(0.15, lerp(off, next, 0.85), Math.max(1.2, third + 0.2), { toRest: true });
         r.arrive = tr.run(Math.max(tr.free, third + 0.6), [BASE[m.from]], { v: 9, toRest: true });
@@ -1136,7 +1128,6 @@ function roundFirst() { return [{ x: BASE[1].x - 10, y: BASE[1].y - 14 }, { x: B
 /** Does runner r (behind) pass any of the runners ahead while both still run? (verify() holds the same) */
 function passes(r, ahead, pr) {
   for (const f of ahead) {
-    if (pr.outs >= 3 && f.to === f.from) continue;
     let pb = r.from, pf = f.from;
     for (let t = 0; t <= 16; t += 0.05) {
       pb = pathProg(r.track.at(t), pb); pf = pathProg(f.track.at(t), pf);
@@ -1465,11 +1456,6 @@ export function verify(pr, plan) {
   const rs = plan.runners.slice().sort((a, b) => a.from - b.from);
   passing: for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
     const back = rs[i], front = rs[j];
-    // (an engine row that cannot be played without it is left to the game: the third out made on a
-    // runner thrown out past a runner the engine keeps on his bag, as a triple with the hitter out at
-    // the plate and the runner from first held at first. Reported, not drawn as a run)
-    const po = (plan.outcome.putouts || []).find((x) => x.from === back.from);
-    if (pr.outs >= 3 && front.to === front.from && po && po.base > front.from) continue;
     let pb = back.from, pf = front.from;
     for (let t = 0; t <= plan.dur + 2; t += 0.05) {
       pb = prog(back.track.at(t), pb); pf = prog(front.track.at(t), pf);
@@ -1518,9 +1504,6 @@ export function verify(pr, plan) {
   for (const r of o.runners) {
     if (r.out) continue;
     if (r.to === 4) { if (r.base !== 4) bad.push(`runner from ${r.from} should score, ends at ${r.base}`); else scored++; continue; }
-    // (the third out made: a runner the engine keeps on his bag may stand on a base further round,
-    // ahead of a runner thrown out behind him; the inning is over and it counts for nothing)
-    if (pr.outs >= 3 && r.to === r.from && (r.base == null || r.base > r.from && r.base <= 3)) continue;
     if (r.base !== r.to) bad.push(`runner from ${r.from} should end on ${r.to}, ends on ${r.base}`);
     else if (r.to >= 1 && r.to <= 3) shown |= 1 << (r.to - 1);
   }

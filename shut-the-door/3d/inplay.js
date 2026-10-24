@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=6';
+import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=7';
 import { Crew } from './fielders.js?v=3';
-import { buildBallpark } from './ballpark.js?v=6';
+import { buildBallpark } from './ballpark.js?v=7';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=36';
 import { look } from './looks.js?v=2';
@@ -225,7 +225,11 @@ export class InPlay {
       if (sg) {
         if (!sg.hand) {
           const f = this.fielders[sg.from], seen = f.root.visible;
+          // (the runners at that moment too: a throw after a tag starts from the hand that tagged)
+          const shown = plan.runners.map((r) => !!(r.fig && r.fig.root.visible));
+          for (const r of plan.runners) if (r.fig) this.poseRunner(r, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3));
           this.poseFielder(sg.from, f, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3));
+          plan.runners.forEach((r, i) => { if (!r.fig) return; if (shown[i]) this.poseRunner(r, s, b); else r.fig.root.visible = false; });
           f.root.updateMatrixWorld(true);
           sg.hand = f.handPoint('hand');
           if (seen) this.poseFielder(sg.from, f, s, b); else f.root.visible = false;
@@ -387,7 +391,7 @@ export class InPlay {
             spec.crouch = Math.max(spec.crouch, 0.8 * k3);
             // (his hips as he is drawn, sliding in: the tag goes on him there)
             let tg = { x: q.x, y: q.y, z: 0.7 };
-            if (r.fig && r.fig.root.visible && s <= tt + 0.02) { r.fig.root.updateMatrixWorld(true); const pj = r.fig.jointPoint('pelvis'); tg = { x: pj.x, y: pj.y, z: Math.max(0.5, pj.z) }; }
+            if (r.fig && r.fig.root.visible && r.fig.posedAt === s && s <= tt + 0.02) { r.fig.root.updateMatrixWorld(true); const pj = r.fig.jointPoint('pelvis'); tg = { x: pj.x, y: pj.y, z: Math.max(0.5, pj.z) }; }
             glove = tg; gloveW = Math.max(gloveW, k3);
             // (once the ball is in his glove the tag is what he reaches for)
             const kw = ramp(s, tt - 0.35, tt - 0.03) * (1 - ramp(s, tt + 0.3, tt + 0.8));
@@ -585,6 +589,7 @@ export class InPlay {
     if (lead) yaw = heading({ x, y }, BASE[Math.min(4, r.from + 1)]) - Math.PI / 2 * (r.from === 2 ? 0.5 : 1);
     f.place(x, y, yaw, {});
     f.pose(spec);
+    f.posedAt = s;
   }
 
   /** The runners for the scorebar diamond (ui.js hudRunners): a place on the paths (0 home, 1..3
@@ -673,6 +678,23 @@ export class InPlay {
 
   /** The camera of a piece of the cut at plan time s, smoothed over a few samples inside the piece. */
   cameraAt(piece, s, aspect) {
+    // the wide camera's side, chosen once a shot (it never swaps mid shot): the side whose lens holds
+    // the shot's middle moment narrower, first base side or third
+    if (piece.cam === 'wide' && piece.side == null) {
+      // (a shot split for its slow motion beat keeps one side: the run of wide pieces decides together)
+      const ed = this.active.plan.edit;
+      let i0 = ed.indexOf(piece), i1 = i0;
+      while (i0 > 0 && ed[i0 - 1].cam === 'wide' && Math.abs(ed[i0 - 1].s1 - ed[i0].s0) < 1e-6) i0--;
+      while (i1 >= 0 && i1 < ed.length - 1 && ed[i1 + 1].cam === 'wide' && Math.abs(ed[i1 + 1].s0 - ed[i1].s1) < 1e-6) i1++;
+      const mid = i0 >= 0 ? (ed[i0].s0 + ed[i1].s1) / 2 : (piece.s0 + piece.s1) / 2;
+      this.wideSide = -1; const a = this.rawCam('wide', mid, aspect).fov;
+      this.wideSide = 1; const b = this.rawCam('wide', mid, aspect).fov;
+      this.wideSide = null;
+      const def = this.rawCam('wide', mid, aspect).pos.x > 0 ? 1 : -1;
+      piece.side = Math.abs(a - b) < 4 ? def : a < b ? -1 : 1;
+      if (i0 >= 0) for (let i = i0; i <= i1; i++) ed[i].side = piece.side;
+    }
+    this.wideSide = piece.cam === 'wide' ? piece.side : null;
     // (a liner or a climbing ball moves fast: its cameras smooth over less time, so it stays in frame)
     const offs = piece.cam === 'track' || piece.cam === 'sky' ? [-0.1, -0.05, 0, 0.05, 0.1] : [-0.24, -0.12, 0, 0.12, 0.24];
     let pos = { x: 0, y: 0, z: 0 }, lk = { x: 0, y: 0, z: 0 }, fov = 0, n = 0;
@@ -757,6 +779,8 @@ export class InPlay {
       // (with a deciding moment near, the wire pulls back and up: the bag and the runner beside the ball)
       const kk = keys.length ? 1 : 0;
       pos = { x: c.x * (0.42 - 0.17 * kk), y: c.y * (0.42 - 0.17 * kk) - 48 - 27 * kk, z: 30 + 12 * kk + r * 0.07 };
+      // (never back in the seats behind the plate, 56 ft back: it climbs instead of backing up)
+      if (pos.y < -46 && c.y > 20) { pos.z += (-46 - pos.y) * 0.6; pos.y = -46; }
       return this.fit(pos, pts, wBall, aspect, keys.length ? 1.55 : 1.3, 12);
     }
     if (cam === 'track') {
@@ -769,8 +793,9 @@ export class InPlay {
     if (cam === 'wide') {
       // the other angle for a jump cut: high on the side of the field away from the ball (a camera
       // over the dugout), on the ball, whoever has it, where it is going and the runners near it
-      const sd = ball.x >= 0 ? -1 : 1;
-      pos = { x: sd * 105, y: 20, z: 42 };
+      // (the side that holds it all in the narrower lens, the first base side or the third)
+      const sd0 = ball.x >= 0 ? -1 : 1;
+      pos = { x: sd0 * 105, y: 20, z: 42 };
       const th = plan.segs.find((sg) => sg.kind === 'throw' && sg.t1 > s - 0.1 && sg.t0 < s + 1.2);
       if (th) pts.push({ x: th.b.x, y: th.b.y, z: 0 }, { x: th.b.x, y: th.b.y, z: 6 });
       for (const r of plan.runners) {
@@ -781,7 +806,9 @@ export class InPlay {
         pts.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 });
       }
       pts.push(...keys);
-      return this.fit(pos, pts, keys.length ? 0.15 : 0.35, aspect, keys.length ? 1.55 : 1.3, 12);
+      const w0 = keys.length ? 0.15 : 0.35, m0 = keys.length ? 1.55 : 1.3;
+      if (this.wideSide) pos.x = this.wideSide * 105;
+      return this.fit(pos, pts, w0, aspect, m0, 12);
     }
     if (cam === 'plate') {
       // low on the first base side, the plate and the runner coming home
