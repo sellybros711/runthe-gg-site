@@ -1156,16 +1156,20 @@ function vsHead(v, his) {
   return v === 'beat' ? 'you beat ' + his : v === 'matched' ? 'you matched ' + his : v === 'lost' ? his + ' did better' : '-';
 }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+/* each outcome as what a pitcher did, so the line reads as two short sentences: "you held the tie.
+   he let them take the lead." */
+var VS_DID = { door_shut: 'shut the door', tie_held: 'held the tie', doors_open: 'let them take the lead', walk_off: 'gave up the walk-off' };
 function vsWhy(r, rv, runs) {
-  var mine = (C.OUTCOME_LABEL[r.outcome] || '').toLowerCase(), hisOut = (C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase();
-  if (r.outcome !== rv.outcome) return mine + ' to his ' + hisOut + '.';
-  var a = mine + ' both times.';
+  var mine = VS_DID[r.outcome], hisDid = VS_DID[rv.outcome];
+  if (!mine || !hisDid) return '';
+  if (r.outcome !== rv.outcome) return 'you ' + mine + '. he ' + hisDid + '.';
+  var a = 'you both ' + mine + '.';
   if (runs == null || rv.runs == null) return a;
-  if (runs !== rv.runs) return a + ' ' + plural(runs, 'run', 'runs') + ' to his ' + rv.runs + '.';
+  if (runs !== rv.runs) return a + ' you gave up ' + plural(runs, 'run', 'runs') + '. he gave up ' + rv.runs + '.';
   a += ' ' + plural(runs, 'run', 'runs') + ' each.';
   if (typeof rv.pitches !== 'number') return a + ' his pitch count is not on record.';
   if (r.pitches === rv.pitches) return a + ' ' + plural(r.pitches, 'pitch', 'pitches') + ' each.';
-  return a + ' ' + plural(r.pitches, 'pitch', 'pitches') + ' to his ' + rv.pitches + '.';
+  return a + ' you needed ' + plural(r.pitches, 'pitch', 'pitches') + '. he needed ' + rv.pitches + '.';
 }
 
 /* Your plate appearances from the outing's log: one per batter, in order. The word is the play by
