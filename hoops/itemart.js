@@ -266,7 +266,27 @@ function packGrid(id){
 }
 
 /* ── coins and shards ─────────────────────────────────────────────────── */
-var COIN = ['..aaaa..', '.abbbba.', 'abbccbba', 'abcbbcba', 'abbccbba', 'abcbbcba', '.abbbba.', '..aaaa..'];
+/* THE COIN, 12 cells: a round outline, a rim lit from the top left, a ring
+   struck into the face (dark where the light hits it, bright where it falls
+   away) and a raised bar in the middle. It is drawn at a whole number of
+   pixels a cell (12, 24, 36), never between: COIN_N is the grid every
+   coin's CSS size is a multiple of (check-shopart and check-closet). */
+var COIN = [
+  '....kkkk....',
+  '..kkllllkk..',
+  '.kwleeeebdk.',
+  '.klebbbbedk.',
+  'klebbyebbydk',
+  'klebbyebbydk',
+  'klebbyebbydk',
+  'klebbyebbydk',
+  '.kbebbbbydk.',
+  '.kbbyyyyddk.',
+  '..kkddddkk..',
+  '....kkkk....',
+];
+var COIN_N = COIN.length;
+var COIN_PAL = { k: '#4a2c06', d: '#b8780e', b: '#f2c23a', l: '#ffe27a', w: '#fffbe6', y: '#ffe7a0', e: '#c08412' };
 var GEM = ['...a...', '..aba..', '.abbba.', 'abbcbba', '.abbba.', '..aba..', '...a...'];
 var RCOL = { common: '#aeb4bf', rare: '#5b9bff', epic: '#b47cff', legendary: '#f2c23a' };
 function smallGrid(rows, pal){
@@ -274,7 +294,7 @@ function smallGrid(rows, pal){
   rows.forEach(function(row, y){ for (var x = 0; x < w; x++) if (pal[row[x]]) g[y * w + x] = pal[row[x]]; });
   return { w: w, h: h, px: g };
 }
-function coinGrid(){ return smallGrid(COIN, { a: '#7a4a08', b: '#f2c23a', c: '#fff0b4' }); }
+function coinGrid(){ return smallGrid(COIN, COIN_PAL); }
 function gemGrid(r){ var c = RCOL[r] || RCOL.common; return smallGrid(GEM, { a: dark(c, 0.55), b: c, c: '#ffffff' }); }
 
 /* ── to pictures, in the browser ───────────────────────────────────────── */
@@ -313,7 +333,7 @@ function questIconURL(){ return spriteURL('quest', SCROLL, { k: '#5a3e0a', w: '#
 function img(url, cls, alt){ return url ? '<img src="' + url + '" class="' + cls + '" alt="' + (alt || '') + '" draggable="false">' : '<span class="' + cls + '"></span>'; }
 
 var API = {
-  API_VERSION: API_VERSION, ICON: ICON, PW: PW, PH: PH, MASK: MASK, PACK_PAL: PACK_PAL, RCOL: RCOL,
+  API_VERSION: API_VERSION, ICON: ICON, PW: PW, PH: PH, MASK: MASK, PACK_PAL: PACK_PAL, RCOL: RCOL, COIN: COIN, COIN_N: COIN_N, GEM_N: GEM.length,
   maskFor: maskFor, iconGrid: iconGrid, packGrid: packGrid, coinGrid: coinGrid, gemGrid: gemGrid,
   iconURL: iconURL, packURL: packURL, coinURL: coinURL, gemURL: gemURL,
   icon: function(it, cls){ return img(iconURL(it), cls || 'ia-icon'); },
@@ -326,5 +346,10 @@ var API = {
   dark: dark, lite: lite, mix: mix, lum: lum,
 };
 if (isNode) module.exports = API;
-else if (typeof window !== 'undefined') window.RTF_ART = API;
+else if (typeof window !== 'undefined') {
+  window.RTF_ART = API;
+  /* the top bar's coin pill is static markup styled by career-kit.js: it
+     draws this same coin through one custom property, so there is one coin */
+  try { var cu = coinURL(); if (cu) document.documentElement.style.setProperty('--rtf-coin', 'url("' + cu + '")'); } catch (e) {}
+}
 })();
