@@ -68,7 +68,7 @@ import { Pitch, releaseOf } from './pitch.js?v=8';
 import { fromResult, motion } from './play.js?v=8';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=12';
+import { InPlay } from './inplay.js?v=13';
 import { Ghost, PITCH_COLORS } from './preview.js?v=4';
 
 const C = () => window.STD_CONTRACT;
