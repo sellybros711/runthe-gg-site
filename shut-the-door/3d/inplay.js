@@ -22,7 +22,7 @@ import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?
 import { Crew } from './fielders.js?v=3';
 import { buildBallpark } from './ballpark.js?v=9';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=36';
+import { kitFor } from './people.js?v=37';
 import { look } from './looks.js?v=2';
 import { P, FT } from './units.js?v=1';
 

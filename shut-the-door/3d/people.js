@@ -48,6 +48,10 @@ const R_BALL = 0.0366, MISS = 0.34, TIP = 0.008;
 // the most poses one pitch's aim may take (about half a millisecond each on a desktop, a few on a
 // phone): it runs once, as the pitch is set up
 const AIM_POSES = 200;
+// the farthest (m) a solve may be from the ball and still start the next frame's
+const WARM_ERR = 0.01;
+// what a metre short of the ball counts against a frame, in units of aim (aimSwing's choice)
+const MISS_COST = 1000;
 // the bat's radius along it (gear3d.js bat), inches from the knob: [inches up, radius]
 const BAT_R = [[0, 0.62], [9, 0.47], [13, 0.5], [17, 0.62], [21, 0.9], [24, 1.18], [27, 1.28], [31, 1.3], [33.4, 1.3], [34, 0.9]];
 function batRadius(y) {
@@ -828,13 +832,14 @@ export class People {
     const dur = b.clips[b.clip].duration;
     if (!b.feetSwing) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, dur, b.feetSpec(0, dur, true));
     const W = meetWindow(b), lo = b.tContact + W[0], hi = b.tContact + W[1], dt = 1 / 120, at = [];
-    const tilt = b.batTilt;
-    b.batTilt = 0;
+    // (his own swing: without the aim, which may still hold the last pitch's, even the last hitter's)
+    const tilt = b.batTilt, aim = b.aim;
+    b.batTilt = 0; b.aim = null;
     for (let u = lo; u <= hi + dt / 2; u += dt) {
       this.swingPose(b, u);
       at.push({ gb: this.grips(b).gb, q: b.bat.quaternion.clone() });
     }
-    b.batTilt = tilt;
+    b.batTilt = tilt; b.aim = aim;
     return (b.meetPath = { lo, dt, at });
   }
 
@@ -908,9 +913,12 @@ export class People {
     let best = null;
     for (const c of [first, ...(b.meetAlt || [])]) {
       b.meet = c.meet; b.meetBall = c.meetBall; b.tiltAt = b.tContact + c.meet;
-      const r = this.aimAt(b, best && best.solved);
-      // the closest, and of two that both reach, the smaller aim
-      const score = Math.max(0, r.err - 0.004) * 50 + r.size;
+      // (a frame beside one that reached the ball starts from its solution; one that did not, from
+      // none: a solve stuck short of the ball sends the frames beside it short too)
+      const r = this.aimAt(b, best && best.err < WARM_ERR ? best.solved : null);
+      // the closest, and of two that both reach, the smaller aim (a centimetre short of the ball
+      // outweighs any aim: one frame that misses must never win over one that reaches)
+      const score = Math.max(0, r.err - 0.004) * MISS_COST + r.size;
       if (!best || score < best.score) best = { score, c, aim: b.aim, err: r.err, poses: b.aimPoses, solved: r.solved };
       if ((r.err < 0.006 && r.size < 4) || b.aimPoses > AIM_POSES * 0.6) break;
     }
@@ -1169,6 +1177,8 @@ export class People {
     let best = 0, bestT = clip.duration * 0.6, prev = null, prevAx = null;
     for (let t = 0.9; t < clip.duration - 0.3; t += 1 / 30) {
       pose(b, { [b.clip]: [t, 1] });
+      // (the bat at this frame: poseBat would take b.batTime, which still holds the last pitch's)
+      b.batTime = t;
       this.poseBat(b);
       const tip = new THREE.Vector3(0, 0.75, 0).applyMatrix4(b.bat.matrixWorld);
       const ax = tip.clone().sub(b.bat.position).normalize();
