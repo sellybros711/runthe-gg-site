@@ -14,7 +14,7 @@
  * HOW. Each approved draft is a markdown file in guides/src/<slug>.md with front matter (slug,
  * title, description, game, play_url). This turns it into guides/<slug>.html in the look of
  * about.html, and writes guides/index.html listing every guide. The markdown it reads is a
- * small subset on purpose: ## headings, paragraphs, - and 1. lists, **bold** and [text](url). Anything
+ * small subset on purpose: ## headings, paragraphs, - and 1. lists, | tables, **bold** and [text](url). Anything
  * else is an error, so a draft never ships with stray syntax showing.
  *
  * Every number a guide states is pinned in guides/numbers.json to the code it comes from, and
@@ -80,8 +80,21 @@ function bodyHtml(body, where) {
   const li = (it) => `        <li>${inline(it.text, where)}` +
     (it.kids.length ? '\n          <ul>\n' + it.kids.map((k) => `            <li>${inline(k, where)}</li>`).join('\n') + '\n          </ul>\n        ' : '') + '</li>';
   const flushP = () => { if (para.length) { out.push(`      <p>${inline(para.join(' '), where)}</p>`); para = []; } };
+  /* A table: a header row, a |---| row, then body rows. Cells are inline markdown. */
+  let table = null;
+  const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+  const flushT = () => {
+    if (!table) return;
+    if (table.length < 2 || !/^\|?\s*:?-{3,}/.test(table[1])) throw new Error(`${where}: a table needs a header row and a |---| row`);
+    const head = cells(table[0]), body = table.slice(2).map(cells);
+    out.push('      <div class="tbl"><table>\n        <thead><tr>' + head.map((c) => `<th>${inline(c, where)}</th>`).join('') + '</tr></thead>\n        <tbody>\n' +
+      body.map((r) => '          <tr>' + r.map((c) => `<td>${inline(c, where)}</td>`).join('') + '</tr>').join('\n') + '\n        </tbody>\n      </table></div>');
+    table = null;
+  };
   const flushL = () => { if (list) { out.push(`      <${tag}>\n` + list.map(li).join('\n') + `\n      </${tag}>`); list = null; } };
   for (const line of body.split('\n')) {
+    if (/^\|/.test(line)) { flushP(); flushL(); (table = table || []).push(line); continue; }
+    flushT();
     if (/^##\s+/.test(line)) { flushP(); flushL(); out.push(`      <h2>${inline(line.replace(/^##\s+/, ''), where)}</h2>`); }
     else if (/^(- |\d+\. )/.test(line)) {
       /* "- " is a bulleted list, "1. " a numbered one (a ranking, an order of steps). */
@@ -94,10 +107,10 @@ function bodyHtml(body, where) {
       list[list.length - 1].kids.push(line.replace(/^ {2}- /, ''));
     }
     else if (!line.trim()) { flushP(); flushL(); }
-    else if (/^(#|\||>)/.test(line)) throw new Error(`${where}: markdown the builder does not handle: "${line.slice(0, 60)}"`);
+    else if (/^(#|>)/.test(line)) throw new Error(`${where}: markdown the builder does not handle: "${line.slice(0, 60)}"`);
     else { flushL(); para.push(line.trim()); }
   }
-  flushP(); flushL();
+  flushP(); flushL(); flushT();
   return out.join('\n\n');
 }
 
@@ -154,7 +167,11 @@ function page({ title, description, url, h1, sub, main, cta }) {
     .card b{color:var(--ink);font-weight:800;}
     .card a{color:var(--teal);font-weight:700;text-decoration:none;}
     .card a:hover{text-decoration:underline;}
-    .list{list-style:none;padding:0;margin:0;}
+    .tbl{overflow-x:auto;margin:0 0 14px;}
+    .tbl table{border-collapse:collapse;width:100%;font-size:14px;color:var(--mut);}
+    .tbl th,.tbl td{text-align:left;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top;}
+    .tbl th{color:var(--ink);font-weight:800;}
+    .card .list{list-style:none;padding:0;margin:0;}
     .list li{border-top:1px solid rgba(255,255,255,.08);padding:14px 0;margin:0;}
     .list li:first-child{border-top:0;}
     .list .t{display:block;font-size:16px;}

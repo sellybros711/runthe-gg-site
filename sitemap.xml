@@ -75,6 +75,7 @@
   </url>
   <!-- guides:start (written by scripts/guides/build-guides.mjs) -->
   <url><loc>https://runthe.gg/guides/</loc><lastmod>2026-10-24</lastmod><priority>0.6</priority></url>
+  <url><loc>https://runthe.gg/guides/arcade-free-daily-puzzles.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://runthe.gg/guides/college-football-commissioner-mode.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://runthe.gg/guides/college-football-nil-budget.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://runthe.gg/guides/football-full-team-run.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
@@ -82,6 +83,9 @@
   <url><loc>https://runthe.gg/guides/putt-putt-off-the-trail.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://runthe.gg/guides/putt-putt-stars-lives-worlds.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://runthe.gg/guides/run-the-diamond-best-eras.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
+  <url><loc>https://runthe.gg/guides/run-the-diamond-pitching-staff.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
+  <url><loc>https://runthe.gg/guides/run-the-pitch-world-cup-xi.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
+  <url><loc>https://runthe.gg/guides/run-the-tour-golfer.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
   <!-- guides:end -->
   <url><loc>https://runthe.gg/about.html</loc><lastmod>2026-10-24</lastmod><priority>0.5</priority></url>
   <url><loc>https://runthe.gg/soccer/about.html</loc><lastmod>2026-10-24</lastmod><priority>0.4</priority></url>
