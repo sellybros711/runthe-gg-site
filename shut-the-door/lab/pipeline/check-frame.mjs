@@ -12,6 +12,7 @@
  *   run    a run scores: the runner and home plate
  *   safe   a runner (the hitter above all) pulls into his base safe: the runner and the bag
  *   catch  a ball caught in the air: the ball
+ *   tag-up a runner leaving his bag on a catch, a beat after it: the runner and the bag
  * and the broadcast camera the cut has at that moment (inplay.js cameraAt, the phone's 390x457 field)
  * must hold every point inside the frame (a margin of 4% each side). Two moments at once in two places
  * cannot share one camera: a moment is covered when one within 0.8 s of it is on screen. A
@@ -34,7 +35,7 @@ const ASPECT = 390 / 457, MARGIN = 0.04;
 // on screen. The rest are camera solves at the frame's edge (a foul pop caught behind the plate with a
 // runner doubled off at first; two runners safe at two bases a second apart). A change that misses
 // more fails; one that misses fewer lowers the number here in the same commit.
-const CEILING = { catch: 69, out: 0, run: 35, safe: 138 };
+const CEILING = { catch: 72, out: 0, run: 1, safe: 96, 'tag-up': 22 };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }
@@ -95,7 +96,14 @@ for (let i = 0; i < cases.length; i += CHUNK) {
           const q = r ? r.track.at(e.s) : BASE[4];
           moments.push({ what: 'run', s: e.s, pts: [{ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }, BASE[4]] });
         }
-        if (e.kind === 'catch') moments.push({ what: 'catch', s: e.s, pts: [plan.ballAt(e.s)] });
+        if (e.kind === 'catch') {
+          moments.push({ what: 'catch', s: e.s, pts: [plan.ballAt(e.s)] });
+          // a tag-up: each runner leaving his bag on the catch, a beat after it
+          for (const r of plan.runners) if (!r.batter && r.to > r.from && plan.kind === 'air_out') {
+            const q = r.track.at(e.s + 0.3);
+            moments.push({ what: 'tag-up', s: e.s + 0.3, pts: [{ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }, BASE[r.from]] });
+          }
+        }
       }
       // every runner who moves up and is safe, the hitter on a hit above all
       for (const r of plan.runners) {
