@@ -365,7 +365,26 @@ section('14. the game narrates, and a card that comes back comes back different'
   ok(!repeatSame.length, `a card dealt again in one career never comes back as the same take (${repeatSame.slice(0, 4).join(', ') || 'none'})`);
   const withTakes = [...Object.keys(C.EVENTS), ...Object.keys(C.AM_EVENTS)].filter((id) => (C.EVENTS[id] || C.AM_EVENTS[id]).takes);
   const dark = [];
-  for (const id of withTakes) { const n = ((C.EVENTS[id] || C.AM_EVENTS[id]).takes.length) + 1; const s = takeSeen[id]; if (s && takeN[id] >= 4 && s.size < Math.min(n, 2)) dark.push(id); }
+  /* A card dealt a few times here can show one take by chance: forty careers
+     on today's rosters deal it to whom they deal it, and two deals of a two
+     take card match half the time. So a card that looks dark is played on
+     until it has been dealt in forty more careers that reach it. A card whose
+     takes are never dealt is dark in all of them; one that was unlucky here
+     shows a second take within a few. */
+  const seenOf = (id, from) => {
+    const s = new Set(from);
+    for (let j = 0, met = 0; j < 400 && met < 40 && s.size < 2; j++) {
+      const x = play('narrx' + j, j % 2 ? 'hs' : 'draft');
+      let hit = false;
+      for (const k of x.cards) if (k.c.id === id) { s.add(k.c.take || 0); hit = true; }
+      if (hit) met++;
+    }
+    return s;
+  };
+  for (const id of withTakes) {
+    const n = ((C.EVENTS[id] || C.AM_EVENTS[id]).takes.length) + 1, s = takeSeen[id];
+    if (s && takeN[id] >= 4 && s.size < Math.min(n, 2) && seenOf(id, s).size < Math.min(n, 2)) dark.push(id);
+  }
   ok(withTakes.length >= 25 && !dark.length, `${withTakes.length} cards carry other takes, and each one dealt four times or more here showed more than one (${dark.join(', ') || 'all'})`);
   const one = ['clutch', 'retire', 'injury', 'coach_review'].filter((id) => titles[id] && titles[id].size < 2);
   ok(!one.length, `the system cards are put more than one way (${['clutch', 'retire', 'injury', 'coach_review'].map((id) => id + ' ' + (titles[id] ? titles[id].size : 0)).join(', ')})`);

@@ -3222,6 +3222,8 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
@@ -4299,20 +4301,20 @@ window.GA_ID='G-L29P5MRWKE';
   <ins class="adsbygoogle"
        style="display:block;width:160px;height:600px"
        data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="1816473106"></ins>
+       data-ad-slot="0000000000"></ins>
 </div>
 <div class="rtp-ad-rail rtp-ad-right">
   <ins class="adsbygoogle"
        style="display:block;width:160px;height:600px"
        data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="4576322214"></ins>
+       data-ad-slot="0000000000"></ins>
 </div>
 <!-- Mobile strip: fixed 320x50, NOT responsive, it cannot grow over a button. -->
 <div class="rtp-ad-mobile-bottom">
   <ins class="adsbygoogle"
        style="display:inline-block;width:320px;height:50px"
        data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="8100634252"></ins>
+       data-ad-slot="0000000000"></ins>
 </div>
 
 <div class="sheet-bg" id="sheet-bg">
@@ -14945,9 +14947,12 @@ boot().then(async ()=>{
     try{
       var ads = document.querySelectorAll('ins.adsbygoogle');
       for (var i=0;i<ads.length;i++){
-        /* Never start a unit whose slot is still all zeros. This page's three units carry
-           real ids, but a placeholder pushed here would either serve nothing or, worse,
-           be filled against whichever unit the id was copied from. */
+        /* Never start a unit whose slot is still all zeros. A placeholder pushed here would
+           either serve nothing or, worse, be filled against whichever unit the id was copied
+           from. All three are placeholders since 2026-10-24: the rails sit about 116px from
+           the board and the strip sits under the game's buttons, closer than Google's 150px,
+           so they stay off until there is a placement that clears it (agents/ads/ in the
+           vault). The real ids were 1816473106, 4576322214 and 8100634252. */
         var slot = ads[i].getAttribute('data-ad-slot');
         if (!slot || /^0+$/.test(slot)) continue;
         (adsbygoogle = window.adsbygoogle || []).push({});
