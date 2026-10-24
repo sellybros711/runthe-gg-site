@@ -14,7 +14,7 @@
  * HOW. Each approved draft is a markdown file in guides/src/<slug>.md with front matter (slug,
  * title, description, game, play_url). This turns it into guides/<slug>.html in the look of
  * about.html, and writes guides/index.html listing every guide. The markdown it reads is a
- * small subset on purpose: ## headings, paragraphs, - lists, **bold** and [text](url). Anything
+ * small subset on purpose: ## headings, paragraphs, - and 1. lists, **bold** and [text](url). Anything
  * else is an error, so a draft never ships with stray syntax showing.
  *
  * Every number a guide states is pinned in guides/numbers.json to the code it comes from, and
@@ -75,21 +75,26 @@ export function parse(file) {
 
 function bodyHtml(body, where) {
   const out = [];
-  let list = null, para = [];
+  let list = null, tag = 'ul', para = [];
   /* A list item may carry one level of sub items, written two spaces in ("  - "). */
   const li = (it) => `        <li>${inline(it.text, where)}` +
     (it.kids.length ? '\n          <ul>\n' + it.kids.map((k) => `            <li>${inline(k, where)}</li>`).join('\n') + '\n          </ul>\n        ' : '') + '</li>';
   const flushP = () => { if (para.length) { out.push(`      <p>${inline(para.join(' '), where)}</p>`); para = []; } };
-  const flushL = () => { if (list) { out.push('      <ul>\n' + list.map(li).join('\n') + '\n      </ul>'); list = null; } };
+  const flushL = () => { if (list) { out.push(`      <${tag}>\n` + list.map(li).join('\n') + `\n      </${tag}>`); list = null; } };
   for (const line of body.split('\n')) {
     if (/^##\s+/.test(line)) { flushP(); flushL(); out.push(`      <h2>${inline(line.replace(/^##\s+/, ''), where)}</h2>`); }
-    else if (/^- /.test(line)) { flushP(); (list = list || []).push({ text: line.slice(2), kids: [] }); }
+    else if (/^(- |\d+\. )/.test(line)) {
+      /* "- " is a bulleted list, "1. " a numbered one (a ranking, an order of steps). */
+      const t = /^- /.test(line) ? 'ul' : 'ol';
+      flushP(); if (list && tag !== t) flushL();
+      tag = t; (list = list || []).push({ text: line.replace(/^(- |\d+\. )/, ''), kids: [] });
+    }
     else if (/^ {2}- /.test(line)) {
       if (!list) throw new Error(`${where}: a sub item with no item above it: "${line.trim().slice(0, 60)}"`);
       list[list.length - 1].kids.push(line.replace(/^ {2}- /, ''));
     }
     else if (!line.trim()) { flushP(); flushL(); }
-    else if (/^(#|\||>|\d+\.)/.test(line)) throw new Error(`${where}: markdown the builder does not handle: "${line.slice(0, 60)}"`);
+    else if (/^(#|\||>)/.test(line)) throw new Error(`${where}: markdown the builder does not handle: "${line.slice(0, 60)}"`);
     else { flushL(); para.push(line.trim()); }
   }
   flushP(); flushL();
@@ -144,7 +149,7 @@ function page({ title, description, url, h1, sub, main, cta }) {
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
-    .card ul{margin:0 0 14px;padding-left:20px;}
+    .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
     .card li{margin:0 0 6px;}
     .card b{color:var(--ink);font-weight:800;}
     .card a{color:var(--teal);font-weight:700;text-decoration:none;}
@@ -247,8 +252,20 @@ export function build() {
   return files;
 }
 
+/* The sitemap's guide entries live between two markers and are written from the sources, so a
+   new guide is never left out of it and a removed one never lingers. */
+const SITEMAP = path.join(ROOT, 'sitemap.xml');
+export function sitemapWith(xml, today) {
+  const keep = new Map([...xml.matchAll(/<url><loc>(https:\/\/runthe\.gg\/guides\/[^<]*)<\/loc><lastmod>([^<]*)<\/lastmod>/g)].map((m) => [m[1], m[2]]));
+  const urls = [`${SITE}/guides/`, ...sources().map(({ meta }) => `${SITE}/guides/${meta.slug}.html`)];
+  const lines = urls.map((u, i) => `  <url><loc>${u}</loc><lastmod>${keep.get(u) || today}</lastmod><priority>${i ? '0.5' : '0.6'}</priority></url>`);
+  return xml.replace(/( *<!-- guides:start[^\n]*-->\n)[\s\S]*?( *<!-- guides:end -->)/, (m, a, b) => a + lines.join('\n') + (lines.length ? '\n' : '') + b);
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const files = build();
+  const xml = fs.readFileSync(SITEMAP, 'utf8');
+  files['sitemap.xml'] = sitemapWith(xml, new Date().toISOString().slice(0, 10));
   const check = process.argv.includes('--check');
   let stale = 0;
   for (const [rel, html] of Object.entries(files)) {
@@ -259,7 +276,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     else { fs.writeFileSync(abs, html); console.log(`wrote ${rel}`); }
   }
   for (const f of fs.readdirSync(OUT).filter((f) => f.endsWith('.html'))) {
-    if (!files[`guides/${f}`]) { console.error(`orphan: guides/${f} has no source in guides/src`); stale++; }
+    if (!files[`guides/${f}`] && f !== 'sitemap.xml') { console.error(`orphan: guides/${f} has no source in guides/src`); stale++; }
   }
   if (stale) process.exit(1);
   console.log(`guides: ${Object.keys(files).length} pages ${check ? 'match their sources' : 'up to date'}`);

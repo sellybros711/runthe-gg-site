@@ -155,5 +155,648 @@
       "re": "secret:\\{[^}]*all:(\\d+),",
       "want": 1000
     }
+  ],
+  "perfect-season-salary-cap": [
+    {
+      "say": "You get **$140M**",
+      "file": "football/engine.js",
+      "re": "CAP_MUSD: (\\d+),",
+      "want": 140
+    },
+    {
+      "say": "from **$3M**",
+      "file": "football/build/01-players.mjs",
+      "re": "BASE_PRICE = (\\d+)\\.0",
+      "want": 3
+    },
+    {
+      "say": "to **$48M**",
+      "file": "football/build/01-players.mjs",
+      "re": "MAX_PRICE = (\\d+)\\.0",
+      "want": 48
+    },
+    {
+      "say": "It keeps back **$3M**",
+      "file": "football/engine.js",
+      "re": "MIN_RESERVE_PER_SLOT_MUSD: (\\d+)",
+      "want": 3
+    },
+    {
+      "say": "First re-spin: **$5M**",
+      "file": "football/engine.js",
+      "re": "RESPIN_LADDER_MUSD: \\[(\\d+), \\d+, \\d+\\]",
+      "want": 5
+    },
+    {
+      "say": "Second: **$10M**",
+      "file": "football/engine.js",
+      "re": "RESPIN_LADDER_MUSD: \\[\\d+, (\\d+), \\d+\\]",
+      "want": 10
+    },
+    {
+      "say": "Third: **$15M**",
+      "file": "football/engine.js",
+      "re": "RESPIN_LADDER_MUSD: \\[\\d+, \\d+, (\\d+)\\]",
+      "want": 15
+    },
+    {
+      "say": "That's **3** re-spins",
+      "file": "football/engine.js",
+      "re": "MAX_RESPINS: (\\d+)",
+      "want": 3
+    },
+    {
+      "say": "tops out at **15%**",
+      "file": "football/engine.js",
+      "re": "\\n  MAX: 0\\.(\\d+),",
+      "want": 15
+    },
+    {
+      "say": "About **a quarter** of your non-passing points",
+      "file": "football/engine.js",
+      "re": "IDEAL_RUSH_SHARE: 0\\.(\\d+)",
+      "want": 25
+    },
+    {
+      "say": "much more than **a quarter**",
+      "file": "football/engine.js",
+      "re": "IDEAL_TOP_SHARE: 0\\.(\\d+)",
+      "want": 24
+    },
+    {
+      "say": "at least **half**",
+      "file": "football/engine.js",
+      "re": "IDEAL_FLOOR_SHARE: 0\\.(\\d+),\\n  FLOOR_TOLERANCE: 0\\.14",
+      "want": 64,
+      "why": "0.64 less the 0.14 tolerance is a floor of half"
+    },
+    {
+      "say": "you play **17** games",
+      "file": "football/engine.js",
+      "re": "REGULAR_SEASON_GAMES: (\\d+)",
+      "want": 17
+    },
+    {
+      "say": "from about **90**",
+      "file": "football/engine.js",
+      "re": "CLASS_PIVOT: (\\d+)",
+      "want": 90
+    },
+    {
+      "say": "**12 wins**",
+      "file": "football/engine.js",
+      "re": "PLAYOFF_WINS: (\\d+)",
+      "want": 12
+    },
+    {
+      "say": "That's **4** games",
+      "file": "football/engine.js",
+      "re": "PLAYOFF_ROUNDS_WILD_CARD: (\\d+)",
+      "want": 4
+    },
+    {
+      "say": "**16 wins**",
+      "file": "football/engine.js",
+      "re": "BYE_SEED_WINS: (\\d+)",
+      "want": 16
+    },
+    {
+      "say": "That's **3** games",
+      "file": "football/engine.js",
+      "re": "PLAYOFF_ROUNDS_WITH_BYE: (\\d+)",
+      "want": 3
+    },
+    {
+      "say": "rated **100** or more",
+      "file": "football/engine.js",
+      "re": "ELITE_BYE_RATING: (\\d+)",
+      "want": 100
+    },
+    {
+      "say": "at **13 wins**",
+      "file": "football/engine.js",
+      "re": "ELITE_BYE_WINS: (\\d+)",
+      "want": 13
+    },
+    {
+      "say": "Around a **95** overall",
+      "file": "football/engine.js",
+      "re": "FINAL_EDGE_PIVOT: (\\d+)",
+      "want": 95
+    },
+    {
+      "say": "worse fast under **90**",
+      "file": "football/engine.js",
+      "re": "FINAL_EDGE_BREAK: (\\d+)",
+      "want": 90
+    }
+  ],
+  "football-full-team-run": [
+    {
+      "say": "Re-spin it for $5M, then $10M, then $15M",
+      "file": "football/engine.js",
+      "re": "RESPIN_LADDER_MUSD: \\[(\\d+), 10, 15\\]",
+      "want": 5
+    },
+    {
+      "say": "three re-spins at most",
+      "file": "football/engine.js",
+      "re": "MAX_RESPINS: (\\d+)",
+      "want": 3
+    },
+    {
+      "say": "You get **$280M**",
+      "file": "football/engine.js",
+      "re": "FULL_CAP_MUSD = (\\d+)",
+      "want": 280
+    },
+    {
+      "say": "**84** is what you get",
+      "file": "football/engine.js",
+      "re": "\\[76\\.3, (\\d+)\\]",
+      "want": 84
+    },
+    {
+      "say": "**100** is the best roster",
+      "file": "football/engine.js",
+      "re": "\\[96\\.4, (\\d+)\\]\\]",
+      "want": 100
+    },
+    {
+      "say": "rated 100 or better",
+      "file": "football/engine.js",
+      "re": "ELITE_BYE_RATING: (\\d+)",
+      "want": 100
+    },
+    {
+      "say": "only 13 wins",
+      "file": "football/engine.js",
+      "re": "ELITE_BYE_WINS: (\\d+)",
+      "want": 13
+    },
+    {
+      "say": "All 17 games",
+      "file": "football/engine.js",
+      "re": "REGULAR_SEASON_GAMES: (\\d+)",
+      "want": 17
+    },
+    {
+      "say": "Win 12",
+      "file": "football/engine.js",
+      "re": "PLAYOFF_WINS: (\\d+)",
+      "want": 12
+    },
+    {
+      "say": "Win 16",
+      "file": "football/engine.js",
+      "re": "BYE_SEED_WINS: (\\d+)",
+      "want": 16
+    },
+    {
+      "say": "it's 3 yards or less to go, at their 48",
+      "file": "football/engine.js",
+      "re": "toGo <= (\\d+) && c\\.y >= 52",
+      "want": 3
+    },
+    {
+      "say": "at their 48 or closer",
+      "file": "football/engine.js",
+      "re": "toGo <= 3 && c\\.y >= (\\d+)",
+      "want": 52,
+      "why": "52 yards from your own goal is their 48"
+    },
+    {
+      "say": "at your own 35 or further",
+      "file": "football/engine.js",
+      "re": "c\\.y >= (35)",
+      "want": 35
+    },
+    {
+      "say": "within 10",
+      "file": "football/engine.js",
+      "re": "Math\\.abs\\(sim\\.you - sim\\.them\\) <= (\\d+)",
+      "want": 10
+    },
+    {
+      "say": "between **30%**",
+      "file": "football/engine.js",
+      "re": "Math\\.max\\(0\\.(\\d+), Math\\.min\\(0\\.60",
+      "want": 30
+    },
+    {
+      "say": "and **60%**",
+      "file": "football/engine.js",
+      "re": "Math\\.min\\(0\\.(\\d+), 0\\.40 \\+",
+      "want": 60
+    },
+    {
+      "say": "goes on 4th and 3 or less",
+      "file": "football/engine.js",
+      "re": "p\\.fourth === 1 \\? (\\d+) :",
+      "want": 3
+    },
+    {
+      "say": "goes on 4th and 2 or less",
+      "file": "football/engine.js",
+      "re": "p\\.fourth === 0 \\? (\\d+) :",
+      "want": 2
+    },
+    {
+      "say": "down more than 3 in the fourth quarter",
+      "file": "football/engine.js",
+      "re": "d\\.quarter >= 4 && behind > (\\d+)\\) return 'go'",
+      "want": 3
+    },
+    {
+      "say": "down 10, down 5, down 2, up 1, up 4 or up 5",
+      "file": "football/engine.js",
+      "re": "TWO_POINT_CHART = \\[-(\\d+), -5, -2, 1, 4, 5\\]",
+      "want": 10
+    }
+  ],
+  "college-football-nil-budget": [
+    {
+      "say": "You get **$11M**",
+      "file": "cfb/engine.js",
+      "re": "CAP_MUSD: (\\d+),",
+      "want": 11
+    },
+    {
+      "say": "costs **$300K**",
+      "file": "cfb/build/01-players.mjs",
+      "re": "BASE_PRICE = 0\\.(\\d+)",
+      "want": 3
+    },
+    {
+      "say": "costs **$4.8M**",
+      "file": "cfb/build/01-players.mjs",
+      "re": "MAX_PRICE = (\\d+)\\.8",
+      "want": 4
+    },
+    {
+      "say": "**Two running backs at most.**",
+      "file": "cfb/engine.js",
+      "re": "POSITION_MAX: \\{ RB: (\\d+) \\}",
+      "want": 2
+    },
+    {
+      "say": "red under **$600K**",
+      "file": "cfb/engine.js",
+      "re": "MIN_RESERVE_PER_SLOT_MUSD: 0\\.(\\d+)",
+      "want": 3,
+      "why": "the line turns red under twice the 0.3 reserve"
+    },
+    {
+      "say": "with **$3M** or more not spent",
+      "file": "cfb/engine.js",
+      "re": "if \\(unspent >= (\\d+)\\) weaknesses",
+      "want": 3
+    },
+    {
+      "say": "inside **$500K**",
+      "file": "cfb/engine.js",
+      "re": "else if \\(unspent <= 0\\.(\\d+)\\) strengths",
+      "want": 5
+    },
+    {
+      "say": "You get **three re-spins**",
+      "file": "cfb/engine.js",
+      "re": "MAX_RESPINS: (\\d+)",
+      "want": 3
+    },
+    {
+      "say": "They cost **$500K**",
+      "file": "cfb/engine.js",
+      "re": "RESPIN_LADDER_MUSD: \\[0\\.(\\d+), 1\\.0, 1\\.5\\]",
+      "want": 5
+    },
+    {
+      "say": "tops out at **+8%**",
+      "file": "cfb/engine.js",
+      "re": "MAX: 0\\.0(\\d+),",
+      "want": 8
+    },
+    {
+      "say": "a 12-game season",
+      "file": "cfb/engine.js",
+      "re": "REGULAR_SEASON_GAMES: (\\d+)",
+      "want": 12
+    },
+    {
+      "say": "The top **12**",
+      "file": "cfb/engine.js",
+      "re": "PLAYOFF_TEAMS: (\\d+)",
+      "want": 12
+    },
+    {
+      "say": "The top **4** seeds",
+      "file": "cfb/engine.js",
+      "re": "PLAYOFF_BYES: (\\d+)",
+      "want": 4
+    },
+    {
+      "say": "with **6** wins",
+      "file": "cfb/engine.js",
+      "re": "BOWL_MIN_WINS: (\\d+)",
+      "want": 6
+    },
+    {
+      "say": "From an overall of **84** up",
+      "file": "cfb/engine.js",
+      "re": "WEEK_FLOOR: (\\d+)",
+      "want": 84
+    },
+    {
+      "say": "Under **84** overall",
+      "file": "cfb/engine.js",
+      "re": "TITLE_FLOOR: (\\d+)",
+      "want": 84
+    }
+  ],
+  "college-football-commissioner-mode": [
+    {
+      "say": "as it stands in 2025",
+      "file": "cfb/commish/index.html",
+      "re": "year\\|\\|(\\d+)",
+      "want": 2025
+    },
+    {
+      "say": "You get one season a day",
+      "file": "supabase/104_commish_free_clock.sql",
+      "re": "interval '(\\d+) hours'",
+      "want": 24
+    },
+    {
+      "say": "answer three questions",
+      "file": "cfb/commish/media.js",
+      "re": "ASKED = (\\d+)",
+      "want": 3
+    },
+    {
+      "say": "both fall below 25",
+      "file": "cfb/commish/ledger.js",
+      "re": "HOSTILE = (\\d+)",
+      "want": 25
+    },
+    {
+      "say": "the SEC and the Big Ten count double",
+      "file": "cfb/commish/ledger.js",
+      "re": "VOTE_WEIGHT = \\{ SEC: (\\d+), 'Big Ten': 2",
+      "want": 2
+    },
+    {
+      "say": "Your first term is five seasons",
+      "file": "cfb/commish/index.html",
+      "re": "TERM_SEASONS=(\\d+)",
+      "want": 5
+    },
+    {
+      "say": "signs you for 8 years",
+      "file": "cfb/commish/index.html",
+      "re": "\\{at:80,years:(\\d+),",
+      "want": 8
+    },
+    {
+      "say": "gives you 3 and watches",
+      "file": "cfb/commish/index.html",
+      "re": "\\{at:0, years:(\\d+),",
+      "want": 3
+    },
+    {
+      "say": "quiet for 4 years",
+      "file": "cfb/commish/docket.js",
+      "re": "years == null \\? (\\d+) : years",
+      "want": 4
+    },
+    {
+      "say": "You start reading 3 of them",
+      "file": "cfb/commish/council.js",
+      "re": "OPENING_SEATS = (\\d+)",
+      "want": 3
+    }
+  ],
+  "run-the-diamond-best-eras": [
+    {
+      "say": "1.5 times his WAR to the power 1.6",
+      "file": "baseball/pipeline/build_positions.py",
+      "re": "COEF, EXPONENT, FLOOR = 1\\.5, 1\\.(\\d+), 1\\.0",
+      "want": 6
+    },
+    {
+      "say": "Nobody costs less than $1M",
+      "file": "baseball/pipeline/build_positions.py",
+      "re": "COEF, EXPONENT, FLOOR = 1\\.5, 1\\.6, (\\d+)\\.0",
+      "want": 1
+    },
+    {
+      "say": "You have $190M for twelve spots",
+      "file": "baseball/engine.js",
+      "re": "CAP_MUSD: (\\d+),",
+      "want": 190
+    },
+    {
+      "say": "more than 210 innings",
+      "file": "baseball/engine.js",
+      "re": "ANCHOR_IP: (\\d+)",
+      "want": 210
+    },
+    {
+      "say": "starts at 80%",
+      "file": "baseball/engine.js",
+      "re": "CLOSER_BASE_SAVE_PCT: 0\\.(\\d+)",
+      "want": 80
+    },
+    {
+      "say": "gains 2 points for each WAR",
+      "file": "baseball/engine.js",
+      "re": "CLOSER_WAR_SCALE: 0\\.0(\\d+)",
+      "want": 2
+    },
+    {
+      "say": "up to 95%",
+      "file": "baseball/engine.js",
+      "re": "Math\\.min\\(0\\.(\\d+), CONSTANTS\\.CLOSER_BASE_SAVE_PCT",
+      "want": 95
+    },
+    {
+      "say": "its top 40 seasons",
+      "file": "baseball/run.js",
+      "re": "ERA_TOP_N = (\\d+)",
+      "want": 40
+    },
+    {
+      "say": "**Family:** +9",
+      "file": "baseball/engine.js",
+      "re": "family:\\s+0\\.0(\\d+),",
+      "want": 9
+    },
+    {
+      "say": "**Reunion (same club, same season):** +8",
+      "file": "baseball/engine.js",
+      "re": "reunion:\\s+0\\.0(\\d+),",
+      "want": 8
+    },
+    {
+      "say": "**Batterymates:** +7",
+      "file": "baseball/engine.js",
+      "re": "battery:\\s+0\\.0(\\d+),",
+      "want": 7
+    },
+    {
+      "say": "**Double-play combo:** +6",
+      "file": "baseball/engine.js",
+      "re": "dp_combo:\\s+0\\.0(\\d+),",
+      "want": 6
+    },
+    {
+      "say": "tops out at +12",
+      "file": "baseball/engine.js",
+      "re": "\\n  MAX: 0\\.(\\d+),",
+      "want": 12
+    },
+    {
+      "say": "Babe Ruth's 1923 at $103.7M",
+      "fact": "baseball-eras",
+      "key": "players.ruthPrice",
+      "want": 103.7
+    },
+    {
+      "say": "The tile says 10.3 WAR",
+      "fact": "baseball-eras",
+      "key": "players.walshWar",
+      "want": 10.3
+    },
+    {
+      "say": "He counts as 4.7",
+      "fact": "baseball-eras",
+      "key": "players.walshCounts",
+      "want": 4.7
+    },
+    {
+      "say": "he costs $17.6M",
+      "fact": "baseball-eras",
+      "key": "players.walshPrice",
+      "want": 17.6
+    },
+    {
+      "say": "shows 15.2",
+      "fact": "baseball-eras",
+      "key": "players.johnsonWar",
+      "want": 15.2
+    },
+    {
+      "say": "counts as 9.2",
+      "fact": "baseball-eras",
+      "key": "players.johnsonCounts",
+      "want": 9.2
+    },
+    {
+      "say": "59% of 1900s starters",
+      "fact": "baseball-eras",
+      "key": "1900s.heavyPct",
+      "want": 59
+    },
+    {
+      "say": "In the 2010s it's 9%",
+      "fact": "baseball-eras",
+      "key": "2010s.heavyPct",
+      "want": 9
+    },
+    {
+      "say": "Six seasons of the 2020s give it 175",
+      "fact": "baseball-eras",
+      "key": "2020s.seasons",
+      "want": 175
+    },
+    {
+      "say": "The 2010s give it 300",
+      "fact": "baseball-eras",
+      "key": "2010s.seasons",
+      "want": 300
+    },
+    {
+      "say": "84% of 1900s boards",
+      "fact": "baseball-eras",
+      "key": "1900s.sp3Pct",
+      "want": 84
+    },
+    {
+      "say": "averages 3.3 WAR, the lowest",
+      "fact": "baseball-eras",
+      "key": "1920s.spBest",
+      "want": 3.33
+    },
+    {
+      "say": "Only one board in ten has a 3 WAR catcher",
+      "fact": "baseball-eras",
+      "key": "1940s.c3Pct",
+      "want": 10
+    },
+    {
+      "say": "About a third of boards have a 3 WAR one",
+      "fact": "baseball-eras",
+      "key": "1970s.c3Pct",
+      "want": 36
+    },
+    {
+      "say": "best man averages 5.1 WAR",
+      "fact": "baseball-eras",
+      "key": "2020s.best",
+      "want": 5.14
+    },
+    {
+      "say": "against 5.6 to 6.1",
+      "fact": "baseball-eras",
+      "key": "othersBestMin",
+      "want": 5.64
+    },
+    {
+      "say": "against 5.6 to 6.1",
+      "fact": "baseball-eras",
+      "key": "othersBestMax",
+      "want": 6.11
+    },
+    {
+      "say": "Only 34% of boards",
+      "fact": "baseball-eras",
+      "key": "2020s.best6Pct",
+      "want": 34
+    },
+    {
+      "say": "The 1900s and 1950s have 16 clubs",
+      "fact": "baseball-eras",
+      "key": "1900s.clubs",
+      "want": 16
+    },
+    {
+      "say": "The 1900s and 1950s have 16 clubs",
+      "fact": "baseball-eras",
+      "key": "1950s.clubs",
+      "want": 16
+    },
+    {
+      "say": "the 1990s on have 30",
+      "fact": "baseball-eras",
+      "key": "1990s.clubs",
+      "want": 30
+    },
+    {
+      "say": "the 1990s on have 30",
+      "fact": "baseball-eras",
+      "key": "2010s.clubs",
+      "want": 30
+    },
+    {
+      "say": "less than 0.1 WAR",
+      "fact": "baseball-eras",
+      "key": "1900s.clBest",
+      "want": 0.07
+    },
+    {
+      "say": "less than 0.1 WAR",
+      "fact": "baseball-eras",
+      "key": "1910s.clBest",
+      "want": 0.06
+    }
   ]
 }

@@ -26,6 +26,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { build, sources } from './build-guides.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -50,11 +51,27 @@ for (const f of fs.readdirSync(path.join(ROOT, 'guides')).filter((f) => f.endsWi
 
 // 2. every number is pinned and every pin holds
 let held = 0;
+const factCache = {};
+const requireCjs = createRequire(import.meta.url);
+function factsOf(name) {
+  if (!factCache[name]) factCache[name] = requireCjs(`./facts/${name}.cjs`)();
+  return factCache[name];
+}
 for (const { meta, body } of guides) {
   const list = pins[meta.slug];
   if (!Array.isArray(list) || !list.length) { fail(`${meta.slug}: no pins in guides/numbers.json`); continue; }
   for (const p of list) {
     if (!body.includes(p.say)) fail(`${meta.slug}: the guide no longer says "${p.say}". Update its pin with the wording`);
+    /* A FACT PIN is a figure the guide computes from a game's data rather than reads off one
+       line of code (a share of boards, an average over a decade). scripts/guides/facts/<name>.cjs
+       recomputes it with the game's own engine, and "key" is a dotted path into what it returns. */
+    if (p.fact) {
+      const got = String(p.key).split('.').reduce((o, k) => (o == null ? o : o[k]), factsOf(p.fact));
+      if (got == null) { fail(`${meta.slug}: fact ${p.fact} has no ${p.key}`); continue; }
+      if (got !== p.want) { fail(`${meta.slug}: ${p.fact} ${p.key} is now ${got}, the guide was written for ${p.want} ("${p.say}"). Fix the guide, then the pin`); continue; }
+      held++;
+      continue;
+    }
     let src;
     try { src = read(p.file); } catch { fail(`${meta.slug}: pin file ${p.file} does not exist`); continue; }
     const m = src.match(new RegExp(p.re));
