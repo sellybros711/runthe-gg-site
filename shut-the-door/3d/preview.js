@@ -1,199 +1,175 @@
-/* The pitch indicator: the break trail from the hand to the spot the player is aiming at, and a
- * landing marker where it crosses the plate.
+/* The aim ball: a small 3D baseball sitting exactly on the aim point at the front of the plate,
+ * spinning the way the picked pitch spins. The 2D crosshair (aim.js) is its hit marker.
  *
- * It is the intended path, never the outcome. The flight is pitch.js's own (flight() and
- * cellPoint(), the same math the real pitch flies on) with the arsenal's real velo, pfxX and pfxZ
- * from the pack, aimed at the exact point the player aims at (the cell plus at). The real pitch
- * still lands where the engine's command draw puts it, so nothing here can tell the player where
- * the ball will go. check-pitches.mjs holds the trail and the flight to one shape.
+ * The owner (2026-10-23), after the animated trail: "Instead of lines coming from the side, it should
+ * be a 3d animated baseball with the hit marker around it. We can make it smaller. The 3d baseball
+ * should be rotating as whatever pitch is selected." So nothing is drawn from the hand any more.
  *
- * How it moves (the console feel, mechanics only, no one's art):
- *   - a pick draws the trail from the hand toward the plate (DRAW_S), a bright head leading it;
- *   - then a comet runs down it every PULSE_S, and the landing marker breathes;
- *   - a change of pitch, or a new aim after a pause, hands off: the old trail fades (FADE_S) while
- *     the new one draws. A drag (calls closer than FOLLOW_MS) moves the trail in place;
- *   - on release it fades out fast (OUT_S), so the real ball is the star;
- *   - prefers-reduced-motion: a static trail and marker, no draw, no comet, no breathing.
- * It asks for frames only while something moves (busy()), at most 30 a second (stage.js), and
- * settles to a still picture SETTLE_S after the last change, so an idle aim costs nothing.
+ * WHERE. The aim point is the cell plus the free aim point at (pitch.js cellPoint, the point the
+ * thrown pitch's flight is solved to cross when the engine's actual is the aim; check-pitches holds
+ * it). The ball is real size (2.9 in) and never under MIN_PX across on screen. It is drawn over
+ * everything, so a hitter's hands never hide it. It shows the aim, never the outcome.
  *
- * The colour is the pitch's colour on the break chart and its button (PITCH_COLORS, by usage, the
- * same list as ui.js: check-pitches holds them equal): one palette, both themes, the brand's signal
- * and data blue first. A dark rim keeps it readable on the sky, the dirt and the catcher alike.
+ * HOW IT SPINS (spinOf). A spin axis per family, catcher's view, written in arm side and glove side
+ * and mirrored for a lefty the same way as the break. The transverse part of the axis is set by the
+ * way the family moves (Magnus: the push is spin x velocity, so a ball moving arm side and up spins
+ * about (-up, arm side)); the rest of the axis points along the flight (gyro spin, which moves
+ * nothing). Four-seam: backspin, a touch arm side, four-seam orientation. Sinker: backspin tilted arm
+ * side, two-seam orientation. Cutter: backspin tilted a little glove side, some gyro. Slider: mostly
+ * gyro, tilted glove side. Sweeper: sidespin to the glove side. Curveball and knuckle curve: topspin.
+ * Changeup: tilted arm side, slower. Splitter and forkball: low spin, a forward tumble. Knuckleball:
+ * barely turning. The packs carry no spin axis or spin rate yet, so these are family defaults
+ * (labelled FAMILY_DEFAULT), and the turn is a readable rate (revolutions a second on screen), not
+ * the real 2,000 to 2,600 rpm, which would strobe. A change of pitch blends axis and rate (BLEND_S).
  *
- * From straight behind, a path bends mostly along the line of sight, so a faint dashed second line
- * shows what the bend is against: the same pitch with no spin, out of the same hand at the same speed
- * and angle (Statcast's pfx is over the whole flight, as pitch.js reads it). The gap between their
- * ends is the break the pitch guide prints.
+ * WHEN. Shown while aiming. On the throw tap it fades out (OUT_S), long before the ball leaves the
+ * hand. prefers-reduced-motion: a still ball, no spin, no fades. It asks for frames only while it
+ * moves (busy()), the stage caps them at 30 a second, and it slows to a stop SETTLE_S after the last
+ * change, so an idle aim draws nothing. One mesh, one draw call, nothing allocated per frame.
  *
- * The trail and the no spin line are one mesh (one draw call), the marker a second; a handoff
- * draws the old trail for FADE_S more. Ribbons are kept a constant width on screen and drawn over
- * everything; the trail fades in from the hand so it never reads as a band near the camera.
- * Nothing is allocated per frame. screen() hands the same points to the page, in CSS px.
+ * The page hears the pitch's colour (the break chart's, PITCH_COLORS, by usage, the same list as
+ * ui.js) through the stage, and aim.js colours the crosshair with it: one reticle around one ball.
  */
 import * as THREE from 'three';
-import { flight, cellPoint } from './pitch.js?v=8';
+import { cellPoint } from './pitch.js?v=8';
 import { FT } from './units.js?v=1';
 
-const N = 56;
-export const DRAW_S = 0.34, PULSE_S = 1.25, FADE_S = 0.2, OUT_S = 0.14, SETTLE_S = 8, FOLLOW_MS = 140;
+export const OUT_S = 0.14, BLEND_S = 0.35, SETTLE_S = 8, STOP_S = 0.6, MIN_PX = 11, BALL_IN = 2.9;
 /** The break chart's colours, in usage order (ui.js PITCH_COLORS: keep the two equal). */
 export const PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 
+/* The family defaults (no spin axis or spin rate in the packs yet). arm, up: the direction the
+   spin pushes the ball (arm side and up, in the pitcher's hand frame, before mirroring); gyro: the
+   share of the spin along the flight; rps: a readable turn on screen; grip: the seam orientation. */
+export const FAMILY_DEFAULT = Object.freeze({
+  FF: { arm: 0.3, up: 1, gyro: 0.1, rps: 1.6, grip: 4 },
+  SI: { arm: 0.85, up: 0.55, gyro: 0.15, rps: 1.5, grip: 2 },
+  FC: { arm: -0.45, up: 0.9, gyro: 0.45, rps: 1.6, grip: 4 },
+  SL: { arm: -0.8, up: 0.15, gyro: 0.85, rps: 1.8, grip: 4 },
+  ST: { arm: -1, up: 0.05, gyro: 0.25, rps: 1.7, grip: 4 },
+  SV: { arm: -0.8, up: -0.6, gyro: 0.3, rps: 1.7, grip: 4 },
+  CU: { arm: -0.3, up: -1, gyro: 0.2, rps: 1.8, grip: 4 },
+  KC: { arm: -0.3, up: -1, gyro: 0.2, rps: 1.8, grip: 4 },
+  CH: { arm: 0.75, up: 0.55, gyro: 0.25, rps: 1.0, grip: 2 },
+  FS: { arm: 0.35, up: -0.4, gyro: 0.35, rps: 0.45, grip: 2 },
+  FO: { arm: 0.3, up: -0.5, gyro: 0.35, rps: 0.4, grip: 2 },
+  KN: { arm: 0, up: 1, gyro: 0, rps: 0.08, grip: 4 },
+});
+
+/** The spin of a pitch type for a hand: { axis: unit vector, catcher's view (x to the first base
+    side, y toward the mound, z up), rps, grip }. The ball turns right handed about axis. Magnus:
+    the push is axis x velocity, velocity is about -y, so the push is (axis.z, 0, -axis.x). */
+export function spinOf(type, hand) {
+  const d = FAMILY_DEFAULT[type] || FAMILY_DEFAULT.FF;
+  const armX = hand === 'L' ? 1 : -1;            // a righty's arm side is the third base side, x < 0
+  const mx = d.arm * armX, mz = d.up, m = Math.hypot(mx, mz) || 1;
+  const t = Math.sqrt(Math.max(0, 1 - d.gyro * d.gyro));
+  // push (mx, mz) = (axis.z, -axis.x): axis.x = -mz, axis.z = mx; the gyro part along the flight,
+  // mirrored for a lefty like everything else
+  const axis = { x: -mz / m * t, y: d.gyro * -armX, z: mx / m * t };
+  return { axis, rps: d.rps, grip: d.grip, src: 'family default' };
+}
+
 const reduced = () => { try { return !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
-const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
-// catcher's view feet into the scene, in place (units.js P without the allocation)
-const put = (v, x, y, z) => v.set(-x * FT, z * FT, y * FT);
-const _dir = new THREE.Vector3(), _toCam = new THREE.Vector3(), _side = new THREE.Vector3(), _v = new THREE.Vector3();
+const ease = (x) => { const k = Math.min(1, Math.max(0, x)); return k * k * (3 - 2 * k); };
+const X = new THREE.Vector3(1, 0, 0);
+const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 
-const LINE_VS = 'attribute float a; attribute float s; attribute float k; varying float vA; varying float vS; varying float vK;' +
-  ' void main(){ vA = a; vS = s; vK = k; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
-// k 0: the trail (the pitch's colour, a white hot core, a dark rim, a bright head while it draws, a
-// comet after); k 1: the no spin line (faint, dashed, white). Both fade in from the hand.
-const LINE_FS = 'uniform vec3 uColor; uniform float uOpacity; uniform float uDraw; uniform float uComet; uniform float uMove;' +
-  ' varying float vA; varying float vS; varying float vK; void main(){' +
-  ' float e = 1.0 - abs(vA * 2.0 - 1.0);' +
-  ' float drawn = step(vS, uDraw);' +
-  ' float fade = smoothstep(0.04, 0.4, vS);' +
-  ' if (vK > 0.5) {' +
-  '  float dash = step(0.38, fract(vS * 11.0));' +
-  '  float c = smoothstep(0.35, 0.7, e);' +
-  '  gl_FragColor = vec4(vec3(0.96), uOpacity * 0.36 * fade * dash * drawn * mix(0.35 * smoothstep(0.0, 0.35, e), 1.0, c)); return; }' +
-  ' float core = smoothstep(0.55, 0.9, e), body = smoothstep(0.22, 0.5, e), rim = smoothstep(0.0, 0.22, e);' +
-  ' float head = uMove * exp(-abs(uDraw - vS) * 40.0) * step(uDraw, 0.999);' +
-  ' float dc = uComet - vS; float comet = uMove * (dc >= 0.0 ? exp(-dc * 9.0) : exp(dc * 60.0)) * step(0.0, uComet);' +
-  ' float glow = clamp(head + comet, 0.0, 1.0);' +
-  ' vec3 col = mix(vec3(0.04, 0.05, 0.08), uColor, body);' +
-  ' col = mix(col, vec3(1.0), core * (0.45 + 0.55 * glow));' +
-  ' float a = mix(0.45 * rim, 1.0, body) * (0.72 + 0.28 * glow);' +
-  ' gl_FragColor = vec4(col, uOpacity * fade * drawn * a); }';
-
-const MARK_VS = 'varying vec2 vUv; void main(){ vUv = uv * 2.0 - 1.0; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
-// a ring in the pitch's colour with a dark edge, a faint fill, and a second ring breathing out of it
-const MARK_FS = 'uniform vec3 uColor; uniform float uOpacity; uniform float uBreath; uniform float uMove; varying vec2 vUv; void main(){' +
-  ' float r = length(vUv);' +
-  ' float ring = smoothstep(0.075, 0.0, abs(r - 0.42));' +
-  ' float edge = smoothstep(0.14, 0.06, abs(r - 0.42));' +
-  ' float dot = smoothstep(0.1, 0.04, r);' +
-  ' float rb = 0.42 + 0.5 * uBreath;' +
-  ' float wave = uMove * smoothstep(0.06, 0.0, abs(r - rb)) * (1.0 - uBreath);' +
-  ' float fill = smoothstep(0.42, 0.3, r) * 0.1;' +
-  ' vec3 col = mix(vec3(0.04, 0.05, 0.08), uColor, max(ring, wave));' +
-  ' col = mix(col, vec3(1.0), dot);' +
-  ' float a = max(max(ring, dot), max(0.5 * edge, max(0.75 * wave, fill)));' +
-  ' gl_FragColor = vec4(col, uOpacity * a); }';
-
-/** One trail and its no spin line, as one mesh. */
-class Line {
-  constructor(scene, order) {
-    const V = N * 4;   // two ribbons of N points, two vertices each
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(V * 3), 3));
-    const a = new Float32Array(V), s = new Float32Array(V), k = new Float32Array(V), idx = [];
-    for (let r = 0; r < 2; r++) {
-      for (let i = 0; i < N; i++) {
-        const o = (r * N + i) * 2;
-        a[o] = 0; a[o + 1] = 1; s[o] = s[o + 1] = i / (N - 1); k[o] = k[o + 1] = r;
-        if (i < N - 1) idx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2);
-      }
+/* A baseball's seam (the two lobe curve on the sphere) painted on an equirectangular map: white
+   leather, a wide red seam and its stitches, bold enough to read the turn at a dozen pixels. */
+function ballTexture() {
+  if (typeof document === 'undefined') return null;
+  const W = 512, H = 256, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#f4f1e8'; g.fillRect(0, 0, W, H);
+  const a = 0.75, b = 0.25, k = 2 * Math.sqrt(a * b);
+  const uv = (t) => {
+    const x = a * Math.cos(t) + b * Math.cos(3 * t), y = a * Math.sin(t) - b * Math.sin(3 * t), z = k * Math.sin(2 * t);
+    const r = Math.hypot(x, y, z);
+    // three.js sphere uv: u from atan2(z, -x) around y, v from y; the curve's z axis is the sphere's y
+    return [((Math.atan2(y / r, -x / r) / (2 * Math.PI)) + 1) % 1 * W, (0.5 - Math.asin(z / r) / Math.PI) * H];
+  };
+  g.lineCap = 'round';
+  for (const [w, col] of [[13, '#7a0a10'], [6, '#d1222b']]) {
+    g.strokeStyle = col; g.lineWidth = w;
+    for (let i = 0; i < 400; i++) {
+      const p = uv(i / 400 * Math.PI * 2), q = uv((i + 1) / 400 * Math.PI * 2);
+      if (Math.abs(p[0] - q[0]) > W / 2) continue;
+      g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke();
     }
-    geo.setAttribute('a', new THREE.BufferAttribute(a, 1));
-    geo.setAttribute('s', new THREE.BufferAttribute(s, 1));
-    geo.setAttribute('k', new THREE.BufferAttribute(k, 1));
-    geo.setIndex(idx);
-    this.u = { uColor: { value: new THREE.Color(1, 1, 1) }, uOpacity: { value: 0 }, uDraw: { value: 1 }, uComet: { value: -1 }, uMove: { value: 1 } };
-    this.mesh = new THREE.Mesh(geo, new THREE.ShaderMaterial({ transparent: true, depthTest: false, depthWrite: false, uniforms: this.u, vertexShader: LINE_VS, fragmentShader: LINE_FS }));
-    this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = order;
-    this.mesh.visible = false;
-    this.pts = Array.from({ length: N }, () => new THREE.Vector3());
-    this.ref = Array.from({ length: N }, () => new THREE.Vector3());
-    this.end = new THREE.Vector3();
-    this.t0 = 0; this.out = null;   // when it began drawing; when it began fading (null: not)
-    scene.add(this.mesh);
   }
-
-  /** Face both ribbons to the camera, a constant width on screen (px CSS px for the trail). */
-  orient(camera, perPx) {
-    const pos = this.mesh.geometry.attributes.position, cam = camera.position;
-    for (let r = 0; r < 2; r++) {
-      const pts = r ? this.ref : this.pts, px = r ? 2.0 : 4.2;
-      for (let i = 0; i < N; i++) {
-        const p = pts[i];
-        _dir.subVectors(pts[Math.min(N - 1, i + 1)], pts[Math.max(0, i - 1)]).normalize();
-        _toCam.subVectors(cam, p);
-        const w = (px / 2) * perPx * _toCam.length();
-        _side.crossVectors(_dir, _toCam.normalize()).normalize();
-        const o = (r * N + i) * 2;
-        pos.setXYZ(o, p.x - _side.x * w, p.y - _side.y * w, p.z - _side.z * w);
-        pos.setXYZ(o + 1, p.x + _side.x * w, p.y + _side.y * w, p.z + _side.z * w);
-      }
-    }
-    pos.needsUpdate = true;
+  g.strokeStyle = '#4a0408'; g.lineWidth = 3;
+  for (let i = 0; i < 96; i++) {
+    const p = uv(i / 96 * Math.PI * 2), q = uv((i + 0.02) / 96 * Math.PI * 2);
+    const ang = Math.atan2(q[1] - p[1], q[0] - p[0]) + Math.PI / 2;
+    g.beginPath(); g.moveTo(p[0] - Math.cos(ang) * 9, p[1] - Math.sin(ang) * 9); g.lineTo(p[0] + Math.cos(ang) * 9, p[1] + Math.sin(ang) * 9); g.stroke();
   }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
 }
 
 export class Ghost {
   constructor(scene) {
     this.scene = scene;
-    this.lines = [new Line(scene, 9), new Line(scene, 9)];
-    this.cur = 0;
-    const mg = new THREE.PlaneGeometry(1, 1);
-    this.mu = { uColor: { value: new THREE.Color(1, 1, 1) }, uOpacity: { value: 0 }, uBreath: { value: 0 }, uMove: { value: 1 } };
-    this.marker = new THREE.Mesh(mg, new THREE.ShaderMaterial({ transparent: true, depthTest: false, depthWrite: false, uniforms: this.mu, vertexShader: MARK_VS, fragmentShader: MARK_FS }));
-    this.marker.frustumCulled = false;
-    this.marker.renderOrder = 10;
-    this.marker.visible = false;
-    scene.add(this.marker);
-    this.on = false;          // shown (or drawing); false once hidden or released
-    this.last = 0;            // the last set(), seconds
-    this.key = null;          // the pitch type on the trail
-    this.outAt = null;        // release: when the fade out began
+    const map = ballTexture();
+    this.mat = new THREE.MeshBasicMaterial({ map, color: map ? 0xffffff : 0xf4f1e8, transparent: true, opacity: 0, depthTest: false, depthWrite: false });
+    // the leather lit softly from above: a basic material with a baked shade keeps it one cheap draw
+    this.mat.onBeforeCompile = (sh) => {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vShade;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvShade = 0.62 + 0.38 * clamp(dot(normalize(mat3(modelMatrix) * normal), normalize(vec3(-0.3, 0.8, 0.5))), 0.0, 1.0);');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vShade;')
+        .replace('#include <opaque_fragment>', 'outgoingLight *= vShade;\n#include <opaque_fragment>');
+    };
+    this.ball = new THREE.Mesh(new THREE.SphereGeometry(0.5, 28, 18), this.mat);
+    this.ball.renderOrder = 11;
+    this.ball.frustumCulled = false;
+    this.ball.visible = false;
+    scene.add(this.ball);
+    this.r = BALL_IN / 2 / 12 * FT;   // radius, metres
+    this.pos = this.ball.position;
+    // the spin: an axis (world), a rate, a turn angle; blending from the last pitch's
+    this.axis = new THREE.Vector3(-1, 0, 0); this.axis0 = new THREE.Vector3(-1, 0, 0); this.axis1 = new THREE.Vector3(-1, 0, 0);
+    this.grip = new THREE.Quaternion(); this.grip0 = new THREE.Quaternion(); this.grip1 = new THREE.Quaternion();
+    this.rps = 0; this.rps0 = 0; this.rps1 = 0;
+    this.angle = 0; this.tPrev = null; this.blendAt = -1;
+    this.on = false; this.outAt = null; this.last = 0; this.key = null; this.shown = 0;
   }
 
-  get line() { return this.lines[this.cur]; }
-  /** The trail's points and the no spin line's, scene metres (check-pitches reads them). */
-  get path() { return { pts: this.line.pts }; }
-  get ref() { return { pts: this.line.ref }; }
-
-  /** The trail from the release to the aim point (a cell, plus at = [u, v] inside it), for this
-      pitch (an arsenal entry: type, velo, pfxX, pfxZ) and this hitter's zone, in color (a CSS hex). */
-  set({ release, pitch, cell, at, szTop, szBot, color }) {
-    const t = now(), still = reduced();
-    const f = flight(release, cellPoint(cell, szTop, szBot, at), pitch.velo, pitch.pfxX || 0, pitch.pfxZ || 0);
-    const follow = this.on && this.outAt == null && pitch.type === this.key && (t - this.last) * 1000 < FOLLOW_MS;
-    let L = this.line;
-    if (!follow && this.on && this.outAt == null && !still) {
-      // hand off: the old trail fades out, the new one draws on the other mesh
-      L.out = t;
-      this.cur = 1 - this.cur;
-      L = this.line;
-    } else if (!follow) {
-      for (const o of this.lines) { o.out = null; o.mesh.visible = false; }
+  /** The ball on the aim point (a cell, plus at = [u, v] inside it) for this pitch (an arsenal
+      entry: type) thrown by this hand ('R' or 'L'), in this hitter's zone. color: the pitch's. */
+  set({ pitch, hand, cell, at, szTop, szBot, color }) {
+    const t = now(), aim = cellPoint(cell, szTop, szBot, at);
+    this.pos.set(-aim.x * FT, aim.z * FT, (17 / 12) * FT);
+    this.aim = aim;
+    this.color = color || PITCH_COLORS[0];
+    const key = pitch.type + (hand || 'R');
+    if (key !== this.key) {
+      const s = spinOf(pitch.type, hand);
+      this.spin = s;
+      // catcher's view to the scene (P(): x -> -x, y -> z, z -> y; a proper rotation, so an axis
+      // maps like a point)
+      this.axis1.set(-s.axis.x, s.axis.z, s.axis.y).normalize();
+      // the grip: the seam curve's own axis (the sphere's y) across the spin for a four-seam, along
+      // it for a two-seam, so four or two seams cross each turn
+      if (s.grip === 2) _w.copy(this.axis1);
+      else { _w.crossVectors(this.axis1, X); if (_w.lengthSq() < 1e-6) _w.set(0, 0, 1); _w.normalize(); }
+      this.grip1.setFromUnitVectors(_v.set(0, 1, 0), _w);
+      const fresh = !this.on || this.outAt != null || reduced();
+      this.axis0.copy(fresh ? this.axis1 : this.axis); this.grip0.copy(fresh ? this.grip1 : this.grip);
+      this.rps0 = fresh ? s.rps : this.rps; this.rps1 = s.rps;
+      this.blendAt = fresh ? -1 : t;
+      if (fresh) { this.axis.copy(this.axis1); this.grip.copy(this.grip1); this.rps = s.rps; }
+      this.key = key;
     }
-    if (!follow) { L.t0 = t; L.out = null; }
-    for (let i = 0; i < N; i++) {
-      const tt = f.T * i / (N - 1), p = f.at(tt), d = 0.5 * tt * tt;
-      put(L.pts[i], p.x, p.y, p.z);
-      put(L.ref[i], p.x - f.sx * d, p.y, p.z - f.sz * d);
-    }
-    L.end.copy(L.pts[N - 1]);
-    L.u.uColor.value.set(color || PITCH_COLORS[0]);
-    this.mu.uColor.value.set(color || PITCH_COLORS[0]);
-    L.mesh.visible = true;
-    this.marker.visible = true;
-    this.marker.position.copy(L.end);
-    this.on = true; this.outAt = null; this.key = pitch.type; this.last = t;
+    if (!this.on || this.outAt != null) { this.shown = t; this.tPrev = null; }
+    this.ball.visible = true;
+    this.on = true; this.outAt = null; this.last = t;
     this.tick(t);
   }
 
   /** Gone at once (a new hitter, the outing over). */
-  hide() {
-    this.on = false; this.outAt = null; this.key = null;
-    for (const o of this.lines) { o.mesh.visible = false; o.out = null; }
-    this.marker.visible = false;
-  }
+  hide() { this.on = false; this.outAt = null; this.key = null; this.ball.visible = false; }
 
   /** The pitch is thrown: a quick fade out of the way (instant with reduced motion). */
   release() {
@@ -206,67 +182,45 @@ export class Ghost {
 
   /** Still moving at time t (seconds)? The stage asks for frames only while this is true. */
   busy(t = now()) {
-    if (!this.on && !this.lines.some((o) => o.mesh.visible)) return false;
+    if (!this.on) return false;
     if (this.outAt != null) return true;
     if (reduced()) return false;
-    return t - this.last < SETTLE_S || this.lines.some((o) => o.out != null);
+    return t - this.last < SETTLE_S + STOP_S;
   }
 
-  /** Move every animation to time t (seconds): uniforms only. */
+  /** Move the spin, the blend and the fades to time t (seconds). */
   tick(t = now()) {
+    if (!this.on) return;
     const still = reduced();
-    const settled = !still && t - this.last >= SETTLE_S;
-    const gone = this.outAt != null ? 1 - ease((t - this.outAt) / OUT_S) : 1;
-    for (let i = 0; i < 2; i++) {
-      const L = this.lines[i], u = L.u;
-      if (!L.mesh.visible) continue;
-      u.uMove.value = still || settled ? 0 : 1;
-      if (L.out != null) {
-        const k = 1 - ease((t - L.out) / FADE_S);
-        u.uOpacity.value = 0.95 * k * gone; u.uComet.value = -1;
-        if (k <= 0) { L.mesh.visible = false; L.out = null; }
-        continue;
-      }
-      const dt = t - L.t0;
-      const draw = still ? 1 : ease(dt / DRAW_S);
-      u.uDraw.value = draw;
-      u.uOpacity.value = 0.95 * gone;
-      u.uComet.value = still || settled || dt < DRAW_S ? -1 : ((dt - DRAW_S) % PULSE_S) / PULSE_S * 1.25;
+    if (this.blendAt >= 0) {
+      const k = ease((t - this.blendAt) / BLEND_S);
+      this.axis.copy(this.axis0).lerp(this.axis1, k).normalize();
+      this.grip.copy(this.grip0).slerp(this.grip1, k);
+      this.rps = this.rps0 + (this.rps1 - this.rps0) * k;
+      if (k >= 1) this.blendAt = -1;
     }
-    // the marker: it pops in as the trail lands, then breathes in time with the comet
-    const L = this.line, dt = t - L.t0;
-    const land = still ? 1 : ease((dt - DRAW_S * 0.8) / 0.18);
-    const ph = still || settled || dt < DRAW_S ? 0 : (((dt - DRAW_S) % PULSE_S) / PULSE_S);
-    this.mu.uBreath.value = ph;
-    this.mu.uMove.value = still || settled ? 0 : 1;
-    this.mu.uOpacity.value = 0.95 * land * gone;
-    this.marker.scale.setScalar((0.9 + 0.18 * (1 - land)) * FT);
-    if (this.outAt != null && gone <= 0) this.hide();
+    // it slows to a stop SETTLE_S after the last change (an idle aim draws nothing)
+    const idle = t - this.last - SETTLE_S, slow = idle > 0 ? 1 - ease(idle / STOP_S) : 1;
+    const dt = this.tPrev == null ? 0 : Math.min(0.1, Math.max(0, t - this.tPrev));
+    this.tPrev = t;
+    if (!still) this.angle = (this.angle + dt * this.rps * slow * Math.PI * 2) % (Math.PI * 2);
+    this.ball.quaternion.setFromAxisAngle(this.axis, this.angle).multiply(this.grip);
+    const fin = still ? 1 : ease((t - this.shown) / 0.12);
+    const out = this.outAt != null ? 1 - ease((t - this.outAt) / OUT_S) : 1;
+    this.mat.opacity = fin * out;
+    if (this.outAt != null && out <= 0) this.hide();
   }
 
-  /** Face everything to the camera, a constant width on screen. hPx: the canvas height in CSS px. */
+  /** Real size, and never under MIN_PX across on screen. hPx: the canvas height in CSS px. */
   orient(camera, hPx) {
+    if (!this.ball.visible) return;
     const perPx = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / Math.max(1, hPx);
-    for (const L of this.lines) if (L.mesh.visible) L.orient(camera, perPx);
-    if (this.marker.visible) this.marker.quaternion.copy(camera.quaternion);
+    const minR = (MIN_PX / 2) * perPx * camera.position.distanceTo(this.pos);
+    this.ball.scale.setScalar(2 * Math.max(this.r, minR));
   }
 
-  /** Both lines on the canvas, in CSS px: { path, ref }, or null when hidden. */
-  screen(camera, w, h) {
-    if (!this.visible) return null;
-    const pr = (pts) => {
-      const out = [];
-      for (const p of pts) {
-        _v.copy(p).project(camera);
-        if (_v.z > 1) continue;
-        out.push({ x: (_v.x + 1) / 2 * w, y: (1 - _v.y) / 2 * h });
-      }
-      return out;
-    };
-    return { path: pr(this.line.pts), ref: pr(this.line.ref) };
-  }
+  /** The aim ball draws no line on the page's grid any more. */
+  screen() { return null; }
 
-  dispose() {
-    for (const o of [...this.lines.map((l) => l.mesh), this.marker]) { this.scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
-  }
+  dispose() { this.scene.remove(this.ball); this.ball.geometry.dispose(); if (this.mat.map) this.mat.map.dispose(); this.mat.dispose(); }
 }
