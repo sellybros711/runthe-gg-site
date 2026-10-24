@@ -14,11 +14,21 @@
  *                                    the pitch (preview.js); the page hears the pitch's colour as a
  *                                    'std-pitch-color' event (aim.js tints the crosshair); null fades it
  *   st.previewPoints()               that trail on the canvas in CSS px, for the grid's thin line
+ *   st.setSafeRect({ top, right, bottom, left })   the HUD's insets in CSS px (null: none). The frame
+ *                                    centres the zone, not the whole set, in the rect left over, and
+ *                                    sizes the set to it (the cell rule unchanged); the bodies may run
+ *                                    under the panels. Call it before gridRect() (it refits)
  *   st.play({ pr, quick, hooks })    one pitch, driven by the engine's PitchResult (play.js). A ball
  *                                    in play is followed into the field (inplay.js): the broadcast
  *                                    cut, the fielders, the runners. See THE PLAY'S TIMELINE below.
  *   st.playing                       the promise of the pitch on now (null between pitches)
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
+ *
+ * FIRST PERSON. You are the pitcher (firstperson.js): his glove low in his glove side corner at the
+ * set, his head through the delivery after the throw (park.js pitcherEye), his arm and the ball
+ * through the frame at release, the follow-through, and back to the set by the end of the pitch.
+ * Nothing moves while aiming but his breathing. The broadcast after contact is not his view: it
+ * hides. toScreen and gridRect always answer for the set (the aim grid is drawn there).
  *
  * THE PLAY'S TIMELINE (what the game, ui.js, can wait on). Every hook is optional and fires at most
  * once a pitch, in this order (but for a foul, whose land comes after its call):
@@ -62,14 +72,15 @@
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=7';
-import { makeRenderer, buildPark, lightFrom, pitcherEye } from './park.js?v=3';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=4';
 import { People } from './people.js?v=36';
-import { Pitch, releaseOf } from './pitch.js?v=8';
-import { fromResult, motion } from './play.js?v=8';
+import { Pitch, releaseOf } from './pitch.js?v=9';
+import { fromResult, motion } from './play.js?v=9';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=13';
-import { Ghost, PITCH_COLORS } from './preview.js?v=4';
+import { Ghost, PITCH_COLORS } from './preview.js?v=5';
+import { FirstPerson } from './firstperson.js?v=1';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -88,7 +99,7 @@ function factsFrom(scn, extra) {
   const p = scn.pitcher;
   return {
     scenarioId: scn.id, title: scn.title,
-    pitcher: { name: p.name, team: p.team, throws: p.throws, teamColors: p.teamColors,
+    pitcher: { name: p.name, team: p.team, throws: p.throws, teamColors: p.teamColors, armAngle: Number.isFinite(p.armAngle) ? p.armAngle : null,
       arsenal: p.arsenal.map((a) => ({ type: a.type, name: a.name, usage: a.usage, velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, shape: a.shape || (C() && C().SHAPE_OF[a.type]), sigmaFt: a.sigmaFt })) },
     situation: { usHome: !!scn.situation.usHome, inning: scn.situation.inning, half: scn.situation.half },
     release: releaseOf(p),
@@ -107,6 +118,9 @@ class Stage {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(10, 1, 0.05, 900);
     this.eye = pitcherEye(this.camera);
+    // the set's camera, for toScreen and gridRect whatever the play has done to the live one
+    this.cam0 = this.camera.clone();
+    this.safe = null;
     this.park = buildPark(this.scene, this.renderer);
     this.is3d = true;
     this.cell = null;
@@ -123,6 +137,8 @@ class Stage {
     this.extra = { uniform: a.facts.uniform, bio: a.facts.bio };
     this.gltfs = a.gltfs;
     lightFrom(this.scene, this.renderer, a.env);
+    // his own glove and arm, on their own canvas over this one (never fatal: the scene draws without)
+    try { this.fp = new FirstPerson(this.canvas, a.env); } catch (e) { console.warn('first person off', e); this.fp = null; }
     mk('lit');
     if (this.scn) this.applyScenario();
     mk('people');
@@ -158,6 +174,9 @@ class Stage {
     this.facts = factsFrom(this.scn, this.extra);
     this.people = new People({ scene: this.scene, facts: this.facts });
     this.people.setup(this.gltfs);
+    this.eye.setHand(this.facts.pitcher.throws);
+    this.eye.setRelease(this.facts.release);
+    if (this.fp) this.fp.setPitcher(this.facts, this.people.catcher && this.people.catcher.kit);
     // the fielders and runners for a ball in play: built once from the catcher's body, dressed for
     // this scenario's two clubs
     if (!this.inplay) {
@@ -259,6 +278,9 @@ class Stage {
     this.pitch = new Pitch({ scene: this.scene, facts: this.facts, play, batter: this.facts.batter, m, grid: false });
     this.people.setPlay(this.pitch, play, m);
     this.m = m;
+    // a new pitch is set up: his head and glove at the set, the ball out of his hand through the lens
+    this.eye.settle = Infinity;
+    if (this.fp) { this.fp.settle = Infinity; this.fp.hidden = false; this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera); }
   }
 
   pose(t) {
@@ -266,16 +288,59 @@ class Stage {
     this.eye.update(t);
     if (this.pitch) this.pitch.update(t, this.camera);
     if (this.people && this.people.batter && this.people.batter.chain) this.people.update(t, 0);
+    if (this.fp) this.fp.pose(t);
   }
 
   render() {
     if (this.ghost && (this.ghost.on || this.ghost.busy())) { this.ghost.tick(); this.ghost.orient(this.camera, this.canvas.clientHeight); }
     this.renderer.render(this.scene, this.camera);
+    if (this.fp) this.fp.render(this.camera);
+  }
+
+  /** His breathing at the set: the glove's canvas alone, at most 30 frames a second, while the set is
+      on screen and no pitch is in the air (the scene itself is not drawn again for it). Stops when
+      the canvas is hidden or the page is in the background; soon() and layout() start it again. */
+  breathe() {
+    if (!this.fp || !this.fp.ok || this.breathId || reducedMotion()) return;
+    let last = 0;
+    const step = (ms) => {
+      this.breathId = 0;
+      if (this.playing || !this.loaded || !this.canvas.clientWidth || document.hidden || reducedMotion()) return;
+      const dt = last ? Math.min(0.1, (ms - last) / 1000) : 0;
+      if (!last || ms - last >= 32) {
+        if (!this.fp.hold) this.fp.clock += dt;
+        last = ms;
+        this.fp.pose(this.t);
+        this.fp.render(this.camera);
+      }
+      this.breathId = requestAnimationFrame(step);
+    };
+    this.breathId = requestAnimationFrame(step);
+  }
+
+  /** The broadcast's cut is not his view: his glove and arm go while it is on (the park is drawn only
+      in the broadcast, inplay.js update). */
+  firstPersonCut() {
+    if (!this.fp) return;
+    const off = !!(this.inplay && this.inplay.active && this.inplay.park && this.inplay.park.visible);
+    if (off !== this.fp.hidden) { this.fp.hidden = off; this.fp.pose(this.t); }
+  }
+
+  /** The HUD's insets in CSS px ({ top, right, bottom, left }, or null): the frame centres the zone in
+      what is left (fit). ui.js calls it before gridRect(). */
+  setSafeRect(r) {
+    const n = (k) => Math.max(0, Number.isFinite(+(r && r[k])) ? +r[k] : 0);
+    const next = r ? { top: n('top'), right: n('right'), bottom: n('bottom'), left: n('left') } : null;
+    const same = (a, b) => (!a && !b) || (a && b && a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left);
+    if (same(next, this.safe)) return;
+    this.safe = next;
+    this.layout();
   }
 
   /** A frame on the next animation frame, once, however many changes asked for one (a tap on take
       the mound sizes, frames and sets the hitter: one frame, not one each). */
   soon() {
+    this.breathe();
     if (this.soonId) return;
     this.soonId = requestAnimationFrame(() => {
       this.soonId = 0;
@@ -291,7 +356,17 @@ class Stage {
     this.eye.resize(w, h);
     this.camera.userData.cssH = h;
     this.eye.update(this.t);
-    if (this.loaded) { this.fit(); this.soon(); }
+    if (this.loaded) this.fit();
+    // the set's camera (toScreen, gridRect), then the first person's own layout
+    this.eye.update(0, this.cam0);
+    this.cam0.aspect = this.camera.aspect; this.cam0.fov = this.camera.fov; this.cam0.updateProjectionMatrix();
+    this.cam0.userData.cssH = h;
+    if (this.fp) {
+      this.fp.layout(w, h, this.safe, this.loaded ? this.gridRect() : null);
+      if (this.pitch && this.loaded) this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera);
+      this.fp.pose(this.t);
+    }
+    if (this.loaded) this.soon();
   }
 
   /** frame (ignored: the 3D scene keeps its own state). After a pitch, back to the set. */
@@ -304,7 +379,7 @@ class Stage {
   toScreen(pp) {
     const zb = this.zone || { szTop: 3.4, szBot: 1.6 };
     const z = zb.szBot + pp.zn * (zb.szTop - zb.szBot);
-    const v = P(pp.x, 17 / 12, z).project(this.camera);
+    const v = P(pp.x, 17 / 12, z).project(this.cam0);
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     return { x: (v.x + 1) / 2 * w, y: (1 - v.y) / 2 * h };
   }
@@ -362,13 +437,18 @@ class Stage {
       margin and a little room, as the lab frames it, but never so wide that a cell of the grid is
       under CELL_PX (38 px; the owner approved the lab's looser frame over a thumb sized 44). If a
       phone is too narrow even so, the hitter stays whole and the catcher's far side goes first. On
-      a short screen the bodies win over the cell size: nobody loses his head. */
+      a short screen the bodies win over the cell size: nobody loses his head.
+      With the HUD's safe rect (setSafeRect) the set is sized to the rect instead of the canvas (the
+      cell rule as before, on the canvas's px), and the zone, not the set, is centred in the rect: the
+      bodies may run under the panels, never off the canvas top to bottom. */
   fit() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     if (!w || !h || !this.people || !this.people.batter || !this.people.batter.chain) return;
     const eye = this.eye;
     eye.fit = null;
     const maxFw = Math.min(eye.preset().fw, (w * CELL_FT) / CELL_PX);
+    const R = this.safe, rw = R ? Math.max(w * 0.3, w - R.left - R.right) : w, rh = R ? Math.max(h * 0.3, h - R.top - R.bottom) : h;
+    const zb = this.zone || { szTop: 3.4, szBot: 1.6 };
     for (let it = 0; it < 3; it++) {
       eye.resize(w, h); eye.update(0);
       const f = { ...eye.frame }, fb = this.figureBoxes(800);
@@ -381,7 +461,7 @@ class Stage {
       const o = P(f.x, 0, f.z).project(this.camera), ox = P(f.x + 1, 0, f.z).project(this.camera), oz = P(f.x, 0, f.z + 1).project(this.camera);
       const kx = (ox.x - o.x) / 2 * w, kz = -(oz.y - o.y) / 2 * h;
       const ftPx = f.fw / w;
-      const need = ROOM * Math.max((u.x1 - u.x0) * ftPx / (1 - 2 * MARGIN), (u.y1 - u.y0) * ftPx / (1 - 2 * MARGIN) * w / h);
+      const need = ROOM * Math.max((u.x1 - u.x0) * ftPx / (1 - 2 * MARGIN) * w / rw, (u.y1 - u.y0) * ftPx / (1 - 2 * MARGIN) * w / rh);
       // the bodies (not the bat) always fit top to bottom, even if a short screen's cells get smaller
       const by0 = Math.min(fb.batter.y0, fb.catcher.y0, fb.umpire.y0), by1 = Math.max(fb.batter.y1, fb.catcher.y1, fb.umpire.y1, fb.apron.y1);
       const needBody = (by1 - by0) * ftPx / (1 - 2 * MARGIN) * w / h;
@@ -392,9 +472,20 @@ class Stage {
       // too wide for the canvas (a narrow phone): the hitter stays whole, the catcher's far side goes
       const fitsH = n.x1 - n.x0 <= w * (1 - 2 * MARGIN);
       const bRight = fb.batter.x0 + fb.batter.x1 > fb.catcher.x0 + fb.catcher.x1;
-      const cx = fitsH ? (n.x0 + n.x1) / 2 - w / 2 : bRight ? n.x1 - w * (1 - MARGIN) : n.x0 - w * MARGIN;
+      let cx = fitsH ? (n.x0 + n.x1) / 2 - w / 2 : bRight ? n.x1 - w * (1 - MARGIN) : n.x0 - w * MARGIN;
       const fitsV = n.y1 - n.y0 <= h * (1 - 2 * MARGIN);
-      const cy = fitsV ? (n.y0 + n.y1) / 2 - h / 2 : n.y1 - h * (1 - MARGIN);
+      let cy = fitsV ? (n.y0 + n.y1) / 2 - h / 2 : n.y1 - h * (1 - MARGIN);
+      if (R) {
+        // the zone's middle (the front of the plate, halfway up his zone) on the rect's middle
+        const q = P(0, 17 / 12, (zb.szTop + zb.szBot) / 2).project(this.camera);
+        const qx = z((q.x + 1) / 2 * w, w / 2), qy = z((1 - q.y) / 2 * h, h / 2);
+        cx = qx - (R.left + rw / 2);
+        cy = qy - (R.top + rh / 2);
+        // but the hitter stays whole across the canvas (on a narrow phone the zone gives way to him)
+        const bx0 = z(fb.batter.x0, w / 2), bx1 = z(fb.batter.x1, w / 2);
+        if (bx1 - cx > w * (1 - MARGIN)) cx = bx1 - w * (1 - MARGIN);
+        if (bx0 - cx < w * MARGIN) cx = bx0 - w * MARGIN;
+      }
       eye.fit = { x: f.x + cx / (kx * sc), z: f.z + cy / (kz * sc), fw };
     }
     eye.resize(w, h); eye.update(this.t);
@@ -471,6 +562,9 @@ class Stage {
     // (knocked down by a pitch, he stays down for a beat)
     const tail = run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
     const tEnd = resultAt + tail;
+    // his head and glove are back at the set by the end of the pitch (the next one starts there)
+    this.eye.settle = tEnd;
+    if (this.fp) this.fp.settle = tEnd;
     const callAt = run ? resultAt + run.resolveReal : resultAt + 0.12;
     const sceneT = (t) => (run && t > resultAt ? resultAt + run.sceneAt(t - resultAt) : t);
     // the runners on the scorebar diamond: the 3D runners themselves after a ball in play, else the
@@ -510,7 +604,7 @@ class Stage {
             const te = sceneT(tEnd);
             if (run) this.inplay.skipTo(te - resultAt);
             this.pose(te);
-            if (run) this.inplay.update(te - resultAt, this.camera);
+            if (run) { this.inplay.update(te - resultAt, this.camera); this.firstPersonCut(); }
             this.render();
             keep(te);
           }
@@ -552,7 +646,7 @@ class Stage {
         if (track && track.running && t >= resultAt && hooks.field) hooks.field(track.at(t * 1000).runners);
         const ts = sceneT(Math.min(t, tEnd));
         this.pose(ts);
-        if (run && ts > resultAt) this.inplay.update(ts - resultAt, this.camera);
+        if (run && ts > resultAt) { this.inplay.update(ts - resultAt, this.camera); this.firstPersonCut(); }
         if (!TEST() || trace.frames % (TEST().renderEvery || 1) === 0) this.render();
         trace.frames++;
         keep(ts);

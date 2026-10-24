@@ -45,6 +45,8 @@ const clampAim = (k) => (Number.isFinite(k) ? Math.max(-0.5, Math.min(0.5, k)) :
 export function releaseOf(p) {
   const r = p.release;
   if (r && [r.x, r.z, r.ext].every(Number.isFinite)) return { x: r.x, y: 60.5 - r.ext, z: r.z, assumed: null };
+  // PITCHf/x seasons (before 2015) have the point but no extension: his point, a typical extension
+  if (r && [r.x, r.z].every(Number.isFinite)) return { x: r.x, y: 54.0, z: r.z, assumed: 'a typical extension (none tracked)' };
   return { x: p.throws === 'L' ? 1.9 : -1.9, y: 54.0, z: 5.6, assumed: 'a stand in release for his hand' };
 }
 
@@ -223,10 +225,11 @@ export class Pitch {
   updateTracer(t, camera) {
     const tf = clamp01((t - this.tRel) / this.f.T) * this.f.T;
     const fade = 1 - smooth(clamp01((t - this.tPlate - 0.9) / 0.8));
-    this.tracer.material.uniforms.uOpacity.value = t > this.tRel ? 0.55 * fade : 0;
+    this.tracer.material.uniforms.uOpacity.value = t > this.tRel + (this.lens ? this.lens.join : 0) ? 0.55 * fade : 0;
     const pos = this.tracer.geometry.attributes.position, a = this.tracer.geometry.attributes.a;
     const cam = camera.position;
-    const tStart = Math.max(0, tf - this.f.T * 1.0);
+    // (the trail starts where the ball joins its own path, under the first person lens)
+    const tStart = Math.max(this.lens ? this.lens.join : 0, tf - this.f.T * 1.0);
     for (let i = 0; i < this.N; i++) {
       const s = i / (this.N - 1);
       const tt = tStart + (tf - tStart) * s;
@@ -295,6 +298,9 @@ export class Pitch {
       const tt = t - this.tRel;
       this.ball.position.copy(free ? this.ballAt(tt) : this.pointAt(Math.min(tt, this.tCatch - this.tRel)));
       this.ball.rotation.x = tt * this.spinRate;
+      // the first person lens (firstperson.js): out of his hand, the ball is drawn from where his
+      // hand is on screen onto its own path, which it joins at lens.join (well before the plate)
+      if (this.lens) { this.ball.scale.setScalar(1); if (camera && tt < this.lens.join) this.lens.place(tt, this.ball, camera); }
     }
     if (camera) {
       this.updateTracer(t, camera);
