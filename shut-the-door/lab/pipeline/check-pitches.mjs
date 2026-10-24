@@ -20,9 +20,12 @@
  *   2. size   the break the flight draws against the same pitch with no spin out of the same hand
  *             (Statcast's pfx, over the whole flight) is his pfxX and pfxZ within SIZE_TOL.
  *   3. aim    the flight crosses the front of the plate on the aim point (the cell plus at) within
- *             CROSS_IN, and the preview ends on it too.
- *   4. agree  the preview (preview.js Ghost) and the flight (pitch.js flight) are one path: every
- *             point within AGREE_IN.
+ *             CROSS_IN, and the aim ball (preview.js) sits on it too.
+ *   4. spin   the aim ball spins like the family (preview.js spinOf), in arm side and glove side and
+ *             mirrored for the other hand: four-seam pure backspin, sinker and changeup arm side and
+ *             up, the changeup slower, cutter glove side and up, slider mostly gyro glove side,
+ *             sweeper sidespin glove side, curveball and knuckle curve topspin, splitter low spin;
+ *             and the ball turns about that axis through P().
  *   5. colour the indicator's palette (preview.js PITCH_COLORS) is ui.js PITCH_COLORS, the break
  *             chart's and the buttons', so a pitch is one colour everywhere.
  *
@@ -52,7 +55,6 @@ export const SIDE_MIN_IN = 2;       // under this much run, a pitch of any famil
 export const SIZE_TOL = 0.1;        // the drawn break against his pfx: 10% (and at least SIZE_MIN_IN)
 export const SIZE_MIN_IN = 0.5;
 export const CROSS_IN = 0.1;        // the crossing point against the aim point, inches
-export const AGREE_IN = 0.05;       // the preview against the flight, inches, at every point
 
 const ARM = new Set(['FF', 'SI', 'CH', 'FS', 'FO']);
 const GLOVE = new Set(['FC', 'SL', 'ST', 'SV', 'CU', 'KC']);
@@ -71,6 +73,7 @@ const SZ = { szTop: 3.4, szBot: 1.6 };
 // where the player aims: every row and column, centres and the corners of the free aim
 const AIMS = [[12, null], [0, null], [4, null], [20, null], [24, null], [6, [0.5, 0.5]], [8, [-0.5, 0.5]], [16, [0.5, -0.5]], [18, [-0.5, -0.5]], [11, [0.3, -0.2]], [13, [-0.25, 0.4]]];
 const IN = 12;
+// the hand each pitch is thrown with in the loop below (the aim ball's spin is mirrored by it)
 
 /** The game's camera, framed for a hitter on this side, on a 390x844 phone. */
 function camera(bats) {
@@ -84,6 +87,27 @@ function camera(bats) {
 }
 const cams = { R: camera('R'), L: camera('L') };
 const screenX = (cam, v) => v.clone().project(cam).x;
+
+/* The family rules for the aim ball's spin, in arm side and glove side. The push of a spin is
+   axis x velocity; the velocity is about -y, so the push is (axis.z, 0, -axis.x), catcher's view. */
+const UP = new Set(['FF', 'SI', 'FC', 'CH']), DOWN = new Set(['CU', 'KC']), SIDE = new Set(['ST']);
+function spinBad(type, hand) {
+  const out = [], s = previewMod.spinOf(type, hand), o = previewMod.spinOf(type, hand === 'R' ? 'L' : 'R');
+  const armSign = hand === 'R' ? -1 : 1, px = s.axis.z, pz = -s.axis.x;
+  const want = ARM.has(type) ? 'arm' : 'glove';
+  if (Math.abs(px) > 0.02 && (Math.sign(px) === armSign ? 'arm' : 'glove') !== want) out.push(`spin: it pushes ${want === 'arm' ? 'glove' : 'arm'} side, a ${type} spins ${want} side`);
+  if (UP.has(type) && !(pz > 0)) out.push(`spin: a ${type} is backspin (it pushes up), this pushes ${pz.toFixed(2)}`);
+  if (DOWN.has(type) && !(pz < 0)) out.push(`spin: a ${type} is topspin (it pushes down), this pushes ${pz.toFixed(2)}`);
+  if (SIDE.has(type) && !(Math.abs(px) > 2 * Math.abs(pz))) out.push('spin: a sweeper is sidespin');
+  if (type === 'SL' && !(Math.abs(s.axis.y) >= 0.7)) out.push('spin: a slider is mostly gyro');
+  if (type === 'FF' && !(Math.abs(s.axis.y) <= 0.2 && pz > 0.9 * Math.hypot(px, pz))) out.push('spin: a four-seam is pure backspin');
+  if (type === 'CH' && !(s.rps < previewMod.spinOf('FF', hand).rps)) out.push('spin: a changeup turns slower than his four-seam');
+  if ((type === 'FS' || type === 'FO') && !(s.rps < 0.6)) out.push('spin: a splitter is low spin');
+  if (Math.abs(Math.hypot(s.axis.x, s.axis.y, s.axis.z) - 1) > 1e-6) out.push('spin: the axis is not a unit vector');
+  // a mirror across the plate's centre line keeps the axis's x (up and down pushes) and flips y and z
+  if (Math.hypot(s.axis.x - o.axis.x, s.axis.y + o.axis.y, s.axis.z + o.axis.z) > 1e-9) out.push('spin: the other hand is not its mirror');
+  return out;
+}
 
 const packsDir = path.join(GAME, 'data/packs');
 const fails = [];
@@ -137,17 +161,18 @@ for (const f of fs.readdirSync(packsDir).filter((x) => x.endsWith('.json')).sort
           const sideNow = (onScreen === 'right') === (hand === 'L') ? 'glove' : 'arm';
           if (sideNow !== dataSide) bad.push(`cell ${cell}, a ${bats === 'R' ? 'righty' : 'lefty'} hitting: it breaks ${sideNow} side on screen (to the ${onScreen}), his pfxX says ${dataSide}`);
         }
-        // the preview: one path with the flight, ending on the aim point
-        ghost.set({ release: rel, pitch: a, cell, at, ...SZ });
-        const pts = ghost.path.pts, NP = pts.length;
-        let worst = 0;
-        for (let i = 0; i < NP; i++) {
-          const p = fl.at(fl.T * i / (NP - 1)), q = P(p.x, p.y, p.z);
-          worst = Math.max(worst, q.distanceTo(pts[i]) / FT * IN);
-        }
-        if (worst > AGREE_IN) bad.push(`cell ${cell}: the preview leaves the flight by ${worst.toFixed(2)} in`);
-        const ge = pts[NP - 1], ae = P(aim.x, 17 / 12, aim.z);
-        if (Math.hypot(ge.x - ae.x, ge.y - ae.y) / FT * IN > CROSS_IN) bad.push(`cell ${cell}: the preview ends ${(Math.hypot(ge.x - ae.x, ge.y - ae.y) / FT * IN).toFixed(2)} in off the aim point`);
+        // the aim ball: on the aim point, at the front of the plate, where the flight crosses
+        ghost.set({ release: rel, pitch: a, hand, cell, at, ...SZ });
+        const bp = ghost.ball ? ghost.ball.position : ghost.path.pts[ghost.path.pts.length - 1];
+        const ae = P(aim.x, 17 / 12, aim.z), fe = P(end.x, end.y, end.z);
+        const off = Math.max(bp.distanceTo(ae), bp.distanceTo(fe)) / FT * IN;
+        if (off > CROSS_IN) bad.push(`cell ${cell}: the aim ball sits ${off.toFixed(2)} in off the aim point`);
+      }
+      // 4. spin: the aim ball turns like the family, mirrored for the hand (preview.js spinOf)
+      if (previewMod.spinOf && (ARM.has(a.type) || GLOVE.has(a.type))) {
+        for (const b of spinBad(a.type, hand)) bad.push(b);
+        const s = previewMod.spinOf(a.type, hand), w = ghost.axis1;
+        if (w && Math.hypot(w.x + s.axis.x, w.y - s.axis.z, w.z - s.axis.y) > 1e-6) bad.push('the aim ball turns about an axis that is not its spin through P()');
       }
       const uniq = [...new Set(bad.map((b) => b.replace(/^cell \d+(?: at [^:,]*)?[:,] /, '')))];
       if (bad.some((b) => /side/.test(b))) wrongWay++;
