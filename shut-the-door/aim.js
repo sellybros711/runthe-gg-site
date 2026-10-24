@@ -23,7 +23,8 @@
  * and away words, so a keyboard or a screen reader picks one too (at the cell's centre), and the
  * arrow keys move the aim a cell at a time.
  *
- * The surface is the old Grid's (place, setHand, setDisabled, setSelected, setMarks, setPitches,
+ * The crosshair is the hit marker around the 3D stage's aim ball (3d/preview.js), in the pitch's
+ * colour. The surface is the old Grid's (place, setHand, setDisabled, setSelected, setMarks, setPitches,
  * setHeat, cells, el), so ui.js drives it the same way. The coach's mini grid stays mound.js Grid.
  */
 (function () {
@@ -109,6 +110,12 @@ function create(host, opts) {
     '<circle class="ax-dot" r="4.5"/></svg><span class="aim-tag"></span>';
   el.appendChild(cross);
   var tag = cross.querySelector('.aim-tag');
+  /* the 3D stage says the picked pitch's colour (stage.js, 'std-pitch-color'): the crosshair takes
+     it and frames the stage's aim ball (no centre dot). null, on the throw: back to the signal. */
+  window.addEventListener('std-pitch-color', function (e) {
+    el.classList.add('has-ball');
+    if (e.detail) el.style.setProperty('--aim-c', e.detail); else el.style.removeProperty('--aim-c');
+  });
   host.appendChild(el);
 
   var api = {
