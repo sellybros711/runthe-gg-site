@@ -237,10 +237,12 @@ function create(host, opts) {
   dots.className = 'dots';
   dots.setAttribute('aria-hidden', 'true');
   el.insertBefore(dots, cross);
-  function setPitches(log, from) {
-    var html = '';
+  /* only one plate appearance's pitches: from..to (to defaults to the end of the log). During an at
+     bat that is the at bat (the owner, 2026-10-24); a finished one is shown when its chip is tapped */
+  function setPitches(log, from, to) {
+    var html = '', end = to == null ? (log || []).length : to;
     (log || []).forEach(function (p, i) {
-      if (!p.actual) return;
+      if (!p.actual || i < from || i >= end) return;
       var cx = Math.max(0, Math.min(5, p.actual.x / C.GRID.COL_FT + 2.5));
       var ry = Math.max(0, Math.min(5, (1 - p.actual.zn) / C.GRID.ROW_ZN + 1));
       html += '<i class="pd ' + (DOT_KIND[p.result] || 'inplay') + (i >= from ? ' cur' : '') + '" style="left:' + ((5 - cx) * 20).toFixed(2) + '%;top:' + (ry * 20).toFixed(2) + '%"></i>';

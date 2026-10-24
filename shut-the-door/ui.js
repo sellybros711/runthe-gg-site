@@ -122,7 +122,10 @@ function stripHTML(strip, big) {
   return (strip || []).map(function (b, i) { return '<i class="sq ' + b + '" title="pitch ' + (i + 1) + ': ' + b + '">' + (big ? i + 1 : '') + '</i>'; }).join('');
 }
 function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; return ['th', 'st', 'nd', 'rd'][n % 10] || 'th'; }
-/* the colours of the break chart and the arsenal list, in usage order */
+/* each pitch type's own colour, Baseball Savant's (the owner, 2026-10-24: "each pitch type should have
+   its own unique color"), so a slider is the same yellow for every pitcher. 3d/preview.js TYPE_COLORS
+   is the same map (check-pitches holds them equal). PITCH_COLORS is the fallback for a type not here */
+var TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', ST: '#ddb33a', SV: '#93afd4', CU: '#00d1ed', KC: '#6236cd', CS: '#0068ff', CH: '#1dbe3a', FS: '#3bacac', FO: '#55ccab', KN: '#3c44cd', SC: '#60db33', EP: '#888888' };
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
@@ -319,7 +322,7 @@ function breakChart(ars, throws, sel) {
     var x = c - a.pfxX * k, y = c - a.pfxZ * k, rad = 5 + Math.sqrt(a.usage) * 13;
     var on = sel === a.type, op = sel == null || on ? '.92' : '.45';
     var ring = on ? ' stroke="currentColor" stroke-width="2.5"' : '';
-    return { on: on, svg: '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + PITCH_COLORS[i % PITCH_COLORS.length] + '" fill-opacity="' + op + '"' + ring + '><title>' + esc(a.name) + '</title></circle>' };
+    return { on: on, svg: '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + (TYPE_COLORS[a.type] || PITCH_COLORS[i % PITCH_COLORS.length]) + '" fill-opacity="' + op + '"' + ring + '><title>' + esc(a.name) + '</title></circle>' };
   }).reverse().sort(function (a, b) { return a.on - b.on; }).map(function (d) { return d.svg; }).join('');
   var armRight = throws !== 'L';
   return '<svg viewBox="0 0 148 148" role="img" aria-label="his pitches by movement">' +
@@ -415,7 +418,7 @@ function buildMound() {
      the heat, the pitch dots and the preview's line in the same box. S.grid keeps its old name: it
      is the aim, the only grid on the mound. A drag or a mouse over it moves the break preview. */
   S.grid = window.STD_AIM.create($('m-scene'), { onPick: pickCell, onHover: hoverCell, label: aimLabel });
-  /* the aim sits over the canvas, under the mini map and the dot key */
+  /* the aim sits over the canvas, under the mini map */
   $('m-scene').insertBefore(S.grid.el, $('m-dbg'));
   /* the live field minimap: built into its slot, shown after the first play of the outing */
   S.mini = window.STD_MINIMAP ? window.STD_MINIMAP.create($('m-mini')) : null;
@@ -423,17 +426,19 @@ function buildMound() {
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
   var big = maxBreak(S.scn.pitcher.arsenal);
-  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name and its speed. The
-     speed is the pack's velo, rounded, never typed. The number is the key that picks it. */
+  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name and its break glyph.
+     No speed: it is revealed after the throw (the owner, 2026-10-23). The number is the key that picks it. */
   S.scn.pitcher.arsenal.forEach(function (a, i) {
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'pitch';
     b.dataset.type = a.type;
+    /* the pitch's own colour: a bar down the button's edge and the picked state */
+    b.style.setProperty('--pc', colorOf(a));
     b.setAttribute('aria-pressed', 'false');
-    b.setAttribute('aria-label', (i + 1) + ', ' + a.name + ', ' + Math.round(a.velo) + ' mph');
+    b.setAttribute('aria-label', (i + 1) + ', ' + a.name);
     b.innerHTML = '<span class="pk" aria-hidden="true">' + (i + 1) + '</span><span class="pt" aria-hidden="true"><b>' + esc(a.name) + '</b>' +
-      '<span class="pv">' + breakGlyph(a, colorOf(a), big) + '<em>' + esc(Math.round(a.velo)) + '</em> mph</span></span>';
+      '<span class="pv">' + breakGlyph(a, colorOf(a), big) + '</span></span>';
     var held = holdToLearn(b, a.type);
     b.addEventListener('click', function () { if (!held()) pickType(a.type); });
     ars.appendChild(b);
@@ -458,13 +463,25 @@ function buildMound() {
   $('m-guide').addEventListener('click', function (e) {
     if (e.target.closest('.gd-x')) setGuide(null);
   });
+  /* the pitch dot key: small, behind its own toggle on the batter card */
+  $('m-key-b').addEventListener('click', function () {
+    var on = $('m-key').hidden;
+    $('m-key').hidden = !on;
+    this.setAttribute('aria-expanded', on ? 'true' : 'false');
+    placeHud();
+  });
   $('m-heat').addEventListener('click', function (e) {
     var x = e.target.closest('[data-heat]');
     if (!x) return;
     S.heat = x.dataset.heat;
     renderScout();
   });
-  window.addEventListener('resize', function () { if (document.body.dataset.screen === 's-mound') relayout(); });
+  /* FULL SCREEN (the owner, 2026-10-24): the canvas is the viewport, so a turn of the phone, a
+     resize and the browser's bars coming and going all lay the stage and the aim out again */
+  var onSize = function () { if (document.body.dataset.screen !== 's-mound') return; if (S.busy) S.sizeDue = true; else relayout(); };
+  window.addEventListener('resize', onSize);
+  window.addEventListener('orientationchange', function () { onSize(); setTimeout(onSize, 250); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', onSize);
   /* The scene's box moves without a window resize (a line wraps, a button grows): the canvas then
      shows a stretched frame and the grid sits off the zone, so lay out again. Never mid pitch. */
   if (window.ResizeObserver) {
@@ -498,7 +515,41 @@ function relayout() {
   S.grid.place(S.scene.gridRect());
   S.scene.draw(idleFrame());
   drawPreview();
+  placeHud();
   renderGuide();
+}
+/* The HUD over the full screen scene: where the top left column ends (the minimap hangs under it),
+   and the open sheet placed off the zone. */
+function wideHud() { return !!(window.matchMedia && matchMedia('(orientation: landscape)').matches); }
+function placeHud() {
+  var host = $('s-mound'), tl = host.querySelector('.mh-tl');
+  if (!tl || !host.classList.contains('on')) return;
+  var hb = host.getBoundingClientRect();
+  host.style.setProperty('--hud-top', Math.round(tl.getBoundingClientRect().bottom - hb.top) + 'px');
+  placeSheet($('m-scout'), 'scout');
+  placeSheet($('m-guide'), 'guide');
+}
+/* A sheet over the scene, never over the zone. Sideways: in the left column under the batter card.
+   Upright: the scout card from the bottom up to just under the zone (over the dock, as it always sat
+   over the pitch buttons); the guide between the batter card and the zone when it fits, else the same. */
+function placeSheet(box, kind) {
+  if (!box || box.hidden || !S.grid) return;
+  var hb = $('s-mound').getBoundingClientRect(), g = S.grid.el.getBoundingClientRect();
+  var card = $('s-mound').querySelector('.mh-tl').getBoundingClientRect();
+  var gut = parseFloat(getComputedStyle($('s-mound')).getPropertyValue('--gut')) || 12;
+  var top = Math.round(card.bottom - hb.top + 8);
+  box.classList.remove('top', 'low');
+  box.style.top = ''; box.style.maxHeight = '';
+  if (wideHud()) {
+    box.classList.add('top');
+    box.style.top = top + 'px';
+    box.style.maxHeight = Math.max(120, hb.height - top - gut) + 'px';
+    return;
+  }
+  var above = Math.round(g.top - hb.top - 8 - top);
+  if (kind === 'guide' && above >= 118) { box.style.top = top + 'px'; box.style.maxHeight = above + 'px'; return; }
+  box.classList.add('low');
+  box.style.maxHeight = Math.max(120, Math.round(hb.bottom - g.bottom - 8 - gut)) + 'px';
 }
 function idleFrame() {
   return { pitcher: 'set', batter: 'stance', umpire: 'set', mitt: S.cell != null ? aimPoint(S.cell, S.at) : null, marker: S.lastMarker || null };
@@ -535,7 +586,7 @@ function setBatter(first) {
   $('m-bline').textContent = b.line;
   relayout();
   renderScout();
-  if (!first) pbp(isTied(S.outing) ? 'tied' : '', b.name + ' up.');
+  if (!first) pbp(isTied(S.outing) ? 'tied' : '', b.name + ' up.', true);
 }
 
 /* A run that ties does not end the outing (the owner's call, 2026-10-20). Once
@@ -559,7 +610,7 @@ function renderHud(st) {
   $('m-themname').textContent = themName ? themName.toUpperCase() : 'them';
   $('m-usname').title = usName ? S.scn.pitcher.team : '';
   $('m-themname').title = them ? (them.city + ' ' + them.nick) : '';
-  S.grid.setPitches(st.log, paStart(st.log));
+  renderPAs(st);
   $('m-us').textContent = st.score.us;
   $('m-them').textContent = st.score.them;
   var tied = isTied(st);
@@ -685,9 +736,8 @@ function renderScout() {
   if (!S.scout) { box.hidden = true; return; }
   box.innerHTML = scoutCard(b, view);
   box.hidden = false;
-  /* a sheet over the lower HUD: it stops just under the grid's last row, so the zone is never covered */
-  var gb = S.grid.el.getBoundingClientRect().bottom, sb = $('s-mound').getBoundingClientRect().bottom;
-  box.style.maxHeight = Math.max(120, sb - gb - 12) + 'px';
+  /* a sheet over the scene that stops short of the zone, so the zone is never covered */
+  placeSheet(box, 'scout');
 }
 
 /* The card: one sentence, the hitter's rates as bars, and his line against each pitch of the
@@ -744,8 +794,10 @@ function scoutSentence(pr, rows) {
    screen like the grid), usage, and the shape from the contract. The preview is the aim, never
    the outcome: it ends on the exact aim point, wherever the engine's command draw puts the ball. */
 
-/* the colour a pitch has on the break chart (usage order), so the buttons and the chart agree */
+/* the colour a pitch has everywhere (its type's, else its place by usage), so the buttons, the chart,
+   the guide and the reticle agree */
 function colorOf(a) {
+  if (TYPE_COLORS[a.type]) return TYPE_COLORS[a.type];
   var ord = S.scn.pitcher.arsenal.slice().sort(function (x, y) { return y.usage - x.usage; });
   return PITCH_COLORS[Math.max(0, ord.indexOf(a)) % PITCH_COLORS.length];
 }
@@ -864,7 +916,8 @@ function renderGuide() {
   var b = batterAt(S.outing.batterIndex), p = S.scn.pitcher, lefty = b.bats === 'L';
   var ordered = p.arsenal.slice().sort(function (x, y) { return y.usage - x.usage; });
   var chart = breakChart(ordered, p.throws, a.type);
-  var nums = '<span><b>' + esc(a.velo.toFixed(1)) + '</b>mph</span>';
+  /* no speed: it is revealed after the throw (the owner, 2026-10-23) */
+  var nums = '';
   if (a.pfxX != null && a.pfxZ != null) {
     var toward = lefty ? a.pfxX > 0 : a.pfxX < 0, hx = Math.round(Math.abs(a.pfxX));
     nums += '<span><b>' + esc(Math.round(Math.abs(a.pfxZ))) + '"</b>' + (a.pfxZ >= 0 ? 'up' : 'down') + '</span>' +
@@ -877,11 +930,7 @@ function renderGuide() {
     '<div class="gd-txt"><p class="gd-say">' + esc(pitchSay(a, b.bats)) + '</p><div class="gd-nums">' + nums + '</div>' +
     '<p class="gd-foot">inches of break against no spin (the dotted line).</p></div></div>';
   box.hidden = false;
-  /* at the top of the field, over the stands, and off the grid when the screen has the room */
-  var host = $('s-mound').getBoundingClientRect(), sc = $('m-scene').getBoundingClientRect();
-  var gt = S.grid.el.getBoundingClientRect().top;
-  box.style.top = (sc.top - host.top + 4) + 'px';
-  box.style.maxHeight = Math.max(118, gt - sc.top - 8) + 'px';
+  placeSheet(box, 'guide');
 }
 
 /* the closer's club in capitals, from the club table: the nickname, or the last word of a name
@@ -898,15 +947,59 @@ function paStart(log) {
   return 0;
 }
 
-/* The play by play: one quiet line under the scoreboard. It covers nothing
-   and needs no tap. No grade, no colour, no tip ever shows during play (the
-   owner, 2026-10-17): that all waits for the coach at the end. */
-/* A tag (the result, in capitals) and the rest of the line. The tag is the thing a player reads
-   first: the swing's result under the scoreboard, in the same place after every pitch. */
-function pbp(tag, rest) {
+/* The zone's dots are the at bat you are in, and only it (the owner, 2026-10-24). Each finished at bat
+   is a chip on the batter card (his name and how it ended); a tap shows that at bat's pitches on the
+   zone, a second tap or the next pitch goes back to the at bat you are in. */
+function finishedPAs(log) {
+  var out = [], start = 0, bi = 0;
+  (log || []).forEach(function (pr, i) {
+    if (!pr.paOver) return;
+    var b = batterAt(bi);
+    out.push({ from: start, to: i + 1, name: lastName(b.name), word: playText(pr, b).tag });
+    start = i + 1; bi++;
+  });
+  return out;
+}
+function renderPAs(st) {
+  var log = st.log || [], box = $('m-pas');
+  if (S.viewPA && S.viewPA.n !== log.length) S.viewPA = null;
+  var v = S.viewPA;
+  S.grid.setPitches(log, v ? v.from : paStart(log), v ? v.to : null);
+  if (!box) return;
+  var pas = finishedPAs(log);
+  box.hidden = !pas.length;
+  box.innerHTML = pas.map(function (p, i) {
+    var on = v && v.from === p.from;
+    return '<button type="button" class="pa-chip' + (on ? ' on' : '') + '" data-pa="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+      esc(p.name) + ' <b>' + esc(String(p.word || '').toLowerCase()) + '</b></button>';
+  }).join('');
+  box.querySelectorAll('.pa-chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var p = pas[+b.dataset.pa];
+      S.viewPA = S.viewPA && S.viewPA.from === p.from ? null : { from: p.from, to: p.to, n: log.length };
+      renderPAs(st);
+    });
+  });
+}
+
+/* The play by play: a broadcast lower third (the owner, 2026-10-24). It comes up when the result is
+   seen, holds, and fades. It takes no tap. No grade, no colour, no tip ever shows during play (the
+   owner, 2026-10-17): that all waits for the coach at the end. A tag (the result, in capitals) and
+   the rest of the line, in the same place after every pitch. */
+var PBP_HOLD_MS = 3600, PBP_MIN_MS = 1800;
+/* next: the line waits until the one up now has had its moment (the next hitter up after a strikeout) */
+function pbp(tag, rest, next) {
   var el = $('m-pbp');
+  clearTimeout(pbp._q);
+  var wait = next ? (pbp._at || 0) + PBP_MIN_MS - Date.now() : 0;
+  if (wait > 0) { pbp._q = setTimeout(function () { pbp(tag, rest); }, wait); return; }
+  pbp._at = Date.now();
   el.innerHTML = '<b class="pbp-tag">' + esc(tag || '') + '</b> <span class="pbp-rest">' + esc(rest || '') + '</span>';
-  el.classList.remove('new'); void el.offsetWidth; el.classList.add('new');
+  el.classList.remove('show'); void el.offsetWidth;
+  if (!tag && !rest) return;
+  el.classList.add('show');
+  clearTimeout(pbp._t);
+  pbp._t = setTimeout(function () { el.classList.remove('show'); }, PBP_HOLD_MS);
 }
 var COUNT_WORD = ['', 'one', 'two', 'three'];
 var HIT_TAG = { single: 'single', double: 'double', triple: 'triple', home_run: 'home run', error: 'error',
@@ -927,6 +1020,8 @@ function playText(pr, batter, after) {
   else if (res === 'foul') { tag = 'foul'; rest = count; }
   else if (pr.paOver) { tag = 'strikeout'; rest = who + ', ' + (res === 'called_strike' ? 'looking' : 'swinging'); }
   else { tag = res === 'called_strike' ? 'called strike' : res === 'foul_tip' ? 'foul tip' : 'swinging strike'; rest = count; }
+  /* THE RADAR GUN (the owner, 2026-10-23): the speed shows after the throw, the drawn pitch's own */
+  if (pr.velo != null && isFinite(pr.velo)) rest = Math.round(pr.velo) + ' mph \u00b7 ' + rest;
   if (pr.runs) rest += ' · ' + (pr.runs === 1 ? 'a run scores' : (COUNT_WORD[pr.runs] || pr.runs) + ' runs score');
   // the run that tied it: the outing goes on, so the line says so
   if (pr.runs && isTied(after)) rest += ' · tied ' + after.score.us + '-' + after.score.them;
@@ -947,12 +1042,9 @@ function throwIt() {
   audio();
   var ap = pitchOf(S.type), bt = batterAt(S.outing.batterIndex);
   var type = S.type, cell = S.cell, at = S.at || [0, 0];
-  /* the meter is one panel over the pitch buttons and the throw button: from the buttons' top to
-     the throw button's foot, so it is big to hit and the scene above never moves */
-  var padEl = $('m-pad'), ars = $('m-arsenal').getBoundingClientRect(), tb = $('m-throw').getBoundingClientRect();
-  var arsTop = ars.top + (parseFloat(getComputedStyle($('m-arsenal')).paddingTop) || 0) - 3;
-  padEl.style.setProperty('--meter-h', Math.max(tb.height, Math.round(tb.bottom - arsTop)) + 'px');
-  padEl.classList.add('metering');
+  /* the meter is one panel over the dock (the pitch buttons and the throw button), so it is big
+     to hit and nothing over the scene moves */
+  $('m-dock').classList.add('metering');
   var run = S.meter.run({
     command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type), pitch: ap,
     onStage: stepLine,
@@ -964,7 +1056,7 @@ function throwIt() {
   });
   stepLine();
   run.then(function (r) {
-    if (!r) { $('m-pad').classList.remove('metering'); updateThrow(); return; }
+    if (!r) { $('m-dock').classList.remove('metering'); updateThrow(); return; }
     var call = { type: type, cell: cell, at: at, q: r.q };
     if (r.e != null) call.e = r.e;      // effort: only when the meter offered it (STD_METER.EFFORT)
     fire(call);
@@ -976,7 +1068,7 @@ function repeatOf(type) {
   for (var i = log.length - 1; i >= 0 && log[i].call.type === type; i--) n++;
   return n;
 }
-function meterDone() { if (S.meter) S.meter.hide(); $('m-pad').classList.remove('metering'); }
+function meterDone() { if (S.meter) S.meter.hide(); $('m-dock').classList.remove('metering'); }
 
 /* PAINTED is rare and earned (the owner, 2026-10-22: "it always says painted"). All three:
    the meter's best tier (q at or over STD_METER.BEST_Q, the bright band), a called cell on the
