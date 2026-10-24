@@ -2673,8 +2673,8 @@
   },
   "hoops/design/style-guide.html": {
     "../career-kit.js": {
-      "v": "11",
-      "sha": "8b1be2303905d953"
+      "v": "12",
+      "sha": "ef3c2ac4dde9a399"
     },
     "../util.js": {
       "v": "1",
@@ -2791,8 +2791,8 @@
       "sha": "bc4fd85f6f528926"
     },
     "career-kit.js": {
-      "v": "11",
-      "sha": "8b1be2303905d953"
+      "v": "12",
+      "sha": "ef3c2ac4dde9a399"
     },
     "sound.js": {
       "v": "2",
@@ -2815,16 +2815,16 @@
       "sha": "647d38ee658e6fac"
     },
     "itemart.js": {
-      "v": "3",
-      "sha": "dcb77ca252ced228"
+      "v": "4",
+      "sha": "3829fe10bba58a06"
     },
     "closet-ui.js": {
-      "v": "12",
-      "sha": "fb3ead54e7769a1d"
+      "v": "14",
+      "sha": "1213469bd70002bf"
     },
     "shop-ui.js": {
-      "v": "6",
-      "sha": "944cf255b96a23e6"
+      "v": "7",
+      "sha": "ea8a61ae873182ef"
     },
     "daily-ui.js": {
       "v": "5",

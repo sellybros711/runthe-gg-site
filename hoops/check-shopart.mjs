@@ -9,7 +9,11 @@
  *    slot falls back rather than drawing nothing.
  * 4. The four packs are four different pictures, each in its own colour.
  * 5. The coin and the four shard gems draw.
+ * 6. The coin is a round, shaded 12 cell coin, and every coin, gem, icon and
+ *    pack the shop, the closet and the top bar draw is a whole number of CSS
+ *    pixels a cell.
  */
+import fs from 'node:fs';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 global.window = undefined;
@@ -64,6 +68,43 @@ ok(packs.every((p) => p.g.some((c) => c && c.toLowerCase() === A.PACK_PAL[p.id].
 ok(lit(A.coinGrid().px) > 30, '5 the coin draws');
 ok(['common', 'rare', 'epic', 'legendary'].every((r) => lit(A.gemGrid(r).px) > 15), '5 the four shard gems draw');
 ok(new Set(['common', 'rare', 'epic', 'legendary'].map((r) => A.gemGrid(r).px.join(','))).size === 4, '5 and each in its rarity');
+
+/* 6. THE COIN IS CLEAN PIXEL ART ON A WHOLE PIXEL GRID (B14, 2026-10-17).
+   The old coin was an 8 cell octagon with a checker for a face, shown at 12,
+   14, 18 and 24px (1.5 to 2.25 pixels a cell), and the top bar's coin was a
+   round CSS gradient with no pixels at all. The coin is now a 12 cell round
+   coin (rim, struck ring, raised bar), and every coin, gem, item icon and
+   pack the shop and the closet draw is a whole number of CSS pixels a cell.
+   Read from the CSS the files inject, so a size between cells fails here. */
+const C = A.COIN;
+ok(C && C.length === 12 && C.every((r) => r.length === 12) && A.COIN_N === 12, '6 the coin is a 12 by 12 grid (' + (C ? C.length + 'x' + C[0].length : 'none') + ')');
+const sil = (C || []).map((r) => r.replace(/[^.]/g, '#'));
+ok(sil.length && sil.every((r) => r === [...r].reverse().join('')) && sil.join() === [...sil].reverse().join(), '6 its outline is round: the same mirrored left to right and top to bottom');
+ok(sil.length && sil.every((r) => (r.match(/#+/g) || []).length === 1), '6 and solid, with no hole in any row');
+const cg = A.coinGrid(), cols = new Set(cg.px.filter(Boolean));
+ok(cols.size >= 6 && lit(cg.px) >= 100, '6 the coin is shaded, not flat (' + cols.size + ' colours, ' + lit(cg.px) + ' cells)');
+const src = (f) => fs.readFileSync(new URL('./' + f, import.meta.url), 'utf8');
+/* every width a class is given in a file's CSS strings */
+function widths(file, cls){
+  const t = src(file), out = [];
+  const re = new RegExp("'([^']*\\." + cls + "(?![\\w-])[^'{]*)\\{([^}]*)\\}", 'g');
+  for (const m of t.matchAll(re)) { const w = /(?:^|;)width:(\d+(?:\.\d+)?)px/.exec(m[2]); if (w) out.push(+w[1]); }
+  return out;
+}
+const GRID = [
+  ['shop-ui.js', ['sh-coinbig', 'sh-coini'], A.COIN_N || 8, 'coin'], ['closet-ui.js', ['cl-coin'], A.COIN_N || 8, 'coin'], ['career-kit.js', ['k-cb'], A.COIN_N || 8, 'coin'],
+  ['shop-ui.js', ['sh-gem', 'sh-gemi', 'sh-gembig'], 7, 'gem'],
+  ['shop-ui.js', ['sh-cicon', 'sh-ricon', 'sh-ticon'], A.ICON, 'icon'], ['closet-ui.js', ['cl-ic', 'cl-si'], A.ICON, 'icon'],
+  ['shop-ui.js', ['sh-bob', 'sh-fpack', 'sh-wpack', 'sh-flimg', 'sh-float'], A.PW, 'pack'], ['closet-ui.js', ['cl-pkimg'], A.PW, 'pack'],
+];
+const off = [], seenW = [];
+for (const [f, list, n, what] of GRID) for (const cls of list) {
+  const ws = widths(f, cls);
+  if (!ws.length) off.push(cls + ' has no width');
+  for (const w of ws) { seenW.push(cls); if (w % n) off.push(cls + ' ' + w + 'px is ' + (w / n).toFixed(2) + 'px ' + (what === 'icon' ? 'an ' : 'a ') + what + ' cell'); }
+}
+ok(seenW.length >= 17, '6 the sizes are found in the CSS (' + seenW.length + ')');
+ok(!off.length, '6 every coin, gem, icon and pack in the shop, the closet and the top bar is a whole number of pixels a cell (' + off.join('; ') + ')');
 
 console.log((fails ? 'FAILED ' : 'ok ') + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);
