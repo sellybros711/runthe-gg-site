@@ -29,8 +29,8 @@ const problems = [];
 /* 1. Nothing public names it. Every file the deploy could serve as a page or
    an asset, which is everything but:
      functions/   Pages Function code, never served as files (check 3 holds
-                  that). Other gated tools live there too and may name the
-                  game: the Sky World draws every game as an island.
+                  that). Other gated tester tools live there too and may name
+                  the game.
      .claude/, .github/   the repo's own tooling (agents, skills, workflows).
    A public Function that rendered the game would still be caught: it would
    have to answer a path, and test/gate.test.mjs and check 4 hold the one
