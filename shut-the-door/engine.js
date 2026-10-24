@@ -67,11 +67,16 @@ const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
    the pitch along his own real speed (grade.js EFFORT) and loads the arm. A
    call without e plays exactly as under 4. And the free aim point (CONTRACT.md
    5d): a rules 2 call may carry at, where inside its cell it was aimed. A call
-   without at aims at the centre, as under 4. */
-const ENGINE_VERSION = 5;
+   without at aims at the centre, as under 4.
+   6: rules 3 (grade.js THE THIRD OUT): a run that crosses before a legal
+   third out counts. A new outing's calls carry r: 3. A call with r: 2, or
+   none, replays under its own rules, where a third out scores none. */
+const ENGINE_VERSION = 6;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
-   for the old end rules is refused rather than misread. */
-const PACK_VERSION = 2;
+   for the old end rules is refused rather than misread.
+   3: the hold table is solved with runs on a legal third out (rules 3), and
+   the advancement table's half-ending rows are the real plays. */
+const PACK_VERSION = 3;
 const SCORE_BASE = 700;
 const SCORE_PER_PT = 20;
 /* The result's part of the score: 100 points a rank (contract.js OUTCOME_RANK).
@@ -121,7 +126,7 @@ function createOuting(pack, opts) {
   const seed = opts.seed >>> 0;
   const st = model.startState();
   const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (rules !== 1 && rules !== G.RULES) throw new Error('rules ' + rules + ', engine plays 1 or ' + G.RULES);
+  if (rules !== 1 && rules !== 2 && rules !== G.RULES) throw new Error('rules ' + rules + ', engine plays 1, 2 or ' + G.RULES);
   const o = {
     pack, model, seed, rules, mode: opts.mode || 'practice',
     outingId: opts.outingId || `${sc.id}:${seed}`,
@@ -217,7 +222,8 @@ function throwPitch(o, call) {
   const cls = G.CLASS[k];
 
   // 4. what it does to the state, the runner draw choosing among the rows
-  const trans = model.transitions(st, cls);
+  // rules 1 and 2 replay with a third out that scores none (grade.js THE THIRD OUT)
+  const trans = model.transitions(st, cls, o.rules >= G.THIRD_OUT_RULES);
   let pickIdx = trans.length - 1;
   if (trans.length > 1) {
     let a2 = 0;

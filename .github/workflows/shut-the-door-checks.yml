@@ -11,7 +11,8 @@ name: Shut The Door checks
 #              sitemap or the newsletter)
 #   engine     the engine on a synthetic pack, every built pack against the
 #              contract with the brief's three tests, the replay check, the
-#              pitch paths (lab/pipeline/check-pitches.mjs), the dash ban and the copy rules on the files that hold player copy
+#              pitch paths (lab/pipeline/check-pitches.mjs), every in-play row a
+#              legal MLB play (check-rules.mjs), the dash ban and the copy rules on the files that hold player copy
 #   migration  supabase/153_shut_the_door.sql applied TWICE to a real Postgres,
 #              then supabase/test/shut_the_door_test.sql; then
 #              155_shut_the_door_tie_held.sql (the held tie) twice and its test;
@@ -22,6 +23,7 @@ name: Shut The Door checks
 #   node shut-the-door/check-posture.mjs
 #   node shut-the-door/test/engine.mjs && node shut-the-door/test/packs.mjs && node shut-the-door/test/api.mjs
 #   node shut-the-door/check-replays.mjs --self-test
+#   node shut-the-door/check-rules.mjs
 #
 # No secrets, no deploy.
 
@@ -63,6 +65,8 @@ jobs:
         run: node shut-the-door/test/lesson.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
+      - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
+        run: node shut-the-door/check-rules.mjs
       - name: Every pitch moves like the real pitch (break side, size, crossing point, preview against flight)
         run: node shut-the-door/lab/pipeline/check-pitches.mjs
       - name: No em or en dashes

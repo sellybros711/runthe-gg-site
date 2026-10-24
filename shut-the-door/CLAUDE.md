@@ -26,6 +26,7 @@ node shut-the-door/test/packs.mjs              every real pack: the contract, al
 node shut-the-door/test/api.mjs                the four calls, the daily, resume, one submit
 node shut-the-door/test/lesson.mjs             the lesson on the worst pitch
 node shut-the-door/check-replays.mjs           stored outings replayed against their scores (--self-test)
+node shut-the-door/check-rules.mjs             every in-play row in every pack a legal MLB play
 node shut-the-door/test/check-browser.mjs      the whole game in Chromium at 390x844 and 1440x900
 node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real packs (--relative)
 ```
@@ -57,11 +58,15 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
   ordinary pitch, so old stored outings replay unchanged (`fixtures/replays-pre-meter.json` holds
   that, and the self-test holds a rules 2 row without e).
 - **Rules 2** (2026-10-22, CONTRACT.md 5b): the hitter adjusts, the arm tires, a repeat keeps less
-  release, coarser scouting. Every effect is a function of the outing's log, never a new draw. A new
-  outing's kept calls carry `r: 2`; a call without `r` replays as rules 1, exactly. The grade prices
+  release, coarser scouting. Every effect is a function of the outing's log, never a new draw. Rules 3
+  (2026-10-24) is rules 2 plus the third out: a new outing's kept calls carry `r: 3`, a call with `r: 2`
+  replays as rules 2 and a call without `r` as rules 1, exactly. The grade prices
   the history (one pitch ahead, then the table). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
+- **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a
+  third out are the ones that count (rules 3, CONTRACT.md 5e), and the half-ending rows are the real
+  plays from Savant's play text (`pipeline/third_outs.py`), never a rule.
 - **Every scenario fact and every pro example is real and sourced.** Proxy spots (before 2008) are
   flagged in the data and the UI. Nothing is invented to fill a gap: a missing pro example is null.
 - **The lesson** picks the worst pitch, and only a principle its own numbers show.

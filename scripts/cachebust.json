@@ -1989,8 +1989,8 @@
       "sha": "15a845209f4b3402"
     },
     "/arcade/sportegories-data.js": {
-      "v": "54",
-      "sha": "4837a2dad48353e4"
+      "v": "55",
+      "sha": "94f19e8fe265405c"
     },
     "/arcade/type.js": {
       "v": "5",
@@ -2957,16 +2957,16 @@
       "sha": "07b7ca2277fe8038"
     },
     "grade.js": {
-      "v": "7",
-      "sha": "516364606ab7d353"
+      "v": "8",
+      "sha": "007731624634e434"
     },
     "lesson.js": {
       "v": "4",
       "sha": "97757da0db8cd9f0"
     },
     "engine.js": {
-      "v": "9",
-      "sha": "2e39baaa5dac816b"
+      "v": "10",
+      "sha": "1a8a2d967a3f450b"
     },
     "share.js": {
       "v": "2",
@@ -2981,8 +2981,8 @@
       "sha": "843bad6d39ae5e64"
     },
     "api.js": {
-      "v": "7",
-      "sha": "b890bff73b595a93"
+      "v": "8",
+      "sha": "3d0935ecb296895c"
     },
     "mock-api.js": {
       "v": "10",
@@ -2997,18 +2997,18 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "28",
-      "sha": "f800e8eaa7acb308"
+      "v": "30",
+      "sha": "21fef3c0308a26b0"
     },
     "3d/boot.js": {
-      "v": "34",
-      "sha": "b765a534eed3acaa"
+      "v": "35",
+      "sha": "8ee9aa4b0315f086"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "39",
-      "sha": "b0574a48153dae19"
+      "v": "40",
+      "sha": "7b54430fa97b789d"
     }
   },
   "soccer/index.html": {
@@ -3123,8 +3123,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "38",
-      "sha": "74d622aa4ed6d09b"
+      "v": "39",
+      "sha": "e12dbfa7cd59e09c"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3191,8 +3191,8 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "9",
-      "sha": "23620814fe8583e9"
+      "v": "10",
+      "sha": "22c8e41db09dcf31"
     },
     "preview.js": {
       "v": "4",
