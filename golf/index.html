@@ -15704,6 +15704,7 @@ function scrMe(){
   body.appendChild($(`<div class="ft-mehead"><div class="ft-k">Your locker</div></div>`));
   body.appendChild(ftTag(false));
   body.appendChild(ftRecord());
+  if(!si){ const sg=$(`<button type="button" class="ft-big">Sign in <small>Save your career</small></button>`); sg.onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); }; body.appendChild(sg); }
   const th=(fn)=>{ try{ const h=fn(); const m=/src="([^"]+)"/.exec(h||''); return m?`<img src="${m[1]}" alt="">`:''; }catch(e){ return ''; } };
   const slots=[
     ['hw','Headwear', ()=>th(()=>pxItemThumb('hw', L.cap===false?'none':(L.hatStyle||'cap')))],
@@ -16071,17 +16072,23 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
   .ft-protour .ft-cards{grid-column:2;grid-row:1/3}
   .ft-protour .ft-plaque{grid-column:1;grid-row:2;align-self:end;justify-self:start}
   .ft-protour .ft-ad{grid-column:2}
-  .ft-mescr .ft-body{display:grid;grid-template-columns:320px minmax(0,1fr) 380px;column-gap:28px;align-items:start;padding-top:20px}
-  .ft-mescr .ft-mehead{grid-column:1;text-align:left} .ft-mescr .ft-body > .ft-tag{grid-column:1;margin:10px 0 0}
-  .ft-mescr .ft-stage{grid-column:2;grid-row:1/5;height:420px;max-width:none;width:100%}
+  .ft-mescr .ft-stage{height:420px;max-width:520px;width:100%}
   .ft-mescr .ft-plinth{width:340px;height:80px}
   .ft-mescr .ft-sth{width:62px;height:62px} .ft-mescr .ft-sth img{max-width:48px;max-height:48px}
-  .ft-mescr .ft-stx{display:flex;flex-direction:column;font:700 13px var(--body)} .ft-stx small{font:800 10px var(--body);letter-spacing:1.5px;text-transform:uppercase;color:var(--brass)}
+  .ft-stx small{font:800 10px var(--body);letter-spacing:1.5px;text-transform:uppercase;color:var(--brass)}
   .ft-mescr .ft-slots{gap:14px;top:40px}
+  body.ftmode #rttnav{display:none}
+}
+/* the locker's three columns (closet, golfer, buttons) need room for the slot labels: below this it stacks like the phone */
+@media (min-width:1400px) and (min-height:560px){
+  .ft-mescr .ft-body{display:grid;grid-template-columns:320px minmax(0,1fr) 380px;column-gap:28px;align-items:start;padding-top:20px}
+  .ft-mescr .ft-mehead{grid-column:1;text-align:left} .ft-mescr .ft-body > .ft-tag{grid-column:1;margin:10px 0 0}
+  .ft-mescr .ft-stage{grid-column:2;grid-row:1/5;max-width:none}
+  .ft-mescr .ft-stx{display:flex;flex-direction:column;font:700 13px var(--body)}
+  .ft-mescr .ft-rec{grid-column:3;width:100%}
   .ft-mescr .ft-big,.ft-mescr .ft-pack{grid-column:3;max-width:none;margin:12px 0 0}
   .ft-mescr .ft-mlist{grid-column:3;max-width:none}
   .ft-mescr .foot{grid-column:1/-1;max-width:none}
-  body.ftmode #rttnav{display:none}
 }
 /* THE CLOSET on the First Tee: the dressing room from Me. Wood walls, a brass ringed plinth, glass tiles */
 body.ftcloset{--brass:#d8b45a;--glt:rgba(244,227,201,.22);--soft:#d8c3a0;background:#1a0f0a}
