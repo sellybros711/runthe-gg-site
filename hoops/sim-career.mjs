@@ -284,7 +284,9 @@ const M = {
   'events in the catalog': allIds.size,
   'arcs met in the sweep': new Set([].concat(...results.map((x) => Object.keys(x.L.arcs || {})))).size,
   'routes met in the sweep': new Set([].concat(...results.map((x) => C.routesOf(x.L)))).size,
-  'endings met in the sweep': new Set([].concat(...results.map((x) => { const e = endOf(x); return [e.tier].concat(e.outcomes, e.secret ? [e.secret] : []); }))).size,
+  /* Over the rare endings' careers too: four endings come one to three times
+     in 3,000, so 1,000 careers met 29 or 30 of them by luck. */
+  'endings met in the sweep': new Set([].concat(...rareEnds.map((e) => [e.tier].concat(e.outcomes, e.secret ? [e.secret] : [])))).size,
   'endings in the catalog': C.ENDING_COUNT(),
   'legend events met in the sweep': new Set([].concat(...results.map((x) => x.legendSeen))).size,
   'distinct events per career': distinct,
