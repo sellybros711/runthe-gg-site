@@ -33,16 +33,16 @@ const ROOT = path.resolve(HERE, '..', '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
 const ASPECT = 390 / 457, MARGIN = 0.04;
-// What is still missed, all of it measured (2026-10-24, the framing pass): a ceiling that only comes
-// down. Catches, outs and tag-ups are all on screen. The rest are camera solves at the frame's edge (two
-// runners safe at two bases a moment apart). A flash is a cut under 0.2 s, or one that runs backwards,
-// where the slow motion beat splits the cut (3,915 before the framing pass): the next fix. A change that
-// misses more fails; one that misses fewer lowers the number here in the same commit.
-const CEILING = { catch: 0, out: 0, run: 1, safe: 9, 'tag-up': 0, flash: 3718 };
+// What is still missed, all of it measured (2026-10-24, after the flash fix): a ceiling that only comes
+// down. Every deciding moment is on screen. A flash is a shot under 0.2 s whose camera is neither
+// neighbour's, or a piece that runs backwards (3,718 after the framing pass, from two deciding moments a
+// few hundredths apart in two cameras): none since inplay-plan.js tidyCut. A change that misses more
+// fails; one that misses fewer lowers the number here in the same commit.
+const CEILING = { catch: 0, out: 0, run: 0, safe: 0, 'tag-up': 0, flash: 0 };
 // How big the man who decides it is, the 10th percentile of his height on the phone's 457 px field: a
 // floor that only goes up. Before the framing pass (2026-10-24) it was out 10.6, run 20.6, safe 10.4,
-// tag-up 10.5, a speck in a frame of the whole infield.
-const FLOOR = { out: 34, run: 44, safe: 12, 'tag-up': 70 };
+// tag-up 10.5, a speck in a frame of the whole infield; after it 34.6, 44.1, 12.4, 70.7.
+const FLOOR = { out: 45, run: 44, safe: 14, 'tag-up': 86 };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }
@@ -72,7 +72,7 @@ await page.route('**/*', (route) => {
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {}; });
-if (process.env.SMALL) await page.evaluate(() => { window.__SMALL = []; });
+if (process.env.SMALL) await page.evaluate((o) => { window.__SMALL = []; window.__SMALLT = o.t; window.__SMALLW = o.w; }, { t: +(process.env.SMALLT || 14), w: process.env.SMALLW || null });
 
 const cases = [];
 for (const c of inplayCases()) { if (cases.length >= LIMIT) break; cases.push(c); }
@@ -136,7 +136,7 @@ for (let i = 0; i < cases.length; i += CHUNK) {
         // how tall the man who decides it stands on the phone (px on the 457 px field, his feet to 6 ft)
         const man = m.pts.findIndex((p, i) => p.z === 6 && i > 0 && m.pts[i - 1].z === 0 && m.pts[i - 1].x === p.x && m.pts[i - 1].y === p.y);
         const tall = man > 0 && m.framed ? Math.abs(V(m.pts[man]).project(cam).y - V(m.pts[man - 1]).project(cam).y) / 2 * 457 : null;
-        if (window.__SMALL && tall != null && tall < 14) window.__SMALL.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, tall: +tall.toFixed(1), k: { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, pts: m.pts, edit: plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | ') });
+        if (window.__SMALL && tall != null && tall < (window.__SMALLT || 14) && (!window.__SMALLW || m.what === window.__SMALLW)) window.__SMALL.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, tall: +tall.toFixed(1), k: { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, pts: m.pts, edit: plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | ') });
         out.push({ tag: c.tag, what: m.what, s: +m.s.toFixed(2), cam: pc.cam, worst: +worst.toFixed(3), tall, miss: m.framed ? null : 'out of frame', at: bad, k: m.framed ? undefined : { pos: k.pos, look: k.look, fov: +k.fov.toFixed(1) }, m, edit: m.framed ? undefined : plan.edit.map((p) => p.cam + ' ' + p.s0.toFixed(2) + '-' + p.s1.toFixed(2)).join(' | '), when: m.framed ? undefined : moments.map((o) => o.what + '@' + o.s.toFixed(2)).join(' ') });
       }
       // a flash: a piece of the cut that runs backwards, or one under 0.2 s whose camera is neither
@@ -162,6 +162,8 @@ console.log('');
 if (process.env.SMALL) for (const r of (await page.evaluate(() => window.__SMALL)).slice(0, +process.env.SMALL)) console.log('SMALL', JSON.stringify(r));
 const by = {};
 for (const r of rows) if (!r.err) { const b = (by[r.what] ||= { n: 0, miss: {} }); b.n++; if (r.miss) b.miss[r.miss] = (b.miss[r.miss] || 0) + 1; }
+// (flashes are counted a play at a time, and shown when there are none)
+by.flash = { n: cases.length, miss: (by.flash || { miss: {} }).miss };
 let fails = 0;
 console.log('\nthe moments that decide the play, on the phone\'s screen');
 for (const [w, b] of Object.entries(by).sort()) {

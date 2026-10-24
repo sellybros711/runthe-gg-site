@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=8';
+import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=9';
 import { Crew } from './fielders.js?v=3';
-import { buildBallpark, frontAt } from './ballpark.js?v=8';
+import { buildBallpark } from './ballpark.js?v=9';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=36';
 import { look } from './looks.js?v=2';
@@ -700,14 +700,25 @@ export class InPlay {
       if (i0 >= 0) for (let i = i0; i <= i1; i++) ed[i].side = piece.side;
     }
     this.wideSide = piece.cam === 'wide' ? piece.side : null;
+    // (one shot is the whole run of pieces of its camera that follow straight on, split or not for the
+    // slow motion beat: it smooths across where they meet, or the seam is a jump on screen)
+    const ed = this.active.plan.edit;
+    let j0 = ed.indexOf(piece), j1 = j0;
+    if (j0 >= 0) {
+      while (j0 > 0 && ed[j0 - 1].cam === piece.cam && Math.abs(ed[j0 - 1].s1 - ed[j0].s0) < 1e-6) j0--;
+      while (j1 < ed.length - 1 && ed[j1 + 1].cam === piece.cam && Math.abs(ed[j1 + 1].s0 - ed[j1].s1) < 1e-6) j1++;
+    }
+    const r0 = j0 >= 0 ? ed[j0].s0 : piece.s0, r1 = j0 >= 0 ? ed[j1].s1 : piece.s1;
     // (a liner or a climbing ball moves fast: its cameras smooth over less time, so it stays in frame)
     const offs = piece.cam === 'track' || piece.cam === 'sky' ? [-0.1, -0.05, 0, 0.05, 0.1] : [-0.24, -0.12, 0, 0.12, 0.24];
     let pos = { x: 0, y: 0, z: 0 }, lk = { x: 0, y: 0, z: 0 }, fov = 0, n = 0;
     // (weighted to the middle, 1 2 3 2 1: what is a quarter second off pulls less than now)
     const wt = [1, 2, 3, 2, 1];
+    let now = null;
     offs.forEach((o, i) => {
-      const t = clamp(s + o, piece.s0, piece.s1);
+      const t = clamp(s + o, r0, r1);
       const c = this.rawCam(piece.cam, t, aspect), k = wt[i];
+      if (i === 2) now = { keys: this.lastKeys, margin: c.margin, minFov: c.minFov };
       pos.x += c.pos.x * k; pos.y += c.pos.y * k; pos.z += c.pos.z * k;
       lk.x += c.look.x * k; lk.y += c.look.y * k; lk.z += c.look.z * k;
       fov += c.fov * k; n += k;
@@ -715,7 +726,11 @@ export class InPlay {
     pos = { x: pos.x / n, y: pos.y / n, z: pos.z / n };
     lk = { x: lk.x / n, y: lk.y / n, z: lk.z / n };
     fov /= n;
-    if (piece.rate < 1) fov *= 0.86;           // the slow motion beat pushes in
+    // (the smoothed camera still holds the deciding moment of now, which comes and goes by its weight)
+    if ((piece.cam === 'wide' || piece.cam === 'follow') && now && now.keys && now.keys.length) fov = Math.max(fov, lensFor(pos, lk, now.keys, aspect, 1.12, now.minFov || 12));
+    // the slow motion beat pushes in, easing in and out over 0.15 s of the scene (not a step at its edges)
+    const sl = ed.find((x) => x.rate < 1 && x.cam === piece.cam && x.s0 >= r0 - 1e-6 && x.s1 <= r1 + 1e-6);
+    if (sl) fov *= 1 - 0.1 * clamp(Math.min(s - (sl.s0 - 0.15), sl.s1 + 0.15 - s) / 0.15, 0, 1);
     return { pos, look: lk, fov: clamp(fov, 4, 72) };
   }
 
@@ -735,7 +750,7 @@ export class InPlay {
     // runner and his bag are in the shot from a little before until just after
     // (each comes in over half a second, its runner and bag sliding out from the ball to where they are,
     // and goes again over 0.3 s from 0.45 s after, when its own shot is over: the shot widens and narrows with no step, never a pop)
-    const keys = [], far = { x: 0, y: 0, w: 0, n: 0 };
+    const keys = [], keyRaw = [], far = { x: 0, y: 0, w: 0, n: 0 };
     const fade = (tq) => clamp((s - (tq - 0.85)) / 0.5, 0, 1) * clamp((tq + 0.75 - s) / 0.3, 0, 1);
     const near = (p, w) => ({ x: ball.x + (p.x - ball.x) * w, y: ball.y + (p.y - ball.y) * w, z: (ball.z || 0) + (p.z - (ball.z || 0)) * w });
     // (two at once at two bases: one camera cannot hold the diamond and still show a man. They go in a
@@ -757,6 +772,7 @@ export class InPlay {
       if (g.rank < 3) for (let j = 0; j < i; j++) if (groups[j].tq <= g.tq + 0.2 && Math.hypot(g.bag.x - groups[j].bag.x, g.bag.y - groups[j].bag.y) > 60) w *= 1 - Math.min(groups[j].w, clamp((groups[j].tq + 0.5 - s) / 0.3, 0, 1));
       if (w <= 0) return;
       keys.push(near({ x: g.q.x, y: g.q.y, z: 0 }, w), near({ x: g.q.x, y: g.q.y, z: 6 }, w), near({ x: g.bag.x, y: g.bag.y, z: 0 }, w));
+      keyRaw.push({ p: { x: g.q.x, y: g.q.y, z: 0 }, w }, { p: { x: g.q.x, y: g.q.y, z: 6 }, w }, { p: { x: g.bag.x, y: g.bag.y, z: 0 }, w });
       // (where the moments are, for a wide shot that leaves the ball for them)
       far.x += (g.q.x + g.bag.x) / 2 * w; far.y += (g.q.y + g.bag.y) / 2 * w; far.w = Math.max(far.w, w); far.n += w;
     });
@@ -768,9 +784,11 @@ export class InPlay {
       const w = clamp((s - (ca.s - 0.2)) / 0.3, 0, 1) * clamp((ca.s + 1.55 - s) / 0.3, 0, 1);
       const q = r.track.at(s), bag = BASE[r.from];
       keys.push(near({ x: q.x, y: q.y, z: 0 }, w), near({ x: q.x, y: q.y, z: 6 }, w), near({ x: bag.x, y: bag.y, z: 0 }, w));
+      keyRaw.push({ p: { x: q.x, y: q.y, z: 0 }, w }, { p: { x: q.x, y: q.y, z: 6 }, w }, { p: { x: bag.x, y: bag.y, z: 0 }, w });
       far.x += (q.x + bag.x) / 2 * w; far.y += (q.y + bag.y) / 2 * w; far.w = Math.max(far.w, w); far.n += w;
     }
     if (far.n) { far.x /= far.n; far.y /= far.n; }
+    this.lastKeys = keys;
     let pos, wBall = 0.6;
     const spray = plan.spray;
     if (cam === 'sky') {
@@ -827,45 +845,68 @@ export class InPlay {
       return this.fit(pos, pts, wBall, aspect, 1.4, 10);
     }
     if (cam === 'wide') {
-      // the other angle for a jump cut: high on the side of the field away from the ball (a camera
-      // over the dugout, on a crane that leans halfway in, out of the stands' way), on the ball, whoever has it,
+      // the other angle for a jump cut: high on the side of the field away from the ball (a camera at
+      // the edge of the field by the dugout, on a crane that leans in), on the ball, whoever has it,
       // where it is going and the runners near it (the side that holds it all in the narrower lens,
-      // the first base side or the third)
+      // the first base side or the third). Everything in it comes and goes by a weight, sliding in
+      // from the ball and out again, so the shot moves and never jumps.
       const sd = this.wideSide || (ball.x >= 0 ? -1 : 1);
-      const th = plan.segs.find((sg) => sg.kind === 'throw' && sg.t1 > s - 0.1 && sg.t0 < s + 0.5);
-      if (th) pts.push({ x: th.b.x, y: th.b.y, z: 0 }, { x: th.b.x, y: th.b.y, z: 6 });
+      const ramp = (a, b) => clamp((s - a) / (b - a), 0, 1);
+      const slide = (p, w) => ({ x: ball.x + (p.x - ball.x) * w, y: ball.y + (p.y - ball.y) * w, z: (ball.z || 0) + (p.z - (ball.z || 0)) * w });
+      // a throw on its way, or about to be: its target (in half a second before it goes, out after it lands)
+      let wTh = 0, th = null;
+      for (const sg of plan.segs) if (sg.kind === 'throw') {
+        const w = ramp(sg.t0 - 0.5, sg.t0 - 0.2) * (1 - ramp(sg.t1 - 0.1, sg.t1 + 0.2));
+        if (w > wTh) { wTh = w; th = sg; }
+      }
+      if (th) pts.push(slide({ x: th.b.x, y: th.b.y, z: 0 }, wTh), slide({ x: th.b.x, y: th.b.y, z: 6 }, wTh));
       for (const r of plan.runners) {
-        if (r.out && s > (r.outAt ?? 0) + 0.4) continue;
-        if (r.scoreAt != null && s > r.scoreAt + 0.3) continue;
-        // a runner near his deciding moment, or near the ball (the batter pulling into his base above all)
+        // a runner near his deciding moment, or near the ball (the batter pulling into his base above
+        // all), until a moment after he is out or scores
         const q = r.track.at(s), tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.arrive;
-        const soon = tq != null && s > tq - 1.0 && s < tq + 0.4;
-        if (!soon && Math.hypot(q.x - ball.x, q.y - ball.y) > 90) continue;
-        pts.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 });
+        const end = r.out ? (r.outAt ?? 0) + 0.4 : r.scoreAt != null ? r.scoreAt + 0.3 : Infinity;
+        const soon = tq != null ? ramp(tq - 1.0, tq - 0.6) * (1 - ramp(tq + 0.4, tq + 0.7)) : 0;
+        const by = 1 - clamp((Math.hypot(q.x - ball.x, q.y - ball.y) - 80) / 30, 0, 1);
+        const w = Math.max(soon, by) * (1 - ramp(end, end + 0.3));
+        if (w > 0) pts.push(slide({ x: q.x, y: q.y, z: 0 }, w), slide({ x: q.x, y: q.y, z: 6 }, w));
       }
       // a deciding moment far from the ball: the shot leaves the ball for it, the rest drawn in to the
       // runner and his bag as the moment comes on (so it slides there, it never jumps)
-      const away = far.n && Math.hypot(ball.x - far.x, ball.y - far.y) > 70;
-      const use = away ? [...pts.map((p) => ({ x: p.x + (far.x - p.x) * far.w, y: p.y + (far.y - p.y) * far.w, z: p.z * (1 - far.w) })), ...keys] : [...pts, ...keys];
+      const wa = far.n ? far.w * clamp((Math.hypot(ball.x - far.x, ball.y - far.y) - 40) / 30, 0, 1) : 0;
+      const held = pts.map((p) => ({ x: p.x + (far.x - p.x) * wa, y: p.y + (far.y - p.y) * wa, z: p.z * (1 - wa) }));
+      // (a moment comes in from where this shot already is, not from the ball: drawn to a moment far
+      // away, the ball is out of it, and a moment sliding in from there would jump in from off screen)
+      const o = centre(held, 0.35);
+      const wk = keyRaw.map((k) => ({ x: o.x + (k.p.x - o.x) * k.w, y: o.y + (k.p.y - o.y) * k.w, z: o.z + (k.p.z - o.z) * k.w }));
+      const use = [...held, ...wk];
+      this.lastKeys = wk;
       const w0 = keys.length ? 0.15 : 0.35, m0 = keys.length ? 1.4 : 1.25;
       const c = centre(use, w0);
       // (a throw to first or third in the shot: it stays near the dugout, down the line of the throw,
       // second to first or short to first, with the thrower behind the man taking it)
-      const lean = th && Math.abs(th.b.x) > 30 ? 0.15 : 0.5;
-      // (a shot too big for a lens of 62 degrees from there: the crane swings back toward the dugout,
-      // never further, so it never ends up high over the seats looking down past them)
-      let k;
-      for (const L of [lean, lean * 0.6, lean * 0.3, 0]) {
-        pos = { x: sd * 105 + (c.x - sd * 105) * L, y: 20 + (c.y - 20) * L, z: 48 };
-        k = this.fit(pos, use, w0, aspect, m0, 16);
-        if (k.fov <= 62) break;
+      const lean = 0.5 - 0.35 * (th && Math.abs(th.b.x) > 30 ? wTh : 0);
+      // the furthest in it can lean and still hold it all in a lens of 62 degrees; from the edge of the
+      // field it climbs, if it must, rather than back into the seats (both found smoothly, by halves)
+      // (it stands by the dugout, over the front rows; as it climbs it comes in to the edge of the field,
+      // so a high crane looks down on the field and not on the seats under it)
+      const A = { x: sd * 105, y: 20 }, E = { x: sd * 88, y: 28 };
+      const at = (L, z) => {
+        const u = clamp((z - 48) / 20, 0, 1), a = { x: A.x + (E.x - A.x) * u, y: A.y + (E.y - A.y) * u };
+        return this.fit({ x: a.x + (c.x - a.x) * L, y: a.y + (c.y - a.y) * L, z }, use, w0, aspect, m0, 16);
+      };
+      let k = at(lean, 48);
+      if (k.fov > 62) {
+        if (at(0, 48).fov <= 62) {
+          let lo = 0, hi = lean;
+          for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (at(mid, 48).fov <= 62) lo = mid; else hi = mid; }
+          k = at(lo, 48);
+        } else {
+          let lo = 48, hi = 140;
+          for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (at(0, mid).fov <= 62) hi = mid; else lo = mid; }
+          k = at(0, hi);
+        }
       }
-      // (never in the seats: past the front of the stands it comes back over the field and climbs
-      // by what it gave up, so no stand fills the bottom of the frame from right under it)
-      const r = Math.hypot(k.pos.x, k.pos.y), lim = frontAt(Math.atan2(k.pos.x, k.pos.y) / D2R) - 4;
-      if (r <= lim) return k;
-      const q = { x: k.pos.x * lim / r, y: k.pos.y * lim / r, z: k.pos.z };
-      return this.fit(q, use, w0, aspect, m0, 16);
+      return k;
     }
     if (cam === 'plate') {
       // low on the first base side, the plate and the runner coming home
