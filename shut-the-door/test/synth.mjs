@@ -150,7 +150,8 @@ export function synthAdvance() {
       P('out_fly', 0.4, play(b, f => (f === 0 ? -1 : f), 'out'));
     } else P('out_fly', 1, play(b, f => (f === 0 ? -1 : f), 'out'));
     if (on(b, 1) && outs < 2) {
-      P('out_ground', 0.45, play(b, f => (f === 0 || f === 1 ? -1 : f === 3 && outs === 0 ? 4 : f === 2 ? 3 : f), 'double_play'));
+      // (the runner from second moves up only to a base the runner from third has left)
+      P('out_ground', 0.45, play(b, f => (f === 0 || f === 1 ? -1 : f === 3 && outs === 0 ? 4 : f === 2 && (outs === 0 || !on(b, 3)) ? 3 : f), 'double_play'));
       P('out_ground', 0.55, play(b, f => (f === 1 ? -1 : f === 0 ? 1 : f), 'fielders_choice'));
     } else {
       P('out_ground', 1, play(b, f => (f === 0 ? -1 : f === 3 && outs < 2 ? 4 : f === 2 && !on(b, 3) ? 3 : f), 'out'));

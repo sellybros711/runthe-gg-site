@@ -31,6 +31,8 @@ const smooth = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
 const ramp = (s, a, b) => smooth((s - a) / (b - a));
 const bump = (s, a, b, c, d) => ramp(s, a, b) * (1 - ramp(s, c, d));
 const D2R = Math.PI / 180;
+const BALL_D = 2 * 1.45 * 0.0254;     // a baseball across, 7.37 cm (the mesh in gear3d.js baseball())
+const BALL_MIN_PX = 2;                // the least a ball in play is drawn across on screen (a floor, not a size)
 // the fielders' and runners' clips (lab/pipeline/build_people.py 'fielder'), with their content hash
 // as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
 const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).href;
@@ -243,11 +245,13 @@ export class InPlay {
       this.ball.rotation.x = s * 90;
     }
     if (broadcast) {
-      // the ball never shrinks under a few pixels (a white dot a viewer can follow)
+      // the ball is its true size, 7.37 cm, like the players are real height. Far off, the true size is
+      // under a pixel, so it is drawn at least BALL_MIN_PX across, a dot a viewer can follow. That floor
+      // is the only thing that ever makes it bigger than it is.
       const H = camera.userData.cssH || 800;
       const d = camera.position.distanceTo(this.ball.position);
-      const px = (0.0738 / (2 * d * Math.tan(camera.fov * D2R / 2))) * H;
-      this.ball.scale.setScalar(this.ballScale0 * Math.max(1, 4.5 / Math.max(0.01, px)));
+      const px = (BALL_D / (2 * d * Math.tan(camera.fov * D2R / 2))) * H;
+      this.ball.scale.setScalar(this.ballScale0 * Math.max(1, BALL_MIN_PX / Math.max(0.01, px)));
     } else this.ball.scale.setScalar(this.ballScale0);
     // the figures' soft shadows (the ball has its marker instead)
     this.crew.shadows(broadcast ? { x: b.x, y: b.y, z: 999 } : null);

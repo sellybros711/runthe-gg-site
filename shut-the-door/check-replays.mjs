@@ -47,6 +47,14 @@
  * The free aim point (CONTRACT.md 5d) rides the same way: at, where inside its
  * cell a call was aimed; a call without at aims at the centre.
  *
+ * RULES 3 (2026-10-24). A run that crosses before a legal third out counts
+ * (grade.js THE THIRD OUT), and the pack's hold table is solved that way. A
+ * row from before (calls with r 2, or none) replays under its own rules, where
+ * a third out scores none: on a model that scores none and solves its own
+ * table (legacyOf below), which on today's advancement table is the old table
+ * exactly, since each half-ending row was split into real plays that sum to
+ * it. So every stored row replays to its score, pitch by pitch.
+ *
  * Export the rows from the Supabase SQL editor, for example:
  *   select json_agg(o) from shutdoor_outings o where day >= current_date - 7;
  * and save the array as rows.json. Exit code 1 when a row is flagged.
@@ -78,12 +86,20 @@ function packOf(id) {
   cache[id] = { pack, model: new G.Model(pack) };
   return cache[id];
 }
+/* The model a row is replayed on: today's, or for a row played before rules
+   3 one where a third out scores none, its table solved here (a few seconds
+   a pack, once). */
+function modelFor(p, calls) {
+  if (E.rulesOf(calls) >= G.THIRD_OUT_RULES) return p.model;
+  if (!p.legacy) p.legacy = new G.Model(p.pack, { thirdOutRuns: false });
+  return p.legacy;
+}
 
 export function replayRow(row) {
   const p = packOf(row.scenario_id);
   if (!p) return { ok: false, why: 'no pack ' + row.scenario_id };
   const calls = typeof row.calls === 'string' ? JSON.parse(row.calls) : row.calls;
-  const o = E.replay(p.pack, E.seedFor('daily', row.day), calls, { mode: 'daily', model: p.model });
+  const o = E.replay(p.pack, E.seedFor('daily', row.day), calls, { mode: 'daily', model: modelFor(p, calls) });
   if (o.calls.length !== calls.length) return { ok: false, why: 'calls after the outing ended' };
   const legacy = o.status === 'live' && endedOnTheTie(o, row);
   if (o.status !== 'over' && !legacy) return { ok: false, why: 'the calls do not finish the outing' };
@@ -134,11 +150,11 @@ function selfTest() {
     const b = replayRow(Object.assign({}, row, { score: row.score + 50 }));
     console.log((!b.ok ? 'ok   ' : 'FAIL ') + `${id}: a doctored score is flagged`);
     if (b.ok) fails++;
-    // rules 2: the row's calls carry r 2; the same calls without it replay under rules 1, a different outing
+    // the row's calls carry r 3 (G.RULES); the same calls without it replay under rules 1, a different outing
     const noR = Object.assign({}, row, { calls: row.calls.map(c => { const x = Object.assign({}, c); delete x.r; return x; }) });
     const c2 = replayRow(noR);
     const okR = row.calls.every(c => c.r === G.RULES) && !c2.ok;
-    console.log((okR ? 'ok   ' : 'FAIL ') + `${id}: a rules 2 row carries r 2, and with r taken out it is flagged`);
+    console.log((okR ? 'ok   ' : 'FAIL ') + `${id}: a new row carries r ${G.RULES}, and with r taken out it is flagged`);
     if (!okR) fails++;
   }
   /* the tie rule: a held tie replays, and a row from before it that ended on

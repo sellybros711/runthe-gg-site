@@ -302,7 +302,10 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   const rng = testRng(41);
   const calls = Array.from({ length: 60 }, () => ({ type: model.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25) }));
   const o2 = E.replay(pack, 2468, calls, { model, rules: 2 });
-  check('rules 2: a new outing plays rules 2 and its kept calls carry r 2', E.createOuting(pack, { seed: 1, model }).rules === 2 && o2.calls.every(c => c.r === 2));
+  check(`rules 2: a new outing plays rules ${G.RULES} (rules 2 and the third out) and its kept calls carry r ${G.RULES}; a rules 2 outing's carry r 2`,
+    E.createOuting(pack, { seed: 1, model }).rules === G.RULES && G.RULES === G.THIRD_OUT_RULES
+    && E.replay(pack, 2468, calls, { model }).rules === 1
+    && E.createOuting(pack, { seed: 1, model, rules: G.RULES }).rules === G.RULES && o2.calls.every(c => c.r === 2));
   check('rules 2: calls without r replay as rules 1, calls with r 2 as rules 2', E.replay(pack, 2468, calls, { model }).rules === 1 && E.replay(pack, 2468, o2.calls, { model }).rules === 2);
   const again = E.replay(pack, 2468, JSON.parse(JSON.stringify(o2.calls)), { model: new G.Model(pack) });
   check('rules 2: determinism, the kept calls through JSON replay the outing exactly', JSON.stringify({ l: again.log, g: again.grades }) === JSON.stringify({ l: o2.log, g: o2.grades }));
@@ -373,6 +376,45 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('meter: an ordinary tap averages his own command at command 50 (within 3%)', Math.abs(m50 - 1) < 0.03, m50.toFixed(3));
   check('meter: across the packs\' commands (35-72) an ordinary tap stays within 10% of 1.0x', Math.abs(m35 - 1) < 0.1 && Math.abs(m72 - 1) < 0.1, `${m35.toFixed(3)} ${m72.toFixed(3)}`);
   check('meter: the word is execution only (no band name)', [0, 0.1, 0.3, 0.6, 0.8, 0.95].every(q => !/green|yellow|orange|red|grade/.test(MT.wordOf(q, -1) + MT.wordOf(q, 1))));
+}
+
+/* ---- rules 3 (2026-10-24): a run that crosses before a legal third out counts ---- */
+{
+  const { rowBreaks } = await import('../check-rules.mjs');
+  // a two-out single, runner on second: he scores, then the batter is thrown out at second
+  const p3 = synthPack({ lead: 1, outs: 2, bases: 2 });
+  p3.advance.single[18] = [[1, 0, 1, 1, 'single', [[2, 4], [0, -1]]]];
+  const m3 = new G.Model(p3), m2 = new G.Model(p3, { thirdOutRuns: false });
+  const st = { bi: 0, b: 0, s: 0, outs: 2, bases: 2, margin: 1 };
+  const [, t3] = m3.transitions(st, 'ip:single')[0], [, t2] = m2.transitions(st, 'ip:single')[0];
+  check('rules 3: the run that crossed before the batter was tagged at second counts, and the half ends tied',
+    t3.end === 'hold' && t3.runs === 1 && t3.margin === 0 && m3.after(st, t3) === 0);
+  check('rules 3: under rules 2 the same third out scores none and holds, as stored outings were played',
+    t2.end === 'hold' && t2.runs === 0 && m2.after(st, t2) === 1);
+  check('rules 3: an outing played under rules 2 takes the old third out whatever model it is given',
+    m3.transitions(st, 'ip:single', false)[0][1].runs === 0 && m2.transitions(st, 'ip:single', true)[0][1].runs === 1);
+  check('rules 3: the hold table prices it (the single is worth less to the pitcher when the run counts)',
+    m3.solve(st).hold < m2.solve(st).hold, `${m3.solve(st).hold} vs ${m2.solve(st).hold}`);
+  // the audit: the 3D agent's two rows, and the real plays that replaced them
+  const kinds = (cat, o, b, row) => rowBreaks(cat, o, b, row).map(x => x[0]);
+  check('check-rules: a triple with the batter out at the plate and the runner from first kept on first is a pass',
+    kinds('triple', 2, 1, [0.006, 1, 0, 1, 'triple', [[0, -1]]]).includes('pass'));
+  check('check-rules: a double with the batter out and the runner kept on first is a pass',
+    kinds('double', 2, 1, [0.059, 1, 0, 1, 'double', [[0, -1]]]).includes('pass'));
+  check('check-rules: the real plays pass (runner out at third, batter on second; runner scores, batter out at third, the run counted)',
+    !kinds('double', 2, 1, [0.045, 2, 0, 1, 'double', [[1, -1], [0, 2]]]).length && !kinds('triple', 2, 1, [0.006, 0, 1, 1, 'triple', [[1, 4], [0, -1]]]).length);
+  check('check-rules: a run on a third out made by the batter before first is refused, and a force out scores none',
+    kinds('out_ground', 2, 4, [0.1, 4, 1, 1, 'out', [[3, 4], [0, -1]]]).includes('third')
+    && kinds('out_ground', 2, 5, [0.1, 4, 1, 1, 'fielders_choice', [[3, 4], [1, -1], [0, 1]]]).includes('third'));
+  check('check-rules: a runner shown scoring on a third out with no run counted is refused, and one left on is no run',
+    kinds('single', 2, 2, [0.03, 0, 0, 1, 'single', [[2, 4], [0, -1]]]).includes('third') && !kinds('out_fly', 2, 2, [0.5, 2, 0, 1, 'out', [[0, -1]]]).length);
+  check('check-rules: more outs than three, two men on one base, and a runner going back are refused',
+    kinds('out_line', 2, 3, [0.1, 0, 0, 2, 'double_play', [[1, -1], [0, -1]]]).includes('outs')
+    && kinds('single', 0, 1, [0.1, 1, 0, 0, 'single', [[0, 1]]]).includes('pass')
+    && kinds('out_fly', 0, 2, [0.1, 1, 0, 1, 'out', [[2, 1], [0, -1]]]).includes('back'));
+  const synthBreaks = [];
+  for (const cat of G.IN_PLAY) for (let o = 0; o < 3; o++) for (let b = 0; b < 8; b++) for (const row of pack.advance[cat][o * 8 + b]) synthBreaks.push(...rowBreaks(cat, o, b, row));
+  check('check-rules: the synthetic table is legal too', !synthBreaks.length, JSON.stringify(synthBreaks.slice(0, 3)));
 }
 
 /* ---- effort (2026-10-22, CONTRACT.md 5c): the meter's first stop ---- */
