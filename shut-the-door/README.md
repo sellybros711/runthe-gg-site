@@ -42,6 +42,7 @@ python3 build_library.py        the library: 2008-2025, every pitch, trimmed (sl
 python3 verify_scenarios.py     every candidate's facts into data/verify
 python3 closers.py              the regular-season scenario search
 python3 closer_pool.py          data/closers.json
+python3 third_outs.py           third_outs.json: the plays that end a half, from Savant's play text
 python3 build_packs.py          the ten packs, staged in cache/stage
 for f in cache/stage/*.json; do node ../pool.js "$f" ../data/closers.json "../data/packs/$(basename "$f")"; done
 node build_schedule.mjs         data/schedule.json
@@ -74,7 +75,8 @@ one at a time per worker. `prefetch.py` fills chunks from a second process.
    priced. The key's real pitch (one per key, cell and batter) gives the velo, the batted ball and
    the `drawn` id and tier.
 4. **The runners.** For a ball in play, the advancement table for that key at the current outs and
-   bases, chosen by the runner draw. Walks and hit batsmen force runners.
+   bases, chosen by the runner draw. Walks and hit batsmen force runners. Every row is a legal MLB
+   play (`check-rules.mjs`, below), and a run that crosses before a legal third out counts.
 
 Four draws a pitch, always, in that order (miss x, miss z, the outcome, the runners), from one
 mulberry32 stream per outing. Daily seed: `hashSeed('shut-the-door-' + day)`.
@@ -86,8 +88,9 @@ the row is the pack's row adjusted for what the hitter has seen (`rowsCtx`). Sam
 ## Rules 2: the hitter adjusts, the arm tires (2026-10-22)
 
 The owner: "I've never given up a run yet. Can we up the difficulty?" CONTRACT.md 5b is the rule;
-`grade.js R2` holds every setting. A new outing plays rules 2 and its calls carry `r: 2`; a call
-without `r` replays as rules 1, exactly.
+`grade.js R2` holds every setting. A new outing played rules 2 and its calls carried `r: 2` (since
+2026-10-24 rules 3, which is rules 2 plus the third out, and `r: 3`); a call without `r` replays as
+rules 1, exactly.
 
 **Why it was easy (measured on main, 400 outings a strategy a pack, an ordinary release).** Mean hold%
 over the ten packs. The closer pool holds 78.2, real 2015-2025 spots about 83.
@@ -212,6 +215,59 @@ strong player's band mix goes from 11/35/37/17 to 13/12/22/54).
 orange or red in 10 of 10 packs, lowest 66%): the grade reads neither stop, and the pool aims at
 centres. The pool, `pack.seq`, the hold tables and the pros rebuilt identical (`pool.js`). `BANDS`
 did not change.
+
+## The third out, and every in-play row a legal play (rules 3, 2026-10-24)
+
+**What was wrong.** `pipeline/advance.py` follows runners by their ids to the next plate
+appearance. A play that ends the half has none in that half, so it was written by a rule: the batter
+out, then the runners nearest him, and no runs. On a two-out hit that kept the runner from first on
+first while the batter behind him was put out further round (the 3D agent's find: Eckersley's
+triple, state 17, moves `[[0,-1]]`), and it threw away runs that count: a two-out single, the runner
+from second scores, the batter is thrown out at second, is a run (Official Baseball Rules 5.08(a)).
+It also wrote a two-out force out as the batter out at first, with the forced runner kept on.
+
+**The fix, at the source.** `pipeline/third_outs.py` reads every such play from Savant's play text
+and score, 2015-2025 regular season (the advancement table's seasons): two-out hits and errors with
+an out on the play, two-out fielder's choices, one-out double plays and none-out triple plays.
+Each man on the play (named through the Stats API from the base ids) gets the last thing the text
+says of him: scores, to a base, or out. A runner it never names stayed, or was forced up a base
+when a safe man ends on his bag. A play is kept only when its outs end the half, its runs are the
+official score's, and nobody passes anybody. 40,264 plays kept; 1,701 left out because they ended
+the game (as `advance.py` leaves those out); 7 left out for a name or a count that did not tie up.
+`advance.apply_third_outs` splits each modelled row into those plays, in place, by their counts:
+the row's own share is kept (the table's share of half-ending plays matches the real plays' within a
+tenth of a point in every state), and every other row keeps its place for the runner draw. One state
+had no real play of its own (an error, two out, runner on third): it takes the real singles' plays
+there, a labelled model (27 of 28 score the runner, then the batter is out). A batter out at two out
+on a ball that is not a hit is the play as it was. The committed packs are patched the same way
+(`python3 pipeline/advance.py --patch <pack> <staged>`, then `pool.js`), no library needed.
+
+| row kind (each pack holds the same table) | before | after |
+|---|---|---|
+| a runner passed, or the batter out on a hit with a runner kept short of his base | 18 | 0 |
+| a run lost on a third out, or a force out shown as the batter out | every modelled row | 0 |
+| the stored bases after a third out not where the runners stand | 29 | 0 |
+| all checks (`check-rules.mjs`), all ten packs | 470 of 8,160 rows | 0 of 8,550 |
+
+**Rules 3.** The engine counts a run on a third out when the row has one (`grade.js THE THIRD OUT`):
+it is the go-ahead run if it puts them ahead, and a held tie if it ties it. A new outing's calls carry
+`r: 3`. A call with `r: 2`, or none, replays under its own rules, where a third out scores none: on
+today's table that is the old hold table exactly (each split sums to the row it replaced; checked
+state by state on all ten packs, no difference), so every stored outing replays to its score
+(`check-replays.mjs` solves that table for it). The server's guard does not read `r`: no SQL.
+
+**What moved** (rules 3 against rules 2 on the same packs). The hold table moves at most 1.5 points in
+any state (two out, a runner in scoring position, a one-run lead). The closer pool holds 0.0 to 0.5
+points less per pack (Eckersley 70.7 to 70.3, Rivera 66.7 to 66.2, Yamamoto 67.9 to 67.6); its
+calls band 19/28/33/20, from 19/28/33/21, heart fastballs orange or red in 10 of 10 packs (lowest
+66%), so `BANDS` did not change. The same calls in 3,000 random outings: 8 end differently, the
+score is about 3 points lower (more of a pitch's value is now at stake), and the percentile against
+each pack's own pool moves -0.03 on average. The median pool outing sits at the 47th to 52nd.
+
+`check-rules.mjs` runs every row of every pack through the engine's own transition and holds it to
+the rules: no runner passes another or shares a base, the batter on a hit of k bases touched base k,
+nobody goes back, the outs, runs and bases add up, no run on a third out made by the batter before
+first or by a force, every run shown scoring is counted, and the scoring fits the play. CI runs it.
 
 ## The tiers (that batter, similar batters, league)
 

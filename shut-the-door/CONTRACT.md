@@ -183,7 +183,8 @@ Statcast codes. The shape tells the UI how to draw the flight.
  *                                    -0.5..0.5, catcher's view, u to the catcher's right, v up.
  *                                    Rules 2 only. Absent = the cell's centre ([0, 0])
  * @property {number} [r]             the rules it was played under, set by the engine on the kept
- *                                    call: 2 since 2026-10-22. Absent = rules 1 (section 5b)
+ *                                    call: 2 since 2026-10-22, 3 since 2026-10-24 (section 5e).
+ *                                    Absent = rules 1 (section 5b)
  */
 ```
 
@@ -232,7 +233,8 @@ sweeps a bar, and the tap that stops it is the release. How close the tap is to 
 ## 5b. Rules 2: the hitter adjusts, the arm tires (the owner's call, 2026-10-22)
 
 The owner found the game too easy ("I've never given up a run yet") and chose four changes. A new
-outing plays rules 2 (`grade.js RULES`), and the engine writes `r: 2` on every kept call. A call
+outing plays rules 2 (`grade.js RULES`), and the engine writes `r: 2` on every kept call (since
+2026-10-24 rules 3 and `r: 3`, section 5e: rules 2 plus the third out). A call
 without `r` is rules 1: every row stored before, and every saved outing begun before, replays and
 finishes exactly as it was played. One outing never mixes the two (a call with the other `r` is
 refused). Nothing new is drawn: the four draws per pitch stay the same draws in the same order, and
@@ -368,6 +370,15 @@ the best centre is green with nothing lost. The lesson prices the same spot.
 scouting, the heat map, the tag, and the hitter's history (where pitches crossed is the actual cell,
 where he aimed is `call.cell`).
 
+## 5e. Rules 3: the third out (2026-10-24)
+
+Rules 2 and everything after it, plus MLB's third out: a run that crosses before a third out that is
+neither a force nor the batter before he reaches first counts (Official Baseball Rules 5.08(a)). If
+it puts them ahead it is the go-ahead run; if it ties it, the half ends tied (`tie_held`). Every
+in-play row is a legal play from the real play by play (`check-rules.mjs`, README). A new outing's
+calls carry `r: 3`; one with `r: 2` or none replays under its own rules, where a third out scores
+none, exactly as it was played. Nothing new is drawn.
+
 ## 6. Pitch result
 
 ```js
@@ -395,7 +406,9 @@ where he aimed is `call.cell`).
  * @property {number} outs           after
  * @property {number} bases          after
  * @property {{from: number, to: number}[]} runnerMoves   0 = batter, 1..3 bases, 4 = scored,
- *                                    -1 = put out on the play
+ *                                    -1 = put out on the play. A legal MLB play: nobody passes
+ *                                    anybody, a runner with no move stayed (left on after the third
+ *                                    out), and every move to 4 is a run counted in runs
  * @property {number} runs           scored on this pitch
  * @property {boolean} paOver
  * @property {{id: string, tier: 'batter'|'similar'|'league'}} drawn   the real pitch used

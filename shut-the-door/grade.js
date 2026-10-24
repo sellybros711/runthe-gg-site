@@ -170,7 +170,11 @@ function Model(pack, opts) {
   for (const a of this.arsenal) this.kernel[a.type] = kernelFor(a.sigmaFt, this.zoneFt);
   this._mixed = new Map();
   this._V = new Map();
-  this.table = (!(opts && opts.fresh) && pack.hold && pack.hold.h) ? pack.hold : null;
+  // rules 3: a run that crosses before a legal third out counts (THE THIRD
+  // OUT below). A model for an outing played before (rules 1 and 2) scores
+  // none on a third out, and solves its own table: the pack's is rules 3's.
+  this.thirdOutRuns = !(opts && opts.thirdOutRuns === false);
+  this.table = (!(opts && opts.fresh) && this.thirdOutRuns && pack.hold && pack.hold.h) ? pack.hold : null;
   this.center = pack.seq && typeof pack.seq.L === 'number' ? pack.seq.L : null;   // rules 2 (see DEFAULT_CENTER)
   this.zone0 = pack.seq && typeof pack.seq.Z === 'number' ? pack.seq.Z : null;
 }
@@ -211,14 +215,32 @@ Model.prototype.mixed = function (bi, type, target, bucket) {
 };
 
 /* The next states of one transition class. Shared by the solver and the engine.
-   Each: [p, {st | end: 'hold'|'lost' | self, runs, label, moves}]. */
-Model.prototype.transitions = function (st, cls) {
+   Each: [p, {st | end: 'hold'|'lost' | self, runs, label, moves, margin}].
+   third (default the model's): whether a run on a third out counts (rules 3).
+
+   THE THIRD OUT (rules 3, 2026-10-24). A run that crosses before the third
+   out counts unless that out is a force or the batter before he reaches
+   first (Official Baseball Rules 5.08(a)): a two-out single, the runner from
+   second scores, the batter is thrown out at second, is a run. The
+   advancement table's half-ending rows are the real plays (pipeline
+   third_outs.py) with the runs the official score counted, and
+   check-rules.mjs holds every row to the rule. A run on the third out that
+   puts them ahead is the go-ahead run; one that ties it ends the half tied,
+   a held tie. Rules 1 and 2 scored none on a third out, and an outing played
+   under them replays that way, exactly. */
+Model.prototype.transitions = function (st, cls, third) {
   const { bi, b, s, outs, bases, margin } = st;
   const next = (bi + 1) % this.N;
+  const counts = third == null ? this.thirdOutRuns : third;
   const pa = (o, nb, runs) => {
+    if (o >= 3 && !counts) return { end: 'hold', runs: 0 };   // rules 1 and 2: a third out scores none
     const m = margin - runs;
     if (m < 0) return { end: 'lost', runs };        // they go ahead: the go-ahead rule decides
-    if (o >= 3) return { end: 'hold', runs: 0 };    // three outs: the margin stands (a row that makes the third out scores none)
+    // three outs. A run that crossed before a third out that was neither a
+    // force nor the batter before first counts (Official Baseball Rules
+    // 5.08(a)); the advancement table holds only such runs (check-rules.mjs).
+    // The margin the half ends at decides door shut or held tie.
+    if (o >= 3) return { end: 'hold', runs, margin: m };
     const r = { st: { bi: next, b: 0, s: 0, outs: o, bases: nb, margin: m }, runs };
     if (m === 0 && margin > 0) r.tie = true;        // this play tied it, and the inning goes on
     return r;
@@ -244,10 +266,12 @@ Model.prototype.transitions = function (st, cls) {
 };
 
 /* The goal's chance after one transition out of st (not a self-loop): 1 for
-   three outs, 0 when they go ahead, 0 for a state below st's goal (a tie from
-   a lead), else that state's own value. Shared by callValue and the lesson. */
+   three outs at or above st's goal (0 when a run on the third out tied it
+   from a lead), 0 when they go ahead, 0 for a state below st's goal (a tie
+   from a lead), else that state's own value. Shared by callValue and the
+   lesson. */
 Model.prototype.after = function (st, t) {
-  if (t.end === 'hold') return 1;
+  if (t.end === 'hold') return t.margin == null || t.margin >= goalOf(st) ? 1 : 0;
   if (t.end === 'lost') return 0;
   return t.st.margin >= goalOf(st) ? this.solve(t.st).hold : 0;
 };
@@ -263,7 +287,7 @@ Model.prototype.callValue = function (st, type, target, ctx, at) {
       const w = p * q;
       if (t.self) { pself += w; continue; }
       v += w * this.after(st, t);
-      if (t.end === 'lost') r += w * t.runs;
+      if (t.end) r += w * t.runs;          // lost, or a run on the third out
       else if (t.st) r += w * (t.runs + this.solve(t.st).runs);
     }
   }
@@ -372,7 +396,12 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 2;
+const RULES = 3;
+/* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
+   before a third out that is neither a force nor the batter before first
+   counts (Model.prototype.transitions, THE THIRD OUT). Everything below
+   applies to rules 2 and 3 alike (rules >= 2). */
+const THIRD_OUT_RULES = 3;
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
               type the batter has seen this plate appearance (1, 2, 3 or more)
@@ -672,7 +701,7 @@ Model.prototype.keyValues = function (st) {
       for (const [q, t] of this.transitions(st, cls)) {
         if (t.self) { self += q; continue; }
         v += q * this.after(st, t);
-        if (t.end === 'lost') r += q * t.runs;
+        if (t.end) r += q * t.runs;          // lost, or a run on the third out
         else if (t.st) r += q * (t.runs + this.solve(t.st).runs);
       }
       byCls[cls] = [v, r, self];
@@ -894,7 +923,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;
