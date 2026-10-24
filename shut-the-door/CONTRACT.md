@@ -101,6 +101,33 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {{src: 'his'|'league', n: number, velo: number[], pfxX: number[], pfxZ: number[]}} [stuff]
  *                                  his own pitches of this type in each fifth of his velocity,
  *                                  slowest first: mean mph and break (section 5c, effort)
+ * @property {Release|null} release   the mean release point of his pitches of this type
+ * @property {number|null} armAngle  Savant's arm_angle, degrees, mean (Savant has it from 2020)
+ * @property {Spin|null} spin
+ */
+
+/**
+ * Release and spin are for the picture only (pipeline/tracking.py): the engine, the grade and the
+ * pool read none of them. Each is the mean over his real pitches in the Savant search his arsenal
+ * came from. A value Savant does not have is null; a proxy spot is null throughout.
+ * @typedef {Object} Release         feet, catcher's view (x < 0 is the third base side)
+ * @property {number} x              release_pos_x
+ * @property {number} z              release_pos_z
+ * @property {number|null} ext       release_extension (null in PITCHf/x seasons, before 2015)
+ *
+ * @typedef {Object} Spin            null before Statcast (2015)
+ * @property {number} rate           release_spin_rate, rpm (integer)
+ * @property {number} axis           spin_axis, degrees 0..360 (a circular mean), Savant's convention
+ * @property {number|null} active    active spin, percent 0..100, from Savant's active spin
+ *                                   leaderboard for that season (regular season; observed before
+ *                                   2020, spin-based from 2020); null where it has none
+ *
+ * @typedef {Object} Tracking        null for a proxy spot
+ * @property {'statcast'|'pitchfx'} system
+ * @property {number} season         the season of the pitches (his year for a real spot)
+ * @property {'regular'|'postseason'} games
+ * @property {number} n              his tracked pitches of his arsenal's types
+ * @property {string|null} active    where active spin came from, or null
  */
 
 /**
@@ -157,7 +184,9 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {string} title         'Game 1, 1988 World Series'
  * @property {string} setup         one paragraph, house voice
  * @property {{name: string, team: string, teamColors: [string, string], year: number,
- *             throws: Hand, arsenal: ArsenalPitch[]}} pitcher
+ *             throws: Hand, arsenal: ArsenalPitch[], release: Release|null,
+ *             armAngle: number|null, tracking: Tracking|null}} pitcher
+ *                                  release and armAngle: over all his arsenal pitches
  * @property {Situation} situation
  * @property {Batter[]} batters     the real order he faced, then the lineup continuing,
  *                                  at least 9 entries; the engine wraps if it runs out
