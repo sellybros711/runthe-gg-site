@@ -69,7 +69,7 @@ import { fromResult, motion } from './play.js?v=8';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=13';
-import { Ghost, PITCH_COLORS } from './preview.js?v=4';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=5';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -211,9 +211,9 @@ class Stage {
     if (!a) return;
     if (!this.ghost) this.ghost = new Ghost(this.scene);
     const b = this.facts.batter;
-    // the pitch's colour on the break chart and its button (ui.js colorOf: by usage)
+    // the pitch's colour on its button and the break chart (ui.js colorOf: its type's, else by usage)
     const ord = this.facts.pitcher.arsenal.slice().sort((x, y) => (y.usage || 0) - (x.usage || 0));
-    const color = PITCH_COLORS[Math.max(0, ord.indexOf(a)) % PITCH_COLORS.length];
+    const color = TYPE_COLORS[a.type] || PITCH_COLORS[Math.max(0, ord.indexOf(a)) % PITCH_COLORS.length];
     tint(color);
     this.ghost.set({ pitch: a, hand: this.facts.pitcher.throws, cell: s.cell == null ? 12 : s.cell, at: s.cell == null ? null : s.at, szTop: b.szTop, szBot: b.szBot, color });
     this.soon();

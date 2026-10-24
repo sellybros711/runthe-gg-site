@@ -37,6 +37,9 @@ import { FT } from './units.js?v=1';
 export const OUT_S = 0.14, BLEND_S = 0.35, SETTLE_S = 8, STOP_S = 0.6, MIN_PX = 11, BALL_IN = 2.9;
 /** The break chart's colours, in usage order (ui.js PITCH_COLORS: keep the two equal). */
 export const PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
+/** Each pitch type's own colour, Baseball Savant's (ui.js TYPE_COLORS: keep the two equal). PITCH_COLORS
+ *  by usage is the fallback for a type not here. */
+export const TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', ST: '#ddb33a', SV: '#93afd4', CU: '#00d1ed', KC: '#6236cd', CS: '#0068ff', CH: '#1dbe3a', FS: '#3bacac', FO: '#55ccab', KN: '#3c44cd', SC: '#60db33', EP: '#888888' };
 
 /* The family defaults (no spin axis or spin rate in the packs yet). arm, up: the direction the
    spin pushes the ball (arm side and up, in the pitcher's hand frame, before mirroring); gyro: the

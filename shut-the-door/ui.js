@@ -122,7 +122,10 @@ function stripHTML(strip, big) {
   return (strip || []).map(function (b, i) { return '<i class="sq ' + b + '" title="pitch ' + (i + 1) + ': ' + b + '">' + (big ? i + 1 : '') + '</i>'; }).join('');
 }
 function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; return ['th', 'st', 'nd', 'rd'][n % 10] || 'th'; }
-/* the colours of the break chart and the arsenal list, in usage order */
+/* each pitch type's own colour, Baseball Savant's (the owner, 2026-10-24: "each pitch type should have
+   its own unique color"), so a slider is the same yellow for every pitcher. 3d/preview.js TYPE_COLORS
+   is the same map (check-pitches holds them equal). PITCH_COLORS is the fallback for a type not here */
+var TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', ST: '#ddb33a', SV: '#93afd4', CU: '#00d1ed', KC: '#6236cd', CS: '#0068ff', CH: '#1dbe3a', FS: '#3bacac', FO: '#55ccab', KN: '#3c44cd', SC: '#60db33', EP: '#888888' };
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
@@ -319,7 +322,7 @@ function breakChart(ars, throws, sel) {
     var x = c - a.pfxX * k, y = c - a.pfxZ * k, rad = 5 + Math.sqrt(a.usage) * 13;
     var on = sel === a.type, op = sel == null || on ? '.92' : '.45';
     var ring = on ? ' stroke="currentColor" stroke-width="2.5"' : '';
-    return { on: on, svg: '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + PITCH_COLORS[i % PITCH_COLORS.length] + '" fill-opacity="' + op + '"' + ring + '><title>' + esc(a.name) + '</title></circle>' };
+    return { on: on, svg: '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + (TYPE_COLORS[a.type] || PITCH_COLORS[i % PITCH_COLORS.length]) + '" fill-opacity="' + op + '"' + ring + '><title>' + esc(a.name) + '</title></circle>' };
   }).reverse().sort(function (a, b) { return a.on - b.on; }).map(function (d) { return d.svg; }).join('');
   var armRight = throws !== 'L';
   return '<svg viewBox="0 0 148 148" role="img" aria-label="his pitches by movement">' +
@@ -430,6 +433,8 @@ function buildMound() {
     b.type = 'button';
     b.className = 'pitch';
     b.dataset.type = a.type;
+    /* the pitch's own colour: a bar down the button's edge and the picked state */
+    b.style.setProperty('--pc', colorOf(a));
     b.setAttribute('aria-pressed', 'false');
     b.setAttribute('aria-label', (i + 1) + ', ' + a.name);
     b.innerHTML = '<span class="pk" aria-hidden="true">' + (i + 1) + '</span><span class="pt" aria-hidden="true"><b>' + esc(a.name) + '</b>' +
@@ -605,7 +610,7 @@ function renderHud(st) {
   $('m-themname').textContent = themName ? themName.toUpperCase() : 'them';
   $('m-usname').title = usName ? S.scn.pitcher.team : '';
   $('m-themname').title = them ? (them.city + ' ' + them.nick) : '';
-  S.grid.setPitches(st.log, paStart(st.log));
+  renderPAs(st);
   $('m-us').textContent = st.score.us;
   $('m-them').textContent = st.score.them;
   var tied = isTied(st);
@@ -789,8 +794,10 @@ function scoutSentence(pr, rows) {
    screen like the grid), usage, and the shape from the contract. The preview is the aim, never
    the outcome: it ends on the exact aim point, wherever the engine's command draw puts the ball. */
 
-/* the colour a pitch has on the break chart (usage order), so the buttons and the chart agree */
+/* the colour a pitch has everywhere (its type's, else its place by usage), so the buttons, the chart,
+   the guide and the reticle agree */
 function colorOf(a) {
+  if (TYPE_COLORS[a.type]) return TYPE_COLORS[a.type];
   var ord = S.scn.pitcher.arsenal.slice().sort(function (x, y) { return y.usage - x.usage; });
   return PITCH_COLORS[Math.max(0, ord.indexOf(a)) % PITCH_COLORS.length];
 }
@@ -938,6 +945,41 @@ function closerName(p) {
 function paStart(log) {
   for (var i = log.length - 1; i >= 0; i--) if (log[i].paOver) return i + 1;
   return 0;
+}
+
+/* The zone's dots are the at bat you are in, and only it (the owner, 2026-10-24). Each finished at bat
+   is a chip on the batter card (his name and how it ended); a tap shows that at bat's pitches on the
+   zone, a second tap or the next pitch goes back to the at bat you are in. */
+function finishedPAs(log) {
+  var out = [], start = 0, bi = 0;
+  (log || []).forEach(function (pr, i) {
+    if (!pr.paOver) return;
+    var b = batterAt(bi);
+    out.push({ from: start, to: i + 1, name: lastName(b.name), word: playText(pr, b).tag });
+    start = i + 1; bi++;
+  });
+  return out;
+}
+function renderPAs(st) {
+  var log = st.log || [], box = $('m-pas');
+  if (S.viewPA && S.viewPA.n !== log.length) S.viewPA = null;
+  var v = S.viewPA;
+  S.grid.setPitches(log, v ? v.from : paStart(log), v ? v.to : null);
+  if (!box) return;
+  var pas = finishedPAs(log);
+  box.hidden = !pas.length;
+  box.innerHTML = pas.map(function (p, i) {
+    var on = v && v.from === p.from;
+    return '<button type="button" class="pa-chip' + (on ? ' on' : '') + '" data-pa="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+      esc(p.name) + ' <b>' + esc(String(p.word || '').toLowerCase()) + '</b></button>';
+  }).join('');
+  box.querySelectorAll('.pa-chip').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var p = pas[+b.dataset.pa];
+      S.viewPA = S.viewPA && S.viewPA.from === p.from ? null : { from: p.from, to: p.to, n: log.length };
+      renderPAs(st);
+    });
+  });
 }
 
 /* The play by play: a broadcast lower third (the owner, 2026-10-24). It comes up when the result is
