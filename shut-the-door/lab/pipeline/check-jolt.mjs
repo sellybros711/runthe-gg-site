@@ -46,12 +46,15 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // with a pop or a skate, by who and his last act. On main before this check (#708) a pop was in
 // 2,920 of these 2,925 plays and a skate in 2,522; with its first fixes, 909 and 1,643. A ceiling
 // that only comes down.
+// The wider broadcast (#710) draws more of the field, so more bodies are on screen and measured: the
+// count rose to 1,043 plays with a pop and 1,704 with a skate (runners and covering fielders, now in
+// frame) with the worst of each unchanged. The same motion, more of it seen; recorded here once.
 const CEILING = {
-  'pop fielder -': 332,
+  'pop fielder -': 343,
   'pop fielder bobble': 104,
   'pop fielder catch': 31,
   'pop fielder catch_throw': 4,
-  'pop fielder cover': 17,
+  'pop fielder cover': 34,
   'pop fielder dive': 13,
   'pop fielder dive_short': 64,
   'pop fielder field': 96,
@@ -61,11 +64,11 @@ const CEILING = {
   'pop fielder set': 20,
   'pop fielder tag': 182,
   'pop fielder throw': 7,
-  'pop runner run': 163,
-  'skate fielder -': 142,
+  'pop runner run': 333,
+  'skate fielder -': 174,
   'skate fielder bobble': 22,
   'skate fielder catch_throw': 5,
-  'skate fielder cover': 230,
+  'skate fielder cover': 291,
   'skate fielder dive': 10,
   'skate fielder field': 461,
   'skate fielder leap_miss': 1,
@@ -74,8 +77,8 @@ const CEILING = {
   'skate fielder receive': 22,
   'skate fielder set': 27,
   'skate fielder tag': 344,
-  'skate fielder throw': 3,
-  'skate runner run': 468,
+  'skate fielder throw': 4,
+  'skate runner run': 556,
 };
 
 function loadPlaywright() {
