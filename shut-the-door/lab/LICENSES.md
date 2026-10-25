@@ -102,20 +102,21 @@ commercial. They do not let the raw files be redistributed on their own. So:
 
 - the raw FBX files are never committed, here or anywhere public. They stay outside the repo, and
   `shut-the-door/.gitignore` refuses any `*.fbx` under this folder;
-- only the retargeted, baked clips inside our own `batter.glb`, `catcher.glb`, `umpire.glb` and
-  `fielder.glb` (motion only, no mesh) ship:
+- only the retargeted, baked clips inside our own `batter.glb`, `catcher.glb`, `umpire.glb`,
+  `fielder.glb` and `fparm.glb` (those two motion only, no mesh) ship:
   fitted to the MakeHuman rig (rest pose aligned, limbs only, the collar bones left to `people.js`),
   resampled to 30 fps and compressed with the meshes. They cannot be pulled back out as Mixamo files.
 
 | clip | Mixamo animation (frames, at 60 fps) | used for | changed |
 |---|---|---|---|
-| `swing`, `swing2`, `swing3` (batter) | Baseball Hit (1-104), Baseball Hit-2 (1-100), Baseball Hit-3 (1-78) | three swings: each hitter gets one, drawn from a hash of his id (`looks.js`); the take, check swing and hit by pitch use the same capture up to the stride | the capture is a right handed hitter: mirrored left to right for a lefty, as is for a righty (`R`); cut at the finish, which the scene holds; fixed finger grip added |
+| `swing`, `swing2`, `swing3` (batter) | Baseball Hit (1-104), Baseball Hit-2 (1-100), Baseball Hit-3 (1-78) | the two full swings: each hitter gets one, drawn from a hash of his id (`looks.js`); the take, check swing and hit by pitch use the same capture up to the stride. `swing3` is a short capture (a second download sent as its full length, 2026-10-25, is the same 118 frames) and no hitter plays it since then; it is still in `batter.glb` until the next rebuild | the capture is a right handed hitter: mirrored left to right for a lefty, as is for a righty (`R`); cut at the finish, which the scene holds; fixed finger grip added |
 | `miss`, `missR` (batter) | Baseball Strike (1-230) | a swing and miss, and his reaction | as above |
 | `hbpFall`, `hbpFallR` (batter) | Shoulder Hit And Fall (1-187) | a pitch on the upper body knocks him down (four in five, picked from the drawn pitch's id) | as above (so the blow is always on the shoulder toward the pitcher, which is the one a pitch hits); turned away from the plate at run time |
 | `idle` (catcher) | Baseball Catcher (430-550) | life in the set: breathing, weight shift | grip on the glove hand; the set's depth and lean, the reach, framing and block are our own posing over it |
 | `rise` (catcher) | Baseball Catcher (60-150) | coming up out of the crouch after a ball in play or a hit batsman | trunk and legs only (the glove arm is our own) |
 | `idle` (umpire) | Crouching Idle (1-151) | life in the slot stance | the stance's depth and lean are our own posing over it; the twist bones of the upper arms held at rest |
 | `call` (umpire) | Baseball Umpire (1-158) | rising into the strike call | blended in from the stance |
+| `throw` (`fparm.glb`, first person) | Baseball Pitching, the 2026-10-25 download (30 fps, file frames 32.8-65.8 around release at 47.8) | the pitcher's own throwing arm in first person (`firstperson.js`): shoulder, elbow, wrist and the hand's turn, nothing else | `lab/pipeline/fparm.py`: relative to his eyes, facing the plate, scaled to a 0.57 m arm, keyed at 60 fps; fitted at run time to his arm angle, mirrored for a lefty and turned to keep clear of the zone and the HUD |
 | `sprint` (fielder) | Sprint (1-17, a 30 fps file, every frame) | fielders and runners at full speed (a ball in play) | one stride cycle; its forward travel taken out at run time (in place, the bob kept) and its phase driven by the distance run (`fielders.js`) |
 | `run` (fielder) | Fast Run (1-17, 30 fps) | the same, between a jog and a sprint | as above, blended by speed |
 | `jog` (fielder) | Jog Forward (1-26, 30 fps) | starting off, backing up a play, the home run trot | as above |

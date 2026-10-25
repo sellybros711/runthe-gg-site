@@ -14,7 +14,7 @@ import * as HG from './headgear.js?v=2';
 import { measureHead, wear, wornShade } from './headgear.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import { assetUrl } from './load.js?v=7';
+import { assetUrl } from './load.js?v=8';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
