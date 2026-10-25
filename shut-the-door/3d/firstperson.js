@@ -37,7 +37,7 @@ import { spline, reducedMotion, SUN } from './park.js?v=4';
 import { baseball } from './gear3d.js?v=3';
 import { look } from './looks.js?v=2';
 import { assetUrl } from './load.js?v=7';
-import { T_RELEASE } from './pitch.js?v=9';
+import { T_RELEASE } from './pitch.js?v=10';
 
 const HALF = THREE.MathUtils.degToRad(30), TAN = Math.tan(HALF);   // the arm's lens, each way across the short side
 const GLOVE_M = 0.30;            // the glove, heel to fingertips, metres
@@ -428,6 +428,10 @@ export class FirstPerson {
       null. eye: the stage's pitcherEye (his head at release); camera: the scene's. */
   lensFor(pitch, eye, camera) {
     if (!this.ok || !this.w || !this.H) return null;
+    // the slot of this pitch: its own arm angle, else his, else its release point's (pitch.js
+    // armAngleFor, releaseFor); the arm shows around release only, so a new slot never pops
+    const slot = THREE.MathUtils.degToRad(armSlot({ armAngle: pitch.armAngle }, pitch.rel || null));
+    if (Number.isFinite(slot) && slot !== this.slot) { this.slot = slot; this.place(); }
     const W = this.w, Hh = this.h;
     const cam = camera.clone();
     eye.update(pitch.tRel, cam);

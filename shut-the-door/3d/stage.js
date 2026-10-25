@@ -75,13 +75,13 @@ import * as THREE from 'three';
 import { preload } from './load.js?v=7';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=4';
 import { People } from './people.js?v=38';
-import { Pitch, releaseOf } from './pitch.js?v=9';
-import { fromResult, motion } from './play.js?v=9';
+import { Pitch, releaseOf } from './pitch.js?v=10';
+import { fromResult, motion } from './play.js?v=10';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=17';
-import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=6';
-import { FirstPerson } from './firstperson.js?v=2';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=7';
+import { FirstPerson } from './firstperson.js?v=3';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -101,7 +101,9 @@ function factsFrom(scn, extra) {
   return {
     scenarioId: scn.id, title: scn.title,
     pitcher: { name: p.name, team: p.team, throws: p.throws, teamColors: p.teamColors, armAngle: Number.isFinite(p.armAngle) ? p.armAngle : null,
-      arsenal: p.arsenal.map((a) => ({ type: a.type, name: a.name, usage: a.usage, velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, shape: a.shape || (C() && C().SHAPE_OF[a.type]), sigmaFt: a.sigmaFt })) },
+      arsenal: p.arsenal.map((a) => ({ type: a.type, name: a.name, usage: a.usage, velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, shape: a.shape || (C() && C().SHAPE_OF[a.type]), sigmaFt: a.sigmaFt,
+        // for the picture only (CONTRACT.md section 4): its own release, arm angle and spin, or null
+        release: a.release || null, armAngle: Number.isFinite(a.armAngle) ? a.armAngle : null, spin: a.spin || null })) },
     situation: { usHome: !!scn.situation.usHome, inning: scn.situation.inning, half: scn.situation.half },
     release: releaseOf(p),
     batters: scn.batters.map((b) => {
