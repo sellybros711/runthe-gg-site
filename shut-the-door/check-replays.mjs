@@ -55,6 +55,13 @@
  * exactly, since each half-ending row was split into real plays that sum to
  * it. So every stored row replays to its score, pitch by pitch.
  *
+ * RULES 4 (2026-10-24). A take is called where it crossed, ABS challenges,
+ * and the bright band's release (engine.js 7). A new outing's calls carry r 4,
+ * and a call whose called ball the player challenged carries ch: 1. A row with
+ * r 3 replays under rules 3 exactly (the self-test holds three, made by main's
+ * engine before rules 4, in fixtures/replays-rules3-pre-abs.json). The pool
+ * was replayed under rules 4, so a rules 3 row's percentile is not compared.
+ *
  * Export the rows from the Supabase SQL editor, for example:
  *   select json_agg(o) from shutdoor_outings o where day >= current_date - 7;
  * and save the array as rows.json. Exit code 1 when a row is flagged.
@@ -256,6 +263,42 @@ function selfTest() {
     let refused = false;
     try { refused = !replayRow(noQ).ok; } catch (e) { refused = true; }
     say(refused, `${id}: a row with an effort and no release is refused`);
+  }
+  /* rules 4: rules 3 rows made before it (by main's engine at f0df2b2, with q, e and at) replay
+     exactly, pitch by pitch; a rules 4 row with a pitcher's challenge (ch) replays exactly, and
+     with the challenge taken out it is flagged */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules3-pre-abs.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.velo)) === JSON.stringify(row.velo)
+        && JSON.stringify(o.log.map(x => x.arm)) === JSON.stringify(row.arm)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result);
+      say(a.ok && same && o.rules === 3 && !o.abs, `${row.scenario_id}: a rules 3 row from before ABS replays exactly, every pitch, call, speed and arm (${row.pitches} pitches)` + (a.ok ? '' : ': ' + a.why));
+    }
+    const id = 'std-2025-ws7-yamamoto', p = packOf(id);
+    let pair = null;
+    for (let d = 1; d <= 120 && !pair; d++) {
+      const day = `2027-01-${String(d % 28 + 1).padStart(2, '0')}`;
+      const rng = R.mulberry32(R.hashSeed(id + '|abs|' + d));
+      const o = E.createOuting(p.pack, { seed: E.seedFor('daily', day), mode: 'daily', model: p.model });
+      while (o.status === 'live' || E.challengeLive(o)) {
+        if (E.challengeLive(o)) { E.challengePitch(o); if (o.status !== 'live') break; continue; }
+        E.throwPitch(o, { type: p.model.types[Math.floor(rng() * p.model.types.length)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100 });
+      }
+      const res = E.finishOuting(o);
+      const row = { day, scenario_id: id, calls: JSON.parse(JSON.stringify(o.calls)), outcome: res.outcome, pitches: res.pitches, score: res.score, percentile: res.percentile, strip: res.strip };
+      const stripped = Object.assign({}, row, { calls: row.calls.map(c => { const x = Object.assign({}, c); delete x.ch; return x; }) });
+      if (row.calls.some(c => c.ch === 1) && !replayRow(stripped).ok) pair = { row, stripped };
+    }
+    say(!!pair, `${id}: an outing whose challenges changed what happened exists`);
+    if (pair) {
+      say(replayRow(pair.row).ok && pair.row.calls.every(c => c.r === 4), `${id}: a rules 4 row with challenges replays exactly (${pair.row.pitches} pitches, ${pair.row.calls.filter(c => c.ch).length} challenged)`);
+      say(!replayRow(pair.stripped).ok, `${id}: the same row with its challenges taken out is flagged`);
+    }
   }
   process.exit(fails ? 1 : 0);
 }

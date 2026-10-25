@@ -270,6 +270,52 @@ the rules: no runner passes another or shares a base, the batter on a hit of k b
 nobody goes back, the outs, runs and bases add up, no run on a third out made by the batter before
 first or by a force, every run shown scoring is counted, and the scoring fits the play. CI runs it.
 
+## Rules 4: the call by location, ABS challenges, the bright band (2026-10-24)
+
+CONTRACT.md 5f is the rule. These are the measurements. `pipeline/umpire.py` makes every number below
+from the 2024 regular season chunks (Baseball Savant, 711,899 pitches, 2,429 games).
+
+**The call.** Rules 3 called a take by the cell it crossed: the cell's real ball and called strike
+split, wherever in the cell. Measured on every pack (random calls, 3,000 outings): cell 12 (the heart)
+was never a ball, but a take 4-6 inches inside the edge was a ball 11.6% of the time (2024 umpires:
+0.4%) and one 6 inches or more outside was a strike 9.4% (2024: 0.04%). A pitch at the middle of the
+plate in a top or bottom cell is that case. Rules 4 calls it where it crossed (`contract.js UMPIRE`,
+the 2024 called strike rate by signed half inch from the edge): 4-6 inches in 0.5% balls, 6 or more
+in 0%, 6 or more out 0% strikes, the edge itself about 70% strikes. The grade splits each cell's takes
+the same way one pitch ahead (`grade.js callMass`), so the draw and the grade stay one table.
+
+**ABS.** The batter's challenge model, fitted on 2024's called strikes to MLB's 2025 spring test
+(4.4% of called strikes) and Triple-A 2025 (batters won 45%): 4.4%, 44.6%. Played by the closer pool
+on every pack (2,000 outings): the batter 0.11 challenges an outing, 4.0% of called strikes, won 53%;
+the model catcher (the pool and the strategy runs) 0.14, 2.5% of called balls, won 39%.
+
+**Errors** (the owner: "they shouldn't make errors on simple plays"). No change: the engine matches
+the majors. Reached on error, 2024: 1 per 112 balls in play, 1 per 53 soft grounders (under 80 mph),
+1 per 351 lazy flies and popups. The engine on every pack under rules 4: 1 per 106, 1 per 56, 1 per
+374. A routine grounder is where real errors happen. The error rows are the real plays (`error` key,
+the drawn pitch is a real reached-on-error), so the mapping is right.
+
+**The bright band.** At q 0.85 or more the pitch lands within 3 inches of the aim point (1.2 inches a
+side at 0.85, 0.6 at 1), in the zone when aimed in it. The strategy table (`strategies.cjs`, 300 runs
+a pack, rules 3 then rules 4 with the model catcher's challenges), the mean over the packs of hold%
+and the median outing's percentile:
+
+| strategy, release | hold% | median percentile |
+|---|---|---|
+| smart, ordinary | 76.0 to 79.6 | 55.5 to 59.5 |
+| smart, perfect | 78.8 to 82.5 | 61.3 to 70.1 |
+| visible, ordinary | 61.6 to 66.3 | 30.5 to 30.2 |
+| visible, perfect | 61.8 to 70.5 | 31.5 to 40.2 |
+| average, perfect | 79.8 to 84.9 | 62.8 to 67.4 |
+| best, perfect | 93.8 to 95.6 | 99.8 to 99.8 |
+| the closer pool | 75.7 to 77.9 | 50.4 to 50.2 |
+
+A perfect timer's edge over an ordinary one went from 6 to 11 percentile points (smart) and from 1 to
+10 (visible). The pool was replayed under rules 4, so the median stays at the 50th. Its bands moved
+under a point (19/27/33/21 to 20/27/33/19); `BANDS` is unchanged (`band_sweep.mjs --relative`: heart
+fastballs mostly orange and red in 10 of 10 packs, lowest 63%). `pack.hold`, `pack.seq` and the pros
+are unchanged (`pool.js` measures `seq` under rules 3, so a rules 3 outing replays exactly).
+
 ## Release and spin, for the picture (2026-10-24)
 
 `pipeline/tracking.py arsenal` reads each scenario pitcher's own pitches from the Savant search his

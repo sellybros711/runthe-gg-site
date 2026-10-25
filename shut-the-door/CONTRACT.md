@@ -408,6 +408,48 @@ in-play row is a legal play from the real play by play (`check-rules.mjs`, READM
 calls carry `r: 3`; one with `r: 2` or none replays under its own rules, where a third out scores
 none, exactly as it was played. Nothing new is drawn.
 
+## 5f. Rules 4: the call, ABS challenges, the bright band (2026-10-24)
+
+Rules 3 and everything before it, plus three things. A new outing's calls carry `r: 4`; a call with
+`r: 3` or before replays under its own rules, exactly (`fixtures/replays-rules3-pre-abs.json`).
+
+**The call by location.** A take is called where the ball crossed, not by the cell. The library draw
+still decides take or swing from the actual cell's row; a take is then a called strike when the same
+draw, read inside the take's share of the row, is under the umpire's chance at that spot
+(`contract.js UMPIRE`, `calledStrikeP(zoneDist(x, zn, zoneFt))`: every called pitch of 2024 by its
+signed distance from the zone's edge, in half inches). Heart near certain, edges uncertain. The grade
+splits each cell's takes the same way one pitch ahead (`grade.js callMass`). No new draw.
+
+**ABS challenges** (MLB's 2026 rules; `contract.js ABS`). Each side has 2 for the outing; a challenge
+that wins is kept. Only a called ball or strike, only right away. The ABS zone decides: the ball's
+actual location against the zone the grid draws (`zoneDist >= 0` is a strike).
+- The batter challenges a called strike by a labelled MODEL (`ABS.BATTER`) fitted to MLB's 2025
+  spring training test (4.4% of called strikes challenged by batters) and Triple-A 2025 (batters won
+  45%). Its gamble is a draw from the outing's second stream (`hashSeed('abs|' + seed)`), taken only
+  when he has a challenge left on a called strike. The outing's four draws a pitch never move.
+- The pitcher's side challenges a called ball with the player's button: `challenge(outingId)`
+  (section 9). Overturned, the pitch is a called strike and the count, outs and end follow; the call
+  carries `ch: 1`, so a replay makes the same challenge.
+- Never graded: the call is not the player's decision. The next pitch is graded from the count the
+  challenge left.
+
+**The bright band** (the owner, 2026-10-24: "if I have a good release it should go where I aimed").
+A release at `q >= PERFECT.BEST_Q` (0.85, the meter's bright band) lands on the aim point plus its
+own small miss (1.2 inches a side at 0.85, 0.6 at 1), never more than 3 inches off, and never out of
+the zone when aimed inside it, whatever the repeat, effort or arm. A GAME RULE. The same two miss
+draws, read as inches. Every other release scales his miss as in section 5.
+
+What the UI needs (a separate UI task):
+- `state.abs`: `{left: {pitcher, batter}, challengeLive, events: [{n, by, call, abs, overturned}]}`,
+  null before rules 4. Show the challenge button only while `challengeLive` (a called ball, not yet
+  challenged, the pitcher's side has one left; also on a ball four that ended the outing, until
+  `finishOuting`). The button calls `challenge(outingId)` and redraws from what it returns.
+- `pitchResult.abs`: `{called, strike, d}` on every called pitch: the umpire's call, the ABS answer,
+  and the inches from the zone's edge (positive inside), for the quick replay against the zone.
+- `pitchResult.challenge`: `{by: 'batter'|'pitcher', call, abs, overturned}`: the replay's event and
+  the scoreboard's mark. On an overturn `result` is the final call; `abs.called` keeps the umpire's.
+- `pitchResult.perfect`: true when the bright band put it on the aim point.
+
 ## 6. Pitch result
 
 ```js
@@ -442,6 +484,11 @@ none, exactly as it was played. Nothing new is drawn.
  * @property {boolean} paOver
  * @property {{id: string, tier: 'batter'|'similar'|'league'}} drawn   the real pitch used
  *                                    (id = Statcast game_pk:at_bat_number:pitch_number)
+ * @property {{called: 'ball'|'called_strike', strike: boolean, d: number}} [abs]   rules 4, a called
+ *                                    pitch: the umpire's call, the ABS zone's answer, inches from its edge
+ * @property {{by: 'batter'|'pitcher', call: string, abs: 'ball'|'strike', overturned: boolean}} [challenge]
+ *                                    rules 4: the challenge on this pitch (section 5f)
+ * @property {boolean} [perfect]      rules 4: a bright band release, on the aim point
  */
 ```
 
@@ -556,7 +603,7 @@ A held tie is a blown save: it ranks under `door_shut` and breaks the streak (se
 
 ## 9. The engine API (the only thing the UI calls)
 
-All four are async, so the UI does not care where the work runs.
+All of them are async, so the UI does not care where the work runs. `challenge` came with rules 4.
 
 ```js
 /** @returns {Promise<Scenario>}  without reveal */
@@ -569,6 +616,11 @@ startOuting(scenarioId, seed, { mode })
 
 /** @returns {Promise<{pitchResult: PitchResult, pitchGrade: PitchGrade, state: OutingState}>} */
 throwPitch(outingId, pitchCall)
+
+/** rules 4: the pitcher's side challenges the last pitch's called ball (section 5f). Only while
+ *  state.abs.challengeLive, before the next throw and before finishOuting.
+ *  @returns {Promise<{pitchResult: PitchResult, state: OutingState}>} */
+challenge(outingId)
 
 /** @returns {Promise<OutingResult>} */
 finishOuting(outingId)
