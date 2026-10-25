@@ -73,37 +73,119 @@ export function lightFrom(scene, renderer, env) {
   pmrem.dispose();
 }
 
-/** The pitcher's eye in the set, a right hander on the rubber; framed toward the hitter's side of
-    the plate (a left handed hitter stands on the catcher's right). The preset frame is 6.6 ft wide
-    at the plate on a phone held upright, 15 ft on a wide screen. A page can fit the frame to the
-    people instead (eye.fit = { x, z, fw }: the look point on the plate, in feet, and the width). */
+/* THE PITCHER'S EYE. Where his eyes are, from the rule book and a body: he stands on the rubber
+   (60 ft 6 in from the plate's back tip) on a mound 10 in high, his eyes about 6 ft up, so 6 ft 10 in
+   over the field, a few inches in front of the rubber, on his own side of it (a righty on the third
+   base side). The lens is the fitted frame (a narrow one: the hitter large on a phone). */
+export const EYE = { y: 60.1, z: 6 + 10 / 12, x: 0.4 };
+/* THE DELIVERY in first person: where his head goes after the throw, as offsets from the set (feet:
+   lat toward his glove side, fwd toward the plate, up), a roll of the head (degrees, toward his glove
+   side) and where his eyes are on the plate (feet up from the look point). Keyed on the play's clock,
+   whose release is always at 0.8 s (pitch.js T_RELEASE): he rocks back on the leg lift, strides
+   toward the plate and drops, lets go, his body bends over into the follow-through, then he comes up
+   into his fielding stance. fwd is a share of his stride to release (fwdAt, from his own release
+   extension). Small on purpose: the lens is long, so a tenth of a degree moves the zone, and the
+   hitter and the zone stay put. */
+const DELIVERY = [
+  // t     lat    fwd    up     roll  look
+  [0.00,  0.00,  0.00,  0.00,  0.0,  0.00],
+  [0.30,  0.00, -0.05,  0.05, -0.5,  0.05],
+  [0.62,  0.15,  0.62, -0.55,  0.7, -0.02],
+  [0.80,  0.25,  1.00, -0.92,  1.2,  0.00],
+  [1.02,  0.32,  1.13, -1.32,  1.6, -0.28],
+  [1.40,  0.22,  1.08, -1.02,  0.6, -0.10],
+];
+/* A cubic through keys [t, ...values] with velocity carried through each key (Catmull-Rom on uneven
+   times), so the head never stops dead at release. Holds the last key after it. */
+export function spline(keys, t, out = []) {
+  const n = keys.length, w = keys[0].length - 1;
+  if (t <= keys[0][0]) { for (let j = 0; j < w; j++) out[j] = keys[0][j + 1]; return out; }
+  if (t >= keys[n - 1][0]) { for (let j = 0; j < w; j++) out[j] = keys[n - 1][j + 1]; return out; }
+  let i = 0;
+  while (keys[i + 1][0] < t) i++;
+  const a = keys[i], b = keys[i + 1], h = b[0] - a[0], s = (t - a[0]) / h;
+  const slope = (k, j) => {
+    // zero velocity at the first and last key (the set, and the stance he holds)
+    if (k === 0 || k === n - 1) return 0;
+    const p = keys[k - 1], q = keys[k + 1];
+    return (q[j] - p[j]) / (q[0] - p[0]);
+  };
+  const s2 = s * s, s3 = s2 * s;
+  const h00 = 2 * s3 - 3 * s2 + 1, h10 = s3 - 2 * s2 + s, h01 = -2 * s3 + 3 * s2, h11 = s3 - s2;
+  for (let j = 1; j <= w; j++) out[j - 1] = h00 * a[j] + h10 * h * slope(i, j) + h01 * b[j] + h11 * h * slope(i + 1, j);
+  return out;
+}
+/** How far his head travels toward the plate by release, feet: his eyes end about 1.9 ft behind the
+    ball as it leaves his hand (his own release extension, or the stand in), within reason. */
+export function fwdAt(rel) {
+  const y = rel && Number.isFinite(rel.y) ? rel.y : 54;
+  return Math.max(3.2, Math.min(5.6, EYE.y - (y + 1.9)));
+}
+/** Is the delivery's head motion off (the player asked for less motion)? */
+export function reducedMotion() {
+  try { return !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; }
+}
+
+/** The pitcher's eye: framed toward the hitter's side of the plate (a left handed hitter stands on
+    the catcher's right). The preset frame is 6.6 ft wide at the plate on a phone held upright, 15 ft
+    on a wide screen. A page can fit the frame to the people instead (eye.fit = { x, z, fw }: the look
+    point on the plate, in feet, and the width). The set is t = 0; after the throw update(t) moves
+    his head through the delivery (DELIVERY), and back to the set by eye.settle (the end of the
+    pitch, when the next one is set up: so the next set never jumps). reduced: no head motion. */
 export function pitcherEye(camera) {
-  const eye0 = P(-0.45, 59.2, 6.05), eye1 = P(-0.75, 56.6, 5.55);
-  const look = new THREE.Vector3();
-  let side = 1, W = 1, H = 1;
+  const look = new THREE.Vector3(), lookAt = new THREE.Vector3(), v = [];
+  let side = 1, hand = 1, W = 1, H = 1, fwd = fwdAt(null);
+  const at = () => P(hand * -EYE.x, EYE.y, EYE.z);
   const eye = {
     widths: { tall: 6.6, wide: 15 },
     fit: null,
+    settle: Infinity,
+    reduced: null,
     setSide(bats) { side = bats === 'R' ? -1 : 1; eye.fit = null; },
+    /** His throwing hand: a righty stands on the third base side of the rubber, his glove side is
+        the first base side (catcher's view x > 0). */
+    setHand(throws) { hand = throws === 'L' ? -1 : 1; },
+    /** His release (pitch.js releaseOf): how far his head goes toward the plate. */
+    setRelease(rel) { fwd = fwdAt(rel); },
     preset() {
       return W > H ? { x: 0.6 * side, z: 2.7, fw: eye.widths.wide } : { x: 0.85 * side, z: 3.4, fw: eye.widths.tall };
     },
     get frame() { return eye.fit || eye.preset(); },
+    /** The set's eye point (world). */
+    get set() { return at(); },
     resize(w, h) {
       W = w; H = h;
       const f = eye.frame;
       look.copy(P(f.x, 0, f.z));
       camera.aspect = w / h;
-      const d = eye0.distanceTo(look);
+      const d = at().distanceTo(look);
       camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan((f.fw * FT) / 2 / camera.aspect / d));
       camera.updateProjectionMatrix();
     },
-    update(t) {
-      // the delivery: the head drifts forward and down until release, then settles
-      const k = smooth(THREE.MathUtils.clamp((t - 0.05) / 0.75, 0, 1));
-      camera.position.lerpVectors(eye0, eye1, k * 0.35);
-      camera.lookAt(look);
-      camera.updateMatrixWorld();
+    /** The head's offsets at play time t: [lat, fwd, up, roll, look], the set at t <= 0. */
+    offsets(t, out = []) {
+      const red = eye.reduced == null ? reducedMotion() : eye.reduced;
+      if (red || !(t > 0)) { out[0] = out[1] = out[2] = out[3] = out[4] = 0; return out; }
+      spline(DELIVERY, t, out);
+      // the stride is his own (fwdAt): the keys hold shares of it
+      out[1] *= fwd;
+      // back to the set by the end of the pitch (he stands up off the follow-through)
+      const s0 = Math.max(1.45, eye.settle - 0.8), s1 = Math.max(s0 + 0.3, eye.settle - 0.1);
+      if (t > s0) { const k = smooth(Math.min(1, (t - s0) / (s1 - s0))); for (let j = 0; j < 5; j++) out[j] *= 1 - k; }
+      return out;
+    },
+    /** Put a camera where his eye is at play time t (the main one by default). */
+    update(t, cam = camera) {
+      eye.offsets(t, v);
+      const [lat, f, up, roll, lk] = v;
+      // glove side is the first base side for a righty (catcher's view x > 0)
+      cam.position.copy(P(-hand * EYE.x + hand * lat, EYE.y - f, EYE.z + up));
+      lookAt.copy(look);
+      lookAt.y += lk * FT;
+      cam.lookAt(lookAt);
+      // the roll, toward his glove side (the screen's left for a righty)
+      if (roll) cam.rotateZ(hand * THREE.MathUtils.degToRad(roll));
+      cam.updateMatrixWorld();
     },
   };
   return eye;
