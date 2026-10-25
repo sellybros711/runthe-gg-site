@@ -41,7 +41,7 @@
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 8;
+  const SCHEDULE_V = 9;
   const STORE_V = 1;
   const BASE = 'data/';
 
@@ -160,6 +160,18 @@
     return clone(r);
   }
 
+  /* rules 4: the pitcher's side challenges the last pitch's called ball (contract.js ABS). Only
+     right away: before the next throw and before the result. Returns the pitch as it now stands
+     and the state (state.abs: challenges left, whether one is live, the events). */
+  async function challenge(outingId) {
+    const rec = outings[outingId];
+    if (!rec) throw new Error('no such outing');
+    if (rec.result) throw new Error('the outing is finished');
+    const r = E.challengePitch(rec.o);
+    save(rec);
+    return clone(r);
+  }
+
   async function finishOuting(outingId) {
     const rec = outings[outingId];
     if (!rec) throw new Error('no such outing');
@@ -192,7 +204,7 @@
     return clone(rec.result);
   }
 
-  const api = { API_VERSION, getScenario, startOuting, throwPitch, finishOuting, configure };
+  const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, finishOuting, configure };
   if (NODE) module.exports = api;
   if (typeof window !== 'undefined') window.STD_API = api;
 })();

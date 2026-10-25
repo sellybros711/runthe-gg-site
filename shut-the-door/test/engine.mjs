@@ -302,8 +302,8 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   const rng = testRng(41);
   const calls = Array.from({ length: 60 }, () => ({ type: model.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25) }));
   const o2 = E.replay(pack, 2468, calls, { model, rules: 2 });
-  check(`rules 2: a new outing plays rules ${G.RULES} (rules 2 and the third out) and its kept calls carry r ${G.RULES}; a rules 2 outing's carry r 2`,
-    E.createOuting(pack, { seed: 1, model }).rules === G.RULES && G.RULES === G.THIRD_OUT_RULES
+  check(`rules 2: a new outing plays rules ${G.RULES} (rules 2, the third out, the call and ABS) and its kept calls carry r ${G.RULES}; a rules 2 outing's carry r 2`,
+    E.createOuting(pack, { seed: 1, model }).rules === G.RULES && G.RULES >= G.THIRD_OUT_RULES
     && E.replay(pack, 2468, calls, { model }).rules === 1
     && E.createOuting(pack, { seed: 1, model, rules: G.RULES }).rules === G.RULES && o2.calls.every(c => c.r === 2));
   check('rules 2: calls without r replay as rules 1, calls with r 2 as rules 2', E.replay(pack, 2468, calls, { model }).rules === 1 && E.replay(pack, 2468, o2.calls, { model }).rules === 2);
@@ -544,6 +544,70 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   }
   const again = E.replay(pack, 515, JSON.parse(JSON.stringify(E.replay(pack, 515, base.map(c => Object.assign({}, c, { at: [0.3, 0.3] })), { model, rules: 2 }).calls)), { model: new G.Model(pack) });
   check('aim: determinism, the kept calls through JSON replay the outing exactly', shape(again) === shape(E.replay(pack, 515, base.map(c => Object.assign({}, c, { at: [0.3, 0.3] })), { model, rules: 2 })));
+}
+
+/* ---- rules 4 (2026-10-24): the call by location, ABS challenges, the bright band ---- */
+{
+  const rng = testRng(71);
+  const calls = Array.from({ length: 400 }, () => ({ type: model.types[Math.floor(rng() * model.types.length)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100 }));
+  let heartTakes = 0, heartBalls = 0, farTakes = 0, farStrikes = 0, perfect = 0, perfectOff = 0, perfectOut = 0, bat = 0, batOver = 0, deep = 0, deepBalls = 0;
+  for (let seed = 1; seed <= 200; seed++) {
+    const o = E.createOuting(pack, { seed, model });
+    for (const c of calls) {
+      if (o.status !== 'live') break;
+      const p = E.throwPitch(o, c).pitchResult;
+      if (p.abs) {
+        if (p.abs.d >= 7.75) { heartTakes++; if (p.abs.called === 'ball') heartBalls++; }
+        if (p.abs.d >= 4) { deep++; if (p.abs.called === 'ball') deepBalls++; }
+        if (p.abs.d <= -6) { farTakes++; if (p.abs.called === 'called_strike') farStrikes++; }
+      }
+      if (p.challenge && p.challenge.by === 'batter') { bat++; if (p.challenge.overturned) batOver++; }
+      if (p.perfect) {
+        perfect++;
+        const t = K.aimPoint(c.cell, c.at);
+        const off = Math.hypot((p.actual.x - t.x) * 12, (p.actual.zn - t.zn) * pack.kernelZoneFt * 12);
+        if (off > K.PERFECT.CAP_IN + 0.01) perfectOff++;
+        if (K.inZone(c.cell) && !K.inZone(p.actualCell)) perfectOut++;
+      }
+    }
+  }
+  check(`rules 4: a take deep in the zone (8 inches in) is never called a ball (${heartBalls} of ${heartTakes})`, heartTakes > 10 && heartBalls === 0);
+  check(`rules 4: a take 4 inches in is a ball under 2% of the time, the 2024 umpires' 1% (${deepBalls} of ${deep})`, deep > 50 && deepBalls / deep < 0.02);
+  check(`rules 4: a take 6 inches out is called a strike under 1% (${farStrikes} of ${farTakes})`, farTakes > 50 && farStrikes / farTakes < 0.01);
+  check(`rules 4: a bright band release lands within ${K.PERFECT.CAP_IN} inches of the aim (${perfect} releases, ${perfectOff} past it) and never leaves the zone when aimed in it (${perfectOut})`, perfect > 50 && perfectOff === 0 && perfectOut === 0);
+  check(`rules 4: batters challenge called strikes and win some (${bat} challenges, ${batOver} overturned)`, bat > 0 && batOver > 0 && batOver < bat);
+  // determinism, and a pitcher's challenge rides on the call it challenged
+  let found = null;
+  for (let seed = 1; seed <= 200 && !found; seed++) {
+    const o = E.createOuting(pack, { seed, model });
+    for (const c of calls) {
+      if (o.status !== 'live') break;
+      const r = E.throwPitch(o, c);
+      if (r.state.abs.challengeLive && r.pitchResult.abs.strike) {
+        const before = r.state.count;
+        const cr = E.challengePitch(o);
+        found = { o, seed, before, after: cr.state.count, pr: cr.pitchResult, left: cr.state.abs.left.pitcher };
+        while (o.status === 'live') E.throwPitch(o, calls[o.log.length % calls.length]);
+        break;
+      }
+    }
+  }
+  check('rules 4: a challenged ball inside the ABS zone is overturned to a called strike, the count moves, and the challenge is kept',
+    !!found && found.pr.result === 'called_strike' && found.pr.challenge.overturned && found.left === K.ABS.PER_SIDE
+    && found.o.calls.some(c => c.ch === 1) && found.after.b + found.after.s <= found.before.b + found.before.s + 1);
+  if (found) {
+    const re = E.replay(pack, found.seed, JSON.parse(JSON.stringify(found.o.calls)), { model: new G.Model(pack) });
+    check('rules 4: the kept calls, ch and all, through JSON replay the outing exactly', JSON.stringify({ l: re.log, g: re.grades, s: re.score }) === JSON.stringify({ l: found.o.log, g: found.o.grades, s: found.o.score }));
+    const noCh = found.o.calls.map(c => { const x = Object.assign({}, c); delete x.ch; return x; });
+    check('rules 4: the same calls with the challenge taken out are a different outing', JSON.stringify(E.replay(pack, found.seed, noCh, { model }).log) !== JSON.stringify(found.o.log));
+  }
+  check('rules 4: a challenge is refused with none to make', (() => { const o = E.createOuting(pack, { seed: 3, model }); try { E.challengePitch(o); return false; } catch (e) { return true; } })());
+  check('rules 4: ch on a rules 3 call is refused', (() => { try { E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 3, ch: 1 }], { model }); return false; } catch (e) { return true; } })());
+  // the four draws a pitch: the outing's stream is where it would be without the challenges
+  const o1 = E.replay(pack, 99, calls.slice(0, 8), { model, rules: 4 });
+  check('rules 4: four draws a pitch on the outing stream, the batter\'s gamble on its own', (() => { const r = R.mulberry32(99); for (let i = 0; i < 4 * o1.log.length; i++) r(); return r() === o1.rng(); })());
+  check('rules 3: an outing has no ABS', E.createOuting(pack, { seed: 1, model, rules: 3 }).abs === null && E.publicState(E.createOuting(pack, { seed: 1, model, rules: 3 })).abs === null);
+  check('contract: the bright band starts where the meter\'s does', K.PERFECT.BEST_Q === require('../meter.js').BEST_Q);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');
