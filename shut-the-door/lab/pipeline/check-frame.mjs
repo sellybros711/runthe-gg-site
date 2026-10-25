@@ -42,7 +42,11 @@ const CEILING = { catch: 0, out: 0, run: 0, safe: 0, 'tag-up': 0, flash: 0 };
 // How big the man who decides it is, the 10th percentile of his height on the phone's 457 px field: a
 // floor that only goes up. Before the framing pass (2026-10-24) it was out 10.6, run 20.6, safe 10.4,
 // tag-up 10.5, a speck in a frame of the whole infield; after it 34.6, 44.1, 12.4, 70.7.
-const FLOOR = { out: 45, run: 44, safe: 14, 'tag-up': 86 };
+// The owner (2026-10-24): "it doesn't need to be super zoomed in". The broadcast now holds at least
+// 45 ft of field where it looks (inplay.js ROOM_FT), so the median man came down from 103 px to 58 (out),
+// 117 to 61 (run), 78 to 39 (safe) and 96 to 53 (tag-up). That lowered one floor, tag-up, from 86 to 35
+// (a tag-up is a runner standing on his bag, the tightest shot there was). The others held where they were.
+const FLOOR = { out: 45, run: 44, safe: 14, 'tag-up': 35 };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }

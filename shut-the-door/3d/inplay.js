@@ -31,6 +31,9 @@ const smooth = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
 const ramp = (s, a, b) => smooth((s - a) / (b - a));
 const bump = (s, a, b, c, d) => ramp(s, a, b) * (1 - ramp(s, c, d));
 const D2R = Math.PI / 180;
+// the least of the field the broadcast shows, top to bottom at the point it looks at, in feet (cameraAt):
+// a 6 ft man is then at most about an eighth of the frame
+const ROOM_FT = 45;
 const BALL_D = 2 * 1.45 * 0.0254;     // a baseball across, 7.37 cm (the mesh in gear3d.js baseball())
 const BALL_MIN_PX = 2;                // the least a ball in play is drawn across on screen (a floor, not a size)
 // the fielders' and runners' clips (lab/pipeline/build_people.py 'fielder'), with their content hash
@@ -728,8 +731,14 @@ export class InPlay {
     fov /= n;
     // (the smoothed camera still holds the deciding moment of now, which comes and goes by its weight)
     if ((piece.cam === 'wide' || piece.cam === 'follow') && now && now.keys && now.keys.length) fov = Math.max(fov, lensFor(pos, lk, now.keys, aspect, 1.12, now.minFov || 12));
+    // the broadcast's room: the frame holds at least ROOM_FT of field, top to bottom where it looks, so
+    // the play has its field around it (the base, the runner, the grass between) and a man is a figure in
+    // it, not the frame (the owner, 2026-10-24: "it doesn't need to be super zoomed in"). The lens only
+    // ever opens for it, and never past 62 degrees for it, so nothing the shot held leaves the frame.
+    const dLook = Math.hypot(lk.x - pos.x, lk.y - pos.y, lk.z - pos.z);
+    fov = Math.max(fov, Math.min(62, 2 * Math.atan(ROOM_FT / 2 / Math.max(1, dLook)) / D2R));
     // the slow motion beat pushes in, easing in and out over 0.15 s of the scene (not a step at its edges)
-    const sl = ed.find((x) => x.rate < 1 && x.cam === piece.cam && x.s0 >= r0 - 1e-6 && x.s1 <= r1 + 1e-6);
+    const sl =ed.find((x) => x.rate < 1 && x.cam === piece.cam && x.s0 >= r0 - 1e-6 && x.s1 <= r1 + 1e-6);
     if (sl) fov *= 1 - 0.1 * clamp(Math.min(s - (sl.s0 - 0.15), sl.s1 + 0.15 - s) / 0.15, 0, 1);
     return { pos, look: lk, fov: clamp(fov, 4, 72) };
   }
