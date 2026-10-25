@@ -18,13 +18,13 @@
  * for the pitcher's view falls out of the camera, never out of the data.
  */
 import * as THREE from 'three';
-import { preload } from '../3d/load.js?v=7';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=4';
-import { People } from '../3d/people.js?v=38';
+import { preload } from '../3d/load.js?v=8';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=5';
+import { People } from '../3d/people.js?v=39';
 import { Pitch } from '../3d/pitch.js?v=10';
 import { labPlay, motion, describe } from '../3d/play.js?v=10';
 import { FT, P, smooth } from '../3d/units.js?v=1';
-import { InPlay } from '../3d/inplay.js?v=17';
+import { InPlay } from '../3d/inplay.js?v=18';
 
 const Q = new URLSearchParams(location.search);
 const MODE = Q.get('take') === '1' ? 'take' : 'swing';   // kept for the checks' URLs (take=1)

@@ -3001,14 +3001,14 @@
       "sha": "d674e8f760357897"
     },
     "3d/boot.js": {
-      "v": "45",
-      "sha": "7b7a7fadcb6c3483"
+      "v": "46",
+      "sha": "0f2aec3798ef25b3"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "49",
-      "sha": "3c33aab49756a9e8"
+      "v": "50",
+      "sha": "42b627fc2bdbe8d3"
     }
   },
   "soccer/index.html": {
@@ -3123,8 +3123,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "49",
-      "sha": "32649b04b95d6b05"
+      "v": "50",
+      "sha": "2b74c6d14f1f037c"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3163,16 +3163,16 @@
   },
   "shut-the-door/3d/stage.js": {
     "load.js": {
-      "v": "7",
-      "sha": "a971ef0884621f51"
+      "v": "8",
+      "sha": "6740e4ce374039b0"
     },
     "park.js": {
-      "v": "4",
-      "sha": "13c4aae2dbe51c99"
+      "v": "5",
+      "sha": "20162b569c3e6fb0"
     },
     "people.js": {
-      "v": "38",
-      "sha": "9e2f49c77d245269"
+      "v": "39",
+      "sha": "3470372850533024"
     },
     "pitch.js": {
       "v": "10",
@@ -3183,24 +3183,24 @@
       "sha": "9b246e3461bb284c"
     },
     "looks.js": {
-      "v": "2",
-      "sha": "9bbdbd7d0efa0afd"
+      "v": "3",
+      "sha": "1aea0dc6e362a6ef"
     },
     "units.js": {
       "v": "1",
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "17",
-      "sha": "99c6a2071bbbabf7"
+      "v": "18",
+      "sha": "9a6f6864aceed3ad"
     },
     "preview.js": {
       "v": "7",
       "sha": "36071604a671158e"
     },
     "firstperson.js": {
-      "v": "3",
-      "sha": "4ca59dbadca640eb"
+      "v": "4",
+      "sha": "cfccf19bb65e4d7f"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3211,12 +3211,12 @@
   },
   "shut-the-door/3d/park.js": {
     "field.js": {
-      "v": "6",
-      "sha": "9e769b3acd52183e"
+      "v": "7",
+      "sha": "dd4417fa8ea9af2f"
     },
     "stands.js": {
-      "v": "6",
-      "sha": "5dadfeb61b8c96c4"
+      "v": "7",
+      "sha": "a0d06c12a2dbbcdb"
     },
     "units.js": {
       "v": "1",
@@ -3253,8 +3253,8 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "7",
-      "sha": "a971ef0884621f51"
+      "v": "8",
+      "sha": "6740e4ce374039b0"
     },
     "motion.js": {
       "v": "5",
@@ -3287,16 +3287,16 @@
       "sha": "6d4dc62c1151a998"
     },
     "ballpark.js": {
-      "v": "10",
-      "sha": "83d66aa0fb342ecb"
+      "v": "11",
+      "sha": "f2bfb5699ce657ac"
     },
     "people.js": {
-      "v": "38",
-      "sha": "9e2f49c77d245269"
+      "v": "39",
+      "sha": "3470372850533024"
     },
     "looks.js": {
-      "v": "2",
-      "sha": "9bbdbd7d0efa0afd"
+      "v": "3",
+      "sha": "1aea0dc6e362a6ef"
     },
     "units.js": {
       "v": "1",
@@ -3319,20 +3319,20 @@
       "sha": "e771dbef0b67350e"
     },
     "park.js": {
-      "v": "4",
-      "sha": "13c4aae2dbe51c99"
+      "v": "5",
+      "sha": "20162b569c3e6fb0"
     },
     "gear3d.js": {
       "v": "3",
       "sha": "5347ce951019b507"
     },
     "looks.js": {
-      "v": "2",
-      "sha": "9bbdbd7d0efa0afd"
+      "v": "3",
+      "sha": "1aea0dc6e362a6ef"
     },
     "load.js": {
-      "v": "7",
-      "sha": "a971ef0884621f51"
+      "v": "8",
+      "sha": "6740e4ce374039b0"
     },
     "pitch.js": {
       "v": "10",
@@ -3345,8 +3345,8 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "7",
-      "sha": "a971ef0884621f51"
+      "v": "8",
+      "sha": "6740e4ce374039b0"
     }
   },
   "shut-the-door/3d/stands.js": {
@@ -3355,12 +3355,12 @@
       "sha": "e771dbef0b67350e"
     },
     "field.js": {
-      "v": "6",
-      "sha": "9e769b3acd52183e"
+      "v": "7",
+      "sha": "dd4417fa8ea9af2f"
     },
     "load.js": {
-      "v": "7",
-      "sha": "a971ef0884621f51"
+      "v": "8",
+      "sha": "6740e4ce374039b0"
     }
   },
   "shut-the-door/3d/motion.js": {
@@ -3385,8 +3385,8 @@
       "sha": "e771dbef0b67350e"
     },
     "load.js": {
-      "v": "7",
-      "sha": "a971ef0884621f51"
+      "v": "8",
+      "sha": "6740e4ce374039b0"
     },
     "inplay-plan.js": {
       "v": "10",

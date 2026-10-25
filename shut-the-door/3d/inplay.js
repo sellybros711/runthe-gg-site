@@ -20,10 +20,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, warp, realAt, BASE, MOUND, wallDist } from './inplay-plan.js?v=10';
 import { Crew } from './fielders.js?v=4';
-import { buildBallpark } from './ballpark.js?v=10';
+import { buildBallpark } from './ballpark.js?v=11';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=38';
-import { look } from './looks.js?v=2';
+import { kitFor } from './people.js?v=39';
+import { look } from './looks.js?v=3';
 import { P, FT } from './units.js?v=1';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

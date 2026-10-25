@@ -14,12 +14,17 @@
  *   fp.render(camera)                       the scene's camera, for the sun's direction
  *   fp.lensFor(pitch, eye, camera)          the ball out of his hand (THE LENS, below)
  *
- * HIS ARM. The slot is his own: Savant's arm angle (pitcher.armAngle, degrees over the horizontal)
- * when the pack has it, else the angle of his release point over his shoulder, else a three quarter
- * 40 degrees. The arm comes in along that angle from his arm side, the ball leaves his hand at
- * T_RELEASE, and the arm goes down his arm side into the follow-through, never across the zone.
- * Mirrored for a lefty. The sleeve is his club's undershirt (people.js kitFor, the closer's side), the
- * skin his tone (looks.js, from his name: never his real look, as for the hitters).
+ * HIS ARM. A real throw: Mixamo's Baseball Pitching, the throwing side's shoulder, elbow, wrist and
+ * hand only, baked into assets/fparm.glb (lab/pipeline/fparm.py) relative to his eyes. The ball leaves
+ * his hand at T_RELEASE, when pitch.js starts the flight. The slot is his own: the pitch's arm angle,
+ * else his (pitch.js armAngleFor, Savant's, degrees over the horizontal), else the angle of his
+ * release point over his shoulder, else a three quarter 40 degrees. The capture is rolled about his
+ * shoulder from its own slot to his, mirrored for a lefty, and turned about his eyes so the ball at
+ * release is out along the slot from the zone (H, place). The way in and the way out are each turned on
+ * the screen about that point (from nothing at release) by the least that keeps the arm off the zone
+ * and the HUD (clearTurn): the real follow-through crosses his body, which would cross the zone. The
+ * sleeve is his club's undershirt (people.js kitFor, the closer's side), the skin his tone (looks.js,
+ * from his name: never his real look, as for the hitters).
  *
  * THE LENS. The scene's lens is long (the hitter large on a phone, a few degrees wide), so the real
  * release point, a couple of feet in front of his eyes and out to his arm side, is far off the
@@ -33,17 +38,17 @@
  */
 import * as THREE from 'three';
 import { smooth, clamp01 } from './units.js?v=1';
-import { spline, reducedMotion, SUN } from './park.js?v=4';
+import { spline, reducedMotion, SUN } from './park.js?v=5';
 import { baseball } from './gear3d.js?v=3';
-import { look } from './looks.js?v=2';
-import { assetUrl } from './load.js?v=7';
+import { look } from './looks.js?v=3';
+import { assetUrl } from './load.js?v=8';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { T_RELEASE } from './pitch.js?v=10';
 
 const HALF = THREE.MathUtils.degToRad(30), TAN = Math.tan(HALF);   // the arm's lens, each way across the short side
 const GLOVE_M = 0.30;            // the glove, heel to fingertips, metres
 const BALL_M = 2.9 * 0.0254;     // a baseball's diameter, metres
 export const IDLE_S = 4.2;       // his breath at the set, seconds
-const UPPER = 0.30, FORE = 0.27; // his arm, metres
 const SKIN_LIGHT = new THREE.Color('#d8a184'), SKIN_DARK = new THREE.Color('#5a3a2a');
 
 /* The glove through the delivery, from the set: [t, toward the screen's middle (units), up (units),
@@ -60,27 +65,23 @@ const GLOVE_KEYS = [
   [1.32, -0.10, -0.85, 0.00, 12],
   [1.58, 0.00, -0.28, 0.00, 4],
 ];
-/* His throwing hand (the ball in it) around release, r = t - T_RELEASE: [r, along the slot (units
-   out from the release point, + toward where it came from), down the arm side (units), depth (m)].
-   In along his slot from off the screen, the ball out at r = 0, then down his arm side. */
-const ARM_KEYS = [
-  [-0.24, 2.60, 0.00, 0.30],
-  [-0.15, 1.70, 0.00, 0.40],
-  [-0.06, 0.62, 0.00, 0.52],
-  [0.00, 0.00, 0.00, 0.58],
-  [0.07, -0.10, 0.75, 0.55],
-  [0.20, -0.15, 2.20, 0.45],
-  [0.30, -0.10, 3.00, 0.40],
-];
-const ARM_ON = [-0.17, 0.24];    // when any of the arm can be on screen
-/* His throwing shoulder, metres from his eyes (x toward his arm side, y up, z toward the plate), as
-   his trunk turns through: back, square at release, over the front leg. */
-const SHOULDER_KEYS = [
-  [-0.24, 0.30, -0.20, -0.12],
-  [0.00, 0.17, -0.16, 0.06],
-  [0.20, 0.03, -0.34, 0.14],
-  [0.30, 0.00, -0.38, 0.16],
-];
+/* His throwing arm: a real pitch (Mixamo's Baseball Pitching, lab/pipeline/fparm.py), the throwing
+   side's shoulder, elbow and wrist and the hand's turn, relative to his eyes in a frame facing the
+   plate (x his arm side, y up, z back), baked into our own small glb (no mesh), with its content hash
+   as every asset URL carries one (lab/pipeline/stamp.mjs computes the same). The scene's extras give
+   the clip's release (seconds in) and slot (degrees). */
+const THROW = new URL('./assets/fparm.glb?h=8dd8eef3e7', import.meta.url).href;
+const ARM_ON = [-0.3, 0.45];     // when any of the arm can be on screen (r = t - T_RELEASE)
+const BALL_IN_HAND = new THREE.Vector3(0, 0.105, -0.03);   // handModel's ball from its origin
+const PALM = new THREE.Vector3(0, 0.055, 0);               // handModel's origin from the wrist
+
+/** The baked throw, parsed: per frame shoulder, elbow, wrist (xyz) and the hand (xyzw). */
+function readThrow(g) {
+  const clip = g.animations[0], ex = g.scene.userData || {};
+  const tr = (n, p) => clip.tracks.find((k) => k.name === `${n}.${p}`).values;
+  const S = tr('shoulder', 'position');
+  return { fps: ex.fps, rel: ex.release * ex.fps, slot: THREE.MathUtils.degToRad(ex.slot), n: S.length / 3, S, E: tr('elbow', 'position'), W: tr('hand', 'position'), Q: tr('hand', 'quaternion') };
+}
 
 /** His arm slot, degrees over the horizontal. */
 export function armSlot(p, rel) {
@@ -154,12 +155,13 @@ function handModel(skin, ball) {
     const p = new THREE.Group(); p.position.set(x, y, 0); p.rotation.set(-curl, 0, splay);
     const f = new THREE.Mesh(seg, skin); f.scale.set(1, len, 1); f.position.y = len / 2; p.add(f); g.add(p);
   };
-  // index and middle over the ball, ring and pinky tucked at its side, the thumb under it
+  // index and middle over the ball, ring and pinky tucked at its side, the thumb up under it
+  // (seen from behind as the real hand turns through release, a thumb out to the side stood out)
   finger(-0.012, 0.045, 0.072, 0.75, 0.05);
   finger(0.012, 0.045, 0.076, 0.75, -0.05);
   finger(0.03, 0.04, 0.05, 1.6, -0.2);
   finger(0.044, 0.032, 0.04, 1.8, -0.35);
-  finger(-0.036, 0.0, 0.055, 1.1, 0.9);
+  finger(-0.028, 0.01, 0.055, 0.65, 0.25);
   ball.position.set(0, 0.105, -0.03);
   g.add(ball);
   return g;
@@ -178,18 +180,6 @@ function limb(mat, r0, r1) {
   return m;
 }
 const UP = new THREE.Vector3(0, 1, 0);
-
-/** Two bone reach from a to the target, the elbow toward pole: the joint. Out of reach, a is pulled
-    in (the arm straight). */
-function reachTo(a, target, l1, l2, pole) {
-  const d = new THREE.Vector3().subVectors(target, a);
-  let len = d.length();
-  if (len > l1 + l2 - 0.004) { a.addScaledVector(d.normalize(), len - (l1 + l2 - 0.004)); d.subVectors(target, a); len = d.length(); }
-  const dir = d.normalize();
-  const along = (l1 * l1 - l2 * l2 + len * len) / (2 * len), up = Math.sqrt(Math.max(0, l1 * l1 - along * along));
-  const perp = pole.clone().addScaledVector(dir, -pole.dot(dir)).normalize();
-  return a.clone().addScaledVector(dir, along).addScaledVector(perp, up);
-}
 
 export class FirstPerson {
   constructor(renderer, world) {
@@ -244,7 +234,12 @@ export class FirstPerson {
     this.arm.add(this.hand, this.upper, this.cuff, this.fore, this.elbow, this.wrist);
     this.scene.add(this.arm);
     this.v = [];
+    this.throw = null;
+    this.fit = null;
     this.ok = true;
+    // the throw is a few kilobytes, fetched beside the scene: until it is in, no arm and no lens
+    // (the ball flies its own path from his release point)
+    new GLTFLoader().loadAsync(THROW).then((g) => { this.throw = readThrow(g); this.place(); }).catch((e) => console.warn('first person arm off', e));
   }
 
   /** His hand, slot, tone and sleeve. kit: the closer's side (people.js kitFor 'us'). */
@@ -320,17 +315,105 @@ export class FirstPerson {
     const H = { x: zc.x + this.dir.x * 0.95 * unit, y: zc.y + this.dir.y * 0.95 * unit };
     H.x = Math.max(0.1 * w, Math.min(0.9 * w, H.x));
     H.y = Math.max(0.1 * h, Math.min(bottom - 0.12 * h, H.y));
+    // never in the zone: a low slot on a narrow screen (the zone nearly as wide as it) lifts the
+    // release over the zone's top corner
+    if (z && H.x > z.x - 0.12 * unit && H.x < z.x + z.w + 0.12 * unit && H.y > z.y - 0.12 * unit && H.y < z.y + z.h + 0.12 * unit) H.y = z.y - 0.12 * unit;
     this.H = H;
+    this.fitThrow();
+  }
+
+  /** The baked throw fitted to him and to this screen: rolled about his shoulder (along the line to
+      the plate) from the capture's slot to his, mirrored for a lefty, then turned about his eyes so
+      the ball at release is at H (as if he looked a little toward his arm side: sizes and shapes as
+      his eyes see them). */
+  fitThrow() {
+    const T = this.throw;
+    if (!T || !this.H) { this.fit = null; return; }
+    const roll = (this.slot ?? 0.7) - T.slot, i = Math.round(T.rel) * 3;
+    const pivot = new THREE.Vector3(T.S[i], T.S[i + 1], T.S[i + 2]);
+    this.fit = { roll: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), roll), pivot, aim: new THREE.Quaternion(), axis: null, pre: 0, post: 0 };
+    const f = this.frame(0);
+    const want = this.at(this.H.x, this.H.y, 1).normalize();
+    this.fit.aim.setFromUnitVectors(f.ball.clone().normalize(), want);
+    // then the way in and the way out, each turned on the screen about the release point (a turn
+    // that grows from nothing at release, so the ball still leaves the hand at H): the least turn
+    // that keeps the arm out of the zone and off the HUD's panels
+    this.fit.axis = want;
+    this.fit.pre = this.clearTurn(-1);
+    this.fit.post = this.clearTurn(1);
+  }
+
+  /** What the arm would cover, phase -1 (before release) or 1 (after), turned by ang: the count of
+      arm points that land on the zone or a HUD panel. */
+  covers(phase, ang) {
+    const F = this.fit, keep = F[phase < 0 ? 'pre' : 'post'];
+    F[phase < 0 ? 'pre' : 'post'] = ang;
+    const z = this.zone, m = 0.04 * this.unit, boxes = [];
+    if (z) boxes.push([z.x - m, z.x + z.w + m, z.y - m, z.y + z.h + m]);
+    if (this.safe) {
+      if (this.safe.top) boxes.push([-1e9, 1e9, -1e9, this.safe.top]);
+      if (this.safe.bottom) boxes.push([-1e9, 1e9, this.h - this.safe.bottom, 1e9]);
+    } else for (const p of this.panels || []) boxes.push([p.x0, p.x1, p.y0, p.y1]);
+    let n = 0;
+    const f = { S: new THREE.Vector3(), E: new THREE.Vector3(), W: new THREE.Vector3(), q: new THREE.Quaternion(), ball: new THREE.Vector3() };
+    const tip = new THREE.Vector3(), mid = new THREE.Vector3();
+    for (let k = 1; k <= 12; k++) {
+      const r = phase * k * (phase < 0 ? -ARM_ON[0] : ARM_ON[1]) / 12;
+      this.frame(r, f);
+      tip.set(0, 0.17, 0).applyQuaternion(f.q).add(f.W);
+      for (const [p, rad] of [[f.E, 0.042], [mid.copy(f.E).lerp(f.W, 0.5), 0.035], [f.W, 0.03], [tip, 0.04], [mid.copy(f.S).lerp(f.E, 0.6), 0.048]]) {
+        if (p.z > -0.05) continue;
+        const k2 = this.unit / (-p.z * TAN), x = this.w / 2 + p.x * k2, y = this.h / 2 - p.y * k2, rr = rad * k2;
+        if (x < -rr || x > this.w + rr || y < -rr || y > this.h + rr) continue;
+        if (boxes.some((b) => x + rr > b[0] && x - rr < b[1] && y + rr > b[2] && y - rr < b[3])) n++;
+      }
+    }
+    F[phase < 0 ? 'pre' : 'post'] = keep;
+    return n;
+  }
+
+  /** The least turn (radians, either way, up to 90 degrees) that keeps one phase of the arm clear;
+      none clears, the one that covers least. */
+  clearTurn(phase) {
+    let best = { n: Infinity, a: 0 };
+    for (let d = 0; d <= 90; d += 3) {
+      for (const sg of d ? [1, -1] : [1]) {
+        const a = THREE.MathUtils.degToRad(d * sg), n = this.covers(phase, a);
+        if (n < best.n) best = { n, a };
+        if (!n) return a;
+      }
+    }
+    return best.a;
+  }
+
+  /** The arm at r seconds from release, fitted (eye space of his own pass, metres): shoulder, elbow,
+      wrist, the hand's turn and the ball in it. */
+  frame(r, o = { S: new THREE.Vector3(), E: new THREE.Vector3(), W: new THREE.Vector3(), q: new THREE.Quaternion(), ball: new THREE.Vector3() }) {
+    const T = this.throw, F = this.fit;
+    const x = Math.max(0, Math.min(T.n - 1.001, T.rel + r * T.fps)), i = Math.floor(x), a = x - i;
+    const v = (A, out) => out.set(A[3 * i] + (A[3 * i + 3] - A[3 * i]) * a, A[3 * i + 1] + (A[3 * i + 4] - A[3 * i + 1]) * a, A[3 * i + 2] + (A[3 * i + 5] - A[3 * i + 2]) * a);
+    const q0 = new THREE.Quaternion().fromArray(T.Q, 4 * i), q1 = new THREE.Quaternion().fromArray(T.Q, 4 * i + 4);
+    o.q.copy(q0).slerp(q1, a);
+    const turn = F.axis ? new THREE.Quaternion().setFromAxisAngle(F.axis, r < 0 ? F.pre * smooth(clamp01(-r / 0.1)) : F.post * smooth(clamp01(r / 0.08))) : null;
+    const m = (p) => {
+      p.sub(F.pivot).applyQuaternion(F.roll).add(F.pivot);
+      if (this.side < 0) p.x = -p.x;
+      p.applyQuaternion(F.aim);
+      return turn ? p.applyQuaternion(turn) : p;
+    };
+    m(v(T.S, o.S)); m(v(T.E, o.E)); m(v(T.W, o.W));
+    o.q.premultiply(F.roll);
+    if (this.side < 0) { o.q.y = -o.q.y; o.q.z = -o.q.z; }
+    o.q.premultiply(F.aim);
+    if (turn) o.q.premultiply(turn);
+    o.ball.copy(PALM).add(BALL_IN_HAND).applyQuaternion(o.q).add(o.W);
+    return o;
   }
 
   /** The ball's place in his hand on screen at play time t (CSS px), its size (px) and depth (m). */
   gripAt(t) {
-    const r = t - T_RELEASE, k = spline(ARM_KEYS, r, this.v);
-    const u = this.unit, d = this.dir;
-    // along the slot (back toward where the arm came from), then down his arm side
-    const x = this.H.x + d.x * k[0] * u + this.side * 0.35 * Math.min(1, k[1]) * u;
-    const y = this.H.y + d.y * k[0] * u + k[1] * u;
-    return { x, y, depth: k[2], px: BALL_M * u / (k[2] * TAN) };
+    const b = this.frame(t - T_RELEASE).ball, depth = -b.z, k = this.unit / (depth * TAN);
+    return { x: this.w / 2 + b.x * k, y: this.h / 2 - b.y * k, depth, px: BALL_M * k };
   }
 
   pose(t) {
@@ -374,36 +457,19 @@ export class FirstPerson {
     this.gloveArm.visible = !this.hidden;
     // ---- the throwing arm, around release only
     const r = t - T_RELEASE;
-    const on = !this.hidden && t > 0 && r > ARM_ON[0] && r < ARM_ON[1];
+    const on = !this.hidden && !!this.fit && t > 0 && r > ARM_ON[0] && r < ARM_ON[1];
     this.arm.visible = on;
     if (!on) return;
-    const gr = this.gripAt(t);
-    const grip = this.at(gr.x, gr.y, gr.depth);
-    const sh = spline(SHOULDER_KEYS, r, []);
-    const S = new THREE.Vector3(side * sh[0], sh[1], -sh[2]);
-    // the hand: fingers along the arm (shoulder to ball), the back of the hand toward his eyes; after
-    // the ball is gone the wrist snaps down and the hand turns over
-    const hy = grip.clone().sub(S).normalize();
-    const hz = new THREE.Vector3(0, 0, 1).addScaledVector(hy, -hy.z).normalize();
-    const hx = new THREE.Vector3().crossVectors(hy, hz);
-    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(hx, hy, hz));
-    if (r > 0) {
-      const k = smooth(clamp01(r / 0.09));
-      q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -1.1 * k));
-      q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -side * 0.9 * k));
-    }
-    this.hand.quaternion.copy(q);
-    const ballLocal = new THREE.Vector3(0, 0.105, -0.03);
-    this.hand.position.copy(grip).sub(ballLocal.clone().applyQuaternion(q));
+    const f = this.f = this.frame(r, this.f || undefined);
+    this.hand.quaternion.copy(f.q);
+    this.hand.position.copy(PALM).applyQuaternion(f.q).add(f.W);
     // the ball is in his hand until it leaves it (then it is the scene's: pitch.js and the lens)
     this.ball.visible = r < 0;
-    const W = new THREE.Vector3(0, -0.055, 0).applyQuaternion(q).add(this.hand.position);
-    const E = reachTo(S, W, UPPER, FORE, new THREE.Vector3(side * 0.7, -1, 0.35));
-    this.upper.userData.set(S, E);
-    this.cuff.userData.set(S, S.clone().lerp(E, 0.35));
-    this.fore.userData.set(E, W);
-    this.elbow.position.copy(E);
-    this.wrist.position.copy(W);
+    this.upper.userData.set(f.S, f.E);
+    this.cuff.userData.set(f.S, f.S.clone().lerp(f.E, 0.35));
+    this.fore.userData.set(f.E, f.W);
+    this.elbow.position.copy(f.E);
+    this.wrist.position.copy(f.W);
   }
 
   /** Draw him over the scene just drawn, on the same canvas (its depth cleared: his body is always in
@@ -427,11 +493,12 @@ export class FirstPerson {
   /** THE LENS for one pitch (see the header): { join, place(tt, ball, camera) } for pitch.js, or
       null. eye: the stage's pitcherEye (his head at release); camera: the scene's. */
   lensFor(pitch, eye, camera) {
-    if (!this.ok || !this.w || !this.H) return null;
+    if (!this.ok || !this.w || !this.H || !this.fit) return null;
     // the slot of this pitch: its own arm angle, else his, else its release point's (pitch.js
     // armAngleFor, releaseFor); the arm shows around release only, so a new slot never pops
     const slot = THREE.MathUtils.degToRad(armSlot({ armAngle: pitch.armAngle }, pitch.rel || null));
     if (Number.isFinite(slot) && slot !== this.slot) { this.slot = slot; this.place(); }
+    if (!this.fit) return null;
     const W = this.w, Hh = this.h;
     const cam = camera.clone();
     eye.update(pitch.tRel, cam);
