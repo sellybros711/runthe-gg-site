@@ -73,12 +73,12 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=7';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=4';
-import { People } from './people.js?v=36';
+import { People } from './people.js?v=38';
 import { Pitch, releaseOf } from './pitch.js?v=9';
 import { fromResult, motion } from './play.js?v=9';
 import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=13';
+import { InPlay } from './inplay.js?v=15';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=6';
 import { FirstPerson } from './firstperson.js?v=1';
 
