@@ -45,6 +45,7 @@ python3 closer_pool.py          data/closers.json
 python3 third_outs.py           third_outs.json: the plays that end a half, from Savant's play text
 python3 build_packs.py          the ten packs, staged in cache/stage
 for f in cache/stage/*.json; do node ../pool.js "$f" ../data/closers.json "../data/packs/$(basename "$f")"; done
+python3 tracking.py arsenal && python3 tracking.py packs     release and spin (then pool.js on each committed pack)
 node build_schedule.mjs         data/schedule.json
 python3 report.py               pipeline/report.md
 ```
@@ -314,6 +315,35 @@ A perfect timer's edge over an ordinary one went from 6 to 11 percentile points 
 under a point (19/27/33/21 to 20/27/33/19); `BANDS` is unchanged (`band_sweep.mjs --relative`: heart
 fastballs mostly orange and red in 10 of 10 packs, lowest 63%). `pack.hold`, `pack.seq` and the pros
 are unchanged (`pool.js` measures `seq` under rules 3, so a rules 3 outing replays exactly).
+
+## Release and spin, for the picture (2026-10-24)
+
+`pipeline/tracking.py arsenal` reads each scenario pitcher's own pitches from the Savant search his
+arsenal came from (the same URL as `effort.py arsenal`) and writes `data/tracking_arsenal.json`;
+`tracking.py packs` puts it into the committed packs, then `pool.js` rebuilds them. Per arsenal
+pitch: `release {x, z, ext}` (release_pos_x, release_pos_z, release_extension, feet, catcher's view),
+`armAngle` (arm_angle), `spin {rate, axis, active}` (release_spin_rate; spin_axis as a circular mean;
+active spin from Savant's active spin leaderboard for that season). On the pitcher: `release` and
+`armAngle` over all his arsenal pitches, and `tracking` (the system, season, games and count).
+`3d/pitch.js releaseOf` reads `pitcher.release`. CONTRACT.md 4 has the shape.
+
+What Savant has, and so what is null: PITCHf/x seasons (Feliz 2011) carry release x and z only;
+spin axis and rate from 2015 (Chapman 2016 and on); arm angle from 2020 (Pressly 2022 and on, not
+Hader 2019 or Chapman 2016); active spin from 2016, observed before 2020 and spin-based after, and
+for the regular season only, so Buehler 2024 and Yamamoto 2025 (postseason arsenals) carry their
+regular season's. A proxy spot (Eckersley 1988, Rivera 2001) is null throughout: Rivera's 2008
+arsenal stands in for his stuff, not his 2001 hand. Savant's leaderboards file a knuckle curve under
+curve, so a KC takes that column only when he throws no CU.
+
+Nothing the engine reads moves: every pack rebuilt with `pool.js` is byte for byte the pack on main
+once the new fields are taken out (hold, pool, `seq`, pros and build report), `band_sweep --relative`
+and `strategies.cjs` print the same output, and `test/packs.mjs` holds every tracked pitcher's
+fields in range (his hand's side, spin 1,000 to 3,500 rpm, axis 0 to 360).
+
+**Hader 2019's sinker.** Savant types it SI: 960 of his 1,189 regular season pitches in the search,
+the same in 2018, the 2019 pitch arsenal leaderboard (a sinker speed, no four-seam), and the sinker
+column of the active spin leaderboard in 2019 and every season 2020 to 2025. So it stays SI. Its 16.9
+in of ride and 96.8% active spin at a 150 degree axis are real: a low slot lefty's backspin sinker.
 
 ## The tiers (that batter, similar batters, league)
 

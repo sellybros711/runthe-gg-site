@@ -10,18 +10,28 @@
  */
 let mod = null;
 
+/* Asked once, then remembered, and the probe's context let go at once: every call used to open a new
+   WebGL context and keep it, and a browser holds only so many (Chromium about 16) before it takes the
+   oldest away, which can be the mound's own. A page that asked again and again (a poll, or the
+   browser check's wait for the warm, every frame) lost the mound's context mid compile. */
+let ok = null;
 function supported() {
+  if (ok != null) return ok;
   try {
     const c = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
-  } catch (e) { return false; }
+    const gl = c.getContext('webgl2') || c.getContext('webgl');
+    ok = !!(window.WebGLRenderingContext && gl);
+    const lose = gl && gl.getExtension('WEBGL_lose_context');
+    if (lose) lose.loseContext();
+  } catch (e) { ok = false; }
+  return ok;
 }
 
 window.STD_STAGE = {
   supported,
   marks: {},
   current: null,
-  load() { return (mod ||= import('./stage.js?v=43')); },
+  load() { return (mod ||= import('./stage.js?v=46')); },
   create(canvas) {
     return this.load().then((m) => {
       if (!this.current || this.current.canvas !== canvas) this.current = m.create(canvas);
