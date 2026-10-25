@@ -27,8 +27,9 @@
  * FIRST PERSON. You are the pitcher (firstperson.js): his glove low in his glove side corner at the
  * set, his head through the delivery after the throw (park.js pitcherEye), his arm and the ball
  * through the frame at release, the follow-through, and back to the set by the end of the pitch.
- * Nothing moves while aiming but his breathing. The broadcast after contact is not his view: it
- * hides. toScreen and gridRect always answer for the set (the aim grid is drawn there).
+ * He is drawn in a second pass on this canvas (no second WebGL context). As each set comes up he
+ * takes one breath, then nothing moves, or draws, while aiming. The broadcast after contact is not
+ * his view: it hides. toScreen and gridRect always answer for the set (the aim grid is drawn there).
  *
  * THE PLAY'S TIMELINE (what the game, ui.js, can wait on). Every hook is optional and fires at most
  * once a pitch, in this order (but for a foul, whose land comes after its call):
@@ -80,7 +81,7 @@ import { look } from './looks.js?v=2';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=15';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=6';
-import { FirstPerson } from './firstperson.js?v=1';
+import { FirstPerson } from './firstperson.js?v=2';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -138,12 +139,13 @@ class Stage {
     this.gltfs = a.gltfs;
     lightFrom(this.scene, this.renderer, a.env);
     // his own glove and arm, on their own canvas over this one (never fatal: the scene draws without)
-    try { this.fp = new FirstPerson(this.canvas, a.env); } catch (e) { console.warn('first person off', e); this.fp = null; }
+    try { this.fp = new FirstPerson(this.renderer, this.scene); } catch (e) { console.warn('first person off', e); this.fp = null; }
     mk('lit');
     if (this.scn) this.applyScenario();
     mk('people');
     if (this.inplay) this.inplay.warm(true);
     await this.renderer.compileAsync(this.scene, this.camera);
+    if (this.fp) await this.renderer.compileAsync(this.fp.scene, this.fp.camera);
     // and the broadcast's textures up now, not on its first frame in a game
     if (this.inplay) this.inplay.prime();
     if (this.inplay) this.inplay.warm(false);
@@ -156,6 +158,7 @@ class Stage {
     mk('framed');
     this.draw();
     this.applyGhost();
+    this.breathe();
     return this;
   }
 
@@ -190,7 +193,7 @@ class Stage {
     // the same hitter again (the home screen dressed him already): only the frame, from the set (a
     // play may have run since: framed where it ended, a hitter knocked down was framed lying there)
     if (b.id === this.batterId && this.facts && this.facts.batter && this.facts.batter.id === b.id) {
-      if (this.dirty && this.loaded) { this.dirty = false; this.preview(); }
+      if (this.dirty && this.loaded) { this.dirty = false; this.preview(); this.breathe(); }
       this.layout();
       return;
     }
@@ -200,6 +203,7 @@ class Stage {
     this.eye.setSide(b.bats);
     if (this.facts) this.applyBatter();
     this.layout();
+    if (this.loaded) this.breathe();
   }
 
   applyBatter() {
@@ -297,21 +301,23 @@ class Stage {
     if (this.fp) this.fp.render(this.camera);
   }
 
-  /** His breathing at the set: the glove's canvas alone, at most 30 frames a second, while the set is
-      on screen and no pitch is in the air (the scene itself is not drawn again for it). Stops when
-      the canvas is hidden or the page is in the background; soon() and layout() start it again. */
+  /** His breath as a set comes up (a new hitter, or the set after a pitch): one breath and a pump of
+      the glove (firstperson.js IDLE_S), drawn at most 30 frames a second, then nothing: an idle aim
+      draws nothing, as before. Never while a pitch plays, nor on a hidden canvas or page. */
   breathe() {
-    if (!this.fp || !this.fp.ok || this.breathId || reducedMotion()) return;
+    if (!this.fp || !this.fp.ok || reducedMotion()) return;
+    this.fp.idleStart = this.fp.clock;
+    if (this.breathId) return;
     let last = 0;
     const step = (ms) => {
       this.breathId = 0;
-      if (this.playing || !this.loaded || !this.canvas.clientWidth || document.hidden || reducedMotion()) return;
-      const dt = last ? Math.min(0.1, (ms - last) / 1000) : 0;
+      if (this.playing || !this.loaded || !this.canvas.clientWidth || document.hidden) return;
       if (!last || ms - last >= 32) {
-        if (!this.fp.hold) this.fp.clock += dt;
+        if (!this.fp.hold) this.fp.clock += last ? Math.min(0.1, (ms - last) / 1000) : 0;
         last = ms;
         this.fp.pose(this.t);
-        this.fp.render(this.camera);
+        this.render();
+        if (!this.fp.breathing()) return;
       }
       this.breathId = requestAnimationFrame(step);
     };
@@ -355,7 +361,6 @@ class Stage {
   /** A frame on the next animation frame, once, however many changes asked for one (a tap on take
       the mound sizes, frames and sets the hitter: one frame, not one each). */
   soon() {
-    this.breathe();
     if (this.soonId) return;
     this.soonId = requestAnimationFrame(() => {
       this.soonId = 0;
@@ -387,7 +392,7 @@ class Stage {
   /** frame (ignored: the 3D scene keeps its own state). After a pitch, back to the set. */
   draw() {
     if (!this.loaded) return;
-    if (this.dirty && this.facts && this.facts.batter) { this.dirty = false; this.preview(); } else this.soon();
+    if (this.dirty && this.facts && this.facts.batter) { this.dirty = false; this.preview(); this.breathe(); } else this.soon();
   }
 
   /** A plate point (catcher's view x in feet, zn normalised to this hitter) on the canvas, in CSS px. */

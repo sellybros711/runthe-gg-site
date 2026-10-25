@@ -1,11 +1,11 @@
 /* The pitcher in first person: you are him. His glove low in the glove side corner at the set (with
- * his breathing and a small pump of the glove), and on the throw his throwing arm and the ball
+ * one breath and a small pump of the glove as each set comes up), and on the throw his throwing arm and the ball
  * through the frame, then the follow-through. His head's own motion is the camera's (park.js
  * pitcherEye); this is the body you see.
  *
- *   const fp = new FirstPerson(canvas, env)   a transparent canvas laid over the scene's, its own
- *                                            small renderer: the idle glove draws here alone, at 30
- *                                            frames a second, and the park is never drawn again for it
+ *   const fp = new FirstPerson(renderer, scene)   the scene's own renderer and park light: he is drawn
+ *                                            in a second pass on the same canvas, after the scene,
+ *                                            with its depth cleared (no second WebGL context)
  *   fp.setPitcher(facts, kit)               his hand, his arm slot, his skin tone, his club's sleeve
  *   fp.layout(w, h, safe, zone, panels)     the canvas in CSS px, the HUD's safe rect, the zone's grid
  *                                            box on screen, the HUD's panels on the canvas (without a
@@ -24,7 +24,7 @@
  * THE LENS. The scene's lens is long (the hitter large on a phone, a few degrees wide), so the real
  * release point, a couple of feet in front of his eyes and out to his arm side, is far off the
  * screen, and a ball drawn there would fill it. The arm is drawn with a natural lens (30 degrees each
- * way across the short side) and the ball leaves his hand where his hand is on that screen. From
+ * way across the short side) in his own pass, and the ball leaves his hand where his hand is on that screen. From
  * there it is drawn onto its own path: its distance from where it will cross the plate shrinks like a
  * ball going away from you, its direction turns onto the path's, its size eases onto its own, and at
  * lens.join (a fifth of a second or so, well before the plate) it is exactly on its path, with the
@@ -42,6 +42,7 @@ import { T_RELEASE } from './pitch.js?v=9';
 const HALF = THREE.MathUtils.degToRad(30), TAN = Math.tan(HALF);   // the arm's lens, each way across the short side
 const GLOVE_M = 0.30;            // the glove, heel to fingertips, metres
 const BALL_M = 2.9 * 0.0254;     // a baseball's diameter, metres
+export const IDLE_S = 4.2;       // his breath at the set, seconds
 const UPPER = 0.30, FORE = 0.27; // his arm, metres
 const SKIN_LIGHT = new THREE.Color('#d8a184'), SKIN_DARK = new THREE.Color('#5a3a2a');
 
@@ -191,36 +192,21 @@ function reachTo(a, target, l1, l2, pole) {
 }
 
 export class FirstPerson {
-  constructor(canvas, env) {
-    this.main = canvas;
+  constructor(renderer, world) {
+    this.renderer = renderer;
     this.ok = false;
     this.clock = 0;
+    this.idleStart = -Infinity;
     this.t = 0;
     this.settle = Infinity;
     this.hidden = false;
     this.side = 1;
-    const ov = this.canvas = document.createElement('canvas');
-    ov.className = 'fp';
-    ov.setAttribute('aria-hidden', 'true');
-    Object.assign(ov.style, { position: 'absolute', left: '0px', top: '0px', width: '100%', height: '100%', pointerEvents: 'none', background: 'transparent' });
-    canvas.parentNode.insertBefore(ov, canvas.nextSibling);
-    try {
-      this.renderer = new THREE.WebGLRenderer({ canvas: ov, alpha: true, antialias: true, premultipliedAlpha: true });
-    } catch (e) { ov.remove(); return; }
-    const r = this.renderer;
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    r.outputColorSpace = THREE.SRGBColorSpace;
-    r.toneMapping = THREE.AgXToneMapping;
-    r.toneMappingExposure = 1.0;
-    r.setClearColor(0x000000, 0);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.02, 10);
-    if (env) {
-      const pm = new THREE.PMREMGenerator(r);
-      this.scene.environment = pm.fromEquirectangular(env).texture;
-      this.scene.environmentIntensity = 0.8;
-      pm.dispose();
-    }
+    // the park's own light (its HDRI, already on the GPU), a little stronger on his near body
+    this.scene.environment = world.environment;
+    this.scene.environmentRotation.copy(world.environmentRotation);
+    this.scene.environmentIntensity = 0.8;
     this.sun = new THREE.DirectionalLight(0xffdcb8, 3.0);
     this.scene.add(this.sun, new THREE.HemisphereLight(0xbcd2ff, 0x5a4a35, 0.35));
     // a soft fill from his own side (his body lit by the sky behind him, not left a silhouette)
@@ -284,7 +270,6 @@ export class FirstPerson {
   layout(w, h, safe, zone, panels) {
     if (!this.ok || !w || !h) return;
     this.w = w; this.h = h; this.safe = safe || null; this.zone = zone || null; this.panels = panels || null;
-    this.renderer.setSize(w, h, false);
     this.unit = Math.min(w, h) / 2;
     this.camera.aspect = w / h;
     this.camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan((h / 2) / this.unit * TAN));
@@ -360,12 +345,13 @@ export class FirstPerson {
       const s0 = Math.max(1.6, this.settle - 0.8), s1 = Math.max(s0 + 0.3, this.settle - 0.1);
       if (t > s0) { const k = smooth(Math.min(1, (t - s0) / (s1 - s0))); for (let j = 0; j < 4; j++) g[j] *= 1 - k; }
     }
-    // his breathing and a small pump of the glove every few seconds, at the set only
-    const still = 1 - smooth(clamp01(t / 0.15));
-    if (!red && still > 0) {
-      const c = this.clock;
-      const pump = Math.sin(Math.PI * clamp01(((c % 5.3) - 4.4) / 0.6)) ** 2;
-      g[1] += still * (0.012 * Math.sin(c * 2 * Math.PI / 3.9) + 0.03 * pump);
+    // as each set comes up: one breath and a small pump of the glove, then still (an idle aim draws
+    // nothing: the scene is not drawn again while the player thinks)
+    const still = 1 - smooth(clamp01(t / 0.15)), c = this.clock - this.idleStart;
+    if (!red && still > 0 && c >= 0 && c < IDLE_S) {
+      const breath = 0.5 * (1 - Math.cos(2 * Math.PI * c / IDLE_S));
+      const pump = Math.sin(Math.PI * clamp01((c - 0.55 * IDLE_S) / 0.6)) ** 2;
+      g[1] += still * (0.022 * breath + 0.03 * pump);
       g[3] += still * 6 * pump;
     }
     g[1] = Math.min(g[1], this.gloveRoom);
@@ -420,15 +406,23 @@ export class FirstPerson {
     this.wrist.position.copy(W);
   }
 
-  /** Draw (the scene's camera gives the sun's direction in his view). */
+  /** Draw him over the scene just drawn, on the same canvas (its depth cleared: his body is always in
+      front). The scene's camera gives the sun's direction in his view. Nothing on screen, no draw. */
   render(camera) {
-    if (!this.ok || !this.w) return;
+    if (!this.ok || !this.w || !(this.glove.visible || this.arm.visible)) return;
     if (camera && SUN.dir) {
       const inv = camera.quaternion.clone().invert();
       this.sun.position.copy(SUN.dir).applyQuaternion(inv).multiplyScalar(5);
     }
-    this.renderer.render(this.scene, this.camera);
+    const r = this.renderer, auto = r.autoClear;
+    r.autoClear = false;
+    r.clearDepth();
+    r.render(this.scene, this.camera);
+    r.autoClear = auto;
   }
+
+  /** Is his breath at the set still going (the stage draws until it ends)? */
+  breathing() { return this.clock - this.idleStart < IDLE_S; }
 
   /** THE LENS for one pitch (see the header): { join, place(tt, ball, camera) } for pitch.js, or
       null. eye: the stage's pitcherEye (his head at release); camera: the scene's. */
