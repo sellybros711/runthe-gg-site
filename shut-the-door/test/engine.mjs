@@ -610,5 +610,18 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('contract: the bright band starts where the meter\'s does', K.PERFECT.BEST_Q === require('../meter.js').BEST_Q);
 }
 
+/* rules 5: the routine play (contract.js ROUTINE) */
+{
+  const r = K.routineOf;
+  check('rules 5: a medium grounder at the shortstop is routine', r('ground', 85, -5, -19) === 'ground');
+  check('rules 5: a grounder in the hole, a hard one and a slow roller are not', r('ground', 85, -5, -29) === null && r('ground', 101, -5, -19) === null && r('ground', 40, -20, -19) === null);
+  check('rules 5: a lazy fly and every popup are routine, a liner and a deep drive are not',
+    r('fly', 88, 38, 10) === 'air' && r('popup', 99, 70, 0) === 'air' && r('line', 80, 15, 0) === null && r('fly', 99, 30, 10) === null && r('fly', 88, 22, 10) === null);
+  check('rules 5: an untracked ball is judged by its type and spray', r('ground', null, null, 18) === 'ground' && r('ground', null, null, 0) === null && r('fly', null, null, 30) === 'air');
+  check('rules 5: a routine error still happens, rarely', K.ROUTINE.KEEP.ground > 0 && K.ROUTINE.KEEP.ground < 0.1 && K.ROUTINE.KEEP.air > 0 && K.ROUTINE.KEEP.air < 0.5);
+  check('rules 5: a new outing plays rules 5, a rules 4 one replays as rules 4', G.RULES === G.ROUTINE_RULES && E.createOuting(pack, { seed: 1, model }).rules === 5
+    && E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 4 }], { model }).rules === 4);
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);

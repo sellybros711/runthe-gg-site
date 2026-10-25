@@ -450,6 +450,34 @@ What the UI needs (a separate UI task):
   the scoreboard's mark. On an overturn `result` is the final call; `abs.called` keeps the umpire's.
 - `pitchResult.perfect`: true when the bright band put it on the aim point.
 
+## 5g. Rules 5: the routine play (2026-10-25)
+
+Rules 4 and everything before it, plus one GAME RULE. The owner: "I don't want them to be completely
+error-free, but it should be extremely rare on a routine play." A new outing's calls carry `r: 5`; a
+call with `r: 4` or before replays under its own rules, exactly, its routine errors included
+(`fixtures/replays-rules4-pre-routine.json`).
+
+**What is routine** (`contract.js ROUTINE`, `routineOf(bb, ev, la, spray)`), read from the real
+batted ball the cell's error draws:
+- a ground ball from 50 up to 95 mph within 6 degrees of a fielder's spot (spray -38 third, -19
+  short, 18 second, 42 first: where the 2024 grounders of 60-95 mph went for hits least often);
+- a fly ball at 30 degrees or more from 80 up to 95 mph (2024: hits on 1-6% of them);
+- every popup;
+- a ball with no tracked speed (the 2010-2012 library) by its type and spray alone: a grounder at a
+  fielder, a fly ball and a popup.
+
+Not routine, and at their real rates: hard-hit balls (95 mph and up), the slow roller and its
+bang-bang throw (under 50 mph), a grounder in the hole or up the middle, line drives, and flies that
+are not lazy (the diving and running plays).
+
+**What changes.** Each cell's error key is one real play. When that ball is routine, an error keeps
+`ROUTINE.KEEP` of its share (a grounder 0.04, a fly or popup 0.2) and the rest is the cell's real out
+of the same kind (`out_ground`, `out_fly`, `out_popup`), with that out's real pitch and advancement
+rows (so `check-rules.mjs` holds it). The engine draws the key from the row as it was; on an error it
+reads where the library draw fell inside the error's slice, and past KEEP it is the out. No new draw,
+and no other key's draw moves. The grade moves the same share one pitch ahead (`grade.js keyMixCtx`);
+the hold table after it is unchanged, like the call by location.
+
 ## 6. Pitch result
 
 ```js

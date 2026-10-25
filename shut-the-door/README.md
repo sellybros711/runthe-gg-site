@@ -289,7 +289,8 @@ the same way one pitch ahead (`grade.js callMass`), so the draw and the grade st
 on every pack (2,000 outings): the batter 0.11 challenges an outing, 4.0% of called strikes, won 53%;
 the model catcher (the pool and the strategy runs) 0.14, 2.5% of called balls, won 39%.
 
-**Errors** (the owner: "they shouldn't make errors on simple plays"). No change: the engine matches
+**Errors** (the owner: "they shouldn't make errors on simple plays"). No change under rules 4 (rules 5
+changed it: see below): the engine matches
 the majors. Reached on error, 2024: 1 per 112 balls in play, 1 per 53 soft grounders (under 80 mph),
 1 per 351 lazy flies and popups. The engine on every pack under rules 4: 1 per 106, 1 per 56, 1 per
 374. A routine grounder is where real errors happen. The error rows are the real plays (`error` key,
@@ -315,6 +316,36 @@ A perfect timer's edge over an ordinary one went from 6 to 11 percentile points 
 under a point (19/27/33/21 to 20/27/33/19); `BANDS` is unchanged (`band_sweep.mjs --relative`: heart
 fastballs mostly orange and red in 10 of 10 packs, lowest 63%). `pack.hold`, `pack.seq` and the pros
 are unchanged (`pool.js` measures `seq` under rules 3, so a rules 3 outing replays exactly).
+
+## Rules 5: the routine play (2026-10-25)
+
+The owner: "I don't want them to be completely error-free, but it should be extremely rare on a
+routine play." A GAME RULE (CONTRACT.md 5g, `contract.js ROUTINE`). A routine play is a grounder of
+50-95 mph within 6 degrees of a fielder's spot, a fly ball at 30 degrees or more of 80-95 mph, or any
+popup. A ball with no tracked speed (the 2010-2012 library) goes by its type and spray. A routine
+error keeps 4% of its share on a grounder and 20% on a fly or popup. The rest is the cell's real out
+of its kind. The library draw is read inside the error's slice, so no draw moves and no other key
+changes. A new outing's calls carry `r: 5`; `r: 4` rows replay exactly
+(`fixtures/replays-rules4-pre-routine.json`, three rows each with a routine error).
+
+**2024 Savant** (`pipeline/umpire.py`, regular season): a routine grounder an error 1 per 44, a
+routine fly or popup 1 per 364, the rest 1 per 129. At KEEP: 1 per 1,096 and 1 per 1,821.
+
+**The engine** (the closer pool's calls, 8,000 outings a pack, all ten packs, rules 4 then rules 5):
+
+| errors | rules 4 | rules 5 |
+|---|---|---|
+| all balls in play | 1 per 124 | 1 per 193 |
+| routine grounders | 1 per 54 | 1 per 1,484 |
+| routine flies and popups | 1 per 361 | 1 per 1,767 |
+| not routine | 1 per 134 | 1 per 134 |
+
+**Strategies** (`strategies.cjs`, 300 runs a pack, mean over packs, rules 4 then 5): smart ordinary
+hold 79.7 to 80.0, median percentile 61 to 61; smart perfect 82.5 to 82.7, 69 to 69; visible ordinary
+66.3 to 66.8, 30 to 29; visible perfect 70.5 to 70.9, 37 to 37; best perfect 95.6 to 95.8, 100; the
+pool 77.9 to 78.0, 51 to 51. `BANDS` unchanged; the pool's bands 19.8/26.9/33.6/19.7 to
+19.9/26.8/33.6/19.6 (band_sweep: 20/27/33/19 both). Packs rebuilt with `pool.js`: `hold`, `seq` and
+`pros` byte-identical, pack v10, `SCHEDULE_V` 10.
 
 ## Release and spin, for the picture (2026-10-24)
 

@@ -15,13 +15,17 @@ caches (cache/chunks/savant-seq2024-*.csv.gz, Baseball Savant) and prints:
      called pitches.
   3. Errors: reached on error per ball in play, overall and on routine chances
      (a ground ball under 80 mph, a fly or popup under 90 mph at 30 degrees or
-     more), for the engine check in the README.
+     more), for the engine check in the README. Rules 5 (2026-10-25): the same
+     by contract.js ROUTINE (routine grounders, routine flies and popups, the
+     rest), the rates its KEEP is set against.
 
     python3 shut-the-door/pipeline/umpire.py [chunk dir]
 """
 import glob
+import json
 import itertools
 import os
+import subprocess
 import sys
 
 import numpy as np
@@ -30,7 +34,7 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 CHUNKS = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'cache', 'chunks')
 COLS = ['game_pk', 'game_type', 'description', 'events', 'type', 'bb_type', 'launch_speed', 'launch_angle',
-        'balls', 'strikes', 'plate_x', 'plate_z', 'sz_top', 'sz_bot']
+        'balls', 'strikes', 'plate_x', 'plate_z', 'sz_top', 'sz_bot', 'hc_x', 'hc_y']
 
 
 def signed_in(c):
@@ -95,6 +99,20 @@ def main():
                     ('soft grounders', soft), ('lazy flies and popups', lazy)]:
         n, k = int(m.sum()), int((e & m).sum())
         print(f'errors, {name}: {k} of {n}, 1 per {n / max(1, k):.0f}')
+    # rules 5: contract.js ROUTINE, read from the contract so the two never differ
+    js = 'process.stdout.write(JSON.stringify(require(process.argv[1]).ROUTINE))'
+    rt = json.loads(subprocess.run(['node', '-e', js, os.path.join(HERE, '..', 'contract.js')],
+                                   capture_output=True, text=True, check=True).stdout)
+    spray = np.degrees(np.arctan2(bip.hc_x - 125.42, 198.27 - bip.hc_y))
+    at = np.min([np.abs(spray - f) for f in rt['FIELDERS']], axis=0) <= rt['FIELDER_DEG']
+    ev, la = bip.launch_speed, bip.launch_angle
+    rg = (bip.bb_type == 'ground_ball') & at & (ev >= rt['GROUND_EV'][0]) & (ev < rt['GROUND_EV'][1])
+    ra = (bip.bb_type == 'popup') | ((bip.bb_type == 'fly_ball') & (la >= rt['FLY_LA'])
+                                     & (ev >= rt['FLY_EV'][0]) & (ev < rt['FLY_EV'][1]))
+    for name, m, keep in [('routine grounders', rg, rt['KEEP']['ground']), ('routine flies and popups', ra, rt['KEEP']['air']),
+                          ('not routine', ~(rg | ra), 1)]:
+        n, k = int(m.sum()), int((e & m).sum())
+        print(f'errors, {name}: {k} of {n}, 1 per {n / max(1, k):.0f}; at KEEP {keep}: 1 per {n / max(1e-9, k * keep):.0f}')
 
 
 if __name__ == '__main__':

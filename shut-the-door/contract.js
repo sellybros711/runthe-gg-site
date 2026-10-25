@@ -229,6 +229,49 @@ function challengeP(side, wrongBy, late) {
   return Math.min(M.MAX, p * (late ? M.TWO_STRIKES : 1));
 }
 
+/* THE ROUTINE PLAY (rules 5, the owner's call 2026-10-25: "I don't want them
+   to be completely error-free, but it should be extremely rare on a routine
+   play"; CONTRACT.md 5g). A labelled game rule, read from the drawn real
+   batted ball: its type (bb), exit speed (ev, mph), launch angle (la) and
+   spray (degrees, 0 centre field, negative the left field side).
+   - A routine grounder: a ground ball from GROUND_EV[0] up to (not including)
+     GROUND_EV[1] mph, within FIELDER_DEG of a fielder's spot (FIELDERS: third,
+     short, second, first, where the 2024 grounders between 60 and 95 mph went
+     for hits least often). Under 50 mph is the slow roller and its bang-bang
+     throw, 95 and up is hard hit (Statcast), between the spots is the hole.
+   - A routine fly: a fly ball at LA FLY_LA or higher from FLY_EV[0] up to
+     FLY_EV[1] mph (2024: hits on 1-6% of them). Every popup is routine.
+   - A ball with no tracked speed (the 2010-2012 library) is judged as the
+     scene draws it, by its type and spray: a grounder at a fielder, a fly ball
+     and a popup are routine.
+   Line drives, diving plays, hard-hit balls and balls in the hole are never
+   routine and keep their real rates. KEEP: the share of a routine error that
+   still happens (2024 Savant, regular season: a routine grounder was an error
+   1 per 44, a routine fly or popup 1 per 364; KEEP makes each about 1 per
+   1,000 or rarer). The rest are the cell's real out of the same kind
+   (grade.js routineRow). */
+const ROUTINE = Object.freeze({
+  GROUND_EV: Object.freeze([50, 95]),
+  FIELDERS: Object.freeze([-38, -19, 18, 42]),
+  FIELDER_DEG: 6,
+  FLY_LA: 30,
+  FLY_EV: Object.freeze([80, 95]),
+  KEEP: Object.freeze({ ground: 0.04, air: 0.2 }),
+});
+/* 'ground', 'air' or null: whether a batted ball is a routine play, and what kind. */
+function routineOf(bb, ev, la, spray) {
+  if (bb === 'popup') return 'air';
+  if (bb === 'ground') {
+    if (spray == null || !ROUTINE.FIELDERS.some(f => Math.abs(spray - f) <= ROUTINE.FIELDER_DEG)) return null;
+    return ev == null || (ev >= ROUTINE.GROUND_EV[0] && ev < ROUTINE.GROUND_EV[1]) ? 'ground' : null;
+  }
+  if (bb === 'fly') {
+    if (ev == null && la == null) return 'air';
+    return ev != null && la != null && la >= ROUTINE.FLY_LA && ev >= ROUTINE.FLY_EV[0] && ev < ROUTINE.FLY_EV[1] ? 'air' : null;
+  }
+  return null;
+}
+
 /* Effort (the owner's call, 2026-10-22; CONTRACT.md 5c). A call may carry e,
    the meter's first stop, 0..1, kept to two places. 0 is his softest, 1 his
    hardest, MID (0.5) his ordinary pitch: a call with e 0.5 plays exactly like
@@ -301,7 +344,7 @@ const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
-  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, EFFORT, effortE, stuffAt, BASE, countBucket,
+  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

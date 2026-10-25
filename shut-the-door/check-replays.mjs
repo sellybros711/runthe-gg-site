@@ -62,6 +62,12 @@
  * engine before rules 4, in fixtures/replays-rules3-pre-abs.json). The pool
  * was replayed under rules 4, so a rules 3 row's percentile is not compared.
  *
+ * RULES 5 (2026-10-25). An error on a routine play is extremely rare
+ * (contract.js ROUTINE, engine.js 8). A new outing's calls carry r 5. A row
+ * with r 4 replays under rules 4 exactly, its routine errors and all (the
+ * self-test holds three, made by main's engine before rules 5, each with an
+ * error on a routine ball, in fixtures/replays-rules4-pre-routine.json).
+ *
  * Export the rows from the Supabase SQL editor, for example:
  *   select json_agg(o) from shutdoor_outings o where day >= current_date - 7;
  * and save the array as rows.json. Exit code 1 when a row is flagged.
@@ -296,8 +302,26 @@ function selfTest() {
     }
     say(!!pair, `${id}: an outing whose challenges changed what happened exists`);
     if (pair) {
-      say(replayRow(pair.row).ok && pair.row.calls.every(c => c.r === 4), `${id}: a rules 4 row with challenges replays exactly (${pair.row.pitches} pitches, ${pair.row.calls.filter(c => c.ch).length} challenged)`);
+      say(replayRow(pair.row).ok && pair.row.calls.every(c => c.r === G.RULES), `${id}: a rules ${G.RULES} row with challenges replays exactly (${pair.row.pitches} pitches, ${pair.row.calls.filter(c => c.ch).length} challenged)`);
       say(!replayRow(pair.stripped).ok, `${id}: the same row with its challenges taken out is flagged`);
+    }
+  }
+  /* rules 5: rules 4 rows made before it (main's engine at 35239d4, with q, e, at and challenges),
+     each with an error on a routine ball, replay exactly, pitch by pitch, the error included */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules4-pre-routine.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const ip = o.log.map(x => x.inPlay ? x.inPlay.result : null);
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.velo)) === JSON.stringify(row.velo)
+        && JSON.stringify(o.log.map(x => x.arm)) === JSON.stringify(row.arm)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(ip) === JSON.stringify(row.inPlay);
+      const routineErr = o.log.some(x => x.inPlay && x.inPlay.result === 'error' && K.routineOf(x.inPlay.bb, x.inPlay.ev, x.inPlay.la, x.inPlay.spray));
+      say(a.ok && same && routineErr && o.rules === G.ABS_RULES, `${row.scenario_id}: a rules 4 row from before the routine play replays exactly, its routine error included (${row.pitches} pitches)` + (a.ok ? '' : ': ' + a.why));
     }
   }
   process.exit(fails ? 1 : 0);

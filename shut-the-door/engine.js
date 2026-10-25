@@ -75,8 +75,12 @@ const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
    (contract.js THE CALL), ABS challenges (contract.js ABS: the batter's from
    a stream of its own, the pitcher's side's with ch on the call it
    challenges), and a release in the bright band lands where it was aimed
-   (contract.js PERFECT). A call with r 3 or before replays exactly as under 6. */
-const ENGINE_VERSION = 7;
+   (contract.js PERFECT). A call with r 3 or before replays exactly as under 6.
+   8: rules 5 (grade.js ROUTINE_RULES): an error on a routine play is
+   extremely rare (contract.js ROUTINE). The same four draws read a row whose
+   routine error share went to the out of its kind. A call with r 4 or before
+   replays exactly as under 7. */
+const ENGINE_VERSION = 8;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread.
    3: the hold table is solved with runs on a legal third out (rules 3), and
@@ -147,7 +151,7 @@ function createOuting(pack, opts) {
   const seed = opts.seed >>> 0;
   const st = model.startState();
   const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (![1, 2, 3, G.RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
+  if (![1, 2, 3, G.ABS_RULES, G.RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
   const o = {
     pack, model, seed, rules, mode: opts.mode || 'practice',
     outingId: opts.outingId || `${sc.id}:${seed}`,
@@ -245,6 +249,12 @@ function throwPitch(o, call) {
   const u = d.library * (ctx ? row.reduce((a, x) => a + x, 0) : 1000);
   let k = -1, acc = 0;
   for (let i = 0; i < row.length; i++) { if (!row[i]) continue; acc += row[i]; k = i; if (u < acc) break; }
+  // rules 5 (THE ROUTINE PLAY, contract.js ROUTINE): an error on a routine ball. The same library
+  // draw, read inside the error's slice: past KEEP it is the out of its kind. No other key moves
+  if (o.rules >= G.ROUTINE_RULES && k === G.KEYS.indexOf('error')) {
+    const rt = model.routineOf(entry, actualCell);
+    if (rt && (u - (acc - row[k])) / row[k] >= rt.keep) k = rt.out;
+  }
   // rules 4 (THE CALL): the take stays a take, and the umpire calls it where it crossed. The same
   // library draw, read inside the take's share of the row: no new draw
   const abs = o.rules >= G.ABS_RULES;
