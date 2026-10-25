@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=25">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -121,8 +121,8 @@
     <div class="mh-tl">
       <div class="scorebar mh-bug" data-hud role="group" aria-label="Scoreboard">
         <div class="sb-teams">
-          <div class="sb-team"><i class="sb-club" id="m-usclub"></i><span class="tm" id="m-usname">us</span><b id="m-us">0</b></div>
-          <div class="sb-team"><i class="sb-club" id="m-themclub"></i><span class="tm" id="m-themname">them</span><b id="m-them">0</b></div>
+          <div class="sb-team"><i class="sb-club" id="m-usclub"></i><span class="tm" id="m-usname">us</span><span class="sb-ch" id="m-usch" role="img" hidden><i></i><i></i></span><b id="m-us">0</b></div>
+          <div class="sb-team"><i class="sb-club" id="m-themclub"></i><span class="tm" id="m-themname">them</span><span class="sb-ch" id="m-themch" role="img" hidden><i></i><i></i></span><b id="m-them">0</b></div>
         </div>
         <div class="sb-inn" id="m-inn"></div>
         <div class="sb-stat sb-outs-wrap">
@@ -154,7 +154,7 @@
           <button class="mh-tog key-tog" id="m-key-b" type="button" aria-expanded="false" aria-controls="m-key" aria-label="Pitch dot key">key</button>
         </div>
         <div class="pa-hist" id="m-pas" role="group" aria-label="Earlier at bats" hidden></div>
-        <div class="dotkey" id="m-key" hidden><span><i class="pd ball"></i>ball</span><span><i class="pd called"></i>called</span><span><i class="pd swing"></i>swinging</span><span><i class="pd foul"></i>foul</span><span><i class="pd inplay"></i>in play</span></div>
+        <div class="dotkey" id="m-key" hidden><span><i class="pd ball"></i>ball</span><span><i class="pd called"></i>called</span><span><i class="pd swing"></i>swinging</span><span><i class="pd foul"></i>foul</span><span><i class="pd inplay"></i>in play</span><span id="m-key-abs" hidden><i class="pd called abs"></i>overturned</span></div>
       </div>
       <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
     </div>
@@ -165,15 +165,19 @@
     <div class="guide msheet" id="m-guide" data-hud role="region" aria-label="Pitch guide" hidden></div>
     <!-- the dock: the play by play (a lower third over it, or beside it on a wide screen), the step prompt, the pitch buttons, then the throw button. The release meter
          (meter-ui.js) is one panel over the pitch buttons and the throw button after the tap on
-         throw. It shows its power bar only when STD_METER.POWER is true (the game agent's rule). -->
+         throw. It shows its power bar only when STD_METER.POWER is true (the game agent's rule).
+         Rules 4: the challenge button sits beside throw only while a called ball can be challenged,
+         and the ABS replay (#m-absr) covers the dock for a moment after any challenge. -->
     <div class="dock" id="m-dock">
       <p class="pbp" id="m-pbp" aria-live="polite"></p>
       <p class="pad-say" id="m-say" aria-live="polite"></p>
       <div class="arsenal" id="m-arsenal" data-hud role="group" aria-label="His pitches"></div>
       <div class="pad" id="m-pad" data-hud>
+        <button class="btn abs-b" id="m-abs-b" type="button" hidden><b>challenge</b><span class="ab-dots" aria-hidden="true"><i></i><i></i></span><i class="ab-clock" aria-hidden="true"></i></button>
         <button class="btn throw" id="m-throw" type="button" disabled><b>throw</b></button>
       </div>
       <div id="m-meter" data-hud hidden></div>
+      <div class="absr" id="m-absr" data-hud role="status" aria-live="polite" hidden></div>
     </div>
   </div>
 </section>
@@ -307,10 +311,10 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
 <script src="api.js?v=10"></script>
-<script src="mock-api.js?v=10"></script>
+<script src="mock-api.js?v=11"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=1"></script>
-<script src="ui.js?v=32"></script>
+<script src="ui.js?v=33"></script>
 <script type="module" src="3d/boot.js?v=43"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>

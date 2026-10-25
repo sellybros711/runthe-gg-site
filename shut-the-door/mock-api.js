@@ -118,7 +118,11 @@ if (window.STD_API && !FORCE) return;
    ?mockProxy=1 marks the spot proxy;
    ?mockNull=1 gives the reveal no pitch count, only its note;
    ?mockLesson=none and ?mockPro=none give the result no lesson, or a
-   lesson with no pro example (CONTRACT.md section 15). */
+   lesson with no pro example (CONTRACT.md section 15).
+   ?mockAbs= (rules 4, ABS challenges; a comma list) reaches the states a real
+   outing rarely does: miss has the umpire call every take within MISS_IN of
+   the edge the wrong way, so a challenge can win; batter has the batter
+   challenge every called strike while he has one left. */
 var QS = (function () { try { return new URLSearchParams(location.search); } catch (e) { return { get: function () { return null; } }; } })();
 var SCRIPTS = {
   door_shut: ['K'],
@@ -128,7 +132,9 @@ var SCRIPTS = {
 };
 var MOCK = { lessonNone: QS.get('mockLesson') === 'none', proNone: QS.get('mockPro') === 'none', script: SCRIPTS[QS.get('mockEnd')] || null, proxy: QS.get('mockProxy') === '1', nullPitches: QS.get('mockNull') === '1',
   /* a go-ahead run is door's open only with the walk-off off (the fixture's 9th has it on) */
-  noWalkOff: QS.get('mockEnd') === 'doors_open' };
+  noWalkOff: QS.get('mockEnd') === 'doors_open',
+  absMiss: /(^|,)miss(,|$)/.test(QS.get('mockAbs') || ''), absBatter: /(^|,)batter(,|$)/.test(QS.get('mockAbs') || '') };
+var MISS_IN = 4;
 
 /* ---- the seeded stream ---------------------------------------------------- */
 
@@ -168,6 +174,8 @@ function freshState(scn, mode, seed, id) {
     pitchNo: 0, count: { b: 0, s: 0 }, outs: s.outs, bases: s.bases,
     score: { us: s.score.us, them: s.score.them }, batterIndex: 0,
     strip: [], shutItLive: false, log: [], grades: [],
+    /* rules 4 (CONTRACT.md 5f): challenges left a side, whether one is live, the events */
+    abs: { left: { pitcher: C.ABS.PER_SIDE, batter: C.ABS.PER_SIDE }, challengeLive: false, events: [] },
     debug: { seed: seed, tiers: [] },
   };
 }
@@ -270,7 +278,7 @@ function forced(bases) {
   });
 }
 
-function resolve(scn, st, call, rng) {
+function resolve(scn, st, call, rng, absRng) {
   var bt = batterOf(scn, st.batterIndex), pr = bt.profile, ap = pitchOf(scn, call.type);
   var tgt = C.aimPoint ? C.aimPoint(call.cell, call.at) : C.targetOf(call.cell), zr = bt.szTop - bt.szBot;
   /* the fixed order: miss x, miss z, the library draw, the runner draw */
@@ -290,9 +298,13 @@ function resolve(scn, st, call, rng) {
   if (forcedR) swing = true;
   var res = { batter: swing ? 'swing' : 'take' };
   var inBatterSide = bt.bats === 'R' ? C.colOf(cell) === 0 : C.colOf(cell) === 4;
+  /* rules 4: a take is called where it crossed, by the umpire's chance there (contract.js UMPIRE).
+     The call reads the same library draw, so there is no new draw. */
+  var dIn = C.zoneDist(actual.x, actual.zn, zr);
   if (!swing) {
     if (inBatterSide && u2 < 0.06 && C.rowOf(cell) >= 1 && C.rowOf(cell) <= 3) res.result = 'hit_by_pitch';
-    else res.result = z ? 'called_strike' : 'ball';
+    else if (MOCK.absMiss && Math.abs(dIn) < MISS_IN) res.result = dIn >= 0 ? 'ball' : 'called_strike';
+    else res.result = ((lib * 211.7) % 1) < C.calledStrikeP(dIn) ? 'called_strike' : 'ball';
   } else if (u2 < whf) res.result = 'swinging_strike';
   else if (u3 < (z ? 0.42 : 0.55)) res.result = (s === 2 && u4 < 0.12) ? 'foul_tip' : 'foul';
   else res.result = 'in_play';
@@ -303,6 +315,21 @@ function resolve(scn, st, call, rng) {
     countBefore: { b: b, s: s }, runnerMoves: [], runs: 0, paOver: false,
     drawn: { id: 'mock:' + st.pitchNo + ':' + Math.floor(lib * 1e6), tier: u3 < 0.6 ? 'batter' : u3 < 0.9 ? 'similar' : 'league' } };
   var outs = st.outs, bases = st.bases, nb = b, ns = s;
+  if (res.result === 'ball' || res.result === 'called_strike') {
+    /* the ABS zone's answer, for the challenge and the quick replay (contract.js ABS) */
+    out.abs = { called: res.result, strike: dIn >= 0, d: Math.round(dIn * 100) / 100 };
+    /* the batter's challenge, right away, on a called strike: a draw from the outing's second
+       stream, taken only when he can challenge */
+    if (res.result === 'called_strike' && st.abs.left.batter > 0) {
+      var g = absRng();
+      if (MOCK.absBatter || g < C.challengeP('batter', -dIn, s === 2)) {
+        var over = dIn < 0;
+        out.challenge = { by: 'batter', call: 'called_strike', abs: over ? 'ball' : 'strike', overturned: over };
+        if (!over) st.abs.left.batter--;
+        if (over) out.result = res.result = 'ball';
+      }
+    }
+  }
 
   if (res.result === 'ball') {
     nb++;
@@ -370,10 +397,12 @@ function resolve(scn, st, call, rng) {
   return out;
 }
 
-function apply(scn, st, call, rng) {
+function apply(scn, st, call, rng, absRng) {
   var grade = gradeCall(scn, st, call);
   (st._pre = st._pre || []).push({ count: { b: st.count.b, s: st.count.s }, outs: st.outs, bases: st.bases, batterIndex: st.batterIndex, margin: st.score.us - st.score.them });
-  var pr = resolve(scn, st, call, rng);
+  /* for the pitcher's side's challenge on this pitch */
+  st._undo = { count: { b: st.count.b, s: st.count.s }, outs: st.outs, bases: st.bases, batterIndex: st.batterIndex, them: st.score.them };
+  var pr = resolve(scn, st, call, rng, absRng);
   st.pitchNo = pr.n;
   st.count = pr.count; st.outs = pr.outs; st.bases = pr.bases;
   st.score.them += pr.runs;
@@ -381,18 +410,57 @@ function apply(scn, st, call, rng) {
   st.strip.push(grade.band);
   st.log.push(pr); st.grades.push(grade);
   st.debug.tiers.push(pr.drawn.tier);
-  /* the end rules (CONTRACT.md section 8): a tie plays on */
+  endRules(scn, st);
+  return { pitchResult: pr, pitchGrade: grade };
+}
+/* the end rules (CONTRACT.md section 8): a tie plays on */
+function endRules(scn, st) {
+  st.status = 'live'; st.outcome = null;
   var sit = scn.situation;
   if (st.score.them > st.score.us) { st.status = 'over'; st.outcome = sit.walkOffLive ? 'walk_off' : 'doors_open'; }
   else if (st.outs >= 3) { st.status = 'over'; st.outcome = st.score.them === st.score.us ? 'tie_held' : 'door_shut'; }
   st.shutItLive = st.status === 'live' && st.count.s === 2 && st.outs === 2;
-  return { pitchResult: pr, pitchGrade: grade };
+}
+
+/* rules 4: the pitcher's side may challenge the last pitch right now: a ball the umpire called (not
+   one a batter's challenge made), not yet challenged, with a challenge left. Also on a ball four
+   that ended the outing, until finishOuting. As engine.js challengeLive. */
+function absLive(o) {
+  var st = o.st, p = st.log[st.log.length - 1];
+  return !o.result && !!p && !!p.abs && p.abs.called === 'ball' && !p.challenge && st.abs.left.pitcher > 0;
+}
+/* rules 4: the pitcher's side challenges the last called ball (engine.js challengePitch). The ABS
+   zone decides. Overturned, the pitch is a called strike: the count, the outs and the end as if it
+   had been called one. Upheld, a challenge is gone. The call carries ch: 1, so a resume replays it. */
+function challengePitch(o) {
+  if (!absLive(o)) throw new Error('no challenge to make');
+  var st = o.st, pr = st.log[st.log.length - 1], over = pr.abs.strike;
+  pr.challenge = { by: 'pitcher', call: 'ball', abs: over ? 'strike' : 'ball', overturned: over };
+  o.calls[o.calls.length - 1].ch = 1;
+  pr.call.ch = 1;
+  if (!over) { st.abs.left.pitcher--; return pr; }
+  var u = st._undo, b = u.count.b, s = u.count.s + 1, paOver = s === 3;
+  st.count = paOver ? { b: 0, s: 0 } : { b: b, s: s };
+  st.outs = Math.min(3, u.outs + (paOver ? 1 : 0));
+  st.bases = st.outs >= 3 ? 0 : u.bases;
+  st.batterIndex = u.batterIndex + (paOver ? 1 : 0);
+  st.score.them = u.them;
+  pr.result = 'called_strike';
+  pr.count = { b: st.count.b, s: st.count.s }; pr.outs = st.outs; pr.bases = st.bases;
+  pr.runnerMoves = []; pr.runs = 0; pr.paOver = paOver;
+  endRules(o.scn, st);
+  return pr;
 }
 
 /* ---- the four calls ------------------------------------------------------------- */
 
 var OUTINGS = {};
-function snapshot(o) { var s = clone(o.st); delete s.outcome; delete s._pre; return s; }
+function snapshot(o) {
+  var s = clone(o.st); delete s.outcome; delete s._pre; delete s._undo;
+  s.abs.challengeLive = absLive(o);
+  s.abs.events = s.log.filter(function (p) { return p.challenge; }).map(function (p) { return Object.assign({ n: p.n }, p.challenge); });
+  return s;
+}
 function saveDaily(o) {
   if (o.st.mode !== 'daily') return;
   try { localStorage.setItem(C.OUTING_KEY, JSON.stringify({ day: o.day, scenarioId: o.scn.id, calls: o.calls })); } catch (e) {}
@@ -416,12 +484,18 @@ function startOuting(scenarioId, seed, opts) {
     var day = C.easternDay();
     var sd = mode === 'daily' ? hashSeed(C.DAILY_SEED_PREFIX + day) : (seed >>> 0);
     var id = mode + ':' + day + ':' + sd;
-    var o = { scn: scn, day: day, calls: [], rng: mulberry32(sd), st: freshState(scn, mode, sd, id) };
+    var o = { scn: scn, day: day, calls: [], rng: mulberry32(sd), absRng: mulberry32(hashSeed('abs|' + sd)), st: freshState(scn, mode, sd, id) };
     if (mode === 'daily') {
       var saved = null;
       try { saved = JSON.parse(localStorage.getItem(C.OUTING_KEY) || 'null'); } catch (e) {}
       if (saved && saved.day === day && saved.scenarioId === scn.id && Array.isArray(saved.calls)) {
-        saved.calls.forEach(function (c) { if (o.st.status === 'live') { o.calls.push(c); apply(scn, o.st, c, o.rng); } });
+        saved.calls.forEach(function (c) {
+          if (o.st.status !== 'live') return;
+          var ch = c.ch === 1;
+          c = Object.assign({}, c); delete c.ch;
+          o.calls.push(c); apply(scn, o.st, c, o.rng, o.absRng);
+          if (ch && absLive(o)) challengePitch(o);   // a challenge made right after this pitch
+        });
       }
     }
     OUTINGS[id] = o;
@@ -441,9 +515,22 @@ function throwPitch(outingId, call) {
     if (call.e != null && C.effortE) c.e = C.effortE(call.e);
     if (call.at != null && C.aimAt) c.at = C.aimAt(call.at);
     o.calls.push(c);
-    var r = apply(o.scn, o.st, c, o.rng);
+    var r = apply(o.scn, o.st, c, o.rng, o.absRng);
     saveDaily(o);
     return { pitchResult: clone(r.pitchResult), pitchGrade: clone(r.pitchGrade), state: snapshot(o) };
+  });
+}
+
+/* rules 4 (CONTRACT.md section 9): the pitcher's side challenges the last pitch's called ball. Only
+   while state.abs.challengeLive, before the next throw and before finishOuting. */
+function challenge(outingId) {
+  return Promise.resolve().then(function () {
+    var o = OUTINGS[outingId];
+    if (!o) throw new Error('no such outing');
+    if (o.result) throw new Error('the outing is finished');
+    var pr = challengePitch(o);
+    saveDaily(o);
+    return { pitchResult: clone(pr), state: snapshot(o) };
   });
 }
 
@@ -545,5 +632,5 @@ function mockLesson(o) {
   };
 }
 
-window.STD_API = { API_VERSION: 1, MOCK: true, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, finishOuting: finishOuting };
+window.STD_API = { API_VERSION: 1, MOCK: true, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting };
 })();
