@@ -354,6 +354,20 @@ export class Figure {
       hip: wpos(B.pelvis).y, shoulder: wpos(B.upperarm_l).y,
     };
     this.ankle0 = Math.min(wpos(B.foot_l).y, wpos(B.foot_r).y);
+    // the body over its own spot: the skeleton's root bone carries an offset of its own (0.6 m to the
+    // side in the model), so the body stood two feet off the point it was placed at, and every turn
+    // swung it round a circle about that point, a slide or a pop of the whole body
+    // (lab/pipeline/check-jolt.mjs). Its bind position is moved by it once, here.
+    const rb = B.pelvis.parent;
+    if (rb && rb.isBone && rb.parent) {
+      const pl = root.worldToLocal(wpos(B.pelvis));
+      const o = root.localToWorld(V(pl.x, 0, pl.z)).sub(root.localToWorld(V(0, 0, 0)));
+      const at = rb.parent.worldToLocal(wpos(rb).sub(o));
+      const e = this.bind.find((x) => x[0] === rb);
+      if (e) e[1].copy(at);
+      rb.position.copy(at);
+      root.updateMatrixWorld(true);
+    }
   }
 
   /** Where the figure stands (field feet) and which way it faces (yaw 0: centre field; + toward
@@ -409,7 +423,7 @@ export class Figure {
     for (const [b, p, q] of this.bind) { b.position.copy(p); b.quaternion.copy(q); }
     root.position.set(0, 0, 0); root.quaternion.identity(); root.scale.setScalar(1);
     root.updateMatrixWorld(true);
-    const sp = spec;
+    const sp = spec; this.lastSpec = spec;
     const clips = this.crew.clips;
     const run = sp.run || { phase: 0, amp: 0 };
     // with the clips the stride is the capture's (laid over this standing pose below)
@@ -473,9 +487,12 @@ export class Figure {
       // the glove arm points at the target as he closes, then tucks
       const gU = k < 1 ? dirL(V(-0.15 * ts, 0.15, 1), V(-0.1 * ts, -0.3, 0.6), smooth(k)) : dirL(V(-0.1 * ts, -0.3, 0.6), V(-0.25 * ts, -0.9, 0.1), smooth(k - 1));
       const gF = k < 1 ? dirL(V(-0.1 * ts, 0.15, 1), V(0.4 * ts, -0.1, 0.7), smooth(k)) : dirL(V(0.4 * ts, -0.1, 0.7), V(0.3 * ts, 0.3, 0.6), smooth(k - 1));
-      if (!sp.glove || !(sp.gloveW > 0)) {
-        blendAim(B[`upperarm_${gl}`], B[`lowerarm_${gl}`], gU, sp.throwW);
-        blendAim(B[`lowerarm_${gl}`], B[`hand_${gl}`], gF, sp.throwW);
+      // (as the glove's own reach gives way: it switched over whole as that weight reached 0, a jump of
+      // the glove hand of three feet in a frame, lab/pipeline/check-jolt.mjs)
+      const gw = sp.throwW * (sp.glove ? 1 - clamp(sp.gloveW || 0, 0, 1) : 1);
+      if (gw > 0) {
+        blendAim(B[`upperarm_${gl}`], B[`lowerarm_${gl}`], gU, gw);
+        blendAim(B[`lowerarm_${gl}`], B[`hand_${gl}`], gF, gw);
       }
     }
     if (sp.armsUp > 0) {
@@ -548,15 +565,22 @@ export class Figure {
         pos.lerp(pa, wsum === 0 ? 1 : k2);
         wsum += w;
       }
-      for (let i = 0; i < n; i++) L[i].quaternion.copy(qp[i]).slerp(qa[i], runW);
+      // (a scoop on the run: the stride goes on under him, his trunk and arms bent down to the ball, the
+      // run giving them up by sp.bend)
+      const bend = clamp(sp.bend || 0, 0, 1);
+      for (let i = 0; i < n; i++) L[i].quaternion.copy(qp[i]).slerp(qa[i], UPPER.has(L[i].name) ? runW * (1 - bend) : runW);
       pel.position.copy(pelP).addScaledVector(pos, runW);
       any = true;
-    } else if (C.idle && !(sp.crouch > 0.15) && !(sp.throwW > 0)) {
-      // standing: a little of the idle's life on the trunk, arms and head (its feet wander, so not those)
+    }
+    // standing: a little of the idle's life on the trunk, arms and head (its feet wander, so not those).
+    // It fades as he runs, crouches or throws (it once switched on and off at those edges, a pop of the
+    // whole upper body, lab/pipeline/check-jolt.mjs)
+    const idleW = C.idle ? 0.45 * (1 - runW) * (1 - smooth((((sp.crouch || 0) - 0.08) / 0.14))) * (1 - clamp((sp.throwW || 0) * 4, 0, 1)) : 0;
+    if (idleW > 0.001) {
       const t = ((sp.idleT || 0) % (2 * C.idle.dur));
-      for (let i = 0; i < n; i++) qa[i].copy(qp[i]);
+      for (let i = 0; i < n; i++) qa[i].copy(L[i].quaternion);
       this.sample(C.idle, t < C.idle.dur ? t : 2 * C.idle.dur - t, qa, null);
-      for (let i = 0; i < n; i++) if (UPPER.has(L[i].name)) L[i].quaternion.slerp(qa[i], 0.45);
+      for (let i = 0; i < n; i++) if (UPPER.has(L[i].name)) L[i].quaternion.slerp(qa[i], idleW);
       any = true;
     }
     if (useThrow) {
