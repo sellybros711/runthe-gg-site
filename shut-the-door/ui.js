@@ -447,7 +447,10 @@ function buildMound() {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
   /* the number keys pick a pitch, on the mound, between pitches */
   document.addEventListener('keydown', function (e) {
-    if (document.body.dataset.screen !== 's-mound' || S.busy || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (document.body.dataset.screen !== 's-mound' || e.ctrlKey || e.metaKey || e.altKey) return;
+    /* C challenges the call while the button is up */
+    if ((e.key === 'c' || e.key === 'C') && !$('m-abs-b').hidden) { e.preventDefault(); challengeIt(); return; }
+    if (S.busy) return;
     if (S.meter && S.meter.running()) return;
     if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
     var k = /^[1-9]$/.test(e.key) ? +e.key - 1 : -1, a = S.scn.pitcher.arsenal[k];
@@ -456,6 +459,7 @@ function buildMound() {
     pickType(a.type);
   });
   $('m-throw').addEventListener('click', throwIt);
+  $('m-abs-b').addEventListener('click', challengeIt);
   /* the meter on the page is meter-ui.js (the look); meter.js keeps the numbers */
   S.meter = METER && $('m-meter') ? (window.STD_METER_UI || METER).create($('m-meter')) : null;
   $('m-batter').addEventListener('click', toggleScout);
@@ -567,6 +571,7 @@ function enterMound() {
   stopMeter(); meterDone();
   S.scene.setScenario(S.scn);
   S.type = null; S.cell = null; S.at = null; S.lastMarker = null; S.paintedN = null;
+  clearTimeout(S.endWinT); S.endWin = null; S.absBusy = false;
   if (S.mini) S.mini.reset();
   show('s-mound');
   setBatter(true);
@@ -633,6 +638,7 @@ function renderHud(st) {
   bs.querySelector('.b3').classList.toggle('on', !!(st.bases & 4));
   var outs = $('m-outs').children;
   for (var i = 0; i < outs.length; i++) outs[i].classList.toggle('on', i < st.outs);
+  renderAbs(st);
 }
 
 /* the scorebar's diamond during a play: a dot per runner on the same base
@@ -697,6 +703,7 @@ function updateThrow() {
   if (S.busy) b.innerHTML = '<b>pitching</b>';
   else b.innerHTML = '<b>throw</b>' + (ready ? '<span>' + esc(pitchOf(S.type).name) + ' \u00b7 ' + esc(M.cellWords(S.cell, bt.bats)) + '</span>' : '');
   stepLine();
+  absButton();
 }
 /* THE STEP LINE (the owner, 2026-10-22): one short line under the throw button and the release
    meter, saying the next thing to do. It never grades and is empty while the pitch plays. */
@@ -955,7 +962,7 @@ function finishedPAs(log) {
   (log || []).forEach(function (pr, i) {
     if (!pr.paOver) return;
     var b = batterAt(bi);
-    out.push({ from: start, to: i + 1, name: lastName(b.name), word: playText(pr, b).tag });
+    out.push({ from: start, to: i + 1, name: lastName(b.name), word: playText(pr, b).tag, abs: log.slice(start, i + 1).some(overturned) });
     start = i + 1; bi++;
   });
   return out;
@@ -965,13 +972,14 @@ function renderPAs(st) {
   if (S.viewPA && S.viewPA.n !== log.length) S.viewPA = null;
   var v = S.viewPA;
   S.grid.setPitches(log, v ? v.from : paStart(log), v ? v.to : null);
+  markAbsDots(log, v ? v.from : paStart(log), v ? v.to : null);
   if (!box) return;
   var pas = finishedPAs(log);
   box.hidden = !pas.length;
   box.innerHTML = pas.map(function (p, i) {
     var on = v && v.from === p.from;
     return '<button type="button" class="pa-chip' + (on ? ' on' : '') + '" data-pa="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
-      esc(p.name) + ' <b>' + esc(String(p.word || '').toLowerCase()) + '</b></button>';
+      esc(p.name) + ' <b>' + esc(String(p.word || '').toLowerCase()) + '</b>' + (p.abs ? '<i class="pa-abs" title="a call overturned">abs</i>' : '') + '</button>';
   }).join('');
   box.querySelectorAll('.pa-chip').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -1055,6 +1063,7 @@ function throwIt() {
     onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
   });
   stepLine();
+  absButton();
   run.then(function (r) {
     if (!r) { $('m-dock').classList.remove('metering'); updateThrow(); return; }
     var call = { type: type, cell: cell, at: at, q: r.q };
@@ -1148,7 +1157,11 @@ function fire(call) {
     var pr = res.pitchResult, batter = batterAt(S.outing.batterIndex);
     var painted = isPainted(pr, call);
     if (painted) S.paintedN = pr.n;
+    /* rules 4: the batter challenged the call. The umpire's call goes up when it is seen, and the
+       count waits for the ABS replay after the play */
+    var byBatter = !!(pr.challenge && pr.challenge.by === 'batter');
     var rv = revealer(pr, function () {
+      if (byBatter) { pbp('called strike', lastName(batter.name) + ' challenges.'); return; }
       var t = playText(pr, batter, res.state);
       pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
       renderHud(res.state);
@@ -1163,9 +1176,20 @@ function fire(call) {
       meterDone();
       hudRunners(null);
       if (S.mini) S.mini.show(pr);
+      return byBatter ? absReplay(pr, batter).then(function () {
+        var t = playText(pr, batter, res.state);
+        pbp(t.tag, t.rest + absNote(pr));
+        renderHud(res.state);
+      }) : null;
+    }).then(function () {
+      var pr = res.pitchResult;
       S.outing = res.state;
-      // the last pitch: the play has finished on screen, then a beat, then the result (still busy)
-      if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { settle(); return finish(); });
+      // the last pitch: the play has finished on screen, then a beat, then the result (still busy).
+      // A ball four that ended it can still be challenged: the button stays up a moment first.
+      if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () {
+        if (S.outing.abs && S.outing.abs.challengeLive) return lastCall();
+        settle(); return finish();
+      });
       settle();
       if (S.scene.setTarget) S.scene.setTarget(null);
       if (pr.paOver) { S.lastMarker = null; S.grid.setMarks({}); setBatter(false); } else S.scene.draw(idleFrame());
@@ -1186,6 +1210,192 @@ function fire(call) {
     toast('that pitch did not go. try again.');
     if (window.console) console.warn(e);
   });
+}
+
+/* ---- ABS challenges (rules 4, CONTRACT.md 5f) ------------------------------------------------
+   The owner (2026-10-25): challenge a call like MLB in 2026, and see when the batter does. Each side
+   has two a game, kept on a win. The button sits beside THROW only while state.abs.challengeLive (a
+   called ball, right after it, one left). Every challenge, his or yours, plays a short ABS replay over
+   the dock: the ball against the zone, the inches off the edge, then the verdict. A tap skips it.
+   Nothing here is a grade, and nothing opens by itself between pitches. */
+var ABS_REPLAY_MS = 1500, LAST_CALL_MS = 3500;
+function overturned(p) { return !!(p && p.challenge && p.challenge.overturned); }
+function renderAbs(st) {
+  var a = st && st.abs;
+  [['m-usch', a && a.left.pitcher], ['m-themch', a && a.left.batter]].forEach(function (x) {
+    var el = $(x[0]);
+    el.hidden = !a;
+    if (!a) return;
+    for (var i = 0; i < el.children.length; i++) el.children[i].classList.toggle('on', i < x[1]);
+    el.setAttribute('aria-label', x[1] + (x[1] === 1 ? ' challenge' : ' challenges') + ' left');
+  });
+  $('m-key-abs').hidden = !a;
+  absButton();
+}
+/* up only while a challenge is live and nothing is playing: right after a called ball, until the
+   next throw starts (or, on a ball four that ended it, through the last call window) */
+function absButton() {
+  var b = $('m-abs-b'), st = S.outing, a = st && st.abs;
+  var on = !!(a && a.challengeLive && !S.absBusy && !(S.meter && S.meter.running()) &&
+    (S.endWin ? true : !S.busy && st.status === 'live'));
+  if (b.hidden === !on && !on) return;
+  b.hidden = !on;
+  $('m-pad').classList.toggle('abs-live', on);
+  b.classList.toggle('clock', !!(on && S.endWin));
+  if (!on) return;
+  var n = a.left.pitcher, dots = b.querySelectorAll('.ab-dots i');
+  for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i < n);
+  b.setAttribute('aria-label', 'Challenge the call. ' + n + ' left.');
+}
+/* the zone's dots for an overturned call carry a ring (aim.js draws one dot per shown pitch, in order) */
+function markAbsDots(log, from, to) {
+  var box = S.grid && S.grid.el && S.grid.el.querySelector('.dots');
+  if (!box) return;
+  var end = to == null ? log.length : to, k = 0;
+  for (var i = from; i < end; i++) {
+    if (!log[i] || !log[i].actual) continue;
+    var dot = box.children[k++];
+    if (dot) dot.classList.toggle('abs', overturned(log[i]));
+  }
+}
+function absNote(pr) { return pr.challenge ? (pr.challenge.overturned ? ' · overturned' : ' · call stands') : ''; }
+
+/* The ball against the ABS zone, in inches, the pitcher's view. The zone is the grid's: the plate
+   plus a ball a side, his height. The dot sits where it crossed, held so its distance from the edge is
+   the engine's d (the UI does not have the pack's zone height, so the drawing defers to d). */
+function absSvg(pr, batter, color) {
+  var W = C.GRID.ZONE_HALF_FT * 24, zf = batter && batter.szTop > batter.szBot ? batter.szTop - batter.szBot : 1.8;
+  var H = zf * 12, P = 5, R = 1.45, d = pr.abs.d;
+  var su = window.STD_AIM ? window.STD_AIM.SCREEN_U : -1;
+  var x = su * pr.actual.x * 12, y = (1 - pr.actual.zn) * H;
+  /* the nearest point on the zone's edge, and the way out of the zone from there */
+  var ex, ey, nx, ny, inside = Math.abs(x) <= W / 2 && y >= 0 && y <= H;
+  if (inside) {
+    var sides = [[W / 2 - x, W / 2, y, 1, 0], [x + W / 2, -W / 2, y, -1, 0], [y, x, 0, 0, -1], [H - y, x, H, 0, 1]];
+    sides.sort(function (a, b) { return a[0] - b[0]; });
+    ex = sides[0][1]; ey = sides[0][2]; nx = sides[0][3]; ny = sides[0][4];
+  } else {
+    ex = Math.max(-W / 2, Math.min(W / 2, x)); ey = Math.max(0, Math.min(H, y));
+    var vx = x - ex, vy = y - ey, l = Math.sqrt(vx * vx + vy * vy) || 1;
+    nx = vx / l; ny = vy / l;
+  }
+  /* d > 0 is in the zone (against the way out), d < 0 out of it */
+  x = ex - nx * d; y = ey - ny * d;
+  x = Math.max(-W / 2 - P + R, Math.min(W / 2 + P - R, x)); y = Math.max(-P + R, Math.min(H + P - R, y));
+  var f = function (v) { return v.toFixed(2); };
+  var grid = '';
+  for (var i = 1; i < 3; i++) {
+    grid += '<line x1="' + f(-W / 2 + W * i / 3) + '" y1="0" x2="' + f(-W / 2 + W * i / 3) + '" y2="' + f(H) + '"/>' +
+      '<line x1="' + f(-W / 2) + '" y1="' + f(H * i / 3) + '" x2="' + f(W / 2) + '" y2="' + f(H * i / 3) + '"/>';
+  }
+  return '<svg viewBox="' + f(-W / 2 - P) + ' ' + f(-P) + ' ' + f(W + 2 * P) + ' ' + f(H + 2 * P) + '" aria-hidden="true">' +
+    '<rect class="ar-plate" x="' + f(-W / 2) + '" y="0" width="' + f(W) + '" height="' + f(H) + '"/>' +
+    '<g class="ar-grid">' + grid + '</g>' +
+    '<line class="ar-edge" x1="' + f(ex) + '" y1="' + f(ey) + '" x2="' + f(x) + '" y2="' + f(y) + '"/>' +
+    '<circle class="ar-ball" cx="' + f(x) + '" cy="' + f(y) + '" r="' + R + '" fill="' + color + '"/></svg>';
+}
+function inchWords(d) {
+  var a = Math.abs(d);
+  if (a < 0.05) return 'on the edge';
+  return a.toFixed(1) + '" ' + (d >= 0 ? 'in' : 'off');
+}
+/* The quick replay after a challenge (about 1.5 s; quick play shortens it). A tap, a key or a tap on
+   the field skips it. Resolves when it is gone. */
+function absReplay(pr, batter) {
+  var box = $('m-absr'), ch = pr.challenge;
+  if (!box || !pr.abs || !ch) return Promise.resolve();
+  var ap = pitchOf(pr.call.type), who = ch.by === 'pitcher' ? 'you challenge' : lastName(batter.name) + ' challenges';
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ms = prefs.quick ? ABS_REPLAY_MS / 1.5 : ABS_REPLAY_MS;
+  box.className = 'absr ' + (ch.overturned ? 'over' : 'stands') + (prefs.quick ? ' quick' : '');
+  box.innerHTML = '<div class="ar-zone">' + absSvg(pr, batter, ap ? colorOf(ap) : '#f4f5f7') + '</div>' +
+    '<div class="ar-txt"><span class="ar-k"><b>abs</b> ' + esc(who) + '</span>' +
+    '<span class="ar-d"><b>' + (pr.abs.strike ? 'strike' : 'ball') + '</b> ' + esc(inchWords(pr.abs.d)) + '</span>' +
+    '<span class="ar-v">' + (ch.overturned ? 'overturned' : 'call stands') + '</span></div>';
+  box.hidden = false;
+  $('m-dock').classList.add('replaying');
+  void box.offsetWidth;
+  box.classList.add('show');
+  sound('pop');
+  return new Promise(function (res) {
+    var done = false, t = 0;
+    var end = function () {
+      if (done) return;
+      done = true; clearTimeout(t);
+      document.removeEventListener('pointerdown', end, true);
+      document.removeEventListener('keydown', end, true);
+      box.classList.remove('show');
+      setTimeout(function () { box.hidden = true; $('m-dock').classList.remove('replaying'); res(); }, reduce ? 0 : 180);
+    };
+    t = setTimeout(end, ms);
+    /* the tap that skips it; a beat first, so the tap that made the challenge is not taken for one */
+    setTimeout(function () {
+      if (done) return;
+      document.addEventListener('pointerdown', end, true);
+      document.addEventListener('keydown', end, true);
+    }, 150);
+  });
+}
+
+/* the pitcher's side challenges the last called ball: the replay, then the count as it now stands */
+function challengeIt() {
+  var st = S.outing;
+  if (S.absBusy || !st || !st.abs || !st.abs.challengeLive) return;
+  if (S.busy && !S.endWin) return;
+  var last = S.endWin;
+  if (last) { clearTimeout(S.endWinT); S.endWin = null; }
+  var log = st.log || [], pr0 = log[log.length - 1];
+  var batter = batterAt(pr0 && pr0.paOver ? st.batterIndex - 1 : st.batterIndex);
+  stopMeter();
+  S.absBusy = true; S.busy = true;
+  S.grid.setDisabled(true);
+  updateThrow();
+  API.challenge(st.outingId).then(function (res) {
+    var pr = res.pitchResult;
+    return absReplay(pr, batter).then(function () {
+      var was = S.outing.batterIndex;
+      S.outing = res.state;
+      S.absBusy = false;
+      var t = playText(pr, batter, res.state);
+      if (S.outing.status === 'over') {
+        pbp(t.tag, t.rest + absNote(pr));
+        renderHud(S.outing);
+        return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { settle(); return finish(); });
+      }
+      settle();
+      if (last && S.scene.setTarget) S.scene.setTarget(null);
+      /* an overturned ball four: the same hitter stays up */
+      if (S.outing.batterIndex !== was) { S.lastMarker = null; S.grid.setMarks({}); setBatter(true); }
+      S.scene.draw(idleFrame());
+      pbp(t.tag, t.rest + absNote(pr));
+      renderHud(S.outing);
+      updateThrow();
+      if (S.sizeDue) { S.sizeDue = false; relayout(); } else drawPreview();
+    });
+  }).catch(function (e) {
+    S.absBusy = false;
+    if (last) { settle(); finish(); return; }
+    S.busy = false;
+    S.grid.setDisabled(false);
+    updateThrow();
+    toast('that challenge did not go. try again.');
+    if (window.console) console.warn(e);
+  });
+}
+/* A ball four that ended the outing can still be challenged: the button stays up with a clock for a
+   moment, then the result comes up by itself. */
+function lastCall() {
+  var ms = prefs.quick ? LAST_CALL_MS / 1.4 : LAST_CALL_MS;
+  $('m-abs-b').style.setProperty('--clock', ms + 'ms');
+  S.endWin = true;
+  absButton();
+  S.endWinT = setTimeout(function () {
+    if (!S.endWin) return;
+    S.endWin = null;
+    absButton();
+    settle();
+    finish();
+  }, ms);
 }
 
 /* ---- the end ----------------------------------------------------------------------------- */
