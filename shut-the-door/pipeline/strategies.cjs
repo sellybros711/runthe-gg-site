@@ -9,6 +9,7 @@
  *          min, mid, max   e 0, 0.5, 1 every pitch
  *          smart  save it for the put-away: max with two strikes, easy early in the count, at
  *                 three balls and on the changeup or splitter, ordinary otherwise
+ *        CHALLENGE=none: no challenges on called balls (default: a real catcher's, pool.js modelChallenge)
  *        AIMS=centre,random,out,in the free aim point (CONTRACT.md 5d; default centre):
  *          centre  no at (the cell's centre); random  anywhere in the cell;
  *          out     the cell's far corner from the heart of the plate; in  its near corner
@@ -172,6 +173,7 @@ function play(pack, model, sname, strat, release, runs, effort, aim) {
     o.pol = R.mulberry32(R.hashSeed(`${pack.scenario.id}|pol|${r}`));
     o.closer = closers[r % closers.length];
     o.aimRng = R.mulberry32(R.hashSeed(`${pack.scenario.id}|aim|${r}`));
+    o.chRng = R.mulberry32(R.hashSeed(`${pack.scenario.id}|challenge|${r}`));
     let guard = 0;
     while (o.status === 'live' && guard++ < 200) {
       const c = strat(o);
@@ -184,6 +186,7 @@ function play(pack, model, sname, strat, release, runs, effort, aim) {
       else if (release === 'ordinary') c.q = tapQ(tap, cmd, eff);
       else if (release === 'good') c.q = tapQ(tap, cmd, eff, GOOD);
       const res = E.throwPitch(o, c).pitchResult;
+      if (process.env.CHALLENGE !== 'none') P.modelChallenge(o, o.chRng);   // rules 4: a real catcher's challenges (pool.js)
       if (res.paOver) { pa++; if (res.result === 'ball' || res.result === 'hit_by_pitch') walks++; }
     }
     if (o.status !== 'over') continue;

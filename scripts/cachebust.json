@@ -2917,8 +2917,8 @@
   },
   "shut-the-door/index.html": {
     "contract.js": {
-      "v": "6",
-      "sha": "934d41cb5cadce48"
+      "v": "7",
+      "sha": "cece740c4dbd04b4"
     },
     "meter.js": {
       "v": "4",
@@ -2957,16 +2957,16 @@
       "sha": "07b7ca2277fe8038"
     },
     "grade.js": {
-      "v": "8",
-      "sha": "007731624634e434"
+      "v": "9",
+      "sha": "b2ab664a2d9b93f6"
     },
     "lesson.js": {
       "v": "4",
       "sha": "97757da0db8cd9f0"
     },
     "engine.js": {
-      "v": "10",
-      "sha": "1a8a2d967a3f450b"
+      "v": "11",
+      "sha": "bb838e505fa4835c"
     },
     "share.js": {
       "v": "2",
@@ -2981,8 +2981,8 @@
       "sha": "843bad6d39ae5e64"
     },
     "api.js": {
-      "v": "8",
-      "sha": "3d0935ecb296895c"
+      "v": "9",
+      "sha": "6585cc28eb9feca3"
     },
     "mock-api.js": {
       "v": "10",
