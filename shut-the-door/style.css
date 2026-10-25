@@ -1018,6 +1018,80 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 
 @media (prefers-reduced-motion: reduce) { .pbp { transition: none; } }
 
+/* ---- ABS challenges (rules 4). The scorebug's marks, the button beside THROW, the replay ---- */
+/* challenges left a side: two ticks after the club's name, lit while one is left */
+.sb-ch { display: inline-flex; gap: 3px; flex: none; margin-left: -2px; }
+.sb-ch[hidden] { display: none; }
+.sb-ch i { width: 5px; height: 9px; border-radius: 1.5px; background: rgba(255, 255, 255, .14); }
+.sb-ch i.on { background: #8fb0ff; box-shadow: 0 0 6px rgba(91, 130, 255, .55); }
+.mh-bug .sb-team .tm { max-width: 64px; }
+/* the button: ink glass with a data blue edge, beside THROW, as tall as it */
+.pad.abs-live { display: flex; gap: 8px; }
+.pad.abs-live .btn.throw { flex: 1 1 auto; min-width: 0; width: auto; }
+.btn.abs-b { position: relative; flex: 0 0 42%; height: 54px; min-height: 54px; margin: 0; padding: 4px 10px; border-radius: 14px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; line-height: 1;
+  background: rgba(11, 15, 23, .86); color: #fff; border: 1.5px solid var(--data); box-shadow: 0 3px 0 #1c3db8, 0 8px 24px rgba(0, 0, 0, .3);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase;
+  animation: ab-in .22s ease-out; }
+.btn.abs-b[hidden] { display: none; }
+.btn.abs-b b { font-size: 22px; letter-spacing: .04em; }
+.ab-dots { display: flex; gap: 5px; }
+.ab-dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .45); }
+.ab-dots i.on { background: #8fb0ff; border-color: #8fb0ff; }
+.btn.abs-b:active { transform: translateY(2px); box-shadow: 0 1px 0 #1c3db8, 0 4px 12px rgba(0, 0, 0, .3); }
+/* the last call window: a clock drains along the bottom, then the result comes up */
+.ab-clock { display: none; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--data); transform-origin: left center; }
+.btn.abs-b.clock .ab-clock { display: block; animation: ab-clock var(--clock, 3.5s) linear forwards; }
+@keyframes ab-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes ab-clock { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* the replay: over the dock for a moment, ink in both themes like the meter and the lower third */
+.dock.replaying .arsenal, .dock.replaying .pad, .dock.replaying .pad-say { visibility: hidden; }
+.absr { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; gap: 14px; padding: 10px 16px 10px 12px; border-radius: 16px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(20, 26, 40, .92), rgba(8, 11, 18, .94)); color: #f4f5f7; border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .42); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); cursor: pointer;
+  opacity: 0; transform: translateY(8px); transition: opacity .18s ease, transform .18s ease; --ar: 1; }
+.absr[hidden] { display: none; }
+.absr.show { opacity: 1; transform: none; }
+.absr.quick { --ar: .67; }
+.absr::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--data); }
+.absr.over::before { background: var(--signal); }
+.ar-zone { flex: none; align-self: stretch; width: 104px; display: grid; place-items: center; }
+.ar-zone svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ar-plate { fill: rgba(255, 255, 255, .06); stroke: #f4f5f7; stroke-width: .7; }
+.ar-grid line { stroke: rgba(255, 255, 255, .16); stroke-width: .35; }
+.ar-edge { stroke: #8fb0ff; stroke-width: .6; stroke-dasharray: 1.2 .9; opacity: 0; }
+.absr.over .ar-edge { stroke: var(--signal); }
+.ar-ball { stroke: #fff; stroke-width: .45; transform-box: fill-box; transform-origin: center; }
+.ar-txt { min-width: 0; display: flex; flex-direction: column; gap: 5px; line-height: 1; }
+.ar-k { font-family: var(--display); font-weight: 700; font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: #a3acbd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ar-k b { color: #8fb0ff; font-weight: 900; margin-right: 3px; }
+.ar-d { font-size: 14px; font-weight: 600; color: #dfe3ea; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ar-d b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; color: #fff; margin-right: 4px; }
+.ar-v { align-self: flex-start; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 26px; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+  padding: 5px 10px 4px; border-radius: 8px; background: rgba(255, 255, 255, .1); color: #fff; }
+.absr.over .ar-v { background: var(--signal); }
+/* the beats: the ball lands, the line to the edge and the inches, then the verdict */
+.absr.show .ar-ball { animation: ar-ball calc(.28s * var(--ar)) cubic-bezier(.2, .9, .3, 1.2) both; }
+.absr.show .ar-edge { animation: ar-fade calc(.2s * var(--ar)) calc(.3s * var(--ar)) both; }
+.absr.show .ar-d { animation: ar-up calc(.2s * var(--ar)) calc(.32s * var(--ar)) both; }
+.absr.show .ar-v { animation: ar-stamp calc(.26s * var(--ar)) calc(.62s * var(--ar)) cubic-bezier(.2, .9, .3, 1.3) both; }
+@keyframes ar-ball { from { opacity: 0; transform: scale(2.4); } to { opacity: 1; transform: none; } }
+@keyframes ar-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ar-up { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes ar-stamp { from { opacity: 0; transform: scale(1.35); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .absr { transition: none; }
+  .absr.show .ar-ball, .absr.show .ar-d, .absr.show .ar-v, .btn.abs-b { animation: none; }
+  .absr.show .ar-edge { animation: none; opacity: 1; }
+}
+/* an overturned call: a data blue ring on its pitch dot, and a tag on its at bat's chip */
+.dots .pd.abs { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px #5b82ff; }
+.dots .pd.ball.abs { box-shadow: inset 0 0 0 2px var(--dim), 0 0 0 1.5px var(--bg), 0 0 0 3px #5b82ff; }
+.dotkey .pd.abs { box-shadow: 0 0 0 1.5px #5b82ff; }
+.pa-abs { display: inline-block; margin-left: 5px; padding: 2px 4px 1px; border-radius: 4px; background: #2b59ff; color: #fff; font-style: normal;
+  font-family: var(--display); font-weight: 800; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; vertical-align: 1px; }
+
 /* sideways (a phone held flat, a desk): the left column, the dock in the bottom right corner as a
    list, the play by play bottom left. The zone keeps the middle. */
 @media (orientation: landscape) {
@@ -1035,6 +1109,11 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
     max-width: calc(100vw - var(--dock-w) - var(--gut) * 3 - var(--sl) - var(--sr)); justify-content: flex-start; }
   .msheet { right: auto; width: calc(var(--col) - var(--gut) * 2); }
   #s-mound .mini { top: calc(var(--st) + var(--gut) + var(--tap) + 8px); }
+  /* the dock is a narrow tall corner: the replay stacks, the zone over the words */
+  .absr { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px 12px 14px; text-align: center; }
+  .ar-zone { align-self: center; width: auto; height: min(46%, 150px); aspect-ratio: 1; flex: 0 1 auto; min-height: 0; }
+  .ar-txt { align-items: center; max-width: 100%; }
+  .ar-v { align-self: center; }
 }
 /* a phone on its side is short: two columns of pitches */
 @media (orientation: landscape) and (max-height: 520px) {
@@ -1045,6 +1124,10 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   #m-arsenal[data-n] .pk { width: 19px; height: 19px; font-size: 12px; }
   .btn.throw { height: 48px; min-height: 48px; padding: 3px 12px; gap: 1px; }
   .btn.throw b { font-size: 24px; }
+  .btn.abs-b { height: 48px; min-height: 48px; gap: 4px; }
+  .btn.abs-b b { font-size: 18px; }
+  .absr { gap: 8px; padding: 10px 10px 12px; }
+  .ar-v { font-size: 21px; }
   /* a narrow column: the switch on its own row under the toggles */
   .heatbar { flex-wrap: wrap; }
   .mh-card .seg { order: 2; flex: 1 0 100%; }
@@ -1067,6 +1150,12 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   #m-arsenal[data-n] .pk { width: 26px; height: 26px; font-size: 16px; }
   .btn.throw { height: 60px; min-height: 60px; }
   .btn.throw b { font-size: 32px; }
+  .btn.abs-b { height: 60px; min-height: 60px; }
+  .btn.abs-b b { font-size: 24px; }
+  .ar-k { font-size: 14px; }
+  .ar-d { font-size: 16px; }
+  .ar-d b { font-size: 20px; }
+  .ar-v { font-size: 32px; }
   .pbp-tag { font-size: 22px; padding: 8px 14px 7px; }
   .pbp-rest { font-size: 16px; padding: 8px 16px; }
   #s-mound .mini { width: 128px; }
