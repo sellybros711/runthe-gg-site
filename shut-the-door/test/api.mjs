@@ -127,5 +127,26 @@ check('practice is never stored', mem[C.OUTING_KEY] === before && pr.mode === 'p
   }
 }
 
+/* rules 4: the pitcher's side's challenge (contract.js ABS), a call of its own */
+{
+  let made = null;
+  for (let seed = 1; seed <= 300 && !made; seed++) {
+    const p = await api.startOuting(sc.id, seed, { mode: 'practice' });
+    let s = p, guard = 0;
+    while (s.status === 'live' && guard++ < 60 && !made) {
+      const r = await api.throwPitch(p.outingId, { type: types[guard % types.length], cell: [6, 8, 16, 18, 2, 22][guard % 6], q: 0.5 });
+      s = r.state;
+      if (s.abs && s.abs.challengeLive) {
+        const c = await api.challenge(p.outingId);
+        made = { r, c };
+      }
+    }
+  }
+  check('rules 4: the state says when a challenge is live, and the challenge call answers with the pitch and the state',
+    !!made && made.c.pitchResult.challenge && made.c.pitchResult.challenge.by === 'pitcher'
+    && made.c.state.abs.events.length >= 1 && made.c.state.abs.challengeLive === false
+    && made.c.state.abs.left.pitcher === (made.c.pitchResult.challenge.overturned ? C.ABS.PER_SIDE : C.ABS.PER_SIDE - 1));
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);
