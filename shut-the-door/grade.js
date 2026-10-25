@@ -396,7 +396,7 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 4;
+const RULES = 5;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
@@ -407,6 +407,15 @@ const THIRD_OUT_RULES = 3;
    splits each cell's takes the same way), ABS challenges (contract.js ABS;
    engine.js) and the bright band's release (contract.js PERFECT). */
 const ABS_RULES = 4;
+/* Rules 5 (2026-10-25) is rules 4 with the routine play (contract.js ROUTINE,
+   the owner's call): an error on a routine grounder, fly or popup is
+   extremely rare. Where a cell's real error is a routine ball, all but
+   ROUTINE.KEEP of the error key's share goes to the cell's real out of the
+   same kind (Model.routineOf): the engine reads it inside the error's slice of
+   the library draw, the grade one pitch ahead moves the same share
+   (keyMixCtx). The draws do not move, and no other key's draw changes. */
+const ROUTINE_RULES = 5;
+const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
               type the batter has seen this plate appearance (1, 2, 3 or more)
@@ -688,6 +697,22 @@ Model.prototype.rowsCtx = function (bi, type, bucket, ctx) {
   return rows;
 };
 
+/* rules 5 (contract.js ROUTINE): whether one cell's error is a routine play.
+   The cell's error is one real play (entry.x). Returns the out key of its kind
+   (a grounder out_ground, a fly out_fly, a popup out_popup) and the share of
+   the error that still happens (KEEP), or null for a cell with no real error
+   or a non-routine one. The engine draws the key from the row as it was and,
+   on the error, reads where the library draw fell inside the error's slice:
+   past KEEP it is the out (engine.js THE ROUTINE PLAY), so no other key's
+   draw moves. The grade one pitch ahead moves the same share (keyMixCtx). */
+Model.prototype.routineOf = function (entry, cell) {
+  const ref = entry.x[cell][KEY_ERROR];
+  if (ref == null || ref < 0) return null;
+  const pt = this.pack.pitches[Math.floor(ref / 3)];
+  const kind = K.routineOf(pt[3], pt[4], pt[5], pt[6]);
+  return kind ? { out: KEY_OUT[pt[3]], keep: K.ROUTINE.KEEP[kind] } : null;
+};
+
 /* What each outcome key is worth from one state, whatever the call: the
    goal's chance and the runs after it, and the chance it is a two-strike
    foul (the self-loop). The same sums callValue does, grouped by key so a
@@ -742,6 +767,7 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
   const ker = off ? this.kernelRowAim(type, ctx.fatigue, target, a0) : this.kernelAt(type, ctx.fatigue);
   const base = off ? 0 : target * 25;
   const rows = this.rowsCtx(st.bi, type, bucketOf(st.b, st.s), ctx);
+  const entry = this.entry(st.bi, type);
   // rules 4 (THE CALL): a take is called where it crossed, so each cell's takes split by the
   // umpire's chance over where in that cell this aim's miss puts the ball
   const cm = ctx.rules >= ABS_RULES ? this.callMass(type, ctx.fatigue, target, off ? a0 : null) : null;
@@ -758,6 +784,9 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
       i0 = 2;
     }
     for (let i = i0; i < KEYS.length; i++) if (row[i]) out[i] += w * row[i] / 1000;
+    // rules 5 (contract.js ROUTINE): a routine error is all but KEEP the out of its kind
+    const rt = ctx.rules >= ROUTINE_RULES && row[KEY_ERROR] ? this.routineOf(entry, a) : null;
+    if (rt) { const m = w * row[KEY_ERROR] / 1000 * (1 - rt.keep); out[KEY_ERROR] -= m; out[rt.out] += m; }
   }
   return out;
 };
@@ -994,7 +1023,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;

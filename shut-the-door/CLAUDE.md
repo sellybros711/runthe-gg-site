@@ -64,7 +64,10 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
   is rules 3 plus the call by location, ABS challenges (`ch: 1` on a challenged call; the batter's
   gamble on its own seeded stream, so the four draws never move) and the bright band's release; a
   call with `r: 3` replays as rules 3 (`fixtures/replays-rules3-pre-abs.json`). The grade prices
-  the history (one pitch ahead, then the table). The strengths live in `grade.js R2`; change them only
+  the history (one pitch ahead, then the table). Rules 5 (2026-10-25, CONTRACT.md 5g) is rules 4
+  plus the routine play: an error on a routine ball (`contract.js ROUTINE`) keeps only `KEEP` of its
+  share, read inside the error's slice of the same library draw, and the rest is the cell's real out
+  of its kind; a call with `r: 4` replays as rules 4 (`fixtures/replays-rules4-pre-routine.json`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

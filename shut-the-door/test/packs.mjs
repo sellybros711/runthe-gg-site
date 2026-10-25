@@ -233,6 +233,24 @@ function determinism(pack) {
   const a = JSON.stringify(E.replay(pack, 4242, calls, { model: new G.Model(pack) }).log);
   const b = JSON.stringify(E.replay(pack, 4242, calls, { model }).log);
   check(`${pack.scenario.id}: the same seed and calls give the same outing`, a === b);
+  /* rules 5 (contract.js ROUTINE): the same seed and calls under rules 4 and 5 are the same outing
+     up to the first pitch that differs, and that pitch is a routine error under rules 4 made the out
+     of its kind under rules 5, from the same landing (the same draws) */
+  const zone = [6, 7, 8, 11, 12, 13, 16, 17, 18];
+  const zc = Array.from({ length: 80 }, () => ({ type: types[Math.floor(rng() * types.length)], cell: zone[Math.floor(rng() * 9)] }));
+  let turned = 0, bad = 0;
+  for (let s = 0; s < 400; s++) {
+    const r4 = E.replay(pack, 9000 + s, zc, { model, rules: 4 }).log;
+    const r5 = E.replay(pack, 9000 + s, zc, { model, rules: 5 }).log;
+    const i = r4.findIndex((p, j) => !r5[j] || JSON.stringify(p) !== JSON.stringify(Object.assign({}, r5[j], { call: p.call })));
+    if (i < 0) continue;
+    const p4 = r4[i], p5 = r5[i], ip = p4.inPlay;
+    const ok = ip && ip.result === 'error' && K.routineOf(ip.bb, ip.ev, ip.la, ip.spray)
+      && p5.inPlay && p5.inPlay.result !== 'error' && p5.drawn.id !== p4.drawn.id && p5.actualCell === p4.actualCell
+      && JSON.stringify(p5.actual) === JSON.stringify(p4.actual) && p5.inPlay.bb === ip.bb;
+    if (ok) turned++; else bad++;
+  }
+  check(`${pack.scenario.id}: rules 5 turns only routine errors into outs, from the same draws (${turned} turned)`, bad === 0, `${bad} other differences`);
 }
 
 /* run ---------------------------------------------------------------------------- */
