@@ -197,7 +197,7 @@ function verdictHeight(ctx, c, w, s) {
   return h;
 }
 
-/* you vs the real pitcher: signal when you beat him, data blue when you matched, ink when he won */
+/* you vs the real game: signal when you rewrote history, data blue when you matched it, ink when history did better */
 function verdict(ctx, c, x, y, w, h, s) {
   if (c.vsReal === 'beat' || c.vsReal === 'matched') {
     var g = ctx.createLinearGradient(x, y, x + w, y + h);
