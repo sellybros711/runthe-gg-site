@@ -148,5 +148,22 @@ check('practice is never stored', mem[C.OUTING_KEY] === before && pr.mode === 'p
     && made.c.state.abs.left.pitcher === (made.c.pitchResult.challenge.overturned ? C.ABS.PER_SIDE : C.ABS.PER_SIDE - 1));
 }
 
+/* rules 7: the pickoff, a call of its own between pitches, kept on the last call (CONTRACT.md 5i) */
+{
+  let made = null;
+  for (let seed = 1; seed <= 300 && !made; seed++) {
+    const p = await api.startOuting(sc.id, seed, { mode: 'practice' });
+    let s = p, guard = 0;
+    while (s.status === 'live' && guard++ < 60 && !made) {
+      const r = await api.throwPitch(p.outingId, { type: types[guard % types.length], cell: [6, 8, 16, 18, 2, 22][guard % 6], q: 0.5, ss: 1 });
+      s = r.state;
+      if (s.run && s.run.pickoff.live) made = { r, k: await api.pickoff(p.outingId) };
+    }
+  }
+  check('rules 7: the state says when a pickoff is live, and the pickoff call answers with the throw and the state',
+    !!made && typeof made.k.pickoff.out === 'boolean' && made.k.state.run.pickoffs.length === 1
+    && (made.k.pickoff.out || made.k.state.run.pickoff.left === C.STEAL.DISENGAGE - 1));
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);

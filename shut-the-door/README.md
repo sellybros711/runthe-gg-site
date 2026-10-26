@@ -387,6 +387,36 @@ tracked speed, so most have no class.
 fly with a runner on 3rd, the strongest third of arms (92 mph) hold him 41% against 19-20% for the
 rest; on a single with a runner on 2nd the arm barely moves the send (70 / 68 / 72 scored).
 
+## Rules 7: the running game (2026-10-26)
+
+The owner: "Runners could also steal ... They may win or lose that moment", then "yes add pickoffs
+and slide step". CONTRACT.md 5i. `pipeline/steals.py` reads every 2022 and 2024 regular season game
+feed from the Stats API, pitch by pitch (a compact line a pitch, `cache/steals-<season>.json.gz`).
+It adds the people's season stats, Savant's sprint speed and pop time, and each spot's real catcher
+and runners, and writes `data/steals.json`. `pool.js` copies a spot's part in as `pack.steal`.
+
+```
+python3 shut-the-door/pipeline/steals.py [--seasons 2022,2024] [--threads 6]
+```
+
+**Real** (the feeds; 2024, then 2022): steal of second 81.7% safe of 3,554 (78.1% of 2,602), third
+86.2% of 530 (81.8% of 351). League 2024: 3,617 SB, 961 CS, 79.0%. Late (8th inning on), a steal of
+second per pitch with one on: down 1 2.53%, down 2 0.81%, down 3 0.25%, tied 3.98% (early 2.39%),
+safe 85-89%. Pickoff, out per throw: first 1.6% of 9,219 throws, second 4.2% of 684, third 9.7% of 93
+(2022: 0.7%, 5.6%, 13.3%). After one throw at him the runner is safe less often (-0.14 z, about 3
+points), after two no less (-0.02). He also goes 1.8 times as often after a throw, measured against
+the same runner. That is the pitcher reading the runner, so the engine does not use it.
+
+**The quick delivery**: a second of pop time is worth 1.95 z of steal success (330 catcher seasons
+2016-2025), so 0.25 s quicker is -0.49 z (79% to about 63% for an average steal). Cross-check: the
+best fifth of 2024 pitchers at holding runners allowed 71.3% (-0.24 z).
+
+**The engine** (closer pool calls, 1,500 outings a pack, all ten packs): 1.0% of pitches with a steal
+on see an attempt, safe 80.5%; with a quick delivery on every pitch, 65.7%. 5.9% of outings have a
+steal, and 74 caught stealings ended an outing. By pack, from 0.24% (Pressly 2022)
+to 2.67% (Diaz 2025). The closer pool's hold rate moves -1.0 to +0.2 points; the grade, the
+hold table and BANDS are unchanged.
+
 ## Release and spin, for the picture (2026-10-24)
 
 `pipeline/tracking.py arsenal` reads each scenario pitcher's own pitches from the Savant search his
