@@ -272,6 +272,55 @@ function routineOf(bb, ev, la, spray) {
   return null;
 }
 
+/* THE RUNNERS READ THE BALL (rules 6, the owner 2026-10-26: "We need to ensure
+   runners are advancing in realistic situations, and tagging up in realistic
+   situations"; CONTRACT.md 5h). Measured by pipeline/runners.py from every
+   2024 ball in play with a runner on (Savant's play text, runner by runner),
+   carried in each pack as pack.runners {dist: {coef}, edges, ratio}.
+   carryOf: how far an air ball goes, feet, from its exit velocity (mph) and
+   launch angle (degrees): the fit of hit_distance_sc (R2 0.94, 15.6 ft mean
+   error), clamped 0-480. runnerClass: the ball's kind for the runners, the
+   same function as runners.py runner_class: a ground ball by its speed (s
+   under edges.soft mph, else h) and field side; an air ball by its carry band
+   (edges.air for an out, edges.hit for a hit: a to g) and side (L, C, R:
+   centre within edges.side degrees). null when the ball cannot say (no spray,
+   no speed, a home run or an error): that ball keeps the table's own mix. */
+function carryOf(ev, la, coef) {
+  if (ev == null || la == null || !coef) return null;
+  const e = ev / 100, a = la * Math.PI / 180;
+  const s = Math.sin(a), c = Math.cos(a), s2 = Math.sin(2 * a);
+  const x = [1, e, e * e, e * e * e, s, s2, e * s2, e * e * s2, e * c, e * e * c * c, s * s];
+  let d = 0;
+  for (let i = 0; i < x.length; i++) d += x[i] * coef[i];
+  return Math.max(0, Math.min(480, d));
+}
+const AIR_KEYS = Object.freeze(['out_line', 'out_fly', 'out_popup']);
+function runnerClass(key, bb, ev, la, spray, runners) {
+  if (!runners || spray == null || key === 'home_run' || key === 'error') return null;
+  const E = runners.edges;
+  const side = spray < -E.side ? 'L' : spray > E.side ? 'R' : 'C';
+  if (bb === 'ground' || key === 'out_ground') return ev == null ? null : (ev < E.soft ? 's' : 'h') + side;
+  const d = carryOf(ev, la, runners.dist.coef);
+  if (d == null) return null;
+  const edges = AIR_KEYS.includes(key) ? E.air : E.hit;
+  let i = 0;
+  while (i < edges.length && d >= edges[i]) i++;
+  return 'abcdefg'[i] + side;
+}
+/* The runners' category of an advancement row: X when a runner (not the
+   batter) is put out on the bases, else how many bases the lead runner went
+   (0 held, 1, 2, 3 scored from first). bases: the bitmask before the play
+   (1 first, 2 second, 4 third); moves: [[from, to]] (4 scored, -1 out). */
+function runnerCategory(bases, moves) {
+  let lead = 0;
+  for (let b = 1; b <= 3; b++) if (bases & (1 << (b - 1))) lead = b;
+  if (!lead) return null;
+  for (const [f, t] of moves || []) if (f >= 1 && t === -1) return 'X';
+  const m = (moves || []).find(x => x[0] === lead);
+  return String((m ? m[1] : lead) - lead);
+}
+const RUNNER_CATS = Object.freeze(['X', '0', '1', '2', '3']);
+
 /* Effort (the owner's call, 2026-10-22; CONTRACT.md 5c). A call may carry e,
    the meter's first stop, 0..1, kept to two places. 0 is his softest, 1 his
    hardest, MID (0.5) his ordinary pitch: a call with e 0.5 plays exactly like
@@ -344,7 +393,7 @@ const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
-  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, EFFORT, effortE, stuffAt, BASE, countBucket,
+  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

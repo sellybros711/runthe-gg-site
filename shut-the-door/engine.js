@@ -79,8 +79,12 @@ const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
    8: rules 5 (grade.js ROUTINE_RULES): an error on a routine play is
    extremely rare (contract.js ROUTINE). The same four draws read a row whose
    routine error share went to the out of its kind. A call with r 4 or before
-   replays exactly as under 7. */
-const ENGINE_VERSION = 8;
+   replays exactly as under 7.
+   9: rules 6 (grade.js RUNNER_RULES): the runners read the ball (contract.js
+   THE RUNNERS READ THE BALL). The same runner draw reads the advancement rows
+   weighted by how real runners went on a ball of that carry and side. A call
+   with r 5 or before replays exactly as under 8. */
+const ENGINE_VERSION = 9;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread.
    3: the hold table is solved with runs on a legal third out (rules 3), and
@@ -151,7 +155,7 @@ function createOuting(pack, opts) {
   const seed = opts.seed >>> 0;
   const st = model.startState();
   const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (![1, 2, 3, G.ABS_RULES, G.RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
+  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
   const o = {
     pack, model, seed, rules, mode: opts.mode || 'practice',
     outingId: opts.outingId || `${sc.id}:${seed}`,
@@ -282,7 +286,10 @@ function throwPitch(o, call) {
 
   // 4. what it does to the state, the runner draw choosing among the rows
   // rules 1 and 2 replay with a third out that scores none (grade.js THE THIRD OUT)
-  const trans = model.transitions(st, playCls, o.rules >= G.THIRD_OUT_RULES);
+  let trans = model.transitions(st, playCls, o.rules >= G.THIRD_OUT_RULES);
+  // rules 6 (THE RUNNERS READ THE BALL, contract.js runnerClass): the same runner draw, on the
+  // table's rows weighted by how real runners went on a ball like this one
+  if (o.rules >= G.RUNNER_RULES && playCls.startsWith('ip:')) trans = readTheBall(pack, st, playCls.slice(3), pitch, trans);
   let pickIdx = trans.length - 1;
   if (trans.length > 1) {
     let a2 = 0;
@@ -323,6 +330,12 @@ function throwPitch(o, call) {
   if (cls.startsWith('ip:')) {
     const label = t2.label || 'out';
     pr.inPlay = { bb: pitch[3], ev: pitch[4], la: pitch[5], spray: pitch[6], result: label, text: inPlayText(label, pitch[3], pitch[6], runs) };
+    if (o.rules >= G.RUNNER_RULES && pack.runners) {
+      // rules 6: how far the real ball carries (contract.js carryOf) and its class, for the scene
+      const c = pitch[3] !== 'ground' ? K.carryOf(pitch[4], pitch[5], pack.runners.dist.coef) : null;
+      if (c != null) pr.inPlay.carry = Math.round(c);
+      pr.inPlay.cls = K.runnerClass(cls.slice(3), pitch[3], pitch[4], pitch[5], pitch[6], pack.runners);
+    }
   }
   if (ctx) pr.arm = arm;     // rules 2: the arm's scale on his miss (fatigue and runners on)
   if (kept.e != null) {      // effort: what the pitch was, from his own real pitches (contract.js stuffAt)
@@ -338,6 +351,27 @@ function throwPitch(o, call) {
     challengePitch(o);
   }
   return { pitchResult: pr, pitchGrade: grade, state: publicState(o) };
+}
+
+/* Rules 6: the advancement rows for this ball, reweighted (contract.js THE
+   RUNNERS READ THE BALL). Each row's chance times the ratio of its runners'
+   category (runnerCategory) for this key, lead runner, outs and the ball's
+   class (runnerClass), measured on 2024 (pipeline/runners.py), then
+   renormalised. Every row is still the table's own legal play, and the runner
+   draw is the same draw. A ball with no class, or a class the data does not
+   move, keeps the table's mix. */
+function readTheBall(pack, st, cat, pitch, trans) {
+  const RN = pack.runners;
+  if (!RN || !st.bases || trans.length < 2) return trans;
+  const cl = K.runnerClass(cat, pitch[3], pitch[4], pitch[5], pitch[6], RN);
+  if (!cl) return trans;
+  const lead = st.bases & 4 ? 3 : st.bases & 2 ? 2 : 1;
+  const r = RN.ratio[`${cat}|${lead}|${st.outs < 2 ? 0 : 1}|${cl}`];
+  if (!r) return trans;
+  const w = trans.map(([p, t]) => p * r[K.RUNNER_CATS.indexOf(K.runnerCategory(st.bases, t.moves))]);
+  const sum = w.reduce((a, x) => a + x, 0);
+  if (!(sum > 0)) return trans;
+  return trans.map(([, t], i) => [w[i] / sum, t]);
 }
 
 /* What a transition does to the outing: the state, the runs, the end. One
