@@ -303,8 +303,13 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .pd.swing { background: var(--signal); }
 .pd.foul { background: var(--faint); }
 .pd.inplay { background: var(--data); }
-.pd.cur { width: 12px; height: 12px; margin: -6px 0 0 -6px; opacity: 1; }
-.pd.ball.cur { box-shadow: inset 0 0 0 2px var(--dim), 0 0 0 1.5px var(--bg); }
+/* the at bat's dots carry their pitch number (the owner, 2026-10-26). Fixed colours, not the theme's:
+   they sit on the 3D scene in both themes, and the number is white on every kind */
+.pd.cur { width: 18px; height: 18px; margin: -9px 0 0 -9px; opacity: 1; color: #fff; font: 700 11px/18px system-ui, sans-serif;
+  text-align: center; font-style: normal; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .9), 0 1px 3px rgba(0, 0, 0, .45); }
+.pd.called.cur { background: #0b0f17; }
+.pd.foul.cur { background: #6b7487; }
+.pd.ball.cur { background: rgba(11, 15, 23, .45); box-shadow: inset 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, .45); }
 .dotkey { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 8px 2px 1px; color: var(--g-dim); font-size: 11.5px; line-height: 1; pointer-events: none; }
 .dotkey span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .dotkey .pd { position: static; margin: 0; width: 8px; height: 8px; opacity: 1; box-shadow: 0 0 0 1px var(--bg); }
