@@ -3209,9 +3209,9 @@
   /* The menu ad keeps 150px from the controls above it, but only once it holds an ad. */
   .rtp-ad-inline[data-ad-zone="menu"]:has(ins[data-ad-status="filled"]){ margin-top:150px; }
   /* THE MENU AD'S SIZE, fixed (the owner, 2026-10-26: a full-width responsive unit filled half a
-     phone screen). A slim 320x100 banner on a phone, the 728x90 leaderboard from 768px up. An
+     phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
      unfilled unit collapses to nothing. */
-  [data-ad-zone="menu"] ins.adsbygoogle{display:inline-block;width:320px;height:100px}
+  [data-ad-zone="menu"] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
   @media (min-width:768px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   @media (max-width:1199px){
