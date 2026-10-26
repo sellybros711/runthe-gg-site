@@ -10,8 +10,8 @@ import * as M from './materials.js?v=6';
 import { battingClub, clubNamed } from './clubs.js?v=2';
 import { capFor } from './uniforms.js?v=1';
 import * as G from './gear3d.js?v=3';
-import * as HG from './headgear.js?v=2';
-import { measureHead, wear, wornShade } from './headgear.js?v=2';
+import * as HG from './headgear.js?v=3';
+import { measureHead, wear, wornShade } from './headgear.js?v=3';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=8';
@@ -139,6 +139,14 @@ export function dress(p, kit, numberText, weave) {
     const part = o.userData.part;
     if (!part) continue;
     const src = o.userData.src;
+    // the kit it wore until now goes, its own number texture with it (a new hitter every at bat was a
+    // new set of materials and a number texture each, never freed: a long session grew without end).
+    // The shared maps (the weave, the club's words, the source's maps) stay.
+    const was = o.material;
+    if (was && was.userData.dressed) {
+      if (was.name === 'number' && was.map) was.map.dispose();
+      was.dispose();
+    }
     if (part === 'uniform') {
       // the pants are a 'uniform' too: only the jersey (its node is named so) carries the words
       const jersey = !!(o.parent && /jersey/i.test(o.parent.name));
@@ -151,6 +159,7 @@ export function dress(p, kit, numberText, weave) {
     else if (part === 'undershirt') o.material = M.plain('undershirt', kit.undershirt, { roughness: 0.7 });
     else if (part === 'belt') o.material = M.plain('belt', kit.belt, { roughness: 0.35, sheen: 0, clearcoat: 0.4 });
     o.material.name = part;
+    o.material.userData.dressed = true;
   }
 }
 
@@ -549,7 +558,8 @@ export class People {
       b.helmet.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       b.helmet = null;
     }
-    if (b.bat) { this.scene.remove(b.bat); b.bat = null; }
+    // (his bat goes too: a new one is made for each hitter; its wood map is shared and stays)
+    if (b.bat) { this.scene.remove(b.bat); b.bat.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); b.bat = null; }
     for (const [bone, pos, q] of b.bind) { bone.position.copy(pos); bone.quaternion.copy(q); }
     b.root.position.set(0, 0, 0); b.root.rotation.set(0, 0, 0); b.root.scale.setScalar(1);
     b.root.updateMatrixWorld(true);
@@ -603,8 +613,16 @@ export class People {
     if (!skin || !skin.material.userData.u) return;
     const u = skin.material.userData.u;
     u.uTone.value = 0; u.uBeardAmt.value = 0;
-    if (f.tone > 0.01) { const d = this.tex.load(assetUrl('tex/skin_dark.webp')); d.colorSpace = THREE.SRGBColorSpace; d.flipY = false; u.uDark.value = d; u.uTone.value = f.tone; }
-    if (f.beard > 0) { const bm = this.tex.load(assetUrl('tex/beard_mask.webp')); bm.colorSpace = THREE.NoColorSpace; bm.flipY = false; u.uBeard.value = bm; u.uBeardAmt.value = f.beard; }
+    // (the two maps are loaded once and shared by every hitter: loaded again for each one, every at bat
+    // fetched, decoded and uploaded a new copy of each, and never freed the last)
+    if (f.tone > 0.01) {
+      if (!this.skinDark) { const d = this.skinDark = this.tex.load(assetUrl('tex/skin_dark.webp')); d.colorSpace = THREE.SRGBColorSpace; d.flipY = false; }
+      u.uDark.value = this.skinDark; u.uTone.value = f.tone;
+    }
+    if (f.beard > 0) {
+      if (!this.beardMask) { const bm = this.beardMask = this.tex.load(assetUrl('tex/beard_mask.webp')); bm.colorSpace = THREE.NoColorSpace; bm.flipY = false; }
+      u.uBeard.value = this.beardMask; u.uBeardAmt.value = f.beard;
+    }
   }
 
   /** His real height (root scale against the model's own) and build (the heavy and lean shape

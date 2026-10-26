@@ -229,6 +229,7 @@ export function rimTexture(edge, opts = {}) {
     data[i * 4 + 3] = 255;
   }
   const t = new THREE.DataTexture(data, N, 1, THREE.RGBAFormat);
+  t.userData.rim = true;
   t.wrapS = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearFilter;
   t.needsUpdate = true;
   return t;
@@ -259,6 +260,9 @@ export function wornShade(p, gear, edge, opts = {}) {
   for (const m of [p.head.skin, ...p.meshes.filter((x) => x.material.name === 'hair')]) {
     const u = m.material.userData.u;
     if (!u || !u.uGearM) continue;
+    // (the last helmet's rim goes: each hitter's helmet makes its own)
+    const was = u.uGearRim.value;
+    if (was && was !== tex && was.userData && was.userData.rim) was.dispose();
     u.uGearRim.value = tex;
     u.uGearOn.value = 1;
     m.visible = true;
