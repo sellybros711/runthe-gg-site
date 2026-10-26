@@ -114,6 +114,44 @@ function bodyHtml(body, where) {
   return out.join('\n\n');
 }
 
+/* AdSense units on the guides (Ads Agent, 2026-10-26). Two in-article units per guide: one
+   before the first ## heading (after the intro), one before the heading nearest the middle.
+   Never next to a game, never more than two, and never on the hub, which is a list of links.
+   A guide with fewer than three headings gets one. The initialiser at the foot of the page
+   starts each unit once and skips a placeholder slot, the same as every other page. */
+const AD_CLIENT = 'ca-pub-5952069078178257';
+const AD_IN_ARTICLE = '9845074071';
+const adUnit = () => `      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_IN_ARTICLE}"></ins>
+      </div>`;
+function withAds(html) {
+  const blocks = html.split('\n\n');
+  const heads = blocks.map((b, i) => (/^\s*<h2>/.test(b) ? i : -1)).filter((i) => i > 0);
+  if (!heads.length) return html;
+  const at = new Set([heads[0]]);
+  if (heads.length >= 3) {
+    const mid = blocks.length / 2;
+    const second = heads.slice(1).reduce((a, b) => (Math.abs(b - mid) < Math.abs(a - mid) ? b : a));
+    at.add(second);
+  }
+  return blocks.map((b, i) => (at.has(i) ? adUnit() + '\n\n' + b : b)).join('\n\n');
+}
+const AD_INIT = `  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+    }catch(e){}
+  })();
+  </script>
+`;
+
 /* The head, the consent defaults (Europe first, then everywhere) before the ad tag, and the
    footer are about.html's, so check-adsense reads a guide the way it reads every other page. */
 function page({ title, description, url, h1, sub, main, cta }) {
@@ -160,6 +198,9 @@ function page({ title, description, url, h1, sub, main, cta }) {
     h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
       font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
     .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
@@ -229,7 +270,7 @@ ${cta ? `
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
-</body>
+${AD_INIT}</body>
 </html>
 `;
 }
@@ -249,7 +290,7 @@ export function build() {
       title: meta.title, description: meta.description, url: `${SITE}/guides/${meta.slug}.html`,
       h1: `      <p class="crumb"><a href="/guides/">Guides</a> · ${GAME_NAME[meta.game]}</p>\n      <h1>${inline(meta.title, where)}</h1>`,
       sub: `A guide to ${esc(GAME_NAME[meta.game])}`,
-      main: bodyHtml(body, where),
+      main: withAds(bodyHtml(body, where)),
       cta: `<a class="cta" href="${meta.play_url}">Play ${esc(GAME_NAME[meta.game])}</a>`,
     });
   }
