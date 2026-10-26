@@ -150,7 +150,7 @@ if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missin
  * Auto ads must stay off in the AdSense dashboard; this check cannot see that, so it also
  * fails on the page-level switch that would turn it on from code. */
 /* Game pages whose start screen may carry one menu ad (the owner's call, 2026-10-26). */
-const MENU_ZONE_PAGES = new Set(['football/index.html']);
+const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html']);
 const READ_ONLY_PAGES = [/^index\.html$/, /^arcade\/index\.html$/, /^guides\/[^/]+\.html$/, /^[a-z]+\/how-to-play\.html$/];
 function walkCode(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

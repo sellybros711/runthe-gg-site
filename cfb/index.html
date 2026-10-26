@@ -3034,6 +3034,8 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);
     margin:0 0 6px;padding-top:16px;border-top:1px solid var(--line)}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  /* The menu ad keeps 150px from the buttons above it, but only once it holds an ad. */
+  .rtp-ad-inline[data-ad-zone="menu"]:has(ins[data-ad-status="filled"]){margin-top:150px}
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{display:block}
     .rtp-ad-rail{display:none !important}
@@ -3404,13 +3406,17 @@ or endorsed by the NCAA, the CFP or any school.
       </div>
     </div>
 
-    <!-- The banner, above the legal line. Placeholder slot; the initializer at the foot of
-         this file refuses to start one, so it renders nothing until a real id is pasted. -->
-    <div class="rtp-ad-inline">
+    <!-- THE MENU AD (Ads Agent, 2026-10-26, the owner's rule: ads on a game's start screen,
+         never in play). The one live unit in this game. menuAd() in show() starts it the
+         first time the start screen shows and REMOVES it the moment any other screen opens
+         (AdSense does not allow a loaded ad to be hidden). It is not started again until the
+         page reloads. Once filled it sits 150px below the last button; empty, it takes no
+         space. check-adsense holds the zone and the removal. -->
+    <div class="rtp-ad-inline" data-ad-zone="menu">
       <span class="rtp-ad-label">Advertisement</span>
       <ins class="adsbygoogle"
            data-ad-client="ca-pub-5952069078178257"
-           data-ad-slot="0000000000"
+           data-ad-slot="6069480594"
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
     </div>
@@ -4364,11 +4370,25 @@ let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,la
    bottom edge, which is where the fixed ad strip sits, and they are the one part of this
    that asks for undivided attention. */
 const NO_ADS=['s-load','s-season','s-po','s-bowl','s-brk'];
+/* THE MENU AD lives on the start screen and nowhere else. Started the first time the start
+   screen shows, removed (not hidden) the first time any other screen opens, and never started
+   again on this page load. The boot screen is the one exception, since every load passes
+   through it on the way to the start screen. A push fills the first unstarted unit in the
+   page, and this one comes before the rails and the strip, which are never started. */
+function menuAd(id){
+  const z=document.querySelector('[data-ad-zone="menu"]');
+  if(!z||id==='s-load') return;
+  if(id!=='s-intro'){ z.remove(); return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 function show(id){
   document.querySelectorAll('.confetti-cv').forEach(cv=>cv.remove());
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $(id).classList.add('on');window.scrollTo({top:0});
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
+  menuAd(id);
   if(typeof heroSync==='function') heroSync();
 }
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');
@@ -12437,6 +12457,7 @@ boot();
       for(var i=0;i<units.length;i++){
         var slot=units[i].getAttribute('data-ad-slot');
         if(!slot||/^0+$/.test(slot)) continue;
+        if(units[i].closest('[data-ad-zone]')) continue;   // the menu ad starts in menuAd()
         (adsbygoogle=window.adsbygoogle||[]).push({});
       }
     }catch(e){}
