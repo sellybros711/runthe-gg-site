@@ -41,6 +41,9 @@
     h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
       font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
     .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
@@ -96,6 +99,12 @@
 
       <p>Decades Draft lets you pick one decade and draft only from it. So which decade gives you the most for your money? The short answer: no decade is cheaper. What changes is what the wheel offers you. This guide shows how prices work, where each era is thin, and how to read an era card before you pick.</p>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>A price doesn't care what year it is</h2>
 
       <p>Every player's price comes from one formula: 1.5 times his WAR to the power 1.6. Nobody costs less than $1M. The year never goes in. A 4 WAR shortstop costs the same in 1925 as in 2015.</p>
@@ -130,6 +139,12 @@
       <p><b>Shape.</b> The card draws its top 40 seasons as bats against arms. A lopsided decade wears a chip: Pitchers' decade or Hitters' decade. In a pitchers' decade aces are easy to find. Good bats are rarer.</p>
 
       <p><b>Holes.</b> Some slots barely exist in some decades. The closer is the big one.</p>
+
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
 
       <h2>The dead-ball closer hole</h2>
 
@@ -193,5 +208,17 @@
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
+  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+    }catch(e){}
+  })();
+  </script>
 </body>
 </html>

@@ -6333,6 +6333,8 @@ window.GA_ID='G-L29P5MRWKE';
     font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);
     margin:0 0 6px;padding-top:14px;border-top:1px solid var(--line)}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  /* The menu ad keeps 150px from the buttons above it, but only once it holds an ad. */
+  .rtp-ad-inline[data-ad-zone="menu"]:has(ins[data-ad-status="filled"]){margin-top:150px}
   /* The gameplay screens stay clear for the same reason the pinned strip does. */
   body.rtp-hide-ads .rtp-ad-inline{display:none}
 
@@ -7301,17 +7303,18 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
          Every link opens in a new tab, deliberately. There is no mid-run save yet,
          so following a link in this tab during a draft would throw the run away. -->
-    <!-- The banner, between the last button and the legal links. Responsive rather than a
-         fixed 320x50: on a phone it runs the content width, on a desktop it caps at the
-         728px leaderboard shape instead of stretching across the whole window. The slot id
-         is a placeholder until the unit exists in the dashboard, and the initializer at the
-         foot of this file refuses to start a placeholder, so this renders nothing at all
-         until a real id is pasted in. -->
-    <div class="rtp-ad-inline">
+    <!-- THE MENU AD (Ads Agent, 2026-10-26, the owner's rule: ads on a game's start screen,
+         never in play). The one live unit in this game. It lives on this screen only:
+         menuAd() in show() starts it the first time the start screen is shown and REMOVES it
+         the moment any other screen opens, because AdSense does not allow a loaded ad to be
+         hidden and play must never sit beside one. It is not started again until the page
+         reloads. Once filled it sits 150px below the last button (Google's distance for game
+         controls); empty, it takes no space. check-adsense holds the zone and the removal. -->
+    <div class="rtp-ad-inline" data-ad-zone="menu">
       <span class="rtp-ad-label">Advertisement</span>
       <ins class="adsbygoogle"
            data-ad-client="ca-pub-5952069078178257"
-           data-ad-slot="0000000000"
+           data-ad-slot="6069480594"
            data-ad-format="horizontal"
            data-full-width-responsive="true"></ins>
     </div>
@@ -9984,6 +9987,19 @@ const NO_ADS=['s-season','s-po','s-bscout','s-bgame','s-bfreeze'];
    added next. Closing used to go to the results page if a run had finished and to the
    landing screen otherwise, which is the right guess twice and wrong from the squad, the
    season and the draft. */
+/* THE MENU AD lives on the start screen and nowhere else. Started the first time the start
+   screen shows, removed (not hidden) the first time any other screen opens, and never started
+   again on this page load. The boot screen is the one exception, since every load passes
+   through it on the way to the start screen. A push fills the first unstarted unit in the
+   page, and this one comes before the rails and the strip, which are never started. */
+function menuAd(id){
+  const z=document.querySelector('[data-ad-zone="menu"]');
+  if(!z||id==='s-load') return;
+  if(id!=='s-intro'){ z.remove(); return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 let boardFrom='s-intro';
 function show(id){
   if(id==='s-board'){
@@ -10006,6 +10022,7 @@ function show(id){
      by any door has to stop them, or a drive keeps animating over whatever comes next. */
   if(id!=='s-bgame'&&typeof bossStop==='function') bossStop();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
+  menuAd(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
      (a finished run, a bailed draft, the leaderboard), and it carries two bits of state
@@ -28892,6 +28909,7 @@ boot();
       for(var i=0;i<units.length;i++){
         var slot=units[i].getAttribute('data-ad-slot');
         if(!slot||/^0+$/.test(slot)) continue;
+        if(units[i].closest('[data-ad-zone]')) continue;   // the menu ad starts in menuAd()
         (adsbygoogle=window.adsbygoogle||[]).push({});
       }
     }catch(e){}

@@ -41,6 +41,9 @@
     h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
       font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
     .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
@@ -96,6 +99,12 @@
 
       <p>Putt Putt Tour is the mini golf game inside Run The Tour. You walk a trail from hole to hole and play each one yourself. It runs in your browser on a phone or a computer. This guide covers the three things that decide how far you get: stars, lives and worlds.</p>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>Stars: what each hole pays</h2>
 
       <p>Every hole has a par. Your score against it decides your stars.</p>
@@ -145,6 +154,12 @@
         <li><b>The Daily Hole.</b></li>
         <li><b>Secret holes.</b></li>
       </ul>
+
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
 
       <h2>Lives: how they come back</h2>
 
@@ -203,5 +218,17 @@
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
+  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+    }catch(e){}
+  })();
+  </script>
 </body>
 </html>

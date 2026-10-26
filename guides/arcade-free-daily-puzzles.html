@@ -41,6 +41,9 @@
     h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
       font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
     .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
@@ -95,6 +98,12 @@
       <p class="sub">A guide to Run The Arcade</p>
 
       <p>Run The Arcade has four games you can play free every day: the Daily Crossword, Sportegories, Alma Mater and Career Path. You don't need an account. You get one play of each a day, and they reset at midnight your time. An account saves your result to the daily board and keeps your streak. Here's how each game really scores, and how to get through it faster.</p>
+
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
 
       <h2>Before you start</h2>
 
@@ -153,6 +162,12 @@
         <li><b>Hunt for double letters.</b> A name where both parts start with the letter doubles the base points.</li>
         <li><b>The clock doesn't stop.</b> It runs on real time, so leaving the page doesn't pause it. Stay on the card.</li>
       </ul>
+
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
 
       <h2>Alma Mater</h2>
 
@@ -219,5 +234,17 @@
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
+  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+    }catch(e){}
+  })();
+  </script>
 </body>
 </html>

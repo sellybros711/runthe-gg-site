@@ -141,6 +141,46 @@ if (fs.existsSync(sitemap)) {
 
 if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missing');
 
+/* NO AD EVER TOUCHES PLAY (the owner's rule, 2026-10-26: "the ads never impact someone's
+ * gameplay while they're playing"). A real ad unit, one whose slot id is not all zeros, may
+ * sit only on pages a player reads, never on a page a player plays. Game pages keep their
+ * slots as placeholders, which their initialisers refuse to start. Moving a game slot to a
+ * real id means adding that page here, and that is the owner's decision, made only after
+ * the slot is measured at least 150px from every game control at every width it shows.
+ * Auto ads must stay off in the AdSense dashboard; this check cannot see that, so it also
+ * fails on the page-level switch that would turn it on from code. */
+/* Game pages whose start screen may carry one menu ad (the owner's call, 2026-10-26). */
+const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html']);
+const READ_ONLY_PAGES = [/^index\.html$/, /^arcade\/index\.html$/, /^guides\/[^/]+\.html$/, /^[a-z]+\/how-to-play\.html$/];
+function walkCode(dir, out = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (SKIP_DIRS.has(e.name)) continue;
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walkCode(p, out);
+    else if (/\.(html|js)$/.test(e.name)) out.push(p);
+  }
+  return out;
+}
+for (const file of walkCode(ROOT)) {
+  const rel = path.relative(ROOT, file);
+  const src = fs.readFileSync(file, 'utf8');
+  if (/enable_page_level_ads/.test(src)) problems.push(`${rel}: turns on page-level (Auto) ads from code`);
+  if (READ_ONLY_PAGES.some((re) => re.test(rel))) continue;
+  /* The one exception on a game page: a unit inside the start screen's menu zone
+   * (data-ad-zone="menu"), which the page starts only on its start screen and REMOVES the
+   * moment any other screen opens. Such a page must carry that removal (menuAd) and its
+   * initialiser must skip the zone, or the unit could load behind a game. */
+  const real = [...src.matchAll(/data-ad-slot=["'](\d+)["']|AD_SLOT\s*=\s*['"](\d+)['"]/g)]
+    .filter((m) => !/^0+$/.test(m[1] || m[2]))
+    .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /data-ad-zone="menu"[^>]*>\s*<span[^>]*>[^<]*<\/span>\s*<ins[^>]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))))
+    .map((m) => m[1] || m[2]);
+  if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
+  if (MENU_ZONE_PAGES.has(rel)) {
+    if (!/function menuAd\(/.test(src) || !/^\s+menuAd\(id\);/m.test(src)) problems.push(`${rel}: has a menu ad zone but show() does not call menuAd(id) to remove it when play starts`);
+    if (!/closest\('\[data-ad-zone\]'\)\) continue/.test(src)) problems.push(`${rel}: the initialiser must skip the menu ad zone (menuAd starts it on the start screen only)`);
+  }
+}
+
 if (problems.length) {
   console.error(`AdSense readiness: ${problems.length} problem(s) across ${checked} indexable pages\n`);
   for (const p of problems) console.error('  ' + p);
