@@ -801,7 +801,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
    held, and the one word. Execution only: no grade colours (signal and data, never green to red). */
 .dock.metering .arsenal, .dock.metering .btn.throw { visibility: hidden; }
 .relm { position: absolute; z-index: 6; inset: 0; box-sizing: border-box; padding: 10px 14px 12px; border-radius: 16px;
-  background: linear-gradient(180deg, rgba(34, 43, 62, .9), rgba(11, 15, 23, .92)); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); color: #f4f5f7; display: flex; flex-direction: column; justify-content: center; gap: 12px;
+  background: linear-gradient(180deg, rgba(34, 43, 62, .96), rgba(11, 15, 23, .97)); color: #f4f5f7; display: flex; flex-direction: column; justify-content: center; gap: 12px;
   box-shadow: 0 3px 0 var(--signal), 0 12px 30px rgba(11, 15, 23, .3); cursor: pointer;
   touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
 :root[data-theme="dark"] .relm { box-shadow: 0 3px 0 var(--signal), inset 0 0 0 1px rgba(255, 255, 255, .08), 0 12px 30px rgba(0, 0, 0, .45); }
@@ -828,23 +828,27 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .rm-good { background: rgba(91, 130, 255, .42); border-radius: 4px; }
 .rm-best { background: linear-gradient(180deg, #ff7a52, var(--signal)); border-radius: 4px; box-shadow: 0 0 14px rgba(255, 79, 31, .6), inset 0 0 0 1px rgba(255, 255, 255, .35); }
 .rm-mark { position: absolute; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; background: rgba(255, 255, 255, .9); border-radius: 1px; }
-.rm-needle { position: absolute; z-index: 2; top: -7px; bottom: -7px; width: 6px; margin-left: -3px; border-radius: 3px; background: #fff;
-  box-shadow: 0 0 0 2px var(--night), 0 0 10px rgba(255, 255, 255, .5); will-change: left; }
-.rm-needle::before { content: ''; position: absolute; left: 50%; top: -8px; transform: translateX(-50%); border: 6px solid transparent; border-top: 7px solid #fff; border-bottom: 0; }
+.rm-needle, .rm-eneedle { position: absolute; z-index: 2; left: 0; width: 100%; pointer-events: none; will-change: transform; transform: translate3d(0, 0, 0); }
+.rm-needle { top: -7px; bottom: -7px; }
+.rm-needle::after, .rm-eneedle::after { content: ''; position: absolute; top: 0; bottom: 0; left: -3px; width: 6px; border-radius: 3px; background: #fff;
+  box-shadow: 0 0 0 2px var(--night), 0 0 10px rgba(255, 255, 255, .5); transition: transform .12s ease-out; }
+.rm-needle::before { content: ''; position: absolute; left: 0; top: -8px; transform: translateX(-50%); border: 6px solid transparent; border-top: 7px solid #fff; border-bottom: 0; }
 .relm.two[data-stage="effort"] .rm-needle { visibility: hidden; }
 /* effort: three zones, a fill that runs through them, the zone it is in lit */
 .rm-etrack { background: linear-gradient(90deg, rgba(91, 130, 255, .16) 0 33.333%, rgba(255, 255, 255, .06) 33.333% 66.667%, rgba(255, 79, 31, .18) 66.667%); }
 .rm-etrack::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background: linear-gradient(90deg, transparent calc(33.333% - 1px), rgba(255, 255, 255, .4) calc(33.333% - 1px) calc(33.333% + 1px), transparent calc(33.333% + 1px) calc(66.667% - 1px), rgba(255, 255, 255, .4) calc(66.667% - 1px) calc(66.667% + 1px), transparent calc(66.667% + 1px)); }
-.rm-efill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 8px 0 0 8px; overflow: hidden; }
-.rm-efill::before { content: ''; position: absolute; top: 3px; bottom: 3px; left: 3px; width: var(--tw, 300px); border-radius: 5px;
+.rm-eclip { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; pointer-events: none; }
+.rm-efill, .rm-egrad { position: absolute; inset: 0; will-change: transform; transform: translate3d(-100%, 0, 0); }
+.rm-egrad { inset: 3px; border-radius: 5px; transform: translate3d(100%, 0, 0);
   background: linear-gradient(90deg, #5b82ff, #c9d4ff 45%, #ffffff 55%, #ff9a78 75%, var(--signal)); }
 .rm-zones { position: absolute; inset: 0; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); pointer-events: none; }
 .rm-zones b { display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-style: italic; font-size: 13px;
   letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .5); text-shadow: 0 1px 2px rgba(0, 0, 0, .7); transition: color .1s; }
 .relm[data-zone="soft"] [data-z="soft"], .relm[data-zone="normal"] [data-z="normal"], .relm[data-zone="max"] [data-z="max"] { color: #fff; }
 .relm[data-zone="normal"] [data-z="normal"] { color: var(--night); text-shadow: none; }
-.rm-eneedle { position: absolute; z-index: 2; top: -5px; bottom: -5px; width: 4px; margin-left: -2px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 2px var(--night); will-change: left; }
+.rm-eneedle { top: -5px; bottom: -5px; }
+.rm-eneedle::after { left: -2px; width: 4px; border-radius: 2px; box-shadow: 0 0 0 2px var(--night); }
 /* THE STOP: the lock ring opens from where it stopped, the track flashes, the value holds */
 .rm-lock { position: absolute; z-index: 3; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; border: 2.5px solid #fff; opacity: 0; pointer-events: none; }
 .rm-lock.go { animation: rm-lock .45s ease-out; }
@@ -853,8 +857,8 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 @keyframes rm-flash { 0% { background-color: rgba(255, 255, 255, .34); } 100% { background-color: rgba(255, 255, 255, .07); } }
 .relm.is-done { animation: rm-punch .18s ease-out; }
 @keyframes rm-punch { 0% { transform: scale(.985); } 100% { transform: none; } }
-.relm.is-done .rm-needle { transform: scaleY(1.15); transition: transform .12s ease-out; }
-.relm.is-best .rm-needle { box-shadow: 0 0 0 2px var(--night), 0 0 16px 4px rgba(255, 79, 31, .85); }
+.relm.is-done .rm-needle::after { transform: scaleY(1.15); }
+.relm.is-best .rm-needle::after { box-shadow: 0 0 0 2px var(--night), 0 0 16px 4px rgba(255, 79, 31, .85); }
 .relm.is-best .rm-acc .rm-lock { border-color: var(--signal); }
 .relm.is-best .rm-best { animation: rm-best .5s ease-out; }
 @keyframes rm-best { 0% { background: #fff; box-shadow: 0 0 26px 6px rgba(255, 79, 31, .9); } 100% { } }

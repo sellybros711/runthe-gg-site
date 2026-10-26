@@ -69,7 +69,7 @@ function create(el) {
     '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span></div>' +
     '<div class="rm-row rm-eff">' +
       '<span class="rm-lbl">power</span>' +
-      '<div class="rm-track rm-etrack"><i class="rm-efill"></i>' +
+      '<div class="rm-track rm-etrack"><i class="rm-eclip"><i class="rm-efill"><i class="rm-egrad"></i></i></i>' +
         '<span class="rm-zones"><b data-z="soft">soft</b><b data-z="normal">normal</b><b data-z="max">max</b></span>' +
         '<i class="rm-eneedle"></i><i class="rm-lock"></i></div>' +
     '</div>' +
@@ -80,7 +80,7 @@ function create(el) {
     '</div>';
   var q = function (s) { return el.querySelector(s); };
   var verb = q('.rm-verb'), call = q('.rm-call');
-  var effRow = q('.rm-eff'), efill = q('.rm-efill'), eneedle = q('.rm-eneedle'), elock = q('.rm-eff .rm-lock');
+  var effRow = q('.rm-eff'), efill = q('.rm-efill'), egrad = q('.rm-egrad'), eneedle = q('.rm-eneedle'), elock = q('.rm-eff .rm-lock');
   var needle = q('.rm-needle'), good = q('.rm-good'), best = q('.rm-best'), mark = q('.rm-mark'), alock = q('.rm-acc .rm-lock'), word = q('.rm-word');
   var live = null;
 
@@ -95,12 +95,20 @@ function create(el) {
     best.style.left = pct(b.best[0]); best.style.width = pct(b.best[1] - b.best[0]);
     mark.style.left = pct(MT.MARK);
   }
+  /* THE SMOOTH SWEEP (the owner, 2026-10-26: "the meter is laggy"). Every frame writes transforms
+     only: the needle is a rail the width of its track slid by translate3d (a percent of the rail is a
+     percent of the track), and the fill is a full width bar slid in from the left inside a clip with
+     its colours slid back the other way, so they hold still on the track. No left or width per frame,
+     so no layout and no paint: the compositor moves them. The zone word is written only when it
+     changes. Where the needle is comes from the clock (meter.js needleAt of the elapsed ms), never a
+     frame count, so a dropped frame skips a step and never moves the timing or the stop. */
+  function slide(x, f) { x.style.transform = 'translate3d(' + (Math.max(-1, Math.min(1, f)) * 100).toFixed(3) + '%,0,0)'; }
   function placeEffort(e) {
-    efill.style.width = pct(e);
-    eneedle.style.left = pct(e);
-    el.dataset.zone = zoneOf(e);
+    slide(efill, e - 1); slide(egrad, 1 - e); slide(eneedle, e);
+    var z = zoneOf(e);
+    if (el.dataset.zone !== z) el.dataset.zone = z;
   }
-  function placeNeedle(pos) { needle.style.left = pct(pos); }
+  function placeNeedle(pos) { slide(needle, pos); }
   function lockAt(lockEl, pos) {
     lockEl.style.left = pct(pos);
     lockEl.classList.remove('go'); void lockEl.offsetWidth; lockEl.classList.add('go');
@@ -197,8 +205,6 @@ function create(el) {
     verb.textContent = opts.verb || 'release';
     call.textContent = opts.label || '';
     el.hidden = false;
-    /* the fill's colours run the whole track, so the zone it reaches has its own colour */
-    if (eff) el.style.setProperty('--tw', Math.max(0, q('.rm-etrack').clientWidth - 6) + 'px');
     return new Promise(function (resolve) {
       live = { t0: performance.now(), opts: opts, resolve: resolve, done: false, raf: 0, e: null, stage: eff ? 'effort' : 'acc' };
       if (eff) { placeEffort(0); placeBands(MT.EFFORT_MID != null ? MT.EFFORT_MID : 0.5); placeNeedle(0); setStage('effort'); }

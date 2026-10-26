@@ -655,6 +655,8 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   const o0 = E.createOuting(real, { seed: 3, model: rm });
   check('rules 7: the spot starts with its real runner on first (Jose Ramirez, 2016 WS 7)', o0.run.on[1] === '608070' && o0.st.bases === 1);
   check('rules 7: no pickoff before the first pitch', !E.pickoffLive(o0));
+  check('rules 7: a pickoff never raises the steal attempt (the data\'s 1.8x after a throw is the pitcher reading the runner, not caused by the throw)',
+    Object.keys(real.steal.attMult).every(k => !k.startsWith('po|')) && Object.entries(real.steal.sucZ).filter(([k]) => k.startsWith('po|2|1')).every(([, z]) => z <= 0));
   let bad = '';
   try { E.throwPitch(E.createOuting(real, { seed: 3, model: rm }), { type: rm.types[0], cell: 12, q: 0.5, e: 1, ss: 1 }); bad = 'max power on a quick delivery was taken'; } catch (e) { /* refused */ }
   try { E.throwPitch(E.createOuting(real, { seed: 3, model: rm, rules: 6 }), { type: rm.types[0], cell: 12, ss: 1 }); bad = 'a quick delivery under rules 6 was taken'; } catch (e) { /* refused */ }
