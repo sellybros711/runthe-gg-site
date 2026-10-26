@@ -131,6 +131,7 @@ function show(id) {
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
+  if (id === 's-result') playResult();
 }
 
 /* ---- sound: four noises made on the spot, nothing to download ---------------- */
@@ -1420,93 +1421,207 @@ function runsOf(r, st) { return r.runs != null ? r.runs : st && st.score ? st.sc
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
   var runs = runsOf(r, st);
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice \u00b7 not scored' : (s.preview ? 'preview' : '#' + s.number) + ' \u00b7 final \u00b7 ' + s.title.toLowerCase();
+  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : (s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
   $('r-hero').className = 'r-hero ' + r.outcome;
+  /* the closer's club on the rail's edge, from the pack */
+  var tc = s.pitcher.teamColors;
+  $('s-result').style.setProperty('--club', tc && tc[0] ? tc[0] : '');
   var p = Math.round(r.percentile);
-  $('r-line').innerHTML =
-    '<span class="fact"><b>' + esc(r.pitches) + '</b>' + (r.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
-    (runs != null ? '<span class="fact"><b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') + '</span>' : '');
+  R.nums = { p: r.pitches, r: runs, pct: p };
+  $('r-kp').innerHTML = '<b>' + esc(r.pitches) + '</b>' + (r.pitches === 1 ? 'pitch' : 'pitches');
+  $('r-kr').hidden = runs == null;
+  $('r-kr').innerHTML = runs != null ? '<b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') : '';
   $('r-npitch').textContent = r.pitches + (r.pitches === 1 ? ' pitch' : ' pitches');
   $('r-strip').innerHTML = stripHTML(r.strip, true);
   var WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
   $('r-legend').innerHTML = C.BANDS.map(function (b) { return '<span><i class="sq ' + b.band + '"></i>' + WORD[b.band] + '</span>'; }).join('');
   $('r-pct').innerHTML = p + '<sup>' + ordSuffix(p) + '</sup>';
+  $('r-kpct').setAttribute('aria-label', p + ordSuffix(p) + ' of closers');
   $('r-pctline').innerHTML = 'better than <b>' + esc(p) + '%</b> of the closer pool in this spot.';
   $('r-score').textContent = r.score != null ? 'score ' + r.score : '';
   $('r-chart').innerHTML = poolChart(r);
   $('r-like').textContent = r.pitchedLike ? r.pitchedLike.name : '-';
   $('r-why').textContent = r.pitchedLike ? r.pitchedLike.reason : '';
-  var rv = r.reveal || {}, his = lastName(s.pitcher.name);
+  var rv = r.reveal || {};
   $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
-  $('r-real').innerHTML = '<div class="vs-t"><small>you vs the real ' + esc(his.toLowerCase()) + '</small>' +
-    '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal, his)) + '</b>' +
+  $('r-real').innerHTML = '<div class="vs-t"><small>' + VS_LABEL + '</small>' +
+    '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal)) + '</b>' +
     vsWhy(r, rv, runs) + '</div>';
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
   renderStreak();
+  /* the stagger's order: the strip's squares, the menu's rows, the tiles, the pitches */
+  ['#r-strip .sq', '#r-nav .nv:not([hidden])', '#s-result .r-tile', '#r-reveal .pc'].forEach(function (q) {
+    document.querySelectorAll(q).forEach(function (el, i) { el.style.setProperty('--i', Math.min(i, 24)); });
+  });
+  navSelect($('r-coach'));
 }
 
-/* ---- you against the real pitcher ------------------------------------------------------------
-   The verdict is the engine's (vsReal: the outcome, then runs, then pitches when his count is
-   known). The line under it says which of the three decided it, in the result's own numbers. */
-var VS_SHORT = { beat: 'beat him', matched: 'matched him', lost: 'he won' };
-function vsHead(v, his) {
-  return v === 'beat' ? 'you beat ' + his : v === 'matched' ? 'you matched ' + his : v === 'lost' ? his + ' did better' : '-';
+/* ---- the result's motion and its menu ------------------------------------------------------
+   The entrance plays once each time the result comes up: the outcome slams in, the rail and the
+   tiles rise, the three numbers count up to the engine's own. Reduced motion shows them at once.
+   The menu is console rows: the selected one is signal, arrow keys or a pad's d-pad move it, enter
+   or the pad's A picks it. Nothing on it opens by itself. */
+var R = { nums: null, run: 0, pad: 0, padHeld: 0 };
+function reducedMotion() { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+function playResult() {
+  var sec = $('s-result');
+  sec.classList.remove('r-play'); void sec.offsetWidth; sec.classList.add('r-play');
+  var n = R.nums, my = ++R.run;
+  if (!n) return;
+  var set = function (k) {
+    var pv = Math.round(n.p * k), rv = n.r == null ? null : Math.round(n.r * k), cv = Math.round(n.pct * k);
+    $('r-kp').firstChild.textContent = pv;
+    if (rv != null) $('r-kr').firstChild.textContent = rv;
+    $('r-pct').innerHTML = cv + '<sup>' + ordSuffix(cv) + '</sup>';
+  };
+  if (reducedMotion()) { set(1); return; }
+  var t0 = null, MS = 900, DELAY = 420;
+  set(0);
+  function tick(t) {
+    if (my !== R.run) return;
+    if (t0 == null) t0 = t;
+    var k = Math.max(0, Math.min(1, (t - t0 - DELAY) / MS));
+    set(1 - Math.pow(1 - k, 3));
+    if (k < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
+function navRows() { return [].slice.call(document.querySelectorAll('#r-nav .nv')).filter(function (b) { return !b.hidden; }); }
+function navSelect(b) {
+  if (!b) return;
+  navRows().forEach(function (x) { x.classList.toggle('sel', x === b); });
+}
+function navMove(d) {
+  var rows = navRows(), cur = rows.indexOf(document.querySelector('#r-nav .nv.sel'));
+  var next = rows[Math.max(0, Math.min(rows.length - 1, cur + d))] || rows[0];
+  navSelect(next);
+  next.focus({ preventScroll: true });
+}
+function resultIdle() { return document.body.dataset.screen === 's-result' && !document.querySelector('.sheet.on'); }
+function initResultNav() {
+  var nav = $('r-nav');
+  nav.addEventListener('mouseover', function (e) { var b = e.target.closest('.nv'); if (b) navSelect(b); });
+  nav.addEventListener('focusin', function (e) { var b = e.target.closest('.nv'); if (b) navSelect(b); });
+  document.addEventListener('keydown', function (e) {
+    if (!resultIdle() || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    /* inside the menu the arrows move it; elsewhere they scroll, except on a desk with nothing focused */
+    var inNav = nav.contains(document.activeElement);
+    var desk = window.matchMedia && matchMedia('(min-width: 1100px)').matches;
+    if (!inNav && !(desk && (document.activeElement === document.body || !document.activeElement))) return;
+    e.preventDefault();
+    if (!inNav) { var sel = nav.querySelector('.nv.sel') || navRows()[0]; sel.focus({ preventScroll: true }); return; }
+    navMove(e.key === 'ArrowDown' ? 1 : -1);
+  });
+  /* a pad: the d-pad or the left stick moves the menu, A picks. Read only while a pad is connected */
+  window.addEventListener('gamepadconnected', function () { if (!R.pad) R.pad = requestAnimationFrame(padTick); });
+}
+function padTick(t) {
+  var pads = navigator.getGamepads ? [].slice.call(navigator.getGamepads()).filter(Boolean) : [];
+  if (!pads.length) { R.pad = 0; return; }
+  R.pad = requestAnimationFrame(padTick);
+  if (!resultIdle()) return;
+  var g = pads[0], btn = function (i) { return !!(g.buttons[i] && g.buttons[i].pressed); };
+  var y = g.axes && g.axes[1] || 0;
+  var dir = btn(12) || y < -0.6 ? -1 : btn(13) || y > 0.6 ? 1 : 0, a = btn(0);
+  var key = dir ? 'd' + dir : a ? 'a' : '';
+  if (!key) { R.padHeld = 0; R.padKey = ''; return; }
+  if (key === R.padKey && t - R.padHeld < 260) return;
+  R.padKey = key; R.padHeld = t;
+  if (dir) navMove(dir);
+  else { var sel = document.querySelector('#r-nav .nv.sel'); if (sel) sel.click(); }
+}
+
+/* ---- you against the real game ---------------------------------------------------------------
+   You pitch as him, so the comparison is with what really happened (the owner, 2026-10-26: "you
+   beat Yamamoto sounds weird when you're also playing as him"). The verdict is the engine's
+   (vsReal: the outcome, then runs, then pitches when his count is known). The line under it says
+   which of the three decided it, in the result's own numbers. */
+var VS_LABEL = 'you vs the real game';
+var VS_SHORT = { beat: 'rewrote history', matched: 'matched history', lost: 'history did better' };
+function vsHead(v) {
+  return v === 'beat' ? 'you rewrote history' : v === 'matched' ? 'you matched history' : v === 'lost' ? 'history did better' : '-';
+}
+/* the real game's column: the year when the pack has it */
+function realCol() { var y = S.scn && S.scn.pitcher && S.scn.pitcher.year; return y ? String(y) : 'real game'; }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
-/* two labelled lines, like the side by side card: your result, his result. The outcome first, then
-   runs when the outcomes tie, then pitches when the runs tie too (the order vsReal decides by). */
+/* two labelled lines, like the side by side card: your result, the real result. The outcome first,
+   then runs when the outcomes tie, then pitches when the runs tie too (the order vsReal decides by). */
 function vsParts(r, rv, runs) {
   var label = function (o) { return (C.OUTCOME_LABEL[o] || '').toLowerCase(); };
   if (!label(r.outcome) || !label(rv.outcome)) return null;
-  var mine = [label(r.outcome)], his = [label(rv.outcome)];
+  var mine = [label(r.outcome)], real = [label(rv.outcome)];
   if (r.outcome === rv.outcome && runs != null && rv.runs != null) {
-    mine.push(plural(runs, 'run', 'runs')); his.push(plural(rv.runs, 'run', 'runs'));
+    mine.push(plural(runs, 'run', 'runs')); real.push(plural(rv.runs, 'run', 'runs'));
     if (runs === rv.runs && typeof rv.pitches === 'number') {
-      mine.push(plural(r.pitches, 'pitch', 'pitches')); his.push(plural(rv.pitches, 'pitch', 'pitches'));
+      mine.push(plural(r.pitches, 'pitch', 'pitches')); real.push(plural(rv.pitches, 'pitch', 'pitches'));
     }
   }
-  return { mine: mine.join(' · '), his: his.join(' · ') };
+  return { mine: mine.join(' · '), real: real.join(' · ') };
 }
 function vsWhy(r, rv, runs) {
   var p = vsParts(r, rv, runs);
-  return p ? '<span class="vs-l"><i>your result</i>' + esc(p.mine) + '</span><span class="vs-l"><i>his result</i>' + esc(p.his) + '</span>' : '';
+  return p ? '<span class="vs-l"><i>your result</i>' + esc(p.mine) + '</span><span class="vs-l"><i>real result</i>' + esc(p.real) + '</span>' : '';
 }
 /* the same two lines as plain text, for the share card's canvas */
 function vsText(r, rv, runs) {
   var p = vsParts(r, rv, runs);
-  return p ? 'your result: ' + p.mine + '. his result: ' + p.his + '.' : null;
+  return p ? 'your result: ' + p.mine + '. real result: ' + p.real + '.' : null;
 }
 
-/* Your plate appearances from the outing's log: one per batter, in order. The word is the play by
-   play's tag on the pitch that ended it. */
-function myPAs(log) {
+/* Your plate appearances from the outing's log: one per batter, in order, each with its pitches.
+   The word is the play by play's tag on the pitch that ended it; each pitch keeps its own tag. */
+function myPAs(log, strip) {
   var out = [], start = 0, bi = 0, runs = 0;
   (log || []).forEach(function (pr, i) {
     runs += pr.runs || 0;
     if (!pr.paOver && i < log.length - 1) return;
     var b = batterAt(bi);
-    out.push({ batter: b.name, word: playText(pr, b).tag, pitches: i - start + 1, runs: runs });
+    var calls = log.slice(start, i + 1).map(function (q, j) {
+      return { n: start + j + 1, type: q.call && q.call.type, velo: q.velo, count: q.countBefore, tag: playText(q, b).tag, band: strip && strip[start + j] };
+    });
+    out.push({ batter: b.name, bats: b.bats, word: playText(pr, b).tag, pitches: i - start + 1, runs: runs, calls: calls });
     start = i + 1; runs = 0;
     if (pr.paOver) bi++;
   });
   return out;
 }
+/* a pitch type's chip takes ink text on a light colour */
+function lightColor(hex) {
+  var m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return false;
+  var v = parseInt(m[1], 16), r = v >> 16 & 255, g = v >> 8 & 255, b = v & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150;
+}
+/* the card is narrow: the two long strike tags get their short form (the title keeps the long one) */
+var CARD_TAG = { 'swinging strike': 'swinging', 'called strike': 'called' };
+var BAND_WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
+function pitchCard(c) {
+  var col = TYPE_COLORS[c.type] || '#64748b', nm = typeName(c.type);
+  var v = c.velo != null && isFinite(c.velo) ? Math.round(c.velo) : null;
+  var cnt = c.count ? c.count.b + '-' + c.count.s : '';
+  var meta = [v, cnt].filter(function (x) { return x != null && x !== ''; }).join(' · ');
+  var title = 'pitch ' + c.n + ': ' + nm + (v != null ? ', ' + v + ' mph' : '') + (cnt ? ', ' + cnt : '') + ', ' + c.tag + (c.band ? ', ' + BAND_WORD[c.band] : '');
+  return '<span class="pc" title="' + esc(title) + '"><b class="n">' + c.n + '</b>' +
+    '<span class="ty' + (lightColor(col) ? ' lt' : '') + '" style="--tc:' + col + '">' + esc(c.type) + '</span>' +
+    '<span class="m">' + esc(meta) + '</span><span class="m">' + esc(CARD_TAG[c.tag] || c.tag) + '</span><i class="bd ' + esc(c.band || '') + '"></i></span>';
+}
 
-/* Two columns, you and him. The outcome, runs and pitches, then one row per batter faced in the
-   real order. A batter one side never faced is a quiet dash. Only an unambiguous edge is marked:
-   the better outcome, fewer runs, fewer pitches. A plate appearance is never judged. */
+/* Two columns, you and the real game. The outcome, runs and pitches, then one row per batter faced
+   in the real order, with your pitches between his name and the two results. A batter one side
+   never faced is a quiet dash. Only an unambiguous edge is marked: the better outcome, fewer runs,
+   fewer pitches. A plate appearance is never judged. */
 function compareCard(r, rv, runs, st) {
-  var s = S.scn, his = lastName(s.pitcher.name);
   var none = '<span class="v none">-</span>';
   var cell = function (html, win, cls) { return '<span class="v' + (cls ? ' ' + cls : '') + (win ? ' win' : '') + '">' + html + '</span>'; };
   var row = function (k, a, b) { return '<div class="cmp-row"><span class="k">' + k + '</span>' + a + b + '</div>'; };
   var rk = C.OUTCOME_RANK, mineO = rk[r.outcome], hisO = rk[rv.outcome];
   var hp = typeof rv.pitches === 'number' ? rv.pitches : null;
+  var col = realCol();
   var rows =
     row('result', cell('<b class="o ' + esc(r.outcome) + '">' + esc((C.OUTCOME_LABEL[r.outcome] || '').toLowerCase()) + '</b>', mineO > hisO),
       rv.outcome ? cell('<b class="o ' + esc(rv.outcome) + '">' + esc((C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase()) + '</b>', hisO > mineO) : none) +
@@ -1514,21 +1629,24 @@ function compareCard(r, rv, runs, st) {
       rv.runs == null ? none : cell('<b>' + esc(rv.runs) + '</b>', runs != null && rv.runs < runs)) +
     row('pitches', cell('<b>' + esc(r.pitches) + '</b>', hp != null && r.pitches < hp),
       hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(rv.pitchesNote || 'not on record'), false, 'note'));
-  var mine = myPAs(st && st.log), real = rv.plateAppearances || [];
+  var mine = myPAs(st && st.log, r.strip), real = rv.plateAppearances || [];
   var n = Math.max(mine.length, real.length), bats = '';
+  var bat = (clubsOf(S.scn).them || {}).pri || '';
   for (var i = 0; i < n; i++) {
     var a = mine[i], b = real[i], name = a ? a.batter : b.batter;
-    var side = function (pa, word) {
-      if (!pa) return none;
-      return '<span class="v">' + esc(word) + (pa.pitches != null ? '<small>' + plural(pa.pitches, 'pitch', 'pitches') + '</small>' : '') + '</span>';
+    var side = function (pa, word, cls, lbl) {
+      if (!pa) return '<span class="v none ' + cls + '"><i>' + lbl + '</i>-</span>';
+      return '<span class="v ' + cls + '"><i>' + lbl + '</i>' + esc(word) + (pa.pitches != null ? '<small>' + plural(pa.pitches, 'pitch', 'pitches') + '</small>' : '') + '</span>';
     };
-    bats += '<div class="cmp-bat"><span class="k"><i>' + (i + 1) + '</i></span><b class="nm">' + esc(name) + '</b>' +
-      side(a, a && a.word) + side(b, b && b.result) + '</div>';
+    var bats1 = a ? a.bats : null;
+    bats += '<div class="cmp-bat"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' +
+      '<span class="ab-who"><span class="i">AB ' + (i + 1) + '</span><b class="nm">' + esc(name) + '</b>' + (bats1 ? '<small>bats ' + esc(bats1) + '</small>' : a ? '' : '<small>you never faced him</small>') + '</span>' +
+      (a ? '<span class="ab-trk">' + a.calls.map(pitchCard).join('') + '</span>' : '<span class="ab-trk empty"></span>') +
+      side(a, a && a.word, 'you', 'you') + side(b, b && b.result, 'real', col) + '</div>';
   }
-  return '<div class="cmp-h"><b>you vs the real one</b><span>side by side</span></div>' +
-    '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">you</span><span class="who him">' + esc(his) + '</span></div>' +
-    rows + (bats ? '<p class="cmp-sub">batter by batter</p>' + bats : '') +
-    (rv.summary ? '<p class="cmp-sum"><b>his night</b> ' + esc(rv.summary) + '.</p>' : '');
+  return '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">you</span><span class="who him">' + esc(col) + '</span></div>' +
+    rows + bats +
+    (rv.summary ? '<p class="cmp-sum"><b>what happened</b> ' + esc(rv.summary) + '.</p>' : '');
 }
 
 /* Your score on the real distribution of the closer pool's outings in this
@@ -1604,13 +1722,13 @@ function shareTextOnly(text) {
 }
 /* what the card shows, every piece from the result */
 function cardOf(r) {
-  var s = S.scn, st = S.daily || S.outing, his = lastName(s.pitcher.name);
+  var s = S.scn, st = S.daily || S.outing;
   var rv = r.reveal || {};
   return {
     outcome: r.outcome, strip: r.strip || [], pitches: r.pitches, percentile: r.percentile,
     label: s.preview ? 'preview' : '#' + s.number, title: s.title,
-    vsReal: r.vsReal || null, vsLabel: 'you vs the real ' + his.toLowerCase(),
-    vsHead: r.vsReal ? vsHead(r.vsReal, his) : null, vsWhy: r.vsReal && rv.outcome ? vsText(r, rv, runsOf(r, st)) : null,
+    vsReal: r.vsReal || null, vsLabel: VS_LABEL,
+    vsHead: r.vsReal ? vsHead(r.vsReal) : null, vsWhy: r.vsReal && rv.outcome ? vsText(r, rv, runsOf(r, st)) : null,
     pitchedLike: r.pitchedLike && r.pitchedLike.name || null,
   };
 }
@@ -1760,6 +1878,7 @@ function boot() {
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
+  initResultNav();
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
 
