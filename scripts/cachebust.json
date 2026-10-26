@@ -3011,6 +3011,16 @@
       "sha": "d0284aaca4693bb5"
     }
   },
+  "shut-the-door/lab/meters.html": {
+    "../contract.js": {
+      "v": "8",
+      "sha": "f00be05147f2e21b"
+    },
+    "../meter.js": {
+      "v": "4",
+      "sha": "96b2354e7483767d"
+    }
+  },
   "soccer/index.html": {
     "/assets/newsletter.js": {
       "v": "2",

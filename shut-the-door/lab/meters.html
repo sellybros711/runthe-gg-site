@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0b0f17">
+<title>Meter Lab</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png">
+<!--
+  Shut The Door: the meter lab (the owner, 2026-10-26: "I would love to experiment with some new meter
+  options and visual styles"). Unlisted: reachable only by its URL, linked from nowhere, noindexed.
+  Nothing here is wired into the game. The owner picks a style first.
+
+  ONE CLOCK, FIVE LOOKS. Every style is a drawing of the same two numbers from meter.js, the file the
+  game plays: the power stop is effortAt(ms since the power started), the release is
+  qOf(errAt(ms since the needle started), command, e). The sweep (SWEEP_MS, EFFORT_SWEEP_MS), the mark
+  (MARK) and the bands (bandsFor, windowOf, BEST_Q) are read from it, never copied. Each style maps the
+  needle's place 0..1 onto its own shape in a straight line, so the bright band is the same width in
+  time and the needle the same speed in every one. Only the look changes. Grading is untouched.
+
+  Frames write transforms (or one small SVG attribute) only. Where the needle is comes from the clock,
+  so a dropped frame never moves a stop, and a stop reads the tap's own timestamp.
+-->
+<style>
+@font-face { font-family: 'Barlow Condensed'; font-weight: 600; font-style: normal; font-display: swap; src: url(../fonts/barlowcondensed-600.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 800; font-style: italic; font-display: swap; src: url(../fonts/barlowcondensed-800italic.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 900; font-style: italic; font-display: swap; src: url(../fonts/barlowcondensed-900italic.woff2) format('woff2'); }
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --panel-2: #eef0f3; --ink: #0b0f17; --dim: #5b6476; --faint: #8a93a6;
+  --line: rgba(11, 15, 23, .08); --line-2: rgba(11, 15, 23, .15);
+  --signal: #ff4f1f; --data: #2b59ff; --night: #0b0f17;
+  --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* the meter panel: a light glass in light, the night panel in dark */
+  --m-bg: rgba(255, 255, 255, .95); --m-ink: #0b0f17; --m-dim: #5b6476; --m-track: rgba(11, 15, 23, .07); --m-edge: rgba(11, 15, 23, .16);
+  --m-good: rgba(43, 89, 255, .30); --m-needle: #0b0f17; --m-needle-edge: #ffffff; --chip: rgba(255, 255, 255, .9);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0f17; --panel: #141a26; --panel-2: #1b2231; --ink: #f4f5f7; --dim: #9aa3b5; --faint: #6b7487;
+    --line: rgba(255, 255, 255, .07); --line-2: rgba(255, 255, 255, .14); --data: #5b82ff; --night: #1a2233;
+    --m-bg: rgba(17, 22, 33, .96); --m-ink: #f4f5f7; --m-dim: #9aa3b5; --m-track: rgba(255, 255, 255, .07); --m-edge: rgba(255, 255, 255, .16);
+    --m-good: rgba(91, 130, 255, .42); --m-needle: #ffffff; --m-needle-edge: #0b0f17; --chip: rgba(20, 26, 38, .9);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0f17; --panel: #141a26; --panel-2: #1b2231; --ink: #f4f5f7; --dim: #9aa3b5; --faint: #6b7487;
+  --line: rgba(255, 255, 255, .07); --line-2: rgba(255, 255, 255, .14); --data: #5b82ff; --night: #1a2233;
+  --m-bg: rgba(17, 22, 33, .96); --m-ink: #f4f5f7; --m-dim: #9aa3b5; --m-track: rgba(255, 255, 255, .07); --m-edge: rgba(255, 255, 255, .16);
+  --m-good: rgba(91, 130, 255, .42); --m-needle: #ffffff; --m-needle-edge: #0b0f17; --chip: rgba(20, 26, 38, .9);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.4; overflow: hidden;
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+button { font: inherit; color: inherit; }
+
+/* the stage: a still of the mound at its own shape, as big as the screen allows */
+.stage { position: fixed; inset: 0; display: flex; justify-content: center; background: #1d2128; touch-action: none; }
+.scene { position: relative; height: 100%; aspect-ratio: 780 / 1688; max-width: 100%; overflow: hidden; }
+.scene > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.zone { position: absolute; left: 49.7%; top: 48.5%; width: 25.9%; height: 14.3%; border: 2px solid rgba(255, 255, 255, .85); border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(11, 15, 23, .35); pointer-events: none;
+  background: linear-gradient(90deg, transparent calc(33.33% - .5px), rgba(255, 255, 255, .35) calc(33.33% - .5px) calc(33.33% + .5px), transparent calc(33.33% + .5px) calc(66.67% - .5px), rgba(255, 255, 255, .35) calc(66.67% - .5px) calc(66.67% + .5px), transparent calc(66.67% + .5px)),
+              linear-gradient(180deg, transparent calc(33.33% - .5px), rgba(255, 255, 255, .35) calc(33.33% - .5px) calc(33.33% + .5px), transparent calc(33.33% + .5px) calc(66.67% - .5px), rgba(255, 255, 255, .35) calc(66.67% - .5px) calc(66.67% + .5px), transparent calc(66.67% + .5px)); }
+.aim { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; border: 2.5px solid var(--signal);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .9); pointer-events: none; }
+.aim::before, .aim::after { content: ''; position: absolute; background: var(--signal); }
+.aim::before { left: 50%; top: -8px; bottom: -8px; width: 2px; margin-left: -1px; }
+.aim::after { top: 50%; left: -8px; right: -8px; height: 2px; margin-top: -1px; }
+.fx { position: absolute; inset: 0; pointer-events: none; }
+
+/* the top: the five styles, then command and theme */
+.top { position: fixed; z-index: 5; left: 0; right: 0; top: 0; padding: calc(10px + env(safe-area-inset-top)) 16px 0; display: flex; flex-direction: column; gap: 8px; }
+.chips { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.chip { min-height: 40px; border: 0; border-radius: 11px; background: var(--chip); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2), 0 4px 14px rgba(11, 15, 23, .18);
+  font-family: var(--display); font-weight: 800; font-style: italic; font-size: 16px; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; padding: 0 4px; }
+.chip[aria-pressed="true"] { background: var(--signal); color: #fff; box-shadow: 0 4px 14px rgba(255, 79, 31, .4); }
+.row2 { display: flex; gap: 6px; align-items: center; }
+.seg { display: flex; border-radius: 11px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line-2); overflow: hidden; }
+.seg button { min-width: 44px; min-height: 38px; border: 0; background: none; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--dim); padding: 0 10px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg .k { display: flex; align-items: center; padding: 0 4px 0 10px; font-size: 12px; color: var(--dim); }
+.seg { flex: none; }
+.blurb { font-size: 13px; font-weight: 600; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); line-height: 1.3; }
+
+/* the panel at the bottom: the verb, the meter's slot, the readout */
+.panel { position: fixed; z-index: 4; left: 16px; right: 16px; bottom: calc(14px + env(safe-area-inset-bottom)); border-radius: 18px; background: var(--m-bg); color: var(--m-ink);
+  padding: 12px 14px 12px; box-shadow: 0 3px 0 var(--signal), 0 14px 34px rgba(11, 15, 23, .35), inset 0 0 0 1px var(--m-edge); display: flex; flex-direction: column; gap: 10px; }
+.p-head { display: flex; align-items: baseline; gap: 10px; line-height: 1; }
+.p-verb { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 28px; text-transform: uppercase; letter-spacing: .02em; }
+.p-call { font-size: 13px; font-weight: 600; color: var(--m-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-say { margin-left: auto; font-size: 14px; font-weight: 600; color: var(--m-dim); white-space: nowrap; }
+.slot:empty { display: none; }
+.read { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: 6px; }
+.read small { display: block; font-size: 11px; font-variant-numeric: tabular-nums; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.read div { border-radius: 10px; background: var(--m-track); box-shadow: inset 0 0 0 1px var(--m-edge); padding: 6px 9px; min-height: 44px; }
+.read b { display: block; font-family: var(--display); font-weight: 800; font-style: italic; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--m-dim); }
+.read span { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; white-space: nowrap; }
+.read div.best { background: var(--signal); color: #fff; box-shadow: none; }
+.read div.best b { color: rgba(255, 255, 255, .8); }
+.read div.good { background: var(--data); color: #fff; box-shadow: none; }
+.read div.good b { color: rgba(255, 255, 255, .8); }
+.foot { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--m-dim); font-variant-numeric: tabular-nums; }
+.foot label { margin-left: auto; display: flex; align-items: center; gap: 4px; min-height: 28px; }
+#spec { white-space: nowrap; }
+.live:empty { display: none; }
+.live { contain: strict; width: 74px; height: 15px; text-align: right; overflow: hidden; white-space: nowrap; }
+.flash { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; background: #fff; }
+
+/* shared parts of a bar: a rail the width of its track slid by transform, so a percent is the track's */
+.rail { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; will-change: transform; }
+.vrail { position: absolute; left: 0; bottom: 0; width: 100%; height: 100%; pointer-events: none; will-change: transform; }
+.lockring { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 2.5px solid var(--m-needle); opacity: 0; pointer-events: none; }
+.clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.fill, .grad { position: absolute; inset: 0; will-change: transform; }
+.grad { background: linear-gradient(90deg, #5b82ff, #c9d4ff 45%, #ffffff 55%, #ff9a78 75%, var(--signal)); }
+
+/* 1. bars */
+.bars { display: flex; flex-direction: column; gap: 10px; }
+.b-row { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; align-items: center; }
+.b-lbl { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--m-dim); }
+.on-power .b-pow .b-lbl, .on-acc .b-acc .b-lbl { color: var(--m-ink); }
+.b-track { position: relative; height: 34px; border-radius: 9px; background: var(--m-track); box-shadow: inset 0 0 0 1px var(--m-edge), inset 0 2px 6px rgba(0, 0, 0, .18); }
+.b-acc .b-track { height: 42px; }
+.on-power .b-acc { opacity: .4; }
+.b-zones { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); pointer-events: none; }
+.b-zones b { display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-style: italic; font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+  color: #fff; text-shadow: 0 1px 2px rgba(11, 15, 23, .85); border-right: 1px solid var(--m-edge); position: relative; }
+.b-zones b:last-child { border-right: 0; }
+.b-pow .clip { inset: 3px; border-radius: 6px; }
+.b-ticks { position: absolute; left: 0; right: 0; bottom: 0; height: 30%; background: repeating-linear-gradient(90deg, var(--m-edge) 0 1px, transparent 1px 10%); border-radius: 0 0 9px 9px; }
+.band { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+.b-good { background: var(--m-good); }
+.b-best { background: linear-gradient(180deg, #ff7a52, var(--signal)); box-shadow: 0 0 14px rgba(255, 79, 31, .55), inset 0 0 0 1px rgba(255, 255, 255, .4); }
+.b-mark { position: absolute; top: -6px; bottom: -6px; width: 0; }
+.b-mark::before, .b-mark::after { content: ''; position: absolute; left: -5px; border: 5px solid transparent; }
+.b-mark::before { top: 0; border-top: 6px solid var(--m-ink); border-bottom: 0; }
+.b-mark::after { bottom: 0; border-bottom: 6px solid var(--m-ink); border-top: 0; }
+.b-needle::after { content: ''; position: absolute; top: -7px; bottom: -7px; left: -3px; width: 6px; border-radius: 3px; background: var(--m-needle); box-shadow: 0 0 0 2px var(--m-needle-edge), 0 2px 8px rgba(0, 0, 0, .35); }
+.b-pow .b-needle::after { top: -4px; bottom: -4px; left: -2px; width: 4px; }
+.streak { position: absolute; top: 4px; bottom: 4px; left: -34px; width: 34px; border-radius: 4px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55)); transform-origin: 100% 50%; }
+:root:not([data-theme="dark"]) .streak { background: linear-gradient(90deg, transparent, rgba(11, 15, 23, .25)); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .streak { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55)); } }
+.streak.back { transform: translateX(34px) scaleX(-1); }
+.b-acc .lockring { top: 50%; }
+.b-pow .lockring { top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; }
+
+/* 2. arc */
+.arc { position: relative; width: 300px; height: 168px; margin: -6px auto -18px; transform: scale(.85); transform-origin: 50% 0; }
+.arc svg { position: absolute; inset: 0; overflow: visible; }
+.arc .trk { fill: none; stroke: var(--m-track); stroke-width: 26; }
+.arc .edge { fill: none; stroke: var(--m-edge); stroke-width: 28; }
+.arc .z { fill: none; stroke-width: 22; }
+.arc .pfill { fill: none; stroke: url(#arcgrad); stroke-width: 18; stroke-linecap: butt; }
+.arc .good { fill: none; stroke: var(--m-good); stroke-width: 22; }
+.arc .best { fill: none; stroke: var(--signal); stroke-width: 24; filter: drop-shadow(0 0 5px rgba(255, 79, 31, .7)); }
+.arc .notch { stroke: var(--m-ink); stroke-width: 2.5; }
+.arc text { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; fill: var(--m-dim); }
+.arc .hub { fill: var(--m-ink); }
+.a-needle { position: absolute; left: 148px; top: 18px; width: 4px; height: 140px; border-radius: 2px; background: var(--m-needle); box-shadow: 0 0 0 2px var(--m-needle-edge);
+  transform-origin: 50% 100%; will-change: transform; }
+.a-needle::before { content: ''; position: absolute; left: 50%; top: -2px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--m-needle); box-shadow: 0 0 0 2px var(--m-needle-edge); }
+.arc .lockring { left: 150px; top: 154px; width: 40px; height: 40px; margin: -20px 0 0 -20px; }
+
+/* 3. ring (on the zone) */
+.ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ring-svg .tg { fill: none; stroke: rgba(255, 255, 255, .55); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.ring-svg .good { fill: none; stroke: rgba(91, 130, 255, .55); }
+.ring-svg .best { fill: none; stroke: var(--signal); filter: drop-shadow(0 0 4px rgba(255, 79, 31, .9)); }
+.ring-svg .mv { fill: none; stroke: #fff; stroke-width: 3.5; }
+.ring-svg .mv-edge { fill: none; stroke: rgba(11, 15, 23, .7); stroke-width: 6.5; }
+.ring-svg .gz { fill: none; stroke-width: 9; }
+.ring-svg .gfill { fill: none; stroke: url(#ringgrad); stroke-width: 9; }
+.ring-svg .gbase { fill: none; stroke: rgba(11, 15, 23, .55); stroke-width: 13; }
+.ring-svg text { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; fill: #fff; paint-order: stroke; stroke: rgba(11, 15, 23, .7); stroke-width: 3px; }
+.ring-svg .hide { display: none; }
+.r-lock { position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 3px solid #fff; opacity: 0; pointer-events: none; }
+
+/* 4. trace (hold for power, then hit the gate) */
+.trace { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; align-items: center; }
+.t-hold { position: relative; width: 74px; height: 74px; }
+.t-hold svg { position: absolute; inset: 0; overflow: visible; }
+.t-hold .base { fill: none; stroke: var(--m-track); stroke-width: 10; }
+.t-hold .z { fill: none; stroke-width: 10; opacity: .35; }
+.t-hold .pf { fill: none; stroke: url(#holdgrad); stroke-width: 10; }
+.t-ball { position: absolute; inset: 17px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #e8e4da 60%, #c9c3b4); box-shadow: 0 2px 6px rgba(0, 0, 0, .35); display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-weight: 800; font-style: italic; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #0b0f17; }
+.on-power .t-ball { transform: scale(.92); transition: transform .1s; }
+.t-path { position: relative; height: 84px; }
+.t-path svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.t-path .bed { fill: none; stroke: var(--m-track); stroke-width: 16; stroke-linecap: round; }
+.t-path .good { fill: none; stroke: var(--m-good); stroke-width: 16; }
+.t-path .best { fill: none; stroke: var(--signal); stroke-width: 18; filter: drop-shadow(0 0 4px rgba(255, 79, 31, .8)); }
+.t-path .gate { stroke: var(--m-ink); stroke-width: 2.5; }
+.t-path .dot { fill: var(--m-needle); stroke: var(--m-needle-edge); stroke-width: 2.5; }
+.on-power .t-path { opacity: .4; }
+
+/* 5. column (one bar by the zone) */
+.col { position: absolute; left: 80%; top: 41%; width: 36px; height: 29%; border-radius: 10px; background: rgba(11, 15, 23, .62); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25), 0 6px 18px rgba(0, 0, 0, .35); }
+.col .clip { inset: 3px; border-radius: 7px; }
+.col .grad { background: linear-gradient(0deg, #5b82ff, #c9d4ff 45%, #ffffff 55%, #ff9a78 75%, var(--signal)); }
+.c-zones { position: absolute; inset: 0; display: grid; grid-template-rows: repeat(3, 1fr); pointer-events: none; }
+.c-zones i { border-bottom: 1px solid rgba(255, 255, 255, .3); }
+.c-zones i:last-child { border-bottom: 0; }
+.c-band { position: absolute; left: 0; right: 0; border-radius: 5px; }
+.c-good { background: rgba(91, 130, 255, .55); }
+.c-best { background: linear-gradient(90deg, #ff7a52, var(--signal)); box-shadow: 0 0 12px rgba(255, 79, 31, .7); }
+.c-mark { position: absolute; left: -7px; right: -7px; height: 0; }
+.c-mark::before, .c-mark::after { content: ''; position: absolute; top: -5px; border: 5px solid transparent; }
+.c-mark::before { left: 0; border-left: 6px solid #fff; border-right: 0; }
+.c-mark::after { right: 0; border-right: 6px solid #fff; border-left: 0; }
+.c-needle::after { content: ''; position: absolute; left: -6px; right: -6px; bottom: -3px; height: 6px; border-radius: 3px; background: #fff; box-shadow: 0 0 0 2px #0b0f17; }
+.c-lbl { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); font-family: var(--display); font-weight: 800; font-style: italic; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); white-space: nowrap; }
+.col.is-acc .clip { opacity: .25; }
+.col .lockring { left: 50%; border-color: #fff; }
+
+@media (min-width: 700px) {
+  .panel { left: 50%; right: auto; width: 420px; transform: translateX(-50%); }
+  .top { left: 50%; right: auto; width: 460px; transform: translateX(-50%); }
+}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="scene" id="scene">
+    <img src="../3d/assets/poster-phone.webp" alt="">
+    <div class="zone" id="zone"></div>
+    <div class="aim" id="aim"></div>
+    <div class="fx" id="fx"></div>
+  </div>
+</div>
+
+<div class="top">
+  <div class="chips" id="chips" role="group" aria-label="meter style"></div>
+  <div class="row2">
+    <div class="seg" id="cmd" role="group" aria-label="command"><span class="k">command</span></div>
+    <div class="seg" id="theme" role="group" aria-label="theme"><button data-t="light">light</button><button data-t="dark">dark</button></div>
+  </div>
+  <div class="blurb" id="blurb"></div>
+</div>
+
+<div class="panel" id="panel">
+  <div class="p-head"><b class="p-verb">release</b><span class="p-say" id="say" aria-live="polite"></span></div>
+  <div class="slot" id="slot"></div>
+  <div class="read">
+    <div id="r-e"><b>power</b><span id="v-e">-</span><small id="s-e"></small></div>
+    <div id="r-q"><b>release</b><span id="v-q">-</span><small id="s-q"></small></div>
+  </div>
+  <div class="foot"><span id="spec"></span><label><input type="checkbox" id="livebox"> live</label><span class="live" id="live"></span></div>
+  <i class="flash" id="flash"></i>
+</div>
+
+<script src="../contract.js?v=8"></script>
+<script src="../meter.js?v=4"></script>
+<script>
+(function () {
+'use strict';
+var C = window.STD_CONTRACT, MT = window.STD_METER;
+var LOCK_MS = 260, GUARD_MS = 120;                      // meter-ui.js: the pause after the power stop, and a bounce
+var AIM = [0.3, 0.62];                                    // the aim point inside the zone, from its left and top
+var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+var NS = 'http://www.w3.org/2000/svg';
+var $ = function (id) { return document.getElementById(id); };
+
+/* ---- the numbers: all from meter.js ------------------------------------------------------- */
+function zoneOf(e) { return e < 1 / 3 ? 'soft' : e < 2 / 3 ? 'normal' : 'max'; }
+/* the two bands as [lo, hi] fractions of the needle's travel, as meter-ui.js draws them */
+function bandsOf(command, e) {
+  var b = MT.bandsFor(command, e), w = MT.windowOf(e, command);
+  return { good: [MT.MARK - b.good, MT.MARK + b.good], best: [w[0], w[1]] };
+}
+function pct(x) { return (Math.max(0, Math.min(1, x)) * 100).toFixed(3) + '%'; }
+function tx(el, f) { el.style.transform = 'translate3d(' + (f * 100).toFixed(3) + '%,0,0)'; }
+function ty(el, f) { el.style.transform = 'translate3d(0,' + (f * 100).toFixed(3) + '%,0)'; }
+function h(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; }
+function s(tag, attrs, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+/* a point on a circle, angle in degrees from straight up, clockwise */
+function P(cx, cy, r, a) { var t = a * Math.PI / 180; return [cx + r * Math.sin(t), cy - r * Math.cos(t)]; }
+function arcD(cx, cy, r, a0, a1) {
+  if (a1 < a0) { var t = a0; a0 = a1; a1 = t; }
+  var p0 = P(cx, cy, r, a0), p1 = P(cx, cy, r, a1);
+  return 'M' + p0[0].toFixed(2) + ' ' + p0[1].toFixed(2) + 'A' + r + ' ' + r + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2);
+}
+function pulse(el, kf, ms) { if (REDUCED || !el.animate) return; el.animate(kf, { duration: ms, easing: 'cubic-bezier(.2,.8,.3,1)' }); }
+function burst(el) { pulse(el, [{ opacity: 1, transform: 'scale(.4)' }, { opacity: 0, transform: 'scale(1.6)' }], 450); }
+var GRAD = '<stop offset="0" stop-color="#5b82ff"/><stop offset=".45" stop-color="#c9d4ff"/><stop offset=".55" stop-color="#ffffff"/><stop offset=".75" stop-color="#ff9a78"/><stop offset="1" stop-color="#ff4f1f"/>';
+var ZC = ['rgba(91,130,255,.35)', 'rgba(150,160,180,.3)', 'rgba(255,79,31,.35)'];
+
+/* ---- the five styles ------------------------------------------------------------------------
+   Each builds into the panel's slot and the scene's layer and answers:
+     power(e)        the power needle at e (0..1)
+     acc(pos, dir)   the release needle at pos (0..1, meter.js needleAt), going dir (1 or -1)
+     bands(b)        the soft and bright bands ({good, best} as [lo, hi] of the travel)
+     stage(s)        'idle', 'power', 'acc' or 'done'
+     lockPower(e), lockAcc(pos, q)   the stops
+   Every one maps pos and e onto its shape in a straight line: the same speed, the same band in time. */
+var STYLES = [
+  { id: 'bars', name: 'bars', blurb: 'today\'s two bars, refined', build: function (slot) {
+    var el = h('div', 'bars',
+      '<div class="b-row b-pow"><span class="b-lbl">power</span><div class="b-track"><i class="clip"><i class="fill"><i class="grad"></i></i></i>' +
+      '<span class="b-zones"><b>soft</b><b>normal</b><b>max</b></span><i class="rail b-needle"></i><i class="lockring"></i></div></div>' +
+      '<div class="b-row b-acc"><span class="b-lbl">accuracy</span><div class="b-track"><i class="b-ticks"></i><i class="band b-good"></i><i class="band b-best"></i><i class="b-mark"></i>' +
+      '<i class="rail b-trail"><i class="streak"></i></i><i class="rail b-needle"></i><i class="lockring"></i></div></div>');
+    slot.appendChild(el);
+    var q = function (x) { return el.querySelector(x); };
+    var fill = q('.b-pow .fill'), grad = q('.b-pow .grad'), pn = q('.b-pow .b-needle'), an = q('.b-acc .b-needle'), trail = q('.b-trail'), streak = q('.streak');
+    var good = q('.b-good'), best = q('.b-best'), mark = q('.b-mark'), pl = q('.b-pow .lockring'), al = q('.b-acc .lockring'), lastDir = 0;
+    return {
+      power: function (e) { tx(fill, e - 1); tx(grad, 1 - e); tx(pn, e); },
+      acc: function (pos, dir) { tx(an, pos); tx(trail, pos); if (dir !== lastDir) { lastDir = dir; streak.classList.toggle('back', dir < 0); } },
+      bands: function (b) {
+        good.style.left = pct(b.good[0]); good.style.width = pct(b.good[1] - b.good[0]);
+        best.style.left = pct(b.best[0]); best.style.width = pct(b.best[1] - b.best[0]); mark.style.left = pct(MT.MARK);
+      },
+      stage: function (st) { trail.style.opacity = st === 'acc' ? 1 : 0; },
+      lockPower: function (e) { pl.style.left = pct(e); burst(pl); },
+      lockAcc: function (pos) { al.style.left = pct(pos); burst(al); },
+    };
+  } },
+
+  { id: 'arc', name: 'arc', blurb: 'three clicks: go, power up the left, release down into the notch', build: function (slot) {
+    /* the arc: power runs from the top down the left (0 to -100 degrees), the release from the top down
+       the right (0 to +100), the notch at the mark. Both are straight maps of e and pos. */
+    var CX = 150, CY = 156, R = 128, PA = -100, AA = 100;
+    var el = h('div', 'arc');
+    var svg = s('svg', { viewBox: '0 0 300 168', width: 300, height: 168 }, el);
+    svg.innerHTML = '<defs><linearGradient id="arcgrad" x1="1" y1="0" x2="0" y2="1">' + GRAD + '</linearGradient></defs>';
+    s('path', { class: 'edge', d: arcD(CX, CY, R, PA - 3, AA + 3) }, svg);
+    s('path', { class: 'trk', d: arcD(CX, CY, R, PA - 3, AA + 3) }, svg);
+    for (var z = 0; z < 3; z++) s('path', { class: 'z', stroke: ZC[z], d: arcD(CX, CY, R, PA * z / 3, PA * (z + 1) / 3) }, svg);
+    var pf = s('path', { class: 'pfill', d: arcD(CX, CY, R, 0, PA), pathLength: 1, 'stroke-dasharray': '0 1' }, svg);
+    var good = s('path', { class: 'good' }, svg), best = s('path', { class: 'best' }, svg);
+    var n0 = P(CX, CY, R - 16, AA * MT.MARK), n1 = P(CX, CY, R + 16, AA * MT.MARK);
+    s('line', { class: 'notch', x1: n0[0], y1: n0[1], x2: n1[0], y2: n1[1] }, svg);
+    var lp = P(CX, CY, R - 34, PA / 2), la = P(CX, CY, R - 34, AA / 2);
+    s('text', { x: lp[0], y: lp[1], 'text-anchor': 'middle' }, svg).textContent = 'power';
+    s('text', { x: la[0], y: la[1], 'text-anchor': 'middle' }, svg).textContent = 'release';
+    s('circle', { class: 'hub', cx: CX, cy: CY, r: 7 }, svg);
+    var needle = h('i', 'a-needle'), lock = h('i', 'lockring');
+    el.appendChild(needle); el.appendChild(lock);
+    slot.appendChild(el);
+    function rot(a) { needle.style.transform = 'rotate(' + a.toFixed(3) + 'deg)'; }
+    return {
+      power: function (e) { rot(PA * e); pf.setAttribute('stroke-dasharray', e.toFixed(4) + ' 1'); },
+      acc: function (pos) { rot(AA * pos); },
+      bands: function (b) { good.setAttribute('d', arcD(CX, CY, R, AA * b.good[0], AA * b.good[1])); best.setAttribute('d', arcD(CX, CY, R, AA * b.best[0], AA * b.best[1])); },
+      stage: function (st) { if (st === 'idle') rot(0); },
+      lockPower: function (e) { var p = P(CX, CY, R, PA * e); lock.style.left = p[0] + 'px'; lock.style.top = p[1] + 'px'; burst(lock); },
+      lockAcc: function (pos) { var p = P(CX, CY, R, AA * pos); lock.style.left = p[0] + 'px'; lock.style.top = p[1] + 'px'; burst(lock); },
+    };
+  } },
+
+  { id: 'ring', name: 'ring', blurb: 'a ring closes on your spot. stop it on the target', build: function (slot, fx, geo) {
+    /* the ring: its radius is a straight map of pos, R0 at the start and RT at the mark, so the bright
+       band is an annulus as wide in time as the bar's. Power is a gauge around the spot first. */
+    var cx = geo.ax, cy = geo.ay, RT = 30, R0 = Math.min(150, geo.w * 0.38), K = (R0 - RT) / MT.MARK, GR = 54, GA = 135;
+    var svg = s('svg', { class: 'ring-svg' }, fx);
+    svg.innerHTML = '<defs><linearGradient id="ringgrad" x1="0" y1="1" x2="1" y2="0">' + GRAD + '</linearGradient></defs>';
+    var gpow = s('g', {}, svg), gacc = s('g', { class: 'hide' }, svg);
+    s('path', { class: 'gbase', d: arcD(cx, cy, GR, -GA, GA) }, gpow);
+    for (var z = 0; z < 3; z++) s('path', { class: 'gz', stroke: ZC[z].replace(/[\d.]+\)$/, '.8)'), d: arcD(cx, cy, GR, -GA + 2 * GA * z / 3, -GA + 2 * GA * (z + 1) / 3) }, gpow);
+    var gf = s('path', { class: 'gfill', d: arcD(cx, cy, GR, -GA, GA), pathLength: 1, 'stroke-dasharray': '0 1' }, gpow);
+    var gt = s('text', { x: cx, y: cy + GR + 22, 'text-anchor': 'middle' }, gpow); gt.textContent = 'power';
+    var good = s('circle', { class: 'good', cx: cx, cy: cy }, gacc), best = s('circle', { class: 'best', cx: cx, cy: cy }, gacc);
+    s('circle', { class: 'tg', cx: cx, cy: cy, r: RT }, gacc);
+    var mve = s('circle', { class: 'mv-edge', cx: cx, cy: cy, r: R0 }, gacc), mv = s('circle', { class: 'mv', cx: cx, cy: cy, r: R0 }, gacc);
+    var lock = h('i', 'r-lock'); lock.style.left = cx + 'px'; lock.style.top = cy + 'px'; fx.appendChild(lock);
+    function rad(pos) { return Math.max(0, RT + (MT.MARK - pos) * K); }
+    function annulus(c, lo, hi) { var a = rad(hi), b = rad(lo); c.setAttribute('r', ((a + b) / 2).toFixed(2)); c.setAttribute('stroke-width', Math.max(1, b - a).toFixed(2)); }
+    return {
+      power: function (e) { gf.setAttribute('stroke-dasharray', e.toFixed(4) + ' 1'); },
+      acc: function (pos) { var r = rad(pos).toFixed(2); mv.setAttribute('r', r); mve.setAttribute('r', r); },
+      bands: function (b) { annulus(good, b.good[0], b.good[1]); annulus(best, b.best[0], b.best[1]); },
+      stage: function (st) { var acc = st === 'acc' || st === 'done'; gacc.setAttribute('class', acc ? '' : 'hide'); gpow.setAttribute('class', acc ? 'hide' : ''); if (st === 'idle') this.acc(0); },
+      lockPower: function () { burst(lock); },
+      lockAcc: function (pos) { lock.style.width = lock.style.height = (2 * rad(pos)) + 'px'; lock.style.margin = (-rad(pos)) + 'px 0 0 ' + (-rad(pos)) + 'px'; burst(lock); },
+    };
+  } },
+
+  { id: 'trace', name: 'trace', blurb: 'hold for power, let go. then hit the gate as the ball runs the path', hold: true, build: function (slot) {
+    /* the trace: power is how long you hold (the same sweep as the bar, back and forth), the release a
+       ball running a pitch's path, the gate at the mark. The path is walked at an even pace (a table of
+       points by length), so pos maps to distance in a straight line. */
+    var el = h('div', 'trace');
+    var hold = h('div', 't-hold'), hs = s('svg', { viewBox: '0 0 74 74', width: 74, height: 74 }, hold);
+    hs.innerHTML = '<defs><linearGradient id="holdgrad" x1="0" y1="1" x2="1" y2="0">' + GRAD + '</linearGradient></defs>';
+    var HA = 150;
+    s('path', { class: 'base', d: arcD(37, 37, 32, -HA, HA) }, hs);
+    for (var z = 0; z < 3; z++) s('path', { class: 'z', stroke: ZC[z].replace(/[\d.]+\)$/, '1)'), d: arcD(37, 37, 32, -HA + 2 * HA * z / 3, -HA + 2 * HA * (z + 1) / 3) }, hs);
+    var pf = s('path', { class: 'pf', d: arcD(37, 37, 32, -HA, HA), pathLength: 1, 'stroke-dasharray': '0 1' }, hs);
+    hold.appendChild(h('span', 't-ball', 'hold'));
+    var path = h('div', 't-path'), ps = s('svg', { viewBox: '0 0 260 84', preserveAspectRatio: 'xMidYMid meet' }, path);
+    var D = 'M12 70 C 70 74, 130 70, 175 46 S 236 10, 248 12';
+    s('path', { class: 'bed', d: D }, ps);
+    var good = s('path', { class: 'good', d: D }, ps), best = s('path', { class: 'best', d: D }, ps);
+    var probe = s('path', { d: D, fill: 'none' }, ps), L = probe.getTotalLength(), LUT = [];
+    for (var i = 0; i <= 400; i++) { var pt = probe.getPointAtLength(L * i / 400); LUT.push([pt.x, pt.y]); }
+    var g0 = LUT[Math.round(400 * MT.MARK)], g1 = LUT[Math.round(400 * MT.MARK) + 2], nx = -(g1[1] - g0[1]), ny = g1[0] - g0[0], nl = Math.hypot(nx, ny) || 1;
+    s('line', { class: 'gate', x1: g0[0] + 14 * nx / nl, y1: g0[1] + 14 * ny / nl, x2: g0[0] - 14 * nx / nl, y2: g0[1] - 14 * ny / nl }, ps);
+    var dot = s('circle', { class: 'dot', r: 7, cx: 0, cy: 0 }, ps);
+    el.appendChild(hold); el.appendChild(path); slot.appendChild(el);
+    function seg(c, lo, hi) { c.setAttribute('stroke-dasharray', '0 ' + (L * lo).toFixed(2) + ' ' + (L * (hi - lo)).toFixed(2) + ' ' + L.toFixed(2)); }
+    function at(pos) { var p = LUT[Math.max(0, Math.min(400, Math.round(pos * 400)))]; dot.setAttribute('transform', 'translate(' + p[0].toFixed(2) + ' ' + p[1].toFixed(2) + ')'); }
+    at(0);
+    return {
+      power: function (e) { pf.setAttribute('stroke-dasharray', e.toFixed(4) + ' 1'); },
+      acc: at,
+      bands: function (b) { seg(good, b.good[0], b.good[1]); seg(best, b.best[0], b.best[1]); },
+      stage: function (st) { if (st === 'idle') { at(0); pf.setAttribute('stroke-dasharray', '0 1'); } },
+      lockPower: function () { pulse(hold, [{ transform: 'scale(1.12)' }, { transform: 'scale(1)' }], 260); },
+      lockAcc: function () { pulse(dot, [{ transform: dot.getAttribute('transform') + ' scale(1.8)' }, { transform: dot.getAttribute('transform') + ' scale(1)' }], 320); },
+    };
+  } },
+
+  { id: 'column', name: 'column', blurb: 'one bar by the zone. power fills it, the release rides it', build: function (slot, fx) {
+    var el = h('div', 'col',
+      '<i class="clip"><i class="fill"><i class="grad"></i></i></i><span class="c-zones"><i></i><i></i><i></i></span>' +
+      '<i class="c-band c-good"></i><i class="c-band c-best"></i><i class="c-mark"></i><i class="vrail c-needle"></i><i class="lockring"></i><span class="c-lbl">power</span>');
+    fx.appendChild(el);
+    var q = function (x) { return el.querySelector(x); };
+    var fill = q('.fill'), grad = q('.grad'), needle = q('.c-needle'), good = q('.c-good'), best = q('.c-best'), mark = q('.c-mark'), lock = q('.lockring'), lbl = q('.c-lbl');
+    return {
+      power: function (e) { ty(fill, 1 - e); ty(grad, e - 1); ty(needle, -e); },
+      acc: function (pos) { ty(needle, -pos); },
+      bands: function (b) {
+        good.style.bottom = pct(b.good[0]); good.style.height = pct(b.good[1] - b.good[0]);
+        best.style.bottom = pct(b.best[0]); best.style.height = pct(b.best[1] - b.best[0]); mark.style.bottom = pct(MT.MARK);
+      },
+      stage: function (st) { var acc = st === 'acc' || st === 'done'; el.classList.toggle('is-acc', acc); lbl.textContent = acc ? 'release' : 'power'; good.style.opacity = best.style.opacity = acc ? 1 : .35; },
+      lockPower: function (e) { lock.style.top = pct(1 - e); burst(lock); },
+      lockAcc: function (pos) { lock.style.top = pct(1 - pos); burst(lock); },
+    };
+  } },
+];
+
+/* ---- the page ------------------------------------------------------------------------------ */
+var store = { get: function (k) { try { return localStorage.getItem('std-meterlab-' + k); } catch (e) { return null; } },
+  set: function (k, v) { try { localStorage.setItem('std-meterlab-' + k, v); } catch (e) {} } };
+var S = { style: null, view: null, command: 50, stage: 'idle', t0: 0, e: null, q: null, raf: 0, timer: 0, live: false, down: false };
+
+function geo() {
+  var sc = $('scene').getBoundingClientRect(), z = $('zone').getBoundingClientRect();
+  return { w: sc.width, h: sc.height, ax: z.left - sc.left + z.width * AIM[0], ay: z.top - sc.top + z.height * AIM[1] };
+}
+function placeAim() { var g = geo(), a = $('aim'); a.style.left = g.ax + 'px'; a.style.top = g.ay + 'px'; }
+
+function say(t) { $('say').textContent = t; }
+function setStage(st) {
+  S.stage = st;
+  var p = $('panel');
+  p.classList.toggle('on-power', st === 'power'); p.classList.toggle('on-acc', st === 'acc');
+  S.view.stage(st);
+  say(st === 'idle' ? (S.style.hold ? 'hold to load power' : 'tap to start') : st === 'power' ? (S.style.hold ? 'let go to set it' : 'set your power') :
+    st === 'acc' ? 'stop it in the bright band' : 'tap to go again');
+}
+function spec() {
+  var e = S.e == null ? C.EFFORT.MID : S.e, half = (1 - MT.BEST_Q) * MT.windowMs(S.command, e);
+  $('spec').textContent = 'bright band ±' + half.toFixed(1) + ' ms · ' + MT.SWEEP_MS + ' ms sweep';
+}
+function readout() {
+  var re = $('r-e'), rq = $('r-q');
+  $('v-e').textContent = S.e == null ? '-' : 'e ' + S.e.toFixed(2);
+  $('s-e').textContent = S.e == null ? '' : zoneOf(S.e);
+  if (S.q == null) { $('v-q').textContent = '-'; $('s-q').textContent = ''; rq.className = ''; return; }
+  $('v-q').textContent = 'q ' + S.q.toFixed(2) + ' · ' + MT.wordOf(S.q, S.err);
+  var off = Math.round(S.err);
+  $('s-q').textContent = (off === 0 ? 'dead on' : Math.abs(off) + ' ms ' + (off < 0 ? 'early' : 'late')) + ' · miss ' + C.spreadOf(S.q, 0).toFixed(2) + 'x';
+  rq.className = S.q >= MT.BEST_Q ? 'best' : S.q >= MT.GOOD_Q ? 'good' : '';
+  re.className = '';
+}
+
+function build() {
+  cancelAnimationFrame(S.raf); clearTimeout(S.timer);
+  $('slot').innerHTML = ''; $('fx').innerHTML = '';
+  S.view = S.style.build($('slot'), $('fx'), geo());
+  [].forEach.call($('chips').children, function (b) { b.setAttribute('aria-pressed', b.dataset.id === S.style.id ? 'true' : 'false'); });
+  $('blurb').textContent = S.style.blurb;
+  reset();
+}
+function reset() {
+  S.e = null; S.q = null; S.err = null;
+  S.view.bands(bandsOf(S.command, C.EFFORT.MID));
+  S.view.power(0); S.view.acc(0, 1);
+  setStage('idle'); readout(); spec(); $('live').textContent = '';
+}
+
+/* the frame: the needle's place from the clock, nothing else */
+function frame(now) {
+  S.raf = 0;
+  if (S.stage !== 'power' && S.stage !== 'acc') return;
+  var t = Math.max(0, now - S.t0);
+  if (S.stage === 'power') { var e = MT.effortAt(t); S.view.power(e); if (S.live) $('live').textContent = 'e now ' + e.toFixed(2); }
+  else { var n = MT.needleAt(t); S.view.acc(n.pos, n.dir); if (S.live) $('live').textContent = 'q now ' + MT.qOf(MT.errAt(t), S.command, S.e).toFixed(2); }
+  S.raf = requestAnimationFrame(frame);
+}
+function go(st, ts) { S.t0 = ts; setStage(st); if (!S.raf) S.raf = requestAnimationFrame(frame); }
+
+function flash(best) {
+  try { if (navigator.vibrate) navigator.vibrate(best ? [10, 40, 14] : 12); } catch (x) {}
+  pulse($('flash'), [{ opacity: best ? .5 : .28 }, { opacity: 0 }], best ? 420 : 240);
+  if (best) pulse($('slot'), [{ transform: 'scale(1.03)' }, { transform: 'scale(1)' }], 220);
+}
+function stopPower(ts) {
+  var t = ts - S.t0;
+  if (!S.style.hold && t < GUARD_MS) return;
+  S.e = MT.effortAt(t);
+  S.view.power(S.e); S.view.lockPower(S.e);
+  S.view.bands(bandsOf(S.command, S.e));
+  S.stage = 'lock'; readout(); spec(); flash(false);
+  S.timer = setTimeout(function () { go('acc', performance.now()); }, LOCK_MS);
+}
+function stopAcc(ts) {
+  var t = ts - S.t0;
+  if (t < GUARD_MS) return;
+  cancelAnimationFrame(S.raf); S.raf = 0;
+  var n = MT.needleAt(t);
+  S.err = MT.errAt(t); S.q = MT.qOf(S.err, S.command, S.e);
+  S.view.acc(n.pos, n.dir); S.view.lockAcc(n.pos, S.q);
+  setStage('done'); readout(); flash(S.q >= MT.BEST_Q);
+}
+/* the tap's own time when the browser gives it on the same clock, as the game does */
+function stamp(ev) { var now = performance.now(), ts = ev && ev.timeStamp; return typeof ts === 'number' && ts > 0 && Math.abs(now - ts) < 500 ? ts : now; }
+function press(ts) {
+  if (S.stage === 'idle' || S.stage === 'done') { if (S.stage === 'done') reset(); go('power', ts); return; }
+  if (S.stage === 'power' && !S.style.hold) return stopPower(ts);
+  if (S.stage === 'acc') return stopAcc(ts);
+}
+function lift(ts) { if (S.style.hold && S.stage === 'power') stopPower(ts); }
+
+function onDown(ev) {
+  if (ev.target.closest('.top') || ev.target.closest('.foot label')) return;
+  ev.preventDefault();
+  S.down = true; press(stamp(ev));
+}
+function onUp(ev) { if (!S.down) return; S.down = false; lift(stamp(ev)); }
+document.addEventListener('pointerdown', onDown, { passive: false });
+document.addEventListener('pointerup', onUp);
+document.addEventListener('pointercancel', onUp);
+document.addEventListener('keydown', function (ev) {
+  if (ev.key !== ' ' && ev.key !== 'Enter') return;
+  if (ev.target.closest && ev.target.closest('button, input')) return;
+  ev.preventDefault(); if (ev.repeat) return; S.down = true; press(performance.now());
+});
+document.addEventListener('keyup', function (ev) { if (ev.key === ' ' || ev.key === 'Enter') { S.down = false; lift(performance.now()); } });
+
+/* the controls */
+STYLES.forEach(function (st) {
+  var b = h('button', 'chip'); b.textContent = st.name; b.dataset.id = st.id;
+  b.addEventListener('click', function () { S.style = st; store.set('style', st.id); build(); });
+  $('chips').appendChild(b);
+});
+[35, 50, 80].forEach(function (c) {
+  var b = h('button'); b.textContent = c; b.dataset.c = c;
+  b.addEventListener('click', function () { S.command = c; mark('#cmd button', 'c', c); reset(); });
+  $('cmd').appendChild(b);
+});
+function mark(sel, key, v) { [].forEach.call(document.querySelectorAll(sel), function (b) { b.setAttribute('aria-pressed', String(b.dataset[key]) === String(v) ? 'true' : 'false'); }); }
+function theme(t) { if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
+  var cur = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); mark('#theme button', 't', cur); }
+[].forEach.call(document.querySelectorAll('#theme button'), function (b) { b.addEventListener('click', function () { store.set('theme', b.dataset.t); theme(b.dataset.t); }); });
+$('livebox').addEventListener('change', function () { S.live = this.checked; $('live').textContent = ''; });
+
+var q0 = new URLSearchParams(location.search);
+var want = q0.get('style') || store.get('style');
+S.style = STYLES.filter(function (x) { return x.id === want; })[0] || STYLES[0];
+theme(q0.get('theme') || store.get('theme'));
+mark('#cmd button', 'c', S.command);
+placeAim();
+build();
+var rt = 0;
+window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { placeAim(); build(); }, 120); });
+/* for the stills: ?demo=power or ?demo=acc holds the meter mid stop */
+var demo = q0.get('demo');
+if (demo) {
+  S.view.power(0.58);
+  if (demo === 'acc' || demo === 'done') { S.e = 0.58; S.view.bands(bandsOf(S.command, S.e)); S.view.lockPower(0.58); setStage('acc'); S.view.acc(0.6, 1); readout(); spec(); }
+  else setStage('power');
+  if (demo === 'done') { var t = MT.MARK * MT.SWEEP_MS + 4; S.err = MT.errAt(t); S.q = MT.qOf(S.err, S.command, S.e); S.view.acc(MT.needleAt(t).pos, 1); setStage('done'); readout(); }
+}
+window.STD_METER_LAB = { styles: STYLES.map(function (x) { return x.id; }), state: S, press: press, lift: lift };
+})();
+</script>
+</body>
+</html>
