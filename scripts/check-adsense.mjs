@@ -141,6 +141,34 @@ if (fs.existsSync(sitemap)) {
 
 if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missing');
 
+/* NO AD EVER TOUCHES PLAY (the owner's rule, 2026-10-26: "the ads never impact someone's
+ * gameplay while they're playing"). A real ad unit, one whose slot id is not all zeros, may
+ * sit only on pages a player reads, never on a page a player plays. Game pages keep their
+ * slots as placeholders, which their initialisers refuse to start. Moving a game slot to a
+ * real id means adding that page here, and that is the owner's decision, made only after
+ * the slot is measured at least 150px from every game control at every width it shows.
+ * Auto ads must stay off in the AdSense dashboard; this check cannot see that, so it also
+ * fails on the page-level switch that would turn it on from code. */
+const READ_ONLY_PAGES = [/^index\.html$/, /^guides\/[^/]+\.html$/, /^[a-z]+\/how-to-play\.html$/];
+function walkCode(dir, out = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (SKIP_DIRS.has(e.name)) continue;
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walkCode(p, out);
+    else if (/\.(html|js)$/.test(e.name)) out.push(p);
+  }
+  return out;
+}
+for (const file of walkCode(ROOT)) {
+  const rel = path.relative(ROOT, file);
+  const src = fs.readFileSync(file, 'utf8');
+  if (/enable_page_level_ads/.test(src)) problems.push(`${rel}: turns on page-level (Auto) ads from code`);
+  if (READ_ONLY_PAGES.some((re) => re.test(rel))) continue;
+  const real = [...src.matchAll(/data-ad-slot=["'](\d+)["']|AD_SLOT\s*=\s*['"](\d+)['"]/g)]
+    .map((m) => m[1] || m[2]).filter((id) => !/^0+$/.test(id));
+  if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
+}
+
 if (problems.length) {
   console.error(`AdSense readiness: ${problems.length} problem(s) across ${checked} indexable pages\n`);
   for (const p of problems) console.error('  ' + p);
