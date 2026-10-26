@@ -79,7 +79,7 @@ import { Pitch, releaseOf } from './pitch.js?v=10';
 import { fromResult, motion } from './play.js?v=10';
 import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=19';
+import { InPlay } from './inplay.js?v=21';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=7';
 import { FirstPerson } from './firstperson.js?v=5';
 
@@ -736,6 +736,8 @@ class Stage {
         if (!called && t >= callAt) { called = true; if (hooks.call) hooks.call(); }
         if (track && track.running && t >= resultAt && hooks.field) hooks.field(track.at(t * 1000).runners);
         const ts = sceneT(Math.min(t, tEnd));
+        // the broadcast's camera moves worked out ahead, one shot a frame, while the pitch is in the air
+        if (run && ts <= resultAt) this.inplay.prepare(this.camera.aspect);
         this.pose(ts);
         if (run && ts > resultAt) { this.inplay.update(ts - resultAt, this.camera); this.firstPersonCut(); }
         if (!TEST() || trace.frames % (TEST().renderEvery || 1) === 0) this.render();
