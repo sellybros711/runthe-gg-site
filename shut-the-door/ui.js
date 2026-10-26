@@ -1090,6 +1090,7 @@ function throwIt() {
   /* the meter is one panel over the dock (the pitch buttons and the throw button), so it is big
      to hit and nothing over the scene moves */
   $('m-dock').classList.add('metering');
+  hush(true);
   var run = S.meter.run({
     command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type), pitch: ap,
     onStage: stepLine,
@@ -1102,12 +1103,15 @@ function throwIt() {
   stepLine();
   absButton();
   run.then(function (r) {
+    hush(false);
     if (!r) { $('m-dock').classList.remove('metering'); updateThrow(); return; }
     var call = { type: type, cell: cell, at: at, q: r.q };
     if (r.e != null) call.e = r.e;      // effort: only when the meter offered it (STD_METER.EFFORT)
     fire(call);
   });
 }
+/* the mound holds still while the meter runs (stage.js hush), so nothing redraws under the needle */
+function hush(on) { var st = S.scene && S.scene.real; if (st && st.hush) st.hush(on); }
 /* rules 2: how many pitches in a row before this one were this type (a good release helps less on a repeat) */
 function repeatOf(type) {
   var log = (S.outing && S.outing.rules >= 2 && S.outing.log) || [], n = 0;
