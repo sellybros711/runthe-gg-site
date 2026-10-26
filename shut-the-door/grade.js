@@ -396,7 +396,7 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 5;
+const RULES = 6;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
@@ -415,6 +415,13 @@ const ABS_RULES = 4;
    the library draw, the grade one pitch ahead moves the same share
    (keyMixCtx). The draws do not move, and no other key's draw changes. */
 const ROUTINE_RULES = 5;
+/* Rules 6 (2026-10-26) is rules 5 with the runners reading the ball (contract.js
+   THE RUNNERS READ THE BALL, engine.js readTheBall): the advancement row is
+   drawn from the table's rows weighted by how real runners went on a ball of
+   that carry and side. The grade keeps the table's own mix: one real ball
+   stands for each key in a cell, and its depth is that ball's, not the
+   hitter's (the weights average back to the table over the real balls). */
+const RUNNER_RULES = 6;
 const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
@@ -1023,7 +1030,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;

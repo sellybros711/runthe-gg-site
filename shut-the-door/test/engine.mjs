@@ -8,6 +8,7 @@
  * so the machinery is held now.
  */
 import { createRequire } from 'module';
+import { readFileSync } from 'fs';
 import { synthPack, testRng } from './synth.mjs';
 const require = createRequire(import.meta.url);
 const K = require('../contract.js');
@@ -619,8 +620,28 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
     r('fly', 88, 38, 10) === 'air' && r('popup', 99, 70, 0) === 'air' && r('line', 80, 15, 0) === null && r('fly', 99, 30, 10) === null && r('fly', 88, 22, 10) === null);
   check('rules 5: an untracked ball is judged by its type and spray', r('ground', null, null, 18) === 'ground' && r('ground', null, null, 0) === null && r('fly', null, null, 30) === 'air');
   check('rules 5: a routine error still happens, rarely', K.ROUTINE.KEEP.ground > 0 && K.ROUTINE.KEEP.ground < 0.1 && K.ROUTINE.KEEP.air > 0 && K.ROUTINE.KEEP.air < 0.5);
-  check('rules 5: a new outing plays rules 5, a rules 4 one replays as rules 4', G.RULES === G.ROUTINE_RULES && E.createOuting(pack, { seed: 1, model }).rules === 5
+  check('rules 5: a rules 5 outing plays, a rules 4 one replays as rules 4', E.createOuting(pack, { seed: 1, model, rules: G.ROUTINE_RULES }).rules === 5
     && E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 4 }], { model }).rules === 4);
+}
+
+/* rules 6: the runners read the ball (contract.js THE RUNNERS READ THE BALL) */
+{
+  const RN = JSON.parse(readFileSync(new URL('../data/runners.json', import.meta.url), 'utf8'));
+  const rn = { dist: { coef: RN.dist.coef }, edges: RN.edges, ratio: RN.ratio };
+  const c = (ev, la) => K.carryOf(ev, la, RN.dist.coef);
+  check('rules 6: the carry fit reads Statcast distance (100 mph at 28 degrees near 380 ft, a 76 mph popup near 130)',
+    Math.abs(c(100, 28) - 380) < 20 && Math.abs(c(76, 65) - 135) < 25 && c(93, 16) < c(100, 20) && c(null, 20) === null);
+  let bad = 0;
+  for (const [key, bb, ev, la, sp, cl] of RN.check) if (K.runnerClass(key, bb, ev, la, sp, rn) !== cl) bad++;
+  check(`rules 6: runnerClass is runners.py's class on all ${RN.check.length} sampled real balls`, bad === 0);
+  check('rules 6: a runner out is X, else the lead runner\'s bases', K.runnerCategory(4, [[3, -1], [0, -1]]) === 'X' && K.runnerCategory(4, [[3, 4], [0, -1]]) === '1'
+    && K.runnerCategory(4, [[0, -1]]) === '0' && K.runnerCategory(1, [[1, 4], [0, 2]]) === '3' && K.runnerCategory(0, [[0, 1]]) === null);
+  const r = (cl) => RN.ratio[`out_fly|3|0|${cl}`];
+  check('rules 6: on a fly with a runner on third, a shallow one holds him and a deep one scores him (2024)',
+    r('bC') && r('fC') && r('bC')[1] > 1 && r('bC')[2] < 1 && r('fC')[2] >= 1 && r('fC')[1] < 0.2);
+  check('rules 6: the infield liner doubles the runner off more, the deep liner less', RN.ratio['out_line|1|0|aC'][0] > 1 && RN.ratio['out_line|1|0|gC'][0] < 1);
+  check('rules 6: a new outing plays rules 6, a rules 5 one replays as rules 5', G.RULES === G.RUNNER_RULES && E.createOuting(pack, { seed: 1, model }).rules === 6
+    && E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 5 }], { model }).rules === 5);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');

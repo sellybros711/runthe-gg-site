@@ -493,6 +493,29 @@ reads where the library draw fell inside the error's slice, and past KEEP it is 
 and no other key's draw moves. The grade moves the same share one pitch ahead (`grade.js keyMixCtx`);
 the hold table after it is unchanged, like the call by location.
 
+## 5h. Rules 6: the runners read the ball (2026-10-26)
+
+Rules 5 and everything before it. The owner: "We need to ensure runners are advancing in realistic
+situations, and tagging up in realistic situations." A new outing's calls carry `r: 6`; a call with
+`r: 5` or before replays under its own rules, exactly (`fixtures/replays-rules5-pre-runners.json`).
+
+The advancement table (`pack.advance`) is the real share of each runner outcome for a key at a base
+and out state. Before rules 6 the row ignored the ball: a 180 ft fly scored the runner from third as
+often as a 380 ft one. Now each row's chance is multiplied by a measured ratio and renormalised:
+
+- **The ball's class** (`contract.js runnerClass`): an air ball's carry band (`carryOf`, the 2024
+  fit of Statcast distance from exit velocity and launch angle) and side (left, centre, right); a
+  ground ball's speed (under 85 mph or not) and side. A ball with no spray or no speed has no class.
+- **The row's category** (`runnerCategory`): X when a runner is put out on the bases, else how many
+  bases the lead runner went (0 to 3).
+- **The ratio** (`pack.runners.ratio`, `pipeline/runners.py`): for each key, lead runner's base, outs
+  (0-1 or 2) and class, the category's share on 2024 balls of that class over its share in the key,
+  shrunk toward the key's mix by 10 plays.
+
+Every row is still the table's own legal play, and the runner draw is the same draw. The grade keeps
+the table's mix: one real ball stands for each key in a cell, and its depth is that ball's, not the
+hitter's. A ball in play under rules 6 carries `carry` (feet, air balls) and `cls` for the scene.
+
 ## 6. Pitch result
 
 ```js
@@ -513,8 +536,10 @@ the hold table after it is unchanged, like the call by location.
  * @property {'take'|'swing'} batter
  * @property {PitchCallResult} result
  * @property {{bb: 'ground'|'line'|'fly'|'popup', ev: number, la: number, spray: number,
- *             result: InPlayResult, text: string}} [inPlay]   spray: degrees, 0 = centre field,
- *                                    negative = the left field side
+ *             result: InPlayResult, text: string, carry?: number, cls?: string}} [inPlay]
+ *                                    spray: degrees, 0 = centre field, negative = the left field
+ *                                    side. Rules 6: carry, how far the air ball goes (feet,
+ *                                    contract.js carryOf), and cls, its class (section 5h)
  * @property {{b: number, s: number}} countBefore
  * @property {{b: number, s: number}} count     after; resets to 0-0 when the plate appearance ends
  * @property {number} outs           after

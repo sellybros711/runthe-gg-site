@@ -347,6 +347,46 @@ pool 77.9 to 78.0, 51 to 51. `BANDS` unchanged; the pool's bands 19.8/26.9/33.6/
 19.9/26.8/33.6/19.6 (band_sweep: 20/27/33/19 both). Packs rebuilt with `pool.js`: `hold`, `seq` and
 `pros` byte-identical, pack v10, `SCHEDULE_V` 10.
 
+## Rules 6: the runners read the ball (2026-10-26)
+
+The owner: "We need to ensure runners are advancing in realistic situations, and tagging up in
+realistic situations." CONTRACT.md 5h. The advancement row is drawn from the table's rows, each
+weighted by how real runners went on a ball of that carry band and side (`pack.runners`, from
+`pipeline/runners.py`: every 2024 ball in play with a runner on, Savant's play text read runner by
+runner). Same draw, same legal rows. A new outing's calls carry `r: 6`; `r: 5` rows replay exactly
+(`fixtures/replays-rules5-pre-runners.json`). `pool.js` copies `data/runners.json` into each pack.
+
+```
+python3 shut-the-door/pipeline/runners.py [--season 2024] [--from DIR]   writes data/runners.json
+```
+
+**Carry** (`contract.js carryOf`): Statcast distance from exit velocity and launch angle, R2 0.94,
+15.6 ft mean error on 65,405 air balls.
+
+**2024 against the engine** (closer pool calls, 1,500 outings a pack, all ten packs; hold / score /
+thrown out, or as labelled):
+
+| play | real 2024 | rules 5 | rules 6 |
+|---|---|---|---|
+| fly out, runner on 3rd, under 2 outs, carry 200-250 ft | 79 / 13 / 7 | 28 / 67 / 5 | 68 / 25 / 7 |
+| the same, 250-280 ft | 38 / 52 / 10 | 22 / 76 / 2 | 31 / 58 / 11 |
+| the same, 300 ft and up | 0 / 99 / 1 | 22 / 76 / 2 | 2 / 97 / 1 |
+| fly out, runner on 2nd tags to 3rd, 300 ft and up | 53 | 34 | 56 |
+| the same, 200-250 ft | 3 | 44 | 2 |
+| line out, runner on 1st doubled off, under 200 ft | 29 | 10 | 20 |
+| the same, 300 ft and up | 2 | 12 | 2 |
+| single, runner on 1st to 3rd, ball to left / right | 10 / 40 | 26 / 27 | 13 / 36 |
+
+The marginals stay real (fly out with a runner on 3rd, all depths: 23 / 73 / 4 real, 17 / 79 / 4
+rules 6). Scoring from 2nd on a single by outs (0-1, 2) and from 1st on a double were already the
+table's real rates and stay so. The closer pool's hold rate moves 0 to 0.9 points; the grade, the
+hold table, `seq` and BANDS are unchanged. The 2011 and 1988 packs move least: their balls carry no
+tracked speed, so most have no class.
+
+**Arm strength** (2024 Savant outfield arm, report only, no fielder is in the pack): on a 240-300 ft
+fly with a runner on 3rd, the strongest third of arms (92 mph) hold him 41% against 19-20% for the
+rest; on a single with a runner on 2nd the arm barely moves the send (70 / 68 / 72 scored).
+
 ## Release and spin, for the picture (2026-10-24)
 
 `pipeline/tracking.py arsenal` reads each scenario pitcher's own pitches from the Savant search his

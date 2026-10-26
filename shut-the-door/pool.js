@@ -12,7 +12,8 @@
  *   3. keeps each closer's name, style vector and reason as pack.pool.closers,
  *      for pitched like
  *   4. keeps the lesson's pro examples this pack can show (attachPros)
- *   5. reports the calibration the brief asks for (band spread, the pool's
+ *   5. copies data/runners.json (pipeline/runners.py) in as pack.runners, rules 6
+ *   6. reports the calibration the brief asks for (band spread, the pool's
  *      hold rate, its outcome mix) in pack.build.pool, and writes the pack
  *      minified, stamped with the engine's pack format (E.PACK_VERSION)
  *
@@ -242,6 +243,9 @@ function build(pack, closersFile, opts) {
   const runs = (opts && opts.runs) || 2000;
   // the hold table's layout is the engine's pack format (a slot for a tied game since 2)
   pack.v = E.PACK_VERSION;
+  // rules 6: how real runners went on each kind of ball (pipeline/runners.py), without its parity sample
+  const fsx = require('fs'), rn = require('path').join(__dirname, 'data', 'runners.json');
+  if (fsx.existsSync(rn)) { const r = JSON.parse(fsx.readFileSync(rn, 'utf8')); pack.runners = { source: r.source, dist: { coef: r.dist.coef }, edges: r.edges, ratio: r.ratio }; }
   const t0 = Date.now();
   const fresh = new G.Model(pack, { fresh: true });
   pack.hold = fresh.holdTable();
