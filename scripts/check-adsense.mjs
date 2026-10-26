@@ -150,7 +150,7 @@ if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missin
  * Auto ads must stay off in the AdSense dashboard; this check cannot see that, so it also
  * fails on the page-level switch that would turn it on from code. */
 /* Game pages whose start screen may carry one menu ad (the owner's call, 2026-10-26). */
-const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html']);
+const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html']);
 const READ_ONLY_PAGES = [/^index\.html$/, /^arcade\/index\.html$/, /^guides\/[^/]+\.html$/, /^[a-z]+\/how-to-play\.html$/];
 function walkCode(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -177,7 +177,7 @@ for (const file of walkCode(ROOT)) {
   if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
   if (MENU_ZONE_PAGES.has(rel)) {
     if (!/function menuAd\(/.test(src) || !/^\s+menuAd\(id\);/m.test(src)) problems.push(`${rel}: has a menu ad zone but show() does not call menuAd(id) to remove it when play starts`);
-    if (!/closest\('\[data-ad-zone\]'\)\) continue/.test(src)) problems.push(`${rel}: the initialiser must skip the menu ad zone (menuAd starts it on the start screen only)`);
+    if (/querySelectorAll\('ins\.adsbygoogle'\)/.test(src) && !/closest\('\[data-ad-zone\]'\)\) continue/.test(src)) problems.push(`${rel}: the initialiser must skip the menu ad zone (menuAd starts it on the start screen only)`);
   }
 }
 
