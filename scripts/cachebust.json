@@ -3001,8 +3001,8 @@
       "sha": "d674e8f760357897"
     },
     "3d/boot.js": {
-      "v": "46",
-      "sha": "0f2aec3798ef25b3"
+      "v": "47",
+      "sha": "d68234bc8b64b751"
     }
   },
   "shut-the-door/lab/index.html": {
@@ -3123,8 +3123,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "50",
-      "sha": "2b74c6d14f1f037c"
+      "v": "51",
+      "sha": "e31f97baaeaee4fc"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3199,8 +3199,8 @@
       "sha": "36071604a671158e"
     },
     "firstperson.js": {
-      "v": "4",
-      "sha": "cfccf19bb65e4d7f"
+      "v": "5",
+      "sha": "60703cb454bc1bcd"
     }
   },
   "wrestling/ring3d/arena.js": {

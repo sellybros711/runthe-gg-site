@@ -81,7 +81,7 @@ import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=18';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=7';
-import { FirstPerson } from './firstperson.js?v=4';
+import { FirstPerson } from './firstperson.js?v=5';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
