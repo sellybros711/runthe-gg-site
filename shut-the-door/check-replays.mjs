@@ -62,6 +62,12 @@
  * engine before rules 4, in fixtures/replays-rules3-pre-abs.json). The pool
  * was replayed under rules 4, so a rules 3 row's percentile is not compared.
  *
+ * RULES 6 (2026-10-26). The runners read the ball (contract.js THE RUNNERS
+ * READ THE BALL, engine.js 9). A new outing's calls carry r 6. A row with r 5
+ * replays under rules 5 exactly (the self-test holds three, made by main's
+ * engine before rules 6, each with a ball in play whose runners go another way
+ * under rules 6, in fixtures/replays-rules5-pre-runners.json).
+ *
  * RULES 5 (2026-10-25). An error on a routine play is extremely rare
  * (contract.js ROUTINE, engine.js 8). A new outing's calls carry r 5. A row
  * with r 4 replays under rules 4 exactly, its routine errors and all (the
@@ -322,6 +328,22 @@ function selfTest() {
         && JSON.stringify(ip) === JSON.stringify(row.inPlay);
       const routineErr = o.log.some(x => x.inPlay && x.inPlay.result === 'error' && K.routineOf(x.inPlay.bb, x.inPlay.ev, x.inPlay.la, x.inPlay.spray));
       say(a.ok && same && routineErr && o.rules === G.ABS_RULES, `${row.scenario_id}: a rules 4 row from before the routine play replays exactly, its routine error included (${row.pitches} pitches)` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 6: rules 5 rows made before it (main's engine at 88dd6bf), each with a ball in play whose
+     runners would go another way under rules 6, replay exactly under rules 5, every runner's move */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules5-pre-runners.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.log.map(x => x.inPlay ? x.inPlay.result : null)) === JSON.stringify(row.inPlay)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result);
+      const o6 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.RUNNER_RULES })), { mode: 'daily', model: p.model });
+      const moved = JSON.stringify(o6.log.map(x => x.runnerMoves || null)) !== JSON.stringify(row.moves.slice(0, o6.log.length));
+      say(a.ok && same && moved && o.rules === G.ROUTINE_RULES, `${row.scenario_id}: a rules 5 row from before the runners read the ball replays exactly, every runner's move (${row.pitches} pitches)` + (a.ok ? '' : ': ' + a.why));
     }
   }
   process.exit(fails ? 1 : 0);
