@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /* Write functions/_lastshot/pages.js: the page shell and every browser
  * module, as strings. They are served by functions/last-shot/[[path]].js
- * behind the tester gate, never as static files. After editing web/play.html
+ * by functions/last-shot/[[path]].js, never as static files. After editing web/play.html
  * or any browser module:
  *
  *   node functions/_lastshot/build/pages.mjs
  *
- * test/gate.test.mjs fails if pages.js has drifted from the sources. */
+ * test/serve.test.mjs fails if pages.js has drifted from the sources. */
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
 
-/* What the browser may load. Server files (gate, db, pages) are not here. */
+/* What the browser may load. Server files (serve, pages) are not here. */
 export const MODULE_FILES = ['scenario.js', 'rng.js', 'court-geo.js', 'motion.js', 'defense.js', 'shot.js', 'playbook.js',
   'sim.js', 'view.js', 'board.js', 'court.js', 'share.js', 'client.js'];
 

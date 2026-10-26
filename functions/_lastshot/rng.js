@@ -1,6 +1,6 @@
 /* Seeds and the one random source. Nothing in the sim may call Math.random:
  * the same seed and the same play have to give the same result, on any
- * device, so a tester's "this happened" can be replayed exactly.
+ * device, so a player's "this happened" can be replayed exactly.
  * (Copied from functions/_arcadelab/shared/seed.js so this game stands alone.) */
 export function hashStr(s) {
   let h = 0x811c9dc5;

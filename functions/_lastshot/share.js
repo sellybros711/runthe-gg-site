@@ -1,7 +1,7 @@
 /* The share line, in the Arcade Lab's shape: a header, one strip of squares,
  * the url. One square per step of the play, the last one the shot. It links
- * the arcade, never this game's gated path, so a pasted result does not
- * hand a non-tester the route.
+ * the arcade, not /last-shot: the game is unlisted until the owner launches
+ * it, and a pasted result would be a public link to it.
  *
  *   Last Shot WINNER 89-88 · 2.1
  *   ⬜🟦🟨🟩

@@ -3,11 +3,11 @@
  *
  * ACCOUNT PLUG POINTS (out of scope for v1, see the vault note
  * games/last-shot/last-shot-overview.md):
- *   TODO(account): who is signed in. The gated pages load no site shell, so
+ *   TODO(account): who is signed in. This page loads no site shell, so
  *     load /arcade/auth.js and read window.RTG_AUTH.state() as the Arcade Lab
  *     shell does (functions/_arcadelab/shared/kit.js session()).
  *   TODO(results): save a finished possession (seed, play, outcome) through a
- *     gated API like /api/arcade/*, replayed on the server by sim.js.
+ *     server API like /api/arcade/*, replayed on the server by sim.js.
  *   TODO(trophies, streaks, leaderboards): once results are saved; a daily
  *     scenario would take a dated seed and a board like RTG_BOARD's. */
 import { SCENARIO as SC } from './scenario.js';

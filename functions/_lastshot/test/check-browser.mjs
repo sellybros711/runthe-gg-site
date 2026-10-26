@@ -2,8 +2,8 @@
 /* Last Shot in Chromium on a phone (390x844, touch): draw a play with all
  * four tools by pointer, run it, watch it to the result, check the reason,
  * the scheme, the share line and the seed panel, replay, go back to the
- * clipboard with the play kept, and check nothing threw. Then the 404 a
- * non-tester gets.
+ * clipboard with the play kept, and check nothing threw. Then the 404 for
+ * anything else under /last-shot.
  *   node functions/_lastshot/test/check-browser.mjs */
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -17,7 +17,7 @@ import { startDev } from '../build/dev-server.mjs';
 
 const PORT = 8792, base = 'http://localhost:' + PORT;
 const SHOTS = process.env.SHOTS || null;
-const { server, setWho } = await startDev(PORT);
+const { server } = await startDev(PORT);
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let fails = 0;
 /* The two banned dashes, built from their code points so this file holds neither. */
@@ -31,9 +31,8 @@ try {
   const errs = [];
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   page.on('pageerror', e => errs.push(String(e)));
-  setWho('dev');
   const res = await page.goto(base + '/last-shot');
-  ok(res.status() === 200, 'a tester gets the page');
+  ok(res.status() === 200, 'anybody gets the page');
   await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
   await page.reload();
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.view);
@@ -93,7 +92,7 @@ try {
   const shared = await page.evaluate(() => navigator.clipboard.readText());
   const lines = shared.split('\n');
   ok(lines.length === 3 && /^Last Shot (WINNER|LOSE) \d+-\d+/.test(lines[0]) && lines[2] === 'https://runthe.gg/arcade/', 'the share line: ' + JSON.stringify(shared));
-  ok(!/last-shot/.test(shared), 'the share line never links the gated path');
+  ok(!/last-shot/.test(shared), 'the share line never links the unlisted page');
 
   // The same seed and play give the same result in the page.
   const again = await page.evaluate(() => { const r = window.__lastShot.result; return window.__lastShot.simulate(r.seed); });
@@ -111,13 +110,11 @@ try {
   ok((await page.evaluate(() => window.__lastShot.play.steps.length)) === 0 && await page.isDisabled('#bRun'), 'Clear empties the clipboard');
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
 
-  // Everybody else.
-  setWho(null);
-  const nobody = await page.goto(base + '/last-shot');
-  ok(nobody.status() === 404, 'a non-tester gets a 404');
-  ok((await page.content()).includes('<title>') && !(await page.content()).includes('Last Shot'), 'the 404 page never names the game');
-  const mod = await page.goto(base + '/last-shot/m/sim.js');
-  ok(mod.status() === 404, 'a non-tester cannot load a module');
+  // Nothing else under /last-shot.
+  const typo = await page.goto(base + '/last-shot/nope');
+  ok(typo.status() === 404, 'an unknown path is a 404');
+  const srv = await page.goto(base + '/last-shot/m/serve.js');
+  ok(srv.status() === 404, 'a server file is never served');
 } finally {
   await browser.close(); server.close();
 }
