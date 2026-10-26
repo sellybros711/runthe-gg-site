@@ -110,7 +110,7 @@
   .path:empty{min-height:152px;}
   @media (max-width:520px){ .path:empty{min-height:122px;} }
   .stop{display:flex; align-items:center; gap:12px;}
-  .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pc,var(--card)); color:var(--pcInk,#fff); font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
+  .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pcFill,var(--pc,var(--card))); color:var(--pcInk,#fff); font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
   .stop:not([style]) .dot{background:var(--card); color:var(--greenT); text-shadow:none;}
   .stop:not([style]):first-child .dot{background:var(--green); color:#071426;}
   .stop:not([style]):last-child .dot{background:color-mix(in srgb, var(--green) 22%, var(--card));}
@@ -712,17 +712,33 @@ window.GA_ID='G-L29P5MRWKE';
   /* Readable ink for a digit sitting on an arbitrary team colour.
    * Compare BOTH candidates rather than splitting on a luminance threshold:
    * a mid-tone like Cincinnati orange (#FB4F14) reads 3.4:1 against white but
-   * 5.3:1 against ink, and any single cutoff gets a band of colours wrong. */
+   * 5.3:1 against ink, and any single cutoff gets a band of colours wrong.
+   *
+   * AND NUDGE THE FILL WHEN NEITHER INK IS ENOUGH. A colour near the middle
+   * (Hawks and Blazers #E03A3E, Chargers #0080C6, Orioles #DF4601, Panthers
+   * #0085CA) tops out near 4.3:1 against either ink, short of the 4.5 a 14px
+   * digit needs. So the dot's fill moves toward black or white, whichever
+   * gets there in fewer steps, and the border keeps the true team colour.
+   * Returns { ink, fill }. */
   function onColorOf(hex){
     try{
       var h=String(hex||'').replace('#','');
-      if(h.length!==6) return '#fff';
-      var lin=function(c){ c=parseInt(c,16)/255; return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4); };
-      var L=0.2126*lin(h.substr(0,2))+0.7152*lin(h.substr(2,2))+0.0722*lin(h.substr(4,2));
+      if(h.length!==6) return { ink:'#fff', fill:hex };
+      var rgb=[0,2,4].map(function(i){ return parseInt(h.substr(i,2),16); });
+      var lin=function(c){ c=c/255; return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4); };
+      var lum=function(c){ return 0.2126*lin(c[0])+0.7152*lin(c[1])+0.0722*lin(c[2]); };
       var ratio=function(a,b){ return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05); };
       var WHITE=1, INK=0.00856;                       // relative luminance of #fff / #0A1728
-      return ratio(L,INK) >= ratio(L,WHITE) ? '#0A1728' : '#fff';
-    }catch(e){ return '#fff'; }
+      var hexOf=function(c){ return '#'+c.map(function(v){ return ('0'+Math.round(v).toString(16)).slice(-2); }).join(''); };
+      for(var t=0; t<=1.0001; t+=0.02){
+        var dark=rgb.map(function(v){ return v*(1-t); }), light=rgb.map(function(v){ return v+(255-v)*t; });
+        var rw=ratio(lum(dark),WHITE), ri=ratio(lum(light),INK);
+        if(t===0){ if(Math.max(rw,ri)>=4.5) return { ink: ri>=rw?'#0A1728':'#fff', fill:'#'+h }; continue; }
+        if(rw>=4.5) return { ink:'#fff', fill:hexOf(dark) };
+        if(ri>=4.5) return { ink:'#0A1728', fill:hexOf(light) };
+      }
+      return { ink:'#fff', fill:'#'+h };
+    }catch(e){ return { ink:'#fff', fill:hex }; }
   }
   /* THE ROUND: a career arrives one team at a time, and you type the name.
      Seeing the whole path and picking from four names was a lookup with the
@@ -750,8 +766,8 @@ window.GA_ID='G-L29P5MRWKE';
       // range from near-black to near-white, and a fixed white digit sat at 3.4:1
       // on the light ones. Pick the ink from the fill's luminance, the same way
       // the hub picks its PLAY labels.
-      var ink = tc ? onColorOf(tc.p) : null;
-      var st=tc?(' style="--pc:'+tc.p+';--pcInk:'+ink+';--pc2:'+(tc.s||tc.p)+'"'):'';
+      var on = tc ? onColorOf(tc.p) : null;
+      var st=tc?(' style="--pc:'+tc.p+';--pcFill:'+on.fill+';--pcInk:'+on.ink+';--pc2:'+(tc.s||tc.p)+'"'):'';
       var body = veiled ? '<span class="tm">? ? ?</span>' : '<span class="tm">'+esc(tm)+'</span>'+tag;
       return (i>0?'<div class="stopgap"></div>':'')
            + '<div class="stop'+(veiled?' veiled':'')+'"'+st+'><span class="dot">'+(i+1)+'</span>'+body+'</div>';
