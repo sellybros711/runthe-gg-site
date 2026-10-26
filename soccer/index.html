@@ -3206,6 +3206,8 @@
     letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
     margin:0 0 6px; padding-top:16px; border-top:1px solid var(--border-soft); }
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{ display:block; }
+  /* The menu ad keeps 150px from the controls above it, but only once it holds an ad. */
+  .rtp-ad-inline[data-ad-zone="menu"]:has(ins[data-ad-status="filled"]){ margin-top:150px; }
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{ display:block; }    /* mobile bottom anchor only */
     .rtp-ad-rail{ display:none !important; }     /* never side rails on mobile */
@@ -4260,13 +4262,17 @@ window.GA_ID='G-L29P5MRWKE';
     </div>
   </section>
 
-  <!-- The banner, above the footer. Placeholder slot: the initialiser refuses to start one,
-       so this renders nothing until a real unit id is pasted in. -->
-  <div class="rtp-ad-inline">
+  <!-- THE MENU AD (Ads Agent, 2026-10-26, the owner's rule: ads on a game's start screen,
+       never in play). The one live unit in this game. It sits under the screens, above the
+       footer, so it shows under the start screen. menuAd() starts it while the start screen is
+       showing and REMOVES it the moment showScreen() opens any other screen (AdSense does not
+       allow a loaded ad to be hidden). It is not started again until the page reloads. Once
+       filled it sits 150px below the last control; empty, it takes no space. -->
+  <div class="rtp-ad-inline" data-ad-zone="menu">
     <span class="rtp-ad-label">Advertisement</span>
     <ins class="adsbygoogle"
          data-ad-client="ca-pub-5952069078178257"
-         data-ad-slot="0000000000"
+         data-ad-slot="6069480594"
          data-ad-format="horizontal"
          data-full-width-responsive="true"></ins>
   </div>
@@ -4820,9 +4826,22 @@ function draftTotalSlots(){ return gs ? gs.picks.length + gs.openSlots.length : 
 function isFullDraft(){ return !!(gs && gs.draftType==='full'); }
 
 function $(id){return document.getElementById(id);}
+/* THE MENU AD lives under the start screen and nowhere else. Started while the start screen
+   shows, removed (not hidden) the first time any other screen opens, and never started again
+   on this page load. A push fills the first unstarted unit in the page, and this one comes
+   before the rails and the strip, which are never started. */
+function menuAd(name){
+  const z=document.querySelector('[data-ad-zone="menu"]');
+  if(!z) return;
+  if(name!=='start'){ z.remove(); return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $('screen-'+name).classList.add('active');
+  menuAd(name);
   // compact mode hides the masthead so the select page fits one screen
   document.body.classList.toggle('sel-mode', name==='select');
   document.body.classList.toggle('home-mode', name==='home');
@@ -14955,9 +14974,12 @@ boot().then(async ()=>{
            vault). The real ids were 1816473106, 4576322214 and 8100634252. */
         var slot = ads[i].getAttribute('data-ad-slot');
         if (!slot || /^0+$/.test(slot)) continue;
+        if (ads[i].closest('[data-ad-zone]')) continue;   // the menu ad starts in menuAd()
         (adsbygoogle = window.adsbygoogle || []).push({});
       }
     }catch(e){}
+    /* The page opens on the start screen without a showScreen() call, so start it here. */
+    try{ var st=document.getElementById('screen-start'); if (st && st.classList.contains('active')) menuAd('start'); }catch(e){}
   })();
 </script>
 
