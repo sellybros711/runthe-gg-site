@@ -1385,7 +1385,11 @@ function planEdit(ctx) {
   // backwards (a cut placed between two moments before its own shot began made a piece that ended
   // before it started, and the next one replayed the play). The shot that holds on frames the moment
   // it took in (inplay.js brings each deciding moment into whatever shot is on).
-  tidyCut(pieces);
+  throwSafe(pieces, p);
+  tidyCut(pieces, p.segs);
+  // (tidying can lay a short shot's start back into a throw: once more, then tidy what that left)
+  throwSafe(pieces, p);
+  tidyCut(pieces, p.segs);
   // the slow motion piece: split whatever piece holds it
   if (slow) {
     const out = [];
@@ -1408,16 +1412,113 @@ function planEdit(ctx) {
   p.events.sort((a, b) => a.s - b.s);
 }
 
+/** No cut while a throw is in the air (the owner, 2026-10-26: the throw, then the base and the result,
+    each beat its moment, none over another). A cut that falls while a throw flies moves to the nearest
+    edge of the throw that keeps both shots' own deciding moments in them: before the release (the shot
+    after takes the throw, from the hand) or a beat after the catch (the shot before holds it to the
+    glove). Of the two it picks the one whose shot holds that throw (the ball's own cameras, the plate
+    for a throw home, a runner's shot for a throw to his own bag). Only the cut moves: no shot runs
+    over another's moment. Pieces are { s0, s1, cam, rate, m }, in order. */
+const THROW_HOLD = 0.25, PRE_RELEASE = 0.05, EARLY_THROW = 0.3;
+function throwSafe(pieces, p) {
+  const throws = p.segs.filter((sg) => sg.kind === 'throw');
+  const inAir = (t) => throws.find((sg) => t > sg.t0 + 0.03 && t < sg.t1 - 0.03);
+  const home = (sg) => Math.hypot(sg.b.x, sg.b.y) < 12;
+  const toBag = (pc, sg) => { const b = bagOf(p, pc.m); return !!b && Math.hypot(sg.b.x - b.x, sg.b.y - b.y) < 20; };
+  const holds = (pc, sg) => pc.cam === 'follow' || pc.cam === 'track' || pc.cam === 'sky' || (pc.cam === 'plate' && home(sg)) || toBag(pc, sg);
+  // (each shot's deciding moments: every out, run and runner safe, and a tag-up, inside it as built)
+  const all = [];
+  for (const r of p.runners) { const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.from !== r.to ? r.arrive : null; if (tq != null) all.push(tq); }
+  const ca = p.events.find((e) => e.kind === 'catch');
+  if (ca && p.runners.some((r) => !r.batter && r.to > r.from)) all.push(ca.s + 0.3);
+  for (const pc of pieces) pc.ms = all.filter((t) => t >= pc.s0 - 1e-6 && t <= pc.s1 + 1e-6);
+  // (a piece's own m can be a moment outside it, a cut away and back again: only what is in it counts)
+  const first = (pc) => (pc.ms.length ? Math.min(...pc.ms) : null), last = (pc) => (pc.ms.length ? Math.max(...pc.ms) : null);
+  for (let guard = 0; guard < 4; guard++) {
+    let moved = false;
+    for (let i = 1; i < pieces.length; i++) {
+      const A = pieces[i - 1], B = pieces[i];
+      if (A.cam === 'pitcher') continue;
+      const th = inAir(A.s1) || inAir(B.s0);
+      if (!th || A.earlyCut === th) continue;
+      // (a jump cut skips dead time between the two shots: that time stays out. Only the edges move, each
+      // within its own side: the shot before holds the throw to the glove as far as the gap allows, and
+      // the shot after starts before the release, so it takes the throw from the hand)
+      if (B.s0 - A.s1 > 0.05) {
+        const e0 = th.t0 - PRE_RELEASE, l0 = th.t1 + THROW_HOLD;
+        if (th === inAir(A.s1)) { const to = Math.min(B.s0, l0); if (to > A.s1 + 1e-6) { A.s1 = to; moved = true; } }
+        if (th === inAir(B.s0)) { const to = Math.max(A.s1, e0); if (to < B.s0 - 1e-6) { B.s0 = to; moved = true; } }
+        continue;
+      }
+      // (the beat after the catch shortens, to a twentieth of a second at least, when the next shot's
+      // moment comes that soon after it)
+      const early = th.t0 - PRE_RELEASE, bF0 = first(B), late = bF0 == null ? th.t1 + THROW_HOLD : clamp(bF0 - 0.2, th.t1 + 0.05, th.t1 + THROW_HOLD);
+      // (a shot keeps its moment with a fifth of a second around it)
+      const aL = last(A), bF = first(B);
+      // (two runners' shots at bags far apart are two shots: one crane cannot hold both, so the one
+      // before never holds on into the other's)
+      const ba = bagOf(p, aL), bb = bagOf(p, bF);
+      const apart = A.cam === 'wide' && B.cam === 'wide' && ba && bb && Math.hypot(ba.x - bb.x, ba.y - bb.y) > 80;
+      const okEarly = (aL == null || aL <= early - 0.2) && (bF == null || bF >= early);
+      const okLate = !apart && (bF == null || bF >= late + 0.2) && (aL == null || aL <= late) && late < B.s1 - 0.1;
+      // (a shot that holds this throw keeps it to the glove when the next shot's moment is the throw's own
+      // arrival: a runner doubled off his bag is the tag-up shot's to show, not a cut's)
+      const arrival = !apart && bF != null && bF >= th.t1 - 0.1 && bF <= late && toBag(B, th) && A.cam !== 'track' && A.cam !== 'sky' && B.ms.every((t) => t <= late);
+      // (and an early cut that would leave the shot before too short to read is no option when the late one is)
+      const shortA = early - A.s0 < MIN_SHOT;
+      const useLate = (holds(A, th) && (okLate || arrival)) || (okLate && (!okEarly || shortA)) ? true : okEarly ? false : holds(A, th) && !apart;
+      // (neither: the shot before has its moment just as the throw leaves. It shows it, and the cut comes
+      // in the throw's first stretch, EARLY_THROW of its flight at most, to a shot that holds the ball in
+      // the air: the ball has only just left the hand, and the next shot picks it up on its way)
+      const soon = th.t0 + EARLY_THROW * (th.t1 - th.t0);
+      if (!useLate && !okEarly && aL != null && aL + 0.15 <= soon && holds(B, th) && (bF == null || bF >= soon)) {
+        const cut = Math.max(aL + 0.15, early);
+        A.s1 = cut; B.s0 = cut; A.earlyCut = th; moved = true;
+        continue;
+      }
+      if (useLate) { A.s1 = Math.max(A.s1, late); B.s0 = Math.max(B.s0, late); A.ms = A.ms.concat(B.ms.filter((t) => t < B.s0)); B.ms = B.ms.filter((t) => t >= B.s0); if (B.s0 >= B.s1 - 1e-6) { if (A.m == null) A.m = B.m; A.ms = A.ms.concat(B.ms); A.s1 = Math.max(A.s1, B.s1); pieces.splice(i, 1); i--; } }
+      else { A.s1 = Math.max(A.s0, Math.min(A.s1, early)); B.s0 = Math.min(B.s0, early); if (B.s0 < A.s1) B.s0 = A.s1; B.ms = B.ms.concat(A.ms.filter((t) => t > A.s1)); A.ms = A.ms.filter((t) => t <= A.s1); if (A.s1 <= A.s0 + 1e-6) { pieces.splice(i - 1, 1); i--; } }
+      moved = true;
+    }
+    if (!moved) break;
+  }
+}
+
+/** The bag a runner's shot is about: the base of the deciding moment at m (an out, a run, a runner
+    safe, or a runner tagging up off his bag a beat after a catch), or null. Feet, catcher's view. */
+export function bagOf(p, m) {
+  if (m == null) return null;
+  for (const r of p.runners) {
+    const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.arrive;
+    if (tq != null && Math.abs(tq - m) < 0.05) return BASE[r.out ? r.outBase : Math.min(4, r.to)] || null;
+  }
+  const ca = p.events.find((e) => e.kind === 'catch');
+  if (ca && Math.abs(ca.s + 0.3 - m) < 0.05) { const r = p.runners.filter((x) => !x.batter && x.to > x.from).sort((x, y) => y.from - x.from)[0]; if (r) return BASE[r.from]; }
+  return null;
+}
+
 /** The cut, in order: never backwards, no shot under MIN_SHOT (folded into the one before it, or
     lengthened back into the gap before a jump cut). Pieces are { s0, s1, cam, rate, m }. */
-const MIN_SHOT = 0.4;
-function tidyCut(pieces) {
+const MIN_SHOT = 0.6;
+function tidyCut(pieces, segs = []) {
+  const flying = (t) => segs.some((sg) => sg.kind === 'throw' && t > sg.t0 + 0.03 && t < sg.t1 - 0.03);
   const out = [pieces[0]];
-  for (const src of pieces.slice(1)) {
+  for (let k = 1; k < pieces.length; k++) {
+    const src = pieces[k];
     const pc = { ...src }, prev = out[out.length - 1];
     if (pc.s0 < prev.s1) pc.s0 = prev.s1;                       // (never back over what was shown)
-    if (pc.s1 - pc.s0 >= MIN_SHOT) { out.push(pc); continue; }
+    // (a shot is the run of pieces of one camera that follow straight on: two beats of the wide camera
+    // back to back are one shot, however short each)
+    let end = pc.s1;
+    for (let j = k + 1; j < pieces.length && pieces[j].cam === pc.cam && Math.abs(pieces[j].s0 - end) < 1e-6; j++) end = pieces[j].s1;
+    if (end - pc.s0 >= MIN_SHOT) { out.push(pc); continue; }
     if (pc.s1 <= pc.s0) continue;                               // (nothing left of it)
+    // (straight on from a shot with room to spare, and a moment of its own: the cut comes earlier, so it
+    // is long enough to read)
+    const cut = pc.s1 - MIN_SHOT;
+    if (pc.s0 - prev.s1 < 1e-6 && prev.cam !== 'pitcher' && pc.m != null && cut - prev.s0 >= MIN_SHOT && (prev.m == null || prev.m <= cut - 0.15) && !flying(cut)) {
+      prev.s1 = cut; pc.s0 = cut; out.push(pc); continue;
+    }
     if (pc.s0 - prev.s1 < 1e-6 && prev.cam !== 'pitcher') {
       // straight on from the shot before: that camera holds on through it
       prev.s1 = pc.s1;
@@ -1434,6 +1535,8 @@ function tidyCut(pieces) {
   for (let i = 1; i < out.length - 1; i++) {
     const pc = out[i], nx = out[i + 1];
     if (pc.s1 - pc.s0 < MIN_SHOT && out[i - 1].cam === 'pitcher' && nx.s0 - pc.s1 < 1e-6) { nx.s0 = pc.s0; if (pc.m != null && nx.m == null) nx.m = pc.m; out.splice(i, 1); i--; }
+    // (or, with a jump cut after it, it runs on into the gap until it is long enough to read)
+    else if (pc.s1 - pc.s0 < MIN_SHOT && out[i - 1].cam === 'pitcher' && nx.s0 - pc.s1 > 1e-6) pc.s1 = Math.min(nx.s0, pc.s0 + MIN_SHOT);
   }
   pieces.splice(0, pieces.length, ...out);
 }

@@ -49,12 +49,16 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // The wider broadcast (#710) draws more of the field, so more bodies are on screen and measured: the
 // count rose to 1,043 plays with a pop and 1,704 with a skate (runners and covering fielders, now in
 // frame) with the worst of each unchanged. The same motion, more of it seen; recorded here once.
+// The eased broadcast (2026-10-26) holds each shot longer and keeps throws and runners in frame, so again
+// more bodies are measured (runners and covering fielders). The motion is the same: with every body measured
+// whether on screen or not, main had 9,147 plays over and this change 8,978, with no body code touched.
+// Recorded here once, for that reason only.
 const CEILING = {
-  'pop fielder -': 343,
+  'pop fielder -': 361,
   'pop fielder bobble': 104,
   'pop fielder catch': 31,
   'pop fielder catch_throw': 4,
-  'pop fielder cover': 34,
+  'pop fielder cover': 53,
   'pop fielder dive': 13,
   'pop fielder dive_short': 64,
   'pop fielder field': 96,
@@ -64,11 +68,11 @@ const CEILING = {
   'pop fielder set': 20,
   'pop fielder tag': 182,
   'pop fielder throw': 7,
-  'pop runner run': 333,
-  'skate fielder -': 174,
+  'pop runner run': 397,
+  'skate fielder -': 182,
   'skate fielder bobble': 22,
   'skate fielder catch_throw': 5,
-  'skate fielder cover': 291,
+  'skate fielder cover': 443,
   'skate fielder dive': 10,
   'skate fielder field': 461,
   'skate fielder leap_miss': 1,
@@ -78,7 +82,7 @@ const CEILING = {
   'skate fielder set': 27,
   'skate fielder tag': 344,
   'skate fielder throw': 4,
-  'skate runner run': 556,
+  'skate runner run': 640,
 };
 
 function loadPlaywright() {
