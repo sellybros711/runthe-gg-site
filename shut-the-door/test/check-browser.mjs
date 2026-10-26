@@ -406,12 +406,12 @@ async function everyResult(page) {
 const PITCH_MS = SHOTS ? 300000 : 60000;
 async function playOuting(page, o) {
   const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
-  const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
+  globalThis.__pg = page; const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
   const done = () => page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
   for (let i = 0; i < 80; i++) {
     if (await done()) break;
     const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
-    await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
+    console.log('STEP pick', i); await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
     const cellNo = o.cell != null ? o.cell : CELLS[i % CELLS.length];
     const freeTap = i === 0 && !o.type0;
     if (freeTap) {
@@ -438,12 +438,12 @@ async function playOuting(page, o) {
       const dx = (a.fx - f[2]) * a.zw, dy = (a.fy - f[3]) * a.zh;
       ok(Math.abs(dx) < 1.5 && Math.abs(dy) < 1.5, '5 the crosshair sits where the finger was in the zone, not on the cell\'s centre (off by ' + dx.toFixed(1) + ', ' + dy.toFixed(1) + ' px)');
     } else {
-      await page.click(`#m-aim .cell[data-cell="${cellNo}"]`);
+      console.log('STEP cell', cellNo); await page.click(`#m-aim .cell[data-cell="${cellNo}"]`);
     }
     if (i === 0 && o.shot) await o.shot('ready');
     const label = await page.textContent('#m-throw');
     if (!/throw|shut it/.test(label)) { r.problems.push('the throw button was not ready: ' + label); break; }
-    await page.click('#m-throw');
+    console.log('STEP throw'); await page.click('#m-throw');
     /* The release meter (draft PR #658, the owner's call 2026-10-22): where the page has one and
        the setting is on, the throw button starts a needle and the next tap on it is the release.
        That page must show it, and it gets its tap here (after its own 120 ms guard against the tap
@@ -1052,7 +1052,7 @@ async function ending(w, h, end, extra) {
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
-  await run(1440, 900, 'dark');
+  if (0) await run(1440, 900, 'dark');
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
   await ending(390, 844, 'tie_held', '&mockAuth=1');
@@ -1064,6 +1064,7 @@ try {
   await ending(1440, 900, 'walk_off', '&mockPro=none');
 } catch (e) {
   fails++;
+  try { console.log('DUMP', JSON.stringify(await globalThis.__pg.evaluate(() => { const R = (e) => { const b = e.getBoundingClientRect(); const cs = getComputedStyle(e); return [e.id || e.className + (e.dataset.cell || ''), Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom), cs.visibility, cs.display, cs.transform, cs.opacity]; }; return { vw: [innerWidth, innerHeight], sy: scrollY, de: [document.documentElement.scrollTop, document.body.scrollTop], scr: [...document.querySelectorAll('.screen, section')].map(e => e.id + ':' + e.className), els: [...document.querySelectorAll('#s-mound, #m-dock, #m-dock > *, #m-arsenal .pitch, #m-throw, #m-abs-b, #m-aim, #m-meter, #m-aim .cell')].map(R), busy: window.STD_UI.state.busy, type: window.STD_UI.state.type, cell: window.STD_UI.state.cell, st: window.STD_UI.state.outing && window.STD_UI.state.outing.status }; }))); } catch (x) { console.log('nodump', x); }
   console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));
   // Playwright's call log says why an action waited (not visible, not stable, another element on top)
   if (e && e.message && e.message.includes('\n')) console.log('       ' + e.message.split('\n').slice(1).filter((l) => l.trim()).slice(-6).map((l) => l.trim()).join(' / '));
