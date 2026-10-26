@@ -88,6 +88,47 @@ const C = () => window.STD_CONTRACT;
 const tint = (color) => { try { window.dispatchEvent(new CustomEvent('std-pitch-color', { detail: color })); } catch (e) { /* no page */ } };
 // the grid: a column is CELL_FT wide at the plate, and a cell is never under CELL_PX on screen
 const CELL_FT = 0.553, CELL_PX = 38, MARGIN = 0.03, ROOM = 1.04;
+
+/* The set clear of the HUD's panels (stage.fit without a safe rect). fb: the figures' boxes on the
+   canvas at a frame fw0 feet wide; the frame scales them about the canvas's middle (fw0 / fw) and
+   moves them by (cx, cy). From fwLo (the frame the set alone asks for) out to fwHi (the cell rule's
+   widest), the first fw where the hitter, his bat, the plate and the dirt before it, the catcher and the umpire all sit in
+   the canvas and off every panel, placed where their nearest panel or edge is furthest. None: the
+   widest frame, placed where the least is covered (the hitter counted most, then the plate). */
+const FREE_W = { batter: 10, bat: 3, plate: 6, apron: 1, catcher: 2, umpire: 2 };
+// and a little further back than the set alone asks (the owner, 2026-10-26: "a little too close")
+const FREE_BACK = 1.12;
+function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
+  const pad = 6, mx = w * MARGIN, my = h * MARGIN, keys = Object.keys(FREE_W);
+  const P = panels.map((p) => ({ x0: p.x0 - pad, x1: p.x1 + pad, y0: p.y0 - pad, y1: p.y1 + pad }));
+  let best = null;
+  const steps = fwHi > fwLo * 1.001 ? 24 : 0;
+  for (let i = 0; i <= steps; i++) {
+    const fw = fwLo * (fwHi / fwLo) ** (steps ? i / steps : 0), sc = fw0 / fw;
+    const B = keys.map((k) => ({ k, x0: w / 2 + (fb[k].x0 - w / 2) * sc, x1: w / 2 + (fb[k].x1 - w / 2) * sc, y0: h / 2 + (fb[k].y0 - h / 2) * sc, y1: h / 2 + (fb[k].y1 - h / 2) * sc }));
+    const U = B.reduce((u, b) => ({ x0: Math.min(u.x0, b.x0), x1: Math.max(u.x1, b.x1), y0: Math.min(u.y0, b.y0), y1: Math.max(u.y1, b.y1) }), { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity });
+    // the moves that keep it all in the canvas (too big: the hitter's own box)
+    const range = (a0, a1, size, m, b) => (a1 - a0 <= size - 2 * m ? [a1 - (size - m), a0 - m] : [b[1] - (size - m), b[0] - m]);
+    const bt = B[0];
+    const [xl, xh] = range(U.x0, U.x1, w, mx, [bt.x0, bt.x1]), [yl, yh] = range(U.y0, U.y1, h, my, [bt.y0, bt.y1]);
+    for (let a = 0; a <= 16; a++) for (let b = 0; b <= 16; b++) {
+      const cx = xl + (xh - xl) * a / 16, cy = yl + (yh - yl) * b / 16;
+      let cost = 0, clear = Math.min(U.x0 - cx, w - (U.x1 - cx), U.y0 - cy, h - (U.y1 - cy));
+      for (const q of B) {
+        const x0 = q.x0 - cx, x1 = q.x1 - cx, y0 = q.y0 - cy, y1 = q.y1 - cy, area = Math.max(1, (x1 - x0) * (y1 - y0));
+        for (const p of P) {
+          const ox = Math.min(x1, p.x1) - Math.max(x0, p.x0), oy = Math.min(y1, p.y1) - Math.max(y0, p.y0);
+          if (ox > 0 && oy > 0) cost += FREE_W[q.k] * ox * oy / area;
+          else clear = Math.min(clear, Math.max(-ox, -oy));
+        }
+      }
+      if (!best || cost < best.cost - 1e-9 || (Math.abs(cost - best.cost) <= 1e-9 && best.fw === fw && clear > best.clear)) best = { fw, cx, cy, cost, clear };
+    }
+    if (best.cost <= 1e-9) return best;
+    if (i < steps) best = null;
+  }
+  return best;
+}
 const AN = () => window.STD_ANIM;
 const TEST = () => window.STD_STAGE_TEST;
 // the most a frame moves the play on, in real seconds (see THE CLOCK above)
@@ -349,6 +390,23 @@ class Stage {
     } catch (e) { return []; }
   }
 
+  /** The HUD's panels that stay on screen through an at bat (the scorebug, the batter card, the
+      menu, the pitch buttons and THROW): the frame keeps the set clear of them. Not the sheets a
+      tap opens over the scene, nor the meter and the ABS line a pitch shows (they come and go). */
+  framePanels() {
+    try {
+      const c = this.canvas.getBoundingClientRect(), out = [];
+      for (const el of document.querySelectorAll('[data-hud]')) {
+        if (el.closest('.msheet, #m-meter, #m-absr')) continue;
+        const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+        if (!r.width || !r.height || cs.display === 'none' || cs.visibility === 'hidden') continue;
+        if (r.right < c.left || r.left > c.right || r.bottom < c.top || r.top > c.bottom) continue;
+        out.push({ x0: r.left - c.left, x1: r.right - c.left, y0: r.top - c.top, y1: r.bottom - c.top });
+      }
+      return out;
+    } catch (e) { return []; }
+  }
+
   /** The HUD's insets in CSS px ({ top, right, bottom, left }, or null): the frame centres the zone in
       what is left (fit). ui.js calls it before gridRect(). */
   setSafeRect(r) {
@@ -462,7 +520,11 @@ class Stage {
       a short screen the bodies win over the cell size: nobody loses his head.
       With the HUD's safe rect (setSafeRect) the set is sized to the rect instead of the canvas (the
       cell rule as before, on the canvas's px), and the zone, not the set, is centred in the rect: the
-      bodies may run under the panels, never off the canvas top to bottom. */
+      bodies may run under the panels, never off the canvas top to bottom.
+      Without a safe rect (the game page gives none) the set keeps clear of the HUD's own panels
+      (framePanels, freeFit): the owner, 2026-10-26, "the info on the screen shouldn't be covering up
+      the batter or home plate". Only the set's scale and centre move; the delivery's head motion and
+      the pitch play on top of it as before. */
   fit() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
     if (!w || !h || !this.people || !this.people.batter || !this.people.batter.chain) return;
@@ -471,6 +533,7 @@ class Stage {
     const maxFw = Math.min(eye.preset().fw, (w * CELL_FT) / CELL_PX);
     const R = this.safe, rw = R ? Math.max(w * 0.3, w - R.left - R.right) : w, rh = R ? Math.max(h * 0.3, h - R.top - R.bottom) : h;
     const zb = this.zone || { szTop: 3.4, szBot: 1.6 };
+    const panels = R ? [] : this.framePanels();
     for (let it = 0; it < 3; it++) {
       eye.resize(w, h); eye.update(0);
       const f = { ...eye.frame }, fb = this.figureBoxes(800);
@@ -487,7 +550,7 @@ class Stage {
       // the bodies (not the bat) always fit top to bottom, even if a short screen's cells get smaller
       const by0 = Math.min(fb.batter.y0, fb.catcher.y0, fb.umpire.y0), by1 = Math.max(fb.batter.y1, fb.catcher.y1, fb.umpire.y1, fb.apron.y1);
       const needBody = (by1 - by0) * ftPx / (1 - 2 * MARGIN) * w / h;
-      const fw = Math.max(Math.min(need, maxFw), needBody), sc = f.fw / fw;
+      let fw = Math.max(Math.min(need, maxFw), needBody), sc = f.fw / fw;
       // the content's box after the zoom (it scales about the canvas centre)
       const z = (a, c) => c + (a - c) * sc;
       const n = { x0: z(u.x0, w / 2), x1: z(u.x1, w / 2), y0: z(u.y0, h / 2), y1: z(u.y1, h / 2) };
@@ -507,6 +570,12 @@ class Stage {
         const bx0 = z(fb.batter.x0, w / 2), bx1 = z(fb.batter.x1, w / 2);
         if (bx1 - cx > w * (1 - MARGIN)) cx = bx1 - w * (1 - MARGIN);
         if (bx0 - cx < w * MARGIN) cx = bx0 - w * MARGIN;
+      } else if (panels.length) {
+        // no safe rect: the HUD's own panels. The hitter, his bat, the plate, the catcher and the
+        // umpire all in the canvas and clear of every panel, as large as that allows (the cell rule
+        // still the widest the frame goes)
+        const sol = freeFit(fb, f.fw, Math.min(fw * FREE_BACK, Math.max(fw, maxFw)), Math.max(fw, maxFw), panels, w, h);
+        fw = sol.fw; sc = f.fw / fw; cx = sol.cx; cy = sol.cy;
       }
       eye.fit = { x: f.x + cx / (kx * sc), z: f.z + cy / (kz * sc), fw };
     }
