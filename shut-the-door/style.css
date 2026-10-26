@@ -792,91 +792,90 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .scene.s3d canvas { image-rendering: auto; width: 100%; height: 100%; }
 .scene.s3d.flying .aim { opacity: 0; transition: opacity .15s; }
 
-/* ---- the release meter (meter-ui.js, the numbers in meter.js). The owner, 2026-10-22: "it doesn't
-   look updated". Meter pitching's mechanics in our brand: after the tap on throw, one night panel
-   over the pitch buttons and the throw button (the dock's own box, so the scene never moves). The
-   head: the verb, the pitch and spot (no speed before the throw). Then the bars: effort on top
-   (only when STD_METER.EFFORT is true: a fill through soft, normal and max) and accuracy (a needle
-   sweeping to the bright band). The stop locks: a flash, a ring opening from the lock, the value
-   held, and the one word. Execution only: no grade colours (signal and data, never green to red). */
+/* ---- the release meter, the combo (meter-ui.js, the numbers in meter.js). The owner, 2026-10-26:
+   "Vertical bar for power, and then the ring around the circle starts to go for accuracy". The
+   panel covers the pitch buttons and the throw button as before (the thumb's target, the verb, the
+   pitch and spot, the two stops as they land). The column stands beside the zone, away from the
+   hitter. The ring closes on the crosshair once power is set. Frames move transforms only. The stop
+   locks with the one word. Execution only: no grade colours (signal and data, never green to red). */
 .dock.metering .arsenal, .dock.metering .btn.throw { visibility: hidden; }
 .relm { position: absolute; z-index: 6; inset: 0; box-sizing: border-box; padding: 10px 14px 12px; border-radius: 16px;
-  background: linear-gradient(180deg, rgba(34, 43, 62, .96), rgba(11, 15, 23, .97)); color: #f4f5f7; display: flex; flex-direction: column; justify-content: center; gap: 12px;
+  background: linear-gradient(180deg, rgba(34, 43, 62, .96), rgba(11, 15, 23, .97)); color: #f4f5f7; display: flex; flex-direction: column; justify-content: center; gap: 10px;
   box-shadow: 0 3px 0 var(--signal), 0 12px 30px rgba(11, 15, 23, .3); cursor: pointer;
   touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
 :root[data-theme="dark"] .relm { box-shadow: 0 3px 0 var(--signal), inset 0 0 0 1px rgba(255, 255, 255, .08), 0 12px 30px rgba(0, 0, 0, .45); }
 .relm[hidden] { display: none; }
 .relm:focus-visible { box-shadow: 0 3px 0 var(--signal), 0 0 0 3px var(--data); }
-.relm.two { gap: 10px; padding-top: 9px; }
-/* the head: RELEASE (or SHUT IT), the pitch and the spot. No speed before the throw (2026-10-23) */
 .rm-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; line-height: 1; }
 .rm-verb { flex: none; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 28px; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .rm-call { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: rgba(244, 245, 247, .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* a bar: its name, then the track */
-.rm-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 10px; transition: opacity .15s; }
-.rm-row[hidden] { display: none; }
-.rm-lbl { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: rgba(244, 245, 247, .55); }
-.relm[data-stage="effort"] .rm-eff .rm-lbl, .relm[data-stage="acc"] .rm-acc .rm-lbl { color: #fff; }
-.relm.two[data-stage="effort"] .rm-acc { opacity: .36; }
-.rm-track { position: relative; height: 30px; border-radius: 8px; background: rgba(255, 255, 255, .07);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), inset 0 2px 6px rgba(0, 0, 0, .35); }
-.relm:not(.two) .rm-atrack { height: 40px; }
-/* accuracy: ticks along the floor, the soft band, the bright band with the mark in it, the needle */
-.rm-atrack::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 28%; border-radius: 0 0 8px 8px; pointer-events: none;
-  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .16) 0 1px, transparent 1px 10%); }
-.rm-good, .rm-best { position: absolute; top: 0; bottom: 0; }
-.rm-good { background: rgba(91, 130, 255, .42); border-radius: 4px; }
-.rm-best { background: linear-gradient(180deg, #ff7a52, var(--signal)); border-radius: 4px; box-shadow: 0 0 14px rgba(255, 79, 31, .6), inset 0 0 0 1px rgba(255, 255, 255, .35); }
-.rm-mark { position: absolute; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; background: rgba(255, 255, 255, .9); border-radius: 1px; }
-.rm-needle, .rm-eneedle { position: absolute; z-index: 2; left: 0; width: 100%; pointer-events: none; will-change: transform; transform: translate3d(0, 0, 0); }
-.rm-needle { top: -7px; bottom: -7px; }
-.rm-needle::after, .rm-eneedle::after { content: ''; position: absolute; top: 0; bottom: 0; left: -3px; width: 6px; border-radius: 3px; background: #fff;
-  box-shadow: 0 0 0 2px var(--night), 0 0 10px rgba(255, 255, 255, .5); transition: transform .12s ease-out; }
-.rm-needle::before { content: ''; position: absolute; left: 0; top: -8px; transform: translateX(-50%); border: 6px solid transparent; border-top: 7px solid #fff; border-bottom: 0; }
-.relm.two[data-stage="effort"] .rm-needle { visibility: hidden; }
-/* effort: three zones, a fill that runs through them, the zone it is in lit */
-.rm-etrack { background: linear-gradient(90deg, rgba(91, 130, 255, .16) 0 33.333%, rgba(255, 255, 255, .06) 33.333% 66.667%, rgba(255, 79, 31, .18) 66.667%); }
-.rm-etrack::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(90deg, transparent calc(33.333% - 1px), rgba(255, 255, 255, .4) calc(33.333% - 1px) calc(33.333% + 1px), transparent calc(33.333% + 1px) calc(66.667% - 1px), rgba(255, 255, 255, .4) calc(66.667% - 1px) calc(66.667% + 1px), transparent calc(66.667% + 1px)); }
-.rm-eclip { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; pointer-events: none; }
-.rm-efill, .rm-egrad { position: absolute; inset: 0; will-change: transform; transform: translate3d(-100%, 0, 0); }
-.rm-egrad { inset: 3px; border-radius: 5px; transform: translate3d(100%, 0, 0);
-  background: linear-gradient(90deg, #5b82ff, #c9d4ff 45%, #ffffff 55%, #ff9a78 75%, var(--signal)); }
-.rm-zones { position: absolute; inset: 0; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); pointer-events: none; }
-.rm-zones b { display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-style: italic; font-size: 13px;
-  letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .5); text-shadow: 0 1px 2px rgba(0, 0, 0, .7); transition: color .1s; }
-.relm[data-zone="soft"] [data-z="soft"], .relm[data-zone="normal"] [data-z="normal"], .relm[data-zone="max"] [data-z="max"] { color: #fff; }
-.relm[data-zone="normal"] [data-z="normal"] { color: var(--night); text-shadow: none; }
-.rm-eneedle { top: -5px; bottom: -5px; }
-.rm-eneedle::after { left: -2px; width: 4px; border-radius: 2px; box-shadow: 0 0 0 2px var(--night); }
-/* THE STOP: the lock ring opens from where it stopped, the track flashes, the value holds */
-.rm-lock { position: absolute; z-index: 3; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; border: 2.5px solid #fff; opacity: 0; pointer-events: none; }
-.rm-lock.go { animation: rm-lock .45s ease-out; }
-@keyframes rm-lock { 0% { opacity: .95; transform: scale(.25); } 100% { opacity: 0; transform: scale(1.5); } }
-.relm.is-edone .rm-etrack, .relm.is-done .rm-atrack { animation: rm-flash .32s ease-out; }
-@keyframes rm-flash { 0% { background-color: rgba(255, 255, 255, .34); } 100% { background-color: rgba(255, 255, 255, .07); } }
-.relm.is-done { animation: rm-punch .18s ease-out; }
-@keyframes rm-punch { 0% { transform: scale(.985); } 100% { transform: none; } }
-.relm.is-done .rm-needle::after { transform: scaleY(1.15); }
-.relm.is-best .rm-needle::after { box-shadow: 0 0 0 2px var(--night), 0 0 16px 4px rgba(255, 79, 31, .85); }
-.relm.is-best .rm-acc .rm-lock { border-color: var(--signal); }
-.relm.is-best .rm-best { animation: rm-best .5s ease-out; }
-@keyframes rm-best { 0% { background: #fff; box-shadow: 0 0 26px 6px rgba(255, 79, 31, .9); } 100% { } }
-/* the one word, stamped in the head in place of the call. Execution, never a grade. */
 .rm-word { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; align-self: center;
-  font-family: var(--display); font-weight: 900; font-style: italic; font-size: 17px; letter-spacing: .05em; text-transform: uppercase; line-height: 1;
+  font-family: var(--display); font-style: italic; font-weight: 800; font-size: 15px; letter-spacing: .06em; text-transform: uppercase;
   padding: 4px 9px 3px; border-radius: 6px; background: #f4f5f7; color: #0b0f17; }
 .rm-word:empty { display: none; }
 .relm.is-done .rm-call { display: none; }
-.relm.is-done .rm-word { margin-right: auto; animation: rm-stamp .26s cubic-bezier(.2, 1.6, .4, 1); }
+.relm.is-done .rm-word { margin-right: auto; animation: rm-pop .26s cubic-bezier(.2, 1.6, .4, 1); }
 .relm.is-good .rm-word { background: var(--data); color: #fff; }
 .relm.is-best .rm-word { background: var(--signal); color: #fff; }
-@keyframes rm-stamp { 0% { opacity: 0; transform: scale(1.5); } 100% { opacity: 1; transform: none; } }
+@keyframes rm-pop { 0% { opacity: 0; transform: scale(1.5); } 100% { opacity: 1; transform: none; } }
+/* the two stops, lit in turn, holding what each landed on */
+.rm-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rm-step { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 40px; padding: 8px 12px; border-radius: 10px;
+  background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); color: rgba(244, 245, 247, .5); transition: background .15s, color .15s; }
+.rm-step[hidden] { display: none; }
+.rm-step b { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; }
+.rm-step span { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; color: #fff; font-variant-numeric: tabular-nums; }
+.rm-step.on { background: rgba(255, 255, 255, .14); box-shadow: inset 0 0 0 1.5px #fff; color: #fff; }
+.rm-step.perfect { background: var(--signal); box-shadow: none; color: #fff; }
+.relm:not(.two) .rm-steps { grid-template-columns: 1fr; }
+
+/* the column: power, beside the zone (placed by meter-ui.js in viewport px), thumb wide */
+.rm-col { position: fixed; z-index: 7; width: 40px; border-radius: 11px; background: rgba(11, 15, 23, .72); cursor: pointer; touch-action: manipulation;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28), 0 6px 18px rgba(0, 0, 0, .35); }
+.rm-col[hidden] { display: none; }
+.rm-cclip { position: absolute; inset: 3px; border-radius: 8px; overflow: hidden; pointer-events: none; }
+.rm-cfill, .rm-cgrad { position: absolute; inset: 0; will-change: transform; transform: translate3d(0, 100%, 0); }
+.rm-cgrad { transform: translate3d(0, -100%, 0); background: linear-gradient(0deg, #5b82ff, #c9d4ff 45%, #ffffff 55%, #ff9a78 75%, var(--signal)); }
+.rm-czones { position: absolute; inset: 3px; display: grid; grid-template-rows: repeat(3, 1fr); pointer-events: none; }
+.rm-czones i { border-bottom: 1px solid rgba(255, 255, 255, .32); }
+.rm-czones i:last-child { border-bottom: 0; }
+/* the top 3% is perfect power (meter.js PERFECT_E): a bright cap */
+.rm-ctop { position: absolute; left: 3px; right: 3px; top: 3px; height: 3%; min-height: 5px; border-radius: 8px 8px 2px 2px; background: #fff; box-shadow: 0 0 10px 2px rgba(255, 79, 31, .8); pointer-events: none; transform-origin: 50% 0; }
+.rm-cneedle { position: absolute; left: 0; bottom: 0; width: 100%; height: 100%; pointer-events: none; will-change: transform; transform: translate3d(0, 0, 0); }
+.rm-cneedle::after { content: ''; position: absolute; left: -6px; right: -6px; bottom: -3px; height: 6px; border-radius: 3px; background: #fff; box-shadow: 0 0 0 2px #0b0f17, 0 2px 8px rgba(0, 0, 0, .4); }
+.rm-col .rm-lock { position: absolute; left: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; border: 2.5px solid #fff; opacity: 0; pointer-events: none; }
+.rm-clbl { position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%); font-family: var(--display); font-weight: 800; font-style: italic; font-size: 13px; letter-spacing: .1em;
+  text-transform: uppercase; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .85); white-space: nowrap; pointer-events: none; }
+.rm-col[data-zone="max"] .rm-clbl, .rm-col[data-zone="perfect"] .rm-clbl { color: #ffb59c; }
+.rm-col.is-set { opacity: .8; }
+/* a cap on power (meter-ui.js opts.cap): the top above it greyed and hatched, no perfect cap */
+.rm-ccap { position: absolute; z-index: 1; left: 3px; right: 3px; top: 3px; height: 0; border-radius: 8px 8px 0 0; pointer-events: none;
+  background: repeating-linear-gradient(135deg, rgba(60, 66, 80, .92) 0 5px, rgba(40, 45, 56, .92) 5px 10px); box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .55); }
+.rm-col.is-capped .rm-ctop { display: none; }
+.rm-col.is-perfect .rm-ctop { background: var(--signal); }
+
+/* the ring: centred on the crosshair, the target circle and the two bands round it (drawn once),
+   the closing ring scaled down from its widest so it stays crisp, the stitches for a perfect */
+.rm-ring { position: fixed; z-index: 7; width: 0; height: 0; pointer-events: none; }
+.rm-ring[hidden] { display: none; }
+.rm-rsvg, .rm-rmove { transition: opacity .22s; }
+.rm-ring.is-out .rm-rsvg, .rm-ring.is-out .rm-rmove { opacity: 0; }
+.rm-rsvg { position: absolute; left: 0; top: 0; overflow: visible; }
+.rm-rgood { fill: none; stroke: rgba(91, 130, 255, .55); }
+.rm-rbest { fill: none; stroke: var(--signal); filter: drop-shadow(0 0 4px rgba(255, 79, 31, .9)); }
+.rm-rtarget { fill: none; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 3 3.5; opacity: .85; }
+.rm-rmove { position: absolute; left: 0; top: 0; border-radius: 50%; border: 14px solid #fff; box-shadow: 0 0 0 2px rgba(11, 15, 23, .55), inset 0 0 0 2px rgba(11, 15, 23, .55);
+  box-sizing: border-box; will-change: transform; transform: scale(1); }
+.rm-ring.is-best .rm-rmove { border-color: #ffd1c2; }
+.rm-seams { position: absolute; left: -46px; top: -46px; width: 92px; height: 92px; overflow: visible; opacity: 0; pointer-events: none; }
+.rm-seams .rm-hide { fill: rgba(255, 255, 255, .18); stroke: none; }
+.rm-seam { fill: none; stroke: rgba(255, 255, 255, .7); stroke-width: 1.5; }
+.rm-stitch { fill: none; stroke: #e2262c; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(255, 60, 40, .95)); }
 /* the ball landed in the cell that was called: a quiet ring, once */
 .aim .cell.m-painted::after { content: ''; position: absolute; inset: 6%; width: auto; height: auto; background: none; border-radius: 6px; box-shadow: 0 0 0 2px #fff, 0 0 12px 2px var(--signal); animation: rm-paint 1.3s ease-out forwards; pointer-events: none; }
 @keyframes rm-paint { 0% { opacity: 0; transform: scale(.7); } 18% { opacity: 1; transform: scale(1.04); } 100% { opacity: 0; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) {
-  .aim .cell.m-painted::after, .rm-lock.go, .relm.is-done, .relm.is-done .rm-word, .relm.is-edone .rm-etrack, .relm.is-done .rm-atrack, .relm.is-best .rm-best { animation: none; }
+  .aim .cell.m-painted::after, .relm.is-done .rm-word { animation: none; }
 }
 /* ---- what each pitch does: the break preview's line on the grid, the glyph on each pitch
    button, and the pitch guide. The line sits under the zone numbers (they keep their place above
@@ -1292,10 +1291,9 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .pbp-tag { font-size: 22px; padding: 8px 14px 7px; }
   .pbp-rest { font-size: 16px; padding: 8px 16px; }
   #s-mound .mini { width: 128px; }
-  /* the meter fills the dock's corner: bigger bars to hit without looking */
-  .relm { padding: 18px 18px 20px; gap: 22px; }
+  /* the meter fills the dock's corner: a bigger target to hit without looking */
+  .relm { padding: 18px 18px 20px; gap: 18px; }
   .relm .rm-verb { font-size: 34px; }
-  .relm .rm-track { height: 42px; }
-  .relm:not(.two) .rm-atrack { height: 64px; }
-  .relm .rm-row { grid-template-columns: 1fr; gap: 8px; }
+  .relm .rm-steps { grid-template-columns: 1fr; }
+  .relm .rm-step { min-height: 52px; }
 }

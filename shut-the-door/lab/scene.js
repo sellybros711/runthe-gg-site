@@ -21,8 +21,8 @@ import * as THREE from 'three';
 import { preload } from '../3d/load.js?v=8';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=5';
 import { People } from '../3d/people.js?v=40';
-import { Pitch } from '../3d/pitch.js?v=10';
-import { labPlay, motion, describe } from '../3d/play.js?v=10';
+import { Pitch } from '../3d/pitch.js?v=11';
+import { labPlay, motion, describe } from '../3d/play.js?v=11';
 import { FT, P, smooth } from '../3d/units.js?v=1';
 import { InPlay } from '../3d/inplay.js?v=21';
 
