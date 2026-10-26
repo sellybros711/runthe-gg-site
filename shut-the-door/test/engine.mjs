@@ -640,8 +640,61 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('rules 6: on a fly with a runner on third, a shallow one holds him and a deep one scores him (2024)',
     r('bC') && r('fC') && r('bC')[1] > 1 && r('bC')[2] < 1 && r('fC')[2] >= 1 && r('fC')[1] < 0.2);
   check('rules 6: the infield liner doubles the runner off more, the deep liner less', RN.ratio['out_line|1|0|aC'][0] > 1 && RN.ratio['out_line|1|0|gC'][0] < 1);
-  check('rules 6: a new outing plays rules 6, a rules 5 one replays as rules 5', G.RULES === G.RUNNER_RULES && E.createOuting(pack, { seed: 1, model }).rules === 6
+  check('rules 6: a rules 6 outing plays, a rules 5 one replays as rules 5', E.createOuting(pack, { seed: 1, model, rules: G.RUNNER_RULES }).rules === 6
     && E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 5 }], { model }).rules === 5);
+}
+
+/* rules 7: the running game (contract.js THE RUNNING GAME) on a real pack */
+{
+  const MT = require('../meter.js');
+  const real = JSON.parse(readFileSync(new URL('../data/packs/std-2016-ws7-chapman.json', import.meta.url), 'utf8'));
+  const rm = new G.Model(real);
+  check('rules 7: the normal cdf from arithmetic matches the inverse to 1e-4', [-2, -0.5, 0, 0.8, 1.7].every(z => Math.abs(K.normInv(K.normCdf(z)) - z) < 1e-4));
+  check('rules 7: a new outing plays rules 7, a rules 6 one replays as rules 6, with no steal', G.RULES === G.STEAL_RULES && E.createOuting(real, { seed: 1, model: rm }).rules === 7
+    && E.replay(real, 1, [{ type: rm.types[0], cell: 12, r: 6 }], { model: rm }).run === null);
+  const o0 = E.createOuting(real, { seed: 3, model: rm });
+  check('rules 7: the spot starts with its real runner on first (Jose Ramirez, 2016 WS 7)', o0.run.on[1] === '608070' && o0.st.bases === 1);
+  check('rules 7: no pickoff before the first pitch', !E.pickoffLive(o0));
+  check('rules 7: a pickoff never raises the steal attempt (the data\'s 1.8x after a throw is the pitcher reading the runner, not caused by the throw)',
+    Object.keys(real.steal.attMult).every(k => !k.startsWith('po|')) && Object.entries(real.steal.sucZ).filter(([k]) => k.startsWith('po|2|1')).every(([, z]) => z <= 0));
+  let bad = '';
+  try { E.throwPitch(E.createOuting(real, { seed: 3, model: rm }), { type: rm.types[0], cell: 12, q: 0.5, e: 1, ss: 1 }); bad = 'max power on a quick delivery was taken'; } catch (e) { /* refused */ }
+  try { E.throwPitch(E.createOuting(real, { seed: 3, model: rm, rules: 6 }), { type: rm.types[0], cell: 12, ss: 1 }); bad = 'a quick delivery under rules 6 was taken'; } catch (e) { /* refused */ }
+  check('rules 7: a quick delivery has no max power, and is a rules 7 call', bad === '' && MT.QUICK.E_MAX < 1 && MT.windowMs(50, null, true) < MT.windowMs(50, null, false));
+  // the four draws never move: the same calls throw the same pitches with steals on or off
+  const calls = [];
+  for (let i = 0; i < 12; i++) calls.push({ type: rm.types[i % rm.types.length], cell: [6, 12, 18, 2, 22][i % 5], q: 0.5 });
+  const a = E.createOuting(real, { seed: 77, model: rm }), b = E.createOuting(real, { seed: 77, model: rm, rules: 6 });
+  let sameFirst = true;
+  for (const c of calls) {
+    if (a.status !== 'live' || b.status !== 'live') break;
+    const pa = E.throwPitch(a, c).pitchResult, pb = E.throwPitch(b, c).pitchResult;
+    if (pa.actual.x !== pb.actual.x || pa.actual.zn !== pb.actual.zn) sameFirst = false;
+    if (JSON.stringify(a.st) !== JSON.stringify(b.st)) break;   // a steal moved the state: past here the rows can differ
+  }
+  check('rules 7: the steal stream never moves the four draws (same miss as rules 6 until a steal changes the state)', sameFirst);
+  // pickoffs: a third throw that does not get him is a balk
+  let balked = false, ended = 0;
+  for (let sd = 1; sd < 400 && !balked; sd++) {
+    const o = E.createOuting(real, { seed: sd, model: rm });
+    E.throwPitch(o, { type: rm.types[0], cell: 0, q: 0.5 });
+    for (let k = 0; k < 3 && E.pickoffLive(o); k++) {
+      const ev = E.pickoff(o).pickoff;
+      if (ev.balk) { balked = k === 2 && o.st.bases === 2 && o.calls[0].pa === 3; }
+      if (ev.out) { ended++; break; }
+    }
+  }
+  check('rules 7: past two disengagements a failed pickoff is a balk, and the runner moves up', balked);
+  // steals happen, at about the real rate and success
+  let att = 0, safe = 0;
+  for (let sd = 1; sd <= 600; sd++) {
+    const o = E.createOuting(real, { seed: sd, model: rm });
+    while (o.status === 'live') {
+      const pr = E.throwPitch(o, { type: rm.types[sd % rm.types.length], cell: 0, q: 0.5 }).pitchResult;
+      if (pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out')) { att++; if (pr.steal.result === 'safe') safe++; if (typeof pr.steal.margin !== 'number') att = -1e9; }
+    }
+  }
+  check(`rules 7: Ramirez runs and is mostly safe, with a margin (${att} attempts, ${safe} safe in 600 outings of chase pitches)`, att > 5 && safe / att > 0.5 && safe / att < 0.98);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');
