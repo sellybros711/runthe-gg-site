@@ -2925,8 +2925,8 @@
       "sha": "96b2354e7483767d"
     },
     "meter-ui.js": {
-      "v": "4",
-      "sha": "81a8f5a46b059fb3"
+      "v": "5",
+      "sha": "f8e46ed74c68a5bc"
     },
     "sprites.js": {
       "v": "2",
@@ -2997,12 +2997,12 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "37",
-      "sha": "3c614d922f4d0f4c"
+      "v": "38",
+      "sha": "d69a500f8e130442"
     },
     "3d/boot.js": {
-      "v": "50",
-      "sha": "faa5ba9792cd9fa9"
+      "v": "51",
+      "sha": "6ce1016c257d826d"
     }
   },
   "shut-the-door/lab/index.html": {
@@ -3123,8 +3123,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "54",
-      "sha": "bc38114233293164"
+      "v": "55",
+      "sha": "a173668639c1ebf0"
     }
   },
   "wrestling/ring3d/boot.js": {

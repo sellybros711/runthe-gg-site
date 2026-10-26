@@ -63,6 +63,8 @@ jobs:
         run: node shut-the-door/test/api.mjs
       - name: The lesson
         run: node shut-the-door/test/lesson.mjs
+      - name: The release meter on the page keeps the same e and q
+        run: node shut-the-door/test/meter.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
