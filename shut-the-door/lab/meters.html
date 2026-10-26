@@ -76,9 +76,9 @@ button { font: inherit; color: inherit; }
 
 /* the top: the five styles, then command and theme */
 .top { position: fixed; z-index: 5; left: 0; right: 0; top: 0; padding: calc(10px + env(safe-area-inset-top)) 16px 0; display: flex; flex-direction: column; gap: 8px; }
-.chips { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.chips { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
 .chip { min-height: 40px; border: 0; border-radius: 11px; background: var(--chip); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2), 0 4px 14px rgba(11, 15, 23, .18);
-  font-family: var(--display); font-weight: 800; font-style: italic; font-size: 16px; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; padding: 0 4px; }
+  font-family: var(--display); font-weight: 800; font-style: italic; font-size: 15px; letter-spacing: .03em; text-transform: uppercase; cursor: pointer; padding: 0 2px; }
 .chip[aria-pressed="true"] { background: var(--signal); color: #fff; box-shadow: 0 4px 14px rgba(255, 79, 31, .4); }
 .row2 { display: flex; gap: 6px; align-items: center; }
 .seg { display: flex; border-radius: 11px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line-2); overflow: hidden; }
@@ -218,6 +218,8 @@ button { font: inherit; color: inherit; }
 .c-lbl { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); font-family: var(--display); font-weight: 800; font-style: italic; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); white-space: nowrap; }
 .col.is-acc .clip { opacity: .25; }
+.col.power-only .c-band, .col.power-only .c-mark { display: none; }
+.col.power-only.is-set { opacity: .7; }
 .col .lockring { left: 50%; border-color: #fff; }
 
 @media (min-width: 700px) {
@@ -301,6 +303,15 @@ var ZC = ['rgba(91,130,255,.35)', 'rgba(150,160,180,.3)', 'rgba(255,79,31,.35)']
      lockPower(e), lockAcc(pos, q)   the stops
    Every one maps pos and e onto its shape in a straight line: the same speed, the same band in time. */
 var STYLES = [
+  { id: 'combo', name: 'combo', blurb: 'set power on the bar. then the ring closes on your spot. tap when it sits on the circle', build: function (slot, fx, geo) {
+    /* the owner's pick (2026-10-26): the column's power stop, then the ring's release. Each half is
+       that style itself, so the timing and the bands are the same meter.js ones as every style. */
+    var col = byId('column').build(slot, fx, geo, { powerOnly: true }), ring = byId('ring').build(slot, fx, geo, { noPower: true });
+    return {
+      power: col.power, acc: ring.acc, bands: ring.bands, lockPower: col.lockPower, lockAcc: ring.lockAcc,
+      stage: function (st) { col.stage(st); ring.stage(st); },
+    };
+  } },
   { id: 'bars', name: 'bars', blurb: 'today\'s two bars, refined', build: function (slot) {
     var el = h('div', 'bars',
       '<div class="b-row b-pow"><span class="b-lbl">power</span><div class="b-track"><i class="clip"><i class="fill"><i class="grad"></i></i></i>' +
@@ -356,7 +367,7 @@ var STYLES = [
     };
   } },
 
-  { id: 'ring', name: 'ring', blurb: 'a ring closes on your spot. stop it on the target', build: function (slot, fx, geo) {
+  { id: 'ring', name: 'ring', blurb: 'a ring closes on your spot. stop it on the target', build: function (slot, fx, geo, opt) {
     /* the ring: its radius is a straight map of pos, R0 at the start and RT at the mark, so the bright
        band is an annulus as wide in time as the bar's. Power is a gauge around the spot first. */
     var cx = geo.ax, cy = geo.ay, RT = 30, R0 = Math.min(150, geo.w * 0.38), K = (R0 - RT) / MT.MARK, GR = 54, GA = 135;
@@ -377,7 +388,7 @@ var STYLES = [
       power: function (e) { gf.setAttribute('stroke-dasharray', e.toFixed(4) + ' 1'); },
       acc: function (pos) { var r = rad(pos).toFixed(2); mv.setAttribute('r', r); mve.setAttribute('r', r); },
       bands: function (b) { annulus(good, b.good[0], b.good[1]); annulus(best, b.best[0], b.best[1]); },
-      stage: function (st) { var acc = st === 'acc' || st === 'done'; gacc.setAttribute('class', acc ? '' : 'hide'); gpow.setAttribute('class', acc ? 'hide' : ''); if (st === 'idle') this.acc(0); },
+      stage: function (st) { var acc = st === 'acc' || st === 'done'; gacc.setAttribute('class', acc ? '' : 'hide'); gpow.setAttribute('class', acc || (opt && opt.noPower) ? 'hide' : ''); if (st === 'idle') this.acc(0); },
       lockPower: function () { burst(lock); },
       lockAcc: function (pos) { lock.style.width = lock.style.height = (2 * rad(pos)) + 'px'; lock.style.margin = (-rad(pos)) + 'px 0 0 ' + (-rad(pos)) + 'px'; burst(lock); },
     };
@@ -418,8 +429,8 @@ var STYLES = [
     };
   } },
 
-  { id: 'column', name: 'column', blurb: 'one bar by the zone. power fills it, the release rides it', build: function (slot, fx) {
-    var el = h('div', 'col',
+  { id: 'column', name: 'column', blurb: 'one bar by the zone. power fills it, the release rides it', build: function (slot, fx, geo, opt) {
+    var el = h('div', 'col' + (opt && opt.powerOnly ? ' power-only' : ''),
       '<i class="clip"><i class="fill"><i class="grad"></i></i></i><span class="c-zones"><i></i><i></i><i></i></span>' +
       '<i class="c-band c-good"></i><i class="c-band c-best"></i><i class="c-mark"></i><i class="vrail c-needle"></i><i class="lockring"></i><span class="c-lbl">power</span>');
     fx.appendChild(el);
@@ -432,12 +443,15 @@ var STYLES = [
         good.style.bottom = pct(b.good[0]); good.style.height = pct(b.good[1] - b.good[0]);
         best.style.bottom = pct(b.best[0]); best.style.height = pct(b.best[1] - b.best[0]); mark.style.bottom = pct(MT.MARK);
       },
-      stage: function (st) { var acc = st === 'acc' || st === 'done'; el.classList.toggle('is-acc', acc); lbl.textContent = acc ? 'release' : 'power'; good.style.opacity = best.style.opacity = acc ? 1 : .35; },
+      stage: function (st) { if (opt && opt.powerOnly) { el.classList.toggle('is-set', st === 'acc' || st === 'done'); return; }
+        var acc = st === 'acc' || st === 'done'; el.classList.toggle('is-acc', acc); lbl.textContent = acc ? 'release' : 'power'; good.style.opacity = best.style.opacity = acc ? 1 : .35; },
       lockPower: function (e) { lock.style.top = pct(1 - e); burst(lock); },
       lockAcc: function (pos) { lock.style.top = pct(1 - pos); burst(lock); },
     };
   } },
 ];
+
+function byId(id) { return STYLES.filter(function (x) { return x.id === id; })[0]; }
 
 /* ---- the page ------------------------------------------------------------------------------ */
 var store = { get: function (k) { try { return localStorage.getItem('std-meterlab-' + k); } catch (e) { return null; } },
