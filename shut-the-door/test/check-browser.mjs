@@ -411,7 +411,7 @@ async function playOuting(page, o) {
   for (let i = 0; i < 80; i++) {
     if (await done()) break;
     const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
-    console.log('STEP pick', i); await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
+    console.log('STEP pick', i, JSON.stringify(await page.evaluate(() => { const r = document.getElementById('m-aim').getBoundingClientRect(); const c = document.querySelector('.mh-card').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(c.bottom), window.STD_UI.state.outing.batterIndex, window.STD_UI.state.busy, document.getElementById('m-dock').className]; }))); await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
     const cellNo = o.cell != null ? o.cell : CELLS[i % CELLS.length];
     const freeTap = i === 0 && !o.type0;
     if (freeTap) {
@@ -1064,7 +1064,7 @@ try {
   await ending(1440, 900, 'walk_off', '&mockPro=none');
 } catch (e) {
   fails++;
-  try { console.log('DUMP', JSON.stringify(await globalThis.__pg.evaluate(() => { const R = (e) => { const b = e.getBoundingClientRect(); const cs = getComputedStyle(e); return [e.id || e.className + (e.dataset.cell || ''), Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom), cs.visibility, cs.display, cs.transform, cs.opacity]; }; return { vw: [innerWidth, innerHeight], sy: scrollY, de: [document.documentElement.scrollTop, document.body.scrollTop], scr: [...document.querySelectorAll('.screen, section')].map(e => e.id + ':' + e.className), els: [...document.querySelectorAll('#s-mound, #m-dock, #m-dock > *, #m-arsenal .pitch, #m-throw, #m-abs-b, #m-aim, #m-meter, #m-aim .cell')].map(R), busy: window.STD_UI.state.busy, type: window.STD_UI.state.type, cell: window.STD_UI.state.cell, st: window.STD_UI.state.outing && window.STD_UI.state.outing.status }; }))); } catch (x) { console.log('nodump', x); }
+  try { console.log('DUMP', JSON.stringify(await globalThis.__pg.evaluate(() => { const R = (e) => { const b = e.getBoundingClientRect(); const cs = getComputedStyle(e); return [e.id || e.className + (e.dataset.cell || ''), Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom), cs.visibility, cs.display, cs.transform, cs.opacity]; }; return { vw: [innerWidth, innerHeight], sy: scrollY, de: [document.documentElement.scrollTop, document.body.scrollTop], scr: [...document.querySelectorAll('.screen, section')].map(e => e.id + ':' + e.className), els: [...document.querySelectorAll('[data-hud], #m-aim, #m-mini')].map(R), bi: window.STD_UI.state.outing.batterIndex, bat: (window.STD_UI.state.scn.batters[window.STD_UI.state.outing.batterIndex] || {}).name, safe: window.STD_STAGE.current.safe, fit: window.STD_STAGE.current.eye.fit, out: window.STD_UI.state.outing.outs, bases: window.STD_UI.state.outing.bases, busy: window.STD_UI.state.busy, type: window.STD_UI.state.type, cell: window.STD_UI.state.cell, st: window.STD_UI.state.outing && window.STD_UI.state.outing.status }; }))); } catch (x) { console.log('nodump', x); }
   console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));
   // Playwright's call log says why an action waited (not visible, not stable, another element on top)
   if (e && e.message && e.message.includes('\n')) console.log('       ' + e.message.split('\n').slice(1).filter((l) => l.trim()).slice(-6).map((l) => l.trim()).join(' / '));
