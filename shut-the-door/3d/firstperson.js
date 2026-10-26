@@ -73,6 +73,7 @@ const GLOVE_KEYS = [
    the clip's release (seconds in) and slot (degrees). */
 const THROW = new URL('./assets/fparm.glb?h=8dd8eef3e7', import.meta.url).href;
 const ARM_ON = [-0.3, 0.45];     // when any of the arm can be on screen (r = t - T_RELEASE)
+const LEAD = [1 / 30, 1 / 60];   // his wrist, and the ball in his hand, on the screen at least this long before release
 const BALL_IN_HAND = new THREE.Vector3(0, 0.105, -0.03);   // handModel's ball from its origin
 const PALM = new THREE.Vector3(0, 0.055, 0);               // handModel's origin from the wrist
 
@@ -552,11 +553,17 @@ export class FirstPerson {
     const H = { x: zc.x + this.dir.x * 0.95 * unit, y: zc.y + this.dir.y * 0.95 * unit };
     H.x = Math.max(0.1 * w, Math.min(0.9 * w, H.x));
     H.y = Math.max(0.1 * h, Math.min(bottom - 0.12 * h, H.y));
-    // never in the zone: a low slot on a narrow screen (the zone nearly as wide as it) lifts the
-    // release over the zone's top corner
-    if (z && H.x > z.x - 0.12 * unit && H.x < z.x + z.w + 0.12 * unit && H.y > z.y - 0.12 * unit && H.y < z.y + z.h + 0.12 * unit) H.y = z.y - 0.12 * unit;
+    this.Hfloor = bottom - 0.12 * h;
+    this.offZone(H);
     this.H = H;
     this.fitThrow();
+  }
+
+  /** Never in the zone: a release point over it (a low slot on a narrow screen, the zone nearly as
+      wide as it) goes up over the zone's top. */
+  offZone(H) {
+    const z = this.zone, u = this.unit;
+    if (z && H.x > z.x - 0.12 * u && H.x < z.x + z.w + 0.12 * u && H.y > z.y - 0.12 * u && H.y < z.y + z.h + 0.12 * u) H.y = z.y - 0.12 * u;
   }
 
   /** The baked throw fitted to him and to this screen: rolled about his shoulder (along the line to
@@ -569,15 +576,42 @@ export class FirstPerson {
     const roll = (this.slot ?? 0.7) - T.slot, i = Math.round(T.rel) * 3;
     const pivot = new THREE.Vector3(T.S[i], T.S[i + 1], T.S[i + 2]);
     this.fit = { roll: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), roll), pivot, aim: new THREE.Quaternion(), axis: null, pre: 0, post: 0 };
-    const f = this.frame(0);
-    const want = this.at(this.H.x, this.H.y, 1).normalize();
-    this.fit.aim.setFromUnitVectors(f.ball.clone().normalize(), want);
-    // then the way in and the way out, each turned on the screen about the release point (a turn
-    // that grows from nothing at release, so the ball still leaves the hand at H): the least turn
-    // that keeps the arm out of the zone and off the HUD's panels
-    this.fit.axis = want;
-    this.fit.pre = this.clearTurn(-1);
-    this.fit.post = this.clearTurn(1);
+    for (let k = 0; k < 4; k++) {
+      const F = this.fit;
+      F.aim.identity(); F.axis = null; F.pre = F.post = 0;
+      const f = this.frame(0);
+      const want = this.at(this.H.x, this.H.y, 1).normalize();
+      F.aim.setFromUnitVectors(f.ball.clone().normalize(), want);
+      // then the way in and the way out, each turned on the screen about the release point (a turn
+      // that grows from nothing at release, so the ball still leaves the hand at H): the least turn
+      // that keeps the arm out of the zone and off the HUD's panels
+      F.axis = want;
+      F.pre = this.clearTurn(-1);
+      F.post = this.clearTurn(1);
+      // his hand holding the ball must be on the screen for the last frames before it lets go
+      // (LEAD): at a release on the screen's edge, or under its top, the hand came in on the very
+      // frame the ball left it and the ball seemed thrown by nobody. Bring the release point in by
+      // what the hand overhangs, and fit again
+      const sh = this.leadShift();
+      if (!sh) break;
+      this.H.x -= sh.x; this.H.y = Math.min(this.H.y - sh.y, this.Hfloor ?? Infinity);
+      this.offZone(this.H);
+    }
+  }
+
+  /** How far (CSS px) his wrist and the ball in his hand overhang the screen, less a margin, LEAD
+      seconds before release: null when they are in. */
+  leadShift() {
+    const m = 0.06 * this.unit, top = (this.safe ? this.safe.top || 0 : 0) + m;
+    const pts = [this.frame(-LEAD[0]).W, this.frame(-LEAD[1]).ball];
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity;
+    for (const p of pts) {
+      if (p.z > -0.05) return null;
+      const k = this.unit / (-p.z * TAN), x = this.w / 2 + p.x * k, y = this.h / 2 - p.y * k;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y);
+    }
+    const sx = Math.max(0, x1 - (this.w - m)) - Math.max(0, m - x0), sy = -Math.max(0, top - y0);
+    return Math.abs(sx) < 1 && Math.abs(sy) < 1 ? null : { x: sx, y: sy };
   }
 
   /** What the arm would cover, phase -1 (before release) or 1 (after), turned by ang: the count of
