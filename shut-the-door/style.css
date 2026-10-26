@@ -1075,26 +1075,28 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 
 /* the dock: the pitch buttons in one glass tray, THROW under them, the step prompt over them */
 .dock { position: absolute; left: calc(var(--sl) + var(--gut)); right: calc(var(--sr) + var(--gut)); bottom: calc(var(--sb) + var(--gut)); width: var(--dock-w);
-  display: flex; flex-direction: column; gap: 8px; }
+  display: flex; flex-direction: column; gap: 6px; }
 .pad-say { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); margin: 0; max-width: 100%; height: 28px; line-height: 26px; padding: 0 12px; border-radius: 999px;
   font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 .pad-say:empty { display: none; }
-/* THE DOCK GRID (the owner, 2026-10-26: room for the names and a speed range). Six tracks; a button
+/* THE DOCK GRID (the owner, 2026-10-26: room for the names and a speed range). Two rows stay short
+   (44 px buttons, 4 px gaps): the stage frames the set between the batter card and the dock, and a
+   taller dock left a long card too little room (the set slid off the left edge on a phone). Six tracks; a button
    takes two (three a row) or three (two a row), so 2 to 6 pitches never squeeze: 5 is 3 + 2, 6 is 3 + 3. */
-.arsenal { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 16px; }
+.arsenal { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 15px; }
 .arsenal .pitch { grid-column: span 2; }
 .arsenal[data-n="1"] .pitch { grid-column: span 6; }
 .arsenal[data-n="2"] .pitch, .arsenal[data-n="4"] .pitch, .arsenal[data-n="5"] .pitch:nth-child(n+4) { grid-column: span 3; }
 /* BIG PITCH BUTTONS: the name on top; the key, his speed range and the break glyph under it */
-.pitch { min-width: 0; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-ink); border-radius: 11px; padding: 5px 6px 5px 11px;
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "n n n" "k s v"; align-items: center; column-gap: 5px; row-gap: 4px;
-  min-height: 48px; position: relative; overflow: hidden; text-align: left; transition: background .12s, border-color .12s; }
+.pitch { min-width: 0; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-ink); border-radius: 11px; padding: 3px 6px 3px 11px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "n n n" "k s v"; align-items: center; column-gap: 5px; row-gap: 3px;
+  min-height: 44px; position: relative; overflow: hidden; text-align: left; transition: background .12s, border-color .12s; }
 .pitch:hover { border-color: var(--g-dim); }
-.pk { grid-area: k; flex: none; width: 19px; height: 19px; border-radius: 5px; display: grid; place-items: center; background: var(--g-2); border: 1px solid var(--g-line);
-  font-family: var(--display); font-style: italic; font-weight: 900; font-size: 12px; line-height: 1; color: var(--g-dim); }
+.pk { grid-area: k; flex: none; width: 17px; height: 17px; border-radius: 5px; display: grid; place-items: center; background: var(--g-2); border: 1px solid var(--g-line);
+  font-family: var(--display); font-style: italic; font-weight: 900; font-size: 11px; line-height: 1; color: var(--g-dim); }
 .pt { display: contents; }
-.pt b { grid-area: n; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 18px; line-height: 1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 2px; }
-.ps { grid-area: s; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 14px; line-height: 1; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: clip;
+.pt b { grid-area: n; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 17px; line-height: 1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 2px; }
+.ps { grid-area: s; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 13px; line-height: 1; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: clip;
   color: inherit; opacity: .82; font-variant-numeric: tabular-nums; }
 .ps small { font-size: .72em; font-weight: 600; letter-spacing: .02em; margin-left: 2px; }
 .pv { grid-area: v; flex: none; display: flex; align-items: center; line-height: 1; }
