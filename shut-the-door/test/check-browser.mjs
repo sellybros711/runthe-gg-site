@@ -752,14 +752,22 @@ async function run(w, h, theme) {
     const S = window.STD_UI.state, ars = S.scn.pitcher.arsenal;
     const btns = [...document.querySelectorAll('#m-arsenal .pitch')];
     return {
-      buttons: btns.every((b, i) => b.querySelector('.pk').textContent === String(i + 1) && b.querySelector('.pt b').textContent === ars[i].name &&
-        !/mph|\b\d{2,3}\b/.test(b.textContent.replace(/^\d/, '') + ' ' + b.getAttribute('aria-label').replace(/^\d+,/, ''))),
+      /* the speed RANGE is on the button (the owner, 2026-10-26: what his arm can do with the pitch, the
+         power stop's softest to hardest, STD_METER.veloOf at e 0 and 1, whole mph); the exact speed of a
+         pitch still shows only after the throw, so no other number is on the button */
+      buttons: btns.every((b, i) => {
+        const M = window.STD_METER, lo = Math.round(M.veloOf(ars[i], 0)), hi = Math.round(M.veloOf(ars[i], 1));
+        const range = (lo === hi ? String(lo) : lo + '-' + hi) + 'mph', ps = b.querySelector('.ps');
+        return b.querySelector('.pk').textContent === String(i + 1) && b.querySelector('.pt b').textContent === ars[i].name &&
+          !!ps && ps.textContent === range && b.getAttribute('aria-label') === (i + 1) + ', ' + ars[i].name + ', ' + range.replace('mph', ' mph') &&
+          !/\d/.test(b.textContent.replace(/^\d/, '').replace(ps.textContent, ''));
+      }),
       tall: Math.min(...btns.map((b) => b.getBoundingClientRect().height)),
       throwWord: document.querySelector('#m-throw b').textContent, say: document.getElementById('m-say').textContent,
       touch: getComputedStyle(document.getElementById('m-aim')).touchAction, grids: document.querySelectorAll('#m-scene .grid').length,
     };
   });
-  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number and its name, and no speed before the throw (' + Math.round(pad.tall) + ' px tall)');
+  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number and its name, and his speed range, no exact speed before the throw (' + Math.round(pad.tall) + ' px tall)');
   /* 3: FULL SCREEN (the owner, 2026-10-24). The 3D canvas is the viewport, the site header is gone
      but a menu button stays, no HUD panel covers the zone, no sideways scroll, and every control
      on the HUD is a thumb's size (44 px on a phone; the desk's are 40). */

@@ -427,8 +427,10 @@ function buildMound() {
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
   var big = maxBreak(S.scn.pitcher.arsenal);
-  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name and its break glyph.
-     No speed: it is revealed after the throw (the owner, 2026-10-23). The number is the key that picks it. */
+  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name, its speed range and
+     its break glyph. The exact speed of a pitch is revealed after the throw (the owner, 2026-10-23);
+     the range is what his arm can do with it (the owner, 2026-10-26), see speedOf. The number is the
+     key that picks it. */
   S.scn.pitcher.arsenal.forEach(function (a, i) {
     var b = document.createElement('button');
     b.type = 'button';
@@ -439,7 +441,7 @@ function buildMound() {
     b.setAttribute('aria-pressed', 'false');
     b.setAttribute('aria-label', (i + 1) + ', ' + a.name);
     b.innerHTML = '<span class="pk" aria-hidden="true">' + (i + 1) + '</span><span class="pt" aria-hidden="true"><b>' + esc(a.name) + '</b>' +
-      '<span class="pv">' + breakGlyph(a, colorOf(a), big) + '</span></span>';
+      '<span class="ps"></span><span class="pv">' + breakGlyph(a, colorOf(a), big) + '</span></span>';
     var held = holdToLearn(b, a.type);
     b.addEventListener('click', function () { if (!held()) pickType(a.type); });
     ars.appendChild(b);
@@ -463,6 +465,8 @@ function buildMound() {
   $('m-abs-b').addEventListener('click', challengeIt);
   /* the meter on the page is meter-ui.js (the look); meter.js keeps the numbers */
   S.meter = METER && $('m-meter') ? (window.STD_METER_UI || METER).create($('m-meter')) : null;
+  /* the speed ranges read the meter setting, so they go on once the meter is built */
+  speedLabels();
   $('m-batter').addEventListener('click', toggleScout);
   $('m-guide-b').addEventListener('click', function () { setGuide(S.guide ? null : S.type || S.scn.pitcher.arsenal[0].type); });
   $('m-guide').addEventListener('click', function (e) {
@@ -502,6 +506,32 @@ function buildMound() {
 
 /* A pitch's name on its button, whole: five in a row are narrow (curveball, four-seam), so a name
    that does not fit steps down half a pixel at a time, never under 12 px, before it would cut. */
+/* The speed range on a pitch button: the slowest and the fastest the power stop can make of that
+   pitch (meter.js veloOf at e 0 and e 1, his own real speeds), whole mph. With the meter off there is
+   no power stop and the engine plays his ordinary pitch, so it is that one speed. */
+function speedOf(a) {
+  var one = function (v) { return v != null && isFinite(v) ? Math.round(v) : null; };
+  if (!(METER && METER.POWER === true && typeof METER.veloOf === 'function' && meterOn())) {
+    var v = METER && typeof METER.veloOf === 'function' ? one(METER.veloOf(a)) : one(a.velo);
+    return v == null ? '' : v + ' mph';
+  }
+  var lo = one(METER.veloOf(a, 0)), hi = one(METER.veloOf(a, 1));
+  if (lo == null || hi == null) return '';
+  if (lo > hi) { var t = lo; lo = hi; hi = t; }
+  return (lo === hi ? lo : lo + '-' + hi) + ' mph';
+}
+function speedLabels() {
+  if (!S.scn) return;
+  var ars = S.scn.pitcher.arsenal;
+  document.querySelectorAll('#m-arsenal .pitch').forEach(function (b, i) {
+    var a = ars[i], ps = b.querySelector('.ps');
+    if (!a || !ps) return;
+    var txt = speedOf(a);
+    /* the unit a size down, so the two numbers carry the button */
+    ps.innerHTML = txt ? esc(txt.replace(/ mph$/, '')) + '<small>mph</small>' : '';
+    b.setAttribute('aria-label', (i + 1) + ', ' + a.name + (txt ? ', ' + txt : ''));
+  });
+}
 function fitNames() {
   document.querySelectorAll('#m-arsenal .pt b').forEach(function (b) {
     b.style.fontSize = '';
@@ -1867,6 +1897,7 @@ function boot() {
       if (k === 'theme') { setTheme(v); return; }
       prefs[k] = v; savePrefs();
       if (k === 'sound' && v) sound('pop');
+      if (k === 'meter') speedLabels();
     },
   });
   $('b-theme').addEventListener('click', function () {
