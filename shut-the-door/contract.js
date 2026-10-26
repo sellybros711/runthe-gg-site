@@ -321,6 +321,61 @@ function runnerCategory(bases, moves) {
 }
 const RUNNER_CATS = Object.freeze(['X', '0', '1', '2', '3']);
 
+/* THE RUNNING GAME (rules 7, the owner 2026-10-26: "Runners could also steal
+   ... They may win or lose that moment" and "yes add pickoffs and slide
+   step"; CONTRACT.md 5i). The measured parts are in each pack (pack.steal,
+   from pipeline/steals.py: every 2022 and 2024 regular season pitch in the
+   Stats API feeds, the people's season stats, Savant's sprint speed and pop
+   time). What is a rule or a game setting is here:
+   DISENGAGE  pickoff throws a plate appearance before a failed one is a balk
+              (MLB 2023, rule 5.07(f)); every runner moves up a base. A GAME
+              RULE in every era: the 1988 and 2001 spots play it too.
+   QUICK      the quick delivery (the slide step), a call's ss: 1. The
+              delivery gets quicker, not the ball: DELIVERY_S seconds off his
+              time to the plate (a MODEL: the owner's 0.2 to 0.3 s; no public
+              per-pitch time to the plate). Seconds become the steal's z at
+              pack.steal.zPerSecond, MEASURED: a second of catcher's pop time
+              against stolen base success (Savant pop time, Stats API catcher
+              stolen bases and caught stealing, 2016 to 2025). Its costs are
+              the meter's (meter.js QUICK: no max power, a quicker ring); only
+              the time to the plate moves the steal.
+   CAP        the most a runner goes on one pitch (game guard).
+   A steal is of second (a runner on first, second open) or third (a runner
+   on second, third open), by the lead runner only: home, the double steal and
+   the delayed steal are not played. The margin a steal or pickoff shows is
+   its z over zPerSecond: seconds, safe by (plus) or out by (minus). */
+const STEAL = Object.freeze({
+  DISENGAGE: 2,
+  QUICK: Object.freeze({ DELIVERY_S: 0.25 }),
+  CAP: 0.5,
+});
+/* The standard normal's cdf from arithmetic only (Abramowitz and Stegun
+   26.2.19, error under 1.5e-7), so a steal decides with the same bits on
+   every device (Math.exp and Math.log may round differently). */
+function normCdf(z) {
+  const x = Math.abs(z);
+  const d = [0.0498673470, 0.0211410061, 0.0032776263, 0.0000380036, 0.0000488906, 0.0000053830];
+  let t = 1, xp = 1;
+  for (let i = 0; i < 6; i++) { xp *= x; t += d[i] * xp; }
+  let q = t;
+  for (let i = 0; i < 4; i++) q *= q;   // t^16
+  const upper = 0.5 / q;
+  return z >= 0 ? 1 - upper : upper;
+}
+/* Its inverse, for the margin only (the scene's closeness, never a decision). */
+function normInv(p) {
+  const pp = Math.min(1 - 1e-9, Math.max(1e-9, p));
+  const a = [-39.6968302866538, 220.946098424521, -275.928510446969, 138.357751867269, -30.6647980661472, 2.50662827745924];
+  const b = [-54.4760987982241, 161.585836858041, -155.698979859887, 66.8013118877197, -13.2806815528857];
+  const c = [-0.00778489400243029, -0.322396458041136, -2.40075827716184, -2.54973253934373, 4.37466414146497, 2.93816398269878];
+  const dd = [0.00778469570904146, 0.32246712907004, 2.445134137143, 3.75440866190742];
+  const lo = 0.02425;
+  if (pp < lo) { const q = Math.sqrt(-2 * Math.log(pp)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((dd[0] * q + dd[1]) * q + dd[2]) * q + dd[3]) * q + 1); }
+  if (pp > 1 - lo) return -normInv(1 - pp);
+  const q = pp - 0.5, r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+
 /* Effort (the owner's call, 2026-10-22; CONTRACT.md 5c). A call may carry e,
    the meter's first stop, 0..1, kept to two places. 0 is his softest, 1 his
    hardest, MID (0.5) his ordinary pitch: a call with e 0.5 plays exactly like
@@ -393,7 +448,7 @@ const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
-  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, EFFORT, effortE, stuffAt, BASE, countBucket,
+  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

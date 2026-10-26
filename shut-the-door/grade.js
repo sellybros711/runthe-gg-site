@@ -396,7 +396,7 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 6;
+const RULES = 7;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
@@ -422,6 +422,13 @@ const ROUTINE_RULES = 5;
    stands for each key in a cell, and its depth is that ball's, not the
    hitter's (the weights average back to the table over the real balls). */
 const RUNNER_RULES = 6;
+/* Rules 7 (2026-10-26) is rules 6 with the running game (contract.js THE
+   RUNNING GAME, engine.js stealGoes, pickoff): the lead runner may steal on a
+   pitch, decided on a stream of its own; the pitcher may throw over between
+   pitches (pa on the call before) and use a quick delivery (ss: 1). None of it
+   is graded: the grade prices the call, and the state after a steal or a
+   pickoff carries into the next call's grade, like a challenge. */
+const STEAL_RULES = 7;
 const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
@@ -1030,7 +1037,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;

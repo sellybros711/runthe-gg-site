@@ -12,7 +12,8 @@
  *   3. keeps each closer's name, style vector and reason as pack.pool.closers,
  *      for pitched like
  *   4. keeps the lesson's pro examples this pack can show (attachPros)
- *   5. copies data/runners.json (pipeline/runners.py) in as pack.runners, rules 6
+ *   5. copies data/runners.json (pipeline/runners.py) in as pack.runners, rules 6, and its
+ *      spot's running game from data/steals.json (pipeline/steals.py) as pack.steal, rules 7
  *   6. reports the calibration the brief asks for (band spread, the pool's
  *      hold rate, its outcome mix) in pack.build.pool, and writes the pack
  *      minified, stamped with the engine's pack format (E.PACK_VERSION)
@@ -246,6 +247,22 @@ function build(pack, closersFile, opts) {
   // rules 6: how real runners went on each kind of ball (pipeline/runners.py), without its parity sample
   const fsx = require('fs'), rn = require('path').join(__dirname, 'data', 'runners.json');
   if (fsx.existsSync(rn)) { const r = JSON.parse(fsx.readFileSync(rn, 'utf8')); pack.runners = { source: r.source, dist: { coef: r.dist.coef }, edges: r.edges, ratio: r.ratio }; }
+  // rules 7: the running game for this spot (pipeline/steals.py): its era's rates and its people
+  const sp = require('path').join(__dirname, 'data', 'steals.json');
+  if (fsx.existsSync(sp)) {
+    const all = JSON.parse(fsx.readFileSync(sp, 'utf8')), sc = all.scenarios[pack.scenario.id];
+    if (sc) {
+      const S = all.sample[sc.era], pick = (o, pre) => Object.fromEntries(Object.entries(o).filter(([k]) => pre.some(p => k.startsWith(p))));
+      pack.steal = {
+        source: all.source, season: sc.season, era: sc.era, bigBases: sc.bigBases, league: sc.league,
+        eraAtt: sc.eraAtt, eraZ: sc.eraZ, zPerSecond: all.zPerSecond.z,
+        baseZ: { 2: Math.round(K.normInv(S.success['2']) * 1000) / 1000, 3: Math.round(K.normInv(S.success['3']) * 1000) / 1000 },
+        attempt: S.attempt, attMult: pick(S.attMult, ['late|']), sucZ: pick(S.sucZ, ['late|', 'po|']),
+        pickoff: Object.fromEntries(Object.entries(S.pickoff).map(([b, v]) => [b, { out: v.out }])),
+        pitcher: sc.pitcher, catcher: sc.catcher, runners: sc.runners, start: sc.start,
+      };
+    }
+  }
   const t0 = Date.now();
   const fresh = new G.Model(pack, { fresh: true });
   pack.hold = fresh.holdTable();

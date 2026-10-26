@@ -65,12 +65,21 @@ function windowScale(e) {
   return ee < C.EFFORT.MID ? 1 + (EFFORT_WINDOW.SOFT - 1) * (C.EFFORT.MID - ee) / C.EFFORT.MID
     : 1 - (1 - EFFORT_WINDOW.HARD) * (ee - C.EFFORT.MID) / (1 - C.EFFORT.MID);
 }
-function windowMs(command, e) {
+/* QUICK DELIVERY (the slide step; the owner, 2026-10-26: "QUICK DELIVERY", never "quick pitch",
+   which is the illegal pitch). The delivery gets quicker, not the ball (CONTRACT.md 5i). Its two
+   costs live here, the one place the grade, the tests and the UI read them:
+   E_MAX   the top of the power column: a quick delivery's e is at most this (no max power). 0.84
+           is where the median fastball in the ten packs is 1 mph under his top (his own speed
+           slices, contract.js stuffAt): the owner's "about -1 mph".
+   WINDOW  the accuracy ring closes a touch faster: the window times this (a game setting).
+   The engine refuses a quick delivery's e over E_MAX. */
+var QUICK = Object.freeze({ E_MAX: 0.84, WINDOW: 0.85 });
+function windowMs(command, e, quick) {
   var c = Math.max(20, Math.min(80, typeof command === 'number' ? command : 50));
-  return WINDOW_AT_50 * (1 + (c - 50) / 80) * windowScale(e);
+  return WINDOW_AT_50 * (1 + (c - 50) / 80) * windowScale(e) * (quick ? QUICK.WINDOW : 1);
 }
-function qOf(errMs, command, e) {
-  return C.releaseQ(Math.max(0, 1 - Math.abs(errMs) / windowMs(command, e)));
+function qOf(errMs, command, e, quick) {
+  return C.releaseQ(Math.max(0, 1 - Math.abs(errMs) / windowMs(command, e, quick)));
 }
 function effortAt(t) {
   var ph = (t / EFFORT_SWEEP_MS) % 2;
@@ -254,7 +263,7 @@ function create(el) {
 
 var api = { SWEEP_MS: SWEEP_MS, MARK: MARK, WINDOW_AT_50: WINDOW_AT_50, TIMING: TIMING, GOOD_Q: GOOD_Q, BEST_Q: BEST_Q,
   EFFORT: POWER_ON, POWER: POWER_ON, windowOf: windowOf, veloOf: veloFor,
-  EFFORT_WINDOW: EFFORT_WINDOW, EFFORT_SWEEP_MS: EFFORT_SWEEP_MS, windowScale: windowScale, effortAt: effortAt,
+  EFFORT_WINDOW: EFFORT_WINDOW, QUICK: QUICK, EFFORT_SWEEP_MS: EFFORT_SWEEP_MS, windowScale: windowScale, effortAt: effortAt,
   ringMs: ringMs, ringAt: ringAt, ringErrAt: ringErrAt, ringBands: ringBands, powerAt: powerAt, powerCap: powerCap, PERFECT_E: PERFECT_E, PERFECT_Q: PERFECT_Q, perfectOf: perfectOf,
   stuffFor: stuffFor, veloFor: veloFor, windowMs: windowMs, qOf: qOf, needleAt: needleAt, errAt: errAt, wordOf: wordOf, bandsFor: bandsFor, create: create };
 if (NODE) module.exports = api;

@@ -516,6 +516,56 @@ Every row is still the table's own legal play, and the runner draw is the same d
 the table's mix: one real ball stands for each key in a cell, and its depth is that ball's, not the
 hitter's. A ball in play under rules 6 carries `carry` (feet, air balls) and `cls` for the scene.
 
+## 5i. Rules 7: the running game (2026-10-26)
+
+Rules 6 and everything before it. The owner: "Runners could also steal ... They may win or lose that
+moment", and "yes add pickoffs and slide step". A new outing's calls carry `r: 7`; a call with `r: 6`
+or before replays under its own rules, exactly (`fixtures/replays-rules6-pre-steals.json`).
+
+**The steal** (`engine.js stealGoes`, `resolveSteal`). The lead runner with the base ahead open
+(first with second open, or second with third open) may go on a pitch. Home, the double steal and the
+delayed steal are not played. Before the pitch, one draw on the steal stream (`steal|seed`, drawn
+only when a steal is on, so the four draws never move) against:
+
+- the 2022 or 2024 rate per pitch for the base, outs and count (`pack.steal.attempt`, every regular
+  season pitch in the Stats API feeds; 2022 for spots before 2023, 2024 from 2023);
+- late and close (inning 8 on, by the batting side's margin), measured against the same runners;
+- him (his attempts per time on first, shrunk toward what his sprint speed predicts; SB and CS
+  alone before 2015), the pitcher (attempts against) and the era (that season's league against the
+  sample's).
+
+He goes with the pitch. A foul, a ball in play or a hit batter sends him back (`result: 'back'`). A walk
+that moves him, or a third out, makes it moot. On a ball or a strike, a second draw decides it:
+safe when it falls under the normal cdf of z (`contract.js normCdf`, arithmetic only). z is the base's
+success, plus the era, him, the pitcher, the catcher on the field in the real game (stolen bases
+and caught stealing against him), late and close, the pickoff throws at him this plate appearance,
+and a quick delivery. A caught stealing that is the third out ends the half: the door is shut. The
+steal is not graded. The state after it carries into the next call's grade.
+
+**The pickoff** (`E.pickoff(o)`, `E.pickoffLive(o)`). It is the player's call between pitches, to
+the lead runner's base. It is not open before the outing's first pitch. One draw on the steal stream
+gets him at the season's rate per throw at that base. Two disengagements a plate appearance (MLB
+2023, `contract.js STEAL.DISENGAGE`, a GAME RULE in every era). Past them, a throw that does not get
+him is a balk, and every runner moves up. A throw that does not get him shortens his jump for that
+plate appearance (`pack.steal.sucZ po|...`, measured against the same runner). The attempt rate is
+not lowered: the feeds show more attempts after a throw, because pitchers throw to the runner about
+to go. A pickoff rides on the call before it as `pa` (throws after that pitch).
+
+**The quick delivery** (the slide step, a call's `ss: 1`; on screen "QUICK DELIVERY", never "quick
+pitch"). The delivery gets quicker, not the ball: `STEAL.QUICK.DELIVERY_S` (0.25 s, a MODEL of the
+owner's 0.2 to 0.3 s) off his time to the plate. That is the only thing it moves in the steal draw:
+z falls by 0.25 times `pack.steal.zPerSecond`, measured as stolen base success against a catcher's
+pop time (Savant pop time, 2016 to 2025, 330 catcher seasons). Its costs are the meter's (`meter.js
+QUICK`): power stops at `E_MAX` (no max power, about 1 mph off his top; the engine refuses more), and
+the accuracy ring closes a touch faster (`WINDOW`). Neither the pickoff nor the quick delivery is
+graded in this version.
+
+**For the scene.** A pitch with a steal carries `steal {runner, name, speed, from, to, result: 'safe'
+| 'out' | 'back' | 'moot', p, margin (seconds, plus is safe by), catcher {id, name, pop}, cover (4,
+5 or 6)}`. A pickoff is `{n, base, runner, name, dis, out, balk, runs?, margin}` on the pitch before it
+(`pickoffs`) and in `state.run.pickoffs`. `state.run` has who is on, `pickoff {live, base, left,
+balkRisk}` and `quick {deliveryS, eMax}`.
+
 ## 6. Pitch result
 
 ```js

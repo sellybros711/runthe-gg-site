@@ -41,7 +41,7 @@
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 11;
+  const SCHEDULE_V = 12;
   const STORE_V = 1;
   const BASE = 'data/';
 
@@ -155,6 +155,7 @@
     if (call && call.q != null) c.q = call.q;     // the release (contract.js RELEASE); absent is 1.0x
     if (call && call.e != null) c.e = call.e;     // the effort (contract.js EFFORT); absent is his ordinary pitch
     if (call && call.at != null) c.at = call.at;  // the free aim point (contract.js aimAt); absent is the cell's centre
+    if (call && call.ss === 1) c.ss = 1;          // rules 7: a quick delivery (CONTRACT.md 5i)
     const r = E.throwPitch(rec.o, c);
     save(rec);
     return clone(r);
@@ -168,6 +169,18 @@
     if (!rec) throw new Error('no such outing');
     if (rec.result) throw new Error('the outing is finished');
     const r = E.challengePitch(rec.o);
+    save(rec);
+    return clone(r);
+  }
+
+  /* rules 7: a pickoff throw to the lead runner's base, between pitches (CONTRACT.md 5i). Returns
+     the throw ({base, out, balk, margin, ...}) and the state (state.run: who is on, whether a
+     pickoff is live, the disengagements left). Kept on the last call as pa, so a reload replays it. */
+  async function pickoff(outingId) {
+    const rec = outings[outingId];
+    if (!rec) throw new Error('no such outing');
+    if (rec.result) throw new Error('the outing is finished');
+    const r = E.pickoff(rec.o);
     save(rec);
     return clone(r);
   }
@@ -204,7 +217,7 @@
     return clone(rec.result);
   }
 
-  const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, finishOuting, configure };
+  const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, configure };
   if (NODE) module.exports = api;
   if (typeof window !== 'undefined') window.STD_API = api;
 })();
