@@ -1012,6 +1012,12 @@ function renderPAs(st) {
     return '<button type="button" class="pa-chip' + (on ? ' on' : '') + '" data-pa="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
       esc(p.name) + ' <b>' + esc(String(p.word || '').toLowerCase()) + '</b>' + (p.abs ? '<i class="pa-abs" title="a call overturned">abs</i>' : '') + '</button>';
   }).join('');
+  /* one sideways row: the chip being viewed in view, else the newest */
+  if (pas.length) {
+    var show = box.querySelector('.pa-chip.on') || box.lastElementChild;
+    var end = show.offsetLeft + show.offsetWidth;   // .pa-hist is positioned, so offsets are its own
+    if (end > box.scrollLeft + box.clientWidth || show.offsetLeft < box.scrollLeft) box.scrollLeft = Math.max(0, end - box.clientWidth + 2);
+  }
   box.querySelectorAll('.pa-chip').forEach(function (b) {
     b.addEventListener('click', function () {
       var p = pas[+b.dataset.pa];

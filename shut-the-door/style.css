@@ -1059,7 +1059,12 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 .mh-card .seg button { flex: 1 1 0; min-width: 0; height: 100%; padding: 0 8px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--g-dim); }
 .mh-card .seg button[aria-selected="true"] { background: var(--g-sel); color: var(--g-sel-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
 /* earlier at bats: one chip each; a tap shows that at bat's pitches on the zone */
-.pa-hist { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+/* the earlier at bats: ONE row that scrolls sideways, newest in view, so the card never grows with the
+   outing (a taller card left the stage too little room and slid the zone off the screen) */
+.pa-hist { position: relative; display: flex; flex-wrap: nowrap; gap: 5px; margin-top: 7px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity; scroll-padding-inline: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
+.pa-hist::-webkit-scrollbar { display: none; }
+.pa-hist .pa-chip { flex: none; scroll-snap-align: end; }
 .pa-chip { height: 30px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-dim); font-size: 12px; white-space: nowrap; }
 .pa-chip b { color: var(--g-ink); font-weight: 700; }
 .pa-chip.on { background: var(--g-sel); border-color: var(--g-sel); color: var(--g-sel-ink); }
