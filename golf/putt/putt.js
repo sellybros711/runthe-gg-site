@@ -305,7 +305,7 @@ function hitCircle(s, cx, cy, r, e){
    the windmills read: the same putt at the same moment always meets the same blade. */
 function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
-  var onDeck = false, climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
+  var onDeck = false, deckV = null, climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
   var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
@@ -325,7 +325,7 @@ function simulate(C, x, y, vx, vy, t0){
        nearest grid point can be outside. OUT is only believed once the exact shape agrees. */
     if (m === M.OUT) m = C.matFn(s.x, s.y);
     if (C.bridges.length && m === M.WATER){ var brg = bridgeAt(C, s.x, s.y, 0.2); if (brg) m = bridgeDown(brg, t0 + t) ? M.GREEN : M.WATER; }
-    var deck = (m === M.WATER && C.ferries.length) ? ferryAt(C, s.x, s.y, t0 + t, 0.1) : null; if (deck){ m = M.GREEN; if (!onDeck) out.ev.push([t, 'deck']); } onDeck = !!deck;
+    var deck = (m === M.WATER && C.ferries.length) ? ferryAt(C, s.x, s.y, t0 + t, 0.1) : null; if (deck){ m = M.GREEN; if (!onDeck) out.ev.push([t, 'deck']); } else deckV = null; onDeck = !!deck;
     if (m === M.WATER){ out.water = true; out.ev.push([t, 'water']); break; }
     if (m === M.OUT){ out.out = true; out.ev.push([t, 'out']); break; }
     var px0 = s.x, py0 = s.y, rv = m === M.FLOW ? riverAt(C, s.x, s.y) : null, disc = (!rv && C.turns.length) ? turnAt(C, s.x, s.y) : null;
@@ -339,6 +339,17 @@ function simulate(C, x, y, vx, vy, t0){
       var fvx = deck.q.vx, fvy = deck.q.vy, rfx = s.vx - fvx, rfy = s.vy - fvy, rfs = Math.hypot(rfx, rfy), aff = fricOf(C, M.GREEN) * (fvx || fvy ? DECK_GRIP : 1);
       if (rfs > 1e-9){ var df = Math.min(rfs, aff * DT); rfx -= rfx / rfs * df; rfy -= rfy / rfs * df; }
       s.vx = rfx + fvx; s.vy = rfy + fvy;
+      /* PUT ASHORE (the owner, 2026-10-25: on Platform Jump the ball "got permanently stuck and kept moving back and
+         forth"). The deck's landing speed f.e is held to 1.4 so it never throws a ball past a narrow landing, and at that
+         speed a ball on the deck's back edge stopped short of the front one, rode back, and shuttled until MAX_T called
+         it wet. So the moment a moving deck stops at its dock, a ball still on it gets the speed that slides it from where
+         it sits to a foot clear of the leading edge on the carpet's grip: never short, never far past. */
+      if (deckV && !fvx && !fvy){ var dfe = deck.f, dqx = Math.abs(dfe.dx) >= Math.abs(dfe.dy), dsg = Math.sign(dqx ? deckV[0] : deckV[1]),
+          gap = dqx ? (dsg > 0 ? dfe.x1 + deck.q.ox - s.x : s.x - dfe.x0 - deck.q.ox) : (dsg > 0 ? dfe.y1 + deck.q.oy - s.y : s.y - dfe.y0 - deck.q.oy),
+          vsl = dsg * Math.sqrt(2 * fricOf(C, M.GREEN) * (Math.max(0, gap) + 1));
+        if (dqx){ if (Math.abs(s.vx) < Math.abs(vsl) || Math.sign(s.vx) !== dsg) s.vx = vsl; } else if (Math.abs(s.vy) < Math.abs(vsl) || Math.sign(s.vy) !== dsg) s.vy = vsl;
+        out.ev.push([t, 'ashore']); }
+      deckV = (fvx || fvy) ? [fvx, fvy] : null;
     } else if (disc){
       // a turntable: friction works against the ball's speed RELATIVE to the disc, and the spin flings it outward
       var dvx0 = -disc.omega * (s.y - disc.y), dvy0 = disc.omega * (s.x - disc.x), rlx = s.vx - dvx0, rly = s.vy - dvy0, rls = Math.hypot(rlx, rly), afd = fricOf(C, M.GREEN);
