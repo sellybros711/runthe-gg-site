@@ -396,12 +396,26 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 3;
+const RULES = 5;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
    applies to rules 2 and 3 alike (rules >= 2). */
 const THIRD_OUT_RULES = 3;
+/* Rules 4 (2026-10-24) is rules 3 with the call by location (contract.js THE
+   CALL: the umpire's chance where the ball crossed, the grade one pitch ahead
+   splits each cell's takes the same way), ABS challenges (contract.js ABS;
+   engine.js) and the bright band's release (contract.js PERFECT). */
+const ABS_RULES = 4;
+/* Rules 5 (2026-10-25) is rules 4 with the routine play (contract.js ROUTINE,
+   the owner's call): an error on a routine grounder, fly or popup is
+   extremely rare. Where a cell's real error is a routine ball, all but
+   ROUTINE.KEEP of the error key's share goes to the cell's real out of the
+   same kind (Model.routineOf): the engine reads it inside the error's slice of
+   the library draw, the grade one pitch ahead moves the same share
+   (keyMixCtx). The draws do not move, and no other key's draw changes. */
+const ROUTINE_RULES = 5;
+const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
               type the batter has seen this plate appearance (1, 2, 3 or more)
@@ -683,6 +697,22 @@ Model.prototype.rowsCtx = function (bi, type, bucket, ctx) {
   return rows;
 };
 
+/* rules 5 (contract.js ROUTINE): whether one cell's error is a routine play.
+   The cell's error is one real play (entry.x). Returns the out key of its kind
+   (a grounder out_ground, a fly out_fly, a popup out_popup) and the share of
+   the error that still happens (KEEP), or null for a cell with no real error
+   or a non-routine one. The engine draws the key from the row as it was and,
+   on the error, reads where the library draw fell inside the error's slice:
+   past KEEP it is the out (engine.js THE ROUTINE PLAY), so no other key's
+   draw moves. The grade one pitch ahead moves the same share (keyMixCtx). */
+Model.prototype.routineOf = function (entry, cell) {
+  const ref = entry.x[cell][KEY_ERROR];
+  if (ref == null || ref < 0) return null;
+  const pt = this.pack.pitches[Math.floor(ref / 3)];
+  const kind = K.routineOf(pt[3], pt[4], pt[5], pt[6]);
+  return kind ? { out: KEY_OUT[pt[3]], keep: K.ROUTINE.KEEP[kind] } : null;
+};
+
 /* What each outcome key is worth from one state, whatever the call: the
    goal's chance and the runs after it, and the chance it is a two-strike
    foul (the self-loop). The same sums callValue does, grouped by key so a
@@ -737,14 +767,84 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
   const ker = off ? this.kernelRowAim(type, ctx.fatigue, target, a0) : this.kernelAt(type, ctx.fatigue);
   const base = off ? 0 : target * 25;
   const rows = this.rowsCtx(st.bi, type, bucketOf(st.b, st.s), ctx);
+  const entry = this.entry(st.bi, type);
+  // rules 4 (THE CALL): a take is called where it crossed, so each cell's takes split by the
+  // umpire's chance over where in that cell this aim's miss puts the ball
+  const cm = ctx.rules >= ABS_RULES ? this.callMass(type, ctx.fatigue, target, off ? a0 : null) : null;
   const out = new Float64Array(KEYS.length);
   for (let a = 0; a < 25; a++) {
     const w = ker[base + a];
     if (w < 1e-9) continue;
     const row = rows[a];
-    for (let i = 0; i < KEYS.length; i++) if (row[i]) out[i] += w * row[i] / 1000;
+    let i0 = 0;
+    if (cm) {
+      const take = (row[0] + row[1]) / 1000, ps = Math.max(0, Math.min(1, cm[a] / w));
+      out[0] += w * take * (1 - ps);
+      out[1] += w * take * ps;
+      i0 = 2;
+    }
+    for (let i = i0; i < KEYS.length; i++) if (row[i]) out[i] += w * row[i] / 1000;
+    // rules 5 (contract.js ROUTINE): a routine error is all but KEEP the out of its kind
+    const rt = ctx.rules >= ROUTINE_RULES && row[KEY_ERROR] ? this.routineOf(entry, a) : null;
+    if (rt) { const m = w * row[KEY_ERROR] / 1000 * (1 - rt.keep); out[KEY_ERROR] -= m; out[rt.out] += m; }
   }
   return out;
+};
+
+/* ---- the call by location (rules 4, contract.js THE CALL) ----------------
+ * For one aim and miss, per actual cell: the chance the pitch crosses in that
+ * cell AND a take there is called a strike, the umpire's chance
+ * (contract.js calledStrikeP) integrated over the cell under the same normal
+ * the miss table uses. Each axis is cut into half-inch strips inside its
+ * cells (and out to 8 inches past the zone, then one strip to infinity), the
+ * normal's mass in each strip is exact, and the umpire's chance is read at the
+ * strip's middle. Divided by the cell's own chance it is the strike share of
+ * that cell's takes, which is what the engine plays (engine.js THE CALL). */
+const CALL_STEP_IN = 0.5, CALL_OUT_IN = 8, CALL_FAR_IN = 12;
+function axisStrips(edges, outFt, stepFt, farFt) {
+  // edges: the 4 inner cell edges ascending; returns strips [lo, hi, mid, cellIndex 0..4]
+  const out = [];
+  const lo0 = edges[0] - outFt, hi4 = edges[3] + outFt;
+  out.push([-Infinity, lo0, edges[0] - farFt, 0]);
+  const cut = (a, b, idx) => { const n = Math.max(1, Math.round((b - a) / stepFt)); for (let k = 0; k < n; k++) out.push([a + (b - a) * k / n, a + (b - a) * (k + 1) / n, a + (b - a) * (k + 0.5) / n, idx]); };
+  cut(lo0, edges[0], 0);
+  for (let c = 1; c <= 3; c++) cut(edges[c - 1], edges[c], c);
+  cut(edges[3], hi4, 4);
+  out.push([hi4, Infinity, edges[3] + farFt, 4]);
+  return out;
+}
+Model.prototype.callGrid = function () {
+  if (this._cg) return this._cg;
+  const zIn = this.zoneFt * 12;
+  const xs = axisStrips(X_EDGES, CALL_OUT_IN / 12, CALL_STEP_IN / 12, CALL_FAR_IN / 12);
+  // zn: row 0 is the top, so the strip's cell row is 4 - its index from the bottom
+  const zs = axisStrips(ZN_EDGES, CALL_OUT_IN / zIn, CALL_STEP_IN / zIn, CALL_FAR_IN / zIn)
+    .map(s => [s[0], s[1], s[2], 4 - s[3]]);
+  const P = zs.map(z => xs.map(x => K.calledStrikeP(K.zoneDist(x[2], z[2], this.zoneFt))));
+  this._cg = { xs, zs, P };
+  return this._cg;
+};
+Model.prototype.callMass = function (type, f, target, at) {
+  if (!this._cm) this._cm = new Map();
+  const key = type + '|' + f + '|' + target + '|' + (at ? at[0] + '|' + at[1] : '');
+  let m = this._cm.get(key);
+  if (m) return m;
+  const g = this.callGrid();
+  const sig = this.arsenal.find(a => a.type === type).sigmaFt * f, sz = sig / this.zoneFt;
+  const p = at ? K.aimPoint(target, at) : K.targetOf(target);
+  const wOf = (strips, c, s) => strips.map(([lo, hi]) => R.normCdf((hi - c) / s) - R.normCdf((lo - c) / s));
+  const wx = wOf(g.xs, p.x, sig), wz = wOf(g.zs, p.zn, sz);
+  m = new Float64Array(25);
+  for (let j = 0; j < g.zs.length; j++) {
+    if (wz[j] < 1e-12) continue;
+    const row = g.zs[j][3], Pj = g.P[j];
+    for (let i = 0; i < g.xs.length; i++) {
+      if (wx[i] < 1e-12) continue;
+      m[row * 5 + g.xs[i][3]] += wz[j] * wx[i] * Pj[i];
+    }
+  }
+  this._cm.set(key, m);
+  return m;
 };
 
 /* A call's value under rules 2: its key mix, each key's value from here. */
@@ -923,7 +1023,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;

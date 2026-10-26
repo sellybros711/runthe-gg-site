@@ -13,8 +13,10 @@
  * draw one shape. Arm side or glove side is the sign of pfxX and nothing else (a righty's arm side is
  * x < 0); the pitcher's view mirror comes from the camera through P().
  *
- * The release point is the pitcher's own when the pack carries it (facts.release); today it is a
- * stand in for his hand (releaseOf). In the lab the aimed cell and the miss are a sample (play.js,
+ * Each pitch leaves his hand from its own release point (the arsenal pitch's release, Savant's mean
+ * for that type) when the pack carries it, else his overall release (facts.release), else a labelled
+ * stand in for his hand (releaseOf, releaseFor). The same order gives its arm angle (armAngleFor),
+ * which the first person arm reads (firstperson.js lensFor). Both are for the picture only. In the lab the aimed cell and the miss are a sample (play.js,
  * labelled so); in the game they are the engine's. Cells follow CONTRACT.md section 2, catcher's view.
  * After the plate the ball goes where the play sends it: into the glove, off the bat (the real exit
  * velocity, launch angle and spray), off the dirt, off the hitter.
@@ -45,7 +47,26 @@ const clampAim = (k) => (Number.isFinite(k) ? Math.max(-0.5, Math.min(0.5, k)) :
 export function releaseOf(p) {
   const r = p.release;
   if (r && [r.x, r.z, r.ext].every(Number.isFinite)) return { x: r.x, y: 60.5 - r.ext, z: r.z, assumed: null };
+  // PITCHf/x seasons (before 2015) have the point but no extension: his point, a typical extension
+  if (r && [r.x, r.z].every(Number.isFinite)) return { x: r.x, y: 54.0, z: r.z, assumed: 'a typical extension (none tracked)' };
   return { x: p.throws === 'L' ? 1.9 : -1.9, y: 54.0, z: 5.6, assumed: 'a stand in release for his hand' };
+}
+
+/** One pitch's release: its own (a.release, an arsenal pitch, with his overall extension when the
+    pitch has none) when the pack carries it, else rel, his resolved release (releaseOf). */
+export function releaseFor(a, rel) {
+  const r = a && a.release;
+  if (!r || ![r.x, r.z].every(Number.isFinite)) return rel;
+  if (Number.isFinite(r.ext)) return { x: r.x, y: 60.5 - r.ext, z: r.z, assumed: null, own: true };
+  // no extension for this pitch: his overall one when it is his, else a typical one
+  const y = rel && !/stand in|typical/.test(rel.assumed || '') ? rel.y : 54.0;
+  return { x: r.x, y, z: r.z, assumed: y === 54.0 ? 'a typical extension (none tracked)' : null, own: true };
+}
+
+/** One pitch's arm angle, degrees: its own (a.armAngle), else his (p.armAngle), else null. */
+export function armAngleFor(a, p) {
+  if (a && Number.isFinite(a.armAngle)) return a.armAngle;
+  return p && Number.isFinite(p.armAngle) ? p.armAngle : null;
 }
 
 /** The flight from rel (release, feet) to plate (the crossing point at the front of the plate), at
@@ -84,7 +105,10 @@ export class Pitch {
     this.aim = aim;
     this.actual = { x: play.actual.x, z: play.actual.z };
     // the movement of the pitch he threw: the engine's (its effort slice, play.pfxX) or his average
-    this.f = flight(facts.release, this.actual, this.p.velo, play.pfxX ?? a.pfxX, play.pfxZ ?? a.pfxZ);
+    // out of his hand from this pitch's own release point when the pack has it (releaseFor)
+    this.rel = releaseFor(a, facts.release);
+    this.armAngle = armAngleFor(a, facts.pitcher);
+    this.f = flight(this.rel, this.actual, this.p.velo, play.pfxX ?? a.pfxX, play.pfxZ ?? a.pfxZ);
     // the glove: about 3 ft behind the front of the plate, out in front of the catcher's knees
     const yGlove = -1.45;
     const tg = this.timeAtY(yGlove);
@@ -223,10 +247,11 @@ export class Pitch {
   updateTracer(t, camera) {
     const tf = clamp01((t - this.tRel) / this.f.T) * this.f.T;
     const fade = 1 - smooth(clamp01((t - this.tPlate - 0.9) / 0.8));
-    this.tracer.material.uniforms.uOpacity.value = t > this.tRel ? 0.55 * fade : 0;
+    this.tracer.material.uniforms.uOpacity.value = t > this.tRel + (this.lens ? this.lens.join : 0) ? 0.55 * fade : 0;
     const pos = this.tracer.geometry.attributes.position, a = this.tracer.geometry.attributes.a;
     const cam = camera.position;
-    const tStart = Math.max(0, tf - this.f.T * 1.0);
+    // (the trail starts where the ball joins its own path, under the first person lens)
+    const tStart = Math.max(this.lens ? this.lens.join : 0, tf - this.f.T * 1.0);
     for (let i = 0; i < this.N; i++) {
       const s = i / (this.N - 1);
       const tt = tStart + (tf - tStart) * s;
@@ -295,6 +320,9 @@ export class Pitch {
       const tt = t - this.tRel;
       this.ball.position.copy(free ? this.ballAt(tt) : this.pointAt(Math.min(tt, this.tCatch - this.tRel)));
       this.ball.rotation.x = tt * this.spinRate;
+      // the first person lens (firstperson.js): out of his hand, the ball is drawn from where his
+      // hand is on screen onto its own path, which it joins at lens.join (well before the plate)
+      if (this.lens) { this.ball.scale.setScalar(1); if (camera && tt < this.lens.join) this.lens.place(tt, this.ball, camera); }
     }
     if (camera) {
       this.updateTracer(t, camera);

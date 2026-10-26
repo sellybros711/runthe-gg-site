@@ -138,6 +138,140 @@ function spreadOf(q, repeat) {
   return 1 - (1 - RELEASE.SPREAD_BEST) * keep * (r - RELEASE.Q_AVG) / (1 - RELEASE.Q_AVG);
 }
 
+/* The bright band (rules 4, the owner's call 2026-10-24: "if I have a good
+   release it should go where I aimed"). A release at BEST_Q or over (the
+   meter's bright band, meter.js BEST_Q, the same number) no longer scales his
+   miss: it lands on the aim point plus a small miss of its own, PERFECT.SD_IN
+   inches a side at BEST_Q down to PERFECT.SD_TOP_IN at q 1, never further than
+   PERFECT.CAP_IN from the aim point, whatever the repeat, the effort or the
+   arm. Aimed inside the zone, it never leaves the zone. A GAME RULE, not a
+   measurement: the wider misses belong to good and ordinary releases, max
+   effort and a tired arm. The same two miss draws, read as inches. A call
+   under rules 3 or before plays spreadOf, exactly as it did. */
+const PERFECT = Object.freeze({ BEST_Q: 0.85, SD_IN: 1.2, SD_TOP_IN: 0.6, CAP_IN: 3 });
+function perfectLanding(aim, missX, missZ, q, zoneFt) {
+  const r = releaseQ(q);
+  const f = Math.max(0, Math.min(1, (r - PERFECT.BEST_Q) / (1 - PERFECT.BEST_Q)));
+  const sd = PERFECT.SD_IN + (PERFECT.SD_TOP_IN - PERFECT.SD_IN) * f;
+  let ox = missX * sd, oz = missZ * sd;
+  const len = Math.sqrt(ox * ox + oz * oz);
+  if (len > PERFECT.CAP_IN) { ox *= PERFECT.CAP_IN / len; oz *= PERFECT.CAP_IN / len; }
+  let x = aim.x + ox / 12, zn = aim.zn + oz / 12 / zoneFt;
+  if (Math.abs(aim.x) <= GRID.ZONE_HALF_FT && aim.zn >= 0 && aim.zn <= 1) {   // aimed in the zone: it stays in
+    x = Math.max(-GRID.ZONE_HALF_FT, Math.min(GRID.ZONE_HALF_FT, x));
+    zn = Math.max(0, Math.min(1, zn));
+  }
+  return { x, zn };
+}
+
+/* THE CALL (rules 4, 2026-10-24). A take is called by where the ball crossed,
+   not by the cell it crossed in. zoneDist is the signed distance, in inches,
+   from the zone's nearest edge: positive inside (the nearest of the two sides,
+   the top and the bottom), negative outside (straight to the zone, round the
+   corners). The zone is the one the grid draws: the plate's width plus a ball
+   (GRID.ZONE_HALF_FT a side) and the batter's own height (zn 0..1, his
+   Statcast zone, zoneFt tall).
+   UMPIRE: DATA. The chance a taken pitch is called a strike at that distance,
+   from every called pitch of the 2024 regular season (Baseball Savant, 375,000
+   called balls and strikes, plate_x, plate_z, sz_top, sz_bot; the miss table's
+   own geometry). Half-inch bins, straight between their centres: past six
+   inches outside 0.0004, three inches inside 0.97, the heart near certain
+   (a heart take called a ball 1 in 10,000 in 2024, 0.1% here). */
+const UMPIRE = Object.freeze({
+  D: Object.freeze([-6.25, -5.75, -5.25, -4.75, -4.25, -3.75, -3.25, -2.75, -2.25, -1.75, -1.25, -0.75, -0.25,
+    0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75, 6.25, 6.75, 7.25, 7.75]),
+  P: Object.freeze([0.0004, 0.0049, 0.0095, 0.0156, 0.0273, 0.0419, 0.0745, 0.1156, 0.1649, 0.2162, 0.3951, 0.4935, 0.6372,
+    0.7343, 0.7985, 0.862, 0.9085, 0.9362, 0.9637, 0.9782, 0.9888, 0.9901, 0.9966, 0.9966, 0.9983, 0.9987, 0.9994, 0.9994, 1]),
+});
+function zoneDist(x, zn, zoneFt) {
+  const dx = (GRID.ZONE_HALF_FT - Math.abs(x)) * 12;
+  const dz = Math.min(zn, 1 - zn) * zoneFt * 12;
+  if (dx >= 0 && dz >= 0) return Math.min(dx, dz);
+  const ox = Math.min(0, dx), oz = Math.min(0, dz);
+  return -Math.sqrt(ox * ox + oz * oz);
+}
+function calledStrikeP(d) {
+  const D = UMPIRE.D, P = UMPIRE.P;
+  if (d <= D[0]) return P[0];
+  if (d >= D[D.length - 1]) return P[P.length - 1];
+  let i = 0;
+  while (d > D[i + 1]) i++;
+  return P[i] + (P[i + 1] - P[i]) * (d - D[i]) / (D[i + 1] - D[i]);
+}
+
+/* ABS CHALLENGES (rules 4, MLB's 2026 rules). Each side has PER_SIDE a game
+   (here, the outing); a challenge that wins is kept. Only a called ball or
+   strike, only right away (before the next pitch). The ABS zone decides: the
+   ball's actual location against the zone above (zoneDist >= 0 is a strike).
+   The pitcher's side challenges a called ball with the player's button. The
+   batter challenges a called strike by BATTER, a MODEL fitted to sourced
+   rates: MLB's 2025 spring training ABS test (288 games: batters challenged
+   2.1 a game, 4.4% of called strikes, and won 50%; the defense 2.0 a game,
+   1.8% of called balls, 54%) and Triple-A in 2025 (batters won 45%). On the
+   2024 called strikes above, his chance to challenge one m inches outside is
+   min(MISS_MAX, MISS_A + MISS_B m), one d inches inside (a gamble)
+   GAMBLE exp(-d / GAMBLE_IN), times TWO_STRIKES on strike three (the spring's
+   full counts drew the most); that gives 4.4% of called strikes challenged and
+   45% won. DEFENSE is the same shape fitted to the defense's numbers on the
+   2024 called balls (1.9% challenged, 54% won), ball four for strike three. The
+   closer pool and the strategy runs challenge by it; the player has the button. */
+const ABS = Object.freeze({
+  PER_SIDE: 2,
+  BATTER: Object.freeze({ MISS_A: 0.02, MISS_B: 0.06, MISS_MAX: 0.9, GAMBLE: 0.1, GAMBLE_IN: 2, TWO_STRIKES: 1.5, MAX: 0.95 }),
+  DEFENSE: Object.freeze({ MISS_A: 0, MISS_B: 0.34, MISS_MAX: 0.9, GAMBLE: 0.195, GAMBLE_IN: 1, TWO_STRIKES: 1.5, MAX: 0.95 }),
+});
+/* The chance a side challenges: m the inches the call was wrong by (> 0, a
+   miss the ABS overturns) or right by (< 0, the ABS confirms). late: strike
+   three for the batter, ball four for the defense. */
+function challengeP(side, wrongBy, late) {
+  const M = side === 'batter' ? ABS.BATTER : ABS.DEFENSE;
+  const p = wrongBy > 0 ? Math.min(M.MISS_MAX, M.MISS_A + M.MISS_B * wrongBy) : M.GAMBLE * Math.exp(wrongBy / M.GAMBLE_IN);
+  return Math.min(M.MAX, p * (late ? M.TWO_STRIKES : 1));
+}
+
+/* THE ROUTINE PLAY (rules 5, the owner's call 2026-10-25: "I don't want them
+   to be completely error-free, but it should be extremely rare on a routine
+   play"; CONTRACT.md 5g). A labelled game rule, read from the drawn real
+   batted ball: its type (bb), exit speed (ev, mph), launch angle (la) and
+   spray (degrees, 0 centre field, negative the left field side).
+   - A routine grounder: a ground ball from GROUND_EV[0] up to (not including)
+     GROUND_EV[1] mph, within FIELDER_DEG of a fielder's spot (FIELDERS: third,
+     short, second, first, where the 2024 grounders between 60 and 95 mph went
+     for hits least often). Under 50 mph is the slow roller and its bang-bang
+     throw, 95 and up is hard hit (Statcast), between the spots is the hole.
+   - A routine fly: a fly ball at LA FLY_LA or higher from FLY_EV[0] up to
+     FLY_EV[1] mph (2024: hits on 1-6% of them). Every popup is routine.
+   - A ball with no tracked speed (the 2010-2012 library) is judged as the
+     scene draws it, by its type and spray: a grounder at a fielder, a fly ball
+     and a popup are routine.
+   Line drives, diving plays, hard-hit balls and balls in the hole are never
+   routine and keep their real rates. KEEP: the share of a routine error that
+   still happens (2024 Savant, regular season: a routine grounder was an error
+   1 per 44, a routine fly or popup 1 per 364; KEEP makes each about 1 per
+   1,000 or rarer). The rest are the cell's real out of the same kind
+   (grade.js routineRow). */
+const ROUTINE = Object.freeze({
+  GROUND_EV: Object.freeze([50, 95]),
+  FIELDERS: Object.freeze([-38, -19, 18, 42]),
+  FIELDER_DEG: 6,
+  FLY_LA: 30,
+  FLY_EV: Object.freeze([80, 95]),
+  KEEP: Object.freeze({ ground: 0.04, air: 0.2 }),
+});
+/* 'ground', 'air' or null: whether a batted ball is a routine play, and what kind. */
+function routineOf(bb, ev, la, spray) {
+  if (bb === 'popup') return 'air';
+  if (bb === 'ground') {
+    if (spray == null || !ROUTINE.FIELDERS.some(f => Math.abs(spray - f) <= ROUTINE.FIELDER_DEG)) return null;
+    return ev == null || (ev >= ROUTINE.GROUND_EV[0] && ev < ROUTINE.GROUND_EV[1]) ? 'ground' : null;
+  }
+  if (bb === 'fly') {
+    if (ev == null && la == null) return 'air';
+    return ev != null && la != null && la >= ROUTINE.FLY_LA && ev >= ROUTINE.FLY_EV[0] && ev < ROUTINE.FLY_EV[1] ? 'air' : null;
+  }
+  return null;
+}
+
 /* Effort (the owner's call, 2026-10-22; CONTRACT.md 5c). A call may carry e,
    the meter's first stop, 0..1, kept to two places. 0 is his softest, 1 his
    hardest, MID (0.5) his ordinary pitch: a call with e 0.5 plays exactly like
@@ -209,7 +343,8 @@ const SHARE_URL = 'runthe.gg/shut-the-door';
 const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
-  OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, EFFORT, effortE, stuffAt, BASE, countBucket,
+  OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
+  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

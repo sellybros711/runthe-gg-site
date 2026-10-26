@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=26">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -108,61 +108,77 @@
   <div class="err" id="h-err" hidden></div>
 </section>
 
-<!-- 2 AND 3. THE MOUND AND THE PITCH -->
+<!-- 2 AND 3. THE MOUND AND THE PITCH. The owner (2026-10-24): the game takes the whole screen and the
+     HUD floats over it like a console game. The scene is full bleed; every panel over it carries
+     data-hud and keeps off the zone. The top right corner is a header, so a tap on it never skips a play. -->
 <section class="screen" id="s-mound" aria-label="On the mound">
-  <div class="hud">
-    <div class="scorebar" role="group" aria-label="Scoreboard">
-      <div class="sb-teams">
-        <div class="sb-team"><i class="sb-club" id="m-usclub"></i><span class="tm" id="m-usname">us</span><b id="m-us">0</b></div>
-        <div class="sb-team"><i class="sb-club" id="m-themclub"></i><span class="tm" id="m-themname">them</span><b id="m-them">0</b></div>
-      </div>
-      <div class="sb-inn" id="m-inn"></div>
-      <svg class="sb-bases" id="m-bases" viewBox="0 0 40 30" aria-label="Bases">
-        <path class="sb-path" d="M19.5 6.5 L30.5 17.5 L19.5 28.5 L8.5 17.5 Z"/>
-        <rect class="b2" x="16" y="3" width="7" height="7" transform="rotate(45 19.5 6.5)"/>
-        <rect class="b3" x="5" y="14" width="7" height="7" transform="rotate(45 8.5 17.5)"/>
-        <rect class="b1" x="27" y="14" width="7" height="7" transform="rotate(45 30.5 17.5)"/>
-        <g id="m-runners"></g>
-      </svg>
-      <div class="sb-stat sb-outs-wrap">
-        <div class="sb-outs" id="m-outs" role="img" aria-label="Outs"><i></i><i></i></div>
-        <span class="sb-lbl">outs</span>
-      </div>
-      <div class="sb-count" id="m-count" role="img" aria-label="0 balls, 0 strikes"></div>
-      <div class="sb-stat sb-pn"><b id="m-pn">1</b><span class="sb-lbl">pitch</span></div>
-    </div>
-    <p class="pbp" id="m-pbp" aria-live="polite"></p>
-  </div>
-  <button class="batterbar" id="m-batter" type="button" aria-expanded="false" aria-controls="m-scout">
-    <span class="bb-name"><b id="m-bname"></b><span class="hand" id="m-bhand"></span></span>
-    <span class="bb-line" id="m-bline"></span>
-    <span class="bb-scout">scout</span>
-  </button>
-  <div class="heatbar" id="m-heat">
-    <div class="seg sm" role="group" aria-label="What the grid shows">
-      <button type="button" data-heat="damage" aria-selected="true">damage</button>
-      <button type="button" data-heat="swing" aria-selected="false">swings</button>
-    </div>
-    <button class="guide-tog" id="m-guide-b" type="button" aria-expanded="false" aria-controls="m-guide">pitch guide</button>
-    <span class="legend" id="m-heat-legend"></span>
-  </div>
   <div class="scene" id="m-scene">
     <canvas id="m-canvas" aria-hidden="true"></canvas>
     <div class="dbg" id="m-dbg" hidden></div>
-    <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
     <div class="mini" id="m-mini" hidden></div>
-    <div class="dotkey" aria-hidden="true"><span><i class="pd ball"></i>ball</span><span><i class="pd called"></i>called</span><span><i class="pd swing"></i>swinging</span><span><i class="pd foul"></i>foul</span><span><i class="pd inplay"></i>in play</span></div>
   </div>
-  <div class="scout" id="m-scout" hidden></div>
-  <div class="guide" id="m-guide" role="region" aria-label="Pitch guide" hidden></div>
-  <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
-  <!-- the pad: the throw button, the release meter (meter-ui.js) as one panel over the pitch
-       buttons and the throw button after the tap on throw, and one step line under them. The
-       meter shows its power bar only when STD_METER.POWER is true (the game agent's rule). -->
-  <div class="pad" id="m-pad">
-    <button class="btn throw" id="m-throw" type="button" disabled><b>throw</b></button>
-    <div id="m-meter" hidden></div>
-    <p class="pad-say" id="m-say" aria-live="polite"></p>
+  <div class="mhud">
+    <div class="mh-tl">
+      <div class="scorebar mh-bug" data-hud role="group" aria-label="Scoreboard">
+        <div class="sb-teams">
+          <div class="sb-team"><i class="sb-club" id="m-usclub"></i><span class="tm" id="m-usname">us</span><span class="sb-ch" id="m-usch" role="img" hidden><i></i><i></i></span><b id="m-us">0</b></div>
+          <div class="sb-team"><i class="sb-club" id="m-themclub"></i><span class="tm" id="m-themname">them</span><span class="sb-ch" id="m-themch" role="img" hidden><i></i><i></i></span><b id="m-them">0</b></div>
+        </div>
+        <div class="sb-inn" id="m-inn"></div>
+        <div class="sb-stat sb-outs-wrap">
+          <svg class="sb-bases" id="m-bases" viewBox="0 0 40 30" aria-label="Bases">
+            <path class="sb-path" d="M19.5 6.5 L30.5 17.5 L19.5 28.5 L8.5 17.5 Z"/>
+            <rect class="b2" x="16" y="3" width="7" height="7" transform="rotate(45 19.5 6.5)"/>
+            <rect class="b3" x="5" y="14" width="7" height="7" transform="rotate(45 8.5 17.5)"/>
+            <rect class="b1" x="27" y="14" width="7" height="7" transform="rotate(45 30.5 17.5)"/>
+            <g id="m-runners"></g>
+          </svg>
+          <div class="sb-outs" id="m-outs" role="img" aria-label="Outs"><i></i><i></i></div>
+        </div>
+        <div class="sb-count" id="m-count" role="img" aria-label="0 balls, 0 strikes"></div>
+        <div class="sb-stat sb-pn"><b id="m-pn">1</b><span class="sb-lbl">pitch</span></div>
+      </div>
+      <div class="mh-card" data-hud>
+        <div class="bb-top">
+          <span class="bb-name"><b id="m-bname"></b><span class="hand" id="m-bhand"></span></span>
+          <span class="legend" id="m-heat-legend"></span>
+        </div>
+        <span class="bb-line" id="m-bline"></span>
+        <div class="heatbar" id="m-heat">
+          <button class="mh-tog bb-scout" id="m-batter" type="button" aria-expanded="false" aria-controls="m-scout">scout</button>
+          <div class="seg sm" role="group" aria-label="What the zone shows">
+            <button type="button" data-heat="damage" aria-selected="true">damage</button>
+            <button type="button" data-heat="swing" aria-selected="false">swings</button>
+          </div>
+          <button class="mh-tog guide-tog" id="m-guide-b" type="button" aria-expanded="false" aria-controls="m-guide">guide</button>
+          <button class="mh-tog key-tog" id="m-key-b" type="button" aria-expanded="false" aria-controls="m-key" aria-label="Pitch dot key">key</button>
+        </div>
+        <div class="pa-hist" id="m-pas" role="group" aria-label="Earlier at bats" hidden></div>
+        <div class="dotkey" id="m-key" hidden><span><i class="pd ball"></i>ball</span><span><i class="pd called"></i>called</span><span><i class="pd swing"></i>swinging</span><span><i class="pd foul"></i>foul</span><span><i class="pd inplay"></i>in play</span><span id="m-key-abs" hidden><i class="pd called abs"></i>overturned</span></div>
+      </div>
+      <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
+    </div>
+    <header class="mh-tr">
+      <button class="mh-menu" type="button" data-open="menu" data-hud aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </header>
+    <div class="scout msheet" id="m-scout" data-hud hidden></div>
+    <div class="guide msheet" id="m-guide" data-hud role="region" aria-label="Pitch guide" hidden></div>
+    <!-- the dock: the play by play (a lower third over it, or beside it on a wide screen), the step prompt, the pitch buttons, then the throw button. The release meter
+         (meter-ui.js) is one panel over the pitch buttons and the throw button after the tap on
+         throw. It shows its power bar only when STD_METER.POWER is true (the game agent's rule).
+         Rules 4: the challenge button sits beside throw only while a called ball can be challenged,
+         and the ABS replay (#m-absr) covers the dock for a moment after any challenge. -->
+    <div class="dock" id="m-dock">
+      <p class="pbp" id="m-pbp" aria-live="polite"></p>
+      <p class="pad-say" id="m-say" aria-live="polite"></p>
+      <div class="arsenal" id="m-arsenal" data-hud role="group" aria-label="His pitches"></div>
+      <div class="pad" id="m-pad" data-hud>
+        <button class="btn abs-b" id="m-abs-b" type="button" hidden><b>challenge</b><span class="ab-dots" aria-hidden="true"><i></i><i></i></span><i class="ab-clock" aria-hidden="true"></i></button>
+        <button class="btn throw" id="m-throw" type="button" disabled><b>throw</b></button>
+      </div>
+      <div id="m-meter" data-hud hidden></div>
+      <div class="absr" id="m-absr" data-hud role="status" aria-live="polite" hidden></div>
+    </div>
   </div>
 </section>
 
@@ -277,29 +293,29 @@
      takes over when the address carries a mock test switch (?mockEnd= and
      the rest, used by test/check-browser.mjs); a player always gets the real
      engine. -->
-<script src="contract.js?v=6"></script>
+<script src="contract.js?v=8"></script>
 <script src="meter.js?v=4"></script>
-<script src="meter-ui.js?v=3"></script>
+<script src="meter-ui.js?v=4"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=4"></script>
-<script src="aim.js?v=3"></script>
+<script src="aim.js?v=5"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
 <script src="menus.js?v=8"></script>
 <script src="rng.js?v=1"></script>
-<script src="grade.js?v=8"></script>
+<script src="grade.js?v=10"></script>
 <script src="lesson.js?v=4"></script>
-<script src="engine.js?v=10"></script>
+<script src="engine.js?v=12"></script>
 <script src="share.js?v=2"></script>
 <script src="card.js?v=1"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=3"></script>
-<script src="api.js?v=8"></script>
-<script src="mock-api.js?v=10"></script>
+<script src="api.js?v=11"></script>
+<script src="mock-api.js?v=11"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=1"></script>
-<script src="ui.js?v=30"></script>
-<script type="module" src="3d/boot.js?v=38"></script>
+<script src="ui.js?v=33"></script>
+<script type="module" src="3d/boot.js?v=46"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
 </html>

@@ -89,6 +89,9 @@ function speedShare(tau, al, be) {
 }
 
 /** A figure's path: legs of movement and the actions on it. Pure functions of s. */
+// a run at full speed pulled up short of a wait pulls up over this long (seconds, Track.settle)
+const STOP_S = 0.3;
+
 export class Track {
   constructor(at, opts = {}) {
     this.start = { x: at.x, y: at.y };
@@ -131,6 +134,19 @@ export class Track {
     let lo = 1, hi = v;
     for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (runTime(d, m, this.a, true, o.toRest ?? true) > t1 - t0) lo = m; else hi = m; }
     return this.run(t0, [p], { ...o, v: hi });
+  }
+  /** A run that ends at full speed with nothing straight on after it (a wait, or a run that starts
+      from rest) pulls up over its last STOP_S instead, in the same time to the same spot: from full
+      speed to standing in one frame was a pop of the whole body (lab/pipeline/check-jolt.mjs). The
+      last run is left as it is: past it the bodies carry on and slow by themselves. */
+  settle() {
+    const groups = [...new Set(this.legs.map((l) => l.g))];
+    for (let i = 0; i < groups.length - 1; i++) {
+      const g = groups[i], nx = groups[i + 1];
+      if (g.be > 0 || (nx.t0 < g.t0 + g.T + 0.02 && nx.al === 0)) continue;
+      // (its top speed rises to fit the stop into the same time, by no more than a sixth)
+      g.be = Math.min(STOP_S / g.T, 2 * (1 - g.al / 2) * (1 - 1 / 1.15));
+    }
   }
   /** Stay where he is until t (whatever comes next starts no sooner). */
   hold(t) { const e = this.end; if (t > this.free) this.run(t, [{ x: e.x + 0.02, y: e.y }], { v: 1 }); }
@@ -323,6 +339,9 @@ export function planPlay(pr, o = {}) {
   }
   // ---- everyone else on the field
   planRest(ctx);
+  // ---- no run stops dead
+  for (let n = 1; n <= 9; n++) if (p.fielders[n]) p.fielders[n].settle();
+  for (const r of p.runners) if (r.track && r.track.settle) r.track.settle();
   // ---- the cut
   planEdit(ctx);
   p.segs.sort((a, b) => a.t0 - b.t0);
@@ -490,7 +509,8 @@ function holdThenThrow(ctx, n, s, at, late) {
     const cov = coverer(ctx, o.base, holder, done);
     const tgtPt = basePoint(o.base, o.base === 1 ? 'in' : 'bag');
     if (cov === holder || dist(pos, tgtPt) < 22) {
-      // close enough to take it himself
+      // close enough to take it himself (and a tag he makes himself waits for the runner too)
+      runnerEta(ctx, o);
       const arr = ctx.T[holder].run(t + 0.05, [tgtPt], { v: 22 });
       o.force = isForce(ctx, o);
       ctx.T[holder].act(arr, o.force ? 'step' : 'tag', { base: o.base, self: true, force: o.force, runner: o.from });
@@ -509,20 +529,7 @@ function holdThenThrow(ctx, n, s, at, late) {
       // half a base path away when the ball gets there (the owner, 2026-10-22: the out visible at the
       // base). The throw waits on his run, never on the batter's (that one is a routine out)
       // (the hitter too, when he is out past first, trying for one more)
-      if (o.from >= 1 && o.base > o.from || o.from === 0 && o.base > 1) {
-        const bat = o.from === 0;
-        let d = 0, prev = bat ? { x: ctx.bats === 'L' ? 2.95 : -2.95, y: 0.4 } : leadOff(o.from);
-        for (const q of bat ? [...roundFirst(), ...basePath(1, o.base)] : basePath(o.from, o.base)) { d += dist(prev, q); prev = q; }
-        const go = ctx.catchAt && ctx.kind === 'air_out' ? ctx.catchAt.s + 0.08 : bat ? 0.28 : 0.15;
-        let eta = go + runTime(d, bat ? 26.5 : 27, 16, true, false);
-        // (a runner held halfway on a fly with fewer than two out: on from there when it drops)
-        if (!bat && ctx.kind === 'air_hit' && ctx.outs0 < 2 && ctx.landAt != null) {
-          const half = dist(leadOff(o.from), BASE[o.from + 1]) * 0.5;
-          eta = Math.max(go + runTime(half, 22, 16, true, true), ctx.landAt - 0.7) + runTime(d - half, 27, 16, true, false);
-        }
-        rel = Math.max(rel, eta - fly - (0.25 + 0.35 * rnd(ctx.id, 'bag' + o.from)));
-        o.eta = eta;
-      }
+      if (runnerEta(ctx, o)) rel = Math.max(rel, o.eta - fly - (0.25 + 0.35 * rnd(ctx.id, 'bag' + o.from)));
       o.force = isForce(ctx, o);
       const far = OF.includes(holder) ? dist(pos, tgtPt) : 0;
       if (far > 240) {
@@ -558,8 +565,15 @@ function holdThenThrow(ctx, n, s, at, late) {
       }
       backUp(ctx, o.base, holder, pos, t);
     }
-    // (a tag: the next throw waits for the tag itself, as the runner gets there)
-    if (!o.force && o.eta != null) t = Math.max(t, o.eta + 0.05);
+    // (a tag: the next throw waits for the tag itself, as the runner gets there. He gets there no sooner
+    // than his run at full speed, and a runner thrown out is slowed to reach the bag just after the ball,
+    // by the margin planRunners draws: the tag is then, and the ball stays in the glove for it. Waiting
+    // on the full speed run alone, the ball went on to first and the tag was made with an empty glove.)
+    if (!o.force && o.eta != null && o.ballAt != null) {
+      const margin = 0.08 + 0.45 * rnd(ctx.id, 'out' + o.from);
+      const tagAt = Math.max(o.ballAt + 0.12, Math.max(o.etaBag ?? o.eta, o.ballAt + margin) - 0.06);
+      t = Math.max(t, tagAt + 0.05);
+    }
     done.push(o);
     p.events.push({ s: o.ballAt, kind: 'out', base: o.base, runner: o.from, by: o.by, force: !!o.force });
   }
@@ -649,6 +663,26 @@ function throwBall(ctx, from, to, rel, a, b, fly) {
   ctx.T[to].act(rel + fly, ctx.T[to].acts.some((x) => x.kind === 'receive' && Math.abs(x.t - rel - fly) < 1e-3) ? 'receive' : 'catch_throw', { from: a });
   ctx.p.events.push({ s: rel, kind: 'throw', from, to });
   ctx.p.events.push({ s: rel + fly, kind: 'glove', by: to });
+}
+
+/** When runner o (thrown out further round) gets to the bag he is out at: o.eta at full speed into it,
+    o.etaBag pulling up on it as planRunners runs him. False when he is not running on (a force on the
+    batter at first, a runner doubled off). */
+function runnerEta(ctx, o) {
+  if (!(o.from >= 1 && o.base > o.from || o.from === 0 && o.base > 1)) return false;
+  const bat = o.from === 0, v = bat ? 26.5 : 27;
+  let d = 0, prev = bat ? { x: ctx.bats === 'L' ? 2.95 : -2.95, y: 0.4 } : leadOff(o.from);
+  for (const q of bat ? [...roundFirst(), ...basePath(1, o.base)] : basePath(o.from, o.base)) { d += dist(prev, q); prev = q; }
+  const go = ctx.catchAt && ctx.kind === 'air_out' ? ctx.catchAt.s + 0.08 : bat ? 0.28 : 0.15;
+  o.eta = go + runTime(d, v, 16, true, false);
+  o.etaBag = go + runTime(d, v, 16, true, true);
+  // (a runner held halfway on a fly with fewer than two out: on from there when it drops)
+  if (!bat && ctx.kind === 'air_hit' && ctx.outs0 < 2 && ctx.landAt != null) {
+    const half = dist(leadOff(o.from), BASE[o.from + 1]) * 0.5, t0 = Math.max(go + runTime(half, 22, 16, true, true), ctx.landAt - 0.7);
+    o.eta = t0 + runTime(d - half, 27, 16, true, false);
+    o.etaBag = t0 + runTime(d - half, 27, 16, true, true);
+  }
+  return true;
 }
 
 /** The runners put out on the play, in the order the throws go (the lead runner first, the batter
@@ -1516,6 +1550,8 @@ export function verify(pr, plan) {
   // every throw leaves the hand of the man holding the ball (never a second throw from a man whose
   // first is still in the air)
   for (const sg of plan.segs) if (sg.kind === 'throw') { const b = ballAt(plan, sg.t0 - 1e-3); if (b.by !== sg.from) bad.push(`a throw from ${NAME[sg.from]} at ${sg.t0.toFixed(2)} s while ${b.by ? NAME[b.by] : 'nobody'} has the ball`); }
+  // a tag is made with the ball: the man who tags holds it as he does
+  for (const e of plan.events) if (e.kind === 'out' && !e.force && e.by) { const b = ballAt(plan, e.s); if (b.by !== e.by) bad.push(`${NAME[e.by]} tags the runner from ${e.runner} at ${e.s.toFixed(2)} s while ${b.by ? NAME[b.by] : 'nobody'} has the ball`); }
   // the ball
   if (label === 'home_run') {
     if (o.ball !== 'over' || !o.wall || o.wall.z <= WALL_H + BALL_R) bad.push('home run does not clear the wall');

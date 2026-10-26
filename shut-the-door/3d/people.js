@@ -14,7 +14,7 @@ import * as HG from './headgear.js?v=2';
 import { measureHead, wear, wornShade } from './headgear.js?v=2';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import { assetUrl } from './load.js?v=7';
+import { assetUrl } from './load.js?v=8';
 import { planFeet, plantFeet, reach, clavicles, deltoids, chestTo, yawOf, footGeom } from './motion.js?v=5';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -48,6 +48,23 @@ const R_BALL = 0.0366, MISS = 0.34, TIP = 0.008;
 // the most poses one pitch's aim may take (about half a millisecond each on a desktop, a few on a
 // phone): it runs once, as the pitch is set up
 const AIM_POSES = 200;
+// the farthest (m) a solve may be from the ball and still start the next frame's
+const WARM_ERR = 0.01;
+// what a metre short of the ball counts against a frame, in units of aim (aimSwing's choice)
+const MISS_COST = 1000;
+// The swing's bat speed (whipSwing, swingClock). The captures' sweet spot moves about 20 mph where
+// they meet the ball; a big league swing is near 72 (Statcast bat speed, measured 6 in from the end:
+// our sweet spot), most of it gained in the last 0.15 s. So his capture is played on a warped clock,
+// never with new keys: slower through the load and the stride, k times its own speed at the frame
+// that meets the ball (k sets the sweet spot there to WHIP.mph, at most WHIP.k), then slower again as
+// the finish decelerates. Capture time u (the contact frame) still plays at the moment the ball is
+// met, so the pose there is the one the aim solved; nothing outside WHIP.pre before and WHIP.post
+// after it changes. core: the half width (capture seconds) of the fast part each side of contact;
+// pre and post: the windows that give that time back (the load and stride before, the finish after);
+// back: how much of the time gained after contact the finish gives back (the rest is a quicker
+// finish, as a real one is). Every part is smooth (no kink in the clock), and the clock never runs
+// slower than WHIP.floor of the capture's own speed.
+const WHIP = { mph: 72, blend: [0.16, 0.14], sigma: [0.09, 0.08], pre: 0.62, post: 0.5, back: 0.5, floor: 0.25, gmax: 12, d: 1 / 120, h: 1 / 960, reach: 0.4, near: 0.05, hips: { lead: 0.035, in: 0.06, out: 0.09 } };
 // the bat's radius along it (gear3d.js bat), inches from the knob: [inches up, radius]
 const BAT_R = [[0, 0.62], [9, 0.47], [13, 0.5], [17, 0.62], [21, 0.9], [24, 1.18], [27, 1.28], [31, 1.3], [33.4, 1.3], [34, 0.9]];
 function batRadius(y) {
@@ -249,8 +266,10 @@ const FALL_FLESH = [['head', 0.1], ['spine_03', 0.12], ['spine_02', 0.12], ['pel
   ...['l', 'r'].flatMap((s) => [[`upperarm_${s}`, 0.06], [`lowerarm_${s}`, 0.05], [`hand_${s}`, 0.035], [`thigh_${s}`, 0.08]])];
 
 // how much further each swing's shoulders stay closed into foot strike (degrees): Mixamo's third
-// swing is a shorter, flatter one, and is given more
-const COIL = { swing: 3, swing2: 3, swing3: 9, miss: 3 };
+// swing is a shorter, flatter one, and is given more. (The whiff's 4: on the warped clock its foot
+// strike is sampled a little nearer the capture's own, which is 30 degrees of separation, the edge of
+// check-deform's band; one more keeps it inside.)
+const COIL = { swing: 3, swing2: 3, swing3: 9, miss: 4 };
 
 // the most the hips tip to the side (degrees; check-deform holds them under 12)
 const PELVIS_TILT = 10.5;
@@ -561,8 +580,8 @@ export class People {
       // and then aimed at it (aimSwing): to meet it where the engine says it was met, or on a swing
       // and a miss, to go by it
       b.aim = null;
-      if (!b.take && pitch) { this.meetTime(b); this.aimSwing(b); }
-      else { b.meet = 0; b.meetBall = this.m.contactShift; b.tiltAt = b.tContact; }
+      if (!b.take && pitch) { this.meetTime(b); this.aimSwing(b); this.whipSwing(b); }
+      else { b.meet = 0; b.meetBall = this.m.contactShift; b.tiltAt = b.tContact; b.whip = null; }
     }
     if (c && c.crouch) {
       // he sets up where the pitch is aimed
@@ -649,10 +668,11 @@ export class People {
     b.root.position.x += want.x - mid.x; b.root.position.z += want.z - mid.z;
     b.root.updateMatrixWorld(true);
     ground(b);
-    b.meetPath = null;
+    b.meetPath = null; b.speedPath = null;
     this.setupChain(b);
     // his swing's path through the zone, while he walks up (not on the tap that throws the pitch)
     this.meetPath(b);
+    this.speedPath(b);
   }
 
   /* The swing as a kinetic chain. The capture's hips and shoulders turn almost together (its hips
@@ -703,11 +723,11 @@ export class People {
       contact, chain and feet are worked out the first time and kept. */
   useClip(b, name) {
     if (!b.clips[name] || (b.clip === name && b.chain)) return;
-    const KEYS = ['batTrack', 'batDt', 'tContact', 'peakBatSpeed', 'chain', 'feetSpec', 'feetSwing', 'meetPath'];
+    const KEYS = ['batTrack', 'batDt', 'tContact', 'peakBatSpeed', 'chain', 'feetSpec', 'feetSwing', 'meetPath', 'speedPath'];
     if (b.chain) b.clipData[b.clip] = Object.fromEntries(KEYS.map((k) => [k, b[k]]));
     b.clip = name;
     if (b.clipData[name]) { Object.assign(b, b.clipData[name]); return; }
-    b.chain = null; b.feetSwing = null; b.feetSpec = null; b.meetPath = null;
+    b.chain = null; b.feetSwing = null; b.feetSpec = null; b.meetPath = null; b.speedPath = null;
     this.bakeBat(b);
     this.setupChain(b);
   }
@@ -721,14 +741,15 @@ export class People {
     else if (this.pitch) { const ct0 = Math.min(0, -this.pitch.tPlate + b.tContact - 0.1); b.feetTake = planFeet(b, (t) => this.takeBase(b, t), ct0, ct0 + 3.8, b.feetSpec(ct0, ct0 + 3.8, false)); }
   }
 
-  /** The swing at capture time t, before the feet are planted. */
-  swingBase(b, t) {
+  /** The swing at capture time t, before the feet are planted. tl, when given, is the capture time
+      his hips and legs are at (swingHips: ahead of the rest through the turn on a fast swing). */
+  swingBase(b, t, tl) {
     pose(b, { [b.clip]: [t, 1] });
     const ch = b.chain;
     if (!ch) return;
     const chest = wquat(b.bones.spine_03);
-    const lead = ch.lead(t);
-    if (lead > 1e-4) sampleRot(b, b.clip, t + lead, LOWER);
+    const lead = ch.lead(t), at = tl ?? t;
+    if (lead > 1e-4 || at !== t) sampleRot(b, b.clip, at + lead, LOWER);
     const coil = ch.coil(t);
     chestTo(b, new THREE.Quaternion().setFromAxisAngle(UP, -ch.dirn * coil).multiply(chest), UP);
     this.trimPelvis(b);
@@ -736,9 +757,9 @@ export class People {
 
   /** The swing at capture time t, all of it: the chain, the planted feet, the shoulders and the bat
       (update() poses a swing this way every frame). */
-  swingPose(b, t) {
+  swingPose(b, t, tl) {
     b.batTime = t;
-    this.swingBase(b, t);
+    this.swingBase(b, t, tl);
     this.aimBody(b, t);
     reach(b, b.feetSwing, t);
     plantFeet(b, b.feetSwing, t);
@@ -828,13 +849,14 @@ export class People {
     const dur = b.clips[b.clip].duration;
     if (!b.feetSwing) b.feetSwing = planFeet(b, (t) => this.swingBase(b, t), 0, dur, b.feetSpec(0, dur, true));
     const W = meetWindow(b), lo = b.tContact + W[0], hi = b.tContact + W[1], dt = 1 / 120, at = [];
-    const tilt = b.batTilt;
-    b.batTilt = 0;
+    // (his own swing: without the aim, which may still hold the last pitch's, even the last hitter's)
+    const tilt = b.batTilt, aim = b.aim;
+    b.batTilt = 0; b.aim = null;
     for (let u = lo; u <= hi + dt / 2; u += dt) {
       this.swingPose(b, u);
       at.push({ gb: this.grips(b).gb, q: b.bat.quaternion.clone() });
     }
-    b.batTilt = tilt;
+    b.batTilt = tilt; b.aim = aim;
     return (b.meetPath = { lo, dt, at });
   }
 
@@ -908,14 +930,140 @@ export class People {
     let best = null;
     for (const c of [first, ...(b.meetAlt || [])]) {
       b.meet = c.meet; b.meetBall = c.meetBall; b.tiltAt = b.tContact + c.meet;
-      const r = this.aimAt(b, best && best.solved);
-      // the closest, and of two that both reach, the smaller aim
-      const score = Math.max(0, r.err - 0.004) * 50 + r.size;
+      // (a frame beside one that reached the ball starts from its solution; one that did not, from
+      // none: a solve stuck short of the ball sends the frames beside it short too)
+      const r = this.aimAt(b, best && best.err < WARM_ERR ? best.solved : null);
+      // the closest, and of two that both reach, the smaller aim (a centimetre short of the ball
+      // outweighs any aim: one frame that misses must never win over one that reaches)
+      const score = Math.max(0, r.err - 0.004) * MISS_COST + r.size;
       if (!best || score < best.score) best = { score, c, aim: b.aim, err: r.err, poses: b.aimPoses, solved: r.solved };
       if ((r.err < 0.006 && r.size < 4) || b.aimPoses > AIM_POSES * 0.6) break;
     }
     b.meet = best.c.meet; b.meetBall = best.c.meetBall; b.tiltAt = b.tContact + best.c.meet;
     b.aim = best.aim; b.aimErr = best.err;
+  }
+
+  /** The sweet spot's path along his swing (capture time, without the aim or the launch tilt): its
+      length run so far every WHIP.d s, over every frame a pitch's warped clock can reach near
+      contact. Posed once per hitter and swing, like meetPath. */
+  speedPath(b) {
+    if (b.speedPath) return b.speedPath;
+    const W = meetWindow(b), dur = b.clips[b.clip].duration, d = WHIP.d;
+    const lo = Math.max(0, b.tContact + W[0] - WHIP.reach), hi = Math.min(dur, b.tContact + W[1] + WHIP.reach);
+    const tilt = b.batTilt, aim = b.aim;
+    b.batTilt = 0; b.aim = null;
+    const L = [0], s = new THREE.Vector3(), prev = new THREE.Vector3();
+    for (let x = lo, i = 0; x <= hi + d / 2; x += d, i++) {
+      this.swingPose(b, x);
+      s.set(0, SWEET, 0).applyMatrix4(b.bat.matrixWorld);
+      if (i) L.push(L[i - 1] + s.distanceTo(prev));
+      prev.copy(s);
+    }
+    b.batTilt = tilt; b.aim = aim;
+    return (b.speedPath = { lo, d, L });
+  }
+
+  /** The swing's warped clock for this pitch (swingClock). Near contact (WHIP.blend either side, on
+      the clock) the capture is run along the bat's own path so the sweet spot moves at a real swing's
+      speed: rising over the last 0.15 s to WHIP.mph at the frame that meets the ball, falling through
+      the finish. Out from there his capture plays at its own pace, slowed through the load and stride
+      (and the finish) by sin squared windows: the load's is as deep as it must be for the contact frame
+      to play on time; the finish's gives back WHIP.back of what was gained after contact. Every pose is
+      his own capture's; only when each plays changes. A swing whose load cannot give back the time
+      over WHIP.floor of its own pace is run a little slower through the ball instead. */
+  whipSwing(b) {
+    const P = this.speedPath(b), u = b.tContact + b.meet, Vt = WHIP.mph / 2.23694, n = P.L.length - 1;
+    const Lat = (x) => { const f = THREE.MathUtils.clamp((x - P.lo) / P.d, 0, n), i = Math.min(n - 1, Math.floor(f)); return P.L[i] + (P.L[i + 1] - P.L[i]) * (f - i); };
+    // the capture's own speed there (its keys are 30 a second and the bat's speed is lumpy from one
+    // to the next, so it is the local speed: the bat itself then runs smoothly, the body taking the
+    // lumps, at most a frame of a phone's at full speed), times how much faster the bat runs aimed
+    // than in his own swing (the aim turns the bat in his wrists, up to 55 degrees for a low pitch,
+    // which changes how fast its sweet spot sweeps). That ratio is measured on his aimed swing posed
+    // WHIP.near either side of the frame that meets the ball, between the same samples as the path,
+    // and held at its ends beyond
+    const e = P.d / 2, nn = Math.round(WHIP.near / P.d), ratio = [];
+    let prev = null;
+    for (let j = -nn; j <= nn; j++) {
+      this.swingPose(b, u + j * P.d);
+      const s = new THREE.Vector3(0, SWEET, 0).applyMatrix4(b.bat.matrixWorld);
+      if (prev) {
+        const own = (Lat(u + j * P.d) - Lat(u + (j - 1) * P.d)) / P.d;
+        ratio.push(own > 0.3 ? THREE.MathUtils.clamp(s.distanceTo(prev) / P.d / own, 0.3, 3) : 1);
+      }
+      prev = s;
+    }
+    // (ratio[i] is for the sample from u + (i - nn) d to the next: centred at u + (i - nn + 0.5) d)
+    const rhoAt = (x) => { const f = THREE.MathUtils.clamp((x - u) / P.d + nn - 0.5, 0, ratio.length - 1), i = Math.min(ratio.length - 2, Math.floor(f)); return ratio[i] + (ratio[i + 1] - ratio[i]) * (f - i); };
+    const V = (x) => Math.max(0.3, (Lat(x + e) - Lat(x - e)) / (2 * e) * rhoAt(x));
+    const rho = rhoAt(u);
+    const h = WHIP.h, A = WHIP.pre, B = WHIP.post;
+    const bump = (z) => { z = Math.min(1, Math.abs(z)); const q = 1 - z * z; return q * q * q; };
+    const win = (x, x0, len) => { const s = Math.sin(Math.PI * clamp01((x - x0) / len)); return s * s; };
+    // the clock's rate (capture seconds per second) at clock x, capture w, on the side dir of contact
+    const rate = (x, w, m, sc, dir) => {
+      const t = x - u, side = dir < 0 ? 0 : 1, be = bump(t / WHIP.blend[side]);
+      const base = 1 - m * (dir < 0 ? win(x, u - A, A) : win(x, u, B));
+      const S = sc * Vt * Math.exp(-((t / WHIP.sigma[side]) ** 2));
+      return Math.min(WHIP.gmax, (1 - be) * base + (be > 0 ? be * S / V(w) : 0));
+    };
+    // from u out to len either side (midpoint steps): the capture time at each step
+    const run = (dir, len, m, sc) => {
+      const out = [u];
+      let w = u;
+      for (let i = 1, N = Math.round(len / h); i <= N; i++) {
+        const x = u + dir * (i - 1) * h, g0 = rate(x, w, m, sc, dir);
+        w += dir * h * rate(x + dir * h / 2, w + dir * g0 * h / 2, m, sc, dir);
+        out.push(w);
+      }
+      return out;
+    };
+    const solve = (f, lo, hi) => { for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (f(mid) > 0) hi = mid; else lo = mid; } return (lo + hi) / 2; };
+    // before contact: the load's window as deep as it must be (it may also hurry a slow load: m < 0)
+    const mMax = 1 - WHIP.floor, endPre = (m, sc) => { const r = run(-1, A, m, sc); return r[r.length - 1] - (u - A); };
+    let sc = 1, m;
+    if (endPre(mMax, 1) < 0) sc = solve((s) => -endPre(mMax, s), 0.2, 1);   // (endPre falls as sc rises)
+    m = solve((mm) => endPre(mm, sc), -1, mMax);
+    const pre = run(-1, A, m, sc);
+    // (the last few microseconds left over are spread along it, so u - A is exact)
+    const err = pre[pre.length - 1] - (u - A);
+    for (let i = 0; i < pre.length; i++) pre[i] -= err * i / (pre.length - 1);
+    // after contact: the finish's window gives back WHIP.back of what was gained
+    const endPost = (mm) => { const r = run(1, B, mm, sc); return r[r.length - 1] - (u + B); };
+    const gained = endPost(0);
+    const mb = gained > 0 ? solve((mm) => (1 - WHIP.back) * gained - endPost(mm), 0, mMax) : 0;
+    const post = run(1, B, mb, sc);
+    b.whip = { u, A, B, h, table: pre.reverse().concat(post.slice(1)), off: post[post.length - 1] - (u + B), mph: sc * WHIP.mph, m, mb, rho, k: rate(u, u, m, sc, 1) };
+    // foot strike on the clock (where the warped capture reaches it), for the hips' lead
+    const tS = b.chain && b.chain.tStrike;
+    b.whip.xs = tS == null ? null : tS <= u - A ? tS : (() => { let lo = u - A, hi = u; for (let i = 0; i < 30; i++) { const mid = (lo + hi) / 2; if (this.swingClock(b, mid) < tS) lo = mid; else hi = mid; } return (lo + hi) / 2; })();
+  }
+
+  /** The capture time of his hips and legs at clock time x, on a warped swing: ahead of the rest
+      from foot strike (in over WHIP.hips.in), then back to the rest over the last WHIP.hips.out
+      before contact, so they brake into the ball and the contact frame is his own. A real swing's
+      pelvis peaks 30 to 50 ms before the trunk; the capture's own gap (33 ms of capture time) is cut
+      by the clock's speed through the turn (k), so they lead by what it took away: WHIP.hips.lead
+      times 1 - 1/k (a whiff's capture is already quick, and gets little). Not before foot strike:
+      the planted feet are planned on the capture's own clock, and a leg landing ahead of its plan is
+      pulled back to it, a kick the head shows. Undefined when they are with the rest. */
+  swingHips(b, x) {
+    const w = b.whip, H = WHIP.hips;
+    if (!w || w.xs == null || x <= w.xs || x >= w.u) return undefined;
+    // (smootherstep in and out: its acceleration is continuous too, so the spine carries no kick)
+    const s5 = (q) => q * q * q * (q * (6 * q - 15) + 10);
+    const d = H.lead * (1 - 1 / Math.max(1, w.k)) * s5(clamp01((x - w.xs) / H.in)) * (1 - s5(clamp01((x - (w.u - H.out)) / H.out)));
+    return d > 1e-6 ? this.swingClock(b, x + d) : undefined;
+  }
+
+  /** Capture time for clock time x (both on update's ct): the identity before WHIP.pre ahead of the
+      contact frame, the warped table through it, and a constant lead after WHIP.post. */
+  swingClock(b, x) {
+    const w = b.whip;
+    if (!w) return x;
+    if (x <= w.u - w.A) return x;
+    if (x >= w.u + w.B) return x + w.off;
+    const f = (x - (w.u - w.A)) / w.h, i = Math.min(w.table.length - 2, Math.floor(f));
+    return w.table[i] + (w.table[i + 1] - w.table[i]) * (f - i);
   }
 
   /** The aim from one meet frame (b.meet, b.meetBall): sets b.aim, returns how near and how much. */
@@ -1169,6 +1317,8 @@ export class People {
     let best = 0, bestT = clip.duration * 0.6, prev = null, prevAx = null;
     for (let t = 0.9; t < clip.duration - 0.3; t += 1 / 30) {
       pose(b, { [b.clip]: [t, 1] });
+      // (the bat at this frame: poseBat would take b.batTime, which still holds the last pitch's)
+      b.batTime = t;
       this.poseBat(b);
       const tip = new THREE.Vector3(0, 0.75, 0).applyMatrix4(b.bat.matrixWorld);
       const ax = tip.clone().sub(b.bat.position).normalize();
@@ -1201,7 +1351,7 @@ export class People {
     // the bat's plane through contact follows the ball's launch: a little under it for a fly ball,
     // on top of it for a grounder (b.batTilt degrees at contact, easing in and out over 0.15 s)
     if (b.batTilt) {
-      const w = Math.exp(-Math.pow((ct - (b.tiltAt ?? b.tContact)) / 0.09, 2));
+      const w = Math.exp(-Math.pow(((b.tiltClock ?? ct) - (b.tiltAt ?? b.tContact)) / 0.09, 2));
       const ax = UP.clone().applyQuaternion(q), across = new THREE.Vector3().crossVectors(ax, UP);
       if (across.lengthSq() > 1e-6) q.premultiply(new THREE.Quaternion().setFromAxisAngle(across.normalize(), THREE.MathUtils.degToRad(b.batTilt) * w));
     }
@@ -1323,8 +1473,16 @@ export class People {
         // capture is cut at its finish); a swing and miss plays on through his reaction
         const dur = b.clips[b.clip].duration;
         const hold = b.clip.startsWith('miss') ? dur - 0.05 : Math.min(b.tContact + 0.42, dur - 0.05);
-        const cw = ct < hold ? ct : hold + (1 - Math.exp(-(ct - hold) / 0.5)) * 0.18;
-        this.swingPose(b, cw);
+        // his capture on the swing's warped clock (swingClock): slow load, fast through the ball
+        const cs = this.swingClock(b, ct);
+        // (it comes into the hold at the clock's own rate and slows from there to the capture's last
+        // frame, with no kink: at full bat speed a kink there is the bat hitting a wall)
+        const tau = Math.max(0.02, Math.min(0.18, dur - 1e-3 - hold));
+        const cw = cs < hold ? cs : hold + tau * (1 - Math.exp(-(cs - hold) / tau));
+        // (the bat's launch tilt eases in and out on the clock, not the capture: as it always has)
+        b.tiltClock = ct;
+        this.swingPose(b, cw, this.swingHips(b, ct));
+        b.tiltClock = null;
       } else {
         // a pitch on the shoulder puts him down (play.js motion, m.fall): the take until the ball
         // is on him, then Mixamo's shoulder hit and fall, its blow timed to the ball

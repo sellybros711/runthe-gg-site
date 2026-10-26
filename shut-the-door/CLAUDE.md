@@ -60,8 +60,14 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
 - **Rules 2** (2026-10-22, CONTRACT.md 5b): the hitter adjusts, the arm tires, a repeat keeps less
   release, coarser scouting. Every effect is a function of the outing's log, never a new draw. Rules 3
   (2026-10-24) is rules 2 plus the third out: a new outing's kept calls carry `r: 3`, a call with `r: 2`
-  replays as rules 2 and a call without `r` as rules 1, exactly. The grade prices
-  the history (one pitch ahead, then the table). The strengths live in `grade.js R2`; change them only
+  replays as rules 2 and a call without `r` as rules 1, exactly. Rules 4 (2026-10-24, CONTRACT.md 5f)
+  is rules 3 plus the call by location, ABS challenges (`ch: 1` on a challenged call; the batter's
+  gamble on its own seeded stream, so the four draws never move) and the bright band's release; a
+  call with `r: 3` replays as rules 3 (`fixtures/replays-rules3-pre-abs.json`). The grade prices
+  the history (one pitch ahead, then the table). Rules 5 (2026-10-25, CONTRACT.md 5g) is rules 4
+  plus the routine play: an error on a routine ball (`contract.js ROUTINE`) keeps only `KEEP` of its
+  share, read inside the error's slice of the same library draw, and the rest is the cell's real out
+  of its kind; a call with `r: 4` replays as rules 4 (`fixtures/replays-rules4-pre-routine.json`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

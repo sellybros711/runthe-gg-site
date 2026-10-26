@@ -70,8 +70,17 @@ const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
    without at aims at the centre, as under 4.
    6: rules 3 (grade.js THE THIRD OUT): a run that crosses before a legal
    third out counts. A new outing's calls carry r: 3. A call with r: 2, or
-   none, replays under its own rules, where a third out scores none. */
-const ENGINE_VERSION = 6;
+   none, replays under its own rules, where a third out scores none.
+   7: rules 4 (grade.js ABS_RULES): a take is called where it crossed
+   (contract.js THE CALL), ABS challenges (contract.js ABS: the batter's from
+   a stream of its own, the pitcher's side's with ch on the call it
+   challenges), and a release in the bright band lands where it was aimed
+   (contract.js PERFECT). A call with r 3 or before replays exactly as under 6.
+   8: rules 5 (grade.js ROUTINE_RULES): an error on a routine play is
+   extremely rare (contract.js ROUTINE). The same four draws read a row whose
+   routine error share went to the out of its kind. A call with r 4 or before
+   replays exactly as under 7. */
+const ENGINE_VERSION = 8;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread.
    3: the hold table is solved with runs on a legal third out (rules 3), and
@@ -116,7 +125,23 @@ function publicState(o) {
     log: o.log.slice(),
     grades: o.grades.slice(),
     debug: { seed: o.seed, tiers: o.log.map(p => p.drawn.tier) },
+    // rules 4: the ABS challenges (contract.js ABS). null under rules 3 and before
+    abs: o.abs ? {
+      left: { pitcher: o.abs.pitcher, batter: o.abs.batter },
+      challengeLive: challengeLive(o),
+      events: o.log.filter(p => p.challenge).map(p => Object.assign({ n: p.n }, p.challenge)),
+    } : null,
   };
+}
+
+/* rules 4: the pitcher's side may challenge the last pitch right now: a ball
+   the umpire called (not one a batter's challenge made), not yet challenged,
+   with a challenge left. Also on a ball four that ended the outing, until it
+   is finished (api.js). */
+function challengeLive(o) {
+  if (!o.abs || !o.log.length || o.finished) return false;
+  const p = o.log[o.log.length - 1];
+  return !!p.abs && p.abs.called === 'ball' && !p.challenge && o.abs.pitcher > 0;
 }
 
 function createOuting(pack, opts) {
@@ -126,7 +151,7 @@ function createOuting(pack, opts) {
   const seed = opts.seed >>> 0;
   const st = model.startState();
   const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (rules !== 1 && rules !== 2 && rules !== G.RULES) throw new Error('rules ' + rules + ', engine plays 1, 2 or ' + G.RULES);
+  if (![1, 2, 3, G.ABS_RULES, G.RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
   const o = {
     pack, model, seed, rules, mode: opts.mode || 'practice',
     outingId: opts.outingId || `${sc.id}:${seed}`,
@@ -134,6 +159,10 @@ function createOuting(pack, opts) {
     st, status: 'live', outcome: null,
     score: { us: sc.situation.score.us, them: sc.situation.score.them },
     log: [], grades: [], calls: [], before: [], ctxs: [],
+    // rules 4: challenges left per side, and the batter's gamble on a stream of its own, so the
+    // outing's four draws a pitch never move (contract.js ABS)
+    abs: rules >= G.ABS_RULES ? { pitcher: K.ABS.PER_SIDE, batter: K.ABS.PER_SIDE } : null,
+    absRng: rules >= G.ABS_RULES ? R.mulberry32(R.hashSeed('abs|' + seed)) : null,
   };
   return o;
 }
@@ -150,6 +179,7 @@ function validCall(o, call) {
     if (call.q == null) throw new Error('an effort needs a timed release (q)');
   }
   if (call.r != null && call.r !== o.rules) throw new Error(`a rules ${call.r} call in a rules ${o.rules} outing`);
+  if (call.ch != null && (call.ch !== 1 || o.rules < G.ABS_RULES)) throw new Error('a challenge is ch: 1 on a rules 4 call');
 }
 
 /* A call as the engine keeps it: {type, cell}, plus q (two places) when the
@@ -164,6 +194,7 @@ function keptCall(call, rules) {
   const at = K.aimAt(call.at);
   if (at != null) c.at = at;
   if (rules >= 2) c.r = rules;
+  if (call.ch === 1) c.ch = 1;
   return c;
 }
 
@@ -203,7 +234,10 @@ function throwPitch(o, call) {
   const effSpread = kept.e != null ? G.effortSpread(call.type, kept.e) : 1;   // effort: a harder pitch misses wider
   const sigma = arsenal.sigmaFt * spread * arm * effSpread;
   const t = K.aimPoint(call.cell, kept.at);   // the cell's centre, or the free aim point inside it
-  const actual = { x: t.x + d.missX * sigma, zn: t.zn + d.missZ * sigma / pack.kernelZoneFt };
+  // rules 4: a release in the bright band lands where it was aimed, whatever the repeat, effort or arm
+  const perfect = o.rules >= G.ABS_RULES && kept.q != null && kept.q >= K.PERFECT.BEST_Q;
+  const actual = perfect ? K.perfectLanding(t, d.missX, d.missZ, kept.q, pack.kernelZoneFt)
+    : { x: t.x + d.missX * sigma, zn: t.zn + d.missZ * sigma / pack.kernelZoneFt };
   const actualCell = K.cellAt(actual.x, actual.zn);
 
   // 3. the outcome key, from the same per mille row the grade priced, then
@@ -215,15 +249,40 @@ function throwPitch(o, call) {
   const u = d.library * (ctx ? row.reduce((a, x) => a + x, 0) : 1000);
   let k = -1, acc = 0;
   for (let i = 0; i < row.length; i++) { if (!row[i]) continue; acc += row[i]; k = i; if (u < acc) break; }
-  const ref = entry.x[actualCell][k];
+  // rules 5 (THE ROUTINE PLAY, contract.js ROUTINE): an error on a routine ball. The same library
+  // draw, read inside the error's slice: past KEEP it is the out of its kind. No other key moves
+  if (o.rules >= G.ROUTINE_RULES && k === G.KEYS.indexOf('error')) {
+    const rt = model.routineOf(entry, actualCell);
+    if (rt && (u - (acc - row[k])) / row[k] >= rt.keep) k = rt.out;
+  }
+  // rules 4 (THE CALL): the take stays a take, and the umpire calls it where it crossed. The same
+  // library draw, read inside the take's share of the row: no new draw
+  const abs = o.rules >= G.ABS_RULES;
+  const dIn = abs ? K.zoneDist(actual.x, actual.zn, pack.kernelZoneFt) : null;
+  if (abs && k <= 1 && row[0] + row[1] > 0) k = u / (row[0] + row[1]) < K.calledStrikeP(dIn) ? 1 : 0;
+  let ref = entry.x[actualCell][k];
+  if (abs && (ref == null || ref < 0)) ref = nearestRef(entry, actualCell, k);
   if (ref == null || ref < 0) throw new Error(`no real pitch for ${G.KEYS[k]} at cell ${actualCell}`);
   const pitch = pack.pitches[Math.floor(ref / 3)];
   const tier = ref % 3;
   const cls = G.CLASS[k];
+  const res0 = pitch[2];
+
+  // rules 4: the batter's challenge, right away, on a called strike (contract.js ABS)
+  let challenge = null;
+  if (abs && res0 === 'called_strike' && o.abs.batter > 0) {
+    const g = o.absRng();   // drawn only when he can challenge, in pitch order
+    if (g < K.challengeP('batter', -dIn, st.s === 2)) {
+      const over = dIn < 0;
+      challenge = { by: 'batter', call: 'called_strike', abs: over ? 'ball' : 'strike', overturned: over };
+      if (!over) o.abs.batter--;
+    }
+  }
+  const playCls = challenge && challenge.overturned ? 'ball' : cls;
 
   // 4. what it does to the state, the runner draw choosing among the rows
   // rules 1 and 2 replay with a third out that scores none (grade.js THE THIRD OUT)
-  const trans = model.transitions(st, cls, o.rules >= G.THIRD_OUT_RULES);
+  const trans = model.transitions(st, playCls, o.rules >= G.THIRD_OUT_RULES);
   let pickIdx = trans.length - 1;
   if (trans.length > 1) {
     let a2 = 0;
@@ -232,19 +291,11 @@ function throwPitch(o, call) {
   const t2 = trans[pickIdx][1];
 
   const countBefore = { b: st.b, s: st.s };
-  const basesBefore = st.bases;
-  const runs = t2.runs || 0;
-  const paOver = !t2.self && (!!t2.end || (t2.st.b === 0 && t2.st.s === 0));
-  if (t2.st) o.st = t2.st;
-  o.score.them += runs;
+  if (abs) o.undo = { st, them: o.score.them };   // for the pitcher's side's challenge on this pitch
+  const moved = applyTrans(o, st, t2);
+  const runs = moved.runs, paOver = moved.paOver;
 
-  if (t2.end) {
-    o.status = 'over';
-    if (t2.end === 'hold') o.outcome = o.score.us > o.score.them ? 'door_shut' : 'tie_held';
-    else o.outcome = sc.situation.walkOffLive ? 'walk_off' : 'doors_open';   // 'lost': they went ahead
-  }
-
-  const res = pitch[2];
+  const res = challenge && challenge.overturned ? 'ball' : res0;
   const pr = {
     n: o.log.length + 1,
     call: kept,
@@ -255,14 +306,20 @@ function throwPitch(o, call) {
     batter: (res === 'ball' || res === 'called_strike' || res === 'hit_by_pitch') ? 'take' : 'swing',
     result: res,
     countBefore,
-    count: paOver ? { b: 0, s: 0 } : { b: o.st.b, s: o.st.s },
-    outs: t2.end === 'hold' ? 3 : (t2.st ? t2.st.outs : st.outs),
-    bases: t2.st ? t2.st.bases : (t2.end ? endBases(basesBefore, t2.moves) : basesBefore),
-    runnerMoves: (t2.moves || []).map(([from, to]) => ({ from, to })),
+    count: moved.count,
+    outs: moved.outs,
+    bases: moved.bases,
+    runnerMoves: moved.runnerMoves,
     runs,
     paOver,
     drawn: { id: pitch[0], tier: TIER_NAME[tier] },
   };
+  if (abs && (res0 === 'ball' || res0 === 'called_strike')) {
+    // the ABS zone's answer, for the challenge and the quick replay: d inches from the zone's edge
+    pr.abs = { called: res0, strike: dIn >= 0, d: Math.round(dIn * 100) / 100 };
+  }
+  if (challenge) pr.challenge = challenge;
+  if (perfect) pr.perfect = true;
   if (cls.startsWith('ip:')) {
     const label = t2.label || 'out';
     pr.inPlay = { bb: pitch[3], ev: pitch[4], la: pitch[5], spray: pitch[6], result: label, text: inPlayText(label, pitch[3], pitch[6], runs) };
@@ -275,7 +332,73 @@ function throwPitch(o, call) {
   o.log.push(pr);
   o.grades.push(grade);
   o.calls.push(Object.assign({}, kept));
+  delete o.calls[o.calls.length - 1].ch;   // ch goes back on when the challenge is made (below)
+  if (kept.ch === 1) {                      // a replay: this call's ball was challenged right away
+    if (!challengeLive(o)) throw new Error('a challenge on a pitch with none to make');
+    challengePitch(o);
+  }
   return { pitchResult: pr, pitchGrade: grade, state: publicState(o) };
+}
+
+/* What a transition does to the outing: the state, the runs, the end. One
+   place, for the pitch and for a challenge that changes its call. */
+function applyTrans(o, st, t2) {
+  const sc = o.pack.scenario;
+  const runs = t2.runs || 0;
+  const paOver = !t2.self && (!!t2.end || (t2.st.b === 0 && t2.st.s === 0));
+  if (t2.st) o.st = t2.st;
+  o.score.them += runs;
+  if (t2.end) {
+    o.status = 'over';
+    if (t2.end === 'hold') o.outcome = o.score.us > o.score.them ? 'door_shut' : 'tie_held';
+    else o.outcome = sc.situation.walkOffLive ? 'walk_off' : 'doors_open';   // 'lost': they went ahead
+  }
+  return {
+    runs, paOver,
+    count: paOver ? { b: 0, s: 0 } : { b: o.st.b, s: o.st.s },
+    outs: t2.end === 'hold' ? 3 : (t2.st ? t2.st.outs : st.outs),
+    bases: t2.st ? t2.st.bases : (t2.end ? endBases(st.bases, t2.moves) : st.bases),
+    runnerMoves: (t2.moves || []).map(([from, to]) => ({ from, to })),
+  };
+}
+
+/* rules 4: the pitcher's side challenges the last pitch's called ball (the
+   player's button; contract.js ABS). The ABS zone decides. Overturned, the
+   pitch is a called strike: the count, the outs and the end as if it had been
+   called one (a strike has one row, so no draw). Upheld, a challenge is gone.
+   Marks the call ch: 1, so a replay makes the same challenge. Never graded:
+   the call is not the player's decision. The next pitch is graded from the
+   count it leaves. */
+function challengePitch(o) {
+  if (!challengeLive(o)) throw new Error('no challenge to make');
+  const pr = o.log[o.log.length - 1];
+  const over = pr.abs.strike;
+  pr.challenge = { by: 'pitcher', call: 'ball', abs: over ? 'strike' : 'ball', overturned: over };
+  o.calls[o.calls.length - 1].ch = 1;
+  pr.call.ch = 1;
+  if (!over) { o.abs.pitcher--; return { pitchResult: pr, state: publicState(o) }; }
+  const st = o.undo.st;
+  o.st = st; o.score.them = o.undo.them; o.status = 'live'; o.outcome = null;
+  const t2 = o.model.transitions(st, 'strike', o.rules >= G.THIRD_OUT_RULES)[0][1];
+  const moved = applyTrans(o, st, t2);
+  pr.result = 'called_strike';
+  Object.assign(pr, { count: moved.count, outs: moved.outs, bases: moved.bases, runnerMoves: moved.runnerMoves, runs: moved.runs, paOver: moved.paOver });
+  return { pitchResult: pr, state: publicState(o) };
+}
+
+/* rules 4: a key with no real pitch in the cell it crossed (the call moved
+   to a strike far out, or a ball deep in): the nearest cell's, ring by ring,
+   in cell order. Only the pitch shown; what happens is the key. */
+function nearestRef(entry, cell, k) {
+  const r0 = K.rowOf(cell), c0 = K.colOf(cell);
+  for (let ring = 1; ring <= 4; ring++) {
+    for (let c = 0; c < 25; c++) {
+      if (Math.max(Math.abs(K.rowOf(c) - r0), Math.abs(K.colOf(c) - c0)) !== ring) continue;
+      const ref = entry.x[c][k];
+      if (ref != null && ref >= 0) return ref;
+    }
+  }
+  return -1;
 }
 
 /* Where runners stand when the outing ends on the play (the diamond's last
@@ -410,6 +533,7 @@ function vsReal(outcome, runs, reveal, pitches) {
 
 function finishOuting(o, extra) {
   if (o.status !== 'over') throw new Error('the outing is still live');
+  o.finished = true;   // rules 4: no challenge after the result
   const runs = o.score.them - o.pack.scenario.situation.score.them;
   const score = outingScore(o);
   const reveal = o.pack.reveal || (o.pack.scenario && o.pack.scenario.reveal) || null;
@@ -441,7 +565,7 @@ function replay(pack, seed, calls, opts) {
 
 const publicAPI = Object.freeze({
   ENGINE_VERSION, PACK_VERSION, SCORE_BASE, SCORE_PER_PT, RESULT_BONUS,
-  seedFor, createOuting, throwPitch, finishOuting, publicState, replay, rulesOf, bestCall,
+  seedFor, createOuting, throwPitch, challengePitch, challengeLive, finishOuting, publicState, replay, rulesOf, bestCall,
   outingScore, percentileOf, styleVector, vsReal,
 });
 if (NODE) module.exports = publicAPI;

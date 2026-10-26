@@ -112,6 +112,18 @@ function closerCall(closer, o, rng) {
   return { type, cell };
 }
 
+/* RULES 4: a real catcher's challenge on a called ball (contract.js ABS
+   DEFENSE, fitted to MLB's 2025 spring numbers), for the closer pool and the
+   strategy runs. The player has the button instead. Its own stream, drawn
+   only when a challenge is live. */
+function modelChallenge(o, rng) {
+  if (!E.challengeLive(o)) return false;
+  const p = o.log[o.log.length - 1];
+  if (rng() >= K.challengeP('defense', p.abs.d, p.countBefore.b === 3)) return false;
+  E.challengePitch(o);
+  return true;
+}
+
 function runPool(pack, closers, runs, model) {
   const per = Math.ceil(runs / closers.length);
   const scores = [];
@@ -124,7 +136,8 @@ function runPool(pack, closers, runs, model) {
       const policy = R.mulberry32(R.hashSeed(`${pack.scenario.id}|policy|${ci}|${r}`));
       const o = E.createOuting(pack, { seed, mode: 'practice', model });
       let guard = 0;
-      while (o.status === 'live' && guard++ < 150) E.throwPitch(o, closerCall(c, o, policy));
+      const ch = R.mulberry32(R.hashSeed(`${pack.scenario.id}|challenge|${ci}|${r}`));
+      while (o.status === 'live' && guard++ < 150) { E.throwPitch(o, closerCall(c, o, policy)); modelChallenge(o, ch); }
       if (o.status !== 'over') continue;
       scores.push(E.outingScore(o));
       for (const g of o.grades) { lostAll.push(g.lost); bandAll.push(g.band); }
@@ -144,18 +157,22 @@ function runPool(pack, closers, runs, model) {
    level the hitter-adjustment is centred on, so a pitcher who sequences like
    the real closers meets the library's numbers on average and only a more
    predictable one pays. Z, the share of their aims in the zone, is the same
-   for where he has been (grade.js R2.ZONE). Its own seeded streams, apart from the pool's runs. */
+   for where he has been (grade.js R2.ZONE). Its own seeded streams, apart from the pool's runs.
+   Measured under rules 3 (SEQ_RULES), whatever the rules a new outing plays: a rules 3 outing
+   reads this centre, so it must not move under it, and the call by location and ABS (rules 4)
+   change no pitch the closers choose, only how some takes are called. */
+const SEQ_RULES = 3;
 function seqCenter(pack, closers, model, runs) {
   let sum = 0, n = 0, zone = 0;
   const per = Math.max(1, Math.ceil((runs || 400) / closers.length));
   closers.forEach((c, ci) => {
     for (let r = 0; r < per; r++) {
-      const o = E.createOuting(pack, { seed: R.hashSeed(`${pack.scenario.id}|seq|${ci}|${r}`), mode: 'practice', model });
+      const o = E.createOuting(pack, { seed: R.hashSeed(`${pack.scenario.id}|seq|${ci}|${r}`), mode: 'practice', model, rules: SEQ_RULES });
       const policy = R.mulberry32(R.hashSeed(`${pack.scenario.id}|seqpolicy|${ci}|${r}`));
       let guard = 0;
       while (o.status === 'live' && guard++ < 150) {
         const call = closerCall(c, o, policy);
-        sum += G.familiarRaw(G.contextOf(o.log, o.st, G.RULES, 0), call.type, call.cell);
+        sum += G.familiarRaw(G.contextOf(o.log, o.st, SEQ_RULES, 0), call.type, call.cell);
         if (K.inZone(call.cell)) zone++;
         n++;
         E.throwPitch(o, call);
@@ -271,4 +288,4 @@ if (NODE && require.main === module) {
     `pool ${b.pool.runs} runs, hold rate ${b.pool.holdRate}, bands ${JSON.stringify(b.pool.bands)}, solve ${b.solveMs} ms`);
 }
 
-if (NODE) module.exports = { build, runPool, closerCall, typeForFamily, bandsOf, seqCenter };
+if (NODE) module.exports = { build, runPool, closerCall, typeForFamily, bandsOf, seqCenter, modelChallenge };

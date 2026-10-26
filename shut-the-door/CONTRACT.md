@@ -101,6 +101,33 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {{src: 'his'|'league', n: number, velo: number[], pfxX: number[], pfxZ: number[]}} [stuff]
  *                                  his own pitches of this type in each fifth of his velocity,
  *                                  slowest first: mean mph and break (section 5c, effort)
+ * @property {Release|null} release   the mean release point of his pitches of this type
+ * @property {number|null} armAngle  Savant's arm_angle, degrees, mean (Savant has it from 2020)
+ * @property {Spin|null} spin
+ */
+
+/**
+ * Release and spin are for the picture only (pipeline/tracking.py): the engine, the grade and the
+ * pool read none of them. Each is the mean over his real pitches in the Savant search his arsenal
+ * came from. A value Savant does not have is null; a proxy spot is null throughout.
+ * @typedef {Object} Release         feet, catcher's view (x < 0 is the third base side)
+ * @property {number} x              release_pos_x
+ * @property {number} z              release_pos_z
+ * @property {number|null} ext       release_extension (null in PITCHf/x seasons, before 2015)
+ *
+ * @typedef {Object} Spin            null before Statcast (2015)
+ * @property {number} rate           release_spin_rate, rpm (integer)
+ * @property {number} axis           spin_axis, degrees 0..360 (a circular mean), Savant's convention
+ * @property {number|null} active    active spin, percent 0..100, from Savant's active spin
+ *                                   leaderboard for that season (regular season; observed before
+ *                                   2020, spin-based from 2020); null where it has none
+ *
+ * @typedef {Object} Tracking        null for a proxy spot
+ * @property {'statcast'|'pitchfx'} system
+ * @property {number} season         the season of the pitches (his year for a real spot)
+ * @property {'regular'|'postseason'} games
+ * @property {number} n              his tracked pitches of his arsenal's types
+ * @property {string|null} active    where active spin came from, or null
  */
 
 /**
@@ -157,7 +184,9 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {string} title         'Game 1, 1988 World Series'
  * @property {string} setup         one paragraph, house voice
  * @property {{name: string, team: string, teamColors: [string, string], year: number,
- *             throws: Hand, arsenal: ArsenalPitch[]}} pitcher
+ *             throws: Hand, arsenal: ArsenalPitch[], release: Release|null,
+ *             armAngle: number|null, tracking: Tracking|null}} pitcher
+ *                                  release and armAngle: over all his arsenal pitches
  * @property {Situation} situation
  * @property {Batter[]} batters     the real order he faced, then the lineup continuing,
  *                                  at least 9 entries; the engine wraps if it runs out
@@ -379,6 +408,76 @@ in-play row is a legal play from the real play by play (`check-rules.mjs`, READM
 calls carry `r: 3`; one with `r: 2` or none replays under its own rules, where a third out scores
 none, exactly as it was played. Nothing new is drawn.
 
+## 5f. Rules 4: the call, ABS challenges, the bright band (2026-10-24)
+
+Rules 3 and everything before it, plus three things. A new outing's calls carry `r: 4`; a call with
+`r: 3` or before replays under its own rules, exactly (`fixtures/replays-rules3-pre-abs.json`).
+
+**The call by location.** A take is called where the ball crossed, not by the cell. The library draw
+still decides take or swing from the actual cell's row; a take is then a called strike when the same
+draw, read inside the take's share of the row, is under the umpire's chance at that spot
+(`contract.js UMPIRE`, `calledStrikeP(zoneDist(x, zn, zoneFt))`: every called pitch of 2024 by its
+signed distance from the zone's edge, in half inches). Heart near certain, edges uncertain. The grade
+splits each cell's takes the same way one pitch ahead (`grade.js callMass`). No new draw.
+
+**ABS challenges** (MLB's 2026 rules; `contract.js ABS`). Each side has 2 for the outing; a challenge
+that wins is kept. Only a called ball or strike, only right away. The ABS zone decides: the ball's
+actual location against the zone the grid draws (`zoneDist >= 0` is a strike).
+- The batter challenges a called strike by a labelled MODEL (`ABS.BATTER`) fitted to MLB's 2025
+  spring training test (4.4% of called strikes challenged by batters) and Triple-A 2025 (batters won
+  45%). Its gamble is a draw from the outing's second stream (`hashSeed('abs|' + seed)`), taken only
+  when he has a challenge left on a called strike. The outing's four draws a pitch never move.
+- The pitcher's side challenges a called ball with the player's button: `challenge(outingId)`
+  (section 9). Overturned, the pitch is a called strike and the count, outs and end follow; the call
+  carries `ch: 1`, so a replay makes the same challenge.
+- Never graded: the call is not the player's decision. The next pitch is graded from the count the
+  challenge left.
+
+**The bright band** (the owner, 2026-10-24: "if I have a good release it should go where I aimed").
+A release at `q >= PERFECT.BEST_Q` (0.85, the meter's bright band) lands on the aim point plus its
+own small miss (1.2 inches a side at 0.85, 0.6 at 1), never more than 3 inches off, and never out of
+the zone when aimed inside it, whatever the repeat, effort or arm. A GAME RULE. The same two miss
+draws, read as inches. Every other release scales his miss as in section 5.
+
+What the UI needs (a separate UI task):
+- `state.abs`: `{left: {pitcher, batter}, challengeLive, events: [{n, by, call, abs, overturned}]}`,
+  null before rules 4. Show the challenge button only while `challengeLive` (a called ball, not yet
+  challenged, the pitcher's side has one left; also on a ball four that ended the outing, until
+  `finishOuting`). The button calls `challenge(outingId)` and redraws from what it returns.
+- `pitchResult.abs`: `{called, strike, d}` on every called pitch: the umpire's call, the ABS answer,
+  and the inches from the zone's edge (positive inside), for the quick replay against the zone.
+- `pitchResult.challenge`: `{by: 'batter'|'pitcher', call, abs, overturned}`: the replay's event and
+  the scoreboard's mark. On an overturn `result` is the final call; `abs.called` keeps the umpire's.
+- `pitchResult.perfect`: true when the bright band put it on the aim point.
+
+## 5g. Rules 5: the routine play (2026-10-25)
+
+Rules 4 and everything before it, plus one GAME RULE. The owner: "I don't want them to be completely
+error-free, but it should be extremely rare on a routine play." A new outing's calls carry `r: 5`; a
+call with `r: 4` or before replays under its own rules, exactly, its routine errors included
+(`fixtures/replays-rules4-pre-routine.json`).
+
+**What is routine** (`contract.js ROUTINE`, `routineOf(bb, ev, la, spray)`), read from the real
+batted ball the cell's error draws:
+- a ground ball from 50 up to 95 mph within 6 degrees of a fielder's spot (spray -38 third, -19
+  short, 18 second, 42 first: where the 2024 grounders of 60-95 mph went for hits least often);
+- a fly ball at 30 degrees or more from 80 up to 95 mph (2024: hits on 1-6% of them);
+- every popup;
+- a ball with no tracked speed (the 2010-2012 library) by its type and spray alone: a grounder at a
+  fielder, a fly ball and a popup.
+
+Not routine, and at their real rates: hard-hit balls (95 mph and up), the slow roller and its
+bang-bang throw (under 50 mph), a grounder in the hole or up the middle, line drives, and flies that
+are not lazy (the diving and running plays).
+
+**What changes.** Each cell's error key is one real play. When that ball is routine, an error keeps
+`ROUTINE.KEEP` of its share (a grounder 0.04, a fly or popup 0.2) and the rest is the cell's real out
+of the same kind (`out_ground`, `out_fly`, `out_popup`), with that out's real pitch and advancement
+rows (so `check-rules.mjs` holds it). The engine draws the key from the row as it was; on an error it
+reads where the library draw fell inside the error's slice, and past KEEP it is the out. No new draw,
+and no other key's draw moves. The grade moves the same share one pitch ahead (`grade.js keyMixCtx`);
+the hold table after it is unchanged, like the call by location.
+
 ## 6. Pitch result
 
 ```js
@@ -413,6 +512,11 @@ none, exactly as it was played. Nothing new is drawn.
  * @property {boolean} paOver
  * @property {{id: string, tier: 'batter'|'similar'|'league'}} drawn   the real pitch used
  *                                    (id = Statcast game_pk:at_bat_number:pitch_number)
+ * @property {{called: 'ball'|'called_strike', strike: boolean, d: number}} [abs]   rules 4, a called
+ *                                    pitch: the umpire's call, the ABS zone's answer, inches from its edge
+ * @property {{by: 'batter'|'pitcher', call: string, abs: 'ball'|'strike', overturned: boolean}} [challenge]
+ *                                    rules 4: the challenge on this pitch (section 5f)
+ * @property {boolean} [perfect]      rules 4: a bright band release, on the aim point
  */
 ```
 
@@ -527,7 +631,7 @@ A held tie is a blown save: it ranks under `door_shut` and breaks the streak (se
 
 ## 9. The engine API (the only thing the UI calls)
 
-All four are async, so the UI does not care where the work runs.
+All of them are async, so the UI does not care where the work runs. `challenge` came with rules 4.
 
 ```js
 /** @returns {Promise<Scenario>}  without reveal */
@@ -540,6 +644,11 @@ startOuting(scenarioId, seed, { mode })
 
 /** @returns {Promise<{pitchResult: PitchResult, pitchGrade: PitchGrade, state: OutingState}>} */
 throwPitch(outingId, pitchCall)
+
+/** rules 4: the pitcher's side challenges the last pitch's called ball (section 5f). Only while
+ *  state.abs.challengeLive, before the next throw and before finishOuting.
+ *  @returns {Promise<{pitchResult: PitchResult, state: OutingState}>} */
+challenge(outingId)
 
 /** @returns {Promise<OutingResult>} */
 finishOuting(outingId)

@@ -237,13 +237,18 @@ function create(host, opts) {
   dots.className = 'dots';
   dots.setAttribute('aria-hidden', 'true');
   el.insertBefore(dots, cross);
-  function setPitches(log, from) {
-    var html = '';
+  /* only one plate appearance's pitches: from..to (to defaults to the end of the log). During an at
+     bat that is the at bat (the owner, 2026-10-24); a finished one is shown when its chip is tapped.
+     Each dot carries its pitch number in the at bat, from 1 (the owner, 2026-10-26) */
+  function setPitches(log, from, to) {
+    var html = '', end = to == null ? (log || []).length : to, n = 0;
     (log || []).forEach(function (p, i) {
+      if (i < from || i >= end) return;
+      n++;
       if (!p.actual) return;
       var cx = Math.max(0, Math.min(5, p.actual.x / C.GRID.COL_FT + 2.5));
       var ry = Math.max(0, Math.min(5, (1 - p.actual.zn) / C.GRID.ROW_ZN + 1));
-      html += '<i class="pd ' + (DOT_KIND[p.result] || 'inplay') + (i >= from ? ' cur' : '') + '" style="left:' + ((5 - cx) * 20).toFixed(2) + '%;top:' + (ry * 20).toFixed(2) + '%"></i>';
+      html += '<i class="pd ' + (DOT_KIND[p.result] || 'inplay') + ' cur" style="left:' + ((5 - cx) * 20).toFixed(2) + '%;top:' + (ry * 20).toFixed(2) + '%">' + n + '</i>';
     });
     dots.innerHTML = html;
   }

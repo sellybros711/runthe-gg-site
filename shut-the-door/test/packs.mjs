@@ -38,6 +38,49 @@ function check(name, cond, detail) {
   else { fails++; console.log('FAIL ' + name + (detail ? ': ' + detail : '')); }
 }
 
+/* Release and spin (pipeline/tracking.py, CONTRACT.md 4): for the picture only. A proxy spot is null
+   throughout. A tracked pitcher has his release side by his hand (catcher's view: a righty's hand is
+   on the third base side, x < 0), a sane height and extension, and on Statcast every pitch type has
+   a spin rate of 1,000 to 3,500 rpm and an axis of 0 to 360. PITCHf/x carries x and z only. */
+const inR = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
+function releaseErrs(r, hand, where, statcast) {
+  if (!r) return [where + ' has no release'];
+  const errs = [];
+  const side = hand === 'R' ? r.x < 0 : r.x > 0;
+  if (!inR(r.x, -5, 5) || !side) errs.push(`${where} release x ${r.x} for a ${hand} hand`);
+  if (!inR(r.z, 3.5, 7.5)) errs.push(`${where} release z ${r.z}`);
+  if (statcast ? !inR(r.ext, 4.5, 8.5) : r.ext !== null) errs.push(`${where} extension ${r.ext}`);
+  return errs;
+}
+function trackingErrs(sc) {
+  const p = sc.pitcher, errs = [];
+  if (!('tracking' in p) || !('release' in p) || !('armAngle' in p)) return ['pitcher lacks tracking, release or armAngle'];
+  if (sc.resolution === 'proxy' || !p.tracking) {
+    if (sc.resolution !== 'proxy') errs.push('a real spot without tracking');
+    if (p.tracking || p.release || p.armAngle !== null) errs.push('a proxy spot carries tracking');
+    for (const a of p.arsenal) if (a.release !== null || a.armAngle !== null || a.spin !== null) errs.push('proxy ' + a.type + ' carries release or spin');
+    return errs;
+  }
+  const t = p.tracking, statcast = t.system === 'statcast';
+  if (!['statcast', 'pitchfx'].includes(t.system) || statcast !== t.season >= 2015) errs.push('tracking system ' + t.system + ' ' + t.season);
+  if (t.season !== p.year && sc.resolution === 'real') errs.push('tracking season ' + t.season + ' for ' + p.year);
+  errs.push(...releaseErrs(p.release, p.throws, 'pitcher', statcast));
+  const armOk = (v) => (statcast && t.season >= 2020 ? inR(v, -30, 90) : v === null);
+  if (!armOk(p.armAngle)) errs.push('pitcher arm angle ' + p.armAngle);
+  for (const a of p.arsenal) {
+    errs.push(...releaseErrs(a.release, p.throws, a.type, statcast));
+    if (!armOk(a.armAngle)) errs.push(a.type + ' arm angle ' + a.armAngle);
+    const s = a.spin;
+    if (!statcast) { if (s !== null) errs.push(a.type + ' spin before Statcast'); continue; }
+    if (!s) { errs.push(a.type + ' has no spin'); continue; }
+    if (!inR(s.rate, 1000, 3500) || !Number.isInteger(s.rate)) errs.push(`${a.type} spin rate ${s.rate}`);
+    if (!inR(s.axis, 0, 360)) errs.push(`${a.type} spin axis ${s.axis}`);
+    if (s.active !== null && !inR(s.active, 0, 100)) errs.push(`${a.type} active spin ${s.active}`);
+    if (s.active !== null && !t.active) errs.push(a.type + ' active spin without a source');
+  }
+  return errs;
+}
+
 function shapeChecks(pack, file) {
   const id = pack.scenario.id;
   const sc = pack.scenario;
@@ -60,6 +103,7 @@ function shapeChecks(pack, file) {
     else if (!st.velo.every((v, i) => i === 0 || v >= st.velo[i - 1]) || Math.abs(st.velo[2] - a.velo) > 1.5) errs.push('stuff speeds of ' + a.type + ' ' + st.velo.join(' '));
     else if (st.src === 'his' && !(st.n >= 40)) errs.push('stuff of ' + a.type + ' is his own on ' + st.n + ' pitches');
   }
+  errs.push(...trackingErrs(sc));
   const s = sc.situation;
   const lead = s.score.us - s.score.them;
   if (!(lead >= 1)) errs.push('us does not lead');
@@ -189,6 +233,24 @@ function determinism(pack) {
   const a = JSON.stringify(E.replay(pack, 4242, calls, { model: new G.Model(pack) }).log);
   const b = JSON.stringify(E.replay(pack, 4242, calls, { model }).log);
   check(`${pack.scenario.id}: the same seed and calls give the same outing`, a === b);
+  /* rules 5 (contract.js ROUTINE): the same seed and calls under rules 4 and 5 are the same outing
+     up to the first pitch that differs, and that pitch is a routine error under rules 4 made the out
+     of its kind under rules 5, from the same landing (the same draws) */
+  const zone = [6, 7, 8, 11, 12, 13, 16, 17, 18];
+  const zc = Array.from({ length: 80 }, () => ({ type: types[Math.floor(rng() * types.length)], cell: zone[Math.floor(rng() * 9)] }));
+  let turned = 0, bad = 0;
+  for (let s = 0; s < 400; s++) {
+    const r4 = E.replay(pack, 9000 + s, zc, { model, rules: 4 }).log;
+    const r5 = E.replay(pack, 9000 + s, zc, { model, rules: 5 }).log;
+    const i = r4.findIndex((p, j) => !r5[j] || JSON.stringify(p) !== JSON.stringify(Object.assign({}, r5[j], { call: p.call })));
+    if (i < 0) continue;
+    const p4 = r4[i], p5 = r5[i], ip = p4.inPlay;
+    const ok = ip && ip.result === 'error' && K.routineOf(ip.bb, ip.ev, ip.la, ip.spray)
+      && p5.inPlay && p5.inPlay.result !== 'error' && p5.drawn.id !== p4.drawn.id && p5.actualCell === p4.actualCell
+      && JSON.stringify(p5.actual) === JSON.stringify(p4.actual) && p5.inPlay.bb === ip.bb;
+    if (ok) turned++; else bad++;
+  }
+  check(`${pack.scenario.id}: rules 5 turns only routine errors into outs, from the same draws (${turned} turned)`, bad === 0, `${bad} other differences`);
 }
 
 /* run ---------------------------------------------------------------------------- */
@@ -203,9 +265,19 @@ if (!files.length) {
 }
 if (!files.length) { console.log('no packs to check'); process.exit(0); }
 const rows = [];
+let bitten = false;
 for (const f of files) {
   const pack = JSON.parse(readFileSync(f, 'utf8'));
   if (!calibOnly) { shapeChecks(pack, f); determinism(pack); }
+  // the release and spin check bites: a hand on the wrong side, a spin rate past 3,500 and an axis
+  // past 360 on a copy of the first Statcast pitcher are each caught
+  if (!calibOnly && !bitten && pack.scenario.pitcher.tracking && pack.scenario.pitcher.tracking.system === 'statcast') {
+    bitten = true;
+    const bad = (fn) => { const sc = JSON.parse(JSON.stringify(pack.scenario)); fn(sc.pitcher); return trackingErrs(sc).length > 0; };
+    check(`${pack.scenario.id}: the release and spin check catches a wrong side, a fast spin and an axis past 360`,
+      bad((p) => { p.release.x = -p.release.x; }) && bad((p) => { p.arsenal[0].spin.rate = 3600; }) &&
+      bad((p) => { p.arsenal[0].spin.axis = 400; }) && bad((p) => { p.arsenal[0].spin = null; }) && !bad(() => {}));
+  }
   const c = calibration(pack);
   rows.push(c);
   // A calibration line until the lead rules on the bands (CONTRACT.md section 14:

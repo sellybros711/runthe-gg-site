@@ -1,0 +1,563 @@
+{
+ "packs": {
+  "std-1988-ws1-eckersley": {
+   "source": null,
+   "tracking": null,
+   "release": null,
+   "armAngle": null,
+   "arsenal": {
+    "FF": {
+     "n": 0,
+     "release": null,
+     "armAngle": null,
+     "spin": null
+    },
+    "SL": {
+     "n": 0,
+     "release": null,
+     "armAngle": null,
+     "spin": null
+    }
+   },
+   "note": "proxy spot: no pitch tracking that day"
+  },
+  "std-2001-ws7-rivera": {
+   "source": null,
+   "tracking": null,
+   "release": null,
+   "armAngle": null,
+   "arsenal": {
+    "FC": {
+     "n": 0,
+     "release": null,
+     "armAngle": null,
+     "spin": null
+    },
+    "FF": {
+     "n": 0,
+     "release": null,
+     "armAngle": null,
+     "spin": null
+    }
+   },
+   "note": "proxy spot: no pitch tracking that day"
+  },
+  "std-2011-ws6-feliz": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2011%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=491703",
+   "tracking": {
+    "system": "pitchfx",
+    "season": 2011,
+    "games": "regular",
+    "n": 1051,
+    "active": null
+   },
+   "release": {
+    "x": -1.34,
+    "z": 6.06,
+    "ext": null
+   },
+   "armAngle": null,
+   "arsenal": {
+    "FF": {
+     "n": 790,
+     "release": {
+      "x": -1.27,
+      "z": 6.11,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    },
+    "SL": {
+     "n": 128,
+     "release": {
+      "x": -1.62,
+      "z": 5.89,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    },
+    "SI": {
+     "n": 48,
+     "release": {
+      "x": -1.36,
+      "z": 5.9,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    },
+    "FC": {
+     "n": 43,
+     "release": {
+      "x": -1.47,
+      "z": 5.97,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    },
+    "CH": {
+     "n": 42,
+     "release": {
+      "x": -1.55,
+      "z": 5.97,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    }
+   }
+  },
+  "std-2016-ws7-chapman": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2016%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=547973",
+   "tracking": {
+    "system": "statcast",
+    "season": 2016,
+    "games": "regular",
+    "n": 976,
+    "active": "Savant active spin leaderboard, 2016 regular season, observed"
+   },
+   "release": {
+    "x": 0.94,
+    "z": 6.36,
+    "ext": 6.72
+   },
+   "armAngle": null,
+   "arsenal": {
+    "FF": {
+     "n": 792,
+     "release": {
+      "x": 0.94,
+      "z": 6.35,
+      "ext": 6.75
+     },
+     "armAngle": null,
+     "spin": {
+      "rate": 2547,
+      "axis": 165,
+      "active": 97.8
+     }
+    },
+    "SL": {
+     "n": 153,
+     "release": {
+      "x": 0.96,
+      "z": 6.42,
+      "ext": 6.46
+     },
+     "armAngle": null,
+     "spin": {
+      "rate": 2233,
+      "axis": 231,
+      "active": 65.6
+     }
+    },
+    "CH": {
+     "n": 31,
+     "release": {
+      "x": 0.83,
+      "z": 6.12,
+      "ext": 7.33
+     },
+     "armAngle": null,
+     "spin": {
+      "rate": 2090,
+      "axis": 134,
+      "active": 89.7
+     }
+    }
+   }
+  },
+  "std-2019-nlwc-hader": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2019%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623352",
+   "tracking": {
+    "system": "statcast",
+    "season": 2019,
+    "games": "regular",
+    "n": 1136,
+    "active": "Savant active spin leaderboard, 2019 regular season, observed"
+   },
+   "release": {
+    "x": 3.22,
+    "z": 5.2,
+    "ext": 6.64
+   },
+   "armAngle": null,
+   "arsenal": {
+    "SI": {
+     "n": 960,
+     "release": {
+      "x": 3.19,
+      "z": 5.22,
+      "ext": 6.72
+     },
+     "armAngle": null,
+     "spin": {
+      "rate": 2118,
+      "axis": 150,
+      "active": 96.8
+     }
+    },
+    "SL": {
+     "n": 176,
+     "release": {
+      "x": 3.41,
+      "z": 5.06,
+      "ext": 6.18
+     },
+     "armAngle": null,
+     "spin": {
+      "rate": 2626,
+      "axis": 251,
+      "active": 38.2
+     }
+    }
+   }
+  },
+  "std-2022-ws6-pressly": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2022%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=519151",
+   "tracking": {
+    "system": "statcast",
+    "season": 2022,
+    "games": "regular",
+    "n": 708,
+    "active": "Savant active spin leaderboard, 2022 regular season, spin-based"
+   },
+   "release": {
+    "x": -0.31,
+    "z": 6.05,
+    "ext": 6.14
+   },
+   "armAngle": 53.9,
+   "arsenal": {
+    "SL": {
+     "n": 262,
+     "release": {
+      "x": -0.28,
+      "z": 6.07,
+      "ext": 6.13
+     },
+     "armAngle": 54.8,
+     "spin": {
+      "rate": 2729,
+      "axis": 135,
+      "active": 27.0
+     }
+    },
+    "FF": {
+     "n": 229,
+     "release": {
+      "x": -0.27,
+      "z": 6.02,
+      "ext": 6.3
+     },
+     "armAngle": 53.5,
+     "spin": {
+      "rate": 2512,
+      "axis": 203,
+      "active": 80.2
+     }
+    },
+    "CU": {
+     "n": 192,
+     "release": {
+      "x": -0.36,
+      "z": 6.08,
+      "ext": 5.96
+     },
+     "armAngle": 54.2,
+     "spin": {
+      "rate": 3272,
+      "axis": 28,
+      "active": 76.0
+     }
+    },
+    "CH": {
+     "n": 25,
+     "release": {
+      "x": -0.64,
+      "z": 5.77,
+      "ext": 6.21
+     },
+     "armAngle": 46.8,
+     "spin": {
+      "rate": 1974,
+      "axis": 227,
+      "active": 70.6
+     }
+    }
+   }
+  },
+  "std-2024-ws5-buehler": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=621111",
+   "tracking": {
+    "system": "statcast",
+    "season": 2024,
+    "games": "postseason",
+    "n": 249,
+    "active": "Savant active spin leaderboard, 2024 regular season, spin-based"
+   },
+   "release": {
+    "x": -1.18,
+    "z": 5.55,
+    "ext": 6.6
+   },
+   "armAngle": 46.9,
+   "arsenal": {
+    "FF": {
+     "n": 95,
+     "release": {
+      "x": -1.16,
+      "z": 5.59,
+      "ext": 6.59
+     },
+     "armAngle": 46.4,
+     "spin": {
+      "rate": 2340,
+      "axis": 202,
+      "active": 90.2
+     }
+    },
+    "KC": {
+     "n": 55,
+     "release": {
+      "x": -1.04,
+      "z": 5.69,
+      "ext": 6.59
+     },
+     "armAngle": 52.6,
+     "spin": {
+      "rate": 2466,
+      "axis": 30,
+      "active": 92.3
+     }
+    },
+    "FC": {
+     "n": 42,
+     "release": {
+      "x": -1.15,
+      "z": 5.53,
+      "ext": 6.63
+     },
+     "armAngle": 47.4,
+     "spin": {
+      "rate": 2421,
+      "axis": 173,
+      "active": 54.5
+     }
+    },
+    "ST": {
+     "n": 37,
+     "release": {
+      "x": -1.34,
+      "z": 5.37,
+      "ext": 6.67
+     },
+     "armAngle": 43.8,
+     "spin": {
+      "rate": 2729,
+      "axis": 64,
+      "active": 57.9
+     }
+    },
+    "SI": {
+     "n": 20,
+     "release": {
+      "x": -1.45,
+      "z": 5.32,
+      "ext": 6.51
+     },
+     "armAngle": 38.2,
+     "spin": {
+      "rate": 2201,
+      "axis": 211,
+      "active": 86.9
+     }
+    }
+   }
+  },
+  "std-2025-diaz-cin": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=621242",
+   "tracking": {
+    "system": "statcast",
+    "season": 2025,
+    "games": "regular",
+    "n": 1066,
+    "active": "Savant active spin leaderboard, 2025 regular season, spin-based"
+   },
+   "release": {
+    "x": -1.95,
+    "z": 4.93,
+    "ext": 7.15
+   },
+   "armAngle": 19.2,
+   "arsenal": {
+    "FF": {
+     "n": 561,
+     "release": {
+      "x": -1.98,
+      "z": 4.81,
+      "ext": 7.23
+     },
+     "armAngle": 16.7,
+     "spin": {
+      "rate": 2327,
+      "axis": 234,
+      "active": 94.8
+     }
+    },
+    "SL": {
+     "n": 505,
+     "release": {
+      "x": -1.91,
+      "z": 5.07,
+      "ext": 7.06
+     },
+     "armAngle": 22.1,
+     "spin": {
+      "rate": 2260,
+      "axis": 186,
+      "active": 23.4
+     }
+    }
+   }
+  },
+  "std-2025-scott-kc": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=656945",
+   "tracking": {
+    "system": "statcast",
+    "season": 2025,
+    "games": "regular",
+    "n": 909,
+    "active": "Savant active spin leaderboard, 2025 regular season, spin-based"
+   },
+   "release": {
+    "x": 2.49,
+    "z": 5.24,
+    "ext": 6.21
+   },
+   "armAngle": 34.7,
+   "arsenal": {
+    "FF": {
+     "n": 479,
+     "release": {
+      "x": 2.44,
+      "z": 5.28,
+      "ext": 6.22
+     },
+     "armAngle": 35.2,
+     "spin": {
+      "rate": 2550,
+      "axis": 143,
+      "active": 81.2
+     }
+    },
+    "SL": {
+     "n": 430,
+     "release": {
+      "x": 2.54,
+      "z": 5.2,
+      "ext": 6.21
+     },
+     "armAngle": 34.0,
+     "spin": {
+      "rate": 2633,
+      "axis": 245,
+      "active": 27.8
+     }
+    }
+   }
+  },
+  "std-2025-ws7-yamamoto": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=808967",
+   "tracking": {
+    "system": "statcast",
+    "season": 2025,
+    "games": "postseason",
+    "n": 512,
+    "active": "Savant active spin leaderboard, 2025 regular season, spin-based"
+   },
+   "release": {
+    "x": -1.94,
+    "z": 5.31,
+    "ext": 6.49
+   },
+   "armAngle": 41.0,
+   "arsenal": {
+    "FS": {
+     "n": 149,
+     "release": {
+      "x": -2.01,
+      "z": 5.26,
+      "ext": 6.51
+     },
+     "armAngle": 38.3,
+     "spin": {
+      "rate": 1403,
+      "axis": 239,
+      "active": 78.4
+     }
+    },
+    "FF": {
+     "n": 146,
+     "release": {
+      "x": -1.99,
+      "z": 5.3,
+      "ext": 6.46
+     },
+     "armAngle": 39.6,
+     "spin": {
+      "rate": 2254,
+      "axis": 216,
+      "active": 91.0
+     }
+    },
+    "CU": {
+     "n": 117,
+     "release": {
+      "x": -1.74,
+      "z": 5.42,
+      "ext": 6.51
+     },
+     "armAngle": 47.8,
+     "spin": {
+      "rate": 2818,
+      "axis": 36,
+      "active": 94.9
+     }
+    },
+    "FC": {
+     "n": 63,
+     "release": {
+      "x": -2.03,
+      "z": 5.24,
+      "ext": 6.45
+     },
+     "armAngle": 38.1,
+     "spin": {
+      "rate": 2492,
+      "axis": 172,
+      "active": 45.8
+     }
+    },
+    "SI": {
+     "n": 37,
+     "release": {
+      "x": -1.91,
+      "z": 5.33,
+      "ext": 6.46
+     },
+     "armAngle": 40.7,
+     "spin": {
+      "rate": 2306,
+      "axis": 211,
+      "active": 87.4
+     }
+    }
+   }
+  }
+ },
+ "_about": "Per scenario pitcher: the mean release point (feet, catcher's view), arm angle and spin (rate rpm, axis degrees as a circular mean, active spin percent from the season's Savant leaderboard) of his own pitches, per arsenal type and over all of them, from the Savant search his arsenal came from. Null where Savant has no value; null throughout for a proxy spot. For the picture only: the engine reads none of it. Built by pipeline/tracking.py arsenal."
+}

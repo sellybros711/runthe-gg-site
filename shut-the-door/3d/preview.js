@@ -18,8 +18,13 @@
  * side, two-seam orientation. Cutter: backspin tilted a little glove side, some gyro. Slider: mostly
  * gyro, tilted glove side. Sweeper: sidespin to the glove side. Curveball and knuckle curve: topspin.
  * Changeup: tilted arm side, slower. Splitter and forkball: low spin, a forward tumble. Knuckleball:
- * barely turning. The packs carry no spin axis or spin rate yet, so these are family defaults
- * (labelled FAMILY_DEFAULT), and the turn is a readable rate (revolutions a second on screen), not
+ * barely turning. Those are the fallback (labelled FAMILY_DEFAULT), for a pitch the pack has no spin
+ * for (before Statcast, 2015, and proxy spots). A pitch with spin {rate, axis, active} (CONTRACT.md
+ * section 4) turns about its own axis: Savant's spin_axis is the way the spin moves the ball, catcher's
+ * view (0 topspin, 90 the first base side, 180 backspin, 270 the third base side), so the transverse
+ * axis is (cos, 0, sin) of it; active spin is the transverse share and the rest is gyro (along the
+ * flight, signed like the family's; with no active spin, the family's gyro). Its rate is his real rpm
+ * scaled to a readable turn (RPS_PER_RPM: 2,300 rpm turns 1.6 times a second on screen), not
  * the real 2,000 to 2,600 rpm, which would strobe. A change of pitch blends axis and rate (BLEND_S).
  *
  * WHEN. Shown while aiming. On the throw tap it fades out (OUT_S), long before the ball leaves the
@@ -31,14 +36,17 @@
  * ui.js) through the stage, and aim.js colours the crosshair with it: one reticle around one ball.
  */
 import * as THREE from 'three';
-import { cellPoint } from './pitch.js?v=8';
+import { cellPoint } from './pitch.js?v=10';
 import { FT } from './units.js?v=1';
 
 export const OUT_S = 0.14, BLEND_S = 0.35, SETTLE_S = 8, STOP_S = 0.6, MIN_PX = 11, BALL_IN = 2.9;
 /** The break chart's colours, in usage order (ui.js PITCH_COLORS: keep the two equal). */
 export const PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
+/** Each pitch type's own colour, Baseball Savant's (ui.js TYPE_COLORS: keep the two equal). PITCH_COLORS
+ *  by usage is the fallback for a type not here. */
+export const TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', ST: '#ddb33a', SV: '#93afd4', CU: '#00d1ed', KC: '#6236cd', CS: '#0068ff', CH: '#1dbe3a', FS: '#3bacac', FO: '#55ccab', KN: '#3c44cd', SC: '#60db33', EP: '#888888' };
 
-/* The family defaults (no spin axis or spin rate in the packs yet). arm, up: the direction the
+/* The family defaults (the fallback for a pitch with no spin in the pack). arm, up: the direction the
    spin pushes the ball (arm side and up, in the pitcher's hand frame, before mirroring); gyro: the
    share of the spin along the flight; rps: a readable turn on screen; grip: the seam orientation. */
 export const FAMILY_DEFAULT = Object.freeze({
@@ -59,9 +67,22 @@ export const FAMILY_DEFAULT = Object.freeze({
 /** The spin of a pitch type for a hand: { axis: unit vector, catcher's view (x to the first base
     side, y toward the mound, z up), rps, grip }. The ball turns right handed about axis. Magnus:
     the push is axis x velocity, velocity is about -y, so the push is (axis.z, 0, -axis.x). */
-export function spinOf(type, hand) {
+export const RPS_PER_RPM = 1.6 / 2300, RPS_MIN = 0.05, RPS_MAX = 2.4;
+/** pitch: an arsenal entry ({type, spin}) or a bare type (the family default). */
+export function spinOf(pitch, hand) {
+  const type = typeof pitch === 'string' ? pitch : pitch && pitch.type;
   const d = FAMILY_DEFAULT[type] || FAMILY_DEFAULT.FF;
   const armX = hand === 'L' ? 1 : -1;            // a righty's arm side is the third base side, x < 0
+  const sp = pitch && typeof pitch === 'object' ? pitch.spin : null;
+  if (sp && Number.isFinite(sp.axis) && Number.isFinite(sp.rate)) {
+    const th = sp.axis * Math.PI / 180;
+    const act = Number.isFinite(sp.active) ? Math.max(0, Math.min(1, sp.active / 100)) : Math.sqrt(Math.max(0, 1 - d.gyro * d.gyro));
+    const gy = Math.sqrt(Math.max(0, 1 - act * act));
+    // push (sin, -cos) = (axis.z, -axis.x): axis.x = cos, axis.z = sin
+    const axis = { x: Math.cos(th) * act, y: gy * -armX, z: Math.sin(th) * act };
+    const rps = Math.max(RPS_MIN, Math.min(RPS_MAX, sp.rate * RPS_PER_RPM));
+    return { axis, rps, grip: d.grip, src: 'his spin' };
+  }
   const mx = d.arm * armX, mz = d.up, m = Math.hypot(mx, mz) || 1;
   const t = Math.sqrt(Math.max(0, 1 - d.gyro * d.gyro));
   // push (mx, mz) = (axis.z, -axis.x): axis.x = -mz, axis.z = mx; the gyro part along the flight,
@@ -143,9 +164,10 @@ export class Ghost {
     this.pos.set(-aim.x * FT, aim.z * FT, (17 / 12) * FT);
     this.aim = aim;
     this.color = color || PITCH_COLORS[0];
-    const key = pitch.type + (hand || 'R');
+    const sp = pitch.spin;
+    const key = pitch.type + (hand || 'R') + (sp ? ':' + sp.axis + ':' + sp.rate + ':' + sp.active : '');
     if (key !== this.key) {
-      const s = spinOf(pitch.type, hand);
+      const s = spinOf(pitch, hand);
       this.spin = s;
       // catcher's view to the scene (P(): x -> -x, y -> z, z -> y; a proper rotation, so an axis
       // maps like a point)

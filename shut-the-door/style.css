@@ -164,8 +164,6 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .d-act .btn, .r-actions .btn { flex: 1 1 auto; }
 .r-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
 .proxy { font-size: 12px; color: var(--dim); text-align: center; margin: 8px 0; }
-/* top left: the pitch dot key holds the bottom right, the minimap the top right */
-.proxy.pin { position: absolute; left: 8px; top: 8px; z-index: 6; pointer-events: none; background: rgba(10, 14, 22, .6); color: #cfd5df; padding: 2px 8px; border-radius: 6px; font-size: 11px; }
 .legal { margin-top: 22px; text-align: center; font-size: 12px; color: var(--dim); }
 .legal-mark { display: block; margin: 0 auto 10px; height: 46px; width: auto; opacity: .9; }
 .legal p { margin: 4px 0; }
@@ -181,9 +179,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .strip.big .sq { width: 32px; height: 32px; border-radius: 9px; color: #fff; font: 700 13px var(--sans); }
 .strip.big .sq.yellow { color: #2a2000; }
 
-/* ---- the mound: the HUD around the scene. The scene itself is mound.js's ---- */
-#s-mound.on { display: flex; flex-direction: column; position: relative; height: calc(100vh - 56px); height: calc(100dvh - 56px); }
-.hud { padding: 2px 10px 4px; background: var(--bg); }
+/* ---- the mound's scorebug (the home's .hb is a size up). The full screen HUD is at the end ---- */
 /* a hand hung scoreboard, slatted, in the brand's ink */
 .scorebar { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: #f4f5f7; border-radius: 14px; padding: 6px 12px;
   background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 24px), linear-gradient(180deg, #1a2130, #0b0f17); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), var(--shadow); }
@@ -220,23 +216,10 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .sb-count .row i { width: 8px; height: 8px; border-radius: 50%; border: 1.4px solid #4a5366; transition: background .3s, border-color .3s; }
 .sb-count .row i.on { background: #f4f5f7; border-color: #f4f5f7; }
 .sb-pn b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; line-height: 1; }
-.pbp { display: flex; align-items: center; gap: 10px; margin: 8px 4px 0; min-height: 34px; font-size: 15px; font-weight: 500; color: var(--dim); white-space: nowrap; overflow: hidden; }
-.pbp-tag { flex: none; font-family: var(--display); font-weight: 800; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--signal-ink); background: var(--signal); border-radius: 6px; padding: 4px 9px 3px; line-height: 1.1; }
-.pbp-tag:empty { display: none; }
-.pbp-rest { overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
-.pbp.new { animation: pbpIn .35s ease-out; }
-@keyframes pbpIn { from { opacity: .2; } to { opacity: 1; } }
-.batterbar { display: flex; align-items: center; gap: 8px; border: 0; border-top: 1px solid var(--line); background: var(--panel); padding: 7px 12px; text-align: left; min-height: 44px; }
-.bb-name { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
-.bb-name b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 20px; text-transform: uppercase; }
-.bb-line { flex: 1; color: var(--dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bb-scout { font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 9px; padding: 4px 10px; }
-.batterbar.on .bb-scout { background: var(--signal); color: #fff; border-color: var(--signal); }
-.scene { position: relative; flex: 1 1 auto; min-height: 260px; overflow: hidden; background: #0b1020; touch-action: manipulation; }
 .scene canvas { position: absolute; left: 0; top: 0; image-rendering: pixelated; }
 
 /* the live field minimap (minimap.js): a small dark card in the scene's top corner. It never takes a tap. */
-.mini { position: absolute; top: 8px; right: 8px; z-index: 4; width: 74px; padding: 3px 3px 1px; border-radius: 10px; pointer-events: none;
+.mini { position: absolute; z-index: 4; width: 74px; padding: 3px 3px 1px; border-radius: 10px; pointer-events: none;
   background: linear-gradient(180deg, #1a2130, #0b0f17); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07), 0 4px 14px rgba(0, 0, 0, .35); }
 .mini[hidden] { display: none; }
 .mini svg { display: block; width: 100%; height: auto; }
@@ -252,7 +235,6 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .mm-dot { fill: var(--signal); stroke: #0b0f17; stroke-width: 4; opacity: .34; transform-box: fill-box; transform-origin: center; transition: opacity 1.2s ease-out; }
 .mm-dot.now { opacity: 1; animation: mmPop .3s ease-out; }
 @keyframes mmPop { from { transform: scale(.4); } to { transform: scale(1); } }
-@media (min-width: 700px) { .mini { width: 128px; top: 12px; right: 12px; } }
 
 /* the coach's mini grid (mound.js Grid), mirrored by screenCol(). The mound aims with aim.js */
 .grid { position: absolute; z-index: 3; }
@@ -311,13 +293,6 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .aim-x.sr .aim-tag { left: auto; right: 0; transform: none; }
 /* the old drawing (no WebGL) plays the pitch over the aim: it goes quiet in flight */
 .scene.flying .aim .aim-heat { opacity: .3; }
-/* the heat row: the grid's mode switch and its scale, always on, above the scene (tokens, both themes) */
-.heatbar { display: flex; align-items: center; gap: 10px; padding: 6px 10px 2px; background: var(--bg); }
-.heatbar .legend { display: flex; align-items: center; gap: 4px; margin-left: auto; font-family: var(--display); font-weight: 600; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
-.heatbar .legend i { width: 12px; height: 12px; border-radius: 3px; }
-.heatbar .legend .lo { background: rgb(59, 111, 216); }
-.heatbar .legend .hi { background: rgb(221, 64, 52); margin-left: 6px; }
-
 /* the outing's pitches on the grid, where each crossed the plate. The colour is the result's kind
    (the neutral palette), never a grade band. This batter's pitches are the bright ones. */
 .aim .dots { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
@@ -328,18 +303,21 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .pd.swing { background: var(--signal); }
 .pd.foul { background: var(--faint); }
 .pd.inplay { background: var(--data); }
-.pd.cur { width: 12px; height: 12px; margin: -6px 0 0 -6px; opacity: 1; }
-.pd.ball.cur { box-shadow: inset 0 0 0 2px var(--dim), 0 0 0 1.5px var(--bg); }
-.dotkey { position: absolute; right: 8px; bottom: 8px; z-index: 4; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px 9px; max-width: calc(100% - 16px);
-  padding: 5px 9px; border-radius: 10px; background: var(--panel); color: var(--dim); font-size: 11px; line-height: 1; pointer-events: none; box-shadow: var(--shadow); }
+/* the at bat's dots carry their pitch number (the owner, 2026-10-26). Fixed colours, not the theme's:
+   they sit on the 3D scene in both themes, and the number is white on every kind */
+.pd.cur { width: 18px; height: 18px; margin: -9px 0 0 -9px; opacity: 1; color: #fff; font: 700 11px/18px system-ui, sans-serif;
+  text-align: center; font-style: normal; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .9), 0 1px 3px rgba(0, 0, 0, .45); }
+.pd.called.cur { background: #0b0f17; }
+.pd.foul.cur { background: #6b7487; }
+.pd.ball.cur { background: rgba(11, 15, 23, .45); box-shadow: inset 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, .45); }
+.dotkey { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 8px 2px 1px; color: var(--g-dim); font-size: 11.5px; line-height: 1; pointer-events: none; }
 .dotkey span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .dotkey .pd { position: static; margin: 0; width: 8px; height: 8px; opacity: 1; box-shadow: 0 0 0 1px var(--bg); }
 .dotkey .pd.ball { box-shadow: inset 0 0 0 1.5px var(--dim); }
 
 /* the scout card: one sentence, the rates as bars, then his line against each pitch of the
-   closer's arsenal. A sheet over the lower HUD, under the grid. Tokens only, so both themes read. */
-.scout { position: absolute; left: 8px; right: 8px; bottom: 6px; z-index: 6; overflow-y: auto; background: var(--panel); color: var(--ink);
-  border: 1px solid var(--line-2); border-radius: 14px; padding: 8px 12px 6px; font-size: 12.5px; box-shadow: var(--shadow); }
+   closer's arsenal. A sheet over the scene that keeps off the zone (ui.js placeSheet). Tokens only, so both themes read. */
+.scout { padding: 8px 12px 6px; font-size: 12.5px; }
 .sc-say { margin: 0 0 5px; font-size: 13.5px; font-weight: 600; line-height: 1.25; }
 .sc-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 5px; }
 .scout .bar { display: grid; grid-template-columns: auto 1fr 32px; align-items: center; gap: 7px; min-width: 0; }
@@ -361,54 +339,6 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .seg button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
 .seg.sm button { padding: 3px 9px; font-size: 12px; }
 .dbg { position: absolute; left: 6px; bottom: 6px; z-index: 6; font: 11px ui-monospace, monospace; background: rgba(0, 0, 0, .65); color: #b6f5c8; padding: 2px 6px; border-radius: 4px; }
-.arsenal { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 7px; padding: 8px 10px 7px; background: var(--bg); }
-/* BIG PITCH BUTTONS (the owner, 2026-10-22): the number that picks it, the name, the speed. All of
-   them on one row, so the scene keeps its height and the zone's cells stay 38 px or more */
-.arsenal[data-n="1"] { --cols: 1; }
-.arsenal[data-n="3"] { --cols: 3; }
-.arsenal[data-n="4"] { --cols: 4; }
-.arsenal[data-n="5"] { --cols: 5; }
-.arsenal[data-n="6"] { --cols: 6; }
-.pitch { min-width: 0; border: 1.5px solid var(--line-2); background: var(--panel); color: var(--ink); border-radius: 14px; padding: 7px 10px; display: flex; align-items: center; gap: 10px;
-  min-height: 58px; position: relative; overflow: hidden; text-align: left; box-shadow: 0 1px 0 var(--line); transition: background .12s, border-color .12s; }
-.pitch:hover { border-color: var(--faint); }
-.pk { flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--panel-2); border: 1px solid var(--line-2);
-  font-family: var(--display); font-style: italic; font-weight: 900; font-size: 16px; line-height: 1; color: var(--dim); }
-.pt { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
-.pt b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 21px; line-height: 1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pv { display: flex; align-items: center; font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .04em; line-height: 1.1; color: var(--dim); white-space: nowrap; }
-.pv em { font-style: normal; font-weight: 600; font-size: 17px; color: var(--ink); margin-right: 3px; font-variant-numeric: tabular-nums; letter-spacing: 0; }
-/* three or more a row is narrow: the name on top, the number beside the speed under it */
-.arsenal:not([data-n="1"]):not([data-n="2"]) .pitch { display: grid; grid-template-columns: auto auto; grid-template-areas: "n n" "k v"; justify-content: center; align-content: center;
-  column-gap: 5px; row-gap: 4px; padding: 6px 4px; text-align: center; }
-.arsenal:not([data-n="1"]):not([data-n="2"]) .pt { display: contents; }
-.arsenal:not([data-n="1"]):not([data-n="2"]) .pt b { grid-area: n; font-size: 19px; max-width: 100%; padding: 0 2px; }
-.arsenal:not([data-n="1"]):not([data-n="2"]) .pk { grid-area: k; width: 18px; height: 18px; border-radius: 5px; font-size: 12px; align-self: center; }
-.arsenal:not([data-n="1"]):not([data-n="2"]) .pv { grid-area: v; }
-.arsenal[data-n="4"][data-n] .pt b { font-size: 17px; }
-.arsenal[data-n="5"][data-n] .pt b, .arsenal[data-n="6"][data-n] .pt b { font-size: 15px; letter-spacing: -.01em; }
-.arsenal[data-n="5"] .pv, .arsenal[data-n="6"] .pv { font-size: 12px; letter-spacing: .02em; }
-.arsenal[data-n="5"] .pv em, .arsenal[data-n="6"] .pv em { font-size: 15px; margin-right: 2px; }
-.arsenal[data-n="5"] .pv .glyph, .arsenal[data-n="6"] .pv .glyph { display: none; }
-.pitch.sel { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.pitch.sel::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--signal); }
-.pitch.sel .pk { background: var(--signal); border-color: var(--signal); color: #fff; }
-.pitch.sel .pv, .pitch.sel .pv em { color: var(--bg); }
-.pitch.sel .pv { opacity: .8; }
-/* THE PAD: the throw button, the release meter in its place, and the step line under them. Both
-   keep one height: the throw button's slot is --pad-h, and the meter is placed over the pitch
-   buttons and that slot (--meter-h), so swapping one for the other never moves the scene. */
-.pad { --pad-h: 60px; padding: 0 10px; padding-bottom: max(4px, env(safe-area-inset-bottom)); background: var(--bg); }
-.pad .btn.throw { margin: 0; height: var(--pad-h); min-height: var(--pad-h); }
-.pad-say { margin: 0; height: 24px; line-height: 24px; text-align: center; font-size: 13px; font-weight: 600; letter-spacing: .01em; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* ONE CLEAR THROW BUTTON: always the word throw; lit when a pitch and a spot are picked */
-.btn.throw { width: 100%; background: var(--signal); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; line-height: 1;
-  font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase; box-shadow: 0 3px 0 #c43a12; padding: 6px 14px; }
-.btn.throw b { font-size: 30px; letter-spacing: .03em; line-height: 1; }
-.btn.throw span { font-family: var(--sans); font-style: normal; font-size: 12px; font-weight: 600; text-transform: none; opacity: .92; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.btn.throw:disabled { background: var(--panel); color: var(--faint); border: 1px solid var(--line-2); box-shadow: none; }
-.btn.throw:disabled b { opacity: .7; }
-.btn.throw.shut { background: var(--ink); color: var(--bg); box-shadow: 0 3px 0 var(--signal); }
 
 /* ---- the result: the outcome on ink, the verdict against the real pitcher, the percentile, then
    pitched like, the coach, the side by side and the share row ---- */
@@ -745,30 +675,24 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
 /* ---- the release meter (meter-ui.js, the numbers in meter.js). The owner, 2026-10-22: "it doesn't
    look updated". Meter pitching's mechanics in our brand: after the tap on throw, one night panel
-   over the pitch buttons and the throw button (placed over them, --meter-h from ui.js, so the scene
-   never moves). The head: the verb, the pitch and spot, the speed. Then the bars: effort on top
+   over the pitch buttons and the throw button (the dock's own box, so the scene never moves). The
+   head: the verb, the pitch and spot (no speed before the throw). Then the bars: effort on top
    (only when STD_METER.EFFORT is true: a fill through soft, normal and max) and accuracy (a needle
    sweeping to the bright band). The stop locks: a flash, a ring opening from the lock, the value
    held, and the one word. Execution only: no grade colours (signal and data, never green to red). */
-.pad { position: relative; }
-.pad.metering .btn.throw { visibility: hidden; }
-.relm { position: absolute; z-index: 6; left: 10px; right: 10px; bottom: calc(24px + max(4px, env(safe-area-inset-bottom)));
-  height: var(--meter-h, var(--pad-h)); box-sizing: border-box; padding: 10px 14px 12px; border-radius: 16px;
-  background: linear-gradient(180deg, var(--night-2), var(--night)); color: #f4f5f7; display: flex; flex-direction: column; justify-content: center; gap: 12px;
+.dock.metering .arsenal, .dock.metering .btn.throw { visibility: hidden; }
+.relm { position: absolute; z-index: 6; inset: 0; box-sizing: border-box; padding: 10px 14px 12px; border-radius: 16px;
+  background: linear-gradient(180deg, rgba(34, 43, 62, .9), rgba(11, 15, 23, .92)); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); color: #f4f5f7; display: flex; flex-direction: column; justify-content: center; gap: 12px;
   box-shadow: 0 3px 0 var(--signal), 0 12px 30px rgba(11, 15, 23, .3); cursor: pointer;
   touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
 :root[data-theme="dark"] .relm { box-shadow: 0 3px 0 var(--signal), inset 0 0 0 1px rgba(255, 255, 255, .08), 0 12px 30px rgba(0, 0, 0, .45); }
 .relm[hidden] { display: none; }
 .relm:focus-visible { box-shadow: 0 3px 0 var(--signal), 0 0 0 3px var(--data); }
 .relm.two { gap: 10px; padding-top: 9px; }
-/* the head: RELEASE (or SHUT IT), the pitch and the spot, the speed */
+/* the head: RELEASE (or SHUT IT), the pitch and the spot. No speed before the throw (2026-10-23) */
 .rm-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; line-height: 1; }
 .rm-verb { flex: none; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 28px; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .rm-call { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: rgba(244, 245, 247, .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rm-velo { flex: none; font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: .04em; color: rgba(244, 245, 247, .7); }
-.rm-velo em { font-style: italic; font-weight: 900; font-size: 26px; color: #fff; margin-right: 2px; display: inline-block; }
-.rm-velo.tick em { animation: rm-tick .4s ease-out; }
-@keyframes rm-tick { 0% { transform: translateY(-6px); color: var(--signal); } 60% { color: var(--signal); } 100% { transform: none; } }
 /* a bar: its name, then the track */
 .rm-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 10px; transition: opacity .15s; }
 .rm-row[hidden] { display: none; }
@@ -829,7 +753,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .aim .cell.m-painted::after { content: ''; position: absolute; inset: 6%; width: auto; height: auto; background: none; border-radius: 6px; box-shadow: 0 0 0 2px #fff, 0 0 12px 2px var(--signal); animation: rm-paint 1.3s ease-out forwards; pointer-events: none; }
 @keyframes rm-paint { 0% { opacity: 0; transform: scale(.7); } 18% { opacity: 1; transform: scale(1.04); } 100% { opacity: 0; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) {
-  .aim .cell.m-painted::after, .rm-lock.go, .relm.is-done, .relm.is-done .rm-word, .relm.is-edone .rm-etrack, .relm.is-done .rm-atrack, .relm.is-best .rm-best, .rm-velo.tick em { animation: none; }
+  .aim .cell.m-painted::after, .rm-lock.go, .relm.is-done, .relm.is-done .rm-word, .relm.is-edone .rm-etrack, .relm.is-done .rm-atrack, .relm.is-best .rm-best { animation: none; }
 }
 /* ---- what each pitch does: the break preview's line on the grid, the glyph on each pitch
    button, and the pitch guide. The line sits under the zone numbers (they keep their place above
@@ -846,10 +770,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
    In dark mode it is white, where the colours read as they are */
 :root:not([data-theme="dark"]) .pitch.sel .glyph { filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 .5px #fff); }
 .pitch { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.guide-tog { border: 1px solid var(--line-2); background: none; color: var(--dim); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.guide-tog.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.guide { position: absolute; left: 8px; right: 8px; z-index: 6; overflow-y: auto; background: var(--panel); color: var(--ink);
-  border: 1px solid var(--line-2); border-radius: 14px; padding: 5px 10px 6px; box-shadow: var(--shadow); }
+.guide { padding: 6px 12px 8px; }
 .gd-head { display: flex; align-items: center; gap: 7px; margin-bottom: 2px; }
 .gd-head .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px; }
 .gd-head b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 16px; line-height: 1; text-transform: uppercase; }
@@ -961,4 +882,292 @@ body[data-screen="s-home"] .wm-dark { display: block !important; }
   .t-l1 { font-size: 58px; }
   .t-l2 { font-size: 86px; }
   .t-sit { padding: 14px; }
+}
+
+/* ---- THE MOUND, FULL SCREEN (the owner, 2026-10-24: "the game should take up the entire screen with
+   the box score in a corner, the pitch selection there for you"). The 3D scene fills the viewport and
+   the HUD floats over it like a console game: the scorebug and the batter card top left, the menu
+   top right, the pitch buttons and THROW in the dock (along the bottom on a phone held upright, the
+   bottom right corner otherwise), the play by play as a lower third that fades. Every panel is glass
+   (translucent, the scene blurred behind it) and carries data-hud; none of them covers the zone
+   (ui.js placeHud, and the browser check measures it). Everything here is scoped to the mound. */
+#s-mound {
+  --g: rgba(255, 255, 255, .42); --g-strong: rgba(255, 255, 255, .9); --g-ink: #0b0f17; --g-dim: #4a5366; --g-line: rgba(11, 15, 23, .1); --g-2: rgba(11, 15, 23, .06);
+  --g-sel: #0b0f17; --g-sel-ink: #fff; --g-shadow: 0 6px 22px rgba(8, 12, 20, .22);
+  --st: env(safe-area-inset-top, 0px); --sb: env(safe-area-inset-bottom, 0px); --sl: env(safe-area-inset-left, 0px); --sr: env(safe-area-inset-right, 0px);
+  --gut: 12px; --tap: 44px; --col: 100%; --dock-w: auto;
+}
+:root[data-theme="dark"] #s-mound {
+  --g: rgba(12, 16, 25, .42); --g-strong: rgba(14, 19, 29, .9); --g-ink: #f4f5f7; --g-dim: #a3acbd; --g-line: rgba(255, 255, 255, .12); --g-2: rgba(255, 255, 255, .08);
+  --g-sel: #f4f5f7; --g-sel-ink: #0b0f17; --g-shadow: 0 8px 26px rgba(0, 0, 0, .42);
+}
+body[data-screen="s-mound"] { overflow: hidden; }
+body[data-screen="s-mound"] .hdr { display: none; }
+body[data-screen="s-mound"] .app { max-width: none; border: 0; }
+#s-mound.on { display: block; position: fixed; inset: 0; z-index: 20; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; background: #0b1020; }
+#s-mound .scene { position: absolute; inset: 0; overflow: hidden; background: #0b1020; touch-action: manipulation; }
+.mhud { position: absolute; inset: 0; z-index: 10; pointer-events: none; color: var(--g-ink); }
+.mhud [data-hud] { pointer-events: auto; }
+.mh-card, .mh-menu, .arsenal, .msheet, .pad-say, .mini { -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3); }
+.mh-card, .mh-menu, .arsenal, .msheet, .pad-say { background: var(--g); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); color: var(--g-ink); }
+
+/* top left: the scorebug, the batter card under it, the proxy note */
+.mh-tl { position: absolute; top: calc(var(--st) + var(--gut)); left: calc(var(--sl) + var(--gut)); width: calc(var(--col) - var(--gut) * 2 - var(--sl) - var(--sr));
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.mh-bug { max-width: calc(100% - var(--tap) - 8px); gap: 10px; padding: 6px 12px 6px 10px; border-radius: 12px;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 24px), linear-gradient(180deg, rgba(26, 33, 48, .9), rgba(11, 15, 23, .9));
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 6px 22px rgba(0, 0, 0, .3); }
+.mh-bug .sb-team .tm { max-width: 76px; }
+.mh-bug .sb-outs-wrap { gap: 4px; }
+.mh-bug .sb-bases { width: 32px; height: 24px; }
+.mh-bug .sb-outs { gap: 4px; height: 8px; }
+.mh-bug .sb-outs i { width: 8px; height: 8px; }
+.mh-card { align-self: stretch; border-radius: 14px; padding: 8px 8px 8px 12px; min-width: 0; }
+.bb-top { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; padding-right: 4px; }
+.bb-name { display: flex; align-items: center; gap: 7px; white-space: nowrap; min-width: 0; }
+.bb-name b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 20px; line-height: 1.1; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; }
+.mh-card .hand { flex: none; background: var(--g-2); border-color: var(--g-line); color: var(--g-ink); }
+.mh-card .legend { display: flex; align-items: center; gap: 4px; margin-left: auto; flex: none; font-family: var(--display); font-weight: 600; font-size: 12.5px; color: var(--g-dim); font-variant-numeric: tabular-nums; }
+.mh-card .legend i { width: 10px; height: 10px; border-radius: 3px; }
+.mh-card .legend .lo { background: rgb(59, 111, 216); }
+.mh-card .legend .hi { background: rgb(221, 64, 52); margin-left: 5px; }
+.bb-line { display: block; margin: 1px 0 0; color: var(--g-dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.heatbar { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+.mh-tog { flex: none; height: var(--tap); min-width: var(--tap); padding: 0 12px; border-radius: 11px; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-ink);
+  font-family: var(--display); font-weight: 700; font-size: 13.5px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.mh-tog.on, .mh-tog[aria-expanded="true"] { background: var(--signal); border-color: var(--signal); color: #fff; }
+.mh-card .seg { flex: 1 1 auto; min-width: 0; height: var(--tap); padding: 0; background: var(--g-2); box-shadow: inset 0 0 0 1px var(--g-line); border-radius: 11px; }
+.mh-card .seg button { flex: 1 1 0; min-width: 0; height: 100%; padding: 0 8px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--g-dim); }
+.mh-card .seg button[aria-selected="true"] { background: var(--g-sel); color: var(--g-sel-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+/* earlier at bats: one chip each; a tap shows that at bat's pitches on the zone */
+.pa-hist { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.pa-chip { height: 30px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-dim); font-size: 12px; white-space: nowrap; }
+.pa-chip b { color: var(--g-ink); font-weight: 700; }
+.pa-chip.on { background: var(--g-sel); border-color: var(--g-sel); color: var(--g-sel-ink); }
+.pa-chip.on b { color: var(--g-sel-ink); }
+.mh-card .dotkey .pd { box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+.mh-tl .proxy.pin { margin: 0; pointer-events: none; background: rgba(10, 14, 22, .66); color: #dfe3ea; padding: 3px 9px; border-radius: 7px; font-size: 11px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+
+/* top right: the menu (a header, so a tap on it never skips the play), the minimap under the card */
+.mh-tr { position: absolute; top: calc(var(--st) + var(--gut)); right: calc(var(--sr) + var(--gut)); }
+.mh-menu { width: var(--tap); height: var(--tap); border-radius: 13px; display: grid; place-items: center; padding: 0; }
+.mh-menu svg { width: 21px; height: 21px; fill: none; stroke: var(--g-ink); stroke-width: 1.9; stroke-linecap: round; }
+#s-mound .mini { top: calc(var(--hud-top, 200px) + 8px); right: calc(var(--sr) + var(--gut)); background: rgba(11, 15, 23, .72); }
+
+/* the dock: the pitch buttons in one glass tray, THROW under them, the step prompt over them */
+.dock { position: absolute; left: calc(var(--sl) + var(--gut)); right: calc(var(--sr) + var(--gut)); bottom: calc(var(--sb) + var(--gut)); width: var(--dock-w);
+  display: flex; flex-direction: column; gap: 8px; }
+.pad-say { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); margin: 0; max-width: 100%; height: 28px; line-height: 26px; padding: 0 12px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.pad-say:empty { display: none; }
+.arsenal { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 16px; }
+.arsenal[data-n="1"] { --cols: 1; }
+.arsenal[data-n="3"] { --cols: 3; }
+.arsenal[data-n="4"] { --cols: 4; }
+.arsenal[data-n="5"] { --cols: 5; }
+.arsenal[data-n="6"] { --cols: 6; }
+/* BIG PITCH BUTTONS: the key that picks it, the name and the break glyph. No speed before the throw. */
+.pitch { min-width: 0; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-ink); border-radius: 11px; padding: 6px 10px; display: flex; align-items: center; gap: 9px;
+  min-height: 52px; position: relative; overflow: hidden; text-align: left; transition: background .12s, border-color .12s; }
+.pitch:hover { border-color: var(--g-dim); }
+.pk { flex: none; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: var(--g-2); border: 1px solid var(--g-line);
+  font-family: var(--display); font-style: italic; font-weight: 900; font-size: 15px; line-height: 1; color: var(--g-dim); }
+.pt { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; flex: 1 1 auto; }
+.pt b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 20px; line-height: 1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.pv { flex: none; display: flex; align-items: center; line-height: 1; }
+.pitch .glyph { display: block; width: 17px; height: 17px; margin: 0; }
+/* three or more a row is narrow: the name on top, the key and the glyph under it */
+.arsenal:not([data-n="1"]):not([data-n="2"]) .pitch { display: grid; grid-template-columns: auto auto; grid-template-areas: "n n" "k v"; justify-content: center; align-content: center;
+  column-gap: 6px; row-gap: 5px; padding: 6px 3px; text-align: center; }
+.arsenal:not([data-n="1"]):not([data-n="2"]) .pt { display: contents; }
+.arsenal:not([data-n="1"]):not([data-n="2"]) .pt b { grid-area: n; font-size: 18px; max-width: 100%; padding: 0 2px; }
+.arsenal:not([data-n="1"]):not([data-n="2"]) .pk { grid-area: k; width: 19px; height: 19px; border-radius: 5px; font-size: 12px; align-self: center; }
+.arsenal:not([data-n="1"]):not([data-n="2"]) .pv { grid-area: v; }
+.arsenal[data-n="4"] .pt b { font-size: 17px; }
+.arsenal[data-n="5"] .pt b, .arsenal[data-n="6"] .pt b { font-size: 15px; letter-spacing: -.01em; }
+.pitch.sel { background: var(--g-sel); color: var(--g-sel-ink); border-color: var(--pc, var(--g-sel)); box-shadow: inset 0 0 0 2px var(--pc, transparent); }
+.pitch.sel::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--pc, var(--signal)); }
+.pitch.sel .pk { background: var(--pc, var(--signal)); border-color: var(--pc, var(--signal)); color: #0b0f17; }
+/* each pitch type's own colour (TYPE_COLORS in ui.js): a bar down the button's edge */
+.pitch::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--pc, transparent); }
+/* ONE CLEAR THROW BUTTON: always the word throw; lit when a pitch and a spot are picked */
+.pad { position: relative; }
+.btn.throw { width: 100%; height: 54px; min-height: 54px; margin: 0; border-radius: 14px; background: var(--signal); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; line-height: 1;
+  font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase; box-shadow: 0 3px 0 #c43a12, 0 8px 24px rgba(0, 0, 0, .3); padding: 4px 14px; }
+.btn.throw b { font-size: 28px; letter-spacing: .03em; line-height: 1; }
+.btn.throw span { font-family: var(--sans); font-style: normal; font-size: 12px; font-weight: 600; line-height: 1.25; text-transform: none; opacity: .92; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn.throw:disabled { background: var(--g); color: var(--g-dim); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.btn.throw:disabled b { opacity: .75; }
+.btn.throw.shut { background: #0b0f17; color: #fff; box-shadow: 0 3px 0 var(--signal), 0 8px 24px rgba(0, 0, 0, .3); }
+
+/* the play by play: a lower third over the scene after each pitch, then it fades. The result tag on
+   signal, the line on ink glass. It takes no tap and is never a grade. */
+.pbp { position: absolute; left: 0; right: 0; bottom: calc(100% + 44px); z-index: 2; display: flex; justify-content: center; align-items: stretch; margin: 0; pointer-events: none;
+  opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; }
+.pbp.show { opacity: 1; transform: none; }
+.pbp-tag { flex: none; display: flex; align-items: center; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 17px; letter-spacing: .06em; text-transform: uppercase;
+  color: #fff; background: var(--signal); border-radius: 9px 0 0 9px; padding: 6px 11px 5px; line-height: 1.1; }
+.pbp-tag:empty { display: none; }
+.pbp-rest { min-width: 0; display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 6px 12px; font-size: 14px; font-weight: 600; color: #f4f5f7;
+  background: rgba(11, 15, 23, .8); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-radius: 0 9px 9px 0; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); }
+.pbp-tag:empty + .pbp-rest { border-radius: 9px; }
+.mh-card .seg button[aria-selected="true"] { border-radius: 11px; }
+.pbp-rest:empty { display: none; }
+
+/* the sheets over the scene (scout, pitch guide): placed by ui.js placeSheet, never over the zone */
+.msheet { position: absolute; z-index: 12; left: calc(var(--sl) + var(--gut)); right: calc(var(--sr) + var(--gut)); overflow-y: auto; border-radius: 16px; background: var(--g-strong); }
+.msheet .gd-x { width: var(--tap); height: var(--tap); margin: -10px -10px -10px auto; }
+#m-scout { bottom: calc(var(--sb) + var(--gut)); }
+#m-scout.top, #m-guide { bottom: auto; }
+#m-guide.low { top: auto; bottom: calc(var(--sb) + var(--gut)); }
+
+@media (prefers-reduced-motion: reduce) { .pbp { transition: none; } }
+
+/* ---- ABS challenges (rules 4). The scorebug's marks, the button beside THROW, the replay ---- */
+/* challenges left a side: two ticks after the club's name, lit while one is left */
+.sb-ch { display: inline-flex; gap: 3px; flex: none; margin-left: -2px; }
+.sb-ch[hidden] { display: none; }
+.sb-ch i { width: 5px; height: 9px; border-radius: 1.5px; background: rgba(255, 255, 255, .14); }
+.sb-ch i.on { background: #8fb0ff; box-shadow: 0 0 6px rgba(91, 130, 255, .55); }
+.mh-bug .sb-team .tm { max-width: 64px; }
+/* the button: ink glass with a data blue edge, beside THROW, as tall as it */
+.pad.abs-live { display: flex; gap: 8px; }
+.pad.abs-live .btn.throw { flex: 1 1 auto; min-width: 0; width: auto; }
+.btn.abs-b { position: relative; flex: 0 0 42%; height: 54px; min-height: 54px; margin: 0; padding: 4px 10px; border-radius: 14px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; line-height: 1;
+  background: rgba(11, 15, 23, .86); color: #fff; border: 1.5px solid var(--data); box-shadow: 0 3px 0 #1c3db8, 0 8px 24px rgba(0, 0, 0, .3);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase;
+  animation: ab-in .22s ease-out; }
+.btn.abs-b[hidden] { display: none; }
+.btn.abs-b b { font-size: 22px; letter-spacing: .04em; }
+.ab-dots { display: flex; gap: 5px; }
+.ab-dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .45); }
+.ab-dots i.on { background: #8fb0ff; border-color: #8fb0ff; }
+.btn.abs-b:active { transform: translateY(2px); box-shadow: 0 1px 0 #1c3db8, 0 4px 12px rgba(0, 0, 0, .3); }
+/* the last call window: a clock drains along the bottom, then the result comes up */
+.ab-clock { display: none; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--data); transform-origin: left center; }
+.btn.abs-b.clock .ab-clock { display: block; animation: ab-clock var(--clock, 3.5s) linear forwards; }
+@keyframes ab-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes ab-clock { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* the replay: over the dock for a moment, ink in both themes like the meter and the lower third */
+.dock.replaying .arsenal, .dock.replaying .pad, .dock.replaying .pad-say { visibility: hidden; }
+.absr { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; gap: 14px; padding: 10px 16px 10px 12px; border-radius: 16px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(20, 26, 40, .92), rgba(8, 11, 18, .94)); color: #f4f5f7; border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .42); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); cursor: pointer;
+  opacity: 0; transform: translateY(8px); transition: opacity .18s ease, transform .18s ease; --ar: 1; }
+.absr[hidden] { display: none; }
+.absr.show { opacity: 1; transform: none; }
+.absr.quick { --ar: .67; }
+.absr::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--data); }
+.absr.over::before { background: var(--signal); }
+.ar-zone { flex: none; align-self: stretch; width: 104px; display: grid; place-items: center; }
+.ar-zone svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ar-plate { fill: rgba(255, 255, 255, .06); stroke: #f4f5f7; stroke-width: .7; }
+.ar-grid line { stroke: rgba(255, 255, 255, .16); stroke-width: .35; }
+.ar-edge { stroke: #8fb0ff; stroke-width: .6; stroke-dasharray: 1.2 .9; opacity: 0; }
+.absr.over .ar-edge { stroke: var(--signal); }
+.ar-ball { stroke: #fff; stroke-width: .45; transform-box: fill-box; transform-origin: center; }
+.ar-txt { min-width: 0; display: flex; flex-direction: column; gap: 5px; line-height: 1; }
+.ar-k { font-family: var(--display); font-weight: 700; font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: #a3acbd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ar-k b { color: #8fb0ff; font-weight: 900; margin-right: 3px; }
+.ar-d { font-size: 14px; font-weight: 600; color: #dfe3ea; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ar-d b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; color: #fff; margin-right: 4px; }
+.ar-v { align-self: flex-start; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 26px; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+  padding: 5px 10px 4px; border-radius: 8px; background: rgba(255, 255, 255, .1); color: #fff; }
+.absr.over .ar-v { background: var(--signal); }
+/* the beats: the ball lands, the line to the edge and the inches, then the verdict */
+.absr.show .ar-ball { animation: ar-ball calc(.28s * var(--ar)) cubic-bezier(.2, .9, .3, 1.2) both; }
+.absr.show .ar-edge { animation: ar-fade calc(.2s * var(--ar)) calc(.3s * var(--ar)) both; }
+.absr.show .ar-d { animation: ar-up calc(.2s * var(--ar)) calc(.32s * var(--ar)) both; }
+.absr.show .ar-v { animation: ar-stamp calc(.26s * var(--ar)) calc(.62s * var(--ar)) cubic-bezier(.2, .9, .3, 1.3) both; }
+@keyframes ar-ball { from { opacity: 0; transform: scale(2.4); } to { opacity: 1; transform: none; } }
+@keyframes ar-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ar-up { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes ar-stamp { from { opacity: 0; transform: scale(1.35); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .absr { transition: none; }
+  .absr.show .ar-ball, .absr.show .ar-d, .absr.show .ar-v, .btn.abs-b { animation: none; }
+  .absr.show .ar-edge { animation: none; opacity: 1; }
+}
+/* an overturned call: a data blue ring on its pitch dot, and a tag on its at bat's chip */
+.dots .pd.abs { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px #5b82ff; }
+.dots .pd.ball.abs { box-shadow: inset 0 0 0 2px var(--dim), 0 0 0 1.5px var(--bg), 0 0 0 3px #5b82ff; }
+.dotkey .pd.abs { box-shadow: 0 0 0 1.5px #5b82ff; }
+.pa-abs { display: inline-block; margin-left: 5px; padding: 2px 4px 1px; border-radius: 4px; background: #2b59ff; color: #fff; font-style: normal;
+  font-family: var(--display); font-weight: 800; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; vertical-align: 1px; }
+
+/* sideways (a phone held flat, a desk): the left column, the dock in the bottom right corner as a
+   list, the play by play bottom left. The zone keeps the middle. */
+@media (orientation: landscape) {
+  #s-mound { --col: 330px; --dock-w: 252px; }
+  .dock { left: auto; }
+  #s-mound .mh-bug { max-width: none; }
+  #m-arsenal[data-n] { grid-template-columns: 1fr; gap: 5px; }
+  #m-arsenal[data-n] .pitch { display: flex; min-height: var(--tap); padding: 4px 10px; text-align: left; }
+  #m-arsenal[data-n] .pt { display: flex; }
+  #m-arsenal[data-n] .pt b { font-size: 18px; padding: 0; }
+  #m-arsenal[data-n] .pk { width: 22px; height: 22px; font-size: 13px; }
+  #m-arsenal[data-n] .pv .glyph { display: block; }
+  /* the lower third in the bottom left corner, a broadcast's place for it */
+  .pbp { position: fixed; left: calc(var(--sl) + var(--gut)); right: auto; bottom: calc(var(--sb) + var(--gut)); width: max-content;
+    max-width: calc(100vw - var(--dock-w) - var(--gut) * 3 - var(--sl) - var(--sr)); justify-content: flex-start; }
+  .msheet { right: auto; width: calc(var(--col) - var(--gut) * 2); }
+  #s-mound .mini { top: calc(var(--st) + var(--gut) + var(--tap) + 8px); }
+  /* the dock is a narrow tall corner: the replay stacks, the zone over the words */
+  .absr { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px 12px 14px; text-align: center; }
+  .ar-zone { align-self: center; width: auto; height: min(46%, 150px); aspect-ratio: 1; flex: 0 1 auto; min-height: 0; }
+  .ar-txt { align-items: center; max-width: 100%; }
+  .ar-v { align-self: center; }
+}
+/* a phone on its side is short: two columns of pitches */
+@media (orientation: landscape) and (max-height: 520px) {
+  #s-mound { --col: 284px; --dock-w: 244px; }
+  #m-arsenal[data-n="5"], #m-arsenal[data-n="6"] { grid-template-columns: 1fr 1fr; }
+  #m-arsenal[data-n] .pitch { padding: 4px 8px; gap: 6px; }
+  #m-arsenal[data-n] .pt b { font-size: 15px; }
+  #m-arsenal[data-n] .pk { width: 19px; height: 19px; font-size: 12px; }
+  .btn.throw { height: 48px; min-height: 48px; padding: 3px 12px; gap: 1px; }
+  .btn.throw b { font-size: 24px; }
+  .btn.abs-b { height: 48px; min-height: 48px; gap: 4px; }
+  .btn.abs-b b { font-size: 18px; }
+  .absr { gap: 8px; padding: 10px 10px 12px; }
+  .ar-v { font-size: 21px; }
+  /* a narrow column: the switch on its own row under the toggles */
+  .heatbar { flex-wrap: wrap; }
+  .mh-card .seg { order: 2; flex: 1 0 100%; }
+  .bb-name b { font-size: 18px; }
+}
+/* a desk: a size up, the pitch list The Show's way */
+@media (orientation: landscape) and (min-width: 1000px) and (min-height: 600px) {
+  #s-mound { --gut: 20px; --col: 400px; --dock-w: 300px; --tap: 40px; }
+  .mh-bug { padding: 8px 16px 8px 12px; gap: 14px; border-radius: 14px; }
+  .mh-bug .sb-team { height: 26px; }
+  .mh-bug .sb-team .tm { font-size: 14px; max-width: 110px; }
+  .mh-bug .sb-team b { font-size: 28px; }
+  .mh-bug .sb-inn { font-size: 15px; padding: 7px 9px; }
+  .mh-bug .sb-bases { width: 40px; height: 30px; }
+  .mh-card { padding: 10px 10px 10px 14px; }
+  .bb-name b { font-size: 24px; }
+  .bb-line { font-size: 13px; }
+  #m-arsenal[data-n] .pitch { min-height: 50px; padding: 6px 12px; }
+  #m-arsenal[data-n] .pt b { font-size: 21px; }
+  #m-arsenal[data-n] .pk { width: 26px; height: 26px; font-size: 16px; }
+  .btn.throw { height: 60px; min-height: 60px; }
+  .btn.throw b { font-size: 32px; }
+  .btn.abs-b { height: 60px; min-height: 60px; }
+  .btn.abs-b b { font-size: 24px; }
+  .ar-k { font-size: 14px; }
+  .ar-d { font-size: 16px; }
+  .ar-d b { font-size: 20px; }
+  .ar-v { font-size: 32px; }
+  .pbp-tag { font-size: 22px; padding: 8px 14px 7px; }
+  .pbp-rest { font-size: 16px; padding: 8px 16px; }
+  #s-mound .mini { width: 128px; }
+  /* the meter fills the dock's corner: bigger bars to hit without looking */
+  .relm { padding: 18px 18px 20px; gap: 22px; }
+  .relm .rm-verb { font-size: 34px; }
+  .relm .rm-track { height: 42px; }
+  .relm:not(.two) .rm-atrack { height: 64px; }
+  .relm .rm-row { grid-template-columns: 1fr; gap: 8px; }
 }
