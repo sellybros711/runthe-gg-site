@@ -336,8 +336,23 @@ Each part is marked **data**, **game choice (not data)**, **game rule** or **mod
 3. **The miss (data, then a game choice).** His fastest slice misses wider than his middle one:
    fastballs 3%, breaking balls 11%, offspeed 6% (`EFFORT.SPREAD`). **Game choice:** that is
    doubled (`SPREAD_GAME` 2), and applies above the middle only.
-4. **The window (a game rule).** The accuracy window is x1.25 at `e = 0`, x1 at 0.5 and x0.6 at 1,
-   straight between (`meter.js windowScale`). Both bands shrink with it.
+4. **The window, as the ring's speed (a game rule).** The accuracy window is x1.25 at `e = 0`, x1
+   at 0.5 and x0.6 at 1, straight between (`meter.js windowScale`), so at command 50 the bright band
+   is +/-20.6 ms at the softest, +/-16.5 at his ordinary effort and +/-9.9 at max. Since the combo
+   meter (the owner, 2026-10-26: power on a column, then a ring closing on the aim point) the player
+   sees that window as the ring's speed: one pass takes `ringMs(e) = SWEEP_MS x windowScale(e)`
+   (1062.5 ms soft, 850 ordinary, 510 max), so the bands sit at the same place on the ring at every
+   power and max closes fastest. q is `qOf(ringErrAt(t, e), command, e)`: for the same miss in ms it
+   is exactly the q the two bar meter gave, so a stored call's `q` and `e` mean what they meant and
+   every outing replays unchanged. Measured on the meter's ordinary tap (`meter.js TIMING`, 60 ms,
+   one slip in ten) at command 50: mean q 0.59 soft, 0.52 ordinary, 0.35 max; the bright band 24%,
+   19%, 12%. Those are the bar's numbers, because the window in ms did not move. If real players'
+   misses in ms grow with the ring's speed, max is harder than that model says (a strategy run on
+   real stored calls settles it).
+   **Perfect** (execution only, never the grade): a perfect power is `e >= PERFECT_E` (0.97, the top
+   of the column) and a perfect release `q >= PERFECT_Q` (0.9, the word's "perfect release",
+   `meter.js perfectOf`). Both on one pitch plays the one celebration (the stitches, a gold sparkle
+   behind the ball); it changes nothing the engine reads.
 5. **The arm (a model, tuned).** A pitch counts `1 + 1 x (2e - 1)` pitches on the arm above the
    middle (2 at max) and `1 - 0.5 x (1 - 2e)` below (0.5 at the softest) for every later pitch
    (`grade.js loadOf`, `fatigueOf`). The extra over 1 builds a **strain** that easier pitches pay

@@ -26,6 +26,7 @@ import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import * as G from './gear3d.js?v=3';
 
 const G_FT = 32.17;
+const SPARKS = 36;          // the sparkle's quads (a perfect power and a perfect release, buildSparkle)
 export const T_RELEASE = 0.8;
 
 /** Contract section 2: a cell's centre, moved by the free aim point at = [u, v] inside it
@@ -123,6 +124,11 @@ export class Pitch {
     this.ball.visible = false;
     scene.add(this.ball);
     this.buildTracer();
+    // a perfect power and a perfect release on one pitch (meter.js perfectOf, on the call the engine
+    // kept): a slight sparkle behind the ball (the owner, 2026-10-26). An overlay only: nothing it
+    // does reaches the ball, its flight, its timing or the first person.
+    const M = typeof window !== 'undefined' ? window.STD_METER : null, pc = play.call || {};
+    if (M && M.perfectOf && M.perfectOf(pc.e ?? null, pc.q ?? null).both) this.buildSparkle();
     this.buildMarkers();
     this.buildGrid(batter);
     if (!grid) for (const o of this.grid) o.visible = false;
@@ -188,7 +194,7 @@ export class Pitch {
 
   /** Take this pitch's ball, trail, grid and markers out of the scene (the next pitch has its own). */
   dispose() {
-    for (const o of [this.ball, this.tracer, this.aimRing, this.hitDot, ...(this.grid || [])]) {
+    for (const o of [this.ball, this.tracer, this.sparkle, this.aimRing, this.hitDot, ...(this.grid || [])]) {
       if (!o) continue;
       this.scene.remove(o);
       o.traverse((x) => { if (x.geometry) x.geometry.dispose(); if (x.material && x.material.map && x.material.map.isCanvasTexture) x.material.map.dispose(); if (x.material) x.material.dispose(); });
@@ -268,6 +274,59 @@ export class Pitch {
     pos.needsUpdate = true; a.needsUpdate = true;
   }
 
+  /** THE SPARKLE: SPARKS little star quads trailing the ball for a third of a second, warm gold,
+      each a fixed jitter (a hash of its index, never a random draw) that spreads as it ages, twinkling
+      and fading with age. Drawn only after the ball joins its own path (the lens), gone at the plate.
+      One mesh, one draw; dispose() takes it with the rest. */
+  buildSparkle() {
+    const N = SPARKS, geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 4 * 3), 3));
+    geo.setAttribute('a', new THREE.BufferAttribute(new Float32Array(N * 4), 1));
+    const uv = new Float32Array(N * 4 * 2), idx = [];
+    for (let i = 0; i < N; i++) {
+      uv.set([-1, -1, 1, -1, 1, 1, -1, 1], i * 8);
+      const b = i * 4; idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(idx);
+    const mat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uColor: { value: new THREE.Color(1.0, 0.8, 0.42) } },
+      vertexShader: 'attribute float a; varying float vA; varying vec2 vUv; void main(){ vA = a; vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      // a soft core and a four point glint
+      fragmentShader: 'uniform vec3 uColor; varying float vA; varying vec2 vUv; void main(){ float r = length(vUv); float core = pow(max(0.0, 1.0 - r), 3.0); float glint = max(0.0, 1.0 - abs(vUv.x) * 9.0) + max(0.0, 1.0 - abs(vUv.y) * 9.0); glint *= max(0.0, 1.0 - r); gl_FragColor = vec4(uColor * (core + 0.7 * glint) * vA, 1.0); }',
+    });
+    this.sparkle = new THREE.Mesh(geo, mat);
+    this.sparkle.frustumCulled = false;
+    this.sparkle.renderOrder = 5;
+    this.scene.add(this.sparkle);
+    this.sparkR = new THREE.Vector3(); this.sparkU = new THREE.Vector3();
+  }
+
+  updateSparkle(t, camera) {
+    const pos = this.sparkle.geometry.attributes.position, a = this.sparkle.geometry.attributes.a;
+    const tt = t - this.tRel, join = this.lens ? this.lens.join : 0;
+    const fade = 1 - clamp01((t - this.tPlate) / 0.12);
+    const R = this.sparkR.setFromMatrixColumn(camera.matrixWorld, 0), U = this.sparkU.setFromMatrixColumn(camera.matrixWorld, 1);
+    for (let i = 0; i < SPARKS; i++) {
+      const k = i / SPARKS, age = (i + 1) * 0.009, ts = tt - age;
+      const on = ts >= join && ts <= this.f.T && fade > 0 ? 1 : 0;
+      const p = on ? this.pointAt(ts) : this.sparkR.clone().set(0, 0, 0);
+      // the fixed jitter: a hash of i, spreading with age
+      const h1 = Math.sin(i * 12.9898) * 43758.5453, h2 = Math.sin(i * 78.233) * 12543.1234, h3 = Math.sin(i * 39.425) * 24634.6345;
+      const sp = 0.35 * age;
+      p.x += (h1 - Math.floor(h1) - 0.5) * sp; p.y += (h2 - Math.floor(h2) - 0.5) * sp; p.z += (h3 - Math.floor(h3) - 0.5) * sp;
+      const w = 0.032 * (1 - 0.55 * k) * on;
+      const tw = 0.6 + 0.4 * Math.sin(tt * 47 + i * 2.3);
+      for (let c = 0; c < 4; c++) {
+        const sx = c === 0 || c === 3 ? -1 : 1, sy = c < 2 ? -1 : 1;
+        pos.setXYZ(i * 4 + c, p.x + (R.x * sx + U.x * sy) * w, p.y + (R.y * sx + U.y * sy) * w, p.z + (R.z * sx + U.z * sy) * w);
+        a.setX(i * 4 + c, Math.pow(1 - k, 1.5) * tw * fade * 0.9 * on);
+      }
+    }
+    pos.needsUpdate = true; a.needsUpdate = true;
+  }
+
   /** The 5x5 target grid (contract section 2) on the front plane of the plate, in catcher's view
       coordinates through P(): the pitcher's view mirror comes from the camera. Faint, shown only
       while aiming, gone before the ball leaves the hand. The aimed cell is filled a touch. */
@@ -326,6 +385,7 @@ export class Pitch {
     }
     if (camera) {
       this.updateTracer(t, camera);
+      if (this.sparkle) this.updateSparkle(t, camera);
       for (const m of [this.aimRing, this.hitDot]) m.lookAt(camera.position);
     }
     // aiming: the grid is up until a beat before release, then gone for the pitch
