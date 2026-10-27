@@ -619,7 +619,25 @@ export class InPlay {
       // leans round it, never a right angle in a frame, lab/pipeline/check-jolt.mjs)
       let hd = st.head;
       if (!glide) { const a = tr.at(Math.max(0, s - 0.1)), b = tr.at(s + 0.1); if (Math.hypot(b.x - a.x, b.y - a.y) > 1) hd = heading(a, b); }
-      yaw = faceYaw + angDiff(faceYaw, hd) * w;
+      // (on his feet, slow, and moving away from where he faces, as the pitcher backing off a liner: he turns
+      // toward his heading less the further behind him it is, and not at all straight back, where he backs
+      // off facing the play. Half turned to it, he spun half round in a frame as his heading crossed straight
+      // behind him (163 m/s, check-jolt.mjs). At a run he turns to his heading as before, and a man getting up
+      // from a dive comes up as he did, as does anyone after his first act)
+      let rel = angDiff(faceYaw, hd);
+      // (only before he does anything: no act yet, none within the next 0.6 s. Near a catch or a pickup it swung
+      // him further at the frame his attention jumps to the ball in his glove)
+      const up = !acts.some((a) => a.t < s + 0.6);
+      if (up && Math.abs(rel) > Math.PI / 2) { const kb = 1 - Math.pow(w, 8); rel = rel * (1 - kb) + Math.sign(rel) * (Math.PI - Math.abs(rel)) * kb; }
+      yaw = faceYaw + rel * w;
+    }
+    // (a ball picked up on the run: his track ends at the ball, and he comes round from the way he ran to
+    // where he faces over a third of a second. Facing the run one frame and the infield the next, his planted
+    // feet swung round him at 33 m/s, check-jolt.mjs skate fielder pickup)
+    const tkP = takes.filter((x) => x.t <= s + 1e-6).pop();
+    if (tkP && tkP.key.kind === 'pickup' && s > tkP.t && s < tkP.t + 0.35) {
+      const e = tr.at(tkP.t - 0.02), kk = e.head != null ? smooth((e.spd - 3) / 8) * (1 - smooth(ramp(s, tkP.t, tkP.t + 0.35))) : 0;
+      yaw += angDiff(yaw, e.head) * kk;
     }
     // getting down to the ball he took eases out after it over a third of a second, never popping up the
     // frame after the ball is in (check-jolt.mjs); first, so what the fit added goes on top as it did
