@@ -2789,6 +2789,26 @@ if (prose) {
   check(read('setlist/pxhd.js') === extract(), 'setlist/pxhd.js is golf\'s PXHD, unedited (run scripts/setlist/extract_pxhd.mjs)');
   check(/from '\.\/pxhd\.js\?v=\d+'/.test(world) && /from '\.\/world\.js\?v=\d+'/.test(stage), 'and the stage draws with it (through world.js)');
 }
+/* BACKSTAGE (2026-10-27): the band soundchecking behind the front screen. The same sprites and the
+   same motion as the show, so it must come from world.js and nowhere else; it is scenery, so it
+   reads no song, score or rule; and its bus sign is the next show's DATE, never its venue, because
+   no room or venue is named on screen. It must load after the screen is up and stop when it is
+   left, or the front screen pays for a picture nobody can see. */
+{
+  const back = read('setlist/backstage.js');
+  check(/import \{[^}]*bandPose[^}]*\} from '\.\/world\.js\?v=\d+'/.test(back),
+    'the backstage band moves with world.js\'s bandPose, the same as the show');
+  check(!/from\s+['"]\.\/scoring\.js/.test(back) && !/scoreShow|scorePerf|show_gap/.test(back),
+    'and reads nothing but its band and its sign');
+  const sign = cdSlice('function busSign(){', '\n}');
+  check(!!sign && /next\.date/.test(sign) && !/venue|city|state/.test(sign),
+    'the bus sign is the next show\'s date, never where it is');
+  const mount = cdSlice('function mountBackstage(){', '\n}');
+  check(/requestIdleCallback/.test(mount) && /import\('\.\/backstage\.js\?v=\d+'\)/.test(mount),
+    'the scene loads after the screen is up, on its own');
+  check(/if \(S\.backstage\)\s*\{\s*S\.backstage\.destroy\(\)/.test(cdSlice('function setScreen(name){', '\n}')),
+    'and stops when the screen changes');
+}
 
 console.log();
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
