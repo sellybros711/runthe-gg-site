@@ -2969,6 +2969,28 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   :is(body[data-screen="tour"], body[data-screen="songs"], body[data-screen="board"], body[data-screen="profile"],
       body[data-screen="nights"], body[data-screen="browse"]) .stripbox:has(> canvas.on){display:block;}
   @media (min-width:900px){ .stripbox{max-width:780px; margin-left:auto; margin-right:auto;} }
+
+  /* LIGHTS DOWN (2026-10-27). Building a show from the front screen is the house going dark: the
+     props drop away, the room dims, three beams come up, and the next screen opens as they fade. It
+     runs alongside the archive loading, never in front of it, and not at all with reduced motion. */
+  #houseDim{position:fixed; inset:0; z-index:80; pointer-events:none; visibility:hidden; opacity:0;
+    background:#0B0718; overflow:hidden;}
+  #houseDim.on{visibility:visible; opacity:.94; transition:opacity .45s ease .12s;}
+  #houseDim.up{visibility:visible; opacity:0; transition:opacity .6s ease;}
+  #houseDim i{position:absolute; bottom:-6vh; width:38vmax; height:112vh; margin-left:-19vmax;
+    transform-origin:50% 100%; opacity:0; transform:rotate(calc(var(--r) * -1));
+    clip-path:polygon(46% 100%, 54% 100%, 100% 0, 0 0);
+    background:linear-gradient(to top, var(--c), transparent 85%);}
+  #houseDim i:nth-child(1){left:18%; --r:-16deg; --c:rgba(255,111,193,.42);}
+  #houseDim i:nth-child(2){left:50%; --r:0deg; --c:rgba(91,224,230,.38);}
+  #houseDim i:nth-child(3){left:82%; --r:16deg; --c:rgba(150,110,255,.42);}
+  #houseDim.on i{opacity:1; transform:rotate(var(--r)); transition:opacity .3s ease .35s, transform .7s ease .35s;}
+  body.lightsdown #app > *{transform:translateY(26px); opacity:0;
+    transition:transform .38s ease, opacity .32s ease;}
+  body.lightsdown #app > *:nth-child(2){transition-delay:.05s;}
+  body.lightsdown #app > *:nth-child(3){transition-delay:.1s;}
+  body.lightsdown #app > *:nth-child(n+4){transition-delay:.15s;}
+  @media (prefers-reduced-motion: reduce){ #houseDim{display:none;} body.lightsdown #app > *{transform:none; opacity:1;} }
 </style>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
@@ -3699,7 +3721,31 @@ function setScreen(name){
   if (name === 'reveal' || name === 'draft') saveDraft();
   render();
   mountStrip(name);
+  if (name !== 'loading') lightsUp();
   if (changed) window.scrollTo(0, 0);
+}
+
+/* LIGHTS DOWN, from the front screen into a show (the CSS says what it looks like). It resolves when
+   the room is dark; the next real screen brings the lights back up through setScreen. */
+function lightsDown(){
+  if (S.screen !== 'home' || matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
+  let el = document.getElementById('houseDim');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'houseDim'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = '<i></i><i></i><i></i>';
+    document.body.appendChild(el);
+  }
+  el.classList.remove('up'); void el.offsetWidth;
+  el.classList.add('on');
+  document.body.classList.add('lightsdown');
+  return new Promise(r => setTimeout(r, 520));
+}
+function lightsUp(){
+  document.body.classList.remove('lightsdown');
+  const el = document.getElementById('houseDim');
+  if (!el || !el.classList.contains('on')) return;
+  el.classList.remove('on'); el.classList.add('up');
+  setTimeout(() => el.classList.remove('up'), 700);
 }
 
 /* THE BAND STRIP over the browsing screens. It lives outside #app, so a screen that re-renders itself
@@ -7016,11 +7062,15 @@ async function start(bandId, opts){
   if (daily && dailyState(bandId, daily)) return;   // one try a day
 
   S.band = band; S.error = '';
+  // The archive starts loading now; the lights go down while it does.
+  const data = fetchBand(band);
+  data.catch(() => {});
+  await lightsDown();
   setScreen('loading');
   renderLoading(`Loading the ${band.label} archive…`);
 
   try {
-    S.data = await fetchBand(band);
+    S.data = await data;
   } catch (e){
     S.error = e.message;
     setScreen('home');

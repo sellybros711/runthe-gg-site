@@ -2853,6 +2853,15 @@ if (prose) {
     'and it loads after the screen is up, from backstage.js');
 }
 
+/* LIGHTS DOWN (2026-10-27): the front screen going dark into a show. It runs alongside the archive
+   loading, not in front of it, only from the front screen, and never with reduced motion. */
+{
+  const down = cdSlice('function lightsDown(){', '\n}');
+  check(/S\.screen !== 'home'/.test(down) && /prefers-reduced-motion/.test(down), 'lights down only from the front screen, and never with reduced motion');
+  const st = cdSlice('async function start(bandId, opts){', '\n}');
+  check(/const data = fetchBand\(band\);[\s\S]*await lightsDown\(\);/.test(st), 'and the archive is already loading while it plays');
+}
+
 console.log();
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
 process.exit(failures ? 1 : 0);
