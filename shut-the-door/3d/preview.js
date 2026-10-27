@@ -36,7 +36,7 @@
  * ui.js) through the stage, and aim.js colours the crosshair with it: one reticle around one ball.
  */
 import * as THREE from 'three';
-import { cellPoint } from './pitch.js?v=10';
+import { cellPoint } from './pitch.js?v=11';
 import { FT } from './units.js?v=1';
 
 export const OUT_S = 0.14, BLEND_S = 0.35, SETTLE_S = 8, STOP_S = 0.6, MIN_PX = 11, BALL_IN = 2.9;
