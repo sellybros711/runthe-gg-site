@@ -150,6 +150,10 @@ if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missin
  * Auto ads must stay off in the AdSense dashboard; this check cannot see that, so it also
  * fails on the page-level switch that would turn it on from code. */
 /* Game pages whose start screen may carry one menu ad (the owner's call, 2026-10-26). */
+/* Pages the owner asked to carry one unit at the bottom of every screen (2026-10-27): the unit sits
+ * under all the screens in a data-ad-zone="page" block and is started once per load. The Fantasy
+ * Challenge is a weekly lineup, not a live game, so nothing on it is played in real time. */
+const PAGE_ZONE_PAGES = new Set(['football/fantasy/index.html']);
 const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html', 'soccer/index.html']);
 const READ_ONLY_PAGES = [/^index\.html$/, /^arcade\/index\.html$/, /^guides\/[^/]+\.html$/, /^[a-z]+\/how-to-play\.html$/];
 function walkCode(dir, out = []) {
@@ -172,10 +176,23 @@ for (const file of walkCode(ROOT)) {
    * initialiser must skip the zone, or the unit could load behind a game. */
   const real = [...src.matchAll(/data-ad-slot=["'](\d+)["']|AD_SLOT\s*=\s*['"](\d+)['"]/g)]
     .filter((m) => !/^0+$/.test(m[1] || m[2]))
+    .filter((m) => !(PAGE_ZONE_PAGES.has(rel) && /data-ad-zone="page"[^>]*>\s*<span[^>]*>[^<]*<\/span>\s*<ins[^>]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))))
     .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /data-ad-zone="menu"[^>]*>\s*<span[^>]*>[^<]*<\/span>\s*<ins[^>]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))))
+    /* A unit made in code for a results screen or a leaderboard: only inside adUnitInto(), on a
+     * page whose show() calls screenAds(), which builds it when that screen opens and empties it
+     * when it closes (the owner's rule, 2026-10-27). */
+    .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /function adUnitInto\(host\)\{\s*host\.innerHTML='[^']*$/.test(src.slice(Math.max(0, m.index - 400), m.index)) && /^\s+screenAds\(\w+\);/m.test(src)))
     .map((m) => m[1] || m[2]);
   if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
   if (MENU_ZONE_PAGES.has(rel)) {
+    if (/function adUnitInto\(/.test(src)) {
+      const body = (src.match(/function screenAds\([\s\S]*?\n\}/) || [''])[0];
+      const CALL = /adUnitInto\((?!host\))[^)\s]+\)/g;   // a call with an argument, not the definition or a comment's ()
+      const calls = (src.match(CALL) || []).length;
+      const inside = (body.match(CALL) || []).length;
+      if (!body) problems.push(`${rel}: adUnitInto() makes a live unit but there is no screenAds() to own it`);
+      else if (calls !== inside) problems.push(`${rel}: adUnitInto() is called outside screenAds(), so a unit could load on a play screen`);
+    }
     if (!/function menuAd\(/.test(src) || !/^\s+menuAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a menu ad zone but show() does not call menuAd() to remove it when play starts`);
     if (/querySelectorAll\('ins\.adsbygoogle'\)/.test(src) && !/closest\('\[data-ad-zone\]'\)\) continue/.test(src)) problems.push(`${rel}: the initialiser must skip the menu ad zone (menuAd starts it on the start screen only)`);
   }
