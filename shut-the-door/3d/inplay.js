@@ -581,14 +581,15 @@ export class InPlay {
       if (take.z < 1) spec.bend = takeW * moving;
     }
     // the ball held: glove and ball together in front of his chest, whatever reach is easing off
-    // (and as his throw winds up, giving way to it by its weight: switched off whole as the windup's weight
-    // began, the glove dropped from his chest in a frame, check-jolt.mjs)
-    if (ball.by === n) {
+    // (and through the first of his throw's windup, giving way over it: switched off whole as the windup's
+    // weight began, the glove dropped from his chest in a frame, check-jolt.mjs)
+    const early = f.throwing ? 1 - clamp((spec.throwW || 0) / 0.3, 0, 1) : 1;
+    if (ball.by === n && early > 0) {
       const fw = { x: Math.sin(faceYaw), y: Math.cos(faceYaw) };
       const chest = { x: st.x + fw.x * 1.0, y: st.y + fw.y * 1.0, z: 3.9 };
       const k = glove ? gloveW : 0;
       glove = glove ? { x: chest.x + (glove.x - chest.x) * k, y: chest.y + (glove.y - chest.y) * k, z: chest.z + (glove.z - chest.z) * k } : chest;
-      gloveW = Math.max(0.85, k) * (spec.throwW > 0 ? 1 - spec.throwW : 1);
+      gloveW = Math.max(0.85, k) * (spec.throwW > 0 ? 1 - spec.throwW : 1) * early;
     }
     // the fit runs up to the moment he takes the ball; after it, what it did then is carried (below)
     if (take && s > take.t + 1e-6) { take = null; takeW = 0; }
@@ -600,11 +601,11 @@ export class InPlay {
       // leans round it, never a right angle in a frame, lab/pipeline/check-jolt.mjs)
       let hd = st.head;
       if (!glide) { const a = tr.at(Math.max(0, s - 0.1)), b = tr.at(s + 0.1); if (Math.hypot(b.x - a.x, b.y - a.y) > 1) hd = heading(a, b); }
-      // (a man going the other way from where he looks, backing off a ball, backpedals: turned to his
-      // heading the short way round, the way flipped as the heading crossed half a turn, a body spun in a
-      // frame, check-jolt.mjs)
-      const d = angDiff(faceYaw, hd);
-      yaw = faceYaw + d * w * clamp((Math.cos(d) + 0.6) / 0.6, 0, 1);
+      // (a man going slowly the other way from where he looks, backing off a ball, backpedals: turned to
+      // his heading the short way round, the way flipped as the heading crossed half a turn, a body spun in
+      // a frame, check-jolt.mjs. At a run he turns to where he runs, as before)
+      const d = angDiff(faceYaw, hd), slow = 1 - smooth((spd - 10) / 8);
+      yaw = faceYaw + d * w * (1 - slow * (1 - clamp((Math.cos(d) + 0.6) / 0.6, 0, 1)));
     }
     // getting down to the ball he took eases out after it over a third of a second, never popping up the
     // frame after the ball is in (check-jolt.mjs); first, so what the fit added goes on top as it did
