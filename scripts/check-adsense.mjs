@@ -173,9 +173,21 @@ for (const file of walkCode(ROOT)) {
   const real = [...src.matchAll(/data-ad-slot=["'](\d+)["']|AD_SLOT\s*=\s*['"](\d+)['"]/g)]
     .filter((m) => !/^0+$/.test(m[1] || m[2]))
     .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /data-ad-zone="menu"[^>]*>\s*<span[^>]*>[^<]*<\/span>\s*<ins[^>]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))))
+    /* A unit made in code for a results screen or a leaderboard: only inside adUnitInto(), on a
+     * page whose show() calls screenAds(), which builds it when that screen opens and empties it
+     * when it closes (the owner's rule, 2026-10-27). */
+    .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /function adUnitInto\(host\)\{\s*host\.innerHTML='[^']*$/.test(src.slice(Math.max(0, m.index - 400), m.index)) && /^\s+screenAds\(\w+\);/m.test(src)))
     .map((m) => m[1] || m[2]);
   if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
   if (MENU_ZONE_PAGES.has(rel)) {
+    if (/function adUnitInto\(/.test(src)) {
+      const body = (src.match(/function screenAds\([\s\S]*?\n\}/) || [''])[0];
+      const CALL = /adUnitInto\((?!host\))[^)\s]+\)/g;   // a call with an argument, not the definition or a comment's ()
+      const calls = (src.match(CALL) || []).length;
+      const inside = (body.match(CALL) || []).length;
+      if (!body) problems.push(`${rel}: adUnitInto() makes a live unit but there is no screenAds() to own it`);
+      else if (calls !== inside) problems.push(`${rel}: adUnitInto() is called outside screenAds(), so a unit could load on a play screen`);
+    }
     if (!/function menuAd\(/.test(src) || !/^\s+menuAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a menu ad zone but show() does not call menuAd() to remove it when play starts`);
     if (/querySelectorAll\('ins\.adsbygoogle'\)/.test(src) && !/closest\('\[data-ad-zone\]'\)\) continue/.test(src)) problems.push(`${rel}: the initialiser must skip the menu ad zone (menuAd starts it on the start screen only)`);
   }
