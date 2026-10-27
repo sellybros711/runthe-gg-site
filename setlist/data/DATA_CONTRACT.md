@@ -154,9 +154,10 @@ whichever one carries it, so a reordering cannot silently drop the note.
 Six tags, and only these six, are scored: `opener`, `closer`, `jam`, `peak`,
 `ballad`, `encore`. `scoring.js` maps them onto the role a song lands in.
 
-**These are inferred, not sourced.** elgoose has no field saying a song is a
-ballad, so `ingest_band.mjs` derives each tag from the song's own history across
-every show. The thresholds live in one `TAGS` block at the top of that script:
+**Five are inferred, one is curated.** elgoose has no field saying a song is a
+ballad. `ingest_band.mjs` derives five tags from the song's own history across
+every show. The thresholds live in one `TAGS` block at the top of that script.
+`ballad` comes from `goose_feels.json` (below):
 
 | Tag | Inferred when |
 |---|---|
@@ -165,13 +166,35 @@ every show. The thresholds live in one `TAGS` block at the top of that script:
 | `encore` | lands in an encore in ≥20% of plays (min 2 plays) |
 | `jam` | jamcharted in ≥15% of plays, **or** median length ≥15 min |
 | `peak` | jamcharted in ≥25% of plays **and** median length ≥12 min |
-| `ballad` | median length ≤5:30, never jamcharted, closes a set <10% of the time |
+| `ballad` | its feel in `goose_feels.json` is `Ballad` |
 
-All except `encore` require at least 3 plays. A song can carry several tags, or
+`opener`, `closer`, `jam` and `peak` require at least 3 plays. A song can carry several tags, or
 none — an untagged song scores the neutral placement multiplier everywhere.
 
 Tuning these changes how the game plays, so treat a threshold change as a
 gameplay change: edit `TAGS`, regenerate, and replay a few rounds.
+
+### `<band>_feels.json`
+
+One entry per song: a primary `feel`, an optional `feel2`, and `by`, who set it.
+The seven feels are Ballad, Easy, Groove, Rocker, Anthem, Space and Bit.
+`by` is `owner` (the owner's own review), `research` (sourced from live
+reviews), or `guess` (a song played under 10 times, judged by its original or
+its stats). An owner answer always wins. Only `Ballad` is scored today.
+
+It replaced a length rule (under 5:30, never jamcharted, rarely closes) that
+tagged Whip It and Psycho Killer as ballads and missed This Old Sea, Peggy-O
+and most of the real ones.
+
+A feel edit needs no fetch:
+
+```
+node scripts/setlist/ingest_band.mjs --retag   # re-read the feels, rewrite only the ballad tag
+```
+
+`check_data.mjs` fails when the CSV and the feels disagree. A song new to the
+archive has no feel until somebody adds one, and cannot be a ballad until then.
+The ingester names those songs in its log.
 
 ## Song esteem (`crowd_rating`)
 
