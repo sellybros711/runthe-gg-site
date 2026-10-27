@@ -504,7 +504,9 @@ function buildMound() {
   });
   /* FULL SCREEN (the owner, 2026-10-24): the canvas is the viewport, so a turn of the phone, a
      resize and the browser's bars coming and going all lay the stage and the aim out again */
-  var onSize = function () { if (document.body.dataset.screen !== 's-mound') return; if (S.busy) S.sizeDue = true; else relayout(); };
+  /* the stage frames around the lasting panels (stage.js framePanels), so a new layout shuts the
+     scout drawer first: the set is framed for the slim line, never for the drawer */
+  var onSize = function () { if (document.body.dataset.screen !== 's-mound') return; if (S.busy) S.sizeDue = true; else { if (S.drawer) closeDrawer(true); relayout(); } };
   window.addEventListener('resize', onSize);
   window.addEventListener('orientationchange', function () { onSize(); setTimeout(onSize, 250); });
   if (window.visualViewport) window.visualViewport.addEventListener('resize', onSize);
@@ -786,7 +788,7 @@ function openDrawer() {
 }
 /* quiet: on a new at bat, before the layout runs anyway */
 function closeDrawer(quiet) {
-  var was = S.drawer || S.scout || S.guide || S.viewPA || !$('m-key').hidden;
+  var was = S.drawer || S.scout || S.guide || S.viewPA || !$('m-key').hidden, hadView = !!S.viewPA;
   S.drawer = false;
   S.scout = false;
   S.viewPA = null;
@@ -796,7 +798,8 @@ function closeDrawer(quiet) {
   if (S.guide) setGuide(null);
   if (!was) return;
   drawerState();
-  if (!quiet && S.outing) renderPAs(S.outing);
+  /* an earlier at bat on the zone goes back to this one's dots */
+  if ((hadView || !quiet) && S.outing) renderPAs(S.outing);
 }
 function drawerState() {
   $('m-drawer-b').setAttribute('aria-expanded', S.drawer ? 'true' : 'false');
