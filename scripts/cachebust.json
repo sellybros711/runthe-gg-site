@@ -1989,8 +1989,8 @@
       "sha": "15a845209f4b3402"
     },
     "/arcade/sportegories-data.js": {
-      "v": "56",
-      "sha": "b1dca633026108c1"
+      "v": "57",
+      "sha": "11ca8ecc02563581"
     },
     "/arcade/type.js": {
       "v": "5",
@@ -2917,16 +2917,16 @@
   },
   "shut-the-door/index.html": {
     "contract.js": {
-      "v": "8",
-      "sha": "f00be05147f2e21b"
+      "v": "10",
+      "sha": "804b37c86a4e4224"
     },
     "meter.js": {
-      "v": "4",
-      "sha": "96b2354e7483767d"
+      "v": "5",
+      "sha": "8babaf312b66269a"
     },
     "meter-ui.js": {
-      "v": "4",
-      "sha": "81a8f5a46b059fb3"
+      "v": "5",
+      "sha": "f8e46ed74c68a5bc"
     },
     "sprites.js": {
       "v": "2",
@@ -2957,16 +2957,16 @@
       "sha": "07b7ca2277fe8038"
     },
     "grade.js": {
-      "v": "10",
-      "sha": "482b2b94b703c718"
+      "v": "12",
+      "sha": "5578d95031a7a7d0"
     },
     "lesson.js": {
       "v": "4",
       "sha": "97757da0db8cd9f0"
     },
     "engine.js": {
-      "v": "12",
-      "sha": "1b10c92c7cfa5457"
+      "v": "14",
+      "sha": "9f6734db2e34ab9c"
     },
     "share.js": {
       "v": "2",
@@ -2981,11 +2981,11 @@
       "sha": "843bad6d39ae5e64"
     },
     "api.js": {
-      "v": "11",
-      "sha": "7b0002386a15ebfa"
+      "v": "13",
+      "sha": "e7815ba2ed05ea35"
     },
     "mock-api.js": {
-      "v": "11",
+      "v": "12",
       "sha": "420ad371f276462f"
     },
     "coach.js": {
@@ -2997,8 +2997,8 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "34",
-      "sha": "5e46b5aa80af677c"
+      "v": "38",
+      "sha": "d69a500f8e130442"
     },
     "3d/boot.js": {
       "v": "52",
@@ -3124,7 +3124,7 @@
   "shut-the-door/3d/boot.js": {
     "stage.js": {
       "v": "56",
-      "sha": "12ec206c135aa2ad"
+      "sha": "c5bbb93d9599e90a"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3192,7 +3192,7 @@
     },
     "inplay.js": {
       "v": "22",
-      "sha": "b92dc8308e79fa8c"
+      "sha": "b1e5adaf525b061d"
     },
     "preview.js": {
       "v": "7",
@@ -3284,7 +3284,7 @@
     },
     "fielders.js": {
       "v": "5",
-      "sha": "547ba75900befcc4"
+      "sha": "d75c7a506dd91b21"
     },
     "ballpark.js": {
       "v": "13",

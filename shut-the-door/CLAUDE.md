@@ -67,7 +67,15 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
   the history (one pitch ahead, then the table). Rules 5 (2026-10-25, CONTRACT.md 5g) is rules 4
   plus the routine play: an error on a routine ball (`contract.js ROUTINE`) keeps only `KEEP` of its
   share, read inside the error's slice of the same library draw, and the rest is the cell's real out
-  of its kind; a call with `r: 4` replays as rules 4 (`fixtures/replays-rules4-pre-routine.json`). The strengths live in `grade.js R2`; change them only
+  of its kind; a call with `r: 4` replays as rules 4 (`fixtures/replays-rules4-pre-routine.json`).
+  Rules 6 (2026-10-26, CONTRACT.md 5h) is rules 5 plus the runners reading the ball: the same runner
+  draw on the advancement rows weighted by 2024 runners on a ball of that carry and side
+  (`pack.runners`, `pipeline/runners.py`); the grade keeps the table's mix; a call with `r: 5`
+  replays as rules 5 (`fixtures/replays-rules5-pre-runners.json`). Rules 7 (2026-10-26, CONTRACT.md
+  5i) is rules 6 plus the running game: steals on their own seeded stream (drawn only when a steal
+  is on, so the four draws never move), the pickoff (`pa` on the call before) and the quick delivery
+  (`ss: 1`, never called "quick pitch"; its costs live in `meter.js QUICK`). None of it is graded. A
+  call with `r: 6` replays as rules 6 (`fixtures/replays-rules6-pre-steals.json`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

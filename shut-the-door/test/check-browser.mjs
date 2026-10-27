@@ -478,15 +478,26 @@ async function playOuting(page, o) {
       // the step line under the meter says how to stop it (the owner, 2026-10-22)
       const say = await page.textContent('#m-say');
       if (say !== 'stop it in the bright band') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
+      if (freeTap && !SHOTS) {
+        /* the smooth sweep (the owner, 2026-10-26: "the meter is laggy"): while the needle runs the mound
+           draws nothing (stage.js hush) and the needle moves by transform only, never left or width */
+        const sw = await page.evaluate(() => new Promise((res) => {
+          const d0 = window.STD_CHECK_SKIPPED || 0, n = document.querySelector('#m-meter .rm-needle'), seen = new Set();
+          let k = 0;
+          const f = () => { seen.add(n.style.transform); if (++k < 20) requestAnimationFrame(f); else res({ draws: (window.STD_CHECK_SKIPPED || 0) - d0, left: n.style.left, moved: seen.size }); };
+          requestAnimationFrame(f);
+        }));
+        ok(sw.draws === 0 && !sw.left && sw.moved > 1, '5 the needle sweeps by transform with the mound still (' + sw.draws + ' draws, ' + sw.moved + ' places in 20 frames)');
+      }
       await page.click('#m-meter');
       if (freeTap) {
         /* the stop locks: the needle holds where it was stopped, the word goes up, and the call
            carries the cell, the free aim's at, the release q (and e with effort) */
-        const n0 = await page.evaluate(() => document.querySelector('#m-meter .rm-needle').style.left);
+        const n0 = await page.evaluate(() => document.querySelector('#m-meter .rm-needle').style.transform);
         await page.waitForTimeout(150);
-        const st = await page.evaluate(() => ({ n1: document.querySelector('#m-meter .rm-needle').style.left, done: document.getElementById('m-meter').classList.contains('is-done'),
+        const st = await page.evaluate(() => ({ n1: document.querySelector('#m-meter .rm-needle').style.transform, done: document.getElementById('m-meter').classList.contains('is-done'),
           word: document.querySelector('#m-meter .rm-word').textContent, call: (window.__calls || []).slice(-1)[0] }));
-        ok(st.done && st.n1 === n0 && st.word.length > 0, '5 the meter locks on the stop: the needle holds at ' + n0 + ' and says "' + st.word + '"');
+        ok(st.done && !!n0 && st.n1 === n0 && st.word.length > 0, '5 the meter locks on the stop: the needle holds at ' + n0 + ' and says "' + st.word + '"');
         const c = st.call || {};
         ok(c.cell === cellNo && Array.isArray(c.at) && c.at.length === 2 && typeof c.q === 'number' && c.q >= 0 && c.q <= 1 && (eff ? typeof c.e === 'number' : !('e' in c)),
           '5 the call carries the cell, at, q' + (eff ? ' and e' : '') + ' (' + JSON.stringify(c) + ')');
@@ -752,14 +763,22 @@ async function run(w, h, theme) {
     const S = window.STD_UI.state, ars = S.scn.pitcher.arsenal;
     const btns = [...document.querySelectorAll('#m-arsenal .pitch')];
     return {
-      buttons: btns.every((b, i) => b.querySelector('.pk').textContent === String(i + 1) && b.querySelector('.pt b').textContent === ars[i].name &&
-        !/mph|\b\d{2,3}\b/.test(b.textContent.replace(/^\d/, '') + ' ' + b.getAttribute('aria-label').replace(/^\d+,/, ''))),
+      /* the speed RANGE is on the button (the owner, 2026-10-26: what his arm can do with the pitch, the
+         power stop's softest to hardest, STD_METER.veloOf at e 0 and 1, whole mph); the exact speed of a
+         pitch still shows only after the throw, so no other number is on the button */
+      buttons: btns.every((b, i) => {
+        const M = window.STD_METER, lo = Math.round(M.veloOf(ars[i], 0)), hi = Math.round(M.veloOf(ars[i], 1));
+        const range = (lo === hi ? String(lo) : lo + '-' + hi) + 'mph', ps = b.querySelector('.ps');
+        return b.querySelector('.pk').textContent === String(i + 1) && b.querySelector('.pt b').textContent === ars[i].name &&
+          !!ps && ps.textContent === range && b.getAttribute('aria-label') === (i + 1) + ', ' + ars[i].name + ', ' + range.replace('mph', ' mph') &&
+          !/\d/.test(b.textContent.replace(/^\d/, '').replace(ps.textContent, ''));
+      }),
       tall: Math.min(...btns.map((b) => b.getBoundingClientRect().height)),
       throwWord: document.querySelector('#m-throw b').textContent, say: document.getElementById('m-say').textContent,
       touch: getComputedStyle(document.getElementById('m-aim')).touchAction, grids: document.querySelectorAll('#m-scene .grid').length,
     };
   });
-  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number and its name, and no speed before the throw (' + Math.round(pad.tall) + ' px tall)');
+  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number and its name, and his speed range, no exact speed before the throw (' + Math.round(pad.tall) + ' px tall)');
   /* 3: FULL SCREEN (the owner, 2026-10-24). The 3D canvas is the viewport, the site header is gone
      but a menu button stays, no HUD panel covers the zone, no sideways scroll, and every control
      on the HUD is a thumb's size (44 px on a phone; the desk's are 40). */

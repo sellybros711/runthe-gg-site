@@ -56,6 +56,8 @@ const R = NODE ? require('./rng.js') : window.STD_RNG;
 const G = NODE ? require('./grade.js') : window.STD_GRADE;
 /* lesson.js is optional at load: without it the result has lesson null */
 const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
+/* meter.js holds the quick delivery's costs (QUICK); only a quick delivery reads it */
+const MT = NODE ? require('./meter.js') : (window.STD_METER || null);
 
 /* 3: a call may carry q, the release (contract.js RELEASE). Without q a call
    plays exactly as it did under 2.
@@ -79,8 +81,16 @@ const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
    8: rules 5 (grade.js ROUTINE_RULES): an error on a routine play is
    extremely rare (contract.js ROUTINE). The same four draws read a row whose
    routine error share went to the out of its kind. A call with r 4 or before
-   replays exactly as under 7. */
-const ENGINE_VERSION = 8;
+   replays exactly as under 7.
+   9: rules 6 (grade.js RUNNER_RULES): the runners read the ball (contract.js
+   THE RUNNERS READ THE BALL). The same runner draw reads the advancement rows
+   weighted by how real runners went on a ball of that carry and side. A call
+   with r 5 or before replays exactly as under 8.
+   10: rules 7 (grade.js STEAL_RULES): the running game. The lead runner may
+   steal on a pitch (a stream of its own, so the four draws never move), the
+   pitcher may throw over (pa: the throws after a pitch) and use a quick
+   delivery (ss: 1). A call with r 6 or before replays exactly as under 9. */
+const ENGINE_VERSION = 10;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread.
    3: the hold table is solved with runs on a legal third out (rules 3), and
@@ -131,6 +141,8 @@ function publicState(o) {
       challengeLive: challengeLive(o),
       events: o.log.filter(p => p.challenge).map(p => Object.assign({ n: p.n }, p.challenge)),
     } : null,
+    // rules 7: the running game (contract.js THE RUNNING GAME). null under rules 6 and before
+    run: o.run ? runState(o) : null,
   };
 }
 
@@ -151,7 +163,7 @@ function createOuting(pack, opts) {
   const seed = opts.seed >>> 0;
   const st = model.startState();
   const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (![1, 2, 3, G.ABS_RULES, G.RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
+  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
   const o = {
     pack, model, seed, rules, mode: opts.mode || 'practice',
     outingId: opts.outingId || `${sc.id}:${seed}`,
@@ -163,6 +175,14 @@ function createOuting(pack, opts) {
     // outing's four draws a pitch never move (contract.js ABS)
     abs: rules >= G.ABS_RULES ? { pitcher: K.ABS.PER_SIDE, batter: K.ABS.PER_SIDE } : null,
     absRng: rules >= G.ABS_RULES ? R.mulberry32(R.hashSeed('abs|' + seed)) : null,
+    // rules 7: the running game (contract.js STEAL): who is on, the pickoff throws at the lead
+    // runner and the disengagements this plate appearance, and a stream of its own, drawn only
+    // when a steal or a pickoff is on, so the outing's four draws a pitch never move
+    run: rules >= G.STEAL_RULES && pack.steal ? {
+      rng: R.mulberry32(R.hashSeed('steal|' + seed)),
+      on: [null, pack.steal.start['1'] || null, pack.steal.start['2'] || null, pack.steal.start['3'] || null].map(x => (x == null ? null : String(x))),
+      po: { 1: 0, 2: 0, 3: 0 }, dis: 0, events: [],
+    } : null,
   };
   return o;
 }
@@ -180,6 +200,9 @@ function validCall(o, call) {
   }
   if (call.r != null && call.r !== o.rules) throw new Error(`a rules ${call.r} call in a rules ${o.rules} outing`);
   if (call.ch != null && (call.ch !== 1 || o.rules < G.ABS_RULES)) throw new Error('a challenge is ch: 1 on a rules 4 call');
+  if (call.ss != null && (call.ss !== 1 || o.rules < G.STEAL_RULES)) throw new Error('a quick delivery is ss: 1 on a rules 7 call');
+  if (call.ss === 1 && K.effortE(call.e) != null && K.effortE(call.e) > MT.QUICK.E_MAX) throw new Error('a quick delivery has no max power (meter.js QUICK.E_MAX)');
+  if (call.pa != null && (!Number.isInteger(call.pa) || call.pa < 1 || call.pa > 9 || o.rules < G.STEAL_RULES)) throw new Error('pickoffs after a pitch are pa: 1..9 on a rules 7 call');
 }
 
 /* A call as the engine keeps it: {type, cell}, plus q (two places) when the
@@ -195,6 +218,8 @@ function keptCall(call, rules) {
   if (at != null) c.at = at;
   if (rules >= 2) c.r = rules;
   if (call.ch === 1) c.ch = 1;
+  if (call.ss === 1) c.ss = 1;
+  if (call.pa != null) c.pa = call.pa;
   return c;
 }
 
@@ -232,6 +257,9 @@ function throwPitch(o, call) {
   const spread = K.spreadOf(kept.q, repeat);
   const arm = ctx ? ctx.fatigue : 1;
   const effSpread = kept.e != null ? G.effortSpread(call.type, kept.e) : 1;   // effort: a harder pitch misses wider
+  // rules 7: a quick delivery (the slide step). Its costs are the meter's (meter.js QUICK): the
+  // release was timed in a quicker ring and the power has no top; the pitch is as thrown
+  const slide = o.run && kept.ss === 1 ? { velo: kept.e != null ? K.stuffAt(arsenal, kept.e).velo : null } : null;
   const sigma = arsenal.sigmaFt * spread * arm * effSpread;
   const t = K.aimPoint(call.cell, kept.at);   // the cell's centre, or the free aim point inside it
   // rules 4: a release in the bright band lands where it was aimed, whatever the repeat, effort or arm
@@ -282,7 +310,10 @@ function throwPitch(o, call) {
 
   // 4. what it does to the state, the runner draw choosing among the rows
   // rules 1 and 2 replay with a third out that scores none (grade.js THE THIRD OUT)
-  const trans = model.transitions(st, playCls, o.rules >= G.THIRD_OUT_RULES);
+  let trans = model.transitions(st, playCls, o.rules >= G.THIRD_OUT_RULES);
+  // rules 6 (THE RUNNERS READ THE BALL, contract.js runnerClass): the same runner draw, on the
+  // table's rows weighted by how real runners went on a ball like this one
+  if (o.rules >= G.RUNNER_RULES && playCls.startsWith('ip:')) trans = readTheBall(pack, st, playCls.slice(3), pitch, trans);
   let pickIdx = trans.length - 1;
   if (trans.length > 1) {
     let a2 = 0;
@@ -291,8 +322,11 @@ function throwPitch(o, call) {
   const t2 = trans[pickIdx][1];
 
   const countBefore = { b: st.b, s: st.s };
-  if (abs) o.undo = { st, them: o.score.them };   // for the pitcher's side's challenge on this pitch
+  // rules 7: does the lead runner go on this pitch? Decided before it, on the steal stream
+  const steal = o.run ? stealGoes(o) : null;
+  if (abs) o.undo = { st, them: o.score.them, on: o.run ? o.run.on.slice() : null };   // for the pitcher's side's challenge on this pitch
   const moved = applyTrans(o, st, t2);
+  if (o.run) moveRunners(o, st, moved);
   const runs = moved.runs, paOver = moved.paOver;
 
   const res = challenge && challenge.overturned ? 'ball' : res0;
@@ -323,6 +357,12 @@ function throwPitch(o, call) {
   if (cls.startsWith('ip:')) {
     const label = t2.label || 'out';
     pr.inPlay = { bb: pitch[3], ev: pitch[4], la: pitch[5], spray: pitch[6], result: label, text: inPlayText(label, pitch[3], pitch[6], runs) };
+    if (o.rules >= G.RUNNER_RULES && pack.runners) {
+      // rules 6: how far the real ball carries (contract.js carryOf) and its class, for the scene
+      const c = pitch[3] !== 'ground' ? K.carryOf(pitch[4], pitch[5], pack.runners.dist.coef) : null;
+      if (c != null) pr.inPlay.carry = Math.round(c);
+      pr.inPlay.cls = K.runnerClass(cls.slice(3), pitch[3], pitch[4], pitch[5], pitch[6], pack.runners);
+    }
   }
   if (ctx) pr.arm = arm;     // rules 2: the arm's scale on his miss (fatigue and runners on)
   if (kept.e != null) {      // effort: what the pitch was, from his own real pitches (contract.js stuffAt)
@@ -333,11 +373,202 @@ function throwPitch(o, call) {
   o.grades.push(grade);
   o.calls.push(Object.assign({}, kept));
   delete o.calls[o.calls.length - 1].ch;   // ch goes back on when the challenge is made (below)
+  delete o.calls[o.calls.length - 1].pa;   // pa goes back on with each pickoff throw (below)
+  if (steal) {                              // rules 7: the steal, with the pitch
+    pr.steal = resolveSteal(o, steal, playCls, kept.ss === 1, st);
+    if (pr.steal.result === 'safe' || pr.steal.result === 'out') { pr.outs = o.st.outs; pr.bases = o.st.bases; }
+  }
+  if (slide) pr.quick = { deliveryS: K.STEAL.QUICK.DELIVERY_S };
   if (kept.ch === 1) {                      // a replay: this call's ball was challenged right away
     if (!challengeLive(o)) throw new Error('a challenge on a pitch with none to make');
     challengePitch(o);
   }
+  for (let i = 0; i < (kept.pa || 0); i++) {   // a replay: the pickoff throws made after this pitch
+    if (!pickoffLive(o)) throw new Error('a pickoff with none to make');
+    pickoff(o);
+  }
   return { pitchResult: pr, pitchGrade: grade, state: publicState(o) };
+}
+
+/* Rules 6: the advancement rows for this ball, reweighted (contract.js THE
+   RUNNERS READ THE BALL). Each row's chance times the ratio of its runners'
+   category (runnerCategory) for this key, lead runner, outs and the ball's
+   class (runnerClass), measured on 2024 (pipeline/runners.py), then
+   renormalised. Every row is still the table's own legal play, and the runner
+   draw is the same draw. A ball with no class, or a class the data does not
+   move, keeps the table's mix. */
+function readTheBall(pack, st, cat, pitch, trans) {
+  const RN = pack.runners;
+  if (!RN || !st.bases || trans.length < 2) return trans;
+  const cl = K.runnerClass(cat, pitch[3], pitch[4], pitch[5], pitch[6], RN);
+  if (!cl) return trans;
+  const lead = st.bases & 4 ? 3 : st.bases & 2 ? 2 : 1;
+  const r = RN.ratio[`${cat}|${lead}|${st.outs < 2 ? 0 : 1}|${cl}`];
+  if (!r) return trans;
+  const w = trans.map(([p, t]) => p * r[K.RUNNER_CATS.indexOf(K.runnerCategory(st.bases, t.moves))]);
+  const sum = w.reduce((a, x) => a + x, 0);
+  if (!(sum > 0)) return trans;
+  return trans.map(([, t], i) => [w[i] / sum, t]);
+}
+
+/* ---- rules 7: the running game (contract.js THE RUNNING GAME) ---------------- */
+
+/* What the UI shows: who is on, whether a pickoff is live and at which base, the disengagements
+   left this plate appearance (a throw past them is a balk unless it gets him), the steals and the
+   pickoffs so far. */
+function runState(o) {
+  const opp = o.status === 'live' ? stealOpp(o) : null;
+  const left = Math.max(0, K.STEAL.DISENGAGE - o.run.dis);
+  return {
+    on: o.run.on.map(id => (id ? { id, name: runnerOf(o, id).name, speed: runnerOf(o, id).speed } : null)),
+    pickoff: { live: pickoffLive(o), base: opp ? opp.from : null, left, balkRisk: left === 0 },
+    quick: { deliveryS: K.STEAL.QUICK.DELIVERY_S, eMax: MT && MT.QUICK ? MT.QUICK.E_MAX : null },
+    steals: o.log.filter(p => p.steal).map(p => Object.assign({ n: p.n }, p.steal)),
+    pickoffs: o.run.events.slice(),
+  };
+}
+
+/* The steal on: the lead runner with the base ahead open. {from, to, rid} or null. */
+function stealOpp(o) {
+  const b = o.st.bases, on = o.run.on;
+  if ((b & 2) && !(b & 4) && on[2]) return { from: 2, to: 3, rid: on[2] };
+  if ((b & 1) && !(b & 2) && on[1]) return { from: 1, to: 2, rid: on[1] };
+  return null;
+}
+/* Late and close, from the batting side's margin (pipeline/steals.py late). */
+function lateKey(o) {
+  const inn = o.pack.scenario.situation.inning;
+  if (inn < 8) return null;
+  const m = o.score.them - o.score.us;
+  return m <= -3 ? 'd3' : m === -2 ? 'd2' : m === -1 ? 'd1' : m === 0 ? 't0' : 'up';
+}
+function runnerOf(o, rid) { return o.pack.steal.runners[rid] || { name: null, att: 1, z: 0, speed: null }; }
+/* The chance he goes on this pitch: the 2022 or 2024 rate for the base, outs and count, late and
+   close, times him, the pitcher and the era (pack.steal). */
+function attemptP(o, opp) {
+  const S = o.pack.steal, st = o.st, lk = lateKey(o);
+  let p = S.attempt[`${opp.to}|${st.outs}|${st.b}|${st.s}`] || 0;
+  if (lk) p *= S.attMult[`late|${opp.to}|${lk}`] || 1;
+  p *= runnerOf(o, opp.rid).att * S.pitcher.att * S.eraAtt;
+  return Math.min(K.STEAL.CAP, p);
+}
+/* Whether he is safe, as a z: the base's success, the era, him, the pitcher, the catcher, late and
+   close, the pickoff throws at him this plate appearance, and a quick delivery's time. */
+function stealZ(o, opp, quick) {
+  const S = o.pack.steal, lk = lateKey(o);
+  let z = S.baseZ[opp.to] + S.eraZ + runnerOf(o, opp.rid).z + S.pitcher.z + S.catcher.z;
+  if (lk) z += S.sucZ[`late|${opp.to}|${lk}`] || 0;
+  z += S.sucZ[`po|${opp.to}|${Math.min(2, o.run.po[opp.from])}`] || 0;
+  if (quick) z -= K.STEAL.QUICK.DELIVERY_S * S.zPerSecond;
+  return z;
+}
+/* Before the pitch: does the lead runner go? One draw on the steal stream, only with a steal on. */
+function stealGoes(o) {
+  const opp = stealOpp(o);
+  if (!opp) return null;
+  return o.run.rng() < attemptP(o, opp) ? opp : null;
+}
+/* Who is on, after a transition: each runner to where his move takes him, the batter to his. */
+function moveRunners(o, st, moved) {
+  if (!moved.paOver && !(moved.runnerMoves || []).length) return;
+  const on = o.run.on, next = [null, null, null, null];
+  const batter = String(o.pack.scenario.batters[st.bi % o.model.N].id);
+  for (let b = 1; b <= 3; b++) {
+    if (!on[b]) continue;
+    const m = moved.runnerMoves.find(x => x.from === b);
+    const to = m ? m.to : b;
+    if (to >= 1 && to <= 3) next[to] = on[b];
+  }
+  const bm = moved.runnerMoves.find(x => x.from === 0);
+  if (bm && bm.to >= 1 && bm.to <= 3) next[bm.to] = batter;
+  o.run.on = next;
+  if (moved.paOver) { o.run.po = { 1: 0, 2: 0, 3: 0 }; o.run.dis = 0; }
+}
+/* An out on the bases: the third ends the half, and the outing, held. */
+function outOnBases(o) {
+  const outs = o.st.outs + 1;
+  if (outs >= 3) {
+    o.status = 'over';
+    o.outcome = o.score.us > o.score.them ? 'door_shut' : 'tie_held';
+    o.st = Object.assign({}, o.st, { outs: 3 });
+    return 3;
+  }
+  o.st = Object.assign({}, o.st, { outs });
+  return outs;
+}
+/* After the pitch: the steal. A ball or a strike (not a foul, a ball in play or a hit batter) and
+   the runner still there with the base open: one more draw decides it. */
+function resolveSteal(o, opp, cls, quick, st0) {
+  const r = runnerOf(o, opp.rid), S = o.pack.steal;
+  const ev = { runner: opp.rid, name: r.name, speed: r.speed, from: opp.from, to: opp.to,
+    catcher: { id: S.catcher.id, name: S.catcher.name, pop: S.catcher.pop },
+    cover: opp.to === 3 ? 5 : (o.pack.scenario.batters[st0.bi % o.model.N].bats === 'L' ? 6 : 4) };
+  if (cls !== 'ball' && cls !== 'strike') { ev.result = 'back'; return ev; }   // a foul, a ball in play or a hit batter: he goes back, or the play takes him
+  const toBit = 1 << (opp.to - 1);
+  if (o.status !== 'live' || o.run.on[opp.from] !== opp.rid || (o.st.bases & toBit)) { ev.result = 'moot'; return ev; }   // the inning ended, or the walk moved him
+  const z = stealZ(o, opp, quick);
+  const p = K.normCdf(z), u = o.run.rng();
+  ev.p = Math.round(p * 1000) / 1000;
+  ev.margin = Math.round(1000 * (z - K.normInv(u)) / S.zPerSecond) / 1000;   // seconds: safe by (plus) or out by (minus)
+  applySteal(o, ev, u < p ? 'safe' : 'out');
+  return ev;
+}
+function applySteal(o, ev, result) {
+  ev.result = result;
+  const fromBit = 1 << (ev.from - 1), toBit = 1 << (ev.to - 1);
+  o.run.on[ev.from] = null;
+  if (result === 'safe') {
+    o.run.on[ev.to] = ev.runner;
+    o.st = Object.assign({}, o.st, { bases: (o.st.bases & ~fromBit) | toBit });
+  } else {
+    o.st = Object.assign({}, o.st, { bases: o.st.bases & ~fromBit });
+    outOnBases(o);
+  }
+}
+/* A pickoff is live: rules 7, a pitch thrown, the outing live, and a runner with a steal on. */
+function pickoffLive(o) {
+  return !!o.run && o.status === 'live' && !o.finished && o.log.length > 0 && !!stealOpp(o);
+}
+/* The pickoff throw to the lead runner's base (the player's call between pitches). One draw on the
+   steal stream: out at the season's rate per throw at that base. Past STEAL.DISENGAGE a throw that
+   does not get him is a balk, and every runner moves up. Kept on the last call as pa. */
+function pickoff(o) {
+  if (!pickoffLive(o)) throw new Error('no pickoff to make');
+  const S = o.pack.steal, opp = stealOpp(o), pk = S.pickoff[opp.from] || { out: 0 };
+  const r = runnerOf(o, opp.rid);
+  o.run.dis++;
+  const u = o.run.rng();
+  const out = u < pk.out;
+  const ev = { n: o.log.length, base: opp.from, runner: opp.rid, name: r.name, dis: o.run.dis, out, balk: false,
+    margin: Math.round(1000 * (K.normInv(pk.out) - K.normInv(u)) / S.zPerSecond) / 1000 };
+  if (out) {
+    o.run.on[opp.from] = null;
+    o.st = Object.assign({}, o.st, { bases: o.st.bases & ~(1 << (opp.from - 1)) });
+    outOnBases(o);
+  } else if (o.run.dis > K.STEAL.DISENGAGE) {
+    ev.balk = true;
+    const on = o.run.on, next = [null, null, null, null];
+    let runs = 0, bases = 0;
+    for (let b = 3; b >= 1; b--) {
+      if (!on[b]) continue;
+      if (b === 3) runs++;
+      else { next[b + 1] = on[b]; bases |= 1 << b; }
+    }
+    o.run.on = next;
+    const margin = o.st.margin - runs;
+    o.score.them += runs;
+    ev.runs = runs;
+    o.st = Object.assign({}, o.st, { bases, margin });
+    if (margin < 0) { o.status = 'over'; o.outcome = o.pack.scenario.situation.walkOffLive ? 'walk_off' : 'doors_open'; }
+  } else {
+    o.run.po[opp.from]++;
+  }
+  o.run.events.push(ev);
+  const last = o.calls[o.calls.length - 1];
+  last.pa = (last.pa || 0) + 1;
+  const pr = o.log[o.log.length - 1];
+  (pr.pickoffs || (pr.pickoffs = [])).push(ev);
+  return { pickoff: ev, state: publicState(o) };
 }
 
 /* What a transition does to the outing: the state, the runs, the end. One
@@ -380,9 +611,19 @@ function challengePitch(o) {
   const st = o.undo.st;
   o.st = st; o.score.them = o.undo.them; o.status = 'live'; o.outcome = null;
   const t2 = o.model.transitions(st, 'strike', o.rules >= G.THIRD_OUT_RULES)[0][1];
+  if (o.run) { o.run.on = o.undo.on.slice(); }
   const moved = applyTrans(o, st, t2);
+  if (o.run) moveRunners(o, st, moved);
   pr.result = 'called_strike';
   Object.assign(pr, { count: moved.count, outs: moved.outs, bases: moved.bases, runnerMoves: moved.runnerMoves, runs: moved.runs, paOver: moved.paOver });
+  // rules 7: a steal on this pitch stands as it was decided (no new draw), if the strike leaves it on
+  if (pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out')) {
+    const toBit = 1 << (pr.steal.to - 1);
+    if (o.status === 'live' && o.run.on[pr.steal.from] === pr.steal.runner && !(o.st.bases & toBit)) {
+      applySteal(o, pr.steal, pr.steal.result);
+      pr.outs = o.st.outs; pr.bases = o.st.bases;
+    } else pr.steal.result = 'moot';
+  }
   return { pitchResult: pr, state: publicState(o) };
 }
 
@@ -565,7 +806,7 @@ function replay(pack, seed, calls, opts) {
 
 const publicAPI = Object.freeze({
   ENGINE_VERSION, PACK_VERSION, SCORE_BASE, SCORE_PER_PT, RESULT_BONUS,
-  seedFor, createOuting, throwPitch, challengePitch, challengeLive, finishOuting, publicState, replay, rulesOf, bestCall,
+  seedFor, createOuting, throwPitch, challengePitch, challengeLive, pickoff, pickoffLive, finishOuting, publicState, replay, rulesOf, bestCall,
   outingScore, percentileOf, styleVector, vsReal,
 });
 if (NODE) module.exports = publicAPI;

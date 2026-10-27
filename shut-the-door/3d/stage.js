@@ -289,7 +289,7 @@ class Stage {
   /** Frames while the pitch indicator moves (its draw, comet, breathing and fades), at most 30 a
       second, and none once it settles: an idle aim draws nothing. A pitch in the air has its own loop. */
   animate() {
-    if (this.animId || !this.ghost) return;
+    if (this.animId || !this.ghost || this.hushed) return;
     let last = 0;
     const step = (ms) => {
       this.animId = 0;
@@ -344,11 +344,22 @@ class Stage {
     if (this.fp) this.fp.render(this.camera);
   }
 
+  /** The release meter is up (ui.js throwIt): the mound holds still, so the needle has the phone to
+      itself. The indicator's spin and his breath stop drawing (they drew 30 a second under the meter,
+      and on a phone each draw also re-blurs every glass panel over the canvas); hush(false) lets
+      the indicator settle as before. */
+  hush(on) {
+    this.hushed = !!on;
+    if (!on) { this.animate(); return; }
+    if (this.animId) { cancelAnimationFrame(this.animId); this.animId = 0; }
+    if (this.breathId) { cancelAnimationFrame(this.breathId); this.breathId = 0; }
+  }
+
   /** His breath as a set comes up (a new hitter, or the set after a pitch): one breath and a pump of
       the glove (firstperson.js IDLE_S), drawn at most 30 frames a second, then nothing: an idle aim
       draws nothing, as before. Never while a pitch plays, nor on a hidden canvas or page. */
   breathe() {
-    if (!this.fp || !this.fp.ok || reducedMotion()) return;
+    if (!this.fp || !this.fp.ok || reducedMotion() || this.hushed) return;
     this.fp.idleStart = this.fp.clock;
     if (this.breathId) return;
     let last = 0;

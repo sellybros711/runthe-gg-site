@@ -347,6 +347,76 @@ pool 77.9 to 78.0, 51 to 51. `BANDS` unchanged; the pool's bands 19.8/26.9/33.6/
 19.9/26.8/33.6/19.6 (band_sweep: 20/27/33/19 both). Packs rebuilt with `pool.js`: `hold`, `seq` and
 `pros` byte-identical, pack v10, `SCHEDULE_V` 10.
 
+## Rules 6: the runners read the ball (2026-10-26)
+
+The owner: "We need to ensure runners are advancing in realistic situations, and tagging up in
+realistic situations." CONTRACT.md 5h. The advancement row is drawn from the table's rows, each
+weighted by how real runners went on a ball of that carry band and side (`pack.runners`, from
+`pipeline/runners.py`: every 2024 ball in play with a runner on, Savant's play text read runner by
+runner). Same draw, same legal rows. A new outing's calls carry `r: 6`; `r: 5` rows replay exactly
+(`fixtures/replays-rules5-pre-runners.json`). `pool.js` copies `data/runners.json` into each pack.
+
+```
+python3 shut-the-door/pipeline/runners.py [--season 2024] [--from DIR]   writes data/runners.json
+```
+
+**Carry** (`contract.js carryOf`): Statcast distance from exit velocity and launch angle, R2 0.94,
+15.6 ft mean error on 65,405 air balls.
+
+**2024 against the engine** (closer pool calls, 1,500 outings a pack, all ten packs; hold / score /
+thrown out, or as labelled):
+
+| play | real 2024 | rules 5 | rules 6 |
+|---|---|---|---|
+| fly out, runner on 3rd, under 2 outs, carry 200-250 ft | 79 / 13 / 7 | 28 / 67 / 5 | 68 / 25 / 7 |
+| the same, 250-280 ft | 38 / 52 / 10 | 22 / 76 / 2 | 31 / 58 / 11 |
+| the same, 300 ft and up | 0 / 99 / 1 | 22 / 76 / 2 | 2 / 97 / 1 |
+| fly out, runner on 2nd tags to 3rd, 300 ft and up | 53 | 34 | 56 |
+| the same, 200-250 ft | 3 | 44 | 2 |
+| line out, runner on 1st doubled off, under 200 ft | 29 | 10 | 20 |
+| the same, 300 ft and up | 2 | 12 | 2 |
+| single, runner on 1st to 3rd, ball to left / right | 10 / 40 | 26 / 27 | 13 / 36 |
+
+The marginals stay real (fly out with a runner on 3rd, all depths: 23 / 73 / 4 real, 17 / 79 / 4
+rules 6). Scoring from 2nd on a single by outs (0-1, 2) and from 1st on a double were already the
+table's real rates and stay so. The closer pool's hold rate moves 0 to 0.9 points; the grade, the
+hold table, `seq` and BANDS are unchanged. The 2011 and 1988 packs move least: their balls carry no
+tracked speed, so most have no class.
+
+**Arm strength** (2024 Savant outfield arm, report only, no fielder is in the pack): on a 240-300 ft
+fly with a runner on 3rd, the strongest third of arms (92 mph) hold him 41% against 19-20% for the
+rest; on a single with a runner on 2nd the arm barely moves the send (70 / 68 / 72 scored).
+
+## Rules 7: the running game (2026-10-26)
+
+The owner: "Runners could also steal ... They may win or lose that moment", then "yes add pickoffs
+and slide step". CONTRACT.md 5i. `pipeline/steals.py` reads every 2022 and 2024 regular season game
+feed from the Stats API, pitch by pitch (a compact line a pitch, `cache/steals-<season>.json.gz`).
+It adds the people's season stats, Savant's sprint speed and pop time, and each spot's real catcher
+and runners, and writes `data/steals.json`. `pool.js` copies a spot's part in as `pack.steal`.
+
+```
+python3 shut-the-door/pipeline/steals.py [--seasons 2022,2024] [--threads 6]
+```
+
+**Real** (the feeds; 2024, then 2022): steal of second 81.7% safe of 3,554 (78.1% of 2,602), third
+86.2% of 530 (81.8% of 351). League 2024: 3,617 SB, 961 CS, 79.0%. Late (8th inning on), a steal of
+second per pitch with one on: down 1 2.53%, down 2 0.81%, down 3 0.25%, tied 3.98% (early 2.39%),
+safe 85-89%. Pickoff, out per throw: first 1.6% of 9,219 throws, second 4.2% of 684, third 9.7% of 93
+(2022: 0.7%, 5.6%, 13.3%). After one throw at him the runner is safe less often (-0.14 z, about 3
+points), after two no less (-0.02). He also goes 1.8 times as often after a throw, measured against
+the same runner. That is the pitcher reading the runner, so the engine does not use it.
+
+**The quick delivery**: a second of pop time is worth 1.95 z of steal success (330 catcher seasons
+2016-2025), so 0.25 s quicker is -0.49 z (79% to about 63% for an average steal). Cross-check: the
+best fifth of 2024 pitchers at holding runners allowed 71.3% (-0.24 z).
+
+**The engine** (closer pool calls, 1,500 outings a pack, all ten packs): 1.0% of pitches with a steal
+on see an attempt, safe 80.5%; with a quick delivery on every pitch, 65.7%. 5.9% of outings have a
+steal, and 74 caught stealings ended an outing. By pack, from 0.24% (Pressly 2022)
+to 2.67% (Diaz 2025). The closer pool's hold rate moves -1.0 to +0.2 points; the grade, the
+hold table and BANDS are unchanged.
+
 ## Release and spin, for the picture (2026-10-24)
 
 `pipeline/tracking.py arsenal` reads each scenario pitcher's own pitches from the Savant search his
