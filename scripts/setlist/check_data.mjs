@@ -2768,21 +2768,26 @@ if (prose) {
    able to take the playback down with it: a stage that throws is a show that
    never reaches the scorecard. Both fail silently, so both are read here. */
 {
-  const stage = read('setlist/stage.js');
-  check(!/from\s+['"]\.\/scoring\.js/.test(stage) && !/scoreShow|scorePerf|show_gap/.test(stage),
-    'the stage reads nothing but the cues it is handed');
+  /* The stage was split on 2026-10-27: world.js builds the room and the band, world-worker.js runs
+     that build off the main thread. All three are the renderer, so all three are held to it. */
+  const stage = read('setlist/stage.js'), world = read('setlist/world.js'), worker = read('setlist/world-worker.js');
+  check([stage, world, worker].every(f => !/from\s+['"]\.\/scoring\.js/.test(f) && !/scoreShow|scorePerf|show_gap/.test(f)),
+    'the stage reads nothing but the cues it is handed (stage.js, world.js, world-worker.js)');
+  check(/buildWorld\(R, RIG, seed\)/.test(stage) && /setTimeout\(\(\) => \{ waiting\.delete\(id\); res\(null\); \}/.test(stage),
+    'a room the worker cannot build is built on the main thread, so a show always has a room');
   const show = (() => {
     const at = gameBare.indexOf('function renderShow(');
     return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\nfunction ', at + 10));
   })();
   check(/try\s*\{\s*stage = createStage\(/.test(show), 'a stage that fails to start leaves the playback running');
+  check(/Promise\.race\(\[stage\.ready,/.test(show), 'the first song waits for the room, but never forever');
   check(/if \(S\.stage\)\s*\{\s*S\.stage\.destroy\(\)/.test(gameBare), 'leaving the show stops the stage');
   /* THE STAGE IS PAINTED BY RUN THE TOUR'S OWN RENDERER, so the concert and the putt putt world are
      one style. setlist/pxhd.js is generated from golf/index.html; a hand edit there, or a change to
      PXHD in golf that was never carried over, is two renderers that look almost alike. */
   const { extract } = await import('./extract_pxhd.mjs');
   check(read('setlist/pxhd.js') === extract(), 'setlist/pxhd.js is golf\'s PXHD, unedited (run scripts/setlist/extract_pxhd.mjs)');
-  check(/from '\.\/pxhd\.js\?v=\d+'/.test(stage), 'and the stage draws with it');
+  check(/from '\.\/pxhd\.js\?v=\d+'/.test(world) && /from '\.\/world\.js\?v=\d+'/.test(stage), 'and the stage draws with it (through world.js)');
 }
 
 console.log();
