@@ -200,6 +200,8 @@ for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
           const bodies = [];
           for (let n = 1; n <= 9; n++) bodies.push(['F' + n, ip.fielders[n], n]);
           for (const rr of plan.runners) if (rr.fig) bodies.push(['R' + rr.from, rr.fig, 0]);
+          // (the base umpires: held to no pop and no skate at all, CEILING has no row for them)
+          if (ip.umps && plan.umps) for (const k of [1, 2, 3]) bodies.push(['U' + k, ip.umps[k], -k]);
           for (const [id, f, n] of bodies) {
             if (!f.root.visible) { hist.delete(id); continue; }
             f.root.updateMatrixWorld(true);
@@ -208,13 +210,14 @@ for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
             P.root = { x: -rp.x / FT, y: rp.z / FT, z: rp.y / FT };
             for (const j of J) P[j] = f.jointPoint(j);
             const h = hist.get(id) || [];
-            if (TRACE) { const [tid, ta, tb] = TRACE.split(':'); if (tid === id && s >= +ta && s <= +tb) trace.push({ id, s: +s.toFixed(3), act: n ? lastAct(n, s) : 'run', pitch: +(f.pitch || 0).toFixed(2), vis: f.root.visible, sp: f.lastSpec && { gw: f.lastSpec.gloveW, g: f.lastSpec.glove, tw: f.lastSpec.throwW, hw: f.lastSpec.handW, th: f.lastSpec.throw }, yaw: +(f.yaw || 0).toFixed(2), g0: +(f.g0 || 0).toFixed(2), sc: f.scale, P: Object.fromEntries(Object.entries(P).map(([q, v]) => [q, [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)]])) }); }
+            if (TRACE) { const [tid, ta, tb] = TRACE.split(':'); if (tid === id && s >= +ta && s <= +tb) trace.push({ id, s: +s.toFixed(3), act: n > 0 ? lastAct(n, s) : 'run', pitch: +(f.pitch || 0).toFixed(2), vis: f.root.visible, sp: f.lastSpec && { gw: f.lastSpec.gloveW, g: f.lastSpec.glove, tw: f.lastSpec.throwW, hw: f.lastSpec.handW, th: f.lastSpec.throw }, yaw: +(f.yaw || 0).toFixed(2), g0: +(f.g0 || 0).toFixed(2), sc: f.scale, P: Object.fromEntries(Object.entries(P).map(([q, v]) => [q, [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)]])) }); }
             h.push({ s, P }); if (h.length > PLANT_N) h.shift(); hist.set(id, h);
             if (h.length < 3) continue;
             const [a, b, cc] = h.slice(-3);
             const d1 = b.s - a.s, d2 = cc.s - b.s;
             if (d1 < 1e-5 || d2 < 1e-5) continue;
-            const who = id[0] === 'F' ? 'fielder' : 'runner', act = n ? lastAct(n, s) : 'run';
+            const who = id[0] === 'F' ? 'fielder' : id[0] === 'U' ? 'umpire' : 'runner';
+            const act = n > 0 ? lastAct(n, s) : n < 0 ? ((plan.umps[-n].acts.filter((x) => x.t <= s + 1e-6).pop() || {}).kind || '-') : 'run';
             for (const k of ['root', ...J]) {
               const rel = k !== 'root' && k !== 'pelvis' && k !== 'head';
               const base = (q) => (rel ? q.pelvis : { x: 0, y: 0, z: 0 });
