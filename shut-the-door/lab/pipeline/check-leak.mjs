@@ -15,6 +15,8 @@
  *   page     DOM nodes (but the result screen's, rebuilt each outing as long as its pitches), live listeners (on a node still in the page, or window/document), pending
  *            animation frames, pending timeouts, live intervals, the JS heap after a forced GC
  *   frame    the JS time of each animation frame over the last outing (median and 95th)
+ * The first pitch of every outing is a perfect power and a perfect release (the combo meter's stitches
+ * and the ball's sparkle are made and freed once an outing); the run fails if none came off.
  * A count is held to the first measured outing's value (the first outing warms the caches): any later
  * outing above it fails. The heap is held to HEAP_SLACK over its early mean.
  */
@@ -163,13 +165,55 @@ async function sample(label) {
 /* One pitch the way a player throws it. Returns false when the outing is over. */
 // (mostly over the plate: a session of balls in play, each with its broadcast)
 const CELLS = [12, 7, 13, 17, 11, 12, 6, 8, 16, 18, 12, 23];
-let pitchNo = 0, inPlays = 0, challenges = 0, chips = 0;
+let pitchNo = 0, inPlays = 0, challenges = 0, chips = 0, firstOfOuting = true;
 const lap = (() => { let t = Date.now(); return (w) => { const d = Date.now() - t; t = Date.now(); if (process.env.LEAK_VERBOSE && d > 15000) console.log(`    slow: ${w} ${Math.round(d / 1000)} s`); }; })();
 // (a tap is the element's own click, sent in the page: Playwright's waits for a painted, stable frame
 // cost most of a minute a tap in software GL on a busy machine, and the session is hundreds of taps)
 const tap = (sel) => page.evaluate((q) => { const el = document.querySelector(q); if (!el) throw new Error('no ' + q); el.click(); }, sel);
 // (the meter stops on the finger coming down)
 const press = (sel) => page.evaluate((q) => { const el = document.querySelector(q), r = el.getBoundingClientRect(); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, pointerId: 1, isPrimary: true })); }, sel);
+/* PERFECT AND PERFECT (the combo meter, the owner 2026-10-26): the first pitch of every outing stops
+   both bars perfectly, so the stitches and the ball's sparkle (3d/pitch.js buildSparkle) are made and
+   freed once an outing and the counts compare across outings. Power: the stop when the column's
+   needle is at its top (it turns there). The release: when the ring meets the target circle on its
+   next closing pass, read from the ring's own start (meter-ui.js startAcc) and meter.js ringMs. */
+let perfects = 0, sparkles = 0, perfectMiss = 0;
+async function perfectStops() {
+  await page.evaluate(() => {
+    if (window.__leakRing) return;
+    window.__leakRing = true;
+    const st0 = window.setTimeout;
+    window.setTimeout = function (fn, ms) {
+      if (typeof fn === 'function' && fn.name === 'startAcc') return st0(function () { window.RING_T0 = performance.now(); fn(); }, ms);
+      return st0.apply(this, arguments);
+    };
+  });
+  await page.evaluate(() => { window.RING_T0 = null; window.__eLocked = null; });
+  await page.evaluate(() => new Promise((res) => {
+    const nd = document.querySelector('.rm-cneedle'), el = document.getElementById('m-meter'), t0 = performance.now();
+    const f = () => {
+      const m = /,\s*(-?[\d.]+)%/.exec(nd.style.transform), e = m ? -parseFloat(m[1]) / 100 : 0;
+      if (e >= 0.985 || performance.now() - t0 > 8000) { el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); window.__eLocked = Math.round(e * 100) / 100; res(); }
+      else requestAnimationFrame(f);
+    };
+    requestAnimationFrame(f);
+  }));
+  await page.evaluate(() => new Promise((res) => {
+    const MT = window.STD_METER, el = document.getElementById('m-meter'), t0 = performance.now();
+    const go = () => {
+      if (window.RING_T0 == null) { if (performance.now() - t0 > 8000) return res(); return setTimeout(go, 5); }
+      const P = MT.ringMs(window.__eLocked), k = Math.max(0, Math.ceil((performance.now() + 60 - window.RING_T0 - MT.MARK * P) / (2 * P))), tHit = window.RING_T0 + 2 * P * k + MT.MARK * P;
+      const wait = () => {
+        if (performance.now() < tHit - 30) return setTimeout(wait, 5);
+        while (performance.now() < tHit) { /* the tap on the mark */ }
+        el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+        res();
+      };
+      wait();
+    };
+    go();
+  }));
+}
 async function pitch() {
   lap('between pitches');
   if (await page.evaluate(() => document.getElementById('s-result').classList.contains('on'))) return false;
@@ -187,6 +231,20 @@ async function pitch() {
   await page.waitForFunction(() => !document.getElementById('m-throw').disabled);
   await tap('#m-throw'); lap('throw');
   const meter = await page.waitForSelector('#m-meter:not([hidden])', { timeout: 20000 }).then(() => true, () => false);
+  const perfect = meter && firstOfOuting;
+  firstOfOuting = false;
+  if (perfect) {
+    await perfectStops();
+    // the sparkle is made with the pitch's flight; the call is in the log once the throw returns
+    const sparkle = await page.waitForFunction(() => { const p = window.STD_STAGE.current.pitch; return !!(p && p.sparkle); }, null, { timeout: 60000, polling: 50 }).then(() => true, () => false);
+    await page.waitForFunction(() => window.STD_UI.state.outing.log.length > 0, null, { timeout: 60000 }).catch(() => {});
+    const pp = await page.evaluate(() => { const st = window.STD_UI.state.outing, c = (st.log.slice(-1)[0] || {}).call || {};
+      return { pf: window.STD_METER.perfectOf(c.e, c.q).both, e: c.e, q: c.q }; }).catch(() => ({}));
+    pp.sparkle = sparkle;
+    if (pp.pf) perfects++; else perfectMiss++;
+    if (pp.sparkle) sparkles++;
+    if (process.env.LEAK_VERBOSE) console.log(`  perfect and perfect: e ${pp.e} q ${pp.q}, sparkle ${pp.sparkle}`);
+  }
   if (meter) {
     // (both stops, pressed until each takes: the meter guards its first moments, and a slow page runs
     // its timers late)
@@ -228,6 +286,7 @@ for (let o = 0; o < OUTINGS; o++) {
   console.log(`outing ${o + 1} (pitch ${pitchNo}, ${inPlays} in play, ${challenges} challenges, ${chips} chips, ${Math.round((Date.now() - t0) / 1000)} s): ` +
     `geo ${r.geometries} tex ${r.textures} prog ${r.programs} calls ${r.calls} tris ${r.triangles} obj ${r.objects}/${r.fpObjects} dom ${r.dom} ls ${r.listeners} raf ${r.raf} to ${r.timeouts} iv ${r.intervals} ` +
     `heap ${(r.heap / 1e6).toFixed(2)} MB frame ${r.frameMed}/${r.frame95} ms draw ${r.drawMed} ms (${r.frames} frames) cut frame ${r.cutMed}/${r.cutMax} ms (${r.cuts})`);
+  firstOfOuting = true;
   while (await pitch());
   await page.waitForSelector('#s-result.on', { timeout: 60000 });
   await page.waitForTimeout(400);
@@ -261,6 +320,10 @@ const hb = lateHeap - early > HEAP_SLACK;
 if (hb) fails++;
 console.log(`  ${hb ? 'FAIL' : 'ok  '} heap       ${(early / 1e6).toFixed(2)} MB early, ${(lateHeap / 1e6).toFixed(2)} MB late (slack ${(HEAP_SLACK / 1e6).toFixed(1)} MB), ${((lateHeap - early) / Math.max(1, pitchNo) * 100 / 1e3).toFixed(1)} KB per 100 pitches`);
 for (const e of errors.slice(0, 5)) console.log('  page error:', e);
+// the effects were made and freed: a perfect and perfect pitch each outing, each with its sparkle
+const pBad = perfects === 0 || sparkles < perfects;
+console.log(`  ${pBad ? 'FAIL' : 'ok  '} perfect   ${perfects} perfect and perfect pitches (${perfectMiss} missed), ${sparkles} with the sparkle`);
+if (pBad) fails++;
 console.log(`\n${pitchNo} pitches, ${inPlays} balls in play, ${challenges} challenges, ${chips} chips, ${OUTINGS} outings, ${fails} growing${errors.length ? ', ' + errors.length + ' page errors' : ''}`);
 await browser.close();
 server.close();
