@@ -743,7 +743,7 @@ function stepLine() {
   if (!el) return;
   var say = '';
   if (S.busy || !S.outing || S.outing.status !== 'live') say = '';
-  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your power' : 'stop it in the bright band';
+  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your power' : 'tap when it hits the circle';
   else if (!S.type) say = 'pick a pitch';
   else if (S.cell == null) say = 'aim: drag or tap the zone';
   else say = 'tap throw';
@@ -1098,7 +1098,10 @@ function throwIt() {
     label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
     /* the step line under the meter says what to do; the meter's own corner keeps its word for after the tap */
     hint: ' ',
+    place: meterPlace(bt),
     onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
+    /* a perfect release: the snap again, and with a perfect power a second one like a mitt's pop */
+    onPerfect: function (level) { sound('snap', 60); if (level === 2) sound('pop', 140); },
   });
   stepLine();
   absButton();
@@ -1109,6 +1112,24 @@ function throwIt() {
     if (r.e != null) call.e = r.e;      // effort: only when the meter offered it (STD_METER.EFFORT)
     fire(call);
   });
+}
+/* where the combo meter goes (meter-ui.js): the aim layer, the crosshair, and the side of the zone
+   away from the hitter for the power column (his box on the 3D mound, else the side he bats from:
+   a right handed hitter stands on the right of the pitcher's view) */
+function meterPlace(bt) {
+  var aim = $('m-aim'), x = aim && aim.querySelector('.aim-x');
+  if (!aim) return null;
+  var a = aim.getBoundingClientRect(), c = x && x.offsetParent ? x.getBoundingClientRect() : null;
+  var side = bt && bt.bats === 'L' ? 'right' : 'left';
+  try {
+    var st = S.scene && S.scene.real, cv = $('m-canvas');
+    if (st && st.figureBoxes && cv) {
+      var b = st.figureBoxes(400).batter, r = cv.getBoundingClientRect();
+      if (b && isFinite(b.x0)) side = r.left + (b.x0 + b.x1) / 2 > (a.left + a.right) / 2 ? 'left' : 'right';
+    }
+  } catch (e) {}
+  var zEl = aim.querySelector('.aim-zone');
+  return { aim: a, zone: zEl ? zEl.getBoundingClientRect() : null, x: c ? c.left + c.width / 2 : null, y: c ? c.top + c.height / 2 : null, side: side };
 }
 /* the mound holds still while the meter runs (stage.js hush), so nothing redraws under the needle */
 function hush(on) { var st = S.scene && S.scene.real; if (st && st.hush) st.hush(on); }

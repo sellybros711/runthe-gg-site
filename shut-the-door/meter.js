@@ -110,9 +110,55 @@ function errAt(t) {
   var n = needleAt(t);
   return n.dir * (n.pos - MARK) * SWEEP_MS;
 }
+/* THE COMBO METER (the owner, 2026-10-26: "Vertical bar for power, and then the ring around the
+   circle starts to go for accuracy and you have to tap when it is as close to the circle as you can").
+   Power is the column's stop, effortAt(t) as before. The release is a ring closing onto the aim
+   point, and POWER SETS ITS SPEED: one pass of the ring takes ringMs(e) = SWEEP_MS x windowScale(e),
+   so the ring at max (x0.6) closes in 510 ms and at the softest (x1.25) in 1062.5. The window in ms is
+   windowMs(command, e), the same rule as the bar's (CONTRACT.md 5c, part 4): the bright band is
+   +/-16.5 ms at command 50 and his ordinary effort, +/-9.9 at max, +/-20.6 at the softest. So the
+   band covers the same share of the ring's travel at every power (ringBands), and the speed is
+   what makes max hard. q for a tap t ms after the ring starts is qOf(ringErrAt(t, e), command, e):
+   for the same miss in ms, exactly the q the bar gave. The ring passes the mark (MARK of its
+   travel), closes past it, and opens back, back and forth until the tap, so nobody is rushed. */
+/* QUICK DELIVERY (the game agent's rules 7, its numbers in QUICK when that lands): every function
+   here takes a last argument quick. With it the ring's pass is times QUICK.WINDOW, the window's own
+   factor (windowMs(command, e, quick)), so the bands stay put on the ring and it closes that much
+   faster; and the power needle turns at QUICK.E_MAX (powerAt) at the same speed, so the column's
+   top above it is never reached. Without QUICK (before rules 7) quick changes nothing. */
+function quickOf(quick) { return quick && typeof QUICK !== 'undefined' ? QUICK : null; }
+function ringMs(e, quick) { var Q = quickOf(quick); return SWEEP_MS * windowScale(e) * (Q ? Q.WINDOW : 1); }
+function ringAt(t, e, quick) {
+  var ph = (t / ringMs(e, quick)) % 2;
+  return ph < 1 ? { pos: ph, dir: 1 } : { pos: 2 - ph, dir: -1 };
+}
+function ringErrAt(t, e, quick) { var n = ringAt(t, e, quick); return n.dir * (n.pos - MARK) * ringMs(e, quick); }
+/* the two bands as halves of the ring's travel: the same at every power (see above) */
+function ringBands(command, e, quick) {
+  var w = windowMs(command, e, quick), p = ringMs(e, quick);
+  return { good: (1 - GOOD_Q) * w / p, best: (1 - BEST_Q) * w / p };
+}
+/* the power stop at t ms: effortAt, or with a quick delivery a needle that turns at QUICK.E_MAX */
+function powerAt(t, quick) {
+  var Q = quickOf(quick);
+  if (!Q) return effortAt(t);
+  var top = Q.E_MAX, ph = (t / (EFFORT_SWEEP_MS * top)) % 2;
+  return C.effortE(top * (ph < 1 ? ph : 2 - ph));
+}
+/* the top of the power column a player can reach (1, or QUICK.E_MAX with a quick delivery) */
+function powerCap(quick) { var Q = quickOf(quick); return Q ? Q.E_MAX : 1; }
+/* PERFECT (the owner, 2026-10-26: "perfect and perfect"). Execution only, never the grade.
+   Perfect power is the top of the column: e at PERFECT_E or over (the needle's last 27 ms each way
+   before it turns, 54 ms in all; an ordinary tap aimed at the top gets it about a third of the time). A perfect release is q at PERFECT_Q or over, the word's own
+   "perfect release". Both on one pitch is the one celebration the game plays. */
+var PERFECT_E = 0.97, PERFECT_Q = 0.9;
+function perfectOf(e, q) {
+  var pe = e != null && e >= PERFECT_E, pq = q != null && q >= PERFECT_Q;
+  return { power: pe, release: pq, both: pe && pq };
+}
 /* The quiet word after the tap. Execution only, never the call. */
 function wordOf(q, err) {
-  if (q >= 0.9) return 'perfect release';
+  if (q >= PERFECT_Q) return 'perfect release';
   if (q >= 0.75) return 'sharp';
   if (q >= GOOD_Q) return 'on time';
   var side = err < 0 ? 'early' : 'late';
@@ -218,6 +264,7 @@ function create(el) {
 var api = { SWEEP_MS: SWEEP_MS, MARK: MARK, WINDOW_AT_50: WINDOW_AT_50, TIMING: TIMING, GOOD_Q: GOOD_Q, BEST_Q: BEST_Q,
   EFFORT: POWER_ON, POWER: POWER_ON, windowOf: windowOf, veloOf: veloFor,
   EFFORT_WINDOW: EFFORT_WINDOW, QUICK: QUICK, EFFORT_SWEEP_MS: EFFORT_SWEEP_MS, windowScale: windowScale, effortAt: effortAt,
+  ringMs: ringMs, ringAt: ringAt, ringErrAt: ringErrAt, ringBands: ringBands, powerAt: powerAt, powerCap: powerCap, PERFECT_E: PERFECT_E, PERFECT_Q: PERFECT_Q, perfectOf: perfectOf,
   stuffFor: stuffFor, veloFor: veloFor, windowMs: windowMs, qOf: qOf, needleAt: needleAt, errAt: errAt, wordOf: wordOf, bandsFor: bandsFor, create: create };
 if (NODE) module.exports = api;
 if (typeof window !== 'undefined') window.STD_METER = api;
