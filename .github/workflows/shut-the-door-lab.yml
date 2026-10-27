@@ -1,0 +1,126 @@
+name: Shut The Door lab checks
+
+# The long lab checks on every PR that touches the game, side by side, in minutes. The longest runs
+# (check-catch on every case, check-jolt on every case, check-leak's session) are the nightly's
+# (shut-the-door-nightly.yml).
+#
+# A check whose ceilings are counts of bad plays (jolt, camera, frame) runs here on exactly the set
+# its ceilings were measured on, so it is held to them as they are, with nothing scaled: those
+# ceilings sit at the counts main measured, and a sample's count wanders round its share by chance,
+# so a scaled ceiling on a small sample would fail main about half the time per ceiling.
+# check-jolt's held set is split in four shards and combined, which gives the same plays and the same
+# verdict as one run (--combine). A check whose limits are per case with no ceiling (catch) runs a
+# sample: any case over its limit in the sample is over it in the whole run, so a sample cannot fail
+# what the whole run passes, and with no ceiling there is no rate to scale.
+#
+#   jolt     the held 2,925 (every 20th case), as four shards then --combine
+#   camera   every case (58,498), the set its ceilings were measured on       check-camera.mjs --stride 1
+#   frame    every case                                                        check-frame.mjs
+#   catch    every 9th case (6,500 of 58,498)                                  check-catch.mjs --sample 6000
+#   inplay   every case (it is pure: a minute and a half)                      check-inplay.mjs
+#
+# Runs locally, unchanged (add --resume to pick up a killed run; lab/pipeline/checkpoint.mjs). No
+# secrets, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'shut-the-door/**'
+      - '.github/workflows/shut-the-door-lab.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: shut-the-door-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lab:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: jolt-0
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 0/4 --rows-out jolt-rows.json
+            browser: true
+          - name: jolt-1
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 1/4 --rows-out jolt-rows.json
+            browser: true
+          - name: jolt-2
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 2/4 --rows-out jolt-rows.json
+            browser: true
+          - name: jolt-3
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --shard 3/4 --rows-out jolt-rows.json
+            browser: true
+          - name: camera
+            run: node shut-the-door/lab/pipeline/check-camera.mjs --stride 1
+            browser: true
+          - name: frame
+            run: node shut-the-door/lab/pipeline/check-frame.mjs
+            browser: true
+          - name: catch
+            run: node shut-the-door/lab/pipeline/check-catch.mjs --sample 6000
+            browser: true
+          - name: inplay
+            run: node shut-the-door/lab/pipeline/check-inplay.mjs
+            browser: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        if: matrix.browser
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: check-${{ matrix.name }}
+        run: |
+          set -o pipefail
+          ${{ matrix.run }} 2>&1 | tr '\r' '\n' | grep -v ' cases *$' | tee check-${{ matrix.name }}.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          f=check-${{ matrix.name }}.txt
+          [ -f "$f" ] || exit 0
+          grep -E 'FAIL' "$f" | head -30 | sed 's/%/%25/g; s/^ */::error title=check-${{ matrix.name }}::/' || true
+          tail -n 1 "$f" | sed 's/^/::notice title=check-${{ matrix.name }}::/'
+          { echo "### check-${{ matrix.name }}"; echo '```'; tail -n 60 "$f"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: The shard's plays, for the combined verdict
+        if: startsWith(matrix.name, 'jolt-')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: jolt-rows.json
+          retention-days: 3
+
+  # the four jolt shards as one run, held to CEILING as it is
+  jolt:
+    needs: lab
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jolt-*
+          path: jolt
+      - name: The held 2,925, combined
+        run: |
+          set -o pipefail
+          mkdir -p shards
+          for f in jolt/*/jolt-rows.json; do cp "$f" "shards/$(basename "$(dirname "$f")").json"; done
+          node shut-the-door/lab/pipeline/check-jolt.mjs --combine shards 2>&1 | tee check-jolt.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          [ -f check-jolt.txt ] || exit 0
+          grep -E 'FAIL' check-jolt.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-jolt::/' || true
+          tail -n 1 check-jolt.txt | sed 's/^/::notice title=check-jolt::/'
+          { echo '### check-jolt (combined)'; echo '```'; tail -n 45 check-jolt.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

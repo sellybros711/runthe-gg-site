@@ -709,6 +709,10 @@ class Stage {
             if (run) { this.inplay.update(te - resultAt, this.camera); this.firstPersonCut(); }
             this.render();
             keep(te);
+            // the broadcast over, its last frame held for the play's tail: the director cuts back to the
+            // mound, as television does, rather than leave the canvas on a long lens full of grass until
+            // the next hitter (after the outing's last play nothing else would bring the set back)
+            if (run) { this.inplay.end(this.camera); this.preview(); this.render(); }
           }
         } catch (e) { console.error('the end of the pitch failed', e); trace.error = String(e && e.message || e); }
         this.dirty = true;

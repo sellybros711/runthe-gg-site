@@ -4,6 +4,11 @@
  *   node shut-the-door/lab/pipeline/check-frame.mjs              the cases check-inplay plans
  *   node shut-the-door/lab/pipeline/check-frame.mjs --limit N    the first N cases (reported, not held to CEILING)
  *   node shut-the-door/lab/pipeline/check-frame.mjs --show N     print N misses in full
+ *   node shut-the-door/lab/pipeline/check-frame.mjs --sample N   about N cases, spread over all of them
+ *   node shut-the-door/lab/pipeline/check-frame.mjs --stride N   every Nth case
+ *   node shut-the-door/lab/pipeline/check-frame.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ * (the ceilings and floors were measured on every case: a sample is held to the ceilings' rate, which
+ * for a ceiling of 0 is 0, and to the same floors, a percentile being a rate already)
  *
  * The owner (2026-10-22): we need to actually see the play unfold, the out or safe visible at the
  * base. So for every case check-inplay plans, staged the way the game stages it (inplay.js begin), the
@@ -26,6 +31,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
+import { selection, holding, capStr, openCheckpoint } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -83,11 +89,16 @@ await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current &&
 await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {}; });
 if (process.env.SMALL) await page.evaluate((o) => { window.__SMALL = []; window.__SMALLT = o.t; window.__SMALLW = o.w; }, { t: +(process.env.SMALLT || 14), w: process.env.SMALLW || null });
 
+const SEL = selection({ heldStride: 1, total: [...inplayCases()].length });
 const cases = [];
-for (const c of inplayCases()) { if (cases.length >= LIMIT) break; cases.push(c); }
+let kc = 0;
+for (const c of inplayCases()) { const kk = kc++; if (kk % SEL.stride || Math.floor(kk / SEL.stride) % SEL.shard.n !== SEL.shard.i) continue; if (cases.length >= LIMIT) break; cases.push(c); }
+const HOLD = holding({ stride: SEL.stride, heldStride: 1, n: cases.length, heldN: SEL.total, partial: LIMIT !== Infinity || !!process.env.SMALL, shard: SEL.shard });
 const rows = [];
 const CHUNK = 500;
+const CK = openCheckpoint('check-frame', { STRIDE: SEL.stride, LIMIT: String(LIMIT), SHARD: SEL.shard, CHUNK, SMALL: process.env.SMALL || null });
 for (let i = 0; i < cases.length; i += CHUNK) {
+  if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
   const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate(({ part, ASPECT, MARGIN }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
@@ -165,9 +176,11 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     return out;
   }, { part, ASPECT, MARGIN });
   rows.push(...got);
+  CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
 console.log('');
+CK.close();
 if (process.env.SMALL) for (const r of (await page.evaluate(() => window.__SMALL)).slice(0, +process.env.SMALL)) console.log('SMALL', JSON.stringify(r));
 const by = {};
 for (const r of rows) if (!r.err) { const b = (by[r.what] ||= { n: 0, miss: {} }); b.n++; if (r.miss) b.miss[r.miss] = (b.miss[r.miss] || 0) + 1; }
@@ -178,10 +191,10 @@ console.log('\nthe moments that decide the play, on the phone\'s screen');
 for (const [w, b] of Object.entries(by).sort()) {
   const m = Object.values(b.miss).reduce((a, x) => a + x, 0);
   // (a partial run, --limit, only reports)
-  const cap = LIMIT === Infinity ? CEILING[w] ?? 0 : Infinity;
+  const cap = HOLD.cap(CEILING[w] ?? 0);
   const over = m > cap;
-  if (over) fails += m - cap;
-  console.log(`  ${over ? 'FAIL' : 'ok  '} ${w.padEnd(6)} ${String(b.n).padStart(7)}  missed ${m}${cap !== Infinity ? ' (ceiling ' + cap + ')' : ''}${m ? ' (' + Object.entries(b.miss).map(([k, v]) => v + ' ' + k).join(', ') + ')' : ''}`);
+  if (over) fails += Math.ceil(m - cap);
+  console.log(`  ${over ? 'FAIL' : 'ok  '} ${w.padEnd(6)} ${String(b.n).padStart(7)}  missed ${m}${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}${m ? ' (' + Object.entries(b.miss).map(([k, v]) => v + ' ' + k).join(', ') + ')' : ''}`);
 }
 // how big the man is: the 10th percentile and the median of his height on screen, each moment
 console.log('\nthe man who decides it, his height on the phone (px of the 457 px field)');
@@ -189,7 +202,7 @@ const pct = (a, q) => a[Math.min(a.length - 1, Math.floor(a.length * q))];
 for (const w of Object.keys(by).sort()) {
   const t = rows.filter((r) => r.what === w && r.tall != null).map((r) => r.tall).sort((a, b) => a - b);
   if (!t.length) continue;
-  const p10 = pct(t, 0.1), cap = LIMIT === Infinity ? FLOOR[w] : undefined, under = cap != null && p10 < cap;
+  const p10 = pct(t, 0.1), cap = HOLD.mode !== 'report' ? FLOOR[w] : undefined, under = cap != null && p10 < cap;
   if (under) fails++;
   console.log(`  ${under ? 'FAIL' : 'ok  '} ${w.padEnd(6)} ${String(t.length).padStart(7)}  10th ${p10.toFixed(1)}${cap != null ? ' (floor ' + cap + ')' : ''}  median ${pct(t, 0.5).toFixed(1)}`);
 }
@@ -197,7 +210,7 @@ if (SHOW) for (const cm of [...new Set(rows.map((r) => r.cam).filter(Boolean))])
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 if (SHOW) for (const r of rows.filter((x) => x.miss).slice(0, SHOW)) console.log(JSON.stringify(r));
-console.log(`\n${cases.length} cases, ${rows.filter((r) => !r.err && r.what !== 'flash').length} moments, ${fails} over the ceiling`);
+console.log(`\n${cases.length} cases, ${rows.filter((r) => !r.err && r.what !== 'flash').length} moments, ${fails} over the ceiling (${HOLD.label})`);
 await browser.close();
 server.close();
 process.exit(fails || errs.length ? 1 : 0);

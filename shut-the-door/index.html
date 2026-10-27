@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=32">
+<link rel="stylesheet" href="style.css?v=33">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -171,6 +171,11 @@
     <div class="dock" id="m-dock">
       <p class="pbp" id="m-pbp" aria-live="polite"></p>
       <p class="pad-say" id="m-say" aria-live="polite"></p>
+      <!-- rules 7: with a runner on, the running game's row (ui.js runBar): QUICK DELIVERY and PICKOFF -->
+      <div class="runbar" id="m-run" data-hud role="group" aria-label="The running game" hidden>
+        <button class="rb-quick" id="m-quick" type="button" aria-pressed="false"><span class="rb-t"><b>quick delivery</b><small id="m-quick-l">slide step · beats the steal</small></span><i class="rb-sw" aria-hidden="true"></i></button>
+        <button class="rb-po" id="m-po" type="button" hidden><span class="rb-t"><b>pickoff</b><small id="m-po-l"></small></span><span class="ab-dots" aria-hidden="true"><i></i><i></i></span></button>
+      </div>
       <div class="arsenal" id="m-arsenal" data-hud role="group" aria-label="His pitches"></div>
       <div class="pad" id="m-pad" data-hud>
         <button class="btn abs-b" id="m-abs-b" type="button" hidden><b>challenge</b><span class="ab-dots" aria-hidden="true"><i></i><i></i></span><i class="ab-clock" aria-hidden="true"></i></button>
@@ -326,7 +331,7 @@
 <script src="mock-api.js?v=12"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=1"></script>
-<script src="ui.js?v=39"></script>
+<script src="ui.js?v=41"></script>
 <script type="module" src="3d/boot.js?v=54"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
