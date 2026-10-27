@@ -4174,7 +4174,7 @@ function renderReveal(){
   const showFiller = Array.from({ length: 14 }, () => pick(sameYear.length > 1 ? sameYear : pool));
 
   const land = () => {
-    document.getElementById('revealLbl').textContent = "Tonight's show";
+    document.getElementById('revealLbl').textContent = 'The wheel picked';
     const c = document.getElementById('rCount');
     c.textContent = `${show.songs.length} songs played`;
     c.classList.remove('hidden');
