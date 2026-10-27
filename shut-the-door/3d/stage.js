@@ -87,7 +87,7 @@ import { Pitch, releaseOf } from './pitch.js?v=11';
 import { fromResult, motion } from './play.js?v=11';
 import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=25';
+import { InPlay } from './inplay.js?v=26';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=8';
 import { FirstPerson } from './firstperson.js?v=6';
 
@@ -593,7 +593,11 @@ class Stage {
         // no safe rect: the HUD's own panels. The hitter, his bat, the plate, the catcher and the
         // umpire all in the canvas and clear of every panel, as large as that allows (the cell rule
         // still the widest the frame goes)
-        const sol = freeFit(fb, f.fw, Math.min(fw * FREE_BACK, Math.max(fw, maxFw)), Math.max(fw, maxFw), panels, w, h);
+        // (the widest it may go is the cell rule's alone, not the preset's: a window with corners but
+        // not a desk's width, 1000x1020, needs to stand further back than the preset to clear the
+        // pitch list, the owner 2026-10-27)
+        const freeHi = Math.max(fw, (w * CELL_FT) / CELL_PX);
+        const sol = freeFit(fb, f.fw, Math.min(fw * FREE_BACK, freeHi), freeHi, panels, w, h);
         fw = sol.fw; sc = f.fw / fw; cx = sol.cx; cy = sol.cy;
       }
       eye.fit = { x: f.x + cx / (kx * sc), z: f.z + cy / (kz * sc), fw };
@@ -773,6 +777,10 @@ class Stage {
             if (run) { this.inplay.update(te - resultAt, this.camera); this.firstPersonCut(); }
             this.render();
             keep(te);
+            // the broadcast over, its last frame held for the play's tail: the director cuts back to the
+            // mound, as television does, rather than leave the canvas on a long lens full of grass until
+            // the next hitter (after the outing's last play nothing else would bring the set back)
+            if (run) { this.inplay.end(this.camera); this.preview(); this.render(); }
           }
         } catch (e) { console.error('the end of the pitch failed', e); trace.error = String(e && e.message || e); }
         this.dirty = true;

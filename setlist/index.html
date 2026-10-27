@@ -2852,6 +2852,90 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .namehd{gap:10px;}
   .namehd h2{flex:1 1 auto; min-width:0; overflow-wrap:anywhere;}
   .namehd .btn{width:auto; flex:0 0 auto; white-space:nowrap;}
+
+  /* ── THE PIXEL WORLD: the front screen as backstage (2026-10-27) ─────────────────────────────
+     The owner's call: the game should feel like one pixel world from the first screen. So the hero
+     is the deck at dusk with the band soundchecking (backstage.js, the show's own sprites), and
+     every block under it is a prop you would find there: the rules on a setlist taped to the floor,
+     the daily as a ticket stub, the band's pages as road cases, the rooms as a tour poster strip.
+     Props are objects, so they carry their own colours in BOTH themes, the way the hero always has:
+     each one re-scopes the tokens it is drawn with, so everything inside it follows. Square corners,
+     hard offset shadows and thick outlines are the pixel kit; the faces stay the game's own. */
+  #app .hero{--stageH:106px; padding-top:12px; padding-bottom:calc(var(--stageH) + 2px);}
+  #app .hero > .hero-stage{position:absolute; left:0; right:0; bottom:0; width:100%;
+    height:var(--stageH); z-index:-1; image-rendering:pixelated; image-rendering:crisp-edges;
+    opacity:0; transition:opacity .6s ease; pointer-events:none;}
+  #app .hero > .hero-stage.on{opacity:1;}
+  #app .hero h1{font-size:clamp(52px,15vw,120px);}
+  #app .hero .tagline{font-size:clamp(15px,4vw,26px); margin:0 0 6px; text-wrap:balance;}
+  #app .hero p{font-size:12.5px;}
+  @media (min-width:900px){ #app .hero{--stageH:184px;} }
+
+  /* The rules, on a setlist taped to the floor. */
+  .how{--card:#FFF8EA; --card2:#F4EBD8; --card3:#E8DECB; --ink:#1B1726; --mut:#4E4560; --dim:#6E6352;
+    --line:rgba(27,23,38,.12); --line2:rgba(27,23,38,.22); --tealT:#0B6E7A;
+    position:relative; background:var(--paper); color:var(--ink); padding:10px 12px 10px;
+    border-radius:2px; box-shadow:4px 4px 0 rgba(8,5,18,.35); transform:rotate(-.4deg);}
+  .how:before{content:''; position:absolute; left:50%; top:-7px; width:58px; height:14px;
+    transform:translateX(-50%) rotate(-3deg); background:rgba(255,236,170,.78);
+    box-shadow:0 1px 0 rgba(0,0,0,.08);}
+  #app .how{margin:12px 0 14px;}
+  .how h3 .btn{background:transparent; color:var(--ink); border:2px solid var(--ink); border-radius:2px;
+    box-shadow:2px 2px 0 rgba(8,5,18,.25);}
+  .how .loop b{font-family:var(--hand); font-weight:400; font-size:13px; letter-spacing:.2px; white-space:nowrap;}
+  .how .lp-art{border-radius:2px; height:30px; padding:4px;}
+  .how .loop span{font-size:10.5px;}
+  .how .how-scores{margin-top:8px;}
+  .how .how-scores{color:var(--ink);}
+
+  /* The band's own panel: a dark road case, in both themes. */
+  .band:not(.soon){--card:#17112B; --card2:#211A3A; --card3:#2B2348; --ink:#F6F2EA; --mut:#CFC4E6;
+    --dim:#A99FC4; --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.18); --tealT:#7FE0EA;
+    background:var(--card); color:var(--ink); border:3px solid #0B0818; border-radius:4px;
+    box-shadow:4px 4px 0 rgba(8,5,18,.35);}
+  .band:not(.soon) .band-hd h2{font-size:30px;}
+  .band:not(.soon){padding-top:12px;}
+  .band:not(.soon) .band-hd .eyebrow{display:none;}
+
+  /* Free play, a setlist slip taped down. The daily, a ticket stub. */
+  .mode.free{--ink:#1B1726; background:var(--paper); color:var(--paper-ink); border-radius:2px;
+    box-shadow:3px 3px 0 rgba(8,5,18,.45); transform:rotate(-.8deg);}
+  .mode.free .md-k, .mode.free .md-s{color:#5E5446;}
+  .mode.free .md-go{background:#1D1A3A; color:#F6F2EA; border-radius:2px; box-shadow:3px 3px 0 #C43A8A;}
+  .dailycard{border:3px solid #9FE7EF; border-radius:3px; box-shadow:3px 3px 0 rgba(8,5,18,.45);
+    transform:rotate(.8deg);}
+  .dailycard .md-go{border-radius:2px; box-shadow:3px 3px 0 #0B0818;}
+  .mode:active{transform:translate(2px,2px);}
+  .mode:active .md-go{box-shadow:1px 1px 0 currentColor;}
+
+  /* The countdown, on the bus's amber sign. */
+  .band:not(.soon) .nextline{background:#140B05; border:2px solid #3A2A18; border-radius:2px;}
+  .band:not(.soon) .nl-k{color:#FFB347;}
+  .band:not(.soon) .nl-v{color:#FFB347; text-shadow:0 0 8px rgba(255,138,40,.45);}
+  .band:not(.soon) .nl-p{color:#F5D9A8;}
+
+  /* The band's pages, as road cases with their latches. */
+  .band:not(.soon) .bandlinks{gap:8px;}
+  .band:not(.soon) .bandlinks button{min-height:48px; padding:12px 10px 10px; text-align:center;
+    font-family:var(--ui); font-weight:400; font-size:15px; letter-spacing:1.5px; text-transform:uppercase;
+    color:#E9E4D6; background-color:#2B2B3A; border:3px solid #15151F; border-radius:2px;
+    box-shadow:3px 3px 0 #000;
+    background-image:linear-gradient(#9A9AA8,#9A9AA8), linear-gradient(#9A9AA8,#9A9AA8);
+    background-size:10px 4px, 10px 4px; background-position:8px 0, calc(100% - 8px) 0;
+    background-repeat:no-repeat;}
+  .band:not(.soon) .bandlinks button:after{display:none;}
+  .band:not(.soon) .bandlinks button:active{transform:translate(2px,2px); box-shadow:1px 1px 0 #000;}
+
+  /* Where your show is played: a strip of tour posters, pasted up. */
+  .vpick{--card:var(--paper); --ink:#1B1726; --mut:#4E4560; --dim:#5E5446; --line2:rgba(27,23,38,.25);
+    background:var(--paper); color:var(--ink); border:3px solid #15151F; border-radius:3px;
+    box-shadow:4px 4px 0 rgba(8,5,18,.35);}
+  .vpick .vp-hd .eyebrow{color:var(--ink);}
+  .vpick .vp-hd .btn{background:transparent; color:var(--ink); border:2px solid var(--ink); border-radius:2px;}
+  .vpick .vthumb{border-radius:2px; border-color:#15151F;}
+  /* Every control on the front screen is a 44px target, the size a thumb can hit mid-show. */
+  .how h3 .btn, .vpick .vp-hd .btn{min-height:44px; padding-left:14px; padding-right:14px;}
+  .band.soon .linkbtn{min-height:44px; display:inline-flex; align-items:center;}
 </style>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
@@ -3176,7 +3260,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=44';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=11';
+import { createStage } from './stage.js?v=14';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -3559,6 +3643,7 @@ function setScreen(name){
   // its resize listener with it, which a reduced-motion stage never loops to drop.
   if (S.stage){ S.stage.destroy(); S.stage = null; }
   if (S.crowdStage){ S.crowdStage.destroy(); S.crowdStage = null; }
+  if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
   /* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
      scorecard" at the foot of a long playback landed half way down the
      scorecard, and every round after the first opened its reveal wherever the
@@ -3682,7 +3767,7 @@ const GUIDE_STEPS = [
     body: `<p><b>Tour</b> has every date Goose has announced. <b>Songs</b> is the
         whole catalog. <b>Board</b> is the leaderboard. <b>You</b> is where you
         check off the shows you've been to.</p>
-      <p>You don't need any of it to play. Let's spin you a show.</p>`,
+      <p>You don't need any of it to play. Let's build your show.</p>`,
   },
 ];
 
@@ -3731,7 +3816,7 @@ function paintGuide(){
       <div class="g-dots">${GUIDE_STEPS.map((_, i) =>
         `<i class="${i === GUIDE_AT ? 'at' : ''}"></i>`).join('')}</div>
       <button class="g-next" type="button" id="guideNext">${
-        last ? 'Spin the wheel' : 'Next'}</button>
+        last ? 'Build your show' : 'Next'}</button>
     </div>`;
 
   const target = step.aim ? step.aim() : null;
@@ -3808,6 +3893,29 @@ function placeGuideCard(card, target, ring, arrow){
 }
 
 // ── home ─────────────────────────────────────────────────────────────────────
+/* THE BAND BACKSTAGE, behind the wordmark. Loaded after the screen is up and never in its way: the
+   module, the band's frames and the drawing all arrive late, and if any of it fails the hero is the
+   poster it always was. The bus's sign is the next real show's date, never its venue. */
+function busSign(){
+  const next = nextShow();
+  if (!next) return null;
+  const days = daysUntil(next.date);
+  if (days === 0) return 'Tonight';
+  const d = new Date(next.date + 'T12:00:00');
+  return d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getDate();
+}
+function mountBackstage(){
+  if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
+  const cv = document.getElementById('heroStage');
+  if (!cv) return;
+  const go = () => import('./backstage.js?v=2').then(m => {
+    if (!cv.isConnected || S.backstage) return;
+    S.backstage = m.createBackstage(cv, { sign: busSign(),
+      reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
+  }).catch(() => {});
+  (window.requestIdleCallback || (f => setTimeout(f, 200)))(go);
+}
+
 /* THE DAILY, on the band panel under the main button. Three states, and each
    says what pressing it does: play it, carry on with it, or see how you did. */
 function dailyCardHTML(b, saved){
@@ -3825,7 +3933,7 @@ function dailyCardHTML(b, saved){
     line = `You scored <b>${Number(st.total).toLocaleString()}</b>`; cta = "Today's board"; }
   else if (st){ attr = 'data-daily-board="1"'; done = true;
     line = 'Started on this device'; cta = "Today's board"; }
-  else { attr = `data-daily="${b.id}"`; line = 'Same shows for everyone. One try.'; cta = 'Play'; }
+  else { attr = `data-daily="${b.id}"`; line = 'Same shows for everyone. One try.'; cta = 'Build your show'; }
   return `<button type="button" class="mode dailycard${done ? ' done' : ''}" ${attr}>
       <span class="md-k">Daily &middot; ${esc(fmtDay(day))}</span>
       <span class="md-t">Today's shows</span>
@@ -3897,7 +4005,7 @@ function renderHome(){
                 <span class="md-k">Free play</span>
                 <span class="md-t">Build a setlist</span>
                 <span class="md-s">Random nights, as many as you like.</span>
-                <span class="md-go">Spin</span></button>`}
+                <span class="md-go">Build your show</span></button>`}
           ${b.sample ? '' : dailyCardHTML(b, saved)}
         </div>
         ${saved ? `<button class="linkbtn freshlink" type="button" data-start="${b.id}"
@@ -3946,11 +4054,15 @@ function renderHome(){
      sit above the band panel rather than below it. The play button is still
      the biggest thing on the screen; it is now the biggest thing on the screen
      AFTER you have been told what pressing it does. */
+  /* THE HERO IS BACKSTAGE (2026-10-27): the band soundchecking on a deck at dusk, drawn by
+     backstage.js with the show's own sprites, under the wordmark. The eyebrow went to pay for it:
+     the tagline now names the band, and the play button still has to clear the fold. */
+  const who = real.length === 1 ? real[0].label + ' ' : '';
   app.innerHTML = `
     <div class="hero">
-      <div class="eyebrow">The setlist game for jam fans</div>
+      <canvas class="hero-stage" id="heroStage" aria-hidden="true"></canvas>
       <h1><span class="accent">Segue</span></h1>
-      <div class="tagline">Build the show that never happened.</div>
+      <div class="tagline">Build the ${esc(who)}show that never happened.</div>
       <p>Real shows, one at a time. Take one song from each and pay its
         running time.</p>
     </div>
@@ -4061,6 +4173,7 @@ function renderHome(){
       <button class="btn ghost" data-start="${test[0].id}">Try the sample data</button>
       <span>Made-up data we use for testing.</span>
     </div>` : ''}`;
+  mountBackstage();
 
   /* The walkthrough no longer opens by itself (owner's call: no auto tutorial
      on any game). "Show me around" under How it works is the way in. */
@@ -4174,7 +4287,7 @@ function renderReveal(){
   const showFiller = Array.from({ length: 14 }, () => pick(sameYear.length > 1 ? sameYear : pool));
 
   const land = () => {
-    document.getElementById('revealLbl').textContent = "Tonight's show";
+    document.getElementById('revealLbl').textContent = 'The wheel picked';
     const c = document.getElementById('rCount');
     c.textContent = `${show.songs.length} songs played`;
     c.classList.remove('hidden');
@@ -4568,7 +4681,7 @@ function renderDraft(){
                 spells out the full trade before anything is spent.
                 "Time" is the other one. It is not a noun for anything: it
                 opens the setlist you have built, on a card whose own heading
-                says "Tonight", next to the clock it appears to name. */''}
+                says "Your show", next to the clock it appears to name. */''}
           ${cost === null ? '<span class="nospin">No spins left</span>'
             : `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
                 aria-label="${can
@@ -4653,7 +4766,7 @@ function renderDraft(){
       <div class="slotcol" id="slotCol">
         <aside class="card setlist">
           <div class="sheetgrab"></div>
-          <h2>${S.pickedSong ? 'Add to ' + esc(cfg.label) : 'Tonight'}</h2>
+          <h2>${S.pickedSong ? 'Add to ' + esc(cfg.label) : 'Your show'}</h2>
           <div class="sub">${S.pickedSong
             ? `${esc(S.pickedSong.song)} · ${fmtClock(lenOf(S.pickedSong))}`
             : 'Two sets and an encore to fill.'}</div>
@@ -5050,9 +5163,9 @@ function venuePickerHTML(){
     : `${open.size} of ${VENUE_LIST.length} rooms open. ${cur === 'random' ? 'Each show draws one of them.' : 'Tap a dark one to see what it takes.'}`;
   const rnd = cur === 'random';
   return `<section class="card vpick">
-    <div class="vp-hd"><span class="eyebrow">Where tonight is played</span>
+    <div class="vp-hd"><span class="eyebrow">Where your show is played</span>
       ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
-    <div class="vp-row" role="radiogroup" aria-label="Choose tonight's room">
+    <div class="vp-row" role="radiogroup" aria-label="Choose where your show is played">
       <button type="button" class="vthumb vrand${rnd ? ' on' : ''}" data-venue="random" role="radio"
         aria-checked="${rnd}" aria-label="A random room each show">
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="none" stroke="currentColor"
@@ -5434,7 +5547,7 @@ function renderResult(){
       <div class="actions">
         <button class="btn primary" type="button" id="shareImgBtn">Share your setlist</button>
         <button class="btn" type="button" id="shareBtn">Copy as text</button>
-        <button class="btn" type="button" data-start="${S.band.id}">Play again</button>
+        <button class="btn" type="button" data-start="${S.band.id}">Build another show</button>
         <button class="btn ghost" type="button" id="homeBtn">Back home</button>
       </div>
     </div>`;
@@ -7239,15 +7352,15 @@ function renderShow(){
         </div>
         <button class="sx-skip" type="button" id="simSkip">Skip &rsaquo;</button>
       </div>
-      <button class="sx-paper" type="button" id="sxPaper" aria-label="Open tonight's full setlist">
-        <span class="sx-ph" id="sxPh">Tonight</span>
+      <button class="sx-paper" type="button" id="sxPaper" aria-label="Open your full setlist">
+        <span class="sx-ph" id="sxPh">Your show</span>
         <ol class="sx-list" id="sxList"></ol>
         <span class="sx-more">Full setlist</span>
       </button>
       <div class="sx-now" id="sxNow" aria-live="polite"></div>
       <div class="sx-final" id="sxFinal" hidden></div>
       <div class="sx-sheet" id="sxSheet" hidden>
-        <div class="sx-sheet-hd"><b>Tonight&rsquo;s setlist</b>
+        <div class="sx-sheet-hd"><b>Your setlist</b>
           <button type="button" class="sx-close" id="sxClose">Close</button></div>
         <div class="sim-feed" id="simFeed"></div>
       </div>
@@ -7418,7 +7531,12 @@ function renderShow(){
   });
 
   if (reduce){ skip(); return; }
-  S.revealTimer = setTimeout(step, 700);
+  /* THE ROOM IS BUILT OFF THE MAIN THREAD (stage.js), so the house stays dark until it is ready and
+     the first song waits for it, never longer than four seconds. Skipping, or leaving, before then
+     wins: the first step only runs if this is still the show on screen and nothing has played. */
+  const go = () => { if (S.stage === stage && !stopped && i === 0) S.revealTimer = setTimeout(step, 700); };
+  if (stage && stage.ready) Promise.race([stage.ready, new Promise(r => setTimeout(r, 4000))]).then(go);
+  else go();
 }
 
 function render(){

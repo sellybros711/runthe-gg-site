@@ -2768,21 +2768,57 @@ if (prose) {
    able to take the playback down with it: a stage that throws is a show that
    never reaches the scorecard. Both fail silently, so both are read here. */
 {
-  const stage = read('setlist/stage.js');
-  check(!/from\s+['"]\.\/scoring\.js/.test(stage) && !/scoreShow|scorePerf|show_gap/.test(stage),
-    'the stage reads nothing but the cues it is handed');
+  /* The stage was split on 2026-10-27: world.js builds the room and the band, world-worker.js runs
+     that build off the main thread. All three are the renderer, so all three are held to it. */
+  const stage = read('setlist/stage.js'), world = read('setlist/world.js'), worker = read('setlist/world-worker.js');
+  check([stage, world, worker].every(f => !/from\s+['"]\.\/scoring\.js/.test(f) && !/scoreShow|scorePerf|show_gap/.test(f)),
+    'the stage reads nothing but the cues it is handed (stage.js, world.js, world-worker.js)');
+  check(/buildWorld\(R, RIG, seed\)/.test(stage) && /setTimeout\(\(\) => \{ waiting\.delete\(id\); res\(null\); \}/.test(stage),
+    'a room the worker cannot build is built on the main thread, so a show always has a room');
   const show = (() => {
     const at = gameBare.indexOf('function renderShow(');
     return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\nfunction ', at + 10));
   })();
   check(/try\s*\{\s*stage = createStage\(/.test(show), 'a stage that fails to start leaves the playback running');
+  check(/Promise\.race\(\[stage\.ready,/.test(show), 'the first song waits for the room, but never forever');
   check(/if \(S\.stage\)\s*\{\s*S\.stage\.destroy\(\)/.test(gameBare), 'leaving the show stops the stage');
   /* THE STAGE IS PAINTED BY RUN THE TOUR'S OWN RENDERER, so the concert and the putt putt world are
      one style. setlist/pxhd.js is generated from golf/index.html; a hand edit there, or a change to
      PXHD in golf that was never carried over, is two renderers that look almost alike. */
   const { extract } = await import('./extract_pxhd.mjs');
   check(read('setlist/pxhd.js') === extract(), 'setlist/pxhd.js is golf\'s PXHD, unedited (run scripts/setlist/extract_pxhd.mjs)');
-  check(/from '\.\/pxhd\.js\?v=\d+'/.test(stage), 'and the stage draws with it');
+  check(/from '\.\/pxhd\.js\?v=\d+'/.test(world) && /from '\.\/world\.js\?v=\d+'/.test(stage), 'and the stage draws with it (through world.js)');
+}
+/* THE BAND MOVES (2026-10-27): it walks on, off, to the lip for a solo and down for the bow, all from
+   the cues the lights already follow. Reduced motion, or a cue marked instant, puts every player on
+   his mark rather than walking him there, and a fill only plays in real time. */
+{
+  const stage = read('setlist/stage.js');
+  check(/if \(snapBand \|\| reduce \|\| d < \.05\)/.test(stage), 'reduced motion and instant cues put the band on its marks');
+  check(/if \(reduce \|\| ev\.instant\)\{\s*snapBand = true;/.test(stage), 'an instant cue snaps the band');
+  check(/if \(!ev\.instant && !reduce\) st\.fillUntil/.test(stage), 'a drum fill only plays in real time');
+  check(/walk: \{/.test(read('setlist/world.js')) && /frames\.walk\[role\]/.test(stage), 'the walk frames are the world\'s');
+}
+
+/* BACKSTAGE (2026-10-27): the band soundchecking behind the front screen. The same sprites and the
+   same motion as the show, so it must come from world.js and nowhere else; it is scenery, so it
+   reads no song, score or rule; and its bus sign is the next show's DATE, never its venue, because
+   no room or venue is named on screen. It must load after the screen is up and stop when it is
+   left, or the front screen pays for a picture nobody can see. */
+{
+  const back = read('setlist/backstage.js');
+  check(/import \{[^}]*bandPose[^}]*\} from '\.\/world\.js\?v=\d+'/.test(back),
+    'the backstage band moves with world.js\'s bandPose, the same as the show');
+  check(!/from\s+['"]\.\/scoring\.js/.test(back) && !/scoreShow|scorePerf|show_gap/.test(back),
+    'and reads nothing but its band and its sign');
+  const sign = cdSlice('function busSign(){', '\n}');
+  check(!!sign && /next\.date/.test(sign) && !/venue|city|state/.test(sign),
+    'the bus sign is the next show\'s date, never where it is');
+  const mount = cdSlice('function mountBackstage(){', '\n}');
+  check(/requestIdleCallback/.test(mount) && /import\('\.\/backstage\.js\?v=\d+'\)/.test(mount),
+    'the scene loads after the screen is up, on its own');
+  check(/if \(S\.backstage\)\s*\{\s*S\.backstage\.destroy\(\)/.test(cdSlice('function setScreen(name){', '\n}')),
+    'and stops when the screen changes');
 }
 
 console.log();
