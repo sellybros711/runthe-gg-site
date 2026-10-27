@@ -1350,8 +1350,19 @@ function pickoffIt() {
   S.busy = true;
   S.grid.setDisabled(true);
   updateThrow();
+  var basesBefore = st.bases | 0;
   API.pickoff(st.outingId).then(function (res) {
     var ev = res.pickoff;
+    /* the throw on the field, when the stage plays one (stage.js pickoff, the camera agent's #744);
+       without it the line and the scorebug say what happened */
+    var real = S.scene && S.scene.real;
+    var thrown = real && typeof real.pickoff === 'function'
+      ? Promise.resolve(real.pickoff({ po: ev, bases: basesBefore, hooks: { sound: sound, field: hudRunners } })).catch(function (e) { if (window.console) console.warn(e); })
+      : Promise.resolve();
+    return thrown.then(function () { return res; });
+  }).then(function (res) {
+    var ev = res.pickoff;
+    hudRunners(null);
     S.outing = res.state;
     var t = pickoffText(ev, res.state);
     pbp(t.tag, t.rest);
