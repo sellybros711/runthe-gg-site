@@ -34,7 +34,7 @@
  * It never changes a score.
  */
 import PXHD from './pxhd.js?v=2';
-import { ROOMS, RIGS } from './rooms.js?v=3';
+import { ROOMS, RIGS } from './rooms.js?v=4';
 /* The camera, the solids, the people, the band and the venue's painted layers live in world.js, which
    the room builder in world-worker.js and the menus share. This file lights and moves them. */
 import {
@@ -89,7 +89,7 @@ function worldWorker(){
   if (worker !== null) return worker;
   try {
     worker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
-      ? new Worker(new URL('./world-worker.js?v=4', import.meta.url), { type: 'module' }) : false;
+      ? new Worker(new URL('./world-worker.js?v=5', import.meta.url), { type: 'module' }) : false;
   } catch (err) { worker = false; }
   if (worker){
     worker.onmessage = e => { const cb = waiting.get(e.data.id); if (cb){ waiting.delete(e.data.id); cb(e.data); } };
@@ -580,7 +580,7 @@ export function createStage(view, opts = {}){
     const jumping = now < st.jumpUntil, signs = now < st.signsUntil, arms = now < st.armsUntil;
     const top = camY - 20, bot = camY + visH + 50, lft = camX - 20, rgt = camX + visW + 20;
     /* The wave: at the top of a jam it runs across the lawn, rail to rail, one stretch of arms at a time. */
-    const wave = st.arc && st.push > .6 ? ((now - st.arc.t0) / 1000 * 12) % 36 - 18 : null;
+    const wave = !lite && st.arc && st.push > .6 ? ((now - st.arc.t0) / 1000 * 12) % 36 - 18 : null;
     for (const c of crowd){
       c.px = null;
       if (c.t > st.density * (FL.capacity || 1)) continue;
@@ -638,6 +638,113 @@ export function createStage(view, opts = {}){
   /* THE BEACH BALL. Outdoors, on a big song, one goes up off the lawn and the crowd keeps it in the air
      until the set break. Real time only: no still frame ever has one. */
   let ball = null;
+
+  /* THE WEATHER. The room says what its sky can do (rooms.js `weather`) and the night's seed rolls it,
+     once, so a night is rainy or it is not; nothing about the show touches it. It only moves once the
+     show is running: a thumbnail, a replay jump and a reduced-motion still are all clear skies. It is
+     the first thing a struggling phone drops (`lite`). */
+  const WX = opts.weather || (() => {
+    const W = R.weather || {}, wr = mulberry32(seed ^ 0x9e3779b9);
+    const rain = wr() < (W.rain || 0), snow = wr() < (W.snow || 0), fog = wr() < (W.fog || 0);
+    const storm = wr() < (W.storm || 0) && (rain || !W.rain);
+    return { rain, snow, fog, storm, shimmer: !!W.shimmer, wind: W.wind || null };
+  })();
+  let wxLive = false, bolt = null, boltNext = 0, fogTex = null;
+  const drops = [];
+  function wxParticles(){
+    const r = mulberry32(seed ^ 0x51ed270b), n = WX.rain ? 230 : WX.snow ? 110 : 0;
+    for (let i = 0; i < n; i++) drops.push({ x: r(), y: r(), v: .7 + r() * .6, ph: r() * 7, big: r() < .25 });
+    const m = WX.wind === 'sand' ? 40 : WX.wind === 'leaf' ? 22 : 0;
+    for (let i = 0; i < m; i++) drops.push({ x: r(), y: .45 + r() * .55, v: .6 + r() * .8, ph: r() * 7, wind: true, c: (r() * 4) | 0 });
+  }
+  wxParticles();
+  const LEAF = ['#c8642a', '#d89a32', '#9a4a22', '#b8b040'];
+  // The far edge of the ground, on screen: where the sky starts, the horizon shimmers and bolts land.
+  const horizon = () => P2(0, R.far, 0)[1] - camY;
+
+  /* A bolt, far off, behind everything: drawn under what is already there, so it only shows in the sky. */
+  function drawBolt(night){
+    if (!WX.storm || indoor || night < .4) return;
+    if (!bolt && now > boltNext){
+      if (boltNext){
+        const r = Math.random, hy = horizon(), pts = [[r() * visW, -2]];
+        while (pts[pts.length - 1][1] < hy) pts.push([pts[pts.length - 1][0] + (r() - .5) * 10, pts[pts.length - 1][1] + 3 + r() * 6]);
+        bolt = { pts, until: now + 160 };
+      }
+      boltNext = now + 6000 + Math.random() * 10000;
+    }
+    if (!bolt) return;
+    if (now > bolt.until){ bolt = null; return; }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'destination-over';
+    g.fillStyle = '#f4f2ff';
+    for (let i = 1; i < bolt.pts.length; i++){
+      const [x0, y0] = bolt.pts[i - 1], [x1, y1] = bolt.pts[i];
+      for (let k = 0; k <= 4; k++) g.fillRect(Math.round(x0 + (x1 - x0) * k / 4), Math.round(y0 + (y1 - y0) * k / 4), 1, 1);
+    }
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  /* Fog, laid on the painted room before the band, the stage front and the crowd stand in it, so it
+     sits behind them and the rig's light falls on it like on everything else. Densest at the back. */
+  function drawFog(t){
+    if (!fogTex){
+      fogTex = canvas(256, 64);
+      const fx = fogTex.getContext('2d'), r = mulberry32(seed ^ 0x3c6ef372);
+      for (let i = 0; i < 70; i++){
+        const x = r() * 256, y = 8 + r() * 48, w = 18 + r() * 40, h = 4 + r() * 8;
+        for (const dx of [-256, 0, 256]){
+          fx.fillStyle = 'rgba(255,255,255,.08)';
+          fx.beginPath(); fx.ellipse(x + dx, y, w, h, 0, 0, 7); fx.fill();
+        }
+      }
+    }
+    const deck = P2(0, -4, 0)[1] - camY, off = (t * 4) % 256;
+    if (deck <= 0) return;
+    g.globalAlpha = .75;
+    for (let x = -off; x < visW; x += 256) g.drawImage(fogTex, Math.round(x), 0, 256, deck + 12);
+    g.globalAlpha = 1;
+  }
+
+  /* Rain, snow, heat and wind, over the finished picture, in screen pixels. */
+  function drawWeather(t, night, p, L){
+    const dt = pdt, hy = horizon();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'source-over';
+    // Heat off the sand in daylight: the rows over the horizon wobble a pixel either way.
+    if (WX.shimmer && night < .35){
+      const c = g.canvas;
+      for (let y = Math.max(0, hy - 10); y < Math.min(visH, hy + 2); y++){
+        const off = Math.round(Math.sin(t * 3.2 + y * .9));
+        if (off) g.drawImage(c, 0, y, visW, 1, off, y, visW, 1);
+      }
+    }
+    if (!drops.length) return;
+    const wind = WX.wind === 'sand' ? 1 : .35;
+    for (const q of drops){
+      if (q.wind){
+        q.x += q.v * .16 * dt * wind * 2; if (q.x > 1.02) q.x -= 1.04;
+        const x = Math.round(q.x * visW), y = Math.round(q.y * visH + Math.sin(t * 2 + q.ph) * 3);
+        // Sand blows in pale streaks low over the beach by day; leaves tumble, two pixels then one.
+        if (WX.wind === 'sand'){ if (night > .6) continue; g.fillStyle = 'rgba(255,248,228,.75)'; g.fillRect(x, y, 3, 1); }
+        else { g.fillStyle = LEAF[q.c]; g.fillRect(x, y, 2, Math.sin(t * 5 + q.ph) > 0 ? 2 : 1); }
+        continue;
+      }
+      if (WX.rain){
+        q.y += q.v * 1.6 * dt; q.x += .05 * dt;
+        if (q.y > 1){ q.y -= 1; q.x = (q.x + .37) % 1; }
+        const x = Math.round((q.x % 1) * visW), y = Math.round(q.y * visH);
+        // Slanted a little with the wind: two pixels down, one across, then two more.
+        g.fillStyle = night > .5 ? 'rgba(210,220,255,.42)' : 'rgba(225,232,245,.6)';
+        g.fillRect(x, y, 1, 2); g.fillRect(x - 1, y + 2, 1, q.big ? 3 : 2);
+      } else {
+        q.y += q.v * .09 * dt; if (q.y > 1) q.y -= 1;
+        const x = Math.round(((q.x + Math.sin(t * .8 + q.ph) * .012) % 1) * visW), y = Math.round(q.y * visH);
+        g.fillStyle = 'rgba(244,246,255,.9)';
+        g.fillRect(x, y, q.big ? 2 : 1, q.big ? 2 : 1);
+      }
+    }
+  }
   function drawBall(){
     if (!ball) return;
     const dt = pdt;
@@ -756,6 +863,7 @@ export function createStage(view, opts = {}){
     g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, visW, visH);
     g.drawImage(back, camX, camY, visW, visH, 0, 0, visW, visH);
+    if (wxLive && !lite && WX.fog) drawFog(t);
     g.translate(-camX, -camY);
     g.fillStyle = 'rgba(30,20,40,.35)';
     for (const B of blk){
@@ -1070,7 +1178,14 @@ export function createStage(view, opts = {}){
     g.globalCompositeOperation = 'lighter';
     g.drawImage(emit, 0, 0);
     eg.globalCompositeOperation = 'source-over';
+    if (wxLive && !lite) drawBolt(night);
     drawSky(t, night, p, show, L);
+    if (wxLive && !lite) drawWeather(t, night, p, L);
+    // Lightning far off lights the whole night for a moment, twice: a flicker, a gap, a flash.
+    if (bolt){
+      const u = 1 - (bolt.until - now) / 160;
+      if (u < .25 || u > .5){ g.fillStyle = 'rgba(170,175,230,.16)'; g.globalCompositeOperation = 'lighter'; g.fillRect(0, 0, visW, visH); g.globalCompositeOperation = 'source-over'; }
+    }
     g.globalCompositeOperation = 'source-over';
     if (now < st.flashUntil){
       g.fillStyle = rgb([255, 255, 255], .4 * (st.flashUntil - now) / 260);
@@ -1139,6 +1254,7 @@ export function createStage(view, opts = {}){
     const dt = Math.min(.1, (ts - (last || ts)) / 1000);
     last = ts; now = ts;
     ease(dt);
+    wxLive = true;
     pdt = dt;
     const t0 = performance.now();
     draw();

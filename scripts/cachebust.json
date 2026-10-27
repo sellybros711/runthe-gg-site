@@ -2907,8 +2907,8 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "16",
-      "sha": "00d9f4c75dc5f2e3"
+      "v": "17",
+      "sha": "ca85b6a2327dab4d"
     },
     "venues.js": {
       "v": "2",
@@ -3117,8 +3117,8 @@
       "sha": "82d8338da1a8ffd3"
     },
     "rooms.js": {
-      "v": "3",
-      "sha": "36afe06c5ac503d0"
+      "v": "4",
+      "sha": "c5def90922ef7838"
     },
     "world.js": {
       "v": "3",

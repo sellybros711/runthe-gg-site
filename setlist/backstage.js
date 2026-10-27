@@ -36,7 +36,7 @@ function bandWorker(){
   return new Promise(res => {
     try {
       if (typeof Worker !== 'function' || typeof OffscreenCanvas !== 'function') return res(null);
-      const w = new Worker(new URL('./world-worker.js?v=4', import.meta.url), { type: 'module' });
+      const w = new Worker(new URL('./world-worker.js?v=5', import.meta.url), { type: 'module' });
       const done = v => { clearTimeout(timer); w.terminate(); res(v); };
       const timer = setTimeout(() => done(null), 8000);
       w.onmessage = e => done(e.data && e.data.frames ? e.data.frames : null);

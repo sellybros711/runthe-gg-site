@@ -19,7 +19,7 @@ self.onmessage = async e => {
       return;
     }
     // The rooms are 80KB, so they are fetched only for a room, never for the menu's band.
-    const { ROOMS, RIGS } = await import('./rooms.js?v=3');
+    const { ROOMS, RIGS } = await import('./rooms.js?v=4');
     const R = ROOMS[vid] || ROOMS.lawn;
     const W = buildWorld(R, rigFor(R, RIGS), seed, true);
     const moved = [];
