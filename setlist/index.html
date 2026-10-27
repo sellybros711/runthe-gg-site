@@ -3176,7 +3176,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=44';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=11';
+import { createStage } from './stage.js?v=12';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -3682,7 +3682,7 @@ const GUIDE_STEPS = [
     body: `<p><b>Tour</b> has every date Goose has announced. <b>Songs</b> is the
         whole catalog. <b>Board</b> is the leaderboard. <b>You</b> is where you
         check off the shows you've been to.</p>
-      <p>You don't need any of it to play. Let's spin you a show.</p>`,
+      <p>You don't need any of it to play. Let's build your show.</p>`,
   },
 ];
 
@@ -3731,7 +3731,7 @@ function paintGuide(){
       <div class="g-dots">${GUIDE_STEPS.map((_, i) =>
         `<i class="${i === GUIDE_AT ? 'at' : ''}"></i>`).join('')}</div>
       <button class="g-next" type="button" id="guideNext">${
-        last ? 'Spin the wheel' : 'Next'}</button>
+        last ? 'Build your show' : 'Next'}</button>
     </div>`;
 
   const target = step.aim ? step.aim() : null;
@@ -3825,7 +3825,7 @@ function dailyCardHTML(b, saved){
     line = `You scored <b>${Number(st.total).toLocaleString()}</b>`; cta = "Today's board"; }
   else if (st){ attr = 'data-daily-board="1"'; done = true;
     line = 'Started on this device'; cta = "Today's board"; }
-  else { attr = `data-daily="${b.id}"`; line = 'Same shows for everyone. One try.'; cta = 'Play'; }
+  else { attr = `data-daily="${b.id}"`; line = 'Same shows for everyone. One try.'; cta = 'Build your show'; }
   return `<button type="button" class="mode dailycard${done ? ' done' : ''}" ${attr}>
       <span class="md-k">Daily &middot; ${esc(fmtDay(day))}</span>
       <span class="md-t">Today's shows</span>
@@ -3897,7 +3897,7 @@ function renderHome(){
                 <span class="md-k">Free play</span>
                 <span class="md-t">Build a setlist</span>
                 <span class="md-s">Random nights, as many as you like.</span>
-                <span class="md-go">Spin</span></button>`}
+                <span class="md-go">Build your show</span></button>`}
           ${b.sample ? '' : dailyCardHTML(b, saved)}
         </div>
         ${saved ? `<button class="linkbtn freshlink" type="button" data-start="${b.id}"
@@ -5434,7 +5434,7 @@ function renderResult(){
       <div class="actions">
         <button class="btn primary" type="button" id="shareImgBtn">Share your setlist</button>
         <button class="btn" type="button" id="shareBtn">Copy as text</button>
-        <button class="btn" type="button" data-start="${S.band.id}">Play again</button>
+        <button class="btn" type="button" data-start="${S.band.id}">Build another show</button>
         <button class="btn ghost" type="button" id="homeBtn">Back home</button>
       </div>
     </div>`;
@@ -7418,7 +7418,12 @@ function renderShow(){
   });
 
   if (reduce){ skip(); return; }
-  S.revealTimer = setTimeout(step, 700);
+  /* THE ROOM IS BUILT OFF THE MAIN THREAD (stage.js), so the house stays dark until it is ready and
+     the first song waits for it, never longer than four seconds. Skipping, or leaving, before then
+     wins: the first step only runs if this is still the show on screen and nothing has played. */
+  const go = () => { if (S.stage === stage && !stopped && i === 0) S.revealTimer = setTimeout(step, 700); };
+  if (stage && stage.ready) Promise.race([stage.ready, new Promise(r => setTimeout(r, 4000))]).then(go);
+  else go();
 }
 
 function render(){
