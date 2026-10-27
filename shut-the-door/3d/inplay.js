@@ -607,7 +607,21 @@ export class InPlay {
       // leans round it, never a right angle in a frame, lab/pipeline/check-jolt.mjs)
       let hd = st.head;
       if (!glide) { const a = tr.at(Math.max(0, s - 0.1)), b = tr.at(s + 0.1); if (Math.hypot(b.x - a.x, b.y - a.y) > 1) hd = heading(a, b); }
-      yaw = faceYaw + angDiff(faceYaw, hd) * w;
+      // (on his feet and moving away from where he faces, as the pitcher backing off a liner: he backs off
+      // facing it, no turn to his heading. Half turned to it, he spun half round in a frame as his heading
+      // crossed straight behind him, check-jolt.mjs. Never a man getting up from a dive: he comes up facing
+      // where he dived, as he did)
+      const rel = angDiff(faceYaw, hd);
+      const up = !acts.some((a) => (a.kind === 'dive' || a.kind === 'dive_short') && a.t < s + 0.2 && s < a.t + 2.5);
+      yaw = faceYaw + rel * w * (up ? smooth(clamp((Math.cos(rel) + 0.3) / 0.6, 0, 1)) : 1);
+    }
+    // (a ball picked up on the run: his track ends at the ball, and he comes round from the way he ran to
+    // where he faces over a third of a second. Facing the run one frame and the infield the next, his planted
+    // feet swung round him at 33 m/s, check-jolt.mjs skate fielder pickup)
+    const tkP = takes.filter((x) => x.t <= s + 1e-6).pop();
+    if (tkP && tkP.key.kind === 'pickup' && s > tkP.t && s < tkP.t + 0.35) {
+      const e = tr.at(tkP.t - 0.02), kk = e.head != null ? smooth((e.spd - 3) / 8) * (1 - smooth(ramp(s, tkP.t, tkP.t + 0.35))) : 0;
+      if (kk > w) yaw = faceYaw + angDiff(faceYaw, e.head) * kk;
     }
     // getting down to the ball he took eases out after it over a third of a second, never popping up the
     // frame after the ball is in (check-jolt.mjs); first, so what the fit added goes on top as it did

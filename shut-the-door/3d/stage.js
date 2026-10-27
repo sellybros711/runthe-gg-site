@@ -79,7 +79,7 @@ import { Pitch, releaseOf } from './pitch.js?v=11';
 import { fromResult, motion } from './play.js?v=11';
 import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=25';
+import { InPlay } from './inplay.js?v=27';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=8';
 import { FirstPerson } from './firstperson.js?v=6';
 
