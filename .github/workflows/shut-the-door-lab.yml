@@ -1,0 +1,74 @@
+name: Shut The Door lab checks (sampled)
+
+# The long lab checks on every PR that touches the game, each on a sample of its cases, side by side.
+# The full runs are the nightly's (shut-the-door-nightly.yml). Each sample is a subset of the set the
+# check's ceilings were measured on, and is held to the same RATE (lab/pipeline/checkpoint.mjs): a
+# ceiling of C bad plays over the held N is C * n / N over the sample's n, never rounded up, so a sample
+# fails whenever its share of bad plays is over the ceiling's share. A ceiling of 0 stays 0. No ceiling
+# or floor changes here.
+#
+#   jolt     every 180th case (325 of the held 2,925)          check-jolt.mjs --sample 300
+#   camera   every 10th case (5,850 of the held 58,498)        check-camera.mjs
+#   frame    every 9th case (6,500 of 58,498)                  check-frame.mjs --sample 6000
+#   catch    every 9th case                                    check-catch.mjs --sample 6000
+#   inplay   every case (it is pure and takes a minute and a half)
+#
+# Runs locally, unchanged (add --resume to pick up a killed run). No secrets, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'shut-the-door/**'
+      - '.github/workflows/shut-the-door-lab.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: shut-the-door-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lab:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: jolt
+            run: node shut-the-door/lab/pipeline/check-jolt.mjs --sample 300
+            browser: true
+          - name: camera
+            run: node shut-the-door/lab/pipeline/check-camera.mjs
+            browser: true
+          - name: frame
+            run: node shut-the-door/lab/pipeline/check-frame.mjs --sample 6000
+            browser: true
+          - name: catch
+            run: node shut-the-door/lab/pipeline/check-catch.mjs --sample 6000
+            browser: true
+          - name: inplay
+            run: node shut-the-door/lab/pipeline/check-inplay.mjs
+            browser: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        if: matrix.browser
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: check-${{ matrix.name }}
+        run: |
+          set -o pipefail
+          ${{ matrix.run }} 2>&1 | tr '\r' '\n' | grep -v ' cases *$' | tee check-${{ matrix.name }}.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          f=check-${{ matrix.name }}.txt
+          [ -f "$f" ] || exit 0
+          grep -E 'FAIL' "$f" | head -30 | sed 's/%/%25/g; s/^ */::error title=check-${{ matrix.name }}::/' || true
+          tail -n 1 "$f" | sed 's/^/::notice title=check-${{ matrix.name }}::/'
+          { echo '```'; tail -n 60 "$f"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
