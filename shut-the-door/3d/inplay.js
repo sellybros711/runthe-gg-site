@@ -827,6 +827,10 @@ export class InPlay {
     const n = A.faced, throws = plan.segs.filter((sg) => sg.kind === 'throw' && sg.from === n);
     // (while he holds the ball: the way he is about to throw it, else the raw facing)
     tr.face = this.faceTable((t) => tr.at(t), 0, plan.dur + 3, (t, raw) => {
+      // (and through his follow-through, until the throw's own turn has let go of him, poseFielder: the
+      // watching facing turned away meanwhile, and as the throw's weight eased the blend of the two spun him)
+      const thru = throws.find((x) => t > x.t0 && t < x.t0 + 0.7);
+      if (thru) return heading(tr.at(t), thru.b);
       if (plan.ballAt(t).by !== n) return null;
       const sg = throws.find((x) => x.t0 >= t - 1e-6);
       return sg ? heading(tr.at(t), sg.b) : raw;
