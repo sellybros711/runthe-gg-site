@@ -5,7 +5,7 @@
  * the pictures back as ImageBitmaps, which cost the page nothing to receive. stage.js falls back to
  * building on the main thread if this worker cannot start or answers with an error.
  */
-import { buildWorld, rigFor, bandFrames } from './world.js?v=2';
+import { buildWorld, rigFor, bandFrames } from './world.js?v=3';
 
 self.onmessage = async e => {
   const { id, vid, seed, kind } = e.data;

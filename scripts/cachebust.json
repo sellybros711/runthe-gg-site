@@ -1989,8 +1989,8 @@
       "sha": "15a845209f4b3402"
     },
     "/arcade/sportegories-data.js": {
-      "v": "57",
-      "sha": "11ca8ecc02563581"
+      "v": "58",
+      "sha": "7621ca95f3cdeff6"
     },
     "/arcade/type.js": {
       "v": "5",
@@ -2907,8 +2907,8 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "14",
-      "sha": "773f72e45976b4dc"
+      "v": "16",
+      "sha": "00d9f4c75dc5f2e3"
     },
     "venues.js": {
       "v": "2",
@@ -3121,14 +3121,14 @@
       "sha": "36afe06c5ac503d0"
     },
     "world.js": {
-      "v": "2",
-      "sha": "890783821e530da6"
+      "v": "3",
+      "sha": "8d032d009d41ebfd"
     }
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
       "v": "65",
-      "sha": "5caab518e88120d7"
+      "sha": "47df4420fd143dd5"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3202,7 +3202,7 @@
     },
     "inplay.js": {
       "v": "27",
-      "sha": "54a3882ec664c39c"
+      "sha": "8bbe295ca43d6aee"
     },
     "preview.js": {
       "v": "8",
@@ -3289,16 +3289,16 @@
   },
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
-      "v": "14",
-      "sha": "f0e2835d6de1a018"
+      "v": "16",
+      "sha": "e5bf41e1703f1033"
     },
     "fielders.js": {
       "v": "6",
       "sha": "4d1d4bf78c9f345f"
     },
     "ballpark.js": {
-      "v": "15",
-      "sha": "084c6aaec1586169"
+      "v": "17",
+      "sha": "aff07d81eca02959"
     },
     "people.js": {
       "v": "40",
@@ -3399,8 +3399,8 @@
       "sha": "6740e4ce374039b0"
     },
     "inplay-plan.js": {
-      "v": "14",
-      "sha": "f0e2835d6de1a018"
+      "v": "16",
+      "sha": "e5bf41e1703f1033"
     }
   }
 }

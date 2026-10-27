@@ -39,9 +39,9 @@ import { ROOMS, RIGS } from './rooms.js?v=3';
    the room builder in world-worker.js and the menus share. This file lights and moves them. */
 import {
   ART, WPX, sx, sy, depth, rgb, mixc, clamp01, hash, mulberry32,
-  canvas, SKINS, HAIRS, face, personSprite, CROWD_POSES, signPose, crowdVariant, DECK, FIX,
-  podCorners, CE, HPX, PAX, PAY, bandPose, buildWorld, rigFor, PLAYERS, CROWD_KINDS, KEY_SEQ,
-} from './world.js?v=2';
+  canvas, SKINS, HAIRS, face, personSprite, DECK, FIX,
+  podCorners, CE, HPX, PAX, PAY, bandPose, buildWorld, rigFor, PLAYERS, KEY_SEQ, crowdVariants, crowdPose, GLOWS,
+} from './world.js?v=3';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
    setlist/rooms.js what each looks like; this file only draws whichever it is handed. */
@@ -89,7 +89,7 @@ function worldWorker(){
   if (worker !== null) return worker;
   try {
     worker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
-      ? new Worker(new URL('./world-worker.js?v=3', import.meta.url), { type: 'module' }) : false;
+      ? new Worker(new URL('./world-worker.js?v=4', import.meta.url), { type: 'module' }) : false;
   } catch (err) { worker = false; }
   if (worker){
     worker.onmessage = e => { const cb = waiting.get(e.data.id); if (cb){ waiting.delete(e.data.id); cb(e.data); } };
@@ -144,15 +144,14 @@ export function createStage(view, opts = {}){
     ready = job.then(w => { if (!dead){ take(w); draw(); } });
   }
 
-  // The crowd: twenty eight kinds of person, several hundred people, back to front.
-  const variants = Array.from({ length: CROWD_KINDS }, () => crowdVariant(rand));
+  // The crowd: forty kinds of person, several hundred people, back to front.
+  const variants = crowdVariants(rand, seed);
   spriteCache = new Map(preCrowd ? Object.entries(preCrowd) : []);
   const spriteOf = (vi, pose) => {
     const key = vi + ':' + pose;
     let s = spriteCache.get(key);
     if (!s){
-      const v = variants[vi];
-      s = personSprite(v, pose === 'sign' ? signPose(v) : CROWD_POSES[pose], true);
+      s = personSprite(variants[vi], crowdPose(variants[vi], pose), true);
       spriteCache.set(key, s);
     }
     return s;
@@ -170,6 +169,23 @@ export function createStage(view, opts = {}){
       if (!FL.skip || !FL.skip(c.x, c.y)) crowd.push(c);
     }
   }
+  /* What a person does on top of that comes off a stream of its own, so adding it moved nobody. A few
+     knots of dancers who move as one, and a glow stick for the encore in about a third of hands. */
+  const more = mulberry32(seed ^ 0x6a09e667);
+  const knots = Array.from({ length: 5 }, () => ({ x: (more() * 2 - 1) * 14, y: FL.y0 + 4 + more() * Math.max(4, (FL.deep - FL.y0) * .6), ph: more() * 7 }));
+  for (const c of crowd){
+    c.glow = more() < .32;
+    const k = knots.find(K => (c.x - K.x) ** 2 + ((c.y - K.y) * 1.6) ** 2 < 7);
+    c.knot = k ? k.ph : null;
+  }
+  /* The taper's stand: two mics on a tall pole in the middle of the lawn, up all night, a little to
+     one side of dead centre the way a taper section is. */
+  {
+    const ty = FL.y0 + (FL.deep - FL.y0) * .5;
+    let tx = 2.2;
+    if (FL.skip && FL.skip(tx, ty)) tx = -2.2;
+    if (!FL.skip || !FL.skip(tx, ty)) crowd.push({ x: tx, y: ty, taper: true, t: 0 });
+  }
   crowd.sort((a, b) => a.y - b.y);
   /* THE CROWD SHOT. The same night, after the last song, framed on the lawn instead of the stage: the
      rail is the best night anybody drafted and the merch tent is the worst, and one fan in the middle
@@ -184,6 +200,7 @@ export function createStage(view, opts = {}){
     const half = FL.half(ty), tx = (r2() * 2 - 1) * half * .45;
     let bestD = 1e9;
     for (const c of crowd){
+      if (c.taper) continue;
       const dd = (c.y - ty) ** 2 * 6 + (c.x - tx) ** 2 * .08;
       if (dd < bestD){ bestD = dd; you = c; }
     }
@@ -274,8 +291,9 @@ export function createStage(view, opts = {}){
     energy: .2, energyWant: .2, density: .8, densityWant: .8,
     sky: 0, skyWant: 0,
     band: false, encore: false, bow: false,
-    signsUntil: 0, flashUntil: 0, jumpUntil: 0, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
+    signsUntil: 0, flashUntil: 0, jumpUntil: 0, armsUntil: 0, slow: false, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
     jam: false, soloist: null, fillUntil: 0,
+    arc: null, push: 0, dipUntil: 0, ribbonAt: 0, bannerAt: 0, flameUntil: 0,
   };
   /* THE BLOCKING: where each player is standing and where he is headed. The band walks on from the
      wings when a set starts and off at the break, the soloist steps down to the lip on a jam's peak and
@@ -322,9 +340,13 @@ export function createStage(view, opts = {}){
       const f = (shakeUntil - now) / 320, a = shakeAmp * f * f;
       tr = `${(Math.sin(now * .09) * a).toFixed(1)}px ${(Math.cos(now * .113) * a).toFixed(1)}px`;
     }
-    if (tr === shook) return;
-    shook = tr;
-    for (const el of [view, dof, glow]) el.style.translate = tr;
+    /* THE PUSH-IN: at a jam's peak the camera leans in on the stage, seven percent, and eases back out
+       on the release. Applied to every layer of the picture together, like the kick. Never with
+       reduced motion. */
+    const sc = reduce ? '1' : (1 + .07 * st.push).toFixed(3);
+    if (tr + sc === shook) return;
+    shook = tr + sc;
+    for (const el of [view, dof, glow, vig]){ el.style.translate = tr; el.style.scale = sc; el.style.transformOrigin = '50% 40%'; }
   }
   const FETTI = ['#ff4f7a', '#ffd23f', '#3fd0ff', '#8a5bff', '#5be08a', '#ffffff', '#ff8a3c'];
   /* Every colour a piece can show, worked out once: its face and its back, at eight levels of the
@@ -435,6 +457,7 @@ export function createStage(view, opts = {}){
   }
 
   const P2 = (x, y, z) => [Math.round(sx(x)), Math.round(sy(y, z))];
+  const GLOW_RGB = GLOWS.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
 
   /* A cone of light from a lens to where it lands: brightest at the lens and thinning as it spreads,
      the way a beam in haze looks. Drawn into the beam layer, which the haze then breaks up. */
@@ -463,6 +486,51 @@ export function createStage(view, opts = {}){
       c2.fillStyle = rgb(mixc(c, [255, 255, 255], .5), f);
       c2.fillRect(x - i, y, 1, 1); c2.fillRect(x + i, y, 1, 1); c2.fillRect(x, y - i, 1, 1); c2.fillRect(x, y + i, 1, 1);
     }
+  }
+
+  /* The pods in order across the stage, for the ribbon. */
+  const PODRANK = {};
+  [...PODS].sort((a, b) => a.cx - b.cx).forEach((P, i) => { PODRANK[P.pi] = i; });
+
+  /* THE BUSTOUT BANNER: a cloth that drops from the truss in front of the back wall, hangs for the
+     signs to go up, and rolls back up. No words on it, the room knows what a bustout is: the night's
+     colours in bands with a row of stars. Painted once, lit by the stage like everything else. */
+  const banner = canvas(48, 20);
+  {
+    const bc = banner.getContext('2d');
+    const cols = ['#e8505f', '#f4cc2c', '#37c5d5', '#8a5bff'];
+    for (let y = 0; y < 20; y++){ bc.fillStyle = cols[Math.floor(y / 5) % cols.length]; bc.fillRect(0, y, 48, 1); }
+    bc.fillStyle = '#fff8e0';
+    for (let x = 3; x < 48; x += 7){ bc.fillRect(x, 9, 1, 1); bc.fillRect(x - 1, 10, 3, 1); bc.fillRect(x, 11, 1, 1); }
+    bc.fillStyle = '#1b1726'; bc.fillRect(0, 19, 48, 1);
+  }
+  function drawBanner(t){
+    const age = now - st.bannerAt;
+    if (!st.bannerAt || age > 4200) return;
+    const u = age < 600 ? age / 600 : age > 3600 ? 1 - (age - 3600) / 600 : 1;
+    // It hangs from the top of the back wall, above the middle pods, and drops to just over them.
+    const mid = Math.max(...PODS.filter(P => Math.abs(P.cx) < 5).map(P => P.cz + RIG.podR), 0);
+    const top = RIG.wallZ - .4, len = Math.max(1.6, Math.min(4.2, top - mid - .3));
+    const [x0, y0] = P2(-5, RIG.podY - .4, top), [x1, y1] = P2(5, RIG.podY - .4, top - len);
+    const h = Math.max(1, Math.round((y1 - y0) * u));
+    g.drawImage(banner, 0, 0, 48, Math.max(1, Math.round(20 * u)), x0, y0, x1 - x0, h);
+  }
+  /* FLAME JETS at the lip on a bustout: short columns of fire, yellow at the nozzle going red. */
+  const flames = [];
+  function drawFlames(t){
+    if (!reduce && now < st.flameUntil){
+      for (const x of [-12.5, -6.5, 6.5, 12.5]) for (let n = 0; n < (lite ? 1 : 3); n++)
+        flames.push({ x: x + (Math.random() - .5) * .5, y: .1, z: DECK.z + .3, vz: 16 + Math.random() * 8, life: .35 + Math.random() * .2, max: .55 });
+    }
+    for (let i = flames.length - 1; i >= 0; i--){
+      const q = flames[i];
+      q.z += q.vz * pdt; q.vz *= 1 - 2.2 * pdt; q.life -= pdt;
+      if (q.life <= 0){ flames.splice(i, 1); continue; }
+      const k = q.life / q.max, [px, py] = P2(q.x, q.y, q.z);
+      eg.fillStyle = k > .7 ? '#fff4c0' : k > .45 ? '#ffc040' : k > .2 ? '#ff7a28' : '#c8301e';
+      eg.globalAlpha = Math.min(1, k * 1.6); eg.fillRect(px - 1, py, 2, 2);
+    }
+    eg.globalAlpha = 1;
   }
 
   function drawBand(t){
@@ -509,13 +577,16 @@ export function createStage(view, opts = {}){
 
   function drawCrowd(t){
     const e = st.energy, lit = st.house > .5;
-    const jumping = now < st.jumpUntil, signs = now < st.signsUntil;
+    const jumping = now < st.jumpUntil, signs = now < st.signsUntil, arms = now < st.armsUntil;
     const top = camY - 20, bot = camY + visH + 50, lft = camX - 20, rgt = camX + visW + 20;
+    /* The wave: at the top of a jam it runs across the lawn, rail to rail, one stretch of arms at a time. */
+    const wave = st.arc && st.push > .6 ? ((now - st.arc.t0) / 1000 * 12) % 36 - 18 : null;
     for (const c of crowd){
       c.px = null;
       if (c.t > st.density * (FL.capacity || 1)) continue;
       const [px, py] = P2(c.x, c.y, 0);
       if (py < top || py > bot || px < lft || px > rgt) continue;
+      if (c.taper){ drawTaper(px, py); continue; }
       // A pose is held for a while and then reconsidered, so the lawn never moves in lockstep.
       if (c.you) c.pose = 'up';
       else if (now > c.until){
@@ -523,20 +594,78 @@ export function createStage(view, opts = {}){
         let pose = 'down';
         if (st.band && !lit){
           if (signs && c.sign) pose = 'sign';
+          else if (arms) pose = r < .75 ? 'up' : 'clap';
+          else if (st.encore && c.glow && r < .85) pose = 'glow';
           else if (st.encore && c.phone && r < .55) pose = 'phone';
           else if (st.bow || jumping) pose = r < .7 ? 'up' : 'clap';
+          // A ballad sits the back half of the lawn down; the rail stays on its feet.
+          else if (st.slow && c.t > .3 && r < .8) pose = 'sit';
           else if (r < e * .55) pose = r < e * .3 ? 'up' : r < e * .42 ? 'one' : 'clap';
-        }
+        } else if (lit && c.t > .4 && r < .6) pose = 'sit';
         c.pose = pose;
         c.until = now + 1500 + Math.random() * 3500;
       }
-      const hop = st.band && !lit && (jumping || e > .7)
-        ? Math.round(Math.max(0, Math.sin(t * (5 + e * 3) + c.phase)) * 2 * c.jumpy) : 0;
-      const sway = st.band && !lit && e > .35 ? Math.round(Math.sin(t * 1.5 + c.phase)) : 0;
-      const wander = lit ? Math.round(Math.sin(t * .4 + c.phase) * 2) : 0;
-      c.px = px + sway + wander; c.py = py - hop;
+      let pose = c.pose;
+      const sat = pose === 'sit', live = st.band && !lit && !sat;
+      // A knot of dancers moves as one: the same phase, a wider step.
+      const ph = c.knot != null ? c.knot : c.phase;
+      let hop = live && (jumping || e > .7)
+        ? Math.round(Math.max(0, Math.sin(t * (5 + e * 3) + ph)) * 2 * (c.knot != null ? 1 : c.jumpy)) : 0;
+      const sway = live && e > .35 ? Math.round(Math.sin(t * (c.knot != null ? 2.2 : pose === 'glow' ? 1.1 : 1.5) + ph) * (c.knot != null || pose === 'glow' ? 2 : 1)) : 0;
+      const wander = lit && !sat ? Math.round(Math.sin(t * .4 + c.phase) * 2) : 0;
+      // Inside the wave, arms up and off the ground; either side of it, arms down, waiting for it.
+      if (wave != null && live){
+        if (Math.abs(c.x - wave) < 3){ pose = 'up'; hop = 3; }
+        else if (pose === 'up' || pose === 'one' || pose === 'clap'){ pose = 'down'; hop = 0; }
+      }
+      c.px = px + sway + wander; c.py = py - hop; c.drawn = pose;
       if (!lite) g.drawImage(shade, px + sway + wander - 6, py - 2);
-      g.drawImage(spriteOf(c.v, c.pose), c.px - PAX, c.py - PAY);
+      g.drawImage(spriteOf(c.v, pose), c.px - PAX, c.py - PAY);
+    }
+  }
+
+  /* The taper's stand, in pixels: a tripod, a pole, a bar with a mic at each end, a recorder at its foot. */
+  function drawTaper(px, py){
+    if (!lite) g.drawImage(shade, px - 6, py - 2);
+    g.fillStyle = '#2a2a32';
+    g.fillRect(px - 2, py, 5, 1); g.fillRect(px - 1, py - 1, 3, 1);
+    g.fillRect(px, py - 20, 1, 20);
+    g.fillRect(px - 4, py - 21, 9, 1);
+    g.fillStyle = '#c8ccd6'; g.fillRect(px - 4, py - 23, 1, 2); g.fillRect(px + 4, py - 23, 1, 2);
+    g.fillStyle = '#1c1c22'; g.fillRect(px + 2, py - 2, 3, 2);
+  }
+
+  /* THE BEACH BALL. Outdoors, on a big song, one goes up off the lawn and the crowd keeps it in the air
+     until the set break. Real time only: no still frame ever has one. */
+  let ball = null;
+  function drawBall(){
+    if (!ball) return;
+    const dt = pdt;
+    if (dt){
+      ball.vz -= 32 * dt;
+      ball.x += ball.vx * dt; ball.y += ball.vy * dt; ball.z += ball.vz * dt; ball.spin += ball.vx * dt * .6;
+      if (ball.y < FL.y0 + 1) ball.vy = Math.abs(ball.vy);
+      if (ball.y > FL.deep) ball.vy = -Math.abs(ball.vy);
+      const half = FL.half(Math.max(FL.y0, Math.min(FL.y1 - .01, ball.y))) - 1;
+      if (Math.abs(ball.x) > half) ball.vx = -Math.sign(ball.x) * Math.abs(ball.vx);
+      if (ball.z < 6 && ball.vz < 0){
+        // Somebody under it knocks it back up, and puts their arms up doing it.
+        ball.vz = 18 + Math.random() * 8;
+        ball.vx = (Math.random() - .5) * 7 - ball.x * .06;
+        ball.vy = (Math.random() - .5) * 5 + ((FL.y0 + FL.deep) / 2 - ball.y) * .05;
+        for (const c of crowd) if (!c.taper && Math.abs(c.x - ball.x) < 1.6 && Math.abs(c.y - ball.y) < 1.6){ c.pose = 'up'; c.until = now + 700; }
+      }
+    }
+    const [sx0, sy0] = P2(ball.x, ball.y, 0), [bx, by] = P2(ball.x, ball.y, ball.z);
+    if (!lite){ g.fillStyle = 'rgba(20,14,30,.25)'; g.fillRect(sx0 - 3, sy0 - 1, 7, 2); }
+    // Seven pixels across, panels turning as it flies, a dark rim so it reads against the heads.
+    const cols = ['#f6f1e4', '#e0443a', '#f6f1e4', '#3a7ad8', '#f6f1e4', '#f4cc2c'];
+    for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++){
+      const d2 = i * i + j * j;
+      if (d2 > 11) continue;
+      const k = ((Math.floor((Math.atan2(j, i) + ball.spin) / (Math.PI / 3)) % 6) + 6) % 6;
+      g.fillStyle = d2 > 7 ? '#2a1e30' : d2 < 1 ? '#f6f1e4' : cols[k];
+      g.fillRect(bx + i, by + j - 3, 1, 1);
     }
   }
 
@@ -612,7 +741,7 @@ export function createStage(view, opts = {}){
     // The room is still being built: the house is dark.
     if (!back){ out.fillStyle = '#0b0718'; out.fillRect(0, 0, view.width, view.height); return; }
     const t = now / 1000, p = palette();
-    const L = st.light, H = st.house, e = st.energy;
+    const L = st.light * (now < st.dipUntil ? .3 : 1), H = st.house, e = st.energy;
     // Indoors it is always night: the house lights stand in for the sun.
     const night = indoor ? 1 : clamp01((st.sky - .45) / .4);
     // The beat. Everything that pulses pulses on it, and it quickens with the song.
@@ -633,9 +762,11 @@ export function createStage(view, opts = {}){
       if (Math.abs(B.x) > 15.2) continue;
       const [px, py] = P2(B.x, B.y, B.z); g.beginPath(); g.ellipse(px, py, 5, 2, 0, 0, 7); g.fill();
     }
+    drawBanner(t);
     drawBand(t);
     g.drawImage(front, camX, camY, visW, visH, camX, camY, visW, visH);
     drawCrowd(t);
+    drawBall();
 
     // 2. THE LIGHT falling on it. The sky is the floor of it; the rig adds to it.
     lg.setTransform(1, 0, 0, 1, 0, 0);
@@ -722,6 +853,13 @@ export function createStage(view, opts = {}){
           pool(lg, b[0], b[1], 10 + e * 4, col, a * 4);
         });
       }
+      // The soloist's spot: a warm cone off the truss onto him while the jam peaks.
+      if (st.soloist && st.push > .05){
+        const B = blk[PLAYERS.findIndex(pl => pl[0] === st.soloist)];
+        const [px, py] = P2(B.x, B.y, B.z);
+        cone(bg, P2(B.x, -9, RIG.trussZ), [px, py - 2], 11, [255, 236, 196], .26 * st.push * dark);
+        pool(lg, px, py - 9, 30, [255, 240, 210], .9 * st.push * dark, 1.1);
+      }
       if (now < st.segueUntil){
         const f = 1 - (st.segueUntil - now) / 1500;
         const b2 = P2(-14 + f * 28, -2, DECK.z);
@@ -801,6 +939,18 @@ export function createStage(view, opts = {}){
     eg.globalCompositeOperation = 'lighter';
     podPixels(eg, p, t, pulse, beatN, strobe);
     drawFill(t);
+    /* THE HAND-OFF: a segue runs a ribbon of white across the pods, left to right, so the room sees
+       one song hand the night to the next. */
+    if (now > st.ribbonAt && now < st.ribbonAt + 1100){
+      const head = (now - st.ribbonAt) / 1100 * (PODS.length + 1.5);
+      for (const q of PODPX){
+        const d = head - PODRANK[q.pi];
+        if (d < 0 || d > 1.5) continue;
+        const [px, py] = P2(q.x, RIG.podY + .3, q.z);
+        eg.fillStyle = rgb([255, 255, 255], (1 - d / 1.5) * .95); eg.fillRect(px, py, 1, 1);
+      }
+    }
+    drawFlames(t);
     // The pods' lenses: the movers under each diamond, lit in the colour of their beam.
     for (const P of PODS){
       [P.C[2], P.C[1], P.C[3], [P.cx, P.cz + .55]].forEach(([x, z], k) => {
@@ -851,6 +1001,14 @@ export function createStage(view, opts = {}){
     }
     if (st.encore && H < .5){
       for (const c of crowd){
+        if (c.drawn === 'glow' && c.px != null){
+          // The stick's own light, at the top of the stick, in its colour.
+          const col = GLOW_RGB[variants[c.v].glow | 0];
+          const qx = c.px + Math.round(1.04 / ART), qy = c.py - Math.round(6.9 * CE / ART);
+          glint(eg, qx, qy, col, .85, 1);
+          pool(lg, qx, qy + 4, 7, col, .3);
+          continue;
+        }
         if (c.pose !== 'phone' || c.px == null) continue;
         const fl = .8 + .2 * Math.sin(t * 4 + c.phase);
         const qx = c.px - Math.round(.85 / ART), qy = c.py - Math.round(6.05 * CE / ART);
@@ -951,6 +1109,18 @@ export function createStage(view, opts = {}){
   }
 
   function ease(dt){
+    /* THE JAM'S ARC, across the time the song holds the screen: it builds for the first two fifths
+       (the rig climbs), peaks to four fifths (the push-in, the soloist's spot) and comes back down. */
+    let pushWant = 0;
+    if (st.arc){
+      const u = (now - st.arc.t0) / st.arc.dur;
+      if (u >= 1) st.arc = null;
+      else {
+        if (u < .4) st.lightWant = Math.max(st.lightWant, .55 + .45 * u / .4);
+        else if (u < .82){ pushWant = 1; st.lightWant = 1; st.energyWant = Math.max(st.energyWant, .95); }
+      }
+    }
+    st.push += (pushWant - st.push) * Math.min(1, dt * (pushWant ? 1.1 : 1.8));
     const f = 1 - Math.pow(.03, dt);
     st.light += (st.lightWant - st.light) * f;
     st.house += (st.houseWant - st.house) * f;
@@ -990,6 +1160,7 @@ export function createStage(view, opts = {}){
   function cue(ev){
     const ts = performance.now();
     if (ev.progress != null) st.skyWant = clamp01(R.skyMap ? R.skyMap(ev.progress) : ev.progress);
+    if (ev.kind !== 'song'){ st.slow = false; if (ev.kind !== 'final') ball = null; }
     if (ev.kind === 'set'){
       st.band = true; st.bow = false; st.encore = !!ev.encore; st.soloist = null; st.jam = false;
       st.houseWant = 0; st.lightWant = .5; st.energyWant = .3;
@@ -1004,7 +1175,21 @@ export function createStage(view, opts = {}){
       if (ev.segue) st.segueUntil = ts + 1500;
       /* A fill into every song, a longer one into a segue. A jam that peaks gets a soloist at the
          lip: the keys player when he has the red guitar on, the guitarist otherwise. */
-      if (!ev.instant && !reduce) st.fillUntil = ts + (ev.segue ? 1400 : 650);
+      if (!ev.instant && !reduce){
+        st.fillUntil = ts + (ev.segue ? 1400 : 650);
+        // A jam long enough to have a shape gets one: build, peak, release.
+        st.arc = ev.jam && ev.hold > 2500 ? { t0: ts, dur: ev.hold } : null;
+        if (ev.segue){ st.dipUntil = ts + 220; st.ribbonAt = ts + 220; }
+        if (ev.bustout){ st.bannerAt = ts; st.flameUntil = ts + 900; }
+        // Arms up for a segue and for a set's closer.
+        if (ev.segue || ev.closer) st.armsUntil = ts + 2200;
+        // A big song outdoors, past the first few, sometimes sends a beach ball up.
+        if (!indoor && !lite && !ball && ev.energy > .75 && ev.progress > .25 && Math.random() < .45)
+          ball = { x: (Math.random() - .5) * 8, y: FL.y0 + (FL.deep - FL.y0) * (.3 + Math.random() * .4), z: 7, vx: 0, vy: 0, vz: 12, spin: 0 };
+      }
+      const wasSlow = st.slow;
+      st.slow = !!ev.slow;
+      if (st.slow !== wasSlow || ev.segue || ev.closer) for (const c of crowd) c.until = 0;
       st.jam = !!ev.jam;
       st.soloist = ev.jam && ev.energy >= .6
         ? (KEY_SEQ[Math.floor(st.mode / 3) % KEY_SEQ.length] === 'guitar' ? 'keys' : 'guitar') : null;

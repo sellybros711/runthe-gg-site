@@ -3260,7 +3260,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=44';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=14';
+import { createStage } from './stage.js?v=16';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -3908,7 +3908,7 @@ function mountBackstage(){
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
   const cv = document.getElementById('heroStage');
   if (!cv) return;
-  const go = () => import('./backstage.js?v=2').then(m => {
+  const go = () => import('./backstage.js?v=3').then(m => {
     if (!cv.isConnected || S.backstage) return;
     S.backstage = m.createBackstage(cv, { sign: busSign(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
@@ -5084,7 +5084,7 @@ function drawCrowdFlat(cv, st){
  */
 const VENUE_KEY = 'segue_venue_v1';
 // The pictures are rendered once by scripts/setlist/make_venue_thumbs.mjs; bump this with them.
-const VENUE_ART_V = 2;
+const VENUE_ART_V = 3;
 const venueThumb = id => `/setlist/venues/${id}.png?v=${VENUE_ART_V}`;
 const VSTATE = { rows: null, for: null, busy: false, failed: false };
 
@@ -7410,6 +7410,11 @@ function renderShow(){
         segue: !!b.event,
         jam: isJamchart(p) || lenOf(p) >= LEN_20MIN || tagsOf(p).includes('jam'),
         bustout: (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP,
+        // The crowd sits for a ballad and throws its arms up for a set's closer.
+        slow: tagsOf(p).includes('ballad'),
+        closer: b.role === 'Closer',
+        /* How long the song holds the screen, so a jam can build, peak and come back down inside it. */
+        hold: songHold(lenOf(p)),
       });
     } else if (b.kind === 'time'){
       stage.cue({ kind: 'time', instant, progress, last: idx > lastSetBeat });
