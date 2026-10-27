@@ -40,8 +40,8 @@ import { ROOMS, RIGS } from './rooms.js?v=3';
 import {
   ART, WPX, sx, sy, depth, rgb, mixc, clamp01, hash, mulberry32,
   canvas, SKINS, HAIRS, face, personSprite, CROWD_POSES, signPose, crowdVariant, DECK, FIX,
-  podCorners, CE, HPX, PAX, PAY, bandPose, buildWorld, rigFor, PLAYERS, CROWD_KINDS,
-} from './world.js?v=1';
+  podCorners, CE, HPX, PAX, PAY, bandPose, buildWorld, rigFor, PLAYERS, CROWD_KINDS, KEY_SEQ,
+} from './world.js?v=2';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
    setlist/rooms.js what each looks like; this file only draws whichever it is handed. */
@@ -89,7 +89,7 @@ function worldWorker(){
   if (worker !== null) return worker;
   try {
     worker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
-      ? new Worker(new URL('./world-worker.js?v=2', import.meta.url), { type: 'module' }) : false;
+      ? new Worker(new URL('./world-worker.js?v=3', import.meta.url), { type: 'module' }) : false;
   } catch (err) { worker = false; }
   if (worker){
     worker.onmessage = e => { const cb = waiting.get(e.data.id); if (cb){ waiting.delete(e.data.id); cb(e.data); } };
@@ -275,7 +275,24 @@ export function createStage(view, opts = {}){
     sky: 0, skyWant: 0,
     band: false, encore: false, bow: false,
     signsUntil: 0, flashUntil: 0, jumpUntil: 0, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
+    jam: false, soloist: null, fillUntil: 0,
   };
+  /* THE BLOCKING: where each player is standing and where he is headed. The band walks on from the
+     wings when a set starts and off at the break, the soloist steps down to the lip on a jam's peak and
+     back, and everyone comes down to the front for the bow. Nothing here reads a song: it follows the
+     same cues the lights do. */
+  const SOLO = { guitar: { x: -5.6, y: -2.5, z: DECK.z }, keys: { x: -9.6, y: -2.8, z: DECK.z } };
+  const BOW = [{ x: -7.5, y: -2.6 }, { x: -2.6, y: -2.4 }, { x: 2.6, y: -2.4 }, { x: 7.5, y: -2.6 }];
+  const WING = [-16.5, -16.5, 16.5, 16.5];
+  const blk = PLAYERS.map(([, m], i) => ({ x: WING[i], y: m.y, z: m.z, walking: false }));
+  let snapBand = true;
+  function markOf(i, pose){
+    const [role, m] = PLAYERS[i];
+    if (st.bow) return { x: BOW[i].x, y: BOW[i].y, z: DECK.z };
+    if (!st.band) return { x: WING[i], y: m.y, z: m.z };
+    if (st.soloist === role) return SOLO[role];
+    return pose.at;
+  }
   let raf = 0, dead = false, last = 0, now = performance.now(), pdt = 0;
   /* A phone that cannot draw all of this at thirty frames a second drops the decoration first: the
      dust, the fireflies and the shadows under the crowd. The light, the band and the crowd stay. */
@@ -449,13 +466,45 @@ export function createStage(view, opts = {}){
   }
 
   function drawBand(t){
-    if (!st.band) return;
-    // How each player moves is world.js's bandPose, the one the menus use too.
+    /* Each player walks toward his mark at about nine feet a second, which crosses the deck in the time
+       a set's opening caption is on screen. A cue marked instant, or reduced motion, puts him there. */
+    const order = [];
     for (let i = 0; i < PLAYERS.length; i++){
-      const { img, at, bob } = bandPose(frames, i, t, st);
-      const [px, py] = P2(at.x, at.y, at.z);
+      const pose = bandPose(frames, i, t, st), want = markOf(i, pose), B = blk[i];
+      const dx = want.x - B.x, dy = want.y - B.y, d = Math.hypot(dx, dy);
+      if (snapBand || reduce || d < .05){ B.x = want.x; B.y = want.y; B.z = want.z; B.walking = false; }
+      else {
+        const k = Math.min(1, 9 * pdt / d);
+        B.x += dx * k; B.y += dy * k; B.z += (want.z - B.z) * k; B.walking = d > .3;
+      }
+      order.push([i, pose]);
+    }
+    snapBand = false;
+    order.sort((p1, p2) => blk[p1[0]].y - blk[p2[0]].y);
+    const fill = now < st.fillUntil;
+    for (const [i, pose] of order){
+      const B = blk[i], role = PLAYERS[i][0];
+      if (Math.abs(B.x) > 15.2) continue;
+      let img = pose.img, bob = pose.bob;
+      if (B.walking) img = frames.walk[role][Math.floor(t * 7 + i) % 2];
+      else if (st.bow && frames.cheer[role] && !pose.onGuitar) img = frames.cheer[role];
+      else if (role === 'drums' && fill) img = frames.drums[Math.floor(t * 14) % 4];
+      else if (st.jam && st.energy > .6 && !st.bow && (role === 'guitar' || role === 'bass') && st.soloist !== role)
+        img = frames.face[role][pose.f % 4];
+      if (st.soloist === role && !B.walking) bob = Math.sin(t * 9) > .2 ? 1 : 0;
+      const [px, py] = P2(B.x, B.y, B.z);
       g.drawImage(img, px - PAX, py - PAY - bob);
     }
+  }
+
+  /* A fill hits the cymbals: one at a time, a white glint on its rim, round the kit. */
+  const CYMBALS = [[5.6, -8.8, DECK.z + 4.6], [11.6, -9.6, DECK.z + 5.1], [4.6, -7.8, DECK.z + 3.2], [12.6, -8.2, DECK.z + 4.2]];
+  function drawFill(t){
+    if (now >= st.fillUntil || Math.abs(blk[3].x) > 15.2) return;
+    const k = Math.floor(t * 14), c = CYMBALS[(k >> 1) % CYMBALS.length];
+    if (k % 2) return;
+    const [px, py] = P2(c[0], c[1], c[2]);
+    glint(eg, px, py, [255, 236, 190], .95, 3);
   }
 
   function drawCrowd(t){
@@ -579,9 +628,10 @@ export function createStage(view, opts = {}){
     g.clearRect(0, 0, visW, visH);
     g.drawImage(back, camX, camY, visW, visH, 0, 0, visW, visH);
     g.translate(-camX, -camY);
-    if (st.band){
-      g.fillStyle = 'rgba(30,20,40,.35)';
-      for (const [, m] of PLAYERS){ const [px, py] = P2(m.x, m.y, m.z); g.beginPath(); g.ellipse(px, py, 5, 2, 0, 0, 7); g.fill(); }
+    g.fillStyle = 'rgba(30,20,40,.35)';
+    for (const B of blk){
+      if (Math.abs(B.x) > 15.2) continue;
+      const [px, py] = P2(B.x, B.y, B.z); g.beginPath(); g.ellipse(px, py, 5, 2, 0, 0, 7); g.fill();
     }
     drawBand(t);
     g.drawImage(front, camX, camY, visW, visH, camX, camY, visW, visH);
@@ -609,8 +659,8 @@ export function createStage(view, opts = {}){
       const [sx2, sy2] = P2(0, -12, DECK.z);
       pool(lg, sx2, sy2, 70, mixc(p[0], p[1], .5), .22 * L * dark, .4);
       // A key light on every player, so the band is the brightest thing in the room.
-      for (const [, m] of PLAYERS){
-        const [px, py] = P2(m.x, m.y, m.z);
+      for (const B of blk){
+        const [px, py] = P2(B.x, B.y, B.z);
         pool(lg, px, py - 8, 15, spot, (.45 + .35 * L) * dark, 1.2);
       }
       // Spill off the stage onto the front of the lawn.
@@ -750,6 +800,7 @@ export function createStage(view, opts = {}){
     eg.translate(-camX, -camY);
     eg.globalCompositeOperation = 'lighter';
     podPixels(eg, p, t, pulse, beatN, strobe);
+    drawFill(t);
     // The pods' lenses: the movers under each diamond, lit in the colour of their beam.
     for (const P of PODS){
       [P.C[2], P.C[1], P.C[3], [P.cx, P.cz + .55]].forEach(([x, z], k) => {
@@ -940,7 +991,7 @@ export function createStage(view, opts = {}){
     const ts = performance.now();
     if (ev.progress != null) st.skyWant = clamp01(R.skyMap ? R.skyMap(ev.progress) : ev.progress);
     if (ev.kind === 'set'){
-      st.band = true; st.bow = false; st.encore = !!ev.encore;
+      st.band = true; st.bow = false; st.encore = !!ev.encore; st.soloist = null; st.jam = false;
       st.houseWant = 0; st.lightWant = .5; st.energyWant = .3;
       setPalette(ev.encore ? 'encore' : 'house');
       st.jumpUntil = ts + 1200;
@@ -951,12 +1002,18 @@ export function createStage(view, opts = {}){
       setPalette(ev.palette || ROTATION[st.rot++ % ROTATION.length]);
       st.mode++;
       if (ev.segue) st.segueUntil = ts + 1500;
+      /* A fill into every song, a longer one into a segue. A jam that peaks gets a soloist at the
+         lip: the keys player when he has the red guitar on, the guitarist otherwise. */
+      if (!ev.instant && !reduce) st.fillUntil = ts + (ev.segue ? 1400 : 650);
+      st.jam = !!ev.jam;
+      st.soloist = ev.jam && ev.energy >= .6
+        ? (KEY_SEQ[Math.floor(st.mode / 3) % KEY_SEQ.length] === 'guitar' ? 'keys' : 'guitar') : null;
       if (ev.bustout){ burst(150); shakeUntil = ts + 320; shakeAmp = 3; st.signsUntil = ts + 3400; st.jumpUntil = ts + 2000; st.flashUntil = ts + 260; st.strobeUntil = ts + 1600; }
       if (ev.grade) st.densityWant = DENSITY[ev.grade] || .8;
     } else if (ev.kind === 'time'){
-      if (!ev.last){ st.band = false; st.houseWant = .85; st.lightWant = 0; st.energyWant = .15; }
+      if (!ev.last){ st.band = false; st.soloist = null; st.jam = false; st.houseWant = .85; st.lightWant = 0; st.energyWant = .15; }
     } else if (ev.kind === 'final'){
-      st.band = true; st.bow = true; st.skyWant = 1;
+      st.band = true; st.bow = true; st.skyWant = 1; st.soloist = null; st.jam = false;
       st.houseWant = 0; st.lightWant = 1; st.energyWant = ev.grade === 'cold' ? .4 : 1;
       st.densityWant = DENSITY[ev.grade] || .8;
       st.flashUntil = ts + 260;
@@ -966,6 +1023,7 @@ export function createStage(view, opts = {}){
     // a night of one second songs had the whole crowd changing pose every second.
     if (ev.kind !== 'song' || ev.bustout) for (const c of crowd) c.until = 0;
     if (reduce || ev.instant){
+      snapBand = true;
       st.light = st.lightWant; st.house = st.houseWant; st.energy = st.energyWant;
       st.density = st.densityWant; st.sky = st.skyWant; st.palT = 1; st.flashUntil = 0;
       now = ts; draw();

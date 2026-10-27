@@ -199,10 +199,19 @@ function personParts(G, P, pose, facing){
       E(s2 * .38, 1.07, .2, .32, .45, .22, shoes, { gloss: 1 });
     }
   } else {
-    C([-.38, 0, .35], [-.38, 0, 1.55], .3, pants);
-    C([.38, 0, .35], [.38, 0, 1.55], .3, pants);
-    E(-.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
-    E(.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
+    /* `step` walks: -1 or 1 puts one foot forward and lifted and the other back. Zero, or none, is the
+       square stance every other pose stands in, drawn exactly as it always was. */
+    const sp = pose.step || 0;
+    if (!sp){
+      C([-.38, 0, .35], [-.38, 0, 1.55], .3, pants);
+      C([.38, 0, .35], [.38, 0, 1.55], .3, pants);
+      E(-.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
+      E(.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
+    } else for (const s2 of [-1, 1]){
+      const f = sp * s2, up = Math.max(0, f) * .24;
+      C([s2 * .38, 0, 1.55], [s2 * .38, f * .34, .35 + up], .3, pants);
+      E(s2 * .38, .12 + f * .34, .2 + up, .32, .45, .22, shoes, { gloss: 1 });
+    }
   }
   // Body.
   E(0, 0, 2.3, .78, .55, .92, shirt);
@@ -359,10 +368,10 @@ function keysFrames(){
 const KEY_SEQ = ['right', 'left', 'right', 'back', 'guitar', 'left', 'back', 'right', 'left', 'guitar'];
 
 function bandFrames(){
-  const g = m => [0, 1, 2, 3].map(f => personSprite(m.look, {
-    L: [m.bass ? 1.4 : 1.15, .9, m.bass ? 3.05 : 2.85],
-    R: [-.55, .95, [2.25, 1.85, 2.15, 2.45][f]],
-    extra: guitarExtra(m) }, false));
+  const strum = (m, f) => ({ L: [m.bass ? 1.4 : 1.15, .9, m.bass ? 3.05 : 2.85],
+    R: [-.55, .95, [2.25, 1.85, 2.15, 2.45][f]], extra: guitarExtra(m) });
+  const g = m => [0, 1, 2, 3].map(f => personSprite(m.look, strum(m, f), false));
+  const down = CROWD_POSES.down, up = CROWD_POSES.up;
   const stick = (hand, up, C) => C(hand, [hand[0] * .6, hand[1] + 1.1, hand[2] + (up ? .9 : -.2)], .07, 'x:#e0c08a');
   const D = [[[-1.0, .9, 2.6], [1.0, .9, 3.6]], [[-1.0, .9, 3.6], [1.0, .9, 2.6]], [[-1.05, .9, 3.0], [1.05, .9, 3.0]], [[-1.2, .7, 4.6], [1.2, .7, 4.6]]];
   return {
@@ -371,6 +380,21 @@ function bandFrames(){
     keys: keysFrames(),
     drums: D.map(([l, r], f) => personSprite(BAND.drums.look, {
       L: l, R: r, extra: (E, C) => { stick(l, f !== 0 && f !== 2, C); stick(r, f === 0 || f === 3, C); } }, false)),
+    /* Walking on, off, to the front and back: two steps each, the strings still holding their
+       instruments. The keys player walks with his hands free, and the drummer without his sticks. */
+    walk: {
+      guitar: [-1, 1].map(st => personSprite(BAND.guitar.look, Object.assign(strum(BAND.guitar, 0), { step: st }), 0)),
+      bass: [-1, 1].map(st => personSprite(BAND.bass.look, Object.assign(strum(BAND.bass, 0), { step: st }), 0)),
+      keys: [-1, 1].map(st => personSprite(BAND.keys.look, Object.assign({}, down, { step: st }), 0)),
+      drums: [-1, 1].map(st => personSprite(BAND.drums.look, Object.assign({}, down, { step: st }), 0)),
+    },
+    // In a jam the guitar and the bass turn to each other: the guitar east, the bass west.
+    face: {
+      guitar: [0, 1, 2, 3].map(f => personSprite(BAND.guitar.look, strum(BAND.guitar, f), -Math.PI / 2)),
+      bass: [0, 1, 2, 3].map(f => personSprite(BAND.bass.look, strum(BAND.bass, f), Math.PI / 2)),
+    },
+    // The bow: the two with their hands free throw them up.
+    cheer: { keys: personSprite(BAND.keys.look, up, 0), drums: personSprite(BAND.drums.look, up, 0) },
   };
 }
 
@@ -599,7 +623,7 @@ function bandPose(frames, i, t, mood){
   if (energy < .3 && role !== 'drums') f = (beat | 0) % 2 ? 0 : 2;
   if (mood.bow) f = role === 'drums' ? 3 : 1;
   const bob = energy > .45 && Math.sin(t * (4 + energy * 4) + i) > .4 ? 1 : 0;
-  return { role, img: fr[f % fr.length], at, bob };
+  return { role, img: fr[f % fr.length], at, bob, f: f % fr.length, onGuitar: at !== m };
 }
 
 /* A room's rig: its kind's defaults with the room's own overrides. */

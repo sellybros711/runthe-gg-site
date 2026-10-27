@@ -3260,7 +3260,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=44';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=13';
+import { createStage } from './stage.js?v=14';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -3908,7 +3908,7 @@ function mountBackstage(){
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
   const cv = document.getElementById('heroStage');
   if (!cv) return;
-  const go = () => import('./backstage.js?v=1').then(m => {
+  const go = () => import('./backstage.js?v=2').then(m => {
     if (!cv.isConnected || S.backstage) return;
     S.backstage = m.createBackstage(cv, { sign: busSign(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
