@@ -2998,11 +2998,11 @@
     },
     "ui.js": {
       "v": "42",
-      "sha": "dc0d738487801163"
+      "sha": "e9614635336400c4"
     },
     "3d/boot.js": {
-      "v": "54",
-      "sha": "968244724726fee4"
+      "v": "57",
+      "sha": "d58b6995d079e7ca"
     }
   },
   "shut-the-door/lab/index.html": {
@@ -3123,7 +3123,7 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "58",
+      "v": "61",
       "sha": "1cc79b3b8a6aa4eb"
     }
   },
