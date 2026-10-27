@@ -362,6 +362,9 @@ const BAND = {
     shirt: '#3d5878', vest: '#5a7da6', sleeveless: true, pants: '#30303a', shoes: '#2a2a30' } },
 };
 
+const ROADIE = { skin: SKINS[2], hair: HAIRS[1], style: 'short', hat: 'capback', hatC: '#1c1c22',
+  shirt: '#1c1c22', pants: '#2e2e38', shoes: '#2a2a30' };
+
 function guitarExtra(m){
   return (E, C) => {
     E(-.2, .8, 2.0, .98, .22, .74, 'x:' + m.axe, { gloss: 1 });
@@ -369,6 +372,8 @@ function guitarExtra(m){
     const tip = m.bass ? [2.25, .85, 3.75] : [1.85, .85, 3.4];
     C([.5, .88, 2.25], tip, .12, 'x:#8a5a34');
     E(tip[0] + .12, tip[1], tip[2] + .1, .2, .08, .14, 'x:' + (m.bass ? '#2a2226' : '#efe6d4'));
+    // The strap: from the body's top horn up over the left shoulder.
+    C([-.75, .7, 2.6], [-.62, .35, 3.05], .08, 'x:#2a2226');
   };
 }
 /* The keys player's four places: a board to his right, one to his left, one behind him, and the red
@@ -415,6 +420,10 @@ function bandFrames(){
     },
     // The bow: the two with their hands free throw them up.
     cheer: { keys: personSprite(BAND.keys.look, up, 0), drums: personSprite(BAND.drums.look, up, 0) },
+    /* The roadie who crosses the deck at the set break: black tee, a cap on backwards, a guitar case.
+       Painted here with the band, so his first step is not a stall mid-show. */
+    roadie: [-1, 1].map(step => personSprite(ROADIE, { step, L: [-.95, .15, 1.75], R: [.95, .3, 1.9],
+      extra: E => E(1.3, .3, 1.5, .28, .55, 1.15, 'x:#22202a') }, 0)),
   };
 }
 
@@ -616,6 +625,22 @@ function buildFront(){
   }
   for (const [x, y] of [[-3.2, -2.6], [2.5, -3.6]]){
     box(G, x - 1, x + 1, y - .3, y + .3, Z, Z + .2, px => 'x:' + ['#e85a5a', '#5ad48a', '#f2f2f2', '#5a7ae8'][Math.floor((px - x + 1) * 2) & 3]);
+  }
+  /* The small things a real deck has (2026-10-27): a cable from each pedalboard snaking upstage to the
+     amps, a boom mic over the keys, and the night's setlist taped down at the lip. */
+  for (const [x0, y0, x1, y1] of [[-3.2, -2.9, -6.4, -9.4], [2.5, -3.9, 5.2, -9.8], [-2.7, -3.0, -1.2, -9.6]]){
+    for (let u = 0; u <= 1; u += .02){
+      const x = x0 + (x1 - x0) * u + Math.sin(u * 9) * .35, y = y0 + (y1 - y0) * u;
+      G.put(x, y, Z + .03, 'x:#33303a', [0, 0, 1], { noCast: 1 });
+    }
+  }
+  const kb = [BAND.keys.x + 1.2, BAND.keys.y + 1.4];
+  cap(G, [kb[0], kb[1], Z], [kb[0], kb[1], Z + 4.2], .06, 'x:#a8a8b2');
+  cap(G, [kb[0], kb[1], Z + 4.2], [kb[0] - .9, kb[1] - .5, Z + 4.6], .05, 'x:#a8a8b2');
+  ell(G, kb[0] - 1, kb[1] - .55, Z + 4.6, .14, .18, .14, 'x:#2a2a30');
+  for (let x = -.55; x <= .55; x += STEP) for (let y = -1.2; y <= -.4; y += STEP){
+    const line = Math.abs(((y + 1.2) * 5) % 1 - .5) < .12 && x < .3 - ((y * 7 | 0) % 3) * .12;
+    G.put(x + 1.2, y, Z + .04, 'x:' + (line ? '#3a3440' : '#f6f1e4'), [0, 0, 1], { noCast: 1 });
   }
   // The barricade between the pit and the lawn.
   for (let x = -16; x <= 16; x += .9) cap(G, [x, 3.4, 0], [x, 3.4, 3.2], .06, 'x:#b8bac4');

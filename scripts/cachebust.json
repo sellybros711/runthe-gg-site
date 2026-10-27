@@ -2907,8 +2907,8 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "17",
-      "sha": "ca85b6a2327dab4d"
+      "v": "18",
+      "sha": "f04874d9a01a8613"
     },
     "venues.js": {
       "v": "2",
@@ -3121,8 +3121,8 @@
       "sha": "c5def90922ef7838"
     },
     "world.js": {
-      "v": "3",
-      "sha": "8d032d009d41ebfd"
+      "v": "4",
+      "sha": "a01238f0e0bd4780"
     }
   },
   "shut-the-door/3d/boot.js": {
