@@ -172,9 +172,12 @@ const DYE = ['#f05a7e', '#ffd04a', '#4ac0e6', '#9b5ff0', '#5fd47a'];
 /* `facing` turns the model about its feet: 0 faces you, PI is its back to you, and a quarter turn
    either way is side on. Only quarter turns, so an ellipsoid's radii simply swap. */
 function turnOf(facing){ return typeof facing === 'number' ? facing : facing ? Math.PI : 0; }
+/* How far a person sitting on the grass drops: everything above the hips comes down this many feet. */
+const GROUND_DROP = 1.25;
 function personParts(G, P, pose, facing){
   const th = turnOf(facing), cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th)), swap = sn !== 0;
-  const T = (x, y, z) => [x * cs - y * sn, x * sn + y * cs, z];
+  const dz = pose.ground ? GROUND_DROP : 0;
+  const T = (x, y, z) => [x * cs - y * sn, x * sn + y * cs, z - dz];
   const E = (x, y, z, rx, ry, rz, m, o, cut) => {
     const [a, b, c] = T(x, y, z);
     ell(G, a, b, c, swap ? ry : rx, swap ? rx : ry, rz, m, o, cut ? (u, v, w) => cut(u * cs + v * sn, -u * sn + v * cs, w) : null);
@@ -192,7 +195,14 @@ function personParts(G, P, pose, facing){
     : P.stripe ? (x, y, z) => 'x:' + (Math.floor(z * 3) % 2 ? P.shirt : P.stripe)
     : 'x:' + P.shirt;
   // Legs and shoes. Sitting, the thighs run forward and the shins drop to the deck.
-  if (pose.seated){
+  if (pose.ground){
+    // On the grass: knees up, feet out in front. Written in standing feet, so they add the drop back.
+    for (const s2 of [-1, 1]){
+      C([s2 * .38, 0, 1.45], [s2 * .42, .9, 1.95], .3, pants);
+      C([s2 * .42, .9, 1.95], [s2 * .38, 1.45, dz + .3], .28, pants);
+      E(s2 * .38, 1.6, dz + .2, .32, .45, .22, shoes, { gloss: 1 });
+    }
+  } else if (pose.seated){
     for (const s2 of [-1, 1]){
       C([s2 * .38, 0, 1.45], [s2 * .38, .95, 1.45], .3, pants);
       C([s2 * .38, .95, 1.45], [s2 * .38, .95, .35], .28, pants);
@@ -263,10 +273,10 @@ function personParts(G, P, pose, facing){
 /* Two dots and a mouth, set onto the face after it is drawn, the way the golf golfer gets its own.
    Turned side on, only the near eye shows. Glasses are a dark rim either side of an eye; a mustache
    is a short dark bar over the mouth. */
-function face(G, P, facing){
+function face(G, P, facing, dz = 0){
   const th = turnOf(facing), cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th));
   const at = (x, y, z) => { const wx = x * cs - y * sn, wy = x * sn + y * cs;
-    return { i: Math.floor(sx(wx) - G.ox), j: Math.floor(sy(wy, z) - G.oy), seen: wy > .25 }; };
+    return { i: Math.floor(sx(wx) - G.ox), j: Math.floor(sy(wy, z - dz) - G.oy), seen: wy > .25 }; };
   const rim = 'f:#241c22';
   for (const s of [-1, 1]){
     const e = at(s * .42, 1.02, 4.25);
@@ -288,7 +298,7 @@ const PW = 34, PH = 46, PAX = 17, PAY = 38;
 function personSprite(P, pose, facing){
   const G = new Grid(PW, PH, sx(0) - PAX, OY - PAY);
   personParts(G, P, pose, facing);
-  if (Math.cos(turnOf(facing)) > -.5) face(G, P, facing);
+  if (Math.cos(turnOf(facing)) > -.5) face(G, P, facing, pose.ground ? GROUND_DROP : 0);
   return paint(G);
 }
 
@@ -299,7 +309,17 @@ const CROWD_POSES = {
   one:   { L: [-.95, .15, 1.75], R: [1.0, .15, 6.1] },
   clap:  { L: [-.25, .4, 5.7], R: [.25, .4, 5.7] },
   phone: { L: [-.95, .15, 1.75], R: [.85, .2, 5.6], extra: (E) => E(.85, .2, 6.05, .22, .1, .32, 'x:#2a2c36') },
+  // On the grass for a ballad, or the set break: hands on the knees. Written in standing feet.
+  sit:   { ground: true, L: [-.62, .95, 2.15], R: [.62, .95, 2.15] },
 };
+/* A glow stick held up in the encore, in one of four colours the person keeps all night. The stage
+   adds the glow round it; the stick itself is painted like everything else. */
+const GLOWS = ['#8cff6a', '#ff6ad8', '#6af0ff', '#ffe96a'];
+const GLOW_HAND = [1.0, .15, 6.1];
+function glowPose(v){
+  const col = 'x:' + GLOWS[v.glow | 0];
+  return { L: [-.95, .15, 1.75], R: GLOW_HAND, extra: (E, C) => C([1.0, .15, 6.2], [1.08, .15, 7.3], .16, col) };
+}
 /* A sign is a board over the head, held in both hands, drawn on the person's own grid so it is lit
    and outlined like everything else. */
 function signPose(v){
@@ -640,18 +660,24 @@ function buildWorld(R, RIG, seed, withCrowd){
 /* EVERY CROWD SPRITE A NIGHT CAN SHOW, keyed 'variant:pose'. The twenty eight kinds of person are the
    first twenty eight draws of the night's crowd generator, exactly as stage.js draws them, so the
    worker can paint them all in advance and nobody is built mid-song. */
-const CROWD_KINDS = 28;
+const CROWD_KINDS = 40;
+/* The first twenty eight come off the night's own crowd stream, as they always have, so where everybody
+   stands does not move. The rest come off a stream of their own, as does each kind's glow stick. */
+function crowdVariants(rand, seed){
+  const more = mulberry32(seed ^ 0x2c1b3c6d), out = [];
+  for (let vi = 0; vi < CROWD_KINDS; vi++) out.push(crowdVariant(vi < 28 ? rand : more));
+  for (const v of out) v.glow = (more() * GLOWS.length) | 0;
+  return out;
+}
+const CROWD_POSE_KEYS = [...Object.keys(CROWD_POSES), 'sign', 'glow'];
+function crowdPose(v, pose){ return pose === 'sign' ? signPose(v) : pose === 'glow' ? glowPose(v) : CROWD_POSES[pose]; }
 function crowdSprites(seed){
-  const rand = mulberry32(seed ^ 0x5bd1e995), out = {};
-  for (let vi = 0; vi < CROWD_KINDS; vi++){
-    const v = crowdVariant(rand);
-    for (const pose of [...Object.keys(CROWD_POSES), 'sign'])
-      out[vi + ':' + pose] = personSprite(v, pose === 'sign' ? signPose(v) : CROWD_POSES[pose], true);
-  }
+  const out = {}, vs = crowdVariants(mulberry32(seed ^ 0x5bd1e995), seed);
+  vs.forEach((v, vi) => { for (const pose of CROWD_POSE_KEYS) out[vi + ':' + pose] = personSprite(v, crowdPose(v, pose), true); });
   return out;
 }
 
 export {
   ART, ELEV, SE, X0, WPX, OY, sx, sy, depth, camN, rgb, mixc, clamp01, hash, mulberry32, canvas, rampCache, rampOf, Grid, STEP, fn, box, ell, cap, cyl, paint, SKINS, HAIRS, SHIRTS, DYE, turnOf, personParts, face, PW, personSprite, CROWD_POSES, signPose, crowdVariant, BAND, guitarExtra, KEY_TURN, keysFrames, KEY_SEQ, bandFrames, DECK, FIX, kit, buildBack, podCorners, buildRig, buildPods, keysBoard, buildFront, D2R, CE, X1, HPX, PH, PAX, PAY,
-  PLAYERS, bandPose, buildWorld, rigFor, crowdSprites, CROWD_KINDS,
+  PLAYERS, bandPose, buildWorld, rigFor, crowdSprites, CROWD_KINDS, crowdVariants, crowdPose, GLOWS, GLOW_HAND,
 };
