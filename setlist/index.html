@@ -3176,7 +3176,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=44';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=11';
+import { createStage } from './stage.js?v=12';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -7418,7 +7418,12 @@ function renderShow(){
   });
 
   if (reduce){ skip(); return; }
-  S.revealTimer = setTimeout(step, 700);
+  /* THE ROOM IS BUILT OFF THE MAIN THREAD (stage.js), so the house stays dark until it is ready and
+     the first song waits for it, never longer than four seconds. Skipping, or leaving, before then
+     wins: the first step only runs if this is still the show on screen and nothing has played. */
+  const go = () => { if (S.stage === stage && !stopped && i === 0) S.revealTimer = setTimeout(step, 700); };
+  if (stage && stage.ready) Promise.race([stage.ready, new Promise(r => setTimeout(r, 4000))]).then(go);
+  else go();
 }
 
 function render(){
