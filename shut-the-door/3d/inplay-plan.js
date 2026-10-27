@@ -634,17 +634,7 @@ function planGround(ctx) {
   if (!best) best = { n: 1, s: 1.5, b: at(1.5) };
   const n = best.n, sp = SPEED(n);
   // he gets to the spot a beat before the ball and fields it in front of him
-  // (the pick allows him 3 ft past his reach: one who cannot be set there before the ball takes it a
-  // little further along, where he can, rather than arriving after it with his glove still coming down,
-  // check-catch.mjs. Never more than 0.4 s on, and never past the infield)
   const standFor = (bb) => lerp(F[n], bb, Math.max(0, (dist(F[n], bb) - 1.5) / Math.max(1e-3, dist(F[n], bb))));
-  const settles = (ss) => sp.react + runTime(dist(F[n], standFor(at(ss))), sp.v, sp.a, true, true) <= ss - 0.12;
-  if (kind === 'ground_play' && !settles(best.s)) {
-    for (let ss = best.s + 1 / 60; ss <= best.s + 0.4; ss += 1 / 60) {
-      if (rad(at(ss)) > 165) break;
-      if (settles(ss)) { best = { ...best, s: ss, b: at(ss) }; break; }
-    }
-  }
   const b = best.b;
   const stand = standFor(b);
   T[n].arrive(sp.react, stand, Math.max(sp.react + 0.2, best.s - 0.12), { toRest: true });
