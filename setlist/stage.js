@@ -276,6 +276,7 @@ export function createStage(view, opts = {}){
     band: false, encore: false, bow: false,
     signsUntil: 0, flashUntil: 0, jumpUntil: 0, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
     jam: false, soloist: null, fillUntil: 0,
+    arc: null, push: 0, dipUntil: 0, ribbonAt: 0, bannerAt: 0, flameUntil: 0,
   };
   /* THE BLOCKING: where each player is standing and where he is headed. The band walks on from the
      wings when a set starts and off at the break, the soloist steps down to the lip on a jam's peak and
@@ -322,9 +323,13 @@ export function createStage(view, opts = {}){
       const f = (shakeUntil - now) / 320, a = shakeAmp * f * f;
       tr = `${(Math.sin(now * .09) * a).toFixed(1)}px ${(Math.cos(now * .113) * a).toFixed(1)}px`;
     }
-    if (tr === shook) return;
-    shook = tr;
-    for (const el of [view, dof, glow]) el.style.translate = tr;
+    /* THE PUSH-IN: at a jam's peak the camera leans in on the stage, seven percent, and eases back out
+       on the release. Applied to every layer of the picture together, like the kick. Never with
+       reduced motion. */
+    const sc = reduce ? '1' : (1 + .07 * st.push).toFixed(3);
+    if (tr + sc === shook) return;
+    shook = tr + sc;
+    for (const el of [view, dof, glow, vig]){ el.style.translate = tr; el.style.scale = sc; el.style.transformOrigin = '50% 40%'; }
   }
   const FETTI = ['#ff4f7a', '#ffd23f', '#3fd0ff', '#8a5bff', '#5be08a', '#ffffff', '#ff8a3c'];
   /* Every colour a piece can show, worked out once: its face and its back, at eight levels of the
@@ -463,6 +468,51 @@ export function createStage(view, opts = {}){
       c2.fillStyle = rgb(mixc(c, [255, 255, 255], .5), f);
       c2.fillRect(x - i, y, 1, 1); c2.fillRect(x + i, y, 1, 1); c2.fillRect(x, y - i, 1, 1); c2.fillRect(x, y + i, 1, 1);
     }
+  }
+
+  /* The pods in order across the stage, for the ribbon. */
+  const PODRANK = {};
+  [...PODS].sort((a, b) => a.cx - b.cx).forEach((P, i) => { PODRANK[P.pi] = i; });
+
+  /* THE BUSTOUT BANNER: a cloth that drops from the truss in front of the back wall, hangs for the
+     signs to go up, and rolls back up. No words on it, the room knows what a bustout is: the night's
+     colours in bands with a row of stars. Painted once, lit by the stage like everything else. */
+  const banner = canvas(48, 20);
+  {
+    const bc = banner.getContext('2d');
+    const cols = ['#e8505f', '#f4cc2c', '#37c5d5', '#8a5bff'];
+    for (let y = 0; y < 20; y++){ bc.fillStyle = cols[Math.floor(y / 5) % cols.length]; bc.fillRect(0, y, 48, 1); }
+    bc.fillStyle = '#fff8e0';
+    for (let x = 3; x < 48; x += 7){ bc.fillRect(x, 9, 1, 1); bc.fillRect(x - 1, 10, 3, 1); bc.fillRect(x, 11, 1, 1); }
+    bc.fillStyle = '#1b1726'; bc.fillRect(0, 19, 48, 1);
+  }
+  function drawBanner(t){
+    const age = now - st.bannerAt;
+    if (!st.bannerAt || age > 4200) return;
+    const u = age < 600 ? age / 600 : age > 3600 ? 1 - (age - 3600) / 600 : 1;
+    // It hangs from the top of the back wall, above the middle pods, and drops to just over them.
+    const mid = Math.max(...PODS.filter(P => Math.abs(P.cx) < 5).map(P => P.cz + RIG.podR), 0);
+    const top = RIG.wallZ - .4, len = Math.max(1.6, Math.min(4.2, top - mid - .3));
+    const [x0, y0] = P2(-5, RIG.podY - .4, top), [x1, y1] = P2(5, RIG.podY - .4, top - len);
+    const h = Math.max(1, Math.round((y1 - y0) * u));
+    g.drawImage(banner, 0, 0, 48, Math.max(1, Math.round(20 * u)), x0, y0, x1 - x0, h);
+  }
+  /* FLAME JETS at the lip on a bustout: short columns of fire, yellow at the nozzle going red. */
+  const flames = [];
+  function drawFlames(t){
+    if (!reduce && now < st.flameUntil){
+      for (const x of [-12.5, -6.5, 6.5, 12.5]) for (let n = 0; n < (lite ? 1 : 3); n++)
+        flames.push({ x: x + (Math.random() - .5) * .5, y: .1, z: DECK.z + .3, vz: 16 + Math.random() * 8, life: .35 + Math.random() * .2, max: .55 });
+    }
+    for (let i = flames.length - 1; i >= 0; i--){
+      const q = flames[i];
+      q.z += q.vz * pdt; q.vz *= 1 - 2.2 * pdt; q.life -= pdt;
+      if (q.life <= 0){ flames.splice(i, 1); continue; }
+      const k = q.life / q.max, [px, py] = P2(q.x, q.y, q.z);
+      eg.fillStyle = k > .7 ? '#fff4c0' : k > .45 ? '#ffc040' : k > .2 ? '#ff7a28' : '#c8301e';
+      eg.globalAlpha = Math.min(1, k * 1.6); eg.fillRect(px - 1, py, 2, 2);
+    }
+    eg.globalAlpha = 1;
   }
 
   function drawBand(t){
@@ -612,7 +662,7 @@ export function createStage(view, opts = {}){
     // The room is still being built: the house is dark.
     if (!back){ out.fillStyle = '#0b0718'; out.fillRect(0, 0, view.width, view.height); return; }
     const t = now / 1000, p = palette();
-    const L = st.light, H = st.house, e = st.energy;
+    const L = st.light * (now < st.dipUntil ? .3 : 1), H = st.house, e = st.energy;
     // Indoors it is always night: the house lights stand in for the sun.
     const night = indoor ? 1 : clamp01((st.sky - .45) / .4);
     // The beat. Everything that pulses pulses on it, and it quickens with the song.
@@ -633,6 +683,7 @@ export function createStage(view, opts = {}){
       if (Math.abs(B.x) > 15.2) continue;
       const [px, py] = P2(B.x, B.y, B.z); g.beginPath(); g.ellipse(px, py, 5, 2, 0, 0, 7); g.fill();
     }
+    drawBanner(t);
     drawBand(t);
     g.drawImage(front, camX, camY, visW, visH, camX, camY, visW, visH);
     drawCrowd(t);
@@ -722,6 +773,13 @@ export function createStage(view, opts = {}){
           pool(lg, b[0], b[1], 10 + e * 4, col, a * 4);
         });
       }
+      // The soloist's spot: a warm cone off the truss onto him while the jam peaks.
+      if (st.soloist && st.push > .05){
+        const B = blk[PLAYERS.findIndex(pl => pl[0] === st.soloist)];
+        const [px, py] = P2(B.x, B.y, B.z);
+        cone(bg, P2(B.x, -9, RIG.trussZ), [px, py - 2], 11, [255, 236, 196], .26 * st.push * dark);
+        pool(lg, px, py - 9, 30, [255, 240, 210], .9 * st.push * dark, 1.1);
+      }
       if (now < st.segueUntil){
         const f = 1 - (st.segueUntil - now) / 1500;
         const b2 = P2(-14 + f * 28, -2, DECK.z);
@@ -801,6 +859,18 @@ export function createStage(view, opts = {}){
     eg.globalCompositeOperation = 'lighter';
     podPixels(eg, p, t, pulse, beatN, strobe);
     drawFill(t);
+    /* THE HAND-OFF: a segue runs a ribbon of white across the pods, left to right, so the room sees
+       one song hand the night to the next. */
+    if (now > st.ribbonAt && now < st.ribbonAt + 1100){
+      const head = (now - st.ribbonAt) / 1100 * (PODS.length + 1.5);
+      for (const q of PODPX){
+        const d = head - PODRANK[q.pi];
+        if (d < 0 || d > 1.5) continue;
+        const [px, py] = P2(q.x, RIG.podY + .3, q.z);
+        eg.fillStyle = rgb([255, 255, 255], (1 - d / 1.5) * .95); eg.fillRect(px, py, 1, 1);
+      }
+    }
+    drawFlames(t);
     // The pods' lenses: the movers under each diamond, lit in the colour of their beam.
     for (const P of PODS){
       [P.C[2], P.C[1], P.C[3], [P.cx, P.cz + .55]].forEach(([x, z], k) => {
@@ -951,6 +1021,18 @@ export function createStage(view, opts = {}){
   }
 
   function ease(dt){
+    /* THE JAM'S ARC, across the time the song holds the screen: it builds for the first two fifths
+       (the rig climbs), peaks to four fifths (the push-in, the soloist's spot) and comes back down. */
+    let pushWant = 0;
+    if (st.arc){
+      const u = (now - st.arc.t0) / st.arc.dur;
+      if (u >= 1) st.arc = null;
+      else {
+        if (u < .4) st.lightWant = Math.max(st.lightWant, .55 + .45 * u / .4);
+        else if (u < .82){ pushWant = 1; st.lightWant = 1; st.energyWant = Math.max(st.energyWant, .95); }
+      }
+    }
+    st.push += (pushWant - st.push) * Math.min(1, dt * (pushWant ? 1.1 : 1.8));
     const f = 1 - Math.pow(.03, dt);
     st.light += (st.lightWant - st.light) * f;
     st.house += (st.houseWant - st.house) * f;
@@ -1004,7 +1086,13 @@ export function createStage(view, opts = {}){
       if (ev.segue) st.segueUntil = ts + 1500;
       /* A fill into every song, a longer one into a segue. A jam that peaks gets a soloist at the
          lip: the keys player when he has the red guitar on, the guitarist otherwise. */
-      if (!ev.instant && !reduce) st.fillUntil = ts + (ev.segue ? 1400 : 650);
+      if (!ev.instant && !reduce){
+        st.fillUntil = ts + (ev.segue ? 1400 : 650);
+        // A jam long enough to have a shape gets one: build, peak, release.
+        st.arc = ev.jam && ev.hold > 2500 ? { t0: ts, dur: ev.hold } : null;
+        if (ev.segue){ st.dipUntil = ts + 220; st.ribbonAt = ts + 220; }
+        if (ev.bustout){ st.bannerAt = ts; st.flameUntil = ts + 900; }
+      }
       st.jam = !!ev.jam;
       st.soloist = ev.jam && ev.energy >= .6
         ? (KEY_SEQ[Math.floor(st.mode / 3) % KEY_SEQ.length] === 'guitar' ? 'keys' : 'guitar') : null;
