@@ -3260,7 +3260,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=44';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=14';
+import { createStage } from './stage.js?v=15';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -7410,6 +7410,8 @@ function renderShow(){
         segue: !!b.event,
         jam: isJamchart(p) || lenOf(p) >= LEN_20MIN || tagsOf(p).includes('jam'),
         bustout: (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP,
+        /* How long the song holds the screen, so a jam can build, peak and come back down inside it. */
+        hold: songHold(lenOf(p)),
       });
     } else if (b.kind === 'time'){
       stage.cue({ kind: 'time', instant, progress, last: idx > lastSetBeat });

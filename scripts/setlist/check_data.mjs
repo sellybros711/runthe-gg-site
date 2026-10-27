@@ -2796,7 +2796,14 @@ if (prose) {
   const stage = read('setlist/stage.js');
   check(/if \(snapBand \|\| reduce \|\| d < \.05\)/.test(stage), 'reduced motion and instant cues put the band on its marks');
   check(/if \(reduce \|\| ev\.instant\)\{\s*snapBand = true;/.test(stage), 'an instant cue snaps the band');
-  check(/if \(!ev\.instant && !reduce\) st\.fillUntil/.test(stage), 'a drum fill only plays in real time');
+  check(/if \(!ev\.instant && !reduce\)\s*\{\s*st\.fillUntil/.test(stage), 'a drum fill only plays in real time');
+  /* The big moments (2026-10-27): the jam's arc, the segue's dip and ribbon, the bustout's banner and
+     flames all move the camera or flash, so they live inside that same real-time block, and the
+     push-in is never applied with reduced motion. A thumbnail or a replay jump shows none of them. */
+  const live = (stage.match(/if \(!ev\.instant && !reduce\)\s*\{([\s\S]*?)\n      \}/) || [, ''])[1];
+  check(/st\.arc =/.test(live) && /st\.dipUntil =/.test(live) && /st\.bannerAt =/.test(live) && /st\.flameUntil =/.test(live),
+    'the big moments only play in real time');
+  check(/reduce \? '1' : \(1 \+ [.\d]+ \* st\.push\)/.test(stage), 'the push-in stays still with reduced motion');
   check(/walk: \{/.test(read('setlist/world.js')) && /frames\.walk\[role\]/.test(stage), 'the walk frames are the world\'s');
 }
 
