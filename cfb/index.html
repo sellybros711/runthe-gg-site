@@ -823,6 +823,60 @@ window.GA_ID='G-L29P5MRWKE';
     animation:lights 9s ease-in-out infinite}
   @keyframes lights{0%{left:-45%}50%{left:105%}100%{left:-45%}}
 
+  /* ── the front page on a wide screen ────────────────────────────
+     It shipped at the 600px wrap, which on a 1440 monitor is a phone screenshot
+     pasted into the middle of a desktop: 420px of empty dark either side, and the
+     headline and the button pushed below the fold under a field drawn 572 wide.
+
+     THE FOOTBALL GAME'S SHAPE, on purpose. Picture on the left (the wheel and the
+     formation, the half that shows what the game is), and the name and the
+     buttons on the right (the half you act on). The ad, the about fold and the
+     footer stay full width under both.
+
+     THE SAME THRESHOLDS AS THE FOOTBALL FRONT PAGE: 920 to go wide, and from 1200
+     the wrap is clamped to clear the 200px rails. The cap is 1200 rather than the
+     football game's 1040, so a 1920 screen is filled from rail to rail. MIN-HEIGHT too, so a short wide
+     window keeps the stacked page. EVERY RULE IS INSIDE A MIN-WIDTH QUERY, so a
+     phone renders byte for byte as before.
+
+     The poll ticker is position:fixed, so it is not a grid item and stays on the
+     bottom edge. */
+  @media (min-width:920px) and (min-height:560px){
+    .wrap:has(#s-intro.on){max-width:1200px}
+    /* .on, because an id beats .screen{display:none} and an unscoped display here
+       would show this screen on top of every other one. */
+    #s-intro.on{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:34px;align-items:start}
+    /* THE CATCH-ALL FIRST, so anything added to this screen later is full width
+       rather than landing in whichever column happens to be free. */
+    #s-intro>*{grid-column:1/-1}
+    #s-intro>.stage{grid-column:1;grid-row:1/span 2;margin-bottom:0;align-self:center}
+    /* The name sits on the buttons and the pair is centred against the picture:
+       the headline drops to the bottom of the first row and the buttons hang
+       from the top of the second. */
+    #s-intro>.hero{grid-column:2;grid-row:1;align-self:end;margin-bottom:22px;
+      container-type:inline-size}
+    #s-intro>.ctas{grid-column:2;grid-row:2;align-self:start}
+    /* The headline is sized to its column, not the page. 84px of three stacked
+       words runs 493 wide and the column can be 400, so COLLEGE would cross
+       into the field. 15cqi keeps it inside with the tee's overhang to spare. */
+    #s-intro>.hero h1{font-size:min(84px,15cqi)}
+    #s-intro .hnote{max-width:440px;font-size:14px}
+    #s-intro>[data-ad-zone]{margin-top:34px}
+    /* The controls stop being thumb-sized in a 490px column you reach with a
+       mouse. Sizes only, the same buttons. */
+    #s-intro .ctas{gap:11px}
+    #s-intro #b-play-intro{padding:20px 18px;font-size:19px}
+    #s-intro #b-modes{padding:16px 18px;font-size:15.5px}
+    #s-intro .cta3{gap:11px}
+    #s-intro .cta3 .btn{padding:14px 14px;font-size:14px}
+    /* The footer's one button would otherwise run the full 1200. */
+    #s-intro .fbrow{max-width:420px;margin-left:auto;margin-right:auto}
+  }
+  @media (min-width:1200px) and (min-height:560px){
+    .wrap:has(#s-intro.on){max-width:min(1200px,calc(100vw - 400px))}
+  }
+
   /* ── reels ──────────────────────────────────────────────────── */
   .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:11px}
   .reelbox{position:relative;height:114px;overflow:hidden;border-radius:14px;
@@ -12494,6 +12548,10 @@ boot();
       h.style.fontSize='';
       var size=parseFloat(getComputedStyle(h).fontSize);
       var room=document.documentElement.clientWidth-24;
+      /* On a wide screen the headline has a column, not the page, and running
+         past it puts COLLEGE across the field. Same query as the stylesheet. */
+      if(matchMedia('(min-width:920px) and (min-height:560px)').matches)
+        room=Math.min(room,h.parentElement.clientWidth);
       var line=h.scrollWidth;
       if(line>room&&line>0) h.style.fontSize=(size*room/line).toFixed(2)+'px';
     }
