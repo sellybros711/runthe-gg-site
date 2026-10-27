@@ -38,3 +38,6 @@ node scripts/setlist/make_venue_thumbs.mjs   render every room to setlist/venues
   in `stage.js` and `stage.js`'s `?v=` in `index.html`, together. A new picture bumps `VENUE_ART_V`.
 - **A data refresh only appends.** `data_drift.mjs` fails a refresh where a derived value moved for a
   song whose own history did not.
+- **"Tonight" means the band's real show** (the tour countdown, the last show). The show a player
+  builds is "your show": "Where your show is played", "Your show", "Your setlist". The owner's call,
+  2026-10-27.
