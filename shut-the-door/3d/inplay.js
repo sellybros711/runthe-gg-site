@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=12';
+import { planPlay, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=13';
 import { Crew } from './fielders.js?v=5';
-import { buildBallpark } from './ballpark.js?v=13';
+import { buildBallpark } from './ballpark.js?v=14';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -581,12 +581,19 @@ export class InPlay {
       if (take.z < 1) spec.bend = takeW * moving;
     }
     // the ball held: glove and ball together in front of his chest, whatever reach is easing off
-    if (ball.by === n && !f.throwing) {
+    // (and through the first of his throw's windup, giving way over it: switched off whole as the windup's
+    // weight began, the glove dropped from his chest in a frame, check-jolt.mjs)
+    // (it eases back to what the glove did without it, the reach of a pickup still on, never to nothing)
+    const early = f.throwing ? 1 - clamp((spec.throwW || 0) / 0.3, 0, 1) : 1;
+    if (ball.by === n && early > 0) {
       const fw = { x: Math.sin(faceYaw), y: Math.cos(faceYaw) };
       const chest = { x: st.x + fw.x * 1.0, y: st.y + fw.y * 1.0, z: 3.9 };
-      const k = glove ? gloveW : 0;
-      glove = glove ? { x: chest.x + (glove.x - chest.x) * k, y: chest.y + (glove.y - chest.y) * k, z: chest.z + (glove.z - chest.z) * k } : chest;
-      gloveW = Math.max(0.85, k) * (spec.throwW > 0 ? 1 - spec.throwW : 1);
+      const k = glove ? gloveW : 0, g0 = glove, w0 = glove ? gloveW : 0;
+      let hg = glove ? { x: chest.x + (glove.x - chest.x) * k, y: chest.y + (glove.y - chest.y) * k, z: chest.z + (glove.z - chest.z) * k } : chest;
+      const hw = Math.max(0.85, k) * (spec.throwW > 0 ? 1 - spec.throwW : 1);
+      if (early < 1 && g0) hg = { x: g0.x + (hg.x - g0.x) * early, y: g0.y + (hg.y - g0.y) * early, z: g0.z + (hg.z - g0.z) * early };
+      glove = hg;
+      gloveW = w0 + (hw - w0) * early;
     }
     // the fit runs up to the moment he takes the ball; after it, what it did then is carried (below)
     if (take && s > take.t + 1e-6) { take = null; takeW = 0; }
@@ -1062,6 +1069,13 @@ export class InPlay {
     // the side away from where the throw comes from, so the plate and the throw are one look)
     const thP = cam === 'plate' && plan.segs.find((sg) => sg.kind === 'throw' && sg.t1 > ed[j0].s0 && sg.t0 < ed[j1].s1 && Math.hypot(sg.b.x, sg.b.y) < 12);
     this.plateHigh = thP ? (thP.a.x > 0 ? -1 : 1) : 0;
+    // (and one with a runner's moment at another bag in it, the hitter safe at first as a run scores: the
+    // low camera by first base has that bag beside it, out of its frame; from high behind the plate both are in)
+    if (cam === 'plate' && !this.plateHigh) {
+      const s0 = ed[j0].s0 - 0.85, s1 = ed[j1].s1 + 0.45;
+      const other = plan.runners.some((r) => { const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.from !== r.to ? r.arrive : null; const b = r.out ? r.outBase : r.to; return tq != null && tq >= s0 && tq <= s1 && b >= 1 && b <= 3; });
+      if (other) this.plateHigh = -1;
+    }
     // every camera is running all along, the cut only picks one: the move is worked out from a little
     // before the shot to a little after (as far as the smoothing reaches), so a shot opens on a camera
     // already in its move, not one jolted into it
@@ -1358,7 +1372,7 @@ export class InPlay {
       // plate; low by first base the throw would come from behind it)
       // (decided once a shot, track: a camera does not fly across the field mid shot)
       const hs = this.plateHigh || 0;
-      pos = hs ? { x: hs * 12, y: -46, z: 26.5 } : { ...LOW_FIRST };
+      pos = hs ? { x: hs * 14, y: -72, z: 40 } : { ...LOW_FIRST };
       const home = plan.runners.filter((r) => r.to === 4 || (r.out && r.outBase === 4));
       pts.length = 0;
       pts.push({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 6 });
@@ -1366,8 +1380,8 @@ export class InPlay {
       for (const r of home) { const q = r.track.at(s); if (Math.hypot(q.x, q.y) < 70) coming.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }); }
       pts.push(...coming);
       if (ball && Math.hypot(ball.x, ball.y) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
-      // (from high behind the plate, third and first are in reach too)
-      const near = keys.filter((k) => Math.hypot(k.x, k.y) < (hs ? 100 : 75));
+      // (from high behind the plate, third, first and second are in reach too)
+      const near = keys.filter((k) => Math.hypot(k.x, k.y) < (hs ? 135 : 75));
       pts.push(...near);
       // (what it must hold: the runners coming in to the plate, and the moments in its reach; one at
       // first base is not this camera's)

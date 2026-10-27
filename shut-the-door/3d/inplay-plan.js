@@ -25,7 +25,12 @@
  */
 
 const D2R = Math.PI / 180, G = 32.17;
-const KD = 0.0019, KL = 0.001;            // drag and lift per foot (see the header)
+// drag and lift per foot, and the launch angles the lift works over (it rises from LIFT_LO over 14
+// degrees and falls to nothing at LIFT_HI over LIFT_FALL): fitted (2026-10-27) to the Statcast carry fit
+// the engine uses (contract.js carryOf, R2 0.94) over exit velocity 60-115 mph and launch angle 8-70
+// degrees, 188 balls: 11.9 ft rms against it, where the old drag and lift (0.0019, 0.001, tuned on one
+// 100 mph ball at 28 degrees) were 43.7 ft, every ball long (93 mph at 16 degrees: 292 ft, Statcast 259)
+const KD = 0.002313, KL = 0.001552, LIFT_LO = 11.25, LIFT_HI = 80, LIFT_FALL = 10;
 export const BALL_R = 0.12;
 export const WALL_H = 8;
 export const BASE = [{ x: 0, y: 0 }, { x: 63.64, y: 63.64 }, { x: 0, y: 127.28 }, { x: -63.64, y: 63.64 }, { x: 0, y: 0 }];
@@ -181,7 +186,7 @@ export class Track {
 /** The ball in the air: drag and backspin lift (none on a low liner), sampled each 1/120 s until it
     lands, or meets the wall (off it below WALL_H, over it above). */
 function simAir(v, la, spray, z0, scale = 1, stopAt = null) {
-  const dt = 1 / 120, lift = clamp((la - 4) / 14, 0, 1) * clamp((72 - la) / 22, 0, 1) * KL;
+  const dt = 1 / 120, lift = clamp((la - LIFT_LO) / 14, 0, 1) * clamp((LIFT_HI - la) / LIFT_FALL, 0, 1) * KL;
   const u = { x: Math.sin(spray * D2R), y: Math.cos(spray * D2R) };
   let vv = v * scale;
   let vh = vv * Math.cos(la * D2R), vz = vv * Math.sin(la * D2R);
@@ -189,7 +194,7 @@ function simAir(v, la, spray, z0, scale = 1, stopAt = null) {
   const T = [0], H = [0], Z = [z0];
   let wall = null, over = false, bounced = false;
   const fair = Math.abs(spray) <= 45.5, W = wallDist(spray);
-  while (t < 9) {
+  while (t < 12) {
     const s = Math.hypot(vh, vz);
     const ah = -KD * s * vh - lift * s * vz, az = -KD * s * vz + lift * s * Math.abs(vh) - G;
     vh += ah * dt; vz += az * dt; h += vh * dt; z += vz * dt; t += dt;
@@ -212,10 +217,10 @@ function simAir(v, la, spray, z0, scale = 1, stopAt = null) {
 
 /** The same flight, coarser and storing nothing: how far it carries (or that it left the park). */
 function carry(v, la, spray, z0, scale) {
-  const dt = 1 / 60, lift = clamp((la - 4) / 14, 0, 1) * clamp((72 - la) / 22, 0, 1) * KL, W = wallDist(spray), fair = Math.abs(spray) <= 45.5;
+  const dt = 1 / 60, lift = clamp((la - LIFT_LO) / 14, 0, 1) * clamp((LIFT_HI - la) / LIFT_FALL, 0, 1) * KL, W = wallDist(spray), fair = Math.abs(spray) <= 45.5;
   const vv = v * scale;
   let vh = vv * Math.cos(la * D2R), vz = vv * Math.sin(la * D2R), h = 0, z = z0, t = 0;
-  while (t < 9) {
+  while (t < 12) {
     const s = Math.sqrt(vh * vh + vz * vz);
     const ah = -KD * s * vh - lift * s * vz, az = -KD * s * vz + lift * s * Math.abs(vh) - G;
     vh += ah * dt; vz += az * dt; h += vh * dt; z += vz * dt; t += dt;
@@ -744,13 +749,18 @@ function planAir(ctx) {
     else band = [W - 45, W - 4];
   } else {
     // an out (or a drop): pop ups stay in or near the infield; foul ones behind the plate stay short
-    if (pop) band = Math.abs(spray) > 90 ? [12, 45] : [20, 185];
+    // (a pop up comes down where its own flight takes it, in the infield or just past it: no longer
+    // pinned to 185 ft, where the old long carry held most of them)
+    if (pop) band = Math.abs(spray) > 90 ? [12, 45] : [20, 240];
     else if (ctx.bb === 'line') band = [80, W - 20];
-    else band = [150, W - 6];
+    // (a towering one, over 50 degrees, comes down shallower: its own carry, Statcast's, is short)
+    else band = [la > 50 ? 90 : 150, W - 6];
   }
   // fly the measured ball; hold its distance to the band by scaling its speed (the angles stay)
   const natural = simAir(v, la, spray, z0);
-  const nat = natural.over ? natural.wall.h + 40 : natural.land.h;
+  // (rules 6 and on: the engine's own carry for the real ball, Statcast's distance, is where it lands)
+  const real = ctx.pr.inPlay && Number.isFinite(ctx.pr.inPlay.carry) && kind !== 'hr' ? ctx.pr.inPlay.carry : null;
+  const nat = real != null ? real : natural.over ? natural.wall.h + 40 : natural.land.h;
   // (a ball hit nearly straight up keeps its own carry when short: a pop up is not sped up to reach
   // somewhere, it comes down where it comes down)
   const want = la > 70 && nat < band[0] ? nat : clamp(nat, band[0], band[1]);
@@ -789,7 +799,7 @@ function planAir(ctx) {
     return;
   }
   // where a fielder can take it: a point on its way down, under 8 ft (a liner: anywhere under 8 ft)
-  const catchable = (s) => { const q = airAt(s); if (q.z > 8.2) return null; const q2 = airAt(s + 0.02); return (q2.z < q.z || ctx.bb === 'line') ? q : null; };
+  const catchable = (s) => { const q = airAt(s); if (q.z > 8.2 || q.z < 0.6) return null; const q2 = airAt(s + 0.02); return (q2.z < q.z || ctx.bb === 'line') ? q : null; };
   const tEnd = f.bounced ? f.wall.t : f.land.t;
   const who = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const pick = () => {
@@ -802,7 +812,10 @@ function planAir(ctx) {
         const d = dist(F[n], q);
         if (d <= reach(s, sp.react, sp.v, sp.a) + 3) {
           // an outfielder coming in has it over an infielder going out
-          const pri = s + (OF.includes(n) ? -0.4 : 0) + (n === 2 && Math.abs(ctx.spray) < 90 ? 0.6 : 0) + (n === 1 ? 0.8 : 0);
+          // (a pop up is the infielders' and the catcher's: they call off an outfielder short of the
+          // grass's edge, and the pitcher gives way to anyone)
+          const popIn = pop && rad(q) < 200;
+          const pri = s + (OF.includes(n) ? (popIn ? 0.6 : -0.4) : popIn && n !== 1 ? -0.5 : 0) + (n === 2 && Math.abs(ctx.spray) < 90 && !popIn ? 0.6 : 0) + (n === 1 ? 0.8 : 0);
           if (!best || pri < best.pri) best = { n, s, q, pri };
           break;
         }
@@ -843,8 +856,20 @@ function planAir(ctx) {
     const stand = { x: q.x, y: q.y };
     const deep = rad(stand) > W - 22 && OF.includes(n);
     ctx.deep = rad(stand) > 200;
-    const arrive = T[n].arrive(sp.react, stand, Math.max(sp.react + 0.4, s - (deep ? 0.04 : 0.35)), { toRest: !deep, v: sp.v });
-    void arrive;
+    // (a routine one: he gets there and settles under it, a second or more before it comes down, as a
+    // real fielder does; one he has to run down he takes on the run, as before)
+    const need = sp.react + runTime(dist(F[n], stand), sp.v, sp.a, true, true);
+    const settle = !deep && ctx.bb !== 'line' && need < s - 1.2 ? Math.max(need + 0.15, s - 1.6) : null;
+    const t1 = settle != null ? settle : Math.max(sp.react + 0.4, s - (deep ? 0.04 : 0.35));
+    const nLegs = T[n].legs.length;
+    const arrive = T[n].arrive(sp.react, stand, t1, { toRest: !deep, v: sp.v });
+    // (there early and at rest, he waits under it: whatever he does next starts at the catch, never
+    // before it. One who could only run through the spot takes it on the run instead, there exactly at
+    // the catch: held there he stopped dead in a frame, check-jolt.mjs)
+    if (!deep && arrive < s) {
+      if (Math.abs(arrive - t1) < 1e-3) T[n].hold(s);
+      else { T[n].legs.length = nLegs; T[n].arrive(sp.react, stand, s, { toRest: false, v: sp.v }); }
+    }
     T[n].act(s - 0.45, 'reach', { ball: q });
     T[n].act(s, kind === 'air_drop' ? 'drop' : 'catch', { ball: q, high: q.z, wall: deep });
     p.segs.push({ kind: 'air', t0: 0, t1: s, at: airAt });
