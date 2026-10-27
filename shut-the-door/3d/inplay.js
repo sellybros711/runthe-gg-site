@@ -820,7 +820,13 @@ export class InPlay {
     A.faced = A.faced || 0;
     if (A.faced >= 9) return false;
     const tr = plan.fielders[++A.faced];
-    tr.face = this.faceTable((t) => tr.at(t), 0, plan.dur + 3, (t) => plan.ballAt(t).by === A.faced);
+    const n = A.faced, throws = plan.segs.filter((sg) => sg.kind === 'throw' && sg.from === n);
+    // (while he holds the ball: the way he is about to throw it, else the raw facing)
+    tr.face = this.faceTable((t) => tr.at(t), 0, plan.dur + 3, (t, raw) => {
+      if (plan.ballAt(t).by !== n) return null;
+      const sg = throws.find((x) => x.t0 >= t - 1e-6);
+      return sg ? heading(tr.at(t), sg.b) : raw;
+    });
     return true;
   }
 
@@ -835,9 +841,10 @@ export class InPlay {
     let yaw = this.faceTrail(at(t0), t0);
     for (let i = 0; i < n; i++) {
       const t = t0 + i * dt, raw = this.faceTrail(at(t), t);
-      // (while he holds the ball his facing is not this one, poseFielder: it waits where the old one
-      // would be, so the moment he lets it go he is where he was before, as the throw's turn expects)
-      if (holds && holds(t)) yaw = raw;
+      // (while he holds the ball his facing is not this one, poseFielder: it waits on the way he is about to
+      // throw, so the moment he lets it go it is where the throw's turn leaves him)
+      const held = holds ? holds(t, raw) : null;
+      if (held != null) yaw = yaw + angDiff(yaw, held);
       else yaw += clamp(angDiff(yaw, raw), -step, step);
       out[i] = yaw;
     }
