@@ -4568,7 +4568,7 @@ function renderDraft(){
                 spells out the full trade before anything is spent.
                 "Time" is the other one. It is not a noun for anything: it
                 opens the setlist you have built, on a card whose own heading
-                says "Tonight", next to the clock it appears to name. */''}
+                says "Your show", next to the clock it appears to name. */''}
           ${cost === null ? '<span class="nospin">No spins left</span>'
             : `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
                 aria-label="${can
@@ -4653,7 +4653,7 @@ function renderDraft(){
       <div class="slotcol" id="slotCol">
         <aside class="card setlist">
           <div class="sheetgrab"></div>
-          <h2>${S.pickedSong ? 'Add to ' + esc(cfg.label) : 'Tonight'}</h2>
+          <h2>${S.pickedSong ? 'Add to ' + esc(cfg.label) : 'Your show'}</h2>
           <div class="sub">${S.pickedSong
             ? `${esc(S.pickedSong.song)} · ${fmtClock(lenOf(S.pickedSong))}`
             : 'Two sets and an encore to fill.'}</div>
@@ -5050,9 +5050,9 @@ function venuePickerHTML(){
     : `${open.size} of ${VENUE_LIST.length} rooms open. ${cur === 'random' ? 'Each show draws one of them.' : 'Tap a dark one to see what it takes.'}`;
   const rnd = cur === 'random';
   return `<section class="card vpick">
-    <div class="vp-hd"><span class="eyebrow">Where tonight is played</span>
+    <div class="vp-hd"><span class="eyebrow">Where your show is played</span>
       ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
-    <div class="vp-row" role="radiogroup" aria-label="Choose tonight's room">
+    <div class="vp-row" role="radiogroup" aria-label="Choose where your show is played">
       <button type="button" class="vthumb vrand${rnd ? ' on' : ''}" data-venue="random" role="radio"
         aria-checked="${rnd}" aria-label="A random room each show">
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="none" stroke="currentColor"
@@ -7239,15 +7239,15 @@ function renderShow(){
         </div>
         <button class="sx-skip" type="button" id="simSkip">Skip &rsaquo;</button>
       </div>
-      <button class="sx-paper" type="button" id="sxPaper" aria-label="Open tonight's full setlist">
-        <span class="sx-ph" id="sxPh">Tonight</span>
+      <button class="sx-paper" type="button" id="sxPaper" aria-label="Open your full setlist">
+        <span class="sx-ph" id="sxPh">Your show</span>
         <ol class="sx-list" id="sxList"></ol>
         <span class="sx-more">Full setlist</span>
       </button>
       <div class="sx-now" id="sxNow" aria-live="polite"></div>
       <div class="sx-final" id="sxFinal" hidden></div>
       <div class="sx-sheet" id="sxSheet" hidden>
-        <div class="sx-sheet-hd"><b>Tonight&rsquo;s setlist</b>
+        <div class="sx-sheet-hd"><b>Your setlist</b>
           <button type="button" class="sx-close" id="sxClose">Close</button></div>
         <div class="sim-feed" id="simFeed"></div>
       </div>
