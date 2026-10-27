@@ -2921,12 +2921,12 @@
       "sha": "804b37c86a4e4224"
     },
     "meter.js": {
-      "v": "5",
-      "sha": "8babaf312b66269a"
+      "v": "6",
+      "sha": "29905a0435a9794a"
     },
     "meter-ui.js": {
-      "v": "5",
-      "sha": "f8e46ed74c68a5bc"
+      "v": "6",
+      "sha": "b0379a3a95d63dc9"
     },
     "sprites.js": {
       "v": "2",
@@ -2997,18 +2997,18 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "38",
-      "sha": "d69a500f8e130442"
+      "v": "39",
+      "sha": "bfac801532f6c9e1"
     },
     "3d/boot.js": {
-      "v": "54",
-      "sha": "968244724726fee4"
+      "v": "55",
+      "sha": "9e3ade82d25e6a6f"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "55",
-      "sha": "eec8014013a3b6a9"
+      "v": "56",
+      "sha": "91606225b4322d86"
     }
   },
   "soccer/index.html": {
@@ -3123,8 +3123,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "58",
-      "sha": "447cfd54b1ee60e8"
+      "v": "59",
+      "sha": "132010a118c90063"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3175,12 +3175,12 @@
       "sha": "4e0a1e374ca3f529"
     },
     "pitch.js": {
-      "v": "10",
-      "sha": "4f9e051cec7796ca"
+      "v": "11",
+      "sha": "0cbff4b8b47da835"
     },
     "play.js": {
-      "v": "10",
-      "sha": "9b246e3461bb284c"
+      "v": "11",
+      "sha": "262388df83dad2a8"
     },
     "looks.js": {
       "v": "3",
@@ -3195,12 +3195,12 @@
       "sha": "fc39d1cfbed4801d"
     },
     "preview.js": {
-      "v": "7",
-      "sha": "36071604a671158e"
+      "v": "8",
+      "sha": "baf61f3e74f3e313"
     },
     "firstperson.js": {
       "v": "6",
-      "sha": "580138aa353fe956"
+      "sha": "92605ea41e712247"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3273,8 +3273,8 @@
   },
   "shut-the-door/3d/play.js": {
     "pitch.js": {
-      "v": "10",
-      "sha": "4f9e051cec7796ca"
+      "v": "11",
+      "sha": "0cbff4b8b47da835"
     }
   },
   "shut-the-door/3d/inplay.js": {
@@ -3305,8 +3305,8 @@
   },
   "shut-the-door/3d/preview.js": {
     "pitch.js": {
-      "v": "10",
-      "sha": "4f9e051cec7796ca"
+      "v": "11",
+      "sha": "0cbff4b8b47da835"
     },
     "units.js": {
       "v": "1",
@@ -3335,8 +3335,8 @@
       "sha": "6740e4ce374039b0"
     },
     "pitch.js": {
-      "v": "10",
-      "sha": "4f9e051cec7796ca"
+      "v": "11",
+      "sha": "0cbff4b8b47da835"
     }
   },
   "shut-the-door/3d/field.js": {
