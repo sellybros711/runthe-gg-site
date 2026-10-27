@@ -22,6 +22,14 @@
  *                                    in play is followed into the field (inplay.js): the broadcast
  *                                    cut, the fielders, the runners. See THE PLAY'S TIMELINE below.
  *   st.playing                       the promise of the pitch on now (null between pitches)
+ *                                    A steal on a ball or a strike (rules 7, pr.steal safe or out)
+ *                                    is followed the same way from the catch: the throw down, the
+ *                                    cover, the slide and the tag (inplay-plan.js planSteal)
+ *   st.pickoff({ po, bases, hooks })  a pickoff throw between pitches (rules 7: E.pickoff's result,
+ *                                    the bases before it): the throw over, the dive back, the tag
+ *                                    and the engine's call, on the broadcast (planPickoff); a balk
+ *                                    walks every runner up. Resolves when it is over, back at the
+ *                                    set; hooks.call at the call, hooks.field with the runners
  * Everything waits for the downloads: calls made before then are kept and applied when they land.
  *
  * FIRST PERSON. You are the pitcher (firstperson.js): his glove low in his glove side corner at the
@@ -79,7 +87,7 @@ import { Pitch, releaseOf } from './pitch.js?v=10';
 import { fromResult, motion } from './play.js?v=10';
 import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=24';
+import { InPlay } from './inplay.js?v=25';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=7';
 import { FirstPerson } from './firstperson.js?v=6';
 
@@ -631,6 +639,59 @@ class Stage {
     return { tEnd: resultAt + 2.0, resultAt };
   }
 
+  /** A pickoff throw between pitches, to its end, then back to the set (the header). */
+  pickoff(opts) {
+    const p = this.playing = this.pickoffOnce(opts);
+    const clear = () => { if (this.playing === p) this.playing = null; };
+    p.then(clear, clear);
+    return p;
+  }
+
+  async pickoffOnce({ po, bases = 0, hooks = {} }) {
+    await this.ready;
+    if (!this.inplay || !this.pitch || !po) return { pickoff: false };
+    let run = null;
+    try { run = this.inplay.begin({ pickoff: po, basesBefore: bases | (1 << (po.base - 1)) }, this.pitch, { hooks }); } catch (e) { console.error('the pickoff could not be staged', e); this.inplay.active = null; return { pickoff: false }; }
+    const tEnd = run.realDur + 0.3, callAt = run.resolveReal;
+    return new Promise((done) => {
+      let prev = null, clock = 0, frames = 0, raf = 0, called = false, finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        cancelAnimationFrame(raf);
+        try {
+          if (!called) { called = true; if (hooks.call) hooks.call(); }
+          if (hooks.field) hooks.field(this.inplay.fieldAt(run.plan.dur + 5));
+          // back to the set: everyone in his stance, the camera the pitcher's eye
+          this.inplay.end(this.camera);
+          this.preview();
+          this.render();
+        } catch (e) { console.error('the end of the pickoff failed', e); }
+        this.dirty = true;
+        done({ pickoff: true, out: !!po.out, balk: !!po.balk });
+      };
+      const frame = (now) => {
+        if (finished) return;
+        try {
+          if (prev == null) prev = now;
+          clock += Math.min(MAX_STEP, Math.max(0, (now - prev) / 1000));
+          prev = now;
+          const t = TEST() ? frames * TEST().step : clock;
+          if (!called && t >= callAt) { called = true; if (hooks.call) hooks.call(); }
+          const s = run.sceneAt(Math.min(t, run.realDur));
+          this.inplay.update(s, this.camera);
+          this.firstPersonCut();
+          if (hooks.field) hooks.field(this.inplay.fieldAt(s));
+          if (!TEST() || frames % (TEST().renderEvery || 1) === 0) this.render();
+          frames++;
+          if (t >= tEnd) { finish(); return; }
+        } catch (e) { console.error('the pickoff failed mid play', e); finish(); return; }
+        raf = requestAnimationFrame(frame);
+      };
+      raf = requestAnimationFrame(frame);
+    });
+  }
+
   /** One pitch, to the end of its play (THE PLAY'S TIMELINE, in the header). */
   play(opts) {
     const p = this.playing = this.playOnce(opts);
@@ -658,8 +719,11 @@ class Stage {
     // (a broadcast that cannot be planned is said on the console, which the browser check fails on,
     // and the pitch plays on in the pitcher's view: the game never hangs on it)
     let run = null;
-    if (inPlay && this.inplay && pt.after) {
-      try { run = this.inplay.begin(pr, pt, { hooks }); } catch (e) { console.error('the ball in play could not be staged', e); this.inplay.active = null; }
+    // (a steal on a ball or a strike, rules 7: the same broadcast, from the catch: the throw down, the
+    // slide and the tag, as the engine called it)
+    const steal = !inPlay && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
+    if (((inPlay && pt.after) || steal) && this.inplay) {
+      try { run = this.inplay.begin(pr, pt, { hooks }); } catch (e) { console.error(steal ? 'the steal could not be staged' : 'the ball in play could not be staged', e); this.inplay.active = null; }
     }
     // (knocked down by a pitch, he stays down for a beat)
     const tail = run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
@@ -680,7 +744,7 @@ class Stage {
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
     // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, the
     // umpire's signal
-    const landAt = run ? resultAt + run.land.real : pr.result === 'foul' ? resultAt + FOUL_SIGNAL : null;
+    const landAt = run && run.land ? resultAt + run.land.real : pr.result === 'foul' ? resultAt + FOUL_SIGNAL : null;
     let landed = null;
     const land = (t) => {
       if (landed || landAt == null) return;

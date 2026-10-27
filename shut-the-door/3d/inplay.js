@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=14';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=15';
 import { Crew } from './fielders.js?v=5';
-import { buildBallpark } from './ballpark.js?v=15';
+import { buildBallpark } from './ballpark.js?v=16';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -160,7 +160,11 @@ export class InPlay {
   begin(pr, pitch, o = {}) {
     const b = this.facts.batter;
     const contact = pitch.after ? pitch.f.at(pitch.after.t0) : { x: 0, y: 1.2, z: 2.6 };
-    const plan = planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') });
+    // (a steal on a ball or a strike, rules 7: its own plan, from the catch)
+    const steal = pr.result !== 'in_play' && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
+    // (and a pickoff throw between pitches: pr is { pickoff, basesBefore }, stage.js pickoff)
+    const po = pr.pickoff && pr.result == null ? pr.pickoff : null;
+    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') });
     this.active = { pr, plan, pitch, hooks: o.hooks || {}, fired: 0, cam: null, fov0: null };
     this.ball = pitch.ball;
     this.ballScale0 = this.ball.scale.x;
@@ -171,7 +175,12 @@ export class InPlay {
     const infPlay = (plan.kind === 'ground_play' || plan.kind === 'ground_hit') && ft0.n != null && ft0.n <= 6 && Math.hypot(ft0.at ? ft0.at.x : 0, ft0.at ? ft0.at.y : 0) < 160;
     // (and a bag a runner is out, scores or pulls in safe at, from 1.6 s before, when another moment comes
     // within a second of it at a bag across the diamond: one high shot holds the two together)
-    this.active.infield = infPlay ? [
+    this.active.steal = steal || !!po;
+    // (a steal: home and the bag he steals, the throw down and the tag in the high home's one shot; a
+    // pickoff: the rubber and the bag)
+    if (po) this.active.infield = [{ x: 0, y: 60.5, t1: 99 }, { ...BASE[po.base], t1: 99 }];
+    else if (steal) this.active.infield = [{ x: 0, y: 0, t1: 99 }, { ...BASE[pr.steal.to], t1: 99 }];
+    else this.active.infield = infPlay ? [
       ...plan.segs.filter((sg) => sg.kind === 'throw' && Math.hypot(sg.b.x, sg.b.y) < 135).map((sg) => ({ x: sg.b.x, y: sg.b.y, t1: sg.t1 })),
       ...crowded(plan.runners.map((r) => { const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.from !== r.to ? r.arrive : null, bag = BASE[r.out ? r.outBase : Math.min(4, r.to)]; return tq != null && tq < 100 && bag ? { x: bag.x, y: bag.y, t1: tq, t0: tq - 1.6 } : null; }).filter(Boolean)),
     ] : [];
@@ -195,7 +204,9 @@ export class InPlay {
     const landS = Math.min(ft.landAt ?? ft.s ?? plan.resolveAt, plan.resolveAt);
     return {
       plan,
-      land: { s: landS, real: realAt(plan.edit, landS), how: oc.ball, fair: true },
+      // (a steal has no ball landing: the play by play waits for nothing but its call)
+      land: steal || po ? null : { s: landS, real: realAt(plan.edit, landS), how: oc.ball, fair: true },
+      steal,
       realDur: plan.realDur,
       resolveReal: realAt(plan.edit, plan.resolveAt),
       sceneAt: (r) => warp(plan.edit, r).s,
@@ -225,8 +236,9 @@ export class InPlay {
     // ---- the cut: the broadcast hides the set's own hitter (a runner takes his place) and, when the
     // catcher is in the play, the set's catcher (a fielder takes his)
     const pp = this.people, pt = A.pitch;
-    pp.batter.root.visible = !broadcast;
-    if (pp.batter.bat && broadcast) {
+    // (a steal: the hitter is still in the box, bat in hand)
+    pp.batter.root.visible = !broadcast || !!A.steal;
+    if (pp.batter.bat && broadcast && !A.steal) {
       // he let go of the bat on his way: it lies in the dirt by the box
       const side = this.facts.batter.bats === 'L' ? 1 : -1;
       pp.batter.bat.position.copy(P(side * 3.6, 1.8, 0.11));

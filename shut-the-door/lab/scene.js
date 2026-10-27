@@ -24,7 +24,7 @@ import { People } from '../3d/people.js?v=40';
 import { Pitch } from '../3d/pitch.js?v=10';
 import { labPlay, motion, describe } from '../3d/play.js?v=10';
 import { FT, P, smooth } from '../3d/units.js?v=1';
-import { InPlay } from '../3d/inplay.js?v=24';
+import { InPlay } from '../3d/inplay.js?v=25';
 
 const Q = new URLSearchParams(location.search);
 const MODE = Q.get('take') === '1' ? 'take' : 'swing';   // kept for the checks' URLs (take=1)
