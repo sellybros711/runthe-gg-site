@@ -1,25 +1,24 @@
 name: Golf roster refresh (DataGolf)
-# Re-rates the golf game's current players from DataGolf's skill ratings and rewrites the in-game
-# Roster Updates page, using golf/roster/dg_refresh.py against golf/index.html.
+# Every Tuesday: re-rates the golf game's current players from DataGolf's skill ratings, rewrites the
+# in-game Roster Updates page, proves the result, and opens a pull request for the owner.
+# golf/roster/dg_refresh.py does the work against golf/index.html.
 #
-# It NEVER pushes to main. The result goes to the review branch golf-roster-refresh with the movers
-# report in the run summary; deploying it to /golf is a separate, human decision (the runbook's rule).
+# It NEVER pushes to main. The result goes to the branch golf-roster-refresh and a pull request from
+# it, with the movers report in the PR and the run summary. Merging that PR is what puts it live.
 #
 # Needs one repository secret: DG_KEY (the DataGolf API key). The key is only ever passed in the
 # environment; the script never prints or writes it.
 #
-# Triggers: the Run workflow button (once this file is on main), every Tuesday in season (also from
-# main), and a push that changes golf/roster/REFRESH on any branch, which is how a session without
-# DataGolf access asks for a run without touching main.
+# A pull request opened with the workflow token starts no other workflow, so every check the golf
+# page's own CI would run on it runs HERE, before anything is pushed: the page parses, the roster gate
+# (golf/roster/check_refresh.py), dashes, copy, cache versions, and the 3D golfer booting the page.
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: '17 14 * * 2'   # Tuesdays, mid morning Eastern, after Monday finishes
-  push:
-    paths:
-      - 'golf/roster/REFRESH'
+    - cron: '17 14 * * 2'   # Tuesdays, mid morning Eastern, after Monday's feed update
 permissions:
   contents: write
+  pull-requests: write
 concurrency:
   group: golf-roster-refresh
   cancel-in-progress: false
@@ -51,22 +50,67 @@ jobs:
         env:
           DG_KEY: ${{ secrets.DG_KEY }}
         run: python3 golf/roster/dg_refresh.py --write
+      - name: Anything to propose?
+        id: diff
+        run: |
+          if git diff --quiet -- golf/index.html; then
+            echo "No ratings moved. Nothing to propose." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: The roster gate (only ratings moved, legends held, no wild movers)
+        if: steps.diff.outputs.changed == '1'
+        run: |
+          python3 golf/roster/check_refresh.py | tee /tmp/gate.txt
       - name: The page still parses, and the repo rules hold
+        if: steps.diff.outputs.changed == '1'
         run: |
           python3 -c "import re;s=open('golf/index.html').read();b=max(re.findall(r'<script[^>]*>(.*?)</script>',s,re.S),key=len);open('/tmp/x.js','w').write(b)"
           node --check /tmp/x.js
           node scripts/check-dashes.mjs golf
-      - name: Push to the review branch (never main)
+          node scripts/check-copy.mjs
+          node scripts/check-cachebust.mjs
+      - name: Install Playwright
+        if: steps.diff.outputs.changed == '1'
         run: |
-          if git diff --quiet -- golf/index.html; then
-            echo "No ratings moved. Nothing to push." | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: The page boots and the 3D golfer draws
+        if: steps.diff.outputs.changed == '1'
+        run: |
+          (python3 -m http.server 8099 >/dev/null 2>&1 &)
+          sleep 2
+          node golf/check-golfer3d.mjs
+      - name: Push the branch and open (or update) the pull request
+        if: steps.diff.outputs.changed == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
           git config user.name "golf-roster-bot"
           git config user.email "noreply@anthropic.com"
           FEED=$(sed -n 's/.*last_updated=\([0-9-]*\).*/\1/p' /tmp/report.txt | head -1)
+          TITLE="Golf: roster refresh from the DataGolf feed of ${FEED:-this week}"
           git checkout -B golf-roster-refresh
           git add golf/index.html
-          git commit -m "Golf: refresh roster from DataGolf feed ${FEED:-latest}"
+          git commit -m "$TITLE"
           git push -f origin golf-roster-refresh
-          echo "Pushed to golf-roster-refresh for review." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "The weekly Run The Tour roster update, opened by the Tuesday workflow."
+            echo
+            echo "Every check the golf page needs ran before this was pushed: the roster gate, the page parses, dashes, copy, cache versions, and the 3D golfer boots the page. Merging puts it live."
+            echo
+            echo '## The roster gate'; echo '```'; cat /tmp/gate.txt; echo '```'
+            echo '## The DataGolf report'; echo '```'; cat /tmp/report.txt; echo '```'
+          } > /tmp/body.md
+          OPEN=$(gh pr list --head golf-roster-refresh --state open --json number --jq '.[0].number')
+          if [ -n "$OPEN" ]; then
+            gh pr edit "$OPEN" --title "$TITLE" --body-file /tmp/body.md
+            echo "Updated pull request #$OPEN." >> "$GITHUB_STEP_SUMMARY"
+          elif gh pr create --base main --head golf-roster-refresh --title "$TITLE" --body-file /tmp/body.md; then
+            echo "Opened a pull request for review." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Pushed golf-roster-refresh, but GitHub refused the pull request. Turn on Settings, Actions, General, 'Allow GitHub Actions to create and approve pull requests', or open it by hand." >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::could not open the pull request"
+            exit 1
+          fi

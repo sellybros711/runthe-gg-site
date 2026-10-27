@@ -3040,7 +3040,15 @@ window.GA_ID='G-L29P5MRWKE';
      phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
      unfilled unit collapses to nothing. */
   [data-ad-zone="menu"] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
-  @media (min-width:768px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
+  /* SIZED BY THE COLUMN, NOT THE SCREEN (QA, 2026-10-27). A 768px media query handed the
+     728x90 to a column that can be narrower: the college start screen is 572px wide at every
+     desktop width, and at 768 the football, college and baseball columns are 572 to 612. The
+     leaderboard then hung 156px past the column, past the screen at 768. The zone is a size
+     container, so the slim standard size that fits is the one served: 320x50, 468x60 from a
+     468px column, the 728x90 from a 728px column. */
+  [data-ad-zone="menu"]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{display:block}

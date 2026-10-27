@@ -574,6 +574,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .rtp-ad-inline .adsbygoogle{display:block;}
   .rtp-ad-inline .rtp-ad-label{display:none;font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mut-2);margin-bottom:6px;}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
+  /* The two section-break ads: a fixed slim size, and no space at all until one fills. */
+  .home-break{margin:0 auto;padding:0 16px;}
+  .home-break:has(ins[data-ad-status="filled"]){margin:96px auto 48px;}
+  .home-break ins.adsbygoogle{display:inline-block;width:320px;height:50px;}
+  @media (min-width:768px){ .home-break ins.adsbygoogle{width:728px;height:90px;} }
+  .home-break ins.adsbygoogle[data-ad-status="unfilled"]{display:none;}
 
   /* ---------- footer ---------- */
   .foot{margin-top:80px;border-top:1px solid var(--line);background:var(--bg-2);padding:56px 0 calc(34px + env(safe-area-inset-bottom,0px));}
@@ -976,6 +982,14 @@ window.GA_ID='G-L29P5MRWKE';
   },true);
 })();
 </script>
+<!-- A SECTION-BREAK AD (Ads Agent, 2026-10-27, the owner's rule: ads on start screens, results,
+     leaderboards and reading pages, never in play). Between two sections, never between game
+     cards or beside a Play button. A slim 320x50 on a phone, 728x90 from 768px; unfilled, it
+     collapses to nothing. -->
+<div class="rtp-ad-inline home-break">
+  <span class="rtp-ad-label">Advertisement</span>
+  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>
+</div>
 <section class="sec shell" id="games">
     <div class="sec-head">
       <div>
@@ -1163,6 +1177,14 @@ window.GA_ID='G-L29P5MRWKE';
 })();
 </script>
 
+<!-- A SECTION-BREAK AD (Ads Agent, 2026-10-27, the owner's rule: ads on start screens, results,
+     leaderboards and reading pages, never in play). Between two sections, never between game
+     cards or beside a Play button. A slim 320x50 on a phone, 728x90 from 768px; unfilled, it
+     collapses to nothing. -->
+<div class="rtp-ad-inline home-break">
+  <span class="rtp-ad-label">Advertisement</span>
+  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>
+</div>
   <section class="sec shell" id="on-deck">
     <div class="sec-head">
       <div>
@@ -1257,13 +1279,11 @@ window.GA_ID='G-L29P5MRWKE';
          accidental tap on an ad is what gets a placement called deceptive. It occupies
          nothing until AdSense fills it, and the label appears on the same condition. The
          unit is site-display (6069480594), live since AdSense approved the site in 2026-10. -->
-    <div class="rtp-ad-inline">
+    <div class="rtp-ad-inline home-break">
       <span class="rtp-ad-label">Advertisement</span>
       <ins class="adsbygoogle"
            data-ad-client="ca-pub-5952069078178257"
-           data-ad-slot="6069480594"
-           data-ad-format="horizontal"
-           data-full-width-responsive="true"></ins>
+           data-ad-slot="6069480594"></ins>
     </div>
   </div>
 

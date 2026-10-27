@@ -169,7 +169,10 @@ for (let i = 0; i < SHOW_COUNT; i++) {
   emit(encore, 'e');
 }
 
-const { csv, shows, performances, songs } = buildCSV(raw, { quiet: true });
+// Ballads are curated for the real band (goose_feels.json), so here the role
+// table stands in for that curation.
+const feels = new Map(SONGS.filter(s => s[2] === 'ballad').map(s => [s[0], 'Ballad']));
+const { csv, shows, performances, songs } = buildCSV(raw, { quiet: true, feels });
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, csv, 'utf8');
 

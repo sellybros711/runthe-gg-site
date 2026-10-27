@@ -1098,6 +1098,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     background:color-mix(in srgb,var(--teal) 11%, transparent);
     border:1px solid color-mix(in srgb,var(--teal) 30%, transparent);}
   .firsthint b{display:block; color:var(--ink); font-weight:800; margin-bottom:2px;}
+  /* The Add button, opened under the song it adds. */
+  .rowadd{margin:-2px 0 10px; padding:8px 0 2px;}
+  .rowadd .btn{width:100%; min-height:48px; font-size:15px;}
+  .rowadd .commit{margin-top:6px;}
   /* A set that closed itself says so once, in the spot the first-round hint uses. */
   .settled{margin-bottom:10px; padding:10px 13px; border-radius:var(--r-sm);
     font-size:12.5px; font-weight:600; line-height:1.5; color:var(--mut);
@@ -3364,7 +3368,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = '531bd6c6';
+const DATA_VERSION = 'db4b68ea';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -4723,7 +4727,7 @@ function renderDraft(){
           /* WHAT THE PICK LEAVES, which is the sum the player was doing in their
              head for every row: the clock above minus the clock on the row. */
           dead ? '' : `<span class="after">leaves ${fmtClock(Math.max(0, left - lenOf(p)))}</span>`}</span>
-      </button>`;
+      </button>${S.pickedSong === p ? rowAddHTML(p, cfg) : ''}`;
     }).join('');
     /* WHOSE SET I THIS IS. The list below is grouped by the sets of the show
        that was dealt, and the clock above says you are filling Set I, so a
@@ -4844,7 +4848,7 @@ function renderDraft(){
                 true when an open segue blocked the close button and is not
                 true any more. */''}
           ${canFinish
-            ? 'is still going. One of these lands it.'
+            ? 'is still going. Play a song marked Lands the segue to finish it.'
             : `is still going. Nothing here lands it. Keep playing, or close the set
                 and let it go${
                 canRespin(S.sets, si, S.respins, S.closed, S.spent)
@@ -4907,8 +4911,8 @@ function renderDraft(){
                    partner turns up in the next show 73.8% of the time. The
                    game was talking a player out of the thing it most wants
                    them to try. -->
-              <div class="commit">This one segues. Land it next round and you get the points.
-                Most shows have a song that can.</div>` : ''}
+              <div class="commit">This one segues. Next pick, play a song marked
+                Lands the segue and it scores. Most shows have a song that can.</div>` : ''}
             ${/* THE CLOSE BUTTON IS AN EXIT, NOT AN OPTION ON EVERY PICK. Closing early costs points
                   at every threshold measured, and a set with nothing left to fit closes itself, so
                   here it shows only when the player is stuck: nothing fits and a respin could still
@@ -4936,7 +4940,18 @@ function renderDraft(){
   // If nothing in this show fits, the only move left is closing the set — and on
   // a phone that button lives in the sheet. Open it rather than hiding the exit.
   document.body.classList.toggle('sheet-on',
-    !!S.pickedSong || S.sheetForced || !fits.length);
+    S.sheetForced || !fits.length);
+}
+
+/* THE ADD BUTTON SITS UNDER THE SONG YOU TAPPED (2026-10-27, the owner's call). A tap used to slide a
+   sheet over the whole list to ask the same question, so the songs you were weighing went out of
+   sight. Picks are final, so it is still two taps: the song, then this. */
+function rowAddHTML(p, cfg){
+  return `<div class="rowadd">
+    <button class="btn primary" type="button" data-lock>Add to ${esc(cfg.label)} (${fmtClock(lenOf(p))})</button>
+    ${String(p.is_segue) === 'true' ? `<div class="commit">This one segues. Next pick, play a song marked
+      Lands the segue and it scores. Most shows have a song that can.</div>` : ''}
+  </div>`;
 }
 
 // ── result ───────────────────────────────────────────────────────────────────
@@ -7244,7 +7259,7 @@ function pickBlock(perf, si){
     const over = lenOf(perf) - remaining(S.sets, si, S.closed, S.spent);
     return over > 0 ? `${fmtClock(over)} too long` : `${SETS[si].label} is full`;
   }
-  if (wouldStrand(S.sets, si, perf, S.closed, S.spent)) return 'Nothing here lands it';
+  if (wouldStrand(S.sets, si, perf, S.closed, S.spent)) return 'No room left to land its segue';
   return null;
 }
 
@@ -8922,14 +8937,17 @@ app.addEventListener('click', e => {
       S.hintBad = true; renderDraft(); return;
     }
     S.pickedSong = S.pickedSong === s ? null : s;
-    S.hint = S.pickedSong ? `Play it, or pick a different one.` : '';
+    S.hint = '';
     S.hintBad = false;
     renderDraft();
+    // The Add button opens under the row; bring it into view if it landed below the fold.
+    const add = document.querySelector('.rowadd');
+    if (add) add.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     return;
   }
 
 
-  if (e.target.closest('#lockBtn')){ lockIn(); return; }
+  if (e.target.closest('#lockBtn, [data-lock]')){ lockIn(); return; }
   if (e.target.closest('[data-close-set]')){ closeSet(); return; }
   if (e.target.closest('#respinBtn')){ askRespin(); return; }
   if (e.target.closest('#sofarTog')){ S.sofarAll = !S.sofarAll; renderDraft(); return; }

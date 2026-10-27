@@ -638,6 +638,17 @@
   .stack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 </style>
 <script src="/football/fantasy/skin.js?v=1"></script>
+<!-- Consent Mode defaults first (Europe denies all four until the certified CMP answers), then the
+     AdSense tag: the same order as every other page on runthe.gg. Added 2026-10-27 for the one
+     bottom-of-page unit the owner asked for on the Fantasy Challenge. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 </head>
 <body>
 <div class="wrap">
@@ -848,6 +859,28 @@
     </div>
   </section>
 </div>
+
+<!-- THE FANTASY AD (Ads Agent, 2026-10-27, the owner: "one on every screen of the fantasy challenge,
+     at the bottom"). One unit under whichever screen is open, so it is at the bottom of every
+     screen without loading a new ad on each one. Started once per page load, never hidden. 150px
+     below the screen's last button once filled, and 170px of room under it so the floating Live
+     button never sits over it. sized by its column (320x50, 468x60, 728x90); unfilled, it collapses. -->
+<style>
+  .fx-ad{max-width:728px;margin:0 auto;text-align:center}
+  .fx-ad:has(ins[data-ad-status="filled"]){margin:150px auto 0;padding-bottom:170px}
+  .fx-ad .ad-label{display:none;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin:0 0 6px}
+  .fx-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  [data-ad-zone="page"] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  [data-ad-zone="page"]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone="page"] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone="page"] ins.adsbygoogle{width:728px;height:90px} }
+  [data-ad-zone="page"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+</style>
+<div class="fx-ad" data-ad-zone="page">
+  <span class="ad-label">Advertisement</span>
+  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>
+</div>
+<script>(function(){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}})();</script>
 
 <!-- Outside the wrap because it is fixed to the window rather than to the column. Hidden
      until the first kickoff and gone again once the last game is well over, which is asked

@@ -6334,13 +6334,20 @@ window.GA_ID='G-L29P5MRWKE';
     margin:0 0 6px;padding-top:14px;border-top:1px solid var(--line)}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
   /* The menu ad keeps 150px from the buttons above it, but only once it holds an ad. */
-  .rtp-ad-inline[data-ad-zone="menu"]:has(ins[data-ad-status="filled"]){margin-top:150px}
+  .rtp-ad-inline[data-ad-zone]:has(ins[data-ad-status="filled"]){margin-top:150px}
+  .rtp-ad-inline[data-ad-zone="results"]:has(ins[data-ad-status="filled"]){margin-top:170px}
   /* THE MENU AD'S SIZE, fixed (the owner, 2026-10-26: a full-width responsive unit filled half a
      phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
      unfilled unit collapses to nothing. */
-  [data-ad-zone="menu"] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
-  @media (min-width:768px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
-  [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  [data-ad-zone] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  /* SIZED BY THE COLUMN, NOT THE SCREEN (QA, 2026-10-27, site PR on claude/qa-ad-fit). A 768px
+     media query handed the 728x90 to a column that can be narrower (572 to 612px at 768), so it
+     hung past the screen. Each zone is a size container: 320x50, 468x60 from a 468px column, the
+     728x90 from a 728px column. */
+  [data-ad-zone]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone] ins.adsbygoogle{width:728px;height:90px} }
+  [data-ad-zone] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   /* The gameplay screens stay clear for the same reason the pinned strip does. */
   body.rtp-hide-ads .rtp-ad-inline{display:none}
 
@@ -8241,6 +8248,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="ggad-long">One free account, every game. College Football, RunThePitch soccer, RunTheTour golf and more, alongside this one.</span>
         <span class="ggad-short">College Football, RunThePitch &amp; more, one free account</span></span>
       <span class="ggad-go">Play &#8599;</span></a>
+    <!-- THE RESULTS AD (Ads Agent, 2026-10-27, the owner's rule: start screens, results and
+         leaderboards, never in play). Empty until screenAds() fills it, once per finished run,
+         never between a Dynasty's seasons. Emptied the moment the screen closes. -->
+    <div class="rtp-ad-inline" data-ad-zone="results" id="o-adhost"></div>
   </div>
 
   <!-- ===== DYNASTY'S BOSS SEASONS =====
@@ -10004,6 +10015,22 @@ function menuAd(id){
   z.dataset.started='1';
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
+/* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
+   opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
+   board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
+   get none; only a Dynasty that has ended does. adUnitInto() is the only place a live unit is
+   made on this page, and screenAds() the only caller (check-adsense holds both). */
+let resultsAdFor=null;
+function adUnitInto(host){
+  host.innerHTML='<span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+function screenAds(id){
+  const res=$('o-adhost'); if(!res) return;
+  if(id!=='s-over'){ res.innerHTML=''; return; }
+  const done=!!(run&&run.outcome)&&!(run.dynasty&&!run.fired);
+  if(done&&!res.firstChild&&resultsAdFor!==run){ resultsAdFor=run; adUnitInto(res); }
+}
 let boardFrom='s-intro';
 function show(id){
   if(id==='s-board'){
@@ -10027,6 +10054,7 @@ function show(id){
   if(id!=='s-bgame'&&typeof bossStop==='function') bossStop();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   menuAd(id);
+  screenAds(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
      (a finished run, a bailed draft, the leaderboard), and it carries two bits of state
