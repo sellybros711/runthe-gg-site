@@ -1062,6 +1062,13 @@ export class InPlay {
     // the side away from where the throw comes from, so the plate and the throw are one look)
     const thP = cam === 'plate' && plan.segs.find((sg) => sg.kind === 'throw' && sg.t1 > ed[j0].s0 && sg.t0 < ed[j1].s1 && Math.hypot(sg.b.x, sg.b.y) < 12);
     this.plateHigh = thP ? (thP.a.x > 0 ? -1 : 1) : 0;
+    // (and one with a runner's moment at another bag in it, the hitter safe at first as a run scores: the
+    // low camera by first base has that bag beside it, out of its frame; from high behind the plate both are in)
+    if (cam === 'plate' && !this.plateHigh) {
+      const s0 = ed[j0].s0 - 0.85, s1 = ed[j1].s1 + 0.45;
+      const other = plan.runners.some((r) => { const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.from !== r.to ? r.arrive : null; const b = r.out ? r.outBase : r.to; return tq != null && tq >= s0 && tq <= s1 && b >= 1 && b <= 3; });
+      if (other) this.plateHigh = -1;
+    }
     // every camera is running all along, the cut only picks one: the move is worked out from a little
     // before the shot to a little after (as far as the smoothing reaches), so a shot opens on a camera
     // already in its move, not one jolted into it
@@ -1358,7 +1365,7 @@ export class InPlay {
       // plate; low by first base the throw would come from behind it)
       // (decided once a shot, track: a camera does not fly across the field mid shot)
       const hs = this.plateHigh || 0;
-      pos = hs ? { x: hs * 12, y: -46, z: 26.5 } : { ...LOW_FIRST };
+      pos = hs ? { x: hs * 14, y: -72, z: 40 } : { ...LOW_FIRST };
       const home = plan.runners.filter((r) => r.to === 4 || (r.out && r.outBase === 4));
       pts.length = 0;
       pts.push({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 6 });
@@ -1366,8 +1373,8 @@ export class InPlay {
       for (const r of home) { const q = r.track.at(s); if (Math.hypot(q.x, q.y) < 70) coming.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }); }
       pts.push(...coming);
       if (ball && Math.hypot(ball.x, ball.y) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
-      // (from high behind the plate, third and first are in reach too)
-      const near = keys.filter((k) => Math.hypot(k.x, k.y) < (hs ? 100 : 75));
+      // (from high behind the plate, third, first and second are in reach too)
+      const near = keys.filter((k) => Math.hypot(k.x, k.y) < (hs ? 135 : 75));
       pts.push(...near);
       // (what it must hold: the runners coming in to the plate, and the moments in its reach; one at
       // first base is not this camera's)
