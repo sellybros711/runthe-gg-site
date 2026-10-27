@@ -25,7 +25,9 @@
  * The first pitch of every outing is a perfect power and a perfect release (the combo meter's stitches
  * and the ball's sparkle are made and freed once an outing); the run fails if none came off.
  * A count is held to the first measured outing's value (the first outing warms the caches): any later
- * outing above it fails. The heap is held to HEAP_SLACK over its early mean.
+ * outing above it fails. The heap is held to HEAP_PER_OUTING a outing from outing 2 on, two ways: the
+ * least squares slope over every sample, and the late mean over the early mean across the outings
+ * between them.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,9 +48,13 @@ if (argv.includes('--resume')) {
 }
 // (the log of each outing's sample, as it is taken: never read back, see the header)
 const LOG = openCheckpoint('check-leak', { OUTINGS });
-// the heap after a GC may wander a little (the engine's own caches, the JIT): this much over the early
-// outings' mean is a leak
-const HEAP_SLACK = 1.5e6;
+// the heap after a GC, held per outing (the owner, 2026-10-27: it grew 1 to 2 MB an outing, a phone
+// gets laggy over a session). The grade's caches keyed by the tired spread and the aim point kept every
+// pitch, and api.js kept every practice outing; with both bounded a session measured about 0.08 MB an
+// outing (outings 2 to 4 at 23.61, 23.70, 23.76 MB: the JIT's code and the check's own evaluates, not
+// the game). The ceiling is that plus a margin for the JIT on a busy machine. Never raise it to pass:
+// find what grew (a heap snapshot after outing 2 and after outing N, diffed by retainer).
+const HEAP_PER_OUTING = 0.25e6;
 const COUNTS = ['geometries', 'textures', 'programs', 'objects', 'fpObjects', 'dom', 'listeners', 'raf', 'timeouts', 'intervals'];
 
 function loadPlaywright() {
@@ -331,11 +337,20 @@ if (rows.length > 2) {
   for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) if ((b[k] || 0) !== (a[k] || 0)) d.push([k, (b[k] || 0) - (a[k] || 0)]);
   if (d.length) console.log('  DOM nodes by place, outing 2 to the end: ' + d.sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 8).map(([k, v]) => k + ' ' + (v > 0 ? '+' : '') + v).join(', '));
 }
-const early = rows.slice(1, 3).reduce((a, r) => a + r.heap, 0) / Math.min(2, rows.length - 1);
-const lateHeap = rows.slice(-2).reduce((a, r) => a + r.heap, 0) / 2;
-const hb = lateHeap - early > HEAP_SLACK;
+// (from outing 2, the first measured after the warm caches; x is the outing, the end sample one past the last)
+const held = rows.slice(1).map((r, i) => [i + 1, r.heap]);
+const xm = held.reduce((a, [x]) => a + x, 0) / held.length, ym = held.reduce((a, [, y]) => a + y, 0) / held.length;
+const sxx = held.reduce((a, [x]) => a + (x - xm) ** 2, 0);
+const slope = sxx > 0 ? held.reduce((a, [x, y]) => a + (x - xm) * (y - ym), 0) / sxx : 0;
+const eRows = held.slice(0, 2), lRows = held.slice(-2);
+const mean = (a, k) => a.reduce((s, r) => s + r[k], 0) / a.length;
+const early = mean(eRows, 1), lateHeap = mean(lRows, 1), span = Math.max(1, mean(lRows, 0) - mean(eRows, 0));
+const perOuting = (lateHeap - early) / span;
+const hb = held.length < 3 || slope > HEAP_PER_OUTING || perOuting > HEAP_PER_OUTING;
 if (hb) fails++;
-console.log(`  ${hb ? 'FAIL' : 'ok  '} heap       ${(early / 1e6).toFixed(2)} MB early, ${(lateHeap / 1e6).toFixed(2)} MB late (slack ${(HEAP_SLACK / 1e6).toFixed(1)} MB), ${((lateHeap - early) / Math.max(1, pitchNo) * 100 / 1e3).toFixed(1)} KB per 100 pitches`);
+console.log(`  ${hb ? 'FAIL' : 'ok  '} heap       ${(slope / 1e6).toFixed(3)} MB an outing by the slope, ${(perOuting / 1e6).toFixed(3)} by the means ` +
+  `(${(early / 1e6).toFixed(2)} MB early, ${(lateHeap / 1e6).toFixed(2)} MB late; ceiling ${(HEAP_PER_OUTING / 1e6).toFixed(2)} MB an outing), ` +
+  `${((lateHeap - early) / Math.max(1, pitchNo) * 100 / 1e3).toFixed(1)} KB per 100 pitches${held.length < 3 ? ' (too few outings to hold: run 3 or more)' : ''}`);
 for (const e of errors.slice(0, 5)) console.log('  page error:', e);
 // the effects were made and freed: a perfect and perfect pitch each outing, each with its sparkle
 const pBad = perfects === 0 || sparkles < perfects;
