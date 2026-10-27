@@ -818,7 +818,7 @@ export class InPlay {
     A.faced = A.faced || 0;
     if (A.faced >= 9) return false;
     const tr = plan.fielders[++A.faced];
-    tr.face = this.faceTable((t) => tr.at(t), 0, plan.dur + 3);
+    tr.face = this.faceTable((t) => tr.at(t), 0, plan.dur + 3, (t) => plan.ballAt(t).by === A.faced);
     return true;
   }
 
@@ -828,12 +828,15 @@ export class InPlay {
       the back of him (from facing the ball to facing home, the short way round flipping sides as the ball
       crosses): standing still he turned 85 degrees in a frame, both feet skating round him
       (check-jolt.mjs, the shortstop and the pitcher on throws home). Now he comes round at a person's pace. */
-  faceTable(at, t0, t1) {
+  faceTable(at, t0, t1, holds = null) {
     const dt = 1 / 60, n = Math.ceil((t1 - t0) / dt) + 2, out = new Float32Array(n), step = TURN_MAX * dt;
     let yaw = this.faceTrail(at(t0), t0);
     for (let i = 0; i < n; i++) {
-      const t = t0 + i * dt;
-      yaw += clamp(angDiff(yaw, this.faceTrail(at(t), t)), -step, step);
+      const t = t0 + i * dt, raw = this.faceTrail(at(t), t);
+      // (while he holds the ball his facing is not this one, poseFielder: it waits where the old one
+      // would be, so the moment he lets it go he is where he was before, as the throw's turn expects)
+      if (holds && holds(t)) yaw = raw;
+      else yaw += clamp(angDiff(yaw, raw), -step, step);
       out[i] = yaw;
     }
     return (t) => { const x = clamp((t - t0) / dt, 0, n - 1.001), i = Math.floor(x); return out[i] + (out[i + 1] - out[i]) * (x - i); };
