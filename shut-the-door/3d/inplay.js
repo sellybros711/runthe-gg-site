@@ -69,6 +69,8 @@ const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).hre
 const OF = [7, 8, 9];
 // the base umpires' kit: the plate umpire's own (assets/umpire.glb's suit, its shirt and slacks read off
 // its texture: a navy black shirt, charcoal grey slacks), his black cap and shoes
+// the fastest a base umpire turns his body round (radians a second: a half turn in 0.8 s, on planted feet)
+const UMP_TURN = 4;
 const UMP_KIT = { base: new THREE.Color('#05070d'), pants: new THREE.Color('#2d2f33'), trim: new THREE.Color('#05070d'), belt: new THREE.Color('#0a0a0c'), cap: new THREE.Color('#0a0a0c') };
 const CYCLE = { fielder: 13.5, runner: 14.5 };          // feet run per full stride cycle (two steps)
 
@@ -229,7 +231,7 @@ export class InPlay {
     const T1 = plan.dur + 3, trot = plan.kind === 'hr';
     for (let n = 1; n <= 9; n++) { const tr = plan.fielders[n]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); }
     for (const r of plan.runners) r.phase = this.crew.phaseTable((t) => r.track.at(t).spd, 0, T1, trot);
-    if (plan.umps) for (const k of [1, 2, 3]) { const tr = plan.umps[k]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); }
+    if (plan.umps) for (const k of [1, 2, 3]) { const tr = plan.umps[k]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); tr.face = this.umpFace(tr, T1); }
   }
 
   /** The play at plan time s (seconds after contact): everyone placed and posed, the ball, the cut. */
@@ -813,14 +815,32 @@ export class InPlay {
     return Math.hypot(x, y) > 1e-6 ? Math.atan2(x, y) : faceToward(p, plan.ballAt(s));
   }
 
+  /** A base umpire's facing through the play, as a table (a pure function of plan time, made once a play):
+      the ball as he watches it (faceTrail), his heading while he runs, and toward his bag as he sets for a
+      call, all followed at no more than UMP_TURN radians a second. He turns on planted feet, so faster his
+      feet skated round him; the raw watching facing swung through his back in a frame as a throw passed. */
+  umpFace(tr, t1) {
+    const dt = 1 / 60, n = Math.ceil(t1 / dt) + 2, out = new Float32Array(n), step = UMP_TURN * dt;
+    const want = (t) => {
+      const st = tr.at(t), moving = smooth((st.spd - 3) / 8);
+      let y = this.faceTrail(st, t);
+      if (st.head != null && moving > 0) y += angDiff(y, st.head) * moving;
+      const call = tr.acts.find((a) => a.kind === 'call' && t > a.t - 0.4 && t < a.t + 2.2);
+      if (call) y += angDiff(y, heading(st, BASE[call.base])) * ramp(t, call.t - 0.4, call.t);
+      return y;
+    };
+    let yaw = want(0);
+    for (let i = 0; i < n; i++) { yaw += clamp(angDiff(yaw, want(i * dt)), -step, step); out[i] = yaw; }
+    return (t) => { const x = clamp(t / dt, 0, n - 1.001), i = Math.floor(x); return out[i] + (out[i + 1] - out[i]) * (x - i); };
+  }
+
   /** A base umpire at plan time s: set at the pitch (hands toward his knees), up as the ball is hit, his
       eyes and his body on the ball (faceTrail, as a fielder's), running to his calling spot facing where
       he goes, then the call (fielders.js signalArms), held a second and let go. */
   poseUmp(k, f, s) {
     const plan = this.active.plan, tr = plan.umps[k], st = tr.at(s);
     const moving = smooth((st.spd - 3) / 8);
-    const watch = this.faceTrail(st, s);
-    const yaw = st.head != null && moving > 0 ? watch + angDiff(watch, st.head) * moving : watch;
+    const yaw = tr.face(s);
     const b = plan.ballAt(s);
     const set = 1 - ramp(s, 0.1, 0.55);
     const spec = { run: { phase: this.crew.clips ? tr.phase.at(s) : 2 * Math.PI * st.run / CYCLE.fielder, amp: clamp(st.spd / 26, 0, 1.1) }, crouch: 0.3 * set + 0.04, lean: 0.38 * set + 0.05, idleT: s + k * 1.37, look: { x: b.x, y: b.y, z: b.z }, lookW: 1 };
@@ -828,9 +848,8 @@ export class InPlay {
     if (call) {
       const d = s - call.t;
       spec.signal = { kind: call.call, k: clamp(d / 0.5, 0, 1), w: ramp(s, call.t - 0.02, call.t + 0.17) * (1 - ramp(s, call.t + 1.6, call.t + 2.1)) };
-      // (he calls it toward the play: the bag, his body square to it)
     }
-    f.place(st.x, st.y, call && s < call.t + 2.2 ? turnTo(yaw, heading(st, BASE[call.base]), ramp(s, call.t - 0.4, call.t)) : yaw, {});
+    f.place(st.x, st.y, yaw, {});
     f.pose(spec);
   }
 

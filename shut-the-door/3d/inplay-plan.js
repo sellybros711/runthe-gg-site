@@ -411,8 +411,17 @@ function planUmps(p, go) {
     // where he sees the bag, the runner's foot and the glove at once; at second, on the side he is already on)
     const R = rad(bag), score = (q) => ((q.x - bag.x) * bag.x + (q.y - bag.y) * bag.y) / R + 0.5 * Math.sign(q.y - Math.abs(q.x));
     const spot = pl.base !== 2 ? (score(c1) >= score(c2) ? c1 : c2) : dist(from, c1) <= dist(from, c2) ? c1 : c2;
-    const t0 = Math.max(go, pl.s - 3.2);
-    tr.arrive(t0, spot, Math.max(t0 + 0.4, pl.s - 0.45), { toRest: true });
+    const t0 = Math.max(go, pl.s - 3.2), t1 = Math.max(t0 + 0.4, pl.s - 0.45);
+    // (no time for the whole way: as far toward it as he can go and still pull up before the call. Run
+    // through, he stopped dead from a full run in a frame, check-jolt.mjs)
+    const dd = dist(from, spot);
+    let go2 = spot;
+    if (runTime(dd, UMP.v, UMP.a, true, true) > t1 - t0) {
+      let lo = 0, hi = dd;
+      for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (runTime(m, UMP.v, UMP.a, true, true) <= t1 - t0) lo = m; else hi = m; }
+      go2 = lerp(from, spot, lo / Math.max(1e-6, dd));
+    }
+    if (dist(from, go2) > 0.5) tr.arrive(t0, go2, t1, { toRest: true });
     tr.act(pl.s, 'call', { call: pl.call, base: pl.base });
     calls.push({ base: pl.base, s: pl.s, call: pl.call, at: tr.at(pl.s) });
   }
