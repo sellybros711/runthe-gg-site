@@ -464,40 +464,63 @@ async function playOuting(page, o) {
           const m = document.getElementById('m-meter').getBoundingClientRect(), b = document.querySelector('#m-arsenal .pitch').getBoundingClientRect();
           const t = document.getElementById('m-throw').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
           const offZone = m.right <= z.left + 1 || m.left >= z.right - 1 || m.bottom <= z.top + 1 || m.top >= z.bottom - 1;
-          return { over: m.top <= b.top + 1 && m.bottom >= t.bottom - 1 && offZone, h: m.height, effRow: !document.querySelector('#m-meter .rm-eff').hidden };
+          const col = document.querySelector('.rm-col'), ring = document.querySelector('.rm-ring');
+          return { over: m.top <= b.top + 1 && m.bottom >= t.bottom - 1 && offZone, h: m.height, effRow: !document.querySelector('#m-meter .rm-s-pow').hidden,
+            col: !!col && !col.hidden, ringHidden: !ring || ring.hidden };
         });
         ok(lay.over && lay.h >= 90, '5 the meter is one panel over the pitch buttons and the throw button, off the zone (' + Math.round(lay.h) + ' px tall)');
-        ok(lay.effRow === eff, '5 the effort bar shows only when STD_METER.EFFORT is true (' + eff + ')');
+        ok(lay.effRow === eff && lay.col === eff, '5 the power column and its step show only when STD_METER.EFFORT is true (' + eff + ')');
+        /* the combo (the owner, 2026-10-26): power on a column beside the zone, off the zone, the hitter
+           and the plate, thumb wide and on screen; the ring is not there until power is set */
+        ok(!eff || lay.ringHidden, '5 the ring waits for the power stop');
+        if (eff) {
+          const cl = await page.evaluate(() => {
+            const c = document.querySelector('.rm-col').getBoundingClientRect(), z = document.querySelector('#m-aim .aim-zone').getBoundingClientRect();
+            const hit = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+            let boxes = [];
+            try {
+              const st = window.STD_STAGE && window.STD_STAGE.current, cv = document.getElementById('m-canvas').getBoundingClientRect();
+              if (st && st.figureBoxes) { const fb = st.figureBoxes(800); boxes = ['batter', 'plate'].map((k) => fb[k] && { name: k, left: cv.left + fb[k].x0, right: cv.left + fb[k].x1, top: cv.top + fb[k].y0, bottom: cv.top + fb[k].y1 }).filter(Boolean); }
+            } catch (e) {}
+            const R = (b) => [b.left, b.top, b.right, b.bottom].map(Math.round).join(',');
+            return { at: 'column ' + R(c) + ' zone ' + R(z) + boxes.map((b) => ' ' + b.name + ' ' + R(b)).join(''), w: c.width, h: c.height, onZone: hit(c, z), on: boxes.filter((b) => hit(c, b)).map((b) => b.name), inside: c.left >= 15.5 && c.right <= innerWidth - 15.5,
+              hud: document.querySelector('.rm-col').hasAttribute('data-hud') };
+          });
+          ok(cl.w >= 38 && cl.h >= 140 && !cl.onZone && cl.on.length === 0 && cl.inside && cl.hud,
+            '5 the power column is beside the zone, off the hitter and the plate, on screen and thumb wide (' + Math.round(cl.w) + 'x' + Math.round(cl.h) + (cl.on.length ? ', over ' + cl.on.join(' and ') : '') + (cl.onZone ? ', over the zone' : '') + (cl.on.length || cl.onZone ? '; ' + cl.at : '') + ')');
+        }
       }
       if (eff) {
         const say0 = await page.textContent('#m-say');
         if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
         await page.click('#m-meter');
         await page.waitForTimeout(450);
+        if (freeTap) ok(await page.evaluate(() => !document.querySelector('.rm-ring').hidden), '5 the ring comes up once power is set');
       }
-      // the step line under the meter says how to stop it (the owner, 2026-10-22)
+      // the step line under the meter says how to stop it (the owner, 2026-10-26: the ring)
       const say = await page.textContent('#m-say');
-      if (say !== 'stop it in the bright band') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
+      if (say !== 'tap when it hits the circle') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
       if (freeTap && !SHOTS) {
-        /* the smooth sweep (the owner, 2026-10-26: "the meter is laggy"): while the needle runs the mound
-           draws nothing (stage.js hush) and the needle moves by transform only, never left or width */
+        /* the smooth sweep (the owner, 2026-10-26: "the meter is laggy"): while the ring runs the mound
+           draws nothing (stage.js hush) and the ring moves by transform only, never its size */
         const sw = await page.evaluate(() => new Promise((res) => {
-          const d0 = window.STD_CHECK_SKIPPED || 0, n = document.querySelector('#m-meter .rm-needle'), seen = new Set();
+          const d0 = window.STD_CHECK_SKIPPED || 0, n = document.querySelector('.rm-ring .rm-rmove'), seen = new Set();
           let k = 0;
           const f = () => { seen.add(n.style.transform); if (++k < 20) requestAnimationFrame(f); else res({ draws: (window.STD_CHECK_SKIPPED || 0) - d0, left: n.style.left, moved: seen.size }); };
           requestAnimationFrame(f);
         }));
-        ok(sw.draws === 0 && !sw.left && sw.moved > 1, '5 the needle sweeps by transform with the mound still (' + sw.draws + ' draws, ' + sw.moved + ' places in 20 frames)');
+        ok(sw.draws === 0 && !sw.left && sw.moved > 1, '5 the ring closes by transform with the mound still (' + sw.draws + ' draws, ' + sw.moved + ' places in 20 frames)');
       }
       await page.click('#m-meter');
       if (freeTap) {
-        /* the stop locks: the needle holds where it was stopped, the word goes up, and the call
+        /* the stop locks: the ring holds where it was stopped, the word goes up, and the call
            carries the cell, the free aim's at, the release q (and e with effort) */
-        const n0 = await page.evaluate(() => document.querySelector('#m-meter .rm-needle').style.transform);
+        const n0 = await page.evaluate(() => document.querySelector('.rm-ring .rm-rmove').style.transform);
         await page.waitForTimeout(150);
-        const st = await page.evaluate(() => ({ n1: document.querySelector('#m-meter .rm-needle').style.transform, done: document.getElementById('m-meter').classList.contains('is-done'),
+        const st = await page.evaluate(() => ({ colGone: document.querySelector('.rm-col').hidden, n1: document.querySelector('.rm-ring .rm-rmove').style.transform, done: document.getElementById('m-meter').classList.contains('is-done'),
           word: document.querySelector('#m-meter .rm-word').textContent, call: (window.__calls || []).slice(-1)[0] }));
-        ok(st.done && !!n0 && st.n1 === n0 && st.word.length > 0, '5 the meter locks on the stop: the needle holds at ' + n0 + ' and says "' + st.word + '"');
+        ok(st.colGone, '5 the power column goes once the release is stopped, so the pitch has the field');
+        ok(st.done && !!n0 && st.n1 === n0 && st.word.length > 0, '5 the meter locks on the stop: the ring holds at ' + n0 + ' and says "' + st.word + '"');
         const c = st.call || {};
         ok(c.cell === cellNo && Array.isArray(c.at) && c.at.length === 2 && typeof c.q === 'number' && c.q >= 0 && c.q <= 1 && (eff ? typeof c.e === 'number' : !('e' in c)),
           '5 the call carries the cell, at, q' + (eff ? ' and e' : '') + ' (' + JSON.stringify(c) + ')');
