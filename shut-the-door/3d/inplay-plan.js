@@ -356,6 +356,160 @@ export function planPlay(pr, o = {}) {
   return p;
 }
 
+/** A steal (rules 7, CONTRACT.md 5i: pr.steal, on a ball or a strike), staged as a play from the catch:
+    the runner already gone with the pitch, the catcher's throw down (his own pop time, catch to glove),
+    the cover man on the bag, the slide and the tag, safe or out by the engine's margin (seconds, plus is
+    safe by). Plan time 0 is the catch. Nothing here decides anything: the engine's result and margin
+    are what it shows. Returns a plan of the same shape planPlay returns (kind 'steal'). */
+export function planSteal(pr, o = {}) {
+  const st = pr.steal, id = o.id || (pr.drawn && pr.drawn.id) || 'x';
+  const from = st.from, to = st.to, out = st.result === 'out';
+  const F = spots(o.bats || 'R');
+  const p = { kind: 'steal', label: 'steal', bb: null, ev: null, la: null, spray: to === 3 ? -30 : 0, guess: [], events: [], segs: [], fielders: {}, runners: [], notes: [], flight: null };
+  const T = {};
+  for (let n = 1; n <= 9; n++) T[n] = new Track(F[n], { v: SPEED(n).v, a: SPEED(n).a });
+  p.fielders = T;
+  const ctx = { p, T, F, pr, o, id, kind: 'steal', label: 'steal', moves: [], spray: p.spray, bats: o.bats || 'R', outs0: 0 };
+  // the catcher: the ball in his glove at 0, up and throwing; the ball in the cover man's glove at his
+  // pop time (Savant's, catch to glove at second; a throw to third is shorter)
+  const home = { x: 0, y: -1.5 }, bag = basePoint(to, 'bag');
+  const pop = clamp(st.catcher && st.catcher.pop ? st.catcher.pop : 2.0, 1.75, 2.3) * (to === 3 ? 0.8 : 1);
+  const fly = dist(home, bag) / 122 + 0.05, rel = pop - fly;
+  p.segs.push({ kind: 'held', t0: 0, by: 2, t1: null });
+  T[2].act(0, 'catch_throw', { from: home });
+  const cov = st.cover || (to === 3 ? 5 : 4);
+  // (the cover man broke for the bag when the runner went, with the pitch: at the catch he is well on
+  // his way, and on the bag a beat before the ball)
+  T[cov] = p.fielders[cov] = new Track(lerp(F[cov], basePoint(to, 'bag'), 0.45), { v: SPEED(cov).v, a: SPEED(cov).a });
+  const onBag = T[cov].arrive(0, basePoint(to, 'bag'), Math.max(0.6, pop - 0.35), { toRest: true });
+  T[cov].act(onBag, 'cover', { base: to });
+  ctx.cover = { [cov + ':' + to]: onBag };
+  throwBall(ctx, 2, cov, rel, home, { ...bag, z: 2.2 }, fly);
+  const tBall = rel + fly;
+  // the runner: off with the pitch (at the catch he is a third of the way), at the bag by the margin
+  const lead = leadOff(from), path = basePath(from, to);
+  const tr = new Track(lerp(lead, BASE[to], 0.3), { v: 27, a: 16 });
+  const margin = Number.isFinite(st.margin) ? st.margin : (out ? -0.1 : 0.1);
+  const arrive = Math.max(0.9, tBall - margin);
+  tr.arrive(0, path[path.length - 1], arrive, { toRest: true, v: 29 });
+  const r = { from, to, track: tr, out, batter: false, safeAt: out ? null : to, arrive };
+  // the tag: on him as he gets there, or the instant the ball does
+  const tagAt = Math.max(arrive, tBall) + 0.03;
+  T[cov].act(tagAt, 'tag', { base: to, runner: from });
+  if (out) { r.outAt = tagAt; r.outBase = to; p.events.push({ s: tagAt, kind: 'out', base: to, runner: from }); }
+  p.runners.push(r);
+  // whoever else is on stays on his bag
+  for (const b of [1, 2, 3]) if (b !== from && pr.bases != null && (pr.bases & (1 << (b - 1))) && b !== to) {
+    const t2 = new Track(leadOff(b), { v: 27, a: 16 });
+    t2.run(0.3, [lerp(leadOff(b), BASE[b], 0.5)], { v: 8, toRest: true });
+    p.runners.push({ from: b, to: b, track: t2, out: false, batter: false, safeAt: b, arrive: t2.free });
+  }
+  ctx.firstTouch = { s: 0, n: 2, how: 'catch', at: home, fell: false };
+  ctx.lastHolder = cov;
+  for (let n = 1; n <= 9; n++) T[n].settle();
+  for (const x of p.runners) x.track.settle();
+  // the cut: the pitcher's view a beat, then the high home on the throw down and the bag, one shot; a
+  // bang bang one slowed at the tag
+  const CUT = 0.2, end = tagAt + 1.1;
+  const pieces = [{ s0: 0, s1: CUT, cam: 'pitcher', rate: 1 }, { s0: CUT, s1: end, cam: 'follow', rate: 1, m: tagAt }];
+  if (Math.abs(margin) < 0.12) {
+    const out2 = [];
+    for (const pc of pieces) {
+      const a = tagAt - 0.3, b = tagAt + 0.15;
+      if (pc.cam === 'pitcher' || b <= pc.s0 || a >= pc.s1) { out2.push(pc); continue; }
+      out2.push({ ...pc, s1: a }, { ...pc, s0: a, s1: b, rate: 0.38 }, { ...pc, s0: b });
+    }
+    pieces.splice(0, pieces.length, ...out2);
+    p.decisive = { s: tagAt, kind: 'bang' };
+    p.events.push({ s: tagAt, kind: 'crowd', cue: 'big' });
+  } else p.decisive = null;
+  p.edit = pieces;
+  p.realDur = pieces.reduce((acc, x) => acc + (x.s1 - x.s0) / x.rate, 0);
+  p.dur = pieces[pieces.length - 1].s1;
+  p.resolveAt = tagAt + 0.05;
+  p.steal = { from, to, out, tagAt, tBall, arrive, margin };
+  p.events.sort((a, b) => a.s - b.s);
+  p.segs.sort((a, b) => a.t0 - b.t0);
+  p.ballAt = (s) => ballAt(p, s);
+  p.outcome = outcomeOf(ctx);
+  return p;
+}
+
+/** A pickoff throw (rules 7, CONTRACT.md 5i: { base, out, balk, margin, runs? } with the bases before
+    it), staged from the pitcher's move: he steps off and throws over, the runner dives back, the man on
+    the bag tags, and the engine's call stands (margin seconds, plus is safe by). On a balk every runner
+    then moves up a base. Plan time 0 is his move. Returns a plan of planPlay's shape (kind 'pickoff'). */
+export function planPickoff(po, o = {}) {
+  const base = po.base, out = !!po.out, id = o.id || 'po' + (po.n ?? 0);
+  const F = spots(o.bats || 'R');
+  const cov = base === 1 ? 3 : base === 3 ? 5 : (o.bats === 'L' ? 6 : 4);
+  // (the man holding a runner on is on the bag already; a middle infielder breaks in behind him)
+  if (base === 1) F[3] = { x: BASE[1].x - 1.5, y: BASE[1].y + 1.5 };
+  if (base === 3) F[5] = { x: BASE[3].x + 6, y: BASE[3].y - 3 };
+  if (base === 2) F[cov] = lerp(F[cov], BASE[2], 0.5);
+  const p = { kind: 'pickoff', label: 'pickoff', bb: null, ev: null, la: null, spray: base === 3 ? -40 : base === 1 ? 40 : 0, guess: [], events: [], segs: [], fielders: {}, runners: [], notes: [], flight: null };
+  const T = {};
+  for (let n = 1; n <= 9; n++) T[n] = new Track(F[n], { v: SPEED(n).v, a: SPEED(n).a });
+  p.fielders = T;
+  const ctx = { p, T, F, o, id, kind: 'pickoff', label: 'pickoff', moves: [], spray: p.spray, bats: o.bats || 'R', outs0: 0 };
+  const bag = basePoint(base, 'bag'), rubber = { x: 0, y: 59.5 };
+  const onBag = base === 1 ? 0 : T[cov].arrive(0.1, bag, 0.75, { toRest: true });
+  if (base !== 1) T[cov].act(onBag, 'cover', { base });
+  const fly = dist(rubber, bag) / 115 + 0.05, rel = Math.max(0.55, onBag - fly + 0.25);
+  p.segs.push({ kind: 'held', t0: 0, by: 1, t1: null });
+  T[1].act(0, 'set');
+  throwBall(ctx, 1, cov, rel, rubber, { ...bag, z: 1.6 }, fly);
+  const tBall = rel + fly;
+  // the runner: a lead off the bag, back on the move, a dive in to beat it (or not, by the margin)
+  const lead = lerp(BASE[base], BASE[Math.min(4, base + 1)], base === 3 ? 0.14 : 0.15);
+  const tr = new Track(lead, { v: 27, a: 16 });
+  const margin = Number.isFinite(po.margin) ? po.margin : (out ? -0.08 : 0.25);
+  const back = Math.max(0.5, tBall - margin);
+  tr.arrive(0.2, BASE[base], back, { toRest: true, v: 24 });
+  const r = { from: base, to: out ? -1 : base, track: tr, out, batter: false, safeAt: out ? null : base, arrive: back };
+  const tagAt = Math.max(back, tBall) + 0.03;
+  T[cov].act(tagAt, 'tag', { base, runner: base });
+  if (out) { r.outAt = tagAt; r.outBase = base; p.events.push({ s: tagAt, kind: 'out', base, runner: base }); }
+  p.runners.push(r);
+  // the others: a step off and back. A balk moves every runner up a base once it is called.
+  const bases = o.basesBefore || (1 << (base - 1));
+  for (const b of [1, 2, 3]) if (b !== base && (bases & (1 << (b - 1)))) {
+    const t2 = new Track(leadOff(b), { v: 27, a: 16 });
+    t2.run(0.3, [lerp(leadOff(b), BASE[b], 0.6)], { v: 8, toRest: true });
+    p.runners.push({ from: b, to: b, track: t2, out: false, batter: false, safeAt: b, arrive: t2.free });
+  }
+  if (po.balk) for (const x of p.runners) {
+    if (x.out) continue;
+    const nx = Math.min(4, x.from + 1);
+    x.arrive = x.track.run(Math.max(x.track.free, tagAt + 0.5), [BASE[nx]], { v: 20, toRest: true });
+    x.to = nx; x.safeAt = nx < 4 ? nx : null;
+    if (nx === 4) x.scoreAt = x.arrive;
+  }
+  ctx.firstTouch = { s: 0, n: 1, how: 'catch', at: rubber, fell: false };
+  ctx.lastHolder = cov;
+  for (let n = 1; n <= 9; n++) T[n].settle();
+  for (const x of p.runners) x.track.settle();
+  // (a balk: the call and the first strides of the walk up; the diamond on the scorebar has the rest)
+  const end = tagAt + (po.balk ? 2.6 : 1.0);
+  const pieces = [{ s0: 0, s1: end, cam: 'follow', rate: 1, m: tagAt }];
+  if (Math.abs(margin) < 0.12) {
+    const a = tagAt - 0.3, b = tagAt + 0.15;
+    pieces.splice(0, 1, { ...pieces[0], s1: a }, { ...pieces[0], s0: a, s1: b, rate: 0.38 }, { ...pieces[0], s0: b });
+    p.decisive = { s: tagAt, kind: 'bang' };
+    p.events.push({ s: tagAt, kind: 'crowd', cue: 'big' });
+  } else p.decisive = null;
+  p.edit = pieces;
+  p.realDur = pieces.reduce((acc, x) => acc + (x.s1 - x.s0) / x.rate, 0);
+  p.dur = pieces[pieces.length - 1].s1;
+  p.resolveAt = tagAt + 0.05;
+  p.pickoff = { base, out, tagAt, tBall, back, margin, balk: !!po.balk };
+  p.events.sort((a, b) => a.s - b.s);
+  p.segs.sort((a, b) => a.t0 - b.t0);
+  p.ballAt = (s) => ballAt(p, s);
+  p.outcome = outcomeOf(ctx);
+  return p;
+}
+
 /** Bases occupied before the play, from the moves and the bases after (a runner who did not move
     is still on his base). */
 export function basesBefore(pr) {
