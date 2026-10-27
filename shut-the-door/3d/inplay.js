@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=14';
-import { Crew } from './fielders.js?v=5';
+import { Crew } from './fielders.js?v=6';
 import { buildBallpark } from './ballpark.js?v=15';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
@@ -649,6 +649,25 @@ export class InPlay {
           spec.lean = (spec.lean || 0) + c.dLean * takeW; spec.crouch = (spec.crouch || 0) + c.dCrouch * takeW; spec.wide = Math.max(spec.wide || 0, c.wide * takeW);
         }
       }
+      // the tag's lunge is a step, never a slide. The fit moves his body to the runner between the catch and
+      // the tag (a bang bang tag gives it a tenth of a second); with both feet on the dirt they went with it,
+      // planted and sliding (check-jolt.mjs). So the foot away from the runner stays where it stood until the
+      // tag is down and then comes up under him, and the other steps out toward the runner, off the dirt.
+      const tagTk = dive ? null : takes.find((x) => x.key.kind === 'tag' && s > x.key.t + 1e-6 && s < x.t + 0.5);
+      const cT = tagTk && this.carriedFit(n, f, tagTk.key, tagTk.t);
+      if (cT && cT.yaw != null && Math.hypot(cT.dx, cT.dy) > 0.05) {
+        const t0 = tagTk.key.t, t1 = tagTk.t;
+        // (how much of the fit's move he has made now: the take's weight up to the tag, all of it after)
+        const k = take && take.key === tagTk.key ? takeW : s > t1 ? Math.exp(-Math.max(0, st.run - cT.run) / 4) : 0;
+        const p = ramp(s, t0, t1), q = ramp(s, t1 + 0.15, t1 + 0.4);
+        const lead = -cT.dx * Math.cos(cT.yaw) + cT.dy * Math.sin(cT.yaw) >= 0 ? 'l' : 'r', trail = lead === 'l' ? 'r' : 'l';
+        const kl = smooth(p) - k, kt = -k * (1 - smooth(q));
+        spec.plant = {
+          w: 1 - moving,
+          [lead]: { x: cT.dx * kl, y: cT.dy * kl, z: 0.35 * Math.sin(Math.PI * p) },
+          [trail]: { x: cT.dx * kt, y: cT.dy * kt, z: 0.3 * Math.sin(Math.PI * q) },
+        };
+      }
       f.place(at.x, at.y, yaw, { lift });
       f.pose(spec);
       // a force with the ball already in his hand (he steps on the bag himself): the foot to the bag
@@ -706,7 +725,7 @@ export class InPlay {
     // slides so the nearer foot is on the bag's middle, and the arm reaches from there
     const fa = acts.find((x) => (x.kind === 'receive' || x.kind === 'step') && x.force && x.base && s > x.t - 0.6 && s < x.t + 0.35);
     if (fa) at = this.pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW);
-    return { dx: at.x - base0.x, dy: at.y - base0.y, lift, dLean: (spec.lean || 0) - lean0, dCrouch: (spec.crouch || 0) - crouch0, wide, run: st.run, z: take ? take.z : null };
+    return { dx: at.x - base0.x, dy: at.y - base0.y, lift, dLean: (spec.lean || 0) - lean0, dCrouch: (spec.crouch || 0) - crouch0, wide, run: st.run, z: take ? take.z : null, yaw };
   }
 
   /** A force at a bag: the nearer foot onto the bag's middle (the glove kept on a ball he is taking),
