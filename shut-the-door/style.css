@@ -1249,7 +1249,13 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 
 /* sideways (a phone held flat, a desk): the left column, the dock in the bottom right corner as a
    list, the play by play bottom left. The zone keeps the middle. */
-@media (orientation: landscape) {
+/* THE CORNER LAYOUT (the owner, 2026-10-27: at half a desk's width "the batter is cropped and huge",
+   the card full width over his head, the pitches in two rows across the bottom). The card top left
+   and the pitch list in the bottom right corner whenever the screen is sideways, or upright but
+   big enough to have corners (a tablet, a desk window at half width): 700 px wide and 600 tall. Only a
+   phone held upright keeps the full width card and the dock along the bottom. ui.js wideHud asks
+   the same question (WIDE_HUD). */
+@media (orientation: landscape), (min-width: 700px) and (min-height: 600px) {
   #s-mound { --col: 330px; --dock-w: 252px; }
   .dock { left: auto; }
   #s-mound .mh-bug { max-width: none; }
@@ -1290,8 +1296,9 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .mh-card .seg { order: 2; flex: 1 0 100%; }
   .bb-name b { font-size: 18px; }
 }
-/* a desk: a size up, the pitch list The Show's way */
-@media (orientation: landscape) and (min-width: 1000px) and (min-height: 600px) {
+/* a desk: a size up, the pitch list The Show's way (sideways or not: a desk window at half width is
+   still a desk) */
+@media (min-width: 1000px) and (min-height: 600px) {
   #s-mound { --gut: 20px; --col: 400px; --dock-w: 300px; --tap: 40px; }
   .mh-bug { padding: 8px 16px 8px 12px; gap: 14px; border-radius: 14px; }
   .mh-bug .sb-team { height: 26px; }
