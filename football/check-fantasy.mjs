@@ -1398,6 +1398,11 @@ const BEFORE = Date.parse(POOL.locks_at) - 36 * 3600 * 1000;
 /* THREE HOURS PAST THE LOCK: the Thursday game is on, which is the only clock at which a
    live board is a real screen. Every section about movement runs at this one. */
 const LIVE_AT = Date.parse(POOL.locks_at) + 3 * 3600 * 1000;
+/* HOW MANY GAMES THE WEEK HAS, counted the way the page's slate() counts them: one per
+   pairing of clubs on the board. It was written as 16, a week with no byes, and every week
+   with a bye (weeks 7 and 8 have 14) went red with the page right. */
+const SLATE_GAMES = new Set(POOL.pool.filter((m) => m.team && m.opp && m.kick)
+  .map((m) => (m.home ? m.opp + '|' + m.team : m.team + '|' + m.opp))).size;
 const AFTER = Date.parse(POOL.locks_at) + 60 * 1000;
 
 const browser = await pw.chromium.launch({ executablePath: CHROME });
@@ -2441,7 +2446,7 @@ console.log('\nAND SOMEBODY WHO NEVER ENTERED CAN STILL WATCH');
   }));
   ok('  and they get the whole board', seen.rows === 2, seen.rows + '');
   ok('  with nobody picked out as them', seen.mine === 0, seen.mine + '');
-  ok('  and the games beside it', seen.games === 16, seen.games + '');
+  ok('  and the games beside it', seen.games === SLATE_GAMES, seen.games + ' of ' + SLATE_GAMES);
   /* BACK GOES SOMEWHERE THAT EXISTS. A single destination would send a reader with no
      lineup to a screen about one. */
   await page.click('#b-live-back');
@@ -2532,8 +2537,8 @@ console.log('\nTHE SCOREBOARD IS THE SCHEDULE UNTIL SOMETHING HAS HAPPENED');
         .filter((e) => e.textContent.trim()).length,
       text: document.getElementById('lv-games').textContent,
     }));
-    ok('with nothing written the whole slate is still drawn', seen.games === 16,
-      seen.games + ' games');
+    ok('with nothing written the whole slate is still drawn', seen.games === SLATE_GAMES,
+      seen.games + ' of ' + SLATE_GAMES + ' games');
     ok('  and not one of them claims a score', seen.scores === 0, seen.scores + ' numbers');
     ok('  and none of them claims to be live', seen.live === 0, seen.live + '');
     ok('  the clubs are named', seen.text.includes(AWAY) && seen.text.includes(HOME));
@@ -2576,7 +2581,8 @@ console.log('\nTHE SCOREBOARD IS THE SCHEDULE UNTIL SOMETHING HAS HAPPENED');
       seen.leads.filter((x) => x[0] === '*').length === 1
       && seen.leads.find((x) => x[0] === '*').includes(HOME),
       seen.leads.join(' | '));
-    ok('  and it did not replace the rest of the slate', seen.total === 16, seen.total + '');
+    ok('  and it did not replace the rest of the slate', seen.total === SLATE_GAMES,
+      seen.total + ' of ' + SLATE_GAMES);
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }
@@ -2985,8 +2991,26 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   /* One of each slot, drawn from the real pool so the names and clubs are real. Listed OUT
      of position order on purpose, so a lineup drawn in pick order is caught. */
   const byPos = (pos, n) => POOL.pool.filter((m) => m.position === pos).slice(n, n + 1)[0];
-  const SIX = [byPos('TE', 0), byPos('WR', 0), byPos('RB', 0), byPos('QB', 0),
-    byPos('WR', 1), byPos('RB', 1)];
+  /* THE RECEIVERS' GAMES HAVE NOT STARTED, and that has to be made true rather than hoped
+     for, the tight end's lesson below from the other side. Taken as the first two receivers
+     on the board, one of week 8's played for the quarterback's opponent, so his game was the
+     live one and he rightly showed a projection: red with the page right. So they are the
+     dearest two from clubs that have no game in this fixture at all. */
+  /* AND THE RUNNING BACK'S GAME IS NOT THE QUARTERBACK'S. One is live and one is over, and
+     in week 7 the dearest of each both played for Detroit: the finished game was written
+     over the live one, the quarterback lost his projection, and the check went red with
+     the page right. So the back is the dearest one from another game. */
+  const QB_GAME = [byPos('QB', 0).team, byPos('QB', 0).opp];
+  /* Nor the tight end's, whose game has to be live (see below), never the finished one. */
+  const TE_GAME = [byPos('TE', 0).team, byPos('TE', 0).opp];
+  const RB_LEAD = POOL.pool.find((m) => m.position === 'RB'
+    && !QB_GAME.includes(m.team) && !TE_GAME.includes(m.team));
+  const RB_NEXT = POOL.pool.find((m) => m.position === 'RB' && m !== RB_LEAD);
+  const BUSY = new Set([byPos('QB', 0), RB_LEAD, byPos('TE', 0)]
+    .flatMap((m) => [m.team, m.opp]));
+  const idleWR = POOL.pool.filter((m) => m.position === 'WR' && !BUSY.has(m.team));
+  const SIX = [byPos('TE', 0), idleWR[0], RB_LEAD, byPos('QB', 0),
+    idleWR[1], RB_NEXT];
   const ADA = SIX.map((m) => m.player_id);
   const YOU = POOL.pool.slice(0, 6).map((m) => m.player_id);
   const r = (place, name, score, picks, me, played) => ({ place, display_name: name, score,
@@ -2995,7 +3019,7 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
      man who has not played. The quarterback's game is LIVE, a third of the way through the
      third quarter, and the running back's is over: one man with somewhere to go and one
      whose number is the answer. */
-  const QB0 = byPos('QB', 0), RB0 = byPos('RB', 0);
+  const QB0 = byPos('QB', 0), RB0 = RB_LEAD;
   /* AND BOTH ARE PAST THE FIRST 1,000 ROWS. The writer files every man with a stat line,
      1,049 of them in week 3, and a read that took one page drew the 49 past the cap as 0.0
      under FINAL. So 1,100 other men come first, in the table's order and in the stub's. */
