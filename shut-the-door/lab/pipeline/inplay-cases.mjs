@@ -60,11 +60,10 @@ export function* inplayCases({ all = false, packs = null } = {}) {
           result: 'in_play', inPlay: { bb: pt[3], ev: pt[4], la: pt[5], spray: pt[6], result: label || 'out' },
           runnerMoves: (moves || []).map(([from, to]) => ({ from, to })), bases: nb, outs: Math.min(3, outs0 + oa), runs, drawn: { id: pt[0] },
         };
-        // where the fielders stand (inplay-plan.js alignment): his shading, the spot's inning and our lead
-        // at the start of it (the margin the stage reads before a run has scored)
-        const who = owner.get(pi) ? owner.get(pi).b : null, sit = pack.scenario.situation;
+        // where the fielders stand (inplay-plan.js alignment): his shading
+        const who = owner.get(pi) ? owner.get(pi).b : null;
         const rowsS = SHADE[pack.scenario.id], sh = who && rowsS ? rowsS[String(who.id)] || null : null;
-        const align = { shade: sh && sh.bats === hand ? sh : null, inning: sit.inning, margin: sit.score.us - sit.score.them };
+        const align = { shade: sh && sh.bats === hand ? sh : null };
         yield { pack: f, key, label, st, moves, ball: pt.slice(3), pr, hand, bases0, id: pt[0], align, own: !!(owner.get(pi) && owner.get(pi).t === 0) };
       }
     }

@@ -161,13 +161,12 @@ export class InPlay {
     return seen.size;
   }
 
-  /** Where the fielders stand for this hitter (inplay-plan.js alignment): his shading from his own
-      batted balls (shade-data.js, by pack and id; none: the standard alignment), and the late game
-      (sit: { inning, margin }, our lead before the pitch, from the stage). The lab checks give the whole
-      of it as begin's o.align instead (inplay-cases.mjs). */
-  align(b, sit) {
+  /** Where the fielders stand for this hitter (inplay-plan.js alignment): his shading from his own batted
+      balls (shade-data.js, by pack and id; none: the standard alignment). The lab checks give it as
+      begin's o.align instead (inplay-cases.mjs). */
+  align(b) {
     const rows = SHADE[this.facts.scenarioId];
-    return { shade: (rows && rows[String(b.id)]) || null, inning: sit ? sit.inning : null, margin: sit ? sit.margin : null };
+    return { shade: (rows && rows[String(b.id)]) || null };
   }
 
   /** A ball in play: plan it from the engine's PitchResult and the pitch as the scene threw it. */
@@ -178,7 +177,7 @@ export class InPlay {
     const steal = pr.result !== 'in_play' && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
     // (and a pickoff throw between pitches: pr is { pickoff, basesBefore }, stage.js pickoff)
     const po = pr.pickoff && pr.result == null ? pr.pickoff : null;
-    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), ...(o.align || this.align(b, o.sit)) });
+    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), ...(o.align || this.align(b)) });
     this.active = { pr, plan, pitch, hooks: o.hooks || {}, fired: 0, cam: null, fov0: null };
     this.ball = pitch.ball;
     this.ballScale0 = this.ball.scale.x;
