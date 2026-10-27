@@ -4,6 +4,10 @@
  *   node shut-the-door/lab/pipeline/check-catch.mjs --limit N    the first N cases (a quick look)
  *   node shut-the-door/lab/pipeline/check-catch.mjs --show N     print the N worst catches in full
  *   node shut-the-door/lab/pipeline/check-catch.mjs --json FILE  every measured catch, for a closer look
+ *   node shut-the-door/lab/pipeline/check-catch.mjs --sample N   about N cases, spread over all of them
+ *   node shut-the-door/lab/pipeline/check-catch.mjs --stride N   every Nth case
+ *   node shut-the-door/lab/pipeline/check-catch.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ * (every limit here is per catch, with no ceiling, so a sample is held exactly as the full run is)
  *
  * check-inplay.mjs holds the plan to the engine (who catches it, where, when). This holds the picture to
  * the plan: the owner saw a pop fly land beside the outfielder who caught it (2026-10-22). So the game
@@ -22,6 +26,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
+import { selection, openCheckpoint } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -74,11 +79,15 @@ await page.evaluate(async () => {
   st.inplay.ownCamera = false;
 });
 
+const SEL = selection({ heldStride: 1, total: [...inplayCases()].length });
 const cases = [];
-for (const c of inplayCases()) { if (cases.length >= LIMIT) break; cases.push(c); }
+let kc = 0;
+for (const c of inplayCases()) { const kk = kc++; if (kk % SEL.stride || Math.floor(kk / SEL.stride) % SEL.shard.n !== SEL.shard.i) continue; if (cases.length >= LIMIT) break; cases.push(c); }
 const rows = [];
 const CHUNK = 400;
+const CK = openCheckpoint('check-catch', { STRIDE: SEL.stride, LIMIT: String(LIMIT), SHARD: SEL.shard, CHUNK });
 for (let i = 0; i < cases.length; i += CHUNK) {
+  if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
   const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate((part) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
@@ -144,9 +153,11 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     return out;
   }, part);
   rows.push(...got);
+  CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
 console.log('');
+CK.close();
 const errs = rows.filter((r) => r.err);
 const hits = rows.filter((r) => r.what === 'hit lands');
 const outsF = rows.filter((r) => r.footFt != null), outsT = rows.filter((r) => r.tagFt != null);

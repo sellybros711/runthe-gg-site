@@ -4,6 +4,13 @@
  *   node shut-the-door/lab/pipeline/check-leak.mjs                 the default session (OUTINGS outings)
  *   node shut-the-door/lab/pipeline/check-leak.mjs --outings N     a longer or shorter one
  *   node shut-the-door/lab/pipeline/check-leak.mjs --json F        every sample to a file
+ *   node shut-the-door/lab/pipeline/check-leak.mjs --outings 3     the shortest held run (a quick look; the nightly runs 7)
+ *
+ * NO --resume, ON PURPOSE. What is measured is growth inside one page's life: every count is held to
+ * outing 2 of the same session. A run picked up in a new page is a new session, so its outings cannot
+ * be held to the old one's, and a "resumed" verdict would not be this check's verdict. So each outing's
+ * sample is written as it is taken, one line to .cache/checks/check-leak-<tree>-<args>.jsonl
+ * (checkpoint.mjs), so a killed run still leaves what it measured; --resume says so and stops.
  *
  * The owner (2026-10-26, on an iPhone): "the game also gets very laggy as you play", worse over time.
  * So the check plays whole outings at 390x844 the way a player does (a pitch type, a cell, the throw,
@@ -25,6 +32,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { openCheckpoint } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -32,6 +40,12 @@ const ROOT = path.resolve(HERE, '..', '..', '..');
 const argv = process.argv;
 const arg = (k, d) => { const i = argv.indexOf(k); return i > 0 ? argv[i + 1] : d; };
 const OUTINGS = +arg('--outings', 7), JSON_OUT = arg('--json', null);
+if (argv.includes('--resume')) {
+  console.log('check-leak cannot resume: it holds the growth inside one page session, and a new page is a new session. Run it whole (--outings 3 is the shortest held run).');
+  process.exit(2);
+}
+// (the log of each outing's sample, as it is taken: never read back, see the header)
+const LOG = openCheckpoint('check-leak', { OUTINGS });
 // the heap after a GC may wander a little (the engine's own caches, the JIT): this much over the early
 // outings' mean is a leak
 const HEAP_SLACK = 1.5e6;
@@ -283,6 +297,7 @@ for (let o = 0; o < OUTINGS; o++) {
   await page.waitForTimeout(600);
   rows.push(await sample('outing ' + (o + 1)));
   const r = rows[rows.length - 1];
+  LOG.put(o, { pitches: pitchNo, inPlays, challenges, chips, ...r });
   console.log(`outing ${o + 1} (pitch ${pitchNo}, ${inPlays} in play, ${challenges} challenges, ${chips} chips, ${Math.round((Date.now() - t0) / 1000)} s): ` +
     `geo ${r.geometries} tex ${r.textures} prog ${r.programs} calls ${r.calls} tris ${r.triangles} obj ${r.objects}/${r.fpObjects} dom ${r.dom} ls ${r.listeners} raf ${r.raf} to ${r.timeouts} iv ${r.intervals} ` +
     `heap ${(r.heap / 1e6).toFixed(2)} MB frame ${r.frameMed}/${r.frame95} ms draw ${r.drawMed} ms (${r.frames} frames) cut frame ${r.cutMed}/${r.cutMax} ms (${r.cuts})`);
@@ -296,6 +311,8 @@ for (let o = 0; o < OUTINGS; o++) {
 await page.waitForTimeout(600);
 rows.push(await sample('end'));
 const last = rows[rows.length - 1];
+LOG.put('end', { pitches: pitchNo, inPlays, challenges, chips, ...last });
+LOG.close();
 console.log(`end (pitch ${pitchNo}): geo ${last.geometries} tex ${last.textures} prog ${last.programs} obj ${last.objects}/${last.fpObjects} dom ${last.dom} ls ${last.listeners} raf ${last.raf} to ${last.timeouts} iv ${last.intervals} heap ${(last.heap / 1e6).toFixed(2)} MB frame ${last.frameMed}/${last.frame95} ms`);
 if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify({ pitches: pitchNo, inPlays, challenges, chips, rows }, null, 1));
 
