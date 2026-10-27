@@ -18,9 +18,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=16';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=17';
+import { SHADE } from './shade-data.js?v=1';
 import { Crew } from './fielders.js?v=6';
-import { buildBallpark } from './ballpark.js?v=17';
+import { buildBallpark } from './ballpark.js?v=18';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -156,6 +157,15 @@ export class InPlay {
     return seen.size;
   }
 
+  /** Where the fielders stand for this hitter (inplay-plan.js alignment): his shading from his own
+      batted balls (shade-data.js, by pack and id; none: the standard alignment), and the late game
+      (sit: { inning, margin }, our lead before the pitch, from the stage). The lab checks give the whole
+      of it as begin's o.align instead (inplay-cases.mjs). */
+  align(b, sit) {
+    const rows = SHADE[this.facts.scenarioId];
+    return { shade: (rows && rows[String(b.id)]) || null, inning: sit ? sit.inning : null, margin: sit ? sit.margin : null };
+  }
+
   /** A ball in play: plan it from the engine's PitchResult and the pitch as the scene threw it. */
   begin(pr, pitch, o = {}) {
     const b = this.facts.batter;
@@ -164,7 +174,7 @@ export class InPlay {
     const steal = pr.result !== 'in_play' && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
     // (and a pickoff throw between pitches: pr is { pickoff, basesBefore }, stage.js pickoff)
     const po = pr.pickoff && pr.result == null ? pr.pickoff : null;
-    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') });
+    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), ...(o.align || this.align(b, o.sit)) });
     this.active = { pr, plan, pitch, hooks: o.hooks || {}, fired: 0, cam: null, fov0: null };
     this.ball = pitch.ball;
     this.ballScale0 = this.ball.scale.x;

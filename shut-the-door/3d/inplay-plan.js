@@ -9,14 +9,15 @@
  * and launch angle (a drag and lift flight, constants set to Statcast carry: 100 mph at 28 degrees
  * goes about 390 ft), held to the band the result needs: an out in the air is caught, a single
  * falls in front of the outfield or through the infield, a double reaches a gap or the line, a home
- * run clears the wall. Where the fielders stand is ours (no positioning data): a fielder who would
- * catch a ball the engine called a hit starts a step further off, and one who must make a catch
- * starts close enough to make it.
+ * run clears the wall. Where the fielders stand is alignment(): the standard spots, shaded to the
+ * hitter's own batted balls in the pack (shade-data.js) and set for the bases, outs and inning. Then a
+ * fielder who would catch a ball the engine called a hit starts a step further off, and one who must
+ * make a catch starts close enough to make it.
  *
  * Units: feet and seconds, catcher's view (x toward first base, y out to centre field, z up), home
  * plate at the origin, s = seconds after contact.
  *
- *   const p = planPlay(pr, { bats, contact, basesBefore, id })
+ *   const p = planPlay(pr, { bats, contact, basesBefore, id, shade, inning, margin })
  *   p.ballAt(s)        { x, y, z, by }    by: the fielder holding it, or null
  *   p.fielders[n]      a Track for positions 1..9 (scoring numbers), p.runners[] the same for runners
  *   p.events           [{ s, kind, ... }] catches, pickups, throws, outs, runs, crowd cues
@@ -63,6 +64,71 @@ export function spots(bats) {
     3: pol(37 + pull * 0.3, 108), 4: pol(13 + pull, 148), 5: pol(-36 + pull * 0.3, 110), 6: pol(-13 + pull, 148),
     7: pol(-28 + pull, 285), 8: pol(0 + pull, 315), 9: pol(28 + pull, 285),
   };
+}
+
+// a step, for the positioning conventions below (two steps in, two toward the bag, two toward the line)
+const STEP = 3;
+/** The same point turned about home by deg (positive toward first), r feet further out. */
+const turnOut = (p, deg, dr = 0) => { const a = sprayOf(p) + deg, r = rad(p) + dr; return pol(a, r); };
+/** On the base line at this spray: where the infield grass ends (it stops 3 ft inside the lines, ballpark.js). */
+const lineAt = (deg) => 127.28 / (Math.abs(Math.sin(deg * D2R)) + Math.cos(deg * D2R));
+
+/** Where the nine stand at this pitch, for this hitter in this spot (site PR, fielders shade by hitter).
+    o.shade: the hitter's row of shade-data.js (his own batted balls against the league's, from the
+    packs; lab/pipeline/build-shade.mjs), or null: the standard alignment, spots(). o.bases (bitmask)
+    and o.outs: before the pitch. o.inning, o.margin (our lead before the pitch): the late game.
+      the infield turns by his ground balls (g degrees; the corners by 0.3 of it, the stock alignment's
+      own ratio); the outfield stands where his air balls go (of: each fielder at the median spray of
+      his third of them, at its median carry). Since 2023 two infielders stand each side of second and
+      all four on the infield dirt: held here for every era
+    then the spot, the conventions every club plays:
+      a runner on first and second open: the first baseman holds him on, on the bag
+      a runner on third, under two outs, and his run ties it or wins it: the infield in, at the grass
+      a runner on first, under two outs: the middle infielders at double play depth, two steps in and
+      two toward second
+      the ninth or later: the corners guard the lines (two steps toward them), against the double
+    Pure: the same hitter in the same spot always stands the same. Never decides anything: the engine's
+    play is staged from here exactly as from the stock spots (the plan moves whoever must make or miss
+    a play, as before). */
+export function alignment(bats, o = {}) {
+  const F = spots(bats);
+  const sh = o.shade && o.shade.bats === bats ? o.shade : null;
+  if (sh) {
+    for (const n of IF) F[n] = turnOut(F[n], (n === 3 || n === 5 ? 0.3 : 1) * (sh.g || 0));
+    if (sh.of) OF.forEach((n, j) => { F[n] = pol(sh.of[j][0], sh.of[j][1]); });
+  }
+  // the shift rules: two each side of second, the corners inside their lines, all four on the dirt
+  const keep = (n, lo, hi) => {
+    const a = clamp(sprayOf(F[n]), lo, hi);
+    let r = rad(F[n]);
+    // (the dirt's edge, an arc 95 ft from the rubber: a stride inside it)
+    const u = pol(a, 1), b = u.x * MOUND.x + u.y * MOUND.y, c = MOUND.x * MOUND.x + MOUND.y * MOUND.y - 92 * 92;
+    r = Math.min(r, b + Math.sqrt(b * b - c));
+    F[n] = pol(a, r);
+  };
+  keep(3, 25, 43); keep(4, 4, 40); keep(5, -43, -25); keep(6, -40, -4);
+  for (const [n, lo, hi] of [[7, -42, 15], [8, -25, 25], [9, -15, 42]]) {
+    const a = clamp(sprayOf(F[n]), lo, hi);
+    F[n] = pol(a, Math.min(rad(F[n]), wallDist(a) - 25));
+  }
+  const bases = o.bases || 0, outs = o.outs ?? 0;
+  const hold = (bases & 1) && !(bases & 2);
+  const inn = (bases & 4) && outs < 2 && Number.isFinite(o.margin) && o.margin <= 1;
+  if (inn) for (const n of IF) { const a = sprayOf(F[n]); F[n] = pol(a, Math.min(rad(F[n]), lineAt(a))); }
+  else if ((bases & 1) && outs < 2) {
+    for (const n of [4, 6]) {
+      const p = F[n], r = rad(p) || 1, to = { x: BASE[2].x - p.x, y: BASE[2].y - p.y }, d = Math.hypot(to.x, to.y) || 1;
+      F[n] = { x: p.x - (p.x / r) * 2 * STEP + (to.x / d) * 2 * STEP, y: p.y - (p.y / r) * 2 * STEP + (to.y / d) * 2 * STEP };
+    }
+  }
+  if ((o.inning || 0) >= 9 && !inn) {
+    for (const n of [3, 5]) {
+      const a = sprayOf(F[n]), r = rad(F[n]);
+      F[n] = pol(clamp(a + Math.sign(a) * (2 * STEP / r) / D2R, -43, 43), r);
+    }
+  }
+  if (hold) F[3] = { x: BASE[1].x - 1.5, y: BASE[1].y + 1.5 };
+  return F;
 }
 
 /* ------------------------------------------------------------------ motion along a path */
@@ -277,7 +343,8 @@ const INF = 1e9;
 
 /** The plan of one ball in play. pr: the engine's PitchResult (in_play). o: { bats, contact
     {x,y,z} feet (where the bat met it), basesBefore (bitmask; derived from the moves when left
-    out), id (the drawn pitch's id, for the plan's own picks) }. */
+    out), id (the drawn pitch's id, for the plan's own picks), shade (the hitter's shade-data.js row, or
+    null), inning and margin (our lead before the pitch; alignment()) }. */
 export function planPlay(pr, o = {}) {
   const ip = pr.inPlay || {};
   const id = o.id || (pr.drawn && pr.drawn.id) || 'x';
@@ -310,7 +377,7 @@ export function planPlay(pr, o = {}) {
   const ctx = { pr, o, id, label, moves, before, hit, bb, ev, la, spray, kind, contact, z0, bats: o.bats || 'R' };
   // the outs before the pitch: the engine gives the outs after it and every runner put out on it
   ctx.outs0 = Math.max(0, Math.min(2, (pr.outs ?? 0) - moves.filter((m) => m.to === -1).length));
-  const F = spots(ctx.bats);
+  const F = alignment(ctx.bats, { shade: o.shade || null, bases: before, outs: ctx.outs0, inning: o.inning, margin: o.margin });
   ctx.F = F;
   const p = { kind, label, bb, ev, la, spray, guess, events: [], segs: [], fielders: {}, runners: [], notes: [] };
   ctx.p = p;
@@ -971,7 +1038,10 @@ function planAir(ctx) {
           // grass's edge, and the pitcher gives way to anyone)
           const popIn = pop && rad(q) < 200;
           const pri = s + (OF.includes(n) ? (popIn ? 0.6 : -0.4) : popIn && n !== 1 ? -0.5 : 0) + (n === 2 && Math.abs(ctx.spray) < 90 && !popIn ? 0.6 : 0) + (n === 1 ? 0.8 : 0);
-          if (!best || pri < best.pri) best = { n, s, q, pri };
+          // (two who get there at the same moment: the one standing nearer it takes it, the man under it
+          // calling off the one running; before, the lower number won, a centre fielder running 90 ft past
+          // a right fielder camped under the ball)
+          if (!best || pri < best.pri - 1e-9 || (pri <= best.pri + 1e-9 && d < best.d)) best = { n, s, q, pri, d };
           break;
         }
       }

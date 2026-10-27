@@ -102,7 +102,7 @@ const CHUNK = 300;
 const CK = openCheckpoint('check-camera', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK });
 for (let i = 0; i < cases.length; i += CHUNK) {
   if (CK.has(i)) { const got = CK.get(i); rows.push(...got.out); for (const k2 of Object.keys(got.stats)) (dist[k2] ||= []).push(...got.stats[k2]); continue; }
-  const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
+  const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, align: c.align, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate(({ part, ASPECT, LIM }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [], warp = window.__plan.warp;
     const facts0 = ip.facts;
@@ -116,7 +116,7 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     for (const c of part) {
       ip.facts = { ...facts0, batter: { ...facts0.batter, bats: c.hand } };
       let run;
-      try { run = ip.begin(c.pr, stub, {}); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
+      try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
       const plan = run.plan, ed = plan.edit, miss = {};
       const note = (what, at, info) => { if (!miss[what]) miss[what] = { at: +at.toFixed(3), ...info }; };
       const shots = [];

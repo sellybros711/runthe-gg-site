@@ -151,7 +151,7 @@ const ROWS_OUT = process.argv.includes('--rows-out') ? process.argv[process.argv
 const cases = [];
 let idx = 0;
 for (const c of inplayCases()) {
-  if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0 && Math.floor(idx / STRIDE) % SEL.shard.n === SEL.shard.i) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
+  if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0 && Math.floor(idx / STRIDE) % SEL.shard.n === SEL.shard.i) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, align: c.align, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
   idx++;
 }
 const rows = [];
@@ -185,7 +185,7 @@ for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
     for (const c of part) {
       ip.facts = { ...facts0, batter: { ...facts0.batter, bats: c.hand } };
       let run;
-      try { run = ip.begin(c.pr, stub, {}); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
+      try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
       const plan = run.plan, hist = new Map(), hits = [], trace = [];
       const lastAct = (n, s) => { const a = plan.fielders[n].acts.filter((x) => x.t <= s + 1e-6).pop(); return a ? a.kind : '-'; };
       let sPrev = null;

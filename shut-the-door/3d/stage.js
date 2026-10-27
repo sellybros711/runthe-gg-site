@@ -87,7 +87,7 @@ import { Pitch, releaseOf } from './pitch.js?v=11';
 import { fromResult, motion } from './play.js?v=11';
 import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=27';
+import { InPlay } from './inplay.js?v=28';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=8';
 import { FirstPerson } from './firstperson.js?v=6';
 
@@ -656,6 +656,8 @@ class Stage {
     if (!this.inplay || !this.pitch || !po) return { pickoff: false };
     let run = null;
     try { run = this.inplay.begin({ pickoff: po, basesBefore: bases | (1 << (po.base - 1)) }, this.pitch, { hooks }); } catch (e) { console.error('the pickoff could not be staged', e); this.inplay.active = null; return { pickoff: false }; }
+    // (a balk that walks a run in: the lead the next pitch's fielders read, sitBefore)
+    if (po.runs) this.runsIn = (this.runsIn || 0) + po.runs;
     const tEnd = run.realDur + 0.3, callAt = run.resolveReal;
     return new Promise((done) => {
       let prev = null, clock = 0, frames = 0, raf = 0, called = false, finished = false;
@@ -696,6 +698,18 @@ class Stage {
     });
   }
 
+  /** The late game before this pitch, for where the fielders stand (inplay-plan.js alignment): the
+      inning, and our lead (the scenario's, less the runs scored since the outing's first pitch, pr.n 1;
+      an outing resumed mid way counts from its scenario's lead). Every pitch passes here, in order. */
+  sitBefore(pr) {
+    if (!(pr.n > (this.lastN || 0))) this.runsIn = 0;
+    this.lastN = pr.n || 0;
+    const sc = this.scn && this.scn.situation ? this.scn.situation.score : null;
+    const sit = { inning: this.facts.situation.inning, margin: sc ? sc.us - sc.them - (this.runsIn || 0) : null };
+    this.runsIn = (this.runsIn || 0) + (pr.runs || 0);
+    return sit;
+  }
+
   /** One pitch, to the end of its play (THE PLAY'S TIMELINE, in the header). */
   play(opts) {
     const p = this.playing = this.playOnce(opts);
@@ -707,6 +721,7 @@ class Stage {
   async playOnce(opts) {
     await this.ready;
     const pr = opts.pr, hooks = opts.hooks || {};
+    const sit = this.sitBefore(pr);
     // the indicator is the aim, not the pitch: a quick fade on the throw, long before the ball
     // leaves the hand (preview.js OUT_S), so the real ball is the star
     this.ghostSpec = null;
@@ -727,7 +742,7 @@ class Stage {
     // slide and the tag, as the engine called it)
     const steal = !inPlay && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
     if (((inPlay && pt.after) || steal) && this.inplay) {
-      try { run = this.inplay.begin(pr, pt, { hooks }); } catch (e) { console.error(steal ? 'the steal could not be staged' : 'the ball in play could not be staged', e); this.inplay.active = null; }
+      try { run = this.inplay.begin(pr, pt, { hooks, sit }); } catch (e) { console.error(steal ? 'the steal could not be staged' : 'the ball in play could not be staged', e); this.inplay.active = null; }
     }
     // (knocked down by a pitch, he stays down for a beat)
     const tail = run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
