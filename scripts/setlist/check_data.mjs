@@ -2789,6 +2789,17 @@ if (prose) {
   check(read('setlist/pxhd.js') === extract(), 'setlist/pxhd.js is golf\'s PXHD, unedited (run scripts/setlist/extract_pxhd.mjs)');
   check(/from '\.\/pxhd\.js\?v=\d+'/.test(world) && /from '\.\/world\.js\?v=\d+'/.test(stage), 'and the stage draws with it (through world.js)');
 }
+/* THE BAND MOVES (2026-10-27): it walks on, off, to the lip for a solo and down for the bow, all from
+   the cues the lights already follow. Reduced motion, or a cue marked instant, puts every player on
+   his mark rather than walking him there, and a fill only plays in real time. */
+{
+  const stage = read('setlist/stage.js');
+  check(/if \(snapBand \|\| reduce \|\| d < \.05\)/.test(stage), 'reduced motion and instant cues put the band on its marks');
+  check(/if \(reduce \|\| ev\.instant\)\{\s*snapBand = true;/.test(stage), 'an instant cue snaps the band');
+  check(/if \(!ev\.instant && !reduce\) st\.fillUntil/.test(stage), 'a drum fill only plays in real time');
+  check(/walk: \{/.test(read('setlist/world.js')) && /frames\.walk\[role\]/.test(stage), 'the walk frames are the world\'s');
+}
+
 /* BACKSTAGE (2026-10-27): the band soundchecking behind the front screen. The same sprites and the
    same motion as the show, so it must come from world.js and nowhere else; it is scenery, so it
    reads no song, score or rule; and its bus sign is the next show's DATE, never its venue, because
