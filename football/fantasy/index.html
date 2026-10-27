@@ -723,7 +723,7 @@
     <div class="slots" id="d-slots"></div>
     <div class="men" id="d-men"></div>
     <p class="note" id="d-note"></p>
-    <div class="stack"><button class="btn quiet" id="b-abandon">Start this draft again</button></div>
+    <div class="stack"><button class="btn quiet" id="b-draft-back">Back</button></div>
   </section>
 
   <section id="s-review" class="screen">
@@ -1436,7 +1436,7 @@
       $('d-men').innerHTML = '';
       $('d-men').className = 'men';
       $('d-note').textContent = 'No ' + D.SLOTS[i] + ' can be signed with what is left. '
-        + 'That is a bug. Start this draft again.';
+        + 'That should not happen. Please tell us through the feedback form.';
       return;
     }
     /* THE CAP HAS TO BE ON THE SCREEN OR IT IS NOT A BUDGET. A board used to hold only men
@@ -1642,21 +1642,25 @@
     var was = cur, len = c.ids.length;
     later(function(){
       busy = false;
-      /* The identity check. A draft abandoned or a chance switched inside those 170ms has
+      /* The identity check. A draft left or a chance switched inside those 170ms has
          moved on, and repainting then would put the old board's next spin on screen. */
       if (cur !== was || !state.chances[was] || state.chances[was].ids.length !== len) return;
       paintDraft();
     }, 170);
   }
 
-  $('b-abandon').onclick = function(){
+  /* BACK, AND THE DRAFT IS KEPT EXACTLY AS IT IS. There used to be "Start this draft
+     again" here, which dealt a fresh board from a new seed on every press: unlimited
+     rerolls of the wheel, which is the one thing a stored seed exists to stop. The owner
+     took it out (2026-10-27). Every pick is already saved, so coming back to the draft
+     resumes the same board where it was left, and the only way to a different board is to
+     finish this one and use the next of the week's chances. */
+  $('b-draft-back').onclick = function(){
     clearTimers();
     busy = false;
-    JUST = -1;
-    moneyFrom = CAP;
-    state.chances[cur] = { seed: D.newSeed(), ids: [] };
-    save();
-    paintDraft();
+    closeConfirm();
+    paintHome();
+    show('s-home');
   };
 
   /* ---- the review screen ---- */
@@ -3219,7 +3223,11 @@
     $('home-drafts').textContent = done + ' of ' + chancesAllowed();
     $('b-draft').hidden = locked() || state.chances.length >= chancesAllowed()
       && done >= chancesAllowed();
-    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + chancesAllowed() : 'Start drafting';
+    /* A DRAFT LEFT PART WAY is resumed, not restarted, so the button says so. */
+    var going = state.chances.some(function(c){
+      var n = (c.ids||[]).length; return n > 0 && n < D.SLOTS.length; });
+    $('b-draft').textContent = going ? 'Keep drafting'
+      : done ? 'Draft ' + (done+1) + ' of ' + chancesAllowed() : 'Start drafting';
     $('b-review').hidden = !done;
     $('b-past').hidden = POOL.week <= 1;
     /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five
