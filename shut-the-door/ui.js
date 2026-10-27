@@ -555,7 +555,9 @@ function relayout() {
 }
 /* The HUD over the full screen scene: where the top left column ends (the minimap hangs under it),
    and the open sheet placed off the zone. */
-function wideHud() { return !!(window.matchMedia && matchMedia('(orientation: landscape)').matches); }
+/* the corner layout (style.css THE CORNER LAYOUT): sideways, or upright with room for corners */
+var WIDE_HUD = '(orientation: landscape), (min-width: 700px) and (min-height: 600px)';
+function wideHud() { return !!(window.matchMedia && matchMedia(WIDE_HUD).matches); }
 function placeHud() {
   var host = $('s-mound'), tl = host.querySelector('.mh-tl');
   if (!tl || !host.classList.contains('on')) return;
