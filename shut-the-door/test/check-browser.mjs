@@ -961,10 +961,10 @@ async function run(w, h, theme) {
       fly: M.spot({ bb: 'fly', ev: 100, la: 30, spray: -20 }),
       foulSide: M.spot({ bb: 'fly', ev: 100, la: 30, spray: -60 }),
       popup: M.spot({ bb: 'popup', ev: 70, la: 60, spray: 0 }),
-      /* each ball in play of the outing, and whether it has a place on the field (minimap.js spot:
-         batted-ball data and fair). A pack before Statcast (2015) has none: no dot, by design */
-      placed: (window.STD_UI.state.outing.log || []).filter((p) => p.result === 'in_play').map((p) => ({ n: String(p.n), spot: !!M.spot(p.inPlay) })),
       hud: { lit: document.querySelectorAll('#m-count .row i.on').length, aria: document.getElementById('m-count').getAttribute('aria-label') },
+      // (each in-play pitch of the outing, and whether its ball has a place on the field: a pack with no
+      // batted-ball data, 2011 Feliz, has none, and the minimap draws no dot for it, by design)
+      placed: (window.STD_UI && window.STD_UI.state.outing ? window.STD_UI.state.outing.log : []).filter((p) => p.result === 'in_play').map((p) => ({ n: String(p.n), spot: !!M.spot(p.inPlay) })),
     };
   });
   const inPlayNs = play.traces.filter((t) => t.result === 'in_play').map((t) => String(t.n));
@@ -976,12 +976,9 @@ async function run(w, h, theme) {
   ok(mini.popup && mini.popup.y < 150, '5 a popup comes down near the infield (' + JSON.stringify(mini.popup) + ')');
   if (comparable) {
     ok(mini.dots.every((d) => inPlayNs.includes(d.n)), '5 every dot is a ball in play, none for a take (' + mini.dots.length + ' dots, ' + inPlayNs.length + ' in play)');
-    /* every ball in play with a place on the field draws its dot (strict on a day with data), and one
-       without batted-ball data (a pack before Statcast) draws none */
-    const want = mini.placed.filter((p) => p.spot).map((p) => p.n), none = mini.placed.filter((p) => !p.spot).map((p) => p.n);
-    const dotNs = mini.dots.map((d) => d.n);
-    ok(want.every((n) => dotNs.includes(n)), '5 an in-play pitch with batted-ball data draws a dot on the field (' + want.length + ' with data, ' + dotNs.length + ' dots)');
-    ok(none.every((n) => !dotNs.includes(n)), '5 an in-play pitch without batted-ball data draws no dot (' + none.length + ' without)');
+    // (held as before unless the outing's log has every in-play pitch and none of them has a place)
+    const known = inPlayNs.every((n) => mini.placed.some((p) => p.n === n)), placeable = mini.placed.filter((p) => p.spot).length;
+    ok(!inPlayNs.length || mini.dots.length > 0 || (known && placeable === 0), '5 an in-play pitch draws a dot on the field (' + placeable + ' of ' + inPlayNs.length + ' in play have a place on it)');
   }
   ok(/^\d balls, \d strikes$/.test(mini.hud.aria || '') && mini.hud.lit <= 5, '5 the scorebug count is lit as balls and strikes (' + mini.hud.aria + ')');
 

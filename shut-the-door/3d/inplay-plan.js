@@ -1265,18 +1265,24 @@ function planEdit(ctx) {
     const groundish = kind === 'ground_play' || kind === 'ground_hit';
     const beats = [];
     const touch = ctx.catchAt ? ctx.catchAt.s : ctx.landAt != null ? ctx.landAt : ft.s;
-    const ballCam = groundish ? 'follow' : ctx.bb === 'line' ? 'track' : 'follow';
-    if (groundish) beats.push({ s0: CUT, s1: Math.max(ft.s + 0.55, CUT + 1.6), cam: 'follow', pri: 9 });
-    else if (ctx.bb === 'line') beats.push({ s0: CUT, s1: Math.max(touch + 0.55, CUT + 1.6), cam: 'track', pri: 9 });
-    else {
-      // up into the sky, then down to whoever is under it (a long hang is cut: up, then the catch)
-      const apexT = apexTime(ctx);
-      const skyEnd = Math.min(Math.max(CUT + 0.6, apexT * 0.7), 1.4, touch - 0.8);
+    // the broadcast's camera plan (the owner, 2026-10-26: "a true broadcast feel... show more of the
+    // field at once and not pan so fast"): the high home camera ('follow', high behind the plate) is the
+    // game camera from contact, a ball on the ground, a liner and a fly ball alike, and holds the infield
+    // play whole (the fielder, the ball, the base) in one shot. The high first and third base cameras
+    // ('wide') take a runner's moment the high home cannot hold with the ball, the low plate camera a run
+    // scoring out of its frame, and the low angle behind the plate ('sky') only a home run or a towering fly.
+    const ballCam = 'follow';
+    // (a towering one, over four seconds up and down, is cut as before: the low angle on its climb, then
+    // the high home on its way down to the man under it)
+    if (!groundish && touch - CUT > 4.2) {
+      const skyEnd = Math.min(Math.max(CUT + 0.6, apexTime(ctx) * 0.7), 1.4, touch - 0.8);
       beats.push({ s0: CUT, s1: skyEnd, cam: 'sky', pri: 9 });
       beats.push({ s0: Math.max(skyEnd, touch - 2.1), s1: touch + 0.55, cam: 'follow', pri: 9 });
-    }
+    } else beats.push({ s0: CUT, s1: Math.max(touch + 0.55, CUT + 1.6), cam: 'follow', pri: 9 });
+    // (an infield play: fielded by an infielder on the infield, the high home's one shot)
+    const infPlay = groundish && ft.n != null && ft.n <= 6 && Math.hypot(ft.at ? ft.at.x : 0, ft.at ? ft.at.y : 0) < 160;
     // the ball picked up after a hit, and the throw in
-    if (ft.s > touch + 0.2) beats.push({ s0: ft.s - 0.8, s1: ft.s + 0.4, cam: ballCam === 'track' ? 'track' : 'follow', pri: 3 });
+    if (ft.s > touch + 0.2) beats.push({ s0: ft.s - 0.8, s1: ft.s + 0.4, cam: ballCam, pri: 3 });
     // every putout: the throw and the tag or the bag
     for (const po of (ctx.putouts || [])) {
       const thr = ev.filter((e) => e.kind === 'throw' && e.s <= po.ballAt + 1e-6).pop();
@@ -1288,7 +1294,8 @@ function planEdit(ctx) {
       const sg = thr && p.segs.find((x) => x.kind === 'throw' && Math.abs(x.t0 - thr.s) < 1e-6);
       const relay = (ctx.putouts || []).indexOf(po) > 0;
       const long = relay && sg && Math.hypot(sg.b.x - sg.a.x, sg.b.y - sg.a.y) > 70;
-      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: po.base === 4 ? 'plate' : long ? 'wide' : 'follow', pri: 8, m: outT });
+      // (on the ground the high home holds it all, the plate too: one shot)
+      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: infPlay ? 'follow' : po.base === 4 ? 'plate' : long ? 'wide' : 'follow', pri: 8, m: outT });
     }
     // a tag-up: the catch, then straight to the runner leaving his bag on it (the umpire's look)
     if (ctx.catchAt && kind === 'air_out') {
@@ -1296,12 +1303,14 @@ function planEdit(ctx) {
       if (tg.length) beats.push({ s0: ctx.catchAt.s + 0.12, s1: ctx.catchAt.s + 1.2, cam: 'wide', pri: 7, m: ctx.catchAt.s + 0.3, tagUp: true });
     }
     // runs that score
-    for (const r of runs) beats.push({ s0: r - 0.9, s1: r + 0.4, cam: 'plate', pri: 7, m: r });
+    // (in an infield play the high home has the plate under it already)
+    for (const r of runs) beats.push({ s0: r - 0.9, s1: r + 0.4, cam: infPlay && r < ft.s + 4 ? 'follow' : 'plate', pri: 7, m: r });
     // every runner pulling into his base safe (the hitter on a hit above all): the owner, 2026-10-22,
     // wants to see the play unfold, the out or the safe at the base
     for (const r of p.runners) {
       if (r.out || !(r.to >= 1 && r.to <= 3) || r.arrive == null || r.from === r.to || r.arrive <= 0.8) continue;
-      beats.push({ s0: r.arrive - 1.1, s1: r.arrive + 0.4, cam: 'wide', pri: r.from === 0 && ctx.hit ? 7 : 6, m: r.arrive });
+      // (an infield play's runners are in the high home's frame with it; a ball in the outfield leaves them to the base cameras)
+      beats.push({ s0: r.arrive - 1.1, s1: r.arrive + 0.4, cam: infPlay ? 'follow' : 'wide', pri: r.from === 0 && ctx.hit ? 7 : 6, m: r.arrive });
     }
     const build = (list) => {
       list = list.slice().sort((x, y) => x.s0 - y.s0);
@@ -1321,7 +1330,7 @@ function planEdit(ctx) {
           }
           continue;
         }
-        if (bt.s0 <= cur.s1 + 1.0) {
+        if (bt.s0 <= cur.s1 + (bt.cam === cur.cam && infPlay ? 2.0 : 1.0)) {
           // continuous: the same camera runs on; a new one takes over from where the last ended
           if (bt.cam === cur.cam || cur.cam === 'pitcher' && false) { cur.s1 = bt.s1; if (bt.m != null) cur.m = bt.m; }
           else if (cur.m != null && bt.m != null && bt.m > cur.m + 0.3) {
@@ -1337,7 +1346,7 @@ function planEdit(ctx) {
         } else {
           let cam = bt.cam;
           // (a jump cut changes camera, but a deciding moment keeps the one that shows it)
-          if (cam === cur.cam && bt.m == null) cam = cam === 'wide' ? 'follow' : 'wide';
+          if (cam === cur.cam && (bt.m == null || cam === 'follow')) cam = cam === 'wide' ? 'follow' : 'wide';
           out.push({ s0: bt.s0, s1: bt.s1, cam, rate: 1, m: bt.m });
         }
       }
@@ -1363,6 +1372,8 @@ function planEdit(ctx) {
       const main = pcs.find((x) => x.cam !== 'pitcher' && x.cam !== 'sky' && x.s1 - x.s0 > 2.2);
       // (never past a deciding moment in it: the trim takes only the run up to it)
       const ms = list.filter((b) => b.m != null && main && b.m >= main.s0 && b.m <= main.s1).map((b) => b.m);
+      // (nor past the catch or the ball's landing: the one shot from contact holds it)
+      if (main && touch >= main.s0 && touch <= main.s1) ms.push(touch);
       if (main) main.s0 = Math.min(main.s1 - 1.6, main.s0 + over, ms.length ? Math.min(...ms) - 0.7 : Infinity);
     }
     pieces.splice(0, pieces.length, ...pcs);

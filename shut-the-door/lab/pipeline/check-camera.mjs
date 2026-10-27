@@ -5,6 +5,12 @@
  *   node shut-the-door/lab/pipeline/check-camera.mjs --stride N   every Nth case (1: all of them)
  *   node shut-the-door/lab/pipeline/check-camera.mjs --limit N    the first N of those (reported, not held)
  *   node shut-the-door/lab/pipeline/check-camera.mjs --show N     print N of each kind of miss in full
+ *   node shut-the-door/lab/pipeline/check-camera.mjs --sample N   about N cases (held at the ceilings' rate)
+ *   node shut-the-door/lab/pipeline/check-camera.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ *
+ * The ceilings were measured on every case (--stride 1), the held set: that run is held to them as they
+ * are, and the nightly runs it. A bare run (every 10th case) or any --sample is a subset of it, held to
+ * the same rate (checkpoint.mjs: a ceiling of C over 58,498 plays is C * n / 58,498 over n).
  *
  * The owner (2026-10-26, on an iPhone): "the camera is super messed up when the ball is hit, and the
  * sequence of events feels off, not smooth, and very hard to follow visually." check-frame holds the
@@ -36,19 +42,25 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
+import { selection, holding, capStr, openCheckpoint } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const ONLY = (() => { const i = process.argv.indexOf('--only'); return i > 0 ? process.argv[i + 1] : null; })();
-const STRIDE = arg('--stride', 10), LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
+const SEL = selection({ heldStride: 1, defaultStride: 10, total: [...inplayCases()].length });
+const STRIDE = SEL.stride, LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
 const ASPECT = 390 / 457;
-const LIM = { WHIP_DEG: 3.0, ANG_JERK: 0.5, POS_JERK: 1.0, FOV_JERK: 0.05, MIN_SHOT_S: 0.55 };
-// (measured on every case, --stride 1, 2026-10-26: 39 of 58,498 plays left, against most plays on main.
-// whip: one wide crane on a long error throw. jerk: follow shots at the turn of a ground ball (just over the
-// limit). lost: a throw out of a wide or plate shot's frame. Lower these as they are fixed, never raise them)
-const CEILING = { whip: 1, jerk: 27, lost: 11, short: 0, 'mid-throw': 0, away: Infinity };
+const LIM = { WHIP_DEG: 1.0, ANG_JERK: 0.1, POS_JERK: 0.5, FOV_JERK: 0.02, MIN_SHOT_S: 0.55 };
+// The broadcast's pan caps (the owner, 2026-10-26: "a true broadcast feel... not pan so fast"): a pan of
+// at most 1 degree a frame (60 degrees a second, a third of the old 3), its change of speed 0.1 a frame a
+// frame (a fifth of 0.5), the camera's travel 0.5 ft (half of 1.0) and the zoom 0.02 (from 0.05).
+// Measured on every case, --stride 1, 2026-10-27, with the high home, high base and low first base cameras
+// (inplay.js): whip 321 of 58,498 plays (high base camera shots that must turn from the ball to a runner's
+// bag, at 1.0-1.1 degrees a frame), jerk 86, lost 7 (balls hit behind the plate, in a plate shot). Lower
+// these as they are fixed, never raise them.
+const CEILING = { whip: 321, jerk: 86, lost: 7, short: 0, 'mid-throw': 0, away: Infinity };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }
@@ -84,10 +96,12 @@ await page.evaluate(async (u) => { window.__plan = await import(u); }, warpUrl);
 
 const cases = [];
 let k = 0;
-for (const c of inplayCases()) { if (k++ % STRIDE) continue; if (ONLY && !`${c.pack} ${c.key}/${c.label} st ${c.st}`.includes(ONLY)) continue; if (cases.length >= LIMIT) break; cases.push(c); }
+for (const c of inplayCases()) { const kk = k++; if (kk % STRIDE || Math.floor(kk / STRIDE) % SEL.shard.n !== SEL.shard.i) continue; if (ONLY && !`${c.pack} ${c.key}/${c.label} st ${c.st}`.includes(ONLY)) continue; if (cases.length >= LIMIT) break; cases.push(c); }
 const rows = [], dist = { ang: [], angJ: [], posJ: [], fovJ: [], shot: [], fov: [] };
 const CHUNK = 300;
+const CK = openCheckpoint('check-camera', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK });
 for (let i = 0; i < cases.length; i += CHUNK) {
+  if (CK.has(i)) { const got = CK.get(i); rows.push(...got.out); for (const k2 of Object.keys(got.stats)) (dist[k2] ||= []).push(...got.stats[k2]); continue; }
   const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate(({ part, ASPECT, LIM }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [], warp = window.__plan.warp;
@@ -174,9 +188,12 @@ for (let i = 0; i < cases.length; i += CHUNK) {
   }, { part, ASPECT, LIM });
   rows.push(...got.out);
   for (const k2 of Object.keys(got.stats)) (dist[k2] ||= []).push(...got.stats[k2]);
+  CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
 console.log('');
+CK.close();
+const HOLD = holding({ stride: STRIDE, heldStride: 1, n: cases.length, heldN: SEL.total, partial: LIMIT !== Infinity || ONLY != null, shard: SEL.shard });
 const pct = (a, q) => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.min(b.length - 1, Math.floor(b.length * q))] : 0; };
 console.log('per frame at 60 fps: median, 99th, 99.9th, max');
 for (const [k2, u] of [['ang', 'deg turn'], ['angJ', 'deg turn change'], ['posJ', 'ft travel change'], ['fovJ', 'log lens change']]) console.log(`  ${k2.padEnd(5)} ${pct(dist[k2], 0.5).toFixed(3)} ${pct(dist[k2], 0.99).toFixed(3)} ${pct(dist[k2], 0.999).toFixed(3)} ${dist[k2].reduce((a, x) => Math.max(a, x), 0).toFixed(3)}  (${u})`);
@@ -186,16 +203,16 @@ let fails = 0;
 console.log('\nplays with a miss');
 for (const w of Object.keys(CEILING)) {
   const m = rows.filter((r) => r.miss && r.miss[w]);
-  const cap = LIMIT === Infinity ? CEILING[w] : Infinity, over = m.length > cap;
-  if (over) fails += m.length - cap;
+  const cap = HOLD.cap(CEILING[w]), over = m.length > cap;
+  if (over) fails += Math.ceil(m.length - cap);
   const byCam = {};
   for (const r of m) { const c2 = r.miss[w].cam || r.miss[w].to || '-'; byCam[c2] = (byCam[c2] || 0) + 1; }
-  console.log(`  ${over ? 'FAIL' : 'ok  '} ${w.padEnd(9)} ${String(m.length).padStart(6)} of ${rows.length}${cap !== Infinity ? ' (ceiling ' + cap + ')' : ''}  ${JSON.stringify(byCam)}`);
+  console.log(`  ${over ? 'FAIL' : 'ok  '} ${w.padEnd(9)} ${String(m.length).padStart(6)} of ${rows.length}${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  ${JSON.stringify(byCam)}`);
   for (const r of m.slice(0, SHOW)) console.log('     ', r.tag, JSON.stringify(r.miss[w]), '|', r.edit);
 }
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
-console.log(`\n${cases.length} cases, ${fails} over the ceiling`);
+console.log(`\n${cases.length} cases, ${fails} over the ceiling (${HOLD.label})`);
 await browser.close();
 server.close();
 process.exit(fails || errs.length ? 1 : 0);
