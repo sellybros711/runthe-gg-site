@@ -5,6 +5,11 @@
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --stride N   every Nth case
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --limit N    the first N of those (reported, not held)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --show N     print N of the worst in full
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --sample N   about N of the held 2,925 (held at the ceilings' rate)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --shard I/4 --rows-out F   a quarter of the run, its plays to F
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --combine DIR the shards' files in DIR, held as one run
+ *   (CI runs the held 2,925 as four shards and then --combine: the same plays, the same verdict, exactly)
  *
  * The owner (2026-10-24): "the fielding is extremely glitchy". check-catch holds the glove on the ball at
  * the moment of each catch; this holds every moment in between. Each case is staged the way the game
@@ -31,13 +36,15 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
+import { selection, holding, capStr, openCheckpoint, treeHash } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const ALL = process.argv.includes('--all');
-const STRIDE = ALL ? 1 : arg('--stride', 20), LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
+const SEL = selection({ heldStride: 20, total: [...inplayCases()].length });
+const STRIDE = ALL ? 1 : SEL.stride, LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
 const FPS = 60;
 // (--only N plays case N alone; JOLT_TRACE=F9:2.4:2.6 prints that body's points frame by frame)
 const ONLY = process.argv.includes('--only') ? arg('--only', 0) : null, TRACE = process.env.JOLT_TRACE || '';
@@ -53,36 +60,48 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // more bodies are measured (runners and covering fielders). The motion is the same: with every body measured
 // whether on screen or not, main had 9,147 plays over and this change 8,978, with no body code touched.
 // Recorded here once, for that reason only.
+// The broadcast camera plan (site PR #741, 2026-10-27) holds an infield play in one high shot and cuts less:
+// 108 fewer jump cuts and 2.0% more of each play shown (every 40th case), so frames a jump cut skipped are now
+// measured. With every body measured, on screen or not, main had 801 plays with a pop and 993 with a skate,
+// and #741 811 and 1,003. The rise is the frames shown, not motion: every fielder's and runner's track and
+// every act is identical to main's at every plan time (1,463 plays, max difference 0 ft), the posing change
+// (fielders.js aimFast) gives the same bones to the bit, and each row's worst speed holds. Accepted by the
+// coordinator on the terms of #710 and #725; these are the on screen counts at the default stride, once.
+// The flight and who catches it (site PR #742, 2026-10-27) changes the plays themselves: the same rows now have
+// new flights, catch spots and catchers, so a row's count is a count of different plays. Three pops it brought
+// were fixed at the source first (a run through catch held dead, the held glove dropped at a windup, a
+// backpedal that spun divers, reverted). With every body measured against main (0ed4342): plays with a pop
+// 1,641 against 1,635, with a skate 2,001 against 2,039. Recorded here once, on the coordinator's decision.
 const CEILING = {
-  'pop fielder -': 361,
-  'pop fielder bobble': 104,
-  'pop fielder catch': 31,
-  'pop fielder catch_throw': 4,
-  'pop fielder cover': 53,
-  'pop fielder dive': 13,
-  'pop fielder dive_short': 64,
-  'pop fielder field': 96,
-  'pop fielder leap_miss': 5,
-  'pop fielder pickup': 47,
-  'pop fielder reach': 20,
-  'pop fielder set': 20,
-  'pop fielder tag': 182,
-  'pop fielder throw': 7,
-  'pop runner run': 397,
-  'skate fielder -': 182,
+  'pop fielder -': 433,
+  'pop fielder bobble': 106,
+  'pop fielder catch': 12,
+  'pop fielder catch_throw': 2,
+  'pop fielder cover': 71,
+  'pop fielder dive': 16,
+  'pop fielder dive_short': 75,
+  'pop fielder field': 100,
+  'pop fielder leap_miss': 2,
+  'pop fielder pickup': 19,
+  'pop fielder reach': 10,
+  'pop fielder set': 16,
+  'pop fielder tag': 195,
+  'pop fielder throw': 8,
+  'pop runner run': 614,
+  'skate fielder -': 212,
   'skate fielder bobble': 22,
-  'skate fielder catch_throw': 5,
-  'skate fielder cover': 443,
-  'skate fielder dive': 10,
+  'skate fielder catch_throw': 3,
+  'skate fielder cover': 434,
+  'skate fielder dive': 14,
   'skate fielder field': 461,
-  'skate fielder leap_miss': 1,
-  'skate fielder pickup': 556,
-  'skate fielder reach': 40,
+  'skate fielder leap_miss': 0,
+  'skate fielder pickup': 619,
+  'skate fielder reach': 12,
   'skate fielder receive': 22,
-  'skate fielder set': 27,
-  'skate fielder tag': 344,
-  'skate fielder throw': 4,
-  'skate runner run': 640,
+  'skate fielder set': 28,
+  'skate fielder tag': 331,
+  'skate fielder throw': 6,
+  'skate runner run': 863,
 };
 
 function loadPlaywright() {
@@ -91,7 +110,11 @@ function loadPlaywright() {
 }
 const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
 const TYPES = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary' };
-const server = http.createServer((req, res) => {
+// (the page is opened only when there is something to measure: not for --combine, nor for a run whose
+// every chunk is in the checkpoint)
+let server = null, browser = null;
+async function openPage() {
+server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (rel.endsWith('/')) rel += 'index.html';
   const f = path.join(ROOT, rel);
@@ -100,7 +123,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
+browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 page.on('pageerror', (e) => console.log('page error', String(e).slice(0, 300)));
 await page.route('**/*', (route) => {
@@ -114,17 +137,40 @@ await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { wa
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 // the clips (fielder.glb) in, so the bodies run as the game shows them; nothing drawn
 await page.evaluate(async () => { const st = window.STD_STAGE.current; await st.inplay.motion; st.renderer.render = () => {}; });
+return page;
+}
+const COMBINE = process.argv.includes('--combine') ? process.argv[process.argv.indexOf('--combine') + 1] : null;
+const ROWS_OUT = process.argv.includes('--rows-out') ? process.argv[process.argv.indexOf('--rows-out') + 1] : null;
 
 const cases = [];
 let idx = 0;
 for (const c of inplayCases()) {
-  if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
+  if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0 && Math.floor(idx / STRIDE) % SEL.shard.n === SEL.shard.i) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
   idx++;
 }
 const rows = [];
 const CHUNK = 50;
 const t0 = Date.now();
-for (let i = 0; i < cases.length; i += CHUNK) {
+let page = null, nCases = cases.length, shardOf = SEL.shard;
+if (COMBINE) {
+  // the shards' plays, one run: each file the same code (its tree), stride and number of shards, every
+  // shard there once
+  const tree = treeHash();
+  const parts = fs.readdirSync(COMBINE).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(path.join(COMBINE, f), 'utf8')));
+  const n = parts[0] ? parts[0].shard.n : 0, got = new Set(parts.map((q) => q.shard.i));
+  for (const q of parts) if (q.tree !== tree || q.stride !== STRIDE || q.shard.n !== n || q.limit !== String(LIMIT) || q.only !== ONLY) throw new Error('--combine: a shard of another run (tree, stride, shards or limit differ)');
+  if (!n || got.size !== n || parts.length !== n) throw new Error(`--combine: ${parts.length} files for ${n} shards (${[...got].sort().join(', ')})`);
+  // (in the order a single run takes them: by case number, the tag's #N)
+  for (const q of parts) rows.push(...q.rows);
+  rows.sort((a, b) => +a.tag.slice(1, a.tag.indexOf(' ')) - +b.tag.slice(1, b.tag.indexOf(' ')));
+  nCases = parts.reduce((a, q) => a + q.n, 0);
+  shardOf = { i: 0, n: 1 };
+  console.log(`combined ${n} shards: ${nCases} plays`);
+}
+const CK = COMBINE ? null : openCheckpoint('check-jolt', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK, TRACE });
+for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
+  if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
+  page ||= await openPage();
   const got = await page.evaluate(({ part, FPS, BODY_MS, LIMB_MS, PLANT_M, PLANT_N, SKATE_MS, TRACE }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
     const facts0 = ip.facts, stub = { after: { t0: 0 }, f: { at: () => ({ x: 0, y: 1.2, z: 2.6 }) }, ball: st.pitch.ball, overlays: false };
@@ -189,9 +235,12 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     return out;
   }, { part: cases.slice(i, i + CHUNK), FPS, BODY_MS, LIMB_MS, PLANT_M, PLANT_N, SKATE_MS, TRACE });
   rows.push(...got);
+  CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
+if (CK) CK.close();
 console.log('');
+if (ROWS_OUT) fs.writeFileSync(ROWS_OUT, JSON.stringify({ tree: treeHash(), stride: STRIDE, limit: String(LIMIT), only: ONLY, shard: SEL.shard, n: cases.length, rows }));
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 // plays with each, by what and who and his last act
@@ -208,7 +257,10 @@ for (const r of rows) {
   }
   if (r.hits.length) worst.push({ tag: r.tag, ...r.hits.reduce((x, y) => (y.ms > x.ms ? y : x)) });
 }
-const held = LIMIT === Infinity && STRIDE === 20;
+// (held: the default 2,925, as the ceilings were measured; a sample of them, --sample or a stride that
+// is a multiple of 20, at the same rate; anything else reported)
+const HOLD = holding({ stride: STRIDE, heldStride: 20, n: nCases, heldN: Math.ceil(SEL.total / 20), partial: LIMIT !== Infinity || ONLY != null, shard: shardOf });
+const held = HOLD.mode !== 'report';
 let fails = 0;
 const any = (w) => rows.filter((r) => !r.err && r.hits.some((h) => h.what === w)).length;
 console.log(`\nbodies on screen at ${FPS} frames a second, ${rows.length - errs.length} plays (every ${STRIDE}${STRIDE === 1 ? 'st' : 'th'} case), ${((Date.now() - t0) / 1000).toFixed(0)} s`);
@@ -216,16 +268,16 @@ console.log(`  plays with a pop: ${any('pop')}, with a skate: ${any('skate')}`);
 const keys = new Set([...Object.keys(by), ...(held ? Object.keys(CEILING) : [])]);
 for (const key of [...keys].sort((a, b) => (by[b]?.plays ?? 0) - (by[a]?.plays ?? 0))) {
   const b = by[key] || { plays: 0, worst: 0 };
-  const cap = held ? CEILING[key] ?? 0 : Infinity;
+  const cap = held ? HOLD.cap(CEILING[key] ?? 0) : Infinity;
   const over = b.plays > cap;
-  if (over) fails += b.plays - cap;
-  console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(28)} ${String(b.plays).padStart(6)} plays${cap !== Infinity ? ' (ceiling ' + cap + ')' : ''}  worst ${b.worst.toFixed(1)} m/s`);
+  if (over) fails += Math.ceil(b.plays - cap);
+  console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(28)} ${String(b.plays).padStart(6)} plays${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  worst ${b.worst.toFixed(1)} m/s`);
 }
 for (const r of rows) for (const q of r.trace || []) console.log('TRACE', JSON.stringify(q));
 if (process.env.JOLT_DUMP) for (const r of rows) for (const h of (r.hits || []).filter((x) => !process.env.JOLT_WHAT || `${x.what} ${x.who} ${x.act}` === process.env.JOLT_WHAT)) console.log('HIT', r.tag, JSON.stringify(h));
 if (SHOW) for (const w of worst.sort((a, b) => b.ms - a.ms).slice(0, SHOW)) console.log(JSON.stringify(w));
 if (process.env.JOLT_CEILING) console.log('\nCEILING = ' + JSON.stringify(Object.fromEntries(Object.entries(by).map(([k, b]) => [k, b.plays]).sort())));
-console.log(`\n${rows.length - errs.length} plays, ${fails} over the ceiling${held ? '' : ' (a partial run: reported, not held)'}`);
-await browser.close();
-server.close();
+console.log(`\n${rows.length - errs.length} plays, ${fails} over the ceiling (${HOLD.label})`);
+if (browser) await browser.close();
+if (server) server.close();
 process.exit(fails || errs.length ? 1 : 0);

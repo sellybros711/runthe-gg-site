@@ -13,11 +13,15 @@ name: Shut The Door browser check
 # only where it reads pixels (its header says why and how), which is what lets it finish here.
 #
 # A second job, contact, runs beside it: every swing the engine says met the ball, posed in the
-# game page, the ball on the bat (shut-the-door/lab/pipeline/check-contact.mjs).
+# game page, the ball on the bat (shut-the-door/lab/pipeline/check-contact.mjs). It runs as four
+# shards side by side (--shard 0/4 to 3/4): the packs split between them by size, every case in
+# exactly one, so the four together are the whole run, and each limit is per case, so a shard is held
+# as the whole run is. Each pack is measured on a freshly loaded page, so a shard measures its packs
+# exactly as the whole run does.
 #
 # Runs locally, unchanged:
 #   node shut-the-door/test/check-browser.mjs
-#   node shut-the-door/lab/pipeline/check-contact.mjs
+#   node shut-the-door/lab/pipeline/check-contact.mjs              (or --shard 2/4, --sample N, --resume)
 #
 # No secrets, no deploy.
 
@@ -66,8 +70,13 @@ jobs:
           printf '::notice title=check-browser output::%s\n' "$(tail -c 3900 check-browser.txt | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
 
   contact:
+    name: contact (shard ${{ matrix.shard }} of 4)
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -80,7 +89,7 @@ jobs:
       - name: Every contact meets the bat, every whiff misses it
         run: |
           set -o pipefail
-          node shut-the-door/lab/pipeline/check-contact.mjs 2>&1 | tr '\r' '\n' | grep -v ' cases *$' | tee check-contact.txt
+          node shut-the-door/lab/pipeline/check-contact.mjs --shard ${{ matrix.shard }}/4 2>&1 | tr '\r' '\n' | grep -v ' cases *$' | tee check-contact.txt
       - name: Failures as annotations
         if: always()
         run: |

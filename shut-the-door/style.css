@@ -1030,8 +1030,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 #s-mound .scene { position: absolute; inset: 0; overflow: hidden; background: #0b1020; touch-action: manipulation; }
 .mhud { position: absolute; inset: 0; z-index: 10; pointer-events: none; color: var(--g-ink); }
 .mhud [data-hud] { pointer-events: auto; }
-.mh-card, .mh-menu, .arsenal, .msheet, .pad-say, .mini { -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3); }
-.mh-card, .mh-menu, .arsenal, .msheet, .pad-say { background: var(--g); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); color: var(--g-ink); }
+.mh-card, .mh-menu, .arsenal, .runbar, .msheet, .pad-say, .mini { -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3); }
+.mh-card, .mh-menu, .arsenal, .runbar, .msheet, .pad-say { background: var(--g); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); color: var(--g-ink); }
 
 /* top left: the scorebug, the batter card under it, the proxy note */
 .mh-tl { position: absolute; top: calc(var(--st) + var(--gut)); left: calc(var(--sl) + var(--gut)); width: calc(var(--col) - var(--gut) * 2 - var(--sl) - var(--sr));
@@ -1147,6 +1147,32 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 
 @media (prefers-reduced-motion: reduce) { .pbp { transition: none; } }
 
+/* ---- the running game (rules 7): a row over the pitch buttons while a runner is on. QUICK DELIVERY
+   is a switch (the slide step), PICKOFF a button with the disengagements left as two ticks. Glass,
+   thumb tall, in the dock (data-hud), so never over the zone, the batter or the plate. */
+.runbar { display: flex; gap: 4px; padding: 4px; border-radius: 15px; }
+.runbar[hidden] { display: none; }
+.dock.metering .runbar, .dock.replaying .runbar { visibility: hidden; }
+.rb-quick, .rb-po { min-width: 0; min-height: 44px; margin: 0; padding: 5px 10px 5px 12px; border-radius: 12px; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-ink);
+  display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rb-quick { flex: 1 1 auto; }
+.rb-po { flex: 0 0 39%; }
+.rb-po[hidden] { display: none; }
+.rb-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.rb-t b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 16px; line-height: 1; letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-t small { font-size: 10.5px; font-weight: 600; line-height: 1.15; color: var(--g-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rb-sw { flex: none; position: relative; width: 36px; height: 22px; border-radius: 11px; background: var(--g-line); box-shadow: inset 0 0 0 1px var(--g-line); transition: background .15s; }
+.rb-sw::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); transition: transform .15s; }
+.rb-quick[aria-pressed="true"] { border-color: var(--signal); box-shadow: inset 0 0 0 1px var(--signal); }
+.rb-quick[aria-pressed="true"] .rb-sw { background: var(--signal); }
+.rb-quick[aria-pressed="true"] .rb-sw::after { transform: translateX(14px); }
+.rb-po .ab-dots { display: inline-flex; gap: 3px; flex: none; }
+.rb-po .ab-dots i { width: 6px; height: 14px; border-radius: 2px; background: var(--g-line); }
+.rb-po .ab-dots i.on { background: var(--data); box-shadow: 0 0 6px rgba(91, 130, 255, .5); }
+.rb-po.balk small { color: var(--signal); }
+.rb-quick:active, .rb-po:active { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) { .rb-sw, .rb-sw::after { transition: none; } }
+
 /* ---- ABS challenges (rules 4). The scorebug's marks, the button beside THROW, the replay ---- */
 /* challenges left a side: two ticks after the club's name, lit while one is left */
 .sb-ch { display: inline-flex; gap: 3px; flex: none; margin-left: -2px; }
@@ -1223,7 +1249,13 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 
 /* sideways (a phone held flat, a desk): the left column, the dock in the bottom right corner as a
    list, the play by play bottom left. The zone keeps the middle. */
-@media (orientation: landscape) {
+/* THE CORNER LAYOUT (the owner, 2026-10-27: at half a desk's width "the batter is cropped and huge",
+   the card full width over his head, the pitches in two rows across the bottom). The card top left
+   and the pitch list in the bottom right corner whenever the screen is sideways, or upright but
+   big enough to have corners (a tablet, a desk window at half width): 700 px wide and 600 tall. Only a
+   phone held upright keeps the full width card and the dock along the bottom. ui.js wideHud asks
+   the same question (WIDE_HUD). */
+@media (orientation: landscape), (min-width: 700px) and (min-height: 600px) {
   #s-mound { --col: 330px; --dock-w: 252px; }
   .dock { left: auto; }
   #s-mound .mh-bug { max-width: none; }
@@ -1264,8 +1296,9 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .mh-card .seg { order: 2; flex: 1 0 100%; }
   .bb-name b { font-size: 18px; }
 }
-/* a desk: a size up, the pitch list The Show's way */
-@media (orientation: landscape) and (min-width: 1000px) and (min-height: 600px) {
+/* a desk: a size up, the pitch list The Show's way (sideways or not: a desk window at half width is
+   still a desk) */
+@media (min-width: 1000px) and (min-height: 600px) {
   #s-mound { --gut: 20px; --col: 400px; --dock-w: 300px; --tap: 40px; }
   .mh-bug { padding: 8px 16px 8px 12px; gap: 14px; border-radius: 14px; }
   .mh-bug .sb-team { height: 26px; }
