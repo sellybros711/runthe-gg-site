@@ -2936,6 +2936,39 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* Every control on the front screen is a 44px target, the size a thumb can hit mid-show. */
   .how h3 .btn, .vpick .vp-hd .btn{min-height:44px; padding-left:14px; padding-right:14px;}
   .band.soon .linkbtn{min-height:44px; display:inline-flex; align-items:center;}
+
+  /* ── THE PIXEL KIT on every other screen (2026-10-27) ───────────────────────────────────────
+     Tour, Songs, Board, You, the scorecard and every sheet get the front screen's surfaces: square
+     corners, a 2px outline, a hard shadow, and buttons that press down into it. Fills stay solid and
+     the faces stay the game's own, so every word reads exactly as it did. Only the surfaces change. */
+  :root{--pxo:#05030C; --pxs:rgba(0,0,0,.55);}
+  :root[data-theme="light"]{--pxo:#1B1726; --pxs:rgba(27,23,38,.26);}
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){--pxo:#1B1726; --pxs:rgba(27,23,38,.26);} }
+  :is(body[data-screen="tour"], body[data-screen="songs"], body[data-screen="board"], body[data-screen="profile"],
+      body[data-screen="nights"], body[data-screen="browse"], body[data-screen="result"]) #app :is(.card, .sgnudge),
+  .sheet .inner{border-radius:3px; border:2px solid var(--pxo); box-shadow:4px 4px 0 var(--pxs);}
+  .sheet .inner{border-radius:3px 3px 0 0; border-bottom:0; box-shadow:none;}
+  :is(body[data-screen="tour"], body[data-screen="songs"], body[data-screen="board"], body[data-screen="profile"],
+      body[data-screen="nights"], body[data-screen="browse"], body[data-screen="result"]) #app .btn,
+  .sheet .btn{border-radius:2px; border:2px solid var(--pxo); box-shadow:3px 3px 0 var(--pxs);}
+  :is(body[data-screen="tour"], body[data-screen="songs"], body[data-screen="board"], body[data-screen="profile"],
+      body[data-screen="nights"], body[data-screen="browse"], body[data-screen="result"]) #app :is(.btn, .sgnudge):active:not(:disabled),
+  .sheet .btn:active:not(:disabled){transform:translate(2px,2px); box-shadow:1px 1px 0 var(--pxs);}
+  #app .binput{border-radius:2px; border:2px solid var(--pxo);}
+  #app .segbar{border-radius:2px; border:2px solid var(--pxo);}
+  #app .segbar button{border-radius:1px;}
+  #app .gate-i{border-radius:3px;}
+
+  /* The band, on a strip of deck over each of those screens: the same four, with the screen's own
+     prop (the bus, a record crate, a trophy, your setlists). Scenery: hidden from screen readers and
+     never a button. The box only shows once the strip has painted, so if the module never loads the
+     screen is exactly what it was. */
+  .stripbox{display:none; height:84px; margin:14px 0 2px; overflow:hidden; background:#120D22;
+    border:3px solid #0B0818; border-radius:3px; box-shadow:4px 4px 0 var(--pxs);}
+  .stripbox canvas{display:block; height:100%; margin:0 auto; image-rendering:pixelated; image-rendering:crisp-edges;}
+  :is(body[data-screen="tour"], body[data-screen="songs"], body[data-screen="board"], body[data-screen="profile"],
+      body[data-screen="nights"], body[data-screen="browse"]) .stripbox:has(> canvas.on){display:block;}
+  @media (min-width:900px){ .stripbox{max-width:780px; margin-left:auto; margin-right:auto;} }
 </style>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
@@ -2970,6 +3003,7 @@ window.GA_ID='G-L29P5MRWKE';
     </button>
     </div>
   </div>
+  <div class="stripbox" aria-hidden="true"><canvas id="bandStrip"></canvas></div>
   <main id="app" aria-live="polite"></main>
 
   <!-- Outside #app on purpose: render() replaces the contents of #app on every state
@@ -3664,7 +3698,26 @@ function setScreen(name){
      without coming through here, and it saves for itself. */
   if (name === 'reveal' || name === 'draft') saveDraft();
   render();
+  mountStrip(name);
   if (changed) window.scrollTo(0, 0);
+}
+
+/* THE BAND STRIP over the browsing screens. It lives outside #app, so a screen that re-renders itself
+   (the board landing, the tour dates arriving) never rebuilds it; it changes only with the screen. */
+const STRIP_ACT = { tour: 'tour', songs: 'songs', board: 'board', profile: 'you', nights: 'you', browse: 'you' };
+function mountStrip(name){
+  const act = STRIP_ACT[name] || null;
+  if (S.strip && S.strip.act === act) return;
+  if (S.strip){ S.strip.h.destroy(); S.strip = null; }
+  const mine = S.stripSeq = (S.stripSeq || 0) + 1;
+  const cv = document.getElementById('bandStrip');
+  if (!act || !cv) return;
+  const go = () => import('./backstage.js?v=5').then(m => {
+    if (mine !== S.stripSeq || S.strip) return;
+    S.strip = { act, h: m.createStrip(cv, { act, sign: busSign(),
+      reduce: matchMedia('(prefers-reduced-motion: reduce)').matches }) };
+  }).catch(() => {});
+  (window.requestIdleCallback || (f => setTimeout(f, 200)))(go);
 }
 
 /* THE TAB BAR, kept in step with the screen from one place.
@@ -3908,7 +3961,7 @@ function mountBackstage(){
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
   const cv = document.getElementById('heroStage');
   if (!cv) return;
-  const go = () => import('./backstage.js?v=4').then(m => {
+  const go = () => import('./backstage.js?v=5').then(m => {
     if (!cv.isConnected || S.backstage) return;
     S.backstage = m.createBackstage(cv, { sign: busSign(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });

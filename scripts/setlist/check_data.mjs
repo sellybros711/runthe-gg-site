@@ -2842,6 +2842,17 @@ if (prose) {
     'and stops when the screen changes');
 }
 
+/* THE BAND STRIP (2026-10-27) over Tour, Songs, Board and You: backstage.js again, so the same rules.
+   It sits outside #app so a screen re-rendering itself cannot rebuild it, it is hidden from screen
+   readers, and it loads after the screen is up. */
+{
+  check(/<div class="stripbox" aria-hidden="true"><canvas id="bandStrip"><\/canvas><\/div>\s*<main id="app"/.test(game),
+    'the band strip is scenery, outside #app');
+  const strip = cdSlice('function mountStrip(name){', '\n}');
+  check(/requestIdleCallback/.test(strip) && /import\('\.\/backstage\.js\?v=\d+'\)/.test(strip) && /createStrip/.test(strip),
+    'and it loads after the screen is up, from backstage.js');
+}
+
 console.log();
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
 process.exit(failures ? 1 : 0);
