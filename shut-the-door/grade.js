@@ -154,6 +154,20 @@ function stateIndex(N, M, bi, b, s, outs, bases, margin) {
    tied, 0 (keep them from going ahead). See THE GOAL above. */
 function goalOf(st) { return st.margin >= 1 ? 1 : 0; }
 
+/* A memo with a ceiling, for the caches keyed by a number that moves with every
+   pitch (the tired spread, which effort makes continuous, and a free aim point).
+   Unbounded, they kept every pitch of a session: about 1 MB of heap an outing,
+   for a page that plays outing after outing (check-leak.mjs). Past cap entries
+   the oldest goes (a Map iterates in insertion order). A miss recomputes the
+   same pure value from its key, so no number the engine plays moves. The caps
+   are several pitches' working set (one pitch adds at most about 130 to the
+   call mass, 5 to the kernels, 1 to the aim rows). */
+const CAP = { kf: 32, cm: 768, ka: 128 };
+function capSet(map, k, v, cap) {
+  if (map.size >= cap) map.delete(map.keys().next().value);
+  map.set(k, v);
+}
+
 /* ---- the model over one pack ------------------------------------------ */
 
 function Model(pack, opts) {
@@ -687,7 +701,7 @@ Model.prototype.kernelAt = function (type, f) {
   let ker = this._kf.get(k);
   if (!ker) {
     ker = kernelFor(this.arsenal.find(a => a.type === type).sigmaFt * f, this.zoneFt);
-    this._kf.set(k, ker);
+    capSet(this._kf, k, ker, CAP.kf);
   }
   return ker;
 };
@@ -766,7 +780,7 @@ Model.prototype.kernelRowAim = function (type, f, cell, at) {
   if (!row) {
     const p = K.aimPoint(cell, at);
     row = kernelRowAt(this.arsenal.find(a => a.type === type).sigmaFt * f, this.zoneFt, p.x, p.zn);
-    this._ka.set(k, row);
+    capSet(this._ka, k, row, CAP.ka);
   }
   return row;
 };
@@ -857,7 +871,7 @@ Model.prototype.callMass = function (type, f, target, at) {
       m[row * 5 + g.xs[i][3]] += wz[j] * wx[i] * Pj[i];
     }
   }
-  this._cm.set(key, m);
+  capSet(this._cm, key, m, CAP.cm);
   return m;
 };
 
