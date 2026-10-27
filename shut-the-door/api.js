@@ -120,6 +120,9 @@
       const s = seed == null ? R.practiceSeed(Date.now() + ':' + practiceN) : (seed >>> 0);
       const id = 'practice:' + s + ':' + (++practiceN);
       const o = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id });
+      // one practice outing at a time: the page only ever plays the newest, and each kept one held
+      // its whole log and every pitch's context (about 200 KB) for the life of the page
+      for (const k of Object.keys(outings)) if (k.startsWith('practice:')) delete outings[k];
       outings[id] = { o, day: null, number: null };
       return clone(E.publicState(o));
     }
