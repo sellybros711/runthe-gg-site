@@ -1044,17 +1044,32 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 .mh-bug .sb-bases { width: 32px; height: 24px; }
 .mh-bug .sb-outs { gap: 4px; height: 8px; }
 .mh-bug .sb-outs i { width: 8px; height: 8px; }
-.mh-card { align-self: stretch; border-radius: 14px; padding: 8px 8px 8px 12px; min-width: 0; }
-.bb-top { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; padding-right: 4px; }
-.bb-name { display: flex; align-items: center; gap: 7px; white-space: nowrap; min-width: 0; }
-.bb-name b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 20px; line-height: 1.1; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; }
-.mh-card .hand { flex: none; background: var(--g-2); border-color: var(--g-line); color: var(--g-ink); }
-.mh-card .legend { display: flex; align-items: center; gap: 4px; margin-left: auto; flex: none; font-family: var(--display); font-weight: 600; font-size: 12.5px; color: var(--g-dim); font-variant-numeric: tabular-nums; }
+.mh-card { align-self: stretch; border-radius: 14px; padding: 5px 5px 5px 12px; min-width: 0; }
+/* THE AT BAT LINE: one slim row (the owner, 2026-10-27). The eyebrow carries at bat, his side and
+   his line; the name under it; SCOUT on the right opens the drawer. */
+.bb-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bb-id { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.bb-eye { display: flex; align-items: baseline; gap: 7px; min-width: 0; white-space: nowrap; line-height: 1.1; }
+.bb-ab { flex: none; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--signal); }
+.bb-hand { flex: none; font-family: var(--display); font-weight: 700; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--g-dim); }
+.bb-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--display); font-weight: 600; font-size: 12.5px; letter-spacing: .02em; color: var(--g-ink); opacity: .86; font-variant-numeric: tabular-nums; }
+.bb-nm { display: block; min-width: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 20px; line-height: 1.05; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 2px; }
+.bb-drawer { display: inline-flex; align-items: center; gap: 6px; padding: 0 11px 0 13px; }
+.bb-drawer svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: transform .18s ease; }
+.bb-drawer[aria-expanded="true"] svg { transform: rotate(180deg); }
+/* THE DRAWER: the same card, grown down. It shows at once (the layout is final the moment it opens,
+   so the minimap and the sheets place against it), and only its contents fade in. */
+.bb-drawer-box { margin: 6px 4px 2px -4px; padding-top: 7px; border-top: 1px solid var(--g-line); }
+.bb-drawer-box:not([hidden]) { animation: bb-in .16s ease-out; }
+@keyframes bb-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .bb-drawer-box:not([hidden]) { animation: none; } .bb-drawer svg { transition: none; } }
+.mh-card .legend { display: flex; align-items: center; gap: 4px; flex: none; font-family: var(--display); font-weight: 600; font-size: 12.5px; color: var(--g-dim); font-variant-numeric: tabular-nums; padding-right: 2px; }
 .mh-card .legend i { width: 10px; height: 10px; border-radius: 3px; }
 .mh-card .legend .lo { background: rgb(59, 111, 216); }
 .mh-card .legend .hi { background: rgb(221, 64, 52); margin-left: 5px; }
-.bb-line { display: block; margin: 1px 0 0; color: var(--g-dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.heatbar { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+.heatbar { display: flex; align-items: center; gap: 10px; }
+.bb-togs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.bb-togs .mh-tog { min-width: 0; }
 .mh-tog { flex: none; height: var(--tap); min-width: var(--tap); padding: 0 12px; border-radius: 11px; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-ink);
   font-family: var(--display); font-weight: 700; font-size: 13.5px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
 .mh-tog.on, .mh-tog[aria-expanded="true"] { background: var(--signal); border-color: var(--signal); color: #fff; }
@@ -1291,10 +1306,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .btn.abs-b b { font-size: 18px; }
   .absr { gap: 8px; padding: 10px 10px 12px; }
   .ar-v { font-size: 21px; }
-  /* a narrow column: the switch on its own row under the toggles */
-  .heatbar { flex-wrap: wrap; }
-  .mh-card .seg { order: 2; flex: 1 0 100%; }
-  .bb-name b { font-size: 18px; }
+  .bb-nm { font-size: 18px; }
 }
 /* a desk: a size up, the pitch list The Show's way (sideways or not: a desk window at half width is
    still a desk) */
@@ -1306,9 +1318,10 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .mh-bug .sb-team b { font-size: 28px; }
   .mh-bug .sb-inn { font-size: 15px; padding: 7px 9px; }
   .mh-bug .sb-bases { width: 40px; height: 30px; }
-  .mh-card { padding: 10px 10px 10px 14px; }
-  .bb-name b { font-size: 24px; }
-  .bb-line { font-size: 13px; }
+  .mh-card { padding: 6px 6px 6px 14px; }
+  .bb-nm { font-size: 23px; }
+  .bb-ab, .bb-hand { font-size: 12px; }
+  .bb-line { font-size: 13.5px; }
   #m-arsenal[data-n] .pitch { min-height: 50px; padding: 6px 12px; }
   #m-arsenal[data-n] .pt b { font-size: 21px; }
   #m-arsenal[data-n] .pk { width: 26px; height: 26px; font-size: 16px; }

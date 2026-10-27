@@ -11,7 +11,7 @@
  *      stats, past dailies, settings, account
  *   3. the grid is the pitcher's view: cell 0 (catcher's left) is drawn on the
  *      right, through screenCol()
- *   4. take the mound, scout the batter (the heat map lands on the same grid)
+ *   4. take the mound, the at bat line, the scout drawer (shut at first; the heat map lands on the same grid only while it is open)
  *   5. throw a whole outing to a result: every pitch animates, a tap skips it
  *      and none is needed. Between the first pitch and the last nothing is
  *      graded or tipped: no grade card, no strip square, no band word, no
@@ -470,7 +470,10 @@ async function playOuting(page, o) {
     if (i === 0 && o.shot) await o.shot('ready');
     const label = await page.textContent('#m-throw');
     if (!/throw|shut it/.test(label)) { r.problems.push('the throw button was not ready: ' + label); break; }
+    const drawerWas = i === 0 && o.drawerOpen ? await page.evaluate(() => !document.getElementById('m-drawer').hidden) : null;
     await page.click('#m-throw');
+    if (drawerWas != null) ok(drawerWas && await page.evaluate(() => document.getElementById('m-drawer').hidden && !document.querySelector('#m-aim .aim-heat i[style*="background"]')),
+      '5 the scout drawer, open through the aim and the pick, shuts on the throw and takes the heat with it');
     /* The release meter (draft PR #658, the owner's call 2026-10-22): where the page has one and
        the setting is on, the throw button starts a needle and the next tap on it is the release.
        That page must show it, and it gets its tap here (after its own 120 ms guard against the tap
@@ -878,19 +881,48 @@ async function run(w, h, theme) {
   ok(drag.tag.indexOf(drag.words) === 0 && !/\b(left|right)\b/.test(drag.tag), '3 the crosshair says where in inside and away words ("' + drag.tag + '")');
   ok(drag.ready && drag.say === 'tap throw' && drag.scroll.join() === scroll0.join(), '3 the throw button is ready, the step line says throw, and the page did not scroll');
   await shot('aimed');
-  /* the heat map is always on: 25 painted tiles in the on-field aim before any tap, and the card opens over it */
-  const heat = await page.evaluate(() => [...document.querySelectorAll('#m-aim .aim-heat i')].filter((c) => c.style.background).length);
-  ok(heat === 25, '4 the heat map is in the on-field zone before any tap, on the same 25 cells');
+  /* THE SCOUT DRAWER (the owner, 2026-10-27): the at bat line is one slim row, the drawer starts shut
+     and the zone carries no heat until SCOUT opens it. Open, the heat is on the same 25 cells and the
+     drawer stays off the zone. Its report opens and closes; a tap on the zone keeps it open (aiming
+     is play), a tap outside shuts it and the heat goes with it. */
+  const painted = () => page.evaluate(() => [...document.querySelectorAll('#m-aim .aim-heat i')].filter((c) => c.style.background).length);
+  const shut = await page.evaluate(() => ({ drawer: document.getElementById('m-drawer').hidden, exp: document.getElementById('m-drawer-b').getAttribute('aria-expanded'),
+    h: Math.round(document.getElementById('m-card').getBoundingClientRect().height), tap: Math.round(document.getElementById('m-drawer-b').getBoundingClientRect().height),
+    name: document.getElementById('m-bname').textContent, line: document.getElementById('m-bline').textContent, hand: document.getElementById('m-bhand').textContent,
+    want: (() => { const S = window.STD_UI.state, b = S.scn.batters[S.outing.batterIndex]; return { name: b.name, line: b.line, bats: b.bats }; })() }));
+  ok(shut.drawer && shut.exp === 'false' && (await painted()) === 0, '4 the scout drawer starts shut and the zone carries no heat');
+  ok(shut.h <= 64 && shut.tap >= 38, '4 the at bat line is one slim row (' + shut.h + ' px), SCOUT thumb tall (' + shut.tap + ' px)');
+  const lineNums = (t) => (String(t).match(/\d*\.?\d+/g) || []).join(' ');
+  ok(shut.name === shut.want.name && shut.hand === 'bats ' + shut.want.bats && lineNums(shut.line) === lineNums(shut.want.line),
+    '4 the line reads his name, his side and his numbers from the pack ("' + shut.hand + ' ' + shut.line + '")');
+  await page.click('#m-drawer-b');
+  await page.waitForSelector('#m-drawer:not([hidden])');
+  const open = await page.evaluate(() => {
+    const d = document.getElementById('m-card').getBoundingClientRect(), z = document.querySelector('#m-aim .aim-zone').getBoundingClientRect();
+    return { exp: document.getElementById('m-drawer-b').getAttribute('aria-expanded'), clear: d.bottom <= z.top + 1 || d.right <= z.left + 1 };
+  });
+  ok(open.exp === 'true' && (await painted()) === 25, '4 SCOUT opens the drawer and the heat map is in the on-field zone, on the same 25 cells');
+  ok(open.clear, '4 the open drawer stays off the zone');
+  await shot('scout-drawer');
   await page.click('#m-batter');
   await page.waitForSelector('#m-scout:not([hidden])');
   await shot('scout');
   await page.click('#m-heat [data-heat="swing"]');
   const swingOn = await page.evaluate(() => document.querySelector('#m-heat [data-heat="swing"]').getAttribute('aria-selected') === 'true');
-  ok(swingOn, '4 the damage and swings switch is on the mound, outside the card');
+  ok(swingOn, '4 the damage and swings switch is in the drawer');
   await shot('scout-swings');
   await page.click('#m-heat [data-heat="damage"]');
   await page.click('#m-batter');
-  ok(await page.evaluate(() => document.getElementById('m-scout').hidden), '4 scouting closes on a second tap');
+  ok(await page.evaluate(() => document.getElementById('m-scout').hidden), '4 the report closes on a second tap');
+  const keep = await page.evaluate(() => window.STD_UI.state.cell);
+  await page.click(`#m-aim .cell[data-cell="${keep}"]`);
+  ok(await page.evaluate(() => !document.getElementById('m-drawer').hidden), '4 a tap on the zone aims and keeps the drawer open');
+  await page.click('#m-drawer-b');
+  ok(await page.evaluate(() => document.getElementById('m-drawer').hidden) && (await painted()) === 0, '4 SCOUT shuts the drawer and the heat goes with it');
+  await page.click('#m-drawer-b');
+  await page.mouse.click(4, Math.round((await page.evaluate(() => innerHeight)) * 0.55));
+  ok(await page.evaluate(() => document.getElementById('m-drawer').hidden) && (await painted()) === 0, '4 a tap outside shuts the drawer');
+  await page.click('#m-drawer-b');
 
   /* 10 */
   at('10 the framing');
@@ -942,7 +974,7 @@ async function run(w, h, theme) {
 
   /* 5 */
   at('5 the outing', 900);
-  const play = await playOuting(page, { w, h, shot });
+  const play = await playOuting(page, { w, h, shot, drawerOpen: true });
   if (is3d) pixelsOk('5 after the outing the canvas still draws', await canvasRenders(page));
   ok(play.pitches > 0, '5 a whole outing on the real engine (' + play.pitches + ' pitches)');
   ok(play.problems.length === 0, '5 nothing graded, tipped or over the field from the first pitch to the last' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));

@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=34">
+<link rel="stylesheet" href="style.css?v=35">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -138,23 +138,34 @@
         <div class="sb-count" id="m-count" role="img" aria-label="0 balls, 0 strikes"></div>
         <div class="sb-stat sb-pn"><b id="m-pn">1</b><span class="sb-lbl">pitch</span></div>
       </div>
-      <div class="mh-card" data-hud>
-        <div class="bb-top">
-          <span class="bb-name"><b id="m-bname"></b><span class="hand" id="m-bhand"></span></span>
-          <span class="legend" id="m-heat-legend"></span>
-        </div>
-        <span class="bb-line" id="m-bline"></span>
-        <div class="heatbar" id="m-heat">
-          <button class="mh-tog bb-scout" id="m-batter" type="button" aria-expanded="false" aria-controls="m-scout">scout</button>
-          <div class="seg sm" role="group" aria-label="What the zone shows">
-            <button type="button" data-heat="damage" aria-selected="true">damage</button>
-            <button type="button" data-heat="swing" aria-selected="false">swings</button>
+      <!-- THE AT BAT LINE (the owner, 2026-10-27: "minimal clutter on the gameplay"). One slim row: at
+           bat, the name, his side, his line from the pack, and SCOUT. SCOUT opens the drawer under it
+           (the zone's heat, the report, the guide, the key, the earlier at bats). It starts closed
+           every at bat, closes on SCOUT, a tap outside or the throw, and never opens by itself. -->
+      <div class="mh-card" id="m-card" data-hud>
+        <div class="bb-row">
+          <div class="bb-id">
+            <span class="bb-eye"><span class="bb-ab">at bat</span><span class="bb-hand" id="m-bhand"></span><span class="bb-line" id="m-bline"></span></span>
+            <b class="bb-nm" id="m-bname"></b>
           </div>
-          <button class="mh-tog guide-tog" id="m-guide-b" type="button" aria-expanded="false" aria-controls="m-guide">guide</button>
-          <button class="mh-tog key-tog" id="m-key-b" type="button" aria-expanded="false" aria-controls="m-key" aria-label="Pitch dot key">key</button>
+          <button class="mh-tog bb-drawer" id="m-drawer-b" type="button" aria-expanded="false" aria-controls="m-drawer">scout<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></button>
         </div>
-        <div class="pa-hist" id="m-pas" role="group" aria-label="Earlier at bats" hidden></div>
-        <div class="dotkey" id="m-key" hidden><span><i class="pd ball"></i>ball</span><span><i class="pd called"></i>called</span><span><i class="pd swing"></i>swinging</span><span><i class="pd foul"></i>foul</span><span><i class="pd inplay"></i>in play</span><span id="m-key-abs" hidden><i class="pd called abs"></i>overturned</span></div>
+        <div class="bb-drawer-box" id="m-drawer" role="region" aria-label="Scouting" hidden>
+          <div class="heatbar" id="m-heat">
+            <div class="seg sm" role="group" aria-label="What the zone shows">
+              <button type="button" data-heat="damage" aria-selected="true">damage</button>
+              <button type="button" data-heat="swing" aria-selected="false">swings</button>
+            </div>
+            <span class="legend" id="m-heat-legend"></span>
+          </div>
+          <div class="bb-togs">
+            <button class="mh-tog bb-scout" id="m-batter" type="button" aria-expanded="false" aria-controls="m-scout">report</button>
+            <button class="mh-tog guide-tog" id="m-guide-b" type="button" aria-expanded="false" aria-controls="m-guide">guide</button>
+            <button class="mh-tog key-tog" id="m-key-b" type="button" aria-expanded="false" aria-controls="m-key" aria-label="Pitch dot key">key</button>
+          </div>
+          <div class="dotkey" id="m-key" hidden><span><i class="pd ball"></i>ball</span><span><i class="pd called"></i>called</span><span><i class="pd swing"></i>swinging</span><span><i class="pd foul"></i>foul</span><span><i class="pd inplay"></i>in play</span><span id="m-key-abs" hidden><i class="pd called abs"></i>overturned</span></div>
+          <div class="pa-hist" id="m-pas" role="group" aria-label="Earlier at bats" hidden></div>
+        </div>
       </div>
       <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
     </div>
@@ -331,7 +342,7 @@
 <script src="mock-api.js?v=12"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=1"></script>
-<script src="ui.js?v=42"></script>
+<script src="ui.js?v=43"></script>
 <script type="module" src="3d/boot.js?v=61"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
