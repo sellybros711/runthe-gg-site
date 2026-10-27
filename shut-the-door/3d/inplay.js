@@ -488,7 +488,9 @@ export class InPlay {
             // fielder lunge his whole body at them.)
             const bag = a.base === 4 ? { x: 0, y: 0.7 } : BASE[a.base] || q;
             let tg = { x: q.x, y: q.y, z: 0.7 };
-            if (r.fig && r.fig.root.visible && r.fig.posedAt === s && s <= tt + 0.02) {
+            // (after the tag too: the glove stays on the part of him it touched as he lies on the bag. Back
+            // on his track's end it jumped a man's length in a frame, check-jolt.mjs)
+            if (r.fig && r.fig.root.visible && r.fig.posedAt === s) {
               r.fig.root.updateMatrixWorld(true);
               let best = null;
               for (const j of ['foot_l', 'foot_r', 'calf_l', 'calf_r', 'hand_l', 'hand_r', 'pelvis']) { if (!r.fig.bones[j]) continue; const pj = r.fig.jointPoint(j), d = Math.hypot(pj.x - bag.x, pj.y - bag.y); if (!best || d < best.d) best = { d, p: pj }; }
