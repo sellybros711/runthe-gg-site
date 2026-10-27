@@ -38,7 +38,7 @@
  */
 import * as THREE from 'three';
 import { smooth, clamp01 } from './units.js?v=1';
-import { spline, reducedMotion, SUN } from './park.js?v=5';
+import { spline, reducedMotion, SUN } from './park.js?v=6';
 import { baseball } from './gear3d.js?v=3';
 import { look } from './looks.js?v=3';
 import { assetUrl } from './load.js?v=8';

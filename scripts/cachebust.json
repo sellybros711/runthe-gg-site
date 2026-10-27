@@ -3001,14 +3001,14 @@
       "sha": "5e46b5aa80af677c"
     },
     "3d/boot.js": {
-      "v": "50",
-      "sha": "faa5ba9792cd9fa9"
+      "v": "52",
+      "sha": "1a2984fc4fe4c440"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "52",
-      "sha": "d0284aaca4693bb5"
+      "v": "53",
+      "sha": "facb279bcdc837c1"
     }
   },
   "soccer/index.html": {
@@ -3123,8 +3123,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "54",
-      "sha": "bc38114233293164"
+      "v": "56",
+      "sha": "12ec206c135aa2ad"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3167,8 +3167,8 @@
       "sha": "6740e4ce374039b0"
     },
     "park.js": {
-      "v": "5",
-      "sha": "20162b569c3e6fb0"
+      "v": "6",
+      "sha": "2109e489b22e1f70"
     },
     "people.js": {
       "v": "40",
@@ -3191,16 +3191,16 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "21",
-      "sha": "431ba1c1e8822762"
+      "v": "22",
+      "sha": "b92dc8308e79fa8c"
     },
     "preview.js": {
       "v": "7",
       "sha": "36071604a671158e"
     },
     "firstperson.js": {
-      "v": "5",
-      "sha": "935f61d537e07059"
+      "v": "6",
+      "sha": "580138aa353fe956"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3215,8 +3215,8 @@
       "sha": "dd4417fa8ea9af2f"
     },
     "stands.js": {
-      "v": "7",
-      "sha": "a0d06c12a2dbbcdb"
+      "v": "8",
+      "sha": "9e7577d2dcb9eb00"
     },
     "units.js": {
       "v": "1",
@@ -3279,16 +3279,16 @@
   },
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
-      "v": "11",
-      "sha": "d6cb2fca876bd778"
+      "v": "12",
+      "sha": "f22fa0985c22882b"
     },
     "fielders.js": {
-      "v": "4",
-      "sha": "6d4dc62c1151a998"
+      "v": "5",
+      "sha": "547ba75900befcc4"
     },
     "ballpark.js": {
-      "v": "12",
-      "sha": "5cd7723219cf962b"
+      "v": "13",
+      "sha": "42f28d4fce106f2e"
     },
     "people.js": {
       "v": "40",
@@ -3319,8 +3319,8 @@
       "sha": "e771dbef0b67350e"
     },
     "park.js": {
-      "v": "5",
-      "sha": "20162b569c3e6fb0"
+      "v": "6",
+      "sha": "2109e489b22e1f70"
     },
     "gear3d.js": {
       "v": "3",
@@ -3389,8 +3389,8 @@
       "sha": "6740e4ce374039b0"
     },
     "inplay-plan.js": {
-      "v": "11",
-      "sha": "d6cb2fca876bd778"
+      "v": "12",
+      "sha": "f22fa0985c22882b"
     }
   }
 }
