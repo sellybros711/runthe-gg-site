@@ -68,6 +68,8 @@ const POS_EASE_S = { follow: 0.25, wide: 0.16, plate: 0.12, sky: 0.08, track: 0.
 // as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
 const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).href;
 const OF = [7, 8, 9];
+// the fastest a man watching the ball turns his body round (radians a second: a half turn in 0.4 s)
+const TURN_MAX = 7.5;
 const CYCLE = { fielder: 13.5, runner: 14.5 };          // feet run per full stride cycle (two steps)
 
 /** The angle from a to b the short way round. */
@@ -232,6 +234,8 @@ export class InPlay {
     A.phased = !!this.crew.clips;
     const T1 = plan.dur + 3, trot = plan.kind === 'hr';
     for (let n = 1; n <= 9; n++) { const tr = plan.fielders[n]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); }
+    // (and each fielder's facing as he watches the ball, turned at a person's speed: faceTable)
+    while (this.faceNext()) { /* the ones prepare has not made yet */ }
     for (const r of plan.runners) r.phase = this.crew.phaseTable((t) => r.track.at(t).spd, 0, T1, trot);
   }
 
@@ -428,7 +432,7 @@ export class InPlay {
     if (ball.by === n) lookPt = { x: 0, y: 70 };
     // (a ball right over him, a throw passing above his head: facing it would turn him half round in a
     // frame as it crosses, so near him he faces the plate and turns to it as it goes on)
-    let faceYaw = ball.by === n ? faceToward(st, lookPt) : this.faceTrail(st, s);
+    let faceYaw = ball.by === n ? faceToward(st, lookPt) : tr.face ? tr.face(s) : this.faceTrail(st, s);
     f.throwing = false; f.reaching = false;
     let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0;
     // a ball he takes (a catch in the air, a throw at a bag): the point, and how far his body is
@@ -808,6 +812,33 @@ export class InPlay {
     return Math.hypot(x, y) > 1e-6 ? Math.atan2(x, y) : faceToward(p, plan.ballAt(s));
   }
 
+  /** The next fielder's facing table (faceTable), if any is left to make: true when it made one. */
+  faceNext() {
+    const A = this.active, plan = A.plan;
+    A.faced = A.faced || 0;
+    if (A.faced >= 9) return false;
+    const tr = plan.fielders[++A.faced];
+    tr.face = this.faceTable((t) => tr.at(t), 0, plan.dur + 3);
+    return true;
+  }
+
+  /** A body's facing as he watches the ball, through the play (a table made once a play, a pure function
+      of plan time like the stride's phase): faceTrail where he stands, followed at no more than TURN_MAX
+      radians a second. A throw passing over a man's head, or right behind him, swings faceTrail through
+      the back of him (from facing the ball to facing home, the short way round flipping sides as the ball
+      crosses): standing still he turned 85 degrees in a frame, both feet skating round him
+      (check-jolt.mjs, the shortstop and the pitcher on throws home). Now he comes round at a person's pace. */
+  faceTable(at, t0, t1) {
+    const dt = 1 / 60, n = Math.ceil((t1 - t0) / dt) + 2, out = new Float32Array(n), step = TURN_MAX * dt;
+    let yaw = this.faceTrail(at(t0), t0);
+    for (let i = 0; i < n; i++) {
+      const t = t0 + i * dt;
+      yaw += clamp(angDiff(yaw, this.faceTrail(at(t), t)), -step, step);
+      out[i] = yaw;
+    }
+    return (t) => { const x = clamp((t - t0) / dt, 0, n - 1.001), i = Math.floor(x); return out[i] + (out[i + 1] - out[i]) * (x - i); };
+  }
+
   /** What the fit does to fielder n's body at the moment t he takes a ball (an act, or a throw in with
       no act of its own; posed then, once, and kept on it): his move off his track, a hop, the extra
       crouch, lean and stance. */
@@ -1014,6 +1045,8 @@ export class InPlay {
   prepare(aspect) {
     const A = this.active;
     if (!A) return false;
+    // (the fielders' facing tables first, one a frame)
+    if (this.faceNext()) return true;
     for (const pc of A.plan.edit) {
       if (pc.cam === 'pitcher') continue;
       const had = A.tracks && A.tracks.size;
