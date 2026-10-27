@@ -581,7 +581,9 @@ export class InPlay {
       if (take.z < 1) spec.bend = takeW * moving;
     }
     // the ball held: glove and ball together in front of his chest, whatever reach is easing off
-    if (ball.by === n && !f.throwing) {
+    // (and as his throw winds up, giving way to it by its weight: switched off whole as the windup's weight
+    // began, the glove dropped from his chest in a frame, check-jolt.mjs)
+    if (ball.by === n) {
       const fw = { x: Math.sin(faceYaw), y: Math.cos(faceYaw) };
       const chest = { x: st.x + fw.x * 1.0, y: st.y + fw.y * 1.0, z: 3.9 };
       const k = glove ? gloveW : 0;
@@ -598,7 +600,11 @@ export class InPlay {
       // leans round it, never a right angle in a frame, lab/pipeline/check-jolt.mjs)
       let hd = st.head;
       if (!glide) { const a = tr.at(Math.max(0, s - 0.1)), b = tr.at(s + 0.1); if (Math.hypot(b.x - a.x, b.y - a.y) > 1) hd = heading(a, b); }
-      yaw = faceYaw + angDiff(faceYaw, hd) * w;
+      // (a man going the other way from where he looks, backing off a ball, backpedals: turned to his
+      // heading the short way round, the way flipped as the heading crossed half a turn, a body spun in a
+      // frame, check-jolt.mjs)
+      const d = angDiff(faceYaw, hd);
+      yaw = faceYaw + d * w * clamp((Math.cos(d) + 0.6) / 0.6, 0, 1);
     }
     // getting down to the ball he took eases out after it over a third of a second, never popping up the
     // frame after the ball is in (check-jolt.mjs); first, so what the fit added goes on top as it did

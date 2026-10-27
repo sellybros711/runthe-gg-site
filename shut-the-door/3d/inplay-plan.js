@@ -860,9 +860,16 @@ function planAir(ctx) {
     // real fielder does; one he has to run down he takes on the run, as before)
     const need = sp.react + runTime(dist(F[n], stand), sp.v, sp.a, true, true);
     const settle = !deep && ctx.bb !== 'line' && need < s - 1.2 ? Math.max(need + 0.15, s - 1.6) : null;
-    const arrive = T[n].arrive(sp.react, stand, settle != null ? settle : Math.max(sp.react + 0.4, s - (deep ? 0.04 : 0.35)), { toRest: !deep, v: sp.v });
-    // (there early, he waits under it: whatever he does next starts at the catch, never before it)
-    if (arrive < s) T[n].hold(s);
+    const t1 = settle != null ? settle : Math.max(sp.react + 0.4, s - (deep ? 0.04 : 0.35));
+    const nLegs = T[n].legs.length;
+    const arrive = T[n].arrive(sp.react, stand, t1, { toRest: !deep, v: sp.v });
+    // (there early and at rest, he waits under it: whatever he does next starts at the catch, never
+    // before it. One who could only run through the spot takes it on the run instead, there exactly at
+    // the catch: held there he stopped dead in a frame, check-jolt.mjs)
+    if (!deep && arrive < s) {
+      if (Math.abs(arrive - t1) < 1e-3) T[n].hold(s);
+      else { T[n].legs.length = nLegs; T[n].arrive(sp.react, stand, s, { toRest: false, v: sp.v }); }
+    }
     T[n].act(s - 0.45, 'reach', { ball: q });
     T[n].act(s, kind === 'air_drop' ? 'drop' : 'catch', { ball: q, high: q.z, wall: deep });
     p.segs.push({ kind: 'air', t0: 0, t1: s, at: airAt });
