@@ -86,10 +86,11 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
   that talks to `109_fantasy_challenge.sql`.
 - A published week's cap is that week's. The constant is only the next week's.
 - **The week opens Tuesday, and three things make sure of it** (the owner's rule, 2026-10-22):
-  `fantasy-pool.yml` (Tuesday 11am Eastern, catch-ups Wednesday and Thursday morning),
-  `fantasy-watchdog.yml` (every two hours Tuesday afternoon to Thursday, dispatches the build
-  if the week is not live), and the issue "Fantasy Challenge: the week did not open". A
-  scheduled or watchdog run never rebuilds a week that is already live.
+  `fantasy-pool.yml` (Tuesday 8am Eastern, the owner's call 2026-10-27; it waits for last week's
+  stats until noon, then a settle pass at 11am and catch-ups Wednesday and Thursday morning),
+  `fantasy-watchdog.yml` (hourly Tuesday from 9am, then every two hours to Thursday, dispatches
+  the build if the week is not live), and the issue "Fantasy Challenge: the week did not open".
+  A scheduled or watchdog run never rebuilds a week that is already live.
 - Pro buys drafts, never a price, a board or a score. One entry each.
 
 **Accounts and money**
