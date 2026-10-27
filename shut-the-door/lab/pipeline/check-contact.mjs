@@ -147,7 +147,7 @@ packs.map((f, i) => [i, size[i]]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).for
   if (s === SEL.shard.i) mine.add(packs[i]);
 });
 const CK = openCheckpoint('check-contact', { QUICK, STRIDE: SEL.stride, SHARD: SEL.shard });
-if (SEL.shard.n > 1) console.log(`shard ${SEL.shard.i} of ${SEL.shard.n} (0-based): ${mine.size} of ${packs.length} packs, ${load[SEL.shard.i]} of ${SEL.total} cases`);
+if (SEL.shard.n > 1) console.log(`shard ${SEL.shard.i} of ${SEL.shard.n} (0-based): ${mine.size} of ${packs.length} packs, ${load[SEL.shard.i]} of ${load.reduce((x, y) => x + y, 0)} cases`);
 for (const file of packs) {
   if (!mine.has(file) || !units.some((x) => x.file === file && x.cases.length)) continue;
   if (CK.has(file)) { rows.push(...CK.get(file)); continue; }
