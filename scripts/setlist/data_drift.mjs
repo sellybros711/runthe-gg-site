@@ -128,6 +128,18 @@ check(med <= MEDIAN_ESTEEM_LIMIT,
     return m;
   };
   const was = bySong(oldRows), now = bySong(newRows);
+  /* The ballad tag comes from goose_feels.json, which a person curates. A feel
+     edit is an input that moved, so the tag it moves is explained. Only when
+     comparing against HEAD: two loose CSVs carry no feel history. */
+  const feelsAt = text => { try { return JSON.parse(text).songs || {}; } catch { return {}; } };
+  const FEELS = CSV.replace(/\.csv$/, '_feels.json');
+  const feelNow = argOld ? {} : feelsAt(readFileSync(resolve(repoRoot, FEELS), 'utf8'));
+  let feelWas = {};
+  if (!argOld) {
+    try { feelWas = feelsAt(execFileSync('git', ['show', `HEAD:${FEELS}`], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })); }
+    catch { /* not committed yet: every feel is new */ }
+  }
+  const feelMoved = id => (feelNow[id] && feelNow[id].feel) !== (feelWas[id] && feelWas[id].feel);
   const movedEsteem = [], movedTags = [], unexplained = [];
   for (const [id, a] of now) {
     const b = was.get(id);
@@ -140,7 +152,7 @@ check(med <= MEDIAN_ESTEEM_LIMIT,
     }
     if (a.tags !== b.tags) {
       movedTags.push(id);
-      if (!inputsMoved) unexplained.push(`${id} tags "${b.tags}" to "${a.tags}"`);
+      if (!inputsMoved && !feelMoved(id)) unexplained.push(`${id} tags "${b.tags}" to "${a.tags}"`);
     }
   }
   console.log(`\nderived values moved on ${movedEsteem.length} song(s) for esteem, ` +

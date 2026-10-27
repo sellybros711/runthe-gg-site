@@ -2549,7 +2549,7 @@ check(latest.upcoming.every(s => /^\d{4}-\d{2}-\d{2}$/.test(s.date || '')),
   'every upcoming date is YYYY-MM-DD');
 /* SET ORDER COMES FROM THE GAME'S OWN LOADER, not a second implementation that
    could disagree with it about where an encore goes. */
-check(/import \{ loadBand, setLabel \} from '\.\.\/\.\.\/setlist\/dataLoader\.js'/
+check(/import \{ loadBand, setLabel[^}]*\} from '\.\.\/\.\.\/setlist\/dataLoader\.js'/
   .test(read('scripts/setlist/ingest_band.mjs')),
   'the ingester groups it with the loader the game reads with');
 check(/git add[\s\S]{0,180}goose_latest\.json/.test(wf), 'the refresh commits it');
@@ -2883,6 +2883,26 @@ if (prose) {
   check(/S\.screen !== 'home'/.test(down) && /prefers-reduced-motion/.test(down), 'lights down only from the front screen, and never with reduced motion');
   const st = cdSlice('async function start(bandId, opts){', '\n}');
   check(/const data = fetchBand\(band\);[\s\S]*await lightsDown\(\);/.test(st), 'and the archive is already loading while it plays');
+}
+
+/* BALLADS ARE CURATED (2026-10-27). The length rule tagged Whip It and Psycho Killer as ballads
+   and missed most of the real ones, so the tag comes from goose_feels.json: the owner's reviews,
+   then research, then guesses for the rare songs. The CSV must agree with it, or the game plays
+   a ballad list nobody chose. A new song from a refresh has no feel yet, which is allowed. */
+{
+  const f = JSON.parse(read('setlist/data/goose_feels.json'));
+  const songs = Object.entries(f.songs);
+  const bad = songs.filter(([, s]) => !f.feels.includes(s.feel) || (s.feel2 && !f.feels.includes(s.feel2))
+    || !['owner', 'research', 'guess'].includes(s.by));
+  check(!bad.length, 'every feel is one of the seven, with who set it', bad.length ? bad[0][0] : '');
+  check(songs.filter(([, s]) => s.by === 'owner').length >= 96, 'and the owner\'s 96 reviews are all there');
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  const off = [...new Map(rows.map(r => [r.song_id, r])).values()].filter(r =>
+    /(^|\|)ballad(\||$)/.test(r.tags || '') !== ((f.songs[r.song_id] || {}).feel === 'Ballad'));
+  check(!off.length, 'goose.csv tags a ballad exactly when its feel says Ballad',
+    off.length ? `${off.length} off, e.g. ${off[0].song}. Run ingest_band.mjs --retag` : '');
+  const ing = read('scripts/setlist/ingest_band.mjs');
+  check(/feels\.get\(id\) === 'Ballad'/.test(ing) && !/BALLAD_MEDIAN_LEN/.test(ing), 'and the ingester takes it from the feel, not from length');
 }
 
 console.log();
