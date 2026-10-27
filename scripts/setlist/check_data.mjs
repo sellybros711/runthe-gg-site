@@ -2804,6 +2804,12 @@ if (prose) {
   check(/st\.arc =/.test(live) && /st\.dipUntil =/.test(live) && /st\.bannerAt =/.test(live) && /st\.flameUntil =/.test(live),
     'the big moments only play in real time');
   check(/reduce \? '1' : \(1 \+ [.\d]+ \* st\.push\)/.test(stage), 'the push-in stays still with reduced motion');
+  /* The crowd (2026-10-27): arms up and the beach ball are moments too, so they live in the same block.
+     What a person does beyond the original pose comes off its own stream, so where the night's crowd
+     stands never moved; the forty kinds keep the first twenty eight on the night's own stream. */
+  check(/st\.armsUntil =/.test(live) && /ball = \{/.test(live), 'arms up and the beach ball only happen in real time');
+  check(/const more = mulberry32\(seed \^ 0x[0-9a-f]+\)/.test(stage) && /vi < 28 \? rand : more/.test(read('setlist/world.js')),
+    'the new crowd draws come off their own stream, so nobody moved');
   check(/walk: \{/.test(read('setlist/world.js')) && /frames\.walk\[role\]/.test(stage), 'the walk frames are the world\'s');
 }
 

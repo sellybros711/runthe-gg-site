@@ -10,7 +10,7 @@
  * are painted in a worker; until they land the deck is empty, and if they never do it stays that way.
  * It names no venue: the bus shows a date and how many days away it is, nothing else.
  */
-import { bandPose, PLAYERS, bandFrames } from './world.js?v=2';
+import { bandPose, PLAYERS, bandFrames } from './world.js?v=3';
 
 // A 3 by 5 pixel face for the bus's sign. Only what a date needs.
 const GLYPH = {
@@ -36,7 +36,7 @@ function bandWorker(){
   return new Promise(res => {
     try {
       if (typeof Worker !== 'function' || typeof OffscreenCanvas !== 'function') return res(null);
-      const w = new Worker(new URL('./world-worker.js?v=3', import.meta.url), { type: 'module' });
+      const w = new Worker(new URL('./world-worker.js?v=4', import.meta.url), { type: 'module' });
       const done = v => { clearTimeout(timer); w.terminate(); res(v); };
       const timer = setTimeout(() => done(null), 8000);
       w.onmessage = e => done(e.data && e.data.frames ? e.data.frames : null);
