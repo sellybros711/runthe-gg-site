@@ -453,6 +453,8 @@ function buildMound() {
     if (document.body.dataset.screen !== 's-mound' || e.ctrlKey || e.metaKey || e.altKey) return;
     /* C challenges the call while the button is up */
     if ((e.key === 'c' || e.key === 'C') && !$('m-abs-b').hidden) { e.preventDefault(); challengeIt(); return; }
+    if ((e.key === 'p' || e.key === 'P') && !$('m-run').hidden && !$('m-po').hidden) { e.preventDefault(); pickoffIt(); return; }
+    if ((e.key === 'q' || e.key === 'Q') && !$('m-run').hidden) { e.preventDefault(); setSlide(!S.slide); return; }
     if (S.busy) return;
     if (S.meter && S.meter.running()) return;
     if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
@@ -463,6 +465,8 @@ function buildMound() {
   });
   $('m-throw').addEventListener('click', throwIt);
   $('m-abs-b').addEventListener('click', challengeIt);
+  $('m-po').addEventListener('click', pickoffIt);
+  $('m-quick').addEventListener('click', function () { setSlide(!S.slide); });
   /* the meter on the page is meter-ui.js (the look); meter.js keeps the numbers */
   S.meter = METER && $('m-meter') ? (window.STD_METER_UI || METER).create($('m-meter')) : null;
   /* the speed ranges read the meter setting, so they go on once the meter is built */
@@ -735,6 +739,7 @@ function updateThrow() {
   else b.innerHTML = '<b>throw</b>' + (ready ? '<span>' + esc(pitchOf(S.type).name) + ' \u00b7 ' + esc(M.cellWords(S.cell, bt.bats)) + '</span>' : '');
   stepLine();
   absButton();
+  runBar();
 }
 /* THE STEP LINE (the owner, 2026-10-22): one short line under the throw button and the release
    meter, saying the next thing to do. It never grades and is empty while the pitch plays. */
@@ -1082,7 +1087,7 @@ function meterOn() { return !!(S.meter && prefs.meter !== false); }
 function stopMeter() { if (S.meter && S.meter.running()) S.meter.cancel(); }
 function throwIt() {
   if (S.busy || !S.type || S.cell == null || S.outing.status !== 'live') return;
-  if (!meterOn()) return fire({ type: S.type, cell: S.cell, at: S.at || [0, 0] });
+  if (!meterOn()) return fire(slideCall({ type: S.type, cell: S.cell, at: S.at || [0, 0] }));
   if (S.meter.running()) return;
   audio();
   var ap = pitchOf(S.type), bt = batterAt(S.outing.batterIndex);
@@ -1091,7 +1096,9 @@ function throwIt() {
      to hit and nothing over the scene moves */
   $('m-dock').classList.add('metering');
   hush(true);
+  runBar();
   var run = S.meter.run({
+    quick: !!S.slide,
     command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type), pitch: ap,
     onStage: stepLine,
     verb: S.outing.shutItLive ? 'shut it' : 'release',
@@ -1108,7 +1115,7 @@ function throwIt() {
   run.then(function (r) {
     hush(false);
     if (!r) { $('m-dock').classList.remove('metering'); updateThrow(); return; }
-    var call = { type: type, cell: cell, at: at, q: r.q };
+    var call = slideCall({ type: type, cell: cell, at: at, q: r.q });
     if (r.e != null) call.e = r.e;      // effort: only when the meter offered it (STD_METER.EFFORT)
     fire(call);
   });
@@ -1227,6 +1234,8 @@ function fire(call) {
       var t = playText(pr, batter, res.state);
       pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
       renderHud(res.state);
+      var sl = stealText(pr.steal);
+      if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); }
     });
     var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: sound, field: hudRunners } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
@@ -1270,6 +1279,104 @@ function fire(call) {
     drawPreview();
     updateThrow();
     toast('that pitch did not go. try again.');
+    if (window.console) console.warn(e);
+  });
+}
+
+/* ---- the running game (rules 7, CONTRACT.md 5i) ----------------------------------------------
+   The owner (2026-10-26): "Runners could also steal", "yes add pickoffs and slide step". With a
+   runner on, a row over the pitch buttons: QUICK DELIVERY (the slide step: a call's ss 1, beats the
+   steal, costs him the top of his power, meter.js QUICK) and PICKOFF while state.run.pickoff.live,
+   with the disengagements left this plate appearance (two; past them a throw that misses is a
+   balk). The steal and the pickoff go in the play by play; an out on the bases is a red dot on the
+   scorebug's diamond for a moment. None of it is graded, and nothing here opens by itself. */
+var BASE_WORD = { 1: 'first', 2: 'second', 3: 'third', 4: 'home' };
+function slideCall(call) { if (S.slide && runnersOn()) call.ss = 1; return call; }
+function runnersOn() { var run = S.outing && S.outing.run; return !!(run && run.on && run.on.some(Boolean)); }
+function setSlide(on) {
+  S.slide = !!on;
+  var b = $('m-quick');
+  if (b) b.setAttribute('aria-pressed', S.slide ? 'true' : 'false');
+}
+/* about how much speed a quick delivery costs this pitch: his own speed at max against at QUICK's top */
+function slideMph() {
+  var run = S.outing && S.outing.run, eMax = run && run.quick && run.quick.eMax, ap = S.type ? pitchOf(S.type) : S.scn.pitcher.arsenal[0];
+  if (eMax == null || !ap || !METER || !METER.veloOf) return null;
+  var d = METER.veloOf(ap, 1) - METER.veloOf(ap, eMax);
+  return isFinite(d) ? Math.max(1, Math.round(d)) : null;
+}
+function runBar() {
+  var bar = $('m-run'), st = S.outing, run = st && st.run;
+  if (!bar) return;
+  var on = runnersOn();
+  if (!on && S.slide) setSlide(false);
+  var show = !!(on && st.status === 'live' && !S.busy && !S.absBusy && !(S.meter && S.meter.running()));
+  if (bar.hidden !== !show) bar.hidden = !show;
+  $('m-dock').classList.toggle('running-game', show);
+  if (!show) return;
+  var mph = slideMph();
+  $('m-quick-l').textContent = 'slide step \u00b7 beats the steal' + (mph ? ' \u00b7 about -' + mph + ' mph' : '');
+  var po = run.pickoff || {}, b = $('m-po');
+  b.hidden = !po.live;
+  if (!po.live) return;
+  $('m-po-l').textContent = 'to ' + (BASE_WORD[po.base] || 'the bag') + ' \u00b7 ' + (po.left > 0 ? po.left + ' left' : 'one more is a balk');
+  var dots = b.querySelectorAll('.ab-dots i');
+  for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i < po.left);
+  b.classList.toggle('balk', !po.left);
+  b.setAttribute('aria-label', 'Pickoff to ' + (BASE_WORD[po.base] || 'the bag') + '. ' + (po.left > 0 ? po.left + ' left before a balk.' : 'A miss now is a balk.'));
+}
+function stealText(sl) {
+  if (!sl || (sl.result !== 'safe' && sl.result !== 'out')) return null;
+  var who = lastName(sl.name || 'the runner');
+  return sl.result === 'safe' ? { tag: 'stolen base', rest: who + ' takes ' + BASE_WORD[sl.to] + '.' } : { tag: 'caught stealing', rest: who + ' out at ' + BASE_WORD[sl.to] + '.' };
+}
+function pickoffText(ev, st) {
+  var who = lastName(ev.name || 'the runner');
+  if (ev.out) return { tag: 'picked off', rest: who + ' out at ' + BASE_WORD[ev.base] + '.' };
+  if (ev.balk) return { tag: 'balk', rest: 'runners move up' + (ev.runs ? ' \u00b7 ' + (ev.runs === 1 ? 'a run scores' : ev.runs + ' runs score') : '') + '.' };
+  var left = st && st.run && st.run.pickoff ? st.run.pickoff.left : 0;
+  return { tag: 'pickoff', rest: who + ' gets back \u00b7 ' + (left > 0 ? left + ' left' : 'one more is a balk') + '.' };
+}
+/* an out on the bases: a red dot on the scorebug's diamond at that base, for a moment */
+function baseOut(base) {
+  hudRunners([{ p: base, out: true }]);
+  clearTimeout(baseOut._t);
+  baseOut._t = setTimeout(function () { hudRunners(null); }, 1600);
+}
+function pickoffIt() {
+  var st = S.outing;
+  if (S.busy || S.absBusy || !st || !st.run || !st.run.pickoff || !st.run.pickoff.live) return;
+  stopMeter();
+  S.busy = true;
+  S.grid.setDisabled(true);
+  updateThrow();
+  var basesBefore = st.bases | 0;
+  API.pickoff(st.outingId).then(function (res) {
+    var ev = res.pickoff;
+    /* the throw on the field, when the stage plays one (stage.js pickoff, the camera agent's #744);
+       without it the line and the scorebug say what happened */
+    var real = S.scene && S.scene.real;
+    var thrown = real && typeof real.pickoff === 'function'
+      ? Promise.resolve(real.pickoff({ po: ev, bases: basesBefore, hooks: { sound: sound, field: hudRunners } })).catch(function (e) { if (window.console) console.warn(e); })
+      : Promise.resolve();
+    return thrown.then(function () { return res; });
+  }).then(function (res) {
+    var ev = res.pickoff;
+    hudRunners(null);
+    S.outing = res.state;
+    var t = pickoffText(ev, res.state);
+    pbp(t.tag, t.rest);
+    if (ev.out) baseOut(ev.base);
+    renderHud(S.outing);
+    if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { settle(); return finish(); });
+    S.busy = false;
+    S.grid.setDisabled(false);
+    updateThrow();
+  }).catch(function (e) {
+    S.busy = false;
+    S.grid.setDisabled(false);
+    updateThrow();
+    toast('that throw did not go. try again.');
     if (window.console) console.warn(e);
   });
 }
