@@ -433,7 +433,7 @@ export class InPlay {
     if (ball.by === n) lookPt = { x: 0, y: 70 };
     // (a ball right over him, a throw passing above his head: facing it would turn him half round in a
     // frame as it crosses, so near him he faces the plate and turns to it as it goes on)
-    let faceYaw = ball.by === n ? faceToward(st, lookPt) : this.faceTrail(st, s);
+    let faceYaw = ball.by === n ? faceToward(st, lookPt) : tr.face ? tr.face(s) : this.faceTrail(st, s);
     f.throwing = false; f.reaching = false;
     let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0;
     // a ball he takes (a catch in the air, a throw at a bag): the point, and how far his body is
