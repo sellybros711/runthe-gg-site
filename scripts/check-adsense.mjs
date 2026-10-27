@@ -198,6 +198,41 @@ for (const file of walkCode(ROOT)) {
   }
 }
 
+/* ONE NAMED UNIT PER PLACEMENT (the owner's rule, 2026-10-27: "if we add an ad, we also go and do
+ * this so that we can track all of them"). Every ad spot has its own unit in AdSense, so the Ad
+ * units report says which spot earns and which does not. scripts/ad-units.json is the list. A slot
+ * the list does not have, a slot on a page the list does not name for it, a retired slot, a unit
+ * used twice on one page (unless it is a 'many' unit), a 'planned' unit already in the code and a
+ * 'live' unit the code no longer carries each fail here. Adding a spot is three things in one
+ * commit: the unit made in AdSense, its id in the list, and the code. */
+const REG = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/ad-units.json'), 'utf8'));
+const bySlot = new Map(Object.entries(REG.units).map(([name, u]) => [u.slot, { name, ...u }]));
+const retired = new Map(Object.entries(REG.retired || {}).map(([name, u]) => [u.slot, name]));
+const seen = new Map();   // unit name -> pages it was found on
+const owns = (where, rel) => where.some((w) => (w.endsWith('/') ? rel.startsWith(w) : rel === w));
+for (const file of walkCode(ROOT)) {
+  const rel = path.relative(ROOT, file);
+  const src = fs.readFileSync(file, 'utf8');
+  const count = new Map();
+  for (const m of src.matchAll(/data-ad-slot=["'](\d+)["']|AD_SLOT\s*=\s*['"](\d+)['"]/g)) {
+    const slot = m[1] || m[2];
+    if (/^0+$/.test(slot)) continue;
+    if (retired.has(slot)) { problems.push(`${rel}: uses the retired unit ${retired.get(slot)} (${slot}). Give the spot its own unit`); continue; }
+    const u = bySlot.get(slot);
+    if (!u) { problems.push(`${rel}: ad slot ${slot} is not in scripts/ad-units.json. Make a named unit for the spot and record it`); continue; }
+    if (!owns(u.where, rel)) { problems.push(`${rel}: carries ${u.name} (${slot}), which ad-units.json keeps to ${u.where.join(', ')}. Each spot gets its own unit`); continue; }
+    count.set(u.name, (count.get(u.name) || 0) + 1);
+    if (!seen.has(u.name)) seen.set(u.name, []);
+    seen.get(u.name).push(rel);
+  }
+  for (const [name, n] of count) if (n > 1 && !REG.units[name].many) problems.push(`${rel}: uses ${name} ${n} times. One placement, one unit`);
+}
+for (const [name, u] of Object.entries(REG.units)) {
+  const found = seen.has(name);
+  if (u.status === 'live' && !found) problems.push(`ad-units.json: ${name} is live but no page carries it. Mark it planned or retired`);
+  if (u.status === 'planned' && found) problems.push(`ad-units.json: ${name} is in ${seen.get(name).join(', ')} but still marked planned. Mark it live`);
+}
+
 if (problems.length) {
   console.error(`AdSense readiness: ${problems.length} problem(s) across ${checked} indexable pages\n`);
   for (const p of problems) console.error('  ' + p);

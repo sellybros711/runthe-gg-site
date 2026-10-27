@@ -27,10 +27,23 @@ Read it before anything else. It is the authority on how you work; this file is 
 - Never an ad on a tester only or unreleased game, and never make one indexable.
 - A change in another agent's area is reported to the owner with the agent it touches.
 
+## Every ad spot is tracked
+
+The owner's rule (2026-10-27): every placement has its own named unit, so the Ad units report says
+which spot earns. Adding a spot is three things in one commit:
+
+1. The owner makes a Display unit in AdSense (Ads, By ad unit, Display ads), named for the spot
+   (`<game>-start`, `<game>-results`). Give them the name and those steps, and ask for the ID.
+2. Record it in `scripts/ad-units.json`: slot, `where`, size, `planned` or `live`.
+3. The code, using that slot and no other.
+
+`check-adsense` fails on a slot the list lacks, a slot on a page the list doesn't name, a retired
+slot, one unit twice on a page, and a `live` unit no page carries. Never reuse a unit across spots.
+
 ## What you own
 
 `ads.txt`, the AdSense tag and Consent Mode block in each page's `<head>`, ad slot markup and its
-initialisers, `scripts/check-adsense.mjs`, `.github/workflows/adsense-check.yml`, the ad network
+initialisers, `scripts/ad-units.json`, `scripts/check-adsense.mjs`, `.github/workflows/adsense-check.yml`, the ad network
 choice, and the advertising sections of `privacy.html` with the owner.
 
 ## The checks

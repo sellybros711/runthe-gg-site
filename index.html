@@ -574,11 +574,13 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .rtp-ad-inline .adsbygoogle{display:block;}
   .rtp-ad-inline .rtp-ad-label{display:none;font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mut-2);margin-bottom:6px;}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block;}
-  /* The two section-break ads: a fixed slim size, and no space at all until one fills. */
+  /* The section-break ads: a fixed size, and no space at all until one fills. */
   .home-break{margin:0 auto;padding:0 16px;}
   .home-break:has(ins[data-ad-status="filled"]){margin:96px auto 48px;}
   .home-break ins.adsbygoogle{display:inline-block;width:320px;height:50px;}
   @media (min-width:768px){ .home-break ins.adsbygoogle{width:728px;height:90px;} }
+  /* The two section breaks are the 300x250 at every width (after the rule above, so it wins). */
+  .home-mid ins.adsbygoogle{width:300px;height:250px;}
   .home-break ins.adsbygoogle[data-ad-status="unfilled"]{display:none;}
 
   /* ---------- footer ---------- */
@@ -984,11 +986,11 @@ window.GA_ID='G-L29P5MRWKE';
 </script>
 <!-- A SECTION-BREAK AD (Ads Agent, 2026-10-27, the owner's rule: ads on start screens, results,
      leaderboards and reading pages, never in play). Between two sections, never between game
-     cards or beside a Play button. A slim 320x50 on a phone, 728x90 from 768px; unfilled, it
+     cards or beside a Play button. The mid-size 300x250 (the owner, 2026-10-27); unfilled, it
      collapses to nothing. -->
-<div class="rtp-ad-inline home-break">
+<div class="rtp-ad-inline home-break home-mid">
   <span class="rtp-ad-label">Advertisement</span>
-  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>
+  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="8791704631"></ins>
 </div>
 <section class="sec shell" id="games">
     <div class="sec-head">
@@ -1179,11 +1181,11 @@ window.GA_ID='G-L29P5MRWKE';
 
 <!-- A SECTION-BREAK AD (Ads Agent, 2026-10-27, the owner's rule: ads on start screens, results,
      leaderboards and reading pages, never in play). Between two sections, never between game
-     cards or beside a Play button. A slim 320x50 on a phone, 728x90 from 768px; unfilled, it
+     cards or beside a Play button. The mid-size 300x250 (the owner, 2026-10-27); unfilled, it
      collapses to nothing. -->
-<div class="rtp-ad-inline home-break">
+<div class="rtp-ad-inline home-break home-mid">
   <span class="rtp-ad-label">Advertisement</span>
-  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>
+  <ins class="adsbygoogle-lazy" data-ad-client="ca-pub-5952069078178257" data-ad-slot="2851440254"></ins>
 </div>
   <section class="sec shell" id="on-deck">
     <div class="sec-head">
@@ -1278,12 +1280,12 @@ window.GA_ID='G-L29P5MRWKE';
          than pinned: a sticky strip is under the thumb for the whole scroll, and an
          accidental tap on an ad is what gets a placement called deceptive. It occupies
          nothing until AdSense fills it, and the label appears on the same condition. The
-         unit is site-display (6069480594), live since AdSense approved the site in 2026-10. -->
+         unit is home-footer, and every unit's id is in scripts/ad-units.json. -->
     <div class="rtp-ad-inline home-break">
       <span class="rtp-ad-label">Advertisement</span>
-      <ins class="adsbygoogle"
+      <ins class="adsbygoogle-lazy"
            data-ad-client="ca-pub-5952069078178257"
-           data-ad-slot="6069480594"></ins>
+           data-ad-slot="8375229676"></ins>
     </div>
   </div>
 
@@ -1957,6 +1959,20 @@ document.querySelectorAll('.feat-link').forEach(function(a){
         var slot=units[i].getAttribute('data-ad-slot');
         if(!slot||/^0+$/.test(slot)) continue;
         (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+      /* A unit marked adsbygoogle-lazy sits below the fold. It takes the adsbygoogle class, and
+         is started, only once it is within 600px of the screen, so an ad nobody scrolls to is
+         never requested and never counts against the page's viewability. The class swap is what
+         makes each push land on that unit, since a push fills the next unstarted ins.adsbygoogle. */
+      var lazy=document.querySelectorAll('ins.adsbygoogle-lazy');
+      var start=function(u){ u.className='adsbygoogle'; (adsbygoogle=window.adsbygoogle||[]).push({}); };
+      var io='IntersectionObserver' in window ? new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); try{ start(e.target); }catch(x){} } });
+      },{rootMargin:'600px 0px'}) : null;
+      for(var j=0;j<lazy.length;j++){
+        var ls=lazy[j].getAttribute('data-ad-slot');
+        if(!ls||/^0+$/.test(ls)) continue;
+        if(io) io.observe(lazy[j]); else start(lazy[j]);
       }
     }catch(e){}
   })();

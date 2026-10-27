@@ -132,7 +132,7 @@
 
       <div class="ad">
         <span class="ad-label">Advertisement</span>
-        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
              data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
       </div>
 
@@ -156,7 +156,7 @@
 
       <div class="ad">
         <span class="ad-label">Advertisement</span>
-        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
              data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
       </div>
 
@@ -222,6 +222,16 @@
         var slot=units[i].getAttribute('data-ad-slot');
         if(!slot||/^0+$/.test(slot)) continue;
         (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+      var lazy=document.querySelectorAll('ins.adsbygoogle-lazy');
+      var start=function(u){ u.className='adsbygoogle'; (adsbygoogle=window.adsbygoogle||[]).push({}); };
+      var io='IntersectionObserver' in window ? new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); try{ start(e.target); }catch(x){} } });
+      },{rootMargin:'600px 0px'}) : null;
+      for(var j=0;j<lazy.length;j++){
+        var ls=lazy[j].getAttribute('data-ad-slot');
+        if(!ls||/^0+$/.test(ls)) continue;
+        if(io) io.observe(lazy[j]); else start(lazy[j]);
       }
     }catch(e){}
   })();

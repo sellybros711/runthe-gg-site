@@ -6347,6 +6347,10 @@ window.GA_ID='G-L29P5MRWKE';
   [data-ad-zone]{container-type:inline-size;width:100%;box-sizing:border-box}
   @container (min-width:468px){ [data-ad-zone] ins.adsbygoogle{width:468px;height:60px} }
   @container (min-width:728px){ [data-ad-zone] ins.adsbygoogle{width:728px;height:90px} }
+  /* THE RESULTS AD IS THE MID-SIZE RECTANGLE (the owner, 2026-10-27): 300x250 on every column, since
+     a finished run is a resting screen and the 300x250 is the size advertisers bid on most. Start
+     screens keep the slim banner. After the container rules so it wins at every width. */
+  [data-ad-zone="results"] ins.adsbygoogle{width:300px;height:250px}
   [data-ad-zone] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   /* The gameplay screens stay clear for the same reason the pinned strip does. */
   body.rtp-hide-ads .rtp-ad-inline{display:none}
@@ -7327,7 +7331,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <span class="rtp-ad-label">Advertisement</span>
       <ins class="adsbygoogle"
            data-ad-client="ca-pub-5952069078178257"
-           data-ad-slot="6069480594"></ins>
+           data-ad-slot="7383466228"></ins>
     </div>
 
     <!-- What this game is, in prose, for anyone who arrives without knowing. Folded, because
@@ -10022,7 +10026,7 @@ function menuAd(id){
    made on this page, and screenAds() the only caller (check-adsense holds both). */
 let resultsAdFor=null;
 function adUnitInto(host){
-  host.innerHTML='<span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>';
+  host.innerHTML='<span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="7062148007"></ins>';
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
 function screenAds(id){

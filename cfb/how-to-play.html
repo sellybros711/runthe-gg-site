@@ -256,8 +256,8 @@ window.GA_ID='G-L29P5MRWKE';
       <style>.htp-ad{margin:26px 0;text-align:center}.htp-ad .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px}.htp-ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none}</style>
       <div class="htp-ad">
         <span class="ad-label">Advertisement</span>
-        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5952069078178257"
-             data-ad-slot="6069480594" data-ad-format="auto" data-full-width-responsive="true"></ins>
+        <ins class="adsbygoogle-lazy" style="display:block" data-ad-client="ca-pub-5952069078178257"
+             data-ad-slot="5834368801" data-ad-format="auto" data-full-width-responsive="true"></ins>
       </div>
 
       <h2>Where the numbers come from</h2>
@@ -285,7 +285,10 @@ window.GA_ID='G-L29P5MRWKE';
   </div>
 <script>
   /* Start each AdSense unit once, and never a placeholder slot. */
-  (function(){try{var u=document.querySelectorAll('ins.adsbygoogle');for(var i=0;i<u.length;i++){var s=u[i].getAttribute('data-ad-slot');if(!s||/^0+$/.test(s))continue;(adsbygoogle=window.adsbygoogle||[]).push({});}}catch(e){}})();
+  (function(){try{var u=document.querySelectorAll('ins.adsbygoogle');for(var i=0;i<u.length;i++){var s=u[i].getAttribute('data-ad-slot');if(!s||/^0+$/.test(s))continue;(adsbygoogle=window.adsbygoogle||[]).push({});}
+  /* The unit near the end loads once it is within 600px of the screen: see index.html. */
+  var l=document.querySelectorAll('ins.adsbygoogle-lazy'),go=function(x){x.className='adsbygoogle';(adsbygoogle=window.adsbygoogle||[]).push({});},io='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){io.unobserve(e.target);try{go(e.target);}catch(x){}}});},{rootMargin:'600px 0px'}):null;
+  for(var j=0;j<l.length;j++){var t=l[j].getAttribute('data-ad-slot');if(!t||/^0+$/.test(t))continue;if(io)io.observe(l[j]);else go(l[j]);}}catch(e){}})();
 </script>
 </body>
 </html>
