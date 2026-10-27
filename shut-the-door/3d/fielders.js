@@ -574,6 +574,21 @@ export class Figure {
     // ---- hands to points (two bone IK), the glove's pocket on its target
     if (sp.glove && sp.gloveW > 0 && this.glove) this.reachTo(this.glove, this.toModel(sp.glove), sp.gloveW, true);
     if (sp.hand && sp.handW > 0) this.reachTo(this.glove === 'r' ? 'l' : 'r', this.toModel(sp.hand), sp.handW, false);
+    // ---- a foot kept off where the body puts it (a tag's lunge, inplay.js): two bone IK of the leg to its
+    // posed place moved by { x, y } field feet over the ground and z up, the foot level again after
+    if (sp.plant && sp.plant.w > 0 && !this.pitch) {
+      const c = Math.cos(this.yaw), sn = Math.sin(this.yaw), k = FT / this.scale;
+      for (const s of ['l', 'r']) {
+        const o = sp.plant[s];
+        if (!o) continue;
+        const side = s === 'l' ? 1 : -1;
+        const tgt = wpos(B[`foot_${s}`]).add(V((-o.x * c + o.y * sn) * k, (o.z || 0) * k, (o.x * sn + o.y * c) * k));
+        const pole = wpos(B[`calf_${s}`]).add(V(0.15 * side, 0, 1));
+        twoBoneIK(B[`thigh_${s}`], B[`calf_${s}`], B[`foot_${s}`], tgt, pole, sp.plant.w);
+        root.updateMatrixWorld(true);
+        aimFast(B[`foot_${s}`], B[`ball_${s}`], V(side * 0.08 * (crouch + wide), -0.25, 1));
+      }
+    }
     // ---- the head: toward what he watches
     if (sp.look) this.lookAt(this.toModel(sp.look), sp.lookW ?? 1);
     // ---- now the real place: field position, heading, scale. A dive pitches the body forward about

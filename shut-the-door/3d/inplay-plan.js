@@ -330,7 +330,8 @@ export function planPlay(pr, o = {}) {
     const sc = p.runners.find((r) => r.scoreAt != null);
     if (sc && OF.includes(ctx.catchAt.n)) {
       const from = ctx.catchAt.q, home = basePoint(4, 'bag'), fly = dist(from, home) / 125 + 0.1;
-      const rel = Math.max(ctx.catchAt.s + 0.55, sc.scoreAt + 0.3 - fly);
+      // (by a tenth to a third of a second, never the same twice: the slide beats the tag, or only just)
+      const rel = Math.max(ctx.catchAt.s + 0.55, sc.scoreAt + 0.1 + 0.25 * rnd(ctx.id, 'late') - fly);
       // the catcher out to the plate for it, and the cutoff man in line between them
       ctx.T[2].run(Math.max(0.6, ctx.T[2].free === -Infinity ? 0.6 : ctx.T[2].free), [home], { toRest: true, v: 12 });
       if (dist(from, home) > 150) {
@@ -860,15 +861,26 @@ function planAir(ctx) {
     // real fielder does; one he has to run down he takes on the run, as before)
     const need = sp.react + runTime(dist(F[n], stand), sp.v, sp.a, true, true);
     const settle = !deep && ctx.bb !== 'line' && need < s - 1.2 ? Math.max(need + 0.15, s - 1.6) : null;
-    const t1 = settle != null ? settle : Math.max(sp.react + 0.4, s - (deep ? 0.04 : 0.35));
-    const nLegs = T[n].legs.length;
-    const arrive = T[n].arrive(sp.react, stand, t1, { toRest: !deep, v: sp.v });
-    // (there early and at rest, he waits under it: whatever he does next starts at the catch, never
-    // before it. One who could only run through the spot takes it on the run instead, there exactly at
-    // the catch: held there he stopped dead in a frame, check-jolt.mjs)
-    if (!deep && arrive < s) {
-      if (Math.abs(arrive - t1) < 1e-3) T[n].hold(s);
-      else { T[n].legs.length = nLegs; T[n].arrive(sp.react, stand, s, { toRest: false, v: sp.v }); }
+    // (a runner on third tagging: an outfielder with the time sets up a few steps behind the catch and comes
+    // in through it, his momentum toward the plate, as a strong arm does to throw through)
+    const tagHome = kind === 'air_out' && OF.includes(n) && settle != null && ctx.moves.some((m) => m.from === 3 && (m.to === 4 || m.to === -1));
+    if (tagHome) {
+      const toHome = { x: -stand.x, y: -stand.y }, dl = Math.hypot(toHome.x, toHome.y) || 1;
+      const behind = { x: stand.x - toHome.x / dl * 7, y: stand.y - toHome.y / dl * 7 };
+      T[n].arrive(sp.react, behind, Math.max(need + 0.15, s - 1.4), { toRest: true, v: sp.v });
+      T[n].hold(s - 0.55);
+      T[n].arrive(s - 0.55, stand, s, { toRest: false, v: 18 });
+    } else {
+      const t1 = settle != null ? settle : Math.max(sp.react + 0.4, s - (deep ? 0.04 : 0.35));
+      const nLegs = T[n].legs.length;
+      const arrive = T[n].arrive(sp.react, stand, t1, { toRest: !deep, v: sp.v });
+      // (there early and at rest, he waits under it: whatever he does next starts at the catch, never
+      // before it. One who could only run through the spot takes it on the run instead, there exactly at
+      // the catch: held there he stopped dead in a frame, check-jolt.mjs)
+      if (!deep && arrive < s) {
+        if (Math.abs(arrive - t1) < 1e-3) T[n].hold(s);
+        else { T[n].legs.length = nLegs; T[n].arrive(sp.react, stand, s, { toRest: false, v: sp.v }); }
+      }
     }
     T[n].act(s - 0.45, 'reach', { ball: q });
     T[n].act(s, kind === 'air_drop' ? 'drop' : 'catch', { ball: q, high: q.z, wall: deep });
@@ -1031,6 +1043,18 @@ function planRunners(ctx) {
       }
       // stays: on a ground ball a step off and back; on a fly with fewer than two out he goes partway
       // (farther on a deep one), watches, and goes back to the bag once it is caught or played
+      // (a fly caught with fewer than two out: he tags, on the bag at the catch, and bluffs: a few hard
+      // strides toward the next bag as the ball is caught, a stop, and back)
+      if (caught && ctx.outs0 < 2) {
+        const tc = ctx.catchAt.s;
+        tr.run(0.2, [BASE[m.from]], { v: 9, toRest: true });
+        tr.hold(tc + 0.08);
+        const fake = lerp(BASE[m.from], next, m.from === 3 ? 0.2 : 0.15);
+        tr.run(tc + 0.08, [fake], { fromRest: true, toRest: true, v: 22 });
+        r.arrive = tr.run(tr.free + 0.25, [BASE[m.from]], { v: 12, toRest: true });
+        r.bluff = true;
+        continue;
+      }
       const deep = air && ctx.flight ? clamp((p.flight && p.flight.land ? rad(p.flight.land) : 200) / 300, 0, 1) : 0;
       const half = lerp(off, next, air ? 0.2 + 0.2 * deep : 0.12);
       const t1 = tr.run(0.3, [half], { v: air ? 16 : 12 });
@@ -1058,7 +1082,8 @@ function planRunners(ctx) {
           r.arrive = back; r.outAt = po ? po.ballAt : back; r.outBase = m.from;
         } else {
           // tagged and went: thrown out at the next base
-          const tAt = po && po.ballAt ? po.ballAt + 0.15 + 0.3 * rnd(ctx.id, 'tag') : ctx.catchAt.s + 3;
+          // (a step late, bang bang: the throw beats him by a few hundredths to a fifth of a second)
+          const tAt = po && po.ballAt ? po.ballAt + 0.06 + 0.16 * rnd(ctx.id, 'tag') : ctx.catchAt.s + 3;
           tr.arrive(ctx.catchAt.s + 0.08, BASE[ob], tAt, { v: 27, toRest: true });
           r.arrive = tAt; r.outAt = po ? po.ballAt : tAt; r.outBase = ob;
         }
