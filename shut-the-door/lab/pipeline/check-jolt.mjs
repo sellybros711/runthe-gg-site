@@ -7,6 +7,9 @@
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --show N     print N of the worst in full
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --sample N   about N of the held 2,925 (held at the ceilings' rate)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --shard I/4 --rows-out F   a quarter of the run, its plays to F
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --combine DIR the shards' files in DIR, held as one run
+ *   (CI runs the held 2,925 as four shards and then --combine: the same plays, the same verdict, exactly)
  *
  * The owner (2026-10-24): "the fielding is extremely glitchy". check-catch holds the glove on the ball at
  * the moment of each catch; this holds every moment in between. Each case is staged the way the game
@@ -33,7 +36,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
-import { selection, holding, capStr, openCheckpoint } from './checkpoint.mjs';
+import { selection, holding, capStr, openCheckpoint, treeHash } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -95,7 +98,11 @@ function loadPlaywright() {
 }
 const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
 const TYPES = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary' };
-const server = http.createServer((req, res) => {
+// (the page is opened only when there is something to measure: not for --combine, nor for a run whose
+// every chunk is in the checkpoint)
+let server = null, browser = null;
+async function openPage() {
+server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (rel.endsWith('/')) rel += 'index.html';
   const f = path.join(ROOT, rel);
@@ -104,7 +111,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
+browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 page.on('pageerror', (e) => console.log('page error', String(e).slice(0, 300)));
 await page.route('**/*', (route) => {
@@ -118,6 +125,10 @@ await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { wa
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 // the clips (fielder.glb) in, so the bodies run as the game shows them; nothing drawn
 await page.evaluate(async () => { const st = window.STD_STAGE.current; await st.inplay.motion; st.renderer.render = () => {}; });
+return page;
+}
+const COMBINE = process.argv.includes('--combine') ? process.argv[process.argv.indexOf('--combine') + 1] : null;
+const ROWS_OUT = process.argv.includes('--rows-out') ? process.argv[process.argv.indexOf('--rows-out') + 1] : null;
 
 const cases = [];
 let idx = 0;
@@ -128,9 +139,26 @@ for (const c of inplayCases()) {
 const rows = [];
 const CHUNK = 50;
 const t0 = Date.now();
-const CK = openCheckpoint('check-jolt', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK, TRACE });
-for (let i = 0; i < cases.length; i += CHUNK) {
+let page = null, nCases = cases.length, shardOf = SEL.shard;
+if (COMBINE) {
+  // the shards' plays, one run: each file the same code (its tree), stride and number of shards, every
+  // shard there once
+  const tree = treeHash();
+  const parts = fs.readdirSync(COMBINE).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(path.join(COMBINE, f), 'utf8')));
+  const n = parts[0] ? parts[0].shard.n : 0, got = new Set(parts.map((q) => q.shard.i));
+  for (const q of parts) if (q.tree !== tree || q.stride !== STRIDE || q.shard.n !== n || q.limit !== String(LIMIT) || q.only !== ONLY) throw new Error('--combine: a shard of another run (tree, stride, shards or limit differ)');
+  if (!n || got.size !== n || parts.length !== n) throw new Error(`--combine: ${parts.length} files for ${n} shards (${[...got].sort().join(', ')})`);
+  // (in the order a single run takes them: by case number, the tag's #N)
+  for (const q of parts) rows.push(...q.rows);
+  rows.sort((a, b) => +a.tag.slice(1, a.tag.indexOf(' ')) - +b.tag.slice(1, b.tag.indexOf(' ')));
+  nCases = parts.reduce((a, q) => a + q.n, 0);
+  shardOf = { i: 0, n: 1 };
+  console.log(`combined ${n} shards: ${nCases} plays`);
+}
+const CK = COMBINE ? null : openCheckpoint('check-jolt', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK, TRACE });
+for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
   if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
+  page ||= await openPage();
   const got = await page.evaluate(({ part, FPS, BODY_MS, LIMB_MS, PLANT_M, PLANT_N, SKATE_MS, TRACE }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
     const facts0 = ip.facts, stub = { after: { t0: 0 }, f: { at: () => ({ x: 0, y: 1.2, z: 2.6 }) }, ball: st.pitch.ball, overlays: false };
@@ -198,8 +226,9 @@ for (let i = 0; i < cases.length; i += CHUNK) {
   CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
-CK.close();
+if (CK) CK.close();
 console.log('');
+if (ROWS_OUT) fs.writeFileSync(ROWS_OUT, JSON.stringify({ tree: treeHash(), stride: STRIDE, limit: String(LIMIT), only: ONLY, shard: SEL.shard, n: cases.length, rows }));
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 // plays with each, by what and who and his last act
@@ -218,7 +247,7 @@ for (const r of rows) {
 }
 // (held: the default 2,925, as the ceilings were measured; a sample of them, --sample or a stride that
 // is a multiple of 20, at the same rate; anything else reported)
-const HOLD = holding({ stride: STRIDE, heldStride: 20, n: cases.length, heldN: Math.ceil(SEL.total / 20), partial: LIMIT !== Infinity || ONLY != null, shard: SEL.shard });
+const HOLD = holding({ stride: STRIDE, heldStride: 20, n: nCases, heldN: Math.ceil(SEL.total / 20), partial: LIMIT !== Infinity || ONLY != null, shard: shardOf });
 const held = HOLD.mode !== 'report';
 let fails = 0;
 const any = (w) => rows.filter((r) => !r.err && r.hits.some((h) => h.what === w)).length;
@@ -237,6 +266,6 @@ if (process.env.JOLT_DUMP) for (const r of rows) for (const h of (r.hits || []).
 if (SHOW) for (const w of worst.sort((a, b) => b.ms - a.ms).slice(0, SHOW)) console.log(JSON.stringify(w));
 if (process.env.JOLT_CEILING) console.log('\nCEILING = ' + JSON.stringify(Object.fromEntries(Object.entries(by).map(([k, b]) => [k, b.plays]).sort())));
 console.log(`\n${rows.length - errs.length} plays, ${fails} over the ceiling (${HOLD.label})`);
-await browser.close();
-server.close();
+if (browser) await browser.close();
+if (server) server.close();
 process.exit(fails || errs.length ? 1 : 0);
