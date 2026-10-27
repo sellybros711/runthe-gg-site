@@ -1298,6 +1298,12 @@ console.log('the first five minutes');
 check(/Add to \$\{esc\(cfg\.label\)\} \(\$\{fmtClock\(lenOf\(S\.pickedSong\)\)\}\)/.test(gameBare),
   'the confirm button and the panel above it use the same verb');
 check(!/`Play it \(/.test(gameBare), 'and "Play it" is gone');
+/* THE ADD BUTTON SITS UNDER THE SONG (2026-10-27, the owner's call): a tap no longer slides a sheet over
+   the list. Same verb as the panel, still a second tap because picks are final. */
+check(/\$\{S\.pickedSong === p \? rowAddHTML\(p, cfg\) : ''\}/.test(gameBare) && /data-lock>Add to \$\{esc\(cfg\.label\)\}/.test(gameBare),
+  'the Add button opens under the song that was tapped, with the same verb');
+check(/toggle\('sheet-on',\s*S\.sheetForced \|\| !fits\.length\)/.test(gameBare),
+  'and picking a song no longer covers the list with the sheet');
 /* THE RECEIPT. Confirming a song used to drop you straight into a full-screen
    slot machine labelled "Spinning the archive" with nothing about the song just
    added, and two people read it as the game restarting: "it spun the wheel
