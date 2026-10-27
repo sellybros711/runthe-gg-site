@@ -1219,6 +1219,26 @@ async function signOne(page, nth = 0) {
     before, { timeout: 10000 });
 }
 
+/* A FRESH BOARD, FOR A SEARCH THAT NEEDS MANY. Players cannot do this: "Start this draft
+   again" was removed (the owner's call, 2026-10-27) because it was an unlimited reroll. So a
+   search drops its own unfinished draft out of storage and reloads, which deals the next
+   chance from a new seed exactly as a first visit would, and never spends one of the week's
+   chances because the dropped draft was never finished. */
+async function freshDraft(page) {
+  await page.evaluate(() => {
+    for (let k = 0; k < localStorage.length; k++) {
+      const key = localStorage.key(k);
+      if (!/^ps_fantasy_\d+_w\d+$/.test(key)) continue;
+      const st = JSON.parse(localStorage.getItem(key) || '{}');
+      st.chances = (st.chances || []).filter((c) => (c.ids || []).length >= 6);
+      localStorage.setItem(key, JSON.stringify(st));
+    }
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+}
+
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
     results = null, storage = null, server = null, reduced = false,
@@ -3399,21 +3419,32 @@ console.log('\nA PRESS ASKS BEFORE IT SPENDS');
     await page.evaluate(() => document.getElementById('cf-sheet').hidden));
 
   /*
-   * A SHEET SITS OPEN FOR AS LONG AS SOMEBODY LEAVES IT OPEN, so the board it was asked
-   * about can go. Opened on one board, then the draft is started again underneath it, and
-   * what must not happen is a man signed into a draft that no longer exists. This is
-   * `dynNewSheet`'s lesson in the football game: the gate is above the line that spends.
+   * A SHEET SITS OPEN FOR AS LONG AS SOMEBODY LEAVES IT OPEN, and the draft can be left
+   * underneath it: Back goes home and keeps the draft. What must not happen is a man signed
+   * after the reader has left. Back closes the sheet, and a confirm answered anyway signs
+   * nobody. This is `dynNewSheet`'s lesson in the football game: the gate is above the line
+   * that spends.
    */
   const stale = page.locator('#d-men .man:not([disabled]):not(.hurt)').first();
   await stale.click({ force: true });
   await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 5000 });
-  await page.evaluate(() => document.getElementById('b-abandon').click());
+  const beforeBack = await filled();
+  await page.evaluate(() => document.getElementById('b-draft-back').click());
   await page.waitForTimeout(300);
-  const afterReset = await filled();
+  ok('  Back goes home and closes the sheet',
+    await page.evaluate(() => document.getElementById('s-home').classList.contains('on')
+      && document.getElementById('cf-sheet').hidden));
   await page.evaluate(() => document.getElementById('cf-go').click());
   await page.waitForTimeout(400);
-  ok('  a confirm answered after the draft was restarted signs nobody',
-    (await filled()) === afterReset, `${afterReset} -> ${await filled()}`);
+  /* And the draft is kept, not dealt again: back in, it is the same board with the same
+     picks. That is the reroll this replaced. */
+  await page.click('#b-draft');
+  await page.waitForSelector('#s-draft.on', { timeout: 10000 });
+  ok('  a confirm answered after Back signs nobody, and the draft is kept as it was',
+    (await filled()) === beforeBack, `${beforeBack} -> ${await filled()}`);
+  ok('  and there is no button left that deals the draft again',
+    await page.evaluate(() => !document.getElementById('b-abandon')
+      && ![...document.querySelectorAll('button')].some((b) => /again/i.test(b.textContent))));
 
   /*
    * AND IT FITS THE SHORTEST PHONE HOLDING THE LONGEST NAME.
@@ -3606,11 +3637,10 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
    * exactly what the first version of this section did, and the feature it was reporting
    * missing was on one board in eight the whole time.
    *
-   * THE ANSWER IS TO NEVER LEAVE THE DRAFT SCREEN. `#b-abandon` re-seeds the current chance
-   * and costs nothing, and the only reason it failed before is that the walk had finished a
-   * draft and moved on. So the walk signs at most five of the six, inspects all six boards,
-   * and abandons rather than completing. The button is then always there, chances are never
-   * spent, and the search can run as long as it needs to.
+   * THE ANSWER IS TO NEVER FINISH A DRAFT. `freshDraft` drops the unfinished draft and deals
+   * a new one, and costs nothing (the button that used to do this in the page is gone). So
+   * the walk signs at most five of the six, inspects all six boards, and starts fresh rather
+   * than completing. Chances are never spent, and the search can run as long as it needs.
    *
    * TWENTY FOUR, against a measured p99 of 16 and a worst case of 33 over 4,000 drafts.
    */
@@ -3618,16 +3648,15 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
   let sawGrey = null, drafts = 0;
   for (; drafts < MAX_DRAFTS && !sawGrey; drafts++) {
     if (drafts) {
-      await page.waitForSelector('#s-draft.on', { timeout: 10000 });
-      await page.click('#b-abandon');
+      await freshDraft(page);
       await page.waitForTimeout(200);
     }
     for (let i = 0; i < D.SLOTS.length && !sawGrey; i++) {
       await page.locator('#d-men .man').first().waitFor({ timeout: 10000 });
       sawGrey = await look();
       /* THE LAST BOARD IS INSPECTED AND NEVER SIGNED FROM. Signing the sixth man finishes
-         the draft and moves to the review screen, which is where `#b-abandon` does not
-         exist. Every board is looked at; only five are drafted from. */
+         the draft and spends a chance. Every board is looked at; only five are drafted
+         from. */
       if (!sawGrey && i < D.SLOTS.length - 1) await signOne(page);
     }
   }
@@ -3728,7 +3757,7 @@ console.log('\nA MAN WHO WILL NOT PLAY IS NOT OFFERED, AND A CHIP STILL OPENS TH
       if (b.chip) { chipAt = true; break; }
       await signOne(page);
     }
-    if (!chipAt) await page.click('#b-abandon');
+    if (!chipAt) await freshDraft(page);
   }
   ok('no board offers a man who is Out, Doubtful or on reserve', !offered.length,
     offered.length ? 'offered: ' + [...new Set(offered)].join(', ') : `${seen} rows read`);
