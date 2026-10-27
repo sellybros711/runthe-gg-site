@@ -41,7 +41,7 @@ import {
   ART, WPX, sx, sy, depth, rgb, mixc, clamp01, hash, mulberry32,
   canvas, SKINS, HAIRS, face, personSprite, DECK, FIX,
   podCorners, CE, HPX, PAX, PAY, bandPose, buildWorld, rigFor, PLAYERS, KEY_SEQ, crowdVariants, crowdPose, GLOWS,
-} from './world.js?v=3';
+} from './world.js?v=4';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
    setlist/rooms.js what each looks like; this file only draws whichever it is handed. */
@@ -89,7 +89,7 @@ function worldWorker(){
   if (worker !== null) return worker;
   try {
     worker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
-      ? new Worker(new URL('./world-worker.js?v=5', import.meta.url), { type: 'module' }) : false;
+      ? new Worker(new URL('./world-worker.js?v=6', import.meta.url), { type: 'module' }) : false;
   } catch (err) { worker = false; }
   if (worker){
     worker.onmessage = e => { const cb = waiting.get(e.data.id); if (cb){ waiting.delete(e.data.id); cb(e.data); } };
@@ -568,11 +568,33 @@ export function createStage(view, opts = {}){
   /* A fill hits the cymbals: one at a time, a white glint on its rim, round the kit. */
   const CYMBALS = [[5.6, -8.8, DECK.z + 4.6], [11.6, -9.6, DECK.z + 5.1], [4.6, -7.8, DECK.z + 3.2], [12.6, -8.2, DECK.z + 4.2]];
   function drawFill(t){
-    if (now >= st.fillUntil || Math.abs(blk[3].x) > 15.2) return;
-    const k = Math.floor(t * 14), c = CYMBALS[(k >> 1) % CYMBALS.length];
-    if (k % 2) return;
-    const [px, py] = P2(c[0], c[1], c[2]);
-    glint(eg, px, py, [255, 236, 190], .95, 3);
+    if (Math.abs(blk[3].x) > 15.2) return;
+    if (now < st.fillUntil){
+      const k = Math.floor(t * 14), c = CYMBALS[(k >> 1) % CYMBALS.length];
+      if (k % 2) return;
+      const [px, py] = P2(c[0], c[1], c[2]);
+      glint(eg, px, py, [255, 236, 190], .95, 3);
+      return;
+    }
+    /* Between fills a hard song keeps the cymbals alive: on each beat one catches the light, faintly,
+       and lets it go. Live only, like the weather. */
+    if (!wxLive || lite || !st.band || st.energy < .6) return;
+    const ph = t * (86 + st.energy * 46) / 60, b = Math.floor(ph), pl = Math.exp(-(ph - b) * 6);
+    if (pl < .35) return;
+    const c = CYMBALS[b % CYMBALS.length], [px, py] = P2(c[0], c[1], c[2]);
+    glint(eg, px, py, [255, 236, 190], .5 * pl, 2);
+  }
+
+  /* A ROADIE at the set break: wing to wing across the deck while the house lights are up, in the two
+     frames the world painted with the band (world.js). Live only. */
+  let roadie = null;
+  function drawRoadie(t){
+    if (!roadie || !frames || !frames.roadie) return;
+    const x = roadie.dir * (-16.5 + (now - roadie.t0) / 1000 * 6.5);
+    if (Math.abs(x) > 16.6 && now - roadie.t0 > 500){ roadie = null; return; }
+    if (Math.abs(x) > 15.2) return;
+    const [px, py] = P2(x, -5.4, DECK.z);
+    g.drawImage(frames.roadie[Math.floor(t * 7) % 2], px - PAX, py - PAY);
   }
 
   function drawCrowd(t){
@@ -872,6 +894,7 @@ export function createStage(view, opts = {}){
     }
     drawBanner(t);
     drawBand(t);
+    drawRoadie(t);
     g.drawImage(front, camX, camY, visW, visH, camX, camY, visW, visH);
     drawCrowd(t);
     drawBall();
@@ -1277,6 +1300,7 @@ export function createStage(view, opts = {}){
     const ts = performance.now();
     if (ev.progress != null) st.skyWant = clamp01(R.skyMap ? R.skyMap(ev.progress) : ev.progress);
     if (ev.kind !== 'song'){ st.slow = false; if (ev.kind !== 'final') ball = null; }
+    if (ev.kind === 'set') roadie = null;
     if (ev.kind === 'set'){
       st.band = true; st.bow = false; st.encore = !!ev.encore; st.soloist = null; st.jam = false;
       st.houseWant = 0; st.lightWant = .5; st.energyWant = .3;
@@ -1312,6 +1336,7 @@ export function createStage(view, opts = {}){
       if (ev.bustout){ burst(150); shakeUntil = ts + 320; shakeAmp = 3; st.signsUntil = ts + 3400; st.jumpUntil = ts + 2000; st.flashUntil = ts + 260; st.strobeUntil = ts + 1600; }
       if (ev.grade) st.densityWant = DENSITY[ev.grade] || .8;
     } else if (ev.kind === 'time'){
+      if (!ev.last && !ev.instant && !reduce) roadie = { t0: ts, dir: Math.random() < .5 ? 1 : -1 };
       if (!ev.last){ st.band = false; st.soloist = null; st.jam = false; st.houseWant = .85; st.lightWant = 0; st.energyWant = .15; }
     } else if (ev.kind === 'final'){
       st.band = true; st.bow = true; st.skyWant = 1; st.soloist = null; st.jam = false;

@@ -2818,6 +2818,8 @@ if (prose) {
     'the weather comes from the room and the night\'s seed, nothing else');
   check(/if \(wxLive && !lite\) drawWeather/.test(stage) && /if \(wxLive && !lite\) drawBolt/.test(stage) && /if \(wxLive && !lite && WX\.fog\) drawFog/.test(stage),
     'and it only runs live, and drops under lite');
+  // The roadie at the set break (2026-10-27) is a moment too: real time only.
+  check(/if \(!ev\.last && !ev\.instant && !reduce\) roadie = \{/.test(stage), 'the roadie only crosses in real time');
   check(/walk: \{/.test(read('setlist/world.js')) && /frames\.walk\[role\]/.test(stage), 'the walk frames are the world\'s');
 }
 
