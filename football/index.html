@@ -6340,7 +6340,13 @@ window.GA_ID='G-L29P5MRWKE';
      phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
      unfilled unit collapses to nothing. */
   [data-ad-zone] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
-  @media (min-width:768px){ [data-ad-zone] ins.adsbygoogle{width:728px;height:90px} }
+  /* SIZED BY THE COLUMN, NOT THE SCREEN (QA, 2026-10-27, site PR on claude/qa-ad-fit). A 768px
+     media query handed the 728x90 to a column that can be narrower (572 to 612px at 768), so it
+     hung past the screen. Each zone is a size container: 320x50, 468x60 from a 468px column, the
+     728x90 from a 728px column. */
+  [data-ad-zone]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   /* The gameplay screens stay clear for the same reason the pinned strip does. */
   body.rtp-hide-ads .rtp-ad-inline{display:none}
