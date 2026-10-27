@@ -72,8 +72,14 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // were fixed at the source first (a run through catch held dead, the held glove dropped at a windup, a
 // backpedal that spun divers, reverted). With every body measured against main (0ed4342): plays with a pop
 // 1,641 against 1,635, with a skate 2,001 against 2,039. Recorded here once, on the coordinator's decision.
+// Close plays (site PR #743, 2026-10-27) tighten a tag-up thrown out to bang bang. Three rows rose: skate runner run
+// 863 to 869, pop fielder - 433 to 437, skate fielder - 212 to 215. The new runner skates are runners thrown out
+// tagging who slide into the tag faster (a real slide moves its feet over the dirt). The F7 and F8 hits come from
+// tracks and acts identical to main, read at the threshold (40.6 m/s against 40) on frames the slowed beat moved.
+// With every body measured against main (c6922cc) the totals fall: plays with a pop 1,641 to 1,624, with a skate
+// 2,001 to 1,968. Recorded here once, on the coordinator's decision.
 const CEILING = {
-  'pop fielder -': 433,
+  'pop fielder -': 437,
   'pop fielder bobble': 106,
   'pop fielder catch': 12,
   'pop fielder catch_throw': 2,
@@ -88,7 +94,7 @@ const CEILING = {
   'pop fielder tag': 195,
   'pop fielder throw': 8,
   'pop runner run': 614,
-  'skate fielder -': 212,
+  'skate fielder -': 215,
   'skate fielder bobble': 22,
   'skate fielder catch_throw': 3,
   'skate fielder cover': 434,
@@ -101,7 +107,7 @@ const CEILING = {
   'skate fielder set': 28,
   'skate fielder tag': 331,
   'skate fielder throw': 6,
-  'skate runner run': 863,
+  'skate runner run': 869,
 };
 
 function loadPlaywright() {
