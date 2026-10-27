@@ -31,6 +31,13 @@ node shut-the-door/test/check-browser.mjs      the whole game in Chromium at 390
 node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real packs (--relative)
 ```
 
+Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says how they sample and resume):
+
+- Push work to the branch after each meaningful step. A container restart loses what is not pushed.
+- Locally, run the sampled checks (`--sample N`, or the check's default) and add `--resume` after a
+  restart. Leave the full runs to CI and the nightly (`shut-the-door-nightly.yml`).
+- Write long run output to a file (`> run.txt 2>&1`), not only to stdout.
+
 ## Rules a change here must keep
 
 - **Unlisted until the owner launches it.** Noindexed, no ad tag, not in the sitemap, linked from no
