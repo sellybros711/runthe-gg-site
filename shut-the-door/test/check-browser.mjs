@@ -410,6 +410,33 @@ async function playOuting(page, o) {
   const done = () => page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
   for (let i = 0; i < 80; i++) {
     if (await done()) break;
+    /* THE RUNNING GAME (rules 7, the owner 2026-10-26): with a runner on, a row over the pitch
+       buttons, off the zone, thumb tall: QUICK DELIVERY, and PICKOFF while one is live. Once an outing:
+       a pickoff throw goes in the play by play and spends a disengagement; the next pitch goes with
+       a quick delivery (the call carries ss 1, the meter greys the top of the power column). */
+    const rb = await page.evaluate(() => {
+      const bar = document.getElementById('m-run');
+      if (!bar || bar.hidden) return null;
+      const z = document.getElementById('m-aim').getBoundingClientRect(), hit = (a) => a.left < z.right - 1 && a.right > z.left + 1 && a.top < z.bottom - 1 && a.bottom > z.top + 1;
+      const q = document.getElementById('m-quick').getBoundingClientRect(), po = document.getElementById('m-po');
+      const st = window.STD_UI.state.outing;
+      return { q: { h: q.height, onZone: hit(q) }, po: !po.hidden ? { h: po.getBoundingClientRect().height, onZone: hit(po.getBoundingClientRect()) } : null,
+        dis: st.run.pickoff.left, n: st.run.pickoffs.length, quickLabel: document.getElementById('m-quick-l').textContent };
+    });
+    if (rb && (rb.po || i > 2) && !r.ranGame) {
+      r.ranGame = true;
+      ok(rb.q.h >= 38 && !rb.q.onZone && (!rb.po || (rb.po.h >= 38 && !rb.po.onZone)), '5 the running game row is thumb tall and off the zone (' + Math.round(rb.q.h) + ' px' + (rb.po ? ', pickoff live' : '') + ')');
+      ok(/^slide step · beats the steal/.test(rb.quickLabel), '5 QUICK DELIVERY says what it is: "' + rb.quickLabel + '"');
+      if (rb.po) {
+        await page.click('#m-po');
+        await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
+        const af = await page.evaluate(() => ({ tag: document.querySelector('#m-pbp .pbp-tag').textContent, st: window.STD_UI.state.outing }));
+        ok(/^(pickoff|picked off|balk)$/.test(af.tag) && af.st.run.pickoffs.length === rb.n + 1,
+          '5 a pickoff throw goes in the play by play ("' + af.tag + '") and spends a disengagement (' + rb.dis + ' left before, ' + (af.st.run.pickoff.left) + ' after)');
+        if (await done() || af.st.status !== 'live') { if (await done()) break; }
+      }
+      if (await page.evaluate(() => !document.getElementById('m-run').hidden)) { await page.click('#m-quick'); r.quickAt = i; }
+    }
     const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
     await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
     const cellNo = o.cell != null ? o.cell : CELLS[i % CELLS.length];
@@ -459,6 +486,8 @@ async function playOuting(page, o) {
       /* the meter (the owner, 2026-10-22: rebuilt): one panel over the pitch buttons and the throw
          button, so the scene never moves; the effort bar only when STD_METER.EFFORT is true */
       const eff = await page.evaluate(() => window.STD_METER.EFFORT === true);
+      if (r.quickAt === i) ok(await page.evaluate(() => document.querySelector('.rm-col').classList.contains('is-capped') && parseFloat(document.querySelector('.rm-ccap').style.height) > 0),
+        '5 a quick delivery greys the top of the power column (meter.js QUICK)');
       if (freeTap) {
         const lay = await page.evaluate(() => {
           const m = document.getElementById('m-meter').getBoundingClientRect(), b = document.querySelector('#m-arsenal .pitch').getBoundingClientRect();
@@ -527,6 +556,10 @@ async function playOuting(page, o) {
       }
     }
     r.pitches++;
+    if (r.quickAt === i) {
+      const c = await page.evaluate(() => (window.__calls ? window.__calls.slice(-1)[0] || null : 'none'));
+      if (c !== 'none') ok(!!c && c.ss === 1, '5 a pitch with QUICK DELIVERY on carries ss 1 (' + JSON.stringify(c) + ')');
+    }
     const tapless = i === 0 || !!o.noSkip;
     let shotTaken = false, ended = false;
     /* until the pitch is over, by a deadline and not a count of polls: a slow pitch must not leave
@@ -1083,10 +1116,55 @@ async function ending(w, h, end, extra) {
   await ctx.close();
 }
 
+/* 15. THE RUNNING GAME (rules 7) on a spot that starts with a runner on: the first day on the schedule
+   whose pack has bases, played on that day's clock. The row shows, a pickoff throw goes, the next
+   pitch goes with a quick delivery (playOuting holds each), and nothing is over the field. */
+function runnerDay() {
+  const sch = JSON.parse(fs.readFileSync(path.join(ROOT, 'shut-the-door/data/schedule.json'), 'utf8'));
+  for (const [day, d] of Object.entries(sch.days || {})) {
+    const f = path.join(ROOT, 'shut-the-door/data/packs', d.pack + '.json');
+    if (!fs.existsSync(f)) continue;
+    const sit = (JSON.parse(fs.readFileSync(f, 'utf8')).scenario || {}).situation || {};
+    if (sit.bases) return day;
+  }
+  return null;
+}
+async function runningGame(w, h) {
+  const day = runnerDay();
+  console.log(`\nthe running game, ${w}x${h}, ${day}`);
+  step('15 the running game', 900);
+  if (!day) { ok(false, '15 a day on the schedule with a runner on'); return; }
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(day + 'T16:00:00Z'));
+  await page.addInitScript(STAGE_TEST);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await homeWarm(page);
+  await page.click('#b-take');
+  await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
+  await stageReady(page);
+  const play = await playOuting(page, { w, h });
+  ok(play.ranGame, '15 the running game row came up with a runner on');
+  ok(play.problems.length === 0, '15 nothing graded, tipped or over the field' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
+  ok(errors.length === 0, '15 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
   await run(1440, 900, 'dark');
+  await runningGame(390, 844);
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
   await ending(390, 844, 'tie_held', '&mockAuth=1');
