@@ -1067,6 +1067,19 @@ check((gameBare.match(/Close anyway, lose the segue/g) || []).length === 2,
 check(/close the set\s*\n?\s*and let it go/.test(gameBare),
   'the hunt banner offers closing as a way out');
 
+/* A SET THAT CANNOT TAKE ANOTHER SONG CLOSES ITSELF (2026-10-27, the owner's ask: closing "should
+   be automatic in most cases"). 97% of simulated sets ended with nothing in the dealt show fitting
+   and a Close tap that was no choice at all. The draft settles before it renders; it holds back only
+   when a respin would still leave real time to spend. And the close button is not on every pick. */
+{
+  const settle = gameBare.slice(gameBare.indexOf('function settleSets(){'), gameBare.indexOf('function settleSets(){') + 900);
+  check(/S\.show\.songs\.some\(p => !pickBlock\(p, si\)\)/.test(settle), 'a set closes itself only when nothing on screen can go in it');
+  check(/left - cost >= AUTO_CLOSE_SPIN_ROOM/.test(settle), 'and not while a respin could still give it something');
+  check(/if \(name === 'draft' && settleSets\(\)\) return;/.test(gameBare), 'the draft settles before it renders');
+  check(/S\.settled = null;\s*if \(settleSets\(\)\) return;/.test(gameBare), 'and so does a manual close');
+  check(/fits\.length && !closeArmed \? '' :/.test(gameBare), 'the pick panel offers Close only when the player is stuck');
+}
+
 /* TIME CARRIES ONE SET FORWARD, and three separate bits of copy promise it to
    the player. They used to say "for the encore", which was true when both sets
    paid straight into it and is a lie now that Set I's leftovers are Set II's.
@@ -1117,8 +1130,10 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
      same omission in the other direction. */
   check(/Short sets score less/.test(say),
     'the close button states what a short set costs');
-  check(/the crowd notices a short set/.test(say),
-    'and so does the hint beside it');
+  /* The hint that repeated it under every pick went with the close button it sat beside (2026-10-27):
+     closing is offered only where it is an exit, and both places that offer it say the cost. */
+  check((say.match(/Short sets score less/g) || []).length >= 2,
+    'both close buttons say what a short set costs');
   /* WHERE it goes is still true and still said: the cascade is real. */
   check(/carries to \$\{esc\(bankGoesTo\(si\)\)\}/.test(gameBare),
     'while still saying where the time actually goes');
