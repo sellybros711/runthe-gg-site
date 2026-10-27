@@ -1165,11 +1165,64 @@ async function runningGame(w, h) {
   await ctx.close();
 }
 
+/* 16. EVERY WINDOW SIZE (the owner, 2026-10-27: at half a desk's width the card covered the batter and
+   the scene looked distorted). One mound, resized through phones, a tablet, square and half width
+   windows and desks. At each: no HUD panel over the batter, his bat, the plate or the zone; the
+   batter, the plate and the zone on screen; the card no wider than its column once there are
+   corners; and the canvas's drawing buffer the shape of its box (a canvas sized for one box and drawn
+   into another is stretched). */
+const SWEEP = [[390, 844], [844, 390], [768, 1024], [900, 900], [1000, 1020], [1100, 800], [1280, 720], [1440, 900], [1920, 1080]];
+async function sizeSweep() {
+  console.log('\nevery window size');
+  step('16 the window sizes', 900);
+  const ctx = await browser.newContext({ viewport: { width: 1000, height: 1020 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await homeWarm(page);
+  await page.click('#b-take');
+  await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
+  if (!(await stageReady(page))) { ok(true, '16 no 3D mound here, nothing to frame'); await ctx.close(); return; }
+  for (const [w, h] of SWEEP) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(700);
+    const m = await page.evaluate(() => {
+      const st = window.STD_STAGE.current, cv = document.getElementById('m-canvas'), c = cv.getBoundingClientRect(), fb = st.figureBoxes(800);
+      const box = (k) => fb[k] && isFinite(fb[k].x0) ? { left: c.left + fb[k].x0, right: c.left + fb[k].x1, top: c.top + fb[k].y0, bottom: c.top + fb[k].y1 } : null;
+      const figs = { batter: box('batter'), bat: box('bat'), plate: box('plate'), zone: document.querySelector('#m-aim .aim-zone').getBoundingClientRect() };
+      const vis = (el) => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && !el.hidden; };
+      const hit = (a, b) => a && b && a.left < b.right - 2 && a.right > b.left + 2 && a.top < b.bottom - 2 && a.bottom > b.top + 2;
+      const over = [];
+      for (const el of [...document.querySelectorAll('#s-mound [data-hud]')].filter(vis).filter((el) => !el.closest('.msheet'))) {
+        const r = el.getBoundingClientRect();
+        for (const k of Object.keys(figs)) if (hit(r, figs[k])) over.push((el.id || el.className.split(' ')[0]) + ' over ' + k);
+      }
+      const cut = ['batter', 'plate', 'zone'].filter((k) => { const f = figs[k]; return f && (f.left < -2 || f.top < -2 || f.right > innerWidth + 2 || f.bottom > innerHeight + 2); });
+      const wide = matchMedia('(orientation: landscape), (min-width: 700px) and (min-height: 600px)').matches;
+      return { over, cut, wide, card: Math.round(document.querySelector('.mh-card').getBoundingClientRect().width),
+        aspect: Math.abs(cv.width / cv.height - c.width / c.height) / (c.width / c.height) };
+    });
+    ok(m.over.length === 0 && m.cut.length === 0 && m.aspect < 0.01 && (!m.wide || m.card <= 420),
+      `16 ${w}x${h}: the batter, his bat, the plate and the zone clear and on screen, the card ${m.card} px, the canvas its box's shape` +
+      (m.over.length ? ' (' + m.over.join(', ') + ')' : '') + (m.cut.length ? ' (cut: ' + m.cut.join(', ') + ')' : '') + (m.aspect >= 0.01 ? ' (stretched ' + (m.aspect * 100).toFixed(1) + '%)' : ''));
+  }
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
+  await sizeSweep();
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
   await ending(390, 844, 'tie_held', '&mockAuth=1');
