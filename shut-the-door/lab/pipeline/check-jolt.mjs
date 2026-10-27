@@ -67,36 +67,41 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // every act is identical to main's at every plan time (1,463 plays, max difference 0 ft), the posing change
 // (fielders.js aimFast) gives the same bones to the bit, and each row's worst speed holds. Accepted by the
 // coordinator on the terms of #710 and #725; these are the on screen counts at the default stride, once.
+// The flight and who catches it (site PR #742, 2026-10-27) changes the plays themselves: the same rows now have
+// new flights, catch spots and catchers, so a row's count is a count of different plays. Three pops it brought
+// were fixed at the source first (a run through catch held dead, the held glove dropped at a windup, a
+// backpedal that spun divers, reverted). With every body measured against main (0ed4342): plays with a pop
+// 1,641 against 1,635, with a skate 2,001 against 2,039. Recorded here once, on the coordinator's decision.
 const CEILING = {
-  'pop fielder -': 397,
-  'pop fielder bobble': 104,
-  'pop fielder catch': 31,
-  'pop fielder catch_throw': 4,
-  'pop fielder cover': 67,
+  'pop fielder -': 433,
+  'pop fielder bobble': 106,
+  'pop fielder catch': 12,
+  'pop fielder catch_throw': 2,
+  'pop fielder cover': 71,
   'pop fielder dive': 16,
-  'pop fielder dive_short': 64,
+  'pop fielder dive_short': 75,
   'pop fielder field': 100,
-  'pop fielder leap_miss': 5,
-  'pop fielder pickup': 47,
-  'pop fielder reach': 20,
-  'pop fielder set': 20,
-  'pop fielder tag': 182,
-  'pop fielder throw': 7,
-  'pop runner run': 595,
-  'skate fielder -': 229,
+  'pop fielder leap_miss': 2,
+  'pop fielder pickup': 19,
+  'pop fielder reach': 10,
+  'pop fielder set': 16,
+  'pop fielder tag': 195,
+  'pop fielder throw': 8,
+  'pop runner run': 614,
+  'skate fielder -': 212,
   'skate fielder bobble': 22,
-  'skate fielder catch_throw': 5,
-  'skate fielder cover': 454,
+  'skate fielder catch_throw': 3,
+  'skate fielder cover': 434,
   'skate fielder dive': 14,
   'skate fielder field': 461,
-  'skate fielder leap_miss': 1,
-  'skate fielder pickup': 590,
-  'skate fielder reach': 40,
+  'skate fielder leap_miss': 0,
+  'skate fielder pickup': 619,
+  'skate fielder reach': 12,
   'skate fielder receive': 22,
-  'skate fielder set': 27,
-  'skate fielder tag': 344,
+  'skate fielder set': 28,
+  'skate fielder tag': 331,
   'skate fielder throw': 6,
-  'skate runner run': 829,
+  'skate runner run': 863,
 };
 
 function loadPlaywright() {
