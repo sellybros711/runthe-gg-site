@@ -43,6 +43,9 @@ node scripts/setlist/make_venue_thumbs.mjs   render every room to setlist/venues
   `stage.js` and `backstage.js`. A change to either file bumps those `?v=` by hand, every place.
 - **A data refresh only appends.** `data_drift.mjs` fails a refresh where a derived value moved for a
   song whose own history did not.
+- **"Tonight" means the band's real show** (the tour countdown, the last show). The show a player
+  builds is "your show": "Where your show is played", "Your show", "Your setlist". The owner's call,
+  2026-10-27.
 - **A button that starts a show says "Build your show"** (the scorecard's says "Build another
   show"). It names what the player gets, never the spin. Respin stays: it really is a spin. The
   owner's call, 2026-10-27, and it applies to every mockup too.
