@@ -5,6 +5,8 @@
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --stride N   every Nth case
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --limit N    the first N of those (reported, not held)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --show N     print N of the worst in full
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --sample N   about N of the held 2,925 (held at the ceilings' rate)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --resume     pick up a killed run (checkpoint.mjs says how)
  *
  * The owner (2026-10-24): "the fielding is extremely glitchy". check-catch holds the glove on the ball at
  * the moment of each catch; this holds every moment in between. Each case is staged the way the game
@@ -31,13 +33,15 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
+import { selection, holding, capStr, openCheckpoint } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const ALL = process.argv.includes('--all');
-const STRIDE = ALL ? 1 : arg('--stride', 20), LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
+const SEL = selection({ heldStride: 20, total: [...inplayCases()].length });
+const STRIDE = ALL ? 1 : SEL.stride, LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
 const FPS = 60;
 // (--only N plays case N alone; JOLT_TRACE=F9:2.4:2.6 prints that body's points frame by frame)
 const ONLY = process.argv.includes('--only') ? arg('--only', 0) : null, TRACE = process.env.JOLT_TRACE || '';
@@ -118,13 +122,15 @@ await page.evaluate(async () => { const st = window.STD_STAGE.current; await st.
 const cases = [];
 let idx = 0;
 for (const c of inplayCases()) {
-  if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
+  if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0 && Math.floor(idx / STRIDE) % SEL.shard.n === SEL.shard.i) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
   idx++;
 }
 const rows = [];
 const CHUNK = 50;
 const t0 = Date.now();
+const CK = openCheckpoint('check-jolt', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK, TRACE });
 for (let i = 0; i < cases.length; i += CHUNK) {
+  if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
   const got = await page.evaluate(({ part, FPS, BODY_MS, LIMB_MS, PLANT_M, PLANT_N, SKATE_MS, TRACE }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
     const facts0 = ip.facts, stub = { after: { t0: 0 }, f: { at: () => ({ x: 0, y: 1.2, z: 2.6 }) }, ball: st.pitch.ball, overlays: false };
@@ -189,8 +195,10 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     return out;
   }, { part: cases.slice(i, i + CHUNK), FPS, BODY_MS, LIMB_MS, PLANT_M, PLANT_N, SKATE_MS, TRACE });
   rows.push(...got);
+  CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
+CK.close();
 console.log('');
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
@@ -208,7 +216,10 @@ for (const r of rows) {
   }
   if (r.hits.length) worst.push({ tag: r.tag, ...r.hits.reduce((x, y) => (y.ms > x.ms ? y : x)) });
 }
-const held = LIMIT === Infinity && STRIDE === 20;
+// (held: the default 2,925, as the ceilings were measured; a sample of them, --sample or a stride that
+// is a multiple of 20, at the same rate; anything else reported)
+const HOLD = holding({ stride: STRIDE, heldStride: 20, n: cases.length, heldN: Math.ceil(SEL.total / 20), partial: LIMIT !== Infinity || ONLY != null, shard: SEL.shard });
+const held = HOLD.mode !== 'report';
 let fails = 0;
 const any = (w) => rows.filter((r) => !r.err && r.hits.some((h) => h.what === w)).length;
 console.log(`\nbodies on screen at ${FPS} frames a second, ${rows.length - errs.length} plays (every ${STRIDE}${STRIDE === 1 ? 'st' : 'th'} case), ${((Date.now() - t0) / 1000).toFixed(0)} s`);
@@ -216,16 +227,16 @@ console.log(`  plays with a pop: ${any('pop')}, with a skate: ${any('skate')}`);
 const keys = new Set([...Object.keys(by), ...(held ? Object.keys(CEILING) : [])]);
 for (const key of [...keys].sort((a, b) => (by[b]?.plays ?? 0) - (by[a]?.plays ?? 0))) {
   const b = by[key] || { plays: 0, worst: 0 };
-  const cap = held ? CEILING[key] ?? 0 : Infinity;
+  const cap = held ? HOLD.cap(CEILING[key] ?? 0) : Infinity;
   const over = b.plays > cap;
-  if (over) fails += b.plays - cap;
-  console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(28)} ${String(b.plays).padStart(6)} plays${cap !== Infinity ? ' (ceiling ' + cap + ')' : ''}  worst ${b.worst.toFixed(1)} m/s`);
+  if (over) fails += Math.ceil(b.plays - cap);
+  console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(28)} ${String(b.plays).padStart(6)} plays${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  worst ${b.worst.toFixed(1)} m/s`);
 }
 for (const r of rows) for (const q of r.trace || []) console.log('TRACE', JSON.stringify(q));
 if (process.env.JOLT_DUMP) for (const r of rows) for (const h of (r.hits || []).filter((x) => !process.env.JOLT_WHAT || `${x.what} ${x.who} ${x.act}` === process.env.JOLT_WHAT)) console.log('HIT', r.tag, JSON.stringify(h));
 if (SHOW) for (const w of worst.sort((a, b) => b.ms - a.ms).slice(0, SHOW)) console.log(JSON.stringify(w));
 if (process.env.JOLT_CEILING) console.log('\nCEILING = ' + JSON.stringify(Object.fromEntries(Object.entries(by).map(([k, b]) => [k, b.plays]).sort())));
-console.log(`\n${rows.length - errs.length} plays, ${fails} over the ceiling${held ? '' : ' (a partial run: reported, not held)'}`);
+console.log(`\n${rows.length - errs.length} plays, ${fails} over the ceiling (${HOLD.label})`);
 await browser.close();
 server.close();
 process.exit(fails || errs.length ? 1 : 0);
