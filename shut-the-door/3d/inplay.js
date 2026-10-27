@@ -68,8 +68,10 @@ const POS_EASE_S = { follow: 0.25, wide: 0.16, plate: 0.12, sky: 0.08, track: 0.
 // as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
 const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).href;
 const OF = [7, 8, 9];
-// the fastest a man watching the ball turns his body round (radians a second: a half turn in 0.4 s)
-const TURN_MAX = 7.5;
+// the fastest a man watching the ball turns his body round (radians a second: a half turn in 0.8 s). The
+// body turns on planted feet (no step of its own), so faster than this the feet skate round him (at 7.5,
+// a catcher turning after his throw slid his feet at 4.2-4.7 m/s, check-jolt.mjs)
+const TURN_MAX = 4;
 const CYCLE = { fielder: 13.5, runner: 14.5 };          // feet run per full stride cycle (two steps)
 
 /** The angle from a to b the short way round. */
