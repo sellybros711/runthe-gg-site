@@ -2810,6 +2810,14 @@ if (prose) {
   check(/st\.armsUntil =/.test(live) && /ball = \{/.test(live), 'arms up and the beach ball only happen in real time');
   check(/const more = mulberry32\(seed \^ 0x[0-9a-f]+\)/.test(stage) && /vi < 28 \? rand : more/.test(read('setlist/world.js')),
     'the new crowd draws come off their own stream, so nobody moved');
+  /* The weather (2026-10-27): the room says what its sky can do and the night's seed rolls it. Never a
+     cue, never a score. It only moves once frames are running, so thumbnails and reduced-motion stills
+     are clear skies, and a struggling phone drops it first. */
+  const wxRoll = (stage.match(/const WX = opts\.weather \|\| \(\(\) => \{([\s\S]*?)\}\)\(\);/) || [, ''])[1];
+  check(/R\.weather/.test(wxRoll) && /mulberry32\(seed/.test(wxRoll) && !/ev\.|score|grade|st\./.test(wxRoll),
+    'the weather comes from the room and the night\'s seed, nothing else');
+  check(/if \(wxLive && !lite\) drawWeather/.test(stage) && /if \(wxLive && !lite\) drawBolt/.test(stage) && /if \(wxLive && !lite && WX\.fog\) drawFog/.test(stage),
+    'and it only runs live, and drops under lite');
   check(/walk: \{/.test(read('setlist/world.js')) && /frames\.walk\[role\]/.test(stage), 'the walk frames are the world\'s');
 }
 
