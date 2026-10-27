@@ -82,7 +82,6 @@ const lineAt = (deg) => 127.28 / (Math.abs(Math.sin(deg * D2R)) + Math.cos(deg *
       his third of them, at its median carry). Since 2023 two infielders stand each side of second and
       all four on the infield dirt: held here for every era
     then the spot, the conventions every club plays:
-      a runner on first and second open: the first baseman holds him on, on the bag
       a runner on third, under two outs, and his run ties it or wins it: the infield in, at the grass
       a runner on first, under two outs: the middle infielders at double play depth, two steps in and
       two toward second
@@ -112,7 +111,6 @@ export function alignment(bats, o = {}) {
     F[n] = pol(a, Math.min(rad(F[n]), wallDist(a) - 25));
   }
   const bases = o.bases || 0, outs = o.outs ?? 0;
-  const hold = (bases & 1) && !(bases & 2);
   const inn = (bases & 4) && outs < 2 && Number.isFinite(o.margin) && o.margin <= 1;
   if (inn) for (const n of IF) { const a = sprayOf(F[n]); F[n] = pol(a, Math.min(rad(F[n]), lineAt(a))); }
   else if ((bases & 1) && outs < 2) {
@@ -127,7 +125,6 @@ export function alignment(bats, o = {}) {
       F[n] = pol(clamp(a + Math.sign(a) * (2 * STEP / r) / D2R, -43, 43), r);
     }
   }
-  if (hold) F[3] = { x: BASE[1].x - 1.5, y: BASE[1].y + 1.5 };
   return F;
 }
 
@@ -690,7 +687,7 @@ function planGround(ctx) {
     }
   }
   const b = best.b;
-  const stand = lerp(F[n], b, Math.max(0, (dist(F[n], b) - 1.5) / Math.max(1e-3, dist(F[n], b))));
+  const stand = standFor(b);
   T[n].arrive(sp.react, stand, Math.max(sp.react + 0.2, best.s - 0.12), { toRest: true });
   T[n].act(best.s - 0.25, 'set');
   T[n].act(best.s, 'field', { ball: b });

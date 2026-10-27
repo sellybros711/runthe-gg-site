@@ -770,15 +770,20 @@ export class InPlay {
     // a force at a bag: a foot stays on it (the pivot foot, or the back foot of a stretch): the body
     // slides so the nearer foot is on the bag's middle, and the arm reaches from there
     const fa = acts.find((x) => (x.kind === 'receive' || x.kind === 'step') && x.force && x.base && s > x.t - 0.6 && s < x.t + 0.35);
-    if (fa) at = this.pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW);
+    // (a step on the bag after fielding the ball himself: the foot goes there once he has it, not while
+    // his glove is still going down to it; pinned from the start, the foot won and the glove stayed 0.2 m
+    // over a ball he fielded a step from the bag, check-catch.mjs)
+    const had = fa && fa.kind === 'step' ? acts.find((x) => (x.kind === 'field' || x.kind === 'pickup') && x.t < fa.t && x.t > fa.t - 0.6) : null;
+    if (fa) at = this.pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW, had ? had.t + 0.02 : null);
     return { dx: at.x - base0.x, dy: at.y - base0.y, lift, dLean: (spec.lean || 0) - lean0, dCrouch: (spec.crouch || 0) - crouch0, wide, run: st.run, z: take ? take.z : null, yaw };
   }
 
   /** A force at a bag: the nearer foot onto the bag's middle (the glove kept on a ball he is taking),
       the body moved by what it misses; returns where he stands. */
-  pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW) {
+  pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW, from = null) {
     const bag = fa.base === 4 ? { x: 0, y: 0.7 } : BASE[fa.base];
-    const kf = ramp(s, fa.t - 0.6, fa.t - 0.15) * (1 - ramp(s, fa.t + 0.1, fa.t + 0.35));
+    const k0 = from != null ? Math.max(fa.t - 0.6, from) : fa.t - 0.6, k1 = Math.max(k0 + 0.12, fa.t - 0.15);
+    const kf = ramp(s, k0, k1) * (1 - ramp(s, Math.max(k1, fa.t + 0.1), Math.max(k1, fa.t + 0.1) + 0.25));
     for (let i = 0; i < 4 && kf > 0; i++) {
       // (the glove to the ball again, then the foot back on the bag: the two settle together)
       if (i && take && takeW > 0) {
