@@ -52,11 +52,15 @@ const ONLY = (() => { const i = process.argv.indexOf('--only'); return i > 0 ? p
 const SEL = selection({ heldStride: 1, defaultStride: 10, total: [...inplayCases()].length });
 const STRIDE = SEL.stride, LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
 const ASPECT = 390 / 457;
-const LIM = { WHIP_DEG: 3.0, ANG_JERK: 0.5, POS_JERK: 1.0, FOV_JERK: 0.05, MIN_SHOT_S: 0.55 };
-// (measured on every case, --stride 1, 2026-10-26: 39 of 58,498 plays left, against most plays on main.
-// whip: one wide crane on a long error throw. jerk: follow shots at the turn of a ground ball (just over the
-// limit). lost: a throw out of a wide or plate shot's frame. Lower these as they are fixed, never raise them)
-const CEILING = { whip: 1, jerk: 27, lost: 11, short: 0, 'mid-throw': 0, away: Infinity };
+const LIM = { WHIP_DEG: 1.0, ANG_JERK: 0.1, POS_JERK: 0.5, FOV_JERK: 0.02, MIN_SHOT_S: 0.55 };
+// The broadcast's pan caps (the owner, 2026-10-26: "a true broadcast feel... not pan so fast"): a pan of
+// at most 1 degree a frame (60 degrees a second, a third of the old 3), its change of speed 0.1 a frame a
+// frame (a fifth of 0.5), the camera's travel 0.5 ft (half of 1.0) and the zoom 0.02 (from 0.05).
+// Measured on every case, --stride 1, 2026-10-27, with the high home, high base and low first base cameras
+// (inplay.js): whip 321 of 58,498 plays (high base camera shots that must turn from the ball to a runner's
+// bag, at 1.0-1.1 degrees a frame), jerk 86, lost 7 (balls hit behind the plate, in a plate shot). Lower
+// these as they are fixed, never raise them.
+const CEILING = { whip: 321, jerk: 86, lost: 7, short: 0, 'mid-throw': 0, away: Infinity };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }

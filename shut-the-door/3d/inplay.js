@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=11';
-import { Crew } from './fielders.js?v=4';
-import { buildBallpark } from './ballpark.js?v=12';
+import { planPlay, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=12';
+import { Crew } from './fielders.js?v=5';
+import { buildBallpark } from './ballpark.js?v=13';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -32,8 +32,20 @@ const ramp = (s, a, b) => smooth((s - a) / (b - a));
 const bump = (s, a, b, c, d) => ramp(s, a, b) * (1 - ramp(s, c, d));
 const D2R = Math.PI / 180;
 // the least of the field the broadcast shows, top to bottom at the point it looks at, in feet (cameraAt):
-// a 6 ft man is then at most about an eighth of the frame
-const ROOM_FT = 45;
+// a 6 ft man is then at most about a tenth of the frame (45 ft until the owner, 2026-10-26: "show more of
+// the field at once")
+const ROOM_FT = 60;
+// (the low plate camera is the close one, saved for a run scoring: it keeps the tighter room it had)
+const ROOM_PLATE_FT = 46;
+const roomOf = (cam) => (cam === 'plate' ? ROOM_PLATE_FT : ROOM_FT);
+// the broadcast's cameras that stand still (feet, catcher's view): the high home, high behind the plate
+// over the net, the high first and third base cameras (x mirrored for third) over the seats down the line,
+// and the low first base camera by the dugout for a run scoring
+const HIGH_HOME = { x: 0, y: -115, z: 72 }, HIGH_BASE = { x: 150, y: 45, z: 58 }, LOW_FIRST = { x: 56, y: 32, z: 8 };
+// how long an infield play's bag takes to leave the high home's frame once its throw is in (seconds)
+const INF_FADE = 1.2;
+// the body's coarse copy below this height on screen (CSS px; fielders.js clusterLod)
+const LOD_PX = 70;
 const BALL_D = 2 * 1.45 * 0.0254;     // a baseball across, 7.37 cm (the mesh in gear3d.js baseball())
 const BALL_MIN_PX = 2;                // the least a ball in play is drawn across on screen (a floor, not a size)
 // the broadcast camera's moves (cameraAt, shot, track): the director's camera (rawCam) every TRACK_DT of
@@ -47,9 +59,9 @@ const BALL_MIN_PX = 2;                // the least a ball in play is drawn acros
 // knee from KNEE degrees to 72, the widest. The slow motion beat pushes in over PUSH_S. KICK_MAX is the
 // sharpest change of turn (degrees a frame, a frame) a shot may have before it is eased longer.
 const TRACK_DT = 1 / 20;
-const EASE_S = { follow: 0.1, wide: 0.14, plate: 0.12, sky: 0.08, track: 0.08 };
-const FOV_EASE_S = { follow: 0.07, wide: 0.1, plate: 0.07, sky: 0.06, track: 0.06 }, PUSH_S = 0.35, HOLD_MARGIN = 1.1, ARRIVE_S = 0.5, KNEE = 64, LENS_SCALE = 0.75, BALL_MARGIN = 1.2, PAN_MAX = 2.6, KICK_MAX = 0.3, ZOOM_MAX = 0.03;
-const RAWFOV_S = { follow: 0.1, wide: 0.11, plate: 0.1, sky: 0.08, track: 0.08 };
+const EASE_S = { follow: 0.3, wide: 0.3, plate: 0.3, sky: 0.12, track: 0.2 };
+const FOV_EASE_S = { follow: 0.2, wide: 0.18, plate: 0.15, sky: 0.08, track: 0.1 }, PUSH_S = 0.35, HOLD_MARGIN = 1.1, ARRIVE_S = 0.5, KNEE = 64, LENS_SCALE = 0.75, BALL_MARGIN = 1.2, PAN_MAX = 0.6, KICK_MAX = 0.035, ZOOM_MAX = 0.007;
+const RAWFOV_S = { follow: 0.3, wide: 0.25, plate: 0.2, sky: 0.1, track: 0.12 };
 const POS_EASE_S = { follow: 0.25, wide: 0.16, plate: 0.12, sky: 0.08, track: 0.08 };
 // the fielders' and runners' clips (lab/pipeline/build_people.py 'fielder'), with their content hash
 // as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
@@ -69,7 +81,7 @@ function faceToward(p, q) {
 function turnTo(a, b, w) { return a + angDiff(a, b) * clamp(w * 1.5, 0, 1); }
 function angDiff(a, b) { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }
 const heading = (from, to) => Math.atan2(to.x - from.x, to.y - from.y);
-const _frustum = new THREE.Frustum(), _mat = new THREE.Matrix4(), _sph = new THREE.Sphere();
+const _frustum = new THREE.Frustum(), _mat = new THREE.Matrix4(), _sph = new THREE.Sphere(), _v3 = new THREE.Vector3();
 
 export class InPlay {
   constructor({ scene, renderer, people, facts }) {
@@ -118,8 +130,8 @@ export class InPlay {
       GL), the first broadcast frame uploaded 14 textures and 12 buffers on top of its draw; drawn
       ahead into a target instead, it still compiled a shader per variant the canvas never uses, so
       this only uploads (renderer.initTexture: no draw, nothing on screen). It takes six of the
-      fourteen off that frame; the rest are the bodies' bone textures (made on their first draw)
-      and textures still loading. A small hitch at the cut remains: stage.js's clock pauses for it. */
+      fourteen off that frame; the bodies' bone textures (three.js makes one on a body's first draw)
+      are made and uploaded here too (2026-10-26). What remains is textures still loading. */
   prime() {
     const r = this.renderer, seen = new Set();
     const up = (o) => o.traverse((m) => {
@@ -133,6 +145,14 @@ export class InPlay {
     up(this.park);
     for (const f of this.crew.figures) up(f.root);
     up(this.crew.blobs);
+    // (and each body's bone texture, which three.js makes on that body's first draw: a fielder first in
+    // the frame mid pan, the right fielder on a ball to right, was a new texture made and uploaded then)
+    for (const f of this.crew.figures) {
+      const sk = f.mesh && f.mesh.skeleton;
+      if (!sk) continue;
+      if (!sk.boneTexture) sk.computeBoneTexture();
+      if (sk.boneTexture && !seen.has(sk.boneTexture)) { seen.add(sk.boneTexture); r.initTexture(sk.boneTexture); }
+    }
     return seen.size;
   }
 
@@ -146,6 +166,15 @@ export class InPlay {
     this.ballScale0 = this.ball.scale.x;
     // who holds the ball next, at each moment (for the camera)
     this.active.holds = plan.segs.filter((sg) => sg.kind === 'held').map((sg) => ({ t: sg.t0, by: sg.by }));
+    // an infield play's bags, every throw's to the infield (for the high home camera, rawCam)
+    const ft0 = (plan.outcome && plan.outcome.firstTouch) || {};
+    const infPlay = (plan.kind === 'ground_play' || plan.kind === 'ground_hit') && ft0.n != null && ft0.n <= 6 && Math.hypot(ft0.at ? ft0.at.x : 0, ft0.at ? ft0.at.y : 0) < 160;
+    // (and a bag a runner is out, scores or pulls in safe at, from 1.6 s before, when another moment comes
+    // within a second of it at a bag across the diamond: one high shot holds the two together)
+    this.active.infield = infPlay ? [
+      ...plan.segs.filter((sg) => sg.kind === 'throw' && Math.hypot(sg.b.x, sg.b.y) < 135).map((sg) => ({ x: sg.b.x, y: sg.b.y, t1: sg.t1 })),
+      ...crowded(plan.runners.map((r) => { const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.from !== r.to ? r.arrive : null, bag = BASE[r.out ? r.outBase : Math.min(4, r.to)]; return tq != null && tq < 100 && bag ? { x: bag.x, y: bag.y, t1: tq, t0: tq - 1.6 } : null; }).filter(Boolean)),
+    ] : [];
     // the set's catcher is posed for the pitch (his rise after contact ends in a crouch half undone):
     // in the broadcast a fielder in his place stands, watches and plays
     this.active.usesCatcher = true;
@@ -207,6 +236,10 @@ export class InPlay {
     if (pt.overlays) for (const o of [pt.tracer, pt.aimRing, pt.hitDot]) o.visible = !broadcast;
     pp.catcher.root.visible = !(broadcast && A.usesCatcher);
     this.park.visible = broadcast;
+    // (the backstop net's three poles stand between the high home camera and the field: on television a
+    // net's cables are lost in the distance, so the broadcast leaves them out)
+    if (!this.netPoles) this.netPoles = this.scene.getObjectsByProperty('name', 'netPole');
+    for (const o of this.netPoles) o.visible = !broadcast;
     // the sun's shadow map covers the plate only: in the broadcast it is not drawn again each frame
     this.renderer.shadowMap.autoUpdate = !broadcast;
     // ---- the ball
@@ -237,6 +270,20 @@ export class InPlay {
       const q = plan.fielders[n].at(s);
       if (!inView(q.x, q.y, n)) { f.root.visible = false; f.at = { x: q.x, y: q.y }; continue; }
       this.poseFielder(n, f, s, b);
+    }
+    // ---- each body's detail for its size on screen: a man under LOD_PX tall is drawn from the coarse body
+    // (fielders.js clusterLod, a tenth of the triangles). The wide high shots hold every fielder at once,
+    // and the full body is some 30k triangles a man for a figure twenty pixels tall
+    if (broadcast) {
+      const H = camera.userData.cssH || 800, k = H / (2 * Math.tan(camera.fov * D2R / 2));
+      for (const f of this.crew.figures) if (f.root.visible) this.crew.detail(f, 1.85 * k / Math.max(1, camera.position.distanceTo(f.root.position)), LOD_PX);
+    }
+    // (and the set's umpire, behind the plate in the high home's frame: his mask is a cage of a dozen
+    // pieces, each a draw, under a pixel across on a man that small. It is left off while he is)
+    const ump = this.people.umpire;
+    if (ump && ump.mask) {
+      const k = (camera.userData.cssH || 800) / (2 * Math.tan(camera.fov * D2R / 2));
+      ump.mask.visible = !(broadcast && 1.85 * k / Math.max(1, camera.position.distanceTo(ump.root.getWorldPosition(_v3))) < LOD_PX);
     }
     // the ball in a glove or a hand, or in flight (eased into the glove over its last few hundredths)
     let bp = { x: b.x, y: b.y, z: b.z };
@@ -923,7 +970,20 @@ export class InPlay {
       // it, which the shot must hold, can need the other side)
       // (a crane that must climb to hold it all counts against its side: its lens is at the cap)
       // (and the broadcast's room counts: a crane right by the bag must open wide to show its 45 ft)
-      const widest = (sd) => { this.wideSide = sd; let m = 0; for (const f of [0.1, 0.3, 0.5, 0.7, 0.9]) { const c = this.rawCam('wide', q0 + (q1 - q0) * f, aspect); const room = 2 * Math.atan(ROOM_FT / 2 / Math.max(1, Math.hypot(c.look.x - c.pos.x, c.look.y - c.pos.y, c.look.z - c.pos.z))) / D2R; m = Math.max(m, Math.max(c.fov, Math.min(62, room)) + Math.max(0, c.pos.z - 48)); } return m; };
+      // (and how far it must turn across the shot: a camera that stands still pans to what it cannot hold,
+      // and the side that turns least is the steadier shot)
+      const widest = (sd) => {
+        this.wideSide = sd; let m = 0; const dirs = [];
+        for (const f of [0, 0.1, 0.3, 0.5, 0.7, 0.9, 1]) {
+          const c = this.rawCam('wide', q0 + (q1 - q0) * f, aspect), d = Math.hypot(c.look.x - c.pos.x, c.look.y - c.pos.y, c.look.z - c.pos.z) || 1;
+          dirs.push({ x: (c.look.x - c.pos.x) / d, y: (c.look.y - c.pos.y) / d, z: (c.look.z - c.pos.z) / d });
+          const room = 2 * Math.atan(ROOM_FT / 2 / Math.max(1, d)) / D2R;
+          m = Math.max(m, Math.max(c.fov, Math.min(62, room)) + Math.max(0, c.pos.z - HIGH_BASE.z));
+        }
+        let turn = 0;
+        for (const a of dirs) for (const b of dirs) turn = Math.max(turn, Math.acos(clamp(a.x * b.x + a.y * b.y + a.z * b.z, -1, 1)) / D2R);
+        return m + turn;
+      };
       const a = widest(-1), b = widest(1);
       this.wideSide = null;
       const def = this.rawCam('wide', mid, aspect).pos.x > 0 ? 1 : -1;
@@ -953,14 +1013,24 @@ export class InPlay {
       // degrees a frame at 60 frames a second, change its turn sharper than KICK_MAX, or whose zoom would
       // change speed sharper than ZOOM_MAX, is eased again, longer, the lens holding what it must)
       // (and one that cannot hold a ball it must, eased that long, tries it quicker)
-      const bad = (t) => t.short * 100 + Math.max(0, t.pan - PAN_MAX) * 10 + Math.max(0, t.kick - KICK_MAX) * 10 + Math.max(0, t.zoom - ZOOM_MAX) * 100;
-      let best = null;
-      for (const k of [1, 1.4, 2, 3, 4.5, 0.6]) {
-        tk = this.track(ed, j0, j1, aspect, k);
-        if (!best || bad(tk) < bad(best)) best = tk;
-        if (bad(tk) === 0) break;
+      const bad = (t) => t.short * 100 + t.miss * 100 + Math.max(0, t.pan - PAN_MAX) * 400 + Math.max(0, t.kick - KICK_MAX) * 400 + Math.max(0, t.zoom - ZOOM_MAX) * 100;
+      const search = () => {
+        let best = null;
+        for (const k of [1, 1.4, 2, 3, 4.5, 6.5, 0.6]) {
+          const t = this.track(ed, j0, j1, aspect, k);
+          if (!best || bad(t) < bad(best)) best = t;
+          if (bad(t) === 0) break;
+        }
+        return best;
+      };
+      tk = search();
+      // (a high base camera that cannot hold its shot's moments from its side tries the other side whole)
+      if (piece.cam === 'wide' && tk.miss > 0) {
+        this.wideSide = -piece.side;
+        const other = search();
+        if (bad(other) < bad(tk)) { tk = other; for (let i = j0; i <= j1; i++) ed[i].side = -piece.side; }
+        this.wideSide = piece.side;
       }
-      tk = best;
       tracks.set(key, tk);
     }
     return tk;
@@ -997,15 +1067,17 @@ export class InPlay {
     // already in its move, not one jolted into it
     // (a broadcast camera turns and zooms; it hardly travels: its place drifts over POS_EASE_S while its
     // look follows the play over EASE_S)
-    const sig = slow * (EASE_S[cam] || 0.25) / TRACK_DT, psig = slow * (POS_EASE_S[cam] || 0.3) / TRACK_DT, P = Math.ceil(2.5 * psig);
+    const sig = slow * (EASE_S[cam] || 0.25) / TRACK_DT, psig = slow * (POS_EASE_S[cam] || 0.3) / TRACK_DT, P = Math.ceil(2.5 * Math.max(sig, psig));
     const sOf = (i) => (i < 0 ? Math.max(0, ed[j0].s0 + i * TRACK_DT * ed[j0].rate) : i >= n ? ed[j1].s1 + (i - n + 1) * TRACK_DT * ed[j1].rate : sAt(Math.min(dur, i * TRACK_DT)));
     const all = [];
     // (the bag each moment of the shot is about, for its throws: the piece's deciding moment)
     const bagAt = (s) => { let pc = ed[j0]; for (let j = j0; j <= j1; j++) if (s >= ed[j].s0 - 1e-6) pc = ed[j]; return bagOf(plan, pc.m); };
     // (a throw that leaves after this shot is over is none of its business, nor a moment before it began)
     this.shotEnd = ed[j1].s1; this.shotStart = ed[j0].s0;
+    // (a broadcast camera is framed before the director takes it and settles before he leaves it: the
+    // move is the shot's own, at rest at either end, never a pan the cut lands in the middle of)
     for (let i = -P; i < n + P; i++) {
-      const s = sOf(i), bag = bagAt(s);
+      const s = sOf(clamp(i, 0, n - 1)), bag = bagAt(s);
       this.shotBag = bag;
       const c = this.rawCam(cam, s, aspect);
       all.push({ s, pos: c.pos, look: c.look, fov: c.fov, pts: c.pts, keys: (this.lastKeys || []).slice(), bag, margin: c.margin || 1.25, minFov: c.minFov || 12 });
@@ -1043,7 +1115,7 @@ export class InPlay {
       const m = x.must.filter((p) => ((p.x - pos[i].x) * (look[i].x - pos[i].x) + (p.y - pos[i].y) * (look[i].y - pos[i].y) + (p.z - pos[i].z) * (look[i].z - pos[i].z)) > 1 &&
         Math.hypot(p.x - pos[i].x, p.y - pos[i].y, p.z - pos[i].z) > 20);
       const dLook = Math.hypot(look[i].x - pos[i].x, look[i].y - pos[i].y, look[i].z - pos[i].z);
-      const room = Math.min(62, 2 * Math.atan(ROOM_FT / 2 / Math.max(1, dLook)) / D2R);
+      const room = Math.min(62, 2 * Math.atan(roomOf(cam) / 2 / Math.max(1, dLook)) / D2R);
       // (the ball, fast and small, with a wider margin: between two samples it covers ground)
       const mb = m.filter((p) => p.ball), mk = m.filter((p) => !p.ball);
       const nv = clamp(Math.max(lensFor(pos[i], look[i], mk, aspect, HOLD_MARGIN, 4), mb.length ? lensFor(pos[i], look[i], mb, aspect, BALL_MARGIN, 4) : 0, room), 4, 72);
@@ -1053,7 +1125,7 @@ export class InPlay {
     // jumps closer and back would otherwise leave the eased one, between, with a lens for elsewhere)
     const lensRaw = all.map((x, i) => (x.pts && x.pts.length ? Math.min(Math.max(x.fov, 72), lensFor(posAll[i], x.look, x.pts, aspect, x.margin * LENS_SCALE, x.minFov)) : x.fov));
     // (and the broadcast's room is the director's too: the lens it eases from never zooms in past it)
-    const roomAll = all.map((x, i) => { const p0 = posAll[i]; return Math.min(62, 2 * Math.atan(ROOM_FT / 2 / Math.max(1, Math.hypot(x.look.x - p0.x, x.look.y - p0.y, x.look.z - p0.z))) / D2R); });
+    const roomAll = all.map((x, i) => { const p0 = posAll[i]; return Math.min(62, 2 * Math.atan(roomOf(cam) / 2 / Math.max(1, Math.hypot(x.look.x - p0.x, x.look.y - p0.y, x.look.z - p0.z))) / D2R); });
     let fov = gauss(lensRaw.map((f, i) => ({ x: lw(clamp(Math.max(f, roomAll[i]), 4, 80)), y: 0, z: 0 })), slow * (RAWFOV_S[cam] || 0.1) / TRACK_DT).slice(P, P + n).map((v) => fw(v.x));
     // the slow motion beat pushes in a tenth, easing in and out over PUSH_S of real time either side
     const sl = ed.find((x, j) => j >= j0 && j <= j1 && x.rate < 1);
@@ -1072,7 +1144,8 @@ export class InPlay {
       if (th && !x.b.by && bg && Math.hypot(th.b.x - bg.x, th.b.y - bg.y) < 20) { x.must.push(...x.bAll); more = true; }
     });
     let short = 0;
-    if (more) { const nd = needOf(); fov = hold(nd); short = raw.filter((x, i) => nd[i] >= 71.9 && x.must.some((q) => q.ball)).length; }
+    let ndF = null;
+    if (more) { const nd = needOf(); fov = hold(nd); short = raw.filter((x, i) => nd[i] >= 71.9 && x.must.some((q) => q.ball)).length; ndF = nd; }
     // (its fastest turn, a frame at 60 frames a second, from sample to sample, and its sharpest change of
     // turn away from the shot's first and last tenth of a second)
     let pan = 0, kick = 0;
@@ -1085,11 +1158,14 @@ export class InPlay {
     }
     // (the widest lens is reached softly, never a hard stop: a knee from KNEE degrees to 72)
     fov = fov.map((f) => (f > KNEE ? KNEE + (72 - KNEE) * Math.tanh((f - KNEE) / (72 - KNEE)) : Math.max(4, f)));
+    // (and the samples whose lens, past the knee, no longer holds what it must: an ease that slow is too slow)
+    const ndM = ndF || needOf();
+    const miss = ndM.reduce((m, v, i) => m + (v > fov[i] + 0.5 ? 1 : 0), 0);
     // (and its sharpest change of zoom, on the log of the lens's width, a frame at 60 frames a second)
     let zoom = 0;
     const lt = fov.map((f) => Math.log(Math.tan(f * D2R / 2)));
     for (let i = 1; i < n - 1; i++) zoom = Math.max(zoom, Math.abs(lt[i + 1] - 2 * lt[i] + lt[i - 1]) * ((1 / 60) / TRACK_DT) ** 2);
-    return { r0, dur, n, pos, look, fov, pan, kick, zoom, short };
+    return { r0, dur, n, pos, look, fov, pan, kick, zoom, short, miss };
   }
 
   /** One camera, unsmoothed: where it is, what it looks at, the field of view that holds the points
@@ -1192,21 +1268,24 @@ export class InPlay {
           for (const n of OF) { const f = plan.fielders[n]; if (f.acts.some((a) => a.kind === 'leap_miss')) { const q2 = f.at(s); pts.push({ x: q2.x, y: q2.y, z: 0 }); } }
         } else if (q && s < (plan.flight.tLand ?? 9) + 0.5) pts.push({ x: q.x, y: q.y, z: 0 });
       }
-      // from behind the plate, high, trailing the action at about half its distance (a camera on a
-      // wire): close enough that a fielder is a figure, not a speck
+      // an infield play: the bags it throws to are in the frame from contact (a broadcast's high home holds
+      // the fielder, the ball and the base together, so the throw is no pan), a runner's bag from a moment
+      // before he gets there (in over 0.8 s), each out again over INF_FADE after
+      for (const q of this.active.infield || []) {
+        const w = (q.t0 == null ? 1 : clamp((s - q.t0) / 0.8, 0, 1)) * (1 - clamp((s - (q.t1 + 0.4)) / INF_FADE, 0, 1));
+        if (w > 0) pts.push(slideF({ x: q.x, y: q.y, z: 0 }, w), slideF({ x: q.x, y: q.y, z: 6 }, w));
+      }
       pts.push(...keys);
       if (keys.length) wBall = 0.3;
-      const c = centre(pts, wBall);
-      const r = Math.hypot(c.x, c.y);
-      // (with a deciding moment near, the wire pulls back and up: the bag and the runner beside the ball)
-      // (halfway in and high, and 32 ft behind the nearest thing it holds: a pop up behind the plate keeps its distance)
-      const near = Math.min(...pts.map((p) => p.y));
-      pos = { x: c.x * 0.5, y: Math.min(c.y * 0.5 - 44, near - 32), z: 34 + r * 0.1 };
-      // (never back in the seats behind the plate, 56 ft back: it climbs instead of backing up)
-      // (eased in as the play moves out past 20 ft, not a step there)
-      const up = Math.max(0, -46 - pos.y) * clamp((c.y - 10) / 20, 0, 1);
-      pos.z += up * 0.6; pos.y += up;
-      return this.backOff(pos, pts, wBall, aspect, keys.length ? 1.3 : 1.25, 12);
+      // the high home camera: high behind the plate, where it stays. It turns and zooms; it never travels
+      // (the camera on a wire that trailed the play at half its distance moved the whole park past the
+      // lens on every fly ball)
+      pos = { ...HIGH_HOME };
+      // (a ball up over the backstop, behind the plate: the camera is further back still, so it stays
+      // in front of the lens)
+      const back = Math.min(...pts.map((p) => p.y)) - 60;
+      if (back < pos.y) pos.y = back;
+      return this.fit(pos, pts, wBall, aspect, keys.length ? 1.3 : 1.25, 12);
     }
     if (cam === 'track') {
       // low behind the plate, off to the side away from the ball, panning with the liner
@@ -1257,29 +1336,19 @@ export class InPlay {
       this.lastKeys = wk;
       const w0 = keys.length ? 0.15 : 0.35, m0 = keys.length ? 1.4 : 1.25;
       const c = centre(use, w0);
-      // (a throw to first or third in the shot: it stays near the dugout, down the line of the throw,
-      // second to first or short to first, with the thrower behind the man taking it)
-      const lean = 0.5 - 0.35 * (th && Math.abs(th.b.x) > 30 ? wTh : 0);
-      // the furthest in it can lean and still hold it all in a lens of 62 degrees; from the edge of the
-      // field it climbs, if it must, rather than back into the seats (both found smoothly, by halves)
-      // (it stands by the dugout, over the front rows; as it climbs it comes in to the edge of the field,
-      // so a high crane looks down on the field and not on the seats under it)
-      const A = { x: sd * 105, y: 20 }, E = { x: sd * 88, y: 28 };
-      const at = (L, z) => {
-        const u = clamp((z - 48) / 20, 0, 1), a = { x: A.x + (E.x - A.x) * u, y: A.y + (E.y - A.y) * u };
-        return this.fit({ x: a.x + (c.x - a.x) * L, y: a.y + (c.y - a.y) * L, z }, use, w0, aspect, m0, 16);
+      // the high first or third base camera: it stands where it stands, over the seats down the line, and
+      // turns and zooms (it leaned in from the dugout before, a crane flying across the field mid shot).
+      // A moment it cannot hold in a lens of 62 degrees: it climbs, by halves, rather than back into the seats
+      const A = { x: sd * HIGH_BASE.x, y: HIGH_BASE.y }, E = { x: sd * 88, y: 28 };
+      const at = (z) => {
+        const u = clamp((z - HIGH_BASE.z) / 20, 0, 1), a = { x: A.x + (E.x - A.x) * u, y: A.y + (E.y - A.y) * u };
+        return this.fit({ x: a.x, y: a.y, z }, use, w0, aspect, m0, 16);
       };
-      let k = at(lean, 48);
+      let k = at(HIGH_BASE.z);
       if (k.fov > 62) {
-        if (at(0, 48).fov <= 62) {
-          let lo = 0, hi = lean;
-          for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (at(mid, 48).fov <= 62) lo = mid; else hi = mid; }
-          k = at(lo, 48);
-        } else {
-          let lo = 48, hi = 140;
-          for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (at(0, mid).fov <= 62) hi = mid; else lo = mid; }
-          k = at(0, hi);
-        }
+        let lo = HIGH_BASE.z, hi = 140;
+        for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (at(mid).fov <= 62) hi = mid; else lo = mid; }
+        k = at(hi);
       }
       return k;
     }
@@ -1289,7 +1358,7 @@ export class InPlay {
       // plate; low by first base the throw would come from behind it)
       // (decided once a shot, track: a camera does not fly across the field mid shot)
       const hs = this.plateHigh || 0;
-      pos = hs ? { x: hs * 12, y: -46, z: 26.5 } : { x: 36, y: 24, z: 4.5 };
+      pos = hs ? { x: hs * 12, y: -46, z: 26.5 } : { ...LOW_FIRST };
       const home = plan.runners.filter((r) => r.to === 4 || (r.out && r.outBase === 4));
       pts.length = 0;
       pts.push({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 6 });
@@ -1339,18 +1408,25 @@ export class InPlay {
     if (!A) return;
     this.crew.hide();
     this.park.visible = false;
+    for (const o of this.netPoles || []) o.visible = true;
     this.renderer.shadowMap.autoUpdate = true;
     this.trail.visible = false;
     this.marker.visible = false;
     const pp = this.people;
     pp.batter.root.visible = true;
     pp.catcher.root.visible = true;
+    if (pp.umpire && pp.umpire.mask) pp.umpire.mask.visible = true;
     if (this.ball) this.ball.scale.setScalar(this.ballScale0);
     if (camera && A.fov0 != null) { camera.fov = A.fov0; camera.updateProjectionMatrix(); }
     this.active = null;
   }
 }
 
+
+/** The moments (bags at times t1) that have another within a second at a bag more than 60 ft away. */
+function crowded(ms) {
+  return ms.filter((a) => ms.some((b) => b !== a && Math.abs(b.t1 - a.t1) < 1 && Math.hypot(a.x - b.x, a.y - b.y) > 60));
+}
 
 /** A gaussian smoothing of a run of points (sigma in samples), its ends held: what lies past either
     end is taken as the end itself, so the move starts and stops at rest. */

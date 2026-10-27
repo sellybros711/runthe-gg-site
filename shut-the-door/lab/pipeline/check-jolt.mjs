@@ -60,36 +60,43 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // more bodies are measured (runners and covering fielders). The motion is the same: with every body measured
 // whether on screen or not, main had 9,147 plays over and this change 8,978, with no body code touched.
 // Recorded here once, for that reason only.
+// The broadcast camera plan (site PR #741, 2026-10-27) holds an infield play in one high shot and cuts less:
+// 108 fewer jump cuts and 2.0% more of each play shown (every 40th case), so frames a jump cut skipped are now
+// measured. With every body measured, on screen or not, main had 801 plays with a pop and 993 with a skate,
+// and #741 811 and 1,003. The rise is the frames shown, not motion: every fielder's and runner's track and
+// every act is identical to main's at every plan time (1,463 plays, max difference 0 ft), the posing change
+// (fielders.js aimFast) gives the same bones to the bit, and each row's worst speed holds. Accepted by the
+// coordinator on the terms of #710 and #725; these are the on screen counts at the default stride, once.
 const CEILING = {
-  'pop fielder -': 361,
+  'pop fielder -': 397,
   'pop fielder bobble': 104,
   'pop fielder catch': 31,
   'pop fielder catch_throw': 4,
-  'pop fielder cover': 53,
-  'pop fielder dive': 13,
+  'pop fielder cover': 67,
+  'pop fielder dive': 16,
   'pop fielder dive_short': 64,
-  'pop fielder field': 96,
+  'pop fielder field': 100,
   'pop fielder leap_miss': 5,
   'pop fielder pickup': 47,
   'pop fielder reach': 20,
   'pop fielder set': 20,
   'pop fielder tag': 182,
   'pop fielder throw': 7,
-  'pop runner run': 397,
-  'skate fielder -': 182,
+  'pop runner run': 595,
+  'skate fielder -': 229,
   'skate fielder bobble': 22,
   'skate fielder catch_throw': 5,
-  'skate fielder cover': 443,
-  'skate fielder dive': 10,
+  'skate fielder cover': 454,
+  'skate fielder dive': 14,
   'skate fielder field': 461,
   'skate fielder leap_miss': 1,
-  'skate fielder pickup': 556,
+  'skate fielder pickup': 590,
   'skate fielder reach': 40,
   'skate fielder receive': 22,
   'skate fielder set': 27,
   'skate fielder tag': 344,
-  'skate fielder throw': 4,
-  'skate runner run': 640,
+  'skate fielder throw': 6,
+  'skate runner run': 829,
 };
 
 function loadPlaywright() {

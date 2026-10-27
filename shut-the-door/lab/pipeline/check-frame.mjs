@@ -52,7 +52,12 @@ const CEILING = { catch: 0, out: 0, run: 0, safe: 0, 'tag-up': 0, flash: 0 };
 // 45 ft of field where it looks (inplay.js ROOM_FT), so the median man came down from 103 px to 58 (out),
 // 117 to 61 (run), 78 to 39 (safe) and 96 to 53 (tag-up). That lowered one floor, tag-up, from 86 to 35
 // (a tag-up is a runner standing on his bag, the tightest shot there was). The others held where they were.
-const FLOOR = { out: 45, run: 44, safe: 14, 'tag-up': 35 };
+// The owner (2026-10-26): "a true broadcast feel... show more of the field at once", the deciding man smaller,
+// as on television. The broadcast became fixed high cameras (inplay.js: the high home holds an infield play
+// whole, the fielder, the ball and the bag) with ROOM_FT 60. That wider look is why three floors came
+// down, measured on every case: out 45 to 15 (10th 15.8, median 41.7), run 44 to 22 (22.2, 31.2), safe 14
+// to 10 (10.6, 24.0). Tag-up rose, 35 to 42 (42.7). Every miss ceiling held at 0.
+const FLOOR = { out: 15, run: 22, safe: 10, 'tag-up': 42 };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }

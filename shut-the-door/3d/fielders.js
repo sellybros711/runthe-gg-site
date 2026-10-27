@@ -29,7 +29,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { aimBone, twoBoneIK, wpos } from './rig.js?v=1';
+import { twoBoneIK, wpos } from './rig.js?v=1';
 import { P, FT } from './units.js?v=1';
 
 const PART = { skin: 0, hair: 1, uniform: 2, trim: 3, shoes: 4, belt: 5, cap: 6, gloveL: 7, gloveR: 8, brim: 9 };
@@ -149,12 +149,54 @@ function buildTemplate(person) {
   const geometry = mergeGeometries(parts);
   geometry.computeBoundingSphere();
   merged0.dispose();
+  // the same body for a figure far off (crew.lod): about a tenth of the triangles
+  const lod = clusterLod(geometry, LOD_CELL);
   // where the glove's pocket and the bare hand's ball sit, in each hand's own frame
   const pocket = (s) => {
     const hb = box(`hand_${s}`, 0.3), c = hb.getCenter(V());
     return c.applyMatrix4(world[index[`hand_${s}`]].clone().invert());
   };
-  return { geometry, names, index, parents: sk.bones.map((b) => names.indexOf(b.parent && b.parent.name)), world, inverses: world.map((m) => m.clone().invert()), modelH, foot: Math.min(world[index.foot_l].elements[13], world[index.foot_r].elements[13]) - all.min.y, minY: all.min.y, pocketL: pocket('l'), pocketR: pocket('r') };
+  return { geometry, lod, names, index, parents: sk.bones.map((b) => names.indexOf(b.parent && b.parent.name)), world, inverses: world.map((m) => m.clone().invert()), modelH, foot: Math.min(world[index.foot_l].elements[13], world[index.foot_r].elements[13]) - all.min.y, minY: all.min.y, pocketL: pocket('l'), pocketR: pocket('r') };
+}
+
+/** A coarse copy of a skinned geometry by vertex clustering: every vertex snapped to a cell of `cell`
+    metres (by part, so a cap never melts into a sleeve), the cell's vertices merged into one at their
+    mean place and normal with the first one's bones, and the triangles that collapse dropped. For a
+    body a few dozen pixels tall, where a cell is under a pixel. Pure, made once at load. */
+function clusterLod(g, cell) {
+  const pos = g.attributes.position, nor = g.attributes.normal, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, pt = g.attributes.part;
+  const map = new Int32Array(pos.count), keys = new Map(), acc = [];
+  for (let i = 0; i < pos.count; i++) {
+    const k = Math.round(pos.getX(i) / cell) + ',' + Math.round(pos.getY(i) / cell) + ',' + Math.round(pos.getZ(i) / cell) + ',' + pt.getX(i);
+    let c = keys.get(k);
+    if (c == null) { c = acc.length; keys.set(k, c); acc.push({ i, n: 0, x: 0, y: 0, z: 0, nx: 0, ny: 0, nz: 0 }); }
+    const a = acc[c]; a.n++; a.x += pos.getX(i); a.y += pos.getY(i); a.z += pos.getZ(i); a.nx += nor.getX(i); a.ny += nor.getY(i); a.nz += nor.getZ(i);
+    map[i] = c;
+  }
+  const n = acc.length, P = new Float32Array(n * 3), N = new Float32Array(n * 3), SI = new Uint16Array(n * 4), SW = new Float32Array(n * 4), PT = new Float32Array(n);
+  acc.forEach((a, c) => {
+    P[c * 3] = a.x / a.n; P[c * 3 + 1] = a.y / a.n; P[c * 3 + 2] = a.z / a.n;
+    const l = Math.hypot(a.nx, a.ny, a.nz) || 1; N[c * 3] = a.nx / l; N[c * 3 + 1] = a.ny / l; N[c * 3 + 2] = a.nz / l;
+    for (let k = 0; k < 4; k++) { SI[c * 4 + k] = si.getComponent(a.i, k); SW[c * 4 + k] = sw.getComponent(a.i, k); }
+    PT[c] = pt.getX(a.i);
+  });
+  const idx = g.index.array, out = [], seen = new Set();
+  for (let t = 0; t < idx.length; t += 3) {
+    const a = map[idx[t]], b = map[idx[t + 1]], c = map[idx[t + 2]];
+    if (a === b || b === c || a === c) continue;
+    const key = [a, b, c].sort((x, y) => x - y).join(',');
+    if (seen.has(key)) continue;
+    seen.add(key); out.push(a, b, c);
+  }
+  const o = new THREE.BufferGeometry();
+  o.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  o.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  o.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4));
+  o.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
+  o.setAttribute('part', new THREE.Float32BufferAttribute(PT, 1));
+  o.setIndex(new THREE.Uint32BufferAttribute(Uint32Array.from(out), 1));
+  o.computeBoundingSphere();
+  return o;
 }
 
 /** The material all figures share the program of: a standard material coloured per part. */
@@ -181,6 +223,9 @@ function figureMaterial() {
   m.customProgramCacheKey = () => 'std-figure-1';
   return m;
 }
+
+// the far body's cell (metres): 2.5 cm, under a pixel on a body below LOD_PX (inplay.js) on a phone
+const LOD_CELL = 0.025;
 
 const SKIN = [new THREE.Color('#e0b393'), new THREE.Color('#5e3d29')];
 const HAIR = new THREE.Color('#1c1712');
@@ -283,6 +328,14 @@ export class Crew {
     const f = new Figure(this, root, mesh, Object.fromEntries(bones.map((b) => [b.name, b])));
     this.figures.push(f);
     return f;
+  }
+
+  /** The body's detail for its size on screen (CSS px tall): the coarse body under px, with a margin
+      either way so a figure at the edge of it does not switch every frame. */
+  detail(f, px, lodPx) {
+    const far = f.mesh.geometry === this.t.lod;
+    const want = far ? px < lodPx * 1.15 : px < lodPx * 0.85;
+    if (want !== far) f.mesh.geometry = want ? this.t.lod : this.t.geometry;
   }
 
   /** Colour a figure: kit from people.js kitFor, tone 0..1 the skin, glove 'l' | 'r' | null, the cap
@@ -436,6 +489,8 @@ export class Figure {
     rotY(B.pelvis, tw * 0.35 - runTw * 0.6);
     rotX(B.spine_01, lean * 0.35); rotX(B.spine_02, lean * 0.35); rotX(B.spine_03, lean * 0.3);
     rotY(B.spine_02, tw * 0.35 + runTw * 0.5); rotY(B.spine_03, tw * 0.3 + runTw * 0.5);
+    // (the trunk's world matrices brought up to date once: every aim below reads them as they stand)
+    root.updateMatrixWorld(true);
     // ---- the legs
     for (const s of ['l', 'r']) {
       const side = s === 'l' ? 1 : -1;
@@ -453,11 +508,11 @@ export class Figure {
         kn = kn * (1 - k) + (lead ? 0.1 : 1.9) * k;
       }
       const splay = 0.06 + 0.22 * wide + 0.08 * crouch;
-      aimBone(B[`thigh_${s}`], B[`calf_${s}`], V(splay * side, -Math.cos(th), Math.sin(th)));
-      aimBone(B[`calf_${s}`], B[`foot_${s}`], V(splay * side * 0.4, -Math.cos(th - kn), Math.sin(th - kn)));
+      aimFast(B[`thigh_${s}`], B[`calf_${s}`], V(splay * side, -Math.cos(th), Math.sin(th)));
+      aimFast(B[`calf_${s}`], B[`foot_${s}`], V(splay * side * 0.4, -Math.cos(th - kn), Math.sin(th - kn)));
       // the foot: level on the ground, the toe down as it comes off it
       const toe = a > 0 ? 0.35 * a * Math.max(0, -Math.sin(ph)) : 0;
-      aimBone(B[`foot_${s}`], B[`ball_${s}`], V(side * 0.08 * (crouch + wide), -0.25 - toe, 1));
+      aimFast(B[`foot_${s}`], B[`ball_${s}`], V(side * 0.08 * (crouch + wide), -0.25 - toe, 1));
     }
     // ---- the arms: hanging, swinging with the stride, or reaching
     for (const s of ['l', 'r']) {
@@ -469,8 +524,8 @@ export class Figure {
       const up = V(hangOut * side, -Math.cos(sw + fwd0), Math.sin(sw + fwd0));
       const elbow = 0.35 + 1.1 * a + 0.4 * crouch;
       const fo = V(hangOut * side * 0.4 - 0.12 * side * a, -Math.cos(sw + fwd0 + elbow), Math.sin(sw + fwd0 + elbow));
-      aimBone(B[`upperarm_${s}`], B[`lowerarm_${s}`], up);
-      aimBone(B[`lowerarm_${s}`], B[`hand_${s}`], fo);
+      aimFast(B[`upperarm_${s}`], B[`lowerarm_${s}`], up);
+      aimFast(B[`lowerarm_${s}`], B[`hand_${s}`], fo);
     }
     // a throw: the throwing arm is the one without the glove
     const thr = this.glove === 'r' ? 'l' : 'r', gl = thr === 'l' ? 'r' : 'l', ts = thr === 'l' ? 1 : -1;
@@ -503,9 +558,10 @@ export class Figure {
       }
     }
     // ---- the clips over the standing pose: the run by speed, a little idle life, the throw's trunk and arms
-    if (clips) this.layerClips(sp, aRun, useThrowClip);
+    const layered = clips ? this.layerClips(sp, aRun, useThrowClip) : false;
     // ---- on the ground: where the soles are in this pose (the lowest foot at its bind height)
-    root.updateMatrixWorld(true);
+    // (layerClips brings the matrices up to date itself when it lays anything on)
+    if (!layered) root.updateMatrixWorld(true);
     const low = Math.min(wpos(B.foot_l).y, wpos(B.foot_r).y, wpos(B.ball_l).y + 0.03, wpos(B.ball_r).y + 0.03);
     this.g0 = low - (this.ankle0 - this.crew.t.minY);       // the ground's height in the model frame
     if (sp.slide > 0) {
@@ -592,6 +648,7 @@ export class Figure {
       any = true;
     }
     if (any) this.root.updateMatrixWorld(true);
+    return any;
   }
 
   /** Two bone IK of one arm to a model frame point, the glove's pocket (or the hand) on it. */
@@ -654,7 +711,22 @@ function rotWorld(bone, axis, a) {
 }
 function blendAim(bone, child, dir, w) {
   if (w <= 0) return;
-  aimBone(bone, child, dir, Math.min(1, w));
+  aimFast(bone, child, dir, Math.min(1, w));
+}
+
+/** rig.js aimBone, for a skeleton whose world matrices are already current (pose keeps them so): the
+    same rotation, read off matrixWorld instead of walking up and recomposing every parent on each read.
+    With nine fielders and four runners in one high wide shot, that walk was most of the frame's posing. */
+const _fa = new THREE.Vector3(), _fb = new THREE.Vector3(), _fq = new THREE.Quaternion(), _fpq = new THREE.Quaternion(), _fbq = new THREE.Quaternion(), _fs = new THREE.Vector3(), _fp = new THREE.Vector3(), _fd = new THREE.Vector3(), _fI = new THREE.Quaternion();
+function aimFast(bone, child, dir, weight = 1) {
+  _fa.setFromMatrixPosition(bone.matrixWorld);
+  _fb.setFromMatrixPosition(child.matrixWorld).sub(_fa).normalize();
+  _fq.setFromUnitVectors(_fb, _fd.copy(dir).normalize());
+  if (weight < 1) _fq.slerp(_fI.identity(), 1 - weight);
+  if (bone.parent) bone.parent.matrixWorld.decompose(_fp, _fpq, _fs); else _fpq.identity();
+  bone.matrixWorld.decompose(_fp, _fbq, _fs);
+  bone.quaternion.copy(_fpq.invert().multiply(_fq.multiply(_fbq)));
+  bone.updateMatrixWorld(true);
 }
 
 export { PART };
