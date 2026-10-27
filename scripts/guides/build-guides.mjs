@@ -114,11 +114,15 @@ function bodyHtml(body, where) {
   return out.join('\n\n');
 }
 
-/* AdSense units on the guides (Ads Agent, 2026-10-26). Two in-article units per guide: one
-   before the first ## heading (after the intro), one before the heading nearest the middle.
-   Never next to a game, never more than two, and never on the hub, which is a list of links.
-   A guide with fewer than three headings gets one. The initialiser at the foot of the page
-   starts each unit once and skips a placeholder slot, the same as every other page. */
+/* AdSense units on the guides (the owner's rule, 2026-10-27: an ad between each change in topic).
+   An in-article unit goes before a ## heading: always before the first one (after the intro), then
+   before any later heading with at least AD_GAP words of reading since the last ad, and never
+   more than AD_MAX in one guide. The gap and the cap are what keep "between every topic" from
+   stacking ads on short sections, which reads as a page built for ads and earns less per ad.
+   The hub has none. The initialiser at the foot of the page starts each unit once and skips a
+   placeholder slot, the same as every other page. */
+const AD_GAP = 250;
+const AD_MAX = 4;
 const AD_CLIENT = 'ca-pub-5952069078178257';
 const AD_IN_ARTICLE = '9845074071';
 const adUnit = () => `      <div class="ad">
@@ -128,14 +132,13 @@ const adUnit = () => `      <div class="ad">
       </div>`;
 function withAds(html) {
   const blocks = html.split('\n\n');
-  const heads = blocks.map((b, i) => (/^\s*<h2>/.test(b) ? i : -1)).filter((i) => i > 0);
-  if (!heads.length) return html;
-  const at = new Set([heads[0]]);
-  if (heads.length >= 3) {
-    const mid = blocks.length / 2;
-    const second = heads.slice(1).reduce((a, b) => (Math.abs(b - mid) < Math.abs(a - mid) ? b : a));
-    at.add(second);
-  }
+  const words = (b) => b.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+  const at = new Set();
+  let since = 0, first = true;
+  blocks.forEach((b, i) => {
+    if (i > 0 && /^\s*<h2>/.test(b) && at.size < AD_MAX && (first || since >= AD_GAP)) { at.add(i); since = 0; first = false; }
+    since += words(b);
+  });
   return blocks.map((b, i) => (at.has(i) ? adUnit() + '\n\n' + b : b)).join('\n\n');
 }
 const AD_INIT = `  <script>
