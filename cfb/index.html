@@ -1093,6 +1093,17 @@ window.GA_ID='G-L29P5MRWKE';
      much of the fold has gone; the row's height is reserved at every value and only
      opacity moves, so nothing shifts under the finger as it appears. */
   #s-draft{--sq:0}
+  /* THE DRAFT BANNER: a child of body, pinned to the viewport while the draft is open. The draft is
+     padded by the banner's rendered height, so the last cards and Quit scroll clear. */
+  #s-draft.on{padding-bottom:var(--draft-ad-h,0px)}
+  .draft-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .draft-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .draft-ad ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  @media (min-width:768px){ .draft-ad ins.adsbygoogle{width:728px;height:90px} }
+  .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
   /* The row unfurls with the scroll rather than reserving dead space in the card:
      its height and top margin scale with --sq, so at the top it is nothing and by
      the time the field is gone it is a full 34px. Because the field it is measured
@@ -4387,6 +4398,31 @@ const NO_ADS=['s-load','s-season','s-po','s-bowl','s-brk'];
    again on this page load. The boot screen is the one exception, since every load passes
    through it on the way to the start screen. A push fills the first unstarted unit in the
    page, and this one comes before the rails and the strip, which are never started. */
+/* THE DRAFT BANNER (Ads Agent, 2026-10-28, the owner: "live immediately"). A slim banner pinned to the
+   bottom of the screen while the draft is open. Built as a child of body when the draft opens and
+   removed when the player leaves, so the screen's transform cannot move it. The draft is padded by
+   its rendered height (--draft-ad-h), so the last cards and Quit scroll clear. Unfilled, it costs
+   nothing. Same pattern as The Perfect Season's draft (football/index.html). */
+let draftAdSize=null;
+function draftAd(id){
+  const old=document.querySelector('[data-ad-zone="draft"]');
+  if(id!=='s-draft'){
+    if(draftAdSize){ draftAdSize.disconnect(); draftAdSize=null; }
+    document.documentElement.style.removeProperty('--draft-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="draft-ad" data-ad-zone="draft"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="8189884070"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    draftAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--draft-ad-h',z.offsetHeight+'px'));
+    draftAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 function menuAd(id){
   const z=document.querySelector('[data-ad-zone="menu"]');
   if(!z||id==='s-load') return;
@@ -4401,6 +4437,7 @@ function show(id){
   $(id).classList.add('on');window.scrollTo({top:0});
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   menuAd(id);
+  draftAd(id);
   if(typeof heroSync==='function') heroSync();
 }
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');
