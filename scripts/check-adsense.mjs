@@ -155,6 +155,17 @@ if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missin
  * Challenge is a weekly lineup, not a live game, so nothing on it is played in real time. */
 const PAGE_ZONE_PAGES = new Set(['football/fantasy/index.html']);
 const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html', 'soccer/index.html']);
+/* Pages whose draft screen carries one pinned banner (the owner, 2026-10-28, live immediately):
+ * built by draftAd() when the draft opens and emptied when it is left. Only a unit made inside
+ * draftAd(), on a page whose show() calls draftAd(), is allowed on a play screen. */
+const DRAFT_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html']);
+/* The text of the named function's body, from its header to its closing brace at column 0. */
+function fnBody(src, name) {
+  const start = src.indexOf(`function ${name}(`);
+  if (start < 0) return null;
+  const end = src.indexOf('\n}', start);
+  return end < 0 ? null : [start, end + 2];
+}
 const READ_ONLY_PAGES = [/^index\.html$/, /^arcade\/index\.html$/, /^guides\/[^/]+\.html$/, /^[a-z]+\/how-to-play\.html$/];
 function walkCode(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -181,9 +192,15 @@ for (const file of walkCode(ROOT)) {
     /* A unit made in code for a results screen or a leaderboard: only inside adUnitInto(), on a
      * page whose show() calls screenAds(), which builds it when that screen opens and empties it
      * when it closes (the owner's rule, 2026-10-27). */
+    .filter((m) => {
+      if (!DRAFT_ZONE_PAGES.has(rel) || !/^\s+draftAd\(\w+\);/m.test(src)) return true;
+      const b = fnBody(src, 'draftAd');
+      return !(b && m.index >= b[0] && m.index < b[1]);
+    })
     .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /function adUnitInto\(host\)\{\s*host\.innerHTML='[^']*$/.test(src.slice(Math.max(0, m.index - 400), m.index)) && /^\s+screenAds\(\w+\);/m.test(src)))
     .map((m) => m[1] || m[2]);
   if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
+  if (DRAFT_ZONE_PAGES.has(rel) && /data-ad-zone="draft"/.test(src) && !/^\s+draftAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a draft banner but show() does not call draftAd() to remove it on leaving the draft`);
   if (MENU_ZONE_PAGES.has(rel)) {
     if (/function adUnitInto\(/.test(src)) {
       const body = (src.match(/function screenAds\([\s\S]*?\n\}/) || [''])[0];
