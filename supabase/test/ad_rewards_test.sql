@@ -110,6 +110,15 @@ select pg_temp.claim(arcade_spend_game('crossword')->>'reason' = 'spent', 'once'
 select pg_temp.claim(arcade_spend_game('sportegories')->>'ok' = 'true', 'other games are untouched');
 select pg_temp.claim(ad_rewards_today('00000000-0000-0000-0000-0000000000a1', 'arcade_play') = 1, 'the arcade cap counts on its own');
 
+-- A PERFECT SEASON RE-SPIN: only the cap, whatever p_max says
+select pg_temp.claim((ad_reward_status('ps_respin', null, 0)->>'ok')::boolean, 'a re-spin may be offered');
+create temp table l9 as select lives from putt_lives_state(9);
+create temp table c9 as select pg_temp.code(ad_reward_issue('ps_respin', null, 0)) as code;
+select pg_temp.watched();
+select pg_temp.claim((ad_reward_claim((select code from c9), 0)->>'ok')::boolean, 'and paid');
+select pg_temp.claim((select lives from putt_lives_state(9)) = (select lives from l9), 'touching no lives');
+select pg_temp.claim(ad_rewards_today('00000000-0000-0000-0000-0000000000a1', 'ps_respin') = 1, 'counted on its own cap');
+
 -- NOBODY ELSE WRITES
 select pg_temp.claim(not has_function_privilege('anon', 'public.ad_reward_claim(uuid, int)', 'execute'), 'a guest cannot claim');
 select pg_temp.claim(not has_table_privilege('authenticated', 'public.ad_rewards', 'insert'), 'nor write the ledger');

@@ -35,6 +35,9 @@
 --   arcade_play  one more play today of the free game named at issue. It lifts
 --                that game's cap in arcade_spend_game by one. Card games are not
 --                offered: a look at one is what the Arcade Card sells.
+--   ps_respin    the Perfect Season agent's (owner's ruling, 2026-10-28): a free re-spin
+--                that is not one of the three paid ones. The page does the re-spin
+--                itself on an ok claim, so only the switch and the cap apply here.
 --
 -- TWO RE-RUN HAZARDS. Re-running 91 after this file puts back an arcade cap that ignores
 -- the ad plays (preflight row 67 reads NO). Re-running this file turns the switch off.
@@ -67,7 +70,7 @@ create or replace function public.ad_reward_cap()
 returns int language sql stable as $$ select 3 $$;
 
 create or replace function public.ad_reward_kind_ok(p_kind text)
-returns boolean language sql stable as $$ select p_kind in ('putt_life', 'arcade_play') $$;
+returns boolean language sql stable as $$ select p_kind in ('putt_life', 'arcade_play', 'ps_respin') $$;
 
 create or replace function public.ad_rewards_open(p_uid uuid)
 returns boolean language sql stable security definer set search_path = public as $$

@@ -703,6 +703,8 @@ called by the page as the signed in player, like `putt_lives_spare`.
 - **The switch** is `ad_rewards_live()`, false: testers only (the `putt_lives_refill` list).
   Turning it on is the owner's step, after Google approves the account. Re-running 158 turns it
   off again. Re-running 91 after 158 drops the ad plays from the arcade cap.
+- **ps_respin** (the Perfect Season agent's): a free re-spin, not one of the three paid. The page
+  re-spins on an ok claim, so only the switch and the cap apply here.
 - A Fantasy swap or a golf mulligan is its game agent's grant: a kind in `ad_reward_kind_ok()`
   and a branch in `ad_reward_claim()`.
 
