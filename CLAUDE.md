@@ -374,6 +374,63 @@ screen. Re-measure after touching anything above it.
 one line on a short phone. Its size is `min(14vw,84px)` rather than the old one-line fit,
 because "THE PERFECT" is eleven of the eighteen characters.
 
+## The college front page is that layout in this game's colours
+
+`#s-intro` in `cfb/index.html` was one narrow column on every screen: the wheel, the
+formation, the name, a line of copy, and only then the button the page exists for. One
+column is right on a phone and wrong on a laptop, because the cost of stacking is paid
+at the bottom. Measured through the real page before the change, at 600px of wrap:
+
+| | the Draft button finished |
+|---|---|
+| 1280x800 | **62.9px BELOW the fold** |
+| 960x700 | 162.9px below |
+| 1440x900 | 37px above it, which is not clearance, it is luck |
+
+**So the stage takes the left column and the name, the pitch, the button and the links
+take the right**, which is The Perfect Season's own shape. Ported rather than invented,
+for the reason the draft's two-column block already gives: the two front pages are
+deliberately one layout in two games' colours, and a second game standing up a hero its
+own way is how they drift. After: 414.9 at 1440x900, 429.9 at 1280x800, 414.9 at 960x700,
+with the three links and the Top 25 ticker on the same screen.
+
+**NOTHING MOVES ON A PHONE, and that is asserted rather than asserted-ish.** Every rule is
+inside `@media(min-width:920px) and (min-height:560px)`, and 390x844 and 360x740 measure
+byte-identical either side: the same Draft bottom to a tenth of a pixel, the same headline
+size, the same page height.
+
+**The thresholds are this file's own**, 920 and 1200, and unlike the draft this screen does
+NOT fall back to one column between 1200 and 1259. The draft needs about 860 for a field
+beside a three-across board; this needs a field beside four buttons, which fits the 800 the
+rails leave.
+
+**MIN-HEIGHT IS NOT DECORATION.** The short-window rules that shorten the headline and drop
+the formation sit earlier in the sheet, so an unqualified `display:grid` wins on source
+order and quietly undoes them on any window under 560 tall and over 920 wide.
+
+**THE HEADLINE'S FIT SCRIPT WAS MEASURING THE PAGE, AND THE PAGE IS THE WRONG BOX.** It
+shrinks the line when it runs wider than `documentElement.clientWidth - 24`, which is the
+right question in one column, where `width:max-content` deliberately lets the words run
+wider than the 600px wrap. In two columns the line is centred on its own column with the
+formation beside it, so 1416px of page is room it does not have: the script finds nothing
+to shrink and COLLEGE reaches into the other column. It asks the SCREEN'S OWN `display`
+rather than restating the 920px query, because a copy of a breakpoint in script is a second
+place to change it.
+
+**And the one band where the headline is sized to its column is 1200 and up**, where the
+rails take 400px off the wrap. Measured in real Anton (checked against the fallback the way
+this repo's own rule says: Anton draws COLLEGE at 257.3px against sans-serif's 396.8, so
+the face really had arrived), 84px ran 356 of a 369px column and cleared it by seven pixels
+a side. `min(84px,6.4vw)` is football's own figure and puts it at 326 with twenty either
+side. It is NOT in the 920 block: below 1200 the column is 429 to 503 and a vw figure would
+shrink the headline on exactly the screens with the most room for it.
+
+**The runtime doors need no rule**, which is worth knowing before adding one.
+`ensureCommishDoor()` and `ensurePremiumCard()` build INTO `.ctas` rather than into the
+screen, so they travel with the column that holds them. The catch-all (`#s-intro>*{grid-column:1/-1}`)
+is written FIRST so anything that does arrive on this screen later is full width by default
+rather than landing in whichever column happens to be free.
+
 ## The football game's badge cabinet
 
 `football/achievements.js` is the badge catalog for The Perfect Season, and every badge in
