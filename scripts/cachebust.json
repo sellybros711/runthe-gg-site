@@ -2887,7 +2887,7 @@
   },
   "setlist/index.html": {
     "/setlist/auth.js": {
-      "v": "44",
+      "v": "45",
       "sha": "2bfbddde6b67b5fc"
     },
     "/assets/newsletter.js": {
@@ -2895,20 +2895,20 @@
       "sha": "260c8dc0bc33a527"
     },
     "/setlist/board.js": {
-      "v": "44",
+      "v": "45",
       "sha": "4121a57c1d6730b3"
     },
     "scoring.js": {
-      "v": "44",
-      "sha": "76ce0fc843d116ca"
+      "v": "45",
+      "sha": "efb6b5c554b954bb"
     },
     "dataLoader.js": {
-      "v": "44",
+      "v": "45",
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "19",
-      "sha": "20d9ccce93f30a4e"
+      "v": "20",
+      "sha": "76e09747d6ec2ae5"
     },
     "venues.js": {
       "v": "2",

@@ -605,8 +605,19 @@ export function placementMult(tags, role) {
   }
 }
 
+/*
+ * HOW HARD A SONG HITS, from its feel (the `feel` column, curated per song in
+ * goose_feels.json). The role tags say where the band tends to put a song,
+ * not how it lands: an opener can be a slow burn and a closer a singalong.
+ * So with a feel, the feel sets the energy and only `jam` and `peak` can lift
+ * it, because a song the band stretches out climbs whatever it started as.
+ * Without one (a song nobody has given a feel yet) the tags decide, as before.
+ */
+export const FEEL_ENERGY = { Ballad: 1, Space: 2, Easy: 2, Bit: 2, Groove: 3, Rocker: 4, Anthem: 5 };
 export function energyOf(perf) {
   const t = tagsOf(perf);
+  const f = perf && FEEL_ENERGY[perf.feel];
+  if (f !== undefined) return Math.max(f, ...t.filter(x => x === 'jam' || x === 'peak').map(x => ENERGY[x]));
   if (!t.length) return ENERGY_DEFAULT;
   return Math.max(...t.map(x => ENERGY[x] === undefined ? ENERGY_DEFAULT : ENERGY[x]));
 }
@@ -1125,8 +1136,8 @@ export function theOneThatGotAway(drafted, sets) {
  * projection is the real total, so the colour the playback ends on is always
  * the colour the scorecard opens with.
  */
-export const GRADE_WARM = 887;
-export const GRADE_HOT = 1129;
+export const GRADE_WARM = 892;
+export const GRADE_HOT = 1135;
 /** Songs to get through before the running colour means anything. */
 export const GRADE_SETTLE = 3;
 

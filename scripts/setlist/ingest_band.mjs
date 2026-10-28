@@ -711,7 +711,7 @@ const COLUMNS = [
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
   'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
-  'teases',
+  'teases', 'feel',
 ];
 
 function csvCell(v) {
@@ -889,6 +889,7 @@ export function buildCSV(raw, opts = {}) {
   for (const show of shows) {
     for (const r of show.songs) {
       r.tags = tagsFor.get(r.song_id) || '';
+      r.feel = feels.get(r.song_id) || '';
       r.crowd_rating = esteem.get(r.song_id) || '';   // blank → scoring's neutral
       out.push(COLUMNS.map(c => csvCell(r[c])).join(','));
       performances += 1;
@@ -925,15 +926,17 @@ export function readFeels(path) {
 const TAG_ORDER = ['opener', 'closer', 'jam', 'peak', 'ballad', 'encore'];
 
 /**
- * Re-derive only the ballad tag on an existing CSV, with no fetch. A feel
+ * Re-derive only the ballad tag and the feel column on an existing CSV, with no fetch. A feel
  * edit is a curation change, not a refresh: the other five tags come from
  * history that has not moved, so they are kept exactly as they are.
  */
 export function retagCSV(text, feels) {
   const rows = parseCSV(text);
   const header = text.slice(0, text.indexOf('\n'));
-  if (header !== COLUMNS.join(',')) throw new Error('the CSV header is not the one this script writes');
-  const same = [header, ...rows.map(r => COLUMNS.map(c => csvCell(r[c])).join(','))].join('\n') + '\n';
+  // A file from before the feel column is read with the columns it was written with.
+  const was = header === COLUMNS.join(',') ? COLUMNS : COLUMNS.filter(c => c !== 'feel');
+  if (header !== was.join(',')) throw new Error('the CSV header is not the one this script writes');
+  const same = [header, ...rows.map(r => was.map(c => csvCell(r[c])).join(','))].join('\n') + '\n';
   if (same !== text) throw new Error('the CSV does not round-trip byte for byte; regenerate it instead');
   let moved = 0;
   for (const r of rows) {
@@ -942,9 +945,10 @@ export function retagCSV(text, feels) {
     t.delete('ballad');
     if (feels.get(r.song_id) === 'Ballad') t.add('ballad');
     r.tags = TAG_ORDER.filter(x => t.has(x)).join('|');
+    r.feel = feels.get(r.song_id) || '';
     if (r.tags !== had) moved++;
   }
-  return { csv: [header, ...rows.map(r => COLUMNS.map(c => csvCell(r[c])).join(','))].join('\n') + '\n', moved };
+  return { csv: [COLUMNS.join(','), ...rows.map(r => COLUMNS.map(c => csvCell(r[c])).join(','))].join('\n') + '\n', moved };
 }
 
 // ── main ─────────────────────────────────────────────────────────────────────

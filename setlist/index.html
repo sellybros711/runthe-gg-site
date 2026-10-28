@@ -1206,6 +1206,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
   .song .len{font-family:var(--ui); font-weight:400; font-size:16px; color:var(--mut);
     font-variant-numeric:tabular-nums; letter-spacing:.3px;}
+  .keyfeel{font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--dim);}
+  .song .feel{font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+    color:var(--dim); white-space:nowrap; margin-top:-3px;}
   .song .after{font-size:10.5px; font-weight:800; color:var(--dim); white-space:nowrap;
     font-variant-numeric:tabular-nums; margin-top:-2px;}
   .nightnote{margin-top:8px; font-size:12px; font-weight:700; font-style:italic;
@@ -3259,8 +3262,7 @@ setTimeout(function(){
       <dd>A song they stretch out. <b>Peak</b> is the best of those. Long, and
         written up by the archivists over and over.</dd>
       <dt><span class="chip acc ballad">ballad</span></dt>
-      <dd>Short and slow. Cheap on the clock. Perfect after three 20 minute
-        jams.</dd>
+      <dd>Slow and tender. Perfect after three 20 minute jams.</dd>
       <dt><span class="chip acc cover">cover</span></dt>
       <dd>Not their song. The row tells you whose.</dd>
     </dl>
@@ -3278,7 +3280,7 @@ setTimeout(function(){
         the set loses points for being one note.</dd>
     </dl>
 
-    <h3 class="keygrp">Two things that aren't tags</h3>
+    <h3 class="keygrp">Three things that aren't tags</h3>
     <dl class="keylist">
       <dt><span class="keyseg"><i class="segout"></i></span></dt>
       <dd>The arrow after a title means the same thing as the SEGUE tag. It ran
@@ -3286,6 +3288,9 @@ setTimeout(function(){
       <dt><span class="keybar"><i></i></span></dt>
       <dd>The colored bar under a title is how long it ran, out of 20 minutes.
         A full bar eats your set.</dd>
+      <dt><span class="keyfeel">Groove</span></dt>
+      <dd>The word under the clock is how the song feels. Ballad, Easy, Groove,
+        Rocker, Anthem, Space or Bit. It's what the song is, not a hint.</dd>
     </dl>
   </div>
 </div>
@@ -3323,10 +3328,10 @@ setTimeout(function(){
      HTML change can never be served against a stale script. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
-<script src="/setlist/auth.js?v=44" defer></script>
+<script src="/setlist/auth.js?v=45" defer></script>
 <!-- The release newsletter checkbox on the account sheet. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2" defer></script>
-<script src="/setlist/board.js?v=44" defer></script>
+<script src="/setlist/board.js?v=45" defer></script>
 
 <script type="module">
 import {
@@ -3337,9 +3342,9 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=44';
-import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=19';
+} from './scoring.js?v=45';
+import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=45';
+import { createStage } from './stage.js?v=20';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones, tally } from './venues.js?v=2';
 import { ROLES, OUTFITS, ladderProgress, outfitOpen, dressFor } from './outfits.js?v=1';
 
@@ -3382,7 +3387,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = 'db4b68ea';
+const DATA_VERSION = '24f31763';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -4740,6 +4745,9 @@ function renderDraft(){
             style="--w:${Math.min(100, 100 * lenOf(p) / TBAR_FULL).toFixed(1)}%"></span>
         </span>
         <span class="r"><span class="len">${fmtClock(lenOf(p))}</span>${
+          /* THE FEEL, said plainly and the same way on every row: what the song is, never whether it
+             fits. The owner's call (2026-10-28): show it, but do not tell people what to pick. */
+          p.feel ? `<span class="feel">${esc(p.feel)}</span>` : ''}${
           /* WHAT THE PICK LEAVES, which is the sum the player was doing in their
              head for every row: the clock above minus the clock on the row. */
           dead ? '' : `<span class="after">leaves ${fmtClock(Math.max(0, left - lenOf(p)))}</span>`}</span>
@@ -7665,6 +7673,8 @@ function renderShow(){
         bustout: (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP,
         // The crowd sits for a ballad and throws its arms up for a set's closer.
         slow: tagsOf(p).includes('ballad'),
+        // The song's feel (goose_feels.json): how the room takes it. Looks only, never a score.
+        feel: p.feel || null,
         closer: b.role === 'Closer',
         /* How long the song holds the screen, so a jam can build, peak and come back down inside it. */
         hold: songHold(lenOf(p)),
