@@ -2495,8 +2495,8 @@
       "sha": "acb77b5add408631"
     },
     "run.js": {
-      "v": "103",
-      "sha": "c89d2f6dba5b9b76"
+      "v": "104",
+      "sha": "7716e4280ac6c518"
     },
     "/football/fullteam-access.js": {
       "v": "3",
@@ -2887,7 +2887,7 @@
   },
   "setlist/index.html": {
     "/setlist/auth.js": {
-      "v": "44",
+      "v": "45",
       "sha": "2bfbddde6b67b5fc"
     },
     "/assets/newsletter.js": {
@@ -2895,24 +2895,28 @@
       "sha": "260c8dc0bc33a527"
     },
     "/setlist/board.js": {
-      "v": "44",
+      "v": "45",
       "sha": "4121a57c1d6730b3"
     },
     "scoring.js": {
-      "v": "44",
-      "sha": "76ce0fc843d116ca"
+      "v": "45",
+      "sha": "efb6b5c554b954bb"
     },
     "dataLoader.js": {
-      "v": "44",
+      "v": "45",
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "18",
-      "sha": "f04874d9a01a8613"
+      "v": "20",
+      "sha": "76e09747d6ec2ae5"
     },
     "venues.js": {
       "v": "2",
       "sha": "e2de218e6c8d793b"
+    },
+    "outfits.js": {
+      "v": "1",
+      "sha": "89dc4f189658cf32"
     }
   },
   "shut-the-door/index.html": {
@@ -2997,8 +3001,8 @@
       "sha": "75aebc9cd981db13"
     },
     "ui.js": {
-      "v": "42",
-      "sha": "e9614635336400c4"
+      "v": "45",
+      "sha": "e90d7c1fa3db7fd9"
     },
     "3d/boot.js": {
       "v": "65",
@@ -3121,8 +3125,8 @@
       "sha": "c5def90922ef7838"
     },
     "world.js": {
-      "v": "4",
-      "sha": "a01238f0e0bd4780"
+      "v": "5",
+      "sha": "3023ba22d6fa7043"
     }
   },
   "shut-the-door/3d/boot.js": {
@@ -3169,6 +3173,10 @@
     "pxhd.js": {
       "v": "2",
       "sha": "82d8338da1a8ffd3"
+    },
+    "outfits.js": {
+      "v": "1",
+      "sha": "89dc4f189658cf32"
     }
   },
   "shut-the-door/3d/stage.js": {

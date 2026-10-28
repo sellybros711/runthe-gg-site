@@ -118,6 +118,7 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `footnote` | The curators' note on **this performance**: `Unfinished.`, `80s synth version.`, `With Carol Of The Bells teases from Rick.` Display only. 38% of rows carry one, but 43% of those are nothing but the cover artist, which the row already prints as `orig. X`, so the game strips that prefix at render and 21% of rows end up showing something. |
 | `show_notes` | The curators' note on **the night**: `This was Aaron and Kris' first show as members of Goose.` 55% of shows have one. **Written on exactly one row per show and blank on the rest.** See below. Display only. |
 | `teases` | Pipe-delimited songs the band **quoted without playing** inside this one, parsed out of `footnote` prose ("With Axel F teases from Rick"). Display only. 254 rows carry one, 259 teases of 123 distinct songs across 201 shows. Parsed at ingest rather than in the browser: see below. |
+| `feel` | The song's feel from `<band>_feels.json`: Ballad, Easy, Groove, Rocker, Anthem, Space or Bit. Blank for a song nobody has given a feel yet. **Drives energy in scoring** (see below). |
 
 ### Why `teases` is parsed here and not in the game
 

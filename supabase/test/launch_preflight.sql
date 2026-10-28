@@ -88,7 +88,7 @@ has_table as (
     'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
     'sportegories_rulings','stumpire_rulings',
-    'shutdoor_outings','shutdoor_streaks','putt_daily'
+    'shutdoor_outings','shutdoor_streaks','putt_daily','ad_rewards'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -760,7 +760,17 @@ check_rows(sort, migration, what, breaks, ok) as (
       'a Dynasty wait that has run out is never started again',
       'A free player whose countdown reaches zero can be locked out for another 24 hours by reopening their finished season.',
       (select count(*) > 0 from proc
-        where name = 'ps_attempt_day_end' and body like '%v_lapsed%'))
+        where name = 'ps_attempt_day_end' and body like '%v_lapsed%')),
+  -- REWARDED VIDEOS. Asked of arcade_spend_game's body too, because re-running 91
+  -- after 158 puts back a cap that ignores the ad plays.
+  (67, '158_ad_rewards',
+      'A watched video pays a Putt Putt life or an arcade play, three a day, testers only until the switch',
+      'The watch-a-video button gets no code and pays nothing. An arcade play paid by a video is refused by the game.',
+      (select count(*) > 0 from has_table where name = 'ad_rewards')
+      and (select count(*) > 0 from proc where name = 'ad_reward_issue')
+      and (select count(*) > 0 from proc where name = 'ad_reward_claim')
+      and (select count(*) > 0 from proc
+            where name = 'arcade_spend_game' and body like '%arcade_game_cap%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
