@@ -28,7 +28,7 @@ const COLUMNS = [
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
   'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
-  'teases',
+  'teases', 'feel',
 ];
 
 // Goose today: 7504 performances / 655 shows. The bounds are deliberately wide
@@ -2901,6 +2901,15 @@ if (prose) {
     /(^|\|)ballad(\||$)/.test(r.tags || '') !== ((f.songs[r.song_id] || {}).feel === 'Ballad'));
   check(!off.length, 'goose.csv tags a ballad exactly when its feel says Ballad',
     off.length ? `${off.length} off, e.g. ${off[0].song}. Run ingest_band.mjs --retag` : '');
+  /* THE FEEL COLUMN (2026-10-28). Every row carries its song's feel, so scoring and the stage read
+     it off the performance. It must be the feels file's, or the energy is somebody else's. */
+  const offFeel = rows.filter(r => (r.feel || '') !== ((f.songs[r.song_id] || {}).feel || ''));
+  check(!offFeel.length, 'every row carries its song\'s feel',
+    offFeel.length ? `${offFeel.length} off, e.g. ${offFeel[0].song}. Run ingest_band.mjs --retag` : '');
+  const sc = read('setlist/scoring.js');
+  check(/FEEL_ENERGY\[perf\.feel\]/.test(sc), 'scoring takes a song\'s energy from its feel');
+  check(/feel: p\.feel \|\| null/.test(read('setlist/index.html')) && /st\.feel = ev\.feel/.test(read('setlist/stage.js')),
+    'and the stage is told the feel of every song');
   const ing = read('scripts/setlist/ingest_band.mjs');
   check(/feels\.get\(id\) === 'Ballad'/.test(ing) && !/BALLAD_MEDIAN_LEN/.test(ing), 'and the ingester takes it from the feel, not from length');
 }
