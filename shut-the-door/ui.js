@@ -90,7 +90,7 @@ function record(day, number, r) {
 var S = {
   day: C.easternDay(), scn: null, daily: null, dailyResult: null,
   outing: null, mode: 'daily', type: null, cell: null, at: null, busy: false,
-  heat: 'damage', scout: false, guide: null, hover: null, scene: null, grid: null, mini: null, hero: null, result: null,
+  heat: 'damage', drawer: false, scout: false, guide: null, hover: null, scene: null, grid: null, mini: null, hero: null, result: null,
 };
 
 /* ---- small things ------------------------------------------------------------- */
@@ -471,7 +471,20 @@ function buildMound() {
   S.meter = METER && $('m-meter') ? (window.STD_METER_UI || METER).create($('m-meter')) : null;
   /* the speed ranges read the meter setting, so they go on once the meter is built */
   speedLabels();
+  $('m-drawer-b').addEventListener('click', function () { if (S.drawer) closeDrawer(); else openDrawer(); });
   $('m-batter').addEventListener('click', toggleScout);
+  /* a tap outside closes the drawer. Outside is the scene, the scorebug, the menu. The zone and the
+     dock are play, so aiming and picking a pitch keep the heat up; the sheets the drawer opened are
+     part of it. */
+  document.addEventListener('pointerdown', function (e) {
+    if (!S.drawer || document.body.dataset.screen !== 's-mound') return;
+    var t = e.target;
+    if (t && t.closest && t.closest('#m-card, #m-scout, #m-guide, #m-aim, #m-dock')) return;
+    closeDrawer();
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && S.drawer && document.body.dataset.screen === 's-mound') closeDrawer();
+  });
   $('m-guide-b').addEventListener('click', function () { setGuide(S.guide ? null : S.type || S.scn.pitcher.arsenal[0].type); });
   $('m-guide').addEventListener('click', function (e) {
     if (e.target.closest('.gd-x')) setGuide(null);
@@ -491,7 +504,9 @@ function buildMound() {
   });
   /* FULL SCREEN (the owner, 2026-10-24): the canvas is the viewport, so a turn of the phone, a
      resize and the browser's bars coming and going all lay the stage and the aim out again */
-  var onSize = function () { if (document.body.dataset.screen !== 's-mound') return; if (S.busy) S.sizeDue = true; else relayout(); };
+  /* the stage frames around the lasting panels (stage.js framePanels), so a new layout shuts the
+     scout drawer first: the set is framed for the slim line, never for the drawer */
+  var onSize = function () { if (document.body.dataset.screen !== 's-mound') return; if (S.busy) S.sizeDue = true; else { if (S.drawer) closeDrawer(true); relayout(); } };
   window.addEventListener('resize', onSize);
   window.addEventListener('orientationchange', function () { onSize(); setTimeout(onSize, 250); });
   if (window.visualViewport) window.visualViewport.addEventListener('resize', onSize);
@@ -621,11 +636,17 @@ function enterMound() {
 
 function setBatter(first) {
   var b = batterAt(S.outing.batterIndex);
+  /* every at bat starts with the drawer shut (the owner, 2026-10-27), before the stage frames the
+     new hitter around the lasting panels (stage.js framePanels) */
+  closeDrawer(true);
   S.scene.setBatter(b);
   S.grid.setHand(b.bats);
   $('m-bname').textContent = b.name;
-  $('m-bhand').textContent = 'bats ' + handWord(b.bats);
-  $('m-bline').textContent = b.line;
+  $('m-bhand').textContent = 'bats ' + (b.bats === 'L' ? 'L' : 'R');
+  $('m-bhand').setAttribute('aria-label', 'bats ' + handWord(b.bats));
+  /* the slash line and the homers, as the pack writes them */
+  var lp = lineParts(b.line);
+  $('m-bline').textContent = lp ? lp.slash + (lp.hr != null ? ' \u00b7 ' + lp.hr + ' HR' : '') : (b.line || '');
   relayout();
   renderScout();
   if (!first) pbp(isTied(S.outing) ? 'tied' : '', b.name + ' up.', true);
@@ -757,20 +778,52 @@ function stepLine() {
   if (el.textContent !== say) el.textContent = say;
 }
 
+/* THE SCOUT DRAWER (the owner, 2026-10-27: "minimal clutter on the gameplay"). The at bat line
+   stays one slim row; SCOUT opens the rest under it. The heat map shows only while it is open, so
+   the field is clear by default and the scouting is one tap away. Only a tap opens it. */
+function openDrawer() {
+  if (S.drawer) return;
+  S.drawer = true;
+  $('m-drawer').hidden = false;
+  drawerState();
+}
+/* quiet: on a new at bat, before the layout runs anyway */
+function closeDrawer(quiet) {
+  var was = S.drawer || S.scout || S.guide || S.viewPA || !$('m-key').hidden, hadView = !!S.viewPA;
+  S.drawer = false;
+  S.scout = false;
+  S.viewPA = null;
+  $('m-drawer').hidden = true;
+  $('m-key').hidden = true;
+  $('m-key-b').setAttribute('aria-expanded', 'false');
+  if (S.guide) setGuide(null);
+  if (!was) return;
+  drawerState();
+  /* an earlier at bat on the zone goes back to this one's dots */
+  if ((hadView || !quiet) && S.outing) renderPAs(S.outing);
+}
+function drawerState() {
+  $('m-drawer-b').setAttribute('aria-expanded', S.drawer ? 'true' : 'false');
+  $('m-card').classList.toggle('open', !!S.drawer);
+  if (S.outing && S.grid) renderScout();
+  placeHud();
+}
+
 function toggleScout() {
   S.scout = !S.scout;
   if (S.scout && S.guide) setGuide(null);
   renderScout();
 }
 
-/* The heat map is always on the grid (S.heat is its mode); the scout card is the reading of
-   the hitter, opened by the batter bar. It is a sheet over the lower HUD, under the grid. */
+/* The heat map is on the grid only while the scout drawer is open (S.heat is its mode); the
+   report is the reading of the hitter, opened from the drawer. It is a sheet over the lower HUD,
+   under the grid. */
 function renderScout() {
   var b = batterAt(S.outing.batterIndex), box = $('m-scout');
   /* rules 2: the screen reads the scouting view (grade.js scoutView: the chase area in four quadrants,
      values in steps), never the exact profile the engine plays */
   var G = window.STD_GRADE, view = G && G.scoutView && S.outing.rules >= 2 ? G.scoutView(b.profile) : b.profile;
-  S.grid.setHeat(view, S.heat);
+  S.grid.setHeat(S.drawer ? view : null, S.heat);
   $('m-batter').setAttribute('aria-expanded', S.scout ? 'true' : 'false');
   $('m-batter').classList.toggle('on', !!S.scout);
   document.querySelectorAll('#m-heat [data-heat]').forEach(function (x) {
@@ -1091,6 +1144,7 @@ function throwIt() {
   if (S.busy || !S.type || S.cell == null || S.outing.status !== 'live') return;
   if (!meterOn()) return fire(slideCall({ type: S.type, cell: S.cell, at: S.at || [0, 0] }));
   if (S.meter.running()) return;
+  closeDrawer();
   audio();
   var ap = pitchOf(S.type), bt = batterAt(S.outing.batterIndex);
   var type = S.type, cell = S.cell, at = S.at || [0, 0];
@@ -1218,9 +1272,9 @@ function fire(call) {
   audio();
   updateThrow();
   S.grid.setDisabled(true);
-  var scoutWas = S.scout, guideWas = S.guide;
-  if (S.scout) { S.scout = false; renderScout(); }
-  if (S.guide) setGuide(null);
+  /* the throw closes the scout drawer and everything it opened (the owner, 2026-10-27); it stays
+     shut after the pitch */
+  closeDrawer();
   S.hover = null;
   drawPreview();
   $('m-scene').classList.add('flying');
@@ -1266,8 +1320,6 @@ function fire(call) {
       settle();
       if (S.scene.setTarget) S.scene.setTarget(null);
       if (pr.paOver) { S.lastMarker = null; S.grid.setMarks({}); setBatter(false); } else S.scene.draw(idleFrame());
-      if (scoutWas) { S.scout = true; renderScout(); }
-      if (guideWas) setGuide(guideWas);
       updateThrow();
       if (S.sizeDue) { S.sizeDue = false; relayout(); } else drawPreview();
       renderHud(S.outing);
@@ -1277,7 +1329,6 @@ function fire(call) {
     meterDone();
     S.grid.setDisabled(false);
     $('m-scene').classList.remove('flying');
-    if (guideWas) setGuide(guideWas);
     drawPreview();
     updateThrow();
     toast('that pitch did not go. try again.');

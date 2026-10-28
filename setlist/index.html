@@ -1206,6 +1206,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
   .song .len{font-family:var(--ui); font-weight:400; font-size:16px; color:var(--mut);
     font-variant-numeric:tabular-nums; letter-spacing:.3px;}
+  .keyfeel{font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--dim);}
+  .song .feel{font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+    color:var(--dim); white-space:nowrap; margin-top:-3px;}
   .song .after{font-size:10.5px; font-weight:800; color:var(--dim); white-space:nowrap;
     font-variant-numeric:tabular-nums; margin-top:-2px;}
   .nightnote{margin-top:8px; font-size:12px; font-weight:700; font-style:italic;
@@ -2945,6 +2948,19 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .vpick .vthumb{border-radius:2px; border-color:#15151F;}
   /* Every control on the front screen is a 44px target, the size a thumb can hit mid-show. */
   .how h3 .btn, .vpick .vp-hd .btn{min-height:44px; padding-left:14px; padding-right:14px;}
+  /* What your band wears: a row of outfit chips per player, on the same poster. */
+  .op-role + .op-role{margin-top:8px;}
+  .op-lbl{font-size:11px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; color:var(--dim); margin-bottom:4px;}
+  .op-row{display:flex; gap:6px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:thin;}
+  .ochip{flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; min-height:44px; padding:0 11px 0 8px;
+    border:2px solid #15151F; border-radius:2px; background:#F6F2EA; color:#1B1726; font:inherit;
+    font-size:12.5px; font-weight:800; cursor:pointer;}
+  .ochip .osw{display:inline-flex; flex-direction:column; width:12px; height:20px; border:1px solid #15151F;}
+  .ochip .osw i{flex:1; display:block;}
+  .ochip.on{border-color:var(--teal); box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 30%, transparent);}
+  .ochip.locked{background:#CFC8BA; color:#5E5446;}
+  .ochip.locked .osw{filter:grayscale(1) brightness(.6);}
+  .ochip.locked.peek{border-color:var(--violet);}
   .band.soon .linkbtn{min-height:44px; display:inline-flex; align-items:center;}
 
   /* ── THE PIXEL KIT on every other screen (2026-10-27) ───────────────────────────────────────
@@ -3246,8 +3262,7 @@ setTimeout(function(){
       <dd>A song they stretch out. <b>Peak</b> is the best of those. Long, and
         written up by the archivists over and over.</dd>
       <dt><span class="chip acc ballad">ballad</span></dt>
-      <dd>Short and slow. Cheap on the clock. Perfect after three 20 minute
-        jams.</dd>
+      <dd>Slow and tender. Perfect after three 20 minute jams.</dd>
       <dt><span class="chip acc cover">cover</span></dt>
       <dd>Not their song. The row tells you whose.</dd>
     </dl>
@@ -3265,7 +3280,7 @@ setTimeout(function(){
         the set loses points for being one note.</dd>
     </dl>
 
-    <h3 class="keygrp">Two things that aren't tags</h3>
+    <h3 class="keygrp">Three things that aren't tags</h3>
     <dl class="keylist">
       <dt><span class="keyseg"><i class="segout"></i></span></dt>
       <dd>The arrow after a title means the same thing as the SEGUE tag. It ran
@@ -3273,6 +3288,9 @@ setTimeout(function(){
       <dt><span class="keybar"><i></i></span></dt>
       <dd>The colored bar under a title is how long it ran, out of 20 minutes.
         A full bar eats your set.</dd>
+      <dt><span class="keyfeel">Groove</span></dt>
+      <dd>The word under the clock is how the song feels. Ballad, Easy, Groove,
+        Rocker, Anthem, Space or Bit. It's what the song is, not a hint.</dd>
     </dl>
   </div>
 </div>
@@ -3310,10 +3328,10 @@ setTimeout(function(){
      HTML change can never be served against a stale script. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
-<script src="/setlist/auth.js?v=44" defer></script>
+<script src="/setlist/auth.js?v=45" defer></script>
 <!-- The release newsletter checkbox on the account sheet. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2" defer></script>
-<script src="/setlist/board.js?v=44" defer></script>
+<script src="/setlist/board.js?v=45" defer></script>
 
 <script type="module">
 import {
@@ -3324,10 +3342,11 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=44';
-import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=18';
-import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
+} from './scoring.js?v=45';
+import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=45';
+import { createStage } from './stage.js?v=20';
+import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones, tally } from './venues.js?v=2';
+import { ROLES, OUTFITS, ladderProgress, outfitOpen, dressFor } from './outfits.js?v=1';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -3368,7 +3387,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = 'db4b68ea';
+const DATA_VERSION = '24f31763';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -3774,9 +3793,9 @@ function mountStrip(name){
   const mine = S.stripSeq = (S.stripSeq || 0) + 1;
   const cv = document.getElementById('bandStrip');
   if (!act || !cv) return;
-  const go = () => import('./backstage.js?v=6').then(m => {
+  const go = () => import('./backstage.js?v=7').then(m => {
     if (mine !== S.stripSeq || S.strip) return;
-    S.strip = { act, h: m.createStrip(cv, { act, sign: busSign(),
+    S.strip = { act, h: m.createStrip(cv, { act, sign: busSign(), dress: bandDress(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches }) };
   }).catch(() => {});
   (window.requestIdleCallback || (f => setTimeout(f, 200)))(go);
@@ -4023,9 +4042,9 @@ function mountBackstage(){
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
   const cv = document.getElementById('heroStage');
   if (!cv) return;
-  const go = () => import('./backstage.js?v=6').then(m => {
+  const go = () => import('./backstage.js?v=7').then(m => {
     if (!cv.isConnected || S.backstage) return;
-    S.backstage = m.createBackstage(cv, { sign: busSign(),
+    S.backstage = m.createBackstage(cv, { sign: busSign(), dress: bandDress(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
   }).catch(() => {});
   (window.requestIdleCallback || (f => setTimeout(f, 200)))(go);
@@ -4279,6 +4298,8 @@ function renderHome(){
       </section></div>
 
     ${venuePickerHTML()}
+
+    ${outfitPickerHTML()}
 
     ${/* THE "YOURS" ROW IS GONE. Leaderboard and Your shows were the only two
           links on it, and both are tabs on the bar that sits under this screen
@@ -4724,6 +4745,9 @@ function renderDraft(){
             style="--w:${Math.min(100, 100 * lenOf(p) / TBAR_FULL).toFixed(1)}%"></span>
         </span>
         <span class="r"><span class="len">${fmtClock(lenOf(p))}</span>${
+          /* THE FEEL, said plainly and the same way on every row: what the song is, never whether it
+             fits. The owner's call (2026-10-28): show it, but do not tell people what to pick. */
+          p.feel ? `<span class="feel">${esc(p.feel)}</span>` : ''}${
           /* WHAT THE PICK LEAVES, which is the sum the player was doing in their
              head for every row: the clock above minus the clock on the row. */
           dead ? '' : `<span class="after">leaves ${fmtClock(Math.max(0, left - lenOf(p)))}</span>`}</span>
@@ -5117,7 +5141,7 @@ function drawCrowd(){
   };
   try {
     S.crowdStage = createStage(cv, {
-      seed: Math.abs(S.result.total) + 17, venue: S.playedVenue || 'lawn', shot: 'crowd', onFit: place,
+      seed: Math.abs(S.result.total) + 17, venue: S.playedVenue || 'lawn', dress: S.playedDress || null, shot: 'crowd', onFit: place,
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches,
       you: { d: st.above / Math.max(1, st.n - 1), rnd: st.rndDepth, seed: hash32(`${S.result.total}|${st.n}`) },
     });
@@ -5323,6 +5347,81 @@ function venueClueHTML(id){
   return `${esc(v.clue)}<span class="vbar"><span style="width:${pct}%"></span></span>`;
 }
 
+/* ── WHAT THE BAND WEARS ─────────────────────────────────────────────────────────
+ *
+ * Six outfits a player, from setlist/outfits.js. The first is free; the rest open up one ladder that
+ * every player climbs together, worked out from the same rows as the rooms, never kept. What is kept is
+ * the choice, per player, and a choice the rows do not back is the first outfit. Signed out, the band
+ * wears its first outfits. An outfit changes how the band looks, never a score. No player is named:
+ * a player is their instrument.
+ */
+const OUTFIT_KEY = 'segue_outfits_v1';
+function outfitLadder(rows){
+  return ladderProgress(ME.signedIn ? tally(rows || VSTATE.rows || [], null) : null);
+}
+function storedOutfits(){
+  try { return JSON.parse(localStorage.getItem(OUTFIT_KEY) || '{}') || {}; } catch (e) { return {}; }
+}
+function chooseOutfit(role, id){
+  const all = storedOutfits();
+  all[role] = id;
+  try { localStorage.setItem(OUTFIT_KEY, JSON.stringify(all)); } catch (e) {}
+}
+// The band as every scene draws it: role to outfit id, each one backed by the rows.
+function bandDress(){ return dressFor(storedOutfits(), outfitLadder()); }
+
+// Two swatches an outfit reads as at a glance: its top and its trousers.
+function outfitSwatch(o){
+  const L = o.look;
+  return [L.jacket || L.shirt || '#efe6cf', L.pants || '#e8dec4'];
+}
+function outfitPickerHTML(){
+  const prog = outfitLadder(), dress = bandDress();
+  const rungs = prog.filter(p => p.open).length;
+  const hint = !ME.signedIn ? 'Sign in to earn new outfits. Every show you build counts.'
+    : VSTATE.rows === null && VSTATE.busy ? 'Checking which outfits you have earned...'
+    : `${ROLES.length * (rungs + 1)} of ${ROLES.length * OUTFITS.guitar.length} outfits open. Tap a dark one to see what it takes.`;
+  return `<section class="card vpick opick">
+    <div class="vp-hd"><span class="eyebrow">What your band wears</span>
+      ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
+    ${ROLES.map(r => `<div class="op-role">
+      <div class="op-lbl">${esc(r.label)}</div>
+      <div class="op-row" role="radiogroup" aria-label="What ${esc(r.label.toLowerCase())} wears">
+        ${OUTFITS[r.id].map((o, i) => {
+          const on = outfitOpen(prog, i), cur = dress[r.id] === o.id, [a, b] = outfitSwatch(o);
+          return `<button type="button" class="ochip${on ? '' : ' locked'}${cur ? ' on' : ''}" role="radio"
+            aria-checked="${cur}" data-outfit="${r.id}:${o.id}" data-rung="${i}"
+            aria-label="${esc(o.name)}${on ? '' : ', locked'}">
+            <span class="osw" aria-hidden="true"><i style="background:${a}"></i><i style="background:${b}"></i></span>
+            <span class="onm">${esc(o.name)}</span></button>`;
+        }).join('')}
+      </div></div>`).join('')}
+    <div class="vp-say" id="opSay">${esc(hint)}</div>
+  </section>`;
+}
+function outfitClueHTML(i){
+  const p = outfitLadder()[i - 1];
+  if (!p) return '';
+  if (!ME.signedIn) return 'Sign in to earn it. Every show you build counts.';
+  return `${esc(p.clue)}<span class="vbar"><span style="width:${Math.round(100 * p.frac)}%"></span></span>`;
+}
+/* The outfits this show opened: the rungs open after it and not before. */
+function outfitFresh(){
+  if (S.outfitFresh !== undefined) return S.outfitFresh;
+  if (!ME.signedIn || !S.result || !S.band || S.band.id !== 'goose') return (S.outfitFresh = []);
+  if (VSTATE.rows === null || VSTATE.for !== ME.userId){ loadVenueRows(); return []; }
+  const base = VSTATE.rows.filter(x => !x._local);
+  const was = outfitLadder(base), now = outfitLadder(base.concat([thisShowRow()]));
+  return (S.outfitFresh = now.map((p, i) => p.open && !was[i].open ? i + 1 : -1).filter(i => i > 0));
+}
+function outfitRevealHTML(){
+  return outfitFresh().map(i => `<div class="card vreveal">
+      <div class="ceil-lbl">New outfits just opened</div>
+      <div class="vr-lore">${ROLES.map(r => `${esc(r.label)}: ${esc(OUTFITS[r.id][i].name)}`).join(' · ')}</div>
+      <div class="vr-lore">Pick them on the front screen.</div>
+    </div>`).join('');
+}
+
 /* THE SHELF, on the profile: the rooms by tier, earned ones as pictures with their lore, locked ones
    as dark silhouettes with the clue and how far along it is. */
 function venueShelfHTML(){
@@ -5465,6 +5564,7 @@ function renderResult(){
       </div>
 
       ${venueRevealHTML()}
+      ${outfitRevealHTML()}
 
       ${crowdCardHTML()}
 
@@ -6169,7 +6269,7 @@ function bootAccounts(){
       if (S.posted) claimPosted();
     }
     // A different account (or none) has different rooms.
-    if (VSTATE.for !== (ME.signedIn ? ME.userId : null)){ VSTATE.rows = null; VSTATE.for = null; S.venueFresh = undefined; }
+    if (VSTATE.for !== (ME.signedIn ? ME.userId : null)){ VSTATE.rows = null; VSTATE.for = null; S.venueFresh = undefined; S.outfitFresh = undefined; }
     if (ME.signedIn) loadVenueRows();
     if (S.screen === 'board' || authScreen()) render();
   });
@@ -7546,10 +7646,12 @@ function renderShow(){
   // The room is decided once, as the lights go down, so the crowd shot and the share card after it
   // are the same room the show was played in.
   S.playedVenue = tonightVenue();
+  S.playedDress = bandDress();
   S.venueFresh = undefined;
+  S.outfitFresh = undefined;
   try {
     stage = createStage(document.getElementById('simStage'), {
-      seed: Math.abs(S.result.total) + 17, venue: S.playedVenue, reduce });
+      seed: Math.abs(S.result.total) + 17, venue: S.playedVenue, dress: S.playedDress, reduce });
   } catch (err) { stage = null; }
   S.stage = stage;
   const toStage = (b, idx, instant) => {
@@ -7571,6 +7673,8 @@ function renderShow(){
         bustout: (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP,
         // The crowd sits for a ballad and throws its arms up for a set's closer.
         slow: tagsOf(p).includes('ballad'),
+        // The song's feel (goose_feels.json): how the room takes it. Looks only, never a score.
+        feel: p.feel || null,
         closer: b.role === 'Closer',
         /* How long the song holds the screen, so a jam can build, peak and come back down inside it. */
         hold: songHold(lenOf(p)),
@@ -8782,6 +8886,20 @@ app.addEventListener('click', e => {
     chooseVenue(vNext.dataset.venueNext);
     vNext.textContent = 'Set for your next show';
     vNext.disabled = true;
+    return;
+  }
+  const oBtn = e.target.closest('[data-outfit]');
+  if (oBtn){
+    const [role, id] = oBtn.dataset.outfit.split(':'), i = Number(oBtn.dataset.rung);
+    if (outfitOpen(outfitLadder(), i)){
+      chooseOutfit(role, id);
+      render();
+    } else {
+      const say = document.getElementById('opSay');
+      if (say) say.innerHTML = outfitClueHTML(i);
+      document.querySelectorAll('.ochip.peek').forEach(x => x.classList.remove('peek'));
+      oBtn.classList.add('peek');
+    }
     return;
   }
   const vBtn = e.target.closest('[data-venue]');

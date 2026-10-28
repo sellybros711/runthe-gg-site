@@ -41,7 +41,7 @@ import {
   ART, WPX, sx, sy, depth, rgb, mixc, clamp01, hash, mulberry32,
   canvas, SKINS, HAIRS, face, personSprite, DECK, FIX,
   podCorners, CE, HPX, PAX, PAY, bandPose, buildWorld, rigFor, PLAYERS, KEY_SEQ, crowdVariants, crowdPose, GLOWS,
-} from './world.js?v=4';
+} from './world.js?v=5';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
    setlist/rooms.js what each looks like; this file only draws whichever it is handed. */
@@ -54,6 +54,8 @@ const PALETTES = {
   cover:  [[255, 112, 96], [80, 225, 205]],
   encore: [[245, 245, 255], [255, 100, 130]],
   ballad: [[80, 130, 255], [170, 120, 255]],
+  // A Space song: a slow wash of deep blue and violet, no white.
+  space:  [[40, 70, 170], [120, 70, 210]],
   opener: [[90, 235, 140], [240, 240, 255]],
   closer: [[70, 215, 225], [255, 90, 190]],
   house:  [[170, 160, 220], [120, 180, 230]],
@@ -89,7 +91,7 @@ function worldWorker(){
   if (worker !== null) return worker;
   try {
     worker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
-      ? new Worker(new URL('./world-worker.js?v=6', import.meta.url), { type: 'module' }) : false;
+      ? new Worker(new URL('./world-worker.js?v=7', import.meta.url), { type: 'module' }) : false;
   } catch (err) { worker = false; }
   if (worker){
     worker.onmessage = e => { const cb = waiting.get(e.data.id); if (cb){ waiting.delete(e.data.id); cb(e.data); } };
@@ -97,14 +99,14 @@ function worldWorker(){
   }
   return worker;
 }
-function buildOffThread(vid, seed){
+function buildOffThread(vid, seed, dress){
   return new Promise(res => {
     const w = worldWorker();
     if (!w) return res(null);
     const id = ++jobs;
     const timer = setTimeout(() => { waiting.delete(id); res(null); }, 8000);
     waiting.set(id, d => { clearTimeout(timer); res(d && !d.error ? d : null); });
-    w.postMessage({ id, vid, seed });
+    w.postMessage({ id, vid, seed, dress });
   });
 }
 
@@ -123,7 +125,9 @@ export function createStage(view, opts = {}){
      and hands back pictures; until they land the house is dark, and `ready` says when they have. A
      browser with no module worker or OffscreenCanvas builds it here, as before. `sync` asks for the
      old way outright. */
-  const wkey = vid + ':' + seed;
+  // What the band wears (outfits.js); a night in other clothes is another night to build.
+  const dress = opts.dress || null;
+  const wkey = vid + ':' + seed + ':' + JSON.stringify(dress);
   let back = null, front = null, frames = null, ready;
   let preCrowd = null, spriteCache = null;
   const take = w => {
@@ -137,9 +141,9 @@ export function createStage(view, opts = {}){
   };
   const known = WORLDS.get(wkey);
   if (known && !known.then){ take(known); ready = Promise.resolve(); }
-  else if (!known && opts.sync){ take(keep(buildWorld(R, RIG, seed))); ready = Promise.resolve(); }
+  else if (!known && opts.sync){ take(keep(buildWorld(R, RIG, seed, false, dress))); ready = Promise.resolve(); }
   else {
-    const job = known || buildOffThread(vid, seed).then(w => keep(w || buildWorld(R, RIG, seed)));
+    const job = known || buildOffThread(vid, seed, dress).then(w => keep(w || buildWorld(R, RIG, seed, false, dress)));
     if (!known) WORLDS.set(wkey, job);
     ready = job.then(w => { if (!dead){ take(w); draw(); } });
   }
@@ -291,7 +295,7 @@ export function createStage(view, opts = {}){
     energy: .2, energyWant: .2, density: .8, densityWant: .8,
     sky: 0, skyWant: 0,
     band: false, encore: false, bow: false,
-    signsUntil: 0, flashUntil: 0, jumpUntil: 0, armsUntil: 0, slow: false, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
+    signsUntil: 0, flashUntil: 0, jumpUntil: 0, armsUntil: 0, slow: false, feel: null, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
     jam: false, soloist: null, fillUntil: 0,
     arc: null, push: 0, dipUntil: 0, ribbonAt: 0, bannerAt: 0, flameUntil: 0,
   };
@@ -622,6 +626,12 @@ export function createStage(view, opts = {}){
           else if (st.bow || jumping) pose = r < .7 ? 'up' : 'clap';
           // A ballad sits the back half of the lawn down; the rail stays on its feet.
           else if (st.slow && c.t > .3 && r < .8) pose = 'sit';
+          /* The song's feel: an Anthem is sung back with an arm in the air, a Bit gets phones out
+             and a laugh, and a Space song brings the glow sticks out. */
+          else if (st.feel === 'Anthem' && r < .6) pose = r < .35 ? 'one' : 'up';
+          else if (st.feel === 'Bit' && c.phone && r < .6) pose = 'phone';
+          else if (st.feel === 'Bit' && r < .35) pose = 'clap';
+          else if (st.feel === 'Space' && c.glow && r < .7) pose = 'glow';
           else if (r < e * .55) pose = r < e * .3 ? 'up' : r < e * .42 ? 'one' : 'clap';
         } else if (lit && c.t > .4 && r < .6) pose = 'sit';
         c.pose = pose;
@@ -633,7 +643,9 @@ export function createStage(view, opts = {}){
       const ph = c.knot != null ? c.knot : c.phase;
       let hop = live && (jumping || e > .7)
         ? Math.round(Math.max(0, Math.sin(t * (5 + e * 3) + ph)) * 2 * (c.knot != null ? 1 : c.jumpy)) : 0;
-      const sway = live && e > .35 ? Math.round(Math.sin(t * (c.knot != null ? 2.2 : pose === 'glow' ? 1.1 : 1.5) + ph) * (c.knot != null || pose === 'glow' ? 2 : 1)) : 0;
+      // A Groove song moves the whole lawn the way a knot of dancers moves: a wider, quicker step.
+      const groove = st.feel === 'Groove', wide = c.knot != null || groove;
+      const sway = live && (e > .35 || groove) ? Math.round(Math.sin(t * (wide ? 2.2 : pose === 'glow' ? 1.1 : 1.5) + ph) * (wide || pose === 'glow' ? 2 : 1)) : 0;
       const wander = lit && !sat ? Math.round(Math.sin(t * .4 + c.phase) * 2) : 0;
       // Inside the wave, arms up and off the ground; either side of it, arms down, waiting for it.
       if (wave != null && live){
@@ -1299,7 +1311,7 @@ export function createStage(view, opts = {}){
   function cue(ev){
     const ts = performance.now();
     if (ev.progress != null) st.skyWant = clamp01(R.skyMap ? R.skyMap(ev.progress) : ev.progress);
-    if (ev.kind !== 'song'){ st.slow = false; if (ev.kind !== 'final') ball = null; }
+    if (ev.kind !== 'song'){ st.slow = false; st.feel = null; if (ev.kind !== 'final') ball = null; }
     if (ev.kind === 'set') roadie = null;
     if (ev.kind === 'set'){
       st.band = true; st.bow = false; st.encore = !!ev.encore; st.soloist = null; st.jam = false;
@@ -1326,6 +1338,14 @@ export function createStage(view, opts = {}){
         // A big song outdoors, past the first few, sometimes sends a beach ball up.
         if (!indoor && !lite && !ball && ev.energy > .75 && ev.progress > .25 && Math.random() < .45)
           ball = { x: (Math.random() - .5) * 8, y: FL.y0 + (FL.deep - FL.y0) * (.3 + Math.random() * .4), z: 7, vx: 0, vy: 0, vz: 12, spin: 0 };
+      }
+      /* What the song feels like (goose_feels.json). A Space song dims to a slow wash; a Rocker
+         jumps the lawn and an Anthem throws its arms up as it starts. The rest is in drawCrowd. */
+      st.feel = ev.feel || null;
+      if (st.feel === 'Space'){ setPalette('space'); st.lightWant = Math.min(st.lightWant, .5); }
+      if (!ev.instant && !reduce){
+        if (st.feel === 'Rocker') st.jumpUntil = Math.max(st.jumpUntil, ts + 1800);
+        if (st.feel === 'Anthem') st.armsUntil = Math.max(st.armsUntil, ts + 3200);
       }
       const wasSlow = st.slow;
       st.slow = !!ev.slow;

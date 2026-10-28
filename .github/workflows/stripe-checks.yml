@@ -21,6 +21,8 @@ name: Stripe checks
 #                     that no lifetime row moved and no Fantasy pass was cut short
 #   premium_yearly    supabase/124 driven in SQL, the same database the replay builds
 #   arcade_cap        supabase/125's ranked cap, on the arcade chain it restates
+#   ad_rewards        supabase/158's rewarded videos: a single use code, three a day,
+#                     a Putt Putt life never past the max, an arcade play of one free game
 #
 # Runnable locally with the exact same commands:
 #   node scripts/stripe/verify-bundles.mjs
@@ -135,3 +137,17 @@ jobs:
           $P -f supabase/152_putt_lives_refund.sql
           $P -f supabase/152_putt_lives_refund.sql
           $P -f supabase/test/putt_lives_refund_test.sql
+      - name: supabase/158, rewarded videos (a Putt Putt life, an arcade play)
+        run: |
+          createdb adrw
+          P="psql -X -q -v ON_ERROR_STOP=1 -d adrw"
+          $P -f supabase/test/fantasy_base.sql
+          $P -c 'create table public.subscriptions(user_id uuid, status text, current_period_end timestamptz);'
+          for f in 101_premium_bundles 52_grid_daily 70_grid_integrity 71_arcade_free_games 72_grid_game_keys \
+                   74_arcade_new_games 76_sport_variant_boards 82_grid_submit_idempotent 83_referrals \
+                   84_free_games_crossword 85_rollcall_chain 91_arcade_trial 125_arcade_cap_and_bonus_refund \
+                   138_putt_lives 146_putt_lives_nine 149_putt_lives_buy 150_putt_lives_spares \
+                   151_putt_lives_extra 158_ad_rewards 158_ad_rewards; do
+            $P -f supabase/$f.sql
+          done
+          $P -f supabase/test/ad_rewards_test.sql

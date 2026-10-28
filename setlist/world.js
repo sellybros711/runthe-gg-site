@@ -12,6 +12,7 @@
  * scripts/setlist/check_data.mjs holds that line for this file as it does for stage.js.
  */
 import PXHD from './pxhd.js?v=2';
+import { ROLES, SIGNATURE, OUTFITS, RESET } from './outfits.js?v=1';
 
 // ── the camera ─────────────────────────────────────────────────────────────
 const ART = 0.2;                       // feet per pixel
@@ -192,8 +193,17 @@ function personParts(G, P, pose, facing){
   const pants = P.doodle ? doodle(P.pants) : 'x:' + P.pants;
   const shirt = P.doodle ? doodle(P.shirt) : P.dye
     ? (x, y, z) => 'x:' + DYE[(Math.floor(Math.hypot(x, z - 2.3) * 3.2 + P.dye) % DYE.length + DYE.length) % DYE.length]
+    : P.pattern === 'flowers' ? (x, y, z) => { const h = hash(Math.floor(x * 4) + 11, Math.floor(z * 4) + Math.floor(y * 4) * 3, 63); return 'x:' + (h < .2 ? P.stripe : h < .27 ? '#3f8a4a' : P.shirt); }
+    : P.pattern === 'bands' ? (x, y, z) => { const h = hash(Math.floor(x * 5) + 2, Math.floor(z * 5) + Math.floor(y * 5) * 3, 88); return 'x:' + (h < .12 ? '#2a2230' : P.bands[(Math.floor((x + 1) * 2.2) % P.bands.length + P.bands.length) % P.bands.length]); }
+    : P.pattern === 'harle' ? (x, y, z) => 'x:' + ((Math.floor(x * 2.2 + z * 2.2) + Math.floor(x * 2.2 - z * 2.2)) % 2 ? P.stripe : P.shirt)
+    : P.pattern === 'pin' ? (x, y, z) => 'x:' + (((Math.floor((x + 3) * 6)) % 3) === 0 ? P.stripe : P.shirt)
+    : P.pattern === 'plaid' ? (x, y, z) => { const a = Math.floor((x + 3) * 2.6) % 2, b = Math.floor(z * 2.6) % 2; return 'x:' + (a && b ? P.plaid[2] : (a || b) ? P.plaid[1] : P.plaid[0]); }
+    : P.pattern === 'panel' ? (x, y, z) => 'x:' + ((Math.abs(x) < .2 && y > .1) || (Math.abs(x) > .78 && Math.abs(z - 2.55) < .14) ? P.stripe : P.shirt)
     : P.stripe ? (x, y, z) => 'x:' + (Math.floor(z * 3) % 2 ? P.shirt : P.stripe)
     : 'x:' + P.shirt;
+  const eyes = base => (x, y, z) => { const h = hash(Math.floor(x * 4) + 9, Math.floor(z * 4) + Math.floor(y * 4) * 7, 51); return 'x:' + (h < .06 ? '#3a62c4' : h < .1 ? '#c8402e' : base); };
+  const spots = base => (x, y, z) => 'x:' + (hash(Math.floor(x * 3) + 3, Math.floor(z * 3) + Math.floor(y * 3) * 5, 19) < .22 ? P.jacketSpot : base);
+  const jacket = P.jacket ? (P.jacketSpot ? spots(P.jacket) : P.jacketEyes ? eyes(P.jacket) : 'x:' + P.jacket) : null;
   // Legs and shoes. Sitting, the thighs run forward and the shins drop to the deck.
   if (pose.ground){
     // On the grass: knees up, feet out in front. Written in standing feet, so they add the drop back.
@@ -226,6 +236,8 @@ function personParts(G, P, pose, facing){
   // Body.
   E(0, 0, 2.3, .78, .55, .92, shirt);
   if (P.vest) E(0, .02, 2.35, .8, .57, .86, 'x:' + P.vest, {}, (u, v, w) => Math.abs(u) > .35 && v > -.2);
+  // An open jacket over the shirt: the front left open down the middle.
+  if (jacket) E(0, .03, 2.36, .84, .6, .9, jacket, {}, (u, v, w) => Math.abs(u) > .3 || v < -.1);
   // Head, neck, ears.
   C([0, 0, 3.1], [0, 0, 3.4], .25, skin);
   E(0, 0, 4.25, 1.18, 1.08, 1.12, skin);
@@ -234,7 +246,14 @@ function personParts(G, P, pose, facing){
   // Hair: over the top and back of the head; longer styles fall behind the shoulders.
   const cut = { long: (u, v, w) => w > .1 || v < 0, curly: (u, v, w) => w > -.1 || v < .1 }[P.style]
     || ((u, v, w) => w > .15 || v < -.2);
-  if (P.style === 'shag'){
+  if (P.style === 'shag' && P.parted){
+    // The keys player's parted shag: a lower crown parted down the middle, waves past the ears to the shoulders.
+    const wave = (x, y, z) => 'h:' + (Math.abs(x) < .09 && y > -.2 && z > 4.6 ? PXHD.mix(P.hair, '#e3b48b', .5)
+      : hash(Math.floor(x * 5) + 70, Math.floor(z * 4) + Math.floor(y * 5) * 3, 41) < .38 ? PXHD.mix(P.hair, '#c08a52', .38) : P.hair);
+    E(0, -.05, 4.4, 1.24, 1.14, 1.02, wave, {}, (u, v, w) => w > .38 || v < -.1);
+    for (const s2 of [-1, 1]){ E(s2 * 1.0, .1, 3.9, .5, .62, .9, wave, {}, (u, v, w) => s2 * u > -.2); E(s2 * .95, -.2, 3.25, .42, .5, .45, wave); }
+    E(0, -.55, 3.7, 1.25, .6, 1.1, wave);
+  } else if (P.style === 'shag'){
     // A big shag of curls: over the brow and down past the ears, the face left open.
     // Two tones of brown so the curls read as curls rather than a helmet.
     const curl = (x, y, z) => 'h:' + (hash(Math.floor(x * 6) + 60, Math.floor(z * 6) + Math.floor(y * 6) * 5, 33) < .35
@@ -243,6 +262,17 @@ function personParts(G, P, pose, facing){
     E(0, -.25, 4.42, 1.38, 1.2, 1.24, curl, {}, (u, v, w) => v < 0 || w > .55);
   } else if (P.style !== 'bald') E(0, -.02, 4.32, 1.24, 1.14, 1.16, hair, {}, cut);
   if (P.style === 'long') E(0, -.55, 3.35, 1.05, .5, 1.05, hair);
+  // The guitarist's curls: volume at the sides and the back, falling to the shoulders.
+  if (P.style === 'mop'){
+    const curl = (x, y, z) => 'h:' + (hash(Math.floor(x * 6) + 30, Math.floor(z * 6) + Math.floor(y * 6) * 5, 17) < .3 ? PXHD.mix(P.hair, '#7a5a40', .45) : P.hair);
+    E(0, -.08, 4.45, 1.36, 1.24, 1.22, curl, {}, (u, v, w) => w > .1 || v < -.05 || (P.hat && w > -.25));
+    for (const s2 of [-1, 1]){ E(s2 * 1.08, -.05, 3.75, .46, .58, .85, curl); E(s2 * .95, -.3, 3.15, .4, .45, .42, curl); }
+    E(0, -.62, 3.55, 1.2, .55, 1.05, curl);
+  }
+  // The bassist's long hair, falling in front of the shoulders as well as behind.
+  if (P.mane){ const ln = (x, y, z) => 'h:' + (hash(Math.floor(x * 6) + 8, Math.floor(z * 6) + Math.floor(y * 6) * 5, 29) < .3 ? PXHD.mix(P.hair, '#e0c08a', .4) : P.hair);
+    for (const s2 of [-1, 1]){ E(s2 * 1.08, -.1, 3.7, .4, .55, .9, ln); E(s2 * .9, -.25, 2.95, .38, .5, .5, ln); } E(0, -.6, 3.2, 1.15, .5, 1.25, ln); }
+  if (P.pendant) E(0, .56, 2.95, .07, .04, .09, 'x:#e0b850', { gloss: 2 });
   if (P.style === 'curly') E(0, -.05, 4.45, 1.42, 1.3, 1.25, hair, {}, (u, v, w) => w > -.25 || v < 0);
   if (P.style === 'bun') E(0, -.5, 5.35, .45, .45, .42, hair);
   if (P.style === 'pony') C([0, -.95, 4.6], [0, -1.2, 3.5], .26, hair);
@@ -250,7 +280,14 @@ function personParts(G, P, pose, facing){
   // Hats.
   if (P.hat){
     const hm = 'x:' + P.hatC;
-    if (P.hat === 'brim'){ E(0, 0, 5.05, 1.62, 1.5, .13, hm); E(0, 0, 5.35, 1.05, .98, .62, hm, {}, (u, v, w) => w > -.1); }
+    // The cap on curls sits high with a short brim: the camera looks down, and a full brim hides the face.
+    if (P.hat === 'tophat'){ E(0, 0, 5.0, 1.75, 1.6, .1, hm); for (let k = 0; k < 7; k++) E(0, 0, 5.15 + k * .3, .92, .85, .2, hm); E(0, 0, 7.15, .92, .85, .1, 'x:#2c2c34'); E(0, 0, 5.3, .95, .88, .12, 'x:#5a1a24'); }
+    else if (P.hat === 'fur'){ const fz = (x, y, z) => 'x:' + (hash(Math.floor(x * 7) + 5, Math.floor(z * 7) + Math.floor(y * 7) * 3, 77) < .4 ? PXHD.mix(P.hatC, '#000000', .3) : P.hatC); E(0, -.05, 4.75, 1.55, 1.42, 1.25, fz, {}, (u, v, w) => w > -.05 || v < -.2); for (const s2 of [-1, 1]) E(s2 * 1.25, 0, 3.9, .38, .5, .7, fz); }
+    else if (P.hat === 'jester'){ const [a1, a2] = P.jest; E(0, -.02, 4.5, 1.28, 1.18, 1.18, (x) => 'x:' + (x < 0 ? a1 : a2), {}, (u, v, w) => w > .15);
+      for (const s2 of [-1, 1]){ C([s2 * .5, 0, 5.3], [s2 * 1.55, -.1, 6.1], .32, 'x:' + (s2 < 0 ? a2 : a1)); C([s2 * 1.55, -.1, 6.1], [s2 * 1.9, .1, 5.5], .2, 'x:' + (s2 < 0 ? a2 : a1)); E(s2 * 1.95, .12, 5.35, .2, .2, .2, 'x:#f2d24a', { gloss: 2 }); } }
+    else if (P.hat === 'cap' && P.style === 'mop'){ E(0, -.02, 4.55, 1.3, 1.2, 1.18, hm, {}, (u, v, w) => w > .2); E(0, .95, 4.72, .62, .42, .07, hm); }
+    else if (P.hat === 'cowboy'){ E(0, 0, 5.0, 1.8, 1.6, .12, hm); E(0, 0, 5.4, 1.05, .95, .62, hm, {}, (u, v, w) => w > -.1); E(-1.6, 0, 5.12, .4, 1.2, .1, hm); E(1.6, 0, 5.12, .4, 1.2, .1, hm); }
+    else if (P.hat === 'brim'){ E(0, 0, 5.05, 1.62, 1.5, .13, hm); E(0, 0, 5.35, 1.05, .98, .62, hm, {}, (u, v, w) => w > -.1); }
     else if (P.hat === 'bucket'){ E(0, 0, 4.85, 1.6, 1.5, .2, hm); E(0, 0, 5.05, 1.12, 1.05, .6, hm, {}, (u, v, w) => w > -.1); }
     else if (P.hat === 'beanie') E(0, -.02, 4.5, 1.27, 1.17, 1.2, hm, {}, (u, v, w) => w > .2);
     else {
@@ -261,9 +298,10 @@ function personParts(G, P, pose, facing){
   // Arms. A pose is two hands; the elbow sits halfway, pushed a little outward.
   const arm = (s, hand) => {
     const sh = [s * .72, 0, 2.95], mid = [(sh[0] + hand[0]) / 2 + s * .25, (sh[1] + hand[1]) / 2, (sh[2] + hand[2]) / 2];
-    C(sh, mid, .24, P.sleeveless ? skin : shirt);
+    C(sh, mid, .24, P.sleeveless ? skin : (jacket || shirt));
     C(mid, hand, .21, skin);
     E(hand[0], hand[1], hand[2], .24, .24, .24, skin);
+    if (P.beads && s === 1) for (let k = 0; k < 5; k++){ const a = k / 5 * Math.PI * 2; E(mid[0] + (hand[0] - mid[0]) * .72 + Math.cos(a) * .2, mid[1] + (hand[1] - mid[1]) * .72 + Math.sin(a) * .2, mid[2] + (hand[2] - mid[2]) * .72, .07, .07, .07, 'x:' + ['#8a4a24', '#c88a3a', '#3a2a22'][k % 3]); }
   };
   arm(-1, pose.L);
   arm(1, pose.R);
@@ -282,6 +320,8 @@ function face(G, P, facing, dz = 0){
     const e = at(s * .42, 1.02, 4.25);
     if (!e.seen) continue;
     if (P.glasses){ G.S.set(e.i - 1, e.j, rim, 0, { noCast: 1 }); G.S.set(e.i + 1, e.j, rim, 0, { noCast: 1 }); G.S.set(e.i, e.j - 1, rim, 0, { noCast: 1 }); }
+    // Shades or tinted lenses: both pixels of each eye in the lens colour.
+    if (P.tint){ G.S.set(e.i, e.j, 'f:' + P.tint, 0, { noCast: 1 }); G.S.set(e.i + s, e.j, 'f:' + P.tint, 0, { noCast: 1 }); continue; }
     G.S.set(e.i, e.j, 'f:#2a1c22', 0, { noCast: 1 });
   }
   if (P.mustache){
@@ -362,18 +402,38 @@ const BAND = {
     shirt: '#3d5878', vest: '#5a7da6', sleeveless: true, pants: '#30303a', shoes: '#2a2a30' } },
 };
 
+/* WHAT THE BAND WEARS. Each player's look above is laid under their signature and their outfit from
+   outfits.js. Dressing rewrites BAND in place, so the frames painted next wear it; bandFrames and
+   buildWorld dress the band first, every time, so nothing depends on what was dressed before. */
+const AS_WRITTEN = Object.fromEntries(Object.entries(BAND).map(([k, m]) => [k, { look: { ...m.look }, axe: m.axe, bass: m.bass }]));
+const GEAR_RESET = { flame: false, fholes: false, rainbow: false, burl: false };
+function dressBand(dress){
+  for (const { id } of ROLES){
+    const m = BAND[id], sig = SIGNATURE[id], w = AS_WRITTEN[id];
+    const o = OUTFITS[id].find(x => x.id === (dress && dress[id])) || OUTFITS[id][0];
+    m.look = Object.assign({}, w.look, RESET, sig.base, o.look);
+    Object.assign(m, GEAR_RESET, { axe: w.axe, bass: w.bass }, sig.gear, o.gear || {});
+  }
+}
+dressBand(null);
+
 const ROADIE = { skin: SKINS[2], hair: HAIRS[1], style: 'short', hat: 'capback', hatC: '#1c1c22',
   shirt: '#1c1c22', pants: '#2e2e38', shoes: '#2a2a30' };
 
 function guitarExtra(m){
   return (E, C) => {
-    E(-.2, .8, 2.0, .98, .22, .74, 'x:' + m.axe, { gloss: 1 });
+    E(-.2, .8, 2.0, .98, .22, .74, m.burl ? (x, y, z) => { const h = hash(Math.floor(x * 6) + 4, Math.floor(z * 6), 45); return 'x:' + (h < .3 ? '#5a3a20' : h < .55 ? '#a8804a' : '#d8bc88'); } : m.flame ? (x, y, z) => 'x:' + (Math.floor((x + z * .7) * 5) % 2 ? m.axe : PXHD.mix(m.axe, '#7a4a1c', .25)) : 'x:' + m.axe, { gloss: 1 });
+    // Burl for the bass, flame maple with f-holes for the guitar.
+    if (m.fholes) for (const fx of [-.62, .2]) E(fx, 1.0, 2.0, .06, .03, .24, 'x:#2a1810');
     E(-.62, .96, 1.95, .36, .1, .3, 'x:' + (m.bass ? '#2a2226' : '#f8f4ea'));
     const tip = m.bass ? [2.25, .85, 3.75] : [1.85, .85, 3.4];
     C([.5, .88, 2.25], tip, .12, 'x:#8a5a34');
     E(tip[0] + .12, tip[1], tip[2] + .1, .2, .08, .14, 'x:' + (m.bass ? '#2a2226' : '#efe6d4'));
     // The strap: from the body's top horn up over the left shoulder.
-    C([-.75, .7, 2.6], [-.62, .35, 3.05], .08, 'x:#2a2226');
+    if (m.rainbow){ const R = ['#d8402e', '#e8963a', '#f2d24a', '#3f9a5a', '#3a6ac4', '#7a4ab0'];
+      for (let k = 0; k < 6; k++){ const a = k / 6, b = (k + 1) / 6; C([-.75 + .13 * a, .7 - .35 * a, 2.6 + .45 * a], [-.75 + .13 * b, .7 - .35 * b, 2.6 + .45 * b], .1, 'x:' + R[k]); }
+      for (let k = 0; k < 4; k++){ const a = k / 4, b = (k + 1) / 4; C([-.62 + .8 * a, .35 - .2 * a, 3.05 + .02 * a], [-.62 + .8 * b, .35 - .2 * b, 3.05 + .02 * b], .09, 'x:' + R[(k + 2) % 6]); } }
+    else C([-.75, .7, 2.6], [-.62, .35, 3.05], .08, 'x:#2a2226');
   };
 }
 /* The keys player's four places: a board to his right, one to his left, one behind him, and the red
@@ -392,7 +452,8 @@ function keysFrames(){
 // Which of his four places he is at, song by song. Mostly keys, the guitar now and then.
 const KEY_SEQ = ['right', 'left', 'right', 'back', 'guitar', 'left', 'back', 'right', 'left', 'guitar'];
 
-function bandFrames(){
+function bandFrames(dress){
+  dressBand(dress);
   const strum = (m, f) => ({ L: [m.bass ? 1.4 : 1.15, .9, m.bass ? 3.05 : 2.85],
     R: [-.55, .95, [2.25, 1.85, 2.15, 2.45][f]], extra: guitarExtra(m) });
   const g = m => [0, 1, 2, 3].map(f => personSprite(m.look, strum(m, f), false));
@@ -586,8 +647,8 @@ function buildFront(){
   // The keys player's boards either side of him. The one behind him is in the back layer.
   keysBoard(G, BAND.keys.x + 1.65, BAND.keys.y, 'y', '#d23c3a');
   keysBoard(G, BAND.keys.x - 1.65, BAND.keys.y, 'y', '#2c2a32');
-  // The kit: yellow shells, cymbals, and the kick facing you with a swirl painted on it.
-  const yel = (x, y, z, th) => 'x:' + (Math.sin(th || 0) > .6 ? '#c9a218' : '#f4cc2c');
+  // The kit: red burst shells, cymbals, and the kick facing you with a swirl painted on it.
+  const yel = (x, y, z, th) => 'x:' + (Math.sin(th || 0) > .6 ? '#7a1a22' : '#b8242c');
   const drum = (x, y, r, z0, z1) => cyl(G, x, y, r, z0, z1, yel, 'x:#efeadc', { gloss: 1 });
   const RZ = DECK.z + 1.2;
   drum(6.9, -8.6, .7, RZ + 1.6, RZ + 2.3); drum(9.7, -8.6, .7, RZ + 1.6, RZ + 2.3);
@@ -601,14 +662,14 @@ function buildFront(){
   for (let y = ky - 1.6; y <= ky; y += STEP){
     for (let k = 0; k < 60; k++){
       const th = k / 60 * 2 * Math.PI, nx = Math.cos(th), nz = Math.sin(th);
-      G.put(kx + nx * kr, y, kz + nz * kr, 'x:' + (nz < -.4 ? '#c9a218' : '#f4cc2c'), [nx, 0, nz], { gloss: 1 });
+      G.put(kx + nx * kr, y, kz + nz * kr, 'x:' + (nz < -.4 ? '#7a1a22' : '#b8242c'), [nx, 0, nz], { gloss: 1 });
     }
   }
   for (let x = -kr; x <= kr; x += STEP) for (let z = -kr; z <= kr; z += STEP){
     const d = Math.hypot(x, z);
     if (d > kr) continue;
     let m;
-    if (d > kr - .22) m = 'x:#f4cc2c';
+    if (d > kr - .22) m = 'x:#b8242c';
     else {
       const a = Math.atan2(z, x) + d * 2.4;
       m = 'x:' + ['#e8573c', '#3c62d6', '#4ec4d8', '#f6ecd4'][((Math.floor(a / 1.1) % 4) + 4) % 4];
@@ -676,8 +737,8 @@ function rigFor(R, RIGS){ return Object.assign({}, RIGS[R.rig] || RIGS.shed, R.r
 
 /* A room's two painted layers and the band's frames: a second of work on a phone, which is why the
    worker exists. Both the worker and the main-thread fallback call this. */
-function buildWorld(R, RIG, seed, withCrowd){
-  const w = { back: buildBack(mulberry32(seed), R, RIG), front: buildFront(), frames: bandFrames() };
+function buildWorld(R, RIG, seed, withCrowd, dress){
+  const w = { back: buildBack(mulberry32(seed), R, RIG), front: buildFront(), frames: bandFrames(dress) };
   if (withCrowd) w.crowd = crowdSprites(seed);
   return w;
 }
@@ -703,6 +764,6 @@ function crowdSprites(seed){
 }
 
 export {
-  ART, ELEV, SE, X0, WPX, OY, sx, sy, depth, camN, rgb, mixc, clamp01, hash, mulberry32, canvas, rampCache, rampOf, Grid, STEP, fn, box, ell, cap, cyl, paint, SKINS, HAIRS, SHIRTS, DYE, turnOf, personParts, face, PW, personSprite, CROWD_POSES, signPose, crowdVariant, BAND, guitarExtra, KEY_TURN, keysFrames, KEY_SEQ, bandFrames, DECK, FIX, kit, buildBack, podCorners, buildRig, buildPods, keysBoard, buildFront, D2R, CE, X1, HPX, PH, PAX, PAY,
+  ART, ELEV, SE, X0, WPX, OY, sx, sy, depth, camN, rgb, mixc, clamp01, hash, mulberry32, canvas, rampCache, rampOf, Grid, STEP, fn, box, ell, cap, cyl, paint, SKINS, HAIRS, SHIRTS, DYE, turnOf, personParts, face, PW, personSprite, CROWD_POSES, signPose, crowdVariant, BAND, guitarExtra, KEY_TURN, keysFrames, KEY_SEQ, bandFrames, dressBand, DECK, FIX, kit, buildBack, podCorners, buildRig, buildPods, keysBoard, buildFront, D2R, CE, X1, HPX, PH, PAX, PAY,
   PLAYERS, bandPose, buildWorld, rigFor, crowdSprites, CROWD_KINDS, crowdVariants, crowdPose, GLOWS, GLOW_HAND,
 };
