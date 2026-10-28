@@ -643,11 +643,10 @@ export class Figure {
         // the first LOOP_BLEND of a cycle it comes from the pose a period on (as far as the capture goes) into
         // its own start, so the seam is a short ease)
         if (u < LOOP_BLEND && c.dur > c.period) {
-          const qc = this.qc, pc = V(), wl = smooth(1 - u / LOOP_BLEND);
+          const qc = this.qc, wl = smooth(1 - u / LOOP_BLEND);
           for (let i = 0; i < n; i++) qc[i].copy(qb[i]);
-          this.sample(c, Math.min((u + 1) * c.period, c.dur), qc, pc);
-          for (let i = 0; i < n; i++) qb[i].slerp(qc[i], wl);
-          pa.lerp(pc.sub(c.drift), wl);
+          this.sample(c, Math.min((u + 1) * c.period, c.dur), qc, null);
+          for (let i = 0; i < n; i++) if (UPPER.has(L[i].name)) qb[i].slerp(qc[i], wl);
         }
         // in place: the cycle's travel out, the bob kept
         pa.sub(c.drift.clone().multiplyScalar(u)).sub(c.p0);
