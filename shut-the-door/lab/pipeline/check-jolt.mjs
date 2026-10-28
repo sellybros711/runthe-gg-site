@@ -78,6 +78,10 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // tracks and acts identical to main, read at the threshold (40.6 m/s against 40) on frames the slowed beat moved.
 // With every body measured against main (c6922cc) the totals fall: plays with a pop 1,641 to 1,624, with a skate
 // 2,001 to 1,968. Recorded here once, on the coordinator's decision.
+// The outfield shades to each hitter (site PR #785, 2026-10-28), so the broadcast keeps more of each play's
+// runners in frame. skate runner run rose 869 to 872 on screen. With every body measured against main the
+// runner skates fall 1,103 to 1,100 and the plays with any skate 1,967 to 1,812. Recorded here once, on the
+// coordinator's decision.
 const CEILING = {
   'pop fielder -': 437,
   'pop fielder bobble': 106,
@@ -107,7 +111,7 @@ const CEILING = {
   'skate fielder set': 28,
   'skate fielder tag': 331,
   'skate fielder throw': 6,
-  'skate runner run': 869,
+  'skate runner run': 872,
 };
 
 function loadPlaywright() {
