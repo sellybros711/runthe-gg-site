@@ -17,6 +17,7 @@
  * angle and spray, and a few between), so each ball and each row is covered. The plan is pure, so a
  * failure here is the same failure on screen.
  */
+import { execFileSync } from 'node:child_process';
 import { planPlay, verify } from '../../3d/inplay-plan.js';
 import { inplayCases } from './inplay-cases.mjs';
 import { selection, openCheckpoint } from './checkpoint.mjs';
@@ -45,7 +46,7 @@ function planOne(c) {
   const { pr, key, label, st, moves } = c;
   let bad, dur = null;
   try {
-    const plan = planPlay(pr, { bats: c.hand, basesBefore: c.bases0, id: c.id });
+    const plan = planPlay(pr, { bats: c.hand, basesBefore: c.bases0, id: c.id, ...c.align });
     bad = verify(pr, plan);
     dur = plan.realDur;
   } catch (e) { bad = ['threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')]; }
@@ -85,4 +86,7 @@ durs.sort((a, b) => a - b);
 const q = (x) => durs[Math.floor(x * (durs.length - 1))].toFixed(1);
 console.log(`\nlength on screen (s, after contact): median ${q(0.5)}, 90th ${q(0.9)}, longest ${q(1)}`);
 console.log(`\n${plays} plays, ${fails} wrong`);
-process.exit(fails ? 1 : 0);
+// where the fielders stand comes from the packs (build-shade.mjs): the table must be what they give now
+let shadeOk = true;
+try { console.log(execFileSync(process.execPath, [new URL('./build-shade.mjs', import.meta.url).pathname, '--check'], { encoding: 'utf8' }).trim()); } catch (e) { shadeOk = false; console.log(String(e.stdout || e).trim()); }
+process.exit(fails || !shadeOk ? 1 : 0);
