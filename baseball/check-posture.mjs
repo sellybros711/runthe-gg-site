@@ -148,23 +148,35 @@ if (!LINKED && linkedFrom.length) {
     + 'is not on the site\'s own pages yet.');
 }
 
-/* THE HOME PAGE REACHES A VISITOR TWICE: the hub of tiles at the top, and the
-   "All games" cards under it that the sport filter works on. The redesign changed
-   both shapes (it was `.gtile` and a card per device), so this reads the current
-   ones: `<a class="tile g-...">` into /baseball/, and `<article class="feat
-   baseball">`. A game on only one of them is found by half the people who scroll. */
+/* THE HOME PAGE REACHES A VISITOR TWICE: the hub at the top, and the "All games"
+   cards under it that the sport filter works on. The redesign changed both shapes
+   once (it was `.gtile` and a card per device), and the Play today hub (#703,
+   2026-10-24) changed the hub again: there are no `.tile`s at all any more.
+
+   THE HUB IS NOW TWO LINKS, ONE PER KIND OF DEVICE, which is the old argument in a
+   new place. Over 640px the hub leads with the big `.spot`; at 640px and under the
+   spot is `display:none` and the Play today list becomes a swipe strip that opens
+   on `.today-new`, which is itself `display:none` above 640px. So a game that is in
+   only one of them is in the hub on one kind of device and missing from it on the
+   other, and nothing else on the page would notice. Both are asked, plus the
+   `<article class="feat baseball">` card. */
 const home = read('index.html');
-const hasTile = /<a class="tile [^"]*" href="\/baseball\/"/i.test(home);
+const hasSpot = /<a class="spot [^"]*" href="\/baseball\/"/i.test(home);
+const hasRow = /<li class="today-new"><a class="trow [^"]*" href="\/baseball\/"/i.test(home);
 const hasCard = /<article class="feat baseball[^"]*"/i.test(home);
-if (!LINKED && (hasTile || hasCard)) {
-  problems.push(`index.html carries a baseball ${hasTile ? 'tile' : 'card'} while this file says `
-    + 'the game is not on the home page. Half a link is a game that exists on one kind of '
-    + 'device.');
+if (!LINKED && (hasSpot || hasRow || hasCard)) {
+  problems.push(`index.html carries a baseball ${hasSpot ? 'hub spot' : hasRow ? 'Play today row' : 'card'} `
+    + 'while this file says the game is not on the home page. Half a link is a game that '
+    + 'exists on one kind of device.');
 }
 if (LINKED) {
-  if (!hasTile) {
-    problems.push('index.html has no hub .tile for baseball. The hub is the first thing on the '
-      + 'home page, so without one the game is not in the list a visitor sees first.');
+  if (!hasSpot) {
+    problems.push('index.html has no hub .spot for baseball. Over 640px the spot is the first '
+      + 'thing on the home page, so without it the game is not in the hub on a desktop.');
+  }
+  if (!hasRow) {
+    problems.push('index.html has no Play today row (.today-new .trow) for baseball. At 640px '
+      + 'and under that row opens the hub strip, so without it the game is not in the hub on a phone.');
   }
   if (!hasCard) {
     problems.push('index.html has no .feat card for baseball. The cards are the All games '
