@@ -2907,12 +2907,16 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "18",
-      "sha": "f04874d9a01a8613"
+      "v": "19",
+      "sha": "20d9ccce93f30a4e"
     },
     "venues.js": {
       "v": "2",
       "sha": "e2de218e6c8d793b"
+    },
+    "outfits.js": {
+      "v": "1",
+      "sha": "89dc4f189658cf32"
     }
   },
   "shut-the-door/index.html": {
@@ -3121,8 +3125,8 @@
       "sha": "c5def90922ef7838"
     },
     "world.js": {
-      "v": "4",
-      "sha": "a01238f0e0bd4780"
+      "v": "5",
+      "sha": "3023ba22d6fa7043"
     }
   },
   "shut-the-door/3d/boot.js": {
@@ -3169,6 +3173,10 @@
     "pxhd.js": {
       "v": "2",
       "sha": "82d8338da1a8ffd3"
+    },
+    "outfits.js": {
+      "v": "1",
+      "sha": "89dc4f189658cf32"
     }
   },
   "shut-the-door/3d/stage.js": {
