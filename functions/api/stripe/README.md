@@ -678,6 +678,38 @@ psql -d pbuy -f supabase/test/putt_lives_buy_test.sql     (its header lists the 
 psql -d pbuy -f supabase/test/putt_lives_extra_test.sql   151, lives over the max
 ```
 
+## Rewarded videos (no Stripe, the Store Agent's grant side)
+
+`supabase/158_ad_rewards.sql`. A watched video pays one Putt Putt life or one more play of an
+arcade free game, three a day of each, per account. Guests are asked to sign in. The owner's
+calls, 2026-10-28. The video player and the button are the Ads Agent's; this is only the grant.
+
+The ad network may not tell our server a video was watched (Google's web rewarded ads report it
+in the browser only). So the server cannot prove a view, and the owner approved this instead:
+
+1. `ad_reward_issue(p_kind, p_target, p_max)` before the video: a single use code, or a reason
+   (`sign_in`, `off`, `cap`, `full`, `has_play`, `card_only`, `unlimited`, `busy`).
+2. The video plays.
+3. `ad_reward_claim(p_code, p_max)` after it: the code must be this account's, 5 seconds to 10
+   minutes old and never used. The cap is asked again under a lock.
+
+`ad_reward_status(p_kind, p_target, p_max)` says whether to show the button at all. All three are
+called by the page as the signed in player, like `putt_lives_spare`.
+
+- **putt_life** cancels the clock due back last, like a spare. Never past the max: extras are only bought.
+- **arcade_play** lifts one free game's cap today by one (`arcade_game_cap`, read by 158's
+  `arcade_spend_game`). Card games are not offered. `arcade_game_status` returns `ad`, a map of
+  game to ad plays today; the arcade page has to add it to that game's cap (not done yet).
+- **The switch** is `ad_rewards_live()`, false: testers only (the `putt_lives_refill` list).
+  Turning it on is the owner's step, after Google approves the account. Re-running 158 turns it
+  off again. Re-running 91 after 158 drops the ad plays from the arcade cap.
+- A Fantasy swap or a golf mulligan is its game agent's grant: a kind in `ad_reward_kind_ok()`
+  and a branch in `ad_reward_claim()`.
+
+```
+psql -d adrw -f supabase/test/ad_rewards_test.sql     (the chain is in stripe-checks.yml)
+```
+
 ## Before public launch
 
 - Flip `arcade/tokens.js` `TESTING = false` to enforce the tiers.
