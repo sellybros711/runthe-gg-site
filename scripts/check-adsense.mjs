@@ -193,9 +193,11 @@ for (const file of walkCode(ROOT)) {
      * page whose show() calls screenAds(), which builds it when that screen opens and empties it
      * when it closes (the owner's rule, 2026-10-27). */
     .filter((m) => {
-      if (!DRAFT_ZONE_PAGES.has(rel) || !/^\s+draftAd\(\w+\);/m.test(src)) return true;
-      const b = fnBody(src, 'draftAd');
-      return !(b && m.index >= b[0] && m.index < b[1]);
+      if (!DRAFT_ZONE_PAGES.has(rel)) return true;
+      return !['draftAd', 'seasonAd'].some((fn) => {
+        const b = fnBody(src, fn);
+        return b && new RegExp(`^\\s+${fn}\\(\\w+\\);`, 'm').test(src) && m.index >= b[0] && m.index < b[1];
+      });
     })
     .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /function adUnitInto\(host\)\{\s*host\.innerHTML='[^']*$/.test(src.slice(Math.max(0, m.index - 400), m.index)) && /^\s+screenAds\(\w+\);/m.test(src)))
     .map((m) => m[1] || m[2]);
