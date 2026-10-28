@@ -155,6 +155,17 @@ if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missin
  * Challenge is a weekly lineup, not a live game, so nothing on it is played in real time. */
 const PAGE_ZONE_PAGES = new Set(['football/fantasy/index.html']);
 const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html', 'soccer/index.html']);
+/* Pages whose draft screen carries one pinned banner (the owner, 2026-10-28, live immediately):
+ * built by draftAd() when the draft opens and emptied when it is left. Only a unit made inside
+ * draftAd(), on a page whose show() calls draftAd(), is allowed on a play screen. */
+const DRAFT_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html']);
+/* The text of the named function's body, from its header to its closing brace at column 0. */
+function fnBody(src, name) {
+  const start = src.indexOf(`function ${name}(`);
+  if (start < 0) return null;
+  const end = src.indexOf('\n}', start);
+  return end < 0 ? null : [start, end + 2];
+}
 const READ_ONLY_PAGES = [/^index\.html$/, /^arcade\/index\.html$/, /^guides\/[^/]+\.html$/, /^[a-z]+\/how-to-play\.html$/];
 function walkCode(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -181,9 +192,15 @@ for (const file of walkCode(ROOT)) {
     /* A unit made in code for a results screen or a leaderboard: only inside adUnitInto(), on a
      * page whose show() calls screenAds(), which builds it when that screen opens and empties it
      * when it closes (the owner's rule, 2026-10-27). */
+    .filter((m) => {
+      if (!DRAFT_ZONE_PAGES.has(rel) || !/^\s+draftAd\(\w+\);/m.test(src)) return true;
+      const b = fnBody(src, 'draftAd');
+      return !(b && m.index >= b[0] && m.index < b[1]);
+    })
     .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /function adUnitInto\(host\)\{\s*host\.innerHTML='[^']*$/.test(src.slice(Math.max(0, m.index - 400), m.index)) && /^\s+screenAds\(\w+\);/m.test(src)))
     .map((m) => m[1] || m[2]);
   if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
+  if (DRAFT_ZONE_PAGES.has(rel) && /data-ad-zone="draft"/.test(src) && !/^\s+draftAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a draft banner but show() does not call draftAd() to remove it on leaving the draft`);
   if (MENU_ZONE_PAGES.has(rel)) {
     if (/function adUnitInto\(/.test(src)) {
       const body = (src.match(/function screenAds\([\s\S]*?\n\}/) || [''])[0];
@@ -196,6 +213,62 @@ for (const file of walkCode(ROOT)) {
     if (!/function menuAd\(/.test(src) || !/^\s+menuAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a menu ad zone but show() does not call menuAd() to remove it when play starts`);
     if (/querySelectorAll\('ins\.adsbygoogle'\)/.test(src) && !/closest\('\[data-ad-zone\]'\)\) continue/.test(src)) problems.push(`${rel}: the initialiser must skip the menu ad zone (menuAd starts it on the start screen only)`);
   }
+}
+
+/* ONE NAMED UNIT PER PLACEMENT (the owner's rule, 2026-10-27: "if we add an ad, we also go and do
+ * this so that we can track all of them"). Every ad spot has its own unit in AdSense, so the Ad
+ * units report says which spot earns and which does not. scripts/ad-units.json is the list. A slot
+ * the list does not have, a slot on a page the list does not name for it, a retired slot, a unit
+ * used twice on one page (unless it is a 'many' unit), a 'planned' unit already in the code and a
+ * 'live' unit the code no longer carries each fail here. Adding a spot is three things in one
+ * commit: the unit made in AdSense, its id in the list, and the code. */
+const REG = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/ad-units.json'), 'utf8'));
+const bySlot = new Map(Object.entries(REG.units).map(([name, u]) => [u.slot, { name, ...u }]));
+const retired = new Map(Object.entries(REG.retired || {}).map(([name, u]) => [u.slot, name]));
+const seen = new Map();   // unit name -> pages it was found on
+const owns = (where, rel) => where.some((w) => (w.endsWith('/') ? rel.startsWith(w) : rel === w));
+for (const file of walkCode(ROOT)) {
+  const rel = path.relative(ROOT, file);
+  const src = fs.readFileSync(file, 'utf8');
+  const count = new Map();
+  for (const m of src.matchAll(/data-ad-slot=["'](\d+)["']|AD_SLOT\s*=\s*['"](\d+)['"]/g)) {
+    const slot = m[1] || m[2];
+    if (/^0+$/.test(slot)) continue;
+    if (retired.has(slot)) { problems.push(`${rel}: uses the retired unit ${retired.get(slot)} (${slot}). Give the spot its own unit`); continue; }
+    const u = bySlot.get(slot);
+    if (!u) { problems.push(`${rel}: ad slot ${slot} is not in scripts/ad-units.json. Make a named unit for the spot and record it`); continue; }
+    if (!owns(u.where, rel)) { problems.push(`${rel}: carries ${u.name} (${slot}), which ad-units.json keeps to ${u.where.join(', ')}. Each spot gets its own unit`); continue; }
+    count.set(u.name, (count.get(u.name) || 0) + 1);
+    if (!seen.has(u.name)) seen.set(u.name, []);
+    seen.get(u.name).push(rel);
+  }
+  /* A page that builds its units in code keeps the ids in a table (golf's GAD_UNIT = {career: '...'}).
+   * Each id in such a table is one placement, counted the same way. */
+  for (const t of src.matchAll(/\b[A-Z_]*(?:UNIT|SLOT)[A-Z_]*\s*=\s*\{([^}]*)\}/g)) {
+    for (const m of t[1].matchAll(/['"](\d{6,})['"]/g)) {
+      const slot = m[1];
+      if (/^0+$/.test(slot)) continue;
+      const u = bySlot.get(slot);
+      if (retired.has(slot)) problems.push(`${rel}: uses the retired unit ${retired.get(slot)} (${slot}). Give the spot its own unit`);
+      else if (!u) problems.push(`${rel}: ad slot ${slot} is not in scripts/ad-units.json. Make a named unit for the spot and record it`);
+      else if (!owns(u.where, rel)) problems.push(`${rel}: carries ${u.name} (${slot}), which ad-units.json keeps to ${u.where.join(', ')}. Each spot gets its own unit`);
+      else { count.set(u.name, (count.get(u.name) || 0) + 1); if (!seen.has(u.name)) seen.set(u.name, []); seen.get(u.name).push(rel); }
+    }
+  }
+  /* GOLF builds its results and home units in code (golf/index.html, the GAD block). gadMount() runs at
+   * the end of every render and removes the unit when its screen goes; gadDrop() removes it (never hides
+   * it); opening Putt Putt drops it before the course loads. */
+  if (/\bGAD_UNIT\s*=/.test(src)) {
+    if (!/function gadDrop\(/.test(src)) problems.push(`${rel}: builds golf ads but has no gadDrop() to remove them`);
+    if (!/^\s*try\{ gadMount\(\); \}/m.test(src)) problems.push(`${rel}: render() must call gadMount(), which removes the ad when its screen goes`);
+    if (!/function openPutt\([^)]*\)\{[^}]*gadDrop\(\)/.test(src)) problems.push(`${rel}: openPutt() must drop the ad before Putt Putt opens`);
+  }
+  for (const [name, n] of count) if (n > 1 && !REG.units[name].many) problems.push(`${rel}: uses ${name} ${n} times. One placement, one unit`);
+}
+for (const [name, u] of Object.entries(REG.units)) {
+  const found = seen.has(name);
+  if (u.status === 'live' && !found) problems.push(`ad-units.json: ${name} is live but no page carries it. Mark it planned or retired`);
+  if (u.status === 'planned' && found) problems.push(`ad-units.json: ${name} is in ${seen.get(name).join(', ')} but still marked planned. Mark it live`);
 }
 
 if (problems.length) {

@@ -125,9 +125,11 @@ const AD_GAP = 250;
 const AD_MAX = 4;
 const AD_CLIENT = 'ca-pub-5952069078178257';
 const AD_IN_ARTICLE = '9845074071';
-const adUnit = () => `      <div class="ad">
+/* The first unit starts with the page. The rest are adsbygoogle-lazy: AD_INIT starts each one
+   only once it is within 600px of the screen, so an ad nobody reads down to is never requested. */
+const adUnit = (lazy) => `      <div class="ad">
         <span class="ad-label">Advertisement</span>
-        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+        <ins class="${lazy ? 'adsbygoogle-lazy' : 'adsbygoogle'}" style="display:block;text-align:center" data-ad-layout="in-article"
              data-ad-format="fluid" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_IN_ARTICLE}"></ins>
       </div>`;
 function withAds(html) {
@@ -139,7 +141,8 @@ function withAds(html) {
     if (i > 0 && /^\s*<h2>/.test(b) && at.size < AD_MAX && (first || since >= AD_GAP)) { at.add(i); since = 0; first = false; }
     since += words(b);
   });
-  return blocks.map((b, i) => (at.has(i) ? adUnit() + '\n\n' + b : b)).join('\n\n');
+  let n = 0;
+  return blocks.map((b, i) => (at.has(i) ? adUnit(n++ > 0) + '\n\n' + b : b)).join('\n\n');
 }
 const AD_INIT = `  <script>
   (function(){
@@ -149,6 +152,16 @@ const AD_INIT = `  <script>
         var slot=units[i].getAttribute('data-ad-slot');
         if(!slot||/^0+$/.test(slot)) continue;
         (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+      var lazy=document.querySelectorAll('ins.adsbygoogle-lazy');
+      var start=function(u){ u.className='adsbygoogle'; (adsbygoogle=window.adsbygoogle||[]).push({}); };
+      var io='IntersectionObserver' in window ? new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); try{ start(e.target); }catch(x){} } });
+      },{rootMargin:'600px 0px'}) : null;
+      for(var j=0;j<lazy.length;j++){
+        var ls=lazy[j].getAttribute('data-ad-slot');
+        if(!ls||/^0+$/.test(ls)) continue;
+        if(io) io.observe(lazy[j]); else start(lazy[j]);
       }
     }catch(e){}
   })();

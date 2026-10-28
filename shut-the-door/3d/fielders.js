@@ -398,7 +398,7 @@ export class Figure {
     Object.assign(this, { crew, root, mesh, bones });
     this.bind = Object.values(bones).map((b) => [b, b.position.clone(), b.quaternion.clone()]);
     this.list = crew.t.names.map((n) => bones[n]);
-    this.qa = this.list.map(() => new THREE.Quaternion()); this.qb = this.list.map(() => new THREE.Quaternion());
+    this.qa = this.list.map(() => new THREE.Quaternion()); this.qb = this.list.map(() => new THREE.Quaternion()); this.qc = this.list.map(() => new THREE.Quaternion());
     this.qp = this.list.map(() => new THREE.Quaternion());
     this.at = { x: 0, y: 0 };
     this.scale = HEIGHT_M / crew.t.modelH;
@@ -636,6 +636,18 @@ export class Figure {
         if (!(w > 0.001) || !c) continue;
         for (let i = 0; i < n; i++) qb[i].copy(qp[i]);
         this.sample(c, u * c.period, qb, pa);
+        // (the captures are not perfect loops: the pose a period on is not the pose at the start, and each new
+        // cycle began with a jump of the arms, a hand at 40 m/s at the wrap, check-jolt.mjs. Over the start of a
+        // cycle as long as the capture runs past its period (about two frames), the trunk, arms and head come
+        // from the pose a period on into the cycle's own start. The legs and the pelvis keep the cycle's own:
+        // eased, their jump became a planted foot sliding)
+        const lb = (c.dur - c.period) / c.period;
+        if (lb > 0 && u < lb) {
+          const qc = this.qc, wl = smooth(1 - u / lb);
+          for (let i = 0; i < n; i++) qc[i].copy(qb[i]);
+          this.sample(c, (u + 1) * c.period, qc, null);
+          for (let i = 0; i < n; i++) if (UPPER.has(L[i].name)) qb[i].slerp(qc[i], wl);
+        }
         // in place: the cycle's travel out, the bob kept
         pa.sub(c.drift.clone().multiplyScalar(u)).sub(c.p0);
         const k2 = w / (wsum + w);

@@ -43,6 +43,11 @@ export const FOOT_FT = 1.3, TAG_M = 0.45;
 // the moments held to LIMIT_M (a kind left out is measured and printed as todo)
 const HELD = ['catch in the air', 'drop', 'throw taken', 'release', 'ground ball fielded', 'picked up'];
 const FT = 0.3048;
+// the routine fly share (reported, not held): of the outs in the air on a ball the engine calls routine
+// (contract.js routineOf: a popup, or a fly at 30 degrees and up off the bat at 80-95 mph), how many the
+// catcher takes within ROUTINE_FT of where he stood at the pitch (a few steps), and within twice that
+const ROUTINE_FT = 15;
+const { routineOf } = require(path.join(ROOT, 'shut-the-door', 'contract.js'));
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }
@@ -88,7 +93,7 @@ const CHUNK = 400;
 const CK = openCheckpoint('check-catch', { STRIDE: SEL.stride, LIMIT: String(LIMIT), SHARD: SEL.shard, CHUNK });
 for (let i = 0; i < cases.length; i += CHUNK) {
   if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
-  const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
+  const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, align: c.align, routine: routineOf(c.pr.inPlay.bb, c.pr.inPlay.ev, c.pr.inPlay.la, c.pr.inPlay.spray) === 'air', tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate((part) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
     const facts0 = ip.facts;
@@ -97,8 +102,10 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     for (const c of part) {
       ip.facts = { ...facts0, batter: { ...facts0.batter, bats: c.hand } };
       let run;
-      try { run = ip.begin(c.pr, stub, {}); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
+      try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
       const plan = run.plan, seen = new Set();
+      // how far the catcher went for an out in the air: from where he stood at the pitch to the catch
+      if (plan.kind === 'air_out') { const e = plan.events.find((x) => x.kind === 'catch'); if (e) { const tr = plan.fielders[e.by], at = tr.at(e.s); out.push({ tag: c.tag, what: 'air out', n: e.by, routine: c.routine, movedFt: Math.hypot(at.x - tr.start.x, at.y - tr.start.y) }); } }
       const moments = plan.events.filter((e) => e.kind === 'glove').map((e) => ({ s: e.s, n: e.by, what: plan.events.some((x) => x.kind === 'catch' && Math.abs(x.s - e.s) < 1e-6) ? 'catch in the air' : plan.events.some((x) => x.kind === 'drop' && Math.abs(x.s - e.s) < 1e-6) ? 'drop' : 'throw taken' }));
       // every throw leaves from his hand: the hand an instant before the release, the ball an instant after
       for (const sg of plan.segs) if (sg.kind === 'throw') moments.push({ s: sg.t0, n: sg.from, what: 'release', release: sg });
@@ -161,7 +168,8 @@ CK.close();
 const errs = rows.filter((r) => r.err);
 const hits = rows.filter((r) => r.what === 'hit lands');
 const outsF = rows.filter((r) => r.footFt != null), outsT = rows.filter((r) => r.tagFt != null);
-const meas = rows.filter((r) => !r.err && r.what !== 'hit lands' && r.footFt == null && r.tagFt == null);
+const airOuts = rows.filter((r) => r.what === 'air out');
+const meas = rows.filter((r) => !r.err && r.what !== 'hit lands' && r.what !== 'air out' && r.footFt == null && r.tagFt == null);
 const by = {};
 for (const r of meas) (by[r.what] ||= []).push(r.dFt * FT);
 let fails = 0;
@@ -189,6 +197,13 @@ const tooNear = cl.filter((x) => x < CLEAR_M).length;
 fails += tooNear;
 if (cl.length) console.log(`  ${tooNear ? 'FAIL' : 'ok  '} ${'hit lands, clear by'.padEnd(20)} ${String(cl.length).padStart(7)}  nearest glove: least ${cl[0].toFixed(3)}  10th ${cl[Math.floor(0.1 * (cl.length - 1))].toFixed(3)}  median ${cl[Math.floor(0.5 * (cl.length - 1))].toFixed(3)}  under ${CLEAR_M}: ${tooNear}`);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
+// the routine fly share (reported): where the fielders stand (inplay-plan.js alignment) decides it
+for (const [name, rs] of [['routine fly share', airOuts.filter((r) => r.routine)], ['every out in the air', airOuts]]) {
+  const d = rs.map((r) => r.movedFt).sort((a, b) => a - b);
+  if (!d.length) continue;
+  const pct = (k) => (100 * d.filter((x) => x <= k).length / d.length).toFixed(1) + '%';
+  console.log(`  info ${name.padEnd(20)} ${String(d.length).padStart(7)}  caught within ${ROUTINE_FT} ft of his spot ${pct(ROUTINE_FT)}, within ${2 * ROUTINE_FT} ft ${pct(2 * ROUTINE_FT)}, median run ${d[Math.floor(0.5 * (d.length - 1))].toFixed(1)} ft`);
+}
 if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify(meas));
 if (SHOW) for (const r of meas.sort((a, b) => b.dFt - a.dFt).slice(0, SHOW)) console.log(JSON.stringify({ ...r, dM: +(r.dFt * FT).toFixed(3) }));
 console.log(`\n${cases.length} cases, ${meas.length} catches, ${hits.length} hits landing, ${fails} failing${errs.length ? ', ' + errs.length + ' threw' : ''}`);

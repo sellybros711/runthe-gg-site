@@ -467,7 +467,12 @@ check(/body\.inshow \.sfoot\{display:none;?\}/.test(game)
 console.log('the tab bar');
 check(/\.tabbar\{[^}]*position:fixed/.test(game) && /\.tabbar\{[^}]*bottom:0/.test(game),
       'the tab bar is pinned to the foot of the screen, not scrolled with the page');
-check((game.match(/data-tab="/g) || []).length === 5, 'it carries five tabs');
+check((game.match(/<button class="tab" type="button" data-tab="/g) || []).length === 5, 'it carries five tabs');
+/* Each tab is its own colour on its own tile (owner's call, 2026-10-28: five grey outlines blended
+   together), so every tab has a colour and an icon tile. */
+check(['home', 'tour', 'songs', 'board', 'profile'].every(t => new RegExp(`\\.tab\\[data-tab="${t}"\\]\\{--tc:#`).test(game))
+  && (game.match(/<i class="ti" aria-hidden="true"><svg/g) || []).length === 5,
+  'and each tab has its own colour on its own tile');
 check(/data-tab="songs"/.test(game), 'and the songs list is one of them');
 for (const dest of ['home', 'tour', 'songs', 'board', 'profile'])
   check(new RegExp(`data-tab="${dest}"`).test(game), `  including ${dest}`);
@@ -1357,19 +1362,20 @@ const cdSlice = (from, to) => {
 const homePage = cdSlice('function renderHome(){', '\n}');
 check(!!homePage, 'renderHome can be read');
 
-/* 1. THE RULES WERE BELOW THE PLAY BUTTON. "How it works" is the clearest
-      explanation on the site and it sat 420px under the thing it explains, so
-      the walkthrough existed to carry it up. It is above the band panel now,
-      and the order is asserted because it is one edit away from drifting back:
-      both blocks live in the same template literal. */
+/* 1. THE RULES FOLD AWAY UNDER THE PLAY BUTTONS (owner's call, 2026-10-28). They were moved above the
+      band panel once, to sit next to the thing they explain, and that pushed Build your show and the
+      daily below the fold on a phone. Now they are a closed <details> under the band panel: one tap
+      for whoever wants them, out of the way of everybody else. Closed by default, because nothing on
+      this game opens by itself. */
 {
-  const how = homePage.indexOf('<section class="how">');
+  const how = homePage.indexOf('<details class="how">');
   const bands = homePage.indexOf('<div class="bands">');
   check(how > -1 && bands > -1, 'the home screen has rules and a band panel');
-  check(how < bands, 'and the rules come before the button that needs them');
+  check(how > bands, 'and the rules sit under the buttons, not in front of them');
+  check(!/<details class="how" open/.test(homePage), 'folded shut until somebody opens them');
   /* Exactly one copy of it. It was moved rather than duplicated, and a second
      "How it works" further down is the obvious bad merge. */
-  check((homePage.match(/<section class="how">/g) || []).length === 1,
+  check((homePage.match(/class="how"/g) || []).length === 1,
     'stated once, not twice');
 }
 /* AND THE HERO STATES THE LOOP. "Choose a band. Build the show you've always
