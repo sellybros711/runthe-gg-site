@@ -611,6 +611,20 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
   background:linear-gradient(180deg,var(--bg) 92%,var(--bg-fade))}
 #s-draft{--sq:0}
+/* ROOM FOR THE PINNED DRAFT BANNER (the owner's call, 2026-10-28: a banner pinned
+   to the bottom of the draft, draft only). The ads code owns the banner and sets
+   --draft-ad-h on the root to its rendered height while it is up, and removes it on
+   leaving the draft. This side only makes room: the draft scrolls its last tiles
+   and Quit clear of it, and the pick bar and a toast sit above it, so nothing a
+   player presses is ever under an ad. Unset, every value here is today's. */
+#s-draft.on{padding-bottom:var(--draft-ad-h,0px)}
+.draft-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;background:var(--bg,#0b0f17);padding:0}
+.draft-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+.draft-ad ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+@media (min-width:768px){ .draft-ad ins.adsbygoogle{width:728px;height:90px} }
+.draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+.draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+.draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
 .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
   background:var(--line);opacity:var(--sq)}
 .cap-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -1764,7 +1778,7 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 .pf-sw2{display:flex;flex-direction:column;gap:1px;min-width:0}
 .pf-sw2 b{font-size:13px;color:var(--ink)}
 .pf-when{color:var(--dim-2)!important}
-.pf-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:200;max-width:min(92vw,420px);
+.pf-toast{position:fixed;left:50%;bottom:calc(24px + var(--draft-ad-h,0px));transform:translate(-50%,20px);opacity:0;z-index:200;max-width:min(92vw,420px);
   padding:10px 14px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:13px;pointer-events:none;
   transition:opacity .2s,transform .2s;text-align:center}
 .pf-toast.on{opacity:1;transform:translate(-50%,0)}
@@ -1828,7 +1842,7 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
    everything else steps back, and a tap on a glowing spot signs him there. The same
    targets light on the staff strip and the lineup card, because the mound is one
    disc and a starter who can also close has two places on it. */
-.pickbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));
+.pickbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom) + var(--draft-ad-h,0px));
   transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;
   width:min(520px,calc(100% - 24px));padding:10px 10px 10px 16px;border-radius:14px;
   background:var(--ink);color:var(--bg);box-shadow:0 10px 30px -8px rgba(0,0,0,.55);
@@ -3943,6 +3957,32 @@ const OFF_TAG='-'+OFF_PCT;
    screen shows, removed (not hidden) the first time any other screen opens, and never started
    again on this page load. The boot screen is the one exception, since every load passes
    through it on the way to the start screen. It is the only ad unit on this page. */
+/* THE DRAFT BANNER (Ads Agent, 2026-10-28, the owner: "Diamond can go now", and the banners "fixed to
+   the bottom of the phone when drafting"). A slim banner pinned to the bottom of the draft while it is
+   open. Built as a child of body when the draft opens and removed when the player leaves, so the
+   screen's transform cannot move it. Its rendered height is set on --draft-ad-h, which the draft's
+   padding, the pick bar and the toast already read, so nothing a player presses sits under it.
+   Unit diamond-draft (8070696087). */
+let draftAdSize=null;
+function draftAd(id){
+  const old=document.querySelector('[data-ad-zone="draft"]');
+  if(id!=='s-draft'){
+    if(draftAdSize){ draftAdSize.disconnect(); draftAdSize=null; }
+    document.documentElement.style.removeProperty('--draft-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="draft-ad" data-ad-zone="draft"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="8070696087"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    draftAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--draft-ad-h',z.offsetHeight+'px'));
+    draftAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 function menuAd(id){
   const z=document.querySelector('[data-ad-zone="menu"]');
   if(!z||id==='s-load') return;
@@ -3956,7 +3996,8 @@ const show=id=>{
      screen's clicks, so any screen change drops it. */
   if(PICK&&id!=='s-draft'){PICK=null;paintPickBar();}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');
-  menuAd(id);};
+  menuAd(id);
+  draftAd(id);};
 const M=v=>'$'+v.toFixed(1)+'M';
 /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ──
    The cap is written out by hand a dozen times across this page and how-to-play.html,
