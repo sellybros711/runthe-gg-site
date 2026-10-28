@@ -2626,7 +2626,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
   </style>
   <div class="menu-ad" data-ad-zone="menu">
     <span class="ad-label">Advertisement</span>
-    <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>
+    <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="7614354332"></ins>
   </div>
 
   <details class="about">
@@ -4295,7 +4295,10 @@ function dressInTeamColors(team){
     const tc=E.teamColors(team);
     box.style.setProperty('--c1',tc[0]);
     box.style.setProperty('--c2',tc[1]||'#333');
-    box.style.setProperty('--on','#fff');
+    /* The ink the club's colour can carry, the same answer the lineup card's club
+       plate gets from inkOn(). It was white for every club, and two primaries
+       cannot carry white: Miami's blue at 2.87:1 and Milwaukee's gold at 1.58:1. */
+    box.style.setProperty('--on',inkOn(tc[0]));
     box.classList.add('clubbed');
   };
 }

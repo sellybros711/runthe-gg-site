@@ -87,6 +87,21 @@ section('2. a save from before becomes a story career and grows a story');
 
 const runs = [];
 for (let i = 0; i < N; i++) runs.push(play('st' + i, i % 2 ? 'hs' : 'draft'));
+/* A COVERAGE CHECK READS MORE THAN THE SWEEP before it calls anything dark.
+   The sweep plays today's rosters, and each weekly roster refresh changes
+   which of its careers meet a rare node or trait: one that came twice in
+   two hundred can come none. So `somewhere` asks the sweep, then plays on
+   (careers shared between checks, made only when needed) up to 600 more. A
+   node or trait that no career can reach is still dark after all of them. */
+const more = [];
+function somewhere(hit, cap = 600) {
+  if (runs.some(hit)) return true;
+  for (let j = 0; j < cap; j++) {
+    if (j === more.length) more.push(play('more' + j, j % 2 ? 'hs' : 'draft'));
+    if (hit(more[j])) return true;
+  }
+  return false;
+}
 
 section('3. every card says when it is, and the story happens in order');
 {
@@ -188,7 +203,7 @@ section('5. arcs: set up, escalate, pay off, and end more than one way');
     const n = runs.filter((x) => x.L.arcs && x.L.arcs[id] && x.L.arcs[id].done && x.L.arcs[id].done !== 'faded').length;
     if (n >= 12) ok(how[id].size >= 2, `${id} settles at least two ways in the sweep (${[...how[id]].join(', ')} over ${n})`);
   }
-  const dark = Object.keys(C.ARC_EVENTS).filter((n) => !nodes[n] && !C.ARC_EVENTS[n].authored);
+  const dark = Object.keys(C.ARC_EVENTS).filter((n) => !nodes[n] && !C.ARC_EVENTS[n].authored && !somewhere((x) => x.cards.some((k) => k.c.id === n)));
   ok(dark.length === 0, `every arc node is dealt somewhere (${dark.join(', ') || 'all'})`);
   ok(early === 0, 'no arc node comes before its setup');
   const once = runs.every((x) => { const seen = {}; return x.cards.every((k) => !C.ARC_EVENTS[k.c.id] || !(seen[k.c.id] = (seen[k.c.id] || 0) + 1) || seen[k.c.id] === 1); });
@@ -214,7 +229,7 @@ section('7. traits are revealed by play, and only the ones you have');
   let wrong = 0;
   for (const x of runs) for (const k in x.L.traits) { const t = x.L.traits[k]; if (t.known) { seen[k] = (seen[k] || 0) + 1; if (!t.has || !t.why) wrong++; } }
   ok(wrong === 0, 'every revealed trait is one the career has, with a reason');
-  const dark = C.TRAITS.filter((k) => !seen[k]);
+  const dark = C.TRAITS.filter((k) => !seen[k] && !somewhere((x) => x.L.traits[k] && x.L.traits[k].known));
   ok(dark.length === 0, `every trait is revealed somewhere (${dark.join(', ') || 'all fifteen'})`);
 }
 
