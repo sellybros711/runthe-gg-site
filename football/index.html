@@ -5412,6 +5412,16 @@ window.GA_ID='G-L29P5MRWKE';
   .draft-ad ins.adsbygoogle{display:inline-block;width:320px;height:50px}
   @media (min-width:768px){ .draft-ad ins.adsbygoogle{width:728px;height:90px} }
   .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* THE SEASON BANNER: the same pattern, on the regular season screen. */
+  #s-season.on{padding-bottom:var(--season-ad-h,0px)}
+  .season-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .season-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .season-ad ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  @media (min-width:768px){ .season-ad ins.adsbygoogle{width:728px;height:90px} }
+  .season-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .season-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .season-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
   .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
   .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
 
@@ -10102,6 +10112,32 @@ function draftAd(id){
   }
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
+/* THE SEASON BANNER (Ads Agent, 2026-10-28, the owner: "Pinned to the bottom of the device so it's
+   always there", and "let's get this on the live site"). A slim banner pinned to the bottom of the
+   regular season screen while the season is on screen, live games included. Built as a child of body
+   when the screen opens and removed when the player leaves, the same way as the draft banner. The
+   screen is padded by the banner's rendered height (--season-ad-h), so the last grid row clears it.
+   Unit football-season (8510729536). */
+let seasonAdSize=null;
+function seasonAd(id){
+  const old=document.querySelector('[data-ad-zone="season"]');
+  if(id!=='s-season'){
+    if(seasonAdSize){ seasonAdSize.disconnect(); seasonAdSize=null; }
+    document.documentElement.style.removeProperty('--season-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="season-ad" data-ad-zone="season"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="8510729536"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    seasonAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--season-ad-h',z.offsetHeight+'px'));
+    seasonAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 /* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
    opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
    board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
@@ -10142,6 +10178,7 @@ function show(id){
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   menuAd(id);
   draftAd(id);
+  seasonAd(id);
   screenAds(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game

@@ -185,6 +185,14 @@
         "cfb/index.html"
       ],
       "size": "320x50, 728x90 from 768px, pinned during the draft"
+    },
+    "football-season": {
+      "slot": "8510729536",
+      "status": "live",
+      "where": [
+        "football/index.html"
+      ],
+      "size": "320x50, 728x90 from 768px, pinned on the season screen during live games"
     }
   },
   "retired": {
