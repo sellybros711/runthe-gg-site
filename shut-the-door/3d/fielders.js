@@ -41,6 +41,19 @@ const smooth = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
 const lerpV = (a, b, k) => a.clone().lerp(b, k);
 const dirL = (a, b, k) => a.clone().lerp(b, k).normalize();
 
+/** A looping capture's period: the time t, within a fifth of the hand set guess and the capture, at which
+    every bone's turn comes back nearest to where it was at the start (the sum over bones of 1 - |q0 . qt|). */
+function loopPeriod(tracks, guess, dur) {
+  const qs = tracks.filter((x) => x.q), q0 = qs.map((x) => Array.from(x.interp.evaluate(0)));
+  let best = guess, bestE = Infinity;
+  for (let t = guess * 0.8; t <= Math.min(dur, guess * 1.2) + 1e-9; t += 1 / 240) {
+    let e = 0;
+    qs.forEach((x, i) => { const v = x.interp.evaluate(t), a = q0[i]; e += 1 - Math.abs(a[0] * v[0] + a[1] * v[1] + a[2] * v[2] + a[3] * v[3]); });
+    if (e < bestE) { bestE = e; best = t; }
+  }
+  return best;
+}
+
 /** What a mesh of the loaded body is, from its material (people.js loadPerson renamed them). */
 function partOf(o) {
   const n = (o.material && o.material.name || '').toLowerCase(), part = o.userData.part;
@@ -267,6 +280,10 @@ export class Crew {
         tracks.push({ i: idx[node], q: prop === 'quaternion', interp: tr.createInterpolant() });
       }
       const c = { name: a.name, dur: a.duration, period: LOOP[a.name] || a.duration, tracks };
+      // (a run's true period: the time its pose comes back closest to its start, searched about the hand set
+      // one. The hand set ones missed it, the pose a period on was not the start, and each new cycle began with
+      // a jump of the whole body, a hand at 40 m/s at the wrap, check-jolt.mjs)
+      if (LOOP[a.name]) c.period = loopPeriod(tracks, LOOP[a.name], a.duration);
       // the pelvis' travel over one cycle (a run goes forward; it is taken out, the bob kept)
       const pt = tracks.find((x) => !x.q);
       if (pt) {
@@ -398,7 +415,7 @@ export class Figure {
     Object.assign(this, { crew, root, mesh, bones });
     this.bind = Object.values(bones).map((b) => [b, b.position.clone(), b.quaternion.clone()]);
     this.list = crew.t.names.map((n) => bones[n]);
-    this.qa = this.list.map(() => new THREE.Quaternion()); this.qb = this.list.map(() => new THREE.Quaternion()); this.qc = this.list.map(() => new THREE.Quaternion());
+    this.qa = this.list.map(() => new THREE.Quaternion()); this.qb = this.list.map(() => new THREE.Quaternion());
     this.qp = this.list.map(() => new THREE.Quaternion());
     this.at = { x: 0, y: 0 };
     this.scale = HEIGHT_M / crew.t.modelH;
@@ -636,19 +653,6 @@ export class Figure {
         if (!(w > 0.001) || !c) continue;
         for (let i = 0; i < n; i++) qb[i].copy(qp[i]);
         this.sample(c, u * c.period, qb, pa);
-        // (the captures are not perfect loops: the pose a period on is not the pose at the start, so each new
-        // cycle began with a jump of the whole body, a hand at 40 m/s at the wrap, check-jolt.mjs. Over the start
-        // of a cycle as long as the capture runs past its period (two frames or so), the pose and the pelvis'
-        // travel come from the pose a period on into the cycle's own start, so the seam is a short ease. Never
-        // past the capture's end: held there, the stride slowed under a body moving on and planted feet slid)
-        const lb = (c.dur - c.period) / c.period;
-        if (lb > 0 && u < lb) {
-          const qc = this.qc, pc = V(), wl = smooth(1 - u / lb);
-          for (let i = 0; i < n; i++) qc[i].copy(qb[i]);
-          this.sample(c, (u + 1) * c.period, qc, pc);
-          for (let i = 0; i < n; i++) qb[i].slerp(qc[i], wl);
-          pa.lerp(pc.sub(c.drift), wl);
-        }
         // in place: the cycle's travel out, the bob kept
         pa.sub(c.drift.clone().multiplyScalar(u)).sub(c.p0);
         const k2 = w / (wsum + w);
