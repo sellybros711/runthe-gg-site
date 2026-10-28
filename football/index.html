@@ -4993,19 +4993,26 @@ window.GA_ID='G-L29P5MRWKE';
      figure. The lineup pips sit at the bottom of it now, and the year reel was showing straight
      through them, so the solid part runs to 92% and only the last few pixels feather. */
   /* Sticks BELOW the banner, not underneath it. z-index stays under the header's 60. */
-  .capwrap{position:sticky;top:var(--hdr);z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
+  .capwrap{position:sticky;top:var(--hdr);z-index:30;padding:7px 0 7px;margin:-4px 0 8px;
     background:linear-gradient(180deg,var(--bg) 92%,rgba(8,11,20,0))}
   /* THE LINEUP PIPS, in the sticky bar, fading in as the field scrolls off.
      --sq runs 0 to 1 with how much of the field has gone. The height is RESERVED at every
      value and only opacity moves: growing a sticky block as they appear would shift the page
      under the finger, which is the same class of bug as trying to collapse the block itself. */
   #s-draft{--sq:0}
+  /* HUNG UNDER THE BAR, NOT RESERVED INSIDE IT. They used to keep 42px of the bar empty at
+     every scroll position so it never changed height, and at the top of a draft that was a
+     dark band between the money and the field. Absolute below the bar keeps the promise
+     (the sticky block never changes height) without the band: they are a strip laid over
+     whatever has scrolled under, and invisible and untouchable until it has. */
   .dpips{display:flex;gap:5px;justify-content:center;height:34px;align-items:center;
-    margin-top:8px;opacity:var(--sq);pointer-events:none;position:relative}
+    opacity:var(--sq);pointer-events:none;position:absolute;left:0;right:0;top:100%;
+    padding:4px 0 6px;box-sizing:content-box;background:var(--bg);
+    border-bottom:1px solid var(--line)}
   /* A hairline under the bar, fading in with the pips, so the pinned header has an edge once
      content is scrolling behind it. Without one the pips float over the reels. */
   .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
-    background:var(--line);opacity:var(--sq)}
+    background:var(--line);opacity:0}
   .dpips i{flex:0 0 auto;min-width:27px;height:32px;padding:0 6px;border-radius:7px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
     font-family:var(--fn);font-size:9.5px;font-weight:600;line-height:1.05;
@@ -5105,7 +5112,7 @@ window.GA_ID='G-L29P5MRWKE';
      letters of the line above it. Nothing measured as overlapping and it read as though it
      did, which on a screen is the same complaint. */
   .capline{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:6px}
-  .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
+  .capline .amt{font-family:var(--fd);font-size:28px;line-height:1}
   .capline .amt.low{color:var(--red)}
   /* What is left divided by the spots still to fill. Under the BAR now, not inside the
      money column: it is the same fact read a second way, and sitting it below the gauge
@@ -5120,7 +5127,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* Slightly taller than the 5px countdown it replaces: it now carries up to twelve slices
      and a 5px bar cannot show a hairline between two of them. The radius lives on the track
      and clips every slice to it, so the ends stay round with no notch where two meet. */
-  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:9px;
+  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:7px;
     display:flex}
   /* ONE SLICE PER SIGNING, the width of his salary against the cap and the colour of the
      position he plays, set inline. The transition is the whole animation: a signing grows
@@ -5239,8 +5246,8 @@ window.GA_ID='G-L29P5MRWKE';
      past instead of one number swapping for another. Motion is driven from rAF in
      script rather than a CSS transition: the strip needs a blur that tracks its
      own speed, and the old build hung the whole draft on transitionend firing. */
-  .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:11px}
-  .reelbox{position:relative;height:114px;overflow:hidden;border-radius:14px;
+  .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:8px}
+  .reelbox{position:relative;height:96px;overflow:hidden;border-radius:14px;
     background:linear-gradient(180deg,#0d1526,#070b14 55%,#05080f);
     border:1px solid var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   /* Fades the faces above and below the middle one into the housing. */
@@ -5252,18 +5259,18 @@ window.GA_ID='G-L29P5MRWKE';
   .reelbox .strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform,filter}
   .reelbox .wash{display:none}
   .reelbox.clubbed .wash{display:block}
-  .reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;z-index:3;
+  .reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:32px;margin-top:-16px;z-index:3;
     border-radius:9px;border:1px solid rgba(255,255,255,.13);pointer-events:none;
     transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
-  .reel-i{height:38px;display:grid;place-items:center;padding:0 9px;text-align:center;
+  .reel-i{height:32px;display:grid;place-items:center;padding:0 9px;text-align:center;
     font-family:var(--fd);text-transform:uppercase;letter-spacing:.02em;
     line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .reelbox.year .reel-i{font-size:23px;font-weight:800}
+  .reelbox.year .reel-i{font-size:21px;font-weight:800}
   .reelbox.team .reel-i{font-size:14.5px;font-weight:800}
   /* The face it stopped on carries more weight than the decoys either side. */
   .reel-i.land{font-weight:900}
   .reelcol{min-width:0}
-  .rlabel{display:block;margin:0 0 5px 3px;font-family:var(--fn);
+  .rlabel{display:block;margin:0 0 3px 3px;font-family:var(--fn);
     font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
   /* Spinning: the housing glows in its own color so you can see which reel is live. */
   .reelbox.year.spin{border-color:rgba(239,68,68,.55)}
@@ -5314,7 +5321,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* The band becomes a glaze that lifts the middle face out of the vignette. */
   .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;
     background:rgba(255,255,255,.13)}
-  .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;
+  .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:32px;margin-top:-16px;
     border-radius:9px;z-index:0;background:var(--c1);opacity:0;pointer-events:none;
     animation:clubwash .5s ease-out}
   @keyframes clubwash{
@@ -5363,6 +5370,24 @@ window.GA_ID='G-L29P5MRWKE';
      price all fighting over one line, which is why everything was clipped with an
      ellipsis. In a tile each of those gets its own place. */
   .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+  /* THE DRAFT, CONDENSED (the owner's call, 2026-10-28): the board in view without
+     scrolling, with room for an ad at the foot of the screen. Nothing is removed; what goes
+     is air. A shorter field (the formation is three rows, not a square of them), the empty
+     note line under it closed until it has something to say, and the tabs and the sort a
+     notch tighter. Draft only: the same classes on other screens keep their size. */
+  #s-draft .field:not(.fullfield){aspect-ratio:1/0.42}
+  /* Full Team's two halves were taller than they were wide, which on a phone put the board
+     a full screen down. Six rows still fit with a name under every disc. */
+  #s-draft .field.fullfield{aspect-ratio:1/0.85}
+  /* The wheels' own labels go: a year and a club name say what they are, and the buttons
+     right under them already read New year and New team. */
+  #s-draft .rlabel{display:none}
+  #s-draft .railnote:empty{min-height:0;margin:0}
+  #s-draft .tabs{margin-top:8px}
+  #s-draft .tab{padding:9px 13px}
+  #s-draft .optbar{margin:6px 0 0}
+  #s-draft .seg.compact button{padding-top:7px;padding-bottom:7px}
+  #s-draft .opts{margin-top:8px}
 
   /* ================= THE DRAFT ON A WIDE SCREEN =================
      One column on a phone, and the phone layout is untouched: .dcols is display:block
@@ -7653,19 +7678,23 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            which put the control for the thing at the top of the column at the bottom of
            it, and out of sight on a phone. -->
       <div id="d-respin"></div>
-     </div>
-    </div>
-    <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
-    <!-- HOW THE BOARD IS ORDERED, above the board and to the right of it. The tabs pick
-         WHICH players are listed and this picks the order they come in, so it belongs
-         between the two rather than inside the scrolling tab row, where it would slide out
-         of reach on a phone. -->
-    <div class="optbar">
-      <div class="seg compact" id="opt-sort">
-        <button data-os="pos">Position</button>
-        <button data-os="fppg">FPPG</button>
-        <button data-os="salary">Salary</button>
+      <!-- THE TABS AND THE SORT LIVE IN THIS COLUMN TOO. On a phone .dcols is a block, so the
+           order down the page is the same as when they sat under it. Wide, they fill the
+           space beside the field that used to be empty, and the board starts a whole row
+           higher (the owner's call, 2026-10-28: room for the board without scrolling). -->
+      <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
+      <!-- HOW THE BOARD IS ORDERED, above the board and to the right of it. The tabs pick
+           WHICH players are listed and this picks the order they come in, so it belongs
+           between the two rather than inside the scrolling tab row, where it would slide out
+           of reach on a phone. -->
+      <div class="optbar">
+        <div class="seg compact" id="opt-sort">
+          <button data-os="pos">Position</button>
+          <button data-os="fppg">FPPG</button>
+          <button data-os="salary">Salary</button>
+        </div>
       </div>
+     </div>
     </div>
     <div class="opts" id="opts"></div>
     <!-- QUITTING. Six spins in, a player who has changed their mind had no exit
@@ -15226,7 +15255,7 @@ function paintTop(){
    open, and a player who turns it on mid-run should get it mid-run. */
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null;
 const reduceMotion=()=>!!(RM&&RM.matches);
-const REEL_H=38;          // one face
+const REEL_H=32;          // one face, and .reel-i's height in the CSS
 const REEL_FACES=3;       // faces visible in the window
 
 /*
@@ -28463,6 +28492,8 @@ function watchFold(){
   const hdr=parseFloat(getComputedStyle(document.documentElement)
     .getPropertyValue('--hdr'))||0;
   const bar=scr.querySelector('.capwrap');
+  /* The bar only. The pips hang under it, over the top of the field, and counting them here
+     would read a field at rest as partly gone and fade them in before any scroll. */
   const under=Math.round(hdr+(bar?bar.offsetHeight:0));
   foldObs=new IntersectionObserver((entries)=>{
     for(const e of entries){
