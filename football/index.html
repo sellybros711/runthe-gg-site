@@ -5403,7 +5403,7 @@ window.GA_ID='G-L29P5MRWKE';
   #s-draft .opts{margin-top:8px}
   /* THE DRAFT BANNER: pinned to the bottom while the draft is on screen, padded so nothing scrolls
      under it. Empty (no ad yet), it takes no space and the padding is the only cost. */
-  #s-draft.on{padding-bottom:64px}
+  #s-draft.on{padding-bottom:var(--draft-ad-h,64px)}
   #s-draft.on .draft-ad.built{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box}
   #s-draft.on .draft-ad.built:has(ins[data-ad-status="filled"]){background:var(--bg);padding:4px 0 6px}
   #s-draft .draft-ad ins.adsbygoogle{display:inline-block;width:320px;height:50px}
@@ -10078,13 +10078,24 @@ function menuAd(id){
 }
 /* THE DRAFT BANNER. Built once when the draft opens, and emptied (never hidden) when the player
    leaves it, so no ad is ever loaded behind another screen. Each visit builds a fresh unit. */
+let draftAdSize=null;
 function draftAd(id){
   const z=document.querySelector('[data-ad-zone="draft"]');
   if(!z) return;
-  if(id!=='s-draft'){ z.innerHTML=''; z.classList.remove('built'); delete z.dataset.started; return; }
+  if(id!=='s-draft'){
+    if(draftAdSize){ draftAdSize.disconnect(); draftAdSize=null; }
+    document.documentElement.style.removeProperty('--draft-ad-h');
+    z.innerHTML=''; z.classList.remove('built'); delete z.dataset.started; return;
+  }
   if(z.dataset.started) return;
   z.dataset.started='1'; z.classList.add('built');
   z.innerHTML='<span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="4314237726"></ins>';
+  /* The draft's bottom padding follows the banner's rendered height (the Diamond agent's
+     --draft-ad-h), so the last cards and Quit scroll clear however tall the ad fills. */
+  if(window.ResizeObserver){
+    draftAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--draft-ad-h',z.offsetHeight+'px'));
+    draftAdSize.observe(z);
+  }
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
 /* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
