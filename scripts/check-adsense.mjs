@@ -225,6 +225,27 @@ for (const file of walkCode(ROOT)) {
     if (!seen.has(u.name)) seen.set(u.name, []);
     seen.get(u.name).push(rel);
   }
+  /* A page that builds its units in code keeps the ids in a table (golf's GAD_UNIT = {career: '...'}).
+   * Each id in such a table is one placement, counted the same way. */
+  for (const t of src.matchAll(/\b[A-Z_]*(?:UNIT|SLOT)[A-Z_]*\s*=\s*\{([^}]*)\}/g)) {
+    for (const m of t[1].matchAll(/['"](\d{6,})['"]/g)) {
+      const slot = m[1];
+      if (/^0+$/.test(slot)) continue;
+      const u = bySlot.get(slot);
+      if (retired.has(slot)) problems.push(`${rel}: uses the retired unit ${retired.get(slot)} (${slot}). Give the spot its own unit`);
+      else if (!u) problems.push(`${rel}: ad slot ${slot} is not in scripts/ad-units.json. Make a named unit for the spot and record it`);
+      else if (!owns(u.where, rel)) problems.push(`${rel}: carries ${u.name} (${slot}), which ad-units.json keeps to ${u.where.join(', ')}. Each spot gets its own unit`);
+      else { count.set(u.name, (count.get(u.name) || 0) + 1); if (!seen.has(u.name)) seen.set(u.name, []); seen.get(u.name).push(rel); }
+    }
+  }
+  /* GOLF builds its results and home units in code (golf/index.html, the GAD block). gadMount() runs at
+   * the end of every render and removes the unit when its screen goes; gadDrop() removes it (never hides
+   * it); opening Putt Putt drops it before the course loads. */
+  if (/\bGAD_UNIT\s*=/.test(src)) {
+    if (!/function gadDrop\(/.test(src)) problems.push(`${rel}: builds golf ads but has no gadDrop() to remove them`);
+    if (!/^\s*try\{ gadMount\(\); \}/m.test(src)) problems.push(`${rel}: render() must call gadMount(), which removes the ad when its screen goes`);
+    if (!/function openPutt\([^)]*\)\{[^}]*gadDrop\(\)/.test(src)) problems.push(`${rel}: openPutt() must drop the ad before Putt Putt opens`);
+  }
   for (const [name, n] of count) if (n > 1 && !REG.units[name].many) problems.push(`${rel}: uses ${name} ${n} times. One placement, one unit`);
 }
 for (const [name, u] of Object.entries(REG.units)) {
