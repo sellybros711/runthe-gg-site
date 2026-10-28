@@ -2,30 +2,207 @@
   "_readme": "Every AdSense unit the site uses, one per placement. A new ad spot gets its own named unit in AdSense (Ads, By ad unit, Display ads) before it goes live, and its id goes here in the same commit. check-adsense fails on a slot that is not here, on a slot outside the pages listed for it, and on a live unit it cannot find. 'where' is a page, or a folder ending in /. 'planned' is made in AdSense but not built yet. 'many' lets one page carry several of that unit (the guides).",
   "client": "ca-pub-5952069078178257",
   "units": {
-    "home-break-1":        { "slot": "8791704631", "status": "live",    "where": ["index.html"], "size": "300x250" },
-    "home-break-2":        { "slot": "2851440254", "status": "live",    "where": ["index.html"], "size": "300x250", "lazy": true },
-    "home-footer":         { "slot": "8375229676", "status": "live",    "where": ["index.html"], "size": "320x50, 728x90 from 768px", "lazy": true },
-    "howto":               { "slot": "5834368801", "status": "live",    "where": ["baseball/how-to-play.html", "cfb/how-to-play.html", "football/how-to-play.html", "golf/how-to-play.html", "soccer/how-to-play.html"], "size": "responsive", "lazy": true },
-    "guides-in-article":   { "slot": "9845074071", "status": "live",    "where": ["guides/"], "size": "in-article", "many": true },
-    "arcade-hub":          { "slot": "1538358580", "status": "live",    "where": ["arcade/index.html"], "size": "320x50, 728x90 from 768px" },
-    "football-start":      { "slot": "7383466228", "status": "live",    "where": ["football/index.html"], "size": "slim, by column" },
-    "football-results":    { "slot": "7062148007", "status": "live",    "where": ["football/index.html"], "size": "300x250" },
-    "fantasy":             { "slot": "4218034808", "status": "live",    "where": ["football/fantasy/index.html"], "size": "300x250" },
-    "college-start":       { "slot": "7912195246", "status": "live",    "where": ["cfb/index.html"], "size": "slim, by column" },
-    "college-results":     { "slot": "8927436000", "status": "planned", "where": ["cfb/index.html"], "size": "300x250" },
-    "diamond-start":       { "slot": "7614354332", "status": "live",    "where": ["baseball/index.html"], "size": "slim, by column" },
-    "diamond-results":     { "slot": "6599113577", "status": "planned", "where": ["baseball/index.html"], "size": "300x250" },
-    "pitch-start":         { "slot": "6301272665", "status": "live",    "where": ["soccer/index.html"], "size": "slim, by column" },
-    "pitch-results":       { "slot": "8894104423", "status": "planned", "where": ["soccer/index.html"], "size": "300x250" },
-    "arcade-results":      { "slot": "4852459626", "status": "planned", "where": ["arcade/"], "size": "300x250" },
-    "golf-start":          { "slot": "2904953136", "status": "planned", "where": ["golf/"], "size": "slim, by column" },
-    "golf-career-results": { "slot": "1895123791", "status": "planned", "where": ["golf/"], "size": "300x250" },
-    "golf-daily":          { "slot": "3539377957", "status": "planned", "where": ["golf/"], "size": "300x250" }
+    "home-break-1": {
+      "slot": "8791704631",
+      "status": "live",
+      "where": [
+        "index.html"
+      ],
+      "size": "300x250"
+    },
+    "home-break-2": {
+      "slot": "2851440254",
+      "status": "live",
+      "where": [
+        "index.html"
+      ],
+      "size": "300x250",
+      "lazy": true
+    },
+    "home-footer": {
+      "slot": "8375229676",
+      "status": "live",
+      "where": [
+        "index.html"
+      ],
+      "size": "320x50, 728x90 from 768px",
+      "lazy": true
+    },
+    "howto": {
+      "slot": "5834368801",
+      "status": "live",
+      "where": [
+        "baseball/how-to-play.html",
+        "cfb/how-to-play.html",
+        "football/how-to-play.html",
+        "golf/how-to-play.html",
+        "soccer/how-to-play.html"
+      ],
+      "size": "responsive",
+      "lazy": true
+    },
+    "guides-in-article": {
+      "slot": "9845074071",
+      "status": "live",
+      "where": [
+        "guides/"
+      ],
+      "size": "in-article",
+      "many": true
+    },
+    "arcade-hub": {
+      "slot": "1538358580",
+      "status": "live",
+      "where": [
+        "arcade/index.html"
+      ],
+      "size": "320x50, 728x90 from 768px"
+    },
+    "football-start": {
+      "slot": "7383466228",
+      "status": "live",
+      "where": [
+        "football/index.html"
+      ],
+      "size": "slim, by column"
+    },
+    "football-results": {
+      "slot": "7062148007",
+      "status": "live",
+      "where": [
+        "football/index.html"
+      ],
+      "size": "300x250"
+    },
+    "fantasy": {
+      "slot": "4218034808",
+      "status": "live",
+      "where": [
+        "football/fantasy/index.html"
+      ],
+      "size": "300x250"
+    },
+    "college-start": {
+      "slot": "7912195246",
+      "status": "live",
+      "where": [
+        "cfb/index.html"
+      ],
+      "size": "slim, by column"
+    },
+    "college-results": {
+      "slot": "8927436000",
+      "status": "planned",
+      "where": [
+        "cfb/index.html"
+      ],
+      "size": "300x250"
+    },
+    "diamond-start": {
+      "slot": "7614354332",
+      "status": "live",
+      "where": [
+        "baseball/index.html"
+      ],
+      "size": "slim, by column"
+    },
+    "diamond-results": {
+      "slot": "6599113577",
+      "status": "planned",
+      "where": [
+        "baseball/index.html"
+      ],
+      "size": "300x250"
+    },
+    "pitch-start": {
+      "slot": "6301272665",
+      "status": "live",
+      "where": [
+        "soccer/index.html"
+      ],
+      "size": "slim, by column"
+    },
+    "pitch-results": {
+      "slot": "8894104423",
+      "status": "planned",
+      "where": [
+        "soccer/index.html"
+      ],
+      "size": "300x250"
+    },
+    "arcade-results": {
+      "slot": "4852459626",
+      "status": "planned",
+      "where": [
+        "arcade/"
+      ],
+      "size": "300x250"
+    },
+    "golf-start": {
+      "slot": "2904953136",
+      "status": "planned",
+      "where": [
+        "golf/"
+      ],
+      "size": "slim, by column"
+    },
+    "golf-career-results": {
+      "slot": "1895123791",
+      "status": "planned",
+      "where": [
+        "golf/"
+      ],
+      "size": "300x250"
+    },
+    "golf-daily": {
+      "slot": "3539377957",
+      "status": "planned",
+      "where": [
+        "golf/"
+      ],
+      "size": "300x250"
+    },
+    "football-draft": {
+      "slot": "4314237726",
+      "status": "live",
+      "where": [
+        "football/index.html"
+      ],
+      "size": "320x50, 728x90 from 768px, pinned during the draft"
+    },
+    "college-draft": {
+      "slot": "3001156050",
+      "status": "planned",
+      "where": [
+        "cfb/index.html"
+      ],
+      "size": "320x50, 728x90 from 768px, pinned during the draft"
+    },
+    "diamond-draft": {
+      "slot": "8070696087",
+      "status": "planned",
+      "where": [
+        "baseball/index.html"
+      ],
+      "size": "320x50, 728x90 from 768px, pinned during the draft"
+    }
   },
   "retired": {
-    "site-display": { "slot": "6069480594", "why": "the one shared unit until 2026-10-27; every placement now has its own" },
-    "RTP Left Rail": { "slot": "1816473106", "why": "the old Run The Pitch rails, removed" },
-    "RTP Right Rail": { "slot": "4576322214", "why": "the old Run The Pitch rails, removed" },
-    "RTP Mobile Bottom": { "slot": "8100634252", "why": "the old Run The Pitch rails, removed" }
+    "site-display": {
+      "slot": "6069480594",
+      "why": "the one shared unit until 2026-10-27; every placement now has its own"
+    },
+    "RTP Left Rail": {
+      "slot": "1816473106",
+      "why": "the old Run The Pitch rails, removed"
+    },
+    "RTP Right Rail": {
+      "slot": "4576322214",
+      "why": "the old Run The Pitch rails, removed"
+    },
+    "RTP Mobile Bottom": {
+      "slot": "8100634252",
+      "why": "the old Run The Pitch rails, removed"
+    }
   }
 }

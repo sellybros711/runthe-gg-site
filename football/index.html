@@ -5401,6 +5401,16 @@ window.GA_ID='G-L29P5MRWKE';
   #s-draft .optbar{margin:6px 0 0}
   #s-draft .seg.compact button{padding-top:7px;padding-bottom:7px}
   #s-draft .opts{margin-top:8px}
+  /* THE DRAFT BANNER: pinned to the bottom while the draft is on screen, padded so nothing scrolls
+     under it. Empty (no ad yet), it takes no space and the padding is the only cost. */
+  #s-draft.on{padding-bottom:64px}
+  #s-draft.on .draft-ad.built{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box}
+  #s-draft.on .draft-ad.built:has(ins[data-ad-status="filled"]){background:var(--bg);padding:4px 0 6px}
+  #s-draft .draft-ad ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  @media (min-width:768px){ #s-draft .draft-ad ins.adsbygoogle{width:728px;height:90px} }
+  #s-draft .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  #s-draft .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  #s-draft .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
 
   /* ================= THE DRAFT ON A WIDE SCREEN =================
      One column on a phone, and the phone layout is untouched: .dcols is display:block
@@ -7600,6 +7610,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <div class="screen" id="s-draft">
+    <!-- THE DRAFT BANNER (Ads Agent, 2026-10-28, the owner: "live immediately"). Pinned to the bottom
+         of the screen while the draft is open and nowhere else. draftAd() builds it when the draft
+         opens and empties it when the player leaves. The draft is padded by its height (in the
+         stylesheet) so the last cards scroll clear of it. A slim 320x50 on a phone, 728x90 from 768px. -->
+    <div class="draft-ad" data-ad-zone="draft"></div>
     <div class="capwrap">
       <!-- TWO STATS, IN TWO COLUMNS, EACH LABELED THE SAME WAY.
            The intent here was always "two parallel eyebrows, each naming its own column".
@@ -10061,6 +10076,17 @@ function menuAd(id){
   z.dataset.started='1';
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
+/* THE DRAFT BANNER. Built once when the draft opens, and emptied (never hidden) when the player
+   leaves it, so no ad is ever loaded behind another screen. Each visit builds a fresh unit. */
+function draftAd(id){
+  const z=document.querySelector('[data-ad-zone="draft"]');
+  if(!z) return;
+  if(id!=='s-draft'){ z.innerHTML=''; z.classList.remove('built'); delete z.dataset.started; return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1'; z.classList.add('built');
+  z.innerHTML='<span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="4314237726"></ins>';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 /* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
    opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
    board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
@@ -10100,6 +10126,7 @@ function show(id){
   if(id!=='s-bgame'&&typeof bossStop==='function') bossStop();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   menuAd(id);
+  draftAd(id);
   screenAds(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
