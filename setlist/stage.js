@@ -41,7 +41,7 @@ import {
   ART, WPX, sx, sy, depth, rgb, mixc, clamp01, hash, mulberry32,
   canvas, SKINS, HAIRS, face, personSprite, DECK, FIX,
   podCorners, CE, HPX, PAX, PAY, bandPose, buildWorld, rigFor, PLAYERS, KEY_SEQ, crowdVariants, crowdPose, GLOWS,
-} from './world.js?v=4';
+} from './world.js?v=5';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
    setlist/rooms.js what each looks like; this file only draws whichever it is handed. */
@@ -89,7 +89,7 @@ function worldWorker(){
   if (worker !== null) return worker;
   try {
     worker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
-      ? new Worker(new URL('./world-worker.js?v=6', import.meta.url), { type: 'module' }) : false;
+      ? new Worker(new URL('./world-worker.js?v=7', import.meta.url), { type: 'module' }) : false;
   } catch (err) { worker = false; }
   if (worker){
     worker.onmessage = e => { const cb = waiting.get(e.data.id); if (cb){ waiting.delete(e.data.id); cb(e.data); } };
@@ -97,14 +97,14 @@ function worldWorker(){
   }
   return worker;
 }
-function buildOffThread(vid, seed){
+function buildOffThread(vid, seed, dress){
   return new Promise(res => {
     const w = worldWorker();
     if (!w) return res(null);
     const id = ++jobs;
     const timer = setTimeout(() => { waiting.delete(id); res(null); }, 8000);
     waiting.set(id, d => { clearTimeout(timer); res(d && !d.error ? d : null); });
-    w.postMessage({ id, vid, seed });
+    w.postMessage({ id, vid, seed, dress });
   });
 }
 
@@ -123,7 +123,9 @@ export function createStage(view, opts = {}){
      and hands back pictures; until they land the house is dark, and `ready` says when they have. A
      browser with no module worker or OffscreenCanvas builds it here, as before. `sync` asks for the
      old way outright. */
-  const wkey = vid + ':' + seed;
+  // What the band wears (outfits.js); a night in other clothes is another night to build.
+  const dress = opts.dress || null;
+  const wkey = vid + ':' + seed + ':' + JSON.stringify(dress);
   let back = null, front = null, frames = null, ready;
   let preCrowd = null, spriteCache = null;
   const take = w => {
@@ -137,9 +139,9 @@ export function createStage(view, opts = {}){
   };
   const known = WORLDS.get(wkey);
   if (known && !known.then){ take(known); ready = Promise.resolve(); }
-  else if (!known && opts.sync){ take(keep(buildWorld(R, RIG, seed))); ready = Promise.resolve(); }
+  else if (!known && opts.sync){ take(keep(buildWorld(R, RIG, seed, false, dress))); ready = Promise.resolve(); }
   else {
-    const job = known || buildOffThread(vid, seed).then(w => keep(w || buildWorld(R, RIG, seed)));
+    const job = known || buildOffThread(vid, seed, dress).then(w => keep(w || buildWorld(R, RIG, seed, false, dress)));
     if (!known) WORLDS.set(wkey, job);
     ready = job.then(w => { if (!dead){ take(w); draw(); } });
   }

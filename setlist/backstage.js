@@ -3,14 +3,14 @@
  * The same four players as the show, in the same frames, moved by the same function (world.js's
  * bandPose), so the band on the menu can never drift from the band on the stage. Everything else here
  * is a few dozen rectangles: a treeline, the tour bus with the next real show's date on its sign, the
- * truss with its six pods, the deck, the rug, two amps and the yellow kit.
+ * truss with its six pods, the deck, the rug, two amps and the red kit.
  *
  * Cheap on purpose. It draws into a small pixel buffer about twelve times a second, stops when it is
  * off screen or the tab is hidden, and draws one still frame when motion is reduced. The band's frames
  * are painted in a worker; until they land the deck is empty, and if they never do it stays that way.
  * It names no venue: the bus shows a date and how many days away it is, nothing else.
  */
-import { bandPose, PLAYERS, bandFrames } from './world.js?v=4';
+import { bandPose, PLAYERS, bandFrames } from './world.js?v=5';
 
 // A 3 by 5 pixel face for the bus's sign. Only what a date needs.
 const GLYPH = {
@@ -25,23 +25,25 @@ const GLYPH = {
   8: '010101010101010', 9: '010101011001110', '.': '000000000000010',
 };
 
-/* The band's frames, painted once per visit: the front screen re-renders when the tour dates land,
-   and every render shares this one job. */
-let framesJob = null;
-function bandFramesOnce(){
-  return framesJob || (framesJob = bandWorker().then(f => f || bandFrames()).catch(() => null));
+/* The band's frames, painted once per visit and per outfit choice: the front screen re-renders when
+   the tour dates land, and every render in the same clothes shares one job. */
+const framesJobs = new Map();
+function bandFramesOnce(dress){
+  const key = JSON.stringify(dress || null);
+  if (!framesJobs.has(key)) framesJobs.set(key, bandWorker(dress).then(f => f || bandFrames(dress)).catch(() => null));
+  return framesJobs.get(key);
 }
 
-function bandWorker(){
+function bandWorker(dress){
   return new Promise(res => {
     try {
       if (typeof Worker !== 'function' || typeof OffscreenCanvas !== 'function') return res(null);
-      const w = new Worker(new URL('./world-worker.js?v=6', import.meta.url), { type: 'module' });
+      const w = new Worker(new URL('./world-worker.js?v=7', import.meta.url), { type: 'module' });
       const done = v => { clearTimeout(timer); w.terminate(); res(v); };
       const timer = setTimeout(() => done(null), 8000);
       w.onmessage = e => done(e.data && e.data.frames ? e.data.frames : null);
       w.onerror = () => done(null);
-      w.postMessage({ id: 1, kind: 'band' });
+      w.postMessage({ id: 1, kind: 'band', dress });
     } catch (err) { res(null); }
   });
 }
@@ -118,7 +120,7 @@ function run(view, opts, paint){
   window.addEventListener('resize', fit);
   fit();
   // The band arrives from the worker; a browser without one paints them here, after the first frame.
-  const ready = bandFramesOnce().then(f => {
+  const ready = bandFramesOnce(opts.dress).then(f => {
     if (dead || !f) return;
     frames = f;
     draw(performance.now());
@@ -151,7 +153,7 @@ function drawBus(g, bx, by, sign){
   }
 }
 
-/* One player, by role, standing with their feet at (px, py); the drummer gets his yellow kit. */
+/* One player, by role, standing with their feet at (px, py); the drummer gets his red kit. */
 function drawPlayer(g, frames, role, px, py, t, mood, lick){
   const i = PLAYERS.findIndex(p => p[0] === role);
   const { img, bob } = bandPose(frames, i, t, mood);
@@ -159,8 +161,8 @@ function drawPlayer(g, frames, role, px, py, t, mood, lick){
   if (role !== 'drums') return;
   const rect = rectOn(g);
   for (const [ox, oy, r] of [[0, 2, 5], [-8, 3, 3], [8, 3, 3]]){
-    g.fillStyle = '#d8a62a'; g.beginPath(); g.ellipse(px + ox, py + oy, r, r * .6, 0, 0, 7); g.fill();
-    rect('#f4d46a', px + ox - r + 1, py + oy - 1, r * 2 - 2, 1);
+    g.fillStyle = '#a8222a'; g.beginPath(); g.ellipse(px + ox, py + oy, r, r * .6, 0, 0, 7); g.fill();
+    rect('#d8505a', px + ox - r + 1, py + oy - 1, r * 2 - 2, 1);
   }
   const hit = Math.sin(t * (lick ? 11 : 4)) > .6;
   rect(hit ? '#fff6d0' : '#e8e0c4', px - 13, py - 6, 6, 1); rect('#e8e0c4', px + 8, py - 7, 7, 1);
