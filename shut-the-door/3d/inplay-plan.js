@@ -353,7 +353,85 @@ export function planPlay(pr, o = {}) {
   p.segs.sort((a, b) => a.t0 - b.t0);
   p.ballAt = (s) => ballAt(p, s);
   p.outcome = outcomeOf(ctx);
+  p.umps = planUmps(p, 0.35);
   return p;
+}
+
+/* ------------------------------------------------------------------ the base umpires */
+
+/** Where the first, second and third base umpires stand at the pitch, for the bases before it (MLB's four
+    man crew): the first and third base umpires a step into foul ground, about 18 ft beyond their bag down
+    the line; the second base umpire on the outfield grass behind second with the bases empty, and inside
+    the infield with a runner on (on the shortstop side with first base alone occupied, else on the second
+    baseman's side), where he sees a play at second from in front of it. */
+export function umpSpots(bases) {
+  const out = (k) => { const u = k === 1 ? { x: Math.SQRT1_2, y: Math.SQRT1_2 } : { x: -Math.SQRT1_2, y: Math.SQRT1_2 }, f = k === 1 ? { x: Math.SQRT1_2, y: -Math.SQRT1_2 } : { x: -Math.SQRT1_2, y: -Math.SQRT1_2 }; return { x: BASE[k].x + u.x * 18 + f.x * 4, y: BASE[k].y + u.y * 18 + f.y * 4 }; };
+  const u2 = !bases ? { x: -8, y: 146 } : bases === 1 ? { x: -14, y: 112 } : { x: 14, y: 112 };
+  return { 1: out(1), 2: u2, 3: out(3) };
+}
+
+// an umpire's run: brisker than a jog, never a sprint (feet a second, and per second)
+const UMP = { v: 19, a: 11 };
+
+/** The base umpires through the play: each at his spot (umpSpots, for the runners on at the start), and
+    on a play at his base (an out there, or a runner safe there with a throw arriving within a second of
+    him) he goes to a spot 15 ft from the bag square to the throw, on his own side of it, set before the
+    ball gets there, and makes the call at once (the fist up within a fifth of a second of the out): out on an out, safe on a safe. Nothing here
+    decides anything: the call is the plan's own out or safe, which is the engine's (verify holds it).
+    go: when they can start moving (seconds of plan time). Returns { 1, 2, 3: Track, calls: [{ base, s,
+    call: 'out' | 'safe', at }] }. */
+function planUmps(p, go) {
+  let bases = 0;
+  for (const r of p.runners) if (r.from >= 1 && r.from <= 3) bases |= 1 << (r.from - 1);
+  const S = umpSpots(bases), T = {};
+  for (const k of [1, 2, 3]) T[k] = new Track(S[k], UMP);
+  const plays = [];
+  for (const e of p.events) if (e.kind === 'out' && e.base >= 1 && e.base <= 3) plays.push({ base: e.base, s: e.s + 0.05, call: 'out', thr: lastThrowTo(p, e.base, e.s) });
+  for (const sg of p.segs) {
+    if (sg.kind !== 'throw') continue;
+    const k = [1, 2, 3].find((b) => dist(sg.b, BASE[b]) < 8);
+    if (!k) continue;
+    for (const r of p.runners) {
+      if (r.out || r.safeAt !== k || r.arrive == null || r.from === k && !p.pickoff) continue;
+      if (Math.abs(r.arrive - sg.t1) > 1.0) continue;
+      plays.push({ base: k, s: Math.max(r.arrive, sg.t1) + 0.05, call: 'safe', thr: sg });
+    }
+  }
+  plays.sort((a, b) => a.s - b.s);
+  const calls = [];
+  for (const pl of plays) {
+    // (one call a base: a second play there, a runner and a throw that came to nothing, is not called again)
+    if (calls.some((c) => c.base === pl.base)) continue;
+    const tr = T[pl.base], bag = BASE[pl.base], from = tr.end;
+    // square to the throw, on his side of it (no throw: square to the line from home)
+    const d = pl.thr ? { x: bag.x - pl.thr.a.x, y: bag.y - pl.thr.a.y } : { x: bag.x, y: bag.y };
+    const L = Math.hypot(d.x, d.y) || 1, n1 = { x: -d.y / L, y: d.x / L };
+    const c1 = { x: bag.x + n1.x * 15, y: bag.y + n1.y * 15 }, c2 = { x: bag.x - n1.x * 15, y: bag.y - n1.y * 15 };
+    // (at first and third, on the far side of the bag from home and in fair ground, out of the runner's way,
+    // where he sees the bag, the runner's foot and the glove at once; at second, on the side he is already on)
+    const R = rad(bag), score = (q) => ((q.x - bag.x) * bag.x + (q.y - bag.y) * bag.y) / R + 0.5 * Math.sign(q.y - Math.abs(q.x));
+    const spot = pl.base !== 2 ? (score(c1) >= score(c2) ? c1 : c2) : dist(from, c1) <= dist(from, c2) ? c1 : c2;
+    const t0 = Math.max(go, pl.s - 3.2), t1 = Math.max(t0 + 0.4, pl.s - 0.45);
+    // (no time for the whole way: as far toward it as he can go and still pull up before the call. Run
+    // through, he stopped dead from a full run in a frame, check-jolt.mjs)
+    const dd = dist(from, spot);
+    let go2 = spot;
+    if (runTime(dd, UMP.v, UMP.a, true, true) > t1 - t0) {
+      let lo = 0, hi = dd;
+      for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (runTime(m, UMP.v, UMP.a, true, true) <= t1 - t0) lo = m; else hi = m; }
+      go2 = lerp(from, spot, lo / Math.max(1e-6, dd));
+    }
+    if (dist(from, go2) > 0.5) tr.arrive(t0, go2, t1, { toRest: true });
+    tr.act(pl.s, 'call', { call: pl.call, base: pl.base });
+    calls.push({ base: pl.base, s: pl.s, call: pl.call, at: tr.at(pl.s) });
+  }
+  for (const k of [1, 2, 3]) T[k].settle();
+  return { 1: T[1], 2: T[2], 3: T[3], calls, bases };
+}
+function lastThrowTo(p, base, s) {
+  let best = null;
+  for (const sg of p.segs) if (sg.kind === 'throw' && sg.t1 <= s + 0.05 && dist(sg.b, BASE[base]) < 8 && (!best || sg.t1 > best.t1)) best = sg;
+  return best;
 }
 
 /** A steal (rules 7, CONTRACT.md 5i: pr.steal, on a ball or a strike), staged as a play from the catch:
@@ -432,6 +510,7 @@ export function planSteal(pr, o = {}) {
   p.segs.sort((a, b) => a.t0 - b.t0);
   p.ballAt = (s) => ballAt(p, s);
   p.outcome = outcomeOf(ctx);
+  p.umps = planUmps(p, 0.1);
   return p;
 }
 
@@ -507,6 +586,7 @@ export function planPickoff(po, o = {}) {
   p.segs.sort((a, b) => a.t0 - b.t0);
   p.ballAt = (s) => ballAt(p, s);
   p.outcome = outcomeOf(ctx);
+  p.umps = planUmps(p, 0.1);
   return p;
 }
 
@@ -1856,6 +1936,16 @@ export function verify(pr, plan) {
       pb = prog(back.track.at(t), pb); pf = prog(front.track.at(t), pf);
       if (!live(back, t) || !live(front, t)) continue;
       if (pb > pf + 0.02) { bad.push(`the runner from ${back.from} passes the runner from ${front.from} at ${t.toFixed(2)} s`); break passing; }
+    }
+  }
+  // the base umpires call what the plan shows: an out at first, second or third called out by that base's
+  // umpire a beat after it, every safe call a runner safe on that bag, never a call against the play
+  if (plan.umps) {
+    const outs = plan.events.filter((e) => e.kind === 'out' && e.base >= 1 && e.base <= 3);
+    for (const e of outs) if (!plan.umps.calls.some((c) => c.base === e.base && c.call === 'out' && c.s >= e.s && c.s <= e.s + 0.5)) bad.push(`the out at ${e.base} has no out call`);
+    for (const c of plan.umps.calls) {
+      if (c.call === 'out' && !outs.some((e) => e.base === c.base && c.s >= e.s && c.s <= e.s + 0.5)) bad.push(`an out call at ${c.base} with no out there`);
+      if (c.call === 'safe' && (outs.some((e) => e.base === c.base) || !plan.runners.some((r) => !r.out && r.safeAt === c.base))) bad.push(`a safe call at ${c.base} against the play`);
     }
   }
   // every throw is taken by a man already there: at the bag (or his spot in line) before it arrives

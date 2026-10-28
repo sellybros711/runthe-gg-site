@@ -32,8 +32,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { twoBoneIK, wpos } from './rig.js?v=1';
 import { P, FT } from './units.js?v=1';
 
-const PART = { skin: 0, hair: 1, uniform: 2, trim: 3, shoes: 4, belt: 5, cap: 6, gloveL: 7, gloveR: 8, brim: 9 };
-const NPART = 10;
+const PART = { skin: 0, hair: 1, uniform: 2, trim: 3, shoes: 4, belt: 5, cap: 6, gloveL: 7, gloveR: 8, brim: 9, pants: 10 };
+const NPART = 11;
 const HEIGHT_M = 1.86;                 // a fielder, 6 ft 1
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -46,7 +46,9 @@ function partOf(o) {
   const n = (o.material && o.material.name || '').toLowerCase(), part = o.userData.part;
   if (n.includes('eye') || n.includes('lash') || n.includes('brow') || part === 'number' || part === 'gloves') return null;
   if (n === 'skin') return PART.skin;
-  if (part === 'uniform') return PART.uniform;
+  // (the pants are a 'uniform' too, people.js dress: only the jersey's node is named so. A part of their own,
+  // so an umpire's slacks can be grey under his dark shirt; a player's are his kit's own colour)
+  if (part === 'uniform') return o.parent && /jersey/i.test(o.parent.name) ? PART.uniform : PART.pants;
   if (part === 'socks' || part === 'undershirt') return PART.trim;
   if (part === 'belt') return PART.belt;
   if (n.includes('hair') || n.includes('short')) return PART.hair;
@@ -220,7 +222,7 @@ function figureMaterial() {
         vec4 diffuseColor = vec4( kc, opacity );`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nif (pi == ${PART.skin}) roughnessFactor = 0.55; else if (pi == ${PART.shoes} || pi == ${PART.belt} || pi == ${PART.brim}) roughnessFactor = 0.45;`);
   };
-  m.customProgramCacheKey = () => 'std-figure-1';
+  m.customProgramCacheKey = () => 'std-figure-2';
   return m;
 }
 
@@ -345,6 +347,7 @@ export class Crew {
     k[PART.skin].copy(SKIN[0]).lerp(SKIN[1], o.tone ?? 0.3);
     k[PART.hair].copy(HAIR);
     k[PART.uniform].copy(kit.base);
+    k[PART.pants].copy(kit.pants || kit.base);
     k[PART.trim].copy(kit.trim);
     k[PART.shoes].set('#1a1a1a');
     k[PART.belt].copy(kit.belt);
@@ -470,6 +473,8 @@ export class Figure {
       dive     0..1    the body laid out forward (the root pitched), arms out to the glove
       armsUp   0..1    a leap: arms straight up
       slide    0..1    feet first into a bag: legs out in front, the trunk laid back, the seat on the dirt
+      signal   { kind: 'out' | 'safe', k: 0..1 through it, w: 0..1 }  an umpire's call: out, the right fist up
+               and a hammer down; safe, both arms swept out flat to the sides (laid over everything else)
       settle   0..1    the run's capture gives way to this pose (getting down to field a ball) */
   pose(spec) {
     const B = this.bones, root = this.root;
@@ -571,6 +576,8 @@ export class Figure {
     }
     this.lift = ((this.o && this.o.lift) || 0) * FT;
     this.pitch = (sp.dive || 0) * 1.32;
+    // ---- an umpire's call, over the clips' arms (the idle's life stays on the trunk and head)
+    if (sp.signal && sp.signal.w > 0) { this.signalArms(sp.signal); root.updateMatrixWorld(true); }
     // ---- hands to points (two bone IK), the glove's pocket on its target
     if (sp.glove && sp.gloveW > 0 && this.glove) this.reachTo(this.glove, this.toModel(sp.glove), sp.gloveW, true);
     if (sp.hand && sp.handW > 0) this.reachTo(this.glove === 'r' ? 'l' : 'r', this.toModel(sp.hand), sp.handW, false);
@@ -664,6 +671,28 @@ export class Figure {
     }
     if (any) this.root.updateMatrixWorld(true);
     return any;
+  }
+
+  /** An umpire's call (pose's spec.signal), in the model frame (+x his left, +y up, +z the way he faces).
+      out: his right upper arm comes up and out, the forearm straight up beside his head (the fist, as w
+      comes in), then the forearm hammers forward and down through k 0.45-0.7 and holds. safe: both arms
+      come together in front at chest height, then sweep out flat to the sides by k 0.6 and hold. w fades
+      it in and out (inplay.js poseUmp: k runs over half a second). */
+  signalArms(sg) {
+    const B = this.bones, w = clamp(sg.w, 0, 1), k = clamp(sg.k, 0, 1);
+    if (sg.kind === 'out') {
+      const ham = smooth((k - 0.45) / 0.25);
+      blendAim(B.upperarm_r, B.lowerarm_r, V(-0.5, 0.35 + 0.1 * ham, 0.75), w);
+      blendAim(B.lowerarm_r, B.hand_r, dirL(V(-0.1, 1, 0.15), V(-0.15, 0.25, 1), ham), w);
+    } else {
+      const sw = smooth((k - 0.1) / 0.5);
+      for (const s of ['l', 'r']) {
+        const side = s === 'l' ? 1 : -1;
+        const dir = dirL(V(-0.25 * side, -0.05, 1), V(side, 0.02, 0.12), sw);
+        blendAim(B[`upperarm_${s}`], B[`lowerarm_${s}`], dir, w);
+        blendAim(B[`lowerarm_${s}`], B[`hand_${s}`], dir, w);
+      }
+    }
   }
 
   /** Two bone IK of one arm to a model frame point, the glove's pocket (or the hand) on it. */

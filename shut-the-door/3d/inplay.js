@@ -18,9 +18,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=16';
-import { Crew } from './fielders.js?v=6';
-import { buildBallpark } from './ballpark.js?v=17';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=18';
+import { Crew } from './fielders.js?v=7';
+import { buildBallpark } from './ballpark.js?v=19';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -67,6 +67,11 @@ const POS_EASE_S = { follow: 0.25, wide: 0.16, plate: 0.12, sky: 0.08, track: 0.
 // as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
 const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).href;
 const OF = [7, 8, 9];
+// the base umpires' kit: the plate umpire's own (assets/umpire.glb's suit, its shirt and slacks read off
+// its texture: a navy black shirt, charcoal grey slacks), his black cap and shoes
+// the fastest a base umpire turns his body round (radians a second: a half turn in 0.8 s, on planted feet)
+const UMP_TURN = 4;
+const UMP_KIT = { base: new THREE.Color('#05070d'), pants: new THREE.Color('#2d2f33'), trim: new THREE.Color('#05070d'), belt: new THREE.Color('#0a0a0c'), cap: new THREE.Color('#0a0a0c') };
 const CYCLE = { fielder: 13.5, runner: 14.5 };          // feet run per full stride cycle (two steps)
 
 /** The angle from a to b the short way round. */
@@ -93,6 +98,8 @@ export class InPlay {
     this.fielders = {};
     for (let n = 1; n <= 9; n++) this.fielders[n] = this.crew.figure();
     this.runnerFigs = [0, 1, 2, 3].map(() => this.crew.figure());
+    // the first, second and third base umpires (the plate umpire is the set's own, people.js)
+    this.umps = { 1: this.crew.figure(), 2: this.crew.figure(), 3: this.crew.figure() };
     this.trail = makeTrail(scene);
     this.marker = makeMarker(scene);
     this.setFacts(facts);
@@ -114,6 +121,7 @@ export class InPlay {
       this.crew.dress(this.fielders[n], kit, { tone: look(`${facts.scenarioId}:f${n}`).tone, glove, gloveColor: n === 2 ? new THREE.Color('#2a1d14') : null });
     }
     this.runnerFigs.forEach((f, i) => this.crew.dress(f, them, { tone: look(`${facts.scenarioId}:r${i}`).tone, glove: null }));
+    for (const k of [1, 2, 3]) this.crew.dress(this.umps[k], UMP_KIT, { tone: look(`${facts.scenarioId}:u${k}`).tone, glove: null });
   }
 
   /** Everything this module draws, shown for a shader compile (the page compiles before it plays). */
@@ -223,6 +231,7 @@ export class InPlay {
     const T1 = plan.dur + 3, trot = plan.kind === 'hr';
     for (let n = 1; n <= 9; n++) { const tr = plan.fielders[n]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); }
     for (const r of plan.runners) r.phase = this.crew.phaseTable((t) => r.track.at(t).spd, 0, T1, trot);
+    if (plan.umps) for (const k of [1, 2, 3]) { const tr = plan.umps[k]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); tr.face = this.umpFace(tr, T1); }
   }
 
   /** The play at plan time s (seconds after contact): everyone placed and posed, the ball, the cut. */
@@ -282,6 +291,14 @@ export class InPlay {
       const q = plan.fielders[n].at(s);
       if (!inView(q.x, q.y, n)) { f.root.visible = false; f.at = { x: q.x, y: q.y }; continue; }
       this.poseFielder(n, f, s, b);
+    }
+    // ---- the base umpires
+    for (const k of [1, 2, 3]) {
+      const f = this.umps[k];
+      if (!broadcast || !plan.umps) { f.root.visible = false; continue; }
+      const q = plan.umps[k].at(s);
+      if (!inView(q.x, q.y, -1)) { f.root.visible = false; f.at = { x: q.x, y: q.y }; continue; }
+      this.poseUmp(k, f, s);
     }
     // ---- each body's detail for its size on screen: a man under LOD_PX tall is drawn from the coarse body
     // (fielders.js clusterLod, a tenth of the triangles). The wide high shots hold every fielder at once,
@@ -796,6 +813,44 @@ export class InPlay {
       x += Math.sin(a); y += Math.cos(a);
     }
     return Math.hypot(x, y) > 1e-6 ? Math.atan2(x, y) : faceToward(p, plan.ballAt(s));
+  }
+
+  /** A base umpire's facing through the play, as a table (a pure function of plan time, made once a play):
+      the ball as he watches it (faceTrail), his heading while he runs, and toward his bag as he sets for a
+      call, all followed at no more than UMP_TURN radians a second. He turns on planted feet, so faster his
+      feet skated round him; the raw watching facing swung through his back in a frame as a throw passed. */
+  umpFace(tr, t1) {
+    const dt = 1 / 60, n = Math.ceil(t1 / dt) + 2, out = new Float32Array(n), step = UMP_TURN * dt;
+    const want = (t) => {
+      const st = tr.at(t), moving = smooth((st.spd - 3) / 8);
+      let y = this.faceTrail(st, t);
+      if (st.head != null && moving > 0) y += angDiff(y, st.head) * moving;
+      const call = tr.acts.find((a) => a.kind === 'call' && t > a.t - 0.4 && t < a.t + 2.2);
+      if (call) y += angDiff(y, heading(st, BASE[call.base])) * ramp(t, call.t - 0.4, call.t);
+      return y;
+    };
+    let yaw = want(0);
+    for (let i = 0; i < n; i++) { yaw += clamp(angDiff(yaw, want(i * dt)), -step, step); out[i] = yaw; }
+    return (t) => { const x = clamp(t / dt, 0, n - 1.001), i = Math.floor(x); return out[i] + (out[i + 1] - out[i]) * (x - i); };
+  }
+
+  /** A base umpire at plan time s: set at the pitch (hands toward his knees), up as the ball is hit, his
+      eyes and his body on the ball (faceTrail, as a fielder's), running to his calling spot facing where
+      he goes, then the call (fielders.js signalArms), held a second and let go. */
+  poseUmp(k, f, s) {
+    const plan = this.active.plan, tr = plan.umps[k], st = tr.at(s);
+    const moving = smooth((st.spd - 3) / 8);
+    const yaw = tr.face(s);
+    const b = plan.ballAt(s);
+    const set = 1 - ramp(s, 0.1, 0.55);
+    const spec = { run: { phase: this.crew.clips ? tr.phase.at(s) : 2 * Math.PI * st.run / CYCLE.fielder, amp: clamp(st.spd / 26, 0, 1.1) }, crouch: 0.3 * set + 0.04, lean: 0.38 * set + 0.05, idleT: s + k * 1.37, look: { x: b.x, y: b.y, z: b.z }, lookW: 1 };
+    const call = tr.acts.find((a) => a.kind === 'call' && s >= a.t - 0.05);
+    if (call) {
+      const d = s - call.t;
+      spec.signal = { kind: call.call, k: clamp(d / 0.5, 0, 1), w: ramp(s, call.t - 0.02, call.t + 0.17) * (1 - ramp(s, call.t + 1.6, call.t + 2.1)) };
+    }
+    f.place(st.x, st.y, yaw, {});
+    f.pose(spec);
   }
 
   /** What the fit does to fielder n's body at the moment t he takes a ball (an act, or a throw in with
