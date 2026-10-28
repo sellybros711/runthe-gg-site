@@ -4,6 +4,7 @@
  *   RTG_AD.status(kind, target, max)            {ok, reason, left}. Show the button only when ok.
  *   RTG_AD.setPlayer(fn)                        the network's player: fn(done) plays one video and
  *                                               calls done(true) only when it has finished.
+ *   RTG_AD.ready()                              true once a player is set. Show a button only on this.
  *   RTG_AD.watch(kind, target, max, opts)       issue a code, play, claim. opts.onGranted(answer),
  *                                               opts.onReason(reason). Resolves with the answer.
  *
@@ -98,6 +99,9 @@
   root.RTG_AD = {
     status: status,
     watch: watch,
-    setPlayer: function (fn) { player = typeof fn === 'function' ? fn : null; }
+    setPlayer: function (fn) { player = typeof fn === 'function' ? fn : null; },
+    /* True only once a player is set. A game shows its button on this, so nothing is offered
+       on a site whose network has not approved it. */
+    ready: function () { return !!player; }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
