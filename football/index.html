@@ -2170,6 +2170,19 @@ window.GA_ID='G-L29P5MRWKE';
   .respin.off b{color:var(--dim-2)}
   .respins .respin.off span{color:var(--dim-2)}
   .respinnote{color:var(--dim-2);font-size:10px;text-align:center;margin:6px 0 0}
+  /* THE FREE RE-SPIN shares a line with the note under the paid ones, so offering it costs
+     the screen no height. Yellow, because it is the one re-spin that costs nothing. */
+  .freerow{display:flex;align-items:center;gap:9px;margin-top:6px}
+  .freerow .respinnote,.freerow p{flex:1 1 auto;min-width:0;margin:0;text-align:left}
+  .freespin{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;
+    border-radius:8px;border:0;cursor:pointer;background:linear-gradient(180deg,#facc15,#eab308);
+    color:#1a1405;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 2px 8px rgba(234,179,8,.25)}
+  .freespin b{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;line-height:1}
+  .freespin svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+  .freespin svg path{fill:currentColor;stroke:none}
+  .freespin:active{transform:scale(.97)}
+  .freespin[disabled]{opacity:.55;cursor:default}
 
   .panel{background:var(--grad-panel);border:1px solid var(--line);border-radius:16px;padding:15px;
     box-shadow:var(--shadow)}
@@ -8572,7 +8585,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=101"></script>
-<script src="run.js?v=103"></script>
+<script src="run.js?v=104"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -15764,9 +15777,12 @@ function paintRespins(){
   const y=yearRun?null:R.canRespin(run,'year',dataNow());
   const t=clubRun?null:R.canRespin(run,'team',dataNow());
   const left=E.CONSTANTS.MAX_RESPINS-run.respinsUsed;
+  const free=freeRespinHtml();
   if(!(y&&y.ok)&&!(t&&t.ok)){
-    el.innerHTML='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
+    const why='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
       (left<=0?'No re-spins left':esc((y||t||{}).reason||'No re-spins left'))+'</p>';
+    el.innerHTML=free?'<div class="freerow">'+free+why.replace('text-align:center;','')+'</div>':why;
+    bindFreeRespin(el);
     return;
   }
   const btn=(kind,label,chk)=>chk.ok
@@ -15776,9 +15792,15 @@ function paintRespins(){
   el.innerHTML='<div class="respins'+(clubRun||yearRun?' one':'')+'">'+
       (y?btn('year','New year',y):'')+(t?btn('team','New team',t):'')+
     '</div>'+
-    '<p class="respinnote">Comes off your budget. '+
+    /* Beside the yellow button the line is half as wide, so it says only what the paid
+       ones cost. The free one says what it costs on its face. */
+    (free?'<div class="freerow">'+free+'<p class="respinnote">'+
+      (left>1?'Next paid one: '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
+      left+' paid left.</p></div>'
+    :'<p class="respinnote">Comes off your budget. '+
       (left>1?'Next one costs '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
-      left+' left.</p>';
+      left+' left.</p>');
+  bindFreeRespin(el);
   el.querySelectorAll('button.respin').forEach(b=>{
     b.onclick=()=>{
       $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
@@ -15787,6 +15809,100 @@ function paintRespins(){
       paintTop();spinBoth(d,()=>paintOpts(d));
     };
   });
+}
+
+/* ---- THE FREE RE-SPIN ----
+   The owner's call (2026-10-28): watch a short ad, get one re-spin that costs nothing and is
+   not one of the three paid ones. Signed in only, three a day, and backing out of the video
+   earns nothing.
+
+   NONE OF THAT IS DECIDED HERE. The cap, the sign in and "watched to the end" are the
+   server's (the Store Agent's ad_reward_issue, ad_reward_claim and ad_reward_status, kind
+   'ps_respin'), reached through the Ads Agent's shared player, assets/rewarded.js
+   (window.RTG_AD). This page only offers the button and, once the server has granted the
+   view, throws the draw back with R.freeRespin.
+
+   THE BUTTON SHOWS ONLY WHEN A VIDEO CAN PLAY. Until the ad network is approved there is no
+   player, RTG_AD.ready() is false, and the draft looks exactly as it did. A guest sees it
+   once there is a player, and a tap opens the sign in sheet (the owner's call). A signed in
+   player sees it while the server says one is left today. */
+const FREE_KIND='ps_respin';
+let freeAsk=null;   // {who, ok, reason, left}: the server's last answer, per account
+function freeAd(){
+  const A=window.RTG_AD;
+  if(!A||typeof A.watch!=='function'||typeof A.status!=='function') return null;
+  if(typeof A.ready!=='function'||!A.ready()) return null;
+  if(typeof R.freeRespin!=='function') return null;
+  return A;
+}
+function freeWho(){ return authState&&authState.signedIn?(authState.userId||authState.name||'me'):null; }
+/* Asks the server once per account and repaints when it answers. A repaint while the
+   answer is out does not ask again. */
+function freeStatus(){
+  const A=freeAd(), who=freeWho();
+  if(!A||!who) return null;
+  if(freeAsk&&freeAsk.who===who) return freeAsk;
+  freeAsk={who:who,ok:false,reason:'asking',left:0};
+  Promise.resolve(A.status(FREE_KIND,null,0)).then((a)=>{
+    if(!freeAsk||freeAsk.who!==who) return;
+    freeAsk={who:who,ok:!!(a&&a.ok),reason:a&&a.reason,left:(a&&a.left)|0};
+    if(run&&run.currentDraw&&$('s-draft').classList.contains('on')) paintRespins();
+  },()=>{ if(freeAsk&&freeAsk.who===who) freeAsk.reason='error'; });
+  return freeAsk;
+}
+function freeRespinHtml(){
+  if(!freeAd()||!run||!run.currentDraw) return '';
+  const signedIn=!!freeWho();
+  if(signedIn){
+    const st=freeStatus();
+    if(!st||!st.ok) return '';
+  }
+  const chk=R.canFreeRespin(run,dataNow());
+  if(!chk.ok) return '';
+  return '<button class="freespin" id="b-freespin" type="button">'+
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/>'+
+    '<path d="M10 9.2v5.6l4.8-2.8z"/></svg><b>Free respin</b></button>';
+}
+function bindFreeRespin(el){
+  const b=el.querySelector('#b-freespin'); if(!b) return;
+  b.onclick=()=>{
+    if(!freeWho()){ profileSheet(); return; }
+    const A=freeAd(); if(!A) return;
+    const mine=run, draw=run.currentDraw;
+    b.disabled=true;
+    ga('respin_free_start',{mode:runMode()});
+    Promise.resolve(A.watch(FREE_KIND,null,0,{})).then((a)=>{
+      if(a&&typeof a.left==='number'&&freeAsk) freeAsk.left=a.left;
+      /* The run has to be the one the video was watched for, still on the same draw. A
+         player who quit or signed during the ad has moved on, and the view is spent. */
+      if(!a||!a.ok||run!==mine||!run.currentDraw||run.currentDraw!==draw){
+        if(a&&a.reason==='cap'&&freeAsk){ freeAsk.ok=false; freeAsk.reason='cap'; }
+        freeSay(a&&a.reason);
+        if(run===mine&&run.currentDraw) paintRespins();
+        return;
+      }
+      if(freeAsk&&freeAsk.left<=0){ freeAsk.ok=false; freeAsk.reason='cap'; }
+      ga('respin_free_used',{mode:runMode(),free_respins:(run.freeRespins||0)+1});
+      $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
+      const d=R.freeRespin(run,dataNow());
+      paintTop();spinBoth(d,()=>paintOpts(d));
+    },()=>{ freeSay('error'); if(run===mine&&run.currentDraw) paintRespins(); });
+  };
+}
+/* One line under the re-spins when the video did not pay. Nothing at all when it was
+   simply not offered, because then there was no button. */
+function freeSay(reason){
+  const el=$('d-respin'); if(!el) return;
+  const say=reason==='closed'?'Watch to the end to get the free respin.'
+    : reason==='cap'?'That\'s your three free respins for today.'
+    : reason==='sign_in'?'Sign in to get a free respin.'
+    : 'The video didn\'t load. Try again in a bit.';
+  setTimeout(()=>{
+    const p=document.createElement('p');
+    p.className='respinnote freesay'; p.textContent=say;
+    const old=el.querySelector('.freesay'); if(old) old.remove();
+    el.appendChild(p);
+  },0);
 }
 
 /* Re-sorting is a repaint of the board already on screen, not a new one: nothing about the

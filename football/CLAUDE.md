@@ -35,6 +35,7 @@ node football/check-gameday.mjs       the Game Day shelf
 node football/check-boss.mjs          the boss battle (add go: going for it on fourth down)
 node football/check-overtime.mjs      a tie goes to overtime
 node football/check-simspeed.mjs      Slow and Slower pace by the drive, Normal untouched
+node football/check-freespin.mjs      the free re-spin: when it shows, what a watched or closed video does
 node football/check-fantasy.mjs       the Fantasy Challenge (--quick: the engine, no browser)
 psql ... -f supabase/test/launch_preflight.sql    the live modes' migrations are applied
 ```
@@ -75,6 +76,13 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
   both sides possess, then the next score wins, and a defensive score on the first possession ends it.
   `otPlanFor` in `engine.js` is the one place that decides it; the broadcast and the drive picture play
   its plan (`script.ot`) and never invent a possession of their own.
+
+**The free re-spin**
+
+- Watching a short ad buys one re-spin of both wheels (the owner's call, 2026-10-28). It is not one
+  of the three paid re-spins and it costs nothing: `R.freeRespin` never touches `respinsUsed` or the
+  fee ladder. The cap (three a day), the sign in and "watched to the end" are the server's
+  (`ad_reward_*`, kind `ps_respin`), reached through `window.RTG_AD`. The page never grants one.
 
 **The Fantasy Challenge**
 
