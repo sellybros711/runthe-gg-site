@@ -922,7 +922,6 @@ async function run(w, h, theme) {
   await page.click('#m-drawer-b');
   await page.mouse.click(4, Math.round((await page.evaluate(() => innerHeight)) * 0.55));
   ok(await page.evaluate(() => document.getElementById('m-drawer').hidden) && (await painted()) === 0, '4 a tap outside shuts the drawer');
-  await page.click('#m-drawer-b');
 
   /* 10 */
   at('10 the framing');
@@ -974,6 +973,9 @@ async function run(w, h, theme) {
 
   /* 5 */
   at('5 the outing', 900);
+  /* the drawer open into the first pitch: step 5 holds that the throw shuts it (opened here, not in
+     step 4, so the framing of steps 10 and 14 sees the slim line, as a new at bat always does) */
+  await page.click('#m-drawer-b');
   const play = await playOuting(page, { w, h, shot, drawerOpen: true });
   if (is3d) pixelsOk('5 after the outing the canvas still draws', await canvasRenders(page));
   ok(play.pitches > 0, '5 a whole outing on the real engine (' + play.pitches + ' pitches)');

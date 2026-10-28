@@ -636,10 +636,11 @@ function enterMound() {
 
 function setBatter(first) {
   var b = batterAt(S.outing.batterIndex);
+  /* every at bat starts with the drawer shut (the owner, 2026-10-27), before the stage frames the
+     new hitter around the lasting panels (stage.js framePanels) */
+  closeDrawer(true);
   S.scene.setBatter(b);
   S.grid.setHand(b.bats);
-  /* every at bat starts with the drawer shut (the owner, 2026-10-27) */
-  closeDrawer(true);
   $('m-bname').textContent = b.name;
   $('m-bhand').textContent = 'bats ' + (b.bats === 'L' ? 'L' : 'R');
   $('m-bhand').setAttribute('aria-label', 'bats ' + handWord(b.bats));
