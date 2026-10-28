@@ -1390,7 +1390,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1614315171,2019-04-11,2019,River Street Jazz Cafe,Plains,PA,1,5,Tumble,418,false,Vasudo,,0,11,0,71,false,false,,",",false,closer|jam|peak,,,,Groove
 1614315171,2019-04-11,2019,River Street Jazz Cafe,Plains,PA,1,6,Peggy-O,531,true,Grateful Dead,,7,7,0,,false,false,,",",false,ballad,Grateful Dead. Reggae version.,,,Ballad
 1614315171,2019-04-11,2019,River Street Jazz Cafe,Plains,PA,1,7,Creatures,420,false,,,13,39,10,63,false,false,,",",false,jam,,,,Groove
-1614315171,2019-04-11,2019,River Street Jazz Cafe,Plains,PA,1,8,Happy Birthday,1,true,,,117,2,50,,false,false,,",",false,,For Kenny.,,,Rocker
+1614315171,2019-04-11,2019,River Street Jazz Cafe,Plains,PA,1,8,Happy Birthday,747,true,,,64,2,35,,false,false,,",",false,opener,For Kenny.,,,Bit
 1614315171,2019-04-11,2019,River Street Jazz Cafe,Plains,PA,1,9,The Way It Is,570,true,Bruce Hornsby,,6,12,0,41,false,false,,",",false,,Bruce Hornsby.,,,Easy
 1614315171,2019-04-11,2019,River Street Jazz Cafe,Plains,PA,1,10,So Ready,421,false,,,7,65,0,38,false,false,,",",false,closer,,,,Groove
 1614315171,2019-04-11,2019,River Street Jazz Cafe,Plains,PA,1,11,I'm Alright,496,true,Kenny Loggins,,8,8,10,,false,false,,>,true,,Kenny Loggins.,,,Rocker
@@ -1756,7 +1756,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,4,Drive,462,false,,1097,1,18,0,67,false,false,,",",false,opener|jam,,,,Groove
 1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,5,Creatures,420,false,,488,4,45,0,63,false,false,,>,true,jam,,,,Groove
 1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,6,Shama Lama Ding Dong,545,true,Otis Day and The Knights,243,4,19,0,,false,false,,>,true,encore,Otis Day & The Knights.,,,Groove
-1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,7,Happy Birthday,747,true,,44,96,2,35,,false,false,,>,true,opener,For Rosie.,,,Bit
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,7,Happy Birthday,747,true,,44,31,3,20,,false,false,,>,true,opener,For Rosie.,,,Bit
 1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,8,Jive Lee,502,false,,465,2,23,0,57,false,false,,,false,closer|jam,,,,Groove
 1613618864,2019-08-22,2019,Night Lights Music Festival,Sherman,NY,1,1,All I Need,414,false,,,2,57,0,72,false,false,,",",false,jam|peak,"Slow, melodic version.",Set Start Time: 7:06pm - End Time 8:32pm,,Groove
 1613618864,2019-08-22,2019,Night Lights Music Festival,Sherman,NY,1,2,Time to Flee,404,false,,,3,41,0,56,false,false,,>,true,,,,,Groove
@@ -2033,7 +2033,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,1,4,Shama Lama Ding Dong,545,true,Otis Day and The Knights,510,2,23,0,,false,false,,",",false,encore,Otis Day & The Knights.,,,Groove
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,1,5,Jive II,413,false,,609,8,36,10,44,false,false,,",",false,opener,,,,Groove
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,1,6,Hot Tea,408,false,Vasudo,843,2,54,0,58,false,false,,,false,closer,,,,Groove
-1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,2,7,Happy Birthday,747,true,,,23,3,20,,false,false,,",",false,opener,For Peter.,,,Bit
+1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,2,7,Happy Birthday,747,true,,,23,4,20,,false,false,,",",false,opener,For Peter.,,,Bit
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,2,8,Yeti,416,false,Great Blue,510,5,36,0,50,false,false,,->,true,opener,Unfinished.,,,Groove
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,2,9,Pumped Up Kicks,534,true,Foster The People,354,21,15,20,,false,false,,",",false,,Foster The People.,,,Groove
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,2,10,Slow Ready,422,false,,702,2,17,0,49,false,false,,",",false,,,,,Space
@@ -2047,7 +2047,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,4,Wysteria Lane,405,false,Vasudo,1310,4,51,0,73,true,false,"Nonstop dance party until they step on the gas in the last 5 minutes resulting in a fun, thrilling finish.",",",false,opener|jam|peak,,,,Groove
 1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,5,Movin' Out (Anthony's Song),519,true,Billy Joel,500,7,8,0,,false,false,,",",false,,Billy Joel.,,,Easy
 1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,6,All I Need,414,false,,1043,1,65,0,72,true,false,"A twisting “fast Need” with a danceable exploratory initial jam that pivots over a drum break into a more dynamic guitar-led section. As Rick passes the baton to Trevor, they descend into an almost marching section with a syncopated drum line and thumping bassline. Rick finds a new melody that the band quickly backs as a looping hook that naturally summons the composed tail.",,false,jam|peak,,,,Groove
-1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,7,Happy Birthday,747,true,,64,0,4,0,,false,false,,",",false,opener,For Peter.,,,Bit
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,7,Happy Birthday,747,true,,64,0,5,0,,false,false,,",",false,opener,For Peter.,,,Bit
 1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,8,Elizabeth,465,false,,625,9,17,10,53,false,false,,->,true,opener|jam,,,,Groove
 1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,9,Mas Que Nada,513,true,Sergio Mendes,476,12,7,10,38,false,false,,",",false,,Sergio Mendes.,,,Groove
 1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,10,Arcadia,403,false,,745,3,115,0,67,false,false,,",",false,closer,,,,Groove
@@ -2386,7 +2386,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1599321218,2020-06-20,2020,Goose Community Rec Center,Redding,CT,1,5,Jam,802,false,,2036,0,13,0,44,false,false,,>,true,opener|jam,"Included ""Drums"", ""+20 Minute Jam"", and ""50 Crunches"" bingo balls. Each band member and Coach did 50 crunches.",,,Space
 1599321218,2020-06-20,2020,Goose Community Rec Center,Redding,CT,1,6,Trevor Reads Poetry,741,false,,337,0,1,0,,false,false,,>,true,,,,,Bit
 1599321218,2020-06-20,2020,Goose Community Rec Center,Redding,CT,1,7,Peggy-O,531,true,Grateful Dead,550,42,10,20,,false,false,,,false,ballad,Grateful Dead.,,,Ballad
-1599321218,2020-06-20,2020,Goose Community Rec Center,Redding,CT,2,8,Happy Birthday,747,true,,141,37,5,20,,false,false,,",",false,opener,For Marta.,,,Bit
+1599321218,2020-06-20,2020,Goose Community Rec Center,Redding,CT,2,8,Happy Birthday,747,true,,141,37,6,20,,false,false,,",",false,opener,For Marta.,,,Bit
 1599321218,2020-06-20,2020,Goose Community Rec Center,Redding,CT,2,9,Atlas,439,true,The Wood Brothers,594,9,27,10,36,false,false,,",",false,opener,The Wood Brothers.,,,Easy
 1599321218,2020-06-20,2020,Goose Community Rec Center,Redding,CT,2,10,Movin' Out (Anthony's Song),519,true,Billy Joel,488,10,11,10,,false,false,,>,true,,Bily Joel.,,,Easy
 1599321218,2020-06-20,2020,Goose Community Rec Center,Redding,CT,2,11,Jam,802,false,,594,0,14,0,44,false,false,,>,true,opener|jam,"Included ""One Minute Beast Pose"" bingo ball. Each band member and Coach did Beast Pose for one minute.",,,Space
@@ -2525,7 +2525,7 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1601953232,2020-10-03,2020,Drive-In Live,Swanzey,NH,E,13,Jive Lee,502,false,,590,3,41,0,57,true,false,"A month before ""Empress"" would be debuted with Goose, the band finds that progression in the midst of this show-closing ""Lee"" and hits several strong peaks in that vein.",,false,closer|jam,,,,Groove
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,1,Danger Zone,457,true,Kenny Loggins,304,10,15,10,,false,false,,",",false,,Kenny Loggins.,,,Rocker
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,2,Bob Don,429,false,,372,4,7,0,38,false,false,,",",false,ballad,,,,Ballad
-1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,3,Happy Birthday,747,true,,133,10,6,10,,false,false,,",",false,opener,For Jeff and Matt Kolinski.,,,Bit
+1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,3,Happy Birthday,747,true,,133,10,7,10,,false,false,,",",false,opener,For Jeff and Matt Kolinski.,,,Bit
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,4,Arcadia,403,false,,746,3,126,0,67,false,false,,",",false,closer,,,,Groove
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,5,No Rain,525,true,Blind Melon,902,9,7,10,43,false,false,,>,true,opener|jam,Blind Melon.,,,Easy
 1602831065,2020-10-15,2020,Legend Valley,Thornville,OH,1,6,Jive II,413,false,,723,1,45,0,44,false,false,,",",false,opener,,,,Groove
