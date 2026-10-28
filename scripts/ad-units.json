@@ -170,19 +170,19 @@
       ],
       "size": "320x50, 728x90 from 768px, pinned during the draft"
     },
-    "college-draft": {
-      "slot": "3001156050",
-      "status": "planned",
-      "where": [
-        "cfb/index.html"
-      ],
-      "size": "320x50, 728x90 from 768px, pinned during the draft"
-    },
     "diamond-draft": {
       "slot": "8070696087",
       "status": "planned",
       "where": [
         "baseball/index.html"
+      ],
+      "size": "320x50, 728x90 from 768px, pinned during the draft"
+    },
+    "cfb-draft": {
+      "slot": "8189884070",
+      "status": "live",
+      "where": [
+        "cfb/index.html"
       ],
       "size": "320x50, 728x90 from 768px, pinned during the draft"
     },
