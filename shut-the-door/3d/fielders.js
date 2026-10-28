@@ -35,6 +35,8 @@ import { P, FT } from './units.js?v=1';
 const PART = { skin: 0, hair: 1, uniform: 2, trim: 3, shoes: 4, belt: 5, cap: 6, gloveL: 7, gloveR: 8, brim: 9, pants: 10 };
 const NPART = 11;
 const HEIGHT_M = 1.86;                 // a fielder, 6 ft 1
+// the share of a run's cycle over which its start eases in from the pose a period on (layerClips)
+const LOOP_BLEND = 0.2;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const smooth = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
@@ -398,7 +400,7 @@ export class Figure {
     Object.assign(this, { crew, root, mesh, bones });
     this.bind = Object.values(bones).map((b) => [b, b.position.clone(), b.quaternion.clone()]);
     this.list = crew.t.names.map((n) => bones[n]);
-    this.qa = this.list.map(() => new THREE.Quaternion()); this.qb = this.list.map(() => new THREE.Quaternion());
+    this.qa = this.list.map(() => new THREE.Quaternion()); this.qb = this.list.map(() => new THREE.Quaternion()); this.qc = this.list.map(() => new THREE.Quaternion());
     this.qp = this.list.map(() => new THREE.Quaternion());
     this.at = { x: 0, y: 0 };
     this.scale = HEIGHT_M / crew.t.modelH;
@@ -636,6 +638,17 @@ export class Figure {
         if (!(w > 0.001) || !c) continue;
         for (let i = 0; i < n; i++) qb[i].copy(qp[i]);
         this.sample(c, u * c.period, qb, pa);
+        // (the captures are not perfect loops: the pose a period on is not the pose at the start, so each new
+        // cycle began with a jump of the arms and the trunk, a hand at 40 m/s at the wrap, check-jolt.mjs. Over
+        // the first LOOP_BLEND of a cycle it comes from the pose a period on (as far as the capture goes) into
+        // its own start, so the seam is a short ease)
+        if (u < LOOP_BLEND && c.dur > c.period) {
+          const qc = this.qc, pc = V(), wl = smooth(1 - u / LOOP_BLEND);
+          for (let i = 0; i < n; i++) qc[i].copy(qb[i]);
+          this.sample(c, Math.min((u + 1) * c.period, c.dur), qc, pc);
+          for (let i = 0; i < n; i++) qb[i].slerp(qc[i], wl);
+          pa.lerp(pc.sub(c.drift), wl);
+        }
         // in place: the cycle's travel out, the bob kept
         pa.sub(c.drift.clone().multiplyScalar(u)).sub(c.p0);
         const k2 = w / (wsum + w);
