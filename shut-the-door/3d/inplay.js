@@ -89,6 +89,12 @@ function faceToward(p, q) {
 }
 /** A facing turned from a toward b by weight w (0..1), the short way round. */
 function turnTo(a, b, w) { return a + angDiff(a, b) * clamp(w * 1.5, 0, 1); }
+/** turnTo, the way round the one nearest ref (the turn as it was at the act): it never flips sides as its two
+    headings pass half a turn apart. */
+function turnNear(a, b, w, ref) {
+  const d = ref + angDiff(ref, angDiff(a, b));
+  return a + d * clamp(w * 1.5, 0, 1);
+}
 function angDiff(a, b) { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }
 const heading = (from, to) => Math.atan2(to.x - from.x, to.y - from.y);
 const _frustum = new THREE.Frustum(), _mat = new THREE.Matrix4(), _sph = new THREE.Sphere(), _v3 = new THREE.Vector3();
@@ -476,7 +482,12 @@ export class InPlay {
           spec.crouch = Math.max(spec.crouch, 0.95 * k); spec.wide = 0.8 * k; spec.lean = Math.max(spec.lean, 0.75 * k);
           glove = { x: bp.x, y: bp.y, z: 0.2 }; gloveW = Math.max(gloveW, k);
           hand = { x: bp.x, y: bp.y, z: 1.0 }; handW = 0.7 * k;
-          faceYaw = turnTo(faceYaw, heading(st, plan.ballAt(t - 0.3)), k);
+          // (the way round is chosen once, at the take: the ball he ran down and where he turns to after it can be
+          // half a turn apart, and the short way round between them flipped sides as the turn eased off, a left
+          // fielder's head swinging 2.2 rad in a frame a third of a second after a pickup in the corner, check-jolt.mjs)
+          const bh = heading(st, plan.ballAt(t - 0.3));
+          if (a.turnRef == null) { const st1 = tr.at(t + 0.12); a.turnRef = angDiff(faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3))); }
+          faceYaw = turnNear(faceYaw, bh, k, a.turnRef);
           f.reaching = true;
         }
       }
