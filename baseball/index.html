@@ -60,7 +60,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
-<script src="/assets/rtg-ads.js?v=1"></script>
+<script src="/assets/rtg-ads.js?v=2"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -4009,15 +4009,17 @@ function railAds(){
   if(left-RAIL_GAP-RAIL_W<0||right+RAIL_GAP+RAIL_W>document.documentElement.clientWidth){ have.forEach(x=>x.remove()); return; }
   const top=Math.round(r.top+window.scrollY+parseFloat(cs.paddingTop)+40)+'px';
   const at={left:Math.round(left-RAIL_GAP-RAIL_W+window.scrollX)+'px', right:Math.round(right+RAIL_GAP+window.scrollX)+'px'};
-  if(have.length){ have.forEach(x=>{ x.style.left=at[x.dataset.side]; x.style.top=top; }); return; }
+  const clear=()=>{ if(window.RTG_ADS) RTG_ADS.clear(document.querySelectorAll('[data-ad-zone="rail"]')); };   // 150px clear of every control
+  if(have.length){ have.forEach(x=>{ x.style.left=at[x.dataset.side]; x.style.top=top; }); clear(); return; }
   Object.entries(RAIL_SLOTS).forEach(([side,slot])=>{
     const wrap=document.createElement('div');
     wrap.innerHTML='<div class="rail-ad" data-ad-zone="rail" data-side="'+side+'"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="'+slot+'"></ins></div>';
     const z=wrap.firstChild;
     z.style.left=at[side]; z.style.top=top;
     document.body.appendChild(z);
-    try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
   });
+  clear();
+  document.querySelectorAll('[data-ad-zone="rail"]').forEach(()=>{ try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} });
 }
 window.addEventListener('resize',()=>{ try{ railAds(); }catch(e){} });
 /* THE CLOSEABLE BOTTOM BANNER (Ads Agent, 2026-10-29, the owner's call). On the home screen, the
