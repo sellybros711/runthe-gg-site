@@ -241,12 +241,12 @@ const hasDecider = (p) => p.evaluate(() => {
 head('1-3. A RUN THAT REACHES A DECIDING GAME, WATCHED WITHOUT SKIPPING');
 let found = null;
 /* FEWER RUNS HAVE A DECIDER THAN THIS ONCE SAID. The old comment guessed one in
-   four. Measured on 2026-10-28, about one Classic run in three reaches October and
-   only some of those Octobers hold a decider, so 24 tries missed about one time in
-   eight with nothing wrong, and every October without one was still watched to the
-   end (a minute or more each). Now an October without a decider is skipped as soon
-   as it starts, so a try costs only the draft and the season, and 80 tries make a
-   miss rarer than one in a thousand. The loop still stops at the first decider. */
+   four. Measured on 2026-10-29 over 60 Classic runs: 17 reached October and 9 of
+   those held a decider, about one run in seven. So 24 tries missed about one time
+   in 50 with nothing wrong, and every October without a decider was still watched
+   to the end. Now an October without one is skipped as soon as it is settled, so a
+   try costs only the draft and the season, and 80 tries make a miss about one in
+   a million. The loop still stops at the first decider. */
 let octobers = 0;
 for (let attempt = 0; attempt < 80 && !found; attempt++) {
   const { ctx, p } = await openPage({});
@@ -279,7 +279,7 @@ for (let attempt = 0; attempt < 80 && !found; attempt++) {
   await ctx.close();
   break;
 }
-claim(!!found, 'a run reached a winner-take-all game', `${octobers} Octobers in the tries, none with a decider`);
+claim(!!found, 'a run reached a winner-take-all game', fails ? '' : `${octobers} Octobers in the tries, none with a decider`);
 if (found) {
   const { tl, p } = found;
   /* 1. The series is revealed a game at a time. */
