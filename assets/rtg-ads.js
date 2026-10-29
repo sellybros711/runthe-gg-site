@@ -16,6 +16,9 @@
  *                                      o.fixed: pin them to the window, for a leaderboard that is a
  *                                      full screen overlay scrolling inside itself (golf's).
  *
+ * A page that lays itself out around the banner listens for the 'rtg-sticky' event on window: it
+ * fires whenever the banner fills, changes height or goes (the X, or a screen without one).
+ *
  * Each page keeps its unit ids in its own *_SLOT(S) table (check-adsense counts them there) and
  * calls these from its screen switch, so a unit is built on entering a screen and removed on
  * leaving it. This file owns how they look and behave, and nothing about where they go.
@@ -81,8 +84,9 @@
     if (size) { size.disconnect(); size = null; }
     document.documentElement.style.removeProperty('--sticky-ad-h');
     if (document.body) document.body.classList.remove('rtg-sticky-on');
-    if (z) z.remove();
+    if (z) { z.remove(); tell(); }
   }
+  function tell() { try { root.dispatchEvent(new Event('rtg-sticky')); } catch (e) {} }
   var above = null;
   function lift() {
     if (!above) return;
@@ -115,7 +119,7 @@
       body.appendChild(z);
       body.classList.add('rtg-sticky-on');
       if (root.ResizeObserver) {
-        size = new ResizeObserver(function () { document.documentElement.style.setProperty('--sticky-ad-h', z.offsetHeight + 'px'); });
+        size = new ResizeObserver(function () { document.documentElement.style.setProperty('--sticky-ad-h', z.offsetHeight + 'px'); tell(); });
         size.observe(z);
       }
       push();

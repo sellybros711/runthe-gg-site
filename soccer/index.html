@@ -875,6 +875,19 @@
     -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%);
             mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%);}
   .flag-marquee.top{margin:0 -22px 10px;}
+  /* EVERY BANNER SCREEN MAKES ROOM FOR THE BOTTOM BANNER (the owner, 2026-10-29: the banner may never sit
+     over a main control on the first view). pitchClear() measures, and only where a control would sit
+     under the banner does anything give: first the masthead's blurb and logo and, on the start screen,
+     the flag strip, the demo scoreline and the trophy's size (pitch-tight), then the start screen's
+     subtitle and trophy (pitch-tighter). A block that would still sit under the banner moves below the
+     fold whole. Screens with room keep everything. The footer scrolls under it like any long page. */
+  body.pitch-tight .acct-bar .fa-lock{display:none}
+  body.pitch-tight .masthead .logo-badge img{height:48px}
+  body.pitch-tight #screen-start .flag-marquee.top,
+  body.pitch-tight #screen-start .home-demo{display:none}
+  body.pitch-tight #screen-start .trophy-svg{width:42px;height:60px}
+  body.pitch-tighter #screen-start .hero-sub,
+  body.pitch-tighter #screen-start .ball{display:none}
   .flag-marquee.bottom{margin:14px -22px 0;}
   .flag-lane{display:flex;gap:12px;width:max-content;flex:0 0 auto;will-change:transform;}
   .flag-lane.left{animation:flagScrollLeft linear infinite;}
@@ -4924,6 +4937,35 @@ const STICKY_ON=['start','online-hub','report','friendly-result','h2h-result','h
 function stickyAd(name){
   if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(name)>=0, STICKY_SLOT.sticky, 'pitch');
 }
+/* Where the bottom banner would cover a main control on the first view of a banner screen, the
+   masthead and the start screen's decoration step aside (the pitch-tight CSS above), and a block that
+   would still sit under the banner moves down past the bottom of the window, whole. The first view
+   then shows whole controls, never one under the banner. The footer is not a main control. Re-run on
+   every screen change, resize and banner change ('rtg-sticky' from /assets/rtg-ads.js). */
+function pitchClear(){
+  const B=document.body;
+  B.classList.remove('pitch-tight','pitch-tighter');
+  document.querySelectorAll('[data-pitch-push]').forEach(e=>{ e.style.removeProperty('margin-top'); e.removeAttribute('data-pitch-push'); });
+  const z=document.querySelector('[data-ad-zone="sticky"] .rtg-sticky-in'), sc=document.querySelector('.screen.active');
+  if(!z||!z.offsetHeight||!sc||STICKY_ON.indexOf(sc.id.replace(/^screen-/,''))<0) return;
+  const sy=window.scrollY, fold=window.innerHeight, bannerTop=()=>z.getBoundingClientRect().top+sy;
+  const ctl=()=>[...sc.querySelectorAll('a[href],button,[role="button"]')].filter(e=>e.offsetWidth&&!e.closest('footer,.site-footer'));
+  const under=e=>{ const b=e.getBoundingClientRect(); return b.bottom+sy>bannerTop()-4&&b.top+sy<fold; };
+  const main=sc.id==='screen-start'?$('btn-start'):null;
+  const low=()=>main&&main.getBoundingClientRect().bottom+sy>bannerTop()-4;   // Start World Cup not wholly above the banner
+  if(low()||ctl().some(under)) B.classList.add('pitch-tight');                // lift first
+  if(low()) B.classList.add('pitch-tighter');
+  const host=sc.children.length===1?sc.firstElementChild:sc;
+  for(let n=0;n<4;n++){
+    const c=ctl().find(under); if(!c) break;
+    let blk=c; while(blk.parentElement&&blk.parentElement!==host) blk=blk.parentElement;
+    if(!blk.parentElement) break;
+    const t=blk.getBoundingClientRect().top+sy; if(t>=fold) break;
+    blk.style.marginTop=(parseFloat(getComputedStyle(blk).marginTop)+fold-t+24)+'px'; blk.setAttribute('data-pitch-push','1');
+  }
+}
+window.addEventListener('resize',()=>{ try{ pitchClear(); }catch(e){} });
+window.addEventListener('rtg-sticky',()=>{ try{ pitchClear(); }catch(e){} });
 /* The start screen is open in the markup, so showScreen() never runs for it on a fresh load, and the
    rails and the banner would wait for the first resize or screen change (the owner saw none, 2026-10-29).
    So the screen that is open at load gets them too. */
@@ -4938,6 +4980,8 @@ function showScreen(name){
   menuAd(name);
   stageAd(name);
   railAds();
+  try{ pitchClear(); }catch(e){}
+  setTimeout(()=>{ try{ pitchClear(); }catch(e){} },400);   // and once the screen has drawn
   setTimeout(()=>{ try{ railAds(); }catch(e){} },350);   // again once the screen has drawn its content
   stickyAd(name);
   // compact mode hides the masthead so the select page fits one screen
