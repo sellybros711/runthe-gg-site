@@ -31,6 +31,10 @@ export function scrub(issue) {
   return { issue: out, dashes: n };
 }
 
+// A fixed block in every issue, written here rather than by the drafting agent,
+// so no draft can drop it or reword it.
+const IDEAS_URL = 'https://runthe.gg/ideas/';
+
 export function renderHtml(issue, { postal }) {
   const para = (t) => esc(t).split(/\n{2,}/).map((p) =>
     `<p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#2b3445">${p.replace(/\n/g, '<br>')}</p>`).join('');
@@ -55,6 +59,13 @@ export function renderHtml(issue, { postal }) {
   ${para(issue.intro)}
 </td></tr>
 ${sections}
+<tr><td style="padding:0 32px 28px">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0f9ee;border:1px solid #cfe9c8;border-radius:12px"><tr><td style="padding:18px 20px">
+    <div style="font-size:18px;font-weight:800;line-height:1.3;color:#0b1220;margin:0 0 6px">Have an idea?</div>
+    <p style="margin:0 0 14px;font-size:15px;line-height:1.55;color:#2b3445">Tell us what to build next. Post it on the community ideas page and vote on the rest.</p>
+    <a href="${IDEAS_URL}" style="display:inline-block;background:#0b1220;color:#ffffff;font-weight:800;font-size:14px;text-decoration:none;padding:11px 18px;border-radius:10px">Share an idea</a>
+  </td></tr></table>
+</td></tr>
 <tr><td style="padding:0 32px 28px">${para(issue.outro)}</td></tr>
 <tr><td style="padding:22px 32px;background:#f5f7fb;border-top:1px solid #e3e8f0;font-size:12px;line-height:1.6;color:#6b7890">
   You are getting this because you asked for RunThe.GG release news.
@@ -67,6 +78,6 @@ ${sections}
 export function renderText(issue, { postal }) {
   const parts = [issue.subject, '', issue.intro, ''];
   for (const s of issue.sections) parts.push(`${s.game.toUpperCase()}: ${s.headline}`, s.body, `Play: ${urlFor(s.game)}`, '');
-  parts.push(issue.outro, '', '---', 'Unsubscribe: {{UNSUB_URL}}', `RunThe.GG · ${postal}`);
+  parts.push('HAVE AN IDEA?', 'Tell us what to build next. Post it on the community ideas page and vote on the rest.', `Share an idea: ${IDEAS_URL}`, '', issue.outro, '', '---', 'Unsubscribe: {{UNSUB_URL}}', `RunThe.GG · ${postal}`);
   return parts.join('\n');
 }

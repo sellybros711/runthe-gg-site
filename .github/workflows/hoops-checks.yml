@@ -2,12 +2,31 @@ name: Hoops checks
 
 # Run The Floor is headless underneath: the engine and the draft loop touch no
 # DOM, so a whole 82 game season can be replayed from a seed in Node. This
-# workflow is what that buys. All three commands run locally, unchanged:
+# workflow is what that buys. Every command runs locally, unchanged:
 #
 #   node hoops/check-posture.mjs        the game stays out of the indexed site
+#   node hoops/build/bundle.mjs --check   career.js and page.js are built from their parts
 #   node hoops/build/check-fetch.mjs    the scraper's parsers, against fixtures
 #   node hoops/verify.mjs               draft rules, replay, and the calibration
 #   node hoops/check-badges.mjs         every badge is reachable, against real runs
+#   node hoops/check-career.mjs --quick Career's engine: every life ends, the bands hold
+#   node hoops/check-saves.mjs          old saves migrate and play on unchanged
+#   node hoops/check-sprite.mjs         no existing sprite pose moves a cell
+#   node hoops/check-moments.mjs --quick the touch, the moments, the frames
+#   node hoops/check-economy.mjs        the coin ledger, the daily rule, the merge, the faucet
+#   node hoops/check-wardrobe.mjs       every item painted, in every pose, on every build
+#   node hoops/check-idles.mjs          every idle frame painted, the loop closes, the page plays it
+#   node hoops/check-packs.mjs          odds, pity, shards, the exchange, two devices, the shop on a phone
+#   node hoops/check-closet.mjs         what he owns and wears, two devices, the closet on a phone
+#   node hoops/check-shopart.mjs        every item, pack, coin and shard in pixels
+#   node hoops/check-daily.mjs          the streak, the wheel, the quests, Floor Rep
+#   node hoops/check-pass.mjs           the Floor Pass: the cap, claims, settlement, the track
+#   node hoops/check-card.mjs           the player card: its pieces, the 140 shapes, the boards
+#   node hoops/check-polish.mjs         one notice lane, the coin pill, the Locker, one material
+#   node hoops/check-earn.mjs           who earns coins, from what, and only once
+#   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
+#   node hoops/check-rosters.mjs        a career joins today's real rosters
+#   node hoops/sim-career.mjs           a thousand careers against the story bible
 #
 # No secrets, no network, no deploy.
 
@@ -17,6 +36,7 @@ on:
       - 'hoops/**'
       - 'sitemap.xml'
       - 'index.html'
+      - 'supabase/140_hoops_card.sql'
       - '.github/workflows/hoops-checks.yml'
   push:
     branches: [main]
@@ -24,6 +44,7 @@ on:
       - 'hoops/**'
       - 'sitemap.xml'
       - 'index.html'
+      - 'supabase/140_hoops_card.sql'
       - '.github/workflows/hoops-checks.yml'
   workflow_dispatch: {}
 
@@ -47,6 +68,12 @@ jobs:
       - name: Discoverability posture
         run: node hoops/check-posture.mjs
 
+      # career.js is built from hoops/career/ and page.js from hoops/page/. A
+      # hand edit to a built file, or a part the bundler does not list, fails
+      # here before anything runs them.
+      - name: The built scripts are their parts
+        run: node hoops/build/bundle.mjs --check
+
       # The fetcher can only run where Basketball-Reference is reachable, which
       # is not the dev sandbox, so its parsers are tested against saved markup.
       # A BBRef redesign that moves a column fails here rather than silently
@@ -67,3 +94,115 @@ jobs:
       # nothing failed: the cabinet rendered and the squares just stayed dark.
       - name: Badges are reachable
         run: node hoops/check-badges.mjs
+
+      # Career, the engine half: six hundred lives played three ways must all
+      # retire, every event must be dealt somewhere, a reload must change
+      # nothing, and no real player may be written into a storyline. The
+      # browser half needs Chromium and runs locally.
+      - name: Career engine
+        run: node hoops/check-career.mjs --quick
+
+      # Every saved career loads, migrates and plays on exactly as the old
+      # engine played it, against frozen version 1 saves.
+      - name: Career saves migrate
+        run: node hoops/check-saves.mjs
+
+      # The characters are final. New cutscene poses are drawn by the same rig,
+      # and no existing pose may move a single cell.
+      - name: The sprite does not change
+        run: node hoops/check-sprite.mjs
+
+      # The games feel alive, and nothing under the picture moved: a touch of
+      # nought is the old card, a better release only turns misses into makes,
+      # moments never reach a migrated save, every moving frame stays inside
+      # the grid. The browser half (every moment and ceremony played) runs
+      # locally.
+      - name: Playable moments
+        run: node hoops/check-moments.mjs --quick
+
+      # Coins are a keyed ledger: a key pays once, two devices merge exactly,
+      # careers count by career, and a measured career pays what the plan says.
+      - name: The coin economy
+        run: node hoops/check-economy.mjs
+
+      # Every street item names a shape the rig knows, paints on every build
+      # and pose, stays on the grid, and never dresses a real player.
+      - name: The wardrobe
+        run: node hoops/check-wardrobe.mjs
+
+      # The browser checks below load the repo's own playwright, and a sandbox
+      # falls back to its global one. Pinned to the sandbox's version, so the
+      # two run the same browser code.
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      # Every idle frame paints on four bodies inside the grid, every loop
+      # closes and moves, and the page plays it live (the still under
+      # reduced motion).
+      - name: The idles
+        run: node hoops/check-idles.mjs
+
+      # Packs roll their printed odds, pity holds, a free pack never mints
+      # coins, two devices file one open, the exchange steps a rarity up,
+      # and the shop works on a phone without letting a request out.
+      - name: Packs and the shop
+        run: node hoops/check-packs.mjs
+
+      # Every item, pack, coin and shard is drawn in pixels from its own
+      # row, nothing is clipped, and the four packs are four pictures.
+      - name: The shop's pixel art
+        run: node hoops/check-shopart.mjs
+
+      # The streak and its freezes, the login track, the wheel's odds and a
+      # spin that stops on the prize it paid, quests that pay once, Floor
+      # Rep, and a Coin Rush that doubles play and nothing else.
+      - name: The daily loop
+        run: node hoops/check-daily.mjs
+
+      # The Floor Pass: the season clock, the curve, a daily cap that holds
+      # across two devices, claims that pay once, settlement at the season's
+      # end, and the track on a phone.
+      - name: The Floor Pass
+        run: node hoops/check-pass.mjs
+
+      # The player card: nameplates and backdrops are never wear, what goes to
+      # the profile fits 140 (and falls back for 139), every design draws, and
+      # a board row filed by an account draws its player and opens his card.
+      - name: The player card
+        run: node hoops/check-card.mjs
+
+      # The UI pass: pops share one lane and never cover a sheet, the coin pill
+      # is the wallet and opens the Locker, which works with no career, every
+      # sheet closes on the kit's X, and the front page is one material.
+      - name: The front page polish
+        run: node hoops/check-polish.mjs
+
+      # Only what he owns is ever saved or drawn, two devices merge without
+      # losing anything, and the closet wears a piece on a press.
+      - name: The closet
+        run: node hoops/check-closet.mjs
+
+      # Only a signed in account earns, every award pays once, and what was
+      # earned before the account had a wallet (badges, seasons) pays nothing.
+      - name: Who earns coins
+        run: node hoops/check-earn.mjs
+
+      # The story engine holds together: events are data, every card says
+      # when it is and the story happens in order, arcs end more than one way,
+      # traits are revealed only when a career has them, the people are
+      # invented, and the league names a champion and an MVP every season.
+      # Its browser half (the People, Legacy and News tabs) runs locally.
+      - name: Story engine
+        run: node hoops/check-story.mjs --quick
+
+      # The league a career joins is today's: data/rosters.json, nobody retired
+      # or moved before the season they are under contract for.
+      - name: Today's rosters
+        run: node hoops/check-rosters.mjs
+
+      # A thousand careers: crashes, careers that never end, unfilled tokens,
+      # wrong-year lines, continuity, and the balance bands due by the phase.
+      - name: Career simulator
+        run: node hoops/sim-career.mjs --n 1000 --phase E

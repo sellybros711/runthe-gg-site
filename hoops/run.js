@@ -607,7 +607,7 @@ function playSeason(run) {
   if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
   const rng = rngFor(run);
   const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
-  const result = E.playRun(run.roster, rng, slotNames, _data && _data.oppPool);
+  const result = E.playRun(run.roster, rng, slotNames, _data && _data.oppPool, { plan: run.plan });
   result.allTimeRank = _data ? E.nationalRank(result.rating, _data.ratingTable) : null;
 
   run.season = result.season;
@@ -633,6 +633,12 @@ function outcomeOf(run, r) {
     totalPA: r.totalPA,
     chemistry: r.chemistry,
     structure: r.structure,
+    /* How fast this roster ran, and what it bought in each half of the year.
+       Null only for a mode that does not play tempo, which Classic always does. */
+    tempo: r.tempo || null,
+    /* Big or small, fast or slow, shooting or not: the words a fan uses
+       before naming a system, read off the same numbers the model charges. */
+    style: r.roster ? E.rosterStyle(r.roster) : null,
     rating: r.rating,
     allTimeRank: r.allTimeRank ?? null,
     ortg: r.ortg,
@@ -648,16 +654,17 @@ function advanceGame(run, gameIndex) {
   if (!run._simState) {
     const rng = rngFor(run);
     const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
-    const chem = E.resolveChemistry(tagged);
-    const structure = E.rosterFit(tagged);
-    const ortg = E.rosterOffense(tagged, chem.bonus, structure.bonus);
-    const drtg = E.rosterDefense(tagged, chem.bonus);
+    /* E.rosterRatings, the one sum. Written out here as well it was the
+       fourth copy, and a term added to three of them is how the animated
+       season and the instant one become two seasons off one seed. */
+    const RR = E.rosterRatings(tagged, { plan: run.plan });
     const schedule = E.generateSchedule(
       rng, E.CONSTANTS.REGULAR_SEASON_GAMES, _data && _data.oppPool);
 
     run._simState = {
-      rng, tagged, chem, structure, ortg, drtg, schedule,
-      rating: E.overallRating(E.teamWinPct(ortg, drtg)),
+      rng, tagged, chem: RR.chem, structure: RR.structure, tempo: RR.tempo,
+      ortg: RR.ortg, drtg: RR.drtg, pace: RR.pace, po: RR.po, schedule,
+      rating: RR.rating,
       results: [], wins: 0, losses: 0, totalPF: 0, totalPA: 0,
     };
   }
@@ -666,7 +673,7 @@ function advanceGame(run, gameIndex) {
   if (gameIndex >= st.schedule.length) return null;
 
   const game = st.schedule[gameIndex];
-  const means = E.gameMeans(st.ortg, st.drtg, game);
+  const means = E.gameMeans(st.ortg, st.drtg, game, st.pace);
   /* E.homeAdvantage, NOT a home-court expression written out again here. This
      line and the one inside playRun have to agree exactly or the animated
      season and the instant one are two different seasons off one seed, which is
@@ -695,7 +702,7 @@ function finalizeSeason(run) {
   if (!st) throw new Error('no sim state');
 
   const seed = E.seedFromRecord(st.wins);
-  const playoffs = E.generatePlayoffs(seed, st.ortg, st.drtg, st.rng, st.wins, st.rating);
+  const playoffs = E.generatePlayoffs(seed, st.po.ortg, st.po.drtg, st.rng, st.wins, st.rating, st.po.pace);
 
   run.season = st.results;
   run.schedule = st.schedule;
@@ -711,6 +718,7 @@ function finalizeSeason(run) {
     totalPA: st.totalPA,
     chemistry: st.chem,
     structure: st.structure,
+    tempo: st.tempo,
     rating: st.rating,
     allTimeRank: _data ? E.nationalRank(st.rating, _data.ratingTable) : null,
     ortg: Math.round(st.ortg * 100) / 100,
@@ -760,12 +768,9 @@ function finalizeSeason(run) {
    decide. */
 function seasonBits(run) {
   const tagged = taggedRoster(run);
-  const chem = E.resolveChemistry(tagged);
-  const structure = E.rosterFit(tagged);
-  const ortg = E.rosterOffense(tagged, chem.bonus, structure.bonus);
-  const drtg = E.rosterDefense(tagged, chem.bonus);
-  return { tagged, chem, structure, ortg, drtg,
-    rating: E.overallRating(E.teamWinPct(ortg, drtg)) };
+  const RR = E.rosterRatings(tagged, { plan: run.plan });
+  return { tagged, chem: RR.chem, structure: RR.structure, tempo: RR.tempo,
+    ortg: RR.ortg, drtg: RR.drtg, pace: RR.pace, po: RR.po, rating: RR.rating };
 }
 
 function seasonTotals(run) {
@@ -787,7 +792,7 @@ function playToPlayoffs(run) {
 
   const season = [];
   for (const game of schedule) {
-    const means = E.gameMeans(b.ortg, b.drtg, game);
+    const means = E.gameMeans(b.ortg, b.drtg, game, b.pace);
     season.push({ game: game.game,
       ...E.resolveGame(means.pointsFor, means.pointsAgainst, rng, E.homeAdvantage(game)) });
   }
@@ -800,7 +805,7 @@ function playToPlayoffs(run) {
      play-in has no bracket to play. The phase still moves, because the screen
      after the season is the same screen either way and it is the one that
      says so. */
-  run.po = E.poCreate(run.playoffSeed, b.ortg, b.drtg, wins, b.rating);
+  run.po = E.poCreate(run.playoffSeed, b.po.ortg, b.po.drtg, wins, b.rating, b.po.pace);
   run.phase = PHASES.PLAYOFFS;
   return { record: { wins, losses: season.length - wins }, seed: run.playoffSeed,
     made: !!run.po };
@@ -864,7 +869,7 @@ function finishRun(run) {
     isGOAT: t.wins >= E.CONSTANTS.GOAT_WINS,
     beatRecord: t.wins >= E.CONSTANTS.RECORD_WINS,
     totalPF: t.totalPF, totalPA: t.totalPA,
-    chemistry: b.chem, structure: b.structure, rating: b.rating,
+    chemistry: b.chem, structure: b.structure, tempo: b.tempo, rating: b.rating,
     allTimeRank: _data ? E.nationalRank(b.rating, _data.ratingTable) : null,
     ortg: Math.round(b.ortg * 100) / 100,
     drtg: Math.round(b.drtg * 100) / 100,
@@ -910,6 +915,20 @@ function taggedRoster(run) {
   return run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[run.slotIndex[i]] }));
 }
 
+/* EVERY PLAYOFF ROUND WITH GAMES IN IT, FINISHED OR NOT. After the run ends
+   that is run.playoffs.rounds, which is po.results under another name. While
+   the bracket is still being played it is po.results plus the series in
+   progress, so a game can be opened from the bracket the moment it is over.
+   The seed a box score is drawn from is the game's ADDRESS, and the address is
+   the same either way, so a game opened mid-bracket and the same game opened
+   from the results screen are one box score. check-bracket.mjs asserts that. */
+function playoffRounds(run) {
+  if (run && run.playoffs && run.playoffs.rounds) return run.playoffs.rounds;
+  const po = run && run.po;
+  if (!po) return [];
+  return po.cur ? po.results.concat([po.cur]) : po.results;
+}
+
 /* ref is { kind: 'season', index } or { kind: 'playoff', round, game }. */
 function gameDetail(run, ref) {
   if (!run || !ref) return null;
@@ -917,12 +936,12 @@ function gameDetail(run, ref) {
 
   let gm = null, head = null;
   if (playoff) {
-    const rd = run.playoffs && run.playoffs.rounds && run.playoffs.rounds[ref.round];
+    const rd = playoffRounds(run)[ref.round];
     if (!rd || !rd.games || !rd.games[ref.game]) return null;
     gm = rd.games[ref.game];
     head = {
       round: rd.round,
-      label: rd.round + (rd.games.length > 1 ? ' · Game ' + (ref.game + 1) : ''),
+      label: rd.round + (rd.round !== 'Play-In' ? ' · Game ' + (ref.game + 1) : ''),
       oppName: null, oppNet: rd.oppNet, home: !!gm.home, marquee: true,
     };
   } else {
@@ -984,11 +1003,11 @@ function bigGames(run) {
       label: (sc.home ? 'vs ' : 'at ') + (sc.oppName || 'opponent'),
       score: g.yourPoints + '-' + g.oppPoints });
   });
-  if (run.playoffs && run.playoffs.rounds) {
-    run.playoffs.rounds.forEach((rd, r) => {
+  {
+    playoffRounds(run).forEach((rd, r) => {
       (rd.games || []).forEach((g, i) => {
         out.push({ kind: 'playoff', round: r, game: i, won: !!g.won,
-          label: rd.round + ((rd.games.length > 1) ? ' · G' + (i + 1) : ''),
+          label: rd.round + (rd.round !== 'Play-In' ? ' · G' + (i + 1) : ''),
           score: g.yourPoints + '-' + g.oppPoints });
       });
     });
@@ -1033,8 +1052,8 @@ function bestNight(run) {
     look({ kind: 'season', index: i },
       sc.oppName ? ((sc.home ? 'vs ' : 'at ') + sc.oppName) : ('game ' + (i + 1)));
   }
-  if (run.playoffs && run.playoffs.rounds) {
-    run.playoffs.rounds.forEach((rd, r) => {
+  {
+    playoffRounds(run).forEach((rd, r) => {
       (rd.games || []).forEach((g, i) => {
         look({ kind: 'playoff', round: r, game: i },
           rd.round + (rd.games.length > 1 ? ', game ' + (i + 1) : ''));
@@ -1199,7 +1218,7 @@ function projectSeason(run, trials) {
 
   for (let i = 0; i < n; i++) {
     const rng = E.createSeededRNG((run.seed ^ (i * 2654435761)) >>> 0);
-    const out = E.playRun(run.roster, rng, slotNames, pool);
+    const out = E.playRun(run.roster, rng, slotNames, pool, { plan: run.plan });
     wins.push(out.record.wins);
     if (out.seed.made) po++;
     if (out.titleWon) title++;
@@ -1256,14 +1275,14 @@ const publicAPI = {
   /* Moves with engine.js, not independently: index.html asks both files for the
      SAME number, so one version means one answer to "is this page and its
      scripts the same age". */
-  API_VERSION: 7,
+  API_VERSION: 9,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,
   playToPlayoffs, pendingGame, simGame, simRest, liveGame, recordGame, finishRun,
   previewSigning, previewFit, fitNow, bestPossibleSquad, projectSeason,
   indexData, drawable, clubSeasons, eraSeasons,
-  gameDetail, bigGames, bestNight, taggedRoster,
+  gameDetail, bigGames, bestNight, taggedRoster, playoffRounds,
   remaining, reserveFloor, fullFloor, spendable, capOf, money,
   canRespin, canFinishAfter, marginAfter, leavesNoChoice, blockFor, positionFull,
   LAST_SLOT_ROOM_MUSD,

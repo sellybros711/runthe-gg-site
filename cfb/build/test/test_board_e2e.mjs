@@ -210,7 +210,7 @@ console.log('\n=== a guest finishes a season ===');
   for (const win of ['week', 'all', 'day']) {
     await page.click('#lb-tabs .tab[data-lb="' + win + '"]');
     await page.waitForTimeout(1500);
-    ok('the ' + win + ' window loads', !/not reachable/.test(await page.textContent('#lb-note')));
+    ok('the ' + win + ' window loads', !/(?:not|n't) reachable/.test(await page.textContent('#lb-note')));
   }
   await page.close();
 }
@@ -290,15 +290,15 @@ console.log('\n=== a dead board must not break a finished season ===');
   ok('the record is still on screen', /\d+-\d+/.test(await page.textContent('#o-rec')));
   ok('the roster is still on screen', (await page.$$eval('#o-rost .rrow', (e) => e.length)) === 6);
   const place = (await page.textContent('#o-place')).replace(/\s+/g, ' ').trim();
-  ok('and it says so rather than inventing a rank', /not reachable/.test(place), place.slice(0, 70));
+  ok('and it says so rather than inventing a rank', /(?:not|n't) reachable/.test(place), place.slice(0, 70));
   /* Home first: #b-lb-intro lives on the front screen, and the results screen is
      what is showing. */
   await page.click('#b-home2'); await page.waitForTimeout(600);
   await page.click('#b-lb-intro'); await page.waitForTimeout(2500);
-  ok('the board says it is not reachable', /not reachable/.test(await page.textContent('#lb-note')));
+  ok('the board says it is not reachable', /(?:not|n't) reachable/.test(await page.textContent('#lb-note')));
   ok('and the diagnostics name the reason', await (async () => {
     await page.click('#b-diag'); await page.waitForTimeout(2500);
-    return /Could not reach|not there/.test(await page.textContent('#lb-note'));
+    return /Could(?: not|n't) reach|not there/.test(await page.textContent('#lb-note'));
   })(), await page.textContent('#lb-note'));
   await page.screenshot({ path: SS + 'e2e_board_down.png', fullPage: true });
   await page.close();

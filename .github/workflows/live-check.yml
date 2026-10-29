@@ -1,0 +1,53 @@
+name: Live site check
+# Every hour, opens every game's real page on runthe.gg in a browser and fails if a page does not
+# answer, a file the site serves is missing, or the page's own code throws. Third-party failures (ads,
+# analytics) are listed and never fail it. A failure opens one issue (GitHub emails the owner); while
+# it stays red the issue body is updated quietly; when every page passes the issue is closed. See
+# scripts/qa/live.mjs.
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: live-check
+  cancel-in-progress: true
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Playwright and a browser
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Open every game on runthe.gg
+        id: live
+        continue-on-error: true
+        run: node scripts/qa/live.mjs --out live-report.md
+      - name: Report
+        if: always()
+        run: cat live-report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Open, update or close the issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.live.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="Live site: pages failing"
+          NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+          { echo "Latest run: $RUN_URL"; echo; head -c 60000 live-report.md; } > body.md
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "Every page loads again: $RUN_URL" && gh issue close "$NUM"; fi
+          elif [ -n "$NUM" ]; then
+            gh issue edit "$NUM" --body-file body.md
+          else
+            gh issue create --title "$TITLE" --body-file body.md
+          fi

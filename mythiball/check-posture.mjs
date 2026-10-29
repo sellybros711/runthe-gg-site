@@ -227,7 +227,8 @@ if (!rosterMatch) {
     const NEED = ['idle', 'ready', 'load', 'swing1', 'swing', 'follow',
                   'run1', 'run2', 'run3', 'run4',
                   'back', 'backrun1', 'backrun2', 'slump',
-                  'windup', 'kick', 'release', 'throw', 'catch', 'cheer'];
+                  'windup', 'kick', 'release', 'throw', 'catch', 'cheer',
+                  'field', 'slide'];
     const spriteKeys = new Set(Object.keys(table));
     for (const [key, rec] of spriteKeys.size ? Object.entries(table) : []) {
       const f = rec && rec.f;

@@ -806,6 +806,10 @@ function scoringScript(you, them, rng) {
     const at = pool.findIndex((s) => s.points === absMargin);
     if (at >= 0) otScore = pool.splice(at, 1)[0];
   }
+  /* HOW THE OVERTIME WENT, decided here because one version of it takes a score from each
+     side's regulation. See otPlanFor below. Drawn only for an overtime game, so every other
+     game's script is exactly what it was. */
+  const otPlan = otScore ? otPlanFor(otScore, winner, yParts, tParts, rng) : null;
 
   /* NOT EVERY ONE-SCORE GAME IS DECIDED LATE. Holding the winner's last score back in all
      of them meant the winner had almost always been behind just before it, so 70.6% of
@@ -975,21 +979,138 @@ function scoringScript(you, them, rng) {
      construction. Fifteen minutes, which is the playoff length; both sides get a
      possession before it can end, so the score that settles it is never on the opening
      drive of the period and lands a couple of minutes in at the earliest. */
-  if (otScore) {
-    const OT_SEC = 15 * 60;
-    const elapsed = 120 + Math.floor(rng() * (OT_SEC - 240));
-    const sec = Math.max(1, OT_SEC - elapsed);
-    if (otScore.team === 'you') ry += otScore.points; else rt += otScore.points;
-    out.push({
-      q: QUARTERS + 1,
-      ot: true,
-      sec,
-      clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
-      team: otScore.team, kind: otScore.kind, note: otScore.note || null, points: otScore.points,
-      you: ry, them: rt,
-    });
+  if (otPlan) {
+    /* Every score in the plan, in possession order, on the period clock: OT is the fifth
+       period and 2OT the sixth, fifteen minutes each. `plan.poss[i].at` is the score's
+       index in the script, which is how the drive picture finds it. */
+    for (const p of otPlan.poss) {
+      if (!p.score) continue;
+      const e = p.score;
+      const per = Math.floor(p.end / OT_PERIOD);
+      const sec = Math.max(1, Math.min(OT_PERIOD - 1, OT_PERIOD - (p.end - per * OT_PERIOD)));
+      if (e.team === 'you') ry += e.points; else rt += e.points;
+      p.at = out.length;
+      out.push({
+        q: QUARTERS + 1 + per,
+        ot: true,
+        sec,
+        clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
+        team: e.team, kind: e.kind, note: e.note || null, points: e.points,
+        you: ry, them: rt,
+      });
+    }
+    /* Carried on the array rather than in it, because every reader of a script treats each
+       entry as a score. The broadcast reads it for the possessions that did not score and
+       for when the game actually ended, which is not always the last score. */
+    out.ot = otPlan;
   }
   return out;
+}
+
+/*
+ * ─── OVERTIME, UNDER THE NFL'S PLAYOFF RULES ───────────────────────────────────────────
+ *
+ * The owner's call (2026-10-22): overtime plays out under the current playoff rules.
+ *
+ *   A coin toss, and the winner receives.
+ *   Fifteen minute periods, as many as it takes. A playoff game cannot end level.
+ *   Both sides get a possession, whatever the first one does. A touchdown on the opening
+ *   drive does not end it: the other side gets the ball and has to answer.
+ *   The one exception is a score by the defense on that first possession: a safety ends it.
+ *   Once both have had the ball, the next score wins, and a winning touchdown takes no try.
+ *
+ * The final is already settled, so this decides only HOW it was reached, from the score that
+ * settled it (`otScore`, worth exactly the margin):
+ *
+ *   'first'    the winner receives and scores, and the other side then has the ball and does
+ *              not answer. A 7 or 8 point margin can only be this: a walk-off touchdown takes
+ *              no try, so it is worth 6.
+ *   'matched'  both sides score the same on their first possessions, then sudden death. The
+ *              two matching scores come out of each side's regulation, so the tie it went to
+ *              overtime on is lower and the final is unchanged.
+ *   'walk'     nobody answers the first possessions, or nobody scores at all, and the winner
+ *              scores on a later one. A safety is always this, and can land on the first.
+ *
+ * A scoring possession takes about 2 to 4.5 minutes of clock and a failed one 1 to 3, the
+ * NFL's own overtime drives. Past fifteen minutes the game rolls into 2OT: about one overtime
+ * in fifty here, which is rare, as it is in the league.
+ */
+const OT_PERIOD = 15 * 60;
+function otPlanFor(otScore, winner, yParts, tParts, rng) {
+  const loser = winner === 'you' ? 'them' : 'you';
+  const other = (t) => (t === 'you' ? 'them' : 'you');
+  const safety = otScore.kind === 'SAFETY';
+  /* A touchdown worth 6 is either a missed kick on the first possession or a walk-off with no
+     kick at all. 7 and 8 had their try, so they were never a walk-off. */
+  const walkable = safety || otScore.kind === 'FIELD GOAL' || otScore.points === 6;
+  let mode;
+  if (!walkable) mode = 'first';
+  else if (safety) mode = 'walk';
+  else mode = rng() < 0.4 ? 'first' : 'walk';
+  /* A matched pair needs both sides to own a score of the same value to give up. */
+  let pair = null;
+  if (mode === 'walk' && !safety && rng() < 0.35) {
+    for (const pts of [3, 7]) {
+      const iy = yParts.findIndex((k) => k.points === pts && !k.note);
+      const it = tParts.findIndex((k) => k.points === pts && !k.note);
+      if (iy >= 0 && it >= 0) {
+        pair = { you: yParts.splice(iy, 1)[0], them: tParts.splice(it, 1)[0] };
+        break;
+      }
+    }
+    if (pair) mode = 'matched';
+  }
+  const receiver = mode === 'first' ? winner : (rng() < 0.5 ? 'you' : 'them');
+  /* A trailing side has this possession and no other, so it never punts. */
+  const fail = (behind) => (behind ? (rng() < 0.6 ? 'downs' : 'turnover')
+    : (rng() < 0.65 ? 'punt' : 'turnover'));
+  const poss = [];
+  const add = (team, result, score) => poss.push({ team, result, score: score || null });
+  if (mode === 'first') {
+    add(winner, otScore.kind === 'FIELD GOAL' ? 'field goal' : 'touchdown', otScore);
+    add(loser, otScore.kind === 'FIELD GOAL' && rng() < 0.3 ? 'miss' : fail(true));
+  } else {
+    let team = receiver;
+    if (pair) {
+      add(team, pair[team].points === 3 ? 'field goal' : 'touchdown', { ...pair[team], team });
+      team = other(team);
+      add(team, pair[team].points === 3 ? 'field goal' : 'touchdown', { ...pair[team], team });
+      team = other(team);
+    }
+    /* The possession the winning score comes on. For a field goal or touchdown it is the
+       winner's, and never the very first of overtime unless the first two were answered. For a
+       safety it is the loser's, and the first one is allowed: a defensive score ends it. */
+    const scorerHasBall = !safety;
+    const need = scorerHasBall ? winner : loser;
+    const minIdx = (pair || safety) ? 0 : 1;
+    let extra = rng() < 0.55 ? 0 : (rng() < 0.7 ? 1 : 2);
+    let i = 0;
+    while (true) {
+      if (team === need && i >= minIdx) {
+        if (extra === 0) break;
+        extra--;
+      }
+      add(team, fail(false));
+      team = other(team); i++;
+    }
+    const walkoff = { ...otScore };
+    if (!safety && otScore.kind === 'TOUCHDOWN') { walkoff.points = 6; walkoff.note = 'no kick needed'; }
+    add(team, safety ? 'safety' : (otScore.kind === 'FIELD GOAL' ? 'field goal' : 'touchdown'), walkoff);
+  }
+  /* The clock. A scoring drive is longer than a failed one, on average. */
+  let t = 0;
+  for (const p of poss) {
+    const len = p.score && p.result !== 'safety' ? 110 + Math.floor(rng() * 160)
+      : 45 + Math.floor(rng() * 120);
+    p.start = t; p.end = t + len; t = p.end;
+  }
+  /* Two full periods is the most this ever draws: the scores have to fit somewhere. */
+  if (t > 2 * OT_PERIOD - 30) {
+    const k = (2 * OT_PERIOD - 30) / t;
+    for (const p of poss) { p.start = Math.floor(p.start * k); p.end = Math.floor(p.end * k); }
+    t = poss[poss.length - 1].end;
+  }
+  return { receiver, mode, poss, end: t };
 }
 
 /* ─── WHOSE TOUCHDOWN IT WAS ──────────────────────────────────────────────────
@@ -1434,7 +1555,9 @@ function takeawayScript(men, rng, opts = {}) {
       let best = -1, bestGap = Infinity;
       for (let i = 0; i < script.length; i++) {
         const e = script[i];
-        if (e.team !== 'you' || e.kind !== 'TOUCHDOWN' || claimed.has(i)) continue;
+        /* Never an overtime touchdown: the plan already says which offense had the ball on
+           it, and a return would be the other side's possession. */
+        if (e.team !== 'you' || e.kind !== 'TOUCHDOWN' || e.ot || claimed.has(i)) continue;
         const gap = Math.abs(at(e.q, e.sec) - when);
         if (gap <= TAKEAWAY_TD_WINDOW && gap < bestGap) { best = i; bestGap = gap; }
       }
@@ -5797,6 +5920,9 @@ function fullCoachCall(d, plan) {
     return 'kick';
   }
   const behind = d.them - d.you;
+  /* Behind in overtime there is no next possession at all. Three points tie it and are worth
+     kicking; anything else, and every punt, is the loss. */
+  if (d.ot && behind > 0) return behind <= 3 && d.inFgRange ? 'fg' : 'go';
   /* Three points do not cover it and there is no time to get the ball back, so the drive is
      the game. Above every philosophy, including a coach who never otherwise goes. */
   if (d.quarter >= 4 && behind > 3) return 'go';
@@ -5923,9 +6049,11 @@ function bossBallSpot(y) {
   return y <= 50 ? { side: 'own', yard: Math.max(1, Math.round(y)) }
     : { side: 'opp', yard: Math.max(1, Math.round(100 - y)) };
 }
-/* The clock, split into quarters for display. */
+/* The clock, split into quarters for display. Overtime is period 5 and up, fifteen minutes
+   each the way a playoff overtime is, so a decision asked in it names a clock the page can
+   draw rather than 0:00 of the fourth quarter. The page labels anything past 4 as OT. */
 function bossClock(sim) {
-  const q = Math.min(4, Math.floor(sim.clock / 900) + 1);
+  const q = Math.floor(sim.clock / 900) + 1;
   const rem = 900 - (sim.clock - (q - 1) * 900);
   return { quarter: q, secs: Math.max(0, Math.round(rem)) };
 }
@@ -5943,11 +6071,14 @@ function bossTwoLive(sim) {
 function bossGenuineFourth(sim, c) {
   const short = c.toGo <= 3 && c.y >= 52;
   const lateTrail = sim.clock >= 2400 && sim.you < sim.them && c.y >= 35;
-  return short || lateTrail;
+  /* Behind in overtime, every fourth down is the season, wherever the ball is. */
+  const otTrail = !!sim.ot && sim.you < sim.them;
+  return short || lateTrail || otTrail;
 }
 
 function bossStartDrive(sim, team, startY) {
   sim.pos = team;
+  if (sim.ot) sim.ot.poss++;
   sim.cur = { team, y: startY, down: 1, toGo: Math.min(10, 100 - startY),
     startAbs: bossAbsYard(team, startY), tStart: sim.clock, plays: 0 };
 }
@@ -5977,6 +6108,14 @@ function bossEndDrive(sim, how, endY, rng) {
     result: how, tStart: c.tStart, tEnd: sim.clock, plays: c.plays };
   sim.drives.push(drive);
   sim[c.team] += pts;
+  /* A SCORE THAT ENDS OVERTIME ENDS THE GAME ON THE SPOT. Once both sides have had the ball,
+     the first score wins, and a touchdown that wins it is not followed by a kick or a two
+     point question nobody needs answering. The drive is recorded and the next advance calls
+     it: bossOtDecided is the one rule both places read. */
+  if (bossOtDecided(sim)) {
+    sim.cur = null;
+    return { type: 'drive', drive, you: sim.you, them: sim.them, clock: bossClock(sim) };
+  }
   if (how === 'td' && c.team === 'you' && bossTwoLive(sim)) {
     // Pause for the PAT decision; the handoff waits until it is resolved.
     sim.pending = { kind: 'two', team: 'you', pat: { endY } };
@@ -5999,8 +6138,32 @@ function bossDecisionInfo(sim, drive) {
   const c = sim.cur, toGoal = 100 - c.y;
   return { kind: 'fourth', quarter: cl.quarter, secs: cl.secs, you: sim.you, them: sim.them,
     down: 4, toGo: Math.round(c.toGo), ball: bossBallSpot(c.y), toGoal: Math.round(toGoal),
-    inFgRange: toGoal <= BOSS_SIM.FG_MAX_YARD };
+    inFgRange: toGoal <= BOSS_SIM.FG_MAX_YARD, ot: !!sim.ot };
 }
+
+/*
+ * ─── OVERTIME ────────────────────────────────────────────────────────────────────────
+ *
+ * A TIE AT THE END OF REGULATION USED TO BE DECIDED BY THE PREGAME PROJECTION: whichever side
+ * the sim expected to score more was handed the win, so a game the player watched end 24-24
+ * went into the book as a loss with nothing on screen to say why. Reported by a player, off a
+ * 19-0 Full Team season ended by an extra point that TIED the Super Bowl.
+ *
+ * So a tie plays overtime, under the playoff rule the NFL uses now: a fresh coin toss, both
+ * sides get one possession whatever happens on the first, and after that the next score wins.
+ * It never ends level, because neither game that uses this can: a playoff round has to send
+ * somebody through and a boss battle is a win or a loss.
+ *
+ * bossOtDecided is the whole of "is it over", read in two places: by bossEndDrive, so a
+ * winning score is not followed by an extra point, and by bossSimAdvance between drives.
+ */
+function bossOtDecided(sim) {
+  return !!sim.ot && sim.ot.poss >= 2 && sim.you !== sim.them;
+}
+/* Past this much overtime something has gone wrong rather than stayed tied, and the game has
+   to end somewhere: a coin, never the projection that caused this. Unreachable in practice,
+   at about one drive in three scoring. */
+const BOSS_OT_MAX = 3600 * 3;
 
 /*
  * PLAY FORWARD until something the driver needs to show: a completed drive, a decision for the
@@ -6010,10 +6173,22 @@ function bossDecisionInfo(sim, drive) {
 function bossSimAdvance(sim, rng) {
   if (sim.over) return { type: 'over', won: sim.won, you: sim.you, them: sim.them };
   if (!sim.cur) {
-    if (sim.clock >= 3600) {
-      sim.over = true;
-      sim.won = sim.you > sim.them || (sim.you === sim.them && sim.youExp >= sim.themExp);
-      return { type: 'over', won: sim.won, you: sim.you, them: sim.them };
+    const end = (won) => {
+      sim.over = true; sim.won = won;
+      return { type: 'over', won: sim.won, you: sim.you, them: sim.them, ot: !!sim.ot };
+    };
+    if (sim.ot) {
+      if (bossOtDecided(sim)) return end(sim.you > sim.them);
+      if (sim.clock >= BOSS_OT_MAX) return end(rng() < 0.5);
+    } else if (sim.clock >= 3600) {
+      if (sim.you !== sim.them) return end(sim.you > sim.them);
+      /* Level at the end of regulation: overtime, off its own coin toss. */
+      sim.clock = Math.max(sim.clock, 3600);
+      /* `level` is the score it was tied at, kept because the first overtime drive is played
+         before the page gets to say overtime has started. */
+      sim.ot = { poss: 0, receiver: rng() < 0.5 ? 'you' : 'them', level: sim.you };
+      sim.pos = sim.ot.receiver;
+      sim.nextStart = BOSS_SIM.START_YARD;
     }
     if (sim.pos == null) { sim.firstReceiver = rng() < 0.5 ? 'you' : 'them'; sim.pos = sim.firstReceiver; }
     bossStartDrive(sim, sim.pos, sim.nextStart != null ? sim.nextStart : BOSS_SIM.START_YARD);
@@ -6025,8 +6200,12 @@ function bossSimAdvance(sim, rng) {
     if (rng() < BOSS_SIM.TO_RATE) return bossEndDrive(sim, 'turnover', c.y, rng);
     if (c.down === 4 && !c.forcedGo) {
       const toGoal = 100 - c.y;
-      const trailing = sim[c.team] < sim[c.team === 'you' ? 'them' : 'you'];
-      const desperate = sim.clock >= 3360 && trailing;
+      const behind = sim[c.team === 'you' ? 'them' : 'you'] - sim[c.team];
+      /* In overtime the clock is not what runs out, the possession is: a side that is behind
+         there has this drive and no other. Three points tie it, so it kicks when it can, and
+         it never punts, because a punt is the loss. */
+      const desperate = sim.ot ? behind > 3 : (sim.clock >= 3360 && behind > 0);
+      const lastChance = !!sim.ot && behind > 0;
       if (c.team === 'you' && bossGenuineFourth(sim, c)) {
         sim.pending = { kind: 'fourth', team: 'you' };
         return { type: 'decision', decision: bossDecisionInfo(sim) };
@@ -6035,7 +6214,7 @@ function bossSimAdvance(sim, rng) {
         return bossFgGood(toGoal, rng) ? bossEndDrive(sim, 'fg', c.y, rng)
           : bossEndDrive(sim, 'miss', c.y, rng);
       }
-      if (toGoal > 5 && !desperate) return bossEndDrive(sim, 'punt', c.y, rng);
+      if (toGoal > 5 && !desperate && !lastChance) return bossEndDrive(sim, 'punt', c.y, rng);
       // otherwise go for it
     }
     c.forcedGo = false;

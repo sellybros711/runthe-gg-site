@@ -68,6 +68,8 @@
   <script>
   window.dataLayer=window.dataLayer||[];
   window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  /* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
   gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
   </script>
   <script>
@@ -94,7 +96,7 @@
 
     <main class="card">
       <h1 class="page-title display">Privacy <span class="accent">Policy</span></h1>
-      <p class="date">Last updated: July 29, 2026</p>
+      <p class="date">Last updated: October 24, 2026</p>
 
       <p>RunThePitch, part of RunThe.GG, respects your privacy. This page explains, in
          plain terms, what information is and isn't collected when you use our site.</p>
@@ -123,13 +125,16 @@
             <a href="https://www.youronlinechoices.eu" target="_blank" rel="noopener">youronlinechoices.eu</a>.</li>
         <li>A full list of the companies that may set cookies for advertising here is in Google's
             <a href="https://business.safety.google/adscontrollerterms/vendors/" target="_blank" rel="noopener">list of ad technology providers</a>.</li>
+        <li>How Google uses information from sites that use its ad services is explained on Google's
+            <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">partner sites page</a>.</li>
       </ul>
       <p>Where required by law, including in the European Economic Area, the United Kingdom and
          Switzerland, we use a <b>Google-certified consent management platform</b> to ask for your
          consent before any advertising or analytics cookie is set, and our pages send Google Consent
          Mode signals that deny advertising storage until you choose. You can change or withdraw your
-         consent at any time through the consent tool. Visitors who are not confirmed to be 18 or over,
-         including everyone playing as a guest, are served <b>non-personalised ads only</b>.</p>
+         consent at any time through the consent tool. Today every visitor is served <b>non-personalised
+         ads only</b>, and visitors who are not confirmed to be 18 or over, including everyone playing as a
+         guest, always will be.</p>
       <p>The full site-wide policy, including your rights, data retention and the other services we
          rely on, is at <a href="/privacy.html">runthe.gg/privacy.html</a>.</p>
 

@@ -1,4 +1,4 @@
-/* topbanner.js — the shared Run The Arcade top banner (like the football game's).
+/* topbanner.js: the shared Run The Arcade top banner (like the football game's).
  *
  * Self-mounting on every arcade page: a sticky bar with the logo (→ the arcade
  * home) top-left, a RunThe.GG link, your tokens (plays left today), and your

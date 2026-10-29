@@ -2,6 +2,7 @@
  *
  *   node scripts/setlist/ingest_band.mjs               # → setlist/data/goose.csv
  *   node scripts/setlist/ingest_band.mjs --probe       # what does the API return?
+ *   node scripts/setlist/ingest_band.mjs --retag       # re-read _feels.json, no fetch
  *   node scripts/setlist/ingest_band.mjs --out /tmp/goose.csv
  *   node scripts/setlist/ingest_band.mjs --limit 200   # last 200 shows only
  *   node scripts/setlist/ingest_band.mjs --from 2019 --to 2024
@@ -45,13 +46,13 @@
  *   - tracktime is on every row, so length is a strong per-version signal.
  */
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 /* The loader, so the latest-setlist file is grouped by the SAME code the game
    reads with, rather than a second implementation of set order that could
    disagree with it. */
-import { loadBand, setLabel } from '../../setlist/dataLoader.js';
+import { loadBand, setLabel, parseCSV } from '../../setlist/dataLoader.js';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dir, '..', '..');
@@ -68,9 +69,14 @@ const ROW_CAP = 4000;
 const YEAR_DELAY_MS = 600;
 
 // ── tag thresholds ───────────────────────────────────────────────────────────
-// elgoose carries no "this song is a ballad" field, so the six tags the game
-// scores against are inferred from each song's own history. These are proxies,
-// not ground truth — tune them here and regenerate.
+// elgoose carries no "this song is a ballad" field, so five of the six tags the
+// game scores against are inferred from each song's own history. These are
+// proxies, not ground truth: tune them here and regenerate.
+//
+// 'ballad' is the exception. It comes from <band>_feels.json, a hand-curated
+// feel per song, because no length or jamchart rule could find the ballads.
+// The old rule (under 5:30, never charted, rarely closes) tagged Whip It and
+// Psycho Killer and missed most of the real ones.
 const TAGS = {
   MIN_PLAYS: 3,          // below this a song has no role tags at all
   OPENER_RATE: 0.20,     // opens a set this often → 'opener'
@@ -81,8 +87,6 @@ const TAGS = {
   JAM_MEDIAN_LEN: 900,   // ...or typically runs 15 min+
   PEAK_JAM_RATE: 0.25,   // the big ones: jamcharted often AND long
   PEAK_MEDIAN_LEN: 720,
-  BALLAD_MEDIAN_LEN: 330, // typically under 5:30, never jamcharted → 'ballad'
-  BALLAD_MAX_CLOSER_RATE: 0.10,
 };
 
 // ── args ─────────────────────────────────────────────────────────────────────
@@ -94,11 +98,13 @@ const OUT = resolve(repoRoot, arg('out', 'setlist/data/goose.csv'));
 // Derived from --out so a band added later gets both files in one place.
 const SHOWS_OUT = resolve(repoRoot, arg('shows-out', OUT.replace(/\.csv$/, '_shows.csv')));
 const LATEST_OUT = resolve(repoRoot, arg('latest-out', OUT.replace(/\.csv$/, '_latest.json')));
+const FEELS_IN = resolve(repoRoot, arg('feels', OUT.replace(/\.csv$/, '_feels.json')));
 const LIMIT = Number(arg('limit', 0)) || 0;
 const KEY = arg('key', process.env.ELGOOSE_API_KEY || '');
 const FROM = Number(arg('from', 2014));   // Goose's first setlist on the site is 2014
 const TO = Number(arg('to', new Date().getFullYear()));
 const PROBE = process.argv.includes('--probe');
+const RETAG = process.argv.includes('--retag');
 
 /* ---------------------------------------------------------------------------
  * --strict : every warning becomes a failure.
@@ -705,7 +711,7 @@ const COLUMNS = [
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
   'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
-  'teases',
+  'teases', 'feel',
 ];
 
 function csvCell(v) {
@@ -727,6 +733,7 @@ export function buildCSV(raw, opts = {}) {
   const limit = opts.limit || 0;
   const say = opts.quiet ? () => {} : (...a) => console.log(...a);
   const jamcharts = opts.jamcharts || new Map();
+  const feels = opts.feels || new Map();   // song_id → feel, see readFeels
 
   // Normalise into our shape, dropping rows with nothing to key on.
   const rows = [];
@@ -867,9 +874,9 @@ export function buildCSV(raw, opts = {}) {
       if (closerRate >= TAGS.CLOSER_RATE) t.push('closer');
       if (jamRate >= TAGS.JAM_RATE || medLen >= TAGS.JAM_MEDIAN_LEN) t.push('jam');
       if (jamRate >= TAGS.PEAK_JAM_RATE && medLen >= TAGS.PEAK_MEDIAN_LEN) t.push('peak');
-      if (medLen > 0 && medLen <= TAGS.BALLAD_MEDIAN_LEN && st.jams === 0
-          && closerRate < TAGS.BALLAD_MAX_CLOSER_RATE) t.push('ballad');
     }
+    // Curated, so it needs no minimum play count.
+    if (feels.get(id) === 'Ballad') t.push('ballad');
     if (st.plays >= TAGS.ENCORE_MIN_PLAYS && rate(st.encores) >= TAGS.ENCORE_RATE) t.push('encore');
 
     tagsFor.set(id, t.join('|'));
@@ -882,6 +889,7 @@ export function buildCSV(raw, opts = {}) {
   for (const show of shows) {
     for (const r of show.songs) {
       r.tags = tagsFor.get(r.song_id) || '';
+      r.feel = feels.get(r.song_id) || '';
       r.crowd_rating = esteem.get(r.song_id) || '';   // blank → scoring's neutral
       out.push(COLUMNS.map(c => csvCell(r[c])).join(','));
       performances += 1;
@@ -890,6 +898,8 @@ export function buildCSV(raw, opts = {}) {
 
   const tagged = Array.from(tagsFor.values()).filter(Boolean).length;
   say(`  ${tagged} of ${stats.size} songs carry at least one tag`);
+  const unfelt = [...stats.keys()].filter(id => !feels.has(id));
+  if (unfelt.length) say(`  ${unfelt.length} song(s) have no feel yet, so cannot be a ballad: ${unfelt.join(', ')}`);
   const rec = rows.filter(r => r.is_recommended === 'true').length;
   say(`  ${esteem.size} songs carry a jamchart-derived esteem rating`);
   say(`  ${rows.filter(r => r.is_jamchart === 'true').length} jamcharted versions, ${rec} of them "recommended"`);
@@ -902,9 +912,54 @@ export function buildCSV(raw, opts = {}) {
   };
 }
 
+// ── feels ────────────────────────────────────────────────────────────────────
+/**
+ * <band>_feels.json → Map(song_id → primary feel). Missing file → empty map,
+ * which leaves every song un-balladed rather than failing a refresh.
+ */
+export function readFeels(path) {
+  if (!existsSync(path)) return new Map();
+  const { songs } = JSON.parse(readFileSync(path, 'utf8'));
+  return new Map(Object.entries(songs).map(([id, s]) => [id, s.feel]));
+}
+
+const TAG_ORDER = ['opener', 'closer', 'jam', 'peak', 'ballad', 'encore'];
+
+/**
+ * Re-derive only the ballad tag and the feel column on an existing CSV, with no fetch. A feel
+ * edit is a curation change, not a refresh: the other five tags come from
+ * history that has not moved, so they are kept exactly as they are.
+ */
+export function retagCSV(text, feels) {
+  const rows = parseCSV(text);
+  const header = text.slice(0, text.indexOf('\n'));
+  // A file from before the feel column is read with the columns it was written with.
+  const was = header === COLUMNS.join(',') ? COLUMNS : COLUMNS.filter(c => c !== 'feel');
+  if (header !== was.join(',')) throw new Error('the CSV header is not the one this script writes');
+  const same = [header, ...rows.map(r => was.map(c => csvCell(r[c])).join(','))].join('\n') + '\n';
+  if (same !== text) throw new Error('the CSV does not round-trip byte for byte; regenerate it instead');
+  let moved = 0;
+  for (const r of rows) {
+    const had = r.tags;
+    const t = new Set(String(r.tags || '').split('|').filter(Boolean));
+    t.delete('ballad');
+    if (feels.get(r.song_id) === 'Ballad') t.add('ballad');
+    r.tags = TAG_ORDER.filter(x => t.has(x)).join('|');
+    r.feel = feels.get(r.song_id) || '';
+    if (r.tags !== had) moved++;
+  }
+  return { csv: [COLUMNS.join(','), ...rows.map(r => COLUMNS.map(c => csvCell(r[c])).join(','))].join('\n') + '\n', moved };
+}
+
 // ── main ─────────────────────────────────────────────────────────────────────
 async function main() {
   if (PROBE) return probe();
+  if (RETAG) {
+    const { csv, moved } = retagCSV(readFileSync(OUT, 'utf8'), readFeels(FEELS_IN));
+    writeFileSync(OUT, csv, 'utf8');
+    console.log(`Retagged ${OUT}: ballad moved on ${moved} rows`);
+    return;
+  }
 
   console.log(`Fetching setlists from elgoose.net (artist_id ${ARTIST_ID || 'all'}, ${FROM}–${TO})...`);
   const raw = await fetchAllRows();
@@ -912,7 +967,7 @@ async function main() {
   console.log(`  ${raw.length} raw rows`);
 
   const jamcharts = await fetchJamcharts();
-  const { csv, shows, performances, songs } = buildCSV(raw, { limit: LIMIT, jamcharts });
+  const { csv, shows, performances, songs } = buildCSV(raw, { limit: LIMIT, jamcharts, feels: readFeels(FEELS_IN) });
 
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, csv, 'utf8');

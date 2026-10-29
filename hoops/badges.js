@@ -63,7 +63,7 @@ const prefixed = (c, pre) => Object.keys(set(c, 'feats'))
 /* How many of a thing there are to collect. Read from the data at boot where
    the page can, so a season landing in the data next July moves the target
    rather than leaving a collection permanently one short. */
-let TOTALS = { seasons: 53, clubs: 45, shapes: 14, mvps: 53, franchises: 30 };
+let TOTALS = { seasons: 53, clubs: 45, shapes: 22, mvps: 53, franchises: 30 };
 function setTotals(t) {
   if (!t) return;
   for (const k of Object.keys(TOTALS)) if (num(t[k]) > 0) TOTALS[k] = num(t[k]);
@@ -160,7 +160,7 @@ const AWARDS = [
 const TROPHIES = ['mvp', 'fmvp', 'roy', 'dpoy', 'smoy', 'mip', 'an1'];
 const BLUE_BLOODS = ['UNC', 'Duke', 'Kentucky', 'Kansas', 'UCLA'];
 
-/* ---------------- what a finished Quick Draft run proves ----------------
+/* ---------------- what a finished Classic run proves ----------------
  *
  * Returns { add: {key: 1}, max: {} }. Every key here is a count of runs that
  * did the thing. Pure: it reads the run the page already has and returns keys,
@@ -245,6 +245,16 @@ function draftFeats(run) {
   if (num(out.wins) >= 65) one('rs.w65');
   if (num(out.wins) >= 70) one('rs.w70');
   if (season.length && (num(out.totalPF) - num(out.totalPA)) / season.length >= 10) one('rs.pd10');
+
+  /* ---- how it played ---- */
+  const plan = out.tempo && out.tempo.plan, sty = out.style || {};
+  if (plan === 'run' && num(out.wins) >= 55) one('pl.run55');
+  if (plan === 'run' && out.titleWon) one('pl.runring');
+  if (plan === 'grind' && out.titleWon) one('pl.grindring');
+  if (plan === 'grind' && num(out.wins) >= 55) one('pl.grind55');
+  if (sty.size === 'Big' && sty.speed === 'Fast' && num(out.wins) >= 50) one('sty.bigfast');
+  if (sty.size === 'Small' && sty.range === 'Shooting' && num(out.wins) >= 50) one('sty.smallball');
+  if (sty.size === 'Big' && sty.speed === 'Slow' && num(out.wins) >= 50) one('sty.bigslow');
 
   /* ---- the playoffs ---- */
   const po = run.playoffs, rounds = (po && Array.isArray(po.rounds)) ? po.rounds : [];
@@ -368,6 +378,32 @@ function passesFeats(solved, passes, par, clock, streak) {
   return { add, max };
 }
 
+/* ---------------- Career ----------------
+ * Called once, when a career is over. `s` is career.js' featSummary: plain
+ * numbers and flags about one finished life, so this file needs nothing from
+ * career.js. Everything is a maximum except the count of careers, so a
+ * badge reads the best life rather than the last one. */
+function careerFeats(s) {
+  const add = { 'cr.careers': 1 }, max = {};
+  if (!s) return { add: {}, max };
+  const m = (k, v) => { if (num(v) > 0) max[k] = Math.max(max[k] || 0, num(v)); };
+  m('cr.seasons', s.seasons); m('cr.pts', s.pts); m('cr.rings', s.rings); m('cr.mvp', s.mvp);
+  m('cr.star', s.star); m('cr.fmvp', s.fmvp); m('cr.dpoy', s.dpoy); m('cr.score', s.score); m('cr.g7', s.g7);
+  m('cr.ncaa', s.ncaa); m('cr.state', s.state); m('cr.npoy', s.npoy);
+  if (s.pick === 1) m('cr.pick1', 1);
+  if (s.undrafted && num(s.seasons) >= 8) m('cr.undrafted', 1);
+  if (s.road && num(s.seasons) > 0) m('cr.road', 1);
+  if (s.jersey) m('cr.jersey', 1);
+  if (s.oneClub && num(s.seasons) >= 12) m('cr.oneclub', 1);
+  if (s.rivalBeat) m('cr.rival', 1);
+  if (s.married && num(s.kids) >= 3) m('cr.family', 1);
+  if (s.home) m('cr.home', 1);
+  if (s.headCoach) m('cr.coach', 1);
+  if (num(s.olympic) > 0) m('cr.gold', 1);
+  if (num(s.ncaa) > 0 && num(s.rings) > 0) m('cr.double', 1);
+  return { add, max };
+}
+
 /* Fold feats into a career. The ONE writer, used by the page for every mode,
    so an add and a max mean the same thing wherever they came from. */
 function applyFeats(career, f) {
@@ -396,9 +432,11 @@ function applyFeats(career, f) {
  */
 const GROUPS = [
   ['start', 'Tip-off'],
+  ['career', 'Career'],
   ['win', 'Winning'],
   ['playoffs', 'Playoff lore'],
   ['build', 'Roster building'],
+  ['style', 'Style of play'],
   ['lines', 'Stat lines'],
   ['legends', 'Reunions'],
   ['history', 'Hall of fame'],
@@ -451,7 +489,7 @@ const CATALOG = [
   { id: 'hundred-wins', g: 'start', name: 'A thousand games', why: 'Play a thousand regular season games.',
     tier: 'gold', got: (c) => num(c.totalWins) + num(c.totalLosses) >= 1000 },
   { id: 'all-four', g: 'start', name: 'Four ways to play',
-    why: 'Finish a Quick Draft, a Conquest run, a Fix History day and a Six Passes chain.', tier: 'silver',
+    why: 'Finish a Classic draft, a Conquest run, a Fix History day and a Six Passes chain.', tier: 'silver',
     got: (c) => num(c.runs) >= 1 && feat(c, 'cq.runs') >= 1 && feat(c, 'fx.days') >= 1 && feat(c, 'ps.played') >= 1 },
 
   /* ---- winning ---- */
@@ -483,6 +521,22 @@ const CATALOG = [
     got: has('rs.slump') },
 
   /* ---- playoff lore ---- */
+  /* ---- style of play: the game plans and the shapes they suit ---- */
+  { id: 'pl-run55', g: 'style', name: 'Run the floor', why: 'Win 55 games playing Run the floor.', tier: 'silver',
+    got: has('pl.run55') },
+  { id: 'pl-grind55', g: 'style', name: 'Walk it up', why: 'Win 55 games playing Half court.', tier: 'silver',
+    got: has('pl.grind55') },
+  { id: 'pl-runring', g: 'style', name: 'Showtime ring', why: 'Win a title playing Run the floor. May slows everybody down.', tier: 'ring',
+    got: has('pl.runring') },
+  { id: 'pl-grindring', g: 'style', name: 'Defense wins championships', why: 'Win a title playing Half court.', tier: 'gold',
+    got: has('pl.grindring') },
+  { id: 'sty-bigfast', g: 'style', name: 'Bigs who run', why: 'Win 50 with a roster that is big and fast.', tier: 'gold',
+    got: has('sty.bigfast') },
+  { id: 'sty-smallball', g: 'style', name: 'Small ball', why: 'Win 50 with a roster that is small and shoots.', tier: 'gold',
+    got: has('sty.smallball') },
+  { id: 'sty-bigslow', g: 'style', name: 'Bully ball', why: 'Win 50 with a roster that is big and slow.', tier: 'silver',
+    got: has('sty.bigslow') },
+
   { id: 'ring', g: 'playoffs', name: 'Champions', why: 'Win the title.', tier: 'ring',
     got: (c) => num(c.rings) >= 1 },
   { id: 'threepeat', g: 'playoffs', name: 'Dynasty', why: 'Win three titles.', tier: 'ring',
@@ -747,6 +801,53 @@ const CATALOG = [
     [7, 'ps-streak7', 'Automatic', 'Solve Six Passes seven days running.', 'gold'],
   ]),
 
+  /* ---- Career ---- */
+  { id: 'cr-first', g: 'career', name: 'Rookie card', why: 'Finish a Career.', tier: 'bronze', got: has('cr.careers') },
+  { id: 'cr-five', g: 'career', name: 'Five lives', why: 'Finish five Careers.', tier: 'silver', got: has('cr.careers', 5) },
+  { id: 'cr-road', g: 'career', name: 'The long road', why: 'Start in high school and make the league.', tier: 'bronze', got: has('cr.road') },
+  { id: 'cr-state', g: 'career', name: 'Hometown hero', why: 'Win a state title in high school.', tier: 'bronze', got: has('cr.state') },
+  { id: 'cr-ncaa', g: 'career', name: 'One shining moment', why: 'Win a national championship in college.', tier: 'silver', got: has('cr.ncaa') },
+  { id: 'cr-npoy', g: 'career', name: 'Best in the country', why: 'Be National Player of the Year in college.', tier: 'gold', got: has('cr.npoy') },
+  { id: 'cr-pick1', g: 'career', name: 'Number one', why: 'Go first overall in the draft.', tier: 'silver', got: has('cr.pick1') },
+  { id: 'cr-undrafted', g: 'career', name: 'Nobody called', why: 'Go undrafted and play eight seasons anyway.', tier: 'gold', got: has('cr.undrafted') },
+  ...ladder('career', 'cr.seasons', [
+    [10, 'cr-10y', 'A decade in', 'Play ten seasons in one Career.', 'bronze'],
+    [18, 'cr-18y', 'Ageless', 'Play eighteen seasons in one Career.', 'gold'],
+  ]),
+  ...ladder('career', 'cr.pts', [
+    [20000, 'cr-20k', 'Twenty thousand', 'Score 20,000 points in one Career.', 'silver'],
+    [30000, 'cr-30k', 'Thirty thousand', 'Score 30,000 points in one Career.', 'gold'],
+    [38000, 'cr-38k', 'The record', 'Score 38,000 points in one Career.', 'ring'],
+  ]),
+  ...ladder('career', 'cr.star', [
+    [1, 'cr-star', 'All-Star', 'Make an All-Star team in Career.', 'bronze'],
+    [10, 'cr-star10', 'Perennial', 'Make ten All-Star teams in one Career.', 'gold'],
+  ]),
+  ...ladder('career', 'cr.mvp', [
+    [1, 'cr-mvp', 'MVP', 'Win MVP in Career.', 'gold'],
+    [3, 'cr-mvp3', 'Three-peat MVP', 'Win three MVPs in one Career.', 'ring'],
+  ]),
+  ...ladder('career', 'cr.rings', [
+    [1, 'cr-ring', 'Champion', 'Win a ring in Career.', 'silver'],
+    [3, 'cr-ring3', 'Dynasty', 'Win three rings in one Career.', 'gold'],
+  ]),
+  { id: 'cr-fmvp', g: 'career', name: 'Finals MVP', why: 'Be Finals MVP in Career.', tier: 'gold', got: has('cr.fmvp') },
+  { id: 'cr-dpoy', g: 'career', name: 'Lockdown', why: 'Win Defensive Player of the Year in Career.', tier: 'gold', got: has('cr.dpoy') },
+  { id: 'cr-g7', g: 'career', name: 'Ice in the veins', why: 'Hit the last shot of a Game 7 in Career.', tier: 'silver', got: has('cr.g7') },
+  { id: 'cr-double', g: 'career', name: 'Both rings', why: 'Win a national championship and an NBA title in one Career.', tier: 'ring', got: has('cr.double') },
+  ...ladder('career', 'cr.score', [
+    [55, 'cr-hall', 'Springfield', 'Retire a Hall of Famer.', 'silver'],
+    [85, 'cr-ballot', 'First ballot', 'Retire a first-ballot Hall of Famer.', 'gold'],
+    [120, 'cr-inner', 'Inner circle', 'Retire one of the greatest ever.', 'ring'],
+  ]),
+  { id: 'cr-jersey', g: 'career', name: 'In the rafters', why: 'Have your number retired.', tier: 'gold', got: has('cr.jersey') },
+  { id: 'cr-oneclub', g: 'career', name: 'One city', why: 'Play twelve seasons and never change clubs.', tier: 'gold', got: has('cr.oneclub') },
+  { id: 'cr-rival', g: 'career', name: 'The right pick', why: 'Outscore your draft-class rival over a whole Career.', tier: 'bronze', got: has('cr.rival') },
+  { id: 'cr-home', g: 'career', name: 'Homecoming', why: 'Play for your hometown club.', tier: 'silver', got: has('cr.home') },
+  { id: 'cr-gold', g: 'career', name: 'Gold medal', why: 'Win Olympic gold in Career.', tier: 'silver', got: has('cr.gold') },
+  { id: 'cr-family', g: 'career', name: 'Full house', why: 'Retire married with three kids.', tier: 'bronze', got: has('cr.family') },
+  { id: 'cr-coach', g: 'career', name: 'From the bench', why: 'Become a head coach after you retire.', tier: 'bronze', got: has('cr.coach') },
+
   /* ---- heartbreak ---- */
   { id: 'swept', g: 'hurt', name: 'Swept', why: 'Lose a playoff series 0-4.', tier: 'bronze',
     got: (c) => any(c, (r) => r.swept) },
@@ -781,7 +882,12 @@ function catalog() {
     const marks = { clubs: 45, seasons: 52, shapes: 14 };
     if (!b.id.endsWith('-' + marks[b._totalKey])) return b;
     if (total === marks[b._totalKey]) return b;
-    return { ...b, progress: (c) => [Math.min(count(c, b._totalKey), total), total],
+    /* The WORDS move with the target. "Field 14 different roster identities"
+       over a bar reading 0 of 22 is the card and the rule disagreeing, which
+       is what happened the day the systems went from fourteen to twenty-two.
+       The id stays, because a badge is derived and its id is its name. */
+    return { ...b, why: String(b.why).replace(String(marks[b._totalKey]), String(total)),
+      progress: (c) => [Math.min(count(c, b._totalKey), total), total],
       got: (c) => count(c, b._totalKey) >= total };
   });
 }
@@ -803,7 +909,7 @@ function earned(career) { return evaluate(career).filter((b) => b.got); }
 const publicAPI = {
   API_VERSION: BADGES_API_VERSION,
   catalog, evaluate, earned, setTotals, applyFeats,
-  draftFeats, conquestFeats, fixFeats, passesFeats,
+  draftFeats, conquestFeats, fixFeats, passesFeats, careerFeats,
   GROUPS, REUNIONS, DREAM_TEAM, CLASSES, BLUE_BLOODS,
   get TOTAL() { return CATALOG.length; },
 };

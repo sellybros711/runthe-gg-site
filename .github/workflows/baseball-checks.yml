@@ -2,8 +2,9 @@ name: Baseball checks
 
 # Run The Diamond's October decides nothing on screen: generatePlayoffs() settles
 # the player's path, and both the bracket and the at-bat simulator are built around
-# it. The failures that follow from that are all invisible in a screenshot, which
-# is what these two check.
+# it. The one exception is a Pro player's call to change pitchers, which
+# check-calls.mjs holds. The failures that follow from all of that are invisible in
+# a screenshot, which is what these check.
 #
 #   node baseball/check-atbats.mjs    the line score adds up to the score it was handed
 #   node baseball/check-bracket.mjs   the field agrees with the run it was built from
@@ -14,11 +15,15 @@ on:
   pull_request:
     paths:
       - 'baseball/**'
+      - 'supabase/127_baseball_profiles.sql'
+      - 'supabase/test/baseball_profile_test.sql'
       - '.github/workflows/baseball-checks.yml'
   push:
     branches: [main]
     paths:
       - 'baseball/**'
+      - 'supabase/127_baseball_profiles.sql'
+      - 'supabase/test/baseball_profile_test.sql'
       - '.github/workflows/baseball-checks.yml'
   workflow_dispatch: {}
 
@@ -89,6 +94,39 @@ jobs:
       - name: The staff sorts itself
         run: node baseball/check-staff.mjs 60
 
+      # Every step from here on drives a real browser, and each check script
+      # reads require('playwright') first. Its fallback path exists only on a dev
+      # sandbox, so installing this any later crashed the first browser step (the
+      # lineup) on a missing module before it asserted anything, on every run from
+      # 2026-10-13 to 2026-10-24. Installed once, here.
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      # The squad screen reads as a batting order and a staff. The coach's order is
+      # the season's baseline, so it has to cost nothing and nothing may beat it,
+      # or Pro could buy runs by moving a man. Pro swaps, reads the cost, and can
+      # put the coach back; a free account reads the order and cannot move it.
+      - name: The lineup
+        run: node baseball/check-lineup.mjs
+
+      # A run in progress survives leaving the page: the banner asks first and
+      # saves, and resuming shows the SAME board, or leaving would be a free re-spin.
+      - name: A run survives leaving the page
+        run: node baseball/check-resume.mjs
+
+      # The leaderboard: a row opens into its twelve, every mode has a today,
+      # this week and all time window, and champions and records look it.
+      - name: The leaderboard
+        run: node baseball/check-leaderboard.mjs
+
+      # October has suspense: your series lands a game at a time, and a deciding
+      # game is played on the game screen, never revealed. Plays seasons until one
+      # reaches a decider, so it takes a few minutes.
+      - name: October and game 7
+        run: node baseball/check-october.mjs
+
       # Every badge, against real runs. The catalogue went from 36 to 205 in one
       # pass, and a badge nobody can earn throws no error and breaks no test: the
       # cabinet renders, the square stays dark, and nobody reports it. The hoops
@@ -122,8 +160,6 @@ jobs:
       # highlight around the row next to the pick.
       - name: The front page, and the reel under it
         run: |
-          npm install --no-save playwright@1.49.1
-          npx playwright install --with-deps chromium
           node baseball/check-theme.mjs
           node baseball/check-home.mjs
 
@@ -144,5 +180,42 @@ jobs:
       # sharing an id paint each other, a rule nobody can meet is a park nobody
       # sees, and a chosen park the account cannot back must fall back to the home
       # park. All four are silent, so all four are asked of the real page.
+      # Unlike its neighbours this script starts no server of its own and opens
+      # localhost:8080, so one is started for it here.
       - name: Ballparks, their art and their unlocks
-        run: node baseball/check-parks.mjs
+        run: |
+          (python3 -m http.server 8080 >/dev/null 2>&1 &)
+          sleep 1
+          node baseball/check-parks.mjs
+
+      # THE PROFILE, and the career it keeps on the server. Every way this fails
+      # loses a player's things in silence: a device that never sends its seasons,
+      # a sync that drops the guest seasons beside them, a server that cannot be
+      # reached being read as an empty career, and a locked club or mark being
+      # saved anyway. The server half is supabase/test/baseball_profile_test.sql.
+      - name: The profile, Customize and the career on the server
+        run: node baseball/check-profile.mjs
+
+      # THE MANAGER'S CALL. A Pro player can change pitchers in the October games
+      # they watch, and the call really decides the rest of that game, so it is the
+      # one place a watched game decides anything. Held: a game nobody called is
+      # byte for byte the old one, the coach's own arm changes nothing, the same
+      # calls are the same October, a flipped game carries October on correctly,
+      # and a reload cannot take a call back. The balance band is --balance, which
+      # is minutes long and is run by hand when the model moves.
+      - name: The manager's call
+        run: node baseball/check-calls.mjs
+
+      # 127 in SQL: the career only ever adds, a season held is never replaced,
+      # every row is filed under its caller, and every choice is held to its list.
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+      - name: supabase/127, driven in SQL
+        run: |
+          createdb rtd_prof
+          psql -q -d rtd_prof -f supabase/test/baseball_pro_base.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/127_baseball_profiles.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/127_baseball_profiles.sql
+          psql -q -v ON_ERROR_STOP=1 -d rtd_prof -f supabase/test/baseball_profile_test.sql

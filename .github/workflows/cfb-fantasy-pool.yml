@@ -1,0 +1,115 @@
+# Build the COLLEGE Fantasy Challenge week: the twenty games, the board, the prices and the
+# cap, then publish it to the leaderboard and commit the files the page reads.
+#
+# Monday 11am Eastern. Saturday's box scores are settled by then, and the week's betting
+# lines, which the projection reads, are up. The two cron entries are the NFL job's answer to
+# daylight saving: the job asks which schedule fired rather than what time it is now.
+#
+# A DRY RUN IS THE DEFAULT BY HAND. Dispatched with `write` off, it builds and prints the
+# slate, the cap sweep and the top of the board, and commits and publishes nothing.
+name: College fantasy, build the week
+on:
+  schedule:
+    - cron: '0 15 * * 1'    # 11am Eastern while daylight saving is in effect
+    - cron: '0 16 * * 1'    # 11am Eastern the rest of the year
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Week to build. Blank is the week about to be played.'
+        required: false
+        default: ''
+      write:
+        description: 'Write the files, publish to the leaderboard and commit'
+        type: boolean
+        required: false
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: cfb-fantasy-pool
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Is this the 11am Eastern entry
+        id: when
+        run: |
+          OFFSET=$(TZ=America/New_York date +%z)
+          FIRED='${{ github.event.schedule }}'
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+            echo "write=${{ inputs.write }}" >> "$GITHUB_OUTPUT"
+          elif [ "$OFFSET" = "-0400" ] && [ "$FIRED" = "0 15 * * 1" ]; then
+            echo "go=yes" >> "$GITHUB_OUTPUT"; echo "write=true" >> "$GITHUB_OUTPUT"
+          elif [ "$OFFSET" = "-0500" ] && [ "$FIRED" = "0 16 * * 1" ]; then
+            echo "go=yes" >> "$GITHUB_OUTPUT"; echo "write=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "the other cron entry for the current offset. Stopping."
+            echo "go=no" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.when.outputs.go == 'yes'
+      - uses: actions/setup-node@v4
+        if: steps.when.outputs.go == 'yes'
+        with:
+          node-version: '22'
+
+      - name: Build the board
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          set -o pipefail
+          WRITE=''
+          if [ "${{ steps.when.outputs.write }}" = "true" ]; then WRITE='--write'; fi
+          WEEK='${{ inputs.week }}'
+          if [ -n "$WEEK" ]; then
+            node cfb/build/fantasy/pool.mjs --week "$WEEK" $WRITE
+          else
+            node cfb/build/fantasy/pool.mjs $WRITE
+          fi
+
+      - name: Who is out
+        if: steps.when.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        run: node cfb/build/fantasy/injuries.mjs --write
+
+      - name: Can it be drafted
+        if: steps.when.outputs.go == 'yes'
+        run: node cfb/build/test/test_fantasy.mjs --quick
+
+      - name: Install the postgres client
+        if: steps.when.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      # THE BOARD IS PUBLISHED BEFORE ANYTHING IS COMMITTED. A committed board with no row on
+      # the server is a page that drafts perfectly and refuses every submit.
+      - name: Publish the week to the leaderboard
+        if: steps.when.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL is not set."
+            exit 1
+          fi
+          node cfb/build/fantasy/publish.mjs | psql -q -v ON_ERROR_STOP=1 "$SUPABASE_DB_URL"
+          echo "published."
+
+      - name: Commit the week
+        if: steps.when.outputs.go == 'yes' && steps.when.outputs.write == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add cfb/data/fantasy/
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          git commit -q -m "College fantasy: build the week"
+          for i in 1 2 3 4; do
+            if git push -q; then exit 0; fi
+            git pull -q --rebase || exit 1
+            sleep $((i * 5))
+          done
+          exit 1

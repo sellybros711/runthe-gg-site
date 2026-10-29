@@ -222,5 +222,30 @@ console.log('\n5) the Number Game never asks about a season the player was not a
   ok('and the page drops every one of them before a round is built');
 }
 
+console.log('\n6) one man is one entity, whatever two sources call him');
+{
+  /* The other half of the same mistake. A key of name + sport is not a
+     person, so it merged two men who share a name, and it also SPLIT one man
+     whose name the sources write two ways: Michael Vick (the star flag) beside
+     Mike Vick (Virginia Tech), Penny beside Anfernee Hardaway, Chad Johnson
+     beside Chad Ochocinco. Each game then held him twice, as two halves.
+     The rule is scripts/sportegories-people.mjs, the one Sportegories pairs
+     with; data.js folds a pair through ALIAS. Any related pair still standing
+     as two entities fails here, unless sportegories-people.json lists it as
+     two men. */
+  const { candidates, pairKey } = await import('./sportegories-people.mjs');
+  const PEOPLE = JSON.parse(readFileSync('scripts/sportegories-people.json', 'utf8'));
+  const APART = new Set(PEOPLE.apart.map(([sp, a, b]) => pairKey(sp, a, b)));
+  const E = ENT.filter((e) => e && e.name && e.sport);
+  const SH = E.map((e) => ({ name: e.name, sport: e.sport, pos: e.pos || null, t: e.t || [], col: e.col || null, dec: e.decade || [] }));
+  const open = [];
+  for (const [i, j, v] of candidates(SH)) {
+    if (v === 'apart' || APART.has(pairKey(SH[i].sport, SH[i].name, SH[j].name))) continue;
+    open.push(SH[i].sport + ' ' + SH[i].name + ' / ' + SH[j].name + ' (' + v + ')');
+  }
+  if (open.length) fail(open.length + ' men are two entities; fold each through ALIAS in arcade/data.js, or list two men under `apart` in scripts/sportegories-people.json: ' + open.slice(0, 12).join(' | '));
+  else ok('no man is held as two entities (' + E.length + ' checked)');
+}
+
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }
 console.log('\nnamesakes ok');

@@ -141,7 +141,7 @@
 
   /* The board key and label for whichever version is currently in play.
    * One place decides this, so a game page can never mount its leaderboard
-   * against a different key than the one it submits scores to — which is
+   * against a different key than the one it submits scores to, which is
    * exactly the bug that made every sport-edition score vanish. */
   function boardKey(base) { return key(base, eligible() ? last(base) : 'all'); }
   function label(mode) {

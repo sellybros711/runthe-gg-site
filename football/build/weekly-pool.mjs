@@ -117,14 +117,25 @@ export function seasonToDate(rows, week) {
   return [...by.values()];
 }
 
-/* What a card says. Season to date totals, in the order the position is read in. */
+/* What a card says. Season to date totals, in the order the position is read in.
+ *
+ * TWO KINDS OF PRODUCTION AT MOST, the position's own first. The line is one line on the
+ * card at every width down to 320, and three kinds do not fit: Josh Allen's one catch in
+ * week 4 of 2026 made his "786 pass yds, 5 TD, 114 rush yds, 6 TD, 1 rec, 1 yds, 0 TD",
+ * 58 characters against the 40 the row was sized for, and it was cut off at 360. A QB's
+ * stray catch or a receiver's trick play pass is trivia, and the line is a summary. */
 export function statLine(p) {
-  const bits = [];
   const n = (v) => Math.round(v).toLocaleString('en-US');
-  if (p.pass_yds) bits.push(`${n(p.pass_yds)} pass yds`, `${Math.round(p.pass_td)} TD`);
-  if (p.rush_yds) bits.push(`${n(p.rush_yds)} rush yds`, `${Math.round(p.rush_td)} TD`);
-  if (p.rec) bits.push(`${Math.round(p.rec)} rec`, `${n(p.rec_yds)} yds`, `${Math.round(p.rec_td)} TD`);
-  return bits.join(', ') || 'no production yet';
+  const parts = {
+    pass: p.pass_yds ? `${n(p.pass_yds)} pass yds, ${Math.round(p.pass_td)} TD` : null,
+    rush: p.rush_yds ? `${n(p.rush_yds)} rush yds, ${Math.round(p.rush_td)} TD` : null,
+    rec: p.rec ? `${Math.round(p.rec)} rec, ${n(p.rec_yds)} yds, ${Math.round(p.rec_td)} TD` : null,
+  };
+  const order = p.position === 'QB' ? ['pass', 'rush', 'rec']
+    : p.position === 'RB' ? ['rush', 'rec', 'pass']
+    : p.position === 'WR' || p.position === 'TE' ? ['rec', 'rush', 'pass']
+    : ['pass', 'rush', 'rec'];
+  return order.map((k) => parts[k]).filter(Boolean).slice(0, 2).join(', ') || 'no production yet';
 }
 
 /* ─── who is playing ───────────────────────────────────────────────────────────────── */

@@ -1,7 +1,7 @@
 /* Premium bundles : Stripe Checkout (Cloudflare Pages Function)
  *
  * POST /api/stripe/checkout-bundle
- *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro"|"floor-pro",
+ *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro"|"floor-pro"|"floor-pass",
  *           plan?: "once"|"year", email?, return_path? }
  *   -> { url: "https://checkout.stripe.com/..." }
  *
@@ -12,7 +12,10 @@
  *   STRIPE_PRICE_PS_YEAR              price_...  (Perfect Season, $19.99 a year)
  *   STRIPE_PRICE_RTB_YEAR             price_...  (Run The Bundle, $34.99 a year)
  *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, $14.99 a year, RECURRING)
- *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, one-time)
+ *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, $14.99 a year, RECURRING)
+ *   STRIPE_PRICE_RTF_PASS             price_...  (Floor Pass, $9.99 a season; DARK until PASS_PAID_ENABLED)
+ *   STRIPE_PRICE_RTF_COINS_1..5       price_...  (Run The Floor coin buckets; DARK until BUCKETS_ENABLED)
+ *   or body: { bucket: "floor-coins-1".."floor-coins-5", return_path? } for a coin bucket
  *   SITE_URL                          https://runthe.gg
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE
  *
@@ -66,7 +69,7 @@
  * _verify.js explains.
  */
 import { verifyUser } from './_verify.js';
-import { bundleByKey } from './_bundles.js';
+import { bundleByKey, bucketByKey, BUCKETS_ENABLED, BUCKET_RETURN, puttLivesPack, PUTT_LIVES_ENABLED, PUTT_LIVES_EXTRA_MAX, PUTT_LIVES_RETURN } from './_bundles.js';
 import { siteBase } from './_site.js';
 import { currentPlan } from './_offer.js';
 
@@ -91,9 +94,16 @@ async function handle(context) {
   // bundle -> price (allow-list; the client can never inject an arbitrary price id)
   let body = {};
   try { body = await request.json(); } catch (e) {}
+  /* A COIN BUCKET is a consumable, not a bundle: its own path, below. */
+  if (body.bucket != null) return bucket(env, request, body);
+  /* So are Putt Putt's lives. */
+  if (body.putt_lives != null) return puttLives(env, request, body);
   const key = String(body.bundle || '');
   const bundle = bundleByKey(key);
   if (!bundle) return json({ error: 'unknown_bundle' }, 400);
+  /* SHIPPED DARK: a catalog row whose switch is off (the Floor Pass, until
+     PASS_PAID_ENABLED) is refused here whatever the env vars say. */
+  if (bundle.live === false) return json({ error: 'not_on_sale' }, 403);
 
   /* Only a bundle with a `year` block has two ways to be sold. The baseball and hoops
      tiers are one-time whatever the switch says, and ignore any plan they are sent. */
@@ -203,6 +213,120 @@ async function handle(context) {
     return json({ error: 'stripe_error', detail: attempt.data.error && attempt.data.error.message }, 400);
   }
   return json({ url: attempt.data.url });
+}
+
+/* THE COIN BUCKETS (Run The Floor), shipped dark behind BUCKETS_ENABLED. A
+ * one-time payment, bought as often as anybody likes, so there is no ownership
+ * refusal. The webhook files the paid session in rtf_coin_buys (141), keyed on
+ * the session, and paid coins live only there. No promotion codes: a 100% off
+ * code on a consumable is free coins, not a comp. */
+async function bucket(env, request, body) {
+  const key = String(body.bucket || '');
+  const b = bucketByKey(key);
+  if (!b) return json({ error: 'unknown_bucket' }, 400);
+  if (!BUCKETS_ENABLED) return json({ error: 'not_on_sale' }, 403);
+  const price = env[b.envPrice];
+  if (!env.STRIPE_SECRET_KEY || !price) return json({ error: 'stripe_not_configured' }, 503);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return json({ error: 'stripe_not_configured' }, 503);
+  const userId = await verifyUser(env, request);
+  if (!userId) return json({ error: 'unauthorized' }, 401);
+  const site = siteBase(env, request);
+  let ret = typeof body.return_path === 'string' && body.return_path.indexOf(BUCKET_RETURN) === 0 ? body.return_path : BUCKET_RETURN;
+  const sep = ret.indexOf('?') >= 0 ? '&' : '?';
+  const form = new URLSearchParams({
+    mode: 'payment',
+    'line_items[0][price]': price,
+    'line_items[0][quantity]': '1',
+    client_reference_id: userId,
+    'metadata[supabase_user_id]': userId,
+    'metadata[bucket]': key,
+    success_url: site + ret + sep + 'checkout=success&bucket=' + encodeURIComponent(key),
+    cancel_url: site + ret + sep + 'checkout=cancelled',
+    customer_creation: 'always'
+  });
+  const customer = await lookupCustomer(env, userId);
+  if (customer) { form.set('customer', customer); form.delete('customer_creation'); }
+  else if (body.email) form.set('customer_email', String(body.email));
+  let attempt = await createSession(env, form);
+  if (!attempt.res.ok && customer && isMissingCustomer(attempt.data)) {
+    form.delete('customer');
+    form.set('customer_creation', 'always');
+    if (body.email) form.set('customer_email', String(body.email));
+    attempt = await createSession(env, form);
+  }
+  if (!attempt.res.ok) return json({ error: 'stripe_error', detail: attempt.data.error && attempt.data.error.message }, 400);
+  return json({ url: attempt.data.url });
+}
+
+/* PUTT PUTT LIVES, behind PUTT_LIVES_ENABLED. The body names a pack
+ * (`putt_lives: 'nine'` or `'three'`, keys of PUTT_LIVES). A one-time payment
+ * for that many lives, sold to a signed in player at any time (the owner,
+ * 2026-10-17): lives on a clock come back first, and the rest go over the max
+ * as extra lives (151). The one refusal is the cap: a pack that would take the
+ * extras past PUTT_LIVES_EXTRA_MAX is 409 lives_full, so the webhook never has
+ * to drop a paid life. The read also needs 151's `extra` column, so until 151
+ * is in it fails, and a read that fails is a retryable 503, never a sale. The
+ * webhook delivers. No promotion codes: a 100% off code here is free lives.
+ *
+ * The page comes back to /golf/ with ?putt=lives_paid&pack=<key> or ?putt=lives_cancelled,
+ * never ?purchase=, which is the golf edge function's return and its own poll. */
+async function puttLives(env, request, body) {
+  if (!PUTT_LIVES_ENABLED) return json({ error: 'not_on_sale' }, 403);
+  const key = String(body.putt_lives);
+  const pack = puttLivesPack(key);
+  if (!pack) return json({ error: 'unknown_pack' }, 400);
+  const price = env[pack.envPrice];
+  if (!env.STRIPE_SECRET_KEY || !price) return json({ error: 'stripe_not_configured' }, 503);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return json({ error: 'stripe_not_configured' }, 503);
+  const userId = await verifyUser(env, request);
+  if (!userId) return json({ error: 'unauthorized' }, 401);
+  const held = await puttLivesHeld(env, userId);
+  if (held == null) return json({ error: 'try_again' }, 503);
+  if (held.extra + Math.max(0, pack.lives - held.missing) > PUTT_LIVES_EXTRA_MAX) return json({ error: 'lives_full' }, 409);
+  const site = siteBase(env, request);
+  const ret = typeof body.return_path === 'string' && body.return_path.indexOf(PUTT_LIVES_RETURN) === 0 ? body.return_path : PUTT_LIVES_RETURN;
+  const sep = ret.indexOf('?') >= 0 ? '&' : '?';
+  const form = new URLSearchParams({
+    mode: 'payment',
+    'line_items[0][price]': price,
+    'line_items[0][quantity]': '1',
+    client_reference_id: userId,
+    'metadata[supabase_user_id]': userId,
+    'metadata[putt_lives]': key,
+    success_url: site + ret + sep + 'putt=lives_paid&pack=' + key,
+    cancel_url: site + ret + sep + 'putt=lives_cancelled',
+    customer_creation: 'always'
+  });
+  const customer = await lookupCustomer(env, userId);
+  if (customer) { form.set('customer', customer); form.delete('customer_creation'); }
+  else if (body.email) form.set('customer_email', String(body.email));
+  let attempt = await createSession(env, form);
+  if (!attempt.res.ok && customer && isMissingCustomer(attempt.data)) {
+    form.delete('customer');
+    form.set('customer_creation', 'always');
+    if (body.email) form.set('customer_email', String(body.email));
+    attempt = await createSession(env, form);
+  }
+  if (!attempt.res.ok) return json({ error: 'stripe_error', detail: attempt.data.error && attempt.data.error.message }, 400);
+  return json({ url: attempt.data.url });
+}
+
+/* What this account holds on the server: the lives it is waiting on (a clock in
+ * back_at not yet run out, 146) and its extra lives over the max (151), or null
+ * when the read failed, which includes a database without 150. No row is
+ * nothing lost and nothing extra: a row is made the first time the page asks. */
+async function puttLivesHeld(env, userId) {
+  const h = { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE };
+  try {
+    const r = await fetch(env.SUPABASE_URL + '/rest/v1/putt_lives?user_id=eq.' + encodeURIComponent(userId) + '&select=back_at,extra', { headers: h });
+    if (!r.ok) return null;
+    const rows = (await r.json()) || [];
+    const now = Date.now(), row = rows[0] || {};
+    return {
+      missing: (row.back_at || []).filter(function (t) { return Date.parse(t) > now; }).length,
+      extra: +row.extra || 0,
+    };
+  } catch (e) { return null; }
 }
 
 async function createSession(env, form) {

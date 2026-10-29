@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
@@ -106,9 +106,11 @@
   /* Held so the JS fill doesn't throw the hint line and leaderboard down the
      page a second after first paint - a fixed-count list, so its height is
      knowable, and :empty drops the reservation the moment it's built. */
-  .path:empty{min-height:196px;}
+  /* the four stops a round opens with: 152px on a desktop, 122 on a phone */
+  .path:empty{min-height:152px;}
+  @media (max-width:520px){ .path:empty{min-height:122px;} }
   .stop{display:flex; align-items:center; gap:12px;}
-  .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pc,var(--card)); color:var(--pcInk,#fff); font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
+  .stop .dot{flex:0 0 auto; width:26px; height:26px; border-radius:50%; border:2px solid var(--pc,var(--green)); background:var(--pcFill,var(--pc,var(--card))); color:var(--pcInk,#fff); font-family:var(--hero); font-weight:400; font-size:14px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; text-shadow:0 1px 2px rgba(0,0,0,.55);}
   .stop:not([style]) .dot{background:var(--card); color:var(--greenT); text-shadow:none;}
   .stop:not([style]):first-child .dot{background:var(--green); color:#071426;}
   .stop:not([style]):last-child .dot{background:color-mix(in srgb, var(--green) 22%, var(--card));}
@@ -124,7 +126,7 @@
      more teams to come" is itself a clue, and a career of unknown length would
      make the 3-point call a coin flip. */
   /* out-specifies the :not([style]):first/last-child dot tints above */
-  .path .stop.veiled .dot{background:var(--card); border-style:dashed; border-color:var(--line2); color:var(--line2); text-shadow:none;}
+  .path .stop.veiled .dot{background:var(--card); border-style:dashed; border-color:var(--line2); color:var(--mut); text-shadow:none;}
   .path .stop.veiled .tm{color:var(--line2); letter-spacing:.18em; font-size:14px;}
   .revealbar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; padding-top:14px; border-top:1px dashed var(--line2);}
   .revealbtn{flex:0 0 auto; border:1px solid var(--line2); background:var(--card2); color:var(--ink);
@@ -159,7 +161,7 @@
   .bailbtn:hover:not(:disabled){color:var(--ink); border-color:var(--green);}
   .bailbtn[hidden]{display:none;}
   /* one line of real history after every answer, right or wrong */
-  .factline{min-height:18px; text-align:center; font-size:12.5px; font-weight:700; line-height:1.35;
+  .factline{min-height:calc(3 * 1.35em); text-align:center; font-size:12.5px; font-weight:700; line-height:1.35;
     color:var(--mut); margin:12px 2px 0;}
   .factline.on{color:var(--ink);}
   .factline b{color:var(--greenT); font-weight:900;}
@@ -179,7 +181,8 @@
     text-transform:uppercase; color:var(--mut);}
   .scout .sc b{font-size:12.5px; font-weight:900; color:var(--ink); letter-spacing:.01em;}
   .scout .sc.era b{color:var(--greenT);}
-  .scout:empty{display:none;}
+  /* empty only before the first round is drawn: it keeps its two rows so the
+     card does not grow 84px under the reader when the round lands */
   .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
   .choices{display:flex; flex-direction:column; gap:9px;}
   /* A class rule beats the UA's [hidden]{display:none}, so without this the
@@ -194,6 +197,11 @@
   .choice.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 15%, var(--card));}
   .choice.wrong{border-color:var(--red); background:color-mix(in srgb, var(--red) 14%, var(--card));}
   .choice.dim{opacity:.5;}
+  .bailbtn.aside{visibility:hidden; pointer-events:none;}
+  .choice.sel{border-color:var(--green); background:color-mix(in srgb, var(--green) 10%, var(--card));}
+  .choicego{display:block; width:100%; min-height:48px; border:0; border-radius:13px; background:var(--green); color:var(--onAccent,#04140A);
+    font:900 16px var(--f); cursor:pointer;}
+  .choicego:disabled{opacity:.45; cursor:default;}
   .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:14px 0 2px; font-weight:700;}
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
   .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
@@ -285,11 +293,14 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -303,6 +314,9 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
+<script src="/arcade/tokens.js?v=15"></script>
+<script src="/arcade/metrics.js?v=3"></script>
+<script src="/arcade/gamehead.js?v=4"></script>
 </head>
 <body>
 <div class="wrap">
@@ -325,7 +339,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">Name them off 1 team for 5. Miss once and you’re out.</span></div>
+    <div class="rl"><span class="k">Points today</span><span class="v" id="runSub">5 points off one team. One miss ends it.</span></div>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -341,15 +355,18 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="worth" id="worth">Worth <b>5</b></span>
       </div>
     </div>
+    <!-- The way out sits ABOVE the answer field. Below it, it lay under the
+         name suggestions that drop down from the field, so a tap meant for a
+         suggestion could spend the round on the four names instead. -->
+    <button class="bailbtn" type="button" id="bailBtn">Not sure? Show me 4 names (1 point)</button>
     <div class="answerbar" id="answerbar">
       <input class="answerin" id="answerIn" type="text" inputmode="text" placeholder="Name the player" aria-label="Name the player" />
       <button class="answergo" id="answerGo" type="button">Call it</button>
     </div>
     <div class="subprompt" id="subprompt"></div>
-    <button class="bailbtn" type="button" id="bailBtn">Not sure? Show me 4 names (1 point)</button>
     <div class="choices" id="choices" hidden></div>
     <div class="factline" id="factline" aria-live="polite"></div>
-    <div class="hintline" id="hintline">Type the name to call it. Each extra team you ask for is worth less.</div>
+    <div class="hintline" id="hintline">Call it now, or show a team for less.</div>
   </div>
 
   <div class="lb" id="lb">
@@ -419,44 +436,47 @@ window.GA_ID='G-L29P5MRWKE';
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
-<script src="/arcade/former.js?v=3"></script>
-<script src="/arcade/stars.js?v=4"></script>
+<script src="/arcade/former.js?v=4"></script>
+<script src="/arcade/stars.js?v=5"></script>
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
-<script src="/arcade/primary.js?v=27"></script>
-<script src="/arcade/data.js?v=5"></script>
+<script src="/arcade/primary.js?v=60"></script>
+<script src="/arcade/franchise.js?v=1"></script>
+<script src="/arcade/data.js?v=9"></script>
+<script src="/arcade/flags.js?v=8"></script>
+<script src="/arcade/fame.js?v=2"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
-<script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/result.js?v=1"></script>
-<script src="/arcade/funnel.js?v=12"></script>
-<script src="/arcade/share.js?v=9"></script>
-<script src="/arcade/resultart.js?v=4"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/sfx.js?v=4"></script>
+<script src="/arcade/result.js?v=2"></script>
+<script src="/arcade/funnel.js?v=14"></script>
+<script src="/arcade/share.js?v=11"></script>
+<script src="/arcade/resultart.js?v=5"></script>
+<script src="/arcade/resultstats.js?v=4"></script>
+<script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
-<script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
-<script src="/arcade/dayroll.js?v=1"></script>
-<script src="/arcade/mode.js?v=7"></script>
-<script src="/arcade/archive.js?v=2"></script>
+<script src="/arcade/modal-a11y.js?v=2"></script>
+<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=2"></script>
+<script src="/arcade/mode.js?v=8"></script>
+<script src="/arcade/archive.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=25"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
-<script src="/arcade/topbanner.js?v=10"></script>
-<script src="/arcade/auth-ui.js?v=8"></script>
-<script src="/arcade/card.js?v=22"></script>
-<script src="/arcade/referral.js?v=11"></script>
+<script src="/arcade/topbanner.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=9"></script>
+<script src="/arcade/card.js?v=23"></script>
+<script src="/arcade/referral.js?v=12"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
-<script src="/arcade/howto.js?v=24"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script src="/arcade/type.js?v=5"></script>
-<script src="/arcade/fact.js?v=3"></script>
+<script src="/arcade/fact.js?v=6"></script>
 <script>
 (function(){
   'use strict';
@@ -495,9 +515,13 @@ window.GA_ID='G-L29P5MRWKE';
      gives the game an identity: this is the well-travelled-career game.
      Counted as DISTINCT franchises, not stops, so a there-and-back career
      (Portland, Milwaukee, Portland) is the two-club career it actually is. */
+  /* Clubs as FRANCHISES (data.js via franchise.js): the St. Louis and Los
+     Angeles Rams are one, so a player who stayed through a move is not a
+     two-club career. Names on screen still come from e.t, as they were. */
+  function fk(e){ return (e.tk && e.tk.length) ? e.tk : (e.t||[]); }
   function franchiseCount(e){
     var seen={}, n=0;
-    (e.t||[]).forEach(function(t){ if(t && !seen[t]){ seen[t]=1; n++; } });
+    fk(e).forEach(function(t){ if(t && !seen[t]){ seen[t]=1; n++; } });
     return n;
   }
   function careerStar(e){
@@ -527,13 +551,13 @@ window.GA_ID='G-L29P5MRWKE';
   // re-derive both inside its loop, which is what made this page block the
   // main thread for ~430ms on load (the worst boot cost in the arcade).
   var pathCache={};
-  function pathOf(e){ var p=pathCache[e.id]; if(p===undefined){ p=(e.t||[]).join('>'); pathCache[e.id]=p; } return p; }
+  function pathOf(e){ var p=pathCache[e.id]; if(p===undefined){ p=fk(e).join('>'); pathCache[e.id]=p; } return p; }
   // sport -> team -> [entities], so "who else played for the Lakers" is a
   // lookup instead of a full-bucket scan.
   var byTeam={};
   Object.keys(bySport).forEach(function(sp){
     var m=byTeam[sp]={};
-    bySport[sp].forEach(function(e){ (e.t||[]).forEach(function(tm){ (m[tm]=m[tm]||[]).push(e); }); });
+    bySport[sp].forEach(function(e){ fk(e).forEach(function(tm){ (m[tm]=m[tm]||[]).push(e); }); });
   });
   // Same-sport candidates minus the target and anyone sharing its exact path.
   // Cached per (sport|path) because consecutive rounds often reuse a bucket.
@@ -550,7 +574,7 @@ window.GA_ID='G-L29P5MRWKE';
   // Everyone in the sport who shares >=1 team with the target, via byTeam.
   function overlapWith(t, tpath){
     var m=byTeam[t.sport]||{}, out=[], hit={};
-    (t.t||[]).forEach(function(tm){
+    fk(t).forEach(function(tm){
       (m[tm]||[]).forEach(function(e){
         if(e.id===t.id || hit[e.id]) return;
         if(pathOf(e)===tpath) return;      // same exact path = second right answer
@@ -563,22 +587,67 @@ window.GA_ID='G-L29P5MRWKE';
   // 200 rounds up front cost ~370ms of blocked main thread for rounds almost
   // nobody reaches (same fix Rank It got).
   var BATCH=12;
-  function buildRounds(want, preSeen){
+  /* Phase 2 content, behind flags (flags.js): the run opens on household names
+     and gets harder (ramp), and the three wrong names come from the same era
+     and position as the answer (decoys). Read per board day, so an archive
+     day is dealt the way it was dealt on that day. */
+  function flagOn(n){ try{ return !!(window.RTGFlags && window.RTGFame && RTGFlags.on(n, DATE)); }catch(e){ return false; } }
+  function buildRounds(want, preSeen, base){
     want = Math.min(want || BATCH, ROUNDS);
     var pool=poolForMode();
-    var out=[], guard=0, seen={};
+    var out=[], guard=0, seen={}, bad={};
+    var RAMP=flagOn('ramp'), DECOYS=flagOn('decoys'), ERAS=flagOn('eras') && !!RTGFame.eraOk;
     if(preSeen) Object.keys(preSeen).forEach(function(k){ seen[k]=1; });
+    /* Flag 'current': careers that reached the 2020s, the owner's call after
+       the eras gate still dealt the 1970s by the seventeenth card. A game for
+       younger fans asks about players they watched. A sport mode too thin for
+       a run (under 40) starts at careers that reached the 2010s, and a run
+       that uses everyone up moves down a tier rather than ending. Nobody
+       older is dealt while anybody newer is left. */
+    var CUR=flagOn('current') && !!RTGFame.lastDecade;
+    function recent(e, d){ return !!e.act || RTGFame.lastDecade(e)>=d; }
+    var tiers=[pool];
+    if(CUR){
+      var t20=pool.filter(function(e){ return recent(e, 2020); }), t10=pool.filter(function(e){ return recent(e, 2010); });
+      tiers = t20.length>=40 ? [t20, t10, pool] : [t10, pool];
+    }
+    function liveTier(){
+      for(var i=0;i<tiers.length;i++){
+        var tr=tiers[i];
+        for(var j=0;j<tr.length;j++) if(!seen[tr[j].id] && !bad[tr[j].id]) return tr;
+      }
+      return tiers[tiers.length-1];
+    }
+    // and the three wrong names are just as recent, or the answer is the only
+    // modern name on the card
+    function recentOnly(list, strict){
+      if(!CUR) return list;
+      var r=list.filter(function(e){ return recent(e, 2010); });
+      return (strict || r.length>=3) ? r : list;
+    }
+    /* Flag 'eras': the opening cards are careers that reached the 1990s and
+       the 1970s (fame.js eraOk), keyed on the card number like the ramp. A
+       run used to open on a 1960s Yankee outfielder. `eraTries` lets a card
+       nobody in this mode's pool can fill fall back to anyone. */
+    var eraTries=0;
     while(out.length<want && guard<8000){ guard++;
-      var t=pool[ri(pool.length)];
+      var t, k=(base||0)+out.length, gate=ERAS && eraTries<400;
+      if(CUR) pool=liveTier();
+      if(RAMP){
+        t=RTGFame.pick(pool, k, rng, function(e){ return seen[e.id] || bad[e.id] || (gate && !RTGFame.eraOk(e, k)); });
+        if(!t && gate){ eraTries=400; continue; }
+        if(!t) break;
+      } else t=pool[ri(pool.length)];
       if(seen[t.id]) continue;   // each athlete stars at most once per day
+      if(gate && !RTGFame.eraOk(t, k)){ eraTries++; continue; }
       var tpath=pathOf(t);
-      var tteams=(t.t||[]);
+      var tteams=fk(t);
       // Distractors: same sport, and NOT the same exact team path (no second
       // correct answer). The sport bucket is filtered ONCE per candidate using
       // a precomputed path index; rebuilding it per iteration meant ~500k array
       // scans and ~430ms of blocked main thread before first paint.
-      var others=sameSportExcept(t, tpath);
-      if(others.length<3) continue;
+      var others=recentOnly(sameSportExcept(t, tpath));
+      if(others.length<3){ bad[t.id]=1; continue; }
       // Prefer decoys that SHARE at least one team with the target - "he also
       // played for the Lakers" is a far more tempting wrong answer than a random
       // name. Still fair: only the target has the exact full chronological path.
@@ -589,14 +658,28 @@ window.GA_ID='G-L29P5MRWKE';
       //   rounds 20+:                   rank by shared-team COUNT (>=2 first, then >=1,
       //                                 then others) and take the top 3; ties broken by
       //                                 the seeded shuffle so boards stay deterministic
-      function sharedCount(e){ var n=0,ts=e.t||[]; for(var k=0;k<ts.length;k++){ if(tteams.indexOf(ts[k])>=0) n++; } return n; }
+      function sharedCount(e){ var n=0,ts=fk(e); for(var k=0;k<ts.length;k++){ if(tteams.indexOf(ts[k])>=0) n++; } return n; }
       var pickIds={}, distract=[];
       function takeFrom(list){ list.forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } }); }
       // The overlap set comes from the team index, so neither branch scans the
       // whole sport bucket. Late rounds still rank by shared-team count, but
       // only across the (small) overlap set before falling back.
-      var overlap=overlapWith(t, tpath);
-      if(out.length>=19){
+      var overlap=recentOnly(overlapWith(t, tpath), true);
+      if(DECOYS){
+        /* A wrong name has to be believable: same league (already), the same
+           era, the same position family, and about as well known as the
+           answer, so none of the four can be ruled out without knowing the
+           career. Shared clubs still count, most of all late in the run. */
+        var tt=RTGFame.tier(t), TI=['household','known','solid','deep'];
+        var late=((base||0)+out.length)>=19;
+        var cand=shuffle(others).filter(function(e){ return e.id!==t.id && RTGFame.eraScore(t,e)>=1; });
+        var scored=cand.map(function(e,i){
+          var fameGap=Math.abs(TI.indexOf(RTGFame.tier(e))-TI.indexOf(tt));
+          return { e:e, i:i, v: RTGFame.alike(t,e)*10 + sharedCount(e)*(late?6:3) - fameGap*4 };
+        }).sort(function(a,b){ return (b.v-a.v) || (a.i-b.i); });
+        takeFrom(scored.map(function(x){ return x.e; }));
+        if(distract.length<3){ takeFrom(shuffle(others).filter(function(e){ return e.id!==t.id; })); }
+      } else if(out.length>=19){
         takeFrom(shuffle(overlap).sort(function(a,b){ return sharedCount(b)-sharedCount(a); }));
         if(distract.length<3){ takeFrom(shuffle(others).filter(function(e){ return e.id!==t.id; })); }
       } else {
@@ -604,18 +687,22 @@ window.GA_ID='G-L29P5MRWKE';
         if(distract.length<3){ takeFrom(shuffle(others).filter(function(e){ return e.id!==t.id; })); }
       }
       var opts=shuffle([t].concat(distract)).map(function(e){ return e.id; });
-      out.push({ target:t.id, opts:opts }); seen[t.id]=1;
+      out.push({ target:t.id, opts:opts }); seen[t.id]=1; eraTries=0;
     }
     return out;
   }
   var SEQ=buildRounds(BATCH);
+  /* Read-only view of the deal for scripts/check-content.mjs. Nothing on the
+     page calls it. */
+  window.__rtgDeal = function(n){ ensureRounds(n||30); return SEQ.slice(0, n||30).map(function(r){
+    return { target: byId[r.target], opts: r.opts.map(function(id){ return byId[id]; }) }; }); };
   // Top up before the player can run off the end. The RNG stream continues
   // from where the last batch stopped, so a given seed still yields a given
   // sequence - just built in slices.
   function ensureRounds(upto){
     if(SEQ.length>=ROUNDS || SEQ.length>=upto) return;
     var seen={}; SEQ.forEach(function(r){ seen[r.target]=1; });
-    var add=buildRounds(Math.min(ROUNDS, upto+BATCH)-SEQ.length, seen);
+    var add=buildRounds(Math.min(ROUNDS, upto+BATCH)-SEQ.length, seen, SEQ.length);
     for(var i=0;i<add.length;i++) SEQ.push(add[i]);
   }
 
@@ -626,17 +713,33 @@ window.GA_ID='G-L29P5MRWKE';
   /* Readable ink for a digit sitting on an arbitrary team colour.
    * Compare BOTH candidates rather than splitting on a luminance threshold:
    * a mid-tone like Cincinnati orange (#FB4F14) reads 3.4:1 against white but
-   * 5.3:1 against ink, and any single cutoff gets a band of colours wrong. */
+   * 5.3:1 against ink, and any single cutoff gets a band of colours wrong.
+   *
+   * AND NUDGE THE FILL WHEN NEITHER INK IS ENOUGH. A colour near the middle
+   * (Hawks and Blazers #E03A3E, Chargers #0080C6, Orioles #DF4601, Panthers
+   * #0085CA) tops out near 4.3:1 against either ink, short of the 4.5 a 14px
+   * digit needs. So the dot's fill moves toward black or white, whichever
+   * gets there in fewer steps, and the border keeps the true team colour.
+   * Returns { ink, fill }. */
   function onColorOf(hex){
     try{
       var h=String(hex||'').replace('#','');
-      if(h.length!==6) return '#fff';
-      var lin=function(c){ c=parseInt(c,16)/255; return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4); };
-      var L=0.2126*lin(h.substr(0,2))+0.7152*lin(h.substr(2,2))+0.0722*lin(h.substr(4,2));
+      if(h.length!==6) return { ink:'#fff', fill:hex };
+      var rgb=[0,2,4].map(function(i){ return parseInt(h.substr(i,2),16); });
+      var lin=function(c){ c=c/255; return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4); };
+      var lum=function(c){ return 0.2126*lin(c[0])+0.7152*lin(c[1])+0.0722*lin(c[2]); };
       var ratio=function(a,b){ return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05); };
       var WHITE=1, INK=0.00856;                       // relative luminance of #fff / #0A1728
-      return ratio(L,INK) >= ratio(L,WHITE) ? '#0A1728' : '#fff';
-    }catch(e){ return '#fff'; }
+      var hexOf=function(c){ return '#'+c.map(function(v){ return ('0'+Math.round(v).toString(16)).slice(-2); }).join(''); };
+      for(var t=0; t<=1.0001; t+=0.02){
+        var dark=rgb.map(function(v){ return v*(1-t); }), light=rgb.map(function(v){ return v+(255-v)*t; });
+        var rw=ratio(lum(dark),WHITE), ri=ratio(lum(light),INK);
+        if(t===0){ if(Math.max(rw,ri)>=4.5) return { ink: ri>=rw?'#0A1728':'#fff', fill:'#'+h }; continue; }
+        if(rw>=4.5) return { ink:'#fff', fill:hexOf(dark) };
+        if(ri>=4.5) return { ink:'#0A1728', fill:hexOf(light) };
+      }
+      return { ink:'#fff', fill:'#'+h };
+    }catch(e){ return { ink:'#fff', fill:hex }; }
   }
   /* THE ROUND: a career arrives one team at a time, and you type the name.
      Seeing the whole path and picking from four names was a lookup with the
@@ -664,8 +767,8 @@ window.GA_ID='G-L29P5MRWKE';
       // range from near-black to near-white, and a fixed white digit sat at 3.4:1
       // on the light ones. Pick the ink from the fill's luminance, the same way
       // the hub picks its PLAY labels.
-      var ink = tc ? onColorOf(tc.p) : null;
-      var st=tc?(' style="--pc:'+tc.p+';--pcInk:'+ink+';--pc2:'+(tc.s||tc.p)+'"'):'';
+      var on = tc ? onColorOf(tc.p) : null;
+      var st=tc?(' style="--pc:'+tc.p+';--pcFill:'+on.fill+';--pcInk:'+on.ink+';--pc2:'+(tc.s||tc.p)+'"'):'';
       var body = veiled ? '<span class="tm">? ? ?</span>' : '<span class="tm">'+esc(tm)+'</span>'+tag;
       return (i>0?'<div class="stopgap"></div>':'')
            + '<div class="stop'+(veiled?' veiled':'')+'"'+st+'><span class="dot">'+(i+1)+'</span>'+body+'</div>';
@@ -710,7 +813,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(factEl){ factEl.textContent=''; factEl.classList.remove('on'); }
     var r=SEQ[idx], target=byId[r.target];
     shown=1; bailed=false;
-    answerIn.value=''; choicesEl.hidden=true; choicesEl.innerHTML='';
+    answerIn.value=''; bailBtn.classList.remove('aside'); choicesEl.hidden=true; choicesEl.innerHTML='';
     setAnswerEnabled(true);
     drawScout(target); drawPath(target, false); drawWorth(target, false);
   }
@@ -737,14 +840,31 @@ window.GA_ID='G-L29P5MRWKE';
     bailed=true;
     var target=byId[r.target];
     choicesEl.hidden=false;
-    choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
-    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(bt.dataset.id===r.target, bt); }); });
+    /* Pick, then lock it in. A tap used to be the answer, so a thumb that
+       landed one row off ended the run. Now a tap selects, and the call is
+       a second, separate button that says which name it is calling. */
+    choicesEl.innerHTML = r.opts.map(function(id){ return '<button class="choice" type="button" aria-pressed="false" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('') +
+      '<button class="choicego" type="button" id="choiceGo" disabled>Pick a name</button>';
+    var picked=null, goBtn=document.getElementById('choiceGo');
+    [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){
+      if(done||busy) return;
+      picked=bt;
+      [].forEach.call(choicesEl.querySelectorAll('.choice'), function(x){ x.classList.toggle('sel', x===bt); x.setAttribute('aria-pressed', x===bt?'true':'false'); });
+      goBtn.disabled=false; goBtn.textContent='Lock in '+byId[bt.dataset.id].name;
+    }); });
+    goBtn.addEventListener('click', function(){ if(!picked) return; goBtn.hidden=true; resolve(picked.dataset.id===r.target, picked); });
     setAnswerEnabled(true);
     drawWorth(target, false);
     document.getElementById('subprompt').textContent='It’s one of these. Worth 1 point.';
     saveResume();
   }
   bailBtn.addEventListener('click', bail);
+  /* While a name is being typed the suggestions are open, above or below the
+     field depending on the keyboard, and the four-name button is the one
+     thing a stray tap could hit. It steps out of the way (keeping its space,
+     so nothing jumps) until the field is empty again. */
+  function bailAside(){ bailBtn.classList.toggle('aside', !!answerIn.value.trim()); }
+  answerIn.addEventListener('input', bailAside);
 
   /* A typed answer is graded in three states, not two. A name we have never
      heard of is a spelling problem, not a wrong answer, and ending someone's
@@ -803,6 +923,8 @@ window.GA_ID='G-L29P5MRWKE';
     if(done||busy) return; busy=true;
     var r=SEQ[idx], target=byId[r.target], got=worthOf(shown);
     setAnswerEnabled(false);
+    if(window.RTGReview) RTGReview.add(GAME, { q:(target.t||[]).join(' · '), you: bt && byId[bt.dataset.id] ? byId[bt.dataset.id].name : answerIn.value.trim(),
+      answer: target.name, ok: !!right, note: bailed ? 'Took the four names' : (shown>1 ? shown+' teams shown' : 'Off 1 team') });
     // whatever happens, the career finishes telling itself - you always get to
     // see the rest of the path you were betting on
     drawPath(target, true); drawWorth(target, true);
@@ -822,25 +944,27 @@ window.GA_ID='G-L29P5MRWKE';
         (got>=5 ? 'Off 1 team! +5.' : ('+'+got+(got===1?' point':' points'))) + ' It was ' + target.name + '.';
       if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
-      setTimeout(function(){ busy=false; renderRound(); answerIn.focus(); }, 1900);
+      afterFact(function(){ busy=false; renderRound(); answerIn.focus(); }, 1900);
     } else {
       ANSLOG.push('x');
       document.getElementById('subprompt').textContent='Nope. It was '+target.name+'.';
       if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){ finish(); }, 2400);
+      afterFact(function(){ finish(); }, 2400);
     }
   }
 
+  function afterFact(fn, ms){ return (window.RTGFact && RTGFact.hold) ? RTGFact.hold(fn, ms) : setTimeout(fn, ms); }
   function startIfNeeded(){ if(started||done) return;
     if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
-    started=true; startTs=performance.now(); }
+    started=true; startTs=performance.now(); if(window.RTGReview) RTGReview.start(GAME); saveResume(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
-    if(ARCHIVE){ h.textContent='Call it now, or see another team for fewer points. · Archive · your personal best'; return; }
+    if(ARCHIVE){ h.textContent='Call it now, or show a team for less. · Archive · your personal best'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
-    h.textContent='Call it now, or see another team for fewer points.'+lbl; }
+    h.textContent='Call it now, or show a team for less.'+lbl; }
   function beginAttempt(){
+    if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(false);
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); SEQ=buildRounds(BATCH); } else { seedDaily(); SEQ=buildRounds(BATCH); servedDaily=true; }
@@ -906,7 +1030,7 @@ window.GA_ID='G-L29P5MRWKE';
   // made Wordle spread).
   var ANSLOG=[];
   function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('career', DATE);
-    if(done) return; done=true;
+    if(done) return; done=true; if(!ARCHIVE&&window.RTGTokens&&RTGTokens.complete) RTGTokens.complete(GAME);
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
@@ -929,6 +1053,7 @@ window.GA_ID='G-L29P5MRWKE';
     }
   }
   function showEnd(s, locked){
+    if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(true);
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('runN').textContent=run;
     document.getElementById('bestRun').textContent=s.bestRun||0;
@@ -955,7 +1080,7 @@ window.GA_ID='G-L29P5MRWKE';
     subEl.classList.toggle('newbest', !locked && NEWBEST);
     var mm=document.getElementById('mMilestone');
     if(mm){ if(!locked && MSTONE){ mm.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg> '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
-    document.getElementById('yourTm').textContent = run+' points';
+    document.getElementById('yourTm').textContent = run+(run===1?' point':' points');
     document.getElementById('yourBest').textContent = s.bestRun||0;
     updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && (run>=5 || NEWBEST)){ confetti(NEWBEST?140:(run>=15?120:70), NEWBEST || run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
@@ -986,7 +1111,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* The result screen shows this card too (resultart.js), so the spec the
      share button builds is now a function both can call. */
   function cardSpec(){
-    var stat=(run>0?'🔥 ':'')+run+' points';
+    var stat=(run>0?'🔥 ':'')+run+(run===1?' point':' points');
     return { key:'career', date:DATE, grid:shareGrid(), stat:stat, statInt:run };
   }
   window.RTG_CARD_SPEC = cardSpec;
@@ -1018,9 +1143,9 @@ window.GA_ID='G-L29P5MRWKE';
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
         if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top scores today</div>';
+        else{ var me=((RTG_BOARD.boardName&&RTG_BOARD.boardName())||RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Top scores today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
-            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' points</span></div>'; }
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+((r.run_len||0)===1?' point':' points')+'</span></div>'; }
           samp.innerHTML=h;
         }
       }
@@ -1144,6 +1269,19 @@ window.GA_ID='G-L29P5MRWKE';
     })();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ready); else ready();
+})();
+</script>
+<script>
+/* THE ARCADE'S ADS (Ads Agent, 2026-10-29, the owner's calls). Two desktop rails beside the game on
+   every screen, play included, built only where each one can sit 150px clear of the column and never
+   on a phone. And the closeable bottom banner on the result, never during play; its X closes it for
+   the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
+(function(){
+  var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
+  function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
+  if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
+  window.RTG_ARCADE_STICKY = function(on){ if(window.RTG_ADS) RTG_ADS.sticky(on, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
 })();
 </script>
 </body>

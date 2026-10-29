@@ -27,6 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
@@ -39,6 +40,30 @@ E.setCuratedChemistry(JSON.parse(fs.readFileSync(path.join(HERE, 'data/chemistry
 const D = R.indexData(JSON.parse(fs.readFileSync(path.join(HERE, 'data/players.json'), 'utf8')));
 const QUICK = process.argv.includes('--quick');
 
+/* THE MODE TILES LIVE UNDER MORE WAYS TO PLAY. A phone reaches them through
+   one door and a sheet, so a tile that is not on the page is pressed the way a
+   reader would press it: open the sheet, then the tile. The two daily puzzles
+   are the strip at the top of the front page and never in the sheet, so a
+   press on one with the sheet up shuts the sheet first, the way a reader
+   would, rather than clicking through its scrim. */
+async function openMore(page) {
+  const open = await page.evaluate(() => document.querySelector('#modesheet') &&
+    document.querySelector('#modesheet').classList.contains('open'));
+  if (open) return;
+  await page.click('#b-modes');
+  await page.waitForSelector('#modesheet.open');
+}
+async function tapMode(page, sel) {
+  const shown = await page.evaluate((q) => { const el = document.querySelector(q);
+    return !!el && el.getBoundingClientRect().height > 0; }, sel);
+  if (!shown) await openMore(page);
+  else if (await page.evaluate((q) => { const m = document.querySelector('#modesheet');
+    return !!m && m.classList.contains('open') && !m.contains(document.querySelector(q)); }, sel)) {
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('#modesheet').classList.contains('open'));
+  }
+  await page.click(sel);
+}
 const failures = [];
 let passed = 0;
 function ok(cond, what) { if (cond) passed++; else failures.push(what); }
@@ -574,6 +599,62 @@ section('4. Fix History: one team a day, four trade windows, one score everywher
   }
 }
 
+// ── 4b. your lineup ─────────────────────────────────────────────────────────
+section('4b. Fix History: you set the five, and the five you set is the five that plays');
+{
+  const day = 7, st = M.fxSeasonCreate(D, day);
+  const keys = (fv) => fv.map(p => E.pkey(p)).join();
+  const rows0 = M.fxRosterAt(D, st, 0), coach = M.fxLineup(rows0);
+  ok(keys(M.fxLineupAt(D, st, 0)) === keys(coach), 'no lineup set is the coach\'s five');
+  ok(JSON.stringify(M.fxStretches(D, st).map(g => keys(g.five))) === JSON.stringify(M.FX_WINDOWS.map(() => keys(coach))),
+    'so a season nobody touched plays the team as built');
+  /* The best man on the bench swapped for the best starter: a real change,
+     and the one that has to move the odds downward. */
+  const star = [...coach].sort((a, b) => b.w - a.w)[0];
+  const bench = rows0.filter(p => !coach.some(c => c.i === p.i)).sort((a, b) => a.w - b.w)[0];
+  const sat = coach.map(p => E.pkey(p === star ? bench : p));
+  ok(M.fxSetLineup(D, st, sat) === null, 'a bench man can take a starter\'s spot');
+  ok(keys(M.fxLineupAt(D, st, 0)) === sat.join(), 'and the five is the five set, in the spots set');
+  ok(keys(M.fxStretches(D, st)[0].five) === sat.join(), 'the stretch plays that five, not the coach\'s');
+  const oddsSat = M.fxSeasonOddsStep(D, st, 0, 300).titles, oddsCoach = M.fxSeasonOddsStep(D, M.fxSeasonCreate(D, day), 0, 300).titles;
+  console.log(`  benching the best man: ${oddsCoach} titles in 300 against ${oddsSat}`);
+  ok(oddsSat < oddsCoach, 'benching the best man costs title odds');
+  /* A swap of two starters is legal whatever the positions say. */
+  const flip = coach.map(p => E.pkey(p)); [flip[0], flip[4]] = [flip[4], flip[0]];
+  const st2 = M.fxSeasonCreate(D, day);
+  ok(M.fxSetLineup(D, st2, flip) === null && keys(M.fxLineupAt(D, st2, 0)) === flip.join(), 'two starters swap spots, any spot');
+  ok(M.fxSetLineup(D, st2, flip.slice(0, 4).concat([flip[0]])) !== null, 'the same man twice is refused');
+  ok(M.fxSetLineup(D, st2, flip.slice(0, 4).concat(['nobody|1990|XXX'])) !== null, 'a man not on the roster is refused');
+  ok(M.fxSetLineup(D, st2, coach.map(p => E.pkey(p))) === null && !st2.lineups, 'setting the coach\'s five back clears it');
+  /* It carries forward, and the games before the window it was set at never
+     move: the record the desk prints is the record as played. */
+  const st3 = M.fxSeasonCreate(D, day);
+  M.fxNextWindow(st3);
+  const before = M.fxSeasonReplay(D, st3).games.slice(0, M.FX_WINDOWS[1].at).join();
+  M.fxSetLineup(D, st3, sat);
+  ok(M.fxSeasonReplay(D, st3).games.slice(0, M.FX_WINDOWS[1].at).join() === before, 'a lineup set at a window never moves a game before it');
+  ok(keys(M.fxStretches(D, st3)[0].five) === keys(coach), 'and the stretch before it keeps the coach\'s five');
+  M.fxNextWindow(st3);
+  ok(keys(M.fxLineupAt(D, st3, 2)) === sat.join(), 'the five carries forward to the next window');
+  /* A starter traded away leaves a hole, and the hole is filled from the
+     roster: always five different men, all of them yours. */
+  const st4 = M.fxSeasonCreate(D, day);
+  M.fxSetLineup(D, st4, sat);
+  let holes = 0, tried = 0, moved = 0;
+  for (const p of M.fxLineupAt(D, st4, 0)) {
+    for (const o of M.fxCalls(D, st4, [E.pkey(p)], []).slice(0, 3)) {
+      tried++;
+      const t = { ...st4, trades: [{ w: 0, with: o.with, outs: [E.pkey(p)], ins: o.ins, picks: [] }] };
+      const fv = M.fxLineupAt(D, t, 0), mine = new Set(M.fxRosterAt(D, t, 0).map(x => E.pkey(x)));
+      if (fv.length !== 5 || new Set(fv.map(x => x.i)).size !== 5 || !fv.every(x => mine.has(E.pkey(x))) || fv.some(x => E.pkey(x) === E.pkey(p))) holes++;
+      /* and the four who stayed keep the spots you put them in */
+      if (sat.some((k, i) => k !== E.pkey(p) && E.pkey(fv[i]) !== k)) moved++;
+    }
+  }
+  ok(tried > 3 && holes === 0, `a traded starter's hole is always filled from your roster (${holes} of ${tried} are not)`);
+  ok(moved === 0, `and the four who stayed keep their spots (${moved} of ${tried} moved)`);
+}
+
 // ── 5. Six Passes ───────────────────────────────────────────────────────────
 section('5. Six Passes: a year of puzzles, every par a real shortest chain');
 {
@@ -647,6 +728,18 @@ section('5b. endless and picked puzzles never share a seed with a day');
 // ── 6. a number a player reads is the number the game plays ─────────────────
 section('6. the copy and the SQL agree with the constants');
 {
+  /* A RULE WITH NO CLOSING BRACE SWALLOWS EVERY RULE AFTER IT, in silence. The
+     leaderboard pass deleted the line that closed .fx-chip, and every screen
+     styled after it (Fix History's dock, all of Six Passes, the board sheet)
+     drew as raw browser defaults for a week. Nothing threw. So the injected
+     stylesheet is read out of modes-ui.js and its braces are counted. */
+  const ui = fs.readFileSync(path.join(HERE, 'modes-ui.js'), 'utf8');
+  const cssSrc = ui.slice(ui.indexOf('var CSS = ['), ui.indexOf("].join(", ui.indexOf('var CSS = [')) + 1);
+  const css = new Function('return ' + cssSrc.replace(/^var CSS = /, ''))().join('');
+  let depth = 0, low = 0;
+  for (const ch of css.replace(/"[^"]*"/g, '')) { if (ch === '{') depth++; else if (ch === '}') { depth--; low = Math.min(low, depth); } }
+  ok(css.length > 20000 && depth === 0 && low === 0, `the modes stylesheet closes every brace it opens (depth ${depth}, ${css.length} chars)`);
+
   const WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
   const ORD = ['', '', 'second', 'third', 'fourth', 'fifth', 'sixth'];
   const how = fs.readFileSync(path.join(HERE, 'how-to-play.html'), 'utf8');
@@ -656,7 +749,7 @@ section('6. the copy and the SQL agree with the constants');
 
   const sql = fs.readFileSync(path.join(ROOT, 'supabase/116_hoops_modes.sql'), 'utf8');
   ok(sql.includes("date '" + M.DAILY_EPOCH + "'"), `116 counts days from ${M.DAILY_EPOCH}, as modes.js does`);
-  const page = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const page = pageSource();
   ok(page.includes("var DAILY_EPOCH = '" + M.DAILY_EPOCH + "'"), 'and so does the page');
   ok(sql.includes('v_passes > ' + M.PS.CLOCK), `116 refuses a chain past the ${M.PS.CLOCK} pass shot clock`);
   ok(sql.includes('p_lives > ' + M.CQ.LIVES), `116 refuses more than ${M.CQ.LIVES} lives`);
@@ -680,6 +773,7 @@ if (!QUICK) {
   const posts = [];
   const escaped = [];
   const checkouts = [];
+  let boardRows = [];   // what the stand-in answers a board read with
   async function serve(route) {
     const u = new URL(route.request().url());
     /* THE BOARD, stood in for. Submits answer an id; reads answer a row and a
@@ -694,6 +788,9 @@ if (!QUICK) {
            made the same move (fix_in), and the whole field. Answered as
            different numbers so each line can be told apart. */
         const q = u.search;
+        if (/order=score\.desc/.test(q) && /mode=eq\.fix/.test(q)) {
+          return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(boardRows) });
+        }
         const n = /score=gt/.test(q) ? 2 : /fix_in=/.test(q) ? 5 : 41;
         return route.fulfill({ status: 200, contentType: 'application/json',
           headers: { 'content-range': '0-0/' + n, 'access-control-expose-headers': 'content-range' },
@@ -727,17 +824,22 @@ if (!QUICK) {
   page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
   await page.route('**/*', serve);
   await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
 
   const home = await page.evaluate(() => ({
     cards: ['mc-fix', 'mc-ps', 'mc-cq'].map((id) => !!document.getElementById(id)),
     dock: document.querySelector('#dock').textContent.trim(),
   }));
   ok(home.cards.every(Boolean), 'the front page has a card for each of the three');
-  ok(/Fix History/.test(home.dock), `the dock offers today's Fix History first ("${home.dock}")`);
+  /* THE DOCK IS CAREER'S since the owner made it the main game (it was
+     Classic's before), so the dailies say what is open on their own rows
+     rather than in the dock. */
+  ok(/career/i.test(home.dock), `the dock carries the career button ("${home.dock}")`);
+  ok(await page.evaluate(() => !document.querySelector('#mc-fix').classList.contains('done')),
+    'and today\'s Fix History row is open');
 
   // Fix History, end to end: a season of four windows.
-  await page.click('#mc-fix');
+  await tapMode(page, '#mc-fix');
   await page.waitForSelector('.fx-man[data-k]');
   const fx = await page.evaluate(() => {
     const M = window.RTF_MODES, D = window.RTF_PAGE.data, E = window.RTF_ENGINE;
@@ -775,14 +877,62 @@ if (!QUICK) {
 
   /* A RELOAD MID-SEASON comes back to the same window with the same deal. */
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   const row = await page.textContent('#mc-fix');
-  ok(/Game 20 window is open/.test(row), `the front page says which window is open ("${row.trim().slice(0, 60)}")`);
-  await page.click('#mc-fix');
+  ok(/Game 20 window open/.test(row), `the front page says which window is open ("${row.trim().slice(0, 60)}")`);
+  await tapMode(page, '#mc-fix');
   await page.waitForSelector('#fx-pat');
   const steps2 = await page.$$eval('.fxw-s', (b) => b.map((x) => x.textContent));
   ok(/Traded/.test(steps2[0]) && /Open now/.test(steps2[1]), 'a reload lands in the game 20 window with the deal marked');
   ok(await page.$(`.fx-pick[data-pk="${fx.pick}"]`) === null, 'and the traded pick is gone from the shelf');
+
+  /* YOUR LINEUP, set by hand. Drag a bench man's spot onto a starter's and he
+     starts there; tap two spots and they swap; the coach's five puts it back.
+     All by the real pointer, because the handle is the claim. */
+  const order = () => page.$$eval('#s-fix .fx-five .fx-man.dr', (b) => b.map((x) => ({
+    k: x.getAttribute('data-k'), bn: x.classList.contains('bn') })));
+  const lu = () => page.evaluate(() => (JSON.parse(localStorage.getItem('rtf.fix.run.v2')) || {}).lineups || null);
+  async function dragTo(fromKey, toKey) {
+    const a = await page.$(`#s-fix .fx-man.dr[data-k="${fromKey}"] .fs`), b = await page.$(`#s-fix .fx-man.dr[data-k="${toKey}"]`);
+    /* Both ends on the screen: the one the drag lands on at the top. */
+    await page.evaluate((k) => {
+      const el = document.querySelector('#s-fix .fx-man.dr[data-k="' + k + '"]');
+      window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 90);
+    }, toKey);
+    const ra = await a.boundingBox();
+    await page.mouse.move(ra.x + ra.width / 2, ra.y + ra.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(ra.x + ra.width / 2, ra.y + ra.height / 2 + 12, { steps: 3 });
+    const rb = await b.boundingBox();
+    await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(150);
+  }
+  const o0 = await order();
+  const starters0 = o0.filter((x) => !x.bn), bench0 = o0.filter((x) => x.bn);
+  ok(starters0.length === 5 && bench0.length > 0, `five starters and a bench, each with a handle (${starters0.length}, ${bench0.length})`);
+  const oddsBefore = await page.textContent('.fx-now-o b');
+  await dragTo(bench0[0].k, starters0[0].k);
+  const o1 = await order();
+  ok(o1[0].k === bench0[0].k && !o1.some((x) => x.bn && x.k === bench0[0].k) && o1.some((x) => x.bn && x.k === starters0[0].k),
+    'dragging a bench man onto a starter starts him in that spot and sits the starter');
+  const l1 = await lu();
+  ok(!!l1 && Array.isArray(l1['1']) && l1['1'][0] === bench0[0].k, 'and the lineup is kept with the season, for this window');
+  ok(await page.$('#fx-coach') !== null, 'a changed five offers the coach\'s five back');
+  console.log(`  title odds ${oddsBefore.trim()} with the coach's five, ${(await page.textContent('.fx-now-o b')).trim()} with the bench man`);
+  ok(!(await page.$('#s-fix .fx-man.out')), 'moving a man never puts him on the block');
+  const s1 = (await order()).filter((x) => !x.bn);
+  await page.click(`#s-fix .fx-man.dr[data-k="${s1[1].k}"] .fs`);
+  ok(await page.$(`#s-fix .fx-man.pick[data-k="${s1[1].k}"]`) !== null, 'a tap on a spot picks that man');
+  await page.click(`#s-fix .fx-man.dr[data-k="${s1[2].k}"] .fs`);
+  const s2 = (await order()).filter((x) => !x.bn);
+  ok(s2[1].k === s1[2].k && s2[2].k === s1[1].k, 'and a tap on another spot swaps the two');
+  if (await page.$('#fx-coach')) await page.click('#fx-coach');
+  await page.waitForTimeout(100);
+  ok((await order()).filter((x) => !x.bn).map((x) => x.k).join() === starters0.map((x) => x.k).join() && !(await lu()),
+    'the coach\'s five puts it all back, and clears the lineup');
+  await dragTo(bench0[0].k, starters0[4].k);
+  ok(((await lu()) || {})['1'] && (await lu())['1'][4] === bench0[0].k, 'and a lineup set again is kept for the rest of the season');
   /* A COUNTER at game 20: the table opens on the club's offer, a proposal is
      answered, and it costs a proposal. Then back out and stand pat. */
   await page.click('#s-fix .fx-man[data-k]');
@@ -817,6 +967,9 @@ if (!QUICK) {
   await page.waitForTimeout(300);
   const saved = await page.evaluate((d) => JSON.parse(localStorage.getItem('rtf.fix.v1')).days[d], fx.day);
   ok(!!saved && saved.v === 2 && saved.trades.length === 1 && saved.trades[0].with === pickWith, 'the season is kept for the day');
+  ok(!!saved && saved.lineups && saved.lineups['1'] && saved.lineups['1'][4] === bench0[0].k, 'with the lineup that played it');
+  const resFive = await page.$$eval('#s-fix .fx-five .fx-man:not(.bn)', (b) => b.map((x) => x.getAttribute('data-k')));
+  ok(resFive[4] === bench0[0].k, 'and the result draws the five you set, not the coach\'s');
   ok(await page.evaluate(() => localStorage.getItem('rtf.fix.run.v2')) === null, 'and the season in progress is cleared');
   const sub = posts.find((p) => p.fn === 'rtf_submit_fix_season');
   ok(!!sub && sub.body.p_day === fx.day && sub.body.p_trades.length === 1 && sub.body.p_trades[0].picks[0] === fx.pick
@@ -826,13 +979,48 @@ if (!QUICK) {
   const place = await page.textContent('#fx-place');
   ok(/3rd of 41 today/.test(place), `the place comes off the board ("${place.trim()}")`);
   ok(/4 others traded for/.test(place), 'and so does how many traded for the same man');
+
+  /* THE BOARD ROW OPENS INTO THE SEASON IT WAS: the final roster rebuilt from
+     the club and the trades, and the numbers the row does not have room for. */
+  boardRows = [{ id: 501, created_at: '2026-09-27T12:00:00Z', display_name: 'Tester', mode: 'fix', day: fx.day, score: 31,
+    fix_ts: fx.ts, fix_odds: 0.312, fix_base: 0.114, replay_wins: 61, replay_title: true, fix_trades: saved.trades }];
+  /* THE BOARD IS THE PAGE'S LEADERBOARD SCREEN, on the Fix History tab, and
+     it has to land there rather than on Classic. */
+  await page.click('#fx-board');
+  await page.waitForSelector('#s-board.active #bd-list .bd-ent');
+  const tab = await page.evaluate(() => (document.querySelector('#bd-tabs .bd-tab.on') || {}).getAttribute
+    && document.querySelector('#bd-tabs .bd-tab.on').getAttribute('data-k'));
+  ok(tab === 'fix', `the result's board button opens the Fix History tab (${tab})`);
+  const row0 = '#bd-list .bd-ent .bd-row';
+  ok(await page.$('#bd-list .bd-team:not([hidden])') === null, 'a board row starts shut');
+  ok(await page.evaluate(() => /Won it all/.test(document.querySelector('#bd-list .bd-meta').textContent)
+    && document.querySelector('#bd-list .bd-ent').classList.contains('champ')),
+    'a replay that won it wears the gold');
+  await page.click(row0);
+  await page.waitForSelector('#bd-list .bd-team:not([hidden])');
+  const more = await page.evaluate(() => {
+    const m = document.querySelector('#bd-list .bd-team:not([hidden])');
+    return { text: m.textContent, men: m.querySelectorAll('.mb-man').length, newMen: m.querySelectorAll('.mb-man em').length };
+  });
+  const finalRows = await page.evaluate((t) => window.RTF_MODES.fxRosterAt(window.RTF_PAGE.data, { ts: t.ts, trades: t.trades }, 3).length,
+    { ts: fx.ts, trades: saved.trades });
+  ok(more.men === finalRows, `it opens on the final roster, every man (${more.men} of ${finalRows})`);
+  ok(more.newMen === saved.trades[0].ins.length, `with the men who came in marked (${more.newMen})`);
+  ok(/31\.2%/.test(more.text) && /11\.4%/.test(more.text) && /61-21/.test(more.text), 'and the odds, the odds as built and the replay');
+  ok(/Preseason/.test(more.text), 'and each trade, by the window it was made in');
+  await page.click(row0);
+  ok(await page.$('#bd-list .bd-team:not([hidden])') === null, 'a second press shuts it');
+  await page.click('#b-board-back');
+  await page.waitForSelector('#s-fix.active');
+  ok(await page.$('#fx-share') !== null, 'and Back returns to the result it was opened from');
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
-  await page.click('#mc-fix');
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
+  await tapMode(page, '#mc-fix');
   ok(await page.$('#fx-share') !== null && await page.$('#fx-pat') === null,
     'a reload lands on the result: one season a day');
-  const dock = await page.evaluate(() => { window.RTF_PAGE.goHome(); return document.querySelector('#dock').textContent.trim(); });
-  ok(/Six Passes/.test(dock), `with Fix done, the dock moves on to Six Passes ("${dock}")`);
+  const dayRows = await page.evaluate(() => { window.RTF_PAGE.goHome();
+    return ['mc-fix', 'mc-ps'].map((id) => document.getElementById(id).classList.contains('done')); });
+  ok(dayRows[0] && !dayRows[1], `with Fix done, its row reads done and Six Passes is still open (${dayRows})`);
 
   /* THE TWO OLDER SHAPES OF RESULT, planted as somebody who played this
      morning would have left them, still draw and still file the way they were
@@ -859,8 +1047,8 @@ if (!QUICK) {
     }, [fx.day, shape]);
     posts.length = 0;
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
-    await page.click('#mc-fix');
+    await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
+    await tapMode(page, '#mc-fix');
     await page.waitForSelector('#fx-share');
     const lt = await page.textContent('#s-fix');
     ok(lt.includes(legacy.name), `a ${shape} result still draws its man (${legacy.name})`);
@@ -872,7 +1060,7 @@ if (!QUICK) {
   }
 
   // Six Passes, along a shortest chain, through the filter a player uses.
-  await page.click('#mc-ps');
+  await tapMode(page, '#mc-ps');
   await page.waitForSelector('#ps-q');
   const art = await page.evaluate(() => ({
     pics: document.querySelectorAll('#s-pass .ps-pic svg.portrait').length,
@@ -896,7 +1084,18 @@ if (!QUICK) {
   ok(psDone && psDone.done && psDone.solved && psDone.chain.length === chain.par + 1, 'a chain at par solves the day');
   const pssub = posts.find((p) => p.fn === 'rtf_submit_passes');
   ok(!!pssub && pssub.body.p_par === chain.par && pssub.body.p_solved === true, 'and is filed with its par and solved');
+  ok(!!pssub && !('p_easy' in pssub.body), 'and a chain played without easy mode sends no p_easy, so it files against 116 as well');
   ok(/Perfect pass/i.test(await page.textContent('#s-pass')), 'a chain at par is called a perfect pass');
+  const win = await page.evaluate(() => {
+    const d = document.querySelector('#s-pass .ps-done'), top = document.querySelector('#s-pass .ps-top');
+    return { win: !!d && d.classList.contains('win'), first: !!d && !!top && (d.compareDocumentPosition(top) & 4) > 0,
+      hops: document.querySelectorAll('#s-pass .ps-lane .ps-hop').length, last: !!document.querySelector('#s-pass .ps-hop.last'),
+      head: (document.querySelector('#s-pass .ps-head') || {}).textContent || '' };
+  });
+  ok(win.win && win.first, 'a solved chain is a win card, above the ends and the timeline');
+  ok(win.hops === chain.par + 1 && win.last && /Bucket/.test(win.head),
+    `and draws the passing lane, man to man (${win.hops} hands, "${win.head}")`);
+
 
   /* ENDLESS AND PICKED PUZZLES. None of this may touch today: not the day's
      saved result, not the board, not the days-played count. */
@@ -905,19 +1104,28 @@ if (!QUICK) {
   ok(doors.every(Boolean), 'the front page offers endless and build for both dailies');
   /* PRO. A guest owns nothing, so every door wears the lock and opens the
      offer rather than doing nothing, and the finished daily's door does too. */
+  /* Measured IN the sheet, where a phone reader meets them: read on the
+     front page itself the rows are inside a hidden grid and every height is
+     zero, which would pass the one-line claim on anything. */
+  await openMore(page);
   const lockedHome = await page.evaluate(() => ({
     lk: document.querySelectorAll('.td-end button.lk').length, go: !!document.getElementById('td-pro'),
     rows: [...document.querySelectorAll('.td-end')].map((e) => Math.round(e.getBoundingClientRect().height)) }));
   ok(lockedHome.lk === 4 && lockedHome.go, `without Pro all four doors are locked and Go Pro is offered (${JSON.stringify(lockedHome)})`);
-  ok(lockedHome.rows.every((h) => h < 44), `and each row of doors holds one line (${lockedHome.rows})`);
-  await page.click('#td-efx');
+  ok(lockedHome.rows.length === 2 && lockedHome.rows.every((h) => h > 0 && h < 44), `and each row of doors holds one line (${lockedHome.rows})`);
+  /* The whole locked card opens the offer, not only its buttons. */
+  const cardOffer = await page.evaluate(() => { const c = document.getElementById('mw-pro'), t = c && c.querySelector('.mt-name');
+    if (!t) return null; t.click(); const sh = document.getElementById('pro-sheet'); const on = !!sh && !sh.hidden;
+    if (sh) sh.hidden = true; return { on: on, shut: c.classList.contains('mw-shut') }; });
+  ok(cardOffer && cardOffer.on && cardOffer.shut, 'a press anywhere on the locked Endless card opens the offer');
+  await tapMode(page, '#td-efx');
   const sheet1 = await page.evaluate(() => { const s = document.getElementById('pro-sheet');
     return { open: !!s && !s.hidden, text: s ? s.textContent : '', screen: document.querySelector('.screen.active').id }; });
   ok(sheet1.open && /Run The Floor Pro/.test(sheet1.text) && /Sign in to get Pro/.test(sheet1.text), 'a locked door opens the offer, and a guest is asked to sign in');
   ok(sheet1.screen === 's-home', `and nothing behind it opens (${sheet1.screen})`);
-  ok(/\$9\.99/.test(sheet1.text) && /stay free|dailies are free/i.test(sheet1.text), 'the offer names the price and says the dailies stay free');
+  ok(/\$14\.99/.test(sheet1.text) && /a year/.test(sheet1.text) && !/for good|nothing renews/i.test(sheet1.text) && /stay free|dailies are free/i.test(sheet1.text), 'the offer names the yearly price, never a lifetime one, and says the dailies stay free');
   await page.click('#pro-sheet [data-pro-x]');
-  await page.click('#mc-fix');
+  await tapMode(page, '#mc-fix');
   await page.waitForSelector('#fx-endless');
   ok(/Pro/.test(await page.textContent('#fx-endless')), "the finished daily's endless door wears the Pro tag");
   await page.click('#fx-endless');
@@ -932,7 +1140,7 @@ if (!QUICK) {
     window.RTF_PAGE.auth = () => fake;
     window.RTF_PAGE.goHome();
   });
-  await page.click('#td-pro');
+  await tapMode(page, '#td-pro');
   await page.click('#pro-buy');
   await page.waitForSelector('#pro-err:not([hidden])');
   const co = checkouts[checkouts.length - 1];
@@ -957,6 +1165,17 @@ if (!QUICK) {
   }
   await page.evaluate(() => { window.__owns = ['ps_premium', 'cfb_premium']; return window.RTF_MODES_UI._proRefresh(); });
   ok(await page.evaluate(() => document.querySelectorAll('.td-end button.lk').length) === 4, 'another game\'s Pro does not open this one');
+  /* A TESTER IS COMPED: owning nothing, a name on the list opens every door,
+     whatever casing it was typed in, and a name off it does not. */
+  const lockedAs = (name) => page.evaluate((n) => {
+    window.__owns = [];
+    const f = window.RTF_PAGE.auth();
+    f.state = () => ({ signedIn: true, email: 'buyer@example.com', name: n, userId: 'u-1' });
+    return window.RTF_MODES_UI._proRefresh().then(() => document.querySelectorAll('.td-end button.lk').length);
+  }, name);
+  ok(await lockedAs('RunnyJ') === 0, 'a tester account owning nothing gets Pro');
+  ok(await lockedAs('notatester') === 4, 'an account off the tester list owning nothing does not');
+  ok(await page.evaluate(() => !window.RTF_MODES_UI._tester({ signedIn: false, name: 'runnyj' })), 'and a signed out state is never a tester');
   await page.evaluate(() => { window.__owns = ['rtf_premium']; return window.RTF_MODES_UI._proRefresh(); });
   await page.evaluate(() => { window.RTF_PAGE.auth = window.__realAuth; window.RTF_PAGE.goHome(); });
   const before5 = await page.evaluate(([d, pd]) => ({
@@ -964,7 +1183,7 @@ if (!QUICK) {
     days: (JSON.parse(localStorage.getItem('runthefloor_career_v1') || '{}').feats || {})['fx.days'] || 0,
   }), [fx.day, chain.day]);
   posts.length = 0;
-  await page.click('#td-efx');
+  await tapMode(page, '#td-efx');
   await page.waitForSelector('#fx-pat');
   ok(/Endless/.test(await page.textContent('#s-fix .cq-rung')), 'endless Fix History says so');
   for (let i = 0; i < 4; i++) {
@@ -992,7 +1211,7 @@ if (!QUICK) {
 
   // Endless Six Passes, solved along a real shortest chain.
   await page.evaluate(() => window.RTF_PAGE.goHome());
-  await page.click('#td-eps');
+  await tapMode(page, '#td-eps');
   await page.waitForSelector('#ps-q');
   ok(/Endless/.test(await page.textContent('#s-pass .cq-rung')), 'endless Six Passes says so');
   const ech = await page.evaluate(() => {
@@ -1013,7 +1232,7 @@ if (!QUICK) {
 
   // Build: any two players, through the search a player uses, sent as a link.
   await page.evaluate(() => { window.RTF_PAGE.goHome(); window.RTF_PAGE.shareText = (t) => { window.__shared = t; }; });
-  await page.click('#td-pps');
+  await tapMode(page, '#td-pps');
   await page.waitForSelector('#ps-qa');
   await page.fill('#ps-qa', 'Michael Jordan');
   await page.click('.ps-mate[data-id="jordami01"]');
@@ -1028,7 +1247,7 @@ if (!QUICK) {
 
   // Build: any team, through the two selects.
   await page.evaluate(() => window.RTF_PAGE.goHome());
-  await page.click('#td-pfx');
+  await tapMode(page, '#td-pfx');
   await page.waitForSelector('#fx-pclub');
   await page.selectOption('#fx-pclub', 'CHI');
   await page.waitForSelector('#fx-pyr');
@@ -1051,6 +1270,68 @@ if (!QUICK) {
     s: JSON.parse(localStorage.getItem('rtf.passes.endless.v1')) }));
   ok(/Custom/.test(fr.rung) && fr.s.pz.from === 'jordami01' && fr.s.pz.to === 'jamesle01', `a friend's link opens the made puzzle ("${fr.rung}")`);
   ok(fr.hash === '', 'and the hash is cleared once it has been read');
+  /* EASY MODE. The years are hidden until a pass is spent on them, and the
+     offer sits under the last group of teammates. */
+  const ez0 = await friend.evaluate(() => ({ small: document.querySelectorAll('#s-pass .ps-mate small').length,
+    last: (document.querySelector('#ps-pick').lastElementChild || {}).id, clock: document.querySelector('#s-pass .ps-clock b').textContent }));
+  ok(ez0.small === 0, `the years are hidden by default (${ez0.small} shown)`);
+  ok(ez0.last === 'ps-easy' && /Too hard\? Use a pass to reveal the years each player played for that team/.test(await friend.textContent('#ps-easy')),
+    'and the offer to show them is the last thing under the teammates');
+  await friend.click('#ps-easy');
+  const ez1 = await friend.evaluate(() => {
+    const M = window.RTF_MODES, g = M.psGraph(window.RTF_PAGE.data), grp = document.querySelector('#s-pass .ps-grp');
+    const b = grp.querySelector('.ps-mate'), id = b.getAttribute('data-id'), em = grp.querySelector('.ps-gh em').textContent;
+    return { clock: document.querySelector('#s-pass .ps-clock b').textContent, offer: !!document.getElementById('ps-easy'),
+      mates: document.querySelectorAll('#s-pass .ps-mate').length, small: document.querySelectorAll('#s-pass .ps-mate small').length,
+      yrs: b.querySelector('small').textContent,
+      want: (g.seasonsOf[id] || []).filter((ts) => ts.slice(0, ts.lastIndexOf('_')) === grp.getAttribute('data-code')).map((ts) => ts.slice(ts.lastIndexOf('_') + 1)),
+      easy: JSON.parse(localStorage.getItem('rtf.passes.endless.v1')).st.easy };
+  });
+  ok(Number(ez1.clock) === Number(ez0.clock) - 1, `easy mode costs one pass of the shot clock (${ez0.clock} to ${ez1.clock})`);
+  const yset = new Set();
+  ez1.yrs.split(', ').forEach((r) => { const [a, b] = r.split('-'); const lo = +a, hi = b ? +(a.slice(0, 2) + b) : lo; for (let y = lo; y <= hi; y++) yset.add(String(y)); });
+  ok(ez1.want.length > 0 && yset.size === ez1.want.length && ez1.want.every((y) => yset.has(y)),
+    `the years are his seasons with that club, not his career (${ez1.want.join(' ')} as "${ez1.yrs}")`);
+  ok(ez1.small === ez1.mates && /^\d{4}(-\d{2})?(, \d{4}(-\d{2})?)*$/.test(ez1.yrs), `every teammate then shows his years with that club ("${ez1.yrs}")`);
+  ok(!ez1.offer && ez1.easy === true, 'the offer goes, and easy mode is saved with the puzzle');
+  /* The offer is at the foot of the picker, so pressing it leaves the page
+     scrolled down; the desktop checks below measure from the top. */
+  await friend.evaluate(() => window.scrollTo(0, 0));
+  /* THE DESKTOP. The page widens, the timeline sits BETWEEN the two ends, and
+     the teammates are even tiles in two columns, each a name over its years.
+     Measured off the rectangles, because every way this goes wrong renders. */
+  await friend.setViewportSize({ width: 1440, height: 900 });
+  await friend.waitForTimeout(200);
+  const dk = await friend.evaluate(() => {
+    const r = (q) => document.querySelector(q).getBoundingClientRect();
+    const a = r('#s-pass .ps-top > .ps-end'), t = r('#s-pass .ps-top > .ps-tlw'), b = r('#s-pass .ps-top > .ps-end.tgt');
+    const tiles = [...document.querySelectorAll('#s-pass .ps-grp')[0].querySelectorAll('.ps-mate')].map((m) => m.getBoundingClientRect());
+    const grps = [...document.querySelectorAll('#s-pass .ps-grp')].slice(0, 2).map((g) => g.getBoundingClientRect());
+    const m = document.querySelector('#s-pass .ps-mate'), sm = m.querySelector('small').getBoundingClientRect(), mr = m.getBoundingClientRect();
+    const head = r('#s-pass .cq-head'), bar = document.querySelector('header, .topbar');
+    return { row: a.right <= t.left && t.right <= b.left && Math.abs(a.top - t.top) < 2 && Math.abs(b.top - t.top) < 2,
+      widths: [...new Set(tiles.map((x) => Math.round(x.width)))], wrap: r('#s-pass').width,
+      cols: grps.length === 2 && Math.abs(grps[0].top - grps[1].top) < 2,
+      twoLines: sm.top >= mr.top + 12, below: !bar || head.top >= bar.getBoundingClientRect().bottom - 1 };
+  });
+  ok(dk.row, 'on a desktop the timeline sits between the two ends, on one row');
+  ok(dk.widths.length === 1 && dk.wrap > 900, `the teammates are tiles of one width (${dk.widths.join(', ')}px) on a page ${Math.round(dk.wrap)}px wide`);
+  ok(dk.cols && dk.twoLines, 'in two columns of clubs, with the years on a line under the name');
+  ok(dk.below, 'and the header starts under the site bar');
+  /* PINNED: scrolled to the bottom of the picker, both ends are still on screen,
+     right under the site bar. A phone scrolls them away, which is the room. */
+  const pin = async () => friend.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    const hdr = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hdr')) || 50;
+    return [...document.querySelectorAll('#s-pass .ps-top > .ps-end')].map((e) => {
+      const q = e.getBoundingClientRect(); return q.top >= hdr - 1 && q.bottom <= innerHeight; });
+  });
+  await friend.waitForTimeout(100);
+  const pinned = await pin();
+  ok(pinned.length === 2 && pinned.every(Boolean), 'on a desktop both ends stay on screen while the picker scrolls');
+  await friend.setViewportSize({ width: 390, height: 844 });
+  await friend.waitForTimeout(100);
+  ok(!(await pin()).every(Boolean), 'and a phone scrolls them away');
   await friend.goto('http://local.test/hoops/#fix=CHI_1996', { waitUntil: 'domcontentloaded' });
   await friend.waitForSelector('#s-fix #fx-pat', { timeout: 60000 });
   ok(/Picked team/.test(await friend.textContent('#s-fix .cq-rung')), 'and a team link opens the picked team');
@@ -1072,7 +1353,7 @@ if (!QUICK) {
   await page.click('.cqd-card');
   const mid = await page.$$eval('.cqd-card', (b) => b.map((x) => x.getAttribute('data-k')).join());
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#b-today:not([disabled])', { timeout: 60000 });
+  await page.waitForSelector('#mc-cq', { state: 'attached', timeout: 60000 });
   await page.evaluate(() => window.RTF_MODES_UI.openConquest());
   await page.waitForSelector('.cqd-card');
   const back = await page.$$eval('.cqd-card', (b) => b.map((x) => x.getAttribute('data-k')).join());

@@ -70,7 +70,8 @@
       var d = new Date(monday); d.setDate(monday.getDate() + i);
       var s = iso(d), done = false;
       try { done = !!localStorage.getItem('rtg:' + GAME + ':done:' + s); } catch (e) {}
-      out.push({ d: s, done: done, today: s === t, future: s > t, lab: 'MTWTFSS'[i] });
+      out.push({ d: s, done: done, today: s === t, future: s > t, lab: 'MTWTFSS'[i],
+                 day: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i] });
     }
     return out;
   }
@@ -102,7 +103,7 @@
       '.rtgrs-wk .hd{display:flex;align-items:baseline;gap:8px;margin:0 0 9px;}',
       '.rtgrs-wk .hd b{font:900 13px var(--f,system-ui);color:var(--goldT,#F2B632);}',
       '.rtgrs-wk .hd span{font-size:11.5px;font-weight:700;color:var(--mut,#8aa0b8);}',
-      '.rtgrs-days{display:flex;justify-content:space-between;gap:4px;}',
+      '.rtgrs-days{display:flex;justify-content:space-between;gap:4px;list-style:none;margin:0;padding:0;}',
       '.rtgrs-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;}',
       '.rtgrs-day i{font-style:normal;font:900 9px var(--f,system-ui);letter-spacing:.06em;color:var(--dim,#7C8DA3);}',
       '.rtgrs-day u{text-decoration:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;',
@@ -121,7 +122,11 @@
       '.rtgrs-go .nm{flex:1;min-width:0;font-size:13.5px;font-weight:900;color:var(--ink,#F4F7FB);',
       '  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       '.rtgrs-go .btn{flex:0 0 auto;font:900 11.5px var(--f,system-ui);letter-spacing:.04em;border-radius:999px;',
-      '  padding:7px 14px;background:var(--gc);color:var(--onAccent,#160B02);}',
+      '  padding:7px 14px;background:var(--gc);color:var(--onAccent,#160B02);',
+      /* Its own size and edges. The crossword styles every `.modal .btn` at
+         full width, which made each Solve pill a 100% bar and squeezed the
+         game's name beside it to nothing. */
+      '  width:auto;min-width:0;margin:0;border:0;box-shadow:none;}',
       '.rtgrs-go:hover .btn{filter:brightness(1.08);}',
       '@media (max-width:380px){.rtgrs-go .nm{font-size:12.5px;} .rtgrs-go .btn{padding:6px 11px;font-size:11px;}}'
     ].join('');
@@ -140,10 +145,14 @@
               n >= 2 ? 'You are heating up.' : 'Come back tomorrow to build it.';
     return '<div class="rtgrs-box rtgrs-wk">' +
       '<div class="hd"><b>' + n + '-day streak</b><span>' + esc(msg) + '</span></div>' +
-      '<div class="rtgrs-days">' + w.map(function (d) {
-        return '<span class="rtgrs-day' + (d.done ? ' on' : '') + (d.today ? ' now' : '') + (d.future ? ' fut' : '') + '">' +
-          '<i>' + d.lab + '</i><u>&#10003;</u></span>';
-      }).join('') + '</div></div>';
+      /* A tick only on a day that was played. Every day used to carry one,
+         hidden by CSS on the empty days, so a screen reader read out seven
+         ticks for a one-day streak. Each day now says what it is, in words. */
+      '<ul class="rtgrs-days" aria-label="This week">' + w.map(function (d) {
+        var say = d.day + (d.today ? ', today' : '') + ': ' + (d.done ? 'played' : (d.future ? 'still to come' : 'not played'));
+        return '<li class="rtgrs-day' + (d.done ? ' on' : '') + (d.today ? ' now' : '') + (d.future ? ' fut' : '') + '" aria-label="' + esc(say) + '">' +
+          '<i aria-hidden="true">' + d.lab + '</i><u aria-hidden="true">' + (d.done ? '&#10003;' : '') + '</u></li>';
+      }).join('') + '</ul></div>';
   }
 
   function nextHTML() {

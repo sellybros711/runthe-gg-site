@@ -84,7 +84,11 @@ has_table as (
     'commish_free_clock','ps_runs','profiles',
     'fantasy_weeks','fantasy_prices','fantasy_results','fantasy_entries',
     'nfl_games','fantasy_prizes',
-    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions'
+    'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
+    'rtd_profiles','rtd_career','rtf_profiles',
+    'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
+    'sportegories_rulings','stumpire_rulings',
+    'shutdoor_outings','shutdoor_streaks','putt_daily','ad_rewards'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -113,7 +117,7 @@ trg as (
 -- statement can leave the table committed and the index raised, and `if not
 -- exists` does not help: it skips on a name that is taken, never on a duplicate
 -- row. Applied through `--single-transaction` the whole file rolls back and the
--- table is missing too, which the block above already catches; pasted by hand it
+-- table is missing too, which the block above already catches. Pasted by hand it
 -- is the 114 trigger all over again, an object whose absence is invisible from
 -- every side. Like `col` and `trg` and unlike `has_table`, it asks the catalog
 -- for everything and lets the row do the filtering.
@@ -441,7 +445,7 @@ check_rows(sort, migration, what, breaks, ok) as (
 
   -- RUN THE DIAMOND PRO. Two halves that fail differently, asked in one row
   -- because neither is any use without the other. Without the constraint every
-  -- paid Pro checkout 500s in the webhook and Stripe retries it; without the
+  -- paid Pro checkout 500s in the webhook and Stripe retries it. Without the
   -- meter the six modes stay unlimited for everybody, because the page fails
   -- open, so nothing is sold at all.
   (31, '121_baseball_pro',
@@ -466,7 +470,7 @@ check_rows(sort, migration, what, breaks, ok) as (
             ('newsletter_status','newsletter_set','newsletter_guest_request','newsletter_confirm','newsletter_unsubscribe'))),
 
   -- THE KEY IS THE RULE. 121 keyed the meter on (user, day), one play a day
-  -- across all six modes; 122 widens it to (user, mode, day), one of each.
+  -- across all six modes. 122 widens it to (user, mode, day), one of each.
   (33, '122_baseball_pro_per_mode',
       'a free account gets one play of each extra mode a day, not one in total',
       'The meter keeps 121''s rule: one play a day across all six modes. The page says one of each, so the second mode a player opens is refused with a sheet that says it is still free.',
@@ -502,7 +506,271 @@ check_rows(sort, migration, what, breaks, ok) as (
       and (select count(*) > 0 from trg
             where name = 'premium_unlocks_keep_lifetime_trg' and tbl = 'premium_unlocks')
       and (select count(*) > 0 from proc
-            where name = 'fantasy_grant_pass' and body like '%grant_until%'))
+            where name = 'fantasy_grant_pass' and body like '%grant_until%')),
+  -- TWO FOLLOW-UPS TO 124, asked of the BODY and of the function. The cap is asked of
+  -- grid_submit_run's body because re-running 85 (or any earlier grid file) on its
+  -- own puts back the version that reads the Arcade Card table alone, and that
+  -- database would answer yes to an existence check.
+  (36, '125_arcade_cap_and_bonus_refund',
+      'a bundle''s Arcade year lifts the ranked cap, and a refunded yearly Run The Bundle gives back its bonus',
+      'A Run The Bundle buyer is refused their fifth ranked arcade score of the day. And every full refund or chargeback of a yearly plan fails in the webhook and is retried by Stripe until this runs (the plan''s access is still taken back on each try).',
+      (select count(*) > 0 from proc
+        where name = 'grid_submit_run' and body like '%arcade_card_active%')
+      and (select count(*) > 0 from proc where name = 'premium_reclaim_bonus')),
+
+  -- WHAT EACH MAN DID, beside his points on the live board. Display only: the writer
+  -- asks for the column before it writes, so a database without this keeps scoring.
+  (37, '126_fantasy_results_line',
+      'each man''s stat line under his name in a lineup on the live board',
+      'The live board shows every man''s points and nothing about how he got them. Nothing is scored wrong.',
+      (select count(*) > 0 from col where tbl = 'fantasy_results' and name = 'line')),
+
+  -- RUN THE DIAMOND PROFILES. Its absence is soft by design: the page keeps every
+  -- season and every choice in the browser until the server can take them, and
+  -- sends them the first time it can. What is lost without it is exactly what this
+  -- file exists to stop losing: a cleared browser, a second phone, a private
+  -- window, each of which is an empty trophy case with nothing said. The rung is
+  -- asked of the function's arguments, because an early copy of 127 had none and
+  -- a board then draws every other player's circle at the bottom rung.
+  (38, '127_baseball_profiles',
+      'a baseball profile and career are kept on the account, not only in the browser',
+      'Seasons, badges and the profile circle live only in the browser that played them. Clearing site data or changing phones empties the trophy case.',
+      (select count(*) > 0 from has_table where name = 'rtd_profiles')
+      and (select count(*) > 0 from has_table where name = 'rtd_career')
+      and (select count(*) > 0 from col where tbl = 'rtd_profiles' and name = 'rung')
+      and (select count(*) > 0 from proc where name = 'rtd_career_merge')
+      and (select count(*) > 0 from proc where name = 'rtd_set_profile' and body like '%p_rung%')),
+
+  -- THE BALLPARK LADDER. 127's constraint lists thirteen parks and the shelf has
+  -- twenty seven, so without 128 a park chosen from the new ones is refused by the
+  -- server in silence: it works on the device and is gone on the next phone.
+  (39, '128_baseball_parks',
+      'every ballpark on the shelf can be saved to the account',
+      'Choosing a Little League, minor league, seasonal or hidden park works on this device only. The server refuses it and the next device opens on another park.',
+      (select count(*) > 0 from con where name = 'rtd_profiles_park_ck' and def like '%sandlot%' and def like '%golden%')),
+
+  -- RUN THE FLOOR PROFILES. Soft by design like 127: the page keeps the jersey,
+  -- the arena, the camera and the door choices in the browser until the server
+  -- can take them and sends them the first time it can. Without it they follow
+  -- nobody to a second phone, and a cleared browser loses them.
+  (40, '129_hoops_profiles',
+      'a hoops jersey, arena and camera are kept on the account, not only in the browser',
+      'The jersey, the chosen arena, the camera and the last club and decade live only in the browser that set them.',
+      (select count(*) > 0 from has_table where name = 'rtf_profiles')
+      and (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'guide_seen')
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile')),
+
+  -- THE COLLEGE FANTASY CHALLENGE, a competition of its own with its own tables. Asked
+  -- of the tables, the submit, the swap AND the settle trigger, because the trigger is the
+  -- one object whose absence is invisible from every side (114's finding): the week plays,
+  -- the board draws, and nobody is ever paid.
+  (41, '128_cfb_fantasy',
+      'the college Fantasy Challenge: the week, the entries, the swap and the prize',
+      'The college page drafts and then refuses every lineup. Without the trigger alone, a finished week settles nobody and first place is never paid.',
+      (select count(*) > 0 from has_table where name = 'cfb_fantasy_weeks')
+      and (select count(*) > 0 from has_table where name = 'cfb_fantasy_entries')
+      and (select count(*) > 0 from has_table where name = 'cfb_fantasy_prizes')
+      and (select count(*) > 0 from proc where name = 'cfb_fantasy_submit')
+      and (select count(*) > 0 from proc where name = 'cfb_fantasy_swap')
+      and (select count(*) > 0 from trg where name = 'cfb_fantasy_settle_on_scored')),
+
+  -- RUN THE FLOOR'S CAREER BOARD. It fails soft like every board here: a
+  -- career plays to the Hall card and the badges light, and the board says it
+  -- is not reachable, which looks exactly like a bad network day.
+  (42, '130_hoops_careers',
+      'a finished hoops Career goes on the Career board',
+      'Every Career plays and retires. The Career board stays empty and the Hall card says the board is not set up.',
+      (select count(*) > 0 from has_table where name = 'rtf_careers')
+      and (select count(*) > 0 from proc where name = 'rtf_submit_career')
+      and (select count(*) > 0 from proc where name = 'rtf_career_score')
+      and (select count(*) > 0 from proc where name = 'rtf_claim_career')),
+
+  -- THE ARCADE'S BOARD NAMES. Without it an account with no username is still
+  -- filed with no name, and every board prints "Player" for it, so a board of
+  -- new sign-ups reads as six copies of one person. Nothing throws.
+  (43, '131_arcade_generated_names',
+      'an unnamed account gets a generated name on the arcade boards',
+      'Unnamed accounts all show as "Player" and cannot find their own row.',
+      (select count(*) > 0 from proc where name = 'arcade_generated_name')
+      and (select count(*) > 0 from trg where name = 'grid_runs_fill_name')),
+
+  -- SIX PASSES EASY MODE. Without it a normal chain still files, and a chain
+  -- solved in easy mode is refused, so it never reaches the board at all.
+  (44, '134_hoops_passes_easy',
+      'a Six Passes chain played in easy mode is filed with its extra pass',
+      'Chains that used easy mode do not reach the Six Passes board.',
+      (select count(*) > 0 from proc where name = 'rtf_submit_passes' and args like '%p_easy%')),
+
+  -- SPORTEGORIES CHALLENGES. They rule live either way, so a missing table is
+  -- silent: a won challenge scores for the player who made it and is
+  -- forgotten, and the next card marks the same answer wrong again.
+  (50, '135_sportegories_rulings',
+      'a won Sportegories challenge is remembered for every later card',
+      'Challenges still rule, but nothing is remembered. The same answer is marked wrong again tomorrow.',
+      (select count(*) > 0 from has_table where name = 'sportegories_rulings')
+      and (select count(*) > 0 from trg where name = 'sportegories_rulings_keep_admin')),
+
+  -- STUMPIRE CHALLENGES. Without it a challenge is still ruled live, but the
+  -- ruling is not remembered, so the same player strikes again the next time
+  -- the prompt is dealt.
+  (51, '136_stumpire_rulings',
+      'a won Stumpire challenge is remembered for the next slate',
+      'Challenges still rule, but nothing is remembered. The same answer strikes again next time.',
+      (select count(*) > 0 from has_table where name = 'stumpire_rulings')
+      and (select count(*) > 0 from trg where name = 'stumpire_rulings_keep_admin')),
+
+  -- PUTT PUTT LIVES ON SERVER TIME. Without it the page falls back to lives kept in
+  -- the Tour record, which a cleared browser or a wound clock can refill. Nothing throws.
+  (52, '138_putt_lives',
+      'Putt Putt Tour lives are kept on the server, on its clock',
+      'Lives still work, kept on the device. Clearing site data can refill them.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'refill_at')
+      and (select count(*) > 0 from proc where name = 'putt_lives_state')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spend')
+      and (select count(*) > 0 from proc where name = 'putt_lives_refill')),
+
+  -- WHAT A RUN THE FLOOR PLAYER WEARS, on the public profile. Soft: the closet
+  -- works on the device and on the account's shelf (103) without it; what is
+  -- missing is other players' screens drawing him dressed. Re-running 129 after
+  -- 139 takes the wider writer away, so this row asks for its argument.
+  (53, '139_hoops_wardrobe',
+      'what a hoops player wears is on the profile other players read',
+      'His closet still works and follows the account. Other players see him in the plain uniform.',
+      (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'wear_street')
+      and (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'wear_court')
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile' and body like '%p_wear_street%')),
+
+  -- THE PLAYER CARD. Soft, twice over: without it a loadout naming an idle, a
+  -- nameplate or a backdrop is refused by 139's narrower check (the page sends
+  -- it again without them), and other players see the plain jersey on a board
+  -- row instead of the player, and cannot open his card.
+  (54, '140_hoops_card',
+      'a hoops player card (who he is, his nameplate and backdrop) is on the profile',
+      'Board rows show the jersey, not the player, and nobody can open his card. His idle and card items stay on the device.',
+      (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'player')
+      and (select count(*) > 0 from proc where name = 'rtf_player_ok')
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile' and body like '%p_player%')),
+
+  -- RUN THE FLOOR'S PAID COINS, shipped dark. Not needed while BUCKETS_ENABLED
+  -- is false. Once it is on, a bucket paid for against a database without this
+  -- is a webhook answering 500 and Stripe retrying, with the buyer's coins late.
+  (55, '141_hoops_wallet',
+      'bought Run The Floor coins are kept on the server',
+      'Needed before the coin buckets go on sale: a paid bucket cannot be filed, and the page reads no bought coins.',
+      (select count(*) > 0 from col where tbl = 'rtf_coin_buys' and name = 'session_id')
+      and (select count(*) > 0 from col where tbl = 'rtf_coin_spends' and name = 'key')
+      and (select count(*) > 0 from proc where name = 'rtf_coin_buy')
+      and (select count(*) > 0 from proc where name = 'rtf_wallet_state')
+      and (select count(*) > 0 from proc where name = 'rtf_wallet_spend')),
+
+  -- THE FLOOR PASS AS A PRODUCT, shipped dark. Not needed while
+  -- PASS_PAID_ENABLED is false. Once it is on, a paid pass against a database
+  -- without it is refused by the product constraint and the webhook answers 500.
+  (56, '142_hoops_pass',
+      'the Floor Pass premium lane can be granted as a product',
+      'Needed before the Floor Pass goes on sale: a paid pass cannot be written to premium_unlocks.',
+      (select count(*) > 0 from con where name = 'premium_unlocks_product_ck' and def like '%rtf_pass%')),
+
+  -- 103's ps_save_put raised "column reference slot is ambiguous" on every call,
+  -- so row 12 read yes over a shelf nothing could write to. Asked of the BODY,
+  -- because the broken function and the fixed one have the same name.
+  (57, '143_ps_save_put_fix',
+      'ps_save_put can actually write a save',
+      'NO run is kept against the account in ANY game. Every save is in one browser only.',
+      (select count(*) > 0 from proc where name = 'ps_save_put' and body like '%ps_saves_pkey%')),
+
+  -- 101 wrote a read-own policy and no grant, so every browser read was refused
+  -- with 42501 and row 10 still read yes. Asked of the table's ACL rather than
+  -- with has_table_privilege(), which RAISES on a missing table or role and would
+  -- take this whole report down, the thing the header says nothing here may do.
+  -- PUBLIC (grantee 0) counts too, since authenticated is a member of it.
+  (58, '144_premium_unlocks_grant',
+      'authenticated has SELECT on premium_unlocks',
+      'Receipts read empty and Run The Tour never delivers a bundle buyer''s packs. Postgres logs 42501 all day.',
+      (select count(*) > 0
+       from pg_class c
+       join pg_namespace n on n.oid = c.relnamespace
+       cross join lateral aclexplode(c.relacl) a
+       where n.nspname = 'public' and c.relname = 'premium_unlocks'
+         and a.privilege_type = 'SELECT'
+         and (a.grantee = 0
+              or a.grantee = (select oid from pg_roles where rolname = 'authenticated')))),
+
+  -- NINE PUTT PUTT LIVES, EACH ON ITS OWN CLOCK. Without it the page reads the
+  -- 138 answer as a heart a life and one clock for them all. Nothing throws.
+  (59, '146_putt_lives_nine',
+      'Putt Putt lives are three hearts of three, each life back 24 hours after it went',
+      'Lives still work on 138: three a heart, and none come back until all are gone.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'back_at')
+      and (select count(*) > 0 from proc where name = 'putt_lives_state' and body like '%back_at%')),
+  -- PUTT PUTT LIVES FOR SALE (nine for $4.99, three for $2.99), shipped dark.
+  -- Without it a paid session 500s in the webhook and Stripe retries until it runs.
+  (60, '149_putt_lives_buy',
+      'Bought Putt Putt lives are filed once a checkout session and handed back on the server',
+      'A paid lives checkout is charged and the webhook fails until this runs.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'given')
+      and (select count(*) > 0 from proc where name = 'putt_lives_buy')
+      -- and the webhook may call it: without this a paid buy 500s with "permission denied"
+      and (not exists (select 1 from pg_roles where rolname = 'service_role')
+           or has_function_privilege('service_role', 'public.putt_lives_buy(text, uuid, int)', 'execute'))),
+  -- SPARE LIVES FILL THE HEARTS. Without it a signed in player's spares are never
+  -- spent: they wait as +N and come out only from the out of lives sheet. Nothing throws.
+  (61, '150_putt_lives_spares',
+      'A Putt Putt spare life fills a heart on the server, once a spare',
+      'Spares do not fill the hearts. They wait until the player is out of lives.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_spares' and name = 'spare_id')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spare')),
+  -- PUTT PUTT LIVES OVER THE MAX. Without it the checkout cannot read `extra`
+  -- and answers 503 to every lives buy, so nothing is sold it could not deliver.
+  (62, '151_putt_lives_extra',
+      'Bought Putt Putt lives can go over the max, and are lost first',
+      'Every Putt Putt lives checkout answers try again, and nothing sells.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'extra')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spend' and body like '%extra%')),
+  -- A REFUNDED LIVES BUY TAKES ITS LIVES BACK. Without it the webhook 500s on that refund
+  -- and Stripe retries for three days; nothing else is touched.
+  (63, '152_putt_lives_refund',
+      'A refunded or charged-back Putt Putt lives buy takes its lives back, once',
+      'A lives refund is retried by Stripe and the lives stay until this runs.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'reclaimed')
+      and (select count(*) > 0 from proc where name = 'putt_lives_reclaim')
+      and (not exists (select 1 from pg_roles where rolname = 'service_role')
+           or has_function_privilege('service_role', 'public.putt_lives_reclaim(text)', 'execute'))),
+  -- SHUT THE DOOR'S DAILY, signed in. Without it the outing plays and finishes
+  -- and the submit is refused: no streak, no board row, nothing said.
+  (64, '153_shut_the_door',
+      'Shut The Door keeps a signed in daily outing, the doors shut streak and the day''s board',
+      'A signed in daily is played and never recorded. The streak and the board stay empty.',
+      (select count(*) > 0 from has_table where name = 'shutdoor_outings')
+      and (select count(*) > 0 from has_table where name = 'shutdoor_streaks')
+      and (select count(*) > 0 from proc where name = 'shutdoor_submit')
+      and (select count(*) > 0 from proc where name = 'shutdoor_board')
+      and (select count(*) > 0 from proc where name = 'shutdoor_my_stats')),
+  -- THE PUTT PUTT DAILY HOLE BOARD. Without it the Daily Hole plays and pays, and the
+  -- round is never posted: the board stays empty and nothing is said.
+  (65, '148_putt_daily_board',
+      'A signed in player''s first Daily Hole round of the day posts to the Putt Putt board',
+      'The Daily Hole board is empty for everybody. Rounds play and pay, and none is posted.',
+      (select count(*) > 0 from has_table where name = 'putt_daily')
+      and (select count(*) > 0 from proc where name = 'putt_daily_submit')
+      and (select count(*) > 0 from proc where name = 'putt_daily_board')),
+  -- THE DYNASTY WAIT ENDS WHEN IT SAYS. Asked of the body, because 154 restates a
+  -- function 105 already created and the name alone reads yes on either.
+  (66, '154_dynasty_day_end_lapsed',
+      'a Dynasty wait that has run out is never started again',
+      'A free player whose countdown reaches zero can be locked out for another 24 hours by reopening their finished season.',
+      (select count(*) > 0 from proc
+        where name = 'ps_attempt_day_end' and body like '%v_lapsed%')),
+  -- REWARDED VIDEOS. Asked of arcade_spend_game's body too, because re-running 91
+  -- after 158 puts back a cap that ignores the ad plays.
+  (67, '158_ad_rewards',
+      'A watched video pays a Putt Putt life or an arcade play, three a day, testers only until the switch',
+      'The watch-a-video button gets no code and pays nothing. An arcade play paid by a video is refused by the game.',
+      (select count(*) > 0 from has_table where name = 'ad_rewards')
+      and (select count(*) > 0 from proc where name = 'ad_reward_issue')
+      and (select count(*) > 0 from proc where name = 'ad_reward_claim')
+      and (select count(*) > 0 from proc
+            where name = 'arcade_spend_game' and body like '%arcade_game_cap%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

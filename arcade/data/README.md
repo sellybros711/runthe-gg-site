@@ -1,18 +1,18 @@
 # Run The Arcade content corpus (Common Ground)
 
 **This folder feeds Common Ground.** Add JSON here, rebuild, and the game gets
-richer. `match/entities.js` is **generated** from these files — never hand-edit it.
+richer. `match/entities.js` is **generated** from these files. Never hand-edit it.
 
 > The Daily Crossword currently keeps its own data in `grid/crossword/data/`
-> (see its `DATA_CONTRACT.md`). Unifying both games onto one shared corpus here —
-> plus a daily coordinator that stops the two games featuring the same
-> name/team/term on the same day — is a planned follow-up. That's why every entry
+> (see its `DATA_CONTRACT.md`). Unifying both games onto one shared corpus here
+> (plus a daily coordinator that stops the two games featuring the same
+> name/team/term on the same day) is a planned follow-up. That's why every entry
 > already carries a **stable, unique id**: it's the join key that unification
 > will use.
 
 ## The loop (do this to add content)
 
-1. **Generate JSON in a regular claude.ai chat** (browser — not this code session).
+1. **Generate JSON in a regular claude.ai chat** (browser, not this code session).
    Paste the prompt in [PROMPT.md](./PROMPT.md), one chunk at a time.
 2. **Save each result** as a file here, named `<type>-<chunk>.json`, e.g.
    `athletes-nba-tier5.json`, `teams-nfl.json`, `terms-golf.json`.
@@ -24,16 +24,16 @@ richer. `match/entities.js` is **generated** from these files — never hand-edi
    ```
    The build FAILS on malformed JSON or duplicate ids, and warns (then drops)
    off-vocabulary awards. Well-formed but factually wrong tags still need a human
-   eye — see "Accuracy" below.
+   eye. See "Accuracy" below.
 
-`athletes.seed.json` is the working example — copy its shape.
+`athletes.seed.json` is the working example. Copy its shape.
 
 ## Schema
 
 ```jsonc
 // ATHLETE / COACH  (the tagged core Common Ground builds categories from)
 {
-  "id": "nba_lebron_james",        // lowercase sport_first_last — UNIQUE, the join key
+  "id": "nba_lebron_james",        // lowercase sport_first_last: UNIQUE, the join key
   "name": "LeBron James",
   "type": "athlete",               // athlete | coach
   "sport": "NBA",                  // NFL NBA MLB NHL Golf Tennis Soccer Boxing UFC Olympics
@@ -78,19 +78,19 @@ To add a new award/milestone type, add the string to `AWARDS`/`MILES` in
 
 ## Accuracy
 
-The uniqueness solver guarantees every board is fair **given the tags** — it
+The uniqueness solver guarantees every board is fair **given the tags**. It
 cannot tell a factually wrong tag from a right one. A chat-generated athlete file
-will be ~10–20% wrong on structured facts (draft year, jersey, awards). Two
+will be ~10-20% wrong on structured facts (draft year, jersey, awards). Two
 defenses:
 - The prompt tells the model to **omit any field it isn't sure of** (omitting is
   free; a wrong value is a bug).
-- Prefer authoritative sources for the risky fields — Lahman DB (MLB), nflverse
-  (NFL), basketball-reference (NBA) — and use the chat mainly for low-risk
+- Prefer authoritative sources for the risky fields: Lahman DB (MLB), nflverse
+  (NFL), basketball-reference (NBA), and use the chat mainly for low-risk
   enumerables (teams, cities, colleges, terms, coaches).
 
 ## Two games, no overlap
 
-The dataset does **not** prevent the two games from colliding — the engine does,
+The dataset does **not** prevent the two games from colliding. The engine does,
 at runtime: one daily seed builds both games, and a shared usage ledger (keyed on
 these `id`s) excludes any name/team/term featured in one game from the other that
 day, and honors cooldowns. That's why every entry needs a **stable, unique id**.

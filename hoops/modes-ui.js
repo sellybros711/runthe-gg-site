@@ -30,8 +30,121 @@ function lsGet(k){
 }
 function lsSet(k, v){
   try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+  syncWrite(k);
 }
-function lsDel(k){ try { localStorage.removeItem(k); } catch (e) {} }
+function lsDel(k){ try { localStorage.removeItem(k); } catch (e) {} syncWrite(k); }
+
+/* ── EVERY MODE IS ON THE ACCOUNT ─────────────────────────────────────────
+ *
+ * Every key this file writes that is a player's record (the Conquest run and
+ * bests, Fix History's days and season, Six Passes' days, both endless
+ * puzzles) is also a slot on the account's shelf. hoops/cloud.js says which
+ * key is which slot and how two copies of it combine; this is the half that
+ * sends and adopts. The browser copy is a cache: a write lands here first,
+ * synchronously, and goes up behind it; a pull on sign in brings the account's
+ * copy down and the account's copy wins wherever the two cannot be combined.
+ *
+ * The clock slots count their own writes (`rtf.rev.v1`), which is the whole of
+ * how a device that played later beats one that played earlier. A write the
+ * shelf refuses answers with what the shelf holds, and that is adopted or
+ * merged on the spot. Guests write the cache and nothing else, and their
+ * records go up with the next sign in. */
+var REV_KEY = 'rtf.rev.v1';
+function revs(){
+  try { var r = JSON.parse(localStorage.getItem(REV_KEY) || '{}'); return (r && typeof r === 'object') ? r : {}; }
+  catch (e) { return {}; }
+}
+function setRev(slot, n){
+  var r = revs();
+  r[slot] = n;
+  try { localStorage.setItem(REV_KEY, JSON.stringify(r)); } catch (e) {}
+}
+function modeCL(){ return (P.cloudMode && P.cloudMode.CL()) || null; }
+function rawGet(k){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function rawPut(k, v){
+  try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+}
+function modePush(key, slot){
+  if (!P.cloudMode || !P.cloudMode.ready()) return;
+  var CLm = modeCL();
+  var sent = P.cloudMode.push(slot, function(){
+    var payload = { rev: revs()[slot] || 0, v: rawGet(key) };
+    return { payload: payload, progress: CLm.modeProgress(slot, payload) };
+  });
+  if (sent && sent.then) sent.then(function(res){
+    /* REFUSED: the shelf is further along. Take what it holds. */
+    if (res && res.ok === false) modeAdopt(key, slot, res, true);
+  });
+}
+function syncWrite(k){
+  var CLm = modeCL();
+  var slot = CLm && CLm.MODE_KEYS[k];
+  if (!slot) return;
+  if (CLm.modeKind(slot) === 'clock') setRev(slot, (revs()[slot] || 0) + 1);
+  modePush(k, slot);
+}
+/* Which screen a key's record is on screen in. A record is never swapped out
+   from under somebody playing it: the device keeps its own and its next write,
+   counted past the shelf's, is the one that stands. */
+var MODE_SCREEN = { cq: 's-cq', fixrun: 's-fix', fixend: 's-fix', psend: 's-pass', passes: 's-pass', life: 's-car' };
+function onScreen(slot){
+  var id = MODE_SCREEN[slot], el = id && $(id);
+  return !!(el && el.classList.contains('active'));
+}
+/* One slot, from the shelf. Answers whether the browser copy changed. */
+function modeAdopt(key, slot, row, claim){
+  var CLm = modeCL();
+  var theirs = row && row.payload && typeof row.payload === 'object' ? row.payload : null;
+  var here = rawGet(key), mine = revs()[slot] || 0;
+  if (!claim) {
+    /* ANOTHER ACCOUNT'S BROWSER: the account's own copy stands alone, and
+       no copy at all means nothing, never the previous reader's record. */
+    rawPut(key, theirs ? theirs.v : null);
+    setRev(slot, theirs ? (theirs.rev || 0) : 0);
+    return JSON.stringify(here) !== JSON.stringify(theirs ? theirs.v : null);
+  }
+  if (CLm.modeKind(slot) === 'merge') {
+    var merged = CLm.modeMerge(slot, here, theirs ? theirs.v : null);
+    if (merged == null) return false;
+    var changed = JSON.stringify(merged) !== JSON.stringify(here);
+    if (changed) rawPut(key, merged);
+    if (!theirs || JSON.stringify(merged) !== JSON.stringify(theirs.v)) modePush(key, slot);
+    return changed;
+  }
+  if (!theirs) { if (here != null) modePush(key, slot); return false; }
+  var tr = theirs.rev || 0;
+  /* A TIE GOES TO THE SHELF, so two devices that never wrote after this
+     shipped agree on one copy rather than each keeping its own. */
+  if (tr >= mine) {
+    if (onScreen(slot)) { setRev(slot, Math.max(mine, tr)); return false; }
+    setRev(slot, tr);
+    if (JSON.stringify(here) === JSON.stringify(theirs.v)) return false;
+    rawPut(key, theirs.v);
+    return true;
+  }
+  modePush(key, slot);
+  return false;
+}
+/* Every slot, from a pull. `by` is the shelf's rows by slot name. */
+function cloudAdopt(by, claim){
+  var CLm = modeCL();
+  if (!CLm) return;
+  var changed = false;
+  for (var key in CLm.MODE_KEYS) {
+    var slot = CLm.MODE_KEYS[key];
+    if (modeAdopt(key, slot, by && by[slot], claim)) changed = true;
+  }
+  if (!changed) return;
+  /* What is in memory was read from the old copies. */
+  if (!onScreen('cq')) cq = null;
+  if (!onScreen('fixrun')) { fx = null; fxSt = null; fxDayPz = null; }
+  if (!onScreen('psend')) psPz = null;
+  if (window.RTF_WARD) window.RTF_WARD.reload();
+  if (window.RTF_WALLET) window.RTF_WALLET.reload();
+  if (window.RTF_CAREER_UI) window.RTF_CAREER_UI.reload();
+  var home = $('s-home');
+  if (home && home.classList.contains('active')) renderHome();
+}
 
 // ─── pixel art ─────────────────────────────────────────────────────────────
 
@@ -256,34 +369,10 @@ var CSS = [
   '.mx-rise{animation:mxRise .35s ease both;}',
   '@media (prefers-reduced-motion:reduce){.mx-rise,.mx-stamp{animation:none}}',
 
-  /* the mode cards on the front page */
-  '.mhome{display:grid;gap:10px;margin:0 0 6px;}',
-  '.today{border-radius:16px;border:1px solid rgba(255,255,255,.12);padding:14px 14px 10px;',
-  '  background:radial-gradient(120% 90% at 0% 0%,rgba(240,120,45,.16),transparent 60%),linear-gradient(180deg,#171e2d,#111624);',
-  '  box-shadow:0 10px 30px rgba(0,0,0,.35);}',
-  '.td-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 2px 10px;}',
-  '.td-eye{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--orange);}',
-  '.td-title{display:block;font-family:var(--display);font-weight:400;font-size:22px;line-height:1.1;text-transform:uppercase;margin-top:4px;}',
-  '.td-prog{display:flex;align-items:center;gap:5px;margin-top:4px;}',
-  '.td-n{font-size:11px;font-weight:800;color:var(--mut);margin-right:3px;white-space:nowrap;}',
-  '#b-today.today,.dock #b-today.today{background:linear-gradient(180deg,var(--orange),var(--orange-dk));border-color:var(--orange);color:#fff;}',
-  '.td-prog i{width:12px;height:12px;border-radius:3px;background:#243049;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);}',
-  '.td-prog i.on{background:var(--green);box-shadow:none;}',
-  '.td-row{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;',
-  '  background:#0f1420;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin:0 0 8px;',
-  '  color:var(--ink);font-family:var(--body);cursor:pointer;}',
-  '.td-row:hover{filter:none;border-color:rgba(240,120,45,.5);}',
-  '.td-ico{width:44px;height:44px;border-radius:10px;background:#070a12;display:grid;place-items:center;}',
-  '.td-txt{min-width:0;}',
-  '.td-txt b{display:block;font-family:var(--pixel);font-weight:400;font-size:12px;text-transform:uppercase;line-height:1.4;}',
-  '.td-txt small{display:block;font-size:13px;color:var(--mut);font-weight:600;margin-top:3px;line-height:1.35;}',
-  '.td-st{font-family:var(--display);font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);',
-  '  display:flex;align-items:center;gap:6px;white-space:nowrap;}',
-  '.td-row.done{background:#0d1512;border-color:rgba(74,222,128,.25);}',
-  '.td-row.done .td-st{color:var(--green);font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:800;font-size:13px;text-transform:none;letter-spacing:0;}',
+  /* the chips the More ways to play tiles use (the tiles themselves are
+     styled by the page, beside the grid they live in) */
   '.td-ck{width:14px;height:14px;border-radius:50%;background:var(--green);position:relative;flex:0 0 auto;}',
   '.td-ck::after{content:"";position:absolute;left:4px;top:2px;width:4px;height:7px;border:solid #06140c;border-width:0 2px 2px 0;transform:rotate(45deg);}',
-  '.td-foot{font-size:12px;font-weight:800;color:var(--gold);text-align:center;margin:2px 0 2px;letter-spacing:.04em;}',
   '.td-end{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:8px 0 0;font-size:12px;}',
   '.td-end span{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}',
   '.td-end button{background:none;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:var(--ink);font:inherit;font-weight:700;padding:5px 11px;cursor:pointer;}',
@@ -293,6 +382,7 @@ var CSS = [
   '.td-pro{display:block;margin:8px auto 0;background:none;border:0;color:#f2c14e;font:inherit;font-weight:800;font-size:13px;',
   'cursor:pointer;padding:2px 6px;}',
   '.td-pro .pro-tag{font-style:normal;margin:0 4px 0 0;}',
+  '.mw-pro.mw-shut{cursor:pointer;}',
   '.pro-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#1b1405;',
   'background:#f2c14e;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;}',
   '#pro-sheet[hidden]{display:none;}',
@@ -315,38 +405,7 @@ var CSS = [
   '.ps-chosen{display:flex;align-items:center;gap:10px;background:#161d2b;border:1px solid #2a3450;border-radius:10px;padding:10px 12px;margin-top:6px;}',
   '.ps-chosen b{flex:1;}',
   '.ps-chosen small{color:var(--dim);}',
-  '.ptiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
-  '.ptile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;text-align:left;cursor:pointer;',
-  '  background:linear-gradient(180deg,#171e2d,#121826);border:1px solid rgba(255,255,255,.1);border-radius:14px;',
-  '  padding:12px;color:var(--ink);font-family:var(--body);min-width:0;}',
-  '.ptile:hover{filter:none;border-color:rgba(240,120,45,.5);transform:translateY(-1px);}',
-  '.pt-ico{height:34px;display:flex;align-items:center;}',
-  '.pt-name{font-family:var(--pixel);font-weight:400;font-size:12px;text-transform:uppercase;line-height:1.4;margin-top:2px;}',
-  '.pt-sub{font-size:12.5px;color:var(--mut);font-weight:600;line-height:1.35;flex:1 1 auto;}',
-  '.pt-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;margin-top:4px;}',
-  '.pt-foot .mx-chip{font-size:10.5px;padding:2px 8px;white-space:nowrap;}',
-  '.pt-go{font-family:var(--display);font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--orange);}',
-  '.mb-modes{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;scrollbar-width:none;}',
-  '.mb-modes::-webkit-scrollbar{display:none;}',
-  '.mb-mode{flex:0 0 auto;width:auto;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;',
-  '  background:#141a26;border:1px solid var(--cardb);color:var(--mut);}',
-  '.mb-mode.on{background:var(--orange);border-color:var(--orange);color:#fff;}',
 
-  '  position:relative;overflow:hidden;border-radius:14px;padding:13px 14px;border:1px solid var(--cardb);',
-  '  background:linear-gradient(180deg,#171d2a,#10151f);transition:transform .12s,border-color .12s;}',
-  '  background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);}',
-  '  text-transform:uppercase;border-radius:8px;padding:7px 14px;color:#fff;}',
-  '  radial-gradient(420px 160px at 90% -20%,rgba(94,234,212,.18),transparent 70%),linear-gradient(180deg,#132024,#0e151b);}',
-  '  radial-gradient(420px 160px at 90% -20%,rgba(240,120,45,.22),transparent 70%),linear-gradient(180deg,#221710,#130f0c);}',
-  '  radial-gradient(420px 160px at 90% -20%,rgba(242,193,78,.18),transparent 70%),linear-gradient(180deg,#1f1b10,#12110c);}',
-  /* The Quick Draft card's court is a picture of the mode, not a stage, so it
-     is shorter than it was when it opened the page. */
-  '.qd .hero{margin:0 0 10px;}',
-  '.qd .herocourt{aspect-ratio:1/0.42;}',
-  '.qd .hero .reelbox{height:54px;}',
-  '.card p.qd-say{margin:0 0 12px;}',
-  '.mhome-h{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:15px;',
-  '  letter-spacing:.06em;color:var(--mut);margin:18px 2px 8px;}',
 
   /* ── Conquest ── */
   '.cq-head{display:flex;align-items:center;gap:12px;margin:4px 0 12px;}',
@@ -504,6 +563,16 @@ var CSS = [
   '  background:var(--red);color:#fff;border-radius:999px;padding:2px 8px;}',
   '.fx-tag.in{background:#14b8a6;}',
   '.fx-man.bn{padding:7px 12px;background:#10151f;}',
+  '.fx-man.dr{grid-template-columns:40px 1fr auto;}',
+  '.fx-man.dr .fs{touch-action:none;cursor:grab;align-self:stretch;display:flex;align-items:center;gap:6px;margin:-10px 0 -10px -12px;padding-left:9px;}',
+  '.fx-man.dr .fs::before{content:"";width:6px;height:15px;flex:none;background:radial-gradient(circle,rgba(148,163,184,.75) 1.2px,transparent 1.6px) 0 0/3px 5px;}',
+  '.fx-man.dr.bn .fs{margin:-7px 0 -7px -12px;}',
+  '.fx-man .fs.off{color:#fbbf24;}',
+  '.fx-man.lift{opacity:.35;}',
+  '.fx-man.drop{border-color:#5eead4;box-shadow:0 0 0 2px #5eead4 inset;}',
+  '.fx-man.pick{border-color:#fbbf24;box-shadow:0 0 0 2px #fbbf24 inset;}',
+  '.fx-man.ghost{position:fixed;left:0;top:0;z-index:60;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.55);border-color:#5eead4;}',
+  '.fx-lu{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--dim);margin:0 2px 8px;min-height:28px;}',
   '.fx-man.bn .fs{color:var(--dim);font-size:12px;}',
   '.fx-benchh{font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--dim);margin:12px 2px 6px;}',
   '.fx-dock{position:sticky;bottom:calc(var(--dock, 0px) + 8px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;gap:10px;align-items:center;',
@@ -640,10 +709,15 @@ var CSS = [
   '.ps-clock b{display:block;font-family:var(--pixel);font-size:20px;color:#ff5a36;text-shadow:0 0 8px rgba(255,90,54,.6);}',
   '.ps-clock.low b{animation:psBlink 1s steps(2) infinite;}',
   '@keyframes psBlink{50%{opacity:.35}}',
-  '.ps-ends{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:0 0 10px;}',
+  '.ps-top{display:grid;grid-template-columns:1fr auto 1fr;grid-template-areas:"a h b" "t t t";gap:10px;align-items:center;margin:0 0 10px;}',
+  '.ps-top>.ps-end{grid-area:a;align-self:stretch;}',
+  '.ps-top>.ps-end.tgt{grid-area:b;}',
+  '.ps-top>.ps-to{grid-area:h;}',
+  '.ps-top>.ps-tlw{grid-area:t;margin:0;}',
   '.ps-end{background:#141a26;border:1px solid var(--cardb);border-radius:12px;padding:10px 12px;min-width:0;}',
-  '.ps-end b{display:block;font-family:var(--display);font-weight:400;font-size:19px;line-height:1.1;text-transform:uppercase;margin-top:3px;}',
-  '.ps-end small{font-size:11.5px;color:var(--dim);font-weight:700;}',
+  '.ps-end b{display:block;font-family:var(--display);font-weight:400;font-size:19px;line-height:1.1;text-transform:uppercase;margin-top:3px;overflow-wrap:anywhere;}',
+  '.ps-end small{display:block;font-size:11.5px;color:var(--dim);font-weight:700;margin-top:2px;}',
+  '.ps-end .mx-eyebrow{display:block;}',
   '.ps-end.tgt{border-color:rgba(242,193,78,.55);background:#1e1a10;text-align:right;}',
   '.ps-end.tgt b{color:var(--gold);}',
   '.ps-pic{display:flex;margin:0 0 8px;}',
@@ -666,38 +740,97 @@ var CSS = [
   '.ps-pick{display:grid;gap:10px;}',
   '.ps-grp{background:#10151f;border:1px solid var(--line);border-radius:10px;padding:10px;}',
   '.ps-gh{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:var(--c-acc);margin-bottom:8px;}',
-  '.ps-mates{display:flex;flex-wrap:wrap;gap:6px;}',
+  '.ps-mates{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px;}',
   '.ps-mate{background:#161d2b;border:1px solid #2a3450;border-radius:8px;padding:6px 10px;color:var(--ink);',
-  '  font-family:var(--body);font-weight:700;font-size:13px;text-align:left;cursor:pointer;line-height:1.2;}',
-  '.ps-mate small{display:block;font-size:10.5px;color:var(--dim);font-weight:700;}',
+  '  font-family:var(--body);font-weight:700;font-size:13px;text-align:left;cursor:pointer;line-height:1.2;',
+  '  min-width:0;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}',
+  '.ps-mate small{display:block;font-size:10.5px;color:var(--dim);font-weight:700;overflow:hidden;text-overflow:ellipsis;}',
   '.ps-mate:hover:not(:disabled){filter:none;border-color:var(--gold);}',
   '.ps-mate.used{opacity:.35;}',
   '.ps-gh em{font-style:normal;color:var(--dim);margin-left:4px;}',
+  '.ps-easy{grid-column:1/-1;background:#14192a;border:1px dashed var(--gold);border-radius:10px;padding:12px 14px;',
+  '  color:var(--gold);font-family:var(--body);font-weight:800;font-size:13px;line-height:1.35;cursor:pointer;text-align:center;}',
+  '.ps-easy:hover{background:#2a2412;}',
+  '.ps-score .ps-easytag{display:block;margin-top:4px;font-size:10px;letter-spacing:.06em;color:var(--gold);}',
   '.ps-more{background:none;border:1px dashed #3a4666;border-radius:8px;padding:6px 10px;color:var(--mut);',
   '  font-family:var(--body);font-weight:800;font-size:12px;cursor:pointer;}',
   '.ps-mate.tgt{border-color:var(--gold);background:#2a2412;box-shadow:0 0 0 1px var(--gold) inset;animation:mxPulse 1.4s infinite;}',
   '.ps-go{background:linear-gradient(180deg,#d9a52a,#a8781a);border-color:#d9a52a;}',
-  '.ps-big{color:var(--gold);margin:14px 0 8px;}',
-  '.ps-done{padding:22px 16px;}',
+  '.ps-done{padding:18px 16px 16px;margin:0 0 12px;text-align:center;position:relative;overflow:hidden;}',
+  '.ps-done.win{border-color:rgba(242,193,78,.7);background:radial-gradient(120% 90% at 50% 0%,rgba(242,193,78,.22),rgba(242,193,78,0) 60%),#141a26;',
+  '  box-shadow:0 0 0 1px rgba(242,193,78,.35),0 10px 40px rgba(242,193,78,.18);}',
+  '.ps-done.miss{border-color:rgba(255,90,54,.5);background:radial-gradient(120% 90% at 50% 0%,rgba(255,90,54,.16),rgba(255,90,54,0) 60%),#141a26;}',
+  '.ps-done-top{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;}',
+  '.ps-verdict{display:grid;justify-items:center;gap:4px;}',
+  '.ps-head{font-family:var(--pixel);font-size:30px;line-height:1.1;color:var(--gold);text-shadow:0 3px 0 #7a5410,0 0 22px rgba(242,193,78,.45);}',
+  '.ps-done.miss .ps-head{color:#ff5a36;text-shadow:0 3px 0 #6e1f0e;}',
+  '.ps-done.win .ps-head{animation:psPop .6s cubic-bezier(.3,1.6,.5,1) both;}',
+  '@keyframes psPop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}',
+  '.ps-stars{display:flex;gap:4px;font-size:22px;line-height:1;}',
+  '.ps-stars span{color:#3a4258;}',
+  '.ps-stars span.on{color:var(--gold);text-shadow:0 0 10px rgba(242,193,78,.6);}',
+  '.ps-score{display:grid;justify-items:center;background:#05060b;border:2px solid #2a3350;border-radius:10px;padding:8px 16px;}',
+  '.ps-score b{font-family:var(--pixel);font-size:34px;line-height:1;color:var(--gold);}',
+  '.ps-done.miss .ps-score b{color:#ff5a36;}',
+  '.ps-score span{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-top:6px;}',
+  '.ps-lane{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:6px 4px;margin:16px 0 4px;}',
+  '.ps-hop{display:grid;justify-items:center;gap:4px;width:64px;}',
+  '.ps-hop b{font-size:11.5px;font-weight:800;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+  '.ps-lp{display:flex;}',
+  '.ps-lp .portrait{border-radius:7px;border:1px solid rgba(255,255,255,.16);}',
+  '.ps-hop.last .ps-lp .portrait{border-color:var(--gold);box-shadow:0 0 0 2px rgba(242,193,78,.35),0 0 16px rgba(242,193,78,.4);}',
+  '.ps-hop.last b{color:var(--gold);}',
+  '.ps-arrow{display:grid;justify-items:center;align-content:center;height:44px;min-width:34px;}',
+  '.ps-arrow span{font-size:9.5px;font-weight:800;color:var(--mut);white-space:nowrap;}',
+  '.ps-arrow i{display:block;width:28px;height:2px;margin-top:4px;background:repeating-linear-gradient(90deg,var(--gold) 0 4px,transparent 4px 7px);position:relative;}',
+  '.ps-arrow i::after{content:"";position:absolute;right:-2px;top:-3px;border:4px solid transparent;border-left:6px solid var(--gold);border-right:0;}',
+  '.ps-best{margin:10px auto 0;max-width:520px;}',
+  '@media(max-width:480px){.ps-lane{gap:6px 2px;} .ps-hop{width:48px;} .ps-hop b{max-width:48px;font-size:10.5px;}',
+  '  .ps-arrow{min-width:36px;} .ps-arrow span{font-size:8.5px;} .ps-arrow i{width:24px;}}',
+  '.ps-acts{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;}',
+  '.ps-acts button{flex:0 1 320px;min-width:0;width:auto;}',
+  /* THE DESKTOP. The page widens, the timeline sits between the two ends, and
+     the picker is two columns of even tiles rather than one long column. */
+  '@media(min-width:920px){',
+  '  .wrap:has(#s-pass.active){max-width:1040px;}',
+  '  .ps-top{grid-template-columns:230px 1fr 230px;grid-template-areas:"a t b";gap:14px;align-items:stretch;}',
+  '  .ps-top>.ps-to{display:none;}',
+  /* PINNED. The two ends are the whole puzzle, so they stay on screen while the
+     picker scrolls under them. The backdrop is the app bar's, bled to the window
+     and up over the gap under the bar, so a tile never shows between the cards. */
+  /* And it runs the width of the window, not the page: the timeline is the
+     thing that needs the room, and the ends sit at the screen's edges. */
+  '  .ps-top{position:sticky;top:var(--hdr);z-index:40;padding:8px 24px 10px;margin:-8px calc(50% - 50vw) 10px;grid-template-columns:clamp(230px,18vw,300px) 1fr clamp(230px,18vw,300px);}',
+  '  .ps-top:before{content:"";position:absolute;inset:-10px 0 0;background:rgba(13,17,23,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);z-index:-1;}',
+  '  .ps-top>.ps-tlw{display:flex;flex-direction:column;justify-content:flex-end;}',
+  '  .ps-end{display:flex;flex-direction:column;justify-content:flex-end;padding:14px 16px;}',
+  '  .ps-end b{font-size:24px;}',
+  '  .ps-pic{margin-bottom:auto;padding-bottom:12px;}',
+  '  .ps-pick{grid-template-columns:1fr 1fr;align-items:start;}',
+  '  .ps-head{font-size:40px;}',
+  '  .ps-hop{width:76px;} .ps-hop b{max-width:76px;font-size:12.5px;}',
+  '  .ps-arrow{min-width:52px;} .ps-arrow i{width:44px;}',
+  '}',
   '.ps-done i{color:var(--dim);font-style:normal;}',
 
   /* the leaderboard sheet */
-  '#mb-sheet[hidden]{display:none;}',
-  '.mb-card{max-height:84vh;display:flex;flex-direction:column;}',
   '.mb-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}',
   '.mb-top button.sm{padding:6px 12px;font-size:12px;}',
-  '.mb-tabs{display:flex;gap:6px;margin:12px 0 10px;}',
-  '.mb-tab{flex:1;background:#141a26;border:1px solid var(--cardb);color:var(--mut);padding:8px;border-radius:8px;}',
-  '.mb-tab.on{background:#1e2a3d;color:var(--ink);border-color:#3b4b66;}',
-  '.mb-rows{overflow-y:auto;display:grid;gap:4px;padding-bottom:4px;}',
-  '.mb-row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:8px 10px;',
-  '  border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--line);}',
-  '.mb-row.me{border-color:var(--gold);background:#1e1a10;}',
-  '.mb-n{font-family:var(--pixel);font-size:11px;color:var(--mut);text-align:center;}',
-  '.mb-who{min-width:0;}',
-  '.mb-who b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-  '.mb-who small{display:block;font-size:11.5px;color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-  '.mb-v{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums;}'
+  '.mb-chain{margin:0 0 4px;padding:0;list-style:none;display:grid;gap:2px;counter-reset:ch;}',
+  '.mb-chain li{display:flex;align-items:baseline;gap:8px;font-size:12.5px;padding:3px 0;border-top:1px solid rgba(255,255,255,.04);}',
+  '.mb-chain li b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+  '.mb-chain small{color:var(--dim);font-weight:600;font-variant-numeric:tabular-nums;}',
+  '.mb-chain em{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#5eead4;}',
+  '.mb-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}',
+  '.mb-stats div{background:rgba(255,255,255,.03);border-radius:6px;padding:6px 8px;}',
+  '.mb-stats small{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;}',
+  '.mb-stats b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:15px;}',
+  '.mb-deals{margin:0 0 10px;padding:0;list-style:none;font-size:12px;color:var(--mut);display:grid;gap:3px;}',
+  '.mb-deals b{color:var(--ink);}',
+  '.mb-ros{display:grid;gap:2px;}',
+  '.mb-man{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:12.5px;padding:3px 0;border-top:1px solid rgba(255,255,255,.04);}',
+  '.mb-man small{color:var(--dim);font-weight:600;}',
+  '.mb-man em{font-style:normal;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#5eead4;margin-left:6px;}'
 ].join('\n');
 
 (function inject(){
@@ -1126,6 +1259,9 @@ function cqRecordBest(){
    counts nothing twice. The one count, runs finished, rides on `final`, which
    is passed once and marked on the run so a reload cannot pass it again. */
 function cqFeats(){
+  /* The coins ride on the same moments: every win is keyed on its rung, so
+     asking after every steal pays each win once. */
+  if (window.RTF_EARN && cq) { try { window.RTF_EARN.conquest(cq.seed, cq.wins.length, M.cqCleared(cq)); } catch (e) {} }
   var BD = window.RTF_BADGES;
   if (!BD || !P.feats || !cq) return;
   var final = M.cqOver(cq) && !cq.featsFiled;
@@ -1294,6 +1430,91 @@ var fx = null;                      // today's puzzle: { day, ts, five }
 var fxBase = null;                  // today's odds as built
 var fxSt = null;                    // the season in progress
 var fxBlock = [], fxPicksOn = [];   // the package: pkeys and pick ids
+var fxSwapFrom = null;               // a spot tapped, waiting for the one to swap with
+
+/* SWAP TWO MEN. Two starters trade spots. A bench man takes a starter's spot
+   and the starter sits. Two bench men is nothing to do. The five goes to the
+   engine as keys in SLOTS order, and the engine is what says it is legal. */
+function fxSwap(a, b){
+  if (!a || !b || a === b) return false;
+  var d = data(), st = fxSeason();
+  var keys = M.fxLineupAt(d, st, st.win).map(E.pkey);
+  var ia = keys.indexOf(a), ib = keys.indexOf(b);
+  if (ia < 0 && ib < 0) return false;
+  if (ia >= 0 && ib >= 0) { keys[ia] = b; keys[ib] = a; }
+  else if (ia >= 0) keys[ia] = b;
+  else keys[ib] = a;
+  if (M.fxSetLineup(d, st, keys)) return false;
+  fxSaveSeason();
+  return true;
+}
+
+/* DRAG BY THE SPOT LABEL. Only the label takes the drag (touch-action:none),
+   so a thumb anywhere else on the row still scrolls the page and a tap still
+   shops the man. A press that does not move is a tap on the label: it picks
+   that man, and the next label tapped is who he swaps with. */
+function fxWireDrag(box, keepY){
+  var redo = keepY(function(){});
+  box.querySelectorAll('.fx-man.dr [data-grip]').forEach(function(g){
+    g.addEventListener('pointerdown', function(ev){
+      if (ev.button > 0) return;
+      ev.preventDefault();
+      var row = g.closest('.fx-man'), from = row.getAttribute('data-k');
+      var x0 = ev.clientX, y0 = ev.clientY, ghost = null, over = null, raf = 0, lastY = y0;
+      try { g.setPointerCapture(ev.pointerId); } catch (e) {}
+      function target(x, y){
+        var el = document.elementFromPoint(x, y);
+        var m = el && el.closest && el.closest('.fx-man.dr');
+        return m && box.contains(m) && m !== row ? m : null;
+      }
+      function scroll(){
+        if (!ghost) return;
+        var edge = 70, v = lastY < edge ? -10 : lastY > window.innerHeight - edge ? 10 : 0;
+        if (v) window.scrollBy(0, v);
+        raf = requestAnimationFrame(scroll);
+      }
+      function move(e){
+        lastY = e.clientY;
+        if (!ghost) {
+          if (Math.abs(e.clientX - x0) + Math.abs(e.clientY - y0) < 8) return;
+          var r = row.getBoundingClientRect();
+          ghost = row.cloneNode(true);
+          ghost.className += ' ghost';
+          ghost.style.width = r.width + 'px';
+          document.body.appendChild(ghost);
+          row.classList.add('lift');
+          fxSwapFrom = null;
+          raf = requestAnimationFrame(scroll);
+        }
+        ghost.style.transform = 'translate(' + (e.clientX - 24) + 'px,' + (e.clientY - 22) + 'px)';
+        var t = target(e.clientX, e.clientY);
+        if (t !== over) { if (over) over.classList.remove('drop'); over = t; if (over) over.classList.add('drop'); }
+      }
+      function up(e){
+        g.removeEventListener('pointermove', move);
+        g.removeEventListener('pointerup', up);
+        g.removeEventListener('pointercancel', up);
+        cancelAnimationFrame(raf);
+        if (ghost) {
+          ghost.remove();
+          row.classList.remove('lift');
+          if (over) over.classList.remove('drop');
+          if (e.type === 'pointerup' && over) fxSwap(from, over.getAttribute('data-k'));
+          redo();
+          return;
+        }
+        if (e.type !== 'pointerup') return;
+        if (!fxSwapFrom) fxSwapFrom = from;
+        else if (fxSwapFrom === from) fxSwapFrom = null;
+        else { fxSwap(fxSwapFrom, from); fxSwapFrom = null; }
+        redo();
+      }
+      g.addEventListener('pointermove', move);
+      g.addEventListener('pointerup', up);
+      g.addEventListener('pointercancel', up);
+    });
+  });
+}
 var fxView = 'desk';                // 'desk', 'phone', 'stretch'
 var fxSort = 'pts', fxPos = 'all';
 var fxCallsMemo = null;             // { key, offers }
@@ -1321,8 +1542,28 @@ function today(){ return P.dayNumberOf(P.easternISO()); }
    with no store behind it is a wall. A friend's link never asks. */
 var PRO_LIVE = true;
 var PRO_BUNDLE = 'floor-pro';
-var PRO_PRICE = '$9.99';
+/* $14.99 A YEAR, renewing (the owner's call, 2026-10). PRO_TERM rides beside the
+   price wherever it is shown, because a price with no term on a subscription
+   reads as once. */
+var PRO_PRICE = '$14.99';
+var PRO_TERM = ' a year';
 var proOwned = false;
+/* TESTER ACCOUNTS ARE COMPED PRO, the owner's call. Usernames as the board
+   prints them (matched lowercased, because set_username keeps the casing
+   somebody typed), or an account id for an account with no name yet. The same
+   five the football game's dynasty-access.js comps One Franchise to.
+   NO EMAIL ADDRESSES HERE: this file is served to anybody who asks for it.
+   It is a comp in the page and never a premium_unlocks row, so nothing is
+   filed, the receipt is not a purchase, and a tester signing in on another
+   site's game is not handed rtf_premium there. It is forgeable from the
+   console, which costs nothing: Pro gates puzzles nobody is ranked on. */
+var PRO_TESTERS = ['malikwillislover', 'runnyj', 'slimeyb3', 'csel8', 'jordantest'];
+var PRO_TESTER_IDS = [];
+function proTester(st){
+  if (!st || !st.signedIn) return false;
+  if (st.name && PRO_TESTERS.indexOf(String(st.name).toLowerCase()) >= 0) return true;
+  return !!st.userId && PRO_TESTER_IDS.indexOf(String(st.userId)) >= 0;
+}
 function endlessOpen(){ return !PRO_LIVE || proOwned; }
 function fxStore(){ return lsGet(FX_KEY) || { days: {} }; }
 /* THREE SHAPES OF RESULT, read as one. The first version was one man for one
@@ -1385,7 +1626,7 @@ function fxPuzzle(){
   var d = today();
   var picked = null;
   if (fxEnd) { var s = fxEndStore(); if (s.day == null) s = fxEndNew(); d = s.day; picked = s.ts; }
-  if (!fx || fx.day !== d) { fx = fxEnd ? (picked && M.fxCustom(data(), picked)) || M.fxDaily(data(), d) : fxToday(); fxBase = null; fxSt = null; fxBlock = []; fxPicksOn = []; fxView = 'desk'; }
+  if (!fx || fx.day !== d) { fx = fxEnd ? (picked && M.fxCustom(data(), picked)) || M.fxDaily(data(), d) : fxToday(); fxBase = null; fxSt = null; fxBlock = []; fxPicksOn = []; fxSwapFrom = null; fxView = 'desk'; }
   return fx;
 }
 function fxBaseOdds(){
@@ -1414,7 +1655,7 @@ function fxInProgress(){
   var p = fxToday(), s = lsGet(FX_RUN);
   return !!(s && s.day === p.day && (s.win > 0 || (s.trades && s.trades.length)));
 }
-function fxStKey(st){ return st.day + ':' + st.win + ':' + JSON.stringify(st.trades); }
+function fxStKey(st){ return st.day + ':' + st.win + ':' + JSON.stringify(st.trades) + ':' + JSON.stringify(st.lineups || {}); }
 /* The odds as the season stands: every trade so far, and nothing more. */
 function fxOddsNow(){
   var st = fxSeason(), key = fxStKey(st);
@@ -1461,11 +1702,12 @@ function fxBanner(ts){
 
 /* One man on a roster. Win shares show on YOUR men only: you know your own
    team, and who the market underpaid elsewhere is the puzzle. */
-function fxManHtml(p, label, mark, tap, showWs){
+function fxManHtml(p, label, mark, tap, showWs, drag, off){
   var k = E.pkey(p);
-  return '<button class="fx-man' + (mark ? ' ' + mark : '') + (label === 'BN' ? ' bn' : '') + '" data-k="' + esc(k) + '"'
+  return '<button class="fx-man' + (mark ? ' ' + mark : '') + (label === 'BN' ? ' bn' : '') + (drag ? ' dr' : '')
+    + (drag && fxSwapFrom === k ? ' pick' : '') + '" data-k="' + esc(k) + '"'
     + (tap ? '' : ' disabled') + '>'
-    + '<span class="fs">' + label + '</span>'
+    + '<span class="fs' + (off ? ' off' : '') + '"' + (drag ? ' data-grip="1" title="Drag to swap"' : '') + '>' + label + '</span>'
     + '<span class="fn">' + esc(p.n) + '<small>' + esc(lineOf(p)) + ' · ' + (p.mp || 0).toFixed(0) + ' min</small></span>'
     + '<span class="fp"><b>' + money(p.p) + '</b>' + (showWs ? p.w.toFixed(1) + ' WS' : esc(shortClub(p.t, p.s))) + '</span>'
     + (mark === 'out' ? '<span class="fx-tag">On the block</span>'
@@ -1477,14 +1719,14 @@ function fxRosterHtml(rows, five, opts){
   var out = opts.out || {}, inn = opts.inn || {};
   o.starters.forEach(function(p, i){
     var k = E.pkey(p);
-    h += fxManHtml(p, E.SLOTS[i], out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k]);
+    h += fxManHtml(p, E.SLOTS[i], out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k], opts.drag, !E.canFillSlot(p, E.SLOTS[i]));
   });
   h += '</div>';
   if (o.bench.length) {
     h += '<div class="fx-benchh">Bench</div><div class="fx-five">';
     o.bench.forEach(function(p){
       var k = E.pkey(p);
-      h += fxManHtml(p, 'BN', out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k]);
+      h += fxManHtml(p, 'BN', out[k] ? 'out' : inn[k] ? 'in' : '', opts.tap, !inn[k], opts.drag);
     });
     h += '</div>';
   }
@@ -1533,7 +1775,8 @@ function fxRecordTo(st, games){
 function fxDeskHtml(){
   var st = fxSeason(), p = fxPuzzle(), d = data(), win = M.FX_WINDOWS[st.win];
   var base = fxBaseOdds(), now = fxOddsNow(), rec = fxRecordTo(st, win.at);
-  var rows = M.fxRosterAt(d, st, st.win), five = M.fxLineup(rows);
+  var rows = M.fxRosterAt(d, st, st.win), five = M.fxLineupAt(d, st, st.win);
+  var coach = M.fxLineup(rows), custom = five.map(E.pkey).join() !== coach.map(E.pkey).join();
   var h = fxHead() + fxStepper(st)
     + '<div class="fx-now"><div><span class="mx-eyebrow">' + esc(win.name) + (rec ? ' · ' + rec.w + '-' + rec.l : '') + '</span>'
     + '<b>' + (rec ? 'Record ' + rec.w + '-' + rec.l + '.' : 'The season starts after this window.') + '</b></div>'
@@ -1541,7 +1784,9 @@ function fxDeskHtml(){
     + (st.trades.length ? '<small>was ' + pct1(base.odds) + '</small>' : '') + '</div></div>'
     + '<h3 class="fx-step">Put up to three players on the block</h3>'
     + '<p class="mx-say" style="margin-top:0">Add picks to sweeten it. Each club that calls makes one offer. One trade a window.</p>'
-    + fxRosterHtml(rows, five, { tap: true, out: fxSetOf(fxBlock), inn: fxAcquired(st) });
+    + '<div class="fx-lu"><span>Drag a spot to swap two players.</span>'
+    + (custom ? '<button class="ghost sm" id="fx-coach">Coach\'s five</button>' : '') + '</div>'
+    + fxRosterHtml(rows, five, { tap: true, drag: true, out: fxSetOf(fxBlock), inn: fxAcquired(st) });
   var picks = M.fxPicksLeft(st);
   h += '<div class="fx-benchh">Your picks</div><div class="fx-picks">'
     + (picks.length ? picks.map(function(id){
@@ -1821,6 +2066,7 @@ function fxFinish(){
   var o = fxOddsNow(), rep = M.fxSeasonReplay(d, st);
   var r = {
     v: 2, day: p.day, ts: p.ts, trades: st.trades.slice(),
+    lineups: st.lineups ? JSON.parse(JSON.stringify(st.lineups)) : undefined,
     odds: o.odds, base: fxBaseOdds().odds, avgWins: o.wins,
     replay: { w: rep.wins, l: rep.losses, title: !!rep.titleWon, story: replayStory(rep) },
     at: Date.now()
@@ -1850,6 +2096,9 @@ function fxFinish(){
    finished and days in a row are a claim about coming back each day, and a
    button that deals a new team every press would make both worthless. */
 function fxFeats(r){
+  /* fxFeats is asked once a finish, so the coins are asked here too. A day's
+     season is keyed on the day; an endless one pays the small endless rate. */
+  if (window.RTF_EARN) { try { window.RTF_EARN.fix(r.day, r.odds, M.isEndless(r.day)); } catch (e) {} }
   var BD = window.RTF_BADGES;
   if (!BD || !P.feats) return;
   if (M.isEndless(r.day)) {
@@ -1891,9 +2140,9 @@ function fxResultRoster(r){
     var five = M.fxApply(p.five, r.slot, d.allPlayers[r.inKey]);
     return { rows: five, five: five };
   }
-  var st = { day: r.day, ts: r.ts, win: M.FX_WINDOWS.length, trades: r.trades, done: true };
-  var rows = M.fxRosterAt(d, st, M.FX_WINDOWS.length);
-  return { rows: rows, five: M.fxLineup(rows) };
+  var st = { day: r.day, ts: r.ts, win: M.FX_WINDOWS.length, trades: r.trades, lineups: r.lineups, done: true };
+  var last = M.FX_WINDOWS.length - 1;
+  return { rows: M.fxRosterAt(d, st, last), five: M.fxLineupAt(d, st, last) };
 }
 /* The dearest man taken back all season: the headline of the moves, and the
    one the board counts who else traded for. */
@@ -2020,11 +2269,21 @@ function fxRender(){
   box.innerHTML = fxDeskHtml();
   var keepY = function(fn){ return function(){ var y = window.scrollY; fn.apply(this, arguments); fxRender(); window.scrollTo({ top: y }); }; };
   box.querySelectorAll('.fx-man[data-k]').forEach(function(b){
-    b.onclick = keepY(function(){
+    var tap = keepY(function(){
       var k = b.getAttribute('data-k'), at = fxBlock.indexOf(k);
       if (at >= 0) fxBlock.splice(at, 1);
       else if (fxBlock.length < M.TRADE.MAX_OUT) fxBlock.push(k);
     });
+    /* The spot label is the drag handle, and its own press is handled on
+       pointerup, so a click that lands on it is never also a trade. */
+    b.onclick = function(ev){ if (ev.target.closest('[data-grip]')) return; tap(); };
+  });
+  fxWireDrag(box, keepY);
+  var coachBtn = $('fx-coach');
+  if (coachBtn) coachBtn.onclick = keepY(function(){
+    var st2 = fxSeason();
+    M.fxSetLineup(data(), st2, M.fxLineup(M.fxRosterAt(data(), st2, st2.win)).map(E.pkey));
+    fxSwapFrom = null; fxSaveSeason();
   });
   box.querySelectorAll('.fx-pick[data-pk]').forEach(function(b){
     b.onclick = keepY(function(){
@@ -2213,18 +2472,47 @@ function psStreak(){
   while (days[d] && days[d].done && days[d].solved) { n++; d--; }
   return n;
 }
-function passesOf(st){ return st.chain.length - 1; }
+/* EASY MODE IS ONE PASS OF THE SHOT CLOCK, spent once, and it counts
+   everywhere a pass is counted: the clock, the verdict, the share and the
+   board (134). A chain is still its hops; this is the number it scores. */
+function passesOf(st){ return st.chain.length - 1 + (st.easy ? 1 : 0); }
+/* The seasons a man played for one club, as ranges: "1976-80, 1984". */
+function clubYears(id, code){
+  var ys = (graph().seasonsOf[id] || []).map(function(ts){ return tsParts(ts); })
+    .filter(function(t){ return t.code === code; })
+    .map(function(t){ return t.season; }).sort(function(a, b){ return a - b; });
+  var out = [], i = 0;
+  while (i < ys.length) {
+    var j = i;
+    while (j + 1 < ys.length && ys[j + 1] === ys[j] + 1) j++;
+    out.push(ys[i] === ys[j] ? String(ys[i]) : ys[i] + '-' + String(ys[j]).slice(-2));
+    i = j + 1;
+  }
+  return out.join(', ');
+}
 function spanTxt(id){ var sp = graph().span[id]; return sp[0] === sp[1] ? String(sp[0]) : sp[0] + '-' + sp[1]; }
 
 /* THE TIMELINE: 1974 to today, each man a point at the middle of his career,
    each pass an arc between two of them. It is the picture of what the puzzle
    is, which is moving the ball through time, and it is drawn from the chain
    rather than stored, so a reload draws the same flight. */
+/* ON A DESKTOP THE BAR IS THE WIDTH OF THE WINDOW, so the drawing is made wider
+   rather than scaled up: a 340 wide picture stretched across 1300px came out
+   400px tall. W is the box's width at a fixed scale, rounded so a small resize
+   does not redraw. A phone keeps 340. */
+var PS_TL_SCALE = 1.45;
+function psTlWidth(){
+  if (!(window.matchMedia && matchMedia('(min-width:920px)').matches)) return 340;
+  var el = document.querySelector('#s-pass .ps-top > .ps-tlw');
+  var px = el && el.clientWidth ? el.clientWidth
+    : innerWidth - 76 - 2 * Math.min(300, Math.max(230, innerWidth * 0.18));
+  return Math.max(340, Math.round(px / PS_TL_SCALE / 20) * 20);
+}
 function psTimeline(st){
   var g = graph(), pz = psPuzzle();
   var yrs = data().teamSeasons.map(function(t){ return t.season; });
   var y0 = Math.min.apply(null, yrs), y1 = Math.max.apply(null, yrs);
-  var W = 340, H = 104, pad = 14, base = 84;
+  var W = psTlWidth(), H = 104, pad = 14, base = 84;
   var X = function(y){ return pad + (y - y0) / (y1 - y0) * (W - pad * 2); };
   var mid = function(id){ var sp = g.span[id]; return (sp[0] + sp[1]) / 2; };
   var h = '<svg class="ps-tl" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">';
@@ -2261,6 +2549,15 @@ function psTimeline(st){
     + (hx / W * 100) + '% - 11px)">';
   return '<div class="ps-tlw">' + h + '</div>';
 }
+/* A resize redraws only the timeline, and only when its width bucket moves. */
+window.addEventListener('resize', function(){
+  var el = document.querySelector('#s-pass.active .ps-top > .ps-tlw');
+  var svg = el && el.querySelector('.ps-tl');
+  if (!svg || psPicking) return;
+  if (svg.getAttribute('viewBox') === '0 0 ' + psTlWidth() + ' 104') return;
+  var t = document.createElement('div'); t.innerHTML = psTimeline(psState());
+  el.innerHTML = t.firstChild.innerHTML;
+});
 
 function psClock(n){
   var left = M.PS.CLOCK - n;
@@ -2268,16 +2565,21 @@ function psClock(n){
     + (left < 10 ? '0' : '') + left + '</b></div>';
 }
 
-function psEnds(st){
+function psEnds(st, tl){
   var g = graph(), pz = psPuzzle();
   /* Once the ball is there the left card is where it started, or both cards
      would name the same man. The portraits are the two ends of the puzzle and
      never move, so the left one is always the man who started with it. */
   var holder = st.done ? pz.from : st.chain[st.chain.length - 1];
-  return '<div class="ps-ends"><div class="ps-end"><div class="ps-pic">' + portrait(pz.from, 3, -1) + '</div><span class="mx-eyebrow">'
+  /* ONE GRID, TWO SHAPES. A phone puts the two ends side by side with the hoop
+     between them and the timeline under both. A desktop puts the timeline
+     BETWEEN the two ends, which is the picture the puzzle is: one career on
+     the left, one on the right, and the passes that join them. */
+  return '<div class="ps-top"><div class="ps-end"><div class="ps-pic">' + portrait(pz.from, 3, -1) + '</div><span class="mx-eyebrow">'
     + (st.done ? 'Started with' : st.chain.length === 1 ? 'Starts with the ball' : 'Has the ball') + '</span><b>'
     + esc(g.nameOf[holder]) + '</b><small>' + spanTxt(holder) + '</small></div>'
     + '<div class="ps-to">' + pix(ART.hoop, HOOP_PAL, 3) + '</div>'
+    + tl
     + '<div class="ps-end tgt"><div class="ps-pic">' + portrait(pz.to, 3, 1) + '</div><span class="mx-eyebrow">Get it to</span><b>' + esc(g.nameOf[pz.to])
     + '</b><small>' + spanTxt(pz.to) + '</small></div></div>';
 }
@@ -2333,18 +2635,35 @@ function psPickerHtml(st){
     var list = open ? mates : mates.slice(0, 10);
     var skin = E.clubSkin(stint.code);
     var yrs = stint.from === stint.to ? String(stint.from) : stint.from + '-' + String(stint.to).slice(-2);
-    h += '<div class="ps-grp"><div class="ps-gh" style="--c-acc:' + skin.accent + '">' + jersey(stint.code, 2)
+    h += '<div class="ps-grp" data-code="' + esc(stint.code) + '"><div class="ps-gh" style="--c-acc:' + skin.accent + '">' + jersey(stint.code, 2)
       + '<span>' + esc(E.teamName(stint.code)) + ' <em>' + yrs + '</em></span></div><div class="ps-mates">';
     list.forEach(function(id){
       shown++;
       h += '<button class="ps-mate' + (used[id] ? ' used' : '') + (id === psPuzzle().to ? ' tgt' : '') + '" data-id="' + esc(id) + '"'
-        + (used[id] ? ' disabled' : '') + '>' + esc(g.nameOf[id]) + '<small>' + spanTxt(id) + '</small></button>';
+        + (used[id] ? ' disabled' : '') + '>' + esc(g.nameOf[id])
+        + (st.easy ? '<small>' + clubYears(id, stint.code) + '</small>' : '') + '</button>';
     });
     if (!open) h += '<button class="ps-more" data-stint="' + esc(key) + '">+' + (mates.length - 10) + ' more</button>';
     h += '</div></div>';
   });
   if (!shown) h = '<p class="fx-hint">Nobody by that name played with him.</p>';
+  /* The years are hidden by default, which is the puzzle: you have to know
+     when a man played. The offer is under the last group, and it is not made
+     when spending a pass would end the clock. */
+  else if (!st.easy && passesOf(st) < M.PS.CLOCK - 1) {
+    h += '<button class="ps-easy" id="ps-easy">Too hard? Use a pass to reveal the years each player played for that team</button>';
+  }
   return h;
+}
+
+/* Easy mode: one pass off the clock, the years on for the rest of the puzzle. */
+function psEasy(){
+  var st = psState();
+  if (st.done || st.easy || passesOf(st) >= M.PS.CLOCK - 1) return;
+  st.easy = true;
+  st.at = Date.now();
+  psKeep(st);
+  psRender(false);
 }
 
 function psPass(to){
@@ -2361,6 +2680,7 @@ function psPass(to){
   psOpenStints = {};
   if (st.done) { if (!psEnd) psSubmit(pz, st); psFeats(pz, st); }
   psRender(true);
+  if (st.solved && P.confetti) P.confetti();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2368,7 +2688,10 @@ function psPass(to){
    solved, off this device's store. */
 function psFeats(pz, st){
   var BD = window.RTF_BADGES;
-  if (!BD || !P.feats || st.featsFiled) return;
+  if (st.featsFiled) return;
+  /* Keyed on the day, so the guard above is only about the cabinet. */
+  if (window.RTF_EARN) { try { window.RTF_EARN.passes(pz.day, !!st.solved && passesOf(st) <= pz.par, !!st.easy, M.isEndless(pz.day)); } catch (e) {} }
+  if (!BD || !P.feats) return;
   var days = psStore().days, n = 0;
   /* Endless counts every chain and no streak: see fxFeats. */
   if (!M.isEndless(pz.day)) for (var d = pz.day; days[d] && days[d].solved; d--) n++;
@@ -2383,25 +2706,52 @@ function psVerdict(st){
   return over <= 0 ? 'Perfect pass' : over === 1 ? 'One extra pass' : over === 2 ? 'Worked for it' : 'Got it there';
 }
 
+/* THE PASSING LANE. A finished chain is drawn as the ball going hand to hand:
+   every man who touched it, in order, with the club and season that joined
+   each pair written on the pass between them. */
+function psLane(st){
+  var g = graph(), h = '<div class="ps-lane">';
+  st.chain.forEach(function(id, i){
+    if (i) {
+      var shared = M.psShared(g, st.chain[i - 1], id);
+      h += '<div class="ps-arrow"><span>' + esc(tsParts(shared[shared.length - 1]).short) + '</span><i></i></div>';
+    }
+    var last = i === st.chain.length - 1;
+    h += '<div class="ps-hop' + (i === 0 ? ' first' : '') + (last && st.solved ? ' last' : '') + '"><div class="ps-lp">'
+      + portrait(id, 2, last ? 1 : -1) + '</div><b>' + esc(surname(g.nameOf[id])) + '</b></div>';
+  });
+  return h + '</div>';
+}
+
 function psDoneHtml(st){
-  var g = graph(), pz = psPuzzle();
+  var g = graph(), pz = psPuzzle(), n = passesOf(st), over = n - pz.par;
   var best = M.psPath(g, pz.from, pz.to);
   var bestHtml = best.map(function(id){ return esc(surname(g.nameOf[id])); }).join(' <i>to</i> ');
-  return '<div class="mx-card mx-scan ps-done mx-rise" style="text-align:center">'
-    + '<div class="mx-eyebrow">' + esc(psVerdict(st)) + '</div>'
-    + '<div class="cq-big ps-big">' + (st.solved ? passesOf(st) : 'X') + '</div>'
-    + '<div class="mx-eyebrow" style="color:var(--ink)">' + (st.solved ? plural(passesOf(st), 'pass', 'passes') + ' · par ' + pz.par : 'The ball never got there') + '</div>'
-    + '<p class="mx-say">A shortest chain: ' + bestHtml + '.</p>'
-    + (psEnd ? '' : '<div id="ps-place" class="fx-place"></div>') + '</div>'
+  var head = !st.solved ? 'Shot clock' : over <= 0 ? 'Bucket!' : over === 1 ? 'And one!' : 'Scored';
+  var stars = '';
+  if (st.solved) for (var i = 0; i < 3; i++) stars += '<span class="' + (i < 3 - Math.min(3, Math.max(0, over)) ? 'on' : '') + '">★</span>';
+  return '<div class="mx-card ps-done mx-rise ' + (st.solved ? 'win' : 'miss') + '">'
+    + '<div class="ps-done-top"><div class="ps-verdict"><div class="mx-eyebrow">' + esc(psVerdict(st)) + '</div>'
+    + '<div class="ps-head">' + head + '</div>'
+    + (st.solved ? '<div class="ps-stars" aria-label="' + Math.max(0, 3 - Math.max(0, over)) + ' of 3">' + stars + '</div>' : '')
+    + '</div><div class="ps-score"><b>' + (st.solved ? n : 'X') + '</b><span>'
+    + (st.solved ? (n === 1 ? 'pass' : 'passes') + ' · par ' + pz.par : 'Never got there') + '</span>'
+    + (st.easy ? '<span class="ps-easytag">Easy mode: one pass for the years</span>' : '') + '</div></div>'
+    + psLane(st)
+    + '<p class="mx-say ps-best">' + (st.solved && over <= 0 ? 'No shorter way exists.' : 'A shortest chain: ' + bestHtml + '.') + '</p>'
+    + (psEnd ? '' : '<div id="ps-place" class="fx-place"></div>')
+    + '<div class="ps-acts">'
     + (psEnd
-      ? (endlessOpen() ? '<div class="mx-row"><button class="big ps-go" id="ps-next">Next puzzle</button></div>' : '')
-        + '<div class="mx-row" style="margin-top:8px"><button class="' + (endlessOpen() ? 'ghost' : 'big ps-go') + '" id="ps-share">'
-        + (pz.custom ? 'Send it to a friend' : 'Share') + '</button></div>'
-        + '<p class="fx-hint" style="text-align:center">' + (pz.custom ? 'The link gives them the same two players.' : 'Endless. Off the leaderboard.') + '</p>'
-      : '<div class="mx-row"><button class="big ps-go" id="ps-share">Share</button></div>'
-        + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="ps-board">Today\'s leaderboard</button></div>'
-        + endlessDoor('ps-endless', 'Play another puzzle')
-        + '<p class="fx-hint" style="text-align:center">A new puzzle tomorrow.</p>');
+      ? (endlessOpen() ? '<button class="big ps-go" id="ps-next">Next puzzle</button>' : '')
+        + '<button class="' + (endlessOpen() ? 'ghost' : 'big ps-go') + '" id="ps-share">'
+        + (pz.custom ? 'Send it to a friend' : 'Share') + '</button>'
+      : '<button class="big ps-go" id="ps-share">Share</button>'
+        + '<button class="ghost" id="ps-board">Today\'s leaderboard</button>')
+    + '</div>'
+    + (psEnd
+      ? '<p class="fx-hint" style="text-align:center">' + (pz.custom ? 'The link gives them the same two players.' : 'Endless. Off the leaderboard.') + '</p>'
+      : endlessDoor('ps-endless', 'Play another puzzle') + '<p class="fx-hint" style="text-align:center">A new puzzle tomorrow.</p>')
+    + '</div>';
 }
 
 function psShareText(st){
@@ -2411,7 +2761,7 @@ function psShareText(st){
   line += st.solved ? '🎯' : '❌';
   return 'Run The Floor · Six Passes ' + (M.isEndless(pz.day) ? (pz.custom ? 'Custom' : 'Endless') : '#' + pz.day) + '\n'
     + surname(g.nameOf[pz.from]) + ' to ' + surname(g.nameOf[pz.to]) + '\n'
-    + line + ' ' + (st.solved ? plural(n, 'pass', 'passes') + ' (par ' + pz.par + ')' : 'shot clock') + '\n'
+    + line + ' ' + (st.solved ? plural(n, 'pass', 'passes') + ' (par ' + pz.par + ')' : 'shot clock') + (st.easy ? ' · easy mode' : '') + '\n'
     + 'Real teammates only. Can you do it in fewer?\n' + (pz.custom ? linkTo('pass=' + pz.from + '.' + pz.to) : P.SHARE_URL);
 }
 
@@ -2426,12 +2776,10 @@ function psRender(animate){
     + '<div><div class="mh ps-mh">Six Passes</div><div class="cq-rung">' + psLabel(pz) + ' · Par ' + pz.par
     + (streak > 1 ? ' · ' + streak + ' days in a row' : '') + '</div></div>'
     + (st.done ? '' : psClock(passesOf(st))) + '</div>'
-    + psEnds(st)
-    + psTimeline(st).replace('ps-tlw', 'ps-tlw' + (animate ? ' fresh' : ''))
-    + psChainHtml(st);
-  if (st.done) {
-    h += psDoneHtml(st);
-  } else {
+    + (st.done ? psDoneHtml(st) : '')
+    + psEnds(st, psTimeline(st).replace('ps-tlw', 'ps-tlw' + (animate ? ' fresh' : '')))
+    + (st.done ? '' : psChainHtml(st));
+  if (!st.done) {
     h += '<h3 class="fx-step">' + (st.chain.length === 1 ? 'Who does ' : 'Now who does ') + esc(surname(g.nameOf[holder]))
       + ' pass to?</h3><p class="mx-say" style="margin-top:0">Anybody he played with, same team, same season. Every pass is final.</p>'
       + '<input class="fx-q ps-q" id="ps-q" type="search" autocomplete="off" spellcheck="false" placeholder="Filter his teammates" value="' + esc(psFilter) + '">'
@@ -2449,6 +2797,7 @@ function psRender(animate){
         wire();
       };
     });
+    var ez = $('ps-easy'); if (ez) ez.onclick = psEasy;
   };
   wire();
   var q = $('ps-q');
@@ -2576,74 +2925,93 @@ function psOpen(){
 
 // ═══ FRONT PAGE ═════════════════════════════════════════════════════════════
 
-/* ── THE FRONT PAGE: one game, three tiers ─────────────────────────────────
+/* ── THE FRONT PAGE: the puzzle strip and the tiles this file owns ───────
  *
- * It was seven doors at one weight in four colours, and a returning player had
- * to read all of them to find the one thing that changed since yesterday. Now:
+ * The front page (index.html) opens on the DAILY PUZZLES, a strip of two
+ * cards, then Classic, the Daily Draft in its own spot, then MORE WAYS TO
+ * PLAY, one grid of tiles a desktop draws beside the daily card and a phone
+ * keeps in a sheet. The page owns the grid and two of its tiles (One
+ * Franchise, Decades); this file fills everything that needs to know whether
+ * a puzzle is done or a run is live.
  *
- *   TODAY   the two dailies as one checklist, which is the reason to open the
- *           app on any given day. The dock carries the one primary button,
- *           pointed at whichever is still open, so the rows are rows and not
- *           two more big buttons saying the same thing.
- *   PLAY    Conquest and Quick Draft, side by side. Quick Draft's four ways in
- *           live in a sheet behind its tile.
- *   QUIET   boards, career, rules, as a row of links under everything.
+ *   #pz-fix   Fix History, today's puzzle, in the strip
+ *   #pz-ps    Six Passes, today's puzzle, in the strip
+ *   #mw-cq    Conquest, the other unlimited mode
+ *   #mw-pro   endless and build, for Pro
  *
- * ONE COLOUR FOR ACTION. Every primary button is the brand orange; a mode's own
- * colour is on its icon and nowhere else. Four accents on one screen is what
- * made it read as four apps. */
-function todayRow(id, ico, name, sub, done, doneTxt){
-  return '<button class="td-row' + (done ? ' done' : '') + '" id="' + id + '"><span class="td-ico">' + ico + '</span>'
-    + '<span class="td-txt"><b>' + name + '</b><small>' + sub + '</small></span>'
-    + '<span class="td-st">' + (done ? '<i class="td-ck" aria-hidden="true"></i>' + doneTxt : 'Play') + '</span></button>';
+ * A TILE IS ONE PRESS. The tag over the name says what kind of mode it is, the
+ * chip in the corner says where you are with it, and the sub says what it is.
+ * The puzzle cards keep the ids the tiles had (#mc-fix, #mc-ps), so every
+ * walker that presses them still finds them. */
+function tileHtml(id, ico, tag, name, sub, chip, done){
+  return '<button class="mt-main' + (chip ? ' has-chip' : '') + (done ? ' done' : '') + '" id="' + id + '">'
+    + '<span class="mt-ico pix">' + ico + '</span>'
+    + '<span class="mt-tag">' + tag + '</span><b class="mt-name">' + name + '</b>'
+    + '<small class="mt-sub">' + sub + '</small>'
+    + (chip ? '<span class="mt-chip' + (done ? '' : ' go') + '">' + chip + '</span>' : '') + '</button>';
 }
-function todayHtml(){
-  var p = fxToday(), t = tsParts(p.ts), r = fxResult(p.day);
-  var pz = psToday(), st = psTodayState(), g = graph();
-  var n = (r ? 1 : 0) + (st.done ? 1 : 0);
-  var streak = Math.max(fxStreak(), psStreak());
-  var title = n === 2 ? 'Both done. New ones tomorrow.' : n === 1 ? 'One down, one to go.' : 'Two puzzles. One shot each.';
-  var h = '<section class="today" id="today"><div class="td-h"><div><span class="td-eye">Today · Day ' + p.day + '</span>'
-    + '<b class="td-title">' + title + '</b></div>'
-    + '<span class="td-prog"><span class="td-n">' + n + ' of 2</span><i class="' + (r ? 'on' : '') + '"></i><i class="' + (st.done ? 'on' : '') + '"></i></span></div>';
-  var fxSub = esc(t.name) + '. Four trade windows to win it.';
-  var dayRun = lsGet(FX_RUN);
-  if (!r && fxInProgress()) fxSub = esc(t.name) + '. ' + esc(M.FX_WINDOWS[Math.min(dayRun.win, M.FX_WINDOWS.length - 1)].name) + ' window is open.';
-  h += todayRow('mc-fix', pix(ART.rewind, { t: '#5eead4' }, 3), 'Fix History', fxSub, !!r, r ? pct1(r.odds) : '');
-  h += todayRow('mc-ps', pix(ART.hoop, HOOP_PAL, 3), 'Six Passes',
-    esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + '. Par ' + pz.par + '.',
-    st.done, st.done ? (st.solved ? plural(passesOf(st), 'pass', 'passes') : 'Missed') : '');
-  if (streak > 1) h += '<div class="td-foot">' + streak + ' days in a row</div>';
-  /* Drawn for everybody. Without Pro each chip wears the lock and opens the
-     offer, which is where that press was always going to end: a door nobody can
-     see is a mode nobody knows exists. */
-  var lk = endlessOpen() ? '' : ' class="lk"';
-  h += '<div class="td-end"><span>Endless</span><button id="td-efx"' + lk + '>Fix History</button><button id="td-eps"' + lk + '>Six Passes</button></div>'
-    + '<div class="td-end"><span>Build</span><button id="td-pfx"' + lk + '>Any team</button><button id="td-pps"' + lk + '>Any two players</button></div>'
-    /* One line, not a card: the front page is held to a height (check-home),
-       and a tag on each row label wrapped both rows onto two lines. */
-    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + '</button>');
-  return h + '</section>';
+function puzzleHtml(id, color, ico, tag, name, sub, chip, done){
+  return '<button class="pz' + (done ? ' done' : '') + '" id="' + id + '" style="--c:' + color + '">'
+    + '<span class="pz-top"><span class="pz-ico">' + ico + '</span><span class="pz-chip">' + chip + '</span></span>'
+    + '<span class="pz-tag">' + tag + '</span><b class="pz-name">' + name + '</b>'
+    + '<small class="pz-sub">' + sub + '</small></button>';
 }
-function playTilesHtml(){
+function cqTileHtml(){
   if (!cq) cqLoad();
   var b = cqBest(), live = cq && !M.cqOver(cq);
-  var cqSub = live ? (cq.drafting ? 'Finish your draft.' : plural(M.cqStreak(cq), 'win') + ' and counting.')
-    : 'Winners stay on. Take a guy off every team you beat.';
-  var cqChip = live ? ball(14) + ' ' + plural(cq.lives, 'life', 'lives') : b.best ? 'Best ' + b.best + 'W' : '3 lives';
-  return '<h2 class="mhome-h">Play</h2><div class="ptiles">'
-    + '<button class="ptile cq" id="mc-cq"><span class="pt-ico">' + pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 3) + '</span>'
-    + '<b class="pt-name">Conquest</b><small class="pt-sub">' + cqSub + '</small>'
-    + '<span class="pt-foot"><span class="mx-chip">' + cqChip + '</span><span class="pt-go">' + (live ? 'Continue' : 'Play') + '</span></span></button>'
-    + '<button class="ptile qd" id="mc-qd"><span class="pt-ico">' + ball(34) + '</span>'
-    + '<b class="pt-name">Quick Draft</b><small class="pt-sub">Spin a team and a season. Sign five under ' + money(E.CONSTANTS.CAP_MUSD) + '.</small>'
-    + '<span class="pt-foot"><span class="mx-chip">4 ways</span><span class="pt-go">Draft</span></span></button>'
-    + '</div>';
+  var sub = live ? (cq.drafting ? 'Finish your draft.' : plural(M.cqStreak(cq), 'win') + ' and counting.')
+    : 'Winners stay on. Beat a real team and take a guy off it.';
+  var chip = live ? plural(cq.lives, 'life', 'lives') : b.best ? 'Best ' + b.best + 'W' : 'Play';
+  return tileHtml('mc-cq', pix(ART.crown, { g: '#f2c14e', r: '#ef4444', b: '#60a5fa', d: '#a8781a' }, 2),
+    'Unlimited', 'Conquest', sub, chip, false);
+}
+function fixTileHtml(){
+  var p = fxToday(), t = tsParts(p.ts), r = fxResult(p.day);
+  /* Short on purpose: the card is half a phone wide, and the four windows
+     are explained on the screen it opens. */
+  var sub = esc(t.name) + '. Win it.';
+  if (!r && fxInProgress()) {
+    var dayRun = lsGet(FX_RUN);
+    sub = esc(t.name) + '. ' + esc(M.FX_WINDOWS[Math.min(dayRun.win, M.FX_WINDOWS.length - 1)].name) + ' window open.';
+  }
+  return puzzleHtml('mc-fix', '#5eead4', pix(ART.rewind, { t: '#5eead4' }, 2), 'Day ' + p.day, 'Fix History', sub,
+    r ? '<i class="td-ck" aria-hidden="true"></i>' + pct1(r.odds) : 'Play', !!r);
+}
+function psTileHtml(){
+  var pz = psToday(), st = psTodayState(), g = graph();
+  return puzzleHtml('mc-ps', '#fb923c', pix(ART.hoop, HOOP_PAL, 2), 'Par ' + pz.par, 'Six Passes',
+    esc(surname(g.nameOf[pz.from])) + ' to ' + esc(surname(g.nameOf[pz.to])) + '.',
+    st.done ? '<i class="td-ck" aria-hidden="true"></i>' + (st.solved ? plural(passesOf(st), 'pass', 'passes') : 'Missed') : 'Play',
+    st.done);
+}
+/* Drawn for everybody. Without Pro each chip wears the lock and opens the
+   offer, which is where that press was always going to end: a door nobody can
+   see is a mode nobody knows exists. */
+function proTileHtml(){
+  var lk = endlessOpen() ? '' : ' class="lk"';
+  return '<span class="mt-tag">Pro · No daily limit</span><b class="mt-name">Endless</b>'
+    + '<div class="td-end"><span>Endless</span><button id="td-efx"' + lk + '>Fix History</button><button id="td-eps"' + lk + '>Six Passes</button></div>'
+    + '<div class="td-end"><span>Build</span><button id="td-pfx"' + lk + '>Any team</button><button id="td-pps"' + lk + '>Two players</button></div>'
+    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + PRO_TERM + '</button>');
+}
+/* How many of today's two puzzles are still open, for the strip's heading. */
+function dailiesLeft(){
+  if (!data()) return 0;
+  return (fxResult(fxToday().day) ? 0 : 1) + (psTodayState().done ? 0 : 1);
 }
 function renderHome(){
-  var box = $('modes-home');
-  if (!box || !data()) return;
-  box.innerHTML = todayHtml() + playTilesHtml();
+  if (!data()) return;
+  var slots = { 'pz-fix': fixTileHtml, 'pz-ps': psTileHtml, 'mw-cq': cqTileHtml, 'mw-pro': proTileHtml };
+  for (var k in slots) { var el = $(k); if (el) el.innerHTML = slots[k](); }
+  var sec = $('hp-puzzles'); if (sec) sec.hidden = false;
+  /* THE HEADING SAYS WHAT IS WAITING, and both done says when the next two
+     arrive, because a strip of two green cards reads as nothing left to do
+     rather than as a streak to keep. */
+  var hl = $('pz-left'), left = dailiesLeft();
+  if (hl) {
+    hl.textContent = left ? (left === 2 ? 'Two open today' : 'One left today') : 'New ones at midnight ET';
+    hl.className = 'pz-left' + (left ? ' open' : '');
+  }
   paintToday();
   var c = $('mc-cq'); if (c) c.onclick = cqOpen;
   var f = $('mc-fix'); if (f) f.onclick = fxOpen;
@@ -2653,27 +3021,26 @@ function renderHome(){
   var pf = $('td-pfx'); if (pf) pf.onclick = fxOpenPicker;
   var pp = $('td-pps'); if (pp) pp.onclick = psOpenPicker;
   var tp = $('td-pro'); if (tp) tp.onclick = function(){ openPro(null); };
-  var qd = $('mc-qd'); if (qd) qd.onclick = function(){ if (P.openQuickDraft) P.openQuickDraft(); };
+  /* LOCKED, THE WHOLE CARD IS THE OFFER, asked for by the owner: a press anywhere on
+     it opens the Pro sheet. The chips keep their own presses (they open the same
+     sheet without Pro, and their mode with it), so this only takes the rest of the
+     card. Unlocked the card has nothing of its own to open. */
+  var mp = $('mw-pro');
+  if (mp) {
+    var shut = !endlessOpen();
+    mp.classList.toggle('mw-shut', shut);
+    mp.onclick = shut ? function(ev){ if (!ev.target.closest('button')) openPro(null); } : null;
+    if (shut) { mp.setAttribute('role', 'button'); mp.tabIndex = 0;
+      mp.onkeydown = function(ev){ if (ev.target === mp && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openPro(null); } }; }
+    else { mp.removeAttribute('role'); mp.removeAttribute('tabindex'); mp.onkeydown = null; }
+  }
+  if (window.RTF_CAREER_UI) window.RTF_CAREER_UI.renderHero();
 }
 
-/* THE DOCKED BUTTON: whichever daily is still open, then Conquest. One
-   button, so what it says is always the next thing worth doing. It is the
-   brand orange whatever it points at: the colour means "the next thing",
-   and the mode it opens is in its words. */
-function paintToday(){
-  var b = $('b-today');
-  if (!b) return;
-  var fxDone = !!fxResult(fxToday().day), psDone = psTodayState().done;
-  if (!fxDone) { b.textContent = 'Play today\'s Fix History'; b.onclick = fxOpen; }
-  else if (!psDone) { b.textContent = 'Play today\'s Six Passes'; b.onclick = psOpen; }
-  else {
-    var live = cq && !M.cqOver(cq);
-    b.textContent = live ? 'Back to Conquest' : 'Play Conquest';
-    b.onclick = cqOpen;
-  }
-  b.className = 'big today';
-  b.disabled = false;
-}
+/* THE DOCK IS CLASSIC'S NOW (index.html's DOCK_FOR), so the daily puzzles
+   are rows and nothing here owns a primary button. Kept as a function because
+   renderHome and the modes call it after every result. */
+function paintToday(){}
 
 // ═══ LEADERBOARDS ═══════════════════════════════════════════════════════════
 
@@ -2736,7 +3103,7 @@ function fxFillPlace(r){
 
 function psSubmit(pz, st){
   if (st.boardId) return Promise.resolve(st.boardId);
-  return BB().submitPasses(pz.day, st.chain, pz.par, st.solved).then(function(id){
+  return BB().submitPasses(pz.day, st.chain, pz.par, st.solved, !!st.easy).then(function(id){
     if (id) { st.boardId = id; psKeep(st); rememberGuest(id); }
     return id;
   });
@@ -2770,102 +3137,125 @@ function cqSubmitOrPlace(){
   });
 }
 
-/* THE SHEET. One for all three modes, because the three boards are one query
-   with a different mode. The dailies read today and yesterday; Conquest reads
-   today and all time. */
-var mbMode = null, mbTab = 0;
-function openModeBoard(mode){
-  mbMode = mode; mbTab = 0;
-  var sh = $('mb-sheet');
-  if (!sh) {
-    sh = document.createElement('div');
-    sh.id = 'mb-sheet';
-    sh.className = 'fx-sheet';
-    document.body.appendChild(sh);
-    sh.addEventListener('click', function(ev){ if (ev.target === sh) closeModeBoard(); });
-    document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeModeBoard(); });
-  }
-  sh.hidden = false;
-  paintModeBoard();
-}
-function closeModeBoard(){ var sh = $('mb-sheet'); if (sh) sh.hidden = true; }
+/* THE BOARDS ARE ONE SCREEN NOW, the page's own s-board, which is Run The
+   Diamond's leaderboard: a tab a mode, a window, a sort, a hundred rows at a
+   time, and a row that opens. This file only knows what a Conquest, Fix History
+   or Six Passes row SAYS, and hands that over through RTF_MODES_UI.board. */
+function openModeBoard(mode){ if (P.openBoard) P.openBoard({ door: mode }); }
 function mbDetail(row){
   var d = data();
   if (row.mode === 'fix') {
     var nm = function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : '?'; };
     /* A season of trades says how many and who came in. */
     if (Array.isArray(row.fix_trades)) {
-      if (!row.fix_trades.length) return 'Stood pat' + (row.replay_title ? ' 🏆' : '');
+      if (!row.fix_trades.length) return 'Stood pat';
       var got = [];
       row.fix_trades.forEach(function(t){ (t.ins || []).forEach(function(k){ got.push(nm(k)); }); });
-      return plural(row.fix_trades.length, 'trade') + ' · got ' + got.slice(0, 3).join(', ') + (row.replay_title ? ' 🏆' : '');
+      return plural(row.fix_trades.length, 'trade') + ' · got ' + got.slice(0, 3).join(', ');
     }
     var ins = row.fix_ins || [row.fix_in], outs = row.fix_outs || [row.fix_out];
     var inn = d.allPlayers[ins[0]];
     var from = row.fix_with ? E.teamName(tsParts(row.fix_with).code) : inn ? shortClub(inn.t, inn.s) : '';
-    return ins.map(nm).join(', ') + (from ? ' ' + esc(from) : '') + ' for ' + outs.map(nm).join(', ')
-      + (row.replay_title ? ' 🏆' : '');
+    return ins.map(nm).join(', ') + (from ? ' ' + esc(from) : '') + ' for ' + outs.map(nm).join(', ');
   }
-  if (row.mode === 'passes') return row.solved ? plural(row.passes, 'pass', 'passes') + ' · par ' + row.par : 'Shot clock';
+  if (row.mode === 'passes') return row.solved ? 'Par ' + row.par : 'Shot clock ran out';
   var took = (row.cq_took || []).slice(-2).map(function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : ''; }).filter(Boolean);
-  return plural(row.cq_wins, 'win') + (row.cq_cleared ? ' 👑' : '') + (took.length ? ' · took ' + took.join(', ') : '');
+  return took.length ? 'Took ' + took.join(', ') : 'Took nobody';
 }
-function mbValue(row){
-  if (row.mode === 'fix') return pct1(Number(row.fix_odds));
-  if (row.mode === 'passes') return row.solved ? String(row.passes) : 'X';
-  return String(row.cq_wins);
+/* A FIX HISTORY ROW OPENS INTO THE SEASON IT WAS. The board already carries
+   the club and every trade, so the final roster is rebuilt here from this
+   browser's own data with no request: the club, then each trade in order. What
+   it cannot say is who started, because the lineup is not filed, so it lists
+   the roster by win shares and marks who came in. */
+function mbFixTrades(row){
+  if (Array.isArray(row.fix_trades)) return row.fix_trades;
+  var ins = row.fix_ins || (row.fix_in ? [row.fix_in] : []), outs = row.fix_outs || (row.fix_out ? [row.fix_out] : []);
+  return ins.length ? [{ w: 0, with: row.fix_with || null, outs: outs, ins: ins, picks: [] }] : [];
 }
-function paintModeBoard(){
-  var sh = $('mb-sheet');
-  if (!sh || sh.hidden) return;
-  var tabs = mbMode === 'conquest' ? ['Today', 'All time'] : ['Today', 'Yesterday'];
-  var d = today();
-  var day = mbMode === 'conquest' ? (mbTab === 0 ? d : null) : (mbTab === 0 ? d : d - 1);
-  var mine = {};
-  if (mbMode === 'fix') { var fr = fxResult(d); if (fr && fr.boardId) mine[fr.boardId] = 1; var fy = fxResult(d - 1); if (fy && fy.boardId) mine[fy.boardId] = 1; }
-  if (mbMode === 'passes') { var pd = psStore().days; Object.keys(pd).forEach(function(k){ if (pd[k].boardId) mine[pd[k].boardId] = 1; }); }
-  if (mbMode === 'conquest' && cq && cq.boardId) mine[cq.boardId] = 1;
-  var modes = [['fix', 'Fix History'], ['passes', 'Six Passes'], ['conquest', 'Conquest'], ['draft', 'Quick Draft']];
-  sh.innerHTML = '<div class="fx-card mb-card"><div class="mb-top"><h2 style="margin:0">Leaderboards'
-    + '</h2><button class="ghost sm" id="mb-x">Close</button></div><div class="mb-modes">'
-    + modes.map(function(m){ return '<button class="mb-mode' + (m[0] === mbMode ? ' on' : '') + '" data-m="' + m[0] + '">' + m[1] + '</button>'; }).join('')
-    + '</div><div class="mb-tabs">'
-    + tabs.map(function(t, i){ return '<button class="mb-tab' + (i === mbTab ? ' on' : '') + '" data-i="' + i + '">' + t + '</button>'; }).join('')
-    + '</div><div id="mb-rows" class="mb-rows"><p class="fx-hint">Loading the board...</p></div></div>';
-  $('mb-x').onclick = closeModeBoard;
-  /* THE DRAFT'S BOARD IS ITS OWN SHEET, with its own competitions and axes,
-     so its chip hands over to it rather than drawing a thinner copy here. */
-  sh.querySelectorAll('.mb-mode').forEach(function(b){
-    b.onclick = function(){
-      var m = b.getAttribute('data-m');
-      if (m === 'draft') { closeModeBoard(); if (P.openBoard) P.openBoard(); return; }
-      mbMode = m; mbTab = 0; paintModeBoard();
-    };
-  });
-  sh.querySelectorAll('.mb-tab').forEach(function(b){
-    b.onclick = function(){ mbTab = Number(b.getAttribute('data-i')); paintModeBoard(); };
-  });
-  var want = mbMode + ':' + mbTab;
-  BB().playTop(mbMode, day, 50).then(function(rows){
-    if (!$('mb-rows') || mbMode + ':' + mbTab !== want) return;
-    var box = $('mb-rows');
-    if (rows === null) {
-      box.innerHTML = '<p class="fx-hint">The leaderboard is not reachable right now. Your result is saved on this device.</p>';
-      return;
-    }
-    if (!rows.length) {
-      box.innerHTML = '<p class="fx-hint">Nobody with a name on the board yet. Sign in and you are first.</p>';
-      return;
-    }
-    var h = '', place = 0, last = null;
-    rows.forEach(function(r, i){
-      if (r.score !== last) { place = i + 1; last = r.score; }
-      h += '<div class="mb-row' + (mine[r.id] ? ' me' : '') + '"><span class="mb-n">' + place + '</span>'
-        + '<span class="mb-who"><b>' + esc(r.display_name || 'Guest') + '</b><small>' + mbDetail(r) + '</small></span>'
-        + '<span class="mb-v">' + mbValue(r) + '</span></div>';
-    });
-    box.innerHTML = h;
-  });
+function mbFixMore(row){
+  var d = data(), trades = mbFixTrades(row);
+  var nm = function(k){ var p = d.allPlayers[k]; return p ? esc(surname(p.n)) : '?'; };
+  var rows = [];
+  try {
+    var ok = trades.filter(function(t){ return (t.ins || []).every(function(k){ return d.allPlayers[k]; }); });
+    rows = M.fxRosterAt(d, { ts: row.fix_ts, trades: ok }, M.FX_WINDOWS.length - 1).filter(Boolean);
+  } catch (e) { rows = []; }
+  var got = {};
+  trades.forEach(function(t){ (t.ins || []).forEach(function(k){ got[k] = 1; }); });
+  var odds = Number(row.fix_odds), base = Number(row.fix_base);
+  var h = '<div class="mb-stats">'
+    + '<div><small>Title odds</small><b>' + pct1(odds) + '</b></div>'
+    + '<div><small>As built</small><b>' + (isFinite(base) ? pct1(base) : '-') + '</b></div>'
+    + '<div><small>Replay</small><b>' + (row.replay_wins != null ? row.replay_wins + '-' + (E.CONSTANTS.REGULAR_SEASON_GAMES - row.replay_wins) : '-')
+    + (row.replay_title ? ' · Won it' : '') + '</b></div></div>';
+  if (trades.length) {
+    h += '<ul class="mb-deals">' + trades.map(function(t){
+      var w = M.FX_WINDOWS[t.w], club = t.with ? E.teamName(tsParts(t.with).code) : '';
+      var gave = (t.outs || []).map(nm).concat((t.picks || []).map(pickLabel));
+      return '<li>' + esc(w ? w.name : 'A trade') + ': <b>' + (t.ins || []).map(nm).join(', ') + '</b>'
+        + (club ? ' from ' + esc(club) : '') + ' for ' + gave.join(', ') + '</li>';
+    }).join('') + '</ul>';
+  } else h += '<ul class="mb-deals"><li>Stood pat all season.</li></ul>';
+  if (rows.length) {
+    h += '<div class="mb-ros">' + rows.slice().sort(function(a, b){ return b.w - a.w; }).map(function(p){
+      return '<div class="mb-man"><span>' + esc(p.n) + (got[E.pkey(p)] ? '<em>New</em>' : '') + '</span>'
+        + '<small>' + (p.pts || 0).toFixed(1) + ' pts · ' + p.w.toFixed(1) + ' WS</small></div>';
+    }).join('') + '</div>';
+  }
+  return h;
+}
+/* A SIX PASSES ROW OPENS INTO ITS CHAIN, and a Conquest row into the five it
+   finished with and who ended it, drawn from this browser's own data with no
+   request, the way a Fix History row opens into its season. */
+function mbPassesMore(row){
+  var chain = Array.isArray(row.chain) ? row.chain : [];
+  if (!chain.length) return '<p class="fx-hint">No chain on file.</p>';
+  var g = graph();
+  return '<ol class="mb-chain">' + chain.map(function(id, i){
+    var sp = g.span[id];
+    return '<li><b>' + esc(g.nameOf(id) || id) + '</b>'
+      + (sp ? '<small>' + sp[0] + (sp[1] !== sp[0] ? '-' + sp[1] : '') + '</small>' : '')
+      + (i ? '' : '<em>Start</em>') + '</li>';
+  }).join('') + '</ol>'
+    + '<p class="bd-team-foot">' + (row.solved ? plural(row.passes, 'pass', 'passes') + ' against a par of ' + row.par
+      : 'The shot clock ran out after ' + plural(Math.max(0, row.passes || chain.length - 1), 'pass', 'passes')) + '.'
+      + (row.passes > chain.length - 1 ? ' One was spent on easy mode.' : '') + '</p>';
+}
+function mbConquestMore(row){
+  var d = data(), men = Array.isArray(row.cq_roster) ? row.cq_roster : [];
+  var h = men.length ? '<div class="mb-ros">' + men.map(function(k){
+    var p = d.allPlayers[k];
+    return '<div class="mb-man"><span>' + esc(p ? p.n : 'Season not in this version') + '</span>'
+      + (p ? '<small>' + esc(shortClub(p.t, p.s)) + ' · ' + (p.pts || 0).toFixed(1) + ' pts</small>' : '') + '</div>';
+  }).join('') + '</div>' : '<p class="fx-hint">No roster on file.</p>';
+  var foot = [plural(row.cq_wins, 'win')];
+  if (row.cq_cleared) foot.push('cleared the whole ladder');
+  else if (row.cq_lost_to) foot.push('ended by ' + esc(E.teamName(tsParts(row.cq_lost_to).code)) + ' ' + esc(tsParts(row.cq_lost_to).season || ''));
+  return h + '<p class="bd-team-foot">' + foot.join(' · ') + '</p>';
+}
+/* WHAT A ROW SAYS, for s-board. The value is what the board ranks on, the tag
+   is the one mark a row can wear (gold, like a title on the draft boards), and
+   `more` is what opens under it. */
+function boardBits(row){
+  if (row.mode === 'fix') return {
+    value: pct1(Number(row.fix_odds)), unit: 'title odds', meta: mbDetail(row),
+    champ: !!row.replay_title, tag: 'Won it all', more: function(){ return mbFixMore(row); } };
+  if (row.mode === 'passes') return {
+    value: row.solved ? String(row.passes) : 'X', unit: row.solved ? 'passes' : 'no chain',
+    meta: mbDetail(row), champ: !!(row.solved && row.passes <= row.par),
+    tag: row.solved && row.passes < row.par ? 'Under par' : 'At par',
+    more: function(){ return mbPassesMore(row); } };
+  return {
+    value: String(row.cq_wins), unit: row.cq_wins === 1 ? 'win' : 'wins', meta: mbDetail(row),
+    champ: !!row.cq_cleared, tag: 'Cleared', more: function(){ return mbConquestMore(row); } };
+}
+/* WHICH ROWS ARE THIS BROWSER'S, by the board id each mode kept when it filed. */
+function boardMine(mode){
+  var mine = {}, d = today();
+  if (mode === 'fix') [d, d - 1].forEach(function(x){ var r = fxResult(x); if (r && r.boardId) mine[r.boardId] = 1; });
+  if (mode === 'passes') { var pd = psStore().days; Object.keys(pd).forEach(function(k){ if (pd[k].boardId) mine[pd[k].boardId] = 1; }); }
+  if (mode === 'conquest' && cq && cq.boardId) mine[cq.boardId] = 1;
+  return mine;
 }
 
 // ═══ WIRING ═════════════════════════════════════════════════════════════════
@@ -2901,28 +3291,37 @@ function paintPro(why, kind){
     + (kind === 'thanks' ? (proOwned ? 'Pro is on' : 'Thanks for buying Pro') : proOwned ? 'You have Pro' : 'Run The Floor Pro')
     + '</h2><button class="ghost sm" data-pro-x>Close</button></div>';
   if (kind === 'thanks') {
-    h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles and build your own are open. On every device you sign in on.'
+    h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles, build your own, high school careers and the family tree are open. On every device you sign in on.'
       : 'Your payment went through. Pro is on its way to your account and usually lands in a few seconds.') + '</p>';
   } else if (proOwned) {
-    h += '<p class="mx-say">Endless puzzles and build your own are open. Thanks for backing the game.</p>';
+    h += '<p class="mx-say">Endless puzzles, build your own, high school careers and the family tree are open. Thanks for backing the game.</p>'
+      + '<button class="ghost" id="pro-bill">Manage billing</button>'
+      + '<p class="pro-err" id="pro-err" hidden></p>'
+      + '<p class="fx-hint" style="text-align:center">Change your card or cancel in Stripe. Pro stays on until the end of the year you paid for.</p>';
   } else {
     var signed = signedAcct();
     h += '<p class="mx-say">' + (why === 'endless' ? 'Out of puzzles for today? Pro keeps them coming.'
-        : why === 'build' ? 'Build your own puzzles with Pro.' : 'The dailies are free. Pro is everything else.') + '</p>'
+        : why === 'build' ? 'Build your own puzzles with Pro.'
+        : why === 'career' ? 'Play your road from high school with Pro.'
+        : why === 'family' ? 'Play as your son with Pro, and keep a family tree.' : 'The dailies are free. Pro is everything else.') + '</p>'
       + '<ul class="pro-list">'
+      + '<li><b>Career from high school</b>Play the road yourself, from age 15 to the draft. Free careers start on draft night.</li>'
+      + '<li><b>Family tree</b>When a career ends, play as your son. Every generation is kept.</li>'
       + '<li><b>Endless puzzles</b>A new Fix History team or Six Passes pair every time you finish one.</li>'
       + '<li><b>Rebuild any team</b>Any club, any year, champions too. Four trade windows to win it.</li>'
       + '<li><b>Make a puzzle</b>Pick any two players and send the link. Friends play it free.</li>'
       + '</ul>'
-      + '<div class="pro-price"><b>' + PRO_PRICE + '</b><span>once. Yours for good.</span></div>'
-      + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE : 'Sign in to get Pro') + '</button>'
+      + '<div class="pro-price"><b>' + PRO_PRICE + '</b><span>a year. Cancel any time.</span></div>'
+      + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE + PRO_TERM : 'Sign in to get Pro') + '</button>'
       + '<p class="pro-err" id="pro-err" hidden></p>'
       + '<p class="fx-hint" style="text-align:center">' + (signed
-        ? 'One payment through Stripe. Nothing renews. The dailies, Conquest and Quick Draft stay free for everybody.'
-        : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies stay free for everybody.') + '</p>';
+        ? 'Paid through Stripe. Renews each year until you cancel. Classic, Conquest, the dailies and Career from draft night stay free.'
+        : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies and Career from draft night stay free.') + '</p>';
   }
   sh.innerHTML = h + '</div>';
   sh.querySelectorAll('[data-pro-x]').forEach(function(b){ b.onclick = closePro; });
+  var bill = $('pro-bill');
+  if (bill) bill.onclick = function(){ openBilling(bill); };
   var buy = $('pro-buy');
   if (buy) buy.onclick = function(){
     if (!signedAcct()) { closePro(); if (P.openProfile) P.openProfile(); return; }
@@ -2947,13 +3346,36 @@ function buyPro(btn){
       if (d && d.url) { location.href = d.url; return; }
       if (d && d.error === 'already_owned') proRefresh(true);
       btn.disabled = false;
-      btn.textContent = 'Get Pro for ' + PRO_PRICE;
+      btn.textContent = 'Get Pro for ' + PRO_PRICE + PRO_TERM;
       if (err) {
         err.hidden = false;
         err.textContent = d && d.error === 'stripe_not_configured' ? 'Pro is not on sale yet. Try again soon.'
           : d && d.error === 'already_owned' ? 'This account already has Pro.'
           : d && d.error === 'unauthorized' ? 'Sign in again, then try once more.'
           : 'Checkout did not open. Try again.';
+      }
+    });
+}
+/* The Stripe Customer Portal, where a subscription is changed or cancelled.
+   A comped tester has no customer, and is told so rather than shown an error. */
+function openBilling(btn){
+  var a = P.auth(), t = a && a.token ? a.token() : null;
+  if (!t) { closePro(); if (P.openProfile) P.openProfile(); return; }
+  var err = $('pro-err'); if (err) err.hidden = true;
+  var label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Opening billing...';
+  fetch('/api/stripe/portal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+    body: JSON.stringify({ return_path: '/hoops/' })
+  }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+    .catch(function(){ return {}; })
+    .then(function(d){
+      if (d && d.url) { location.href = d.url; return; }
+      btn.disabled = false; btn.textContent = label;
+      if (err) {
+        err.hidden = false;
+        err.textContent = d && d.error === 'no_customer' ? 'There is no billing on this account to show.' : 'Billing did not open. Try again.';
       }
     });
 }
@@ -2965,6 +3387,7 @@ function proRefresh(force){
   var ask = ++proAsked, a = P.auth();
   if (!a || !a.premiumProducts) return Promise.resolve();
   if (!signedAcct()) { proSet(false); return Promise.resolve(); }
+  if (proTester(a.state && a.state())) { proSet(true); return Promise.resolve(); }
   return a.premiumProducts(force).then(function(prods){
     if (ask !== proAsked || !Array.isArray(prods)) return;
     proSet(prods.indexOf('rtf_premium') >= 0);
@@ -2973,10 +3396,15 @@ function proRefresh(force){
 function proSet(on){
   if (proOwned === on) return;
   proOwned = on;
+  /* Two arenas are Pro's, so owning it changes which floors are yours. */
+  if (P.arenaChanged) P.arenaChanged();
   var home = $('s-home');
   if (home && home.classList.contains('active')) renderHome();
   var sh = $('pro-sheet');
   if (sh && !sh.hidden && sh.getAttribute('data-kind') !== 'thanks') paintPro(null);
+  /* Career's builder and Hall card offer Pro doors of their own. */
+  var CU = window.RTF_CAREER_UI;
+  if (CU && CU.proChanged) CU.proChanged();
 }
 /* COMING BACK FROM STRIPE. The webhook races the redirect, so this asks for
    about ten seconds, past the cache each time, and never says the payment
@@ -3042,13 +3470,24 @@ function onData(){
 
 window.RTF_MODES_UI = {
   UI_VERSION: UI_VERSION,
+  /* The page's pull hands every row on the shelf to this, see cloudAdopt. */
+  cloudAdopt: cloudAdopt,
+  /* A key some other file keeps (Career's), sent to the shelf the same way
+     this file's own records are. */
+  write: function(k){ syncWrite(k); },
+  /* Whether this account owns Run The Floor Pro, for the arenas. */
+  pro: function(){ return proOwned; },
+  /* Whether Pro's doors are open: owning it, or PRO_LIVE off. Career asks this. */
+  proOpen: function(){ return endlessOpen(); },
+  openPro: function(why){ openPro(why); },
   onData: onData,
   renderHome: renderHome,
   openConquest: cqOpen,
   openFix: fxOpen,
   openPasses: psOpen,
   /* Every board in one sheet, from the front page's quiet row. */
-  openBoards: function(){ openModeBoard('fix'); },
+  openBoards: function(){ if (P.openBoard) P.openBoard(); },
+  board: { bits: function(r){ return boardBits(r); }, mine: function(m){ return boardMine(m); } },
   /* The doors the draft's results screen offers: the dailies still open
      today, and Conquest. Built here because only this file knows whether a
      daily is done. */
@@ -3068,7 +3507,9 @@ window.RTF_MODES_UI = {
   /* For the checker. Nothing on the page reads these. */
   _cq: function(){ return cq; },
   _pro: function(on){ proSet(!!on); },
-  _proRefresh: function(){ return proRefresh(true); }
+  _proRefresh: function(){ return proRefresh(true); },
+  /* Whether an auth state is on the tester comp. The checker's. */
+  _tester: function(st){ return proTester(st); }
 };
 if (data()) onData();
 })();

@@ -18,10 +18,10 @@ node scripts/setlist/ingest_band.mjs        # → setlist/data/goose.csv
 node scripts/setlist/ingest_band.mjs --probe   # check the API before trusting a run
 ```
 
-As of the last run: **7732 performances · 672 shows · 368 songs**, 2014-2026.
+As of the last run: **7747 performances · 674 shows · 368 songs**, 2014-2026.
 A run that lands far below that is a bad run, not a smaller band — see below.
 
-The show table from the same run: **856 shows · 672 with a setlist · 16 still to
+The show table from the same run: **865 shows · 674 with a setlist · 23 still to
 play**. The gap between those first two figures is not an error. It is announced
 dates that were never played, plus shows nobody has transcribed.
 
@@ -118,6 +118,7 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `footnote` | The curators' note on **this performance**: `Unfinished.`, `80s synth version.`, `With Carol Of The Bells teases from Rick.` Display only. 38% of rows carry one, but 43% of those are nothing but the cover artist, which the row already prints as `orig. X`, so the game strips that prefix at render and 21% of rows end up showing something. |
 | `show_notes` | The curators' note on **the night**: `This was Aaron and Kris' first show as members of Goose.` 55% of shows have one. **Written on exactly one row per show and blank on the rest.** See below. Display only. |
 | `teases` | Pipe-delimited songs the band **quoted without playing** inside this one, parsed out of `footnote` prose ("With Axel F teases from Rick"). Display only. 254 rows carry one, 259 teases of 123 distinct songs across 201 shows. Parsed at ingest rather than in the browser: see below. |
+| `feel` | The song's feel from `<band>_feels.json`: Ballad, Easy, Groove, Rocker, Anthem, Space or Bit. Blank for a song nobody has given a feel yet. **Drives energy in scoring** (see below). |
 
 ### Why `teases` is parsed here and not in the game
 
@@ -154,9 +155,10 @@ whichever one carries it, so a reordering cannot silently drop the note.
 Six tags, and only these six, are scored: `opener`, `closer`, `jam`, `peak`,
 `ballad`, `encore`. `scoring.js` maps them onto the role a song lands in.
 
-**These are inferred, not sourced.** elgoose has no field saying a song is a
-ballad, so `ingest_band.mjs` derives each tag from the song's own history across
-every show. The thresholds live in one `TAGS` block at the top of that script:
+**Five are inferred, one is curated.** elgoose has no field saying a song is a
+ballad. `ingest_band.mjs` derives five tags from the song's own history across
+every show. The thresholds live in one `TAGS` block at the top of that script.
+`ballad` comes from `goose_feels.json` (below):
 
 | Tag | Inferred when |
 |---|---|
@@ -165,13 +167,35 @@ every show. The thresholds live in one `TAGS` block at the top of that script:
 | `encore` | lands in an encore in ≥20% of plays (min 2 plays) |
 | `jam` | jamcharted in ≥15% of plays, **or** median length ≥15 min |
 | `peak` | jamcharted in ≥25% of plays **and** median length ≥12 min |
-| `ballad` | median length ≤5:30, never jamcharted, closes a set <10% of the time |
+| `ballad` | its feel in `goose_feels.json` is `Ballad` |
 
-All except `encore` require at least 3 plays. A song can carry several tags, or
+`opener`, `closer`, `jam` and `peak` require at least 3 plays. A song can carry several tags, or
 none — an untagged song scores the neutral placement multiplier everywhere.
 
 Tuning these changes how the game plays, so treat a threshold change as a
 gameplay change: edit `TAGS`, regenerate, and replay a few rounds.
+
+### `<band>_feels.json`
+
+One entry per song: a primary `feel`, an optional `feel2`, and `by`, who set it.
+The seven feels are Ballad, Easy, Groove, Rocker, Anthem, Space and Bit.
+`by` is `owner` (the owner's own review), `research` (sourced from live
+reviews), or `guess` (a song played under 10 times, judged by its original or
+its stats). An owner answer always wins. Only `Ballad` is scored today.
+
+It replaced a length rule (under 5:30, never jamcharted, rarely closes) that
+tagged Whip It and Psycho Killer as ballads and missed This Old Sea, Peggy-O
+and most of the real ones.
+
+A feel edit needs no fetch:
+
+```
+node scripts/setlist/ingest_band.mjs --retag   # re-read the feels, rewrite only the ballad tag
+```
+
+`check_data.mjs` fails when the CSV and the feels disagree. A song new to the
+archive has no feel until somebody adds one, and cannot be a ballad until then.
+The ingester names those songs in its log.
 
 ## Song esteem (`crowd_rating`)
 

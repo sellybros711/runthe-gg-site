@@ -17,6 +17,9 @@ on:
       - 'scripts/setlist/**'
       - 'sitemap.xml'
       - 'index.html'
+      # The stage draws with golf's PXHD, copied out by scripts/setlist/extract_pxhd.mjs,
+      # so a change to it in golf has to run the check that the copy still matches.
+      - 'golf/index.html'
       - '.github/workflows/setlist-checks.yml'
   push:
     branches: [main]
@@ -25,6 +28,9 @@ on:
       - 'scripts/setlist/**'
       - 'sitemap.xml'
       - 'index.html'
+      # The stage draws with golf's PXHD, copied out by scripts/setlist/extract_pxhd.mjs,
+      # so a change to it in golf has to run the check that the copy still matches.
+      - 'golf/index.html'
       - '.github/workflows/setlist-checks.yml'
   workflow_dispatch: {}
 
@@ -53,6 +59,11 @@ jobs:
       # indexable, in the sitemap, linked from nowhere.
       - name: Data and discoverability
         run: node scripts/setlist/check_data.mjs
+
+      # The rooms: every one has its fields and its picture, every archive name is a real venue,
+      # every rule can be met, and no venue is named on screen.
+      - name: The rooms
+        run: node scripts/setlist/check_venues.mjs
 
       # sitemap.xml is hand-edited, and a malformed one is invisible until a
       # crawler chokes on it.

@@ -120,7 +120,7 @@ async function fresh(browser) {
   await pg.evaluate(() => {
     Sound.muted = true;
     PREFS.cutscenes = false;
-    PREFS.coach = false;          /* the first-timer notes are not what is under test */
+    PREFS.tips = false;          /* the first-timer notes are not what is under test */
     window.confirm = () => true;
     State.gameSpeed = 'fast'; applyGameSpeed();
   });
@@ -338,12 +338,19 @@ async function main() {
         const b = document.getElementById('inning-board');
         const during = b ? { text: b.textContent, sprites: b.querySelectorAll('canvas').length } : null;
         await new Promise(r => setTimeout(r, BEAT.betweenHalfInnings * 0.7));
-        return { during, after: !!document.getElementById('inning-board'), pitch: !!g.pitch };
+        const sel = document.getElementById('pitch-select');
+        return { during, after: !!document.getElementById('inning-board'), pitch: !!g.pitch,
+                 picker: !!sel && getComputedStyle(sel).display !== 'none' };
       });
       ok(r.during && /Bottom 2/.test(r.during.text) && /You pitch/.test(r.during.text), 'the board names the coming half and your side', JSON.stringify(r));
       ok(r.during && /Due up/.test(r.during.text) && r.during.sprites === 3, 'three batters due, drawn', JSON.stringify(r));
       ok(r.during && /arm fresh/i.test(r.during.text), 'the arm is named', JSON.stringify(r));
-      ok(!r.after && r.pitch, 'gone once the next at bat starts', JSON.stringify(r));
+      /* YOU PITCH THE BOTTOM, SO NOTHING IS THROWN UNTIL YOU THROW IT. This used
+         to ask for `g.pitch`, and it passed only because the first at bat's
+         timer called cpuCallPitch and threw straight into the half the player
+         was pitching, hiding their picker. That timer goes through nextPitch
+         now, which asks who is pitching when it fires. */
+      ok(!r.after && r.picker && !r.pitch, 'gone once the next at bat starts, and your pitch is yours to call', JSON.stringify(r));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -979,66 +986,38 @@ async function main() {
         await pg.evaluate(() => localStorage.clear());
         await pg.goto(URL);
         const r = await pg.evaluate(() => {
-          const el = document.querySelector('.clubhouse canvas');
-          const cv = el.getBoundingClientRect();
-          /* THE ROOM AND THE THING TO PRESS. It used to be the room and
-             the Meet tab, because the tab was the last thing on the page.
-             The page is longer now on purpose, and what a returning player
+          /* THE BALLPARK AND THE THING TO PRESS. What a returning player
              must not have to scroll for is the button that continues their
              franchise. */
+          const el = document.querySelector('.hero-box');
           const tabs = document.querySelector('.bigplay').getBoundingClientRect();
-          const hots = [...document.querySelectorAll('.clubhouse .hot')]
-            .map(b => b.getBoundingClientRect());
-          /* No two things in the room may claim the same pixel. */
-          let overlap = false;
-          for (let i = 0; i < hots.length; i++) {
-            for (let j = i + 1; j < hots.length; j++) {
-              if (hots[i].right > hots[j].left && hots[j].right > hots[i].left
-                  && hots[i].bottom > hots[j].top && hots[j].bottom > hots[i].top) overlap = true;
-            }
-          }
+          const cvs = [...el.querySelectorAll('canvas')];
           return {
-            /* the CONTENT box: the rect carries the 3px border, which is a
-               tenth of a phone-sized room's height and none of a desk one's,
-               so comparing rects makes the shape look wrong only on a phone */
             cw: el.clientWidth, ch: el.clientHeight,
             room: document.body.classList.contains('inroom'),
-            hots: hots.length, overlap,
-            inFrame: hots.every(b => b.left >= cv.left - 1 && b.right <= cv.right + 1
-                                  && b.top >= cv.top - 1 && b.bottom <= cv.bottom + 1),
+            layers: cvs.length,
+            ratio: parseFloat(getComputedStyle(el.parentNode).getPropertyValue('--ar')),
             bottom: tabs.bottom, vh: window.innerHeight,
             docW: document.documentElement.scrollWidth, winW: window.innerWidth,
-            /* The scene is composed to the shape of the window now, so the
-               ratio to keep is the one the layout chose for THIS window. */
-            ratio: ROOM.w / ROOM.h,
+            cta: tabs.width,
           };
         });
         const tag = `${w}x${h}`;
-        ok(r.room, `${tag}: the menu puts the page in room mode`);
+        ok(r.room, `${tag}: the menu puts the page in its wide layout`);
+        ok(r.layers === 2, `${tag}: the park and the players on it`, 'canvases=' + r.layers);
         ok(Math.abs(r.cw / r.ch - r.ratio) < 0.02,
-           `${tag}: the room keeps its shape rather than stretching`,
+           `${tag}: the park keeps its shape rather than stretching`,
            `drawn ${Math.round(r.cw)}x${Math.round(r.ch)} ratio ${(r.cw / r.ch).toFixed(2)} want ${r.ratio.toFixed(2)}`);
-        ok(r.bottom <= r.vh, `${tag}: the room and the button to press are above the fold`,
+        ok(r.bottom <= r.vh, `${tag}: the park and the button to press are above the fold`,
            `bottom=${Math.round(r.bottom)} vh=${r.vh}`);
         ok(r.docW <= r.winW + 1, `${tag}: and the page does not scroll sideways`,
            `doc=${r.docW} win=${r.winW}`);
-        ok(r.hots === 4 && !r.overlap && r.inFrame,
-           `${tag}: four things, none overlapping, all inside the frame`,
-           JSON.stringify({ n: r.hots, overlap: r.overlap, inFrame: r.inFrame }));
-        /* THE ROOM IS NEVER SMALLER THAN IT IS ALLOWED TO BE, which is a
-           property rather than a percentage. It used to be the whole menu,
-           so "fills the window" meant the width and nothing else. There is
-           a franchise scoreboard and a button under it now, and on a SHORT
-           window the height budget is what binds: at 1280x800 the room is
-           78% of the width because going wider would push the button that
-           continues a save below the fold, which is the worse trade.
-           So it has to be limited by ONE of the two, never by neither. */
-        if (w >= 1280) {
-          const cap = Math.min(r.vh - 350, 760);
-          ok(r.cw >= w * 0.82 || r.ch >= cap - 4,
-             `${tag}: the room takes everything the layout allows it`,
-             `drawn ${Math.round(r.cw)} of ${w} wide, ${Math.round(r.ch)} tall against a ${Math.round(cap)} budget`);
-        }
+        /* As big as the layout allows: the panel width, or the height
+           budget, whichever binds. Never neither. */
+        const cap = Math.min(r.vh - 360, 780) * r.ratio;
+        ok(r.cw >= Math.min(r.cta, cap) - 8,
+           `${tag}: the park takes everything the layout allows it`,
+           `drawn ${Math.round(r.cw)} wide against panel ${Math.round(r.cta)} and budget ${Math.round(cap)}`);
         ok(errors.length === 0, `${tag}: no page errors`, errors.join(' | '));
         await pg.close();
       }
@@ -3359,7 +3338,7 @@ async function main() {
         };
       });
       const moment = await pg.evaluate(async () => {
-        Sound.muted = true; PREFS.coach = false; PREFS.cutscenes = false;
+        Sound.muted = true; PREFS.tips = false; PREFS.cutscenes = false;
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'T';
         State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
         startGame({ mode: 'exhibition', youHome: false });
@@ -3528,39 +3507,32 @@ async function main() {
     {
       console.log('the pitcher faces the plate');
       /* THE CAMERA IS BEHIND THE CATCHER, so the man on the mound is seen
-         from the FRONT. The pack's `windup`, `kick` and `release` are a
-         LEFT FACING PROFILE, and the plate view used all three, so every
+         from the FRONT. The pack's `windup`, `kick` and `release` were a
+         LEFT FACING PROFILE and the plate view used all three, so every
          pitch was a man throwing sideways toward third base while the ball
-         flew at the reader. Reported as the pitcher throwing to a base
-         instead of to home.
+         flew at the reader. Nothing could report it: each frame was the
+         right frame, present and distinct. They were the wrong VIEW.
 
-         NOTHING COULD REPORT IT. Each frame is the right frame for the
-         right character, present, distinct from its neighbours and
-         correctly seated: every property the guards here ask of a drawing.
-         They are the wrong VIEW, which none of them asks.
-
-         SO THE ALLOWLIST IS WRITTEN OUT, and it was established by
-         rendering all sixty eight and looking. That is not laziness: this
-         file already records TWO automatic matchers written for the pack
-         and thrown away, both of which confidently contradicted the eye,
-         and nothing in a 64x64 bitmap says which way a figure is turned.
-
-         What it really defends against is somebody restoring the pitching
-         animation by reaching for the three poses that are literally NAMED
-         windup, kick and release. That is the obvious edit and it is the
-         wrong one, so the check is on the names.
+         THE ALLOWLIST IS READ OFF THE RIG NOW, not written out. The rig
+         draws every pose from a spec that says which way it faces
+         (`view: 'front'` or `'side'`), so the claim is that nothing the
+         pitcher wears during a pitch is a side view. A list typed here was
+         right about the pack and would be wrong about the rig the day
+         anybody moved a pose, which is the drift a second copy invites.
 
          It reads the PICTURE over a whole real pitch rather than at an
          instant, because the pitcher's branch is a chain of `else if` and
          the way it breaks is one of them winning at a moment nobody
-         sampled. */
+         sampled. And it asks for the delivery as beats: the set, the knee
+         and the stride have to be three different drawings he actually
+         wears, or the windup is a statue. */
       const { pg, errors } = await fresh(browser);
       await exhibition(pg, false);
       const r = await pg.evaluate(async () => {
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
         const g = State.game;
-        /* every pose the pack draws front on, looked at one at a time */
-        const FRONT = ['idle', 'catch', 'throw', 'ready', 'cheer'];
+        /* every pose the rig draws facing the camera */
+        const FRONT = Object.keys(RIG.POSES).filter(p => RIG.POSES[p].view === 'front');
         /* `exhibition` clears the at bat, so nothing has built batterCtx
            and throwPitch would read weakPitch off undefined. It also
            decides who is up, so the pitcher is read after it. */
@@ -3577,27 +3549,27 @@ async function main() {
         const dur = Math.round((g.pitch.speed || 2) * 1000);
         await sleep(BEAT.windup + dur + 400);
         window.drawRunner = real;
-        /* how many of the roster have a cheer that is its own drawing, so
-           the windup is two frames rather than a statue */
+        /* how many of the roster draw the set, the kick and the stride as
+           three different pictures */
         let own = 0;
         for (const c of ROSTER) {
-          const a = v2Frame(c.k, 'idle'), d = v2Frame(c.k, 'cheer');
-          if (d && (!a || d.join('/') !== a.join('/'))) own++;
+          const d = ['windup', 'kick', 'throw'].map(p => (v2Frame(c.k, p) || []).join('/'));
+          if (d[0] && new Set(d).size === 3) own++;
         }
         return { poses: [...seen], FRONT, own, chars: ROSTER.length };
       });
       const bad = r.poses.filter(p => r.FRONT.indexOf(p) < 0);
       ok(r.poses.length > 0, 'the pitcher really is drawn during a pitch',
          'he was never drawn at all, so this section read nothing');
-      ok(r.poses.indexOf('cheer') >= 0,
-         'and the windup is a second frame rather than a statue',
+      ok(['windup', 'kick', 'throw'].every(p => r.poses.indexOf(p) >= 0),
+         'and the windup is a delivery: the set, the knee and the stride',
          `he wore only: ${r.poses.join(', ')}`);
       ok(bad.length === 0,
          'THE PITCHER IS NEVER TURNED SIDEWAYS: no profile frame reaches the mound',
          `he was drawn with ${bad.join(', ')}, which the pack draws in profile`);
-      ok(r.own >= 60,
-         `and ${r.own} of ${r.chars} have a cheer of their own to wind up with`,
-         `only ${r.own} do, so most of the roster would not animate`);
+      ok(r.own === r.chars,
+         `and all ${r.chars} draw those three beats as three pictures`,
+         `only ${r.own} of ${r.chars} do, so the rest would not animate`);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -4147,7 +4119,7 @@ async function main() {
         await pg.goto(URL);
         await wait(pg, 400);
         await pg.evaluate(() => {
-          Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+          Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
           PREFS.smooth = false; document.body.classList.remove('smooth');
           State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
           State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
@@ -4364,7 +4336,7 @@ async function main() {
         out.orphanSprites = Object.keys(V2_SPRITES).filter(k => !keys.has(k));
         const POSES = ['idle','run1','run2','back','backrun1','backrun2','windup',
                        'release','swing','catch','throw','load','follow','kick',
-                       'ready','slump'];
+                       'ready','slump','field','slide'];
         out.shortPose = ROSTER.filter(c => {
           const f = (V2_SPRITES[c.k] || {}).f || {};
           return POSES.some(p => !f[p]);
@@ -4536,7 +4508,7 @@ async function main() {
             ctaFs: cta ? parseFloat(getComputedStyle(cta).fontSize) : 0,
             ctaTouch: cr ? Math.min(cr.width, cr.height) : 0,
             room: !!document.querySelector('.clubhouse canvas'),
-            strip: !!document.querySelector('.ph-strip'),
+            strip: !!document.querySelector('.hero-box canvas'),
             names: doors.map(d => (d.querySelector('b').textContent || '').trim()),
             lines: doors.map(d => (d.querySelector('span').textContent || '').trim().length),
             icons: doors.filter(d => d.querySelector('canvas')).length,
@@ -4596,7 +4568,7 @@ async function main() {
         ok(r.nameFs >= 16,
            `${sz.what}: the names are set in real type`,
            r.nameFs + 'px');
-        ok(r.strip, `${sz.what}: the clubhouse is there as a strip`, JSON.stringify(r));
+        ok(r.strip, `${sz.what}: the ballpark is there over the menu`, JSON.stringify(r));
         ok(!r.sideways, `${sz.what}: no sideways scroll`, JSON.stringify(r));
         ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
       }
@@ -4608,8 +4580,8 @@ async function main() {
          so what this asserts is that the room is still there rather than
          that nothing else is. */
       const desk = await look(1280, 860, false);
-      ok(desk.doors === 4 && desk.room,
-         'a desktop: still gets the clubhouse room, with the tiles under it',
+      ok(desk.doors === 4 && desk.strip && !desk.room,
+         'a desktop: gets the ballpark too, with the tiles under it',
          JSON.stringify({ tiles: desk.doors, room: desk.room }));
       ok(desk.errors.length === 0, 'a desktop: no page errors', desk.errors.join(' | '));
     }
@@ -4660,7 +4632,7 @@ async function main() {
       await wait(pg, 700);
       const look = () => pg.evaluate(() => ({
         doors: document.querySelectorAll('.hmode').length,
-        room: !!document.querySelector('.clubhouse canvas'),
+        room: !!document.querySelector('.hero-box canvas'),
         over: document.documentElement.scrollWidth - innerWidth,
       }));
       const up = await look();
@@ -4687,10 +4659,11 @@ async function main() {
          did. The phone assertion below is still one or the other, because a
          phone gets no room. */
       ok(desk.room && desk.doors === 4,
-         'stretched to a desktop, the room comes back with the tiles under it',
+         'stretched to a desktop, the park is there with the tiles under it',
          JSON.stringify(desk));
-      ok(again.doors === 4 && !again.room,
-         'and back to a phone gets the menu again', JSON.stringify(again));
+      ok(again.doors === 4 && again.room && up.room && flat.room,
+         'and back to a phone gets the menu again, the park over it every time',
+         JSON.stringify({ up, flat, again }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
     }
 
@@ -4722,7 +4695,7 @@ async function main() {
         await pg.goto(URL);
         await wait(pg, 500);
         await pg.evaluate(() => {
-          Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+          Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
           State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
           State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
           startGame({ mode: 'exhibition', youHome: false });
@@ -5196,7 +5169,7 @@ async function main() {
       await pg.evaluate(() => localStorage.clear());
       await pg.goto(URL);
       await pg.evaluate(() => {
-        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false; window.confirm = () => true;
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false; window.confirm = () => true;
         State.gameSpeed = 'fast'; applyGameSpeed();
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
         State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';

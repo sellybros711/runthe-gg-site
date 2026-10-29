@@ -9,6 +9,8 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
@@ -100,19 +102,30 @@ ol li b{color:var(--ink)}
     <li><b>Spin.</b> Each spin draws a random team-season from MLB history (1901-2025). You see that roster and draft one player who fits an open spot.</li>
     <li><b>Budget.</b> You have $190M to fill all twelve spots. Prices come from WAR, so superstars cost a premium and you can't stack legends everywhere. The budget always reserves enough to fill your open positions.</li>
     <li><b>Re-spin.</b> Don't like the draw? Re-spin for a rising fee ($5M, then $10M, then $15M), up to three times.</li>
-    <li><b>Chemistry.</b> Teammates from the same team-season, franchise loyalists, double-play combos, real batterymates, and actual families (the Alous, the Griffeys) raise your chemistry multiplier.</li>
+    <li><b>Chemistry.</b> Teammates from the same team-season, franchise loyalists, double-play combos, real batterymates, players from the same college, and actual families (the Alous, the Griffeys) raise your chemistry multiplier.</li>
     <li><b>Roster shape.</b> Talent isn't everything. Balance between bats and arms, a strong floor, and no boom-or-bust over-reliance all make your roster play better. Your build earns an archetype like <b>Murderers' Row</b> or <b>No Weak Links</b>.</li>
     <li><b>Play 162.</b> Your roster simulates a full season against real all-time opponents (the 1927 Yankees, the 2019 Astros) with a 14-game marquee gauntlet mixed in.</li>
-    <li><b>Playoffs.</b> Win enough and you reach October: the Division Series, Championship Series, and the World Series, and the deepest rounds get harder the weaker your team is.</li>
-    <li><b>The chase.</b> 116 wins ties the all-time record; 117+ makes you the greatest of all time. Every finished season is ranked among all 2,594 team-seasons in history.</li>
+    <li><b>Playoffs.</b> Win 88 and you're in October. Win 95 and you take the division and skip the Wild Card round. Under that, you start in the Wild Card. Then it's the Division Series, the Championship Series and the World Series. The deepest rounds get harder the weaker your team is. A team rated 95 or better plays like one: it should reach the World Series most years.</li>
+    <li><b>The chase.</b> 116 wins ties the all-time record; 117+ makes you the greatest of all time.</li>
   </ol>
 
   <h2>How you're rated</h2>
-  <p>Every roster gets a <b>team rating</b> from 0 to 100 (a .500 team sits near 50, a 100-win team near 80, and the 116-win record near 98) and an <b>all-time rank</b> placing it among every team-season since 1901. A title isn't just about getting hot: the championship stiffens against weaker teams, so winning it all means you truly built a great club.</p>
+  <p>Every roster gets a <b>team rating</b> from 1 to 99. It says how many wins the roster projects to, and 99 is the best roster the budget can buy.</p>
+  <p>It also gets a <b>rank against real MLB teams</b>. That compares your roster's talent on paper with every real team-season since 1901. It is not your place on the leaderboard. A roster of twelve star seasons outranks most real clubs, so a high number here is common.</p>
+  <p>A title isn't just about getting hot. The championship stiffens against weaker teams, so winning it all means you truly built a great club.</p>
 
   <div class="panel">
     <h2 style="margin-top:0">Achievements</h2>
-    <p style="margin-bottom:0">206 badges span milestones, winning, October, the all-time list, roster craft, the roster itself, the modes, the daily and streaks. Badges are for signed-in players. Every season you play signed in counts, and seasons played as a guest do not. A new badge lights the moment you qualify, including for seasons you played before it existed.</p>
+    <p style="margin-bottom:0">207 badges span milestones, winning, October, real-team rankings, roster craft, the roster itself, the modes, the daily and streaks. Badges are for signed-in players. Every season you play signed in counts, and seasons played as a guest do not. A new badge lights the moment you qualify, including for seasons you played before it existed.</p>
+  </div>
+
+  <!-- AdSense display unit (Ads Agent, 2026-10-26): one, between the last two sections, away from
+       the Play button so no tap lands on it by mistake. The label shows only once an ad fills. -->
+  <style>.htp-ad{margin:26px 0;text-align:center}.htp-ad .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px}.htp-ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none}</style>
+  <div class="htp-ad">
+    <span class="ad-label">Advertisement</span>
+    <ins class="adsbygoogle-lazy" style="display:block" data-ad-client="ca-pub-5952069078178257"
+         data-ad-slot="5834368801" data-ad-format="auto" data-full-width-responsive="true"></ins>
   </div>
 
   <h2>Where the numbers come from</h2>
@@ -127,5 +140,12 @@ ol li b{color:var(--ink)}
     <p>WAR data from Baseball-Reference. An unofficial fan project.</p>
   </footer>
 </div>
+<script>
+  /* Start each AdSense unit once, and never a placeholder slot. */
+  (function(){try{var u=document.querySelectorAll('ins.adsbygoogle');for(var i=0;i<u.length;i++){var s=u[i].getAttribute('data-ad-slot');if(!s||/^0+$/.test(s))continue;(adsbygoogle=window.adsbygoogle||[]).push({});}
+  /* The unit near the end loads once it is within 600px of the screen: see index.html. */
+  var l=document.querySelectorAll('ins.adsbygoogle-lazy'),go=function(x){x.className='adsbygoogle';(adsbygoogle=window.adsbygoogle||[]).push({});},io='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){io.unobserve(e.target);try{go(e.target);}catch(x){}}});},{rootMargin:'600px 0px'}):null;
+  for(var j=0;j<l.length;j++){var t=l[j].getAttribute('data-ad-slot');if(!t||/^0+$/.test(t))continue;if(io)io.observe(l[j]);else go(l[j]);}}catch(e){}})();
+</script>
 </body>
 </html>

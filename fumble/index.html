@@ -1,0 +1,1374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow" />
+<meta name="theme-color" content="#10213a" />
+<title>Fumble | prototype</title>
+<style>
+  /* MythiBall's cabinet colours around a 16-bit sideline broadcast. The field
+     is drawn in a canvas at a low resolution and scaled up by a whole number,
+     so every pixel of the cast and the stadium is the same size. The menus and
+     the controller are DOM, in the same flat colours with hard navy edges. */
+  :root{
+    --ink:#f1e2bb; --panel:#fffcf2; --panel-2:#ffeec0; --navy:#1b3a5c; --deep:#10213a; --text:#14283f; --dim:#4d5f75;
+    --red:#cf3229; --green:#1b8a4a; --blue:#1566ae; --gold:#f4c25a;
+    --bd:2px solid var(--navy); --sh:3px 3px 0 var(--navy); --sh-sm:2px 2px 0 var(--navy);
+    --you:#35a4ff; --them:#e0453f;
+    --font:ui-rounded,'SF Pro Rounded',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ width:100%; height:100%; overflow:hidden; background:var(--deep); font-family:var(--font); color:var(--text);
+    touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+  button{ font-family:var(--font); cursor:pointer; }
+
+  #app{ position:fixed; inset:0; display:flex; flex-direction:column; }
+  #screen{ position:relative; overflow:hidden; background:#0a1628; }
+  #c{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:block;
+    image-rendering:pixelated; image-rendering:crisp-edges; }
+  #deck{ position:relative; }
+
+  /* ---- the controller ---- */
+  #stick{ position:relative; border-radius:50%; touch-action:none;
+    background:radial-gradient(circle at 50% 45%, #2c4a72 0 55%, #1a3050 56%);
+    border:3px solid #0b1830; box-shadow:inset 0 3px 0 rgba(255,255,255,.08), 0 4px 0 #0b1830; }
+  #stick::before{ content:''; position:absolute; inset:14%; border-radius:50%; border:2px dashed rgba(255,255,255,.12); }
+  #nub{ position:absolute; left:50%; top:50%; width:44%; height:44%; border-radius:50%; transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 40% 35%, #fffcf2, #d9ccb0); border:3px solid #0b1830; box-shadow:0 3px 0 #0b1830; pointer-events:none; }
+  #btns{ position:relative; }
+  .abtn{ position:absolute; border-radius:50%; border:3px solid #0b1830; font-weight:900; letter-spacing:1px; color:#fffcf2;
+    display:flex; align-items:center; justify-content:center; flex-direction:column; line-height:1; touch-action:none;
+    box-shadow:0 5px 0 #0b1830, inset 0 3px 0 rgba(255,255,255,.28), inset 0 -4px 0 rgba(0,0,0,.18); text-shadow:0 2px 0 rgba(0,0,0,.35); }
+  .abtn small{ font-size:9px; opacity:.8; margin-top:3px; letter-spacing:.5px; }
+  .abtn.down{ transform:translateY(4px); box-shadow:0 1px 0 #0b1830, inset 0 3px 0 rgba(255,255,255,.2); }
+  .abtn.off{ opacity:.35; }
+  .abtn.gone{ visibility:hidden; }
+  #aBtn{ background:var(--gold); color:var(--text); text-shadow:0 1px 0 rgba(255,255,255,.5); }
+  #bBtn{ background:var(--green); }
+  #cBtn{ background:var(--blue); }
+  #aBtn.coach{ animation:coach .45s ease-in-out infinite; }
+  @keyframes coach{ 0%,100%{ filter:none; } 50%{ filter:brightness(1.3) drop-shadow(0 0 10px #8ff0a0); } }
+
+  #setupBar{ display:none; flex-direction:column; align-items:center; gap:10px; }
+  #setupHint{ color:#fffcf2; font-size:12px; font-weight:900; letter-spacing:1px; text-align:center; text-shadow:0 2px 0 #0b1830; max-width:92vw; }
+  #setupBar .row{ display:flex; gap:10px; align-items:center; }
+  #mode{ padding:11px 14px; font-size:13px; font-weight:900; letter-spacing:.5px; color:var(--text); background:var(--panel);
+    border:var(--bd); border-radius:12px; box-shadow:0 4px 0 #0b1830; white-space:nowrap; }
+  #mode.draw{ background:var(--gold); }
+  #kick{ padding:13px 26px; font-size:19px; font-weight:900; letter-spacing:1px; color:var(--panel); white-space:nowrap;
+    background:var(--red); border:var(--bd); border-radius:14px; box-shadow:0 4px 0 #0b1830; }
+  #mode:active,#kick:active{ transform:translateY(3px); box-shadow:0 1px 0 #0b1830; }
+  #kick:disabled{ filter:grayscale(.75); opacity:.7; }
+  #brand{ display:none; }
+
+  /* Upright phone: a handheld. The field on top, the deck below. */
+  @media (orientation:portrait){
+    #screen{ flex:none; height:min(58vh, 128vw); border-bottom:4px solid #0b1830; }
+    #deck{ flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center;
+      padding:8px 18px calc(10px + env(safe-area-inset-bottom));
+      background:linear-gradient(180deg,#24406a 0,#1b3354 40%,#152a47 100%); }
+    #brand{ display:flex; justify-content:space-between; align-items:center; position:absolute; top:8px; left:18px; right:18px;
+      color:rgba(255,252,242,.55); font-size:10px; font-weight:900; letter-spacing:3px; }
+    #brand i{ display:inline-block; width:34px; height:10px; background:repeating-linear-gradient(90deg,rgba(0,0,0,.35) 0 3px,transparent 3px 6px); }
+    #pad{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:12px; }
+    #stick{ width:min(38vw,150px); height:min(38vw,150px); flex:none; }
+    #btns{ width:min(48vw,196px); height:min(40vw,168px); flex:none; }
+    #aBtn{ right:0; top:50%; transform:translateY(-50%); width:44%; height:52%; font-size:15px; }
+    #aBtn.down{ transform:translateY(calc(-50% + 4px)); }
+    #bBtn{ left:6%; top:0; width:34%; height:40%; font-size:12px; }
+    #cBtn{ left:6%; bottom:0; width:34%; height:40%; font-size:12px; }
+    #setupBar{ margin-top:4px; }
+  }
+  /* Sideways phone or desktop: the field fills the screen and the controls float over it. */
+  @media (orientation:landscape){
+    #screen{ position:absolute; inset:0; }
+    #deck{ position:absolute; inset:0; pointer-events:none; }
+    #pad{ position:absolute; inset:0; }
+    #stick{ position:absolute; left:calc(20px + env(safe-area-inset-left)); bottom:calc(18px + env(safe-area-inset-bottom));
+      width:min(30vh,140px); height:min(30vh,140px); pointer-events:auto; opacity:.9; }
+    #btns{ position:absolute; right:calc(18px + env(safe-area-inset-right)); bottom:calc(16px + env(safe-area-inset-bottom));
+      width:min(44vh,200px); height:min(38vh,170px); pointer-events:none; }
+    .abtn{ pointer-events:auto; opacity:.94; }
+    #aBtn{ right:0; top:50%; transform:translateY(-50%); width:46%; height:54%; font-size:15px; }
+    #aBtn.down{ transform:translateY(calc(-50% + 4px)); }
+    #bBtn{ left:4%; top:0; width:34%; height:40%; font-size:12px; }
+    #cBtn{ left:4%; bottom:0; width:34%; height:40%; font-size:12px; }
+    #setupBar{ position:absolute; left:50%; bottom:calc(14px + env(safe-area-inset-bottom)); transform:translateX(-50%); pointer-events:auto; }
+    #setupHint{ background:rgba(16,33,58,.82); padding:5px 10px; border-radius:8px; }
+  }
+
+  /* ---- the cabinet screens: cards over the live stadium ---- */
+  .overlay{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:safe center;
+    text-align:center; padding:18px 16px calc(22px + env(safe-area-inset-bottom)); overflow-y:auto; touch-action:pan-y;
+    background:linear-gradient(180deg, rgba(10,22,40,.55), rgba(10,22,40,.86) 55%, rgba(10,22,40,.94)); }
+  #over{ display:none; }
+  .kicker{ font-size:11px; letter-spacing:5px; color:var(--gold); font-weight:900; text-shadow:0 2px 0 #0b1830; }
+  #logo{ display:block; margin:6px auto 0; image-rendering:pixelated; max-width:92vw; height:auto; }
+  .tagline{ margin:8px auto 0; color:var(--panel); font-size:clamp(13px,4vw,16px); font-weight:800; max-width:30ch; line-height:1.3; text-shadow:0 2px 0 #0b1830; }
+  .card{ width:min(440px,100%); margin:14px auto 0; background:var(--panel); border:var(--bd); border-radius:14px; box-shadow:4px 4px 0 #0b1830;
+    padding:11px 11px 9px; text-align:left; }
+  .side + .side{ margin-top:10px; padding-top:10px; border-top:2px dashed rgba(27,58,92,.25); }
+  .shead{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .sname{ font-size:15px; font-weight:900; letter-spacing:.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sname small{ display:block; font-size:10.5px; font-weight:800; color:var(--dim); letter-spacing:.8px; }
+  .chip{ flex:none; font-size:12px; font-weight:900; letter-spacing:.5px; color:var(--text); background:var(--panel-2);
+    border:var(--bd); border-radius:9px; padding:6px 10px; box-shadow:0 3px 0 var(--navy); }
+  .chip:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--navy); }
+  .mugs{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-top:8px; }
+  .mug{ aspect-ratio:1; border-radius:8px; border:2px solid var(--navy); background:#bfe3f5; overflow:hidden; position:relative; cursor:pointer; padding:0; }
+  .mug canvas{ width:100%; height:100%; display:block; image-rendering:pixelated; }
+  .mug.you{ background:linear-gradient(#cfe9f7,#9fd0ec); } .mug.them{ background:linear-gradient(#f7dcd2,#ecb4a4); }
+  .mug.sel{ outline:3px solid var(--gold); outline-offset:-1px; }
+  .mug b{ position:absolute; left:0; top:0; font-size:9px; font-weight:900; color:#fffcf2; background:var(--navy); padding:1px 3px 2px; border-bottom-right-radius:5px; letter-spacing:.3px; }
+  .mug i{ position:absolute; right:1px; bottom:0; font-style:normal; font-size:10px; font-weight:900; color:var(--navy); text-shadow:0 1px 0 #fff; }
+  .pcard{ margin-top:10px; padding:8px 9px; border-radius:10px; background:var(--panel-2); border:2px solid rgba(27,58,92,.25); min-height:52px;
+    font-size:12px; font-weight:800; color:var(--dim); display:flex; gap:10px; align-items:center; }
+  .pcard canvas{ width:44px; height:44px; image-rendering:pixelated; flex:none; }
+  .pcard .who{ color:var(--text); font-size:13px; font-weight:900; }
+  .pcard .who em{ font-style:normal; color:var(--dim); font-size:11px; margin-left:4px; }
+  .bars{ display:grid; grid-template-columns:auto 1fr auto 1fr; gap:3px 6px; align-items:center; margin-top:4px; font-size:9.5px; letter-spacing:.5px; }
+  .bar{ height:6px; border-radius:3px; background:rgba(27,58,92,.15); overflow:hidden; }
+  .bar i{ display:block; height:100%; background:var(--navy); }
+  .moves{ display:grid; grid-template-columns:1fr 1fr; gap:7px; width:min(440px,100%); margin:12px auto 0; }
+  .move{ display:flex; align-items:center; gap:9px; padding:7px 9px; text-align:left; background:var(--panel);
+    border:var(--bd); border-radius:11px; box-shadow:2px 2px 0 #0b1830; }
+  .badge{ flex:none; width:30px; height:30px; border-radius:50%; border:var(--bd); display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:900; }
+  .badge.a{ background:var(--gold); color:var(--text); } .badge.b{ background:var(--green); color:var(--panel); }
+  .badge.c{ background:var(--blue); color:var(--panel); } .badge.d{ background:var(--red); color:var(--panel); }
+  .mtext b{ display:block; font-size:12.5px; letter-spacing:.5px; }
+  .mtext small{ font-size:10.5px; color:var(--dim); font-weight:700; }
+  .keys{ color:rgba(255,252,242,.7); font-size:11px; letter-spacing:.3px; margin-top:12px; font-weight:700; line-height:1.5; }
+  .startbtn{ margin-top:14px; padding:14px 54px; font-size:22px; font-weight:900; letter-spacing:2px; color:var(--panel);
+    background:var(--red); border:var(--bd); border-radius:14px; box-shadow:0 5px 0 #0b1830; }
+  .startbtn:active{ transform:translateY(4px); box-shadow:0 1px 0 #0b1830; }
+  .linkbtn{ margin-top:12px; font-size:13px; font-weight:900; letter-spacing:.5px; color:var(--panel);
+    background:none; border:none; text-decoration:underline; text-underline-offset:3px; }
+  #overTitle{ font-size:clamp(40px,12vw,64px); font-weight:900; letter-spacing:2px; color:var(--panel);
+    -webkit-text-stroke:3px #0b1830; paint-order:stroke fill; text-shadow:5px 5px 0 #0b1830; }
+  #overSub{ margin-top:6px; font-size:16px; font-weight:800; color:var(--panel); text-shadow:0 2px 0 #0b1830; }
+  #overCast{ display:grid; grid-template-columns:repeat(7,minmax(0,64px)); justify-content:center; gap:4px; margin-top:10px; width:100%; }
+  #overCast canvas{ width:100%; height:auto; image-rendering:pixelated; }
+  #overStats{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px auto 4px; width:min(440px,100%); }
+  .stat{ background:var(--panel); border:var(--bd); border-radius:11px; box-shadow:2px 2px 0 #0b1830; padding:9px 6px; }
+  .stat .n{ font-size:24px; font-weight:900; color:var(--red); line-height:1; }
+  @media (orientation:landscape) and (max-height:560px){
+    .overlay{ justify-content:flex-start; padding-top:10px; }
+    #overTitle{ font-size:40px; } #overCast{ grid-template-columns:repeat(7,minmax(0,44px)); margin-top:4px; }
+    #overStats{ grid-template-columns:repeat(6,1fr); width:min(720px,100%); margin-top:8px; } .stat{ padding:6px 4px; } .stat .n{ font-size:19px; }
+    #over .startbtn{ margin-top:10px; padding:10px 44px; font-size:19px; }
+    .card{ width:min(500px,100%); }
+  }
+  /* Upright, the two columns melt into one list in reading order; sideways they
+     sit side by side so START is never below the fold. */
+  .col-a,.col-b{ display:contents; }
+  #start .kicker{ order:1; } #logo{ order:2; } .tagline{ order:3; } .card{ order:4; } .moves{ order:5; } #go{ order:6; } #start .keys{ order:7; }
+  @media (orientation:landscape) and (max-height:560px){
+    #start{ flex-direction:row; align-items:center; justify-content:center; gap:22px; padding:12px 18px; }
+    #start .col-a,#start .col-b{ display:flex; flex-direction:column; align-items:center; min-width:0; }
+    #start .col-a{ flex:0 1 38%; } #start .col-b{ flex:0 1 54%; max-height:100%; }
+    #start .moves{ display:none; } #start .card{ margin-top:0; width:100%; }
+  }
+  .stat .l{ font-size:9.5px; letter-spacing:1px; color:var(--dim); margin-top:5px; text-transform:uppercase; font-weight:800; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="screen"><canvas id="c" aria-label="Fumble"></canvas></div>
+  <div id="deck">
+    <div id="brand"><span>FUMBLE · MYTHIBALL SPORTS</span><i></i></div>
+    <div id="pad">
+      <div id="stick"><div id="nub"></div></div>
+      <div id="btns">
+        <button class="abtn" id="bBtn">JUKE<small>B</small></button>
+        <button class="abtn" id="cBtn">PITCH<small>C</small></button>
+        <button class="abtn" id="aBtn">TRUCK<small>A</small></button>
+      </div>
+    </div>
+    <div id="setupBar">
+      <div id="setupHint">DRAG YOUR PLAYERS</div>
+      <div class="row"><button id="mode">DRAW BLOCKS</button><button id="kick">KICK OFF</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="start" class="overlay">
+  <div class="col-a">
+  <div class="kicker">A MYTHIBALL GAME</div>
+  <canvas id="logo" aria-label="Fumble"></canvas>
+  <div class="tagline">7 on 7. No whistles. No going down. Get the ball to the house.</div>
+  <button class="startbtn" id="go">START</button>
+  <div class="keys">Every hit pops the ball loose. First to 3 wins.<br>Move: stick, WASD or arrows · A: Space · B: E · C: Shift</div>
+  </div>
+  <div class="col-b">
+  <div class="card">
+    <div class="side">
+      <div class="shead"><div class="sname" style="color:var(--you)">YOUR SEVEN<small>KR · RB · WR · WR · TE · OL · OL</small></div><button class="chip" id="shuffle">SHUFFLE</button></div>
+      <div class="mugs" id="youMugs"></div>
+    </div>
+    <div class="side">
+      <div class="shead"><div class="sname" style="color:var(--them)"><span id="clubName">VS</span><small id="parkName"></small></div><button class="chip" id="newOpp">NEW TEAM</button></div>
+      <div class="mugs" id="themMugs"></div>
+    </div>
+    <div class="pcard" id="pcard">Tap a player to scout him.</div>
+  </div>
+  <div class="moves">
+    <div class="move"><span class="badge a">A</span><div class="mtext"><b>TRUCK / DIVE</b><small>run through a hit. On D, lay out.</small></div></div>
+    <div class="move"><span class="badge b">B</span><div class="mtext"><b>JUKE / SWITCH</b><small>sidestep. On D, change player.</small></div></div>
+    <div class="move"><span class="badge c">C</span><div class="mtext"><b>PITCH</b><small>toss it back to a trailer</small></div></div>
+    <div class="move"><span class="badge d">»</span><div class="mtext"><b>SPRINT</b><small>full stick, burns stamina</small></div></div>
+  </div>
+  </div>
+</div>
+<div id="over" class="overlay">
+  <div class="kicker" id="overKick">FINAL</div>
+  <h1 id="overTitle">GAME</h1>
+  <div id="overCast"></div>
+  <p id="overSub"></p>
+  <div id="overStats"></div>
+  <button class="startbtn" id="again">REMATCH</button>
+  <button class="linkbtn" id="newMatch">New matchup</button>
+</div>
+
+<script src="cast.js?v=1"></script>
+<script>
+'use strict';
+/* ============================================================================
+   FUMBLE: continuous 7-on-7 football, played by the MythiBall cast, seen from
+   the sideline like a 16-bit cartridge.
+   ----------------------------------------------------------------------------
+   No going down: a tackle POPS THE BALL loose and anyone can recover it. Truck
+   to stay up, juke to make him miss, pitch back to keep a play alive. On
+   defense, dive to lay a man out. Play only stops for a touchdown, and every
+   touchdown is followed by a kickoff. First to WIN_SCORE.
+
+   World units are yards. x runs down the field (0 to 120, end zones included);
+   you attack to the right. y runs across it (0 is the near sideline). h is
+   height off the grass. No storage APIs.
+   ---- ALL FEEL LIVES IN THE TUNE BLOCK BELOW. ----
+============================================================================ */
+const TUNE = {
+  TEAM_SIZE: 7,
+  WIN_SCORE: 3,
+
+  // ---- TRUCK (skill check to stay up through a hit) ----
+  TRUCK_PROMPT_LEAD_MS: 400,   // ring closes for this long BEFORE the window opens (early tap = fumble)
+  TRUCK_WINDOW_MS:      380,   // width of the success window, scaled by the carrier's power
+  TACKLE_RADIUS:        2.0,   // how close a tackler must get to start a hit
+  TRUCK_COOLDOWN_S:     1.0,   // grace after a broken tackle before the next hit
+  TRUCK_KNOCKBACK:      6.0,   // how fast a trucked tackler is flung (yd/s for KNOCK_S)
+  KNOCK_S:              0.45,
+  TRUCK_BOOST:          1.18, TRUCK_BOOST_MS: 480,
+
+  // ---- BALL POP + bounce physics ----
+  POP_UP:            12.5,
+  POP_SPREAD:        2.8,
+  RESTITUTION:       0.5,
+  BOUNCE_RANDOMNESS: 0.5,
+  BOUNCE_FRICTION:   0.8,
+  ROLL_FRICTION:     0.97,   // per 1/60s of rolling
+  RECOVER_RADIUS:    2.1,
+  RECOVER_MAX_HEIGHT:1.6,
+  GRAVITY:           22,
+
+  // ---- PITCH ----
+  LATERAL_RANGE:     15,
+  LATERAL_COOLDOWN_S:0.6,
+  PITCH_FLIGHT_S:    0.26,
+
+  // ---- MOVEMENT ----
+  CARRIER_SPEED:  8.6,
+  CHASE_SPEED:    8.8,
+  MATE_SPEED:     8.2,
+  DEF_SPEED:      8.3,
+  BLOCK_RADIUS:   2.7,
+  BLOCKED_MULT:   0.34,
+  SHED_S:         1.1,      // a block holds about this long before the defender sheds it (less for good tacklers)
+  SHED_FREE_S:    0.8,      // after shedding, no block can catch him for this long
+  BODY_RADIUS:    0.95,
+
+  // ---- MOVES ----
+  JUKE_TIME:      0.22, JUKE_SPEED: 15, JUKE_COOLDOWN: 0.9, JUKE_COST: 0.28,
+  SPRINT_MULT:    1.18, STAMINA_DRAIN: 0.42, STAMINA_REGEN: 0.30, WINDED_UNTIL: 0.35,   // run dry and you cannot sprint again until this much is back
+  CPU_SPRINT:     1.08,     // a CPU carrier with nobody near him opens up
+  CPU_JUKE:       0.45,     // chance a CPU carrier jukes a man closing on him (scaled by his speed)
+  CPU_PITCH:      0.35,
+  CPU_BREAK:      0.30,     // a CPU carrier's own truck: base chance to break any tackle, plus his power; twice a possession at most     // chance he pitches to a trailing, open back when a hit is coming
+  DIVE_TIME:      0.30, DIVE_SPEED: 15.5, DIVE_REACH: 1.55, DIVE_DOWN_S: 0.6, DIVE_COOLDOWN: 1.0,
+  TACKLER_DOWN_S: 0.45, FUMBLER_STAGGER_S: 0.3,
+
+  // ---- DIFFICULTY ----
+  DIFF_RAMP:      0.02,     // every defender +2% per point scored (both teams)
+  CATCH_UP:       0.045,    // the club's defenders +4.5% per point YOU lead by: an arcade game stays close
+  AI_TACKLE:      0.45,     // chance an AI teammate's tackle lands; yours (the ringed man) always does
+  MISS_DOWN_S:    0.7,      // a missed tackle leaves the tackler on the grass this long
+
+  // ---- DEFENSE SHAPE ----
+  PURSUERS:       2,
+  CONTAIN_DEPTH:  11,
+  LANE_WIDTH:     4.6,
+
+  // ---- KICKOFF ----
+  KICK_RUNUP_S:   0.65,
+  KICK_HANG_S:    2.5,
+  SETUP_ZOOM:     0.5,
+
+  // ---- JUICE ----
+  SLOWMO:         0.5,
+  CUTIN_S:        2.4,
+
+  // ---- FIELD (regulation) ----
+  FIELD_LENGTH: 120, FIELD_WIDTH: 53.3, ENDZONE: 10,
+};
+const W = TUNE.FIELD_WIDTH;
+const TEAM = { BLUE:'#35a4ff', RED:'#e0453f' };   // BLUE is you; RED is set per matchup from the club
+const other = t => t==='BLUE' ? 'RED' : 'BLUE';
+const dirOf = t => t==='BLUE' ? 1 : -1;
+const goalLine = t => t==='BLUE' ? TUNE.FIELD_LENGTH-TUNE.ENDZONE : TUNE.ENDZONE;   // cross it to score
+const goalX = t => t==='BLUE' ? TUNE.FIELD_LENGTH-TUNE.ENDZONE/2 : TUNE.ENDZONE/2;  // where AI carriers aim
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, rand=(a,b)=>a+Math.random()*(b-a);
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+/* ---------------- colour helpers ---------------- */
+function hexRgb(h){ h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function rgbHex(r,g,b){ const c=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0'); return '#'+c(r)+c(g)+c(b); }
+function shade(h,f){ const [r,g,b]=hexRgb(h); return f>=0 ? rgbHex(r+(255-r)*f,g+(255-g)*f,b+(255-b)*f) : rgbHex(r*(1+f),g*(1+f),b*(1+f)); }
+function hsl(h){ let [r,g,b]=hexRgb(h).map(v=>v/255); const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2; let hh=0,s=0;
+  if(mx!==mn){ const d=mx-mn; s=l>.5?d/(2-mx-mn):d/(mx+mn);
+    hh = mx===r ? (g-b)/d+(g<b?6:0) : mx===g ? (b-r)/d+2 : (r-g)/d+4; hh*=60; } return [hh,s,l]; }
+function fromHsl(h,s,l){ const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l), f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
+  return rgbHex(f(0)*255,f(8)*255,f(4)*255); }
+/* A club colour has to read as an outline on a sprite and a ring on grass.
+   Nightmares is #1a0a1a, which is neither, so it is lifted. */
+function lift(h){ const [hh,s,l]=hsl(h); return fromHsl(hh, Math.max(s,.55), Math.min(.62,Math.max(l,.5))); }
+/* Seeded random, so the two crowd frames seat the same fans. */
+function rng(seed){ return ()=>{ seed=(seed+0x6D2B79F5)|0; let t=Math.imul(seed^(seed>>>15),1|seed); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+
+/* ---------------- the pixel font ----------------
+   5x7 cells, one string per glyph, rows split by spaces. Every word on the
+   field, the scoreboard and the banners is set in it, so type and art share
+   one pixel grid. */
+const FONT={
+  A:'01110 10001 10001 11111 10001 10001 10001', B:'11110 10001 10001 11110 10001 10001 11110',
+  C:'01110 10001 10000 10000 10000 10001 01110', D:'11110 10001 10001 10001 10001 10001 11110',
+  E:'11111 10000 10000 11110 10000 10000 11111', F:'11111 10000 10000 11110 10000 10000 10000',
+  G:'01110 10001 10000 10111 10001 10001 01111', H:'10001 10001 10001 11111 10001 10001 10001',
+  I:'01110 00100 00100 00100 00100 00100 01110', J:'00111 00010 00010 00010 00010 10010 01100',
+  K:'10001 10010 10100 11000 10100 10010 10001', L:'10000 10000 10000 10000 10000 10000 11111',
+  M:'10001 11011 10101 10101 10001 10001 10001', N:'10001 10001 11001 10101 10011 10001 10001',
+  O:'01110 10001 10001 10001 10001 10001 01110', P:'11110 10001 10001 11110 10000 10000 10000',
+  Q:'01110 10001 10001 10001 10101 10010 01101', R:'11110 10001 10001 11110 10100 10010 10001',
+  S:'01111 10000 10000 01110 00001 00001 11110', T:'11111 00100 00100 00100 00100 00100 00100',
+  U:'10001 10001 10001 10001 10001 10001 01110', V:'10001 10001 10001 10001 10001 01010 00100',
+  W:'10001 10001 10001 10101 10101 10101 01010', X:'10001 10001 01010 00100 01010 10001 10001',
+  Y:'10001 10001 01010 00100 00100 00100 00100', Z:'11111 00001 00010 00100 01000 10000 11111',
+  '0':'01110 10001 10011 10101 11001 10001 01110', '1':'00100 01100 00100 00100 00100 00100 01110',
+  '2':'01110 10001 00001 00010 00100 01000 11111', '3':'11111 00010 00100 00010 00001 10001 01110',
+  '4':'00010 00110 01010 10010 11111 00010 00010', '5':'11111 10000 11110 00001 00001 10001 01110',
+  '6':'00110 01000 10000 11110 10001 10001 01110', '7':'11111 00001 00010 00100 01000 01000 01000',
+  '8':'01110 10001 10001 01110 10001 10001 01110', '9':'01110 10001 10001 01111 00001 00010 01100',
+  '!':'00100 00100 00100 00100 00100 00000 00100', '?':'01110 10001 00001 00010 00100 00000 00100',
+  '.':'00000 00000 00000 00000 00000 01100 01100', ',':'00000 00000 00000 00000 01100 00100 01000',
+  ':':'00000 01100 01100 00000 01100 01100 00000', '-':'00000 00000 00000 11111 00000 00000 00000',
+  "'":'00100 00100 01000 00000 00000 00000 00000', '/':'00001 00010 00010 00100 01000 01000 10000',
+  '+':'00000 00100 00100 11111 00100 00100 00000', '#':'01010 01010 11111 01010 11111 01010 01010',
+  '(':'00010 00100 01000 01000 01000 00100 00010', ')':'01000 00100 00010 00010 00010 00100 01000',
+  '>':'01000 01100 01110 01111 01110 01100 01000', '<':'00010 00110 01110 11110 01110 00110 00010',
+  '^':'00000 00100 01110 11111 00000 00000 00000', 'v':'00000 00000 11111 01110 00100 00000 00000',
+  '·':'00000 00000 00000 01100 01100 00000 00000', '&':'01100 10010 10100 01000 10101 10010 01101',
+  ' ':'00000 00000 00000 00000 00000 00000 00000',
+};
+const GLYPHS={}; for(const k in FONT) GLYPHS[k]=FONT[k].split(' ');
+function cleanText(s){ return String(s).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+const textW=(s,sc)=>s.length? (s.length*6-1)*sc : 0;
+const textCache=new Map();
+/* A string set in the pixel font, with an optional outline and a hard drop,
+   cached as a canvas because the same few words are drawn every frame. */
+function textImg(str,sc,color,outline,drop){ str=cleanText(str); sc=Math.max(1,sc|0); drop=drop||0;
+  const key=str+'|'+sc+'|'+color+'|'+(outline||'')+'|'+drop; let c=textCache.get(key); if(c) return c;
+  const o=outline?sc:0, w=textW(str,sc)+2*o+drop*sc, h=7*sc+2*o+drop*sc;
+  c=document.createElement('canvas'); c.width=Math.max(1,w); c.height=h; const g=c.getContext('2d');
+  const mask=(ox,oy,col)=>{ g.fillStyle=col; for(let i=0;i<str.length;i++){ const rows=GLYPHS[str[i]]||GLYPHS[' '];
+    for(let y=0;y<7;y++) for(let x=0;x<5;x++) if(rows[y][x]==='1') g.fillRect(ox+(i*6+x)*sc, oy+y*sc, sc, sc); } };
+  if(outline){ if(drop) for(let d=1;d<=drop;d++){ for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1],[1,1],[-1,1],[1,-1],[-1,-1]]) mask(o+dx*sc+d*sc,o+dy*sc+d*sc,outline); }
+    for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1],[1,1],[-1,1],[1,-1],[-1,-1]]) mask(o+dx*sc,o+dy*sc,outline); }
+  else if(drop) mask(drop*sc,drop*sc,'rgba(0,0,0,.5)');
+  mask(o,o,color);
+  if(textCache.size>500) textCache.clear(); textCache.set(key,c); return c; }
+function drawText(g,str,x,y,sc,color,align,outline,drop){ const im=textImg(str,sc,color,outline,drop);
+  const ox = align==='center' ? Math.round(x-im.width/2) : align==='right' ? Math.round(x-im.width) : Math.round(x);
+  g.drawImage(im,ox,Math.round(y)); return im.width; }
+
+/* ---------------- the cast ---------------- */
+const CAST=window.FUMBLE_CAST;
+const SPR_N=CAST.w+2;                 // a frame plus a one pixel border for the team outline
+const rowCache=new Map();
+function frameRows(key,pose){ const ck=key+'/'+pose; let rows=rowCache.get(ck); if(rows) return rows;
+  const c=CAST.chars[key]; let raw=c.f[pose]!=null?c.f[pose]:c.f.idle;
+  if(typeof raw==='string'&&raw.charCodeAt(0)===64) raw=c.f[raw.slice(1)]!=null?c.f[raw.slice(1)]:c.f.idle;
+  if(typeof raw==='string'&&raw.charCodeAt(0)===64) raw=c.f.idle;
+  rows=raw.split('/').map(r=>{ let out='',num=''; for(let i=0;i<r.length;i++){ const ch=r[i];
+    if(ch>='0'&&ch<='9'){ num+=ch; continue; } out+=ch.repeat(num?parseInt(num,10):1); num=''; } return out; });
+  rowCache.set(ck,rows); return rows; }
+function paintChar(g,key,pose,px,flip,ox,oy){ const rows=frameRows(key,pose), pal=CAST.chars[key].p, Wd=CAST.w;
+  for(let y=0;y<rows.length;y++){ const row=rows[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.') continue; const col=pal[ch]; if(!col) continue;
+    g.fillStyle=col; g.fillRect((ox||0)+(flip?Wd-1-x:x)*px,(oy||0)+y*px,px,px); } } }
+/* Which way each pose is drawn. The run cycle and the side-on stance face
+   right; the slide (MythiBall's slide, Fumble's dive and man on the grass)
+   leads with its head to the left. Celebrating faces the camera and is never
+   mirrored. */
+const FACING={ run1:1, run2:1, run3:1, run4:1, back:1, slide:-1 };
+function poseFlip(pose,faceR){ const f=FACING[pose]||0; return f>0 ? !faceR : f<0 ? faceR : false; }
+/* A man standing on the field looking somewhere. */
+const sideStand=()=>'back';
+/* The painted extent of a frame, so feet land on the grass and tags sit on
+   heads whatever the size of the frame. MythiBall draws into 96x96 with the
+   figure in the lower part. */
+const boxCache=new Map();
+function frameBox(key,pose){ const ck=key+'/'+pose; let b=boxCache.get(ck); if(b) return b; const rows=frameRows(key,pose);
+  let top=rows.length, bottom=0, left=CAST.w, right=0;
+  rows.forEach((r,y)=>{ const a=r.search(/[^.]/); if(a<0) return; let z=r.length-1; while(z>0&&r[z]==='.') z--;
+    top=Math.min(top,y); bottom=Math.max(bottom,y); left=Math.min(left,a); right=Math.max(right,z); });
+  if(top>bottom){ top=0; bottom=rows.length-1; left=0; right=CAST.w-1; }
+  b={top,bottom,left,right,h:bottom-top+1}; boxCache.set(ck,b); return b; }
+const sprCache=new Map();
+/* One canvas per (character, pose, mirror, outline). The outline is one pixel
+   of team colour, so a crowd of fairy tale characters still reads as two
+   teams. 'FLASH' paints the whole figure white for the frame of a big hit. */
+function spr(key,pose,faceR,outline){ const flip=poseFlip(pose,faceR), ck=key+'|'+pose+'|'+(flip?1:0)+'|'+outline;
+  let c=sprCache.get(ck); if(c) return c;
+  c=document.createElement('canvas'); c.width=c.height=SPR_N; const g=c.getContext('2d');
+  paintChar(g,key,pose,1,flip,1,1);
+  const img=g.getImageData(0,0,SPR_N,SPR_N), d=img.data; const out=g.createImageData(SPR_N,SPR_N), o=out.data;
+  const [r,gg,b]=outline==='FLASH'?[255,255,255]:hexRgb(outline);
+  const A=(x,y)=> x>=0&&y>=0&&x<SPR_N&&y<SPR_N ? d[(y*SPR_N+x)*4+3] : 0;
+  for(let y=0;y<SPR_N;y++) for(let x=0;x<SPR_N;x++){ const i=(y*SPR_N+x)*4;
+    if(d[i+3]>0){ if(outline==='FLASH'){ o[i]=o[i+1]=o[i+2]=255; } else { o[i]=d[i]; o[i+1]=d[i+1]; o[i+2]=d[i+2]; } o[i+3]=255; }
+    else if(A(x-1,y)||A(x+1,y)||A(x,y-1)||A(x,y+1)){ o[i]=r; o[i+1]=gg; o[i+2]=b; o[i+3]=255; } }
+  g.putImageData(out,0,0);
+  if(sprCache.size>1400) sprCache.clear(); sprCache.set(ck,c); return c; }
+/* Nessie has no run cycle: her run frames are her standing frame. She glides. */
+const isStill=key=>{ const f=CAST.chars[key].f; return f.run1==='@idle' || f.run1===f.idle; };
+
+/* ---- the ball, as pixel art in four spins ---- */
+const BALL_PAL={k:'#3a1a08',b:'#8a4a1c',h:'#b8743a',w:'#fffcf2'};
+const BALL_F0=['..kkkkk...','.khhbbbbk.','khbwwwwbbk','kbbbbbbbbk','.kbbbbbbk.','..kkkkk...'];
+const BALL_F1=['....kkk.','..kkhhbk','.khbbwbk','.kbbwbbk','kbwbbbk.','kbbbbk..','kbbkk...','.kk.....'];
+function pixImg(rows){ const c=document.createElement('canvas'); c.width=rows[0].length; c.height=rows.length; const g=c.getContext('2d');
+  rows.forEach((r,y)=>{ for(let x=0;x<r.length;x++){ const col=BALL_PAL[r[x]]; if(col){ g.fillStyle=col; g.fillRect(x,y,1,1); } } }); return c; }
+const transpose=rows=>rows[0].split('').map((_,x)=>rows.map(r=>r[x]).join(''));
+const mirror=rows=>rows.map(r=>r.split('').reverse().join(''));
+const BALL_IMG=[pixImg(BALL_F0),pixImg(BALL_F1),pixImg(transpose(BALL_F0)),pixImg(mirror(BALL_F1))];
+
+/* ---------------- positions ----------------
+   Seven two-way players, the way the game was played before platoons. Each is
+   cast from his MythiBall ratings: the fastest returns kicks and plays safety,
+   the two strongest are the line, the next strongest the tight end, the next
+   fastest the back, and the rest go wide. */
+const DPOS={ KR:'S', RB:'LB', WR:'CB', TE:'LB', OL:'DL' };
+const POS_NAME={ KR:'Kick returner', RB:'Running back', WR:'Wide receiver', TE:'Tight end', OL:'Lineman',
+  S:'Safety', LB:'Linebacker', CB:'Cornerback', DL:'Defensive line' };
+const NUMS={ KR:[1,29], RB:[20,49], WR:[80,89], TE:[80,89], OL:[50,79] };
+const DEF_LANES={ DL:[0.42,0.58], LB:[0.30,0.70], CB:[0.12,0.88], S:[0.5] };
+const WR_LANES=[0.16,0.84];
+const CLAIM_PRIO={ OL:0, TE:1, KR:2, WR:3, RB:4 };
+function assignPositions(keys){ const C=k=>CAST.chars[k], rest=keys.slice();
+  const take=f=>{ let bi=0; for(let i=1;i<rest.length;i++) if(f(rest[i])>f(rest[bi])) bi=i; return rest.splice(bi,1)[0]; };
+  const KR=take(k=>C(k).spd), OL1=take(k=>C(k).pow), OL2=take(k=>C(k).pow), TE=take(k=>C(k).pow+C(k).def),
+        RB=take(k=>C(k).spd+C(k).con*0.5), WR1=rest[0], WR2=rest[1];
+  const used=new Set();
+  const num=(k,pos)=>{ const [a,b]=NUMS[pos]; let n=a+hashStr(k)%(b-a+1); while(used.has(n)) n = n+1>b ? a : n+1; used.add(n); return n; };
+  return [[KR,'KR'],[RB,'RB'],[WR1,'WR'],[WR2,'WR'],[TE,'TE'],[OL1,'OL'],[OL2,'OL']].map(([key,pos])=>({key,pos,num:num(key,pos)})); }
+/* What a rating buys, kept small: flavour, not a second balance. */
+const spdOf=c=>clamp(1+(c.spd-60)*0.0025,0.86,1.10);
+const powOf=c=>clamp(1+(c.pow-60)*0.004,0.80,1.20);
+const hndOf=c=>clamp(1+(c.con-55)*0.003,0.90,1.12);
+const tklOf=c=>clamp(1+(c.def-60)*0.003,0.90,1.12);
+
+/* ---------------- players ---------------- */
+function makePlayer(team,idx){ return { team, idx, key:null, name:'', pos:'', dpos:'', num:0, isK:false,
+  x:0, y:0, vx:0, vy:0, lx:null, ly:null, faceR:team==='BLUE', stride:Math.random()*4, pose:'back',
+  act:0, actPose:'idle', cheer:0, cheerPose:'cheer', knockT:0, kx:0, ky:0, down:0, downPose:'slide', fallR:true, stagger:0,
+  flashT:0, dive:null, engaged:false, blockOn:-1, assign:null, blockT:0, boost:0, brkCd:0, breaks:0,
+  spdF:1, powF:1, hndF:1, tklF:1, laneY:W/2, offLaneY:W/2, still:false }; }
+const PL=[]; for(const team of ['BLUE','RED']) for(let i=0;i<TUNE.TEAM_SIZE;i++) PL.push(makePlayer(team,i));
+const teamIdx=t=>{ const r=[]; for(let i=0;i<PL.length;i++) if(PL[i].team===t) r.push(i); return r; };
+const teamPlayers=t=>PL.filter(p=>p.team===t);
+function castTeam(team,keys){ const lineup=assignPositions(keys), ps=teamPlayers(team), dc={}; let wr=0;
+  lineup.forEach((L,i)=>{ const p=ps[i], c=CAST.chars[L.key];
+    Object.assign(p,{ key:L.key, name:c.n, pos:L.pos, dpos:DPOS[L.pos], num:L.num, spdF:spdOf(c), powF:powOf(c), hndF:hndOf(c), tklF:tklOf(c), still:isStill(L.key) });
+    const k=dc[p.dpos]||0; dc[p.dpos]=k+1; p.laneY=DEF_LANES[p.dpos][k]*W;
+    p.offLaneY = p.pos==='WR' ? WR_LANES[wr++]*W : W/2; });
+  /* The kicker is the surest foot that is not the returner or the line. */
+  let kb=null; for(const p of ps){ p.isK=false; if(p.pos==='KR'||p.pos==='OL') continue; const c=CAST.chars[p.key]; if(!kb||c.con>CAST.chars[kb.key].con) kb=p; }
+  if(kb) kb.isK=true; }
+function nearestOfTeam(t,pt,skip){ let b=-1,bd=1e9; for(let i=0;i<PL.length;i++){ const p=PL[i]; if(p.team!==t||i===skip||p.down>0) continue;
+  const d=Math.hypot(p.x-pt.x,p.y-pt.y); if(d<bd){bd=d;b=i;} } return b; }
+
+/* ---------------- state ---------------- */
+let phase='MENU';                 // MENU -> SETUP -> KICK -> PLAY -> SCORE -> (SETUP | OVER)
+let possession='NONE', carrier=-1, controlled=-1, manualPick=-1;
+let truck=null, truckCd=0, latCd=0, jukeCd=0, jukeT=0, jukeDir=0, stamina=1, diveCd=0, sprinting=false, winded=false;
+let scoreB=0, scoreR=0;
+const STATS={ trucks:0, jukes:0, takeaways:0, giveaways:0, tds:0, longest:0 };
+let possStartX=null, lastFumbleTeam=null, coachDone=false;
+let recvTeam='BLUE', kickReceiver=-1, kicker=-1, kick=null;
+const landing={x:20,y:W/2}, kickSpot={x:75,y:W/2}, LAND_R=2.7;
+let setupMode='MOVE', grabbed=-1, drawingIdx=-1; const previewPt={x:0,y:0}, blockAssign={};
+const ball={x:60,y:W/2,h:0,vx:0,vy:0,vh:0,spin:0,spinV:0};
+let ballFlight=null, cutin=null, overT=0, gameOver=false, timeScale=1, simTime=0;
+const input={x:0,y:0};
+
+/* ---------------- audio (synthesized: no assets, no network) ---------------- */
+const SND={ ctx:null, master:null, crowdGain:null, on:true };
+function audioInit(){ if(SND.ctx) return; const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ctx=new AC(); SND.ctx=ctx; const master=ctx.createGain(); master.gain.value=0.85; master.connect(ctx.destination); SND.master=master;
+  const buf=ctx.createBuffer(1, ctx.sampleRate*2|0, ctx.sampleRate), d=buf.getChannelData(0);
+  let last=0; for(let i=0;i<d.length;i++){ const w=Math.random()*2-1; last=(last+0.02*w)/1.02; d[i]=last*3.2; }
+  const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true;
+  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=600; bp.Q.value=0.6;
+  const cg=ctx.createGain(); cg.gain.value=0.10; src.connect(bp); bp.connect(cg); cg.connect(master); src.start(); SND.crowdGain=cg; }
+function audioResume(){ if(SND.ctx&&SND.ctx.state==='suspended') SND.ctx.resume(); }
+function crowdSwell(amt,ms){ if(!SND.ctx)return; const g=SND.crowdGain.gain,t=SND.ctx.currentTime;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value,t); g.linearRampToValueAtTime(0.10+amt,t+0.08); g.linearRampToValueAtTime(0.10,t+(ms||900)/1000); }
+function tone(freq,dur,type,vol,glide){ if(!SND.ctx||!SND.on)return; const ctx=SND.ctx,t=ctx.currentTime;
+  const o=ctx.createOscillator(),g=ctx.createGain(); o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+  if(glide) o.frequency.exponentialRampToValueAtTime(glide,t+dur);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.3,t+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(SND.master); o.start(t); o.stop(t+dur+0.02); }
+function noise(dur,vol,cut){ if(!SND.ctx||!SND.on)return; const ctx=SND.ctx,n=(ctx.sampleRate*dur)|0,buf=ctx.createBuffer(1,n,ctx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+  const s=ctx.createBufferSource(); s.buffer=buf; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=cut||900;
+  const g=ctx.createGain(); g.gain.value=vol||0.6; s.connect(lp); lp.connect(g); g.connect(SND.master); s.start(); }
+const sfx={
+  kick(){ noise(0.09,0.5,1200); tone(220,0.18,'sine',0.25,90); },
+  catch(){ tone(440,0.1,'triangle',0.2); },
+  contact(){ noise(0.08,0.3,700); },
+  hit(){ noise(0.2,0.75,800); tone(85,0.16,'square',0.28,55); },
+  fumble(){ noise(0.14,0.55,1000); tone(280,0.42,'sawtooth',0.3,920); crowdSwell(0.2,1300); },
+  recover(){ tone(520,0.11,'triangle',0.3); setTimeout(()=>tone(784,0.16,'triangle',0.28),70); },
+  truck(){ noise(0.18,0.7,700); tone(150,0.26,'sawtooth',0.32,340); crowdSwell(0.16,800); },
+  pitch(){ tone(660,0.1,'triangle',0.22,880); },
+  dive(){ noise(0.16,0.45,600); tone(180,0.12,'triangle',0.18,120); },
+  bounce(){ tone(160,0.06,'square',0.08,110); },
+  tick(){ tone(900,0.04,'square',0.08); },
+  whistle(){ tone(2050,0.16,'square',0.16,2450); setTimeout(()=>tone(2050,0.13,'square',0.15,2450),120); },
+  score(){ tone(330,0.5,'sawtooth',0.3); setTimeout(()=>tone(440,0.4,'sawtooth',0.3),120); setTimeout(()=>tone(554,0.7,'sawtooth',0.3),240); crowdSwell(0.45,2400); },
+};
+function haptic(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+
+/* ---------------- the screen ----------------
+   The canvas is sized in whole device pixels per game pixel (K), so every
+   pixel of art lands on the same number of screen pixels. PX and PY are the
+   pixels per yard down and across the field; across is shorter, which is what
+   makes a flat field read as seen from the stands. PH is pixels per yard of
+   height, matched to the size of the cast. */
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let VW=640, VH=360, K=2, DPR=1, PX=13, PY=7.3, UI_S=2, portrait=false;
+const PH=26;
+const MARGIN_X=14, FAR=10, NEAR=10;   // yards of stadium drawn beyond the end lines and the sidelines
+let FIELD_IMG=null, STANDS=[], SKY=null, CLOUD=null, builtFor='';
+function resize(){ const scr=document.getElementById('screen'), r=scr.getBoundingClientRect();
+  portrait = innerHeight>innerWidth; DPR=window.devicePixelRatio||1;
+  const devW=Math.max(1,Math.round(r.width*DPR)), devH=Math.max(1,Math.round(r.height*DPR));
+  /* Upright, the scale follows the screen's density so a player is 40 to 64
+     points tall on any phone; sideways, it follows the height. */
+  K = portrait ? Math.max(1,Math.ceil(DPR*0.6)) : Math.max(1,Math.round(devH/400));
+  VW=Math.max(160,Math.floor(devW/K)); VH=Math.max(120,Math.floor(devH/K));
+  canvas.width=VW; canvas.height=VH; canvas.style.width=(VW*K/DPR)+'px'; canvas.style.height=(VH*K/DPR)+'px';
+  PX=clamp(Math.round(VW/52),10,15); PY=Math.round(PX*0.56*10)/10;
+  UI_S=Math.max(1,Math.round(2*DPR/K));
+  ctx.imageSmoothingEnabled=false;
+  if(PARK){ fitSetupZoom(); buildStadium(); } }
+
+/* ---------------- the stadium ---------------- */
+let PARK=null, CLUB=null, MINE=[];
+const fx=x=>Math.round((x+MARGIN_X)*PX), fy=y=>Math.round((W+FAR-y)*PY);
+function clubWord(){ const n=CLUB.name.replace(/^The /,''); return (n.length<=12?n:n.split(' ')[0]).toUpperCase(); }
+function shortClub(n){ return n.replace(/^The /,'').split(' ')[0].toUpperCase(); }
+function abbr3(n){ const w=shortClub(n); const a=(w[0]+w.slice(1).replace(/[AEIOU]/g,'')).slice(0,3); return a.length<3?w.slice(0,3):a; }
+let standsFor='';
+function buildStadium(force){ const key=PARK.park+'|'+PX+'|'+PY+'|'+VH+'|'+TEAM.BLUE+'|'+TEAM.RED+'|'+setupZ; if(key===builtFor && !force) return; builtFor=key; standsFor=setupZ+'|'+VH;
+  FIELD_IMG=buildField(); STANDS=[buildStands(0),buildStands(1)]; SKY=null; CLOUD=buildCloud(); }
+function buildField(){ const park=PARK, FW=Math.round((TUNE.FIELD_LENGTH+2*MARGIN_X)*PX), FH=Math.round((W+FAR+NEAR)*PY);
+  const c=document.createElement('canvas'); c.width=FW; c.height=FH; const g=c.getContext('2d'); const R=rng(hashStr(park.park));
+  // the warning track all round, flecked
+  g.fillStyle=park.track; g.fillRect(0,0,FW,FH);
+  g.fillStyle=shade(park.track,-.12); for(let i=0;i<FW*FH/60;i++) g.fillRect((R()*FW)|0,(R()*FH)|0,1,1);
+  g.fillStyle=shade(park.track,.12); for(let i=0;i<FW*FH/120;i++) g.fillRect((R()*FW)|0,(R()*FH)|0,1,1);
+  // the grass apron and the mowing stripes, five yards to a stripe
+  const gx0=fx(-4), gx1=fx(TUNE.FIELD_LENGTH+4), gy0=fy(W+4), gy1=fy(-4);
+  const gA=shade(park.grass,.03), gB=shade(park.grass,-.09);
+  g.fillStyle=shade(park.grass,-.05); g.fillRect(gx0,gy0,gx1-gx0,gy1-gy0);
+  for(let x=0;x<TUNE.FIELD_LENGTH;x+=5){ g.fillStyle=((x/5)|0)%2?gB:gA; g.fillRect(fx(x),gy0,fx(x+5)-fx(x),gy1-gy0); }
+  // tufts: a lawn has things growing in it
+  for(let i=0;i<(gx1-gx0)*(gy1-gy0)/22;i++){ const x=gx0+((R()*(gx1-gx0))|0), y=gy0+((R()*(gy1-gy0))|0);
+    g.fillStyle=R()<.6?shade(park.grass,-.2):shade(park.grass,.14); g.fillRect(x,y,1,R()<.3?2:1); }
+  // end zones: yours on the left in your colour, theirs on the right in the club's, hatched
+  const ez=(x0,col,word)=>{ const X0=fx(x0), X1=fx(x0+TUNE.ENDZONE), Y0=fy(W), Y1=fy(0);
+    g.fillStyle=shade(col,-.42); g.fillRect(X0,Y0,X1-X0,Y1-Y0);
+    g.fillStyle=shade(col,-.34); for(let k=-(Y1-Y0);k<X1-X0;k+=8){ for(let y=Y0;y<Y1;y++){ const x=X0+k+(y-Y0); if(x>=X0&&x<X1) g.fillRect(x,y,3,1); } }
+    const n=word.length, sc=Math.max(1,Math.min(Math.floor((X1-X0)*0.55/7), Math.floor((Y1-Y0)*0.86/(n*6))));
+    const im=textImg(word,sc,shade(col,.55),shade(col,-.7),0);
+    g.save(); g.translate((X0+X1)/2,(Y0+Y1)/2); g.rotate(x0<60?-Math.PI/2:Math.PI/2); g.drawImage(im,Math.round(-im.width/2),Math.round(-im.height/2)); g.restore(); };
+  ez(0,TEAM.BLUE,'FUMBLE'); ez(TUNE.FIELD_LENGTH-TUNE.ENDZONE,TEAM.RED,clubWord());
+  const M=park.marker, lw=PX>=13?2:1;
+  // yard lines every five, goal lines heavier
+  g.fillStyle=M; g.globalAlpha=.9;
+  for(let x=15;x<=105;x+=5) g.fillRect(fx(x)-(lw>>1),fy(W),lw,fy(0)-fy(W));
+  g.globalAlpha=1; g.fillStyle='#ffffff';
+  for(const x of [TUNE.ENDZONE,TUNE.FIELD_LENGTH-TUNE.ENDZONE]) g.fillRect(fx(x)-1,fy(W),3,fy(0)-fy(W));
+  // boundary: sidelines and end lines, two pixels of white
+  g.fillRect(fx(0),fy(W)-2,fx(TUNE.FIELD_LENGTH)-fx(0),2); g.fillRect(fx(0),fy(0),fx(TUNE.FIELD_LENGTH)-fx(0),2);
+  g.fillRect(fx(0)-2,fy(W)-2,2,fy(0)-fy(W)+4); g.fillRect(fx(TUNE.FIELD_LENGTH),fy(W)-2,2,fy(0)-fy(W)+4);
+  // hash marks: every yard, at both sidelines and on the inbounds hashes
+  g.fillStyle=M; g.globalAlpha=.85;
+  for(let x=11;x<110;x++){ if(x%5===0) continue; const X=fx(x);
+    for(const [a,b] of [[0.3,1.1],[W-1.1,W-0.3],[W/2-3.4,W/2-2.8],[W/2+2.8,W/2+3.4]]){ const y0=fy(b), y1=fy(a); g.fillRect(X,y0,1,Math.max(2,y1-y0)); } }
+  g.globalAlpha=1;
+  // yard numbers, twelve yards in from each sideline; the far ones read upside down, as on a real field
+  const ns=PX>=13?2:1, nh=7*ns;
+  for(let n=10;n<=90;n+=10){ const v=n<=50?n:100-n, lab=String(v), X=fx(TUNE.ENDZONE+n);
+    for(const far of [false,true]){ const Y=fy(far?W-12:12), d0=textImg(lab[0],ns,M), d1=textImg(lab[1],ns,M);
+      g.save(); g.translate(X,Y); if(far) g.rotate(Math.PI);
+      g.drawImage(d0,-d0.width-2*ns,-(d0.height>>1)); g.drawImage(d1,2*ns,-(d1.height>>1));
+      if(v!==50){ // a little arrow pointing at the nearer goal line; turned with the far numbers, so flip it back
+        const left=(n<50)!==far, ax=left ? -d0.width-7*ns : d1.width+4*ns; g.fillStyle=M;
+        for(let k=0;k<3;k++){ const hh=(2*k+1)*ns, cx=left ? ax+k*ns : ax+(2-k)*ns; g.fillRect(cx,-(hh>>1),ns,hh); } }
+      g.restore(); } }
+  // midfield: the home club's roundel
+  { const X=fx(60), Y=fy(W/2), rx=Math.round(5*PX), ry=Math.round(5*PY);
+    g.fillStyle=shade(TEAM.RED,-.3); for(let y=-ry;y<=ry;y++){ const hw=Math.round(rx*Math.sqrt(1-(y/ry)*(y/ry))); g.fillRect(X-hw,Y+y,2*hw,1); }
+    g.fillStyle=M; for(let a=0;a<720;a++){ const t=a/720*Math.PI*2; g.fillRect(Math.round(X+Math.cos(t)*rx)-1,Math.round(Y+Math.sin(t)*ry),2,1); }
+    const w=abbr3(CLUB.name), sc=Math.max(1,Math.floor(rx*1.1/textW(w,1)));
+    const im=textImg(w,Math.min(sc,3),'#fffcf2',shade(TEAM.RED,-.65),0); g.drawImage(im,X-(im.width>>1),Y-(im.height>>1)); }
+  // pylons at the eight corners of the end zones
+  g.fillStyle='#ff7a1a'; for(const x of [0,10,110,120]) for(const y of [0,W]){ g.fillRect(fx(x)-2,fy(y)-4,4,5); g.fillStyle='#c85a0a'; g.fillRect(fx(x)-2,fy(y),4,1); g.fillStyle='#ff7a1a'; }
+  // the far wall: padded, the park's colour, its line along the top, ad boards along the face
+  { const y0=0, y1=fy(W+8); g.fillStyle=park.wall; g.fillRect(0,y0,FW,y1-y0); g.fillStyle=park.wallLine; g.fillRect(0,y0,FW,2);
+    g.fillStyle=shade(park.wall,-.3); g.fillRect(0,y1-2,FW,2);
+    const boards=['FUMBLE','MYTHIBALL',clubWord(),'RUNTHE.GG']; let bx=6, bi=0; const bh=Math.max(7,y1-y0-6);
+    while(bx<FW){ const word=boards[bi++%boards.length], sc=bh>=16?2:1, tw=textW(word,sc)+10;
+      g.fillStyle=shade(park.wall,.18); g.fillRect(bx,3,tw,bh-1); drawText(g,word,bx+5,3+((bh-1-7*sc)>>1),sc,park.wallLine); bx+=tw+14; } }
+  // the near wall along the bottom edge
+  { const y0=fy(-8.5); g.fillStyle=shade(park.wall,-.15); g.fillRect(0,y0,FW,FH-y0); g.fillStyle=park.wallLine; g.fillRect(0,y0,FW,2); }
+  return c; }
+/* The stands: a lower bowl, a concourse with the club's name on it, an upper
+   deck, a roof hung with pennants, light towers and a jumbotron at midfield.
+   Two frames with the same fans in the same seats; in the second some of them
+   are up, which is all a pixel crowd needs to roar. */
+let STANDS_H=180, JUMBO={x:0,y:0,w:0,h:0};
+function buildStands(frame){ const park=PARK, FW=Math.round((TUNE.FIELD_LENGTH+2*MARGIN_X)*PX); const fieldPx=(W+FAR+NEAR)*PY, fill=Math.min(VH/setupZ, VH/Math.min(setupZ,1))-fieldPx+30;
+  STANDS_H=Math.round(clamp(Math.max(PY*24,fill),140,640));
+  const H=STANDS_H, c=document.createElement('canvas'); c.width=FW; c.height=H; const g=c.getContext('2d');
+  const R=rng(hashStr(park.park+'crowd')), R2=rng(hashStr(park.park+'up')+frame*977);
+  const skins=['#f1c9a0','#d8a47a','#a8744c','#6e4a30','#f6dcc0','#e8b890'];
+  const fans=[...park.crowd,...park.crowd,TEAM.RED,TEAM.RED,TEAM.BLUE,'#fffcf2'];
+  const lowerRows=Math.floor(H*0.40/6), upperRows=Math.floor(H*0.24/6), concourse=11;
+  const bowl=(yBottom,rows,dark)=>{ const top=yBottom-rows*6; g.fillStyle=shade(park.wall,-.5+dark); g.fillRect(0,top,FW,rows*6);
+    for(let r=0;r<rows;r++){ const y=yBottom-(r+1)*6; g.fillStyle=shade(park.wall,-.62+dark); g.fillRect(0,y+5,FW,1);
+      for(let x=(r%2)*2;x<FW;x+=4){ const aisle=(x%96)<5; if(aisle) { R(); R(); R(); continue; }
+        const empty=R()<.09, body=fans[(R()*fans.length)|0], skin=skins[(R()*skins.length)|0]; if(empty) continue;
+        const up=frame===1 && R2()<.4 ? 1 : 0;
+        g.fillStyle=shade(body,dark); g.fillRect(x,y+2-up,3,3);
+        g.fillStyle=shade(skin,dark); g.fillRect(x,y-up,3,2);
+        if(up){ g.fillRect(x-1,y-2,1,2); g.fillRect(x+3,y-2,1,2); } } }
+    // stairs
+    g.fillStyle=shade(park.wallLine,-.35+dark); for(let x=0;x<FW;x+=96){ for(let y=top;y<yBottom;y+=2) g.fillRect(x,y,4,1); } };
+  bowl(H,lowerRows,0);
+  // concourse band with the club's name along it
+  const cy=H-lowerRows*6-concourse; g.fillStyle=shade(TEAM.RED,-.35); g.fillRect(0,cy,FW,concourse); g.fillStyle=shade(TEAM.RED,-.6); g.fillRect(0,cy+concourse-1,FW,1);
+  { const word=CLUB.name.toUpperCase()+'  ·  '+PARK.park.toUpperCase()+'  ·  '; const tw=textW(cleanText(word),1)+6; for(let x=4;x<FW;x+=tw) drawText(g,word,x,cy+2,1,'#fffcf2'); }
+  bowl(cy,upperRows,-.08);
+  // the roof, the pennants under it and the towers above it
+  const ry=cy-upperRows*6-8; g.fillStyle=shade(park.wall,-.25); g.fillRect(0,ry,FW,8); g.fillStyle=park.wallLine; g.fillRect(0,ry,FW,1);
+  for(let x=4,i=0;x<FW;x+=13,i++){ g.fillStyle=park.crowd[i%park.crowd.length]; for(let k=0;k<5;k++) g.fillRect(x+(k>>1),ry+8+k,5-k,1); }
+  for(const tx of [0.12,0.37,0.63,0.88]){ const X=Math.round(FW*tx), top=Math.max(2,ry-44);
+    g.fillStyle='#5a6270'; g.fillRect(X-1,top+10,3,ry-top-10); g.fillStyle='#39404c'; g.fillRect(X-1,top+10,1,ry-top-10);
+    g.fillStyle='#39404c'; g.fillRect(X-12,top,25,11); g.fillStyle='#fff6c8';
+    for(let yy=0;yy<3;yy++) for(let xx=0;xx<6;xx++) g.fillRect(X-11+xx*4,top+1+yy*3,3,2); }
+  // jumbotron over midfield; its screen is drawn live
+  { const X=fx(60), jw=Math.round(clamp(PX*7,70,104)), jh=Math.round(jw*0.42), top=Math.max(1,ry-jh-10);
+    g.fillStyle='#39404c'; g.fillRect(X-(jw>>1)+6,top+jh,3,ry-top-jh); g.fillRect(X+(jw>>1)-9,top+jh,3,ry-top-jh);
+    g.fillStyle='#1b2230'; g.fillRect(X-(jw>>1)-2,top-2,jw+4,jh+4); g.fillStyle='#05080d'; g.fillRect(X-(jw>>1),top,jw,jh);
+    JUMBO={x:X-(jw>>1),y:top,w:jw,h:jh}; }
+  return c; }
+function buildCloud(){ const c=document.createElement('canvas'); c.width=48; c.height=14; const g=c.getContext('2d'); g.fillStyle='#ffffff';
+  const blobs=[[6,8,6],[14,5,7],[24,6,8],[34,7,6],[41,9,5]];
+  for(const [x,y,r] of blobs) for(let yy=-r;yy<=r;yy++){ const hw=Math.round(Math.sqrt(r*r-yy*yy)); if(y+yy<14) g.fillRect(x-hw,y+yy,2*hw,1); }
+  g.fillStyle='rgba(180,200,230,.5)'; g.fillRect(2,12,44,2); return c; }
+
+/* ---------------- camera ---------------- */
+const cam={x:60,y:W/2,z:1,shake:0,shakeT:0,sx:0,sy:0};
+let PXz=PX, PYz=PY, PHz=PH;
+const SX=x=>Math.round((x-cam.x)*PXz+VW/2+cam.sx);
+const SY=(y,h)=>Math.round((cam.y-y)*PYz+VH/2-(h||0)*PHz+cam.sy);
+function shake(mag,ms){ cam.shake=Math.max(cam.shake,mag); cam.shakeT=Math.max(cam.shakeT,(ms||300)/1000); }
+function clampCam(){ const hv=VW/2/(PX*cam.z), lo=-MARGIN_X+hv, hi=TUNE.FIELD_LENGTH+MARGIN_X-hv;
+  cam.x = lo>hi ? TUNE.FIELD_LENGTH/2 : clamp(cam.x,lo,hi);
+  const pyz=PY*cam.z, ylo=-NEAR+VH/2/pyz, yhi=W+FAR+(26+STANDS_H*cam.z-VH/2)/pyz;
+  cam.y = ylo>yhi ? ylo : clamp(cam.y,ylo,yhi); }
+function setupSpan(){ let x0=landing.x, x1=landing.x; for(const p of PL){ x0=Math.min(x0,p.x); x1=Math.max(x1,p.x); } return [x0,x1]; }
+function setupFrame(){ const [x0,x1]=setupSpan(); return (x0+x1)/2; }
+/* The formation view is the biggest of three fixed scales that shows every
+   man on both teams. Fixed steps, because a sprite shrunk by an odd amount
+   loses rows of pixels unevenly. */
+let setupZ=TUNE.SETUP_ZOOM;
+function fitSetupZoom(){ const [x0,x1]=setupSpan(), need=(x1-x0+6)*PX; setupZ=[1,0.75,0.5].find(z=>need*z<=VW)||0.5; }
+function updateCamera(dt){ let tx=cam.x, ty=cam.y, tz=1, rate=6;
+  if(phase==='MENU'){ tx=60+Math.sin(simTime*0.11)*40; ty=W+FAR+40; rate=2; }
+  else if(phase==='SETUP'){ tz=setupZ; tx=setupFrame(); ty=W/2; rate=8; }
+  else if(phase==='KICK'){ const e=clamp(kick.t/0.9,0,1); tz=lerp(setupZ,1,e*e*(3-2*e));
+    tx = kick.kicked ? ball.x+(landing.x-ball.x)*0.2 : lerp(setupFrame(),kickSpot.x,e); ty=lerp(W/2,ball.y,.5); rate=kick.kicked?5:10; }
+  else { let f=null, la=0;
+    if(possession==='LOOSE'){ const c=controlled>=0?PL[controlled]:ball; f={x:(ball.x*2+c.x)/3,y:(ball.y*2+c.y)/3}; }
+    else if(carrier>=0){ const c=PL[carrier]; f=c; la=dirOf(possession)*VW*0.16/PX; if(possession==='RED' && controlled>=0){ const m=PL[controlled]; f={x:(c.x*3+m.x)/4,y:(c.y*3+m.y)/4}; } }
+    if(f){ tx=f.x+la; ty=f.y; } rate=5; }
+  cam.z = phase==='KICK' ? tz : cam.z+(tz-cam.z)*Math.min(1,dt*6);
+  const a=1-Math.exp(-rate*dt); cam.x+=(tx-cam.x)*a; cam.y+=(ty-cam.y)*a*0.8; clampCam();
+  if(cam.shakeT>0){ cam.shakeT-=dt; const k=cam.shake*Math.min(1,cam.shakeT*3.5)*6; cam.sx=Math.round((Math.random()*2-1)*k); cam.sy=Math.round((Math.random()*2-1)*k*0.7);
+    if(cam.shakeT<=0){ cam.shake=0; cam.sx=cam.sy=0; } } }
+
+/* ---------------- juice: particles, banners, crowd ---------------- */
+const FX=[];
+function burst(x,y,color,n,spd,opts){ opts=opts||{}; for(let k=0;k<(n||14);k++){ const a=Math.random()*Math.PI*2, r=(spd||6)*(0.35+Math.random());
+  FX.push({x,y,h:opts.h??1.1,vx:Math.cos(a)*r,vy:Math.sin(a)*r*0.6,vh:2.5+Math.random()*4.5,life:0.5+Math.random()*0.4,color:Array.isArray(color)?color[k%color.length]:color,s:opts.s||2,g:opts.g??32}); }
+  if(FX.length>400) FX.splice(0,FX.length-400); }
+function dust(x,y,n){ burst(x,y,[shade(PARK.track,.15),shade(PARK.grass,-.1),'#e8dcc0'],n||5,2.2,{h:0.1,s:1,g:18}); }
+function updateFX(dt){ for(let i=FX.length-1;i>=0;i--){ const p=FX[i]; p.life-=dt; if(p.life<=0){ FX.splice(i,1); continue; }
+  p.vh-=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.h+=p.vh*dt; if(p.h<0){ p.h=0; p.vh*=-0.35; p.vx*=0.6; p.vy*=0.6; } } }
+let banner=null;
+function msg(text,cls,ms){ banner={text,cls:cls||'',t:0,dur:(ms||800)/1000}; }
+let hype=0, crowdFrame=0, crowdT=0;
+function pump(v){ hype=Math.max(hype,v); }
+const snow=[]; function initSnow(){ snow.length=0; if(!PARK||!PARK.snow) return; for(let i=0;i<90;i++) snow.push({x:Math.random(),y:Math.random(),v:0.05+Math.random()*0.08,d:Math.random()*6}); }
+const trail=[];   // juke afterimages
+
+/* ---------------- kickoff: formation, setup, the kick ---------------- */
+function layoutKickoff(recv){ const dir=dirOf(recv), R=teamPlayers(recv), Kt=teamPlayers(other(recv));
+  const ogl = recv==='BLUE' ? TUNE.ENDZONE : TUNE.FIELD_LENGTH-TUNE.ENDZONE;   // the receiving side's own goal line
+  kickSpot.x = ogl + dir*65; kickSpot.y = W/2;                                  // kicked from the kicking side's 35
+  landing.x = ogl + dir*rand(5,12); landing.y = W/2 + rand(-0.2,0.2)*W;
+  const front = kickSpot.x - dir*11;                                            // one yard off the restraining line
+  const byPos=(team,pos)=>team.filter(p=>p.pos===pos);
+  for(const p of PL){ p.knockT=0; p.down=0; p.stagger=0; p.dive=null; p.assign=null; p.blockT=0; p.boost=0; p.act=0; p.cheer=0; p.brkCd=0; p.breaks=0; p.lx=p.ly=null; p.vx=p.vy=0; p.cpuH=null; p.cjT=0; p.cjCd=0; p.pitchCd=0; p.shedT=0; p.blockTime=0; }
+  // RETURN TEAM: the returner deep, two up-backs, four men on the front line (wideouts outside)
+  const kr=byPos(R,'KR')[0]; kr.x=landing.x; kr.y=landing.y;
+  const ups=[byPos(R,'RB')[0],byPos(R,'TE')[0]]; ups.forEach((p,i)=>{ p.x=ogl+dir*24; p.y=W/2+(i?6:-6); });
+  const wr=byPos(R,'WR'), ol=byPos(R,'OL'); [[wr[0],.12],[ol[0],.37],[ol[1],.63],[wr[1],.88]].forEach(([p,t])=>{ p.x=front; p.y=W*t; });
+  // KICKING TEAM: the kicker behind the ball, six in lanes on the line, the two fastest as gunners outside
+  const k=Kt.find(p=>p.isK)||Kt[0], cover=Kt.filter(p=>p!==k).sort((a,b)=>CAST.chars[b.key].spd-CAST.chars[a.key].spd);
+  k.x=kickSpot.x+dir*5; k.y=W/2;
+  const lanes=[.07,.93,.23,.77,.39,.61]; cover.forEach((p,i)=>{ p.x=kickSpot.x+dir*1; p.y=W*lanes[i]; p.laneK=W*lanes[i]; });
+  for(const p of R) p.faceR = dir>0; for(const p of Kt) p.faceR = dir<0;
+  kicker=PL.indexOf(k); kickReceiver=PL.indexOf(kr); }
+function beginSetup(recv){ recvTeam=recv; phase='SETUP'; possession='NONE'; carrier=-1; controlled=-1; manualPick=-1; truck=null; ballFlight=null;
+  grabbed=-1; drawingIdx=-1; latCd=0; jukeCd=0; jukeT=0; diveCd=0; stamina=1; winded=false; timeScale=1;
+  layoutKickoff(recv);
+  ball.x=kickSpot.x; ball.y=kickSpot.y; ball.h=0.35; ball.vx=ball.vy=ball.vh=0; ball.spin=0;
+  for(const k in blockAssign) delete blockAssign[k]; setupMode='MOVE';
+  const mb=document.getElementById('mode'); mb.classList.remove('draw'); mb.textContent = recv==='BLUE' ? '✎ DRAW BLOCKS' : '✎ DRAW LANES';
+  document.getElementById('kick').textContent = recv==='BLUE' ? 'READY' : 'KICK OFF';
+  fitSetupZoom(); if(STANDS.length && standsFor!==setupZ+'|'+VH) buildStadium(true);
+  showControls(false); updateKickBtn(); sfx.whistle(); }
+function blueInCircle(){ return teamPlayers('BLUE').some(p=>Math.hypot(p.x-landing.x,p.y-landing.y)<=LAND_R); }
+function canKick(){ return recvTeam==='RED' || blueInCircle(); }
+function setHint(t){ document.getElementById('setupHint').textContent=t; }
+function updateKickBtn(){ document.getElementById('kick').disabled=!canKick();
+  if(setupMode==='DRAW') setHint(recvTeam==='BLUE'?'DRAG FROM A BLOCKER TO AIM HIM':'DRAG FROM A COVER MAN TO AIM HIM');
+  else setHint(recvTeam==='BLUE' ? (canKick()?'YOU RECEIVE · DRAG TO SET YOUR RETURN':'PUT A PLAYER IN THE GOLD CIRCLE') : 'YOU KICK · DRAG TO SET YOUR COVERAGE'); }
+function showControls(on){ document.getElementById('pad').style.display=on?'':'none'; document.getElementById('setupBar').style.display=on?'none':'flex'; }
+function kickoff(){ if(phase!=='SETUP'||!canKick()) return; audioResume();
+  const mine=recvTeam==='BLUE'; if(mine){ let b=-1,bd=LAND_R+0.01; for(const i of teamIdx('BLUE')){ const d=Math.hypot(PL[i].x-landing.x,PL[i].y-landing.y); if(d<bd){bd=d;b=i;} } kickReceiver=b; }
+  for(const k in blockAssign){ const i=+k, p=PL[i]; if(p&&p.team==='BLUE'&&i!==kickReceiver){ p.assign=blockAssign[k]; p.blockT=TUNE.KICK_HANG_S+2.4; } }
+  kick={t:0,kicked:false,caught:false}; phase='KICK'; grabbed=-1; drawingIdx=-1; showControls(true); updateButtons(true); }
+function doKick(){ kick.kicked=true; const T=TUNE.KICK_HANG_S, G=TUNE.GRAVITY;
+  ball.x=kickSpot.x; ball.y=kickSpot.y; ball.h=0.35; ball.vx=(landing.x-ball.x)/T; ball.vy=(landing.y-ball.y)/T; ball.vh=(1.3-0.35+0.5*G*T*T)/T; ball.spinV=16;
+  const k=PL[kicker]; k.act=0.3; k.actPose='run2'; sfx.kick(); crowdSwell(0.14,900); pump(0.4); dust(ball.x,ball.y,6); shake(0.25,150); }
+function updateKick(dt){ kick.t+=dt; const dir=dirOf(recvTeam), kt=other(recvTeam);
+  if(!kick.kicked){ const k=PL[kicker]; moveToward(k,kickSpot.x+dir*0.7,kickSpot.y,7,dt); if(kick.t>=TUNE.KICK_RUNUP_S) doKick(); velocities(dt); return; }
+  ball.vh-=TUNE.GRAVITY*dt; ball.x+=ball.vx*dt; ball.y+=ball.vy*dt; ball.h+=ball.vh*dt; ball.spin+=ball.spinV*dt;
+  for(let i=0;i<PL.length;i++){ const p=PL[i];
+    if(p.assign && p.blockT>0){ p.blockT-=dt; if(Math.hypot(p.x-p.assign.x,p.y-p.assign.y)<1.6) { p.blockT=0; p.assign=null; } else { moveToward(p,p.assign.x,p.assign.y,p.team===recvTeam?TUNE.MATE_SPEED:TUNE.DEF_SPEED,dt); continue; } }
+    if(p.team===kt){ if(i===kicker) moveToward(p,landing.x+dir*30,W/2,TUNE.DEF_SPEED*0.8,dt);
+      else moveToward(p,landing.x+dir*3,lerp(p.laneK??p.y,landing.y,.35),TUNE.DEF_SPEED*0.95,dt); }
+    else if(i===kickReceiver){ moveToward(p,landing.x,landing.y,TUNE.MATE_SPEED,dt); p.faceR=ball.x>p.x; }
+    else if(p.pos==='RB'||p.pos==='TE') moveToward(p,landing.x+dir*6,landing.y+(p.pos==='RB'?-4:4),TUNE.MATE_SPEED*0.9,dt);
+    else moveToward(p,landing.x+dir*15,lerp(p.y,W/2,.02),TUNE.MATE_SPEED*0.9,dt); }
+  resolveBodies(); velocities(dt);
+  if(ball.vh<0 && ball.h<=1.3){ kick.caught=true; ball.h=1.1; possession=recvTeam; carrier=kickReceiver; const r=PL[carrier]; r.breaks=0; r.act=0.3; r.actPose='catch';
+    truckCd=TUNE.TRUCK_COOLDOWN_S; phase='PLAY'; pickControlled(); sfx.catch(); crowdSwell(0.12,700); pump(0.3);
+    if(recvTeam==='BLUE') possStartX=r.x;
+    msg(recvTeam==='BLUE'?'YOUR BALL':shortClub(CLUB.name)+' RETURN', recvTeam==='BLUE'?'good':'bad', 700); } }
+
+/* ---------------- who you control ---------------- */
+function pickControlled(){
+  if(possession==='BLUE'){ controlled=carrier; manualPick=-1; return; }
+  const t = possession==='LOOSE' ? ball : (carrier>=0?PL[carrier]:null); if(!t) return;
+  if(manualPick>=0 && PL[manualPick].team==='BLUE'){ controlled=manualPick; return; }
+  let best=-1,bd=1e9; for(const i of teamIdx('BLUE')){ const p=PL[i]; const d=Math.hypot(p.x-t.x,p.y-t.y)+(p.down>0?20:0); if(d<bd){bd=d;best=i;} }
+  if(controlled<0||PL[controlled].team!=='BLUE') { controlled=best; return; }
+  const c=PL[controlled]; if(c.dive) return;
+  const dc=Math.hypot(c.x-t.x,c.y-t.y)+(c.down>0?20:0);
+  if(best!==controlled && bd<dc-3) controlled=best; }
+
+/* ---------------- tackle / truck / pop ---------------- */
+function updateContact(){
+  if(possession==='LOOSE'||carrier<0||ballFlight) return;
+  const c=PL[carrier], foe=other(possession);
+  let near=-1, nd=1e9;
+  for(let i=0;i<PL.length;i++){ const p=PL[i]; if(p.team!==foe||p.engaged||p.down>0||p.knockT>0||p.stagger>0) continue;
+    const reach=TUNE.TACKLE_RADIUS*p.tklF*(p.dive?TUNE.DIVE_REACH:1), d=dist(p,c); if(d<reach && d-reach<nd){ nd=d-reach; near=i; } }
+  if(near<0) return;
+  if(possession!=='BLUE' && c.cjT>0) return;
+  if(possession==='BLUE'){
+    if(!truck && truckCd<=0){ truck={t:0,tapped:false,foe:near}; sfx.contact();
+      if(!coachDone){ coachDone=true; const b=document.getElementById('aBtn'); b.classList.add('coach'); msg('TAP TRUCK ON GREEN','good',1400); setTimeout(()=>b.classList.remove('coach'),2600); } }
+  } else {
+    if(c.brkCd>0) return;
+    /* Your tackles land. An AI teammate's is a coin flip, so the man who
+       stops a return is usually the one you are steering. */
+    if(near!==controlled && Math.random()>TUNE.AI_TACKLE){ const t=PL[near]; t.down=TUNE.MISS_DOWN_S; t.downPose='slide'; t.fallR=c.x>t.x; t.dive=null;
+      c.brkCd=0.5; dust(t.x,t.y,4); sfx.contact(); return; }
+    if((c.breaks||0)>=2) return popBall(near);    // two broken tackles a possession, then he goes down
+    const ch=CAST.chars[c.key], brk=TUNE.CPU_BREAK+(ch?Math.max(0,ch.pow-55)/100*0.6:0);
+    if(Math.random()<brk){ knockAway(PL[near],c,0.8); c.brkCd=1.0; c.breaks=(c.breaks||0)+1; c.boost=0.35; c.act=0.3; c.actPose='run2'; c.faceR=PL[near].x>c.x;
+      sfx.truck(); shake(0.4,220); msg(shortName(c.name)+' SHRUGS HIM OFF','bad',800); return; }
+    popBall(near);
+  } }
+function knockAway(f,from,mult){ let dx=f.x-from.x, dy=f.y-from.y; const d=Math.hypot(dx,dy)||1; dx/=d; dy/=d;
+  f.kx=dx*TUNE.TRUCK_KNOCKBACK*(mult||1)/TUNE.KNOCK_S*0.45; f.ky=dy*TUNE.TRUCK_KNOCKBACK*(mult||1)/TUNE.KNOCK_S*0.45*0.8;
+  f.knockT=TUNE.KNOCK_S; f.fallR=dx>0; f.downPose='slide'; f.flashT=0.12; f.dive=null; }
+function truckWindow(){ return TUNE.TRUCK_WINDOW_MS*((PL[carrier]&&PL[carrier].powF)||1); }
+function updateTruck(dt){ if(!truck) return; truck.t+=dt*1000;
+  if(truck.t>=TUNE.TRUCK_PROMPT_LEAD_MS+truckWindow() && !truck.tapped) popBall(truck.foe); }
+function attemptTruck(){ if(!truck||truck.tapped) return; truck.tapped=true;
+  const lead=TUNE.TRUCK_PROMPT_LEAD_MS, tot=lead+truckWindow(), c=PL[carrier];
+  if(truck.t>=lead && truck.t<=tot){ const f=PL[truck.foe]; if(f) knockAway(f,c,1);
+    c.act=0.3; c.actPose='run2'; if(f) c.faceR=f.x>c.x;
+    sfx.truck(); shake(0.65,320); burst(c.x,c.y,['#8ff0a0','#ffd34d','#ffffff'],18,6.5); haptic(55); pump(0.55); STATS.trucks++;
+    c.boost=TUNE.TRUCK_BOOST_MS/1000; truckCd=TUNE.TRUCK_COOLDOWN_S; truck=null; msg('TRUCK!','good',550);
+  } else popBall(truck.foe); }
+function popBall(byIdx){ truck=null; const wasBlue=possession==='BLUE', c=PL[carrier];
+  possession='LOOSE'; lastFumbleTeam=wasBlue?'BLUE':'RED'; manualPick=-1;
+  if(byIdx>=0){ const t=PL[byIdx]; t.dive=null; t.down=Math.max(t.down,TUNE.TACKLER_DOWN_S); t.downPose='slide'; t.fallR=c.x>t.x; t.faceR=c.x>t.x; }
+  c.stagger=TUNE.FUMBLER_STAGGER_S; c.flashT=0.1;
+  ball.x=c.x; ball.y=c.y; ball.h=1.3; ball.vx=(Math.random()*2-1)*TUNE.POP_SPREAD; ball.vy=(Math.random()*2-1)*TUNE.POP_SPREAD; ball.vh=TUNE.POP_UP; ball.spinV=(Math.random()*2-1)*18;
+  carrier=-1; ballFlight=null;
+  sfx.hit(); sfx.fumble(); shake(0.85,380); burst(c.x,c.y,['#ffcf4d','#ffffff',shade(PARK.grass,-.1)],20,7.5); haptic([40,30,90]); pump(0.7);
+  msg(wasBlue?'FUMBLE!':'BALL OUT!', wasBlue?'bad':'good', 800);
+  pickControlled(); }
+function updateLooseBall(dt){
+  ball.vh-=TUNE.GRAVITY*dt; ball.x+=ball.vx*dt; ball.y+=ball.vy*dt; ball.h+=ball.vh*dt; ball.spin+=ball.spinV*dt;
+  if(ball.h<=0){ ball.h=0;
+    if(ball.vh<0){ ball.vh=-ball.vh*TUNE.RESTITUTION; if(ball.vh<1.4) ball.vh=0; else { sfx.bounce(); dust(ball.x,ball.y,3); }
+      const k=TUNE.BOUNCE_RANDOMNESS; ball.vx+=(Math.random()*2-1)*k*6; ball.vy+=(Math.random()*2-1)*k*6;
+      ball.vx*=TUNE.BOUNCE_FRICTION; ball.vy*=TUNE.BOUNCE_FRICTION; ball.spinV=(Math.random()*2-1)*14; }
+    const f=Math.pow(TUNE.ROLL_FRICTION,dt*60); ball.vx*=f; ball.vy*=f; ball.spinV*=f; }
+  if(ball.y<0.6){ ball.y=0.6; ball.vy=Math.abs(ball.vy)*0.5; } if(ball.y>W-0.6){ ball.y=W-0.6; ball.vy=-Math.abs(ball.vy)*0.5; }
+  if(ball.x<0.6){ ball.x=0.6; ball.vx=Math.abs(ball.vx)*0.5; } if(ball.x>TUNE.FIELD_LENGTH-0.6){ ball.x=TUNE.FIELD_LENGTH-0.6; ball.vx=-Math.abs(ball.vx)*0.5; }
+  if(ball.h<=TUNE.RECOVER_MAX_HEIGHT){
+    let best=-1,bd=1e9; for(let i=0;i<PL.length;i++){ const p=PL[i]; if(p.down>0||p.knockT>0||p.stagger>0) continue;
+      const reach=TUNE.RECOVER_RADIUS*p.hndF*(p.dive?TUNE.DIVE_REACH:1), d=Math.hypot(p.x-ball.x,p.y-ball.y); if(d<reach && d/reach<bd){ bd=d/reach; best=i; } }
+    if(best>=0){ const p=PL[best], t=p.team;
+      p.breaks=0; if(p.dive){ p.dive=null; } possession=t; carrier=best; manualPick=-1; truckCd=TUNE.TRUCK_COOLDOWN_S;
+      p.act=0.3; p.actPose='catch';
+      if(lastFumbleTeam && t!==lastFumbleTeam){ if(t==='BLUE') STATS.takeaways++; else STATS.giveaways++; }
+      if(t==='BLUE') possStartX=p.x;
+      sfx.recover(); shake(0.3,220); burst(ball.x,ball.y,t==='BLUE'?'#8ff0a0':'#ff8a6b',10,4.5); crowdSwell(0.14,700); haptic(30); pump(0.4);
+      pickControlled();
+      msg(t==='BLUE'?'YOU RECOVER!':shortClub(CLUB.name)+' BALL', t==='BLUE'?'good':'bad', 750); } } }
+
+/* ---------------- your moves ---------------- */
+function attemptLateral(){ if(phase!=='PLAY'||possession!=='BLUE'||carrier<0||latCd>0||ballFlight) return;
+  const c=PL[carrier]; let best=-1,bd=1e9;
+  for(const i of teamIdx('BLUE')){ const p=PL[i]; if(i===carrier||p.down>0||p.knockT>0||p.stagger>0) continue;
+    if(p.x-c.x>=1.0) continue; const d=dist(p,c); if(d<TUNE.LATERAL_RANGE*c.hndF && d<bd){bd=d;best=i;} }
+  if(best<0){ msg('NO ONE BEHIND YOU','bad',600); return; }
+  c.act=0.3; c.actPose='run2'; c.faceR=PL[best].x>c.x;
+  ballFlight={t:0,T:TUNE.PITCH_FLIGHT_S,fx:c.x,fy:c.y}; carrier=best; controlled=best; PL[best].breaks=0;
+  latCd=TUNE.LATERAL_COOLDOWN_S; truckCd=0.35; truck=null; sfx.pitch(); msg('PITCH!','good',500); }
+function attemptJuke(){ if(phase!=='PLAY'||possession!=='BLUE'||carrier<0||jukeCd>0||stamina<TUNE.JUKE_COST) return;
+  const c=PL[carrier]; let side = input.y>0.25?1 : input.y<-0.25?-1 : 0;
+  if(!side){ const f=nearestOfTeam('RED',c); side = f>=0 ? (PL[f].y>c.y?-1:1) : 1; }
+  if(c.y<3) side=1; if(c.y>W-3) side=-1;
+  jukeDir=side; jukeT=TUNE.JUKE_TIME; jukeCd=TUNE.JUKE_COOLDOWN; stamina=Math.max(0,stamina-TUNE.JUKE_COST); STATS.jukes++;
+  if(truck){ const f=PL[truck.foe]; if(f){ f.kx=(f.x-c.x)*2; f.ky=-side*5; f.knockT=0.3; f.fallR=f.x>c.x; f.downPose='slide'; }
+    truck=null; truckCd=0.5; sfx.pitch(); shake(0.3,180); haptic(35); pump(0.35); msg('JUKE!','good',480); }
+  else { sfx.pitch(); haptic(22); msg('JUKE!','good',320); } }
+function attemptDive(){ if(phase!=='PLAY'||possession==='BLUE'||controlled<0||diveCd>0) return;
+  const p=PL[controlled]; if(p.down>0||p.stagger>0||p.knockT>0||p.dive) return;
+  let dx=input.x, dy=input.y;
+  if(Math.hypot(dx,dy)<0.2){ const t=possession==='LOOSE'?ball:(carrier>=0?PL[carrier]:ball); dx=t.x-p.x; dy=t.y-p.y; }
+  const m=Math.hypot(dx,dy)||1; p.dive={t:TUNE.DIVE_TIME,vx:dx/m,vy:dy/m}; p.faceR=dx>0; p.fallR=dx>0; diveCd=TUNE.DIVE_COOLDOWN; sfx.dive(); haptic(18); }
+function attemptSwitch(){ if(phase!=='PLAY'||possession==='BLUE') return;
+  const t = possession==='LOOSE' ? ball : PL[carrier]; if(!t) return;
+  const order=teamIdx('BLUE').filter(i=>PL[i].down<=0).sort((a,b)=>dist(PL[a],t)-dist(PL[b],t)); if(!order.length) return;
+  const k=order.indexOf(controlled); manualPick=order[(k+1)%order.length]; controlled=manualPick; sfx.tick(); }
+function pressA(){ if(phase!=='PLAY') return; if(possession==='BLUE') attemptTruck(); else attemptDive(); }
+function pressB(){ if(phase!=='PLAY') return; if(possession==='BLUE') attemptJuke(); else attemptSwitch(); }
+function pressC(){ if(phase!=='PLAY') return; if(possession==='BLUE') attemptLateral(); }
+
+/* ---------------- movement + AI ---------------- */
+function clampField(p){ p.x=clamp(p.x,0.5,TUNE.FIELD_LENGTH-0.5); p.y=clamp(p.y,0.5,W-0.5); }
+function moveToward(p,tx,ty,sp,dt){ sp*=p.spdF; if(p.boost>0){ sp*=TUNE.TRUCK_BOOST; p.boost-=dt; }
+  let dx=tx-p.x, dy=ty-p.y; const d=Math.hypot(dx,dy);
+  if(d>0.05){ const step=Math.min(d,sp*dt); p.x+=dx/d*step; p.y+=dy/d*step; } clampField(p); }
+function applyInput(p,dt){ const iAmCarrier=possession==='BLUE'&&carrier===controlled;
+  /* Your man's speed rating counts half: the stick is already the edge. */
+  let sp=(iAmCarrier?TUNE.CARRIER_SPEED:TUNE.CHASE_SPEED)*(1+(p.spdF-1)*0.5); if(p.boost>0){ sp*=TUNE.TRUCK_BOOST; p.boost-=dt; }
+  const m=Math.hypot(input.x,input.y), mag=Math.min(1,m); sprinting=false;
+  if(winded && stamina>=TUNE.WINDED_UNTIL) winded=false;
+  if(iAmCarrier && mag>0.85 && !winded){ sp*=TUNE.SPRINT_MULT; stamina=Math.max(0,stamina-TUNE.STAMINA_DRAIN*dt); sprinting=true; if(stamina<=0.01) winded=true; }
+  if(m>0.05){ p.x+=input.x/m*sp*dt*mag; p.y+=input.y/m*sp*dt*mag; }
+  if(jukeT>0 && iAmCarrier){ jukeT-=dt; p.y+=jukeDir*TUNE.JUKE_SPEED*dt; if(Math.random()<0.7) trail.push({x:p.x,y:p.y,key:p.key,pose:p.pose,faceR:p.faceR,t:0.18}); }
+  clampField(p); }
+/* THE CPU CARRIER READS THE FIELD. Every frame he tries a fan of headings
+   and scores each one: yards gained, minus the danger of every free defender
+   near the points three and six yards along it, with each defender moved on
+   along his own path. He runs the best one, smoothed so he cuts rather than
+   jitters. A man closing on him gets a juke; a man about to hit him, when his
+   back is trailing open, gets a pitch. */
+function cpuCarrier(p,dt){ const dir=dirOf(p.team), foes=[];
+  for(const i of teamIdx(other(p.team))){ const f=PL[i]; if(f.down<=0&&f.knockT<=0&&!f.engaged) foes.push(f); }
+  let bh=null, bs=-1e9;
+  for(let a=-1.25;a<=1.26;a+=0.25){ const hx=Math.cos(a)*dir, hy=Math.sin(a); let sc=Math.cos(a)*7;
+    for(const L of [3,6]){ const px=p.x+hx*L, py=p.y+hy*L; if(py<2.5||py>W-2.5) sc-=25;
+      for(const f of foes){ const t=L/9, d=Math.hypot(px-(f.x+f.vx*t),py-(f.y+f.vy*t)); if(d<7) sc-=(7-d)*(7-d)*(L===3?1.1:0.55); } }
+    if(sc>bs){ bs=sc; bh=[hx,hy]; } }
+  if(!p.cpuH) p.cpuH=bh.slice(); const k=Math.min(1,dt*9); p.cpuH[0]+=(bh[0]-p.cpuH[0])*k; p.cpuH[1]+=(bh[1]-p.cpuH[1])*k;
+  let near=null, nd=1e9; for(const f of foes){ const d=dist(f,p); if(d<nd){ nd=d; near=f; } }
+  if(p.cjT>0){ p.cjT-=dt; p.y=clamp(p.y+p.cjDir*TUNE.JUKE_SPEED*0.85*dt,0.5,W-0.5); }
+  else if(p.cjCd>0) p.cjCd-=dt;
+  else if(near && nd<3.9 && nd>TUNE.TACKLE_RADIUS*0.7){ const c=CAST.chars[p.key], diver=near.dive?0.35:0; if(Math.random()<TUNE.CPU_JUKE*(0.6+c.spd/100)+diver){ p.cjT=0.2; p.cjDir=near.y>p.y?-1:1; if(p.y<3) p.cjDir=1; if(p.y>W-3) p.cjDir=-1; trail.push({x:p.x,y:p.y,key:p.key,pose:p.pose,faceR:p.faceR,t:0.18,team:p.team}); }
+    p.cjCd=0.9; }
+  if(near && nd<TUNE.TACKLE_RADIUS+1.2 && !ballFlight && (p.pitchCd||0)<=0){ p.pitchCd=1.2;
+    const back=teamIdx(p.team).map(i=>PL[i]).find(q=>q!==p&&q.pos==='RB'&&q.down<=0&&(q.x-p.x)*dir<0.5&&dist(q,p)<12&&!foes.some(f=>dist(f,q)<4));
+    if(back && Math.random()<TUNE.CPU_PITCH){ p.act=0.3; p.actPose='run2'; p.faceR=back.x>p.x; ballFlight={t:0,T:TUNE.PITCH_FLIGHT_S,fx:p.x,fy:p.y}; carrier=PL.indexOf(back); back.breaks=0; truckCd=0.35; sfx.pitch(); msg(shortName(back.name)+' TAKES THE PITCH','bad',650); pickControlled(); return; } }
+  if(p.pitchCd>0) p.pitchCd-=dt;
+  const open=!near||nd>6; moveToward(p,p.x+p.cpuH[0]*10,p.y+p.cpuH[1]*10,TUNE.CARRIER_SPEED*(open?TUNE.CPU_SPRINT:1),dt); }
+function offenseAI(p,i,dt,claimed,c,dir){
+  if(p.assign && p.blockT>0){ p.blockT-=dt; if(Math.hypot(p.x-p.assign.x,p.y-p.assign.y)<1.6) p.blockT=0; else { moveToward(p,p.assign.x,p.assign.y,TUNE.MATE_SPEED,dt); return; } }
+  p.assign=null; if(!c) return;
+  if(p.pos==='RB'){ const ty=clamp(c.y+(c.y<W/2?5:-5),2,W-2); moveToward(p,c.x-dir*4.5,ty,TUNE.MATE_SPEED*1.04,dt); return; }   // the pitch man
+  const foe=other(p.team); let best=-1,bd=1e9;
+  for(let k=0;k<PL.length;k++){ const d=PL[k]; if(d.team!==foe||claimed.has(k)||d.down>0) continue;
+    if(p.pos==='WR' && (d.x-c.x)*dir<-1) continue;                 // wideouts lead: only men ahead of the ball
+    const dd = p.pos==='WR' ? dist(d,p) : dist(d,c); if(dd<bd){bd=dd;best=k;} }
+  if(best>=0){ claimed.add(best); const f=PL[best], a=Math.atan2(c.y-f.y,c.x-f.x); moveToward(p,f.x+Math.cos(a)*1.2,f.y+Math.sin(a)*1.2,TUNE.MATE_SPEED,dt); }
+  else moveToward(p,c.x+dir*8,p.pos==='WR'?p.offLaneY:c.y,TUNE.MATE_SPEED,dt); }
+function defenseAI(p,i,dt,c,dir,diffMult){
+  if(p.assign && p.blockT>0){ p.blockT-=dt; if(Math.hypot(p.x-p.assign.x,p.y-p.assign.y)<1.6) p.blockT=0; else { moveToward(p,p.assign.x,p.assign.y,TUNE.DEF_SPEED*diffMult,dt); return; } }
+  p.assign=null; if(!c) return;
+  const sp=(p.engaged?TUNE.DEF_SPEED*TUNE.BLOCKED_MULT*p.tklF:TUNE.DEF_SPEED)*diffMult;
+  const rank=defRankToCarrier(p), dd=dist(p,c), ahead=(p.x-c.x)*dir>-2;
+  const inLane = p.dpos!=='S' && ahead && Math.abs(c.y-p.laneY)<TUNE.LANE_WIDTH && Math.abs(p.x-c.x)<22;
+  if(rank<TUNE.PURSUERS || inLane || dd<6 || (p.dpos==='DL'&&dd<14)){
+    const lead=Math.min(1.1,dd/Math.max(4,sp))*0.6; moveToward(p,c.x+c.vx*lead,c.y+c.vy*lead,sp,dt); return; }
+  let tx,ty;
+  if(p.dpos==='DL'){ tx=c.x+dir*4; ty=lerp(c.y,p.laneY,.4); }
+  else if(p.dpos==='LB'){ tx=c.x+dir*8; ty=lerp(c.y,p.laneY,.5); }
+  else if(p.dpos==='CB'){ tx=c.x+dir*TUNE.CONTAIN_DEPTH; ty=p.laneY; }
+  else { tx=c.x+dir*TUNE.CONTAIN_DEPTH*1.7; ty=lerp(W/2,c.y,.6); }
+  moveToward(p,clamp(tx,1,TUNE.FIELD_LENGTH-1),ty,sp*0.94,dt); }
+function defRankToCarrier(p){ if(carrier<0) return 99; const c=PL[carrier], my=dist(p,c); let r=0;
+  for(const q of PL){ if(q.team!==p.team||q===p||q.down>0) continue; if(dist(q,c)<my) r++; } return r; }
+function teamRankToBall(p){ const my=Math.hypot(p.x-ball.x,p.y-ball.y); let r=0;
+  for(const q of PL){ if(q.team!==p.team||q===p) continue; if(Math.hypot(q.x-ball.x,q.y-ball.y)<my) r++; } return r; }
+function updatePlayers(dt){
+  const off=(possession==='BLUE'||possession==='RED')?possession:null, def=off?other(off):null;
+  for(const p of PL){ p.engaged=false; p.blockOn=-1; }
+  if(off){ for(let i=0;i<PL.length;i++){ const d=PL[i]; if(d.team!==def||d.down>0||d.knockT>0) continue;
+      if(d.shedT>0){ d.shedT-=dt; d.blockTime=0; continue; }
+      for(let j=0;j<PL.length;j++){ const b=PL[j]; if(b.team!==off||j===carrier||b.down>0||b.knockT>0) continue;
+        if(dist(d,b)<TUNE.BLOCK_RADIUS){ d.engaged=true; d.blockOn=j; if(b.blockOn<0) b.blockOn=i; break; } }
+      /* Blocks do not hold forever: a defender fights off his man, sooner if he is a real tackler. */
+      if(d.engaged){ d.blockTime=(d.blockTime||0)+dt; if(d.blockTime>TUNE.SHED_S*(2-d.tklF)){ d.shedT=TUNE.SHED_FREE_S; d.blockTime=0; d.engaged=false; const b=PL[d.blockOn]; if(b.blockOn===i) b.blockOn=-1; d.blockOn=-1; } }
+      else d.blockTime=Math.max(0,(d.blockTime||0)-dt); } }
+  const claimed=new Set(), diffMult=1+(scoreB+scoreR)*TUNE.DIFF_RAMP+(def==='RED'?Math.max(0,scoreB-scoreR)*TUNE.CATCH_UP:0), c=carrier>=0?PL[carrier]:null, dir=off?dirOf(off):1;
+  const order=PL.map((_,i)=>i).sort((a,b)=>(PL[a].team===off?CLAIM_PRIO[PL[a].pos]:9)-(PL[b].team===off?CLAIM_PRIO[PL[b].pos]:9));
+  for(const i of order){ const p=PL[i];
+    if(p.brkCd>0) p.brkCd-=dt;
+    if(p.knockT>0){ p.knockT-=dt; p.x+=p.kx*dt; p.y+=p.ky*dt; clampField(p); if(p.knockT<=0){ p.down=Math.max(p.down,0.5); if(Math.random()<.6) dust(p.x,p.y,4); } continue; }
+    if(p.dive){ p.dive.t-=dt; p.x+=p.dive.vx*TUNE.DIVE_SPEED*dt; p.y+=p.dive.vy*TUNE.DIVE_SPEED*dt*0.9; clampField(p);
+      if(p.dive.t<=0){ p.dive=null; p.down=TUNE.DIVE_DOWN_S; p.downPose='slide'; dust(p.x,p.y,5); } continue; }
+    if(p.down>0){ p.down-=dt; continue; }
+    if(p.stagger>0){ p.stagger-=dt; continue; }
+    if(i===controlled){ applyInput(p,dt); continue; }
+    if(!off){ const rank=teamRankToBall(p); moveToward(p,ball.x,ball.y,rank<3?TUNE.CHASE_SPEED:TUNE.MATE_SPEED*0.6,dt); continue; }
+    if(p.team===off){ if(i===carrier) cpuCarrier(p,dt); else offenseAI(p,i,dt,claimed,c,dir); }
+    else defenseAI(p,i,dt,c,dir,diffMult); }
+  resolveBodies(); velocities(dt);
+  // pads: a little dust where a block is being fought
+  if(off) for(const p of PL){ if(p.team===off && p.blockOn>=0 && Math.random()<dt*3){ const d=PL[p.blockOn]; dust((p.x+d.x)/2,(p.y+d.y)/2,2); } } }
+function velocities(dt){ if(dt<=0) return; for(const p of PL){ p.vx=p.lx==null?0:(p.x-p.lx)/dt; p.vy=p.ly==null?0:(p.y-p.ly)/dt; p.lx=p.x; p.ly=p.y; } }
+/* Solid bodies: no two players overlap, so nobody runs through anybody. A
+   man on the ground is under the play, not in it. */
+function resolveBodies(){ const minD=TUNE.BODY_RADIUS*2, minD2=minD*minD;
+  for(let i=0;i<PL.length;i++){ const a=PL[i]; if(a.knockT>0||a.down>0||a.dive) continue;
+    for(let j=i+1;j<PL.length;j++){ const b=PL[j]; if(b.knockT>0||b.down>0||b.dive) continue;
+      let dx=b.x-a.x, dy=b.y-a.y; const d2=dx*dx+dy*dy; if(d2>=minD2) continue;
+      const d=Math.sqrt(d2)||0.0001, push=(minD-d)/2; dx/=d; dy/=d; a.x-=dx*push; a.y-=dy*push; b.x+=dx*push; b.y+=dy*push; } }
+  for(const p of PL) clampField(p); }
+
+/* ---------------- score ---------------- */
+function checkScore(){ if(possession==='LOOSE'||carrier<0) return; const p=PL[carrier];
+  if(p.team==='BLUE'&&p.x>=goalLine('BLUE')) doScore('BLUE'); else if(p.team==='RED'&&p.x<=goalLine('RED')) doScore('RED'); }
+function doScore(t){ const p=PL[carrier]; truck=null; ballFlight=null;
+  sfx.whistle(); sfx.score(); shake(1.1,600); burst(p.x,p.y,[TEAM[t],'#ffd34d','#ffffff'],30,8); haptic([60,40,60,40,120]); pump(1);
+  if(t==='BLUE'){ scoreB++; STATS.tds++; } else scoreR++;
+  for(const q of PL){ q.cheer=TUNE.CUTIN_S; q.cheerPose = q.team===t ? 'cheer' : 'back'; q.dive=null; q.knockT=0; }
+  cutin={t:0,team:t,key:p.key,name:p.name,num:p.num,pos:p.pos}; phase='SCORE'; possStartX=null; updateButtons(true); }
+function afterScore(){ const t=cutin.team; cutin=null;
+  if(scoreB>=TUNE.WIN_SCORE||scoreR>=TUNE.WIN_SCORE){ endGame(); return; }
+  beginSetup(other(t)); }                                        // the side that conceded receives
+function endGame(){ gameOver=true; phase='OVER'; const win=scoreB>scoreR;
+  for(const q of PL){ q.cheer=1e9; q.cheerPose=(q.team==='BLUE')===win?'cheer':'back'; }
+  document.getElementById('overKick').textContent='FINAL · '+PARK.park.toUpperCase();
+  document.getElementById('overTitle').textContent=win?'YOU WIN':shortClub(CLUB.name)+' WIN';
+  document.getElementById('overTitle').style.color=win?'#8ff0a0':'#ff8a6b';
+  document.getElementById('overSub').textContent='You '+scoreB+' · '+CLUB.name+' '+scoreR;
+  const oc=document.getElementById('overCast'); oc.innerHTML='';
+  for(const q of teamPlayers(win?'BLUE':'RED')) oc.appendChild(mugCanvas(q.key,'cheer'));
+  const cells=[['longest','LONGEST RUN','yd'],['trucks','TRUCKS',''],['jukes','JUKES',''],['takeaways','TAKEAWAYS',''],['giveaways','GIVEAWAYS',''],['tds','TOUCHDOWNS','']];
+  document.getElementById('overStats').innerHTML=cells.map(([k,l,u])=>`<div class="stat"><div class="n">${STATS[k]}${u?'<span style="font-size:13px">'+u+'</span>':''}</div><div class="l">${l}</div></div>`).join('');
+  showControls(false); document.getElementById('setupBar').style.display='none';
+  document.getElementById('over').style.display='flex'; }
+
+/* ---------------- poses ---------------- */
+function updatePoses(dt){
+  for(let i=0;i<PL.length;i++){ const p=PL[i]; if(!p.key) continue;
+    if(p.flashT>0) p.flashT-=dt;
+    if(Math.abs(p.vx)>0.5 && p.act<=0 && p.blockOn<0 && !(p.knockT>0||p.down>0)) p.faceR=p.vx>0;
+    const sp=Math.hypot(p.vx,p.vy); let pose='back';
+    if(p.cheer>0){ p.cheer-=dt; pose=p.cheerPose; }
+    else if(p.knockT>0||p.down>0||p.dive){ pose='slide'; if(!p.dive) p.faceR=p.fallR; }
+    else if(p.stagger>0) pose=sideStand(p.faceR);
+    else if(p.act>0){ p.act-=dt; pose=p.actPose==='catch'?sideStand(p.faceR):p.actPose; }
+    else if(phase==='KICK' && i===kickReceiver && kick && !kick.caught && kick.kicked){ pose=sideStand(p.faceR); }
+    else if(phase==='PLAY' && p.blockOn>=0){ pose='run'+(1+(Math.floor(simTime*5+i*0.7)%4)); p.faceR=PL[p.blockOn].x>p.x; }   // churning his legs into his man
+    else if(sp>1.2 && (phase==='PLAY'||phase==='KICK')){ p.stride+=sp*dt; pose='run'+(1+(Math.floor(p.stride/1.15)%4)); }
+    else pose=sideStand(p.faceR);
+    p.pose=pose; } }
+
+/* ---------------- drawing ---------------- */
+const ellCache=new Map();
+function ellImg(rx,ry,color,th){ rx=Math.max(2,Math.round(rx)); ry=Math.max(1,Math.round(ry)); const k=rx+'|'+ry+'|'+color+'|'+th; let c=ellCache.get(k); if(c) return c;
+  const pd=1+(th||0); c=document.createElement('canvas'); c.width=2*(rx+pd); c.height=2*(ry+pd); const g=c.getContext('2d'); g.fillStyle=color;
+  if(!th){ for(let y=-ry;y<=ry;y++){ const hw=Math.round(rx*Math.sqrt(Math.max(0,1-(y/ry)*(y/ry)))); g.fillRect(rx+pd-hw,ry+pd+y,2*hw,1); } }
+  else { const n=Math.ceil(Math.PI*2*Math.max(rx,ry))*2; for(let a=0;a<n;a++){ const t=a/n*Math.PI*2; g.fillRect(Math.round(rx+pd+Math.cos(t)*rx-th/2),Math.round(ry+pd+Math.sin(t)*ry-th/2),th,th); } }
+  if(ellCache.size>300) ellCache.clear(); ellCache.set(k,c); return c; }
+function drawEll(x,y,rx,ry,color,th){ const im=ellImg(rx,ry,color,th); ctx.drawImage(im,Math.round(x-im.width/2),Math.round(y-im.height/2)); }
+function pxLine(x0,y0,x1,y1,t,color){ ctx.fillStyle=color; x0=Math.round(x0); y0=Math.round(y0); x1=Math.round(x1); y1=Math.round(y1);
+  const dx=Math.abs(x1-x0), sx=x0<x1?1:-1, dy=-Math.abs(y1-y0), sy=y0<y1?1:-1; let err=dx+dy, n=0;
+  for(;;){ ctx.fillRect(x0-(t>>1),y0-(t>>1),t,t); if((x0===x1&&y0===y1)||++n>4000) break; const e2=2*err; if(e2>=dy){ err+=dy; x0+=sx; } if(e2<=dx){ err+=dx; y0+=sy; } } }
+function arrow(x0,y0,x1,y1,color,t){ pxLine(x0,y0,x1,y1,t,color); const a=Math.atan2(y1-y0,x1-x0), L=7+t*2;
+  for(const s of [-0.55,0.55]) pxLine(x1,y1,x1-Math.cos(a+s)*L,y1-Math.sin(a+s)*L,t,color); }
+function tag(text,x,y,bg,fg,sc){ const im=textImg(text,sc,fg); const w=im.width+4*sc, h=im.height+3*sc;
+  const X=Math.round(x-w/2), Y=Math.round(y-h); ctx.fillStyle='#0b1830'; ctx.fillRect(X-1,Y-1,w+2,h+2); ctx.fillStyle=bg; ctx.fillRect(X,Y,w,h);
+  ctx.drawImage(im,X+2*sc,Y+Math.round(1.5*sc)); return {X,Y,w,h}; }
+function drawSprite(p,i){ const z=cam.z, x=SX(p.x), y=SY(p.y), n=Math.round(SPR_N*z);
+  const gold = i===carrier && possession!=='LOOSE' && phase!=='SETUP';
+  const img=spr(p.key,p.pose,p.faceR,p.flashT>0?'FLASH':gold?'#ffd34d':TEAM[p.team]);
+  const foot=Math.round((frameBox(p.key,p.pose).bottom+2)*z), lift=p.dive?Math.round(8*z):0;
+  let bob=0; if(p.still && Math.hypot(p.vx,p.vy)>1.2) bob=Math.round(Math.abs(Math.sin(p.stride*2.2))*3*z);
+  ctx.drawImage(img,x-(n>>1),y-foot-bob-lift,n,n); }
+/* Height of a man's figure above his feet in screen pixels, for tags and rings. */
+const figH=p=>Math.round(frameBox(p.key,p.pose).h*cam.z);
+function ballScreen(){ if(ballFlight){ const t=clamp(ballFlight.t/ballFlight.T,0,1), r=PL[carrier];
+    return {x:lerp(ballFlight.fx,r.x,t), y:lerp(ballFlight.fy,r.y,t), h:1.1+Math.sin(Math.PI*t)*1.4}; }
+  if((possession==='BLUE'||possession==='RED') && carrier>=0 && phase!=='SETUP'){ const c=PL[carrier]; return {x:c.x,y:c.y,h:1.1,carried:c}; }
+  return {x:ball.x,y:ball.y,h:ball.h}; }
+function drawBall(b){ const z=cam.z; let x=SX(b.x), y=SY(b.y,b.h);
+  if(b.carried){ const c=b.carried; y=SY(c.y)-Math.round(figH(c)*0.42); x+=Math.round((c.faceR?9:-9)*z); }
+  const fr = b.carried ? 0 : ((Math.floor(Math.abs(ball.spin)/1.2))%4+4)%4, im=BALL_IMG[fr];
+  const w=Math.max(1,Math.round(im.width*z*(z<1?1:1))), h=Math.max(1,Math.round(im.height*z));
+  ctx.drawImage(im,x-(w>>1),y-(h>>1),w,h); }
+function drawGoalpost(xw){ const z=cam.z, bx=SX(xw), by=SY(W/2), ch=Math.round(3.3*PHz), up=Math.round(6*PHz), sk=Math.round(3.1*PYz), t=Math.max(1,Math.round(3*z));
+  const col='#f4c25a', dk='#b8862a';
+  ctx.fillStyle=dk; ctx.fillRect(bx-t,by-ch,t*2,ch); ctx.fillStyle=col; ctx.fillRect(bx-t,by-ch,t,ch);
+  pxLine(bx-sk,by-ch+sk*0.35,bx+sk,by-ch-sk*0.35,t,col);
+  for(const s of [-1,1]){ const ux=bx+s*sk, uy=by-ch-s*sk*0.35; ctx.fillStyle=col; ctx.fillRect(ux-(t>>1),uy-up,t,up); ctx.fillStyle=dk; ctx.fillRect(ux-(t>>1),uy-up,1,up); } }
+let skyKey='', skyGrad=null;
+function drawSky(){ const k=PARK.park+'|'+VH; if(k!==skyKey){ skyKey=k; skyGrad=ctx.createLinearGradient(0,0,0,VH);
+    skyGrad.addColorStop(0,shade(PARK.sky,-.22)); skyGrad.addColorStop(0.7,PARK.sky); skyGrad.addColorStop(1,shade(PARK.sky,.3)); }
+  ctx.fillStyle=skyGrad; ctx.fillRect(0,0,VW,VH);
+  const top=SY(W+FAR)-Math.round(STANDS_H*cam.z);
+  if(top>0 && CLOUD){ const span=VW+120; for(let i=0;i<6;i++){ const X=((i*173+simTime*4-cam.x*PX*0.15)%span+span)%span-60;
+    const Y=Math.round(top*(0.15+0.12*(i%3))); if(Y+14<top) ctx.drawImage(CLOUD,Math.round(X),Y); } } }
+function drawJumbo(standsTop){ const z=cam.z; const X=SX(-MARGIN_X)+Math.round(JUMBO.x*z), Y=standsTop+Math.round(JUMBO.y*z), w=Math.round(JUMBO.w*z), h=Math.round(JUMBO.h*z);
+  if(X+w<0||X>VW||Y+h<0||Y>VH||z<0.99) return;
+  const blink=Math.floor(simTime*4)%2===0;
+  let line1=abbr3(CLUB.name)+' '+scoreR, line0='YOU '+scoreB, col='#ffd34d';
+  if(phase==='SCORE'&&cutin&&blink){ line0='TOUCH'; line1='DOWN!'; col=cutin.team==='BLUE'?'#8ff0a0':'#ff8a6b'; }
+  else if(possession==='LOOSE'&&blink){ line0='LOOSE'; line1='BALL!'; col='#ff8a6b'; }
+  drawText(ctx,line0,X+(w>>1),Y+Math.round(h*0.14),1,col,'center');
+  drawText(ctx,line1,X+(w>>1),Y+Math.round(h*0.14)+10,1,col,'center');
+  ctx.fillStyle='rgba(255,255,255,.05)'; for(let yy=Y;yy<Y+h;yy+=2) ctx.fillRect(X,yy,w,1); }
+
+function render(dt){
+  const z=cam.z; PXz=PX*z; PYz=PY*z; PHz=PH*z; ctx.imageSmoothingEnabled=false;
+  if(!FIELD_IMG){ ctx.fillStyle='#0a1628'; ctx.fillRect(0,0,VW,VH); return; }
+  drawSky();
+  const left=SX(-MARGIN_X), fieldTop=SY(W+FAR), fw=Math.round(FIELD_IMG.width*z), fh=Math.round(FIELD_IMG.height*z), sh=Math.round(STANDS_H*z);
+  ctx.imageSmoothingEnabled = z<0.99;
+  ctx.drawImage(STANDS[crowdFrame],left,fieldTop-sh,fw,sh);
+  ctx.drawImage(FIELD_IMG,left,fieldTop,fw,fh);
+  ctx.imageSmoothingEnabled=false;
+  drawJumbo(fieldTop-sh);
+  if(hype>0.45){ ctx.fillStyle='#ffffff'; for(let k=0;k<3;k++){ if(Math.random()<hype) ctx.fillRect((Math.random()*VW)|0,Math.max(0,fieldTop-sh)+((Math.random()*sh)|0),1,1); } }
+
+  // decals on the grass
+  if(phase==='SETUP'||(phase==='KICK'&&!kick.caught)){ const pulse=0.55+0.35*Math.abs(Math.sin(simTime*3.5));
+    ctx.globalAlpha=pulse; drawEll(SX(landing.x),SY(landing.y),LAND_R*PXz,LAND_R*PYz,'#ffcf4d',Math.max(2,Math.round(3*z))); ctx.globalAlpha=1; }
+  if(phase==='SETUP'){ for(const i of teamIdx('BLUE')){ const p=PL[i], t=i===drawingIdx?previewPt:blockAssign[i]; if(!t||i===kickReceiverCandidate()) continue;
+      arrow(SX(p.x),SY(p.y)-2,SX(t.x),SY(t.y),'#ffd34d',2); } }
+  if(phase==='SETUP'||(phase==='KICK'&&!kick.kicked)){ ctx.fillStyle='#ff7a1a'; const tx=SX(kickSpot.x), ty=SY(kickSpot.y); ctx.fillRect(tx-2,ty-2,4,3); }
+  // shadows and team rings
+  for(let i=0;i<PL.length;i++){ const p=PL[i]; if(!p.key) continue; const x=SX(p.x), y=SY(p.y);
+    drawEll(x,y+1,11*z,3.5*z,'rgba(0,0,0,.28)',0);
+    if(phase!=='MENU'&&phase!=='OVER'){ const gold=i===carrier&&possession!=='LOOSE'&&phase==='PLAY'; ctx.globalAlpha=0.9;
+      drawEll(x,y+1,12*z,4*z,gold?'#ffd34d':TEAM[p.team],Math.max(1,Math.round(z))); ctx.globalAlpha=1; } }
+  if(phase==='PLAY'&&controlled>=0){ const p=PL[controlled]; drawEll(SX(p.x),SY(p.y)+1,14*z,5*z,'#ffffff',2); }
+  // the tackler about to hit you
+  if(phase==='PLAY'&&possession==='BLUE'&&carrier>=0){ const c=PL[carrier]; let n=-1,nd=7;
+    for(const i of teamIdx('RED')){ const p=PL[i]; if(p.engaged||p.down>0) continue; const d=dist(p,c); if(d<nd){nd=d;n=i;} }
+    if(n>=0){ const p=PL[n]; ctx.globalAlpha=0.5+0.4*Math.abs(Math.sin(simTime*9)); drawEll(SX(p.x),SY(p.y)+1,14*z,5*z,'#ff5a4a',2); ctx.globalAlpha=1; } }
+  // ball shadow
+  const b=ballScreen(); if(!b.carried){ const s=clamp(1-b.h/18,0.35,1); drawEll(SX(b.x),SY(b.y)+1,5*z*s,2*z*s,'rgba(0,0,0,.32)',0); }
+  // juke afterimages
+  for(let k=trail.length-1;k>=0;k--){ const t=trail[k]; t.t-=dt; if(t.t<=0){ trail.splice(k,1); continue; }
+    ctx.globalAlpha=t.t/0.18*0.45; const im=spr(t.key,t.pose,t.faceR,TEAM[t.team||'BLUE']), n=Math.round(SPR_N*z);
+    ctx.drawImage(im,SX(t.x)-(n>>1),SY(t.y)-Math.round((frameBox(t.key,t.pose).bottom+2)*z),n,n); ctx.globalAlpha=1; }
+
+  // everything that stands up, far side first
+  const ents=[]; for(let i=0;i<PL.length;i++) if(PL[i].key) ents.push({y:PL[i].y,x:PL[i].x,k:'p',i});
+  ents.push({y:W/2+0.01,k:'g',x:-1},{y:W/2+0.01,k:'g',x:TUNE.FIELD_LENGTH+1});
+  if(!b.carried) ents.push({y:b.y-0.05,k:'b'});
+  ents.sort((a,b2)=>b2.y-a.y);
+  for(const e of ents){ if(e.k==='p'){ const p=PL[e.i]; drawSprite(p,e.i); if(b.carried===p) drawBall(b); }
+    else if(e.k==='g') drawGoalpost(e.x); else drawBall(b); }
+
+  // particles
+  for(const p of FX){ ctx.fillStyle=p.color; const s=Math.max(1,Math.round(p.s*z)); ctx.fillRect(SX(p.x),SY(p.y,p.h),s,s); }
+  drawOverlays();
+  if(PARK.snow){ ctx.fillStyle='#ffffff'; for(const f of snow){ f.y+=f.v*dt; if(f.y>1) f.y-=1; const X=((f.x*VW+Math.sin(simTime+f.d)*6-cam.x*PX*0.3)%VW+VW)%VW; ctx.fillRect(X|0,(f.y*VH)|0,f.d>3?2:1,f.d>3?2:1); } }
+  drawHUD();
+  if(banner) drawBanner(dt);
+  if(cutin) drawCutin(); }
+
+function kickReceiverCandidate(){ if(recvTeam!=='BLUE') return -1; let b=-1,bd=LAND_R+0.01; for(const i of teamIdx('BLUE')){ const d=Math.hypot(PL[i].x-landing.x,PL[i].y-landing.y); if(d<bd){bd=d;b=i;} } return b; }
+
+function drawOverlays(){ const z=cam.z, s=UI_S;
+  // formation labels
+  if(phase==='SETUP'){ const rIdx=kickReceiverCandidate();
+    for(let i=0;i<PL.length;i++){ const p=PL[i]; const mine=p.team==='BLUE';
+      const kicking = p.team!==recvTeam; let lab = kicking ? (p.isK?'K':p.dpos) : p.pos; if(mine&&i===rIdx) lab='KR';
+      tag(lab,SX(p.x),SY(p.y)+Math.round(4+7*Math.max(1,s-1))+4,mine?shade(TEAM.BLUE,-.35):shade(TEAM.RED,-.35),'#fffcf2',Math.max(1,s-1)); } }
+  if(phase!=='PLAY') return;
+  // who you are: a number tag over your man
+  if(controlled>=0){ const p=PL[controlled], x=SX(p.x), top=SY(p.y)-figH(p)-4-(p.dive?Math.round(8*z):0);
+    const bob=Math.round(Math.sin(simTime*6)*1.5); const r=tag(String(p.num),x,top-4+bob,shade(TEAM.BLUE,-.2),'#ffffff',Math.max(1,s-1));
+    ctx.fillStyle='#0b1830'; ctx.fillRect(x-3,r.Y+r.h+1,7,1); ctx.fillRect(x-2,r.Y+r.h+2,5,1); ctx.fillStyle=shade(TEAM.BLUE,-.2); ctx.fillRect(x-2,r.Y+r.h+1,5,1); ctx.fillRect(x-1,r.Y+r.h+2,3,1);
+    if(possession==='BLUE' && stamina<0.985){ const w=24, X=x-12, Y=SY(p.y)+5; ctx.fillStyle='#0b1830'; ctx.fillRect(X-1,Y-1,w+2,5);
+      ctx.fillStyle=winded?'#ff5a4a':'#ffd34d'; ctx.fillRect(X,Y,Math.round(w*stamina),3); } }
+  // the CPU carrier: a red flag so you always know who to hit
+  if(possession==='RED'&&carrier>=0){ const c=PL[carrier], x=SX(c.x), top=SY(c.y)-figH(c)-6+Math.round(Math.sin(simTime*8)*2);
+    ctx.fillStyle='#0b1830'; ctx.fillRect(x-4,top-6,9,6); ctx.fillStyle='#ff5a4a'; ctx.fillRect(x-3,top-5,7,1); ctx.fillRect(x-2,top-4,5,1); ctx.fillRect(x-1,top-3,3,1); ctx.fillRect(x,top-2,1,1); }
+  // the loose ball: an arrow over it, or at the edge of the screen pointing to it
+  if(possession==='LOOSE'){ const bx=SX(ball.x), by=SY(ball.y,ball.h); const on=bx>8&&bx<VW-8&&by>20&&by<VH-8;
+    if(on){ const t=by-14-Math.round(Math.abs(Math.sin(simTime*8))*4); ctx.fillStyle='#ffd34d';
+      for(let r=0;r<4;r++) ctx.fillRect(bx-3+r,t+r,7-2*r,1); }
+    else { const ex=clamp(bx,10,VW-10), ey=clamp(by,30,VH-12); tag('BALL',ex,ey,'#cf3229','#fffcf2',Math.max(1,s-1)); } }
+  // the truck ring
+  if(truck&&carrier>=0){ const c=PL[carrier], x=SX(c.x), y=SY(c.y)-Math.round(figH(c)/2), lead=TUNE.TRUCK_PROMPT_LEAD_MS, tot=lead+truckWindow();
+    const p=clamp(truck.t/tot,0,1), inWin=truck.t>=lead&&truck.t<=tot, r=Math.round(lerp(48,20,p)), col=inWin?'#8ff0a0':'#ffcf4d';
+    drawEll(x,y,r+1,r+1,'#0b1830',4); drawEll(x,y,r,r,col,3); drawEll(x,y,18,18,'rgba(255,252,242,.18)',0);
+    const lab=inWin?'NOW!':'TRUCK'; drawText(ctx,lab,x,y-r-9*s,s,inWin?'#8ff0a0':'#fffcf2','center','#0b1830'); } }
+
+function drawHUD(){ if(phase==='MENU'||phase==='OVER') return; const s=UI_S, pad=2*s, g=ctx;
+  const you='YOU '+scoreB, them=scoreR+' '+(CLUB?shortClub(CLUB.name).slice(0,10):'CPU');
+  const wy=textW(you,s), wt=textW(cleanText(them),s), mid=5*s, chip=3*s;
+  const total=chip+pad+wy+pad+mid+pad+wt+pad+chip, X=Math.round(VW/2-total/2), Y=3*s, H=7*s+2*pad;
+  g.fillStyle='#0b1830'; g.fillRect(X-1,Y-1,total+2+pad*2,H+2+s); g.fillStyle='#16294a'; g.fillRect(X,Y,total+pad*2,H);
+  g.fillStyle='#fffcf2'; g.fillRect(X,Y,total+pad*2,1);
+  let cx=X+pad; g.fillStyle=TEAM.BLUE; g.fillRect(cx,Y+pad,chip,7*s); cx+=chip+pad; drawText(g,you,cx,Y+pad,s,'#fffcf2'); cx+=wy+pad;
+  if(possession==='BLUE'||possession==='RED'){ const im=BALL_IMG[0]; const bw=im.width*Math.max(1,s-1), bh=im.height*Math.max(1,s-1);
+    g.drawImage(im, possession==='BLUE'? cx-1 : cx+mid-bw+1, Y+pad+((7*s-bh)>>1), bw, bh); }
+  else drawText(g,'·',cx+(mid>>1),Y+pad,s,'#8aa0bf','center');
+  cx+=mid+pad; drawText(g,them,cx,Y+pad,s,'#fffcf2'); cx+=wt+pad; g.fillStyle=TEAM.RED; g.fillRect(cx,Y+pad,chip,7*s);
+  // status line
+  let st='', col='#fffcf2', bg='#1b3a5c';
+  if(phase==='SETUP') { st = recvTeam==='BLUE' ? 'KICKOFF · YOU RECEIVE' : 'KICKOFF · YOU KICK'; bg='#1b3a5c'; }
+  else if(phase==='KICK') st = kick&&kick.kicked ? 'BALL IN THE AIR' : 'KICKOFF';
+  else if(phase==='PLAY'){ if(possession==='LOOSE'){ st='BALL LOOSE!'; bg=Math.floor(simTime*6)%2?'#cf3229':'#8a1f18'; }
+    else if(possession==='BLUE'&&carrier>=0){ const c=PL[carrier]; st=shortName(c.name)+' #'+c.num+' · '+Math.max(0,Math.round(goalLine('BLUE')-c.x))+' TO GO'; bg=shade(TEAM.BLUE,-.45); }
+    else if(carrier>=0){ const c=PL[carrier]; st='STOP '+shortName(c.name)+' · '+Math.max(0,Math.round(c.x-goalLine('RED')))+' TO GO'; bg=shade(TEAM.RED,-.45); } }
+  if(st){ const ss=Math.max(1,s-1), im=textImg(st,ss,col), w=im.width+6*ss, h=im.height+4*ss, x=Math.round(VW/2-w/2), y=Y+H+2*s+1;
+    g.fillStyle='#0b1830'; g.fillRect(x-1,y-1,w+2,h+2); g.fillStyle=bg; g.fillRect(x,y,w,h); g.drawImage(im,x+3*ss,y+2*ss); }
+  if(phase==='PLAY'&&timeScale<0.8){ g.fillStyle='rgba(10,22,40,.18)'; g.fillRect(0,0,VW,VH); } }
+function drawBanner(dt){ const b=banner; b.t+=dt; if(b.t>b.dur){ banner=null; return; }
+  const big=b.cls==='big', s=UI_S*(big?3:2), col = b.cls==='good'?'#8ff0a0' : b.cls==='bad'?'#ff8a6b' : big?'#ffd34d':'#fffcf2';
+  const fit=Math.max(UI_S,Math.min(s,Math.floor((VW-16)/Math.max(1,textW(cleanText(b.text),1)+6)))); const pop=b.t<0.08?1:0;
+  const y=Math.round(VH*0.3)-(pop?2*UI_S:0), a=b.t>b.dur-0.15?(b.dur-b.t)/0.15:1;
+  ctx.globalAlpha=clamp(a,0,1); drawText(ctx,b.text,VW/2,y,fit+pop,col,'center','#0b1830',1); ctx.globalAlpha=1; }
+function drawCutin(){ const c=cutin, t=c.t, D=TUNE.CUTIN_S; const inT=0.22, outT=0.25;
+  const slide = t<inT ? 1-t/inT : t>D-outT ? -(t-(D-outT))/outT : 0; const ox=Math.round(slide*VW);
+  const cb=frameBox(c.key,'cheer'), cs=Math.max(1,Math.min(5,Math.floor(VH*0.40/cb.h))), ph=cs*cb.h+Math.round(VH*0.08), py=Math.round(VH*0.52-ph/2);
+  const col=TEAM[c.team];
+  ctx.fillStyle='#0b1830'; ctx.fillRect(ox,py-4,VW,ph+8);
+  ctx.fillStyle=shade(col,-.25); ctx.fillRect(ox,py,VW,ph);
+  ctx.fillStyle=shade(col,-.08); const off=Math.floor(simTime*160)%28; for(let x=-ph-28+off;x<VW;x+=28){ for(let y=0;y<ph;y++){ const X=ox+x+y; if(X>=ox&&X<ox+VW) ctx.fillRect(X,py+y,12,1); } }
+  ctx.fillStyle='#ffd34d'; ctx.fillRect(ox,py,VW,2); ctx.fillRect(ox,py+ph-2,VW,2);
+  const im=spr(c.key,'cheer',false,'#0b1830'), fw=cb.right-cb.left+3, fh=cb.h+2;
+  const n=fw*cs, sxp=ox+Math.round(VW*0.06), syp=py+ph-fh*cs-Math.round(VH*0.03)+Math.round(Math.abs(Math.sin(t*9))*-3*cs);
+  ctx.drawImage(im,cb.left,cb.top,fw,fh,sxp,syp,n,fh*cs);
+  const tx=sxp+n+Math.round(VW*0.03), room=VW-(tx-ox)-8, word=c.team==='BLUE'?'TOUCHDOWN!':'TOUCHDOWN';
+  const line2=cleanText(c.name)+' #'+c.num, line3='YOU '+scoreB+' · '+shortClub(CLUB.name)+' '+scoreR;
+  /* Three lines sized to the room beside the sprite AND to the panel's height. */
+  const fitS=(str,cap,hFrac)=>Math.max(1,Math.min(cap,Math.floor(room/Math.max(1,textW(str,1)+2)),Math.floor(ph*hFrac/9)));
+  const s1=fitS(word,UI_S*4,0.42), s2=fitS(line2,UI_S*2,0.2), s3=fitS(line3,UI_S*2,0.2), gap=Math.max(2,UI_S*2);
+  const blockH=9*s1+9*s2+9*s3+2*gap; let yy=py+Math.round((ph-blockH)/2);
+  drawText(ctx,word,tx,yy,s1,'#ffd34d','left','#0b1830',1); yy+=9*s1+gap;
+  drawText(ctx,line2,tx,yy,s2,'#fffcf2','left','#0b1830'); yy+=9*s2+gap;
+  drawText(ctx,line3,tx,yy,s3,'#fffcf2','left','#0b1830');
+  if(t<D-outT) for(let k=0;k<3;k++) FX.push({x:cam.x+rand(-VW/2,VW/2)/PXz,y:cam.y+rand(-2,VH/2/PYz),h:rand(4,8),vx:rand(-1,1),vy:0,vh:rand(0,2),life:1.4,color:[TEAM.BLUE,TEAM.RED,'#ffd34d','#ffffff'][k%4],s:2,g:4}); }
+
+/* ---------------- the loop ---------------- */
+let lastT=performance.now();
+function tick(now){ requestAnimationFrame(tick); let dt=(now-lastT)/1000; lastT=now; if(!(dt>0)) dt=0; if(dt>0.05) dt=0.05;
+  simTime+=dt; update(dt); render(dt); }
+function update(dt){
+  hype=Math.max(0,hype-dt*0.35); crowdT-=dt; if(crowdT<=0){ crowdFrame=hype>0.35?1-crowdFrame:(Math.random()<.2?1:0); crowdT=hype>0.35?0.13:0.7; }
+  if(phase==='MENU'){ velocities(dt); updatePoses(dt); }
+  else if(phase==='SETUP'){ velocities(dt); updatePoses(dt); }
+  else if(phase==='KICK'){ updateKick(dt); updatePoses(dt); }
+  else if(phase==='PLAY'){
+    const wantSlow = truck && truck.t>=TUNE.TRUCK_PROMPT_LEAD_MS*0.5;
+    timeScale += ((wantSlow?TUNE.SLOWMO:1)-timeScale)*Math.min(1,dt*14); const sdt=dt*timeScale;
+    if(truckCd>0) truckCd-=sdt; if(latCd>0) latCd-=sdt; if(jukeCd>0) jukeCd-=sdt; if(diveCd>0) diveCd-=sdt;
+    if(possession!=='BLUE' || !sprinting) stamina=Math.min(1,stamina+TUNE.STAMINA_REGEN*sdt*(possession==='BLUE'?1:1.5));
+    if(ballFlight){ ballFlight.t+=sdt; if(ballFlight.t>=ballFlight.T){ ballFlight=null; sfx.catch(); } }
+    pickControlled(); updatePlayers(sdt);
+    if(possession==='LOOSE') updateLooseBall(sdt);
+    else { updateContact(); updateTruck(sdt); if(phase==='PLAY') checkScore(); }
+    if(carrier>=0){ ball.x=PL[carrier].x; ball.y=PL[carrier].y; ball.h=1.1; }
+    if(possession==='BLUE' && possStartX!=null && carrier>=0){ const gain=Math.round(PL[carrier].x-possStartX); if(gain>STATS.longest) STATS.longest=gain; }
+    updatePoses(dt); }
+  else if(phase==='SCORE'){ cutin.t+=dt; updatePoses(dt); if(cutin.t>=TUNE.CUTIN_S) afterScore(); }
+  else if(phase==='OVER'){ updatePoses(dt); }
+  updateFX(dt); updateCamera(dt); updateButtons(); }
+
+/* ---------------- the controller ---------------- */
+let btnMode='';
+function updateButtons(force){ const m = phase==='PLAY' ? (possession==='BLUE'?'off':'def') : 'idle'; if(m===btnMode && !force) return; btnMode=m;
+  const a=document.getElementById('aBtn'), b=document.getElementById('bBtn'), c=document.getElementById('cBtn');
+  if(m==='def'){ a.innerHTML='DIVE<small>A</small>'; b.innerHTML='SWITCH<small>B</small>'; c.classList.add('gone'); }
+  else { a.innerHTML='TRUCK<small>A</small>'; b.innerHTML='JUKE<small>B</small>'; c.innerHTML='PITCH<small>C</small>'; c.classList.remove('gone'); }
+  for(const e of [a,b,c]) e.classList.toggle('off', m==='idle'); }
+const keys={};
+addEventListener('keydown',e=>{ if(e.repeat) return; keys[e.code]=true; audioResume();
+  if(e.code==='Space'||e.code==='KeyJ'){ e.preventDefault(); pressA(); }
+  if(e.code==='KeyE'||e.code==='KeyK'||e.code==='KeyQ'){ e.preventDefault(); pressB(); }
+  if(e.code==='ShiftLeft'||e.code==='ShiftRight'||e.code==='KeyL'){ e.preventDefault(); pressC(); }
+  if(e.code==='Enter' && phase==='SETUP'){ e.preventDefault(); kickoff(); }
+  if(e.code.startsWith('Arrow')) e.preventDefault(); keySteer(); });
+addEventListener('keyup',e=>{ keys[e.code]=false; keySteer(); });
+function keySteer(){ let x=0,y=0; if(keys.KeyA||keys.ArrowLeft) x-=1; if(keys.KeyD||keys.ArrowRight) x+=1; if(keys.KeyW||keys.ArrowUp) y+=1; if(keys.KeyS||keys.ArrowDown) y-=1;
+  if(stickId==null){ input.x=x; input.y=y; } }
+const stick=document.getElementById('stick'), nub=document.getElementById('nub'); let stickId=null;
+function stickAt(e){ const r=stick.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2, max=r.width*0.34;
+  let dx=e.clientX-cx, dy=e.clientY-cy; const d=Math.hypot(dx,dy); if(d>max){ dx=dx/d*max; dy=dy/d*max; }
+  nub.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`; input.x=dx/max; input.y=-dy/max; }
+stick.addEventListener('pointerdown',e=>{ e.preventDefault(); stickId=e.pointerId; try{ stick.setPointerCapture(e.pointerId); }catch(_){} audioResume(); stickAt(e); });
+stick.addEventListener('pointermove',e=>{ if(e.pointerId===stickId) stickAt(e); });
+const stickEnd=e=>{ if(e.pointerId!==stickId) return; stickId=null; input.x=0; input.y=0; nub.style.transform='translate(-50%,-50%)'; keySteer(); };
+stick.addEventListener('pointerup',stickEnd); stick.addEventListener('pointercancel',stickEnd);
+for(const [id,fn] of [['aBtn',pressA],['bBtn',pressB],['cBtn',pressC]]){ const el=document.getElementById(id);
+  el.addEventListener('pointerdown',e=>{ e.preventDefault(); el.classList.add('down'); audioResume(); fn(); });
+  for(const ev of ['pointerup','pointercancel','pointerleave']) el.addEventListener(ev,()=>el.classList.remove('down')); }
+addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ---------------- setup: drag your pieces, draw their first move ---------------- */
+function toWorld(e){ const r=canvas.getBoundingClientRect(); const px=(e.clientX-r.left)*VW/r.width, py=(e.clientY-r.top)*VH/r.height;
+  return { x:cam.x+(px-VW/2-cam.sx)/(PX*cam.z), y:cam.y-(py-VH/2-cam.sy)/(PY*cam.z), px, py }; }
+function pickBlue(pt){ let b=-1,bd=1e9; const z=cam.z;
+  for(const i of teamIdx('BLUE')){ const p=PL[i]; const dx=pt.px-SX(p.x), dy=pt.py-(SY(p.y)-14*z); const d=Math.hypot(dx,dy*0.8); if(d<bd){bd=d;b=i;} }
+  return bd<=Math.max(18,30*z) ? b : -1; }
+function setupLimit(){ return recvTeam==='BLUE' ? kickSpot.x-10 : kickSpot.x-0.5; }   // stay on your side of the ball
+canvas.addEventListener('pointerdown',e=>{ if(phase!=='SETUP') return; e.preventDefault(); audioResume(); const pt=toWorld(e), b=pickBlue(pt); if(b<0) return;
+  try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+  if(setupMode==='DRAW' && b!==kickReceiverCandidate()){ drawingIdx=b; previewPt.x=pt.x; previewPt.y=pt.y; } else grabbed=b; });
+canvas.addEventListener('pointermove',e=>{ if(phase!=='SETUP') return; const pt=toWorld(e);
+  if(drawingIdx>=0){ previewPt.x=clamp(pt.x,1,TUNE.FIELD_LENGTH-1); previewPt.y=clamp(pt.y,1,W-1); }
+  else if(grabbed>=0){ const p=PL[grabbed]; p.x=clamp(pt.x,1,setupLimit()); p.y=clamp(pt.y,1,W-1); p.lx=p.x; p.ly=p.y; updateKickBtn(); } });
+const setupUp=()=>{ if(drawingIdx>=0){ const p=PL[drawingIdx]; if(Math.hypot(previewPt.x-p.x,previewPt.y-p.y)>1.2) blockAssign[drawingIdx]={x:previewPt.x,y:previewPt.y}; else delete blockAssign[drawingIdx]; drawingIdx=-1; } grabbed=-1; };
+addEventListener('pointerup',setupUp); addEventListener('pointercancel',setupUp);
+document.getElementById('kick').addEventListener('click',kickoff);
+document.getElementById('mode').addEventListener('click',()=>{ setupMode=setupMode==='MOVE'?'DRAW':'MOVE';
+  const m=document.getElementById('mode'); m.classList.toggle('draw',setupMode==='DRAW');
+  m.textContent = setupMode==='DRAW' ? '✋ MOVE PLAYERS' : (recvTeam==='BLUE'?'✎ DRAW BLOCKS':'✎ DRAW LANES'); updateKickBtn(); });
+
+/* ---------------- the matchup: your seven against a MythiBall club ---------------- */
+const pick=a=>a[(Math.random()*a.length)|0];
+function sample(a,n){ const c=a.slice(); for(let i=c.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [c[i],c[j]]=[c[j],c[i]]; } return c.slice(0,n); }
+/* "The Great Ape" is the name; "Ape" is what fits on a tag. */
+function shortName(n){ if(!n) return ''; const t=n.replace(/^The /,''); return t.length<=11 ? t : t.split(' ')[0]; }
+/* The club is the club's colour, lifted until it reads on grass. You are sky
+   blue unless the club is blue too, in which case you are gold. */
+function teamColours(){ TEAM.RED=lift(CLUB.color);
+  const d=Math.abs(((hsl(TEAM.RED)[0]-207)+540)%360-180); TEAM.BLUE = d<45 ? '#ffc233' : '#35a4ff';
+  document.documentElement.style.setProperty('--you',TEAM.BLUE); document.documentElement.style.setProperty('--them',TEAM.RED); }
+function rollMatchup(keepClub,keepMine){
+  if(!keepClub||!CLUB){ let c; do c=pick(CAST.clubs); while(CLUB && c===CLUB && CAST.clubs.length>1); CLUB=c; }
+  const theirs=CLUB.roster.slice(0,TUNE.TEAM_SIZE), free=Object.keys(CAST.chars).filter(k=>!theirs.includes(k));
+  if(!keepMine||!MINE.length||MINE.some(k=>theirs.includes(k))) MINE=sample(free,TUNE.TEAM_SIZE);
+  PARK=CAST.parks[CLUB.name]||CAST.parks._default;
+  teamColours(); castTeam('BLUE',MINE); castTeam('RED',theirs); builtFor=''; buildStadium(); initSnow();
+  layoutKickoff('BLUE'); ball.x=kickSpot.x; ball.y=kickSpot.y; ball.h=0.35; for(const p of PL){ p.cheer=0; p.pose='back'; } paintMatchup(); }
+/* A card portrait: the figure cropped square, so a chibi in a 96 pixel frame
+   fills the tile instead of standing small at the bottom of it. */
+function mugCanvas(key,pose){ pose=pose||'cheer'; const b=frameBox(key,pose), side=Math.max(b.right-b.left+1,b.h)+4;
+  const cv=document.createElement('canvas'); cv.width=cv.height=side;
+  paintChar(cv.getContext('2d'),key,pose,1,false,Math.round((side-(b.right-b.left+1))/2)-b.left,side-2-b.bottom); return cv; }
+let selMug=null;
+function paintMugs(el,team,cls){ el.innerHTML=''; for(const p of teamPlayers(team)){ const m=document.createElement('button'); m.className='mug '+cls; m.type='button';
+  m.title=p.name; m.appendChild(mugCanvas(p.key,'cheer')); const b=document.createElement('b'); b.textContent=p.pos; const n=document.createElement('i'); n.textContent=p.num;
+  m.appendChild(b); m.appendChild(n); m.addEventListener('click',()=>scout(p,m)); el.appendChild(m); } }
+function scout(p,m){ if(selMug) selMug.classList.remove('sel'); selMug=m; m.classList.add('sel'); const c=CAST.chars[p.key], card=document.getElementById('pcard');
+  const bar=(l,v)=>`<span>${l}</span><div class="bar"><i style="width:${clamp(v,4,100)}%"></i></div>`;
+  card.innerHTML=''; card.appendChild(mugCanvas(p.key,'cheer'));
+  const d=document.createElement('div'); d.style.flex='1';
+  d.innerHTML=`<div class="who">#${p.num} ${p.name}<em>${POS_NAME[p.pos]} / ${POS_NAME[p.dpos]}${p.isK?' · K':''}</em></div><div class="bars">${bar('SPD',c.spd)}${bar('PWR',c.pow)}${bar('HND',c.con)}${bar('TKL',c.def)}</div>`;
+  card.appendChild(d); }
+function paintMatchup(){ paintMugs(document.getElementById('youMugs'),'BLUE','you'); paintMugs(document.getElementById('themMugs'),'RED','them');
+  document.getElementById('clubName').textContent='VS '+CLUB.name.toUpperCase();
+  document.getElementById('parkName').textContent='AT '+PARK.park.toUpperCase();
+  selMug=null; document.getElementById('pcard').textContent='Tap a player to scout him.'; }
+/* FUMBLE in the game's own pixel face: cream letters, a navy outline and a
+   hard red drop, with a ball for the dot. */
+function paintLogo(){ const cv=document.getElementById('logo'), g=cv.getContext('2d'), word='FUMBLE', sc=2, pad=4;
+  const w=textW(word,sc)+2*pad+16, h=7*sc+2*pad+3; cv.width=w; cv.height=h; g.imageSmoothingEnabled=false;
+  g.drawImage(textImg(word,sc,'#cf3229','#0b1830',0),pad+2,pad+2); g.drawImage(textImg(word,sc,'#fffcf2','#0b1830',0),pad,pad);
+  g.drawImage(BALL_IMG[1],w-pad-9,pad+3);
+  const k=Math.max(3,Math.floor(Math.min(innerWidth*0.84,420)/w)); cv.style.width=w*k+'px'; cv.style.height=h*k+'px'; }
+
+/* ---------------- boot ---------------- */
+function newGame(){ audioInit(); audioResume(); scoreB=0; scoreR=0; gameOver=false; cutin=null; banner=null;
+  for(const k in STATS) STATS[k]=0; possStartX=null; lastFumbleTeam=null;
+  document.getElementById('over').style.display='none'; document.getElementById('start').style.display='none';
+  for(const p of PL){ p.cheer=0; } beginSetup('BLUE'); }
+document.getElementById('go').addEventListener('click',newGame);
+document.getElementById('again').addEventListener('click',newGame);
+document.getElementById('newMatch').addEventListener('click',()=>{ document.getElementById('over').style.display='none'; phase='MENU';
+  rollMatchup(); showControls(false); document.getElementById('setupBar').style.display='none'; document.getElementById('start').style.display='flex'; });
+document.getElementById('shuffle').addEventListener('click',()=>rollMatchup(true));
+document.getElementById('newOpp').addEventListener('click',()=>rollMatchup(false,true));
+addEventListener('resize',()=>{ resize(); paintLogo(); });
+rollMatchup(); resize(); paintLogo(); showControls(false); document.getElementById('setupBar').style.display='none';
+updateCamera(10); requestAnimationFrame(t=>{ lastT=t; tick(t); });
+</script>
+</body>
+</html>

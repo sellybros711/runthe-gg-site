@@ -75,7 +75,7 @@ async function game(browser, w, h, dpr, mode, youHome) {
   await pg.goto(URL);
   await pg.waitForTimeout(400);
   await pg.evaluate(([m, yh]) => {
-    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
     if (m) { PREFS.smooth = m === 'smooth'; document.body.classList.toggle('smooth', PREFS.smooth); }
     State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
     State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
@@ -392,6 +392,18 @@ const main = async () => {
       const { ctx, pg, errors } = await game(browser, w, h, dpr, null, yh);
       await pg.waitForFunction(() => State.game && plateViewActive(State.game),
         { timeout: 25000 });
+      /* WITH THE PLAY BY PLAY FULL, which is how every game looks by the
+         second inning and how this section never looked. It measured the
+         first pitch of a game, with nothing in the log, and on a wide window
+         the log sat under the swing row and pushed it up a line per pitch:
+         reported from a laptop, the swing row lying straight across the zone
+         with six lines under it, while this section passed. The tallest the
+         deck ever gets is the reading that matters. */
+      await pg.evaluate(() => {
+        const g = State.game;
+        for (let i = 0; i < 12; i++) g.log.push({ text: `Line ${i + 1} of the play by play, as long as a real one gets.` });
+        refreshHud();
+      });
       await pg.waitForTimeout(250);
       const r = await pg.evaluate(() => {
         const P = plateGeom();
@@ -407,7 +419,10 @@ const main = async () => {
         const m = document.querySelector('.meter-wrap');
         const mb = m.getBoundingClientRect();
         const ar = cv.parentElement.getBoundingClientRect();
+        const lg = document.getElementById('log');
+        const lb = lg && lg.offsetParent ? lg.getBoundingClientRect() : null;
         return { x0, y0, x1, y1, deckTop: mb.top,
+                 log: lb && { l: lb.left, t: lb.top, r: lb.right, b: lb.bottom },
                  /* A PHONE HELD SIDEWAYS PUTS THE DECK BESIDE THE FIELD, in
                     a column of its own, and a column that starts high up the
                     window is not standing on anything. The claim is about
@@ -432,6 +447,114 @@ const main = async () => {
       ok(!r.deckOver || r.y1 <= r.deckTop + margin,
         `${label}: and the swing row does not stand on it`,
         `the zone ends at ${r.y1.toFixed(0)} and the deck starts at ${r.deckTop.toFixed(0)}`);
+      /* And the log itself, wherever it went, is never on the zone. */
+      const lo = r.log;
+      ok(!lo || lo.r <= r.x0 + margin || lo.l >= r.x1 - margin || lo.b <= r.y0 + margin || lo.t >= r.y1 - margin,
+        `${label}: and the play by play is not on it either`,
+        lo && `log ${lo.l.toFixed(0)},${lo.t.toFixed(0)}..${lo.r.toFixed(0)},${lo.b.toFixed(0)} against zone `
+          + `${r.x0.toFixed(0)},${r.y0.toFixed(0)}..${r.x1.toFixed(0)},${r.y1.toFixed(0)}`);
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
+  /* ---- the man throwing the ball is in the picture ---- */
+  {
+    console.log('the pitcher is in the picture');
+    /* Reported from a laptop with a screenshot: a pair of legs on the mound,
+       the park's sign where the face should be, and no arm. The keep box
+       held the zone and the ball and nothing above them, so the camera
+       centred on the zone and a short wide window started below the
+       pitcher's head. The zone section above was green the whole time,
+       because the zone was never the thing missing.
+
+       READ OFF THE GLASS, both ends of him: the top of his drawing and the
+       mound he stands on, through the same inversion the zone section uses.
+       And the sign, because a head in frame under a placard is not a face
+       anybody can see. The 21:9 row is the one that needs the camera to
+       step back, so it is the one that proves the step is there. */
+    for (const [label, w, h, dpr, yh] of [['laptop', 1366, 768, 1],
+                                      ['laptop pitching', 1366, 768, 1, true],
+                                      ['retina laptop', 1440, 780, 2],
+                                      ['desktop', 1280, 720, 1],
+                                      ['desktop pitching', 1280, 720, 1, true],
+                                      ['wide desktop', 1920, 1080, 1],
+                                      ['ultrawide', 2560, 1080, 1],
+                                      ['phone upright', 390, 844, 3],
+                                      ['phone sideways', 844, 390, 3]]) {
+      const { ctx, pg, errors } = await game(browser, w, h, dpr, null, yh);
+      await pg.waitForFunction(() => State.game && plateViewActive(State.game),
+        { timeout: 25000 });
+      await pg.evaluate(() => {
+        const g = State.game;
+        for (let i = 0; i < 12; i++) g.log.push({ text: `Line ${i + 1} of the play by play, as long as a real one gets.` });
+        refreshHud();
+      });
+      await pg.waitForTimeout(450);
+      const r = await pg.evaluate(() => {
+        const P = plateGeom();
+        const cv = document.getElementById('field');
+        const box = cv.getBoundingClientRect();
+        const toY = (ly) => box.top + (ly / PIX - FIELD_CAM.sy) / FIELD_CAM.sh * box.height;
+        const ar = cv.parentElement.getBoundingClientRect();
+        const sign = document.querySelector('.arena .corner.park');
+        const sb = sign && sign.getBoundingClientRect();
+        return { head: toY(P.moundY - HERO_DRAW_H * P.pitSc), feet: toY(P.moundY),
+                 top: Math.max(ar.top, box.top), bottom: Math.min(ar.bottom, box.bottom),
+                 sign: sb && { b: sb.bottom, shown: getComputedStyle(sign).opacity !== '0'
+                   && getComputedStyle(sign).display !== 'none' } };
+      });
+      ok(r.head >= r.top - 1 && r.feet <= r.bottom + 1,
+        `${label}: the whole pitcher is in frame, head to feet`,
+        `head at ${r.head.toFixed(0)}, feet at ${r.feet.toFixed(0)}, picture ${r.top.toFixed(0)}..${r.bottom.toFixed(0)}`);
+      ok(!r.sign || !r.sign.shown || r.sign.b <= r.head + 1,
+        `${label}: and the park's sign is not on his face`,
+        r.sign && `sign ends at ${r.sign.b.toFixed(0)}, head at ${r.head.toFixed(0)}`);
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
+  /* ---- a batter is not shown where the pitch is going ---- */
+  {
+    console.log('a batter is not shown where the pitch is going');
+    /* The plate view drew the catcher's target at `pitch.aim` from the moment
+       a pitch existed, and `pitch.aim` is where the arm is TRYING to put the
+       ball. Batting, that is the answer printed in the zone before the windup
+       ends: reported by a player as a circle that says where the pitch is
+       going. It is read off the drawing calls rather than the pixels, because
+       the target is a faint ring and a pixel read would be a claim about the
+       park behind it. The pitching arm is asked too, because the target is
+       right there and a check that never sees it drawn proves nothing. */
+    for (const [label, youHome, want] of [['batting', false, false], ['pitching', true, true]]) {
+      const { ctx, pg, errors } = await game(browser, 1280, 800, 1, null, youHome);
+      /* Batting waits for the other side's pitch. Pitching has none until
+         the player throws, and the target stands at their aim meanwhile. */
+      await pg.waitForFunction((yh) => State.game && plateViewActive(State.game)
+        && (yh || State.game.pitch), youHome, { timeout: 25000 });
+      const seen = await pg.evaluate(async () => {
+        const g = State.game;
+        /* hold the windup open, which is when the target is the only mark */
+        if (g.pitch) {
+          g.pitch.windupMs = 60000; g.pitch.windupUntil = performance.now() + 60000;
+          g.pitch.start = g.pitch.windupUntil;
+        }
+        const proto = CanvasRenderingContext2D.prototype;
+        const real = proto.arc;
+        const calls = [];
+        proto.arc = function (x, y, r, a0, a1, ccw) {
+          calls.push([Math.round(x), Math.round(y), r]);
+          return real.call(this, x, y, r, a0, a1, ccw);
+        };
+        await new Promise(res => setTimeout(res, 300));
+        proto.arc = real;
+        /* the target is a ring of 11 with a dot of 2 at its centre */
+        const rings = calls.filter(c => c[2] === 11);
+        return rings.some(c => calls.some(d => d[2] === 2 && d[0] === c[0] && d[1] === c[1]));
+      });
+      ok(seen === want, want ? `${label}: the pitcher still sees his target`
+                              : `${label}: no target in the zone during the windup`,
+        `target drawn: ${seen}`);
       ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
       await pg.close(); await ctx.close();
     }
@@ -526,7 +649,7 @@ const main = async () => {
       await pg.goto(URL);
       await pg.waitForTimeout(350);
       const r = await pg.evaluate(() => new Promise((res) => {
-        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
         const out = []; let i = 0;
         const step = () => {
@@ -681,7 +804,7 @@ const main = async () => {
       await pg.goto(URL);
       await pg.waitForTimeout(350);
       await pg.evaluate(() => {
-        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
         State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
         startGame({ mode: 'exhibition', youHome: false });

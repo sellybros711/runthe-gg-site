@@ -53,6 +53,8 @@ const GUARDED = [
   'cfb/index.html',
   'cfb/commish/index.html',
   'assets/store.js',
+  /* The lock day reminder both football games draw over their front page. */
+  'assets/fantasy-promo.js',
   /* A BUILD SCRIPT THAT WRITES WORDS ONTO AN IMAGE IS COPY. 06-og.mjs writes the
      headline baked into og-challenge.png, which is the most public text the college
      game produces: it is what a shared challenge link shows in a feed, and nobody
@@ -65,6 +67,9 @@ const GUARDED = [
      exists because the rest of the repo predates the rule, and this page does not. */
   'football/fantasy/index.html',
   'football/fantasy/draft.js',
+  /* The share card's words are baked into og.png for both competitions, the most public text
+     the mode produces, so the source it is rendered from is copy too. */
+  'football/fantasy/og-source.html',
   // Run The Diamond. Added after the audit that cleared it: nothing on the banned
   // list across both pages, only long-sentence warnings, which this file does not
   // fail on. Its NUMBERS are held by baseball/check-numbers.mjs rather than by
@@ -84,6 +89,17 @@ const GUARDED = [
   'wrestling/moves.js',
   'wrestling/cosmetics.js',
   'wrestling/corrections.js',
+  /* 4th and What, from the day it was written: the page, and the scripts that
+     build what a player reads (the screens, the result's reason and the
+     captions, the clipboard's hints, the share line). */
+  '4th-and-what/index.html',
+  '4th-and-what/ui.js',
+  '4th-and-what/engine.js',
+  '4th-and-what/clipboard.js',
+  '4th-and-what/share.js',
+  /* The guides (runthe.gg/guides/), from the day they were written: every page the
+     guide builder writes, so a new guide is read here with no list to edit. */
+  ...(() => { try { return readdirSync('guides').filter((f) => f.endsWith('.html')).map((f) => 'guides/' + f); } catch { return []; } })(),
 ];
 
 /* ---------------------------------------------------------------------------

@@ -35,6 +35,8 @@ jobs:
       # yesterday's working corpus stays on the site.
       - name: The rebuilt corpus must still answer correctly
         run: node scripts/check-sportegories.mjs
+      - name: Every category still checks every league it names
+        run: node scripts/check-sportegories-leagues.mjs
       # A data file that changed and kept its ?v= hands a returning visitor the
       # old data against the new page. Only when it actually moved: a bump with
       # no change is a re-download for everybody who already has the file.

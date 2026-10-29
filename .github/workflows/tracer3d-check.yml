@@ -1,0 +1,47 @@
+name: 3D course check
+
+# The 3D course (golf/tracer3d.js): every course and its putting close-up draws with
+# no holes, nothing the ball rests on moves, it stays fast, the tester gate holds,
+# and the ball keeps one scale against the golfer on every camera. Runs locally:
+#
+#   (nohup python3 -m http.server 8099 &) ; node golf/check-tracer3d.mjs
+#
+# No secrets, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'golf/tracer3d.js'
+      - 'golf/check-tracer3d.mjs'
+      - 'golf/index.html'
+      - '.github/workflows/tracer3d-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'golf/tracer3d.js'
+      - 'golf/check-tracer3d.mjs'
+      - 'golf/index.html'
+      - '.github/workflows/tracer3d-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: tracer3d-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: Every course in 3D, and the ball against the golfer
+        run: |
+          (python3 -m http.server 8099 >/dev/null 2>&1 &)
+          sleep 2
+          node golf/check-tracer3d.mjs

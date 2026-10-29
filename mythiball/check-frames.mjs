@@ -92,7 +92,7 @@ await pg.evaluate(() => localStorage.clear());
 await pg.goto(pathToFileURL('mythiball/index.html').href);
 
 await pg.evaluate((sp) => {
-  Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+  Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
   window.confirm = () => true;
   State.gameSpeed = sp; applyGameSpeed();
   State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Frames';
@@ -146,7 +146,7 @@ while (Date.now() < until) {
       startGame({ mode: 'exhibition', youHome: true });
       return;
     }
-    if (g.aiming) { try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone); } catch (e) {} }
+    if (g.aiming) { try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone, p.aim ? { aim: p.aim } : undefined); } catch (e) {} }
   }).catch(() => {});
   await pg.waitForTimeout(250);
 }

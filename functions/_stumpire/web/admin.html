@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Stumpire admin | Run The Arcade</title>
+<style>
+  body{margin:0;background:#0f1420;color:#eef2f8;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{max-width:980px;margin:0 auto;padding:16px}
+  section{background:#18202f;border:1px solid #2a3448;border-radius:12px;padding:14px;margin-bottom:14px}
+  h1{font-size:22px} h2{font-size:17px;margin:0 0 8px}
+  input,select,textarea,button{font:inherit;color:#eef2f8;background:#0c111b;border:1px solid #2a3448;border-radius:8px;padding:7px 9px}
+  button{background:#24304a;cursor:pointer} button.go{background:#2f6fed;border-color:#2f6fed}
+  textarea{width:100%;min-height:190px;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  table{border-collapse:collapse;width:100%;font-size:13px} td,th{border-bottom:1px solid #2a3448;padding:4px 6px;text-align:left}
+  .err{color:#ff6b6b} .warn{color:#ffc94d} .okc{color:#3ecf8e} .mut{color:#9aa7bd}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Stumpire admin</h1>
+  <p class="mut">Testers only. Every change here is live the moment it is saved.</p>
+
+  <section>
+    <h2>Access</h2>
+    <div class="row">Mode <select id="mode"><option>off</option><option>testers</option><option>public</option></select> <button id="saveMode">Save mode</button> <span class="mut">off: admins only. testers: the list below. public: everybody.</span></div>
+    <div class="row"><input id="tName" placeholder="username"> <select id="tRole"><option>tester</option><option>admin</option></select> <button class="go" id="addT">Add tester</button></div>
+    <table id="testers"></table>
+  </section>
+
+  <section>
+    <h2>Author a prompt</h2>
+    <div class="row">At-bat <select id="atBat"><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option><option value="4">5</option></select>
+      <button id="preview">Preview</button> <button class="go" id="savePrompt">Save prompt</button> <select id="load"><option value="">Load a saved prompt</option></select></div>
+    <textarea id="def">{
+  "id": "nba-pg-all-star",
+  "text": "A point guard who made an All-Star team",
+  "league": "NBA",
+  "type": "athlete",
+  "years": [1960, 2025],
+  "where": [ { "k": "award", "v": "NBA All-Star" }, { "k": "pos", "v": "Point Guard" } ],
+  "wildcard": "nba-steve-nash-1990",
+  "arguable": []
+}</textarea>
+    <div id="pv"></div>
+  </section>
+
+  <section>
+    <h2>Publish a slate</h2>
+    <div class="row">Date <input id="pDate" type="date"></div>
+    <div class="row" id="pPick"></div>
+    <button class="go" id="publish">Publish and freeze</button>
+    <div id="pOut"></div>
+  </section>
+
+  <section><h2>Challenges</h2><div id="ch"></div></section>
+  <section><h2>Benefit of the doubt review</h2><div id="rv"></div></section>
+  <section><h2>NO PITCH log</h2><p class="mut">What players typed that matched nobody. Grow the alias table from this.</p><div id="np"></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.RTG_AUTH;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function api(method, path, body) {
+    var h = { 'Content-Type': 'application/json' };
+    var t = A && A.token && A.token(); if (t) h.Authorization = 'Bearer ' + t;
+    return fetch('/api/stumpire/' + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j._status = r.status; return j; }); });
+  }
+  var PROMPTS = [];
+
+  function loadTesters() {
+    api('GET', 'admin/testers').then(function (r) {
+      $('mode').value = r.mode;
+      $('testers').innerHTML = '<tr><th>User</th><th>Role</th><th></th></tr>' + (r.testers || []).map(function (t) {
+        return '<tr><td>' + esc(t.username || t.user_id) + '</td><td>' + esc(t.role) + '</td><td><button data-rm="' + esc(t.user_id) + '">Remove</button></td></tr>';
+      }).join('');
+    });
+  }
+  $('saveMode').onclick = function () { api('POST', 'admin/mode', { mode: $('mode').value }).then(loadTesters); };
+  $('addT').onclick = function () { api('POST', 'admin/testers', { username: $('tName').value.trim(), role: $('tRole').value }).then(function (r) { if (r._status !== 200) alert(r.error); $('tName').value = ''; loadTesters(); }); };
+  $('testers').onclick = function (e) { var b = e.target.closest('[data-rm]'); if (b && confirm('Remove this tester?')) api('DELETE', 'admin/testers', { userId: b.dataset.rm }).then(function (r) { if (r._status !== 200) alert(r.error); loadTesters(); }); };
+
+  function def() { try { return JSON.parse($('def').value); } catch (e) { alert('That is not valid JSON: ' + e.message); return null; } }
+  $('preview').onclick = function () {
+    var d = def(); if (!d) return;
+    api('POST', 'admin/preview', { prompt: d, atBat: Number($('atBat').value) }).then(function (r) {
+      if (r._status !== 200) { $('pv').innerHTML = '<p class="err">' + esc(r.error) + '</p>'; return; }
+      var h = '<p><b>' + r.count + '</b> valid answers. Bands: single ' + r.bands[1] + ', double ' + r.bands[2] + ', triple ' + r.bands[3] + ', home run ' + r.bands[4] + '.</p>';
+      if (r.called) h += '<p>Called (' + Math.round(r.called.coverage * 100) + '% of expected share): ' + esc(r.called.names.join(', ')) + '</p>';
+      h += r.errors.map(function (e) { return '<p class="err">Blocks publishing: ' + esc(e) + '</p>'; }).join('');
+      h += r.warnings.map(function (e) { return '<p class="warn">Check: ' + esc(e) + '</p>'; }).join('');
+      if (!r.errors.length) h += '<p class="okc">Passes every rule for this at-bat.</p>';
+      h += '<table><tr><th>#</th><th>Answer</th><th>Expected share</th><th>Depth</th><th>Hit</th><th></th></tr>' + r.sample.map(function (x, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(x.name) + ' <span class="mut">' + esc(x.id) + '</span></td><td>' + (x.expected * 100).toFixed(2) + '%</td><td>' + (x.depth * 100).toFixed(1) + '%</td><td>' + ['', '1B', '2B', '3B', 'HR'][x.tier] + '</td><td>' + (x.called ? 'called' : '') + (x.arguable ? ' arguable' : '') + '</td></tr>';
+      }).join('') + '</table>';
+      $('pv').innerHTML = h;
+    });
+  };
+  $('savePrompt').onclick = function () { var d = def(); if (d) api('POST', 'admin/prompts', { prompt: d }).then(function (r) { alert(r._status === 200 ? 'Saved ' + r.saved : r.error); loadPrompts(); }); };
+  $('load').onchange = function () { var p = PROMPTS.find(function (x) { return x.id === $('load').value; }); if (p) { var c = Object.assign({}, p); delete c.status; $('def').value = JSON.stringify(c, null, 2); } };
+
+  function loadPrompts() {
+    api('GET', 'admin/prompts').then(function (r) {
+      PROMPTS = r.prompts || [];
+      var opts = PROMPTS.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.league + ' · ' + p.text + ' (' + p.status + ')') + '</option>'; }).join('');
+      $('load').innerHTML = '<option value="">Load a saved prompt</option>' + opts;
+      var picks = ''; for (var i = 0; i < 5; i++) picks += '<label>At-bat ' + (i + 1) + ' <select class="pp"><option value=""></option>' + opts + '</select></label>';
+      $('pPick').innerHTML = picks;
+    });
+  }
+  $('publish').onclick = function () {
+    var ids = Array.prototype.map.call(document.querySelectorAll('.pp'), function (s) { return s.value; });
+    if (!confirm('Publishing freezes every grade on this slate. Go?')) return;
+    api('POST', 'admin/publish', { date: $('pDate').value, promptIds: ids }).then(function (r) {
+      $('pOut').innerHTML = r.published ? '<p class="okc">Published slate #' + r.no + ' for ' + esc(r.date) + ' (' + r.rows + ' answers frozen).</p>'
+        : (r.errors || [r.error]).map(function (e) { return '<p class="err">' + esc(e) + '</p>'; }).join('');
+      loadPrompts();
+    });
+  };
+
+  function loadQueues() {
+    api('GET', 'admin/challenges').then(function (r) {
+      var c = r.challenges || [];
+      $('ch').innerHTML = c.length ? '<table><tr><th>Slate</th><th>At-bat</th><th>Typed</th><th>Entity</th><th>Ruling</th><th>Note</th><th></th></tr>' + c.map(function (x) {
+        return '<tr><td>' + esc(x.slate_date) + '</td><td>' + (x.at_bat + 1) + '</td><td>' + esc(x.raw) + '</td><td>' + esc(x.entity_id) + '</td><td>' + esc(x.ruling) + '</td><td>' + esc(x.note) + '</td>' +
+          '<td><button data-up="' + x.id + '">Uphold</button> <button data-dn="' + x.id + '">Deny</button></td></tr>';
+      }).join('') + '</table>' : '<p class="mut">No open challenges.</p>';
+    });
+    api('GET', 'admin/review').then(function (r) {
+      var v = r.review || [];
+      $('rv').innerHTML = v.length ? '<table>' + v.map(function (x) { return '<tr><td>' + esc(x.slate_date) + '</td><td>' + esc(x.prompt_id) + '</td><td>' + esc(x.entity_id) + '</td><td>' + esc(x.reason) + '</td></tr>'; }).join('') + '</table>' : '<p class="mut">Nothing to review.</p>';
+    });
+    api('GET', 'admin/nopitch').then(function (r) {
+      var v = r.nopitch || [];
+      $('np').innerHTML = v.length ? '<table>' + v.map(function (x) { return '<tr><td>' + esc(x.prompt_id) + '</td><td>' + esc(x.raw) + '</td></tr>'; }).join('') + '</table>' : '<p class="mut">Nothing logged.</p>';
+    });
+  }
+  $('ch').onclick = function (e) {
+    var up = e.target.closest('[data-up]'), dn = e.target.closest('[data-dn]');
+    if (!up && !dn) return;
+    var id = Number((up || dn).dataset.up || (up || dn).dataset.dn);
+    var body = { id: id, upheld: !!up, resolution: prompt(up ? 'What was fixed? (alias added, award added...)' : 'Why denied?') || '' };
+    if (up) { var ent = prompt('Entity id the player meant (blank to keep the logged one)'); if (ent) body.entityId = ent.trim(); }
+    api('POST', 'admin/challenges/resolve', body).then(function (r) { if (r._status !== 200) alert(r.error); loadQueues(); });
+  };
+
+  function boot() { loadTesters(); loadPrompts(); loadQueues(); }
+  $('pDate').value = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(Date.now() + 86400000));
+  if (A && A.boot && A.boot()) { var go = false; A.onChange(function (s) { if (s.resolved && !go) { go = true; boot(); } }); setTimeout(function () { if (!go) { go = true; boot(); } }, 2500); }
+  else boot();
+})();
+</script>
+</body>
+</html>

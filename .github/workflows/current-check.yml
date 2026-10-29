@@ -1,0 +1,46 @@
+name: Current players check
+
+# Career Path, Guess the Player, Alma Mater and Number Game are for younger
+# fans, and the owner reported four deals in a row that opened on players
+# from the 1960s. Flags 'eras' and 'current' (arcade/flags.js) fix that. This
+# drives each game in a real browser with the flag on and off and reads the
+# deal through the page's own read-only hook, so a deal that drifts back to
+# the old players fails here rather than in somebody's first two cards.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-current.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/**/*.html'
+      - 'arcade/*.js'
+      - 'scripts/check-current.mjs'
+      - '.github/workflows/current-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/**/*.html'
+      - 'arcade/*.js'
+      - 'scripts/check-current.mjs'
+      - '.github/workflows/current-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: current-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-save playwright@1.49.1
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/check-current.mjs

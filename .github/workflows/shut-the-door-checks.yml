@@ -1,0 +1,118 @@
+name: Shut The Door checks
+
+# Shut The Door (shut-the-door/), served and unlisted until the owner launches it.
+#
+# NO PATH FILTER, ON PURPOSE. The posture check has to see every PR: a link to
+# /shut-the-door added anywhere on the site is what would launch it early, and a
+# filter on shut-the-door/** would never see that change. The other jobs are a
+# few seconds each, so they ride along rather than splitting the file.
+#
+#   posture    shut-the-door/check-posture.mjs (noindex, not linked, not in the
+#              sitemap or the newsletter)
+#   engine     the engine on a synthetic pack, every built pack against the
+#              contract with the brief's three tests, the replay check, the
+#              pitch paths (lab/pipeline/check-pitches.mjs), every in-play row a
+#              legal MLB play (check-rules.mjs), the dash ban and the copy rules on the files that hold player copy
+#   migration  supabase/153_shut_the_door.sql applied TWICE to a real Postgres,
+#              then supabase/test/shut_the_door_test.sql; then
+#              155_shut_the_door_tie_held.sql (the held tie) twice and its test;
+#              then 156_shut_the_door_release.sql (the release's q) twice and its test; then
+#              157_shut_the_door_effort.sql (the effort's e) twice and its test
+#
+# Runs locally, unchanged:
+#   node shut-the-door/check-posture.mjs
+#   node shut-the-door/test/engine.mjs && node shut-the-door/test/packs.mjs && node shut-the-door/test/api.mjs
+#   node shut-the-door/check-replays.mjs --self-test
+#   node shut-the-door/check-rules.mjs
+#
+# No secrets, no deploy.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: shut-the-door-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  posture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Unlisted until launch
+        run: node shut-the-door/check-posture.mjs
+
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: The engine on a synthetic pack
+        run: node shut-the-door/test/engine.mjs
+      - name: Every pack against the contract, and the three tests
+        run: node shut-the-door/test/packs.mjs
+      - name: The four calls and the daily's promises
+        run: node shut-the-door/test/api.mjs
+      - name: The lesson
+        run: node shut-the-door/test/lesson.mjs
+      - name: The release meter on the page keeps the same e and q
+        run: node shut-the-door/test/meter.mjs
+      - name: Stored results replay
+        run: node shut-the-door/check-replays.mjs --self-test
+      - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
+        run: node shut-the-door/check-rules.mjs
+      - name: Every pitch moves like the real pitch (break side, size, crossing point, preview against flight)
+        run: node shut-the-door/lab/pipeline/check-pitches.mjs
+      - name: No em or en dashes
+        run: node scripts/check-dashes.mjs shut-the-door
+      - name: The copy rules, on the files that hold player copy
+        run: |
+          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js shut-the-door/meter.js; do
+            node scripts/check-copy.mjs "$f"
+          done
+
+  migration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # The runner image ships PostgreSQL stopped. Start it, and let the runner's own user create databases.
+      - name: Start Postgres
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres createuser -s "$USER"
+      - name: 153 applied twice, then its test
+        run: |
+          createdb std
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/test/baseball_pro_base.sql
+          $P -c "create table if not exists public.profiles (id uuid primary key, username text)"
+          $P -f supabase/153_shut_the_door.sql
+          $P -f supabase/153_shut_the_door.sql
+          $P -f supabase/test/shut_the_door_test.sql
+      - name: 155 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/155_shut_the_door_tie_held.sql
+          $P -f supabase/155_shut_the_door_tie_held.sql
+          $P -f supabase/test/shut_the_door_tie_held_test.sql
+      - name: 156 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/156_shut_the_door_release.sql
+          $P -f supabase/156_shut_the_door_release.sql
+          $P -f supabase/test/shut_the_door_release_test.sql
+      - name: 157 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/157_shut_the_door_effort.sql
+          $P -f supabase/157_shut_the_door_effort.sql
+          $P -f supabase/test/shut_the_door_effort_test.sql

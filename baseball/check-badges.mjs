@@ -43,6 +43,7 @@ const LIST = process.argv.includes('--list');
    family badge as unreachable while the game hands it out perfectly well.
    index.html fetches this beside the pool; nothing in engine.js loads it. */
 E.setCuratedChemistry(require(path.join(HERE, 'data', 'chemistry.json')));
+E.setColleges(require(path.join(HERE, 'data', 'colleges.json')));
 const DATA = R.indexData(require(path.join(HERE, 'data', 'players.json')));
 
 const slotsOf = (run) => (run.staff ? E.STAFF_SLOTS : E.SLOTS);
@@ -260,6 +261,7 @@ for (const [opts, bot, respins] of plan) {
 const GRIND = {
   daily_100: 'daily_50',
   daily_streak_30: 'daily_streak_14',
+  title_10: 'title_5',
 };
 const SKILL = {
   /* A TITLE IS ABOUT ONE RUN IN SIXTY even for the best bot, so anything that
@@ -291,10 +293,8 @@ const SKILL = {
      over-valued, so a season is decided by the roster the market leaves you rather
      than by two arms. An excuse on a badge that lights is not harmless, it is the
      check quietly agreeing not to look at that badge again. */
-  /* Two men from a curated family, which needs the draft to offer both and the
-     drafter to want them. Five rosters in 1,750 had one. The anchor is the other
-     link that has to be gone looking for rather than fallen into. */
-  family: 'link_battery',
+  /* `family` came off: it lights in quick now. See the Eras and Division note
+     at the end of this list. */
   /* THESE FIVE AND THE FIVE THAT CAME OFF ARE ONE EVENT: the pool grew. Splitting
      a traded season into one row per club added 1,035 rows and moved which
      borderline badges a sweep this size happens to reach. `rank_one` and four
@@ -308,7 +308,6 @@ const SKILL = {
      the 95 rating, the perfect draft and four more) and their excuses came off.
      These two went the other way. Each is anchored on the rung below it.
      (`rank_one` was the other, and the cap change below took it back off.) */
-  one_franchise_8: 'one_franchise',
   /* THE CAP WENT FROM $170M TO $190M, and the borderline moved a third time.
      Titles got easier, so seven title and legend rungs now light in quick and
      their excuses came off: back to back, three and four in a row, ten titles,
@@ -324,6 +323,46 @@ const SKILL = {
      at the top of this list describes, and the archetype itself still lights. */
   murderers_row: 'arch_murderers_row',
   surv_clean_oct: 'mode_survivor_oct',
+  /* ERAS AND DIVISION STOPPED PAYING THE TEAM-MATES LINK, the owner's call, and
+     those two modes had been handing the bots about eleven wins a season through
+     it. So titles got rarer and three and four in a row went back behind the
+     line a sweep this size reaches. Anchored on back to back, which still
+     lights. The chemistry bot, no longer paid for team-mates there, now chases
+     the curated pairs instead, so `family` lights and its excuse came off. */
+  threepeat: 'btb_title',
+  fourpeat: 'btb_title',
+  /* OCTOBER GOT HARDER AND CHEMISTRY GOT WEAKER, the owner's call (players were
+     winning it all too easily). The title pivot went 84 to 90, each playoff round
+     stiffens 15% rather than 12%, and the chemistry cap came down from 0.15 to
+     0.12. Titles roughly halved and the chemistry bot lost about three wins, so
+     the rungs that stack a title on a second condition, and the two record rungs,
+     went back behind the line three runs a bot reaches. Each is anchored on the
+     half of itself the quick sweep does light. Measured over 500 chemistry drafts,
+     116 wins still happens (2 of 500, best 121), so the record is a wait rather
+     than a wall. */
+  tie_record: 'win_110',
+  goat: 'win_110',
+  btb_title: 'title_5',
+  /* THE SCHEDULE GOT HARDER, the owner's call: a careful draft was winning 90
+     about half the time and the target is one in four. Opponents score 1.05x
+     and allow 0.92x (was 1.02x and 0.95x). Measured over 2,250 seasons of the
+     chemistry bot's rosters, 110 wins went from 4.4% of them to 0.36%, and 116
+     and 117 still happen (1 in 2,250), so the top rungs are a wait rather than
+     a wall. A ten-year October streak and a Decades title went behind the line
+     three runs a bot reaches for the same reason. Each is anchored on the rung
+     below it, which still lights. Going the other way, four excuses came off
+     (five cuts, eight from one club, a Survivor October, every mode's
+     October): tougher seasons mean more cuts and different drafts, and all four
+     light in quick now. */
+  win_110: 'win_100',
+  oct_streak_10: 'oct_streak_5',
+  /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER (TITLE.ELITE_* in engine.js): a
+     roster rated 85 or better meets easier opponents, so a 95+ roster reaches
+     the World Series most years. The World Series keeps less of the ease, so
+     a 95+ roster wins it about half the time. Two excuses came off because the
+     quick sweep lights them now (a wild card title and a Division title). Ten
+     titles and a Decades title stay behind the line. */
+  mode_era_title: 'mode_era_oct',
   /* `daily_100w` HAD AN EXCUSE AND DID NOT NEED ONE. A hundred wins on a daily
      lights in the quick sweep (spread / classic), so the entry was section 5's
      own target: an excuse written for something that turned out to be reachable,

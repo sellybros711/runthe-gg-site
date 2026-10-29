@@ -1,0 +1,52 @@
+name: Crossword mini check
+
+# The dense mini crossword (arcade/crossword/mini.js, behind the densecw flag)
+# builds a new grid every day from a word list and the player pool. The rules
+# it has to keep (every letter crossed, one-line clues, at most two clues that
+# need real knowledge and those always gettable from the crossings) are
+# properties of the output, so they are checked over a year of real days.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-crossword-mini.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/crossword/mini.js'
+      - 'arcade/crossword/gen.js'
+      - 'arcade/crossword/data/mini-words.js'
+      - 'arcade/cluebank.js'
+      - 'arcade/data.js'
+      - 'arcade/fame.js'
+      - 'arcade/stars.js'
+      - 'scripts/check-crossword-mini.mjs'
+      - '.github/workflows/crossword-mini-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/crossword/mini.js'
+      - 'arcade/crossword/gen.js'
+      - 'arcade/crossword/data/mini-words.js'
+      - 'arcade/cluebank.js'
+      - 'arcade/data.js'
+      - 'arcade/fame.js'
+      - 'arcade/stars.js'
+      - 'scripts/check-crossword-mini.mjs'
+      - '.github/workflows/crossword-mini-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: crossword-mini-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-crossword-mini.mjs

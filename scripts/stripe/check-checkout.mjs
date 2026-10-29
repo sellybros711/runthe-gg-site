@@ -205,8 +205,11 @@ console.log('\nSOLD YEARLY (the switch on, in a scratch copy)');
   world = { rows: [], subs: [], ready: true };
   env.STRIPE_PRICE_RTF_PRO = 'price_rtf';
   r = await buy(d, 'floor-pro', 'year');
-  ok('a bundle with no yearly plan ignores the plan it is sent and sells once',
-    !!r.body.url && sessions[sessions.length - 1].get('mode') === 'payment');
+  /* Run The Floor Pro went to $14.99 a year (2026-10) before it was ever sold, so it
+     is the second recurring bundle and opens a subscription like Diamond Pro. */
+  ok('Run The Floor Pro opens a subscription, as a recurring bundle',
+    !!r.body.url && sessions[sessions.length - 1].get('mode') === 'subscription'
+      && sessions[sessions.length - 1].get('subscription_data[metadata][bundle]') === 'floor-pro');
 
   /* Run The Diamond Pro renews, but on its own Price rather than as a yearly plan, so
      it opens a subscription whatever plan it is sent and is never filed as 'year'. */

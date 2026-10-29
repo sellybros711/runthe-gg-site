@@ -11,7 +11,9 @@
  * So this holds the season table to what the pass sells:
  *
  *   VALUE      every pack, shard and spin Season 1 paid is still paid, at the same tier, and no tier
- *              pays fewer coins. A new season is never a worse pass.
+ *              pays fewer coins. The one exception is a Pro pack a season names in `swap` (owner, Oct
+ *              2026): it is traded for that tier's exclusive, so the tier must carry one, and it keeps
+ *              its spin and shard. Season 2 swaps exactly tiers 10, 45, 48 and 53.
  *   EXCLUSIVE  every item on a season's track is on that track only: price 0, in no pack pool, in no
  *              drop, on no other season, carrying no stat boost, and never offered for coins.
  *   DRAWN      every item actually renders. A hat id with no sprite silently falls back to the plain
@@ -36,6 +38,7 @@ const PROBE = ROOT + '/golf/__test_pass.html';
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++;
   console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + JSON.stringify(x).slice(0, 260) : '')); };
+const V4 = (t) => { let x = 0; for (let i = 1; i <= t; i++) x += 95 + 2 * (i - 1) + 0.38 * (i - 1) * (i - 1); return Math.round(x); }, V4_60 = V4(60);
 const head = (t) => console.log('\n' + t + '\n' + '-'.repeat(t.length));
 
 const HOOK = `
@@ -46,6 +49,7 @@ window.__P = {
     _walletCache={paid:0, lifePurchased:0, lifeGranted:0, tokens:0, passActive:true, passPeriod:'S'+passSeason().n};
     try{ cloudPush=function(){}; }catch(e){} },
   season(){ return passSeason(); },
+  swap(n){ return ((PASS_SEASONS[n]||{}).swap||{}); },
   tables(){ var out={};
     [1,2,3].forEach(function(n){ var L={free:[],prem:[]};
       for(var t=1;t<=PASS_TIERS;t++){ L.free.push(passTierReward(t,'free',n)); L.prem.push(passTierReward(t,'prem',n)); }
@@ -55,14 +59,17 @@ window.__P = {
     return out; },
   items(){ var out=[];
     Object.keys(PASS_SEASONS).forEach(function(n){ var d=PASS_SEASONS[n], lanes=d.legacy?(d.excl||{}):{prem:d.items};
-      ['free','prem'].forEach(function(lane){ var m=lanes[lane]||{}; Object.keys(m).forEach(function(t){ out.push({season:+n,lane:lane,tier:+t,cat:m[t].cat,id:m[t].id,name:m[t].name}); }); }); });
+      ['free','prem'].forEach(function(lane){ var m=lanes[lane]||{}; Object.keys(m).forEach(function(t){ out.push({season:+n,lane:lane,tier:+t,cat:m[t].cat,id:m[t].id,name:m[t].name});
+        if(m[t].also) out.push({season:+n,lane:lane,tier:+t,cat:m[t].also.cat,id:m[t].also.id,name:m[t].also.name}); }); }); });
     return out; },
   audit(cat,id){
     var listed=(cosmeticItems(cat)||[]).some(function(o){ return o.id===id; });
     var drawn=false;
     if(cat==='hw') drawn=!!PXG_HATS[id]; else if(cat==='ew') drawn=!!PXG_EYEWEAR[id];
+    else if(cat==='club') drawn=!!(PXG_CLUBS[id]&&PXG_CLUB_PAL[id]&&CLUBS_BY[id]); else if(cat==='top') drawn=!!(PXG_TOPS[id]&&PXG_TOP_PAL[id]);
+    else if(cat==='cleats') drawn=!!(PXG_CLEATS[id]&&PXG_CLEATS_PAL[id]);
     else if(cat==='ball') drawn=!!(PXG_BALL[id]&&PXG_BALL_PAL[id]); else if(cat==='pat') drawn=!!PXPAT_BY[id];
-    else if(cat==='fx') drawn=!!PXFX_BY[id]; else if(cat==='plate') drawn=!!PLATE_STYLE[id]; else if(cat==='cardbg') drawn=!!CARDBG_ART[id];
+    else if(cat==='fx') drawn=!!PXFX_BY[id]; else if(cat==='body') drawn=!!BODY_SKINS[id]; else if(cat==='plate') drawn=!!PLATE_STYLE[id]; else if(cat==='cardbg') drawn=!!CARDBG_ART[id];
     var inPool=packPool().some(function(e){ return e.cat===cat && e.id===id; });
     var inDrop=!!DROP_BY_ITEM[cat+'|'+id], reward=cosRewardOnly(cat,id), boost=!!COS_BOOST[cosKey(cat,id)];
     return {listed:listed, drawn:drawn, base:cosmeticPriceBase(cat,id), price:cosmeticPrice(cat,id), packOnly:cosPackOnly(cat,id),
@@ -92,7 +99,8 @@ window.__P = {
     return {before:before, m1:m1, m2:m2, pool:packCredits('seasonal'), asLive:liveSeasonalPackId()?packCredits(liveSeasonalPackId()):null,
       live:liveSeasonalPackId(), opensAs:packType('seasonal').id}; },
   claimAll(){ var s=passState(); s.xp=passXpForTier(PASS_TIERS); passSave(s); var got=passClaimAll(); var own=coinState().owned;
-    return {n:got.length, cos:got.filter(function(r){return r.cos;}).map(function(r){ return {cat:r.cos.cat,id:r.cos.id,owned:!!own[cosKey(r.cos.cat,r.cos.id)]}; })}; },
+    var cs=[]; got.forEach(function(r){ [r.cos,r.cos2].forEach(function(c){ if(c) cs.push({cat:c.cat,id:c.id,owned:!!own[cosKey(c.cat,c.id)]}); }); });
+    return {n:got.length, cos:cs}; },
   /* the Go Pro pitch, which only a player WITHOUT the pass sees */
   sales(){ var had=_walletCache.passActive; _walletCache.passActive=false;
     var d=document.createElement('div'); document.body.appendChild(d); S.overlay='tourpass'; overlayTourPass(d);
@@ -112,10 +120,12 @@ window.__P = {
   mergeHist(a,b){ return mergePassHist(a,b); },
   stamps(){ return {list:passStamps(), code:passStampsCode(), html:passStampsHTML(), decoded:passStampsDecode(passStampsCode()), look:lookForBoard().stamps||null}; },
   card(){ var d=document.createElement('div'); d.innerHTML=playerCardHTML({self:true, name:'Rig', look:S.look||DEFLOOK, rep:'Amateur'}); var st=d.querySelector('.pcstamps'); return st?st.textContent:null; },
+  curveNow(){ return PASS_CURVE_V; },
   otherCard(code){ var d=document.createElement('div'); d.innerHTML=playerCardHTML({self:false, uid:'x', name:'Other', look:Object.assign({},DEFLOOK,{stamps:code}), rep:'Amateur'}); var st=d.querySelector('.pcstamps'); return st?st.textContent:null; },
   event(){ return {now:(passEventNow()||{}).id||null, mult:passEventMult(), soon:(passEventSoon(3)||{e:{}}).e.id||null, line:passEventLine().replace(/<[^>]+>/g,''), chip:passEventChip().replace(/<[^>]+>/g,'')}; },
   addXp(n, boost){ try{ var w=wheelState(); w.boostUntil=boost?Date.now()+600000:0; wheelSave(w); }catch(e){}
-    var s=passState(), before=s.xp; passAddXp(n); var after=passState().xp; S._passPop=null; return after-before; },
+    var before=passState().xp;
+    passAddXp(n); var after=passState().xp; S._passPop=null; return after-before; },
   eventNote(){ var got=[]; var t0=window.toast; window.toast=function(h){ got.push(String(h).replace(/<[^>]+>/g,' ')); };
     try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('bag_passev_')>=0) localStorage.removeItem(k); }); }catch(e){}
     maybePassEventNote(); maybePassEventNote(); return new Promise(function(r){ setTimeout(function(){ window.toast=t0; r(got); }, 1700); }); },
@@ -126,6 +136,21 @@ window.__P = {
     if(metric==='dailyUnder'||metric==='packsOpened') passChalProgress(metric,n); else questWeekly(metric,n);
     window.toast=t0; S._passPop=null; return passState().xp-s0; },
   mergeChal(a,b){ return mergePassChal(a,b); },
+  /* a tab left open across a season change: the wallet still holds last season's pass */
+  stale(){ var w=_walletCache, n=passSeason().n, out={season:n};
+    try{ localStorage.removeItem(acctKey('bag_tourpass')); localStorage.removeItem(acctKey('bag_pass')); }catch(e){}
+    _walletCache=Object.assign({},w,{passActive:true, passPeriod:'S'+(n-1)});
+    out.active=dailyPassActive(); out.pro=passProActive(); var s=passState(); out.mark=!!s.pro; out.markS=s.proS||'';
+    out.claimable=passClaimable();
+    _walletCache=Object.assign({},w,{passActive:false, passPeriod:''});
+    out.hadOldMark=passHadPro(n,{pro:true}); out.hadS1Mark=passHadPro(1,{pro:true}); out.hadNewMark=passHadPro(n,{pro:true,proS:'S'+n});
+    // a FREE player's tab left open across the change: runtour_wallet said pass_period S<n-1>, pass_active false
+    _walletCache=Object.assign({},w,{passActive:false, passPeriod:'S'+(n-1)}); out.freeStale=passHadPro(n-1,{pro:false});
+    _walletCache=Object.assign({},w,{passActive:true, passPeriod:'S'+(n-1)}); out.buyerStale=passHadPro(n-1,{pro:false});
+    _walletCache=Object.assign({},w,{passActive:true, passPeriod:'S'+n});
+    out.liveActive=dailyPassActive(); var s2=passState(); out.liveMarkS=s2.proS||'';
+    out.merged=mergeTourPass({season:n,xp:0,pro:true,curveV:PASS_CURVE_V,claimed:{free:[],prem:[]}}, {season:n,xp:0,pro:true,proS:'S'+n,curveV:PASS_CURVE_V,claimed:{free:[],prem:[]}}).proS;
+    _walletCache=w; try{ localStorage.removeItem(acctKey('bag_tourpass')); }catch(e){} return out; },
   /* ---- the Oct 5 gate, saved seasonal packs, season-end settlement ---- */
   gate(){ return {on:passSystemsOn(), chal:passChalSet().length, chalHTML:passChalHTML(), stamps:passStampsHTML({1:40}), code:passStampsCode(),
     spookyLive:packTierLive('spooky'), spookyDrop:!!dropReward(dropById('spooky')), live:liveSeasonalPackId(), tease:PASS_NEXT_TEASE}; },
@@ -188,6 +213,8 @@ try {
 
   head('value: Season 2 is never a worse pass than Season 1');
   const T = await E('tables');
+  const SW = await E('swap', 2);
+  ok('Season 2 swaps exactly Pro tiers 10, 45, 48 and 53 (owner)', JSON.stringify(SW) === JSON.stringify({ prem: [10, 45, 48, 53] }), SW);
   const sum = (L, k) => L.reduce((a, r) => a + (k === 'coins' ? (r.coins || 0) : 0), 0);
   for (const lane of ['free', 'prem']) {
     const s1 = T[1][lane], s2 = T[2][lane];
@@ -195,11 +222,18 @@ try {
     const moved = [];
     for (let i = 0; i < s1.length; i++) {
       const a = s1[i], z = s2[i];
-      // Season 2 may ADD a pack where Season 1 had only a cosmetic; it may never change or drop one.
+      // Season 2 may ADD a pack where Season 1 had only a cosmetic; it may never change or drop one,
+      // except a Pro pack it SWAPS for that tier's exclusive.
+      const swapped = (SW[lane] || []).includes(i + 1);
+      if (swapped) { if (z.pack || !z.cos) moved.push(i + 1); else if (JSON.stringify(a.shard || null) !== JSON.stringify(z.shard || null) || JSON.stringify(a.spin || null) !== JSON.stringify(z.spin || null) || (z.coins || 0) < (a.coins || 0)) moved.push(i + 1); continue; }
       if ((a.pack && JSON.stringify(a.pack) !== JSON.stringify(z.pack || null)) || JSON.stringify(a.shard || null) !== JSON.stringify(z.shard || null)
         || JSON.stringify(a.spin || null) !== JSON.stringify(z.spin || null) || (z.coins || 0) < (a.coins || 0)) moved.push(i + 1);
     }
-    ok(`${lane}: every pack, shard and spin is where Season 1 put it, and no tier pays fewer coins`, !moved.length, moved);
+    ok(`${lane}: every pack, shard and spin is where Season 1 put it (or swapped for an exclusive), and no tier pays fewer coins`, !moved.length, moved);
+    if (lane === 'prem') {
+      const sw = (SW.prem || []).map(t => t + ':' + (s2[t - 1].cos ? s2[t - 1].cos.cat + '/' + s2[t - 1].cos.id : 'none') + (s2[t - 1].pack ? '+pack' : '') + (s2[t - 1].spin ? '+spin' : ''));
+      ok('prem: each swapped tier pays its exclusive instead of the pack, and 48 keeps its spin', sw.join(',') === '10:club/broomstick,45:top/shacket,48:cleats/hayride+spin,53:club/pitchfork', sw);
+    }
     const added = s2.map((z, i) => (!s1[i].pack && z.pack) ? (i + 1) + ':' + z.pack.tier : null).filter(Boolean);
     if (lane === 'free') ok('free: the two tiers Season 1 spent on cosmetics pay a seasonal pack instead', added.join(',') === '15:seasonal,35:seasonal', added);
     else ok('prem: no pack is added on the Pro lane', !added.length, added);
@@ -215,6 +249,7 @@ try {
   const n1 = T[1].free.filter(r => r.cos).length + T[1].prem.filter(r => r.cos).length;
   ok(`Season 2 has more cosmetics than Season 1 (${n2} against ${n1})`, n2 > n1);
   ok('the Pro capstone at tier 60 is a cosmetic', !!T[2].prem[59].cos, T[2].prem[59].cos);
+  ok('and it is two: the Pumpkin Head skin and the Will-o\'-Wisp Aura', T[2].prem[59].cos && T[2].prem[59].cos.id === 'pumpkinhead' && T[2].prem[59].cos2 && T[2].prem[59].cos2.id === 'wisp', [T[2].prem[59].cos, T[2].prem[59].cos2]);
 
   head('exclusive: every pass item is on one track and nowhere else');
   const items = await E('items');
@@ -254,7 +289,7 @@ try {
   head('drops and their rewards');
   for (const d of await E('drops')) {
     ok(`${d.id}: every item exists and is priced`, d.items.every(i => i.listed && i.base > 0), d.items.filter(i => !(i.listed && i.base > 0)));
-    ok(`${d.id}: completing it pays a listed backdrop and coins`, d.reward.length > 0 && d.reward.every(r => r.listed && r.bg) && d.coins > 0, d.reward);
+    ok(`${d.id}: completing it pays a listed backdrop and coins`, d.reward.every(r => r.listed) && d.reward.some(r => r.bg) && d.coins > 0, d.reward);
   }
 
   head('October');
@@ -300,7 +335,7 @@ try {
 
   head('claiming the whole track');
   const CL = await E('claimAll');
-  ok(`all ${CL.n} rewards claim, and every cosmetic lands in the closet`, CL.cos.length === 17 && CL.cos.every(c => c.owned), CL.cos.filter(c => !c.owned));
+  ok(`all ${CL.n} rewards claim, and every cosmetic lands in the closet`, CL.cos.length === 22 && CL.cos.every(c => c.owned), CL.cos.filter(c => !c.owned));
 
   const at = async (iso) => { await page.clock.setSystemTime(new Date(iso)); };
 
@@ -353,12 +388,23 @@ try {
   await E('histReset');
   SS = await E('staleSeason', 1, 20);
   ok('tier 20 in Season 1 is recorded and earns nothing', SS.hist['1'] === 20 && (await E('stamps')).list.length === 0, SS.hist);
-  H = await E('histFrom', { season: 1, xp: await E('xpAt', 72), curveV: 4 });
+  H = await E('histFrom', { season: 1, xp: await E('xpAt', 72), curveV: await E('curveNow') });
   ok('a Season 1 track arriving from the cloud counts too, overtime included', H['1'] === 72, H);
   H = await E('histFrom', { season: 1, xp: 10, curveV: 4 });
   ok('a smaller one never lowers it', H['1'] === 72, H);
   ok('the merge keeps each season\'s best and drops junk', JSON.stringify(await E('mergeHist', { 1: 35, 2: 10 }, { 1: 20, 2: 44, x: 5, 3: 400 })) === JSON.stringify({ 1: 35, 2: 44, 3: 90 }), await E('mergeHist', { 1: 35, 2: 10 }, { 1: 20, 2: 44, x: 5, 3: 400 }));
   ok('Season 1 at 72 shows one mark', (await E('card')) === 'S1★', await E('card'));
+  // a real Season 1 track in the cloud is on the v4 curve, and its overtime has to survive the v5 conversion
+  await E('histReset');
+  H = await E('histFrom', { season: 1, xp: V4_60 + 12 * 1500, curveV: 4 });
+  ok('a v4 Season 1 track at overtime tier 72 still reads 72 on the current curve', H['1'] === 72, H);
+  await E('histReset');
+  H = await E('histFrom', { season: 1, xp: V4(35) + 20, curveV: 4 });
+  ok('a v4 Season 1 track at tier 35 still reads 35 on the current curve', H['1'] === 35, H);
+  await E('histReset');
+  H = await E('histFrom', { season: 1, xp: Math.round(300 * 60 + 10.1 * 1770) + 12 * 1500, curveV: 5 });
+  ok('a v5 Season 1 track (overtime 1,500 a tier) at tier 72 still reads 72', H['1'] === 72, H);
+  await E('histFrom', { season: 1, xp: V4_60 + 12 * 1500, curveV: 4 });
   ok('another player\'s stamps come off their look', (await E('otherCard', '1:35,2:90')) === 'S1S2★★★', await E('otherCard', '1:35,2:90'));
   ok('a garbled look shows nothing rather than breaking the card', (await E('otherCard', 'nonsense')) === null);
 
@@ -497,7 +543,7 @@ try {
   ok('a season marked as having Pro settles both lanes at once, skipping what was claimed', ST2.paid['1'] === 14 && !ST2.ledger['1'].free.includes(3) && ST2.ledger['1'].prem.length === 7, ST2);
   // a device that never saw Season 1 locally: its track arrives from the cloud
   await E('settleReset');
-  AR = await E('archiveFrom', { season: 1, xp: await E('xpAt', 12), curveV: 4, claimed: { free: [1], prem: [] } });
+  AR = await E('archiveFrom', { season: 1, xp: V4(12) + 5, curveV: 4, claimed: { free: [1], prem: [] } });
   ok('a Season 1 track that arrives in a cloud pull is archived too', AR['1'] && (await E('settle')).paid['1'] === 11);
   ok('an in-progress season is never archived', !(await E('archiveFrom', { season: 2, xp: 999, curveV: 4 }))['2']);
   const MA = await E('mergeArchive', { 1: { season: 1, xp: 100, pro: false, curveV: 4, claimed: { free: [1, 2], prem: [] } } }, { 1: { season: 1, xp: 300, pro: true, curveV: 4, claimed: { free: [3], prem: [1] } } });
@@ -505,6 +551,18 @@ try {
   const ML = await E('mergeSettled', { 1: { free: [1, 2], prem: [] } }, { 1: { free: [2, 3], prem: [4] }, x: { free: [9] } });
   ok('the ledger merges as a union, so no device pays a tier twice', JSON.stringify(ML) === JSON.stringify({ 1: { free: [1, 2, 3], prem: [4] } }), ML);
   await E('settleReset');
+
+  head('a season change under an open tab: last season\'s pass is not this season\'s');
+  await at('2026-10-06T16:00:00Z');
+  const STW = await E('stale');
+  ok('a wallet still holding the Season 1 pass reads as no pass in Season 2', STW.season === 2 && STW.active === false && STW.pro === false, STW);
+  ok('...so the Season 2 track is not marked Pro', STW.mark === false && STW.markS === '', STW);
+  ok('a bare Pro mark on a Season 2+ track no longer settles the Pro lane', STW.hadOldMark === false && STW.hadNewMark === true, STW);
+  ok('...while Season 1 still settles off the mark it always had', STW.hadS1Mark === true, STW);
+  ok('a Season 2 buyer is Pro and the track is stamped with the season', STW.liveActive === true && STW.liveMarkS === 'S2', STW);
+  ok('the cloud merge carries the season stamp', STW.merged === 'S2', STW);
+  ok('a free player\'s stale wallet is not proof of last season\'s Pro (pass_period is the season read, not bought)', STW.freeStale === false, STW);
+  ok('...while a stale wallet that says the pass was active still is', STW.buyerStale === true, STW);
 
   head('page errors');
   ok('none', errs.length === 0, errs.slice(0, 3));

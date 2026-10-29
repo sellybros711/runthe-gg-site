@@ -508,7 +508,9 @@
   function wallButton(btn){
     if(!btn) return false;
     btn.disabled=false; btn.classList.remove('spent');
-    btn.textContent = signedIn() ? 'Get an Arcade Card' : 'Create a free account';
+    // A guest who has just finished is offered the account as what it does for
+    // them: it keeps the streak (the offer it opens says so in its first line).
+    btn.textContent = signedIn() ? 'Get an Arcade Card' : 'Save my streak';
     return true;
   }
 

@@ -1,0 +1,74 @@
+name: Fantasy Challenge watchdog
+
+# THE WEEK OPENS FIRST THING TUESDAY, AND THIS IS WHAT MAKES SURE. The owner's rule
+# (2026-10-22, moved to 8am on 2026-10-27): the week's contest opens at 8am Eastern Tuesday.
+# fantasy-pool.yml builds it then, settles at 11am, and catches up Wednesday and Thursday
+# morning. That is three chances, all on GitHub's cron, which is best effort: it has delayed
+# the Tuesday run by four hours and dropped live-scoring firings outright. Week 7 of 2026
+# sat on week 6 into game day and nobody heard.
+#
+# SO THIS ASKS EVERY HOUR ON TUESDAY FROM 9AM EASTERN, THEN EVERY TWO HOURS UNTIL THURSDAY
+# EVENING: is the week
+# about to be played the one fantasy_now.json points at? If not, it dispatches the build with
+# catchup=true, which builds only a week that is not live yet. On a Tuesday morning a week not
+# yet open may only mean Monday night's stats are late: the build then waits (until noon
+# Eastern at most) and this asks again on the hour. The catchup flag matters: a build
+# that lands while this one is queued must never be rebuilt, because a price never moves once
+# somebody has drafted against it. From Wednesday on, a week still not open also opens the
+# issue "Fantasy Challenge: the week did not open", which emails the owner.
+#
+# ON A NORMAL WEEK IT DOES NOTHING. The Tuesday build has already moved the pointer, the two
+# answers agree, and the run ends green in a few seconds.
+
+on:
+  schedule:
+    - cron: '7 13-23 * * 2'     # Tuesday hourly from 9am Eastern (EDT; 8am in EST)
+    - cron: '7 */2 * * 3'       # all of Wednesday
+    - cron: '7 0-22/2 * * 4'    # Thursday until early evening Eastern
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: write
+  issues: write
+
+concurrency:
+  group: fantasy-watchdog
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Is the right week open
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # The season over (every game played) is the one time there is no next week, and
+          # next-week.mjs says so by exiting non-zero. Nothing to watch then.
+          if ! OUT=$(node football/build/next-week.mjs); then
+            echo "no week to build (season over?): $OUT"
+            exit 0
+          fi
+          WANT=$(echo "$OUT" | head -1 | awk '{print $1" "$2}')
+          LIVE=$(node -e 'const n=require("./football/data/fantasy_now.json");console.log(n.season+" "+n.week)')
+          echo "this week: $WANT, live: $LIVE"
+          if [ "$WANT" = "$LIVE" ]; then
+            echo "the week is open."
+            exit 0
+          fi
+          echo "::warning::$WANT is not open yet. Dispatching the build."
+          gh workflow run fantasy-pool.yml --ref main -f catchup=true
+          DOW=$(TZ=America/New_York date +%u)   # 2 Tuesday, 3 Wednesday, 4 Thursday
+          if [ "$DOW" -ge 3 ]; then
+            TITLE="Fantasy Challenge: the week did not open"
+            BODY="The watchdog found $WANT still not open (live: $LIVE) and dispatched the build again. Run: $RUN_URL"
+            NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+            if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "$BODY"; else gh issue create --title "$TITLE" --body "$BODY"; fi
+          fi

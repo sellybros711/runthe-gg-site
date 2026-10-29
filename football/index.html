@@ -88,6 +88,8 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <!-- GA4: same property as the rest of runthe.gg. Consent defaults above gate it. -->
@@ -537,6 +539,22 @@ window.GA_ID='G-L29P5MRWKE';
      way to the thing that opens it. The press opens the sign-in sheet, which is where that
      tap was always going to end. */
   .hp-full.hp-fan.hp-lock .hp-full-name{color:rgba(255,232,232,.92)}
+  /* ---- THE CREST AND THE SIX ----
+     The trophy is the prize and the six bars are the lineup, so the door says what the
+     mode is before anybody reads a word of it. A field's yard lines sit faintly behind,
+     the same ground the mode's own pages are drawn on. The crest glows in the sign's own
+     colour, so it changes with the state rather than being a fourth colour to learn. */
+  .hp-full.hp-fan{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,var(--fan-bg1),var(--fan-bg2));gap:4px;padding-top:13px}
+  .hp-fan-ico{width:30px;height:30px;flex:0 0 auto;
+    filter:drop-shadow(0 0 7px var(--fan-g2)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-fan-rack{display:flex;gap:4px;margin-top:4px}
+  .hp-fan-rack i{display:block;width:17px;height:4px;border-radius:2px;opacity:.5}
+  .hp-fan-rack .QB{background:#ff0a3b} .hp-fan-rack .RB{background:#22c55e}
+  .hp-fan-rack .WR{background:#0f93ff} .hp-fan-rack .TE{background:#eb9500}
+  .hp-full.hp-fan.hp-fan-in .hp-fan-rack i{opacity:1;box-shadow:0 0 6px currentColor}
   /* Sized off the label it sits in rather than in pixels, so it tracks the name at every
      width instead of needing a breakpoint of its own. */
   .hp-lk{width:.82em;height:.82em;vertical-align:-0.06em;margin-right:5px;
@@ -1830,7 +1848,13 @@ window.GA_ID='G-L29P5MRWKE';
   .bg-narr b{color:#f4f7fc;font-weight:700}
   .bg-narr .good{color:#4ade80;font-weight:800}
   .bg-narr .bad{color:#f87171;font-weight:800}
-  .bg-skip{display:flex;justify-content:flex-end;margin:-2px 2px 2px}
+  .bg-skip{display:flex;justify-content:flex-end;gap:16px;margin:-2px 2px 2px}
+  /* The broadcast's two controls share a row: Sim to the end, and the Speed button that
+     slows it down (assets/simspeed.js). Speed is sized to its words so the way out stays the
+     bigger target. */
+  .porow{display:flex;gap:8px}
+  .porow .btn{flex:1;width:auto;white-space:nowrap;padding-left:12px;padding-right:12px}
+  .porow .btn.spd{flex:0 0 auto}
   /* THE SIXTH TIME IN THIS FILE. .bg-skip sets display:flex, so the `hidden` the script
      writes on it never takes without this line, and the control stays on screen through the
      verdict offering to hurry a game that has finished. */
@@ -2146,6 +2170,19 @@ window.GA_ID='G-L29P5MRWKE';
   .respin.off b{color:var(--dim-2)}
   .respins .respin.off span{color:var(--dim-2)}
   .respinnote{color:var(--dim-2);font-size:10px;text-align:center;margin:6px 0 0}
+  /* THE FREE RE-SPIN shares a line with the note under the paid ones, so offering it costs
+     the screen no height. Yellow, because it is the one re-spin that costs nothing. */
+  .freerow{display:flex;align-items:center;gap:9px;margin-top:6px}
+  .freerow .respinnote,.freerow p{flex:1 1 auto;min-width:0;margin:0;text-align:left}
+  .freespin{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;
+    border-radius:8px;border:0;cursor:pointer;background:linear-gradient(180deg,#facc15,#eab308);
+    color:#1a1405;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 2px 8px rgba(234,179,8,.25)}
+  .freespin b{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;line-height:1}
+  .freespin svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+  .freespin svg path{fill:currentColor;stroke:none}
+  .freespin:active{transform:scale(.97)}
+  .freespin[disabled]{opacity:.55;cursor:default}
 
   .panel{background:var(--grad-panel);border:1px solid var(--line);border-radius:16px;padding:15px;
     box-shadow:var(--shadow)}
@@ -2174,7 +2211,16 @@ window.GA_ID='G-L29P5MRWKE';
      --hdr is the pinned height, declared once, because the draft HUD sticks too and has to
      stack UNDER this rather than on top of it. */
   :root{--hdr:56px}
-  header{position:sticky;top:0;z-index:60;display:flex;align-items:center;
+  /* UNDER THE CLOCK. Saved to the Home Screen, an iPhone can draw the page edge to edge, under
+     the status bar (viewport-fit=cover), and then env(safe-area-inset-top) is the clock's
+     height. A player saw the header pinned behind the time, profile button and all, where
+     nothing could be tapped. The header now sticks below that inset, the wrap starts below
+     it, and an opaque strip covers it so the page never scrolls through the clock. In a
+     browser tab the inset is 0 and none of this moves a pixel. */
+  body:before{content:'';position:fixed;left:0;right:0;top:0;z-index:61;pointer-events:none;
+    height:env(safe-area-inset-top,0px);background:var(--bg)}
+  .wrap{padding-top:calc(14px + env(safe-area-inset-top,0px)) !important}
+  header{position:sticky;top:env(safe-area-inset-top,0px);z-index:60;display:flex;align-items:center;
     padding:6px 0;margin:-4px 0 10px}
   /* The page's own background, carried out over the wrap's 14px of side padding so nothing
      scrolls past in the gutter. Behind the header's content, not over it. */
@@ -2963,15 +3009,6 @@ window.GA_ID='G-L29P5MRWKE';
   .swatch:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
   /* Which club is picked, spelled out. A ringed disc in a grid of thirty-two does not tell
      anybody they have chosen the Jaguars. */
-  /* ---------- WHAT IS NEW ---------- */
-  .wnrow{display:flex;gap:13px;align-items:center;margin:0 0 12px}
-  .pfp.wnbig{width:88px;height:88px}
-  .wnlead{margin:0;font-size:13px;line-height:1.5;color:var(--dim)}
-  .wnlist{margin-top:0}
-  .wnnow{font-size:11.5px;margin:12px 0 0}
-  .wnchk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;
-    color:var(--dim-2);cursor:pointer}
-  .wnchk input{width:15px;height:15px;accent-color:#F4B413;flex:0 0 auto}
   /* ---------- THE UNREAD DOT ---------- */
   /* Red, and the only red circle on any of these screens, because it has to be findable in
      the corner of an eye rather than read. It sits on the tile corner where an icon badge
@@ -4566,6 +4603,10 @@ window.GA_ID='G-L29P5MRWKE';
      .mypin's offset, because the two are sticky siblings and the only thing stopping
      them overlapping is that one knows how tall the other is. */
   #s-board{--lbdock:54px}
+  /* The closeable bottom banner (/assets/rtg-ads.js) takes the bottom edge on the board, so the
+     bar and the pinned place row stand on it rather than on the strip's reserved band. */
+  body.rtg-sticky-on #s-board{--adstrip:var(--sticky-ad-h,0px)}
+  @media (max-width:1199px){ body.rtg-sticky-on #s-board{--adstrip:max(calc(54px + env(safe-area-inset-bottom,0px)), var(--sticky-ad-h,0px))} }
   /* Sat above the fixed ad strip, not under it: sticky offsets are measured from the
      scrollport, so bottom:0 is the viewport edge, which is exactly where the strip is.
 
@@ -4978,19 +5019,26 @@ window.GA_ID='G-L29P5MRWKE';
      figure. The lineup pips sit at the bottom of it now, and the year reel was showing straight
      through them, so the solid part runs to 92% and only the last few pixels feather. */
   /* Sticks BELOW the banner, not underneath it. z-index stays under the header's 60. */
-  .capwrap{position:sticky;top:var(--hdr);z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
+  .capwrap{position:sticky;top:calc(var(--hdr) + env(safe-area-inset-top,0px));z-index:30;padding:7px 0 7px;margin:-4px 0 8px;
     background:linear-gradient(180deg,var(--bg) 92%,rgba(8,11,20,0))}
   /* THE LINEUP PIPS, in the sticky bar, fading in as the field scrolls off.
      --sq runs 0 to 1 with how much of the field has gone. The height is RESERVED at every
      value and only opacity moves: growing a sticky block as they appear would shift the page
      under the finger, which is the same class of bug as trying to collapse the block itself. */
   #s-draft{--sq:0}
+  /* HUNG UNDER THE BAR, NOT RESERVED INSIDE IT. They used to keep 42px of the bar empty at
+     every scroll position so it never changed height, and at the top of a draft that was a
+     dark band between the money and the field. Absolute below the bar keeps the promise
+     (the sticky block never changes height) without the band: they are a strip laid over
+     whatever has scrolled under, and invisible and untouchable until it has. */
   .dpips{display:flex;gap:5px;justify-content:center;height:34px;align-items:center;
-    margin-top:8px;opacity:var(--sq);pointer-events:none;position:relative}
+    opacity:var(--sq);pointer-events:none;position:absolute;left:0;right:0;top:100%;
+    padding:4px 0 6px;box-sizing:content-box;background:var(--bg);
+    border-bottom:1px solid var(--line)}
   /* A hairline under the bar, fading in with the pips, so the pinned header has an edge once
      content is scrolling behind it. Without one the pips float over the reels. */
   .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
-    background:var(--line);opacity:var(--sq)}
+    background:var(--line);opacity:0}
   .dpips i{flex:0 0 auto;min-width:27px;height:32px;padding:0 6px;border-radius:7px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
     font-family:var(--fn);font-size:9.5px;font-weight:600;line-height:1.05;
@@ -5090,7 +5138,7 @@ window.GA_ID='G-L29P5MRWKE';
      letters of the line above it. Nothing measured as overlapping and it read as though it
      did, which on a screen is the same complaint. */
   .capline{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:6px}
-  .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
+  .capline .amt{font-family:var(--fd);font-size:28px;line-height:1}
   .capline .amt.low{color:var(--red)}
   /* What is left divided by the spots still to fill. Under the BAR now, not inside the
      money column: it is the same fact read a second way, and sitting it below the gauge
@@ -5105,7 +5153,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* Slightly taller than the 5px countdown it replaces: it now carries up to twelve slices
      and a 5px bar cannot show a hairline between two of them. The radius lives on the track
      and clips every slice to it, so the ends stay round with no notch where two meet. */
-  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:9px;
+  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:7px;
     display:flex}
   /* ONE SLICE PER SIGNING, the width of his salary against the cap and the colour of the
      position he plays, set inline. The transition is the whole animation: a signing grows
@@ -5224,8 +5272,8 @@ window.GA_ID='G-L29P5MRWKE';
      past instead of one number swapping for another. Motion is driven from rAF in
      script rather than a CSS transition: the strip needs a blur that tracks its
      own speed, and the old build hung the whole draft on transitionend firing. */
-  .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:11px}
-  .reelbox{position:relative;height:114px;overflow:hidden;border-radius:14px;
+  .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:8px}
+  .reelbox{position:relative;height:96px;overflow:hidden;border-radius:14px;
     background:linear-gradient(180deg,#0d1526,#070b14 55%,#05080f);
     border:1px solid var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   /* Fades the faces above and below the middle one into the housing. */
@@ -5237,18 +5285,18 @@ window.GA_ID='G-L29P5MRWKE';
   .reelbox .strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform,filter}
   .reelbox .wash{display:none}
   .reelbox.clubbed .wash{display:block}
-  .reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;z-index:3;
+  .reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:32px;margin-top:-16px;z-index:3;
     border-radius:9px;border:1px solid rgba(255,255,255,.13);pointer-events:none;
     transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
-  .reel-i{height:38px;display:grid;place-items:center;padding:0 9px;text-align:center;
+  .reel-i{height:32px;display:grid;place-items:center;padding:0 9px;text-align:center;
     font-family:var(--fd);text-transform:uppercase;letter-spacing:.02em;
     line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .reelbox.year .reel-i{font-size:23px;font-weight:800}
+  .reelbox.year .reel-i{font-size:21px;font-weight:800}
   .reelbox.team .reel-i{font-size:14.5px;font-weight:800}
   /* The face it stopped on carries more weight than the decoys either side. */
   .reel-i.land{font-weight:900}
   .reelcol{min-width:0}
-  .rlabel{display:block;margin:0 0 5px 3px;font-family:var(--fn);
+  .rlabel{display:block;margin:0 0 3px 3px;font-family:var(--fn);
     font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
   /* Spinning: the housing glows in its own color so you can see which reel is live. */
   .reelbox.year.spin{border-color:rgba(239,68,68,.55)}
@@ -5299,7 +5347,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* The band becomes a glaze that lifts the middle face out of the vignette. */
   .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;
     background:rgba(255,255,255,.13)}
-  .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;
+  .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:32px;margin-top:-16px;
     border-radius:9px;z-index:0;background:var(--c1);opacity:0;pointer-events:none;
     animation:clubwash .5s ease-out}
   @keyframes clubwash{
@@ -5348,6 +5396,47 @@ window.GA_ID='G-L29P5MRWKE';
      price all fighting over one line, which is why everything was clipped with an
      ellipsis. In a tile each of those gets its own place. */
   .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+  /* THE DRAFT, CONDENSED (the owner's call, 2026-10-28): the board in view without
+     scrolling, with room for an ad at the foot of the screen. Nothing is removed; what goes
+     is air. A shorter field (the formation is three rows, not a square of them), the empty
+     note line under it closed until it has something to say, and the tabs and the sort a
+     notch tighter. Draft only: the same classes on other screens keep their size. */
+  #s-draft .field:not(.fullfield){aspect-ratio:1/0.42}
+  /* Full Team's two halves were taller than they were wide, which on a phone put the board
+     a full screen down. Six rows still fit with a name under every disc. */
+  #s-draft .field.fullfield{aspect-ratio:1/0.85}
+  /* The wheels' own labels go: a year and a club name say what they are, and the buttons
+     right under them already read New year and New team. */
+  #s-draft .rlabel{display:none}
+  #s-draft .railnote:empty{min-height:0;margin:0}
+  #s-draft .tabs{margin-top:8px}
+  #s-draft .tab{padding:9px 13px}
+  #s-draft .optbar{margin:6px 0 0}
+  #s-draft .seg.compact button{padding-top:7px;padding-bottom:7px}
+  #s-draft .opts{margin-top:8px}
+  /* THE DRAFT BANNER. It is a child of body, not of the draft, so the screen's entrance transform
+     cannot move it (a transformed ancestor would make bottom:0 the draft's own bottom). Pinned to the
+     viewport while the draft is open; the draft is padded by its rendered height, so the last cards
+     and Quit scroll clear. Unfilled, it costs no height and no padding. */
+  #s-draft.on{padding-bottom:var(--draft-ad-h,0px)}
+  .draft-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .draft-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .draft-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+  .draft-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
+  .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* THE SEASON BANNER: the same pattern, on the regular season screen. */
+  #s-season.on{padding-bottom:var(--season-ad-h,0px)}
+  .season-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .season-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .season-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+  .season-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
+  .season-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .season-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .season-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
 
   /* ================= THE DRAFT ON A WIDE SCREEN =================
      One column on a phone, and the phone layout is untouched: .dcols is display:block
@@ -6318,6 +6407,25 @@ window.GA_ID='G-L29P5MRWKE';
     font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);
     margin:0 0 6px;padding-top:14px;border-top:1px solid var(--line)}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  /* The menu ad keeps 150px from the buttons above it, but only once it holds an ad. */
+  .rtp-ad-inline[data-ad-zone]:has(ins[data-ad-status="filled"]){margin-top:150px}
+  .rtp-ad-inline[data-ad-zone="results"]:has(ins[data-ad-status="filled"]){margin-top:170px}
+  /* THE MENU AD'S SIZE, fixed (the owner, 2026-10-26: a full-width responsive unit filled half a
+     phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
+     unfilled unit collapses to nothing. */
+  [data-ad-zone] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  /* SIZED BY THE COLUMN, NOT THE SCREEN (QA, 2026-10-27, site PR on claude/qa-ad-fit). A 768px
+     media query handed the 728x90 to a column that can be narrower (572 to 612px at 768), so it
+     hung past the screen. Each zone is a size container: 320x50, 468x60 from a 468px column, the
+     728x90 from a 728px column. */
+  [data-ad-zone]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone] ins.adsbygoogle{width:728px;height:90px} }
+  /* THE RESULTS AD IS THE MID-SIZE RECTANGLE (the owner, 2026-10-27): 300x250 on every column, since
+     a finished run is a resting screen and the 300x250 is the size advertisers bid on most. Start
+     screens keep the slim banner. After the container rules so it wins at every width. */
+  [data-ad-zone="results"] ins.adsbygoogle{width:300px;height:250px}
+  [data-ad-zone] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   /* The gameplay screens stay clear for the same reason the pinned strip does. */
   body.rtp-hide-ads .rtp-ad-inline{display:none}
 
@@ -7286,19 +7394,18 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
          Every link opens in a new tab, deliberately. There is no mid-run save yet,
          so following a link in this tab during a draft would throw the run away. -->
-    <!-- The banner, between the last button and the legal links. Responsive rather than a
-         fixed 320x50: on a phone it runs the content width, on a desktop it caps at the
-         728px leaderboard shape instead of stretching across the whole window. The slot id
-         is a placeholder until the unit exists in the dashboard, and the initializer at the
-         foot of this file refuses to start a placeholder, so this renders nothing at all
-         until a real id is pasted in. -->
-    <div class="rtp-ad-inline">
+    <!-- THE MENU AD (Ads Agent, 2026-10-26, the owner's rule: ads on a game's start screen,
+         never in play). The one live unit in this game. It lives on this screen only:
+         menuAd() in show() starts it the first time the start screen is shown and REMOVES it
+         the moment any other screen opens, because AdSense does not allow a loaded ad to be
+         hidden and play must never sit beside one. It is not started again until the page
+         reloads. Once filled it sits 150px below the last button (Google's distance for game
+         controls); empty, it takes no space. check-adsense holds the zone and the removal. -->
+    <div class="rtp-ad-inline" data-ad-zone="menu">
       <span class="rtp-ad-label">Advertisement</span>
       <ins class="adsbygoogle"
            data-ad-client="ca-pub-5952069078178257"
-           data-ad-slot="0000000000"
-           data-ad-format="horizontal"
-           data-full-width-responsive="true"></ins>
+           data-ad-slot="7383466228"></ins>
     </div>
 
     <!-- What this game is, in prose, for anyone who arrives without knowing. Folded, because
@@ -7473,9 +7580,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <button class="tab" data-dyn="score">High score</button>
     </div></div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
-      <button class="tab on" data-lb="day">Today</button>
+      <button class="tab" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
-      <button class="tab" data-lb="all">All time</button>
+      <button class="tab on" data-lb="all">All time</button>
     </div></div>
     <div class="sortbar">
       <div class="seg" id="lb-sort">
@@ -7624,19 +7731,23 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            which put the control for the thing at the top of the column at the bottom of
            it, and out of sight on a phone. -->
       <div id="d-respin"></div>
-     </div>
-    </div>
-    <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
-    <!-- HOW THE BOARD IS ORDERED, above the board and to the right of it. The tabs pick
-         WHICH players are listed and this picks the order they come in, so it belongs
-         between the two rather than inside the scrolling tab row, where it would slide out
-         of reach on a phone. -->
-    <div class="optbar">
-      <div class="seg compact" id="opt-sort">
-        <button data-os="pos">Position</button>
-        <button data-os="fppg">FPPG</button>
-        <button data-os="salary">Salary</button>
+      <!-- THE TABS AND THE SORT LIVE IN THIS COLUMN TOO. On a phone .dcols is a block, so the
+           order down the page is the same as when they sat under it. Wide, they fill the
+           space beside the field that used to be empty, and the board starts a whole row
+           higher (the owner's call, 2026-10-28: room for the board without scrolling). -->
+      <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
+      <!-- HOW THE BOARD IS ORDERED, above the board and to the right of it. The tabs pick
+           WHICH players are listed and this picks the order they come in, so it belongs
+           between the two rather than inside the scrolling tab row, where it would slide out
+           of reach on a phone. -->
+      <div class="optbar">
+        <div class="seg compact" id="opt-sort">
+          <button data-os="pos">Position</button>
+          <button data-os="fppg">FPPG</button>
+          <button data-os="salary">Salary</button>
+        </div>
       </div>
+     </div>
     </div>
     <div class="opts" id="opts"></div>
     <!-- QUITTING. Six spins in, a player who has changed their mind had no exit
@@ -7969,7 +8080,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <canvas id="po-fcanvas" width="600" height="160"></canvas>
     </div>
     <div class="polog" id="po-log"></div>
-    <div style="margin-top:14px"><button class="btn ghost sm" id="b-po-fast">Sim to the end</button></div>
+    <div class="porow" style="margin-top:14px"><button class="btn ghost sm" id="b-po-fast">Sim to the end</button>
+      <button class="btn ghost sm spd" data-simspeed>Speed: Normal</button></div>
   </div>
 
   <div class="screen" id="s-seed">
@@ -8218,6 +8330,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="ggad-long">One free account, every game. College Football, RunThePitch soccer, RunTheTour golf and more, alongside this one.</span>
         <span class="ggad-short">College Football, RunThePitch &amp; more, one free account</span></span>
       <span class="ggad-go">Play &#8599;</span></a>
+    <!-- THE RESULTS AD (Ads Agent, 2026-10-27, the owner's rule: start screens, results and
+         leaderboards, never in play). Empty until screenAds() fills it, once per finished run,
+         never between a Dynasty's seasons. Emptied the moment the screen closes. -->
+    <div class="rtp-ad-inline" data-ad-zone="results" id="o-adhost"></div>
   </div>
 
   <!-- ===== DYNASTY'S BOSS SEASONS =====
@@ -8303,7 +8419,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          watch in the mode, so there has to be a way to get to the result. It does NOT take
          the calls: fourth down and the two point try are what a boss battle IS, so it runs
          the football fast and still stops to ask. See bossFast. -->
-    <div class="bg-skip" id="bg-skip"><button class="btn-text" id="b-boss-fast">Sim the rest</button></div>
+    <div class="bg-skip" id="bg-skip"><button class="btn-text" data-simspeed>Speed: Normal</button><button class="btn-text" id="b-boss-fast">Sim the rest</button></div>
     <!-- EVERY DRIVE, NOT JUST THE SCORES, which is the one thing this screen can do that the
          playoff broadcast cannot. That log is built from scoringScript, which works BACKWARDS
          from a final score to a legal way of reaching it, so the only honest thing it can list
@@ -8387,7 +8503,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
     <div class="pocap" id="bowl-cap"></div>
     <div class="polog" id="bowl-log"></div>
-    <div style="margin-top:14px" id="bowl-fastwrap"><button class="btn ghost sm" id="b-bowl-fast">See result</button></div>
+    <div style="margin-top:14px" id="bowl-fastwrap"><div class="porow"><button class="btn ghost sm" id="b-bowl-fast">See result</button>
+      <button class="btn ghost sm spd" data-simspeed>Speed: Normal</button></div></div>
 
     <div id="bowl-result" hidden>
       <div class="verdict" id="bowl-verdict" style="margin-top:6px">
@@ -8507,8 +8624,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=98"></script>
-<script src="run.js?v=103"></script>
+<script src="engine.js?v=101"></script>
+<script src="run.js?v=104"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8526,7 +8643,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=40"></script>
-<script src="achievements.js?v=15"></script>
+<script src="achievements.js?v=16"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
@@ -8549,11 +8666,18 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
 <script src="/assets/cloudsave.js?v=2"></script>
+<!-- THE REWARDED VIDEO PLAYER (Ads Agent, 2026-10-28). Loaded here so the free re-spin can ask it
+     whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
+     the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
+<script src="/assets/rewarded.js?v=1"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
+<script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
-<script src="/assets/newsletter.js?v=1"></script>
+<script src="/assets/newsletter.js?v=2"></script>
 <!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
      keeps its own body as the fallback, so a blocked copy still draws the old chart. -->
-<script src="/assets/fieldcast.js?v=3"></script>
+<script src="/assets/fieldcast.js?v=4"></script>
+<script src="/assets/simspeed.js?v=1"></script>
 <script defer src="auth.js?v=8"></script>
 <script>
 (function(){
@@ -8774,7 +8898,7 @@ const isDefRun=()=>!!(run&&run.defense);
    database is what actually decides whether a run is recorded, and it does not consult
    this list. */
 const DEFENSE_LIVE=true;
-const DEFENSE_TESTERS=['malikwillislover','runnyj','slimeyb3'];
+const DEFENSE_TESTERS=['malikwillislover','runnyj','slimeyb3','csel8','jordantest'];
 /* FULL TEAM ASKS ITS OWN FILE. Same two gates as above and the same warning applies with
    more force: fullteam-access.js is served to anybody who asks for it, so it hides an
    unannounced mode and must never be what stands between a paying player and the thing
@@ -9965,6 +10089,101 @@ const NO_ADS=['s-season','s-po','s-bscout','s-bgame','s-bfreeze'];
    added next. Closing used to go to the results page if a run had finished and to the
    landing screen otherwise, which is the right guess twice and wrong from the squad, the
    season and the draft. */
+/* THE MENU AD lives on the start screen and nowhere else. Started the first time the start
+   screen shows, removed (not hidden) the first time any other screen opens, and never started
+   again on this page load. The boot screen is the one exception, since every load passes
+   through it on the way to the start screen. A push fills the first unstarted unit in the
+   page, and this one comes before the rails and the strip, which are never started. */
+function menuAd(id){
+  const z=document.querySelector('[data-ad-zone="menu"]');
+  if(!z||id==='s-load') return;
+  if(id!=='s-intro'){ z.remove(); return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE DRAFT BANNER. Built once when the draft opens, and emptied (never hidden) when the player
+   leaves it, so no ad is ever loaded behind another screen. Each visit builds a fresh unit. */
+let draftAdSize=null;
+function draftAd(id){
+  const old=document.querySelector('[data-ad-zone="draft"]');
+  if(id!=='s-draft'){
+    if(draftAdSize){ draftAdSize.disconnect(); draftAdSize=null; }
+    document.documentElement.style.removeProperty('--draft-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="draft-ad" data-ad-zone="draft"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="4314237726"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  /* The draft's bottom padding follows the banner's rendered height, so an unfilled banner costs
+     nothing and a filled one never covers the last cards or Quit. */
+  if(window.ResizeObserver){
+    draftAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--draft-ad-h',z.offsetHeight+'px'));
+    draftAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE SEASON BANNER (Ads Agent, 2026-10-28, the owner: "Pinned to the bottom of the device so it's
+   always there", and "let's get this on the live site"). A slim banner pinned to the bottom of the
+   regular season screen while the season is on screen, live games included. Built as a child of body
+   when the screen opens and removed when the player leaves, the same way as the draft banner. The
+   screen is padded by the banner's rendered height (--season-ad-h), so the last grid row clears it.
+   Unit football-season (8510729536). */
+let seasonAdSize=null;
+function seasonAd(id){
+  const old=document.querySelector('[data-ad-zone="season"]');
+  if(id!=='s-season'){
+    if(seasonAdSize){ seasonAdSize.disconnect(); seasonAdSize=null; }
+    document.documentElement.style.removeProperty('--season-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="season-ad" data-ad-zone="season"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="8510729536"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    seasonAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--season-ad-h',z.offsetHeight+'px'));
+    seasonAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's
+   calls). The banner sits on the front page, the leaderboard and the results, never on a screen
+   where people play, and never while the Dynasty dock is up (it owns the bottom of the screen
+   then). Its X closes it for the rest of the visit. The two rails are desktop only, on the
+   leaderboard. /assets/rtg-ads.js owns how both look and behave. */
+const STICKY_SLOT={sticky:'4079162954'};                      // football-sticky
+const BOARD_SLOTS={left:'1287020649', right:'5274367113'};    // football-board-left, football-board-right
+const STICKY_ON=['s-intro','s-board','s-over'];
+function stickyAd(id){
+  if(!window.RTG_ADS) return;
+  const dock=$('o-dock');
+  RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0&&!(dock&&!dock.hidden), STICKY_SLOT.sticky, 'football');
+}
+function boardRails(id){
+  if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
+}
+/* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
+   opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
+   board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
+   get none; only a Dynasty that has ended does. adUnitInto() is the only place a live unit is
+   made on this page, and screenAds() the only caller (check-adsense holds both). */
+let resultsAdFor=null;
+function adUnitInto(host){
+  host.innerHTML='<span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="7062148007"></ins>';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+function screenAds(id){
+  const res=$('o-adhost'); if(!res) return;
+  if(id!=='s-over'){ res.innerHTML=''; return; }
+  const done=!!(run&&run.outcome)&&!(run.dynasty&&!run.fired);
+  if(done&&!res.firstChild&&resultsAdFor!==run){ resultsAdFor=run; adUnitInto(res); }
+}
 let boardFrom='s-intro';
 function show(id){
   if(id==='s-board'){
@@ -9987,6 +10206,12 @@ function show(id){
      by any door has to stop them, or a drive keeps animating over whatever comes next. */
   if(id!=='s-bgame'&&typeof bossStop==='function') bossStop();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
+  menuAd(id);
+  draftAd(id);
+  seasonAd(id);
+  screenAds(id);
+  stickyAd(id);
+  boardRails(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
      (a finished run, a bailed draft, the leaderboard), and it carries two bits of state
@@ -9998,7 +10223,6 @@ function show(id){
      network round trip, and on a connection where that round trip beats the loading screen
      the panel would find the wrong screen on and never fire at all. It declines quietly
      whenever it has already been shown, been opted out of, or has nothing to show. */
-  if(id==='s-intro'&&typeof whatsNewMaybe==='function') whatsNewMaybe();
   if(typeof heroSync==='function') heroSync();
   /* Measured here because a hidden element reports no scrollWidth at all: asking at
      boot said every tab row fitted, whatever the viewport. */
@@ -10081,11 +10305,9 @@ async function boot(){
        the normal intro. routeChallenge falls back to false on anything it cannot decode. */
     if(!routeChallenge()) show('s-intro');
     ga('game_loaded');
-    /* A beat after the intro lands, because the auth client decides on ITS first change
-       whether it is opening a sheet of its own, and this must not get there first.
-       ONLY THE GUIDE NOW. askArcadeAd() shared this timer and has been removed: this game
-       does not put up a house ad for another one. */
-    setTimeout(()=>{ firstRunGuide(); },1200);
+    /* The first-run guide no longer opens by itself (owner's call: no auto tutorial on any
+       game). The Tutorial button on the front page is the way in. firstRunGuide() is kept,
+       and check-popups still drives it, so it can be put back with one line here. */
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -10816,8 +11038,32 @@ const dailyOn=()=>dailyLimited()&&!!authState.signedIn
   &&premiumSet!==null&&!dynastyOwned();
 /* How many are left today, and 1 whenever the page has no answer. What one of them buys is
    dailyUnit's question, not this one. */
+/* A CACHED ANSWER RUNS OUT AT ITS OWN resetsAt, and this is what says so.
+ *
+ * The meter is asked once per sign-in and then read off the cache, so without this the page
+ * goes on holding "used 3 of 3, locked until T" long after T. Reported by a signed in player:
+ * the spent sheet read 1s, they closed it, opened it again, and it read 24 hours. Past T the
+ * countdown has nothing left to count, dailyShut still answered true off the stale `used`, and
+ * the sheet fell through to its fallback line. Worse, a results screen painted from that cache
+ * reports the day over AGAIN, and a database on 105 answered an expired lock by stamping a
+ * fresh 24 hours (154_dynasty_day_end_lapsed.sql is the server half).
+ *
+ * So past T the cache is replaced with what ps_attempts_state itself answers for a lapsed
+ * window: nothing used, no clock. The allowance is left null, which every reader here takes
+ * as no opinion (so permission), and the boot read is re-armed to fill it in. The same is
+ * true of a calendar-day mode at Eastern midnight, so this is not Dynasty's alone.
+ * Written through dailyPut, because that is the one writer and its count is what tells a read
+ * that was already in flight that it describes the old window. */
+function dailyLapse(mode){
+  const s=dailyState[mode];
+  const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
+  if(!Number.isFinite(t)||t>Date.now()) return;
+  dailyPut(mode,{used:0,allowance:null,resetsAt:null,unit:s.unit,ended:false});
+  dailyAsked[mode]=false; dailyTried[mode]=0;
+}
 function dailyLeft(mode){
   if(!dailyOn()) return 1;
+  dailyLapse(mode);
   const s=dailyState[mode];
   if(!s||s.used==null||s.allowance==null) return 1;
   return Math.max(0,s.allowance-s.used);
@@ -10827,7 +11073,7 @@ function dailyLeft(mode){
 const dailyUnit=(mode)=>((dailyState[mode]&&dailyState[mode].unit)||'run');
 const dailySeasons=(mode)=>dailyUnit(mode)==='season';
 /* The day is over because the run is, which only season metering has a notion of. */
-const dailyEnded=(mode)=>!!(dailyState[mode]&&dailyState[mode].ended);
+const dailyEnded=(mode)=>{ dailyLapse(mode); return !!(dailyState[mode]&&dailyState[mode].ended); };
 /* Nothing more today, for either reason. The one question every gate asks. */
 const dailyShut=(mode)=>dailyOn()&&(dailyEnded(mode)||dailyLeft(mode)<=0);
 /* AND WHETHER A CLOCK IS ACTUALLY RUNNING ON IT, which is a separate question under the
@@ -10841,10 +11087,12 @@ const dailyTicking=(mode)=>dailyResetsAt(mode)!=null;
    the fallback for a page that has not been answered yet. */
 const DYN_DAY_SEASONS=3;
 const dailyAllow=(mode)=>{
+  dailyLapse(mode);
   const s=dailyState[mode];
   return (s&&s.allowance!=null)?s.allowance:(mode==='dynasty'?DYN_DAY_SEASONS:1);
 };
 const dailyResetsAt=(mode)=>{
+  dailyLapse(mode);
   const s=dailyState[mode];
   const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
   return Number.isFinite(t)?t:null;
@@ -10949,8 +11197,14 @@ function runDayEnsure(){
     paintHomeStart();
   }).catch(()=>{ missed(); });
 }
-/* Shut only on a definite refusal. An owner answers pro and is never shut. */
-const runDayShut=()=>!!(dailyOn()&&runDayState&&runDayState.ok===false&&!runDayState.pro);
+/* Shut only on a definite refusal. An owner answers pro and is never shut.
+   AND ONLY UNTIL nextAt. The refusal is cached for the session, so past that moment it
+   describes a day that is over; the same stale cache dailyLapse retires on the season meter.
+   No re-ask is needed: dynRunStart is the write and it asks the server anyway. */
+const runDayShut=()=>{
+  const t=runDayNext();
+  return !!(dailyOn()&&runDayState&&runDayState.ok===false&&!runDayState.pro&&!(t!=null&&t<=Date.now()));
+};
 const runDayNext=()=>{
   const t=runDayState&&runDayState.nextAt?Date.parse(runDayState.nextAt):NaN;
   return isNaN(t)?null:t;
@@ -12078,12 +12332,22 @@ function fantasyWeekEnsure(){
     .then(n=>{
       if(!n||n.season==null||n.week==null) return;
       fanWeek=n;
-      /* Only repaint if the answer actually changes the door, so this is a no-op on the
-         common visit and cannot fight whatever else has repainted since. */
-      if(fantasyEntered()) ensureFantasyButton();
+      /* REPAINTED ON EVERY ANSWER NOW, because the door says when the week locks and that
+         line is only known once the pointer is here. ensureFantasyButton rebuilds the same
+         node, so a second paint cannot fight whatever else has painted since. */
+      ensureFantasyButton();
+      /* The lock line is a countdown, so it is redrawn once a minute while the door is up. */
+      setInterval(()=>{ if($('b-fantasy')) ensureFantasyButton(); },60000);
     })
     .catch(()=>{});
 }
+
+/* THE LOCK DAY REMINDER. One sheet, once per account per week, on the Eastern day the
+   week locks and before the first kickoff. The rule lives in /assets/fantasy-promo.js
+   because the college game asks it too. `show` is this door's own question, so a reader
+   who is not shown the mode is never sold it. */
+if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'nfl', nowUrl:'/football/data/fantasy_now.json',
+  href:'/football/fantasy/', entryPrefix:'ps_fantasy_', auth:()=>authState, show:()=>fantasyShow() });
 
 /* THE SAME PADLOCK THE modes sheet DRAWS, written out again rather than shared, because
    MC_LOCK is a const inside the sheet's own painter and hoisting it to module scope to
@@ -12093,6 +12357,33 @@ const HP_LOCK='<svg class="hp-lk" viewBox="0 0 24 24" aria-hidden="true">'+
   '<path fill="none" stroke="currentColor" stroke-width="2.4" '+
     'd="M7.6 10.4V7a4.4 4.4 0 0 1 8.8 0v3.4"/>'+
   '<rect x="4.2" y="10.2" width="15.6" height="11.6" rx="2.4" fill="currentColor"/></svg>';
+
+/* THE CREST, the trophy on a shield the mode's own pages wear in their header. Solid colours
+   and no gradient ids, so it can be drawn anywhere without two copies painting each other. */
+const HP_CREST='<svg class="hp-fan-ico" viewBox="0 0 32 32" aria-hidden="true">'+
+  '<path d="M16 1.8 28.4 6v9.4c0 7.4-5.3 12.6-12.4 15-7.1-2.4-12.4-7.6-12.4-15V6Z" '+
+  'fill="rgba(10,14,26,.85)" stroke="#f0c96b" stroke-width="1.8"/>'+
+  '<path d="M11 8.6h10v4.2a5 5 0 0 1-10 0Z" fill="#f0c96b"/>'+
+  '<path d="M11 9.8H8.6a2.6 2.6 0 0 0 2.9 3.8M21 9.8h2.4a2.6 2.6 0 0 1-2.9 3.8" '+
+  'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'+
+  '<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'+
+  '<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
+/* Six bars, one a slot, in the position colours the mode's board deals. Lit once a lineup
+   is in, which is the door's own question asked a second way. */
+const HP_RACK='<span class="hp-fan-rack" aria-hidden="true"><i class="QB"></i><i class="RB">'+
+  '</i><i class="RB"></i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
+/* WHEN THE WEEK LOCKS, read off the pointer the Tuesday build writes. Null before it has
+   arrived, and null once the week is under way, so the line falls back rather than
+   counting down past zero. */
+function fantasyLockLine(){
+  if(!fanWeek||!fanWeek.locks_at) return null;
+  const ms=Date.parse(fanWeek.locks_at)-Date.now();
+  if(!(ms>0)) return 'Week '+fanWeek.week+' is live &middot; see the board';
+  const h=Math.floor(ms/3600000), d=Math.floor(h/24);
+  const left=d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
+    :Math.max(1,Math.floor(ms/60000))+'m';
+  return 'Week '+fanWeek.week+' &middot; locks in '+left;
+}
 
 function ensureFantasyButton(){
   let el=$('b-fantasy');
@@ -12133,13 +12424,13 @@ function ensureFantasyButton(){
   /* BETA, BECAUSE IT IS. Preview was the honest word while only a tester could open it and
      New is what a finished mode says. Beta is the one that tells a reader the mode is real,
      is theirs, and has rough edges. */
-  el.innerHTML='<span class="hp-tag hp-tag-beta">Beta</span>'+
+  el.innerHTML='<span class="hp-tag hp-tag-beta">Beta</span>'+HP_CREST+
     '<span class="hp-full-name">'+(showLock?HP_LOCK:'')+'Fantasy Challenge</span>'+
     '<span class="hp-full-sub">'+(inThisWeek
       ? 'Lineup in &middot; watch it score'
       : showLock
         ? 'Sign in to play &middot; one lineup a week'
-        : 'One lineup &middot; one week')+'</span>';
+        : (fantasyLockLine()||'One lineup &middot; one week'))+'</span>'+HP_RACK;
   /* THE COLOUR IS A CLAIM ABOUT THIS ACCOUNT, so it is said out loud for a reader who
      cannot see a border at all. The border is the fast answer and this is the true one. */
   el.setAttribute('aria-label','Fantasy Challenge, beta. '+(inThisWeek
@@ -12505,17 +12796,12 @@ function dynastyReplaceSheet(opts){
  * meeting each of those for the first time in the middle of a run. That is not difficulty,
  * it is a missing sentence.
  *
- * SHOWN BEFORE EVERY RUN, AND TURNED OFF BY THE READER RATHER THAN BY THE SECOND VIEW.
- * It used to be once per browser, the same shape as tradeIntro. That is right for a mode you
- * learn once and wrong for this one: a dynasty is a calendar, a win bar that moves, a cap
- * that does not, and the ageing rule, and somebody coming back a fortnight later is starting
- * a run against rules they half remember. So the sheet stands in front of every run and
- * carries its own off switch, which is the arrangement that lets a player who HAS learned it
- * stop seeing it without taking it away from everybody else.
- *
- * `opts.offer` draws that switch. Only the intro passes it: a "do not show this again" on a
- * sheet somebody deliberately opened from the How to play pill would be offering to hide a
- * thing they just asked for.
+ * SHOWN ONCE, ON THE ACCOUNT. It stood in front of every run for a while, with its own
+ * "don't show this again" box, on the argument that somebody coming back a fortnight later
+ * half remembers the rules. The box only held in the browser it was ticked in, and players
+ * reported the same pop-up ten times. So it shows before the first dynasty and never pushes
+ * itself again (dynastyIntro, through hasSeen); the rules pill and How to play bring it
+ * back for anybody who wants it.
  */
 function dynastyRulesHTML(go,opts){
   const step=E.DYNASTY_STEP_SEASONS;   // seasons between steps up in the target
@@ -12629,60 +12915,32 @@ function dynastyRulesHTML(go,opts){
     '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
       'You score points every season, more for the playoffs and a title, and later seasons '+
       'pay multiples. Lasting is the whole game.</p>'+
-    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>'+
-    /* UNDER THE BUTTON, which is where the site already puts this control: see .wnchk on the
-       crest's What's new sheet, whose markup and storage idiom this follows exactly so the
-       two cannot end up looking like two different products. */
-    ((opts&&opts.offer)
-      ? '<label class="wnchk"><input type="checkbox" id="b-dyni-off"'+
-          (dynIntroOff()?' checked':'')+'><span>Don\'t show this again</span></label>'
-      : '');
+    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
 }
 
 /*
- * TWO KEYS, BECAUSE THEY ANSWER TWO QUESTIONS.
- *
- * ps_dynintro means "has read the rules at least once" and is what retires the NEW badge on
- * the front page door. ps_dynintro_off means "has asked not to be shown them again" and is
- * the only thing that skips the sheet. Folding them into one was the obvious move and it is
- * wrong in both directions: the badge would never retire for somebody who reads the rules
- * every time and never ticks the box, and ticking the box would silently also mean "this
- * mode is no longer new to me", which the player did not say.
- *
- * Both fall back to a window flag when localStorage throws, which is a real state on iOS in
- * private mode. A checkbox that cannot persist should still work for the session it is in.
+ * ps_dynintro retires the NEW badge on the front page door and is set the first time the
+ * rules are on screen. ps_dynintro_off was the old "don't show this again" box; it is still
+ * READ (SEEN_LEGACY), so a player who ticked it is never shown the sheet again, and nothing
+ * writes it any more.
  */
 const DYN_INTRO_KEY='ps_dynintro';
 const DYN_INTRO_OFF='ps_dynintro_off';
-function dynIntroOff(){
-  try{ return localStorage.getItem(DYN_INTRO_OFF)==='1'; }catch(_){ return !!window.__dynIntroOff; }
-}
+/* SEEN ONCE MEANS SEEN, and it is held on the account rather than in one browser. */
+function dynIntroOff(){ return hasSeen('dynintro'); }
 function dynastyIntro(go){
   if(dynIntroOff()){ go(); return; }
-  /* Marked as read on the way in, not on the way out: the badge is about whether this mode
-     is still new to them, and it stops being new the moment the sheet is on screen. */
+  /* Marked on the way in, not on the way out. ps_dynintro also retires the NEW badge. */
   window.__dynIntro=true;
   try{ localStorage.setItem(DYN_INTRO_KEY,'1'); }catch(_){}
-  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team',{offer:true});
+  markSeen('dynintro');
+  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team');
   $('sheet-in').dataset.kind='dynintro';
   /* However it is dismissed the draft proceeds, because a rules popup that can strand a run
      is worse than no rules at all. The Trade Machine's intro writes this out at length. */
   sheetOnClose=go;
   openSheet();
   $('b-dyni-go').onclick=closeSheet;
-  /* WRITTEN THE MOMENT IT IS TICKED rather than on the way out, so the promise holds however
-     the sheet is dismissed: the backdrop, the button, or a phone back gesture. Unticking puts
-     it back, because a control that only goes one way is a trap on a sheet this one is about
-     to stop showing. */
-  const off=$('b-dyni-off');
-  if(off) off.onchange=()=>{
-    window.__dynIntroOff=off.checked;
-    try{
-      if(off.checked) localStorage.setItem(DYN_INTRO_OFF,'1');
-      else localStorage.removeItem(DYN_INTRO_OFF);
-    }catch(_){}
-    ga('dynasty_intro_off',{off:off.checked});
-  };
 }
 /* The same card on demand, with no continuation: it closes back to wherever you were. */
 function reviewDynastyRules(){
@@ -12968,6 +13226,9 @@ async function dynCloudPull(){
   if(!rows){ dynCloudPulled=null; return; }
   const by={};
   rows.forEach((r)=>{ if(r&&r.slot) by[r.slot]=r; });
+  /* The same shelf carries what the account has already been shown. Not a run, so it is
+     merged here rather than walked with FB_SLOTS below. */
+  seenMerge(by[SEEN_SLOT]);
   let painted=false;
   for(const slot of Object.keys(FB_SLOTS)){
     const S=FB_SLOTS[slot];
@@ -14517,9 +14778,91 @@ function tutFinish(){
    IT POINTS AT THE BUTTON AND LEAVES IT LIVE. The scrim sits under #b-start rather than
    over it, so the way out of the guide is the thing the guide is telling you to do. Got it
    dismisses without starting, for somebody who wants to look around first. */
+/* ---- WHAT THIS PLAYER HAS ALREADY BEEN SHOWN ----
+   Reported by a player: the same pop-ups, ten times, after saying they did not need them.
+   Every one of these used to be remembered in THIS BROWSER and nowhere else, so a new
+   phone, a private window, iOS clearing a site nobody opened for a week, or a cleared jar
+   put every guide back in front of somebody forty seasons in. And the dynasty rules stood
+   in front of EVERY run unless a box was ticked, which is the ten times.
+
+   THREE RULES NOW, and each one is for one of those causes:
+   - every guide shows ONCE, ever, and is marked seen the moment it is on screen;
+   - a seen mark rides on the account (a `seen` slot on the same cloud save shelf the runs
+     use, so it costs no extra request: dynCloudPull already fetches the whole shelf), so
+     it follows the player to any device they sign in on;
+   - somebody with a history is not new, whatever this browser says. A run on the account
+     retires the first-run guide, a dynasty retires the dynasty rules and a Trade Machine
+     season retires its rules (seenFromRows, called by careerLoad).
+
+   The rules sheets are still one tap away on demand (How to play, the rules pill), so
+   nothing is taken away from a reader who wants them: they are just not pushed at anybody
+   twice. The old per-guide keys are still READ, so nobody who already dismissed something
+   sees it again on the day this ships. */
+const SEEN_KEY='ps_seen_v1';
+const SEEN_SLOT='seen';
+const SEEN_LEGACY={ guide:['ps_seen_guide'], dynintro:['ps_dynintro','ps_dynintro_off'],
+  tmintro:['ps_tmintro'] };
+/* Held in memory ONLY when storage throws (iOS private mode): a mark that cannot persist
+   must still hold for the visit it was made in. Everywhere else storage is the one copy, so
+   clearing it really does make a browser new again. */
+const seenMem={};
+function seenRead(){
+  let o={};
+  try{ o=JSON.parse(localStorage.getItem(SEEN_KEY)||'{}')||{}; }catch(_){ o={}; }
+  for(const k of Object.keys(SEEN_LEGACY)) for(const lk of SEEN_LEGACY[k]){
+    try{ if(localStorage.getItem(lk)==='1') o[k]=1; }catch(_){}
+  }
+  return Object.assign(o,seenMem);
+}
+function hasSeen(k){ return !!seenRead()[k]; }
+function seenWrite(o){
+  try{ localStorage.setItem(SEEN_KEY,JSON.stringify(o)); }
+  catch(_){ Object.keys(o).forEach((k)=>{ seenMem[k]=1; }); }
+}
+function markSeen(...keys){
+  const o=seenRead(); let moved=false;
+  keys.forEach((k)=>{ if(!o[k]){ o[k]=1; moved=true; } });
+  seenWrite(o);
+  if(moved) seenPush();
+}
+/* Up to the account, through the shelf's own queue. Progress is the number of things seen,
+   which only ever grows, so the server's "never move a save backwards" rule is exactly the
+   rule a seen list wants. Signed out there is nowhere to put it, and the browser copy is it. */
+function seenPush(){
+  if(!window.RTG_SAVE||!authState.signedIn||!authState.userId) return;
+  RTG_SAVE.queue(DYN_CLOUD_GAME,SEEN_SLOT,()=>{
+    const o=seenRead();
+    return { payload:{ seen:o }, progress:Object.keys(o).length };
+  });
+}
+/* Down from the account. A UNION, never a replace: either side may have seen something the
+   other has not, and nothing here ever un-sees a guide. */
+function seenMerge(row){
+  const there=(row&&row.payload&&row.payload.seen)||{};
+  const here=seenRead();
+  for(const k of Object.keys(there)) if(there[k]) here[k]=1;
+  seenWrite(here);
+  if(Object.keys(here).some((k)=>!there[k])) seenPush();
+  /* A guide already on screen for something this account has seen goes away again. */
+  if(here.guide&&frgUp()) frgClose();
+}
+/* What the account's own rows say about who this is. */
+function seenFromRows(rows){
+  rows=rows||[];
+  const keys=[];
+  if(rows.length) keys.push('guide');
+  if(rows.some((r)=>r&&(r.run_mode==='dynasty'||r.dynasty_id))) keys.push('dynintro');
+  if(rows.some((r)=>r&&r.run_mode==='trade')) keys.push('tmintro');
+  if(keys.length) markSeen(...keys);
+}
+/* And what this browser already holds: a saved run in any slot is somebody who has played. */
+function seenFromSaves(){
+  try{ if(Object.keys(FB_SLOTS).some((s)=>FB_SLOTS[s].read())) markSeen('guide'); }catch(_){}
+}
+
 const FRG_KEY='ps_seen_guide';
-function frgSeen(){ try{ return localStorage.getItem(FRG_KEY)==='1'; }catch(e){ return true; } }
-function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} }
+function frgSeen(){ return hasSeen('guide'); }
+function frgMark(){ try{ localStorage.setItem(FRG_KEY,'1'); }catch(e){} markSeen('guide'); }
 function frgUp(){ const el=$('frg'); return !!el&&!el.hidden; }
 /* WHAT THE GUIDE POINTS AT, which is no longer one fixed button. The front page shows either
    Start a run or the Offense and Defense pair, so the arrow, the cut-out, the glow and the
@@ -14639,8 +14982,24 @@ function frgClose(){
   window.removeEventListener('resize',frgPlace);
   window.removeEventListener('scroll',frgPlace);
 }
-function firstRunGuide(){
+/* `wait` counts the beats spent waiting to learn who this is. The guide fires 1.2s after boot
+   and the account can take longer than that to resolve, and a signed in player with a career
+   on a phone they have never used here is exactly who must not get it. So it waits for the
+   sign in to settle and, if somebody is signed in, for their rows, which retire it through
+   seenFromRows. Bounded, so a sign in that never answers still gets a stranger their guide. */
+function firstRunGuide(wait){
+  wait=wait||0;
   if(frgSeen()) return false;
+  seenFromSaves();
+  if(frgSeen()) return false;
+  if(wait<10&&A()&&!authState.ready){ setTimeout(()=>firstRunGuide(wait+1),400); return false; }
+  if(wait<10&&authState.signedIn&&authState.userId
+     &&!(career&&career.userId===authState.userId)){
+    careerLoad(authState.userId).then((c)=>{
+      setTimeout(()=>firstRunGuide(c?10:wait+1),c?0:400);
+    },()=>firstRunGuide(10));
+    return false;
+  }
   if(!$('s-intro').classList.contains('on')) return false;
   if($('sheet').classList.contains('on')) return false;
   if(wantModes||wantOneTeam||wantDefense||wantFull||wantDynasty) return false;
@@ -15024,7 +15383,7 @@ function paintTop(){
    open, and a player who turns it on mid-run should get it mid-run. */
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null;
 const reduceMotion=()=>!!(RM&&RM.matches);
-const REEL_H=38;          // one face
+const REEL_H=32;          // one face, and .reel-i's height in the CSS
 const REEL_FACES=3;       // faces visible in the window
 
 /*
@@ -15533,9 +15892,12 @@ function paintRespins(){
   const y=yearRun?null:R.canRespin(run,'year',dataNow());
   const t=clubRun?null:R.canRespin(run,'team',dataNow());
   const left=E.CONSTANTS.MAX_RESPINS-run.respinsUsed;
+  const free=freeRespinHtml();
   if(!(y&&y.ok)&&!(t&&t.ok)){
-    el.innerHTML='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
+    const why='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
       (left<=0?'No re-spins left':esc((y||t||{}).reason||'No re-spins left'))+'</p>';
+    el.innerHTML=free?'<div class="freerow">'+free+why.replace('text-align:center;','')+'</div>':why;
+    bindFreeRespin(el);
     return;
   }
   const btn=(kind,label,chk)=>chk.ok
@@ -15545,9 +15907,15 @@ function paintRespins(){
   el.innerHTML='<div class="respins'+(clubRun||yearRun?' one':'')+'">'+
       (y?btn('year','New year',y):'')+(t?btn('team','New team',t):'')+
     '</div>'+
-    '<p class="respinnote">Comes off your budget. '+
+    /* Beside the yellow button the line is half as wide, so it says only what the paid
+       ones cost. The free one says what it costs on its face. */
+    (free?'<div class="freerow">'+free+'<p class="respinnote">'+
+      (left>1?'Next paid one: '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
+      left+' paid left.</p></div>'
+    :'<p class="respinnote">Comes off your budget. '+
       (left>1?'Next one costs '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
-      left+' left.</p>';
+      left+' left.</p>');
+  bindFreeRespin(el);
   el.querySelectorAll('button.respin').forEach(b=>{
     b.onclick=()=>{
       $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
@@ -15556,6 +15924,100 @@ function paintRespins(){
       paintTop();spinBoth(d,()=>paintOpts(d));
     };
   });
+}
+
+/* ---- THE FREE RE-SPIN ----
+   The owner's call (2026-10-28): watch a short ad, get one re-spin that costs nothing and is
+   not one of the three paid ones. Signed in only, three a day, and backing out of the video
+   earns nothing.
+
+   NONE OF THAT IS DECIDED HERE. The cap, the sign in and "watched to the end" are the
+   server's (the Store Agent's ad_reward_issue, ad_reward_claim and ad_reward_status, kind
+   'ps_respin'), reached through the Ads Agent's shared player, assets/rewarded.js
+   (window.RTG_AD). This page only offers the button and, once the server has granted the
+   view, throws the draw back with R.freeRespin.
+
+   THE BUTTON SHOWS ONLY WHEN A VIDEO CAN PLAY. Until the ad network is approved there is no
+   player, RTG_AD.ready() is false, and the draft looks exactly as it did. A guest sees it
+   once there is a player, and a tap opens the sign in sheet (the owner's call). A signed in
+   player sees it while the server says one is left today. */
+const FREE_KIND='ps_respin';
+let freeAsk=null;   // {who, ok, reason, left}: the server's last answer, per account
+function freeAd(){
+  const A=window.RTG_AD;
+  if(!A||typeof A.watch!=='function'||typeof A.status!=='function') return null;
+  if(typeof A.ready!=='function'||!A.ready()) return null;
+  if(typeof R.freeRespin!=='function') return null;
+  return A;
+}
+function freeWho(){ return authState&&authState.signedIn?(authState.userId||authState.name||'me'):null; }
+/* Asks the server once per account and repaints when it answers. A repaint while the
+   answer is out does not ask again. */
+function freeStatus(){
+  const A=freeAd(), who=freeWho();
+  if(!A||!who) return null;
+  if(freeAsk&&freeAsk.who===who) return freeAsk;
+  freeAsk={who:who,ok:false,reason:'asking',left:0};
+  Promise.resolve(A.status(FREE_KIND,null,0)).then((a)=>{
+    if(!freeAsk||freeAsk.who!==who) return;
+    freeAsk={who:who,ok:!!(a&&a.ok),reason:a&&a.reason,left:(a&&a.left)|0};
+    if(run&&run.currentDraw&&$('s-draft').classList.contains('on')) paintRespins();
+  },()=>{ if(freeAsk&&freeAsk.who===who) freeAsk.reason='error'; });
+  return freeAsk;
+}
+function freeRespinHtml(){
+  if(!freeAd()||!run||!run.currentDraw) return '';
+  const signedIn=!!freeWho();
+  if(signedIn){
+    const st=freeStatus();
+    if(!st||!st.ok) return '';
+  }
+  const chk=R.canFreeRespin(run,dataNow());
+  if(!chk.ok) return '';
+  return '<button class="freespin" id="b-freespin" type="button">'+
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/>'+
+    '<path d="M10 9.2v5.6l4.8-2.8z"/></svg><b>Free respin</b></button>';
+}
+function bindFreeRespin(el){
+  const b=el.querySelector('#b-freespin'); if(!b) return;
+  b.onclick=()=>{
+    if(!freeWho()){ profileSheet(); return; }
+    const A=freeAd(); if(!A) return;
+    const mine=run, draw=run.currentDraw;
+    b.disabled=true;
+    ga('respin_free_start',{mode:runMode()});
+    Promise.resolve(A.watch(FREE_KIND,null,0,{})).then((a)=>{
+      if(a&&typeof a.left==='number'&&freeAsk) freeAsk.left=a.left;
+      /* The run has to be the one the video was watched for, still on the same draw. A
+         player who quit or signed during the ad has moved on, and the view is spent. */
+      if(!a||!a.ok||run!==mine||!run.currentDraw||run.currentDraw!==draw){
+        if(a&&a.reason==='cap'&&freeAsk){ freeAsk.ok=false; freeAsk.reason='cap'; }
+        freeSay(a&&a.reason);
+        if(run===mine&&run.currentDraw) paintRespins();
+        return;
+      }
+      if(freeAsk&&freeAsk.left<=0){ freeAsk.ok=false; freeAsk.reason='cap'; }
+      ga('respin_free_used',{mode:runMode(),free_respins:(run.freeRespins||0)+1});
+      $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
+      const d=R.freeRespin(run,dataNow());
+      paintTop();spinBoth(d,()=>paintOpts(d));
+    },()=>{ freeSay('error'); if(run===mine&&run.currentDraw) paintRespins(); });
+  };
+}
+/* One line under the re-spins when the video did not pay. Nothing at all when it was
+   simply not offered, because then there was no button. */
+function freeSay(reason){
+  const el=$('d-respin'); if(!el) return;
+  const say=reason==='closed'?'Watch to the end to get the free respin.'
+    : reason==='cap'?'That\'s your three free respins for today.'
+    : reason==='sign_in'?'Sign in to get a free respin.'
+    : 'The video didn\'t load. Try again in a bit.';
+  setTimeout(()=>{
+    const p=document.createElement('p');
+    p.className='respinnote freesay'; p.textContent=say;
+    const old=el.querySelector('.freesay'); if(old) old.remove();
+    el.appendChild(p);
+  },0);
 }
 
 /* Re-sorting is a repaint of the board already on screen, not a new one: nothing about the
@@ -18107,11 +18569,11 @@ function tradeRulesHTML(cta){
   '</div>';
 }
 function tradeIntro(go){
-  let seen=false;
-  try{ seen=localStorage.getItem('ps_tmintro')==='1'; }catch(e){ seen=!!window.__tmIntro; }
-  if(seen){ go(); return; }
+  /* Once, on the account: see hasSeen. window.__tmIntro is kept for the checks that set it. */
+  if(hasSeen('tmintro')||window.__tmIntro){ go(); return; }
   window.__tmIntro=true;
   try{ localStorage.setItem('ps_tmintro','1'); }catch(e){}
+  markSeen('tmintro');
   $('sheet-in').innerHTML=tradeRulesHTML('Deal me a team');
   sheetOnClose=go;
   $('sheet').classList.add('on');
@@ -19441,6 +19903,10 @@ const PACE={
 const LIVE_PACE={'Wild Card':0.18,'Divisional':0.25,
   'Conference Championship':0.31,'Super Bowl':0.40};
 const QNAME=['1ST','2ND','3RD','4TH'];
+/* Anything past the fourth is overtime, which is not a fifth quarter: a live game that goes
+   to overtime reads OT on the bug and in the log, never undefined or 4TH 0:00. */
+/* And a second overtime period is 2OT, the way a broadcast says it. */
+const qLabel=(q)=>q>5?(q-4)+'OT':q>4?'OT':QNAME[q-1];
 const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
 
 /* How the score bug dresses for each rung, and what its right-hand cell says. Slate,
@@ -19464,7 +19930,76 @@ function recordBefore(r){
 
 /* Flatten a script into segments of real time: run the clock down to the next
    score, hold on it, repeat, then run out the quarter. */
-function buildTimeline(script,pace){
+/* HOW FAST IT PLAYS. Players said the playoffs went by too fast to follow, so a Speed button
+   on every broadcast screen stretches this pace (assets/simspeed.js, one setting for both
+   football games). Each segment reads the multiplier ONCE, the first time its length is asked
+   for, which is the moment it starts playing. So a change lands on the next segment and never
+   halfway through one: re-read every frame, a slower setting would wind the clock back, and
+   the field reads a clock going backwards as a new game. */
+const simMul=()=>(window.RTG_SPEED&&RTG_SPEED.mul)?RTG_SPEED.mul():1;
+/*
+ * SLOW AND SLOWER ARE PACED BY THE DRIVE, NOT BY THE CLOCK. The owner's call (2026-10-22):
+ * the slower settings still went too fast, and they should be slow enough to follow each
+ * drive if you want to. A multiplier on the game clock could not do that. A three minute drive
+ * is a third of a second at Normal, so even 2.4 times that is under a second, and the field's
+ * snap by snap picture of it went by as a smear.
+ *
+ * So below Normal every drive gets its own time on the field (`drive`, stretched for a long
+ * march and cut for a three and out by driveSpan), a stop after it with one line saying what
+ * happened (`hold`), and a longer hold on a score (`score`). NORMAL IS UNTOUCHED, timing and
+ * detail both: it is for somebody who wants the result, and every timed check measures it.
+ *
+ * Football's own numbers, keyed on the setting's id rather than its multiplier, because
+ * simspeed.js is shared with the college game and this changes nothing there.
+ */
+const SLOW_DRIVE={
+  slow:  {drive:2600, hold:1000, score:1800},
+  slower:{drive:5200, hold:1900, score:2800},
+};
+const speedLevel=()=>{
+  const id=(window.RTG_SPEED&&RTG_SPEED.id)?RTG_SPEED.id():'normal';
+  return SLOW_DRIVE[id]?id:'normal';
+};
+/* A drive's share of the standard time: 2:30 of game clock is one drive's worth. */
+const driveSpan=(secs)=>Math.max(0.6,Math.min(1.5,secs/150));
+/* `slow` is how long the segment lasts below Normal, given that setting's numbers. It is read
+   at the same moment the multiplier always was, so a change still lands on the next segment. */
+function paced(seg,base,slow){
+  seg.base=base;
+  Object.defineProperty(seg,'ms',{enumerable:true,
+    get(){
+      if(this._ms==null){
+        const L=SLOW_DRIVE[speedLevel()];
+        this._ms=(L&&slow)?slow(L):this.base*simMul();
+      }
+      return this._ms;
+    }});
+  return seg;
+}
+/* A run of the clock, cut where a drive ends, so each piece knows whose drive it is. Normal
+   keeps exactly the length it had: the pieces share the run's own time in proportion. Below
+   Normal each piece is its slice of the drive's time, and a drive that ended without a score
+   gets a stop of its own (a score already has one). */
+function pushRun(segs,q,from,to,base,drives){
+  const a=(q-1)*900+(900-from), b=(q-1)*900+(900-to);
+  if(!drives||!drives.length||b<=a){ segs.push(paced({kind:'run',q,from,to},base)); return; }
+  const cuts=[a];
+  for(const d of drives) if(d.tEnd>a&&d.tEnd<b) cuts.push(d.tEnd);
+  cuts.sort((x,y)=>x-y); cuts.push(b);
+  for(let k=0;k+1<cuts.length;k++){
+    const x=cuts[k], y=cuts[k+1];
+    if(y<=x) continue;
+    const mid=(x+y)/2, d=drives.find(v=>v.tStart<=mid&&mid<v.tEnd);
+    const len=d?Math.max(1,d.tEnd-d.tStart):1;
+    segs.push(paced({kind:'run',q,from:900-(x-(q-1)*900),to:900-(y-(q-1)*900)},
+      base*(y-x)/(b-a), d?(L)=>L.drive*driveSpan(len)*(y-x)/len:null));
+    const ended=drives.find(v=>v.tEnd===y);
+    if(ended&&ended.at==null&&ended.result!=='safety'&&ended.result!=='touchdown'
+      &&ended.result!=='field goal')
+      segs.push(paced({kind:'drive',d:ended},0,(L)=>L.hold));
+  }
+}
+function buildTimeline(script,pace,drives){
   const segs=[];
   /* THE SCORE'S PLACE IN THE SCRIPT, carried through onto the segment. The timeline is
      rebuilt quarter by quarter out of a filtered copy, so by the time a segment is played
@@ -19475,12 +20010,31 @@ function buildTimeline(script,pace){
   for(let q=1;q<=4;q++){
     let from=900;
     for(const e of script.filter(x=>x.q===q)){
-      segs.push({kind:'run',q,from,to:e.sec,ms:Math.max(200,(from-e.sec)/900*pace.quarterMs)});
-      segs.push({kind:'score',q,e,i:idx.get(e),ms:pace.hold});
+      pushRun(segs,q,from,e.sec,Math.max(200,(from-e.sec)/900*pace.quarterMs),drives);
+      segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold,(L)=>L.score));
       from=e.sec;
     }
-    segs.push({kind:'run',q,from,to:0,ms:Math.max(200,from/900*pace.quarterMs)});
-    if(q<4) segs.push({kind:'break',q,ms:q===2?pace.half:pace.qbreak});
+    pushRun(segs,q,from,0,Math.max(200,from/900*pace.quarterMs),drives);
+    if(q<4) segs.push(paced({kind:'break',q},q===2?pace.half:pace.qbreak));
+  }
+  /* OVERTIME, PLAYED OUT. Fifteen minute periods, and the game ends when the engine's plan
+     says it did: at the walk-off, or when the side that had to answer a first-possession
+     score did not. Not at 0:00, because nothing in overtime waits for the clock. */
+  const plan=script.ot;
+  if(plan&&plan.poss){
+    const periods=Math.floor(Math.max(0,plan.end-1)/900)+1;
+    for(let k=0;k<periods;k++){
+      const q=5+k;
+      segs.push(paced({kind:'break',q:q-1,otStart:q},pace.half,(L)=>L.score));
+      const endHere=k===periods-1?900-(plan.end-k*900):0;
+      let from=900;
+      for(const e of script.filter(x=>x.q===q)){
+        pushRun(segs,q,from,e.sec,Math.max(200,(from-e.sec)/900*pace.quarterMs),drives);
+        segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold,(L)=>L.score));
+        from=e.sec;
+      }
+      if(from>endHere) pushRun(segs,q,from,endHere,Math.max(200,(from-endHere)/900*pace.quarterMs),drives);
+    }
   }
   return segs;
 }
@@ -19496,7 +20050,7 @@ function buildTimeline(script,pace){
 
 /* "Q1".."Q4", then "OT". The extra period is not a fifth quarter and calling it Q5 on the
    play log would read as a bug rather than as overtime. */
-function periodLabel(e){ return e.q>4?'OT':'Q'+e.q; }
+function periodLabel(e){ return e.q>4?qLabel(e.q):'Q'+e.q; }
 
 /*
  * THE TAKEAWAYS, ON THE FIELD.
@@ -19528,11 +20082,16 @@ function generateDrives(script,rng,opts){
      produces. Halftime and overtime are pushed into this same list and the whole thing is
      then sorted, so a tick's position here stops being the script's the moment that happens,
      and the kick distances below are keyed on exactly that. */
-  script.forEach((e,i)=>ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}));
+  /* AN OVERTIME THE ENGINE PLANNED is drawn from its plan below, possession by possession,
+     so regulation here stops at 60:00. See otPlanFor in engine.js. */
+  const otPlan=script&&script.ot&&Array.isArray(script.ot.poss)?script.ot:null;
+  script.forEach((e,i)=>{ if(otPlan&&e.ot) return;
+    ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}); });
   /* THE GAME IS AS LONG AS IT TOOK. Fixed at 3600 this walked off the end of an overtime:
      the last gap came out negative and the extra period drew no drives at all. */
   const REG=3600;
-  const GAME=ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
+  /* With an overtime plan, regulation is exactly sixty minutes and the plan has the rest. */
+  const GAME=otPlan?REG:ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
   /* HALFTIME IS AN EVENT, not a line the clock happens to pass. Without it the ball simply
      stayed with whoever had it when the second quarter ran out and play carried straight on
      into the third, so a team could finish the half with a punt and open the second half
@@ -19689,6 +20248,29 @@ function generateDrives(script,rng,opts){
     if(ns&&ns.ot){pos=otReceiver;at=pos==='you'?youKO():themKO();}
     t=tE;
   }
+  /* THE OVERTIME, ONE DRIVE PER POSSESSION OF THE ENGINE'S PLAN. Declared inside, so the
+     tests that lift generateDrives out of this page by its source get it too. Every possession starts off a
+     kickoff or a change of hands, so the ball is placed fresh each time rather than chained:
+     what has to be true here is who had it, in what order, and how it ended, and the plan is
+     the authority on all three. Same frame as above: you advance toward 100. */
+  function otDrives(plan,REG,rng){
+    const out=[];
+    for(const p of plan.poss){
+      const you=p.team==='you';
+      const rel0=20+Math.floor(rng()*16);                 // own 20 to 35
+      let rel1;
+      if(p.result==='touchdown') rel1=100;
+      else if(p.result==='field goal'||p.result==='miss') rel1=60+Math.floor(rng()*25);
+      else if(p.result==='safety') rel1=0;
+      else rel1=Math.min(95,rel0+5+Math.floor(rng()*40));
+      const start=p.result==='safety'?2+Math.floor(rng()*8):rel0;
+      const abs=(r)=>you?r:100-r;
+      out.push({team:p.team,startYard:abs(start),endYard:abs(rel1),result:p.result,
+        tStart:REG+p.start,tEnd:REG+p.end,...(p.at!=null?{at:p.at}:{})});
+    }
+    return out;
+  }
+  if(otPlan) drives.push(...otDrives(otPlan,REG,rng));
   return drives;
 }
 
@@ -20006,7 +20588,6 @@ function playPlayoffGame(r,after){
   const pace=PACE[round]||PACE['Wild Card'];
   const seedStr=run.seed+'|'+round+'|'+r.shownYou+'-'+r.shownThem;
   const script=E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(E.hashSeed(seedStr)));
-  const segs=buildTimeline(script,pace);
   /* WHO SCORED THEM, on the same script the timeline is built from, so the name in the call
      belongs to the play the clock just stopped for. Passing the script in rather than
      letting gameCredits build its own is what makes the box score afterwards agree with the
@@ -20050,6 +20631,10 @@ function playPlayoffGame(r,after){
     const out=d.team==='you'?100-d.endYard:d.endYard;
     fgYards.set(d.at,Math.max(18,Math.min(63,Math.round(out)+17)));
   }
+  /* Built off the drives, so Slow and Slower can give each one its own time. See SLOW_DRIVE. */
+  const segs=buildTimeline(script,pace,drives);
+  const driveAt=new Map();
+  for(const d of drives) if(d.at!=null) driveAt.set(d.at,d);
   const fieldCtx=initFieldCanvas('po-fcanvas');
   const fcv=$('po-fcanvas');
   const cDist=(a,b)=>{const x=parseInt(a.slice(1),16),y=parseInt(b.slice(1),16);
@@ -20089,15 +20674,22 @@ function playPlayoffGame(r,after){
     $('po-log').innerHTML='';
     /* The whole game, in one pass, in time order: the takeaways belong between the scores
        rather than in a block after them, so the log reads as the game happened. */
+    /* Below Normal the drives that did not score stay in the log at the end too. */
+    const quiet=speedLevel()!=='normal'
+      ? drives.filter(d=>d.at==null&&d.result!=='safety'&&d.result!=='touchdown'
+          &&d.result!=='field goal'&&!d.takeaway).map(d=>({t:d.tEnd,d}))
+      : [];
     const all=script.map((e,i)=>({t:(e.q-1)*900+(900-e.sec),e,i}))
       .concat(takeaways.map(t=>({t:(t.q-1)*900+(900-t.sec),tk:t})))
+      .concat(quiet)
       .sort((a,b)=>a.t-b.t);
-    all.forEach(x=>x.tk?logTakeaway(x.tk):logScore(x.e,x.i));
-    paintField(3600);
+    all.forEach(x=>x.d?logDrive(x.d):x.tk?logTakeaway(x.tk):logScore(x.e,x.i));
+    paintField(script.ot?3600+script.ot.end:3600);
     $('po-cap').innerHTML='<div class="call '+(r.won?'you':'them')+
       (r.won&&round==='Super Bowl'?' big':'')+'"><b>'+
       (r.won?(round==='Super Bowl'?'CHAMPIONS':'YOU ADVANCE'):'SEASON OVER')+
-      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+'</span></div>';
+      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+
+      (script.ot?' in '+(script.ot.end>900?'double overtime':'overtime'):'')+'</span></div>';
     if(r.won&&round==='Super Bowl'){
       const perfectRun=run.season.results.every(x=>x.won);
       fireConfetti(confettiTheme(perfectRun));
@@ -20134,12 +20726,36 @@ function playPlayoffGame(r,after){
       '<span class="n">'+(t.kind==='INTERCEPTION'?'INT':'FUM')+'</span></div>');
   };
 
+  /* A DRIVE IN ONE LINE, for Slow and Slower: who had it, how far it went, how long it took.
+     Read off the drive the field has just drawn, so the words and the bar cannot disagree. */
+  const driveWho=(d)=>d.team==='you'?'You':oppCode;
+  const driveLine=(d)=>{
+    const yds=Math.round(d.team==='you'?d.endYard-d.startYard:d.startYard-d.endYard);
+    const went=yds<0?'lost '+(-yds)+(yds===-1?' yard':' yards'):yds+(yds===1?' yard':' yards');
+    return driveWho(d)+' · '+went+' in '+clockText(Math.max(0,d.tEnd-d.tStart));
+  };
+  const driveHead=(d)=>d.result==='punt'?'PUNT'
+    :d.takeaway==='INTERCEPTION'?'INTERCEPTED'
+    :d.takeaway?'FUMBLE'
+    :d.result==='turnover'?'TURNOVER'
+    :d.result==='downs'?'TURNOVER ON DOWNS'
+    :d.result==='miss'?'NO GOOD'
+    :String(d.result).toUpperCase();
+  const logDrive=(d)=>{
+    const q=Math.floor(Math.max(0,d.tEnd-1)/900)+1;
+    const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
+    $('po-log').insertAdjacentHTML('afterbegin',
+      '<div class="pl '+d.team+' quiet"><span class="t">'+(q>4?qLabel(q):'Q'+q)+' '+clock+'</span>'+
+      '<span class="w">'+esc(driveWho(d))+' &middot; '+esc(driveHead(d).toLowerCase())+
+      '<i class="plsub">'+esc(driveLine(d))+'</i></span><span class="n"></span></div>');
+  };
+
   let i=0;
   const next=()=>{
     if(i>=segs.length){ finish(); return; }
     const seg=segs[i++];
     if(seg.kind==='run'){
-      $('po-q').textContent=QNAME[seg.q-1];
+      $('po-q').textContent=qLabel(seg.q);
       $('po-ck').textContent=clockText(seg.from);
       const t0=(window.performance||Date).now();
       const step=()=>{
@@ -20158,7 +20774,7 @@ function playPlayoffGame(r,after){
             '<span>'+esc(t.blurb)+'</span></div>';
           logTakeaway(t);
         }
-        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        bug.classList.toggle('urgent',seg.q>=4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(step); return; }
         next();
       };
@@ -20185,8 +20801,39 @@ function playPlayoffGame(r,after){
         '<span>'+(c?esc(c.blurb):(e.team==='you'?'You':esc(r.opponent)))+
         (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
       logScore(e,seg.i);
+      /* Below Normal the call also says how the drive got there. */
+      const sd=speedLevel()!=='normal'?driveAt.get(seg.i):null;
+      const callEl=sd?$('po-cap').querySelector('.call'):null;
+      if(callEl) callEl.insertAdjacentHTML('beforeend','<span>'+esc(driveLine(sd))+'</span>');
       poTimer=setTimeout(next,seg.ms);
       return;
+    }
+    if(seg.kind==='drive'){
+      /* A stop after a drive that did not score, below Normal only. At Normal it lasts no
+         time and says nothing, which is how Normal stays exactly what it was. */
+      const ms=seg.ms;
+      /* A takeaway already flashed its own call and log row as the clock passed it, so its
+         stop holds the picture and says nothing twice. */
+      if(ms>0&&!seg.d.takeaway){
+        const d=seg.d;
+        $('po-cap').innerHTML='<div class="call '+d.team+(d.takeaway?' tk':'')+'"><b>'+
+          esc(driveHead(d))+'</b><span>'+esc(driveLine(d))+'</span></div>';
+        logDrive(d);
+      }
+      poTimer=setTimeout(next,ms);
+      return;
+    }
+    if(seg.kind==='break'&&seg.otStart){
+      /* THE TOSS, said out loud. Who has the ball first is the whole shape of overtime under
+         these rules, so it is the first thing the period says. */
+      const rcv=script.ot.receiver==='you'?'You':oppCode;
+      $('po-q').textContent=qLabel(seg.otStart);
+      $('po-ck').textContent='15:00';
+      $('po-cap').innerHTML='<div class="call '+script.ot.receiver+'"><b>'+
+        (seg.otStart>5?'DOUBLE OVERTIME':'OVERTIME')+'</b><span>'+
+        (seg.otStart>5?'Still tied. Next score wins.'
+          :esc(rcv)+(rcv==='You'?' win the toss. You get the ball first.'
+            :' wins the toss and takes the ball.'))+'</span></div>';
     }
     poTimer=setTimeout(next,seg.ms);
   };
@@ -20270,9 +20917,9 @@ function livePlayoffOver(ev,idx,done){
   bossStop();
   const o=bossOppNow;
   if($('bg-skip')) $('bg-skip').hidden=true;
-  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent=ev.ot?'F/OT':'FINAL';
   $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
-  bossRenderScore(); bossDraw(3600,false);
+  bossRenderScore(); bossDraw(Math.max(3600,bossSim.clock),false);
   $('bg-calls').hidden=true;
   /* RECORDED, NOT DECIDED. advanceWeek takes the score this screen produced, files it as the
      round's result, advances the bracket and ends the run on a loss. See its `pre` note. */
@@ -20284,9 +20931,10 @@ function livePlayoffOver(ev,idx,done){
   const next=more?(run.playoffSeed.roundNames[run.season.playoffRound]||'The next round'):'';
   const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
+  const inOt=ev.ot?' in overtime':'';
   $('bg-note').textContent=ev.won
-    ? (more?'You beat '+o.display+'. '+next+' next.':'You beat '+o.display+'. The ring is yours.')
-    : o.display+' ended your season.';
+    ? (more?'You beat '+o.display+inOt+'. '+next+' next.':'You beat '+o.display+inOt+'. The ring is yours.')
+    : o.display+' ended your season'+inOt+'.';
   const cont=$('b-boss-continue');
   cont.textContent=more?'Play '+next:'See the season';
   cont.onclick=()=>done();
@@ -21004,6 +21652,8 @@ let bossFast=false;
  * seconds, which is 2.6 over its resolved counterpart and the honest limit of this.
  */
 let bossPace=1;
+/* The Speed button multiplies every duration below by simMul() on top of this, AFTER the
+   floors, so Slow really is slower on a Wild Card whose pace is already sitting on them. */
 function bossStop(){ clearTimeout(bossTimer); cancelAnimationFrame(bossRaf); }
 function bossRenderScore(){
   $('bg-syou').textContent=bossSim.you; $('bg-sthem').textContent=bossSim.them;
@@ -21011,8 +21661,8 @@ function bossRenderScore(){
   $('bg-them').classList.toggle('lead',bossSim.them>=bossSim.you);
 }
 function bossSetClock(elapsed){
-  const q=Math.min(4,Math.floor(elapsed/900)+1);
-  $('bg-q').textContent=QNAME[q-1];
+  const q=Math.floor(elapsed/900)+1;
+  $('bg-q').textContent=qLabel(q);
   $('bg-ck').textContent=clockText(Math.max(0,900-(elapsed-(q-1)*900)));
 }
 /* Draw the completed drives up to a time, optionally with the drive in progress laid on top
@@ -21132,7 +21782,7 @@ function liveBoard(o,sim,rng,opts){
   show('s-bgame');
   bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
   bossDraw(0,false);
-  bossTimer=setTimeout(bossLoop,Math.max(300,600*bossPace));
+  bossTimer=setTimeout(bossLoop,Math.max(300,600*bossPace)*simMul());
 }
 
 /* THE GAME. Build the sim with the chosen read, set up the field, then run it forward. */
@@ -21168,7 +21818,12 @@ function bossPlay(read){
 /* Play one event, drawing any drives it produced, then either pause for a decision, show the
    verdict, or keep going. */
 function bossLoop(){
+  const wasOt=!!bossSim.ot;
   const ev=E.bossSimAdvance(bossSim,bossRng);
+  /* REGULATION ENDED LEVEL AND THE SIM HAS GONE TO OVERTIME. Said over the field and written
+     into the log before the first overtime drive is drawn, because a game that carries on
+     past 0:00 of the fourth with nothing to say why reads as a clock that broke. */
+  if(!wasOt&&bossSim.ot) bossAnnounceOt();
   if(ev.type==='over'){ const end=bossOnOver||bossFinish;
     bossFlush(()=>{ bossRenderScore(); end(ev); }); return; }
   /* THE DRIVE IS PLAYED UP TO THE CALL BEFORE THE CALL IS ASKED. bossFlush only knows about
@@ -21180,7 +21835,17 @@ function bossLoop(){
   /* 200ms between events was the rest of why the game was over in a blink. The drives
      themselves carry the pace now, so this is the handoff between them rather than the
      pace itself. */
-  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420*bossPace); });
+  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420*bossPace*simMul()); });
+}
+
+function bossAnnounceOt(){
+  const tie=bossSim.ot.level+'-'+bossSim.ot.level;
+  $('bg-narr').innerHTML='<b>Tied '+tie+' at the end of regulation.</b> Overtime: both sides get the ball, then the next score wins.';
+  const el=$('bg-log');
+  if(el) el.insertAdjacentHTML('afterbegin',
+    '<div class="pl call"><span class="t">OT</span>'+
+      '<span class="w">Overtime<i class="plsub">Tied at the end of regulation</i></span>'+
+      '<span class="n">'+tie+'</span></div>');
 }
 
 /* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
@@ -21223,7 +21888,7 @@ function bossLiveTo(d,cb){
   if(!c||bossFast||at<=from+1){
     bossShownTo=Math.max(from,at); bossLiveY=ball; cb(); return;
   }
-  const dur=Math.max(220,bossPace*Math.max(240,Math.min(2400,(at-from)*10)));
+  const dur=Math.max(220,bossPace*Math.max(240,Math.min(2400,(at-from)*10)))*simMul();
   const t0=(window.performance||Date).now();
   const tick=()=>{
     const k=Math.min(1,((window.performance||Date).now()-t0)/dur);
@@ -21268,7 +21933,7 @@ function bossRescoreLast(){
 }
 function bossLogDrive(d){
   const el=$('bg-log'); if(!el) return;
-  const q=Math.min(4,Math.floor(d.tEnd/900)+1);
+  const q=Math.floor(d.tEnd/900)+1;
   const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
   const yds=bossDriveYards(d), plays=d.plays||0;
   /* The drive in one phrase, then what it cost to get there. A kick names its distance for
@@ -21290,7 +21955,7 @@ function bossLogDrive(d){
   const scored=d.result==='td'||d.result==='fg';
   el.insertAdjacentHTML('afterbegin',
     '<div class="pl '+(d.team==='you'?'you':'them')+(scored?'':' quiet')+'">'+
-      '<span class="t">'+QNAME[q-1]+' '+clock+'</span>'+
+      '<span class="t">'+qLabel(q)+' '+clock+'</span>'+
       '<span class="w">'+esc(d.team==='you'?'You':bossThreeLetter(bossOppNow))+' &middot; '+
         esc(what)+(drove?'<i class="plsub">'+esc(drove)+'</i>':'')+'</span>'+
       '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
@@ -21337,8 +22002,12 @@ function bossAnimateDrive(d,cb){
    */
   const from=Math.max(d.tStart,bossShownTo);
   const span=Math.max(0,d.tEnd-from), full=Math.max(1,d.tEnd-d.tStart);
-  const whole=bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260));
-  const floor=from>d.tStart?Math.max(120,240*bossPace):Math.max(220,900*bossPace);
+  /* Below Normal a drive gets at least its SLOW_DRIVE time, the same as the playoff broadcast,
+     and a stop after it whether it scored or not. Normal keeps the pace it had. */
+  const SL=SLOW_DRIVE[speedLevel()];
+  const whole=Math.max(bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260))*simMul(),
+    SL?SL.drive*driveSpan(full):0);
+  const floor=(from>d.tStart?Math.max(120,240*bossPace):Math.max(220,900*bossPace))*simMul();
   const dur=span<=0?0:Math.max(floor,whole*(span/full));
   const anchor=(from>d.tStart&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
   const t0=(window.performance||Date).now();
@@ -21359,7 +22028,8 @@ function bossAnimateDrive(d,cb){
     /* A BEAT ON A SCORE, and only on a score. The drives run back to back otherwise, and a
        touchdown that is gone before the number under it has finished moving is the thing
        this screen was asked to stop doing. */
-    if(scored){ bossTimer=setTimeout(cb,Math.max(300,700*bossPace)); return; }
+    if(scored){ bossTimer=setTimeout(cb,Math.max(Math.max(300,700*bossPace)*simMul(),SL?SL.score:0)); return; }
+    if(SL){ bossTimer=setTimeout(cb,SL.hold); return; }
     cb();
   };
   bossRaf=requestAnimationFrame(tick);
@@ -21494,7 +22164,7 @@ function bossTakeCall(d,choice){
     bossTimer=setTimeout(bossLoop,bossFast?0:560);
   });
 }
-function ordinalQ(q){ return QNAME[q-1]+' quarter'; }
+function ordinalQ(q){ return q>4?'overtime':QNAME[q-1]+' quarter'; }
 /*
  * WHAT WAS DECIDED, as a verb phrase to sit after the caller's name. Present tense, because
  * on the coach's path it is printed in the second BEFORE the play is run.
@@ -21530,7 +22200,7 @@ function bossLogCall(d,choice,res){
   const how=bossCallOutcome(d,choice,res);
   el.insertAdjacentHTML('afterbegin',
     '<div class="pl call">'+
-      '<span class="t">'+QNAME[Math.min(3,d.quarter-1)]+' '+clockText(d.secs)+'</span>'+
+      '<span class="t">'+qLabel(d.quarter)+' '+clockText(d.secs)+'</span>'+
       '<span class="w">'+esc(bossCallerName)+' &middot; '+esc(what)+
         '<i class="plsub">'+esc(how)+'</i></span>'+
       '<span class="n">'+bossSim.you+'-'+bossSim.them+'</span></div>');
@@ -21568,9 +22238,9 @@ function bossFinish(ev){
   bossStop();
   const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
   if($('bg-skip')) $('bg-skip').hidden=true;
-  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent=ev.ot?'F/OT':'FINAL';
   $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
-  bossRenderScore(); bossDraw(3600,false);
+  bossRenderScore(); bossDraw(Math.max(3600,bossSim.clock),false);
   $('bg-calls').hidden=true;
   const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
@@ -21585,17 +22255,17 @@ function bossFinish(ev){
        it today rather than at the reset. */
     if(run&&run.dynasty) dailyGrace('dynasty','boss');
     if(b.reward==='freeze'){
-      $('bg-note').textContent='You beat '+o.display+'. Now pick a player to keep forever.';
+      $('bg-note').textContent='You beat '+o.display+(ev.ot?' in overtime':'')+'. Now pick a player to keep forever.';
       cont.textContent='Choose a player';
       cont.onclick=()=>bossFreeze();
     }else{
-      $('bg-note').textContent='You beat '+o.display+'. Your dead cap is wiped clean.';
+      $('bg-note').textContent='You beat '+o.display+(ev.ot?' in overtime':'')+'. Your dead cap is wiped clean.';
       cont.textContent='Into the offseason';
       cont.onclick=()=>{ R.applyBossResult(run,true); dynToWinter(); };
     }
     afterPaint(()=>fireConfetti(confettiTheme(false)));
   }else{
-    $('bg-note').textContent=o.display+' held on. The owner wants one more win next season.';
+    $('bg-note').textContent=o.display+(ev.ot?' won it in overtime':' held on')+'. The owner wants one more win next season.';
     cont.textContent='Into the offseason';
     cont.onclick=()=>{ R.applyBossResult(run,false); dynToWinter(); };
   }
@@ -23009,11 +23679,11 @@ function bowlBroadcast(cfg){
     if(i>=segs.length){ finish(); return; }
     const seg=segs[i++];
     if(seg.kind==='run'){
-      $('bowl-q').textContent=QNAME[seg.q-1]; $('bowl-ck').textContent=clockText(seg.from);
+      $('bowl-q').textContent=qLabel(seg.q); $('bowl-ck').textContent=clockText(seg.from);
       const t0=(window.performance||Date).now();
       const stepf=()=>{ const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
         const sec=seg.from+(seg.to-seg.from)*k; $('bowl-ck').textContent=clockText(sec);
-        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        bug.classList.toggle('urgent',seg.q>=4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(stepf); return; } next(); };
       poRaf=requestAnimationFrame(stepf); return;
     }
@@ -23553,6 +24223,8 @@ function authBoot(){
        would otherwise sit there looking at a single Start button. Losing eligibility (a sign
        out, a rename) puts it back the same way. */
     paintHomeStart();
+    /* The lock day reminder waits for the account, so it is asked again here. */
+    if(window.RTG_FANPROMO) RTG_FANPROMO.check();
     /* AND THE RUN THE ACCOUNT IS HOLDING, which is the one thing on this page that can arrive
        from another device. Not awaited: it repaints the door itself if what comes back is
        further on than what this browser had, and does nothing at all otherwise. */
@@ -23635,6 +24307,7 @@ function authBoot(){
     if(!st.signedIn){ myCrest=null; myMark=null; mySeen=null; }
     else { loadMyMark(); loadSeen(); crestBoot(); }
     signinHash();
+    proHash();
   });
   a.boot();
 }
@@ -23664,6 +24337,17 @@ function signinHash(){
   profileSheet();
 }
 
+/* #pro OPENS THE STORE ON ARRIVAL, for the Fantasy Challenge's review screen, which tells a
+   free account that Pro gets five drafts a week and has no store of its own to show them.
+   The same one-shot rules as #signin: asked once auth has answered, and the hash cleared. */
+let proDone=false;
+function proHash(){
+  if(proDone||!authState.ready||location.hash!=='#pro') return;
+  proDone=true;
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+  openPremium('fantasy');
+}
+
 /* Fetch the rows the crest needs, once per account, and repaint what is already on screen.
    careerLoad is cached and the cabinet already asks for the same rows, so on a player who
    opens their profile this costs nothing at all: it is the same promise resolved twice.
@@ -23680,7 +24364,6 @@ function crestBoot(){
       crestRefresh(c.rows);
       pushTierIfMoved();
       paintAvatar();
-      whatsNewMaybe();
       if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
         profileSheet();
     });
@@ -23790,7 +24473,7 @@ function avatarOf(name,color,initials,crest){
    names in the page is a feature flag rather than a permission is written out there.
 
    LIVE FOR EVERYBODY since supabase/88_football_crests.sql. The tester list stays as the
-   way back: flipping CREST_LIVE to false puts the crest behind those three names again
+   way back: flipping CREST_LIVE to false puts the crest behind the tester names again
    without touching anything else, which is what a kill switch is for.
 
    88 IS NOT REQUIRED FOR THIS TO BE SAFE, and that is deliberate. Without it the two crest
@@ -23800,7 +24483,7 @@ function avatarOf(name,color,initials,crest){
    never needed it: it is drawn from rows this browser already fetched for the badge
    cabinet. */
 const CREST_LIVE=true;
-const CREST_TESTERS=['malikwillislover','runnyj','slimeyb3'];
+const CREST_TESTERS=['malikwillislover','runnyj','slimeyb3','csel8','jordantest'];
 const canUseCrest=()=>{
   if(!window.PS_CREST) return false;
   if(!authState.signedIn) return false;
@@ -24120,98 +24803,11 @@ async function loadMyAvatar(){
 
 const authMsg=(m,ok)=>'<p class="autherr'+(ok?' authok':'')+'">'+esc(m)+'</p>';
 
-/* ---------------- WHAT IS NEW ----------------
-   Shown once to a signed-in player who can see the crest, because a profile system nobody
-   is told about is a profile system nobody opens. Three rules it follows:
-
-   ONLY WHEN THERE IS NOTHING ELSE ON SCREEN. It arrives off a network round trip, so it can
-   land at any moment, including the middle of a draft or over a results screen somebody is
-   reading. A popup that interrupts a run is worse than no popup, so it waits for the front
-   page. It is asked twice for that reason: once when the rows land, and again by show()
-   every time the front page is arrived at, which covers both orders those can happen in.
-
-   ONCE PER VISIT AT MOST, whatever else happens. The auth library fires onChange more than
-   once on a normal sign-in, and each of those is a fresh chance to open this.
-
-   THE BOX IS WRITTEN THE MOMENT IT IS TICKED, not on the way out, because the promise it
-   makes has to hold however the sheet is dismissed, including the tab being closed. */
-const WHATSNEW_KEY='ps_crest_whatsnew_off:1';
-let whatsNewShown=false;
-function whatsNewOff(){
-  try{ return localStorage.getItem(WHATSNEW_KEY)==='1'; }catch(_){ return false; }
-}
-function whatsNewMaybe(){
-  if(whatsNewShown||whatsNewOff()||!canUseCrest()||!myCrest) return;
-  if(!$('s-intro').classList.contains('on')) return;
-  if($('sheet').classList.contains('on')) return;
-  whatsNewShown=true;
-  whatsNewSheet();
-}
-function whatsNewSheet(){
-  const box=$('sheet-in'); box.dataset.kind='whatsnew';
-  const C=window.PS_CREST;
-  const a=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
-  const club=a.chosen?a.key:null;
-  const rung=crestRungFor(club);
-  /* Their own crest, not a picture of somebody else's. The whole argument for the thing is
-     that it is yours, and a stock illustration would be making that argument badly. */
-  let mine='';
-  try{ mine=C.crest({ club:club, rung:rung, mark:wornMark(), ring:myCrest.ring,
-    tier:myCrest.tier, size:88, text:a.text }); }catch(_){ mine=''; }
-  const tier=myCrest.tier?C.tierAt(myCrest.tier):null;
-  box.innerHTML='<div class="eyebrow">New</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 10px">Your circle is a crest now</h2>'+
-    '<div class="wnrow">'+
-      '<span class="pfp crested wnbig" aria-hidden="true">'+mine+'</span>'+
-      '<p class="wnlead">That\'s yours, drawn from what you have actually done. '+
-        'Four things go into it, and every one of them is earned rather than picked '+
-        'off a list.</p>'+
-    '</div>'+
-    '<ul class="rules wnlist">'+
-      '<li><span class="n">1</span><span><b>Your club\'s colors</b>, in three steps. '+
-        'Play one draft with a club and the crest takes their colors. Reach the playoffs '+
-        'with them and their second color becomes the ring. Win it all with them and you '+
-        'get that club\'s own pattern, and all thirty two are different.</span></li>'+
-      '<li><span class="n">2</span><span><b>A mark</b> in the middle, instead of your '+
-        'initials. There are twelve, each one opened by a badge you already have: a '+
-        'perfect season, a 17-0, a title from a wild card seed, going 0-17. Pick which '+
-        'one you wear in Customize.</span></li>'+
-      '<li><span class="n">3</span><span><b>A seal</b> on the rim for your rank, which '+
-        'climbs with your badge count. Ten of them: Bronze 1, 2 and 3, then Silver, then '+
-        'Gold, then GOAT for every badge in the game. The chevrons are the number. '+
-        'Nothing to choose: it\'s your cabinet, in one shape.</span></li>'+
-      '<li><span class="n">4</span><span><b>The ring</b>, for the honors worth a ring. '+
-        'A title gets gold. Titles in two straight seasons, or a 20-0, and the light '+
-        'starts moving round it.</span></li>'+
-    '</ul>'+
-    '<p class="dim wnnow">'+esc(whatsNewStanding(a,rung,tier))+'</p>'+
-    '<div class="hrow" style="margin-top:14px">'+
-      '<button class="btn sm" id="wn-go">Set mine up</button>'+
-      '<button class="btn ghost sm" id="sh-x">Not now</button></div>'+
-    '<label class="wnchk"><input type="checkbox" id="wn-off"'+(whatsNewOff()?' checked':'')+'>'+
-      '<span>Don\'t show this again</span></label>';
-  openSheet();
-  $('sh-x').onclick=closeSheet;
-  $('wn-go').onclick=()=>pfLook();
-  const chk=$('wn-off');
-  chk.onchange=()=>{
-    try{
-      if(chk.checked) localStorage.setItem(WHATSNEW_KEY,'1');
-      else localStorage.removeItem(WHATSNEW_KEY);
-    }catch(_){}
-  };
-  ga('crest_whatsnew_shown',{rung:rung,badges:myCrest.badges});
-}
-/* Where they stand right now, in one line, because the four rules above are abstract until
-   somebody sees their own numbers against them. */
-function whatsNewStanding(a,rung,tier){
-  const bits=[];
-  bits.push(a.chosen?a.team+', rung '+rung+' of 3':'No club picked yet');
-  bits.push(myCrest.badges+' of '+myCrest.total+' badges'+(tier?', '+tier.name:''));
-  const n=myCrest.marks.length;
-  bits.push(n===1?'one mark unlocked':n+' marks unlocked');
-  return 'Right now: '+bits.join(' · ')+'.';
-}
+/* ---------------- WHAT IS NEW: RETIRED ----------------
+   A "your circle is a crest now" sheet opened on the front page for every signed-in player
+   on every visit until a box in it was ticked, and the box only held in one browser. It was
+   an announcement, the crest has been out since August, and it was the pop-up players were
+   tired of. Customize is where the crest is set, and the profile circle leads there. */
 
 /* ---------------- THE CREST, IN THE CUSTOMIZE PAGE ----------------
    Three controls that were one. The club grid below already existed; what is new is that the
@@ -24568,6 +25164,9 @@ async function careerLoad(userId){
   careerBusy=false;
   if(!r) return null;
   career={userId,rows:r.rows,total:r.total,capped:r.capped};
+  /* Who this is, by what they have played, so a guide is never put in front of somebody
+     whose history says they do not need it. Any caller, so whichever asks first does it. */
+  seenFromRows(r.rows);
   return career;
 }
 
@@ -24737,7 +25336,22 @@ function achPairLinks(a,b,sameClub){
 }
 function achEvaluate(rows){
   if(!ACH) return null;
-  try{ return ACH.evaluate(rows,achResolve,{pairLinks:achPairLinks}); }catch(_){ return null; }
+  try{ return ACH.evaluate(rows,achResolve,{pairLinks:achPairLinks,schedule:NFL_SCHED}); }catch(_){ return null; }
+}
+/* THE REAL NFL SCHEDULE, for the Game Day shelf: which games were on when each season was
+   filed. Rebuilt by a workflow whenever the schedule or a final score moves, under the same
+   name, so it is fetched no-cache rather than with a hand-written ?v= a bot cannot bump.
+   Loaded once, only when the cabinet is derived, and a failure leaves those badges dark
+   rather than holding up the ones that do not need it. */
+let NFL_SCHED=null, schedLoading=null;
+function loadSchedule(){
+  if(NFL_SCHED) return Promise.resolve(NFL_SCHED);
+  if(schedLoading) return schedLoading;
+  schedLoading=fetch('data/nfl_schedule.json',{cache:'no-cache'})
+    .then(r=>{ if(!r.ok) throw new Error('nfl_schedule'); return r.json(); })
+    .then(j=>{ NFL_SCHED=j; return j; })
+    .catch(()=>{ schedLoading=null; return null; });
+  return schedLoading;
 }
 /* THE DEFENDERS HAVE TO BE IN THE ROOM BEFORE THE CABINET IS DERIVED. achResolve reads
    BYKEY, and the defensive pool is a second data file that only a defense draft loads, so a
@@ -24745,9 +25359,10 @@ function achEvaluate(rows){
    empty roster: not a wrong badge, a missing one, and silently. Every caller awaits this
    first. A failure leaves the cabinet exactly as it was rather than blocking it. */
 function achReady(rows){
-  if(!ACH||DDATA) return Promise.resolve();
-  if(!(rows||[]).some(r=>r&&r.run_mode==='defense')) return Promise.resolve();
-  return loadDefensePool().then(()=>{},()=>{});
+  if(!ACH) return Promise.resolve();
+  const wait=[loadSchedule()];
+  if(!DDATA&&(rows||[]).some(r=>r&&r.run_mode==='defense')) wait.push(loadDefensePool().then(()=>{},()=>{}));
+  return Promise.all(wait).then(()=>{},()=>{});
 }
 
 /* The two streaks, side by side. The play streak leads with the state that motivates: if
@@ -25141,10 +25756,13 @@ async function pfProLoad(){
     /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
        premium_products(), which answers through an RPC; this reads the table. A blocked
        request, an expired token or an account comped by hand outside the table all land
-       here, and none of them is a reason to tell somebody their purchase is gone. */
+       here, and none of them is a reason to tell somebody their purchase is gone.
+       IT NEVER PROMISES A RELOAD WILL FIX IT. Until supabase/144 the table had no grant for
+       the signed in role, so every read here was refused and this sentence told every
+       owner a reload would bring the list back, which it never did. */
     list.innerHTML='<p class="dim" style="font-size:12.5px;line-height:1.45;margin:0">'+
-      'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be loaded '+
-      'just now. Reload the page and it will come back.</p>';
+      'Your Pro modes are unlocked. We couldn\'t show the list of what you own. '+
+      'Your purchase is safe.</p>';
   }else{
     let ends=null, endedOn=null, passEnds=null, passEnded=null, paid=false;
     list.innerHTML=owned.map((k)=>{
@@ -25676,6 +26294,7 @@ function profileSheet(msg,ok){
       'autocapitalize="off" autocorrect="off" spellcheck="false">'+
     '<input class="fld" id="a-pass" type="password" placeholder="password" '+
       'autocomplete="'+(up?'new-password':'current-password')+'">'+
+    (up?'':'<a href="/#forgot" target="_blank" rel="noopener" style="display:inline-block;margin:4px 0 2px;font-size:12.5px;color:inherit;opacity:.75;text-decoration:underline;text-underline-offset:3px">Forgot your password?</a>')+
     (up?'<input class="fld" id="a-user" placeholder="a name for the board" '+
         'autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20">':'')+
     '<div style="margin-top:10px"><button class="btn" id="a-go">'+
@@ -26204,11 +26823,12 @@ async function submitAfterSignIn(){
 
 /* THE BOARD, OPENED ON THE ROW THAT WAS JUST ADDED.
    Forced to the window and the axis where the run is certain to be findable rather than
-   wherever the board was last left: today, by record, best first. A run played in the
-   last few minutes is in today's board by definition, and the pinned-row fallback that
-   catches a run outside the top page only runs on a record board in descending order,
-   so those are the settings that guarantee there is something to point at. A club run goes
-   to that club's board, which is the only board it is on. */
+   wherever the board was last left: the board's own window (All time), by record, best
+   first. A run played in the last few minutes is on the
+   all-time board by definition, and the pinned-row fallback that catches a run outside the top
+   page only runs on a record board in descending order, so those are the settings that
+   guarantee there is something to point at. A club run goes to that club's board, which is
+   the only board it is on. */
 async function showMyRowOnBoard(){
   /* THE PROFILE SHEET HAS TO GO FIRST. The player got here by signing in inside it, and
      the auth handler repaints it rather than closing it, so without this the board is
@@ -26220,7 +26840,7 @@ async function showMyRowOnBoard(){
      has no row in, on an axis the mode is not scored on, when the whole point of this path is
      to show the player their own row. */
   boardFromRun();
-  lbWin='day'; lbSort=defaultSort(); lbDir=sortBestDir(lbSort);
+  lbWin=defaultWin(); lbSort=defaultSort(); lbDir=sortBestDir(lbSort);
   show('s-board');
   await loadBoard();
   /* Your actual row, which the 500-row list will hold unless five hundred people beat
@@ -26641,7 +27261,7 @@ function rankLine(r){
    looking for themselves, which is what the pinned row at the bottom is for. */
 const LB_LIMIT=500;
 
-let lbWin='day', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
+let lbWin='all', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
 /* WHICH COMPETITION IS SHOWING. 'free', or a club code for one of the thirty-two One Franchise
    boards. Separate from lbWin because it is a separate question: every competition has
    the same three windows, which is why the club boards were given a created_at window
@@ -26837,6 +27457,8 @@ $('lb-comp').addEventListener('change',()=>{
   /* One call instead of a copy of the rule in each branch above. */
   fixSort();
   lbDir=sortBestDir(lbSort);
+  /* Picking a competition lands on its own window: All time for an era or a club. */
+  lbWin=defaultWin();
   ga('board_competition',{mode:lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam':lbEra?'era':lbClub?'club':'free',
     club:lbClub,era:lbEra});
   loadBoard();
@@ -26882,6 +27504,18 @@ function boardFromRun(){
    record. */
 function defaultSort(){ return lbTrade?'gm':lbDefense?'pa':'record'; }  // full team uses record, which is already the fallback
 
+/* THE WINDOW A BOARD OPENS ON is All time, on every competition, asked for by the owner.
+   It started with the era and club boards, where there are forty-odd of them against one free
+   board and Today on a Packers board is usually empty or one row, and then went to all of them.
+   It is still a function rather than a literal because it is applied when the competition
+   CHANGES, never on a repaint, so a window somebody picked stays picked until they move to
+   another board; a board that wants its own default later is one line here. */
+function defaultWin(){ return 'all'; }
+/* Which competition is showing, as one string, so a caller can ask whether it moved. */
+function compKey(){
+  return [lbTrade,lbDynasty,lbDefense,lbFull,lbEra||'',lbClub||''].join('|');
+}
+
 /* WHICH AXES THIS BOARD HAS, in one place. Four callers used to each carry their own copy of
    `if(lbSort==='gm') lbSort='rating'`, which was already one copy too many at one mode-only
    axis and is unmaintainable at three. Anything not offered here falls back to the record,
@@ -26905,7 +27539,11 @@ const sortBestDir=(k)=>k==='pa'?'asc':'desc';
 
 function openBoard(){
   if(run&&run.outcome){
+    const was=compKey();
     boardFromRun();
+    /* Only when the run moved the board to another competition: reopening the same one
+       keeps whatever window was picked on it. */
+    if(compKey()!==was) lbWin=defaultWin();
     if(lbTrade) lbSort='gm'; else if(lbDefense) lbSort='pa';
     fixSort();
     lbDir=sortBestDir(lbSort);
@@ -28085,7 +28723,12 @@ function watchFold(){
   const hdr=parseFloat(getComputedStyle(document.documentElement)
     .getPropertyValue('--hdr'))||0;
   const bar=scr.querySelector('.capwrap');
-  const under=Math.round(hdr+(bar?bar.offsetHeight:0));
+  /* The bar only. The pips hang under it, over the top of the field, and counting them here
+     would read a field at rest as partly gone and fade them in before any scroll. */
+  /* Plus the clock's inset on a Home Screen app, which the header now sticks below. */
+  const head=document.querySelector('header');
+  const inset=head?(parseFloat(getComputedStyle(head).top)||0):0;
+  const under=Math.round(hdr+inset+(bar?bar.offsetHeight:0));
   foldObs=new IntersectionObserver((entries)=>{
     for(const e of entries){
       /* Fully in view is no pips, fully gone is all of them. The 1.4 gets them to full opacity
@@ -28563,6 +29206,7 @@ boot();
       for(var i=0;i<units.length;i++){
         var slot=units[i].getAttribute('data-ad-slot');
         if(!slot||/^0+$/.test(slot)) continue;
+        if(units[i].closest('[data-ad-zone]')) continue;   // the menu ad starts in menuAd()
         (adsbygoogle=window.adsbygoogle||[]).push({});
       }
     }catch(e){}

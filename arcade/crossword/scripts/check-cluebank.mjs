@@ -35,7 +35,7 @@ for (const e of corpus) {
   byKey.set(BANK.key(e.sport, e.name), e);
 }
 const seen = new Set();
-// Parse only the data array — the file's header comment shows an example
+// Parse only the data array: the file's header comment shows an example
 // entry in the same shape, and counting it would fake a duplicate.
 const srcAll = require('fs').readFileSync(new URL('../../cluebank.js', import.meta.url), 'utf8');
 const src = srcAll.slice(srcAll.indexOf('var P = ['));
@@ -53,7 +53,7 @@ for (const { n, s } of entries) {
   seen.add(k);
   if (!byKey.has(k)) err(`no corpus entity for ${s} "${n}"`);
 }
-if (!errors) console.log('  ok — every curated player exists in the corpus');
+if (!errors) console.log('  ok: every curated player exists in the corpus');
 
 /* ---- 2. clue hygiene ------------------------------------------------------ */
 console.log('\n2) clue hygiene (no leaked surname, valid predicate opener)');
@@ -68,7 +68,7 @@ for (const { n, s } of entries) {
     if (/\s$/.test(c.x) || /[.]$/.test(c.x)) err(`${s} ${n}: predicate should not end with a period or space`);
   }
 }
-if (errors === before) console.log('  ok — no leaked answers, all predicates well-formed');
+if (errors === before) console.log('  ok: no leaked answers, all predicates well-formed');
 
 /* ---- 3. coverage of the crossword's actual answer flow -------------------- */
 console.log('\n3) coverage of a year of crossword answers');

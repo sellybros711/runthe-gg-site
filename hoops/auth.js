@@ -219,6 +219,13 @@
        leaves old rows under the old name, which is wrong and is not worth
        refusing the rename over. The next rename fixes them. */
     try { await sb.rpc('rtf_rename_runs'); } catch (e) {}
+    /* The other two boards keep their own copy of the name too. A database
+       without 116 or 130 answers these with an error, which is swallowed for
+       the reason above. rtf_rename_plays has existed since 116 and nothing
+       called it, so a renamed account went on reading the old name on the
+       Conquest, Fix History and Six Passes boards. */
+    try { await sb.rpc('rtf_rename_plays'); } catch (e) {}
+    try { await sb.rpc('rtf_rename_careers'); } catch (e) {}
     fire();
     return { error: null };
   }
@@ -251,6 +258,56 @@
       }
     } catch (e) {}
     return null;
+  }
+
+  /* THE PROFILE, ON THE SERVER. supabase/129_hoops_profiles.sql: one row an
+     account holding what the player chose (the jersey, the arena, the camera,
+     the last club and decade, whether the guide has been seen).
+     getProfile answers the row, `{}` for an account that has none yet, and null
+     for NO OPINION (signed out, offline, or a database without 129), which the
+     page must never read as "you chose nothing". setProfile sends only the
+     fields it is given: the SQL reads a missing argument as leave it alone. */
+  async function getProfile() {
+    if (!sb || !session) return null;
+    const uid = session.user && session.user.id;
+    try {
+      const r = await sb.from('rtf_profiles').select('*').eq('user_id', uid).maybeSingle();
+      if (!r || r.error) return null;
+      return r.data || {};
+    } catch (e) { return null; }
+  }
+  async function setProfile(f) {
+    if (!sb || !session || !f) return null;
+    const args = {};
+    /* wearStreet and wearCourt (139) are sent in a call of their own by
+       hoops/wardrobe.js: against a database without 139 that call is refused
+       for naming arguments it does not know, and nothing else rides on it. */
+    const map = { club: 'p_club', num: 'p_num', arena: 'p_arena', camera: 'p_camera',
+      lastClub: 'p_last_club', lastEra: 'p_last_era', guide: 'p_guide',
+      wearStreet: 'p_wear_street', wearCourt: 'p_wear_court', player: 'p_player' };
+    for (const k of Object.keys(map)) if (f[k] !== undefined && f[k] !== null) args[map[k]] = f[k];
+    if (!Object.keys(args).length) return null;
+    try {
+      const r = await sb.rpc('rtf_set_profile', args);
+      return (r && !r.error) ? (r.data || {}) : null;
+    } catch (e) { return null; }
+  }
+
+  /* PAID COINS (supabase/141_hoops_wallet.sql), shipped dark: hoops/wardrobe.js
+     only asks while economy.js BUCKETS_ENABLED is true. walletState answers the
+     balance and what was bought, or null for no opinion; walletSpend spends
+     under a key and answers { ok, balance } or { ok: false, why }. */
+  async function walletState() {
+    if (!sb || !session) return null;
+    try { const r = await sb.rpc('rtf_wallet_state'); return (r && !r.error && r.data) ? r.data : null; } catch (e) { return null; }
+  }
+  async function walletSpend(key, coins) {
+    if (!sb || !session) return { ok: false, why: 'signin' };
+    try {
+      const r = await sb.rpc('rtf_wallet_spend', { p_key: key, p_coins: coins });
+      if (r && !r.error && r.data) return r.data;
+      return { ok: false, why: /not enough/.test((r && r.error && r.error.message) || '') ? 'coins' : 'error' };
+    } catch (e) { return { ok: false, why: 'error' }; }
   }
 
   /* board.js signs its requests with the anon key. Once somebody is signed in
@@ -286,6 +343,7 @@
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
-    available, setName, claim, token, deleteAccount, premiumProducts,
+    available, setName, claim, token, deleteAccount, premiumProducts, walletState, walletSpend,
+    getProfile, setProfile,
   };
 })();

@@ -1,5 +1,5 @@
 /* =============================================================================
- * Run The Arcade — merge an achievement/stat supplement into the corpus
+ * Run The Arcade: merge an achievement/stat supplement into the corpus
  *
  *   node grid/merge-supplement.mjs
  *

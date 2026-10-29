@@ -237,39 +237,24 @@ async function toResults(p) {
   return !!(await p.$('#s-over.on'));
 }
 
-// ══ 0. the all-time ribbon has one rule, and the share card obeys it ════════
-head('0. THE RIBBON HAS ONE RULE, AND THE SHARE CARD READS IT');
-/* The results screen and the share card both hang "Nth-greatest team of all
-   time" over a season. The screen's copy was gated to a top 100 roster that
-   reached October and the card's was not, so a 73-89 season that missed the
-   playoffs went out to a group chat as the 439th-greatest team of all time. A
-   played run cannot be relied on to land either side of that line, so the rule
-   is lifted out of the page and asked directly, and the card is held to it. */
+// ══ 0. nothing calls a roster the greatest team of all time ═══════════════
+head('0. THE RANK AGAINST REAL TEAMS SAYS WHAT IT IS, AND NOTHING MORE');
+/* allTimeRank ranks a roster's talent ON PAPER against every real MLB
+   team-season. A drafted roster is twelve star seasons, so it is cheap: a greedy
+   draft lands in that top 100 on 93 runs in 100. It used to be hung over the
+   record as "8th-greatest team of all time", labelled "All-time rank" beside the
+   leaderboard cell, and tapped through to the leaderboard. A player 74th on the
+   board read it as their place on it, and was right that it was false.
+   So no surface may call it the greatest team, or bare "all time". */
 {
   const src = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
-  const body = (name) => {
-    const at = src.indexOf('function ' + name + '(');
-    if (at < 0) return null;
-    let i = src.indexOf('{', at), depth = 0;
-    for (let j = i; j < src.length; j++) {
-      if (src[j] === '{') depth++;
-      else if (src[j] === '}' && --depth === 0) return src.slice(at, j + 1);
-    }
-    return null;
-  };
-  const rule = body('crownedRank');
-  claim(!!rule, 'the page has one ribbon rule, crownedRank()');
-  if (rule) {
-    const crownedRank = new Function(rule + '; return crownedRank;')();
-    claim(crownedRank({ allTimeRank: 27, madePlayoffs: true }) === 27, 'a top 100 roster that reached October is crowned');
-    claim(crownedRank({ allTimeRank: 27, madePlayoffs: false }) === null, 'a top 100 roster that missed October is not');
-    claim(crownedRank({ allTimeRank: 439, madePlayoffs: true }) === null, 'a roster outside the top 100 is not, even in October');
-    claim(crownedRank({ allTimeRank: null, madePlayoffs: true }) === null, 'a run with no rank (All-Time Staff) is not');
-  }
-  const card = body('drawShareCard') || '';
-  claim(/crownedRank\(o\)/.test(card), 'the share card asks crownedRank() before it draws the ribbon');
-  claim(!/ordinal\(o\.allTimeRank\)/.test(card), 'and never prints the raw rank as a ribbon',
-    'drawShareCard still formats o.allTimeRank into the ribbon line directly');
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '');
+  claim(!/greatest team of all time/i.test(code), 'no line calls a roster the Nth-greatest team of all time');
+  claim(!/GREATEST TEAM OF ALL TIME/.test(code), 'and the share card does not either');
+  claim(!/'All-time rank'|'ALL-TIME RANK'|' all time'\)/.test(code), 'the rank is never labelled bare "all time"');
+  claim(!/ro-rank-go/.test(code), 'the rank cell does not open the leaderboard');
+  const ach = readFileSync(new URL('./achievements.js', import.meta.url), 'utf8');
+  claim(!/team of all time/.test(ach), 'no badge promises a team of all time');
 }
 
 // ══ 1. a Classic run, end to end ═══════════════════════════════════════════
@@ -280,6 +265,10 @@ claim(drafted.stalled === null, 'twelve picks, with no board the draft could not
   drafted.stalled != null ? `stalled at pick ${drafted.stalled + 1}` : '');
 const arrived = await toResults(p);
 claim(arrived, 'the season and October hand off to the results screen');
+/* A run in progress is saved so leaving the page cannot lose it, and a FINISHED
+   one has to take that save with it, or the front page offers to resume a season
+   that is already on the board. */
+claim(await p.evaluate(() => !localStorage.getItem('rtd_run_v1')), 'a finished run leaves no saved draft behind');
 
 // ══ 2. what the results screen says ════════════════════════════════════════
 head('2. AND IT HAS SOMETHING TO SAY ON IT');
@@ -291,7 +280,7 @@ const r = await p.evaluate(() => {
   };
   return {
     record: txt('ro-record'), verdict: txt('ro-verdict'),
-    rating: txt('ro-rating'), rank: txt('ro-rank'), eff: txt('ro-place'), effL: txt('ro-place-l'),
+    rating: txt('ro-rating'), rank: txt('ro-rank'), rankL: txt('ro-rank-l'), eff: txt('ro-place'), effL: txt('ro-place-l'),
     takes: txt('ro-takes'), arch: txt('ro-arch'),
     rosterRows: document.querySelectorAll('#r-roster .rrow, #r-roster .rline, #r-roster li').length,
     rosterText: (document.getElementById('r-roster') || {}).textContent?.trim().length || 0,
@@ -307,7 +296,8 @@ claim(/\w/.test(r.verdict), `a verdict, rather than an empty hero: ${JSON.string
    twice, and a branch beside them read a field outcomeOf has never set, so it was
    dead on every run the game had ever played. An empty cell renders perfectly.
 */
-for (const [k, label] of [['rating', 'Team rating'], ['rank', 'All-time rank']]) {
+claim(/^Of [\d,]+ real MLB teams$/.test(r.rankL), `the rank says which list it is on, with the real count: ${JSON.stringify(r.rankL)}`);
+for (const [k, label] of [['rating', 'Team rating'], ['rank', 'Rank against real MLB teams']]) {
   claim(/\d/.test(r[k]), `${label} carries a number: ${JSON.stringify(r[k])}`);
 }
 /* THE GRADE IS GONE, asked for by the owner, and the middle cell is the season's
@@ -336,6 +326,17 @@ const oct = await p.evaluate(() => {
 claim(oct.visible === !oct.missed,
   `Watch October is ${oct.missed ? 'not offered on a run with no October' : 'offered on a run that had one'}`,
   `visible ${oct.visible}, verdict missed ${oct.missed}`);
+
+/* The two leaderboard cells open the board this season was filed on, and Back
+   comes home to the result rather than to the front page. */
+for (const id of ['#ro-place-go']) {
+  await p.click(id);
+  const bd = await p.evaluate(() => ({ on: !!document.querySelector('#s-board.on'),
+    tab: (document.querySelector('#bd-tabs .bd-tab.on') || {}).textContent || '' }));
+  claim(bd.on && /classic/i.test(bd.tab), `${id} opens the leaderboard on this season's board (${bd.tab})`);
+  await p.click('#b-board-back');
+  claim(!!(await p.$('#s-over.on')), 'and Back returns to the result');
+}
 
 // ══ 3. the row it files is the row the cabinet reads ═══════════════════════
 head('3. THE SEASON IS FILED, AND THE BADGES IT LIT ARE NAMED');
@@ -384,6 +385,21 @@ const cab = await p.evaluate(() => {
     folds: body.querySelectorAll('details.tg-more').length,
     headline: (body.firstElementChild || {}).textContent || '',
     height: Math.round(body.scrollHeight),
+    flat: (() => {
+      const shut = [...body.querySelectorAll('details')].filter((d) => !d.open);
+      shut.forEach((d) => { d.open = true; });
+      const h = Math.round(body.scrollHeight);
+      shut.forEach((d) => { d.open = false; });
+      return h;
+    })(),
+    /* What the badges this account has earned take up: the grids that sit
+       outside every fold, because a locked badge's grid lives INSIDE one. Asked
+       as "inside any fold" and never "inside a shut one": the first draft asked
+       the second, and with every fold forced open it counted the whole locked
+       catalogue as earned and passed. Measured, never counted times a row
+       height, so a layout change to the tiles cannot make this claim lie. */
+    earnedH: Math.round([...body.querySelectorAll('.trophy-grid')].filter((g) => !g.closest('details'))
+      .reduce((n, g) => n + g.getBoundingClientRect().height, 0)),
     career: (document.getElementById('trophy-career') || {}).textContent || '',
   };
 });
@@ -393,9 +409,23 @@ claim(cab && cab.groups >= 9 && cab.folds >= 1, 'on shelves, with the locked hal
 claim(cab && cab.open > 0 && cab.open < cab.total / 2,
   `what you earned is open and the rest is not (${cab && cab.open} of ${cab && cab.total})`);
 /* MEASURED, BECAUSE THE COMPLAINT THIS FOLD ANSWERS IS A NUMBER. Drawn flat the
-   sheet is about nine thousand pixels on a phone; a first season should be a
-   fraction of that and should grow with what you win. */
-claim(cab && cab.height < 4000, `and the sheet is ${cab && cab.height}px rather than nine thousand`);
+   sheet is about fourteen and a half thousand pixels on a phone.
+
+   IT WAS A FIXED 4000px AND THAT WAS A CLAIM ABOUT THE DICE. The sheet is meant to
+   GROW with what you win: every badge earned is an open tile, about 68px on a
+   phone, and a first season lights anywhere from 25 to 50 of them. Measured, the
+   folded sheet was 2800px at 28 open and 4388px at about 50, while everything that
+   is not an earned tile sat at about 890px in every run. So the fixed line failed
+   on seasons that happened to earn a lot, on a layout doing exactly its job.
+
+   What the fold promises is that the LOCKED half costs a small fixed amount,
+   whatever was earned. So the claim is the sheet minus the earned tiles (the
+   shelves, their strips and the summary), held under 1200px, plus the whole folded
+   sheet held under a third of the same sheet opened flat, which is measured in
+   the same run rather than written down. */
+const locked = cab ? cab.height - cab.earnedH : Infinity;
+claim(cab && locked < 1200, `the locked half costs ${locked}px, whatever the season earned (${cab && cab.open} open)`);
+claim(cab && cab.height < cab.flat / 3, `and the sheet is ${cab && cab.height}px against ${cab && cab.flat}px flat`);
 claim(/\d/.test(cab ? cab.career : ''), 'the career line above it carries numbers');
 /* SHUT IT BEHIND US. A sheet is a scrim over the whole screen, so the next section's
    press lands on the scrim and retries for thirty seconds against a sheet nobody
@@ -524,6 +554,12 @@ const backCard = await d1.p.evaluate(() => {
 claim(backCard.played, 'coming back, the card knows the day has been played');
 claim(/result/i.test(backCard.label || ''),
   `and says so on the label: ${JSON.stringify(backCard.label)}`);
+/* The front page's Leaderboard button opens on Classic, even in a jar that has just
+   played the daily. Only a finished season opens on its own board. */
+await d1.p.click('#b-board');
+const homeTab = await d1.p.evaluate(() =>
+  (document.querySelector('#bd-tabs .bd-tab.on') || {}).textContent || '');
+claim(/classic/i.test(homeTab), `the front page's Leaderboard opens on Classic (${homeTab})`);
 
 // ══ 7. nothing got out, and nothing threw ══════════════════════════════════
 head('7. NOTHING LEFT THE PAGE, AND NOTHING THREW');

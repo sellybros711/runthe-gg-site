@@ -72,6 +72,12 @@
       '  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%272.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6%27/%3E%3C/svg%3E") center/contain no-repeat;',
       '  mask:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27black%27 stroke-width=%272.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6%27/%3E%3C/svg%3E") center/contain no-repeat;}',
       '.rtgart-body button:hover{background:color-mix(in srgb,var(--gac,#F2B632) 28%,transparent);}',
+      '.rtgart-acts{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;}',
+      /* the image is the second option: a quiet text button, still 44px to tap */
+      '.rtgart-body button.img{border:0;background:none;padding:0 2px;min-height:44px;color:var(--mut,#8aa0b8);',
+      '  text-decoration:underline;text-underline-offset:3px;letter-spacing:.04em;text-transform:none;font-size:13px;}',
+      '.rtgart-body button.img::before{display:none;}',
+      '.rtgart-body button.img:hover{background:none;color:var(--ink,#F4F7FB);}',
       /* opened: the poster at full width, the tile folded under it */
       '.rtgart.big{flex-direction:column;align-items:stretch;padding:10px;}',
       '.rtgart.big .rtgart-thumb{flex:none;width:100%;aspect-ratio:auto;transform:none;cursor:zoom-out;}',
@@ -128,7 +134,8 @@
         '<img alt="Your Run The Arcade card for today" src="' + url + '"></button>' +
         '<div class="rtgart-body"><span class="l">Your card</span>' +
         '<span class="t">Think they can beat it?</span>' +
-        '<button type="button" data-rtgart-share>Share it</button></div>';
+        '<span class="rtgart-acts"><button type="button" data-rtgart-share>Share result</button>' +
+        '<button type="button" class="img" data-rtgart-image>Share the image</button></span></div>';
       var th = box.querySelector('.rtgart-thumb');
       if (th) th.onclick = function () {
         var on = box.classList.toggle('big');
@@ -143,6 +150,9 @@
         if (s) { s.click(); return; }
         try { RTGShare.send(spec() || sp); } catch (e) {}
       };
+      // The poster itself, as the second option.
+      var bi = box.querySelector('[data-rtgart-image]');
+      if (bi) bi.onclick = function () { try { RTGShare.sendImage(spec() || sp); } catch (e) {} };
       requestAnimationFrame(function () { box.classList.add('on'); });
       /* The loose Share button underneath is now the same action twice. Hide
          it rather than remove it: the card's button clicks it, so its handler

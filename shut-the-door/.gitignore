@@ -1,0 +1,4 @@
+# Mixamo animations may ship only as the baked clips inside our own glb files: the raw FBX
+# downloads stay outside the repo (lab/LICENSES.md, Motion)
+*.fbx
+*.FBX

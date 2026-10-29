@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The four free daily puzzles, explained: RunThe.GG</title>
+  <meta name="description" content="How the Daily Crossword, Sportegories, Alma Mater and Career Path work in Run The Arcade, how they score, and how to solve each one faster.">
+  <link rel="canonical" href="https://runthe.gg/guides/arcade-free-daily-puzzles.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="RunThe.GG">
+  <meta property="og:url" content="https://runthe.gg/guides/arcade-free-daily-puzzles.html">
+  <meta property="og:title" content="The four free daily puzzles, explained">
+  <meta property="og:description" content="How the Daily Crossword, Sportegories, Alma Mater and Career Path work in Run The Arcade, how they score, and how to solve each one faster.">
+  <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=4">
+  <meta name="theme-color" content="#06182e">
+  <link rel="icon" href="/assets/runthegames-icon_48.png?v=5" sizes="any">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-icon_180.png?v=5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0a1626;--card:#122a44;--cardb:#1e3d5c;--ink:#eaf1f8;--mut:#93a7bd;--coral:#F85858;--teal:#66D3DE;--green:#6EE84E;}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;padding:0;}
+    body{font-family:'Archivo',system-ui,-apple-system,sans-serif;line-height:1.6;color:var(--ink);
+      min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+      background:
+        radial-gradient(1100px 520px at 50% -8%, rgba(102,211,222,.16), transparent 60%),
+        radial-gradient(900px 460px at 88% 4%, rgba(248,88,88,.12), transparent 55%),
+        linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+      background-attachment:fixed;}
+    .wrap{max-width:680px;margin:0 auto;padding:26px 18px 56px;}
+    .mast{text-align:center;margin:4px 0 22px;}
+    .mast img{display:block;width:100%;max-width:440px;height:auto;margin:0 auto;filter:drop-shadow(0 6px 26px rgba(0,0,0,.45));}
+    .crumb{font-size:12.5px;color:#6f829a;margin:0 0 10px;}
+    .crumb a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .card{background:linear-gradient(180deg,var(--card),#0f2338);border:1px solid var(--cardb);border-radius:10px;padding:24px 22px 28px;}
+    h1{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;
+      font-size:clamp(28px,7.5vw,42px);line-height:1.05;margin:0 0 8px;}
+    .sub{font-weight:900;color:var(--teal);text-transform:uppercase;letter-spacing:2px;font-size:11.5px;margin:0 0 18px;}
+    h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
+      font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
+    h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
+    .card p,.card li{font-size:15px;color:var(--mut);}
+    .card p{margin:0 0 14px;}
+    .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
+    .card li{margin:0 0 6px;}
+    .card b{color:var(--ink);font-weight:800;}
+    .card a{color:var(--teal);font-weight:700;text-decoration:none;}
+    .card a:hover{text-decoration:underline;}
+    .tbl{overflow-x:auto;margin:0 0 14px;}
+    .tbl table{border-collapse:collapse;width:100%;font-size:14px;color:var(--mut);}
+    .tbl th,.tbl td{text-align:left;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top;}
+    .tbl th{color:var(--ink);font-weight:800;}
+    .card .list{list-style:none;padding:0;margin:0;}
+    .list li{border-top:1px solid rgba(255,255,255,.08);padding:14px 0;margin:0;}
+    .list li:first-child{border-top:0;}
+    .list .t{display:block;font-size:16px;}
+    .list .d{display:block;font-size:14px;color:var(--mut);}
+    .play-row{margin-top:24px;text-align:center;}
+    .cta{display:inline-block;background:linear-gradient(180deg,#FF6B6B,#F04A44);color:#fff!important;font-weight:800;
+      text-transform:uppercase;letter-spacing:.5px;font-size:15px;padding:13px 26px;border-radius:7px;
+      text-decoration:none!important;box-shadow:0 8px 22px -12px rgba(248,88,88,.9);}
+    .foot{margin-top:28px;text-align:center;font-size:12.5px;color:#6f829a;line-height:2;}
+    .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .foot a:hover{color:var(--ink);}
+    .foot .sep{margin:0 7px;color:#3c4c60;}
+  </style>
+  <script>
+  window.dataLayer=window.dataLayer||[];
+  window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  /* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+  gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+  </script>
+  <script>
+  window.GA_ID='G-L29P5MRWKE';
+  (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+    window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
+    gtag('js',new Date());gtag('set',{game_name:'Guides'}); gtag('config',id);
+    var s=document.createElement('script');s.async=true;
+    s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+    document.head.appendChild(s);})();
+  </script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
+       crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mast"><a href="/"><img src="/assets/wm-stacked.png?v=1" alt="Run The Games" width="1200" height="431" /></a></div>
+
+    <main class="card">
+      <p class="crumb"><a href="/guides/">Guides</a> · Run The Arcade</p>
+      <h1>The four free daily puzzles, explained</h1>
+      <p class="sub">A guide to Run The Arcade</p>
+
+      <p>Run The Arcade has four games you can play free every day: the Daily Crossword, Sportegories, Alma Mater and Career Path. You don't need an account. You get one play of each a day, and they reset at midnight your time. An account saves your result to the daily board and keeps your streak. Here's how each game really scores, and how to get through it faster.</p>
+
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
+      <h2>Before you start</h2>
+
+      <p>Your play is spent on your first move, not when the page opens. So you can open a game and look around for free. The first letter, tap or answer is what counts.</p>
+
+      <h2>Daily Crossword</h2>
+
+      <p>One sports mini crossword a day. Everyone gets the same grid.</p>
+
+      <ul>
+        <li>Type right into the grid. Tap a square twice to switch between across and down.</li>
+        <li>Fill every square correctly to finish. Nothing checks itself as you go.</li>
+        <li>Fill the grid with a mistake in it and the game tells you how many squares are off.</li>
+        <li><b>Check</b> marks the letters in the word you're on, right or wrong. It's free.</li>
+        <li><b>Reveal</b> fills in the one square you're on. You get 1 Reveal per play. The Arcade Card gets unlimited.</li>
+        <li>Time is the score. Fastest wins the day's board.</li>
+      </ul>
+
+      <p>A Reveal isn't free on the board. Each one adds <b>15 seconds</b> to your board time. A clean solve with no Reveals gets the Flawless ribbon.</p>
+
+      <p><b>Tips</b></p>
+
+      <ul>
+        <li><b>Read before you touch.</b> The clock starts on your first tap of a square or a clue, or your first letter. The clue lists are already on screen. Read them all first and walk in with answers.</li>
+        <li><b>Use Check, not Reveal.</b> Check costs nothing. Reveal costs 15 seconds. When the grid says a square is off, Check the words you're least sure of.</li>
+        <li><b>Skip and come back.</b> Fill what you know. The crossing letters crack the hard ones.</li>
+      </ul>
+
+      <h2>Sportegories</h2>
+
+      <p>Daily sports Scattergories. You get one letter, <b>8 categories</b> and <b>two minutes</b>.</p>
+
+      <ul>
+        <li>Type a player's full name for each category: first and last.</li>
+        <li>The first name or the last name can start with the letter. Either one works.</li>
+        <li>A player can only be used once on a card.</li>
+        <li>Nothing is graded until the end. The card scores when time runs out or when you tap <b>I'm done</b>.</li>
+      </ul>
+
+      <p>How a row scores:</p>
+
+      <ul>
+        <li><b>1 point</b> for each name that starts with the letter. A player whose first and last names both start with it gets <b>2</b>.</li>
+        <li>A rarity bonus on top: <b>Common +0</b>, <b>Uncommon +1</b>, <b>Rare +2</b>. It's estimated from how well known the player is. The biggest names score no bonus.</li>
+      </ul>
+
+      <p>A wrong answer just scores 0 on that row. It costs nothing else. If a row gets marked wrong or can't be verified, you get a <b>Challenge</b> button. The server looks the answer up and rules on it. Each row can be challenged once.</p>
+
+      <p>On the board, most points wins. A faster card breaks a tie.</p>
+
+      <p><b>Tips</b></p>
+
+      <ul>
+        <li><b>Never leave a row blank.</b> A wrong guess costs the same as a blank, which is nothing. Type something.</li>
+        <li><b>Go a level deeper.</b> A solid role player who fits can outscore the superstar who fits. The superstar is Common.</li>
+        <li><b>Hunt for double letters.</b> A name where both parts start with the letter doubles the base points.</li>
+        <li><b>The clock doesn't stop.</b> It runs on real time, so leaving the page doesn't pause it. Stay on the card.</li>
+      </ul>
+
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
+      <h2>Alma Mater</h2>
+
+      <p>One NBA, NFL or MLB player at a time. Where did he go to college? It deals current players. It opens on big names and gets harder the longer you go.</p>
+
+      <ul>
+        <li><b>Type the school: 2 points.</b></li>
+        <li><b>Take the 4 choices: 1 point.</b></li>
+        <li>Name a real school that's wrong and your run is over.</li>
+        <li>A school the game doesn't recognise isn't a miss. It asks you to check the spelling and try again.</li>
+        <li>Common short forms count. UNC, North Carolina and University of North Carolina all work.</li>
+        <li>A transfer counts at every school he attended.</li>
+      </ul>
+
+      <p>The run keeps going until your first miss. On the board, most points wins and the faster run takes a tie.</p>
+
+      <p><b>Tips</b></p>
+
+      <ul>
+        <li><b>Type before you bail.</b> A shaky guess at the spelling costs nothing. Only a real, wrong school ends it. Taking the choices halves the round.</li>
+        <li><b>Tapping a suggestion only fills the box.</b> You still have to submit. A mis-tap can't end your run.</li>
+        <li><b>Take the choices when it's close.</b> Typing pays 2 and the choices pay 1, but a miss pays nothing and ends everything. Late in a good run, 1 safe point beats a coin flip.</li>
+      </ul>
+
+      <h2>Career Path</h2>
+
+      <p>Every player here played for <b>at least 3</b> franchises. You see a scouting file first: position, college and era (when the game has them). Then the teams show up one at a time, starting with the first. The last one is tagged Most recent.</p>
+
+      <p>What a right answer is worth:</p>
+
+      <div class="tbl"><table>
+        <thead><tr><th>teams showing</th><th>points</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>5</td></tr>
+          <tr><td>2 or 3</td><td>3</td></tr>
+          <tr><td>4 or 5</td><td>2</td></tr>
+          <tr><td>6 or more</td><td>1</td></tr>
+          <tr><td>took the 4 names</td><td>1</td></tr>
+        </tbody>
+      </table></div>
+
+      <p>Type the full name, first and last. A name the game doesn't know isn't a miss. It asks you to check the spelling. Name the wrong player and the run is over. On the board, most points wins and the faster run takes a tie.</p>
+
+      <p><b>Tips</b></p>
+
+      <ul>
+        <li><b>Two teams and three teams pay the same.</b> Once you've shown a second team, show the third. It's free. Same with the fourth and fifth.</li>
+        <li><b>Read the scouting file hard.</b> Position, college and era rule out most of the league before you see a team.</li>
+        <li><b>The first team is where he broke in.</b> Most fans remember a guy for where he finished. Think draft day, not the last stop.</li>
+      </ul>
+
+      <div class="play-row">
+        <a class="cta" href="/arcade/">Play Run The Arcade</a>
+      </div>
+    </main>
+
+    <footer class="foot">
+      <a href="/">Home</a><span class="sep">·</span>
+      <a href="/guides/">Guides</a><span class="sep">·</span>
+      <a href="/about.html">About</a><span class="sep">·</span>
+      <a href="/privacy.html">Privacy</a><span class="sep">·</span>
+      <a href="/terms.html">Terms</a><span class="sep">·</span>
+      <a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span>
+      <a href="/contact.html">Contact</a>
+    </footer>
+  </div>
+  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+      var lazy=document.querySelectorAll('ins.adsbygoogle-lazy');
+      var start=function(u){ u.className='adsbygoogle'; (adsbygoogle=window.adsbygoogle||[]).push({}); };
+      var io='IntersectionObserver' in window ? new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); try{ start(e.target); }catch(x){} } });
+      },{rootMargin:'600px 0px'}) : null;
+      for(var j=0;j<lazy.length;j++){
+        var ls=lazy[j].getAttribute('data-ad-slot');
+        if(!ls||/^0+$/.test(ls)) continue;
+        if(io) io.observe(lazy[j]); else start(lazy[j]);
+      }
+    }catch(e){}
+  })();
+  </script>
+</body>
+</html>

@@ -147,18 +147,44 @@ const WEEK_CAP = D.capFor(POOL);
      at $140M alike, so a check written there compares two identical boards and reports
      the defect as fixed. Measured: SAME at pick one, and 240 of 360 (seed, pick) pairs
      differ once money has been spent. So it is asked of a roster that has spent. */
-  const dear = POOL.pool.filter((m) => m.price_musd > 20).slice(0, 3);
-  const spent = { seed, men: dear, ids: dear.map((m) => m.player_id) };
+  /* THE FIXTURE HAS TO FIND A TIGHT ROSTER RATHER THAN NAME ONE. The board draws from the
+     dearest men at a slot whatever is left, so a cap only changes it when none of the five
+     drawn is signable and the guaranteed seat goes in. The first draft spent "the first three
+     men over $20M in pool order", which was tight on the week 3 board and on week 4 came to
+     $132.4M, over the $90M cap outright: both caps then dealt identical boards, the check
+     failed, and the Tuesday build stopped here before it published the week. So it walks the
+     spend upward from a cheap roster, three men at one slot price each, over twenty seeds,
+     and needs one (spend, seed) where the two caps deal different men. It asks only for a
+     spend that leaves room under BOTH caps, so the board at $90M is never empty. */
+  const near = (pos, want, not) => POOL.pool
+    .filter((m) => m.position === pos && !not.includes(m.player_id))
+    .sort((a, b) => Math.abs(a.price_musd - want) - Math.abs(b.price_musd - want))[0];
+  let spent = null, differ = 0;
+  for (let want = 8; want <= 30 && !differ; want += 1) {
+    const q = near('QB', want, []);
+    const r1 = q && near('RB', want, []);
+    const r2 = r1 && near('RB', want, [r1.player_id]);
+    if (!r2) continue;
+    const men = [q, r1, r2];
+    const c = { seed, men, ids: men.map((m) => m.player_id) };
+    if (D.boardFor(POOL.pool, c, 3, 90).length === 0) break;
+    spent = c;
+    for (let s = 0; s < 20; s++) {
+      const cs = { seed: seed + s, men, ids: c.ids };
+      if (ids(cs, 3, 90) !== ids(cs, 3, 140)) differ++;
+    }
+  }
   ok('  the two caps deal the SAME board at pick one, which is why the fixture spends',
     ids({ seed, men: [], ids: [] }, 0, 90) === ids({ seed, men: [], ids: [] }, 0, 140));
   ok('  and the CAP CHANGES THE BOARD once there is money spent, so this is not only '
     + 'a refusal at the submit',
-    ids(spent, 3, 90) !== ids(spent, 3, 140),
-    `$${D.spent(spent).toFixed(1)}M spent, same seed, two caps, two boards`);
+    differ > 0,
+    spent ? `$${D.spent(spent).toFixed(1)}M spent, ${differ} of 20 seeds deal two boards`
+      : 'no roster that leaves room under both caps');
   /* And the default is the constant, so a caller that forgets is wrong in the loud
      direction rather than silently drafting somebody else's week. */
   ok('  boardFor with no cap falls back to the constant',
-    ids(spent, 3, D.CAP_MUSD) === D.boardFor(POOL.pool, spent, 3)
+    !!spent && ids(spent, 3, D.CAP_MUSD) === D.boardFor(POOL.pool, spent, 3)
       .map((m) => m.player_id).join(','));
 }
 
@@ -357,7 +383,12 @@ console.log('\nA RELOAD CANNOT RE-ROLL THE WHEEL');
   ok('  and a different chance does not', a !== other);
   /* Proving the check has teeth: a board that ignored the seed would pass the first
      assertion by accident only if it were constant, which the second rules out. */
-  const after = D.boardFor(POOL.pool, { seed: 123456789, men: [POOL.pool[0]] }, 0)
+  /* SIGNED OFF THE BOARD ITSELF, never POOL.pool[0]. The first man in the file is only on
+     this seed's board by luck: week 6's happened to be and week 7's was not, so the board was
+     identical, this failed, and the Tuesday job published nothing. Signing a man the board
+     actually offered is the claim being made. */
+  const first = D.boardFor(POOL.pool, c, 0)[0];
+  const after = D.boardFor(POOL.pool, { seed: 123456789, men: [first] }, 0)
     .map((m) => m.player_id).join(',');
   ok('  and signing somebody changes what is left', after !== a);
 }
@@ -443,10 +474,16 @@ console.log('\nA MAN WHO IS NOT PLAYING IS NOT A PICK');
   {
     const inj = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
       `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
+    /* THE BOARD THE PAGE ACTUALLY DRAWS, which takes Out and Doubtful men off the wheel as
+       well as injured reserve (`applyInjuries`, the launch day reversal). This read `off`
+       alone for as long as the report held few enough Out men not to matter, and then the
+       Saturday report stranded 4 of 400 drafts here while the page stranded none: a model
+       of the board that had drifted from the board. Kept in step with `GONE` there. */
+    const GONE = { off: 1, out: 1, doubtful: 1 };
     const live = POOL.pool.map((m) => {
       const e = inj.men[m.player_id];
       return e ? Object.assign({}, m, { inj: e }) : m;
-    }).filter((m) => !m.inj || m.inj.st !== 'off');
+    }).filter((m) => !m.inj || !GONE[m.inj.st]);
     ok('the live report takes men off the board', live.length < POOL.pool.length,
       `${POOL.pool.length} -> ${live.length}`);
     let stranded = 0, hurtSigned = 0, done = 0;
@@ -774,10 +811,16 @@ console.log('\nTHE PRICE IS THE PROJECTION, AND IT READS THE GAME STATUS REPORT'
     `${cutAged.length} of ${recentAged.length} men priced within a week of their report are discounted`);
   const recent = named.filter((m) => age(m) <= 1);
   const cut = recent.filter((m) => fac(m) !== 1);
-  /* AND THE FILE'S OWN MAX MUST NOT BE WHAT DECIDES. Most of a Tuesday report is older than
-     a week, so the count the price discounts is far short of the count the report names. */
-  ok('  so most of a Tuesday report is correctly not priced', cut.length < named.length / 2,
-    `${cut.length} of ${named.length} designated men are discounted`);
+  /* AND THE FILE'S OWN MAX MUST NOT BE WHAT DECIDES. A man more than a week past his own
+     report is never discounted, so the discounted count can be no more than the men who are
+     NOT that old. This used to read "most of a Tuesday report is not priced", which is a
+     claim about the DAY: from Wednesday the report is this week's, a Thursday run found 30 of
+     60 discounted, and the build stopped there before publishing week 4. */
+  const allCut = named.filter((m) => fac(m) !== 1);
+  const stale = named.filter((m) => age(m) > 1);
+  ok('  so a man past a week on the report is never what makes the count',
+    allCut.length <= named.length - stale.length,
+    `${allCut.length} of ${named.length} designated men are discounted, ${stale.length} are past a week`);
 
   /* NOTHING IS EVER PRICED ABOVE 1. A man on the report practising in full delivers 1.104,
      which is the projection under-reading good players rather than an availability signal,
@@ -966,6 +1009,9 @@ try { pw = (await import(PW)).default; } catch (e) {
   process.exit(fails ? 1 : 0);
 }
 
+/* What PostgREST hands back at most, per request, on the live project. */
+const SERVER_MAX_ROWS = 1000;
+
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json',
   '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
   '.woff2': 'font/woff2' };
@@ -982,6 +1028,16 @@ const authStub = (who) => `
         ls.forEach(function(f){ try{ f(state()); }catch(e){} }); }, 30); return true; },
       state: state,
       onChange: function(f){ ls.push(f); return function(){}; },
+      /* A TOKEN ONLY WHEN THE FIXTURE ASKS, because with one the shared cloud save starts
+         asking the shelf on every page here. The reminder section asks; nothing else does. */
+      token: function(){ return s && s.token ? s.token : null; },
+      /* PRO IS A FIELD ON THE FIXTURE, because the draft count asks it: three drafts for a
+         free account and five for Pro. 'error' is the server failing, which must read as
+         free rather than as Pro. */
+      premiumProducts: function(){
+        if (s && s.pro === 'error') return Promise.reject(new Error('down'));
+        return Promise.resolve(s && s.pro ? ['ps_premium','cfb_premium'] : []);
+      },
     };
     function state(){
       return { ready:true, signedIn:!!s, userId: s&&s.userId, name: s&&s.name };
@@ -1075,6 +1131,15 @@ const serverStub = (server) => {
     /* The ack is asserted through `posted`, which already records every rpc, rather
        than through a counter here that only this file could read. */
     fantasy_ack_result: () => ({ status: 200, body: 'true' }),
+    /* THE ACCOUNT'S SHELF, for the lock day reminder: what it holds, and what was put. */
+    ps_save_get: (b) => ({ status: 200, body: JSON.stringify(
+      s.shelf && s.shelf[b.p_game + '/' + b.p_slot] ? [s.shelf[b.p_game + '/' + b.p_slot]] : []) }),
+    ps_save_put: (b) => {
+      s.shelf = s.shelf || {};
+      s.shelf[b.p_game + '/' + b.p_slot] = { ok: true, slot: b.p_slot, progress: b.p_progress,
+        payload: b.p_payload, saved_at: null };
+      return { status: 200, body: JSON.stringify([s.shelf[b.p_game + '/' + b.p_slot]]) };
+    },
     fantasy_my_wins: () => ({ status: 200, body: JSON.stringify(s.wins || []) }),
     fantasy_standings: () => ({ status: 200, body: JSON.stringify(s.standings || []) }),
     fantasy_my_place: () => ({ status: 200,
@@ -1089,7 +1154,14 @@ const serverStub = (server) => {
      * is drawn: a stub answering the same rows every time would let a painter that never
      * animates anything pass every assertion below.
      */
-    fantasy_board: () => {
+    fantasy_board: (b) => {
+      /* BY WEEK WHEN THE FIXTURE SAYS SO, for the past weeks tab, which asks every earlier
+         week once. A week the fixture does not name is a week with no competition. */
+      if (s.boardByWeek && b && b.p_week !== POOL.week) {
+        const w = s.boardByWeek[b.p_week];
+        return { status: 200, body: JSON.stringify(w || { week: null, rows: [], me: null,
+          games: [], entrants: [] }) };
+      }
       const list = s.boards;
       if (!list || !list.length) {
         return { status: 200, body: JSON.stringify(s.board == null ? null : s.board) };
@@ -1147,10 +1219,30 @@ async function signOne(page, nth = 0) {
     before, { timeout: 10000 });
 }
 
+/* A FRESH BOARD, FOR A SEARCH THAT NEEDS MANY. Players cannot do this: "Start this draft
+   again" was removed (the owner's call, 2026-10-27) because it was an unlimited reroll. So a
+   search drops its own unfinished draft out of storage and reloads, which deals the next
+   chance from a new seed exactly as a first visit would, and never spends one of the week's
+   chances because the dropped draft was never finished. */
+async function freshDraft(page) {
+  await page.evaluate(() => {
+    for (let k = 0; k < localStorage.length; k++) {
+      const key = localStorage.key(k);
+      if (!/^ps_fantasy_\d+_w\d+$/.test(key)) continue;
+      const st = JSON.parse(localStorage.getItem(key) || '{}');
+      st.chances = (st.chances || []).filter((c) => (c.ids || []).length >= 6);
+      localStorage.setItem(key, JSON.stringify(st));
+    }
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+}
+
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
     results = null, storage = null, server = null, reduced = false,
-    injuries = null } = opts;
+    injuries = null, script = null } = opts;
   const page = await browser.newPage({ viewport,
     reducedMotion: reduced ? 'reduce' : 'no-preference' });
   const boom = [];
@@ -1170,6 +1262,7 @@ async function openPage(browser, url, opts = {}) {
      simply not there on the next, and the symptom is the second page sitting on the home
      screen for ever waiting for an entry it never had. So an entry is carried across by
      hand, which is also the honest fixture: it is the same bytes the first page wrote. */
+  if (script) await page.addInitScript(script);
   if (storage) {
     await page.addInitScript(`(function(){
       try { localStorage.setItem(${JSON.stringify(storage.key)},
@@ -1193,8 +1286,31 @@ async function openPage(browser, url, opts = {}) {
     if (/\/rest\/v1\/fantasy_results$/.test(u.pathname)) {
       posted.push({ fn: 'fantasy_results', body: Object.fromEntries(u.searchParams) });
       if (!server || !server.results) return r.abort();
+      /* A DATABASE WITHOUT 126 refuses a select naming `line` with a 400, which is what
+         PostgREST answers for a column it does not know. */
+      if (server.noLine && /(^|,)line(,|$)/.test(u.searchParams.get('select') || '')) {
+        return r.fulfill({ status: 400, contentType: 'application/json',
+          body: JSON.stringify({ code: '42703', message: 'column fantasy_results.line does not exist' }) });
+      }
+      let rows = server.noLine
+        ? server.results.map((x) => ({ player_id: x.player_id, half_ppr: x.half_ppr }))
+        : server.results.slice();
+      /* PostgREST's own paging, INCLUDING ITS CAP: at most 1,000 rows a request whatever
+         `limit` asks for. That cap is what put 49 real men at 0.0 on the live board, so the
+         stub has to have it or the read that ignores it passes here. */
+      if (u.searchParams.get('order') === 'player_id') {
+        rows.sort((a, b) => (a.player_id < b.player_id ? -1 : a.player_id > b.player_id ? 1 : 0));
+      }
+      const total = rows.length;
+      const from = Number(u.searchParams.get('offset')) || 0;
+      const lim = Math.min(Number(u.searchParams.get('limit')) || Infinity, SERVER_MAX_ROWS);
+      rows = rows.slice(from, from + lim);
+      const count = /count=exact/.test(r.request().headers()['prefer'] || '');
       return r.fulfill({ status: 200, contentType: 'application/json',
-        body: JSON.stringify(server.results) });
+        headers: { 'content-range': (rows.length ? `${from}-${from + rows.length - 1}` : '*')
+          + '/' + (count ? total : '*'),
+          'access-control-expose-headers': 'content-range' },
+        body: JSON.stringify(rows) });
     }
     if (u.hostname !== 'local.test') return r.abort();
     let rel = decodeURIComponent(u.pathname);
@@ -1282,6 +1398,11 @@ const BEFORE = Date.parse(POOL.locks_at) - 36 * 3600 * 1000;
 /* THREE HOURS PAST THE LOCK: the Thursday game is on, which is the only clock at which a
    live board is a real screen. Every section about movement runs at this one. */
 const LIVE_AT = Date.parse(POOL.locks_at) + 3 * 3600 * 1000;
+/* HOW MANY GAMES THE WEEK HAS, counted the way the page's slate() counts them: one per
+   pairing of clubs on the board. It was written as 16, a week with no byes, and every week
+   with a bye (weeks 7 and 8 have 14) went red with the page right. */
+const SLATE_GAMES = new Set(POOL.pool.filter((m) => m.team && m.opp && m.kick)
+  .map((m) => (m.home ? m.opp + '|' + m.team : m.team + '|' + m.opp))).size;
 const AFTER = Date.parse(POOL.locks_at) + 60 * 1000;
 
 const browser = await pw.chromium.launch({ executablePath: CHROME });
@@ -1532,16 +1653,25 @@ console.log('\nA WHOLE ENTRY, DRIVEN');
     before.length > 0 && before.join('|') === after.join('|'),
     before.join(', ') + '  ->  ' + after.join(', '));
 
-  /* Fill the rest of the five. */
-  for (let c = 1; c < D.CHANCES; c++) {
+  /* Fill the rest. THIS IS A FREE ACCOUNT, SO THAT IS THREE: Pro gets five, and the walk
+     in the next section is the Pro one. */
+  const FREE = 3;
+  for (let c = 1; c < FREE; c++) {
     await page.waitForSelector('#s-draft.on', { timeout: 10000 });
     await draftOne();
     await page.waitForSelector('#s-review.on', { timeout: 10000 });
-    if (c < D.CHANCES - 1) await page.click('#b-more');
+    if (c < FREE - 1) await page.click('#b-more');
   }
   const five = await page.locator('#r-five .lineup').count();
-  ok(`  all ${D.CHANCES} chances are drafted and shown together`, five === D.CHANCES, five + '');
-  ok('  and there is no sixth', await page.locator('#b-more').isHidden());
+  ok(`  all ${FREE} of a free account's chances are drafted and shown together`, five === FREE, five + '');
+  ok('  and there is no fourth', await page.locator('#b-more').isHidden());
+  const pro = await page.evaluate(() => {
+    const el = document.getElementById('r-pro');
+    const a = el && el.querySelector('a');
+    return { shown: !!el && !el.hidden, href: a && a.getAttribute('href') };
+  });
+  ok('  and the screen says Pro gets five, with a way to the store',
+    pro.shown && pro.href === '/football/#pro', JSON.stringify(pro));
 
   /*
    * THE TOTAL HAS TO BE CHECKABLE AGAINST THE SIX FIGURES PRINTED UNDER IT, which is the
@@ -1745,10 +1875,45 @@ for (const [label, server, want] of [
  * That is the boss battle's call box arriving at a different screen, and the same rule:
  * measure the deepest real case, against a PHONE rather than against the harness's window.
  */
+console.log('\nTHREE DRAFTS FOR A FREE ACCOUNT, FIVE FOR PRO');
+{
+  const KEY = `ps_fantasy_${POOL.season}_w${POOL.week}`;
+  const tile = async (who, storage) => {
+    const { page, boom } = await openPage(browser, FANTASY, { who, at: BEFORE, storage });
+    await page.waitForSelector('#s-home.on', { timeout: 15000 });
+    await page.waitForTimeout(300);
+    const got = await page.evaluate(() => ({
+      tile: document.getElementById('home-drafts').textContent,
+      step: document.querySelector('.steps').textContent }));
+    await page.close();
+    return { ...got, boom };
+  };
+  const free = await tile(TESTER);
+  ok('a free account gets three', free.tile === '0 of 3', free.tile);
+  ok('  and the home screen says Pro gets five', /Pro gets five/.test(free.step), free.step);
+  const pro = await tile({ ...TESTER, pro: true });
+  ok('a Pro account gets five', pro.tile === '0 of 5', pro.tile);
+  /* AN UNKNOWN ANSWER IS FREE. Read the other way, a dropped request would hand out the
+     paid edge in a prize competition. */
+  const down = await tile({ ...TESTER, pro: 'error' });
+  ok('  and a premium read that fails is read as free', down.tile === '0 of 3', down.tile);
+  /* A DRAFT ALREADY MADE IS NEVER TAKEN AWAY: a free account holding four from before the
+     rule, or from a pass that has run out, still has all four. */
+  const four = await tile(TESTER, { key: KEY, value: JSON.stringify({ season: POOL.season,
+    week: POOL.week, chances: [1, 2, 3, 4].map((n) => ({ seed: n, ids: [] })),
+    pick: null, submitted: null }) });
+  ok('  and a free account holding four drafts keeps all four', four.tile === '0 of 4', four.tile);
+  ok('  nothing threw', ![free, pro, down, four].some((x) => x.boom.length),
+    [free, pro, down, four].flatMap((x) => x.boom).join(' | ') || 'clean');
+}
+
 console.log('\nA REFUSAL IS ON THE SCREEN AT THE MOMENT IT IS SAID');
 {
   const { page, boom } = await openPage(browser, FANTASY,
-    { who: TESTER, at: BEFORE, server: { submit: 'that lineup is over the cap' } });
+    /* PRO, because five lineups is the deepest this screen gets and that is what the
+       refusal has to stay on screen under. */
+    { who: { ...TESTER, pro: true }, at: BEFORE,
+      server: { submit: 'that lineup is over the cap' } });
   await page.waitForSelector('#s-home.on', { timeout: 15000 });
   await page.click('#b-draft');
   for (let c = 0; c < D.CHANCES; c++) {
@@ -2281,7 +2446,7 @@ console.log('\nAND SOMEBODY WHO NEVER ENTERED CAN STILL WATCH');
   }));
   ok('  and they get the whole board', seen.rows === 2, seen.rows + '');
   ok('  with nobody picked out as them', seen.mine === 0, seen.mine + '');
-  ok('  and the games beside it', seen.games === 16, seen.games + '');
+  ok('  and the games beside it', seen.games === SLATE_GAMES, seen.games + ' of ' + SLATE_GAMES);
   /* BACK GOES SOMEWHERE THAT EXISTS. A single destination would send a reader with no
      lineup to a screen about one. */
   await page.click('#b-live-back');
@@ -2372,8 +2537,8 @@ console.log('\nTHE SCOREBOARD IS THE SCHEDULE UNTIL SOMETHING HAS HAPPENED');
         .filter((e) => e.textContent.trim()).length,
       text: document.getElementById('lv-games').textContent,
     }));
-    ok('with nothing written the whole slate is still drawn', seen.games === 16,
-      seen.games + ' games');
+    ok('with nothing written the whole slate is still drawn', seen.games === SLATE_GAMES,
+      seen.games + ' of ' + SLATE_GAMES + ' games');
     ok('  and not one of them claims a score', seen.scores === 0, seen.scores + ' numbers');
     ok('  and none of them claims to be live', seen.live === 0, seen.live + '');
     ok('  the clubs are named', seen.text.includes(AWAY) && seen.text.includes(HOME));
@@ -2416,7 +2581,8 @@ console.log('\nTHE SCOREBOARD IS THE SCHEDULE UNTIL SOMETHING HAS HAPPENED');
       seen.leads.filter((x) => x[0] === '*').length === 1
       && seen.leads.find((x) => x[0] === '*').includes(HOME),
       seen.leads.join(' | '));
-    ok('  and it did not replace the rest of the slate', seen.total === 16, seen.total + '');
+    ok('  and it did not replace the rest of the slate', seen.total === SLATE_GAMES,
+      seen.total + ' of ' + SLATE_GAMES);
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }
@@ -2825,17 +2991,62 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   /* One of each slot, drawn from the real pool so the names and clubs are real. Listed OUT
      of position order on purpose, so a lineup drawn in pick order is caught. */
   const byPos = (pos, n) => POOL.pool.filter((m) => m.position === pos).slice(n, n + 1)[0];
-  const SIX = [byPos('TE', 0), byPos('WR', 0), byPos('RB', 0), byPos('QB', 0),
-    byPos('WR', 1), byPos('RB', 1)];
+  /* THE RECEIVERS' GAMES HAVE NOT STARTED, and that has to be made true rather than hoped
+     for, the tight end's lesson below from the other side. Taken as the first two receivers
+     on the board, one of week 8's played for the quarterback's opponent, so his game was the
+     live one and he rightly showed a projection: red with the page right. So they are the
+     dearest two from clubs that have no game in this fixture at all. */
+  /* AND THE RUNNING BACK'S GAME IS NOT THE QUARTERBACK'S. One is live and one is over, and
+     in week 7 the dearest of each both played for Detroit: the finished game was written
+     over the live one, the quarterback lost his projection, and the check went red with
+     the page right. So the back is the dearest one from another game. */
+  const QB_GAME = [byPos('QB', 0).team, byPos('QB', 0).opp];
+  /* Nor the tight end's, whose game has to be live (see below), never the finished one. */
+  const TE_GAME = [byPos('TE', 0).team, byPos('TE', 0).opp];
+  const RB_LEAD = POOL.pool.find((m) => m.position === 'RB'
+    && !QB_GAME.includes(m.team) && !TE_GAME.includes(m.team));
+  const RB_NEXT = POOL.pool.find((m) => m.position === 'RB' && m !== RB_LEAD);
+  const BUSY = new Set([byPos('QB', 0), RB_LEAD, byPos('TE', 0)]
+    .flatMap((m) => [m.team, m.opp]));
+  const idleWR = POOL.pool.filter((m) => m.position === 'WR' && !BUSY.has(m.team));
+  const SIX = [byPos('TE', 0), idleWR[0], RB_LEAD, byPos('QB', 0),
+    idleWR[1], RB_NEXT];
   const ADA = SIX.map((m) => m.player_id);
   const YOU = POOL.pool.slice(0, 6).map((m) => m.player_id);
   const r = (place, name, score, picks, me, played) => ({ place, display_name: name, score,
     projected: 58, spend: 88, picks, is_me: !!me, entry_no: name.charCodeAt(0), played });
   /* Ada's quarterback has 21.4 and her tight end nothing yet: one number to find and one
-     man who has not played. */
-  const results = [{ player_id: byPos('QB', 0).player_id, half_ppr: 21.4 },
-    { player_id: byPos('RB', 0).player_id, half_ppr: 9.1 }];
-  const B = boardOf({
+     man who has not played. The quarterback's game is LIVE, a third of the way through the
+     third quarter, and the running back's is over: one man with somewhere to go and one
+     whose number is the answer. */
+  const QB0 = byPos('QB', 0), RB0 = RB_LEAD;
+  /* AND BOTH ARE PAST THE FIRST 1,000 ROWS. The writer files every man with a stat line,
+     1,049 of them in week 3, and a read that took one page drew the 49 past the cap as 0.0
+     under FINAL. So 1,100 other men come first, in the table's order and in the stub's. */
+  const FILL = Array.from({ length: 1100 }, (_, i) =>
+    ({ player_id: '00-000' + String(i).padStart(4, '0'), half_ppr: 0, line: '' }));
+  const results = FILL.concat([
+    { player_id: QB0.player_id, half_ppr: 21.4, line: '211 pass yds, 2 TD' },
+    { player_id: RB0.player_id, half_ppr: 9.1, line: '64 rush yds, 0 TD, 3 rec, 17 yds, 0 TD' }]);
+  ok('the points fixture runs past the server\'s cap',
+    results.length > SERVER_MAX_ROWS && [QB0, RB0].every((m) => m.player_id > FILL[FILL.length - 1].player_id),
+    String(results.length));
+  const games = [
+    { game_id: 'g1', away: QB0.team, home: QB0.opp, kick: new Date(LIVE_AT - 7200e3).toISOString(),
+      state: 'in', away_score: 17, home_score: 10, period: 3, clock: '7:30' },
+    { game_id: 'g2', away: RB0.team, home: RB0.opp, kick: new Date(LIVE_AT - 14400e3).toISOString(),
+      state: 'post', away_score: 24, home_score: 20, period: 4, clock: '0:00' }];
+  /* THE TIGHT END HAS TO BE IN A LIVE GAME, which used to be true by luck: in week 3 the
+     dearest tight end was the quarterback's team-mate. From week 4 he was not, his game read
+     as not started, and the assertion about a man on the field went red with the page right.
+     So his club gets a live game of its own when it is not already in one. */
+  const TE0 = byPos('TE', 0);
+  if (![QB0.team, QB0.opp, RB0.team, RB0.opp].includes(TE0.team)) {
+    games.push({ game_id: 'g3', away: TE0.team, home: TE0.opp,
+      kick: new Date(LIVE_AT - 7200e3).toISOString(), state: 'in', away_score: 7,
+      home_score: 3, period: 3, clock: '7:30' });
+  }
+  const B = boardOf({ games,
     rows: [r(1, 'Ada', 30.5, ADA, false, 2), r(2, 'You', 12.0, YOU, true, 1),
       r(3, 'Bo', 0, YOU, false, 0)],
     me: { place: 2, entries: 3, score: 12.0, lines: [] },
@@ -2868,11 +3079,15 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   {
     const sql = fs.readFileSync(path.join(ROOT, 'supabase/120_fantasy_pro_pass.sql'), 'utf8');
     const days = [...new Set([...sql.matchAll(/interval '(\d+) days'/g)].map((m) => m[1]))];
-    const copy = [...fs.readFileSync(path.join(ROOT, 'football/fantasy/index.html'), 'utf8').matchAll(/wins (\d+) days of Pro/g)]
+    const read = (f) => [...fs.readFileSync(path.join(ROOT, f), 'utf8').matchAll(/wins (\d+) days of Pro/g)]
       .map((m) => m[1]);
+    const copy = read('football/fantasy/index.html');
+    /* AND THE LOCK DAY REMINDER, which says it on both front pages from one shared file. */
+    const promo = read('assets/fantasy-promo.js');
     ok('  and the number it names is the one the server grants',
-      days.length === 1 && copy.length >= 2 && copy.every((d) => d === days[0]),
-      'sql ' + days.join(',') + ', copy ' + copy.join(','));
+      days.length === 1 && copy.length >= 2 && promo.length >= 1
+      && copy.concat(promo).every((d) => d === days[0]),
+      'sql ' + days.join(',') + ', copy ' + copy.join(',') + ', reminder ' + promo.join(','));
   }
 
   const closed = await page.evaluate(() => {
@@ -2891,8 +3106,12 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
     const inner = e.querySelector('.broster > div');
     const men = [...e.querySelectorAll('.bm')].map((m) => ({
       pos: m.querySelector('.bmp').textContent,
-      name: m.querySelector('.bmn').textContent,
-      pts: m.querySelector('.bmpts').textContent,
+      name: m.querySelector('.bmnn').textContent,
+      pts: m.querySelector('.bmpts b').textContent,
+      line: (m.querySelector('.bml') || {}).textContent || '',
+      lp: (m.querySelector('.bmlp') || {}).textContent || '',
+      lineFits: !m.querySelector('.bml') || m.querySelector('.bml').getBoundingClientRect().right
+        <= m.querySelector('.bmst').getBoundingClientRect().left + 1,
       h: m.getBoundingClientRect().height }));
     return { open: e.classList.contains('open'),
       aria: e.querySelector('.bhd').getAttribute('aria-expanded'),
@@ -2909,6 +3128,33 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   const qb = opened.men.find((m) => m.pos === 'QB');
   ok('  each man carries his own points', qb && qb.pts === '21.4'
     && qb.name.startsWith(byPos('QB', 0).name), qb && `${qb.name} ${qb.pts}`);
+  /*
+   * WHAT HE DID, AND WHERE A LIVE MAN IS HEADED. Asked for by the owner off a screenshot of
+   * this exact board on a Sunday afternoon: points and nothing about how.
+   *
+   * THE PROJECTION IS CHECKED AS ARITHMETIC off the pool's own `proj`, not as a number
+   * typed here, so retuning a projection cannot quietly break it. 7:30 left in the third is
+   * 22.5 of 60 minutes.
+   */
+  ok('  each man who has played shows what he did', qb && qb.line === '211 pass yds, 2 TD',
+    qb && qb.line);
+  const wantLp = 'proj ' + (21.4 + QB0.proj * (22.5 / 60)).toFixed(1);
+  ok('  a man whose game is on shows where he is headed', qb && qb.lp === wantLp,
+    (qb && qb.lp) + ' against ' + wantLp);
+  const rb1 = opened.men.filter((m) => m.pos === 'RB')[0];
+  ok('  a man whose game is over shows no projection, because the score is the answer',
+    rb1 && rb1.pts === '9.1' && !rb1.lp && /rush yds/.test(rb1.line), rb1 && JSON.stringify(rb1));
+  /* The tight end is Allen's team-mate, so he is in the live game with nothing yet: no
+     line, and a projection off zero. The receivers' games have not started, so neither. */
+  const te = opened.men.find((m) => m.pos === 'TE');
+  ok('  a man on the field with nothing yet shows where he is headed and no line',
+    te && !te.line && te.lp === 'proj ' + (byPos('TE', 0).proj * (22.5 / 60)).toFixed(1),
+    te && JSON.stringify({ line: te.line, lp: te.lp }));
+  ok('  and a man whose game has not started shows neither',
+    opened.men.filter((m) => m.pos === 'WR').every((m) => !m.line && !m.lp),
+    JSON.stringify(opened.men.filter((m) => m.pos === 'WR').map((m) => m.lp + m.line)));
+  ok('  the stat line stays in its own column rather than under the game state',
+    opened.men.every((m) => m.lineFits));
   const rb2 = opened.men.filter((m) => m.pos === 'RB')[1];
   ok('  and a man with no number yet is not shown as a zero he has not scored',
     rb2 && (rb2.pts === '-' || rb2.pts === '0.0'), rb2 && rb2.pts);
@@ -2942,6 +3188,27 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   ok('a board where nobody has scored marks no leader', await z.page.evaluate(() =>
     !document.querySelector('#lv-board .brow.lead, #lv-board .bpro')));
   await z.page.close();
+
+  /* A DATABASE WITHOUT 126 STILL HAS POINTS. SQL is deployed by hand and this page by a
+     push, so the read that names `line` is refused, and the lineups must not lose every
+     man's number over a line of display text. */
+  const n = await openPage(browser, FANTASY,
+    { who: TESTER, at: LIVE_AT, server: { mine: ENTRY, boards: [B], results, noLine: true } });
+  await openBoard(n.page);
+  await n.page.waitForSelector('#lv-board .brow .bhd', { timeout: 15000 });
+  await n.page.waitForTimeout(200);
+  await n.page.click('#lv-board .brow:first-child .bhd');
+  await n.page.waitForTimeout(400);
+  const nl = await n.page.evaluate(() => [...document.querySelectorAll('#lv-board .brow:first-child .bm')]
+    .map((m) => ({ pos: m.querySelector('.bmp').textContent, pts: m.querySelector('.bmpts b').textContent,
+      line: !!m.querySelector('.bml') })));
+  const nqb = nl.find((m) => m.pos === 'QB');
+  ok('without 126 the points are still there, with no stat line', nqb && nqb.pts === '21.4'
+    && nl.every((m) => !m.line), JSON.stringify(nqb));
+  ok('  and the read asked once more without the column',
+    n.posted.filter((x) => x.fn === 'fantasy_results'
+      && !/line/.test(x.body.select || '')).length >= 1);
+  await n.page.close();
 }
 
 /* ----------------------------------------------------------------
@@ -3176,21 +3443,32 @@ console.log('\nA PRESS ASKS BEFORE IT SPENDS');
     await page.evaluate(() => document.getElementById('cf-sheet').hidden));
 
   /*
-   * A SHEET SITS OPEN FOR AS LONG AS SOMEBODY LEAVES IT OPEN, so the board it was asked
-   * about can go. Opened on one board, then the draft is started again underneath it, and
-   * what must not happen is a man signed into a draft that no longer exists. This is
-   * `dynNewSheet`'s lesson in the football game: the gate is above the line that spends.
+   * A SHEET SITS OPEN FOR AS LONG AS SOMEBODY LEAVES IT OPEN, and the draft can be left
+   * underneath it: Back goes home and keeps the draft. What must not happen is a man signed
+   * after the reader has left. Back closes the sheet, and a confirm answered anyway signs
+   * nobody. This is `dynNewSheet`'s lesson in the football game: the gate is above the line
+   * that spends.
    */
   const stale = page.locator('#d-men .man:not([disabled]):not(.hurt)').first();
   await stale.click({ force: true });
   await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 5000 });
-  await page.evaluate(() => document.getElementById('b-abandon').click());
+  const beforeBack = await filled();
+  await page.evaluate(() => document.getElementById('b-draft-back').click());
   await page.waitForTimeout(300);
-  const afterReset = await filled();
+  ok('  Back goes home and closes the sheet',
+    await page.evaluate(() => document.getElementById('s-home').classList.contains('on')
+      && document.getElementById('cf-sheet').hidden));
   await page.evaluate(() => document.getElementById('cf-go').click());
   await page.waitForTimeout(400);
-  ok('  a confirm answered after the draft was restarted signs nobody',
-    (await filled()) === afterReset, `${afterReset} -> ${await filled()}`);
+  /* And the draft is kept, not dealt again: back in, it is the same board with the same
+     picks. That is the reroll this replaced. */
+  await page.click('#b-draft');
+  await page.waitForSelector('#s-draft.on', { timeout: 10000 });
+  ok('  a confirm answered after Back signs nobody, and the draft is kept as it was',
+    (await filled()) === beforeBack, `${beforeBack} -> ${await filled()}`);
+  ok('  and there is no button left that deals the draft again',
+    await page.evaluate(() => !document.getElementById('b-abandon')
+      && ![...document.querySelectorAll('button')].some((b) => /again/i.test(b.textContent))));
 
   /*
    * AND IT FITS THE SHORTEST PHONE HOLDING THE LONGEST NAME.
@@ -3200,10 +3478,14 @@ console.log('\nA PRESS ASKS BEFORE IT SPENDS');
    * a good many readers do not have. The name is the one thing on it that can grow, so it is
    * replaced with the longest the pool can produce and the box is measured again.
    *
-   * WHAT IS ASSERTED IS THE BUTTONS, not the height. The sheet is bottom anchored, so a tall
-   * one pushes its own eyebrow off the top and that is fine; what must never happen is the
-   * control the page is waiting on going off the screen, which is the football boss battle's
-   * Continue button arriving at a sheet.
+   * WHAT IS ASSERTED IS THE BUTTONS, not the height: what must never happen is the control
+   * the page is waiting on going off the screen, which is the football boss battle's Continue
+   * button arriving at a sheet.
+   *
+   * AND THE BOX IS IN THE MIDDLE. It was bottom anchored, and a player zoomed in on the board
+   * pressed a row and saw nothing: the sheet was below the part of the page on screen. A
+   * centred box is in the middle of whatever is showing. The zoom half itself (the scrim moved
+   * onto the visual viewport) cannot be driven here, because a headless page has no pinch.
    */
   const longest = POOL.pool.map((m) => m.name).sort((a, b) => b.length - a.length)[0];
   await page.setViewportSize({ width: 360, height: 740 });
@@ -3220,8 +3502,13 @@ console.log('\nA PRESS ASKS BEFORE IT SPENDS');
          confirm who they are signing is the one word it cannot afford to lose. */
       over: Math.round(nm.scrollWidth - nm.clientWidth),
       h: window.innerHeight,
+      box: document.querySelector('#cf-sheet .ibox').getBoundingClientRect(),
     };
   }, longest);
+  const gapTop = fit.box.top, gapBottom = fit.h - fit.box.bottom;
+  ok('  and the box sits in the middle of the screen, not on its bottom edge',
+    gapBottom > 40 && Math.abs(gapTop - gapBottom) <= 2,
+    `${Math.round(gapTop)}px above, ${Math.round(gapBottom)}px below`);
   ok(`  at 360x740 the longest name in the pool fits`, fit.over <= 1,
     `${longest}, ${fit.over}px over`);
   ok('  and both buttons are fully on the screen',
@@ -3374,11 +3661,10 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
    * exactly what the first version of this section did, and the feature it was reporting
    * missing was on one board in eight the whole time.
    *
-   * THE ANSWER IS TO NEVER LEAVE THE DRAFT SCREEN. `#b-abandon` re-seeds the current chance
-   * and costs nothing, and the only reason it failed before is that the walk had finished a
-   * draft and moved on. So the walk signs at most five of the six, inspects all six boards,
-   * and abandons rather than completing. The button is then always there, chances are never
-   * spent, and the search can run as long as it needs to.
+   * THE ANSWER IS TO NEVER FINISH A DRAFT. `freshDraft` drops the unfinished draft and deals
+   * a new one, and costs nothing (the button that used to do this in the page is gone). So
+   * the walk signs at most five of the six, inspects all six boards, and starts fresh rather
+   * than completing. Chances are never spent, and the search can run as long as it needs.
    *
    * TWENTY FOUR, against a measured p99 of 16 and a worst case of 33 over 4,000 drafts.
    */
@@ -3386,16 +3672,15 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
   let sawGrey = null, drafts = 0;
   for (; drafts < MAX_DRAFTS && !sawGrey; drafts++) {
     if (drafts) {
-      await page.waitForSelector('#s-draft.on', { timeout: 10000 });
-      await page.click('#b-abandon');
+      await freshDraft(page);
       await page.waitForTimeout(200);
     }
     for (let i = 0; i < D.SLOTS.length && !sawGrey; i++) {
       await page.locator('#d-men .man').first().waitFor({ timeout: 10000 });
       sawGrey = await look();
       /* THE LAST BOARD IS INSPECTED AND NEVER SIGNED FROM. Signing the sixth man finishes
-         the draft and moves to the review screen, which is where `#b-abandon` does not
-         exist. Every board is looked at; only five are drafted from. */
+         the draft and spends a chance. Every board is looked at; only five are drafted
+         from. */
       if (!sawGrey && i < D.SLOTS.length - 1) await signOne(page);
     }
   }
@@ -3496,7 +3781,7 @@ console.log('\nA MAN WHO WILL NOT PLAY IS NOT OFFERED, AND A CHIP STILL OPENS TH
       if (b.chip) { chipAt = true; break; }
       await signOne(page);
     }
-    if (!chipAt) await page.click('#b-abandon');
+    if (!chipAt) await freshDraft(page);
   }
   ok('no board offers a man who is Out, Doubtful or on reserve', !offered.length,
     offered.length ? 'offered: ' + [...new Set(offered)].join(', ') : `${seen} rows read`);
@@ -3565,11 +3850,23 @@ console.log('\nA LINEUP THAT ALREADY HOLDS A RULED OUT MAN KEEPS HIM, AND SAYS W
   const { rulingsFor } = await import('./build/injuries.mjs');
   const rul = rulingsFor(path.join(ROOT, 'football/data/fantasy_ruled_out.json'),
     NOW.season, NOW.week);
-  const rid = Object.keys(rul)[0];
-  ok('there is a ruling this week to walk with', !!rid, rid ? rul[rid].name : 'none');
+  /* A WEEK WITH NO RULING IS THE ORDINARY WEEK, so the fixture makes one rather than
+     needing the live list to hold somebody. It used to demand a real ruling and went red the
+     first week the list was empty, which says nothing about the page. A real ruling is used
+     when there is one, and otherwise a real man is marked out by the site in the report the
+     page is served, which is exactly what `injuries.mjs` writes for a ruling. */
+  const INJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
+    `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
+  let rid = Object.keys(rul)[0];
+  if (!rid) {
+    const pick = POOL.pool.filter((m) => m.position === 'QB' && !INJ.men[m.player_id])
+      .sort((a, b) => a.price_musd - b.price_musd)[0];
+    rid = pick && pick.player_id;
+    if (rid) INJ.men[rid] = { st: 'out', w: NOW.week, d: 'Elbow', p: 'Did not practise', by: 'site' };
+  }
+  ok('there is a ruling this week to walk with', !!rid,
+    rid ? (POOL.pool.find((m) => m.player_id === rid) || {}).name : 'none');
   if (rid) {
-    const INJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'football/data',
-      `injuries_${NOW.season}_w${NOW.week}.json`), 'utf8'));
     const ruledMan = POOL.pool.find((m) => m.player_id === rid);
     /* A LEGAL SIX AROUND HIM, cheapest fit man at every other slot, built off the slot
        list rather than written out, so a slot change reshapes the fixture by itself. */
@@ -3584,6 +3881,7 @@ console.log('\nA LINEUP THAT ALREADY HOLDS A RULED OUT MAN KEEPS HIM, AND SAYS W
     const state = { season: NOW.season, week: NOW.week, pick: null, submitted: null,
       chances: [{ seed: 1, ids }] };
     const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE,
+      injuries: INJ,
       storage: { key: `ps_fantasy_${NOW.season}_w${NOW.week}`, value: JSON.stringify(state) } });
     await page.waitForSelector('#s-home.on', { timeout: 15000 });
     await page.waitForSelector('#b-review:not([hidden])', { timeout: 5000 });
@@ -3789,6 +4087,133 @@ for (const [label, who, want] of [
  * followed the one instruction on the screen and arrived somewhere that did not answer.
  * So the hash is driven rather than trusted.
  * ---------------------------------------------------------------- */
+/* ----------------------------------------------------------------
+ * THE LOCK DAY REMINDER, ONCE A WEEK, ON THE DAY IT MATTERS
+ *
+ * /assets/fantasy-promo.js puts a sheet over the front page on the Eastern day the week
+ * locks, with a countdown to the first kickoff and the prize. Every claim here is about
+ * WHEN, because a reminder that comes up on the wrong day, after the lock, over a lineup
+ * already entered, or twice, is worse than none.
+ *
+ * IT IS OFF UNDER AUTOMATION UNLESS ASKED FOR, so `RTG_FANPROMO_TEST` is set here and
+ * nowhere else. The first arm is that guard: without the flag nothing comes up, or every
+ * front page suite in the repo would fail one day a week.
+ *
+ * THE DAY IS THE POINTER'S, so the clock is pinned against the real `locks_at` rather than
+ * against a weekday. Signed in, the account's shelf is asked, and the route aborts it like
+ * every other request this file does not answer: no request reaches the live project.
+ * ---------------------------------------------------------------- */
+console.log('\nTHE LOCK DAY REMINDER COMES UP ONCE, ON THE DAY THE WEEK LOCKS');
+{
+  const LOCK = Date.parse(NOW.locks_at);
+  const eastern = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+  /* Three hours before the lock is the same Eastern day for any kickoff after 3am. */
+  const DAY = LOCK - 3 * 3600 * 1000;
+  ok('the fixture morning is the lock\'s own Eastern day', eastern(DAY) === eastern(LOCK),
+    eastern(DAY) + ' vs ' + eastern(LOCK));
+  const midnight = Date.parse(eastern(LOCK) + 'T00:00:00-04:00') || Date.parse(eastern(LOCK) + 'T00:00:00-05:00');
+  const TEST = 'window.RTG_FANPROMO_TEST=true;';
+  const wait = async (page) => {
+    await page.waitForTimeout(4500);
+    return page.evaluate(() => {
+      const el = document.getElementById('fpromo');
+      if (!el) return { up: false };
+      const segs = [...el.querySelectorAll('.fp-seg b')].map((b) => b.textContent);
+      const go = el.querySelector('.fp-go');
+      const card = el.querySelector('.fp-card').getBoundingClientRect();
+      return { up: true, text: el.textContent, segs, href: go.getAttribute('href'),
+        goShown: go.getBoundingClientRect().bottom <= innerHeight,
+        fits: card.top >= 0 && card.bottom <= innerHeight && card.right <= innerWidth };
+    });
+  };
+
+  {
+    const { page, boom } = await openPage(browser, 'http://local.test/football/', { who: STRANGER, at: DAY });
+    const got = await wait(page);
+    ok('without the test flag, automation is never shown it', !got.up);
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+  const SIGNED = Object.assign({ token: 'fixture' }, STRANGER);
+  for (const [label, who] of [['a signed in account', SIGNED], ['a guest', null]]) {
+    const { page, boom, posted } = await openPage(browser, 'http://local.test/football/',
+      { who, at: DAY, script: TEST, server: {} });
+    const got = await wait(page);
+    ok(label + ' is shown it on lock day', got.up);
+    if (got.up) {
+      ok('  it names the week and says it locks today',
+        new RegExp('Week ' + NOW.week).test(got.text) && /lock today/i.test(got.text), got.text.slice(0, 120));
+      ok('  it says what first place wins', /wins 30 days of Pro/.test(got.text));
+      ok('  the countdown is the real time to the lock',
+        got.segs.length === 3 && Number(got.segs[0]) === 2 && Number(got.segs[1]) >= 58, got.segs.join(':'));
+      ok('  the way in is the mode', got.href === '/football/fantasy/', got.href);
+      ok('  and the whole card fits a phone', got.fits && got.goShown);
+      const s1 = await page.evaluate(() => document.querySelector('#fpromo .fp-seg:nth-child(3) b').textContent);
+      await page.waitForTimeout(2100);
+      const s2 = await page.evaluate(() => document.querySelector('#fpromo .fp-seg:nth-child(3) b').textContent);
+      ok('  and it counts down while it is open', s1 !== s2, s1 + ' then ' + s2);
+      await page.click('#fpromo .fp-later');
+      ok('  Not now closes it', await page.evaluate(() => !document.getElementById('fpromo')));
+      const seen = await page.evaluate(() => localStorage.getItem('rtg_fanpromo_v1'));
+      ok('  and it is marked seen for this week', new RegExp('nfl:' + NOW.season + '_w' + NOW.week).test(seen || ''), seen);
+      if (who) {
+        await page.waitForTimeout(500);
+        const put = posted.find((x) => x.fn === 'ps_save_put' && x.body.p_game === 'rtg_promo');
+        ok('  the account\'s shelf is asked, then written with this week',
+          posted.some((x) => x.fn === 'ps_save_get' && x.body.p_game === 'rtg_promo' && x.body.p_slot === 'nfl')
+          && !!put && !!put.body.p_payload.seen[NOW.season + '_w' + NOW.week],
+          JSON.stringify(put && put.body));
+      }
+      const again = await page.evaluate(async () => {
+        RTG_FANPROMO.check(); await new Promise((r) => setTimeout(r, 600));
+        return !!document.getElementById('fpromo');
+      });
+      ok('  asked again, it stays down', !again);
+    }
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+  {
+    /* A SECOND VISIT IS A NEW PAGE CARRYING THE MARK, which is the honest fixture. */
+    const mark = JSON.stringify({ ['nfl:' + NOW.season + '_w' + NOW.week]: 1 });
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: STRANGER, at: DAY, script: TEST, storage: { key: 'rtg_fanpromo_v1', value: mark } });
+    ok('a second visit the same week is not shown it again', !(await wait(page)).up);
+    await page.close();
+  }
+  {
+    /* SEEN ON ANOTHER DEVICE: the shelf already holds this week, and this browser has nothing. */
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: SIGNED, at: DAY, script: TEST, server: { shelf: { 'rtg_promo/nfl': { ok: true,
+        slot: 'nfl', progress: 1, payload: { seen: { [NOW.season + '_w' + NOW.week]: 1 } } } } } });
+    ok('an account that saw it on another device is not shown it here', !(await wait(page)).up);
+    await page.close();
+  }
+  {
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: STRANGER, at: DAY, script: TEST,
+        storage: { key: 'ps_fantasy_' + NOW.season + '_w' + NOW.week, value: JSON.stringify({ submitted: Date.now() }) } });
+    ok('an account that has entered this week is not reminded', !(await wait(page)).up);
+    await page.close();
+  }
+  for (const [label, at] of [
+    ['the day before the lock', midnight - 60 * 1000],
+    ['a minute after the lock', LOCK + 60 * 1000],
+  ]) {
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: STRANGER, at, script: TEST });
+    ok('not shown ' + label, !(await wait(page)).up);
+    await page.close();
+  }
+  {
+    const { page } = await openPage(browser, 'http://local.test/football/',
+      { who: STRANGER, at: midnight + 60 * 1000, script: TEST });
+    ok('shown a minute after midnight Eastern on lock day', (await wait(page)).up);
+    await page.close();
+  }
+}
+
 console.log('\nTHE SIGN IN LINK LANDS ON THE SIGN IN SHEET');
 {
   const { page, boom } = await openPage(browser, 'http://local.test/football/#signin',
@@ -4194,6 +4619,73 @@ console.log('\nA MAN RULED OUT CAN BE SWAPPED, BEFORE HIS GAME');
     ok('an entry only this browser remembers is offered no swap',
       (await screenOn(page)) === 's-in' && (await call(page)).length === 0,
       await screenOn(page));
+    ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+    await page.close();
+  }
+}
+
+console.log('\nA FINISHED WEEK HAS A DOOR AFTER THE BOARD ROLLS OVER');
+{
+  /* THE TUESDAY BUILD ROLLS THE BOARD TO THE NEW WEEK, and before this tab the standings of
+     the week just played had no way in at all. Reported the first Thursday it happened.
+     The fixture is the previous week's real pool and its real results file on disk, so the
+     names and the points are the ones a reader would see. */
+  const PREV = POOL.week - 1;
+  const prevPool = fs.existsSync(path.join(ROOT, `football/data/weekly_${POOL.season}_w${PREV}.json`))
+    ? JSON.parse(fs.readFileSync(path.join(ROOT, `football/data/weekly_${POOL.season}_w${PREV}.json`), 'utf8')) : null;
+  const prevRes = fs.existsSync(path.join(ROOT, `football/data/results_${POOL.season}_w${PREV}.json`))
+    ? JSON.parse(fs.readFileSync(path.join(ROOT, `football/data/results_${POOL.season}_w${PREV}.json`), 'utf8')) : null;
+  ok('there is a finished week on disk to read back', !!prevPool && !!prevRes,
+    `week ${PREV}: pool ${!!prevPool}, results ${!!prevRes}`);
+  if (prevPool && prevRes) {
+    /* A man who scored and a man who did not, so the lineup reads both kinds of row. */
+    const scored = prevPool.pool.filter((m) => prevRes.scores[m.player_id]
+      && prevRes.scores[m.player_id][0] > 5);
+    const SIX = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE'].map((pos, i) =>
+      scored.filter((m) => m.position === pos)[i === 2 || i === 4 ? 1 : 0]);
+    const picks = SIX.map((m) => m.player_id);
+    const total = Math.round(SIX.reduce((t, m) => t + prevRes.scores[m.player_id][0], 0) * 10) / 10;
+    const row = (place, name, score, me) => ({ place, display_name: name, score,
+      projected: 60, spend: 100, picks, is_me: !!me, entry_no: place });
+    const PAST = boardOf({ rows: [row(1, 'Ada', total), row(2, 'You', 40.2, true)],
+      scored_at: new Date(LIVE_AT - 86400e3).toISOString(), games_final: 16 });
+    const byWeek = { [PREV]: PAST };
+    const before = Date.parse(POOL.locks_at) - 3600e3;
+    const { page, boom, posted } = await openPage(browser, FANTASY,
+      { who: TESTER, at: before, results: prevRes, server: { mine: false, boardByWeek: byWeek } });
+    await page.waitForSelector('#s-home.on', { timeout: 15000 });
+    ok('the home screen has a door to past weeks', await page.evaluate(() =>
+      !document.getElementById('b-past').hidden));
+    await page.click('#b-past');
+    await page.waitForSelector('#pw-board .brow .bhd', { timeout: 10000 });
+    const seen = await page.evaluate(() => ({
+      tab: !document.getElementById('lv-pane-past').hidden
+        && document.getElementById('lv-tab-past').classList.contains('on'),
+      chips: [...document.querySelectorAll('#pw-weeks button')].map((b) => b.textContent),
+      lab: document.getElementById('pw-lab').textContent,
+      rows: [...document.querySelectorAll('#pw-board .brow')].map((e) =>
+        [e.querySelector('.bn').textContent, e.querySelector('.bs').textContent]),
+    }));
+    ok('  and it lands on the past weeks tab', seen.tab);
+    ok('  with a chip for only the weeks that had a competition',
+      seen.chips.length === 1 && seen.chips[0] === 'Week ' + PREV, seen.chips.join(', '));
+    ok('  the board is that week\'s, and says it is final', new RegExp('Week ' + PREV + '.*Final')
+      .test(seen.lab), seen.lab);
+    ok('  every row is drawn with its score', seen.rows.length === 2
+      && seen.rows[0][0] === 'Ada' && seen.rows[0][1] === total.toFixed(1), JSON.stringify(seen.rows));
+    ok('  and every earlier week was asked', [...Array(PREV).keys()].map((i) => i + 1)
+      .every((w) => posted.some((x) => x.fn === 'fantasy_board' && x.body.p_week === w)));
+    await page.click('#pw-board .brow .bhd');
+    await page.waitForTimeout(300);
+    const men = await page.evaluate(() => [...document.querySelectorAll('#pw-board .brow.open .bm')]
+      .map((e) => [e.querySelector('.bmnn').firstChild.textContent, e.querySelector('.bmpts b').textContent]));
+    const want = SIX.map((m) => [m.name, prevRes.scores[m.player_id][0].toFixed(1)]);
+    ok('  a row opens into six men named off THAT week\'s pool', men.length === 6
+      && want.every((w) => men.some((x) => x[0] === w[0])), men.map((x) => x[0]).join(', '));
+    ok('  with the points from that week\'s results file',
+      want.every((w) => men.some((x) => x[0] === w[0] && x[1] === w[1])), JSON.stringify(men));
+    ok('  and the six add up to the row', Math.abs(men.reduce((t, x) => t + Number(x[1]), 0) - total) < 0.06,
+      String(total));
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }

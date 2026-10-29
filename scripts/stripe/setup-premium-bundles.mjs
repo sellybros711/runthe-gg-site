@@ -34,6 +34,8 @@
  * before repeating it in any copy.
  */
 
+import { BUCKETS, PUTT_LIVES } from '../../functions/api/stripe/_bundles.js';
+
 const CATALOG = [
   {
     lookupKey: 'ps_premium_bundle_once',
@@ -71,18 +73,59 @@ const CATALOG = [
       metadata: { site_bundle: 'diamond-pro' },
     },
   },
-  /* $9.99, one-time, the owner's decision (2026-09). Basketball's own tier:
-   * endless puzzles and picked ones. The dailies stay free. */
+  /* $14.99 A YEAR, recurring, the owner's decision (2026-10); it was planned at
+   * $9.99 once and never went on sale that way. Basketball's own tier: endless
+   * puzzles, picked ones, the high school road and the family tree. The dailies
+   * stay free. A new lookup key, because a Price cannot change from one-time to
+   * recurring. */
   {
-    lookupKey: 'rtf_pro_once',
+    lookupKey: 'rtf_pro_year',
     envVar: 'STRIPE_PRICE_RTF_PRO',
-    amountCents: 999,
+    amountCents: 1499,
+    interval: 'year',
     product: {
       name: 'Run The Floor Pro',
-      description: 'Endless Fix History and Six Passes. Rebuild any team from any year. Make any two player puzzle and send it to friends. One purchase, yours for good.',
+      description: 'Endless Fix History and Six Passes. Rebuild any team from any year. Make any two player puzzle and send it to friends. Play your career from high school. Renews yearly until cancelled.',
       metadata: { site_bundle: 'floor-pro' },
     },
   },
+  /* RUN THE FLOOR'S REAL MONEY, SHIPPED DARK. A Price sells nothing by existing,
+   * and these also wait on their switches in _bundles.js (PASS_PAID_ENABLED and
+   * BUCKETS_ENABLED, both false) and their migrations (142 and 141). The Floor
+   * Pass is $9.99 a SEASON, one-time; the buckets are Run The Tour's own sizes. */
+  {
+    lookupKey: 'rtf_pass_season',
+    envVar: 'STRIPE_PRICE_RTF_PASS',
+    amountCents: 999,
+    product: {
+      name: 'Floor Pass',
+      description: 'The premium lane of this season\'s Floor Pass in Run The Floor: every premium tier to claim, for this season. One payment, does not renew.',
+      metadata: { site_bundle: 'floor-pass' },
+    },
+  },
+  ...Object.entries(BUCKETS).map(([key, b]) => ({
+    lookupKey: 'rtf_' + key.replace(/-/g, '_'),
+    envVar: b.envPrice,
+    amountCents: b.cents,
+    product: {
+      name: 'Run The Floor: ' + b.name,
+      description: b.coins.toLocaleString('en-US') + ' coins in Run The Floor' + (b.packs.length ? ', plus ' + b.packs.length + ' pack' + (b.packs.length === 1 ? '' : 's') : '') + '. Coins are spent in the game and are not money.',
+      metadata: { site_bundle: key },
+    },
+  })),
+  /* Putt Putt lives, SHIPPED DARK until PUTT_LIVES_ENABLED and 149. Two packs,
+   * $4.99 for nine and $2.99 for three, one-time, bought as often as anybody
+   * runs out. */
+  ...Object.entries(PUTT_LIVES).map(([key, p]) => ({
+    lookupKey: p.lookupKey,
+    envVar: p.envPrice,
+    amountCents: p.cents,
+    product: {
+      name: p.name,
+      description: p.lives + ' lives back in Putt Putt Tour, right away. For when you are out of lives.',
+      metadata: { site_bundle: 'putt-lives-' + key },
+    },
+  })),
 ];
 
 const KEY = process.env.STRIPE_SECRET_KEY;

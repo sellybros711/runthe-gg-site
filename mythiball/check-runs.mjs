@@ -101,7 +101,7 @@ const playGames = async (field, count) => {
   await pg.evaluate(() => localStorage.clear());
   await pg.goto(URL);
   await pg.evaluate(({ sp, field }) => {
-    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
     window.confirm = () => true;
     State.gameSpeed = sp; applyGameSpeed();
     State.innings = 5; State.mode = 'exhibition';
@@ -175,7 +175,7 @@ const playGames = async (field, count) => {
         if (!g) return { gone: true };
         if (g.over) return { over: true };
         if (g.aiming && !g.play && !g.tail) {
-          try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone); window.__threw++; } catch (e) {}
+          try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone, p.aim ? { aim: p.aim } : undefined); window.__threw++; } catch (e) {}
         }
         return { ok: true };
       }).catch(() => ({ gone: true }));

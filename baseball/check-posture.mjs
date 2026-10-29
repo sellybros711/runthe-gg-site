@@ -59,7 +59,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
    INDEXED is refused outright: a page the home page sends visitors to while
    telling crawlers to stay away is the contradiction this file exists for. */
 const INDEXED = true;
-const LINKED = false;
+const LINKED = true;
 
 /* The two pages a reader meets. og-source.html is deliberately not one of them:
    it is the template the share card is rendered from, never a page, and it is
@@ -148,27 +148,39 @@ if (!LINKED && linkedFrom.length) {
     + 'is not on the site\'s own pages yet.');
 }
 
-/* THE HOME PAGE REACHES A VISITOR TWICE AND THE TWO DO NOT OVERLAP. Tiles are the
-   phone home screen and cards are the desktop one: `.gtiles{display:none}` until
-   640px, and `.games > .feat{display:none}` from 640px down. So a link added to
-   only one of them is a game that exists on one kind of device, which renders
-   perfectly and is invisible to every other check here. */
+/* THE HOME PAGE REACHES A VISITOR TWICE: the hub at the top, and the "All games"
+   cards under it that the sport filter works on. The redesign changed both shapes
+   once (it was `.gtile` and a card per device), and the Play today hub (#703,
+   2026-10-24) changed the hub again: there are no `.tile`s at all any more.
+
+   THE HUB IS NOW TWO LINKS, ONE PER KIND OF DEVICE, which is the old argument in a
+   new place. Over 640px the hub leads with the big `.spot`; at 640px and under the
+   spot is `display:none` and the Play today list becomes a swipe strip that opens
+   on `.today-new`, which is itself `display:none` above 640px. So a game that is in
+   only one of them is in the hub on one kind of device and missing from it on the
+   other, and nothing else on the page would notice. Both are asked, plus the
+   `<article class="feat baseball">` card. */
 const home = read('index.html');
-const hasTile = /<a class="gtile[^"]*baseball[^"]*"/i.test(home);
-const hasCard = /<article class="feat[^"]*baseball[^"]*"/i.test(home);
-if (!LINKED && (hasTile || hasCard)) {
-  problems.push(`index.html carries a baseball ${hasTile ? 'tile' : 'card'} while this file says `
-    + 'the game is not on the home page. Half a link is a game that exists on one kind of '
-    + 'device.');
+const hasSpot = /<a class="spot [^"]*" href="\/baseball\/"/i.test(home);
+const hasRow = /<li class="today-new"><a class="trow [^"]*" href="\/baseball\/"/i.test(home);
+const hasCard = /<article class="feat baseball[^"]*"/i.test(home);
+if (!LINKED && (hasSpot || hasRow || hasCard)) {
+  problems.push(`index.html carries a baseball ${hasSpot ? 'hub spot' : hasRow ? 'Play today row' : 'card'} `
+    + 'while this file says the game is not on the home page. Half a link is a game that '
+    + 'exists on one kind of device.');
 }
 if (LINKED) {
-  if (!hasTile) {
-    problems.push('index.html has no .gtile for baseball. Tiles are the phone home screen, '
-      + 'so without one the game cannot be found on a phone at all.');
+  if (!hasSpot) {
+    problems.push('index.html has no hub .spot for baseball. Over 640px the spot is the first '
+      + 'thing on the home page, so without it the game is not in the hub on a desktop.');
+  }
+  if (!hasRow) {
+    problems.push('index.html has no Play today row (.today-new .trow) for baseball. At 640px '
+      + 'and under that row opens the hub strip, so without it the game is not in the hub on a phone.');
   }
   if (!hasCard) {
-    problems.push('index.html has no .feat card for baseball. Cards are the desktop home '
-      + 'screen, so without one the game cannot be found on a desktop at all.');
+    problems.push('index.html has no .feat card for baseball. The cards are the All games '
+      + 'library the sport filter works on, so without one the game is missing from it.');
   }
 }
 

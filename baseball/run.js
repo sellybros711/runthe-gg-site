@@ -661,7 +661,104 @@ function sign(run, player, slotIdx) {
   // Draft complete?
   if (run.roster.length >= slotsOf(run).length) {
     run.phase = PHASES.SEASON;
+    /* The coach sets the rotation too: the better arm starts Game 1. Both starters
+       are averaged into the season, so this moves no number the season reads. */
+    coachArms(run);
   }
+}
+
+/* THE BATTING ORDER. `run.batOrder` holds roster indices, spot one first, and is
+   only ever written by `setBatOrder`, which Pro reaches from the squad screen.
+   Null is the coach's order, which is derived every time rather than stored, so a
+   roster that changes mid-season (a cut, a trade) is re-ordered by the coach for
+   free. Indices rather than keys because a cut or a trade puts the new man at the
+   same index, so a custom order keeps his spot for whoever replaces him. */
+function hitterIdx(run) {
+  return run.roster.map((p, k) => k).filter(k => run.roster[k] && run.roster[k].r === 'b');
+}
+function coachBatOrder(run) {
+  const tagged = hitterIdx(run).map(k => ({ ...run.roster[k], _slot: slotsOf(run)[run.slotIndex[k]], _k: k }));
+  return E.coachOrder(tagged).map(p => p._k);
+}
+function validOrder(run, order) {
+  const hit = hitterIdx(run);
+  return Array.isArray(order) && order.length === hit.length && new Set(order).size === hit.length &&
+    order.every(k => hit.includes(k));
+}
+function batOrderOf(run) {
+  if (run.staff) return [];
+  return validOrder(run, run.batOrder) ? run.batOrder.slice() : coachBatOrder(run);
+}
+/* The roster as the season reads it: every man's slot and every hitter's spot. */
+function tagged_(run) {
+  const order = batOrderOf(run);
+  const nine = order.length === E.LINEUP_WEIGHT.length;
+  return run.roster.map((p, k) => {
+    const o = { ...p, _slot: slotsOf(run)[run.slotIndex[k]] };
+    const b = order.indexOf(k);
+    if (nine && b >= 0) o._bat = b + 1;
+    return o;
+  });
+}
+/* The roster with spots and no slots, for playRun, which tags the slots itself. */
+function batted(run) {
+  const t = tagged_(run);
+  return run.roster.map((p, k) => (t[k]._bat ? { ...p, _bat: t[k]._bat } : p));
+}
+/* A lineup can be changed from the end of the draft until the first pitch. */
+function canReorder(run) {
+  return !!run && run.phase === PHASES.SEASON && !(run._simState && run._simState.results.length);
+}
+function setBatOrder(run, order) {
+  if (!canReorder(run)) return false;
+  if (order === null) { run.batOrder = null; }
+  else {
+    if (!validOrder(run, order)) return false;
+    const coach = coachBatOrder(run);
+    run.batOrder = order.every((k, i) => k === coach[i]) ? null : order.slice();
+  }
+  if (run._simState) run._simState = rebuildSimState(run);
+  return true;
+}
+/* What an order costs against the coach's, in WAR given up. */
+function orderCost(run) {
+  return run.staff ? 0 : E.orderLoss(tagged_(run));
+}
+/* Swap two arms between their slots, inside one group (the rotation, or the pen).
+   The closer is its own group, because the sim reads that slot by name and the
+   save rate goes with it. A swap inside a group moves nothing the season reads
+   (both groups are averages), only who starts which October game. */
+function canSwapArms(run, a, b) {
+  if (!canReorder(run) || a === b) return false;
+  const pa = run.roster[a], pb = run.roster[b];
+  if (!pa || !pb || pa.r !== 'p' || pb.r !== 'p') return false;
+  const slots = slotsOf(run);
+  const sa = slots[run.slotIndex[a]], sb = slots[run.slotIndex[b]];
+  const g = (sl) => E.slotGroup(sl, !!run.staff);
+  if (g(sa) !== g(sb)) return false;
+  return fills(run, pa, sb) && fills(run, pb, sa);
+}
+function swapArms(run, a, b) {
+  if (!canSwapArms(run, a, b)) return false;
+  const t = run.slotIndex[a]; run.slotIndex[a] = run.slotIndex[b]; run.slotIndex[b] = t;
+  run.staffOrdered = true;
+  if (run._simState) run._simState = rebuildSimState(run);
+  return true;
+}
+/* Put the arms back in the coach's order: best first in each group. */
+function coachArms(run) {
+  if (!canReorder(run)) return false;
+  run.staffOrdered = false;
+  if (run.staff) { sortStaffSlots(run); }
+  else {
+    const slots = slotsOf(run);
+    const rot = run.roster.map((p, k) => k).filter(k => E.slotGroup(slots[run.slotIndex[k]], false) === E.slotGroup('SP1', false));
+    const held = rot.map(k => run.slotIndex[k]).sort((x, y) => x - y);
+    rot.sort((x, y) => (E.workloadWar(run.roster[y]) - E.workloadWar(run.roster[x])) || (x - y))
+      .forEach((k, i) => { run.slotIndex[k] = held[i]; });
+  }
+  if (run._simState) run._simState = rebuildSimState(run);
+  return true;
 }
 
 /* What a mode suppresses, in one place.
@@ -682,6 +779,21 @@ function chemOpts(run) {
   // few, the pigeonhole alone guarantees repeats, so a franchise link is the mode
   // talking rather than a choice you made.
   if (run.franchise || run.division) suppress.push('franchise');
+  /* AND IN ONE FRANCHISE, TEAM-MATES TOO. Twelve men from one club almost always
+     overlapped somewhere in their careers, so the team-mates link fired on nearly
+     every pair: measured over 100 best-available drafts it carried 45 raw points,
+     took the roster to 14.1% chemistry against Classic's 8.5%, and turned the same
+     drafting into 105 wins and October 96% of the time against 89 and 59%. The mode
+     was paying for its own rule. With it off, the same drafts land at 7.7% and 90.7
+     wins, and a player chasing bonds still earns more (95.3) through the ones that
+     are choices: a reunion from one season, a battery, a double-play combo. Those
+     read the shared seasons directly, so they are untouched.
+
+     ERAS AND DIVISION TOO, the owner's call. Both ran hot the same way: a decade's
+     twelve or a division's four to six clubs overlap in their careers far more than
+     an open draft does, and best available reached 99.9 and 101.3 wins there against
+     Classic's 89.3, mostly through this link. */
+  if (run.franchise || run.era || run.division) suppress.push('teammates');
   return { suppress, staff: !!run.staff };
 }
 /* The chemistry of a run's roster (or any roster, under that run's rules). */
@@ -725,7 +837,7 @@ function playSeason(run) {
   const rng = rngFor(run);
   const slotNames = run.slotIndex.map(i => slotsOf(run)[i]);
   const pool = poolFor(run);
-  const result = E.playRun(run.roster, rng, slotNames, pool, chemOpts(run));
+  const result = E.playRun(batted(run), rng, slotNames, pool, chemOpts(run));
   result.allTimeRank = (_data && !run.staff) ? E.nationalRank(result.rating, _data.ratingTable) : null;
 
   run.season = result.season;
@@ -764,7 +876,7 @@ function advanceGame(run, gameIndex) {
     // each with their ACTUAL slot from slotIndex, because the sim reads SP1/SP2/CL
     // from these tags.
     const rng = rngFor(run);
-    const tagged = run.roster.map((p, k) => ({ ...p, _slot: slotsOf(run)[run.slotIndex[k]] }));
+    const tagged = tagged_(run);
     const chem = E.resolveChemistry(tagged, chemOpts(run));
     const structure = run.staff ? { multiplier: 1, archetype: null } : E.rosterStructure(tagged);
     const offense = run.staff ? E.staffOffense()
@@ -892,7 +1004,7 @@ function cutPlayer(run, rosterIdx) {
  * reading the roster it tagged before the market moved. */
 function rebuildSimState(run) {
   const st = run._simState;
-  const tagged = run.roster.map((p, k) => ({ ...p, _slot: slotsOf(run)[run.slotIndex[k]] }));
+  const tagged = tagged_(run);
   const chem = E.resolveChemistry(tagged, chemOpts(run));
   const structure = run.staff ? { multiplier: 1, archetype: null } : E.rosterStructure(tagged);
   const offense = run.staff ? E.staffOffense()
@@ -925,7 +1037,7 @@ function rebuildSimState(run) {
      * sweep in check-yardstick: every reading of it is the top ten).
      *
      * It is a balance change and was made on purpose: a higher rating buys a
-     * weaker opponent (titleEdge's PIVOT is 84), so at a fixed record a good
+     * weaker opponent (titleEdge's PIVOT is 90), so at a fixed record a good
      * roster's title rate fell 7.7% back to 5.7% when this was corrected. */
     rating: run.staff ? E.staffRating(tagged) : E.squadRating(run.roster),
     shownRating: run.staff ? E.staffRating(tagged) : E.teamRating(offense, defense),
@@ -1098,7 +1210,7 @@ function finalizeSeason(run) {
   if (!st) throw new Error('no sim state');
 
   const seed = E.seedFromRecord(st.wins);
-  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins, st.rating, poolFor(run));
+  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins, st.rating, poolFor(run), run.staff ? null : st.shownRating);
   const titleWon = playoffs && playoffs.won;
   const isGOAT = st.wins >= E.CONSTANTS.GOAT_WINS;
   const beatRecord = st.wins >= E.CONSTANTS.RECORD_WINS;
@@ -1205,7 +1317,7 @@ function projectSeason(run, trials) {
   let po = 0, title = 0, rec = 0;
   for (let i = 0; i < n; i++) {
     const rng = E.createSeededRNG((run.seed ^ (i * 2654435761)) >>> 0);
-    const out = E.playRun(run.roster, rng, slotNames, pool, chemOpts(run));
+    const out = E.playRun(batted(run), rng, slotNames, pool, chemOpts(run));
     wins.push(out.record.wins);
     if (out.seed.made) po++;
     if (out.titleWon) title++;
@@ -1220,6 +1332,214 @@ function projectSeason(run, trials) {
     titlePct: Math.round(100 * title / n),
     recordPct: Math.round(100 * rec / n),
   };
+}
+
+/* ─── October, managed ─────────────────────────────────────────────────────
+ *
+ * A Pro player can change pitchers in the October games they watch, and the call
+ * really decides the rest of that game (engine.js, "the manager's call"). This is
+ * where a run keeps its calls and where October is carried on after one.
+ *
+ * `run.calls` is the whole record: [{ ri, gi, h, k, slot }], in the order they were
+ * made. Every October game is rebuilt from the coach's version of it plus the calls
+ * on it, so the same calls on the same seed are always the same October, and a game
+ * nobody called is the game generatePlayoffs() settled.
+ *
+ * `run.playoffs.path` holds every round ever drawn for the run, index-aligned, and
+ * `run.playoffs.rounds` is its prefix up to the series you went out in. Each round
+ * keeps the coach's games (`baseGames`) so a flipped game can be undone by a later
+ * call without anything being drawn twice. */
+const _scripts = new WeakMap();
+function poCache(run) {
+  let c = _scripts.get(run);
+  if (!c) { c = {}; _scripts.set(run, c); }
+  return c;
+}
+function poRound(run, ri) {
+  const po = run.playoffs;
+  return (po && (po.path || po.rounds)[ri]) || null;
+}
+function callsIn(run, ri, gi) {
+  return (run.calls || []).filter(c => c.ri === ri && c.gi === gi);
+}
+/* The scoring means of round ri, as the engine played it. */
+function meansOf(run, ri) {
+  const ctx = run.playoffs && run.playoffs.ctx;
+  if (!ctx) return { runsFor: 4.5, runsAgainst: 4.5, adv: 1, bestOf: 7 };
+  return E.roundMeans(ctx, ri);
+}
+/* The coach's own game ri/gi: the score generatePlayoffs() gave it, narrated the
+ * way October always has been, with the same seed the page has always used. */
+function baseScript(run, ri, gi) {
+  const r = poRound(run, ri);
+  const g = r.baseGames ? r.baseGames[gi] : r.games[gi];
+  const rng = E.createSeededRNG(E.hashSeed(String(run.seed) + '|po|' + ri + '|' + gi));
+  const homes = E.homeGames(r.bestOf || 7, !!r.homeField);
+  const tagged = tagged_(run);
+  const oppRoster = (r.oppTeam && r.oppSeason && _data && _data.byTeamSeason)
+    ? _data.byTeamSeason[E.teamSeasonId(r.oppTeam, r.oppSeason)] : null;
+  const staff = E.staffFromRoster(tagged, gi);
+  const s = E.simGameScript({
+    yourRuns: g.yourRuns, oppRuns: g.oppRuns, won: g.won,
+    youHome: !!homes[gi],
+    yourName: run.franchise || 'YOU', oppName: r.oppName || 'The field',
+    yourLineup: E.lineupFromRoster(tagged),
+    oppLineup: E.lineupFromTeamSeason(oppRoster) || E.lineupFromRoster([]),
+    yourStaff: staff,
+    oppStaff: E.staffFromTeamSeason(oppRoster, gi),
+    rng,
+  });
+  s.yourStarter = staff.starter ? staff.starter.slot : null;
+  s.rest = {};
+  return s;
+}
+/* What a call works from: your arms, the coach's staff for this game, who is tired,
+ * and an ordinary half inning's runs for each side. */
+function callCtx(run, ri, gi) {
+  const tagged = tagged_(run);
+  const m = meansOf(run, ri);
+  return {
+    arms: E.armsFor(tagged, !!run.staff),
+    staff: E.staffFromRoster(tagged, gi),
+    rest: restFor(run, ri, gi),
+    halfMean: m.runsAgainst / (m.adv || 1) / 9,
+    yourHalfMean: m.runsFor / 9,
+  };
+}
+/* Who is tired today: whoever you leaned on yesterday in the same series. */
+function restFor(run, ri, gi) {
+  if (gi <= 0) return {};
+  return E.restFrom(octoberScript(run, ri, gi - 1), callsIn(run, ri, gi - 1).length > 0);
+}
+/* Game ri/gi as it is played: the coach's game, then today's rest, then every call
+ * on it in order. Cached until the next call. */
+function octoberScript(run, ri, gi) {
+  const cache = poCache(run);
+  const key = ri + '|' + gi;
+  if (cache[key]) return cache[key];
+  let s = baseScript(run, ri, gi);
+  const ctx = callCtx(run, ri, gi);
+  const seed = String(run.seed) + '|call|' + ri + '|' + gi;
+  if (Object.keys(ctx.rest).length) {
+    s = E.retarget(s, s.youHome ? 0 : 1, 0, null, Object.assign({}, ctx, { seedKey: seed + '|rest' }));
+  }
+  callsIn(run, ri, gi).forEach((c, n) => {
+    s = E.retarget(s, c.h, c.k, c.slot, Object.assign({}, ctx, { seedKey: seed + '|' + n }));
+  });
+  cache[key] = s;
+  return s;
+}
+/* A game the coach's October never got to (a series a call stretched): drawn the
+ * way playoffSeries() draws every game, off its own seed. */
+function extraGame(run, ri, gi) {
+  const m = meansOf(run, ri);
+  const rng = E.createSeededRNG(E.hashSeed(String(run.seed) + '|po|more|' + ri + '|' + gi));
+  const g = E.resolveGame(m.runsFor, m.runsAgainst, run.playoffs.ctx.savePct, rng, m.adv);
+  return { won: g.won, yourRuns: g.yourRuns, oppRuns: g.oppRuns };
+}
+/* Play round ri's series out again from its games, honouring every call. */
+function replaySeries(run, ri) {
+  const r = poRound(run, ri);
+  if (!r.baseGames) r.baseGames = r.games.map(g => ({ won: g.won, yourRuns: g.yourRuns, oppRuns: g.oppRuns }));
+  const need = Math.ceil((r.bestOf || 7) / 2);
+  const games = [];
+  let w = 0, l = 0;
+  for (let k = 0; w < need && l < need; k++) {
+    if (!r.baseGames[k]) r.baseGames[k] = extraGame(run, ri, k);
+    const base = r.baseGames[k];
+    let g = { won: base.won, yourRuns: base.yourRuns, oppRuns: base.oppRuns };
+    if (callsIn(run, ri, k).length || Object.keys(restFor(run, ri, k)).length) {
+      const s = octoberScript(run, ri, k);
+      g = { won: s.final.won, yourRuns: s.final.yourRuns, oppRuns: s.final.oppRuns, managed: true };
+    }
+    games.push(g);
+    if (g.won) w++; else l++;
+  }
+  r.games = games;
+  r.yourWins = w; r.oppWins = l;
+  r.won = w >= need;
+  r.gamesPlayed = games.length;
+}
+/* October after a call: every series replayed from its games, and a round you now
+ * reach for the first time drawn off its own seed, exactly as generatePlayoffs()
+ * draws one. A round you no longer reach is kept on the path, so a later call that
+ * takes you back there finds the same club waiting. */
+function settleOctober(run) {
+  const po = run.playoffs;
+  if (!po || !po.ctx) return;
+  _scripts.delete(run);
+  if (!po.path) po.path = po.rounds.slice();
+  const rounds = [];
+  for (let j = 0; j < po.ctx.names.length; j++) {
+    if (!po.path[j]) {
+      const rng = E.createSeededRNG(E.hashSeed(String(run.seed) + '|po|round|' + j));
+      po.path[j] = E.playoffRound(po.ctx, j, rng, E.eliteSortedOf(poolFor(run)));
+    }
+    replaySeries(run, j);
+    rounds.push(po.path[j]);
+    if (!po.path[j].won) break;
+  }
+  po.rounds = rounds;
+  po.won = E.playoffsWon(rounds);
+  if (run.outcome) run.outcome.titleWon = po.won;
+}
+/* Can a call be made in game ri/gi at all? Only October games, only while the run is
+   finished but not yet recorded. The page decides who (Pro) and which games (all in
+   the six modes, deciders in Classic and the daily). */
+function canCall(run, ri, gi) {
+  return !!(run && run.phase === PHASES.OVER && run.playoffs && run.playoffs.ctx &&
+    !run.recorded && poRound(run, ri) && gi < poRound(run, ri).games.length);
+}
+/* The stop before plate appearance k of half h, if the game wants one. */
+function callAt(run, ri, gi, h, k, asked) {
+  if (!canCall(run, ri, gi)) return null;
+  const ctx = callCtx(run, ri, gi);
+  ctx.asked = asked || {};
+  return E.callFor(octoberScript(run, ri, gi), h, k, ctx);
+}
+/* Every arm the sheet would offer right now, for the Mound button. */
+function mound(run, ri, gi, h, k) {
+  if (!canCall(run, ri, gi)) return null;
+  const s = octoberScript(run, ri, gi);
+  const hf = s.halves[h];
+  if (!hf || hf.half !== E.fieldingHalf(s.youHome) || !hf.plays[k]) return null;
+  const ctx = callCtx(run, ri, gi);
+  const p = hf.plays[k];
+  const sched = p.pitcher;
+  const onMound = E.armBefore(s, h, k) || sched;
+  const pitches = onMound.slot === E.PEN_SLOT && onMound.slot !== sched.slot ? 0 : (E.pitchCounts(s, h, k)[onMound.slot] || 0);
+  return { kind: 'mound', keys: [], inning: hf.inning, outs: p.outsBefore, batter: p.batter && p.batter.name,
+    batterGeneric: !!(p.batter && p.batter.generic),
+    onMound, sched, pitches, options: E.callOptions(s, h, k, onMound, sched, ctx) };
+}
+/* Make the call. Picking the man already scheduled is not a call and changes
+ * nothing. Returns the game's new script, or null when the call was not allowed. */
+function makeCall(run, ri, gi, h, k, slot) {
+  if (!canCall(run, ri, gi)) return null;
+  const s = octoberScript(run, ri, gi);
+  const hf = s.halves[h];
+  if (!hf || hf.half !== E.fieldingHalf(s.youHome) || !hf.plays[k]) return null;
+  if (hf.plays[k].pitcher && hf.plays[k].pitcher.slot === slot) return s;
+  const ctx = callCtx(run, ri, gi);
+  const onMound = E.armBefore(s, h, k) || hf.plays[k].pitcher;
+  const offered = E.callOptions(s, h, k, onMound, hf.plays[k].pitcher, ctx);
+  if (!offered.some(o => o.slot === slot)) return null;
+  if (!run.calls) run.calls = [];
+  run.calls.push({ ri, gi, h, k, slot });
+  settleOctober(run);
+  return octoberScript(run, ri, gi);
+}
+/* The calls a run made, put back after the page was left: the same October as
+   before, with nothing asked again. Calls that no longer fit are dropped. */
+function restoreCalls(run, calls) {
+  if (!Array.isArray(calls) || !run.playoffs) return 0;
+  run.calls = [];
+  let n = 0;
+  for (const c of calls) {
+    if (!c || typeof c.slot !== 'string') continue;
+    if (makeCall(run, c.ri | 0, c.gi | 0, c.h | 0, c.k | 0, c.slot)) n++;
+  }
+  return n;
 }
 
 /* Index the raw player data for draft use. Caches the result so the season
@@ -1242,9 +1562,12 @@ const publicAPI = {
   spin, respin, sign, focusTargets, eligibleFranchises, eligibleEras,
   chemOpts, chemOf, chemByPlayer, chemWorth,
   slotsOf, eligOf,
+  tagged: tagged_, batOrderOf, coachBatOrder, setBatOrder, orderCost, canReorder,
+  canSwapArms, swapArms, coachArms,
   payroll, overCap, marketAt, applyMarket, cutPlayer,
   TRADE, dealRoster, tradeAt, tradeOffers, acceptTrade, declineTrades,
   playSeason, advanceGame, finalizeSeason,
+  octoberScript, callAt, mound, makeCall, restoreCalls, canCall, settleOctober,
   previewSigning, bestPossibleSquad, projectSeason,
   indexData,
   remaining, reserveFloor, fullFloor, spendable, canRespin, canFinishAfter,

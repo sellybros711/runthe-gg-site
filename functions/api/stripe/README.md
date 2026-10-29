@@ -360,13 +360,40 @@ other than what their screen said.
 | `invoice.paid` | a renewal: access to the new period end plus 7 days |
 | `customer.subscription.updated` | active: extends; past due: holds (the grace runs); a plan change in the portal re-grants the new plan's products and takes the old one's back |
 | `customer.subscription.deleted` | access ends at `ended_at`, which for a cancel at period end is the period end, with no grace added |
-| `charge.refunded` (full) / `charge.dispute.created` | access ends now; a late "active" for that same period grants nothing. The bonus coins are not taken back |
+| `charge.refunded` (full) / `charge.dispute.created` | access ends now; a late "active" for that same period grants nothing. If the refunded payment is the one that bought the Run The Bundle bonus, the bonus goes too (125, below) |
 
 Every one goes through `premium_sub_apply()`, which decides from the plan's status rather than
 from which event arrived, because Stripe delivers out of order and more than once. A plan is
 recognised by its PRICE first and its metadata second, so a plan changed in the portal is
 still the right plan, and a yearly plan never reaches the Arcade Card's `subscriptions`
 table, which eight arcade functions read as "this account holds an Arcade Card".
+
+### A refund takes back the bonus it paid for (125)
+
+`supabase/125_arcade_cap_and_bonus_refund.sql`, by hand, after 124. Preflight row 36.
+
+After a full refund or a chargeback on a plan, the webhook calls `premium_reclaim_bonus()`
+with the plan and the date the refunded invoice's period began. The bonus row is removed only
+if this plan wrote it and wrote it inside that period, so refunding the FIRST year (or the
+upgrade that brought the bonus) takes it back and refunding a renewal does not.
+
+| the bonus was | what happens |
+|---|---|
+| not redeemed yet | the row goes, so the coins are never paid |
+| redeemed | the row goes and the coins come back out of the wallet, down to zero; anything already spent is reported as a shortfall, never a negative balance |
+
+The Tour Pack cannot be taken back: packs live in the golf page, not on the server. A
+one-time Run The Bundle's bonus is never touched, because a one-time purchase is revoked by
+hand. With the row gone, a later paid Run The Bundle hands the bonus over again.
+
+**Run 125 before the next refund.** Without it the webhook answers 500 on a plan refund
+(`premium_reclaim_bonus 404`) and Stripe retries for three days. The plan's access is still
+taken back on every attempt, so nothing is lost while it waits.
+
+125 also fixes the arcade's four-a-day ranked cap, which only counted the monthly Arcade Card:
+a Run The Bundle buyer, whose card is a `premium_unlocks` row, was refused their fifth ranked
+score of the day. The cap now asks `arcade_card_active()`, like every other arcade reader.
+`supabase/test/arcade_cap_test.sql` drives both (its header lists the chain).
 
 ### Why the claim is $70 and not $80
 
@@ -410,9 +437,15 @@ row whose `expires_at` follows the subscription:
 | past_due (a renewal failed, Stripe is retrying) | a week from now |
 | cancelled at period end | still active, so the end of the period |
 | canceled, unpaid, incomplete | now |
+| a full refund or a chargeback on one of its invoices | now, and it stays ended |
 
 Every subscription event is read back from Stripe before it is written, so events
-arriving out of order cannot hand a cancelled subscriber another year. **It never
+arriving out of order cannot hand a cancelled subscriber another year. **A refund does not
+cancel the subscription in Stripe**, so the row remembers the period end the refund took
+back (`payload.refunded_through`) and an event that still reads active for that period
+grants nothing. A paid renewal into a later period grants as usual; cancel the subscription
+in the dashboard when you refund it if that should not happen. The webhook needs
+`charge.refunded` and `charge.dispute.created` for this, which the yearly plans already added. **It never
 touches the `subscriptions` table**, which is the Arcade Card's and holds one row a
 user. **A row with no end date is never given one**, so anybody who bought the old
 $9.99, or was comped, keeps Pro for good, and checkout will not sell them a year.
@@ -465,7 +498,7 @@ values ('<user uuid>', 'rtd_premium', 'comp')
 on conflict (user_id, product) do update set expires_at = null;
 ```
 
-## Run The Floor Pro ($9.99 once, basketball only)
+## Run The Floor Pro ($14.99 a year, basketball only)
 
 The second single-game tier, the same shape as Diamond Pro and by the same owner's
 decision (2026-09). One checkout, one webhook, no second payment path. The catalog
@@ -485,13 +518,13 @@ files nothing to the board, so the gate is `endlessOpen()` in `hoops/modes-ui.js
    row 34 reads **yes**. Until it runs, the table refuses `rtf_premium` and a paid
    checkout 500s in the webhook.
 2. **Create the Product and Price in Stripe**, by hand in the Dashboard: name
-   **Run The Floor Pro**, one-time price **$9.99 USD**, lookup key `rtf_pro_once`.
+   **Run The Floor Pro**, **recurring yearly** price **$14.99 USD**, lookup key `rtf_pro_year`.
    Or `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`,
    which is idempotent. Copy the price id (`price_...`).
 3. **Add the env var in Cloudflare Pages** (Production):
    `STRIPE_PRICE_RTF_PRO = price_...`, then redeploy (push any commit). Until it is
    set the Get Pro button answers "Pro is not on sale yet".
-4. **Nothing to change on the webhook.**
+4. **Nothing to change on the webhook.** It already listens for the `customer.subscription.*` events Diamond Pro needs, and a subscription grant is the same path.
 5. **Test it** with a 100% off promotion code restricted to this product: open
    `/hoops/` signed in, press Go Pro, pay with the code, and you land back on the game
    with "Pro is on". The Endless and Build doors lose their Pro tag.
@@ -502,6 +535,181 @@ To comp somebody by hand:
 insert into public.premium_unlocks (user_id, product, source)
 values ('<user uuid>', 'rtf_premium', 'comp')
 on conflict (user_id, product) do update set expires_at = null;
+```
+
+## Run The Floor's coin buckets and Floor Pass (shipped dark)
+
+Both are built and **off**. Nothing below sells anything until its switch is flipped,
+and each switch is the whole of its own go-live. The design is in
+`hoops/design/ECONOMY.md` section 9.
+
+| | switch | price env var | migration | what is bought |
+|---|---|---|---|---|
+| Coin buckets | `BUCKETS_ENABLED` in `_bundles.js` AND `hoops/economy.js` | `STRIPE_PRICE_RTF_COINS_1` to `_5` | `141_hoops_wallet.sql` | coins on the server, plus free packs |
+| Floor Pass premium | `PASS_PAID_ENABLED` in `_bundles.js` AND `hoops/pass.js` | `STRIPE_PRICE_RTF_PASS` | `142_hoops_pass.sql` | one `rtf_pass` row ending with the pass season |
+
+**The two copies of each switch must agree**; `node scripts/stripe/check-floor-money.mjs`
+fails if they do not, and the page draws its shelf and buy button off its own copy.
+
+**Bought coins never live in the page's ledger.** They are rows in `rtf_coin_buys`,
+written only by the webhook through `rtf_coin_buy` (keyed on the checkout session, so a
+retried delivery pays once). The page reads the balance with `rtf_wallet_state` and,
+when a press is short, moves exactly the shortfall with `rtf_wallet_spend` under a key
+it also files in its ledger. A bucket's packs arrive as free packs, keyed on the session.
+
+**The pass is for the season it is bought in.** The webhook writes one row with
+`expires_at` at the pass season's last Eastern midnight (`passSeason` in `_bundles.js`,
+held to `hoops/pass.js` by the check). A pass already running this season is refused
+by the one bundle per account rule. A buyer on the season's last evening gets that
+evening only; the sheet says the pass ends with the season.
+
+### Go-live, in this order (for either one)
+
+1. **Run the migration** in the Supabase SQL editor (141 for the buckets, 142 for the
+   pass). Paste `supabase/test/launch_preflight.sql`: row 55 (141) or 56 (142) reads **yes**.
+2. **Create the Prices**: `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
+   mints `rtf_pass_season` ($9.99 one-time) and the five buckets ($1.99, $4.99, $9.99,
+   $19.99, $49.99, one-time). It is idempotent.
+3. **Add the env vars in Cloudflare Pages** (Production) and redeploy. Without them the
+   checkout answers 503 even with the switch on.
+4. **Flip the switch in BOTH files in one commit**, bump the `?v=` on `economy.js` or
+   `pass.js` in `hoops/index.html`, run `node scripts/check-cachebust.mjs --update` and
+   `node scripts/stripe/check-floor-money.mjs`, and push.
+5. **Nothing to change on the webhook.** A bucket is `checkout.session.completed` with
+   `metadata.bucket`; the pass is the ordinary one-time bundle path.
+6. **Test the pass** with a 100% off promotion code restricted to the Floor Pass. **A
+   bucket takes no promotion code**, so testing one is a real charge: refund it in the
+   Dashboard, then take the coins back by hand:
+
+```sql
+select public.rtf_coin_refund('<cs_live_... session id>');
+```
+
+A refunded bucket's packs stay filed if the page already filed them; that is rare and
+small enough to leave to the refund itself.
+
+## Putt Putt lives, two packs
+
+The owner's calls: nine lives for $4.99 (2026-10-16), three for $2.99 beside it, and
+both sold at any time, over the max if the player wants (2026-10-17). A signed in player
+can buy either from three places: the Out of Lives sheet, the Over par card every time a
+life goes, and the Lives sheet the hearts open. Both are built
+behind one switch, **on since 2026-10-17**. The buttons sit on Putt Putt's Out of
+Lives sheet, under Get Tour Pass, nine first. Putt Putt itself is still testers only
+(`PUTT_LIVE` in `golf/index.html`), so only testers see them until it launches.
+
+| pack | price | price env var | Stripe lookup key |
+|---|---|---|---|
+| `nine` | $4.99 one-time | `STRIPE_PRICE_PUTT_LIVES_9` | `putt_lives_nine` |
+| `three` | $2.99 one-time | `STRIPE_PRICE_PUTT_LIVES_3` | `putt_lives_three` |
+
+Live prices, created 2026-10-17 and set in Cloudflare Production:
+`STRIPE_PRICE_PUTT_LIVES_9` = `price_1URPuvHiw1zsFcnXz9NC5jul` and
+`STRIPE_PRICE_PUTT_LIVES_3` = `price_1URPvzHiw1zsFcnXZ4M8JBE6`. 149 is run.
+`false` in both files is the kill switch.
+
+| switch | migration | what is bought |
+|---|---|---|
+| `PUTT_LIVES_ENABLED` in `_bundles.js` AND `golf/putt/putt.js` | `149_putt_lives_buy.sql` | the pack's lives on the server's `putt_lives` row |
+
+**This is the site's checkout, not golf's `create-checkout` edge function.** The page
+posts `{ putt_lives: 'nine' }` or `{ putt_lives: 'three' }` to
+`/api/stripe/checkout-bundle` and comes back to `/golf/?putt=lives_paid&pack=<key>`
+(never `?purchase=`, which is the edge function's return). Any other `putt_lives`
+value is 400 `unknown_pack`.
+
+**A pack sells at any time.** Lives on a clock come back first (the clocks due back
+last are cancelled), and the rest of the pack goes over the max as extra lives
+(`putt_lives.extra`, `supabase/151_putt_lives_extra.sql`). A lost life comes out of the
+extras first and starts no clock. The page shows extras as a red +N after full hearts.
+The one refusal is the cap: a pack that would take the extras past 99
+(`PUTT_LIVES_EXTRA_MAX`) is 409 `lives_full`. A guest is sent to sign in: bought lives
+are the account's.
+
+**151 must be in before the page that sells over the max.** The checkout reads `extra`,
+so without 151 every lives checkout answers 503 and nothing sells, rather than taking
+money the webhook could only half deliver. **Re-running 146 after 151 undoes 151**; run
+151 again, and preflight row 62 says when that has happened.
+
+**The webhook needs `execute` on `putt_lives_buy` as `service_role`.** 149 and 151 revoke the
+function from everyone else and grant it back to that role by name. Without the grant every paid
+buy is a 500 `permission denied for function putt_lives_buy` (the first live buy, 2026-10-17), and
+preflight row 60 reads NO.
+
+**Lives are the server's.** The session carries the pack's key in
+`metadata.putt_lives`, and the webhook reads the lives off `PUTT_LIVES`, never off the
+session. It calls `putt_lives_buy` (keyed on the checkout session, so a retried
+delivery pays once), which cancels the clocks of the lives due back last, and the page
+asks `putt_lives_state` again. A paid session naming no pack we sell is a 500, so
+Stripe retries it and it shows in the dashboard. A buy is filed in `putt_lives_buys`.
+**No promotion codes**: a free code here is free lives.
+
+**A full refund or a chargeback takes the lives back** (the owner, 2026-10-17). The webhook
+reads the checkout session the refunded payment came from and, when it was a lives buy, calls
+`putt_lives_reclaim` (`supabase/152_putt_lives_refund.sql`): the pack's lives, extras first, then
+hearts on a 24 hour clock, never below nought, once a buy. A partial refund takes nothing. The
+webhook endpoint must send `charge.refunded` and `charge.dispute.created`. Preflight row 63.
+
+### Go-live, in this order
+
+1. **Run `supabase/149_putt_lives_buy.sql`, then `supabase/151_putt_lives_extra.sql`**, in the
+   Supabase SQL editor (146 must be in). Both are safe to run twice. Then paste
+   `supabase/test/launch_preflight.sql`: rows 60 and 62 read **yes**.
+2. **Create both Prices**: `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
+   mints `putt_lives_nine` ($4.99) and `putt_lives_three` ($2.99), one-time, and prints
+   both env lines. It is idempotent. Or by hand in the Dashboard: two Products,
+   **Putt Putt Lives: 9** and **Putt Putt Lives: 3**, each a **one-time** USD price
+   with the lookup key above.
+3. **Add both env vars in Cloudflare Pages** (Production), then redeploy (push any
+   commit). A pack whose var is missing answers 503 on its own; the other still sells.
+4. **Nothing to change on the webhook.** It is `checkout.session.completed` (and
+   `checkout.session.async_payment_succeeded`) with `metadata.putt_lives`.
+5. **Test before the switch, with the switch on in one sitting.** A pack takes no
+   promotion code, so a test is a real charge: buy the $2.99 pack on a test account
+   that is out of lives, check `putt_lives_buys` has the session with `given = 3`,
+   then refund it in the Dashboard. The refund takes the three lives back (152).
+6. **Flip `PUTT_LIVES_ENABLED` in BOTH files in one commit**, bump `putt.js?v=` in
+   `golf/index.html`, run `node scripts/check-cachebust.mjs --update` and
+   `node scripts/stripe/check-putt-lives.mjs`, and push.
+
+```
+node scripts/stripe/check-putt-lives.mjs     both packs, page and server, checkout and webhook
+psql -d pbuy -f supabase/test/putt_lives_buy_test.sql     (its header lists the chain)
+psql -d pbuy -f supabase/test/putt_lives_extra_test.sql   151, lives over the max
+```
+
+## Rewarded videos (no Stripe, the Store Agent's grant side)
+
+`supabase/158_ad_rewards.sql`. A watched video pays one Putt Putt life or one more play of an
+arcade free game, three a day of each, per account. Guests are asked to sign in. The owner's
+calls, 2026-10-28. The video player and the button are the Ads Agent's; this is only the grant.
+
+The ad network may not tell our server a video was watched (Google's web rewarded ads report it
+in the browser only). So the server cannot prove a view, and the owner approved this instead:
+
+1. `ad_reward_issue(p_kind, p_target, p_max)` before the video: a single use code, or a reason
+   (`sign_in`, `off`, `cap`, `full`, `has_play`, `card_only`, `unlimited`, `busy`).
+2. The video plays.
+3. `ad_reward_claim(p_code, p_max)` after it: the code must be this account's, 5 seconds to 10
+   minutes old and never used. The cap is asked again under a lock.
+
+`ad_reward_status(p_kind, p_target, p_max)` says whether to show the button at all. All three are
+called by the page as the signed in player, like `putt_lives_spare`.
+
+- **putt_life** cancels the clock due back last, like a spare. Never past the max: extras are only bought.
+- **arcade_play** lifts one free game's cap today by one (`arcade_game_cap`, read by 158's
+  `arcade_spend_game`). Card games are not offered. `arcade_game_status` returns `ad`, a map of
+  game to ad plays today; the arcade page has to add it to that game's cap (not done yet).
+- **The switch** is `ad_rewards_live()`, false: testers only (the `putt_lives_refill` list).
+  Turning it on is the owner's step, after Google approves the account. Re-running 158 turns it
+  off again. Re-running 91 after 158 drops the ad plays from the arcade cap.
+- **ps_respin** (the Perfect Season agent's): a free re-spin, not one of the three paid. The page
+  re-spins on an ok claim, so only the switch and the cap apply here.
+- A Fantasy swap or a golf mulligan is its game agent's grant: a kind in `ad_reward_kind_ok()`
+  and a branch in `ad_reward_claim()`.
+
+```
+psql -d adrw -f supabase/test/ad_rewards_test.sql     (the chain is in stripe-checks.yml)
 ```
 
 ## Before public launch

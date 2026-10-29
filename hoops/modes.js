@@ -23,7 +23,7 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTF_ENGINE;
 
-const MODES_API_VERSION = 5;
+const MODES_API_VERSION = 6;
 const C = E.CONSTANTS;
 
 // ─── shared ────────────────────────────────────────────────────────────────
@@ -662,7 +662,10 @@ function fxOddsStep(data, five, day, from, to) {
   let titles = 0, wins = 0;
   const rows = five.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
   for (let i = from; i < to; i++) {
-    const run = E.playRun(rows, rngFor('fix:' + day, 'odds:' + i), E.SLOTS, data.oppPool);
+    /* TEMPO OFF. Tempo is Classic's mechanic; Fix History's odds were
+       balanced without it and fxPlayStretches below rates the same five
+       without it, so the two have to agree. */
+    const run = E.playRun(rows, rngFor('fix:' + day, 'odds:' + i), E.SLOTS, data.oppPool, { tempo: false });
     if (run.titleWon) titles++;
     wins += run.record.wins;
   }
@@ -672,7 +675,7 @@ function fxOddsStep(data, five, day, from, to) {
 /* The season as it is replayed for the story. */
 function fxReplay(data, five, day) {
   const rows = five.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
-  return E.playRun(rows, rngFor('fix:' + day, 'replay'), E.SLOTS, data.oppPool);
+  return E.playRun(rows, rngFor('fix:' + day, 'replay'), E.SLOTS, data.oppPool, { tempo: false });
 }
 
 /* THE SALARY RULE, one function so the finder, the refusal and the guard
@@ -810,6 +813,52 @@ function fxPicksLeft(st) {
   return fxPicks(st.ts).filter(id => !gone.has(id));
 }
 function fxLineup(rows) { return fiveOf(rows) || fiveOf(rows, rows.length); }
+
+/* YOUR LINEUP. The coach starts his best five, and you can overrule him:
+   drag any man into any spot. `st.lineups[k]` is the five you set at window
+   k, in SLOTS order, and it carries forward to every later stretch. A man
+   traded away leaves a hole, and the hole takes the best man left on the
+   bench, which is usually whoever came back for him. No lineup set is the
+   coach's five, so a season from before lineups plays exactly as it did.
+
+   ANY FIVE, ANY SPOT, deliberately: that was the ask. A center at the point
+   is legal, and the fit model already charges for it, because fit reads what
+   the five DO rather than the letters beside their names. */
+function fxLineupAt(data, st, k) {
+  const rows = fxRosterAt(data, st, k);
+  let saved = null;
+  for (let j = k; j >= 0 && !saved; j--) saved = (st.lineups && st.lineups[j]) || null;
+  if (!saved) return fxLineup(rows);
+  const byKey = new Map(rows.map(p => [E.pkey(p), p]));
+  const five = saved.map(key => byKey.get(key) || null);
+  const used = new Set(five.filter(Boolean).map(p => p.i));
+  const left = [...rows].sort((a, b) => b.w - a.w).filter(p => !used.has(p.i));
+  for (let i = 0; i < five.length; i++) {
+    if (five[i]) continue;
+    const at = left.findIndex(p => E.canFillSlot(p, E.SLOTS[i]));
+    five[i] = left.splice(at >= 0 ? at : 0, 1)[0] || null;
+  }
+  return five.every(Boolean) ? five : fxLineup(rows);
+}
+/* Set the five for the window being played. null when it took, a reason
+   when it did not. Setting the coach's own five clears it, so a season that
+   put everybody back is the same season as one that never touched them. */
+function fxSetLineup(data, st, keys) {
+  if (st.done || st.win >= FX_WINDOWS.length) return 'the season is over';
+  if (!Array.isArray(keys) || keys.length !== E.SLOTS.length) return 'five starters';
+  const rows = fxRosterAt(data, st, st.win), byKey = new Map(rows.map(p => [E.pkey(p), p]));
+  if (!keys.every(k => byKey.has(k))) return 'not on your roster';
+  if (new Set(keys.map(k => byKey.get(k).i)).size !== keys.length) return 'the same man twice';
+  const lineups = Object.assign({}, st.lineups || {});
+  delete lineups[st.win];
+  const had = fxLineupAt(data, { ...st, lineups }, st.win).map(p => E.pkey(p));
+  if (had.join() === keys.join()) {
+    if (st.lineups) { delete st.lineups[st.win]; if (!Object.keys(st.lineups).length) delete st.lineups; }
+  } else {
+    st.lineups = Object.assign(st.lineups || {}, { [st.win]: keys.slice() });
+  }
+  return null;
+}
 
 function clubCalls(st, win, tsId) {
   return rngFor('fix:' + st.day, 'call:' + win + ':' + tsId)() < TRADE.INTEREST;
@@ -994,7 +1043,7 @@ function fxStretches(data, st) {
   return FX_WINDOWS.map((w, k) => ({
     from: w.at,
     to: k + 1 < FX_WINDOWS.length ? FX_WINDOWS[k + 1].at : E.CONSTANTS.REGULAR_SEASON_GAMES,
-    five: fxLineup(fxRosterAt(data, st, k)),
+    five: fxLineupAt(data, st, k),
   }));
 }
 
@@ -1220,7 +1269,7 @@ const publicAPI = {
   DAILY_EPOCH, dayNumberOf, dailyOrder,
   FX, TRADE, salaryOk, slotFive, startingFive, fiveOf, canCover, fxCandidates, fxDaily, isEndless, fxEndless, customNumber, fxTeams, fxCustom, fxOdds, fxOddsStep, fxReplay,
   fxRoster, fxApply,
-  FX_WINDOWS, fxPicks, pickValue, pickOk, fxSeasonCreate, fxRosterAt, fxPicksLeft, fxLineup, clubCalls,
+  FX_WINDOWS, fxPicks, pickValue, pickOk, fxSeasonCreate, fxRosterAt, fxPicksLeft, fxLineup, fxLineupAt, fxSetLineup, clubCalls,
   untouchable, fxDealRefusal, fxCalls, fxPropose, fxAsking, fxRulesRefusal, fxHungUp, fxTriesLeft, fxDeal, fxNextWindow, fxStretches, fxPlayStretches, fxSeasonOddsStep, fxSeasonReplay,
   PS, psGraph, psBfs, psPath, psFamous, psDaily, psEndless, psCustom, psCustomRefusal, psShared, psCanPass,
 };

@@ -67,7 +67,7 @@
       if (rows === null) { return; }               // offline / not booted yet - retry on next onChange
       loaded = true;
       if (!rows.length) { body.innerHTML = '<div class="aempty">Be the first on the all-time board!</div>'; return; }
-      var me = (RTG_BOARD.state && RTG_BOARD.state().name || '').toLowerCase();
+      var me = ((RTG_BOARD.boardName && RTG_BOARD.boardName()) || (RTG_BOARD.state && RTG_BOARD.state().name) || '').toLowerCase();
       body.innerHTML = rows.map(function (r, i) {
         var nm = r.display_name || 'Player';
         var amt = C.timed ? fmtTime(r.base_seconds) : ((r.run_len || 0) + ' ' + C.unit);

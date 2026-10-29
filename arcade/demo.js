@@ -70,7 +70,7 @@
       /* A clue is read, not typed, so it takes the width it needs and a size
          that fits it. The nowrap above exists so a name being typed does not
          reflow mid-keystroke; a clue never changes once it is printed. */
-      '.rtgd-field.clue{font-size:11.5px;font-weight:700;min-width:0;width:100%;white-space:normal;height:auto;min-height:32px;padding:6px 10px;line-height:1.35;}',
+      '.rtgd-field.clue{font-size:16px;font-weight:700;min-width:0;width:100%;white-space:normal;height:auto;min-height:32px;padding:6px 10px;line-height:1.35;}',
       '.rtgd-caret{display:inline-block;width:1.5px;height:15px;margin-left:1px;background:var(--a,#F4F7FB);animation:rtgdBlink 1s steps(1) infinite;}',
       '@keyframes rtgdBlink{50%{opacity:0}}',
       '.rtgd-line{display:flex;align-items:center;gap:7px;width:100%;max-width:236px;padding:5px 9px;border-radius:8px;',
@@ -87,7 +87,7 @@
       '.rtgd-note{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--mut,#A9B8CB);',
       '  transition:color .2s ease,opacity .2s ease;}',
       '.rtgd-note.pop{color:var(--a,#48D17A);}',
-      '.rtgd-cap{font-size:13px;font-weight:700;line-height:1.45;color:var(--mut,#A9B8CB);text-align:center;margin:11px 0 0;min-height:37px;}',
+      '.rtgd-cap{font-size:16px;font-weight:700;line-height:1.4;color:var(--mut,#A9B8CB);text-align:center;margin:11px 0 0;min-height:45px;}',
       '@media (prefers-reduced-motion:reduce){',
       '  .rtgd-cell,.rtgd-line,.rtgd-note{transition:none!important;}',
       '  .rtgd-caret{animation:none;}',

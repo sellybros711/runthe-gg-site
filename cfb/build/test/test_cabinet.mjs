@@ -66,7 +66,10 @@ if (!hit) { console.log(' FAIL  the profile offers a way into the trophy case');
 await p.waitForTimeout(4000);
 
 const head = await p.$$eval('.achgrp-h .achgrp-c', (els) => els.map((e) => e.textContent));
-ok('every shelf has a heading with a count', head.length === 8, head.join('  '));
+/* Read off the catalog rather than written down: it was a literal 8 and went red the day the
+   Game Day shelf arrived, with nothing wrong with the page. */
+const shelves = await p.evaluate(() => window.PS_CFB_ACH.GROUPS.length);
+ok('every shelf has a heading with a count', head.length === shelves, head.join('  ') + '   of ' + shelves);
 const totals = head.map((t) => Number(String(t).split('/')[1]));
 const sum = totals.reduce((a, c) => a + c, 0);
 ok('the shelves account for the whole catalog', sum > 0, String(sum));

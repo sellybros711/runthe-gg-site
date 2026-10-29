@@ -1,0 +1,187 @@
+{
+ "id": "lidge-2005-nlcs5",
+ "plan": "alternate",
+ "resolution": "proxy",
+ "retroGame": "HOU200510170",
+ "date": "2005/10/17",
+ "game": "SLN at HOU",
+ "pitcher": {
+  "retroId": "lidgb001",
+  "mlbamId": 400058,
+  "name": "Brad Lidge",
+  "throws": "R",
+  "seasonLine": "2.29 ERA, 42 SV, 70.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false
+ },
+ "plateAppearances": [
+  {
+   "batterId": "rodrj002",
+   "records": [
+    "K23"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": "..BSSS",
+   "count": "12",
+   "pitcher": "lidgb001",
+   "name": "John Rodriguez",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 4,
+   "event": "K23",
+   "mlbamId": 431138,
+   "fullName": "John Rodriguez",
+   "batSideListed": "L",
+   "seasonLine": ".295/.382/.436, 5 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "mabrj001",
+   "records": [
+    "K"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": "SBSFS",
+   "count": "12",
+   "pitcher": "lidgb001",
+   "name": "John Mabry",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 5,
+   "event": "K",
+   "mlbamId": 118065,
+   "fullName": "John Mabry",
+   "batSideListed": "L",
+   "seasonLine": ".240/.295/.407, 8 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "ecksd001",
+   "records": [
+    "S7/G"
+   ],
+   "runs": 0,
+   "outs": 0,
+   "seq": "BCCX",
+   "count": "12",
+   "pitcher": "lidgb001",
+   "name": "David Eckstein",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 4,
+   "event": "S7/G",
+   "mlbamId": 275930,
+   "fullName": "David Eckstein",
+   "batSideListed": "R",
+   "seasonLine": ".294/.363/.395, 8 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "edmoj001",
+   "records": [
+    "DI.1-2",
+    "W"
+   ],
+   "runs": 0,
+   "outs": 0,
+   "seq": ">B.SBBB",
+   "count": "31",
+   "pitcher": "lidgb001",
+   "name": "Jim Edmonds",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 5,
+   "event": "W",
+   "mlbamId": 113744,
+   "fullName": "Jim Edmonds",
+   "batSideListed": "L",
+   "seasonLine": ".263/.385/.533, 29 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "pujoa001",
+   "records": [
+    "HR/7D.2-H;1-H"
+   ],
+   "runs": 3,
+   "outs": 0,
+   "seq": "SX",
+   "count": "01",
+   "pitcher": "lidgb001",
+   "name": "Albert Pujols",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 2,
+   "event": "HR/7D.2-H;1-H",
+   "mlbamId": 405395,
+   "fullName": "Albert Pujols",
+   "batSideListed": "R",
+   "seasonLine": ".330/.430/.609, 41 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "sandr002",
+   "records": [
+    "K"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": "BBCSC",
+   "count": "22",
+   "pitcher": "lidgb001",
+   "name": "Reggie Sanders",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 5,
+   "event": "K",
+   "mlbamId": 121673,
+   "fullName": "Reggie Sanders",
+   "batSideListed": "R",
+   "seasonLine": ".271/.340/.546, 21 HR",
+   "inSpot": false
+  }
+ ],
+ "realFaced": 5,
+ "real": {
+  "outcome": "doors_open",
+  "pitches": 20,
+  "pitchesKnown": 20,
+  "pitchesUnknownPAs": 0,
+  "runs": 3
+ },
+ "scoreCheck": {
+  "lineScore": {
+   "away": "002000003",
+   "home": "010000300",
+   "awayRuns": 5,
+   "homeRuns": 4,
+   "log": "gamelog/GLLC.TXT"
+  },
+  "replay": {
+   "away": 5,
+   "home": 4
+  },
+  "agrees": true
+ },
+ "arsenal": null,
+ "sources": [
+  "Retrosheet event file 2005NLCS.EVE, game HOU200510170 (via github.com/chadwickbureau/retrosheet)",
+  "Retrosheet rosters SLN2005.ROS and HOU2005.ROS for bat and throw hands",
+  "Retrosheet game log gamelog/GLLC.TXT for the line score check",
+  "Chadwick Bureau register (github.com/chadwickbureau/register) for Retrosheet to MLBAM ids",
+  "MLB Stats API people with 2005 season stats for names and season lines",
+  "The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at www.retrosheet.org."
+ ]
+}

@@ -4,7 +4,7 @@
  *   → { players: { "chase brown": <profile|null>, ... } }
  *
  * Sportegories grades against a 9,400-player corpus. Real athletes outside it
- * used to be told "No player by that name", which is both wrong and unfair —
+ * used to be told "No player by that name", which is both wrong and unfair.
  * Chase Brown is a Bengals running back, he just isn't in our file. This
  * endpoint answers the only question the corpus can't: does this person exist,
  * and what are the facts of their career?
@@ -212,6 +212,12 @@ function profileOf(qid, e, labels) {
 /* Pages only routes onRequest*; these are here so scripts/check-livecheck.mjs
  * can exercise the claim parsing without reaching Wikidata. */
 export const _test = { profileOf, isAthlete, yearOf, idOf };
+
+/* The same reads, for a Sportegories challenge (sportegories-challenge.js),
+   which has to look at EVERY athlete a name search returns rather than the
+   first one: a challenge on the Browns' Joe Thomas must not be ruled on the
+   linebacker of the same name. */
+export const wikidata = { searchName, getEntities, getLabels, isAthlete, collectRefs, profileOf };
 
 function json(obj, status, ttl) {
   const h = { 'content-type': 'application/json; charset=utf-8' };

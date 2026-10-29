@@ -1,0 +1,239 @@
+{
+ "id": "rs-hader-2023-08-30",
+ "plan": "regular season L-blown",
+ "resolution": "real",
+ "gamePk": 716782,
+ "date": "2023-08-30",
+ "game": "Regular Season Game 3: San Diego Padres at St. Louis Cardinals",
+ "gameType": "R",
+ "pitcher": {
+  "id": 623352,
+  "name": "Josh Hader",
+  "throws": "L",
+  "team": "San Diego Padres",
+  "seasonLine": "1.28 ERA, 33 SV, 56.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 70,
+   "batterId": 600301,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Taylor Motter called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Taylor Motter called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Taylor Motter",
+   "batSideListed": "R",
+   "seasonLine": ".171/.232/.211, 0 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 663609,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 6
+   },
+   "pitches": 6,
+   "event": "field_out",
+   "des": "Luken Baker flies out to center fielder Trent Grisham.",
+   "feedEvent": "field_out",
+   "feedDescription": "Luken Baker flies out to center fielder Trent Grisham.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Luken Baker",
+   "batSideListed": "R",
+   "seasonLine": ".209/.313/.314, 2 HR"
+  },
+  {
+   "atBat": 72,
+   "batterId": 691026,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 3
+   },
+   "pitches": 3,
+   "event": "double",
+   "des": "Masyn Winn doubles (2) on a line drive to left fielder Juan Soto.",
+   "feedEvent": "double",
+   "feedDescription": "Masyn Winn doubles (2) on a line drive to left fielder Juan Soto.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Masyn Winn",
+   "batSideListed": "R",
+   "seasonLine": ".172/.230/.238, 2 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 669242,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 3
+   },
+   "pitches": 3,
+   "event": "home_run",
+   "des": "Tommy Edman homers (12) on a fly ball to right center field. Masyn Winn scores.",
+   "feedEvent": "home_run",
+   "feedDescription": "Tommy Edman homers (12) on a fly ball to right center field. Masyn Winn scores.",
+   "runs": 2,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Tommy Edman",
+   "batSideListed": "S",
+   "seasonLine": ".248/.307/.399, 13 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "walk_off",
+  "pitches": 18,
+  "runs": 2,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 502671,
+   "name": "Paul Goldschmidt",
+   "batSideListed": "R"
+  },
+  {
+   "id": 575929,
+   "name": "Willson Contreras",
+   "batSideListed": "R"
+  },
+  {
+   "id": 571448,
+   "name": "Nolan Arenado",
+   "batSideListed": "R"
+  },
+  {
+   "id": 691023,
+   "name": "Jordan Walker",
+   "batSideListed": "R"
+  },
+  {
+   "id": 668800,
+   "name": "Andrew Knizner",
+   "batSideListed": "R"
+  },
+  {
+   "id": 600301,
+   "name": "Taylor Motter",
+   "batSideListed": "R"
+  },
+  {
+   "id": 663609,
+   "name": "Luken Baker",
+   "batSideListed": "R"
+  },
+  {
+   "id": 691026,
+   "name": "Masyn Winn",
+   "batSideListed": "R"
+  },
+  {
+   "id": 669242,
+   "name": "Tommy Edman",
+   "batSideListed": "S"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1042,
+   "types": [
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 765,
+     "usage": 0.7342,
+     "velo": 96.1,
+     "pfxXin": 7.5,
+     "pfxZin": 18.8
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 242,
+     "usage": 0.2322,
+     "velo": 85.7,
+     "pfxXin": -2.0,
+     "pfxZin": 1.7
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 35,
+     "usage": 0.0336,
+     "velo": 88.5,
+     "pfxXin": 13.5,
+     "pfxZin": 9.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623352"
+  },
+  "postseason": {
+   "pitches": 0,
+   "types": [],
+   "dropped": {}
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 716782: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=716782",
+  "MLB Stats API schedule 2023-08-30 and live feed /api/v1.1/game/716782/feed/live",
+  "MLB Stats API people with 2023 season stats",
+  "Baseball Savant 623352 2023 season search (regular season and postseason) for the arsenal"
+ ],
+ "search": {
+  "gamePk": 716782,
+  "date": "2023-08-30",
+  "year": 2023,
+  "half": "Bot",
+  "pitcher": 623352,
+  "name": "Hader, Josh",
+  "throws": "L",
+  "home": "STL",
+  "away": "SD",
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "midPA": false,
+  "li9": 2.99,
+  "li9n": 702,
+  "swing": 1.314,
+  "held": false,
+  "endLead": -1,
+  "faced": 4,
+  "pitches": 18
+ },
+ "mlbWinProbabilityAtEntry": {
+  "leverageIndex": 3.47,
+  "atBatIndex": 69
+ }
+}

@@ -294,7 +294,7 @@ async function main() {
   await pg.evaluate(() => {
     Sound.muted = true;
     PREFS.cutscenes = false;
-    PREFS.coach = false;
+    PREFS.tips = false;
     window.confirm = () => true;
     State.gameSpeed = 'fast'; applyGameSpeed();
   });

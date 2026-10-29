@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -458,6 +459,46 @@ function playRunWith(o, pick) {
     feat(B.passesFeats(solved, chain ? chain.length - 1 : M.PS.CLOCK, pz.par, M.PS.CLOCK, streak));
   }
 }
+/* CAREER. Whole lives through career.js, from draft night and from high
+   school, answered three ways, each filed through the page's own careerFeats.
+   The rarest rungs (three MVPs, the scoring record, both rings) turn up a
+   handful of times in nine hundred lives, which is what a ring tier means,
+   and the first two need the prospect below to turn up at all. */
+{
+  const CR = require(path.join(HERE, 'career.js'));
+  const lg = CR.seedLeague(players);
+  const N = QUICK ? 40 : 150;
+  const pick = (L, c, pol) => pol === 'first' ? 0 : pol === 'last' ? c.options.length - 1 : (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length;
+  for (const start of ['draft', 'hs']) for (const pol of ['first', 'last', 'random']) for (let i = 0; i < N; i++) {
+    const L = CR.newLife({ seed: start + pol + 'b' + i, league: lg, start, pos: CR.POS[i % 5], arch: CR.ARCH_KEYS[i % 6], bg: CR.BG_KEYS[(i >> 1) % 4] });
+    let g = 0;
+    while (!L.retired && g++ < 4000) { if (L.pending.length) CR.choose(L, pick(L, L.pending[0], pol)); else CR.step(L); }
+    if (L.history.length) feat(B.careerFeats(CR.featSummary(L)));
+  }
+  /* THE PROSPECT. Somebody after three MVPs or the scoring record does not
+     take the first player the builder hands them. The Start step prints
+     "Scouts grade your ceiling" (career-ui.js grade(): potential 92 or more is
+     an A+), so they build a Shot creator and roll again until it reads A+,
+     then start from either of the builder's two doors: a free career on its
+     generated road (generateRoad, which is what the builder previews), or high
+     school. The blind sweep above starts from whatever it is dealt, so the top
+     rungs were a coin flip on its seeds: over its 900 lives four reached two
+     MVPs and none three, and the record was excused for the same reason.
+     Measured before shipping, over 180 A+ scorers: three MVPs in 10 and
+     38,000 points in 4. A blind life is an A+ about one time in twelve, which
+     is the gap between those numbers and the sweep's. */
+  const PROSPECTS = QUICK ? 20 : 80;
+  for (const pol of ['first', 'last', 'random']) for (let i = 0; i < PROSPECTS; i++) {
+    const o = { league: lg, start: 'hs', pos: CR.POS[i % 5], arch: 'scorer' };
+    let L, k = 0;
+    do L = (i % 2 ? CR.newLife : CR.generateRoad)(Object.assign({ seed: 'scorer' + pol + i + ':' + k++ }, o));
+    while (L.pot < 92 && k < 200);
+    let g = 0;
+    while (!L.retired && g++ < 4000) { if (L.pending.length) CR.choose(L, pick(L, L.pending[0], pol)); else CR.step(L); }
+    if (L.history.length) feat(B.careerFeats(CR.featSummary(L)));
+  }
+}
+
 /* Exactly `clock` passes, never passing to the same man twice, finishing on
    the target. A walk that keeps the target within reach of what is left. */
 function longWay(g, pz, clock) {
@@ -495,7 +536,7 @@ function longWay(g, pz, clock) {
  *
  * A badge dark and not on this list fails the file. A badge ON the list that
  * lit anyway fails it too, so the list cannot rot into a blanket. */
-const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8')
+const pageSrc = pageSource()
   + fs.readFileSync(path.join(HERE, 'modes-ui.js'), 'utf8');
 const writes = (key) => pageSrc.includes("'" + key + "'");
 const moved = (key) => Object.keys(career.feats).some((k) => k.indexOf(key) === 0 && career.feats[k] > 0);
@@ -519,7 +560,21 @@ const EXCUSED = {
   'fring-5': ['grind', () => moved('fring:')],
   'fring-15': ['grind', () => moved('fring:')],
   'fring-all': ['grind', () => moved('fring:')],
-  'ering-all': ['grind', () => moved('ering:')],
+  /* A Decades title is the Champions badge with a mode on it, and the sweep
+     finds about one in a full run: the game plans reshuffled every season in
+     it and the one it found went. So both are proved by hand through the real
+     rule rather than waited for. */
+  'ering-1': ['skill', () => lights('ering-1', fakeRun({ era: 'nineties', playoffs: { won: true, rounds: [] } }))],
+  'ering-all': ['skill', () => {
+    const c = { version: 1, feats: {} };
+    for (const era of ['seventies', 'eighties', 'nineties', 'aughts', 'tens', 'twenties'])
+      B.applyFeats(c, B.draftFeats(fakeRun({ era, playoffs: { won: true, rounds: [] } })));
+    return B.earned(c).some((b) => b.id === 'ering-all');
+  }],
+  /* Twenty-two systems, and the four money bots above name about half of
+     them; the shape bots further down name every one. The top rung is the
+     whole set, so it is a collection somebody fills over weeks. */
+  'shapes-14': ['grind', () => Object.keys(career.shapes).length >= 8],
   'fx-30': ['grind', () => moved('fx.days')],
   'fx-title10': ['grind', () => moved('fx.title')],
   /* The page writes these. */
@@ -539,8 +594,6 @@ const EXCUSED = {
   'fofofo': ['skill', () => lights('fofofo', fakeRun({ playoffs: { won: true, rounds: [
     round('First Round', [W, W, W, W]), round('Conference Semifinals', [W, W, W, W]),
     round('Conference Finals', [W, L, W, W, W]), round('NBA Finals', [W, W, W, W])] } }))],
-  'w70': ['skill', () => B.earned({ bestWins: 70 }).some((b) => b.id === 'w70') && career.bestWins >= 60],
-  'record': ['skill', () => career.bestWins >= 60],
   'cq-flawless': ['skill', () => moved('cq.best')],
   'fx-miracle': ['skill', () => moved('fx.gain')],
 };
@@ -742,7 +795,7 @@ ok(B.evaluate(null).length === all.length, 'a missing career does not throw');
 
 /* ── the page writes the fields this file reads ──────────────────────────── */
 {
-  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const src = pageSource();
   const sample = rowOf({ roster: [], outcome: { wins: 0, losses: 0, rating: 0, chemistry: { bonus: 0 } },
     playoffs: null });
   const missing = Object.keys(sample).filter((k) => !new RegExp(`\\b${k}:`).test(src));

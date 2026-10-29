@@ -9,9 +9,8 @@ final. When the encore closes the night plays back to a crowd, song by song.
 The name is Segue; the URL stays `/setlist/` because it is already shared and
 indexed, and renaming it would break both for nothing.
 
-**In open testing.** Indexable and listed in `sitemap.xml`, but deliberately
-**not linked from the homepage** yet — the URL is the only way in, so it can be
-shared and found without being presented as a finished game.
+**Unlaunched.** Since 2026-10-24 it is out of `sitemap.xml`, noindexed, carries no
+ad tag and is not linked from the home page. The URL is the only way in.
 
 ```
 /setlist/
@@ -137,16 +136,17 @@ the rest is the show's songs, which is the thing the player came to read.
 
 ## Discoverability
 
-Three things are deliberate and checked in CI, because "temporarily" hidden
+Four things are deliberate and checked in CI, because "temporarily" hidden
 things drift:
 
 - **Not linked from anywhere.** No link on the homepage or any other page.
-- **Listed in `sitemap.xml`** so the URL can still be found and shared.
-- **No `noindex`** on the page.
+- **Not in `sitemap.xml`.**
+- **`noindex`** on the page.
+- **No ad tag** on the page.
 
 The effect is a game you reach by knowing `runthe.gg/setlist`, not by browsing
-the site. Putting it on the homepage is a one-line change plus deleting the
-`homepage does not link the game` check.
+the site. Launching it moves all four together, on the owner's say, and means changing
+the guards in `check_data.mjs` on purpose.
 
 ## How a show works
 
@@ -288,15 +288,24 @@ disagree with the scorecard that follows it. Tap to skip.
 `scoring.js` is the source of truth; this is a summary, not a spec.
 
 ```
-perSong = base            SONG       is this a song people treasure?
+perSong = (base - 25)      SONG       is this a song people treasure?
         x versionMult     VERSION    was this a special night for it?
         x placementMult   PLACEMENT  does it suit where it landed?
+        x minutes / 10    LENGTH     how much of the night did it hold?
 
-total   = sum(perSong) + time + flow
+total   = sum(perSong) + time + flow + breadth
 ```
 
-**SONG** is `crowd_rating` — 30 ordinary, up to 75 at the top of the jamcharts.
-See `DATA_CONTRACT.md` for how it is derived.
+**SONG** is `crowd_rating`, 38 to 75 in the archive, measured from a floor of 25
+so the best song is worth about four times the worst rather than twice. An
+unrated take counts as 40. See `DATA_CONTRACT.md` for how it is derived.
+
+**LENGTH (v6).** A song is paid for every minute it holds the stage. Before v6 it
+paid once whatever its length, so on a fixed clock four short songs beat one long
+jam and random play (which drifts short) reached 82% of the best possible night.
+Now it reaches 61%, careful play 88%. `node setlist/build/sim.mjs 200 --best`
+plays four strategies on the same draws and prints the table. The leaderboard
+starts again at v6 (`SCORING_SINCE` in `board.js`).
 
 **VERSION** is additive: recommended +0.55 (or jamcharted +0.30), 20+ min +0.25
 (or 15+ min +0.12), rarity by show gap 100+ +0.40 · 50+ +0.25 · 20+ +0.15 ·

@@ -88,6 +88,8 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <!-- GA4, same property as the rest of runthe.gg. The consent defaults above gate it. -->
@@ -560,6 +562,9 @@ window.GA_ID='G-L29P5MRWKE';
      same test to decide whether to paint its own background. */
   body:has(.rtp-ad-mobile-bottom ins[data-ad-status="filled"]) .ticker{
     bottom:var(--adstrip,0px);padding-bottom:0}
+  /* The closeable bottom banner (/assets/rtg-ads.js) owns the bottom edge while it is up, so the
+     poll bar rides on top of it. --sticky-ad-h is 0 until the banner is actually filled. */
+  body.rtg-sticky-on .ticker{bottom:var(--sticky-ad-h,0px)}
   /* The last thing on the front page has to clear a bar that is no longer in the
      flow. Measured, not guessed: see test_ticker.mjs. */
   #s-intro{padding-bottom:var(--tickerh,33px)}
@@ -648,6 +653,48 @@ window.GA_ID='G-L29P5MRWKE';
      with no way to play for free". The pitch moved to the screen where it is honest, which
      is the wait wall inside the mode, after a season has been played. */
   .hp-commish .hp-namerow{display:flex;align-items:center;gap:7px}
+  /* COLLEGE FANTASY'S DOOR, a neon sign whose colour answers one question: is my lineup in
+     this week. Red until it is, green once it is. See ensureFantasyDoor(). */
+  .hp-cfbfan{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:14px 12px 12px;border-radius:12px;text-decoration:none;
+    background:linear-gradient(180deg,rgba(40,14,16,.9),rgba(20,12,14,.9));
+    border:1.5px solid rgba(239,68,68,.82);
+    box-shadow:0 0 18px -6px rgba(239,68,68,.75),inset 0 0 14px -8px rgba(239,68,68,.6)}
+  .hp-cfbfan.in{background:linear-gradient(180deg,rgba(12,36,22,.9),rgba(10,20,14,.9));
+    border-color:rgba(34,197,94,.82);
+    box-shadow:0 0 18px -6px rgba(34,197,94,.7),inset 0 0 14px -8px rgba(34,197,94,.55)}
+  .hp-cfbfan:active{transform:translateY(1px)}
+  .hp-cfbfan .hp-name{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:.02em;
+    color:#ffe8e8;line-height:1}
+  .hp-cfbfan.in .hp-name{color:#dcfce7}
+  .hp-cfbfan .hp-sub{font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:rgba(255,232,232,.72);line-height:1.35;text-align:center;max-width:34ch}
+  .hp-cfbfan.in .hp-sub{color:rgba(220,252,231,.72)}
+  .hp-cfbfan .hp-tag{position:absolute;top:-8px;right:10px;font-family:var(--fn);
+    font-size:9.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 8px;border-radius:6px;background:rgba(239,68,68,.18);
+    border:1px solid rgba(239,68,68,.55);color:#ffe8e8}
+  .hp-cfbfan.in .hp-tag{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.55);
+    color:#dcfce7}
+  /* The crest is the prize and the six bars are the lineup, so the door says what the mode
+     is before a word of it is read. Faint yard lines behind, the ground the mode's own page
+     is drawn on, and the bars light up once a lineup is in. */
+  .hp-cfbfan{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,rgba(40,14,16,.9),rgba(20,12,14,.9));gap:4px;padding-top:12px}
+  .hp-cfbfan.in{background:
+      repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),
+      radial-gradient(160px 70px at 50% 0%,rgba(240,201,107,.16),transparent 75%),
+      linear-gradient(180deg,rgba(12,36,22,.9),rgba(10,20,14,.9))}
+  .hp-cfbfan .hp-ico{width:30px;height:30px;flex:0 0 auto;
+    filter:drop-shadow(0 0 7px rgba(239,68,68,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-cfbfan.in .hp-ico{filter:drop-shadow(0 0 7px rgba(34,197,94,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .hp-cfbfan .hp-rack{display:flex;gap:4px;margin-top:4px}
+  .hp-cfbfan .hp-rack i{display:block;width:17px;height:4px;border-radius:2px;opacity:.5}
+  .hp-cfbfan .hp-rack .QB{background:#ff0a3b} .hp-cfbfan .hp-rack .RB{background:#22c55e}
+  .hp-cfbfan .hp-rack .WR{background:#0f93ff} .hp-cfbfan .hp-rack .TE{background:#eb9500}
+  .hp-cfbfan.in .hp-rack i{opacity:1}
   /* THE PACE LINE. Quieter than the sentence above it and set apart by a hairline, because
      it is a different KIND of thing: the sentence says what the mode is for and this says
      what it costs you in time. Not a tag and not a lock, for the reason written where it is
@@ -657,6 +704,41 @@ window.GA_ID='G-L29P5MRWKE';
     border-top:1px solid rgba(255,255,255,.10);
     font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
     color:rgba(226,214,245,.62);white-space:nowrap}
+  /* ── THE DOOR AS A CHARACTER CARD ───────────────────────────────────────────────
+     The commissioner's portrait (/cfb/commish/portrait.js) beside the name and the
+     sentence, three bars for what the job is graded on, and a foot with the pace and a
+     button. Night navy with a violet glow, gold for the press, which is the mode's own
+     palette. The sentence keeps its measure and its unbreakable tail, so it is still two
+     lines at every width test_store measures. */
+  .hp-commish{align-items:stretch;gap:11px;padding:14px 14px 13px;border-radius:18px;
+    background:radial-gradient(260px 140px at 12% 0%,rgba(167,139,250,.30),rgba(167,139,250,0) 70%),
+      linear-gradient(160deg,#221c52 0%,#141a34 62%);
+    border:1px solid rgba(167,139,250,.45);
+    box-shadow:0 14px 30px -16px rgba(124,58,237,.75),inset 0 1px 0 rgba(255,255,255,.07)}
+  .hp-commish .hp-cm-top{display:flex;align-items:center;gap:12px}
+  .hp-commish .hp-cm-pt{flex:0 0 54px;width:54px;height:54px;border-radius:50%;
+    box-shadow:0 0 0 2px #c9a25a,0 0 16px -4px rgba(201,162,90,.6)}
+  .hp-commish .hp-cm-pt svg{display:block;width:54px;height:54px}
+  .hp-commish .hp-cm-txt{flex:1;min-width:0;display:flex;flex-direction:column;
+    align-items:flex-start;gap:4px}
+  .hp-commish .hp-cm-eye{font-family:var(--fn);font-size:10px;font-weight:800;
+    letter-spacing:.12em;text-transform:uppercase;color:#c4b5fd}
+  .hp-commish .hp-name{font-size:21px;color:#f3edff}
+  .hp-commish .hp-sub{text-align:left;color:rgba(233,226,255,.78);margin-top:0}
+  .hp-commish .hp-cm-bars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .hp-commish .hp-cm-bar i{display:block;height:6px;border-radius:4px;background:rgba(255,255,255,.08);
+    overflow:hidden}
+  .hp-commish .hp-cm-bar em{display:block;height:6px;border-radius:4px}
+  .hp-commish .hp-cm-bar b{display:block;margin-top:4px;font-family:var(--fn);font-size:9.5px;
+    font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#aab4cc;
+    white-space:nowrap;font-variant-numeric:tabular-nums}
+  .hp-commish .hp-cm-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .hp-commish .hp-pace{margin:0;padding:0;border:0;color:#aab4cc;letter-spacing:.02em;
+    font-size:11px;min-width:0;white-space:normal;line-height:1.3}
+  .hp-commish .hp-cm-go{flex:0 0 auto;font-family:var(--fn);font-size:12.5px;font-weight:900;
+    letter-spacing:.06em;text-transform:uppercase;color:#2a1a00;padding:7px 14px;border-radius:999px;
+    background:radial-gradient(circle at 35% 20%,#ffe29a,#f5b83d 60%,#d4930f);
+    box-shadow:0 3px 0 #a16207}
   @media (max-width:340px){
     .hp-commish .hp-name{font-size:17px}
     .hp-commish .hp-sub{font-size:11px}
@@ -1014,6 +1096,27 @@ window.GA_ID='G-L29P5MRWKE';
      much of the fold has gone; the row's height is reserved at every value and only
      opacity moves, so nothing shifts under the finger as it appears. */
   #s-draft{--sq:0}
+  /* THE DRAFT BANNER: a child of body, pinned to the viewport while the draft is open. The draft is
+     padded by the banner's rendered height, so the last cards and Quit scroll clear. */
+  #s-draft.on{padding-bottom:var(--draft-ad-h,0px)}
+  .draft-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .draft-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .draft-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+  .draft-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
+  .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  /* THE SEASON BANNER: the same pattern, on the regular season screen. */
+  #s-season.on{padding-bottom:var(--season-ad-h,0px)}
+  .season-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .season-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .season-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+  .season-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
+  .season-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .season-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .season-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
   /* The row unfurls with the scroll rather than reserving dead space in the card:
      its height and top margin scale with --sq, so at the top it is nothing and by
      the time the field is gone it is a full 34px. Because the field it is measured
@@ -1671,6 +1774,8 @@ window.GA_ID='G-L29P5MRWKE';
     font-weight:600;cursor:pointer;padding:8px 12px;transition:color .15s}
   .btn-text:hover{color:var(--ink)}
   .btn-text:active{color:var(--ink);transform:translateY(1px)}
+  /* The Speed button beside Sim to the end on a broadcast (assets/simspeed.js). */
+  .btn-text.spd{margin-left:18px}
   .btn-text:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
 
   /* ── next panel ─────────────────────────────────────────────── */
@@ -2482,6 +2587,10 @@ window.GA_ID='G-L29P5MRWKE';
      sticky siblings and the only thing stopping them overlapping is that one knows how
      tall the other is. */
   #s-board{--lbdock:54px}
+  /* The closeable bottom banner (/assets/rtg-ads.js) takes the bottom edge on the board, so the
+     bar and the pinned place row stand on it rather than on the strip's reserved band. */
+  body.rtg-sticky-on #s-board{--adstrip:var(--sticky-ad-h,0px)}
+  @media (max-width:1199px){ body.rtg-sticky-on #s-board{--adstrip:max(calc(54px + env(safe-area-inset-bottom,0px)), var(--sticky-ad-h,0px))} }
   /* TWO TRACKS SIZED TO THEIR CONTENT, not 1fr 1fr. At 1fr 1fr the second button gets
      exactly half the row whatever it says, and "Check the connection" does not fit half
      of 320px: it wrapped to two lines and took the bar with it, which broke the height
@@ -2953,6 +3062,22 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);
     margin:0 0 6px;padding-top:16px;border-top:1px solid var(--line)}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  /* The menu ad keeps 150px from the buttons above it, but only once it holds an ad. */
+  .rtp-ad-inline[data-ad-zone="menu"]:has(ins[data-ad-status="filled"]){margin-top:150px}
+  /* THE MENU AD'S SIZE, fixed (the owner, 2026-10-26: a full-width responsive unit filled half a
+     phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
+     unfilled unit collapses to nothing. */
+  [data-ad-zone="menu"] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  /* SIZED BY THE COLUMN, NOT THE SCREEN (QA, 2026-10-27). A 768px media query handed the
+     728x90 to a column that can be narrower: the college start screen is 572px wide at every
+     desktop width, and at 768 the football, college and baseball columns are 572 to 612. The
+     leaderboard then hung 156px past the column, past the screen at 768. The zone is a size
+     container, so the slim standard size that fits is the one served: 320x50, 468x60 from a
+     468px column, the 728x90 from a 728px column. */
+  [data-ad-zone="menu"]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
+  [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{display:block}
     .rtp-ad-rail{display:none !important}
@@ -3402,15 +3527,17 @@ or endorsed by the NCAA, the CFP or any school.
       </div>
     </div>
 
-    <!-- The banner, above the legal line. Placeholder slot; the initializer at the foot of
-         this file refuses to start one, so it renders nothing until a real id is pasted. -->
-    <div class="rtp-ad-inline">
+    <!-- THE MENU AD (Ads Agent, 2026-10-26, the owner's rule: ads on a game's start screen,
+         never in play). The one live unit in this game. menuAd() in show() starts it the
+         first time the start screen shows and REMOVES it the moment any other screen opens
+         (AdSense does not allow a loaded ad to be hidden). It is not started again until the
+         page reloads. Once filled it sits 150px below the last button; empty, it takes no
+         space. check-adsense holds the zone and the removal. -->
+    <div class="rtp-ad-inline" data-ad-zone="menu">
       <span class="rtp-ad-label">Advertisement</span>
       <ins class="adsbygoogle"
            data-ad-client="ca-pub-5952069078178257"
-           data-ad-slot="0000000000"
-           data-ad-format="horizontal"
-           data-full-width-responsive="true"></ins>
+           data-ad-slot="7912195246"></ins>
     </div>
 
     <!-- The attribution and the disclaimer both have to stay, so they are set as one
@@ -3703,6 +3830,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="polog" id="po-log"></div>
     <div style="margin-top:14px;text-align:center">
       <button class="btn-text" id="b-po-fast">Sim to the end</button>
+      <button class="btn-text spd" data-simspeed>Speed: Normal</button>
     </div>
   </div>
 
@@ -3731,6 +3859,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="polog" id="bowl-log"></div>
     <div style="margin-top:14px;text-align:center" id="bowl-fastwrap">
       <button class="btn-text" id="b-bowl-fast">See result</button>
+      <button class="btn-text spd" data-simspeed>Speed: Normal</button>
     </div>
 
     <div id="bowl-result" hidden>
@@ -3796,9 +3925,9 @@ or endorsed by the NCAA, the CFP or any school.
          are six and would not fit on a phone. -->
     <div class="lbmode"><select id="lb-comp" aria-label="Which leaderboard"></select></div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
-      <button class="tab on" data-lb="day">Today</button>
+      <button class="tab" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
-      <button class="tab" data-lb="all">All time</button>
+      <button class="tab on" data-lb="all">All time</button>
     </div></div>
     <!-- THREE AXES, AND ONE OF THEM RUNS THE OTHER WAY BY DEFAULT. Record and team
          overall are high-to-low; the national ranking is low-to-best, because No. 1 in
@@ -4010,13 +4139,14 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=35"></script>
 <script src="run.js?v=15"></script>
-<script src="achievements.js?v=11"></script>
+<script src="achievements.js?v=12"></script>
 <script src="auth.js?v=8"></script>
 <script src="board.js?v=7"></script>
 <!-- The tester list for Commish Simulator, which this page reads to decide whether to draw
      the card on the modes sheet and cfb/commish/ reads to decide whether to open at all.
      One file so the two can never disagree. -->
 <script src="commish/access.js?v=6"></script>
+<script src="commish/portrait.js?v=1"></script>
 <!-- THE FULL TEAM TESTER LIST AND ITS LAUNCH FLAG, WHICH THIS PAGE ALSO NEEDS.
      The store below names the modes the bundle unlocks and three of the four live in the
      other game: Dynasty, the Trade Machine and Full Team. This page named the first two and
@@ -4036,11 +4166,15 @@ or endorsed by the NCAA, the CFP or any school.
      copies of a price or a term is two chances to tell a customer something the other page
      contradicts, and the one that is wrong is whichever was edited second. -->
 <script src="/assets/store.js?v=23"></script>
+<script src="/assets/cloudsave.js?v=2"></script>
+<script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the account page. See supabase/121_newsletter.sql. -->
-<script src="/assets/newsletter.js?v=1"></script>
+<script src="/assets/newsletter.js?v=2"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
      hands its drives here and keeps its own body as the fallback. -->
-<script src="/assets/fieldcast.js?v=3"></script>
+<script src="/assets/fieldcast.js?v=4"></script>
+<script src="/assets/simspeed.js?v=1"></script>
 <!-- THE FREE TIER'S CLOCK, WHICH THIS PAGE ONLY READS. It is the mode's module and the
      mode is still the thing that decides: seasonWall() spends a season and reads the
      server's answer, because only the server can settle it. All this page wants is to know
@@ -4356,11 +4490,92 @@ let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,la
    bottom edge, which is where the fixed ad strip sits, and they are the one part of this
    that asks for undivided attention. */
 const NO_ADS=['s-load','s-season','s-po','s-bowl','s-brk'];
+/* THE MENU AD lives on the start screen and nowhere else. Started the first time the start
+   screen shows, removed (not hidden) the first time any other screen opens, and never started
+   again on this page load. The boot screen is the one exception, since every load passes
+   through it on the way to the start screen. A push fills the first unstarted unit in the
+   page, and this one comes before the rails and the strip, which are never started. */
+/* THE DRAFT BANNER (Ads Agent, 2026-10-28, the owner: "live immediately"). A slim banner pinned to the
+   bottom of the screen while the draft is open. Built as a child of body when the draft opens and
+   removed when the player leaves, so the screen's transform cannot move it. The draft is padded by
+   its rendered height (--draft-ad-h), so the last cards and Quit scroll clear. Unfilled, it costs
+   nothing. Same pattern as The Perfect Season's draft (football/index.html). */
+let draftAdSize=null;
+function draftAd(id){
+  const old=document.querySelector('[data-ad-zone="draft"]');
+  if(id!=='s-draft'){
+    if(draftAdSize){ draftAdSize.disconnect(); draftAdSize=null; }
+    document.documentElement.style.removeProperty('--draft-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="draft-ad" data-ad-zone="draft"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="8189884070"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    draftAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--draft-ad-h',z.offsetHeight+'px'));
+    draftAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE SEASON BANNER (Ads Agent, 2026-10-29, the owner: the College season gets the NFL game's
+   banner). Pinned to the bottom of the regular season screen while it is open, live games
+   included, with no X. Built as a child of body on entering and removed on leaving, the same way as
+   the draft banner, and the screen is padded by its rendered height (--season-ad-h). Same pattern as
+   The Perfect Season's season banner. Unit college-season (3062302592). */
+let seasonAdSize=null;
+function seasonAd(id){
+  const old=document.querySelector('[data-ad-zone="season"]');
+  if(id!=='s-season'){
+    if(seasonAdSize){ seasonAdSize.disconnect(); seasonAdSize=null; }
+    document.documentElement.style.removeProperty('--season-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="season-ad" data-ad-zone="season"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="3062302592"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    seasonAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--season-ad-h',z.offsetHeight+'px'));
+    seasonAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's
+   calls). The banner sits on the front page, the leaderboard and the results, never on a screen
+   where people play. Its X closes it for the rest of the visit. The two rails are desktop only, on
+   the leaderboard. /assets/rtg-ads.js owns how both look and behave. */
+const STICKY_SLOT={sticky:'9883695968'};                      // college-sticky
+const BOARD_SLOTS={left:'1134269564', right:'2175888490'};    // college-board-left, college-board-right
+const STICKY_ON=['s-intro','s-board','s-over'];
+function stickyAd(id){
+  if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0, STICKY_SLOT.sticky, 'college');
+}
+function boardRails(id){
+  if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
+}
+function menuAd(id){
+  const z=document.querySelector('[data-ad-zone="menu"]');
+  if(!z||id==='s-load') return;
+  if(id!=='s-intro'){ z.remove(); return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 function show(id){
   document.querySelectorAll('.confetti-cv').forEach(cv=>cv.remove());
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $(id).classList.add('on');window.scrollTo({top:0});
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
+  menuAd(id);
+  draftAd(id);
+  seasonAd(id);
+  stickyAd(id);
+  boardRails(id);
   if(typeof heroSync==='function') heroSync();
 }
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');
@@ -5440,6 +5655,25 @@ const commishMetered=()=>premiumSet!==null&&!ownsCfb();
    own door reads, so the front page, the sheet and the mode cannot disagree about who gets
    in. While the bundle flip is false that is the tester list; when it flips it is everybody,
    in one edit, on both games at once. */
+/* THE THREE THINGS THE JOB IS GRADED ON, in the order and colours the mode's own office
+   uses (revenue, the state of the game, your standing). The keys are the save's. */
+const COMMISH_BARS=[['revenue','Money','#f5b83d'],['health','Game','#34d399'],['standing','Standing','#60a5fa']];
+let commishTermMemo;
+function commishTerm(){
+  if(commishTermMemo!==undefined) return commishTermMemo;
+  commishTermMemo=null;
+  try{
+    const o=JSON.parse(localStorage.getItem('cfb_commish_term')||'null');
+    const w=o&&o.world;
+    /* A FINISHED TERM IS NOT ONE TO RESUME. careerLogged is set the moment a term is filed
+       to the career shelf, so from then on the door offers the job again. */
+    if(!w||w.careerLogged||!w.meters||typeof w.year!=='number') return null;
+    const len=Math.max(1,(w.termSeasons|0)||5);
+    const season=Math.max(1,Math.min(len,w.year-(w.startYear||w.year)+1));
+    commishTermMemo={season,len,meters:w.meters};
+  }catch(e){}
+  return commishTermMemo;
+}
 let commishDoor=null, commishLead=null;
 function ensureCommishDoor(){
   const ctas=document.querySelector('.ctas');
@@ -5449,6 +5683,7 @@ function ensureCommishDoor(){
     if(commishDoor&&commishDoor.parentNode) commishDoor.parentNode.removeChild(commishDoor);
     if(commishLead&&commishLead.parentNode) commishLead.parentNode.removeChild(commishLead);
     commishDoor=null; commishLead=null;
+    ensureFantasyDoor();
     return;
   }
   if(!commishLead){
@@ -5499,7 +5734,26 @@ function ensureCommishDoor(){
   let seen=false; try{ seen=localStorage.getItem('cfb_commish_seen')==='1'; }catch(e){}
   const tag=!commishLive()?'<span class="hp-tag">Preview</span>'
     :seen?'':'<span class="hp-tag new">New</span>';
+  /* THE CARD IS A CHARACTER NOW, the way a life sim's is: the commissioner's portrait, the
+     name of the mode and its one sentence, three bars for the things the job is graded on,
+     and a line and a button at the foot. The sentence and its unbreakable tail are exactly
+     what they were, for the reasons written below, and are asserted by test_store.
+     A TERM IN PROGRESS SHOWS ITSELF. The mode keeps the term in this browser under
+     cfb_commish_term (and on the account), so the door reads which season it is and the
+     three meters straight off it, and the button says Resume. Read once per page load:
+     the save carries the whole tape and parsing it on every repaint costs for nothing. */
+  const term=commishTerm();
+  const bars=COMMISH_BARS.map(([k,label,col])=>{
+    const v=term?Math.max(0,Math.min(100,Math.round(term.meters[k]))):100;
+    return '<span class="hp-cm-bar"><i><em style="width:'+v+'%;background:'+col+'"></em></i>'
+      +'<b>'+label+(term?' '+v:'')+'</b></span>';
+  }).join('');
+  commishDoor.classList.toggle('mid',!!term);
   commishDoor.innerHTML=tag
+    +'<span class="hp-cm-top">'
+    +'<span class="hp-cm-pt">'+(window.CM_PORTRAIT?CM_PORTRAIT(54,'door'):'')+'</span>'
+    +'<span class="hp-cm-txt">'
+    +(term?'<span class="hp-cm-eye">Season '+term.season+' of '+term.len+'</span>':'')
     +'<span class="hp-namerow">'
       +'<span class="hp-name">Commish Simulator</span></span>'
     /* ONE SENTENCE, AND IT IS THE SAME ONE FOR EVERYBODY NOW.
@@ -5530,6 +5784,9 @@ function ensureCommishDoor(){
        space in front of them. */
     +'<span class="hp-sub">Leave your mark on '
       +'<span class="hp-nb">College Football forever</span></span>'
+    +'</span></span>'
+    +'<span class="hp-cm-bars">'+bars+'</span>'
+    +'<span class="hp-cm-foot">'
     /* ---- AND HOW FAST YOU PLAY IT, BEFORE YOU START ----
        THE OWNER'S REPORT: "I just don't want people to play this mode and then be suddenly
        prompted with a paywall and be shocked by it." The wait wall inside the mode is an
@@ -5545,7 +5802,10 @@ function ensureCommishDoor(){
        and commishMetered() is false until ownership is actually answered, so nobody is told
        about a limit before the page knows whether they have one. */
     +(commishMetered()
-      ? '<span class="hp-pace">Free &middot; '+COMMISH_PACE+'</span>' : '');
+      ? '<span class="hp-pace">Free &middot; '+COMMISH_PACE+'</span>'
+      : '<span class="hp-pace">'+(term?'Your term is saved':'Keep the room. Keep the job.')+'</span>')
+    +'<span class="hp-cm-go">'+(term?'Resume':'Take the job')+'</span>'
+    +'</span>';
   /* UNDER THE TWO WAYS IN AND ABOVE THE ROW OF THREE, which is where the football game puts
      its second door: after the thing most people came for, before the things they came back
      for. Re-anchored on every call rather than appended once, so a repaint after an account
@@ -5559,7 +5819,87 @@ function ensureCommishDoor(){
   }else{
     ctas.appendChild(commishLead); ctas.appendChild(commishDoor);
   }
+  ensureFantasyDoor();
 }
+
+/* ── COLLEGE FANTASY'S DOOR ─────────────────────────────────────────────────────────
+ *
+ * The weekly challenge lives at /cfb/fantasy/, and it is this game's alone: separate
+ * tables, a separate board and a separate prize from the NFL one. DRAWN ONLY WHEN THERE IS
+ * A WEEK, read off the pointer the Monday build writes, so a season with no board built
+ * yet shows no door rather than a door to a screen that says nothing is on.
+ *
+ * THE BORDER IS THE STATE, which is the NFL door's rule arriving here: red until a lineup
+ * is in, green once one is, read off the mode's own record for the live week. That record
+ * is written only after the server has said yes, so a refused entry never lights it green,
+ * and it FAILS SOFT TO RED, which is the safe direction.
+ *
+ * A LINK AND NOT A BUTTON, because it leaves the page. A guest is not stopped here: the
+ * fantasy page tells them it needs an account before they draft, with a way to sign in. */
+let cfbFanWeek=null, cfbFanAsked=false, cfbFanDoor=null;
+/* The crest the mode's own page wears: a trophy on a shield, solid colours and no ids. */
+const CFB_CREST='<svg class="hp-ico" viewBox="0 0 32 32" aria-hidden="true">'
+  +'<path d="M16 1.8 28.4 6v9.4c0 7.4-5.3 12.6-12.4 15-7.1-2.4-12.4-7.6-12.4-15V6Z" '
+  +'fill="rgba(10,14,26,.85)" stroke="#f0c96b" stroke-width="1.8"/>'
+  +'<path d="M11 8.6h10v4.2a5 5 0 0 1-10 0Z" fill="#f0c96b"/>'
+  +'<path d="M11 9.8H8.6a2.6 2.6 0 0 0 2.9 3.8M21 9.8h2.4a2.6 2.6 0 0 1-2.9 3.8" '
+  +'fill="none" stroke="#f0c96b" stroke-width="1.4"/>'
+  +'<rect x="15" y="17.4" width="2" height="2.8" fill="#d9a13a"/>'
+  +'<rect x="11.8" y="20.2" width="8.4" height="2.4" rx="1" fill="#f0c96b"/></svg>';
+function cfbFanEntered(){
+  if(!cfbFanWeek) return false;
+  try{
+    const s=JSON.parse(localStorage.getItem('cfb_fantasy_'+cfbFanWeek.season+'_w'+cfbFanWeek.week)||'null');
+    return !!s&&s.submitted!=null;
+  }catch(_){ return false; }
+}
+function ensureFantasyDoor(){
+  if(!cfbFanAsked){
+    cfbFanAsked=true;
+    fetch('/cfb/data/fantasy/now.json',{cache:'no-cache'})
+      .then(r=>r.ok?r.json():null)
+      .then(n=>{
+        if(!n||n.season==null||n.week==null) return;
+        cfbFanWeek=n;
+        ensureFantasyDoor();
+        /* The lock line counts down, so the door is redrawn once a minute. */
+        setInterval(ensureFantasyDoor,60000);
+      })
+      .catch(()=>{});
+    return;
+  }
+  const ctas=document.querySelector('.ctas');
+  if(!ctas||!cfbFanWeek) return;
+  if(!cfbFanDoor){
+    cfbFanDoor=document.createElement('a');
+    cfbFanDoor.className='hp-cfbfan'; cfbFanDoor.id='b-hp-fantasy';
+    cfbFanDoor.href='/cfb/fantasy/';
+    cfbFanDoor.onclick=()=>{ ga('mode_opened',{mode:'fantasy',from:'home'}); };
+  }
+  const inn=cfbFanEntered();
+  cfbFanDoor.classList.toggle('in',inn);
+  /* WHEN THE WEEK LOCKS, off the pointer's own locks_at, and a plain line once it has. */
+  const ms=cfbFanWeek.locks_at?Date.parse(cfbFanWeek.locks_at)-Date.now():NaN;
+  const h=Math.floor(ms/3600000), d=Math.floor(h/24);
+  const left=!(ms>0)?null:d>=1?d+'d '+(h%24)+'h':h>=1?h+'h '+Math.floor(ms%3600000/60000)+'m'
+    :Math.max(1,Math.floor(ms/60000))+'m';
+  cfbFanDoor.innerHTML='<span class="hp-tag">Beta</span>'+CFB_CREST
+    +'<span class="hp-name">Fantasy Challenge</span>'
+    +'<span class="hp-sub">'+(inn?'Your lineup is in for week '+cfbFanWeek.week+'.'
+      :left?'Week '+cfbFanWeek.week+' &middot; locks in '+left+' &middot; top score wins Pro'
+      :'Six players from the week\'s biggest games. Top score wins Pro.')+'</span>'
+    +'<span class="hp-rack" aria-hidden="true"><i class="QB"></i><i class="RB"></i><i class="RB">'
+    +'</i><i class="WR"></i><i class="WR"></i><i class="TE"></i></span>';
+  const three=ctas.querySelector('.cta3');
+  if(three){ if(cfbFanDoor.nextSibling!==three) ctas.insertBefore(cfbFanDoor,three); }
+  else if(cfbFanDoor.parentNode!==ctas) ctas.appendChild(cfbFanDoor);
+}
+
+/* THE LOCK DAY REMINDER, the football game's sheet for this competition: once per account
+   per week, on the Eastern day the slate locks, before the first kickoff. The rule is in
+   /assets/fantasy-promo.js. cloudsave.js is loaded for it, so the mark rides on the account. */
+if(window.RTG_FANPROMO) RTG_FANPROMO.init({ league:'cfb', nowUrl:'/cfb/data/fantasy/now.json',
+  href:'/cfb/fantasy/', entryPrefix:'cfb_fantasy_', auth:()=>authState });
 
 /* ── THE OFFER ON THE FRONT PAGE, WHICH ONLY THE PROFILE CARRIED ──────────────────────
  *
@@ -6261,10 +6601,13 @@ async function pfProLoad(){
     /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
        premium_products(), which answers through an RPC; this reads the table. A blocked
        request, an expired token or an account comped by hand outside the table all land
-       here, and none of them is a reason to tell somebody their purchase is gone. */
+       here, and none of them is a reason to tell somebody their purchase is gone.
+       IT NEVER PROMISES A RELOAD WILL FIX IT. Until supabase/144 the table had no grant for
+       the signed in role, so every read here was refused and this sentence told every
+       owner a reload would bring the list back, which it never did. */
     list.innerHTML='<p class="dim" style="font-size:12.5px;line-height:1.45;margin:0">'+
-      'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be loaded '+
-      'just now. Reload the page and it will come back.</p>';
+      'Your Pro modes are unlocked. We couldn\'t show the list of what you own. '+
+      'Your purchase is safe.</p>';
   }else{
     let ends=null, endedOn=null, passEnds=null, passEnded=null, paid=false;
     list.innerHTML=owned.map((k)=>{
@@ -6512,6 +6855,7 @@ function bootAuth(){
     /* And the offer card, which reads the same list. Signing OUT has to take it with it,
        which is why this runs on every change rather than only when somebody signs in. */
     ensurePremiumCard();
+    if(window.RTG_FANPROMO) RTG_FANPROMO.check();
     /* WHAT THE ACCOUNT OWNS FOLLOWS THE ACCOUNT TOO, and it has to be asked again on a
        CHANGE of account rather than once: signing out and back in as somebody else on the
        same tab would otherwise leave the previous person's purchases on screen. Cleared
@@ -6679,6 +7023,7 @@ function accountHtml(){
     (up?'<input class="fld" id="ac-user" placeholder="Your name on the board" autocomplete="username" maxlength="20">':'')+
     '<input class="fld" id="ac-pass" type="password" placeholder="Password" autocomplete="'+
       (up?'new-password':'current-password')+'">'+
+    (up?'':'<a href="/#forgot" target="_blank" rel="noopener" style="display:inline-block;margin:4px 0 2px;font-size:12.5px;color:inherit;opacity:.75;text-decoration:underline;text-underline-offset:3px">Forgot your password?</a>')+
     '<button class="btn sm" id="ac-go" style="margin-top:10px">'+
       (up?'Create the account':'Sign in')+'</button>'+msg+
     '<p class="authswap">'+(up?'Already have one? ':'New here? ')+
@@ -7393,6 +7738,19 @@ function rowFromBoard(r){
   };
 }
 
+/* THE REAL COLLEGE SCHEDULE, for the Game Day shelf: which games were on when each season was
+   filed. A workflow rebuilds it under one name whenever a kickoff or a score moves, so it is
+   fetched no-cache rather than with a hand-written ?v= a bot cannot bump. Fetched once at boot
+   and never awaited: until it lands, or if it never does, the Game Day badges read as not
+   known and every other badge is untouched. */
+let CFB_SCHED=null;
+function loadCfbSchedule(){
+  fetch('data/cfb_schedule.json',{cache:'no-cache'})
+    .then(r=>{ if(!r.ok) throw new Error('cfb_schedule'); return r.json(); })
+    .then(j=>{ CFB_SCHED=j; })
+    .catch(()=>{});
+}
+
 function achState(rows){
   if(!window.PS_CFB_ACH) return null;
   /* HOW MANY SEASONS IS NOT HOW MANY ROWS. careerLoad holds the most recent five hundred
@@ -7402,7 +7760,8 @@ function achState(rows){
      board's rows and only with them: local history has none, because a history trimmed
      at four hundred has genuinely forgotten the rest. */
   const opts=(rows&&rows===careerRows&&careerTotal)?{total:careerTotal}:null;
-  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),opts);
+  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString(),
+    Object.assign({schedule:CFB_SCHED},opts||{}));
 }
 
 /* Badges the season just finished is responsible for, worked out by evaluating the cabinet
@@ -7437,10 +7796,10 @@ function recordRun(row){
   const rows=loadHistory();
   /* THE SEASON IS WRITTEN DOWN EITHER WAY. The row is this browser's own history and the
      results screen reads it; what an account buys is the badge actually being yours. */
-  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
+  const lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at,{schedule:CFB_SCHED}).earned.map(a=>a.id)):new Set();
   rows.push(row); saveHistory(rows);
   const gained=A
-    ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
+    ? A.evaluate(loadHistory(),achResolve,row.created_at,{schedule:CFB_SCHED}).earned.filter(a=>!lastBefore.has(a.id))
     : [];
   /* A GUEST IS TOLD WHAT THEY EARNED AND OFFERED IT, rather than told nothing. Telling them
      nothing was the previous rule and it was half right: what it was protecting against is a
@@ -7465,7 +7824,10 @@ function recordRun(row){
    by content-visibility on .lb .lbr, which skips layout and paint for every row that is
    off screen. */
 const LB_LIMIT=500;
-let lbWindow='day', lbSort='record', lbDir=null, lbBusy=false, lbFrom='s-intro', lbMode='free';
+/* EVERY BOARD OPENS ON ALL TIME, asked for by the owner, the same as the NFL game. It is
+   reset when the competition changes and never on a repaint, so a window somebody picked
+   stays picked while they look at the same board. */
+let lbWindow='all', lbSort='record', lbDir=null, lbBusy=false, lbFrom='s-intro', lbMode='free';
 /* The rows the board is currently showing, held so the podium, the pinned place row and
    a tap on any of them all read the same array rather than re-deriving it. */
 let lbRows=null, lbMyPlace=null;
@@ -7489,7 +7851,7 @@ function openBoard(mode){
   /* Opened from a finished season, the board opens on THAT season's competition:
      coming off a Pac-12 run to a free-play board you are not on is the wrong
      answer to "where did I come?". */
-  if(mode&&B&&B.MODES.indexOf(mode)>=0) lbMode=mode;
+  if(mode&&B&&B.MODES.indexOf(mode)>=0&&mode!==lbMode){ lbMode=mode; lbWindow='all'; }
   paintCompSelect();
   ga('board_opened',{window:lbWindow,sort:lbSort,mode:lbMode});
   show('s-board');
@@ -8193,6 +8555,7 @@ function bootStep(say){
 }
 
 async function boot(){
+  loadCfbSchedule();
   const t0=(window.performance&&performance.now)?performance.now():0;
   try{
     /* The step lands after the parse, not after the response: the file of player seasons
@@ -8243,6 +8606,19 @@ async function boot(){
     /* A CHALLENGE LINK WINS. It is somebody else's message and the reason this page was
        opened; a held season is this player's own and will still be here afterwards. */
     if(!routeChallenge()&&!resumeHeld()) show('s-intro');
+    /* `#signin` OPENS THE ACCOUNT SHEET. The Fantasy Challenge page sends a guest here to
+       sign in, because the sign in form lives in this page and a second copy of it there
+       would be a second form to keep in step. The hash is cleared so a reload is a reload. */
+    if(location.hash==='#signin'){
+      try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+      openProfile('account');
+    }
+    /* `#pro` OPENS THE STORE, for the Fantasy Challenge's review screen, which tells a free
+       account that Pro gets five drafts a week and has no store of its own. */
+    else if(location.hash==='#pro'){
+      try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+      openPremium('fantasy');
+    }
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -10064,6 +10440,19 @@ function kickDistances(script,drives,seedStr){
   return out;
 }
 
+/* HOW FAST IT PLAYS. Players said the playoffs went by too fast to follow, so a Speed button
+   on every broadcast screen stretches this pace (assets/simspeed.js, one setting for both
+   football games). Each segment reads the multiplier ONCE, the first time its length is asked
+   for, which is the moment it starts playing. So a change lands on the next segment and never
+   halfway through one: re-read every frame, a slower setting would wind the clock back, and
+   the field reads a clock going backwards as a new game. */
+const simMul=()=>(window.RTG_SPEED&&RTG_SPEED.mul)?RTG_SPEED.mul():1;
+function paced(seg,base){
+  seg.base=base;
+  Object.defineProperty(seg,'ms',{enumerable:true,
+    get(){ if(this._ms==null) this._ms=this.base*simMul(); return this._ms; }});
+  return seg;
+}
 function buildTimeline(script,pace){
   const segs=[];
   /* THE SCORE'S PLACE IN THE SCRIPT, carried through onto the segment. The timeline is built
@@ -10075,12 +10464,12 @@ function buildTimeline(script,pace){
   for(let q=1;q<=4;q++){
     let from=900;
     for(const e of script.filter(x=>x.q===q)){
-      segs.push({kind:'run',q,from,to:e.sec,ms:Math.max(200,(from-e.sec)/900*pace.quarterMs)});
-      segs.push({kind:'score',q,e,i:idx.get(e),ms:pace.hold});
+      segs.push(paced({kind:'run',q,from,to:e.sec},Math.max(200,(from-e.sec)/900*pace.quarterMs)));
+      segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold));
       from=e.sec;
     }
-    segs.push({kind:'run',q,from,to:0,ms:Math.max(200,from/900*pace.quarterMs)});
-    if(q<4) segs.push({kind:'break',q,ms:q===2?pace.half:pace.qbreak});
+    segs.push(paced({kind:'run',q,from,to:0},Math.max(200,from/900*pace.quarterMs)));
+    if(q<4) segs.push(paced({kind:'break',q},q===2?pace.half:pace.qbreak));
   }
   return segs;
 }
@@ -12056,7 +12445,7 @@ $('b-feedback').onclick=()=>feedbackSheet();
 $('b-modes').onclick=modeMenu;
 $('b-lb-intro').onclick=()=>openBoard();
 $('lb-comp').onchange=(e)=>{
-  lbMode=e.target.value;
+  lbMode=e.target.value; lbWindow='all';
   $('lb-comp').parentNode.classList.toggle('isconf',lbMode!=='free');
   ga('board_competition',{mode:lbMode});
   paintBoard();
@@ -12255,6 +12644,7 @@ boot();
       for(var i=0;i<units.length;i++){
         var slot=units[i].getAttribute('data-ad-slot');
         if(!slot||/^0+$/.test(slot)) continue;
+        if(units[i].closest('[data-ad-zone]')) continue;   // the menu ad starts in menuAd()
         (adsbygoogle=window.adsbygoogle||[]).push({});
       }
     }catch(e){}

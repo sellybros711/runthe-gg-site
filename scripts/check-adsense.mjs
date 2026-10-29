@@ -76,7 +76,25 @@ for (const file of walk(ROOT).sort()) {
     }
     const adTag = src.indexOf(PUB);
     if (adTag !== -1 && adTag < consent) fail('AdSense tag loads before the Consent Mode defaults');
+
+    /* Europe gets its own default, with analytics denied too: GA4 sets cookies, and in the
+     * EEA, the UK and Switzerland a cookie waits for consent. The worldwide default above
+     * keeps analytics granted everywhere else. Added 2026-10-24 (agents/ads/ in the vault). */
+    const europe = src.match(/gtag\('consent','default',\{[^}]*analytics_storage:'denied',region:\[([^\]]*)\]/);
+    if (!europe) fail('no Europe Consent Mode default (analytics_storage denied, with a region list)');
+    else {
+      for (const cc of ['DE', 'FR', 'IE', 'NO', 'GB', 'CH']) {
+        if (!europe[1].includes(`'${cc}'`)) fail(`the Europe consent default leaves out ${cc}`);
+      }
+      if (adTag !== -1 && adTag < europe.index) fail('AdSense tag loads before the Europe consent default');
+    }
   }
+  /* GOOGLE'S US STATES OPT-OUT IS LEFT TO GOOGLE. Site PR 800 set googlefc.usstatesoptout.overrideDnsLink
+   * to replace Google's floating "Do Not Sell" bar with a footer link. That override works on Google Ad
+   * Manager only; on AdSense the bar stayed and the link opened nothing (the owner, 2026-10-29). A dead
+   * opt-out link is worse than none, so it was removed, and nothing may set the override again on AdSense. */
+  if (/overrideDnsLink/.test(src.replace(/<!--[\s\S]*?-->/g, ''))) fail('sets overrideDnsLink, which AdSense ignores: Google keeps its bar and a custom link opens nothing');
+
   if (!/rel=["']canonical["']/i.test(src)) fail('no canonical');
   if (!/<title>\s*\S/i.test(src)) fail('no title');
   if (!/name=["']description["'][^>]*content=["']\s*\S/i.test(src)) fail('no meta description');
@@ -128,6 +146,192 @@ if (fs.existsSync(sitemap)) {
 }
 
 if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missing');
+
+/* NO AD EVER TOUCHES PLAY (the owner's rule, 2026-10-26: "the ads never impact someone's
+ * gameplay while they're playing"). A real ad unit, one whose slot id is not all zeros, may
+ * sit only on pages a player reads, never on a page a player plays. Game pages keep their
+ * slots as placeholders, which their initialisers refuse to start. Moving a game slot to a
+ * real id means adding that page here, and that is the owner's decision, made only after
+ * the slot is measured at least 150px from every game control at every width it shows.
+ * Auto ads must stay off in the AdSense dashboard; this check cannot see that, so it also
+ * fails on the page-level switch that would turn it on from code. */
+/* Game pages whose start screen may carry one menu ad (the owner's call, 2026-10-26). */
+/* Pages the owner asked to carry one unit at the bottom of every screen (2026-10-27): the unit sits
+ * under all the screens in a data-ad-zone="page" block and is started once per load. The Fantasy
+ * Challenge is a weekly lineup, not a live game, so nothing on it is played in real time. */
+const PAGE_ZONE_PAGES = new Set(['football/fantasy/index.html']);
+const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html', 'soccer/index.html']);
+/* Pages whose draft screen carries one pinned banner (the owner, 2026-10-28, live immediately):
+ * built by draftAd() when the draft opens and emptied when it is left. Only a unit made inside
+ * draftAd(), on a page whose show() calls draftAd(), is allowed on a play screen. */
+const DRAFT_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html']);
+/* The functions allowed to build a live unit on each page where people play, each one called from
+ * that page's screen switch so it builds on entering its screen and removes on leaving. Run The
+ * Pitch's tournament ad and desktop rails are the owner's calls (2026-10-28), and so are the
+ * Diamond's rails (2026-10-29). */
+const BUILDERS = {
+  'football/index.html': ['draftAd', 'seasonAd'],
+  'cfb/index.html': ['draftAd', 'seasonAd'],
+  'baseball/index.html': ['draftAd', 'seasonAd', 'railAds'],
+  'soccer/index.html': ['stageAd', 'railAds'],
+};
+/* The text of the named function's body, from its header to its closing brace at column 0. */
+function fnBody(src, name) {
+  const start = src.indexOf(`function ${name}(`);
+  if (start < 0) return null;
+  const end = src.indexOf('\n}', start);
+  return end < 0 ? null : [start, end + 2];
+}
+const READ_ONLY_PAGES = [/^index\.html$/, /^arcade\/index\.html$/, /^guides\/[^/]+\.html$/, /^[a-z]+\/how-to-play\.html$/];
+function walkCode(dir, out = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (SKIP_DIRS.has(e.name)) continue;
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walkCode(p, out);
+    else if (/\.(html|js)$/.test(e.name)) out.push(p);
+  }
+  return out;
+}
+for (const file of walkCode(ROOT)) {
+  const rel = path.relative(ROOT, file);
+  const src = fs.readFileSync(file, 'utf8');
+  if (/enable_page_level_ads/.test(src)) problems.push(`${rel}: turns on page-level (Auto) ads from code`);
+  if (READ_ONLY_PAGES.some((re) => re.test(rel))) continue;
+  /* The one exception on a game page: a unit inside the start screen's menu zone
+   * (data-ad-zone="menu"), which the page starts only on its start screen and REMOVES the
+   * moment any other screen opens. Such a page must carry that removal (menuAd) and its
+   * initialiser must skip the zone, or the unit could load behind a game. */
+  const real = [...src.matchAll(/data-ad-slot=["'](\d+)["']|AD_SLOT\s*=\s*['"](\d+)['"]/g)]
+    .filter((m) => !/^0+$/.test(m[1] || m[2]))
+    .filter((m) => !(PAGE_ZONE_PAGES.has(rel) && /data-ad-zone="page"[^>]*>\s*<span[^>]*>[^<]*<\/span>\s*<ins[^>]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))))
+    .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /data-ad-zone="menu"[^>]*>\s*<span[^>]*>[^<]*<\/span>\s*<ins[^>]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))))
+    /* A unit made in code for a results screen or a leaderboard: only inside adUnitInto(), on a
+     * page whose show() calls screenAds(), which builds it when that screen opens and empties it
+     * when it closes (the owner's rule, 2026-10-27). */
+    .filter((m) => {
+      const builders = BUILDERS[rel];
+      if (!builders) return true;
+      return !builders.some((fn) => {
+        const b = fnBody(src, fn);
+        return b && new RegExp(`^\\s+${fn}\\(\\w+\\);`, 'm').test(src) && m.index >= b[0] && m.index < b[1];
+      });
+    })
+    .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /function adUnitInto\(host\)\{\s*host\.innerHTML='[^']*$/.test(src.slice(Math.max(0, m.index - 400), m.index)) && /^\s+screenAds\(\w+\);/m.test(src)))
+    .map((m) => m[1] || m[2]);
+  if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
+  /* A PINNED BANNER IS A STICKY AD (AdSense Ad formats FAQ, read 2026-10-29): 300px wide or less, never
+   * the 728x90. So a draft or season banner is sized 300px or narrower at every width. */
+  if (DRAFT_ZONE_PAGES.has(rel)) {
+    for (const m of src.matchAll(/\.(?:draft|season)-ad(?:\[data-ad-zone\])? ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) {
+      if (+m[1] > 300) problems.push(`${rel}: a pinned banner is ${m[1]}px wide. AdSense allows a sticky ad 300px wide or less`);
+    }
+  }
+  if (rel === 'soccer/index.html') {
+    if (/data-ad-zone="stage"/.test(src) && !/^\s+stageAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a tournament ad but showScreen() does not call stageAd() to remove it on leaving`);
+  }
+  /* A rail is a 160x600 beside the column, never a wide unit, and it is removed with its screen. */
+  if (rel === 'soccer/index.html' || rel === 'baseball/index.html') {
+    for (const m of src.matchAll(/\.rail-ad(?:\[data-ad-zone\])? ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`${rel}: a rail is ${m[1]}px wide`);
+    if (/data-ad-zone="rail"/.test(src) && !/^\s+railAds\(\w*\);/m.test(src)) problems.push(`${rel}: has desktop rails but the screen switch does not call railAds()`);
+  }
+  if (DRAFT_ZONE_PAGES.has(rel) && /data-ad-zone="draft"/.test(src) && !/^\s+draftAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a draft banner but show() does not call draftAd() to remove it on leaving the draft`);
+  if (MENU_ZONE_PAGES.has(rel)) {
+    if (/function adUnitInto\(/.test(src)) {
+      const body = (src.match(/function screenAds\([\s\S]*?\n\}/) || [''])[0];
+      const CALL = /adUnitInto\((?!host\))[^)\s]+\)/g;   // a call with an argument, not the definition or a comment's ()
+      const calls = (src.match(CALL) || []).length;
+      const inside = (body.match(CALL) || []).length;
+      if (!body) problems.push(`${rel}: adUnitInto() makes a live unit but there is no screenAds() to own it`);
+      else if (calls !== inside) problems.push(`${rel}: adUnitInto() is called outside screenAds(), so a unit could load on a play screen`);
+    }
+    if (!/function menuAd\(/.test(src) || !/^\s+menuAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a menu ad zone but show() does not call menuAd() to remove it when play starts`);
+    if (/querySelectorAll\('ins\.adsbygoogle'\)/.test(src) && !/closest\('\[data-ad-zone\]'\)\) continue/.test(src)) problems.push(`${rel}: the initialiser must skip the menu ad zone (menuAd starts it on the start screen only)`);
+  }
+}
+
+/* THE CLOSEABLE BOTTOM BANNER AND THE SHARED RAILS (assets/rtg-ads.js, the owner's calls 2026-10-29).
+ * The banner sits on a game's home, leaderboards and results and never where people play, so each
+ * page's list of screens is held here: a screen added to one fails until it is added below, with a
+ * reason. A page that calls RTG_ADS loads the file, and the banner stays 300px wide (a sticky ad). */
+const STICKY_SCREENS = {
+  'football/index.html': ['s-intro', 's-board', 's-over'],
+  'cfb/index.html': ['s-intro', 's-board', 's-over'],
+  'baseball/index.html': ['s-intro', 's-board', 's-over'],
+  'soccer/index.html': ['start', 'online-hub', 'report', 'friendly-result', 'h2h-result', 'h2h-board', 'wc-board'],
+  'golf/index.html': ['title', 'protour', 'putthub', 'me', 'summary', 'dailyresult', 'h2hresult', 'careerend', 'circuitend'],
+};
+{
+  const lib = fs.readFileSync(path.join(ROOT, 'assets/rtg-ads.js'), 'utf8');
+  for (const m of lib.matchAll(/\.rtg-sticky ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`assets/rtg-ads.js: the bottom banner is ${m[1]}px wide. AdSense allows a sticky ad 300px wide or less`);
+  for (const file of walkCode(ROOT)) {
+    const rel = path.relative(ROOT, file);
+    if (rel === 'assets/rtg-ads.js') continue;
+    const src = fs.readFileSync(file, 'utf8');
+    if (!/RTG_ADS\.(sticky|rails)\(/.test(src)) continue;
+    if (rel.endsWith('.html') && !/<script src="\/assets\/rtg-ads\.js\?v=\d+"><\/script>/.test(src)) problems.push(`${rel}: calls RTG_ADS but does not load /assets/rtg-ads.js`);
+    const list = src.match(/const (?:STICKY_ON|STICKY_SCR)=\[([^\]]*)\]/);
+    if (STICKY_SCREENS[rel]) {
+      const got = list ? [...list[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort().join(',') : '';
+      if (got !== [...STICKY_SCREENS[rel]].sort().join(',')) problems.push(`${rel}: the bottom banner's screens are [${got}], check-adsense holds [${STICKY_SCREENS[rel].join(', ')}]. It goes on home, leaderboard and results screens only`);
+    } else if (list) problems.push(`${rel}: has a bottom banner screen list that check-adsense does not hold. Add it to STICKY_SCREENS`);
+  }
+}
+
+/* ONE NAMED UNIT PER PLACEMENT (the owner's rule, 2026-10-27: "if we add an ad, we also go and do
+ * this so that we can track all of them"). Every ad spot has its own unit in AdSense, so the Ad
+ * units report says which spot earns and which does not. scripts/ad-units.json is the list. A slot
+ * the list does not have, a slot on a page the list does not name for it, a retired slot, a unit
+ * used twice on one page (unless it is a 'many' unit), a 'planned' unit already in the code and a
+ * 'live' unit the code no longer carries each fail here. Adding a spot is three things in one
+ * commit: the unit made in AdSense, its id in the list, and the code. */
+const REG = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/ad-units.json'), 'utf8'));
+const bySlot = new Map(Object.entries(REG.units).map(([name, u]) => [u.slot, { name, ...u }]));
+const retired = new Map(Object.entries(REG.retired || {}).map(([name, u]) => [u.slot, name]));
+const seen = new Map();   // unit name -> pages it was found on
+const owns = (where, rel) => where.some((w) => (w.endsWith('/') ? rel.startsWith(w) : rel === w));
+for (const file of walkCode(ROOT)) {
+  const rel = path.relative(ROOT, file);
+  const src = fs.readFileSync(file, 'utf8');
+  const count = new Map();
+  for (const m of src.matchAll(/data-ad-slot=["'](\d+)["']|AD_SLOT\s*=\s*['"](\d+)['"]/g)) {
+    const slot = m[1] || m[2];
+    if (/^0+$/.test(slot)) continue;
+    if (retired.has(slot)) { problems.push(`${rel}: uses the retired unit ${retired.get(slot)} (${slot}). Give the spot its own unit`); continue; }
+    const u = bySlot.get(slot);
+    if (!u) { problems.push(`${rel}: ad slot ${slot} is not in scripts/ad-units.json. Make a named unit for the spot and record it`); continue; }
+    if (!owns(u.where, rel)) { problems.push(`${rel}: carries ${u.name} (${slot}), which ad-units.json keeps to ${u.where.join(', ')}. Each spot gets its own unit`); continue; }
+    count.set(u.name, (count.get(u.name) || 0) + 1);
+    if (!seen.has(u.name)) seen.set(u.name, []);
+    seen.get(u.name).push(rel);
+  }
+  /* A page that builds its units in code keeps the ids in a table (golf's GAD_UNIT = {career: '...'}).
+   * Each id in such a table is one placement, counted the same way. */
+  for (const t of src.matchAll(/\b[A-Z_]*(?:UNIT|SLOT)[A-Z_]*\s*=\s*\{([^}]*)\}/g)) {
+    for (const m of t[1].matchAll(/['"](\d{6,})['"]/g)) {
+      const slot = m[1];
+      if (/^0+$/.test(slot)) continue;
+      const u = bySlot.get(slot);
+      if (retired.has(slot)) problems.push(`${rel}: uses the retired unit ${retired.get(slot)} (${slot}). Give the spot its own unit`);
+      else if (!u) problems.push(`${rel}: ad slot ${slot} is not in scripts/ad-units.json. Make a named unit for the spot and record it`);
+      else if (!owns(u.where, rel)) problems.push(`${rel}: carries ${u.name} (${slot}), which ad-units.json keeps to ${u.where.join(', ')}. Each spot gets its own unit`);
+      else { count.set(u.name, (count.get(u.name) || 0) + 1); if (!seen.has(u.name)) seen.set(u.name, []); seen.get(u.name).push(rel); }
+    }
+  }
+  /* GOLF builds its results and home units in code (golf/index.html, the GAD block). gadMount() runs at
+   * the end of every render and removes the unit when its screen goes; gadDrop() removes it (never hides
+   * it); opening Putt Putt drops it before the course loads. */
+  if (/\bGAD_UNIT\s*=/.test(src)) {
+    if (!/function gadDrop\(/.test(src)) problems.push(`${rel}: builds golf ads but has no gadDrop() to remove them`);
+    if (!/^\s*try\{ gadMount\(\); \}/m.test(src)) problems.push(`${rel}: render() must call gadMount(), which removes the ad when its screen goes`);
+    if (!/function openPutt\([^)]*\)\{[^}]*gadDrop\(\)/.test(src)) problems.push(`${rel}: openPutt() must drop the ad before Putt Putt opens`);
+  }
+  for (const [name, n] of count) if (n > 1 && !REG.units[name].many) problems.push(`${rel}: uses ${name} ${n} times. One placement, one unit`);
+}
+for (const [name, u] of Object.entries(REG.units)) {
+  const found = seen.has(name);
+  if (u.status === 'live' && !found) problems.push(`ad-units.json: ${name} is live but no page carries it. Mark it planned or retired`);
+  if (u.status === 'planned' && found) problems.push(`ad-units.json: ${name} is in ${seen.get(name).join(', ')} but still marked planned. Mark it live`);
+}
 
 if (problems.length) {
   console.error(`AdSense readiness: ${problems.length} problem(s) across ${checked} indexable pages\n`);

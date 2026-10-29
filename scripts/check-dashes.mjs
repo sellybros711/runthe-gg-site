@@ -47,8 +47,8 @@ import { join, relative } from 'path';
    ones were reachable by a player, including the Challenge Bowl share text and
    the <title> of the two pages a shared challenge link opens. The rest were
    comments, which this rule covers too. */
-const GUARDED = ['wrestling', 'hoops', 'globe', 'mythiball', 'golf', 'cfb', 'football',
-  'assets', 'baseball'];
+const GUARDED = ['wrestling', 'hoops', 'mythiball', 'golf', 'cfb', 'football',
+  'assets', 'baseball', 'arcade', '4th-and-what', 'guides'];
 const EXT = /\.(html|js|mjs|css|json|md|txt|svg)$/i;
 const SKIP = /(^|\/)(node_modules|\.git)(\/|$)/;
 

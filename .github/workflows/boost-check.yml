@@ -1,0 +1,65 @@
+name: Golf boost check
+
+# Run The Tour's whole-game boost check (golf/check-boosts.mjs). It plays the real page in a browser:
+# no boost of 2026-10-16 is lowered (golf/boosts-baseline.json), every item's boost reaches the golfer
+# exactly and nothing else, a full closet is the capped sum of its items, the overall follows its
+# formula, gear reaches the career and never the Daily or ranked Head to Head, the season plays the
+# golfer the screens show, every screen shows that number, and a golfer past 99 plays sanely and fits
+# on a phone and a desktop. Runs locally, unchanged:
+#
+#   (python3 -m http.server 8099 &)
+#   node golf/check-boosts.mjs
+#
+# golf/check-payouts.mjs runs beside it: the weekly Mulli-Spin, lifetime coin achievements, the Head to
+# Head daily cap and the Putt Putt Daily card.
+#
+# No secrets, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'golf/index.html'
+      - 'golf/check-boosts.mjs'
+      - 'golf/check-payouts.mjs'
+      - 'golf/putt/putt.js'
+      - 'golf/boosts-baseline.json'
+      - 'supabase/**'
+      - '.github/workflows/boost-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'golf/index.html'
+      - 'golf/check-boosts.mjs'
+      - 'golf/check-payouts.mjs'
+      - 'golf/putt/putt.js'
+      - 'golf/boosts-baseline.json'
+      - 'supabase/**'
+      - '.github/workflows/boost-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: boost-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: Every boost, from the item to the golfer, the sim and every screen
+        run: |
+          (python3 -m http.server 8099 >/dev/null 2>&1 &)
+          sleep 2
+          node golf/check-boosts.mjs
+      - name: What the economy promises is what it pays
+        run: |
+          (python3 -m http.server 8099 >/dev/null 2>&1 &)
+          sleep 2
+          node golf/check-payouts.mjs

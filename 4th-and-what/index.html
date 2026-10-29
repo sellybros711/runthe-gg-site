@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>4th and What | RunThe.GG</title>
+<!-- UNLISTED UNTIL THE OWNER PUTS IT LIVE: noindex, no ad tag, linked from
+     nowhere, not on the newsletter list. 4th-and-what/check-posture.mjs holds
+     all of it. -->
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="4th and What: you are going for it. Pick the distance, draw the play on the clipboard, and watch it run.">
+<meta name="theme-color" content="#10161f" id="themeMeta">
+<script>
+/* THEME BOOT, BEFORE FIRST PAINT. The key is shared across the suite, so a
+   player who set dark anywhere arrives dark. */
+(function () {
+  var t; try { t = localStorage.getItem('runthegrid_theme'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  var m = document.getElementById('themeMeta'); if (m) m.setAttribute('content', t === 'dark' ? '#10161f' : '#ece7dc');
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Silkscreen:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a class="home" href="/" aria-label="RunThe.GG home">RunThe.GG</a>
+    <div class="brand"><span class="pix">4TH</span> <span class="and">and</span> <span class="pix">WHAT</span></div>
+    <button class="icon" id="bGuide" type="button" aria-label="How to play">?</button>
+    <button class="icon" id="themeBtn" type="button" aria-label="Light or dark"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+  </header>
+
+  <!-- 1. THE DISTANCE -->
+  <section class="screen" id="sPick">
+    <p class="kicker">You're going for it.</p>
+    <h1 class="pix big">4th and&nbsp;what?</h1>
+    <p class="lede" id="pickLede">Ball on the 40. Pick the distance.</p>
+    <div class="dists" id="dists"></div>
+  </section>
+
+  <!-- 2. THE CLIPBOARD -->
+  <section class="screen" id="sBoard" hidden>
+    <div class="strip">
+      <button class="chip down" id="bDist" type="button"><span id="downTxt">4th and 5</span> <small>change</small></button>
+      <span class="chip" id="spotTxt">Ball on the 40</span>
+      <span class="chip box" id="boxTxt">Box 6</span>
+    </div>
+    <div class="forms" id="forms" role="radiogroup" aria-label="Formation"></div>
+    <div class="board"><canvas id="cBoard" aria-label="The clipboard. Draw your play here."></canvas></div>
+    <p class="hint" id="hint">Pick a tool. Drag from a player to draw.</p>
+    <div class="tools" id="tools" role="toolbar" aria-label="Tools">
+      <button type="button" class="tool" data-tool="route" aria-pressed="true"><b>Route</b><span>drag from a receiver</span></button>
+      <button type="button" class="tool" data-tool="block" aria-pressed="false"><b>Block</b><span>drag a short bar</span></button>
+      <button type="button" class="tool" data-tool="handoff" aria-pressed="false"><b>Handoff</b><span>QB, then a back</span></button>
+      <button type="button" class="tool" data-tool="target" aria-pressed="false"><b>Target</b><span>tap who gets it</span></button>
+    </div>
+    <div class="acts">
+      <button type="button" class="btn" id="bUndo">Undo</button>
+      <button type="button" class="btn" id="bClear">Clear</button>
+      <button type="button" class="btn go" id="bSnap" disabled>Snap It</button>
+    </div>
+  </section>
+
+  <!-- 3. THE PLAY, AND THE RESULT OVER ITS LAST FRAME -->
+  <section class="screen" id="sLive" hidden>
+    <div class="stage" id="stage">
+      <canvas id="cLive" aria-label="The play"></canvas>
+      <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
+      <div class="cap" id="cap" aria-live="polite"></div>
+      <button type="button" class="skip" id="bSkip">Skip</button>
+      <div class="result" id="result" hidden>
+        <p class="rdown" id="rDown"></p>
+        <h2 class="pix rtitle" id="rTitle"></h2>
+        <p class="rline" id="rLine"></p>
+        <p class="rwhy" id="rWhy"></p>
+        <p class="rcall" id="rCall"></p>
+        <div class="racts">
+          <button type="button" class="btn go" id="bReplay">Replay</button>
+          <button type="button" class="btn" id="bBack">Back to Clipboard</button>
+          <button type="button" class="btn" id="bShare">Share</button>
+        </div>
+        <p class="toast" id="toast" hidden></p>
+        <details class="dbg" id="dbg"><summary>debug</summary><pre id="dbgTxt"></pre></details>
+      </div>
+    </div>
+  </section>
+
+  <dialog class="guide" id="guide">
+    <h2 class="pix">How it works</h2>
+    <ol>
+      <li><b>Pick the distance.</b> You are going for it on 4th down.</li>
+      <li><b>Pick a formation.</b> Hold a player to move him.</li>
+      <li><b>Draw the play.</b> Route: drag from a receiver. Block: drag a short bar. Handoff: tap the QB, then a back, then drag his path. Target: tap who the QB looks to first, then a checkdown.</li>
+      <li><b>Snap it.</b> Your players run exactly what you drew. The defense picks its call every snap. You see it after.</li>
+      <li><b>Get the first down or score.</b> Short, sacked, thrown away or incomplete, you lose.</li>
+    </ol>
+    <form method="dialog"><button class="btn go" type="submit">Got it</button></form>
+  </dialog>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/auth-ui.js?v=9"></script>
+<script src="config.js?v=1"></script>
+<script src="formations.js?v=1"></script>
+<script src="rng.js?v=1"></script>
+<script src="engine.js?v=1"></script>
+<script src="rig.js?v=1"></script>
+<script src="stage.js?v=1"></script>
+<script src="share.js?v=1"></script>
+<script src="clipboard.js?v=2"></script>
+<script src="play.js?v=1"></script>
+<script src="ui.js?v=1"></script>
+<script type="module">
+/* PXHD, the painter the players and the goalpost are drawn with, from the
+   copy Segue already serves (see rig.js). If it fails to load, the play is
+   drawn with flat tokens instead and nothing else changes. */
+import PXHD from '/setlist/pxhd.js?v=2';
+window.FAW_PXHD = PXHD;
+window.dispatchEvent(new Event('faw-pxhd'));
+</script>
+</body>
+</html>

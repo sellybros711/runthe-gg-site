@@ -218,6 +218,26 @@ const FACTS = [
     ok: (e) => [e.C.ANCHOR_IP],
     why: 'ANCHOR_IP',
   },
+  /* THE TWO OCTOBER LINES. The how-to page said October was three rounds, from the
+     Division Series, while a team on 88 to 94 wins really plays a Wild Card round
+     first (reported 2026-10-24). The fix wrote both win totals into a sentence, so
+     both are held here, each to its own sentence. */
+  {
+    id: 'the wild card line',
+    /* Scoped to its own sentence by the lookahead, not by a window width: a window
+       short enough to miss the next sentence's "division" also cut it in half. */
+    find: /\bWin (\d+)\b(?=[^.]*\bin October)/g,
+    near: /October/i,
+    ok: (e) => [e.C.WILD_CARD_WINS],
+    why: 'WILD_CARD_WINS',
+  },
+  {
+    id: 'the division line',
+    find: /\bWin (\d+)\b(?=[^.]*\bdivision)/g,
+    near: /division/i,
+    ok: (e) => [e.C.DIVISION_WINS],
+    why: 'DIVISION_WINS',
+  },
   {
     id: 'the badge catalog',
     find: /\b([\w-]+)\s+badges\b/gi,

@@ -7,7 +7,7 @@
  *
  * THE ONE RULE THAT MATTERS
  * Every cell must be solvable by a normal fan. Not "an answer exists somewhere
- * in a 61,000-row register" — solvable, by someone who follows the sport. So a
+ * in a 61,000-row register": solvable, by someone who follows the sport. So a
  * grid is only built from RECOGNISABLE players (RTG_KNOWN), and every one of
  * the nine cells needs MIN_ANSWERS of them or the grid is thrown away and
  * redrawn. The register's deep cuts are for GRADING, where a rare correct
@@ -108,7 +108,7 @@
   /* Rows are teams. Franchises are the axis every fan has an instinct for, and
      a grid of two teams reads instantly without a legend. Columns mix in a
      college, a position, a decade or an award so the board is not nine
-     "played for both" cells — that variety is what stops every grid feeling
+     "played for both" cells. That variety is what stops every grid feeling
      like the same grid. */
   function build(seed, sources) {
     sources = sources || {};
@@ -117,7 +117,7 @@
     var rng = mulberry32(xmur3('grid-' + seed)());
     /* One league per board. Mixing them sounds like more variety and is the
        opposite: no NBA player ever played for the Cowboys, so every cross-sport
-       cell is empty and the only column that survives is a decade — 82 of 90
+       cell is empty and the only column that survives is a decade: 82 of 90
        columns came back "played in the 1990s". A grid should read as one
        league's history, so the mixed mode picks a league for the day instead. */
     var sport = sources.sport || null;
@@ -174,7 +174,7 @@
   }
 
   /* Does one player satisfy a given cell? The GAME asks this of the register,
-     not of the corpus, so a deep cut counts — build() only ever decided what
+     not of the corpus, so a deep cut counts. build() only ever decided what
      the puzzle asks, never what an answer is allowed to be. */
   function satisfies(player, rowC, colC) {
     return matches(player, rowC) && matches(player, colC);

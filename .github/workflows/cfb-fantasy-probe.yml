@@ -1,0 +1,29 @@
+# Print what CFBD and ESPN actually send for a college week.
+#
+# Both are refused by the development sandbox, so the college Fantasy Challenge's parsers
+# are written against the shapes this prints. It writes nothing and commits nothing.
+name: College fantasy, probe the feeds
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season'
+        required: false
+        default: '2026'
+      week:
+        description: 'Week to look at (the week before it is read for box scores)'
+        required: false
+        default: '6'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Probe
+        run: node cfb/build/fantasy/probe.mjs "${{ inputs.season }}" "${{ inputs.week }}"

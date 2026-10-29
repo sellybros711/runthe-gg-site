@@ -46,7 +46,34 @@
  * 52% to 1% — without a penalty, just a card worth having.
  */
 
-export const NEUTRAL_BASE = 30;
+export const NEUTRAL_BASE = 40;
+
+/* WHAT A SONG IS WORTH IS ITS QUALITY TIMES ITS TIME ON STAGE (v6).
+ *
+ * Up to v5 a song paid its rating once, however long it ran. The night is a
+ * fixed clock, so that paid for COUNT: four five-minute songs earned four
+ * ratings in the time a twenty-minute jam earned one. Random play, which drifts
+ * toward short songs and fills the 8-song cap, scored 82% of the best possible
+ * night, and careful play 89%. Skill was worth seven points.
+ *
+ * Now a song pays for every minute it holds the stage, so the decision is the
+ * one a band makes: is this worth the time it costs? And the rating is measured
+ * from QUALITY_FLOOR rather than from zero, because the archive's ratings run
+ * 38 to 75 and a scale that starts at zero makes the worst song half as good as
+ * the best. Measured over 200 simulated games (setlist/build/sim.mjs):
+ *
+ *                  v5 % of best   v6 % of best
+ *   Random             82            61
+ *   Longest            78            78
+ *   Best song          86            84
+ *   Smart              89            88
+ *
+ * An unrated take is worth NEUTRAL_BASE, about the archive's 25th percentile:
+ * unrated songs are the ones with no jamchart standing at all.
+ */
+export const QUALITY_FLOOR = 25;
+/** A song's points per ten minutes are its quality: 600 seconds is one unit. */
+export const SONG_UNIT_SEC = 600;
 
 // ── the show ─────────────────────────────────────────────────────────────────
 /* Budgets are the archive's medians. maxSongs caps a set so a run of four-minute
@@ -578,8 +605,19 @@ export function placementMult(tags, role) {
   }
 }
 
+/*
+ * HOW HARD A SONG HITS, from its feel (the `feel` column, curated per song in
+ * goose_feels.json). The role tags say where the band tends to put a song,
+ * not how it lands: an opener can be a slow burn and a closer a singalong.
+ * So with a feel, the feel sets the energy and only `jam` and `peak` can lift
+ * it, because a song the band stretches out climbs whatever it started as.
+ * Without one (a song nobody has given a feel yet) the tags decide, as before.
+ */
+export const FEEL_ENERGY = { Ballad: 1, Space: 2, Easy: 2, Bit: 2, Groove: 3, Rocker: 4, Anthem: 5 };
 export function energyOf(perf) {
   const t = tagsOf(perf);
+  const f = perf && FEEL_ENERGY[perf.feel];
+  if (f !== undefined) return Math.max(f, ...t.filter(x => x === 'jam' || x === 'peak').map(x => ENERGY[x]));
   if (!t.length) return ENERGY_DEFAULT;
   return Math.max(...t.map(x => ENERGY[x] === undefined ? ENERGY_DEFAULT : ENERGY[x]));
 }
@@ -587,18 +625,26 @@ export function energyOf(perf) {
 /** Full breakdown for one performance, given the role it landed in. */
 export function scorePerf(perf, role, mono = 1) {
   const base = baseOf(perf);
+  const quality = Math.max(0, base - QUALITY_FLOOR);
   const v = versionParts(perf);
   const fit = roleFit(perf && perf.tags, role);
   const pm = placementMult(perf && perf.tags, role);
+  const length = lenOf(perf) / SONG_UNIT_SEC;
   return {
     base,
+    quality,
+    length,
     versionMult: v.mult,
     versionReasons: v.reasons,
     role: role.name,
     fit,
     placementMult: pm,
     monotonyMult: mono,
-    subtotal: Math.round(base * v.mult * pm * mono),
+    /* How good the take was, whatever its length. What the crowd reacts to. */
+    take: Math.round(base * v.mult * pm * mono),
+    /* What it would have scored with no monotony brake. */
+    full: Math.round(quality * v.mult * pm * length),
+    subtotal: Math.round(quality * v.mult * pm * mono * length),
   };
 }
 
@@ -945,7 +991,7 @@ export function reactionFor(score, perf, seed = 0, ctx = {}) {
   if (score.role === 'Closer' && score.fit !== 'neutral') return pick('closer');
   if (ctx.first) return pick('opening');
   if (score.role === 'Opener' && score.fit !== 'neutral') return pick('opener');
-  if (score.subtotal >= 55) return pick('good');
+  if ((score.take === undefined ? score.subtotal : score.take) >= 55) return pick('good');
   return pick('flat');
 }
 
@@ -1081,7 +1127,8 @@ export function theOneThatGotAway(drafted, sets) {
  * grow when you play more songs — so dividing by song count marked a
  * seventeen-song night down for the crime of being long.
  *
- * The cuts are the quartiles of 600 simulated shows across the skill range,
+ * The cuts are the quartiles of 800 simulated shows across the skill range
+ * (setlist/build/sim.mjs, four strategies on the same 200 draws),
  * so roughly a quarter of nights come out green and a quarter red.
  *
  * During playback the running total is projected to full-show pace before it
@@ -1089,8 +1136,8 @@ export function theOneThatGotAway(drafted, sets) {
  * projection is the real total, so the colour the playback ends on is always
  * the colour the scorecard opens with.
  */
-export const GRADE_WARM = 1036;
-export const GRADE_HOT = 1156;
+export const GRADE_WARM = 892;
+export const GRADE_HOT = 1135;
 /** Songs to get through before the running colour means anything. */
 export const GRADE_SETTLE = 3;
 
@@ -1135,7 +1182,7 @@ export function scoreShow(sets, segues, spent, segueCounts, suites) {
   const monoHits = [];
   perSet.forEach((songs, si) => songs.forEach((x, i) => {
     if (x.score.monotonyMult >= 1) return;
-    const full = Math.round(x.score.base * x.score.versionMult * x.score.placementMult);
+    const full = x.score.full;
     monoHits.push({
       set: si, at: i, song: x.perf.song,
       kind: x.mono.kind, depth: x.mono.depth,

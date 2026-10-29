@@ -50,7 +50,7 @@
      rules the hub's mark() calls used to carry inline. */
   var GAMES = [
     { key: 'sportegories', name: 'Sportegories', done: function (t) { var s = J('rtg_sportegories_v1'); return !!(s.last && s.last.d === t); },
-      line: function () { var s = J('rtg_sportegories_v1'); return (s.last && s.last.score != null) ? (s.last.score + ' pts') : 'Played'; } },
+      line: function () { var s = J('rtg_sportegories_v1'); return (s.last && s.last.score != null) ? (s.last.score + (s.last.score===1?' pt':' pts')) : 'Played'; } },
     { key: 'crossword', name: 'Daily Crossword', done: function (t) { return J('rtg:cw:v1').lastDone === t; },
       line: function () { var s = J('rtg:cw:v1'); var b = s.lastTime != null ? s.lastTime : (s.last && s.last.seconds); return (b != null) ? (Math.floor(b / 60) + ':' + pad(Math.round(b % 60))) : 'Solved'; } },
     { key: 'almamater', name: 'Alma Mater', done: function (t) { return J('rtg:almamater:v1').lastDone === t; },

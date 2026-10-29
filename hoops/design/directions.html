@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Career Directions | Run The Floor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&family=Press+Start+2P&display=swap">
+<!--
+  Three candidate directions for Career mode, rendered with the real player
+  sprite from ../baller.js and nothing else changed about him. One screen each,
+  the same content in all three, so the comparison is the system and not the
+  copy. This page is a design artefact: it is noindexed and linked from nowhere.
+  Once a direction is picked, its tokens move into DESIGN.md and this page is
+  replaced by the living style guide.
+-->
+<style>
+  :root{
+    --display:'Anton',Impact,'Arial Narrow',sans-serif;
+    --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --pixel:'Press Start 2P',var(--display);
+    --team1:#006BB6; --team2:#F58426;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#05070b;color:#e9edf5;font-family:var(--body)}
+  body{padding:28px 16px 64px}
+  .intro{max-width:1240px;margin:0 auto 28px}
+  .intro h1{font-family:var(--display);font-weight:400;font-size:40px;letter-spacing:.01em;text-transform:uppercase}
+  .intro p{color:#9aa4b6;max-width:760px;line-height:1.55;margin-top:8px;font-size:15px}
+  .row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;max-width:1300px;margin:0 auto}
+  .col{display:flex;flex-direction:column;gap:12px;width:390px;max-width:100%}
+  .lab{font-family:var(--display);font-size:26px;text-transform:uppercase;letter-spacing:.02em}
+  .lab small{display:block;font-family:var(--body);font-size:13px;color:#9aa4b6;text-transform:none;letter-spacing:0;line-height:1.5;margin-top:4px}
+  .phone{width:390px;max-width:100%;height:844px;overflow:hidden;border-radius:28px;position:relative;box-shadow:0 0 0 1px #1d2433,0 30px 60px rgba(0,0,0,.6)}
+  .swatches{display:flex;gap:6px;flex-wrap:wrap}
+  .swatches i{width:30px;height:30px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .px{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+  .rtf-baller{image-rendering:pixelated;display:block}
+
+  /* ════════════════════ A. PRIME TIME ════════════════════
+     A national TV broadcast. Near black, hard edges, the team colour as a
+     bar that runs down the side of everything, gold for what matters. */
+  .A{background:#06080d;height:100%;font-family:var(--body);position:relative}
+  .A .top{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #161c28}
+  .A .live{display:flex;align-items:center;gap:6px;font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+  .A .live b{width:8px;height:8px;background:#e5322d;border-radius:50%;box-shadow:0 0 0 3px rgba(229,50,45,.22)}
+  .A .top .ses{margin-left:auto;font-size:11px;font-weight:700;color:#8792a6;letter-spacing:.12em;text-transform:uppercase}
+  .A .hero{position:relative;margin:14px 16px 0;height:208px;background:linear-gradient(180deg,#0d1422,#080b12);overflow:hidden;border-left:6px solid var(--team1)}
+  .A .hero .crowd{position:absolute;inset:0 0 auto 0;height:120px;opacity:.28}
+  .A .hero .fig{position:absolute;left:8px;bottom:0}
+  .A .hero .meta{position:absolute;left:150px;right:96px;top:18px}
+  .A .hero .num{font-family:var(--display);font-size:13px;color:var(--team2);letter-spacing:.14em}
+  .A .hero h2{font-family:var(--display);font-weight:400;font-size:40px;line-height:.95;text-transform:uppercase;margin-top:4px}
+  .A .hero .sub{font-size:12px;color:#9aa4b6;margin-top:6px;font-weight:600}
+  .A .ovr{position:absolute;right:14px;bottom:14px;text-align:right}
+  .A .ovr b{font-family:var(--display);font-size:58px;line-height:.9;color:#fff;display:block}
+  .A .ovr span{font-size:10px;font-weight:800;letter-spacing:.2em;color:#f2b632}
+  .A .meters{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;margin:1px 16px 0;background:#161c28}
+  .A .m{background:#0b0f17;padding:8px 6px 9px}
+  .A .m .k{font-size:9px;font-weight:800;letter-spacing:.14em;color:#8792a6;text-transform:uppercase;display:flex;align-items:center;gap:4px}
+  .A .m .v{font-family:var(--display);font-size:22px;line-height:1.1;margin-top:3px}
+  .A .seg{display:flex;gap:2px;margin-top:4px}.A .seg i{height:4px;flex:1;background:#1c2433}.A .seg i.on{background:#e9edf5}.A .seg.gold i.on{background:#f2b632}
+  .A .card{margin:16px 16px 0;background:#0b0f17;border-left:6px solid #f2b632;position:relative}
+  .A .card .chy{display:flex;align-items:stretch;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+  .A .card .chy b{background:#f2b632;color:#0a0a0a;padding:6px 10px}
+  .A .card .chy span{background:#141b28;color:#c6cedb;padding:6px 10px;flex:1}
+  .A .card h3{font-family:var(--display);font-weight:400;font-size:30px;line-height:1.02;text-transform:uppercase;padding:14px 14px 0}
+  .A .card p{font-size:14px;color:#aab3c3;line-height:1.5;padding:8px 14px 0}
+  .A .opts{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
+  .A .opt{display:flex;align-items:center;gap:12px;background:#121926;padding:12px;border:1px solid #1f2838}
+  .A .opt .n{font-family:var(--display);font-size:20px;color:#f2b632;width:18px}
+  .A .opt b{font-size:15px;display:block}.A .opt small{font-size:12px;color:#8792a6}
+  .A .opt.hi{border-color:#f2b632;background:#1a1f22}
+  .A .ticker{position:absolute;left:0;right:0;bottom:0;display:flex;font-size:11px;font-weight:700;background:#0d121c;border-top:2px solid var(--team1);height:34px;align-items:center;overflow:hidden;white-space:nowrap}
+  .A .ticker b{background:var(--team1);color:#fff;height:100%;display:flex;align-items:center;padding:0 10px;letter-spacing:.14em;text-transform:uppercase}
+  .A .ticker span{padding:0 12px;color:#c6cedb}
+
+  /* ════════════════════ B. ARENA ARCADE ════════════════════
+     A sports video game menu. The sprite sets the rules for everything:
+     pixel crowd, pixel hardwood, stepped pixel frames, a pixel face for
+     labels and numbers. Spotlight from above, the floor below. */
+  .B{height:100%;position:relative;background:#0a0d18;font-family:var(--body);overflow:hidden}
+  .B .stage{position:absolute;inset:0 0 auto 0;height:330px;overflow:hidden}
+  .B .stage .crowd{position:absolute;inset:0 0 auto 0;height:190px}
+  .B .stage .dim{position:absolute;inset:0 0 auto 0;height:190px;background:linear-gradient(180deg,rgba(10,13,24,.55),rgba(10,13,24,.25))}
+  .B .stage .spot{position:absolute;left:50%;top:-40px;width:420px;height:400px;transform:translateX(-50%);background:radial-gradient(ellipse 45% 60% at 50% 0%,rgba(255,236,196,.30),rgba(255,236,196,0) 70%)}
+  .B .stage .floor{position:absolute;left:0;right:0;bottom:0;height:140px}
+  .B .stage .fig{position:absolute;left:22px;bottom:22px}
+  .B .hud{position:absolute;left:12px;right:12px;top:12px;display:flex;justify-content:space-between;align-items:flex-start}
+  .B .tag{font-family:var(--pixel);font-size:9px;line-height:1.5;color:#fff;background:#151a2e;padding:7px 9px;box-shadow:0 0 0 2px #0a0d18,0 0 0 4px #2d3a66}
+  .B .tag.or{background:#ff7a1a;color:#140a02;box-shadow:0 0 0 2px #0a0d18,0 0 0 4px #ffb37a}
+  .B .ovr{position:absolute;right:16px;top:226px;text-align:right}
+  .B .ovr b{font-family:var(--pixel);font-size:30px;color:#fff;display:block;text-shadow:3px 3px 0 var(--team1)}
+  .B .ovr span{font-family:var(--pixel);font-size:8px;color:#ffd166}
+  .B .name{position:absolute;right:16px;top:120px;text-align:right}
+  .B .name b{font-family:var(--display);font-size:34px;line-height:.95;text-transform:uppercase;display:block;text-shadow:3px 3px 0 #000}
+  .B .name span{font-family:var(--pixel);font-size:8px;color:#9ad1ff;display:block;margin-top:6px}
+  .B .panel{position:absolute;left:12px;right:12px;top:338px;bottom:12px;display:flex;flex-direction:column;gap:12px}
+  .B .frame{background:#111629;position:relative;clip-path:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px));box-shadow:inset 0 0 0 3px #2d3a66}
+  .B .meters{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:12px 12px 10px}
+  .B .m{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .B .m .k{font-family:var(--pixel);font-size:7px;color:#8fa0d6}
+  .B .pips{display:flex;gap:2px}.B .pips i{width:5px;height:10px;background:#232c4d}.B .pips i.on{background:#2ad1c9}.B .pips.or i.on{background:#ff7a1a}
+  .B .card{padding:16px 16px 14px}
+  .B .card .eye{font-family:var(--pixel);font-size:8px;color:#ffd166;line-height:1.6}
+  .B .card h3{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.02;text-transform:uppercase;margin-top:8px}
+  .B .card p{font-size:14px;color:#b8c3e6;line-height:1.5;margin-top:6px}
+  .B .opts{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+  .B .opt{display:flex;align-items:center;gap:10px;padding:10px 10px;background:#18203a;font-size:15px;font-weight:700}
+  .B .opt small{display:block;font-weight:500;font-size:12px;color:#8fa0d6}
+  .B .opt .cur{width:14px;flex:none}
+  .B .opt.hi{background:#ff7a1a;color:#160b02}.B .opt.hi small{color:#4a2408}
+
+  /* ════════════════════ C. BACK OF THE CARD ════════════════════
+     A trading card and a sports magazine. The arena is dark, the paper is
+     cream, the type is set like a feature. The sprite lives in a printed
+     frame with the team stripe behind him. */
+  .C{height:100%;background:#16120e;font-family:var(--body);position:relative;overflow:hidden;color:#1d1a15}
+  .C .grain{position:absolute;inset:0;opacity:.5}
+  .C .top{position:relative;display:flex;justify-content:space-between;align-items:baseline;padding:16px 18px 10px;color:#efe5cf}
+  .C .top b{font-family:var(--display);font-size:22px;letter-spacing:.04em;text-transform:uppercase}
+  .C .top span{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#b9a988}
+  .C .tc{position:relative;margin:0 16px;background:#efe6d2;padding:12px;box-shadow:0 2px 0 #b9a988,0 18px 30px rgba(0,0,0,.45)}
+  .C .tc .win{position:relative;height:196px;background:var(--team1);overflow:hidden}
+  .C .tc .win .stripe{position:absolute;left:-20px;right:-20px;top:120px;height:26px;background:var(--team2);transform:rotate(-8deg)}
+  .C .tc .win .fig{position:absolute;left:18px;bottom:-4px}
+  .C .tc .win .no{position:absolute;right:10px;top:4px;font-family:var(--display);font-size:92px;line-height:1;color:rgba(255,255,255,.18)}
+  .C .tc .nm{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px}
+  .C .tc .nm b{font-family:var(--display);font-size:34px;line-height:.92;text-transform:uppercase;color:#14110d}
+  .C .tc .nm small{display:block;font-size:11px;font-weight:800;letter-spacing:.14em;color:#7a6a4d;text-transform:uppercase;margin-top:4px}
+  .C .tc .nm .o{text-align:center;border:2px solid #14110d;padding:2px 8px 0}
+  .C .tc .nm .o b{font-size:36px}.C .tc .nm .o small{margin:0 0 3px}
+  .C .stats{display:grid;grid-template-columns:repeat(5,1fr);border-top:2px solid #14110d;border-bottom:1px solid #14110d;margin-top:10px}
+  .C .stats div{padding:6px 4px;border-right:1px solid #cdbf9f;text-align:center}.C .stats div:last-child{border:0}
+  .C .stats small{font-size:9px;font-weight:800;letter-spacing:.12em;color:#7a6a4d;text-transform:uppercase;display:block}
+  .C .stats b{font-family:var(--display);font-size:20px}
+  .C .clip{position:relative;margin:16px 16px 0;background:#f6efe0;padding:16px 16px 14px;transform:rotate(-.6deg);box-shadow:0 12px 24px rgba(0,0,0,.35)}
+  .C .clip .eye{font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b0331f;border-bottom:1px solid #14110d;padding-bottom:6px;display:flex;justify-content:space-between}
+  .C .clip h3{font-family:var(--display);font-weight:400;font-size:30px;line-height:1;text-transform:uppercase;margin-top:10px;color:#14110d}
+  .C .clip p{font-size:14px;line-height:1.55;margin-top:6px;color:#3b342a}
+  .C .clip p i{font-style:normal;font-weight:800}
+  .C .opts{margin-top:12px;display:flex;flex-direction:column}
+  .C .opt{display:flex;gap:12px;align-items:baseline;padding:10px 0;border-top:1px solid #d5c7a6;font-size:15px;font-weight:800;color:#14110d}
+  .C .opt small{display:block;font-weight:500;font-size:12px;color:#6c5f47}
+  .C .opt .n{font-family:var(--display);font-size:20px;color:#b0331f;width:16px}
+  .C .opt.hi{background:#14110d;color:#efe6d2;margin:0 -16px;padding:10px 16px}.C .opt.hi small{color:#b9a988}.C .opt.hi .n{color:#f58426}
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>Career: three directions</h1>
+  <p>The same screen three ways: the career hub on a phone, mid-season, with a decision on the table. The player is the real sprite from <code>baller.js</code>, unchanged, drawn at whole-number scales. Every other pixel here (crowd, hardwood, icons, trophy) is drawn on the same grid and lit from the same upper left. Pick one and the rest of the game is built from it.</p>
+</div>
+<div class="row">
+
+  <div class="col">
+    <div class="lab">A. Prime Time<small>A national TV broadcast. Near-black, hard edges, condensed headlines, the team colour as a bar down the side of everything and broadcast gold for what matters. The calmest of the three, and the one that scales best to dense stat screens.</small></div>
+    <div class="phone"><div class="A">
+      <div class="top"><span class="live"><b></b>Floor Wire Live</span><span class="ses">2031-32 · Week 14</span></div>
+      <div class="hero">
+        <canvas class="crowd px" data-px="crowd" data-w="98" data-h="30" data-s="4" data-tone="cool"></canvas>
+        <div class="fig" data-fig="A"></div>
+        <div class="meta"><div class="num">#3 · SG · KNICKS</div><h2>Marcus<br>Hale</h2><div class="sub">Age 24 · Year 3 · Shot creator</div></div>
+        <div class="ovr"><b>78</b><span>OVERALL</span></div>
+      </div>
+      <div class="meters">
+        <div class="m"><div class="k"><canvas class="px" data-icon="heart" data-s="1"></canvas>Health</div><div class="v">92</div><div class="seg" data-seg="9"></div></div>
+        <div class="m"><div class="k"><canvas class="px" data-icon="face" data-s="1"></canvas>Mood</div><div class="v">64</div><div class="seg" data-seg="6"></div></div>
+        <div class="m"><div class="k"><canvas class="px" data-icon="star" data-s="1"></canvas>Fame</div><div class="v">41</div><div class="seg gold" data-seg="4"></div></div>
+        <div class="m"><div class="k"><canvas class="px" data-icon="clip" data-s="1"></canvas>Trust</div><div class="v">71</div><div class="seg" data-seg="7"></div></div>
+        <div class="m"><div class="k"><canvas class="px" data-icon="cash" data-s="1"></canvas>Deal</div><div class="v">2Y</div><div class="seg" data-seg="3"></div></div>
+      </div>
+      <div class="card">
+        <div class="chy"><b>Breaking</b><span>Trade deadline · 6 days</span></div>
+        <h3>Your name is in a three-team rumor</h3>
+        <p>Kelvin Shaw at the Wire says the Knicks are shopping you for a star and two firsts. Your agent wants an answer by tonight.</p>
+        <div class="opts">
+          <div class="opt hi"><span class="n">1</span><div><b>Ask for the trade</b><small>Burns trust here. Agent loves it.</small></div></div>
+          <div class="opt"><span class="n">2</span><div><b>"I want to be a Knick"</b><small>Fans remember. The GM might not care.</small></div></div>
+          <div class="opt"><span class="n">3</span><div><b>Say nothing</b><small>Let the deadline decide.</small></div></div>
+        </div>
+      </div>
+      <div class="ticker"><b>Around the league</b><span>Celtics win 9 straight · Malik Rowe ruled out 4 weeks · MVP ladder: you are 11th</span></div>
+    </div></div>
+    <div class="swatches"><i style="background:#06080d"></i><i style="background:#0b0f17"></i><i style="background:#121926"></i><i style="background:#e9edf5"></i><i style="background:#f2b632"></i><i style="background:#e5322d"></i><i style="background:var(--team1)"></i><i style="background:var(--team2)"></i></div>
+  </div>
+
+  <div class="col">
+    <div class="lab">B. Arena Arcade<small>A sports video game menu built around the sprite. Spotlit pixel crowd above, pixel hardwood below, stepped pixel frames, a pixel face for labels and numbers. The most playful, and the closest match to the characters' own style.</small></div>
+    <div class="phone"><div class="B">
+      <div class="stage">
+        <canvas class="crowd px" data-px="crowd" data-w="98" data-h="48" data-s="4" data-tone="warm"></canvas>
+        <div class="dim"></div><div class="spot"></div>
+        <canvas class="floor px" data-px="wood" data-w="98" data-h="35" data-s="4"></canvas>
+        <div class="fig" data-fig="B"></div>
+        <div class="hud"><span class="tag or">YEAR 3</span><span class="tag">KNICKS 34-21</span></div>
+        <div class="name"><b>Marcus<br>Hale</b><span>#3 SG · SHOT CREATOR</span></div>
+        <div class="ovr"><b>78</b><span>OVR</span></div>
+      </div>
+      <div class="panel">
+        <div class="frame meters">
+          <div class="m"><canvas class="px" data-icon="heart" data-s="2"></canvas><div class="pips" data-pips="9"></div><span class="k">HP</span></div>
+          <div class="m"><canvas class="px" data-icon="face" data-s="2"></canvas><div class="pips" data-pips="6"></div><span class="k">MOOD</span></div>
+          <div class="m"><canvas class="px" data-icon="star" data-s="2"></canvas><div class="pips or" data-pips="4"></div><span class="k">FAME</span></div>
+          <div class="m"><canvas class="px" data-icon="clip" data-s="2"></canvas><div class="pips" data-pips="7"></div><span class="k">TRUST</span></div>
+          <div class="m"><canvas class="px" data-icon="cash" data-s="2"></canvas><div class="pips" data-pips="3"></div><span class="k">DEAL</span></div>
+        </div>
+        <div class="frame card">
+          <div class="eye">TRADE DEADLINE · 6 DAYS</div>
+          <h3>Your name is in a three-team rumor</h3>
+          <p>Kelvin Shaw at the Wire says the Knicks are shopping you. Your agent wants an answer tonight.</p>
+          <div class="opts">
+            <div class="opt hi"><canvas class="cur px" data-icon="arrow" data-s="2"></canvas><div>Ask for the trade<small>Trust down. Agent up.</small></div></div>
+            <div class="opt"><span class="cur"></span><div>"I want to be a Knick"<small>Fans remember.</small></div></div>
+            <div class="opt"><span class="cur"></span><div>Say nothing<small>Let the deadline decide.</small></div></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="swatches"><i style="background:#0a0d18"></i><i style="background:#111629"></i><i style="background:#2d3a66"></i><i style="background:#ff7a1a"></i><i style="background:#2ad1c9"></i><i style="background:#ffd166"></i><i style="background:#c98b4e"></i><i style="background:var(--team1)"></i></div>
+  </div>
+
+  <div class="col">
+    <div class="lab">C. Back of the Card<small>A trading card and a sports magazine feature. Dark room, cream card stock, the player printed in a team-colour window, decisions as a newspaper clipping. The most distinctive and the most editorial; heavier to build for dense tables.</small></div>
+    <div class="phone"><div class="C">
+      <canvas class="grain px" data-px="grain" data-w="98" data-h="211" data-s="4"></canvas>
+      <div class="top"><b>Career</b><span>2031-32 · Knicks</span></div>
+      <div class="tc">
+        <div class="win"><div class="stripe"></div><div class="no">3</div><div class="fig" data-fig="C"></div></div>
+        <div class="nm"><div><b>Marcus Hale</b><small>SG · Shot creator · Age 24</small></div><div class="o"><b>78</b><small>OVR</small></div></div>
+        <div class="stats"><div><small>Health</small><b>92</b></div><div><small>Mood</small><b>64</b></div><div><small>Fame</small><b>41</b></div><div><small>Trust</small><b>71</b></div><div><small>Deal</small><b>2Y</b></div></div>
+      </div>
+      <div class="clip">
+        <div class="eye"><span>The Floor Wire</span><span>Deadline: 6 days</span></div>
+        <h3>Your name is in a three-team rumor</h3>
+        <p><i>Kelvin Shaw</i> says the Knicks are shopping you for a star and two firsts. Your agent wants an answer by tonight.</p>
+        <div class="opts">
+          <div class="opt hi"><span class="n">1</span><div>Ask for the trade<small>Burns trust here. Agent loves it.</small></div></div>
+          <div class="opt"><span class="n">2</span><div>"I want to be a Knick"<small>Fans remember. The GM might not.</small></div></div>
+          <div class="opt"><span class="n">3</span><div>Say nothing<small>Let the deadline decide.</small></div></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="swatches"><i style="background:#16120e"></i><i style="background:#efe6d2"></i><i style="background:#f6efe0"></i><i style="background:#14110d"></i><i style="background:#b0331f"></i><i style="background:#7a6a4d"></i><i style="background:var(--team1)"></i><i style="background:var(--team2)"></i></div>
+  </div>
+
+</div>
+
+<script src="../baller.js"></script>
+<script>
+(function(){
+  /* A small seeded random, so a reload is the same picture. */
+  var s = 7; function rnd(){ s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }
+
+  /* Pixel textures, drawn at one cell per pixel and scaled by CSS with
+     image-rendering:pixelated, the same grid the sprite is drawn on. */
+  function crowd(cv, w, h, tone){
+    var c = cv.getContext('2d'); cv.width = w; cv.height = h;
+    var bg = tone === 'warm' ? '#120e1c' : '#0a0f1a'; c.fillStyle = bg; c.fillRect(0,0,w,h);
+    var shirts = tone === 'warm' ? ['#2a2340','#3a2c4a','#4b2f3a','#20304f','#5a3a2a','#006BB6','#F58426'] : ['#18243a','#1d2c46','#24314d','#1a2840','#006BB6','#33415e'];
+    var skins = ['#6c4027','#aa6f45','#dfa77d','#8b5735','#c88c60','#efc39f'];
+    for (var row = 0; row < h; row += 6){
+      var step = row % 12 ? 4 : 0;
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0,row+5,w,1);
+      for (var x = -step; x < w; x += 4){
+        if (rnd() < .12) continue;
+        var lift = rnd() < .08 ? -1 : 0;
+        c.fillStyle = shirts[(rnd()*shirts.length)|0]; c.fillRect(x+1,row+3+lift,3,2);
+        c.fillStyle = skins[(rnd()*skins.length)|0]; c.fillRect(x+1,row+1+lift,2,2);
+        if (rnd() < .05){ c.fillStyle = '#fff4c8'; c.fillRect(x+3,row+lift,1,1); }
+      }
+    }
+    var g = c.createLinearGradient(0,0,0,h); g.addColorStop(0,'rgba(0,0,0,.55)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    c.fillStyle = g; c.fillRect(0,0,w,h);
+  }
+  function wood(cv, w, h){
+    var c = cv.getContext('2d'); cv.width = w; cv.height = h;
+    var tones = ['#c98b4e','#c3854a','#cf9256','#bd7f45'];
+    for (var y = 0; y < h; y++){
+      for (var x = 0; x < w; x += 1){
+        var plank = Math.floor((x + (y % 2 ? 0 : 0)) / 7);
+        var t = tones[(plank * 7 + Math.floor(y / 11) * 3) % tones.length];
+        c.fillStyle = t; c.fillRect(x,y,1,1);
+      }
+    }
+    c.fillStyle = 'rgba(80,40,10,.35)';
+    for (var x2 = 0; x2 < w; x2 += 7) c.fillRect(x2,0,1,h);
+    for (var k = 0; k < 120; k++){ c.fillStyle = rnd() < .5 ? 'rgba(255,230,190,.18)' : 'rgba(90,45,10,.18)'; c.fillRect((rnd()*w)|0,(rnd()*h)|0,2,1); }
+    c.fillStyle = '#efe6d2'; c.fillRect(0,6,w,1);
+    c.beginPath(); c.strokeStyle = '#efe6d2'; c.lineWidth = 1; c.ellipse(w/2, 6, 22, 8, 0, 0, Math.PI); c.stroke();
+    var g = c.createLinearGradient(0,0,0,h); g.addColorStop(0,'rgba(255,230,190,.12)'); g.addColorStop(1,'rgba(0,0,0,.55)');
+    c.fillStyle = g; c.fillRect(0,0,w,h);
+  }
+  function grain(cv, w, h){
+    var c = cv.getContext('2d'); cv.width = w; cv.height = h;
+    for (var k = 0; k < 900; k++){ c.fillStyle = rnd() < .5 ? 'rgba(255,240,210,.035)' : 'rgba(0,0,0,.25)'; c.fillRect((rnd()*w)|0,(rnd()*h)|0,1,1); }
+  }
+  var ICONS = {
+    heart: ['.XX.XX.','XHXXXXX','XXXXXXX','.XXXXX.','..XXX..','...X...'],
+    face:  ['.XXXXX.','XHXXXXX','XX.X.XX','XXXXXXX','X.XXX.X','.X...X.','..XXX..'],
+    star:  ['...X...','..XHX..','XXXXXXX','.XXXXX.','.XX.XX.','X.....X'],
+    clip:  ['.XXXXX.','X..H..X','X.XXX.X','X.....X','X.XXX.X','X.....X','XXXXXXX'],
+    cash:  ['...X...','.XXXXX.','XHX....','.XXXXX.','....X.X','.XXXXX.','...X...'],
+    arrow: ['X....','XX...','XXX..','XXXX.','XXX..','XX...','X....'],
+  };
+  var ICON_COL = { heart:['#e5483f','#ffb3a8'], face:['#f2b632','#fff0b8'], star:['#ffd166','#fff6d6'], clip:['#7fb2ff','#dbe9ff'], cash:['#3ecf8e','#c9ffe6'], arrow:['#160b02','#160b02'] };
+  function icon(cv, name, sc){
+    var g = ICONS[name], h = g.length, w = g[0].length, col = ICON_COL[name];
+    cv.width = w; cv.height = h; cv.style.width = (w * 2 * sc) + 'px'; cv.style.height = (h * 2 * sc) + 'px';
+    var c = cv.getContext('2d');
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++){
+      var ch = g[y][x]; if (ch === '.') continue;
+      c.fillStyle = ch === 'H' ? col[1] : col[0]; c.fillRect(x,y,1,1);
+    }
+  }
+  document.querySelectorAll('canvas[data-px]').forEach(function(cv){
+    var w = +cv.dataset.w, h = +cv.dataset.h, sc = +cv.dataset.s;
+    if (cv.dataset.px === 'crowd') crowd(cv, w, h, cv.dataset.tone);
+    if (cv.dataset.px === 'wood') wood(cv, w, h);
+    if (cv.dataset.px === 'grain') grain(cv, w, h);
+    cv.style.width = (w * sc) + 'px'; cv.style.height = (h * sc) + 'px';
+  });
+  document.querySelectorAll('canvas[data-icon]').forEach(function(cv){ icon(cv, cv.dataset.icon, +cv.dataset.s); });
+  document.querySelectorAll('[data-seg]').forEach(function(el){ var n = +el.dataset.seg; for (var i = 0; i < 10; i++) el.insertAdjacentHTML('beforeend', '<i' + (i < n ? ' class="on"' : '') + '></i>'); });
+  document.querySelectorAll('[data-pips]').forEach(function(el){ var n = +el.dataset.pips; for (var i = 0; i < 10; i++) el.insertAdjacentHTML('beforeend', '<i' + (i < n ? ' class="on"' : '') + '></i>'); });
+
+  /* The player, unchanged: one look, the Knicks' colours, number 3. */
+  var B = window.RTF_BALLER; if (!B) return;
+  var look = { skin: 5, hair: 'twists', hc: 0, beard: 'stubble', band: 'white', sleeve: 'club', shoes: 'club', build: 'standard' };
+  var base = { c1: '#006BB6', c2: '#F58426', num: 3, age: 24 };
+  var put = function(id, o){ var el = document.querySelector('[data-fig="' + id + '"]'); if (el) el.innerHTML = B.img(look, Object.assign({}, base, o)); };
+  put('A', { pose: 'ball', scale: 3 });
+  put('B', { pose: 'up', scale: 3 });
+  put('C', { pose: 'stand', scale: 3, shadow: false });
+})();
+</script>
+</body>
+</html>

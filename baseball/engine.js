@@ -54,7 +54,7 @@ const CONSTANTS = {
   PLAYOFF_HOME_FIELD: 0.15,
 
   /* Playoff opponents get this much tougher each round. */
-  PLAYOFF_ROUND_STEP: 0.12,
+  PLAYOFF_ROUND_STEP: 0.15,
 
   /* The record to chase. */
   RECORD_WINS: 116,
@@ -711,9 +711,17 @@ const PROJ = {
    * played for 16 seasons: actual = 1.019 * projected + 1.61, rms 1.60 wins,
    * over a range of 50 to 107 actual wins. The projection is sound across the
    * whole range a draft can reach, so it was left alone and only the anchors
-   * below moved. */
-  SLOPE: 1.5047,
-  INTERCEPT: -50.51,
+   * below moved.
+   *
+   * REFITTED when the schedule got harder (OPP_OFF_SCALE 1.05, OPP_DEF_SCALE
+   * 0.92): 640 drafts across eight bots, single seasons, actual = 1.5065 *
+   * pythagorean + -56.77, rms 6.3 wins for one season (the season's own noise).
+   * The same script on the old schedule gave 1.589 / -56.42 against the
+   * shipped 1.5047 / -50.51, so the bot mix moves the fit a little too. What
+   * it has to do is predict the season, and it does: every bot's mean
+   * projection lands within 2.2 wins of its mean record. */
+  SLOPE: 1.5065,
+  INTERCEPT: -56.77,
   /*
    * THE SCALE IS ANCHORED ON WHAT A DRAFT CAN ACTUALLY PRODUCE, at both ends.
    *
@@ -742,8 +750,14 @@ const PROJ = {
    * is 0.77 of a win, and no part of the scale is unreachable in either
    * direction. Re-measure both ends if the cap or the player pool moves: they
    * are facts about the draft, not preferences. */
-  FLOOR_WINS: 31, FLOOR_RATING: 1,
-  TOP_WINS: 106, TOP_RATING: 99,
+  /* RE-ANCHORED with the harder schedule, by the same method: the worst-man
+   * bot now projects a median 23 wins (was 28) and the best roster any bot
+   * reached projects 99 (was 107). So the scale keeps its meaning (1 is the
+   * worst draft, 99 the best anybody built) and a roster wins fewer games at
+   * every rating. A dead top is the defect this block was written to fix, so
+   * the anchors follow the draft rather than holding a win total. */
+  FLOOR_WINS: 26, FLOOR_RATING: 1,
+  TOP_WINS: 99, TOP_RATING: 99,
 };
 
 /* What a roster projects to win over 162, on this game's schedule. */
@@ -808,13 +822,21 @@ const CHEMISTRY = {
      * Johnny Pesky '50 wore the same shirt the same summers. Between a reunion
      * (the same drafted season) and a bare franchise tie. */
     teammates: 0.05,
+    /* Two men who went to the same college, in any era. Weaker than having played
+     * together in the majors and stronger than a bare shared shirt: a school is
+     * something the two of them really had in common, and a club they wore
+     * decades apart is something that happened to them separately. */
+    college:   0.04,
     franchise: 0.03,
     /* Era is a weak ambient link, kept small so the deliberate links
      * (family/reunion/battery/DP) are what actually move the needle. */
     era:       0.005,
   },
   MIN: -0.10,
-  MAX: 0.15,
+  /* 0.15 until 2026-09, when players reported chemistry as overpowered: the bot
+   * that chases links won 97 games and a title on 14.5% of runs. 0.12 takes that
+   * bot to 93 wins; see CLAUDE.md, "October got harder". */
+  MAX: 0.12,
 };
 
 /* Curated real-life relationships (families), loaded from data/chemistry.json.
@@ -882,6 +904,34 @@ function playsAs(p, pos) {
   return playerPositions(p).includes(pos);
 }
 
+/* WHERE THEY WENT TO SCHOOL, from data/colleges.json (Lahman's CollegePlaying,
+ * through 2014, built by pipeline/build_colleges.py). player id -> [school ids],
+ * and school id -> the name a box score writes. A man with no entry simply has no
+ * college link: the source stops in 2014, so it under-counts and never invents a
+ * pair. */
+let COLLEGES = {}, SCHOOL_NAMES = {};
+function setColleges(json) {
+  COLLEGES = {}; SCHOOL_NAMES = {};
+  if (!json || !json.p) return;
+  SCHOOL_NAMES = json.schools || {};
+  for (const id of Object.keys(json.p)) {
+    const v = json.p[id];
+    COLLEGES[id] = Array.isArray(v) ? v : [v];
+  }
+}
+/* The first school two players both went to, as its name, or null. */
+function sharedCollege(a, b) {
+  if (!a || !b || a.i === b.i) return null;
+  const A = COLLEGES[a.i], B = COLLEGES[b.i];
+  if (!A || !B) return null;
+  for (const s of A) if (B.indexOf(s) !== -1) return SCHOOL_NAMES[s] || s;
+  return null;
+}
+function collegeOf(p) {
+  const L = p && COLLEGES[p.i];
+  return L ? L.map((s) => SCHOOL_NAMES[s] || s) : [];
+}
+
 function familyLink(a, b) {
   const m = CURATED_FAMILY[a.i];
   return m && m[b.i] ? m[b.i] : null;
@@ -900,7 +950,7 @@ function familyLink(a, b) {
  * In Eras Mode every pair is inside one decade, so the "same era" link fires on
  * nearly all 66 pairs whatever you draft. In One Franchise every pair shares the
  * club by construction. Left in, those links push a constrained run straight to the
- * chemistry cap, which is worth about 21 wins: measured, Eras and Division runs came
+ * chemistry cap, which is worth about 17 wins (21 before the cap came down to 0.12): measured, Eras and Division runs came
  * out at 100-104 mean wins against the core game's 89 while carrying LESS talent and
  * a LOWER rating. The constraint was paying better than it cost.
  *
@@ -951,6 +1001,15 @@ function pairLinks(a, b, opts) {
   if (shared && !(sameTeam && sameSeason)) {
     links.push({ type: 'teammates', value: CHEMISTRY.VALUES.teammates,
       label: `Team-mates in ${shared.yr}` });
+  }
+
+  /* The same college. It sits beside the team-mates link rather than instead of
+     it, because it is a different fact: two Trojans who later shared a clubhouse
+     had both. The same man twice (two seasons of one player) is refused above. */
+  const school = sharedCollege(a, b);
+  if (school) {
+    links.push({ type: 'college', value: CHEMISTRY.VALUES.college,
+      label: school + ' alums' });
   }
 
   if (sameTeam && !sameSeason && !shared) {
@@ -1019,7 +1078,7 @@ function resolveChemistry(roster, opts) {
  * The VALUES above are already written as hundredths, so reading one as a whole
  * number of points is not a re-scaling, it is just dropping the percent sign:
  * family 0.09 is +9, a franchise tie 0.04 is +4, the ambient era link 0.005 is
- * +0.5. The cap is +15. That gives the player a small integer to compare
+ * +0.5. The cap is +12. That gives the player a small integer to compare
  * against, instead of a single team-wide percentage that never explains itself. */
 function chemPoints(value) {
   return Math.round(value * 1000) / 10;
@@ -1034,7 +1093,7 @@ function chemPoints(value) {
  *
  * Returns one entry per roster position: total points, the links themselves,
  * the strongest single link (what the UI colors the badge by), and keyPoints,
- * which drops the ambient era link. Era is +0.5 against a cap of +15 and it
+ * which drops the ambient era link. Era is +0.5 against a cap of +12 and it
  * attaches to nearly everybody, so badging it would put a meaningless mark on
  * ten of twelve players and drown the bonds that were actually chosen. */
 function chemistryByPlayer(roster, resolved, opts) {
@@ -1101,9 +1160,50 @@ function chemistryWorth(roster, slotNames, opts) {
 const REPLACEMENT_RPG = 3.5;
 const WAR_TO_RPG = 0.062;
 
+/* THE BATTING ORDER, and why the coach's order costs nothing.
+ *
+ * A lineup spot is worth what it gets to do: the top of the order comes up more
+ * often, and the spots after the table setters come up with men on. These weights
+ * follow The Book's reading of that (the two best bats hit second and first, the
+ * next cleanup, then third and fifth) and average exactly one, so a lineup of nine
+ * equal hitters is worth the same in any order.
+ *
+ * `coachOrder` puts the best bats in the heaviest spots, which is the most any
+ * order can get out of these nine. That order is the BASELINE, so a run that never
+ * touches its lineup plays exactly the season it always did and no balance number
+ * moves. A different order costs what it gives up against that baseline and never
+ * pays more, so moving a man is a choice with a visible price rather than a way to
+ * buy runs. */
+const LINEUP_WEIGHT = [1.07, 1.08, 1.03, 1.06, 1.00, 0.97, 0.95, 0.93, 0.91];
+/* The spots, heaviest first. */
+const LINEUP_RANK = LINEUP_WEIGHT.map((w, i) => i).sort((a, b) => LINEUP_WEIGHT[b] - LINEUP_WEIGHT[a] || a - b);
+
+/* The nine in the coach's order, spot one first. Ties go to the higher-priced
+   season, then the name, so the order never depends on the order they were drafted. */
+function coachOrder(hitters) {
+  const byBat = hitters.slice().sort((a, b) =>
+    slotWar(b) - slotWar(a) || (b.p || 0) - (a.p || 0) || String(a.n).localeCompare(String(b.n)));
+  const out = new Array(hitters.length);
+  let k = 0;
+  for (const spot of LINEUP_RANK) if (spot < hitters.length) out[spot] = byBat[k++];
+  for (let i = 0; i < out.length; i++) if (!out[i]) out[i] = byBat[k++];
+  return out;
+}
+
+/* WAR a batting order gives up against the coach's. Zero unless every hitter carries
+   a spot (`_bat`, 1 to 9), so a roster nobody ordered is the coach's by definition. */
+function orderLoss(roster) {
+  const hitters = roster.filter(p => p.r === 'b');
+  if (hitters.length !== LINEUP_WEIGHT.length || !hitters.every(p => p._bat >= 1)) return 0;
+  const wt = (i) => LINEUP_WEIGHT[i] || 1;
+  const actual = hitters.reduce((s, p) => s + slotWar(p) * wt(p._bat - 1), 0);
+  const best = coachOrder(hitters).reduce((s, p, i) => s + slotWar(p) * wt(i), 0);
+  return Math.max(0, best - actual);
+}
+
 function rosterOffense(roster, chemMultiplier, battingOrderBonus) {
   const hitters = roster.filter(p => p.r === 'b');
-  const totalWar = hitters.reduce((s, p) => s + slotWar(p), 0);
+  const totalWar = hitters.reduce((s, p) => s + slotWar(p), 0) - orderLoss(roster);
   const baseRPG = REPLACEMENT_RPG + totalWar * WAR_TO_RPG;
   return baseRPG * chemMultiplier * (battingOrderBonus || 1.0);
 }
@@ -1452,8 +1552,21 @@ const SCHEDULE = {
   // Real teams' run-prevention model floors around ~4.1; scale the pool so
   // these opponents play at the postseason intensity a title team faces all
   // year, holding the calibrated difficulty. These are the difficulty dial.
-  OPP_OFF_SCALE: 1.02,
-  OPP_DEF_SCALE: 0.95,
+  //
+  // TUNED HARDER (2026-09), the owner's call: a careful draft was reaching 90
+  // wins about half the time. The target is one in four. Measured over 300
+  // drafts a bot at the $190M cap:
+  //
+  //                     1.02 / 0.95     1.05 / 0.92
+  //   spread (careful)  43% 90+ wins    28%
+  //   best available    25%             23%
+  //   chases chemistry  52%             38%
+  //
+  // 1.055 / 0.915 put the careful draft at 22%, past the target. The shown
+  // rating's projection (PROJ) was refitted against this schedule in the same
+  // change, because it predicts wins on it.
+  OPP_OFF_SCALE: 1.05,
+  OPP_DEF_SCALE: 0.92,
 };
 
 /* Build the pool of real team-seasons your schedule is drawn from. Returns
@@ -1563,11 +1676,42 @@ function playoffRoundNames(rounds) {
  * multiplier applied to the opponent's scoring (>1 = tougher).
  */
 const TITLE = {
-  PIVOT: 84,        // rating at/above which the title is a fair fight
+  PIVOT: 90,        // rating at/above which the title is a fair fight (84 until 2026-09)
   SLOPE: 0.011,     // how fast a weaker team's opponent stiffens
   MAX_EDGE: 1.34,
   SEMI_SHARE: 0.5,  // the Championship Series gets half the edge
+
+  /* AN ELITE TEAM PLAYS LIKE ONE IN OCTOBER. Everything above only ever makes
+   * the bracket HARDER, and it keys on squadRating, which is blind to chemistry,
+   * shape and the closer. So a roster the page rates 95 to 99 still lost the
+   * Division Series about one run in five and reached the World Series in fewer
+   * than half, and a player reads that as the rating lying.
+   *
+   * So the rating the player READS buys an easier October from ELITE_FROM up:
+   * every opponent scores ELITE_PER less a point, capped at ELITE_MAX. Measured
+   * over 1,500 drafted rosters, 40 Octobers each, share of Octobers:
+   *
+   *   rating   lost the DS    reached the WS    won it
+   *   95+      19% to 4%      47% to 90%        21% to 51%
+   *   90-94    23% to 10%     40% to 71%        13% to 29%
+   *   85-89    28% to 22%     27% to 37%        7% to 10%
+   *   under 85 unchanged
+   *
+   * THE WORLD SERIES KEEPS ONLY ELITE_WS_SHARE OF IT, the owner's call: a 95+
+   * team should nearly always get there and win it about half the time. With
+   * the full ease in the World Series too, that team won 77% of its Octobers.
+   *
+   * Not in All-Time Staff, whose rating is its own ERA scale. */
+  ELITE_FROM: 85,
+  ELITE_PER: 0.025,
+  ELITE_MAX: 0.35,
+  ELITE_WS_SHARE: 0.3,
 };
+function eliteEase(shown, share) {
+  if (typeof shown !== 'number') return 1;
+  const s = typeof share === 'number' ? share : 1;
+  return 1 - s * Math.min(TITLE.ELITE_MAX, Math.max(0, (shown - TITLE.ELITE_FROM) * TITLE.ELITE_PER));
+}
 function titleEdge(rating) {
   if (typeof rating !== 'number') return 1;
   return Math.max(1, Math.min(TITLE.MAX_EDGE, 1 + (TITLE.PIVOT - rating) * TITLE.SLOPE));
@@ -1597,74 +1741,101 @@ function playoffSeries(runsFor, runsAgainst, savePct, rng, bestOf, advantage) {
   };
 }
 
-function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating, pool) {
-  if (!seed.made) return null;
-  const edge = titleEdge(rating);
-
-  const rounds = playoffRoundNames(seed.rounds);
-  const results = [];
-  let alive = true;
-
-  // Escalating real opponents for flavor: each round draws a tougher all-time
-  // team from the elite pool, hardest saved for the World Series.
-  const eliteSorted = (pool && pool.marquee && pool.marquee.length)
-    ? pool.marquee.slice().sort((a, b) => a.rating - b.rating) : null;
-  const oppFor = (roundIdx) => {
-    if (!eliteSorted) return null;
-    const frac = rounds.length > 1 ? roundIdx / (rounds.length - 1) : 1;
-    const lo = Math.floor(frac * (eliteSorted.length - 1) * 0.7);
-    const hi = eliteSorted.length - 1;
-    return eliteSorted[lo + Math.floor(rng() * Math.max(1, hi - lo + 1))] || null;
-  };
-
+/* Everything a round of October is played from, worked out once. It is kept on
+ * the result (`ctx`) because a manager's call can now flip a game, and October
+ * then has to carry on from that game with exactly the numbers it started with.
+ * See continuePlayoffs(). */
+function playoffContext(seed, runsFor, runsAgainst, savePct, regularWins, rating, shown) {
   // Home-field advantage scales with regular-season wins
   const baseAdv = 1 + CONSTANTS.PLAYOFF_HOME_FIELD *
     Math.min(1, Math.max(0, (regularWins - CONSTANTS.WILD_CARD_WINS) /
       (CONSTANTS.REGULAR_SEASON_GAMES - CONSTANTS.WILD_CARD_WINS)));
-
   // Same opponent-quality scaling as the regular season: playoff teams hit
   // like all-time offenses and pitch like all-time staffs.
   const N = CONSTANTS.OPP_RUNS_MEAN;
-  const offAdj = runsFor * (CONSTANTS.OPP_DEF_MEAN / N);
-  const defAdj = runsAgainst * (CONSTANTS.OPP_OFF_MEAN / N);
+  return {
+    names: playoffRoundNames(seed.rounds),
+    bye: !!seed.bye,
+    edge: titleEdge(rating),
+    shown: typeof shown === 'number' ? shown : null,
+    savePct,
+    baseAdv,
+    offAdj: runsFor * (CONSTANTS.OPP_DEF_MEAN / N),
+    defAdj: runsAgainst * (CONSTANTS.OPP_OFF_MEAN / N),
+  };
+}
 
-  for (let i = 0; i < rounds.length; i++) {
-    if (!alive) break;
-
-    const roundName = rounds[i];
-    // Opponents get tougher each round, and the deepest rounds are further
-    // stiffened for weaker teams (title difficulty scaled to your rating).
-    const roundDifficulty = 1 + i * CONSTANTS.PLAYOFF_ROUND_STEP;
-    let titleMult = 1;
-    if (roundName === 'World Series') titleMult = edge;
-    else if (roundName === 'Championship Series') titleMult = 1 + (edge - 1) * TITLE.SEMI_SHARE;
-    const oppRA = defAdj * roundDifficulty * titleMult;
-
+/* The scoring means of round i: what your club scores, what theirs does, and the
+ * home-field edge. A game of that round is resolveGame() on these. */
+function roundMeans(ctx, i) {
+  const roundName = ctx.names[i];
+  // Opponents get tougher each round, and the deepest rounds are further
+  // stiffened for weaker teams (title difficulty scaled to your rating).
+  const roundDifficulty = 1 + i * CONSTANTS.PLAYOFF_ROUND_STEP;
+  let titleMult = 1;
+  if (roundName === 'World Series') titleMult = ctx.edge;
+  else if (roundName === 'Championship Series') titleMult = 1 + (ctx.edge - 1) * TITLE.SEMI_SHARE;
+  const ease = eliteEase(ctx.shown == null ? undefined : ctx.shown,
+    roundName === 'World Series' ? TITLE.ELITE_WS_SHARE : 1);
+  return {
+    runsFor: ctx.offAdj,
+    runsAgainst: ctx.defAdj * roundDifficulty * titleMult * ease,
+    adv: ctx.bye ? ctx.baseAdv : Math.max(1, ctx.baseAdv * 0.85),
     // Best-of-5 for WC and LDS, best-of-7 for LCS and WS
-    const bestOf = (roundName === 'Wild Card' || roundName === 'Division Series') ? 5 : 7;
+    bestOf: (roundName === 'Wild Card' || roundName === 'Division Series') ? 5 : 7,
+  };
+}
 
-    const adv = seed.bye ? baseAdv : Math.max(1, baseAdv * 0.85);
+// Escalating real opponents for flavor: each round draws a tougher all-time
+// team from the elite pool, hardest saved for the World Series.
+function eliteSortedOf(pool) {
+  return (pool && pool.marquee && pool.marquee.length)
+    ? pool.marquee.slice().sort((a, b) => a.rating - b.rating) : null;
+}
+function playoffOpponent(eliteSorted, ctx, roundIdx, rng) {
+  if (!eliteSorted) return null;
+  const rounds = ctx.names;
+  const frac = rounds.length > 1 ? roundIdx / (rounds.length - 1) : 1;
+  const lo = Math.floor(frac * (eliteSorted.length - 1) * 0.7);
+  const hi = eliteSorted.length - 1;
+  return eliteSorted[lo + Math.floor(rng() * Math.max(1, hi - lo + 1))] || null;
+}
 
-    const series = playoffSeries(offAdj, oppRA, savePct, rng, bestOf, adv);
-    const opp = oppFor(i);
-    results.push({
-      round: roundName,
-      oppName: opp ? opp.name : null,
-      oppTeam: opp ? opp.team : null,   // club code, so the bracket can wear its colors
-      oppSeason: opp ? opp.season : null, // and so the at-bat sim can bat their real nine
-      oppRating: opp ? opp.rating : null,
-      bestOf,
-      homeField: !!seed.bye,
-      ...series,
-    });
+/* One round, in the order generatePlayoffs() has always drawn it: the series off
+ * `rng`, then the opponent's name off the same stream. Change that order and every
+ * October ever played changes with it. */
+function playoffRound(ctx, i, rng, eliteSorted) {
+  const m = roundMeans(ctx, i);
+  const series = playoffSeries(m.runsFor, m.runsAgainst, ctx.savePct, rng, m.bestOf, m.adv);
+  const opp = playoffOpponent(eliteSorted, ctx, i, rng);
+  return {
+    round: ctx.names[i],
+    oppName: opp ? opp.name : null,
+    oppTeam: opp ? opp.team : null,   // club code, so the bracket can wear its colors
+    oppSeason: opp ? opp.season : null, // and so the at-bat sim can bat their real nine
+    oppRating: opp ? opp.rating : null,
+    bestOf: m.bestOf,
+    homeField: ctx.bye,
+    ...series,
+  };
+}
 
-    if (!series.won) alive = false;
+function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins, rating, pool, shown) {
+  if (!seed.made) return null;
+  const ctx = playoffContext(seed, runsFor, runsAgainst, savePct, regularWins, rating, shown);
+  const eliteSorted = eliteSortedOf(pool);
+  const results = [];
+  for (let i = 0; i < ctx.names.length; i++) {
+    const r = playoffRound(ctx, i, rng, eliteSorted);
+    results.push(r);
+    if (!r.won) break;
   }
+  return { rounds: results, won: playoffsWon(results), ctx };
+}
 
-  const won = results.length > 0 && results[results.length - 1].won &&
-    results[results.length - 1].round === 'World Series';
-
-  return { rounds: results, won };
+function playoffsWon(rounds) {
+  const last = rounds[rounds.length - 1];
+  return !!(last && last.won && last.round === 'World Series');
 }
 
 // ─── the bracket ─────────────────────────────────────────────────────────────
@@ -1899,6 +2070,39 @@ function createBracket(opts) {
     B.revealed[g.key] = 1;
   };
 
+  /*
+   * A manager's call can change who the run meets: a series it now wins puts a new
+   * round on the ladder, one it now loses takes rounds off. The ladder is re-pinned
+   * in place rather than the bracket being drawn again, so every seat already on
+   * screen stays where it is. A filler who turns out to be the run's new opponent
+   * swaps seats with the club he replaces, so nobody is in the bracket twice, and a
+   * new World Series opponent takes the far side's top seed, as createBracket()
+   * seats one. Nothing past the changed column has been revealed, so its cached
+   * series go.
+   */
+  B.repin = function (next) {
+    const n = Math.max(ladder.length, (next || []).length);
+    for (let i = 0; i < n; i++) {
+      const a = ladder[i] || null, b = (next && next[i]) || null;
+      if ((a && a.id) === (b && b.id)) continue;
+      const col = firstCol + i;
+      ladder[i] = b;
+      delete B.oppSeats[col];
+      if (b) {
+        for (const side of BRACKET.SIDES) for (let s = 1; s <= 6; s++) {
+          const seat = B[side][s];
+          if (seat && seat.team && seat.team.id === b.id && !(col === 3 && side === 'far' && s === 1)) {
+            seat.team = a || seat.team;
+          }
+        }
+        if (col === 3) B.far[1] = { team: b, seed: 1 };
+      }
+      for (const key of Object.keys(B.results)) {
+        if (parseInt(key.split(':')[1], 10) >= col && !B.revealed[key]) { delete B.results[key]; delete B.scores[key]; }
+      }
+    }
+  };
+
   B.revealAll = function () {
     for (let c = 0; c < 4; c++) B.colGames(c).forEach(g => { B.revealed[g.key] = 1; });
   };
@@ -2094,9 +2298,13 @@ function describePlay(code, kind, batter, scored, rng, bases) {
  */
 function simHalfInning(target, rng, ctx) {
   const lineup = ctx.lineup;
-  const st = { outs: 0, bases: [null, null, null] };
+  /* `start` picks a half up where a manager's call stopped it: the outs, the men on
+     and the runs and hits already in. Without it the half starts clean, exactly as
+     it always has, and draws the same numbers. */
+  const s0 = ctx.start || null;
+  const st = s0 ? { outs: s0.outs, bases: s0.bases.slice() } : { outs: 0, bases: [null, null, null] };
   const plays = [];
-  let runs = 0, hits = 0, order = ctx.order || 0;
+  let runs = s0 ? s0.runs : 0, hits = s0 ? s0.hits : 0, order = ctx.order || 0;
   let guard = 0;
 
   while (st.outs < 3 && guard++ < 60) {
@@ -2216,7 +2424,11 @@ const GENERIC_SPOTS = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH'];
 function lineupFromRoster(roster) {
   const batters = (roster || []).filter(p => p.r === 'b');
   if (batters.length >= 9) {
-    return battingOrder(batters).slice(0, 9).map(p => ({
+    /* The order the player set, or the coach's, which is the same order the
+       season was played in. */
+    const ordered = batters.every(p => p._bat >= 1)
+      ? batters.slice().sort((a, b) => a._bat - b._bat) : coachOrder(batters);
+    return ordered.slice(0, 9).map(p => ({
       name: p.n, slot: p._slot || (p.ep || '').split(';')[0] || '', team: p.t, season: p.s, w: p.w,
     }));
   }
@@ -2330,12 +2542,7 @@ function simGameScript(opts) {
   /* Who is on the mound: the starter into the seventh, a reliever after that, and
    * the closer for the ninth when the game is still a save. Decoration, but it is
    * the player's own bullpen doing the deciding, which is the point of drafting one. */
-  const armFor = (staff, inning, lead) => {
-    if (!staff) return null;
-    if (inning >= 9 && lead > 0 && lead <= 3 && staff.closer) return staff.closer;
-    if (inning >= 7 && staff.reliever) return staff.reliever;
-    return staff.starter || staff.reliever;
-  };
+  const armFor = coachArm;
 
   const halves = [];
   const line = [];
@@ -2390,6 +2597,536 @@ function simGameScript(opts) {
   };
 }
 
+// ─── the manager's call ──────────────────────────────────────────────────────
+
+/*
+ * A PRO PLAYER CAN PULL THE PITCHER IN THE OCTOBER GAMES THEY WATCH, AND THE CALL
+ * IS REAL. That is the one exception to "the at-bat simulator decides nothing"
+ * above, and it is drawn as narrowly as it can be.
+ *
+ * Every game still starts as the score resolveGame() gave it, narrated by
+ * simGameScript() with the coach making the changes (armFor). A call never re-rolls
+ * that game. It keeps every run the coach's version already holds and changes how
+ * many of the OTHER side's runs score from that point on, by the ratio of the two
+ * pitchers: thinned when your arm is better than the coach's, added to when it is
+ * worse. Your own side's runs are never touched, because a pitching change does
+ * not move your bats.
+ *
+ * TWO THINGS FOLLOW, and the checks hold both:
+ *   - picking the coach's own arm changes nothing at all, so a call is never a free
+ *     second draw at a game you think you are losing;
+ *   - a game nobody called is byte for byte the game it always was.
+ *
+ * The pitcher gets a pitch count off the plate appearances he faces, and past
+ * TIRE_FROM he is hittable. A reliever you leaned on is tired the next day in the
+ * same series. That is the whole model: no state outlives a series.
+ */
+const CALLS = {
+  /* Pitches a plate appearance costs, by how it ended. A walk is a long at bat and
+   * a first-pitch groundout a short one. Over the at-bat sim's own mix this lands
+   * near 16 an inning, the modern line, so a starter is near 100 after six. */
+  PITCHES: { K: 5, BB: 6, HBP: 2, '1B': 3, '2B': 4, '3B': 4, HR: 3, GO: 3, FO: 4, LO: 3, PO: 3, DP: 3, SF: 4 },
+  /* Past this many pitches a man gets hittable, TIRE_PER more runs a pitch. */
+  TIRE_FROM: 95, TIRE_PER: 0.024, TIRE_MAX: 2.0,
+  /* A reliever who threw more than TIRED_PITCHES or got TIRED_OUTS outs is tired
+   * the next game of the same series; yesterday's starter, used in relief, more so. */
+  TIRED_PITCHES: 25, TIRED_OUTS: 4, TIRED_NEXT_DAY: 1.25, STARTED_YESTERDAY: 1.6,
+  /* Classic drafts three arms. Everybody else in the pen is a league-average man. */
+  PEN_ERA: 4.50,
+  /* The game stops for a call when the man on the mound reaches one of these. */
+  ASK_AT: [95, 110, 125],
+  /* Extra innings, which a call can now cause: three are played out, then a coin. */
+  EXTRA_INNINGS: 3,
+  /* How much of the gap between two arms shows up in a half's runs, as a power on
+   * their ratio. Below one because a pitcher is one input among many: the fielders,
+   * the park, who is up. It is the knob the edge a manager can earn is tuned on.
+   *
+   * TUNED 2026-10-20 to the owner's band: a sharp manager wins 3 to 5 more October
+   * games in 100 than the coach. Measured over 250 drafted runs a mode, a bot that
+   * always takes the arm with the lowest ERA times fatigue, in the games it managed:
+   *
+   *   TIRE_PER  RATIO_POWER   Classic  All-Time Staff   (sharp over the coach)
+   *   0.012     1             +2.8     +5.8
+   *   0.024     0.75          +3.2     +4.0
+   *   0.024     0.85          +3.4     +4.5             <- this
+   *   0.030     0.75          +3.4     +4.3
+   *
+   * Next-day rest was tried as the lever first and does not move All-Time Staff
+   * (+5.2 to +5.5 at 1.5 to 1.8): that edge is the coach rotating relievers by turn
+   * while a sharp manager takes the best one, which only this softens. Re-measure
+   * with `check-calls.mjs --balance` rather than nudge. */
+  RATIO_POWER: 0.85,
+};
+const PEN_SLOT = 'BP';
+
+/* What one plate appearance cost the pitcher. The wobble is read off where it
+ * happened rather than drawn, so counting never touches a random stream. */
+function pitchesFor(play, hi, k) {
+  const key = play.code === 'OUT' ? play.kind : play.code;
+  const base = CALLS.PITCHES[key] || 4;
+  return Math.max(1, base + ((hi * 7 + k * 5) % 3) - 1);
+}
+
+/* The half index a script uses: top of the first is 0, bottom of the first 1. */
+const halfIndex = (inning, half) => (inning - 1) * 2 + (half === 'bot' ? 1 : 0);
+function fieldingHalf(youHome) { return youHome ? 'top' : 'bot'; }
+
+/* Your arms, as a call sheet offers them. Classic drafts two starters and a closer,
+ * so the rest of the pen is the league-average man the season already assumes. */
+function armsFor(tagged, staffMode) {
+  const out = [];
+  const S = STAFF;
+  for (const p of (tagged || []).filter(q => q.r === 'p' && q._slot)) {
+    const sp = slotGroup(p._slot, !!staffMode) === slotGroup('SP1', !!staffMode) && /^SP/.test(p._slot);
+    const era = sp ? Math.max(S.SP_ERA_FLOOR, S.SP_ERA_BASE - Math.max(0, workloadWar(p)) * S.SP_ERA_PER_WAR)
+      : Math.max(S.RP_ERA_FLOOR, S.RP_ERA_BASE - Math.max(0, p.w || 0) * S.RP_ERA_PER_WAR);
+    out.push({ slot: p._slot, name: p.n, team: p.t, season: p.s, w: p.w,
+      era: Math.round(era * 100) / 100, role: sp ? 'sp' : p._slot === 'CL' ? 'cl' : 'rp' });
+  }
+  if (!staffMode) out.push({ slot: PEN_SLOT, name: 'Bullpen', era: CALLS.PEN_ERA, role: 'pen' });
+  return out;
+}
+
+function tireFactor(pitches) {
+  return Math.min(CALLS.TIRE_MAX, 1 + Math.max(0, pitches - CALLS.TIRE_FROM) * CALLS.TIRE_PER);
+}
+
+/* Pitches thrown by each of your arms, from the start of the game up to (not
+ * including) plate appearance k of half hi. A man who came in, went and came back
+ * is impossible, so a running total per slot is the whole story, except for the
+ * league-average pen, which is a fresh man every time it is called. */
+function pitchCounts(script, hi, k) {
+  const fld = fieldingHalf(script.youHome);
+  const out = {};
+  let penRun = 0, last = null, lastObj = null;
+  for (let h = 0; h < script.halves.length; h++) {
+    const hf = script.halves[h];
+    if (h > hi) break;
+    if (hf.half !== fld) continue;
+    const stop = h === hi ? k : hf.plays.length;
+    for (let j = 0; j < stop; j++) {
+      const p = hf.plays[j];
+      const slot = p.pitcher && p.pitcher.slot;
+      if (!slot) continue;
+      /* A fresh league-average man each time the pen is called on. */
+      if (slot === PEN_SLOT) {
+        if (last !== PEN_SLOT || (p.pitcher.fresh && p.pitcher !== lastObj)) penRun = 0;
+        penRun += pitchesFor(p, h, j); out[PEN_SLOT] = penRun;
+      } else out[slot] = (out[slot] || 0) + pitchesFor(p, h, j);
+      last = slot; lastObj = p.pitcher;
+    }
+  }
+  return out;
+}
+
+/* Outs each of your arms got in a script, for tomorrow's fatigue. */
+function outsBy(script) {
+  const fld = fieldingHalf(script.youHome);
+  const out = {};
+  for (const hf of script.halves) {
+    if (hf.half !== fld) continue;
+    for (const p of hf.plays) {
+      const slot = p.pitcher && p.pitcher.slot;
+      if (slot) out[slot] = (out[slot] || 0) + Math.max(0, p.outs - p.outsBefore);
+    }
+  }
+  return out;
+}
+
+/* Who is tired today, from yesterday's game in the same series. Only a game the
+ * player managed can tire anybody: the coach's own usage is what the season was
+ * balanced on, so it is the baseline rather than a cost. */
+function restFrom(prevScript, managed) {
+  if (!prevScript || !managed) return {};
+  const pitches = pitchCounts(prevScript, prevScript.halves.length, 0);
+  const outs = outsBy(prevScript);
+  const starter = prevScript.yourStarter;
+  const rest = {};
+  for (const slot of Object.keys(pitches)) {
+    if (slot === PEN_SLOT) continue;
+    if (slot === starter) { rest[slot] = CALLS.STARTED_YESTERDAY; continue; }
+    if (pitches[slot] > CALLS.TIRED_PITCHES || (outs[slot] || 0) >= CALLS.TIRED_OUTS) rest[slot] = CALLS.TIRED_NEXT_DAY;
+  }
+  return rest;
+}
+
+/* The coach's rule, the one the narration has always used. */
+function coachArm(staff, inning, lead) {
+  if (!staff) return null;
+  if (inning >= 9 && lead > 0 && lead <= 3 && staff.closer) return staff.closer;
+  if (inning >= 7 && staff.reliever) return staff.reliever;
+  return staff.starter || staff.reliever;
+}
+
+/* How hard a man is to hit right now: his ERA, how tired the pitch count says he
+ * is, and how rested he is. Only the ratio of two of these is ever used. */
+function armFactor(arm, pitches, rest) {
+  if (!arm) return 1;
+  const r = (rest && rest[arm.slot]) || 1;
+  return arm.era * tireFactor(pitches) * r;
+}
+
+/* The pitcher on each of your fielding halves of `script` from (hi, k) on, and the
+ * factor he pitches it at. Read off the script's own plays, so it is exact for the
+ * path that produced it. */
+function pathOfScript(script, hi, k, arms, rest) {
+  const fld = fieldingHalf(script.youHome);
+  const bySlot = {};
+  for (const a of arms) bySlot[a.slot] = a;
+  const counts = pitchCounts(script, hi, k);
+  const out = {};
+  for (let h = hi; h < script.halves.length; h++) {
+    const hf = script.halves[h];
+    if (hf.half !== fld) continue;
+    const from = h === hi ? k : 0;
+    const seg = hf.plays.slice(from);
+    if (!seg.length) { out[h] = null; continue; }
+    let sum = 0, n = 0;
+    seg.forEach((p, j) => {
+      const slot = p.pitcher && p.pitcher.slot;
+      const pc = slot === PEN_SLOT ? 0 : (counts[slot] || 0);
+      sum += armFactor(bySlot[slot], pc, rest);
+      n++;
+      if (slot && slot !== PEN_SLOT) counts[slot] = pc + pitchesFor(p, h, from + j);
+    });
+    out[h] = sum / n;
+  }
+  return out;
+}
+
+/* The same, for a path that has not been narrated yet: `slot` takes the ball at
+ * (hi, k) and keeps it, except that the closer still comes in for a save in the
+ * ninth if he is unused. Pitch costs are borrowed from the script's plays, which
+ * is as good a guess at the next half's length as any. */
+function projectPath(script, hi, k, slot, arms, rest, used, staff) {
+  const fld = fieldingHalf(script.youHome);
+  const bySlot = {};
+  for (const a of arms) bySlot[a.slot] = a;
+  const counts = pitchCounts(script, hi, k);
+  if (slot === PEN_SLOT) counts[PEN_SLOT] = 0;
+  else if (counts[slot] == null) counts[slot] = 0;
+  let cur = slot;
+  const usedNow = Object.assign({}, used, { [slot]: 1 });
+  const out = {};
+  for (let h = hi; h < Math.max(script.halves.length, 18); h++) {
+    const inning = Math.floor(h / 2) + 1, half = h % 2 ? 'bot' : 'top';
+    if (half !== fld) continue;
+    const hf = script.halves[h];
+    if (h > hi) {
+      const before = script.halves[h - 1];
+      const lead = before ? (script.youHome ? before.home - before.away : before.away - before.home) : 0;
+      const cl = staff && staff.closer && staff.closer.slot;
+      if (cl && coachArm(staff, inning, lead) === staff.closer && !usedNow[cl] && cur !== cl) {
+        cur = cl; usedNow[cl] = 1; counts[cl] = counts[cl] || 0;
+      }
+    }
+    const plays = hf ? hf.plays.slice(h === hi ? k : 0) : [];
+    const n = Math.max(1, plays.length || 4);
+    let sum = 0;
+    for (let j = 0; j < n; j++) {
+      const pc = counts[cur] || 0;
+      sum += armFactor(bySlot[cur], pc, rest);
+      counts[cur] = pc + (plays[j] ? pitchesFor(plays[j], h, j) : 4);
+    }
+    out[h] = sum / n;
+  }
+  return out;
+}
+
+/* A Poisson draw, for runs a tired arm gives up that the coach's man did not. */
+function poisson(mean, rng) {
+  if (!(mean > 0)) return 0;
+  const L = Math.exp(-mean);
+  let k = 0, p = 1;
+  do { k++; p *= rng(); } while (p > L && k < 50);
+  return k - 1;
+}
+/* Runs scored against a better or worse arm than the one the script had: each run
+ * kept at the ratio when he is better, and extra runs at the ratio's excess of an
+ * ordinary half when he is worse. Both keep the expected runs at ratio times. */
+function rescaleRuns(runs, ratio, halfMean, rng) {
+  if (!(ratio > 0) || Math.abs(ratio - 1) < 1e-9) return runs;
+  if (ratio < 1) { let kept = 0; for (let i = 0; i < runs; i++) if (rng() < ratio) kept++; return kept; }
+  return runs + poisson((ratio - 1) * halfMean, rng);
+}
+/* One half inning's runs, fresh, at a mean: used only where the coach's game has
+ * no half to rescale (a bottom of the ninth it never played, extra innings). */
+function freshHalf(mean, rng) {
+  const chunkMean = RUN_CHUNKS.reduce((s, [c, w]) => s + c * w, 0);
+  if (rng() >= Math.min(0.75, Math.max(0, mean) / chunkMean)) return 0;
+  let r = rng(), acc = 0;
+  for (const [c, w] of RUN_CHUNKS) { acc += w; if (r <= acc) return c; }
+  return 1;
+}
+
+/* Where a half stands before plate appearance k: outs, the men on (as batter
+ * objects, looked up in the lineup by name), runs and hits so far. */
+function stateBefore(hf, k, lineup) {
+  if (k <= 0) return { outs: 0, bases: [null, null, null], runs: 0, hits: 0 };
+  const p = hf.plays[k - 1];
+  const find = (nm) => (nm ? (lineup.find(b => b.name === nm) || { name: nm }) : null);
+  let hits = 0;
+  for (let j = 0; j < k; j++) if (hf.plays[j].hit) hits++;
+  return { outs: p.outs, bases: p.bases.map(find), runs: p.runs, hits };
+}
+
+/*
+ * Play a script on from plate appearance k of half hi with new run targets.
+ *
+ * Everything before (hi, k) is kept exactly, because the player has already
+ * watched it. `targets[h]` is the whole half's runs (including any already in for
+ * half hi). `yourArm(h, inning, lead)` names your pitcher for a fielding half. The
+ * last-inning rules are the real ones: a home club ahead after the top of the ninth
+ * does not bat, a home club that goes ahead in its last at bat walks off, and a tie
+ * plays extra innings (CALLS.EXTRA_INNINGS of them, then a coin).
+ */
+function replayFrom(script, hi, k, targets, o) {
+  const youHome = script.youHome;
+  const rng = o.rng;
+  const halves = script.halves.slice(0, hi);
+  const awayLineup = script.away.lineup, homeLineup = script.home.lineup;
+  const awayStaff = script.away.staff, homeStaff = script.home.staff;
+  let aScore = 0, hScore = 0, aHits = 0, hHits = 0, aOrder = 0, hOrder = 0;
+  for (const h of halves) {
+    if (h.half === 'top') { aScore += h.runs; aHits += h.hits; aOrder += h.plays.length; }
+    else { hScore += h.runs; hHits += h.hits; hOrder += h.plays.length; }
+  }
+  const line = [];
+  for (const h of halves) {
+    if (!line[h.inning - 1]) line[h.inning - 1] = { top: 0, bot: null };
+    if (h.half === 'top') line[h.inning - 1].top = h.runs; else line[h.inning - 1].bot = h.runs;
+  }
+  let walkoff = false, over = false;
+  const lastInning = INNINGS + CALLS.EXTRA_INNINGS;
+  for (let h = hi; !over; h++) {
+    const inning = Math.floor(h / 2) + 1, top = h % 2 === 0;
+    if (inning > lastInning) break;
+    /* Past nine, the game is over the moment a full inning ends with somebody ahead. */
+    if (top && inning > INNINGS && aScore !== hScore) break;
+    if (!top && inning >= INNINGS && hScore > aScore && !(h === hi && k > 0)) { over = true; break; }
+    const cur = h === hi;
+    const hf0 = cur ? script.halves[hi] : null;
+    const lineup = top ? awayLineup : homeLineup;
+    const start = cur && k > 0 ? stateBefore(hf0, k, lineup) : null;
+    const prefix = cur && k > 0 ? hf0.plays.slice(0, k) : [];
+    let target = Math.max(start ? start.runs : 0, targets[h] || 0);
+    let need = null;
+    if (!top && inning >= INNINGS) {
+      const before = hScore;
+      if (before + target > aScore) {
+        need = aScore - before + 1;
+        target = Math.min(target, need + 3);
+      }
+    }
+    const fielding = (top ? 'top' : 'bot') === fieldingHalf(youHome);
+    const lead = top ? hScore - aScore : aScore - hScore;
+    const arm = fielding ? o.yourArm(h, inning, lead) : coachArm(top ? homeStaff : awayStaff, Math.min(inning, INNINGS), lead);
+    const sim = simHalfInning(target, rng, {
+      lineup, order: (top ? aOrder : hOrder) + prefix.length,
+      need, start,
+      pitcherAt: () => arm,
+    });
+    const plays = prefix.concat(sim.plays);
+    const runs = sim.runs;
+    /* The totals so far count finished halves only, so the whole of this one goes
+       in, the runs and hits it already had before the call included. */
+    if (top) { aScore += runs; aHits += sim.hits; aOrder = sim.order; }
+    else { hScore += runs; hHits += sim.hits; hOrder = sim.order; }
+    halves.push({
+      inning, half: top ? 'top' : 'bot', batting: (top ? !youHome : youHome) ? 'you' : 'opp',
+      team: top ? script.away.name : script.home.name, runs, hits: sim.hits, plays,
+      away: aScore, home: hScore,
+      walkoff: need != null && runs >= need,
+    });
+    if (!line[inning - 1]) line[inning - 1] = { top: 0, bot: null };
+    if (top) line[inning - 1].top = runs; else line[inning - 1].bot = runs;
+    if (!top && need != null && runs >= need) { walkoff = true; over = true; }
+    if (!top && inning >= INNINGS && aScore !== hScore) over = true;
+  }
+  /* Still level after the extra innings this plays: a coin, as resolveGame() has
+   * always settled a tie, and the winner's run goes on the last inning played. */
+  if (aScore === hScore) {
+    const homeWin = rng() < 0.5;
+    const li = line.length - 1;
+    if (homeWin) { hScore++; line[li].bot = (line[li].bot || 0) + 1; walkoff = true; }
+    else { aScore++; line[li].top += 1; }
+    const lastHalf = halves[halves.length - 1];
+    if (lastHalf) { lastHalf.away = aScore; lastHalf.home = hScore; }
+  }
+  for (const row of line) if (row && row.bot === undefined) row.bot = null;
+  const yourRuns = youHome ? hScore : aScore, oppRuns = youHome ? aScore : hScore;
+  return Object.assign({}, script, {
+    away: Object.assign({}, script.away, { runs: aScore, hits: aHits }),
+    home: Object.assign({}, script.home, { runs: hScore, hits: hHits }),
+    line: line.map(r => r || { top: 0, bot: null }), halves, walkoff,
+    final: { away: aScore, home: hScore, yourRuns, oppRuns, won: yourRuns > oppRuns },
+  });
+}
+
+/*
+ * Apply one change of pitcher to a script, or (with `slot` null) today's rest to the
+ * coach's own path. Returns the new script; the input is not changed.
+ *
+ *   ctx: { arms, staff (your staff as staffFromRoster gives it), rest, halfMean,
+ *          seedKey }
+ */
+function retarget(script, hi, k, slot, ctx) {
+  const fld = fieldingHalf(script.youHome);
+  const prevRest = script.rest || {};
+  const prev = pathOfScript(script, hi, k, ctx.arms, prevRest);
+  const used = {};
+  for (let h = 0; h <= hi && h < script.halves.length; h++) {
+    const hf = script.halves[h];
+    if (hf.half !== fld) continue;
+    hf.plays.slice(0, h === hi ? k : hf.plays.length).forEach(p => { if (p.pitcher && p.pitcher.slot) used[p.pitcher.slot] = 1; });
+  }
+  let next;
+  if (slot == null) {
+    /* Same pitchers as the coach, today's rest. */
+    next = pathOfScript(script, hi, k, ctx.arms, ctx.rest || {});
+  } else {
+    next = projectPath(script, hi, k, slot, ctx.arms, ctx.rest || {}, used, ctx.staff);
+  }
+  const rng = createSeededRNG(hashSeed(ctx.seedKey));
+  const targets = {};
+  const total = Math.max(script.halves.length, hi + 1);
+  for (let h = hi; h < total; h++) {
+    const hf = script.halves[h];
+    const already = h === hi && k > 0 && hf ? hf.plays[k - 1].runs : 0;
+    const left = hf ? hf.runs - already : 0;
+    if ((h % 2 ? 'bot' : 'top') === fld && hf) {
+      const ratio = Math.pow((next[h] || 1) / (prev[h] || next[h] || 1), CALLS.RATIO_POWER);
+      const frac = h === hi && k > 0 && hf ? Math.max(0.2, (3 - hf.plays[k - 1].outs) / 3) : 1;
+      targets[h] = already + rescaleRuns(left, ratio, ctx.halfMean * frac, rng);
+    } else if (hf) targets[h] = hf.runs;
+  }
+  /* A bottom of the ninth the coach's game never needed, or extra innings: fresh. */
+  const oppMean = ctx.halfMean, yourMean = ctx.yourHalfMean || ctx.halfMean;
+  for (let h = total; h < 18 + CALLS.EXTRA_INNINGS * 2; h++) {
+    const yourBat = (h % 2 ? 'bot' : 'top') !== fld;
+    const ratio = yourBat ? 1 : Math.pow((next[h] || next[h - 2] || 1) / (prev[h] || prev[h - 2] || next[h] || 1), CALLS.RATIO_POWER);
+    targets[h] = freshHalf(yourBat ? yourMean : oppMean * ratio, rng);
+  }
+  /* Your pitcher for each fielding half of the replay: the projected path's man. */
+  const bySlot = {};
+  for (const a of ctx.arms) bySlot[a.slot] = a;
+  const wrap = (a, fresh) => (a ? { name: a.name, slot: a.slot, team: a.team, season: a.season, w: a.w, fresh: !!fresh } : null);
+  let cur = slot != null ? slot : null;
+  const usedNow = Object.assign({}, used);
+  if (cur) usedNow[cur] = 1;
+  let firstPen = cur === PEN_SLOT;
+  const yourArm = (h, inning, lead) => {
+    if (slot == null) {
+      /* The coach's path: whoever the script had, or his rule past its end. */
+      const hf = script.halves[h];
+      const p = hf && hf.plays[h === hi ? Math.min(k, hf.plays.length - 1) : 0];
+      if (p && p.pitcher) return p.pitcher;
+      return coachArm(ctx.staff, Math.min(inning, INNINGS), lead);
+    }
+    if (h > hi) {
+      const cl = ctx.staff && ctx.staff.closer && ctx.staff.closer.slot;
+      if (cl && coachArm(ctx.staff, Math.min(inning, INNINGS), lead) === ctx.staff.closer && !usedNow[cl] && cur !== cl) {
+        cur = cl; usedNow[cl] = 1;
+      }
+    }
+    const fresh = firstPen && h === hi; firstPen = false;
+    return wrap(bySlot[cur], fresh) || coachArm(ctx.staff, Math.min(inning, INNINGS), lead);
+  };
+  const out = replayFrom(script, hi, k, targets, { rng, yourArm });
+  out.rest = ctx.rest || {};
+  out.yourStarter = script.yourStarter;
+  return out;
+}
+
+/* Your pitcher for the last plate appearance before (hi, k), looking back across
+ * innings: at the top of an inning he is still the man on the mound, even when the
+ * coach is about to bring somebody else in. Null before your first fielding at bat. */
+function armBefore(script, hi, k) {
+  const fld = fieldingHalf(script.youHome);
+  for (let h = hi; h >= 0; h--) {
+    const x = script.halves[h];
+    if (!x || x.half !== fld) continue;
+    const upto = h === hi ? k : x.plays.length;
+    for (let j = upto - 1; j >= 0; j--) if (x.plays[j].pitcher) return x.plays[j].pitcher;
+  }
+  return null;
+}
+
+/*
+ * Should the game stop before plate appearance k of half hi, and if so, what does
+ * the sheet offer? Null for no stop. Only ever asked on your fielding halves.
+ *
+ *   ctx: { arms, staff, rest, asked: {} (what has already been asked this game) }
+ */
+function callFor(script, hi, k, ctx) {
+  const hf = script.halves[hi];
+  if (!hf || hf.half !== fieldingHalf(script.youHome)) return null;
+  const p = hf.plays[k];
+  if (!p || !p.pitcher) return null;
+  const asked = ctx.asked || {};
+  const inning = hf.inning;
+  const counts = pitchCounts(script, hi, k);
+  /* The man the coach has pitching this at bat, and the man who threw the last one. */
+  const sched = p.pitcher;
+  const onMound = armBefore(script, hi, k) || sched;
+  const pc = onMound.slot === PEN_SLOT && onMound.slot !== sched.slot ? 0 : (counts[onMound.slot] || 0);
+  const scoreA = k > 0 ? hf.plays[k - 1] : null;
+  const prevHalf = script.halves[hi - 1];
+  const away = (prevHalf ? prevHalf.away : 0) + (hf.half === 'top' && scoreA ? scoreA.runs : 0);
+  const home = (prevHalf ? prevHalf.home : 0) + (hf.half === 'bot' && scoreA ? scoreA.runs : 0);
+  const lead = script.youHome ? home - away : away - home;
+  const on = p.basesBefore.filter(Boolean).length;
+  const cl = ctx.staff && ctx.staff.closer;
+  let kind = null;
+  const tired = CALLS.ASK_AT.filter(t => pc >= t && !asked['pc' + onMound.slot + t]);
+  /* The coach changing pitchers is always worth a word. Otherwise one stop a half at
+     most, so a close game is managed rather than interrupted. */
+  const quiet = !asked['h' + hi];
+  if (sched.slot !== onMound.slot && !asked['ch' + hi]) kind = 'change';
+  else if (quiet && tired.length && onMound.slot !== PEN_SLOT) kind = 'tired';
+  else if (quiet && k === 0 && inning >= 8 && lead > 0 && lead <= 3 && cl && sched.slot !== cl.slot) kind = 'save';
+  /* The tying run on base or at the plate, from the seventh on. */
+  else if (quiet && inning >= 7 && lead >= 0 && lead <= on + 1) kind = 'tying';
+  if (!kind) return null;
+  const keys = ['h' + hi];
+  if (kind === 'change') keys.push('ch' + hi);
+  /* Every count he has passed is answered at once, so 95 and 110 never stack up. */
+  if (kind === 'tired' || kind === 'change') tired.forEach(t => keys.push('pc' + onMound.slot + t));
+  return { kind, keys, inning, lead, on, outs: p.outsBefore, batter: p.batter && p.batter.name,
+    batterGeneric: !!(p.batter && p.batter.generic),
+    onMound, pitches: pc, sched, options: callOptions(script, hi, k, onMound, sched, ctx) };
+}
+
+/* The sheet: who is on the mound, the man the coach would have pitching, and every
+ * other arm still available, best first. A man already taken out cannot come back. */
+function callOptions(script, hi, k, onMound, sched, ctx) {
+  const fld = fieldingHalf(script.youHome);
+  const used = {};
+  for (let h = 0; h <= hi; h++) {
+    const hf = script.halves[h];
+    if (!hf || hf.half !== fld) continue;
+    hf.plays.slice(0, h === hi ? k : hf.plays.length).forEach(p => { if (p.pitcher) used[p.pitcher.slot] = 1; });
+  }
+  const counts = pitchCounts(script, hi, k);
+  const rest = ctx.rest || {};
+  const opt = (a, coach) => ({
+    slot: a.slot, name: a.name, era: a.era, role: a.role, coach: !!coach,
+    pitches: a.slot === PEN_SLOT ? 0 : (counts[a.slot] || 0),
+    rest: rest[a.slot] === CALLS.STARTED_YESTERDAY ? 'started' : rest[a.slot] ? 'tired' : 'rested',
+    stay: a.slot === onMound.slot,
+  });
+  const bySlot = {};
+  for (const a of ctx.arms) bySlot[a.slot] = a;
+  const out = [];
+  if (bySlot[onMound.slot]) out.push(opt(bySlot[onMound.slot], sched.slot === onMound.slot));
+  if (sched.slot !== onMound.slot && bySlot[sched.slot]) out.push(opt(bySlot[sched.slot], true));
+  const rest2 = ctx.arms.filter(a => a.slot !== onMound.slot && a.slot !== sched.slot &&
+    (a.slot === PEN_SLOT || !used[a.slot]))
+    .sort((a, b) => (a.role === 'cl' ? -1 : 0) - (b.role === 'cl' ? -1 : 0) || a.era * (rest[a.slot] || 1) - b.era * (rest[b.slot] || 1));
+  for (const a of rest2) out.push(opt(a, false));
+  return out;
+}
+
 /*
  * Home field across a best-of-seven is 2-2-1-1-1, and across a best-of-five 2-2-1.
  * Which end of it you are on is the one thing the bracket already knows, so the
@@ -2424,7 +3161,7 @@ function coachReport(roster, chem, structure, rating, unspentMusd) {
   else if (spWar < 8) weaknesses.push('Thin rotation');
   if (closer && closer.w >= 3) strengths.push('Lights-out bullpen');
   else if (!closer || closer.w < 1.2) weaknesses.push('Shaky closer');
-  if (chemPct >= 9) strengths.push('Great clubhouse chemistry');
+  if (chemPct >= 7) strengths.push('Great clubhouse chemistry');  // 9 of a 15 cap, now 7 of 12
   else if (chemPct < 1) weaknesses.push('No real chemistry');
   if (structure && structure.archetype && structure.archetype.key === 'one_man_show')
     weaknesses.push(`Leans hard on ${top ? lastNameOf(top.n) : 'one star'}`);
@@ -2504,7 +3241,7 @@ function playRun(roster, rng, slotNames, pool, opts) {
    * two numbers and must not be merged. */
   const rating = staffMode ? staffRating(tagged) : squadRating(roster);
   const shownRating = staffMode ? staffRating(tagged) : teamRating(offense, defense);
-  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool);
+  const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool, staffMode ? null : shownRating);
 
   const titleWon = playoffs && playoffs.won;
   const isGOAT = wins >= CONSTANTS.GOAT_WINS;
@@ -2578,6 +3315,7 @@ const publicAPI = {
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
   pairLinks, resolveChemistry, setCuratedChemistry, setCareers, sharedSeason,
+  setColleges, sharedCollege, collegeOf,
   POSITION_FIT, primaryAt, offPosition, slotWar, slotBase,
   chemPoints, chemistryByPlayer, chemistryWorth,
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
@@ -2586,8 +3324,11 @@ const publicAPI = {
   resolveGame, playoffSeries, playRun,
   BRACKET, bracketSeed, createBracket,
   PA_RATES, simGameScript, simHalfInning, spreadRuns, battingOrder, homeGames,
-  lineupFromRoster, staffFromRoster, lineupFromTeamSeason, staffFromTeamSeason,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
+  CALLS, PEN_SLOT, pitchesFor, pitchCounts, armsFor, coachArm, armFactor, restFrom,
+  callFor, callOptions, retarget, armBefore, replayFrom, fieldingHalf, halfIndex,
+  playoffContext, roundMeans, playoffRound, playoffOpponent, eliteSortedOf, playoffsWon,
+  lineupFromRoster, staffFromRoster, coachOrder, orderLoss, LINEUP_WEIGHT, lineupFromTeamSeason, staffFromTeamSeason,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge, eliteEase, TITLE,
   respinCost, respinFees,
   pythagorean, rosterOffense, rosterRunPrevention, rosterStructure, closerSavePct,
   STAFF, staffOffense, staffRunPrevention, staffEra, staffRating,

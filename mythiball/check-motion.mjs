@@ -71,7 +71,7 @@ async function open(opts) {
   await pg.goto(PAGE_URL);
   await pg.evaluate(() => localStorage.clear());
   await pg.goto(PAGE_URL);
-  await pg.evaluate(() => { Sound.muted = true; PREFS.coach = false; PREFS.cutscenes = false; });
+  await pg.evaluate(() => { Sound.muted = true; PREFS.tips = false; PREFS.cutscenes = false; });
   return { ctx, pg, errors };
 }
 

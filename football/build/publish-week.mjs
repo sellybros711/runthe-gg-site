@@ -171,6 +171,27 @@ export function resultsSQL(res) {
       + `${n2(res.scores[id][0], id + "'s points")})`).join(',\n'));
     out.push('  on conflict (season, week, player_id) do update set '
       + 'half_ppr = excluded.half_ppr;');
+    /* WHAT HE DID, beside what it scored (126). Both writers already build the sentence as
+       `scores[id][1]`; this is where it stops being dropped.
+       ASKED OF THE CATALOG FIRST, because the SQL is deployed by hand and this file by a
+       push, and the live job pipes this every two minutes during a game: an unguarded
+       write to a column the database does not have yet would fail the whole script, and
+       the board would stop moving for the afternoon over a line of display text. plpgsql
+       resolves a column when the statement RUNS, so the update inside the `if` is never
+       looked at on a database without the column. */
+    const lines = ids.filter((id) => res.scores[id][1]);
+    if (lines.length) {
+      out.push('do $line$ begin');
+      out.push('  if exists (select 1 from information_schema.columns');
+      out.push("              where table_schema = 'public' and table_name = 'fantasy_results'");
+      out.push("                and column_name = 'line') then");
+      out.push('    update public.fantasy_results r set line = v.line from (values');
+      out.push(lines.map((id) => `      (${q(id)},${q(res.scores[id][1])})`).join(',\n'));
+      out.push(`    ) as v(player_id, line) where r.season = ${season} and r.week = ${week}`);
+      out.push('      and r.player_id = v.player_id and r.line is distinct from v.line;');
+      out.push('  end if;');
+      out.push('end $line$;');
+    }
   } else {
     out.push('-- no man has a row yet, so there is nothing to upsert. The clocks still move.');
   }

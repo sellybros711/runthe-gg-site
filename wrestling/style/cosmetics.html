@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Ropes Cosmetics Sheet</title>
+<style>body{margin:0;background:#15110f;color:#efe4d2;font:12px system-ui,sans-serif;padding:16px}
+h2{font-size:14px;margin:18px 0 6px;color:#f2c14e;text-transform:uppercase;letter-spacing:.08em}
+.g{display:flex;flex-wrap:wrap;gap:6px}.c{width:116px;text-align:center;background:#211a17;border-radius:4px;padding:4px}
+.c canvas{image-rendering:pixelated;width:112px;height:144px}.c span{display:block;font-size:10px;color:#cdbfa8;height:24px;overflow:hidden}</style></head>
+<body><h1 style="font-size:16px">Every cosmetic, as the career game draws it</h1><div id="out"></div>
+<script src="../cosmetics.js"></script><script src="../pxwrestler.js"></script>
+<script>
+// one wrestler wearing each item in turn, read through the same converter the game uses
+const BASE={skin:'#d19a6d',hair:'#3b2618',gear:'#2f6fd6',trim:'#f2c14e',hairStyle:'short',face:'none',mask:'none',attire:'trunks',boots:'tall',acc:'none',pattern:'solid',build:'athletic',tattoo:'none',aura:'none'};
+const KEY={hair:'hairStyle'}, by={};
+RTR_COSMETICS.forEach(c=>(by[c.slot]=by[c.slot]||[]).push(c));
+const out=document.getElementById('out');
+Object.keys(by).forEach(sl=>{
+  const h=document.createElement('h2'); h.textContent=sl+' ('+by[sl].length+')'; out.appendChild(h);
+  const g=document.createElement('div'); g.className='g'; out.appendChild(g);
+  by[sl].forEach(c=>{
+    const L=Object.assign({},BASE,{[KEY[sl]||sl]:c.v}); if(sl==='pattern') L.attire='tights';
+    const d=document.createElement('div'); d.className='c';
+    d.appendChild(RTR_PX.canvas(RTR_PX.fromLegacy(L),{scale:2}));
+    const s=document.createElement('span'); s.textContent=c.name; d.appendChild(s); g.appendChild(d);
+  });
+});
+</script></body></html>

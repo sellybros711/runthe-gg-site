@@ -131,7 +131,10 @@
       var t = Math.max(1, mt + 1 - n);
       return t + (t === 1 ? ' try' : ' tries');
     }
-    return n + (CFG.kind === 'pts' ? ' pts' : (CFG.unit ? ' ' + CFG.unit : ''));
+    /* "1 pts" was printed on the board. A unit that is a plural noun takes
+       the singular at one; "in a row" and "named" are not nouns and stay. */
+    var unit = CFG.unit === 'points' && n === 1 ? 'point' : CFG.unit;
+    return n + (CFG.kind === 'pts' ? (n === 1 ? ' pt' : ' pts') : (unit ? ' ' + unit : ''));
   }
 
   var TROPHY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>';
@@ -532,7 +535,7 @@
         return;
       }
       if (total) tease(total + ' played today · tap to see the board');
-      var myName = st.name || null;
+      var myName = (RTG_BOARD.boardName && RTG_BOARD.boardName()) || st.name || null;
       var done = function (myRank) {
         var html = youHTML(myRank, total || rows.length, mine, rows) +
           rowsHTML(rows, myName) +
@@ -580,7 +583,7 @@
     // Already loaded this session: repaint what we have, don't refetch pages.
     if (allRows.length) {
       var st = (B.state && B.state()) || {};
-      paint(rowsHTML(allRows, st.name || null) + allFootHTML());
+      paint(rowsHTML(allRows, (RTG_BOARD.boardName && RTG_BOARD.boardName()) || st.name || null) + allFootHTML());
       var b = bodyEl.querySelector('#rtglbMore button');
       if (b) b.addEventListener('click', loadAllPage);
       renderPin(allStats && allStats.my_rank, allTotal, allStats && allStats.score != null ? allStats : null, st);
@@ -620,12 +623,12 @@
           renderPin(null, 0, null, st);
           return;
         }
-        paint(rowsHTML(allRows, st.name || null) + allFootHTML());
+        paint(rowsHTML(allRows, (RTG_BOARD.boardName && RTG_BOARD.boardName()) || st.name || null) + allFootHTML());
         var b = bodyEl.querySelector('#rtglbMore button');
         if (b) b.addEventListener('click', loadAllPage);
       } else {
         var ol = bodyEl.querySelector('.rtglb-rows');
-        if (ol && page.rows.length) ol.insertAdjacentHTML('beforeend', rowsLI(page.rows, st.name || null, startRank));
+        if (ol && page.rows.length) ol.insertAdjacentHTML('beforeend', rowsLI(page.rows, (RTG_BOARD.boardName && RTG_BOARD.boardName()) || st.name || null, startRank));
         syncAllFoot();
       }
       renderPin(allStats && allStats.my_rank, allTotal, (allStats && allStats.score != null) ? allStats : null, st);

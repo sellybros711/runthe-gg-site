@@ -73,8 +73,6 @@
   Cache-Control: no-cache
 /football/
   Cache-Control: no-cache
-/globe/
-  Cache-Control: no-cache
 /golf/
   Cache-Control: no-cache
 /hoops/
@@ -93,3 +91,18 @@
   Cache-Control: no-cache
 /wrestling/
   Cache-Control: no-cache
+
+# Shut The Door's 3D scene (unlisted). The game's page and the lab's are revalidated like every
+# page. Every file the scene loads has a version in its URL: modules carry ?v= (held by
+# scripts/check-cachebust.mjs), assets carry a content hash ?h= (written by
+# shut-the-door/lab/pipeline/stamp.mjs), and three.js sits in a folder named for its release.
+# A changed file gets a new URL, so a URL's bytes never change and a phone can keep them for a
+# year without asking again. Scoped to the game's 3D folder and the lab only.
+/shut-the-door/
+  Cache-Control: no-cache
+/shut-the-door/3d/*
+  Cache-Control: public, max-age=31536000, immutable
+/shut-the-door/lab/
+  Cache-Control: no-cache
+/shut-the-door/lab/*.js
+  Cache-Control: public, max-age=31536000, immutable

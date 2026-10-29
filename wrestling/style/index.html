@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en" data-dir="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Run The Ropes | Style Guide</title>
+<meta name="description" content="The living style guide for Run The Ropes: three candidate directions, the tokens, the pixel rules, the wrestler sample sheet and every component in every state.">
+<style>
+/* ── self-hosted faces (SIL OFL, wrestling/fonts/OFL.txt) ───────────────── */
+@font-face{font-family:'Jersey 10';src:url(../fonts/jersey-10.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Pixelify Sans';font-weight:400;src:url(../fonts/pixelify-400.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Pixelify Sans';font-weight:700;src:url(../fonts/pixelify-700.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Silkscreen';font-weight:400;src:url(../fonts/silkscreen-400.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Silkscreen';font-weight:700;src:url(../fonts/silkscreen-700.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Press Start 2P';src:url(../fonts/press-start-2p.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Barlow Semi Condensed';font-weight:400;src:url(../fonts/barlow-sc-400.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Barlow Semi Condensed';font-weight:600;src:url(../fonts/barlow-sc-600.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Barlow Semi Condensed';font-weight:700;src:url(../fonts/barlow-sc-700.woff2) format('woff2');font-display:swap}
+
+/* ── tokens. Direction A is the default and the recommendation. ─────────── */
+:root,[data-dir="a"]{
+  --px:2px;                                   /* one art pixel at 2x: the unit everything snaps to */
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;--s8:64px;
+  --bg:#0c0a11;--bg2:#121019;--panel:#18151f;--panel2:#211d2a;--steel:#3a3546;--steel2:#5a546a;
+  --ink:#f4ecdf;--ink2:#c9bfae;--ink3:#9a9080;--onaccent:#0e0b08;
+  --hot:#ea4a36;--hot2:#ff6a4a;--gold:#f2c14e;--gold2:#ffe08a;
+  --good:#4fd18b;--bad:#ff6b5e;--warn:#f2c14e;
+  --face:#58b8ff;--heel:#ff5a4e;--tweener:#c79bff;
+  --promo:#e23b2e;--promo-ink:#ffffff;
+  --display:'Jersey 10','Silkscreen',Impact,sans-serif;
+  --label:'Silkscreen',ui-monospace,monospace;
+  --body:'Barlow Semi Condensed',system-ui,sans-serif;
+  --shadow:0 calc(var(--px)*3) 0 0 rgba(0,0,0,.55);
+  --tex:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 2px,transparent 2px 4px);
+  --frame:var(--steel);
+}
+[data-dir="b"]{
+  --bg:#140d0b;--bg2:#1c1310;--panel:#24170f;--panel2:#30200f;--steel:#5a3a22;--steel2:#7d5533;
+  --ink:#ffe9cc;--ink2:#e2c29a;--ink3:#b08f6a;--onaccent:#1a0f06;
+  --hot:#ff8a1f;--hot2:#ffb25a;--gold:#4fd1e8;--gold2:#9eeaf7;
+  --good:#7be07a;--bad:#ff6b4e;--warn:#ffd04a;
+  --face:#4fd1e8;--heel:#ff6b4e;--tweener:#ffd04a;
+  --promo:#ff8a1f;--promo-ink:#1a0f06;
+  --display:'Press Start 2P','Silkscreen',monospace;
+  --label:'Pixelify Sans',ui-monospace,monospace;
+  --body:'Pixelify Sans','Barlow Semi Condensed',system-ui,sans-serif;
+  --tex:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 2px,transparent 2px 4px);
+  --frame:var(--steel2);
+}
+[data-dir="c"]{
+  --bg:#efe4cc;--bg2:#e6d8bb;--panel:#f7eedb;--panel2:#e9dcc0;--steel:#16130f;--steel2:#3a332a;
+  --ink:#16130f;--ink2:#3a332a;--ink3:#6b5f4e;--onaccent:#fff6e6;
+  --hot:#c4251b;--hot2:#e0402e;--gold:#16130f;--gold2:#3a332a;
+  --good:#1f7a43;--bad:#b3201a;--warn:#8a5a00;
+  --face:#1d58a8;--heel:#b3201a;--tweener:#6a3fa0;
+  --promo:#c4251b;--promo-ink:#fff6e6;
+  --display:'Jersey 10',Impact,sans-serif;
+  --label:'Silkscreen',ui-monospace,monospace;
+  --body:'Barlow Semi Condensed',system-ui,sans-serif;
+  --shadow:calc(var(--px)*3) calc(var(--px)*3) 0 0 #16130f;
+  --tex:radial-gradient(rgba(22,19,15,.09) 1px,transparent 1.2px) 0 0/6px 6px;
+  --frame:var(--steel);
+}
+
+*{box-sizing:border-box}
+[data-dir]{color:var(--ink)}
+[data-dir="b"] .stg::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 2px,transparent 2px 4px),linear-gradient(rgba(255,138,31,.10),rgba(79,209,232,.06))}
+[data-dir="c"] .stg > canvas{filter:grayscale(1) contrast(1.25) sepia(.35)}
+[data-dir="c"] .stg::after{content:'';position:absolute;inset:0;background:radial-gradient(rgba(196,37,27,.35) 1px,transparent 1.3px) 0 0/4px 4px;mix-blend-mode:multiply}
+html{background:var(--bg);color:var(--ink);font:400 17px/1.45 var(--body);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg) var(--tex);min-height:100vh}
+img.rtr-px,img.rtf-baller,canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+.wrap{max-width:1180px;margin:0 auto;padding:var(--s5) var(--s4) var(--s8)}
+a{color:var(--gold)}
+
+/* the pixel frame: a border built from four hard shadows, so the corner
+   pixel is missing the way a sprite artist cuts a box, plus a hard drop */
+.fr{background:var(--panel);box-shadow:0 calc(var(--px)*-1) 0 0 var(--frame),0 var(--px) 0 0 var(--frame),calc(var(--px)*-1) 0 0 0 var(--frame),var(--px) 0 0 0 var(--frame),var(--shadow);margin:var(--px)}
+.fr.hot{--frame:var(--hot)}.fr.gold{--frame:var(--gold)}.fr.promo{--frame:var(--promo)}
+
+/* ── type ── */
+.d1{font:400 64px/0.9 var(--display);letter-spacing:.01em;text-transform:uppercase;margin:0}
+.d2{font:400 44px/0.95 var(--display);text-transform:uppercase;margin:0}
+.d3{font:400 30px/1 var(--display);text-transform:uppercase;margin:0}
+[data-dir="b"] .d1{font-size:30px;line-height:1.25}[data-dir="b"] .d2{font-size:22px;line-height:1.3}[data-dir="b"] .d3{font-size:16px;line-height:1.4}
+.lab{font:400 8px/1.6 var(--label);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.lab.l{font-size:16px;letter-spacing:.04em}
+[data-dir="b"] .lab{font-size:11px;letter-spacing:.04em}
+.num{font:400 40px/1 var(--display);font-variant-numeric:tabular-nums}
+[data-dir="b"] .num{font-size:20px}
+p{margin:0 0 var(--s3);max-width:68ch}
+.muted{color:var(--ink2)}
+
+/* ── page chrome ── */
+.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:var(--px) solid var(--frame);}
+.top .in{max-width:1180px;margin:0 auto;padding:var(--s2) var(--s4);display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap}
+.top .t{font:400 24px/1 var(--display);text-transform:uppercase;flex:1 1 auto}
+[data-dir="b"] .top .t{font-size:12px}
+.seg{display:flex;gap:var(--s1)}
+section{margin:var(--s7) 0}
+section > h2{font:400 36px/1 var(--display);text-transform:uppercase;margin:0 0 var(--s2);display:flex;align-items:center;gap:var(--s3)}
+[data-dir="b"] section > h2{font-size:18px}
+section > h2::before{content:'';width:12px;height:12px;background:var(--hot);box-shadow:4px 4px 0 var(--gold)}
+.grid{display:grid;gap:var(--s4)}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.pad{padding:var(--s4)}
+
+/* ── buttons ── */
+.btn{--bfr:var(--hot);appearance:none;border:0;cursor:pointer;font:400 16px/1 var(--label);text-transform:uppercase;letter-spacing:.04em;color:var(--onaccent);background:var(--hot);padding:14px 18px;min-height:48px;position:relative;
+  box-shadow:0 calc(var(--px)*-1) 0 0 var(--bfr),0 var(--px) 0 0 var(--bfr),calc(var(--px)*-1) 0 0 0 var(--bfr),var(--px) 0 0 0 var(--bfr),0 calc(var(--px)*3) 0 0 rgba(0,0,0,.55),inset 0 calc(var(--px)*-2) 0 0 rgba(0,0,0,.28),inset 0 var(--px) 0 0 rgba(255,255,255,.28);
+  margin:var(--px);transition:transform 60ms steps(1),filter 60ms steps(1)}
+[data-dir="b"] .btn{font-size:13px}
+.btn:hover,.btn.is-hover{filter:brightness(1.12)}
+.btn:active,.btn.is-press{transform:translateY(calc(var(--px)*2));box-shadow:0 calc(var(--px)*-1) 0 0 var(--bfr),0 var(--px) 0 0 var(--bfr),calc(var(--px)*-1) 0 0 0 var(--bfr),var(--px) 0 0 0 var(--bfr),0 var(--px) 0 0 rgba(0,0,0,.55),inset 0 calc(var(--px)*2) 0 0 rgba(0,0,0,.28)}
+.btn:focus-visible,.btn.is-focus{outline:var(--px) solid var(--gold2);outline-offset:calc(var(--px)*3)}
+.btn:disabled,.btn.is-off{cursor:not-allowed;filter:grayscale(1) brightness(.6);transform:none}
+.btn.gold{--bfr:var(--gold);background:var(--gold)}
+.btn.ghost{--bfr:var(--steel2);background:var(--panel2);color:var(--ink)}
+.btn.danger{--bfr:var(--bad);background:transparent;color:var(--bad);box-shadow:0 calc(var(--px)*-1) 0 0 var(--bad),0 var(--px) 0 0 var(--bad),calc(var(--px)*-1) 0 0 0 var(--bad),var(--px) 0 0 0 var(--bad)}
+.btn.small{min-height:36px;padding:9px 12px;font-size:8px}
+[data-dir="c"] .btn{color:var(--onaccent)}
+.statesrow{display:flex;flex-wrap:wrap;gap:var(--s3);align-items:center}
+.statesrow .cap{display:block;margin-top:var(--s2)}
+
+/* ── tabs ── */
+.tabs{display:flex;gap:0;border-bottom:var(--px) solid var(--frame);overflow:auto}
+.tab{appearance:none;background:none;border:0;color:var(--ink3);font:400 8px/1 var(--label);text-transform:uppercase;letter-spacing:.08em;padding:14px 14px 12px;min-height:44px;cursor:pointer;position:relative}
+[data-dir="b"] .tab{font-size:11px}
+.tab[aria-selected="true"]{color:var(--ink);background:var(--panel2)}
+.tab[aria-selected="true"]::after{content:'';position:absolute;left:0;right:0;bottom:calc(var(--px)*-1);height:calc(var(--px)*2);background:var(--hot)}
+.tab:focus-visible{outline:var(--px) solid var(--gold2);outline-offset:-4px}
+
+/* ── meters: stepped segments, not a smooth fill ── */
+.meter{display:grid;grid-template-columns:auto 1fr auto;gap:var(--s2);align-items:center;margin:var(--s2) 0}
+.meter .mbar{height:12px;background:var(--bg2);display:flex;gap:2px;padding:2px;box-shadow:0 0 0 var(--px) var(--frame)}
+.meter .mbar i{flex:1;background:var(--steel)}
+.meter .mbar i.on{background:var(--c,var(--good))}
+.meter .v{font:400 22px/1 var(--display);min-width:3ch;text-align:right;font-variant-numeric:tabular-nums}
+[data-dir="b"] .meter .v{font-size:11px}
+.meter.pulse .mbar{animation:pulse 480ms steps(3) 2}
+@keyframes pulse{50%{box-shadow:0 0 0 calc(var(--px)*2) var(--gold)}}
+.delta{font:400 8px/1 var(--label)}.delta.up{color:var(--good)}.delta.dn{color:var(--bad)}
+
+/* ── wrestler card ── */
+.wcard{display:grid;grid-template-columns:auto 1fr;gap:var(--s3);padding:var(--s3);align-items:end;background:var(--panel) linear-gradient(transparent 60%,var(--promo) 60%,var(--promo) calc(60% + 2px),transparent calc(60% + 2px))}
+.wcard .spr{background:var(--bg2);padding:var(--s1)}
+.wcard .nm{font:400 34px/0.9 var(--display);text-transform:uppercase}
+[data-dir="b"] .wcard .nm{font-size:15px;line-height:1.3}
+.chip{display:inline-flex;align-items:center;gap:6px;font:400 8px/1 var(--label);text-transform:uppercase;letter-spacing:.06em;padding:5px 7px;background:var(--bg2);color:var(--ink2);box-shadow:0 0 0 var(--px) var(--steel)}
+[data-dir="b"] .chip{font-size:10px}
+.chip.face{color:var(--face);box-shadow:0 0 0 var(--px) var(--face)}
+.chip.heel{color:var(--heel);box-shadow:0 0 0 var(--px) var(--heel)}
+.chip.tweener{color:var(--tweener);box-shadow:0 0 0 var(--px) var(--tweener)}
+.chip.title{color:var(--onaccent);background:var(--gold);box-shadow:0 0 0 var(--px) var(--gold)}
+.chip.promo{color:var(--promo-ink);background:var(--promo);box-shadow:0 0 0 var(--px) var(--promo)}
+
+/* ── stat table ── */
+table.stats{border-collapse:separate;border-spacing:0;width:100%;font-variant-numeric:tabular-nums}
+table.stats th{font:400 8px/1 var(--label);text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);text-align:left;padding:8px;border-bottom:var(--px) solid var(--frame)}
+[data-dir="b"] table.stats th{font-size:10px}
+table.stats td{padding:8px;border-bottom:var(--px) dashed var(--steel)}
+table.stats td.n{font:400 24px/1 var(--display);text-align:right}
+[data-dir="b"] table.stats td.n{font-size:12px}
+table.stats tr.me td{background:color-mix(in srgb,var(--promo) 16%,transparent)}
+
+/* ── decision card ── */
+.dec{padding:var(--s4)}
+.dec .opts{display:grid;gap:var(--s2);margin-top:var(--s3)}
+.opt{appearance:none;text-align:left;width:100%;background:var(--panel2);color:var(--ink);border:0;padding:var(--s3);cursor:pointer;font:600 16px/1.3 var(--body);display:grid;grid-template-columns:1fr auto;gap:var(--s2);align-items:center;
+  box-shadow:0 0 0 var(--px) var(--steel);min-height:56px}
+.opt small{display:block;font:400 14px/1.35 var(--body);color:var(--ink2);grid-column:1/-1}
+.opt .odds{font:400 22px/1 var(--display)}
+[data-dir="b"] .opt .odds{font-size:11px}
+.opt:hover,.opt.is-hover{box-shadow:0 0 0 var(--px) var(--gold)}
+.opt:focus-visible,.opt.is-focus{outline:var(--px) solid var(--gold2);outline-offset:var(--px)}
+.opt[aria-pressed="true"]{box-shadow:0 0 0 var(--px) var(--hot),inset calc(var(--px)*3) 0 0 var(--hot)}
+.opt:disabled{opacity:.45;cursor:not-allowed}
+.tag2{font:400 8px/1 var(--label);text-transform:uppercase;letter-spacing:.06em;padding:3px 5px}
+.tag2.ky{background:var(--face);color:#04121e}.tag2.rl{background:var(--steel2);color:var(--ink)}
+[data-dir="c"] .tag2.ky{color:#fff}
+
+/* ── promo dialogue ── */
+.say{display:grid;grid-template-columns:auto 1fr;gap:var(--s3);align-items:start;padding:var(--s3)}
+.say .por{width:72px;height:72px;overflow:hidden;background:var(--bg2);box-shadow:0 0 0 var(--px) var(--gold)}
+.say .por img{width:168px;height:216px;margin:-6px 0 0 -48px}
+.say .who{font:400 8px/1 var(--label);text-transform:uppercase;letter-spacing:.08em;color:var(--gold)}
+.say .line{font:600 19px/1.35 var(--body);margin-top:6px}
+[data-dir="b"] .say .line{font-size:15px}
+.crowdbar{display:flex;gap:2px;margin-top:var(--s2)}
+.crowdbar i{width:10px;height:10px;background:var(--steel)}
+.crowdbar i.on{background:var(--good)}.crowdbar i.boo{background:var(--bad)}
+
+/* ── tale of the tape / match card ── */
+.tape{padding:var(--s3);display:grid;grid-template-columns:1fr auto 1fr;gap:var(--s2);align-items:end;background:var(--panel) var(--tex)}
+.tape .side{text-align:center}
+.tape .vs{font:400 52px/1 var(--display);color:var(--hot);align-self:center}
+[data-dir="b"] .tape .vs{font-size:20px}
+.tape .nm{font:400 24px/1 var(--display);text-transform:uppercase;margin-top:4px}
+[data-dir="b"] .tape .nm{font-size:11px;line-height:1.4}
+.tape .rows{grid-column:1/-1;display:grid;grid-template-columns:1fr auto 1fr;gap:4px 10px;margin-top:var(--s2)}
+.tape .rows b{font:400 22px/1 var(--display);text-align:center}
+[data-dir="b"] .tape .rows b{font-size:11px}
+.tape .rows span{font:400 8px/2.6 var(--label);text-transform:uppercase;color:var(--ink3);text-align:center}
+.stip{grid-column:1/-1;text-align:center;font:400 8px/1 var(--label);text-transform:uppercase;letter-spacing:.1em;color:var(--onaccent);background:var(--gold);padding:7px}
+
+/* ── lower third and name plate ── */
+.l3{display:flex;align-items:stretch;max-width:520px}
+.l3 .k{background:var(--promo);color:var(--promo-ink);font:400 8px/1 var(--label);text-transform:uppercase;letter-spacing:.08em;padding:8px;writing-mode:vertical-rl;transform:rotate(180deg)}
+.l3 .b{background:var(--ink);color:var(--bg);padding:8px 14px;flex:1}
+.l3 .b .n{font:400 34px/0.9 var(--display);text-transform:uppercase}
+[data-dir="b"] .l3 .b .n{font-size:15px;line-height:1.3}
+.l3 .b .s{font:400 8px/1.6 var(--label);text-transform:uppercase;letter-spacing:.08em}
+.l3 .x{width:18px;background:repeating-linear-gradient(90deg,var(--hot) 0 4px,transparent 4px 8px)}
+.plate{display:inline-block;background:var(--bg2);padding:6px 12px 7px;font:400 28px/1 var(--display);text-transform:uppercase;box-shadow:0 0 0 var(--px) var(--gold),0 0 0 calc(var(--px)*3) var(--bg2),0 0 0 calc(var(--px)*4) var(--hot)}
+[data-dir="b"] .plate{font-size:12px}
+
+/* ── championship display ── */
+.champ{display:grid;grid-template-columns:auto 1fr;gap:var(--s3);align-items:center;padding:var(--s3)}
+.champ .reign{font:400 8px/1.8 var(--label);text-transform:uppercase;color:var(--ink3)}
+.lineage{display:flex;gap:2px;margin-top:6px}
+.lineage i{flex:1;height:8px;background:var(--steel)}.lineage i.you{background:var(--gold)}
+
+/* ── dirt sheet and social feed ── */
+.dirt{padding:var(--s3);background:var(--panel);position:relative}
+.dirt .mast{font:400 22px/1 var(--display);text-transform:uppercase;border-bottom:var(--px) solid var(--ink);padding-bottom:4px;margin-bottom:6px;display:flex;justify-content:space-between}
+[data-dir="b"] .dirt .mast{font-size:11px}
+.dirt .hl{font:700 18px/1.2 var(--body)}
+.rumor{display:inline-block;background:var(--warn);color:#1a1200;font:400 8px/1 var(--label);text-transform:uppercase;padding:3px 5px;margin-bottom:6px}
+.post{display:grid;grid-template-columns:32px 1fr;gap:var(--s2);padding:var(--s3) 0;border-bottom:var(--px) dashed var(--steel)}
+.post .av{width:32px;height:32px;background:var(--steel2);image-rendering:pixelated}
+.post .h{font:700 15px/1 var(--body)}.post .h span{font-weight:400;color:var(--ink3)}
+.post .t{font:400 16px/1.35 var(--body);margin-top:2px}
+
+/* ── toast, badges, empty, loading ── */
+.toast{display:flex;gap:var(--s2);align-items:center;padding:10px 14px;background:var(--panel2);max-width:420px}
+.toast b{font:400 8px/1 var(--label);text-transform:uppercase;color:var(--good)}
+.badges{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.badge{display:grid;place-items:center;width:64px;height:64px;background:var(--bg2);box-shadow:0 0 0 var(--px) var(--steel)}
+.badge.got{box-shadow:0 0 0 var(--px) var(--gold),0 0 0 calc(var(--px)*2) var(--bg2),0 0 0 calc(var(--px)*3) var(--gold)}
+.badge.lock{opacity:.4;filter:grayscale(1)}
+.empty{text-align:center;padding:var(--s6) var(--s4)}
+.load{display:flex;gap:4px;justify-content:center;margin:var(--s3) 0}
+.load i{width:10px;height:10px;background:var(--hot);animation:ld 900ms steps(1) infinite}
+.load i:nth-child(2){animation-delay:150ms}.load i:nth-child(3){animation-delay:300ms}
+@keyframes ld{0%,100%{opacity:.25}33%{opacity:1}}
+
+/* ── receipt ── */
+.receipt{padding:var(--s3)}
+.receipt .r{display:grid;grid-template-columns:1fr auto;gap:var(--s2);padding:6px 0;border-bottom:var(--px) dashed var(--steel)}
+.receipt .why{grid-column:1/-1;font:400 14px/1.3 var(--body);color:var(--ink3)}
+
+/* ── modal ── */
+.modalbox{position:relative;max-width:440px;padding:var(--s4);background:var(--panel)}
+.modalbox .x{position:absolute;right:8px;top:8px}
+
+/* ── direction sample screens ── */
+.dirs{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:var(--s5)}
+.phone{width:360px;max-width:100%;margin:0 auto;background:var(--bg);overflow:hidden;box-shadow:0 0 0 2px var(--frame),0 12px 0 0 rgba(0,0,0,.4)}
+.phone .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg2);border-bottom:var(--px) solid var(--frame)}
+.phone .bar .t{font:400 20px/1 var(--display);text-transform:uppercase}
+[data-dir="b"] .phone .bar .t{font-size:10px}
+.phone .stg{position:relative;line-height:0}
+.phone .stg canvas{width:100%;height:auto}
+.phone .stg .fig{position:absolute;bottom:4%;left:50%;transform:translateX(-50%)}
+.phone .body{padding:12px;display:grid;gap:12px}
+.phone .nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:var(--px) solid var(--frame);background:var(--bg2)}
+.phone .nav span{display:grid;place-items:center;gap:2px;padding:6px 0;font:400 8px/1 var(--label);text-transform:uppercase;color:var(--ink3)}
+.phone .nav span.on{color:var(--ink);background:var(--panel2)}
+.dirhead{text-align:center;margin-bottom:var(--s3)}
+.dirhead .d3{margin-top:4px}
+
+.sheet{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:flex-end}
+.sheet .c{background:var(--bg2);padding:6px 6px 8px;text-align:center;box-shadow:0 0 0 var(--px) var(--steel)}
+.sheet .c b{display:block;font:400 18px/1 var(--display);text-transform:uppercase;margin-top:4px}
+[data-dir="b"] .sheet .c b{font-size:9px;line-height:1.4}
+.sheet .c i{display:block;font:400 8px/1.5 var(--label);font-style:normal;color:var(--ink3);text-transform:uppercase;max-width:168px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:var(--s2)}
+.sw{padding:10px;min-height:76px;display:flex;flex-direction:column;justify-content:space-between;font:400 8px/1.4 var(--label);text-transform:uppercase}
+.layers{display:flex;flex-wrap:wrap;gap:var(--s1)}
+.stages{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--s3)}
+.stages figure{margin:0}.stages canvas{width:100%;height:auto;display:block}
+.stages figcaption{font:400 8px/2.4 var(--label);text-transform:uppercase;color:var(--ink2)}
+.icons{display:flex;flex-wrap:wrap;gap:var(--s3)}
+.icons figure{margin:0;text-align:center}.icons figcaption{font:400 8px/2 var(--label);text-transform:uppercase;color:var(--ink3)}
+.motion{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s3)}
+.mbox{padding:var(--s3)}
+.mbox .demo{height:56px;background:var(--bg2);position:relative;overflow:hidden;margin-top:var(--s2)}
+.mbox .demo i{position:absolute;left:8px;top:16px;width:24px;height:24px;background:var(--hot)}
+.play .wipe i{animation:wipe 220ms steps(6) forwards}
+@keyframes wipe{from{transform:translateX(-40px)}to{transform:translateX(160px)}}
+.play .hit i{animation:hit 300ms steps(3)}
+@keyframes hit{0%{transform:translate(0,0)}33%{transform:translate(4px,-2px)}66%{transform:translate(-2px,2px)}}
+.play .count i{animation:cnt 640ms steps(4) forwards;background:var(--gold)}
+@keyframes cnt{from{width:0}to{width:180px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:640px){.d1{font-size:44px}.wcard .nm{font-size:26px}.tape .vs{font-size:36px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="t">Run The Ropes · Style Guide</div>
+  <div class="seg" role="group" aria-label="Direction">
+    <button class="btn small" data-set="a" aria-pressed="true">A Main Event</button>
+    <button class="btn small ghost" data-set="b" aria-pressed="false">B Territory Tape</button>
+    <button class="btn small ghost" data-set="c" aria-pressed="false">C Fight Card</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <div class="lab l">Prototype for approval · nothing here ships to players yet</div>
+  <h1 class="d1" style="margin-top:8px">The look of the business</h1>
+  <p class="muted" style="margin-top:12px">Three directions share one pixel system and one set of components. Pick a direction with the switch above and every component on this page re-themes. The wrestlers are drawn by <code>pxwrestler.js</code>, built on the same rig, ramps and outline passes as Run The Floor. My recommendation is <b>A, Main Event</b>, with B and C kept as stage looks for the bottom of the card (see Stage looks).</p>
+
+  <section id="directions">
+    <h2>Three directions</h2>
+    <p class="muted">The same screen, This Week on the indies, drawn three ways at phone width.</p>
+    <div class="dirs" id="dirs"></div>
+  </section>
+
+  <section id="sprites">
+    <h2>The wrestlers</h2>
+    <p class="muted">Sixteen invented wrestlers across five builds, both frames, all three alignments. Shown at 3x, the size the hub card uses. Every pixel lands on the grid: integer scale only, no rotation, no sub-pixel moves. The full set is on <a href="sheet.html">the sample sheet</a>.</p>
+    <div class="sheet" id="cast"></div>
+    <h3 class="d3" style="margin-top:24px">Base bodies</h3>
+    <div class="sheet" id="bodies" style="margin-top:8px"></div>
+    <h3 class="d3" style="margin-top:24px">The layer stack, built up one layer at a time</h3>
+    <div class="sheet" id="stack" style="margin-top:8px"></div>
+    <h3 class="d3" style="margin-top:24px">Poses so far (prototype has five of the fourteen)</h3>
+    <div class="sheet" id="poses" style="margin-top:8px"></div>
+    <h3 class="d3" style="margin-top:24px">Family check</h3>
+    <p class="muted">Run The Floor's player beside two of ours, same cell size, same light, same outline rule.</p>
+    <div class="sheet" id="family"></div>
+  </section>
+
+  <section id="color">
+    <h2>Palette and tokens</h2>
+    <div class="swatches" id="swatches"></div>
+    <h3 class="d3" style="margin-top:24px">Promotion slot</h3>
+    <p class="muted">Signing with a company swaps <code>--promo</code> and <code>--promo-ink</code>. The ink is chosen by measured contrast, never by hand, so every company passes AA.</p>
+    <div class="swatches" id="promos"></div>
+  </section>
+
+  <section id="type">
+    <h2>Type</h2>
+    <div class="grid g2">
+      <div class="fr pad">
+        <div class="lab">Display · headlines, names, numbers</div>
+        <div class="d1">Main Event</div><div class="d2">Tale of the Tape</div><div class="d3">Week 14 · Year 2</div>
+        <div class="num" style="margin-top:8px">87 · 4.75★</div>
+      </div>
+      <div class="fr pad">
+        <div class="lab">Label · 8px multiples only</div>
+        <div class="lab l" style="color:var(--ink)">Popularity · Standing</div>
+        <div class="lab" style="color:var(--ink);margin:6px 0 12px">Overall · Momentum · Health</div>
+        <div class="lab">Body · events, promos, tables</div>
+        <p style="margin-top:6px">The promoter counts the gate twice and pays you once. Thirty two people in folding chairs, and every one of them watched you.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="components">
+    <h2>Components</h2>
+    <h3 class="d3">Buttons, every state</h3>
+    <div class="statesrow" style="margin:12px 0 24px" id="btnstates"></div>
+
+    <div class="grid g2">
+      <div class="fr">
+        <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">This Week</button><button class="tab" role="tab" aria-selected="false">Business</button><button class="tab" role="tab" aria-selected="false">Body</button></div>
+        <div class="pad" id="meters"></div>
+      </div>
+      <div class="fr" id="wcard"></div>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="fr dec">
+        <div class="lab">Decision · The Parking Lot</div>
+        <div class="d3" style="margin-top:6px">The promoter's short</div>
+        <p style="margin-top:8px">Sal Fontaine counts out forty dollars of the hundred he promised. "Rough gate, kid. Next week I make it up."</p>
+        <div class="opts">
+          <button class="opt" aria-pressed="false"><span>Take the forty and say nothing</span><span class="tag2 rl">Real</span><small>The locker room sees it. Sal books you again.</small></button>
+          <button class="opt is-hover" aria-pressed="false"><span>Make him count it again, slower</span><span class="tag2 rl">Real</span><small>You get sixty. He remembers.</small></button>
+          <button class="opt" aria-pressed="true"><span>Cut a promo on him at the next show</span><span class="tag2 ky">Kayfabe</span><small>The crowd loves it. Sal has two ways to answer.</small></button>
+          <button class="opt" disabled><span>Call your trainer for backup</span><small>Needs: trainer relationship 60</small></button>
+        </div>
+      </div>
+      <div class="grid" style="gap:16px">
+        <div class="fr say" id="say"></div>
+        <div class="fr receipt" id="receipt"></div>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="fr tape" id="tape"></div>
+      <div class="grid" style="gap:16px">
+        <div class="l3"><div class="k">Live</div><div class="b"><div class="s">Steel Belt Championship Wrestling · Heavyweight</div><div class="n">Big Hoss Mercer</div></div><div class="x"></div></div>
+        <div><span class="plate">Cometa Azul</span></div>
+        <div class="fr champ" id="champ"></div>
+      </div>
+    </div>
+
+    <div class="grid g3" style="margin-top:16px">
+      <div class="fr dirt">
+        <div class="mast"><span>The Ropes Report</span><span class="lab">Wk 14</span></div>
+        <span class="rumor">Rumor</span>
+        <div class="hl">Apex brass watched the Grit City tape twice</div>
+        <p class="muted" style="margin:6px 0 0;font-size:15px">Two sources say a developmental offer is on the table. A third says the booker hates the name.</p>
+      </div>
+      <div class="fr pad" id="feed"><div class="lab">The timeline</div></div>
+      <div class="grid" style="gap:16px">
+        <div class="fr toast" id="toast"></div>
+        <div class="fr pad"><div class="lab">Badges</div><div class="badges" id="badges" style="margin-top:8px"></div></div>
+      </div>
+    </div>
+
+    <div class="grid g3" style="margin-top:16px">
+      <div class="fr modalbox" role="dialog" aria-labelledby="mh"><button class="btn small ghost x" aria-label="Close">X</button><div class="lab">Modal</div><div class="d3" id="mh" style="margin-top:6px">Sign with Apex?</div><p style="margin-top:8px">Three years. Guaranteed money. Creative control: none.</p><div class="statesrow"><button class="btn">Sign it</button><button class="btn ghost">Walk away</button></div></div>
+      <div class="fr empty"><div class="d3">No rivals yet</div><p class="muted" style="margin:8px auto 0">Somebody will take it personally soon. Lose a close one and see who comes looking.</p></div>
+      <div class="fr empty"><div class="lab">Loading the card</div><div class="load"><i></i><i></i><i></i></div><p class="muted" style="margin:0 auto">Setting up the ring. Somebody always forgets the turnbuckle pads.</p></div>
+    </div>
+
+    <div class="fr pad" style="margin-top:16px"><div class="lab">Stat table</div><table class="stats" id="stats"></table></div>
+  </section>
+
+  <section id="icons">
+    <h2>Icons</h2>
+    <p class="muted">12 by 12 cells, drawn at 2x or 3x, a dark outline of the colour they sit on, never emoji.</p>
+    <div class="icons" id="iconrow"></div>
+  </section>
+
+  <section id="stages">
+    <h2>Stage looks</h2>
+    <p class="muted">Seven rooms, one system. Every step up the business adds crowd rows, light, a screen, and finally pyro. 160 by 90 cells, seeded, so a building is the same building every time.</p>
+    <div class="stages" id="stagegrid"></div>
+  </section>
+
+  <section id="motion">
+    <h2>Motion</h2>
+    <p class="muted">Sprites move in steps at fixed frame rates. UI moves in steps too: panels wipe, numbers count, impacts hit. Press a box to play it. Reduced motion turns all of it off.</p>
+    <div class="motion">
+      <button class="fr mbox" data-m="wipe" style="text-align:left;border:0;color:inherit;cursor:pointer"><div class="lab">Wipe · 220ms · 6 steps</div><div class="demo wipe"><i></i></div></button>
+      <button class="fr mbox" data-m="hit" style="text-align:left;border:0;color:inherit;cursor:pointer"><div class="lab">Impact · 300ms · 3 steps</div><div class="demo hit"><i></i></div></button>
+      <button class="fr mbox" data-m="count" style="text-align:left;border:0;color:inherit;cursor:pointer"><div class="lab">Count up · 640ms · 4 steps</div><div class="demo count"><i></i></div></button>
+    </div>
+  </section>
+</main>
+
+<script src="../pxwrestler.js"></script>
+<script src="../../hoops/baller.js"></script>
+<script src="kit.js"></script>
+<script src="samples.js"></script>
+<script>
+(function(){
+const P = RTR_PX, K = RTR_KIT, S = RTR_SAMPLES;
+const $ = id => document.getElementById(id);
+const byName = n => S.find(w => w.name === n);
+const sprite = (w, scale, pose) => P.img(w.look, { pose: pose || w.pose, age: w.age, scale: scale || 3 });
+const CSS = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* the three direction samples */
+const DIR = { a: ['A', 'Main Event', 'Pay-per-view broadcast. Dark arena, hard light, red and gold, poster type.'],
+  b: ['B', 'Territory Tape', 'A 1980s regional TV studio. Warm, orange and cyan, VHS scanlines, chunky captions.'],
+  c: ['C', 'Fight Card', 'A screen printed event poster. Newsprint, black ink, one spot colour, halftone.'] };
+function screen(d){
+  const w = byName('Kenji Arata');
+  return `<div><div class="dirhead"><div class="lab l">Direction ${DIR[d][0]}</div><div class="d3">${DIR[d][1]}</div><p class="muted" style="margin:6px auto 0;font-size:15px">${DIR[d][2]}</p></div>
+  <div data-dir="${d}"><div class="phone" style="background:var(--bg) var(--tex)">
+    <div class="bar"><span class="t">Run The Ropes</span><span class="chip promo">Grit City</span></div>
+    <div class="stg" data-stage="bingo"><div class="fig">${sprite(w, 2, 'idle')}</div></div>
+    <div class="body">
+      <div><div class="lab">Year 1 · Week 3 · Bingo hall, 41 paid</div><div class="d2" style="margin-top:4px">${w.name}</div>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><span class="chip tweener">Tweener</span><span class="chip">Strong style</span><span class="chip">OVR 41</span></div></div>
+      ${meter('Popularity', 6, 'var(--good)', '+2')}${meter('Health', 18, 'var(--good)')}${meter('Standing', 11, 'var(--warn)', '-1')}
+      <div class="fr" style="padding:10px"><div class="lab">Tonight</div><div style="font:700 17px/1.2 var(--body);margin-top:4px">vs Vera Knox's student, opener</div><div class="muted" style="font-size:14px">Sal wants it short and hard.</div></div>
+      <button class="btn" style="width:calc(100% - 4px)">Head to the ring</button>
+    </div>
+    <div class="nav"><span class="on">Hub</span><span>Skills</span><span>Gear</span><span>Roster</span><span>Career</span></div>
+  </div></div></div>`;
+}
+function meter(label, on, c, delta){
+  let segs = ''; for (let i = 0; i < 20; i++) segs += `<i class="${i < on ? 'on' : ''}"></i>`;
+  return `<div class="meter" style="--c:${c}"><span class="lab">${label}</span><span class="mbar">${segs}</span><span class="v">${on * 5}${delta ? ` <span class="delta ${delta[0] === '+' ? 'up' : 'dn'}">${delta}</span>` : ''}</span></div>`;
+}
+$('dirs').innerHTML = ['a', 'b', 'c'].map(screen).join('');
+document.querySelectorAll('[data-stage]').forEach(el => el.prepend(K.stage(el.dataset.stage, 2)));
+
+/* sprites */
+const card = (w, scale, pose, sub) => `<div class="c">${sprite(w, scale, pose)}<b>${w.name}</b><i>${sub || w.tag}</i></div>`;
+$('cast').innerHTML = S.map(w => card(w, 3)).join('');
+$('bodies').innerHTML = ['m', 'f'].map(f => Object.keys(P.BODY).map(b => `<div class="c">${P.img({ build: b, figure: f, hair: f === 'f' ? 'pony' : 'short', gear: '#5b6170', trim: '#c8ccd4', boots: 'low', wrists: 'none' }, { scale: 2 })}<b>${b}</b><i>Frame ${f === 'f' ? 'B' : 'A'}</i></div>`).join('')).join('');
+const steps = [['Base', { build: 'athletic', hair: 'bald', bottom: 'trunks', boots: 'wraps', wrists: 'none', gear: '#5b6170' }],
+  ['Hair, face', { hair: 'long', hc: 0, facial: 'beard' }], ['Ring gear', { bottom: 'tights', gear: '#3a2350', trim: '#9b7bd0' }],
+  ['Boots, pads', { boots: 'tall', knees: 'pads', elbows: 'pad' }], ['Tape, ink', { wrists: 'tape', tattoo: 'sleeve' }],
+  ['Paint', { paint: 'bars', mood: 'scowl' }], ['Entrance', { entrance: 'robe' }], ['Gold', { entrance: 'none', belt: 'waist' }]];
+let acc = {};
+$('stack').innerHTML = steps.map(([n, l]) => { acc = Object.assign({}, acc, l); return `<div class="c">${P.img(acc, { scale: 2, still: true })}<b>${n}</b></div>`; }).join('');
+const champ = byName('Marcus Reign');
+$('poses').innerHTML = P.POSES.map(p => `<div class="c">${sprite(champ, 2, p)}<b>${p}</b></div>`).join('');
+const B = RTF_BALLER;
+$('family').innerHTML = `<div class="c">${B.img({ skin: 3, hair: 'fade', build: 'strong' }, { pose: 'stand', c1: '#c6392c', c2: '#f2d27a', num: 23, scale: 3 })}<b>Run The Floor</b><i>44 by 64</i></div>`
+  + card(byName('Kenji Arata'), 3, 'idle', 'Run The Ropes · 56 by 72') + card(byName('Big Hoss Mercer'), 3, 'idle', 'Run The Ropes · super heavy');
+
+/* swatches */
+function swatches(){
+  const names = ['--bg', '--panel', '--panel2', '--steel', '--ink', '--ink2', '--ink3', '--hot', '--gold', '--good', '--bad', '--warn', '--face', '--heel', '--tweener'];
+  $('swatches').innerHTML = names.map(n => { const c = CSS(n), ink = P.inkOn(c); return `<div class="sw" style="background:${c};color:${ink};box-shadow:0 0 0 2px var(--steel)"><span>${n.slice(2)}</span><span>${c} · ${P.contrast(c, CSS('--bg')).toFixed(1)}:1 on bg</span></div>`; }).join('');
+  const promos = [['Grit City', '#7a1c24'], ['Cellar Door', '#3b4a5a'], ['Steel Belt', '#b8862b'], ['Sunset Coast', '#e0662a'], ['Crimson Rose', '#d6336c'], ['Apex', '#1f6fd1'], ['Kaiju', '#16181e'], ['Lucha Eterna', '#1f9e74'], ['Colossus', '#c6392c']];
+  $('promos').innerHTML = promos.map(([n, c]) => { const ink = P.inkOn(c); return `<div class="sw" style="background:${c};color:${ink}"><span>${n}</span><span>ink ${ink} · ${P.contrast(c, ink).toFixed(1)}:1</span></div>`; }).join('');
+}
+swatches();
+
+/* button states */
+const states = [['Default', ''], ['Hover', 'is-hover'], ['Pressed', 'is-press'], ['Focus', 'is-focus'], ['Disabled', 'is-off']];
+$('btnstates').innerHTML = ['', 'gold', 'ghost', 'danger'].map(v => `<div style="display:grid;gap:8px">${states.map(([n, c]) => `<div><button class="btn ${v} ${c}" ${c === 'is-off' ? 'disabled' : ''}>${v || 'Primary'}</button><span class="lab cap">${n}</span></div>`).join('')}</div>`).join('');
+
+/* meters, wrestler card, promo, receipt, tape, champ, feed, toast, badges, table */
+$('meters').innerHTML = meter('Popularity', 13, 'var(--good)', '+4') + meter('Health', 9, 'var(--bad)', '-6') + meter('Momentum', 16, 'var(--gold)') + meter('Locker room', 11, 'var(--face)') + meter('Contract', 4, 'var(--warn)')
+  + `<p class="muted" style="font-size:14px;margin-top:8px">Tooltip copy for Health: how many bumps you can take before something gives. Under 30, every match risks an injury.</p>`;
+$('meters').querySelector('.meter').classList.add('pulse');
+$('wcard').innerHTML = `<div class="wcard"><div class="spr">${sprite(champ, 3, 'raise')}</div><div><span class="chip title">World Champion</span><div class="nm" style="margin-top:8px">${champ.name}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><span class="chip face">Face</span><span class="chip">Athletic</span><span class="chip promo">Colossus</span></div><div class="num" style="margin-top:10px">88</div><div class="lab">Overall · 412 days as champion</div></div></div>`;
+const hoss = byName('Big Hoss Mercer');
+$('say').innerHTML = `<div class="por">${sprite(hoss, 3, 'idle')}</div><div><div class="who">Big Hoss Mercer · Promo</div><div class="line">"You want my spot? Kid, I was eating turnbuckles when you were eating crayons."</div><div class="crowdbar">${'<i class="boo"></i>'.repeat(9)}${'<i></i>'.repeat(3)}</div><div class="lab" style="margin-top:4px">Heat 9 of 12 · they hate him, that is the job</div></div>`;
+$('receipt').innerHTML = `<div class="lab">What changed, and why</div>
+ <div class="r"><span>Popularity</span><span class="delta up">+4</span><span class="why">The crowd took your side against Sal.</span></div>
+ <div class="r"><span>Standing with Sal</span><span class="delta dn">-8</span><span class="why">He does not like being made the bad guy at his own show.</span></div>
+ <div class="r"><span>Flag set</span><span class="lab">sal_shorted_you</span><span class="why">He will bring it up. So will you.</span></div>`;
+const vera = byName('Vera Knox'), maya = byName('Maya Storm');
+$('tape').innerHTML = `<div class="side">${sprite(maya, 2, 'flex')}<div class="nm">${maya.name}</div></div><div class="vs">VS</div><div class="side">${P.img(vera.look, { pose: 'stance', scale: 2, flip: true })}<div class="nm">${vera.name}</div></div>
+ <div class="rows"><b>5'6"</b><span>Height</span><b>5'3"</b><b>41</b><span>Overall</span><b>44</b><b>12-4</b><span>Record</span><b>15-2</b><b>Face</b><span>Side</span><b>Heel</b></div><div class="stip">No disqualification · Rose Garden Cup semi final</div>`;
+$('champ').innerHTML = `<canvas width="1" height="1"></canvas><div><div class="d3">Steel Belt Heavyweight Title</div><div class="reign">Champion: Big Hoss Mercer · 6th reign · 211 days</div><div class="lineage">${'<i></i>'.repeat(9)}<i class="you"></i>${'<i></i>'.repeat(4)}</div><div class="lab" style="margin-top:4px">Lineage · 14 reigns · yours is gold</div></div>`;
+$('champ').querySelector('canvas').replaceWith(K.icon('belt', 5));
+const post = (h, u, t) => `<div class="post"><canvas class="av" width="1" height="1"></canvas><div><div class="h">${h} <span>${u}</span></div><div class="t">${t}</div></div></div>`;
+$('feed').innerHTML += post('Doris', '@ringsidedoris · 2h', 'Saw Kenji Arata chop a man into next week at the bingo hall. 41 of us. We will tell our grandkids.') + post('Dale Pruitt', '@dirtsheetdale · 5h', 'Hearing the Grit City kid stiffed Sal on dues. Developing.');
+$('feed').querySelectorAll('canvas.av').forEach((c, i) => c.replaceWith(K.icon(i ? 'mic' : 'crowd', 3)));
+$('toast').innerHTML = ''; $('toast').append(K.icon('star', 3)); $('toast').insertAdjacentHTML('beforeend', '<div><b>Unlocked</b><div style="font:600 16px/1.2 var(--body)">Bingo Hall Hero · first standing ovation</div></div>');
+['belt', 'mic', 'boot', 'fist', 'ladder', 'chair'].forEach((n, i) => { const d = document.createElement('div'); d.className = 'badge ' + (i < 3 ? 'got' : i === 5 ? 'lock' : ''); d.append(K.icon(n, 4)); $('badges').append(d); });
+$('stats').innerHTML = '<tr><th>Rank</th><th>Wrestler</th><th style="text-align:right">W</th><th style="text-align:right">L</th><th style="text-align:right">Stars</th></tr>'
+  + [['1', 'Big Hoss Mercer', 31, 6, '4.25'], ['2', 'Kenji Arata', 27, 9, '4.50'], ['3', 'Maya Storm', 22, 8, '4.00'], ['4', 'Cometa Azul', 19, 12, '3.75']].map((r, i) => `<tr class="${i === 1 ? 'me' : ''}"><td class="n">${r[0]}</td><td>${r[1]}</td><td class="n">${r[2]}</td><td class="n">${r[3]}</td><td class="n">${r[4]}</td></tr>`).join('');
+
+/* icons and stages */
+Object.keys(K.ICONS).forEach(n => { const f = document.createElement('figure'); f.append(K.icon(n, 4)); f.insertAdjacentHTML('beforeend', `<figcaption>${n}</figcaption>`); $('iconrow').append(f); });
+Object.keys(K.STAGES).forEach(k => { const f = document.createElement('figure'); f.className = 'fr'; f.append(K.stage(k, 2)); f.insertAdjacentHTML('beforeend', `<figcaption style="padding:0 8px">${K.STAGES[k].name}</figcaption>`); $('stagegrid').append(f); });
+
+/* direction switch and motion demos */
+document.querySelectorAll('[data-set]').forEach(b => b.addEventListener('click', () => {
+  document.documentElement.dataset.dir = b.dataset.set;
+  document.querySelectorAll('[data-set]').forEach(x => { const on = x === b; x.setAttribute('aria-pressed', on); x.classList.toggle('ghost', !on); });
+  swatches();
+}));
+document.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { b.classList.remove('play'); void b.offsetWidth; b.classList.add('play'); }));
+})();
+</script>
+</body>
+</html>

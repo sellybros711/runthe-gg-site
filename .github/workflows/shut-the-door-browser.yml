@@ -1,0 +1,98 @@
+name: Shut The Door browser check
+
+# The whole game in Chromium, at 390x844 and 1440x900 (shut-the-door/test/check-browser.mjs):
+# home, the sheets, the 3D mound, every pitch result's motion, a whole outing on the real
+# engine, the result screen with the you-vs-him card, the coach, and the four endings forced
+# through the mock (door_shut, tie_held, doors_open, walk_off).
+#
+# Its own workflow, with a path filter, unlike shut-the-door-checks.yml: that one has no filter
+# on purpose (the posture check must see every PR) and its jobs take seconds. This one takes
+# minutes, so it runs when the game, its 3D, or this file changes.
+#
+# The runner has no GPU: Chromium draws WebGL with SwiftShader, on the CPU. The check draws
+# only where it reads pixels (its header says why and how), which is what lets it finish here.
+#
+# A second job, contact, runs beside it: every swing the engine says met the ball, posed in the
+# game page, the ball on the bat (shut-the-door/lab/pipeline/check-contact.mjs). It runs as four
+# shards side by side (--shard 0/4 to 3/4): the packs split between them by size, every case in
+# exactly one, so the four together are the whole run, and each limit is per case, so a shard is held
+# as the whole run is. Each pack is measured on a freshly loaded page, so a shard measures its packs
+# exactly as the whole run does.
+#
+# Runs locally, unchanged:
+#   node shut-the-door/test/check-browser.mjs
+#   node shut-the-door/lab/pipeline/check-contact.mjs              (or --shard 2/4, --sample N, --resume)
+#
+# No secrets, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'shut-the-door/**'
+      - '.github/workflows/shut-the-door-browser.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'shut-the-door/**'
+      - '.github/workflows/shut-the-door-browser.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: shut-the-door-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      # Each FAIL line and the tally also go up as annotations, so a red run says what broke on
+      # the PR itself (and through the checks API) without opening the log.
+      - name: The whole game in Chromium
+        run: |
+          set -o pipefail
+          node shut-the-door/test/check-browser.mjs 2>&1 | tee check-browser.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          [ -f check-browser.txt ] || exit 0
+          grep -E 'FAIL' check-browser.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-browser::/' || true
+          tail -n 1 check-browser.txt | sed 's/^/::notice title=check-browser::/'
+          # the whole output as one more notice (its last 3900 bytes, as an annotation keeps 4 KB; newlines escaped), for a reader with no access to the log
+          printf '::notice title=check-browser output::%s\n' "$(tail -c 3900 check-browser.txt | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
+
+  contact:
+    name: contact (shard ${{ matrix.shard }} of 4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Every contact meets the bat, every whiff misses it
+        run: |
+          set -o pipefail
+          node shut-the-door/lab/pipeline/check-contact.mjs --shard ${{ matrix.shard }}/4 2>&1 | tr '\r' '\n' | grep -v ' cases *$' | tee check-contact.txt
+      - name: Failures as annotations
+        if: always()
+        run: |
+          [ -f check-contact.txt ] || exit 0
+          grep -E 'FAIL' check-contact.txt | head -30 | sed 's/%/%25/g; s/^ */::error title=check-contact::/' || true
+          tail -n 1 check-contact.txt | sed 's/^/::notice title=check-contact::/'
