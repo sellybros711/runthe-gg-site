@@ -18,9 +18,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=18';
-import { Crew } from './fielders.js?v=7';
-import { buildBallpark } from './ballpark.js?v=19';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=19';
+import { SHADE } from './shade-data.js?v=1';
+import { Crew } from './fielders.js?v=8';
+import { buildBallpark } from './ballpark.js?v=20';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -67,6 +68,10 @@ const POS_EASE_S = { follow: 0.25, wide: 0.16, plate: 0.12, sky: 0.08, track: 0.
 // as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
 const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).href;
 const OF = [7, 8, 9];
+// the fastest a man watching the ball turns his body round (radians a second: a half turn in 0.8 s). The
+// body turns on planted feet (no step of its own), so faster than this the feet skate round him (at 7.5,
+// a catcher turning after his throw slid his feet at 4.2-4.7 m/s, check-jolt.mjs)
+const TURN_MAX = 4;
 // the base umpires' kit: the plate umpire's own (assets/umpire.glb's suit, its shirt and slacks read off
 // its texture: a navy black shirt, charcoal grey slacks), his black cap and shoes
 // the fastest a base umpire turns his body round (radians a second: a half turn in 0.8 s, on planted feet)
@@ -84,6 +89,12 @@ function faceToward(p, q) {
 }
 /** A facing turned from a toward b by weight w (0..1), the short way round. */
 function turnTo(a, b, w) { return a + angDiff(a, b) * clamp(w * 1.5, 0, 1); }
+/** turnTo, the way round the one nearest ref (the turn as it was at the act): it never flips sides as its two
+    headings pass half a turn apart. */
+function turnNear(a, b, w, ref) {
+  const d = ref + angDiff(ref, angDiff(a, b));
+  return a + d * clamp(w * 1.5, 0, 1);
+}
 function angDiff(a, b) { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }
 const heading = (from, to) => Math.atan2(to.x - from.x, to.y - from.y);
 const _frustum = new THREE.Frustum(), _mat = new THREE.Matrix4(), _sph = new THREE.Sphere(), _v3 = new THREE.Vector3();
@@ -164,6 +175,14 @@ export class InPlay {
     return seen.size;
   }
 
+  /** Where the fielders stand for this hitter (inplay-plan.js alignment): his shading from his own batted
+      balls (shade-data.js, by pack and id; none: the standard alignment). The lab checks give it as
+      begin's o.align instead (inplay-cases.mjs). */
+  align(b) {
+    const rows = SHADE[this.facts.scenarioId];
+    return { shade: (rows && rows[String(b.id)]) || null };
+  }
+
   /** A ball in play: plan it from the engine's PitchResult and the pitch as the scene threw it. */
   begin(pr, pitch, o = {}) {
     const b = this.facts.batter;
@@ -172,7 +191,7 @@ export class InPlay {
     const steal = pr.result !== 'in_play' && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
     // (and a pickoff throw between pitches: pr is { pickoff, basesBefore }, stage.js pickoff)
     const po = pr.pickoff && pr.result == null ? pr.pickoff : null;
-    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') });
+    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), ...(o.align || this.align(b)) });
     this.active = { pr, plan, pitch, hooks: o.hooks || {}, fired: 0, cam: null, fov0: null };
     this.ball = pitch.ball;
     this.ballScale0 = this.ball.scale.x;
@@ -230,6 +249,8 @@ export class InPlay {
     A.phased = !!this.crew.clips;
     const T1 = plan.dur + 3, trot = plan.kind === 'hr';
     for (let n = 1; n <= 9; n++) { const tr = plan.fielders[n]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); }
+    // (and each fielder's facing as he watches the ball, turned at a person's speed: faceTable)
+    while (this.faceNext()) { /* the ones prepare has not made yet */ }
     for (const r of plan.runners) r.phase = this.crew.phaseTable((t) => r.track.at(t).spd, 0, T1, trot);
     if (plan.umps) for (const k of [1, 2, 3]) { const tr = plan.umps[k]; tr.phase = this.crew.phaseTable((t) => tr.at(t).spd, 0, T1, false); tr.face = this.umpFace(tr, T1); }
   }
@@ -435,7 +456,7 @@ export class InPlay {
     if (ball.by === n) lookPt = { x: 0, y: 70 };
     // (a ball right over him, a throw passing above his head: facing it would turn him half round in a
     // frame as it crosses, so near him he faces the plate and turns to it as it goes on)
-    let faceYaw = ball.by === n ? faceToward(st, lookPt) : this.faceTrail(st, s);
+    let faceYaw = ball.by === n ? faceToward(st, lookPt) : tr.face ? tr.face(s) : this.faceTrail(st, s);
     f.throwing = false; f.reaching = false;
     let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0;
     // a ball he takes (a catch in the air, a throw at a bag): the point, and how far his body is
@@ -461,7 +482,12 @@ export class InPlay {
           spec.crouch = Math.max(spec.crouch, 0.95 * k); spec.wide = 0.8 * k; spec.lean = Math.max(spec.lean, 0.75 * k);
           glove = { x: bp.x, y: bp.y, z: 0.2 }; gloveW = Math.max(gloveW, k);
           hand = { x: bp.x, y: bp.y, z: 1.0 }; handW = 0.7 * k;
-          faceYaw = turnTo(faceYaw, heading(st, plan.ballAt(t - 0.3)), k);
+          // (the way round is chosen once, at the take: the ball he ran down and where he turns to after it can be
+          // half a turn apart, and the short way round between them flipped sides as the turn eased off, a left
+          // fielder's head swinging 2.2 rad in a frame a third of a second after a pickup in the corner, check-jolt.mjs)
+          const bh = heading(st, plan.ballAt(t - 0.3));
+          if (a.turnRef == null) { const st1 = tr.at(t + 0.12); a.turnRef = angDiff(faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3))); }
+          faceYaw = turnNear(faceYaw, bh, k, a.turnRef);
           f.reaching = true;
         }
       }
@@ -771,15 +797,20 @@ export class InPlay {
     // a force at a bag: a foot stays on it (the pivot foot, or the back foot of a stretch): the body
     // slides so the nearer foot is on the bag's middle, and the arm reaches from there
     const fa = acts.find((x) => (x.kind === 'receive' || x.kind === 'step') && x.force && x.base && s > x.t - 0.6 && s < x.t + 0.35);
-    if (fa) at = this.pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW);
+    // (a step on the bag after fielding the ball himself: the foot goes there once he has it, not while
+    // his glove is still going down to it; pinned from the start, the foot won and the glove stayed 0.2 m
+    // over a ball he fielded a step from the bag, check-catch.mjs)
+    const had = fa && fa.kind === 'step' ? acts.find((x) => (x.kind === 'field' || x.kind === 'pickup') && x.t < fa.t && x.t > fa.t - 0.6) : null;
+    if (fa) at = this.pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW, had ? had.t + 0.02 : null);
     return { dx: at.x - base0.x, dy: at.y - base0.y, lift, dLean: (spec.lean || 0) - lean0, dCrouch: (spec.crouch || 0) - crouch0, wide, run: st.run, z: take ? take.z : null, yaw };
   }
 
   /** A force at a bag: the nearer foot onto the bag's middle (the glove kept on a ball he is taking),
       the body moved by what it misses; returns where he stands. */
-  pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW) {
+  pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW, from = null) {
     const bag = fa.base === 4 ? { x: 0, y: 0.7 } : BASE[fa.base];
-    const kf = ramp(s, fa.t - 0.6, fa.t - 0.15) * (1 - ramp(s, fa.t + 0.1, fa.t + 0.35));
+    const k0 = from != null ? Math.max(fa.t - 0.6, from) : fa.t - 0.6, k1 = Math.max(k0 + 0.12, fa.t - 0.15);
+    const kf = ramp(s, k0, k1) * (1 - ramp(s, Math.max(k1, fa.t + 0.1), Math.max(k1, fa.t + 0.1) + 0.25));
     for (let i = 0; i < 4 && kf > 0; i++) {
       // (the glove to the ball again, then the foot back on the bag: the two settle together)
       if (i && take && takeW > 0) {
@@ -813,6 +844,47 @@ export class InPlay {
       x += Math.sin(a); y += Math.cos(a);
     }
     return Math.hypot(x, y) > 1e-6 ? Math.atan2(x, y) : faceToward(p, plan.ballAt(s));
+  }
+
+  /** The next fielder's facing table (faceTable), if any is left to make: true when it made one. */
+  faceNext() {
+    const A = this.active, plan = A.plan;
+    A.faced = A.faced || 0;
+    if (A.faced >= 9) return false;
+    const tr = plan.fielders[++A.faced];
+    const n = A.faced, throws = plan.segs.filter((sg) => sg.kind === 'throw' && sg.from === n);
+    // (while he holds the ball: the way he is about to throw it, else the raw facing)
+    tr.face = this.faceTable((t) => tr.at(t), 0, plan.dur + 3, (t, raw) => {
+      // (and through his follow-through, until the throw's own turn has let go of him, poseFielder: the
+      // watching facing turned away meanwhile, and as the throw's weight eased the blend of the two spun him)
+      const thru = throws.find((x) => t > x.t0 && t < x.t0 + 0.7);
+      if (thru) return heading(tr.at(t), thru.b);
+      if (plan.ballAt(t).by !== n) return null;
+      const sg = throws.find((x) => x.t0 >= t - 1e-6);
+      return sg ? heading(tr.at(t), sg.b) : raw;
+    });
+    return true;
+  }
+
+  /** A body's facing as he watches the ball, through the play (a table made once a play, a pure function
+      of plan time like the stride's phase): faceTrail where he stands, followed at no more than TURN_MAX
+      radians a second. A throw passing over a man's head, or right behind him, swings faceTrail through
+      the back of him (from facing the ball to facing home, the short way round flipping sides as the ball
+      crosses): standing still he turned 85 degrees in a frame, both feet skating round him
+      (check-jolt.mjs, the shortstop and the pitcher on throws home). Now he comes round at a person's pace. */
+  faceTable(at, t0, t1, holds = null) {
+    const dt = 1 / 60, n = Math.ceil((t1 - t0) / dt) + 2, out = new Float32Array(n), step = TURN_MAX * dt;
+    let yaw = this.faceTrail(at(t0), t0);
+    for (let i = 0; i < n; i++) {
+      const t = t0 + i * dt, raw = this.faceTrail(at(t), t);
+      // (while he holds the ball his facing is not this one, poseFielder: it waits on the way he is about to
+      // throw, so the moment he lets it go it is where the throw's turn leaves him)
+      const held = holds ? holds(t, raw) : null;
+      if (held != null) yaw = yaw + angDiff(yaw, held);
+      else yaw += clamp(angDiff(yaw, raw), -step, step);
+      out[i] = yaw;
+    }
+    return (t) => { const x = clamp((t - t0) / dt, 0, n - 1.001), i = Math.floor(x); return out[i] + (out[i + 1] - out[i]) * (x - i); };
   }
 
   /** A base umpire's facing through the play, as a table (a pure function of plan time, made once a play):
@@ -1059,6 +1131,8 @@ export class InPlay {
   prepare(aspect) {
     const A = this.active;
     if (!A) return false;
+    // (the fielders' facing tables first, one a frame)
+    if (this.faceNext()) return true;
     for (const pc of A.plan.edit) {
       if (pc.cam === 'pitcher') continue;
       const had = A.tracks && A.tracks.size;

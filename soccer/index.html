@@ -3222,6 +3222,22 @@
   @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
   @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
   [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* THE TOURNAMENT AD: in the flow under the match cards, the mid-size 300x250. Empty, it takes no space. */
+  .stage-ad{text-align:center}
+  .stage-ad:has(ins[data-ad-status="filled"]){margin:150px auto 0}
+  .stage-ad ins.adsbygoogle{display:inline-block;width:300px;height:250px}
+  .stage-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .stage-ad .rtp-ad-label{display:none}
+  .stage-ad:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  /* THE DESKTOP RAILS: absolute on the page, so they scroll with it. 150px clear of the 640px column. */
+  .rail-ad{position:absolute;top:140px;width:160px;text-align:center;z-index:1}
+  .rail-ad.rail-left{left:calc(50% - 630px)}
+  .rail-ad.rail-right{left:calc(50% + 470px)}
+  .rail-ad ins.adsbygoogle{display:inline-block;width:160px;height:600px}
+  .rail-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .rail-ad .rtp-ad-label{display:none}
+  .rail-ad:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  @media (max-width:1299px){ .rail-ad{display:none} }
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{ display:block; }    /* mobile bottom anchor only */
     .rtp-ad-rail{ display:none !important; }     /* never side rails on mobile */
@@ -4286,7 +4302,7 @@ window.GA_ID='G-L29P5MRWKE';
     <span class="rtp-ad-label">Advertisement</span>
     <ins class="adsbygoogle"
          data-ad-client="ca-pub-5952069078178257"
-         data-ad-slot="6069480594"></ins>
+         data-ad-slot="6301272665"></ins>
   </div>
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
@@ -4850,10 +4866,47 @@ function menuAd(name){
   z.dataset.started='1';
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
+/* THE TOURNAMENT AD (Ads Agent, 2026-10-28, the owner's call: "another good place for an ad").
+   One unit in the page flow under the match cards while the tournament screen is open, above
+   the "More games" promo. Built when the screen opens and removed (never hidden) when it is left,
+   so a new tournament gets a fresh unit. 150px below the cards once filled. Unit pitch-stage. */
+function stageAd(name){
+  const old=document.querySelector('[data-ad-zone="stage"]');
+  if(name!=='sim'){ if(old) old.remove(); return; }
+  if(old) return;
+  const host=document.querySelector('#screen-sim .sim-wrap');
+  if(!host) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="stage-ad" data-ad-zone="stage"><span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="3559841093"></ins></div>';
+  host.after(wrap.firstChild);
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE DESKTOP RAILS (Ads Agent, 2026-10-28, the owner's call: side banners on desktop only, beside
+   gameplay too, scrolling with the page). Two 160x600 units, left and right of the 640px column,
+   built only when the window leaves 150px between each rail and the column (1300px and up), and
+   removed (never hidden) if the window shrinks below that. They scroll with the page; the only
+   sticky ad on a screen stays the bottom banner. Units pitch-rail-left and pitch-rail-right. */
+const RAIL_MIN=1300;
+const RAIL_SLOTS={left:'5343696050', right:'3846781551'};   // pitch-rail-left, pitch-rail-right
+function railAds(){
+  const wide=window.innerWidth>=RAIL_MIN;
+  const have=document.querySelectorAll('[data-ad-zone="rail"]');
+  if(!wide){ have.forEach(r=>r.remove()); return; }
+  if(have.length) return;
+  Object.entries(RAIL_SLOTS).forEach(([side,slot])=>{
+    const wrap=document.createElement('div');
+    wrap.innerHTML='<div class="rail-ad rail-'+side+'" data-ad-zone="rail"><span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="'+slot+'"></ins></div>';
+    document.body.appendChild(wrap.firstChild);
+    try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+  });
+}
+window.addEventListener('resize',()=>{ try{ railAds(); }catch(e){} });
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $('screen-'+name).classList.add('active');
   menuAd(name);
+  stageAd(name);
+  railAds();
   // compact mode hides the masthead so the select page fits one screen
   document.body.classList.toggle('sel-mode', name==='select');
   document.body.classList.toggle('home-mode', name==='home');

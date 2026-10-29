@@ -20,6 +20,7 @@ on:
       - 'sitemap.xml'
       - 'ads.txt'
       - 'scripts/check-adsense.mjs'
+      - 'scripts/ad-units.json'
       - '.github/workflows/adsense-check.yml'
   push:
     branches: [main]
@@ -29,6 +30,7 @@ on:
       - 'sitemap.xml'
       - 'ads.txt'
       - 'scripts/check-adsense.mjs'
+      - 'scripts/ad-units.json'
       - '.github/workflows/adsense-check.yml'
   workflow_dispatch: {}
 

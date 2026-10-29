@@ -59,6 +59,9 @@
                      radial-gradient(800px 500px at 100% 100%, rgba(239,68,68,.07), transparent 70%);
     background-attachment:fixed}
   .wrap{max-width:600px;margin:0 auto;padding:14px 14px 46px}
+  /* Inside the Perfect Season's Home Screen app the page can be drawn under the clock
+     (viewport-fit=cover), so the top row starts below that inset. 0 in a browser tab. */
+  .wrap{padding-top:calc(14px + env(safe-area-inset-top,0px))}
   h1,h2,h3{margin:0;line-height:1.05}
   .display{font-family:var(--fd);font-weight:400;letter-spacing:.01em;text-transform:uppercase}
   .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
@@ -864,21 +867,19 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      at the bottom"). One unit under whichever screen is open, so it is at the bottom of every
      screen without loading a new ad on each one. Started once per page load, never hidden. 150px
      below the screen's last button once filled, and 170px of room under it so the floating Live
-     button never sits over it. sized by its column (320x50, 468x60, 728x90); unfilled, it collapses. -->
+     button never sits over it. The mid-size 300x250 rectangle (the owner, 2026-10-27), which fits the
+     narrowest phone column; unfilled, it collapses. -->
 <style>
   .fx-ad{max-width:728px;margin:0 auto;text-align:center}
   .fx-ad:has(ins[data-ad-status="filled"]){margin:150px auto 0;padding-bottom:170px}
   .fx-ad .ad-label{display:none;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin:0 0 6px}
   .fx-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
-  [data-ad-zone="page"] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
-  [data-ad-zone="page"]{container-type:inline-size;width:100%;box-sizing:border-box}
-  @container (min-width:468px){ [data-ad-zone="page"] ins.adsbygoogle{width:468px;height:60px} }
-  @container (min-width:728px){ [data-ad-zone="page"] ins.adsbygoogle{width:728px;height:90px} }
+  [data-ad-zone="page"] ins.adsbygoogle{display:inline-block;width:300px;height:250px}
   [data-ad-zone="page"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
 </style>
 <div class="fx-ad" data-ad-zone="page">
   <span class="ad-label">Advertisement</span>
-  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="6069480594"></ins>
+  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="4218034808"></ins>
 </div>
 <script>(function(){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}})();</script>
 
