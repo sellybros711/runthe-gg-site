@@ -2967,6 +2967,18 @@
       "sha": "89dc4f189658cf32"
     }
   },
+  "setlist/lab/simple.html": {
+    "lab.js": {
+      "v": "1",
+      "sha": "8553cb8db4f601c2"
+    }
+  },
+  "setlist/lab/world.html": {
+    "lab.js": {
+      "v": "1",
+      "sha": "8553cb8db4f601c2"
+    }
+  },
   "shut-the-door/index.html": {
     "contract.js": {
       "v": "10",

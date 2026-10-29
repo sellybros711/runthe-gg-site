@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Segue lab: the concert world</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/segue-icon_32.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Permanent+Marker&family=Shrikhand&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="lab.css?v=1" />
+<style>
+  /* LAYOUT B: THE VENUE IS THE MENU. One screen, no scrolling: a Goose night on a lawn, and every part
+     of the grounds is a door. The stage plays, the tour bus has the dates, the soundboard has last
+     night's setlist taped to it, the green room trailer is where you dress the band, and so on.
+     Each sign is a real button; the scene behind it is a painting. */
+  html,body{height:100%; overflow:hidden; background:#07051A;}
+  .world{position:fixed; inset:0;}
+  #scene{position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated;}
+  .hud{position:absolute; left:0; right:0; top:0; display:flex; justify-content:space-between; align-items:center;
+    padding:calc(env(safe-area-inset-top,0px) + 40px) 12px 0; pointer-events:none;}
+  .hud > *{pointer-events:auto;}
+  .logo{display:flex; align-items:center; gap:8px; font-family:var(--hero); font-size:22px;
+    text-shadow:2px 2px 0 var(--px);}
+  .logo img{width:30px; height:30px; border-radius:7px; box-shadow:2px 2px 0 var(--px);}
+  .acct{font-size:12.5px; font-weight:800; border:2px solid var(--px); background:#F6F2EA; color:#1B1726;
+    padding:7px 12px; border-radius:2px; box-shadow:2px 2px 0 var(--px);}
+
+  /* A SIGN IS A BUTTON. It sits on the thing it names, in that destination's colour, and the whole
+     painted object under it is the hit area too. */
+  .spot{position:absolute; background:none; border:0; padding:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:flex-start;}
+  .spot .sign{font-family:var(--ui); font-size:13px; letter-spacing:1.2px; text-transform:uppercase; white-space:nowrap;
+    color:#fff; background:var(--sc); border:2px solid var(--px); border-radius:2px; padding:3px 8px 2px;
+    box-shadow:2px 2px 0 var(--px); transform:translateY(-70%); transition:transform .12s;}
+  .spot:hover .sign, .spot:focus-visible .sign{transform:translateY(-85%) scale(1.06);}
+  .spot:active .sign{transform:translateY(-60%);}
+  .spot.play .sign{font-size:20px; padding:5px 16px 3px; letter-spacing:2px; animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{50%{box-shadow:2px 2px 0 var(--px), 0 0 18px var(--sc);}}
+
+  /* The one call to action that is always on screen, at the thumb. */
+  .cta{position:absolute; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 14px); transform:translateX(-50%);
+    display:flex; gap:8px;}
+  .cta .pxbtn{min-height:52px; font-size:16px; white-space:nowrap;}
+
+  /* The panel a door opens: a sheet up from the bottom, over a dimmed scene. */
+  .veil{position:fixed; inset:0; background:rgba(5,3,14,.55); opacity:0; pointer-events:none; transition:opacity .2s; z-index:60;}
+  .veil.on{opacity:1; pointer-events:auto;}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:61; max-height:78dvh; overflow:auto;
+    background:#14102A; border-top:3px solid var(--sc, var(--teal)); box-shadow:0 -4px 0 var(--px);
+    transform:translateY(105%); transition:transform .26s cubic-bezier(.33,1,.68,1);
+    padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 18px);}
+  @media (min-width:760px){ .sheet{left:50%; right:auto; width:640px; margin-left:-320px; border:3px solid var(--sc); border-bottom:0;} }
+  .sheet.on{transform:none;}
+  .sh-hd{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+  .sh-hd h2{font-family:var(--ui); font-weight:400; font-size:24px; letter-spacing:1.6px; text-transform:uppercase; margin:0; color:var(--sc);}
+  .sh-x{background:none; border:2px solid var(--line2); border-radius:2px; padding:6px 12px; font-weight:800; font-size:13px;}
+  .sh-p{font-size:14px; font-weight:600; color:var(--mut); line-height:1.45; margin:0 0 12px;}
+  .modes{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+  .mode{border:3px solid var(--px); border-radius:2px; padding:12px; display:flex; flex-direction:column; gap:6px;}
+  .mode.free{background:var(--paper); color:var(--paper-ink);}
+  .mode.daily{background:#0E0B1C; border-color:var(--teal);}
+  .md-k{font-size:10.5px; font-weight:900; letter-spacing:2px; text-transform:uppercase; opacity:.75;}
+  .md-t{font-family:var(--ui); font-size:24px; line-height:1;}
+  .md-p{font-size:12.5px; font-weight:600; opacity:.8; flex:1;}
+  .mode .pxbtn{font-size:14px; padding:0 8px; white-space:nowrap;}
+  .dates{display:grid; gap:8px;}
+  .date{display:flex; gap:12px; align-items:center; background:#140B05; border:2px solid #3A2A18; padding:10px 12px;}
+  .date b{font-family:var(--hero); font-weight:400; color:#FFB347; font-size:20px; min-width:70px;}
+  .date span{font-size:13px; font-weight:700; color:#F5D9A8;}
+  .menu{background:#1B1726; border:3px solid #3a3550; padding:12px 14px; font-family:var(--hand); font-size:17px; line-height:1.6; color:#F6F2EA;}
+  .menu li{list-style:none;} .menu ol{margin:0; padding:0;}
+  .menu .px{color:#F2B632;}
+  .roomrow{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px;}
+  .roomrow img{width:100%; aspect-ratio:8/5; border:3px solid var(--px); image-rendering:pixelated; object-fit:cover;}
+  .roomrow img.locked{filter:grayscale(1) brightness(.45);}
+  .linkrow{display:flex; gap:8px; flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<div class="labbar">Lab · Layout B · <a href="simple.html">see layout A</a></div>
+<main class="world" id="world">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="hud">
+    <div class="logo"><img src="/assets/segue-icon_192.png" alt=""><span>Segue</span></div>
+    <button class="acct" type="button">Sign in</button>
+  </div>
+  <div id="spots"></div>
+  <div class="cta"><button class="pxbtn" type="button" data-open="stage">Build your show</button></div>
+</main>
+<div class="veil" id="veil"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shHd">
+  <div class="sh-hd"><h2 id="shHd"></h2><button class="sh-x" type="button" id="shX">Close</button></div>
+  <div id="shBody"></div>
+</section>
+
+<script type="module">
+import { latest, esc, daysUntil, shortDate, wardrobeHTML, mountWardrobe, setlistHTML, frames, bandPose, playerIndex } from './lab.js?v=1';
+import { VENUE_LIST } from '../venues.js?v=2';
+
+const cv = document.getElementById('scene'), out = cv.getContext('2d');
+const buf = document.createElement('canvas'), g = buf.getContext('2d');
+let W = 150, H = 320, k = 3, L = null;
+const R = (c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x | 0, y | 0, w | 0, h | 0); };
+const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+
+/* WHERE EVERYTHING STANDS, in the scene's own pixels. A phone gets a tall venue, a desktop a wide one;
+   the same pieces, laid out for the screen they are on. */
+function layout(){
+  const wide = W > H * 1.1;
+  if (wide){
+    const sw = Math.min(150, W * .4), sx = (W - sw) / 2;
+    return { wide, sky: H * .36, lawn: [H * .44, H * .8],
+      stage: { x: sx, y: H * .1, w: sw }, screen: { x: sx - 34, y: H * .14 }, screen2: { x: sx + sw + 10, y: H * .14 },
+      foh: { x: W / 2 - 14, y: H * .6 }, bus: { x: 10, y: H * .42 }, trailer: { x: W - 56, y: H * .42 },
+      records: { x: W * .1, y: H * .78 }, food: { x: W * .34, y: H * .78 }, box: { x: W * .58, y: H * .79 }, gate: { x: W * .78, y: H * .76 } };
+  }
+  const sw = Math.min(W - 24, 126), sx = (W - sw) / 2;
+  return { wide, sky: H * .27, lawn: [H * .34, H * .56],
+    stage: { x: sx, y: H * .14, w: sw }, screen: null, screen2: null,
+    foh: { x: W / 2 - 14, y: H * .45 }, bus: { x: 6, y: H * .58 }, trailer: { x: W - 50, y: H * .58 },
+    records: { x: 6, y: H * .695 }, food: { x: W / 2 - 18, y: H * .69 }, box: { x: W - 40, y: H * .7 }, gate: { x: 10, y: H * .79 } };
+}
+
+// ── the painting ────────────────────────────────────────────────────────────
+function sky(t, lay){
+  const top = [11, 8, 32], bot = [40, 26, 70];
+  for (let y = 0; y < lay.lawn[0]; y++){
+    const f = y / lay.lawn[0];
+    R(`rgb(${top.map((c, i) => Math.round(c + (bot[i] - c) * f)).join(',')})`, 0, y, W, 1);
+  }
+  for (let i = 0; i < 40; i++){
+    const x = hash(i, 1) * W, y = hash(i, 2) * lay.sky * .9, tw = Math.sin(t * 2 + i) > .6;
+    R(tw ? '#fff6d8' : '#8a82b8', x, y, 1, 1);
+  }
+  // The treeline behind the shed, and the glow of the lot beyond it.
+  for (let x = 0; x < W; x += 5){ const h = 6 + ((x * 37) % 6); R('#13241d', x, lay.lawn[0] - h - 2, 6, h + 2); R('#1b3326', x + 1, lay.lawn[0] - h - 2, 4, 1); }
+}
+function lawn(lay){
+  R('#183a22', 0, lay.lawn[0], W, H - lay.lawn[0]);
+  for (let y = lay.lawn[0]; y < H; y += 3) for (let x = (y % 6); x < W; x += 9) R('#21482b', x, y, 2, 1);
+  // The path from the gate up to the stage.
+  const cx = W / 2;
+  for (let y = lay.lawn[1]; y < H; y++){ const w = 10 + (y - lay.lawn[1]) * .4; R('#5a4630', cx - w / 2, y, w, 1); }
+}
+function stageAt(s, t, energy){
+  const { x, y, w } = s, cx = x + w / 2, deckY = y + 40;
+  // The shed roof and its truss.
+  R('#2c2648', x - 6, y - 8, w + 12, 6); R('#3c3462', x - 4, y - 10, w + 8, 2);
+  R('#8890a8', x, y, w, 2); R('#5a6078', x, y + 2, w, 1);
+  R('#221c34', x, y + 3, w, deckY - y - 3);
+  R('#5a6078', x, y, 2, deckY - y); R('#5a6078', x + w - 2, y, 2, deckY - y);
+  // Six pods chasing, and their cones on the deck.
+  for (let i = 0; i < 6; i++){
+    const px = Math.round(x + 8 + i * (w - 16) / 5), on = Math.sin(t * 2.2 - i * .9) > .1;
+    const col = i % 2 ? [91, 224, 230] : [255, 111, 193];
+    R('#7078a0', px - 2, y + 4, 5, 2);
+    if (on){
+      g.fillStyle = `rgba(${col.join(',')},.14)`;
+      g.beginPath(); g.moveTo(px - 1, y + 6); g.lineTo(px + 2, y + 6); g.lineTo(px + 9, deckY + 4); g.lineTo(px - 8, deckY + 4); g.fill();
+      R(`rgb(${col.join(',')})`, px, y + 6, 1, 1);
+    }
+  }
+  // The deck, the rug, two amps, the red kit.
+  R('#8a5e3e', x, deckY, w, 16); for (let yy = deckY + 1; yy < deckY + 16; yy += 4) R('#a8744c', x, yy, w, 1);
+  R('#6a4630', x, deckY + 16, w, 2); R('#2a1f34', x, deckY + 18, w, 3);
+  R('#c0503c', cx - 24, deckY + 4, 48, 9); R('#f2c24a', cx - 22, deckY + 5, 44, 7); R('#4a6a9a', cx - 18, deckY + 7, 36, 3);
+  for (const ax of [x + 3, x + w - 14]){ R('#262230', ax, deckY - 8, 11, 10); R('#8a8498', ax + 2, deckY - 6, 7, 6); R('#111016', ax + 3, deckY - 5, 5, 4); }
+  // The band, from the game's own frames: back to front.
+  const f = frames(), mood = { energy, mode: 12, bow: false };
+  const at = { drums: [cx + 30, deckY + 2], keys: [cx - 38, deckY + 6], guitar: [cx - 11, deckY + 12], bass: [cx + 12, deckY + 13] };
+  for (const role of ['drums', 'keys', 'guitar', 'bass']){
+    const { img, bob } = bandPose(f, playerIndex(role), t, mood);
+    g.drawImage(img, at[role][0] - 17, at[role][1] - 38 - bob);
+    if (role === 'drums') for (const [ox, r] of [[0, 4], [-7, 2], [7, 2]]){ R('#a8222a', at.drums[0] + ox - r, at.drums[1] + 1, r * 2, r); R('#d8505a', at.drums[0] + ox - r + 1, at.drums[1] + 1, r * 2 - 2, 1); }
+  }
+  return { x: x - 6, y: y - 10, w: w + 12, h: deckY + 21 - (y - 10) };
+}
+function screen(s, t){
+  R('#3a3550', s.x + 11, s.y + 18, 2, 30); R('#15121f', s.x, s.y, 24, 19); R('#0e2a3a', s.x + 2, s.y + 2, 20, 15);
+  // The leaderboard on the big screen: three bars and a cup.
+  [14, 11, 8].forEach((w, i) => R(i ? '#37C5D5' : '#F2B632', s.x + 4, s.y + 5 + i * 4, w + Math.round(Math.sin(t + i) * 1.5), 2));
+  return { x: s.x, y: s.y, w: 24, h: 48 };
+}
+function crowd(lay, t){
+  const [y0, y1] = lay.lawn, shirts = ['#e0443a', '#3a7ad8', '#f4cc2c', '#37c5d5', '#ff6fc1', '#f6f1e4', '#7fd06a', '#a982f3'], skins = ['#f1c9a5', '#c68a5e', '#8d5a3b', '#e8b48a'];
+  for (let y = y0 + 3; y < y1; y += 5){
+    for (let x = 4 + (y % 4); x < W - 4; x += 6){
+      if (hash(x, y) < .45) continue;
+      const bob = Math.sin(t * 5 + x * .7 + y) > .55 ? 1 : 0, up = hash(x + 3, y) < .12 && Math.sin(t * 1.3 + x) > 0;
+      R(shirts[(hash(x, y + 1) * 8) | 0], x, y - bob, 3, 3);
+      R(skins[(hash(x + 1, y) * 4) | 0], x + 1, y - 2 - bob, 2, 2);
+      if (up) R(skins[0], x + 3, y - 4 - bob, 1, 3);
+    }
+  }
+}
+function foh(p, t){
+  // The soundboard tent, with last night's setlist taped to the desk.
+  R('#2a2440', p.x, p.y + 4, 28, 12); for (let i = 0; i < 28; i += 4) R(i % 8 ? '#e9e4d6' : '#5a4a8a', p.x + i, p.y, 4, 5);
+  R('#15121f', p.x + 3, p.y + 9, 22, 4);
+  for (let i = 0; i < 6; i++) R(Math.sin(t * 4 + i) > 0 ? '#48D17A' : '#2a5a3a', p.x + 5 + i * 3, p.y + 10, 1, 1);
+  R('#F7F1E3', p.x + 19, p.y + 6, 5, 6); R('#8a8070', p.x + 20, p.y + 8, 3, 1); R('#8a8070', p.x + 20, p.y + 10, 2, 1);
+  return { x: p.x, y: p.y, w: 28, h: 16 };
+}
+function bus(p, sign){
+  R('#e9e4d6', p.x, p.y, 44, 3); R('#9a2f5e', p.x, p.y + 3, 44, 12); R('#7a2248', p.x + 42, p.y + 3, 2, 12);
+  for (let i = 0; i < 6; i++) R('#bfe3f0', p.x + 3 + i * 7, p.y + 5, 5, 4);
+  R('#f4cc2c', p.x + 1, p.y + 13, 42, 1); R('#15101f', p.x + 5, p.y + 15, 6, 3); R('#15101f', p.x + 31, p.y + 15, 6, 3);
+  R('#1a0e08', p.x + 10, p.y - 6, 24, 5); R(sign ? '#ffb347' : '#5a3a20', p.x + 12, p.y - 4, 20, 1);
+  return { x: p.x, y: p.y - 6, w: 44, h: 24 };
+}
+function trailer(p, t){
+  // The green room: a trailer with a star on the door and a rail of outfits outside it.
+  R('#d8d2c2', p.x, p.y, 40, 15); R('#b8b2a2', p.x, p.y + 13, 40, 2); R('#2a2a34', p.x + 6, p.y + 15, 5, 3); R('#2a2a34', p.x + 28, p.y + 15, 5, 3);
+  R('#7553D0', p.x + 26, p.y + 3, 8, 11); R('#F2B632', p.x + 29, p.y + 6, 2, 2);
+  R('#7a9cc8', p.x + 4, p.y + 4, 8, 5);
+  R('#9a9aa8', p.x - 2, p.y + 1, 1, 16); R('#9a9aa8', p.x - 12, p.y + 1, 11, 1); R('#9a9aa8', p.x - 12, p.y + 1, 1, 16);
+  ['#d8402e', '#3f8f9a', '#f2c43a', '#9a4ab8'].forEach((c, i) => R(c, p.x - 11 + i * 2.5 + (Math.sin(t * 1.5 + i) > .9 ? 1 : 0), p.y + 2, 2, 7));
+  return { x: p.x - 12, y: p.y, w: 52, h: 18 };
+}
+function tent(p, col, inside){
+  for (let i = 0; i < 30; i += 5) R(i % 10 ? '#f6f2ea' : col, p.x + i, p.y, 5, 5);
+  R('#2b2440', p.x + 1, p.y + 5, 28, 11); R('#5a4630', p.x + 2, p.y + 12, 26, 4);
+  inside();
+  return { x: p.x, y: p.y, w: 30, h: 16 };
+}
+function records(p, t){
+  return tent(p, '#D13F86', () => { const SL = ['#e0443a', '#3a7ad8', '#f4cc2c', '#37c5d5', '#ff6fc1', '#f6f1e4']; const up = Math.floor(t * 1.4) % 6;
+    SL.forEach((c, i) => R(c, p.x + 5 + i * 3.4, p.y + 8 - (i === up ? 2 : 0), 2, 5)); });
+}
+function food(p, t){
+  R('#F2B632', p.x, p.y, 36, 14); R('#c9940f', p.x, p.y + 12, 36, 2); R('#1b1726', p.x + 6, p.y + 3, 18, 6);
+  R('#f6f2ea', p.x + 8, p.y + 4, 14, 1); R('#f6f2ea', p.x + 8, p.y + 6, 10, 1);
+  R('#2a2a34', p.x + 5, p.y + 14, 5, 3); R('#2a2a34', p.x + 26, p.y + 14, 5, 3);
+  for (let i = 0; i < 3; i++){ const s = (t * 6 + i * 4) % 12; R('rgba(240,236,226,.5)', p.x + 30 - (s * .2), p.y - s, 2, 2); }
+  return { x: p.x, y: p.y - 6, w: 36, h: 23 };
+}
+function box(p){
+  R('#7553D0', p.x, p.y, 30, 14); R('#5a3eaa', p.x, p.y, 30, 2); R('#0e0b1c', p.x + 8, p.y + 4, 14, 6); R('#ffe9a0', p.x + 10, p.y + 9, 10, 1);
+  R('#f6f2ea', p.x + 3, p.y + 3, 3, 4); R('#f6f2ea', p.x + 24, p.y + 3, 3, 4);
+  return { x: p.x, y: p.y, w: 30, h: 14 };
+}
+function gate(p, lay){
+  const w = lay.wide ? 50 : 60;
+  R('#4a4258', p.x, p.y, 3, 22); R('#4a4258', p.x + w - 3, p.y, 3, 22); R('#1F9AAA', p.x, p.y, w, 5); R('#0b6e7a', p.x, p.y + 4, w, 1);
+  VENUE_LIST.slice(0, 4).forEach((v, i) => R(['#5a8a5a', '#3a3a4a', '#3a3a4a', '#3a3a4a'][i], p.x + 5 + i * ((w - 10) / 4), p.y + 8, (w - 10) / 4 - 2, 7));
+  return { x: p.x, y: p.y, w, h: 22 };
+}
+
+// ── the doors ───────────────────────────────────────────────────────────────
+const SPOTS = [
+  ['stage', 'Play', 'var(--c-home)', 'play'], ['board', 'Board', 'var(--c-board)'], ['foh', 'Last night', '#5a4a8a'],
+  ['bus', 'Tour', 'var(--c-tour)'], ['trailer', 'Your band', 'var(--c-you)'], ['records', 'Songs', 'var(--c-songs)'],
+  ['food', 'How it works', '#B8860B'], ['box', 'Your shows', 'var(--c-you)'], ['gate', 'Rooms', 'var(--c-home)'],
+];
+let rects = {};
+function paint(now){
+  const t = now / 1000, lay = layout();
+  sky(t, lay); lawn(lay);
+  rects = {};
+  rects.stage = stageAt(lay.stage, t, .5);
+  if (lay.screen){ rects.board = screen(lay.screen, t); screen(lay.screen2, t + 2); }
+  crowd(lay, t);
+  rects.foh = foh(lay.foh, t);
+  rects.bus = bus(lay.bus, !!L);
+  rects.trailer = trailer(lay.trailer, t);
+  rects.records = records(lay.records, t);
+  rects.food = food(lay.food, t);
+  rects.box = box(lay.box);
+  rects.gate = gate(lay.gate, lay);
+  // On a phone there is no room beside the stage for the big screens: the board rides on the gate's sign row.
+  if (!rects.board) rects.board = { x: W - 40, y: lay.gate.y + 4, w: 26, h: 16 };
+  if (!lay.wide){ const b = rects.board; R('#15121f', b.x, b.y, 24, 14); R('#0e2a3a', b.x + 2, b.y + 2, 20, 10);
+    [14, 10, 7].forEach((w, i) => R(i ? '#37C5D5' : '#F2B632', b.x + 4, b.y + 3 + i * 3, w, 2)); R('#3a3550', b.x + 11, b.y + 14, 2, 6); }
+}
+function placeSpots(){
+  const host = document.getElementById('spots');
+  if (!host.children.length) host.innerHTML = SPOTS.map(([id, label, c, cls]) =>
+    `<button type="button" class="spot ${cls || ''}" data-open="${id}" style="--sc:${c}" aria-label="${esc(label)}"><span class="sign">${esc(label)}</span></button>`).join('');
+  const sx = cv.clientWidth / W, sy = cv.clientHeight / H;
+  for (const el of host.children){
+    const r = rects[el.dataset.open];
+    if (!r) continue;
+    Object.assign(el.style, { left: r.x * sx + 'px', top: r.y * sy + 'px', width: r.w * sx + 'px', height: r.h * sy + 'px' });
+  }
+}
+function fit(){
+  const dpr = devicePixelRatio || 1, cw = innerWidth, ch = innerHeight;
+  k = Math.max(2, Math.round((cw >= 900 ? 4 : 2.6) * dpr));
+  W = Math.ceil(cw * dpr / k); H = Math.ceil(ch * dpr / k);
+  buf.width = W; buf.height = H; cv.width = W * k; cv.height = H * k;
+  draw(performance.now()); placeSpots();
+}
+function draw(now){
+  paint(now);
+  out.imageSmoothingEnabled = false; out.drawImage(buf, 0, 0, W * k, H * k);
+}
+let last = 0;
+const loop = now => { requestAnimationFrame(loop); if (document.hidden || now - last < 80) return; last = now; draw(now); };
+addEventListener('resize', fit);
+fit(); requestAnimationFrame(loop);
+
+// ── the panels ──────────────────────────────────────────────────────────────
+const sheet = document.getElementById('sheet'), veil = document.getElementById('veil');
+const today = new Date(), dayLbl = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()}`;
+const PANELS = {
+  stage: () => ['Play', 'var(--c-home)', `<div class="modes">
+      <section class="mode free"><span class="md-k">Free play</span><span class="md-t">Build a setlist</span>
+        <span class="md-p">Random nights, as many as you like.</span><a class="pxbtn ink" href="/setlist/">Build your show</a></section>
+      <section class="mode daily"><span class="md-k" style="color:var(--teal)">Daily · ${esc(dayLbl)}</span><span class="md-t">Today's shows</span>
+        <span class="md-p">Same shows for everyone. One try.</span><a class="pxbtn" href="/setlist/">Build your show</a></section></div>`],
+  board: () => ['Board', 'var(--c-board)', `<p class="sh-p">Today's best shows, and the all-time board.</p><div class="linkrow"><a class="pxbtn" href="/setlist/">Open the leaderboard</a></div>`],
+  foh: () => ['Last night', '#8a7ae0', L ? `<div class="paper"><div class="pp-k">Last show</div><div class="pp-h">${esc(new Date(L.last.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))}</div><div class="pp-p">${esc(L.last.venue)}, ${esc(L.last.city)}</div>${setlistHTML(L.last)}</div>` : '<p class="sh-p">Loading...</p>'],
+  bus: () => ['Tour', 'var(--c-tour)', `<div class="dates">${(L ? L.upcoming : []).map(u => { const d = daysUntil(u.date);
+      return `<div class="date"><b>${esc(shortDate(u.date))}</b><span>${esc(u.venue)}, ${esc(u.city)}${u.state ? ', ' + esc(u.state) : ''}<br>${d === 0 ? 'Tonight' : `In ${d} day${d === 1 ? '' : 's'}`}</span></div>`; }).join('')}</div>`],
+  trailer: () => ['Your band', 'var(--c-you)', `<p class="sh-p">Dress them here. Close this and they're wearing it on stage.</p>${wardrobeHTML()}`],
+  records: () => ['Songs', 'var(--c-songs)', `<p class="sh-p">Every song they've played, how often, and how it feels.</p><div class="linkrow"><a class="pxbtn" href="/setlist/">Browse every song</a></div>`],
+  food: () => ['How it works', '#E0A82E', `<div class="menu"><ol>
+      <li><span class="px">1.</span> The wheel picks a real night. Not you.</li>
+      <li><span class="px">2.</span> Take one song. It costs every second it ran.</li>
+      <li><span class="px">3.</span> Fill 75, 70 and 10 minutes. Then the crowd decides.</li></ol></div>
+      <p class="sh-p" style="margin-top:12px">Real segues are where the points are. Grabbing every monster jam is how you lose.</p>`],
+  box: () => ['Your shows', 'var(--c-you)', `<p class="sh-p">The shows you were at, and every setlist you've built.</p><div class="linkrow"><a class="pxbtn" href="/setlist/">Track your shows</a></div>`],
+  gate: () => ['Rooms', 'var(--c-home)', `<p class="sh-p">Earn new rooms by playing. One is drawn each show.</p><div class="roomrow">${VENUE_LIST.slice(0, 9).map(v => `<img src="/setlist/venues/${v.id}.png?v=4" alt="" class="${v.free ? '' : 'locked'}">`).join('')}</div>`],
+};
+let stopWardrobe = null;
+function open(id){
+  const [title, col, body] = PANELS[id]();
+  sheet.style.setProperty('--sc', col);
+  document.getElementById('shHd').textContent = title;
+  const b = document.getElementById('shBody'); b.innerHTML = body;
+  if (stopWardrobe){ stopWardrobe(); stopWardrobe = null; }
+  if (id === 'trailer') stopWardrobe = mountWardrobe(b);
+  sheet.classList.add('on'); veil.classList.add('on');
+}
+function close(){ sheet.classList.remove('on'); veil.classList.remove('on'); if (stopWardrobe){ stopWardrobe(); stopWardrobe = null; } }
+document.addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) open(o.dataset.open); });
+veil.addEventListener('click', close); document.getElementById('shX').addEventListener('click', close);
+addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+L = await latest();
+</script>
+</body>
+</html>
