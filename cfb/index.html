@@ -1099,8 +1099,8 @@ window.GA_ID='G-L29P5MRWKE';
   .draft-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
     background:var(--bg);padding:0}
   .draft-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
-  .draft-ad ins.adsbygoogle{display:inline-block;width:320px;height:50px}
-  @media (min-width:768px){ .draft-ad ins.adsbygoogle{width:728px;height:90px} }
+  .draft-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+  .draft-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
   .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
   .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
