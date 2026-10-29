@@ -109,7 +109,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   if(by>1900&&by<=yr&&(yr-by)>=18)npa=0;}catch(e){}
   (window.adsbygoogle=window.adsbygoogle||[]).requestNonPersonalizedAds=npa;})();
 </script>
+<script src="/assets/privacy-choices.js?v=1"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <!-- Analytics (GA4). Set GA_ID to your Measurement ID (G-XXXXXXXXXX) to activate. While it's the
      placeholder it stays fully INERT (no gtag.js request, no cookies) so nothing ships broken. Once a
      real ID is set, gtag.js loads and the game's existing track() events forward automatically. -->
@@ -3439,6 +3441,10 @@ window.GA_ID='G-L29P5MRWKE';
     -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
     padding:calc(20px + env(safe-area-inset-top, 0px)) max(18px, calc((100% - 600px)/2)) calc(26px + env(safe-area-inset-bottom, 0px))}
   body.ovopen{overflow:hidden}   /* lock the page behind an open overlay */
+  /* the closeable bottom banner (/assets/rtg-ads.js) sits over the foot of an overlay, so the overlay's last row clears it */
+  body.rtg-sticky-on .ov{padding-bottom:calc(26px + env(safe-area-inset-bottom, 0px) + var(--sticky-ad-h,0px))}
+  /* and the First Tee and its hubs, which fill the screen exactly, reserve its height at their foot as they do the tab bar's */
+  body.rtg-sticky-on .ft{--ftnav:calc(var(--botnav-space,0px) + env(safe-area-inset-bottom,0px) + var(--sticky-ad-h,0px))}
   .ov h3{font-family:var(--display); font-weight:400; font-size:26px; color:var(--gold); margin:6px 0 12px; text-transform:uppercase}
   /* THE MENU: groups of compact rows in the body face (the display face shouted every row); columns on a wide screen */
   .mn-g{margin:0 0 16px; break-inside:avoid}
@@ -12701,6 +12707,7 @@ function render(){
     nav.classList.toggle('navhide', !showNav);
     if(showNav) navSetActive(nav);
   }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); }
+  try{ golfAds(); }catch(e){}
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   markResumeView();   // remember which screen is active so a browser refresh returns here (all modes)
   _lastView=view;
@@ -15543,6 +15550,27 @@ function ftAd(where){
   if(where==='home') return null;
   return $(`<a class="ft-ad ft-ad-${where} ft-house" href="/" target="_blank" rel="noopener"><img src="/assets/runthegames-icon_192.png" alt="" width="32" height="32" loading="lazy"><span><b>More games at RunThe.GG</b>One free account plays them all</span><span class="ft-adgo">Play ↗</span></a>`); }
 
+/* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's calls).
+   The banner sits on the First Tee and its hubs, the results screens and the leaderboards, never on a
+   screen where a round is played and never while Putt Putt is open. It rides above the tab bar when
+   the tab bar is up. Its X closes it for the rest of the visit. The two rails are desktop only, beside
+   the leaderboard overlays, pinned to the window because those overlays scroll inside themselves.
+   /assets/rtg-ads.js owns how both look and behave. Called at the end of every render(). */
+const STICKY_SLOT={sticky:'4375384263'};                     // golf-sticky
+const BOARD_SLOTS={left:'9970618031', right:'9403194710'};   // golf-board-left, golf-board-right
+const STICKY_SCR=['title','protour','putthub','me','summary','dailyresult','h2hresult','careerend','circuitend'];
+const BOARD_OV=['leaderboard','courserecords','record'];
+function golfAds(){
+  if(!window.RTG_ADS) return;
+  const putt=document.body.classList.contains('pt-open');
+  const board=!putt && BOARD_OV.indexOf(S.overlay)>=0;
+  const nav=document.getElementById('rttnav');
+  const lift=(!S.overlay && nav && !nav.classList.contains('navhide')) ? Math.round(nav.getBoundingClientRect().height) : 0;
+  document.documentElement.style.setProperty('--rtg-sticky-lift', lift+'px');
+  RTG_ADS.sticky(!putt && (board || (!S.overlay && STICKY_SCR.indexOf(S.screen)>=0)), STICKY_SLOT.sticky, 'golf', board?{z:45}:null);
+  RTG_ADS.rails(board, BOARD_SLOTS, ()=>app.querySelector('.ov'), {fixed:true});
+}
+
 /* ── THE FIRST TEE ──────────────────────────────────────────────────────────────────────────────── */
 function scrTitle(){
   if(!S.daily) restoreProfileIdentity();   // a Legend round swaps the look to the legend's; the home must show the player's own
@@ -16071,6 +16099,10 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
   .ft-home .ft-giftnote,.ft-home.has-gift .ft-giftnote{left:auto;right:56px;top:94px;bottom:auto;width:360px}
   .ft-home .ft-ad{left:50%;right:auto;transform:translateX(-50%);bottom:12px;width:min(468px,40vw)}
   .ft-home .ft-tee{bottom:24px} .ft-home.has-ad .ft-tee{bottom:76px}
+  /* the closeable bottom banner (/assets/rtg-ads.js): the golfer, the doors and a hub's foot rise by its height */
+  body.rtg-sticky-on .ft-home .ft-tee{bottom:calc(24px + var(--sticky-ad-h,0px))}
+  body.rtg-sticky-on .ft-door{bottom:calc(64px + var(--sticky-ad-h,0px))}
+  body.rtg-sticky-on .ft-hub .ft-body{padding-bottom:calc(40px + var(--sticky-ad-h,0px))}
   .ft-hub .ft-body{top:76px;bottom:0;padding:10px 56px 40px}
   .ft-ht{font-size:96px}
   .ft-cards{max-width:660px}
@@ -23118,7 +23150,7 @@ function puttReopen(){ if(_puttReopened) return; _puttReopened=true;
   try{ if(sessionStorage.getItem('ppt_open')!=='1' || S.overlay || !puttOn()) return; }catch(e){ return; }
   setTimeout(()=>{ try{ if(!document.querySelector('.pt-ov')) openPutt(); }catch(e){} }, 0); }
 try{ document.addEventListener('DOMContentLoaded',()=>setTimeout(puttReopen,6000),{once:true}); }catch(e){}   // no answer from the accounts in time
-function openPutt(o){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&(o.go||o.tour)?o:undefined); }
+function openPutt(o){ if(!puttOn()) return; try{ if(window.RTG_ADS){ RTG_ADS.dropSticky(); RTG_ADS.dropRails(); } }catch(e){} try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&(o.go||o.tour)?o:undefined); }
 function openPuttDaily(){ openPutt({go:'daily'}); }
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){

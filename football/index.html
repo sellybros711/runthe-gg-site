@@ -105,6 +105,7 @@ window.GA_ID='G-L29P5MRWKE';
 <!-- Google AdSense, same publisher as the rest of the site. Units are manual and sit near the
      foot of the body; Auto Ads stays off in the dashboard, which is what keeps an ad from being
      injected into the middle of a game screen. -->
+<script src="/assets/privacy-choices.js?v=1"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4603,6 +4604,10 @@ window.GA_ID='G-L29P5MRWKE';
      .mypin's offset, because the two are sticky siblings and the only thing stopping
      them overlapping is that one knows how tall the other is. */
   #s-board{--lbdock:54px}
+  /* The closeable bottom banner (/assets/rtg-ads.js) takes the bottom edge on the board, so the
+     bar and the pinned place row stand on it rather than on the strip's reserved band. */
+  body.rtg-sticky-on #s-board{--adstrip:var(--sticky-ad-h,0px)}
+  @media (max-width:1199px){ body.rtg-sticky-on #s-board{--adstrip:max(calc(54px + env(safe-area-inset-bottom,0px)), var(--sticky-ad-h,0px))} }
   /* Sat above the fixed ad strip, not under it: sticky offsets are measured from the
      scrollport, so bottom:0 is the viewport edge, which is exactly where the strip is.
 
@@ -8666,6 +8671,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
      the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
 <script src="/assets/rewarded.js?v=1"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
@@ -10147,6 +10153,22 @@ function seasonAd(id){
   }
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
+/* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's
+   calls). The banner sits on the front page, the leaderboard and the results, never on a screen
+   where people play, and never while the Dynasty dock is up (it owns the bottom of the screen
+   then). Its X closes it for the rest of the visit. The two rails are desktop only, on the
+   leaderboard. /assets/rtg-ads.js owns how both look and behave. */
+const STICKY_SLOT={sticky:'4079162954'};                      // football-sticky
+const BOARD_SLOTS={left:'1287020649', right:'5274367113'};    // football-board-left, football-board-right
+const STICKY_ON=['s-intro','s-board','s-over'];
+function stickyAd(id){
+  if(!window.RTG_ADS) return;
+  const dock=$('o-dock');
+  RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0&&!(dock&&!dock.hidden), STICKY_SLOT.sticky, 'football');
+}
+function boardRails(id){
+  if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
+}
 /* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
    opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
    board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
@@ -10189,6 +10211,8 @@ function show(id){
   draftAd(id);
   seasonAd(id);
   screenAds(id);
+  stickyAd(id);
+  boardRails(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
      (a finished run, a bailed draft, the leaderboard), and it carries two bits of state
