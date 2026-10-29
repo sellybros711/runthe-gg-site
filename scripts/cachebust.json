@@ -49,20 +49,10 @@
       "sha": "93758a342a647e1e"
     }
   },
-  "about.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
   "arcade/almamater/index.html": {
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
-    },
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
     },
     "/assets/rtg-ads.js": {
       "v": "1",
@@ -319,10 +309,6 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
-    },
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
     },
     "/assets/rtg-ads.js": {
       "v": "1",
@@ -639,10 +625,6 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
-    },
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
     },
     "/assets/rtg-ads.js": {
       "v": "1",
@@ -1185,10 +1167,6 @@
     "/arcade/metrics.js": {
       "v": "3",
       "sha": "d37ab08269df2f39"
-    },
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
     },
     "/assets/rtg-ads.js": {
       "v": "1",
@@ -1918,10 +1896,6 @@
     }
   },
   "arcade/sportegories/index.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    },
     "/assets/rtg-ads.js": {
       "v": "1",
       "sha": "5c96f0ee77ea8e2d"
@@ -2241,17 +2215,7 @@
       "sha": "aaaa6b4054ff4960"
     }
   },
-  "baseball/how-to-play.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
   "baseball/index.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    },
     "/assets/rtg-ads.js": {
       "v": "1",
       "sha": "5c96f0ee77ea8e2d"
@@ -2457,17 +2421,7 @@
       "sha": "dd8cc0d912efc44f"
     }
   },
-  "cfb/how-to-play.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
   "cfb/index.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    },
     "engine.js": {
       "v": "35",
       "sha": "6790ff818f8387df"
@@ -2537,26 +2491,10 @@
       "sha": "a7aee657b01c3630"
     }
   },
-  "contact.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "disclaimer.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
   "football/fantasy/index.html": {
     "/football/fantasy/skin.js": {
       "v": "1",
       "sha": "8211beb1a8c09cc1"
-    },
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
     },
     "/assets/rtg-ads.js": {
       "v": "1",
@@ -2583,17 +2521,7 @@
       "sha": "dd8cc0d912efc44f"
     }
   },
-  "football/how-to-play.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
   "football/index.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    },
     "engine.js": {
       "v": "101",
       "sha": "acb77b5add408631"
@@ -2701,12 +2629,6 @@
       "sha": "c71a149f3b8da69e"
     }
   },
-  "golf/how-to-play.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
   "golf/index.html": {
     "/assets/newsletter.js": {
       "v": "2",
@@ -2788,97 +2710,9 @@
       "v": "2",
       "sha": "f7a56d5883d63d55"
     },
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    },
     "/assets/rtg-ads.js": {
       "v": "1",
       "sha": "5c96f0ee77ea8e2d"
-    }
-  },
-  "golf/privacy.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "golf/terms.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/arcade-free-daily-puzzles.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/college-football-commissioner-mode.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/college-football-nil-budget.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/football-full-team-run.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/index.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/perfect-season-salary-cap.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/putt-putt-off-the-trail.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/putt-putt-stars-lives-worlds.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/run-the-diamond-best-eras.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/run-the-diamond-pitching-staff.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/run-the-pitch-world-cup-xi.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "guides/run-the-tour-golfer.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
     }
   },
   "hoops/design/style-guide.html": {
@@ -3068,10 +2902,6 @@
     }
   },
   "index.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    },
     "/assets/rtg-ads.js": {
       "v": "1",
       "sha": "5c96f0ee77ea8e2d"
@@ -3101,12 +2931,6 @@
     "main.js": {
       "v": "3",
       "sha": "834fcd81fc0e32fd"
-    }
-  },
-  "privacy.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
     }
   },
   "setlist/index.html": {
@@ -3239,29 +3063,7 @@
       "sha": "f7825682139cd9e3"
     }
   },
-  "soccer/about.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "soccer/contact.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "soccer/how-to-play.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
   "soccer/index.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    },
     "/assets/rtg-ads.js": {
       "v": "1",
       "sha": "5c96f0ee77ea8e2d"
@@ -3273,18 +3075,6 @@
     "/gameLogic.js": {
       "v": "0.0.32",
       "sha": "201097f19827a3c0"
-    }
-  },
-  "soccer/privacy.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
-    }
-  },
-  "terms.html": {
-    "/assets/privacy-choices.js": {
-      "v": "1",
-      "sha": "e6ee3aaadb871445"
     }
   },
   "wrestling/booking/index.html": {
