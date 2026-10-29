@@ -477,6 +477,41 @@ window.GA_ID='G-L29P5MRWKE';
   .claimbox .btn{margin-bottom:12px}
   .claimbox .cb-more{margin:9px 0 0;font-size:11.5px;line-height:1.4;color:var(--dim-2);
     text-align:center}
+  /* THE CLAIM BUTTON IS THE ASK ON THIS SCREEN, AND THE BANNER LANDED ON IT. The comment
+     over paintClaim records 375x667 as the phone that drove the button above the badge
+     cards in the first place, because under them it fell off a 667px screen. The banner
+     puts it back: measured with the guest sheet dismissed, the button sat 557-613 against
+     a band starting at 591 there, and 550-606 against a band at 564 on a 360x640.
+     So the rhythm of the three blocks above it gives up a few pixels each while the banner
+     is up, which is the same kind of trim as the front page's and for the same reason:
+     spacing only, nothing moved, nothing hidden, no block removed.
+     ONLY ON A SHORT SCREEN. A 390x844 phone is already clear by 188px, and tightening a
+     screen that does not need it is a change for nothing. 700px is the line because the
+     two that fail are 667 and 640 and the next size up is 800.
+     Measured after, with the sheet dismissed: the button lands 493-550 at 375x667, which
+     clears the band by forty one, and the block below finishes the 360x640.
+     READ THAT MARGIN AS A MARGIN RATHER THAN AS A NUMBER. How far down the screen this
+     button starts depends on the season: the verdict card above it is as tall as its own
+     sentence, and the box itself is as tall as the number of badges earned. Across runs
+     that moved the whole block by about twenty pixels on one size, so what these rules buy
+     has to be tens of pixels rather than ones. */
+  @media (max-height:700px){
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .ovr{margin-top:8px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .ovr>div{padding-top:7px;padding-bottom:8px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .splits{margin-top:8px;padding-top:7px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .claimbox{margin-top:6px;padding-top:9px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .claimbox .cb-t{font-size:17px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .claimbox .cb-s{margin:4px 0 6px}
+  }
+  /* AND THE SHORTEST PHONE NEEDED A LITTLE MORE, because the block above left the button
+     clearing the band by ONE pixel at 360x640, and one pixel is not clearance, it is luck:
+     the next word added to that paragraph takes it back. 660px rather than 700 so this
+     only reaches the screen that needs it, since 375x667 already clears by forty one. */
+  @media (max-height:660px){
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .ovr{margin-top:5px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .splits{margin-top:5px;padding-top:5px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .claimbox .cb-s{margin:3px 0 4px}
+  }
   /* Claimed. The same box, once the account has taken them, because a panel that simply
      vanishes leaves nothing that says the offer was honoured. */
   .claimbox.done{border-color:rgba(16,185,129,.4);
@@ -565,6 +600,18 @@ window.GA_ID='G-L29P5MRWKE';
   /* The closeable bottom banner (/assets/rtg-ads.js) owns the bottom edge while it is up, so the
      poll bar rides on top of it. --sticky-ad-h is 0 until the banner is actually filled. */
   body.rtg-sticky-on .ticker{bottom:var(--sticky-ad-h,0px)}
+  /* A SHEET IS BOTTOM ANCHORED, so the banner lands on its action row rather than on the
+     screen behind it. `.sheet` is `inset:0` with `align-items:flex-end`, and `.pitchact`
+     is sticky to the foot of the panel, which is exactly where the banner sits: the guest
+     pitch's "Play as a guest" was under it at every one of the seven sizes measured, and
+     it is the last button of the only sheet a player meets straight after a season. The
+     panel rides up by the banner's height and gives the same height back off its own
+     ceiling, so a tall sheet still fits rather than growing past the top of the screen.
+     This is the whole fix for every sheet on the page at once, which is why it is here
+     and not written out per sheet. --sticky-ad-h is 0 until the banner actually fills, so
+     a blocked, unfilled or closed banner leaves both of these exactly where they were. */
+  body.rtg-sticky-on .sheet{padding-bottom:calc(14px + var(--sticky-ad-h,0px))}
+  body.rtg-sticky-on .sheet .inner{max-height:calc(86vh - var(--sticky-ad-h,0px))}
   /* The last thing on the front page has to clear a bar that is no longer in the
      flow. Measured, not guessed: see test_ticker.mjs. */
   #s-intro{padding-bottom:var(--tickerh,33px)}
@@ -2525,6 +2572,15 @@ window.GA_ID='G-L29P5MRWKE';
     z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(8,11,20,0),var(--bg))}
   .lblock.locked .lbgate{position:relative;z-index:2;display:flex;justify-content:center;
     padding:100px 8px 10px}
+  /* AND THE SAME MEASUREMENT AGAIN WITH A TALLER THING AT THE BOTTOM. The peek came down
+     from 150 to 100 because the sign-in button sat 39px behind the sticky footer; the
+     closeable banner is taller than that footer, and at 1280x800 it put the button at
+     693-749 against a band starting at 724. So the peek gives up another thirty while the
+     banner is up: the podium still reads over the top of the card, which is what the peek
+     is for, and the button lands clear. Only 1280x800 failed, and the lift is harmless at
+     the sizes that passed because it only ever moves the card away from the bottom.
+     test_board_gate measures the button against the dock rather than trusting this. */
+  body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) .lblock.locked .lbgate{padding-top:70px}
   .lbgate .card{width:100%;max-width:330px;padding:16px 15px 15px;border-radius:14px;
     background:rgba(19,26,43,.93);border:1px solid var(--line-2);
     box-shadow:0 24px 60px -20px #000;backdrop-filter:blur(2px)}
@@ -3295,6 +3351,43 @@ window.GA_ID='G-L29P5MRWKE';
        the screens with the most room for it. The fit script at the foot of the
        page is the net under this rather than the plan. */
     #s-intro>.hero h1{font-size:min(84px,6.4vw)}
+  }
+  /* ── AND THE BANNER TAKES THE BOTTOM 76px OF THE WINDOW ─────────
+     The sticky banner is fixed, so it does not shorten the page, it covers the
+     foot of it. Measured at scroll 0 with the banner filled, the links row ran
+     823-875 against a band starting at 824 at 1440x900, and 825-877 against the
+     same band at 1200x900: the three links were under it on both. The Draft
+     button and More ways to play are 400px clear at every desktop size, which is
+     the two-column hero doing its job, so what is left is the tail of the column
+     overshooting by about fifty pixels.
+     THIS IS SPACING AND NOTHING ELSE. Every value here is one already set in the
+     block above, tightened: the same six controls, in the same order, in the same
+     two columns. Nothing is moved between columns, nothing is hidden and no font
+     size changes, because a page that rearranges itself when an ad happens to
+     fill is worse to use than a links row under a banner.
+     IT IS GATED ON AN AD THAT IS ACTUALLY THERE, which is this file's own rule from
+     the --adstrip note at the top: reserved is not the same as occupied. The obvious
+     gate is `body.rtg-sticky-on`, and it is the wrong one: rtg-ads.js sets that class
+     whenever the banner is MOUNTED, and only --sticky-ad-h goes to 0 when nothing
+     fills. Measured with adsbygoogle blocked, which is most visitors: the class was
+     still set, so these rules fired with no banner on the screen and moved the Draft
+     button from 341 to 329 at 1440x900. That is #795's approved hero quietly redrawn
+     for everybody running a blocker. So the gate is the filled `ins`, the same way
+     the ticker's own rule above asks it. Re-measured: the links row lands 768-812 at 1440x900
+     and 770-814 at 1200x900, clearing the band by twelve and ten pixels, and the
+     two mode cards finish at 645 and 762 against the same band.
+     IT DOES NOT REACH 1280x800, and no amount of spacing does. The column there
+     runs 344 to 827 against a band starting at 724, so the Fantasy Challenge card
+     and the links row are both in it, and clearing them needs about a hundred
+     pixels rather than the fifty this finds. Writing that section up rather than
+     chasing it: see the pull request. */
+  @media(min-width:920px) and (min-height:560px){
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro>.hero{margin-bottom:10px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro>.ctas{gap:6px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro #b-play-intro{padding:16px 18px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro>.ctas>.btn.ghost{padding:14px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro .cta3 .btn{padding-top:11px;padding-bottom:11px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro .modecard{padding-top:11px;padding-bottom:11px}
   }
 
   /* ── footer ─────────────────────────────────────────────────── */
