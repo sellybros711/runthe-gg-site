@@ -875,6 +875,19 @@
     -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%);
             mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%);}
   .flag-marquee.top{margin:0 -22px 10px;}
+  /* EVERY BANNER SCREEN MAKES ROOM FOR THE BOTTOM BANNER (the owner, 2026-10-29: the banner may never sit
+     over a main control on the first view). pitchClear() measures, and only where a control would sit
+     under the banner does anything give: first the masthead's blurb and logo and, on the start screen,
+     the flag strip, the demo scoreline and the trophy's size (pitch-tight), then the start screen's
+     subtitle and trophy (pitch-tighter). A block that would still sit under the banner moves below the
+     fold whole. Screens with room keep everything. The footer scrolls under it like any long page. */
+  body.pitch-tight .acct-bar .fa-lock{display:none}
+  body.pitch-tight .masthead .logo-badge img{height:48px}
+  body.pitch-tight #screen-start .flag-marquee.top,
+  body.pitch-tight #screen-start .home-demo{display:none}
+  body.pitch-tight #screen-start .trophy-svg{width:42px;height:60px}
+  body.pitch-tighter #screen-start .hero-sub,
+  body.pitch-tighter #screen-start .ball{display:none}
   .flag-marquee.bottom{margin:14px -22px 0;}
   .flag-lane{display:flex;gap:12px;width:max-content;flex:0 0 auto;will-change:transform;}
   .flag-lane.left{animation:flagScrollLeft linear infinite;}
@@ -3231,13 +3244,10 @@
   .stage-ad:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
   /* THE DESKTOP RAILS: absolute on the page, so they scroll with it. 150px clear of the 640px column. */
   .rail-ad{position:absolute;top:140px;width:160px;text-align:center;z-index:1}
-  .rail-ad.rail-left{left:calc(50% - 630px)}
-  .rail-ad.rail-right{left:calc(50% + 470px)}
   .rail-ad ins.adsbygoogle{display:inline-block;width:160px;height:600px}
   .rail-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   .rail-ad .rtp-ad-label{display:none}
   .rail-ad:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
-  @media (max-width:1299px){ .rail-ad{display:none} }
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{ display:block; }    /* mobile bottom anchor only */
     .rtp-ad-rail{ display:none !important; }     /* never side rails on mobile */
@@ -3260,7 +3270,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
      crossorigin="anonymous"></script>
-<script src="/assets/rtg-ads.js?v=1"></script>
+<script src="/assets/rtg-ads.js?v=2"></script>
 <!-- Supabase JS (auth: email/password + Google OAuth, session persistence) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
@@ -4883,23 +4893,39 @@ function stageAd(name){
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
 /* THE DESKTOP RAILS (Ads Agent, 2026-10-28, the owner's call: side banners on desktop only, beside
-   gameplay too, scrolling with the page). Two 160x600 units, left and right of the 640px column,
-   built only when the window leaves 150px between each rail and the column (1300px and up), and
-   removed (never hidden) if the window shrinks below that. They scroll with the page; the only
-   sticky ad on a screen stays the bottom banner. Units pitch-rail-left and pitch-rail-right. */
-const RAIL_MIN=1300;
+   gameplay too, scrolling with the page). Two 160x600 units, left and right of the game. The column
+   is MEASURED on every screen, not assumed: the start screen's button row is about 925px wide while
+   the other screens are 608, so each rail is placed 150px clear of the widest control on the open
+   screen, and is built only where the window leaves that room (about 1545px on the start screen,
+   1230px elsewhere). RTG_ADS.clear() then moves them below anything above them, the corner buttons
+   included. Removed (never hidden) where they do not fit. Units pitch-rail-left and pitch-rail-right. */
+const RAIL_GAP=150, RAIL_W=160;
 const RAIL_SLOTS={left:'5343696050', right:'3846781551'};   // pitch-rail-left, pitch-rail-right
+function railCol(){
+  const sc=document.querySelector('.screen.active'); if(!sc) return null;
+  const r=sc.getBoundingClientRect(); let L=r.left, R=r.right;
+  sc.querySelectorAll('a[href],button,input,select,[role="button"]').forEach(e=>{
+    if(!e.offsetWidth) return;
+    const q=e.getBoundingClientRect(); if(q.right<=0||q.left>=window.innerWidth) return;
+    L=Math.min(L,q.left); R=Math.max(R,q.right);
+  });
+  return {L,R};
+}
 function railAds(){
-  const wide=window.innerWidth>=RAIL_MIN;
   const have=document.querySelectorAll('[data-ad-zone="rail"]');
-  if(!wide){ have.forEach(r=>r.remove()); return; }
-  if(have.length) return;
+  const c=railCol();
+  if(!c||c.L-RAIL_GAP-RAIL_W<0||c.R+RAIL_GAP+RAIL_W>document.documentElement.clientWidth){ have.forEach(r=>r.remove()); return; }
+  const at={left:Math.round(c.L-RAIL_GAP-RAIL_W+window.scrollX)+'px', right:Math.round(c.R+RAIL_GAP+window.scrollX)+'px'};
+  const clear=()=>{ if(window.RTG_ADS) RTG_ADS.clear(document.querySelectorAll('[data-ad-zone="rail"]')); };
+  if(have.length){ have.forEach(z=>{ z.style.left=at[z.dataset.side]; z.style.top='140px'; }); clear(); return; }
   Object.entries(RAIL_SLOTS).forEach(([side,slot])=>{
     const wrap=document.createElement('div');
-    wrap.innerHTML='<div class="rail-ad rail-'+side+'" data-ad-zone="rail"><span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="'+slot+'"></ins></div>';
-    document.body.appendChild(wrap.firstChild);
-    try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+    wrap.innerHTML='<div class="rail-ad rail-'+side+'" data-ad-zone="rail" data-side="'+side+'"><span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="'+slot+'"></ins></div>';
+    const z=wrap.firstChild; z.style.left=at[side]; z.style.top='140px';
+    document.body.appendChild(z);
   });
+  clear();
+  document.querySelectorAll('[data-ad-zone="rail"]').forEach(()=>{ try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} });
 }
 window.addEventListener('resize',()=>{ try{ railAds(); }catch(e){} });
 /* THE CLOSEABLE BOTTOM BANNER (Ads Agent, 2026-10-29, the owner's call). On the start screen, the
@@ -4911,6 +4937,35 @@ const STICKY_ON=['start','online-hub','report','friendly-result','h2h-result','h
 function stickyAd(name){
   if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(name)>=0, STICKY_SLOT.sticky, 'pitch');
 }
+/* Where the bottom banner would cover a main control on the first view of a banner screen, the
+   masthead and the start screen's decoration step aside (the pitch-tight CSS above), and a block that
+   would still sit under the banner moves down past the bottom of the window, whole. The first view
+   then shows whole controls, never one under the banner. The footer is not a main control. Re-run on
+   every screen change, resize and banner change ('rtg-sticky' from /assets/rtg-ads.js). */
+function pitchClear(){
+  const B=document.body;
+  B.classList.remove('pitch-tight','pitch-tighter');
+  document.querySelectorAll('[data-pitch-push]').forEach(e=>{ e.style.removeProperty('margin-top'); e.removeAttribute('data-pitch-push'); });
+  const z=document.querySelector('[data-ad-zone="sticky"] .rtg-sticky-in'), sc=document.querySelector('.screen.active');
+  if(!z||!z.offsetHeight||!sc||STICKY_ON.indexOf(sc.id.replace(/^screen-/,''))<0) return;
+  const sy=window.scrollY, fold=window.innerHeight, bannerTop=()=>z.getBoundingClientRect().top+sy;
+  const ctl=()=>[...sc.querySelectorAll('a[href],button,[role="button"]')].filter(e=>e.offsetWidth&&!e.closest('footer,.site-footer'));
+  const under=e=>{ const b=e.getBoundingClientRect(); return b.bottom+sy>bannerTop()-4&&b.top+sy<fold; };
+  const main=sc.id==='screen-start'?$('btn-start'):null;
+  const low=()=>main&&main.getBoundingClientRect().bottom+sy>bannerTop()-4;   // Start World Cup not wholly above the banner
+  if(low()||ctl().some(under)) B.classList.add('pitch-tight');                // lift first
+  if(low()) B.classList.add('pitch-tighter');
+  const host=sc.children.length===1?sc.firstElementChild:sc;
+  for(let n=0;n<4;n++){
+    const c=ctl().find(under); if(!c) break;
+    let blk=c; while(blk.parentElement&&blk.parentElement!==host) blk=blk.parentElement;
+    if(!blk.parentElement) break;
+    const t=blk.getBoundingClientRect().top+sy; if(t>=fold) break;
+    blk.style.marginTop=(parseFloat(getComputedStyle(blk).marginTop)+fold-t+24)+'px'; blk.setAttribute('data-pitch-push','1');
+  }
+}
+window.addEventListener('resize',()=>{ try{ pitchClear(); }catch(e){} });
+window.addEventListener('rtg-sticky',()=>{ try{ pitchClear(); }catch(e){} });
 /* The start screen is open in the markup, so showScreen() never runs for it on a fresh load, and the
    rails and the banner would wait for the first resize or screen change (the owner saw none, 2026-10-29).
    So the screen that is open at load gets them too. */
@@ -4925,6 +4980,9 @@ function showScreen(name){
   menuAd(name);
   stageAd(name);
   railAds();
+  try{ pitchClear(); }catch(e){}
+  setTimeout(()=>{ try{ pitchClear(); }catch(e){} },400);   // and once the screen has drawn
+  setTimeout(()=>{ try{ railAds(); }catch(e){} },350);   // again once the screen has drawn its content
   stickyAd(name);
   // compact mode hides the masthead so the select page fits one screen
   document.body.classList.toggle('sel-mode', name==='select');
