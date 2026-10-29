@@ -89,19 +89,11 @@ for (const file of walk(ROOT).sort()) {
       if (adTag !== -1 && adTag < europe.index) fail('AdSense tag loads before the Europe consent default');
     }
   }
-  /* Our own "Do Not Sell or Share" link (assets/privacy-choices.js) replaces Google's floating
-   * bar, the owner's call (2026-10-29). The file sets the flag that suppresses the bar AND draws
-   * the link, so a page that has ads and lacks it shows the bar again, and a page that loaded it
-   * async could set the flag after the CMP read it. So: present, not async, before the ad tag. */
-  const adTagAt = src.search(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/);
-  if (adTagAt !== -1) {
-    const dns = src.match(/<script([^>]*)src="\/assets\/privacy-choices\.js\?v=\d+"([^>]*)><\/script>/);
-    if (!dns) fail('loads the ad tag without /assets/privacy-choices.js (the Do Not Sell link)');
-    else {
-      if (/\b(async|defer)\b/.test(dns[1] + dns[2])) fail('privacy-choices.js must load without async or defer');
-      if (dns.index > adTagAt) fail('privacy-choices.js loads after the ad tag (the flag would be set too late)');
-    }
-  }
+  /* GOOGLE'S US STATES OPT-OUT IS LEFT TO GOOGLE. Site PR 800 set googlefc.usstatesoptout.overrideDnsLink
+   * to replace Google's floating "Do Not Sell" bar with a footer link. That override works on Google Ad
+   * Manager only; on AdSense the bar stayed and the link opened nothing (the owner, 2026-10-29). A dead
+   * opt-out link is worse than none, so it was removed, and nothing may set the override again on AdSense. */
+  if (/overrideDnsLink/.test(src.replace(/<!--[\s\S]*?-->/g, ''))) fail('sets overrideDnsLink, which AdSense ignores: Google keeps its bar and a custom link opens nothing');
 
   if (!/rel=["']canonical["']/i.test(src)) fail('no canonical');
   if (!/<title>\s*\S/i.test(src)) fail('no title');
