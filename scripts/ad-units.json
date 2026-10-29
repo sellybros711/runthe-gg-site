@@ -168,7 +168,7 @@
       "where": [
         "football/index.html"
       ],
-      "size": "320x50, 728x90 from 768px, pinned during the draft"
+      "size": "300x50 at every width, pinned (AdSense sticky ads: 300px wide or less, no 728x90)"
     },
     "diamond-draft": {
       "slot": "8070696087",
@@ -176,7 +176,7 @@
       "where": [
         "baseball/index.html"
       ],
-      "size": "320x50, 728x90 from 768px, pinned during the draft"
+      "size": "300x50 at every width, pinned (AdSense sticky ads: 300px wide or less, no 728x90)"
     },
     "cfb-draft": {
       "slot": "8189884070",
@@ -184,7 +184,7 @@
       "where": [
         "cfb/index.html"
       ],
-      "size": "320x50, 728x90 from 768px, pinned during the draft"
+      "size": "300x50 at every width, pinned (AdSense sticky ads: 300px wide or less, no 728x90)"
     },
     "football-season": {
       "slot": "8510729536",
@@ -192,7 +192,7 @@
       "where": [
         "football/index.html"
       ],
-      "size": "320x50, 728x90 from 768px, pinned on the season screen during live games"
+      "size": "300x50 at every width, pinned (AdSense sticky ads: 300px wide or less, no 728x90)"
     }
   },
   "retired": {

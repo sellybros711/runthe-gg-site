@@ -202,6 +202,13 @@ for (const file of walkCode(ROOT)) {
     .filter((m) => !(MENU_ZONE_PAGES.has(rel) && /function adUnitInto\(host\)\{\s*host\.innerHTML='[^']*$/.test(src.slice(Math.max(0, m.index - 400), m.index)) && /^\s+screenAds\(\w+\);/m.test(src)))
     .map((m) => m[1] || m[2]);
   if (real.length) problems.push(`${rel}: a real ad slot (${real.join(', ')}) on a page where people play. Game slots stay placeholders`);
+  /* A PINNED BANNER IS A STICKY AD (AdSense Ad formats FAQ, read 2026-10-29): 300px wide or less, never
+   * the 728x90. So a draft or season banner is sized 300px or narrower at every width. */
+  if (DRAFT_ZONE_PAGES.has(rel)) {
+    for (const m of src.matchAll(/\.(?:draft|season)-ad(?:\[data-ad-zone\])? ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) {
+      if (+m[1] > 300) problems.push(`${rel}: a pinned banner is ${m[1]}px wide. AdSense allows a sticky ad 300px wide or less`);
+    }
+  }
   if (DRAFT_ZONE_PAGES.has(rel) && /data-ad-zone="draft"/.test(src) && !/^\s+draftAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a draft banner but show() does not call draftAd() to remove it on leaving the draft`);
   if (MENU_ZONE_PAGES.has(rel)) {
     if (/function adUnitInto\(/.test(src)) {
