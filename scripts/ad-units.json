@@ -193,6 +193,30 @@
         "football/index.html"
       ],
       "size": "300x50 at every width, pinned (AdSense sticky ads: 300px wide or less, no 728x90)"
+    },
+    "pitch-stage": {
+      "slot": "3559841093",
+      "status": "live",
+      "where": [
+        "soccer/index.html"
+      ],
+      "size": "300x250, in flow under the tournament match cards"
+    },
+    "pitch-rail-left": {
+      "slot": "5343696050",
+      "status": "live",
+      "where": [
+        "soccer/index.html"
+      ],
+      "size": "160x600, desktop 1300px and up, scrolls with the page"
+    },
+    "pitch-rail-right": {
+      "slot": "3846781551",
+      "status": "live",
+      "where": [
+        "soccer/index.html"
+      ],
+      "size": "160x600, desktop 1300px and up, scrolls with the page"
     }
   },
   "retired": {
