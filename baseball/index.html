@@ -4027,7 +4027,87 @@ const STICKY_SLOT={sticky:'4631369283'};   // diamond-sticky
 const STICKY_ON=['s-intro','s-board','s-over'];
 function stickyAd(id){
   if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0, STICKY_SLOT.sticky, 'diamond');
+  foldH=innerHeight;
+  screenFold();
 }
+/* A SCREEN'S FIRST VIEW STOPS ABOVE THE BANNER (the owner, 2026-10-29: move each screen's content
+   up so the bottom banner never covers it). The page is already padded by the banner, so everything
+   can be scrolled clear, but at scroll 0 the banner sat on the Daily card, More ways to play or the
+   mode tiles, on a 375x667 phone on Draft Your Team itself, and on the results screen on whichever
+   card a run happened to put at the fold. Every move here is measured, and all of them are undone
+   the moment the banner closes or never fills (--sticky-ad-h is 0 then):
+   1. Home: logo to tagline is the first view. If it runs into the banner, the ballpark picture
+      gives up the difference, down to FOLD_FIELD_MIN, then the logo, down to FOLD_LOGO_MIN wide.
+      They are the two parts that are only pictures.
+   2. Home and results: the first block holding a control that the banner would cover starts just
+      below the screen's bottom edge instead, so the banner sits over empty page, not over a door.
+      Blocks that already fit above the banner stay where they are.
+   The leaderboard is left as it is: its tabs and sort sit at the top, and the list below them is
+   a list, read by scrolling, so its rows pass under the banner like any page. */
+const FOLD_FIELD_MIN=120, FOLD_LOGO_MIN=96;
+/* THE HEIGHT IS TAKEN ONCE, when a screen opens or the window changes width. A phone's address
+   bar folds away as the player scrolls and fires a resize with a taller window every time; a
+   fold that followed it would move the page under the player's thumb. */
+let foldH=innerHeight, foldW=innerWidth;
+function foldPush(from,line,y){
+  for(let el=from;el;el=el.nextElementSibling){
+    if(!el.offsetHeight) continue;
+    const r=el.getBoundingClientRect(), top=r.top+y;
+    if(top>=foldH) break;
+    if(r.bottom+y<=line||!el.matches('button,a[href]')&&!el.querySelector('button,a[href],[role=button]')) continue;
+    /* Measured twice, because the margin above it collapses with the one before it: the
+       first push is short by whatever gap was already there. */
+    el.dataset.foldPush='1';
+    const m=Math.ceil(parseFloat(getComputedStyle(el).marginTop)+foldH-top)+1;
+    el.style.marginTop=m+'px';
+    const short=foldH-(el.getBoundingClientRect().top+y);
+    if(short>0) el.style.marginTop=(m+Math.ceil(short)+1)+'px';
+    return;
+  }
+}
+function screenFold(){
+  const intro=$('s-intro'), over=$('s-over'), field=$('h-field');
+  const tag=intro&&intro.querySelector('.htag'), logo=intro&&intro.querySelector('.hlogo');
+  if(field){ field.style.height='';field.style.aspectRatio=''; }
+  if(logo) logo.style.width='';
+  document.querySelectorAll('[data-fold-push]').forEach(e=>{e.style.marginTop='';delete e.dataset.foldPush;});
+  const ad=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-ad-h'))||0;
+  if(!ad||!document.body.classList.contains('rtg-sticky-on')) return;
+  const y=window.scrollY, line=foldH-ad-8;
+  if(over&&over.classList.contains('on')){ foldPush(over.firstElementChild,line,y); return; }
+  if(!intro||!intro.classList.contains('on')||!field||!tag) return;
+  const past=()=>tag.getBoundingClientRect().bottom+y-line;
+  const over0=past();
+  if(over0>0){
+    const h=field.getBoundingClientRect().height;
+    field.style.aspectRatio='auto';field.style.height=Math.max(FOLD_FIELD_MIN,Math.round(h-over0))+'px';
+  }
+  /* Still past it (a short phone with a saved draft's Resume card): the logo gives up the rest. */
+  const still=past();
+  if(still>0&&logo){
+    const r=logo.getBoundingClientRect();
+    if(r.width) logo.style.width=Math.max(FOLD_LOGO_MIN,Math.floor(r.width-still*r.width/r.height))+'px';
+  }
+  foldPush(tag.nextElementSibling,line,y);
+}
+window.addEventListener('resize',()=>{
+  if(innerWidth===foldW) return;
+  foldW=innerWidth;foldH=innerHeight;
+  try{ screenFold(); }catch(e){}
+});
+/* The banner fills (or closes) after the screen shows: its height lands on --sticky-ad-h on the
+   root and its switch on the body's class, so a change to either folds again. Cards paint after
+   the screen shows too (the saved draft, the daily, the results' badges and parks), and each
+   moves what sits under the banner. A margin is not a size, so a fold never re-triggers itself,
+   and the screens themselves are not watched for the same reason. */
+try{
+  const refold=new MutationObserver(()=>screenFold());
+  refold.observe(document.documentElement,{attributes:true,attributeFilter:['style']});
+  refold.observe(document.body,{attributes:true,attributeFilter:['class']});
+  const resized=new ResizeObserver(()=>screenFold());
+  ['resume-card','daily-card','hp-tiles','ro-hero','r-goat','ro-coach','ro-newparks','ro-newbadges','r-stats']
+    .forEach(id=>{ if($(id)) resized.observe($(id)); });
+}catch(e){}
 function menuAd(id){
   const z=document.querySelector('[data-ad-zone="menu"]');
   if(!z||id==='s-load') return;
