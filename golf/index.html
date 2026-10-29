@@ -1193,6 +1193,14 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS305: when the bottom nav is shown, lift any bottom-fixed pop-up (scroll cue, toast, selection
      pop-up, sign-in/error pills) above it via this cascading var so nothing hides behind the nav. */
   body.has-botnav{--botnav-space:58px}
+  /* THE CLOSEABLE BOTTOM BANNER (/assets/rtg-ads.js, the owner's call 2026-10-29) takes the very bottom of the
+     screen and the tab bar stands on top of it, lifted with `bottom` (never a transform: see CS472/CS516 above).
+     --sticky-ad-h is 0 until the banner is filled, so an empty banner moves nothing. The banner carries the safe
+     area itself, so the lifted bar drops its own. Everything that clears the bar clears both. */
+  body.rtg-sticky-on .botnav:not(.navhide){bottom:var(--sticky-ad-h,0px); padding-bottom:0}
+  body.rtg-sticky-on.has-botnav{--botnav-space:calc(58px + var(--sticky-ad-h,0px))}
+  /* on a phone the banner's strip wears the bar's own green, full width, so the two read as one bar */
+  @media (max-width:999px){ body.rtg-sticky-on.has-botnav .rtg-sticky{background:#04160b} body.rtg-sticky-on.has-botnav .rtg-sticky-in{background:none;box-shadow:none} }
   /* DESKTOP (>=1000px): #32 "Desktop: chrome, hover and keyboard". The bottom tab bar is phone chrome -
      on a wide screen a full-width fixed strip strands a cluster of icons in the middle. Float it as a
      centred rounded pill, give the tab buttons a pointer hover cue (they are NOT .btn, so the global
@@ -1210,6 +1218,8 @@ window.GA_ID='G-L29P5MRWKE';
     .botnav button.on:hover{ color:var(--gold) }   /* active tab stays gold on hover */
     #app.has-botnav{ padding-bottom:96px }
     body.has-botnav{ --botnav-space:96px }
+    body.rtg-sticky-on .botnav:not(.navhide){ bottom:calc(16px + var(--sticky-ad-h,0px)) }
+    body.rtg-sticky-on.has-botnav{ --botnav-space:calc(96px + var(--sticky-ad-h,0px)) }
   }
 
   /* ---- title scene ---- */
@@ -3442,8 +3452,9 @@ window.GA_ID='G-L29P5MRWKE';
   body.ovopen{overflow:hidden}   /* lock the page behind an open overlay */
   /* the closeable bottom banner (/assets/rtg-ads.js) sits over the foot of an overlay, so the overlay's last row clears it */
   body.rtg-sticky-on .ov{padding-bottom:calc(26px + env(safe-area-inset-bottom, 0px) + var(--sticky-ad-h,0px))}
-  /* and the First Tee and its hubs, which fill the screen exactly, reserve its height at their foot as they do the tab bar's */
-  body.rtg-sticky-on .ft{--ftnav:calc(var(--botnav-space,0px) + env(safe-area-inset-bottom,0px) + var(--sticky-ad-h,0px))}
+  /* and the First Tee and its hubs, which fill the screen exactly, reserve its height at their foot (with the tab bar up,
+     --botnav-space already carries it) */
+  body.rtg-sticky-on:not(.has-botnav) .ft{--ftnav:calc(env(safe-area-inset-bottom,0px) + var(--sticky-ad-h,0px))}
   .ov h3{font-family:var(--display); font-weight:400; font-size:26px; color:var(--gold); margin:6px 0 12px; text-transform:uppercase}
   /* THE MENU: groups of compact rows in the body face (the display face shouted every row); columns on a wide screen */
   .mn-g{margin:0 0 16px; break-inside:avoid}
@@ -15551,8 +15562,8 @@ function ftAd(where){
 
 /* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's calls).
    The banner sits on the First Tee and its hubs, the results screens and the leaderboards, never on a
-   screen where a round is played and never while Putt Putt is open. It rides above the tab bar when
-   the tab bar is up. Its X closes it for the rest of the visit. The two rails are desktop only, beside
+   screen where a round is played and never while Putt Putt is open. It takes the very bottom of the
+   screen and the tab bar stands on it (the .botnav rules under body.has-botnav). Its X closes it for the rest of the visit. The two rails are desktop only, beside
    the leaderboard overlays, pinned to the window because those overlays scroll inside themselves.
    /assets/rtg-ads.js owns how both look and behave. Called at the end of every render(). */
 const STICKY_SLOT={sticky:'4375384263'};                     // golf-sticky
@@ -15563,9 +15574,6 @@ function golfAds(){
   if(!window.RTG_ADS) return;
   const putt=document.body.classList.contains('pt-open');
   const board=!putt && BOARD_OV.indexOf(S.overlay)>=0;
-  const nav=document.getElementById('rttnav');
-  const lift=(!S.overlay && nav && !nav.classList.contains('navhide')) ? Math.round(nav.getBoundingClientRect().height) : 0;
-  document.documentElement.style.setProperty('--rtg-sticky-lift', lift+'px');
   RTG_ADS.sticky(!putt && (board || (!S.overlay && STICKY_SCR.indexOf(S.screen)>=0)), STICKY_SLOT.sticky, 'golf', board?{z:45}:null);
   RTG_ADS.rails(board, BOARD_SLOTS, ()=>app.querySelector('.ov'), {fixed:true});
 }
