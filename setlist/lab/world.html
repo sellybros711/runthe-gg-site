@@ -24,6 +24,8 @@
   .logo{display:flex; align-items:center; gap:8px; font-family:var(--hero); font-size:22px;
     text-shadow:2px 2px 0 var(--px);}
   .logo img{width:30px; height:30px; border-radius:7px; box-shadow:2px 2px 0 var(--px);}
+  .tag{margin:0 0 8px; font-size:13px; font-weight:800; line-height:1.3; color:#F6F2EA; text-align:center;
+    background:rgba(14,11,28,.82); border:2px solid var(--px); padding:6px 10px; box-shadow:2px 2px 0 var(--px);}
   .acct{font-size:12.5px; font-weight:800; border:2px solid var(--px); background:#F6F2EA; color:#1B1726;
     padding:7px 12px; border-radius:2px; box-shadow:2px 2px 0 var(--px);}
 
@@ -36,12 +38,15 @@
     box-shadow:2px 2px 0 var(--px); transform:translateY(-70%); transition:transform .12s;}
   .spot:hover .sign, .spot:focus-visible .sign{transform:translateY(-85%) scale(1.06);}
   .spot:active .sign{transform:translateY(-60%);}
+  /* Your stats are an extra for people who sign up, not a reason to come: a smaller, quieter sign. */
+  .spot.minor .sign{font-family:var(--body); font-weight:800; font-size:10.5px; letter-spacing:.3px; text-transform:none;
+    background:#1B1726; color:#D8D0EA; border-color:#3a3550; box-shadow:1px 1px 0 var(--px); padding:2px 6px;}
   .spot.play .sign{font-size:20px; padding:5px 16px 3px; letter-spacing:2px; animation:pulse 1.6s ease-in-out infinite;}
   @keyframes pulse{50%{box-shadow:2px 2px 0 var(--px), 0 0 18px var(--sc);}}
 
   /* The one call to action that is always on screen, at the thumb. */
   .cta{position:absolute; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 14px); transform:translateX(-50%);
-    display:flex; gap:8px;}
+    display:flex; flex-direction:column; align-items:center; white-space:nowrap;}
   .cta .pxbtn{min-height:52px; font-size:16px; white-space:nowrap;}
 
   /* The panel a door opens: a sheet up from the bottom, over a dimmed scene. */
@@ -87,7 +92,8 @@
     <button class="acct" type="button">Sign in</button>
   </div>
   <div id="spots"></div>
-  <div class="cta"><button class="pxbtn" type="button" data-open="stage">Build your show</button></div>
+  <div class="cta"><p class="tag">Build a Goose setlist anytime, anywhere.<br>Share it with your friends.</p>
+    <button class="pxbtn" type="button" data-open="stage">Build your show</button></div>
 </main>
 <div class="veil" id="veil"></div>
 <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shHd">
@@ -113,7 +119,7 @@ const ROTATE = ['jam', 'closer', 'opener', 'peak', 'cover'];
 function start(){
   if (stage) stage.destroy();
   stage = createStage(view, { venue: 'lab_' + arr, seed: 23, sync: true, shot: 'crowd', dress: { ...dress },
-    you: { d: .3, rnd: null, seed: 5 }, reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
+    you: { d: 1, rnd: null, seed: 5 }, reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
   // Not the end of the night: the band is playing, the lights are on the lawn.
   stage.cue({ kind: 'set', progress: .92 });
   stage.cue({ kind: 'song', instant: true, progress: .92, energy: .6, palette: 'jam' });
@@ -136,7 +142,7 @@ function camera(){
 const SIGNS = [
   ['stage', 'Play', 'var(--c-home)', 'play'], ['board', 'Board', 'var(--c-board)'], ['foh', 'Last night', '#5a4a8a'],
   ['bus', 'Tour', 'var(--c-tour)'], ['trailer', 'Your band', 'var(--c-you)'], ['records', 'Songs', 'var(--c-songs)'],
-  ['food', 'How it works', '#B8860B'], ['box', 'Your shows', 'var(--c-you)'], ['gate', 'Rooms', 'var(--c-home)'],
+  ['food', 'How it works', '#B8860B'], ['box', 'Your stats', 'var(--c-you)', 'minor'], ['gate', 'Rooms', 'var(--c-home)'],
 ];
 function placeSpots(){
   const host = document.getElementById('spots'), P = camera();
@@ -158,7 +164,8 @@ const PANELS = {
       <section class="mode free"><span class="md-k">Free play</span><span class="md-t">Build a setlist</span>
         <span class="md-p">Random nights, as many as you like.</span><a class="pxbtn ink" href="/setlist/">Build your show</a></section>
       <section class="mode daily"><span class="md-k" style="color:var(--teal)">Daily · ${esc(dayLbl)}</span><span class="md-t">Today's shows</span>
-        <span class="md-p">Same shows for everyone. One try.</span><a class="pxbtn" href="/setlist/">Build your show</a></section></div>`],
+        <span class="md-p">Same shows for everyone. One try.</span><a class="pxbtn" href="/setlist/">Build your show</a></section></div>
+      <p class="sh-p" style="margin:12px 0 0">Every show you build makes a card to send your friends. No account needed.</p>`],
   board: () => ['Board', 'var(--c-board)', `<p class="sh-p">Today's best shows, and the all-time board.</p><div class="linkrow"><a class="pxbtn" href="/setlist/">Open the leaderboard</a></div>`],
   foh: () => ['Last night', '#8a7ae0', L ? `<div class="paper"><div class="pp-k">Last show</div><div class="pp-h">${esc(new Date(L.last.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))}</div><div class="pp-p">${esc(L.last.venue)}, ${esc(L.last.city)}</div>${setlistHTML(L.last)}</div>` : '<p class="sh-p">Loading...</p>'],
   bus: () => ['Tour', 'var(--c-tour)', `<div class="dates">${(L ? L.upcoming : []).map(u => { const d = daysUntil(u.date);
@@ -170,7 +177,7 @@ const PANELS = {
       <li><span class="px">2.</span> Take one song. It costs every second it ran.</li>
       <li><span class="px">3.</span> Fill 75, 70 and 10 minutes. Then the crowd decides.</li></ol></div>
       <p class="sh-p" style="margin-top:12px">Real segues are where the points are. Grabbing every monster jam is how you lose.</p>`],
-  box: () => ['Your shows', 'var(--c-you)', `<p class="sh-p">The shows you were at, and every setlist you've built.</p><div class="linkrow"><a class="pxbtn" href="/setlist/">Track your shows</a></div>`],
+  box: () => ['Your stats', 'var(--c-you)', `<p class="sh-p">Sign up and Segue keeps your stats: every setlist you've built, and the real shows you were at. Optional, and free.</p><div class="linkrow"><a class="pxbtn" href="/setlist/">Sign up</a></div>`],
   gate: () => ['Rooms', 'var(--c-home)', `<p class="sh-p">Earn new rooms by playing. One is drawn each show.</p><div class="roomrow">${VENUE_LIST.slice(0, 9).map(v => `<img src="/setlist/venues/${v.id}.png?v=4" alt="" class="${v.free ? '' : 'locked'}">`).join('')}</div>`],
 };
 let stopWardrobe = null, dressedAs = '';

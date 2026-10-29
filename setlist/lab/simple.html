@@ -41,6 +41,7 @@
   .md-p{font-size:13px; font-weight:600; line-height:1.35; opacity:.8; flex:1;}
   .mode .pxbtn{width:100%; padding:0 8px; font-size:14px; white-space:nowrap;}
 
+  .share{margin:-8px 0 0; font-size:13px; font-weight:700; color:var(--mut);}
   .next{display:flex; align-items:center; gap:14px; background:#140B05; border:3px solid #3A2A18; border-radius:2px; padding:11px 14px;}
   .nx-k{font-size:10.5px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:#FFB347;}
   .nx-v{font-family:var(--hero); font-size:24px; color:#FFB347; line-height:1; text-shadow:0 0 8px rgba(255,138,40,.45);}
@@ -53,6 +54,8 @@
   .rooms img{flex:0 0 auto; width:120px; aspect-ratio:8/5; border:3px solid var(--px); border-radius:2px; image-rendering:pixelated; object-fit:cover;}
   .rooms img.locked{filter:grayscale(1) brightness(.45) contrast(1.3);}
 
+  .stats{margin:0; font-size:12.5px; font-weight:600; color:var(--dim); line-height:1.45;}
+  .stats a{color:var(--mut); text-decoration:underline;}
   details.how{border:2px solid var(--line2); border-radius:2px; padding:0 14px;}
   details.how summary{min-height:48px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;
     font-size:12px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--mut); list-style:none;}
@@ -83,7 +86,7 @@
 
   <section class="intro">
     <h1>Build the Goose show that never happened.</h1>
-    <p>Real shows, one at a time. Take one song from each and pay its running time.</p>
+    <p>Build a Goose setlist anytime, anywhere. Share it with your friends.</p>
   </section>
 
   <div class="grid">
@@ -102,6 +105,7 @@
           <a class="pxbtn" href="/setlist/">Build your show</a>
         </section>
       </div>
+      <p class="share">Every show you build makes a card to send your friends. No account needed.</p>
       <div class="next" id="next"><div><div class="nx-k">Next show</div><div class="nx-v">soon</div></div><div class="nx-p">Loading the tour...</div></div>
 
       <section class="sec">
@@ -118,6 +122,7 @@
         <p class="lede">Earn new rooms by playing. One is drawn each show.</p>
         <div class="rooms" id="rooms"></div>
       </section>
+      <p class="stats">Sign up and Segue keeps your stats: every setlist you've built, and the real shows you were at. <a href="/setlist/">Sign up</a></p>
       <details class="how">
         <summary>How it works <span aria-hidden="true">+</span></summary>
         <ol>

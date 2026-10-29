@@ -163,7 +163,9 @@ function room(arr){
   const S = SPOTS[arr], lawn = ROOMS.lawn, wide = arr === 'wide';
   const lamps = wide ? [[-40, 10], [40, 10], [-19, 24], [17, 26]] : [[-16, 26], [16, 26], [-7.5, 42], [7.5, 42]];
   return {
-    sky: 'open', rig: 'shed', far: -40,
+    /* TWILIGHT, ALWAYS. The front screen is not the end of the night: lit enough to see every building,
+       dark enough that the rig still glows. */
+    sky: 'open', rig: 'shed', far: -40, skyMap: () => .57,
     ground(K, x, y){
       // The lawn's own grass, with a beaten path from the gate up to the soundboard.
       const g = S.gate, path = wide ? (x > 4 && x < 22 && Math.abs(y - 23) < 1.4) : (Math.abs(x + 1) < 2 && y > 24 && y < 58);
@@ -178,11 +180,19 @@ function room(arr){
       boxOffice(K, S.box); gate(K, S.gate); screen(K, S.board); foh(K, S.foh);
       if (wide) screen(K, [15, 22, -4, -2, 14]);
     },
-    floor: { y0: 5.5, y1: wide ? 19 : 19, half: y => wide ? 14 + (y - 5) * .16 : 17, gap: y => 2.9 + (y - 5) * .05,
-      capacity: 1, deep: 18, back: wide ? 26 : 70, skip: (x, y) => inSpot(S, x, y) },
+    /* The crowd fills the front of the lawn. The renderer's crowd camera always follow-spots one fan,
+       so a strip of lawn well below the bottom of the screen holds a few people and that fan stands
+       there, out of shot: the owner wants no spotlight on the crowd. */
+    floor: { y0: 5.5, y1: 98, half: y => y > 90 ? 6 : wide ? 14 + (y - 5) * .16 : 17, gap: y => 2.9 + (y - 5) * .05,
+      capacity: 1, deep: 96, back: wide ? 26 : 70, skip: (x, y) => (y > 19 && y < 94) || inSpot(S, x, y) },
     light(F){
-      for (const [x, y] of lamps) F.pool(x, y, 0, 30, [255, 206, 140], .5 * F.night);
-      for (const k of ['food', 'box', 'records', 'trailer']){ const [x0, x1, , y1] = S[k]; F.pool((x0 + x1) / 2, y1 + 1, 0, 34, [255, 214, 150], .5 * F.night); }
+      // Lamp posts, and a flood on every building: the grounds are lit from the moment the gates open.
+      for (const [x, y] of lamps) F.pool(x, y, 0, 38, [255, 210, 150], .75);
+      for (const k of Object.keys(S)){
+        const [x0, x1, y0, y1, h] = S[k], cx = (x0 + x1) / 2;
+        F.pool(cx, y1 + 1.5, 0, 56, [255, 222, 170], .85);
+        F.pool(cx, y1, h * .6, 46, [255, 236, 200], .55);
+      }
     },
     glow(F){
       for (const [x, y] of lamps) F.dot(x, y, 11.4, [255, 236, 190], .35 + .65 * F.night, 2, 2, -1, -1);
