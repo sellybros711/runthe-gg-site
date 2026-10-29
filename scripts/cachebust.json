@@ -64,6 +64,10 @@
       "v": "1",
       "sha": "e6ee3aaadb871445"
     },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -319,6 +323,10 @@
     "/assets/privacy-choices.js": {
       "v": "1",
       "sha": "e6ee3aaadb871445"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
     },
     "/arcade/tokens.js": {
       "v": "15",
@@ -635,6 +643,10 @@
     "/assets/privacy-choices.js": {
       "v": "1",
       "sha": "e6ee3aaadb871445"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
     },
     "/arcade/tokens.js": {
       "v": "15",
@@ -1177,6 +1189,10 @@
     "/assets/privacy-choices.js": {
       "v": "1",
       "sha": "e6ee3aaadb871445"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
     },
     "/arcade/day.js": {
       "v": "3",
@@ -1906,6 +1922,10 @@
       "v": "1",
       "sha": "e6ee3aaadb871445"
     },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -2232,6 +2252,10 @@
       "v": "1",
       "sha": "e6ee3aaadb871445"
     },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
+    },
     "engine.js": {
       "v": "40",
       "sha": "5daaaa1872e60a57"
@@ -2492,6 +2516,10 @@
       "v": "2",
       "sha": "260c8dc0bc33a527"
     },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
+    },
     "/assets/fieldcast.js": {
       "v": "4",
       "sha": "c73d604954092eb8"
@@ -2529,6 +2557,10 @@
     "/assets/privacy-choices.js": {
       "v": "1",
       "sha": "e6ee3aaadb871445"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
     },
     "/football/fantasy-access.js": {
       "v": "2",
@@ -2605,6 +2637,10 @@
     "/assets/rewarded.js": {
       "v": "1",
       "sha": "79e2cadf0f46ef86"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
     },
     "/assets/fantasy-promo.js": {
       "v": "1",
@@ -2755,6 +2791,10 @@
     "/assets/privacy-choices.js": {
       "v": "1",
       "sha": "e6ee3aaadb871445"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
     }
   },
   "golf/privacy.html": {
@@ -3032,6 +3072,10 @@
       "v": "1",
       "sha": "e6ee3aaadb871445"
     },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
+    },
     "/assets/newsletter.js": {
       "v": "2",
       "sha": "260c8dc0bc33a527"
@@ -3217,6 +3261,10 @@
     "/assets/privacy-choices.js": {
       "v": "1",
       "sha": "e6ee3aaadb871445"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "a33ae01ed5f7384e"
     },
     "/assets/newsletter.js": {
       "v": "2",

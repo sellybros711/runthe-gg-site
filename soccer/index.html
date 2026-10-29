@@ -3261,6 +3261,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <script src="/assets/privacy-choices.js?v=1"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
      crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <!-- Supabase JS (auth: email/password + Google OAuth, session persistence) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
@@ -4902,12 +4903,22 @@ function railAds(){
   });
 }
 window.addEventListener('resize',()=>{ try{ railAds(); }catch(e){} });
+/* THE CLOSEABLE BOTTOM BANNER (Ads Agent, 2026-10-29, the owner's call). On the start screen, the
+   online hub, the results and the boards, never on a screen where a match is picked or played.
+   Its X closes it for the rest of the visit. /assets/rtg-ads.js owns how it looks and behaves.
+   The rails above already cover every screen, the boards included. */
+const STICKY_SLOT={sticky:'2005205943'};   // pitch-sticky
+const STICKY_ON=['start','online-hub','report','friendly-result','h2h-result','h2h-board','wc-board'];
+function stickyAd(name){
+  if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(name)>=0, STICKY_SLOT.sticky, 'pitch');
+}
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $('screen-'+name).classList.add('active');
   menuAd(name);
   stageAd(name);
   railAds();
+  stickyAd(name);
   // compact mode hides the masthead so the select page fits one screen
   document.body.classList.toggle('sel-mode', name==='select');
   document.body.classList.toggle('home-mode', name==='home');

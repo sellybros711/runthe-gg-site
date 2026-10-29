@@ -267,6 +267,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script src="/assets/privacy-choices.js?v=1"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -882,6 +883,7 @@ window.GA_ID='G-L29P5MRWKE';
     var lbl = window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '';
     h.textContent='Type the school, or take 4 choices.'+lbl; }
   function beginAttempt(){
+    if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(false);
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); SEQ=buildRounds(false); } else { seedDaily(); SEQ=buildRounds(true); servedDaily=true; }
@@ -960,6 +962,7 @@ window.GA_ID='G-L29P5MRWKE';
     }
   }
   function showEnd(s, locked){
+    if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(true);
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('runN').textContent=run;
     document.getElementById('bestRun').textContent=s.bestRun||0;
@@ -1202,6 +1205,19 @@ window.GA_ID='G-L29P5MRWKE';
     })();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ready); else ready();
+})();
+</script>
+<script>
+/* THE ARCADE'S ADS (Ads Agent, 2026-10-29, the owner's calls). Two desktop rails beside the game on
+   every screen, play included, built only where each one can sit 150px clear of the column and never
+   on a phone. And the closeable bottom banner on the result, never during play; its X closes it for
+   the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
+(function(){
+  var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
+  function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
+  if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
+  window.RTG_ARCADE_STICKY = function(on){ if(window.RTG_ADS) RTG_ADS.sticky(on, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
 })();
 </script>
 </body>

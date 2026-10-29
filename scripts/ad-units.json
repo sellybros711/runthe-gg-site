@@ -233,6 +233,162 @@
         "baseball/index.html"
       ],
       "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page"
+    },
+    "site-sticky": {
+      "slot": "5122323877",
+      "status": "live",
+      "where": [
+        "index.html",
+        "arcade/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Home page and Arcade hub"
+    },
+    "football-sticky": {
+      "slot": "4079162954",
+      "status": "live",
+      "where": [
+        "football/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Front page, leaderboard, results"
+    },
+    "fantasy-sticky": {
+      "slot": "1372661456",
+      "status": "live",
+      "where": [
+        "football/fantasy/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Home, entry, live"
+    },
+    "college-sticky": {
+      "slot": "9883695968",
+      "status": "live",
+      "where": [
+        "cfb/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Front page, leaderboard, results"
+    },
+    "diamond-sticky": {
+      "slot": "4631369283",
+      "status": "live",
+      "where": [
+        "baseball/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Home, boards, results"
+    },
+    "pitch-sticky": {
+      "slot": "2005205943",
+      "status": "live",
+      "where": [
+        "soccer/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Start, online hub, results, boards"
+    },
+    "golf-sticky": {
+      "slot": "4375384263",
+      "status": "live",
+      "where": [
+        "golf/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. First Tee and hubs, results, leaderboards"
+    },
+    "arcade-sticky": {
+      "slot": "8869997198",
+      "status": "live",
+      "where": [
+        "arcade/career/index.html",
+        "arcade/crossword/index.html",
+        "arcade/sportegories/index.html",
+        "arcade/almamater/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. The four free puzzles, on the result"
+    },
+    "college-season": {
+      "slot": "3062302592",
+      "status": "live",
+      "where": [
+        "cfb/index.html"
+      ],
+      "size": "300x50 pinned to the bottom of the regular season screen, live games included, no X"
+    },
+    "arcade-rail-left": {
+      "slot": "2533699881",
+      "status": "live",
+      "where": [
+        "arcade/"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. Every Arcade screen, play included"
+    },
+    "arcade-rail-right": {
+      "slot": "4030614380",
+      "status": "live",
+      "where": [
+        "arcade/"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. Every Arcade screen, play included"
+    },
+    "football-board-left": {
+      "slot": "1287020649",
+      "status": "live",
+      "where": [
+        "football/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The leaderboard"
+    },
+    "football-board-right": {
+      "slot": "5274367113",
+      "status": "live",
+      "where": [
+        "football/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The leaderboard"
+    },
+    "fantasy-board-left": {
+      "slot": "2447351237",
+      "status": "live",
+      "where": [
+        "football/fantasy/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The standings tab"
+    },
+    "fantasy-board-right": {
+      "slot": "4701532378",
+      "status": "live",
+      "where": [
+        "football/fantasy/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The standings tab"
+    },
+    "college-board-left": {
+      "slot": "1134269564",
+      "status": "live",
+      "where": [
+        "cfb/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The leaderboard"
+    },
+    "college-board-right": {
+      "slot": "2175888490",
+      "status": "live",
+      "where": [
+        "cfb/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The leaderboard"
+    },
+    "golf-board-left": {
+      "slot": "9970618031",
+      "status": "live",
+      "where": [
+        "golf/index.html"
+      ],
+      "size": "160x600, desktop, pinned beside the leaderboard overlays where they leave 150px"
+    },
+    "golf-board-right": {
+      "slot": "9403194710",
+      "status": "live",
+      "where": [
+        "golf/index.html"
+      ],
+      "size": "160x600, desktop, pinned beside the leaderboard overlays where they leave 150px"
     }
   },
   "retired": {

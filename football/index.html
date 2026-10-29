@@ -8667,6 +8667,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
      the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
 <script src="/assets/rewarded.js?v=1"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
@@ -10148,6 +10149,22 @@ function seasonAd(id){
   }
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
+/* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's
+   calls). The banner sits on the front page, the leaderboard and the results, never on a screen
+   where people play, and never while the Dynasty dock is up (it owns the bottom of the screen
+   then). Its X closes it for the rest of the visit. The two rails are desktop only, on the
+   leaderboard. /assets/rtg-ads.js owns how both look and behave. */
+const STICKY_SLOT={sticky:'4079162954'};                      // football-sticky
+const BOARD_SLOTS={left:'1287020649', right:'5274367113'};    // football-board-left, football-board-right
+const STICKY_ON=['s-intro','s-board','s-over'];
+function stickyAd(id){
+  if(!window.RTG_ADS) return;
+  const dock=$('o-dock');
+  RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0&&!(dock&&!dock.hidden), STICKY_SLOT.sticky, 'football');
+}
+function boardRails(id){
+  if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
+}
 /* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
    opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
    board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
@@ -10190,6 +10207,8 @@ function show(id){
   draftAd(id);
   seasonAd(id);
   screenAds(id);
+  stickyAd(id);
+  boardRails(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
      (a finished run, a bailed draft, the leaderboard), and it carries two bits of state

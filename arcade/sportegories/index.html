@@ -267,6 +267,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script src="/assets/privacy-choices.js?v=1"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -472,7 +473,7 @@ window.GA_ID='G-L29P5MRWKE';
   function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
   var P = { setup:$('panelSetup'), spin:$('panelSpin'), play:$('panelPlay') };
-  function show(n){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===n); }); }
+  function show(n){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===n); }); if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(n==='setup'); }
 
   var puz=null, inputs=[], timer=null, left=SECONDS, graded=false, isDaily=true;
 
@@ -805,6 +806,7 @@ window.GA_ID='G-L29P5MRWKE';
       filed=true;
     }
     function finish(){
+      if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(true);
       clearReveal();
       $('tally').classList.remove('on');
       var st=load(); var prevBest=st.best||0; var best=Math.max(prevBest, total);
@@ -1068,5 +1070,21 @@ window.GA_ID='G-L29P5MRWKE';
 </script>
 <script src="/arcade/howto.js?v=26"></script>
 <script>if (window.RTGHowto) RTGHowto.init('sportegories');</script>
+<script>
+/* THE ARCADE'S ADS (Ads Agent, 2026-10-29, the owner's calls). Two desktop rails beside the game on
+   every screen, play included, built only where each one can sit 150px clear of the column and never
+   on a phone. And the closeable bottom banner on the result, never during play; its X closes it for
+   the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
+(function(){
+  var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
+  function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
+  if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
+  window.RTG_ARCADE_STICKY = function(on){ if(window.RTG_ADS) RTG_ADS.sticky(on, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
+  /* the setup screen is open in the markup, so the screen switch never announces it on load */
+  var setup = document.getElementById('panelSetup');
+  if(setup && setup.classList.contains('on')) window.RTG_ARCADE_STICKY(true);
+})();
+</script>
 </body>
 </html>

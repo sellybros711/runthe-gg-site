@@ -563,6 +563,9 @@ window.GA_ID='G-L29P5MRWKE';
      same test to decide whether to paint its own background. */
   body:has(.rtp-ad-mobile-bottom ins[data-ad-status="filled"]) .ticker{
     bottom:var(--adstrip,0px);padding-bottom:0}
+  /* The closeable bottom banner (/assets/rtg-ads.js) owns the bottom edge while it is up, so the
+     poll bar rides on top of it. --sticky-ad-h is 0 until the banner is actually filled. */
+  body.rtg-sticky-on .ticker{bottom:var(--sticky-ad-h,0px)}
   /* The last thing on the front page has to clear a bar that is no longer in the
      flow. Measured, not guessed: see test_ticker.mjs. */
   #s-intro{padding-bottom:var(--tickerh,33px)}
@@ -1105,6 +1108,16 @@ window.GA_ID='G-L29P5MRWKE';
   .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
   .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  /* THE SEASON BANNER: the same pattern, on the regular season screen. */
+  #s-season.on{padding-bottom:var(--season-ad-h,0px)}
+  .season-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .season-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .season-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+  .season-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
+  .season-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .season-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .season-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
   /* The row unfurls with the scroll rather than reserving dead space in the card:
      its height and top margin scale with --sq, so at the top it is nothing and by
      the time the field is gone it is a full 34px. Because the field it is measured
@@ -4075,6 +4088,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
      hands its drives here and keeps its own body as the fallback. -->
 <script src="/assets/fieldcast.js?v=4"></script>
@@ -4424,6 +4438,44 @@ function draftAd(id){
   }
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
+/* THE SEASON BANNER (Ads Agent, 2026-10-29, the owner: the College season gets the NFL game's
+   banner). Pinned to the bottom of the regular season screen while it is open, live games
+   included, with no X. Built as a child of body on entering and removed on leaving, the same way as
+   the draft banner, and the screen is padded by its rendered height (--season-ad-h). Same pattern as
+   The Perfect Season's season banner. Unit college-season (3062302592). */
+let seasonAdSize=null;
+function seasonAd(id){
+  const old=document.querySelector('[data-ad-zone="season"]');
+  if(id!=='s-season'){
+    if(seasonAdSize){ seasonAdSize.disconnect(); seasonAdSize=null; }
+    document.documentElement.style.removeProperty('--season-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="season-ad" data-ad-zone="season"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="3062302592"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    seasonAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--season-ad-h',z.offsetHeight+'px'));
+    seasonAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's
+   calls). The banner sits on the front page, the leaderboard and the results, never on a screen
+   where people play. Its X closes it for the rest of the visit. The two rails are desktop only, on
+   the leaderboard. /assets/rtg-ads.js owns how both look and behave. */
+const STICKY_SLOT={sticky:'9883695968'};                      // college-sticky
+const BOARD_SLOTS={left:'1134269564', right:'2175888490'};    // college-board-left, college-board-right
+const STICKY_ON=['s-intro','s-board','s-over'];
+function stickyAd(id){
+  if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0, STICKY_SLOT.sticky, 'college');
+}
+function boardRails(id){
+  if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
+}
 function menuAd(id){
   const z=document.querySelector('[data-ad-zone="menu"]');
   if(!z||id==='s-load') return;
@@ -4439,6 +4491,9 @@ function show(id){
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   menuAd(id);
   draftAd(id);
+  seasonAd(id);
+  stickyAd(id);
+  boardRails(id);
   if(typeof heroSync==='function') heroSync();
 }
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');

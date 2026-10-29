@@ -257,6 +257,34 @@ for (const file of walkCode(ROOT)) {
   }
 }
 
+/* THE CLOSEABLE BOTTOM BANNER AND THE SHARED RAILS (assets/rtg-ads.js, the owner's calls 2026-10-29).
+ * The banner sits on a game's home, leaderboards and results and never where people play, so each
+ * page's list of screens is held here: a screen added to one fails until it is added below, with a
+ * reason. A page that calls RTG_ADS loads the file, and the banner stays 300px wide (a sticky ad). */
+const STICKY_SCREENS = {
+  'football/index.html': ['s-intro', 's-board', 's-over'],
+  'cfb/index.html': ['s-intro', 's-board', 's-over'],
+  'baseball/index.html': ['s-intro', 's-board', 's-over'],
+  'soccer/index.html': ['start', 'online-hub', 'report', 'friendly-result', 'h2h-result', 'h2h-board', 'wc-board'],
+  'golf/index.html': ['title', 'protour', 'putthub', 'me', 'summary', 'dailyresult', 'h2hresult', 'careerend', 'circuitend'],
+};
+{
+  const lib = fs.readFileSync(path.join(ROOT, 'assets/rtg-ads.js'), 'utf8');
+  for (const m of lib.matchAll(/\.rtg-sticky ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`assets/rtg-ads.js: the bottom banner is ${m[1]}px wide. AdSense allows a sticky ad 300px wide or less`);
+  for (const file of walkCode(ROOT)) {
+    const rel = path.relative(ROOT, file);
+    if (rel === 'assets/rtg-ads.js') continue;
+    const src = fs.readFileSync(file, 'utf8');
+    if (!/RTG_ADS\.(sticky|rails)\(/.test(src)) continue;
+    if (rel.endsWith('.html') && !/<script src="\/assets\/rtg-ads\.js\?v=\d+"><\/script>/.test(src)) problems.push(`${rel}: calls RTG_ADS but does not load /assets/rtg-ads.js`);
+    const list = src.match(/const (?:STICKY_ON|STICKY_SCR)=\[([^\]]*)\]/);
+    if (STICKY_SCREENS[rel]) {
+      const got = list ? [...list[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort().join(',') : '';
+      if (got !== [...STICKY_SCREENS[rel]].sort().join(',')) problems.push(`${rel}: the bottom banner's screens are [${got}], check-adsense holds [${STICKY_SCREENS[rel].join(', ')}]. It goes on home, leaderboard and results screens only`);
+    } else if (list) problems.push(`${rel}: has a bottom banner screen list that check-adsense does not hold. Add it to STICKY_SCREENS`);
+  }
+}
+
 /* ONE NAMED UNIT PER PLACEMENT (the owner's rule, 2026-10-27: "if we add an ad, we also go and do
  * this so that we can track all of them"). Every ad spot has its own unit in AdSense, so the Ad
  * units report says which spot earns and which does not. scripts/ad-units.json is the list. A slot

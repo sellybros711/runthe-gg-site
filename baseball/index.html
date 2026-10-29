@@ -61,6 +61,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 </script>
 <script src="/assets/privacy-choices.js?v=1"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -4020,6 +4021,14 @@ function railAds(){
   });
 }
 window.addEventListener('resize',()=>{ try{ railAds(); }catch(e){} });
+/* THE CLOSEABLE BOTTOM BANNER (Ads Agent, 2026-10-29, the owner's call). On the home screen, the
+   boards and the results, never on a screen where a run is drafted or played. Its X closes it for
+   the rest of the visit. /assets/rtg-ads.js owns how it looks and behaves. */
+const STICKY_SLOT={sticky:'4631369283'};   // diamond-sticky
+const STICKY_ON=['s-intro','s-board','s-over'];
+function stickyAd(id){
+  if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0, STICKY_SLOT.sticky, 'diamond');
+}
 function menuAd(id){
   const z=document.querySelector('[data-ad-zone="menu"]');
   if(!z||id==='s-load') return;
@@ -4035,7 +4044,8 @@ const show=id=>{
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');
   menuAd(id);
   draftAd(id);
-  railAds(id);};
+  railAds(id);
+  stickyAd(id);};
 const M=v=>'$'+v.toFixed(1)+'M';
 /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ──
    The cap is written out by hand a dozen times across this page and how-to-play.html,
