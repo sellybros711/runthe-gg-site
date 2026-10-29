@@ -15567,7 +15567,7 @@ function golfAds(){
   const nav=document.getElementById('rttnav');
   const lift=(!S.overlay && nav && !nav.classList.contains('navhide')) ? Math.round(nav.getBoundingClientRect().height) : 0;
   document.documentElement.style.setProperty('--rtg-sticky-lift', lift+'px');
-  RTG_ADS.sticky(!putt && (board || (!S.overlay && STICKY_SCR.indexOf(S.screen)>=0)), STICKY_SLOT.sticky, 'golf');
+  RTG_ADS.sticky(!putt && (board || (!S.overlay && STICKY_SCR.indexOf(S.screen)>=0)), STICKY_SLOT.sticky, 'golf', board?{z:45}:null);
   RTG_ADS.rails(board, BOARD_SLOTS, ()=>app.querySelector('.ov'), {fixed:true});
 }
 

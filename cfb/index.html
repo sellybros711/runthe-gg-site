@@ -2588,6 +2588,10 @@ window.GA_ID='G-L29P5MRWKE';
      sticky siblings and the only thing stopping them overlapping is that one knows how
      tall the other is. */
   #s-board{--lbdock:54px}
+  /* The closeable bottom banner (/assets/rtg-ads.js) takes the bottom edge on the board, so the
+     bar and the pinned place row stand on it rather than on the strip's reserved band. */
+  body.rtg-sticky-on #s-board{--adstrip:var(--sticky-ad-h,0px)}
+  @media (max-width:1199px){ body.rtg-sticky-on #s-board{--adstrip:max(calc(54px + env(safe-area-inset-bottom,0px)), var(--sticky-ad-h,0px))} }
   /* TWO TRACKS SIZED TO THEIR CONTENT, not 1fr 1fr. At 1fr 1fr the second button gets
      exactly half the row whatever it says, and "Check the connection" does not fit half
      of 320px: it wrapped to two lines and took the bar with it, which broke the height

@@ -241,6 +241,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
    is always in view next to the keys that answer it. */
 .playbar{position:sticky; bottom:0; z-index:20; margin:0 -2px; padding:9px 2px calc(4px + env(safe-area-inset-bottom));
   background:var(--bg); border-top:1px solid var(--line2); box-shadow:0 -10px 22px -14px rgba(0,0,0,.55);}
+/* the closeable bottom banner (/assets/rtg-ads.js) comes up on the finished puzzle, and the bar rides on it */
+body.rtg-sticky-on .playbar{bottom:var(--sticky-ad-h,0px);}
 .playbar .cluebar{margin-bottom:8px;}
 .playbar .controls{margin-bottom:6px;}
 .krow{display:flex; justify-content:center; gap:5px; margin-bottom:6px;}

@@ -7,6 +7,8 @@
  *                                      selector for a fixed bar the banner rides on top of (the
  *                                      Arcade's floating nav). A page can also set
  *                                      --rtg-sticky-lift itself (golf does, for its tab bar).
+ *                                      o.z: its layer, when it must sit over a full screen
+ *                                      overlay (golf's leaderboards, which are 40).
  *   RTG_ADS.rails(on, slots, col, o)   the two 160x600 rails. slots: {left, right}. col: the
  *                                      element (or a function returning it) the game sits in.
  *                                      o.fixed: pin them to the window, for a leaderboard that is a
@@ -21,6 +23,8 @@
  *    has an X. The X removes it (never hides it) and it stays gone for the rest of the visit
  *    (sessionStorage, so a new tab or a new day brings it back).
  *  - One sticky ad on screen at a time: no banner while a pinned draft or season banner is up.
+ *  - It sits on layer 35: over the page and its fixed bars, under every sheet and modal (40 and
+ *    up), so a sheet opened on a home screen is never covered by it.
  *  - The page is padded by the banner's rendered height, so nothing a player presses sits under
  *    it. An unfilled banner takes no height and shows no X.
  *  - The rails scroll with the page (or stand beside an overlay that scrolls inside itself). They are built only while each one can sit 150px clear of
@@ -36,7 +40,7 @@
   var GAP = 150, RAIL_W = 160;
 
   var CSS = [
-    '.rtg-sticky{position:fixed;left:0;right:0;bottom:var(--rtg-sticky-lift,0px);z-index:60;text-align:center;pointer-events:none}',
+    '.rtg-sticky{position:fixed;left:0;right:0;bottom:var(--rtg-sticky-lift,0px);z-index:35;text-align:center;pointer-events:none}',
     '.rtg-sticky:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}',
     '.rtg-sticky-in{display:inline-block;pointer-events:auto;background:#0b0f17;border-radius:8px 8px 0 0;padding:0 4px 4px;box-shadow:0 -4px 14px rgba(0,0,0,.25);padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}',
     '.rtg-sticky-top{display:flex;align-items:center;justify-content:space-between;height:22px}',
@@ -86,10 +90,11 @@
   function sticky(on, slot, group, o) {
     try {
       if (o && o.above) { above = o.above; lift(); }
+      var z0 = o && o.z ? String(o.z) : '';
       var have = document.querySelector('[data-ad-zone="sticky"]');
       var other = document.querySelector('[data-ad-zone="draft"],[data-ad-zone="season"]');
       if (!on || !slot || closed(group) || other) { dropSticky(); return; }
-      if (have) return;
+      if (have) { have.style.zIndex = z0; return; }
       style();
       var body = document.body;
       if (!document.documentElement.style.getPropertyValue('--rtg-body-pb')) {
@@ -98,6 +103,7 @@
       var z = document.createElement('div');
       z.className = 'rtg-sticky';
       z.setAttribute('data-ad-zone', 'sticky');
+      z.style.zIndex = z0;
       z.innerHTML = '<div class="rtg-sticky-in"><div class="rtg-sticky-top"><span class="rtg-sticky-lbl">Advertisement</span>' +
         '<button type="button" class="rtg-sticky-x" aria-label="Close ad">&#x2715;</button></div>' +
         '<ins class="adsbygoogle" data-ad-client="' + CLIENT + '" data-ad-slot="' + slot + '"></ins></div>';

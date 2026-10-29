@@ -4604,6 +4604,10 @@ window.GA_ID='G-L29P5MRWKE';
      .mypin's offset, because the two are sticky siblings and the only thing stopping
      them overlapping is that one knows how tall the other is. */
   #s-board{--lbdock:54px}
+  /* The closeable bottom banner (/assets/rtg-ads.js) takes the bottom edge on the board, so the
+     bar and the pinned place row stand on it rather than on the strip's reserved band. */
+  body.rtg-sticky-on #s-board{--adstrip:var(--sticky-ad-h,0px)}
+  @media (max-width:1199px){ body.rtg-sticky-on #s-board{--adstrip:max(calc(54px + env(safe-area-inset-bottom,0px)), var(--sticky-ad-h,0px))} }
   /* Sat above the fixed ad strip, not under it: sticky offsets are measured from the
      scrollport, so bottom:0 is the viewport edge, which is exactly where the strip is.
 
