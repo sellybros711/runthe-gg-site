@@ -3218,6 +3218,85 @@ window.GA_ID='G-L29P5MRWKE';
     .wrap:has(#s-draft.on){max-width:min(1080px,calc(100vw - 400px))}
   }
 
+  /* ── THE FRONT PAGE ON A DESKTOP: THE WHEEL LEFT, THE DECISION RIGHT ──
+     One narrow column is the right answer on a phone and the wrong one on a
+     laptop, because everything stacks: the wheel, the formation, the name, the
+     line of copy, and only then the button the page exists for. Measured before
+     this block, at 600px of wrap: on a 1280x800 laptop the Draft button finished
+     62.9px BELOW the fold and the three links 300px below that, so the one
+     control a visitor came for needed a scroll to find. At 1440x900 it cleared
+     by 37px, which is not clearance, it is luck.
+
+     So the stage takes the left column and the name, the pitch, the button and
+     the links take the right, which is the shape The Perfect Season's front page
+     already uses. Ported rather than invented, for the reason the draft's own
+     two-column block gives: the two front pages are deliberately the same layout
+     in two games' colours, and a second game inventing a second way to stand up
+     a hero is how they drift.
+
+     NOTHING MOVES ON A PHONE. Every rule here is inside the query, and under
+     920px the screen is the block it has always been.
+
+     THE THRESHOLDS ARE THIS FILE'S OWN: 920 to go wide, and 1200 where the side
+     rails appear and take about 200 each. Unlike the draft this screen does NOT
+     fall back to one column between 1200 and 1259: the draft needs about 860 for
+     a field beside a three-across board, and this needs a field beside four
+     buttons, which is comfortable in the 800 the rails leave.
+
+     AND MIN-HEIGHT, which is not decoration. A short window has its own rules
+     that shorten the headline and drop the formation, and those sit earlier in
+     this sheet: an unqualified display:grid would win on source order and
+     quietly undo them on any window under 560 tall and over 920 wide. */
+  @media(min-width:920px) and (min-height:560px){
+    .wrap:has(#s-intro.on){max-width:1040px}
+    /* .on AND the id, for the reason every screen rule here carries them: an id
+       beats .screen{display:none} and the plain class does not. */
+    #s-intro.on{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:34px;align-items:start}
+    /* THE CATCH-ALL FIRST, so anything that arrives on this screen later is full
+       width by default rather than landing in whichever column happens to be
+       free. Only the two blocks named below opt into a column, and the ad, the
+       folded prose and the legal line stay the full width of the page under
+       both. The runtime doors (the Commish card, the Premium card) are built
+       INSIDE .ctas rather than into the screen, so they travel with it and need
+       no rule of their own. */
+    #s-intro>*{grid-column:1/-1}
+    #s-intro>.stage{grid-column:1;grid-row:1/span 9;margin-bottom:0}
+    #s-intro>.hero,#s-intro>.ctas{grid-column:2}
+    #s-intro>.hero{margin-bottom:22px}
+    /* The wheel is the top of its own column now, so it starts level with the
+       headline beside it rather than a row down. */
+    #s-intro>.stage .reels{margin-top:0}
+    /* A line of copy set to 340px in a 500px column is a column of text with a
+       margin either side of it for no reason. */
+    #s-intro>.hero .hnote{max-width:430px;font-size:14px}
+    /* AND THE CONTROLS STOP BEING PHONE-SIZED. Half of 1040 is about 500px, and
+       a 17px label in the middle of a 500px button is the tell that a page was
+       drawn once and stretched. These are sizes, not new elements: the same four
+       controls, for a screen read from three feet away rather than one. */
+    #s-intro>.ctas{gap:11px}
+    #s-intro #b-play-intro{font-size:22px;padding:21px 18px}
+    #s-intro>.ctas>.btn.ghost{font-size:16px;padding:18px}
+    #s-intro .cta3 .btn{font-size:14px;padding-top:15px;padding-bottom:15px}
+  }
+  /* From the moment the rails are up the hero has to clear them, the same way
+     every other screen on this page does. */
+  @media(min-width:1200px) and (min-height:560px){
+    .wrap:has(#s-intro.on){max-width:min(1040px,calc(100vw - 400px))}
+    /* AND THAT IS THE ONE BAND WHERE THE HEADLINE IS SIZED TO ITS COLUMN RATHER
+       THAN TO THE WINDOW. 14.5vw was written for a headline that owns the whole
+       page, and it does not notice the rails taking 400px off the wrap: measured
+       in real Anton at 1200x900, COLLEGE ran 356 of a 369px column, clearing it
+       by seven pixels a side. 6.4vw is the football page's own figure for the
+       same column and puts the same line at 326 with twenty either side; by
+       about 1310 the wrap has grown back and the 84px cap takes over again.
+       It is NOT in the block above, because below 1200 there are no rails, the
+       column is 429 to 503, and a vw figure would shrink the headline on exactly
+       the screens with the most room for it. The fit script at the foot of the
+       page is the net under this rather than the plan. */
+    #s-intro>.hero h1{font-size:min(84px,6.4vw)}
+  }
+
   /* ── footer ─────────────────────────────────────────────────── */
   .legal{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);
     font-size:11.5px;line-height:1.6;color:var(--dim-2);text-align:center}
@@ -12589,7 +12668,22 @@ boot();
       if(!h.offsetParent) return;
       h.style.fontSize='';
       var size=parseFloat(getComputedStyle(h).fontSize);
-      var room=document.documentElement.clientWidth-24;
+      /* WHICH BOX IT HAS TO FIT IN IS A DIFFERENT BOX IN THE TWO LAYOUTS, and
+         reading the page in both is how the headline ends up lying across the
+         formation. One column: the line is centred on the page and is ALLOWED to
+         be wider than the 600px wrap, which is what the width:max-content rule
+         in the stylesheet is for, so the only thing it must never do is run off
+         the page. Two columns: it is centred on its own column with the field
+         beside it, so the page is 1416px of room it does not have, the script
+         finds nothing to shrink, and 84px of COLLEGE reaches into the other
+         column.
+         The layout is ASKED rather than restated: a copy of the 920px query here
+         is a second place to change it, and display tells us what the screen
+         actually did. */
+      var scr=h.closest('.screen');
+      var room=(scr&&getComputedStyle(scr).display==='grid')
+        ? h.parentElement.clientWidth
+        : document.documentElement.clientWidth-24;
       var line=h.scrollWidth;
       if(line>room&&line>0) h.style.fontSize=(size*room/line).toFixed(2)+'px';
     }
