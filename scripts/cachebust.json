@@ -492,6 +492,10 @@
     }
   },
   "arcade/chain/index.html": {
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "5c96f0ee77ea8e2d"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -816,6 +820,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "5c96f0ee77ea8e2d"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -997,6 +1005,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "5c96f0ee77ea8e2d"
     },
     "/arcade/tokens.js": {
       "v": "15",
@@ -1260,6 +1272,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "5c96f0ee77ea8e2d"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -1425,6 +1441,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "5c96f0ee77ea8e2d"
     },
     "/arcade/tokens.js": {
       "v": "15",
@@ -1596,6 +1616,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "5c96f0ee77ea8e2d"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -1762,6 +1786,10 @@
     }
   },
   "arcade/rollcall/index.html": {
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "5c96f0ee77ea8e2d"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -2033,6 +2061,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "1",
+      "sha": "5c96f0ee77ea8e2d"
     },
     "/arcade/tokens.js": {
       "v": "15",
