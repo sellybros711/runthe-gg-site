@@ -175,11 +175,12 @@ const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseb
 const DRAFT_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html']);
 /* The functions allowed to build a live unit on each page where people play, each one called from
  * that page's screen switch so it builds on entering its screen and removes on leaving. Run The
- * Pitch's tournament ad and desktop rails are the owner's calls (2026-10-28). */
+ * Pitch's tournament ad and desktop rails are the owner's calls (2026-10-28), and so are the
+ * Diamond's rails (2026-10-29). */
 const BUILDERS = {
   'football/index.html': ['draftAd', 'seasonAd'],
   'cfb/index.html': ['draftAd', 'seasonAd'],
-  'baseball/index.html': ['draftAd', 'seasonAd'],
+  'baseball/index.html': ['draftAd', 'seasonAd', 'railAds'],
   'soccer/index.html': ['stageAd', 'railAds'],
 };
 /* The text of the named function's body, from its header to its closing brace at column 0. */
@@ -235,7 +236,11 @@ for (const file of walkCode(ROOT)) {
   }
   if (rel === 'soccer/index.html') {
     if (/data-ad-zone="stage"/.test(src) && !/^\s+stageAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a tournament ad but showScreen() does not call stageAd() to remove it on leaving`);
-    for (const m of src.matchAll(/\.rail-ad ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`${rel}: a rail is ${m[1]}px wide`);
+  }
+  /* A rail is a 160x600 beside the column, never a wide unit, and it is removed with its screen. */
+  if (rel === 'soccer/index.html' || rel === 'baseball/index.html') {
+    for (const m of src.matchAll(/\.rail-ad(?:\[data-ad-zone\])? ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`${rel}: a rail is ${m[1]}px wide`);
+    if (/data-ad-zone="rail"/.test(src) && !/^\s+railAds\(\w*\);/m.test(src)) problems.push(`${rel}: has desktop rails but the screen switch does not call railAds()`);
   }
   if (DRAFT_ZONE_PAGES.has(rel) && /data-ad-zone="draft"/.test(src) && !/^\s+draftAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a draft banner but show() does not call draftAd() to remove it on leaving the draft`);
   if (MENU_ZONE_PAGES.has(rel)) {

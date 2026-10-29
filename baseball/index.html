@@ -626,6 +626,12 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
 .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
 .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+/* The desktop rails (railAds below): 160x600 each side of the column, scrolling with the page. */
+.rail-ad{position:absolute;width:160px;z-index:1;text-align:center}
+.rail-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:160px;height:600px}
+.rail-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+.rail-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin:0 0 6px}
+.rail-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
 .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
   background:var(--line);opacity:var(--sq)}
 .cap-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -3984,6 +3990,36 @@ function draftAd(id){
   }
   try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
+/* THE DESKTOP RAILS (Ads Agent, 2026-10-29, the owner: side banners on the home screen and the
+   draft, "these are also good places for ads"). Two 160x600 units, left and right of the column,
+   on every screen, beside play too, as on Run The Pitch. They scroll with the page. The column is
+   a different width per screen (640 on the menus, 860 in the season, 1040 on the home screen, the
+   draft and the squad), so it is measured on every screen change and resize. The rails are built
+   only while the window leaves 150px between each rail and the column, and removed (never hidden)
+   when it does not: the home screen and the draft need a window about 1640px wide. Never on a
+   phone. Units diamond-rail-left (5477547093) and diamond-rail-right (7508106222). */
+const RAIL_GAP=150, RAIL_W=160;
+const RAIL_SLOTS={left:'5477547093', right:'7508106222'};
+function railAds(){
+  const have=document.querySelectorAll('[data-ad-zone="rail"]');
+  const col=document.querySelector('.wrap');
+  if(!col){ have.forEach(r=>r.remove()); return; }
+  const r=col.getBoundingClientRect(), cs=getComputedStyle(col);
+  const left=r.left+parseFloat(cs.paddingLeft), right=r.right-parseFloat(cs.paddingRight);
+  if(left-RAIL_GAP-RAIL_W<0||right+RAIL_GAP+RAIL_W>document.documentElement.clientWidth){ have.forEach(x=>x.remove()); return; }
+  const top=Math.round(r.top+window.scrollY+parseFloat(cs.paddingTop)+40)+'px';
+  const at={left:Math.round(left-RAIL_GAP-RAIL_W+window.scrollX)+'px', right:Math.round(right+RAIL_GAP+window.scrollX)+'px'};
+  if(have.length){ have.forEach(x=>{ x.style.left=at[x.dataset.side]; x.style.top=top; }); return; }
+  Object.entries(RAIL_SLOTS).forEach(([side,slot])=>{
+    const wrap=document.createElement('div');
+    wrap.innerHTML='<div class="rail-ad" data-ad-zone="rail" data-side="'+side+'"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="'+slot+'"></ins></div>';
+    const z=wrap.firstChild;
+    z.style.left=at[side]; z.style.top=top;
+    document.body.appendChild(z);
+    try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+  });
+}
+window.addEventListener('resize',()=>{ try{ railAds(); }catch(e){} });
 function menuAd(id){
   const z=document.querySelector('[data-ad-zone="menu"]');
   if(!z||id==='s-load') return;
@@ -3998,7 +4034,8 @@ const show=id=>{
   if(PICK&&id!=='s-draft'){PICK=null;paintPickBar();}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');
   menuAd(id);
-  draftAd(id);};
+  draftAd(id);
+  railAds(id);};
 const M=v=>'$'+v.toFixed(1)+'M';
 /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ──
    The cap is written out by hand a dozen times across this page and how-to-play.html,

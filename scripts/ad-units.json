@@ -217,6 +217,22 @@
         "soccer/index.html"
       ],
       "size": "160x600, desktop 1300px and up, scrolls with the page"
+    },
+    "diamond-rail-left": {
+      "slot": "5477547093",
+      "status": "live",
+      "where": [
+        "baseball/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page"
+    },
+    "diamond-rail-right": {
+      "slot": "7508106222",
+      "status": "live",
+      "where": [
+        "baseball/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page"
     }
   },
   "retired": {
