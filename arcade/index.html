@@ -74,6 +74,13 @@
   .stage{position:relative; min-height:100dvh; padding-bottom:10px;}
   .wrap{width:100%; max-width:1280px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
   @media (max-width:640px){ .wrap{padding-left:14px; padding-right:14px;} }
+  /* Room for the two 160x600 rails (assets/rtg-ads.js). A rail is built only
+     while it sits 150px clear of this column's content box, so each side needs
+     310px. From the window where three cards at a 940px column still fit
+     beside two rails, the column gives up width to make that room. Below it
+     the column is unchanged, because narrowing it there would buy no rails.
+     The 18px is a classic scrollbar, which 100vw counts and the rails do not. */
+  @media (min-width:1580px){ .wrap{max-width:min(1280px, calc(100vw - 602px));} }
 
   /* ---- top bar ---- */
   .top{display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:20px;}

@@ -255,6 +255,13 @@
     .choices{ gap:14px; }
     .choice{ min-height:112px; font-size:20px; }
   }
+
+  /* Room for the two 160x600 rails (assets/rtg-ads.js), which need 310px of
+     window beside this column's content box. The floor is the 1000px grid
+     this page already plays at in a 1000px window, so no layout appears that
+     does not ship already. Below 1610px nothing changes, because narrowing
+     there would buy no rails. The 18px is a classic scrollbar. */
+  @media (min-width:1610px){ .wrap{ max-width:min(1200px, calc(100vw - 610px)); } }
 </style>
 <script>
 window.dataLayer=window.dataLayer||[];
