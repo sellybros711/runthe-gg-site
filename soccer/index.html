@@ -4911,6 +4911,14 @@ const STICKY_ON=['start','online-hub','report','friendly-result','h2h-result','h
 function stickyAd(name){
   if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(name)>=0, STICKY_SLOT.sticky, 'pitch');
 }
+/* The start screen is open in the markup, so showScreen() never runs for it on a fresh load, and the
+   rails and the banner would wait for the first resize or screen change (the owner saw none, 2026-10-29).
+   So the screen that is open at load gets them too. */
+window.addEventListener('load',()=>{ try{
+  const a=document.querySelector('.screen.active');
+  railAds();
+  if(a) stickyAd(a.id.replace(/^screen-/,''));
+}catch(e){} });
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $('screen-'+name).classList.add('active');
