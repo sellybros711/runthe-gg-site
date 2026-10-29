@@ -204,6 +204,8 @@
      that way and taller than its line overflows BOTH ends and the top half cannot be
      scrolled back to. An auto margin centres when there is room and gives up when there is
      not, and `overflow-y:auto` lets the scrim scroll to the rest. */
+  /* The Live button rides above the closeable bottom banner (/assets/rtg-ads.js) while it is up. */
+  body.rtg-sticky-on .livebtn{bottom:calc(14px + var(--sticky-ad-h,0px) + env(safe-area-inset-bottom))}
   .isheet{position:fixed;inset:0;z-index:40;display:flex;justify-content:center;
     overflow-y:auto;overscroll-behavior:contain;background:rgba(4,7,14,.74);padding:12px}
   .isheet > .ibox{margin:auto}
@@ -651,7 +653,9 @@ window.gtag=window.gtag||function(){dataLayer.push(arguments);};
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
+<script src="/assets/privacy-choices.js?v=1"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 </head>
 <body>
 <div class="wrap">
@@ -1045,6 +1049,17 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
    * Found by the guard below rather than by reading, which is the only reason it is written
    * up here instead of shipping.
    */
+  /* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's
+     calls). The banner sits on the home screen (and the closed-week screen that stands in for it),
+     the entry and the live screen, never on the draft or the review. Its X closes it for the rest of the visit. The two rails are desktop only, on
+     the standings tab. /assets/rtg-ads.js owns how both look and behave. */
+  var STICKY_SLOT = {sticky:'1372661456'};                     // fantasy-sticky
+  var BOARD_SLOTS = {left:'2447351237', right:'4701532378'};   // fantasy-board-left, fantasy-board-right
+  function fantasyAds(id){
+    if (!window.RTG_ADS) return;
+    RTG_ADS.sticky(id === 's-home' || id === 's-shut' || id === 's-in' || id === 's-live', STICKY_SLOT.sticky, 'fantasy');
+    RTG_ADS.rails(id === 's-live' && !$('lv-pane-board').hidden, BOARD_SLOTS, function(){ return document.querySelector('.wrap'); });
+  }
   var show = function(id){
     var cur = document.querySelector('.screen.on');
     if (cur && cur.id === id) return;
@@ -1067,6 +1082,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        wrong on two of them: on the live screen it would be a door to the room it is in, and
        on the draft screen it would sit over the board somebody is picking from. */
     syncLiveButton();
+    fantasyAds(id);
   };
   var esc = function(s){
     return String(s==null?'':s).replace(/[&<>"']/g, function(c){
@@ -2997,6 +3013,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     $('lv-pane-past').hidden = which !== 'past';
     window.scrollTo(0,0);
     if (which === 'past') openPast();
+    if ($('s-live').classList.contains('on')) fantasyAds('s-live');
   }
   function boardShowing(){
     return $('s-live').classList.contains('on') && !$('lv-pane-board').hidden;

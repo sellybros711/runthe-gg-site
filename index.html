@@ -56,7 +56,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <!-- Google AdSense (site-wide publisher tag; Auto ads decide placement) -->
+<script src="/assets/privacy-choices.js?v=1"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=1"></script>
 
 <!-- RunThe.GG accounts (same Supabase project + keys as the games; the session
      lives in localStorage on this origin, so signing in here carries into every game) -->
@@ -2209,6 +2211,15 @@ document.querySelectorAll('.feat-link').forEach(function(a){
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
   });
+})();
+</script>
+<script>
+/* THE CLOSEABLE BOTTOM BANNER (Ads Agent, 2026-10-29, the owner's call). Its X closes it for the rest
+   of the visit. /assets/rtg-ads.js owns how it looks and behaves. */
+(function(){
+  var SITE_STICKY_SLOT = {sticky:'5122323877'};   // site-sticky
+  function go(){ if(window.RTG_ADS) RTG_ADS.sticky(true, SITE_STICKY_SLOT.sticky, 'site'); }
+  if(document.readyState === 'complete') go(); else window.addEventListener('load', go);
 })();
 </script>
 </body>

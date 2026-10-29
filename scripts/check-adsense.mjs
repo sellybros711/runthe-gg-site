@@ -89,6 +89,20 @@ for (const file of walk(ROOT).sort()) {
       if (adTag !== -1 && adTag < europe.index) fail('AdSense tag loads before the Europe consent default');
     }
   }
+  /* Our own "Do Not Sell or Share" link (assets/privacy-choices.js) replaces Google's floating
+   * bar, the owner's call (2026-10-29). The file sets the flag that suppresses the bar AND draws
+   * the link, so a page that has ads and lacks it shows the bar again, and a page that loaded it
+   * async could set the flag after the CMP read it. So: present, not async, before the ad tag. */
+  const adTagAt = src.search(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/);
+  if (adTagAt !== -1) {
+    const dns = src.match(/<script([^>]*)src="\/assets\/privacy-choices\.js\?v=\d+"([^>]*)><\/script>/);
+    if (!dns) fail('loads the ad tag without /assets/privacy-choices.js (the Do Not Sell link)');
+    else {
+      if (/\b(async|defer)\b/.test(dns[1] + dns[2])) fail('privacy-choices.js must load without async or defer');
+      if (dns.index > adTagAt) fail('privacy-choices.js loads after the ad tag (the flag would be set too late)');
+    }
+  }
+
   if (!/rel=["']canonical["']/i.test(src)) fail('no canonical');
   if (!/<title>\s*\S/i.test(src)) fail('no title');
   if (!/name=["']description["'][^>]*content=["']\s*\S/i.test(src)) fail('no meta description');
@@ -161,11 +175,12 @@ const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseb
 const DRAFT_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html']);
 /* The functions allowed to build a live unit on each page where people play, each one called from
  * that page's screen switch so it builds on entering its screen and removes on leaving. Run The
- * Pitch's tournament ad and desktop rails are the owner's calls (2026-10-28). */
+ * Pitch's tournament ad and desktop rails are the owner's calls (2026-10-28), and so are the
+ * Diamond's rails (2026-10-29). */
 const BUILDERS = {
   'football/index.html': ['draftAd', 'seasonAd'],
   'cfb/index.html': ['draftAd', 'seasonAd'],
-  'baseball/index.html': ['draftAd', 'seasonAd'],
+  'baseball/index.html': ['draftAd', 'seasonAd', 'railAds'],
   'soccer/index.html': ['stageAd', 'railAds'],
 };
 /* The text of the named function's body, from its header to its closing brace at column 0. */
@@ -221,7 +236,11 @@ for (const file of walkCode(ROOT)) {
   }
   if (rel === 'soccer/index.html') {
     if (/data-ad-zone="stage"/.test(src) && !/^\s+stageAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a tournament ad but showScreen() does not call stageAd() to remove it on leaving`);
-    for (const m of src.matchAll(/\.rail-ad ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`${rel}: a rail is ${m[1]}px wide`);
+  }
+  /* A rail is a 160x600 beside the column, never a wide unit, and it is removed with its screen. */
+  if (rel === 'soccer/index.html' || rel === 'baseball/index.html') {
+    for (const m of src.matchAll(/\.rail-ad(?:\[data-ad-zone\])? ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`${rel}: a rail is ${m[1]}px wide`);
+    if (/data-ad-zone="rail"/.test(src) && !/^\s+railAds\(\w*\);/m.test(src)) problems.push(`${rel}: has desktop rails but the screen switch does not call railAds()`);
   }
   if (DRAFT_ZONE_PAGES.has(rel) && /data-ad-zone="draft"/.test(src) && !/^\s+draftAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a draft banner but show() does not call draftAd() to remove it on leaving the draft`);
   if (MENU_ZONE_PAGES.has(rel)) {
@@ -235,6 +254,34 @@ for (const file of walkCode(ROOT)) {
     }
     if (!/function menuAd\(/.test(src) || !/^\s+menuAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a menu ad zone but show() does not call menuAd() to remove it when play starts`);
     if (/querySelectorAll\('ins\.adsbygoogle'\)/.test(src) && !/closest\('\[data-ad-zone\]'\)\) continue/.test(src)) problems.push(`${rel}: the initialiser must skip the menu ad zone (menuAd starts it on the start screen only)`);
+  }
+}
+
+/* THE CLOSEABLE BOTTOM BANNER AND THE SHARED RAILS (assets/rtg-ads.js, the owner's calls 2026-10-29).
+ * The banner sits on a game's home, leaderboards and results and never where people play, so each
+ * page's list of screens is held here: a screen added to one fails until it is added below, with a
+ * reason. A page that calls RTG_ADS loads the file, and the banner stays 300px wide (a sticky ad). */
+const STICKY_SCREENS = {
+  'football/index.html': ['s-intro', 's-board', 's-over'],
+  'cfb/index.html': ['s-intro', 's-board', 's-over'],
+  'baseball/index.html': ['s-intro', 's-board', 's-over'],
+  'soccer/index.html': ['start', 'online-hub', 'report', 'friendly-result', 'h2h-result', 'h2h-board', 'wc-board'],
+  'golf/index.html': ['title', 'protour', 'putthub', 'me', 'summary', 'dailyresult', 'h2hresult', 'careerend', 'circuitend'],
+};
+{
+  const lib = fs.readFileSync(path.join(ROOT, 'assets/rtg-ads.js'), 'utf8');
+  for (const m of lib.matchAll(/\.rtg-sticky ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`assets/rtg-ads.js: the bottom banner is ${m[1]}px wide. AdSense allows a sticky ad 300px wide or less`);
+  for (const file of walkCode(ROOT)) {
+    const rel = path.relative(ROOT, file);
+    if (rel === 'assets/rtg-ads.js') continue;
+    const src = fs.readFileSync(file, 'utf8');
+    if (!/RTG_ADS\.(sticky|rails)\(/.test(src)) continue;
+    if (rel.endsWith('.html') && !/<script src="\/assets\/rtg-ads\.js\?v=\d+"><\/script>/.test(src)) problems.push(`${rel}: calls RTG_ADS but does not load /assets/rtg-ads.js`);
+    const list = src.match(/const (?:STICKY_ON|STICKY_SCR)=\[([^\]]*)\]/);
+    if (STICKY_SCREENS[rel]) {
+      const got = list ? [...list[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort().join(',') : '';
+      if (got !== [...STICKY_SCREENS[rel]].sort().join(',')) problems.push(`${rel}: the bottom banner's screens are [${got}], check-adsense holds [${STICKY_SCREENS[rel].join(', ')}]. It goes on home, leaderboard and results screens only`);
+    } else if (list) problems.push(`${rel}: has a bottom banner screen list that check-adsense does not hold. Add it to STICKY_SCREENS`);
   }
 }
 
