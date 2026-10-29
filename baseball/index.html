@@ -4100,6 +4100,7 @@ window.addEventListener('resize',()=>{
    the screen shows too (the saved draft, the daily, the results' badges and parks), and each
    moves what sits under the banner. A margin is not a size, so a fold never re-triggers itself,
    and the screens themselves are not watched for the same reason. */
+window.addEventListener('rtg-sticky',()=>{ try{ screenFold(); }catch(e){} });   // rtg-ads.js: filled, resized or gone
 try{
   const refold=new MutationObserver(()=>screenFold());
   refold.observe(document.documentElement,{attributes:true,attributeFilter:['style']});
