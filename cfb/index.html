@@ -3334,6 +3334,43 @@ window.GA_ID='G-L29P5MRWKE';
     #s-intro #b-play-intro{font-size:22px;padding:21px 18px}
     #s-intro>.ctas>.btn.ghost{font-size:16px;padding:18px}
     #s-intro .cta3 .btn{font-size:14px;padding-top:15px;padding-bottom:15px}
+    /* ── AND THE TAIL OF THAT COLUMN GOES UNDER BOTH OF THEM ─────
+       Reported by the owner: the page looked like it was hugging the right. It
+       was. The stage is as tall as a wheel and a formation and stops; everything
+       else was in the other column, so the left ran out and the right kept going.
+       Measured with no ad in the way, the empty left column ran 414px at 1440x900,
+       472px at 1280x800 and 481px at 1200x900. There is no width where it did not.
+       THE LAYOUT WAS PORTED FROM A PAGE WITH LESS IN IT. The Perfect Season's hero
+       is a picture, a name, a pitch and two buttons, and in that shape the two
+       columns come out about level. This game has two mode cards and a lead-in
+       under the buttons, and nothing was put beside them.
+       So `.ctas` stops being a box and becomes its own children: `display:contents`
+       hands them to this grid, the two buttons stay in column 2 where the hero put
+       them, and the lead-in, the mode cards and the links become a band under both
+       columns. #795's hero is untouched, which is the point: the wheel still starts
+       level with the headline and the Draft button is still beside the name.
+       THE CATCH-ALL IS WRITTEN FIRST HERE TOO, and for the same reason the screen's
+       own is: `ensureCommishDoor`, `ensureFantasyDoor` and `ensurePremiumCard` all
+       insert into `.ctas` at runtime, so a child that arrives later must be full
+       width by default rather than landing in whichever column happens to be free.
+       Only the four named below opt out.
+       `.ctas` carries no background, border or padding, so dissolving its box costs
+       nothing to look at. What it does cost is its own `gap`, so the row gap comes
+       from this grid instead. */
+    #s-intro>.ctas{display:contents}
+    #s-intro{row-gap:11px}
+    #s-intro>.ctas>*{grid-column:1/-1}
+    #s-intro>.ctas>#b-play-intro,#s-intro>.ctas>#b-modes{grid-column:2}
+    /* The two mode cards are a pair under one lead-in, so they read as a pair. */
+    #s-intro>.ctas>#b-hp-commish{grid-column:1}
+    #s-intro>.ctas>#b-hp-fantasy{grid-column:2}
+    /* AND THE STAGE SPANS WHAT IS BESIDE IT RATHER THAN NINE ROWS. The nine were
+       written when the whole of `.ctas` stacked in column 2 and the stage had to
+       clear all of it. Column 2 is three items now (the hero and the two buttons),
+       so the other six rows are empty, and a full-width item cannot be placed until
+       after the span: measured, that left an 81px hole between More ways to play
+       and the lead-in under it. Three is what column 2 actually uses. */
+    #s-intro>.stage{grid-row:1/span 3}
   }
   /* From the moment the rails are up the hero has to clear them, the same way
      every other screen on this page does. */
@@ -3383,7 +3420,9 @@ window.GA_ID='G-L29P5MRWKE';
      chasing it: see the pull request. */
   @media(min-width:920px) and (min-height:560px){
     body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro>.hero{margin-bottom:10px}
-    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro>.ctas{gap:6px}
+    /* The row rhythm is this grid's now, because `.ctas` is `display:contents` above
+       and a gap on a box with no box does nothing. */
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro{row-gap:6px}
     body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro #b-play-intro{padding:16px 18px}
     body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro>.ctas>.btn.ghost{padding:14px}
     body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro .cta3 .btn{padding-top:11px;padding-bottom:11px}
