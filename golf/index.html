@@ -23152,6 +23152,15 @@ function puttReopen(){ if(_puttReopened) return; _puttReopened=true;
 try{ document.addEventListener('DOMContentLoaded',()=>setTimeout(puttReopen,6000),{once:true}); }catch(e){}   // no answer from the accounts in time
 function openPutt(o){ if(!puttOn()) return; try{ if(window.RTG_ADS){ RTG_ADS.dropSticky(); RTG_ADS.dropRails(); } }catch(e){} try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&(o.go||o.tour)?o:undefined); }
 function openPuttDaily(){ openPutt({go:'daily'}); }
+// A LINK STRAIGHT INTO TODAY'S DAILY HOLE: /golf/?putt=daily (the home page's Putt Putt row). A visitor who is not signed
+// in plays it as a guest. If Putt Putt has not loaded, openPutt does nothing and the First Tee home stays, as with no link.
+// The param comes off the address at once, so a reload does not open it again. Once a page load only, after the page is up.
+let _puttDailyLinked=false;
+function puttDailyLink(){ if(_puttDailyLinked) return; _puttDailyLinked=true; var go=false;
+  try{ const u=new URL(location.href); if(u.searchParams.get('putt')!=='daily') return; go=true;
+    u.searchParams.delete('putt'); history.replaceState(null,'',u.pathname+(u.search||'')+(u.hash||'')); }catch(e){ return; }
+  if(go) setTimeout(()=>{ try{ if(!document.querySelector('.pt-ov')) openPutt({go:'daily'}); }catch(e){} }, 0); }
+window.addEventListener('load',()=>{ try{ puttDailyLink(); }catch(e){} });
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){
   let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
