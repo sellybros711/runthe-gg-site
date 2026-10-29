@@ -201,16 +201,35 @@ const sample = (p) => p.evaluate(() => {
   };
 });
 
+/* Does this October hold a deciding game? October is settled before it is shown,
+   so the page already knows, and the page's own isDecider() answers: a second copy
+   of "both sides one win away" here could drift from the one the screens use. */
+const hasDecider = (p) => p.evaluate(() => {
+  const rounds = (RUN && RUN.playoffs && RUN.playoffs.rounds) || [];
+  return rounds.some((r, i) => r.games.some((_, k) => isDecider(i, k)));
+});
+
 head('1-3. A RUN THAT REACHES A DECIDING GAME, WATCHED WITHOUT SKIPPING');
 let found = null;
-/* ABOUT ONE RUN IN FOUR HAS A DECIDER, so ten tries missed about one time in 25
-   with nothing wrong. Twenty-four make that about one in a thousand, and the loop
-   stops at the first decider, so a passing run costs what it always did. */
-for (let attempt = 0; attempt < 24 && !found; attempt++) {
+/* FEWER RUNS HAVE A DECIDER THAN THIS ONCE SAID. The old comment guessed one in
+   four. Measured on 2026-10-28, about one Classic run in three reaches October and
+   only some of those Octobers hold a decider, so 24 tries missed about one time in
+   eight with nothing wrong, and every October without one was still watched to the
+   end (a minute or more each). Now an October without a decider is skipped as soon
+   as it starts, so a try costs only the draft and the season, and 80 tries make a
+   miss rarer than one in a thousand. The loop still stops at the first decider. */
+let octobers = 0;
+for (let attempt = 0; attempt < 80 && !found; attempt++) {
   const { ctx, p } = await openPage({});
   await p.evaluate(() => { try { localStorage.setItem('rtd_po_speed', '2'); } catch (_) {} });
   const d = await draft(p);
   if (d.stalled != null || !(await toOctober(p))) { await ctx.close(); continue; }
+  octobers++;
+  if (!(await hasDecider(p))) {
+    console.log(`        run ${attempt + 1}: October had no deciding game`);
+    await ctx.close();
+    continue;
+  }
   const tl = [];
   const t0 = Date.now();
   /* Fifteen minutes, because a GitHub runner is slow: five ran out there before a
@@ -223,10 +242,15 @@ for (let attempt = 0; attempt < 24 && !found; attempt++) {
     /* The tap that starts a game 7 sooner is the only press this walk makes. */
     await p.waitForTimeout(120);
   }
-  if (tl.some((s) => s.g7game)) found = { ctx, p, tl };
-  else { console.log(`        run ${attempt + 1}: October had no deciding game`); await ctx.close(); }
+  if (tl.some((s) => s.g7game)) { found = { ctx, p, tl }; break; }
+  /* The page said this October has a decider and the walk never saw it played.
+     That is the bug this check exists for, not bad luck, so it is not retried. */
+  bad('a deciding game the page knows about is played on the game screen',
+    `run ${attempt + 1}: never reached #s-game.g7 (last screen ${tl.length ? tl[tl.length - 1].screen : 'none'})`);
+  await ctx.close();
+  break;
 }
-claim(!!found, 'a run reached a winner-take-all game');
+claim(!!found, 'a run reached a winner-take-all game', `${octobers} Octobers in the tries, none with a decider`);
 if (found) {
   const { tl, p } = found;
   /* 1. The series is revealed a game at a time. */
