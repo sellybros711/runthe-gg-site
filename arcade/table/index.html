@@ -284,7 +284,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
-<script src="/assets/rtg-ads.js?v=1"></script>
+<script src="/assets/rtg-ads.js?v=2"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -979,6 +979,15 @@ window.GA_ID='G-L29P5MRWKE';
   var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
   function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
   if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
+  /* A sheet over the page (the pre-game gate, the Arcade Card sheet, sign in) hides the site bar,
+     and RTG_ADS.clear() ignores controls a sheet covers, so rails placed under one can sit beside a
+     site bar that comes back when it goes. The pre-game gate is removed from the page and the other
+     two drop a hidden attribute, so watch for both and place the rails again. */
+  if(window.MutationObserver){
+    var t=0, again=function(){ clearTimeout(t); t=setTimeout(rails, 120); }, mo=new MutationObserver(again);
+    mo.observe(document.body, { childList:true });
+    mo.observe(document.body, { subtree:true, attributes:true, attributeFilter:['hidden'] });
+  }
 })();
 </script>
 </body>
