@@ -159,6 +159,15 @@ const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseb
  * built by draftAd() when the draft opens and emptied when it is left. Only a unit made inside
  * draftAd(), on a page whose show() calls draftAd(), is allowed on a play screen. */
 const DRAFT_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html']);
+/* The functions allowed to build a live unit on each page where people play, each one called from
+ * that page's screen switch so it builds on entering its screen and removes on leaving. Run The
+ * Pitch's tournament ad and desktop rails are the owner's calls (2026-10-28). */
+const BUILDERS = {
+  'football/index.html': ['draftAd', 'seasonAd'],
+  'cfb/index.html': ['draftAd', 'seasonAd'],
+  'baseball/index.html': ['draftAd', 'seasonAd'],
+  'soccer/index.html': ['stageAd', 'railAds'],
+};
 /* The text of the named function's body, from its header to its closing brace at column 0. */
 function fnBody(src, name) {
   const start = src.indexOf(`function ${name}(`);
@@ -193,8 +202,9 @@ for (const file of walkCode(ROOT)) {
      * page whose show() calls screenAds(), which builds it when that screen opens and empties it
      * when it closes (the owner's rule, 2026-10-27). */
     .filter((m) => {
-      if (!DRAFT_ZONE_PAGES.has(rel)) return true;
-      return !['draftAd', 'seasonAd'].some((fn) => {
+      const builders = BUILDERS[rel];
+      if (!builders) return true;
+      return !builders.some((fn) => {
         const b = fnBody(src, fn);
         return b && new RegExp(`^\\s+${fn}\\(\\w+\\);`, 'm').test(src) && m.index >= b[0] && m.index < b[1];
       });
@@ -208,6 +218,10 @@ for (const file of walkCode(ROOT)) {
     for (const m of src.matchAll(/\.(?:draft|season)-ad(?:\[data-ad-zone\])? ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) {
       if (+m[1] > 300) problems.push(`${rel}: a pinned banner is ${m[1]}px wide. AdSense allows a sticky ad 300px wide or less`);
     }
+  }
+  if (rel === 'soccer/index.html') {
+    if (/data-ad-zone="stage"/.test(src) && !/^\s+stageAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a tournament ad but showScreen() does not call stageAd() to remove it on leaving`);
+    for (const m of src.matchAll(/\.rail-ad ins\.adsbygoogle\{[^}]*width:(\d+)px/g)) if (+m[1] > 300) problems.push(`${rel}: a rail is ${m[1]}px wide`);
   }
   if (DRAFT_ZONE_PAGES.has(rel) && /data-ad-zone="draft"/.test(src) && !/^\s+draftAd\(\w+\);/m.test(src)) problems.push(`${rel}: has a draft banner but show() does not call draftAd() to remove it on leaving the draft`);
   if (MENU_ZONE_PAGES.has(rel)) {
