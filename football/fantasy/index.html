@@ -62,6 +62,24 @@
   /* Inside the Perfect Season's Home Screen app the page can be drawn under the clock
      (viewport-fit=cover), so the top row starts below that inset. 0 in a browser tab. */
   .wrap{padding-top:calc(14px + env(safe-area-inset-top,0px))}
+  /* WHILE THE BOTTOM BANNER IS UP, ON A SHORT PHONE (the owner's call, 2026-10-29): the
+     closeable banner from assets/rtg-ads.js covers the bottom 79px, and the week's main button
+     has to be clear of it before anybody scrolls. Keyed on body.rtg-sticky-on, which is set the
+     moment the banner is asked for, so nothing moves when the ad arrives; closed with its X,
+     the class goes and the screen is as it was. The three steps keep their names and lose
+     their sentences (the tiles under them carry the numbers), and the entry screen's lineup
+     sits a little closer. Taller phones already clear it and are untouched. */
+  @media (max-width:919px) and (max-height:719px){
+    body.rtg-sticky-on #s-home .hero-h{font-size:clamp(30px,9.5vw,40px)}
+    body.rtg-sticky-on #s-home .steps{margin-top:12px;gap:6px}
+    body.rtg-sticky-on #s-home .steps li > span{display:block;height:26px;overflow:hidden}
+    body.rtg-sticky-on #s-home .steps li > span strong{line-height:26px}
+    body.rtg-sticky-on #s-home .hero .stack{margin-top:12px}
+    body.rtg-sticky-on #s-in .big{font-size:36px}
+    body.rtg-sticky-on #s-in .rule{margin-top:10px;margin-bottom:10px}
+    body.rtg-sticky-on #s-in #in-roster{margin-top:8px !important}
+    body.rtg-sticky-on #s-in #b-in-board{margin-top:8px !important}
+  }
   h1,h2,h3{margin:0;line-height:1.05}
   .display{font-family:var(--fd);font-weight:400;letter-spacing:.01em;text-transform:uppercase}
   .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
@@ -1082,7 +1100,44 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        on the draft screen it would sit over the board somebody is picking from. */
     syncLiveButton();
     fantasyAds(id);
+    clearBand();
+    setTimeout(clearBand, 400); setTimeout(clearBand, 1500);
   };
+  /* NOTHING SITS HALF UNDER THE BANNER AT FIRST VIEW. The CSS above brings each screen's
+     main button clear of the banner; what follows it (the notes, the way back, last week's
+     result) is reached by scrolling, and the first of those that would straddle the banner's
+     top edge is moved to just under the fold, with the rest following in the flow. 79 is the
+     filled banner, assumed before it fills so the screen does not move when the ad arrives;
+     closing the banner takes body.rtg-sticky-on away and puts everything back. The football
+     front page does the same (clearBand in football/index.html). */
+  var BAND_ITEMS = { 's-home': ['#b-past', '#home-note', '#b-last', '#b-prize'],
+    's-in': ['#in-note', '#s-in .stack'] };
+  function clearBand(){
+    var all = document.querySelectorAll('[data-band]');
+    for (var i = 0; i < all.length; i++) { all[i].style.removeProperty('margin-top'); all[i].removeAttribute('data-band'); }
+    var cur = document.querySelector('.screen.on');
+    if (!cur || !BAND_ITEMS[cur.id] || !document.body.classList.contains('rtg-sticky-on')) return;
+    var filled = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-ad-h')) || 0;
+    var band = filled > 0 ? filled : 79, fold = innerHeight, y = scrollY;
+    var list = BAND_ITEMS[cur.id];
+    for (var k = 0; k < list.length; k++) {
+      var e = document.querySelector(list[k]);
+      if (!e || !e.offsetParent) continue;
+      var r = e.getBoundingClientRect(), top = r.top + y, bottom = r.bottom + y;
+      if (top >= fold) break;
+      if (bottom <= fold - band) continue;
+      var m = parseFloat(getComputedStyle(e).marginTop) || 0;
+      e.style.setProperty('margin-top', Math.round(m + (fold - top) + 12) + 'px', 'important');
+      e.setAttribute('data-band', '1');
+      break;
+    }
+  }
+  addEventListener('resize', function(){ clearBand(); });
+  /* rtg-ads.js says when the banner fills, changes height or goes (site PR 805). */
+  addEventListener('rtg-sticky', function(){ clearBand(); });
+  if (window.MutationObserver) {
+    new MutationObserver(function(){ clearBand(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  }
   var esc = function(s){
     return String(s==null?'':s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -2042,6 +2097,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       ? 'Entered on your account. One entry a week, and it is final.'
       : 'Saved in this browser. It is not on your account, so it will not count.';
     show('s-in');
+    /* Redrawn, so the strip under the banner is measured again. */
+    clearBand();
   }
 
   /* ---- the swap ----
@@ -3291,6 +3348,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        than here, because the reader most likely to have a result is the one who entered
        this week as well, and they never reach this screen on the way in. */
     drawPrizeDoor();
+    /* Redrawn, so the strip under the banner is measured again. */
+    clearBand();
   }
 
   /* ---- what you scored last week ----
