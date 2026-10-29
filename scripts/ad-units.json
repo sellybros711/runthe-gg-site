@@ -295,12 +295,9 @@
       "slot": "8869997198",
       "status": "live",
       "where": [
-        "arcade/career/index.html",
-        "arcade/crossword/index.html",
-        "arcade/sportegories/index.html",
-        "arcade/almamater/index.html"
+        "arcade/"
       ],
-      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. The four free puzzles, on the result"
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Every Arcade game page, play included (the owner, 2026-10-29)"
     },
     "college-season": {
       "slot": "3062302592",
