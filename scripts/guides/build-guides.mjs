@@ -258,6 +258,7 @@ function page({ title, description, url, h1, sub, main, cta }) {
     s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
     document.head.appendChild(s);})();
   </script>
+  <script src="/assets/privacy-choices.js?v=1"></script>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
        crossorigin="anonymous"></script>
 </head>
