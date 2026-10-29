@@ -90,6 +90,23 @@ async function openPage(opts) {
   p.on('pageerror', (e) => errors.push(String(e)));
   await p.addInitScript(() => {
     try { localStorage.setItem('rtd_seen_intro_v1', '1'); } catch (_) {}
+    /* THE SETTLED OCTOBER, KEPT WHERE THE WALK CAN READ IT. The page's run lives
+       inside its own closure, but the page settles October through the public
+       R.finalizeSeason(RUN), so run.js is caught as it publishes itself and that
+       one call is wrapped to keep the run it was handed. Nothing it returns or
+       changes is touched. */
+    let api;
+    Object.defineProperty(window, 'RTD_RUN', {
+      configurable: true,
+      get: () => api,
+      set: (v) => {
+        api = v;
+        const fin = v && v.finalizeSeason;
+        if (typeof fin === 'function') {
+          v.finalizeSeason = function (run) { window.__octoberRun = run; return fin.apply(this, arguments); };
+        }
+      },
+    });
   });
   await p.goto(`http://localhost:${PORT}/baseball/`, { waitUntil: 'load' });
   await p.waitForSelector('#s-intro.on', { timeout: 20000 });
@@ -202,11 +219,23 @@ const sample = (p) => p.evaluate(() => {
 });
 
 /* Does this October hold a deciding game? October is settled before it is shown,
-   so the page already knows, and the page's own isDecider() answers: a second copy
-   of "both sides one win away" here could drift from the one the screens use. */
+   so the run already knows. The rule is the page's isDecider(): a game played with
+   both sides one win from the series (a one game round is always one). It is a
+   second copy of that rule, which the page keeps in its closure. If the two ever
+   drift, the walk below fails loudly when the page plays no decider this said it
+   would, and a decider this misses only costs a try. */
 const hasDecider = (p) => p.evaluate(() => {
-  const rounds = (RUN && RUN.playoffs && RUN.playoffs.rounds) || [];
-  return rounds.some((r, i) => r.games.some((_, k) => isDecider(i, k)));
+  const run = window.__octoberRun;
+  const rounds = (run && run.playoffs && run.playoffs.rounds) || [];
+  return rounds.some((r) => {
+    const need = Math.ceil((r.bestOf || 7) / 2);
+    let w = 0, l = 0;
+    return r.games.some((g) => {
+      const tied = w === need - 1 && l === need - 1;
+      if (g.won) w++; else l++;
+      return tied;
+    });
+  });
 });
 
 head('1-3. A RUN THAT REACHES A DECIDING GAME, WATCHED WITHOUT SKIPPING');
