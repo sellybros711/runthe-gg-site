@@ -1242,7 +1242,7 @@ async function freshDraft(page) {
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
     results = null, storage = null, server = null, reduced = false,
-    injuries = null, script = null } = opts;
+    injuries = null, script = null, ads = false } = opts;
   const page = await browser.newPage({ viewport,
     reducedMotion: reduced ? 'reduce' : 'no-preference' });
   const boom = [];
@@ -1311,6 +1311,11 @@ async function openPage(browser, url, opts = {}) {
           + '/' + (count ? total : '*'),
           'access-control-expose-headers': 'content-range' },
         body: JSON.stringify(rows) });
+    }
+    /* A STAND-IN FOR ADSENSE that fills every unit, for the section on the bottom banner. Off
+       by default, so every other section runs with the ad script refused, as before. */
+    if (ads && /adsbygoogle\.js$/.test(u.pathname)) {
+      return r.fulfill({ status: 200, contentType: 'text/javascript', body: AD_STUB });
     }
     if (u.hostname !== 'local.test') return r.abort();
     let rel = decodeURIComponent(u.pathname);
@@ -1394,6 +1399,8 @@ const boardOf = (o) => {
 const TESTER = { name: ACCESS.TESTERS[0], userId: null };
 const STRANGER = { name: 'somebody-else', userId: '00000000-0000-0000-0000-000000000000' };
 const FANTASY = 'http://local.test/football/fantasy/';
+/* The Ads Agent's stand-in for adsbygoogle.js: every unit with a real slot is marked filled. */
+const AD_STUB = "(function(){function f(){document.querySelectorAll('ins.adsbygoogle:not([data-ad-status])').forEach(function(i){var z=i.closest('[data-ad-zone]');if(!z||/^0+$/.test(i.getAttribute('data-ad-slot')||''))return;i.setAttribute('data-ad-status','filled');i.style.background='#c33'})} window.adsbygoogle={push:function(){f()}}; f(); setInterval(f,200);})();";
 const BEFORE = Date.parse(POOL.locks_at) - 36 * 3600 * 1000;
 /* THREE HOURS PAST THE LOCK: the Thursday game is on, which is the only clock at which a
    live board is a real screen. Every section about movement runs at this one. */
@@ -4342,7 +4349,10 @@ for (const vp of [{ width: 360, height: 740 }, { width: 390, height: 844 }]) {
         /* One line, measured as the ink's height against the line box rather than counted
            in characters: the column depends on the face and the face depends on the
            sandbox. */
-        subLines: Math.round(ink.height / parseFloat(getComputedStyle(sub).lineHeight)) };
+        subLines: Math.round(ink.height / parseFloat(getComputedStyle(sub).lineHeight)),
+        /* WHILE THE BOTTOM BANNER IS UP the doors share a row as compact tiles (the owner's
+           call, 2026-10-29), and half a phone is too narrow for the guest's line on one row. */
+        compact: document.body.classList.contains('rtg-sticky-on') && innerWidth < 920 };
     });
     const at = `${vp.width}x${vp.height} ${what}`;
     ok(`${at}: the door is drawn`, !!m, m ? `${m.w.toFixed(0)}x${m.h.toFixed(0)}` : 'missing');
@@ -4361,7 +4371,8 @@ for (const vp of [{ width: 360, height: 740 }, { width: 390, height: 844 }]) {
       /* THE SUB LINE IS THE LONGEST STRING ON THE DOOR and the guest's is longer than the
          account's, so this is where a phone gives out first. One line, and the ink inside
          its own column. */
-      ok(`  ${at}: the sub line holds one line`, m.subLines <= 1, m.subLines + ' lines');
+      ok(m.compact ? `  ${at}: the sub line holds two lines in the compact tile`
+        : `  ${at}: the sub line holds one line`, m.subLines <= (m.compact ? 2 : 1), m.subLines + ' lines');
       ok(`  ${at}: and does not spill its column`, m.subInk <= m.subBox + 0.5,
         `${m.subInk.toFixed(1)} of ${m.subBox.toFixed(1)}`);
     }
@@ -4688,6 +4699,91 @@ console.log('\nA FINISHED WEEK HAS A DOOR AFTER THE BOARD ROLLS OVER');
       String(total));
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
+  }
+}
+
+/* ================================================================
+   THE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW
+
+   The owner's call (2026-10-29): with the closeable banner from assets/rtg-ads.js filled,
+   no button or link on a screen that carries it may sit under it before the player scrolls.
+   Content further down still scrolls under it; what is asked is the first view. Measured
+   the way the Ads Agent measures every game: the banner hidden, then every control that
+   overlaps its box and is the thing actually at that point. Four sizes, every screen the
+   banner is on (s-shut, s-home, s-in and both tabs of s-live).
+   ================================================================ */
+console.log('\nTHE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const row = (place, name, score, me) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: !!me,
+    entry_no: name.length * 7 + name.charCodeAt(0), played: 6 });
+  const board = boardOf({ rows: [row(1, 'Somebody', 91.2), row(2, 'You', 77.5, true)],
+    me: { place: 2, entries: 2, score: 77.5 } });
+  const covered = (page) => page.evaluate(() => {
+    const s = document.querySelector('[data-ad-zone=sticky]');
+    const inner = s && s.querySelector('.rtg-sticky-in');
+    if (!inner) return 'no banner';
+    const z = inner.getBoundingClientRect();
+    if (z.height < 5) return 'banner not filled';
+    s.style.visibility = 'hidden';
+    const hit = [...document.querySelectorAll('button,a[href],[role=button]')].filter((e) => e.offsetWidth)
+      .filter((e) => {
+        const t = e.getBoundingClientRect();
+        if (!(t.bottom > z.top && t.top < z.bottom && t.right > z.left && t.left < z.right)) return false;
+        const h = document.elementFromPoint(t.left + t.width / 2, Math.min(innerHeight - 1, t.top + t.height / 2));
+        return h && (h === e || e.contains(h));
+      }).map((e) => (e.id ? '#' + e.id + ' ' : '') + e.textContent.trim().replace(/\s+/g, ' ').slice(0, 30));
+    s.style.visibility = '';
+    return hit;
+  });
+  const settle = async (page) => {
+    await page.evaluate(() => scrollTo(0, 0));
+    await page.waitForTimeout(700);
+  };
+  for (const [w, h] of [[390, 844], [360, 640], [1440, 900], [1920, 1080]]) {
+    const at = w + 'x' + h;
+    {
+      const { page, boom } = await openPage(browser, FANTASY, { who: null, at: BEFORE, ads: true,
+        viewport: { width: w, height: h } });
+      await page.waitForSelector('#s-shut.on', { timeout: 15000 }).catch(() => {});
+      await settle(page);
+      const c = await covered(page);
+      ok(at + ': the sign-in screen has nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+      await page.close();
+    }
+    {
+      const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE, ads: true,
+        viewport: { width: w, height: h } });
+      await page.waitForSelector('#s-home.on', { timeout: 15000 }).catch(() => {});
+      await settle(page);
+      const c = await covered(page);
+      ok(at + ': the week\'s home has nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+      await page.close();
+    }
+    {
+      const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: LIVE_AT, ads: true,
+        viewport: { width: w, height: h }, server: { mine: ENTRY, board } });
+      await page.waitForSelector('#s-in.on', { timeout: 15000 }).catch(() => {});
+      await settle(page);
+      let c = await covered(page);
+      ok(at + ': the entry screen has nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      await page.waitForSelector('#b-live:not([hidden])', { timeout: 10000 }).catch(() => {});
+      await page.click('#b-live').catch(() => {});
+      await page.waitForSelector('#s-live.on', { timeout: 10000 }).catch(() => {});
+      await settle(page);
+      c = await covered(page);
+      ok(at + ': the live games have nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      await page.click('#lv-tab-board').catch(() => {});
+      await settle(page);
+      c = await covered(page);
+      ok(at + ': the standings have nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+      await page.close();
+    }
   }
 }
 

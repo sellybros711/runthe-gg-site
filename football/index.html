@@ -2721,6 +2721,59 @@ window.GA_ID='G-L29P5MRWKE';
   @media (max-height:400px){
     .htitle h1{font-size:min(8.5vw,31px)}
   }
+  /* ─── WHILE THE BOTTOM BANNER IS UP (the owner's call, 2026-10-29) ───
+     The closeable banner from assets/rtg-ads.js is pinned over the bottom 79px of the front
+     page, and at first view it sat on the Dynasty door. The owner chose to move the content up
+     rather than hold the banner back: the start buttons and both mode doors have to be in
+     the clear before anybody scrolls. Keyed on body.rtg-sticky-on, which the module sets
+     the moment it asks for the banner, so the page settles before the ad arrives rather than
+     jumping when it fills. Closed with its X, the class goes and the page is as it was.
+
+     ON A PHONE, THREE THINGS GIVE. The field flattens to the short-screen height, the title
+     goes to one line, and the two doors share a row as compact tiles: the name, the tag and
+     the Fantasy week line, without the record corner, the ball and the Dynasty's question (a status line, like a
+     countdown to the next dynasty, stays),
+     which are what made a half-width door unreadable (see THE SHELF below). On a short
+     phone the hero field stands down entirely; the year and team wheels stay and still spin.
+     What is below the doors (the store card, the other modes, the links) is reached by
+     scrolling, and clearBand() keeps it from sitting half under the banner at first view. */
+  @media (max-width:919px){
+    body.rtg-sticky-on #s-intro .field.hero-field{aspect-ratio:auto;height:116px}
+    body.rtg-sticky-on #s-intro .hero{margin-bottom:10px}
+    body.rtg-sticky-on #s-intro .htitle{margin-bottom:11px}
+    body.rtg-sticky-on #s-intro .htitle h1{font-size:min(10.5vw,40px);line-height:.9}
+    body.rtg-sticky-on #s-intro .htitle h1 .l2{display:inline}
+    body.rtg-sticky-on #s-intro .hp-slots{display:none}
+    body.rtg-sticky-on #s-intro .hp-longer{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px}
+    body.rtg-sticky-on #s-intro .hp-longer>.pw-card,
+    body.rtg-sticky-on #s-intro .hp-longer>#b-dyn-new,
+    body.rtg-sticky-on #s-intro .hp-longer>:only-child{grid-column:1/-1}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full{justify-content:center;min-height:0;
+      padding:24px 8px 11px;gap:4px}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full .hp-full-name{font-size:17px;line-height:1.02;
+      white-space:normal;text-align:center}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full .hp-full-sub{font-size:9px;letter-spacing:.04em}
+    body.rtg-sticky-on #s-intro .hp-longer .hp-hi,
+    body.rtg-sticky-on #s-intro .hp-longer .hp-mark,
+    body.rtg-sticky-on #s-intro .hp-longer .hp-fan-ico,
+    body.rtg-sticky-on #s-intro .hp-longer .hp-tagline{display:none}
+  }
+  @media (max-width:919px) and (max-height:719px){
+    body.rtg-sticky-on #s-intro .field.hero-field{display:none}
+    body.rtg-sticky-on #s-intro .htitle p{display:none}
+  }
+  /* The smallest iPhones (568 tall) have 489px under the banner, and the wheels alone are 100
+     of it. There the front page is the title and the choices; the wheels are back the moment
+     the banner is closed. */
+  @media (max-width:919px) and (max-height:599px){
+    body.rtg-sticky-on #s-intro .hero{display:none}
+  }
+  /* A wide screen has the doors side by side already; the column only has to come up a
+     little, so the doors and the shelf lose some air. */
+  @media (min-width:920px){
+    body.rtg-sticky-on #s-intro .hp-longer{margin-top:10px}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full{min-height:96px;padding-top:24px;padding-bottom:10px}
+  }
   @media (prefers-reduced-motion:reduce){
     .hero-field .chip,.hero-field .hmk,.hp-mode-pill,.hp-tab,#s-intro,.hp-start{transition:none}
     .hero-field .hsweep,.hp-slots.swap,.hp-rule.swap{animation:none}
@@ -6604,6 +6657,12 @@ window.GA_ID='G-L29P5MRWKE';
   /* minmax(0,1fr), not 1fr: a 1fr track's minimum is its content, so on a 320px screen
      the two labels widened the grid past the viewport and the whole page scrolled sideways. */
   .ovr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-top:15px}
+  /* WHILE THE BOTTOM BANNER IS UP the results card gives back about forty pixels, so the
+     lineup that follows it clears the banner at first view (see clearBand). The record stays
+     the biggest thing on the screen. */
+  body.rtg-sticky-on #s-over .verdict{padding-top:8px;padding-bottom:14px}
+  body.rtg-sticky-on #s-over .hero-rec .big{font-size:62px}
+  body.rtg-sticky-on #s-over .ovr{margin-top:10px}
   /* One cell, full width: Dynasty recap shows only the team overall, not the draft
      modes' "best possible" beside it, so there is no second column to make room for. */
   .ovr.solo{grid-template-columns:1fr}
@@ -10168,6 +10227,44 @@ function stickyAd(id){
 function boardRails(id){
   if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
 }
+/* NOTHING SITS HALF UNDER THE BANNER AT FIRST VIEW (the owner's call, 2026-10-29).
+   The CSS under "WHILE THE BOTTOM BANNER IS UP" brings the start buttons and both doors above
+   the banner. What follows them on the front page (the store card, More ways to play, the
+   links) is reached by scrolling, and at some heights the first of those landed straddling the
+   banner's top edge: half a button showing over an ad. So the first one that would is moved
+   to just under the fold, and everything after it follows in the flow. The space it leaves is
+   the strip the banner covers anyway.
+
+   THE BANNER'S HEIGHT IS ASSUMED BEFORE IT FILLS. --sticky-ad-h is 0 until AdSense serves,
+   and waiting for it would move the page under the player a second after it opened. 79 is
+   the filled banner (a 50px unit, its label row and its padding); a filled one that measures
+   differently wins. Re-run on every screen change, on resize, and when the banner is closed,
+   which takes body.rtg-sticky-on away and so puts everything back. */
+const BAND_ITEMS=['#b-premium','#b-teams','#s-intro .hp-util','#s-intro footer.legal'];
+function clearBand(){
+  const scr=$('s-intro'); if(!scr) return;
+  const els=BAND_ITEMS.map((q)=>document.querySelector(q)).filter(Boolean);
+  els.forEach((e)=>{ if(e.dataset.band){ e.style.removeProperty('margin-top'); delete e.dataset.band; } });
+  if(!scr.classList.contains('on')||!document.body.classList.contains('rtg-sticky-on')) return;
+  const filled=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-ad-h'))||0;
+  const band=filled>0?filled:79, fold=innerHeight, y=scrollY;
+  for(const e of els){
+    if(!e.offsetParent) continue;
+    const r=e.getBoundingClientRect(), top=r.top+y, bottom=r.bottom+y;
+    if(top>=fold) break;
+    if(bottom<=fold-band) continue;
+    const m=parseFloat(getComputedStyle(e).marginTop)||0;
+    e.style.setProperty('margin-top',Math.round(m+(fold-top)+12)+'px','important');
+    e.dataset.band='1';
+    break;
+  }
+}
+addEventListener('resize',()=>clearBand());
+/* The display face changes the title's height when it arrives. */
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>clearBand());
+if(typeof MutationObserver==='function'){
+  new MutationObserver(()=>clearBand()).observe(document.body,{attributes:true,attributeFilter:['class']});
+}
 /* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
    opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
    board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
@@ -10211,6 +10308,8 @@ function show(id){
   seasonAd(id);
   screenAds(id);
   stickyAd(id);
+  clearBand();
+  if(id==='s-intro') setTimeout(clearBand,400);
   boardRails(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
@@ -12638,7 +12737,7 @@ function ensureDynastyButton(){
          line. Getting fired is what a life actually means here, it is already the game's own
          word for it (see the grace_fired allowance), and phrased as a question it is the
          only line on this card that asks for an answer. */
-      '<span class="hp-full-sub">How long before they fire you?</span>';
+      '<span class="hp-full-sub hp-tagline">How long before they fire you?</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
     }
   }
