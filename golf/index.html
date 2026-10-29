@@ -15557,10 +15557,10 @@ function ftAd(where){
    style), and an iframe that is moved reloads, which AdSense forbids. The Pro Shop and the profile are overlays, which
    scroll on their own, so their slot is fixed to the viewport and follows the overlay's scroll. The ad is pushed once,
    when it nears the viewport, and removed (not hidden) when its screen goes or when no control is within 150px of it. */
-const GAD_UNIT={career:'1895123791', daily:'3539377957', home:'2904953136', shop:'0000000000', closet:'0000000000', profile:'0000000000'};   // the shop, closet and profile units are not created yet: a zero never starts
+const GAD_UNIT={career:'1895123791', daily:'3539377957', home:'2904953136', shop:'4134274327', closet:'7467014676', profile:'4018724256'};   // the shop, closet and profile units are not created yet: a zero never starts
 const GAD_SIZE={career:[300,250], daily:[300,250], home:[320,50], shop:[300,250], closet:[300,250], profile:[300,250]};
 const GAD_GAP=['career','shop','closet','profile'];   // at most one every 3 minutes
-const GAD_OVERLAY=['shop','profile'];                 // scroll inside their own overlay: the slot is fixed to the viewport
+const GAD_OVERLAY=['shop','profile'];                 // scroll inside their own overlay: the slot follows the placeholder, clipped to the overlay
 const GAD_SCREENS=['title','protour','me','setup'];   // the screens the shop and the profile open over (never a round or the draft)
 const GAD_GAP_MS=3*60*1000;
 const GAD={active:null, host:null, io:null, pushedFor:null, homeUsed:false, fixed:false};
@@ -15587,7 +15587,9 @@ function gadDrop(){ if(GAD.io){ GAD.io.disconnect(); GAD.io=null; } if(GAD.host)
   document.querySelectorAll('.gad-ph').forEach(e=>e.remove()); }
 function gadPlace(){ const ph=document.querySelector('.gad-ph'); if(!ph || !GAD.host) return;
   const r=ph.getBoundingClientRect(), w=GAD_SIZE[GAD.active][0], x=r.left+(r.width-w)/2, y=r.top+18;
-  if(GAD.fixed){ GAD.host.style.left=x+'px'; GAD.host.style.top=y+'px'; }
+  if(GAD.fixed){ GAD.host.style.left=x+'px'; GAD.host.style.top=y+'px';
+    const ov=ph.closest('.ov'); if(ov){ const o=ov.getBoundingClientRect(), hh=GAD_SIZE[GAD.active][1];   // clipped to its overlay, so it never shows over the header or past the foot
+      GAD.host.style.clipPath=`inset(${Math.max(0,o.top-y)}px ${Math.max(0,x+w-o.right)}px ${Math.max(0,y+hh-o.bottom)}px ${Math.max(0,o.left-x)}px)`; } }
   else { GAD.host.style.left=(x+scrollX)+'px'; GAD.host.style.top=(y+scrollY)+'px'; } }
 // the 150px rule. A control counts where it is in the flow; a fixed bar counts where the page rests (the bottom of the
 // scroll); inside an overlay, everything is measured in the viewport, since that is all the player can see of it.
