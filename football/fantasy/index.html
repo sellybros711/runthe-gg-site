@@ -1133,6 +1133,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     }
   }
   addEventListener('resize', function(){ clearBand(); });
+  /* rtg-ads.js says when the banner fills, changes height or goes (site PR 805). */
+  addEventListener('rtg-sticky', function(){ clearBand(); });
   if (window.MutationObserver) {
     new MutationObserver(function(){ clearBand(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   }

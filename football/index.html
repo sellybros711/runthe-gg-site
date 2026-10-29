@@ -10260,6 +10260,8 @@ function clearBand(){
   }
 }
 addEventListener('resize',()=>clearBand());
+/* rtg-ads.js says when the banner fills, changes height or goes (site PR 805). */
+addEventListener('rtg-sticky',()=>clearBand());
 /* The display face changes the title's height when it arrives. */
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>clearBand());
 if(typeof MutationObserver==='function'){

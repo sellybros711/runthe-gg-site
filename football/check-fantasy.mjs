@@ -4727,6 +4727,9 @@ console.log('\nTHE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW');
     if (!inner) return 'no banner';
     const z = inner.getBoundingClientRect();
     if (z.height < 5) return 'banner not filled';
+    /* The old phone strip (.rtp-ad-mobile-bottom) is transparent and pinned to the same edge,
+       and elementFromPoint would land on it and call whatever is behind it clear. */
+    document.querySelectorAll('.rtp-ad-mobile-bottom').forEach((x) => { x.style.visibility = 'hidden'; });
     s.style.visibility = 'hidden';
     const hit = [...document.querySelectorAll('button,a[href],[role=button]')].filter((e) => e.offsetWidth)
       .filter((e) => {
