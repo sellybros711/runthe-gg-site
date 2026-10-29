@@ -2211,7 +2211,16 @@ window.GA_ID='G-L29P5MRWKE';
      --hdr is the pinned height, declared once, because the draft HUD sticks too and has to
      stack UNDER this rather than on top of it. */
   :root{--hdr:56px}
-  header{position:sticky;top:0;z-index:60;display:flex;align-items:center;
+  /* UNDER THE CLOCK. Saved to the Home Screen, an iPhone can draw the page edge to edge, under
+     the status bar (viewport-fit=cover), and then env(safe-area-inset-top) is the clock's
+     height. A player saw the header pinned behind the time, profile button and all, where
+     nothing could be tapped. The header now sticks below that inset, the wrap starts below
+     it, and an opaque strip covers it so the page never scrolls through the clock. In a
+     browser tab the inset is 0 and none of this moves a pixel. */
+  body:before{content:'';position:fixed;left:0;right:0;top:0;z-index:61;pointer-events:none;
+    height:env(safe-area-inset-top,0px);background:var(--bg)}
+  .wrap{padding-top:calc(14px + env(safe-area-inset-top,0px)) !important}
+  header{position:sticky;top:env(safe-area-inset-top,0px);z-index:60;display:flex;align-items:center;
     padding:6px 0;margin:-4px 0 10px}
   /* The page's own background, carried out over the wrap's 14px of side padding so nothing
      scrolls past in the gutter. Behind the header's content, not over it. */
@@ -5006,7 +5015,7 @@ window.GA_ID='G-L29P5MRWKE';
      figure. The lineup pips sit at the bottom of it now, and the year reel was showing straight
      through them, so the solid part runs to 92% and only the last few pixels feather. */
   /* Sticks BELOW the banner, not underneath it. z-index stays under the header's 60. */
-  .capwrap{position:sticky;top:var(--hdr);z-index:30;padding:7px 0 7px;margin:-4px 0 8px;
+  .capwrap{position:sticky;top:calc(var(--hdr) + env(safe-area-inset-top,0px));z-index:30;padding:7px 0 7px;margin:-4px 0 8px;
     background:linear-gradient(180deg,var(--bg) 92%,rgba(8,11,20,0))}
   /* THE LINEUP PIPS, in the sticky bar, fading in as the field scrolls off.
      --sq runs 0 to 1 with how much of the field has gone. The height is RESERVED at every
@@ -28693,7 +28702,10 @@ function watchFold(){
   const bar=scr.querySelector('.capwrap');
   /* The bar only. The pips hang under it, over the top of the field, and counting them here
      would read a field at rest as partly gone and fade them in before any scroll. */
-  const under=Math.round(hdr+(bar?bar.offsetHeight:0));
+  /* Plus the clock's inset on a Home Screen app, which the header now sticks below. */
+  const head=document.querySelector('header');
+  const inset=head?(parseFloat(getComputedStyle(head).top)||0):0;
+  const under=Math.round(hdr+inset+(bar?bar.offsetHeight:0));
   foldObs=new IntersectionObserver((entries)=>{
     for(const e of entries){
       /* Fully in view is no pips, fully gone is all of them. The 1.4 gets them to full opacity

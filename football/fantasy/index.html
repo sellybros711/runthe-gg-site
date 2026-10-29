@@ -59,6 +59,9 @@
                      radial-gradient(800px 500px at 100% 100%, rgba(239,68,68,.07), transparent 70%);
     background-attachment:fixed}
   .wrap{max-width:600px;margin:0 auto;padding:14px 14px 46px}
+  /* Inside the Perfect Season's Home Screen app the page can be drawn under the clock
+     (viewport-fit=cover), so the top row starts below that inset. 0 in a browser tab. */
+  .wrap{padding-top:calc(14px + env(safe-area-inset-top,0px))}
   h1,h2,h3{margin:0;line-height:1.05}
   .display{font-family:var(--fd);font-weight:400;letter-spacing:.01em;text-transform:uppercase}
   .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
