@@ -4340,27 +4340,9 @@ window.GA_ID='G-L29P5MRWKE';
 
 </div>
 
-<!-- ===== Google AdSense units (manual; loader in <head>). Placed before the
-     modal overlays so any modal, all z-index ≥ 40, paints over them. ===== -->
-<div class="rtp-ad-rail rtp-ad-left">
-  <ins class="adsbygoogle"
-       style="display:block;width:160px;height:600px"
-       data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="0000000000"></ins>
-</div>
-<div class="rtp-ad-rail rtp-ad-right">
-  <ins class="adsbygoogle"
-       style="display:block;width:160px;height:600px"
-       data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="0000000000"></ins>
-</div>
-<!-- Mobile strip: fixed 320x50, NOT responsive, it cannot grow over a button. -->
-<div class="rtp-ad-mobile-bottom">
-  <ins class="adsbygoogle"
-       style="display:inline-block;width:320px;height:50px"
-       data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="0000000000"></ins>
-</div>
+<!-- No ad unit is written into this page's markup. A never-started <ins class="adsbygoogle"> takes
+     the next adsbygoogle.push(), so a placeholder here used to swallow the draft, season, banner
+     and rail units built later in code (Ads Agent, 2026-10-30). Every unit is built where it shows. -->
 
 <div class="sheet-bg" id="sheet-bg">
   <div class="sheet">
@@ -15108,12 +15090,9 @@ boot().then(async ()=>{
     try{
       var ads = document.querySelectorAll('ins.adsbygoogle');
       for (var i=0;i<ads.length;i++){
-        /* Never start a unit whose slot is still all zeros. A placeholder pushed here would
-           either serve nothing or, worse, be filled against whichever unit the id was copied
-           from. All three are placeholders since 2026-10-24: the rails sit about 116px from
-           the board and the strip sits under the game's buttons, closer than Google's 150px,
-           so they stay off until there is a placement that clears it (agents/ads/ in the
-           vault). The real ids were 1816473106, 4576322214 and 8100634252. */
+        /* Never start a unit whose slot is still all zeros. There are none in the markup any more:
+           a never-started placeholder swallowed the next push, which is why the rails and the
+           banner went unfilled (Ads Agent, 2026-10-30). Every unit is built where it shows. */
         var slot = ads[i].getAttribute('data-ad-slot');
         if (!slot || /^0+$/.test(slot)) continue;
         if (ads[i].closest('[data-ad-zone]')) continue;   // the menu ad starts in menuAd()
