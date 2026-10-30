@@ -521,9 +521,16 @@ export class InPlay {
           faceYaw = turnNear(faceYaw, bh, k, a.turnRef);
           // at range, on the move: a ball well off to one side is a backhand (his throwing hand's side, the glove
           // across his body) or a forehand (his glove side), his trunk turned to it and his feet wider
-          const side = angDiff(faceYaw, heading(st, bp)), gsd = f.glove === 'r' ? -1 : 1;
-          if (spd > 6 && Math.abs(side) > 0.45) {
-            const kk = k * smooth((spd - 6) / 8) * smooth((Math.abs(side) - 0.45) / 0.4);
+          // (decided once, at the act, from the way he came to the ball: the angle from his body to the ball
+          // swings round as he arrives on top of it, and turned his trunk half round in a frame, check-jolt.mjs)
+          if (a.sideRef == null) {
+            const p0 = tr.at(Math.max(0, t - 0.45)), p1 = tr.at(t), run = Math.hypot(p1.x - p0.x, p1.y - p0.y) / 0.45;
+            const face = run > 2 ? heading(p0, p1) : faceToward(p1, { x: 0, y: 0 });
+            a.sideRef = { side: angDiff(face, heading(p0, bp)), spd: tr.at(Math.max(0, t - 0.1)).spd };
+          }
+          const side = a.sideRef.side, gsd = f.glove === 'r' ? -1 : 1;
+          if (a.sideRef.spd > 6 && Math.abs(side) > 0.45) {
+            const kk = k * smooth((a.sideRef.spd - 6) / 8) * smooth((Math.abs(side) - 0.45) / 0.4);
             spec.twist = (spec.twist || 0) + clamp(side, -0.9, 0.9) * 0.7 * kk;
             spec.wide = Math.max(spec.wide, 0.95 * kk);
             if (Math.sign(side) === gsd) handW *= 1 - 0.6 * kk;   // (a backhand is one hand)
@@ -541,7 +548,10 @@ export class InPlay {
           // he takes it in front of him: he faces where it comes from. Set under a fly or a pop (on his feet, at his
           // waist or above), it comes in on his glove side with the throwing hand there to cover it, as a real
           // one is taken: his body a little turned away from it, both hands on the ball
-          const prev = plan.ballAt(t - 0.25), set = spd < 4 && q.z >= 4;
+          // (whether he is set is decided once, at the catch: tested every frame, his slowing past it switched the
+          // turn and the second hand on in a frame, check-jolt.mjs)
+          if (a.setRef == null) a.setRef = tr.at(t).spd < 4 && q.z >= 4;
+          const prev = plan.ballAt(t - 0.25), set = a.setRef;
           const gs = f.glove === 'r' ? -1 : 1;
           faceYaw = turnTo(faceYaw, heading(q, prev) + (set ? 0.32 * gs : 0), k);
           if (set) {
