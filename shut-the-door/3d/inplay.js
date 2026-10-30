@@ -114,6 +114,8 @@ function turnNear(a, b, w, ref) {
 }
 function angDiff(a, b) { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }
 const heading = (from, to) => Math.atan2(to.x - from.x, to.y - from.y);
+/** Does he throw from the bag he has just stepped on (a throw of his within a second and a half of it)? */
+const throwsFrom = (tr, fa) => tr.acts.some((x) => x.kind === 'throw' && x.t >= fa.t - 0.05 && x.t < fa.t + 1.5);
 const _frustum = new THREE.Frustum(), _mat = new THREE.Matrix4(), _sph = new THREE.Sphere(), _v3 = new THREE.Vector3();
 
 export class InPlay {
@@ -841,7 +843,7 @@ export class InPlay {
       f.place(at.x, at.y, yaw, { lift: lift + hop });
       f.pose(spec);
       // a force with the ball already in his hand (he steps on the bag himself): the foot to the bag
-      const pinTo = (x) => { const nl = tr.legs.find((l) => l.g.t0 >= x.t - 1e-6 && l.g.total > 1); return nl ? nl.g.t0 + nl.g.T : Infinity; };
+      const pinTo = (x) => { if (throwsFrom(tr, x)) return x.t + 0.35; const nl = tr.legs.find((l) => l.g.t0 >= x.t - 1e-6 && l.g.total > 1); return nl ? nl.g.t0 + nl.g.T : Infinity; };
       const fs = acts.find((x) => x.kind === 'step' && x.force && x.base && s > x.t - 0.6 && s < pinTo(x));
       if (fs) this.pinFoot(f, fs, s, at, yaw, lift, spec, null, 0, null, tr);
       return null;
@@ -911,8 +913,11 @@ export class InPlay {
     // (it lets go across the next run he makes after the out, not where he stands: let go over a quarter of a
     // second standing, the body slid back off the bag with both feet planted, a first baseman holding a runner
     // who fielded the ball off the bag and stepped on it himself, check-jolt.mjs skate fielder step)
-    const nl = tr ? tr.legs.find((l) => l.g.t0 >= fa.t - 1e-6 && l.g.total > 1) : null;
-    const rel = tr ? (nl ? smooth(clamp((s - nl.g.t0) / nl.g.T, 0, 1)) : 0) : ramp(s, Math.max(k1, fa.t + 0.1), Math.max(k1, fa.t + 0.1) + 0.25);
+    // (but a man who throws from the bag lets go as he winds up, the throw's stride carrying him off it: held
+    // through his throw, the foot nearest the bag changed sides in the stride and the pin moved his whole body
+    // half a foot in a frame, a pivot man's root at 35 m/s, check-jolt.mjs pop and skate fielder throw)
+    const nl = tr && !throwsFrom(tr, fa) ? tr.legs.find((l) => l.g.t0 >= fa.t - 1e-6 && l.g.total > 1) : null;
+    const rel = tr && !throwsFrom(tr, fa) ? (nl ? smooth(clamp((s - nl.g.t0) / nl.g.T, 0, 1)) : 0) : ramp(s, Math.max(k1, fa.t + 0.1), Math.max(k1, fa.t + 0.1) + 0.25);
     const kf = ramp(s, k0, k1) * (1 - rel);
     for (let i = 0; i < 4 && kf > 0; i++) {
       // (the glove to the ball again, then the foot back on the bag: the two settle together)
