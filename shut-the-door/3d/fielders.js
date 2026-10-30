@@ -267,6 +267,13 @@ export class Crew {
         tracks.push({ i: idx[node], q: prop === 'quaternion', interp: tr.createInterpolant() });
       }
       const c = { name: a.name, dur: a.duration, period: LOOP[a.name] || a.duration, tracks };
+      // (a loop's legs and pelvis close the cycle: the capture's pose a period on is not its start (the
+      // thighs 18-21 degrees off in the run and the sprint), and each new stride began with that jump in one
+      // frame, the runner's foot at 40-45 m/s, check-jolt.mjs. The miss, q(period)^-1 q(0), is taken in
+      // over the cycle (layerClips) while it cannot be seen: a leg's while its foot is in the air, the
+      // pelvis' while both are (loopFix). Spread evenly, a planted foot slid with it. The trunk and arms
+      // keep their own blend over the wrap)
+      if (LOOP[a.name]) c.fix = loopFix(this.t, tracks, c.period);
       // the pelvis' travel over one cycle (a run goes forward; it is taken out, the bob kept)
       const pt = tracks.find((x) => !x.q);
       if (pt) {
@@ -392,6 +399,73 @@ const X = V(1, 0, 0), Y = V(0, 1, 0);
 const UPPER = new Set(['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head', 'clavicle_l', 'clavicle_r', 'deltoid_l', 'deltoid_r',
   ...['l', 'r'].flatMap((s) => ['upperarm', 'upperarm_twist', 'lowerarm', 'lowerarm_twist', 'hand', 'index_01', 'index_02', 'index_03', 'middle_01', 'middle_02', 'middle_03', 'ring_01', 'ring_02', 'ring_03', 'pinky_01', 'pinky_02', 'pinky_03', 'thumb_01', 'thumb_02', 'thumb_03'].map((b) => `${b}_${s}`))]);
 const _q = new THREE.Quaternion();
+const _qf = new THREE.Quaternion();
+
+/** A looped clip's seam, closed where it cannot be seen. For every bone below the trunk: the miss
+    r = q(period)^-1 q(0), and g, its share taken in by each point of the cycle (LOOP_N steps, 0 at the
+    start, 1 at the end). The feet are followed through the cycle by the clip's own rotations on the
+    bind pose, in the root's frame, where the capture still travels: a planted foot stands still there.
+    A leg takes its miss in while its foot is in the air (moving at over a fifth of its fastest, and up
+    a third of its lift), the pelvis while both are (or evenly, a clip with no flight). */
+const LOOP_N = 64;
+function loopFix(t, tracks, period) {
+  const n = t.names.length, ix = t.index;
+  const local = t.world.map((w, i) => (t.parents[i] >= 0 ? t.inverses[t.parents[i]].clone().multiply(w) : w.clone()));
+  const rest = local.map((m) => { const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3(); m.decompose(p, q, s); return { p, q, s }; });
+  const qT = tracks.filter((x) => x.q), pT = tracks.find((x) => !x.q);
+  const footAt = (time) => {
+    const q = rest.map((r) => r.q.clone()), pp = rest[ix.pelvis].p.clone();
+    for (const tr of qT) q[tr.i].fromArray(tr.interp.evaluate(time));
+    if (pT) pp.fromArray(pT.interp.evaluate(time));
+    const M = new Array(n), out = {};
+    const mat = (i) => {
+      if (M[i]) return M[i];
+      const m = new THREE.Matrix4().compose(i === ix.pelvis ? pp : rest[i].p, q[i], rest[i].s);
+      // (in the root's frame: the root and anything above the pelvis stand still)
+      M[i] = i === ix.pelvis || t.parents[i] < 0 ? m : mat(t.parents[i]).clone().multiply(m);
+      return M[i];
+    };
+    for (const s of ['l', 'r']) out[s] = new THREE.Vector3().setFromMatrixPosition(mat(ix[`foot_${s}`]));
+    out.pel = new THREE.Vector3().setFromMatrixPosition(mat(ix.pelvis));
+    return out;
+  };
+  const P = [];
+  for (let k = 0; k <= LOOP_N; k++) P.push(footAt((k / LOOP_N) * period));
+  // (up in the root's frame: the axis the feet hang below the pelvis along)
+  const hang = new THREE.Vector3();
+  for (const f of P) hang.add(f.pel.clone().sub(f.l)).add(f.pel.clone().sub(f.r));
+  const ax = ['x', 'y', 'z'].sort((a, b) => Math.abs(hang[b]) - Math.abs(hang[a]))[0], sg = Math.sign(hang[ax]) || 1;
+  const moving = {};
+  for (const s of ['l', 'r']) {
+    const v = [], h = P.map((f) => f[s][ax] * sg);
+    for (let k = 0; k < LOOP_N; k++) v.push(P[k + 1][s].distanceTo(P[k][s]));
+    const vmax = Math.max(...v) || 1, h0 = Math.min(...h), h1 = Math.max(...h);
+    // (clear of the ground too: at toe off and touchdown a foot still low counts as planted, and the seam
+    // taken in there slid it)
+    moving[s] = v.map((x, k) => (x > 0.2 * vmax && Math.min(h[k], h[k + 1]) > h0 + 0.33 * (h1 - h0) ? 1 : 0));
+  }
+  const share = (w) => {
+    const sum = w.reduce((a, x) => a + x, 0), g = new Float32Array(LOOP_N + 1);
+    if (sum < 1) { for (let k = 0; k <= LOOP_N; k++) g[k] = k / LOOP_N; return g; }
+    for (let k = 0; k < LOOP_N; k++) g[k + 1] = g[k] + w[k] / sum;
+    g[LOOP_N] = 1;
+    return g;
+  };
+  const gL = share(moving.l), gR = share(moving.r), gP = share(moving.l.map((x, k) => x * moving.r[k]));
+  const fix = [];
+  for (const tr of qT) {
+    const name = t.names[tr.i];
+    if (UPPER.has(name)) continue;
+    const q0 = new THREE.Quaternion().fromArray(tr.interp.evaluate(0)), q1 = new THREE.Quaternion().fromArray(tr.interp.evaluate(period));
+    fix.push({ i: tr.i, r: q1.invert().multiply(q0), g: /_l$/.test(name) ? gL : /_r$/.test(name) ? gR : gP });
+  }
+  return fix;
+}
+/** How much of a seam is taken in at a share u of the cycle (loopFix g). */
+function loopShare(g, u) {
+  const x = Math.min(LOOP_N - 1e-6, Math.max(0, u * LOOP_N)), k = Math.floor(x);
+  return g[k] + (g[k + 1] - g[k]) * (x - k);
+}
 
 export class Figure {
   constructor(crew, root, mesh, bones) {
@@ -636,6 +710,8 @@ export class Figure {
         if (!(w > 0.001) || !c) continue;
         for (let i = 0; i < n; i++) qb[i].copy(qp[i]);
         this.sample(c, u * c.period, qb, pa);
+        // (the legs' and pelvis' loop closed, a share u of the seam: setMotion c.fix)
+        if (c.fix) for (const f of c.fix) qb[f.i].multiply(_qf.identity().slerp(f.r, loopShare(f.g, u)));
         // (the captures are not perfect loops: the pose a period on is not the pose at the start, and each new
         // cycle began with a jump of the arms, a hand at 40 m/s at the wrap, check-jolt.mjs. Over the start of a
         // cycle as long as the capture runs past its period (about two frames), the trunk, arms and head come
