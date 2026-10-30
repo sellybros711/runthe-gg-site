@@ -10,10 +10,15 @@
  * is numbered in the order it was drawn, which is the order it runs (the
  * order rule, with its overlaps, is at the top of playbook.js). A cut that
  * comes off a screen is labelled with what a coach would call it (pin-down,
- * flare, pick and roll), from the same code the sim uses. */
+ * flare, pick and roll), from the same code the sim uses.
+ *
+ * FRAMES (the storyboard). The play is drawn picture by picture: Next frame
+ * opens a new frame with everyone where the last one left them, and the
+ * frames before it show faintly. A new step joins the frame on show. Frames
+ * are presentation only: the sim never reads them (playbook.js). */
 import { fitView, sizeCanvas, courtLines } from './view.js';
 import { COURT, dist } from './court-geo.js';
-import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf } from './playbook.js';
+import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf, beatOf, framesOf, stepsBefore, stepsThrough, addToFrame } from './playbook.js';
 import { startSpots } from './defense.js';
 
 const HIT = 3.4;          // feet: how close a tap must land to a player
@@ -21,10 +26,18 @@ const MIN_ROUTE = 2.5;    // feet: shorter than this is a tap, not a route
 
 export function createBoard(cv, sc, getPlay, setPlay, ui) {
   let tool = null, drag = null, pickFrom = null, V = null;
+  /* the frame on show, and how many there are (the last may be empty, just opened) */
+  let beat = 1, frameCount = 1;
 
   const play = () => getPlay();
   const steps = () => play().steps;
-  const commit = p => { setPlay(p); draw(); };
+  const lastBeat = () => play().steps.reduce((m, st) => Math.max(m, beatOf(st)), 1);
+  /* everything drawn so far, up to the end of the frame on show */
+  const upTo = () => stepsThrough(play(), beat);
+  const sc0 = () => (ui.scenario ? ui.scenario() : sc);
+  const commit = p => { setPlay(p); syncFrames(); draw(); };
+  function syncFrames() { frameCount = Math.max(lastBeat(), frameCount); if (beat > frameCount) beat = frameCount; }
+  function addStep(step) { return addToFrame(play(), beat, step); }
 
   function hitPlayer(ft, at) {
     let best = null, bd = HIT;
@@ -33,7 +46,8 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
   }
 
   function locked() {
-    if (shooterOf(play())) { ui.hint('The shot is the last step. Undo to add more.'); return true; }
+    const shot = play().steps.find(st => st.kind === 'shoot');
+    if (shot && beat >= beatOf(shot)) { ui.hint('The shot is the last step. Undo to add more.'); return true; }
     return false;
   }
 
@@ -41,10 +55,11 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     if (!V) return;
     cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
     const ft = V.ft({ x: e.offsetX, y: e.offsetY });
-    const at = spotsAfter(play(), steps());
+    const at = spotsAfter(play(), upTo());
     const who = hitPlayer(ft, at);
     if (!tool) {
       if (!who) return;
+      if (beat > 1) { ui.hint('Players start where frame 1 has them. Go to frame 1 to move them.'); return; }
       if (steps().some(s => s.who === who || s.from === who || s.to === who)) { ui.hint(who + ' already has a job. Undo or Clear to move him.'); return; }
       drag = { kind: 'spot', who };
       return;
@@ -57,20 +72,21 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     }
     if (tool === 'pass') {
       if (locked()) return;
-      const h = holderAfter(sc, steps());
+      const h = holderAfter(sc0(), upTo());
       if (!pickFrom) {
         if (who !== h) { ui.hint(h + ' has the ball. Tap him first.'); return; }
         pickFrom = h; ui.hint('Now tap who gets it.'); draw(); return;
       }
       if (!who || who === pickFrom) { pickFrom = null; ui.hint('Pass cancelled.'); draw(); return; }
-      const p = clone(play()); p.steps.push({ kind: 'pass', from: pickFrom, to: who }); pickFrom = null;
+      const p = addStep({ kind: 'pass', from: pickFrom, to: who }); pickFrom = null;
       commit(p); feedback(p); return;
     }
     if (tool === 'shoot') {
       if (locked()) return;
-      const h = holderAfter(sc, steps());
+      if (beat < lastBeat()) { ui.hint('The shot goes in the last frame.'); return; }
+      const h = holderAfter(sc0(), upTo());
       if (who !== h) { ui.hint(who ? who + ' needs the ball. Pass to him first.' : 'Tap ' + h + '. He has the ball.'); return; }
-      const p = clone(play()); p.steps.push({ kind: 'shoot', who }); ui.hint(''); commit(p);
+      const p = addStep({ kind: 'shoot', who }); ui.hint(''); commit(p);
     }
   }
 
@@ -91,13 +107,16 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     const pts = simplify(d.raw, 1.3).slice(1);
     const len = pathLen([d.raw[0], ...pts]);
     if (len < MIN_ROUTE) { ui.hint('Drag farther to draw a route.'); draw(); return; }
-    const p = clone(play()); p.steps.push({ kind: d.kind, who: d.who, pts: pts.map(r1) });
+    const p = addStep({ kind: d.kind, who: d.who, pts: pts.map(r1) });
     commit(p); feedback(p);
   }
 
   /* One line on what the step just drawn will do, in the words the sim uses. */
   function feedback(p) {
-    const i = p.steps.length - 1, s = p.steps[i], label = labelsOf(sc, p)[i];
+    let i = -1;
+    p.steps.forEach((st, k) => { if (beatOf(st) === beat) i = k; });
+    if (i < 0) return;
+    const s = p.steps[i], label = labelsOf(sc0(), p)[i];
     const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
     if (label === 'handoff') ui.hint('Handoff. He takes it on the run.');
     else if (label === 'roll') ui.hint('He rolls once the screen is used.');
@@ -116,6 +135,7 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
   /* ---------- drawing ---------- */
   function draw() {
     const { w, h, ctx } = sizeCanvas(cv);
+    if (w < 60 || h < 60) return;   // its screen is hidden: drawn again when it shows
     V = fitView(w, h, 12);
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#fbfaf6'; ctx.fillRect(0, 0, w, h);
@@ -128,32 +148,42 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     ctx.strokeStyle = 'rgba(34,50,77,.6)'; ctx.lineWidth = 3;
     poly(ctx, [V.px({ x: COURT.RIM.x - 3, y: 4 }), V.px({ x: COURT.RIM.x + 3, y: 4 })]);
 
-    // the steps, in order
-    const p = play();
-    const before = [], labels = labelsOf(sc, p);
+    // the steps, in order: earlier frames faint, the frame on show in full, later frames hidden
+    const p = play(), S = sc0();
+    const before = [], labels = labelsOf(S, p);
     p.steps.forEach((s, i) => {
-      const at = spotsAfter(p, before);
-      drawStep(ctx, s, at, i + 1, labels[i]);
+      const b = beatOf(s), at = spotsAfter(p, before);
       before.push(s);
+      if (b > beat) return;
+      ctx.globalAlpha = b === beat ? 1 : b === beat - 1 ? 0.22 : 0.1;
+      drawStep(ctx, s, at, i + 1, b === beat ? labels[i] : null, b !== beat);
+      ctx.globalAlpha = 1;
     });
     if (drag && drag.kind !== 'spot') drawRoute(ctx, drag.pts, drag.kind, 'rgba(34,50,77,.55)');
 
-    // defenders where they start (their own spots follow the starting floor)
-    const xs = startSpots(sc, p);
-    for (const xid of Object.keys(sc.matchups)) drawX(ctx, V.px(xs[xid]));
-    // players: where they start, ghosted where they end up
-    const end = spotsAfter(p, p.steps);
-    const holder = holderAfter(sc, p.steps);
+    // where this frame starts, and where it has got to so far
+    const start = spotsAfter(p, stepsBefore(p, beat)), now = spotsAfter(p, upTo());
+    const holder0 = holderAfter(S, stepsBefore(p, beat)), holder = holderAfter(S, upTo());
+    // defenders: where they set up on frame 1, then shading the frame's start
+    const xs = startSpots(S, { ...p, spots: start });
+    for (const xid of Object.keys(S.matchups)) drawX(ctx, V.px(xs[xid]));
+    // players: where the frame starts, ghosted where they end up
     for (const id of IDS) {
-      if (dist(end[id], p.spots[id]) > 0.5) drawO(ctx, V.px(end[id]), id, { ghost: true });
-      drawO(ctx, V.px(p.spots[id]), id, { ball: id === sc.handler, picked: pickFrom === id });
+      if (dist(now[id], start[id]) > 0.5) drawO(ctx, V.px(now[id]), id, { ghost: true });
+      drawO(ctx, V.px(start[id]), id, { ball: id === holder0, picked: pickFrom === id });
     }
-    if (holder !== sc.handler && !shooterOf(p)) ring(ctx, V.px(end[holder]), '#E8742A');
-    ui.changed(p);
+    if (holder !== holder0 && !shooterOf(p)) ring(ctx, V.px(now[holder]), '#E8742A');
+    ui.changed(p, { beat, frames: frameCount });
   }
 
-  function drawStep(ctx, s, at, n, label) {
+  function drawStep(ctx, s, at, n, label, faint) {
     const ink = '#22324d';
+    if (faint) {
+      // an earlier frame: the line only, no numbers or labels
+      if (s.kind === 'move' || s.kind === 'screen') drawRoute(ctx, [at[s.who], ...s.pts], s.kind, ink);
+      else if (s.kind === 'pass') { ctx.strokeStyle = ink; ctx.lineWidth = 2.2; ctx.setLineDash([7, 6]); poly(ctx, [V.px(at[s.from]), V.px(at[s.to])]); ctx.setLineDash([]); }
+      return;
+    }
     if (s.kind === 'move' || s.kind === 'screen') {
       const pts = [at[s.who], ...s.pts];
       drawRoute(ctx, pts, s.kind, ink);
@@ -190,8 +220,32 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     draw,
     setTool(t) { tool = tool === t ? null : t; pickFrom = null; drag = null; draw(); return tool; },
     get tool() { return tool; },
-    undo() { const p = clone(play()); p.steps.pop(); pickFrom = null; commit(p); },
-    clear() { const p = clone(play()); p.steps = []; pickFrom = null; commit(p); },
+    /* Undo takes back the last step of the frame on show; an empty frame closes. */
+    undo() {
+      const p = clone(play());
+      let k = -1;
+      p.steps.forEach((st, i) => { if (beatOf(st) === beat) k = i; });
+      pickFrom = null;
+      if (k >= 0) { p.steps.splice(k, 1); setPlay(p); }
+      else if (beat > 1 && beat === frameCount) { frameCount--; beat--; }
+      else if (beat > 1) return;
+      syncFrames(); draw();
+    },
+    clear() { const p = clone(play()); p.steps = []; pickFrom = null; beat = 1; frameCount = 1; commit(p); },
+    get beat() { return beat; },
+    get frames() { return frameCount; },
+    /* Go to a frame (1 to frames). */
+    setBeat(n) { beat = Math.max(1, Math.min(frameCount, n)); pickFrom = null; drag = null; draw(); },
+    /* Next frame: the next one, or a new one when this is the last (not twice empty). */
+    nextFrame() {
+      pickFrom = null;
+      if (beat < frameCount) beat++;
+      else if (framesOf(play())[beat - 1] && framesOf(play())[beat - 1].length) { frameCount++; beat = frameCount; }
+      else { ui.hint('Draw something in this frame first.'); return false; }
+      draw(); return true;
+    },
+    /* A play swapped in from outside (the playbook): show its last frame. */
+    reset() { frameCount = lastBeat(); beat = frameCount; pickFrom = null; drag = null; draw(); },
     problems: () => problems(sc, play()),
     view: () => V
   };

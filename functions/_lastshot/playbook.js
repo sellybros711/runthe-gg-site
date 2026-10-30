@@ -61,10 +61,11 @@ export function shooterOf(play) {
 }
 
 /* Every reason a play cannot run, in plain words. Empty means Run It. */
-export function problems(sc, play) {
+/* opt.preview: a storyboard frame played on its own needs no shooter. */
+export function problems(sc, play, opt = {}) {
   const out = [];
   const shots = play.steps.filter(s => s && s.kind === 'shoot');
-  if (shots.length === 0) out.push('Pick a shooter.');
+  if (shots.length === 0 && !opt.preview) out.push('Pick a shooter.');
   if (shots.length > 1) out.push('One shooter only.');
   let h = sc.handler;
   play.steps.forEach((s, i) => {
@@ -286,4 +287,78 @@ export function labelsOf(sc, play) {
     }
     return null;
   });
+}
+
+/* ---------- the storyboard ----------
+ * A play drawn as frames, the way a coach draws it on a whiteboard: frame 1,
+ * then Next, and frame 2 starts where everyone ended. Each step carries
+ * `beat` (its frame, from 1). A step with no beat is in frame 1, so a play
+ * drawn before frames existed is one frame.
+ *
+ * FRAMES ARE PRESENTATION ONLY (the owner's call, 2026-10-30). The sim never
+ * reads `beat`: the order rule above decides when everything runs, exactly as
+ * before, and playKey() leaves beats out, so regrouping frames never makes a
+ * play's test results stale. Steps stay in the order they run; a step added
+ * to an earlier frame is inserted at the end of that frame. */
+export const beatOf = s => (s && Number.isInteger(s.beat) && s.beat > 0 ? s.beat : 1);
+
+/* [[step index, ...], ...]: one list per frame, frame 1 first. A frame with
+   no steps yet (just opened with Next) is an empty list. */
+export function framesOf(play, minFrames = 1) {
+  let n = minFrames;
+  for (const s of play.steps) n = Math.max(n, beatOf(s));
+  const out = Array.from({ length: n }, () => []);
+  play.steps.forEach((s, i) => out[beatOf(s) - 1].push(i));
+  return out;
+}
+
+/* The steps before frame `beat` (where everyone stands as it opens). */
+export const stepsBefore = (play, beat) => play.steps.filter(s => beatOf(s) < beat);
+/* The steps through the end of frame `beat`. */
+export const stepsThrough = (play, beat) => play.steps.filter(s => beatOf(s) <= beat);
+
+/* Add a step to frame `beat`, after that frame's last step, so the steps
+   array stays in running order. Returns a new play. */
+export function addToFrame(play, beat, step) {
+  const p = { ...play, steps: play.steps.slice() };
+  let at = p.steps.length;
+  for (let i = p.steps.length - 1; i >= 0; i--) { if (beatOf(p.steps[i]) <= beat) { at = i + 1; break; } if (i === 0) at = 0; }
+  if (!p.steps.length) at = 0;
+  p.steps.splice(at, 0, { ...step, beat });
+  return p;
+}
+
+/* Frame `beat` played on its own, for Play frame: everyone where the frame
+   starts, only that frame's steps, and the ball with whoever has it then.
+   Returns { sc, play } for simulate(sc, play, seed, { preview: true }). The
+   shot is left out: a preview never takes it. */
+export function previewOf(sc, play, beat) {
+  const before = stepsBefore(play, beat);
+  return {
+    sc: { ...sc, handler: holderAfter(sc, before) },
+    play: { spots: spotsAfter(play, before), steps: play.steps.filter(s => beatOf(s) === beat && s.kind !== 'shoot') }
+  };
+}
+
+/* ---------- the situation ----------
+ * A playbook play keeps the game's scenario unless the coach sets its own
+ * (the owner's call, 2026-10-30, v1): the clock, and who starts with the
+ * ball. The score stays the scenario's. */
+export const CLOCK_MIN = 4, CLOCK_MAX = 24;
+export function cleanSituation(sit) {
+  if (!sit || typeof sit !== 'object') return null;
+  const out = {};
+  const c = Number(sit.clock);
+  if (Number.isFinite(c)) out.clock = Math.round(Math.max(CLOCK_MIN, Math.min(CLOCK_MAX, c)) * 10) / 10;
+  if (IDS.includes(sit.handler)) out.handler = sit.handler;
+  return Object.keys(out).length ? out : null;
+}
+export function scenarioFor(sc, sit) {
+  const s = cleanSituation(sit);
+  if (!s) return sc;
+  return { ...sc, clock: s.clock ?? sc.clock, handler: s.handler ?? sc.handler };
+}
+export function situationKey(sc, sit) {
+  const s = scenarioFor(sc, sit);
+  return s.clock.toFixed(1) + '/' + s.handler;
 }
