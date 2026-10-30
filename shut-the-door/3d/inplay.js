@@ -488,7 +488,7 @@ export class InPlay {
     // (holding a runner, before the pitch reaches the plate he faces the mound; he comes round to the plate with it)
     if (R.faceMound && s < 0.3) faceYaw = turnTo(faceYaw, faceToward(st, MOUND), 0.67 * (1 - ramp(s, -0.35, 0.3)));
     f.throwing = false; f.reaching = false;
-    let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0;
+    let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0, hop = 0;
     // a ball he takes (a catch in the air, a throw at a bag): the point, and how far his body is
     // moved so the glove is on it (catchFit, below)
     let take = null, takeW = 0;
@@ -512,7 +512,8 @@ export class InPlay {
           spec.crouch = Math.max(spec.crouch, 0.95 * k); spec.wide = 0.8 * k; spec.lean = Math.max(spec.lean, 0.75 * k);
           glove = { x: bp.x, y: bp.y, z: 0.2 }; gloveW = Math.max(gloveW, k);
           // (two hands: the bare hand just over the glove, covering the ball as it goes in)
-          hand = { x: bp.x, y: bp.y, z: 0.75 }; handW = 0.8 * k;
+          // (an outfielder picking up a ball he ran down keeps the one handed scoop)
+          if (a.kind === 'field') { hand = { x: bp.x, y: bp.y, z: 0.75 }; handW = 0.8 * k; } else { hand = { x: bp.x, y: bp.y, z: 1.0 }; handW = 0.7 * k; }
           // (the way round is chosen once, at the take: the ball he ran down and where he turns to after it can be
           // half a turn apart, and the short way round between them flipped sides as the turn eased off, a left
           // fielder's head swinging 2.2 rad in a frame a third of a second after a pickup in the corner, check-jolt.mjs)
@@ -529,7 +530,7 @@ export class InPlay {
             a.sideRef = { side: angDiff(face, heading(p0, bp)), spd: tr.at(Math.max(0, t - 0.1)).spd };
           }
           const side = a.sideRef.side, gsd = f.glove === 'r' ? -1 : 1;
-          if (a.sideRef.spd > 6 && Math.abs(side) > 0.45) {
+          if (a.kind === 'field' && !OF.includes(n) && a.sideRef.spd > 6 && Math.abs(side) > 0.45) {
             const kk = k * smooth((a.sideRef.spd - 6) / 8) * smooth((Math.abs(side) - 0.45) / 0.4);
             spec.twist = (spec.twist || 0) + clamp(side, -0.9, 0.9) * 0.7 * kk;
             spec.wide = Math.max(spec.wide, 0.95 * kk);
@@ -550,14 +551,18 @@ export class InPlay {
           // one is taken: his body a little turned away from it, both hands on the ball
           // (whether he is set is decided once, at the catch: tested every frame, his slowing past it switched the
           // turn and the second hand on in a frame, check-jolt.mjs)
-          if (a.setRef == null) a.setRef = tr.at(t).spd < 4 && q.z >= 4;
+          if (a.setRef == null) a.setRef = tr.at(t).spd < 4 && q.z >= 4 && !acts.some((x) => x.kind === 'throw' && x.t > t - 1e-6 && x.t < t + 1.2);
           const prev = plan.ballAt(t - 0.25), set = a.setRef;
           const gs = f.glove === 'r' ? -1 : 1;
           faceYaw = turnTo(faceYaw, heading(q, prev) + (set ? 0.32 * gs : 0), k);
           if (set) {
+            // (the covering hand lets go before a throw that follows: held through the windup it fought the
+            // throwing arm, check-jolt.mjs)
+            const nt = acts.find((x) => x.kind === 'throw' && x.t > t - 1e-6);
+            const kh = nt ? 1 - ramp(s, Math.min(t + 0.05, nt.t - 0.3), nt.t - 0.05) : 1;
             const fw = { x: Math.sin(faceYaw), y: Math.cos(faceYaw) };
             hand = { x: q.x - fw.y * gs * -0.35, y: q.y + fw.x * gs * -0.35, z: q.z - 0.2 };
-            handW = Math.max(handW, 0.85 * k);
+            handW = Math.max(handW, 0.85 * k * kh);
           }
           f.reaching = s < t + 0.02;
           // a high one at the wall: he goes up for it
@@ -641,7 +646,9 @@ export class InPlay {
           // the stride toward the target and the weight onto it. An outfielder's long throw (a tag up, a throw home
           // or to a base past the cutoff's reach) comes off a crow hop: a skip onto the back foot before the stride
           const far = OF.includes(n) && Math.hypot(a.to.x - st.x, a.to.y - st.y) > 120;
-          if (far) lift = Math.max(lift, 0.55 * bump(s, rel - 0.62, rel - 0.5, rel - 0.48, rel - 0.34));
+          // (on top of everything, never seen by the catch fit: there it was carried as part of the fit's own lift,
+          // and the outfielder's body jumped when it let go, check-jolt.mjs)
+          if (far) hop = Math.max(hop, 0.55 * bump(s, rel - 0.55, rel - 0.45, rel - 0.43, rel - 0.3));
           spec.stride = { l: 0.62 * smooth(clamp(k, 0, 1)) * w, r: -0.45 * smooth(clamp(k, 0, 1)) * w };
           spec.crouch = Math.max(spec.crouch, 0.16 * w * Math.sin(Math.PI * clamp(k / 2, 0, 1)));
           if (f.glove === 'r') spec.stride = { l: spec.stride.r, r: spec.stride.l };
@@ -819,7 +826,7 @@ export class InPlay {
           [trail]: { x: cT.dx * kt, y: cT.dy * kt, z: 0.3 * Math.sin(Math.PI * q) },
         };
       }
-      f.place(at.x, at.y, yaw, { lift });
+      f.place(at.x, at.y, yaw, { lift: lift + hop });
       f.pose(spec);
       // a force with the ball already in his hand (he steps on the bag himself): the foot to the bag
       const fs = acts.find((x) => x.kind === 'step' && x.force && x.base && s > x.t - 0.6 && s < x.t + 0.35);
