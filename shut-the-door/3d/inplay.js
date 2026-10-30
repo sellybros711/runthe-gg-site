@@ -707,7 +707,15 @@ export class InPlay {
       if (tk.t > s - 1e-6) continue;
       const c = this.carriedFit(n, f, tk.key, tk.t);
       if (!c) continue;
-      const kd = Math.exp(-Math.max(0, st.run - c.run) / 4), kp = 1 - ramp(s, tk.t, tk.t + 0.4);
+      let kd = Math.exp(-Math.max(0, st.run - c.run) / 4);
+      const kp = 1 - ramp(s, tk.t, tk.t + 0.4);
+      // (and it is gone by the end of the first run he makes after it, over that run: a first baseman who fields
+      // a ball a step from the bag, throws to second and steps back for the return throw ran three feet, so
+      // half the move stayed on, his front foot was the one nearest the bag, the force pinned it and stood him
+      // behind the bag, and his glove fell 0.27 m short of the throw, check-catch.mjs. A hold's step of a
+      // fiftieth of a foot is no run)
+      const nl = tr.legs.find((l) => l.g.t0 >= tk.t - 1e-6 && l.g.total > 1);
+      if (nl) kd *= 1 - smooth(clamp((s - nl.g.t0) / nl.g.T, 0, 1));
       at = { x: at.x + c.dx * kd, y: at.y + c.dy * kd };
       lift = Math.max(lift, c.lift * (1 - ramp(s, tk.t, tk.t + 0.3)));
       spec.lean = (spec.lean || 0) + c.dLean * kp; spec.crouch = (spec.crouch || 0) + c.dCrouch * kp; spec.wide = Math.max(spec.wide || 0, c.wide * kp);
