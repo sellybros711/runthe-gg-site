@@ -82,7 +82,12 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
   5i) is rules 6 plus the running game: steals on their own seeded stream (drawn only when a steal
   is on, so the four draws never move), the pickoff (`pa` on the call before) and the quick delivery
   (`ss: 1`, never called "quick pitch"; its costs live in `meter.js QUICK`). None of it is graded. A
-  call with `r: 6` replays as rules 6 (`fixtures/replays-rules6-pre-steals.json`). The strengths live in `grade.js R2`; change them only
+  call with `r: 6` replays as rules 6 (`fixtures/replays-rules6-pre-steals.json`). Rules 8 (2026-10-30,
+  CONTRACT.md 5j) is rules 7 plus the closer's real outing to the end of the game: every half he
+  pitched (`scenario.halves`, at least three outs), his team's real half between (`scenario.between`,
+  from the play by play, `pipeline/halves.py`), one value function over every half. A call with `r: 7`
+  replays on the first half alone (`Model.singleModel`, `fixtures/replays-rules7-pre-full-close.json`).
+  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

@@ -252,5 +252,41 @@ check('practice is never stored', mem[C.OUTING_KEY] === before && pr.mode === 'p
   check('and a sign-in does not post it', (await D.claim()).posted === false && server.posts === 2);
 }
 
+/* rules 8 (CONTRACT.md 5j): the closer's outing to the end of the game starts with a whole day's
+   daily (api.js FULL_CLOSE_FROM). Chapman 2016 was the daily on 2026-10-30, played as one half under
+   rules 7; on his next turn the daily is both halves, the card between them on the pitch that ends
+   the 8th, and the state the 9th's */
+{
+  for (const k of Object.keys(mem)) delete mem[k];
+  signedIn = false;
+  const days = Object.keys(sched.days).filter(d => sched.days[d].pack === 'std-2016-ws7-chapman');
+  const before = days.find(d => d < '2026-10-31'), after = days.find(d => d >= '2026-10-31');
+  const Q = freshApi();
+  const s7 = await Q.getScenario(before);
+  const o7 = await Q.startOuting(s7.id, null, { mode: 'daily' });
+  const t7 = s7.pitcher.arsenal.map(a => a.type);
+  let last = null;
+  for (let i = 0; i < 60 && (!last || last.state.status === 'live'); i++) last = await Q.throwPitch(o7.outingId, { type: t7[i % t7.length], cell: 12 });
+  check(`rules 8: the daily before ${'2026-10-31'} (${before}, Chapman) is played as it was: rules 7, one half`,
+    last.state.status === 'over' && last.pitchResult.call.r === 7 && !last.state.halves.length && o7.half.of === 1);
+  for (const k of Object.keys(mem)) delete mem[k];
+  const Q2 = freshApi();
+  const s8 = await Q2.getScenario(after);
+  check('rules 8: Chapman\'s spot is two halves, his team\'s real 9th between, and no reveal', s8.halves.length === 2 && s8.between.length === 1 && !('reveal' in s8) && !('reveal1' in s8));
+  const o8 = await Q2.startOuting(s8.id, null, { mode: 'daily' });
+  let card = null, r = null;
+  for (let i = 0; i < 200 && !card && (!r || r.state.status === 'live'); i++) {
+    r = await Q2.throwPitch(o8.outingId, { type: 'SL', cell: 22 });
+    card = r.pitchResult.halfOver || null;
+  }
+  check(`rules 8: on his next turn (${after}) the 8th ends with the card and the 9th is set`, !!card && r.state.half.inning === 9 && r.state.outs === 0
+    && r.state.halves.length === 1 && r.pitchResult.call.r === 8 && card.between.abbr === 'CHC' && card.between.pas.length === 4 && card.next.leadoff.name);
+  // a reload replays to the same 9th
+  const Q3 = freshApi();
+  await Q3.getScenario(after);
+  const back = await Q3.startOuting(s8.id, null, { mode: 'daily' });
+  check('rules 8: a reload resumes in the 9th, the card kept', back.half.inning === 9 && back.halves.length === 1 && back.pitchNo === r.state.pitchNo);
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);
