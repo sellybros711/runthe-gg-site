@@ -60,6 +60,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn.go:disabled { background: var(--panel); color: var(--dim); box-shadow: none; border-color: var(--edge); }
 .btn:active:not(:disabled) { transform: translateY(2px); }
 
+/* the bottom ad (on from launch; /assets/rtg-ads.js sets the class and --sticky-ad-h). On a short
+   window the clipboard gives up its spacing and the tool captions (the hint line says the same)
+   before clipboard.js narrows the board. The play keeps its result buttons above the banner. */
+@media (max-height: 760px) {
+  body.rtg-sticky-on #sBoard { gap: 6px; }
+  body.rtg-sticky-on .tool { min-height: 44px; justify-content: center; }
+  body.rtg-sticky-on .tool span { display: none; }
+}
+body.rtg-sticky-on .stage { max-height: calc(100dvh - 98px - var(--sticky-ad-h, 0px)); }
 /* the play */
 .stage { position: relative; border-radius: 14px; overflow: hidden; background: #2f8a4a; aspect-ratio: 260 / 400; width: 100%; max-height: calc(100dvh - 90px); margin: 0 auto; }
 #cLive { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }

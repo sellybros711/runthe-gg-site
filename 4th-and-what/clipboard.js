@@ -66,12 +66,31 @@
 
     /* ---------- the picture ---------- */
 
+    /* With the bottom ad on (body.rtg-sticky-on, set by /assets/rtg-ads.js), the board narrows
+       until the tools and Snap It sit 8px above the banner at scroll 0. It keeps the whole field
+       (every yard a route can reach is still drawn), it is just smaller. Off, this is a no-op and
+       the board is exactly as wide as the column. */
+    var box = canvas.parentNode, FIT_GAP = 8, FIT_MIN = 0.6;
+    function room() {
+      var doc = root.document;
+      if (!doc.body.classList.contains('rtg-sticky-on') || !box.offsetParent) return Infinity;
+      var last = box.parentNode.lastElementChild, b = box.getBoundingClientRect();
+      var below = last.getBoundingClientRect().bottom - b.bottom;
+      var ad = parseFloat(root.getComputedStyle(doc.documentElement).getPropertyValue('--sticky-ad-h')) || 0;
+      return root.innerHeight - ad - FIT_GAP - (b.top + root.scrollY) - below;
+    }
     function layout() {
+      box.style.width = ''; box.style.alignSelf = '';
       var r = canvas.getBoundingClientRect();
       DPR = Math.min(3, root.devicePixelRatio || 1);
       W = Math.max(200, Math.round(r.width));
       var goal = scenario().ballOn;
       ytop = goal <= YTOP ? Math.max(goal + 10 > 40 ? goal : goal + 10, 18) : YTOP;
+      var fit = Math.floor(room() * (X1 - X0) / (ytop - YBOT));
+      if (fit < W) {
+        W = Math.max(200, Math.round(W * FIT_MIN), fit);
+        box.style.width = W + 'px'; box.style.alignSelf = 'center';
+      }
       S = W / (X1 - X0);
       H = Math.round((ytop - YBOT) * S);
       canvas.style.height = H + 'px';
@@ -367,6 +386,7 @@
     canvas.addEventListener('pointerup', up);
     canvas.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.id) { clearTimeout(drag.timer); drag = null; draw(); } });
     root.addEventListener('resize', layout);
+    root.addEventListener('rtg-sticky', layout);   // the bottom ad filled, changed height or closed
 
     return {
       layout: layout, draw: draw,

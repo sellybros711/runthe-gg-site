@@ -6,8 +6,9 @@
  * until launch (check-posture.mjs holds that). The launch commit adds the Consent Mode defaults,
  * adsbygoogle.js and /assets/rtg-ads.js to the head, and from then on:
  *  - the closeable bottom banner sits on every screen, play included (the owner's exception for
- *    this game). The column ends above it (style.css, body.rtg-sticky-on), so Snap It and the
- *    clipboard are never under it.
+ *    this game). The clipboard narrows to fit above it (clipboard.js layout(), with style.css
+ *    under body.rtg-sticky-on), so Snap It and the tools are never under it, and the play keeps
+ *    its result buttons above it.
  *  - the two desktop rails stand beside the column, 150px clear, wherever the window has room.
  * /assets/rtg-ads.js owns how both look and behave.
  */
