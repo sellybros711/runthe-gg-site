@@ -253,6 +253,20 @@ async function run(name, viewport, scale) {
   await ctx.close();
 }
 
+/* The real shared cloud saves (no stand-in): signed in through the arcade's
+   RTG_AUTH, assets/cloudsave.js has the token, so a playbook can reach the account. */
+{
+  console.log('\ncloud saves');
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.goto(BASE + '/4th-and-what/');
+  await page.waitForFunction(() => !!window.RTG_SAVE && !!window.RTG_AUTH);
+  ok(await page.evaluate(() => window.RTG_SAVE.signedIn() === false), 'signed out, the cloud saves have no token');
+  ok(await page.evaluate(() => { window.RTG_AUTH.token = () => 'arcade-token'; return window.RTG_SAVE.signedIn(); }), 'signed in through RTG_AUTH, the cloud saves have the token');
+  await ctx.close();
+}
+
 await run('phone', { width: 390, height: 844 }, 3);
 await run('desktop', { width: 1440, height: 900 }, 1);
 await browser.close();

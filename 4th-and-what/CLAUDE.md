@@ -19,8 +19,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   within a band of real 4th down conversion.
 - **Playbooks need a Run The Games account** (the owner's call, 2026-10-30). They live in the
   shared cloud saves (`ps_saves`, game `fourth_and_what`: slot `index` and one `b-<id>` a book),
-  with a local copy for speed. No new table. `book.js` lends the page's token to
-  `assets/cloudsave.js` as `PS_AUTH`; never edit that shared file from here.
+  with a local copy for speed. No new table. `assets/cloudsave.js` signs in through the arcade's
+  `RTG_AUTH`; it is shared by five games, so a change to it bumps its `?v=` on every page.
 - **A name typed by hand is never changed.** Rules rename only plays whose name was never edited
   (`nameEdited`). Concepts beat single route words; the most exact route rule wins.
 - **Test it forces each call** (`run(..., { call })`), still rolling the call first so the dice

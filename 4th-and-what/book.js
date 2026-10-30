@@ -3,7 +3,8 @@
  * The owner's call (2026-10-30): a playbook needs an account. Signed out, the
  * page offers sign in and keeps nothing. Signed in, every playbook and the
  * coach's terminology live in the site's shared cloud saves
- * (assets/cloudsave.js, supabase/103_cloud_saves.sql): game 'fourth_and_what',
+ * (assets/cloudsave.js, supabase/103_cloud_saves.sql, which signs in through
+ * the arcade's RTG_AUTH on this page): game 'fourth_and_what',
  * one slot for the index (the list of playbooks and the terms) and one slot
  * per playbook. No new table.
  *
@@ -87,17 +88,6 @@
   }
 
   /* ---------- the store (browser) ---------- */
-
-  /* THE SIGN IN, HANDED TO THE CLOUD SAVES. assets/cloudsave.js takes its
-     token from whichever football, college or hoops auth client a page loaded
-     (PS_AUTH, PS_CFB_AUTH, RTF_AUTH) and this page loads the arcade's
-     (RTG_AUTH). Adding RTG_AUTH to that shared list would mean a version bump
-     on four other games' pages, so this page lends its token under the first
-     name instead. Nothing else this page loads reads PS_AUTH. When that
-     shared list learns RTG_AUTH, this goes. */
-  if (typeof window !== 'undefined' && !root.PS_AUTH) {
-    root.PS_AUTH = { token: function () { var A = root.RTG_AUTH; return A && A.token ? A.token() : null; } };
-  }
 
   function auth() {
     var A = root.RTG_AUTH, s = A && A.state ? A.state() : null;
