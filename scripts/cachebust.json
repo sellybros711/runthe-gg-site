@@ -3085,14 +3085,14 @@
       "sha": "e90d7c1fa3db7fd9"
     },
     "3d/boot.js": {
-      "v": "68",
-      "sha": "1ed9624726554daf"
+      "v": "70",
+      "sha": "d6fb160b23b93932"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "64",
-      "sha": "71899dc1c15e695c"
+      "v": "66",
+      "sha": "77b70ef2aabe1378"
     }
   },
   "soccer/index.html": {
@@ -3215,8 +3215,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "72",
-      "sha": "aaeeb5b81a07a327"
+      "v": "74",
+      "sha": "43d63907b67a0fd2"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3277,12 +3277,12 @@
       "sha": "4e0a1e374ca3f529"
     },
     "pitch.js": {
-      "v": "11",
-      "sha": "0cbff4b8b47da835"
+      "v": "12",
+      "sha": "10c7e0ea349a5180"
     },
     "play.js": {
-      "v": "11",
-      "sha": "262388df83dad2a8"
+      "v": "12",
+      "sha": "25055cc87afa8b2b"
     },
     "looks.js": {
       "v": "3",
@@ -3294,15 +3294,15 @@
     },
     "inplay.js": {
       "v": "32",
-      "sha": "bce9e407cfb057df"
+      "sha": "b8a5d0d12ccd5c5e"
     },
     "preview.js": {
-      "v": "8",
-      "sha": "baf61f3e74f3e313"
+      "v": "9",
+      "sha": "e8139c1dad8704aa"
     },
     "firstperson.js": {
-      "v": "6",
-      "sha": "92605ea41e712247"
+      "v": "7",
+      "sha": "8a4455c3ebc0ae97"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3375,18 +3375,18 @@
   },
   "shut-the-door/3d/play.js": {
     "pitch.js": {
-      "v": "11",
-      "sha": "0cbff4b8b47da835"
+      "v": "12",
+      "sha": "10c7e0ea349a5180"
     }
   },
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
       "v": "21",
-      "sha": "c364b4631d10ec99"
+      "sha": "0d474b1171a70197"
     },
     "shade-data.js": {
-      "v": "1",
-      "sha": "ab5ed5871dacaa4c"
+      "v": "2",
+      "sha": "0863b229c591e15f"
     },
     "fielders.js": {
       "v": "8",
@@ -3411,8 +3411,8 @@
   },
   "shut-the-door/3d/preview.js": {
     "pitch.js": {
-      "v": "11",
-      "sha": "0cbff4b8b47da835"
+      "v": "12",
+      "sha": "10c7e0ea349a5180"
     },
     "units.js": {
       "v": "1",
@@ -3441,8 +3441,8 @@
       "sha": "6740e4ce374039b0"
     },
     "pitch.js": {
-      "v": "11",
-      "sha": "0cbff4b8b47da835"
+      "v": "12",
+      "sha": "10c7e0ea349a5180"
     }
   },
   "shut-the-door/3d/field.js": {
@@ -3496,7 +3496,7 @@
     },
     "inplay-plan.js": {
       "v": "21",
-      "sha": "c364b4631d10ec99"
+      "sha": "0d474b1171a70197"
     }
   }
 }

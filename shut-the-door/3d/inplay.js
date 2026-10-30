@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=21';
-import { SHADE } from './shade-data.js?v=1';
+import { SHADE } from './shade-data.js?v=2';
 import { Crew } from './fielders.js?v=8';
 import { buildBallpark } from './ballpark.js?v=22';
 // (the same URL stage.js imports, so both share one copy of people.js)
@@ -192,12 +192,13 @@ export class InPlay {
     return seen.size;
   }
 
-  /** Where the fielders stand for this hitter (inplay-plan.js alignment): his shading from his own batted
-      balls (shade-data.js, by pack and id; none: the standard alignment). The lab checks give it as
-      begin's o.align instead (inplay-cases.mjs). */
-  align(b) {
+  /** Where the fielders stand for this hitter (inplay-plan.js alignment): his shading from his own
+      batted balls (shade-data.js, by pack and id; none: the standard alignment), and the late game
+      (sit: { inning, margin }, our lead before the pitch, from the stage). The lab checks give the whole
+      of it as begin's o.align instead (inplay-cases.mjs). */
+  align(b, sit) {
     const rows = SHADE[this.facts.scenarioId];
-    return { shade: (rows && rows[String(b.id)]) || null };
+    return { shade: (rows && rows[String(b.id)]) || null, inning: sit ? sit.inning : null, margin: sit ? sit.margin : null };
   }
 
   /** A ball in play: plan it from the engine's PitchResult and the pitch as the scene threw it. */
@@ -208,7 +209,7 @@ export class InPlay {
     const steal = pr.result !== 'in_play' && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
     // (and a pickoff throw between pitches: pr is { pickoff, basesBefore }, stage.js pickoff)
     const po = pr.pickoff && pr.result == null ? pr.pickoff : null;
-    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), ...(o.align || this.align(b)) });
+    const plan = po ? planPickoff(po, { bats: b.bats, basesBefore: pr.basesBefore }) : steal ? planSteal(pr, { bats: b.bats, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x') }) : planPlay(pr, { bats: b.bats, contact, id: pr.drawn ? pr.drawn.id : String(pr.n ?? 'x'), ...(o.align || this.align(b, o.sit)) });
     this.active = { pr, plan, pitch, hooks: o.hooks || {}, fired: 0, cam: null, fov0: null };
     this.ball = pitch.ball;
     this.ballScale0 = this.ball.scale.x;
@@ -661,7 +662,10 @@ export class InPlay {
       }
       if (a.kind === 'dive' || a.kind === 'dive_short') {
         const at = a.to || a.at;
-        let k = ramp(s, t - 0.18, t + 0.12) * (1 - ramp(s, t + 0.75, t + 1.35));
+        // (an infielder's lunge at a ground ball lays out over 0.45 s, push off to the dirt, as a real one does: in
+        // the 0.3 s a shoestring catch takes, off a run his head went over a body's speed, check-jolt.mjs)
+        const lay = a.kind === 'dive' ? [0.3, 0.15] : [0.18, 0.12];
+        let k = ramp(s, t - lay[0], t + lay[1]) * (1 - ramp(s, t + 0.75, t + 1.35));
         // (a ball he then picks up: he is up for it, and stays up. Undone only while that pickup was
         // his take, the dive came back whole in the frame after it, laid out flat in one frame at a
         // ball he already had, lab/pipeline/check-jolt.mjs)
@@ -788,7 +792,15 @@ export class InPlay {
       if (tk.t > s - 1e-6) continue;
       const c = this.carriedFit(n, f, tk.key, tk.t);
       if (!c) continue;
-      const kd = Math.exp(-Math.max(0, st.run - c.run) / 4), kp = 1 - ramp(s, tk.t, tk.t + 0.4);
+      let kd = Math.exp(-Math.max(0, st.run - c.run) / 4);
+      const kp = 1 - ramp(s, tk.t, tk.t + 0.4);
+      // (and it is gone by the end of the first run he makes after it, over that run: a first baseman who fields
+      // a ball a step from the bag, throws to second and steps back for the return throw ran three feet, so
+      // half the move stayed on, his front foot was the one nearest the bag, the force pinned it and stood him
+      // behind the bag, and his glove fell 0.27 m short of the throw, check-catch.mjs. A hold's step of a
+      // fiftieth of a foot is no run)
+      const nl = tr.legs.find((l) => l.g.t0 >= tk.t - 1e-6 && l.g.total > 1);
+      if (nl) kd *= 1 - smooth(clamp((s - nl.g.t0) / nl.g.T, 0, 1));
       at = { x: at.x + c.dx * kd, y: at.y + c.dy * kd };
       lift = Math.max(lift, c.lift * (1 - ramp(s, tk.t, tk.t + 0.3)));
       spec.lean = (spec.lean || 0) + c.dLean * kp; spec.crouch = (spec.crouch || 0) + c.dCrouch * kp; spec.wide = Math.max(spec.wide || 0, c.wide * kp);

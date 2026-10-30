@@ -13,7 +13,7 @@
  *         a pitch on the shoulder, the fall)
  *   &type=FF &cell=12 &mx=0.1 &mz=-0.1   override the pitch, the aimed cell, the miss (feet)
  */
-import { cellPoint } from './pitch.js?v=11';
+import { cellPoint } from './pitch.js?v=12';
 
 export const KINDS = ['swinging_strike', 'foul', 'foul_back', 'foul_tip', 'ground', 'line', 'fly', 'popup', 'called_strike', 'ball', 'check', 'hit_by_pitch', 'hbp_fall', 'dirt'];
 

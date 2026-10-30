@@ -83,13 +83,13 @@ import * as THREE from 'three';
 import { preload } from './load.js?v=8';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=6';
 import { People } from './people.js?v=40';
-import { Pitch, releaseOf } from './pitch.js?v=11';
-import { fromResult, motion } from './play.js?v=11';
+import { Pitch, releaseOf } from './pitch.js?v=12';
+import { fromResult, motion } from './play.js?v=12';
 import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=32';
-import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=8';
-import { FirstPerson } from './firstperson.js?v=6';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=9';
+import { FirstPerson } from './firstperson.js?v=7';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -344,11 +344,12 @@ class Stage {
     if (this.pitch) this.pitch.dispose();
     const m = motion(play, this.facts.batter);
     this.pitch = new Pitch({ scene: this.scene, facts: this.facts, play, batter: this.facts.batter, m, grid: false });
-    this.people.setPlay(this.pitch, play, m);
     this.m = m;
     // a new pitch is set up: his head and glove at the set, the ball out of his hand through the lens
+    // (which sets where its flight starts, so before the hitter and catcher read the flight)
     this.eye.settle = Infinity;
     if (this.fp) { this.fp.settle = Infinity; this.fp.hidden = false; this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera); }
+    this.people.setPlay(this.pitch, play, m);
   }
 
   pose(t) {
@@ -475,7 +476,8 @@ class Stage {
     this.cam0.userData.cssH = h;
     if (this.fp) {
       this.fp.layout(w, h, this.safe, this.loaded ? this.gridRect() : null, this.hudPanels());
-      if (this.pitch && this.loaded) this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera);
+      // (a new screen moves his hand, so where the flight starts: the hitter and catcher read it again)
+      if (this.pitch && this.loaded) { this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera); this.people.setPlay(this.pitch, this.pitch.play, this.m); }
       this.fp.pose(this.t);
     }
     if (this.loaded) this.soon();
@@ -674,6 +676,8 @@ class Stage {
     if (!this.inplay || !this.pitch || !po) return { pickoff: false };
     let run = null;
     try { run = this.inplay.begin({ pickoff: po, basesBefore: bases | (1 << (po.base - 1)) }, this.pitch, { hooks }); } catch (e) { console.error('the pickoff could not be staged', e); this.inplay.active = null; return { pickoff: false }; }
+    // (a balk that walks a run in: the lead the next pitch's fielders read, sitBefore)
+    if (po.runs) this.runsIn = (this.runsIn || 0) + po.runs;
     const tEnd = run.realDur + 0.3, callAt = run.resolveReal;
     return new Promise((done) => {
       let prev = null, clock = 0, frames = 0, raf = 0, called = false, finished = false;
@@ -714,6 +718,18 @@ class Stage {
     });
   }
 
+  /** The late game before this pitch, for where the fielders stand (inplay-plan.js alignment): the
+      inning, and our lead (the scenario's, less the runs scored since the outing's first pitch, pr.n 1;
+      an outing resumed mid way counts from its scenario's lead). Every pitch passes here, in order. */
+  sitBefore(pr) {
+    if (!(pr.n > (this.lastN || 0))) this.runsIn = 0;
+    this.lastN = pr.n || 0;
+    const sc = this.scn && this.scn.situation ? this.scn.situation.score : null;
+    const sit = { inning: this.facts.situation.inning, margin: sc ? sc.us - sc.them - (this.runsIn || 0) : null };
+    this.runsIn = (this.runsIn || 0) + (pr.runs || 0);
+    return sit;
+  }
+
   /** One pitch, to the end of its play (THE PLAY'S TIMELINE, in the header). */
   play(opts) {
     const p = this.playing = this.playOnce(opts);
@@ -725,6 +741,7 @@ class Stage {
   async playOnce(opts) {
     await this.ready;
     const pr = opts.pr, hooks = opts.hooks || {};
+    const sit = this.sitBefore(pr);
     // the indicator is the aim, not the pitch: a quick fade on the throw, long before the ball
     // leaves the hand (preview.js OUT_S), so the real ball is the star
     this.ghostSpec = null;
@@ -745,7 +762,7 @@ class Stage {
     // slide and the tag, as the engine called it)
     const steal = !inPlay && pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out');
     if (((inPlay && pt.after) || steal) && this.inplay) {
-      try { run = this.inplay.begin(pr, pt, { hooks }); } catch (e) { console.error(steal ? 'the steal could not be staged' : 'the ball in play could not be staged', e); this.inplay.active = null; }
+      try { run = this.inplay.begin(pr, pt, { hooks, sit }); } catch (e) { console.error(steal ? 'the steal could not be staged' : 'the ball in play could not be staged', e); this.inplay.active = null; }
     }
     // (knocked down by a pitch, he stays down for a beat)
     const tail = run ? run.realDur + 0.6 : inPlay ? 2.0 : pr.result === 'foul' ? 1.5 : pr.result === 'hit_by_pitch' ? (m.fall ? 2.6 : 1.5) : m.ump === 'strike' ? 1.3 : 0.9;
@@ -760,11 +777,13 @@ class Stage {
     const track = run ? { running: true, at: (ms) => ({ runners: this.inplay.fieldAt(Math.max(0, sceneT(ms / 1000) - resultAt)) }) }
       : AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
     if (hooks.sound) hooks.sound('whoosh', pt.tRel * 1000 / speed);
-    // what the browser check reads back: the play's reading and a few frames of it, and rel, where
-    // the pitch leaves his hand (the start of its own path, world metres), which the check measures
-    // the flight from: the first frame that sees the ball can land well into the flight
+    // what the browser check reads back: the play's reading and a few frames of it, and rel, his
+    // true release (pitch.rel, world metres), which the check measures the flight from: the first
+    // frame that sees the ball can land well into the flight. (Under the first person lens the
+    // flight is drawn from further out, on the line through his drawn hand, firstperson.js THE
+    // START; the pitch still leaves his hand at his release, and that is where it is measured from.)
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
-      rel: pt.pointAt(0).toArray().map((v) => Math.round(v * 1000) / 1000),
+      rel: P(pt.rel.x, pt.rel.y, pt.rel.z).toArray().map((v) => Math.round(v * 1000) / 1000),
       zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
     // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, the
