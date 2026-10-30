@@ -376,7 +376,7 @@
       setTool: function (t) { tool = t; armed = false; hint(); draw(); },
       tool: function () { return tool; },
       undo: function () { if (!undo.length) return false; P = JSON.parse(undo.pop()); armed = false; changed(); return true; },
-      clear: function () { save(); var f = P.formation, m = P.moved; P = emptyPlay(f); P.moved = m; armed = false; hint(); changed(); },
+      clear: function () { save(); var f = P.formation, m = P.moved, cf = P.customFormation; P = emptyPlay(f); P.moved = m; if (cf) P.customFormation = cf; armed = false; hint(); changed(); },
       isRun: isRun,
       ready: function () { return isRun() ? true : P.targets.length > 0; },
       box: function () { return FM.boxCount(defense()); },
