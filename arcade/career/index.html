@@ -313,6 +313,37 @@
     html body.rtg-sticky-on .revealbar{margin-top:4px !important; padding-top:4px !important;}
     html body.rtg-sticky-on .bailbtn{padding-top:8px !important; padding-bottom:8px !important; margin-bottom:8px !important;}
   }
+  /* A 1280x720 window had the answer box under the banner at first view: tighter while it is up. */
+  @media (min-width:1000px) and (max-height:760px){
+    html body.rtg-sticky-on .topbar{padding-top:2px !important; padding-bottom:2px !important;}
+    html body.rtg-sticky-on .modesw{margin-bottom:4px !important;}
+    html body.rtg-sticky-on .modesw button{padding-top:5px !important; padding-bottom:5px !important;}
+    html body.rtg-sticky-on .prompt{margin-bottom:6px !important;}
+    html body.rtg-sticky-on .pathcard{padding-top:12px !important; padding-bottom:12px !important; margin-bottom:8px !important;}
+    html body.rtg-sticky-on .bailbtn{padding-top:7px !important; padding-bottom:7px !important; margin-bottom:6px !important;}
+  }
+  /* A 320x568 phone: the "Not sure?" button and the answer box still sat under the banner at first view, so tighter again. */
+  @media (max-height:600px) and (max-width:999px){
+    html body.rtg-sticky-on .wrap{padding-top:4px !important;}
+    html body.rtg-sticky-on .topbar{min-height:0 !important; padding-top:2px !important; padding-bottom:2px !important;}
+    html body.rtg-sticky-on .rtggh-strip{margin-bottom:2px !important;}
+    html body.rtg-sticky-on .runbar{padding-top:2px !important; padding-bottom:2px !important; margin-bottom:3px !important;}
+    html body.rtg-sticky-on .modesw{margin-bottom:3px !important;}
+    html body.rtg-sticky-on .modesw button{padding-top:4px !important; padding-bottom:4px !important; min-height:0 !important;}
+    html body.rtg-sticky-on .pathcard{padding-top:5px !important; padding-bottom:5px !important; margin-bottom:4px !important;}
+    html body.rtg-sticky-on .scout .sc{padding-top:3px !important; padding-bottom:3px !important;}
+    html body.rtg-sticky-on .scout{margin-bottom:4px !important;}
+    html body.rtg-sticky-on .stopgap{height:3px !important;}
+    html body.rtg-sticky-on .revealbar{margin-top:2px !important; padding-top:2px !important;}
+    html body.rtg-sticky-on .revealbtn{padding-top:8px !important; padding-bottom:8px !important;}
+    html body.rtg-sticky-on .runbar .v{font-size:12px !important; line-height:1.25 !important;}
+    html body.rtg-sticky-on .stop .dot{width:22px !important; height:22px !important; font-size:12px !important;}
+    html body.rtg-sticky-on .bailbtn{padding-top:5px !important; padding-bottom:5px !important; margin-bottom:5px !important;}
+    html body.rtg-sticky-on .answerin, html body.rtg-sticky-on .answergo{min-height:46px !important; padding-top:7px !important; padding-bottom:7px !important;}
+    html body.rtg-sticky-on .bailbtn{min-height:38px !important;}
+    html body.rtg-sticky-on .scout{gap:3px !important;}
+    html body.rtg-sticky-on .modesw{padding-top:2px !important; padding-bottom:2px !important;}
+  }
 </style>
 <script>
 window.dataLayer=window.dataLayer||[];

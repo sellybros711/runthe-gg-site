@@ -378,6 +378,36 @@
     html body.rtg-sticky-on .rrow .ctrl{flex-direction:row;}
     html body.rtg-sticky-on .rows:empty{min-height:334px;}   /* 5 rows of 62 + 4 gaps of 6 */
   }
+  /* A 1280x720 window still had Check order under the banner: tighter again, 64px a row to 58. */
+  @media (min-width:1000px) and (max-height:760px){
+    html body.rtg-sticky-on .topbar{padding-top:2px !important; padding-bottom:2px !important;}
+    html body.rtg-sticky-on .modesw{margin-bottom:4px !important;}
+    html body.rtg-sticky-on .modesw button{padding-top:5px !important; padding-bottom:5px !important;}
+    html body.rtg-sticky-on .lead{padding-top:5px !important; padding-bottom:5px !important; margin-bottom:6px !important;}
+    html body.rtg-sticky-on .rows{padding-top:3px !important; padding-bottom:3px !important; gap:4px !important;}
+    html body.rtg-sticky-on .rrow{padding-top:5px; padding-bottom:5px;}
+    html body.rtg-sticky-on .rows:empty{min-height:306px;}   /* 5 rows of 58 + 4 gaps of 4 */
+  }
+  /* A 375x667 phone had Check order under the banner at first view. While it is up the board stands
+     tighter: smaller gaps, the same rows. Not on a 320x568 phone: there five rows and Check order
+     cannot both fit above the banner without cutting names, so Check order stays below the fold. */
+  @media (max-height:700px) and (min-height:601px) and (max-width:999px){
+    html body.rtg-sticky-on .wrap{padding-top:4px !important;}
+    html body.rtg-sticky-on .topbar{min-height:0 !important; padding-top:2px !important; padding-bottom:2px !important;}
+    html body.rtg-sticky-on .rtggh-strip{margin-bottom:2px !important;}
+    html body.rtg-sticky-on .modesw{margin-bottom:4px !important;}
+    html body.rtg-sticky-on .modesw button{padding-top:5px !important; padding-bottom:5px !important; min-height:0 !important;}
+    html body.rtg-sticky-on .lead{padding-top:5px !important; padding-bottom:5px !important; margin-bottom:4px !important;}
+    html body.rtg-sticky-on .axis{padding-top:3px !important; padding-bottom:3px !important; margin-bottom:4px !important;}
+    html body.rtg-sticky-on .rows{padding-top:4px !important; padding-bottom:4px !important; gap:4px !important;}
+    html body.rtg-sticky-on .actions{margin-top:6px !important;}
+  }
+  /* A 360x640 phone needed about 25px more: the rows lose a little padding, the question a little size. */
+  @media (max-height:660px) and (min-height:601px) and (max-width:999px){
+    html body.rtg-sticky-on .rrow{padding-top:2px !important; padding-bottom:2px !important;}
+    html body.rtg-sticky-on .lead .v{font-size:14px !important; line-height:1.2 !important;}
+    html body.rtg-sticky-on .actions{margin-top:4px !important;}
+  }
 </style>
 <script>
 window.dataLayer=window.dataLayer||[];
