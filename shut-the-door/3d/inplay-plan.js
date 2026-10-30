@@ -1743,8 +1743,11 @@ function planEdit(ctx) {
           if (bt.cam !== cur.cam && bt.pri >= 6 && !(cur.m != null && cur.m >= bt.s0 - 0.2 && cur.m <= bt.s1 + 0.2)) {
             const tail = { ...cur, s0: bt.s1 };
             if (bt.s0 > cur.s0 + 0.4) { cur.s1 = bt.s0; out.push({ s0: bt.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m }); }
-            // (it starts with the shot: it opens the shot, the rest follows)
-            else { out.pop(); out.push({ s0: cur.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m }); }
+            // (it starts with the shot: it opens the shot, the rest follows. A shot that changed camera
+            // only for its jump cut goes back to its own once another camera opens it: the jump is now
+            // to that one. Held on the other, a run at home, a throw from deep centre and the out at
+            // second fell to the high first base camera, which cannot hold them all, check-frame.mjs)
+            else { out.pop(); out.push({ s0: cur.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m }); if (cur.own && cur.own !== bt.cam) tail.cam = cur.own; }
             if (tail.s1 - tail.s0 > 0.4) out.push(tail);
           }
           continue;
@@ -1766,7 +1769,7 @@ function planEdit(ctx) {
           let cam = bt.cam;
           // (a jump cut changes camera, but a deciding moment keeps the one that shows it)
           if (cam === cur.cam && (bt.m == null || cam === 'follow')) cam = cam === 'wide' ? 'follow' : 'wide';
-          out.push({ s0: bt.s0, s1: bt.s1, cam, rate: 1, m: bt.m });
+          out.push({ s0: bt.s0, s1: bt.s1, cam, rate: 1, m: bt.m, own: cam !== bt.cam ? bt.cam : undefined });
         }
       }
       return out;
