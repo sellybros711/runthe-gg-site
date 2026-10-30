@@ -5500,6 +5500,34 @@ window.GA_ID='G-L29P5MRWKE';
   .season-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
   .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
   .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  /* ON A PHONE THE BANNER IS ALWAYS THERE (the owner's call, 2026-10-30): "The sticky ad should
+     always be on the draft and season and game simulation screens and the game should live above
+     it." So on a phone the box keeps its place whether or not AdSense has filled it yet, labelled,
+     in the strip's own navy, and every screen it sits on is padded by its height (--draft-ad-h,
+     --season-ad-h, measured off the box), so the game always ends above it. A wide screen keeps
+     the old rule: nothing until an ad arrives. */
+  @media (max-width:919px){
+    body .draft-ad[data-ad-zone],body .season-ad[data-ad-zone]{height:auto;overflow:visible;
+      padding:4px 0 calc(6px + env(safe-area-inset-bottom,0px));background:#0b1220;
+      border-top:1px solid var(--line)}
+    body .draft-ad[data-ad-zone] .ad-label,body .season-ad[data-ad-zone] .ad-label{display:block}
+    body .draft-ad[data-ad-zone] ins.adsbygoogle,body .season-ad[data-ad-zone] ins.adsbygoogle{
+      display:inline-block !important;width:300px;height:50px}
+  }
+  /* A short phone loses 80px to the box, so the draft's field gives a little more of its height
+     and the sort bar stays clear of it at first view. */
+  @media (max-width:919px) and (max-height:719px){
+    #s-draft .field:not(.fullfield){aspect-ratio:1/0.36}
+    /* And the playoff broadcast tightens around its field, so Sim to the end and the speed
+       stay clear of the box on a short phone. */
+    #s-po #po-opp{margin-bottom:8px !important}
+    #s-po .pocap{min-height:44px;margin-top:8px}
+    #s-po .pofield{margin-top:6px}
+    #s-po .porow{margin-top:8px !important}
+  }
+  /* The season's banner stays up through the games that finish it: the seeding, the playoff
+     broadcast, the boss game's scouting, the game itself and the freeze between plays. */
+  #s-seed.on,#s-po.on,#s-bscout.on,#s-bgame.on,#s-bfreeze.on{padding-bottom:var(--season-ad-h,0px)}
 
   /* ================= THE DRAFT ON A WIDE SCREEN =================
      One column on a phone, and the phone layout is untouched: .dcols is display:block
@@ -8148,9 +8176,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="pofield" id="po-field">
       <canvas id="po-fcanvas" width="600" height="160"></canvas>
     </div>
-    <div class="polog" id="po-log"></div>
-    <div class="porow" style="margin-top:14px"><button class="btn ghost sm" id="b-po-fast">Sim to the end</button>
+    <!-- THE CONTROLS SIT UNDER THE FIELD, above the log (the owner, 2026-10-30: the game lives
+         above the pinned banner). Under the log they were the first thing a short phone lost to
+         the banner, and they are what a player reaches for mid-game. -->
+    <div class="porow" style="margin-top:12px"><button class="btn ghost sm" id="b-po-fast">Sim to the end</button>
       <button class="btn ghost sm spd" data-simspeed>Speed: Normal</button></div>
+    <div class="polog" id="po-log" style="margin-top:12px"></div>
   </div>
 
   <div class="screen" id="s-seed">
@@ -10187,9 +10218,13 @@ function draftAd(id){
    screen is padded by the banner's rendered height (--season-ad-h), so the last grid row clears it.
    Unit football-season (8510729536). */
 let seasonAdSize=null;
+/* THE SEASON AND THE GAMES THAT FINISH IT are one spot (the owner, 2026-10-30): the banner is
+   built on the regular season and carried, not rebuilt, into the seeding, the playoff broadcast and the boss
+   game, and goes when the run ends. */
+const SEASON_AD_ON=['s-season','s-seed','s-po','s-bscout','s-bgame','s-bfreeze'];
 function seasonAd(id){
   const old=document.querySelector('[data-ad-zone="season"]');
-  if(id!=='s-season'){
+  if(SEASON_AD_ON.indexOf(id)<0){
     if(seasonAdSize){ seasonAdSize.disconnect(); seasonAdSize=null; }
     document.documentElement.style.removeProperty('--season-ad-h');
     if(old) old.remove();
