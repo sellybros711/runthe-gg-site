@@ -24,7 +24,7 @@ none of it, so no outcome, score, band or percentile moves.
             that day: Eckersley 1988, Rivera 2001) is null throughout, so the 3D code's labelled
             fallbacks apply; Rivera's 2008 arsenal is a proxy for his stuff, not his 2001 hand.
 
-  packs     python3 tracking.py packs                  puts data/tracking_arsenal.json into the
+  packs     python3 tracking.py packs [pack ids]       puts data/tracking_arsenal.json into the
             committed packs (scenario.pitcher and each arsenal pitch), then rebuild with pool.js
 """
 import io
@@ -148,9 +148,11 @@ def arsenal(ids):
     log('wrote', path)
 
 
-def packs():
+def packs(ids=None):
     tr = json.load(open(os.path.join(DATA, 'tracking_arsenal.json')))['packs']
     for pid, row in tr.items():
+        if ids and pid not in ids:
+            continue
         path = os.path.join(DATA, 'packs', pid + '.json')
         pack = json.load(open(path))
         p = pack['scenario']['pitcher']
@@ -170,4 +172,4 @@ if __name__ == '__main__':
     if sys.argv[1] == 'arsenal':
         arsenal(sys.argv[2:])
     elif sys.argv[1] == 'packs':
-        packs()
+        packs(sys.argv[2:])

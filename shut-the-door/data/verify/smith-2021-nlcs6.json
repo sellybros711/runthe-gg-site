@@ -1,0 +1,222 @@
+{
+ "id": "smith-2021-nlcs6",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 660921,
+ "date": "2021-10-23",
+ "game": "NL Championship Series Game 6: Los Angeles Dodgers at Atlanta Braves",
+ "gameType": "L",
+ "pitcher": {
+  "id": 519293,
+  "name": "Will Smith",
+  "throws": "L",
+  "team": "Atlanta Braves",
+  "seasonLine": "3.44 ERA, 37 SV, 68.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 72,
+   "batterId": 621035,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "519293": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Chris Taylor strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Chris Taylor strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Chris Taylor",
+   "batSideListed": "R",
+   "seasonLine": ".254/.344/.438, 20 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 641355,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "519293": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Cody Bellinger strikes out on a foul tip.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Cody Bellinger strikes out on a foul tip.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Cody Bellinger",
+   "batSideListed": "L",
+   "seasonLine": ".165/.240/.302, 10 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 572041,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "519293": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "AJ Pollock grounds out sharply, shortstop Dansby Swanson to first baseman Freddie Freeman.",
+   "feedEvent": "field_out",
+   "feedDescription": "AJ Pollock grounds out sharply, shortstop Dansby Swanson to first baseman Freddie Freeman.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "AJ Pollock",
+   "batSideListed": "R",
+   "seasonLine": ".297/.355/.536, 21 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 14,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 405395,
+   "name": "Albert Pujols",
+   "batSideListed": "R"
+  },
+  {
+   "id": 445276,
+   "name": "Kenley Jansen",
+   "batSideListed": "S"
+  },
+  {
+   "id": 605141,
+   "name": "Mookie Betts",
+   "batSideListed": "R"
+  },
+  {
+   "id": 608369,
+   "name": "Corey Seager",
+   "batSideListed": "L"
+  },
+  {
+   "id": 607208,
+   "name": "Trea Turner",
+   "batSideListed": "R"
+  },
+  {
+   "id": 669257,
+   "name": "Will Smith",
+   "batSideListed": "R"
+  },
+  {
+   "id": 621035,
+   "name": "Chris Taylor",
+   "batSideListed": "R"
+  },
+  {
+   "id": 641355,
+   "name": "Cody Bellinger",
+   "batSideListed": "L"
+  },
+  {
+   "id": 572041,
+   "name": "AJ Pollock",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1079,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 510,
+     "usage": 0.4727,
+     "velo": 92.8,
+     "pfxXin": 7.1,
+     "pfxZin": 17.3
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 450,
+     "usage": 0.4171,
+     "velo": 82.1,
+     "pfxXin": -5.9,
+     "pfxZin": 3.1
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 119,
+     "usage": 0.1103,
+     "velo": 77.6,
+     "pfxXin": -8.7,
+     "pfxZin": -7.6
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2021%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=519293"
+  },
+  "postseason": {
+   "pitches": 165,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 81,
+     "usage": 0.4909,
+     "velo": 82.2,
+     "pfxXin": -5.8,
+     "pfxZin": 2.4
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 62,
+     "usage": 0.3758,
+     "velo": 93.4,
+     "pfxXin": 8.7,
+     "pfxZin": 17.1
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 22,
+     "usage": 0.1333,
+     "velo": 77.8,
+     "pfxXin": -8.3,
+     "pfxZin": -9.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2021%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=519293"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 660921: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=660921",
+  "MLB Stats API schedule 2021-10-23 and live feed /api/v1.1/game/660921/feed/live",
+  "MLB Stats API people with 2021 season stats",
+  "Baseball Savant 519293 2021 season search (regular season and postseason) for the arsenal"
+ ]
+}
