@@ -225,6 +225,12 @@ export class Track {
       if (g.be > 0 || (nx.t0 < g.t0 + g.T + 0.02 && nx.al === 0)) continue;
       // (its top speed rises to fit the stop into the same time, by no more than a sixth)
       g.be = Math.min(STOP_S / g.T, 2 * (1 - g.al / 2) * (1 - 1 / 1.15));
+      // (a run that was speeding up the whole way, a sprint from rest to a ball he only just reaches, has no
+      // room for a stop after it: the ramps overlapped, so he reached the spot at nine tenths of the leg and
+      // stood there with his stride going at full speed, then stopped in a frame, his body snapping from the
+      // way he ran to the ball, the bobble's skate and pop, check-jolt.mjs. Then it speeds up and pulls up
+      // inside the leg, a rise and a stop, the same top speed, the same time and spot)
+      if (g.al + g.be > 1) { g.be = Math.min(STOP_S / g.T, 0.5); g.al = Math.min(g.al, 1 - g.be); }
     }
   }
   /** Stay where he is until t (whatever comes next starts no sooner). */
@@ -733,9 +739,16 @@ function planGround(ctx) {
       if (!near || m < near.m) near = { n, m, s: ms };
     }
     if (near && near.m < 30) {
-      const b = at(near.s), tgt = lerp(F[near.n], b, Math.min(1, (near.m - 4) / near.m));
-      T[near.n].run(SPEED(near.n).react, [tgt], { toRest: true });
-      T[near.n].act(near.s - 0.1, 'dive', { to: b });
+      // (as far toward it as he gets by the dive, never further: he ran on to a spot he reached half a second
+      // after he had laid out, sliding along the grass flat out, and his next run began while he was still
+      // down, check-jolt.mjs. He dives from where he is, and is up before he runs again)
+      const n = near.n, sp = SPEED(n), b = at(near.s), tD = Math.max(sp.react + 0.05, near.s - 0.1);
+      const go = Math.min(Math.max(0, near.m - 4), reach(tD, sp.react, sp.v, sp.a));
+      const tgt = lerp(F[n], b, go / near.m);
+      if (go > 0.5) T[n].arrive(sp.react, tgt, tD, { toRest: true });
+      T[n].act(tD, 'dive', { to: b });
+      // (the dive's get up: down from tD to 0.75 s after it, up by 1.35 s, inplay.js)
+      T[n].hold(tD + 1.2);
     }
     // an outfielder cuts it off as it rolls
     const of = retrieveRolling(ctx, at, g, 0);
