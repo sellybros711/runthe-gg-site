@@ -47,6 +47,10 @@
     "ui.js": {
       "v": "1",
       "sha": "93758a342a647e1e"
+    },
+    "ads.js": {
+      "v": "1",
+      "sha": "c1668ab3dcaef430"
     }
   },
   "arcade/almamater/index.html": {
