@@ -29,12 +29,16 @@
  * THE LENS. The scene's lens is long (the hitter large on a phone, a few degrees wide), so the real
  * release point, a couple of feet in front of his eyes and out to his arm side, is far off the
  * screen, and a ball drawn there would fill it. The arm is drawn with a natural lens (30 degrees each
- * way across the short side) in his own pass, and the ball leaves his hand where his hand is on that screen. From
- * there it is drawn onto its own path: its distance from where it will cross the plate shrinks like a
- * ball going away from you, its direction turns onto the path's, its size eases onto its own, and at
- * lens.join (a fifth of a second or so, well before the plate) it is exactly on its path, with the
- * same speed on screen, from then on. The flight itself (pitch.js flight) is never changed: the
- * crossing, the trail from the join and the markers are the pitch's own.
+ * way across the short side) in his own pass, and the ball leaves his hand where his hand is on that
+ * screen, the size it is in his hand. On the long lens a ball that size on that spot is far out along
+ * the line of sight through his hand, and the pitch's flight starts there (lensFor, THE START): one
+ * constant acceleration (pitch.js flight) to the engine's crossing, in his own time, with his own
+ * break, at its own size the whole way. It is the pitch a long lens shows from behind him, as the
+ * centre field camera does. The only thing added to it is his head: the hand is drawn with his head,
+ * so near the hand the ball carries his head's move since release, all of it at release and none at
+ * the plate (lens.carry). Until 2026-10-30 the ball was eased from his hand onto the flight from his
+ * real release, which came in from far off the screen: it overshot that path and turned back onto it,
+ * the zig zag the owner saw (check-pitch-path.mjs holds it now).
  */
 import * as THREE from 'three';
 import { smooth, clamp01 } from './units.js?v=1';
@@ -43,12 +47,15 @@ import { baseball } from './gear3d.js?v=3';
 import { look } from './looks.js?v=3';
 import { assetUrl } from './load.js?v=8';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { T_RELEASE } from './pitch.js?v=11';
+import { T_RELEASE } from './pitch.js?v=12';
 
 const HALF = THREE.MathUtils.degToRad(30), TAN = Math.tan(HALF);   // the arm's lens, each way across the short side
 const GLOVE_M = 0.31;            // the glove, heel to fingertips, metres
 const GLOVE_TIP = 22, GLOVE_YAW = THREE.MathUtils.degToRad(-32), GLOVE_LEAN = THREE.MathUtils.degToRad(-14);   // its set
-const BALL_M = 2.9 * 0.0254;     // a baseball's diameter, metres
+const BALL_M = 2.9 * 0.0254;
+const FT_M = 0.3048;
+const TRAIL_FROM = 0.45;        // the trail starts this share of the flight out of his hand
+const START_MIN = 0.4;          // the flight starts no nearer the plate than this share of his release's distance     // a baseball's diameter, metres
 export const IDLE_S = 4.2;       // his breath at the set, seconds
 const SKIN_LIGHT = new THREE.Color('#d8a184'), SKIN_DARK = new THREE.Color('#5a3a2a');
 
@@ -765,70 +772,62 @@ export class FirstPerson {
   /** Is his breath at the set still going (the stage draws until it ends)? */
   breathing() { return this.clock - this.idleStart < IDLE_S; }
 
-  /** THE LENS for one pitch (see the header): { join, place(tt, ball, camera) } for pitch.js, or
-      null. eye: the stage's pitcherEye (his head at release); camera: the scene's. */
+  /** THE LENS for one pitch (see the header): { join, hand, carry(tt, out), scale(tt, d) } for
+      pitch.js, or null (the pitch then flies from his release). It sets where the flight starts
+      (pitch.fly). eye: the stage's pitcherEye (his head at release); camera: the scene's. */
   lensFor(pitch, eye, camera) {
-    if (!this.ok || !this.w || !this.H || !this.fit) return null;
+    if (!this.ok || !this.w || !this.H || !this.fit) { pitch.fly(pitch.rel); return null; }
     // the slot of this pitch: its own arm angle, else his, else its release point's (pitch.js
     // armAngleFor, releaseFor); the arm shows around release only, so a new slot never pops
     const slot = THREE.MathUtils.degToRad(armSlot({ armAngle: pitch.armAngle }, pitch.rel || null));
     if (Number.isFinite(slot) && slot !== this.slot) { this.slot = slot; this.place(); }
-    if (!this.fit) return null;
+    if (!this.fit) { pitch.fly(pitch.rel); return null; }
     const W = this.w, Hh = this.h;
     const cam = camera.clone();
     eye.update(pitch.tRel, cam);
     cam.updateMatrixWorld(); cam.updateProjectionMatrix();
-    const px = (pt, c) => { const v = pt.clone().project(c); return { x: (v.x + 1) / 2 * W, y: (1 - v.y) / 2 * Hh }; };
-    const g = this.gripAt(pitch.tRel), hand = { x: g.x, y: g.y };
-    const cross = (c) => px(pitch.pointAt(pitch.f.T), c);
-    const c0 = cross(cam);
-    const off = (tt, c, cc) => { const p = px(pitch.pointAt(tt), c); return { x: p.x - cc.x, y: p.y - cc.y }; };
-    const mH = Math.hypot(hand.x - c0.x, hand.y - c0.y);
-    const o0 = off(0, cam, c0), o1 = off(0.02, cam, c0);
-    const m0 = Math.hypot(o0.x, o0.y), m1 = Math.hypot(o1.x, o1.y);
-    // the true path's distance from the crossing falls like 1 / (tt + tau0)
-    const tau0 = m0 > m1 * 1.0001 ? 0.02 / (m0 / m1 - 1) : 0.02;
-    // the join: the first moment the true path is on screen and as near the crossing as a ball easing
-    // in from the hand (mH e^(-tt / (tt + tau0))) would be: there both distance and speed agree
-    const T = pitch.f.T;
-    let join = 0.6 * T;
-    for (let tt = 0.04; tt < 0.6 * T; tt += 0.002) {
-      const p = px(pitch.pointAt(tt), cam), o = { x: p.x - c0.x, y: p.y - c0.y };
-      const inside = p.x > 0.04 * W && p.x < 0.96 * W && p.y > 0.04 * Hh && p.y < 0.96 * Hh;
-      if (inside && Math.hypot(o.x, o.y) <= mH * Math.exp(-tt / (tt + tau0))) { join = tt; break; }
-    }
-    const lam = 1 / (join + tau0);
-    const ang = (o) => Math.atan2(o.y, o.x);
-    let dTheta = Math.atan2(hand.y - c0.y, hand.x - c0.x) - ang(o0);
-    dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta));
-    const sHand = g.px;
-    const v = new THREE.Vector3();
-    const self = this;
+    // THE START. His hand lets the ball go at g on this screen, the size of the ball in his hand
+    // (g.px). On the scene's long lens that ball is far out along the line of sight through his
+    // hand: dHand from his eyes, where a real ball is that size on this screen. The flight starts
+    // there (no nearer the plate than START_MIN of his own release's distance), and the rest is the
+    // pitch's own (pitch.js fly): to the engine's crossing in his time, at his break. A start at his
+    // real release, a couple of feet in front of a long lens, jumps most of the way to where it is
+    // headed in the first frame; from dHand it is the pitch a long lens shows from behind him, as the
+    // centre field camera does, one smooth arc at its own size the whole way.
+    const g = this.gripAt(pitch.tRel), rel = pitch.rel, yPlate = 17 / 12;
+    const o = cam.position.clone(), eyeY = o.z / FT_M, cssH = cam.userData.cssH || Hh;
+    const dir = new THREE.Vector3(g.x / W * 2 - 1, 1 - g.y / Hh * 2, 0.5).unproject(cam).sub(o).normalize();
+    const sizeK = BALL_M / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2)) * cssH;   // px times metres
+    const dHand = sizeK / Math.max(1, g.px) / FT_M;
+    const yV = Math.max(yPlate + START_MIN * (rel.y - yPlate), Math.min(rel.y, eyeY - dHand));
+    const k = (yV * FT_M - o.z) / dir.z;
+    if (!(k > 0) || !Number.isFinite(k)) { pitch.fly(rel); return null; }
+    const hit = o.clone().addScaledVector(dir, k);
+    pitch.fly({ x: -hit.x / FT_M, y: yV, z: hit.y / FT_M, hand: true });
+    // its size: its own, but where the start was held off dHand, the hand's ball easing onto its own
+    // by join as if it were further away (its distance + c (1 - k(tt))), so it only ever shrinks
+    const c = Math.max(0, sizeK / Math.max(1, g.px) - cam.position.distanceTo(pitch.pointAt(0)));
+    const v = pitch.f.v0 * FT_M;
+    const join = c > 0 ? Math.min(0.6 * pitch.f.T, Math.max(0.08, 2.2 * c / v)) : 0;
+    const self = this, camRel = cam.position.clone(), T = pitch.f.T, head = cam.clone();
     return {
       join,
-      hand, mH,
-      /** Put the ball where the lens draws it, tt seconds out of his hand. */
-      place(tt, ball, c) {
-        if (self.hidden) return;
-        const cH = c.userData.cssH || Hh;
-        const cc = cross(c), q = pitch.pointAt(tt), p = px(q, c);
-        const o = { x: p.x - cc.x, y: p.y - cc.y }, mT = Math.hypot(o.x, o.y);
-        const s = clamp01(tt / join);
-        const kA = smooth(s), kM = smooth(clamp01((s - 0.5) / 0.5));
-        const mE = mH * Math.exp(-lam * tt);
-        const m = Math.exp((1 - kM) * Math.log(Math.max(mE, 1e-3)) + kM * Math.log(Math.max(mT, 1e-3)));
-        const th = ang(o) + dTheta * (1 - kA);
-        const sx = cc.x + m * Math.cos(th), sy = cc.y + m * Math.sin(th);
-        // its own size there, and the size the lens gives it
-        const dist = c.position.distanceTo(q);
-        const sTrue = BALL_M / (2 * dist * Math.tan(THREE.MathUtils.degToRad(c.fov) / 2)) * cH;
-        const sLens = sHand * (m / mH);
-        const size = Math.exp((1 - kA) * Math.log(sLens) + kA * Math.log(sTrue));
-        v.copy(q).project(c);
-        v.x = sx / W * 2 - 1; v.y = 1 - sy / Hh * 2;
-        v.unproject(c);
-        ball.position.copy(v);
-        ball.scale.setScalar(size / sTrue);
+      // the trail and the sparkle start a beat out of his hand, about where they always did
+      trail: Math.max(join, TRAIL_FROM * pitch.f.T),
+      hand: { x: g.x, y: g.y },
+      /** His head's own move since release, the share the ball carries tt seconds out of his hand
+          (all of it at his hand, none at the plate), into out: the ball leaves a hand drawn with his
+          head, so near his eyes it does not slide against the head's motion. */
+      carry(tt, out) {
+        const w = 1 - clamp01(tt / T);
+        if (self.hidden || !(w > 0) || !(tt >= 0)) return out.set(0, 0, 0);
+        eye.update(pitch.tRel + tt, head);
+        return out.copy(head.position).sub(camRel).multiplyScalar(w);
+      },
+      /** The ball's size tt seconds out of his hand, d metres from the eye, as a scale on its own. */
+      scale(tt, d) {
+        if (self.hidden) return 1;
+        return c > 0 ? d / (d + c * (1 - smooth(clamp01(tt / join)))) : 1;
       },
     };
   }

@@ -83,13 +83,13 @@ import * as THREE from 'three';
 import { preload } from './load.js?v=8';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=6';
 import { People } from './people.js?v=40';
-import { Pitch, releaseOf } from './pitch.js?v=11';
-import { fromResult, motion } from './play.js?v=11';
+import { Pitch, releaseOf } from './pitch.js?v=12';
+import { fromResult, motion } from './play.js?v=12';
 import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
 import { InPlay } from './inplay.js?v=30';
-import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=8';
-import { FirstPerson } from './firstperson.js?v=6';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=9';
+import { FirstPerson } from './firstperson.js?v=7';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -344,11 +344,12 @@ class Stage {
     if (this.pitch) this.pitch.dispose();
     const m = motion(play, this.facts.batter);
     this.pitch = new Pitch({ scene: this.scene, facts: this.facts, play, batter: this.facts.batter, m, grid: false });
-    this.people.setPlay(this.pitch, play, m);
     this.m = m;
     // a new pitch is set up: his head and glove at the set, the ball out of his hand through the lens
+    // (which sets where its flight starts, so before the hitter and catcher read the flight)
     this.eye.settle = Infinity;
     if (this.fp) { this.fp.settle = Infinity; this.fp.hidden = false; this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera); }
+    this.people.setPlay(this.pitch, play, m);
   }
 
   pose(t) {
@@ -475,7 +476,8 @@ class Stage {
     this.cam0.userData.cssH = h;
     if (this.fp) {
       this.fp.layout(w, h, this.safe, this.loaded ? this.gridRect() : null, this.hudPanels());
-      if (this.pitch && this.loaded) this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera);
+      // (a new screen moves his hand, so where the flight starts: the hitter and catcher read it again)
+      if (this.pitch && this.loaded) { this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera); this.people.setPlay(this.pitch, this.pitch.play, this.m); }
       this.fp.pose(this.t);
     }
     if (this.loaded) this.soon();
