@@ -611,7 +611,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=2"></script>
-<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <script src="/arcade/archive.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1508,14 +1508,18 @@ window.GA_ID='G-L29P5MRWKE';
 <script>
 /* THE ARCADE'S ADS (Ads Agent, 2026-10-29, the owner's calls). Two desktop rails beside the game on
    every screen, play included, built only where each one can sit 150px clear of the column and never
-   on a phone. And the closeable bottom banner on the result, never during play; its X closes it for
-   the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
+   on a phone. And the closeable bottom banner on every screen, play included (the owner's call,
+   2026-10-29); its X closes it for the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
 (function(){
   var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
   var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
   function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
   if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
-  window.RTG_ARCADE_STICKY = function(on){ if(window.RTG_ADS) RTG_ADS.sticky(on, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
+  /* The owner's call (2026-10-29): the bottom banner is up on every Arcade game, play included.
+     The game's own calls still arrive (a screen change, a finished run) and every one now asks for
+     it on. The X still closes it for the rest of the visit. */
+  window.RTG_ARCADE_STICKY = function(){ if(window.RTG_ADS) RTG_ADS.sticky(true, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
+  if(document.readyState === 'complete') window.RTG_ARCADE_STICKY(true); else window.addEventListener('load', function(){ window.RTG_ARCADE_STICKY(true); });
 })();
 </script>
 </body>

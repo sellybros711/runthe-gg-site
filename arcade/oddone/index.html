@@ -161,6 +161,8 @@
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
+  /* the bottom banner (/assets/rtg-ads.js) is up on every screen, so a toast rides on top of it */
+  body.rtg-sticky-on .toast{bottom:calc(26px + var(--sticky-ad-h,0px));}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
   .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
@@ -202,6 +204,13 @@
      does not ship already. Below 1610px nothing changes, because narrowing
      there would buy no rails. The 18px is a classic scrollbar. */
   @media (min-width:1610px){ .wrap{ max-width:min(1200px, calc(100vw - 610px)); } }
+
+  /* The bottom banner is up during play (the owner's call, 2026-10-29). On a short phone the fifth
+     answer landed under it at first view, so while it is up the answers stand a little tighter. */
+  @media (max-height:700px) and (max-width:999px){
+    body.rtg-sticky-on .choices{gap:7px;}
+    body.rtg-sticky-on .choice{min-height:52px; padding-top:10px; padding-bottom:10px;}
+  }
 </style>
 <script>
 window.dataLayer=window.dataLayer||[];
@@ -347,7 +356,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=2"></script>
-<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <script src="/arcade/archive.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -979,15 +988,17 @@ window.GA_ID='G-L29P5MRWKE';
 })();
 </script>
 <script>
-/* THE ARCADE'S RAILS (2026-10-29, the owner's call: every game carries them, the card games too).
+/* THE ARCADE'S ADS (2026-10-29, the owner's call: every game carries them, the card games too).
    Two desktop rails beside the game, built only where each one can sit 150px clear of the column
    and never on a phone. The same slots as the free games. /assets/rtg-ads.js owns how they look
-   and behave. No bottom banner here: it rides on a game's result screen, and these pages do not
-   call it. */
+   and behave. The closeable bottom banner too, on every screen, play included (the owner's call,
+   2026-10-29); its X closes it for the rest of the visit, across the Arcade. */
 (function(){
   var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
   function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
-  if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
+  function banner(){ if(window.RTG_ADS) RTG_ADS.sticky(true, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); }
+  if(document.readyState === 'complete'){ rails(); banner(); } else window.addEventListener('load', function(){ rails(); banner(); });
   /* A sheet over the page (the pre-game gate, the Arcade Card sheet, sign in) hides the site bar,
      and RTG_ADS.clear() ignores controls a sheet covers, so rails placed under one can sit beside a
      site bar that comes back when it goes. The pre-game gate is removed from the page and the other

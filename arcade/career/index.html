@@ -243,6 +243,8 @@
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
+  /* the bottom banner (/assets/rtg-ads.js) is up on every screen, so a toast rides on top of it */
+  body.rtg-sticky-on .toast{bottom:calc(26px + var(--sticky-ad-h,0px));}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
   .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
@@ -296,6 +298,21 @@
      does not ship already. Below 1610px nothing changes, because narrowing
      there would buy no rails. The 18px is a classic scrollbar. */
   @media (min-width:1610px){ .wrap{ max-width:min(1200px, calc(100vw - 610px)); } }
+
+  /* The bottom banner is up during play (the owner's call, 2026-10-29). On a short phone the answer
+     box landed under it at first view, so while it is up the cards stand a little closer. */
+  @media (max-height:700px) and (max-width:999px){
+    /* html body: gamehead.js restyles these later, at body.rtggh specificity and with !important */
+    html body.rtg-sticky-on .rtggh-strip{margin-bottom:6px !important;}
+    html body.rtg-sticky-on .runbar{padding-top:4px !important; padding-bottom:4px !important; margin-bottom:6px !important;}
+    html body.rtg-sticky-on .modesw{margin-bottom:6px !important;}
+    html body.rtg-sticky-on .modesw button{padding-top:6px !important; padding-bottom:6px !important;}
+    html body.rtg-sticky-on .pathcard{padding-top:8px !important; padding-bottom:8px !important; margin-bottom:8px !important;}
+    html body.rtg-sticky-on .pathcard .plab{margin-bottom:3px !important;}
+    html body.rtg-sticky-on .scout{margin-bottom:6px !important;}
+    html body.rtg-sticky-on .revealbar{margin-top:4px !important; padding-top:4px !important;}
+    html body.rtg-sticky-on .bailbtn{padding-top:8px !important; padding-bottom:8px !important; margin-bottom:8px !important;}
+  }
 </style>
 <script>
 window.dataLayer=window.dataLayer||[];
@@ -462,7 +479,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=2"></script>
-<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <script src="/arcade/mode.js?v=8"></script>
 <script src="/arcade/archive.js?v=3"></script>
@@ -1281,14 +1298,18 @@ window.GA_ID='G-L29P5MRWKE';
 <script>
 /* THE ARCADE'S ADS (Ads Agent, 2026-10-29, the owner's calls). Two desktop rails beside the game on
    every screen, play included, built only where each one can sit 150px clear of the column and never
-   on a phone. And the closeable bottom banner on the result, never during play; its X closes it for
-   the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
+   on a phone. And the closeable bottom banner on every screen, play included (the owner's call,
+   2026-10-29); its X closes it for the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
 (function(){
   var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
   var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
   function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
   if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
-  window.RTG_ARCADE_STICKY = function(on){ if(window.RTG_ADS) RTG_ADS.sticky(on, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
+  /* The owner's call (2026-10-29): the bottom banner is up on every Arcade game, play included.
+     The game's own calls still arrive (a screen change, a finished run) and every one now asks for
+     it on. The X still closes it for the rest of the visit. */
+  window.RTG_ARCADE_STICKY = function(){ if(window.RTG_ADS) RTG_ADS.sticky(true, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
+  if(document.readyState === 'complete') window.RTG_ARCADE_STICKY(true); else window.addEventListener('load', function(){ window.RTG_ARCADE_STICKY(true); });
 })();
 </script>
 </body>
