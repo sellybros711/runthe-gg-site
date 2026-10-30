@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=38">
+<link rel="stylesheet" href="style.css?v=40">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -208,6 +208,9 @@
     <p class="eyebrow" id="r-eyebrow"></p>
     <h2 class="outcome" id="r-outcome"></h2>
     <div class="seam" aria-hidden="true"></div>
+    <!-- a guest's daily (the owner, 2026-10-30): sign in to save the score to the leaderboard. A block
+         near the top of the result, on screen without a scroll at 390x844, never a popup (modes-ui.js) -->
+    <div class="r-save" id="r-save" hidden></div>
     <div class="vsbar" id="r-real"></div>
     <div class="r-kn">
       <div class="kn" id="r-kp"></div>
@@ -219,8 +222,6 @@
       <div class="strip mid" id="r-strip"></div>
     </div>
   </div>
-  <!-- a daily finished signed out: one button to sign in and save it (modes-ui.js). Never a popup. -->
-  <div class="r-save" id="r-save" hidden></div>
   <nav class="r-nav" id="r-nav" aria-label="after the outing">
     <button class="nv" id="r-coach" type="button"><b>talk to pitching coach</b><span>your costliest pitch</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-vote-go" type="button" hidden><b>vote for tomorrow</b><span>pick the next spot</span><i class="chev" aria-hidden="true"></i></button>
@@ -378,8 +379,8 @@
 <script src="api.js?v=17"></script>
 <script src="mock-api.js?v=13"></script>
 <script src="coach.js?v=2"></script>
-<script src="board.js?v=2"></script>
-<script src="modes-ui.js?v=2"></script>
+<script src="board.js?v=3"></script>
+<script src="modes-ui.js?v=3"></script>
 <script src="ui.js?v=48"></script>
 <script type="module" src="3d/boot.js?v=70"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>

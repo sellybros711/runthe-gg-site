@@ -78,13 +78,13 @@ function saveBlock(el, opts) {
     el.hidden = false;
     el.className = 'r-save saved';
     el.innerHTML = '<p><b>saved.</b> ' + (acct.taken === false ? 'your account already had today. that one counts.'
-      : acct.rank != null ? '#' + esc(acct.rank) + ' of ' + esc(acct.players) + ' today.' : 'it\'s on today\'s board.') + '</p>';
+      : acct.rank != null ? '#' + esc(acct.rank) + ' of ' + esc(acct.players) + ' on today\'s leaderboard.' : 'it\'s on today\'s leaderboard.') + '</p>';
     return true;
   }
   if (st.signedIn || !p) { el.hidden = true; el.innerHTML = ''; return false; }
   el.hidden = false;
   el.className = 'r-save';
-  el.innerHTML = '<p><b>your score isn\'t saved.</b> sign in and it goes on today\'s board.</p>' +
+  el.innerHTML = '<p><b>you\'re playing as a guest.</b> sign in to save your score to the leaderboard.</p>' +
     '<button class="btn save-b" type="button" data-save>' + SAVE_LABEL + '</button>';
   el.querySelector('[data-save]').addEventListener('click', function () { if (ctx.signIn) ctx.signIn(); });
   return true;

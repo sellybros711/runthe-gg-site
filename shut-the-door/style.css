@@ -1348,7 +1348,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
    Each is a block on a screen the player opened, never a popup. Ink and signal, the board's look. */
 
 /* sign in to save your score: on the result's rail (ink), one line and one clear button */
-.r-save { margin: 14px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(255, 79, 31, .14); box-shadow: inset 0 0 0 1.5px rgba(255, 79, 31, .55); }
+.r-save { margin: 0 0 14px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 79, 31, .14); box-shadow: inset 0 0 0 1.5px rgba(255, 79, 31, .55); }
 .r-save p { margin: 0 0 10px; font-size: 14px; color: rgba(244, 245, 247, .85); }
 .r-save p b { color: #fff; }
 .r-save.saved { background: rgba(34, 164, 93, .16); box-shadow: inset 0 0 0 1.5px rgba(34, 164, 93, .6); }

@@ -1313,9 +1313,12 @@ async function modes(w, h, full) {
   await dailyDone(page);
   ok(await nothingOpen(page), '17 nothing opens by itself on the home after the daily');
   await page.click('#d-see');
-  await page.waitForSelector('#s-result.on #r-save:not([hidden])', { timeout: 5000 });
-  const sv = await page.evaluate(() => ({ b: document.querySelector('#r-save [data-save]').textContent, h: document.querySelector('#r-save [data-save]').getBoundingClientRect().height }));
-  ok(sv.b === 'sign in to save your score' && sv.h >= 38, '17 signed out, the result has the button "' + sv.b + '" (' + Math.round(sv.h) + ' px)');
+  await page.waitForSelector('#s-result.on #r-save:not([hidden])', { timeout: 30000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const sv = await page.evaluate(() => { const s = document.getElementById('r-save'), b = s.querySelector('[data-save]'), r = s.getBoundingClientRect();
+    return { b: b.textContent, h: b.getBoundingClientRect().height, t: s.querySelector('p').textContent, bottom: r.bottom, top: r.top, nav: document.getElementById('r-nav').getBoundingClientRect().top, vh: innerHeight }; });
+  ok(sv.b === 'sign in to save your score' && sv.h >= 38 && /guest/.test(sv.t) && /leaderboard/.test(sv.t), '17 a guest\'s result says it plainly: "' + sv.t + '", with the button "' + sv.b + '" (' + Math.round(sv.h) + ' px)');
+  ok(sv.top >= 0 && sv.bottom <= sv.vh && sv.bottom <= sv.nav, '17 the guest\'s block is on screen without a scroll and above the menu (' + Math.round(sv.top) + '-' + Math.round(sv.bottom) + ' of ' + sv.vh + ' px, the menu at ' + Math.round(sv.nav) + ')');
   ok(await nothingOpen(page), '17 the save is a button on the result, no sheet opened');
   await page.waitForSelector('#r-vote:not([hidden]) .vt-o', { timeout: 30000 });
   const gv = await page.evaluate(() => ({ n: document.querySelectorAll('#r-vote .vt-o').length, dis: [...document.querySelectorAll('#r-vote .vt-o')].every((b) => b.disabled), btn: (document.querySelector('#r-vote [data-save]') || {}).textContent }));
@@ -1325,7 +1328,7 @@ async function modes(w, h, full) {
   await page.click('#r-board');
   await page.waitForSelector('#bd-list .bd-rows', { timeout: 10000 });
   const bd = await page.evaluate(() => ({ t: document.getElementById('bd-you').textContent, b: (document.getElementById('bd-signin') || {}).textContent }));
-  ok(/played signed out/.test(bd.t) && bd.b === 'sign in to save your score', '17 the board says why you are not on it, with the same button');
+  ok(/as a guest/.test(bd.t) && /leaderboard/.test(bd.t) && bd.b === 'sign in to save your score', '17 the leaderboard says why a guest is not on it, with the same button');
   await shotM(page, 'board-signed-out');
   await page.click('#bd-signin');
   await page.waitForSelector('#sheet-auth.on #au-form');

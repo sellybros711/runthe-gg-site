@@ -65,9 +65,9 @@ function renderYou(rows, st) {
        own button (modes-ui.js). Signing in posts it once (api.js claim). */
     var owed = ctx.pending ? ctx.pending() : null;
     el.innerHTML = count + (owed && ctx.saveLabel
-      ? '<div class="bd-in"><p>you played signed out, so your outing isn\'t on it. it\'s saved on this device until midnight.</p>' +
+      ? '<div class="bd-in"><p>you played as a guest, so your score isn\'t on the leaderboard. sign in to save it.</p>' +
         '<button class="btn save-b" type="button" id="bd-signin">' + esc(ctx.saveLabel) + '</button></div>'
-      : '<div class="bd-in"><p>sign in to put your outing on the board.</p>' +
+      : '<div class="bd-in"><p>sign in to put your outing on the leaderboard.</p>' +
         '<button class="btn dk" type="button" id="bd-signin">sign in</button></div>');
     $('bd-signin').addEventListener('click', function () { if (ctx.onSignIn) ctx.onSignIn(); });
     return;
