@@ -570,6 +570,30 @@
     html body.rtg-sticky-on .lead{padding-top:4px !important; padding-bottom:4px !important;}
     html body.rtg-sticky-on .pool-h{padding-top:5px !important; padding-bottom:5px !important;}
   }
+  /* The smallest phones (360x640 and the like) needed about 30px more for Submit to clear the
+     banner at first view. The tiles are already at the 44px tap minimum, so it comes off the bars
+     around them. */
+  @media (max-height:660px) and (max-width:999px){
+    html body.rtg-sticky-on .modesw,
+    html body.rtg-sticky-on .lead,
+    html body.rtg-sticky-on .mstatus,
+    html body.rtg-sticky-on .pool-h{margin-bottom:3px !important;}
+    html body.rtg-sticky-on .lead .v{font-size:14px !important; line-height:1.25 !important;}
+    html body.rtg-sticky-on .mstatus{padding-top:2px !important; padding-bottom:2px !important;}
+    html body.rtg-sticky-on .mstatus .mtime{font-size:20px; line-height:1;}
+    html body.rtg-sticky-on .pool-h{padding-top:2px !important; padding-bottom:2px !important;}
+    html body.rtg-sticky-on .pool{padding-top:4px !important; padding-bottom:4px !important; margin-bottom:6px !important;}
+    html body.rtg-sticky-on .submitbar .btn{padding-top:11px; padding-bottom:11px;}
+  }
+  /* A laptop window (1366x768 and the like) put Submit under the banner by about 20px. The desktop
+     layout's gaps are generous, so that is where it comes from. */
+  @media (min-width:1000px) and (max-height:860px){
+    html body.rtg-sticky-on .topbar{padding-bottom:6px !important;}
+    html body.rtg-sticky-on .modesw{margin-bottom:6px !important;}
+    html body.rtg-sticky-on .lead{padding-top:7px !important; padding-bottom:7px !important; margin-bottom:8px !important;}
+    html body.rtg-sticky-on .pool-h{margin-bottom:6px !important;}
+    html body.rtg-sticky-on .pool{margin-bottom:10px !important;}
+  }
 </style>
 <script>
 window.dataLayer=window.dataLayer||[];

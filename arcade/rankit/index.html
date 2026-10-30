@@ -367,6 +367,17 @@
     html body.rtg-sticky-on .rows{padding-top:6px !important; padding-bottom:6px !important; gap:6px !important;}
     html body.rtg-sticky-on .actions{margin-top:8px !important;}
   }
+  /* A laptop window (1366x768, 1280x800) needed about 115px more: the five rows are what is tall.
+     On a desktop the column is wide enough for a name on one line, so each row drops its second
+     line, and its up and down arrows stand side by side instead of stacked. 88px a row to 62. */
+  @media (min-width:1000px) and (max-height:860px){
+    html body.rtg-sticky-on .rrow{padding-top:8px; padding-bottom:8px;}
+    html body.rtg-sticky-on .rrow:not(.show-era){grid-template-columns:minmax(0,1fr) auto 72px;}
+    html body.rtg-sticky-on .rmeta{height:44px;}
+    html body.rtg-sticky-on .rmeta .nm{-webkit-line-clamp:1;}
+    html body.rtg-sticky-on .rrow .ctrl{flex-direction:row;}
+    html body.rtg-sticky-on .rows:empty{min-height:334px;}   /* 5 rows of 62 + 4 gaps of 6 */
+  }
 </style>
 <script>
 window.dataLayer=window.dataLayer||[];
