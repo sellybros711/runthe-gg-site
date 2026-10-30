@@ -88,6 +88,9 @@ def active_table(year, pid):
             f'Savant active spin leaderboard, {year} regular season, {method}')
 
 
+SPIN_AGREE = 0.8   # the picture's own rule (lab/pipeline/check-pitches.mjs)
+
+
 def one(pid, pack, spec):
     sc = pack['scenario']
     p = sc['pitcher']
@@ -130,11 +133,30 @@ def one(pid, pack, spec):
         rows[t] = {'n': int(len(g)), 'release': rel, 'armAngle': mean(g['arm_angle'], 1),
                    'spin': spin if any(v is not None for v in spin.values()) else None}
         log(pid, t, json.dumps(rows[t]))
+    # A spin the picture cannot draw is null, so the ball uses its family's default (as before
+    # Statcast), and the reason is kept: no axis (Savant has none in 2015), or a mean axis whose
+    # push is against his own pfx (a cosine under 0.8, lab/pipeline/check-pitches.mjs SPIN_AGREE:
+    # gyro-heavy sliders, Smith 2021 and Hader 2023)
+    spin_null = {}
+    for a in p['arsenal']:
+        sp = rows[a['type']]['spin']
+        if not sp:
+            continue
+        if sp['axis'] is None:
+            spin_null[a['type']] = 'Savant has no spin axis for it that season'
+        else:
+            th, pm = math.radians(sp['axis']), math.hypot(a['pfxX'], a['pfxZ'])
+            cos = (math.sin(th) * a['pfxX'] - math.cos(th) * a['pfxZ']) / pm if pm > 2 else 1.0
+            if cos < SPIN_AGREE:
+                spin_null[a['type']] = f'his mean spin axis ({sp["axis"]}) pushes against his own pfx (cosine {cos:.2f})'
+        if a['type'] in spin_null:
+            log(pid, a['type'], 'spin null:', spin_null[a['type']])
+            rows[a['type']]['spin'] = None
     gt = set(df['game_type'].dropna())
     return {'source': url,
             'tracking': {'system': 'statcast' if year >= 2015 else 'pitchfx', 'season': year,
                          'games': 'regular' if gt == {'R'} else 'postseason', 'n': int(len(df)),
-                         'active': active_src},
+                         'active': active_src, **({'spinNull': spin_null} if spin_null else {})},
             'release': release_of(df), 'armAngle': mean(df['arm_angle'], 1), 'arsenal': rows}
 
 

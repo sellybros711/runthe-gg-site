@@ -555,7 +555,12 @@
     "season": 2015,
     "games": "regular",
     "n": 1035,
-    "active": null
+    "active": null,
+    "spinNull": {
+     "FF": "Savant has no spin axis for it that season",
+     "FC": "Savant has no spin axis for it that season",
+     "KC": "Savant has no spin axis for it that season"
+    }
    },
    "release": {
     "x": -1.88,
@@ -572,11 +577,7 @@
       "ext": 5.99
      },
      "armAngle": null,
-     "spin": {
-      "rate": 2397,
-      "axis": null,
-      "active": null
-     }
+     "spin": null
     },
     "FC": {
      "n": 267,
@@ -586,11 +587,7 @@
       "ext": 5.83
      },
      "armAngle": null,
-     "spin": {
-      "rate": 2570,
-      "axis": null,
-      "active": null
-     }
+     "spin": null
     },
     "KC": {
      "n": 197,
@@ -600,11 +597,7 @@
       "ext": 5.64
      },
      "armAngle": null,
-     "spin": {
-      "rate": 2387,
-      "axis": null,
-      "active": null
-     }
+     "spin": null
     }
    }
   },
@@ -961,7 +954,10 @@
     "season": 2021,
     "games": "regular",
     "n": 1079,
-    "active": "Savant active spin leaderboard, 2021 regular season, spin-based"
+    "active": "Savant active spin leaderboard, 2021 regular season, spin-based",
+    "spinNull": {
+     "SL": "his mean spin axis (309) pushes against his own pfx (cosine 0.40)"
+    }
    },
    "release": {
     "x": 1.53,
@@ -992,11 +988,7 @@
       "ext": 6.26
      },
      "armAngle": 44.4,
-     "spin": {
-      "rate": 2319,
-      "axis": 309,
-      "active": 23.2
-     }
+     "spin": null
     },
     "CU": {
      "n": 119,
@@ -1095,7 +1087,10 @@
     "season": 2023,
     "games": "regular",
     "n": 1042,
-    "active": "Savant active spin leaderboard, 2023 regular season, spin-based"
+    "active": "Savant active spin leaderboard, 2023 regular season, spin-based",
+    "spinNull": {
+     "SL": "his mean spin axis (300) pushes against his own pfx (cosine 0.34)"
+    }
    },
    "release": {
     "x": 2.8,
@@ -1126,11 +1121,7 @@
       "ext": 6.73
      },
      "armAngle": 28.8,
-     "spin": {
-      "rate": 2388,
-      "axis": 300,
-      "active": 14.4
-     }
+     "spin": null
     },
     "CH": {
      "n": 35,
