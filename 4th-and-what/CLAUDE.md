@@ -17,6 +17,14 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
 - **A retune is three things:** the change in `config.js`, `node 4th-and-what/build/tune.mjs 300`,
   and the new rates in the vault's `4th-and-what-formulas.md`. The engine test holds the rates
   within a band of real 4th down conversion.
+- **Playbooks need a Run The Games account** (the owner's call, 2026-10-30). They live in the
+  shared cloud saves (`ps_saves`, game `fourth_and_what`: slot `index` and one `b-<id>` a book),
+  with a local copy for speed. No new table. `book.js` lends the page's token to
+  `assets/cloudsave.js` as `PS_AUTH`; never edit that shared file from here.
+- **A name typed by hand is never changed.** Rules rename only plays whose name was never edited
+  (`nameEdited`). Concepts beat single route words; the most exact route rule wins.
+- **Test it forces each call** (`run(..., { call })`), still rolling the call first so the dice
+  after it fall the same way. Results are stored per distance and flagged when the play changes.
 - **No guide opens by itself.** How it works is behind the `?` button.
 - **PXHD is borrowed, not copied** (`/setlist/pxhd.js`). Do not edit it from here; a change it
   needs goes to the agent that owns it.

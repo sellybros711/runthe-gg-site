@@ -44,11 +44,23 @@ const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 
 async function run(name, viewport, scale) {
   console.log('\n' + name);
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: scale });
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: scale, acceptDownloads: true });
+  /* THE CLOUD, IN MEMORY. assets/cloudsave.js steps aside when RTG_SAVE is
+     already there, so no check ever writes a row on a real account. */
+  await ctx.addInitScript(() => {
+    const mem = {}; window.__mem = mem;
+    window.RTG_SAVE = { API_VERSION: 1, idle: () => true, signedIn: () => true,
+      all: g => Promise.resolve(Object.keys(mem).filter(k => k.startsWith(g + '/')).map(k => ({ slot: k.split('/')[1], progress: mem[k].progress, payload: JSON.parse(JSON.stringify(mem[k].payload)) }))),
+      queue: (g, sl, fn) => { const m = fn(); const k = g + '/' + sl; if (!m) return Promise.resolve(null); if (m.drop) { delete mem[k]; return Promise.resolve(null); }
+        if (mem[k] && mem[k].progress > m.progress) return Promise.resolve({ ok: false, payload: mem[k].payload, progress: mem[k].progress });
+        mem[k] = { progress: m.progress, payload: JSON.parse(JSON.stringify(m.payload)) }; return Promise.resolve({ ok: true }); },
+      drop: (g, sl) => { delete mem[g + '/' + sl]; return Promise.resolve(null); } };
+  });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  page.on('dialog', d => d.accept());
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
   await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
   const shot = async (f) => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
@@ -66,7 +78,14 @@ async function run(name, viewport, scale) {
   }
 
   await page.goto(BASE + '/4th-and-what/?seed=11');
-  await page.waitForFunction(() => !!window.FAW_UI);
+  await page.waitForFunction(() => !!window.FAW_UI && !!window.FAW_BOOKUI);
+  ok(await page.isVisible('#sHome') && await page.isVisible('#goBuild') && await page.isVisible('#goBooks'), 'home: Build a Play and My Playbooks');
+  await shot('0-home');
+  /* signed out, a playbook asks for an account */
+  await page.click('#goBooks');
+  ok(await page.isVisible('#booksSignin') && !(await page.isVisible('#bNewBook')), 'signed out, My Playbooks asks you to sign in');
+  await page.click('#sBooks [data-go="sHome"]');
+  await page.click('#goBuild');
   ok(await page.isVisible('#sPick') && (await page.$$('.dist')).length === 6, 'six distance buttons');
   ok(!(await page.evaluate(() => document.getElementById('guide').open)), 'no guide opens by itself');
   await shot('1-pick');
@@ -137,8 +156,17 @@ async function run(name, viewport, scale) {
   const r3 = await waitResult();
   ok(!!r3.title, 'replay, the defense rolls again: ' + r3.title);
 
-  /* a run: Handoff, QB then the back, then his path */
+  /* Build a Play keeps what you drew: a download, and save to a playbook */
   await page.click('#bBack');
+  const dl = page.waitForEvent('download', { timeout: 5000 }).catch(() => null);
+  await page.click('#bDownload');
+  const file = await dl;
+  ok(!!file && /\.png$/.test(file.suggestedFilename()), 'Download gives a PNG: ' + (file ? file.suggestedFilename() : 'none'));
+  await page.click('#bSaveTo');
+  ok(await page.isVisible('#saveDlg') && /Sign in/.test(await page.textContent('#saveOut')), 'signed out, Save to playbook asks you to sign in');
+  await page.click('#bSaveCancel');
+
+  /* a run: Handoff, QB then the back, then his path */
   await page.click('#bClear');
   await page.click('.tool[data-tool="handoff"]');
   await tapYd([0, -5]); await tapYd([1.8, -5.2]);
@@ -152,6 +180,75 @@ async function run(name, viewport, scale) {
   const r4 = await waitResult();
   ok(!!r4.title, 'the run: ' + r4.title + '. ' + r4.why);
   await shot('5-run');
+
+  /* ---------- the playbooks, signed in ---------- */
+  await page.evaluate(() => { window.RTG_AUTH.state = () => ({ ready: true, resolved: true, signedIn: true, userId: 'check-user', name: 'Coach' }); window.RTG_AUTH.token = () => 'check'; });
+  await page.click('#bResSave');
+  ok(await page.isVisible('#saveDlg') && await page.isVisible('#bSaveOk'), 'signed in, Save to playbook on the result offers a book, a section and a name');
+  await page.click('#bSaveOk');
+  let books = await page.evaluate(() => window.FAW_BOOKUI.store.books());
+  ok(books.length === 1 && books[0].plays.length === 1 && /Power|Zone/.test(books[0].plays[0].name), 'the run is saved to a new playbook, named ' + (books[0] && books[0].plays[0] && books[0].plays[0].name));
+  ok(await page.evaluate(() => Object.keys(window.__mem).some(k => k.startsWith('fourth_and_what/b-'))), 'and the playbook went up to the account');
+  await page.click('#bBack'); await page.click('#bDist'); await page.click('#sPick [data-go="sHome"]');
+  await page.click('#goBooks');
+  ok((await page.$$('.bookcard')).length === 1, 'My Playbooks lists it');
+  await page.click('.bookcard');
+  await page.fill('#bookName', 'Varsity 2026'); await page.press('#bookName', 'Tab');
+  await page.click('#bNewSection');
+  ok((await page.$$('.secname')).length === 2, 'a second section');
+  await page.click('#bNewPlay');
+  ok(await page.isVisible('#editBar') && await page.isVisible('#bTest'), 'a new play opens on the clipboard with its name, Save and Test it');
+  await dragYd([-13.5, -0.9], [-13.5, 2], [-9.5, 6]);
+  await dragYd([-9.5, -1.6], [-9.5, 1], [-14, 3]);
+  await page.click('.tool[data-tool="target"]'); await tapYd([-13.5, -0.9]);
+  ok(/Slant Flat/.test(await page.inputValue('#pName')), 'it names itself from the drawing: ' + await page.inputValue('#pName'));
+  await page.click('#bTest');
+  await page.waitForSelector('.testt', { timeout: 60000 });
+  const rows = await page.$$eval('.testt tr', tr => tr.length);
+  ok(rows === 9, 'Test it: a row for each of the seven defenses, and every defense together');
+  await page.selectOption('#defSel', 'cover2');
+  await page.click('#bSnap'); await page.click('#bSkip');
+  const rr = await waitResult();
+  ok(/Cover 2 zone/.test(rr.call), 'snapped against the defense picked: ' + rr.call);
+  await page.click('#bBack');
+  const live = await page.evaluate(() => { const e = window.FAW_BOOKUI.current().entry; return e.stats[e.distance].byCall; });
+  ok(live.cover2 && live.cover2.n === 1, 'the snap is counted against Cover 2');
+  await shot('6-editor');
+  /* My terminology: a slant on the left is Seminole, slant and flat is Snag */
+  await page.click('#bToBook'); await page.click('#sBook [data-go="sBooks"]'); await page.click('#bTerms');
+  const groups = await page.$$('#termsOut .tgroup');
+  await (await groups[2].$('.btn')).click();
+  await page.fill('#termsOut .tgroup:nth-of-type(3) .rule .word', 'Seminole');
+  await page.waitForTimeout(900);
+  books = await page.evaluate(() => window.FAW_BOOKUI.store.books());
+  const named = books[0].plays.map(p => p.name);
+  ok(named.some(n => /Seminole/.test(n)), 'a route word renames the plays that were never typed by hand: ' + named.join(', '));
+  await (await (await page.$$('#termsOut .tgroup'))[3].$('.btn')).click();
+  await page.fill('#termsOut .tgroup:nth-of-type(4) .rule .word', 'Snag');
+  await page.waitForTimeout(900);
+  ok(/Snag/.test(await page.textContent('#termsExample b')), 'a concept word wins over single routes: ' + await page.textContent('#termsExample b'));
+  await shot('7-terms');
+  /* Print or export: every layout previews */
+  await page.click('#sTerms [data-go="sBooks"]'); await page.click('.bookcard'); await page.click('#bExport');
+  for (const layout of ['cards', 'callsheet', 'wristband']) {
+    await page.selectOption('#exportOut .tgroup:nth-of-type(2) select', layout);
+    await page.waitForTimeout(500);
+    ok((await page.$$('#exportPreview img.page')).length >= 1, layout + ' previews');
+  }
+  await shot('8-export');
+  const fdl = page.waitForEvent('download', { timeout: 5000 }).catch(() => null);
+  await page.click('#sExport [data-go="sBook"]'); await page.click('#bBookFile');
+  const f2 = await fdl;
+  ok(!!f2 && /\.json$/.test(f2.suggestedFilename()), 'the playbook downloads as a file: ' + (f2 ? f2.suggestedFilename() : 'none'));
+  if (f2) {
+    const p2 = await f2.path(); const txt = fs.readFileSync(p2, 'utf8');
+    await page.click('#sBook [data-go="sBooks"]');
+    await page.setInputFiles('#importFile', { name: 'book.json', mimeType: 'application/json', buffer: Buffer.from(txt) });
+    await page.waitForTimeout(400);
+    books = await page.evaluate(() => window.FAW_BOOKUI.store.books());
+    ok(books.length === 2 && books.every(b => b.name === 'Varsity 2026'), 'and imports back as a second copy');
+  }
+
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await ctx.close();
 }

@@ -91,3 +91,72 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .guide h2 { margin: 0 0 8px; }
 .guide ol { padding-left: 20px; line-height: 1.45; }
 .guide li { margin-bottom: 6px; }
+
+/* ---------- home, playbooks, terminology, export ---------- */
+.homes { display: grid; gap: 12px; margin-top: 18px; }
+.homecard { text-align: left; border: 2px solid var(--edge); background: var(--panel); border-radius: 18px; padding: 18px 16px; min-height: 108px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 4px 0 rgba(0, 0, 0, .25); }
+.homecard b { font-size: 22px; color: var(--gold); }
+.homecard.alt b { color: var(--blue); }
+.homecard span { color: var(--dim); font-size: 14px; line-height: 1.35; }
+.homecard:active { transform: translateY(2px); }
+#sHome { justify-content: center; padding-bottom: 40px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip.back { align-self: flex-start; }
+.chip.back::before { content: '\2039  '; }
+.h2 { margin: 2px 0; font-size: 24px; }
+.field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--dim); font-weight: 700; flex: 1 1 100%; min-width: 0; }
+.field.half { flex: 1 1 140px; }
+.field input, .field select, .field textarea, .tgroup select, .rule input, .pacts select { font: inherit; font-size: 15px; color: var(--ink); background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 9px 10px; min-height: 42px; min-width: 0; }
+.editbar { display: flex; flex-direction: column; gap: 8px; background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 10px; }
+.booktag { font-size: 13px; color: var(--dim); font-weight: 700; }
+.suggest { margin: -2px 0 0; font-size: 12px; color: var(--gold); cursor: pointer; min-height: 14px; }
+.acts2, .racts2 { display: flex; gap: 8px; flex-wrap: wrap; }
+.acts2 > .btn, .racts2 > .btn { flex: 1 1 140px; }
+.acts2 > .field { flex: 1 1 200px; }
+.racts2 { margin-top: 8px; }
+.racts2 .btn { font-size: 13px; min-height: 40px; background: #1d2733; border-color: rgba(255, 255, 255, .14); color: #f2efe6; }
+.btn.danger { color: #e0533d; }
+.form.mine { border-style: dashed; }
+.toast { margin: 0; font-size: 13px; color: var(--gold); text-align: center; }
+.testp { background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 10px 12px; font-size: 14px; }
+.testh { margin: 0 0 6px; font-weight: 800; }
+.testt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.testt th, .testt td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--edge); }
+.testt th { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.testt td:nth-child(n+2), .testt th:nth-child(n+2) { text-align: right; font-variant-numeric: tabular-nums; }
+.testt tr.tot td { font-weight: 800; border-bottom: 0; }
+.stale { margin: 6px 0 0; color: var(--gold); font-size: 12px; }
+.signin { background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 16px; text-align: center; }
+.bookcard { display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left; border: 1px solid var(--edge); background: var(--panel); border-radius: 14px; padding: 14px; margin-bottom: 8px; }
+.bookcard b { font-size: 17px; }
+.bookcard span { color: var(--dim); font-size: 13px; }
+.bookname { width: 100%; font: 700 22px 'Silkscreen', monospace; color: var(--ink); background: transparent; border: 0; border-bottom: 2px dashed var(--edge); padding: 4px 0; }
+.sechead { display: flex; gap: 6px; align-items: center; margin: 14px 0 6px; flex-wrap: wrap; }
+.secname { flex: 1 1 140px; font: 800 15px Inter, sans-serif; color: var(--gold); background: transparent; border: 0; border-bottom: 1px solid var(--edge); padding: 6px 0; min-width: 0; text-transform: uppercase; letter-spacing: .06em; }
+.mini { border: 1px solid var(--edge); background: var(--panel); border-radius: 9px; padding: 6px 9px; font-size: 12px; font-weight: 700; min-height: 34px; }
+.empty { color: var(--dim); font-size: 13px; margin: 4px 0; }
+.playrow { background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+.playopen { display: flex; gap: 10px; align-items: center; border: 0; background: transparent; text-align: left; padding: 0; }
+.thumb { border-radius: 8px; border: 1px solid #d9d4c7; background: #fff; flex: none; }
+.pinfo { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pinfo b { font-size: 15px; }
+.pinfo small { color: var(--dim); font-size: 12px; }
+.pacts { display: flex; gap: 6px; flex-wrap: wrap; }
+.pacts select { min-height: 34px; padding: 4px 8px; font-size: 13px; flex: 1 1 120px; }
+.example { display: flex; gap: 12px; align-items: center; background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 10px; }
+.example div { display: flex; flex-direction: column; gap: 4px; }
+.example small { color: var(--dim); }
+.example b { font: 700 17px 'Silkscreen', monospace; color: var(--gold); }
+.tgroup { background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
+.tgroup h3 { flex: 1 1 100%; margin: 0; font-size: 15px; }
+.tgroup .help { flex: 1 1 100%; margin: 0; color: var(--dim); font-size: 13px; line-height: 1.35; }
+.tgroup > select { flex: 1 1 100%; }
+.rule { flex: 1 1 100%; display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--edge); }
+.rule select { flex: 1 1 110px; min-height: 38px; padding: 4px 8px; font-size: 14px; }
+.rule .word { flex: 2 1 140px; font-weight: 800; }
+.chk { display: flex; align-items: center; gap: 7px; font-size: 14px; flex: 1 1 150px; min-height: 34px; }
+.chk input { width: 20px; height: 20px; accent-color: var(--red); }
+.preview { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.preview .page { width: 100%; max-width: 420px; background: #fff; box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .5); border-radius: 4px; }
+.help { color: var(--dim); font-size: 13px; }
+#saveDlg .field { margin-bottom: 8px; }

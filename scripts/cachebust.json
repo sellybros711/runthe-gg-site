@@ -8,6 +8,10 @@
       "v": "9",
       "sha": "1891cdfef9c19253"
     },
+    "/assets/cloudsave.js": {
+      "v": "2",
+      "sha": "db78661bbd724b47"
+    },
     "config.js": {
       "v": "1",
       "sha": "7fc7924051909af5"
@@ -21,8 +25,24 @@
       "sha": "9c6a7e1575b377f0"
     },
     "engine.js": {
+      "v": "2",
+      "sha": "26834fb40237508f"
+    },
+    "names.js": {
+      "v": "2",
+      "sha": "0f04e78c1e763a1f"
+    },
+    "book.js": {
       "v": "1",
-      "sha": "7675f4a2f30bf7b3"
+      "sha": "83484deee0ec4723"
+    },
+    "diagram.js": {
+      "v": "1",
+      "sha": "321983645565a333"
+    },
+    "export.js": {
+      "v": "1",
+      "sha": "6a429576a3794f09"
     },
     "rig.js": {
       "v": "1",
@@ -37,16 +57,20 @@
       "sha": "ddf3f027cc22c5ac"
     },
     "clipboard.js": {
-      "v": "2",
-      "sha": "e9e622d825327b22"
+      "v": "3",
+      "sha": "867d63243aee0782"
     },
     "play.js": {
       "v": "1",
       "sha": "3dc28a7e95923a28"
     },
     "ui.js": {
+      "v": "2",
+      "sha": "c3c8e3cb96e95d78"
+    },
+    "book-ui.js": {
       "v": "1",
-      "sha": "93758a342a647e1e"
+      "sha": "9d8bf3ead3ad5886"
     }
   },
   "arcade/almamater/index.html": {

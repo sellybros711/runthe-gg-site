@@ -1,15 +1,20 @@
-/* 4th and What: the screens.
+/* 4th and What: the screens of the game.
  *
- * Pick the distance, draw the play, snap it, see the result. One SCENARIO
- * (config.js) holds the distance, the spot and the roster; the picker only
- * changes its distance.
+ * Home, then one of two things:
+ *   Build a Play   pick the distance, draw the play, snap it, see the result.
+ *                  Download the drawing, or save it to a playbook.
+ *   My Playbooks   book-ui.js. A playbook play opens on this same clipboard in
+ *                  'edit' mode: its name, section and notes above it, and Save,
+ *                  Test it and the defense to snap against below it.
+ * One SCENARIO (config.js) holds the distance, the spot and the roster; the
+ * picker only changes its distance.
  *
  * Nothing here opens a guide by itself (the owner's rule for every game):
  * How it works is behind the ? button.
  *
- * ACCOUNTS ARE NOT WIRED IN v1. The shell gives sign in for free
- * (/arcade/auth.js and auth-ui.js put the button in the top bar). Where the
- * rest would plug in is marked TODO(account) below.
+ * Sign in comes from the shell (/arcade/auth.js and auth-ui.js put the button
+ * in the top bar). Playbooks need it; the game does not. Results on the
+ * shared board and trophies are still TODO(account) below.
  *
  * ?seed=N on the url fixes the first snap's seed, to reproduce a result.
  *
@@ -21,10 +26,26 @@
   var $ = function (id) { return document.getElementById(id); };
   var SC = JSON.parse(JSON.stringify(C.SCENARIO));
   var Y0 = 100 - SC.ballOn;
-  var board = null, live = null, last = null, lastPlay = null, lastSeed = null;
+  var board = null, live = null, last = null, lastPlay = null, lastSeed = null, lastCall = null;
   var forced = (location.search.match(/[?&]seed=(\d+)/) || [])[1];
+  /* 'build' (Build a Play) or 'edit' (a playbook play, driven by book-ui.js) */
+  var mode = 'build', hooks = {};
+  var SCREENS = ['sHome', 'sPick', 'sBoard', 'sLive', 'sBooks', 'sBook', 'sTerms', 'sExport'];
 
-  function show(id) { ['sPick', 'sBoard', 'sLive'].forEach(function (s) { $(s).hidden = s !== id; }); }
+  function show(id) {
+    SCREENS.forEach(function (s) { if ($(s)) $(s).hidden = s !== id; });
+    if (id === 'sBoard' && board) { board.layout(); refresh(); }
+    window.scrollTo(0, 0);
+    if (hooks.shown) hooks.shown(id);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
+  $('goBuild').addEventListener('click', function () { setMode('build'); show('sPick'); });
+  $('goBooks').addEventListener('click', function () { show('sBooks'); });
+  function setMode(m) {
+    mode = m;
+    $('editBar').hidden = m !== 'edit'; $('editActs').hidden = m !== 'edit'; $('buildActs').hidden = m === 'edit';
+    $('testPanel').hidden = true; $('boardToast').hidden = true;
+  }
   function downName() { return E.downName(SC.distance, Y0); }
 
   /* ---------- 1. the distance ---------- */
@@ -38,11 +59,10 @@
   });
   function pick(d) {
     SC.distance = d;
-    show('sBoard');
     if (!board) makeBoard();
-    board.layout();
-    refresh();
+    show('sBoard');
     LIVE.prepare(SC.ballX, Y0);
+    if (hooks.distance) hooks.distance(d);
   }
   $('bDist').addEventListener('click', function () { show('sPick'); });
 
@@ -54,13 +74,24 @@
       onChange: refresh,
       onHint: function (t) { $('hint').textContent = t || ''; }
     });
+    formChips([]);
+    board.setTool('route');
+  }
+  /* The five sets, then a playbook's own saved formations. */
+  function formChips(custom) {
+    var box = $('forms'); box.innerHTML = '';
     F.SETS.forEach(function (s) {
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'form'; b.dataset.f = s.id; b.setAttribute('role', 'radio'); b.textContent = s.name;
       b.addEventListener('click', function () { board.setFormation(s.id); });
-      $('forms').appendChild(b);
+      box.appendChild(b);
     });
-    board.setTool('route');
+    (custom || []).forEach(function (f) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'form mine'; b.dataset.custom = f.id; b.setAttribute('role', 'radio'); b.textContent = f.name;
+      b.addEventListener('click', function () { var p = window.FAW_BOARD.emptyPlay(f.base); p.moved = JSON.parse(JSON.stringify(f.moved || {})); p.customFormation = f.id; board.setPlay(p); });
+      box.appendChild(b);
+    });
   }
   function refresh() {
     if (!board) return;
@@ -68,12 +99,15 @@
     $('downTxt').textContent = downName();
     $('spotTxt').textContent = 'Ball on ' + E.spotName(Y0);
     $('boxTxt').textContent = 'Box ' + board.box();
-    Array.prototype.forEach.call(document.querySelectorAll('.form'), function (b) { b.setAttribute('aria-checked', String(b.dataset.f === p.formation)); });
+    Array.prototype.forEach.call(document.querySelectorAll('.form'), function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.custom ? b.dataset.custom === p.customFormation : (!p.customFormation && b.dataset.f === p.formation)));
+    });
     var run = board.isRun();
     var tb = document.querySelector('.tool[data-tool="target"]');
     tb.disabled = run;
     if (run && board.tool() === 'target') setTool('route');
     $('bSnap').disabled = !board.ready();
+    if (hooks.changed) hooks.changed(p);
   }
   function setTool(t) {
     board.setTool(t);
@@ -82,17 +116,32 @@
   Array.prototype.forEach.call(document.querySelectorAll('.tool'), function (b) { b.addEventListener('click', function () { setTool(b.dataset.tool); }); });
   $('bUndo').addEventListener('click', function () { board && board.undo(); });
   $('bClear').addEventListener('click', function () { board && board.clear(); });
-  $('bSnap').addEventListener('click', function () { if (board && board.ready()) snap(board.play(), null); });
+  $('bSnap').addEventListener('click', function () {
+    if (!board || !board.ready()) return;
+    var call = mode === 'edit' && $('defSel').value !== 'random' ? $('defSel').value : null;
+    snap(board.play(), null, call);
+  });
+  /* Download what is on the clipboard, as a clean diagram. */
+  function downloadPlay(play, name) {
+    var c = window.FAW_DIAGRAM.png(play, 1200, 1200, { color: true, field: true, distance: SC.distance, gain: true, numbers: true });
+    window.FAW_EXPORT.download(c, window.FAW_EXPORT.slug(name || 'play') + '.png');
+  }
+  function suggestedName(play) { return window.FAW_NAMES.suggest(play, hooks.terms ? hooks.terms() : null).name; }
+  $('bDownload').addEventListener('click', function () { if (board) { var p = board.play(); downloadPlay(p, suggestedName(p)); } });
+  $('bSaveTo').addEventListener('click', function () { if (board && hooks.saveTo) hooks.saveTo(board.play(), SC.distance); });
+  $('bResDownload').addEventListener('click', function () { if (lastPlay) downloadPlay(lastPlay, mode === 'edit' && hooks.name ? hooks.name() : suggestedName(lastPlay)); });
+  $('bResSave').addEventListener('click', function () { if (lastPlay && hooks.saveTo) hooks.saveTo(lastPlay, SC.distance); });
 
   /* ---------- 3. the snap ---------- */
-  function snap(play, seed) {
+  function snap(play, seed, call) {
     if (seed == null) seed = forced != null ? (+forced >>> 0) : RNG.freshSeed();
     forced = null;
-    lastPlay = play; lastSeed = seed;
-    var res = E.run(SC, play, seed);
+    lastPlay = play; lastSeed = seed; lastCall = call || null;
+    var res = E.run(SC, play, seed, call ? { call: call } : undefined);
     last = res;
     show('sLive');
     $('result').hidden = true; $('toast').hidden = true; $('bSkip').hidden = false; $('cap').textContent = '';
+    $('bResSave').hidden = mode === 'edit';
     if (live) live.stop();
     live = LIVE.show($('cLive'), res, {
       caption: function (t) { $('cap').textContent = t; },
@@ -117,12 +166,14 @@
       (r.throwInfo ? '\nthrow ' + r.throwInfo.dist + ' yd to ' + r.throwInfo.to + (r.throwInfo.primary ? ' (first read)' : ' (checkdown)') + (r.throwInfo.sep != null ? ' · open by ' + r.throwInfo.sep + ' · catch chance ' + Math.round(r.throwInfo.p * 100) + '%' : '') : '') +
       '\nreplay this exact snap: ?seed=' + r.seed;
     box.hidden = false;
+    /* a playbook play counts the snap against whatever the defense called */
+    if (mode === 'edit' && hooks.snapped) hooks.snapped(r);
     /* TODO(account): a signed in player's result goes to the shared board and
        streak here, as the arcade games do (window.RTG_BOARD.submit). */
     /* TODO(trophies): first conversion, a 4th and 15 conversion, a touchdown from the 40. */
   }
-  $('bReplay').addEventListener('click', function () { if (lastPlay) snap(lastPlay, null); });
-  $('bBack').addEventListener('click', function () { if (live) live.stop(); show('sBoard'); board.layout(); refresh(); });
+  $('bReplay').addEventListener('click', function () { if (lastPlay) snap(lastPlay, null, lastCall); });
+  $('bBack').addEventListener('click', function () { if (live) live.stop(); show('sBoard'); });
   $('bShare').addEventListener('click', function () {
     if (!last) return;
     SH.send(SH.text(last)).then(function (how) {
@@ -143,6 +194,11 @@
   window.addEventListener('faw-pxhd', function () { if (window.FAW_RIG) window.FAW_RIG.init(window.FAW_PXHD); });
   if (window.FAW_PXHD && window.FAW_RIG) window.FAW_RIG.init(window.FAW_PXHD);
 
-  /* for the checks */
-  window.FAW_UI = { pick: pick, snap: snap, setTool: setTool, board: function () { return board; }, last: function () { return last; }, scenario: SC };
+  /* book-ui.js drives the clipboard through this, and the checks use it too */
+  window.FAW_UI = {
+    pick: pick, snap: snap, setTool: setTool, show: show, setMode: setMode, formChips: formChips, downloadPlay: downloadPlay,
+    board: function () { if (!board) makeBoard(); return board; }, last: function () { return last; }, scenario: SC,
+    mode: function () { return mode; }, hook: function (k, fn) { hooks[k] = fn; },
+    open: function (play, distance) { SC.distance = distance || SC.distance; if (!board) makeBoard(); setTool('route'); board.setPlay(play); show('sBoard'); LIVE.prepare(SC.ballX, Y0); }
+  };
 })();
