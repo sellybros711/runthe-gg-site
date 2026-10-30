@@ -572,7 +572,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 
 /* ---- the board: the ink panel with your rank, then the rows ---- */
 #s-board { padding: 4px 16px 32px; }
-.bd-back { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 8px 4px; margin: 0 0 4px; font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.bd-back { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; border: 0; background: none; padding: 8px 4px; margin: 0 0 4px; font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
 .bd-back i { width: 9px; height: 9px; border: solid currentColor; border-width: 0 0 2px 2px; transform: rotate(45deg); }
 .bd-hero { position: relative; overflow: hidden; padding: 18px 18px 18px; border-radius: 24px; color: var(--on-night); box-shadow: var(--shadow);
   background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 26px), linear-gradient(180deg, #1a2130, #0b0f17); }
@@ -1343,3 +1343,97 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .relm .rm-steps { grid-template-columns: 1fr; }
   .relm .rm-step { min-height: 52px; }
 }
+
+/* ---- THE MODES AROUND THE DAILY (modes-ui.js, 2026-10-30): the save, the vote, Survivor ----
+   Each is a block on a screen the player opened, never a popup. Ink and signal, the board's look. */
+
+/* sign in to save your score: on the result's rail (ink), one line and one clear button */
+.r-save { margin: 14px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(255, 79, 31, .14); box-shadow: inset 0 0 0 1.5px rgba(255, 79, 31, .55); }
+.r-save p { margin: 0 0 10px; font-size: 14px; color: rgba(244, 245, 247, .85); }
+.r-save p b { color: #fff; }
+.r-save.saved { background: rgba(34, 164, 93, .16); box-shadow: inset 0 0 0 1.5px rgba(34, 164, 93, .6); }
+.r-save.saved p { margin: 0; }
+.btn.save-b { width: 100%; min-height: 48px; background: var(--signal); color: #fff; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 21px; letter-spacing: .02em; text-transform: uppercase; box-shadow: 0 2px 0 #c43a12; }
+.btn.save-b:active { transform: translateY(2px); box-shadow: none; }
+.bd-in .btn.save-b { width: auto; flex: 1 1 220px; }
+
+/* the vote for tomorrow: two choices, one line each; after the vote the count fills behind them */
+.r-vote .r-sec-h > span { margin-left: auto; }
+.vt-opts { display: grid; gap: 8px; }
+.vt-o { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 10px 14px; border-radius: 14px; border: 1.5px solid var(--line-2); background: var(--panel); text-align: left; transition: border-color .15s, background .15s; }
+.vt-o:not([disabled]):hover, .vt-o:not([disabled]):focus-visible { border-color: var(--signal); background: var(--signal-soft); }
+.vt-o[disabled] { cursor: default; }
+.vt-o.on { border-color: var(--signal); }
+.vt-bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--data-soft); pointer-events: none; }
+.vt-o.on .vt-bar { background: var(--signal-soft); }
+.vt-t { position: relative; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.vt-t b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 21px; line-height: 1.05; text-transform: uppercase; }
+.vt-t span { font-size: 12.5px; color: var(--dim); }
+.vt-me { position: relative; margin-left: 10px; vertical-align: 3px; font-style: normal; font-family: var(--display); font-weight: 600; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--signal); }
+.vt-n { position: relative; flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.vt-n b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 22px; line-height: 1; color: var(--ink); }
+.vt-say { margin: 10px 2px 0; font-size: 13.5px; color: var(--dim); }
+.vt-say.ok b { color: var(--ink); }
+.vt-say.err { color: var(--red); }
+.vt-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 0 0; }
+.vt-in p { margin: 0; flex: 1 1 120px; font-size: 13.5px; color: var(--dim); }
+.vt-in .btn.save-b { width: auto; flex: 1 1 220px; }
+
+/* how today was picked, once the vote is on: one small line in the situation block */
+.t-sit .h-pick { margin: 0 2px; font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: #9db4ff; }
+
+/* the home's Survivor row, beside the daily: a mode, so a glass bar with its own name and its state */
+.t-mode { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 12px; align-items: center; gap: 2px 14px; min-height: 60px; padding: 9px 16px 9px 18px; border: 0; border-radius: 16px; text-align: left; color: #fff;
+  background: linear-gradient(90deg, rgba(43, 89, 255, .34), rgba(10, 14, 22, .62) 60%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.t-mode::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 3px 3px 0; background: var(--data); }
+.t-mode.live::before { background: var(--signal); }
+.t-mode .tm-k { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 26px; letter-spacing: .03em; text-transform: uppercase; line-height: 1; }
+.t-mode .tm-k { grid-row: 1; grid-column: 1; }
+.t-mode .tm-s { grid-row: 2; grid-column: 1; font-size: 13px; color: rgba(255, 255, 255, .8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-mode .chev { grid-row: 1 / span 2; grid-column: 2; }
+.t-mode .chev { width: 9px; height: 9px; border: solid rgba(255, 255, 255, .6); border-width: 2.5px 2.5px 0 0; transform: rotate(45deg); }
+.t-mode:hover, .t-mode:focus-visible { box-shadow: inset 0 0 0 1.5px var(--signal); outline: 0; }
+.t-mode:hover .chev, .t-mode:focus-visible .chev { border-color: var(--signal); }
+
+/* the Survivor screen: the board's frame, your run on the ink panel */
+#s-surv { padding: 4px 16px 32px; }
+.sv-say { margin: 0 0 14px; font-size: 14.5px; color: rgba(244, 245, 247, .85); }
+.sv-hero .btn.sv-go { margin-top: 14px; min-height: 56px; font-size: 26px; }
+.sv-hero .bd-head::after { color: var(--data); }
+.sv-hero .bd-rank b { color: var(--data); }
+:root[data-theme="dark"] .sv-hero .bd-rank b { color: #7d9bff; }
+.sv-run { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.sv-run li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 13px; color: rgba(244, 245, 247, .82); }
+.sv-run .sv-i { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: rgba(255, 255, 255, .1); font-family: var(--display); font-style: italic; font-weight: 900; font-size: 14px; color: #fff; }
+.sv-run .sv-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-next { margin: 14px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .07); font-size: 14px; color: rgba(244, 245, 247, .85); }
+.sv-next b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 20px; color: #fff; }
+.sv-hero .bd-in { margin-top: 16px; }
+.sv-cols, .sv-rows li { grid-template-columns: 32px minmax(0, 1fr) 44px 56px; }
+.bd-rows .nm em.live { color: var(--data); }
+.bd-rows .n.sv-sv { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 19px; color: var(--ink); }
+.sv-rows .n.sc { font-family: var(--sans); font-style: normal; font-weight: 600; font-size: 13px; color: var(--dim); }
+.sv-rows li.mine .n.sv-sv { color: var(--signal); }
+@media (min-width: 880px) { body[data-screen="s-surv"] .app { max-width: 1040px; } #s-surv { padding-top: 8px; } }
+
+/* between two Survivor spots: the saves and the next closer, on a night of its own. No grade. */
+body[data-screen="s-next"] .hdr { display: none; }
+body[data-screen="s-next"] .app { max-width: none; border: 0; }
+#s-next.on { display: grid; place-items: center; position: fixed; inset: 0; z-index: 25; padding: 24px 16px; color: #fff; cursor: pointer;
+  background: radial-gradient(70% 50% at 50% 0%, rgba(43, 89, 255, .35), transparent 70%), linear-gradient(180deg, #121a2a, #080b12); }
+.nx-in { width: 100%; max-width: 560px; }
+.nx-in .eyebrow { color: rgba(244, 245, 247, .7); }
+.nx-saves { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 92px; line-height: .9; text-transform: uppercase; color: #fff; animation: t-slam .34s cubic-bezier(.2, .9, .3, 1) both; }
+.nx-in .seam { width: 70%; margin: 10px 0 16px; }
+.nx-next { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 34px; line-height: 1; text-transform: uppercase; animation: t-up .4s .18s ease-out both; }
+.nx-next span { color: var(--signal); }
+.nx-occ { margin: 8px 0 0; font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: rgba(244, 245, 247, .7); animation: t-up .4s .26s ease-out both; }
+@media (min-width: 880px) { .nx-saves { font-size: 150px; } .nx-next { font-size: 52px; } .nx-occ { font-size: 18px; } }
+@media (prefers-reduced-motion: reduce) { .nx-saves, .nx-next, .nx-occ { animation: none; } }
+
+/* the archive (Pro): past dailies as a list of days. Shown only when entitlements() says so */
+.arc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin: 12px 0 0; }
+.arc-list button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 58px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--panel); text-align: left; }
+.arc-list button b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 22px; line-height: 1; }
+.arc-list button span { font-size: 12px; color: var(--dim); }
+.arc-list button:hover, .arc-list button:focus-visible { border-color: var(--signal); }

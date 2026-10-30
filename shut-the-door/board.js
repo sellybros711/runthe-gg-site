@@ -25,7 +25,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 
 var LIMIT = 50;
 var WAIT_MS = 300, GIVE_UP_MS = 16000;
-var ctx = { day: null, scn: null, before: null, onBack: null, onSignIn: null, onPlay: null, played: function () { return false; } };
+var ctx = { day: null, scn: null, before: null, onBack: null, onSignIn: null, onPlay: null, pending: null, saveLabel: null, played: function () { return false; } };
 var seq = 0;
 
 function authState() {
@@ -61,9 +61,14 @@ function renderYou(rows, st) {
   }
   var count = rows && rows.length ? '<p class="bd-count"><b>' + esc(players) + '</b> ' + (players === 1 ? 'closer' : 'closers') + ' on it today.</p>' : '';
   if (!st.signedIn) {
-    el.innerHTML = count +
-      '<div class="bd-in"><p>sign in to put your outing on the board.</p>' +
-      '<button class="btn dk" type="button" id="bd-signin">sign in</button></div>';
+    /* a daily finished signed out is on this device, not on the board: say why, with the result's
+       own button (modes-ui.js). Signing in posts it once (api.js claim). */
+    var owed = ctx.pending ? ctx.pending() : null;
+    el.innerHTML = count + (owed && ctx.saveLabel
+      ? '<div class="bd-in"><p>you played signed out, so your outing isn\'t on it. it\'s saved on this device until midnight.</p>' +
+        '<button class="btn save-b" type="button" id="bd-signin">' + esc(ctx.saveLabel) + '</button></div>'
+      : '<div class="bd-in"><p>sign in to put your outing on the board.</p>' +
+        '<button class="btn dk" type="button" id="bd-signin">sign in</button></div>');
     $('bd-signin').addEventListener('click', function () { if (ctx.onSignIn) ctx.onSignIn(); });
     return;
   }

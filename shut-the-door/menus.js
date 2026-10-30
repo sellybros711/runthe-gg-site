@@ -218,10 +218,29 @@ function showStats() {
 
 function renderPast(scn) {
   var n = scn ? scn.number : 1, tiles = '';
+  /* THE ARCHIVE (Pro, CONTRACT.md 17): every past daily, played on its own spot and seed, never on the
+     board. Only when entitlements() says archive, which is false for everyone until Pro exists, so
+     today every player sees the locked tiles below. No price and no buy button here. */
+  if (ctx.ent && ctx.ent.archive && ctx.archiveDays && ctx.onArchive) {
+    var days = ctx.archiveDays(ctx.today);
+    $('past-body').innerHTML = days.length
+      ? '<p>pick a day. it plays on that day\'s spot and luck. it never goes on the board.</p><div class="arc-list">' +
+        days.map(function (d) { return '<button type="button" data-day="' + esc(d.day) + '"><b>#' + esc(d.number) + '</b><span>' + esc(shortDay(d.day)) + '</span></button>'; }).join('') + '</div>'
+      : '<p>nothing before #' + esc(n) + ' yet.</p>';
+    $('past-body').querySelectorAll('[data-day]').forEach(function (b) {
+      b.addEventListener('click', function () { ctx.onArchive(b.getAttribute('data-day')); });
+    });
+    return;
+  }
   for (var i = n - 1; i >= Math.max(1, n - 12); i--) tiles += '<div class="past-t"><b>#' + i + '</b><span class="lock" aria-hidden="true"></span></div>';
   $('past-body').innerHTML =
     '<p>past dailies open later. today\'s is #' + esc(n) + '.</p>' +
     (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>');
+}
+
+function shortDay(day) {
+  var d = new Date(Date.parse(day + 'T12:00:00Z'));
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).toLowerCase();
 }
 
 /* ---- settings ---------------------------------------------------------------- */
@@ -305,7 +324,7 @@ function renderMenuTiles() {
     tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
 }
 
-var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null };
+var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   open: openSheet,

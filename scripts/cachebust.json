@@ -3033,8 +3033,8 @@
       "sha": "8d8bbd62d19c78da"
     },
     "menus.js": {
-      "v": "8",
-      "sha": "d22e8d3bb7bc088b"
+      "v": "9",
+      "sha": "5ace5e03ae54dd1f"
     },
     "rng.js": {
       "v": "1",
@@ -3073,20 +3073,24 @@
       "sha": "d4fc53d7ccdebd9b"
     },
     "mock-api.js": {
-      "v": "12",
-      "sha": "420ad371f276462f"
+      "v": "13",
+      "sha": "4db78975f69ec042"
     },
     "coach.js": {
       "v": "2",
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
+      "v": "2",
+      "sha": "5955d75d8c1bae20"
+    },
+    "modes-ui.js": {
       "v": "1",
-      "sha": "75aebc9cd981db13"
+      "sha": "9a65c2941862653b"
     },
     "ui.js": {
-      "v": "45",
-      "sha": "e90d7c1fa3db7fd9"
+      "v": "47",
+      "sha": "e5c3a4c7473db5dd"
     },
     "3d/boot.js": {
       "v": "70",
