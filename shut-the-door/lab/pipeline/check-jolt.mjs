@@ -10,6 +10,8 @@
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --shard I/4 --rows-out F   a quarter of the run, its plays to F
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --combine DIR the shards' files in DIR, held as one run
  *   (CI runs the held 2,925 as four shards and then --combine: the same plays, the same verdict, exactly)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --every-body  every body measured, on screen or not
+ *       (ownCamera = false, the vault's way to compare two trees' motion; reported, never held)
  *
  * The owner (2026-10-24): "the fielding is extremely glitchy". check-catch holds the glove on the ball at
  * the moment of each catch; this holds every moment in between. Each case is staged the way the game
@@ -48,6 +50,7 @@ const STRIDE = ALL ? 1 : SEL.stride, LIMIT = arg('--limit', Infinity), SHOW = ar
 const FPS = 60;
 // (--only N plays case N alone; JOLT_TRACE=F9:2.4:2.6 prints that body's points frame by frame)
 const ONLY = process.argv.includes('--only') ? arg('--only', 0) : null, TRACE = process.env.JOLT_TRACE || '';
+const EVERY = process.argv.includes('--every-body');
 export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS = 4;
 // What is still there, all of it measured on the default sample (every 20th case, 2026-10-25): plays
 // with a pop or a skate, by who and his last act. On main before this check (#708) a pop was in
@@ -146,7 +149,7 @@ await page.route('**/*', (route) => {
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 // the clips (fielder.glb) in, so the bodies run as the game shows them; nothing drawn
-await page.evaluate(async () => { const st = window.STD_STAGE.current; await st.inplay.motion; st.renderer.render = () => {}; });
+await page.evaluate(async (every) => { const st = window.STD_STAGE.current; await st.inplay.motion; st.renderer.render = () => {}; if (every) st.inplay.ownCamera = false; }, EVERY);
 return page;
 }
 const COMBINE = process.argv.includes('--combine') ? process.argv[process.argv.indexOf('--combine') + 1] : null;
@@ -177,7 +180,7 @@ if (COMBINE) {
   shardOf = { i: 0, n: 1 };
   console.log(`combined ${n} shards: ${nCases} plays`);
 }
-const CK = COMBINE ? null : openCheckpoint('check-jolt', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK, TRACE });
+const CK = COMBINE ? null : openCheckpoint('check-jolt', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK, TRACE, ...(EVERY ? { EVERY } : {}) });
 for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
   if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
   page ||= await openPage();
@@ -272,11 +275,11 @@ for (const r of rows) {
 }
 // (held: the default 2,925, as the ceilings were measured; a sample of them, --sample or a stride that
 // is a multiple of 20, at the same rate; anything else reported)
-const HOLD = holding({ stride: STRIDE, heldStride: 20, n: nCases, heldN: Math.ceil(SEL.total / 20), partial: LIMIT !== Infinity || ONLY != null, shard: shardOf });
+const HOLD = holding({ stride: STRIDE, heldStride: 20, n: nCases, heldN: Math.ceil(SEL.total / 20), partial: LIMIT !== Infinity || ONLY != null || EVERY, shard: shardOf });
 const held = HOLD.mode !== 'report';
 let fails = 0;
 const any = (w) => rows.filter((r) => !r.err && r.hits.some((h) => h.what === w)).length;
-console.log(`\nbodies on screen at ${FPS} frames a second, ${rows.length - errs.length} plays (every ${STRIDE}${STRIDE === 1 ? 'st' : 'th'} case), ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+console.log(`\nbodies ${EVERY ? 'every one, on screen or not,' : 'on screen'} at ${FPS} frames a second, ${rows.length - errs.length} plays (every ${STRIDE}${STRIDE === 1 ? 'st' : 'th'} case), ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 console.log(`  plays with a pop: ${any('pop')}, with a skate: ${any('skate')}`);
 const keys = new Set([...Object.keys(by), ...(held ? Object.keys(CEILING) : [])]);
 for (const key of [...keys].sort((a, b) => (by[b]?.plays ?? 0) - (by[a]?.plays ?? 0))) {
