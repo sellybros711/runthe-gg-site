@@ -224,7 +224,7 @@ function renderPast(scn) {
   if (ctx.ent && ctx.ent.archive && ctx.archiveDays && ctx.onArchive) {
     var days = ctx.archiveDays(ctx.today);
     $('past-body').innerHTML = days.length
-      ? '<p>pick a day. it plays on that day\'s spot and luck. it never goes on the board.</p><div class="arc-list">' +
+      ? '<p>pick a day. it plays on that day\'s spot and luck. it never goes on the leaderboard.</p><div class="arc-list">' +
         days.map(function (d) { return '<button type="button" data-day="' + esc(d.day) + '"><b>#' + esc(d.number) + '</b><span>' + esc(shortDay(d.day)) + '</span></button>'; }).join('') + '</div>'
       : '<p>nothing before #' + esc(n) + ' yet.</p>';
     $('past-body').querySelectorAll('[data-day]').forEach(function (b) {

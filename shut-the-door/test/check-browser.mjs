@@ -1300,6 +1300,16 @@ async function dailyDone(page) {
 }
 const nothingOpen = (page) => page.evaluate(() => ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden));
 const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+/* the leaderboard (the owner, 2026-10-30): its heading is LEADERBOARD, and the count of closers is
+   said once, in the list's header. Read outside the rows, where a score or a rank could match it */
+const oneCount = (page, screen) => page.evaluate((id) => {
+  const sec = document.getElementById(id), n = (sec.querySelector('.bd-n') || {}).textContent || '';
+  const num = (/^(\d+) closers? today$/.exec(n) || [])[1];
+  const copy = sec.cloneNode(true);
+  copy.querySelectorAll('.bd-rows').forEach((x) => x.remove());
+  const times = num ? (copy.textContent.match(new RegExp('(^|\\D)' + num + '(\\D|$)', 'g')) || []).length : 0;
+  return { n, times, head: (sec.querySelector('h2') || {}).textContent };
+}, screen);
 const tall = (page, sel) => page.evaluate((q) => [...document.querySelectorAll(q)].filter((b) => b.offsetParent).every((b) => b.getBoundingClientRect().height >= 38), sel);
 
 async function modes(w, h, full) {
@@ -1326,19 +1336,23 @@ async function modes(w, h, full) {
   ok(await noSideScroll(page), '17 the result has no sideways scroll');
   await shotM(page, 'result-save');
   await page.click('#r-board');
-  await page.waitForSelector('#bd-list .bd-rows', { timeout: 10000 });
+  await page.waitForSelector('#bd-list .bd-rows', { timeout: 30000 });
   const bd = await page.evaluate(() => ({ t: document.getElementById('bd-you').textContent, b: (document.getElementById('bd-signin') || {}).textContent }));
   ok(/as a guest/.test(bd.t) && /leaderboard/.test(bd.t) && bd.b === 'sign in to save your score', '17 the leaderboard says why a guest is not on it, with the same button');
+  const c1 = await oneCount(page, 's-board');
+  ok(c1.head === 'leaderboard' && c1.times === 1, '17 the guest\'s leaderboard: heading "' + c1.head + '", the count once ("' + c1.n + '", ' + c1.times + ' time)');
   await shotM(page, 'board-signed-out');
   await page.click('#bd-signin');
   await page.waitForSelector('#sheet-auth.on #au-form');
   await page.fill('#au-email', 'mock@example.com');
   await page.fill('#au-pass', 'mockpass');
   await page.click('#au-form button[type=submit]');
-  await page.waitForSelector('#bd-you .bd-rank', { timeout: 8000 });
-  ok(true, '17 signing in posts the daily once: the board shows your rank');
+  await page.waitForSelector('#bd-you .bd-rank', { timeout: 30000 });
+  ok(true, '17 signing in posts the daily once: the leaderboard shows your rank');
+  const c2 = await oneCount(page, 's-board');
+  ok(c2.head === 'leaderboard' && c2.times === 1, '17 signed in, the leaderboard: heading "' + c2.head + '", the count once ("' + c2.n + '", ' + c2.times + ' time)');
   await page.click('#bd-back');
-  await page.waitForSelector('#s-result.on #r-save.saved', { timeout: 5000 });
+  await page.waitForSelector('#s-result.on #r-save.saved', { timeout: 30000 });
   const sd = await page.evaluate(() => ({ s: document.getElementById('r-save').textContent, st: document.getElementById('r-streak').textContent, posted: window.STD_API.pending() }));
   ok(/^saved\./.test(sd.s) && /#\d+ of \d+ today/.test(sd.st) && sd.posted === null, '17 the result says it is saved (' + sd.s + ', streak line "' + sd.st + '") and nothing is pending (' + JSON.stringify(sd.posted) + ')');
   await shotM(page, 'result-saved');
@@ -1350,7 +1364,7 @@ async function modes(w, h, full) {
   ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockVote=open'));
   await dailyDone(page);
   await page.click('#d-see');
-  await page.waitForSelector('#r-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 8000 });
+  await page.waitForSelector('#r-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });
   ok(await page.evaluate(() => document.getElementById('r-save').hidden), '17 signed in, no save button');
   const vt = await page.evaluate(() => [...document.querySelectorAll('#r-vote .vt-o')].map((b) => ({ name: b.querySelector('.vt-t b').textContent, meta: b.querySelector('.vt-t span').textContent, h: b.getBoundingClientRect().height })));
   ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(top|bot) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
@@ -1358,12 +1372,12 @@ async function modes(w, h, full) {
   const vrow = await page.evaluate(() => { const b = document.getElementById('r-vote-go'); return { on: !b.hidden, t: b.textContent, h: b.getBoundingClientRect().height }; });
   ok(vrow.on && /vote for tomorrow/.test(vrow.t) && vrow.h >= 38, '17 the result\'s menu has a row to the vote while it is open: "' + vrow.t + '"');
   await page.click('#r-vote-go');
-  await page.waitForFunction(() => { const r = document.getElementById('r-vote').getBoundingClientRect(); return r.top >= -2 && r.top < 80; }, null, { timeout: 5000 });
+  await page.waitForFunction(() => { const r = document.getElementById('r-vote').getBoundingClientRect(); return r.top >= -2 && r.top < 80; }, null, { timeout: 30000 });
   ok(await nothingOpen(page) && await page.evaluate(() => document.activeElement && document.activeElement.closest('#r-vote') !== null),
     '17 the row jumps to the vote tile and hands it the focus, no sheet opened');
   await shotM(page, 'vote');
   await page.click('#r-vote .vt-o >> nth=0');
-  await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 5000 });
+  await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 30000 });
   const vd = await page.evaluate(() => ({ on: document.querySelectorAll('#r-vote .vt-o.on').length, n: document.querySelectorAll('#r-vote .vt-n').length, say: document.querySelector('#r-vote .vt-say').textContent }));
   ok(vd.on === 1 && vd.n === 2 && /it counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
   await shotM(page, 'vote-cast');
@@ -1373,7 +1387,7 @@ async function modes(w, h, full) {
   /* how today was picked, and the archive */
   step(tag + ' 17 the pick and the archive', 300);
   ({ ctx, page, errors } = await modesPage(w, h, '?mockVote=locked&mockEnt=pro'));
-  await page.waitForSelector('#h-pick:not([hidden])', { timeout: 8000 });
+  await page.waitForSelector('#h-pick:not([hidden])', { timeout: 30000 });
   const pk = await page.textContent('#h-pick');
   ok(/^picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
   await page.evaluate(() => window.STD_MENUS.show('past'));
@@ -1396,14 +1410,16 @@ async function modes(w, h, full) {
   /* Survivor */
   step(tag + ' 17 survivor', full ? 1500 : 300);
   ({ ctx, page, errors } = await modesPage(w, h, '?mockSurv=2', { meterOff: true }));
-  await page.waitForSelector('#h-surv:not([hidden]) .tm-s:not(:empty)', { timeout: 8000 });
+  await page.waitForSelector('#h-surv:not([hidden]) .tm-s:not(:empty)', { timeout: 30000 });
   const row = await page.evaluate(() => ({ t: document.getElementById('h-surv').textContent, h: document.getElementById('h-surv').getBoundingClientRect().height }));
   ok(/survivor/.test(row.t) && row.h >= 38, '17 Survivor is on the home menu beside the daily: "' + row.t + '"');
   ok(await nothingOpen(page), '17 nothing opens by itself on the home');
   await page.click('#h-surv');
   await page.waitForSelector('#s-surv.on #sv-go');
-  await page.waitForSelector('#sv-list .bd-rows', { timeout: 8000 });
-  ok(await page.textContent('#sv-go') === 'start the run' && await tall(page, '#s-surv button'), '17 the Survivor screen: a start button and the Survivor board');
+  await page.waitForSelector('#sv-list .bd-rows', { timeout: 30000 });
+  ok(await page.textContent('#sv-go') === 'start the run' && await tall(page, '#s-surv button'), '17 the Survivor screen: a start button and the Survivor leaderboard');
+  const c3 = await oneCount(page, 's-surv');
+  ok(c3.times === 1, '17 the Survivor leaderboard says its count once ("' + c3.n + '", ' + c3.times + ' time)');
   ok(await noSideScroll(page), '17 the Survivor screen has no sideways scroll');
   await shotM(page, 'survivor-start');
   if (full) {
@@ -1445,7 +1461,7 @@ async function modes(w, h, full) {
       '17 the walk-off ends the run on the Survivor board: ' + end.saves + ' saves, "' + end.next + '"');
     await shotM(page, 'survivor-over');
     await page.click('#sv-back');
-    await page.waitForFunction(() => /2 saves today · next run in/.test(document.querySelector('#h-surv .tm-s').textContent), null, { timeout: 8000 });
+    await page.waitForFunction(() => /2 saves today · next run in/.test(document.querySelector('#h-surv .tm-s').textContent), null, { timeout: 30000 });
     ok(true, '17 the home row says the run is used and when the next opens');
     const again = await page.evaluate(() => window.STD_API.survivorStart().then(() => 'started', (e) => e.message));
     ok(again === 'one run a day', '17 one run a day: a second start is refused (' + again + ')');

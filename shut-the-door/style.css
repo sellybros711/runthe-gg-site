@@ -581,6 +581,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .bd-hero::before { content: ''; position: absolute; right: -46px; top: -44px; width: 150px; height: 150px; background: url(brand/mark.svg?v=1) center / contain no-repeat; opacity: .06; transform: rotate(-10deg); pointer-events: none; }
 .bd-head { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 64px; line-height: .9; margin: 4px 0 6px; text-transform: uppercase; color: #fff; }
 .bd-head::after { content: '.'; color: var(--signal); }
+#bd-head::after { content: none; }
 .bd-hero .seam { margin-bottom: 14px; }
 .bd-rank { display: flex; align-items: baseline; gap: 10px; }
 .bd-rank b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 64px; line-height: .9; color: var(--signal); }

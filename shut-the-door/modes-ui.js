@@ -186,7 +186,7 @@ function showSurvivor() {
   var my = ++SV.seq;
   $('sv-eyebrow').textContent = 'today · one run a day';
   $('sv-you').innerHTML = '<p class="sv-say">loading your run.</p>';
-  $('sv-list').innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><p>loading the board.</p></div>';
+  $('sv-list').innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
   var stP = has('survivorState') ? Promise.resolve().then(function () { return API().survivorState(); }).catch(function () { return null; }) : Promise.resolve(null);
   stP.then(function (s) { if (my === SV.seq) { SV.state = s; drawRun(s); } });
   loadBoard(my);
@@ -210,7 +210,7 @@ function drawRun(s) {
     else if (s.canStart) html += '<button class="btn take sm sv-go" type="button" id="sv-go">start another run</button>';
     else { var t = untilTomorrow(); html += '<p class="sv-next">run over. ' + (t ? 'the next one opens in <b>' + esc(t) + '</b>.' : 'the next one opens tomorrow.') + '</p>'; }
   }
-  if (!st.signedIn) html += '<div class="bd-in"><p>sign in to put your run on the board.</p><button class="btn dk" type="button" id="sv-in">sign in</button></div>';
+  if (!st.signedIn) html += '<div class="bd-in"><p>sign in to put your run on the leaderboard.</p><button class="btn dk" type="button" id="sv-in">sign in</button></div>';
   el.innerHTML = html;
   var go = $('sv-go');
   if (go) go.addEventListener('click', function () { go.disabled = true; if (ctx.onSurvivor) ctx.onSurvivor(); });
@@ -223,7 +223,7 @@ function loadBoard(my) {
     if (my !== SV.seq) return;
     var el = $('sv-list');
     if (!Array.isArray(rows)) {
-      el.innerHTML = '<div class="bd-empty"><b>the board didn\'t load</b><p>your run is safe. try again.</p><button class="btn ghost" type="button" id="sv-retry">try again</button></div>';
+      el.innerHTML = '<div class="bd-empty"><b>the leaderboard didn\'t load</b><p>your run is safe. try again.</p><button class="btn ghost" type="button" id="sv-retry">try again</button></div>';
       $('sv-retry').addEventListener('click', function () { var m = ++SV.seq; loadBoard(m); });
       return;
     }
@@ -240,7 +240,8 @@ function loadBoard(my) {
         '<span class="n sv-sv">' + esc(r.saves) + '</span><span class="n sc">' + esc(num(r.points)) + '</span></li>';
       prev = r.rank;
     });
-    el.innerHTML = '<div class="bd-lh"><b>survivor board</b><span>' + esc(rows[0].players) + ' today</span></div>' +
+    var n = rows[0].players;
+    el.innerHTML = '<div class="bd-lh"><b>survivor leaderboard</b><span class="bd-n">' + esc(n) + ' ' + (n === 1 ? 'closer' : 'closers') + ' today</span></div>' +
       '<div class="bd-cols-h sv-cols" aria-hidden="true"><span>#</span><span>closer</span><span>saves</span><span>pts</span></div>' +
       '<ol class="bd-rows sv-rows">' + html + '</ol>';
   });
