@@ -2436,6 +2436,10 @@
       "v": "1",
       "sha": "8211beb1a8c09cc1"
     },
+    "/assets/rtg-ads.js": {
+      "v": "3",
+      "sha": "cc149708e8a0216e"
+    },
     "/cfb/auth.js": {
       "v": "8",
       "sha": "d81dc7cbc4c21a96"
