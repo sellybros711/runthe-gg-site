@@ -80,6 +80,13 @@ async function run(name, viewport, scale) {
   await page.goto(BASE + '/4th-and-what/?seed=11');
   await page.waitForFunction(() => !!window.FAW_UI && !!window.FAW_BOOKUI);
   ok(await page.isVisible('#sHome') && await page.isVisible('#goBuild') && await page.isVisible('#goBooks'), 'home: Build a Play and My Playbooks');
+  await page.waitForFunction(() => document.getElementById('homeName').textContent.length > 0, null, { timeout: 8000 });
+  const clip = await page.evaluate(() => {
+    const c = document.getElementById('cHome'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, n = document.getElementById('homeName');
+    let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) ink++;
+    return { ink, name: n.textContent, fits: n.scrollWidth <= n.clientWidth + 1 };
+  });
+  ok(clip.ink > 500 && clip.fits, 'home: the clipboard draws a play and names it: ' + clip.name);
   await shot('0-home');
   /* signed out, a playbook asks for an account */
   await page.click('#goBooks');

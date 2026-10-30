@@ -64,9 +64,13 @@
       "v": "1",
       "sha": "3dc28a7e95923a28"
     },
+    "home.js": {
+      "v": "1",
+      "sha": "ff6c7cbb96c1351f"
+    },
     "ui.js": {
-      "v": "2",
-      "sha": "c3c8e3cb96e95d78"
+      "v": "3",
+      "sha": "1b107f77ad2b0c82"
     },
     "book-ui.js": {
       "v": "1",

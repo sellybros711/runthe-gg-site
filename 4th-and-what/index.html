@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Silkscreen:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div class="app">
@@ -36,11 +36,26 @@
 
   <!-- 0. HOME: the game, or the playbooks -->
   <section class="screen" id="sHome">
-    <p class="kicker">You're going for it.</p>
+    <p class="kicker">4th down. Your call.</p>
     <h1 class="pix big">4th and&nbsp;what?</h1>
+    <!-- the clipboard: plays draw themselves and get named (home.js) -->
+    <div class="clip" aria-hidden="true">
+      <i class="clamp"></i>
+      <div class="wb"><canvas id="cHome"></canvas><p class="wbname" id="homeName"></p></div>
+    </div>
     <div class="homes">
-      <button type="button" class="homecard" id="goBuild"><b class="pix">Build a Play</b><span>Pick the distance. Draw it up. Watch it run.</span></button>
-      <button type="button" class="homecard alt" id="goBooks"><b class="pix">My Playbooks</b><span>Your plays, named your way. Test them. Print them.</span></button>
+      <button type="button" class="homecard play" id="goBuild">
+        <span class="sb pix" aria-hidden="true"><em>4TH</em><em class="amp">&amp;</em><em class="q">?</em></span>
+        <b class="pix">Build a Play</b>
+        <span>Pick the distance. Draw it up. Watch it run.</span>
+        <small class="tag">The game</small>
+      </button>
+      <button type="button" class="homecard book" id="goBooks">
+        <span class="rings" aria-hidden="true"><i></i><i></i><i></i></span>
+        <b class="pix">My Playbooks</b>
+        <span>Your plays, named your way. Test them. Print them.</span>
+        <small class="tag">For coaches</small>
+      </button>
     </div>
   </section>
 
@@ -224,7 +239,8 @@
 <script src="share.js?v=1"></script>
 <script src="clipboard.js?v=3"></script>
 <script src="play.js?v=1"></script>
-<script src="ui.js?v=2"></script>
+<script src="home.js?v=1"></script>
+<script src="ui.js?v=3"></script>
 <script src="book-ui.js?v=1"></script>
 <script type="module">
 /* PXHD, the painter the players and the goalpost are drawn with, from the

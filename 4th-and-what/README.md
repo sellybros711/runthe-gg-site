@@ -34,6 +34,7 @@ the defensive calls, the look, and the owner's decisions. Read
 | `book.js` | playbooks on the account (the shared cloud saves, game `fourth_and_what`), the playbook file |
 | `book-ui.js` | My Playbooks, a playbook, the play editor, Test it, My terminology, Print or export |
 | `diagram.js` | a play drawn as a printed coaching diagram |
+| `home.js` | the home screen's clipboard: sample plays draw themselves in marker and get named |
 | `export.js` | every export layout and option: cards, call sheet, wristbands, paper, numbering, PNG, print |
 | `build/tune.mjs` | conversion rate by distance for a sensible playbook, against real 4th downs |
 | `build/sheet.mjs` | renders the look for review (players, poses, a phone frame) |

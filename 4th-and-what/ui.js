@@ -35,12 +35,15 @@
   function show(id) {
     SCREENS.forEach(function (s) { if ($(s)) $(s).hidden = s !== id; });
     if (id === 'sBoard' && board) { board.layout(); refresh(); }
+    if (id === 'sHome' && homeClip) homeClip.start();
     window.scrollTo(0, 0);
     if (hooks.shown) hooks.shown(id);
   }
   Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
   $('goBuild').addEventListener('click', function () { setMode('build'); show('sPick'); });
   $('goBooks').addEventListener('click', function () { show('sBooks'); });
+  var homeClip = window.FAW_HOME ? window.FAW_HOME.create($('cHome'), $('homeName'), function () { return !$('sHome').hidden; }) : null;
+  if (homeClip) homeClip.start();
   function setMode(m) {
     mode = m;
     $('editBar').hidden = m !== 'edit'; $('editActs').hidden = m !== 'edit'; $('buildActs').hidden = m === 'edit';
