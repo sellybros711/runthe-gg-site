@@ -1155,19 +1155,58 @@ window.GA_ID='G-L29P5MRWKE';
      statement about demand, it was a bug. The label is the honest part of an empty box: it says
      what the space is for rather than leaving a bar of nothing.
      The cost is real and lands on a reader running a blocker, who now gets a labelled empty box on
-     these screens. That is the owner's call rather than an inference. */
+     these screens. That is the owner's call rather than an inference.
+     IT IS A PHONE RULE, which is the NFL game's shape (football/index.html, site PR #815) rather
+     than one invented here: the first draft of this reserved the box at every width, and a wide
+     screen has room to spare and no reason to hold a bar open for an ad that is not there. So the
+     base below is the old rule, unchanged, and the phone block further down overrides it. */
   #s-draft.on{padding-bottom:var(--draft-ad-h,0px)}
   .draft-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
-    background:var(--bg);padding:4px 0 6px}
+    background:var(--bg);padding:0}
+  .draft-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .draft-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
   .draft-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
-  .draft-ad .ad-label{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
   /* THE SEASON BANNER: the same pattern, on the season and on every screen a game is played
      out on, so the season and the postseason are one spot rather than four. */
   #s-season.on,#s-po.on,#s-bowl.on,#s-brk.on{padding-bottom:var(--season-ad-h,0px)}
   .season-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
-    background:var(--bg);padding:4px 0 6px}
+    background:var(--bg);padding:0}
+  .season-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .season-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
   .season-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
-  .season-ad .ad-label{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .season-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .season-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .season-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  /* ON A PHONE THE BOX KEEPS ITS PLACE whether or not AdSense has filled it, labelled, on a strip
+     that runs the full width so nothing shows beside it (the owner, 2026-10-30, and site PR #819).
+     THE STRIP IS THE SHARED BANNER'S OWN COLOUR. /assets/rtg-ads.js paints its closeable strip
+     #0b0f17, and this is the same site and the same edge of the same screen, so taking a different
+     dark would put two nearly-identical bars on one site that are not the same bar. The NFL page
+     writes #0b1220 here, which is a third value again; worth reconciling in one pass rather than
+     each game picking its own.
+     The bottom padding carries env(safe-area-inset-bottom), or on a phone with a home indicator the
+     ad sits under it. */
+  @media (max-width:919px){
+    body .draft-ad[data-ad-zone],body .season-ad[data-ad-zone]{height:auto;overflow:visible;
+      padding:4px 0 calc(6px + env(safe-area-inset-bottom,0px));background:#0b0f17;
+      border-top:1px solid var(--line)}
+    body .draft-ad[data-ad-zone] .ad-label,body .season-ad[data-ad-zone] .ad-label{display:block}
+    body .draft-ad[data-ad-zone] ins.adsbygoogle,body .season-ad[data-ad-zone] ins.adsbygoogle{
+      display:inline-block !important;width:300px;height:50px}
+  }
+  /* A SHORT PHONE LOSES 81px TO THE BOX, so the season screen closes up around the calendar and
+     Skip to end stays pressable at first view instead of sitting behind the box. Margins only: the
+     scorebug and the week cells are the same size they were, since shrinking those would change
+     what the screen says rather than how it is spaced. Measured at 360x640: the row ran 20px under
+     the box before this. */
+  @media (max-width:919px) and (max-height:719px){
+    #s-season .caleye{margin-top:6px}
+    #s-season .cal{margin-top:5px;gap:4px}
+    #s-season .simrow{margin-top:7px !important}
+  }
   /* The row unfurls with the scroll rather than reserving dead space in the card:
      its height and top margin scale with --sq, so at the top it is nothing and by
      the time the field is gone it is a full 34px. Because the field it is measured
@@ -3905,7 +3944,7 @@ or endorsed by the NCAA, the CFP or any school.
     </div>
     <div class="caleye"><span>Season</span><b id="v-calrec">0-0</b></div>
     <div class="cal" id="v-list"></div>
-    <div style="margin-top:14px;text-align:center">
+    <div class="simrow" style="margin-top:14px;text-align:center">
       <button class="btn-text" id="b-sim">Skip to end</button>
     </div>
   </div>
