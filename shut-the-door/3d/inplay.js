@@ -18,10 +18,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=19';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=21';
 import { SHADE } from './shade-data.js?v=1';
 import { Crew } from './fielders.js?v=8';
-import { buildBallpark } from './ballpark.js?v=20';
+import { buildBallpark } from './ballpark.js?v=22';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -68,6 +68,23 @@ const POS_EASE_S = { follow: 0.25, wide: 0.16, plate: 0.12, sky: 0.08, track: 0.
 // as every asset URL carries one (lab/pipeline/stamp.mjs computes the same)
 const MOTION = new URL('./assets/fielder.glb?h=d58d54f7c5', import.meta.url).href;
 const OF = [7, 8, 9];
+/* The ready stance at the pitch, by position (poseFielder): crouch, lean and width as Figure.pose reads them,
+   and where the hands are, in feet in front of him (fwd), to his glove side (side) and up (z). A middle
+   infielder is low and wide with his weight forward and his glove out front; a corner lower still, the glove
+   down near the dirt; an outfielder upright and set, the glove at his waist. The pitcher and the catcher keep
+   their own. creep: the infielders' two short steps in as the pitch is thrown. */
+const READY = {
+  1: { crouch: 0.32, lean: 0.25 }, 2: { crouch: 0.32, lean: 0.25 },
+  3: { crouch: 0.62, lean: 0.5, wide: 0.75, glove: { fwd: 1.9, side: 0.35, z: 1.0 }, hand: { fwd: 1.8, side: -0.35, z: 1.15 }, creep: true },
+  5: { crouch: 0.62, lean: 0.5, wide: 0.75, glove: { fwd: 1.9, side: 0.35, z: 1.0 }, hand: { fwd: 1.8, side: -0.35, z: 1.15 }, creep: true },
+  4: { crouch: 0.5, lean: 0.45, wide: 0.7, glove: { fwd: 1.9, side: 0.4, z: 1.5 }, hand: { fwd: 1.8, side: -0.4, z: 1.6 }, creep: true },
+  6: { crouch: 0.5, lean: 0.45, wide: 0.7, glove: { fwd: 1.9, side: 0.4, z: 1.5 }, hand: { fwd: 1.8, side: -0.4, z: 1.6 }, creep: true },
+  7: { crouch: 0.16, lean: 0.2, wide: 0.3, glove: { fwd: 1.1, side: 0.5, z: 2.7 }, hand: null },
+  8: { crouch: 0.16, lean: 0.2, wide: 0.3, glove: { fwd: 1.1, side: 0.5, z: 2.7 }, hand: null },
+  9: { crouch: 0.16, lean: 0.2, wide: 0.3, glove: { fwd: 1.1, side: 0.5, z: 2.7 }, hand: null },
+  hold: { crouch: 0.22, lean: 0.12, wide: 0.45, glove: { fwd: 1.3, side: 0.45, z: 3.7 }, hand: null, faceMound: true },
+};
+const CREEP_S = 0.55;
 // the fastest a man watching the ball turns his body round (radians a second: a half turn in 0.8 s). The
 // body turns on planted feet (no step of its own), so faster than this the feet skate round him (at 7.5,
 // a catcher turning after his throw slid his feet at 4.2-4.7 m/s, check-jolt.mjs)
@@ -447,16 +464,29 @@ export class InPlay {
     // (how much he is running: a set, getting down to a ball, gives way to his stride at speed)
     const moving = smooth((spd - 4) / 10);
     const spec = { run: { phase: this.crew.clips ? tr.phase.at(s) + 2 * Math.PI * glide / this.crew.clips.run.strideFt : 2 * Math.PI * st.run / CYCLE.fielder, amp: clamp(spd / 26, 0, 1.1) }, crouch: 0, lean: 0, idleT: s + n * 0.83, look: { x: ball.x, y: ball.y, z: ball.z }, lookW: spd > 6 ? 0.55 : 1 };
-    // ready at the pitch, standing tall once he is out of it
-    const inf = !OF.includes(n);
-    spec.crouch = (inf ? 0.32 : 0.18) * (1 - ramp(s, 0.15, 0.6));
-    spec.lean = (inf ? 0.25 : 0.12) * (1 - ramp(s, 0.15, 0.6));
+    // ready at the pitch, by position, standing tall once he is out of it (READY: the middle infielders low and
+    // wide, weight forward, the glove out front; the corners lower, the glove down; the outfielders upright
+    // and set; the pitcher and the catcher as they were). Before contact (the stills, s < 0) the infielders
+    // creep in, two short steps, landing on both feet as the ball reaches the plate
+    // (the first baseman holding a runner on: upright on the bag, facing the pitcher, his glove up as a target
+    // for the pickoff throw; off the bag he is a corner)
+    const R = n === 3 && plan.hold1 ? READY.hold : READY[n], kr = 1 - ramp(s, 0.15, 0.6);
+    spec.crouch = R.crouch * kr;
+    spec.lean = R.lean * kr;
+    if (R.wide) spec.wide = R.wide * kr;
+    if (R.creep && s < 0) {
+      const c = clamp((s + CREEP_S) / CREEP_S, 0, 1);
+      // (right, then left, a short step each, then the split: both feet down, a little hop)
+      spec.stride = { r: 0.32 * Math.sin(Math.PI * clamp(c * 2, 0, 1)), l: 0.32 * Math.sin(Math.PI * clamp(c * 2 - 1, 0, 1)) };
+    }
     // where he looks and faces when he is not running: the ball, or (holding it) the infield
     let lookPt = { x: ball.x, y: ball.y };
     if (ball.by === n) lookPt = { x: 0, y: 70 };
     // (a ball right over him, a throw passing above his head: facing it would turn him half round in a
     // frame as it crosses, so near him he faces the plate and turns to it as it goes on)
     let faceYaw = ball.by === n ? faceToward(st, lookPt) : tr.face ? tr.face(s) : this.faceTrail(st, s);
+    // (holding a runner, before the pitch reaches the plate he faces the mound; he comes round to the plate with it)
+    if (R.faceMound && s < 0.3) faceYaw = turnTo(faceYaw, faceToward(st, MOUND), 0.67 * (1 - ramp(s, -0.35, 0.3)));
     f.throwing = false; f.reaching = false;
     let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0;
     // a ball he takes (a catch in the air, a throw at a bag): the point, and how far his body is
@@ -481,13 +511,23 @@ export class InPlay {
         if (k > 0) {
           spec.crouch = Math.max(spec.crouch, 0.95 * k); spec.wide = 0.8 * k; spec.lean = Math.max(spec.lean, 0.75 * k);
           glove = { x: bp.x, y: bp.y, z: 0.2 }; gloveW = Math.max(gloveW, k);
-          hand = { x: bp.x, y: bp.y, z: 1.0 }; handW = 0.7 * k;
+          // (two hands: the bare hand just over the glove, covering the ball as it goes in)
+          hand = { x: bp.x, y: bp.y, z: 0.75 }; handW = 0.8 * k;
           // (the way round is chosen once, at the take: the ball he ran down and where he turns to after it can be
           // half a turn apart, and the short way round between them flipped sides as the turn eased off, a left
           // fielder's head swinging 2.2 rad in a frame a third of a second after a pickup in the corner, check-jolt.mjs)
           const bh = heading(st, plan.ballAt(t - 0.3));
           if (a.turnRef == null) { const st1 = tr.at(t + 0.12); a.turnRef = angDiff(faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3))); }
           faceYaw = turnNear(faceYaw, bh, k, a.turnRef);
+          // at range, on the move: a ball well off to one side is a backhand (his throwing hand's side, the glove
+          // across his body) or a forehand (his glove side), his trunk turned to it and his feet wider
+          const side = angDiff(faceYaw, heading(st, bp)), gsd = f.glove === 'r' ? -1 : 1;
+          if (spd > 6 && Math.abs(side) > 0.45) {
+            const kk = k * smooth((spd - 6) / 8) * smooth((Math.abs(side) - 0.45) / 0.4);
+            spec.twist = (spec.twist || 0) + clamp(side, -0.9, 0.9) * 0.7 * kk;
+            spec.wide = Math.max(spec.wide, 0.95 * kk);
+            if (Math.sign(side) === gsd) handW *= 1 - 0.6 * kk;   // (a backhand is one hand)
+          }
           f.reaching = true;
         }
       }
@@ -498,9 +538,17 @@ export class InPlay {
           glove = { x: q.x, y: q.y, z: q.z }; gloveW = Math.max(gloveW, k);
           const kw = ramp(s, t - 0.5, t - 0.05) * (1 - ramp(s, t + 0.4, t + 1.2));
           if (kw > takeW && s <= t + 1e-6) { take = { ...glove, t, key: a }; takeW = kw; }
-          // he takes it in front of him: he faces where it comes from
-          const prev = plan.ballAt(t - 0.25);
-          faceYaw = turnTo(faceYaw, heading(q, prev), k);
+          // he takes it in front of him: he faces where it comes from. Set under a fly or a pop (on his feet, at his
+          // waist or above), it comes in on his glove side with the throwing hand there to cover it, as a real
+          // one is taken: his body a little turned away from it, both hands on the ball
+          const prev = plan.ballAt(t - 0.25), set = spd < 4 && q.z >= 4;
+          const gs = f.glove === 'r' ? -1 : 1;
+          faceYaw = turnTo(faceYaw, heading(q, prev) + (set ? 0.32 * gs : 0), k);
+          if (set) {
+            const fw = { x: Math.sin(faceYaw), y: Math.cos(faceYaw) };
+            hand = { x: q.x - fw.y * gs * -0.35, y: q.y + fw.x * gs * -0.35, z: q.z - 0.2 };
+            handW = Math.max(handW, 0.85 * k);
+          }
           f.reaching = s < t + 0.02;
           // a high one at the wall: he goes up for it
           if (a.wall || q.z > 6.8) lift = Math.max(lift, Math.max(0, q.z - 6.2) * 0.9 * bump(s, t - 0.3, t, t, t + 0.3));
@@ -580,7 +628,10 @@ export class InPlay {
           spec.twist = k < 1 ? -1.0 + 1.4 * smooth(clamp((k - 0.3) / 0.7, 0, 1)) : 0.4 + 0.5 * smooth(k - 1);
           spec.twist *= w;
           spec.lean = Math.max(spec.lean, (k < 1 ? 0.1 + 0.3 * smooth(k) : 0.4 + 0.25 * smooth(k - 1)) * w);
-          // the stride toward the target and the weight onto it (a crow hop is not built yet)
+          // the stride toward the target and the weight onto it. An outfielder's long throw (a tag up, a throw home
+          // or to a base past the cutoff's reach) comes off a crow hop: a skip onto the back foot before the stride
+          const far = OF.includes(n) && Math.hypot(a.to.x - st.x, a.to.y - st.y) > 120;
+          if (far) lift = Math.max(lift, 0.55 * bump(s, rel - 0.62, rel - 0.5, rel - 0.48, rel - 0.34));
           spec.stride = { l: 0.62 * smooth(clamp(k, 0, 1)) * w, r: -0.45 * smooth(clamp(k, 0, 1)) * w };
           spec.crouch = Math.max(spec.crouch, 0.16 * w * Math.sin(Math.PI * clamp(k / 2, 0, 1)));
           if (f.glove === 'r') spec.stride = { l: spec.stride.r, r: spec.stride.l };
@@ -621,6 +672,23 @@ export class InPlay {
       faceYaw = turnTo(faceYaw, heading(st, sg.a), k);
       f.reaching = s < t + 0.02;
       take = { ...glove, t, key: sg }; takeW = kw;
+    }
+    // the ready hands, under whatever his acts reach for: as an act's weight comes in, the glove goes from the
+    // ready spot to the act's point (taken over whole at the act's first frame, it jumped)
+    if (kr > 0 && R.glove) {
+      const fw = { x: Math.sin(faceYaw), y: Math.cos(faceYaw) }, sg = f.glove === 'r' ? -1 : 1;
+      const lt = { x: -fw.y * sg, y: fw.x * sg };
+      const at = (o) => ({ x: st.x + fw.x * o.fwd + lt.x * o.side, y: st.y + fw.y * o.fwd + lt.y * o.side, z: o.z });
+      const rw = 0.85 * kr, g0 = at(R.glove);
+      if (glove && gloveW > 0) { const k = gloveW / (gloveW + rw); glove = { x: g0.x + (glove.x - g0.x) * k, y: g0.y + (glove.y - g0.y) * k, z: g0.z + (glove.z - g0.z) * k }; }
+      else glove = g0;
+      gloveW = Math.max(gloveW, rw);
+      if (R.hand) {
+        const h0 = at(R.hand), hw = 0.6 * kr;
+        if (hand && handW > 0) { const k = handW / (handW + hw); hand = { x: h0.x + (hand.x - h0.x) * k, y: h0.y + (hand.y - h0.y) * k, z: h0.z + (hand.z - h0.z) * k }; }
+        else hand = h0;
+        handW = Math.max(handW, hw);
+      }
     }
     // a low one (a liner at his shins, a sinking fly): he gets down to it
     // the throw's windup waits for the ball he is still taking
