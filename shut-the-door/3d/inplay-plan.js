@@ -270,6 +270,9 @@ export class Track {
 
 /* ------------------------------------------------------------------ the ball */
 
+/** The soonest after contact a fielder can take a ball in the air (s). */
+const AIR_PICK0 = 0.25;
+
 /** The ball in the air: drag and backspin lift (none on a low liner), sampled each 1/120 s until it
     lands, or meets the wall (off it below WALL_H, over it above). */
 function simAir(v, la, spray, z0, scale = 1, stopAt = null) {
@@ -395,6 +398,14 @@ export function planPlay(pr, o = {}) {
   // foul pop ups behind the plate stay inside the backstop
   const contact = o.contact || { x: (o.bats === 'L' ? 0.3 : -0.3), y: 1.2, z: 2.6 };
   const z0 = clamp(contact.z, 1, 5);
+  // a ball the engine has caught in the air whose measured angle drives it into the dirt before anyone
+  // could reach it (Statcast's pop up at -82 degrees, a liner at -20: a missed track's stand-in values)
+  // is not a reading the picture can fly. Flown as measured, the catcher "caught" it at the bat and threw
+  // a ball he never had (check-inplay.mjs). Its angle takes the typical value for its kind, as a missing
+  // one does (and says so); the speed off the bat stays the measured one the result copy reads.
+  if ((kind === 'air_out' || kind === 'air_drop') && !guess.includes('la') && simAir(ev * 1.4667, la, spray, z0).land.t < AIR_PICK0) {
+    la = DEF[bb][1] - 3 + 6 * rnd(id, 'la'); guess.push('la');
+  }
   const ctx = { pr, o, id, label, moves, before, hit, bb, ev, la, spray, kind, contact, z0, bats: o.bats || 'R' };
   // the outs before the pitch: the engine gives the outs after it and every runner put out on it
   ctx.outs0 = Math.max(0, Math.min(2, (pr.outs ?? 0) - moves.filter((m) => m.to === -1).length));
@@ -1162,7 +1173,7 @@ function planAir(ctx) {
     let best = null;
     for (const n of who) {
       const sp = SPEED(n);
-      for (let s = 0.25; s <= tEnd + 1e-6; s += 1 / 60) {
+      for (let s = AIR_PICK0; s <= tEnd + 1e-6; s += 1 / 60) {
         const q = catchable(s); if (!q) continue;
         if (n === 2 && rad(q) > 70 && Math.abs(ctx.spray) < 60) break;
         const d = dist(F[n], q);
