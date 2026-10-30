@@ -185,6 +185,9 @@ export class Track {
   run(t0, pts, o = {}) {
     const v = o.v ?? this.v, a = o.a ?? this.a;
     if (this.legs.length) t0 = Math.max(t0, this.free);
+    // (a leg chained a hair after the last one starts where it ended: a frame in the sliver between read him
+    // standing still for a frame, his stride gone, check-jolt.mjs)
+    if (this.legs.length && t0 - this.free < 1e-6) t0 = this.free;
     let from = this.end;
     const fromRest = o.fromRest ?? true, toRest = o.toRest ?? true;
     const seg = []; let total = 0;
@@ -747,14 +750,17 @@ function planGround(ctx) {
       const tgt = lerp(F[n], b, go / near.m);
       // (off his run, not from a stand: pulled up first and then laid out from standing, his head went over a
       // body's speed. The dive carries him on a few feet as he goes down, over a third of a second)
+      // (from the moment his run ends, as the plan has it, not the moment asked for: a hair apart, a frame between
+      // the two read him standing, his stride gone and his feet down for a frame in the middle of the dive)
+      let tDv = tD;
       if (go > 0.5) {
-        T[n].arrive(sp.react, tgt, tD, { toRest: false });
-        const v0 = T[n].at(tD - 1e-3).spd, u = { x: (tgt.x - F[n].x) / go, y: (tgt.y - F[n].y) / go };
-        if (v0 > 2) T[n].run(tD, [{ x: tgt.x + u.x * v0 * 0.175, y: tgt.y + u.y * v0 * 0.175 }], { fromRest: false, toRest: true, v: v0, a: v0 / 0.35 });
+        tDv = T[n].arrive(sp.react, tgt, tD, { toRest: false });
+        const v0 = T[n].at(tDv - 1e-3).spd, u = { x: (tgt.x - F[n].x) / go, y: (tgt.y - F[n].y) / go };
+        if (v0 > 2) T[n].run(tDv, [{ x: tgt.x + u.x * v0 * 0.175, y: tgt.y + u.y * v0 * 0.175 }], { fromRest: false, toRest: true, v: v0, a: v0 / 0.35 });
       }
-      T[n].act(tD, 'dive', { to: b });
-      // (the dive's get up: down from tD to 0.75 s after it, up by 1.35 s, inplay.js)
-      T[n].hold(tD + 1.2);
+      T[n].act(tDv, 'dive', { to: b });
+      // (the dive's get up: down from tDv to 0.75 s after it, up by 1.35 s, inplay.js)
+      T[n].hold(tDv + 1.2);
     }
     // an outfielder cuts it off as it rolls
     const of = retrieveRolling(ctx, at, g, 0);

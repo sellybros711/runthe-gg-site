@@ -594,7 +594,10 @@ export class InPlay {
       }
       if (a.kind === 'dive' || a.kind === 'dive_short') {
         const at = a.to || a.at;
-        let k = ramp(s, t - 0.18, t + 0.12) * (1 - ramp(s, t + 0.75, t + 1.35));
+        // (an infielder's lunge at a ground ball lays out over 0.45 s, push off to the dirt, as a real one does: in
+        // the 0.3 s a shoestring catch takes, off a run his head went over a body's speed, check-jolt.mjs)
+        const lay = a.kind === 'dive' ? [0.3, 0.15] : [0.18, 0.12];
+        let k = ramp(s, t - lay[0], t + lay[1]) * (1 - ramp(s, t + 0.75, t + 1.35));
         // (a ball he then picks up: he is up for it, and stays up. Undone only while that pickup was
         // his take, the dive came back whole in the frame after it, laid out flat in one frame at a
         // ball he already had, lab/pipeline/check-jolt.mjs)

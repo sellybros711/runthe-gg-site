@@ -3262,7 +3262,7 @@
     },
     "inplay.js": {
       "v": "31",
-      "sha": "dcf977b46429a38c"
+      "sha": "66689d7bc3b555da"
     },
     "preview.js": {
       "v": "8",
@@ -3350,7 +3350,7 @@
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
       "v": "20",
-      "sha": "78b8d3d87d590cbb"
+      "sha": "acf960d487070552"
     },
     "shade-data.js": {
       "v": "2",
@@ -3464,7 +3464,7 @@
     },
     "inplay-plan.js": {
       "v": "20",
-      "sha": "78b8d3d87d590cbb"
+      "sha": "acf960d487070552"
     }
   }
 }
