@@ -95,6 +95,13 @@ for (const file of walk(ROOT).sort()) {
    * opt-out link is worse than none, so it was removed, and nothing may set the override again on AdSense. */
   if (/overrideDnsLink/.test(src.replace(/<!--[\s\S]*?-->/g, ''))) fail('sets overrideDnsLink, which AdSense ignores: Google keeps its bar and a custom link opens nothing');
 
+  /* NO PLACEHOLDER UNIT ON A PAGE WITH THE AD TAG (2026-10-30). adsbygoogle.push({}) starts the first
+   * <ins class="adsbygoogle"> in the page that has not been started yet. A placeholder slot is never
+   * started, so it sat first in line and took the push meant for a unit built later in code: the NFL
+   * and College draft and season banners, Pitch's rails and banner, and golf's leaderboard rails went
+   * unfilled. A unit that is not ready to serve is left out of the page, not written in as zeros. */
+  if (/<ins[^>]*class=["']adsbygoogle["'][^>]*data-ad-slot=["']0+["']/.test(src.replace(/<!--[\s\S]*?-->/g, ''))) fail('has a placeholder ad unit (slot all zeros). It takes the next adsbygoogle.push() from a real unit, so leave it out of the page');
+
   if (!/rel=["']canonical["']/i.test(src)) fail('no canonical');
   if (!/<title>\s*\S/i.test(src)) fail('no title');
   if (!/name=["']description["'][^>]*content=["']\s*\S/i.test(src)) fail('no meta description');

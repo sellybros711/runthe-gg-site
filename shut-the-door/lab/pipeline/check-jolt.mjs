@@ -85,9 +85,20 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // runners in frame. skate runner run rose 869 to 872 on screen. With every body measured against main the
 // runner skates fall 1,103 to 1,100 and the plays with any skate 1,967 to 1,812. Recorded here once, on the
 // coordinator's decision.
+// pop fielder bobble went 106 to 107 on CI with no change to the lab (site PR #818, 2026-10-30). Main and that
+// branch both give 107 locally, the identical plays and speeds, so it is the runner, not a code change. Recorded
+// here once, on the coordinator's decision.
+// The infield shades to each hitter and sets for the bases, outs and score (site PR #810, 2026-10-30). On CI's held
+// 2,925 three rows rose: skate fielder dive 14 to 27, pop fielder set 16 to 17, skate fielder catch_throw 3 to 4. The
+// dive row is the sprint foot slide after a dive, not the dive itself: an infielder playing in dives at more ground
+// hits, then sprints to a relay or cover spot, and the sprint capture's planted foot slides about 5 m/s, booked
+// under his last act. With every body measured against main (1,463 plays, every 40th case) the plays with a pop
+// fall 705 to 653 and with a skate 897 to 873; catch_throw is level there (3 and 3). Its bobble fix (a sprint to a
+// ball he only just reaches now pulls up) takes pop fielder bobble from 107 to 0 and skate fielder bobble from 22
+// to 1 on that held run. Recorded here once, on the coordinator's decision.
 const CEILING = {
   'pop fielder -': 437,
-  'pop fielder bobble': 106,
+  'pop fielder bobble': 0,
   'pop fielder catch': 12,
   'pop fielder catch_throw': 2,
   'pop fielder cover': 71,
@@ -97,15 +108,15 @@ const CEILING = {
   'pop fielder leap_miss': 2,
   'pop fielder pickup': 19,
   'pop fielder reach': 10,
-  'pop fielder set': 16,
+  'pop fielder set': 17,
   'pop fielder tag': 195,
   'pop fielder throw': 8,
   'pop runner run': 614,
   'skate fielder -': 215,
-  'skate fielder bobble': 22,
-  'skate fielder catch_throw': 3,
+  'skate fielder bobble': 1,
+  'skate fielder catch_throw': 4,
   'skate fielder cover': 434,
-  'skate fielder dive': 14,
+  'skate fielder dive': 27,
   'skate fielder field': 461,
   'skate fielder leap_miss': 0,
   'skate fielder pickup': 619,
