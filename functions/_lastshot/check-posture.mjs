@@ -50,7 +50,12 @@ function walk(dir) {
     }
     if (NAMES.some(n => n.test(e.name))) problems.push(rel + ' is a file named for the game outside its gated code');
     if (!TEXT.test(e.name) || fs.statSync(path.join(ROOT, rel)).size > 4e6) continue;
-    const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    let src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    /* scripts/check-cachebust.mjs records every page that loads a versioned
+       script, by its source path, as it does for Stumpire's and the Arcade
+       Lab's gated pages. A source path under functions/ is not a link to the
+       game; anything else in that file still fails. */
+    if (rel === 'scripts/cachebust.json') src = src.replace(/"functions\/_lastshot\/[^"]*"/g, '""');
     for (const n of NAMES) if (n.test(src)) { problems.push(rel + ' mentions the game (' + n + ')'); break; }
   }
 }

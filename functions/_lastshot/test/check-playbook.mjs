@@ -177,7 +177,22 @@ async function run(name, viewport, mobile) {
   await ctx.close();
 }
 
+/* The real assets/cloudsave.js on this page (no stand in): it has no token
+   signed out, and finds one through the arcade's RTG_AUTH when signed in. */
+async function realCloud() {
+  console.log('\nthe real cloud saves module');
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|supabase\.co/, r => r.abort());
+  await page.goto(BASE + '/last-shot');
+  await page.waitForFunction(() => !!window.RTG_SAVE && !!window.RTG_AUTH);
+  ok(await page.evaluate(() => window.RTG_SAVE.signedIn() === false), 'signed out, the cloud saves have no token');
+  ok(await page.evaluate(() => { window.RTG_AUTH.token = () => 'arcade-token'; return window.RTG_SAVE.signedIn(); }), 'signed in through RTG_AUTH, the cloud saves have the token');
+  await ctx.close();
+}
+
 try {
+  await realCloud();
   await run('phone', { width: 390, height: 844 }, true);
   await run('desktop', { width: 1440, height: 900 }, false);
 } finally { await browser.close(); server.close(); }
