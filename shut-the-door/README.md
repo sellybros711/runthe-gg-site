@@ -417,6 +417,61 @@ steal, and 74 caught stealings ended an outing. By pack, from 0.24% (Pressly 202
 to 2.67% (Diaz 2025). The closer pool's hold rate moves -1.0 to +0.2 points; the grade, the
 hold table and BANDS are unchanged.
 
+## Rules 8: the closer's outing to the end of the game (2026-10-30)
+
+The owner: "I don't want a daily scenario to ever only let a user play one out." CONTRACT.md 5j. A
+spot is the closer's real outing from the spot to the end of the game: every half he pitched, to the
+final out, or to the last out of regulation when extras followed. It asks for at least three outs
+(`test/packs.mjs`). Between two of his halves his team bats its real half, from the play by play.
+
+```
+python3 shut-the-door/pipeline/halves.py <verify id> ...             halves, between, line into the verify file
+python3 shut-the-door/pipeline/build_packs.py <scenario id>          stages the pack with the later halves' batters
+node shut-the-door/pipeline/add_halves.cjs <pack> <staged> <pack>    adds them to the committed pack, nothing else moves
+python3 shut-the-door/pipeline/steals.py --halves <scenario id>      their runners, and each later half's catcher
+node shut-the-door/pool.js <pack> data/closers.json <pack>           the table over every half, both centres, the pool
+node shut-the-door/pipeline/halves_meta.cjs <pack> ...               a one-half pack's format 4 (nothing else moves)
+```
+
+**The record** (`halves.py`, MLB's live feed): his halves are his team's defensive halves from the
+spot, each one he pitched in, through regulation. A later half's lineup is by batting slot from the
+spot's first batter's slot: whoever batted in that slot in that real half, else whoever held it when
+the half began (the feed's substitutions in order). His team's half is every plate appearance with
+the feed's event and description, the scorer's short form (from the event, the batted ball's
+trajectory and the fielders the feed credits), runs, outs, the runners after it, hits and errors.
+The plays' runs must equal the line score's for the half, and the hits and errors counted over the
+whole game must equal the feed's totals, or H and E are null.
+
+**The model** (`grade.js THE HALVES`): a state carries its half; three outs before the last half go
+to the next half's first state with his team's real runs on the margin. The value is the goal's
+chance at the outing's end, so a state is solved for a goal (`solve(st, g)`), and a state below the
+goal is 0 only when his team's runs to come cannot lift it. The table covers every half
+(`hold.halves`) and the other goal where one is asked (`hold.alt`, only when his team scored
+between). The first half is the one-half model exactly: a rules 7 outing plays there
+(`Model.singleModel`, its table solved on load, a few seconds; `pack.seq.L` as before). Rules 8
+reads `pack.seq.full`, the pool's sequencing over whole outings: hitters who have seen him for two
+innings are more familiar, and the adjustment is centred on what real closers face then.
+
+**Chapman 2016 (today's daily when it shipped).** In with two out and a man on in the bottom of the
+8th, 6-3. Rules 7 asked one out; rules 8 asks four: the 8th, the Cubs' real top of the 9th (Ross
+walked, Heyward forced Coghlan 4-6 and stole second, Báez struck out on a foul bunt as Heyward took
+third on Gomes's throwing error, Fowler 6-3: no runs), then the bottom of the 9th, Michael Martinez
+in Crisp's slot and Miguel Montero catching. Real: 35 pitches, 3 runs, held the tie.
+
+| Chapman 2016 | rules 7 | rules 8 |
+|---|---|---|
+| start hold% (best play) | 99.77 | 99.17 |
+| pool door shut / held tie / door's open / walk-off | 1964 / 27 / 9 / 0 | 1831 / 87 / 5 / 77 |
+| pool pitches an outing | 6.0 | 23.4 |
+| pool calls green / yellow / orange / red | 25 / 30 / 28 / 16% | 22 / 27 / 33 / 18% |
+| pool score median, share at 300 or less | 993, 1.3% | 916, 12.1% |
+| pack | 0.75 MB | 0.97 MB |
+
+The best-call outing is all green and the median pool outing lands at the 50th (`test/packs.mjs`).
+**The score floor.** `700 - 20 x points lost` reaches 0 at 35 points, and two halves lose about four
+times as many points as one out, so 12% of the pool's outings score only their result bonus. That is
+not changed here: the formula is the lead's (engine.js THE OUTING SCORE).
+
 ## Release and spin, for the picture (2026-10-24)
 
 `pipeline/tracking.py arsenal` reads each scenario pitcher's own pitches from the Savant search his

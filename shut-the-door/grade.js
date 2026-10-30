@@ -47,7 +47,9 @@
  *   chance of anything happening is exactly the chance the grade priced in.
  *
  * STATES
- *   (batter index, balls, strikes, outs, bases, margin), margin = us - them >= 0.
+ *   (half, batter index, balls, strikes, outs, bases, margin), margin = us - them >= 0.
+ *   The half is 0 in a pack with one half (every pack before rules 8), and the
+ *   state then carries no h at all.
  *   A run that ties does not end the outing (the owner's call, 2026-10-20): the
  *   inning goes on at margin 0. Terminal: three outs (the margin stands), and
  *   a run that puts them ahead (margin < 0: door's open or walk-off). The
@@ -145,10 +147,14 @@ function forceWalk(bases) {
 
 /* ---- the state index (the dense hold table) ---------------------------- */
 
-/* M is the starting lead: margins 0..M, so M + 1 slots per (batter, count, outs, bases). */
-function stateIndex(N, M, bi, b, s, outs, bases, margin) {
-  return ((((bi % N) * 12 + b * 3 + s) * 3 + outs) * 8 + bases) * (M + 1) + margin;
+/* M is the largest lead the outing can see: margins 0..M, so M + 1 slots per (batter, count, outs,
+   bases). With one half it is the starting lead; with more (rules 8) it adds the runs his team
+   scored between them. h, the half, is the outermost index, so half 0 sits where a one-half table
+   always had it. */
+function stateIndex(N, M, bi, b, s, outs, bases, margin, h) {
+  return (((((h || 0) * N + (bi % N)) * 12 + b * 3 + s) * 3 + outs) * 8 + bases) * (M + 1) + margin;
 }
+function indexOf(m, st) { return stateIndex(m.N, m.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin, st.h); }
 
 /* The least margin that meets a state's goal: 1 (hold the lead) or, once it is
    tied, 0 (keep them from going ahead). See THE GOAL above. */
@@ -170,12 +176,38 @@ function capSet(map, k, v, cap) {
 
 /* ---- the model over one pack ------------------------------------------ */
 
+/* THE HALVES (rules 8, the owner's call 2026-10-30: a daily is the closer's real outing to the
+   end of the game, at least three outs). A pack's scenario.halves lists every half he pitches,
+   and scenario.between the real half his team batted between each two (its runs). A third out
+   in a half that is not the last is not an end: the next state is the next half's first, the
+   batter after the one who made it leading off, the margin plus his team's real runs. The value
+   of a state is the chance of its goal at the outing's END, so a lead in the 8th is worth what
+   the 9th makes of it. One half, or opts.single (an outing played under rules 7 or before on a
+   pack with more halves), is the model every pack had before: three outs end it.
+
+   THE GOAL across halves. The goal is the state's own (goalOf), and every state after it is
+   priced for that same goal: the chance the outing ends at or above it. With one half a state
+   below the goal is worth 0, because the margin only falls. With halves after it, his team can
+   score again, so a tie from a lead in the 8th is worth the chance the outing still ends with
+   the lead. solve(st, g) solves a state for any goal; the table stores each state's own goal
+   (hold.h) and, where another goal can be asked of it, that one (hold.alt). */
 function Model(pack, opts) {
   const sc = pack.scenario;
   this.pack = pack;
-  this.N = sc.batters.length;
+  this.opts = opts || {};
+  const halves = sc.halves && sc.halves.length > 1 ? sc.halves : null;
+  const multi = !!halves && !(opts && opts.single);
+  this.H = multi ? halves.length : 1;
+  this.N = halves ? halves[0].lineup.length : sc.batters.length;
+  // the batting order by half: index p is the p-th batter after the spot's first, by his slot
+  const ident = Array.from({ length: this.N }, (_, i) => i);
+  this.lineup = multi ? halves.map(x => x.lineup) : [halves ? halves[0].lineup : ident];
+  this.R = multi ? sc.between.map(x => x.runs) : [];
+  // rest[h]: his team's real runs still to come after half h starts; before[h]: those already in
+  this.rest = Array.from({ length: this.H }, (_, h) => this.R.slice(h).reduce((a, x) => a + x, 0));
+  this.before = Array.from({ length: this.H }, (_, h) => this.R.slice(0, h).reduce((a, x) => a + x, 0));
   this.lead0 = sc.situation.score.us - sc.situation.score.them;
-  this.M = Math.max(1, this.lead0);
+  this.M = Math.max(1, this.lead0 + this.rest[0]);
   this.arsenal = sc.pitcher.arsenal;
   this.types = this.arsenal.map(a => a.type);
   this.zoneFt = pack.kernelZoneFt;
@@ -188,15 +220,30 @@ function Model(pack, opts) {
   // OUT below). A model for an outing played before (rules 1 and 2) scores
   // none on a third out, and solves its own table: the pack's is rules 3's.
   this.thirdOutRuns = !(opts && opts.thirdOutRuns === false);
-  this.table = (!(opts && opts.fresh) && this.thirdOutRuns && pack.hold && pack.hold.h) ? pack.hold : null;
-  this.center = pack.seq && typeof pack.seq.L === 'number' ? pack.seq.L : null;   // rules 2 (see DEFAULT_CENTER)
-  this.zone0 = pack.seq && typeof pack.seq.Z === 'number' ? pack.seq.Z : null;
+  this.table = (!(opts && opts.fresh) && this.thirdOutRuns && pack.hold && pack.hold.h && (pack.hold.halves || 1) === this.H) ? pack.hold : null;
+  // rules 2's centre (see DEFAULT_CENTER). A pack with halves measures it twice: over the first
+  // half (seq.L, the one rules 3 to 7 read) and over the whole outing (seq.full, rules 8)
+  const seq = this.H > 1 && pack.seq && pack.seq.full ? pack.seq.full : pack.seq;
+  this.center = seq && typeof seq.L === 'number' ? seq.L : null;
+  this.zone0 = seq && typeof seq.Z === 'number' ? seq.Z : null;
 }
 
+/* The model an outing played under rules 7 or before reads on a pack with halves: the first half
+   alone, three outs and it is over, as every such outing was played. Cached. */
+Model.prototype.singleModel = function () {
+  if (this.H === 1) return this;
+  if (!this._single) this._single = new Model(this.pack, Object.assign({}, this.opts, { single: true }));
+  return this._single;
+};
+
+/* The batter at the plate in a state: his index in scenario.batters, by the half's lineup. */
+Model.prototype.who = function (st) { return this.lineup[st.h || 0][st.bi % this.N]; };
+
+/* The library of one batter (his index in scenario.batters, model.who) for one type. */
 Model.prototype.entry = function (bi, type) {
-  const lib = this.pack.library[bi % this.N];
+  const lib = this.pack.library[bi];
   const e = lib && lib[type];
-  if (!e) throw new Error(`no library for batter ${bi % this.N} type ${type}`);
+  if (!e) throw new Error(`no library for batter ${bi} type ${type}`);
   return e;
 };
 
@@ -207,7 +254,7 @@ Model.prototype.probs = function (bi, type, cell, bucket) {
 
 /* P(transition class | target), through the miss table. Cached. */
 Model.prototype.mixed = function (bi, type, target, bucket) {
-  const k = `${bi % this.N}|${type}|${target}|${bucket}`;
+  const k = `${bi}|${type}|${target}|${bucket}`;
   let m = this._mixed.get(k);
   if (m) return m;
   const acc = {};
@@ -246,6 +293,7 @@ Model.prototype.transitions = function (st, cls, third) {
   const { bi, b, s, outs, bases, margin } = st;
   const next = (bi + 1) % this.N;
   const counts = third == null ? this.thirdOutRuns : third;
+  const h = st.h || 0, hk = this.H > 1 ? { h } : null;
   const pa = (o, nb, runs) => {
     if (o >= 3 && !counts) return { end: 'hold', runs: 0 };   // rules 1 and 2: a third out scores none
     const m = margin - runs;
@@ -254,8 +302,12 @@ Model.prototype.transitions = function (st, cls, third) {
     // force nor the batter before first counts (Official Baseball Rules
     // 5.08(a)); the advancement table holds only such runs (check-rules.mjs).
     // The margin the half ends at decides door shut or held tie.
+    // rules 8: in a half that is not the last, three outs go on to the next half (THE HALVES)
+    if (o >= 3 && h < this.H - 1) {
+      return { st: { h: h + 1, bi: next, b: 0, s: 0, outs: 0, bases: 0, margin: m + this.R[h] }, runs, half: { margin: m } };
+    }
     if (o >= 3) return { end: 'hold', runs, margin: m };
-    const r = { st: { bi: next, b: 0, s: 0, outs: o, bases: nb, margin: m }, runs };
+    const r = { st: Object.assign({}, hk, { bi: next, b: 0, s: 0, outs: o, bases: nb, margin: m }), runs };
     if (m === 0 && margin > 0) r.tie = true;        // this play tied it, and the inning goes on
     return r;
   };
@@ -280,53 +332,64 @@ Model.prototype.transitions = function (st, cls, third) {
 };
 
 /* The goal's chance after one transition out of st (not a self-loop): 1 for
-   three outs at or above st's goal (0 when a run on the third out tied it
-   from a lead), 0 when they go ahead, 0 for a state below st's goal (a tie
-   from a lead), else that state's own value. Shared by callValue and the
-   lesson. */
-Model.prototype.after = function (st, t) {
-  if (t.end === 'hold') return t.margin == null || t.margin >= goalOf(st) ? 1 : 0;
+   three outs at or above the goal (0 when a run on the third out tied it
+   from a lead), 0 when they go ahead, 0 for a state that can no longer reach
+   the goal (a tie from a lead with no runs of his to come), else that state's
+   own value for the goal. g is st's goal unless a solve for another goal asks
+   (THE HALVES). Shared by callValue and the lesson. */
+Model.prototype.after = function (st, t, g) {
+  if (g == null) g = goalOf(st);
+  if (t.end === 'hold') return t.margin == null || t.margin >= g ? 1 : 0;
   if (t.end === 'lost') return 0;
-  return t.st.margin >= goalOf(st) ? this.solve(t.st).hold : 0;
+  return this.reaches(t.st, g) ? this.solve(t.st, g).hold : 0;
 };
+/* Whether a state can still end at or above goal g: its margin plus his team's runs to come. */
+Model.prototype.reaches = function (st, g) { return st.margin + this.rest[st.h || 0] >= g; };
 
 /* The goal's chance (0..1) and the expected runs of one call in one state.
    The runs follow the outing on through a tie, to its real end. */
-Model.prototype.callValue = function (st, type, target, ctx, at) {
+Model.prototype.callValue = function (st, type, target, ctx, at, g) {
   if (ctx) return this.callValueCtx(st, type, target, ctx, at);
-  const mix = this.mixed(st.bi, type, target, bucketOf(st.b, st.s));
+  if (g == null) g = goalOf(st);
+  const mix = this.mixed(this.who(st), type, target, bucketOf(st.b, st.s));
   let v = 0, r = 0, pself = 0;
   for (const [cls, p] of mix) {
     for (const [q, t] of this.transitions(st, cls)) {
       const w = p * q;
       if (t.self) { pself += w; continue; }
-      v += w * this.after(st, t);
+      v += w * this.after(st, t, g);
       if (t.end) r += w * t.runs;          // lost, or a run on the third out
-      else if (t.st) r += w * (t.runs + this.solve(t.st).runs);
+      else if (t.st) r += w * (t.runs + this.solve(t.st, this.reaches(t.st, g) ? g : undefined).runs);
     }
   }
   if (pself > 0) { v /= (1 - pself); r /= (1 - pself); }
   return { hold: v, runs: r };
 };
 
-Model.prototype.solve = function (st) {
-  const idx = stateIndex(this.N, this.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin);
-  const hit = this._V.get(idx);
+/* The best call and its value in one state, for goal g (its own goal by default). From the
+   table when it holds that state for that goal, else solved here. */
+Model.prototype.solve = function (st, g) {
+  if (g == null) g = goalOf(st);
+  const own = g === goalOf(st);
+  const idx = indexOf(this, st);
+  const key = own ? idx : -1 - idx;
+  const hit = this._V.get(key);
   if (hit) return hit;
   let best;
-  if (this.table && this.table.h[idx] != null) {
-    const bc = this.table.b[idx];
-    best = { hold: this.table.h[idx], runs: this.table.r[idx], type: this.types[Math.floor(bc / 25)], cell: bc % 25 };
+  const T = this.table && (own ? this.table : this.table.alt);
+  if (T && T.h[idx] != null) {
+    const bc = T.b[idx];
+    best = { hold: T.h[idx], runs: T.r[idx], type: this.types[Math.floor(bc / 25)], cell: bc % 25 };
   } else {
     best = null;
     for (const type of this.types) {
       for (let cell = 0; cell < 25; cell++) {
-        const cv = this.callValue(st, type, cell);
+        const cv = this.callValue(st, type, cell, null, null, g);
         if (!best || cv.hold > best.hold + 1e-12) best = { hold: cv.hold, runs: cv.runs, type, cell };
       }
     }
   }
-  this._V.set(idx, best);
+  this._V.set(key, best);
   return best;
 };
 
@@ -335,7 +398,7 @@ Model.prototype.solve = function (st) {
    section 7), so a tight spot and a quiet one both grade in real colours. */
 Model.prototype.meanLost = function (st, ctx) {
   if (ctx) { this.bestCtx(st, ctx); return ctx._meanLost; }
-  const idx = stateIndex(this.N, this.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin);
+  const idx = indexOf(this, st);
   if (!this._ML) this._ML = new Map();
   if (this._ML.has(idx)) return this._ML.get(idx);
   const best = this.solve(st).hold;
@@ -348,25 +411,43 @@ Model.prototype.meanLost = function (st, ctx) {
 
 Model.prototype.startState = function () {
   const s = this.pack.scenario.situation;
-  return { bi: 0, b: 0, s: 0, outs: s.outs, bases: s.bases, margin: this.lead0 };
+  return Object.assign(this.H > 1 ? { h: 0 } : {}, { bi: 0, b: 0, s: 0, outs: s.outs, bases: s.bases, margin: this.lead0 });
+};
+
+/* Whether a state is ever priced for the goal it does not own (THE HALVES): a tie that his team's
+   runs to come can still turn into a lead (goal 1), or a lead in a later half that his team's
+   runs made out of a tie (goal 0). */
+Model.prototype.needsAlt = function (st) {
+  const h = st.h || 0;
+  return st.margin === 0 ? this.rest[h] >= 1 : h >= 1 && this.before[h] >= 1;
 };
 
 /* Every state solved and packed dense: the pack's hold table. Rounded to six
    places, and the browser reads the rounded numbers, so every device grades
-   from the same table. */
+   from the same table. With halves (rules 8) the table runs over every half
+   (halves: H) and carries alt, the other goal where one can be asked. */
 Model.prototype.holdTable = function () {
-  const size = this.N * 12 * 3 * 8 * (this.M + 1);
-  const h = new Array(size).fill(null), r = new Array(size).fill(null), b = new Array(size).fill(null);
-  for (let bi = 0; bi < this.N; bi++) for (let bb = 0; bb < 4; bb++) for (let s = 0; s < 3; s++)
+  const size = this.H * this.N * 12 * 3 * 8 * (this.M + 1);
+  const mk = () => ({ h: new Array(size).fill(null), r: new Array(size).fill(null), b: new Array(size).fill(null) });
+  const main = mk();
+  const alt = this.H > 1 && this.rest[0] > 0 ? mk() : null;
+  const put = (T, i, v) => {
+    T.h[i] = Math.round(v.hold * 1e6) / 1e6;
+    T.r[i] = Math.round(v.runs * 1e4) / 1e4;
+    T.b[i] = this.types.indexOf(v.type) * 25 + v.cell;
+  };
+  for (let hh = 0; hh < this.H; hh++) for (let bi = 0; bi < this.N; bi++) for (let bb = 0; bb < 4; bb++) for (let s = 0; s < 3; s++)
     for (let o = 0; o < 3; o++) for (let bs = 0; bs < 8; bs++) for (let m = 0; m <= this.M; m++) {
-      const st = { bi, b: bb, s, outs: o, bases: bs, margin: m };
-      const v = this.solve(st);
-      const i = stateIndex(this.N, this.M, bi, bb, s, o, bs, m);
-      h[i] = Math.round(v.hold * 1e6) / 1e6;
-      r[i] = Math.round(v.runs * 1e4) / 1e4;
-      b[i] = this.types.indexOf(v.type) * 25 + v.cell;
+      const st = Object.assign(this.H > 1 ? { h: hh } : {}, { bi, b: bb, s, outs: o, bases: bs, margin: m });
+      const i = indexOf(this, st);
+      put(main, i, this.solve(st));
+      if (alt && this.needsAlt(st)) put(alt, i, this.solve(st, 1 - goalOf(st)));
     }
-  return { margins: this.M, h, r, b };
+  const out = { margins: this.M };
+  if (this.H > 1) out.halves = this.H;
+  Object.assign(out, main);
+  if (alt) out.alt = alt;
+  return out;
 };
 
 /* ---- rules 2: the hitter adjusts, the arm tires (the owner's call, 2026-10-22) ----
@@ -410,7 +491,7 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 7;
+const RULES = 8;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
@@ -443,6 +524,13 @@ const RUNNER_RULES = 6;
    is graded: the grade prices the call, and the state after a steal or a
    pickoff carries into the next call's grade, like a challenge. */
 const STEAL_RULES = 7;
+/* Rules 8 (2026-10-30, the owner's call: "this game is specifically for closing baseball games")
+   is rules 7 with the closer's real outing to the end of the game (THE HALVES above): a pack may
+   hold more than one half, his team's real half between each two (scenario.between), and three
+   outs in a half that is not the last go on to the next. An outing played under rules 7 or
+   before on such a pack replays on the first half alone (Model.singleModel), exactly as it was
+   played. On a pack with one half, rules 8 plays exactly as rules 7. */
+const FULL_RULES = 8;
 const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
@@ -746,7 +834,7 @@ Model.prototype.routineOf = function (entry, cell) {
    foul (the self-loop). The same sums callValue does, grouped by key so a
    call under rules 2 is one pass over its mix. Cached per state. */
 Model.prototype.keyValues = function (st) {
-  const idx = stateIndex(this.N, this.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin);
+  const idx = indexOf(this, st);
   if (!this._KV) this._KV = new Map();
   let kv = this._KV.get(idx);
   if (kv) return kv;
@@ -760,7 +848,7 @@ Model.prototype.keyValues = function (st) {
         if (t.self) { self += q; continue; }
         v += q * this.after(st, t);
         if (t.end) r += q * t.runs;          // lost, or a run on the third out
-        else if (t.st) r += q * (t.runs + this.solve(t.st).runs);
+        else if (t.st) r += q * (t.runs + this.solve(t.st, this.reaches(t.st, goalOf(st)) ? goalOf(st) : undefined).runs);
       }
       byCls[cls] = [v, r, self];
     }
@@ -794,8 +882,8 @@ Model.prototype.keyMixCtx = function (st, type, target, ctx, at) {
   const off = a0 && (a0[0] !== 0 || a0[1] !== 0);
   const ker = off ? this.kernelRowAim(type, ctx.fatigue, target, a0) : this.kernelAt(type, ctx.fatigue);
   const base = off ? 0 : target * 25;
-  const rows = this.rowsCtx(st.bi, type, bucketOf(st.b, st.s), ctx);
-  const entry = this.entry(st.bi, type);
+  const rows = this.rowsCtx(this.who(st), type, bucketOf(st.b, st.s), ctx);
+  const entry = this.entry(this.who(st), type);
   // rules 4 (THE CALL): a take is called where it crossed, so each cell's takes split by the
   // umpire's chance over where in that cell this aim's miss puts the ball
   const cm = ctx.rules >= ABS_RULES ? this.callMass(type, ctx.fatigue, target, off ? a0 : null) : null;
@@ -992,7 +1080,7 @@ function fmt3(x) { return x.toFixed(3).replace(/^0/, ''); }
 /* The reason line: one fact from the batter's profile or the state, with its
    number from the pack. House voice: lowercase, short. */
 function reasonFor(model, st, call, best, value, lost, band, ctx) {
-  const batter = model.pack.scenario.batters[st.bi % model.N];
+  const batter = model.pack.scenario.batters[model.who(st)];
   const pr = batter.profile || {};
   const bestTxt = `${pitchName(model, best.type)} ${placeOf(best.cell, batter.bats)}`;
   // a note is quoted only where it argues the point: good = it favours the pitcher
@@ -1051,7 +1139,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;

@@ -415,6 +415,71 @@ def catcher_at(feed, side, ab_index, inning=None, half=None):
     return cur, next((p['person']['fullName'] for p in bx.values() if p['person']['id'] == cur), None)
 
 
+def runner_entry(rid, name, season, h, sp, sprior, lgRate, lgP):
+    """One runner: his attempts per time on first and his success, shrunk toward what his sprint
+    speed predicts (SB and CS alone before 2015)."""
+    s = h.get(rid)
+    speed = sp.get(rid)
+    m0 = math.exp(sprior['att'] * (speed - sprior['mean'])) if speed else 1.0
+    z0 = sprior['z'] * (speed - sprior['mean']) if speed else 0.0
+    r0, p0 = lgRate * m0, N01.cdf(probit(lgP) + z0)
+    A = (s['stolenBases'] + s['caughtStealing']) if s else 0
+    O = first_base_times(s) if s else 0
+    SB = s['stolenBases'] if s else 0
+    rate = (A + K_ATT) / (O + K_ATT / r0)
+    p = (SB + K_SUC * p0) / (A + K_SUC)
+    return {'name': name, 'att': round(rate / lgRate, 3), 'z': round(probit(p) - probit(lgP), 3),
+            'sb': int(SB), 'cs': int(A - SB), 'firstBase': int(O), 'speed': speed,
+            'src': 'SB, CS and sprint speed' if speed else 'SB and CS (no sprint speed before 2015)' if season < 2015 else 'SB and CS'}
+
+
+def catcher_entry(cid, cname, cf, pop, lgP):
+    """The catcher on the field: stolen bases and caught stealing against him, and his pop time."""
+    c = cf.get(cid)
+    if c:
+        A = c.get('stolenBases', 0) + c.get('caughtStealing', 0)
+        cp = (c.get('stolenBases', 0) + K_SUC * lgP) / (A + K_SUC)
+        return {'id': cid, 'name': cname, 'z': round(probit(cp) - probit(lgP), 3), 'sb': int(c.get('stolenBases', 0)),
+                'cs': int(c.get('caughtStealing', 0)), 'pop': pop.get(cid)}
+    return {'id': cid, 'name': cname, 'z': 0.0, 'pop': pop.get(cid)}
+
+
+def halves_main(ids):
+    """Rules 8 (halves.py): for a spot with more than one half, the running game of its later
+    halves, into data/steals.json beside what main() wrote: a runner for every batter in the pack
+    who has none, and the catcher on the field when each later half began (halves[h], h >= 1)."""
+    from common import read_json
+    from statsapi import feed as gfeed
+    GAME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(DATA, 'steals.json')
+    allj = read_json(path)
+    specs = {x['id']: x for x in read_json(os.path.join(GAME, 'scenarios', 'scenarios.json'))['scenarios']}
+    for sid in ids:
+        spec = specs[sid]
+        v = read_json(os.path.join(DATA, 'verify', spec['verify'] + '.json'))
+        pack = read_json(os.path.join(DATA, 'packs', sid + '.json'))
+        sc = allj['scenarios'][sid]
+        season = sc['season']
+        S = allj['sample'][sc['era']]
+        lg = league(season)
+        h, cf = stats(season, 'hitting'), stats(season, 'fielding', 'C')
+        sp = leaderboard('sprint', season) if season >= 2015 else {}
+        pop = leaderboard('pop', season) if season >= 2016 else {}
+        for b in pack['scenario']['batters']:
+            bid = str(b['id'])
+            if bid not in sc['runners'] and bid.isdigit():
+                sc['runners'][bid] = runner_entry(int(bid), b['name'], season, h, sp, S['speed'], lg['attRate'], lg['sbPct'])
+        f = gfeed(v['gamePk'])
+        side = 'home' if v['situation']['usHome'] else 'away'
+        out = []
+        for hv in v['halves'][1:]:
+            cid, cname = catcher_at(f, side, None, hv['inning'], hv['half'])
+            out.append({'catcher': catcher_entry(cid, cname, cf, pop, lg['sbPct'])})
+        sc['halves'] = out
+        log(f'{sid}: runners {len(sc["runners"])}, later halves\' catchers ' + ', '.join(x['catcher']['name'] or '?' for x in out))
+    write_json(path, allj)
+
+
 def scenario_facts(spec, v):
     from statsapi import feed as gfeed
     pk = v.get('gamePk')
@@ -471,19 +536,7 @@ def main():
         lgRate, lgP = lg['attRate'], lg['sbPct']
 
         def runner(rid, name):
-            s = h.get(rid)
-            speed = sp.get(rid)
-            m0 = math.exp(sprior['att'] * (speed - sprior['mean'])) if speed else 1.0
-            z0 = sprior['z'] * (speed - sprior['mean']) if speed else 0.0
-            r0, p0 = lgRate * m0, N01.cdf(probit(lgP) + z0)
-            A = (s['stolenBases'] + s['caughtStealing']) if s else 0
-            O = first_base_times(s) if s else 0
-            SB = s['stolenBases'] if s else 0
-            rate = (A + K_ATT) / (O + K_ATT / r0)
-            p = (SB + K_SUC * p0) / (A + K_SUC)
-            return {'name': name, 'att': round(rate / lgRate, 3), 'z': round(probit(p) - probit(lgP), 3),
-                    'sb': int(SB), 'cs': int(A - SB), 'firstBase': int(O), 'speed': speed,
-                    'src': 'SB, CS and sprint speed' if speed else 'SB and CS (no sprint speed before 2015)' if season < 2015 else 'SB and CS'}
+            return runner_entry(rid, name, season, h, sp, sprior, lgRate, lgP)
 
         runners = {}
         retro = {'retro:' + str(pa.get('batterId')): pa.get('mlbamId') for pa in v['plateAppearances'] if pa.get('mlbamId')}
@@ -504,14 +557,7 @@ def main():
                        'sb': int(p['stolenBases']), 'cs': int(p['caughtStealing']), 'pickoffs': int(p.get('pickoffs', 0))}
         else:
             pitcher = {'id': pid, 'att': 1.0, 'z': 0.0}
-        c = cf.get(cid)
-        if c:
-            A = c.get('stolenBases', 0) + c.get('caughtStealing', 0)
-            cp = (c.get('stolenBases', 0) + K_SUC * lgP) / (A + K_SUC)
-            catcher = {'id': cid, 'name': cname, 'z': round(probit(cp) - probit(lgP), 3), 'sb': int(c.get('stolenBases', 0)),
-                       'cs': int(c.get('caughtStealing', 0)), 'pop': pop.get(cid)}
-        else:
-            catcher = {'id': cid, 'name': cname, 'z': 0.0, 'pop': pop.get(cid)}
+        catcher = catcher_entry(cid, cname, cf, pop, lgP)
         scen[spec['id']] = {
             'season': season, 'era': era, 'gamePk': pk,
             'eraAtt': round(lg['attRate'] / lgS['attRate'], 3), 'eraZ': round(probit(lg['sbPct']) - probit(lgS['sbPct']), 3),
@@ -531,4 +577,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if '--halves' in sys.argv:
+        halves_main([x for x in sys.argv[1:] if not x.startswith('--')])
+    else:
+        main()

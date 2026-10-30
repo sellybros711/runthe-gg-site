@@ -1134,11 +1134,33 @@
      "firstBase": 164,
      "speed": 27.9,
      "src": "SB, CS and sprint speed"
+    },
+    "492841": {
+     "name": "Michael Martinez",
+     "att": 1.278,
+     "z": -0.146,
+     "sb": 0,
+     "cs": 2,
+     "firstBase": 23,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
     }
    },
    "start": {
     "1": 608070
-   }
+   },
+   "halves": [
+    {
+     "catcher": {
+      "id": 471083,
+      "name": "Miguel Montero",
+      "z": 0.474,
+      "sb": 59,
+      "cs": 7,
+      "pop": 2.06
+     }
+    }
+   ]
   },
   "std-2024-ws5-buehler": {
    "season": 2024,

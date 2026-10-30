@@ -269,5 +269,97 @@
   "MLB Stats API schedule 2019-10-01 and live feed /api/v1.1/game/599336/feed/live",
   "MLB Stats API people with 2019 season stats",
   "Baseball Savant 623352 2019 season search (regular season and postseason) for the arsenal"
- ]
+ ],
+ "halves": [
+  {
+   "inning": 8,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    645302,
+    572821,
+    607208,
+    594809,
+    543685,
+    665742,
+    435062,
+    452678,
+    435559
+   ],
+   "lineupNames": [
+    "Victor Robles",
+    "Brian Dozier",
+    "Trea Turner",
+    "Adam Eaton",
+    "Anthony Rendon",
+    "Juan Soto",
+    "Howie Kendrick",
+    "Asdrúbal Cabrera",
+    "Kurt Suzuki"
+   ]
+  }
+ ],
+ "between": [],
+ "line": {
+  "teams": [
+   "MIL",
+   "WSH"
+  ],
+  "innings": [
+   [
+    2,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   6,
+   3
+  ],
+  "E": [
+   1,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/599336/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [],
+ "realFull": {
+  "outcome": "doors_open",
+  "pitches": 30,
+  "runs": 3,
+  "score": {
+   "us": 3,
+   "them": 4
+  }
+ }
 }
