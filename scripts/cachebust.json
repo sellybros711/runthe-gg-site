@@ -2681,6 +2681,16 @@
       "sha": "c71a149f3b8da69e"
     }
   },
+  "functions/_lastshot/web/play.html": {
+    "/arcade/auth.js": {
+      "v": "4",
+      "sha": "c71a149f3b8da69e"
+    },
+    "/assets/cloudsave.js": {
+      "v": "3",
+      "sha": "7c8b2c13e2f5ecd5"
+    }
+  },
   "functions/_stumpire/web/admin.html": {
     "/arcade/auth.js": {
       "v": "4",

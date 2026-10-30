@@ -29,7 +29,9 @@ try {
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
   const page = await ctx.newPage();
   const errs = [];
-  page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
+  /* the sign in's CDN and the fonts: not reachable from a check, and not under test here */
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
   page.on('pageerror', e => errs.push(String(e)));
   setWho('dev');
   const res = await page.goto(base + '/last-shot');
@@ -37,6 +39,9 @@ try {
   await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
   await page.reload();
   await page.waitForFunction(() => window.__lastShot && window.__lastShot.view);
+  ok(await page.isVisible('#hPlay') && await page.isVisible('#hBooks'), 'home offers the scenario and My Playbooks');
+  await page.click('#hPlay');
+  await page.waitForSelector('#board', { state: 'visible' });
   ok(await page.isDisabled('#bRun'), 'Run It is disabled with no shooter');
 
   /* Feet to page pixels through the board's own view. */

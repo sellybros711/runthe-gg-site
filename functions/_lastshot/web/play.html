@@ -61,15 +61,84 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .link{background:none;border:0;padding:0;text-decoration:underline;color:var(--dim);font-size:13px;min-height:32px}
 .dbg{font:12px/1.4 ui-monospace,monospace;background:#1d2129;color:#9f9;padding:8px;border-radius:8px;white-space:pre-wrap;word-break:break-all}
+/* the screens: home, the clipboard (game or a playbook play), the playbooks */
+.view{flex:1;min-height:0;display:flex;flex-direction:column}
+.scroll{overflow:auto;-webkit-overflow-scrolling:touch;padding:6px 14px 24px}
+.home{display:flex;flex-direction:column;gap:12px;padding:10px 14px 20px;overflow:auto}
+.hcard{display:block;width:100%;text-align:left;border:1px solid var(--edge);background:var(--card);border-radius:18px;padding:16px;box-shadow:0 8px 20px -14px rgba(0,0,0,.35)}
+.hcard b{display:block;font-family:'Russo One','Outfit',sans-serif;font-size:22px;font-weight:400}
+.hcard span{display:block;color:var(--dim);font-size:14px;margin-top:4px}
+#hHow{flex:none;align-self:flex-start}
+.hcard.game{background:#1d2129;color:#fff;border-color:#1d2129}.hcard.game span{color:#c9ced8}.hcard.game b{color:#ffd23f}
+.frames{display:flex;gap:6px;padding:4px 10px 2px;overflow-x:auto;align-items:stretch}
+.fr{flex:none;min-width:56px;min-height:44px;border-radius:10px;border:2px solid var(--edge);background:var(--board);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--dim)}
+.fr b{font-family:'Outfit',sans-serif;font-size:16px;color:var(--marker)}
+.fr.on{border-color:var(--marker);box-shadow:0 0 0 2px rgba(34,50,77,.15);background:#fff}
+.fr.next{border-style:dashed;font-weight:700;color:var(--marker);padding:0 10px}
+.editbar{padding:2px 10px 4px;display:flex;flex-direction:column;gap:4px}
+.erow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.erow.small{min-height:0}
+.editbar input,.editbar select,.editbar textarea,.scroll input,.scroll select{font:inherit;font-size:15px;min-height:40px;border:1px solid var(--edge);border-radius:10px;padding:4px 8px;background:#fff;color:var(--ink)}
+.erow.nowrap{flex-wrap:nowrap}
+.pname{flex:1;min-width:0;font-family:'Outfit',sans-serif;font-weight:800;font-size:18px!important}
+#pbClock{width:78px}
+.lab{font-size:13px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:6px}
+.actions .btn{white-space:nowrap;padding:0 10px}
+.tbtn{flex:none;min-height:42px;padding:0 14px}
+.sitchip{font-weight:800;color:var(--marker)}
+.more[open]{background:#fff;border:1px solid var(--edge);border-radius:12px;padding:6px 8px}
+.more summary{font-size:13px;font-weight:700;color:var(--dim);min-height:32px;display:flex;align-items:center}
+.more textarea,.more input{width:100%;margin-top:4px}
+.btn.dark{background:#1d2129;color:#fff}.btn.danger{color:var(--red)}
+.mini{min-height:36px;min-width:36px;border-radius:9px;border:1px solid var(--edge);background:#fff;font-size:13px;font-weight:700;padding:0 8px}
+.mini:disabled{opacity:.35}
+.muted{color:var(--dim);font-size:14px}
+.blist{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.bitem{display:block;text-align:left;width:100%;border:1px solid var(--edge);background:#fff;border-radius:14px;padding:12px 14px}
+.bitem b{display:block;font-size:17px}.bitem small{color:var(--dim)}
+.bhead{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.bname{flex:2;font-family:'Outfit',sans-serif!important;font-weight:800;font-size:20px!important}.bteam{flex:1;min-width:120px}
+.shead{display:flex;gap:6px;align-items:center;margin-top:14px;padding-top:8px;border-top:1px solid var(--edge)}
+.sname{flex:1;font-weight:700}
+.plays{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.prow{border:1px solid var(--edge);background:#fff;border-radius:14px;padding:8px}
+.popen{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:0}
+.popen b{display:block;font-size:16px}.popen small{display:block;color:var(--dim);font-size:12px;margin-top:2px}.popen small.stale{color:var(--red)}
+.thumb{width:66px;height:62px;border:1px solid var(--edge);border-radius:8px;flex:none;background:#fff}
+.pctl{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.newplay{align-self:flex-start;flex:none}
+.example{font-weight:700;background:#fff;border:1px solid var(--edge);border-radius:12px;padding:10px}
+.rule{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 0;border-bottom:1px solid var(--edge)}
+.rule input{flex:1;min-width:110px}
+.chips{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0}
+.chk{font-size:14px;display:flex;align-items:center;gap:4px;min-height:32px}
+.chk input{width:20px;height:20px;min-height:0}
+.xprev{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.xpage{width:100%;height:auto;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.15);border-radius:4px}
+.ttable{width:100%;border-collapse:collapse;margin:8px 0;font-size:15px}
+.ttable th,.ttable td{text-align:left;padding:7px 4px;border-bottom:1px solid var(--edge)}
+.ttable th{font-size:12px;color:var(--dim);font-weight:700}.ttable .tall td{font-weight:800}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1d2129;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90%}
+.toast.on{opacity:1}
+.fsheet{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(239,237,232,.75);backdrop-filter:blur(3px);z-index:15}
+.fsheet.on{display:flex}.fsheet .card{max-width:560px}
+@media (min-width:900px){.app{max-width:1100px}.view.wide{display:grid;grid-template-columns:minmax(380px,1fr) 1fr;gap:0}.xform{columns:2;column-gap:24px}}
 @media (prefers-reduced-motion:reduce){.pop.on,.pop.final.on{animation:none;opacity:1;transform:translate(-50%,-50%)}}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="top">
-    <a class="back" href="/arcade/" aria-label="Back to the Arcade">&#8592;</a>
+    <a class="back" id="back" href="/arcade/" aria-label="Back">&#8592;</a>
     <div class="ttl"><h1>Last Shot</h1><div class="sub"><span class="tag">TESTERS ONLY</span><em id="tagline">Draw it up. Win it.</em></div></div>
   </div>
+  <div class="view home" id="vHome">
+    <button class="hcard game" id="hPlay"><b>Play the scenario</b><span>Down 1. 22 seconds. Your ball. Draw it up and run it.</span></button>
+    <button class="hcard" id="hBooks"><b>My Playbooks</b><span>Save your plays. Name them your way. Test them against every defense. Print them for the team.</span></button>
+    <button class="btn alt" id="hHow">How it works</button>
+  </div>
+  <div class="view" id="vGame" hidden>
+  <div class="editbar" id="editBar" hidden></div>
   <div class="score" aria-live="off">
     <div class="team"><span>YOU</span><b id="sUs">87</b></div>
     <div class="clock" id="clock">22.0</div>
@@ -82,6 +151,7 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
     <div class="hint" id="hint"></div>
     <div class="sheet" id="sheet"><div class="card" id="card"></div></div>
   </div>
+  <div class="frames" id="framesRow"><div class="frames" id="frames" style="padding:0"></div><button class="fr next" id="bNext">Next frame</button></div>
   <div class="tools" id="tools">
     <button class="tool" data-tool="move" aria-pressed="false">Move<small>drag a route</small></button>
     <button class="tool" data-tool="screen" aria-pressed="false">Screen<small>route + bar</small></button>
@@ -91,9 +161,22 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
   <div class="actions" id="actions">
     <button class="btn alt" id="bUndo">Undo</button>
     <button class="btn alt" id="bClear">Clear</button>
+    <button class="btn dark" id="bFrame" disabled aria-label="Play this frame">&#9654; Frame</button>
     <button class="btn go" id="bRun" disabled>Run It</button>
   </div>
+  </div>
+  <div class="view scroll" id="vBooks" hidden></div>
 </div>
+<div class="toast" id="toast" role="status"></div>
+<div class="fsheet" id="testSheet"><div class="card" id="testCard"></div></div>
+<div class="fsheet" id="howSheet"><div class="card">
+  <h2>How it works</h2>
+  <p>You are down 1 with 22.0 left. Your ball, at the top of the key.</p>
+  <p>Draw the play in frames. Move, Screen, Pass and Shoot. Next frame starts where everyone ended.</p>
+  <p>Run It plays what you drew. Score late to win. Score early and they get the ball back.</p>
+  <p>My Playbooks keeps your plays on your account. Test it runs a play against every defense.</p>
+  <div class="row"><button class="btn alt" id="howClose">Close</button></div>
+</div></div>
 <!-- Run The Floor's player rig, for the live play (read only, never edited
      from here). UNVERSIONED ON PURPOSE: a ?v= here would be recorded by
      scripts/check-cachebust.mjs, and every later bump of baller.js in hoops
@@ -102,6 +185,12 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
      gets the current file. court.js uses it only at API_VERSION 2; missing or
      any other version draws the disc tokens instead. -->
 <script defer src="/hoops/baller.js"></script>
+<!-- Who is signed in, and the account's saves: the arcade's sign in, as the
+     Arcade Lab shell loads it, and the site's shared cloud saves (playbooks,
+     game last_shot). Absolute paths: this page is served from pages.js. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/assets/cloudsave.js?v=3"></script>
 <script type="module" src="/last-shot/m/client.js?b=__BUILD__"></script>
 </body>
 </html>
