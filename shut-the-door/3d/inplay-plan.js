@@ -139,6 +139,10 @@ export function alignment(bats, o = {}) {
   return F;
 }
 
+/** Does the first baseman hold the runner on first at this pitch? A runner on first with second base open, as
+    every club plays it (the bag behind him taken, he plays off it). bases: before the pitch, bitmask. */
+export function holdsRunner(bases) { return !!((bases & 1) && !(bases & 2)); }
+
 /* ------------------------------------------------------------------ motion along a path */
 
 /** How long a run of d feet takes, top speed v, acceleration a, from rest and/or to rest. */
@@ -395,8 +399,12 @@ export function planPlay(pr, o = {}) {
   // the outs before the pitch: the engine gives the outs after it and every runner put out on it
   ctx.outs0 = Math.max(0, Math.min(2, (pr.outs ?? 0) - moves.filter((m) => m.to === -1).length));
   const F = alignment(ctx.bats, { shade: o.shade || null, bases: before, outs: ctx.outs0, inning: o.inning, margin: o.margin });
+  // the first baseman holds a runner on first with second base open: on the bag at the pitch, his right foot on
+  // its front edge, facing the pitcher (holdsRunner). Over the spot's own alignment: holding him comes first
+  const hold1 = holdsRunner(before);
+  if (hold1) F[3] = { x: BASE[1].x - 1.4, y: BASE[1].y - 0.6 };
   ctx.F = F;
-  const p = { kind, label, bb, ev, la, spray, guess, events: [], segs: [], fielders: {}, runners: [], notes: [] };
+  const p = { kind, label, bb, ev, la, spray, guess, events: [], segs: [], fielders: {}, runners: [], notes: [], hold1 };
   ctx.p = p;
   const tracks = {};
   for (let n = 1; n <= 9; n++) tracks[n] = new Track(F[n], { v: SPEED(n).v, a: SPEED(n).a });
