@@ -264,6 +264,16 @@
      does not ship already. Below 1610px nothing changes, because narrowing
      there would buy no rails. The 18px is a classic scrollbar. */
   @media (min-width:1610px){ .wrap{ max-width:min(1200px, calc(100vw - 610px)); } }
+  /* A 320x568 phone: the "Not sure?" button still sat under the banner at first view, so tighter again. */
+  @media (max-height:600px) and (max-width:999px){
+    html body.rtg-sticky-on .wrap{padding-top:4px !important;}
+    html body.rtg-sticky-on .topbar{min-height:0 !important; padding-top:2px !important; padding-bottom:2px !important;}
+    html body.rtg-sticky-on .rtggh-strip{margin-bottom:2px !important;}
+    html body.rtg-sticky-on .runbar{padding-top:2px !important; padding-bottom:2px !important; margin-bottom:3px !important;}
+    html body.rtg-sticky-on .modesw{margin-bottom:3px !important;}
+    html body.rtg-sticky-on .modesw button{padding-top:4px !important; padding-bottom:4px !important; min-height:0 !important;}
+    html body.rtg-sticky-on .pcard{padding-top:14px !important; padding-bottom:14px !important; margin-bottom:10px !important;}
+  }
 </style>
 <script>
 window.dataLayer=window.dataLayer||[];
