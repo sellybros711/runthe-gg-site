@@ -608,6 +608,13 @@ pitcher hand and batter side, within 3 mph of his speed). The pack counts them i
 Hoffman 2010 4, Uehara 2013 3, Davis 2015 2, of 2,500 to 3,000 type-cells each. A pack that built before
 never reaches it, so none moved. Familia 2015 (36 such cells, his splitter) was left out for Jansen.
 
+**Release and spin the picture cannot draw** (`tracking.py`). A PITCHf/x pitch whose mean release is
+on the wrong side for his hand has no release (Hoffman's 2010 cutter: park calibration), and the 3D
+uses his overall release. A Statcast spin with no axis (Savant has none in 2015: Davis) or whose mean
+axis pushes against his own pfx (a cosine under 0.8, `lab/pipeline/check-pitches.mjs SPIN_AGREE`:
+Smith's 2021 and Hader's 2023 sliders, gyro heavy) is null, with the reason in
+`pitcher.tracking.spinNull`, and the ball uses its family's default.
+
 **The thirty (2026-10-30).** The first ten as before, then twenty, interleaved by era and kind:
 
 | # | pack | spot | start | real |
