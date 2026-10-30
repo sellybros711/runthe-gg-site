@@ -15,6 +15,7 @@
      export async function play(page, t) {}          what the clip shows
      export const seconds = 20;                      optional: the most it may run
      export const hide = ['/baseball/board.js'];     optional: files served as missing (see below)
+     export const init = 'window.x = 1';             optional: a script run before the page's own
      export const viewport = { width: 504, height: 896 };   optional: CSS pixels, 9:16 (432x768 default)
 
    `t` holds the helpers: t.tap(locator or selector) moves a visible finger there and taps it,
@@ -141,6 +142,8 @@ const cdp = await context.newCDPSession(page);
 await cdp.send('Emulation.setDeviceMetricsOverride', { width: VIEW.width, height: VIEW.height, deviceScaleFactor: DPR, mobile: MOBILE });
 if (MOBILE) await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
 await page.addInitScript(FINGER);
+// a shot's own init script (a stand-in account, say) runs before the page's scripts
+if (shot.init) await page.addInitScript(shot.init);
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
 /* Google Fonts, fetched once with curl (it goes through the environment's proxy, the browser does not) and

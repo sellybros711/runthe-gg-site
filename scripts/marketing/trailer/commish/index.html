@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Commish Simulator trailer</title>
+<!-- The Commish Simulator trailer, drawn frame by frame: render(t) paints the frame at t seconds and
+     nothing moves on its own, so render-html.mjs can film it exactly. ?fmt=reels (1080x1920) or
+     ?fmt=x (1350x1080). The footage is the real game, recorded with record.mjs (shots/cfb-commish.mjs)
+     and unpacked to /foot/<clip>/f0001.jpg at 30 fps.
+
+     THE WORDS (the owner, 2026-10-30: a professional trailer, hook in the first 1 to 3 seconds). Every
+     line is something the mode does, in its own terms: "The presidents called a vote. It wasn't close."
+     and "Six groups vote on your job" are the game's own copy, and the vote is the real one (six blocs,
+     8 votes, more than half turned, ledger.js VOTE_WEIGHT and removal()). No term length anywhere: a
+     term is not five seasons (cfb/CLAUDE.md). -->
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;700;800;900&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=block" rel="stylesheet">
+<script src="/cfb/commish/portrait.js"></script>
+<style>
+:root{--bg:#080b14;--panel:#131a2b;--ink:#eef2f9;--dim:#94a3b8;--green:#10b981;--gold:#f59e0b;--red:#ef4444;--navy:#0d1426}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:var(--W);height:var(--H);overflow:hidden;background:#000}
+#frame{position:relative;width:var(--W);height:var(--H);overflow:hidden;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:var(--ink)}
+.layer{position:absolute;inset:0}
+.hide{display:none!important}
+/* footage */
+#foot{overflow:hidden}
+#foot img{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+#footpanel{position:absolute;overflow:hidden;border-radius:calc(28px*var(--k));box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.06)}
+#footpanel img{position:absolute;left:0;top:0;transform-origin:0 0}
+/* effects */
+#grain{mix-blend-mode:overlay;opacity:.22}
+#vig{background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(0,0,0,.75) 100%)}
+#flash{background:#fff;opacity:0}
+#scan{background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 2px,transparent 2px 4px);opacity:0}
+#tint{opacity:0}
+/* type */
+.cap{position:absolute;left:0;right:0;text-align:center;padding:0 calc(60px*var(--k))}
+.big{font-family:Anton,Impact,sans-serif;text-transform:uppercase;line-height:.98;letter-spacing:.01em}
+.w{display:inline-block;white-space:pre}
+.gold{color:var(--gold)}.green{color:var(--green)}.red{color:var(--red)}
+#capbg{background:linear-gradient(180deg,transparent 0%,transparent 46%,rgba(4,6,12,.94) 62%,rgba(4,6,12,.97) 100%)}
+/* the breaking news chyron */
+#chy{position:absolute;left:calc(46px*var(--k));right:calc(46px*var(--k));}
+#chy .tag{display:inline-block;background:var(--red);color:#fff;font:900 calc(34px*var(--k))/1 Archivo,sans-serif;letter-spacing:.14em;padding:calc(14px*var(--k)) calc(20px*var(--k))}
+#chy .live{display:inline-block;margin-left:calc(14px*var(--k));color:#fff;font:800 calc(26px*var(--k))/1 Archivo;letter-spacing:.2em;vertical-align:middle}
+#chy .live i{display:inline-block;width:calc(16px*var(--k));height:calc(16px*var(--k));border-radius:50%;background:var(--red);margin-right:calc(10px*var(--k));vertical-align:middle}
+#chy .head{background:#f4f6fa;color:#0a0f1c;font-family:Anton,Impact;text-transform:uppercase;font-size:calc(104px*var(--k));line-height:1;padding:calc(18px*var(--k)) calc(24px*var(--k)) calc(14px*var(--k))}
+#chy .sub{background:rgba(8,11,20,.92);color:#e7ecf5;font:600 calc(34px*var(--k))/1.3 Inter;padding:calc(18px*var(--k)) calc(24px*var(--k))}
+#ticker{position:absolute;left:0;right:0;height:calc(64px*var(--k));background:#0a0f1c;border-top:3px solid var(--red);overflow:hidden;white-space:nowrap;color:#cbd5e1;font:700 calc(28px*var(--k))/calc(64px*var(--k)) Archivo;letter-spacing:.06em}
+/* rewind */
+#rw{font:500 calc(54px*var(--k))/1 'JetBrains Mono',monospace;color:#fff;text-shadow:0 0 18px rgba(255,255,255,.6)}
+/* the spotlight */
+#spot{background:radial-gradient(ellipse at 50% 38%,#24314f 0%,#0b1120 45%,#04060c 75%)}
+#spot .pt{position:absolute;left:50%;transform:translateX(-50%)}
+#spot .pt svg{width:100%;height:100%;display:block;filter:drop-shadow(0 30px 60px rgba(0,0,0,.7))}
+#beam{background:conic-gradient(from 180deg at 50% -8%,transparent 168deg,rgba(255,236,190,.16) 176deg,rgba(255,236,190,.22) 180deg,rgba(255,236,190,.16) 184deg,transparent 192deg)}
+/* the vote */
+#vote{background:radial-gradient(ellipse at 50% 30%,#141c31 0%,#070a13 70%)}
+.vrow{position:absolute;left:calc(70px*var(--k));right:calc(70px*var(--k))}
+.vrow .nm{font:800 calc(30px*var(--k))/1 Archivo;letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between}
+.vrow .nm small{font:700 calc(22px*var(--k))/1 Archivo;color:var(--dim);letter-spacing:.1em}
+.vrow .tr{margin-top:calc(12px*var(--k));height:calc(22px*var(--k));border-radius:99px;background:#1b2338;position:relative;overflow:hidden}
+.vrow .fl{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.vline{position:absolute;width:3px;background:var(--red);box-shadow:0 0 14px var(--red)}
+.vlab{position:absolute;font:800 calc(22px*var(--k))/1 Archivo;color:var(--red);letter-spacing:.12em;transform:translateX(-50%)}
+#vcount{position:absolute;left:0;right:0;text-align:center}
+/* end card */
+#end{background:radial-gradient(ellipse at 50% 30%,#1a2747 0%,#0b1120 55%,#04060c 100%)}
+#end .pt{position:absolute;left:50%;transform:translateX(-50%)}
+#end .pt svg{width:100%;height:100%}
+.pill{display:inline-block;background:var(--green);color:#04130c;font:900 calc(40px*var(--k))/1 Archivo;padding:calc(18px*var(--k)) calc(34px*var(--k));border-radius:99px;letter-spacing:.02em}
+</style></head>
+<body><div id="frame">
+  <div id="foot" class="layer"><img id="fimg" alt=""></div>
+  <div id="spot" class="layer hide"><div id="beam" class="layer"></div><div class="pt" id="spt"></div></div>
+  <div id="vote" class="layer hide"></div>
+  <div id="end" class="layer hide"><div class="pt" id="ept"></div></div>
+  <div id="footpanelwrap" class="layer hide"><div id="footpanel"><img id="pimg" alt=""></div></div>
+  <div id="frost" style="position:absolute;display:none;backdrop-filter:blur(14px) brightness(.55);-webkit-backdrop-filter:blur(14px) brightness(.55)"></div>
+  <div id="tint" class="layer"></div>
+  <div id="capbg" class="layer hide"></div>
+  <div id="text" class="layer"></div>
+  <div id="scan" class="layer"></div>
+  <canvas id="grain" class="layer"></canvas>
+  <div id="vig" class="layer"></div>
+  <div id="flash" class="layer"></div>
+</div>
+<script>
+const Q = new URLSearchParams(location.search), FMT = Q.get('fmt') || 'reels';
+const F = { reels: { W: 1080, H: 1920, k: 1 }, x: { W: 1350, H: 1080, k: 0.86 } }[FMT];
+const W = F.W, H = F.H, K = F.k, TALL = H > W, FPS = 30;
+document.documentElement.style.setProperty('--W', W + 'px');
+document.documentElement.style.setProperty('--H', H + 'px');
+document.documentElement.style.setProperty('--k', K);
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = (x) => { x = clamp(x, 0, 1); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const out = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+const back = (x) => { x = clamp(x, 0, 1); const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const span = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+
+/* THE FOOTAGE, by clip: frames on disk at 30 fps, 1080x1920 (the phone layout, 432x768 at 2.5x). */
+const SRC = { w: 1080, h: 1920 };
+const COUNT = { office: 363, desk: 464, press: 235, removed: 342, report: 214 };
+function frameOf(clip, sec) { return clamp(Math.round(sec * FPS) + 1, 1, COUNT[clip]); }
+const loaded = {};
+function setImg(img, clip, sec) {
+  const n = frameOf(clip, sec), url = `/foot/${clip}/f${String(n).padStart(4, '0')}.jpg`;
+  if (img.dataset.url === url) return Promise.resolve();
+  img.dataset.url = url; img.src = url; return img.decode().catch(() => {});
+}
+/* Show the crop {cx, cy, w} of the source (its centre and width, in source px) filling box bw x bh. */
+function place(img, bw, bh, cx, cy, cw) {
+  const s = bw / cw, ch = bh / s;
+  let x = cx - cw / 2, y = cy - ch / 2;
+  x = clamp(x, 0, Math.max(0, SRC.w - cw)); y = clamp(y, 0, Math.max(0, SRC.h - ch));
+  img.style.width = SRC.w + 'px'; img.style.height = SRC.h + 'px';
+  img.style.transform = `translate(${-x * s}px,${-y * s}px) scale(${s})`;
+  return { x, y, s };
+}
+
+/* TYPE: words that land one after another. A line is [text, class] pairs; `at` is when it starts. */
+function words(parts, t, at, step = 0.06, kind = 'pop') {
+  let i = 0, html = '';
+  for (const [txt, cls] of parts) {
+    for (const w of txt.split(' ')) {
+      if (w === '|') { html += '<br>'; continue; }
+      const p = span(t, at + i * step, at + i * step + 0.22);
+      const s = kind === 'pop' ? 1 + (1 - back(p)) * 0.35 : 1;
+      const y = kind === 'rise' ? (1 - out(p)) * 40 : 0;
+      html += `<span class="w ${cls || ''}" style="opacity:${p > 0 ? Math.min(1, p * 3) : 0};transform:translateY(${y * K}px) scale(${s})">${w} </span>`;
+      i++;
+    }
+  }
+  return html;
+}
+function cap(t, at, parts, { y = TALL ? 0.73 : 0.70, size = 112, kind = 'pop', step = 0.06, sub = '' } = {}) {
+  return `<div class="cap big" style="top:${y * H}px;font-size:${size * K}px;transform:translateY(-50%)">${words(parts, t, at, step, kind)}`
+    + (sub ? `<div style="font:600 ${34 * K}px/1.3 Inter;text-transform:none;letter-spacing:0;color:#cbd5e1;margin-top:${18 * K}px;opacity:${span(t, at + 0.35, at + 0.6)}">${sub}</div>` : '') + '</div>';
+}
+
+/* GRAIN: a fixed noise field per frame, so every render of a frame is the same. */
+const gc = $('grain'); gc.width = W / 3; gc.height = H / 3; const gx = gc.getContext('2d');
+function grain(frame) {
+  const d = gx.createImageData(gc.width, gc.height); let s = frame * 9301 + 49297;
+  for (let i = 0; i < d.data.length; i += 4) { s = (s * 1103515245 + 12345) & 0x7fffffff; const v = (s >> 16) & 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+  gx.putImageData(d, 0, 0);
+}
+
+$('spt').innerHTML = CM_PORTRAIT(400, 'sp');
+$('ept').innerHTML = CM_PORTRAIT(240, 'en');
+
+/* THE CUT. Scene times in seconds; every scene draws itself from its own local time. */
+const S = [
+  { id: 'hook', t0: 0, t1: 1.6 },
+  { id: 'rewind', t0: 1.6, t1: 2.4 },
+  { id: 'dayone', t0: 2.4, t1: 4.6 },
+  { id: 'office', t0: 4.6, t1: 7.0 },
+  { id: 'desk', t0: 7.0, t1: 10.2 },
+  { id: 'room', t0: 10.2, t1: 12.8 },
+  { id: 'press', t0: 12.8, t1: 15.2 },
+  { id: 'vote', t0: 15.2, t1: 18.8 },
+  { id: 'removed', t0: 18.8, t1: 20.2 },
+  { id: 'end', t0: 20.2, t1: 24.0 },
+];
+window.DURATION = 24.0;
+
+const VOTERS = [['SEC', 2, 52], ['Big Ten', 2, 52], ['Presidents', 1.5, 55], ['ACC', 1, 48], ['Big 12', 1, 46], ['Group of Five', 0.5, 40]];
+
+/* footage in the frame: full bleed in 9:16; in 5:4 a phone-shaped panel beside the words */
+function footage(clip, sec, cx, cy, cw, { dim = 1, blur = 0 } = {}) {
+  if (TALL) {
+    $('foot').classList.remove('hide'); $('footpanelwrap').classList.add('hide');
+    LAST = { ...place($('fimg'), W, H, cx, cy, cw), ox: 0, oy: 0 };
+    $('fimg').style.filter = `brightness(${dim})${blur ? ` blur(${blur}px)` : ''}`;
+    return setImg($('fimg'), clip, sec);
+  }
+  $('foot').classList.add('hide'); $('footpanelwrap').classList.remove('hide');
+  const ph = H - 120, pw = Math.round(ph * 0.62), p = $('footpanel');
+  Object.assign(p.style, { width: pw + 'px', height: ph + 'px', left: (W - pw - 90) + 'px', top: '60px' });
+  LAST = { ...place($('pimg'), pw, ph, cx, cy, cw * 16 / 9 * (pw / ph)), ox: W - pw - 90, oy: 60 };   // the same crop height as the 9:16 cut
+  $('pimg').style.filter = `brightness(${dim})`;
+  return setImg($('pimg'), clip, sec);
+}
+let LAST = null;
+/* a frosted strip over part of the source (source px), for game text that should not read */
+function frost(y0, y1) { const m = $('frost'); if (!LAST) return; Object.assign(m.style, { display: 'block', left: LAST.ox + 'px', width: (TALL ? W : Math.round((H - 120) * 0.62)) + 'px', top: LAST.oy + (y0 - LAST.y) * LAST.s + 'px', height: (y1 - y0) * LAST.s + 'px' }); }
+/* in 5:4 a caption sits left of the panel */
+function side(html) { return TALL ? html : `<div style="position:absolute;left:${70}px;top:0;bottom:0;width:${W - Math.round((H - 120) * 0.62) - 220}px;display:flex;align-items:center">${html.replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`; }
+
+window.render = async function (t) {
+  const frame = Math.round(t * FPS);
+  const sc = S.find((s) => t >= s.t0 && t < s.t1) || S[S.length - 1], l = t - sc.t0, d = sc.t1 - sc.t0;
+  for (const id of ['spot', 'vote', 'end', 'capbg']) $(id).classList.add('hide');
+  $('foot').classList.add('hide'); $('footpanelwrap').classList.add('hide');
+  $('frost').style.display = 'none';
+  let text = '', flash = 0, scan = 0, tint = '', tintA = 0, shake = 0, wait = Promise.resolve();
+
+  if (sc.id === 'hook') {
+    // cold open: the morning the commissioner is removed, as the news has it
+    wait = TALL ? footage('removed', 2.3 + l * 1.1, 540, 1050, 1080 - l * 60, { dim: 0.55 })
+                : footage('removed', 2.3 + l * 1.1, 540, 1050, 1080, { dim: 0.6 });
+    if (!TALL) { $('footpanelwrap').classList.add('hide'); $('foot').classList.remove('hide'); place($('fimg'), W, H, 540, 1000, 1080 - l * 50); $('fimg').style.filter = 'brightness(.5)'; wait = setImg($('fimg'), 'removed', 2.3 + l * 1.1); }
+    // the first frame is the thumbnail, so it is already the headline: the flashes come after it
+    for (const at of [0.08, 0.42, 0.7, 1.12]) flash = Math.max(flash, 0.55 * (1 - span(l, at, at + 0.09)) * (l >= at ? 1 : 0));
+    shake = l < 0.25 ? (1 - l / 0.25) * 14 : 0;
+    const top = TALL ? 0.56 * H : 0.47 * H, pin = 1, sub = span(l, 0.32, 0.5), punch = 1 + 0.06 * (1 - out(span(l, 0, 0.35)));
+    text = `<div id="chy" style="top:${top}px;transform:scale(${punch});transform-origin:0 50%">
+      <div><span class="tag">BREAKING</span><span class="live"><i style="opacity:${(frame % 20) < 12 ? 1 : .2}"></i>LIVE</span></div>
+      <div class="head" style="margin-top:${10 * K}px">Commissioner<br>Removed</div>
+      <div class="sub" style="opacity:${sub}">“The presidents called a vote. It wasn't close.”</div></div>
+      <div id="ticker" style="top:${H - 64 * K - (TALL ? 120 : 40)}px"><span style="display:inline-block;transform:translateX(${W - l * 700}px)">COLLEGE FOOTBALL &nbsp;•&nbsp; THE COMMISSIONER IS OUT &nbsp;•&nbsp; THE STATEMENT IS TWO SENTENCES LONG &nbsp;•&nbsp; ONE OF THEM IS ABOUT THE SEARCH</span></div>`;
+  }
+  if (sc.id === 'rewind') {
+    // the tape runs back: the same term, played in reverse, fast
+    const sec = 15.4 - l * 16;
+    wait = footage('desk', Math.max(0, sec), 540, 960, 1080, { dim: 0.75 });
+    if (!TALL) { $('footpanelwrap').classList.add('hide'); $('foot').classList.remove('hide'); place($('fimg'), W, H, 540, 900, 1080); wait = setImg($('fimg'), 'desk', Math.max(0, sec)); $('fimg').style.filter = 'brightness(.6) saturate(.5)'; }
+    scan = 0.9; tint = '#2a3d7a'; tintA = 0.25;
+    shake = 3;
+    const tc = 'REW ◀◀';
+    text = `<div class="layer" style="transform:translateY(${(frame % 3) * 2}px)"><div id="rw" style="position:absolute;left:${60 * K}px;top:${80 * K}px">${tc}</div>
+      <div style="position:absolute;right:${60 * K}px;top:${80 * K}px;font:500 ${40 * K}px 'JetBrains Mono';color:#fff;opacity:.8">00:0${Math.max(0, 9 - Math.floor(l * 12))}:${String(59 - (frame * 7) % 60).padStart(2, '0')}</div>
+      <div style="position:absolute;left:0;right:0;height:${14 * K}px;top:${((frame * 37) % 100) / 100 * H}px;background:rgba(255,255,255,.18)"></div></div>`;
+  }
+  if (sc.id === 'dayone') {
+    // day one: a portrait in a spotlight, the job before anybody has turned
+    $('spot').classList.remove('hide');
+    const s = 400 * K * (TALL ? 1.25 : 0.95) * (1 + l * 0.03), p = $('spt');
+    Object.assign(p.style, { width: s + 'px', height: s + 'px', top: (TALL ? 0.22 : 0.12) * H + 'px', opacity: out(span(l, 0.0, 0.5)) });
+    $('beam').style.opacity = 0.6 + 0.4 * out(span(l, 0, 0.3));
+    flash = 0.35 * (1 - span(l, 0, 0.15));
+    text = `<div class="cap" style="top:${(TALL ? 0.60 : 0.66) * H}px;font:800 ${40 * K}px/1 Archivo;letter-spacing:.3em;color:var(--gold);opacity:${span(l, 0.1, 0.35)}">DAY ONE</div>`
+      + cap(l, 0.45, [['You run', ''], ['college football.', 'green']], { y: TALL ? 0.71 : 0.80, size: 104, kind: 'rise', step: 0.08 });
+  }
+  if (sc.id === 'office') {
+    const z = 1 - 0.18 * ease(span(l, 0, d));
+    wait = footage('office', 2.2 + l * 1.25, 540, 560, 1080 * z);
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.15, [['A crisis lands', ''], ['on your desk.', 'gold']], { size: 110 }));
+  }
+  if (sc.id === 'desk') {
+    // the desk clip: the options (6 to 9.6 s), then the tap on Rule
+    const sec = 7.4 + l * 1.05, z = 0.92 - 0.12 * ease(span(l, 0, d));
+    wait = footage('desk', sec, 540, 1180, 1080 * z);
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.15, [['Every ruling', ''], ['costs somebody.', 'red']], { size: 110 }));
+  }
+  if (sc.id === 'room') {
+    const sec = 10.9 + l * 1.4, z = 0.98 - 0.22 * ease(span(l, 0.3, d));
+    wait = footage('desk', sec, 540, 820 + 260 * ease(span(l, 0.6, d)), 1080 * z);
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.15, [['The whole room', ''], ['reacts.', 'gold']], { size: 112 }));
+  }
+  if (sc.id === 'press') {
+    const sec = 1.0 + l * 2.2, z = 0.95 - 0.12 * ease(span(l, 0, d));
+    wait = footage('press', sec, 540, 900, 1080 * z);
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.15, [['Media days.', 'gold'], ['| Every word is', ''], ['on the record.', '']], { size: 98, step: 0.05 }));
+  }
+  if (sc.id === 'vote') {
+    // the vote, drawn big: six groups, 8 votes, more than half turned and the term ends
+    $('vote').classList.remove('hide');
+    const top = TALL ? 0.30 * H : 0.24 * H, gap = (TALL ? 150 : 108) * K, x0 = 70 * K, tw = W - 140 * K;
+    let against = 0, html = '';
+    VOTERS.forEach(([nm, v, start], i) => {
+      const fall = ease(span(l, 0.35 + i * 0.32, 0.85 + i * 0.32)), val = start - (start - (i < 4 ? 14 + i * 2 : start - 4)) * fall;
+      const hostile = val < 25; if (hostile) against += v;
+      const col = hostile ? 'var(--red)' : val < 35 ? 'var(--gold)' : 'var(--green)';
+      html += `<div class="vrow" style="top:${top + i * gap}px"><div class="nm"><span>${nm}</span><small>${v === 1 ? '1 VOTE' : v + ' VOTES'}</small></div>
+        <div class="tr"><div class="fl" style="width:${val}%;background:${col};box-shadow:0 0 ${hostile ? 18 : 0}px ${col}"></div></div></div>`;
+    });
+    const lx = x0 + tw * 0.25;
+    html += `<div class="vline" style="left:${lx}px;top:${top + 40 * K}px;height:${VOTERS.length * gap - 20 * K}px"></div>
+      <div class="vlab" style="left:${lx}px;top:${top + VOTERS.length * gap + 30 * K}px">BELOW 25 TURNS ON YOU</div>`;
+    const ok = against > 4;
+    html += `<div id="vcount" style="top:${(TALL ? 0.13 : 0.06) * H}px"><div style="font:800 ${30 * K}px Archivo;letter-spacing:.24em;color:var(--dim)">SIX GROUPS VOTE ON YOUR JOB</div>
+      <div class="big" style="font-size:${120 * K}px;margin-top:${10 * K}px;color:${ok ? 'var(--red)' : '#fff'}">${against.toFixed(1)} <span style="color:var(--dim);font-size:.5em">OF 8 VOTES AGAINST</span></div></div>`;
+    $('vote').innerHTML = html;
+    if (ok) { tint = '#ef4444'; tintA = 0.10 + 0.06 * Math.sin(l * 18); }
+    text = '';
+    shake = ok ? 2 : 0;
+  }
+  if (sc.id === 'removed') {
+    // tight on REMOVED and the year, above the summary line (whose "1 rulings" is the game's, not ours to show)
+    const z = (TALL ? 0.74 : 0.5) - 0.12 * ease(span(l, 0, d));
+    wait = footage('removed', 8.2 + l * 0.5, 540, 560, 1080 * z);
+    frost(378, 640);
+    flash = 0.8 * (1 - span(l, 0, 0.14));
+    shake = l < 0.3 ? (1 - l / 0.3) * 18 : 0;
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.25, [['Lose the room.', ''], ['| Lose the job.', 'red']], { size: 116, step: 0.09 }));
+  }
+  if (sc.id === 'end') {
+    $('end').classList.remove('hide');
+    const s = 240 * K * (TALL ? 1.15 : 0.95), p = $('ept'), a = out(span(l, 0, 0.35));
+    Object.assign(p.style, { width: s + 'px', height: s + 'px', top: (TALL ? 0.20 : 0.07) * H + 'px', opacity: a });
+    flash = 0.5 * (1 - span(l, 0, 0.12));
+    const y0 = TALL ? 0.20 * H + s + 60 * K : 0.07 * H + s + 30 * K, ti = back(span(l, 0.1, 0.4));
+    text = `<div class="cap" style="top:${y0}px">
+      <div class="big" style="font-size:${(TALL ? 170 : 150) * K}px;transform:scale(${0.85 + 0.15 * ti});opacity:${span(l, 0.1, 0.25)}">Commish<br><span class="green">Simulator</span></div>
+      <div style="font:700 ${44 * K}px/1.25 Archivo;margin-top:${34 * K}px;opacity:${span(l, 0.55, 0.8)}">Run college football.<br><span class="gold">Try not to get fired.</span></div>
+      <div style="font:600 ${30 * K}px/1.3 Inter;color:#cbd5e1;margin-top:${36 * K}px;opacity:${span(l, 0.95, 1.2)}">Free to play in Perfect Season: College Football</div>
+      <div style="margin-top:${28 * K}px;opacity:${span(l, 1.1, 1.35)};transform:translateY(${(1 - out(span(l, 1.1, 1.4))) * 20}px)"><span class="pill">runthe.gg/cfb</span></div></div>`;
+  }
+
+  $('text').innerHTML = text;
+  $('flash').style.opacity = flash;
+  $('scan').style.opacity = scan;
+  $('tint').style.background = tint || 'transparent'; $('tint').style.opacity = tintA;
+  const sx = shake ? Math.sin(frame * 2.7) * shake : 0, sy = shake ? Math.cos(frame * 3.1) * shake : 0;
+  $('frame').style.transform = `translate(${sx}px,${sy}px) scale(${shake ? 1.02 : 1})`;
+  grain(frame);
+  await wait;
+  await document.fonts.ready;
+};
+window.ready = document.fonts.ready.then(() => true);
+</script></body></html>
