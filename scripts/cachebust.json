@@ -3085,8 +3085,8 @@
       "sha": "e90d7c1fa3db7fd9"
     },
     "3d/boot.js": {
-      "v": "66",
-      "sha": "2dc68ffc00560949"
+      "v": "68",
+      "sha": "1ed9624726554daf"
     }
   },
   "shut-the-door/lab/index.html": {
@@ -3215,7 +3215,7 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "70",
+      "v": "72",
       "sha": "aaeeb5b81a07a327"
     }
   },
