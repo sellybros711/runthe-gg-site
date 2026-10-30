@@ -9,6 +9,11 @@
  * the way the Ads Agent measures every game: the banner hidden, then every control that
  * overlaps its box and is the thing actually at that point.
  *
+ * ON THE FRONT PAGE IT IS THE SCREEN'S OWN CHOICES that must be clear: the side tabs, the draft
+ * button and the mode doors. The store card, More ways to play and the links below them are
+ * reached by scrolling and may pass under the banner like any long page. Pushing them below
+ * the fold was tried and left a banner-sized hole in the page (the owner, 2026-10-30).
+ *
  * ADSENSE IS A STAND-IN that marks every unit filled, so the banner is its real filled height.
  * The display faces are let through from Google Fonts when the network allows, because the
  * front page's title is measured in them; without them the fallback face is wider, which is
@@ -40,6 +45,7 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applic
   '.webp': 'image/webp' };
 const AD_STUB = "(function(){function f(){document.querySelectorAll('ins.adsbygoogle:not([data-ad-status])').forEach(function(i){var z=i.closest('[data-ad-zone]');if(!z||/^0+$/.test(i.getAttribute('data-ad-slot')||''))return;i.setAttribute('data-ad-status','filled');i.style.background='#c33'})} window.adsbygoogle={push:function(){f()}}; f(); setInterval(f,200);})();";
 const SIZES = [[390, 844], [360, 640], [1440, 900], [1920, 1080]];
+const MAIN = '#hp-mode button,#b-start,#hp-longer>.hp-full';
 
 const browser = await pw.chromium.launch({ executablePath: CHROME });
 
@@ -67,7 +73,7 @@ async function open(w, h) {
   return { page, boom };
 }
 const top = async (page) => { await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(600); };
-const covered = (page) => page.evaluate(() => {
+const covered = (page, main) => page.evaluate((main) => {
   const s = document.querySelector('[data-ad-zone=sticky]');
   const inner = s && s.querySelector('.rtg-sticky-in');
   if (!inner) return 'no banner';
@@ -77,7 +83,7 @@ const covered = (page) => page.evaluate(() => {
      and elementFromPoint would land on it and call whatever is behind it clear. */
   document.querySelectorAll('.rtp-ad-mobile-bottom').forEach((x) => { x.style.visibility = 'hidden'; });
   s.style.visibility = 'hidden';
-  const hit = [...document.querySelectorAll('button,a[href],[role=button]')].filter((e) => e.offsetWidth)
+  const hit = [...document.querySelectorAll(main || 'button,a[href],[role=button]')].filter((e) => e.offsetWidth)
     .filter((e) => {
       const t = e.getBoundingClientRect();
       if (!(t.bottom > z.top && t.top < z.bottom && t.right > z.left && t.left < z.right)) return false;
@@ -86,7 +92,7 @@ const covered = (page) => page.evaluate(() => {
     }).map((e) => (e.id ? '#' + e.id + ' ' : '') + e.textContent.trim().replace(/\s+/g, ' ').slice(0, 30));
   s.style.visibility = '';
   return hit;
-});
+}, main || null);
 const screenOn = (page) => page.evaluate(() => (document.querySelector('.screen.on') || {}).id);
 const clear = (c) => Array.isArray(c) && !c.length;
 
@@ -95,8 +101,8 @@ for (const [w, h] of [...SIZES, [375, 667], [430, 932], [320, 568]]) {
   const at = w + 'x' + h;
   const { page, boom } = await open(w, h);
   await top(page);
-  let c = await covered(page);
-  ok(at + ': nothing on the front page is under the banner', clear(c), JSON.stringify(c));
+  let c = await covered(page, MAIN);
+  ok(at + ': the front page\'s choices are all clear of the banner', clear(c), JSON.stringify(c));
   if (SIZES.some(([a, b]) => a === w && b === h)) {
     await page.evaluate(() => document.getElementById('b-board').click());
     await page.waitForTimeout(2000);
@@ -149,7 +155,6 @@ for (const [w, h] of [[390, 844], [360, 640]]) {
     on: document.body.classList.contains('rtg-sticky-on'),
     field: Math.round(document.querySelector('.field.hero-field').getBoundingClientRect().height),
     cols: getComputedStyle(document.getElementById('hp-longer')).gridTemplateColumns.split(' ').length,
-    moved: document.querySelectorAll('[data-band]').length,
   }));
   const up = await read();
   ok(at + ': with the banner up the doors share a row', up.on && up.cols === 2, JSON.stringify(up));
@@ -157,7 +162,7 @@ for (const [w, h] of [[390, 844], [360, 640]]) {
   await page.waitForTimeout(600);
   const shut = await read();
   ok(at + ': closed, the doors are stacked again and the field is back',
-    !shut.on && shut.cols === 1 && shut.field > 100 && shut.moved === 0, JSON.stringify(shut));
+    !shut.on && shut.cols === 1 && shut.field > 100, JSON.stringify(shut));
   ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
   await page.close();
 }

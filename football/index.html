@@ -2731,12 +2731,12 @@ window.GA_ID='G-L29P5MRWKE';
 
      ON A PHONE, THREE THINGS GIVE. The field flattens to the short-screen height, the title
      goes to one line, and the two doors share a row as compact tiles: the name, the tag and
-     the Fantasy week line, without the record corner, the ball and the Dynasty's question (a status line, like a
-     countdown to the next dynasty, stays),
-     which are what made a half-width door unreadable (see THE SHELF below). On a short
+     the Fantasy week line, the Dynasty ball and question, without the record corner, which is
+     what made a half-width door unreadable (see THE SHELF below). On a short
      phone the hero field stands down entirely; the year and team wheels stay and still spin.
      What is below the doors (the store card, the other modes, the links) is reached by
-     scrolling, and clearBand() keeps it from sitting half under the banner at first view. */
+     scrolling and may pass under the banner like any long page. Pushing it below the fold
+     was tried and left a hole the size of the banner in the page (the owner, 2026-10-30). */
   @media (max-width:919px){
     body.rtg-sticky-on #s-intro .field.hero-field{aspect-ratio:auto;height:116px}
     body.rtg-sticky-on #s-intro .hero{margin-bottom:10px}
@@ -2753,10 +2753,20 @@ window.GA_ID='G-L29P5MRWKE';
     body.rtg-sticky-on #s-intro .hp-longer>.hp-full .hp-full-name{font-size:17px;line-height:1.02;
       white-space:normal;text-align:center}
     body.rtg-sticky-on #s-intro .hp-longer>.hp-full .hp-full-sub{font-size:9px;letter-spacing:.04em}
+    /* THE TWO TILES CARRY THE SAME WEIGHT. The Dynasty tile keeps its ball and its question,
+       smaller, so it reads as a door beside the Fantasy one rather than an empty box (the
+       owner, 2026-10-30). Only the record corner goes, which needs a full row to read. */
     body.rtg-sticky-on #s-intro .hp-longer .hp-hi,
-    body.rtg-sticky-on #s-intro .hp-longer .hp-mark,
-    body.rtg-sticky-on #s-intro .hp-longer .hp-fan-ico,
-    body.rtg-sticky-on #s-intro .hp-longer .hp-tagline{display:none}
+    body.rtg-sticky-on #s-intro .hp-longer .hp-fan-ico{display:none}
+    body.rtg-sticky-on #s-intro .hp-longer .hp-mark{width:24px;height:16px;margin-bottom:0}
+    body.rtg-sticky-on #s-intro .hp-longer .hp-tagline{line-height:1.25}
+    /* AND THE BUTTONS COME DOWN A SIZE, so the tabs, the draft button and the doors read as
+       one set rather than one shouting button over two small tiles (the owner, 2026-10-30).
+       Every one stays a full thumb's height. */
+    body.rtg-sticky-on #s-intro .hp-tab{min-height:42px;font-size:14px}
+    body.rtg-sticky-on #s-intro .hp-mode{margin-bottom:10px}
+    body.rtg-sticky-on #s-intro .hp-start{padding:13px 18px;font-size:min(22px,6.2vw)}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full{padding-top:22px;padding-bottom:10px}
   }
   @media (max-width:919px) and (max-height:719px){
     body.rtg-sticky-on #s-intro .field.hero-field{display:none}
@@ -6658,7 +6668,7 @@ window.GA_ID='G-L29P5MRWKE';
      the two labels widened the grid past the viewport and the whole page scrolled sideways. */
   .ovr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-top:15px}
   /* WHILE THE BOTTOM BANNER IS UP the results card gives back about forty pixels, so the
-     lineup that follows it clears the banner at first view (see clearBand). The record stays
+     lineup that follows it clears the banner at first view. The record stays
      the biggest thing on the screen. */
   body.rtg-sticky-on #s-over .verdict{padding-top:8px;padding-bottom:14px}
   body.rtg-sticky-on #s-over .hero-rec .big{font-size:62px}
@@ -10227,46 +10237,7 @@ function stickyAd(id){
 function boardRails(id){
   if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
 }
-/* NOTHING SITS HALF UNDER THE BANNER AT FIRST VIEW (the owner's call, 2026-10-29).
-   The CSS under "WHILE THE BOTTOM BANNER IS UP" brings the start buttons and both doors above
-   the banner. What follows them on the front page (the store card, More ways to play, the
-   links) is reached by scrolling, and at some heights the first of those landed straddling the
-   banner's top edge: half a button showing over an ad. So the first one that would is moved
-   to just under the fold, and everything after it follows in the flow. The space it leaves is
-   the strip the banner covers anyway.
 
-   THE BANNER'S HEIGHT IS ASSUMED BEFORE IT FILLS. --sticky-ad-h is 0 until AdSense serves,
-   and waiting for it would move the page under the player a second after it opened. 79 is
-   the filled banner (a 50px unit, its label row and its padding); a filled one that measures
-   differently wins. Re-run on every screen change, on resize, and when the banner is closed,
-   which takes body.rtg-sticky-on away and so puts everything back. */
-const BAND_ITEMS=['#b-premium','#b-teams','#s-intro .hp-util','#s-intro footer.legal'];
-function clearBand(){
-  const scr=$('s-intro'); if(!scr) return;
-  const els=BAND_ITEMS.map((q)=>document.querySelector(q)).filter(Boolean);
-  els.forEach((e)=>{ if(e.dataset.band){ e.style.removeProperty('margin-top'); delete e.dataset.band; } });
-  if(!scr.classList.contains('on')||!document.body.classList.contains('rtg-sticky-on')) return;
-  const filled=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-ad-h'))||0;
-  const band=filled>0?filled:79, fold=innerHeight, y=scrollY;
-  for(const e of els){
-    if(!e.offsetParent) continue;
-    const r=e.getBoundingClientRect(), top=r.top+y, bottom=r.bottom+y;
-    if(top>=fold) break;
-    if(bottom<=fold-band) continue;
-    const m=parseFloat(getComputedStyle(e).marginTop)||0;
-    e.style.setProperty('margin-top',Math.round(m+(fold-top)+12)+'px','important');
-    e.dataset.band='1';
-    break;
-  }
-}
-addEventListener('resize',()=>clearBand());
-/* rtg-ads.js says when the banner fills, changes height or goes (site PR 805). */
-addEventListener('rtg-sticky',()=>clearBand());
-/* The display face changes the title's height when it arrives. */
-if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>clearBand());
-if(typeof MutationObserver==='function'){
-  new MutationObserver(()=>clearBand()).observe(document.body,{attributes:true,attributeFilter:['class']});
-}
 /* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
    opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
    board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
@@ -10310,8 +10281,6 @@ function show(id){
   seasonAd(id);
   screenAds(id);
   stickyAd(id);
-  clearBand();
-  if(id==='s-intro') setTimeout(clearBand,400);
   boardRails(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
