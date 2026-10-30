@@ -477,6 +477,41 @@ window.GA_ID='G-L29P5MRWKE';
   .claimbox .btn{margin-bottom:12px}
   .claimbox .cb-more{margin:9px 0 0;font-size:11.5px;line-height:1.4;color:var(--dim-2);
     text-align:center}
+  /* THE CLAIM BUTTON IS THE ASK ON THIS SCREEN, AND THE BANNER LANDED ON IT. The comment
+     over paintClaim records 375x667 as the phone that drove the button above the badge
+     cards in the first place, because under them it fell off a 667px screen. The banner
+     puts it back: measured with the guest sheet dismissed, the button sat 557-613 against
+     a band starting at 591 there, and 550-606 against a band at 564 on a 360x640.
+     So the rhythm of the three blocks above it gives up a few pixels each while the banner
+     is up, which is the same kind of trim as the front page's and for the same reason:
+     spacing only, nothing moved, nothing hidden, no block removed.
+     ONLY ON A SHORT SCREEN. A 390x844 phone is already clear by 188px, and tightening a
+     screen that does not need it is a change for nothing. 700px is the line because the
+     two that fail are 667 and 640 and the next size up is 800.
+     Measured after, with the sheet dismissed: the button lands 493-550 at 375x667, which
+     clears the band by forty one, and the block below finishes the 360x640.
+     READ THAT MARGIN AS A MARGIN RATHER THAN AS A NUMBER. How far down the screen this
+     button starts depends on the season: the verdict card above it is as tall as its own
+     sentence, and the box itself is as tall as the number of badges earned. Across runs
+     that moved the whole block by about twenty pixels on one size, so what these rules buy
+     has to be tens of pixels rather than ones. */
+  @media (max-height:700px){
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .ovr{margin-top:8px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .ovr>div{padding-top:7px;padding-bottom:8px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .splits{margin-top:8px;padding-top:7px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .claimbox{margin-top:6px;padding-top:9px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .claimbox .cb-t{font-size:17px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .claimbox .cb-s{margin:4px 0 6px}
+  }
+  /* AND THE SHORTEST PHONE NEEDED A LITTLE MORE, because the block above left the button
+     clearing the band by ONE pixel at 360x640, and one pixel is not clearance, it is luck:
+     the next word added to that paragraph takes it back. 660px rather than 700 so this
+     only reaches the screen that needs it, since 375x667 already clears by forty one. */
+  @media (max-height:660px){
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .ovr{margin-top:5px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .splits{margin-top:5px;padding-top:5px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-over .claimbox .cb-s{margin:3px 0 4px}
+  }
   /* Claimed. The same box, once the account has taken them, because a panel that simply
      vanishes leaves nothing that says the offer was honoured. */
   .claimbox.done{border-color:rgba(16,185,129,.4);
@@ -565,6 +600,18 @@ window.GA_ID='G-L29P5MRWKE';
   /* The closeable bottom banner (/assets/rtg-ads.js) owns the bottom edge while it is up, so the
      poll bar rides on top of it. --sticky-ad-h is 0 until the banner is actually filled. */
   body.rtg-sticky-on .ticker{bottom:var(--sticky-ad-h,0px)}
+  /* A SHEET IS BOTTOM ANCHORED, so the banner lands on its action row rather than on the
+     screen behind it. `.sheet` is `inset:0` with `align-items:flex-end`, and `.pitchact`
+     is sticky to the foot of the panel, which is exactly where the banner sits: the guest
+     pitch's "Play as a guest" was under it at every one of the seven sizes measured, and
+     it is the last button of the only sheet a player meets straight after a season. The
+     panel rides up by the banner's height and gives the same height back off its own
+     ceiling, so a tall sheet still fits rather than growing past the top of the screen.
+     This is the whole fix for every sheet on the page at once, which is why it is here
+     and not written out per sheet. --sticky-ad-h is 0 until the banner actually fills, so
+     a blocked, unfilled or closed banner leaves both of these exactly where they were. */
+  body.rtg-sticky-on .sheet{padding-bottom:calc(14px + var(--sticky-ad-h,0px))}
+  body.rtg-sticky-on .sheet .inner{max-height:calc(86vh - var(--sticky-ad-h,0px))}
   /* The last thing on the front page has to clear a bar that is no longer in the
      flow. Measured, not guessed: see test_ticker.mjs. */
   #s-intro{padding-bottom:var(--tickerh,33px)}
@@ -2525,6 +2572,15 @@ window.GA_ID='G-L29P5MRWKE';
     z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(8,11,20,0),var(--bg))}
   .lblock.locked .lbgate{position:relative;z-index:2;display:flex;justify-content:center;
     padding:100px 8px 10px}
+  /* AND THE SAME MEASUREMENT AGAIN WITH A TALLER THING AT THE BOTTOM. The peek came down
+     from 150 to 100 because the sign-in button sat 39px behind the sticky footer; the
+     closeable banner is taller than that footer, and at 1280x800 it put the button at
+     693-749 against a band starting at 724. So the peek gives up another thirty while the
+     banner is up: the podium still reads over the top of the card, which is what the peek
+     is for, and the button lands clear. Only 1280x800 failed, and the lift is harmless at
+     the sizes that passed because it only ever moves the card away from the bottom.
+     test_board_gate measures the button against the dock rather than trusting this. */
+  body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) .lblock.locked .lbgate{padding-top:70px}
   .lbgate .card{width:100%;max-width:330px;padding:16px 15px 15px;border-radius:14px;
     background:rgba(19,26,43,.93);border:1px solid var(--line-2);
     box-shadow:0 24px 60px -20px #000;backdrop-filter:blur(2px)}
@@ -3216,6 +3272,161 @@ window.GA_ID='G-L29P5MRWKE';
   }
   @media(min-width:1260px){
     .wrap:has(#s-draft.on){max-width:min(1080px,calc(100vw - 400px))}
+  }
+
+  /* ── THE FRONT PAGE ON A DESKTOP: THE WHEEL LEFT, THE DECISION RIGHT ──
+     One narrow column is the right answer on a phone and the wrong one on a
+     laptop, because everything stacks: the wheel, the formation, the name, the
+     line of copy, and only then the button the page exists for. Measured before
+     this block, at 600px of wrap: on a 1280x800 laptop the Draft button finished
+     62.9px BELOW the fold and the three links 300px below that, so the one
+     control a visitor came for needed a scroll to find. At 1440x900 it cleared
+     by 37px, which is not clearance, it is luck.
+
+     So the stage takes the left column and the name, the pitch, the button and
+     the links take the right, which is the shape The Perfect Season's front page
+     already uses. Ported rather than invented, for the reason the draft's own
+     two-column block gives: the two front pages are deliberately the same layout
+     in two games' colours, and a second game inventing a second way to stand up
+     a hero is how they drift.
+
+     NOTHING MOVES ON A PHONE. Every rule here is inside the query, and under
+     920px the screen is the block it has always been.
+
+     THE THRESHOLDS ARE THIS FILE'S OWN: 920 to go wide, and 1200 where the side
+     rails appear and take about 200 each. Unlike the draft this screen does NOT
+     fall back to one column between 1200 and 1259: the draft needs about 860 for
+     a field beside a three-across board, and this needs a field beside four
+     buttons, which is comfortable in the 800 the rails leave.
+
+     AND MIN-HEIGHT, which is not decoration. A short window has its own rules
+     that shorten the headline and drop the formation, and those sit earlier in
+     this sheet: an unqualified display:grid would win on source order and
+     quietly undo them on any window under 560 tall and over 920 wide. */
+  @media(min-width:920px) and (min-height:560px){
+    .wrap:has(#s-intro.on){max-width:1040px}
+    /* .on AND the id, for the reason every screen rule here carries them: an id
+       beats .screen{display:none} and the plain class does not. */
+    #s-intro.on{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:34px;align-items:start}
+    /* THE CATCH-ALL FIRST, so anything that arrives on this screen later is full
+       width by default rather than landing in whichever column happens to be
+       free. Only the two blocks named below opt into a column, and the ad, the
+       folded prose and the legal line stay the full width of the page under
+       both. The runtime doors (the Commish card, the Premium card) are built
+       INSIDE .ctas rather than into the screen, so they travel with it and need
+       no rule of their own. */
+    #s-intro>*{grid-column:1/-1}
+    #s-intro>.stage{grid-column:1;grid-row:1/span 9;margin-bottom:0}
+    #s-intro>.hero,#s-intro>.ctas{grid-column:2}
+    #s-intro>.hero{margin-bottom:22px}
+    /* The wheel is the top of its own column now, so it starts level with the
+       headline beside it rather than a row down. */
+    #s-intro>.stage .reels{margin-top:0}
+    /* A line of copy set to 340px in a 500px column is a column of text with a
+       margin either side of it for no reason. */
+    #s-intro>.hero .hnote{max-width:430px;font-size:14px}
+    /* AND THE CONTROLS STOP BEING PHONE-SIZED. Half of 1040 is about 500px, and
+       a 17px label in the middle of a 500px button is the tell that a page was
+       drawn once and stretched. These are sizes, not new elements: the same four
+       controls, for a screen read from three feet away rather than one. */
+    #s-intro>.ctas{gap:11px}
+    #s-intro #b-play-intro{font-size:22px;padding:21px 18px}
+    #s-intro>.ctas>.btn.ghost{font-size:16px;padding:18px}
+    #s-intro .cta3 .btn{font-size:14px;padding-top:15px;padding-bottom:15px}
+    /* ── AND THE TAIL OF THAT COLUMN GOES UNDER BOTH OF THEM ─────
+       Reported by the owner: the page looked like it was hugging the right. It
+       was. The stage is as tall as a wheel and a formation and stops; everything
+       else was in the other column, so the left ran out and the right kept going.
+       Measured with no ad in the way, the empty left column ran 414px at 1440x900,
+       472px at 1280x800 and 481px at 1200x900. There is no width where it did not.
+       THE LAYOUT WAS PORTED FROM A PAGE WITH LESS IN IT. The Perfect Season's hero
+       is a picture, a name, a pitch and two buttons, and in that shape the two
+       columns come out about level. This game has two mode cards and a lead-in
+       under the buttons, and nothing was put beside them.
+       So `.ctas` stops being a box and becomes its own children: `display:contents`
+       hands them to this grid, the two buttons stay in column 2 where the hero put
+       them, and the lead-in, the mode cards and the links become a band under both
+       columns. #795's hero is untouched, which is the point: the wheel still starts
+       level with the headline and the Draft button is still beside the name.
+       THE CATCH-ALL IS WRITTEN FIRST HERE TOO, and for the same reason the screen's
+       own is: `ensureCommishDoor`, `ensureFantasyDoor` and `ensurePremiumCard` all
+       insert into `.ctas` at runtime, so a child that arrives later must be full
+       width by default rather than landing in whichever column happens to be free.
+       Only the four named below opt out.
+       `.ctas` carries no background, border or padding, so dissolving its box costs
+       nothing to look at. What it does cost is its own `gap`, so the row gap comes
+       from this grid instead. */
+    #s-intro>.ctas{display:contents}
+    #s-intro{row-gap:11px}
+    #s-intro>.ctas>*{grid-column:1/-1}
+    #s-intro>.ctas>#b-play-intro,#s-intro>.ctas>#b-modes{grid-column:2}
+    /* The two mode cards are a pair under one lead-in, so they read as a pair. */
+    #s-intro>.ctas>#b-hp-commish{grid-column:1}
+    #s-intro>.ctas>#b-hp-fantasy{grid-column:2}
+    /* AND THE STAGE SPANS WHAT IS BESIDE IT RATHER THAN NINE ROWS. The nine were
+       written when the whole of `.ctas` stacked in column 2 and the stage had to
+       clear all of it. Column 2 is three items now (the hero and the two buttons),
+       so the other six rows are empty, and a full-width item cannot be placed until
+       after the span: measured, that left an 81px hole between More ways to play
+       and the lead-in under it. Three is what column 2 actually uses. */
+    #s-intro>.stage{grid-row:1/span 3}
+  }
+  /* From the moment the rails are up the hero has to clear them, the same way
+     every other screen on this page does. */
+  @media(min-width:1200px) and (min-height:560px){
+    .wrap:has(#s-intro.on){max-width:min(1040px,calc(100vw - 400px))}
+    /* AND THAT IS THE ONE BAND WHERE THE HEADLINE IS SIZED TO ITS COLUMN RATHER
+       THAN TO THE WINDOW. 14.5vw was written for a headline that owns the whole
+       page, and it does not notice the rails taking 400px off the wrap: measured
+       in real Anton at 1200x900, COLLEGE ran 356 of a 369px column, clearing it
+       by seven pixels a side. 6.4vw is the football page's own figure for the
+       same column and puts the same line at 326 with twenty either side; by
+       about 1310 the wrap has grown back and the 84px cap takes over again.
+       It is NOT in the block above, because below 1200 there are no rails, the
+       column is 429 to 503, and a vw figure would shrink the headline on exactly
+       the screens with the most room for it. The fit script at the foot of the
+       page is the net under this rather than the plan. */
+    #s-intro>.hero h1{font-size:min(84px,6.4vw)}
+  }
+  /* ── AND THE BANNER TAKES THE BOTTOM 76px OF THE WINDOW ─────────
+     The sticky banner is fixed, so it does not shorten the page, it covers the
+     foot of it. Measured at scroll 0 with the banner filled, the links row ran
+     823-875 against a band starting at 824 at 1440x900, and 825-877 against the
+     same band at 1200x900: the three links were under it on both. The Draft
+     button and More ways to play are 400px clear at every desktop size, which is
+     the two-column hero doing its job, so what is left is the tail of the column
+     overshooting by about fifty pixels.
+     THIS IS SPACING AND NOTHING ELSE. Every value here is one already set in the
+     block above, tightened: the same six controls, in the same order, in the same
+     two columns. Nothing is moved between columns, nothing is hidden and no font
+     size changes, because a page that rearranges itself when an ad happens to
+     fill is worse to use than a links row under a banner.
+     IT IS GATED ON AN AD THAT IS ACTUALLY THERE, which is this file's own rule from
+     the --adstrip note at the top: reserved is not the same as occupied. The obvious
+     gate is `body.rtg-sticky-on`, and it is the wrong one: rtg-ads.js sets that class
+     whenever the banner is MOUNTED, and only --sticky-ad-h goes to 0 when nothing
+     fills. Measured with adsbygoogle blocked, which is most visitors: the class was
+     still set, so these rules fired with no banner on the screen and moved the Draft
+     button from 341 to 329 at 1440x900. That is #795's approved hero quietly redrawn
+     for everybody running a blocker. So the gate is the filled `ins`, the same way
+     the ticker's own rule above asks it. Re-measured: the links row lands 768-812 at 1440x900
+     and 770-814 at 1200x900, clearing the band by twelve and ten pixels, and the
+     two mode cards finish at 645 and 762 against the same band.
+     IT DOES NOT REACH 1280x800, and no amount of spacing does. The column there
+     runs 344 to 827 against a band starting at 724, so the Fantasy Challenge card
+     and the links row are both in it, and clearing them needs about a hundred
+     pixels rather than the fifty this finds. Writing that section up rather than
+     chasing it: see the pull request. */
+  @media(min-width:920px) and (min-height:560px){
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro>.hero{margin-bottom:10px}
+    /* The row rhythm is this grid's now, because `.ctas` is `display:contents` above
+       and a gap on a box with no box does nothing. */
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro{row-gap:6px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro #b-play-intro{padding:16px 18px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro>.ctas>.btn.ghost{padding:14px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro .cta3 .btn{padding-top:11px;padding-bottom:11px}
+    body:has([data-ad-zone="sticky"] ins[data-ad-status="filled"]) #s-intro .modecard{padding-top:11px;padding-bottom:11px}
   }
 
   /* ── footer ─────────────────────────────────────────────────── */
@@ -12589,7 +12800,22 @@ boot();
       if(!h.offsetParent) return;
       h.style.fontSize='';
       var size=parseFloat(getComputedStyle(h).fontSize);
-      var room=document.documentElement.clientWidth-24;
+      /* WHICH BOX IT HAS TO FIT IN IS A DIFFERENT BOX IN THE TWO LAYOUTS, and
+         reading the page in both is how the headline ends up lying across the
+         formation. One column: the line is centred on the page and is ALLOWED to
+         be wider than the 600px wrap, which is what the width:max-content rule
+         in the stylesheet is for, so the only thing it must never do is run off
+         the page. Two columns: it is centred on its own column with the field
+         beside it, so the page is 1416px of room it does not have, the script
+         finds nothing to shrink, and 84px of COLLEGE reaches into the other
+         column.
+         The layout is ASKED rather than restated: a copy of the 920px query here
+         is a second place to change it, and display tells us what the screen
+         actually did. */
+      var scr=h.closest('.screen');
+      var room=(scr&&getComputedStyle(scr).display==='grid')
+        ? h.parentElement.clientWidth
+        : document.documentElement.clientWidth-24;
       var line=h.scrollWidth;
       if(line>room&&line>0) h.style.fontSize=(size*room/line).toFixed(2)+'px';
     }

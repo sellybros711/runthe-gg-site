@@ -62,6 +62,24 @@
   /* Inside the Perfect Season's Home Screen app the page can be drawn under the clock
      (viewport-fit=cover), so the top row starts below that inset. 0 in a browser tab. */
   .wrap{padding-top:calc(14px + env(safe-area-inset-top,0px))}
+  /* WHILE THE BOTTOM BANNER IS UP, ON A SHORT PHONE (the owner's call, 2026-10-29): the
+     closeable banner from assets/rtg-ads.js covers the bottom 79px, and the week's main button
+     has to be clear of it before anybody scrolls. Keyed on body.rtg-sticky-on, which is set the
+     moment the banner is asked for, so nothing moves when the ad arrives; closed with its X,
+     the class goes and the screen is as it was. The three steps keep their names and lose
+     their sentences (the tiles under them carry the numbers), and the entry screen's lineup
+     sits a little closer. Taller phones already clear it and are untouched. */
+  @media (max-width:919px) and (max-height:719px){
+    body.rtg-sticky-on #s-home .hero-h{font-size:clamp(30px,9.5vw,40px)}
+    body.rtg-sticky-on #s-home .steps{margin-top:12px;gap:6px}
+    body.rtg-sticky-on #s-home .steps li > span{display:block;height:26px;overflow:hidden}
+    body.rtg-sticky-on #s-home .steps li > span strong{line-height:26px}
+    body.rtg-sticky-on #s-home .hero .stack{margin-top:12px}
+    body.rtg-sticky-on #s-in .big{font-size:36px}
+    body.rtg-sticky-on #s-in .rule{margin-top:10px;margin-bottom:10px}
+    body.rtg-sticky-on #s-in #in-roster{margin-top:8px !important}
+    body.rtg-sticky-on #s-in #b-in-board{margin-top:8px !important}
+  }
   h1,h2,h3{margin:0;line-height:1.05}
   .display{font-family:var(--fd);font-weight:400;letter-spacing:.01em;text-transform:uppercase}
   .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
