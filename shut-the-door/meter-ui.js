@@ -34,6 +34,16 @@
  * perfect: the stitches flash smaller, still, with a short buzz. Reduced motion: the stitches only
  * fade in and out, nothing moves. The ring fades a beat after the stop, so the pitch is seen.
  *
+ * THE CUE (the owner, 2026-10-30: "It needs to be clear you must tap the bottom bar to time your
+ * pitches"). The panel says so itself, on the panel, while it waits for a tap: "tap to set power"
+ * with "stop it where you want it" under it, then "tap to release" with "as the ring hits the
+ * circle". A dot with a signal ring breathes beside it so the panel reads as live; on a mouse and
+ * keyboard "or press space" follows it, with a key cap. It never opens anything: it is the panel's own words,
+ * and it goes the moment the tap lands (the one quiet word takes its place, as before). Once a
+ * player has finished QUIET_AFTER releases (a count in localStorage, std_meter_taps) the panel is
+ * the quiet one again: the verb and the call on top, and "tap" in the lit step. No storage, the
+ * cue stays.
+ *
  * create(el) -> { el, run(opts), cancel(), hide(), running(), stage() }
  *   run({ command, verb, label, practice, repeat, place, quick, onSnap, onStage, onPerfect }) resolves
  *   { q, err, word, e, perfect } on the release (e only with power), or null when cancelled.
@@ -50,6 +60,12 @@ var GUARD_MS = 120;         // a tap this soon after a stage starts is the tap t
 var FADE_MS = 380;          // the ring holds this long after the release, then fades off the pitch
 var COL_W = 40, GAP = 12, EDGE = 16;
 var RT = 24;                // the target circle's radius, round the crosshair
+var QUIET_AFTER = 10;       // releases finished before the cue steps down to a quiet "tap"
+var TAPS_KEY = 'std_meter_taps';
+var CUE = { effort: ['tap to set power', 'stop it where you want it'], acc: ['tap to release', 'as the ring hits the circle'] };
+
+function tapsUsed() { try { return Math.max(0, parseInt(localStorage.getItem(TAPS_KEY), 10) || 0); } catch (e) { return 0; } }
+function countTap() { try { localStorage.setItem(TAPS_KEY, String(Math.min(999, tapsUsed() + 1))); } catch (e) {} }
 
 function effortOn() { return MT.EFFORT === true; }
 function reduced() { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
@@ -79,9 +95,11 @@ function create(el) {
   el.setAttribute('role', 'button');
   el.setAttribute('tabindex', '-1');
   el.innerHTML =
+    '<div class="rm-cue" aria-hidden="true"><i class="rm-tap"></i><span class="rm-cue-t"><b></b><span class="rm-sub"><small></small><span class="rm-key">or press <kbd>space</kbd></span></span></span></div>' +
     '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span></div>' +
     '<div class="rm-steps"><div class="rm-step rm-s-pow"><b>power</b><span></span></div><div class="rm-step rm-s-rel"><b>release</b><span></span></div></div>';
   var q = function (s, root) { return (root || el).querySelector(s); };
+  var cueB = q('.rm-cue-t b'), cueS = q('.rm-cue-t small');
   var verb = q('.rm-verb'), call = q('.rm-call'), word = q('.rm-word');
   var sPow = q('.rm-s-pow'), sRel = q('.rm-s-rel'), vPow = q('.rm-s-pow span'), vRel = q('.rm-s-rel span');
   var host = (el.closest && el.closest('.screen')) || document.body;
@@ -108,6 +126,13 @@ function create(el) {
     el.dataset.stage = s;
     el.setAttribute('aria-label', s === 'effort' ? 'Power. Tap to set it.' : 'Release. Tap when the ring hits the circle.');
     sPow.classList.toggle('on', s === 'effort'); sRel.classList.toggle('on', s === 'acc');
+    /* the cue says the tap on the panel for this stop; the quiet panel says "tap" in the lit step */
+    var c = CUE[s] || CUE.acc;
+    cueB.textContent = c[0]; cueS.textContent = c[1];
+    if (!el.classList.contains('cue')) {
+      if (s === 'effort') vPow.textContent = 'tap';
+      else { vRel.textContent = 'tap'; if (vPow.textContent === 'tap') vPow.textContent = '-'; }
+    }
     if (live && live.opts.onStage) live.opts.onStage(s);
   }
   /* the ring's radius at pos (0..1 of its travel): R0 at the start, the target at the mark, a straight map */
@@ -220,6 +245,7 @@ function create(el) {
     var extra = live.opts.practice && C.spreadOf ? ' · miss ' + C.spreadOf(qq, live.opts.repeat).toFixed(2) + 'x' : '';
     word.textContent = w + extra;
     vRel.textContent = 'q ' + qq.toFixed(2);
+    countTap();
     if (pf.release) sRel.classList.add('perfect');
     if (qq >= MT.BEST_Q && live.opts.onSnap) live.opts.onSnap(qq);
     celebrate(pf);
@@ -287,6 +313,7 @@ function create(el) {
     try { seam.getAnimations().forEach(function (a) { a.cancel(); }); } catch (x) {}
     var eff = effortOn();
     el.classList.toggle('two', eff);
+    el.classList.toggle('cue', tapsUsed() < QUIET_AFTER);
     sPow.hidden = !eff;
     verb.textContent = opts.verb || 'release';
     call.textContent = opts.label || '';
@@ -315,5 +342,5 @@ function create(el) {
     stage: function () { return live && !live.done ? (live.stage === 'lock' ? 'acc' : live.stage) : null; } };
 }
 
-window.STD_METER_UI = { create: create, effortOn: effortOn };
+window.STD_METER_UI = { create: create, effortOn: effortOn, QUIET_AFTER: QUIET_AFTER, TAPS_KEY: TAPS_KEY };
 })();
