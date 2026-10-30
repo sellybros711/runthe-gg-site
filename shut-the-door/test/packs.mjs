@@ -275,7 +275,7 @@ for (const f of files) {
   if (!calibOnly) { shapeChecks(pack, f); determinism(pack); }
   // the release and spin check bites: a hand on the wrong side, a spin rate past 3,500 and an axis
   // past 360 on a copy of the first Statcast pitcher are each caught
-  if (!calibOnly && !bitten && pack.scenario.pitcher.tracking && pack.scenario.pitcher.tracking.system === 'statcast') {
+  if (!calibOnly && !bitten && pack.scenario.pitcher.tracking && pack.scenario.pitcher.tracking.system === 'statcast' && pack.scenario.pitcher.arsenal[0].spin) {
     bitten = true;
     const bad = (fn) => { const sc = JSON.parse(JSON.stringify(pack.scenario)); fn(sc.pitcher); return trackingErrs(sc).length > 0; };
     check(`${pack.scenario.id}: the release and spin check catches a wrong side, a fast spin and an axis past 360`,
