@@ -37,6 +37,30 @@ function targetOf(cell) {
   return { x: (c - 2) * GRID.COL_FT, zn: 1 - (r - 0.5) * GRID.ROW_ZN };
 }
 
+/* The free aim point (the owner's call, 2026-10-22; CONTRACT.md 5d). A call
+   may carry at: [u, v], where inside its cell the player aimed, as fractions
+   of the cell's width and height, each -0.5..0.5, catcher's view: u toward
+   the catcher's right (+x), v up (+zn). [0, 0] is the cell's centre, which is
+   what a call without at aims at. Clamped to the cell and kept to two places,
+   so a stored call replays exactly. It moves only where the ball is aimed:
+   the cell still decides everything the grade, the scouting and the hitter's
+   history read. */
+const AIM = Object.freeze({ MAX: 0.5, STEPS: 100 });
+function aimAt(at) {
+  if (at == null) return null;
+  if (!Array.isArray(at) || at.length !== 2 || !at.every(x => typeof x === 'number' && isFinite(x))) {
+    throw new Error('an aim point at is [u, v], two numbers');
+  }
+  return at.map(x => Math.round(Math.max(-AIM.MAX, Math.min(AIM.MAX, x)) * AIM.STEPS) / AIM.STEPS + 0);
+}
+/* The point a call aims at: its cell's centre, moved by at. */
+function aimPoint(cell, at) {
+  const t = targetOf(cell);
+  const a = aimAt(at);
+  if (!a) return t;
+  return { x: t.x + a[0] * GRID.COL_FT, zn: t.zn + a[1] * GRID.ROW_ZN };
+}
+
 /* The cell a point lands in. Anything past the chase band stays in it. */
 function cellAt(x, zn) {
   const c = Math.max(0, Math.min(4, Math.floor(x / GRID.COL_FT + 2.5)));
@@ -76,9 +100,316 @@ function bandOf(rel) { for (const b of BANDS) if (rel <= b.maxLost) return b.ban
 const SQUARE = Object.freeze({ green: '🟩', yellow: '🟨', orange: '🟧', red: '🟥' });
 const SQUARES_PER_LINE = 10;
 
-const OUTCOMES = Object.freeze(['door_shut', 'doors_open', 'walk_off']);
-const OUTCOME_RANK = Object.freeze({ door_shut: 2, doors_open: 1, walk_off: 0 });
-const OUTCOME_LABEL = Object.freeze({ door_shut: 'DOOR SHUT', doors_open: "DOOR'S OPEN", walk_off: 'WALK-OFF' });
+/* The end of an outing (CONTRACT.md section 8). tie_held is the owner's call
+   (2026-10-20): a run that ties no longer ends it, and three outs with the
+   game still tied is a held tie. It is a blown save, so it ranks under
+   door_shut and never counts toward the streak. The label lives here only, so
+   it can be renamed in one place. */
+const OUTCOMES = Object.freeze(['door_shut', 'tie_held', 'doors_open', 'walk_off']);
+const OUTCOME_RANK = Object.freeze({ door_shut: 3, tie_held: 2, doors_open: 1, walk_off: 0 });
+const OUTCOME_LABEL = Object.freeze({ door_shut: 'DOOR SHUT', tie_held: 'HELD THE TIE', doors_open: "DOOR'S OPEN", walk_off: 'WALK-OFF' });
+
+/* The release (the owner's call, 2026-10-22). A call may carry q, the release
+   quality from the timing meter, 0..1. It scales the pitch's miss (sigmaFt):
+   q 1 is a perfect release at SPREAD_BEST of his miss, q 0 a bad one at
+   SPREAD_WORST, and Q_AVG is exactly his own miss (1.0x), the closer pool's.
+   Linear on each side of Q_AVG. A call without q is 1.0x, so every outing
+   stored before the meter replays unchanged. The meter off throws Q_AVG.
+   q is kept to two places (STEPS), so a stored call replays exactly. The
+   grade never reads q: it prices the call at his own command. */
+const RELEASE = Object.freeze({ Q_AVG: 0.5, SPREAD_BEST: 0.6, SPREAD_WORST: 1.5, STEPS: 100, REPEAT_KEEP: 0.5 });
+function releaseQ(q) {
+  if (q == null) return null;
+  if (typeof q !== 'number' || !isFinite(q) || q < 0 || q > 1) throw new Error('a release q is a number 0..1');
+  return Math.round(q * RELEASE.STEPS) / RELEASE.STEPS;
+}
+/* repeat (rules 2, the owner's call 2026-10-22): how many pitches in a row
+   before this one were the same type. A good release on a repeat helps less:
+   the tightening below 1.0x keeps REPEAT_KEEP of itself per repeat (0.6x, then
+   0.8x, 0.9x at best). A game rule on the meter, not a measurement. A bad
+   release costs the same, and the meter off (no q) is 1.0x either way. */
+function spreadOf(q, repeat) {
+  if (q == null) return 1;
+  const r = releaseQ(q);
+  if (r === RELEASE.Q_AVG) return 1;
+  if (r < RELEASE.Q_AVG) return 1 + (RELEASE.SPREAD_WORST - 1) * (RELEASE.Q_AVG - r) / RELEASE.Q_AVG;
+  let keep = 1;
+  for (let i = 0; i < (repeat | 0); i++) keep *= RELEASE.REPEAT_KEEP;   // a product, not Math.pow: the same bits on every device
+  return 1 - (1 - RELEASE.SPREAD_BEST) * keep * (r - RELEASE.Q_AVG) / (1 - RELEASE.Q_AVG);
+}
+
+/* The bright band (rules 4, the owner's call 2026-10-24: "if I have a good
+   release it should go where I aimed"). A release at BEST_Q or over (the
+   meter's bright band, meter.js BEST_Q, the same number) no longer scales his
+   miss: it lands on the aim point plus a small miss of its own, PERFECT.SD_IN
+   inches a side at BEST_Q down to PERFECT.SD_TOP_IN at q 1, never further than
+   PERFECT.CAP_IN from the aim point, whatever the repeat, the effort or the
+   arm. Aimed inside the zone, it never leaves the zone. A GAME RULE, not a
+   measurement: the wider misses belong to good and ordinary releases, max
+   effort and a tired arm. The same two miss draws, read as inches. A call
+   under rules 3 or before plays spreadOf, exactly as it did. */
+const PERFECT = Object.freeze({ BEST_Q: 0.85, SD_IN: 1.2, SD_TOP_IN: 0.6, CAP_IN: 3 });
+function perfectLanding(aim, missX, missZ, q, zoneFt) {
+  const r = releaseQ(q);
+  const f = Math.max(0, Math.min(1, (r - PERFECT.BEST_Q) / (1 - PERFECT.BEST_Q)));
+  const sd = PERFECT.SD_IN + (PERFECT.SD_TOP_IN - PERFECT.SD_IN) * f;
+  let ox = missX * sd, oz = missZ * sd;
+  const len = Math.sqrt(ox * ox + oz * oz);
+  if (len > PERFECT.CAP_IN) { ox *= PERFECT.CAP_IN / len; oz *= PERFECT.CAP_IN / len; }
+  let x = aim.x + ox / 12, zn = aim.zn + oz / 12 / zoneFt;
+  if (Math.abs(aim.x) <= GRID.ZONE_HALF_FT && aim.zn >= 0 && aim.zn <= 1) {   // aimed in the zone: it stays in
+    x = Math.max(-GRID.ZONE_HALF_FT, Math.min(GRID.ZONE_HALF_FT, x));
+    zn = Math.max(0, Math.min(1, zn));
+  }
+  return { x, zn };
+}
+
+/* THE CALL (rules 4, 2026-10-24). A take is called by where the ball crossed,
+   not by the cell it crossed in. zoneDist is the signed distance, in inches,
+   from the zone's nearest edge: positive inside (the nearest of the two sides,
+   the top and the bottom), negative outside (straight to the zone, round the
+   corners). The zone is the one the grid draws: the plate's width plus a ball
+   (GRID.ZONE_HALF_FT a side) and the batter's own height (zn 0..1, his
+   Statcast zone, zoneFt tall).
+   UMPIRE: DATA. The chance a taken pitch is called a strike at that distance,
+   from every called pitch of the 2024 regular season (Baseball Savant, 375,000
+   called balls and strikes, plate_x, plate_z, sz_top, sz_bot; the miss table's
+   own geometry). Half-inch bins, straight between their centres: past six
+   inches outside 0.0004, three inches inside 0.97, the heart near certain
+   (a heart take called a ball 1 in 10,000 in 2024, 0.1% here). */
+const UMPIRE = Object.freeze({
+  D: Object.freeze([-6.25, -5.75, -5.25, -4.75, -4.25, -3.75, -3.25, -2.75, -2.25, -1.75, -1.25, -0.75, -0.25,
+    0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75, 6.25, 6.75, 7.25, 7.75]),
+  P: Object.freeze([0.0004, 0.0049, 0.0095, 0.0156, 0.0273, 0.0419, 0.0745, 0.1156, 0.1649, 0.2162, 0.3951, 0.4935, 0.6372,
+    0.7343, 0.7985, 0.862, 0.9085, 0.9362, 0.9637, 0.9782, 0.9888, 0.9901, 0.9966, 0.9966, 0.9983, 0.9987, 0.9994, 0.9994, 1]),
+});
+function zoneDist(x, zn, zoneFt) {
+  const dx = (GRID.ZONE_HALF_FT - Math.abs(x)) * 12;
+  const dz = Math.min(zn, 1 - zn) * zoneFt * 12;
+  if (dx >= 0 && dz >= 0) return Math.min(dx, dz);
+  const ox = Math.min(0, dx), oz = Math.min(0, dz);
+  return -Math.sqrt(ox * ox + oz * oz);
+}
+function calledStrikeP(d) {
+  const D = UMPIRE.D, P = UMPIRE.P;
+  if (d <= D[0]) return P[0];
+  if (d >= D[D.length - 1]) return P[P.length - 1];
+  let i = 0;
+  while (d > D[i + 1]) i++;
+  return P[i] + (P[i + 1] - P[i]) * (d - D[i]) / (D[i + 1] - D[i]);
+}
+
+/* ABS CHALLENGES (rules 4, MLB's 2026 rules). Each side has PER_SIDE a game
+   (here, the outing); a challenge that wins is kept. Only a called ball or
+   strike, only right away (before the next pitch). The ABS zone decides: the
+   ball's actual location against the zone above (zoneDist >= 0 is a strike).
+   The pitcher's side challenges a called ball with the player's button. The
+   batter challenges a called strike by BATTER, a MODEL fitted to sourced
+   rates: MLB's 2025 spring training ABS test (288 games: batters challenged
+   2.1 a game, 4.4% of called strikes, and won 50%; the defense 2.0 a game,
+   1.8% of called balls, 54%) and Triple-A in 2025 (batters won 45%). On the
+   2024 called strikes above, his chance to challenge one m inches outside is
+   min(MISS_MAX, MISS_A + MISS_B m), one d inches inside (a gamble)
+   GAMBLE exp(-d / GAMBLE_IN), times TWO_STRIKES on strike three (the spring's
+   full counts drew the most); that gives 4.4% of called strikes challenged and
+   45% won. DEFENSE is the same shape fitted to the defense's numbers on the
+   2024 called balls (1.9% challenged, 54% won), ball four for strike three. The
+   closer pool and the strategy runs challenge by it; the player has the button. */
+const ABS = Object.freeze({
+  PER_SIDE: 2,
+  BATTER: Object.freeze({ MISS_A: 0.02, MISS_B: 0.06, MISS_MAX: 0.9, GAMBLE: 0.1, GAMBLE_IN: 2, TWO_STRIKES: 1.5, MAX: 0.95 }),
+  DEFENSE: Object.freeze({ MISS_A: 0, MISS_B: 0.34, MISS_MAX: 0.9, GAMBLE: 0.195, GAMBLE_IN: 1, TWO_STRIKES: 1.5, MAX: 0.95 }),
+});
+/* The chance a side challenges: m the inches the call was wrong by (> 0, a
+   miss the ABS overturns) or right by (< 0, the ABS confirms). late: strike
+   three for the batter, ball four for the defense. */
+function challengeP(side, wrongBy, late) {
+  const M = side === 'batter' ? ABS.BATTER : ABS.DEFENSE;
+  const p = wrongBy > 0 ? Math.min(M.MISS_MAX, M.MISS_A + M.MISS_B * wrongBy) : M.GAMBLE * Math.exp(wrongBy / M.GAMBLE_IN);
+  return Math.min(M.MAX, p * (late ? M.TWO_STRIKES : 1));
+}
+
+/* THE ROUTINE PLAY (rules 5, the owner's call 2026-10-25: "I don't want them
+   to be completely error-free, but it should be extremely rare on a routine
+   play"; CONTRACT.md 5g). A labelled game rule, read from the drawn real
+   batted ball: its type (bb), exit speed (ev, mph), launch angle (la) and
+   spray (degrees, 0 centre field, negative the left field side).
+   - A routine grounder: a ground ball from GROUND_EV[0] up to (not including)
+     GROUND_EV[1] mph, within FIELDER_DEG of a fielder's spot (FIELDERS: third,
+     short, second, first, where the 2024 grounders between 60 and 95 mph went
+     for hits least often). Under 50 mph is the slow roller and its bang-bang
+     throw, 95 and up is hard hit (Statcast), between the spots is the hole.
+   - A routine fly: a fly ball at LA FLY_LA or higher from FLY_EV[0] up to
+     FLY_EV[1] mph (2024: hits on 1-6% of them). Every popup is routine.
+   - A ball with no tracked speed (the 2010-2012 library) is judged as the
+     scene draws it, by its type and spray: a grounder at a fielder, a fly ball
+     and a popup are routine.
+   Line drives, diving plays, hard-hit balls and balls in the hole are never
+   routine and keep their real rates. KEEP: the share of a routine error that
+   still happens (2024 Savant, regular season: a routine grounder was an error
+   1 per 44, a routine fly or popup 1 per 364; KEEP makes each about 1 per
+   1,000 or rarer). The rest are the cell's real out of the same kind
+   (grade.js routineRow). */
+const ROUTINE = Object.freeze({
+  GROUND_EV: Object.freeze([50, 95]),
+  FIELDERS: Object.freeze([-38, -19, 18, 42]),
+  FIELDER_DEG: 6,
+  FLY_LA: 30,
+  FLY_EV: Object.freeze([80, 95]),
+  KEEP: Object.freeze({ ground: 0.04, air: 0.2 }),
+});
+/* 'ground', 'air' or null: whether a batted ball is a routine play, and what kind. */
+function routineOf(bb, ev, la, spray) {
+  if (bb === 'popup') return 'air';
+  if (bb === 'ground') {
+    if (spray == null || !ROUTINE.FIELDERS.some(f => Math.abs(spray - f) <= ROUTINE.FIELDER_DEG)) return null;
+    return ev == null || (ev >= ROUTINE.GROUND_EV[0] && ev < ROUTINE.GROUND_EV[1]) ? 'ground' : null;
+  }
+  if (bb === 'fly') {
+    if (ev == null && la == null) return 'air';
+    return ev != null && la != null && la >= ROUTINE.FLY_LA && ev >= ROUTINE.FLY_EV[0] && ev < ROUTINE.FLY_EV[1] ? 'air' : null;
+  }
+  return null;
+}
+
+/* THE RUNNERS READ THE BALL (rules 6, the owner 2026-10-26: "We need to ensure
+   runners are advancing in realistic situations, and tagging up in realistic
+   situations"; CONTRACT.md 5h). Measured by pipeline/runners.py from every
+   2024 ball in play with a runner on (Savant's play text, runner by runner),
+   carried in each pack as pack.runners {dist: {coef}, edges, ratio}.
+   carryOf: how far an air ball goes, feet, from its exit velocity (mph) and
+   launch angle (degrees): the fit of hit_distance_sc (R2 0.94, 15.6 ft mean
+   error), clamped 0-480. runnerClass: the ball's kind for the runners, the
+   same function as runners.py runner_class: a ground ball by its speed (s
+   under edges.soft mph, else h) and field side; an air ball by its carry band
+   (edges.air for an out, edges.hit for a hit: a to g) and side (L, C, R:
+   centre within edges.side degrees). null when the ball cannot say (no spray,
+   no speed, a home run or an error): that ball keeps the table's own mix. */
+function carryOf(ev, la, coef) {
+  if (ev == null || la == null || !coef) return null;
+  const e = ev / 100, a = la * Math.PI / 180;
+  const s = Math.sin(a), c = Math.cos(a), s2 = Math.sin(2 * a);
+  const x = [1, e, e * e, e * e * e, s, s2, e * s2, e * e * s2, e * c, e * e * c * c, s * s];
+  let d = 0;
+  for (let i = 0; i < x.length; i++) d += x[i] * coef[i];
+  return Math.max(0, Math.min(480, d));
+}
+const AIR_KEYS = Object.freeze(['out_line', 'out_fly', 'out_popup']);
+function runnerClass(key, bb, ev, la, spray, runners) {
+  if (!runners || spray == null || key === 'home_run' || key === 'error') return null;
+  const E = runners.edges;
+  const side = spray < -E.side ? 'L' : spray > E.side ? 'R' : 'C';
+  if (bb === 'ground' || key === 'out_ground') return ev == null ? null : (ev < E.soft ? 's' : 'h') + side;
+  const d = carryOf(ev, la, runners.dist.coef);
+  if (d == null) return null;
+  const edges = AIR_KEYS.includes(key) ? E.air : E.hit;
+  let i = 0;
+  while (i < edges.length && d >= edges[i]) i++;
+  return 'abcdefg'[i] + side;
+}
+/* The runners' category of an advancement row: X when a runner (not the
+   batter) is put out on the bases, else how many bases the lead runner went
+   (0 held, 1, 2, 3 scored from first). bases: the bitmask before the play
+   (1 first, 2 second, 4 third); moves: [[from, to]] (4 scored, -1 out). */
+function runnerCategory(bases, moves) {
+  let lead = 0;
+  for (let b = 1; b <= 3; b++) if (bases & (1 << (b - 1))) lead = b;
+  if (!lead) return null;
+  for (const [f, t] of moves || []) if (f >= 1 && t === -1) return 'X';
+  const m = (moves || []).find(x => x[0] === lead);
+  return String((m ? m[1] : lead) - lead);
+}
+const RUNNER_CATS = Object.freeze(['X', '0', '1', '2', '3']);
+
+/* THE RUNNING GAME (rules 7, the owner 2026-10-26: "Runners could also steal
+   ... They may win or lose that moment" and "yes add pickoffs and slide
+   step"; CONTRACT.md 5i). The measured parts are in each pack (pack.steal,
+   from pipeline/steals.py: every 2022 and 2024 regular season pitch in the
+   Stats API feeds, the people's season stats, Savant's sprint speed and pop
+   time). What is a rule or a game setting is here:
+   DISENGAGE  pickoff throws a plate appearance before a failed one is a balk
+              (MLB 2023, rule 5.07(f)); every runner moves up a base. A GAME
+              RULE in every era: the 1988 and 2001 spots play it too.
+   QUICK      the quick delivery (the slide step), a call's ss: 1. The
+              delivery gets quicker, not the ball: DELIVERY_S seconds off his
+              time to the plate (a MODEL: the owner's 0.2 to 0.3 s; no public
+              per-pitch time to the plate). Seconds become the steal's z at
+              pack.steal.zPerSecond, MEASURED: a second of catcher's pop time
+              against stolen base success (Savant pop time, Stats API catcher
+              stolen bases and caught stealing, 2016 to 2025). Its costs are
+              the meter's (meter.js QUICK: no max power, a quicker ring); only
+              the time to the plate moves the steal.
+   CAP        the most a runner goes on one pitch (game guard).
+   A steal is of second (a runner on first, second open) or third (a runner
+   on second, third open), by the lead runner only: home, the double steal and
+   the delayed steal are not played. The margin a steal or pickoff shows is
+   its z over zPerSecond: seconds, safe by (plus) or out by (minus). */
+const STEAL = Object.freeze({
+  DISENGAGE: 2,
+  QUICK: Object.freeze({ DELIVERY_S: 0.25 }),
+  CAP: 0.5,
+});
+/* The standard normal's cdf from arithmetic only (Abramowitz and Stegun
+   26.2.19, error under 1.5e-7), so a steal decides with the same bits on
+   every device (Math.exp and Math.log may round differently). */
+function normCdf(z) {
+  const x = Math.abs(z);
+  const d = [0.0498673470, 0.0211410061, 0.0032776263, 0.0000380036, 0.0000488906, 0.0000053830];
+  let t = 1, xp = 1;
+  for (let i = 0; i < 6; i++) { xp *= x; t += d[i] * xp; }
+  let q = t;
+  for (let i = 0; i < 4; i++) q *= q;   // t^16
+  const upper = 0.5 / q;
+  return z >= 0 ? 1 - upper : upper;
+}
+/* Its inverse, for the margin only (the scene's closeness, never a decision). */
+function normInv(p) {
+  const pp = Math.min(1 - 1e-9, Math.max(1e-9, p));
+  const a = [-39.6968302866538, 220.946098424521, -275.928510446969, 138.357751867269, -30.6647980661472, 2.50662827745924];
+  const b = [-54.4760987982241, 161.585836858041, -155.698979859887, 66.8013118877197, -13.2806815528857];
+  const c = [-0.00778489400243029, -0.322396458041136, -2.40075827716184, -2.54973253934373, 4.37466414146497, 2.93816398269878];
+  const dd = [0.00778469570904146, 0.32246712907004, 2.445134137143, 3.75440866190742];
+  const lo = 0.02425;
+  if (pp < lo) { const q = Math.sqrt(-2 * Math.log(pp)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((dd[0] * q + dd[1]) * q + dd[2]) * q + dd[3]) * q + 1); }
+  if (pp > 1 - lo) return -normInv(1 - pp);
+  const q = pp - 0.5, r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+
+/* Effort (the owner's call, 2026-10-22; CONTRACT.md 5c). A call may carry e,
+   the meter's first stop, 0..1, kept to two places. 0 is his softest, 1 his
+   hardest, MID (0.5) his ordinary pitch: a call with e 0.5 plays exactly like
+   a call without e except for the speed it shows. e only rides with a timed
+   release (q), since its cost is a smaller window on the meter's second stop.
+   What e does lives in grade.js EFFORT (the pitch and the arm) and meter.js
+   (the window). The grade never reads this pitch's e: like q, it prices the
+   call at his ordinary stuff. */
+const EFFORT = Object.freeze({ MID: 0.5, STEPS: 100 });
+function effortE(e) {
+  if (e == null) return null;
+  if (typeof e !== 'number' || !isFinite(e) || e < 0 || e > 1) throw new Error('an effort e is a number 0..1');
+  return Math.round(e * EFFORT.STEPS) / EFFORT.STEPS;
+}
+
+/* What a pitch looks like at effort e: his own real pitches of that type,
+   from the pack (arsenal[i].stuff, pipeline/effort.py): the mean speed (mph)
+   and break (pfx inches, catcher's view) of each fifth of his velocity,
+   slowest first. e walks those five points (0 the slowest fifth, 0.5 the
+   middle, 1 the fastest), straight between them. Without e, or for a pack
+   with no stuff, it is his arsenal average. src: 'his' (his own pitches),
+   'league' (too few of his own: his average plus the league's spread), or
+   'average' (the arsenal's own numbers). One place, so the speed the UI
+   shows is the speed the engine reports. */
+function stuffAt(a, e) {
+  const s = a && a.stuff;
+  const ee = effortE(e);
+  if (!s || ee == null || !Array.isArray(s.velo) || s.velo.length !== 5) {
+    return { velo: a.velo, pfxX: a.pfxX, pfxZ: a.pfxZ, src: 'average' };
+  }
+  const pos = ee * 4, i = Math.min(3, Math.floor(pos)), f = pos - i;
+  const at = arr => Math.round((arr[i] * (1 - f) + arr[i + 1] * f) * 10) / 10;
+  return { velo: at(s.velo), pfxX: at(s.pfxX), pfxZ: at(s.pfxZ), src: s.src };
+}
 
 /* Bases bitmask. */
 const BASE = Object.freeze({ FIRST: 1, SECOND: 2, THIRD: 4 });
@@ -98,10 +429,14 @@ function easternDay(date) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit' })
     .format(date || new Date());
 }
-function dayNumberOf(day) {
+/* Days from the epoch: 0 on EPOCH, negative before it (the preview days before launch). */
+function dayOffsetOf(day) {
   const ms = Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10))
     - Date.UTC(+EPOCH.slice(0, 4), +EPOCH.slice(5, 7) - 1, +EPOCH.slice(8, 10));
-  return Math.max(1, Math.floor(ms / 86400000) + 1);
+  return Math.round(ms / 86400000);
+}
+function dayNumberOf(day) {
+  return Math.max(1, dayOffsetOf(day) + 1);
 }
 const DAILY_SEED_PREFIX = 'shut-the-door-';
 const OUTING_KEY = 'std_outing_v1';
@@ -110,10 +445,11 @@ const SHARE_TITLE = 'Shut The Door';
 const SHARE_URL = 'runthe.gg/shut-the-door';
 
 const publicAPI = Object.freeze({
-  API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, cellAt, screenCol,
+  API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
-  OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, BASE, countBucket,
-  ZONE, EPOCH, easternDay, dayNumberOf, DAILY_SEED_PREFIX, OUTING_KEY,
+  OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
+  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
+  ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });
 

@@ -87,6 +87,21 @@ section('2. a save from before becomes a story career and grows a story');
 
 const runs = [];
 for (let i = 0; i < N; i++) runs.push(play('st' + i, i % 2 ? 'hs' : 'draft'));
+/* A COVERAGE CHECK READS MORE THAN THE SWEEP before it calls anything dark.
+   The sweep plays today's rosters, and each weekly roster refresh changes
+   which of its careers meet a rare node or trait: one that came twice in
+   two hundred can come none. So `somewhere` asks the sweep, then plays on
+   (careers shared between checks, made only when needed) up to 600 more. A
+   node or trait that no career can reach is still dark after all of them. */
+const more = [];
+function somewhere(hit, cap = 600) {
+  if (runs.some(hit)) return true;
+  for (let j = 0; j < cap; j++) {
+    if (j === more.length) more.push(play('more' + j, j % 2 ? 'hs' : 'draft'));
+    if (hit(more[j])) return true;
+  }
+  return false;
+}
 
 section('3. every card says when it is, and the story happens in order');
 {
@@ -188,7 +203,7 @@ section('5. arcs: set up, escalate, pay off, and end more than one way');
     const n = runs.filter((x) => x.L.arcs && x.L.arcs[id] && x.L.arcs[id].done && x.L.arcs[id].done !== 'faded').length;
     if (n >= 12) ok(how[id].size >= 2, `${id} settles at least two ways in the sweep (${[...how[id]].join(', ')} over ${n})`);
   }
-  const dark = Object.keys(C.ARC_EVENTS).filter((n) => !nodes[n] && !C.ARC_EVENTS[n].authored);
+  const dark = Object.keys(C.ARC_EVENTS).filter((n) => !nodes[n] && !C.ARC_EVENTS[n].authored && !somewhere((x) => x.cards.some((k) => k.c.id === n)));
   ok(dark.length === 0, `every arc node is dealt somewhere (${dark.join(', ') || 'all'})`);
   ok(early === 0, 'no arc node comes before its setup');
   const once = runs.every((x) => { const seen = {}; return x.cards.every((k) => !C.ARC_EVENTS[k.c.id] || !(seen[k.c.id] = (seen[k.c.id] || 0) + 1) || seen[k.c.id] === 1); });
@@ -214,7 +229,7 @@ section('7. traits are revealed by play, and only the ones you have');
   let wrong = 0;
   for (const x of runs) for (const k in x.L.traits) { const t = x.L.traits[k]; if (t.known) { seen[k] = (seen[k] || 0) + 1; if (!t.has || !t.why) wrong++; } }
   ok(wrong === 0, 'every revealed trait is one the career has, with a reason');
-  const dark = C.TRAITS.filter((k) => !seen[k]);
+  const dark = C.TRAITS.filter((k) => !seen[k] && !somewhere((x) => x.L.traits[k] && x.L.traits[k].known));
   ok(dark.length === 0, `every trait is revealed somewhere (${dark.join(', ') || 'all fifteen'})`);
 }
 
@@ -365,7 +380,26 @@ section('14. the game narrates, and a card that comes back comes back different'
   ok(!repeatSame.length, `a card dealt again in one career never comes back as the same take (${repeatSame.slice(0, 4).join(', ') || 'none'})`);
   const withTakes = [...Object.keys(C.EVENTS), ...Object.keys(C.AM_EVENTS)].filter((id) => (C.EVENTS[id] || C.AM_EVENTS[id]).takes);
   const dark = [];
-  for (const id of withTakes) { const n = ((C.EVENTS[id] || C.AM_EVENTS[id]).takes.length) + 1; const s = takeSeen[id]; if (s && takeN[id] >= 4 && s.size < Math.min(n, 2)) dark.push(id); }
+  /* A card dealt a few times here can show one take by chance: forty careers
+     on today's rosters deal it to whom they deal it, and two deals of a two
+     take card match half the time. So a card that looks dark is played on
+     until it has been dealt in forty more careers that reach it. A card whose
+     takes are never dealt is dark in all of them; one that was unlucky here
+     shows a second take within a few. */
+  const seenOf = (id, from) => {
+    const s = new Set(from);
+    for (let j = 0, met = 0; j < 400 && met < 40 && s.size < 2; j++) {
+      const x = play('narrx' + j, j % 2 ? 'hs' : 'draft');
+      let hit = false;
+      for (const k of x.cards) if (k.c.id === id) { s.add(k.c.take || 0); hit = true; }
+      if (hit) met++;
+    }
+    return s;
+  };
+  for (const id of withTakes) {
+    const n = ((C.EVENTS[id] || C.AM_EVENTS[id]).takes.length) + 1, s = takeSeen[id];
+    if (s && takeN[id] >= 4 && s.size < Math.min(n, 2) && seenOf(id, s).size < Math.min(n, 2)) dark.push(id);
+  }
   ok(withTakes.length >= 25 && !dark.length, `${withTakes.length} cards carry other takes, and each one dealt four times or more here showed more than one (${dark.join(', ') || 'all'})`);
   const one = ['clutch', 'retire', 'injury', 'coach_review'].filter((id) => titles[id] && titles[id].size < 2);
   ok(!one.length, `the system cards are put more than one way (${['clutch', 'retire', 'injury', 'coach_review'].map((id) => id + ' ' + (titles[id] ? titles[id].size : 0)).join(', ')})`);

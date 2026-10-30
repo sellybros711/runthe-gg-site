@@ -45,7 +45,7 @@ const qPts = [0, 0, 0, 0];
 let wrongFinal = 0, dupClock = 0, lateFG = 0, emptyButScored = 0, outOfOrder = 0, badQuarter = 0;
 let events = 0, scripts = 0;
 let closeLeads = 0, closeGames = 0, blowLeads = 0, blowGames = 0;
-let otGames = 0, otRegNotLevel = 0, otLoserScored = 0, otNoScore = 0;
+let otGames = 0, otRegNotLevel = 0, otLoserScored = 0, otNoScore = 0, otRules = 0;
 
 for (let i = 0; i < N; i++) {
   const [you, them] = drawFinal();
@@ -61,7 +61,7 @@ for (let i = 0; i < N; i++) {
     events++;
     /* Five is overtime, and its period is fifteen minutes rather than a quarter's. */
     const maxSec = e.q === 5 ? 900 : 899;
-    if (e.q < 1 || e.q > 5 || e.sec < 1 || e.sec > maxSec) badQuarter++;
+    if (e.q < 1 || e.q > (e.ot ? 6 : 4) || e.sec < 1 || e.sec > maxSec) badQuarter++;
     const abs = (e.q - 1) * 900 + (900 - e.sec);      // elapsed seconds
     if (abs === prevAbs) dupClock++;
     if (abs < prevAbs) outOfOrder++;
@@ -81,18 +81,33 @@ for (let i = 0; i < N; i++) {
   if (m <= 8) { closeLeads += changes; closeGames++; }
   else if (m >= 17) { blowLeads += changes; blowGames++; }
 
-  const otPlays = sc.filter((e) => e.q === 5);
+  const otPlays = sc.filter((e) => e.ot);
   if (otPlays.length) {
     otGames++;
     /* Regulation has to have finished level, or it was not an overtime. */
-    const reg = sc.filter((e) => e.q <= 4);
+    const reg = sc.filter((e) => !e.ot);
     const rY = reg.length ? reg[reg.length - 1].you : 0;
     const rT = reg.length ? reg[reg.length - 1].them : 0;
     if (rY !== rT) otRegNotLevel++;
-    /* Sudden death after both possessions: whoever scores in it has won, so the losing
-       side can never be the one who scored there. */
+    /* THE PLAYOFF RULES, possession by possession (the owner's call, 2026-10-22). The loser
+       may score in overtime now, answering the first possession, but never last. */
     const winner = you > them ? 'you' : 'them';
-    if (otPlays.some((e) => e.team !== winner)) otLoserScored++;
+    if (otPlays[otPlays.length - 1].team !== winner) otLoserScored++;
+    const P = sc.ot;
+    let y = rY, t = rT;
+    P.poss.forEach((p, i) => {
+      if (i === 0 && p.team !== P.receiver) otRules++;
+      if (i > 0 && p.team === P.poss[i - 1].team) otRules++;
+      if (p.score) { if (p.score.team === 'you') y += p.score.points; else t += p.score.points; }
+      /* Over when both have had the ball and it is not level, or on a safety. */
+      const over = p.result === 'safety' || (i >= 1 && y !== t);
+      if (over !== (i === P.poss.length - 1)) otRules++;
+      /* A side behind has this possession and no other, so it never punts. */
+      if (p.result === 'punt' && (p.team === 'you' ? t - y : y - t) > 0) otRules++;
+      /* A walk-off touchdown takes no try, so it is worth 6. */
+      if (i === P.poss.length - 1 && i >= 1 && p.result === 'touchdown' && P.mode !== 'first'
+        && p.score.points !== 6) otRules++;
+    });
   } else if (you === them) otNoScore++;
 }
 
@@ -153,7 +168,8 @@ ok('overtime happens about as often as it really does',
   pct(otGames, scripts) >= 4.0 && pct(otGames, scripts) <= 7.5,
   pct(otGames, scripts).toFixed(2) + '% of games, real ~5.6%');
 ok('regulation finished level in every one of them', otRegNotLevel === 0, otRegNotLevel);
-ok('only the winner scores in overtime', otLoserScored === 0, otLoserScored);
+ok('the winner scores last in overtime', otLoserScored === 0, otLoserScored);
+ok('overtime keeps the playoff rules: toss, both possess, then the next score wins', otRules === 0, otRules);
 
 console.log('\n' + events + ' scoring plays over ' + scripts + ' scripts, ' +
   (events / scripts).toFixed(2) + ' a game');

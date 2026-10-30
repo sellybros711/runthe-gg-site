@@ -9,9 +9,8 @@ final. When the encore closes the night plays back to a crowd, song by song.
 The name is Segue; the URL stays `/setlist/` because it is already shared and
 indexed, and renaming it would break both for nothing.
 
-**In open testing.** Indexable and listed in `sitemap.xml`, but deliberately
-**not linked from the homepage** yet — the URL is the only way in, so it can be
-shared and found without being presented as a finished game.
+**Unlaunched.** Since 2026-10-24 it is out of `sitemap.xml`, noindexed, carries no
+ad tag and is not linked from the home page. The URL is the only way in.
 
 ```
 /setlist/
@@ -137,16 +136,17 @@ the rest is the show's songs, which is the thing the player came to read.
 
 ## Discoverability
 
-Three things are deliberate and checked in CI, because "temporarily" hidden
+Four things are deliberate and checked in CI, because "temporarily" hidden
 things drift:
 
 - **Not linked from anywhere.** No link on the homepage or any other page.
-- **Listed in `sitemap.xml`** so the URL can still be found and shared.
-- **No `noindex`** on the page.
+- **Not in `sitemap.xml`.**
+- **`noindex`** on the page.
+- **No ad tag** on the page.
 
 The effect is a game you reach by knowing `runthe.gg/setlist`, not by browsing
-the site. Putting it on the homepage is a one-line change plus deleting the
-`homepage does not link the game` check.
+the site. Launching it moves all four together, on the owner's say, and means changing
+the guards in `check_data.mjs` on purpose.
 
 ## How a show works
 

@@ -4,10 +4,12 @@ name: Build the Fantasy Challenge week
 # already been played. So it can only be built AFTER the previous week finishes and BEFORE
 # the next one starts, and that window is Tuesday.
 #
-# TUESDAY 11AM EASTERN, WHICH IS AFTER THE MONDAY NIGHT GAME AND WELL BEFORE THURSDAY. The
-# Monday game ends around midnight Eastern and nflverse publishes within a few hours, so
-# this is the first hour of the week when the season to date is complete. It leaves two and
-# a half days before the Thursday kickoff that locks the week.
+# TUESDAY 8AM EASTERN, the owner's call (2026-10-27): the next week opens first thing
+# Tuesday. The Monday game ends around midnight Eastern and nflverse publishes within a few
+# hours, so by 8am the season to date is normally complete. When it is not, the build WAITS
+# rather than pricing off a week with a club's game missing, because a price never moves once
+# somebody has drafted: see "Is last week in". The watchdog retries hourly, and from noon
+# Eastern the week opens whatever, so a late feed costs a morning and never the day.
 #
 # GITHUB'S CRON IS UTC AND DOES NOT KNOW ABOUT DAYLIGHT SAVING, so one entry cannot mean
 # 11am Eastern all year. Both are listed and the job asks WHICH SCHEDULE FIRED rather than
@@ -27,18 +29,38 @@ name: Build the Fantasy Challenge week
 # nobody can draft from is worse than one that writes nothing, because the mode looks live.
 
 on:
+  # TUESDAY, THEN TWO CATCH-UPS. Week 7 of 2026 never opened: the Tuesday run failed one
+  # check, published nothing, and nothing ran again before the Thursday kickoff. So the same
+  # job fires again Wednesday 11am and Thursday 9am Eastern. A catch-up builds ONLY a week
+  # that is not live yet (see "Is it already open"), so it can never move a price somebody
+  # has drafted against. On a normal week both catch-ups stop at that step and do nothing.
+  #
+  # TUESDAY 11AM STAYS as a settling pass: if the week opened before last week's stats were
+  # all in, it finishes scoring last week (see "Settle last week").
   schedule:
-    - cron: '0 15 * * 2'    # 11am Eastern while daylight saving is in effect
-    - cron: '0 16 * * 2'    # 11am Eastern the rest of the year
+    - cron: '0 12 * * 2'    # Tuesday 8am Eastern while daylight saving is in effect
+    - cron: '0 13 * * 2'    # Tuesday 8am Eastern the rest of the year
+    - cron: '0 15 * * 2'    # Tuesday 11am Eastern, daylight saving
+    - cron: '0 16 * * 2'    # Tuesday 11am Eastern, standard time
+    - cron: '0 15 * * 3'    # Wednesday 11am Eastern, daylight saving
+    - cron: '0 16 * * 3'    # Wednesday 11am Eastern, standard time
+    - cron: '0 13 * * 4'    # Thursday 9am Eastern, daylight saving
+    - cron: '0 14 * * 4'    # Thursday 9am Eastern, standard time
   workflow_dispatch:
     inputs:
       week:
         description: 'Week to build. Leave blank to use the first unplayed week.'
         required: false
         default: ''
+      catchup:
+        description: 'Only build if the week is not live yet (what the watchdog sends).'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: fantasy-pool
@@ -48,7 +70,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Is this the 11am Eastern entry
+      - name: Is this the entry for the current offset
         id: when
         run: |
           OFFSET=$(TZ=America/New_York date +%z)
@@ -58,11 +80,11 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "manual run, proceeding"
             echo "go=yes" >> "$GITHUB_OUTPUT"
-          elif [ "$OFFSET" = "-0400" ] && [ "$FIRED" = "0 15 * * 2" ]; then
-            echo "EDT, so 15:00 UTC is 11am Eastern. Proceeding."
+          elif [ "$OFFSET" = "-0400" ] && case "$FIRED" in "0 12 * * 2"|"0 15 * * 2"|"0 15 * * 3"|"0 13 * * 4") true;; *) false;; esac; then
+            echo "EDT, and this is the daylight saving entry. Proceeding."
             echo "go=yes" >> "$GITHUB_OUTPUT"
-          elif [ "$OFFSET" = "-0500" ] && [ "$FIRED" = "0 16 * * 2" ]; then
-            echo "EST, so 16:00 UTC is 11am Eastern. Proceeding."
+          elif [ "$OFFSET" = "-0500" ] && case "$FIRED" in "0 13 * * 2"|"0 16 * * 2"|"0 16 * * 3"|"0 14 * * 4") true;; *) false;; esac; then
+            echo "EST, and this is the standard time entry. Proceeding."
             echo "go=yes" >> "$GITHUB_OUTPUT"
           else
             echo "this is the other cron entry for the current offset. Stopping."
@@ -86,6 +108,29 @@ jobs:
         if: steps.when.outputs.go == 'yes'
         run: node football/build/next-week.mjs --week '${{ inputs.week }}'
 
+      # A SCHEDULED RUN NEVER REBUILDS A WEEK THAT IS ALREADY LIVE. The catch-up entries fire
+      # every Wednesday and Thursday, and on a normal week the Tuesday run has already opened
+      # this week: rebuilding it would reprice a board people have drafted against, which is
+      # the one thing this mode must never do. So a scheduled run whose week is the one
+      # fantasy_now.json already points at stops here, and so does a run the watchdog
+      # dispatched (catchup), which may land just after another build opened the week. A
+      # plain manual run still builds, because a person asked for it.
+      - name: Is it already open
+        id: open
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          LIVE=$(node -e 'const n=require("./football/data/fantasy_now.json");console.log(n.season+" "+n.week)')
+          WANT='${{ steps.week.outputs.season }} ${{ steps.week.outputs.week }}'
+          echo "live: $LIVE, this week: $WANT"
+          GUARDED=no
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.catchup }}" = "true" ]; then GUARDED=yes; fi
+          if [ "$GUARDED" = "yes" ] && [ "$LIVE" = "$WANT" ]; then
+            echo "week $WANT is already open. Nothing to do."
+            echo "done=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "done=no" >> "$GITHUB_OUTPUT"
+          fi
+
       # SCORE THE WEEK THAT JUST FINISHED BEFORE BUILDING THE NEXT ONE, and the order is the
       # point rather than tidiness: the page finds a result by asking for the week's own
       # file, so a week whose board rolls forward before its result is written is a week
@@ -94,14 +139,81 @@ jobs:
       # `|| true` because this is allowed to have nothing to do. Week one has no week zero,
       # and a manual run mid-week hits a week that is not finished, which the build refuses
       # by design. Neither is a reason to skip building the board.
+      # SETTLE LAST WEEK, on a run that found this week already open. A week that opened at
+      # noon on a late stats feed (see "Is last week in") went up with last week only partly
+      # scored, and this is the pass that finishes it: score it again, and once it reads
+      # final, publish its results and commit the file. On a normal week the results are
+      # already final and this does nothing.
+      - name: Settle last week
+        if: steps.when.outputs.go == 'yes' && steps.open.outputs.done == 'yes'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          SEASON='${{ steps.week.outputs.season }}'
+          PREV=$(( ${{ steps.week.outputs.week }} - 1 ))
+          F="football/data/results_${SEASON}_w${PREV}.json"
+          if [ "$PREV" -lt 1 ]; then echo "no week before this one"; exit 0; fi
+          if [ -f "$F" ] && node -e "process.exit(require('./$F').final?0:1)"; then
+            echo "week $PREV is already settled"; exit 0
+          fi
+          node football/build/weekly-results.mjs --season "$SEASON" --week "$PREV" --write
+          if ! node -e "process.exit(require('./$F').final?0:1)"; then
+            echo "week $PREV is still waiting on stats; the next pass will try again"; exit 0
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          OPENED=$(psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -tAc \
+            "select count(*) from public.fantasy_weeks where season = $SEASON and week = $PREV")
+          if [ "$OPENED" != "0" ]; then
+            node football/build/publish-week.mjs --season "$SEASON" --week "$PREV" --results \
+              | psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q
+            echo "published week $PREV's results"
+          fi
+          git config user.name "fantasy-bot"
+          git config user.email "noreply@anthropic.com"
+          git add "$F"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Fantasy Challenge: $SEASON week $PREV settled"
+          for i in 1 2 3 4 5; do
+            git push && break
+            git pull --rebase origin main || exit 1
+          done
+
       - name: Score the week that just ended
-        if: steps.when.outputs.go == 'yes'
+        if: steps.when.outputs.go == 'yes' && steps.open.outputs.done != 'yes'
         run: |
           PREV=$(( ${{ steps.week.outputs.week }} - 1 ))
           if [ "$PREV" -ge 1 ]; then
             node football/build/weekly-results.mjs \
               --season '${{ steps.week.outputs.season }}' --week "$PREV" --write || \
               echo "week $PREV could not be scored yet, carrying on"
+          fi
+
+      # IS LAST WEEK IN. The board for week N is priced off weeks 1 to N-1, so building it
+      # before Monday night's stats are published would price two clubs' men without their
+      # last game, and that price can never be corrected once somebody drafts. So until noon
+      # Eastern on the Tuesday, a scheduled or watchdog run WAITS for last week to read final
+      # (this run ends green and changes nothing; the watchdog asks again within the hour).
+      # From noon it builds anyway: an open week matters more than a perfect one, and
+      # "Settle last week" finishes the scoring later. A plain manual run never waits.
+      - name: Is last week in
+        id: ready
+        if: steps.when.outputs.go == 'yes' && steps.open.outputs.done != 'yes'
+        run: |
+          SEASON='${{ steps.week.outputs.season }}'
+          PREV=$(( ${{ steps.week.outputs.week }} - 1 ))
+          F="football/data/results_${SEASON}_w${PREV}.json"
+          AUTO=no
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.catchup }}" = "true" ]; then AUTO=yes; fi
+          DOW=$(TZ=America/New_York date +%u); HOUR=$(TZ=America/New_York date +%H)
+          FINAL=yes
+          if [ "$PREV" -ge 1 ] && ! { [ -f "$F" ] && node -e "process.exit(require('./$F').final?0:1)"; }; then FINAL=no; fi
+          if [ "$AUTO" = "yes" ] && [ "$FINAL" = "no" ] && [ "$DOW" = "2" ] && [ "$HOUR" -lt 12 ]; then
+            echo "week $PREV is not final yet (waiting on stats). Not building before noon Eastern."
+            echo "build=no" >> "$GITHUB_OUTPUT"
+          else
+            [ "$FINAL" = "no" ] && echo "::warning::week $PREV is not final yet; building anyway"
+            echo "build=yes" >> "$GITHUB_OUTPUT"
           fi
 
       # THE PRICE READS THE GAME STATUS REPORT, SO THE REPORT HAS TO BE THIS MORNING'S, AND
@@ -129,7 +241,7 @@ jobs:
       # men in the same order, and 5 prices different. A build is under a second against the
       # nflverse cache the first pass warms, so this costs nothing worth naming.
       - name: Build the board, to scope the report
-        if: steps.when.outputs.go == 'yes'
+        if: steps.ready.outputs.build == 'yes'
         run: |
           node football/build/weekly-pool.mjs \
             --season '${{ steps.week.outputs.season }}' \
@@ -148,7 +260,7 @@ jobs:
       # mode priced for a year, the rebuild below is then a no-op, and the read-back after it
       # is what says which of the two happened.
       - name: Refresh the injury report the price reads
-        if: steps.when.outputs.go == 'yes'
+        if: steps.ready.outputs.build == 'yes'
         run: |
           node football/build/injuries.mjs \
             --season '${{ steps.week.outputs.season }}' \
@@ -156,7 +268,7 @@ jobs:
             || echo "the report could not be refreshed, pricing on availability alone"
 
       - name: Build it again, priced off that report
-        if: steps.when.outputs.go == 'yes'
+        if: steps.ready.outputs.build == 'yes'
         run: |
           node football/build/weekly-pool.mjs \
             --season '${{ steps.week.outputs.season }}' \
@@ -171,7 +283,7 @@ jobs:
       # information (a week old DID NOT PRACTISE is worth 0.511, a week old designation is
       # worth nothing) and the log is where somebody finds out which they got.
       - name: Which report the price read
-        if: steps.when.outputs.go == 'yes'
+        if: steps.ready.outputs.build == 'yes'
         run: |
           node -e '
             const fs = require("fs");
@@ -196,7 +308,7 @@ jobs:
       # The gate. It plays 1,200 drafts three ways against the board that was just written,
       # so a week that strands or prices somebody out of reach never reaches main.
       - name: Can it be drafted
-        if: steps.when.outputs.go == 'yes'
+        if: steps.ready.outputs.build == 'yes'
         run: node football/check-fantasy.mjs --quick
 
       # ─── the server's copy ───────────────────────────────────────────────────────────
@@ -223,11 +335,11 @@ jobs:
       # other, and `fantasy_now.json` is not written here at all, so that argument does not
       # reach this step.
       - name: Install the postgres client
-        if: steps.when.outputs.go == 'yes'
+        if: steps.ready.outputs.build == 'yes'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
 
       - name: Publish the week to the leaderboard
-        if: steps.when.outputs.go == 'yes'
+        if: steps.ready.outputs.build == 'yes'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
@@ -297,7 +409,7 @@ jobs:
           fi
 
       - name: Commit the week
-        if: steps.when.outputs.go == 'yes'
+        if: steps.ready.outputs.build == 'yes'
         run: |
           git config user.name "fantasy-bot"
           git config user.email "noreply@anthropic.com"
@@ -330,3 +442,24 @@ jobs:
             echo "push rejected, rebasing onto latest main (attempt $i)"
             git pull --rebase origin main || exit 1
           done
+
+      # SAID OUT LOUD WHEN IT FAILS. Tuesday's week 7 build stopped on one check and nobody
+      # heard until the owner saw last week's board on game day. A failed run now opens an
+      # issue (which emails the owner), a later green run closes it. live-check.yml does the
+      # same for the pages.
+      - name: Open or close the alert
+        if: always() && steps.when.outputs.go == 'yes' && steps.open.outputs.done != 'yes' && steps.ready.outputs.build != 'no'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WEEK: ${{ steps.week.outputs.season }} week ${{ steps.week.outputs.week }}
+        run: |
+          TITLE="Fantasy Challenge: the week did not open"
+          NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "$WEEK is open: $RUN_URL" && gh issue close "$NUM"; fi
+          else
+            BODY="The build for $WEEK failed, so the page still shows last week. Run: $RUN_URL. Fix it and run Build the Fantasy Challenge week by hand before the first kickoff."
+            if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "$BODY"; else gh issue create --title "$TITLE" --body "$BODY"; fi
+          fi

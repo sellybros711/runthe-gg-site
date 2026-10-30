@@ -130,7 +130,7 @@
    "fullName": "Craig Counsell",
    "batSideListed": "L",
    "seasonLine": ".275/.359/.362, 4 HR",
-   "inSpot": false
+   "inSpot": true
   },
   {
    "batterId": "gonzl001",
@@ -151,16 +151,16 @@
    "fullName": "Luis Gonzalez",
    "batSideListed": "L",
    "seasonLine": ".325/.429/.688, 57 HR",
-   "inSpot": false
+   "inSpot": true
   }
  ],
- "realFaced": 4,
+ "realFaced": 6,
  "real": {
-  "outcome": "doors_open",
-  "pitches": 10,
-  "pitchesKnown": 10,
+  "outcome": "walk_off",
+  "pitches": 14,
+  "pitchesKnown": 14,
   "pitchesUnknownPAs": 0,
-  "runs": 1
+  "runs": 2
  },
  "scoreCheck": {
   "lineScore": {

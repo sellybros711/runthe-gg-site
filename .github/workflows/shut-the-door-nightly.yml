@@ -1,0 +1,130 @@
+name: Shut The Door nightly (full lab checks)
+
+# Every long lab check, whole, on main, every night at 08:41 UTC (1:41am Pacific, 4:41am Eastern;
+# done before QA nightly at 10:17 UTC). These are the runs the ceilings and floors were measured on:
+#
+#   jolt     the held 2,925 (every 20th case)                  check-jolt.mjs
+#   camera   every case, 58,498                                check-camera.mjs --stride 1
+#   frame    every case                                        check-frame.mjs
+#   catch    every case                                        check-catch.mjs
+#   inplay   every case                                        check-inplay.mjs
+#   contact  every case, in four shards (the PR runs it too)   check-contact.mjs --shard I/4
+#   leak     a session of 7 outings (not in PR CI)             check-leak.mjs
+#
+# A PR runs samples of them (shut-the-door-lab.yml), held to the same rate. This is where a regression
+# a sample missed is caught. It fails loudly: any red job opens one issue ("Shut The Door nightly: lab
+# checks failing", GitHub emails the owner), a later red night updates it, a green night closes it.
+#
+# Resumable: each check writes its checkpoint (.cache/checks, keyed to the tree under test) and it is
+# cached per check and commit, so "Re-run failed jobs" on a job that timed out or was cancelled picks
+# up from its last finished chunk (--resume). check-leak cannot resume (its header says why).
+#
+# No secrets beyond the run's own token (issues only), no deploy, no data written.
+
+on:
+  schedule:
+    - cron: '41 8 * * *'   # 08:41 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: shut-the-door-nightly
+  cancel-in-progress: false
+
+jobs:
+  full:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: jolt, run: 'node shut-the-door/lab/pipeline/check-jolt.mjs --resume', timeout: 120 }
+          - { name: camera, run: 'node shut-the-door/lab/pipeline/check-camera.mjs --stride 1 --resume', timeout: 90 }
+          - { name: frame, run: 'node shut-the-door/lab/pipeline/check-frame.mjs --resume', timeout: 90 }
+          - { name: catch, run: 'node shut-the-door/lab/pipeline/check-catch.mjs --resume', timeout: 120 }
+          - { name: inplay, run: 'node shut-the-door/lab/pipeline/check-inplay.mjs --resume', timeout: 30 }
+          - { name: contact-0, run: 'node shut-the-door/lab/pipeline/check-contact.mjs --shard 0/4 --resume', timeout: 60 }
+          - { name: contact-1, run: 'node shut-the-door/lab/pipeline/check-contact.mjs --shard 1/4 --resume', timeout: 60 }
+          - { name: contact-2, run: 'node shut-the-door/lab/pipeline/check-contact.mjs --shard 2/4 --resume', timeout: 60 }
+          - { name: contact-3, run: 'node shut-the-door/lab/pipeline/check-contact.mjs --shard 3/4 --resume', timeout: 60 }
+          - { name: leak, run: 'node shut-the-door/lab/pipeline/check-leak.mjs', timeout: 240 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        if: matrix.name != 'inplay'
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The checkpoint of an earlier attempt of this commit, if any
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/checks
+          key: std-lab-${{ matrix.name }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: std-lab-${{ matrix.name }}-${{ github.sha }}-
+      - name: check-${{ matrix.name }}
+        run: |
+          set -o pipefail
+          ${{ matrix.run }} 2>&1 | tr '\r' '\n' | grep -v ' cases *$' | tee check-${{ matrix.name }}.txt
+      - name: Keep the checkpoint for a re-run
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/checks
+          key: std-lab-${{ matrix.name }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Failures as annotations
+        if: always()
+        run: |
+          f=check-${{ matrix.name }}.txt
+          [ -f "$f" ] || exit 0
+          grep -E 'FAIL' "$f" | head -30 | sed 's/%/%25/g; s/^ */::error title=check-${{ matrix.name }}::/' || true
+          tail -n 1 "$f" | sed 's/^/::notice title=check-${{ matrix.name }}::/'
+          { echo "### check-${{ matrix.name }}"; echo '```'; tail -n 60 "$f"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-${{ matrix.name }}
+          path: check-${{ matrix.name }}.txt
+
+  report:
+    needs: full
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULT: ${{ needs.full.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="Shut The Door nightly: lab checks failing"
+          NUM=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number')
+          {
+            echo "Latest run: $RUN_URL (on $GITHUB_SHA)"
+            echo
+            for f in out/*/*.txt; do
+              [ -f "$f" ] || continue
+              echo "**$(basename "$f" .txt)**: $(tail -n 1 "$f")"
+              grep -E 'FAIL' "$f" | head -15 | sed 's/^/    /'
+            done
+          } > body.md
+          cat body.md >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RESULT" = "success" ]; then
+            if [ -n "$NUM" ]; then gh issue comment "$NUM" --body "Every lab check passes again: $RUN_URL" && gh issue close "$NUM"; fi
+          elif [ -n "$NUM" ]; then
+            gh issue edit "$NUM" --body-file body.md
+          else
+            gh issue create --title "$TITLE" --body-file body.md
+          fi
+          [ "$RESULT" = "success" ]

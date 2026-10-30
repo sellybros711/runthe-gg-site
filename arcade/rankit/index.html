@@ -27,6 +27,10 @@
 <meta name="twitter:title" content="Rank It: Daily Sports Ordering Game" />
 <meta name="twitter:description" content="Five players. One right order. New set every day." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
+<!-- OUT OF SEARCH AND ADS until AdSense approves runthe.gg (the owner's call, 2026-10-24). A signed out
+     visitor meets the Arcade Card gate here, and AdSense reads a page behind a login as restricted
+     access. The game and the gate are unchanged; the hub still links here. agents/ads/ in the vault. -->
+<meta name="robots" content="noindex">
 <link rel="canonical" href="https://runthe.gg/arcade/rankit/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -346,11 +350,10 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
-<!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
-     defaults above so no advertising cookie is set before the certified CMP answers. -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -475,7 +478,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/stars.js?v=5"></script>
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
-<script src="/arcade/primary.js?v=49"></script>
+<script src="/arcade/primary.js?v=60"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=9"></script>
 <script src="/arcade/stats.js?v=4"></script>

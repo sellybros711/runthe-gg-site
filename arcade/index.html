@@ -777,11 +777,14 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=2"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -1292,6 +1295,19 @@ window.GA_ID='G-L29P5MRWKE';
         </div>
       </main>
     </div>
+
+    <!-- THE MENU AD (Ads Agent, 2026-10-26). The hub is a menu: every game opens on its own
+         page, so nothing is ever played beside this. One unit, under the whole menu and above
+         the footer, 150px clear of the last link once it holds an ad. A slim 320x50 on a phone, 728x90
+         from 768px. Empty, it takes no space
+         and shows no label. -->
+    <style>.arc-ad{max-width:728px;margin:26px auto 0;padding:0 14px;text-align:center}.arc-ad .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}.arc-ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none}.arc-ad:has(ins[data-ad-status="filled"]){margin-top:150px}.arc-ad ins.adsbygoogle{display:inline-block!important;width:320px;height:50px}@media (min-width:768px){.arc-ad ins.adsbygoogle{width:728px;height:90px}}.arc-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none!important}</style>
+    <div class="arc-ad">
+      <span class="ad-label">Advertisement</span>
+      <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5952069078178257"
+           data-ad-slot="1538358580"></ins>
+    </div>
+    <script>(function(){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}})();</script>
 
     <div class="foot">
       <div class="soc">
@@ -1947,6 +1963,21 @@ window.GA_ID='G-L29P5MRWKE';
 /* the date under Today's Games, in the reader's own words for it */
 (function(){ var el=document.getElementById('dayDate'); if(!el) return;
   try{ el.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}); }catch(e){} })();
+</script>
+<script>
+/* THE HUB'S ADS (Ads Agent, 2026-10-29, the owner's calls). The closeable bottom banner (its X closes
+   it for the rest of the visit) and the Arcade's two desktop rails, built only where each one can sit
+   150px clear of the column and never on a phone. /assets/rtg-ads.js owns how both look and behave. */
+(function(){
+  var SITE_STICKY_SLOT = {sticky:'5122323877'};                      // site-sticky
+  var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  function go(){
+    if(!window.RTG_ADS) return;
+    RTG_ADS.sticky(true, SITE_STICKY_SLOT.sticky, 'site', {above:'.rtgnav'});
+    RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); });
+  }
+  if(document.readyState === 'complete') go(); else window.addEventListener('load', go);
+})();
 </script>
 </body>
 </html>

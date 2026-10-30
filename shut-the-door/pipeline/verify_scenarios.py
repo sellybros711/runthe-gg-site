@@ -30,7 +30,7 @@ PITCH_TYPES = set(json.loads(subprocess.run(
     ['node', '-e', 'process.stdout.write(JSON.stringify(require(process.argv[1]).PITCH_TYPES))',
      os.path.join(GAME, 'contract.js')], capture_output=True, text=True, check=True).stdout))
 
-OUTCOME_RANK = {'door_shut': 2, 'doors_open': 1, 'walk_off': 0}
+OUTCOME_RANK = {'door_shut': 3, 'tie_held': 2, 'doors_open': 1, 'walk_off': 0}
 
 
 def bases_mask(row):
@@ -46,7 +46,11 @@ def bases_mask(row):
 
 def judge(lead, pas, walk_off_live, start_outs):
     """The contract's end rules over a list of plate appearances, each with
-    'runs' and 'outs'. Marks which PAs fall inside the spot."""
+    'runs' and 'outs'. Marks which PAs fall inside the spot.
+
+    A run that ties does not end the spot (the owner's call, 2026-10-20): a
+    go-ahead run ends it (walk-off when it is live, else door's open), and
+    three outs end it as a door shut with the lead or a held tie without."""
     runs = 0
     outs = start_outs
     outcome = None
@@ -56,10 +60,10 @@ def judge(lead, pas, walk_off_live, start_outs):
             continue
         runs += pa['runs']
         outs += pa['outs']
-        if runs >= lead:
-            outcome = 'walk_off' if (runs > lead and walk_off_live) else 'doors_open'
+        if runs > lead:
+            outcome = 'walk_off' if walk_off_live else 'doors_open'
         elif outs >= 3:
-            outcome = 'door_shut'
+            outcome = 'tie_held' if runs == lead else 'door_shut'
     return outcome, runs
 
 

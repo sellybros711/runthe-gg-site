@@ -88,6 +88,8 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <!-- GA4: same property as the rest of runthe.gg. Consent defaults above gate it. -->
@@ -2168,6 +2170,19 @@ window.GA_ID='G-L29P5MRWKE';
   .respin.off b{color:var(--dim-2)}
   .respins .respin.off span{color:var(--dim-2)}
   .respinnote{color:var(--dim-2);font-size:10px;text-align:center;margin:6px 0 0}
+  /* THE FREE RE-SPIN shares a line with the note under the paid ones, so offering it costs
+     the screen no height. Yellow, because it is the one re-spin that costs nothing. */
+  .freerow{display:flex;align-items:center;gap:9px;margin-top:6px}
+  .freerow .respinnote,.freerow p{flex:1 1 auto;min-width:0;margin:0;text-align:left}
+  .freespin{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;
+    border-radius:8px;border:0;cursor:pointer;background:linear-gradient(180deg,#facc15,#eab308);
+    color:#1a1405;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 2px 8px rgba(234,179,8,.25)}
+  .freespin b{font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;line-height:1}
+  .freespin svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+  .freespin svg path{fill:currentColor;stroke:none}
+  .freespin:active{transform:scale(.97)}
+  .freespin[disabled]{opacity:.55;cursor:default}
 
   .panel{background:var(--grad-panel);border:1px solid var(--line);border-radius:16px;padding:15px;
     box-shadow:var(--shadow)}
@@ -2196,7 +2211,16 @@ window.GA_ID='G-L29P5MRWKE';
      --hdr is the pinned height, declared once, because the draft HUD sticks too and has to
      stack UNDER this rather than on top of it. */
   :root{--hdr:56px}
-  header{position:sticky;top:0;z-index:60;display:flex;align-items:center;
+  /* UNDER THE CLOCK. Saved to the Home Screen, an iPhone can draw the page edge to edge, under
+     the status bar (viewport-fit=cover), and then env(safe-area-inset-top) is the clock's
+     height. A player saw the header pinned behind the time, profile button and all, where
+     nothing could be tapped. The header now sticks below that inset, the wrap starts below
+     it, and an opaque strip covers it so the page never scrolls through the clock. In a
+     browser tab the inset is 0 and none of this moves a pixel. */
+  body:before{content:'';position:fixed;left:0;right:0;top:0;z-index:61;pointer-events:none;
+    height:env(safe-area-inset-top,0px);background:var(--bg)}
+  .wrap{padding-top:calc(14px + env(safe-area-inset-top,0px)) !important}
+  header{position:sticky;top:env(safe-area-inset-top,0px);z-index:60;display:flex;align-items:center;
     padding:6px 0;margin:-4px 0 10px}
   /* The page's own background, carried out over the wrap's 14px of side padding so nothing
      scrolls past in the gutter. Behind the header's content, not over it. */
@@ -2696,6 +2720,69 @@ window.GA_ID='G-L29P5MRWKE';
   }
   @media (max-height:400px){
     .htitle h1{font-size:min(8.5vw,31px)}
+  }
+  /* ─── WHILE THE BOTTOM BANNER IS UP (the owner's call, 2026-10-29) ───
+     The closeable banner from assets/rtg-ads.js is pinned over the bottom 79px of the front
+     page, and at first view it sat on the Dynasty door. The owner chose to move the content up
+     rather than hold the banner back: the start buttons and both mode doors have to be in
+     the clear before anybody scrolls. Keyed on body.rtg-sticky-on, which the module sets
+     the moment it asks for the banner, so the page settles before the ad arrives rather than
+     jumping when it fills. Closed with its X, the class goes and the page is as it was.
+
+     ON A PHONE, THREE THINGS GIVE. The field flattens to the short-screen height, the title
+     goes to one line, and the two doors share a row as compact tiles: the name, the tag and
+     the Fantasy week line, the Dynasty ball and question, without the record corner, which is
+     what made a half-width door unreadable (see THE SHELF below). On a short
+     phone the hero field stands down entirely; the year and team wheels stay and still spin.
+     What is below the doors (the store card, the other modes, the links) is reached by
+     scrolling and may pass under the banner like any long page. Pushing it below the fold
+     was tried and left a hole the size of the banner in the page (the owner, 2026-10-30). */
+  @media (max-width:919px){
+    body.rtg-sticky-on #s-intro .field.hero-field{aspect-ratio:auto;height:116px}
+    body.rtg-sticky-on #s-intro .hero{margin-bottom:10px}
+    body.rtg-sticky-on #s-intro .htitle{margin-bottom:11px}
+    body.rtg-sticky-on #s-intro .htitle h1{font-size:min(10.5vw,40px);line-height:.9}
+    body.rtg-sticky-on #s-intro .htitle h1 .l2{display:inline}
+    body.rtg-sticky-on #s-intro .hp-slots{display:none}
+    body.rtg-sticky-on #s-intro .hp-longer{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px}
+    body.rtg-sticky-on #s-intro .hp-longer>.pw-card,
+    body.rtg-sticky-on #s-intro .hp-longer>#b-dyn-new,
+    body.rtg-sticky-on #s-intro .hp-longer>:only-child{grid-column:1/-1}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full{justify-content:center;min-height:0;
+      padding:24px 8px 11px;gap:4px}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full .hp-full-name{font-size:17px;line-height:1.02;
+      white-space:normal;text-align:center}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full .hp-full-sub{font-size:9px;letter-spacing:.04em}
+    /* THE TWO TILES CARRY THE SAME WEIGHT. The Dynasty tile keeps its ball and its question,
+       smaller, so it reads as a door beside the Fantasy one rather than an empty box (the
+       owner, 2026-10-30). Only the record corner goes, which needs a full row to read. */
+    body.rtg-sticky-on #s-intro .hp-longer .hp-hi,
+    body.rtg-sticky-on #s-intro .hp-longer .hp-fan-ico{display:none}
+    body.rtg-sticky-on #s-intro .hp-longer .hp-mark{width:24px;height:16px;margin-bottom:0}
+    body.rtg-sticky-on #s-intro .hp-longer .hp-tagline{line-height:1.25}
+    /* AND THE BUTTONS COME DOWN A SIZE, so the tabs, the draft button and the doors read as
+       one set rather than one shouting button over two small tiles (the owner, 2026-10-30).
+       Every one stays a full thumb's height. */
+    body.rtg-sticky-on #s-intro .hp-tab{min-height:42px;font-size:14px}
+    body.rtg-sticky-on #s-intro .hp-mode{margin-bottom:10px}
+    body.rtg-sticky-on #s-intro .hp-start{padding:13px 18px;font-size:min(22px,6.2vw)}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full{padding-top:22px;padding-bottom:10px}
+  }
+  @media (max-width:919px) and (max-height:719px){
+    body.rtg-sticky-on #s-intro .field.hero-field{display:none}
+    body.rtg-sticky-on #s-intro .htitle p{display:none}
+  }
+  /* The smallest iPhones (568 tall) have 489px under the banner, and the wheels alone are 100
+     of it. There the front page is the title and the choices; the wheels are back the moment
+     the banner is closed. */
+  @media (max-width:919px) and (max-height:599px){
+    body.rtg-sticky-on #s-intro .hero{display:none}
+  }
+  /* A wide screen has the doors side by side already; the column only has to come up a
+     little, so the doors and the shelf lose some air. */
+  @media (min-width:920px){
+    body.rtg-sticky-on #s-intro .hp-longer{margin-top:10px}
+    body.rtg-sticky-on #s-intro .hp-longer>.hp-full{min-height:96px;padding-top:24px;padding-bottom:10px}
   }
   @media (prefers-reduced-motion:reduce){
     .hero-field .chip,.hero-field .hmk,.hp-mode-pill,.hp-tab,#s-intro,.hp-start{transition:none}
@@ -4579,6 +4666,10 @@ window.GA_ID='G-L29P5MRWKE';
      .mypin's offset, because the two are sticky siblings and the only thing stopping
      them overlapping is that one knows how tall the other is. */
   #s-board{--lbdock:54px}
+  /* The closeable bottom banner (/assets/rtg-ads.js) takes the bottom edge on the board, so the
+     bar and the pinned place row stand on it rather than on the strip's reserved band. */
+  body.rtg-sticky-on #s-board{--adstrip:var(--sticky-ad-h,0px)}
+  @media (max-width:1199px){ body.rtg-sticky-on #s-board{--adstrip:max(calc(54px + env(safe-area-inset-bottom,0px)), var(--sticky-ad-h,0px))} }
   /* Sat above the fixed ad strip, not under it: sticky offsets are measured from the
      scrollport, so bottom:0 is the viewport edge, which is exactly where the strip is.
 
@@ -4991,19 +5082,26 @@ window.GA_ID='G-L29P5MRWKE';
      figure. The lineup pips sit at the bottom of it now, and the year reel was showing straight
      through them, so the solid part runs to 92% and only the last few pixels feather. */
   /* Sticks BELOW the banner, not underneath it. z-index stays under the header's 60. */
-  .capwrap{position:sticky;top:var(--hdr);z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
+  .capwrap{position:sticky;top:calc(var(--hdr) + env(safe-area-inset-top,0px));z-index:30;padding:7px 0 7px;margin:-4px 0 8px;
     background:linear-gradient(180deg,var(--bg) 92%,rgba(8,11,20,0))}
   /* THE LINEUP PIPS, in the sticky bar, fading in as the field scrolls off.
      --sq runs 0 to 1 with how much of the field has gone. The height is RESERVED at every
      value and only opacity moves: growing a sticky block as they appear would shift the page
      under the finger, which is the same class of bug as trying to collapse the block itself. */
   #s-draft{--sq:0}
+  /* HUNG UNDER THE BAR, NOT RESERVED INSIDE IT. They used to keep 42px of the bar empty at
+     every scroll position so it never changed height, and at the top of a draft that was a
+     dark band between the money and the field. Absolute below the bar keeps the promise
+     (the sticky block never changes height) without the band: they are a strip laid over
+     whatever has scrolled under, and invisible and untouchable until it has. */
   .dpips{display:flex;gap:5px;justify-content:center;height:34px;align-items:center;
-    margin-top:8px;opacity:var(--sq);pointer-events:none;position:relative}
+    opacity:var(--sq);pointer-events:none;position:absolute;left:0;right:0;top:100%;
+    padding:4px 0 6px;box-sizing:content-box;background:var(--bg);
+    border-bottom:1px solid var(--line)}
   /* A hairline under the bar, fading in with the pips, so the pinned header has an edge once
      content is scrolling behind it. Without one the pips float over the reels. */
   .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
-    background:var(--line);opacity:var(--sq)}
+    background:var(--line);opacity:0}
   .dpips i{flex:0 0 auto;min-width:27px;height:32px;padding:0 6px;border-radius:7px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
     font-family:var(--fn);font-size:9.5px;font-weight:600;line-height:1.05;
@@ -5103,7 +5201,7 @@ window.GA_ID='G-L29P5MRWKE';
      letters of the line above it. Nothing measured as overlapping and it read as though it
      did, which on a screen is the same complaint. */
   .capline{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:6px}
-  .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
+  .capline .amt{font-family:var(--fd);font-size:28px;line-height:1}
   .capline .amt.low{color:var(--red)}
   /* What is left divided by the spots still to fill. Under the BAR now, not inside the
      money column: it is the same fact read a second way, and sitting it below the gauge
@@ -5118,7 +5216,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* Slightly taller than the 5px countdown it replaces: it now carries up to twelve slices
      and a 5px bar cannot show a hairline between two of them. The radius lives on the track
      and clips every slice to it, so the ends stay round with no notch where two meet. */
-  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:9px;
+  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:7px;
     display:flex}
   /* ONE SLICE PER SIGNING, the width of his salary against the cap and the colour of the
      position he plays, set inline. The transition is the whole animation: a signing grows
@@ -5237,8 +5335,8 @@ window.GA_ID='G-L29P5MRWKE';
      past instead of one number swapping for another. Motion is driven from rAF in
      script rather than a CSS transition: the strip needs a blur that tracks its
      own speed, and the old build hung the whole draft on transitionend firing. */
-  .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:11px}
-  .reelbox{position:relative;height:114px;overflow:hidden;border-radius:14px;
+  .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:8px}
+  .reelbox{position:relative;height:96px;overflow:hidden;border-radius:14px;
     background:linear-gradient(180deg,#0d1526,#070b14 55%,#05080f);
     border:1px solid var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   /* Fades the faces above and below the middle one into the housing. */
@@ -5250,18 +5348,18 @@ window.GA_ID='G-L29P5MRWKE';
   .reelbox .strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform,filter}
   .reelbox .wash{display:none}
   .reelbox.clubbed .wash{display:block}
-  .reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;z-index:3;
+  .reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:32px;margin-top:-16px;z-index:3;
     border-radius:9px;border:1px solid rgba(255,255,255,.13);pointer-events:none;
     transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
-  .reel-i{height:38px;display:grid;place-items:center;padding:0 9px;text-align:center;
+  .reel-i{height:32px;display:grid;place-items:center;padding:0 9px;text-align:center;
     font-family:var(--fd);text-transform:uppercase;letter-spacing:.02em;
     line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .reelbox.year .reel-i{font-size:23px;font-weight:800}
+  .reelbox.year .reel-i{font-size:21px;font-weight:800}
   .reelbox.team .reel-i{font-size:14.5px;font-weight:800}
   /* The face it stopped on carries more weight than the decoys either side. */
   .reel-i.land{font-weight:900}
   .reelcol{min-width:0}
-  .rlabel{display:block;margin:0 0 5px 3px;font-family:var(--fn);
+  .rlabel{display:block;margin:0 0 3px 3px;font-family:var(--fn);
     font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
   /* Spinning: the housing glows in its own color so you can see which reel is live. */
   .reelbox.year.spin{border-color:rgba(239,68,68,.55)}
@@ -5312,7 +5410,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* The band becomes a glaze that lifts the middle face out of the vignette. */
   .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;
     background:rgba(255,255,255,.13)}
-  .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;
+  .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:32px;margin-top:-16px;
     border-radius:9px;z-index:0;background:var(--c1);opacity:0;pointer-events:none;
     animation:clubwash .5s ease-out}
   @keyframes clubwash{
@@ -5361,6 +5459,47 @@ window.GA_ID='G-L29P5MRWKE';
      price all fighting over one line, which is why everything was clipped with an
      ellipsis. In a tile each of those gets its own place. */
   .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+  /* THE DRAFT, CONDENSED (the owner's call, 2026-10-28): the board in view without
+     scrolling, with room for an ad at the foot of the screen. Nothing is removed; what goes
+     is air. A shorter field (the formation is three rows, not a square of them), the empty
+     note line under it closed until it has something to say, and the tabs and the sort a
+     notch tighter. Draft only: the same classes on other screens keep their size. */
+  #s-draft .field:not(.fullfield){aspect-ratio:1/0.42}
+  /* Full Team's two halves were taller than they were wide, which on a phone put the board
+     a full screen down. Six rows still fit with a name under every disc. */
+  #s-draft .field.fullfield{aspect-ratio:1/0.85}
+  /* The wheels' own labels go: a year and a club name say what they are, and the buttons
+     right under them already read New year and New team. */
+  #s-draft .rlabel{display:none}
+  #s-draft .railnote:empty{min-height:0;margin:0}
+  #s-draft .tabs{margin-top:8px}
+  #s-draft .tab{padding:9px 13px}
+  #s-draft .optbar{margin:6px 0 0}
+  #s-draft .seg.compact button{padding-top:7px;padding-bottom:7px}
+  #s-draft .opts{margin-top:8px}
+  /* THE DRAFT BANNER. It is a child of body, not of the draft, so the screen's entrance transform
+     cannot move it (a transformed ancestor would make bottom:0 the draft's own bottom). Pinned to the
+     viewport while the draft is open; the draft is padded by its rendered height, so the last cards
+     and Quit scroll clear. Unfilled, it costs no height and no padding. */
+  #s-draft.on{padding-bottom:var(--draft-ad-h,0px)}
+  .draft-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .draft-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .draft-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+  .draft-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
+  .draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* THE SEASON BANNER: the same pattern, on the regular season screen. */
+  #s-season.on{padding-bottom:var(--season-ad-h,0px)}
+  .season-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;
+    background:var(--bg);padding:0}
+  .season-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+  .season-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+  .season-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
+  .season-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .season-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .season-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  .draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+  .draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
 
   /* ================= THE DRAFT ON A WIDE SCREEN =================
      One column on a phone, and the phone layout is untouched: .dcols is display:block
@@ -6331,6 +6470,25 @@ window.GA_ID='G-L29P5MRWKE';
     font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);
     margin:0 0 6px;padding-top:14px;border-top:1px solid var(--line)}
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  /* The menu ad keeps 150px from the buttons above it, but only once it holds an ad. */
+  .rtp-ad-inline[data-ad-zone]:has(ins[data-ad-status="filled"]){margin-top:150px}
+  .rtp-ad-inline[data-ad-zone="results"]:has(ins[data-ad-status="filled"]){margin-top:170px}
+  /* THE MENU AD'S SIZE, fixed (the owner, 2026-10-26: a full-width responsive unit filled half a
+     phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
+     unfilled unit collapses to nothing. */
+  [data-ad-zone] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  /* SIZED BY THE COLUMN, NOT THE SCREEN (QA, 2026-10-27, site PR on claude/qa-ad-fit). A 768px
+     media query handed the 728x90 to a column that can be narrower (572 to 612px at 768), so it
+     hung past the screen. Each zone is a size container: 320x50, 468x60 from a 468px column, the
+     728x90 from a 728px column. */
+  [data-ad-zone]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone] ins.adsbygoogle{width:728px;height:90px} }
+  /* THE RESULTS AD IS THE MID-SIZE RECTANGLE (the owner, 2026-10-27): 300x250 on every column, since
+     a finished run is a resting screen and the 300x250 is the size advertisers bid on most. Start
+     screens keep the slim banner. After the container rules so it wins at every width. */
+  [data-ad-zone="results"] ins.adsbygoogle{width:300px;height:250px}
+  [data-ad-zone] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
   /* The gameplay screens stay clear for the same reason the pinned strip does. */
   body.rtp-hide-ads .rtp-ad-inline{display:none}
 
@@ -6509,6 +6667,12 @@ window.GA_ID='G-L29P5MRWKE';
   /* minmax(0,1fr), not 1fr: a 1fr track's minimum is its content, so on a 320px screen
      the two labels widened the grid past the viewport and the whole page scrolled sideways. */
   .ovr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-top:15px}
+  /* WHILE THE BOTTOM BANNER IS UP the results card gives back about forty pixels, so the
+     lineup that follows it clears the banner at first view. The record stays
+     the biggest thing on the screen. */
+  body.rtg-sticky-on #s-over .verdict{padding-top:8px;padding-bottom:14px}
+  body.rtg-sticky-on #s-over .hero-rec .big{font-size:62px}
+  body.rtg-sticky-on #s-over .ovr{margin-top:10px}
   /* One cell, full width: Dynasty recap shows only the team overall, not the draft
      modes' "best possible" beside it, so there is no second column to make room for. */
   .ovr.solo{grid-template-columns:1fr}
@@ -7299,19 +7463,18 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
          Every link opens in a new tab, deliberately. There is no mid-run save yet,
          so following a link in this tab during a draft would throw the run away. -->
-    <!-- The banner, between the last button and the legal links. Responsive rather than a
-         fixed 320x50: on a phone it runs the content width, on a desktop it caps at the
-         728px leaderboard shape instead of stretching across the whole window. The slot id
-         is a placeholder until the unit exists in the dashboard, and the initializer at the
-         foot of this file refuses to start a placeholder, so this renders nothing at all
-         until a real id is pasted in. -->
-    <div class="rtp-ad-inline">
+    <!-- THE MENU AD (Ads Agent, 2026-10-26, the owner's rule: ads on a game's start screen,
+         never in play). The one live unit in this game. It lives on this screen only:
+         menuAd() in show() starts it the first time the start screen is shown and REMOVES it
+         the moment any other screen opens, because AdSense does not allow a loaded ad to be
+         hidden and play must never sit beside one. It is not started again until the page
+         reloads. Once filled it sits 150px below the last button (Google's distance for game
+         controls); empty, it takes no space. check-adsense holds the zone and the removal. -->
+    <div class="rtp-ad-inline" data-ad-zone="menu">
       <span class="rtp-ad-label">Advertisement</span>
       <ins class="adsbygoogle"
            data-ad-client="ca-pub-5952069078178257"
-           data-ad-slot="0000000000"
-           data-ad-format="horizontal"
-           data-full-width-responsive="true"></ins>
+           data-ad-slot="7383466228"></ins>
     </div>
 
     <!-- What this game is, in prose, for anyone who arrives without knowing. Folded, because
@@ -7637,19 +7800,23 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            which put the control for the thing at the top of the column at the bottom of
            it, and out of sight on a phone. -->
       <div id="d-respin"></div>
-     </div>
-    </div>
-    <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
-    <!-- HOW THE BOARD IS ORDERED, above the board and to the right of it. The tabs pick
-         WHICH players are listed and this picks the order they come in, so it belongs
-         between the two rather than inside the scrolling tab row, where it would slide out
-         of reach on a phone. -->
-    <div class="optbar">
-      <div class="seg compact" id="opt-sort">
-        <button data-os="pos">Position</button>
-        <button data-os="fppg">FPPG</button>
-        <button data-os="salary">Salary</button>
+      <!-- THE TABS AND THE SORT LIVE IN THIS COLUMN TOO. On a phone .dcols is a block, so the
+           order down the page is the same as when they sat under it. Wide, they fill the
+           space beside the field that used to be empty, and the board starts a whole row
+           higher (the owner's call, 2026-10-28: room for the board without scrolling). -->
+      <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
+      <!-- HOW THE BOARD IS ORDERED, above the board and to the right of it. The tabs pick
+           WHICH players are listed and this picks the order they come in, so it belongs
+           between the two rather than inside the scrolling tab row, where it would slide out
+           of reach on a phone. -->
+      <div class="optbar">
+        <div class="seg compact" id="opt-sort">
+          <button data-os="pos">Position</button>
+          <button data-os="fppg">FPPG</button>
+          <button data-os="salary">Salary</button>
+        </div>
       </div>
+     </div>
     </div>
     <div class="opts" id="opts"></div>
     <!-- QUITTING. Six spins in, a player who has changed their mind had no exit
@@ -8232,6 +8399,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="ggad-long">One free account, every game. College Football, RunThePitch soccer, RunTheTour golf and more, alongside this one.</span>
         <span class="ggad-short">College Football, RunThePitch &amp; more, one free account</span></span>
       <span class="ggad-go">Play &#8599;</span></a>
+    <!-- THE RESULTS AD (Ads Agent, 2026-10-27, the owner's rule: start screens, results and
+         leaderboards, never in play). Empty until screenAds() fills it, once per finished run,
+         never between a Dynasty's seasons. Emptied the moment the screen closes. -->
+    <div class="rtp-ad-inline" data-ad-zone="results" id="o-adhost"></div>
   </div>
 
   <!-- ===== DYNASTY'S BOSS SEASONS =====
@@ -8522,8 +8693,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=100"></script>
-<script src="run.js?v=103"></script>
+<script src="engine.js?v=101"></script>
+<script src="run.js?v=104"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8564,6 +8735,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
 <script src="/assets/cloudsave.js?v=2"></script>
+<!-- THE REWARDED VIDEO PLAYER (Ads Agent, 2026-10-28). Loaded here so the free re-spin can ask it
+     whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
+     the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
+<script src="/assets/rewarded.js?v=1"></script>
+<script src="/assets/rtg-ads.js?v=2"></script>
 <script src="/assets/fantasy-promo.js?v=1"></script>
 <!-- The release newsletter checkbox on the Account page. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
@@ -9982,6 +10158,102 @@ const NO_ADS=['s-season','s-po','s-bscout','s-bgame','s-bfreeze'];
    added next. Closing used to go to the results page if a run had finished and to the
    landing screen otherwise, which is the right guess twice and wrong from the squad, the
    season and the draft. */
+/* THE MENU AD lives on the start screen and nowhere else. Started the first time the start
+   screen shows, removed (not hidden) the first time any other screen opens, and never started
+   again on this page load. The boot screen is the one exception, since every load passes
+   through it on the way to the start screen. A push fills the first unstarted unit in the
+   page, and this one comes before the rails and the strip, which are never started. */
+function menuAd(id){
+  const z=document.querySelector('[data-ad-zone="menu"]');
+  if(!z||id==='s-load') return;
+  if(id!=='s-intro'){ z.remove(); return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE DRAFT BANNER. Built once when the draft opens, and emptied (never hidden) when the player
+   leaves it, so no ad is ever loaded behind another screen. Each visit builds a fresh unit. */
+let draftAdSize=null;
+function draftAd(id){
+  const old=document.querySelector('[data-ad-zone="draft"]');
+  if(id!=='s-draft'){
+    if(draftAdSize){ draftAdSize.disconnect(); draftAdSize=null; }
+    document.documentElement.style.removeProperty('--draft-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="draft-ad" data-ad-zone="draft"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="4314237726"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  /* The draft's bottom padding follows the banner's rendered height, so an unfilled banner costs
+     nothing and a filled one never covers the last cards or Quit. */
+  if(window.ResizeObserver){
+    draftAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--draft-ad-h',z.offsetHeight+'px'));
+    draftAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE SEASON BANNER (Ads Agent, 2026-10-28, the owner: "Pinned to the bottom of the device so it's
+   always there", and "let's get this on the live site"). A slim banner pinned to the bottom of the
+   regular season screen while the season is on screen, live games included. Built as a child of body
+   when the screen opens and removed when the player leaves, the same way as the draft banner. The
+   screen is padded by the banner's rendered height (--season-ad-h), so the last grid row clears it.
+   Unit football-season (8510729536). */
+let seasonAdSize=null;
+function seasonAd(id){
+  const old=document.querySelector('[data-ad-zone="season"]');
+  if(id!=='s-season'){
+    if(seasonAdSize){ seasonAdSize.disconnect(); seasonAdSize=null; }
+    document.documentElement.style.removeProperty('--season-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="season-ad" data-ad-zone="season"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="8510729536"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    seasonAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--season-ad-h',z.offsetHeight+'px'));
+    seasonAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's
+   calls). The banner sits on the front page, the leaderboard and the results, never on a screen
+   where people play, and never while the Dynasty dock is up (it owns the bottom of the screen
+   then). Its X closes it for the rest of the visit. The two rails are desktop only, on the
+   leaderboard. /assets/rtg-ads.js owns how both look and behave. */
+const STICKY_SLOT={sticky:'4079162954'};                      // football-sticky
+const BOARD_SLOTS={left:'1287020649', right:'5274367113'};    // football-board-left, football-board-right
+const STICKY_ON=['s-intro','s-board','s-over'];
+function stickyAd(id){
+  if(!window.RTG_ADS) return;
+  const dock=$('o-dock');
+  RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0&&!(dock&&!dock.hidden), STICKY_SLOT.sticky, 'football');
+}
+function boardRails(id){
+  if(window.RTG_ADS) RTG_ADS.rails(id==='s-board', BOARD_SLOTS, ()=>document.querySelector('.wrap'));
+}
+
+/* THE RESULTS AD. One unit on the results screen of a finished run: built when the screen
+   opens, emptied (never hidden) when it closes, and built at most once per run, so going to the
+   board and back does not load a second ad. A Dynasty's results between seasons are mid-run and
+   get none; only a Dynasty that has ended does. adUnitInto() is the only place a live unit is
+   made on this page, and screenAds() the only caller (check-adsense holds both). */
+let resultsAdFor=null;
+function adUnitInto(host){
+  host.innerHTML='<span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="7062148007"></ins>';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+function screenAds(id){
+  const res=$('o-adhost'); if(!res) return;
+  if(id!=='s-over'){ res.innerHTML=''; return; }
+  const done=!!(run&&run.outcome)&&!(run.dynasty&&!run.fired);
+  if(done&&!res.firstChild&&resultsAdFor!==run){ resultsAdFor=run; adUnitInto(res); }
+}
 let boardFrom='s-intro';
 function show(id){
   if(id==='s-board'){
@@ -10004,6 +10276,12 @@ function show(id){
      by any door has to stop them, or a drive keeps animating over whatever comes next. */
   if(id!=='s-bgame'&&typeof bossStop==='function') bossStop();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
+  menuAd(id);
+  draftAd(id);
+  seasonAd(id);
+  screenAds(id);
+  stickyAd(id);
+  boardRails(id);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
      (a finished run, a bailed draft, the leaderboard), and it carries two bits of state
@@ -10830,8 +11108,32 @@ const dailyOn=()=>dailyLimited()&&!!authState.signedIn
   &&premiumSet!==null&&!dynastyOwned();
 /* How many are left today, and 1 whenever the page has no answer. What one of them buys is
    dailyUnit's question, not this one. */
+/* A CACHED ANSWER RUNS OUT AT ITS OWN resetsAt, and this is what says so.
+ *
+ * The meter is asked once per sign-in and then read off the cache, so without this the page
+ * goes on holding "used 3 of 3, locked until T" long after T. Reported by a signed in player:
+ * the spent sheet read 1s, they closed it, opened it again, and it read 24 hours. Past T the
+ * countdown has nothing left to count, dailyShut still answered true off the stale `used`, and
+ * the sheet fell through to its fallback line. Worse, a results screen painted from that cache
+ * reports the day over AGAIN, and a database on 105 answered an expired lock by stamping a
+ * fresh 24 hours (154_dynasty_day_end_lapsed.sql is the server half).
+ *
+ * So past T the cache is replaced with what ps_attempts_state itself answers for a lapsed
+ * window: nothing used, no clock. The allowance is left null, which every reader here takes
+ * as no opinion (so permission), and the boot read is re-armed to fill it in. The same is
+ * true of a calendar-day mode at Eastern midnight, so this is not Dynasty's alone.
+ * Written through dailyPut, because that is the one writer and its count is what tells a read
+ * that was already in flight that it describes the old window. */
+function dailyLapse(mode){
+  const s=dailyState[mode];
+  const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
+  if(!Number.isFinite(t)||t>Date.now()) return;
+  dailyPut(mode,{used:0,allowance:null,resetsAt:null,unit:s.unit,ended:false});
+  dailyAsked[mode]=false; dailyTried[mode]=0;
+}
 function dailyLeft(mode){
   if(!dailyOn()) return 1;
+  dailyLapse(mode);
   const s=dailyState[mode];
   if(!s||s.used==null||s.allowance==null) return 1;
   return Math.max(0,s.allowance-s.used);
@@ -10841,7 +11143,7 @@ function dailyLeft(mode){
 const dailyUnit=(mode)=>((dailyState[mode]&&dailyState[mode].unit)||'run');
 const dailySeasons=(mode)=>dailyUnit(mode)==='season';
 /* The day is over because the run is, which only season metering has a notion of. */
-const dailyEnded=(mode)=>!!(dailyState[mode]&&dailyState[mode].ended);
+const dailyEnded=(mode)=>{ dailyLapse(mode); return !!(dailyState[mode]&&dailyState[mode].ended); };
 /* Nothing more today, for either reason. The one question every gate asks. */
 const dailyShut=(mode)=>dailyOn()&&(dailyEnded(mode)||dailyLeft(mode)<=0);
 /* AND WHETHER A CLOCK IS ACTUALLY RUNNING ON IT, which is a separate question under the
@@ -10855,10 +11157,12 @@ const dailyTicking=(mode)=>dailyResetsAt(mode)!=null;
    the fallback for a page that has not been answered yet. */
 const DYN_DAY_SEASONS=3;
 const dailyAllow=(mode)=>{
+  dailyLapse(mode);
   const s=dailyState[mode];
   return (s&&s.allowance!=null)?s.allowance:(mode==='dynasty'?DYN_DAY_SEASONS:1);
 };
 const dailyResetsAt=(mode)=>{
+  dailyLapse(mode);
   const s=dailyState[mode];
   const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
   return Number.isFinite(t)?t:null;
@@ -10963,8 +11267,14 @@ function runDayEnsure(){
     paintHomeStart();
   }).catch(()=>{ missed(); });
 }
-/* Shut only on a definite refusal. An owner answers pro and is never shut. */
-const runDayShut=()=>!!(dailyOn()&&runDayState&&runDayState.ok===false&&!runDayState.pro);
+/* Shut only on a definite refusal. An owner answers pro and is never shut.
+   AND ONLY UNTIL nextAt. The refusal is cached for the session, so past that moment it
+   describes a day that is over; the same stale cache dailyLapse retires on the season meter.
+   No re-ask is needed: dynRunStart is the write and it asks the server anyway. */
+const runDayShut=()=>{
+  const t=runDayNext();
+  return !!(dailyOn()&&runDayState&&runDayState.ok===false&&!runDayState.pro&&!(t!=null&&t<=Date.now()));
+};
 const runDayNext=()=>{
   const t=runDayState&&runDayState.nextAt?Date.parse(runDayState.nextAt):NaN;
   return isNaN(t)?null:t;
@@ -12398,7 +12708,7 @@ function ensureDynastyButton(){
          line. Getting fired is what a life actually means here, it is already the game's own
          word for it (see the grace_fired allowance), and phrased as a question it is the
          only line on this card that asks for an answer. */
-      '<span class="hp-full-sub">How long before they fire you?</span>';
+      '<span class="hp-full-sub hp-tagline">How long before they fire you?</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
     }
   }
@@ -15143,7 +15453,7 @@ function paintTop(){
    open, and a player who turns it on mid-run should get it mid-run. */
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null;
 const reduceMotion=()=>!!(RM&&RM.matches);
-const REEL_H=38;          // one face
+const REEL_H=32;          // one face, and .reel-i's height in the CSS
 const REEL_FACES=3;       // faces visible in the window
 
 /*
@@ -15652,9 +15962,12 @@ function paintRespins(){
   const y=yearRun?null:R.canRespin(run,'year',dataNow());
   const t=clubRun?null:R.canRespin(run,'team',dataNow());
   const left=E.CONSTANTS.MAX_RESPINS-run.respinsUsed;
+  const free=freeRespinHtml();
   if(!(y&&y.ok)&&!(t&&t.ok)){
-    el.innerHTML='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
+    const why='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
       (left<=0?'No re-spins left':esc((y||t||{}).reason||'No re-spins left'))+'</p>';
+    el.innerHTML=free?'<div class="freerow">'+free+why.replace('text-align:center;','')+'</div>':why;
+    bindFreeRespin(el);
     return;
   }
   const btn=(kind,label,chk)=>chk.ok
@@ -15664,9 +15977,15 @@ function paintRespins(){
   el.innerHTML='<div class="respins'+(clubRun||yearRun?' one':'')+'">'+
       (y?btn('year','New year',y):'')+(t?btn('team','New team',t):'')+
     '</div>'+
-    '<p class="respinnote">Comes off your budget. '+
+    /* Beside the yellow button the line is half as wide, so it says only what the paid
+       ones cost. The free one says what it costs on its face. */
+    (free?'<div class="freerow">'+free+'<p class="respinnote">'+
+      (left>1?'Next paid one: '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
+      left+' paid left.</p></div>'
+    :'<p class="respinnote">Comes off your budget. '+
       (left>1?'Next one costs '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
-      left+' left.</p>';
+      left+' left.</p>');
+  bindFreeRespin(el);
   el.querySelectorAll('button.respin').forEach(b=>{
     b.onclick=()=>{
       $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
@@ -15675,6 +15994,100 @@ function paintRespins(){
       paintTop();spinBoth(d,()=>paintOpts(d));
     };
   });
+}
+
+/* ---- THE FREE RE-SPIN ----
+   The owner's call (2026-10-28): watch a short ad, get one re-spin that costs nothing and is
+   not one of the three paid ones. Signed in only, three a day, and backing out of the video
+   earns nothing.
+
+   NONE OF THAT IS DECIDED HERE. The cap, the sign in and "watched to the end" are the
+   server's (the Store Agent's ad_reward_issue, ad_reward_claim and ad_reward_status, kind
+   'ps_respin'), reached through the Ads Agent's shared player, assets/rewarded.js
+   (window.RTG_AD). This page only offers the button and, once the server has granted the
+   view, throws the draw back with R.freeRespin.
+
+   THE BUTTON SHOWS ONLY WHEN A VIDEO CAN PLAY. Until the ad network is approved there is no
+   player, RTG_AD.ready() is false, and the draft looks exactly as it did. A guest sees it
+   once there is a player, and a tap opens the sign in sheet (the owner's call). A signed in
+   player sees it while the server says one is left today. */
+const FREE_KIND='ps_respin';
+let freeAsk=null;   // {who, ok, reason, left}: the server's last answer, per account
+function freeAd(){
+  const A=window.RTG_AD;
+  if(!A||typeof A.watch!=='function'||typeof A.status!=='function') return null;
+  if(typeof A.ready!=='function'||!A.ready()) return null;
+  if(typeof R.freeRespin!=='function') return null;
+  return A;
+}
+function freeWho(){ return authState&&authState.signedIn?(authState.userId||authState.name||'me'):null; }
+/* Asks the server once per account and repaints when it answers. A repaint while the
+   answer is out does not ask again. */
+function freeStatus(){
+  const A=freeAd(), who=freeWho();
+  if(!A||!who) return null;
+  if(freeAsk&&freeAsk.who===who) return freeAsk;
+  freeAsk={who:who,ok:false,reason:'asking',left:0};
+  Promise.resolve(A.status(FREE_KIND,null,0)).then((a)=>{
+    if(!freeAsk||freeAsk.who!==who) return;
+    freeAsk={who:who,ok:!!(a&&a.ok),reason:a&&a.reason,left:(a&&a.left)|0};
+    if(run&&run.currentDraw&&$('s-draft').classList.contains('on')) paintRespins();
+  },()=>{ if(freeAsk&&freeAsk.who===who) freeAsk.reason='error'; });
+  return freeAsk;
+}
+function freeRespinHtml(){
+  if(!freeAd()||!run||!run.currentDraw) return '';
+  const signedIn=!!freeWho();
+  if(signedIn){
+    const st=freeStatus();
+    if(!st||!st.ok) return '';
+  }
+  const chk=R.canFreeRespin(run,dataNow());
+  if(!chk.ok) return '';
+  return '<button class="freespin" id="b-freespin" type="button">'+
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/>'+
+    '<path d="M10 9.2v5.6l4.8-2.8z"/></svg><b>Free respin</b></button>';
+}
+function bindFreeRespin(el){
+  const b=el.querySelector('#b-freespin'); if(!b) return;
+  b.onclick=()=>{
+    if(!freeWho()){ profileSheet(); return; }
+    const A=freeAd(); if(!A) return;
+    const mine=run, draw=run.currentDraw;
+    b.disabled=true;
+    ga('respin_free_start',{mode:runMode()});
+    Promise.resolve(A.watch(FREE_KIND,null,0,{})).then((a)=>{
+      if(a&&typeof a.left==='number'&&freeAsk) freeAsk.left=a.left;
+      /* The run has to be the one the video was watched for, still on the same draw. A
+         player who quit or signed during the ad has moved on, and the view is spent. */
+      if(!a||!a.ok||run!==mine||!run.currentDraw||run.currentDraw!==draw){
+        if(a&&a.reason==='cap'&&freeAsk){ freeAsk.ok=false; freeAsk.reason='cap'; }
+        freeSay(a&&a.reason);
+        if(run===mine&&run.currentDraw) paintRespins();
+        return;
+      }
+      if(freeAsk&&freeAsk.left<=0){ freeAsk.ok=false; freeAsk.reason='cap'; }
+      ga('respin_free_used',{mode:runMode(),free_respins:(run.freeRespins||0)+1});
+      $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
+      const d=R.freeRespin(run,dataNow());
+      paintTop();spinBoth(d,()=>paintOpts(d));
+    },()=>{ freeSay('error'); if(run===mine&&run.currentDraw) paintRespins(); });
+  };
+}
+/* One line under the re-spins when the video did not pay. Nothing at all when it was
+   simply not offered, because then there was no button. */
+function freeSay(reason){
+  const el=$('d-respin'); if(!el) return;
+  const say=reason==='closed'?'Watch to the end to get the free respin.'
+    : reason==='cap'?'That\'s your three free respins for today.'
+    : reason==='sign_in'?'Sign in to get a free respin.'
+    : 'The video didn\'t load. Try again in a bit.';
+  setTimeout(()=>{
+    const p=document.createElement('p');
+    p.className='respinnote freesay'; p.textContent=say;
+    const old=el.querySelector('.freesay'); if(old) old.remove();
+    el.appendChild(p);
+  },0);
 }
 
 /* Re-sorting is a repaint of the board already on screen, not a new one: nothing about the
@@ -19562,7 +19975,8 @@ const LIVE_PACE={'Wild Card':0.18,'Divisional':0.25,
 const QNAME=['1ST','2ND','3RD','4TH'];
 /* Anything past the fourth is overtime, which is not a fifth quarter: a live game that goes
    to overtime reads OT on the bug and in the log, never undefined or 4TH 0:00. */
-const qLabel=(q)=>q>4?'OT':QNAME[q-1];
+/* And a second overtime period is 2OT, the way a broadcast says it. */
+const qLabel=(q)=>q>5?(q-4)+'OT':q>4?'OT':QNAME[q-1];
 const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
 
 /* How the score bug dresses for each rung, and what its right-hand cell says. Slate,
@@ -19593,13 +20007,69 @@ function recordBefore(r){
    halfway through one: re-read every frame, a slower setting would wind the clock back, and
    the field reads a clock going backwards as a new game. */
 const simMul=()=>(window.RTG_SPEED&&RTG_SPEED.mul)?RTG_SPEED.mul():1;
-function paced(seg,base){
+/*
+ * SLOW AND SLOWER ARE PACED BY THE DRIVE, NOT BY THE CLOCK. The owner's call (2026-10-22):
+ * the slower settings still went too fast, and they should be slow enough to follow each
+ * drive if you want to. A multiplier on the game clock could not do that. A three minute drive
+ * is a third of a second at Normal, so even 2.4 times that is under a second, and the field's
+ * snap by snap picture of it went by as a smear.
+ *
+ * So below Normal every drive gets its own time on the field (`drive`, stretched for a long
+ * march and cut for a three and out by driveSpan), a stop after it with one line saying what
+ * happened (`hold`), and a longer hold on a score (`score`). NORMAL IS UNTOUCHED, timing and
+ * detail both: it is for somebody who wants the result, and every timed check measures it.
+ *
+ * Football's own numbers, keyed on the setting's id rather than its multiplier, because
+ * simspeed.js is shared with the college game and this changes nothing there.
+ */
+const SLOW_DRIVE={
+  slow:  {drive:2600, hold:1000, score:1800},
+  slower:{drive:5200, hold:1900, score:2800},
+};
+const speedLevel=()=>{
+  const id=(window.RTG_SPEED&&RTG_SPEED.id)?RTG_SPEED.id():'normal';
+  return SLOW_DRIVE[id]?id:'normal';
+};
+/* A drive's share of the standard time: 2:30 of game clock is one drive's worth. */
+const driveSpan=(secs)=>Math.max(0.6,Math.min(1.5,secs/150));
+/* `slow` is how long the segment lasts below Normal, given that setting's numbers. It is read
+   at the same moment the multiplier always was, so a change still lands on the next segment. */
+function paced(seg,base,slow){
   seg.base=base;
   Object.defineProperty(seg,'ms',{enumerable:true,
-    get(){ if(this._ms==null) this._ms=this.base*simMul(); return this._ms; }});
+    get(){
+      if(this._ms==null){
+        const L=SLOW_DRIVE[speedLevel()];
+        this._ms=(L&&slow)?slow(L):this.base*simMul();
+      }
+      return this._ms;
+    }});
   return seg;
 }
-function buildTimeline(script,pace){
+/* A run of the clock, cut where a drive ends, so each piece knows whose drive it is. Normal
+   keeps exactly the length it had: the pieces share the run's own time in proportion. Below
+   Normal each piece is its slice of the drive's time, and a drive that ended without a score
+   gets a stop of its own (a score already has one). */
+function pushRun(segs,q,from,to,base,drives){
+  const a=(q-1)*900+(900-from), b=(q-1)*900+(900-to);
+  if(!drives||!drives.length||b<=a){ segs.push(paced({kind:'run',q,from,to},base)); return; }
+  const cuts=[a];
+  for(const d of drives) if(d.tEnd>a&&d.tEnd<b) cuts.push(d.tEnd);
+  cuts.sort((x,y)=>x-y); cuts.push(b);
+  for(let k=0;k+1<cuts.length;k++){
+    const x=cuts[k], y=cuts[k+1];
+    if(y<=x) continue;
+    const mid=(x+y)/2, d=drives.find(v=>v.tStart<=mid&&mid<v.tEnd);
+    const len=d?Math.max(1,d.tEnd-d.tStart):1;
+    segs.push(paced({kind:'run',q,from:900-(x-(q-1)*900),to:900-(y-(q-1)*900)},
+      base*(y-x)/(b-a), d?(L)=>L.drive*driveSpan(len)*(y-x)/len:null));
+    const ended=drives.find(v=>v.tEnd===y);
+    if(ended&&ended.at==null&&ended.result!=='safety'&&ended.result!=='touchdown'
+      &&ended.result!=='field goal')
+      segs.push(paced({kind:'drive',d:ended},0,(L)=>L.hold));
+  }
+}
+function buildTimeline(script,pace,drives){
   const segs=[];
   /* THE SCORE'S PLACE IN THE SCRIPT, carried through onto the segment. The timeline is
      rebuilt quarter by quarter out of a filtered copy, so by the time a segment is played
@@ -19610,12 +20080,31 @@ function buildTimeline(script,pace){
   for(let q=1;q<=4;q++){
     let from=900;
     for(const e of script.filter(x=>x.q===q)){
-      segs.push(paced({kind:'run',q,from,to:e.sec},Math.max(200,(from-e.sec)/900*pace.quarterMs)));
-      segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold));
+      pushRun(segs,q,from,e.sec,Math.max(200,(from-e.sec)/900*pace.quarterMs),drives);
+      segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold,(L)=>L.score));
       from=e.sec;
     }
-    segs.push(paced({kind:'run',q,from,to:0},Math.max(200,from/900*pace.quarterMs)));
+    pushRun(segs,q,from,0,Math.max(200,from/900*pace.quarterMs),drives);
     if(q<4) segs.push(paced({kind:'break',q},q===2?pace.half:pace.qbreak));
+  }
+  /* OVERTIME, PLAYED OUT. Fifteen minute periods, and the game ends when the engine's plan
+     says it did: at the walk-off, or when the side that had to answer a first-possession
+     score did not. Not at 0:00, because nothing in overtime waits for the clock. */
+  const plan=script.ot;
+  if(plan&&plan.poss){
+    const periods=Math.floor(Math.max(0,plan.end-1)/900)+1;
+    for(let k=0;k<periods;k++){
+      const q=5+k;
+      segs.push(paced({kind:'break',q:q-1,otStart:q},pace.half,(L)=>L.score));
+      const endHere=k===periods-1?900-(plan.end-k*900):0;
+      let from=900;
+      for(const e of script.filter(x=>x.q===q)){
+        pushRun(segs,q,from,e.sec,Math.max(200,(from-e.sec)/900*pace.quarterMs),drives);
+        segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold,(L)=>L.score));
+        from=e.sec;
+      }
+      if(from>endHere) pushRun(segs,q,from,endHere,Math.max(200,(from-endHere)/900*pace.quarterMs),drives);
+    }
   }
   return segs;
 }
@@ -19631,7 +20120,7 @@ function buildTimeline(script,pace){
 
 /* "Q1".."Q4", then "OT". The extra period is not a fifth quarter and calling it Q5 on the
    play log would read as a bug rather than as overtime. */
-function periodLabel(e){ return e.q>4?'OT':'Q'+e.q; }
+function periodLabel(e){ return e.q>4?qLabel(e.q):'Q'+e.q; }
 
 /*
  * THE TAKEAWAYS, ON THE FIELD.
@@ -19663,11 +20152,16 @@ function generateDrives(script,rng,opts){
      produces. Halftime and overtime are pushed into this same list and the whole thing is
      then sorted, so a tick's position here stops being the script's the moment that happens,
      and the kick distances below are keyed on exactly that. */
-  script.forEach((e,i)=>ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}));
+  /* AN OVERTIME THE ENGINE PLANNED is drawn from its plan below, possession by possession,
+     so regulation here stops at 60:00. See otPlanFor in engine.js. */
+  const otPlan=script&&script.ot&&Array.isArray(script.ot.poss)?script.ot:null;
+  script.forEach((e,i)=>{ if(otPlan&&e.ot) return;
+    ticks.push({at:i,sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points}); });
   /* THE GAME IS AS LONG AS IT TOOK. Fixed at 3600 this walked off the end of an overtime:
      the last gap came out negative and the extra period drew no drives at all. */
   const REG=3600;
-  const GAME=ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
+  /* With an overtime plan, regulation is exactly sixty minutes and the plan has the rest. */
+  const GAME=otPlan?REG:ticks.length?Math.max(REG,Math.ceil(ticks[ticks.length-1].sec)+60):REG;
   /* HALFTIME IS AN EVENT, not a line the clock happens to pass. Without it the ball simply
      stayed with whoever had it when the second quarter ran out and play carried straight on
      into the third, so a team could finish the half with a punt and open the second half
@@ -19824,6 +20318,29 @@ function generateDrives(script,rng,opts){
     if(ns&&ns.ot){pos=otReceiver;at=pos==='you'?youKO():themKO();}
     t=tE;
   }
+  /* THE OVERTIME, ONE DRIVE PER POSSESSION OF THE ENGINE'S PLAN. Declared inside, so the
+     tests that lift generateDrives out of this page by its source get it too. Every possession starts off a
+     kickoff or a change of hands, so the ball is placed fresh each time rather than chained:
+     what has to be true here is who had it, in what order, and how it ended, and the plan is
+     the authority on all three. Same frame as above: you advance toward 100. */
+  function otDrives(plan,REG,rng){
+    const out=[];
+    for(const p of plan.poss){
+      const you=p.team==='you';
+      const rel0=20+Math.floor(rng()*16);                 // own 20 to 35
+      let rel1;
+      if(p.result==='touchdown') rel1=100;
+      else if(p.result==='field goal'||p.result==='miss') rel1=60+Math.floor(rng()*25);
+      else if(p.result==='safety') rel1=0;
+      else rel1=Math.min(95,rel0+5+Math.floor(rng()*40));
+      const start=p.result==='safety'?2+Math.floor(rng()*8):rel0;
+      const abs=(r)=>you?r:100-r;
+      out.push({team:p.team,startYard:abs(start),endYard:abs(rel1),result:p.result,
+        tStart:REG+p.start,tEnd:REG+p.end,...(p.at!=null?{at:p.at}:{})});
+    }
+    return out;
+  }
+  if(otPlan) drives.push(...otDrives(otPlan,REG,rng));
   return drives;
 }
 
@@ -20141,7 +20658,6 @@ function playPlayoffGame(r,after){
   const pace=PACE[round]||PACE['Wild Card'];
   const seedStr=run.seed+'|'+round+'|'+r.shownYou+'-'+r.shownThem;
   const script=E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(E.hashSeed(seedStr)));
-  const segs=buildTimeline(script,pace);
   /* WHO SCORED THEM, on the same script the timeline is built from, so the name in the call
      belongs to the play the clock just stopped for. Passing the script in rather than
      letting gameCredits build its own is what makes the box score afterwards agree with the
@@ -20185,6 +20701,10 @@ function playPlayoffGame(r,after){
     const out=d.team==='you'?100-d.endYard:d.endYard;
     fgYards.set(d.at,Math.max(18,Math.min(63,Math.round(out)+17)));
   }
+  /* Built off the drives, so Slow and Slower can give each one its own time. See SLOW_DRIVE. */
+  const segs=buildTimeline(script,pace,drives);
+  const driveAt=new Map();
+  for(const d of drives) if(d.at!=null) driveAt.set(d.at,d);
   const fieldCtx=initFieldCanvas('po-fcanvas');
   const fcv=$('po-fcanvas');
   const cDist=(a,b)=>{const x=parseInt(a.slice(1),16),y=parseInt(b.slice(1),16);
@@ -20224,15 +20744,22 @@ function playPlayoffGame(r,after){
     $('po-log').innerHTML='';
     /* The whole game, in one pass, in time order: the takeaways belong between the scores
        rather than in a block after them, so the log reads as the game happened. */
+    /* Below Normal the drives that did not score stay in the log at the end too. */
+    const quiet=speedLevel()!=='normal'
+      ? drives.filter(d=>d.at==null&&d.result!=='safety'&&d.result!=='touchdown'
+          &&d.result!=='field goal'&&!d.takeaway).map(d=>({t:d.tEnd,d}))
+      : [];
     const all=script.map((e,i)=>({t:(e.q-1)*900+(900-e.sec),e,i}))
       .concat(takeaways.map(t=>({t:(t.q-1)*900+(900-t.sec),tk:t})))
+      .concat(quiet)
       .sort((a,b)=>a.t-b.t);
-    all.forEach(x=>x.tk?logTakeaway(x.tk):logScore(x.e,x.i));
-    paintField(3600);
+    all.forEach(x=>x.d?logDrive(x.d):x.tk?logTakeaway(x.tk):logScore(x.e,x.i));
+    paintField(script.ot?3600+script.ot.end:3600);
     $('po-cap').innerHTML='<div class="call '+(r.won?'you':'them')+
       (r.won&&round==='Super Bowl'?' big':'')+'"><b>'+
       (r.won?(round==='Super Bowl'?'CHAMPIONS':'YOU ADVANCE'):'SEASON OVER')+
-      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+'</span></div>';
+      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+
+      (script.ot?' in '+(script.ot.end>900?'double overtime':'overtime'):'')+'</span></div>';
     if(r.won&&round==='Super Bowl'){
       const perfectRun=run.season.results.every(x=>x.won);
       fireConfetti(confettiTheme(perfectRun));
@@ -20269,12 +20796,36 @@ function playPlayoffGame(r,after){
       '<span class="n">'+(t.kind==='INTERCEPTION'?'INT':'FUM')+'</span></div>');
   };
 
+  /* A DRIVE IN ONE LINE, for Slow and Slower: who had it, how far it went, how long it took.
+     Read off the drive the field has just drawn, so the words and the bar cannot disagree. */
+  const driveWho=(d)=>d.team==='you'?'You':oppCode;
+  const driveLine=(d)=>{
+    const yds=Math.round(d.team==='you'?d.endYard-d.startYard:d.startYard-d.endYard);
+    const went=yds<0?'lost '+(-yds)+(yds===-1?' yard':' yards'):yds+(yds===1?' yard':' yards');
+    return driveWho(d)+' · '+went+' in '+clockText(Math.max(0,d.tEnd-d.tStart));
+  };
+  const driveHead=(d)=>d.result==='punt'?'PUNT'
+    :d.takeaway==='INTERCEPTION'?'INTERCEPTED'
+    :d.takeaway?'FUMBLE'
+    :d.result==='turnover'?'TURNOVER'
+    :d.result==='downs'?'TURNOVER ON DOWNS'
+    :d.result==='miss'?'NO GOOD'
+    :String(d.result).toUpperCase();
+  const logDrive=(d)=>{
+    const q=Math.floor(Math.max(0,d.tEnd-1)/900)+1;
+    const clock=clockText(Math.max(0,900-(d.tEnd-(q-1)*900)));
+    $('po-log').insertAdjacentHTML('afterbegin',
+      '<div class="pl '+d.team+' quiet"><span class="t">'+(q>4?qLabel(q):'Q'+q)+' '+clock+'</span>'+
+      '<span class="w">'+esc(driveWho(d))+' &middot; '+esc(driveHead(d).toLowerCase())+
+      '<i class="plsub">'+esc(driveLine(d))+'</i></span><span class="n"></span></div>');
+  };
+
   let i=0;
   const next=()=>{
     if(i>=segs.length){ finish(); return; }
     const seg=segs[i++];
     if(seg.kind==='run'){
-      $('po-q').textContent=QNAME[seg.q-1];
+      $('po-q').textContent=qLabel(seg.q);
       $('po-ck').textContent=clockText(seg.from);
       const t0=(window.performance||Date).now();
       const step=()=>{
@@ -20293,7 +20844,7 @@ function playPlayoffGame(r,after){
             '<span>'+esc(t.blurb)+'</span></div>';
           logTakeaway(t);
         }
-        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        bug.classList.toggle('urgent',seg.q>=4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(step); return; }
         next();
       };
@@ -20320,8 +20871,39 @@ function playPlayoffGame(r,after){
         '<span>'+(c?esc(c.blurb):(e.team==='you'?'You':esc(r.opponent)))+
         (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
       logScore(e,seg.i);
+      /* Below Normal the call also says how the drive got there. */
+      const sd=speedLevel()!=='normal'?driveAt.get(seg.i):null;
+      const callEl=sd?$('po-cap').querySelector('.call'):null;
+      if(callEl) callEl.insertAdjacentHTML('beforeend','<span>'+esc(driveLine(sd))+'</span>');
       poTimer=setTimeout(next,seg.ms);
       return;
+    }
+    if(seg.kind==='drive'){
+      /* A stop after a drive that did not score, below Normal only. At Normal it lasts no
+         time and says nothing, which is how Normal stays exactly what it was. */
+      const ms=seg.ms;
+      /* A takeaway already flashed its own call and log row as the clock passed it, so its
+         stop holds the picture and says nothing twice. */
+      if(ms>0&&!seg.d.takeaway){
+        const d=seg.d;
+        $('po-cap').innerHTML='<div class="call '+d.team+(d.takeaway?' tk':'')+'"><b>'+
+          esc(driveHead(d))+'</b><span>'+esc(driveLine(d))+'</span></div>';
+        logDrive(d);
+      }
+      poTimer=setTimeout(next,ms);
+      return;
+    }
+    if(seg.kind==='break'&&seg.otStart){
+      /* THE TOSS, said out loud. Who has the ball first is the whole shape of overtime under
+         these rules, so it is the first thing the period says. */
+      const rcv=script.ot.receiver==='you'?'You':oppCode;
+      $('po-q').textContent=qLabel(seg.otStart);
+      $('po-ck').textContent='15:00';
+      $('po-cap').innerHTML='<div class="call '+script.ot.receiver+'"><b>'+
+        (seg.otStart>5?'DOUBLE OVERTIME':'OVERTIME')+'</b><span>'+
+        (seg.otStart>5?'Still tied. Next score wins.'
+          :esc(rcv)+(rcv==='You'?' win the toss. You get the ball first.'
+            :' wins the toss and takes the ball.'))+'</span></div>';
     }
     poTimer=setTimeout(next,seg.ms);
   };
@@ -21490,7 +22072,11 @@ function bossAnimateDrive(d,cb){
    */
   const from=Math.max(d.tStart,bossShownTo);
   const span=Math.max(0,d.tEnd-from), full=Math.max(1,d.tEnd-d.tStart);
-  const whole=bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260))*simMul();
+  /* Below Normal a drive gets at least its SLOW_DRIVE time, the same as the playoff broadcast,
+     and a stop after it whether it scored or not. Normal keeps the pace it had. */
+  const SL=SLOW_DRIVE[speedLevel()];
+  const whole=Math.max(bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260))*simMul(),
+    SL?SL.drive*driveSpan(full):0);
   const floor=(from>d.tStart?Math.max(120,240*bossPace):Math.max(220,900*bossPace))*simMul();
   const dur=span<=0?0:Math.max(floor,whole*(span/full));
   const anchor=(from>d.tStart&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
@@ -21512,7 +22098,8 @@ function bossAnimateDrive(d,cb){
     /* A BEAT ON A SCORE, and only on a score. The drives run back to back otherwise, and a
        touchdown that is gone before the number under it has finished moving is the thing
        this screen was asked to stop doing. */
-    if(scored){ bossTimer=setTimeout(cb,Math.max(300,700*bossPace)*simMul()); return; }
+    if(scored){ bossTimer=setTimeout(cb,Math.max(Math.max(300,700*bossPace)*simMul(),SL?SL.score:0)); return; }
+    if(SL){ bossTimer=setTimeout(cb,SL.hold); return; }
     cb();
   };
   bossRaf=requestAnimationFrame(tick);
@@ -23162,11 +23749,11 @@ function bowlBroadcast(cfg){
     if(i>=segs.length){ finish(); return; }
     const seg=segs[i++];
     if(seg.kind==='run'){
-      $('bowl-q').textContent=QNAME[seg.q-1]; $('bowl-ck').textContent=clockText(seg.from);
+      $('bowl-q').textContent=qLabel(seg.q); $('bowl-ck').textContent=clockText(seg.from);
       const t0=(window.performance||Date).now();
       const stepf=()=>{ const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
         const sec=seg.from+(seg.to-seg.from)*k; $('bowl-ck').textContent=clockText(sec);
-        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        bug.classList.toggle('urgent',seg.q>=4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(stepf); return; } next(); };
       poRaf=requestAnimationFrame(stepf); return;
     }
@@ -28206,7 +28793,12 @@ function watchFold(){
   const hdr=parseFloat(getComputedStyle(document.documentElement)
     .getPropertyValue('--hdr'))||0;
   const bar=scr.querySelector('.capwrap');
-  const under=Math.round(hdr+(bar?bar.offsetHeight:0));
+  /* The bar only. The pips hang under it, over the top of the field, and counting them here
+     would read a field at rest as partly gone and fade them in before any scroll. */
+  /* Plus the clock's inset on a Home Screen app, which the header now sticks below. */
+  const head=document.querySelector('header');
+  const inset=head?(parseFloat(getComputedStyle(head).top)||0):0;
+  const under=Math.round(hdr+inset+(bar?bar.offsetHeight:0));
   foldObs=new IntersectionObserver((entries)=>{
     for(const e of entries){
       /* Fully in view is no pips, fully gone is all of them. The 1.4 gets them to full opacity
@@ -28684,6 +29276,7 @@ boot();
       for(var i=0;i<units.length;i++){
         var slot=units[i].getAttribute('data-ad-slot');
         if(!slot||/^0+$/.test(slot)) continue;
+        if(units[i].closest('[data-ad-zone]')) continue;   // the menu ad starts in menuAd()
         (adsbygoogle=window.adsbygoogle||[]).push({});
       }
     }catch(e){}

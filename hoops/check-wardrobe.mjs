@@ -14,6 +14,11 @@
  *   6. the outfit is in the cache key, or a changed fit draws stale
  *   7. resolve() never dresses a man in something he does not own
  *   8. a real player is never dressed (faceless drops the street look)
+ *   9. the item pass's rules (the owner's call, 2026-10-17, review 9):
+ *      R1 an item reads at size, R2 every catalogue colour is drawn,
+ *      R3 no two items in a slot look alike. What waits for the item
+ *      redraws (PR 2) is listed in WAITS and printed on every run.
+ *      9b: a headband is worn across the forehead, on every hair style.
  */
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -207,6 +212,131 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
   const g = B.paint(LOOK, { faceless: 1, c1: '#1d428a', c2: '#ffc72c', ctx: 'street', wear: { hat: { k: 'beanie', c: ['#d9772b'] } } });
   const f = B.paint(LOOK, { faceless: 1, c1: '#1d428a', c2: '#ffc72c' });
   ok(same(g, f), '8 a real player is never dressed: faceless drops the street look');
+}
+
+/* 9: THE ITEM PASS. Review 9 painted every item and found ones that were not
+   there: a headband inside the hair (4 pixels on court, and a black one on
+   black hair invisible), socks that changed no pixel under jeans, a camo and
+   a puffer's orange that were never drawn, and pairs a player could not tell
+   apart. Every check above was green. These rules hold what a player sees.
+
+   Each item is drawn the way the closet draws it (standing, two fine pixels a
+   cell, over the starter tee and jeans off court and over the uniform on it)
+   and the way the court sprite draws it (one pixel a cell).
+     R1 READS AT SIZE: it changes at least 15 pixels on the court sprite and 60
+        in the closet. A smaller item is drawn bigger.
+     R2 EVERY COLOUR IS DRAWN: swap one of its catalogue colours for another
+        and the closet picture moves. Colour never moves geometry, so a shape
+        is asked once for each number of colours it is given.
+     R3 NO LOOK-ALIKES: two items in a slot differ in at least 40 closet
+        pixels a player can tell apart (more than 40 apart in RGB).
+   CLOSE_UP is the owner's call (2026-10-17, decision 5): the mouthguard is
+   drawn bigger and accepted as a close-up item, so it is held to the most a
+   mouth can show, not to a jacket's numbers.
+
+   WAITS is the work the owner approved for the item redraws (PR 2), and only
+   that. An item on it is excused from R1, and a look-alike pair only when both
+   items are on the same line. It is printed on every run, and an item that no
+   longer needs its excuse fails until it comes off the list, so the list only
+   shrinks. */
+{
+  const STARTER = { top: { k: 'tee', c: ['#f1f0ea', '#d8d6cc'] }, bottom: { k: 'jeans', c: ['#3d5a86'] } };
+  const R1_COURT = 15, R1_CLOSET = 60, R3_PX = 40, R3_RGB = 40;
+  const CLOSE_UP = { guard: { court: 5, closet: 20, apart: 15 } };
+  const WAITS = {
+    'PR 2 glasses: bigger lenses, a brow bar, thicker rims, each shape its own silhouette': ['shades_night', 'shades_tort', 'shades_gold', 'ps1_shades', 'frames_tort', 'frames_black', 'frames_gold', 'sport_smoke', 'sport_ice'],
+    'PR 2 watch: moved to the near wrist, where the camera sees its face': ['watch_gold', 'watch_steel', 'watch_field', 'watch_ice'],
+    'PR 2 held items: the phone and the coffee drawn bigger': ['phone_blue', 'phone_spooky', 'coffee_cup'],
+    'PR 2 shoes: a bigger foot for all, a welt and toe cap on dress shoes': ['st_sneaker_white', 'st_sneaker_black', 'hitop_white', 'hitop_ice', 'hitop_black', 'dress_oxford', 'dress_patent', 'slide_black', 'slide_gold'],
+    'PR 2 tees: a chest print for rare and up, a ringer trim that reads': ['st_tee_white', 'tee_cream', 'tee_black', 'tee_navy', 'tee_tour', 'tee_pixel', 'tee_ringer', 'tee_pumpkin', 'ex_rookie_tee', 'longsleeve_white', 'ps1_long'],
+    'PR 2 materials and palette: satin, fleece and mesh drawn, navy told from black and charcoal': ['st_hoodie_navy', 'hoodie_black', 'ex_hallows_hoodie', 'ps1_hoodie', 'puffer_black', 'puffer_navy', 'blazer_charcoal', 'blazer_navy', 'bomber_black', 'bomber_navy', 'bomber_satin', 'jeans_raw', 'jeans_black', 'jeans_selvedge', 'ex_draft_trousers', 'sweats_charcoal', 'sweats_navy', 'shorts_navy', 'shorts_mesh'],
+    'PR 2 rarity on the body: a signature detail for a legendary chain': ['ex_ring_cuban', 'cuban_gold', 'ps1_chain'],
+    'PR 2 small court pieces: tails past the head, and bands, tape, socks and specs drawn bigger': ['st_band_white', 'band_black', 'band_tied_black', 'band_tied_white', 'st_wrist_white', 'wrist_gold', 'wrist_black', 'wrist_red', 'wrist_royal', 'wrist_orange', 'tape_white', 'tape_black', 'tape_gold', 'csocks_crew_black', 'csocks_crew_purple', 'csocks_low_white', 'csocks_low_black', 'goggles_specs', 'goggles_white', 'goggles_gold'],
+  };
+  const waitOf = {};
+  for (const why in WAITS) for (const id of WAITS[why]) { ok(!!CAT.item(id), '9 the PR 2 list names a real item (' + id + ')'); ok(!waitOf[id], '9 ' + id + ' is on one PR 2 line only'); waitOf[id] = why; }
+  const KIT = { c1: '#1d428a', c2: '#ffc72c', num: '23' };
+  const isCourt = (it) => it.ctx === 'court';
+  const fig = (it, res, c) => { const o = Object.assign({}, KIT, { pose: 'stand', res });
+    if (it) { const w = { [it.slot]: { k: it.k, c: c || it.c } }; if (isCourt(it)) o.cwear = w; else { o.ctx = 'street'; o.wear = Object.assign({}, STARTER, w); } }
+    else if (c === 'street') { o.ctx = 'street'; o.wear = STARTER; }
+    return B.paint(LOOK, o); };
+  const flat = (g) => { const a = new Int32Array(g.length * g[0].length); let i = 0; for (const r of g) for (const c of r) a[i++] = c ? parseInt(c.slice(1), 16) : -1; return a; };
+  const moved = (a, b) => { let n = 0; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) n++; return n; };
+  const apart = (a, b) => { let n = 0; for (let i = 0; i < a.length; i++) { const x = a[i], y = b[i]; if (x === y) continue;
+    if (x < 0 || y < 0) { n++; continue; }
+    const dr = (x >> 16) - (y >> 16), dg = ((x >> 8) & 255) - ((y >> 8) & 255), db = (x & 255) - (y & 255); if (dr * dr + dg * dg + db * db > R3_RGB * R3_RGB) n++; } return n; };
+  const base = { street: [flat(fig(null, 1, 'street')), flat(fig(null, 2, 'street'))], court: [flat(fig(null, 1)), flat(fig(null, 2))] };
+  /* the starter pieces the others are measured over are the base itself */
+  const isBase = (it) => it.free && STARTER[it.slot] && !isCourt(it) || it.id === 'st_sneaker_white';
+  const closet = {}, r1 = {}, excused = { r1: [], r3: [] }, needed = {};
+  let r1n = 0, r3n = 0, r2n = 0;
+  for (const it of WEAR) {
+    const ctx = isCourt(it) ? 'court' : 'street', g2 = flat(fig(it, 2));
+    closet[it.id] = g2;
+    if (isBase(it)) continue;
+    const lim = CLOSE_UP[it.slot] || { court: R1_COURT, closet: R1_CLOSET };
+    const d1 = moved(base[ctx][0], flat(fig(it, 1))), d2 = moved(base[ctx][1], g2), pass = d1 >= lim.court && d2 >= lim.closet;
+    r1[it.id] = [d1, d2];
+    if (!pass && waitOf[it.id]) { excused.r1.push(it.id); needed[it.id] = 1; continue; }
+    r1n++; ok(pass, '9 R1 ' + it.id + ' (' + it.name + ') reads at size: ' + d1 + ' court pixels (needs ' + lim.court + '), ' + d2 + ' in the closet (needs ' + lim.closet + ')');
+  }
+  /* R2: a shape asked once for each number of colours */
+  const asked = new Set();
+  for (const it of WEAR) {
+    const key = (isCourt(it) ? 'court' : 'street') + ':' + it.slot + ':' + it.k + ':' + it.c.length;
+    if (asked.has(key)) continue; asked.add(key);
+    it.c.forEach((col, i) => { const c2 = it.c.slice(); c2[i] = col.toLowerCase() === '#ff00ff' ? '#00ff00' : '#ff00ff';
+      r2n++; ok(moved(closet[it.id], flat(fig(it, 2, c2))) > 0, '9 R2 ' + it.slot + ':' + it.k + ' draws its colour ' + (i + 1) + ' of ' + it.c.length + ' (' + it.id + ', ' + col + ')'); });
+  }
+  /* R3 */
+  const groups = {};
+  for (const it of WEAR) { const g = (isCourt(it) ? 'court' : 'street') + ':' + it.slot; (groups[g] = groups[g] || []).push(it); }
+  for (const g in groups) { const L = groups[g];
+    for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+      const a = L[i], b = L[j], need = (CLOSE_UP[a.slot] || {}).apart || R3_PX, d = apart(closet[a.id], closet[b.id]);
+      if (d < need && waitOf[a.id] && waitOf[a.id] === waitOf[b.id]) { excused.r3.push(a.id + ' ~ ' + b.id + ' (' + d + ')'); needed[a.id] = needed[b.id] = 1; continue; }
+      r3n++; ok(d >= need, '9 R3 ' + a.id + ' (' + a.name + ') and ' + b.id + ' (' + b.name + ') are told apart: ' + d + ' closet pixels differ (needs ' + need + ')');
+    } }
+  /* the list only shrinks */
+  for (const id in waitOf) ok(needed[id], '9 ' + id + ' reads at size and has no look-alike now: take it off the PR 2 list');
+  console.log('item pass: R1 ' + r1n + ' items, R2 ' + r2n + ' colours, R3 ' + r3n + ' pairs held');
+  console.log('WAITING FOR PR 2 (the owner approved these redraws, review 9): ' + excused.r1.length + ' items excused from R1, ' + excused.r3.length + ' look-alike pairs excused from R3');
+  for (const why in WAITS) {
+    const ids = WAITS[why], s1 = excused.r1.filter((id) => ids.indexOf(id) >= 0), s3 = excused.r3.filter((p) => ids.indexOf(p.split(' ')[0]) >= 0);
+    console.log('  ' + why + ':');
+    if (s1.length) console.log('    R1: ' + s1.map((id) => id + ' ' + r1[id].join('/')).join(', '));
+    if (s3.length) console.log('    R3: ' + s3.join(', '));
+  }
+}
+
+/* 9b: A HEADBAND IS WORN ACROSS THE FOREHEAD. Drawn over the hair's own
+   surface it rose onto the crown with a ragged top and read as a halo (the
+   owner, 2026-10-17). On every hair style, in the closet, in the column of
+   the near eye: the band's bottom edge leaves the brow showing and sits just
+   above it, no band pixel anywhere climbs more than a band's height above
+   the eye, and its top edge steps at most 3 fine pixels from one column to
+   the next. The eye row is found by painting a blink, so no face geometry is
+   copied here. */
+{
+  const UNI2 = { c1: '#1d428a', c2: '#ffc72c', num: '23', res: 2 };
+  const MAX_UP = { band: 7, tied: 7, wide: 9 };
+  for (const [h] of B.HAIRS) {
+    const L = Object.assign({}, LOOK, { hair: h }), open = B.paint(L, UNI2), shut = B.paint(L, Object.assign({ blink: 1 }, UNI2));
+    let ey = 1e9, ex = -1;
+    open.forEach((r, y) => r.forEach((c, x) => { if (c !== shut[y][x] && (y < ey || (y === ey && x > ex))) { ey = y; ex = x; } }));
+    ok(ex >= 0, '9b the eye is found on ' + h);
+    for (const k of ['band', 'wide', 'tied']) {
+      const P = B.paint(L, Object.assign({ parts: 1, cwear: { band: { k, c: ['#16181f'] } } }, UNI2));
+      const rowsAt = (x) => { const r = []; P.forEach((row, y) => { if (row[x] === 'band') r.push(y); }); return r; };
+      const atEye = rowsAt(ex), low = atEye.length ? ey - atEye[atEye.length - 1] : -1;
+      ok(low >= 2 && low <= 4, '9b a ' + k + ' band on ' + h + ' sits just above the brow: its bottom edge is ' + low + ' fine pixels over the eye (needs 2 to 4)');
+      let top = 1e9, step = 0, prev = null;
+      for (let x = 0; x < P[0].length; x++) { const r = rowsAt(x); if (!r.length) { prev = null; continue; } top = Math.min(top, r[0]); if (prev != null) step = Math.max(step, Math.abs(r[0] - prev)); prev = r[0]; }
+      ok(ey - top <= MAX_UP[k], '9b a ' + k + ' band on ' + h + ' stays on the forehead: its highest pixel is ' + (ey - top) + ' over the eye (at most ' + MAX_UP[k] + ')');
+      ok(step <= 3, '9b a ' + k + ' band on ' + h + ' has an even top edge: it steps ' + step + ' fine pixels between columns (at most 3)');
+    }
+  }
 }
 
 console.log((fails ? 'FAILED ' : 'ok ') + passes + ' passed, ' + fails + ' failed');

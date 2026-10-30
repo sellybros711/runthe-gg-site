@@ -59,6 +59,18 @@ function oneCall(st, call) {
   check('and the principle belongs to that group', ls && GROUP_OF[top].includes(ls.principle), ls && `${top}: ${ls.principle}`);
 }
 {
+  // after a tie the lesson is on the tie's goal: the go-ahead run, kept it tied
+  const st = { bi: 0, b: 3, s: 1, outs: 1, bases: 7, margin: 0 };
+  const o = oneCall(st, { type: 'SL', cell: 24 });
+  const ls = L.lessonFor(o);
+  check('tied, 3-1, bases loaded, a slider in the dirt: the lesson knows it is tied', ls && ls.tied === true && o.grades[0].tied === true, ls && ls.principle);
+  check('its numbers are the tie\'s', ls && ls.why.join(' ').includes(`kept it tied ${(Math.round(o.grades[0].value * 10) / 10).toFixed(1)}%`), ls && ls.why.join(' | '));
+  check('the run it warns about is the go-ahead run', ls && ls.principle === 'dont_walk_the_tying_run' && /go-ahead run/.test(ls.headline) && /forces in the go-ahead run/.test(ls.why[0]),
+    ls && `${ls.principle}: ${ls.headline} ${ls.why[0]}`);
+  const lead = L.lessonFor(oneCall({ ...st, margin: 1 }, { type: 'SL', cell: 24 }));
+  check('with the lead it is still the tying run', lead && lead.tied === false && (lead.principle !== 'dont_walk_the_tying_run' || /tying run/.test(lead.headline)));
+}
+{
   // the lesson is on the pitch that lost the most
   let ok = true, seen = 0;
   for (let seed = 1; seed <= 25; seed++) {
@@ -77,7 +89,7 @@ function oneCall(st, call) {
 }
 {
   const o = E.createOuting(pack, { seed: 3, model });
-  while (o.status === 'live') { const b = model.solve(o.st); E.throwPitch(o, { type: b.type, cell: b.cell }); }
+  while (o.status === 'live') E.throwPitch(o, E.bestCall(o));
   check('an all-green outing has no lesson', E.finishOuting(o).lesson === null);
 }
 check('every principle has a one-line explanation', L.PRINCIPLES.every(p => typeof L.ONE_LINE[p] === 'string'));

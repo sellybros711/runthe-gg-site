@@ -7,7 +7,7 @@ name: AdSense readiness
 # Runnable locally with the exact same command:
 #   node scripts/check-adsense.mjs
 #
-# Runs on any HTML change because the failure mode is a NEW page that forgets the
+# Runs on any HTML or JS change (a game's script could carry an ad slot) because the failure mode is a NEW page that forgets the
 # tag, which no narrower path filter would catch.
 #
 # No secrets, no network, no deploy.
@@ -16,17 +16,21 @@ on:
   pull_request:
     paths:
       - '**/*.html'
+      - '**/*.js'
       - 'sitemap.xml'
       - 'ads.txt'
       - 'scripts/check-adsense.mjs'
+      - 'scripts/ad-units.json'
       - '.github/workflows/adsense-check.yml'
   push:
     branches: [main]
     paths:
       - '**/*.html'
+      - '**/*.js'
       - 'sitemap.xml'
       - 'ads.txt'
       - 'scripts/check-adsense.mjs'
+      - 'scripts/ad-units.json'
       - '.github/workflows/adsense-check.yml'
   workflow_dispatch: {}
 

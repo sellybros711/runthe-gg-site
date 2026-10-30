@@ -55,8 +55,10 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - Routes are recorded at full precision. Never round them.
 - A Hallows Night hole has at most two moving or wet pieces and par 3 (the signature 4).
 - Every hole stays under 34% wet or out in `fair.mjs`, and each tour's mean under 10%.
-- **A ball never comes to rest on a ferry.** A deck pulls away gently and stops hard, so the ball is put
-  ashore; a ferry hole's deck overlaps the land at each dock and its channel is walled on its long sides.
+- **A ball never comes to rest on a ferry.** A moving deck grips the ball (`DECK_GRIP`), so a ball that lands on it
+  rides. The deck pulls away gently and eases into the dock at its landing speed (`f.e`), so the ball slides ashore;
+  a standing deck is carpet. A ferry hole's deck overlaps the land at each dock and its channel is walled on its long
+  sides. Change the grip or the ease and re-solve every ferry hole with `--write`.
 - **A skin name is global.** A second `snowman` in `SKIN` silently replaces the first everywhere.
 - Never put a real course name on screen.
 
@@ -109,13 +111,12 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
   `hole3d.js` once replaced the site's own painter and froze the whole site.
 - Every unlock check goes through `opened()`, never `tp.lv` directly.
 - `pmerge` only adds, and every server call fails soft (null is no opinion).
-- `PUTT_LIVE` is true: Putt Putt and the First Tee are live. False is the kill switch, back to the testers only.
-  There is no localStorage override, on purpose.
-- **The First Tee home rides the same switch.** `ftLive()` is `puttOn()`: everybody (only the Putt Putt testers
-  with the kill switch thrown) gets the First Tee, its hubs (`protour`, `putthub`, `me`) and its phone bar (Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me); everybody else gets
-  the classic home (`scrTitleClassic`, the seven tabs, `tourStepsClassic`, `maybeLoginBonusClassic`). The classic home
-  is kept only as the kill switch's fallback, and is removed once the launch has held. The closet (`setup` with `setupEdit`) wears the Me
-  page's dressing room on the same switch (`ftClosetOn`, `body.ftcloset`); a new career's setup does not.
+- Putt Putt and the First Tee are live for everybody (2026-10-18). The launch switch (`PUTT_LIVE`, `ftLive()`) and
+  the classic home are gone, so there is no kill switch: a fix ships as a fix. `puttOn()` only asks that putt.js
+  loaded at the API this page expects. `PUTT_TESTERS` keeps the tester tools, with no localStorage override.
+- **The First Tee is the home**: its hubs (`protour`, `putthub`, `me`) and its phone bar (Home, Pro Tour, Shop, the
+  Pass, Putt Putt, Leaders, Me). The closet (`setup` with `setupEdit`) wears the Me page's dressing room
+  (`ftClosetOn`, `body.ftcloset`); a new career's setup does not.
 - The login gift on the First Tee waits to be claimed (`bag_login_pend`, `claimLoginGift`). Never pay it on sight there.
 - **No guide or tour opens by itself** on the First Tee either: its guided tour starts from How to play only.
 - `putt_lives_refill` carries its own copy of `PUTT_TESTERS`: keep the two lists in step.
@@ -138,10 +139,9 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - A screen claims the full screen tracer only through `hvFullSet(mode)`. Change a chip's height and
   change its row in `HV_FULL_SIZE`.
 - `G3D_LIVE = false` is the 3D golfer's kill switch.
-- **ICON is the tier for an overall of 100 and up** (`ovrIcon`, `ovrTier`): the player's own career golfer only, on the
-  First Tee switch. `check-boosts.mjs` holds it. Never give it to world golfers or the Daily.
+- **ICON is the tier for an overall of 100 and up** (`ovrIcon`, `ovrTier`): the player's own career golfer only. `check-boosts.mjs` holds it. Never give it to world golfers or the Daily.
 - **The 3D menu golfer** (`RTT_G3D.pic`, `g3dPic` in index.html) draws the golfer and the hat, glasses, club and
-  cleat tiles in the menus. It rides the First Tee switch (`g3dMenuOn` asks `ftLive()`), and anything it cannot
+  cleat tiles in the menus. It is everybody's (`g3dMenuOn`), and anything it cannot
   draw falls back to today's picture. Every menu change in `golfer3d.js` runs only while `MO` is set: the course
   golfer must stay the same pixel for pixel (hash its frames before and after).
 - **One golfer in every mode.** A mode draws your golfer through `modeLook(look, kind)`: the equipped putter on

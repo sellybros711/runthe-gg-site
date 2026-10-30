@@ -1063,6 +1063,49 @@ function respin(run, data, kind) {
   return spin(run, data, constraint);
 }
 
+/**
+ * THE FREE RE-SPIN, paid for by watching a short ad rather than out of the cap (the
+ * owner's call, 2026-10-28). It is separate from the three paid re-spins: it costs
+ * nothing, it never touches respinsUsed or the fee ladder, and the next paid one costs
+ * what it would have. How many a player gets is the server's (three a day, through
+ * ad_reward_claim), so nothing here caps it; this only says whether the draw in front
+ * of you can be thrown back.
+ *
+ * BOTH WHEELS MOVE. A paid re-spin buys one wheel; this one is a fresh spin, held only
+ * by what the mode already holds (the club in One Franchise, the year in a dynasty),
+ * and it never lands on the team-season you just threw back.
+ *
+ * Asked of the state the re-spin would leave, as canRespin is: the team-season you
+ * throw back is spent, and if it was the last reachable one holding a cheap enough man
+ * for an open spot the draft could not be finished.
+ */
+function canFreeRespin(run, data) {
+  if (run.phase !== PHASES.DRAFT) return { ok: false, reason: 'not drafting' };
+  const draw = run.currentDraw;
+  if (!draw) return { ok: false, reason: 'nothing drawn' };
+  run.usedTeamSeasons.push(draw.team_season_id);
+  let short = false, rest = null;
+  try {
+    short = remaining(run) < fullFloor(run);
+    if (!short && data) rest = drawable(run, data).filter((t) => t.team_season_id !== draw.team_season_id);
+  } finally {
+    run.usedTeamSeasons.pop();
+  }
+  if (short) return { ok: false, reason: 'would leave too little to fill your roster' };
+  if (rest && !rest.length) return { ok: false, reason: 'nowhere else to land' };
+  return { ok: true };
+}
+
+function freeRespin(run, data) {
+  const check = canFreeRespin(run, data);
+  if (!check.ok) throw new Error(`can't re-spin: ${check.reason}`);
+  const draw = run.currentDraw;
+  run.usedTeamSeasons.push(draw.team_season_id);
+  run.currentDraw = null;
+  run.freeRespins = (run.freeRespins || 0) + 1;
+  return spin(run, data, { avoid: draw.team_season_id });
+}
+
 /*
  * `want` is an optional slot index, for the caller that asked. It is CHECKED and not
  * trusted -- it has to be an empty spot this player can actually fill -- because it arrives
@@ -3948,7 +3991,7 @@ const RUN_API_VERSION = 51;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
-  PHASES, createRun, spin, respin, sign,
+  PHASES, createRun, spin, respin, canFreeRespin, freeRespin, sign,
   startSeason, nextGame, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
   previewSigning,
   remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,

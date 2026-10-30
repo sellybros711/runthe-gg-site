@@ -12,12 +12,21 @@
  *   3. keeps each closer's name, style vector and reason as pack.pool.closers,
  *      for pitched like
  *   4. keeps the lesson's pro examples this pack can show (attachPros)
- *   5. reports the calibration the brief asks for (band spread, the pool's
- *      hold rate) in pack.build.pool, and writes the pack minified
+ *   5. copies data/runners.json (pipeline/runners.py) in as pack.runners, rules 6, and its
+ *      spot's running game from data/steals.json (pipeline/steals.py) as pack.steal, rules 7
+ *   6. reports the calibration the brief asks for (band spread, the pool's
+ *      hold rate, its outcome mix) in pack.build.pool, and writes the pack
+ *      minified, stamped with the engine's pack format (E.PACK_VERSION)
+ *
+ * Rebuilding a committed pack (no staged pack or pros cache at hand) works the
+ * same way: pass the pack itself as the staged pack. The hold table, the pool
+ * and the build report are solved again; without --pros the pack's own pros
+ * are kept as they are.
  *
  * A CLOSER'S CALL
  *   His pitch family from his share by count bucket; the scenario pitcher's
- *   pitch of that family (the most used one; a family he lacks goes to the
+ *   pitch of that family (under rules 2 one of his pitches of that family by
+ *   their usage, before it the most used one; a family he lacks goes to the
  *   nearest he has: offspeed to breaking to hard); the target from where that
  *   closer's pitches of that family went in that count, in the batter-relative
  *   grid, mirrored back for a left-handed batter, with his misses taken out
@@ -42,10 +51,20 @@ function pick(probs, u) {
   return probs.length - 1;
 }
 
-function typeForFamily(arsenal, fam) {
+/* The scenario pitcher's pitch for a closer's family. With u (0..1), one of
+   his pitches of that family by their real usage (rules 2: a closer's choice
+   of family is carried onto this pitcher's whole mix, so a five-pitch
+   starter is not played as a three-pitch one, and the familiarity centre,
+   seqCenter, is the real mix's). Without u, the most used, as before. */
+function typeForFamily(arsenal, fam, u) {
   for (const f of FALLBACK[fam]) {
     const own = arsenal.filter(a => K.FAMILY_OF[a.type] === f).sort((a, b) => b.usage - a.usage);
-    if (own.length) return own[0].type;
+    if (!own.length) continue;
+    if (u == null || own.length === 1) return own[0].type;
+    const tot = own.reduce((x, a) => x + a.usage, 0);
+    let acc = 0;
+    for (const a of own) { acc += a.usage / tot; if (u < acc) return a.type; }
+    return own[own.length - 1].type;
   }
   return arsenal[0].type;
 }
@@ -88,11 +107,23 @@ function closerCall(closer, o, rng) {
   const st = o.st;
   const bk = G.bucketOf(st.b, st.s);
   const fi = pick(closer.fam[bk], rng());
-  const type = typeForFamily(o.pack.scenario.pitcher.arsenal, FAMS[fi]);
+  const type = typeForFamily(o.pack.scenario.pitcher.arsenal, FAMS[fi], o.rules >= 2 ? rng() : undefined);
   let cell = pick(aimOf(closer, o.pack)[fi][bk], rng());
   const bats = o.pack.scenario.batters[st.bi % o.model.N].bats;
   if (bats === 'L') cell = K.rowOf(cell) * 5 + (4 - K.colOf(cell));
   return { type, cell };
+}
+
+/* RULES 4: a real catcher's challenge on a called ball (contract.js ABS
+   DEFENSE, fitted to MLB's 2025 spring numbers), for the closer pool and the
+   strategy runs. The player has the button instead. Its own stream, drawn
+   only when a challenge is live. */
+function modelChallenge(o, rng) {
+  if (!E.challengeLive(o)) return false;
+  const p = o.log[o.log.length - 1];
+  if (rng() >= K.challengeP('defense', p.abs.d, p.countBefore.b === 3)) return false;
+  E.challengePitch(o);
+  return true;
 }
 
 function runPool(pack, closers, runs, model) {
@@ -100,14 +131,15 @@ function runPool(pack, closers, runs, model) {
   const scores = [];
   const lostAll = [], bandAll = [];
   let holds = 0, n = 0, pitches = 0;
-  const outcomes = { door_shut: 0, doors_open: 0, walk_off: 0 };
+  const outcomes = Object.fromEntries(K.OUTCOMES.map(k => [k, 0]));
   closers.forEach((c, ci) => {
     for (let r = 0; r < per; r++) {
       const seed = R.hashSeed(`${pack.scenario.id}|pool|${ci}|${r}`);
       const policy = R.mulberry32(R.hashSeed(`${pack.scenario.id}|policy|${ci}|${r}`));
       const o = E.createOuting(pack, { seed, mode: 'practice', model });
       let guard = 0;
-      while (o.status === 'live' && guard++ < 150) E.throwPitch(o, closerCall(c, o, policy));
+      const ch = R.mulberry32(R.hashSeed(`${pack.scenario.id}|challenge|${ci}|${r}`));
+      while (o.status === 'live' && guard++ < 150) { E.throwPitch(o, closerCall(c, o, policy)); modelChallenge(o, ch); }
       if (o.status !== 'over') continue;
       scores.push(E.outingScore(o));
       for (const g of o.grades) { lostAll.push(g.lost); bandAll.push(g.band); }
@@ -119,6 +151,37 @@ function runPool(pack, closers, runs, model) {
   });
   scores.sort((a, b) => a - b);
   return { scores, lostAll, bandAll, holdRate: holds / n, outcomes, runs: n, meanPitches: pitches / n };
+}
+
+/* RULES 2: the familiarity real sequencing shows against this pitcher's
+   arsenal (grade.js DEFAULT_CENTER). The closer pool's real pitch choices,
+   played through the scenario, and the mean familiarity of their calls: the
+   level the hitter-adjustment is centred on, so a pitcher who sequences like
+   the real closers meets the library's numbers on average and only a more
+   predictable one pays. Z, the share of their aims in the zone, is the same
+   for where he has been (grade.js R2.ZONE). Its own seeded streams, apart from the pool's runs.
+   Measured under rules 3 (SEQ_RULES), whatever the rules a new outing plays: a rules 3 outing
+   reads this centre, so it must not move under it, and the call by location and ABS (rules 4)
+   change no pitch the closers choose, only how some takes are called. */
+const SEQ_RULES = 3;
+function seqCenter(pack, closers, model, runs) {
+  let sum = 0, n = 0, zone = 0;
+  const per = Math.max(1, Math.ceil((runs || 400) / closers.length));
+  closers.forEach((c, ci) => {
+    for (let r = 0; r < per; r++) {
+      const o = E.createOuting(pack, { seed: R.hashSeed(`${pack.scenario.id}|seq|${ci}|${r}`), mode: 'practice', model, rules: SEQ_RULES });
+      const policy = R.mulberry32(R.hashSeed(`${pack.scenario.id}|seqpolicy|${ci}|${r}`));
+      let guard = 0;
+      while (o.status === 'live' && guard++ < 150) {
+        const call = closerCall(c, o, policy);
+        sum += G.familiarRaw(G.contextOf(o.log, o.st, SEQ_RULES, 0), call.type, call.cell);
+        if (K.inZone(call.cell)) zone++;
+        n++;
+        E.throwPitch(o, call);
+      }
+    }
+  });
+  return { L: Math.round(sum / n * 10000) / 10000, Z: Math.round(zone / n * 10000) / 10000, pitches: n };
 }
 
 function bandsOf(bandList) {
@@ -146,7 +209,7 @@ function attachPros(pack, pros, model) {
     const bats = pack.scenario.batters[bi].bats;
     const platoon = bats === thr ? 'same' : 'opp';
     for (let b = 0; b < 4; b++) for (let s = 0; s < 3; s++) for (let o = 0; o < 3; o++) for (let bs = 0; bs < 8; bs++)
-      for (let m = 1; m <= model.M; m++) {
+      for (let m = 0; m <= model.M; m++) {
         const i = G.stateIndex(model.N, model.M, bi, b, s, o, bs, m);
         const bc = h.b[i];
         if (bc == null) continue;
@@ -179,10 +242,34 @@ function attachPros(pack, pros, model) {
 
 function build(pack, closersFile, opts) {
   const runs = (opts && opts.runs) || 2000;
+  // the hold table's layout is the engine's pack format (a slot for a tied game since 2)
+  pack.v = E.PACK_VERSION;
+  // rules 6: how real runners went on each kind of ball (pipeline/runners.py), without its parity sample
+  const fsx = require('fs'), rn = require('path').join(__dirname, 'data', 'runners.json');
+  if (fsx.existsSync(rn)) { const r = JSON.parse(fsx.readFileSync(rn, 'utf8')); pack.runners = { source: r.source, dist: { coef: r.dist.coef }, edges: r.edges, ratio: r.ratio }; }
+  // rules 7: the running game for this spot (pipeline/steals.py): its era's rates and its people
+  const sp = require('path').join(__dirname, 'data', 'steals.json');
+  if (fsx.existsSync(sp)) {
+    const all = JSON.parse(fsx.readFileSync(sp, 'utf8')), sc = all.scenarios[pack.scenario.id];
+    if (sc) {
+      const S = all.sample[sc.era], pick = (o, pre) => Object.fromEntries(Object.entries(o).filter(([k]) => pre.some(p => k.startsWith(p))));
+      pack.steal = {
+        source: all.source, season: sc.season, era: sc.era, bigBases: sc.bigBases, league: sc.league,
+        eraAtt: sc.eraAtt, eraZ: sc.eraZ, zPerSecond: all.zPerSecond.z,
+        baseZ: { 2: Math.round(K.normInv(S.success['2']) * 1000) / 1000, 3: Math.round(K.normInv(S.success['3']) * 1000) / 1000 },
+        attempt: S.attempt, attMult: pick(S.attMult, ['late|']), sucZ: pick(S.sucZ, ['late|', 'po|']),
+        pickoff: Object.fromEntries(Object.entries(S.pickoff).map(([b, v]) => [b, { out: v.out }])),
+        pitcher: sc.pitcher, catcher: sc.catcher, runners: sc.runners, start: sc.start,
+      };
+    }
+  }
   const t0 = Date.now();
   const fresh = new G.Model(pack, { fresh: true });
   pack.hold = fresh.holdTable();
   const solveMs = Date.now() - t0;
+  // rules 2: the familiarity the real closers' sequencing shows here (the centre the hitter adjusts from)
+  delete pack.seq;
+  pack.seq = seqCenter(pack, closersFile.closers, new G.Model(pack), opts && opts.seqRuns);
   const model = new G.Model(pack);
   attachPros(pack, opts && opts.pros, model);
   const closers = closersFile.closers;
@@ -222,4 +309,4 @@ if (NODE && require.main === module) {
     `pool ${b.pool.runs} runs, hold rate ${b.pool.holdRate}, bands ${JSON.stringify(b.pool.bands)}, solve ${b.solveMs} ms`);
 }
 
-if (NODE) module.exports = { build, runPool, closerCall, typeForFamily, bandsOf };
+if (NODE) module.exports = { build, runPool, closerCall, typeForFamily, bandsOf, seqCenter, modelChallenge };

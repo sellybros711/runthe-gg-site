@@ -11,21 +11,32 @@
  *      stats, past dailies, settings, account
  *   3. the grid is the pitcher's view: cell 0 (catcher's left) is drawn on the
  *      right, through screenCol()
- *   4. take the mound, scout the batter (the heat map lands on the same grid)
+ *   4. take the mound, the at bat line, the scout drawer (shut at first; the heat map lands on the same grid only while it is open)
  *   5. throw a whole outing to a result: every pitch animates, a tap skips it
  *      and none is needed. Between the first pitch and the last nothing is
  *      graded or tipped: no grade card, no strip square, no band word, no
  *      banner, flash or sheet, and nothing over the field (the owner,
- *      2026-10-17). One quiet play by play line under the scoreboard.
- *   6. the end reveal: outcome, strip, percentile, pitched like and the real
- *      pitcher's night, on screen together; share
+ *      2026-10-17). One quiet play by play line under the scoreboard. The live
+ *      field minimap shows after the first play, with a dot only for a ball in play.
+ *      The first pitch is a free tap off a cell's centre (the crosshair there, the
+ *      call's cell and at right, catcher's view) and checks the meter: one panel
+ *      over the pitch buttons and the throw button, the effort bar only with
+ *      STD_METER.EFFORT, the stop locks, and the call carries cell, at and q.
+ *   6. the end reveal: outcome, strip, percentile, pitched like, the verdict
+ *      against the real pitcher and the side by side card, on screen together; share
+ *      opens the share sheet, the result card draws, and "copy the text" copies it
  *   7. run it back is practice; a reload shows today as done
  *   8. ?debug=1 shows the seed
  *   9. no page error and no console error anywhere
- *  10. the framing: the whole batter, catcher and umpire are in frame for a
- *      left and a right handed hitter
- *  11. all three endings, forced through the mock (?mockEnd=): door shut,
- *      door's open (a runner put out on a double play, then the tying run)
+ *  10. the framing: the whole batter, catcher and umpire (and in 3D home plate)
+ *      are in frame for a left and a right handed hitter, cells 38 px or more
+ *  14. the 3D mound: the canvas renders, and every kind of result plays its
+ *      motion (from a trace of each play), with the pitch's trail and its aimed
+ *      and actual markers, and no 3D grid
+ *  11. all four endings, forced through the mock (?mockEnd=): door shut,
+ *      held the tie (a solo home run ties it, play goes on, the scorebar
+ *      says tied, then three outs), door's open (a runner put out on a double
+ *      play, the tying run, then the go-ahead run with the walk-off off)
  *      and walk-off (runners moving up, then scoring), with the runners on
  *      the field and on the scorebar's diamond; the proxy note and a reveal
  *      with no pitch count; the stats sheet from the account and from the
@@ -41,6 +52,42 @@
  *
  * Steps 1 to 10 play the real engine (no mock switch). Step 11 forces each
  * ending through mock-api.js.
+ *
+ * SOFTWARE GL, AND WHY THE CHECK DRAWS ONLY WHERE IT LOOKS. Headless Chromium
+ * here and on CI draws WebGL with SwiftShader, on the CPU. Measured in this
+ * container (2026-10-22): an animation frame with no draw costs about 14 ms,
+ * but one draw of the mound costs 5 to 8 s at 390x844 and 1440x900 (2.5 s at
+ * device pixel ratio 1, still 1.4 s at a quarter of the pixels: the skinned
+ * people and the park are the cost, not the pixels). The stage drew every third
+ * play frame, once more at the end of the pitch and again for the set after
+ * it, so one pitch cost 30 s to a minute and more on a busy machine. Nothing
+ * hung: no await waited on an event that never came. It was only slow. Step
+ * 14's 28 plays took 14 to 18 minutes, and the outing of step 5 prints nothing
+ * until its last pitch, so the run looked stalled right after step 14. Add the
+ * second screen size and the eight forced endings and it needed hours, so the
+ * job's timeout killed it every time, and nothing after the first pitch was
+ * ever checked. The outing's own loop also waited a fixed 80 polls a pitch,
+ * not until the pitch was over.
+ *
+ * So the check keeps everything the game computes and skips only the
+ * rasterising nobody reads:
+ *   - the stage's clock is stepped (window.STD_STAGE_TEST, which stage.js
+ *     reads): a pitch plays every frame of its motion at 30 a second, whatever
+ *     the wall clock does
+ *   - once the stage is loaded, its renderer's draw call is wrapped
+ *     (fastDraw): the game's own draws are counted and skipped. Every pose, bone,
+ *     ball, trail, marker and umpire signal is still computed each frame, and
+ *     the trace reads those (people.js updates its matrices itself, so a
+ *     sample never needs a draw)
+ *   - where the check reads pixels (canvasRenders) it draws for real and reads
+ *     the canvas back: on the mound, after the 28 plays of step 14, after the
+ *     whole outing of step 5 and at the end of every forced ending, so a broken
+ *     shader or scene still fails
+ *   - with SHOTS set, nothing is skipped (the screenshots need real frames):
+ *     slow, for a person looking at the pictures
+ * Every step has a deadline and a name (step(), and a watchdog). A step that
+ * runs past it fails and names itself, so a stall shows where it is. Each line
+ * carries the seconds since the start.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,7 +108,23 @@ function loadPlaywright() {
 const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
 
 let passes = 0, fails = 0;
-function ok(c, m) { if (c) { passes++; console.log('  ok ' + m); } else { fails++; console.log('  FAIL ' + m); } }
+const T0 = Date.now();
+const secs = () => ((Date.now() - T0) / 1000).toFixed(0).padStart(4) + 's';
+function ok(c, m) { if (c) { passes++; console.log(secs() + '  ok ' + m); } else { fails++; console.log(secs() + '  FAIL ' + m); } }
+
+/* The watchdog: the step in hand, and when it began. A step that runs past its deadline ends the
+   run as a failure that names it, instead of a hang (step() is called at each numbered step). */
+let STEP = { name: 'start', at: Date.now(), limit: 420 };
+function step(name, limit = 420) { STEP = { name, at: Date.now(), limit: SHOTS ? limit * 10 : limit }; }
+const watchdog = setInterval(() => {
+  const s = (Date.now() - STEP.at) / 1000;
+  if (s < STEP.limit) return;
+  fails++;
+  console.log(secs() + '  FAIL stalled: "' + STEP.name + '" ran ' + Math.round(s) + ' s, past its ' + STEP.limit + ' s');
+  console.log(`\n${passes} ok, ${fails} failed`);
+  process.exit(1);
+}, 5000);
+watchdog.unref();
 
 const TYPES = { '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
 const server = http.createServer((req, res) => {
@@ -84,8 +147,52 @@ const browser = await pw.chromium.launch(CHROME ? { executablePath: CHROME } : {
 
 /* ---- shared steps ------------------------------------------------------- */
 
+/* Headless Chromium draws WebGL in software, a frame in seconds, so on a real clock a pitch would
+   show two frames. The 3D mound takes a stepped clock for the check: a pitch plays every frame of
+   its motion at 30 a second (quick play runs 1.8 times as fast, so a sample every 0.06 s of the
+   game's time). At 15 a second the first sample of the ball could land almost 2 m past the
+   release, and the flight check below read a slider's 16 m flight as 13.7. With SHOTS set it draws
+   every sixth frame, as many draws as before; otherwise fastDraw skips them all. */
+/* It also counts WebGL context losses on the page (the event does not bubble; a capture listener on
+   the document still hears it). The game does not rebuild what it made with render targets after a
+   restore (the environment light, at least): forced on purpose, the mound then draws 29 colors and
+   40% lit, with a black sky. A loaded machine can lose the context on its own, so the pixel check says
+   when one happened. (QA issue 2026-10-22-shut-the-door-context-loss-dark-mound.) */
+const STAGE_TEST = () => {
+  window.STD_STAGE_TEST = { step: 1 / 30, renderEvery: 6 };
+  window.STD_CHECK_CTXLOST = 0;
+  document.addEventListener('webglcontextlost', () => { window.STD_CHECK_CTXLOST++; }, true);
+};
+
+/* The fast path (see the header): once the stage is loaded, its renderer's draws are counted and
+   skipped, unless the check asks for one (window.STD_CHECK_DRAW). With SHOTS set every draw is
+   real. Idempotent: homeWarm and stageReady both call it. */
+async function fastDraw(page) {
+  if (SHOTS) return;
+  await page.evaluate(() => {
+    const st = window.STD_STAGE && window.STD_STAGE.current;
+    if (!st || !st.renderer || st.renderer.realRender) return;
+    const r = st.renderer;
+    r.realRender = r.render;
+    window.STD_CHECK_SKIPPED = 0;
+    r.render = function (scene, camera) {
+      if (window.STD_CHECK_DRAW) return r.realRender.call(r, scene, camera);
+      window.STD_CHECK_SKIPPED++;
+    };
+  });
+}
+
 /* The owner's rule while pitching: nothing graded, nothing tipped, nothing
-   over the field. Returns what broke it, or an empty list. */
+   over the field but the HUD's own panels (the owner, 2026-10-24: the scene is full screen and the
+   HUD floats over it; every panel carries data-hud), and nothing at all over the zone. Returns { out: what broke it (or an empty list), gone, over }.
+   gone: the mound is not on screen, so there is no field to judge. The field samples are read off
+   #m-scene's box, and a hidden screen's box is 0x0 at (0,0), where every sample lands on the
+   header. That is how a run once failed "over the field: hdr" (390x844, doors_open, pitch 4,
+   2026-10-22): the go-ahead run ended the outing between the loop's look at the result screen and
+   this sample, and finish() had already hidden the mound (show('s-result')). The header was never
+   over the field. So the answer comes from one snapshot: the mound on screen and judged, or gone,
+   with whether the result is up (over). The caller fails a mound that left with no result, and
+   a mound on screen with a field of no size fails here. */
 async function quietProblems(page) {
   return page.evaluate(() => {
     const vis = (el) => {
@@ -94,6 +201,7 @@ async function quietProblems(page) {
       return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.05;
     };
     const mound = document.getElementById('s-mound'), out = [];
+    if (!mound.classList.contains('on')) return { out, gone: true, over: document.getElementById('s-result').classList.contains('on') };
     if ([...mound.querySelectorAll('.sq, .pill, .strip')].some(vis)) out.push('a grade square');
     const text = mound.innerText;
     if (/\b(green|yellow|orange|red)\b/i.test(text)) out.push('a band word');
@@ -101,51 +209,399 @@ async function quietProblems(page) {
     if ([...document.querySelectorAll('.gcard, .callout, .flash, #toast.on')].some(vis)) out.push('a banner or card');
     if ([...document.querySelectorAll('.sheet')].some((s) => !s.hidden)) out.push('a sheet');
     const sc = document.getElementById('m-scene').getBoundingClientRect();
-    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('.grid') || el.id === 'm-proxy' || el.id === 'm-dbg');
-    for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) {
+    if (sc.width < 1 || sc.height < 1) { out.push('the field has no size on the mound (' + Math.round(sc.width) + 'x' + Math.round(sc.height) + ')'); return { out, gone: false, over: false }; }
+    const fine = (el) => el && (el.tagName === 'CANVAS' || el.closest('#m-aim') || el.id === 'm-proxy' || el.id === 'm-dbg' || el.closest('#m-mini') || el.closest('[data-hud]'));
+    const z = document.getElementById('m-aim').getBoundingClientRect();
+    const onZone = [...mound.querySelectorAll('[data-hud]')].filter(vis).find((el) => { const b = el.getBoundingClientRect(); return b.left < z.right - 1 && b.right > z.left + 1 && b.top < z.bottom - 1 && b.bottom > z.top + 1; });
+    if (onZone) out.push('a HUD panel over the zone: ' + (onZone.id || onZone.className));
+    samples: for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) {
       const el = document.elementFromPoint(sc.left + sc.width * i / 6, sc.top + sc.height * j / 6);
-      if (!fine(el)) { out.push('over the field: ' + (el ? el.id || el.className || el.tagName : 'nothing')); return out; }
+      if (!fine(el)) { out.push('over the field: ' + (el ? el.id || el.className || el.tagName : 'nothing')); break samples; }
     }
-    return out;
+    return { out, gone: false, over: false };
+  });
+}
+
+/* The 3D mound (3d/stage.js). Waits for its downloads, then reads pixels straight off the WebGL
+   canvas after a draw: the park, the people and the zone's surroundings, not a blank or one color. */
+/* The home screen gets the 3D mound ready (ui.js warm3d): wait for that before the tap on take the
+   mound, as a player reading the spot would. Software GL compiles shaders on the main thread for
+   seconds, and a tap while it does waits on it. */
+async function homeWarm(page) {
+  // the warm compiles every shader in software: seconds alone, minutes on a loaded machine
+  await page.waitForFunction(() => !(window.STD_STAGE && window.STD_STAGE.supported()) || (window.STD_STAGE.current && window.STD_STAGE.current.loaded), null, { timeout: 240000 })
+    .catch(async (e) => {
+      // say how far the stage got (stage.js marks each phase) and whether the context was lost on the way
+      const at = await page.evaluate(() => JSON.stringify({ marks: window.STD_STAGE && window.STD_STAGE.marks, lost: window.STD_CHECK_CTXLOST || 0, now: Math.round(performance.now()) })).catch(() => 'the page did not answer');
+      throw new Error('the 3D warm did not finish in 240 s: ' + at + '\n' + e.message);
+    });
+  await gpuSettled(page);
+  await fastDraw(page);
+}
+/* loaded means the warm's GL work is issued, not done: the GPU process (SwiftShader, on the CPU) still
+   owes the shader compiles and the warm's two draws. The next tap waits behind all of it, because the
+   page takes an input only with a frame, so a click on the home screen once took 83 s to return, past
+   Playwright's 30 s (step 8, load 50, 2026-10-22). One read of a pixel waits for the GPU to finish
+   (measured: the read took 86 s, and the click after it 0.3 s). On a phone's GPU it is instant. */
+async function gpuSettled(page) {
+  await page.evaluate(() => {
+    const st = window.STD_STAGE && window.STD_STAGE.current;
+    if (!st || !st.renderer) return;
+    const gl = st.renderer.getContext();
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+  });
+}
+
+async function stageReady(page) {
+  const on = await page.evaluate(() => !!(window.STD_STAGE && window.STD_STAGE.supported()));
+  if (!on) return false;
+  await page.waitForFunction(() => window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 240000 });
+  await page.evaluate(() => window.STD_UI.state.scene.real.ready);
+  await fastDraw(page);
+  return true;
+}
+/* A real draw of the stage as it stands, read back off the canvas: not blank, not one color. */
+async function canvasRenders(page) {
+  return page.evaluate(() => {
+    const st = window.STD_STAGE.current, gl = st.renderer.getContext();
+    window.STD_CHECK_DRAW = true;
+    try { st.render(); } finally { window.STD_CHECK_DRAW = false; }
+    const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, px = new Uint8Array(4), seen = new Set();
+    let lit = 0, n = 0;
+    for (let i = 1; i < 12; i++) for (let j = 1; j < 12; j++) {
+      gl.readPixels(Math.floor(W * i / 12), Math.floor(H * j / 12), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      seen.add((px[0] >> 4) + ',' + (px[1] >> 4) + ',' + (px[2] >> 4));
+      if (px[0] + px[1] + px[2] > 30) lit++;
+      n++;
+    }
+    const cv = document.getElementById('m-canvas'), r = cv.getBoundingClientRect();
+    return { W, H, css: [Math.round(r.width), Math.round(r.height)], colors: seen.size, lit: lit / n, s3d: document.getElementById('m-scene').classList.contains('s3d'), lost: window.STD_CHECK_CTXLOST || 0 };
+  });
+}
+
+function pixelsOk(label, cv) {
+  ok(cv.s3d && cv.W >= cv.css[0] && cv.colors >= 12 && cv.lit > 0.9, label + ' (' + cv.W + 'x' + cv.H + ' for ' + cv.css.join('x') + ' css px, ' + cv.colors + ' colors and ' + Math.round(cv.lit * 100) + '% lit in 121 samples' + (cv.s3d ? '' : ', not the 3D scene') + (cv.lost ? ', after ' + cv.lost + ' WebGL context loss' + (cv.lost > 1 ? 'es' : '') + ' on this page' : '') + ')');
+}
+
+/* What a PitchResult must look like on the field (3d/play.js reads it; this is the spec, written
+   apart from it): the hitter's motion, where the ball goes, the umpire's signal. */
+function expectedMotion(tr) {
+  const r = tr.result, swing = ['swinging_strike', 'foul', 'foul_tip', 'in_play'].includes(r);
+  const batter = swing ? 'swing' : r === 'hit_by_pitch' ? 'hbp' : tr.check ? 'check' : 'take';
+  const ball = tr.dirt ? ['dirt'] : r === 'foul_tip' ? ['tip'] : r === 'foul' ? ['back', 'pulled'] : r === 'in_play' ? ['play'] : r === 'hit_by_pitch' ? ['hbp'] : ['glove'];
+  const ump = r === 'called_strike' ? 'strike' : r === 'foul' ? 'foul' : r === 'hit_by_pitch' ? 'hbp' : null;
+  // a pitch above the belt (the zone's middle) knocks him down, four in five, picked from the drawn
+  // pitch's id (FNV-1a, never the engine's random stream); with no drawn pitch, always
+  const fnv = (s) => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const fall = r === 'hit_by_pitch' && tr.zn > 0.5 && (tr.drawn == null || fnv(tr.drawn) % 5 !== 0);
+  return { batter, ball, ump, fall };
+}
+/* Read one play's trace (the stage keeps it): the reading matches the result, and the frames show
+   it: the ball flies with its trail, the aimed and actual markers show, a swing moves the bat, a
+   ball in play leaves, the umpire signals, and no 3D grid is drawn. Returns what is wrong, or an
+   empty list. */
+function motionProblems(tr) {
+  const out = [], e = expectedMotion(tr), name = tr.result + (tr.bb ? ' ' + tr.bb : '') + (tr.check ? ' (check)' : '') + (tr.dirt ? ' (dirt)' : '');
+  if (tr.m.batter !== e.batter) out.push(name + ': the hitter does ' + tr.m.batter + ', not ' + e.batter);
+  if (!e.ball.includes(tr.m.ball)) out.push(name + ': the ball goes ' + tr.m.ball + ', not ' + e.ball.join(' or '));
+  if ((tr.m.ump || null) !== e.ump) out.push(name + ': the umpire signals ' + tr.m.ump + ', not ' + e.ump);
+  if (!!tr.m.fall !== e.fall) out.push(name + (e.fall ? ': the hitter should go down' : ': the hitter went down'));
+  if (tr.s.some((x) => x.grid)) out.push(name + ': the 3D grid was drawn in play (the game draws its own, while aiming)');
+  if (tr.skipped) return out;
+  // the pitch's own picture (not a grade): its trail, and where it was aimed against where it went
+  if (!tr.s.some((x) => x.trail > 0.1)) out.push(name + ': no trail behind the pitch');
+  if (!tr.s.some((x) => x.aimed > 0.1)) out.push(name + ': no aimed marker');
+  if (!tr.s.some((x) => x.actual > 0.1)) out.push(name + ': no marker where it crossed');
+  if (tr.frames < 5) out.push(name + ': only ' + tr.frames + ' frames');
+  const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const balls = tr.s.filter((x) => x.ball);
+  if (balls.length < 3) { out.push(name + ': the ball was seen in ' + balls.length + ' frames'); return out; }
+  /* the flight from where the pitch leaves his hand (tr.rel, the start of its own path, which the
+     stage puts in the trace), never from the first frame that saw the ball: that frame can land a
+     few metres into the flight (a called strike read 13.8 m on a loaded runner, PR #789's CI). A
+     ball that does not fly stays near his hand and still reads short of the 14 m floor. */
+  if (!Array.isArray(tr.rel) || tr.rel.length !== 3) { out.push(name + ': the trace carries no release point'); return out; }
+  const flew = Math.max(...balls.map((x) => d(x.ball, tr.rel)));
+  if (flew < 14) out.push(name + ': the ball flew ' + flew.toFixed(1) + ' m from the release');
+  const s0 = tr.s[0], before = tr.s.filter((x) => x.t < tr.resultAt - 0.15), after = tr.s.filter((x) => x.t >= tr.resultAt);
+  const tip0 = (before.length ? before : tr.s)[0].tip;
+  const batMove = Math.max(...tr.s.map((x) => d(x.tip, tip0)));
+  if (e.batter === 'swing' && batMove < 0.8) out.push(name + ': the bat moved ' + batMove.toFixed(2) + ' m in a swing');
+  if (e.batter === 'check' && batMove < 0.12) out.push(name + ': the bat moved ' + batMove.toFixed(2) + ' m in a check swing');
+  if (e.batter === 'hbp' && Math.max(...tr.s.map((x) => d(x.pel, s0.pel))) < 0.05) out.push(name + ': the hitter did not flinch');
+  if (e.fall) {
+    // down, and clear of the plate (its middle is the origin; he started in the box beside it)
+    const end = tr.s[tr.s.length - 1].pel;
+    if (end[1] > 0.45) out.push(name + ': the hitter is not down (hips ' + end[1].toFixed(2) + ' m up)');
+    if (Math.hypot(end[0], end[2]) < Math.hypot(s0.pel[0], s0.pel[2])) out.push(name + ': the hitter fell toward the plate');
+  }
+  const ballAt = (t) => { const b = balls.filter((x) => x.t >= t); return b.length ? b : null; };
+  if (tr.m.ball === 'play' || tr.m.ball === 'back' || tr.m.ball === 'pulled') {
+    const b = ballAt(tr.resultAt);
+    const off = b ? Math.max(...b.map((x) => d(x.ball, b[0].ball))) : 0;
+    if (off < (tr.m.ball === 'play' ? 6 : 2)) out.push(name + ': off the bat the ball went ' + off.toFixed(1) + ' m');
+  }
+  if (e.ump && after.length) {
+    const rise = (k) => Math.max(...after.map((x) => x[k][1] - s0[k][1]));
+    const moved = (k) => Math.max(...after.map((x) => d(x[k], s0[k])));
+    const okU = e.ump === 'strike' ? Math.max(rise('uR'), rise('uL')) > 0.2 : e.ump === 'foul' ? Math.min(rise('uR'), rise('uL')) > 0.2 : Math.max(moved('uR'), moved('uL')) > 0.2;
+    if (!okU) out.push(name + ': the umpire did not signal ' + e.ump);
+  }
+  return out;
+}
+
+/* The outing's own pitches on the 3D mound: each played its result's motion (a tapped one is
+   judged on its reading only), every hitter in turn. */
+function traceCheck(label, play) {
+  const probs = [].concat(...play.traces.map(motionProblems));
+  const kinds = [...new Set(play.traces.map((t) => t.result + (t.bb ? ' ' + t.bb : '')))];
+  ok(play.traces.length === play.pitches && probs.length === 0,
+    label + ': each of the ' + play.traces.length + ' pitches played its motion on the 3D mound (' + kinds.join(', ') + ')' + (probs.length ? ': ' + probs.slice(0, 4).join(' | ') : ''));
+}
+
+/* Every kind of PitchResult, played on the 3D mound straight from a PitchResult (the stage's own
+   entry, no engine draw): both hands, each pitch type in turn. Returns the problems and the kinds. */
+async function everyResult(page) {
+  return page.evaluate(async () => {
+    const S = window.STD_UI.state, st = window.STD_STAGE.current, C = window.STD_CONTRACT;
+    const was = st.bat, kinds = [];
+    const plays = [
+      ['ball', 'take', 3, { b: 0, s: 0 }, null, { x: 1.4, zn: 0.5 }],
+      ['ball', 'take', 20, { b: 1, s: 0 }, null, { x: 0.2, zn: -1.1 }],          // in the dirt
+      ['ball', 'take', 9, { b: 1, s: 2 }, null, { x: 0.8, zn: -0.15 }],          // a check swing, two strikes
+      ['called_strike', 'take', 18, { b: 0, s: 0 }, null, { x: 0.5, zn: 0.2 }],
+      ['swinging_strike', 'swing', 22, { b: 0, s: 1 }, null, { x: 0.1, zn: 0.0 }],
+      ['foul', 'swing', 7, { b: 1, s: 1 }, { bb: 'popup', ev: 70, la: 60, spray: 0 }, { x: 0.05, zn: 0.8 }],
+      ['foul', 'swing', 11, { b: 1, s: 1 }, { bb: 'ground', ev: 92, la: 4, spray: -44 }, { x: -0.3, zn: 0.4 }],
+      ['foul_tip', 'swing', 12, { b: 2, s: 1 }, null, { x: 0.0, zn: 0.6 }],
+      ['in_play', 'swing', 17, { b: 0, s: 0 }, { bb: 'ground', ev: 95, la: -6, spray: 12, result: 'out', text: 'grounds out to short' }, { x: 0.1, zn: 0.3 }],
+      ['in_play', 'swing', 12, { b: 0, s: 0 }, { bb: 'line', ev: 104, la: 14, spray: -20, result: 'single', text: 'lines a single to left' }, { x: 0.0, zn: 0.5 }],
+      ['in_play', 'swing', 7, { b: 0, s: 0 }, { bb: 'fly', ev: 99, la: 31, spray: 25, result: 'out', text: 'flies out to right' }, { x: 0.0, zn: 0.8 }],
+      ['in_play', 'swing', 7, { b: 0, s: 0 }, { bb: 'popup', ev: 80, la: 58, spray: 5, result: 'out', text: 'pops out to second' }, { x: 0.1, zn: 0.9 }],
+      ['hit_by_pitch', 'take', 14, { b: 0, s: 0 }, null, { x: 0, zn: 0.4 }],
+      ['hit_by_pitch', 'take', 14, { b: 0, s: 0 }, null, { x: 0, zn: 0.85 }],
+    ];
+    const out = [];
+    for (const hand of ['L', 'R']) {
+      const b = S.scn.batters.find((x) => x.bats === hand);
+      if (!b) { out.push('no ' + hand + ' handed hitter in the pack'); continue; }
+      st.setBatter(b);
+      for (const [i, [result, batter, cell, countBefore, inPlay, at]] of plays.entries()) {
+        const a = S.scn.pitcher.arsenal[i % S.scn.pitcher.arsenal.length];
+        // the hit by pitch comes in on the hands: inside is the hitter's side of the plate
+        const x = result === 'hit_by_pitch' ? (hand === 'L' ? 1 : -1) * 1.55 : at.x;
+        const pr = { n: i + 1, call: { type: a.type, cell }, actual: { x, zn: at.zn }, actualCell: C.cellAt(x, at.zn), velo: a.velo, batter, result,
+          inPlay, countBefore, count: countBefore, outs: 0, bases: 0, runnerMoves: [], runs: 0, paOver: false };
+        await st.play({ pr, quick: true });
+        const tr = st.trace;
+        kinds.push(hand + ' ' + result + (inPlay ? ' ' + inPlay.bb : '') + (tr.check ? ' check' : '') + (tr.dirt ? ' dirt' : ''));
+        out.push(tr);
+      }
+    }
+    st.setBatter(was);
+    S.grid.place(st.gridRect());
+    st.draw();
+    return { traces: out.filter((x) => typeof x === 'object'), errors: out.filter((x) => typeof x === 'string'), kinds };
   });
 }
 
 /* Throw a whole outing. The first pitch gets no tap at all, to show the game
    goes on by itself; later ones are skipped with a tap. The quiet rule is
    checked through each flight and after it. */
+const PITCH_MS = SHOTS ? 300000 : 60000;
 async function playOuting(page, o) {
   const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
-  const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [] };
+  const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
   const done = () => page.evaluate(() => document.getElementById('s-result').classList.contains('on'));
   for (let i = 0; i < 80; i++) {
     if (await done()) break;
+    /* THE RUNNING GAME (rules 7, the owner 2026-10-26): with a runner on, a row over the pitch
+       buttons, off the zone, thumb tall: QUICK DELIVERY, and PICKOFF while one is live. Once an outing:
+       a pickoff throw goes in the play by play and spends a disengagement; the next pitch goes with
+       a quick delivery (the call carries ss 1, the meter greys the top of the power column). */
+    const rb = await page.evaluate(() => {
+      const bar = document.getElementById('m-run');
+      if (!bar || bar.hidden) return null;
+      const z = document.getElementById('m-aim').getBoundingClientRect(), hit = (a) => a.left < z.right - 1 && a.right > z.left + 1 && a.top < z.bottom - 1 && a.bottom > z.top + 1;
+      const q = document.getElementById('m-quick').getBoundingClientRect(), po = document.getElementById('m-po');
+      const st = window.STD_UI.state.outing;
+      return { q: { h: q.height, onZone: hit(q) }, po: !po.hidden ? { h: po.getBoundingClientRect().height, onZone: hit(po.getBoundingClientRect()) } : null,
+        dis: st.run.pickoff.left, n: st.run.pickoffs.length, quickLabel: document.getElementById('m-quick-l').textContent };
+    });
+    if (rb && (rb.po || i > 2) && !r.ranGame) {
+      r.ranGame = true;
+      ok(rb.q.h >= 38 && !rb.q.onZone && (!rb.po || (rb.po.h >= 38 && !rb.po.onZone)), '5 the running game row is thumb tall and off the zone (' + Math.round(rb.q.h) + ' px' + (rb.po ? ', pickoff live' : '') + ')');
+      ok(/^slide step · beats the steal/.test(rb.quickLabel), '5 QUICK DELIVERY says what it is: "' + rb.quickLabel + '"');
+      if (rb.po) {
+        await page.click('#m-po');
+        await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
+        const af = await page.evaluate(() => ({ tag: document.querySelector('#m-pbp .pbp-tag').textContent, st: window.STD_UI.state.outing }));
+        ok(/^(pickoff|picked off|balk)$/.test(af.tag) && af.st.run.pickoffs.length === rb.n + 1,
+          '5 a pickoff throw goes in the play by play ("' + af.tag + '") and spends a disengagement (' + rb.dis + ' left before, ' + (af.st.run.pickoff.left) + ' after)');
+        if (await done() || af.st.status !== 'live') { if (await done()) break; }
+      }
+      if (await page.evaluate(() => !document.getElementById('m-run').hidden)) { await page.click('#m-quick'); r.quickAt = i; }
+    }
     const nTypes = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
     await page.click(`#m-arsenal .pitch >> nth=${o.type0 ? 0 : i % nTypes}`);
-    await page.click(`#m-scene .grid .cell[data-cell="${o.cell != null ? o.cell : CELLS[i % CELLS.length]}"]`);
+    const cellNo = o.cell != null ? o.cell : CELLS[i % CELLS.length];
+    const freeTap = i === 0 && !o.type0;
+    if (freeTap) {
+      /* FREE AIM (the owner, 2026-10-22): a tap off the cell's centre puts the crosshair exactly there,
+         keeps that cell, and its at is the point in the cell in catcher's view: u toward the catcher's
+         right (its sign on screen read from screenCol()), v up. Every call the UI sends is recorded. */
+      const f = await page.evaluate((c) => {
+        const A = window.STD_API;
+        if (!A.__rec) { const t = A.throwPitch; window.__calls = []; A.throwPitch = function (id, call) { window.__calls.push(JSON.parse(JSON.stringify(call))); return t.apply(this, arguments); }; A.__rec = true; }
+        const b = document.querySelector('#m-aim .cell[data-cell="' + c + '"]').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
+        const x = b.left + b.width * 0.8, y = b.top + b.height * 0.3;
+        return [x, y, (x - z.left) / z.width, (y - z.top) / z.height];
+      }, cellNo);
+      await page.mouse.click(f[0], f[1]);
+      const a = await page.evaluate(() => {
+        const S = window.STD_UI.state, C = window.STD_CONTRACT, x = document.querySelector('#m-aim .aim-x').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
+        /* in the zone's own frame: a layout after the tap (the 3D stage landing) moves the zone, and the crosshair with it */
+        return { cell: S.cell, at: S.at, fx: (x.left + x.width / 2 - z.left) / z.width, fy: (x.top + x.height / 2 - z.top) / z.height, zw: z.width, zh: z.height,
+          dir: C.screenCol(C.cellOf(0, 1)) - C.screenCol(C.cellOf(0, 0)) };
+      });
+      const want = [0.3 * a.dir, 0.2];
+      ok(a.cell === cellNo && a.at && Math.abs(a.at[0] - want[0]) <= 0.02 && Math.abs(a.at[1] - want[1]) <= 0.02,
+        '5 a free tap keeps its cell (' + a.cell + ') and its point in it, catcher\'s view (at ' + JSON.stringify(a.at) + ', ' + JSON.stringify(want) + ' wanted)');
+      const dx = (a.fx - f[2]) * a.zw, dy = (a.fy - f[3]) * a.zh;
+      ok(Math.abs(dx) < 1.5 && Math.abs(dy) < 1.5, '5 the crosshair sits where the finger was in the zone, not on the cell\'s centre (off by ' + dx.toFixed(1) + ', ' + dy.toFixed(1) + ' px)');
+    } else {
+      await page.click(`#m-aim .cell[data-cell="${cellNo}"]`);
+    }
     if (i === 0 && o.shot) await o.shot('ready');
     const label = await page.textContent('#m-throw');
     if (!/throw|shut it/.test(label)) { r.problems.push('the throw button was not ready: ' + label); break; }
+    const drawerWas = i === 0 && o.drawerOpen ? await page.evaluate(() => !document.getElementById('m-drawer').hidden) : null;
     await page.click('#m-throw');
+    if (drawerWas != null) ok(drawerWas && await page.evaluate(() => document.getElementById('m-drawer').hidden && !document.querySelector('#m-aim .aim-heat i[style*="background"]')),
+      '5 the scout drawer, open through the aim and the pick, shuts on the throw and takes the heat with it');
+    /* The release meter (draft PR #658, the owner's call 2026-10-22): where the page has one and
+       the setting is on, the throw button starts a needle and the next tap on it is the release.
+       That page must show it, and it gets its tap here (after its own 120 ms guard against the tap
+       that started it). A page with no meter, or with it off, throws on the button as before. */
+    const wantsMeter = await page.evaluate(() => {
+      let p = {}; try { p = JSON.parse(localStorage.getItem('std_ui_v1') || '{}') || {}; } catch (e) {}
+      return !!(window.STD_METER && document.getElementById('m-meter')) && p.meter !== false;
+    });
+    if (wantsMeter) {
+      const shown = await page.waitForSelector('#m-meter:not([hidden])', { timeout: 10000 }).then(() => true, () => false);
+      if (!shown) { r.problems.push('pitch ' + (r.pitches + 1) + ': the release meter did not show after throw'); break; }
+      await page.waitForTimeout(200);
+      /* the meter (the owner, 2026-10-22: rebuilt): one panel over the pitch buttons and the throw
+         button, so the scene never moves; the effort bar only when STD_METER.EFFORT is true */
+      const eff = await page.evaluate(() => window.STD_METER.EFFORT === true);
+      if (r.quickAt === i) ok(await page.evaluate(() => document.querySelector('.rm-col').classList.contains('is-capped') && parseFloat(document.querySelector('.rm-ccap').style.height) > 0),
+        '5 a quick delivery greys the top of the power column (meter.js QUICK)');
+      if (freeTap) {
+        const lay = await page.evaluate(() => {
+          const m = document.getElementById('m-meter').getBoundingClientRect(), b = document.querySelector('#m-arsenal .pitch').getBoundingClientRect();
+          const t = document.getElementById('m-throw').getBoundingClientRect(), z = document.getElementById('m-aim').getBoundingClientRect();
+          const offZone = m.right <= z.left + 1 || m.left >= z.right - 1 || m.bottom <= z.top + 1 || m.top >= z.bottom - 1;
+          const col = document.querySelector('.rm-col'), ring = document.querySelector('.rm-ring');
+          return { over: m.top <= b.top + 1 && m.bottom >= t.bottom - 1 && offZone, h: m.height, effRow: !document.querySelector('#m-meter .rm-s-pow').hidden,
+            col: !!col && !col.hidden, ringHidden: !ring || ring.hidden };
+        });
+        ok(lay.over && lay.h >= 90, '5 the meter is one panel over the pitch buttons and the throw button, off the zone (' + Math.round(lay.h) + ' px tall)');
+        ok(lay.effRow === eff && lay.col === eff, '5 the power column and its step show only when STD_METER.EFFORT is true (' + eff + ')');
+        /* the combo (the owner, 2026-10-26): power on a column beside the zone, off the zone, the hitter
+           and the plate, thumb wide and on screen; the ring is not there until power is set */
+        ok(!eff || lay.ringHidden, '5 the ring waits for the power stop');
+        if (eff) {
+          const cl = await page.evaluate(() => {
+            const c = document.querySelector('.rm-col').getBoundingClientRect(), z = document.querySelector('#m-aim .aim-zone').getBoundingClientRect();
+            const hit = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+            let boxes = [];
+            try {
+              const st = window.STD_STAGE && window.STD_STAGE.current, cv = document.getElementById('m-canvas').getBoundingClientRect();
+              if (st && st.figureBoxes) { const fb = st.figureBoxes(800); boxes = ['batter', 'plate'].map((k) => fb[k] && { name: k, left: cv.left + fb[k].x0, right: cv.left + fb[k].x1, top: cv.top + fb[k].y0, bottom: cv.top + fb[k].y1 }).filter(Boolean); }
+            } catch (e) {}
+            const R = (b) => [b.left, b.top, b.right, b.bottom].map(Math.round).join(',');
+            return { at: 'column ' + R(c) + ' zone ' + R(z) + boxes.map((b) => ' ' + b.name + ' ' + R(b)).join(''), w: c.width, h: c.height, onZone: hit(c, z), on: boxes.filter((b) => hit(c, b)).map((b) => b.name), inside: c.left >= 15.5 && c.right <= innerWidth - 15.5,
+              hud: document.querySelector('.rm-col').hasAttribute('data-hud') };
+          });
+          ok(cl.w >= 38 && cl.h >= 140 && !cl.onZone && cl.on.length === 0 && cl.inside && cl.hud,
+            '5 the power column is beside the zone, off the hitter and the plate, on screen and thumb wide (' + Math.round(cl.w) + 'x' + Math.round(cl.h) + (cl.on.length ? ', over ' + cl.on.join(' and ') : '') + (cl.onZone ? ', over the zone' : '') + (cl.on.length || cl.onZone ? '; ' + cl.at : '') + ')');
+        }
+      }
+      if (eff) {
+        const say0 = await page.textContent('#m-say');
+        if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
+        await page.click('#m-meter');
+        await page.waitForTimeout(450);
+        if (freeTap) ok(await page.evaluate(() => !document.querySelector('.rm-ring').hidden), '5 the ring comes up once power is set');
+      }
+      // the step line under the meter says how to stop it (the owner, 2026-10-26: the ring)
+      const say = await page.textContent('#m-say');
+      if (say !== 'tap when it hits the circle') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
+      if (freeTap && !SHOTS) {
+        /* the smooth sweep (the owner, 2026-10-26: "the meter is laggy"): while the ring runs the mound
+           draws nothing (stage.js hush) and the ring moves by transform only, never its size */
+        const sw = await page.evaluate(() => new Promise((res) => {
+          const d0 = window.STD_CHECK_SKIPPED || 0, n = document.querySelector('.rm-ring .rm-rmove'), seen = new Set();
+          let k = 0;
+          const f = () => { seen.add(n.style.transform); if (++k < 20) requestAnimationFrame(f); else res({ draws: (window.STD_CHECK_SKIPPED || 0) - d0, left: n.style.left, moved: seen.size }); };
+          requestAnimationFrame(f);
+        }));
+        ok(sw.draws === 0 && !sw.left && sw.moved > 1, '5 the ring closes by transform with the mound still (' + sw.draws + ' draws, ' + sw.moved + ' places in 20 frames)');
+      }
+      await page.click('#m-meter');
+      if (freeTap) {
+        /* the stop locks: the ring holds where it was stopped, the word goes up, and the call
+           carries the cell, the free aim's at, the release q (and e with effort) */
+        const n0 = await page.evaluate(() => document.querySelector('.rm-ring .rm-rmove').style.transform);
+        await page.waitForTimeout(150);
+        const st = await page.evaluate(() => ({ colGone: document.querySelector('.rm-col').hidden, n1: document.querySelector('.rm-ring .rm-rmove').style.transform, done: document.getElementById('m-meter').classList.contains('is-done'),
+          word: document.querySelector('#m-meter .rm-word').textContent, call: (window.__calls || []).slice(-1)[0] }));
+        ok(st.colGone, '5 the power column goes once the release is stopped, so the pitch has the field');
+        ok(st.done && !!n0 && st.n1 === n0 && st.word.length > 0, '5 the meter locks on the stop: the ring holds at ' + n0 + ' and says "' + st.word + '"');
+        const c = st.call || {};
+        ok(c.cell === cellNo && Array.isArray(c.at) && c.at.length === 2 && typeof c.q === 'number' && c.q >= 0 && c.q <= 1 && (eff ? typeof c.e === 'number' : !('e' in c)),
+          '5 the call carries the cell, at, q' + (eff ? ' and e' : '') + ' (' + JSON.stringify(c) + ')');
+      }
+    }
     r.pitches++;
+    if (r.quickAt === i) {
+      const c = await page.evaluate(() => (window.__calls ? window.__calls.slice(-1)[0] || null : 'none'));
+      if (c !== 'none') ok(!!c && c.ss === 1, '5 a pitch with QUICK DELIVERY on carries ss 1 (' + JSON.stringify(c) + ')');
+    }
     const tapless = i === 0 || !!o.noSkip;
-    let shotTaken = false;
-    for (let t = 0; t < 80; t++) {
+    let shotTaken = false, ended = false;
+    /* until the pitch is over, by a deadline and not a count of polls: a slow pitch must not leave
+       the loop clicking on through a busy mound, and one that never ends fails by name */
+    const deadline = Date.now() + PITCH_MS;
+    for (let t = 0; Date.now() < deadline; t++) {
       await page.waitForTimeout(tapless ? 90 : 60);
       if (!tapless && t === 2) await page.mouse.click(o.w / 2, Math.round(o.h * 0.5));
       const s = await page.evaluate(() => ({ dots: document.querySelectorAll('#m-runners circle').length, outs: document.querySelectorAll('#m-runners circle.out').length,
         busy: /pitching/.test(document.getElementById('m-throw').textContent), over: document.getElementById('s-result').classList.contains('on') }));
       if (s.dots) r.sawMove = true;
       if (s.outs) r.sawOut = true;
-      if (s.over) break;
+      if (s.over) { ended = true; break; }
       const q = await quietProblems(page);
-      if (q.length) r.problems.push('pitch ' + r.pitches + ': ' + q.join(', '));
+      if (q.gone) {
+        // the outing ended between the look above and this sample (see quietProblems), or worse
+        if (!q.over) r.problems.push('pitch ' + r.pitches + ': the mound left the screen with no result');
+        ended = true; break;
+      }
+      if (q.out.length) r.problems.push('pitch ' + r.pitches + ': ' + q.out.join(', '));
       if (i === 0 && t === 8 && o.shot && !shotTaken && !o.runnerShots) { shotTaken = true; await o.shot('pitch-flight'); }
       if (o.runnerShots && s.dots && !shotTaken && t > 6) { shotTaken = true; await o.shot('runners-p' + r.pitches); }
-      if (!s.busy) break;
+      if (!s.busy) { ended = true; break; }
     }
+    if (!ended) { r.problems.push('pitch ' + r.pitches + ' was still playing after ' + PITCH_MS / 1000 + ' s'); break; }
+    const tr = await page.evaluate(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.trace);
+    if (tr && tr.n !== r.lastN) { r.traces.push(tr); r.lastN = tr.n; }
     if (await done()) break;
     const after = await quietProblems(page);
-    if (after.length) r.problems.push('after pitch ' + r.pitches + ': ' + after.join(', '));
+    if (after.gone) {
+      if (!after.over) r.problems.push('after pitch ' + r.pitches + ': the mound left the screen with no result');
+      break;
+    }
+    if (after.out.length) r.problems.push('after pitch ' + r.pitches + ': ' + after.out.join(', '));
     r.pbp.push(await page.textContent('#m-pbp'));
     if (i === 0 && o.shot) await o.shot('after-pitch');
   }
@@ -159,8 +615,10 @@ async function revealCheck(page, label, pitches) {
     const vis = (id) => { const el = document.getElementById(id); const b = el && el.getBoundingClientRect(); return !!(b && b.width > 0 && b.height > 0); };
     return { outcome: vis('r-outcome') && document.getElementById('r-outcome').textContent, strip: document.querySelectorAll('#r-strip .sq').length,
       pct: vis('r-pct') && document.getElementById('r-pct').textContent, like: vis('r-like'), real: vis('r-reveal'), coachBtn: vis('r-coach'),
-      sheetOpen: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden), labels: Object.values(window.STD_CONTRACT.OUTCOME_LABEL) };
+      sheetOpen: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden), labels: Object.values(window.STD_CONTRACT.OUTCOME_LABEL),
+      cmp: document.querySelectorAll('#r-reveal .cmp-row').length, bats: document.querySelectorAll('#r-reveal .cmp-bat').length, vs: vis('r-real') && document.getElementById('r-real').className };
   });
+  ok(rv.cmp >= 4 && rv.bats >= 1 && /beat|matched|lost/.test(rv.vs), label + ': the side by side card (' + (rv.cmp - 1) + ' rows, ' + rv.bats + ' batters) and the verdict (' + rv.vs + ')');
   ok(rv.labels.includes(rv.outcome) && rv.strip === pitches && /^\d+(st|nd|rd|th)$/.test(rv.pct) && rv.like && rv.real,
     label + ': the end reveals the outcome (' + rv.outcome + '), the strip (' + rv.strip + '), the percentile (' + rv.pct + '), pitched like and the real one together');
   ok(rv.coachBtn && !rv.sheetOpen, label + ': "talk to pitching coach" is there and nothing opened by itself');
@@ -206,10 +664,13 @@ async function coachCheck(page, label, pitches, expect, shot) {
 async function run(w, h, theme) {
   console.log(`\n${w}x${h}, ${theme}`);
   const tag = w + '-' + theme;
+  const at = (n, lim) => step(w + 'x' + h + ' ' + n, lim);
+  at('open the page');
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE.replace(/\/shut-the-door\/$/, '') });
   const page = await ctx.newPage();
   await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, theme);
+  await page.addInitScript(STAGE_TEST);
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
@@ -228,17 +689,49 @@ async function run(w, h, theme) {
   };
 
   /* 1 */
+  at('1 home');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await homeWarm(page);
   await page.waitForSelector('#b-take', { state: 'visible' });
-  const home = await page.evaluate(() => ({
-    title: document.getElementById('h-title').textContent,
-    ars: document.querySelectorAll('#h-pitcher .ars li:not(.hd)').length,
-    sit: document.getElementById('h-sit').textContent,
-    openSheets: [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden).length,
-    robots: document.querySelector('meta[name=robots]').content,
-  }));
-  ok(home.title.length > 0 && home.ars >= 2 && /lead/.test(home.sit) && /out/.test(home.sit), '1 home shows the spot, the situation and the arsenal (' + home.ars + ' pitches)');
+  const home = await page.evaluate(() => {
+    const sit = window.STD_UI.state.scn.situation, bug = document.querySelector('#h-sit .scorebar');
+    const q = (s) => (bug && bug.querySelector(s)) || null;
+    return {
+      title: document.getElementById('h-title').textContent,
+      pitcher: (document.getElementById('h-pitcher') || {}).textContent || '',
+      due: (document.getElementById('h-due') || {}).textContent || '',
+      head: (document.getElementById('h-head') || {}).textContent.replace(/\s+/g, ' ').trim(),
+      pills: document.querySelectorAll('#h-day, .hero-chips, .chip-s').length,
+      mph: /mph/i.test(document.getElementById('h-main').textContent),
+      scrollX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      bgs: document.querySelectorAll('#h-bg .t-bgi').length,
+      pack: { pitcher: window.STD_UI.state.scn.pitcher.name, batter: window.STD_UI.state.scn.batters[0].name, line: window.STD_UI.state.scn.batters[0].line },
+      sit, aria: document.getElementById('h-sit').getAttribute('aria-label') || '',
+      // the scorebug (PR #642): both clubs with their runs, the half and the inning, the outs lit, the bases
+      runs: bug ? [...bug.querySelectorAll('.sb-team b')].map((b) => +b.textContent) : [],
+      inn: (q('.sb-inn') || {}).textContent || '', outsLit: bug ? bug.querySelectorAll('.sb-outs i.on').length : -1,
+      bases: bug ? [...bug.querySelectorAll('.sb-bases rect')].filter((r) => r.classList.contains('on')).length : -1,
+      stakes: (document.getElementById('h-setup') || {}).textContent || '',
+      stakesShown: !!document.getElementById('h-setup') && document.getElementById('h-setup').getBoundingClientRect().height > 0,
+      openSheets: [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden).length,
+      robots: document.querySelector('meta[name=robots]').content,
+    };
+  });
+  ok(home.title.length > 0, '1 home shows the occasion ("' + home.title + '")');
+  ok(home.head === 'YOU ARE THE CLOSER. CAN YOU SHUT THE DOOR?', '1 the header is the owner\'s words ("' + home.head + '")');
+  ok(home.pills === 0, '1 no pills above the header (' + home.pills + ' found)');
+  ok(home.pitcher.includes(home.pack.pitcher) && home.due.includes(home.pack.batter) && (!home.pack.line || home.due.includes(home.pack.line.split(',')[0])),
+    '1 the situation block names the closer and the batter due up, from the pack ("' + home.pitcher.trim() + '", "' + home.due.trim() + '")');
+  ok(!home.mph, '1 no speed on the home screen: it is revealed after the throw');
+  ok(home.scrollX <= 0, '1 no horizontal scroll (' + home.scrollX + ' px over)');
+  ok(home.bgs === 4, '1 the stadium background has its four views (' + home.bgs + ')');
+  const pop = (n) => { let c = 0; for (; n; n >>= 1) c += n & 1; return c; };
+  ok(home.runs.length === 2 && home.runs[0] === home.sit.score.us && home.runs[1] === home.sit.score.them
+    && new RegExp('^(top|bot) ' + home.sit.inning + '$').test(home.inn.trim()) && home.outsLit === home.sit.outs && home.bases === pop(home.sit.bases | 0)
+    && /(up|down) \d|tied/.test(home.aria) && /out/.test(home.aria),
+    '1 the scorebug has the score (' + home.runs.join('-') + '), the inning (' + home.inn.trim() + '), the outs and the bases, as the pack has them ("' + home.aria + '")');
+  ok(home.stakesShown && /door is shut/.test(home.stakes), '1 the stakes line is under it ("' + home.stakes.trim() + '")');
   ok(home.openSheets === 0, '1 no sheet or tutorial opened by itself');
   ok(/noindex/.test(home.robots), '1 the page is noindexed');
   await shot('home', true);
@@ -265,6 +758,7 @@ async function run(w, h, theme) {
   ok(['32x32=32x32', '16x16=16x16', 'touch=180x180'].every((x) => brand.heads.includes(x)), '13 favicon 32 and 16 and the apple touch icon 180 are linked and the right size');
 
   /* 2 */
+  at('2 the sheets');
   for (const [btn, id, name] of [['#b-menu', 'sheet-menu', 'menu'], ['[data-open="how"]', 'sheet-how', 'how'], ['[data-open="stats"]', 'sheet-stats', 'stats'],
     ['@menu [data-open="past"]', 'sheet-past', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
     /* past dailies lives in the menu only */
@@ -304,11 +798,19 @@ async function run(w, h, theme) {
   await page.click('#b-theme');
 
   /* 3 and 4 */
-  await page.click('#b-take');
-  await page.waitForSelector('#s-mound.on .grid .cell', { timeout: 5000 });
+  at('3 take the mound');
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });   // software GL: the first frame of the mound takes seconds
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 5000 });
+  /* 14: the mound is 3D */
+  const is3d = await stageReady(page);
+  ok(is3d, '14 the mound is the 3D scene (WebGL here)');
+  if (is3d) {
+    pixelsOk('14 the 3D canvas renders', await canvasRenders(page));
+  }
   await page.waitForTimeout(200);
   const mirror = await page.evaluate(() => {
-    const r = (c) => document.querySelector('#m-scene .grid .cell[data-cell="' + c + '"]').getBoundingClientRect();
+    const r = (c) => document.querySelector('#m-aim .cell[data-cell="' + c + '"]').getBoundingClientRect();
     const C = window.STD_CONTRACT;
     return { c0: r(0).left, c4: r(4).left, c20: r(20).top, c0t: r(0).top, sc: C.screenCol(0), w: r(12).width, hgt: r(12).height };
   });
@@ -316,66 +818,266 @@ async function run(w, h, theme) {
   ok(mirror.c20 > mirror.c0t, '3 row 0 is high, row 4 is low');
   ok(mirror.w >= 36 && mirror.hgt >= 36, '3 a cell is big enough to tap (' + Math.round(mirror.w) + 'x' + Math.round(mirror.hgt) + ')');
   await shot('mound');
+  /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number and
+     the name, and no speed (it is revealed after the throw, the owner 2026-10-23); one throw button; the step line. A drag over the zone moves the
+     crosshair with the pointer (free aim, never snapped) and picks the cell it is let go in,
+     through screenCol(); the break preview follows it; the zone takes touch-action none, so a drag
+     never scrolls the page. The drag ends on a cell's centre, so the crosshair is there. */
+  const pad = await page.evaluate(() => {
+    const S = window.STD_UI.state, ars = S.scn.pitcher.arsenal;
+    const btns = [...document.querySelectorAll('#m-arsenal .pitch')];
+    return {
+      /* the speed RANGE is on the button (the owner, 2026-10-26: what his arm can do with the pitch, the
+         power stop's softest to hardest, STD_METER.veloOf at e 0 and 1, whole mph); the exact speed of a
+         pitch still shows only after the throw, so no other number is on the button */
+      buttons: btns.every((b, i) => {
+        const M = window.STD_METER, lo = Math.round(M.veloOf(ars[i], 0)), hi = Math.round(M.veloOf(ars[i], 1));
+        const range = (lo === hi ? String(lo) : lo + '-' + hi) + 'mph', ps = b.querySelector('.ps');
+        return b.querySelector('.pk').textContent === String(i + 1) && b.querySelector('.pt b').textContent === ars[i].name &&
+          !!ps && ps.textContent === range && b.getAttribute('aria-label') === (i + 1) + ', ' + ars[i].name + ', ' + range.replace('mph', ' mph') &&
+          !/\d/.test(b.textContent.replace(/^\d/, '').replace(ps.textContent, ''));
+      }),
+      tall: Math.min(...btns.map((b) => b.getBoundingClientRect().height)),
+      throwWord: document.querySelector('#m-throw b').textContent, say: document.getElementById('m-say').textContent,
+      touch: getComputedStyle(document.getElementById('m-aim')).touchAction, grids: document.querySelectorAll('#m-scene .grid').length,
+    };
+  });
+  ok(pad.buttons && pad.tall >= 44, '3 each pitch is a big button with its number and its name, and his speed range, no exact speed before the throw (' + Math.round(pad.tall) + ' px tall)');
+  /* 3: FULL SCREEN (the owner, 2026-10-24). The 3D canvas is the viewport, the site header is gone
+     but a menu button stays, no HUD panel covers the zone, no sideways scroll, and every control
+     on the HUD is a thumb's size (44 px on a phone; the desk's are 40). */
+  const full = await page.evaluate(() => {
+    const r = (el) => el.getBoundingClientRect(), cv = r(document.getElementById('m-canvas')), z = r(document.getElementById('m-aim'));
+    const vis = (el) => { const b = r(el), cs = getComputedStyle(el); return b.width > 0 && b.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden'; };
+    const over = [...document.querySelectorAll('#s-mound [data-hud]')].filter(vis).filter((el) => { const b = r(el); return b.left < z.right - 1 && b.right > z.left + 1 && b.top < z.bottom - 1 && b.bottom > z.top + 1; });
+    const taps = [...document.querySelectorAll('#s-mound .mhud button')].filter(vis).map((b) => Math.min(r(b).width, r(b).height));
+    return { cv: [cv.left, cv.top, cv.width, cv.height].map(Math.round), vw: innerWidth, vh: innerHeight, over: over.map((el) => el.id || el.className),
+      scroll: document.documentElement.scrollWidth - innerWidth, hdr: vis(document.querySelector('.hdr')), menu: !!document.querySelector('#s-mound .mhud [data-open="menu"]'), tap: Math.min(...taps) };
+  });
+  ok(full.cv.join() === [0, 0, full.vw, full.vh].join(), '3 the 3D scene fills the screen (' + full.cv.join(',') + ' for ' + full.vw + 'x' + full.vh + ')');
+  ok(!full.over.length, '3 no HUD panel covers the zone' + (full.over.length ? ' (' + full.over.join(', ') + ')' : ''));
+  ok(full.scroll <= 0, '3 no sideways scroll on the mound (' + full.scroll + ' px)');
+  ok(!full.hdr && full.menu, '3 the site header is hidden while pitching, and the menu button stays on the HUD');
+  ok(full.tap >= (w < 700 ? 44 : 38), '3 every HUD control is a thumb\'s size (' + Math.round(full.tap) + ' px at the smallest)');
+  ok(pad.throwWord === 'throw' && pad.say === 'pick a pitch', '3 one throw button, and the step line says what to do ("' + pad.say + '")');
+  ok(pad.touch === 'none' && pad.grids === 0, '3 the aim is on the field (no separate grid) and a drag there never scrolls the page');
+  await page.click('#m-arsenal .pitch >> nth=0');
+  ok(await page.textContent('#m-say') === 'aim: drag or tap the zone', '3 with a pitch picked, the step line says aim');
+  const at12 = await page.evaluate(() => { const r = document.querySelector('#m-aim .cell[data-cell="12"]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width, r.height]; });
+  const scroll0 = await page.evaluate(() => [window.scrollY, document.querySelector('main').scrollTop]);
+  await page.mouse.move(at12[0], at12[1]);
+  await page.mouse.down();
+  // two columns right and one row down on screen, then let go
+  await page.mouse.move(at12[0] + at12[2], at12[1] + at12[3] * 0.5, { steps: 4 });
+  await page.mouse.move(at12[0] + at12[2] * 2, at12[1] + at12[3], { steps: 4 });
+  const mid = await page.evaluate(() => ({ dragging: document.getElementById('m-aim').classList.contains('dragging'), cell: window.STD_UI.state.cell, hover: window.STD_UI.state.hover }));
+  await page.mouse.up();
+  const drag = await page.evaluate(() => {
+    const S = window.STD_UI.state, C = window.STD_CONTRACT, st = window.STD_STAGE && window.STD_STAGE.current;
+    const x = document.querySelector('#m-aim .aim-x').getBoundingClientRect(), c = document.querySelector('#m-aim .cell[data-cell="' + S.cell + '"]').getBoundingClientRect();
+    return { cell: S.cell, row: C.rowOf(S.cell), sc: C.screenCol(S.cell), on: Math.abs(x.left + x.width / 2 - (c.left + c.width / 2)) < 2 && Math.abs(x.top + x.height / 2 - (c.top + c.height / 2)) < 2,
+      ghost: st && st.ghostSpec ? st.ghostSpec.cell : null, is3d: !!st, say: document.getElementById('m-say').textContent, ready: !document.getElementById('m-throw').disabled,
+      tag: document.querySelector('#m-aim .aim-tag').textContent, words: window.STD_UI.cellWords(S.cell, S.scn.batters[S.outing.batterIndex].bats),
+      scroll: [window.scrollY, document.querySelector('main').scrollTop] };
+  });
+  ok(mid.dragging && mid.cell == null && mid.hover != null, '3 mid drag the crosshair moves and the preview follows, nothing picked yet');
+  ok(drag.row === 3 && drag.sc === 4 && drag.on, '3 a drag picks the cell it ends in, through screenCol() (row ' + drag.row + ', screen column ' + drag.sc + '), the crosshair where it was let go');
+  ok(!drag.is3d || drag.ghost === drag.cell, '3 the break preview aims where the crosshair is (' + drag.ghost + ')');
+  ok(drag.tag.indexOf(drag.words) === 0 && !/\b(left|right)\b/.test(drag.tag), '3 the crosshair says where in inside and away words ("' + drag.tag + '")');
+  ok(drag.ready && drag.say === 'tap throw' && drag.scroll.join() === scroll0.join(), '3 the throw button is ready, the step line says throw, and the page did not scroll');
+  await shot('aimed');
+  /* THE SCOUT DRAWER (the owner, 2026-10-27): the at bat line is one slim row, the drawer starts shut
+     and the zone carries no heat until SCOUT opens it. Open, the heat is on the same 25 cells and the
+     drawer stays off the zone. Its report opens and closes; a tap on the zone keeps it open (aiming
+     is play), a tap outside shuts it and the heat goes with it. */
+  const painted = () => page.evaluate(() => [...document.querySelectorAll('#m-aim .aim-heat i')].filter((c) => c.style.background).length);
+  const shut = await page.evaluate(() => ({ drawer: document.getElementById('m-drawer').hidden, exp: document.getElementById('m-drawer-b').getAttribute('aria-expanded'),
+    h: Math.round(document.getElementById('m-card').getBoundingClientRect().height), tap: Math.round(document.getElementById('m-drawer-b').getBoundingClientRect().height),
+    name: document.getElementById('m-bname').textContent, line: document.getElementById('m-bline').textContent, hand: document.getElementById('m-bhand').textContent,
+    want: (() => { const S = window.STD_UI.state, b = S.scn.batters[S.outing.batterIndex]; return { name: b.name, line: b.line, bats: b.bats }; })() }));
+  ok(shut.drawer && shut.exp === 'false' && (await painted()) === 0, '4 the scout drawer starts shut and the zone carries no heat');
+  ok(shut.h <= 64 && shut.tap >= 38, '4 the at bat line is one slim row (' + shut.h + ' px), SCOUT thumb tall (' + shut.tap + ' px)');
+  const lineNums = (t) => (String(t).match(/\d*\.?\d+/g) || []).join(' ');
+  ok(shut.name === shut.want.name && shut.hand === 'bats ' + shut.want.bats && lineNums(shut.line) === lineNums(shut.want.line),
+    '4 the line reads his name, his side and his numbers from the pack ("' + shut.hand + ' ' + shut.line + '")');
+  await page.click('#m-drawer-b');
+  await page.waitForSelector('#m-drawer:not([hidden])');
+  const open = await page.evaluate(() => {
+    const d = document.getElementById('m-card').getBoundingClientRect(), z = document.querySelector('#m-aim .aim-zone').getBoundingClientRect();
+    return { exp: document.getElementById('m-drawer-b').getAttribute('aria-expanded'), clear: d.bottom <= z.top + 1 || d.right <= z.left + 1 };
+  });
+  ok(open.exp === 'true' && (await painted()) === 25, '4 SCOUT opens the drawer and the heat map is in the on-field zone, on the same 25 cells');
+  ok(open.clear, '4 the open drawer stays off the zone');
+  await shot('scout-drawer');
   await page.click('#m-batter');
   await page.waitForSelector('#m-scout:not([hidden])');
-  const heat = await page.evaluate(() => [...document.querySelectorAll('#m-scene .grid .cell')].filter((c) => c.style.background).length);
-  ok(heat === 25, '4 scouting paints the heat map on the same 25 cells');
   await shot('scout');
-  await page.click('#m-scout [data-heat="swing"]');
+  await page.click('#m-heat [data-heat="swing"]');
+  const swingOn = await page.evaluate(() => document.querySelector('#m-heat [data-heat="swing"]').getAttribute('aria-selected') === 'true');
+  ok(swingOn, '4 the damage and swings switch is in the drawer');
   await shot('scout-swings');
+  await page.click('#m-heat [data-heat="damage"]');
   await page.click('#m-batter');
-  ok(await page.evaluate(() => document.getElementById('m-scout').hidden), '4 scouting closes on a second tap');
+  ok(await page.evaluate(() => document.getElementById('m-scout').hidden), '4 the report closes on a second tap');
+  const keep = await page.evaluate(() => window.STD_UI.state.cell);
+  await page.click(`#m-aim .cell[data-cell="${keep}"]`);
+  ok(await page.evaluate(() => !document.getElementById('m-drawer').hidden), '4 a tap on the zone aims and keeps the drawer open');
+  await page.click('#m-drawer-b');
+  ok(await page.evaluate(() => document.getElementById('m-drawer').hidden) && (await painted()) === 0, '4 SCOUT shuts the drawer and the heat goes with it');
+  await page.click('#m-drawer-b');
+  await page.mouse.click(4, Math.round((await page.evaluate(() => innerHeight)) * 0.55));
+  ok(await page.evaluate(() => document.getElementById('m-drawer').hidden) && (await painted()) === 0, '4 a tap outside shuts the drawer');
 
   /* 10 */
+  at('10 the framing');
   for (const hand of ['L', 'R']) {
     const fr = await page.evaluate((hand) => {
       const S = window.STD_UI.state, was = S.scene.bat;
       const b = S.scn.batters.find((x) => x.bats === hand);
       S.scene.setBatter(b); S.grid.place(S.scene.gridRect()); S.scene.draw({});
       const f = S.scene.figureBoxes();
-      const c = document.querySelector('#m-scene .grid .cell[data-cell="12"]').getBoundingClientRect();
+      const c = document.querySelector('#m-aim .cell[data-cell="12"]').getBoundingClientRect();
       return { f, cell: [c.width, c.height], was: S.scn.batters.indexOf(was) };
     }, hand);
     const inside = (bx) => bx.x0 >= 0 && bx.x1 <= fr.f.W && bx.y0 >= 0 && bx.y1 <= fr.f.H;
-    ok(inside(fr.f.batter) && inside(fr.f.catcher) && inside(fr.f.umpire),
-      '10 a ' + (hand === 'L' ? 'left' : 'right') + ' handed hitter, the catcher and the umpire are all in frame (batter ' + fr.f.batter.x0 + '-' + fr.f.batter.x1 + ' of ' + fr.f.W + ')');
-    ok(fr.cell[0] >= 44 && fr.cell[1] >= 44, '10 cells stay tappable with him in frame (' + Math.round(fr.cell[0]) + 'x' + Math.round(fr.cell[1]) + ')');
+    /* the 3D set frames like the lab the owner approved: the hitter, the catcher, the umpire and
+       home plate whole (the top of the bat may leave the frame), and a cell no smaller than 38 px.
+       The old drawing keeps its own rule: everyone in, cells 44 */
+    const R = (v) => Math.round(v), is3d = !!fr.f.plate;
+    ok(inside(fr.f.batter) && inside(fr.f.catcher) && inside(fr.f.umpire) && (!is3d || inside(fr.f.plate)),
+      '10 a ' + (hand === 'L' ? 'left' : 'right') + ' handed hitter, the catcher' + (is3d ? ', the umpire and the plate' : ' and the umpire') + ' are all in frame (batter ' + R(fr.f.batter.x0) + '-' + R(fr.f.batter.x1) + ', catcher ' + R(fr.f.catcher.x0) + '-' + R(fr.f.catcher.x1) + (is3d ? ', plate ' + R(fr.f.plate.x0) + '-' + R(fr.f.plate.x1) + ', ' + R(fr.f.plate.y1) : '') + ' of ' + fr.f.W + 'x' + fr.f.H + ')');
+    const minCell = is3d ? 38 : 44;
+    ok(fr.cell[0] >= minCell && fr.cell[1] >= minCell, '10 cells stay tappable with him in frame (' + Math.round(fr.cell[0]) + 'x' + Math.round(fr.cell[1]) + ', ' + minCell + ' at least)');
     await shot('framing-' + hand);
     await page.evaluate((i) => { const S = window.STD_UI.state; S.scene.setBatter(S.scn.batters[i]); S.grid.place(S.scene.gridRect()); S.scene.draw({}); }, fr.was);
   }
 
+  /* 14: every kind of result plays its own motion, for a hitter from each side */
+  if (is3d) {
+    at('14 every pitch result');
+    const ev = await everyResult(page);
+    const probs = ev.errors.concat(...ev.traces.map(motionProblems));
+    ok(ev.traces.length === 28 && probs.length === 0, '14 every pitch result plays its motion (' + ev.traces.length + ' plays: ' + [...new Set(ev.kinds.map((k) => k.slice(2)))].join(', ') + ')' + (probs.length ? ': ' + probs.slice(0, 4).join(' | ') : ''));
+    await shot('after-every-result');
+    /* stills of one pitch for the record: in flight with its trail, and just after the plate with
+       the aimed and actual markers (a called strike that missed its spot a little) */
+    for (const when of ['flight', 'crossed']) {
+      await page.evaluate((when) => {
+        const S = window.STD_UI.state, st = window.STD_STAGE.current, C = window.STD_CONTRACT, a = S.scn.pitcher.arsenal[0];
+        const pr = { n: 99, call: { type: a.type, cell: 18 }, actual: { x: 0.35, zn: 0.15 }, actualCell: C.cellAt(0.35, 0.15), velo: a.velo, batter: 'take', result: 'called_strike',
+          inPlay: null, countBefore: { b: 0, s: 0 }, count: { b: 0, s: 1 }, outs: 0, bases: 0, runnerMoves: [], runs: 0, paOver: false };
+        document.getElementById('m-scene').classList.add('flying');
+        st.still(pr, when);
+      }, when);
+      await page.waitForTimeout(400);   // the game's grid fades out in flight (.15 s)
+      await shot('still-' + when);
+    }
+    await page.evaluate(() => { document.getElementById('m-scene').classList.remove('flying'); window.STD_STAGE.current.draw(); });
+    pixelsOk('14 after the 28 plays the canvas still draws', await canvasRenders(page));
+  }
+
   /* 5 */
-  const play = await playOuting(page, { w, h, shot });
+  at('5 the outing', 900);
+  /* the drawer open into the first pitch: step 5 holds that the throw shuts it (opened here, not in
+     step 4, so the framing of steps 10 and 14 sees the slim line, as a new at bat always does) */
+  await page.click('#m-drawer-b');
+  const play = await playOuting(page, { w, h, shot, drawerOpen: true });
+  if (is3d) pixelsOk('5 after the outing the canvas still draws', await canvasRenders(page));
   ok(play.pitches > 0, '5 a whole outing on the real engine (' + play.pitches + ' pitches)');
   ok(play.problems.length === 0, '5 nothing graded, tipped or over the field from the first pitch to the last' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
+  if (is3d) traceCheck('5', play);
   ok(play.pbp.length && play.pbp.every((x) => x && x.length > 3), '5 one line of play by play after each pitch ("' + (play.pbp[0] || '') + '")');
+  ok(play.pbp.some((x) => /\b\d{2,3} mph\b/.test(x)), '5 the speed shows after the throw, on the play by play (the radar gun)');
+
+  /* the minimap (minimap.js): the field shows after the first play; a dot only for a ball in play, and
+     never for a take, a strike or a foul; no text on it (the distance is an estimate, never a number) */
+  const mini = await page.evaluate(() => {
+    const el = document.getElementById('m-mini'), M = window.STD_MINIMAP;
+    return {
+      shown: !el.hidden,
+      dots: [...el.querySelectorAll('.mm-dot')].map((d) => ({ n: d.dataset.n, bb: d.dataset.bb })),
+      texts: el.querySelectorAll('text').length,
+      fly: M.spot({ bb: 'fly', ev: 100, la: 30, spray: -20 }),
+      foulSide: M.spot({ bb: 'fly', ev: 100, la: 30, spray: -60 }),
+      popup: M.spot({ bb: 'popup', ev: 70, la: 60, spray: 0 }),
+      hud: { lit: document.querySelectorAll('#m-count .row i.on').length, aria: document.getElementById('m-count').getAttribute('aria-label') },
+      // (each in-play pitch of the outing, and whether its ball has a place on the field: a pack with no
+      // batted-ball data, 2011 Feliz, has none, and the minimap draws no dot for it, by design)
+      placed: (window.STD_UI && window.STD_UI.state.outing ? window.STD_UI.state.outing.log : []).filter((p) => p.result === 'in_play').map((p) => ({ n: String(p.n), spot: !!M.spot(p.inPlay) })),
+    };
+  });
+  const inPlayNs = play.traces.filter((t) => t.result === 'in_play').map((t) => String(t.n));
+  const comparable = is3d && play.traces.length > 0;
+  ok(mini.shown, '5 the minimap shows after the first play');
+  ok(mini.texts === 0, '5 the minimap has no text: no distance is shown');
+  ok(mini.fly && mini.fly.x < 0 && mini.fly.y > 0, '5 spray -20 lands left of centre, out from home (' + JSON.stringify(mini.fly) + ')');
+  ok(mini.foulSide === null, '5 a spray past the foul line gets no dot');
+  ok(mini.popup && mini.popup.y < 150, '5 a popup comes down near the infield (' + JSON.stringify(mini.popup) + ')');
+  if (comparable) {
+    ok(mini.dots.every((d) => inPlayNs.includes(d.n)), '5 every dot is a ball in play, none for a take (' + mini.dots.length + ' dots, ' + inPlayNs.length + ' in play)');
+    // (held as before unless the outing's log has every in-play pitch and none of them has a place)
+    const known = inPlayNs.every((n) => mini.placed.some((p) => p.n === n)), placeable = mini.placed.filter((p) => p.spot).length;
+    ok(!inPlayNs.length || mini.dots.length > 0 || (known && placeable === 0), '5 an in-play pitch draws a dot on the field (' + placeable + ' of ' + inPlayNs.length + ' in play have a place on it)');
+  }
+  ok(/^\d balls, \d strikes$/.test(mini.hud.aria || '') && mini.hud.lit <= 5, '5 the scorebug count is lit as balls and strikes (' + mini.hud.aria + ')');
 
   /* 6 */
+  at('6 the result');
   await revealCheck(page, '6', play.pitches);
   await shot('result', true);
+  /* Share (PR #652): the button opens the share sheet, which draws the result card (card.js) and
+     offers the image and the text. The sheet opens from the button, the card draws, and "copy the
+     text" copies the share text. Before #652 the button copied at once, and this step waited for that
+     toast; on main after #652 it timed out, and the sheet left open then covered the coach button
+     (CI, 2026-10-22).
+     The toast is up for 2.2 s (ui.js toast). A click returns only once the page has taken the input,
+     which under software GL can wait behind the GPU for longer than that, so the watch starts before
+     the tap and keeps what the toast said. */
+  await page.evaluate(() => {
+    const t = document.getElementById('toast');
+    window.STD_CHECK_TOAST = '';
+    new MutationObserver(() => { if (t.classList.contains('on') && !window.STD_CHECK_TOAST) window.STD_CHECK_TOAST = t.textContent; }).observe(t, { attributes: true, attributeFilter: ['class'] });
+  });
   await page.click('#r-share');
-  await page.waitForSelector('#toast.on', { timeout: 3000 });
-  const clip = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
-  ok(/Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014), '6 share copies the share text');
+  await page.waitForSelector('#sheet-share.on', { timeout: 5000 });
+  const card = await page.waitForFunction(() => {
+    const i = document.getElementById('sh-img');
+    if (/did not draw/.test(document.getElementById('share-body').textContent)) return 'the image did not draw';
+    return i && i.complete && i.naturalWidth > 0 ? i.naturalWidth + 'x' + i.naturalHeight : null;
+  }, null, { timeout: 60000 }).then((hd) => hd.jsonValue(), () => 'no image in 60 s');
+  ok(/^\d+x\d+$/.test(card), '6 share opens the share sheet and the card draws (' + card + ')');
+  await shot('share-sheet');
+  await page.click('#sh-text');
+  const toastSeen = await page.waitForFunction(() => window.STD_CHECK_TOAST, null, { timeout: 10000 }).then(() => true, () => false);
+  const said = await page.evaluate(() => window.STD_CHECK_TOAST);
+  const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => 'unreadable: ' + String(e && e.message || e).slice(0, 80)));
+  ok(toastSeen && /^copied/.test(said) && /Shut The Door #\d+/.test(clip) && /runthe\.gg\/shut-the-door/.test(clip) && ![...clip].some((ch) => ch.charCodeAt(0) === 0x2013 || ch.charCodeAt(0) === 0x2014),
+    '6 copy the text copies the share text (toast "' + (said || 'none in 10 s') + '", ' + clip.split('\n').length + ' lines)');
+  await page.click('#sheet-share .sh-x');
+  await page.waitForSelector('#sheet-share', { state: 'hidden', timeout: 3000 });
   await shot('shared');
 
   /* 12, on the real engine */
+  at('12 the coach');
   await coachCheck(page, '12', play.pitches, null, shot);
 
   /* 7 */
+  at('7 run it back');
   await page.click('#r-again');
   await page.waitForSelector('#s-mound.on');
   const practice = await page.evaluate(() => window.STD_UI.state.outing.mode);
   ok(practice === 'practice', '7 run it back starts a practice outing');
   await shot('practice');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-done:not([hidden])', { timeout: 8000 });
+  await page.waitForSelector('#h-done:not([hidden])', { timeout: 20000 });
   ok(await page.isHidden('#b-take'), '7 after a reload today shows as done');
   await shot('home-done', true);
 
   /* 8 */
+  at('8 debug');
   await page.goto(BASE + '?debug=1', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#h-main:not([hidden])');
+  await homeWarm(page);
   await page.click('#d-again');
   await page.waitForSelector('#s-mound.on');
   const dbg = await page.evaluate(() => { const d = document.getElementById('m-dbg'); return !d.hidden && /seed/.test(d.textContent); });
@@ -390,8 +1092,10 @@ async function run(w, h, theme) {
 /* 11: one forced outing per ending */
 async function ending(w, h, end, extra) {
   const tag = String(w);
+  step(w + 'x' + h + ' 11 ' + end + ': open the page');
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
@@ -411,12 +1115,19 @@ async function ending(w, h, end, extra) {
     ok(await page.isVisible('#h-proxy'), '11 ' + end + ': the proxy note is on the home screen');
     await shot('home-proxy', true);
   }
-  await page.click('#b-take');
-  await page.waitForSelector('#s-mound.on .grid .cell');
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });   // software GL: the first frame of the mound takes seconds
+  await page.waitForSelector('#s-mound.on #m-aim .cell');
+  const is3d = await stageReady(page);
   if (proxy) ok(await page.isVisible('#m-proxy'), '11 ' + end + ': the proxy note is on the mound, small');
+  step(w + 'x' + h + ' 11 ' + end + ': the outing', 900);
   const play = await playOuting(page, { w, h, shot, runnerShots: end !== 'door_shut', type0: true, cell: 12, noSkip: end !== 'door_shut' });
   const k = play.pitches, sawMove = play.sawMove, sawOut = play.sawOut;
   ok(play.problems.length === 0, '11 ' + end + ': nothing graded, tipped or over the field during play' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
+  ok(is3d, '11 ' + end + ': on the 3D mound');
+  if (is3d) traceCheck('11 ' + end, play);
+  if (is3d) pixelsOk('11 ' + end + ': at the end the canvas still draws', await canvasRenders(page));
+  step(w + 'x' + h + ' 11 ' + end + ': the result and the coach');
   const res = await page.evaluate(() => ({ o: document.getElementById('r-outcome').textContent, cls: document.getElementById('r-outcome').className, rv: document.getElementById('r-reveal').textContent, st: document.getElementById('r-streak').textContent, them: window.STD_UI.state.outing.score.them, start: window.STD_UI.state.scn.situation.score.them }));
   const sawRun = res.them > res.start;
   ok(res.cls.includes(end), '11 ' + end + ': the outing ends ' + res.o + ' after ' + k + ' pitches');
@@ -425,6 +1136,11 @@ async function ending(w, h, end, extra) {
     ok(sawRun, '11 ' + end + ': runs score (' + res.start + ' to ' + res.them + ')');
   }
   if (end === 'doors_open') ok(sawOut, '11 doors_open: the double play shows a runner put out');
+  if (end === 'tie_held') {
+    const bug = await page.evaluate(() => ({ tied: document.querySelector('#s-mound .scorebar').classList.contains('tied'), inn: document.getElementById('m-inn').textContent, pbp: document.getElementById('m-pbp').textContent }));
+    ok(bug.tied && /tied/i.test(bug.inn), '11 tie_held: the scorebar says tied (' + bug.inn + ')');
+    ok(res.them === res.start + 1, '11 tie_held: the tying run scored and the outing went on to three outs');
+  }
   if (/mockNull/.test(extra || '')) ok(/at least 13 pitches/.test(res.rv), '11 ' + end + ': a reveal with no pitch count shows its note');
   const auth = /mockAuth/.test(extra || '');
   if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
@@ -444,19 +1160,122 @@ async function ending(w, h, end, extra) {
   await ctx.close();
 }
 
+/* 15. THE RUNNING GAME (rules 7) on a spot that starts with a runner on: the first day on the schedule
+   whose pack has bases, played on that day's clock. The row shows, a pickoff throw goes, the next
+   pitch goes with a quick delivery (playOuting holds each), and nothing is over the field. */
+function runnerDay() {
+  const sch = JSON.parse(fs.readFileSync(path.join(ROOT, 'shut-the-door/data/schedule.json'), 'utf8'));
+  for (const [day, d] of Object.entries(sch.days || {})) {
+    const f = path.join(ROOT, 'shut-the-door/data/packs', d.pack + '.json');
+    if (!fs.existsSync(f)) continue;
+    const sit = (JSON.parse(fs.readFileSync(f, 'utf8')).scenario || {}).situation || {};
+    if (sit.bases) return day;
+  }
+  return null;
+}
+async function runningGame(w, h) {
+  const day = runnerDay();
+  console.log(`\nthe running game, ${w}x${h}, ${day}`);
+  step('15 the running game', 900);
+  if (!day) { ok(false, '15 a day on the schedule with a runner on'); return; }
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(day + 'T16:00:00Z'));
+  await page.addInitScript(STAGE_TEST);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await homeWarm(page);
+  await page.click('#b-take');
+  await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
+  await stageReady(page);
+  const play = await playOuting(page, { w, h });
+  ok(play.ranGame, '15 the running game row came up with a runner on');
+  ok(play.problems.length === 0, '15 nothing graded, tipped or over the field' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
+  ok(errors.length === 0, '15 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* 16. EVERY WINDOW SIZE (the owner, 2026-10-27: at half a desk's width the card covered the batter and
+   the scene looked distorted). One mound, resized through phones, a tablet, square and half width
+   windows and desks. At each: no HUD panel over the batter, his bat, the plate or the zone; the
+   batter, the plate and the zone on screen; the card no wider than its column once there are
+   corners; and the canvas's drawing buffer the shape of its box (a canvas sized for one box and drawn
+   into another is stretched). */
+const SWEEP = [[390, 844], [844, 390], [768, 1024], [900, 900], [1000, 1020], [1100, 800], [1280, 720], [1440, 900], [1920, 1080]];
+async function sizeSweep() {
+  console.log('\nevery window size');
+  step('16 the window sizes', 900);
+  const ctx = await browser.newContext({ viewport: { width: 1000, height: 1020 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await homeWarm(page);
+  await page.click('#b-take');
+  await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
+  if (!(await stageReady(page))) { ok(true, '16 no 3D mound here, nothing to frame'); await ctx.close(); return; }
+  for (const [w, h] of SWEEP) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(700);
+    const m = await page.evaluate(() => {
+      const st = window.STD_STAGE.current, cv = document.getElementById('m-canvas'), c = cv.getBoundingClientRect(), fb = st.figureBoxes(800);
+      const box = (k) => fb[k] && isFinite(fb[k].x0) ? { left: c.left + fb[k].x0, right: c.left + fb[k].x1, top: c.top + fb[k].y0, bottom: c.top + fb[k].y1 } : null;
+      const figs = { batter: box('batter'), bat: box('bat'), plate: box('plate'), zone: document.querySelector('#m-aim .aim-zone').getBoundingClientRect() };
+      const vis = (el) => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && !el.hidden; };
+      const hit = (a, b) => a && b && a.left < b.right - 2 && a.right > b.left + 2 && a.top < b.bottom - 2 && a.bottom > b.top + 2;
+      const over = [];
+      for (const el of [...document.querySelectorAll('#s-mound [data-hud]')].filter(vis).filter((el) => !el.closest('.msheet'))) {
+        const r = el.getBoundingClientRect();
+        for (const k of Object.keys(figs)) if (hit(r, figs[k])) over.push((el.id || el.className.split(' ')[0]) + ' over ' + k);
+      }
+      const cut = ['batter', 'plate', 'zone'].filter((k) => { const f = figs[k]; return f && (f.left < -2 || f.top < -2 || f.right > innerWidth + 2 || f.bottom > innerHeight + 2); });
+      const wide = matchMedia('(orientation: landscape), (min-width: 700px) and (min-height: 600px)').matches;
+      return { over, cut, wide, card: Math.round(document.querySelector('.mh-card').getBoundingClientRect().width),
+        aspect: Math.abs(cv.width / cv.height - c.width / c.height) / (c.width / c.height) };
+    });
+    ok(m.over.length === 0 && m.cut.length === 0 && m.aspect < 0.01 && (!m.wide || m.card <= 420),
+      `16 ${w}x${h}: the batter, his bat, the plate and the zone clear and on screen, the card ${m.card} px, the canvas its box's shape` +
+      (m.over.length ? ' (' + m.over.join(', ') + ')' : '') + (m.cut.length ? ' (cut: ' + m.cut.join(', ') + ')' : '') + (m.aspect >= 0.01 ? ' (stretched ' + (m.aspect * 100).toFixed(1) + '%)' : ''));
+  }
+  await ctx.close();
+}
+
 try {
+  if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
   await run(1440, 900, 'dark');
-  console.log('\nthe three endings');
+  await runningGame(390, 844);
+  await sizeSweep();
+  console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
+  await ending(390, 844, 'tie_held', '&mockAuth=1');
   await ending(390, 844, 'doors_open', '&mockPro=none');
   await ending(390, 844, 'walk_off', '&mockProxy=1&mockNull=1&mockAuth=1');
   await ending(1440, 900, 'door_shut', '&mockLesson=none');
+  await ending(1440, 900, 'tie_held', '&mockPro=none');
   await ending(1440, 900, 'doors_open', '&mockAuth=1');
   await ending(1440, 900, 'walk_off', '&mockPro=none');
 } catch (e) {
   fails++;
-  console.log('  FAIL ' + (e && e.message ? e.message.split('\n')[0] : e));
+  console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));
+  // Playwright's call log says why an action waited (not visible, not stable, another element on top)
+  if (e && e.message && e.message.includes('\n')) console.log('       ' + e.message.split('\n').slice(1).filter((l) => l.trim()).slice(-6).map((l) => l.trim()).join(' / '));
 }
 await browser.close();
 server.close();

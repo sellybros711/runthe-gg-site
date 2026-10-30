@@ -257,6 +257,10 @@ if (!QUICK){
   }
   head('3b. BOTH TOURS: EVERY HOLE BEATEN UNDER PAR, WITHOUT LUCK, BY ITS RECORDED ROUTE');
   const ROUTES = JSON.parse(fs.readFileSync(new URL('./routes.json', import.meta.url), 'utf8'));
+  /* NO ROUTE IS STRONGER THAN A PLAYER CAN HIT. The power bar tops out at P.MAX_FT on a mini hole, and a route at 44 ft
+     once showed an ace on Double Loop that full power could not make (the owner, 2026-10-19). */
+  { const over = []; for (const [k, L] of Object.entries(ROUTES)) (L || []).forEach((u, i) => { if (Array.isArray(u) && u[1] > P.MAX_FT + 1e-9) over.push(k + ' putt ' + (i + 1) + ' at ' + u[1] + ' ft'); });
+    claim(P.MAX_FT === 42 && over.length === 0, `every recorded putt is within the power bar (${P.MAX_FT} ft)` + (over.length ? ': ' + over.slice(0, 6).join(', ') + (over.length > 6 ? ' and ' + (over.length - 6) + ' more' : '') : '')); }
   /* THREE STARS HAS TO BE MAKEABLE. It is two under par, so on a par 3 it is the ace. Of the routes a
      hole carries (the obvious one, the secret one, and the ace the solver looks for apart, :3), one has
      to reach three stars and replay with the room for error every recorded putt gets. A star a player
@@ -532,13 +536,11 @@ if (!args.includes('--no-browser')){
     await pg.waitForFunction(() => window.RTT_PUTT_3D && window.RTT_PUTT_LAND && window.PXHD, null, { timeout:30000 });
     claim(await pg.evaluate(() => { try{ const n0 = errs0(); S.overlay = null; S.screen = 'title'; render(); document.querySelector('#rttnav [data-nav="protour"]').click(); return S.screen !== 'title' && document.body.innerText.length > 0; }catch(e){ return false; } function errs0(){ return 0; } }),
       'with every module loaded, the game still draws its home screen and a tab still moves it on');
-    // LIVE: the door is everybody's. The kill switch (PUTT_LIVE=false) still shuts it on all but the testers.
-    claim(await pg.evaluate(() => typeof PUTT_LIVE !== 'undefined' && PUTT_LIVE === true), 'PUTT_LIVE is true: Putt Putt is live');
-    claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt') && ftLive()), 'signed out: the door is there, on the First Tee');
+    // LIVE: the door is everybody's, signed out or in, on the First Tee (the classic home and PUTT_LIVE are gone)
+    claim(await pg.evaluate(() => typeof PUTT_LIVE === 'undefined' && typeof ftLive === 'undefined' && typeof scrTitleClassic === 'undefined'), 'the launch switch and the classic home are gone');
+    claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt') && !!document.querySelector('.ft-home, .ft')), 'signed out: the door is there, on the First Tee');
     await pg.evaluate(() => { sbUser = { id:'x' }; sbUsername = 'somebody'; });
     claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as anybody: the door is there');
-    claim(await pg.evaluate(() => { PUTT_LIVE = false; const shut = !puttOn() && !ftLive(); PUTT_LIVE = true; return shut; }),
-      'the kill switch shuts it for anybody else');
     // a tester who is NOT on PUTT_ALL_ACCESS, so every gate below is the one an ordinary player meets
     await pg.evaluate(() => { sbUsername = 'SlimeyB3'; });
     claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as a tester: the door is there');
@@ -1349,13 +1351,21 @@ if (!args.includes('--no-browser')){
       return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives, clocks:(after.back || []).length }; });
     claim(lvs.first === 0 && lvs.wound === 0, `a fresh browser takes the server's lives, and a wound clock does not refill them (${lvs.first}, then ${lvs.wound})`);
     claim(lvs.spent && lvs.srv === 1 && lvs.after === 1 && lvs.clocks === 8, `a lost life is spent on the server, with a clock of its own (server ${lvs.srv}, browser ${lvs.after}, ${lvs.clocks} clocks)`);
-    // A GUEST WALKS TO HOLE 1 ONLY AND PLAYS NO TOUR HOLE (the owner, 2026-10-16; story mode 2026-10-18). Hole 1 asks them to sign in,
-    // the Daily Hole stays open, and a guest never sees a coin count.
+    // A GUEST WALKS TO HOLE 1 ONLY AND PLAYS HOLE 1 AND NO OTHER TOUR HOLE (the owner, 2026-10-16; story mode 2026-10-18;
+    // hole 1 playable 2026-10-19). Hole 2 asks them to sign in, the Daily Hole stays open, and a guest never sees a coin count.
     const gst = await pg.evaluate(async () => {
-      localStorage.removeItem('bag_ppt_v1'); sbUser = null; window.RTT_PUTT.open(puttHost());
-      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="1"]'); t++) await new Promise(r => setTimeout(r, 50));
-      const S0 = window.RTT_PUTT._state(), pill = !!document.querySelector('.pp-hdr [data-bal]');
-      window.RTT_PUTT._level(1, 'main'); const sh = document.querySelector('.pp-sheet'), txt = sh ? sh.innerText : '';
+      const mapUp = async () => { for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="1"]'); t++) await new Promise(r => setTimeout(r, 50)); };
+      localStorage.removeItem('bag_ppt_v1'); sbUser = null; window.RTT_PUTT.open(puttHost()); await mapUp();
+      const pill = !!document.querySelector('.pp-hdr [data-bal]');
+      // hole 1 plays, and holed it says the coins wait for an account and its Next hole asks for one
+      window.RTT_PUTT._level(1, 'main'); const Sp = window.RTT_PUTT._state();
+      const play1 = Sp.screen === 'play' && !!Sp.round && Sp.round.lv === 1 && !document.querySelector('.pp-sheet [data-in]');
+      if (play1) window.RTT_PUTT._holed(2); const won1 = (Sp.ov || document.body).innerText;
+      const nx = document.querySelector('[data-a="next"]'); if (nx) nx.click(); await new Promise(r => setTimeout(r, 100));
+      const nextAsks = !!document.querySelector('.pp-sheet [data-in]') && window.RTT_PUTT._state().screen !== 'trail';
+      window.RTT_PUTT.close(); window.RTT_PUTT.open(puttHost()); await mapUp();
+      const S0 = window.RTT_PUTT._state();
+      window.RTT_PUTT._level(2, 'main'); const sh = document.querySelector('.pp-sheet'), txt = sh ? sh.innerText : '';
       const walkBtn = !!document.querySelector('.pp-sheet [data-walk]'), notPlayed = S0.screen !== 'play';
       document.querySelector('.pp-sheet [data-n]').click();
       document.querySelector('.pp-map [data-lv="3"]').click(); await new Promise(r => setTimeout(r, 100));
@@ -1371,9 +1381,11 @@ if (!args.includes('--no-browser')){
       document.querySelector('.pp-sheet [data-in]').click();
       const toAcct = !document.querySelector('.pt-ov') && S.overlay === 'account' && S.acctMode === 'signin'; S.overlay = null; render();
       localStorage.removeItem('bag_ppt_v1'); localStorage.removeItem('bag_ppt_v1@chk'); sbUser = { id:'chk' }; openPutt();
-      return { pill, txt, walkBtn, notPlayed, tap, card, res, daily, deep, toAcct }; });
+      return { pill, play1, won1, nextAsks, txt, walkBtn, notPlayed, tap, card, res, daily, deep, toAcct }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && !gst.walkBtn, `a guest's hole 1 asks them to sign in, with no walk on past it (${JSON.stringify(gst.txt.slice(0, 60))})`);
+    claim(gst.play1, 'a guest plays hole 1 of the Tour, with no sign in asked');
+    claim(/Sign in to collect your coins/.test(gst.won1) && !/\+\d+ coins/.test(gst.won1) && gst.nextAsks, `a guest who holes hole 1 sees no coin count, and Next hole asks them to sign in where they stand (${gst.nextAsks})`);
+    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && !gst.walkBtn, `a guest's hole 2 asks them to sign in, with no walk on past it (${JSON.stringify(gst.txt.slice(0, 60))})`);
     claim(gst.tap !== 'trail' && gst.tap !== 'sheet', `story mode: a guest tapping hole 3 on the map stays on the map (${gst.tap})`);
     claim(gst.deep && gst.toAcct, `past the opening world the sheet offers no walk, and Sign in opens the sign in sheet (${gst.deep}, ${gst.toAcct})`);
     claim(gst.daily, `a guest can still play the Daily Hole (${gst.daily})`);
@@ -1602,18 +1614,22 @@ if (!args.includes('--no-browser')){
        board yet says so instead of breaking. */
     const db = await pg.evaluate(async () => { const keepSb = sb, keepU = sbUser, keepOn = puttOn, calls = []; let mode = 'rows';
       sb = { rpc:(fn, args) => { calls.push([fn, args]); if (mode === 'down') return Promise.resolve({ error:{ message:'no such function' } });
+        // the post takes a moment to land, as a real one does: the board must not be read before it has
+        if (fn === 'putt_daily_submit') return new Promise(res => setTimeout(() => { calls.push(['posted']); res({ data:true }); }, 120));
         return Promise.resolve({ data: fn === 'putt_daily_board' ? [{ rank:1, username:'one', strokes:1, par:3, ms:5000, look:null, mine:false, players:2 }, { rank:2, username:'me', strokes:2, par:3, ms:9000, look:null, mine:true, players:2 }] : true }); } };
       sbUser = { id:'dchk' }; puttOn = () => true; const T = window.RTT_PUTT, S = T._state(), k = String(todayKey()), day = /^\d{8}$/.test(k) ? k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8) : k;
       const clear = () => Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).forEach(k0 => { const s0 = JSON.parse(localStorage.getItem(k0)); s0.daily = {}; localStorage.setItem(k0, JSON.stringify(s0)); });
       const r = {}; clear(); S.round = { mode:'pdaily', day:day }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       const sub = calls.filter(c => c[0] === 'putt_daily_submit'); r.posted = sub.length === 1 && sub[0][1].p_day === day && sub[0][1].p_strokes === 2 && !!sub[0][1].p_look;
       r.rows = S.ov.querySelectorAll('.pp-drow').length === 2 && !!S.ov.querySelector('.pp-drow.me');
+      const ix = n => calls.findIndex(c => c[0] === n); r.after = ix('posted') >= 0 && ix('putt_daily_board') > ix('posted');
       clear(); calls.length = 0; const y = new Date(Date.parse(day + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10); S.round = { mode:'pdaily', day:y }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       r.lateQuiet = !calls.some(c => c[0] === 'putt_daily_submit');
       clear(); mode = 'down'; S.round = { mode:'pdaily', day:day }; T._dailyFinish(2, 3, 9000); await new Promise(x => setTimeout(x, 300));
       r.down = /on its way/.test((S.ov.querySelector('[data-rows]') || {}).textContent || '');
       clear(); sb = keepSb; sbUser = keepU; puttOn = keepOn; return r; });
     claim(db.posted && db.rows, `a Daily Hole played on its day posts to the board once, with the golfer's look, and the card shows the day's rows (${JSON.stringify(db)})`);
+    claim(db.after, 'the board is read once the round has landed, so the player is on it (it was read alongside the post and said nobody had posted)');
     claim(db.lateQuiet, 'a Daily Hole played late from the calendar never posts');
     claim(db.down, 'a server without the board yet says it is on its way, and nothing breaks');
     // THE LOCKED GATE IS PART OF ITS FENCE: built to the gap and drawn at the land's size on a smoothed walk (it once stood at half)

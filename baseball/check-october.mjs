@@ -90,6 +90,23 @@ async function openPage(opts) {
   p.on('pageerror', (e) => errors.push(String(e)));
   await p.addInitScript(() => {
     try { localStorage.setItem('rtd_seen_intro_v1', '1'); } catch (_) {}
+    /* THE SETTLED OCTOBER, KEPT WHERE THE WALK CAN READ IT. The page's run lives
+       inside its own closure, but the page settles October through the public
+       R.finalizeSeason(RUN), so run.js is caught as it publishes itself and that
+       one call is wrapped to keep the run it was handed. Nothing it returns or
+       changes is touched. */
+    let api;
+    Object.defineProperty(window, 'RTD_RUN', {
+      configurable: true,
+      get: () => api,
+      set: (v) => {
+        api = v;
+        const fin = v && v.finalizeSeason;
+        if (typeof fin === 'function') {
+          v.finalizeSeason = function (run) { window.__octoberRun = run; return fin.apply(this, arguments); };
+        }
+      },
+    });
   });
   await p.goto(`http://localhost:${PORT}/baseball/`, { waitUntil: 'load' });
   await p.waitForSelector('#s-intro.on', { timeout: 20000 });
@@ -201,26 +218,68 @@ const sample = (p) => p.evaluate(() => {
   };
 });
 
+/* Does this October hold a deciding game? October is settled before it is shown,
+   so the run already knows. The rule is the page's isDecider(): a game played with
+   both sides one win from the series (a one game round is always one). It is a
+   second copy of that rule, which the page keeps in its closure. If the two ever
+   drift, the walk below fails loudly when the page plays no decider this said it
+   would, and a decider this misses only costs a try. */
+const hasDecider = (p) => p.evaluate(() => {
+  const run = window.__octoberRun;
+  const rounds = (run && run.playoffs && run.playoffs.rounds) || [];
+  return rounds.some((r) => {
+    const need = Math.ceil((r.bestOf || 7) / 2);
+    let w = 0, l = 0;
+    return r.games.some((g) => {
+      const tied = w === need - 1 && l === need - 1;
+      if (g.won) w++; else l++;
+      return tied;
+    });
+  });
+});
+
 head('1-3. A RUN THAT REACHES A DECIDING GAME, WATCHED WITHOUT SKIPPING');
 let found = null;
-for (let attempt = 0; attempt < 10 && !found; attempt++) {
+/* FEWER RUNS HAVE A DECIDER THAN THIS ONCE SAID. The old comment guessed one in
+   four. Measured on 2026-10-29 over 60 Classic runs: 17 reached October and 9 of
+   those held a decider, about one run in seven. So 24 tries missed about one time
+   in 50 with nothing wrong, and every October without a decider was still watched
+   to the end. Now an October without one is skipped as soon as it is settled, so a
+   try costs only the draft and the season, and 80 tries make a miss about one in
+   a million. The loop still stops at the first decider. */
+let octobers = 0;
+for (let attempt = 0; attempt < 80 && !found; attempt++) {
   const { ctx, p } = await openPage({});
   await p.evaluate(() => { try { localStorage.setItem('rtd_po_speed', '2'); } catch (_) {} });
   const d = await draft(p);
   if (d.stalled != null || !(await toOctober(p))) { await ctx.close(); continue; }
+  octobers++;
+  if (!(await hasDecider(p))) {
+    console.log(`        run ${attempt + 1}: October had no deciding game`);
+    await ctx.close();
+    continue;
+  }
   const tl = [];
   const t0 = Date.now();
-  while (Date.now() - t0 < 300000) {
+  /* Fifteen minutes, because a GitHub runner is slow: five ran out there before a
+     watched October reached the results screen (2026-10-15). The loop stops the
+     moment October is over, so a passing run costs what it always did. */
+  while (Date.now() - t0 < 900000) {
     const s = await sample(p);
     tl.push(s);
     if (s.over) break;
     /* The tap that starts a game 7 sooner is the only press this walk makes. */
     await p.waitForTimeout(120);
   }
-  if (tl.some((s) => s.g7game)) found = { ctx, p, tl };
-  else { console.log(`        run ${attempt + 1}: October had no deciding game`); await ctx.close(); }
+  if (tl.some((s) => s.g7game)) { found = { ctx, p, tl }; break; }
+  /* The page said this October has a decider and the walk never saw it played.
+     That is the bug this check exists for, not bad luck, so it is not retried. */
+  bad('a deciding game the page knows about is played on the game screen',
+    `run ${attempt + 1}: never reached #s-game.g7 (last screen ${tl.length ? tl[tl.length - 1].screen : 'none'})`);
+  await ctx.close();
+  break;
 }
-claim(!!found, 'a run reached a winner-take-all game');
+claim(!!found, 'a run reached a winner-take-all game', fails ? '' : `${octobers} Octobers in the tries, none with a decider`);
 if (found) {
   const { tl, p } = found;
   /* 1. The series is revealed a game at a time. */

@@ -43,6 +43,9 @@ var STOP_V = 0.05;          // ft/s
 var DROP = BALL_R * 1.25;   // how far a ball must fall before the far lip catches it
 var MAX_T = 24;             // s, a putt that is still rolling after this has found a perpetual slope
 var V_MAX = 15;             // ft/s
+// THE HARDEST PULL. A mini hole's power bar tops out at MAX_FT; the solver, the ace search and every recorded route are
+// held to it too (the owner, 2026-10-19: a route at 44 ft showed an ace on Double Loop that full power could not make).
+var MAX_FT = 42;
 var TGT_R = 0.4;            // a trick shot target (a bottle and its coaster): what the ball has to touch to knock it over
 var TGT_KEEP = 0.7;         // one that topples keeps the ball going at this share of its speed
 var TGT_E = 0.55;           // and one hit out of order rings and stays up: the ball bounces off it this hard
@@ -60,7 +63,6 @@ function mulberry(a){ a = a >>> 0; return function(){ a = (a + 0x6D2B79F5) >>> 0
 function hash3(a, b, c){ var h = (2166136261 ^ (a | 0)) >>> 0; h = Math.imul(h ^ (b | 0), 16777619) >>> 0; h = Math.imul(h ^ ((c | 0) + 0x9e37), 16777619) >>> 0; h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995) >>> 0; h ^= h >>> 15; return (h >>> 0) / 4294967296; }
 function clamp(v, a, b){ return v < a ? a : v > b ? b : v; }
 function sstep(a, b, x){ var t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
-function dsstep(a, b, x){ var t = (x - a) / (b - a); if (t <= 0 || t >= 1) return 0; return 6 * t * (1 - t) / (b - a); }
 function inPoly(P, x, y){ var c = false; for (var i = 0, j = P.length - 1; i < P.length; j = i++){ var a = P[i], b = P[j];
   if (((a[1] > y) !== (b[1] > y)) && (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])) c = !c; } return c; }
 function segDist(px, py, ax, ay, bx, by){ var ex = bx - ax, ey = by - ay, l2 = ex * ex + ey * ey || 1e-9;
@@ -121,7 +123,21 @@ function inClimb(C, x, y){ var Z = C.climbs; for (var i = 0; i < Z.length; i++){
 /* It pulls away gently and stops hard. Pulling away it gathers speed slower than the carpet's grip can
    follow, so a ball sitting on the deck stays put; at the far dock it stops dead and the ball rolls on off
    the leading edge. (A deck that started with a jerk would throw the ball off its back edge.) */
-function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w;
+/* A MOVING DECK HOLDS THE BALL (the owner, 2026-10-19: "it's almost impossible to land it on it right now. The ball
+   rolls off as it moves"). On carpet's grip a ball coming down on a moving deck needed far more than the deck's length
+   to settle. So while the deck moves it grips DECK_GRIP times harder, and a ball that lands on it stops on it and rides.
+   A deck standing at a dock is carpet again, so a ball rolled onto a waiting deck plays as it always has.
+   That grip would have the ball ride at the deck's full speed into the dock and be thrown off it, so the deck now eases
+   in: it leaves gently, runs, and slows to its landing speed (f.e, set where the hole is built: the speed at which a ball
+   anywhere on the deck slides a foot clear of it on the carpet's grip), then stops. The ball keeps that speed and is put
+   ashore, and never rests on the deck. k = (3 - e)w^2 + (e - 2)w^3: no jerk leaving, e times the mean speed arriving. */
+var DECK_GRIP = 8;
+function ferryEase(e, w){ return { k:(3 - e) * w * w + (e - 2) * w * w * w, d:2 * (3 - e) * w + 3 * (e - 2) * w * w }; }
+function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w, z;
+  if (f.e != null){
+    if (u < f.dwell){ k = 0; v = 0; } else if (u < f.dwell + f.move){ z = ferryEase(f.e, (u - f.dwell) / f.move); k = z.k; v = z.d / f.move; }
+    else if (u < 2 * f.dwell + f.move){ k = 1; v = 0; } else { z = ferryEase(f.e, (u - 2 * f.dwell - f.move) / f.move); k = 1 - z.k; v = -z.d / f.move; }
+    return { ox:f.dx * k, oy:f.dy * k, vx:f.dx * v, vy:f.dy * v, k:k }; }
   if (u < f.dwell){ k = 0; v = 0; } else if (u < f.dwell + f.move){ w = (u - f.dwell) / f.move; k = w * w; v = 2 * w / f.move; }
   else if (u < 2 * f.dwell + f.move){ k = 1; v = 0; } else { w = (u - 2 * f.dwell - f.move) / f.move; k = 1 - w * w; v = -2 * w / f.move; }
   return { ox:f.dx * k, oy:f.dy * k, vx:f.dx * v, vy:f.dy * v, k:k }; }
@@ -320,7 +336,7 @@ function simulate(C, x, y, vx, vy, t0){
       s.vx += rv.ty * rv.lat * 5 * DT; s.vy -= rv.tx * rv.lat * 5 * DT;
     } else if (deck){
       // on the ferry: friction works against the ball's speed relative to the deck, so a ball that settles rides it
-      var fvx = deck.q.vx, fvy = deck.q.vy, rfx = s.vx - fvx, rfy = s.vy - fvy, rfs = Math.hypot(rfx, rfy), aff = fricOf(C, M.GREEN);
+      var fvx = deck.q.vx, fvy = deck.q.vy, rfx = s.vx - fvx, rfy = s.vy - fvy, rfs = Math.hypot(rfx, rfy), aff = fricOf(C, M.GREEN) * (fvx || fvy ? DECK_GRIP : 1);
       if (rfs > 1e-9){ var df = Math.min(rfs, aff * DT); rfx -= rfx / rfs * df; rfy -= rfy / rfs * df; }
       s.vx = rfx + fvx; s.vy = rfy + fvy;
     } else if (disc){
@@ -807,7 +823,9 @@ function courseFromH(H, tplName, seed, themeId, label){
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
     secret:H.secret || [], loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
-    rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ return { x0:f.x0, y0:f.y0, x1:f.x1, y1:f.y1, dx:f.dx, dy:f.dy, move:f.move / PACE, dwell:f.dwell / PACE, phase:f.phase || 0 }; }), turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:(u.omega || 1.2) * PACE }; }),
+    rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ var st = H.stimp || (themeId === 'winter' ? 9.5 : 9), D = Math.hypot(f.dx, f.dy) || 1, L = Math.abs(f.dx) >= Math.abs(f.dy) ? f.x1 - f.x0 : f.y1 - f.y0,
+      ve = Math.sqrt(2 * (V_STIMP * V_STIMP / (2 * st)) * (L + 1)), mv = f.move / PACE;
+      return { x0:f.x0, y0:f.y0, x1:f.x1, y1:f.y1, dx:f.dx, dy:f.dy, move:mv, dwell:f.dwell / PACE, phase:f.phase || 0, e:Math.max(0.2, Math.min(1.4, ve * mv / D)) }; }), turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:(u.omega || 1.2) * PACE }; }),
     climbs:(H.climbs || []).slice(),
     belts:(H.belts || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), ax:z.ax, ay:z.ay }; }) };
   C.matFn = function(x, y){
@@ -1198,9 +1216,11 @@ var LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-8, -13.9, 12, -19.1), rm(6, -18.9, 12, -38)], [0, -2.5], [9, -34]); zoneR(H, M.WATER, -8, -14, 6, -19);
     jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1);
     ferry(H, -8, -13.6, -3.6, -19, 10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[2, -7, 0.6], [7.5, -27, 0.6]]); bowl(H, 9, -34, 1.7, 0.12); return H; } },
-  // Double Loop: two loops in a row, one pace for both.
-  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.6], [-0.8, -13.6]]), rm(-0.8, -13.5, 0.8, -24), rm(-4, -23.9, 4, -36)], [0, -2.5], [0, -32]);
-    loopAt(H, 0, -15.6, 0, -1, 0.7, 1.6); loopAt(H, 0, -20.5, 0, -1, 0.7, 1.6); bumps(H, T, [[2.6, -28.5, 0.6]]); return H; } },
+  // Double Loop: angle up into the loop lane on the right, one pace for both loops, then round the prize shelf to the
+  // cup tucked in the far left corner. Not a straight putt (the owner, 2026-10-19): the tee is off the lane's line and
+  // the cup is off its exit.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -10), pg([[-6, -10], [6, -10], [4.2, -13.6], [2, -13.6]]), rm(2, -13.5, 4.2, -24), rm(-6, -23.9, 6, -36)], [-3.5, -2.5], [-3.5, -33]);
+    loopAt(H, 3.1, -15.6, 0, -1, 0.7, 1.6); loopAt(H, 3.1, -20.5, 0, -1, 0.7, 1.6); blk(H, T, -6, -27.6, 0.6, -28.8); bumps(H, T, [[2, -31.5, 0.6]]); return H; } },
   // Pac Maze: zig and zag through the maze past the ghosts, two putts.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-3, 0], [3, 0], [3, -10], [8, -16], [8, -26], [2, -32], [2, -40], [-4, -40], [-4, -30], [2, -24], [2, -18], [-3, -12]])], [0, -2.5], [-1, -36]);
     bumps(H, T, [[0.5, -14.5, 0.55], [5, -21, 0.6], [-1, -29, 0.55]]); zoneR(H, M.MUD, 2, -22, 8, -24);
@@ -1226,7 +1246,7 @@ var LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [0, -32]); pads(H, [[-2.5, -12, 0.75], [2.5, -15, 0.75], [-1, -20, 0.75], [3, -24.5, 0.7], [-3.2, -26, 0.7]]); zoneR(H, M.WATER, -6, -17, -4.5, -23); zoneR(H, M.WATER, 4.5, -17, 6, -23);
     blk(H, T, -4.8, -17, -4.5, -23); blk(H, T, 4.5, -17, 4.8, -23); bowl(H, 0, -32, 1.8, 0.13); return H; } },
   // Walk the Plank: off the kicker over the lagoon, up the railed lane, putt out.
-  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -12), rm(-4, -11.9, 4, -15.1), rm(-4, -15, 4, -30)], [0, -2.5], [0, -26]); jump(H, 0, -12, 0, -1, 2.8, 8, { h:0.7, ang:38 }); zoneR(H, M.WATER, -4, -15, -2.4, -30); zoneR(H, M.WATER, 2.4, -15, 4, -30);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -12), rm(-4, -11.9, 4, -15.1), rm(-4, -15, 4, -30)], [0, -2.5], [0, -26]); jump(H, 0, -12, 0, -1, 2.8, 8, { h:0.7, ang:38 }); zoneR(H, M.WATER, -4, -15, -2.4, -30); zoneR(H, M.WATER, 2.4, -15, 4, -30);
     blk(H, T, -2.7, -16, -2.4, -30); blk(H, T, 2.4, -16, 2.7, -30); bowl(H, 0, -26, 1.8, 0.13); return H; } },
   // Harbor Gates: through two gates, with the water between them railed off, two putts.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -40)], [0, -2.5], [0, -36]); gateWall(H, T, -12, -5, 5, -1.1, 1.1, 2.2, 0, 1); zoneR(H, M.WATER, -5, -18, -1.4, -24); zoneR(H, M.WATER, 1.4, -18, 5, -24); gateWall(H, T, -27, -5, 5, -1.1, 1.1, 2.6, 0.5, -1);
@@ -1237,15 +1257,15 @@ var LEVELS = [
   // Sandbar: through the gaps in the soft sand, round the pools, two putts.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [-3, -2.5], [4, -34.2]); zoneR(H, M.MUD, -6, -13, 6, -15); zoneR(H, M.GREEN, -1.2, -13, 0.8, -15); zoneR(H, M.MUD, -6, -24, 6, -26); zoneR(H, M.GREEN, 1.2, -24, 3.2, -26); zoneC(H, M.WATER, 2.6, -19, 1.2); zoneC(H, M.WATER, -2.6, -20, 1.2); zoneC(H, M.WATER, -1.2, -29.5, 1.1); bowl(H, 4, -34.2, 1.8, 0.13); return H; } },
   // Whirlpool: through the loop, between the pools, putt out.
-  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -11), pg([[-4, -11], [4, -11], [0.8, -14.6], [-0.8, -14.6]]), rm(-0.8, -14.5, 0.8, -19), rm(-5, -18.9, 5, -36)], [0, -2.5], [-0.3, -32]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -11), pg([[-4, -11], [4, -11], [0.8, -14.6], [-0.8, -14.6]]), rm(-0.8, -14.5, 0.8, -19), rm(-5, -18.9, 5, -36)], [0, -2.5], [-0.3, -32]);
     loopAt(H, 0, -16.8, 0, -1, 0.8, 1.6); zoneR(H, M.WATER, -5, -22, -1.2, -26); zoneR(H, M.WATER, 1.2, -22, 5, -26); zoneR(H, M.WATER, 1.5, -26, 5, -36); blk(H, T, 1.2, -26, 1.5, -36); bowl(H, -0.3, -32, 1.6, 0.12); return H; } },
   // Rope Bridges: two bridges on two clocks, curbs on both channels, two putts.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.6), rm(-5, -15.5, 5, -24), rm(-5, -23.9, 5, -27.6), rm(-5, -27.5, 5, -38)], [0, -2.5], [3, -34]);
     zoneR(H, M.WATER, -5, -12, 5, -15.5); drawb(H, -0.4, -12, 2.6, -15.5, 2.6, 0, 0.55); zoneR(H, M.WATER, -5, -24, 5, -27.5); drawb(H, 1.5, -24, 4.5, -27.5, 2.4, 0.35, 0.55); bumps(H, T, [[-1.5, -20, 0.6]]);
     blk(H, T, -5, -11.4, -0.4, -12); blk(H, T, 2.6, -11.4, 5, -12); blk(H, T, -5, -23.4, 1.5, -24); blk(H, T, 4.5, -23.4, 5, -24); board(H, T, 1.4, -35.4, 3, -36.3); board(H, T, 3, -36.3, 4.6, -35.4); bowl(H, 3, -34, 1.8, 0.13); return H; } },
   // Cannon Fire: under three swinging booms, rails along the water, two putts. The secret: a firm putt banks off the back rail and drops.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -40)], [0, -2.5], [0, -36]); spinner(H, T, -1.6, -13, 2.2, 1.7, 2); spinner(H, T, 1.6, -21, 2.2, -1.7, 2); spinner(H, T, -1.6, -29, 2.2, 1.9, 3);
-    zoneR(H, M.WATER, -5, -11, -4.6, -32); zoneR(H, M.WATER, 4.6, -11, 5, -32); blk(H, T, -4.6, -11, -4, -32); blk(H, T, 4, -11, 4.6, -32); bowl(H, 0, -36, 1.3, 0.12); secret(H, -0.24, -39.1, 1.36, -40.7); return H; } },
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -38)], [0, -2.5], [0, -35.5]); spinner(H, T, -1.6, -13, 2.2, 1.7, 2); spinner(H, T, 1.6, -21, 2.2, -1.7, 2); spinner(H, T, -1.6, -29, 2.2, 1.9, 3);
+    zoneR(H, M.WATER, -5, -11, -4.6, -32); zoneR(H, M.WATER, 4.6, -11, 5, -32); blk(H, T, -4.6, -11, -4, -32); blk(H, T, 4, -11, 4.6, -32); bowl(H, 0, -35.5, 1.3, 0.12); secret(H, -0.24, -37.1, 1.36, -38.7); return H; } },
   // Ship Decks: the right ramp to the middle deck, the narrow one in the middle up again, between the water, putt out.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -14), rm(-7, -18, 7, -30, 0.8), rm(-7, -34, 7, -46, 1.6)], [0, -2.5], [0, -42]);
     climb(H, 4, -14, -18, 2.2); climb(H, 0, -30, -34, 1.8);
@@ -1351,7 +1371,7 @@ var LEVELS = [
   // Turntables: two turntables turning opposite ways. Ride them or go round.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [-1, -34]); disc(H, -2.5, -14, 2.2, 1.2); disc(H, 2.5, -24, 2.2, -1.3); bumps(H, T, [[3.5, -12, 0.55], [-3.6, -27, 0.55], [-0.6, -30.4, 0.55]]); bowl(H, -1, -34); zoneR(H, M.MUD, 4, -34, 7, -38); zoneR(H, M.MUD, -7, -6, -4, -9); return H; } },
   // Boulder Field: bounce off the boulders, keeping off the shaft down the left side.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [3.5, -31]); pads(H, [[-4, -12, 0.75], [0, -14, 0.75], [4, -12, 0.75], [-2, -20, 0.7], [2.5, -20.5, 0.7], [0, -26, 0.7]]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [3.5, -31]); pads(H, [[-4, -12, 0.75], [0, -14, 0.75], [4, -12, 0.75], [-2, -20, 0.7], [2.5, -20.5, 0.7], [0, -26, 0.7]]);
     zoneR(H, M.WATER, -7, -22, -5.3, -30); blk(H, T, -5.3, -22, -5, -30); bowl(H, 3.5, -31); zoneR(H, M.MUD, 4.5, -35, 7, -36); return H; } },
   // Stamp Mill: the mill on the ledge's edge, wall to wall, then the lane between two shafts.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -42)], [0, -2.5], [0, -37]); millAt(H, T, -16, 7, 1.4); zoneR(H, M.WATER, -7, -24, -2, -29); zoneR(H, M.WATER, 2, -24, 7, -29); blk(H, T, -2.3, -24, -2, -29); blk(H, T, 2, -24, 2.3, -29);
@@ -1366,7 +1386,7 @@ var LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -40)], [0, -2.5], [0, -36]); slider(H, T, -12, -3.2, 3.2, 2.2, 0); slider(H, T, -20, 3.2, -3.2, 2.6, 0.4); slider(H, T, -28, -3.2, 3.2, 3.0, 0.7);
     zoneR(H, M.WATER, -5, -10, -4.4, -31); zoneR(H, M.WATER, 4.4, -10, 5, -31); blk(H, T, -4.4, -10, -4.1, -31); blk(H, T, 4.1, -10, 4.4, -31); bowl(H, 0, -36); bumps(H, T, [[2.5, -5.5, 0.5]]); return H; } },
   // Two Belts: two belts running opposite ways, one after the other.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [2, -33]); belt(H, -7, -10, 7, -14, 5, 0); belt(H, -7, -20, 7, -24, -5, 0); zoneR(H, M.WATER, -7, -27, -4.3, -31); blk(H, T, -4.3, -27, -4, -31);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [2, -33]); belt(H, -7, -10, 7, -14, 5, 0); belt(H, -7, -20, 7, -24, -5, 0); zoneR(H, M.WATER, -7, -27, -4.3, -31); blk(H, T, -4.3, -27, -4, -31);
     bumps(H, T, [[0, -17, 0.55]]); bowl(H, 2, -33); bumps(H, T, [[-4, -5, 0.55]]); zoneR(H, M.MUD, 4, -36, 7, -38); return H; } },
   // Mesa Hop: two jumps, mesa to mesa to mesa.
   { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -11), rm(-5, -10.9, 5, -14.1), rm(-5, -14, 5, -22), rm(-5, -21.9, 5, -25.1), rm(-6, -25, 6, -38)], [0, -2.5], [2, -33]);
@@ -1581,8 +1601,8 @@ var LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.1), rm(-6, -15, 6, -36)], [0, -2.5], [3.5, -31]); jump(H, 0, -12, 0, -1, 2.6, 10, { h:0.7, ang:36 });
     pen(H, T, 3.5, -31); slider(H, T, -22, -4, 4, 2.6, 0.2); bumps(H, T, [[-3, -26, 0.6], [-1, -33, 0.5], [3, -6, 0.5]]); pads(H, [[-4.5, -19, 0.6]]); zoneR(H, M.ICE, -6, -17, 6, -18); zoneR(H, M.MUD, -6, -34, -3.5, -36); return H; } },
   // Cave Doors: two doors, two plates. Each putt has to roll over its plate on the way through its door.
-  { par:4, three:3, f:function(T){ var H = hole([rm(-6, 0, 6, -44)], [2.5, -2.5], [-3, -40]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2); switchDoor(H, T, -18.6, -1.4, 1.4, 5.1, -5.9, 3.5);
-    blk(H, T, -6, -32, -1.4, -33.2); blk(H, T, 1.4, -32, 6, -33.2); switchDoor(H, T, -32.6, -1.4, 1.4, -2.2, -27, 3.5); bumps(H, T, [[-4.4, -11, 0.6], [3.6, -27, 0.6]]); zoneR(H, M.ICE, -6, -21, 6, -22.5); zoneR(H, M.MUD, 3, -42, 6, -44); bowl(H, -3, -40); return H; } },
+  { par:4, three:3, f:function(T){ var H = hole([rm(-6, 0, 6, -44)], [2.5, -2.5], [-3, -40]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2); switchDoor(H, T, -18.6, -1.4, 1.4, 5.1, -5.9, 4.5);
+    blk(H, T, -6, -32, -1.4, -33.2); blk(H, T, 1.4, -32, 6, -33.2); switchDoor(H, T, -32.6, -1.4, 1.4, -2.2, -27, 4.5); bumps(H, T, [[-4.4, -11, 0.6], [3.6, -27, 0.6]]); zoneR(H, M.ICE, -6, -21, 6, -22.5); zoneR(H, M.MUD, 3, -42, 6, -44); bowl(H, -3, -40); return H; } },
   // Glacier Steps: three tiers of glacier. Soft off each step, and the middle one is ice.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [-3, -2.5], [3, -34]); H.comps.push({ k:'ridge', x:0, y:-10, nx:0, ny:-1, w:0.9, a:-0.6 }, { k:'ridge', x:0, y:-25, nx:0, ny:-1, w:0.9, a:-0.6 });
     zoneR(H, M.ICE, -6, -13, 6, -22); blk(H, T, -2.2, -17, 6, -18.2); bumps(H, T, [[-4, -21, 0.55], [0, -30, 0.55], [4.5, -6, 0.5]]); pads(H, [[-4.5, -29, 0.6]]); zoneR(H, M.MUD, -6, -36, -3, -38); bowl(H, 3, -34); return H; } },
@@ -1675,17 +1695,17 @@ var LAB_LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 1, -26), rm(-7, -15, 14, -26)], [-3, -2.5], [8.5, -22.4]); zoneC(H, M.WATER, 1.6, -14.2, 3.6);
     board(H, T, -7.2, -20.7, -1.8, -25.3); bumps(H, T, [[5.4, -17.4, 0.55]]); bowl(H, 8.5, -22.4, 1.7, 0.12); return H; } },
   // Biarritz: a deep swale across the middle. Too soft and it stays in the hollow; firm enough and it climbs out onto the back plateau.
-  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [-2.2, -29.8]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [-2.2, -29.8]);
     H.comps.push({ k:'ridge', x:0, y:-12, nx:0, ny:-1, w:1.3, a:-0.5 }, { k:'ridge', x:0, y:-19.5, nx:0, ny:-1, w:1.3, a:0.5 });
     bumps(H, T, [[-2.4, -15.8, 0.6], [2.6, -15.8, 0.6]]); blk(H, T, -4.5, -25.6, 0.6, -26.8); bowl(H, -2.2, -29.8, 2.0, 0.14); return H; } },
   // Hairpin: up the left lane, off two angled boards at the top, and back down the right lane to the cup. The classic two-bank ace.
-  { par:3, f:function(T){ var H = hole([rm(-6.5, 0, 6.5, -20)], [-3.6, -2.5], [2.6, -9.5]); blk(H, T, -0.8, 0, 0.8, -10);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6.5, 0, 6.5, -20)], [-3.6, -2.5], [2.6, -9.5]); blk(H, T, -0.8, 0, 0.8, -10);
     board(H, T, -6.5, -13.5, -0.5, -19.5); board(H, T, 0.5, -19.5, 6.5, -13.5); bumps(H, T, [[0, -13, 0.55]]); bowl(H, 2.6, -9.5, 1.7, 0.12); return H; } },
   // The Switch: the door in the wall is shut. Roll over the plate and it opens for a few seconds; the line has to find the plate on its way, and the ace banks off the right wall to do it.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [2.5, -2.5], [-4.2, -27.5]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2);
     switchDoor(H, T, -18.6, -1.4, 1.4, 5.1, -5.9, 3.5); bumps(H, T, [[-4.4, -11, 0.6], [2.6, -24, 0.6]]); bowl(H, -4.2, -27.5, 1.7, 0.12); return H; } },
   // The Drop: three tiers. Down the first step, along the middle terrace to its open end, and down again to the cup.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [-3, -2.5], [-3, -32]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [-3, -2.5], [-3, -32]);
     H.comps.push({ k:'ridge', x:0, y:-10, nx:0, ny:-1, w:0.9, a:-0.6 }, { k:'ridge', x:0, y:-24, nx:0, ny:-1, w:0.9, a:-0.6 });
     blk(H, T, -6, -17, 2.2, -18.2); bumps(H, T, [[4, -21, 0.55]]); board(H, T, 1, -36, 6, -31); bowl(H, -3, -32, 1.7, 0.12); return H; } },
   // The Ferry: the owner's sketch. Roll up off the tee strip onto the ferry while it waits at the right dock; it carries the ball across the
@@ -1745,7 +1765,7 @@ var SECRET_LEVELS = [
   { par:3, f:function(T){ var H = hole([pg([[-3, 0], [3, 0], [7, -5], [8, -14], [7, -23], [3, -28], [-3, -28], [-7, -23], [-8, -14], [-7, -5]])], [0, -2.5], [0, -24]);
     zoneR(H, M.ICE, -6, -8, 6, -20); blk(H, T, -1.5, -13, 1.5, -15); bumps(H, T, [[-5, -10, 0.55], [5, -18, 0.55], [-3, -21, 0.5]]); blk(H, T, -3, -20.2, 3, -21.2); zoneR(H, M.MUD, -2, -26, 2, -28); bowl(H, 0, -24, 1.7, 0.12); return H; } },
   // The Painted Cave: stalagmites to thread, a patch of ice, and a mammoth asleep across the back, rolling over now and then.
-  { par:3, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -10], [6, -24], [2, -34], [-3, -34], [-7, -22], [-6, -8]])], [0, -2.5], [-1, -30]);
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -10], [6, -24], [2, -34], [-3, -34], [-7, -22], [-6, -8]])], [0, -2.5], [-1, -30]);
     bumps(H, T, [[-2.5, -9, 0.5], [2.5, -12, 0.5], [-3.5, -16, 0.45], [3.5, -19, 0.45]]); blk(H, T, -4, -26.2, 2, -27.2); zoneR(H, M.ICE, -6, -20, 6, -22.5); slider(H, T, -25.5, -4, 3, 3.0, 0.2, 2.4);
     zoneR(H, M.MUD, 2, -32, 5, -34); bowl(H, -1, -30, 1.7, 0.12); return H; } }
 ];
@@ -1822,7 +1842,7 @@ function scoreName(strokes, par){
 /* =================================================================================== the export */
 var RTT_PUTT = {
   API_VERSION:API_VERSION,
-  M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, V_STIMP:V_STIMP, ART:ART,
+  M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, MAX_FT:MAX_FT, V_STIMP:V_STIMP, ART:ART,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
   simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
@@ -1984,7 +2004,6 @@ var SKIN = {
     if (Math.abs(v - 0.5) < 0.05) return '#5a3818'; return u < -0.15 ? '#a0703c' : '#8a5e30'; }
 };
 RTT_PUTT.SKIN = SKIN; RTT_PUTT.riverAt = riverAt; RTT_PUTT.bridgeDown = bridgeDown; RTT_PUTT.bridgeLift = bridgeLift; RTT_PUTT.inAny = inAny; RTT_PUTT.edgeDist = edgeDist;   // hole3d.js builds a bumper's 3D shape from the same skin the flat painter uses
-function moverCol(k, T){ return rgb(k === 'blade' ? T.spinner : T.wallLo); }
 
 function paintCourse(C){
   var mats = C.mats, nx = mats.nx, ny = mats.ny, b = C.bounds, cv = mkCanvas(nx, ny), ctx = cv.getContext('2d'), img = ctx.createImageData(nx, ny), D = img.data;
@@ -2166,6 +2185,7 @@ var CSS = '\
 .pp-hdr .pp-hearts{gap:4px}.pp-h{width:20px;height:20px;background:none;clip-path:none;display:block}.pp-h svg{display:block;width:20px;height:20px}.pp-h.on{background:none}\
 .pp-hclock{font-size:12px;font-weight:900;color:#ffd0c8;font-variant-numeric:tabular-nums;background:rgba(0,0,0,.45);border-radius:999px;padding:3px 8px}.pp-hclock:empty{display:none}\
 .pp-sp{flex:1}.pp-x2s{color:#ffd23a;font-weight:800}.pp-x2b{margin:14px auto 4px;max-width:340px;padding:10px 14px;border-radius:12px;background:rgba(241,182,42,.12);border:1px solid rgba(241,182,42,.45);color:#ffe9a8;font-size:13px;line-height:1.35;text-align:center}.pp-x2b b{display:block;font-size:17px;letter-spacing:.02em;color:#ffd23a;margin-bottom:2px}.pp-x2h{display:inline-block;width:14px;height:14px;vertical-align:-3px;margin-right:4px}.pp-x2h svg{display:block;width:100%;height:100%}.pp-x2b .pp-x2h{width:30px;height:30px;margin:0 auto 4px;display:block}.pp-x2s .pp-x2h{width:16px;height:16px;vertical-align:-3px}@media (min-width:900px){.pp-x2 .pp-x2h{width:18px;height:18px}}.pp-x2{border:0;border-radius:999px;padding:4px 9px;font:900 11px/1 inherit;letter-spacing:.04em;color:#2a1a04;background:linear-gradient(#ffe27a,#f1b62a);box-shadow:0 2px 8px rgba(241,182,42,.35);cursor:pointer;white-space:nowrap}@media (min-width:900px){.pp-x2{font-size:14px;padding:6px 12px}}.pp-cpill{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-cpill:before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a8,#f1c232 55%,#b8860b)}\
+.pp-home{flex:none;width:34px;height:34px;border-radius:50%;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.18);background:rgba(10,18,26,.82);cursor:pointer}.pp-home:active{opacity:.7}\
 .pp-cx{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(10,18,26,.82);color:#fff;font:inherit;font-size:16px;font-weight:900;cursor:pointer;padding:0}\
 .pp-hub .pp-daily{position:absolute;z-index:2;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 58px);margin:0;max-width:536px;margin:0 auto;grid-template-columns:auto 1fr auto;gap:2px 12px;background:linear-gradient(160deg,#2c1d46,#1a1230)!important;color:#fff!important;border:2px solid #f08a24!important;border-radius:18px;padding:12px}\
 .pp-daily .th{grid-column:1;grid-row:1/4;width:44px;height:66px;border-radius:7px;background:#0d1a12;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}.pp-daily .th canvas{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:block}\
@@ -2186,6 +2206,7 @@ var CSS = '\
 .pp-pop .row{flex-wrap:nowrap}.pp-pop .row>*{flex:1;padding:13px 10px;border-radius:13px;font-size:15px}.pp-pop .pt-bt{background:#0c1628;border-color:rgba(255,255,255,.16);color:#fff}\
 .pp-pop .pt-go{background:#12a08f;color:#fff}.pp-pop.par .pt-go{background:#F1D04A;color:#1c1606}.pp-pop.over .pt-go{background:#e5483a;color:#fff}\
 .pp-pop .pp-lives{gap:6px}.pp-pop .pp-lives .pp-h,.pp-pop .pp-lives .pp-h svg{width:28px;height:28px}\
+.pt-ov .pp-buys{display:flex;flex-direction:column;gap:10px;width:100%;margin:6px 0 14px}.pt-ov .pp-buys .pp-buy{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;margin:0;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:16px;font-weight:900;letter-spacing:.03em;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px rgba(0,0,0,.28);transition:transform .12s,border-color .12s}.pt-ov .pp-buys .pp-buy:hover{border-color:#F1D04A}.pt-ov .pp-buys .pp-buy:active{transform:scale(.98)}.pt-ov .pp-buys .pp-buy:focus-visible{outline:2px solid #F1D04A;outline-offset:2px}.pt-ov .pp-buys .pp-buy:disabled{opacity:.55}.pt-ov .pp-buys .pp-buy small{display:inline-block;margin:0;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.3);color:#ffe27a;font-size:10.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;opacity:1}.pt-ov .pp-buys .pp-buy[data-buy="nine"]{background:linear-gradient(180deg,#ffe27a,#f1b62a);color:#2a1a04;border-color:#fff3b0;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 22px rgba(241,182,42,.35)}.pt-ov .pp-buys .pp-buy[data-buy="nine"] small{background:#2a1a04;color:#ffe27a}\
 .pp-sheet.pp-oolf{background:linear-gradient(#173226,#0a1a24);align-items:stretch;justify-content:flex-start;flex-direction:column;padding:0;overflow:auto}\
 .pp-oolf .pp-hdr{position:relative;background:none}.pp-oolb{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 18px calc(env(safe-area-inset-bottom,0px) + 24px);max-width:420px;width:100%;margin:0 auto;box-sizing:border-box;text-align:center}\
 .pp-oolb .k{font-size:13px;letter-spacing:.18em;font-weight:900;color:#ff6a55;margin-top:18px}.pp-oolb .pp-lives{gap:10px}.pp-oolb .pp-lives .pp-h,.pp-oolb .pp-lives .pp-h svg{width:42px;height:42px}\
@@ -2368,10 +2389,11 @@ var ICO = {
   heart:'<path d="M12 20.5s-8.5-5.2-8.5-11A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8.5 2.5c0 5.8-8.5 11-8.5 11z" fill="#ff5a6a" stroke="#6a0c18" stroke-width="1.3"/><path d="M7.4 9.6a2.2 2.2 0 0 1 2.1-2" stroke="#ffd6dc" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
   share:'<path d="M12 3.5v11M7.5 8L12 3.5 16.5 8" fill="none" stroke="#fff8e6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 11.5v8h13v-8" fill="none" stroke="#fff8e6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
   play:'<path d="M8 5l11 7-11 7z" fill="#2a1c05"/>',
+  daily:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.2" fill="#fff8e6"/><path d="M3.5 7.2A2.2 2.2 0 0 1 5.7 5h12.6a2.2 2.2 0 0 1 2.2 2.2V9.5h-17z" fill="#e2463f"/><path d="M8 3.2v3.6M16 3.2v3.6" stroke="#fff8e6" stroke-width="2" stroke-linecap="round"/><ellipse cx="11" cy="18.4" rx="3.6" ry="1.1" fill="#2f8a4a"/><path d="M11 18.4V11.4" stroke="#3a2a14" stroke-width="1.4" stroke-linecap="round"/><path d="M11.5 11.4l4.4 1.6-4.4 1.6z" fill="#e2463f"/>',
   walk:'<ellipse cx="8.5" cy="8.5" rx="2.7" ry="4.2" fill="#fff8e6" transform="rotate(-12 8.5 8.5)"/><ellipse cx="8" cy="15" rx="1.9" ry="1.5" fill="#fff8e6"/><ellipse cx="15.5" cy="11" rx="2.7" ry="4.2" fill="#fff8e6" transform="rotate(12 15.5 11)"/><ellipse cx="16.2" cy="17.5" rx="1.9" ry="1.5" fill="#fff8e6"/>' };
 // each icon chip's colour, top and bottom of its gradient and the dark edge under it
 var ICOL = { map:['#f6dea6','#cf9a3e','#7a5212'], bag:['#d0945a','#7e4718','#3e1f06'], closet:['#bd8aea','#6c3aa0','#3a1660'],
-  reset:['#ffbe5c','#e06a16','#7a3204'], view:['#78c8ff','#2a76cc','#123c6e'], talk:['#56d8c0','#1d8c7a','#0c4a40'],
+  reset:['#ffbe5c','#e06a16','#7a3204'], daily:['#7fe0ff','#2a9ad6','#0e4a70'], view:['#78c8ff','#2a76cc','#123c6e'], talk:['#56d8c0','#1d8c7a','#0c4a40'],
   heart:['#ff8a98','#c42a42','#5e0c18'], share:['#56d8c0','#1d8c7a','#0c4a40'], walk:['#8ad66a','#2f8a3e','#14401c'],
   close:null, left:null, right:null, flag:null, play:null };
 function icoUrl(n){ return 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' + ICO[n] + '</svg>') + '")'; }
@@ -2393,6 +2415,9 @@ function skinCss(){
     '.pt-ov .pt-bt:active,.pt-ov .pp-bagb:active,.pt-ov .pp-cx:active,.pt-ov .pt-x:active,.pt-ov .pp-mapb:active,.pt-ov .pp-rb:active{' + press + '}',
     '.pt-ov .pt-bt.on{background:linear-gradient(#ffe07a,#ebb02e);color:#2a1c05;border-color:transparent}',
     '.pt-ov button:focus-visible{outline:3px solid #ffe07a;outline-offset:2px}',
+    // a hidden thing stays hidden: these glass buttons set their own display, and that beat [hidden] (the Talk button
+    // showed, empty and dead, on every trail with nobody to talk to)
+    '.pt-ov [hidden]{display:none!important}',
     // the header over the map and the trail: glass pieces on a soft shade
     '.pt-ov .pp-hdr{background:linear-gradient(rgba(4,12,8,.55),rgba(4,12,8,0))}',
     '.pt-ov .pp-hearts{' + glass + ';border-radius:999px;padding:5px 8px;gap:2px;align-items:center}',
@@ -2409,10 +2434,11 @@ function skinCss(){
     // Bag and Closet stand down the right side, each its own colour and picture
     '.pt-ov .pp-bagb{' + ibtn + ';flex-direction:column;gap:3px;width:62px;min-height:62px;padding:6px 4px 5px;border-radius:18px;font-size:11px;right:12px}',
     '.pt-ov .pp-bagb.pp-closb{right:12px}',
-    '.pt-ov .pp-wv>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 132px)}.pt-ov .pp-wv>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 202px)}',
+    // the trail: the Daily Hole on top (the owner, 2026-10-19), then Bag, then Closet
+    '.pt-ov .pp-wv>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 132px)}.pt-ov .pp-wv>.pp-bagb[data-bag]{top:calc(env(safe-area-inset-top,0px) + 202px)}.pt-ov .pp-wv>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 272px)}',
     '.pt-ov .pp-hub>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 70px)}.pt-ov .pp-hub>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 140px)}',
     '.pt-ov .pp-hub:has(.pp-daily)>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 186px)}.pt-ov .pp-hub:has(.pp-daily)>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 256px)}',
-    chip('.pt-ov .pp-bagb[data-bag]', 'bag', 34), chip('.pt-ov .pp-bagb.pp-closb', 'closet', 34),
+    chip('.pt-ov .pp-bagb[data-bag]', 'bag', 34), chip('.pt-ov .pp-bagb.pp-closb', 'closet', 34), chip('.pt-ov .pp-bagb[data-dly]', 'daily', 34),
     // the trail: what you are walking to is a glass plate, what is on it sits in glass chips
     '.pt-ov .pp-tgoal{' + glass + ';border-radius:16px;padding:6px 14px}',
     '.pt-ov .pp-tgoal i{color:#e7c66c}.pt-ov .pp-tgoal b{font-family:var(--display,inherit);font-size:17px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}',
@@ -2425,6 +2451,8 @@ function skinCss(){
     chip('.pt-ov .pp-rb[data-skip]', 'flag', 36),
     '.pt-ov .pp-rb[data-skip]::before{background-color:rgba(255,255,255,.45);border-radius:12px}',
     '.pt-ov .pp-talkb{background:' + G + '!important}', chip('.pt-ov .pp-talkb', 'talk', 32),
+    // a phone is narrow for the hub header: the Home and Close buttons stay on the screen (the owner, 2026-10-19)
+    '@media (max-width:430px){.pt-ov .pp-hdr{gap:3px;padding-left:6px;padding-right:6px}.pt-ov .pp-x2{padding:4px 6px;font-size:11px;gap:3px}.pt-ov .pp-av{width:34px;height:34px}.pt-ov .pp-home,.pt-ov .pp-cx{width:30px;height:30px}}@media (max-width:380px){.pt-ov .pp-hdr{padding-right:4px}.pt-ov .pp-hdr .pp-cpill{padding:5px 6px}.pt-ov .pp-x2{padding:4px 4px}}',
     '.pt-ov .pp-stick{border-color:rgba(248,239,214,.6);background:rgba(13,32,22,.35)}',
     '.pt-ov .pp-stick i{border-color:#2a1c05;background:radial-gradient(circle at 38% 34%,#fff6d6,#ffe07a 55%,#c98e14)}',
     '.pt-ov .pp-rhint{' + glass + ';border-radius:999px}',
@@ -2481,13 +2509,21 @@ function open(host, o){
   document.body.appendChild(ov);
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
   // the hearts in the header and the play bar open the Lives sheet, where lives are bought (the owner, 2026-10-17)
-  ov.addEventListener('click', function(e){ var hs = e.target && e.target.closest && e.target.closest('.pp-hearts'); if (hs && ov.contains(hs)) livesSheet(); });
+  ov.addEventListener('click', function(e){ var hs = e.target && e.target.closest && e.target.closest('.pp-hearts'); if (hs && ov.contains(hs)) livesSheet();
+    // Home, on every screen of Putt Putt: out to the First Tee home (the owner, 2026-10-19: there was no way back)
+    if (e.target && e.target.closest && e.target.closest('[data-home]') && ov.contains(e.target.closest('[data-home]'))) goHome(); });
   document.body.style.overflow = 'hidden';
+  // the page behind is covered: it stops painting and animating while Putt Putt is open (CSS: body.pt-open)
+  document.body.classList.add('pt-open');
+  // this tab has Putt Putt open: a reload (iOS drops a tab that grows too big) comes straight back in (index.html puttReopen)
+  try{ sessionStorage.setItem('ppt_open', '1'); }catch(e){}
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
   // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
   ov.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-pass]'); if (!b) return; var h = S && S.host; if (h && h.pass){ close(); try{ h.pass(); }catch(x){} } });
   syncPutters();
   if (o && o.go === 'daily'){ showMenu(); startDaily(); }
+  // a door that names its tour (the First Tee's "Into the world", which shows the main tour's place) opens that tour's frontier
+  else if (o && o.tour && worldOk(o.tour)) home(o.tour);
   else if (!resumeCur()) showMenu();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
   cloudPull().then(function(moved){ if (moved) syncPutters(); if (moved) pulled(); });
@@ -2506,15 +2542,18 @@ function pulled(){
   var t = S.trailTo.tid, TR = tourOf(t), n = Math.min(TR.levels.length, frontier(st.tours[TR.id], TR));
   if (n !== S.trailTo.to) home(t);
 }
+// Home: close Putt Putt and go to the First Tee home. A hole in progress is saved, so it waits for the next visit.
+function homeBtn(){ return '<button class="pp-home" data-home title="Home" aria-label="Home"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 11.2L12 4l9 7.2V20h-6.5v-5.5h-5V20H3z" fill="#fff8e6"/></svg></button>'; }
+function goHome(){ if (!S) return; var h = S.host; close(); try{ if (h.goHome) h.goHome(); }catch(e){} }
 function close(){
   if (!S) return;
   stopTrail();
   cancelAnimationFrame(S.raf); clearInterval(S.tick); window.removeEventListener('keydown', S.onKey); if (S.onResize) window.removeEventListener('resize', S.onResize);
-  document.body.style.overflow = S.prevOverflow || ''; S.ov.remove();
+  document.body.style.overflow = S.prevOverflow || ''; document.body.classList.remove('pt-open'); try{ sessionStorage.removeItem('ppt_open'); }catch(e){} S.ov.remove();
   var h = S.host; S = null; try{ if (h.onClose) h.onClose(); }catch(e){}
 }
 function top(title, sub, right){
-  return '<div class="pt-top"><button class="pt-x" data-x>' + (S.screen === 'menu' ? 'Close' : 'Back') + '</button><div class="pt-hd"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div><div class="pt-sc">' + (right || '') + '</div></div>';
+  return '<div class="pt-top"><button class="pt-x" data-x>' + (S.screen === 'menu' ? 'Close' : 'Back') + '</button><div class="pt-hd"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div><div class="pt-sc">' + (right || '') + '</div>' + homeBtn() + '</div>';
 }
 
 /* ============================================================================ THE TOUR, PLAYED */
@@ -2769,10 +2808,14 @@ function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p
    says so. A host that cannot say who is signed in gates nobody. GUEST_WALK is how many holes of the main tour a
    guest may walk to (the opening world). */
 // STORY MODE (the owner, 2026-10-18): everybody starts on hole 1 and opens the next only by beating the one before.
-// A guest walks the trail to hole 1 and nothing past it; hole 1 asks them to sign in. GUEST_WALK was 18 (the
-// opening world, 2026-10-16).
-var GUEST_WALK = 1;
+// A guest walks the trail to hole 1 and nothing past it. GUEST_WALK was 18 (the opening world, 2026-10-16).
+// A GUEST PLAYS HOLE 1 (the owner, 2026-10-19): one real hole before the ask, so a new player putts once before
+// being asked for an account. The ask moves to hole 2. GUEST_PLAY is how many holes of the main tour a guest may
+// play; it never passes GUEST_WALK.
+var GUEST_WALK = 1, GUEST_PLAY = 1;
 function isGuest(){ try{ var h = hostOf(); return !!(h.signedIn && !h.signedIn()); }catch(e){ return false; } }
+// a guest is asked to sign in before this hole of this tour (the Daily Hole and the lab never ask)
+function guestAsks(tid, n){ return isGuest() && !(tid === 'main' && n <= GUEST_PLAY); }
 var GUEST_COINS = 'Sign in to collect your coins and open packs.';
 function guestSheet(n, tid){
   var walk = tid === 'main' && n && n < Math.min(GUEST_WALK, tourOf('main').levels.length);
@@ -2899,7 +2942,7 @@ function balStr(){ if (isGuest()) return '';   // a guest sees no coin count (th
 function hdr(right){ var b = balStr();
   return '<div class="pp-hdr">' + avRing() + '<span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span>' +
     (membersOpen() ? '' : '<button class="pp-x2" data-pass aria-label="' + esc(passLivesLine()) + '"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i>2× lives</button>') + '<span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
-    (right != null ? right : (b !== '' ? '<span class="pp-cpill" data-bal>' + b + '</span>' : '')) + '<button class="pp-cx" data-x aria-label="Close">✕</button></div>'; }
+    (right != null ? right : (b !== '' ? '<span class="pp-cpill" data-bal>' + b + '</span>' : '')) + homeBtn() + '<button class="pp-cx" data-x aria-label="Close">✕</button></div>'; }
 // a small top view of a hole, off the flat painter, for the Daily card
 var THUMBS = {};
 function thumb(box, d, key){ if (!box) return; var c = THUMBS[key];
@@ -2922,8 +2965,6 @@ function revealed(TR, w, st){ if (!TR || TR.lab || w <= 0 || allAccess()) return
   var tp = st.tours[TR.id] || {}, K = TR.per || PER; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) if ((tp.best || {})[n] != null) return true; return false; }
 function reveal(TR, w){ if (revealed(TR, w)) return false; var st = pload(); st.rv = st.rv || []; st.rv.push(TR.id + ':' + w); psave(st); return true; }
 var CLOUD_NAME = 'In the clouds';
-// what a world is called where the player can read it: its name once revealed, and nothing about it before
-function wName(TR, w, st){ return revealed(TR, w, st) ? TR.worlds[w].name : CLOUD_NAME; }
 function wLabel(TR, w, st){ return TR.members ? (revealed(TR, w, st) ? TR.worlds[w].name : 'The next Members world') : 'World ' + (w + 1); }
 function worldOk(tid){ var TR = TOURS[tid]; if (!TR || TR.lab || tid === 'daily' || !trailOk()) return false;
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){} return !reduce; }
@@ -3061,7 +3102,7 @@ function drawMap(st, TR){
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id];
-    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK && opened(TR, tq, n)){ return trailOk() ? openTrail(TR.id, n - 1) : guestSheet(n, TR.id); }   // a guest walks the opening world
+    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK && opened(TR, tq, n)){ return trailOk() ? openTrail(TR.id, n - 1) : startLevel(n, TR.id); }   // a guest walks to hole 1 (and startLevel says whether they may play it)
     if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? wLabel(TR, pw + 1) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
   box.querySelectorAll('[data-cw]').forEach(function(c){ c.onclick = function(){ var w = +c.getAttribute('data-cw'), tq = pload().tours[TR.id], have = starsThrough(tq, TR, w - 1), need = worldGate(TR, w - 1);
@@ -3497,7 +3538,11 @@ function trailPlan(sp){ var k = trailKey(sp); if (!TRP[k]){ TRP[k] = window.RTT_
    render in progress, kept here too, so leaving the mode part way through a render does not throw the work away.
    The disk copy is keyed on the trail and on the versions of the files that draw it (TRAIL_V), so a change to any
    of them renders afresh rather than showing an old picture. Every disk call fails soft: null is "render it". */
-var TRC = {}, TRJ = null, TRC_KEEP = 4, TIDB = null, TIDB_KEEP = 3, TRAIL_V = null;
+/* MEMORY (the owner, 2026-10-18: on a phone the game "gets overwhelmed and refreshes"). A rendered trail or hole holds
+   its picture and its height grids, about 55 MB each, and iOS Safari reloads a tab that grows too big. So only two of
+   each are kept: the one in play and the one rendered ahead. A trail left behind is still on the device (TIDB). */
+var V3C_KEEP = 2;
+var TRC = {}, TRJ = null, TRC_KEEP = 2, TIDB = null, TIDB_KEEP = 3, TRAIL_V = null;
 function trcPut(k, pic){ TRC[k] = pic; var ks = Object.keys(TRC); if (ks.length > TRC_KEEP) delete TRC[ks[0]]; }
 function trailV(){ if (TRAIL_V) return TRAIL_V;
   var v = ['putt.js', 'trail.js', 'hole3d.js', 'gyms.js'].map(function(f){ try{ var e = document.querySelector('script[src*="putt/' + f + '"]'), m = e && /[?&]v=([^&]+)/.exec(e.src); return m ? m[1] : '?'; }catch(e){ return '?'; } });
@@ -3550,12 +3595,15 @@ function openTrail(tid, from){
   S.ov.innerHTML = '<div class="pp-trail pp-wv" data-wv="' + (clouded ? sp.theme0 : Wd.theme) + '">' + hdr((b0 !== '' ? '<span class="pp-cpill" data-bal>' + b0 + '</span>' : '') + '<button class="pp-mapb" data-mapb aria-label="Open the map"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2z" fill="#f6ead2" stroke="#3a2a14" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 2v14M13 4v14" stroke="#3a2a14" stroke-width="1.4"/><circle cx="10" cy="9" r="1.8" fill="#e5483a"/></svg><b>Map</b></button>') +
     '<div class="pp-tbox" data-tbox></div>' +
     '<div class="pp-tgoal">' + goalHtml() + '</div>' +
+    '<button class="pp-bagb" data-dly aria-label="Today\'s Daily Hole">Daily</button>' +
     (TR.id === 'main' ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') + '<button class="pp-bagb pp-closb" data-closet aria-label="Your closet">Closet</button>' +
     (seen ? '' : banHtml()) + '</div>';
   S.ov.querySelector('[data-x]').onclick = close;
   S.ov.querySelector('[data-mapb]').onclick = function(){ stopTrail(); showHub(tid); };
   var bgw = S.ov.querySelector('[data-bag]'); if (bgw) bgw.onclick = bagSheet;
   var clw = S.ov.querySelector('[data-closet]'); if (clw) clw.onclick = closetSheet;
+  // today's Daily Hole, straight from the trail (or its result, once played); it ends on the map, as the map's own Daily card does
+  var dyw = S.ov.querySelector('[data-dly]'); if (dyw) dyw.onclick = function(){ stopTrail(); startDaily(); };
   // the world's title card holds while the world loads, and leaves once you are standing in it
   var wbn = S.ov.querySelector('.pp-wban'); function banOut(){ if (wbn) setTimeout(function(){ if (wbn.isConnected) wbn.classList.add('out'); setTimeout(function(){ if (wbn.isConnected) wbn.remove(); }, 700); }, 2200); }
   var box = S.ov.querySelector('[data-tbox]'), P = trailPlan(sp);
@@ -3615,12 +3663,12 @@ function openTrail(tid, from){
       arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove();
         // a walker without the pass reaches the hole and is asked, over the trail they are standing on
         if (TR.members && !membersCanPlay()){ stopTrail(); return membersSheet({ n:to, trail:true }); }
-        if (TR.id === 'main' && isGuest()){ stopTrail(); return guestSheet(to, tid); }
+        if (TR.id === 'main' && guestAsks(tid, to)){ stopTrail(); return guestSheet(to, tid); }
         stopTrail(); if (opened(TR, tp, to)) startLevel(to, tid); else showHub(tid); },
       // Skip keeps its button, and says what it leaves behind first: the same list the map's warning reads, off
       // the record as it stands now, so anything already picked up on this walk is not named.
       skip:function(){ var tp = pload().tours[TR.id], play = opened(TR, tp, to) && !(sp.cross && !sp.gateOpen);
-        function leave(){ stopTrail(); if (TR.id === 'main' && isGuest()) return guestSheet(to, tid); if (play) startLevel(to, tid); else showHub(tid); }
+        function leave(){ stopTrail(); if (TR.id === 'main' && guestAsks(tid, to)) return guestSheet(to, tid); if (play) startLevel(to, tid); else showHub(tid); }
         var left = trailLeft(tid, to); if (!left.length || S.ov.querySelector('.pp-skipw')) return leave();
         var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
         var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE TRAIL?</div><div class="t">Bonus rewards</div><div class="m">This trail still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-n>Keep walking</button><button class="pt-bt pp-wide" data-skip>' + (play ? 'Skip to Hole ' + to : 'Skip to the map') + '</button></div></div>');
@@ -3715,8 +3763,9 @@ function outOfLives(){
    and comes back to /golf/?putt=lives_paid, where the host asks for lives again (RTT_PUTT.livesRefresh). */
 function canBuyLives(st, p){ var h = hostOf(); return PUTT_LIVES_ENABLED && !!h.buyLives && (st.lives || 0) + p.lives - livesMax() <= LIVES_EXTRA_MAX; }
 function buyRow(st){ var any = LIVES_BUY.some(function(p){ return canBuyLives(st, p); });
-  return LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide" data-buy="' + p.pack + '">' + buyLabel(p) + (p.tag ? '<small>' + p.tag + '</small>' : '') + '</button>' : ''; }).join('') +
-    (any ? '<div class="m" data-buym hidden></div>' : ''); }
+  if (!any) return '';
+  return '<div class="pp-buys">' + LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide pp-buy" data-buy="' + p.pack + '">' + buyLabel(p) + (p.tag ? '<small>' + p.tag + '</small>' : '') + '</button>' : ''; }).join('') +
+    '<div class="m" data-buym hidden></div></div>'; }
 function wireBuy(sh){ sh.querySelectorAll('[data-buy]').forEach(function(bb){ bb.onclick = function(){ buyLives(sh, bb, bb.getAttribute('data-buy')); }; }); }
 /* THE LIVES SHEET, opened by tapping the hearts anywhere in Putt Putt: what is held, the next life's clock, the buttons. */
 function livesSheet(){ if (S.ov.querySelector('.pp-livesh')) return; var st = pload(), n = livesNow(st);
@@ -3749,7 +3798,7 @@ function trailLeft(tid, n){ try{ if (tid !== 'main' || n < 2 || !trailOk()) retu
 function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[tid] || {};
   // only a hole being reached for the first time can forfeit anything: its trail is gone once it is beaten. A gate
   // that would refuse the hole anyway (a guest, the Members Tour, no lives) speaks first, from startLevel.
-  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (isGuest() && !tourOf(tid).lab) || livesNow(st) <= 0) return startLevel(n, tid);
+  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (guestAsks(tid, n) && !tourOf(tid).lab) || livesNow(st) <= 0) return startLevel(n, tid);
   var left = trailLeft(tid, n); if (!left.length) return startLevel(n, tid);
   var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
   var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE WALK?</div><div class="t">Hole ' + n + '</div><div class="m">The trail to Hole ' + n + ' still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-walk>Walk to Hole ' + n + '</button><button class="pt-bt pp-wide" data-skip>Play now and forfeit the rewards</button><button class="pt-bt pp-wide" data-n>Cancel</button></div></div>');
@@ -3774,7 +3823,7 @@ function startLevel(n, tid){
   if (tourOf(tid).members && !membersCanPlay()) return membersSheet({ n:n, trail:S.screen === 'trail' });
   if (tourOf(tid).lab && !labOpen()) return showHub('main');
   if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
-  if (isGuest() && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays no Tour hole
+  if (guestAsks(tid, n) && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays hole 1 of the Tour and no other
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
   // STORY MODE: a hole not yet reached never starts, from any door (the map already refuses it; this is the backstop)
   var TRo = tourOf(tid); if (!back && !TRo.lab && !TRo.secret && !opened(TRo, (st.tours || {})[tid], n)) return showHub(tid);
@@ -3906,10 +3955,11 @@ function tourOut(holed){
     return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
       <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? (threeOf(par, th) >= par - 1 ? 'Beat par for 3 stars.' : 'Beat par for 2 stars, ' + threeLine(par, th) + ' for 3.') : threeLine(par, th).replace(/^./, function(c){ return c.toUpperCase(); }) + ' for 3 stars.') + '</div>' : '') + '\
       <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + fmtPar(s - par) + '</b>To par</span></div>' +
-      (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + (TT && gw === TT.w && !tp.treat[n] ? '<div class="s">Beat par here for a trick or treat bonus.</div>' : '') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
+      (isGuest() ? '<div class="s">' + GUEST_COINS + '</div>' : got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + (TT && gw === TT.w && !tp.treat[n] ? '<div class="s">Beat par here for a trick or treat bonus.</div>' : '') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
       (openLine ? '<div class="s">' + openLine + '</div>' : '') +
       '<div class="row"><button class="pt-bt" data-a="again">Replay</button>' + (nextOpen ? '<button class="pt-go" data-a="next">Next hole</button>' : '<button class="pt-go" data-a="map">Map</button>') + '</div>',
-      { again:function(){ startLevel(n, tid); }, next:function(){ walkTo(n, tid); }, map:function(){ showHub(tid); } });
+      // a guest goes no further than the holes they may play: the next one asks them to sign in, where they stand
+      { again:function(){ startLevel(n, tid); }, next:function(){ if (guestAsks(tid, n + 1)) return guestSheet(n + 1, tid); walkTo(n, tid); }, map:function(){ showHub(tid); } });
   }
   // over par: the moment par strokes are gone with the ball still out
   if (TR.lab) return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down. The Lab costs no lives.</div>\
@@ -3963,17 +4013,23 @@ function dailyFinish(s, par, ms){
   psave(st); coins(got, 'Daily Hole');
   if (!late){ hq('ppDaily', 1); try{ S.host.questDaily && S.host.questDaily(); }catch(e){} try{ S.host.dayPlayed && S.host.dayPlayed(); }catch(e){}
     // the day's shared board (148_putt_daily_board.sql): the first round of the day stands, a late one never posts
-    try{ if (S.host.signedIn && S.host.signedIn() && S.host.rpc) S.host.rpc('putt_daily_submit', { p_day:dk, p_strokes:s, p_par:par, p_ms:ms == null ? null : Math.round(ms), p_look:S.host.boardLook ? S.host.boardLook() : null }); }catch(e){} }
+    // the board waits for this post (S.dailyPost), or it is read before the round lands and says nobody has posted
+    try{ if (S.host.signedIn && S.host.signedIn() && S.host.rpc) S.dailyPost = S.host.rpc('putt_daily_submit', { p_day:dk, p_strokes:s, p_par:par, p_ms:ms == null ? null : Math.round(ms), p_look:S.host.boardLook ? S.host.boardLook() : null }); }catch(e){} }
   if (s < par) try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
   dailyResult(got, dk);
 }
 /* THE DAILY HOLE BOARD. The day's top ten and the player's own row, off the server (putt_daily_board). Signed out
-   it says to sign in; a server that does not answer yet (148 not run) says the board is coming, and nothing breaks. */
-function dailyBoard(dk){ var box = S.ov && S.ov.querySelector('[data-rows]'); if (!box) return; var h = S.host;
+   it says to sign in; a server that does not answer yet (148 not run) says the board is coming, and nothing breaks.
+   It is LIVE (the owner, 2026-10-18): read once the player's own post has landed, then again every 20 seconds while
+   the result is on screen, so rounds posted by others come in without leaving and coming back. */
+var BOARD_EVERY = 20000;
+function dailyBoard(dk, again){ var box = S.ov && S.ov.querySelector('[data-rows]'); if (!box) return; var h = S.host;
   if (!(h.signedIn && h.signedIn())){ box.innerHTML = '<div class="m">Sign in to see how you stack up.</div>'; return; }
-  box.innerHTML = '<div class="m">Loading the board.</div>';
-  var p = null; try{ p = h.rpc('putt_daily_board', { p_day:dk, p_limit:10 }); }catch(e){}
-  Promise.resolve(p).then(function(rows){ if (!S || !S.ov || !S.ov.contains(box)) return;
+  if (!again) box.innerHTML = '<div class="m">Loading the board.</div>';
+  var post = S.dailyPost; S.dailyPost = null;
+  var p = Promise.resolve(post).catch(function(){ return null; }).then(function(){ try{ return h.rpc('putt_daily_board', { p_day:dk, p_limit:10 }); }catch(e){ return null; } });
+  p.then(function(rows){ if (!S || !S.ov || !S.ov.contains(box)) return;
+    clearTimeout(S.boardT); S.boardT = setTimeout(function(){ if (S && S.ov && S.ov.contains(box)) dailyBoard(dk, true); }, BOARD_EVERY);
     if (!rows || !rows.length){ box.innerHTML = '<div class="m">' + (rows ? 'Nobody has posted yet. Be the first.' : 'The board is on its way.') + '</div>'; return; }
     var n = rows[0].players || rows.length;
     box.innerHTML = rows.map(function(r){ var im = '', g = r.look ? chipImg(r.look) : ''; if (g) im = '<i class="pp-dav g3">' + g + '</i>';
@@ -4043,7 +4099,7 @@ function v3Get(d, C){
   // the hole being asked for is half rendered already: finish that rather than start again
   if (S.v3job && S.v3job.k === k){ var J = S.v3job, o = null; S.v3job = null; try{ while (!(o = J.step(1e9))); S.v3c[k] = o; }catch(e){ S.v3c[k] = null; } }
   if (S.v3c[k] === undefined){ try{ S.v3c[k] = window.RTT_PUTT_3D.render(C || buildFrom(d), v3Opt(d)); }catch(e){ try{ console.warn('putt 3D hole failed, drawing it flat', e); }catch(_){} S.v3c[k] = null; }
-    var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
+    var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; }
   return S.v3c[k];
 }
 // render the next hole while this one is played, so moving on does not wait. It is done a few
@@ -4055,15 +4111,24 @@ function v3Ahead(){
 }
 /* THE HOLE AT THE END OF A WALK RENDERS WHILE IT IS WALKED, a few milliseconds a frame, so arriving at it is not a wait.
    Arriving early is fine: v3Get finishes the half done render rather than start again. */
+/* BACKGROUND WORK GIVES WAY (the owner, 2026-10-18: laggy walking, on a phone and on a computer). A hole or a trail
+   rendered ahead runs a slice a frame, but only while frames are coming in on time: a frame that took over 20 ms
+   means the device is busy, so that frame does no background work. Every sixth frame still takes a slice, so a slow
+   device finishes in the end; arriving early only means the hole finishes rendering then (v3Get). */
+function bgSlack(){ var n = performance.now(), dt = n - (S.bgLast || n); S.bgLast = n; S.bgSkip = (S.bgSkip || 0) + 1;
+  if (dt < 20 || S.bgSkip >= 6){ S.bgSkip = 0; return true; } return false; }
+/* A CANVAS IS NEVER MORE THAN ABOUT 1.6 MILLION PIXELS. Pixel art loses nothing a phone or a big screen shows, and a
+   computer screen at 2x was 4.3 million pixels to fill every frame. */
+function capDpr(w, h){ var d = Math.min(2, window.devicePixelRatio || 1), MAX = 1.6e6; if (w * h * d * d > MAX) d = Math.max(1, Math.sqrt(MAX / Math.max(1, w * h))); return d; }
 function holeAhead(tid, n){ if (!v3Ok() || S.v3job) return; var d; try{ d = tourDesc(n, S.host, tid); }catch(e){ return; } if (!d || d.real || (S.v3c && S.v3c[v3Key(d)] !== undefined)) return;
   try{ S.v3job = { k:v3Key(d), step:window.RTT_PUTT_3D.slices(buildFrom(d), v3Opt(d)) }; }catch(e){ S.v3job = null; return; }
-  (function tick(){ var J = S && S.v3job; if (!J || S.screen !== 'trail') return; var out = null; try{ out = J.step(3); }catch(e){ S.v3job = null; return; }
-    if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; return; } requestAnimationFrame(tick); })(); }
+  (function tick(){ var J = S && S.v3job; if (!J || S.screen !== 'trail') return; if (!bgSlack()) return requestAnimationFrame(tick); var out = null; try{ out = J.step(3); }catch(e){ S.v3job = null; return; }
+    if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; return; } requestAnimationFrame(tick); })(); }
 function v3Tick(){
   var J = S.v3job; if (!J) return;
   var P = S.play; if (P && (P.state !== 'aim' || S.held)) return;   // never while the ball rolls or a pull back is held: those are the frames that matter
   var out = null; try{ out = J.step(2.5); }catch(e){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = null; return; }
-  if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
+  if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); while (ks.length > V3C_KEEP) delete S.v3c[ks.shift()]; }
 }
 
 function buildHole(d){
@@ -4119,7 +4184,7 @@ function aimNudge(da){
 function sizeCanvas(){
   // 2 at most (the owner, 2026-10-18: laggy on an iPhone). The art is pixel art, so a 3x phone loses nothing it shows,
   // and a canvas at 3x is 2.25 times the pixels to fill every frame.
-  var r = S.stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  var r = S.stage.getBoundingClientRect(), dpr = capDpr(r.width, r.height);
   S.dpr = dpr; S.cv.width = Math.max(1, Math.round(r.width * dpr)); S.cv.height = Math.max(1, Math.round(r.height * dpr)); S.play.cam = null;
 }
 function hud(){
@@ -4232,7 +4297,7 @@ function onKey(e){
    number in the physics changing: the solver, the pars and every replay stay exactly as they were. */
 var PLAY_RATE = 1.45;
 function gnow(){ return performance.now() * PLAY_RATE; }
-function maxFt(C){ return C.kind === 'real' ? 60 : 42; }
+function maxFt(C){ return C.kind === 'real' ? 60 : MAX_FT; }
 function strike(){
   var P = S.play, C = P.C, ft = P.pow * maxFt(C), v = speedFor(C, ft), a = C.kind === 'real' ? Math.atan2(P.target[1] - P.ball[1], P.target[0] - P.ball[0]) : P.aimAng;
   var t0 = gnow() / 1000 - P.clock0;
@@ -4252,7 +4317,7 @@ function frame(){
   if (!S || S.screen !== 'play') return;
   S.raf = requestAnimationFrame(frame);
   var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = gnow() / 1000, clock = now - P.clock0;
-  v3Tick(); trailTick(4);
+  if (bgSlack()){ v3Tick(); trailTick(4); }
   if (S.round.mode === 'pdaily') dailyClock(P);
   if (P.state === 'cheer' && (gnow() - P.cheerAt) / PLAY_RATE > (P.cheerAce ? CHEER_ACE : CHEER_MS)){ P.state = 'aim'; return holeOut(); }   // the hole keeps living behind the card, as it always did
   // where the ball is: at rest, or partway along the putt it is playing back
@@ -4886,6 +4951,7 @@ RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._chestRoll = chestRoll; RTT_PUTT._chestLuck = chestLuck; RTT_PUTT._keeperBlocks = function(n){ return keeperBlocks(pload(), n, 'main'); };
 RTT_PUTT._overPar = function(){ if (S && S.play && S.round && S.round.mode === 'ppt'){ S.play.strokes = S.play.C.par; S.play.state = 'done'; return tourOut(false); } };   // checks: a hole lost to par
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
+RTT_PUTT._holed = function(n){ if (S && S.play && S.round && S.round.mode === 'ppt'){ S.play.strokes = n; S.play.state = 'done'; return tourOut(true); } };   // checks: a Tour hole holed in n
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
 RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };
 // a hole built from a function, for trying out a layout in the browser: RTT_PUTT._try(function(T){ return H; }, 'clubhouse')

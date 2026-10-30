@@ -31,9 +31,19 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=35">
+<script type="importmap">
+{ "imports": {
+  "three": "./3d/vendor/three-0.170.0/three.module.min.js",
+  "three/addons/": "./3d/vendor/three-0.170.0/addons/"
+} }
+</script>
+<!-- the mound's 3D scene: its modules and downloads start with the page (shut-the-door/lab/pipeline/stamp.mjs writes this list) -->
+<!-- stamp:preload:begin -->
+<link rel="preload" as="image" href="3d/assets/hero.webp?h=a8b96e3af7">
+<!-- stamp:preload:end -->
 </head>
-<body>
+<body data-screen="s-home">
 <div class="app">
 
 <header class="hdr">
@@ -54,31 +64,40 @@
 
 <main>
 
-<!-- 1. HOME -->
+<!-- 1. HOME: a title screen. A slow stadium behind, the header, today's spot, one button, the menu. -->
 <section class="screen on" id="s-home" aria-labelledby="h-head">
+  <div class="t-bg" id="h-bg" aria-hidden="true">
+    <img class="t-bgi" src="home-bg/wide.webp" alt="" width="2048" height="1024" decoding="async" fetchpriority="high">
+    <img class="t-bgi" data-src="home-bg/stands.webp" alt="" width="2048" height="1024" decoding="async">
+    <img class="t-bgi" data-src="home-bg/seats.webp" alt="" width="2048" height="1024" decoding="async">
+    <img class="t-bgi" data-src="home-bg/outfield.webp" alt="" width="2048" height="1024" decoding="async">
+  </div>
+  <div class="t-scrim" aria-hidden="true"></div>
   <div class="load" id="h-load"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><span>warming up</span></div>
-  <div id="h-main" hidden>
-    <div class="hero" id="h-hero">
-      <canvas id="h-canvas" aria-hidden="true"></canvas>
-      <div class="hero-chips" id="h-day"></div>
-      <div class="hero-text"><p class="h-title" id="h-title"></p><h1 class="hero-head" id="h-head"></h1></div>
+  <div class="title" id="h-main" hidden>
+    <h1 class="t-head" id="h-head"><span class="t-l1">YOU ARE THE CLOSER.</span> <span class="t-l2">CAN YOU SHUT THE DOOR?</span></h1>
+    <div class="t-sit">
+      <p class="h-occ"><span class="h-title" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
+      <div class="hbug-wrap" id="h-sit" role="group"></div>
+      <div class="t-who" id="h-pitcher"></div>
+      <div class="t-who due" id="h-due"></div>
+      <p class="stakes" id="h-setup"></p>
+      <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
     </div>
-    <div class="tiles4" id="h-sit"></div>
-    <p class="setup" id="h-setup"></p>
-    <div class="go-wrap" id="h-go">
-      <button class="btn take" id="b-take" type="button">take the mound</button>
-      <p class="streak" id="h-streak"></p>
+    <div class="t-menu" id="h-menu">
+      <div class="t-go" id="h-go">
+        <button class="btn take" id="b-take" type="button">take the mound</button>
+        <p class="streak" id="h-streak"></p>
+      </div>
+      <div class="done" id="h-done" hidden></div>
+      <nav class="t-list" aria-label="More">
+        <button type="button" data-open="how"><span>how to play</span></button>
+        <button type="button" data-open="101"><span>pitching 101</span></button>
+        <button type="button" data-open="board"><span>today's board</span></button>
+        <button type="button" data-open="stats"><span>stats</span></button>
+        <button type="button" data-open="settings"><span>settings</span></button>
+      </nav>
     </div>
-    <div class="card done" id="h-done" hidden></div>
-    <div class="card pcard" id="h-pitcher"></div>
-    <div class="card due" id="h-due"></div>
-    <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
-    <nav class="h-links" aria-label="More">
-      <button type="button" data-open="how">how to play</button>
-      <button type="button" data-open="101">pitching 101</button>
-      <button type="button" data-open="stats">stats</button>
-      <button type="button" data-open="settings">settings</button>
-    </nav>
     <footer class="legal">
       <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=1" alt="Shut The Door" width="160" height="63">
       <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=1" alt="" width="160" height="63">
@@ -89,73 +108,166 @@
   <div class="err" id="h-err" hidden></div>
 </section>
 
-<!-- 2 AND 3. THE MOUND AND THE PITCH -->
+<!-- 2 AND 3. THE MOUND AND THE PITCH. The owner (2026-10-24): the game takes the whole screen and the
+     HUD floats over it like a console game. The scene is full bleed; every panel over it carries
+     data-hud and keeps off the zone. The top right corner is a header, so a tap on it never skips a play. -->
 <section class="screen" id="s-mound" aria-label="On the mound">
-  <div class="hud">
-    <div class="scorebar">
-      <div class="sb-score"><span class="tm">us</span><b id="m-us">0</b><span class="tm">them</span><b id="m-them">0</b></div>
-      <div class="sb-inn" id="m-inn"></div>
-      <svg class="sb-bases" id="m-bases" viewBox="0 0 40 30" aria-label="Bases">
-        <rect class="b2" x="15" y="2" width="9" height="9" transform="rotate(45 19.5 6.5)"/>
-        <rect class="b3" x="4" y="13" width="9" height="9" transform="rotate(45 8.5 17.5)"/>
-        <rect class="b1" x="26" y="13" width="9" height="9" transform="rotate(45 30.5 17.5)"/>
-        <g id="m-runners"></g>
-      </svg>
-      <div class="sb-outs" id="m-outs" aria-label="Outs"><i></i><i></i></div>
-      <div class="sb-count"><b id="m-count">0-0</b><span>count</span></div>
-      <div class="sb-pn"><b id="m-pn">1</b><span>pitch</span></div>
-    </div>
-    <p class="pbp" id="m-pbp" aria-live="polite"></p>
-  </div>
-  <button class="batterbar" id="m-batter" type="button" aria-expanded="false" aria-controls="m-scout">
-    <span class="bb-name"><b id="m-bname"></b><span class="hand" id="m-bhand"></span></span>
-    <span class="bb-line" id="m-bline"></span>
-    <span class="bb-scout">scout</span>
-  </button>
   <div class="scene" id="m-scene">
     <canvas id="m-canvas" aria-hidden="true"></canvas>
-    <div class="scout" id="m-scout" hidden></div>
     <div class="dbg" id="m-dbg" hidden></div>
-    <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
+    <div class="mini" id="m-mini" hidden></div>
   </div>
-  <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
-  <button class="btn throw" id="m-throw" type="button" disabled>pick a pitch</button>
+  <div class="mhud">
+    <div class="mh-tl">
+      <div class="scorebar mh-bug" data-hud role="group" aria-label="Scoreboard">
+        <div class="sb-teams">
+          <div class="sb-team"><i class="sb-club" id="m-usclub"></i><span class="tm" id="m-usname">us</span><span class="sb-ch" id="m-usch" role="img" hidden><i></i><i></i></span><b id="m-us">0</b></div>
+          <div class="sb-team"><i class="sb-club" id="m-themclub"></i><span class="tm" id="m-themname">them</span><span class="sb-ch" id="m-themch" role="img" hidden><i></i><i></i></span><b id="m-them">0</b></div>
+        </div>
+        <div class="sb-inn" id="m-inn"></div>
+        <div class="sb-stat sb-outs-wrap">
+          <svg class="sb-bases" id="m-bases" viewBox="0 0 40 30" aria-label="Bases">
+            <path class="sb-path" d="M19.5 6.5 L30.5 17.5 L19.5 28.5 L8.5 17.5 Z"/>
+            <rect class="b2" x="16" y="3" width="7" height="7" transform="rotate(45 19.5 6.5)"/>
+            <rect class="b3" x="5" y="14" width="7" height="7" transform="rotate(45 8.5 17.5)"/>
+            <rect class="b1" x="27" y="14" width="7" height="7" transform="rotate(45 30.5 17.5)"/>
+            <g id="m-runners"></g>
+          </svg>
+          <div class="sb-outs" id="m-outs" role="img" aria-label="Outs"><i></i><i></i></div>
+        </div>
+        <div class="sb-count" id="m-count" role="img" aria-label="0 balls, 0 strikes"></div>
+        <div class="sb-stat sb-pn"><b id="m-pn">1</b><span class="sb-lbl">pitch</span></div>
+      </div>
+      <!-- THE AT BAT LINE (the owner, 2026-10-27: "minimal clutter on the gameplay"). One slim row: at
+           bat, the name, his side, his line from the pack, and SCOUT. SCOUT opens the drawer under it
+           (the zone's heat, the report, the guide, the key, the earlier at bats). It starts closed
+           every at bat, closes on SCOUT, a tap outside or the throw, and never opens by itself. -->
+      <div class="mh-card" id="m-card" data-hud>
+        <div class="bb-row">
+          <div class="bb-id">
+            <span class="bb-eye"><span class="bb-ab">at bat</span><span class="bb-hand" id="m-bhand"></span><span class="bb-line" id="m-bline"></span></span>
+            <b class="bb-nm" id="m-bname"></b>
+          </div>
+          <button class="mh-tog bb-drawer" id="m-drawer-b" type="button" aria-expanded="false" aria-controls="m-drawer">scout<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></button>
+        </div>
+        <div class="bb-drawer-box" id="m-drawer" role="region" aria-label="Scouting" hidden>
+          <div class="heatbar" id="m-heat">
+            <div class="seg sm" role="group" aria-label="What the zone shows">
+              <button type="button" data-heat="damage" aria-selected="true">damage</button>
+              <button type="button" data-heat="swing" aria-selected="false">swings</button>
+            </div>
+            <span class="legend" id="m-heat-legend"></span>
+          </div>
+          <div class="bb-togs">
+            <button class="mh-tog bb-scout" id="m-batter" type="button" aria-expanded="false" aria-controls="m-scout">report</button>
+            <button class="mh-tog guide-tog" id="m-guide-b" type="button" aria-expanded="false" aria-controls="m-guide">guide</button>
+            <button class="mh-tog key-tog" id="m-key-b" type="button" aria-expanded="false" aria-controls="m-key" aria-label="Pitch dot key">key</button>
+          </div>
+          <div class="dotkey" id="m-key" hidden><span><i class="pd ball"></i>ball</span><span><i class="pd called"></i>called</span><span><i class="pd swing"></i>swinging</span><span><i class="pd foul"></i>foul</span><span><i class="pd inplay"></i>in play</span><span id="m-key-abs" hidden><i class="pd called abs"></i>overturned</span></div>
+          <div class="pa-hist" id="m-pas" role="group" aria-label="Earlier at bats" hidden></div>
+        </div>
+      </div>
+      <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
+    </div>
+    <header class="mh-tr">
+      <button class="mh-menu" type="button" data-open="menu" data-hud aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </header>
+    <div class="scout msheet" id="m-scout" data-hud hidden></div>
+    <div class="guide msheet" id="m-guide" data-hud role="region" aria-label="Pitch guide" hidden></div>
+    <!-- the dock: the play by play (a lower third over it, or beside it on a wide screen), the step prompt, the pitch buttons, then the throw button. The release meter
+         (meter-ui.js) is one panel over the pitch buttons and the throw button after the tap on
+         throw. It shows its power bar only when STD_METER.POWER is true (the game agent's rule).
+         Rules 4: the challenge button sits beside throw only while a called ball can be challenged,
+         and the ABS replay (#m-absr) covers the dock for a moment after any challenge. -->
+    <div class="dock" id="m-dock">
+      <p class="pbp" id="m-pbp" aria-live="polite"></p>
+      <p class="pad-say" id="m-say" aria-live="polite"></p>
+      <!-- rules 7: with a runner on, the running game's row (ui.js runBar): QUICK DELIVERY and PICKOFF -->
+      <div class="runbar" id="m-run" data-hud role="group" aria-label="The running game" hidden>
+        <button class="rb-quick" id="m-quick" type="button" aria-pressed="false"><span class="rb-t"><b>quick delivery</b><small id="m-quick-l">slide step · beats the steal</small></span><i class="rb-sw" aria-hidden="true"></i></button>
+        <button class="rb-po" id="m-po" type="button" hidden><span class="rb-t"><b>pickoff</b><small id="m-po-l"></small></span><span class="ab-dots" aria-hidden="true"><i></i><i></i></span></button>
+      </div>
+      <div class="arsenal" id="m-arsenal" data-hud role="group" aria-label="His pitches"></div>
+      <div class="pad" id="m-pad" data-hud>
+        <button class="btn abs-b" id="m-abs-b" type="button" hidden><b>challenge</b><span class="ab-dots" aria-hidden="true"><i></i><i></i></span><i class="ab-clock" aria-hidden="true"></i></button>
+        <button class="btn throw" id="m-throw" type="button" disabled><b>throw</b></button>
+      </div>
+      <div id="m-meter" data-hud hidden></div>
+      <div class="absr" id="m-absr" data-hud role="status" aria-live="polite" hidden></div>
+    </div>
+  </div>
 </section>
 
 <!-- 5. THE RESULT -->
 <section class="screen" id="s-result" aria-labelledby="r-outcome">
-  <p class="eyebrow" id="r-eyebrow"></p>
-  <h2 class="outcome" id="r-outcome"></h2>
-  <div class="seam" aria-hidden="true"></div>
-  <p class="r-line" id="r-line"></p>
-  <div class="card graded">
-    <div class="ch"><b>your calls, graded</b><span id="r-npitch"></span></div>
-    <div class="strip big" id="r-strip"></div>
-    <div class="legend" id="r-legend"></div>
+ <aside class="r-rail" id="r-rail">
+  <div class="r-hero" id="r-hero">
+    <p class="eyebrow" id="r-eyebrow"></p>
+    <h2 class="outcome" id="r-outcome"></h2>
+    <div class="seam" aria-hidden="true"></div>
+    <div class="vsbar" id="r-real"></div>
+    <div class="r-kn">
+      <div class="kn" id="r-kp"></div>
+      <div class="kn" id="r-kr"></div>
+      <div class="kn kn-pct" id="r-kpct"><b class="pct" id="r-pct"></b><span>of closers<span id="r-score"></span></span></div>
+    </div>
+    <div class="r-graded">
+      <p class="rg-h"><b>your calls, graded</b><span id="r-npitch"></span></p>
+      <div class="strip mid" id="r-strip"></div>
+    </div>
   </div>
-  <div class="card pool">
-    <div class="ch"><b>vs every closer in this spot</b><span id="r-score"></span></div>
-    <div class="pool-top"><b class="pct" id="r-pct"></b><p id="r-pctline"></p></div>
-    <div class="chart" id="r-chart"></div>
+  <nav class="r-nav" id="r-nav" aria-label="after the outing">
+    <button class="nv" id="r-coach" type="button"><b>talk to pitching coach</b><span>your costliest pitch</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-board" type="button"><b>today's board</b><span>where you rank</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-share" type="button"><b>share</b><span>the card or the text</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-again" type="button"><b>run it back</b><span>practice. not scored.</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-home" type="button"><b>home</b><i class="chev" aria-hidden="true"></i></button>
+  </nav>
+  <div class="r-foot">
+    <p class="streak" id="r-streak"></p>
+    <p class="r-tmr" id="r-tomorrow"></p>
+    <p class="r-keys" aria-hidden="true"><kbd>&#8593;</kbd><kbd>&#8595;</kbd> move <kbd>enter</kbd> pick</p>
   </div>
-  <div class="r-two">
-    <div class="card r-stat"><small>pitched like</small><b class="nm" id="r-like"></b><span id="r-why"></span></div>
-    <div class="card r-stat" id="r-real"></div>
+ </aside>
+ <div class="r-main">
+  <section class="r-tile r-pbp">
+    <div class="r-sec-h"><h3>you vs the real game</h3><span>pitch by pitch</span><div class="legend" id="r-legend"></div></div>
+    <div class="cmp" id="r-reveal"></div>
+  </section>
+  <div class="r-row2">
+    <section class="r-tile r-pool">
+      <div class="r-sec-h"><h3>vs every closer in this spot</h3></div>
+      <p class="r-pctline" id="r-pctline"></p>
+      <div class="chart" id="r-chart"></div>
+    </section>
+    <section class="r-tile r-like">
+      <i class="rl-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></i>
+      <div class="rl-t"><small>pitched like</small><b class="nm" id="r-like"></b><span id="r-why"></span></div>
+    </section>
   </div>
-  <button class="coach-go" id="r-coach" type="button"><span class="cg-t"><b>talk to pitching coach</b><span>your costliest pitch, then every pitch</span></span><i class="cg-arrow" aria-hidden="true"></i></button>
-  <div class="card reveal" id="r-reveal"></div>
-  <div class="r-actions">
-    <button class="btn go" id="r-share" type="button">share</button>
-    <button class="btn ghost" id="r-again" type="button">run it back</button>
-    <button class="btn ghost" id="r-home" type="button">home</button>
+ </div>
+</section>
+
+<!-- 6. THE BOARD. From the result, the home links and the menu. board.js fills it. -->
+<section class="screen" id="s-board" aria-labelledby="bd-head">
+  <button class="bd-back" id="bd-back" type="button"><i aria-hidden="true"></i>back</button>
+  <div class="bd-grid">
+    <div class="bd-side">
+      <div class="bd-hero">
+        <p class="eyebrow" id="bd-eyebrow"></p>
+        <h2 class="bd-head" id="bd-head">the board</h2>
+        <div class="seam" aria-hidden="true"></div>
+        <div id="bd-you"></div>
+      </div>
+      <p class="quiet bd-note">today's daily only. ranked by score. a tie goes to whoever posted first.</p>
+    </div>
+    <div class="card bd-list" id="bd-list" aria-live="polite"></div>
   </div>
-  <p class="streak" id="r-streak"></p>
-  <p class="quiet center" id="r-tomorrow"></p>
 </section>
 
 </main>
 
-<!-- 6. THE SHEETS. Every one opens from a button. None opens by itself. -->
+<!-- 7. THE SHEETS. Every one opens from a button. None opens by itself. -->
 <div class="sheet" id="sheet-menu" hidden aria-hidden="true" role="dialog" aria-label="Menu">
   <div class="sh-in">
     <div class="sh-h"><h2>you</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div>
@@ -165,9 +277,10 @@
       <button type="button" data-open="101"><i class="mi data"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></i><span class="mt"><b>pitching 101</b><span>the ideas the coach uses.</span></span><i class="chev" aria-hidden="true"></i></button>
     </div>
     <div class="menu-list">
+      <button type="button" data-open="board"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="mt"><b>today's board</b><span>every closer who posted today.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="stats"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="mt"><b>stats</b><span>every outing, every grade.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="past"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></i><span class="mt"><b>past dailies</b><span>every spot so far.</span></span><em class="tag">locked</em><i class="chev" aria-hidden="true"></i></button>
-      <button type="button" data-open="settings"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="mt"><b>settings</b><span>sound, speed, theme.</span></span><i class="chev" aria-hidden="true"></i></button>
+      <button type="button" data-open="settings"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="mt"><b>settings</b><span>sound, speed, meter, theme.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="auth"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></i><span class="mt"><b>account</b><span>sign in to keep your streak.</span></span><i class="chev" aria-hidden="true"></i></button>
     </div>
   </div>
@@ -193,6 +306,9 @@
 <div class="sheet" id="sheet-settings" hidden aria-hidden="true" role="dialog" aria-label="Settings">
   <div class="sh-in"><div class="sh-h"><h2>settings</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="set-body"></div></div>
 </div>
+ <div class="sheet" id="sheet-share" hidden aria-hidden="true" role="dialog" aria-label="Share">
+  <div class="sh-in"><div class="sh-h"><h2>share</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body share" id="share-body"></div></div>
+</div>
 <div class="sheet" id="sheet-auth" hidden aria-hidden="true" role="dialog" aria-label="Account">
   <div class="sh-in"><div class="sh-h"><h2>account</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body auth" id="auth-body"></div></div>
 </div>
@@ -205,21 +321,29 @@
      takes over when the address carries a mock test switch (?mockEnd= and
      the rest, used by test/check-browser.mjs); a player always gets the real
      engine. -->
-<script src="contract.js?v=2"></script>
+<script src="contract.js?v=10"></script>
+<script src="meter.js?v=6"></script>
+<script src="meter-ui.js?v=6"></script>
 <script src="sprites.js?v=2"></script>
-<script src="mound.js?v=3"></script>
-<script src="anim.js?v=2"></script>
-<script src="menus.js?v=5"></script>
+<script src="mound.js?v=4"></script>
+<script src="aim.js?v=5"></script>
+<script src="anim.js?v=3"></script>
+<script src="minimap.js?v=1"></script>
+<script src="menus.js?v=8"></script>
 <script src="rng.js?v=1"></script>
-<script src="grade.js?v=2"></script>
-<script src="lesson.js?v=1"></script>
-<script src="engine.js?v=3"></script>
-<script src="share.js?v=1"></script>
+<script src="grade.js?v=13"></script>
+<script src="lesson.js?v=4"></script>
+<script src="engine.js?v=14"></script>
+<script src="share.js?v=2"></script>
+<script src="card.js?v=2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=2"></script>
-<script src="api.js?v=2"></script>
-<script src="mock-api.js?v=5"></script>
-<script src="coach.js?v=1"></script>
-<script src="ui.js?v=6"></script>
+<script src="auth.js?v=3"></script>
+<script src="api.js?v=14"></script>
+<script src="mock-api.js?v=12"></script>
+<script src="coach.js?v=2"></script>
+<script src="board.js?v=1"></script>
+<script src="ui.js?v=45"></script>
+<script type="module" src="3d/boot.js?v=66"></script>
+<script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
 </html>

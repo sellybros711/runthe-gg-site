@@ -59,6 +59,27 @@
                      radial-gradient(800px 500px at 100% 100%, rgba(239,68,68,.07), transparent 70%);
     background-attachment:fixed}
   .wrap{max-width:600px;margin:0 auto;padding:14px 14px 46px}
+  /* Inside the Perfect Season's Home Screen app the page can be drawn under the clock
+     (viewport-fit=cover), so the top row starts below that inset. 0 in a browser tab. */
+  .wrap{padding-top:calc(14px + env(safe-area-inset-top,0px))}
+  /* WHILE THE BOTTOM BANNER IS UP, ON A SHORT PHONE (the owner's call, 2026-10-29): the
+     closeable banner from assets/rtg-ads.js covers the bottom 79px, and the week's main button
+     has to be clear of it before anybody scrolls. Keyed on body.rtg-sticky-on, which is set the
+     moment the banner is asked for, so nothing moves when the ad arrives; closed with its X,
+     the class goes and the screen is as it was. The three steps keep their names and lose
+     their sentences (the tiles under them carry the numbers), and the entry screen's lineup
+     sits a little closer. Taller phones already clear it and are untouched. */
+  @media (max-width:919px) and (max-height:719px){
+    body.rtg-sticky-on #s-home .hero-h{font-size:clamp(30px,9.5vw,40px)}
+    body.rtg-sticky-on #s-home .steps{margin-top:12px;gap:6px}
+    body.rtg-sticky-on #s-home .steps li > span{display:block;height:26px;overflow:hidden}
+    body.rtg-sticky-on #s-home .steps li > span strong{line-height:26px}
+    body.rtg-sticky-on #s-home .hero .stack{margin-top:12px}
+    body.rtg-sticky-on #s-in .big{font-size:36px}
+    body.rtg-sticky-on #s-in .rule{margin-top:10px;margin-bottom:10px}
+    body.rtg-sticky-on #s-in #in-roster{margin-top:8px !important}
+    body.rtg-sticky-on #s-in #b-in-board{margin-top:8px !important}
+  }
   h1,h2,h3{margin:0;line-height:1.05}
   .display{font-family:var(--fd);font-weight:400;letter-spacing:.01em;text-transform:uppercase}
   .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
@@ -201,6 +222,8 @@
      that way and taller than its line overflows BOTH ends and the top half cannot be
      scrolled back to. An auto margin centres when there is room and gives up when there is
      not, and `overflow-y:auto` lets the scrim scroll to the rest. */
+  /* The Live button rides above the closeable bottom banner (/assets/rtg-ads.js) while it is up. */
+  body.rtg-sticky-on .livebtn{bottom:calc(14px + var(--sticky-ad-h,0px) + env(safe-area-inset-bottom))}
   .isheet{position:fixed;inset:0;z-index:40;display:flex;justify-content:center;
     overflow-y:auto;overscroll-behavior:contain;background:rgba(4,7,14,.74);padding:12px}
   .isheet > .ibox{margin:auto}
@@ -638,6 +661,18 @@
   .stack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 </style>
 <script src="/football/fantasy/skin.js?v=1"></script>
+<!-- Consent Mode defaults first (Europe denies all four until the certified CMP answers), then the
+     AdSense tag: the same order as every other page on runthe.gg. Added 2026-10-27 for the one
+     bottom-of-page unit the owner asked for on the Fantasy Challenge. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=2"></script>
 </head>
 <body>
 <div class="wrap">
@@ -723,7 +758,7 @@
     <div class="slots" id="d-slots"></div>
     <div class="men" id="d-men"></div>
     <p class="note" id="d-note"></p>
-    <div class="stack"><button class="btn quiet" id="b-abandon">Start this draft again</button></div>
+    <div class="stack"><button class="btn quiet" id="b-draft-back">Back</button></div>
   </section>
 
   <section id="s-review" class="screen">
@@ -848,6 +883,26 @@
     </div>
   </section>
 </div>
+
+<!-- THE FANTASY AD (Ads Agent, 2026-10-27, the owner: "one on every screen of the fantasy challenge,
+     at the bottom"). One unit under whichever screen is open, so it is at the bottom of every
+     screen without loading a new ad on each one. Started once per page load, never hidden. 150px
+     below the screen's last button once filled, and 170px of room under it so the floating Live
+     button never sits over it. The mid-size 300x250 rectangle (the owner, 2026-10-27), which fits the
+     narrowest phone column; unfilled, it collapses. -->
+<style>
+  .fx-ad{max-width:728px;margin:0 auto;text-align:center}
+  .fx-ad:has(ins[data-ad-status="filled"]){margin:150px auto 0;padding-bottom:170px}
+  .fx-ad .ad-label{display:none;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin:0 0 6px}
+  .fx-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  [data-ad-zone="page"] ins.adsbygoogle{display:inline-block;width:300px;height:250px}
+  [data-ad-zone="page"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+</style>
+<div class="fx-ad" data-ad-zone="page">
+  <span class="ad-label">Advertisement</span>
+  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="4218034808"></ins>
+</div>
+<script>(function(){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}})();</script>
 
 <!-- Outside the wrap because it is fixed to the window rather than to the column. Hidden
      until the first kickoff and gone again once the last game is well over, which is asked
@@ -1011,6 +1066,17 @@
    * Found by the guard below rather than by reading, which is the only reason it is written
    * up here instead of shipping.
    */
+  /* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-29, the owner's
+     calls). The banner sits on the home screen (and the closed-week screen that stands in for it),
+     the entry and the live screen, never on the draft or the review. Its X closes it for the rest of the visit. The two rails are desktop only, on
+     the standings tab. /assets/rtg-ads.js owns how both look and behave. */
+  var STICKY_SLOT = {sticky:'1372661456'};                     // fantasy-sticky
+  var BOARD_SLOTS = {left:'2447351237', right:'4701532378'};   // fantasy-board-left, fantasy-board-right
+  function fantasyAds(id){
+    if (!window.RTG_ADS) return;
+    RTG_ADS.sticky(id === 's-home' || id === 's-shut' || id === 's-in' || id === 's-live', STICKY_SLOT.sticky, 'fantasy');
+    RTG_ADS.rails(id === 's-live' && !$('lv-pane-board').hidden, BOARD_SLOTS, function(){ return document.querySelector('.wrap'); });
+  }
   var show = function(id){
     var cur = document.querySelector('.screen.on');
     if (cur && cur.id === id) return;
@@ -1033,6 +1099,7 @@
        wrong on two of them: on the live screen it would be a door to the room it is in, and
        on the draft screen it would sit over the board somebody is picking from. */
     syncLiveButton();
+    fantasyAds(id);
   };
   var esc = function(s){
     return String(s==null?'':s).replace(/[&<>"']/g, function(c){
@@ -1436,7 +1503,7 @@
       $('d-men').innerHTML = '';
       $('d-men').className = 'men';
       $('d-note').textContent = 'No ' + D.SLOTS[i] + ' can be signed with what is left. '
-        + 'That is a bug. Start this draft again.';
+        + 'That should not happen. Please tell us through the feedback form.';
       return;
     }
     /* THE CAP HAS TO BE ON THE SCREEN OR IT IS NOT A BUDGET. A board used to hold only men
@@ -1642,21 +1709,25 @@
     var was = cur, len = c.ids.length;
     later(function(){
       busy = false;
-      /* The identity check. A draft abandoned or a chance switched inside those 170ms has
+      /* The identity check. A draft left or a chance switched inside those 170ms has
          moved on, and repainting then would put the old board's next spin on screen. */
       if (cur !== was || !state.chances[was] || state.chances[was].ids.length !== len) return;
       paintDraft();
     }, 170);
   }
 
-  $('b-abandon').onclick = function(){
+  /* BACK, AND THE DRAFT IS KEPT EXACTLY AS IT IS. There used to be "Start this draft
+     again" here, which dealt a fresh board from a new seed on every press: unlimited
+     rerolls of the wheel, which is the one thing a stored seed exists to stop. The owner
+     took it out (2026-10-27). Every pick is already saved, so coming back to the draft
+     resumes the same board where it was left, and the only way to a different board is to
+     finish this one and use the next of the week's chances. */
+  $('b-draft-back').onclick = function(){
     clearTimers();
     busy = false;
-    JUST = -1;
-    moneyFrom = CAP;
-    state.chances[cur] = { seed: D.newSeed(), ids: [] };
-    save();
-    paintDraft();
+    closeConfirm();
+    paintHome();
+    show('s-home');
   };
 
   /* ---- the review screen ---- */
@@ -2959,6 +3030,7 @@
     $('lv-pane-past').hidden = which !== 'past';
     window.scrollTo(0,0);
     if (which === 'past') openPast();
+    if ($('s-live').classList.contains('on')) fantasyAds('s-live');
   }
   function boardShowing(){
     return $('s-live').classList.contains('on') && !$('lv-pane-board').hidden;
@@ -3219,7 +3291,11 @@
     $('home-drafts').textContent = done + ' of ' + chancesAllowed();
     $('b-draft').hidden = locked() || state.chances.length >= chancesAllowed()
       && done >= chancesAllowed();
-    $('b-draft').textContent = done ? 'Draft ' + (done+1) + ' of ' + chancesAllowed() : 'Start drafting';
+    /* A DRAFT LEFT PART WAY is resumed, not restarted, so the button says so. */
+    var going = state.chances.some(function(c){
+      var n = (c.ids||[]).length; return n > 0 && n < D.SLOTS.length; });
+    $('b-draft').textContent = going ? 'Keep drafting'
+      : done ? 'Draft ' + (done+1) + ' of ' + chancesAllowed() : 'Start drafting';
     $('b-review').hidden = !done;
     $('b-past').hidden = POOL.week <= 1;
     /* THE REOPENED DRAFTS ARE NAMED WHERE THE READER LANDS, so nobody opens their five

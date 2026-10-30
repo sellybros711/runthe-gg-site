@@ -169,7 +169,12 @@ for (let i = 0; i < SHOW_COUNT; i++) {
   emit(encore, 'e');
 }
 
-const { csv, shows, performances, songs } = buildCSV(raw, { quiet: true });
+// Feels are curated for the real band (goose_feels.json), so here the role
+// table stands in for that curation.
+const FEEL_OF_ROLE = { opener: 'Groove', peak: 'Groove', jam: 'Space', ballad: 'Ballad', closer: 'Rocker',
+  encore: 'Anthem', mid: 'Easy', rare: 'Bit' };
+const feels = new Map(SONGS.map(s => [s[0], FEEL_OF_ROLE[s[2]]]));
+const { csv, shows, performances, songs } = buildCSV(raw, { quiet: true, feels });
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, csv, 'utf8');
 

@@ -50,6 +50,7 @@ const HARNESS = `<!doctype html><meta charset="utf-8">
 const q = new URLSearchParams(location.search);
 const { createStage } = await import('/setlist/stage.js?v=' + Date.now());
 const st = createStage(document.getElementById('c'), { seed: 41, venue: q.get('v'), reduce: true });
+await st.ready;
 const p = +q.get('p');
 st.cue({ kind: 'set', progress: p, instant: true });
 st.cue({ kind: 'song', progress: p, energy: .8, palette: 'jam', instant: true });
