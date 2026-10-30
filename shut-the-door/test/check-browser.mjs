@@ -316,8 +316,13 @@ function motionProblems(tr) {
   const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
   const balls = tr.s.filter((x) => x.ball);
   if (balls.length < 3) { out.push(name + ': the ball was seen in ' + balls.length + ' frames'); return out; }
-  const flew = Math.max(...balls.map((x) => d(x.ball, balls[0].ball)));
-  if (flew < 14) out.push(name + ': the ball flew ' + flew.toFixed(1) + ' m');
+  /* the flight from where the pitch leaves his hand (tr.rel, the start of its own path, which the
+     stage puts in the trace), never from the first frame that saw the ball: that frame can land a
+     few metres into the flight (a called strike read 13.8 m on a loaded runner, PR #789's CI). A
+     ball that does not fly stays near his hand and still reads short of the 14 m floor. */
+  if (!Array.isArray(tr.rel) || tr.rel.length !== 3) { out.push(name + ': the trace carries no release point'); return out; }
+  const flew = Math.max(...balls.map((x) => d(x.ball, tr.rel)));
+  if (flew < 14) out.push(name + ': the ball flew ' + flew.toFixed(1) + ' m from the release');
   const s0 = tr.s[0], before = tr.s.filter((x) => x.t < tr.resultAt - 0.15), after = tr.s.filter((x) => x.t >= tr.resultAt);
   const tip0 = (before.length ? before : tr.s)[0].tip;
   const batMove = Math.max(...tr.s.map((x) => d(x.tip, tip0)));
