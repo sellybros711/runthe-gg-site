@@ -12,6 +12,15 @@
 export const page = '/cfb/commish/';
 export const seconds = 40;
 export const hide = [];
+// what the trailer's camera frames (record.mjs writes where each is, every frame)
+export const track = {
+  calendar: '#s-office.on #off-monthcard', meters: '#s-office.on #off-meters', deskbtn: '#b-desk',
+  brief: '#s-desk.on #d-brief', options: '#s-desk.on #d-options', opt1: '#s-desk.on #d-options .opt', voices: '#s-desk.on #d-voices', rule: '#s-desk.on #b-rule',
+  ruled: '#s-room.on #r-title', setoff: '#s-room.on #r-note', rmeters: '#s-room.on #r-meters', whip: '#s-room.on #r-whip', room: '#s-room.on #r-room',
+  ask: '#s-press.on #p-ask', who: '#s-press.on #p-who', answers: '#s-press.on #p-answers', say: '#b-say',
+  wire: '#s-scene.on #sc-card', wiresay: '#s-scene.on #sc-say',
+  verdict: '#s-year.on #y-card', eyebrow: '#s-year.on #y-eyebrow', year: '#s-year.on #y-big', yearsay: '#s-year.on #y-say', report: '#s-year.on #y-report',
+};
 export const init = `window.supabase={createClient(){const session={access_token:'x',user:{id:'00000000-0000-4000-8000-00000000c0ff',email:'c@e.com'}};
   return {auth:{onAuthStateChange(){return{data:{}}},getSession:()=>Promise.resolve({data:{session}}),signOut:()=>Promise.resolve({})},
   from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve({data:{username:'coachcarter'}})}}}}}},

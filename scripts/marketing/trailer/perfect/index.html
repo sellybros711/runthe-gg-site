@@ -155,7 +155,7 @@ function footage(clip, sec, cx, cy, cw, { dim = 1, blur = 0 } = {}) {
     return setImg($('fimg'), clip, sec);
   }
   $('foot').classList.add('hide'); $('footpanelwrap').classList.remove('hide');
-  const ph = H - 120, pw = Math.round(ph * 0.62), p = $('footpanel');
+  const ph = H - 120, pw = Math.round(ph * 9 / 16), p = $('footpanel');   // the take's own shape, so a crop never cuts a line
   Object.assign(p.style, { width: pw + 'px', height: ph + 'px', left: (W - pw - 90) + 'px', top: '60px' });
   LAST = { ...place($('pimg'), pw, ph, cx, cy, cw * 16 / 9 * (pw / ph)), ox: W - pw - 90, oy: 60 };   // the same crop height as the 9:16 cut
   $('pimg').style.filter = `brightness(${dim})`;
@@ -163,9 +163,9 @@ function footage(clip, sec, cx, cy, cw, { dim = 1, blur = 0 } = {}) {
 }
 let LAST = null;
 /* a frosted strip over part of the source (source px), for game text that should not read */
-function frost(y0, y1) { const m = $('frost'); if (!LAST) return; Object.assign(m.style, { display: 'block', left: LAST.ox + 'px', width: (TALL ? W : Math.round((H - 120) * 0.62)) + 'px', top: LAST.oy + (y0 - LAST.y) * LAST.s + 'px', height: (y1 - y0) * LAST.s + 'px' }); }
+function frost(y0, y1) { const m = $('frost'); if (!LAST) return; Object.assign(m.style, { display: 'block', left: LAST.ox + 'px', width: (TALL ? W : Math.round((H - 120) * 9 / 16)) + 'px', top: LAST.oy + (y0 - LAST.y) * LAST.s + 'px', height: (y1 - y0) * LAST.s + 'px' }); }
 /* in 5:4 a caption sits left of the panel */
-function side(html) { return TALL ? html : `<div style="position:absolute;left:${70}px;top:0;bottom:0;width:${W - Math.round((H - 120) * 0.62) - 220}px;display:flex;align-items:center">${html.replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`; }
+function side(html) { return TALL ? html : `<div style="position:absolute;left:${70}px;top:0;bottom:0;width:${W - Math.round((H - 120) * 9 / 16) - 220}px;display:flex;align-items:center">${html.replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`; }
 
 /* THE CUT, on a 120 BPM grid (sound.mjs). Every scene draws itself from its own local time. */
 const S = [

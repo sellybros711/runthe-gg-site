@@ -16,6 +16,7 @@
      export const seconds = 20;                      optional: the most it may run
      export const hide = ['/baseball/board.js'];     optional: files served as missing (see below)
      export const init = 'window.x = 1';             optional: a script run before the page's own
+     export const track = { budget: '#c-amt' };      optional: parts to follow, logged every frame (below)
      export const viewport = { width: 504, height: 896 };   optional: CSS pixels, 9:16 (432x768 default)
 
    `t` holds the helpers: t.tap(locator or selector) moves a visible finger there and taps it,
@@ -178,6 +179,18 @@ let now = 0, ticks = Number(process.hrtime.bigint()) / 1e6, rolling = false, rol
 let ff = null, pumpError = null;
 const keepDir = args.includes('--keep') ? fs.mkdtempSync(path.join(os.tmpdir(), `clip-${name}-`)) : null;
 let waiters = [];
+/* TRACKING, for a trailer's camera: where each part named in the shot's `track` sits on screen, every
+   frame, and every tap, in the clip's own pixels (CSS px times the scale). It goes beside the clip as
+   <clip>.track.json, so an edit can frame the thing a caption talks about instead of guessing. A part
+   that is missing or hidden on a frame is null there. */
+const TRACK = shot.track || null, track = { fps: FPS, scale: DPR, view: VIEW, frames: [], taps: [] };
+const trackFrame = async () => {
+  if (!TRACK) return;
+  track.frames.push(await page.evaluate((T) => { const o = {};
+    for (const [k, sel] of Object.entries(T)) { const el = [...document.querySelectorAll(sel)].find((e) => e.offsetParent || e.getClientRects().length);
+      const r = el && el.getBoundingClientRect(); o[k] = r && r.width && r.height ? [r.x, r.y, r.width, r.height].map((v) => Math.round(v * 10) / 10) : null; }
+    return o; }, TRACK).catch(() => null));
+};
 const nextFrame = () => new Promise((res, rej) => { if (pumpError) rej(pumpError); else waiters.push({ res, rej }); });
 await cdp.send('Emulation.setVirtualTimePolicy', { policy: 'pause' });
 const advance = (ms) => new Promise((res) => {
@@ -199,7 +212,7 @@ const pump = (async () => {
       if (rolling) {
         // A frame with nothing new to draw repeats the last one, so the clip keeps time.
         if (f.screenshotData) last = Buffer.from(f.screenshotData, 'base64');
-        if (last) await write(last);
+        if (last) { await write(last); await trackFrame(); }
       }
       const w = waiters; waiters = [];
       for (const x of w) x.res();
@@ -243,6 +256,7 @@ const t = {
     }
     if (!box) throw new Error(`nothing on screen to tap: ${target}`);
     await hold(before);
+    if (rolling) track.taps.push({ frame: written, box: [box.x, box.y, box.width, box.height].map((v) => Math.round(v)), what: String(typeof target === 'string' ? target : 'locator') });
     // page.mouse fires the pointer events the finger listens for; touchscreen.tap does not.
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await hold(after);
@@ -288,5 +302,6 @@ try { fs.rmSync(profile, { recursive: true, force: true, maxRetries: 3 }); } cat
 if (failed) { console.error(`the shot failed: ${failed.message}`); process.exit(1); }
 if (keepDir) console.log(`raw frames kept in ${keepDir}`);
 const size = fs.statSync(out).size / 1048576;
+if (TRACK || track.taps.length) fs.writeFileSync(out.replace(/\.mp4$/, '') + '.track.json', JSON.stringify(track));
 console.log(`${path.relative(ROOT, out)}: ${(written / FPS / SPEED).toFixed(1)}s${SPEED !== 1 ? ` at ${SPEED}x` : ''}, ${written} frames, ${size.toFixed(1)} MB`);
 if (errors.length) console.log(`the page threw ${errors.length} error(s) while recording; watch the clip before using it:\n  ${errors.slice(0, 5).join('\n  ')}`);

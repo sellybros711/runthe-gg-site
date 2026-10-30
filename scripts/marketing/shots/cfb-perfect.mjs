@@ -11,6 +11,17 @@ export const hide = [];
 const SEED = 350;
 const PICKS = ['174154|2008', '4241205|2020', '4808830|2022', '550190|2013', '546621|2014', '4242369|2019'];
 export const init = `window.PS_CFB_SEED = ${SEED};`;
+// what the trailer's camera frames (record.mjs writes where each is, every frame)
+export const track = {
+  budget: '#s-draft.on #c-amt', hud: '#s-draft.on #c-bar', count: '#s-draft.on #d-count', field: '#s-draft.on #field',
+  reels: '#s-draft.on #reel-t', reely: '#s-draft.on #reel-y', respin: '#s-draft.on #d-respin', opts: '#s-draft.on #opts',
+  ...Object.fromEntries(PICKS.filter((k) => !k.startsWith('respin')).map((k, i) => [`p${i}`, `#opts button.tile[data-k="${k}"]`])),
+  squad: '#s-squad.on', play: '#b-play',
+  bug: '#s-season.on #v-bug', rec: '#s-season.on #v-rec', streak: '#s-season.on #v-streak', gameday: '#s-season.on #v-gameday', cal: '#s-season.on #v-list',
+  seedrec: '#s-seed.on #sd-rec', badges: '#s-seed.on #sd-badges', po: '#b-po',
+  rail: '#s-brk.on #brk-rail', note: '#s-brk.on #brk-note',
+  card: '#s-over.on #o-card', orec: '#s-over.on #o-rec', otitle: '#s-over.on #o-title',
+};
 
 const on = (id) => `!!document.querySelector('${id}.on')`;
 async function sign(page, t, k) {
@@ -34,9 +45,10 @@ export async function play(page, t) {
   await t.hold(700);
   await t.tap('#b-play-intro', { before: 300, after: 200 });
   for (const k of PICKS) {
-    // the reels land, the board fills, the pick goes in
+    // the reels land, the board fills, the pick goes in (or a re-spin, 'respin:team' or 'respin:year')
     await t.until(() => document.querySelectorAll('#opts button.tile').length > 0, 20000);
     await t.hold(1400);
+    if (k.startsWith('respin:')) { await t.tap(`#d-respin button.respin[data-kind="${k.slice(7)}"]`, { before: 400, after: 300 }); await t.hold(1200); continue; }
     await sign(page, t, k);
     await t.hold(500);
   }

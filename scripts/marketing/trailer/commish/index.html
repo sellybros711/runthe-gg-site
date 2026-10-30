@@ -11,6 +11,7 @@
      and "Six groups vote on your job" are the game's own copy, and the vote is the real one (six blocs,
      8 votes, more than half turned, ledger.js VOTE_WEIGHT and removal()). No term length anywhere: a
      term is not five seasons (cfb/CLAUDE.md). -->
+<script src="/scripts/marketing/trailer/lib/camera.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;700;800;900&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=block" rel="stylesheet">
 <script src="/cfb/commish/portrait.js"></script>
 <style>
@@ -99,7 +100,7 @@ const span = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
 
 /* THE FOOTAGE, by clip: frames on disk at 30 fps, 1080x1920 (the phone layout, 432x768 at 2.5x). */
 const SRC = { w: 1080, h: 1920 };
-const COUNT = { office: 363, desk: 464, press: 235, removed: 342, report: 214 };
+const COUNT = { office: 365, desk: 470, press: 234, removed: 342 };
 function frameOf(clip, sec) { return clamp(Math.round(sec * FPS) + 1, 1, COUNT[clip]); }
 const loaded = {};
 function setImg(img, clip, sec) {
@@ -174,7 +175,7 @@ function footage(clip, sec, cx, cy, cw, { dim = 1, blur = 0 } = {}) {
     return setImg($('fimg'), clip, sec);
   }
   $('foot').classList.add('hide'); $('footpanelwrap').classList.remove('hide');
-  const ph = H - 120, pw = Math.round(ph * 0.62), p = $('footpanel');
+  const ph = H - 120, pw = Math.round(ph * 9 / 16), p = $('footpanel');   // the take's own shape, so a crop never cuts a line
   Object.assign(p.style, { width: pw + 'px', height: ph + 'px', left: (W - pw - 90) + 'px', top: '60px' });
   LAST = { ...place($('pimg'), pw, ph, cx, cy, cw * 16 / 9 * (pw / ph)), ox: W - pw - 90, oy: 60 };   // the same crop height as the 9:16 cut
   $('pimg').style.filter = `brightness(${dim})`;
@@ -182,9 +183,11 @@ function footage(clip, sec, cx, cy, cw, { dim = 1, blur = 0 } = {}) {
 }
 let LAST = null;
 /* a frosted strip over part of the source (source px), for game text that should not read */
-function frost(y0, y1) { const m = $('frost'); if (!LAST) return; Object.assign(m.style, { display: 'block', left: LAST.ox + 'px', width: (TALL ? W : Math.round((H - 120) * 0.62)) + 'px', top: LAST.oy + (y0 - LAST.y) * LAST.s + 'px', height: (y1 - y0) * LAST.s + 'px' }); }
+function frost(y0, y1) { const m = $('frost'); if (!LAST) return; Object.assign(m.style, { display: 'block', left: LAST.ox + 'px', width: (TALL ? W : Math.round((H - 120) * 9 / 16)) + 'px', top: LAST.oy + (y0 - LAST.y) * LAST.s + 'px', height: (y1 - y0) * LAST.s + 'px' }); }
+/* film a clip through the camera: CAM.path picks the crop, footage() draws it */
+function shoot(clip, sec, l, shots, o) { const c = CAM.path(clip, sec, l, shots); return footage(clip, sec, c.cx, c.cy, c.cw, o); }
 /* in 5:4 a caption sits left of the panel */
-function side(html) { return TALL ? html : `<div style="position:absolute;left:${70}px;top:0;bottom:0;width:${W - Math.round((H - 120) * 0.62) - 220}px;display:flex;align-items:center">${html.replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`; }
+function side(html) { return TALL ? html : `<div style="position:absolute;left:${70}px;top:0;bottom:0;width:${W - Math.round((H - 120) * 9 / 16) - 220}px;display:flex;align-items:center">${html.replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`; }
 
 window.render = async function (t) {
   const frame = Math.round(t * FPS);
@@ -196,9 +199,10 @@ window.render = async function (t) {
 
   if (sc.id === 'hook') {
     // cold open: the morning the commissioner is removed, as the news has it
-    wait = TALL ? footage('removed', 2.3 + l * 1.1, 540, 1050, 1080 - l * 60, { dim: 0.55 })
-                : footage('removed', 2.3 + l * 1.1, 540, 1050, 1080, { dim: 0.6 });
-    if (!TALL) { $('footpanelwrap').classList.add('hide'); $('foot').classList.remove('hide'); place($('fimg'), W, H, 540, 1000, 1080 - l * 50); $('fimg').style.filter = 'brightness(.5)'; wait = setImg($('fimg'), 'removed', 2.3 + l * 1.1); }
+    // on the wire card as it types the news, pushing in
+    { const sec = 2.0 + l * 1.1, c = CAM.focus('removed', sec, ['wire'], { pad: 20, w: 900 - 120 * l / d, at: 0.3 });
+      if (TALL) wait = footage('removed', sec, c.cx, c.cy - 120, c.cw, { dim: 0.6 });
+      else { $('foot').classList.remove('hide'); place($('fimg'), W, H, c.cx, c.cy - 60, c.cw * 1.3); $('fimg').style.filter = 'brightness(.55)'; wait = setImg($('fimg'), 'removed', sec); } }
     // the first frame is the thumbnail, so it is already the headline: the flashes come after it
     for (const at of [0.08, 0.42, 0.7, 1.12]) flash = Math.max(flash, 0.55 * (1 - span(l, at, at + 0.09)) * (l >= at ? 1 : 0));
     shake = l < 0.25 ? (1 - l / 0.25) * 14 : 0;
@@ -232,27 +236,30 @@ window.render = async function (t) {
       + cap(l, 0.45, [['You run', ''], ['college football.', 'green']], { y: TALL ? 0.71 : 0.80, size: 104, kind: 'rise', step: 0.08 });
   }
   if (sc.id === 'office') {
-    const z = 1 - 0.18 * ease(span(l, 0, d));
-    wait = footage('office', 2.2 + l * 1.25, 540, 560, 1080 * z);
+    // the calendar first, then the button that opens the desk, tapped at 3.13 s of the take
+    wait = shoot('office', 1.0 + l, l, [[0, { names: ['calendar'], pad: 20, w: 760 - 120 * l / d, ax: 'left' }]]);
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.15, [['A crisis lands', ''], ['on your desk.', 'gold']], { size: 110 }));
   }
   if (sc.id === 'desk') {
     // the desk clip: the options (6 to 9.6 s), then the tap on Rule
-    const sec = 7.4 + l * 1.05, z = 0.92 - 0.12 * ease(span(l, 0, d));
-    wait = footage('desk', sec, 540, 1180, 1080 * z);
+    // the room arguing, the option tapped (9.77 s of the take), then Rule (11.0 s)
+    const sec = 7.6 + l * 1.125;
+    wait = shoot('desk', sec, l, [[0, { names: ['voices'], pad: 20, w: 640, ax: 'left' }], [1.0, { names: ['opt1'], pad: 20, w: 620, ax: 'left' }], [2.5, { names: ['opt1'], pad: 20, w: 560, ax: 'left' }]]);
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.15, [['Every ruling', ''], ['costs somebody.', 'red']], { size: 110 }));
   }
   if (sc.id === 'room') {
-    const sec = 10.9 + l * 1.4, z = 0.98 - 0.22 * ease(span(l, 0.3, d));
-    wait = footage('desk', sec, 540, 820 + 260 * ease(span(l, 0.6, d)), 1080 * z);
+    // what you ruled, then the meters moving, then the vote strip
+    const sec = 11.2 + l * 1.3;
+    wait = shoot('desk', sec, l, [[0, { names: ['ruled'], pad: 20, w: 700, ax: 'left' }], [0.9, { names: ['rmeters'], pad: 16, w: 640, ax: 'left' }], [1.8, { names: ['whip'], pad: 20, w: 620 }]]);
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.15, [['The whole room', ''], ['reacts.', 'gold']], { size: 112 }));
   }
   if (sc.id === 'press') {
-    const sec = 1.0 + l * 2.2, z = 0.95 - 0.12 * ease(span(l, 0, d));
-    wait = footage('press', sec, 540, 900, 1080 * z);
+    // the question, the answer tapped (2.77 s), Say it (3.9 s)
+    const sec = 1.0 + l * 1.5;
+    wait = shoot('press', sec, l, [[0, { names: ['who', 'ask'], pad: 20, w: 720, ax: 'left' }], [1.0, { names: ['answers'], pad: 20, w: 640, ax: 'left', top: true, at: 0.12 }]]);
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.15, [['Media days.', 'gold'], ['| Every word is', ''], ['on the record.', '']], { size: 98, step: 0.05 }));
   }
@@ -281,9 +288,10 @@ window.render = async function (t) {
   }
   if (sc.id === 'removed') {
     // tight on REMOVED and the year, above the summary line (whose "1 rulings" is the game's, not ours to show)
-    const z = (TALL ? 0.74 : 0.5) - 0.12 * ease(span(l, 0, d));
-    wait = footage('removed', 8.2 + l * 0.5, 540, 560, 1080 * z);
-    frost(378, 640);
+    // tight on REMOVED and the year; the summary under it (the game's "1 rulings") is frosted
+    const sec = 7.4 + l * 0.5;
+    wait = shoot('removed', sec, l, [[0, { names: ['eyebrow', 'year'], pad: 20, w: 560 - 80 * l / d }]]);
+    { const b = CAM.box('removed', Math.round(sec * 30), ['yearsay']); if (b) frost(b[1] - 6, b[3] + 6); }
     flash = 0.8 * (1 - span(l, 0, 0.14));
     shake = l < 0.3 ? (1 - l / 0.3) * 18 : 0;
     $('capbg').classList.remove('hide');
@@ -312,5 +320,7 @@ window.render = async function (t) {
   await wait;
   await document.fonts.ready;
 };
-window.ready = document.fonts.ready.then(() => true);
+CAM.at = TALL ? 0.36 : 0.5;   // in 9:16 the caption band takes the lower third
+CAM.fit = !TALL;               // in 5:4 the panel is narrow: frame whole cards, never part of one
+window.ready = Promise.all([document.fonts.ready, CAM.load(Object.fromEntries(Object.keys(COUNT).map((c) => [c, `/foot/${c}.track.json`])))]).then(() => true);
 </script></body></html>
