@@ -1667,9 +1667,12 @@ export class InPlay {
       const coming = [];
       for (const r of home) { const q = r.track.at(s); if (Math.hypot(q.x, q.y) < 70) coming.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }); }
       pts.push(...coming);
-      if (ball && Math.hypot(ball.x, ball.y) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
-      // (from high behind the plate, third, first and second are in reach too)
-      const near = keys.filter((k) => Math.hypot(k.x, k.y) < (hs ? 135 : 75));
+      // (near the plate in the air too, not only over the ground: a towering fly 60 ft out and 400 ft up
+      // is not the plate camera's, and holding it tilted the low camera up off the run, check-frame.mjs)
+      if (ball && Math.hypot(ball.x, ball.y, ball.z || 0) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
+      // (from high behind the plate, third, first and second are in reach too; a moment still sliding in
+      // from a ball high overhead is in reach once it is down near the field)
+      const near = keys.filter((k) => Math.hypot(k.x, k.y, k.z || 0) < (hs ? 135 : 75));
       pts.push(...near);
       // (what it must hold: the runners coming in to the plate, and the moments in its reach; one at
       // first base is not this camera's)
