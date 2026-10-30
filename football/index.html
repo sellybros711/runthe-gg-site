@@ -8597,24 +8597,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 </div>
 
-<!-- ===== AdSense units. Manual, and placed before the overlays so the sheet, the toast and
-     the crash banner all paint above them. The slot ids are placeholders until the units are
-     created in the dashboard; the initializer at the foot of this file refuses to start a unit
-     whose slot is still a placeholder, rather than reporting this game's traffic against
-     another game's unit. ===== -->
-<div class="rtp-ad-rail rtp-ad-left">
-  <ins class="adsbygoogle" style="display:block;width:160px;height:600px"
-       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
-</div>
-<div class="rtp-ad-rail rtp-ad-right">
-  <ins class="adsbygoogle" style="display:block;width:160px;height:600px"
-       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
-</div>
-<!-- Fixed 320x50, deliberately not responsive: a responsive unit here can grow over a button. -->
-<div class="rtp-ad-mobile-bottom">
-  <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px"
-       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
-</div>
+<!-- No ad unit is written into this page's markup. A never-started <ins class="adsbygoogle"> takes
+     the next adsbygoogle.push(), so a placeholder here used to swallow the draft, season, banner
+     and rail units built later in code (Ads Agent, 2026-10-30). Every unit is built where it shows. -->
 
 <div class="crash" id="crash"></div>
 <div class="toast" id="toast"></div>
@@ -29266,10 +29251,9 @@ boot();
      Wrapped so a missing, blocked or slow adsbygoogle.js can never throw and take the game
      with it: an ad blocker is the common case, not the edge case.
 
-     A unit whose slot is still the placeholder is SKIPPED. This game's units do not exist in
-     the dashboard yet, and pushing a placeholder either serves nothing or, worse, could be
-     pointed at another game's slot by a careless copy and report the wrong game's traffic.
-     Paste the real slot ids into the three ins elements above and they start on their own. */
+     There are no units in this page's markup any more (a never-started placeholder swallowed
+     the next push, Ads Agent 2026-10-30): every unit is built and started where it shows. This
+     loop stays as a guard, and still never starts a placeholder or a zone's unit. */
   (function(){
     try{
       var units=document.querySelectorAll('ins.adsbygoogle');
