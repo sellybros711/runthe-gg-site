@@ -17,7 +17,8 @@ name: Shut The Door checks
 #              then supabase/test/shut_the_door_test.sql; then
 #              155_shut_the_door_tie_held.sql (the held tie) twice and its test;
 #              then 156_shut_the_door_release.sql (the release's q) twice and its test; then
-#              157_shut_the_door_effort.sql (the effort's e) twice and its test
+#              157_shut_the_door_effort.sql (the effort's e) twice and its test; then
+#              159_shut_the_door_boards.sql (the board end to end) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
@@ -116,3 +117,9 @@ jobs:
           $P -f supabase/157_shut_the_door_effort.sql
           $P -f supabase/157_shut_the_door_effort.sql
           $P -f supabase/test/shut_the_door_effort_test.sql
+      - name: 159 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/159_shut_the_door_boards.sql
+          $P -f supabase/159_shut_the_door_boards.sql
+          $P -f supabase/test/shut_the_door_boards_test.sql
