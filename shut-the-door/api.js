@@ -51,10 +51,15 @@
   const E = NODE ? require('./engine.js') : window.STD_ENGINE;
   const SH = () => (NODE ? require('./share.js') : window.STD_SHARE);
   const AUTH = () => (typeof window !== 'undefined' ? window.STD_AUTH : null);
+  const M = NODE ? require('./modes.js') : window.STD_MODES;
 
   const API_VERSION = 1;
   const SCHEDULE_V = 12;
   const STORE_V = 1;
+  const PICKS_KEY = 'std_picks_v1';         // vote days the server has locked: {day: pack}
+  const SURVIVOR_KEY = 'std_survivor_v1';   // today's run on this device
+  const ARCHIVE_KEY = 'std_archive_v1';     // past dailies played from the archive: {day: {scenarioId, calls, result}}
+  const SERVER_WAIT_MS = 4000;              // the page never waits longer than this on the account
   const BASE = 'data/';
 
   let loader = (path) => fetch(path).then((r) => {
@@ -85,6 +90,26 @@
     try { s.setItem(C.OUTING_KEY, JSON.stringify(Object.assign({ v: STORE_V }, v))); } catch (e) {}
   }
 
+  function readKey(k) {
+    const st = store();
+    if (!st) return null;
+    try { const v = JSON.parse(st.getItem(k) || 'null'); return v && v.v === STORE_V ? v : null; } catch (e) { return null; }
+  }
+  function writeKey(k, v) {
+    const st = store();
+    if (!st) return;
+    try { st.setItem(k, JSON.stringify(Object.assign({ v: STORE_V }, v))); } catch (e) {}
+  }
+  /* A server call with a deadline: its answer, or null (no account module, no answer, a failure). */
+  async function ask(name) {
+    const A = AUTH();
+    if (!A || typeof A[name] !== 'function') return null;
+    const args = Array.prototype.slice.call(arguments, 1);
+    try {
+      return await Promise.race([Promise.resolve(A[name].apply(A, args)), new Promise(r => setTimeout(() => r(null), SERVER_WAIT_MS))]);
+    } catch (e) { return null; }
+  }
+
   async function loadSchedule() {
     if (!schedule) schedule = await loader(BASE + 'schedule.json?v=' + SCHEDULE_V);
     return schedule;
@@ -98,6 +123,26 @@
     const offset = C.dayOffsetOf(day), L = sch.rotation.length;
     const number = C.dayNumberOf(day);
     return { pack: sch.rotation[((offset % L) + L) % L], number, preview: offset < 0 };
+  }
+
+  /* The day's entry with the vote: from VOTE.EPOCH on, the pack the server locked for the day
+     (kept on the device once known), else the default, candidate A (modes.js). A day not begun
+     yet has no lock, so it reads as its default. */
+  async function dayEntry(sch, day) {
+    if (!M.voteOpen(day)) return entryFor(sch, day);
+    const number = C.dayNumberOf(day);
+    const picks = (readKey(PICKS_KEY) || {}).days || {};
+    if (picks[day]) return { pack: picks[day], number, preview: false, pick: 'vote' };
+    if (day <= C.easternDay()) {
+      const v = await ask('vote', day);
+      if (v && v.winner && sch.packs[v.winner]) {
+        const keep = Object.assign({}, picks, { [day]: v.winner });
+        const recent = Object.keys(keep).sort().slice(-40);
+        writeKey(PICKS_KEY, { days: Object.fromEntries(recent.map(d => [d, keep[d]])) });
+        return { pack: v.winner, number, preview: false, pick: 'vote' };
+      }
+    }
+    return { pack: M.defaultPack(sch, day), number, preview: false, pick: 'default' };
   }
 
   async function loadPack(id) {
@@ -114,19 +159,22 @@
   async function getScenario(day) {
     const d = day || C.easternDay();
     const sch = await loadSchedule();
-    const e = entryFor(sch, d);
+    const e = await dayEntry(sch, d);
     const p = await loadPack(e.pack);
     const sc = clone(p.pack.scenario);
     delete sc.reveal;
     sc.day = d;
     sc.number = e.number;
     sc.preview = !!e.preview;
+    // from the vote's first day: 'vote' when the server locked it, 'default' when it could not say
+    if (e.pick) sc.pick = e.pick;
     current[sc.id] = { day: d, number: e.number };
     return sc;
   }
 
   async function startOuting(scenarioId, seed, opts) {
-    const mode = opts && opts.mode === 'practice' ? 'practice' : 'daily';
+    const mode = opts && ['practice', 'archive'].includes(opts.mode) ? opts.mode : 'daily';
+    if (mode === 'archive') return startArchive(scenarioId, opts && opts.day);
     const p = await loadPack(scenarioId);
     if (mode === 'practice') {
       const s = seed == null ? R.practiceSeed(Date.now() + ':' + practiceN) : (seed >>> 0);
@@ -191,6 +239,8 @@
   }
 
   function save(rec) {
+    if (rec.o.mode === 'survivor') return saveSurvivorLive(rec);
+    if (rec.o.mode === 'archive') return saveArchive(rec);
     if (rec.o.mode !== 'daily') return;
     writeSaved({ day: rec.day, scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, result: rec.result, submitted: rec.submitted, by: rec.by || null });
   }
@@ -238,12 +288,14 @@
     if (!rec) throw new Error('no such outing');
     const o = rec.o;
     if (o.status !== 'over') throw new Error('the outing is not over');
+    if (o.mode === 'survivor') return finishSurvivor(rec);
     if (!rec.result) {
       const res = E.finishOuting(o);
       res.share = SH().text(res, rec.number != null ? rec.number : o.pack.scenario.number);
       rec.result = res;
       save(rec);
     }
+    if (o.mode === 'archive') return finishArchive(rec);
     if (o.mode === 'daily' && !rec.submitted) {
       if (!rec.posting) rec.posting = post(rec).finally(() => { rec.posting = null; });
       await rec.posting;
@@ -292,7 +344,7 @@
     const saved = readSaved();
     try {
       const sch = await loadSchedule();
-      const e = entryFor(sch, saved.day);
+      const e = await dayEntry(sch, saved.day);
       if (e.pack !== saved.scenarioId) return { posted: false };
       if (!current[saved.scenarioId]) current[saved.scenarioId] = { day: saved.day, number: e.number };
       const id = 'daily:' + saved.day + ':' + saved.scenarioId;
@@ -304,13 +356,261 @@
     } catch (e) { return { posted: false }; }
   }
 
-  const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, pending, claim, configure };
+  /* ---------------- what this player may play (160) ---------------- */
+
+  /* {signedIn, pro, archive, survivorRuns}: survivorRuns null is unlimited. Pro answers false for
+     everyone until payments exist (shutdoor_is_pro). Signed out or offline: the free allowance. */
+  async function entitlements() {
+    const e = signedInUser() ? await ask('entitlements') : null;
+    if (e && typeof e === 'object') return { signedIn: !!e.signedIn, pro: !!e.pro, archive: !!e.archive, survivorRuns: e.survivorRuns == null ? null : e.survivorRuns };
+    return { signedIn: !!signedInUser(), pro: false, archive: false, survivorRuns: 1 };
+  }
+
+  /* ---------------- the vote for tomorrow (CONTRACT.md section 16) ---------------- */
+
+  /* A pack's card, for the two choices: {id, title, pitcher, team, year, throws, situation, resolution}
+     from the schedule (build_schedule.mjs), so the vote never downloads a pack. */
+  function cardOf(sch, id) {
+    const m = sch.packs[id];
+    return Object.assign({ id }, (m && m.card) || {});
+  }
+  function voteShape(sch, d, srv, err) {
+    const local = M.voteOpen(d) ? M.candidates(sch, d) : null;
+    const ids = (srv && Array.isArray(srv.candidates) && srv.candidates) || local;
+    const tomorrow = M.addDays(C.easternDay(), 1);
+    const out = {
+      day: d,
+      open: srv ? !!srv.open : !!(local && d === tomorrow),
+      candidates: ids ? ids.map(id => cardOf(sch, id)) : [],
+      myVote: srv ? srv.myVote || null : null,
+      votes: srv && srv.votes ? { a: srv.votes.a, b: srv.votes.b } : null,
+      winner: srv ? srv.winner || null : null,
+      canVote: srv ? !!srv.canVote : false,
+      why: srv ? srv.why || null : (ids ? 'could not reach the server' : 'no vote for that day'),
+      offline: !srv,
+    };
+    if (err) out.error = err;
+    return out;
+  }
+  /* The vote for a day (default tomorrow): {day, open, candidates [card A, card B], myVote,
+     votes {a, b} | null, winner, canVote, why, offline}. votes show once you voted or the day
+     is locked. Offline the candidates still come (modes.js), and canVote is false. */
+  async function vote(day) {
+    const sch = await loadSchedule();
+    const d = day || M.addDays(C.easternDay(), 1);
+    return voteShape(sch, d, await ask('vote', d));
+  }
+  /* Cast this player's one vote for tomorrow. Signed in, after finishing today's daily. Answers
+     the vote as vote() does, with error set (the server's words) when it was refused. */
+  async function castVote(scenarioId) {
+    const sch = await loadSchedule();
+    const d = M.addDays(C.easternDay(), 1);
+    if (!signedInUser()) return voteShape(sch, d, await ask('vote', d), 'sign in to vote');
+    const r = await ask('voteCast', d, scenarioId);
+    if (r && r.data) return voteShape(sch, d, r.data);
+    return voteShape(sch, d, await ask('vote', d), (r && r.error) || 'could not reach the server');
+  }
+
+  /* ---------------- the archive (Pro): any past daily, kept, never on the board ---------------- */
+
+  async function startArchive(scenarioId, day) {
+    const today = C.easternDay();
+    if (!day || day >= today || day < C.EPOCH) throw new Error('not an archive day');
+    const ent = await entitlements();
+    if (!ent.archive) throw new Error('the archive is for Pro');
+    const sch = await loadSchedule();
+    const e = await dayEntry(sch, day);
+    if (e.pack !== scenarioId) throw new Error('that is not the day\'s situation');
+    const p = await loadPack(scenarioId);
+    const id = 'archive:' + day + ':' + scenarioId;
+    if (outings[id]) return clone(E.publicState(outings[id].o));
+    const seed = E.seedFor('daily', day);     // the day's own luck, as it was
+    const kept = ((readKey(ARCHIVE_KEY) || {}).days || {})[day];
+    const resume = kept && kept.scenarioId === scenarioId && Array.isArray(kept.calls) ? kept : null;
+    const o = E.createOuting(p.pack, { seed, mode: 'archive', model: p.model, outingId: id, rules: resume && resume.calls.length ? E.rulesOf(resume.calls) : undefined });
+    if (resume) for (const c of resume.calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
+    outings[id] = { o, day, number: e.number, result: resume ? resume.result || null : null, submitted: !!(resume && resume.submitted) };
+    return clone(E.publicState(o));
+  }
+  function saveArchive(rec) {
+    const all = (readKey(ARCHIVE_KEY) || {}).days || {};
+    all[rec.day] = { scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, result: rec.result, submitted: !!rec.submitted };
+    const keep = Object.keys(all).sort().slice(-60);
+    writeKey(ARCHIVE_KEY, { days: Object.fromEntries(keep.map(d => [d, all[d]])) });
+  }
+  async function finishArchive(rec) {
+    if (!rec.submitted && signedInUser()) {
+      const r = rec.result;
+      const a = await ask('archiveSubmit', { day: rec.day, scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, outcome: r.outcome,
+        pitches: r.pitches, score: r.score, percentile: r.percentile == null ? 0 : r.percentile });
+      if (a && a.data) { rec.submitted = true; rec.result.archive = { kept: true, taken: !!a.data.taken }; save(rec); }
+    }
+    return clone(rec.result);
+  }
+
+  /* ---------------- Survivor: a run of saves (CONTRACT.md section 17) ---------------- */
+
+  /* The device's run: {day, run, entries [{scenarioId, calls, outcome, pitches, score}], live
+     {index, calls} | null, posted (entries the server holds)}. */
+  function readRun() {
+    const r = readKey(SURVIVOR_KEY);
+    return r && r.day === C.easternDay() ? r : null;
+  }
+  function writeRun(r) { writeKey(SURVIVOR_KEY, r); }
+  function runSummary(run) {
+    const saves = run.entries.filter(e => e.outcome === M.SURVIVOR.CONTINUES).length;
+    const over = run.entries.some(e => e.outcome !== M.SURVIVOR.CONTINUES);
+    return { run: run.run, index: run.entries.length, saves, points: run.entries.reduce((a, e) => a + e.score, 0), over };
+  }
+  /* The server's live (or last) run for today, as the device's shape. */
+  function fromServer(st, day) {
+    if (!st || !Array.isArray(st.runs) || !st.runs.length) return null;
+    const r = st.runs.find(x => !x.over) || st.runs[st.runs.length - 1];
+    return { day, run: r.run, entries: (r.entries || []).map(e => ({ scenarioId: e.scenarioId, calls: e.calls, outcome: e.outcome, pitches: e.pitches, score: e.score })),
+      live: null, posted: (r.entries || []).length, server: true };
+  }
+
+  /* Today's Survivor: {day, signedIn, pro, run, index, saves, points, over, canStart, entries,
+     runs (the server's, signed in), offline}. entries are the finished situations of the run
+     shown: {scenarioId, title, outcome, pitches, score}. */
+  async function survivorState() {
+    const day = C.easternDay();
+    const sch = await loadSchedule();
+    const ent = await entitlements();
+    const srv = ent.signedIn ? await ask('survivorState', day) : null;
+    let run = readRun();
+    const sr = fromServer(srv, day);
+    if (sr && !(run && run.run === sr.run && run.entries.length >= sr.entries.length)) run = Object.assign(sr, { live: null });
+    const sum = run ? runSummary(run) : { run: null, index: 0, saves: 0, points: 0, over: false };
+    const canStart = srv ? !!srv.canStart || !!(run && !sum.over)
+      : !run || !sum.over;     // signed out: one run a day on this device
+    return Object.assign(sum, {
+      day, signedIn: ent.signedIn, pro: ent.pro, canStart,
+      entries: run ? run.entries.map(e => ({ scenarioId: e.scenarioId, title: cardOf(sch, e.scenarioId).title || null, outcome: e.outcome, pitches: e.pitches, score: e.score })) : [],
+      runs: srv && Array.isArray(srv.runs) ? srv.runs.map(r => ({ run: r.run, saves: r.saves, points: r.points, over: r.over })) : [],
+      offline: ent.signedIn && !srv,
+    });
+  }
+
+  /* Start today's run, or go on with it: the next situation of the live run (resumed where it
+     stood after a reload or on another device). Pro may start a new run once the last is over.
+     Answers {run, index, saves, scenario (no reveal), state}. Throws 'one run a day' when the
+     allowance is used. */
+  async function survivorStart() {
+    const day = C.easternDay();
+    const sch = await loadSchedule();
+    let run = readRun();
+    if (signedInUser()) {
+      const r = await ask('survivorStart', day);
+      if (r && r.error) throw new Error(r.error);
+      const sr = r && r.data ? fromServer(r.data, day) : null;
+      if (sr) {
+        // the server's live run wins, unless this device is further along the same run
+        const sameRun = run && run.run === sr.run && run.entries.length >= sr.entries.length;
+        run = sameRun ? Object.assign(run, { posted: Math.max(run.posted || 0, sr.posted) }) : sr;
+      }
+    }
+    // a run that is over stays over: signed out, or when the server could not be asked
+    if (run && runSummary(run).over) throw new Error('one run a day');
+    if (!run) run = { day, run: 0, entries: [], live: null, posted: 0 };
+    writeRun(run);
+    return openSituation(sch, run);
+  }
+
+  async function openSituation(sch, run) {
+    const i = run.entries.length;
+    const at = M.survivorAt(sch, run.day, run.run, i);
+    const p = await loadPack(at.pack);
+    const id = 'survivor:' + run.day + ':' + run.run + ':' + i;
+    let rec = outings[id];
+    if (!rec) {
+      const live = run.live && run.live.index === i && Array.isArray(run.live.calls) ? run.live.calls : null;
+      const o = E.createOuting(p.pack, { seed: at.seed, mode: 'survivor', model: p.model, outingId: id, rules: live && live.length ? E.rulesOf(live) : undefined });
+      if (live) for (const c of live) { if (o.status !== 'live') break; E.throwPitch(o, c); }
+      for (const k of Object.keys(outings)) if (k.startsWith('survivor:') && k !== id) delete outings[k];
+      rec = outings[id] = { o, day: run.day, number: null, result: null, submitted: false, survivor: { run: run.run, index: i } };
+    }
+    const sc = clone(p.pack.scenario);
+    delete sc.reveal;
+    sc.day = run.day;
+    sc.number = null;
+    sc.survivor = { run: run.run, index: i };
+    return { run: run.run, index: i, saves: runSummary(run).saves, scenario: sc, state: clone(E.publicState(rec.o)) };
+  }
+
+  function saveSurvivorLive(rec) {
+    const run = readRun();
+    if (!run || run.run !== rec.survivor.run || run.entries.length !== rec.survivor.index) return;
+    run.live = { index: rec.survivor.index, calls: rec.o.calls };
+    writeRun(run);
+  }
+
+  /* A finished situation: the result as the daily's (no share line), plus survivor {run, index,
+     saves, over, posted}. A door shut goes on (survivorStart opens the next); anything else ends
+     the run. Posted to the server signed in, in order. */
+  async function finishSurvivor(rec) {
+    if (!rec.result) {
+      const res = E.finishOuting(rec.o);
+      rec.result = res;
+      const run = readRun() || { day: rec.day, run: rec.survivor.run, entries: [], live: null, posted: 0 };
+      if (run.run === rec.survivor.run && run.entries.length === rec.survivor.index) {
+        run.entries.push({ scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, outcome: res.outcome, pitches: res.pitches, score: res.score });
+        run.live = null;
+        writeRun(run);
+      }
+    }
+    const run = readRun();
+    const posted = await postRun(run);
+    const sum = run ? runSummary(run) : { saves: 0, over: true };
+    rec.result.survivor = { run: rec.survivor.run, index: rec.survivor.index, saves: sum.saves, over: sum.over, posted };
+    return clone(rec.result);
+  }
+
+  /* Every finished situation of the device's run the server does not hold yet, in order. True
+     when the server holds them all (signed in), false otherwise. */
+  async function postRun(run) {
+    if (!run || !signedInUser()) return false;
+    while ((run.posted || 0) < run.entries.length) {
+      const i = run.posted || 0, e = run.entries[i];
+      const r = await ask('survivorPost', { day: run.day, run: run.run, index: i, scenarioId: e.scenarioId, calls: e.calls, outcome: e.outcome, pitches: e.pitches, score: e.score });
+      if (!r || r.error || !r.data) return false;
+      run.posted = i + 1;
+      writeRun(run);
+    }
+    return true;
+  }
+
+  /* Signed in: put today's run played signed out on the account, once, when the account has no
+     run today (the owner's rule: same day, not already kept). {posted} or null signed out. */
+  async function survivorClaim() {
+    if (!signedInUser()) return null;
+    const run = readRun();
+    if (!run || run.server || !run.entries.length || (run.posted || 0) >= run.entries.length) return { posted: false };
+    const st = await ask('survivorState', run.day);
+    if (!st || (Array.isArray(st.runs) && st.runs.length)) return { posted: false };
+    const r = await ask('survivorStart', run.day);
+    if (!r || !r.data) return { posted: false };
+    run.run = 0; run.posted = 0; run.server = true;
+    writeRun(run);
+    return { posted: await postRun(run) };
+  }
+
+  /* The day's Survivor board: rows {rank, username, saves, points, over, mine, players}, run 0 of
+     each player. null on failure. */
+  async function survivorBoard(day, limit) {
+    const r = await ask('survivorBoard', day || C.easternDay(), limit);
+    return Array.isArray(r) ? r : null;
+  }
+
+  const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, pending, claim,
+    vote, castVote, entitlements, survivorState, survivorStart, survivorClaim, survivorBoard, configure };
   // a sign-in posts the day's finished daily by itself (the board and the result read it after)
   try {
     const A = AUTH();
     let was = !!signedInUser();
     if (A && A.onChange) A.onChange((st) => {
       const now = !!(st && st.signedIn);
+      if (now && !was) survivorClaim().catch(() => null);
       if (now && !was) claim().then((r) => {
         if (r && r.posted && typeof window !== 'undefined' && window.dispatchEvent && typeof CustomEvent === 'function') {
           window.dispatchEvent(new CustomEvent('std-claimed', { detail: r }));
