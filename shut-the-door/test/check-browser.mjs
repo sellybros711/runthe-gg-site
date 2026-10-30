@@ -527,16 +527,30 @@ async function playOuting(page, o) {
             '5 the power column is beside the zone, off the hitter and the plate, on screen and thumb wide (' + Math.round(cl.w) + 'x' + Math.round(cl.h) + (cl.on.length ? ', over ' + cl.on.join(' and ') : '') + (cl.onZone ? ', over the zone' : '') + (cl.on.length || cl.onZone ? '; ' + cl.at : '') + ')');
         }
       }
+      /* THE CUE (the owner, 2026-10-30: "It needs to be clear you must tap the bottom bar to time your
+         pitches"): the panel itself says the tap while it waits for one, the line over it is empty.
+         For the first releases (meter-ui.js QUIET_AFTER) the cue in the panel's biggest type; after,
+         the quiet panel: "tap" in the lit step. Either way it is on the panel and on screen. */
+      const tapSays = () => page.evaluate(() => {
+        const m = document.getElementById('m-meter'), vis = (x) => !!x && x.getClientRects().length > 0 && getComputedStyle(x).visibility !== 'hidden';
+        const cue = m.querySelector('.rm-cue-t b'), lit = m.querySelector('.rm-step.on span');
+        const big = m.classList.contains('cue');
+        const el = big ? cue : lit, mr = m.getBoundingClientRect(), r = el && el.getBoundingClientRect();
+        return { say: document.getElementById('m-say').textContent, big, text: el ? el.textContent : '', shown: vis(el) && r.top >= mr.top && r.bottom <= mr.bottom && r.top >= 0 && r.bottom <= innerHeight };
+      });
+      const cueOk = (c, want) => c.say === '' && c.shown && (c.big ? c.text === want : c.text === 'tap');
       if (eff) {
-        const say0 = await page.textContent('#m-say');
-        if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
+        const c0 = await tapSays();
+        if (!cueOk(c0, 'tap to set power')) r.problems.push('pitch ' + (r.pitches + 1) + ': the meter at power did not say the tap on its panel (' + JSON.stringify(c0) + ')');
+        if (freeTap) ok(cueOk(c0, 'tap to set power'), '5 the meter says the tap on its own panel at power ("' + c0.text + '", the line over it empty)');
         await page.click('#m-meter');
         await page.waitForTimeout(450);
         if (freeTap) ok(await page.evaluate(() => !document.querySelector('.rm-ring').hidden), '5 the ring comes up once power is set');
       }
-      // the step line under the meter says how to stop it (the owner, 2026-10-26: the ring)
-      const say = await page.textContent('#m-say');
-      if (say !== 'tap when it hits the circle') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
+      // the panel says how to stop the ring (the owner, 2026-10-26: the ring; 2026-10-30: on the bar)
+      const c1 = await tapSays();
+      if (!cueOk(c1, 'tap to release')) r.problems.push('pitch ' + (r.pitches + 1) + ': the meter at the release did not say the tap on its panel (' + JSON.stringify(c1) + ')');
+      if (freeTap) ok(cueOk(c1, 'tap to release'), '5 the meter says the tap on its own panel at the release ("' + c1.text + '")');
       if (freeTap && !SHOTS) {
         /* the smooth sweep (the owner, 2026-10-26: "the meter is laggy"): while the ring runs the mound
            draws nothing (stage.js hush) and the ring moves by transform only, never its size */

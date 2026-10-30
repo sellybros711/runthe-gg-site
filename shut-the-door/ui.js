@@ -771,7 +771,9 @@ function stepLine() {
   if (!el) return;
   var say = '';
   if (S.busy || !S.outing || S.outing.status !== 'live') say = '';
-  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your power' : 'tap when it hits the circle';
+  /* the meter says its own tap on the panel itself (meter-ui.js, the cue: the owner, 2026-10-30), so
+     the line over it stays empty: one message, on the thing to tap */
+  else if (S.meter && S.meter.running()) say = '';
   else if (!S.type) say = 'pick a pitch';
   else if (S.cell == null) say = 'aim: drag or tap the zone';
   else say = 'tap throw';
