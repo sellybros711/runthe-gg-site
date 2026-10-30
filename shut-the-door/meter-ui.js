@@ -38,7 +38,7 @@
  * pitches"). The panel says so itself, on the panel, while it waits for a tap: "tap to set power"
  * with "stop it where you want it" under it, then "tap to release" with "as the ring hits the
  * circle". A dot with a signal ring breathes beside it so the panel reads as live; on a mouse and
- * keyboard "or press space" sits under it, with a key cap. It never opens anything: it is the panel's own words,
+ * keyboard "or press space" follows it, with a key cap. It never opens anything: it is the panel's own words,
  * and it goes the moment the tap lands (the one quiet word takes its place, as before). Once a
  * player has finished QUIET_AFTER releases (a count in localStorage, std_meter_taps) the panel is
  * the quiet one again: the verb and the call on top, and "tap" in the lit step. No storage, the
@@ -95,7 +95,7 @@ function create(el) {
   el.setAttribute('role', 'button');
   el.setAttribute('tabindex', '-1');
   el.innerHTML =
-    '<div class="rm-cue" aria-hidden="true"><i class="rm-tap"></i><span class="rm-cue-t"><b></b><small></small><span class="rm-key">or press <kbd>space</kbd></span></span></div>' +
+    '<div class="rm-cue" aria-hidden="true"><i class="rm-tap"></i><span class="rm-cue-t"><b></b><span class="rm-sub"><small></small><span class="rm-key">or press <kbd>space</kbd></span></span></span></div>' +
     '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span></div>' +
     '<div class="rm-steps"><div class="rm-step rm-s-pow"><b>power</b><span></span></div><div class="rm-step rm-s-rel"><b>release</b><span></span></div></div>';
   var q = function (s, root) { return (root || el).querySelector(s); };
