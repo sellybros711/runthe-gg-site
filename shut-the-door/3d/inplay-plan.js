@@ -745,7 +745,13 @@ function planGround(ctx) {
       const n = near.n, sp = SPEED(n), b = at(near.s), tD = Math.max(sp.react + 0.05, near.s - 0.1);
       const go = Math.min(Math.max(0, near.m - 4), reach(tD, sp.react, sp.v, sp.a));
       const tgt = lerp(F[n], b, go / near.m);
-      if (go > 0.5) T[n].arrive(sp.react, tgt, tD, { toRest: true });
+      // (off his run, not from a stand: pulled up first and then laid out from standing, his head went over a
+      // body's speed. The dive carries him on a few feet as he goes down, over a third of a second)
+      if (go > 0.5) {
+        T[n].arrive(sp.react, tgt, tD, { toRest: false });
+        const v0 = T[n].at(tD - 1e-3).spd, u = { x: (tgt.x - F[n].x) / go, y: (tgt.y - F[n].y) / go };
+        if (v0 > 2) T[n].run(tD, [{ x: tgt.x + u.x * v0 * 0.175, y: tgt.y + u.y * v0 * 0.175 }], { fromRest: false, toRest: true, v: v0, a: v0 / 0.35 });
+      }
       T[n].act(tD, 'dive', { to: b });
       // (the dive's get up: down from tD to 0.75 s after it, up by 1.35 s, inplay.js)
       T[n].hold(tD + 1.2);
