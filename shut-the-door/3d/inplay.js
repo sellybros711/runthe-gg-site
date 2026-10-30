@@ -829,8 +829,9 @@ export class InPlay {
       f.place(at.x, at.y, yaw, { lift: lift + hop });
       f.pose(spec);
       // a force with the ball already in his hand (he steps on the bag himself): the foot to the bag
-      const fs = acts.find((x) => x.kind === 'step' && x.force && x.base && s > x.t - 0.6 && s < x.t + 0.35);
-      if (fs) this.pinFoot(f, fs, s, at, yaw, lift, spec, null, 0);
+      const pinTo = (x) => { const nl = tr.legs.find((l) => l.g.t0 >= x.t - 1e-6 && l.g.total > 1); return nl ? nl.g.t0 + nl.g.T : Infinity; };
+      const fs = acts.find((x) => x.kind === 'step' && x.force && x.base && s > x.t - 0.6 && s < pinTo(x));
+      if (fs) this.pinFoot(f, fs, s, at, yaw, lift, spec, null, 0, null, tr);
       return null;
     }
     // ---- the solve, at the moment he takes the ball (carriedFit): the glove on it
@@ -892,10 +893,15 @@ export class InPlay {
 
   /** A force at a bag: the nearer foot onto the bag's middle (the glove kept on a ball he is taking),
       the body moved by what it misses; returns where he stands. */
-  pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW, from = null) {
+  pinFoot(f, fa, s, at, yaw, lift, spec, take, takeW, from = null, tr = null) {
     const bag = fa.base === 4 ? { x: 0, y: 0.7 } : BASE[fa.base];
     const k0 = from != null ? Math.max(fa.t - 0.6, from) : fa.t - 0.6, k1 = Math.max(k0 + 0.12, fa.t - 0.15);
-    const kf = ramp(s, k0, k1) * (1 - ramp(s, Math.max(k1, fa.t + 0.1), Math.max(k1, fa.t + 0.1) + 0.25));
+    // (it lets go across the next run he makes after the out, not where he stands: let go over a quarter of a
+    // second standing, the body slid back off the bag with both feet planted, a first baseman holding a runner
+    // who fielded the ball off the bag and stepped on it himself, check-jolt.mjs skate fielder step)
+    const nl = tr ? tr.legs.find((l) => l.g.t0 >= fa.t - 1e-6 && l.g.total > 1) : null;
+    const rel = tr ? (nl ? smooth(clamp((s - nl.g.t0) / nl.g.T, 0, 1)) : 0) : ramp(s, Math.max(k1, fa.t + 0.1), Math.max(k1, fa.t + 0.1) + 0.25);
+    const kf = ramp(s, k0, k1) * (1 - rel);
     for (let i = 0; i < 4 && kf > 0; i++) {
       // (the glove to the ball again, then the foot back on the bag: the two settle together)
       if (i && take && takeW > 0) {
