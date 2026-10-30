@@ -1100,44 +1100,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        on the draft screen it would sit over the board somebody is picking from. */
     syncLiveButton();
     fantasyAds(id);
-    clearBand();
-    setTimeout(clearBand, 400); setTimeout(clearBand, 1500);
   };
-  /* NOTHING SITS HALF UNDER THE BANNER AT FIRST VIEW. The CSS above brings each screen's
-     main button clear of the banner; what follows it (the notes, the way back, last week's
-     result) is reached by scrolling, and the first of those that would straddle the banner's
-     top edge is moved to just under the fold, with the rest following in the flow. 79 is the
-     filled banner, assumed before it fills so the screen does not move when the ad arrives;
-     closing the banner takes body.rtg-sticky-on away and puts everything back. The football
-     front page does the same (clearBand in football/index.html). */
-  var BAND_ITEMS = { 's-home': ['#b-past', '#home-note', '#b-last', '#b-prize'],
-    's-in': ['#in-note', '#s-in .stack'] };
-  function clearBand(){
-    var all = document.querySelectorAll('[data-band]');
-    for (var i = 0; i < all.length; i++) { all[i].style.removeProperty('margin-top'); all[i].removeAttribute('data-band'); }
-    var cur = document.querySelector('.screen.on');
-    if (!cur || !BAND_ITEMS[cur.id] || !document.body.classList.contains('rtg-sticky-on')) return;
-    var filled = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-ad-h')) || 0;
-    var band = filled > 0 ? filled : 79, fold = innerHeight, y = scrollY;
-    var list = BAND_ITEMS[cur.id];
-    for (var k = 0; k < list.length; k++) {
-      var e = document.querySelector(list[k]);
-      if (!e || !e.offsetParent) continue;
-      var r = e.getBoundingClientRect(), top = r.top + y, bottom = r.bottom + y;
-      if (top >= fold) break;
-      if (bottom <= fold - band) continue;
-      var m = parseFloat(getComputedStyle(e).marginTop) || 0;
-      e.style.setProperty('margin-top', Math.round(m + (fold - top) + 12) + 'px', 'important');
-      e.setAttribute('data-band', '1');
-      break;
-    }
-  }
-  addEventListener('resize', function(){ clearBand(); });
-  /* rtg-ads.js says when the banner fills, changes height or goes (site PR 805). */
-  addEventListener('rtg-sticky', function(){ clearBand(); });
-  if (window.MutationObserver) {
-    new MutationObserver(function(){ clearBand(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  }
   var esc = function(s){
     return String(s==null?'':s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -2097,8 +2060,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       ? 'Entered on your account. One entry a week, and it is final.'
       : 'Saved in this browser. It is not on your account, so it will not count.';
     show('s-in');
-    /* Redrawn, so the strip under the banner is measured again. */
-    clearBand();
   }
 
   /* ---- the swap ----
@@ -3348,8 +3309,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        than here, because the reader most likely to have a result is the one who entered
        this week as well, and they never reach this screen on the way in. */
     drawPrizeDoor();
-    /* Redrawn, so the strip under the banner is measured again. */
-    clearBand();
   }
 
   /* ---- what you scored last week ----
