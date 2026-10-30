@@ -62,7 +62,7 @@ insert into public.shutdoor_packs (id, ord) values
   ('std-2019-nlwc-hader', 7),
   ('std-2022-ws6-pressly', 8),
   ('std-2001-ws7-rivera', 9),
-  ('std-2015-ws1-familia', 10),
+  ('std-2017-ws2-jansen', 10),
   ('std-2010-hoffman-stl', 11),
   ('std-2021-nlcs6-smith', 12),
   ('std-2005-nlcs5-lidge', 13),
@@ -70,7 +70,7 @@ insert into public.shutdoor_packs (id, ord) values
   ('std-2012-ws4-romo', 15),
   ('std-2023-williams-sd', 16),
   ('std-2008-ws5-lidge', 17),
-  ('std-2020-ws6-urias', 18),
+  ('std-2020-nlds2-kelly', 18),
   ('std-2013-alcs6-uehara', 19),
   ('std-2023-ws1-sewald', 20),
   ('std-2011-rivera-min', 21),
@@ -79,9 +79,9 @@ insert into public.shutdoor_packs (id, ord) values
   ('std-2023-hader-stl', 24),
   ('std-2015-alcs6-davis', 25),
   ('std-2008-krod-sea', 26),
-  ('std-2025-alcs7-hoffman', 27),
+  ('std-2025-ws6-glasnow', 27),
   ('std-2010-ws5-wilson', 28),
-  ('std-2017-ws2-jansen', 29)
+  ('std-2016-nlds5-kershaw', 29)
 on conflict (id) do update set ord = excluded.ord;
 
 -- the first day picked by a vote. The same date is modes.js VOTE.EPOCH

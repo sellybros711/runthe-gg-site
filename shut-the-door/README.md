@@ -575,11 +575,70 @@ that type, hand and velocity band (2021-2025); the similar tier is matched on se
 
 ## Adding a scenario
 
-1. Add it to `pipeline/candidates.json` and run `verify_scenarios.py`; read `data/verify/<id>.json`.
-2. Add it to `scenarios/scenarios.json` with its title and arsenal source (`regular`,
-   `postseason`, or `proxy` with the source).
-3. `build_packs.py <id>`, `pool.js`, `build_schedule.mjs`, then `node test/packs.mjs`. Report its
-   band spread before it goes in the rotation.
+1. Add it to `pipeline/candidates.json` and run `verify_scenarios.py <id>`; read `data/verify/<id>.json`.
+   A verify file from before 2026-10-20 was judged under the old end rules: run it again.
+2. Add it to the end of `scenarios/scenarios.json` (never in the middle: the rotation is by day number,
+   so a pack added at the end moves no day already served) with its title and arsenal (`regular`,
+   `postseason` for a starter, or `proxy` with the source).
+3. The steps, as run for the twenty of 2026-10-30 (the library 2008-2025 rebuilt in a session, the
+   SQLite file in `/dev/shm` through `STD_LIBRARY`):
+
+```
+python3 build_packs.py <ids>                                  staged in cache/stage
+node ../pool.js cache/stage/<id>.json ../data/closers.json ../data/packs/<id>.json --runs 2000 --pros cache/pros.json
+python3 steals.py --spots-only                                the new spots' people, catcher and runners
+python3 effort.py arsenal <ids> && python3 effort.py packs <ids>
+python3 tracking.py arsenal <ids> && python3 tracking.py packs <ids>
+node ../pool.js ../data/packs/<id>.json ../data/closers.json ../data/packs/<id>.json --runs 2000 --pros cache/pros.json
+node build_schedule.mjs                                       then SCHEDULE_V in api.js, and check-cachebust --update
+python3 check_pros.py && node ../test/packs.mjs && node band_sweep.mjs --relative
+```
+
+`cache/advance.json` can be seeded from any committed pack (`pack.advance`, the same table in every pack,
+third outs applied). `pros.py` over 2015-2025 rebuilds `cache/pros.json`. Rebuilt on 2026-10-30, one
+committed pack (Scott 2025) came out of `pool.js` with its hold table, pool and `seq` byte for byte the
+same, and four more pro examples (Savant's 2025 data has grown since); the committed packs were left
+as they are.
+
+**A cell with no real pitch.** Every outcome a pack can draw is a real pitch of that type. When no
+key in a cell keeps one in the batter's, the similar batters' or the window's league pool (a pitcher
+far from the league's speed in a thin season: Hoffman's 74 mph changeup in 2009-2011), `build_packs.py`
+takes that cell again with the league pool widened to every season in the library (the same type,
+pitcher hand and batter side, within 3 mph of his speed). The pack counts them in `build.wideCells`:
+Hoffman 2010 4, Uehara 2013 3, Davis 2015 2, of 2,500 to 3,000 type-cells each. A pack that built before
+never reaches it, so none moved. Familia 2015 (36 such cells, his splitter) was left out for Jansen.
+
+**The thirty (2026-10-30).** The first ten as before, then twenty, interleaved by era and kind:
+
+| # | pack | spot | start | real |
+|---|---|---|---|---|
+| 11 | `std-2017-ws2-jansen` | 2017 WS G2, HOU at LAD | top 9, 0 out, empty, up 3-2 | held the tie |
+| 12 | `std-2010-hoffman-stl` | 2010-09-07, STL at MIL | top 9, 0 out, empty, up 4-2 | door shut |
+| 13 | `std-2021-nlcs6-smith` | 2021 NLCS G6, LAD at ATL | top 9, 0 out, empty, up 4-2 | door shut |
+| 14 | `std-2005-nlcs5-lidge` | 2005 NLCS G5, STL at HOU (proxy) | top 9, 0 out, empty, up 4-2 | door's open |
+| 15 | `std-2018-alcs4-kimbrel` | 2018 ALCS G4, BOS at HOU | bottom 9, 0 out, empty, up 8-6 | door shut |
+| 16 | `std-2012-ws4-romo` | 2012 WS G4, SF at DET | bottom 10, 0 out, empty, up 4-3 | door shut |
+| 17 | `std-2023-williams-sd` | 2023-04-16, MIL at SD | bottom 9, 0 out, empty, up 1-0 | door shut |
+| 18 | `std-2008-ws5-lidge` | 2008 WS G5, TB at PHI | top 9, 0 out, empty, up 4-3 | door shut |
+| 19 | `std-2020-nlds2-kelly` | 2020 NLDS G2, SD at LAD | top 9, 2 out, man on 1st, up 6-5 | door shut |
+| 20 | `std-2013-alcs6-uehara` | 2013 ALCS G6, DET at BOS | top 9, 0 out, empty, up 5-2 | door shut |
+| 21 | `std-2023-ws1-sewald` | 2023 WS G1, ARI at TEX | bottom 9, 0 out, empty, up 5-3 | held the tie |
+| 22 | `std-2011-rivera-min` | 2011-09-19, MIN at NYY | top 9, 0 out, empty, up 6-4 | door shut |
+| 23 | `std-2014-ws7-bumgarner` | 2014 WS G7, SF at KC | bottom 9, 0 out, empty, up 3-2 | door shut |
+| 24 | `std-2007-ws4-papelbon` | 2007 WS G4, BOS at COL (proxy) | bottom 8, 1 out, empty, up 4-3 | door shut |
+| 25 | `std-2023-hader-stl` | 2023-08-30, SD at STL | bottom 9, 0 out, empty, up 4-3 | walk-off |
+| 26 | `std-2015-alcs6-davis` | 2015 ALCS G6, TOR at KC | top 9, 0 out, empty, up 4-3 | door shut |
+| 27 | `std-2008-krod-sea` | 2008-09-13, SEA at LAA | top 9, 0 out, empty, up 5-2 | door shut |
+| 28 | `std-2025-ws6-glasnow` | 2025 WS G6, LAD at TOR | bottom 9, 0 out, 2nd and 3rd, up 3-1 | door shut |
+| 29 | `std-2010-ws5-wilson` | 2010 WS G5, SF at TEX | bottom 9, 0 out, empty, up 3-1 | door shut |
+| 30 | `std-2016-nlds5-kershaw` | 2016 NLDS G5, LAD at WSH | bottom 9, 1 out, 1st and 2nd, up 4-3 | door shut |
+
+The runners-on spots (Kelly, Glasnow, Kershaw) came from a search of the library: every postseason
+game from 2015 whose last pitcher entered in the 8th or later, mid-inning with a man on, 1 to 3 ahead.
+Starters in relief (Bumgarner, Glasnow, Kershaw) use their postseason mix, as Yamamoto and Buehler do.
+Left out, with the reason: Urías 2020 WS G6 (his slurve, SV, has too few left-handed slurves in
+2019-2021 for a table), Vesia 2024 WS G2 (one pitch to one batter, the lead's reason for leaving out
+Montgomery), Montgomery 2016, Familia 2015 (above). Their verify files stay.
 
 ## Accounts
 

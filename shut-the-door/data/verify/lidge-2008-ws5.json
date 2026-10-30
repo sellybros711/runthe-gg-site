@@ -1,0 +1,236 @@
+{
+ "id": "lidge-2008-ws5",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 243847,
+ "date": "2008-10-29",
+ "game": "World Series Game 5: Tampa Bay Rays at Philadelphia Phillies",
+ "gameType": "W",
+ "pitcher": {
+  "id": 400058,
+  "name": "Brad Lidge",
+  "throws": "R",
+  "team": "Philadelphia Phillies",
+  "seasonLine": "1.95 ERA, 41 SV, 69.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 72,
+   "batterId": 446334,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "400058": 6
+   },
+   "pitches": 6,
+   "event": "field_out",
+   "des": "Evan Longoria pops out to second baseman Chase Utley.",
+   "feedEvent": "field_out",
+   "feedDescription": "Evan Longoria pops out to second baseman Chase Utley.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Evan Longoria",
+   "batSideListed": "R",
+   "seasonLine": ".272/.343/.531, 27 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 425900,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "400058": 3
+   },
+   "pitches": 3,
+   "event": "single",
+   "des": "Dioner Navarro singles on a soft fly ball to right fielder Jayson Werth.",
+   "feedEvent": "single",
+   "feedDescription": "Dioner Navarro singles on a soft fly ball to right fielder Jayson Werth.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Dioner Navarro",
+   "batSideListed": "S",
+   "seasonLine": ".295/.349/.407, 7 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 450314,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "400058": 4
+   },
+   "pitches": 4,
+   "event": "field_out",
+   "des": "Ben Zobrist lines out to right fielder Jayson Werth.",
+   "feedEvent": "field_out",
+   "feedDescription": "Ben Zobrist lines out to right fielder Jayson Werth.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Ben Zobrist",
+   "batSideListed": "S",
+   "seasonLine": ".253/.339/.505, 12 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 400134,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "400058": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Eric Hinske strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Eric Hinske strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Eric Hinske",
+   "batSideListed": "L",
+   "seasonLine": ".247/.333/.465, 20 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 16,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 430632,
+   "name": "Willy Aybar",
+   "batSideListed": "S"
+  },
+  {
+   "id": 493127,
+   "name": "Akinori Iwamura",
+   "batSideListed": "L"
+  },
+  {
+   "id": 408307,
+   "name": "Carl Crawford",
+   "batSideListed": "L"
+  },
+  {
+   "id": 425834,
+   "name": "B.J. Upton",
+   "batSideListed": "R"
+  },
+  {
+   "id": 456034,
+   "name": "David Price",
+   "batSideListed": "L"
+  },
+  {
+   "id": 446334,
+   "name": "Evan Longoria",
+   "batSideListed": "R"
+  },
+  {
+   "id": 445010,
+   "name": "Fernando Perez",
+   "batSideListed": "R"
+  },
+  {
+   "id": 450314,
+   "name": "Ben Zobrist",
+   "batSideListed": "S"
+  },
+  {
+   "id": 400134,
+   "name": "Eric Hinske",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1216,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 686,
+     "usage": 0.5641,
+     "velo": 85.5,
+     "pfxXin": 1.2,
+     "pfxZin": 1.4
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 522,
+     "usage": 0.4293,
+     "velo": 94.8,
+     "pfxXin": -7.3,
+     "pfxZin": 16.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 8,
+     "usage": 0.0066,
+     "velo": 93.2,
+     "pfxXin": -22.3,
+     "pfxZin": 13.9
+    }
+   ],
+   "dropped": {
+    "IN": 10,
+    "PO": 2
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=400058"
+  },
+  "postseason": {
+   "pitches": 173,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 104,
+     "usage": 0.6012,
+     "velo": 91.3,
+     "pfxXin": -4.0,
+     "pfxZin": 11.1
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 69,
+     "usage": 0.3988,
+     "velo": 84.9,
+     "pfxXin": 2.2,
+     "pfxZin": 0.3
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=400058"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 243847: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=243847",
+  "MLB Stats API schedule 2008-10-29 and live feed /api/v1.1/game/243847/feed/live",
+  "MLB Stats API people with 2008 season stats",
+  "Baseball Savant 400058 2008 season search (regular season and postseason) for the arsenal"
+ ]
+}

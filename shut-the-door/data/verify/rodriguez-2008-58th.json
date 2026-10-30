@@ -1,0 +1,264 @@
+{
+ "id": "rodriguez-2008-58th",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 235975,
+ "date": "2008-09-13",
+ "game": "Regular Season Game 3: Seattle Mariners at Los Angeles Angels",
+ "gameType": "R",
+ "pitcher": {
+  "id": 408061,
+  "name": "Francisco Rodríguez",
+  "throws": "R",
+  "team": "Los Angeles Angels",
+  "seasonLine": "2.24 ERA, 62 SV, 68.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 73,
+   "batterId": 111867,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "408061": 3
+   },
+   "pitches": 3,
+   "event": "double",
+   "des": "Miguel Cairo doubles (13) on a ground ball to left fielder Reggie Willits.",
+   "feedEvent": "double",
+   "feedDescription": "Miguel Cairo doubles (13) on a ground ball to left fielder Reggie Willits.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Miguel Cairo",
+   "batSideListed": "R",
+   "seasonLine": ".249/.316/.330, 0 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 472528,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "408061": 4
+   },
+   "pitches": 4,
+   "event": "walk",
+   "des": "Luis Valbuena walks.",
+   "feedEvent": "walk",
+   "feedDescription": "Luis Valbuena walks.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Luis Valbuena",
+   "batSideListed": "L",
+   "seasonLine": ".245/.315/.347, 0 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 400085,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "408061": 6
+   },
+   "pitches": 6,
+   "event": "force_out",
+   "des": "Ichiro Suzuki grounds into a force out, second baseman Sean Rodriguez to shortstop Brandon Wood.   Miguel Cairo to 3rd.    Luis Valbuena out at 2nd.    Ichiro Suzuki to 1st.",
+   "feedEvent": "force_out",
+   "feedDescription": "Ichiro Suzuki grounds into a force out, second baseman Sean Rodriguez to shortstop Brandon Wood. Miguel Cairo to 3rd. Luis Valbuena out at 2nd. Ichiro Suzuki to 1st.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Ichiro Suzuki",
+   "batSideListed": "L",
+   "seasonLine": ".310/.361/.386, 6 HR"
+  },
+  {
+   "atBat": 76,
+   "batterId": 434605,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "408061": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Wladimir Balentien strikes out on a foul tip.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Wladimir Balentien strikes out on a foul tip.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Wladimir Balentien",
+   "batSideListed": "R",
+   "seasonLine": ".202/.250/.342, 7 HR"
+  },
+  {
+   "atBat": 77,
+   "batterId": 116380,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "408061": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Raul Ibanez strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Raul Ibanez strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Raul Ibanez",
+   "batSideListed": "L",
+   "seasonLine": ".293/.358/.479, 23 HR"
+  }
+ ],
+ "realFaced": 5,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 24,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 134181,
+   "name": "Adrian Beltré",
+   "batSideListed": "R"
+  },
+  {
+   "id": 430946,
+   "name": "Jose Lopez",
+   "batSideListed": "R"
+  },
+  {
+   "id": 435358,
+   "name": "Yuniesky Betancourt",
+   "batSideListed": "R"
+  },
+  {
+   "id": 461834,
+   "name": "Tug Hulett",
+   "batSideListed": "L"
+  },
+  {
+   "id": 111867,
+   "name": "Miguel Cairo",
+   "batSideListed": "R"
+  },
+  {
+   "id": 472528,
+   "name": "Luis Valbuena",
+   "batSideListed": "L"
+  },
+  {
+   "id": 400085,
+   "name": "Ichiro Suzuki",
+   "batSideListed": "L"
+  },
+  {
+   "id": 434605,
+   "name": "Wladimir Balentien",
+   "batSideListed": "R"
+  },
+  {
+   "id": 116380,
+   "name": "Raul Ibanez",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1108,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 565,
+     "usage": 0.5099,
+     "velo": 92.8,
+     "pfxXin": -1.3,
+     "pfxZin": 20.3
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 358,
+     "usage": 0.3231,
+     "velo": 80.3,
+     "pfxXin": 14.1,
+     "pfxZin": -4.5
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 185,
+     "usage": 0.167,
+     "velo": 85.1,
+     "pfxXin": -8.9,
+     "pfxZin": 8.2
+    }
+   ],
+   "dropped": {
+    "IN": 14
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=408061"
+  },
+  "postseason": {
+   "pitches": 56,
+   "types": [
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 21,
+     "usage": 0.375,
+     "velo": 81.1,
+     "pfxXin": 14.5,
+     "pfxZin": -6.6
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 18,
+     "usage": 0.3214,
+     "velo": 87.7,
+     "pfxXin": -10.5,
+     "pfxZin": 10.9
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 17,
+     "usage": 0.3036,
+     "velo": 94.4,
+     "pfxXin": -0.8,
+     "pfxZin": 21.3
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=408061"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 235975: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=235975",
+  "MLB Stats API schedule 2008-09-13 and live feed /api/v1.1/game/235975/feed/live",
+  "MLB Stats API people with 2008 season stats",
+  "Baseball Savant 408061 2008 season search (regular season and postseason) for the arsenal"
+ ]
+}
