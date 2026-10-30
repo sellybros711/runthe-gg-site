@@ -8,6 +8,10 @@
       "v": "9",
       "sha": "1891cdfef9c19253"
     },
+    "/assets/cloudsave.js": {
+      "v": "3",
+      "sha": "7c8b2c13e2f5ecd5"
+    },
     "config.js": {
       "v": "1",
       "sha": "7fc7924051909af5"
@@ -21,8 +25,24 @@
       "sha": "9c6a7e1575b377f0"
     },
     "engine.js": {
+      "v": "2",
+      "sha": "26834fb40237508f"
+    },
+    "names.js": {
+      "v": "2",
+      "sha": "0f04e78c1e763a1f"
+    },
+    "book.js": {
       "v": "1",
-      "sha": "7675f4a2f30bf7b3"
+      "sha": "bc3423307ecf8d18"
+    },
+    "diagram.js": {
+      "v": "1",
+      "sha": "321983645565a333"
+    },
+    "export.js": {
+      "v": "1",
+      "sha": "6a429576a3794f09"
     },
     "rig.js": {
       "v": "1",
@@ -37,16 +57,24 @@
       "sha": "ddf3f027cc22c5ac"
     },
     "clipboard.js": {
-      "v": "2",
-      "sha": "e9e622d825327b22"
+      "v": "3",
+      "sha": "867d63243aee0782"
     },
     "play.js": {
       "v": "1",
       "sha": "3dc28a7e95923a28"
     },
-    "ui.js": {
+    "home.js": {
       "v": "1",
-      "sha": "93758a342a647e1e"
+      "sha": "ff6c7cbb96c1351f"
+    },
+    "ui.js": {
+      "v": "3",
+      "sha": "1b107f77ad2b0c82"
+    },
+    "book-ui.js": {
+      "v": "1",
+      "sha": "9d8bf3ead3ad5886"
     }
   },
   "arcade/almamater/index.html": {
@@ -2411,8 +2439,8 @@
       "sha": "d81dc7cbc4c21a96"
     },
     "/assets/cloudsave.js": {
-      "v": "2",
-      "sha": "db78661bbd724b47"
+      "v": "3",
+      "sha": "7c8b2c13e2f5ecd5"
     },
     "/cfb/data/cfb_fbs.json": {
       "v": "1",
@@ -2495,8 +2523,8 @@
       "sha": "733a0836581de9eb"
     },
     "/assets/cloudsave.js": {
-      "v": "2",
-      "sha": "db78661bbd724b47"
+      "v": "3",
+      "sha": "7c8b2c13e2f5ecd5"
     },
     "/assets/fantasy-promo.js": {
       "v": "1",
@@ -2595,8 +2623,8 @@
       "sha": "733a0836581de9eb"
     },
     "/assets/cloudsave.js": {
-      "v": "2",
-      "sha": "db78661bbd724b47"
+      "v": "3",
+      "sha": "7c8b2c13e2f5ecd5"
     },
     "/assets/rewarded.js": {
       "v": "1",
@@ -2851,8 +2879,8 @@
       "sha": "201b9525c2dff333"
     },
     "/assets/cloudsave.js": {
-      "v": "2",
-      "sha": "db78661bbd724b47"
+      "v": "3",
+      "sha": "7c8b2c13e2f5ecd5"
     },
     "/assets/newsletter.js": {
       "v": "2",

@@ -86,12 +86,26 @@
     var depth = last[1] - start[1], inward = (dx * (start[0] < 0 ? 1 : -1)) / L;
     if (dy / L < -0.4) return depth > 9 ? 'comeback' : 'curl';
     if (dy / L > 0.8) return depth > 14 ? 'go' : 'seam';
-    if (dy / L > 0.35) return inward > 0 ? (depth > 12 ? 'post' : 'slant') : (depth > 12 ? 'corner' : 'fade');
+    if (dy / L > 0.35) {
+      if (inward > 0) return depth > 12 ? 'post' : 'slant';
+      /* outside and up: a corner deep, a fade on the way, a flat when it stays short */
+      return depth > 12 ? 'corner' : depth <= 6 && dy / L < 0.65 ? 'flat' : 'fade';
+    }
     if (inward > 0) return depth > 6 ? 'dig' : 'drag';
     return depth > 3 ? 'out' : 'flat';
   }
 
   /* ---------- the call ---------- */
+
+  /* Every call the defense can make, by its key. Test it runs a play against
+     each. Cover 0 is always a blitz. */
+  var CALLS = {
+    cover0: { coverage: 'cover0', blitz: true }, cover1: { coverage: 'cover1', blitz: false }, cover1b: { coverage: 'cover1', blitz: true },
+    cover2: { coverage: 'cover2', blitz: false }, cover2b: { coverage: 'cover2', blitz: true },
+    cover3: { coverage: 'cover3', blitz: false }, cover3b: { coverage: 'cover3', blitz: true }
+  };
+  var CALL_KEYS = Object.keys(CALLS);
+  function callKey(c) { return c.coverage === 'cover0' ? 'cover0' : c.coverage + (c.blitz ? 'b' : ''); }
 
   function rollCall(T, distance, box, rnd) {
     var w = distance <= 3 ? T.calls.short : distance <= 7 ? T.calls.medium : T.calls.long;
@@ -124,7 +138,14 @@
     var targets = isRun ? [] : (play.targets || []).filter(function (id) { return routes[id] && !blocks[id]; });
     var abs = function (p) { return { x: clamp(BX + p[0], 0.3, FIELD_W - 0.3), y: Y0 + p[1] }; };
 
+    /* The call is always rolled, so the dice after it fall the same way. A
+       forced call (Test it, against one defense) then replaces what it says. */
     var call = rollCall(T, distance, box, rnd);
+    if (opt.call && CALLS[opt.call]) {
+      var fc = CALLS[opt.call];
+      call = { coverage: fc.coverage, man: fc.coverage === 'cover0' || fc.coverage === 'cover1', blitz: fc.blitz,
+        rushers: 4 + (fc.coverage === 'cover0' ? 2 : fc.blitz ? 1 : 0) };
+    }
     var events = [];
     var say = function (t, kind, text, extra) { var e = { t: Math.round(t * 1000) / 1000, kind: kind, text: text }; if (extra) for (var k in extra) e[k] = extra[k]; events.push(e); };
 
@@ -641,7 +662,7 @@
     if (outcome === 'down') say(tEnd, 'spot', win ? 'First down.' : (marker - spotY < 1 ? 'Tackled a yard short.' : 'Short of the sticks.'));
 
     return {
-      seed: seed >>> 0, distance: distance, down: downName(distance, Y0), Y0: Y0, BX: BX, marker: marker, box: box,
+      seed: seed >>> 0, distance: distance, callKey: callKey(call), down: downName(distance, Y0), Y0: Y0, BX: BX, marker: marker, box: box,
       formation: setDef.id, isRun: isRun, call: call, callName: callName(call), callLine: callLine(call),
       pocket: Math.round(Tp * 100) / 100, outcome: outcome, win: win, title: title,
       yards: shown, spotY: spotY, spot: spotY != null ? spotName(spotY) : null, reason: reason,
@@ -651,7 +672,7 @@
     };
   }
 
-  var API = { run: run, rollCall: rollCall, spotName: spotName, downName: downName, routeName: routeName, callName: callName, chance: chance, FIELD_W: FIELD_W };
+  var API = { run: run, rollCall: rollCall, CALLS: CALLS, CALL_KEYS: CALL_KEYS, callKey: callKey, spotName: spotName, downName: downName, routeName: routeName, callName: callName, chance: chance, FIELD_W: FIELD_W };
   if (isNode) module.exports = API;
   else root.FAW_ENGINE = API;
 })(typeof window !== 'undefined' ? window : this);

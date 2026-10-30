@@ -97,6 +97,10 @@ const GUARDED = [
   '4th-and-what/engine.js',
   '4th-and-what/clipboard.js',
   '4th-and-what/share.js',
+  /* the playbook: its screens, the names it gives plays, and what an export prints */
+  '4th-and-what/book-ui.js',
+  '4th-and-what/names.js',
+  '4th-and-what/export.js',
   /* The guides (runthe.gg/guides/), from the day they were written: every page the
      guide builder writes, so a new guide is read here with no list to edit. */
   ...(() => { try { return readdirSync('guides').filter((f) => f.endsWith('.html')).map((f) => 'guides/' + f); } catch { return []; } })(),
