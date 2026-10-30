@@ -102,16 +102,22 @@ const CELL_FT = 0.553, CELL_PX = 38, MARGIN = 0.03, ROOM = 1.04;
    moves them by (cx, cy). From fwLo (the frame the set alone asks for) out to fwHi (the cell rule's
    widest), the first fw where the hitter, his bat, the plate and the dirt before it, the catcher and the umpire all sit in
    the canvas and off every panel, placed where their nearest panel or edge is furthest. None: the
-   widest frame, placed where the least is covered (the hitter counted most, then the plate). */
+   first fw where the hitter, his bat and the plate (FREE_HARD) are clear, the rest placed where the
+   least is covered; none of that either: the widest frame, the hitter, his bat and the plate
+   covered least, then the rest. (The owner, 2026-10-26: the info "shouldn't be covering up the
+   batter or home plate". A single weighted sum once traded the scorebar over the hitter's head for
+   the catcher's mitt under the pitch list, at 844x390.) */
 const FREE_W = { batter: 10, bat: 3, plate: 6, apron: 1, catcher: 2, umpire: 2 };
+const FREE_HARD = { batter: true, bat: true, plate: true };
 // and a little further back than the set alone asks (the owner, 2026-10-26: "a little too close")
 const FREE_BACK = 1.12;
 function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
   const pad = 6, mx = w * MARGIN, my = h * MARGIN, keys = Object.keys(FREE_W);
   const P = panels.map((p) => ({ x0: p.x0 - pad, x1: p.x1 + pad, y0: p.y0 - pad, y1: p.y1 + pad }));
-  let best = null;
   const steps = fwHi > fwLo * 1.001 ? 24 : 0;
-  for (let i = 0; i <= steps; i++) {
+  // the best place for the set at the i-th frame, trying n by n moves
+  const place = (i, n) => {
+    let best = null;
     const fw = fwLo * (fwHi / fwLo) ** (steps ? i / steps : 0), sc = fw0 / fw;
     const B = keys.map((k) => ({ k, x0: w / 2 + (fb[k].x0 - w / 2) * sc, x1: w / 2 + (fb[k].x1 - w / 2) * sc, y0: h / 2 + (fb[k].y0 - h / 2) * sc, y1: h / 2 + (fb[k].y1 - h / 2) * sc }));
     const U = B.reduce((u, b) => ({ x0: Math.min(u.x0, b.x0), x1: Math.max(u.x1, b.x1), y0: Math.min(u.y0, b.y0), y1: Math.max(u.y1, b.y1) }), { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity });
@@ -119,22 +125,29 @@ function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
     const range = (a0, a1, size, m, b) => (a1 - a0 <= size - 2 * m ? [a1 - (size - m), a0 - m] : [b[1] - (size - m), b[0] - m]);
     const bt = B[0];
     const [xl, xh] = range(U.x0, U.x1, w, mx, [bt.x0, bt.x1]), [yl, yh] = range(U.y0, U.y1, h, my, [bt.y0, bt.y1]);
-    for (let a = 0; a <= 16; a++) for (let b = 0; b <= 16; b++) {
-      const cx = xl + (xh - xl) * a / 16, cy = yl + (yh - yl) * b / 16;
-      let cost = 0, clear = Math.min(U.x0 - cx, w - (U.x1 - cx), U.y0 - cy, h - (U.y1 - cy));
+    for (let a = 0; a <= n; a++) for (let b = 0; b <= n; b++) {
+      const cx = xl + (xh - xl) * a / n, cy = yl + (yh - yl) * b / n;
+      let cost = 0, hard = 0, clear = Math.min(U.x0 - cx, w - (U.x1 - cx), U.y0 - cy, h - (U.y1 - cy));
       for (const q of B) {
         const x0 = q.x0 - cx, x1 = q.x1 - cx, y0 = q.y0 - cy, y1 = q.y1 - cy, area = Math.max(1, (x1 - x0) * (y1 - y0));
         for (const p of P) {
           const ox = Math.min(x1, p.x1) - Math.max(x0, p.x0), oy = Math.min(y1, p.y1) - Math.max(y0, p.y0);
-          if (ox > 0 && oy > 0) cost += FREE_W[q.k] * ox * oy / area;
+          if (ox > 0 && oy > 0) { const c = FREE_W[q.k] * ox * oy / area; cost += c; if (FREE_HARD[q.k]) hard += c; }
           else clear = Math.min(clear, Math.max(-ox, -oy));
         }
       }
-      if (!best || cost < best.cost - 1e-9 || (Math.abs(cost - best.cost) <= 1e-9 && best.fw === fw && clear > best.clear)) best = { fw, cx, cy, cost, clear };
+      // the hitter, his bat and the plate first, then the rest, then the most room
+      const soft = cost - hard;
+      if (!best || hard < best.hard - 1e-9 || (Math.abs(hard - best.hard) <= 1e-9 && (soft < best.soft - 1e-9 || (Math.abs(soft - best.soft) <= 1e-9 && clear > best.clear)))) best = { fw, cx, cy, cost, hard, soft, clear };
     }
-    if (best.cost <= 1e-9) return best;
-    if (i < steps) best = null;
-  }
+    return best;
+  };
+  // everyone clear, on a 16 by 16 set of moves
+  let best = null;
+  for (let i = 0; i <= steps; i++) { best = place(i, 16); if (best.cost <= 1e-9) return best; }
+  // none: the gap that clears the hitter, his bat and the plate can be narrower than a 16th of the
+  // room (at 844x390 it was 16 px of 523), so look again on a finer set of moves
+  for (let i = 0; i <= steps; i++) { const b = place(i, 64); if (b.hard <= 1e-9) return b; }
   return best;
 }
 const AN = () => window.STD_ANIM;
@@ -596,8 +609,13 @@ class Stage {
         // (the widest it may go is the cell rule's alone, not the preset's: a window with corners but
         // not a desk's width, 1000x1020, needs to stand further back than the preset to clear the
         // pitch list, the owner 2026-10-27)
-        const freeHi = Math.max(fw, (w * CELL_FT) / CELL_PX);
-        const sol = freeFit(fb, f.fw, Math.min(fw * FREE_BACK, freeHi), freeHi, panels, w, h);
+        // (on a short screen the bodies already set the frame past the cell rule, and the cap left it
+        // one size to try: at 844x390 the set is wider than the gap between the scorebar and the pitch
+        // list, so the scorebar sat over the hitter's head. There it may stand back as far as
+        // FREE_BACK, from the frame the bodies ask for, to clear him)
+        const cellHi = (w * CELL_FT) / CELL_PX, short = fw > cellHi * 1.001;
+        const freeHi = short ? fw * FREE_BACK : Math.max(fw, cellHi);
+        const sol = freeFit(fb, f.fw, short ? fw : Math.min(fw * FREE_BACK, freeHi), freeHi, panels, w, h);
         fw = sol.fw; sc = f.fw / fw; cx = sol.cx; cy = sol.cy;
       }
       eye.fit = { x: f.x + cx / (kx * sc), z: f.z + cy / (kz * sc), fw };
@@ -742,8 +760,11 @@ class Stage {
     const track = run ? { running: true, at: (ms) => ({ runners: this.inplay.fieldAt(Math.max(0, sceneT(ms / 1000) - resultAt)) }) }
       : AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
     if (hooks.sound) hooks.sound('whoosh', pt.tRel * 1000 / speed);
-    // what the browser check reads back: the play's reading and a few frames of it
+    // what the browser check reads back: the play's reading and a few frames of it, and rel, where
+    // the pitch leaves his hand (the start of its own path, world metres), which the check measures
+    // the flight from: the first frame that sees the ball can land well into the flight
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
+      rel: pt.pointAt(0).toArray().map((v) => Math.round(v * 1000) / 1000),
       zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
     // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, the

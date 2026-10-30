@@ -151,8 +151,8 @@
       "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -257,8 +257,8 @@
       "sha": "d647e53a1bc1a49a"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -407,8 +407,8 @@
       "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -492,6 +492,10 @@
     }
   },
   "arcade/chain/index.html": {
+    "/assets/rtg-ads.js": {
+      "v": "2",
+      "sha": "a1c925f05ca29fc1"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -513,8 +517,8 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -739,8 +743,8 @@
       "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -815,6 +819,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "2",
+      "sha": "a1c925f05ca29fc1"
     },
     "/arcade/tokens.js": {
       "v": "15",
@@ -913,8 +921,8 @@
       "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -998,6 +1006,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-ads.js": {
+      "v": "2",
+      "sha": "a1c925f05ca29fc1"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -1059,8 +1071,8 @@
       "sha": "f5cc0f203ed248f5"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -1173,8 +1185,8 @@
       "sha": "a1c925f05ca29fc1"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -1235,8 +1247,8 @@
       "sha": "d647e53a1bc1a49a"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/auth.js": {
       "v": "4",
@@ -1259,6 +1271,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "2",
+      "sha": "a1c925f05ca29fc1"
     },
     "/arcade/tokens.js": {
       "v": "15",
@@ -1345,8 +1361,8 @@
       "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/mode.js": {
       "v": "8",
@@ -1425,6 +1441,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "2",
+      "sha": "a1c925f05ca29fc1"
     },
     "/arcade/tokens.js": {
       "v": "15",
@@ -1515,8 +1535,8 @@
       "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -1595,6 +1615,10 @@
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
+    },
+    "/assets/rtg-ads.js": {
+      "v": "2",
+      "sha": "a1c925f05ca29fc1"
     },
     "/arcade/tokens.js": {
       "v": "15",
@@ -1685,8 +1709,8 @@
       "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -1762,6 +1786,10 @@
     }
   },
   "arcade/rollcall/index.html": {
+    "/assets/rtg-ads.js": {
+      "v": "2",
+      "sha": "a1c925f05ca29fc1"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -1787,8 +1815,8 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -1921,8 +1949,8 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -2034,6 +2062,10 @@
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
     },
+    "/assets/rtg-ads.js": {
+      "v": "2",
+      "sha": "a1c925f05ca29fc1"
+    },
     "/arcade/tokens.js": {
       "v": "15",
       "sha": "d647e53a1bc1a49a"
@@ -2135,8 +2167,8 @@
       "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
-      "v": "3",
-      "sha": "b439237ac07ec089"
+      "v": "4",
+      "sha": "748d7deb2e57101d"
     },
     "/arcade/dayroll.js": {
       "v": "2",
@@ -3053,8 +3085,8 @@
       "sha": "e90d7c1fa3db7fd9"
     },
     "3d/boot.js": {
-      "v": "65",
-      "sha": "25a9f9731ad3487c"
+      "v": "66",
+      "sha": "2dc68ffc00560949"
     }
   },
   "shut-the-door/lab/index.html": {
@@ -3183,8 +3215,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "69",
-      "sha": "8bc48d2559af374a"
+      "v": "70",
+      "sha": "aaeeb5b81a07a327"
     }
   },
   "wrestling/ring3d/boot.js": {
