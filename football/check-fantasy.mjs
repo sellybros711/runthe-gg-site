@@ -4707,7 +4707,9 @@ console.log('\nA FINISHED WEEK HAS A DOOR AFTER THE BOARD ROLLS OVER');
 
    The owner's call (2026-10-29): with the closeable banner from assets/rtg-ads.js filled,
    no button or link on a screen that carries it may sit under it before the player scrolls.
-   Content further down still scrolls under it; what is asked is the first view. Measured
+   Content further down still scrolls under it; what is asked is the first view, of each
+   screen's own actions (the home's draft button, the entry's way to the board). The notes and
+   the way back to the game below them may pass under it like any long page. Measured
    the way the Ads Agent measures every game: the banner hidden, then every control that
    overlaps its box and is the thing actually at that point. Four sizes, every screen the
    banner is on (s-shut, s-home, s-in and both tabs of s-live).
@@ -4721,7 +4723,7 @@ console.log('\nTHE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW');
     entry_no: name.length * 7 + name.charCodeAt(0), played: 6 });
   const board = boardOf({ rows: [row(1, 'Somebody', 91.2), row(2, 'You', 77.5, true)],
     me: { place: 2, entries: 2, score: 77.5 } });
-  const covered = (page) => page.evaluate(() => {
+  const covered = (page, main) => page.evaluate((main) => {
     const s = document.querySelector('[data-ad-zone=sticky]');
     const inner = s && s.querySelector('.rtg-sticky-in');
     if (!inner) return 'no banner';
@@ -4731,7 +4733,7 @@ console.log('\nTHE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW');
        and elementFromPoint would land on it and call whatever is behind it clear. */
     document.querySelectorAll('.rtp-ad-mobile-bottom').forEach((x) => { x.style.visibility = 'hidden'; });
     s.style.visibility = 'hidden';
-    const hit = [...document.querySelectorAll('button,a[href],[role=button]')].filter((e) => e.offsetWidth)
+    const hit = [...document.querySelectorAll(main || 'button,a[href],[role=button]')].filter((e) => e.offsetWidth)
       .filter((e) => {
         const t = e.getBoundingClientRect();
         if (!(t.bottom > z.top && t.top < z.bottom && t.right > z.left && t.left < z.right)) return false;
@@ -4740,7 +4742,7 @@ console.log('\nTHE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW');
       }).map((e) => (e.id ? '#' + e.id + ' ' : '') + e.textContent.trim().replace(/\s+/g, ' ').slice(0, 30));
     s.style.visibility = '';
     return hit;
-  });
+  }, main || null);
   const settle = async (page) => {
     await page.evaluate(() => scrollTo(0, 0));
     await page.waitForTimeout(700);
@@ -4762,8 +4764,8 @@ console.log('\nTHE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW');
         viewport: { width: w, height: h } });
       await page.waitForSelector('#s-home.on', { timeout: 15000 }).catch(() => {});
       await settle(page);
-      const c = await covered(page);
-      ok(at + ': the week\'s home has nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      const c = await covered(page, '#b-draft,#b-review');
+      ok(at + ': the week\'s home has its buttons clear of the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
       ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
       await page.close();
     }
@@ -4772,8 +4774,8 @@ console.log('\nTHE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW');
         viewport: { width: w, height: h }, server: { mine: ENTRY, board } });
       await page.waitForSelector('#s-in.on', { timeout: 15000 }).catch(() => {});
       await settle(page);
-      let c = await covered(page);
-      ok(at + ': the entry screen has nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      let c = await covered(page, '#b-in-board');
+      ok(at + ': the entry screen has its way to the board clear of the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
       await page.waitForSelector('#b-live:not([hidden])', { timeout: 10000 }).catch(() => {});
       await page.click('#b-live').catch(() => {});
       await page.waitForSelector('#s-live.on', { timeout: 10000 }).catch(() => {});

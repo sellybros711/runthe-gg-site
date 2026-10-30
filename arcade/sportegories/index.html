@@ -252,6 +252,8 @@
   .abtn.go{background:var(--sp); color:var(--onAccent,#160B02); border-color:transparent; font-family:var(--hero); font-weight:400; font-size:18px; letter-spacing:.05em; text-transform:uppercase;}
 
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none;}
+  /* the bottom banner (/assets/rtg-ads.js) is up on every screen, so a toast rides on top of it */
+  body.rtg-sticky-on .toast{bottom:calc(26px + var(--sticky-ad-h,0px));}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
   .foot{margin-top:22px; text-align:center; font-size:11.5px; color:var(--dim); line-height:1.6;}
   .foot a{color:var(--mut); text-decoration:underline;}
@@ -400,7 +402,7 @@ window.GA_ID='G-L29P5MRWKE';
 
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/icons.js?v=3"></script>
-<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
 <script src="/arcade/archive.js?v=3"></script>
@@ -1072,17 +1074,20 @@ window.GA_ID='G-L29P5MRWKE';
 <script>
 /* THE ARCADE'S ADS (Ads Agent, 2026-10-29, the owner's calls). Two desktop rails beside the game on
    every screen, play included, built only where each one can sit 150px clear of the column and never
-   on a phone. And the closeable bottom banner on the result, never during play; its X closes it for
-   the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
+   on a phone. And the closeable bottom banner on every screen, play included (the owner's call,
+   2026-10-29); its X closes it for the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
 (function(){
   var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
   var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
   function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
   if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
-  window.RTG_ARCADE_STICKY = function(on){ if(window.RTG_ADS) RTG_ADS.sticky(on, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
+  /* The owner's call (2026-10-29): the bottom banner is up on every Arcade game, play included.
+     The game's own calls still arrive (a screen change, a finished run) and every one now asks for
+     it on. The X still closes it for the rest of the visit. */
+  window.RTG_ARCADE_STICKY = function(){ if(window.RTG_ADS) RTG_ADS.sticky(true, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
   /* the setup screen is open in the markup, so the screen switch never announces it on load */
   var setup = document.getElementById('panelSetup');
-  if(setup && setup.classList.contains('on')) window.RTG_ARCADE_STICKY(true);
+  window.RTG_ARCADE_STICKY(true);
 })();
 </script>
 </body>
