@@ -1260,9 +1260,13 @@ window.GA_ID='G-L29P5MRWKE';
   .stack-sep b{font-family:var(--body); font-weight:800; letter-spacing:.2em; font-size:11px; color:var(--pagemut); text-transform:uppercase}
   /* CS254: richer "continue your career" card - bigger than a button, shows where you are (owner) */
   .resumecard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; color:#f1f6ff;
-    background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); border:0; border-radius:18px; padding:15px 17px 14px;
-    box-shadow:0 6px 16px -6px rgba(0,0,0,.6), 0 22px 44px -12px rgba(0,0,0,.6), 0 16px 40px -14px rgba(58,99,200,.55), inset 0 1px 0 rgba(255,255,255,.28)}
+    background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); border:2px solid #ffd86b; border-radius:18px; padding:14px 16px 13px;
+    box-shadow:0 6px 16px -6px rgba(0,0,0,.6), 0 22px 44px -12px rgba(0,0,0,.6), 0 16px 40px -14px rgba(58,99,200,.55), 0 0 0 1px rgba(255,216,107,.35), 0 0 24px rgba(255,216,107,.35), inset 0 1px 0 rgba(255,255,255,.28)}
   .resumecard:active{transform:translateY(1px)}
+  .rc-live{display:inline-flex; align-items:center; gap:5px; margin-left:8px; vertical-align:middle; font:900 10px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:#fff; background:#d62a2a; border-radius:999px; padding:4px 8px 4px 6px; box-shadow:0 0 10px rgba(255,60,60,.6)}
+  .rc-live i{width:7px; height:7px; border-radius:50%; background:#ff5c5c; box-shadow:0 0 6px #ff3b3b; animation:rcBlink 1s steps(2,jump-none) infinite}
+  @keyframes rcBlink{0%,100%{opacity:1} 50%{opacity:.15}}
+  @media (prefers-reduced-motion:reduce){ .rc-live i{animation:none} }
   .rc-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
   .rc-kick{font:800 10px/1 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.62}
   .rc-name{font-family:var(--display); font-weight:400; font-style:normal; font-size:27px; line-height:1.05; letter-spacing:.01em; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:6px}
@@ -12712,6 +12716,7 @@ function render(){
   // leaderboard loads); only jump to top when the view actually changes.
   const nowOv=app.querySelector('.ov');
   if(nowOv && sameView) nowOv.scrollTop=savedOvY;   // restore the overlay's own scroll position
+  try{ gadMount(); }catch(e){ gadDrop(); }   // the results screens' ad: the host stays put, the placeholder follows the screen
   window.scrollTo({top: sameView ? savedY : (closingOv ? _ovBgY : 0)});
   // release the height hold once the new content has laid out and the scroll is back where it was
   if(heldH){ const want=heldH+'px'; requestAnimationFrame(()=>{ if(app.style.minHeight===want) app.style.minHeight=''; }); }
@@ -14855,7 +14860,7 @@ function resumeCareerCard(cs){
   else { yrLabel=`${calYear(cs.year)} · Yr ${cs.year} of ${saveYrs}`; pct=Math.min(100,Math.max(7,(cs.year||1)/saveYrs*100)); }
   const card=$(`<button class="resumecard" aria-label="Resume ${circuit?'Legend Circuit':'Career Mode'}, ${who}, ${yrLabel}">
     <div class="rc-top">
-      <div style="min-width:0"><div class="rc-kick">Resume ${circuit?'Legend Circuit':'Career'}</div><div class="rc-name">${who}</div></div>
+      <div style="min-width:0"><div class="rc-kick">Resume ${circuit?'Legend Circuit':'Career'}<span class="rc-live" aria-label="Live"><i></i>Live</span></div><div class="rc-name">${who}</div></div>
       <div style="display:flex;align-items:center;gap:9px;flex:0 0 auto">${pxFigureHTML(withAge(cs.look||S.look, (((cs.career&&cs.career.startAge)>0)?cs.career.startAge:START_AGE)+((cs.year||1)-1)),62)}<div class="rc-ovr"><b>${cs.ovr}</b><span>OVR</span></div></div>
     </div>
     <div class="rc-prog">
@@ -15562,6 +15567,93 @@ function golfAds(){
 }
 
 /* ── THE FIRST TEE ──────────────────────────────────────────────────────────────────────────────── */
+/* ── GOLF ADS (the owner, 2026-10-27, widened 2026-10-28) ─────────────────────────────────────────────────────────
+   One 300x250 on the Career season results, the Daily Challenge results, the Pro Shop, the closet and the profile,
+   and one slim 320x50 on the First Tee home (desktop only). The home's ad is once per page load; the others are at
+   most one every 3 minutes. Never in play, never in Putt Putt.
+   The slot is a node in <body>, outside the screen, so render() never detaches it: a re-render only moves it (its
+   style), and an iframe that is moved reloads, which AdSense forbids. The Pro Shop and the profile are overlays, which
+   scroll on their own, so their slot is fixed to the viewport and follows the overlay's scroll. The ad is pushed once,
+   when it nears the viewport, and removed (not hidden) when its screen goes or when no control is within 150px of it. */
+const GAD_UNIT={career:'1895123791', daily:'3539377957', home:'2904953136', shop:'4134274327', closet:'7467014676', profile:'4018724256'};   // the shop, closet and profile units are not created yet: a zero never starts
+const GAD_SIZE={career:[300,250], daily:[300,250], home:[320,50], shop:[300,250], closet:[300,250], profile:[300,250]};
+const GAD_GAP=['career','shop','closet','profile'];   // at most one every 3 minutes
+const GAD_OVERLAY=['shop','profile'];                 // scroll inside their own overlay: the slot follows the placeholder, clipped to the overlay
+const GAD_SCREENS=['title','protour','me','setup'];   // the screens the shop and the profile open over (never a round or the draft)
+const GAD_GAP_MS=3*60*1000;
+const GAD={active:null, host:null, io:null, pushedFor:null, homeUsed:false, fixed:false};
+function gadStyleOnce(){ if(document.getElementById('gad-css')) return; const s=document.createElement('style'); s.id='gad-css';
+  s.textContent='.gad-ph{position:relative;width:300px;max-width:100%;height:268px;margin:150px auto 150px}.gad-ph.gad-ph-home{position:absolute;left:24px;top:232px;width:320px;height:68px;margin:0}.gad-l{display:block;height:18px;font:700 9px/18px var(--body);letter-spacing:1px;text-transform:uppercase;opacity:.5}.gad-host{position:absolute;z-index:2;overflow:hidden}';
+  document.head.appendChild(s); }
+// the First Tee home gets its banner on a desktop only (a phone has no clear 150px)
+function gadSpotOf(){
+  if(S.overlay==='shop' && GAD_SCREENS.includes(S.screen)) return 'shop';
+  if(S.overlay==='record' && GAD_SCREENS.includes(S.screen)) return 'profile';
+  if(S.overlay) return null;
+  if(S.screen==='setup') return S.setupEdit ? 'closet' : null;
+  if(S.screen==='summary') return 'career';
+  if(S.screen==='dailyresult') return 'daily';
+  return S.screen==='title' && matchMedia('(min-width:900px) and (min-height:560px)').matches ? 'home' : null; }
+function gadWant(spot){
+  if(!spot || /^0+$/.test(GAD_UNIT[spot])) return false;
+  if(GAD.active===spot) return true;                // the same screen: keep the host, only move it
+  if(GAD.pushedFor===spot) return false;            // already shown on this visit: a re-render never adds a second
+  if(spot==='home') return !GAD.homeUsed;           // the home's one ad for this page load
+  if(GAD_GAP.includes(spot)){ try{ return Date.now()-(+localStorage.getItem('gad_'+spot+'_last')||0) >= GAD_GAP_MS; }catch(e){ return false; } }
+  return true; }
+function gadDrop(){ if(GAD.io){ GAD.io.disconnect(); GAD.io=null; } if(GAD.host){ GAD.host.remove(); GAD.host=null; } GAD.active=null; GAD.fixed=false;
+  document.querySelectorAll('.gad-ph').forEach(e=>e.remove()); }
+function gadPlace(){ const ph=document.querySelector('.gad-ph'); if(!ph || !GAD.host) return;
+  const r=ph.getBoundingClientRect(), w=GAD_SIZE[GAD.active][0], x=r.left+(r.width-w)/2, y=r.top+18;
+  if(GAD.fixed){ GAD.host.style.left=x+'px'; GAD.host.style.top=y+'px';
+    const ov=ph.closest('.ov'); if(ov){ const o=ov.getBoundingClientRect(), hh=GAD_SIZE[GAD.active][1];   // clipped to its overlay, so it never shows over the header or past the foot
+      GAD.host.style.clipPath=`inset(${Math.max(0,o.top-y)}px ${Math.max(0,x+w-o.right)}px ${Math.max(0,y+hh-o.bottom)}px ${Math.max(0,o.left-x)}px)`; } }
+  else { GAD.host.style.left=(x+scrollX)+'px'; GAD.host.style.top=(y+scrollY)+'px'; } }
+// the 150px rule. A control counts where it is in the flow; a fixed bar counts where the page rests (the bottom of the
+// scroll); inside an overlay, everything is measured in the viewport, since that is all the player can see of it.
+function gadFits(){ if(!GAD.host) return false;
+  const h=GAD.host.getBoundingClientRect(), fx=GAD.fixed;
+  const a=fx?[h.left,h.top,h.right,h.bottom]:[h.left,h.top+scrollY,h.right,h.bottom+scrollY];
+  const maxS=Math.max(0,document.documentElement.scrollHeight-innerHeight);
+  const fixedIn=e=>{ for(let n=e;n&&n!==document.body;n=n.parentElement) if(getComputedStyle(n).position==='fixed') return true; return false; };
+  const far=b=>Math.hypot(Math.max(b[0]-a[2],a[0]-b[2],0), Math.max(b[1]-a[3],a[1]-b[3],0))>=150;
+  const ov=fx?(document.querySelector('.gad-ph')||{closest:()=>null}).closest('.ov'):null;
+  if(fx && !ov) return false;
+  return [...(ov||document).querySelectorAll('button,a,input,select,[role=button],.ft-door,.ft-tee,.ft-tag,.ft-sheet,.ft-tb,#rttnav,.spk-egg')]
+    .every(e=>{ if(e.closest('.gad-ph,.gad-host,[data-ad-zone="sticky"],[data-ad-zone="rail-x"]')) return true; const q=e.getBoundingClientRect(); if(!q.width||!q.height) return true;
+      if(fx) return far([q.left,q.top,q.right,q.bottom]);
+      return fixedIn(e) ? far([q.left,q.top+maxS,q.right,q.bottom+maxS]) : far([q.left,q.top+scrollY,q.right,q.bottom+scrollY]); }); }
+// place the host on its placeholder, then drop it if the page no longer leaves 150px around it, else push it once it is near
+function gadCheck(){ if(!GAD.host) return; gadPlace(); if(!gadFits()){ gadDrop(); return; }
+  if(GAD.io || GAD.pushedFor===GAD.active) return;   // pushed once for this screen: a re-render or a settle check never pushes again
+  const spot=GAD.active;
+  GAD.io=new IntersectionObserver(es=>{ if(!es.some(e=>e.isIntersecting)) return; GAD.io.disconnect(); GAD.io=null;
+    GAD.pushedFor=spot; if(spot==='home') GAD.homeUsed=true;
+    if(GAD_GAP.includes(spot)){ try{ localStorage.setItem('gad_'+spot+'_last', String(Date.now())); }catch(e){} }
+    try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} }, {rootMargin:'600px 0px'});
+  GAD.io.observe(GAD.host); }
+// called at the end of render(): the placeholder is rebuilt with the screen, the host stays put and only moves
+function gadMount(){
+  const spot=gadSpotOf();
+  if(!spot){ GAD.pushedFor=null; gadDrop(); return; }
+  if(!gadWant(spot)){ gadDrop(); return; }
+  gadStyleOnce();
+  const ovs=[...app.querySelectorAll('.ov')];
+  const holder=spot==='home'?(RT.querySelector('.ft-home')||RT):(GAD_OVERLAY.includes(spot)&&ovs.length?ovs[ovs.length-1]:RT);
+  if(GAD.active!==spot){
+    gadDrop(); GAD.active=spot; GAD.fixed=GAD_OVERLAY.includes(spot);
+    const [w,h]=GAD_SIZE[spot];
+    GAD.host=$(`<div class="gad-host"><ins class="adsbygoogle" style="display:inline-block;width:${w}px;height:${h}px" data-ad-client="ca-pub-5952069078178257" data-ad-slot="${GAD_UNIT[spot]}"></ins></div>`);
+    if(GAD.fixed) GAD.host.style.cssText='position:fixed;z-index:45;overflow:hidden';
+    document.body.appendChild(GAD.host);
+  }
+  holder.appendChild($(`<div class="gad-ph${spot==='home'?' gad-ph-home':''}" data-gad="${spot}"><span class="gad-l">Advertisement</span></div>`));
+  // the page settles after render (fonts, images, the footer), so the placement is checked when it has: then as it moves
+  setTimeout(gadCheck,400); setTimeout(gadCheck,1500);
+}
+if(!GAD.ro && window.ResizeObserver){ GAD.ro=new ResizeObserver(()=>{ try{ gadCheck(); }catch(e){} }); GAD.ro.observe(document.body); }
+window.addEventListener('resize',()=>{ try{ gadCheck(); }catch(e){} });
+window.addEventListener('scroll',()=>{ try{ if(GAD.fixed) gadCheck(); }catch(e){} },{capture:true,passive:true});
 function scrTitle(){
   if(!S.daily) restoreProfileIdentity();   // a Legend round swaps the look to the legend's; the home must show the player's own
   reconcileDailyAttempts();
@@ -15598,7 +15690,6 @@ function scrTitle(){
   // desktop: the seam leans toward the other side while you hover one
   root.querySelectorAll('.ft-door').forEach(d=>{ const on=()=>root.setAttribute('data-hov',d.getAttribute('data-side')), off=()=>root.removeAttribute('data-hov');
     d.addEventListener('mouseenter',on); d.addEventListener('mouseleave',off); d.addEventListener('focusin',on); d.addEventListener('focusout',off); });
-  const ad=ftAd('home'); if(ad){ root.appendChild(ad); root.classList.add('has-ad'); }
   if(S.ftSheetOpen && !desk){ const scrim=$(`<div class="ft-scrim"></div>`); scrim.onclick=()=>{ S.ftSheetOpen=false; render(); };
     const box=$(`<div class="ft-sheetbox" role="dialog" aria-label="Today's pin sheet"><div class="ft-grab"></div></div>`); box.appendChild(ftSheet(false));
     root.appendChild(scrim); root.appendChild(box); }
@@ -16008,6 +16099,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 @keyframes ftZoom{from{transform:scale(1.06);filter:brightness(.7)}}
 .ft-cards{display:grid;gap:10px;max-width:640px}
 .ft-cards .gcard,.ft-cards .resumecard{width:100%;max-width:none;margin:0;background:linear-gradient(180deg,rgba(56,84,58,.72),rgba(34,56,40,.82))!important;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--glt)!important;box-shadow:0 16px 36px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)!important;color:var(--cream)!important}
+.ft-cards .resumecard{border:2px solid #ffd86b!important;box-shadow:0 0 0 1px rgba(255,216,107,.35),0 0 26px rgba(255,216,107,.4),0 14px 30px -12px rgba(0,0,0,.6)!important}
 .ft-cards .gcard .gc-title,.ft-cards .gcard .gc-mid,.ft-cards .resumecard *{color:var(--cream)}
 .ft-cards .gcard .gc-kick{color:var(--gold)}
 .ft-cards .gc-go{background:var(--gold)!important;color:#2a1a00!important}
@@ -23140,7 +23232,7 @@ function puttReopen(){ if(_puttReopened) return; _puttReopened=true;
   try{ if(sessionStorage.getItem('ppt_open')!=='1' || S.overlay || !puttOn()) return; }catch(e){ return; }
   setTimeout(()=>{ try{ if(!document.querySelector('.pt-ov')) openPutt(); }catch(e){} }, 0); }
 try{ document.addEventListener('DOMContentLoaded',()=>setTimeout(puttReopen,6000),{once:true}); }catch(e){}   // no answer from the accounts in time
-function openPutt(o){ if(!puttOn()) return; try{ if(window.RTG_ADS){ RTG_ADS.dropSticky(); RTG_ADS.dropRails(); } }catch(e){} try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&(o.go||o.tour)?o:undefined); }
+function openPutt(o){ if(!puttOn()) return; gadDrop(); try{ if(window.RTG_ADS){ RTG_ADS.dropSticky(); RTG_ADS.dropRails(); } }catch(e){} try{ track('putt_open'); }catch(e){} try{ localStorage.setItem('bag_putt_seen','1'); }catch(e){} window.RTT_PUTT.open(puttHost(),o&&(o.go||o.tour)?o:undefined); }
 function openPuttDaily(){ openPutt({go:'daily'}); }
 // A LINK STRAIGHT INTO TODAY'S DAILY HOLE: /golf/?putt=daily (the home page's Putt Putt row). A visitor who is not signed
 // in plays it as a guest. If Putt Putt has not loaded, openPutt does nothing and the First Tee home stays, as with no link.

@@ -140,7 +140,7 @@
     },
     "golf-start": {
       "slot": "2904953136",
-      "status": "planned",
+      "status": "live",
       "where": [
         "golf/"
       ],
@@ -148,7 +148,7 @@
     },
     "golf-career-results": {
       "slot": "1895123791",
-      "status": "planned",
+      "status": "live",
       "where": [
         "golf/"
       ],
@@ -156,7 +156,31 @@
     },
     "golf-daily": {
       "slot": "3539377957",
-      "status": "planned",
+      "status": "live",
+      "where": [
+        "golf/"
+      ],
+      "size": "300x250"
+    },
+    "golf-shop": {
+      "slot": "4134274327",
+      "status": "live",
+      "where": [
+        "golf/"
+      ],
+      "size": "300x250"
+    },
+    "golf-closet": {
+      "slot": "7467014676",
+      "status": "live",
+      "where": [
+        "golf/"
+      ],
+      "size": "300x250"
+    },
+    "golf-profile": {
+      "slot": "4018724256",
+      "status": "live",
       "where": [
         "golf/"
       ],
