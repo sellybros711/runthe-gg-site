@@ -165,5 +165,92 @@ check('practice is never stored', mem[C.OUTING_KEY] === before && pr.mode === 'p
     && (made.k.pickoff.out || made.k.state.run.pickoff.left === C.STEAL.DISENGAGE - 1));
 }
 
+/* The board end to end (159_shut_the_door_boards.sql), against a stand-in server that keeps the
+   first post per (user, day) and answers the kept row, as the real one does. Today's daily:
+   a guest finishes, sees it pending, signs in and it posts once by itself; a second device signed
+   in replays the kept outing and posts nothing; a device that played before it could ask loses
+   the race and is told which outing counts; yesterday's unposted result is never pending today. */
+{
+  const server = { rows: {}, posts: 0 };
+  let user = null;
+  const listeners = [];
+  const auth = {
+    state: () => ({ ready: true, waiting: false, signedIn: !!user, userId: user }),
+    onChange: (f) => { listeners.push(f); return () => {}; },
+    submit: async (row) => {
+      server.posts++;
+      const k = user + '|' + row.day, taken = !server.rows[k];
+      if (taken) server.rows[k] = { day: row.day, scenarioId: row.scenarioId, calls: JSON.parse(JSON.stringify(row.calls)), score: row.score, outcome: row.outcome };
+      return { taken, streak: 1, best: 1, rank: 1, players: 1, keptScore: server.rows[k].score, keptOutcome: server.rows[k].outcome };
+    },
+    myDay: async (d) => (user && server.rows[user + '|' + d]) || null,
+  };
+  const signIn = (u) => { user = u; listeners.slice().forEach(f => f(auth.state())); };
+  const wipe = () => { for (const k of Object.keys(mem)) delete mem[k]; };
+  const playOut = async (a, id, cell) => {
+    let s = null, g = 0;
+    do { s = (await a.throwPitch(id, { type: types[0], cell })).state; } while (s.status === 'live' && g++ < 150);
+    return s;
+  };
+  const today = C.easternDay();
+  window.STD_AUTH = auth;
+  wipe();
+
+  // device A, signed out: play today's daily to the end
+  let A = freshApi();
+  let tsc = await A.getScenario(today);
+  const tTypes = tsc.pitcher.arsenal.map(x => x.type);
+  types.length = 0; types.push(...tTypes);
+  let o = await A.startOuting(tsc.id, null, { mode: 'daily' });
+  await playOut(A, o.outingId, 18);
+  const ra = await A.finishOuting(o.outingId);
+  const pend = A.pending();
+  check('signed out: the finished daily is pending, with its score, for the sign-in prompt',
+    !!pend && pend.day === today && pend.score === ra.score && pend.outcome === ra.outcome && server.posts === 0);
+  check('signed out: claim answers null and posts nothing', (await A.claim()) === null && server.posts === 0);
+
+  // signing in posts it by itself, once
+  signIn('u1');
+  for (let i = 0; i < 20 && A.pending(); i++) await new Promise(r => setTimeout(r, 5));
+  check('a sign-in posts the pending daily by itself', server.posts === 1 && !!server.rows['u1|' + today] && A.pending() === null);
+  const again2 = await A.claim();
+  check('claim after that posts nothing more', again2 && again2.posted === false && server.posts === 1);
+  const rb = await A.finishOuting(o.outingId);
+  check('the result now carries the account, taken', rb.account && rb.account.taken === true && rb.score === ra.score);
+
+  // device B, same account, nothing stored: it replays the kept outing and posts nothing
+  wipe();
+  let B = freshApi();
+  await B.getScenario(today);
+  const ob = await B.startOuting(tsc.id, null, { mode: 'daily' });
+  check('a second device signed in opens on the kept outing, over, from the account',
+    ob.status === 'over' && ob.fromAccount === true && ob.pitchNo === server.rows['u1|' + today].calls.length);
+  const rbb = await B.finishOuting(ob.outingId);
+  check('and shows the same result, with nothing posted again', rbb.score === ra.score && rbb.outcome === ra.outcome && server.posts === 1);
+
+  // device C, same account, played before it could ask (the account did not answer): told which counts
+  wipe();
+  const myDay = auth.myDay;
+  auth.myDay = async () => null;
+  let Cc = freshApi();
+  await Cc.getScenario(today);
+  const oc = await Cc.startOuting(tsc.id, null, { mode: 'daily' });
+  await playOut(Cc, oc.outingId, 6);
+  const rc = await Cc.finishOuting(oc.outingId);
+  auth.myDay = myDay;
+  check('a device that loses the race is told: taken false, and the score that counts',
+    rc.account && rc.account.taken === false && rc.account.keptScore === ra.score && server.posts === 2);
+
+  // the day boundary: yesterday's unposted result is never pending today
+  wipe();
+  user = null;
+  const yday = new Date(Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10)) - 86400000).toISOString().slice(0, 10);
+  mem[C.OUTING_KEY] = JSON.stringify({ v: 1, day: yday, scenarioId: tsc.id, calls: [], result: { score: 500, outcome: 'door_shut', pitches: 9 }, submitted: false });
+  const D = freshApi();
+  check('yesterday\'s unposted result is not pending today', D.pending() === null);
+  signIn('u2');
+  check('and a sign-in does not post it', (await D.claim()).posted === false && server.posts === 2);
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);
