@@ -41,7 +41,10 @@ function check(name, cond, detail) {
 /* Release and spin (pipeline/tracking.py, CONTRACT.md 4): for the picture only. A proxy spot is null
    throughout. A tracked pitcher has his release side by his hand (catcher's view: a righty's hand is
    on the third base side, x < 0), a sane height and extension, and on Statcast every pitch type has
-   a spin rate of 1,000 to 3,500 rpm and an axis of 0 to 360. PITCHf/x carries x and z only. */
+   a spin rate of 1,000 to 3,500 rpm and an axis of 0 to 360. PITCHf/x carries x and z only.
+   Two gaps in the source stay null: Savant carries no spin axis in 2015 (none of 4,202 pitches on
+   2015-07-01, 4,055 of them with a spin rate), and a PITCHf/x pitch whose mean release is on the
+   wrong side for his hand has none (pipeline/tracking.py; the picture uses his overall release). */
 const inR = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
 function releaseErrs(r, hand, where, statcast) {
   if (!r) return [where + ' has no release'];
@@ -68,13 +71,13 @@ function trackingErrs(sc) {
   const armOk = (v) => (statcast && t.season >= 2020 ? inR(v, -30, 90) : v === null);
   if (!armOk(p.armAngle)) errs.push('pitcher arm angle ' + p.armAngle);
   for (const a of p.arsenal) {
-    errs.push(...releaseErrs(a.release, p.throws, a.type, statcast));
+    if (!(a.release === null && !statcast)) errs.push(...releaseErrs(a.release, p.throws, a.type, statcast));
     if (!armOk(a.armAngle)) errs.push(a.type + ' arm angle ' + a.armAngle);
     const s = a.spin;
     if (!statcast) { if (s !== null) errs.push(a.type + ' spin before Statcast'); continue; }
     if (!s) { errs.push(a.type + ' has no spin'); continue; }
     if (!inR(s.rate, 1000, 3500) || !Number.isInteger(s.rate)) errs.push(`${a.type} spin rate ${s.rate}`);
-    if (!inR(s.axis, 0, 360)) errs.push(`${a.type} spin axis ${s.axis}`);
+    if (!(s.axis === null && t.season === 2015) && !inR(s.axis, 0, 360)) errs.push(`${a.type} spin axis ${s.axis}`);
     if (s.active !== null && !inR(s.active, 0, 100)) errs.push(`${a.type} active spin ${s.active}`);
     if (s.active !== null && !t.active) errs.push(a.type + ' active spin without a source');
   }

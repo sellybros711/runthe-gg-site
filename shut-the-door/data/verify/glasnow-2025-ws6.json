@@ -1,0 +1,220 @@
+{
+ "id": "glasnow-2025-ws6",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 813025,
+ "date": "2025-10-31",
+ "game": "World Series Game 6: Los Angeles Dodgers at Toronto Blue Jays",
+ "gameType": "W",
+ "pitcher": {
+  "id": 607192,
+  "name": "Tyler Glasnow",
+  "throws": "R",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "3.19 ERA, 0 SV, 90.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 6,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 70,
+   "batterId": 676391,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "607192": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Ernie Clement pops out to first baseman Freddie Freeman.",
+   "feedEvent": "field_out",
+   "feedDescription": "Ernie Clement pops out to first baseman Freddie Freeman.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Ernie Clement",
+   "batSideListed": "R",
+   "seasonLine": ".277/.313/.398, 9 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 665926,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "607192": 2
+   },
+   "pitches": 2,
+   "event": "double_play",
+   "des": "Blue Jays challenged (force play), call on the field was upheld: Andrés Giménez lines into a double play, left fielder Enrique Hernández to second baseman Miguel Rojas. Addison Barger out at 2nd.",
+   "feedEvent": "double_play",
+   "feedDescription": "Blue Jays challenged (force play), call on the field was upheld: Andrés Giménez lines into a double play, left fielder Enrique Hernández to second baseman Miguel Rojas. Addison Barger out at 2nd.",
+   "runs": 0,
+   "outs": 2,
+   "inSpot": true,
+   "name": "Andrés Giménez",
+   "batSideListed": "L",
+   "seasonLine": ".210/.285/.313, 7 HR"
+  }
+ ],
+ "realFaced": 2,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 3,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 543807,
+   "name": "George Springer",
+   "batSideListed": "R"
+  },
+  {
+   "id": 664770,
+   "name": "Nathan Lukes",
+   "batSideListed": "L"
+  },
+  {
+   "id": 665489,
+   "name": "Vladimir Guerrero Jr.",
+   "batSideListed": "R"
+  },
+  {
+   "id": 666182,
+   "name": "Bo Bichette",
+   "batSideListed": "R"
+  },
+  {
+   "id": 662139,
+   "name": "Daulton Varsho",
+   "batSideListed": "L"
+  },
+  {
+   "id": 664702,
+   "name": "Myles Straw",
+   "batSideListed": "R"
+  },
+  {
+   "id": 680718,
+   "name": "Addison Barger",
+   "batSideListed": "L"
+  },
+  {
+   "id": 676391,
+   "name": "Ernie Clement",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665926,
+   "name": "Andrés Giménez",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1480,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 537,
+     "usage": 0.3628,
+     "velo": 95.7,
+     "pfxXin": -1.4,
+     "pfxZin": 16.4
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 327,
+     "usage": 0.2209,
+     "velo": 89.3,
+     "pfxXin": 3.1,
+     "pfxZin": -0.1
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 324,
+     "usage": 0.2189,
+     "velo": 82.0,
+     "pfxXin": 4.8,
+     "pfxZin": -16.0
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 292,
+     "usage": 0.1973,
+     "velo": 96.0,
+     "pfxXin": -10.8,
+     "pfxZin": 13.9
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=607192"
+  },
+  "postseason": {
+   "pitches": 342,
+   "types": [
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 92,
+     "usage": 0.269,
+     "velo": 96.7,
+     "pfxXin": -10.6,
+     "pfxZin": 14.5
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 91,
+     "usage": 0.2661,
+     "velo": 81.9,
+     "pfxXin": 6.8,
+     "pfxZin": -15.9
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 88,
+     "usage": 0.2573,
+     "velo": 96.5,
+     "pfxXin": -0.7,
+     "pfxZin": 16.0
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 71,
+     "usage": 0.2076,
+     "velo": 90.1,
+     "pfxXin": 3.0,
+     "pfxZin": -0.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=607192"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 813025: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=813025",
+  "MLB Stats API schedule 2025-10-31 and live feed /api/v1.1/game/813025/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 607192 2025 season search (regular season and postseason) for the arsenal"
+ ]
+}

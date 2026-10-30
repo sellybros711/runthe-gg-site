@@ -248,7 +248,6 @@ def arsenal(ids):
             rows[a['type']] = b
             log(pid, a['type'], a['velo'], json.dumps(b))
         out['packs'][pid] = {'source': url or 'none: no tracked pitches (public reporting)', 'arsenal': rows}
-    out['packs'] = dict(sorted(out['packs'].items()))
     json.dump(out, open(path, 'w'), indent=1)
 
 

@@ -24,6 +24,10 @@
   {"id": "sewald-2023-nlcs7", "plan": "30", "date": "2023-10-24", "gameType": "L", "pitcher": "Sewald"},
   {"id": "familia-2015-ws1", "plan": "30", "date": "2015-10-27", "gameType": "W", "pitcher": "Familia", "inning": 9},
   {"id": "sewald-2023-ws1", "plan": "30", "date": "2023-10-27", "gameType": "W", "pitcher": "Sewald", "inning": 9},
+  {"id": "kershaw-2016-nlds5", "plan": "30", "date": "2016-10-13", "gameType": "D", "pitcher": "Kershaw", "inning": 9},
+  {"id": "vesia-2024-ws2", "plan": "30", "date": "2024-10-26", "gameType": "W", "pitcher": "Vesia", "inning": 9},
+  {"id": "glasnow-2025-ws6", "plan": "30", "date": "2025-10-31", "gameType": "W", "pitcher": "Glasnow", "inning": 9},
+  {"id": "kelly-2020-nlds2", "plan": "30", "date": "2020-10-07", "gameType": "D", "pitcher": "Joe Kelly", "inning": 9},
   {"id": "hoffman-2025-alcs7", "plan": "30", "date": "2025-10-20", "gameType": "L", "pitcher": "Jeff Hoffman"}
  ],
  "proxy": [

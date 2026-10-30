@@ -1745,6 +1745,2454 @@
     }
    },
    "start": {}
+  },
+  "std-2017-ws2-jansen": {
+   "season": 2017,
+   "era": "2022",
+   "gamePk": 526512,
+   "eraAtt": 1.009,
+   "eraZ": -0.074,
+   "league": {
+    "sb": 2527,
+    "cs": 934,
+    "sbPct": 0.7301,
+    "attRate": 0.0778
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 445276,
+    "att": 1.43,
+    "z": 0.325,
+    "sb": 11,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 605131,
+    "name": "Austin Barnes",
+    "z": 0.083,
+    "sb": 24,
+    "cs": 7,
+    "pop": 2.01
+   },
+   "runners": {
+    "503556": {
+     "name": "Marwin Gonzalez",
+     "att": 0.855,
+     "z": -0.033,
+     "sb": 8,
+     "cs": 3,
+     "firstBase": 136,
+     "speed": 26.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "502210": {
+     "name": "Josh Reddick",
+     "att": 1.142,
+     "z": 0.005,
+     "sb": 7,
+     "cs": 3,
+     "firstBase": 142,
+     "speed": 27.8,
+     "src": "SB, CS and sprint speed"
+    },
+    "136860": {
+     "name": "Carlos Beltrán",
+     "att": 0.297,
+     "z": -0.176,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 101,
+     "speed": 25.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "543807": {
+     "name": "George Springer",
+     "att": 1.189,
+     "z": -0.289,
+     "sb": 5,
+     "cs": 7,
+     "firstBase": 167,
+     "speed": 28.0,
+     "src": "SB, CS and sprint speed"
+    },
+    "608324": {
+     "name": "Alex Bregman",
+     "att": 1.521,
+     "z": 0.087,
+     "sb": 17,
+     "cs": 5,
+     "firstBase": 157,
+     "speed": 27.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "514888": {
+     "name": "Jose Altuve",
+     "att": 2.238,
+     "z": 0.285,
+     "sb": 32,
+     "cs": 6,
+     "firstBase": 204,
+     "speed": 28.4,
+     "src": "SB, CS and sprint speed"
+    },
+    "621043": {
+     "name": "Carlos Correa",
+     "att": 0.811,
+     "z": 0.014,
+     "sb": 2,
+     "cs": 1,
+     "firstBase": 138,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "493329": {
+     "name": "Yuli Gurriel",
+     "att": 0.727,
+     "z": -0.099,
+     "sb": 3,
+     "cs": 2,
+     "firstBase": 125,
+     "speed": 26.9,
+     "src": "SB, CS and sprint speed"
+    },
+    "435263": {
+     "name": "Brian McCann",
+     "att": 0.091,
+     "z": -0.355,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 98,
+     "speed": 22.8,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {}
+  },
+  "std-2010-hoffman-stl": {
+   "season": 2010,
+   "era": "2022",
+   "gamePk": 265883,
+   "eraAtt": 1.155,
+   "eraZ": -0.093,
+   "league": {
+    "sb": 2959,
+    "cs": 1129,
+    "sbPct": 0.7238,
+    "attRate": 0.089
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 116034,
+    "att": 0.846,
+    "z": 0.04,
+    "sb": 1,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 518960,
+    "name": "Jonathan Lucroy",
+    "z": -0.082,
+    "sb": 37,
+    "cs": 17,
+    "pop": null
+   },
+   "runners": {
+    "458675": {
+     "name": "Colby Rasmus",
+     "att": 1.283,
+     "z": -0.177,
+     "sb": 12,
+     "cs": 8,
+     "firstBase": 138,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "133160": {
+     "name": "Randy Winn",
+     "att": 1.046,
+     "z": 0.204,
+     "sb": 6,
+     "cs": 0,
+     "firstBase": 57,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "425446": {
+     "name": "Aaron Miles",
+     "att": 0.858,
+     "z": -0.1,
+     "sb": 0,
+     "cs": 1,
+     "firstBase": 41,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "458036": {
+     "name": "Nick Stavinoha",
+     "att": 0.849,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 30,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "150479": {
+     "name": "Felipe López",
+     "att": 1.012,
+     "z": 0.078,
+     "sb": 8,
+     "cs": 2,
+     "firstBase": 109,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "445055": {
+     "name": "Jon Jay",
+     "att": 0.92,
+     "z": -0.253,
+     "sb": 2,
+     "cs": 4,
+     "firstBase": 88,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "405395": {
+     "name": "Albert Pujols",
+     "att": 0.985,
+     "z": 0.078,
+     "sb": 14,
+     "cs": 4,
+     "firstBase": 208,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "407812": {
+     "name": "Matt Holliday",
+     "att": 0.911,
+     "z": -0.097,
+     "sb": 9,
+     "cs": 5,
+     "firstBase": 189,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "425877": {
+     "name": "Yadier Molina",
+     "att": 0.964,
+     "z": -0.063,
+     "sb": 8,
+     "cs": 4,
+     "firstBase": 146,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {}
+  },
+  "std-2021-nlcs6-smith": {
+   "season": 2021,
+   "era": "2022",
+   "gamePk": 660921,
+   "eraAtt": 0.884,
+   "eraZ": 0.009,
+   "league": {
+    "sb": 2213,
+    "cs": 711,
+    "sbPct": 0.7568,
+    "attRate": 0.0681
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 519293,
+    "att": 0.853,
+    "z": 0.037,
+    "sb": 1,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 518595,
+    "name": "Travis d'Arnaud",
+    "z": 0.169,
+    "sb": 26,
+    "cs": 5,
+    "pop": 2.03
+   },
+   "runners": {
+    "621035": {
+     "name": "Chris Taylor",
+     "att": 1.751,
+     "z": 0.354,
+     "sb": 13,
+     "cs": 1,
+     "firstBase": 151,
+     "speed": 28.8,
+     "src": "SB, CS and sprint speed"
+    },
+    "641355": {
+     "name": "Cody Bellinger",
+     "att": 1.355,
+     "z": 0.057,
+     "sb": 3,
+     "cs": 1,
+     "firstBase": 63,
+     "speed": 28.0,
+     "src": "SB, CS and sprint speed"
+    },
+    "572041": {
+     "name": "AJ Pollock",
+     "att": 1.362,
+     "z": 0.196,
+     "sb": 9,
+     "cs": 1,
+     "firstBase": 101,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "405395": {
+     "name": "Albert Pujols",
+     "att": 0.084,
+     "z": -0.339,
+     "sb": 2,
+     "cs": 0,
+     "firstBase": 64,
+     "speed": 22.5,
+     "src": "SB, CS and sprint speed"
+    },
+    "519306": {
+     "name": "Steven Souza Jr.",
+     "att": 0.973,
+     "z": -0.001,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 5,
+     "speed": 27.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "605141": {
+     "name": "Mookie Betts",
+     "att": 1.195,
+     "z": -0.119,
+     "sb": 10,
+     "cs": 5,
+     "firstBase": 147,
+     "speed": 27.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "608369": {
+     "name": "Corey Seager",
+     "att": 0.561,
+     "z": -0.13,
+     "sb": 1,
+     "cs": 1,
+     "firstBase": 120,
+     "speed": 26.5,
+     "src": "SB, CS and sprint speed"
+    },
+    "607208": {
+     "name": "Trea Turner",
+     "att": 3.611,
+     "z": 0.372,
+     "sb": 32,
+     "cs": 5,
+     "firstBase": 177,
+     "speed": 30.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "669257": {
+     "name": "Will Smith",
+     "att": 0.865,
+     "z": 0.148,
+     "sb": 3,
+     "cs": 0,
+     "firstBase": 137,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {}
+  },
+  "std-2005-nlcs5-lidge": {
+   "season": 2005,
+   "era": "2022",
+   "gamePk": 39809,
+   "eraAtt": 1.02,
+   "eraZ": -0.146,
+   "league": {
+    "sb": 2565,
+    "cs": 1069,
+    "sbPct": 0.7058,
+    "attRate": 0.0786
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 400058,
+    "att": 1.081,
+    "z": 0.006,
+    "sb": 5,
+    "cs": 2,
+    "pickoffs": 1
+   },
+   "catcher": {
+    "id": 110385,
+    "name": "Brad Ausmus",
+    "z": -0.046,
+    "sb": 39,
+    "cs": 18,
+    "pop": null
+   },
+   "runners": {
+    "retro:rodrj002": {
+     "name": "John Rodriguez",
+     "att": 0.88,
+     "z": 0.079,
+     "sb": 2,
+     "cs": 0,
+     "firstBase": 55,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "retro:mabrj001": {
+     "name": "John Mabry",
+     "att": 0.776,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 55,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "retro:ecksd001": {
+     "name": "David Eckstein",
+     "att": 1.066,
+     "z": -0.172,
+     "sb": 11,
+     "cs": 8,
+     "firstBase": 215,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "retro:edmoj001": {
+     "name": "Jim Edmonds",
+     "att": 0.93,
+     "z": -0.19,
+     "sb": 5,
+     "cs": 5,
+     "firstBase": 151,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "retro:pujoa001": {
+     "name": "Albert Pujols",
+     "att": 1.022,
+     "z": 0.274,
+     "sb": 16,
+     "cs": 2,
+     "firstBase": 220,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "retro:sandr002": {
+     "name": "Reggie Sanders",
+     "att": 1.436,
+     "z": 0.312,
+     "sb": 14,
+     "cs": 1,
+     "firstBase": 75,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "retro:walkl001": {
+     "name": "Larry Walker",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    },
+    "retro:grudm001": {
+     "name": "Mark Grudzielanek",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    },
+    "retro:moliy001": {
+     "name": "Yadier Molina",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    }
+   },
+   "start": {}
+  },
+  "std-2018-alcs4-kimbrel": {
+   "season": 2018,
+   "era": "2022",
+   "gamePk": 563396,
+   "eraAtt": 1.014,
+   "eraZ": -0.102,
+   "league": {
+    "sb": 2474,
+    "cs": 958,
+    "sbPct": 0.7209,
+    "attRate": 0.0781
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 518886,
+    "att": 1.022,
+    "z": 0.145,
+    "sb": 4,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 506702,
+    "name": "Sandy León",
+    "z": 0.042,
+    "sb": 26,
+    "cs": 9,
+    "pop": 1.97
+   },
+   "runners": {
+    "493329": {
+     "name": "Yuli Gurriel",
+     "att": 0.917,
+     "z": 0.108,
+     "sb": 5,
+     "cs": 1,
+     "firstBase": 138,
+     "speed": 27.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "502210": {
+     "name": "Josh Reddick",
+     "att": 1.143,
+     "z": 0.085,
+     "sb": 7,
+     "cs": 2,
+     "firstBase": 122,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "621043": {
+     "name": "Carlos Correa",
+     "att": 0.907,
+     "z": 0.163,
+     "sb": 3,
+     "cs": 0,
+     "firstBase": 115,
+     "speed": 27.8,
+     "src": "SB, CS and sprint speed"
+    },
+    "435263": {
+     "name": "Brian McCann",
+     "att": 0.088,
+     "z": -0.484,
+     "sb": 0,
+     "cs": 1,
+     "firstBase": 55,
+     "speed": 22.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "643393": {
+     "name": "Tony Kemp",
+     "att": 1.464,
+     "z": 0.056,
+     "sb": 9,
+     "cs": 3,
+     "firstBase": 81,
+     "speed": 27.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "608324": {
+     "name": "Alex Bregman",
+     "att": 1.111,
+     "z": 0.024,
+     "sb": 10,
+     "cs": 4,
+     "firstBase": 195,
+     "speed": 27.8,
+     "src": "SB, CS and sprint speed"
+    },
+    "543807": {
+     "name": "George Springer",
+     "att": 1.026,
+     "z": -0.088,
+     "sb": 6,
+     "cs": 4,
+     "firstBase": 165,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "514888": {
+     "name": "Jose Altuve",
+     "att": 1.516,
+     "z": 0.185,
+     "sb": 17,
+     "cs": 4,
+     "firstBase": 186,
+     "speed": 28.1,
+     "src": "SB, CS and sprint speed"
+    },
+    "503556": {
+     "name": "Marwin Gonzalez",
+     "att": 0.592,
+     "z": -0.237,
+     "sb": 2,
+     "cs": 3,
+     "firstBase": 133,
+     "speed": 26.4,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {}
+  },
+  "std-2012-ws4-romo": {
+   "season": 2012,
+   "era": "2022",
+   "gamePk": 345633,
+   "eraAtt": 1.283,
+   "eraZ": -0.045,
+   "league": {
+    "sb": 3229,
+    "cs": 1136,
+    "sbPct": 0.7397,
+    "attRate": 0.0989
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 489265,
+    "att": 1.273,
+    "z": 0.15,
+    "sb": 8,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 457763,
+    "name": "Buster Posey",
+    "z": -0.112,
+    "sb": 87,
+    "cs": 38,
+    "pop": null
+   },
+   "runners": {
+    "457706": {
+     "name": "Austin Jackson",
+     "att": 1.108,
+     "z": -0.248,
+     "sb": 12,
+     "cs": 9,
+     "firstBase": 177,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "430603": {
+     "name": "Don Kelly",
+     "att": 0.941,
+     "z": 0.075,
+     "sb": 2,
+     "cs": 0,
+     "firstBase": 31,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "408234": {
+     "name": "Miguel Cabrera",
+     "att": 0.592,
+     "z": 0.038,
+     "sb": 4,
+     "cs": 1,
+     "firstBase": 190,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "425902": {
+     "name": "Prince Fielder",
+     "att": 0.435,
+     "z": 0.039,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 220,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "430321": {
+     "name": "Delmon Young",
+     "att": 0.602,
+     "z": -0.196,
+     "sb": 0,
+     "cs": 2,
+     "firstBase": 134,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "543108": {
+     "name": "Andy Dirks",
+     "att": 0.697,
+     "z": -0.066,
+     "sb": 1,
+     "cs": 1,
+     "firstBase": 95,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "425509": {
+     "name": "Jhonny Peralta",
+     "att": 0.646,
+     "z": -0.156,
+     "sb": 1,
+     "cs": 2,
+     "firstBase": 130,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "408299": {
+     "name": "Omar Infante",
+     "att": 1.279,
+     "z": 0.181,
+     "sb": 17,
+     "cs": 3,
+     "firstBase": 125,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "408042": {
+     "name": "Gerald Laird",
+     "att": 0.741,
+     "z": -0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 53,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {}
+  },
+  "std-2023-williams-sd": {
+   "season": 2023,
+   "era": "2024",
+   "gamePk": 718549,
+   "eraAtt": 0.93,
+   "eraZ": 0.041,
+   "league": {
+    "sb": 3503,
+    "cs": 866,
+    "sbPct": 0.8018,
+    "attRate": 0.0994
+   },
+   "bigBases": true,
+   "pitcher": {
+    "id": 642207,
+    "att": 1.335,
+    "z": 0.146,
+    "sb": 10,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 661388,
+    "name": "William Contreras",
+    "z": 0.08,
+    "sb": 77,
+    "cs": 16,
+    "pop": 1.95
+   },
+   "runners": {
+    "665742": {
+     "name": "Juan Soto",
+     "att": 0.75,
+     "z": -0.156,
+     "sb": 12,
+     "cs": 5,
+     "firstBase": 222,
+     "speed": 26.8,
+     "src": "SB, CS and sprint speed"
+    },
+    "443558": {
+     "name": "Nelson Cruz",
+     "att": 0.206,
+     "z": -0.032,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 32,
+     "speed": 24.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "630105": {
+     "name": "Jake Cronenworth",
+     "att": 1.086,
+     "z": 0.072,
+     "sb": 6,
+     "cs": 1,
+     "firstBase": 121,
+     "speed": 28.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "673490": {
+     "name": "Ha-Seong Kim",
+     "att": 2.482,
+     "z": 0.026,
+     "sb": 38,
+     "cs": 9,
+     "firstBase": 178,
+     "speed": 28.5,
+     "src": "SB, CS and sprint speed"
+    },
+    "543592": {
+     "name": "Austin Nola",
+     "att": 0.451,
+     "z": -0.029,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 35,
+     "speed": 26.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "663757": {
+     "name": "Trent Grisham",
+     "att": 1.341,
+     "z": 0.06,
+     "sb": 15,
+     "cs": 3,
+     "firstBase": 128,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "572761": {
+     "name": "Matt Carpenter",
+     "att": 0.278,
+     "z": -0.017,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 59,
+     "speed": 25.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "593428": {
+     "name": "Xander Bogaerts",
+     "att": 1.175,
+     "z": 0.212,
+     "sb": 19,
+     "cs": 2,
+     "firstBase": 181,
+     "speed": 27.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "592518": {
+     "name": "Manny Machado",
+     "att": 0.476,
+     "z": -0.156,
+     "sb": 3,
+     "cs": 2,
+     "firstBase": 141,
+     "speed": 26.3,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {}
+  },
+  "std-2008-ws5-lidge": {
+   "season": 2008,
+   "era": "2022",
+   "gamePk": 243847,
+   "eraAtt": 1.054,
+   "eraZ": -0.074,
+   "league": {
+    "sb": 2799,
+    "cs": 1035,
+    "sbPct": 0.73,
+    "attRate": 0.0812
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 400058,
+    "att": 1.147,
+    "z": 0.157,
+    "sb": 8,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 434563,
+    "name": "Carlos Ruiz",
+    "z": 0.087,
+    "sb": 65,
+    "cs": 20,
+    "pop": null
+   },
+   "runners": {
+    "446334": {
+     "name": "Evan Longoria",
+     "att": 0.907,
+     "z": 0.229,
+     "sb": 7,
+     "cs": 0,
+     "firstBase": 114,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "425900": {
+     "name": "Dioner Navarro",
+     "att": 0.746,
+     "z": -0.338,
+     "sb": 0,
+     "cs": 4,
+     "firstBase": 129,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "450314": {
+     "name": "Ben Zobrist",
+     "att": 0.932,
+     "z": 0.11,
+     "sb": 3,
+     "cs": 0,
+     "firstBase": 53,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "400134": {
+     "name": "Eric Hinske",
+     "att": 1.203,
+     "z": 0.047,
+     "sb": 10,
+     "cs": 3,
+     "firstBase": 102,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "434442": {
+     "name": "J.P. Howell",
+     "att": 1.0,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 0,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "493127": {
+     "name": "Akinori Iwamura",
+     "att": 0.926,
+     "z": -0.188,
+     "sb": 8,
+     "cs": 6,
+     "firstBase": 201,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "408307": {
+     "name": "Carl Crawford",
+     "att": 1.881,
+     "z": 0.098,
+     "sb": 25,
+     "cs": 7,
+     "firstBase": 123,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "425834": {
+     "name": "B.J. Upton",
+     "att": 2.426,
+     "z": 0.007,
+     "sb": 44,
+     "cs": 16,
+     "firstBase": 196,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "150289": {
+     "name": "Carlos Pena",
+     "att": 0.587,
+     "z": -0.062,
+     "sb": 1,
+     "cs": 1,
+     "firstBase": 172,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {}
+  },
+  "std-2020-nlds2-kelly": {
+   "season": 2020,
+   "era": "2022",
+   "gamePk": 635933,
+   "eraAtt": 0.955,
+   "eraZ": -0.007,
+   "league": {
+    "sb": 885,
+    "cs": 292,
+    "sbPct": 0.7519,
+    "attRate": 0.0736
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 523260,
+    "att": 1.007,
+    "z": -0.109,
+    "sb": 0,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 605131,
+    "name": "Austin Barnes",
+    "z": 0.016,
+    "sb": 16,
+    "cs": 5,
+    "pop": 2.05
+   },
+   "runners": {
+    "665487": {
+     "name": "Fernando Tatis Jr.",
+     "att": 3.057,
+     "z": 0.158,
+     "sb": 11,
+     "cs": 3,
+     "firstBase": 64,
+     "speed": 29.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "592518": {
+     "name": "Manny Machado",
+     "att": 0.852,
+     "z": -0.131,
+     "sb": 6,
+     "cs": 3,
+     "firstBase": 65,
+     "speed": 26.4,
+     "src": "SB, CS and sprint speed"
+    },
+    "543333": {
+     "name": "Eric Hosmer",
+     "att": 0.488,
+     "z": 0.001,
+     "sb": 4,
+     "cs": 0,
+     "firstBase": 37,
+     "speed": 25.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "502054": {
+     "name": "Tommy Pham",
+     "att": 1.871,
+     "z": 0.276,
+     "sb": 6,
+     "cs": 0,
+     "firstBase": 34,
+     "speed": 28.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "571976": {
+     "name": "Wil Myers",
+     "att": 1.487,
+     "z": 0.042,
+     "sb": 2,
+     "cs": 1,
+     "firstBase": 46,
+     "speed": 28.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "630105": {
+     "name": "Jake Cronenworth",
+     "att": 1.897,
+     "z": 0.112,
+     "sb": 3,
+     "cs": 1,
+     "firstBase": 46,
+     "speed": 28.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "519048": {
+     "name": "Mitch Moreland",
+     "att": 0.186,
+     "z": -0.277,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 33,
+     "speed": 24.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "543592": {
+     "name": "Austin Nola",
+     "att": 0.557,
+     "z": -0.075,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 48,
+     "speed": 26.4,
+     "src": "SB, CS and sprint speed"
+    },
+    "663757": {
+     "name": "Trent Grisham",
+     "att": 2.534,
+     "z": 0.318,
+     "sb": 10,
+     "cs": 1,
+     "firstBase": 67,
+     "speed": 29.1,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {
+    "1": 663757
+   }
+  },
+  "std-2013-alcs6-uehara": {
+   "season": 2013,
+   "era": "2022",
+   "gamePk": 379727,
+   "eraAtt": 1.076,
+   "eraZ": -0.081,
+   "league": {
+    "sb": 2693,
+    "cs": 1007,
+    "sbPct": 0.7278,
+    "attRate": 0.0829
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 493157,
+    "att": 0.986,
+    "z": -0.061,
+    "sb": 1,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 457454,
+    "name": "Jarrod Saltalamacchia",
+    "z": 0.161,
+    "sb": 89,
+    "cs": 24,
+    "pop": null
+   },
+   "runners": {
+    "488671": {
+     "name": "Alex Avila",
+     "att": 0.658,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 94,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "408299": {
+     "name": "Omar Infante",
+     "att": 0.862,
+     "z": -0.011,
+     "sb": 5,
+     "cs": 2,
+     "firstBase": 127,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "457706": {
+     "name": "Austin Jackson",
+     "att": 0.964,
+     "z": -0.068,
+     "sb": 8,
+     "cs": 4,
+     "firstBase": 157,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "578428": {
+     "name": "Jose Iglesias",
+     "att": 0.909,
+     "z": -0.011,
+     "sb": 5,
+     "cs": 2,
+     "firstBase": 111,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "116338": {
+     "name": "Torii Hunter",
+     "att": 0.712,
+     "z": -0.075,
+     "sb": 3,
+     "cs": 2,
+     "firstBase": 158,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "408234": {
+     "name": "Miguel Cabrera",
+     "att": 0.546,
+     "z": 0.111,
+     "sb": 3,
+     "cs": 0,
+     "firstBase": 217,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "425902": {
+     "name": "Prince Fielder",
+     "att": 0.542,
+     "z": -0.061,
+     "sb": 1,
+     "cs": 1,
+     "firstBase": 197,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "400121": {
+     "name": "Victor Martinez",
+     "att": 0.557,
+     "z": -0.189,
+     "sb": 0,
+     "cs": 2,
+     "firstBase": 187,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "430603": {
+     "name": "Don Kelly",
+     "att": 0.837,
+     "z": 0.076,
+     "sb": 2,
+     "cs": 0,
+     "firstBase": 64,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {}
+  },
+  "std-2023-ws1-sewald": {
+   "season": 2023,
+   "era": "2024",
+   "gamePk": 748542,
+   "eraAtt": 0.93,
+   "eraZ": 0.041,
+   "league": {
+    "sb": 3503,
+    "cs": 866,
+    "sbPct": 0.8018,
+    "attRate": 0.0994
+   },
+   "bigBases": true,
+   "pitcher": {
+    "id": 623149,
+    "att": 1.075,
+    "z": 0.202,
+    "sb": 7,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 672515,
+    "name": "Gabriel Moreno",
+    "z": -0.428,
+    "sb": 35,
+    "cs": 22,
+    "pop": 1.9
+   },
+   "runners": {
+    "665750": {
+     "name": "Leody Taveras",
+     "att": 1.9,
+     "z": -0.017,
+     "sb": 14,
+     "cs": 4,
+     "firstBase": 124,
+     "speed": 29.1,
+     "src": "SB, CS and sprint speed"
+    },
+    "543760": {
+     "name": "Marcus Semien",
+     "att": 1.268,
+     "z": 0.056,
+     "sb": 14,
+     "cs": 3,
+     "firstBase": 189,
+     "speed": 28.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "608369": {
+     "name": "Corey Seager",
+     "att": 0.418,
+     "z": -0.086,
+     "sb": 2,
+     "cs": 1,
+     "firstBase": 134,
+     "speed": 26.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "694497": {
+     "name": "Evan Carter",
+     "att": 3.101,
+     "z": 0.153,
+     "sb": 3,
+     "cs": 0,
+     "firstBase": 21,
+     "speed": 29.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "666969": {
+     "name": "Adolis García",
+     "att": 0.862,
+     "z": 0.124,
+     "sb": 9,
+     "cs": 1,
+     "firstBase": 139,
+     "speed": 27.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "641598": {
+     "name": "Mitch Garver",
+     "att": 0.3,
+     "z": -0.042,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 97,
+     "speed": 25.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "595978": {
+     "name": "Austin Hedges",
+     "att": 0.181,
+     "z": -0.037,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 41,
+     "speed": 24.5,
+     "src": "SB, CS and sprint speed"
+    },
+    "663993": {
+     "name": "Nathaniel Lowe",
+     "att": 0.453,
+     "z": 0.034,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 203,
+     "speed": 27.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "673962": {
+     "name": "Josh Jung",
+     "att": 0.597,
+     "z": -0.304,
+     "sb": 1,
+     "cs": 3,
+     "firstBase": 113,
+     "speed": 26.8,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {}
+  },
+  "std-2011-rivera-min": {
+   "season": 2011,
+   "era": "2022",
+   "gamePk": 286969,
+   "eraAtt": 1.309,
+   "eraZ": -0.098,
+   "league": {
+    "sb": 3279,
+    "cs": 1261,
+    "sbPct": 0.7222,
+    "attRate": 0.1009
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 121250,
+    "att": 1.064,
+    "z": 0.078,
+    "sb": 5,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 431145,
+    "name": "Russell Martin",
+    "z": -0.048,
+    "sb": 95,
+    "cs": 40,
+    "pop": null
+   },
+   "runners": {
+    "461858": {
+     "name": "Trevor Plouffe",
+     "att": 0.952,
+     "z": -0.147,
+     "sb": 3,
+     "cs": 3,
+     "firstBase": 70,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "150212": {
+     "name": "Michael Cuddyer",
+     "att": 0.893,
+     "z": 0.235,
+     "sb": 11,
+     "cs": 1,
+     "firstBase": 151,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "476633": {
+     "name": "Chris Parmelee",
+     "att": 0.837,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 29,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "502143": {
+     "name": "Danny Valencia",
+     "att": 0.806,
+     "z": -0.369,
+     "sb": 2,
+     "cs": 6,
+     "firstBase": 134,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "501920": {
+     "name": "Brian Dinkelman",
+     "att": 0.965,
+     "z": 0.077,
+     "sb": 2,
+     "cs": 0,
+     "firstBase": 26,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "471863": {
+     "name": "Luke Hughes",
+     "att": 0.898,
+     "z": -0.071,
+     "sb": 3,
+     "cs": 2,
+     "firstBase": 72,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "501994": {
+     "name": "Joe Benson",
+     "att": 1.165,
+     "z": -0.107,
+     "sb": 2,
+     "cs": 2,
+     "firstBase": 13,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "459434": {
+     "name": "Rene Tosoni",
+     "att": 0.898,
+     "z": -0.186,
+     "sb": 0,
+     "cs": 2,
+     "firstBase": 39,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "519184": {
+     "name": "Ben Revere",
+     "att": 2.034,
+     "z": 0.146,
+     "sb": 34,
+     "cs": 9,
+     "firstBase": 134,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {}
+  },
+  "std-2014-ws7-bumgarner": {
+   "season": 2014,
+   "era": "2022",
+   "gamePk": 416387,
+   "eraAtt": 1.118,
+   "eraZ": -0.082,
+   "league": {
+    "sb": 2764,
+    "cs": 1035,
+    "sbPct": 0.7276,
+    "attRate": 0.0862
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 518516,
+    "att": 1.049,
+    "z": -0.397,
+    "sb": 7,
+    "cs": 10,
+    "pickoffs": 6
+   },
+   "catcher": {
+    "id": 457763,
+    "name": "Buster Posey",
+    "z": -0.06,
+    "sb": 59,
+    "cs": 25,
+    "pop": null
+   },
+   "runners": {
+    "543333": {
+     "name": "Eric Hosmer",
+     "att": 0.804,
+     "z": -0.042,
+     "sb": 4,
+     "cs": 2,
+     "firstBase": 129,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "456714": {
+     "name": "Billy Butler",
+     "att": 0.531,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 154,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "460086": {
+     "name": "Alex Gordon",
+     "att": 1.006,
+     "z": 0.096,
+     "sb": 12,
+     "cs": 3,
+     "firstBase": 172,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "521692": {
+     "name": "Salvador Perez",
+     "att": 0.615,
+     "z": 0.04,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 128,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "519058": {
+     "name": "Mike Moustakas",
+     "att": 0.683,
+     "z": 0.04,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 98,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "408299": {
+     "name": "Omar Infante",
+     "att": 1.004,
+     "z": 0.026,
+     "sb": 9,
+     "cs": 3,
+     "firstBase": 138,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "444876": {
+     "name": "Alcides Escobar",
+     "att": 1.851,
+     "z": 0.233,
+     "sb": 31,
+     "cs": 6,
+     "firstBase": 152,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "493114": {
+     "name": "Norichika Aoki",
+     "att": 1.39,
+     "z": -0.078,
+     "sb": 17,
+     "cs": 8,
+     "firstBase": 160,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "456715": {
+     "name": "Lorenzo Cain",
+     "att": 1.82,
+     "z": 0.246,
+     "sb": 28,
+     "cs": 5,
+     "firstBase": 132,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {}
+  },
+  "std-2007-ws4-papelbon": {
+   "season": 2007,
+   "era": "2022",
+   "gamePk": 224026,
+   "eraAtt": 1.066,
+   "eraZ": -0.03,
+   "league": {
+    "sb": 2918,
+    "cs": 1002,
+    "sbPct": 0.7444,
+    "attRate": 0.0821
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 449097,
+    "att": 1.044,
+    "z": 0.139,
+    "sb": 4,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 123660,
+    "name": "Jason Varitek",
+    "z": 0.037,
+    "sb": 63,
+    "cs": 20,
+    "pop": null
+   },
+   "runners": {
+    "retro:spilr001": {
+     "name": "Ryan Spilborghs",
+     "att": 0.917,
+     "z": 0.035,
+     "sb": 4,
+     "cs": 1,
+     "firstBase": 83,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "retro:hawpb001": {
+     "name": "Brad Hawpe",
+     "att": 0.59,
+     "z": -0.198,
+     "sb": 0,
+     "cs": 2,
+     "firstBase": 168,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "retro:torry001": {
+     "name": "Yorvit Torrealba",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    },
+    "retro:carrj001": {
+     "name": "Jamey Carroll",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    },
+    "retro:smits002": {
+     "name": "Seth Smith",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    },
+    "retro:tulot001": {
+     "name": "Troy Tulowitzki",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    },
+    "retro:hollm001": {
+     "name": "Matt Holliday",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    },
+    "retro:heltt001": {
+     "name": "Todd Helton",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    },
+    "retro:atkig001": {
+     "name": "Garrett Atkins",
+     "att": 1.0,
+     "z": 0.0,
+     "speed": null,
+     "src": "no MLBAM id: the league runner"
+    }
+   },
+   "start": {}
+  },
+  "std-2023-hader-stl": {
+   "season": 2023,
+   "era": "2024",
+   "gamePk": 716782,
+   "eraAtt": 0.93,
+   "eraZ": 0.041,
+   "league": {
+    "sb": 3503,
+    "cs": 866,
+    "sbPct": 0.8018,
+    "attRate": 0.0994
+   },
+   "bigBases": true,
+   "pitcher": {
+    "id": 623352,
+    "att": 0.767,
+    "z": 0.034,
+    "sb": 1,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 596142,
+    "name": "Gary Sánchez",
+    "z": -0.025,
+    "sb": 38,
+    "cs": 10,
+    "pop": 1.9
+   },
+   "runners": {
+    "600301": {
+     "name": "Taylor Motter",
+     "att": 0.569,
+     "z": -0.021,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 16,
+     "speed": 26.5,
+     "src": "SB, CS and sprint speed"
+    },
+    "663609": {
+     "name": "Luken Baker",
+     "att": 0.195,
+     "z": -0.068,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 26,
+     "speed": 24.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "691026": {
+     "name": "Masyn Winn",
+     "att": 2.422,
+     "z": -0.022,
+     "sb": 2,
+     "cs": 1,
+     "firstBase": 27,
+     "speed": 29.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "669242": {
+     "name": "Tommy Edman",
+     "att": 2.571,
+     "z": 0.18,
+     "sb": 27,
+     "cs": 4,
+     "firstBase": 119,
+     "speed": 28.8,
+     "src": "SB, CS and sprint speed"
+    },
+    "502671": {
+     "name": "Paul Goldschmidt",
+     "att": 0.615,
+     "z": 0.049,
+     "sb": 11,
+     "cs": 2,
+     "firstBase": 193,
+     "speed": 26.4,
+     "src": "SB, CS and sprint speed"
+    },
+    "575929": {
+     "name": "Willson Contreras",
+     "att": 0.689,
+     "z": -0.152,
+     "sb": 6,
+     "cs": 3,
+     "firstBase": 130,
+     "speed": 26.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "571448": {
+     "name": "Nolan Arenado",
+     "att": 0.263,
+     "z": -0.27,
+     "sb": 3,
+     "cs": 3,
+     "firstBase": 139,
+     "speed": 24.9,
+     "src": "SB, CS and sprint speed"
+    },
+    "691023": {
+     "name": "Jordan Walker",
+     "att": 1.339,
+     "z": -0.178,
+     "sb": 7,
+     "cs": 4,
+     "firstBase": 122,
+     "speed": 28.5,
+     "src": "SB, CS and sprint speed"
+    },
+    "668800": {
+     "name": "Andrew Knizner",
+     "att": 0.419,
+     "z": 0.031,
+     "sb": 2,
+     "cs": 0,
+     "firstBase": 48,
+     "speed": 25.9,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {}
+  },
+  "std-2015-alcs6-davis": {
+   "season": 2015,
+   "era": "2022",
+   "gamePk": 446269,
+   "eraAtt": 1.06,
+   "eraZ": -0.157,
+   "league": {
+    "sb": 2505,
+    "cs": 1064,
+    "sbPct": 0.7019,
+    "attRate": 0.0817
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 451584,
+    "att": 1.1,
+    "z": 0.058,
+    "sb": 4,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 521692,
+    "name": "Salvador Perez",
+    "z": -0.017,
+    "sb": 66,
+    "cs": 29,
+    "pop": null
+   },
+   "runners": {
+    "431145": {
+     "name": "Russell Martin",
+     "att": 0.67,
+     "z": -0.278,
+     "sb": 4,
+     "cs": 5,
+     "firstBase": 119,
+     "speed": 26.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "607680": {
+     "name": "Kevin Pillar",
+     "att": 2.32,
+     "z": 0.368,
+     "sb": 25,
+     "cs": 4,
+     "firstBase": 151,
+     "speed": 28.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "425900": {
+     "name": "Dioner Navarro",
+     "att": 0.074,
+     "z": -0.434,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 47,
+     "speed": 22.5,
+     "src": "SB, CS and sprint speed"
+    },
+    "519184": {
+     "name": "Ben Revere",
+     "att": 2.32,
+     "z": 0.274,
+     "sb": 31,
+     "cs": 7,
+     "firstBase": 184,
+     "speed": 28.4,
+     "src": "SB, CS and sprint speed"
+    },
+    "518626": {
+     "name": "Josh Donaldson",
+     "att": 0.609,
+     "z": 0.17,
+     "sb": 6,
+     "cs": 0,
+     "firstBase": 179,
+     "speed": 26.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "430832": {
+     "name": "José Bautista",
+     "att": 0.492,
+     "z": -0.008,
+     "sb": 8,
+     "cs": 2,
+     "firstBase": 179,
+     "speed": 25.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "429665": {
+     "name": "Edwin Encarnación",
+     "att": 0.343,
+     "z": -0.204,
+     "sb": 3,
+     "cs": 2,
+     "firstBase": 162,
+     "speed": 25.2,
+     "src": "SB, CS and sprint speed"
+    },
+    "499624": {
+     "name": "Chris Colabello",
+     "att": 0.479,
+     "z": -0.017,
+     "sb": 2,
+     "cs": 0,
+     "firstBase": 97,
+     "speed": 26.1,
+     "src": "SB, CS and sprint speed"
+    },
+    "453064": {
+     "name": "Troy Tulowitzki",
+     "att": 0.414,
+     "z": -0.058,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 136,
+     "speed": 26.1,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {}
+  },
+  "std-2008-krod-sea": {
+   "season": 2008,
+   "era": "2022",
+   "gamePk": 235975,
+   "eraAtt": 1.054,
+   "eraZ": -0.074,
+   "league": {
+    "sb": 2799,
+    "cs": 1035,
+    "sbPct": 0.73,
+    "attRate": 0.0812
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 408061,
+    "att": 1.099,
+    "z": 0.255,
+    "sb": 8,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 435063,
+    "name": "Mike Napoli",
+    "z": 0.237,
+    "sb": 52,
+    "cs": 11,
+    "pop": null
+   },
+   "runners": {
+    "111867": {
+     "name": "Miguel Cairo",
+     "att": 1.103,
+     "z": -0.012,
+     "sb": 5,
+     "cs": 2,
+     "firstBase": 61,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "472528": {
+     "name": "Luis Valbuena",
+     "att": 0.939,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 12,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "400085": {
+     "name": "Ichiro Suzuki",
+     "att": 1.815,
+     "z": 0.466,
+     "sb": 43,
+     "cs": 4,
+     "firstBase": 236,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "434605": {
+     "name": "Wladimir Balentien",
+     "att": 0.858,
+     "z": -0.102,
+     "sb": 0,
+     "cs": 1,
+     "firstBase": 45,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "116380": {
+     "name": "Raul Ibanez",
+     "att": 0.701,
+     "z": -0.259,
+     "sb": 2,
+     "cs": 4,
+     "firstBase": 184,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "134181": {
+     "name": "Adrian Beltré",
+     "att": 0.934,
+     "z": 0.072,
+     "sb": 8,
+     "cs": 2,
+     "firstBase": 145,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "430946": {
+     "name": "Jose Lopez",
+     "att": 0.857,
+     "z": -0.058,
+     "sb": 6,
+     "cs": 3,
+     "firstBase": 160,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "435358": {
+     "name": "Yuniesky Betancourt",
+     "att": 0.903,
+     "z": -0.189,
+     "sb": 4,
+     "cs": 4,
+     "firstBase": 129,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "461834": {
+     "name": "Tug Hulett",
+     "att": 0.925,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 15,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {}
+  },
+  "std-2025-ws6-glasnow": {
+   "season": 2025,
+   "era": "2024",
+   "gamePk": 813025,
+   "eraAtt": 0.955,
+   "eraZ": -0.046,
+   "league": {
+    "sb": 3440,
+    "cs": 989,
+    "sbPct": 0.7767,
+    "attRate": 0.102
+   },
+   "bigBases": true,
+   "pitcher": {
+    "id": 607192,
+    "att": 1.079,
+    "z": 0.28,
+    "sb": 10,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 669257,
+    "name": "Will Smith",
+    "z": -0.127,
+    "sb": 67,
+    "cs": 25,
+    "pop": 1.94
+   },
+   "runners": {
+    "676391": {
+     "name": "Ernie Clement",
+     "att": 1.254,
+     "z": -0.234,
+     "sb": 6,
+     "cs": 5,
+     "firstBase": 136,
+     "speed": 28.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "665926": {
+     "name": "Andrés Giménez",
+     "att": 1.554,
+     "z": 0.127,
+     "sb": 12,
+     "cs": 2,
+     "firstBase": 86,
+     "speed": 28.0,
+     "src": "SB, CS and sprint speed"
+    },
+    "543807": {
+     "name": "George Springer",
+     "att": 1.244,
+     "z": 0.331,
+     "sb": 18,
+     "cs": 1,
+     "firstBase": 171,
+     "speed": 28.0,
+     "src": "SB, CS and sprint speed"
+    },
+    "664770": {
+     "name": "Nathan Lukes",
+     "att": 0.808,
+     "z": -0.309,
+     "sb": 2,
+     "cs": 4,
+     "firstBase": 106,
+     "speed": 27.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "665489": {
+     "name": "Vladimir Guerrero Jr.",
+     "att": 0.6,
+     "z": -0.117,
+     "sb": 6,
+     "cs": 3,
+     "firstBase": 202,
+     "speed": 26.9,
+     "src": "SB, CS and sprint speed"
+    },
+    "666182": {
+     "name": "Bo Bichette",
+     "att": 0.458,
+     "z": -0.189,
+     "sb": 4,
+     "cs": 3,
+     "firstBase": 161,
+     "speed": 26.1,
+     "src": "SB, CS and sprint speed"
+    },
+    "662139": {
+     "name": "Daulton Varsho",
+     "att": 1.413,
+     "z": 0.097,
+     "sb": 2,
+     "cs": 0,
+     "firstBase": 42,
+     "speed": 28.4,
+     "src": "SB, CS and sprint speed"
+    },
+    "672386": {
+     "name": "Alejandro Kirk",
+     "att": 0.146,
+     "z": -0.04,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 143,
+     "speed": 24.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "680718": {
+     "name": "Addison Barger",
+     "att": 0.918,
+     "z": 0.024,
+     "sb": 4,
+     "cs": 1,
+     "firstBase": 97,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "664702": {
+     "name": "Myles Straw",
+     "att": 2.447,
+     "z": 0.249,
+     "sb": 12,
+     "cs": 1,
+     "firstBase": 71,
+     "speed": 29.4,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {
+    "2": 680718,
+    "3": 664702
+   }
+  },
+  "std-2010-ws5-wilson": {
+   "season": 2010,
+   "era": "2022",
+   "gamePk": 286351,
+   "eraAtt": 1.155,
+   "eraZ": -0.093,
+   "league": {
+    "sb": 2959,
+    "cs": 1129,
+    "sbPct": 0.7238,
+    "attRate": 0.089
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 451216,
+    "att": 0.744,
+    "z": -0.1,
+    "sb": 0,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 457763,
+    "name": "Buster Posey",
+    "z": -0.203,
+    "sb": 39,
+    "cs": 23,
+    "pop": null
+   },
+   "runners": {
+    "285078": {
+     "name": "Josh Hamilton",
+     "att": 0.823,
+     "z": 0.161,
+     "sb": 8,
+     "cs": 1,
+     "firstBase": 159,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "115223": {
+     "name": "Vladimir Guerrero",
+     "att": 0.808,
+     "z": -0.243,
+     "sb": 4,
+     "cs": 5,
+     "firstBase": 165,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "443558": {
+     "name": "Nelson Cruz",
+     "att": 1.452,
+     "z": 0.137,
+     "sb": 17,
+     "cs": 4,
+     "firstBase": 110,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "435079": {
+     "name": "Ian Kinsler",
+     "att": 1.254,
+     "z": 0.04,
+     "sb": 15,
+     "cs": 5,
+     "firstBase": 145,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "461815": {
+     "name": "David Murphy",
+     "att": 1.178,
+     "z": 0.216,
+     "sb": 14,
+     "cs": 2,
+     "firstBase": 127,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "134260": {
+     "name": "Bengie Molina",
+     "att": 0.618,
+     "z": 0.0,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 104,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "519048": {
+     "name": "Mitch Moreland",
+     "att": 0.977,
+     "z": 0.013,
+     "sb": 3,
+     "cs": 1,
+     "firstBase": 50,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "462101": {
+     "name": "Elvis Andrus",
+     "att": 1.855,
+     "z": -0.088,
+     "sb": 32,
+     "cs": 15,
+     "firstBase": 207,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "276545": {
+     "name": "Michael Young",
+     "att": 0.683,
+     "z": -0.039,
+     "sb": 4,
+     "cs": 2,
+     "firstBase": 177,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {}
+  },
+  "std-2016-nlds5-kershaw": {
+   "season": 2016,
+   "era": "2022",
+   "gamePk": 487616,
+   "eraAtt": 1.037,
+   "eraZ": -0.113,
+   "league": {
+    "sb": 2537,
+    "cs": 1001,
+    "sbPct": 0.7171,
+    "attRate": 0.0799
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 477132,
+    "att": 0.786,
+    "z": -0.057,
+    "sb": 1,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 434563,
+    "name": "Carlos Ruiz",
+    "z": -0.239,
+    "sb": 21,
+    "cs": 15,
+    "pop": 2.09
+   },
+   "runners": {
+    "502517": {
+     "name": "Daniel Murphy",
+     "att": 0.674,
+     "z": -0.121,
+     "sb": 5,
+     "cs": 3,
+     "firstBase": 150,
+     "speed": 26.5,
+     "src": "SB, CS and sprint speed"
+    },
+    "594694": {
+     "name": "Wilmer Difo",
+     "att": 3.187,
+     "z": 0.32,
+     "sb": 3,
+     "cs": 0,
+     "firstBase": 20,
+     "speed": 29.6,
+     "src": "SB, CS and sprint speed"
+    },
+    "452220": {
+     "name": "Stephen Drew",
+     "att": 0.58,
+     "z": -0.175,
+     "sb": 0,
+     "cs": 1,
+     "firstBase": 36,
+     "speed": 26.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "457787": {
+     "name": "Danny Espinosa",
+     "att": 1.136,
+     "z": 0.141,
+     "sb": 9,
+     "cs": 2,
+     "firstBase": 143,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "600474": {
+     "name": "Pedro Severino",
+     "att": 1.278,
+     "z": 0.054,
+     "sb": 0,
+     "cs": 0,
+     "firstBase": 11,
+     "speed": 27.8,
+     "src": "SB, CS and sprint speed"
+    },
+    "572191": {
+     "name": "Michael A. Taylor",
+     "att": 3.058,
+     "z": 0.232,
+     "sb": 14,
+     "cs": 3,
+     "firstBase": 48,
+     "speed": 28.7,
+     "src": "SB, CS and sprint speed"
+    },
+    "607208": {
+     "name": "Trea Turner",
+     "att": 5.376,
+     "z": 0.378,
+     "sb": 33,
+     "cs": 6,
+     "firstBase": 85,
+     "speed": 30.0,
+     "src": "SB, CS and sprint speed"
+    },
+    "547180": {
+     "name": "Bryce Harper",
+     "att": 1.587,
+     "z": -0.067,
+     "sb": 21,
+     "cs": 10,
+     "firstBase": 184,
+     "speed": 27.3,
+     "src": "SB, CS and sprint speed"
+    },
+    "150029": {
+     "name": "Jayson Werth",
+     "att": 0.469,
+     "z": -0.024,
+     "sb": 5,
+     "cs": 1,
+     "firstBase": 154,
+     "speed": 25.8,
+     "src": "SB, CS and sprint speed"
+    }
+   },
+   "start": {
+    "1": 150029,
+    "2": 547180
+   }
   }
  }
 }
