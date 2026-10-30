@@ -17,7 +17,7 @@
  * far off the long lens's screen, so the first person lens (firstperson.js lensFor) moves the start
  * onto the line of sight through his drawn hand (fly): the same time, crossing and break, a shorter
  * run (its depth speed scaled to keep his time). The ball is drawn on that flight (seenAt), plus his
- * head's carry near the hand. pointAt(0) is where the ball leaves his hand on the screen.
+ * head's carry near the hand. pointAt(0) is where the drawn flight starts; this.rel is his release.
  *
  * Each pitch leaves his hand from its own release point (the arsenal pitch's release, Savant's mean
  * for that type) when the pack carries it, else his overall release (facts.release), else a labelled

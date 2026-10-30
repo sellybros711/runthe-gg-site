@@ -3184,7 +3184,7 @@
   "shut-the-door/3d/boot.js": {
     "stage.js": {
       "v": "72",
-      "sha": "cbd7266e0e818e98"
+      "sha": "598bb45feee9d14d"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3246,7 +3246,7 @@
     },
     "pitch.js": {
       "v": "12",
-      "sha": "42390313144c69af"
+      "sha": "10c7e0ea349a5180"
     },
     "play.js": {
       "v": "12",
@@ -3344,7 +3344,7 @@
   "shut-the-door/3d/play.js": {
     "pitch.js": {
       "v": "12",
-      "sha": "42390313144c69af"
+      "sha": "10c7e0ea349a5180"
     }
   },
   "shut-the-door/3d/inplay.js": {
@@ -3380,7 +3380,7 @@
   "shut-the-door/3d/preview.js": {
     "pitch.js": {
       "v": "12",
-      "sha": "42390313144c69af"
+      "sha": "10c7e0ea349a5180"
     },
     "units.js": {
       "v": "1",
@@ -3410,7 +3410,7 @@
     },
     "pitch.js": {
       "v": "12",
-      "sha": "42390313144c69af"
+      "sha": "10c7e0ea349a5180"
     }
   },
   "shut-the-door/3d/field.js": {

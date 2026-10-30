@@ -762,11 +762,13 @@ class Stage {
     const track = run ? { running: true, at: (ms) => ({ runners: this.inplay.fieldAt(Math.max(0, sceneT(ms / 1000) - resultAt)) }) }
       : AN() && AN().runnerTrack ? AN().runnerTrack(pr, (resultAt + (inPlay ? 0.26 : 0.22)) * 1000, (inPlay ? 1150 : 700)) : null;
     if (hooks.sound) hooks.sound('whoosh', pt.tRel * 1000 / speed);
-    // what the browser check reads back: the play's reading and a few frames of it, and rel, where
-    // the pitch leaves his hand (the start of its own path, world metres), which the check measures
-    // the flight from: the first frame that sees the ball can land well into the flight
+    // what the browser check reads back: the play's reading and a few frames of it, and rel, his
+    // true release (pitch.rel, world metres), which the check measures the flight from: the first
+    // frame that sees the ball can land well into the flight. (Under the first person lens the
+    // flight is drawn from further out, on the line through his drawn hand, firstperson.js THE
+    // START; the pitch still leaves his hand at his release, and that is where it is measured from.)
     const trace = this.trace = { n: pr.n, result: pr.result, bb: pr.inPlay ? pr.inPlay.bb : null, m: { ...m }, check: play.check, dirt: play.dirt,
-      rel: pt.pointAt(0).toArray().map((v) => Math.round(v * 1000) / 1000),
+      rel: P(pt.rel.x, pt.rel.y, pt.rel.z).toArray().map((v) => Math.round(v * 1000) / 1000),
       zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
     // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, the
