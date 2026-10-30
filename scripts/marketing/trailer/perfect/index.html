@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Perfect Season trailer</title>
+<!-- The Perfect Season (College Football) trailer, drawn frame by frame: render(t) paints the frame at t,
+     as commish/index.html does. ?fmt=reels (1080x1920) or ?fmt=x (1350x1080). The footage is one real run,
+     recorded with record.mjs (shots/cfb-perfect.mjs, seed 350) and unpacked to /foot/run/f0001.jpg.
+
+     THE WORDS: an $11M NIL budget, six players, 12 games, and 15-0 is the run on screen (12-0, a
+     first-round bye, three playoff wins). All of it is CAP_MUSD, SLOTS, REGULAR_SEASON_GAMES and
+     PLAYOFF_BYES in cfb/engine.js, and the result screen the take ends on. -->
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;700;800;900&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=block" rel="stylesheet">
+<style>
+@font-face{font-family:DSEG7;src:url(/cfb/fonts/DSEG7Classic-Bold.woff2) format('woff2')}
+.seg{font-family:DSEG7,monospace;font-weight:700;letter-spacing:.04em}
+:root{--bg:#080b14;--panel:#131a2b;--ink:#eef2f9;--dim:#94a3b8;--green:#10b981;--gold:#f59e0b;--red:#ef4444;--navy:#0d1426}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:var(--W);height:var(--H);overflow:hidden;background:#000}
+#frame{position:relative;width:var(--W);height:var(--H);overflow:hidden;background:var(--bg);font-family:Inter,system-ui,sans-serif;color:var(--ink)}
+.layer{position:absolute;inset:0}
+.hide{display:none!important}
+/* footage */
+#foot{overflow:hidden}
+#foot img{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+#footpanel{position:absolute;overflow:hidden;border-radius:calc(28px*var(--k));box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.06)}
+#footpanel img{position:absolute;left:0;top:0;transform-origin:0 0}
+/* effects */
+#grain{mix-blend-mode:overlay;opacity:.22}
+#vig{background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(0,0,0,.75) 100%)}
+#flash{background:#fff;opacity:0}
+#scan{background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 2px,transparent 2px 4px);opacity:0}
+#tint{opacity:0}
+/* type */
+.cap{position:absolute;left:0;right:0;text-align:center;padding:0 calc(60px*var(--k))}
+.big{font-family:Anton,Impact,sans-serif;text-transform:uppercase;line-height:.98;letter-spacing:.01em}
+.w{display:inline-block;white-space:pre}
+.gold{color:var(--gold)}.green{color:var(--green)}.red{color:var(--red)}
+#capbg{background:linear-gradient(180deg,transparent 0%,transparent 46%,rgba(4,6,12,.94) 62%,rgba(4,6,12,.97) 100%)}
+/* the breaking news chyron */
+#chy{position:absolute;left:calc(46px*var(--k));right:calc(46px*var(--k));}
+#chy .tag{display:inline-block;background:var(--red);color:#fff;font:900 calc(34px*var(--k))/1 Archivo,sans-serif;letter-spacing:.14em;padding:calc(14px*var(--k)) calc(20px*var(--k))}
+#chy .live{display:inline-block;margin-left:calc(14px*var(--k));color:#fff;font:800 calc(26px*var(--k))/1 Archivo;letter-spacing:.2em;vertical-align:middle}
+#chy .live i{display:inline-block;width:calc(16px*var(--k));height:calc(16px*var(--k));border-radius:50%;background:var(--red);margin-right:calc(10px*var(--k));vertical-align:middle}
+#chy .head{background:#f4f6fa;color:#0a0f1c;font-family:Anton,Impact;text-transform:uppercase;font-size:calc(104px*var(--k));line-height:1;padding:calc(18px*var(--k)) calc(24px*var(--k)) calc(14px*var(--k))}
+#chy .sub{background:rgba(8,11,20,.92);color:#e7ecf5;font:600 calc(34px*var(--k))/1.3 Inter;padding:calc(18px*var(--k)) calc(24px*var(--k))}
+#ticker{position:absolute;left:0;right:0;height:calc(64px*var(--k));background:#0a0f1c;border-top:3px solid var(--red);overflow:hidden;white-space:nowrap;color:#cbd5e1;font:700 calc(28px*var(--k))/calc(64px*var(--k)) Archivo;letter-spacing:.06em}
+/* rewind */
+#rw{font:500 calc(54px*var(--k))/1 'JetBrains Mono',monospace;color:#fff;text-shadow:0 0 18px rgba(255,255,255,.6)}
+/* the spotlight */
+#spot{background:radial-gradient(ellipse at 50% 38%,#24314f 0%,#0b1120 45%,#04060c 75%)}
+#spot .pt{position:absolute;left:50%;transform:translateX(-50%)}
+#spot .pt svg{width:100%;height:100%;display:block;filter:drop-shadow(0 30px 60px rgba(0,0,0,.7))}
+#beam{background:conic-gradient(from 180deg at 50% -8%,transparent 168deg,rgba(255,236,190,.16) 176deg,rgba(255,236,190,.22) 180deg,rgba(255,236,190,.16) 184deg,transparent 192deg)}
+/* the vote */
+#vote{background:radial-gradient(ellipse at 50% 30%,#141c31 0%,#070a13 70%)}
+.vrow{position:absolute;left:calc(70px*var(--k));right:calc(70px*var(--k))}
+.vrow .nm{font:800 calc(30px*var(--k))/1 Archivo;letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between}
+.vrow .nm small{font:700 calc(22px*var(--k))/1 Archivo;color:var(--dim);letter-spacing:.1em}
+.vrow .tr{margin-top:calc(12px*var(--k));height:calc(22px*var(--k));border-radius:99px;background:#1b2338;position:relative;overflow:hidden}
+.vrow .fl{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.vline{position:absolute;width:3px;background:var(--red);box-shadow:0 0 14px var(--red)}
+.vlab{position:absolute;font:800 calc(22px*var(--k))/1 Archivo;color:var(--red);letter-spacing:.12em;transform:translateX(-50%)}
+#vcount{position:absolute;left:0;right:0;text-align:center}
+/* end card */
+#end{background:radial-gradient(ellipse at 50% 30%,#1a2747 0%,#0b1120 55%,#04060c 100%)}
+#end .pt{position:absolute;left:50%;transform:translateX(-50%)}
+#end .pt svg{width:100%;height:100%}
+.pill{display:inline-block;background:var(--green);color:#04130c;font:900 calc(40px*var(--k))/1 Archivo;padding:calc(18px*var(--k)) calc(34px*var(--k));border-radius:99px;letter-spacing:.02em}
+</style></head>
+<body><div id="frame">
+  <div id="foot" class="layer"><img id="fimg" alt=""></div>
+  <div id="spot" class="layer hide"><div id="beam" class="layer"></div><div class="pt" id="spt"></div></div>
+  <div id="vote" class="layer hide"></div>
+  <div id="end" class="layer hide"><div class="pt" id="ept"></div></div>
+  <div id="footpanelwrap" class="layer hide"><div id="footpanel"><img id="pimg" alt=""></div></div>
+  <div id="frost" style="position:absolute;display:none;backdrop-filter:blur(14px) brightness(.55);-webkit-backdrop-filter:blur(14px) brightness(.55)"></div>
+  <div id="tint" class="layer"></div>
+  <div id="capbg" class="layer hide"></div>
+  <div id="text" class="layer"></div>
+  <div id="scan" class="layer"></div>
+  <canvas id="grain" class="layer"></canvas>
+  <div id="vig" class="layer"></div>
+  <div id="flash" class="layer"></div>
+</div>
+<script>
+const Q = new URLSearchParams(location.search), FMT = Q.get('fmt') || 'reels';
+const F = { reels: { W: 1080, H: 1920, k: 1 }, x: { W: 1350, H: 1080, k: 0.86 } }[FMT];
+const W = F.W, H = F.H, K = F.k, TALL = H > W, FPS = 30;
+document.documentElement.style.setProperty('--W', W + 'px');
+document.documentElement.style.setProperty('--H', H + 'px');
+document.documentElement.style.setProperty('--k', K);
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = (x) => { x = clamp(x, 0, 1); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const out = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+const back = (x) => { x = clamp(x, 0, 1); const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const span = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+
+/* THE FOOTAGE, by clip: frames on disk at 30 fps, 1080x1920 (the phone layout, 432x768 at 2.5x). */
+const SRC = { w: 1080, h: 1920 };
+const COUNT = { run: 1655 };
+function frameOf(clip, sec) { return clamp(Math.round(sec * FPS) + 1, 1, COUNT[clip]); }
+const loaded = {};
+function setImg(img, clip, sec) {
+  const n = frameOf(clip, sec), url = `/foot/${clip}/f${String(n).padStart(4, '0')}.jpg`;
+  if (img.dataset.url === url) return Promise.resolve();
+  img.dataset.url = url; img.src = url; return img.decode().catch(() => {});
+}
+/* Show the crop {cx, cy, w} of the source (its centre and width, in source px) filling box bw x bh. */
+function place(img, bw, bh, cx, cy, cw) {
+  const s = bw / cw, ch = bh / s;
+  let x = cx - cw / 2, y = cy - ch / 2;
+  x = clamp(x, 0, Math.max(0, SRC.w - cw)); y = clamp(y, 0, Math.max(0, SRC.h - ch));
+  img.style.width = SRC.w + 'px'; img.style.height = SRC.h + 'px';
+  img.style.transform = `translate(${-x * s}px,${-y * s}px) scale(${s})`;
+  return { x, y, s };
+}
+
+/* TYPE: words that land one after another. A line is [text, class] pairs; `at` is when it starts. */
+function words(parts, t, at, step = 0.06, kind = 'pop') {
+  let i = 0, html = '';
+  for (const [txt, cls] of parts) {
+    for (const w of txt.split(' ')) {
+      if (w === '|') { html += '<br>'; continue; }
+      const p = span(t, at + i * step, at + i * step + 0.22);
+      const s = kind === 'pop' ? 1 + (1 - back(p)) * 0.35 : 1;
+      const y = kind === 'rise' ? (1 - out(p)) * 40 : 0;
+      html += `<span class="w ${cls || ''}" style="opacity:${p > 0 ? Math.min(1, p * 3) : 0};transform:translateY(${y * K}px) scale(${s})">${w} </span>`;
+      i++;
+    }
+  }
+  return html;
+}
+function cap(t, at, parts, { y = TALL ? 0.73 : 0.70, size = 112, kind = 'pop', step = 0.06, sub = '' } = {}) {
+  return `<div class="cap big" style="top:${y * H}px;font-size:${size * K}px;transform:translateY(-50%)">${words(parts, t, at, step, kind)}`
+    + (sub ? `<div style="font:600 ${34 * K}px/1.3 Inter;text-transform:none;letter-spacing:0;color:#cbd5e1;margin-top:${18 * K}px;opacity:${span(t, at + 0.35, at + 0.6)}">${sub}</div>` : '') + '</div>';
+}
+
+/* GRAIN: a fixed noise field per frame, so every render of a frame is the same. */
+const gc = $('grain'); gc.width = W / 3; gc.height = H / 3; const gx = gc.getContext('2d');
+function grain(frame) {
+  const d = gx.createImageData(gc.width, gc.height); let s = frame * 9301 + 49297;
+  for (let i = 0; i < d.data.length; i += 4) { s = (s * 1103515245 + 12345) & 0x7fffffff; const v = (s >> 16) & 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+  gx.putImageData(d, 0, 0);
+}
+
+$('ept').innerHTML = '<img src="/cfb/logo.png" style="width:100%;height:100%">';
+
+
+/* footage in the frame: full bleed in 9:16; in 5:4 a phone-shaped panel beside the words */
+function footage(clip, sec, cx, cy, cw, { dim = 1, blur = 0 } = {}) {
+  if (TALL) {
+    $('foot').classList.remove('hide'); $('footpanelwrap').classList.add('hide');
+    LAST = { ...place($('fimg'), W, H, cx, cy, cw), ox: 0, oy: 0 };
+    $('fimg').style.filter = `brightness(${dim})${blur ? ` blur(${blur}px)` : ''}`;
+    return setImg($('fimg'), clip, sec);
+  }
+  $('foot').classList.add('hide'); $('footpanelwrap').classList.remove('hide');
+  const ph = H - 120, pw = Math.round(ph * 0.62), p = $('footpanel');
+  Object.assign(p.style, { width: pw + 'px', height: ph + 'px', left: (W - pw - 90) + 'px', top: '60px' });
+  LAST = { ...place($('pimg'), pw, ph, cx, cy, cw * 16 / 9 * (pw / ph)), ox: W - pw - 90, oy: 60 };   // the same crop height as the 9:16 cut
+  $('pimg').style.filter = `brightness(${dim})`;
+  return setImg($('pimg'), clip, sec);
+}
+let LAST = null;
+/* a frosted strip over part of the source (source px), for game text that should not read */
+function frost(y0, y1) { const m = $('frost'); if (!LAST) return; Object.assign(m.style, { display: 'block', left: LAST.ox + 'px', width: (TALL ? W : Math.round((H - 120) * 0.62)) + 'px', top: LAST.oy + (y0 - LAST.y) * LAST.s + 'px', height: (y1 - y0) * LAST.s + 'px' }); }
+/* in 5:4 a caption sits left of the panel */
+function side(html) { return TALL ? html : `<div style="position:absolute;left:${70}px;top:0;bottom:0;width:${W - Math.round((H - 120) * 0.62) - 220}px;display:flex;align-items:center">${html.replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`; }
+
+/* THE CUT, on a 120 BPM grid (sound.mjs). Every scene draws itself from its own local time. */
+const S = [
+  { id: 'hook', t0: 0, t1: 1.5 },
+  { id: 'budget', t0: 1.5, t1: 3.0 },
+  { id: 'spin', t0: 3.0, t1: 5.0 },
+  { id: 'sign', t0: 5.0, t1: 7.0 },
+  { id: 'spend', t0: 7.0, t1: 9.5 },
+  { id: 'season', t0: 9.5, t1: 14.0 },
+  { id: 'seed', t0: 14.0, t1: 15.5 },
+  { id: 'bracket', t0: 15.5, t1: 17.0 },
+  { id: 'perfect', t0: 17.0, t1: 20.0 },
+  { id: 'end', t0: 20.0, t1: 24.0 },
+];
+window.DURATION = 24.0;
+// where the budget reads after each signing in the take (run seconds), $11.0M down to $1.2M
+const SPENT = [[1.2, '$11.0M'], [6.6, '$8.3M'], [11.4, '$5.2M'], [16.3, '$4.0M'], [21.3, '$2.8M'], [25.3, '$1.2M']];
+
+window.render = async function (t) {
+  const frame = Math.round(t * FPS);
+  const sc = S.find((s) => t >= s.t0 && t < s.t1) || S[S.length - 1], l = t - sc.t0, d = sc.t1 - sc.t0;
+  for (const id of ['spot', 'vote', 'end', 'capbg']) $(id).classList.add('hide');
+  $('foot').classList.add('hide'); $('footpanelwrap').classList.add('hide');
+  $('frost').style.display = 'none';
+  let text = '', flash = 0, scan = 0, tint = '', tintA = 0, shake = 0, wait = Promise.resolve();
+
+  if (sc.id === 'hook') {
+    // the end of the dream run first: the game's own 15-0 card, confetti still falling
+    wait = footage('run', 50.6 + l * 0.9, 540, 480, 1080 * (0.86 - 0.05 * out(span(l, 0, d))));
+    if (!TALL) { $('footpanelwrap').classList.add('hide'); $('foot').classList.remove('hide'); place($('fimg'), W, H, 540, 470, 1080 * (0.95 - 0.05 * out(span(l, 0, d)))); $('fimg').style.filter = ''; wait = setImg($('fimg'), 'run', 50.6 + l * 0.9); }
+    shake = l < 0.2 ? (1 - l / 0.2) * 10 : 0;
+    $('capbg').classList.remove('hide');
+    text = `<div class="cap big" style="top:${(TALL ? 0.74 : 0.80) * H}px;font-size:${(TALL ? 150 : 120) * K}px;transform:translateY(-50%) scale(${1 + 0.08 * (1 - out(span(l, 0, 0.3)))})">Can you go<br><span class="gold">15-0?</span></div>`;
+  }
+  if (sc.id === 'budget') {
+    // a built beat: the whole budget on a scoreboard, then what it has to buy
+    $('vote').classList.remove('hide');
+    flash = 0.4 * (1 - span(l, 0, 0.12));
+    const roll = span(l, 0, 0.5), val = (11 * out(roll)).toFixed(1);
+    $('vote').innerHTML = `<div style="position:absolute;left:0;right:0;top:${(TALL ? 0.30 : 0.18) * H}px;text-align:center">
+      <div style="font:800 ${34 * K}px Archivo;letter-spacing:.3em;color:var(--dim)">NIL BUDGET</div>
+      <div style="font-size:${(TALL ? 210 : 190) * K}px;line-height:1;color:var(--green);text-shadow:0 0 40px rgba(16,185,129,.55);margin-top:${20 * K}px"><span class="big" style="font-size:.8em">$</span><span class="seg">${val}</span><span class="big" style="font-size:.8em">M</span></div>
+      <div style="margin:${40 * K}px auto 0;width:${(TALL ? 760 : 820) * K}px;height:${16 * K}px;border-radius:99px;background:#1b2338;overflow:hidden"><div style="height:100%;width:${100 * out(roll)}%;background:var(--green)"></div></div></div>`;
+    text = cap(l, 0.55, [['Six', ''], ['players.', 'gold']], { y: TALL ? 0.66 : 0.74, size: 140, step: 0.1 });
+  }
+  if (sc.id === 'spin') {
+    const sec = 1.5 + l * 1.15, z = 0.80 - 0.10 * ease(span(l, 0, d));
+    wait = footage('run', sec, 540, 1250, 1080 * z);
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.1, [['Spin a year.', ''], ['| Spin a school.', 'green']], { size: 108, step: 0.07 }));
+  }
+  if (sc.id === 'sign') {
+    const sec = 4.6 + l * 1.0, z = 0.9 - 0.12 * ease(span(l, 0, d));
+    wait = footage('run', sec, 540, 1200, 1080 * z);
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.1, [['Sign one', ''], ['player.', 'gold']], { size: 116 }));
+  }
+  if (sc.id === 'spend') {
+    // five signings in five beats: the budget readout after each, cut on the drum
+    const i = Math.min(SPENT.length - 2, Math.floor(l / 0.5)), sec = SPENT[i + 1][0] + (l - i * 0.5) * 0.6;
+    wait = footage('run', sec, 540, TALL ? 760 : 700, 1080 * 0.82);
+    flash = 0.18 * (1 - span(l - i * 0.5, 0, 0.08));
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.1, [['Spend', ''], ['every dollar.', 'green']], { size: 116 }));
+  }
+  if (sc.id === 'season') {
+    const sec = 34.0 + l * 2.35, z = 0.98;
+    wait = footage('run', sec, 540, TALL ? 900 : 640, 1080 * z);
+    $('capbg').classList.remove('hide');
+    text = l < 2.2 ? side(cap(l, 0.1, [['Twelve', ''], ['games.', 'gold']], { size: 130 }))
+                   : side(cap(l - 2.2, 0.05, [['No room', ''], ['for a loss.', 'red']], { size: 120 }));
+  }
+  if (sc.id === 'seed') {
+    wait = footage('run', 45.4 + l * 0.6, 540, 560, 1080 * (0.86 - 0.06 * ease(span(l, 0, d))));
+    flash = 0.3 * (1 - span(l, 0, 0.1));
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.15, [['12-0.', 'gold'], ['| Then the playoff.', '']], { size: 110, step: 0.08 }));
+  }
+  if (sc.id === 'bracket') {
+    wait = footage('run', 48.1 + l * 0.9, 540, 760, 1080 * 0.9);
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.1, [['Three wins', ''], ['from a title.', 'green']], { size: 110 }));
+  }
+  if (sc.id === 'perfect') {
+    wait = footage('run', 49.9 + l * 1.25, 540, 470, 1080 * (0.95 - 0.18 * ease(span(l, 0.2, d))));
+    flash = 0.95 * (1 - span(l, 0, 0.18));
+    shake = l < 0.35 ? (1 - l / 0.35) * 16 : 0;
+    $('capbg').classList.remove('hide');
+    text = side(cap(l, 0.35, [['Perfect.', 'gold']], { size: 200 }));
+  }
+  if (sc.id === 'end') {
+    $('end').classList.remove('hide');
+    const s = 300 * K * (TALL ? 1.1 : 0.8), p = $('ept');
+    Object.assign(p.style, { width: s + 'px', height: s + 'px', top: (TALL ? 0.14 : 0.05) * H + 'px', opacity: out(span(l, 0, 0.35)), transform: `translateX(-50%) scale(${0.9 + 0.1 * back(span(l, 0, 0.4))})` });
+    flash = 0.5 * (1 - span(l, 0, 0.12));
+    const y0 = TALL ? 0.14 * H + s + 50 * K : 0.05 * H + s + 20 * K, ti = back(span(l, 0.1, 0.4));
+    text = `<div class="cap" style="top:${y0}px">
+      <div class="big" style="font-size:${(TALL ? 150 : 128) * K}px;transform:scale(${0.85 + 0.15 * ti});opacity:${span(l, 0.1, 0.25)}">Perfect Season<br><span class="green">College Football</span></div>
+      <div style="font:700 ${44 * K}px/1.25 Archivo;margin-top:${30 * K}px;opacity:${span(l, 0.55, 0.8)}">$11M. Six players.<br><span class="gold">Go perfect.</span></div>
+      <div style="font:600 ${30 * K}px/1.3 Inter;color:#cbd5e1;margin-top:${34 * K}px;opacity:${span(l, 0.95, 1.2)}">Free in your browser. No download.</div>
+      <div style="margin-top:${28 * K}px;opacity:${span(l, 1.1, 1.35)};transform:translateY(${(1 - out(span(l, 1.1, 1.4))) * 20}px)"><span class="pill">runthe.gg/cfb</span></div></div>`;
+  }
+
+  $('text').innerHTML = text;
+  $('flash').style.opacity = flash;
+  $('scan').style.opacity = scan;
+  $('tint').style.background = tint || 'transparent'; $('tint').style.opacity = tintA;
+  const sx = shake ? Math.sin(frame * 2.7) * shake : 0, sy = shake ? Math.cos(frame * 3.1) * shake : 0;
+  $('frame').style.transform = `translate(${sx}px,${sy}px) scale(${shake ? 1.02 : 1})`;
+  grain(frame);
+  await wait;
+  await document.fonts.ready;
+};
+window.ready = document.fonts.ready.then(() => true);
+</script></body></html>
