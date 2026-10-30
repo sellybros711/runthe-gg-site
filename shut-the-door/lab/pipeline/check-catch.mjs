@@ -45,7 +45,10 @@ const HELD = ['catch in the air', 'drop', 'throw taken', 'release', 'ground ball
 const FT = 0.3048;
 // the routine fly share (reported, not held): of the outs in the air on a ball the engine calls routine
 // (contract.js routineOf: a popup, or a fly at 30 degrees and up off the bat at 80-95 mph), how many the
-// catcher takes within ROUTINE_FT of where he stood at the pitch (a few steps), and within twice that
+// catcher takes within ROUTINE_FT of where he stood at the pitch (a few steps), and within twice that.
+// The routine ground out share the same way: of the outs on a ground ball the engine calls routine (a
+// grounder at 50-95 mph within 6 degrees of a fielder's spot; an error left out), how many the man who
+// fields it takes within ROUTINE_FT of where he stood at the pitch
 const ROUTINE_FT = 15;
 const { routineOf } = require(path.join(ROOT, 'shut-the-door', 'contract.js'));
 
@@ -93,7 +96,7 @@ const CHUNK = 400;
 const CK = openCheckpoint('check-catch', { STRIDE: SEL.stride, LIMIT: String(LIMIT), SHARD: SEL.shard, CHUNK });
 for (let i = 0; i < cases.length; i += CHUNK) {
   if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
-  const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, align: c.align, routine: routineOf(c.pr.inPlay.bb, c.pr.inPlay.ev, c.pr.inPlay.la, c.pr.inPlay.spray) === 'air', tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
+  const part = cases.slice(i, i + CHUNK).map((c) => ({ pr: c.pr, hand: c.hand, align: c.align, routine: routineOf(c.pr.inPlay.bb, c.pr.inPlay.ev, c.pr.inPlay.la, c.pr.inPlay.spray), label: c.label, tag: `${c.pack} ${c.key}/${c.label} st ${c.st} ball ${JSON.stringify(c.ball)} moves ${JSON.stringify(c.moves)}` }));
   const got = await page.evaluate((part) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
     const facts0 = ip.facts;
@@ -105,7 +108,9 @@ for (let i = 0; i < cases.length; i += CHUNK) {
       try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
       const plan = run.plan, seen = new Set();
       // how far the catcher went for an out in the air: from where he stood at the pitch to the catch
-      if (plan.kind === 'air_out') { const e = plan.events.find((x) => x.kind === 'catch'); if (e) { const tr = plan.fielders[e.by], at = tr.at(e.s); out.push({ tag: c.tag, what: 'air out', n: e.by, routine: c.routine, movedFt: Math.hypot(at.x - tr.start.x, at.y - tr.start.y) }); } }
+      if (plan.kind === 'air_out') { const e = plan.events.find((x) => x.kind === 'catch'); if (e) { const tr = plan.fielders[e.by], at = tr.at(e.s); out.push({ tag: c.tag, what: 'air out', n: e.by, routine: c.routine === 'air', movedFt: Math.hypot(at.x - tr.start.x, at.y - tr.start.y) }); } }
+      // and for a ground out: from where he stood to where he fields it
+      if (plan.kind === 'ground_play' && c.label !== 'error') { for (let n = 1; n <= 9; n++) { const a = plan.fielders[n].acts.find((x) => x.kind === 'field'); if (a) { const tr = plan.fielders[n], at = tr.at(a.t); out.push({ tag: c.tag, what: 'ground out', n, routine: c.routine === 'ground', movedFt: Math.hypot(at.x - tr.start.x, at.y - tr.start.y) }); break; } } }
       const moments = plan.events.filter((e) => e.kind === 'glove').map((e) => ({ s: e.s, n: e.by, what: plan.events.some((x) => x.kind === 'catch' && Math.abs(x.s - e.s) < 1e-6) ? 'catch in the air' : plan.events.some((x) => x.kind === 'drop' && Math.abs(x.s - e.s) < 1e-6) ? 'drop' : 'throw taken' }));
       // every throw leaves from his hand: the hand an instant before the release, the ball an instant after
       for (const sg of plan.segs) if (sg.kind === 'throw') moments.push({ s: sg.t0, n: sg.from, what: 'release', release: sg });
@@ -168,8 +173,8 @@ CK.close();
 const errs = rows.filter((r) => r.err);
 const hits = rows.filter((r) => r.what === 'hit lands');
 const outsF = rows.filter((r) => r.footFt != null), outsT = rows.filter((r) => r.tagFt != null);
-const airOuts = rows.filter((r) => r.what === 'air out');
-const meas = rows.filter((r) => !r.err && r.what !== 'hit lands' && r.what !== 'air out' && r.footFt == null && r.tagFt == null);
+const airOuts = rows.filter((r) => r.what === 'air out'), groundOuts = rows.filter((r) => r.what === 'ground out');
+const meas = rows.filter((r) => !r.err && r.what !== 'hit lands' && r.what !== 'air out' && r.what !== 'ground out' && r.footFt == null && r.tagFt == null);
 const by = {};
 for (const r of meas) (by[r.what] ||= []).push(r.dFt * FT);
 let fails = 0;
@@ -198,11 +203,11 @@ fails += tooNear;
 if (cl.length) console.log(`  ${tooNear ? 'FAIL' : 'ok  '} ${'hit lands, clear by'.padEnd(20)} ${String(cl.length).padStart(7)}  nearest glove: least ${cl[0].toFixed(3)}  10th ${cl[Math.floor(0.1 * (cl.length - 1))].toFixed(3)}  median ${cl[Math.floor(0.5 * (cl.length - 1))].toFixed(3)}  under ${CLEAR_M}: ${tooNear}`);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 // the routine fly share (reported): where the fielders stand (inplay-plan.js alignment) decides it
-for (const [name, rs] of [['routine fly share', airOuts.filter((r) => r.routine)], ['every out in the air', airOuts]]) {
+for (const [name, rs] of [['routine fly share', airOuts.filter((r) => r.routine)], ['every out in the air', airOuts], ['routine ground out share', groundOuts.filter((r) => r.routine)], ['every ground out', groundOuts]]) {
   const d = rs.map((r) => r.movedFt).sort((a, b) => a - b);
   if (!d.length) continue;
   const pct = (k) => (100 * d.filter((x) => x <= k).length / d.length).toFixed(1) + '%';
-  console.log(`  info ${name.padEnd(20)} ${String(d.length).padStart(7)}  caught within ${ROUTINE_FT} ft of his spot ${pct(ROUTINE_FT)}, within ${2 * ROUTINE_FT} ft ${pct(2 * ROUTINE_FT)}, median run ${d[Math.floor(0.5 * (d.length - 1))].toFixed(1)} ft`);
+  console.log(`  info ${name.padEnd(24)} ${String(d.length).padStart(7)}  ${/ground/.test(name) ? 'fielded' : 'caught'} within ${ROUTINE_FT} ft of his spot ${pct(ROUTINE_FT)}, within ${2 * ROUTINE_FT} ft ${pct(2 * ROUTINE_FT)}, median run ${d[Math.floor(0.5 * (d.length - 1))].toFixed(1)} ft`);
 }
 if (JSON_OUT) fs.writeFileSync(JSON_OUT, JSON.stringify(meas));
 if (SHOW) for (const r of meas.sort((a, b) => b.dFt - a.dFt).slice(0, SHOW)) console.log(JSON.stringify({ ...r, dM: +(r.dFt * FT).toFixed(3) }));

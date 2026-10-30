@@ -9,15 +9,15 @@
  * and launch angle (a drag and lift flight, constants set to Statcast carry: 100 mph at 28 degrees
  * goes about 390 ft), held to the band the result needs: an out in the air is caught, a single
  * falls in front of the outfield or through the infield, a double reaches a gap or the line, a home
- * run clears the wall. Where the fielders stand is alignment(): the standard spots, the outfield shaded to
- * the hitter's own batted balls in the pack (shade-data.js). Then a
+ * run clears the wall. Where the fielders stand is alignment(): the standard spots, shaded to the
+ * hitter's own batted balls in the pack (shade-data.js) and set for the bases, outs and score. Then a
  * fielder who would catch a ball the engine called a hit starts a step further off, and one who must
  * make a catch starts close enough to make it.
  *
  * Units: feet and seconds, catcher's view (x toward first base, y out to centre field, z up), home
  * plate at the origin, s = seconds after contact.
  *
- *   const p = planPlay(pr, { bats, contact, basesBefore, id, shade })
+ *   const p = planPlay(pr, { bats, contact, basesBefore, id, shade, inning, margin })
  *   p.ballAt(s)        { x, y, z, by }    by: the fielder holding it, or null
  *   p.fielders[n]      a Track for positions 1..9 (scoring numbers), p.runners[] the same for runners
  *   p.events           [{ s, kind, ... }] catches, pickups, throws, outs, runs, crowd cues
@@ -66,26 +66,82 @@ export function spots(bats) {
   };
 }
 
-/** Where the nine stand at this pitch, for this hitter (site PR, fielders shade by hitter). o.shade: the
-    hitter's row of shade-data.js (lab/pipeline/build-shade.mjs: his own batted balls in the pack, the
-    league's as the prior), or null: the standard alignment, spots(). The outfield stands where his air balls
-    go: each fielder at the median spray of his third of them (a one dimensional three median), at the median
-    carry of that third, inside the lines and short of the wall. The infield stays in the standard alignment
-    (its turn by his ground balls, and the spot's infield in, double play depth and the lines guarded late, are
-    a later change: they move who fields which ground ball, and that needs its own motion fixes first).
-    Pure: the same hitter always stands the same. Never decides anything: the engine's play is staged from
-    here exactly as from the stock spots (the plan moves whoever must make or miss a play, as before). */
+// a step, for the spot's conventions below (two steps in and two toward second at double play depth, two
+// toward the line guarding it): a stride of an infielder setting himself, 3 ft
+const STEP = 3;
+/** On the base path at this spray (the line between the bags; the infield grass stops 3 ft inside it,
+    ballpark.js): where an infield playing in stands, at the grass. */
+const lineAt = (deg) => 127.28 / (Math.abs(Math.sin(deg * D2R)) + Math.cos(deg * D2R));
+/** The spot's late and close (the engine's own: the eighth inning on, engine.js lateKey; close, the margin
+    within a run either way, pipeline/effects.py). o.inning, o.margin: our lead before the pitch. */
+export function lateClose(o) {
+  return (o.inning || 0) >= 8 && Number.isFinite(o.margin) && Math.abs(o.margin) <= 1;
+}
+
+/** Where the nine stand at this pitch, for this hitter in this spot (site PRs: the outfield, #785; the
+    infield, fielders shade by hitter). o.shade: the hitter's row of shade-data.js
+    (lab/pipeline/build-shade.mjs: his own batted balls in the pack, the league's as the prior), or null:
+    the standard alignment, spots(). o.bases (bitmask) and o.outs: before the pitch. o.inning, o.margin
+    (our lead before the pitch): the late game.
+      the infield: each man turns about home to where this hitter's ground balls put the league's share of
+      them that his standard spot takes (inf, degrees)
+      the outfield: each fielder at the median spray of his third of the hitter's air balls (a one
+      dimensional three median), at the median carry of that third, inside the lines and short of the wall
+      the 2023 rules (held for every era, as the owner asked): two infielders each side of second, all four
+      on the infield dirt, so no overshift
+    then the spot, the conventions every club plays:
+      a runner on third, under two outs, late and close: the infield in, at the grass
+      else a runner on first, under two outs: the middle infielders at double play depth, two steps in and
+      two toward second
+      late and close (and not in): the corners guard the lines, two steps toward them
+    Pure: the same hitter in the same spot always stands the same. Never decides anything: the engine's
+    play is staged from here exactly as from the stock spots (the plan moves whoever must make or miss a
+    play, as before). */
 export function alignment(bats, o = {}) {
   const F = spots(bats);
   const sh = o.shade && o.shade.bats === bats ? o.shade : null;
+  if (sh && sh.inf) [5, 6, 4, 3].forEach((n, j) => { F[n] = pol(sprayOf(F[n]) + sh.inf[j], rad(F[n])); });
   if (sh && sh.of) {
     for (const [j, n, lo, hi] of [[0, 7, -42, 15], [1, 8, -25, 25], [2, 9, -15, 42]]) {
       const a = clamp(sh.of[j][0], lo, hi);
       F[n] = pol(a, Math.min(sh.of[j][1], wallDist(a) - 25));
     }
   }
+  // the 2023 rules: the shortstop and third baseman left of second, the second and first basemen right of
+  // it (a body's width clear, 1.5 ft), the corners inside their lines (as far), all four on the dirt
+  const side = (n, s) => {
+    const p = F[n], r = rad(p), a = sprayOf(p), m = Math.asin(Math.min(1, 1.5 / r)) / D2R;
+    let lo = s < 0 ? -45 + m : m, hi = s < 0 ? -m : 45 - m;
+    // (the dirt's edge, an arc 95 ft from the rubber: a stride inside it)
+    const aa = clamp(a, lo, hi), u = pol(aa, 1), b = u.x * MOUND.x + u.y * MOUND.y, c = MOUND.x * MOUND.x + MOUND.y * MOUND.y - 92 * 92;
+    F[n] = pol(aa, Math.min(r, b + Math.sqrt(b * b - c)));
+  };
+  side(5, -1); side(6, -1); side(4, 1); side(3, 1);
+  // (and in their order: a corner never turned past the man beside him, a body's width clear)
+  const wid = (n) => Math.asin(Math.min(1, 1.5 / rad(F[n]))) / D2R;
+  if (sprayOf(F[5]) > sprayOf(F[6]) - wid(5)) F[5] = pol(sprayOf(F[6]) - wid(5), rad(F[5]));
+  if (sprayOf(F[3]) < sprayOf(F[4]) + wid(3)) F[3] = pol(sprayOf(F[4]) + wid(3), rad(F[3]));
+  const bases = o.bases || 0, outs = o.outs ?? 0, late = lateClose(o);
+  const inn = (bases & 4) && outs < 2 && late;
+  if (inn) for (const n of IF) { const a = sprayOf(F[n]); F[n] = pol(a, Math.min(rad(F[n]), lineAt(a))); }
+  else if ((bases & 1) && outs < 2) {
+    for (const n of [4, 6]) {
+      const p = F[n], r = rad(p) || 1, to = { x: BASE[2].x - p.x, y: BASE[2].y - p.y }, d = Math.hypot(to.x, to.y) || 1;
+      F[n] = { x: p.x - (p.x / r) * 2 * STEP + (to.x / d) * 2 * STEP, y: p.y - (p.y / r) * 2 * STEP + (to.y / d) * 2 * STEP };
+    }
+  }
+  if (late && !inn) {
+    for (const n of [3, 5]) {
+      const a = sprayOf(F[n]), r = rad(F[n]), m = Math.asin(Math.min(1, 1.5 / r)) / D2R;
+      F[n] = pol(clamp(a + Math.sign(a) * (2 * STEP / r) / D2R, -45 + m, 45 - m), r);
+    }
+  }
   return F;
 }
+
+/** Does the first baseman hold the runner on first at this pitch? A runner on first with second base open, as
+    every club plays it (the bag behind him taken, he plays off it). bases: before the pitch, bitmask. */
+export function holdsRunner(bases) { return !!((bases & 1) && !(bases & 2)); }
 
 /* ------------------------------------------------------------------ motion along a path */
 
@@ -133,6 +189,9 @@ export class Track {
   run(t0, pts, o = {}) {
     const v = o.v ?? this.v, a = o.a ?? this.a;
     if (this.legs.length) t0 = Math.max(t0, this.free);
+    // (a leg chained a hair after the last one starts where it ended: a frame in the sliver between read him
+    // standing still for a frame, his stride gone, check-jolt.mjs)
+    if (this.legs.length && t0 - this.free < 1e-6) t0 = this.free;
     let from = this.end;
     const fromRest = o.fromRest ?? true, toRest = o.toRest ?? true;
     const seg = []; let total = 0;
@@ -173,6 +232,12 @@ export class Track {
       if (g.be > 0 || (nx.t0 < g.t0 + g.T + 0.02 && nx.al === 0)) continue;
       // (its top speed rises to fit the stop into the same time, by no more than a sixth)
       g.be = Math.min(STOP_S / g.T, 2 * (1 - g.al / 2) * (1 - 1 / 1.15));
+      // (a run that was speeding up the whole way, a sprint from rest to a ball he only just reaches, has no
+      // room for a stop after it: the ramps overlapped, so he reached the spot at nine tenths of the leg and
+      // stood there with his stride going at full speed, then stopped in a frame, his body snapping from the
+      // way he ran to the ball, the bobble's skate and pop, check-jolt.mjs. Then it speeds up and pulls up
+      // inside the leg, a rise and a stop, the same top speed, the same time and spot)
+      if (g.al + g.be > 1) { g.be = Math.min(STOP_S / g.T, 0.5); g.al = Math.min(g.al, 1 - g.be); }
     }
   }
   /** Stay where he is until t (whatever comes next starts no sooner). */
@@ -300,7 +365,7 @@ const INF = 1e9;
 /** The plan of one ball in play. pr: the engine's PitchResult (in_play). o: { bats, contact
     {x,y,z} feet (where the bat met it), basesBefore (bitmask; derived from the moves when left
     out), id (the drawn pitch's id, for the plan's own picks), shade (the hitter's shade-data.js row, or
-    null; alignment()) }. */
+    null), inning and margin (our lead before the pitch; alignment()) }. */
 export function planPlay(pr, o = {}) {
   const ip = pr.inPlay || {};
   const id = o.id || (pr.drawn && pr.drawn.id) || 'x';
@@ -333,9 +398,13 @@ export function planPlay(pr, o = {}) {
   const ctx = { pr, o, id, label, moves, before, hit, bb, ev, la, spray, kind, contact, z0, bats: o.bats || 'R' };
   // the outs before the pitch: the engine gives the outs after it and every runner put out on it
   ctx.outs0 = Math.max(0, Math.min(2, (pr.outs ?? 0) - moves.filter((m) => m.to === -1).length));
-  const F = alignment(ctx.bats, { shade: o.shade || null });
+  const F = alignment(ctx.bats, { shade: o.shade || null, bases: before, outs: ctx.outs0, inning: o.inning, margin: o.margin });
+  // the first baseman holds a runner on first with second base open: on the bag at the pitch, his right foot on
+  // its front edge, facing the pitcher (holdsRunner). Over the spot's own alignment: holding him comes first
+  const hold1 = holdsRunner(before);
+  if (hold1) F[3] = { x: BASE[1].x - 1.4, y: BASE[1].y - 0.6 };
   ctx.F = F;
-  const p = { kind, label, bb, ev, la, spray, guess, events: [], segs: [], fielders: {}, runners: [], notes: [] };
+  const p = { kind, label, bb, ev, la, spray, guess, events: [], segs: [], fielders: {}, runners: [], notes: [], hold1 };
   ctx.p = p;
   const tracks = {};
   for (let n = 1; n <= 9; n++) tracks[n] = new Track(F[n], { v: SPEED(n).v, a: SPEED(n).a });
@@ -681,9 +750,25 @@ function planGround(ctx) {
       if (!near || m < near.m) near = { n, m, s: ms };
     }
     if (near && near.m < 30) {
-      const b = at(near.s), tgt = lerp(F[near.n], b, Math.min(1, (near.m - 4) / near.m));
-      T[near.n].run(SPEED(near.n).react, [tgt], { toRest: true });
-      T[near.n].act(near.s - 0.1, 'dive', { to: b });
+      // (as far toward it as he gets by the dive, never further: he ran on to a spot he reached half a second
+      // after he had laid out, sliding along the grass flat out, and his next run began while he was still
+      // down, check-jolt.mjs. He dives from where he is, and is up before he runs again)
+      const n = near.n, sp = SPEED(n), b = at(near.s), tD = Math.max(sp.react + 0.05, near.s - 0.1);
+      const go = Math.min(Math.max(0, near.m - 4), reach(tD, sp.react, sp.v, sp.a));
+      const tgt = lerp(F[n], b, go / near.m);
+      // (off his run, not from a stand: pulled up first and then laid out from standing, his head went over a
+      // body's speed. The dive carries him on a few feet as he goes down, over a third of a second)
+      // (from the moment his run ends, as the plan has it, not the moment asked for: a hair apart, a frame between
+      // the two read him standing, his stride gone and his feet down for a frame in the middle of the dive)
+      let tDv = tD;
+      if (go > 0.5) {
+        tDv = T[n].arrive(sp.react, tgt, tD, { toRest: false });
+        const v0 = T[n].at(tDv - 1e-3).spd, u = { x: (tgt.x - F[n].x) / go, y: (tgt.y - F[n].y) / go };
+        if (v0 > 2) T[n].run(tDv, [{ x: tgt.x + u.x * v0 * 0.175, y: tgt.y + u.y * v0 * 0.175 }], { fromRest: false, toRest: true, v: v0, a: v0 / 0.35 });
+      }
+      T[n].act(tDv, 'dive', { to: b });
+      // (the dive's get up: down from tDv to 0.75 s after it, up by 1.35 s, inplay.js)
+      T[n].hold(tDv + 1.2);
     }
     // an outfielder cuts it off as it rolls
     const of = retrieveRolling(ctx, at, g, 0);
@@ -772,7 +857,19 @@ function holdThenThrow(ctx, n, s, at, late) {
   for (const o of outs) {
     const cov = coverer(ctx, o.base, holder, done);
     const tgtPt = basePoint(o.base, o.base === 1 ? 'in' : 'bag');
-    if (cov === holder || dist(pos, tgtPt) < 22) {
+    // (or he gets to the bag sooner than a throw could: the man who would cover it comes from far off. A third
+    // baseman who fielded a ball 30 ft from his bag stood three seconds holding it for the shortstop to come
+    // over from deep short, and the broadcast waited on him while the batter was safe at first out of frame,
+    // check-frame.mjs)
+    const selfAt = () => {
+      const T0 = ctx.T[cov], sp0 = SPEED(cov), key = cov + ':' + o.base;
+      const ready = ctx.cover && ctx.cover[key] != null ? ctx.cover[key]
+        : Math.max(sp0.react, T0.free === -Infinity ? sp0.react : T0.free) + runTime(dist(T0.end, basePoint(o.base, 'bag')), sp0.v, sp0.a, true, true);
+      const fly = dist(pos, tgtPt) / (OF.includes(holder) ? 125 : 118) + 0.06;
+      const ball = Math.max(t + (done.length ? 0.32 : 0.65), ready - fly + 0.05) + fly;
+      return !OF.includes(holder) && t + 0.05 + runTime(dist(pos, tgtPt), 22, 18, true, false) <= ball;
+    };
+    if (cov === holder || dist(pos, tgtPt) < 22 || selfAt()) {
       // close enough to take it himself (and a tag he makes himself waits for the runner too)
       runnerEta(ctx, o);
       const arr = ctx.T[holder].run(t + 0.05, [tgtPt], { v: 22 });
