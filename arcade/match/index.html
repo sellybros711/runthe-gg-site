@@ -570,6 +570,22 @@
     html body.rtg-sticky-on .lead{padding-top:4px !important; padding-bottom:4px !important;}
     html body.rtg-sticky-on .pool-h{padding-top:5px !important; padding-bottom:5px !important;}
   }
+  /* Taller phones (701px to 820px: an iPhone 8 Plus, an iPhone with its browser bars showing, most
+     Androids) kept the full 62px tiles, so Submit sat up to 85px under the banner at first view (the
+     owner, 2026-10-30: fix them). The same tighter bars as above, and tiles at 56px rather than 62,
+     which is just enough at 720px tall. */
+  @media (min-height:701px) and (max-height:820px) and (max-width:999px){
+    html body.rtg-sticky-on .pool .tile{min-height:56px !important;}
+    html body.rtg-sticky-on .pool{padding-top:6px !important; padding-bottom:6px !important; gap:6px !important; margin-bottom:10px !important;}
+    html body.rtg-sticky-on .app{padding-top:4px !important;}
+    html body.rtg-sticky-on .rtggh-strip{margin-bottom:6px !important;}
+    html body.rtg-sticky-on .modesw,
+    html body.rtg-sticky-on .lead,
+    html body.rtg-sticky-on .mstatus,
+    html body.rtg-sticky-on .pool-h{margin-bottom:4px !important;}
+    html body.rtg-sticky-on .lead{padding-top:4px !important; padding-bottom:4px !important;}
+    html body.rtg-sticky-on .pool-h{padding-top:5px !important; padding-bottom:5px !important;}
+  }
   /* The smallest phones (360x640 and the like) needed about 30px more for Submit to clear the
      banner at first view. The tiles are already at the 44px tap minimum, so it comes off the bars
      around them. */
