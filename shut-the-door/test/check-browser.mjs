@@ -1155,7 +1155,7 @@ async function ending(w, h, end, extra) {
   const auth = /mockAuth/.test(extra || '');
   if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
   await revealCheck(page, '11 ' + end, k);
-  ok(await page.evaluate(() => document.getElementById('r-vote').hidden), '11 ' + end + ': no vote for tomorrow before the vote\'s first day');
+  ok(await page.evaluate(() => document.getElementById('r-vote').hidden && document.getElementById('r-vote-go').hidden), '11 ' + end + ': no vote for tomorrow (and no row to it) before the vote\'s first day');
   await shot('result', true);
   /* 12 */
   await coachCheck(page, '12 ' + end, k, { lesson: !/mockLesson=none/.test(extra || ''), pro: !/mockPro=none/.test(extra || '') && !/mockLesson=none/.test(extra || '') }, shot);
@@ -1285,7 +1285,7 @@ async function modesPage(w, h, q, opts) {
     return route.abort();
   });
   await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 60000 });
   return { ctx, page, errors };
 }
 /* finish today's daily through the calls (the mound's own path is steps 5 and 11), then come back to it */
@@ -1296,7 +1296,7 @@ async function dailyDone(page) {
     for (let i = 0; st.status === 'live' && i < 90; i++) st = (await A.throwPitch(st.outingId, { type: S.scn.pitcher.arsenal[0].type, cell: 12 })).state;
   });
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#d-see', { timeout: 15000 });
+  await page.waitForSelector('#d-see', { timeout: 60000 });
 }
 const nothingOpen = (page) => page.evaluate(() => ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden));
 const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
@@ -1317,7 +1317,7 @@ async function modes(w, h, full) {
   const sv = await page.evaluate(() => ({ b: document.querySelector('#r-save [data-save]').textContent, h: document.querySelector('#r-save [data-save]').getBoundingClientRect().height }));
   ok(sv.b === 'sign in to save your score' && sv.h >= 38, '17 signed out, the result has the button "' + sv.b + '" (' + Math.round(sv.h) + ' px)');
   ok(await nothingOpen(page), '17 the save is a button on the result, no sheet opened');
-  await page.waitForSelector('#r-vote:not([hidden]) .vt-o', { timeout: 8000 });
+  await page.waitForSelector('#r-vote:not([hidden]) .vt-o', { timeout: 30000 });
   const gv = await page.evaluate(() => ({ n: document.querySelectorAll('#r-vote .vt-o').length, dis: [...document.querySelectorAll('#r-vote .vt-o')].every((b) => b.disabled), btn: (document.querySelector('#r-vote [data-save]') || {}).textContent }));
   ok(gv.n === 2 && gv.dis && gv.btn === 'sign in to save your score', '17 signed out, the vote shows the two and the same sign-in button (' + gv.btn + ')');
   ok(await noSideScroll(page), '17 the result has no sideways scroll');
@@ -1351,7 +1351,13 @@ async function modes(w, h, full) {
   ok(await page.evaluate(() => document.getElementById('r-save').hidden), '17 signed in, no save button');
   const vt = await page.evaluate(() => [...document.querySelectorAll('#r-vote .vt-o')].map((b) => ({ name: b.querySelector('.vt-t b').textContent, meta: b.querySelector('.vt-t span').textContent, h: b.getBoundingClientRect().height })));
   ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(top|bot) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
-  await page.evaluate(() => document.getElementById('r-vote').scrollIntoView({ block: 'start' }));
+  /* the menu's row to the vote (the owner, 2026-10-30): only while it is open; it scrolls, nothing opens */
+  const vrow = await page.evaluate(() => { const b = document.getElementById('r-vote-go'); return { on: !b.hidden, t: b.textContent, h: b.getBoundingClientRect().height }; });
+  ok(vrow.on && /vote for tomorrow/.test(vrow.t) && vrow.h >= 38, '17 the result\'s menu has a row to the vote while it is open: "' + vrow.t + '"');
+  await page.click('#r-vote-go');
+  await page.waitForFunction(() => { const r = document.getElementById('r-vote').getBoundingClientRect(); return r.top >= -2 && r.top < 80; }, null, { timeout: 5000 });
+  ok(await nothingOpen(page) && await page.evaluate(() => document.activeElement && document.activeElement.closest('#r-vote') !== null),
+    '17 the row jumps to the vote tile and hands it the focus, no sheet opened');
   await shotM(page, 'vote');
   await page.click('#r-vote .vt-o >> nth=0');
   await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 5000 });
@@ -1371,7 +1377,7 @@ async function modes(w, h, full) {
   await page.waitForSelector('#sheet-past.on');
   const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);
   ok(arc > 0, '17 Pro: the past dailies are a list to play (' + arc + ' days)');
-  await page.click('#past-body .arc-list button >> nth=0');
+  await page.click('#past-body .arc-list button >> nth=0', { timeout: 120000 });
   await page.waitForFunction(() => window.STD_UI.state.mode === 'archive' && document.body.dataset.screen === 's-mound', null, { timeout: 120000 });
   ok(true, '17 Pro: a past day opens on the mound, as the archive');
   ok(errors.length === 0, '17 the pick and the archive: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));

@@ -1672,7 +1672,24 @@ function renderModes() {
   var daily = S.mode === 'daily';
   if (daily) MU.saveBlock($('r-save'), { account: S.result && S.result.account, justSaved: S.saved });
   else { $('r-save').hidden = true; }
-  if (daily && S.dailyResult) MU.voteBlock($('r-vote')); else $('r-vote').hidden = true;
+  if (daily && S.dailyResult) MU.voteBlock($('r-vote')); else { $('r-vote').hidden = true; voteRow(null); }
+}
+/* The result's menu carries one row to the vote while it is open (the owner, 2026-10-30): on a phone
+   the vote's tile sits below the menu. The row only scrolls to it; it never opens anything. */
+function voteRow(v) {
+  var b = $('r-vote-go'), on = !!(v && v.open && v.candidates && v.candidates.length === 2) && S.mode === 'daily';
+  var was = !b.hidden;
+  b.hidden = !on;
+  if (on) b.querySelector('span').textContent = v.myVote ? 'your vote is in' : v.canVote ? 'pick the next spot' : 'see the two spots';
+  if (was && !on && b.classList.contains('sel')) navSelect($('r-coach'));
+}
+function jumpToVote() {
+  var t = $('r-vote');
+  if (t.hidden) return;
+  t.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  var f = t.querySelector('.vt-o:not([disabled]), [data-save]') || t;
+  if (f === t) t.setAttribute('tabindex', '-1');
+  try { f.focus({ preventScroll: true }); } catch (e) {}
 }
 
 /* ---- Survivor (CONTRACT.md 17): a run of saves --------------------------------------------------
@@ -2199,7 +2216,9 @@ function boot() {
     if (document.body.dataset.screen === 's-result') { renderStreak(); renderModes(); }
     if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
   });
+  $('r-vote-go').addEventListener('click', jumpToVote);
   if (MU) MU.init({
+    onVote: voteRow,
     signIn: function () { MN.show('auth'); },
     onSurvivor: startSurvivor,
     onBack: function () { renderHomeState(); show('s-home'); drawHero(); },

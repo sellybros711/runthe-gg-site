@@ -25,7 +25,7 @@ function authState() {
   return st;
 }
 
-var ctx = { signIn: null, onSurvivor: null, onBack: null };
+var ctx = { signIn: null, onSurvivor: null, onBack: null, onVote: null };
 
 /* ---- small words -------------------------------------------------------------------------- */
 
@@ -102,9 +102,10 @@ function voteBlock(el) {
     if (my !== voteSeq) return v;
     drawVote(el, v);
     return v;
-  }, function () { if (my === voteSeq) el.hidden = true; return null; });
+  }, function () { if (my === voteSeq) { el.hidden = true; if (ctx.onVote) ctx.onVote(null); } return null; });
 }
 function drawVote(el, v, busy) {
+  if (ctx.onVote) ctx.onVote(v);
   if (!v || !v.candidates || v.candidates.length !== 2) { el.hidden = true; el.innerHTML = ''; return; }
   el.hidden = false;
   var st = authState(), mine = v.myVote, tot = v.votes ? (v.votes.a || 0) + (v.votes.b || 0) : 0;
