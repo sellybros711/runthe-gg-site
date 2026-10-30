@@ -1360,6 +1360,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 /* the vote for tomorrow: two choices, one line each; after the vote the count fills behind them */
 .r-vote .r-sec-h > span { margin-left: auto; }
 .vt-opts { display: grid; gap: 8px; }
+@media (min-width: 1100px) { .vt-opts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .vt-o { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 10px 14px; border-radius: 14px; border: 1.5px solid var(--line-2); background: var(--panel); text-align: left; transition: border-color .15s, background .15s; }
 .vt-o:not([disabled]):hover, .vt-o:not([disabled]):focus-visible { border-color: var(--signal); background: var(--signal-soft); }
 .vt-o[disabled] { cursor: default; }
