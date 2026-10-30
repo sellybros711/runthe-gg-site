@@ -46,7 +46,15 @@
  * rule. After a tie every call is graded on the tie's goal (grade.js THE GOAL).
  *
  * THE OUTING SCORE (higher is better)
- *   score = max(0, 700 - SCORE_PER_PT * total pts lost) + RESULT_BONUS[outcome]
+ *   rules 8:  score = round(700 * exp(-total pts lost * 3 / outs asked / SCORE_DECAY)) + RESULT_BONUS[outcome]
+ *   before:   score = max(0, 700 - SCORE_PER_PT * total pts lost) + RESULT_BONUS[outcome]
+ *   Rules 8's curve (the lead's call on #830, 2026-10-30): the straight line hit 0 at 35 points
+ *   lost, and in a hard spot a quarter of the closer pool sat there with one score (Diaz 2025: 26%;
+ *   Chapman over two halves: 11%), so the percentile could not tell them apart. The curve has the
+ *   same slope at the start (20 a point: SCORE_DECAY is 700 / 20), never reaches 0, and divides the
+ *   points by the outs asked over three, so a spot of four or six outs is scored per out like one
+ *   of three. A spot of three outs from a fresh half scores what it did under the line until about
+ *   5 points lost, then less steeply. An outing played before rules 8 keeps the line, exactly.
  *   The first part is the hold% kept across the outing (20 points of score per
  *   point of hold% given away; after a tie, points of the tie's goal), the
  *   second the result. Tuned against the closer pool when the pool exists;
@@ -114,6 +122,7 @@ const ENGINE_VERSION = 11;
 const PACK_VERSION = 4;
 const SCORE_BASE = 700;
 const SCORE_PER_PT = 20;
+const SCORE_DECAY = SCORE_BASE / SCORE_PER_PT;   // 35: the curve's slope at 0 is the line's
 /* The result's part of the score: 100 points a rank (contract.js OUTCOME_RANK).
    tie_held is 200. It is a blown save, so it sits a full step under door_shut
    (300): holding the tie never pays like holding the lead. The game goes on
@@ -802,7 +811,12 @@ function inPlayText(label, bb, spray, runs) {
 
 function totalLost(o) { return o.grades.reduce((a, g) => a + g.lost, 0); }
 
+/* The outs a spot asks: the first half's, then three a half (rules 8). */
+function outsAsked(o) { return 3 * o.model.H - o.pack.scenario.situation.outs; }
 function outingScore(o) {
+  if (o.rules >= G.FULL_RULES) {
+    return Math.round(SCORE_BASE * Math.exp(-totalLost(o) * 3 / outsAsked(o) / SCORE_DECAY)) + RESULT_BONUS[o.outcome];
+  }
   return Math.max(0, Math.round(SCORE_BASE - SCORE_PER_PT * totalLost(o))) + RESULT_BONUS[o.outcome];
 }
 
@@ -927,7 +941,7 @@ function replay(pack, seed, calls, opts) {
 }
 
 const publicAPI = Object.freeze({
-  ENGINE_VERSION, PACK_VERSION, SCORE_BASE, SCORE_PER_PT, RESULT_BONUS,
+  ENGINE_VERSION, PACK_VERSION, SCORE_BASE, SCORE_PER_PT, SCORE_DECAY, RESULT_BONUS,
   seedFor, createOuting, throwPitch, challengePitch, challengeLive, pickoff, pickoffLive, finishOuting, publicState, replay, rulesOf, bestCall,
   outingScore, percentileOf, styleVector, vsReal,
 });

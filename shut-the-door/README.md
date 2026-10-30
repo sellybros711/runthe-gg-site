@@ -464,13 +464,12 @@ in Crisp's slot and Miguel Montero catching. Real: 35 pitches, 3 runs, held the 
 | pool door shut / held tie / door's open / walk-off | 1964 / 27 / 9 / 0 | 1831 / 87 / 5 / 77 |
 | pool pitches an outing | 6.0 | 23.4 |
 | pool calls green / yellow / orange / red | 25 / 30 / 28 / 16% | 22 / 27 / 33 / 18% |
-| pool score median, share at 300 or less | 993, 1.3% | 916, 12.1% |
+| pool score median, share at 300 or less (the line) | 993, 1.3% | 916, 12.1% |
 | pack | 0.75 MB | 0.97 MB |
 
 The best-call outing is all green and the median pool outing lands at the 50th (`test/packs.mjs`).
-**The score floor.** `700 - 20 x points lost` reaches 0 at 35 points, and two halves lose about four
-times as many points as one out, so 12% of the pool's outings score only their result bonus. That is
-not changed here: the formula is the lead's (engine.js THE OUTING SCORE).
+**The score floor.** Under the line `700 - 20 x points lost`, 12% of the pool's two-half outings scored
+only their result bonus. Rules 8 scores on a curve instead (The outing score, below).
 
 ## Release and spin, for the picture (2026-10-24)
 
@@ -567,8 +566,34 @@ pitcher's miss per axis): Statcast does not record the catcher's target, so it i
 ## The outing score and percentile
 
 ```
-score = max(0, 700 - 20 * total pts lost) + {door_shut: 300, tie_held: 200, doors_open: 100, walk_off: 0}
+rules 8:  score = round(700 * exp(-total pts lost * 3 / outs asked / 35)) + {door_shut: 300, tie_held: 200, doors_open: 100, walk_off: 0}
+before:   score = max(0, 700 - 20 * total pts lost) + the same
 ```
+
+Rules 8's curve (2026-10-30, the lead on #830). The line reached 0 at 35 points lost, and in hard
+spots a quarter of the pool sat there on one score, so the percentile could not tell them apart.
+The curve has the line's slope at 0 (35 is 700 / 20: one point lost is 680 either way), never
+reaches 0, and counts points per out asked (`3 x halves - outs at the start`), so a four out spot
+is scored per out like a three out one. An outing played before rules 8 keeps the line, exactly.
+The pools of all ten packs were replayed for it (nothing else in them moved):
+
+| pack | at the floor, before | after | 10th outing's percentile, before | after |
+|---|---|---|---|---|
+| Eckersley 1988 | 29% | 0% | 10 | 10 |
+| Rivera 2001 | 42% | 0% | 6 | 10 |
+| Feliz 2011 | 23% | 0% | 10 | 10 |
+| Chapman 2016 | 11% | 0% | 9 | 10 |
+| Hader 2019 | 17% | 0% | 8 | 10 |
+| Pressly 2022 | 9% | 0% | 8 | 10 |
+| Buehler 2024 | 28% | 0% | 10 | 10 |
+| Diaz 2025 | 26% | 0% | 13 | 10 |
+| Scott 2025 | 32% | 0% | 10 | 10 |
+| Yamamoto 2025 | 31% | 0% | 10 | 10 |
+
+Options measured on Chapman's two halves and Diaz's one (share of the pool on one score): the line
+11% and 26%; the line per out asked 8% and 26%; the line per half 14% and 26%; the curve 2% (the
+perfect outings at the top) and 0%. Only the curve reaches the one-half spots, where the floor was
+already worst. The grade, the bands and `band_sweep` do not read the score, so they are unchanged.
 
 The result's part is 100 points a rank (`contract.js OUTCOME_RANK`). A held tie is a blown save, a
 full step under a door shut, and the game goes on level, a full step over door's open. After a tie

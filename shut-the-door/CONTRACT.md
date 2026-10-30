@@ -693,6 +693,10 @@ up to his first batter, hits and errors so far), `pack.reveal` (his whole outing
 catcher on the field when a later half began). Every fact from the play by play (`pipeline/halves.py`,
 MLB's live feed; Retrosheet for a proxy spot); a missing one is null.
 
+**The score** (section 8): rules 8 scores `round(700 x exp(-points lost x 3 / outs asked / 35))` plus
+the result's bonus, with no floor (the README has why and the measurements). Before rules 8 the line
+`max(0, 700 - 20 x points lost)`, which an older outing keeps.
+
 **The daily's rollout.** A daily is never switched partway through a day: `api.js FULL_CLOSE_FROM`.
 Outings stored before rules 8 replay as they were played.
 

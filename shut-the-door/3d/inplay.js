@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=21';
-import { SHADE } from './shade-data.js?v=2';
+import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=8';
 import { buildBallpark } from './ballpark.js?v=22';
 // (the same URL stage.js imports, so both share one copy of people.js)

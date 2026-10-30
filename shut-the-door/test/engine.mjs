@@ -192,7 +192,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('a tie, then three outs: tie_held', held.status === 'over' && held.outcome === 'tie_held', held.outcome);
   const heldR = E.finishOuting(held);
   check('a held tie scores the tie_held bonus',
-    heldR.score === Math.max(0, Math.round(E.SCORE_BASE - E.SCORE_PER_PT * held.grades.reduce((a, g) => a + g.lost, 0))) + E.RESULT_BONUS.tie_held,
+    heldR.score === Math.round(E.SCORE_BASE * Math.exp(-held.grades.reduce((a, g) => a + g.lost, 0) / E.SCORE_DECAY)) + E.RESULT_BONUS.tie_held,
     String(heldR.score));
   check('the held tie\'s runs are the runs that tied it', heldR.runs === 1);
   check('a held tie is HELD THE TIE', K.OUTCOME_LABEL[heldR.outcome] === 'HELD THE TIE');
@@ -797,6 +797,14 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('rules 8: deterministic, the half switch included', JSON.stringify(a1.log) === JSON.stringify(a2.log) && JSON.stringify(a1.halves) === JSON.stringify(a2.halves));
   check('rules 8: a new outing\'s calls carry r 8', a1.calls.every(c => c.r === 8) && G.RULES === 8 && G.FULL_RULES === 8);
   // the grade of the 9th's first pitch is the 9th's own state
+  // the score (rules 8): a curve with the line's slope at 0, no floor, per out asked; the line before
+  {
+    const L = 50, mk = (rules, H, outs) => ({ rules, grades: [{ lost: L }], outcome: 'door_shut', model: { H }, pack: { scenario: { situation: { outs } } } });
+    check('rules 8: the score is a curve that never reaches 0 (50 points lost: 168 + 300, not 0 + 300)', E.outingScore(mk(8, 1, 0)) === Math.round(700 * Math.exp(-50 / 35)) + 300 && E.outingScore(mk(8, 1, 0)) > 300);
+    check('rules 8: four outs asked score their points at three quarters', E.outingScore(mk(8, 2, 2)) === Math.round(700 * Math.exp(-50 * 0.75 / 35)) + 300);
+    check('rules 8: an outing before rules 8 keeps the line, floor and all', E.outingScore(mk(7, 1, 0)) === 300 && E.outingScore({ grades: [{ lost: 10 }], outcome: 'door_shut' }) === 800);
+    check('rules 8: the slope at 0 is the line\'s (one point lost: 680 either way)', E.outingScore(Object.assign(mk(8, 1, 0), { grades: [{ lost: 1 }] })) === 980 && E.outingScore(Object.assign(mk(7, 1, 0), { grades: [{ lost: 1 }] })) === 980);
+  }
   check('rules 8: the 9th is graded from its own state (the hold table over both halves)', a1.grades[9].best > 0 && a1.before[9].h === 1 && a1.before[9].outs === 0);
 }
 
