@@ -849,7 +849,19 @@ function holdThenThrow(ctx, n, s, at, late) {
   for (const o of outs) {
     const cov = coverer(ctx, o.base, holder, done);
     const tgtPt = basePoint(o.base, o.base === 1 ? 'in' : 'bag');
-    if (cov === holder || dist(pos, tgtPt) < 22) {
+    // (or he gets to the bag sooner than a throw could: the man who would cover it comes from far off. A third
+    // baseman who fielded a ball 30 ft from his bag stood three seconds holding it for the shortstop to come
+    // over from deep short, and the broadcast waited on him while the batter was safe at first out of frame,
+    // check-frame.mjs)
+    const selfAt = () => {
+      const T0 = ctx.T[cov], sp0 = SPEED(cov), key = cov + ':' + o.base;
+      const ready = ctx.cover && ctx.cover[key] != null ? ctx.cover[key]
+        : Math.max(sp0.react, T0.free === -Infinity ? sp0.react : T0.free) + runTime(dist(T0.end, basePoint(o.base, 'bag')), sp0.v, sp0.a, true, true);
+      const fly = dist(pos, tgtPt) / (OF.includes(holder) ? 125 : 118) + 0.06;
+      const ball = Math.max(t + (done.length ? 0.32 : 0.65), ready - fly + 0.05) + fly;
+      return !OF.includes(holder) && t + 0.05 + runTime(dist(pos, tgtPt), 22, 18, true, false) <= ball;
+    };
+    if (cov === holder || dist(pos, tgtPt) < 22 || selfAt()) {
       // close enough to take it himself (and a tag he makes himself waits for the runner too)
       runnerEta(ctx, o);
       const arr = ctx.T[holder].run(t + 0.05, [tgtPt], { v: 22 });
