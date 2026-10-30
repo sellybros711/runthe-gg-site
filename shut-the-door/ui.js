@@ -1164,6 +1164,9 @@ function throwIt() {
     /* the step line under the meter says what to do; the meter's own corner keeps its word for after the tap */
     hint: ' ',
     place: meterPlace(bt),
+    /* the zone is a stop too while the meter runs (the owner, 2026-10-30): its taps go to the meter,
+       never to the aim. RE-AIM on the panel (or Escape) cancels it to aim again */
+    zone: S.grid.el,
     onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
     /* a perfect release: the snap again, and with a perfect power a second one like a mitt's pop */
     onPerfect: function (level) { sound('snap', 60); if (level === 2) sound('pop', 140); },
