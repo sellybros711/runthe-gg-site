@@ -809,7 +809,9 @@ export class FirstPerson {
     const c = Math.max(0, sizeK / Math.max(1, g.px) - cam.position.distanceTo(pitch.pointAt(0)));
     const v = pitch.f.v0 * FT_M;
     const join = c > 0 ? Math.min(0.6 * pitch.f.T, Math.max(0.08, 2.2 * c / v)) : 0;
-    const self = this, camRel = cam.position.clone(), T = pitch.f.T, head = cam.clone();
+    // (his head's offsets at release, park.js pitcherEye: the carry reads the offsets alone, no camera
+    // is posed for it, so a trail of 64 points costs next to nothing)
+    const self = this, T = pitch.f.T, side = this.side, at0 = eye.offsets(pitch.tRel, []), at = [];
     return {
       join,
       // the trail and the sparkle start a beat out of his hand, about where they always did
@@ -821,8 +823,9 @@ export class FirstPerson {
       carry(tt, out) {
         const w = 1 - clamp01(tt / T);
         if (self.hidden || !(w > 0) || !(tt >= 0)) return out.set(0, 0, 0);
-        eye.update(pitch.tRel + tt, head);
-        return out.copy(head.position).sub(camRel).multiplyScalar(w);
+        // where his eye is (park.js pitcherEye update): P(-hand EYE.x + hand lat, EYE.y - fwd, EYE.z + up)
+        eye.offsets(pitch.tRel + tt, at);
+        return out.set(-side * (at[0] - at0[0]) * FT_M, (at[2] - at0[2]) * FT_M, -(at[1] - at0[1]) * FT_M).multiplyScalar(w);
       },
       /** The ball's size tt seconds out of his hand, d metres from the eye, as a scale on its own. */
       scale(tt, d) {

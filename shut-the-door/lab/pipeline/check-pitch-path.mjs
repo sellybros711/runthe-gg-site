@@ -24,8 +24,9 @@
  *           a ball all but still, its direction the pixel's rounding), and no kink: no frame where its
  *           step changes by KINK_PX and KINK_X times its neighbours' change (a curve's own change,
  *           at an apex or as a ball going away slows on the screen, is smooth)
- *   drawn   the ball the game draws (its position after stage.pose) is its flight plus the lens's carry
- *           of his head's move, within DRAWN_FT, and that carry is nothing at the plate
+ *   drawn   the ball the game draws (its position after stage.pose) is its flight plus the lens's carry,
+ *           within DRAWN_FT; the carry is his head's own move since release (the camera's), the share
+ *           1 - tt / T of it, and nothing at the plate
  *   hand    the ball leaves from his hand: at release it is on his hand on the screen, within HAND_PX
  *   size    the ball on the screen never grows (its drawn size in px, within SIZE_PX)
  *   plate   it crosses the front of the plate on the engine's point (within PLATE_IN), at his time:
@@ -107,12 +108,15 @@ for (const [W, H] of SCREENS) {
           const still = cam.clone(); st.eye.update(pt.tRel, still); still.updateMatrixWorld(); still.updateProjectionMatrix();
           const N = Math.max(4, Math.round(T * 60)), dt = T / N;
           const view = [], world = [];
-          let kink = 0, lastSide = 0, turns = 0, maxSize = Infinity, grew = 0, drawn = 0, hand = 0;
+          let carryOff = 0, kink = 0, lastSide = 0, turns = 0, maxSize = Infinity, grew = 0, drawn = 0, hand = 0;
           for (let i = 0; i <= N; i++) {
             const tt = i * dt;
             const w = pt.pointAt(tt); world.push(w); view.push(px(w, still));
             st.pose(pt.tRel + tt);
             const want = pt.pointAt(tt).add(lens.carry(tt, w.clone()));
+            // the carry is his head's own move since release, the share 1 - tt / T of it
+            const head = cam.position.clone().sub(still.position).multiplyScalar(1 - Math.min(1, tt / T));
+            carryOff = Math.max(carryOff, head.distanceTo(lens.carry(tt, w.clone())) / 0.3048);
             drawn = Math.max(drawn, pt.ball.position.distanceTo(want) / 0.3048);
             const d = cam.position.distanceTo(pt.ball.position);
             const size = 0.0737 / (2 * d * Math.tan(cam.fov * Math.PI / 360)) * cssH * pt.ball.scale.x;
@@ -148,6 +152,7 @@ for (const [W, H] of SCREENS) {
           if (kink) bad.push(`a kink: its step changes ${kink.toFixed(1)} px in one frame`);
           if (cst > L.CONST_FT) bad.push(`not one constant acceleration from the side (${cst.toExponential(1)} ft)`);
           if (drawn > L.DRAWN_FT) bad.push(`drawn ${drawn.toFixed(4)} ft off its flight and carry`);
+          if (carryOff > L.DRAWN_FT) bad.push(`its carry is ${carryOff.toFixed(4)} ft off his head's move`);
           if (carryEnd > L.DRAWN_FT) bad.push(`still carried ${carryEnd.toFixed(4)} ft at the plate`);
           if (hand > L.HAND_PX) bad.push(`leaves ${hand.toFixed(1)} px off his hand`);
           if (grew) bad.push(`grows ${grew.toFixed(2)} px on the screen`);
