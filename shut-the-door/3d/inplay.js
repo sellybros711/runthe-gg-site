@@ -75,13 +75,13 @@ const OF = [7, 8, 9];
    their own. creep: the infielders' two short steps in as the pitch is thrown. */
 const READY = {
   1: { crouch: 0.32, lean: 0.25 }, 2: { crouch: 0.32, lean: 0.25 },
-  3: { crouch: 0.62, lean: 0.5, wide: 0.75, glove: { fwd: 1.9, side: 0.35, z: 1.0 }, hand: { fwd: 1.8, side: -0.35, z: 1.15 }, creep: true },
-  5: { crouch: 0.62, lean: 0.5, wide: 0.75, glove: { fwd: 1.9, side: 0.35, z: 1.0 }, hand: { fwd: 1.8, side: -0.35, z: 1.15 }, creep: true },
-  4: { crouch: 0.5, lean: 0.45, wide: 0.7, glove: { fwd: 1.9, side: 0.4, z: 1.5 }, hand: { fwd: 1.8, side: -0.4, z: 1.6 }, creep: true },
-  6: { crouch: 0.5, lean: 0.45, wide: 0.7, glove: { fwd: 1.9, side: 0.4, z: 1.5 }, hand: { fwd: 1.8, side: -0.4, z: 1.6 }, creep: true },
-  7: { crouch: 0.16, lean: 0.2, wide: 0.3, glove: { fwd: 1.1, side: 0.5, z: 2.7 }, hand: null },
-  8: { crouch: 0.16, lean: 0.2, wide: 0.3, glove: { fwd: 1.1, side: 0.5, z: 2.7 }, hand: null },
-  9: { crouch: 0.16, lean: 0.2, wide: 0.3, glove: { fwd: 1.1, side: 0.5, z: 2.7 }, hand: null },
+  3: { crouch: 0.8, lean: 0.62, wide: 1.7, glove: { fwd: 2.0, side: 0.18, z: 0.8 }, hand: { fwd: 1.95, side: -0.2, z: 0.95 }, creep: true },
+  5: { crouch: 0.8, lean: 0.62, wide: 1.7, glove: { fwd: 2.0, side: 0.18, z: 0.8 }, hand: { fwd: 1.95, side: -0.2, z: 0.95 }, creep: true },
+  4: { crouch: 0.68, lean: 0.58, wide: 1.6, glove: { fwd: 2.0, side: 0.2, z: 1.25 }, hand: { fwd: 1.95, side: -0.22, z: 1.35 }, creep: true },
+  6: { crouch: 0.68, lean: 0.58, wide: 1.6, glove: { fwd: 2.0, side: 0.2, z: 1.25 }, hand: { fwd: 1.95, side: -0.22, z: 1.35 }, creep: true },
+  7: { crouch: 0.32, lean: 0.48, wide: 0.9, glove: { fwd: 0.9, side: 0.5, z: 1.75 }, hand: { fwd: 0.9, side: -0.5, z: 1.75 } },
+  8: { crouch: 0.32, lean: 0.48, wide: 0.9, glove: { fwd: 0.9, side: 0.5, z: 1.75 }, hand: { fwd: 0.9, side: -0.5, z: 1.75 } },
+  9: { crouch: 0.32, lean: 0.48, wide: 0.9, glove: { fwd: 0.9, side: 0.5, z: 1.75 }, hand: { fwd: 0.9, side: -0.5, z: 1.75 } },
   hold: { crouch: 0.22, lean: 0.12, wide: 0.45, glove: { fwd: 1.3, side: 0.45, z: 3.7 }, hand: null, faceMound: true },
 };
 const CREEP_S = 0.55;
