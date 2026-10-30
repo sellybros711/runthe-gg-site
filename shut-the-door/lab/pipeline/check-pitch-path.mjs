@@ -21,8 +21,9 @@
  *   view    his view held still at release (the flight through the camera at the release frame, his
  *           head's later move taken out): the turn from one frame's step to the next never changes
  *           side (over TURN_DEG, smaller turns are a straight line's rounding; a step under STEP_PX is
- *           a ball all but still, its direction the pixel's rounding), and no frame turns
- *           KINK_DEG and KINK_X times its neighbours' turns (an isolated kink, not a curve's apex)
+ *           a ball all but still, its direction the pixel's rounding), and no kink: no frame where its
+ *           step changes by KINK_PX and KINK_X times its neighbours' change (a curve's own change,
+ *           at an apex or as a ball going away slows on the screen, is smooth)
  *   drawn   the ball the game draws (its position after stage.pose) is its flight plus the lens's carry
  *           of his head's move, within DRAWN_FT, and that carry is nothing at the plate
  *   hand    the ball leaves from his hand: at release it is on his hand on the screen, within HAND_PX
@@ -45,8 +46,8 @@ const ROOT = path.resolve(HERE, '..', '..', '..');
 const GAME = path.join(ROOT, 'shut-the-door');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const SHOW = arg('--show', 5), LIST = process.argv.includes('--list');
-export const LIMITS = { TURN_DEG: 0.5, STEP_PX: 2, KINK_DEG: 8, KINK_X: 2.5, CONST_FT: 1e-6, DRAWN_FT: 1e-4, HAND_PX: 1.5, SIZE_PX: 0.02, PLATE_IN: 0.01, TIME_S: 1e-6 };
-const SCREENS = [[390, 844], [1440, 900]];
+export const LIMITS = { TURN_DEG: 0.5, STEP_PX: 2, KINK_PX: 3, KINK_X: 2.5, CONST_FT: 1e-6, DRAWN_FT: 1e-4, HAND_PX: 1.5, SIZE_PX: 0.02, PLATE_IN: 0.01, TIME_S: 1e-6 };
+const SCREENS = [[390, 844], [1440, 900]].filter(([w]) => !process.argv.includes('--wide') || w > 1000);
 const CELLS = [0, 2, 4, 10, 12, 14, 20, 22, 24], MISS = [[0, 0], [0.35, -0.25]];
 
 function loadPlaywright() {
@@ -123,11 +124,16 @@ for (const [W, H] of SCREENS) {
           const step = (p, q) => Math.hypot(q[0] - p[0], q[1] - p[1]);
           // (a turn between steps under STEP_PX is a ball all but still on the screen: its direction is
           // the pixel's rounding, not a path)
-          for (let i = 1; i < N; i++) tv.push(step(view[i - 1], view[i]) < L.STEP_PX || step(view[i], view[i + 1]) < L.STEP_PX ? 0 : turnOf(view[i - 1], view[i], view[i + 1]));
-          for (const t of tv) { if (Math.abs(t) < L.TURN_DEG) continue; const s = Math.sign(t); if (lastSide && s !== lastSide) turns++; lastSide = s; }
-          for (let i = 1; i + 1 < tv.length; i++) {
-            const k = Math.abs(tv[i]), nb = Math.max(0.5, (Math.abs(tv[i - 1]) + Math.abs(tv[i + 1])) / 2);
-            if (k >= L.KINK_DEG && k / nb >= L.KINK_X) kink = Math.max(kink, k);
+          for (let i = 1; i < N; i++) tv.push(step(view[i - 1], view[i]) < L.STEP_PX || step(view[i], view[i + 1]) < L.STEP_PX ? null : turnOf(view[i - 1], view[i], view[i + 1]));
+          for (const t of tv) { if (t == null || Math.abs(t) < L.TURN_DEG) continue; const s = Math.sign(t); if (lastSide && s !== lastSide) turns++; lastSide = s; }
+          // a kink: the change of its step in one frame (the second difference, px a frame a frame) a
+          // spike over its neighbours', where a curve's own (an apex, the fall of a ball going away)
+          // changes smoothly
+          const acc = [];
+          for (let i = 1; i < N; i++) acc.push(Math.hypot(view[i + 1][0] - 2 * view[i][0] + view[i - 1][0], view[i + 1][1] - 2 * view[i][1] + view[i - 1][1]));
+          for (let i = 1; i + 1 < acc.length; i++) {
+            const nb = Math.max(0.25, (acc[i - 1] + acc[i + 1]) / 2);
+            if (acc[i] >= L.KINK_PX && acc[i] / nb >= L.KINK_X) kink = Math.max(kink, acc[i]);
           }
           // the side view: the flight's second difference, the same every frame
           let cst = 0;
@@ -139,7 +145,7 @@ for (const [W, H] of SCREENS) {
           const T0 = (pt.rel.y - 17 / 12) / (0.96 * a.velo * 1.46667);
           const sx = 2 * (a.pfxX / 12) / (T * T), sz = 2 * (a.pfxZ / 12) / (T * T);
           if (turns) bad.push(`turns back ${turns}x in his view`);
-          if (kink) bad.push(`a kink of ${kink.toFixed(1)} deg in one frame`);
+          if (kink) bad.push(`a kink: its step changes ${kink.toFixed(1)} px in one frame`);
           if (cst > L.CONST_FT) bad.push(`not one constant acceleration from the side (${cst.toExponential(1)} ft)`);
           if (drawn > L.DRAWN_FT) bad.push(`drawn ${drawn.toFixed(4)} ft off its flight and carry`);
           if (carryEnd > L.DRAWN_FT) bad.push(`still carried ${carryEnd.toFixed(4)} ft at the plate`);
@@ -148,7 +154,7 @@ for (const [W, H] of SCREENS) {
           if (plate > L.PLATE_IN || yErr > L.PLATE_IN) bad.push(`crosses ${plate.toFixed(3)} in off the engine's point`);
           if (Math.abs(T0 - T) > L.TIME_S || Math.abs(pt.tPlate - pt.tRel - T) > L.TIME_S) bad.push(`reaches the plate in ${T.toFixed(4)} s, not his ${T0.toFixed(4)} s`);
           if (Math.abs(f.ax - sx) > 1e-9 || Math.abs(f.az - (sz - 32.17)) > 1e-9) bad.push('not his break');
-          out.push({ tag, bad, T, turns, kink, cst, drawn, hand, grew });
+          out.push({ tag, bad, T, turns, kink, cst, drawn, hand, grew, view: bad.length ? view.map((q) => q.map((v) => Math.round(v * 10) / 10)) : null });
         }
       }
       return out;
@@ -161,6 +167,6 @@ await browser.close(); server.close();
 
 const fails = rows.filter((r) => r.bad.length);
 if (LIST) for (const r of rows) console.log(r.where, JSON.stringify({ T: r.T, turns: r.turns, kink: r.kink, cst: r.cst, drawn: r.drawn, hand: r.hand, grew: r.grew }));
-for (const r of fails.slice(0, SHOW)) console.log('FAIL', r.where + ':', r.bad.join('; '));
+for (const r of fails.slice(0, SHOW)) { console.log('FAIL', r.where + ':', r.bad.join('; ')); if (process.argv.includes('--trace')) console.log('  his view, px a frame:', r.view.map((q) => q.join(',')).join(' ')); }
 console.log(`${rows.length} pitches: ${fails.length} failing (turning back, kinks, off the hand, growing, off the plate, off his time)`);
 process.exit(fails.length ? 1 : 0);
