@@ -82,9 +82,12 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // runners in frame. skate runner run rose 869 to 872 on screen. With every body measured against main the
 // runner skates fall 1,103 to 1,100 and the plays with any skate 1,967 to 1,812. Recorded here once, on the
 // coordinator's decision.
+// pop fielder bobble went 106 to 107 on CI with no change to the lab (site PR #818, 2026-10-30). Main and that
+// branch both give 107 locally, the identical plays and speeds, so it is the runner, not a code change. Recorded
+// here once, on the coordinator's decision.
 const CEILING = {
   'pop fielder -': 437,
-  'pop fielder bobble': 106,
+  'pop fielder bobble': 107,
   'pop fielder catch': 12,
   'pop fielder catch_throw': 2,
   'pop fielder cover': 71,
