@@ -31,8 +31,9 @@ every speed a player reads is a real one. This script measures the two halves:
             (pfx, inches, catcher's view) of his pitches in each of the five
             velocity bins. engine.js reads it from the pack (arsenal[i].stuff).
 
-  packs     python3 effort.py packs                    puts data/effort_arsenal.json into the
-            committed packs (arsenal[i].stuff), for pool.js to rebuild them
+  packs     python3 effort.py packs [pack ids]         puts data/effort_arsenal.json into the
+            committed packs (arsenal[i].stuff), for pool.js to rebuild them. With
+            ids, only those packs are written (and arsenal keeps the others' rows)
 
   constants python3 effort.py constants [effort.json]  prints grade.js EFFORT.BINS
 
@@ -224,6 +225,9 @@ def arsenal(ids):
                      'first (his slowest 5%, second fifth, middle fifth, fourth fifth, fastest 5%). src his: his own pitches from the arsenal source; src league: his arsenal mean plus '
                      "the league's typical spread (pipeline/effort.json), when he has fewer than "
                      f'{MIN_OWN} tracked pitches of it. Built by pipeline/effort.py arsenal.', 'packs': {}}
+    path = os.path.join(DATA, 'effort_arsenal.json')
+    if ids and os.path.exists(path):      # some ids: the others stay as they are
+        out['packs'] = json.load(open(path))['packs']
     for pid in ids or specs:
         pack = json.load(open(os.path.join(DATA, 'packs', pid + '.json')))
         url, ck = pack_source(pack, specs[pid])
@@ -244,12 +248,14 @@ def arsenal(ids):
             rows[a['type']] = b
             log(pid, a['type'], a['velo'], json.dumps(b))
         out['packs'][pid] = {'source': url or 'none: no tracked pitches (public reporting)', 'arsenal': rows}
-    json.dump(out, open(os.path.join(DATA, 'effort_arsenal.json'), 'w'), indent=1)
+    json.dump(out, open(path, 'w'), indent=1)
 
 
-def packs():
+def packs(ids=None):
     ea = json.load(open(os.path.join(DATA, 'effort_arsenal.json')))['packs']
     for pid, row in ea.items():
+        if ids and pid not in ids:
+            continue
         path = os.path.join(DATA, 'packs', pid + '.json')
         pack = json.load(open(path))
         for a in pack['scenario']['pitcher']['arsenal']:
@@ -296,6 +302,6 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'arsenal':
         arsenal(sys.argv[2:])
     elif sys.argv[1] == 'packs':
-        packs()
+        packs(sys.argv[2:])
     elif sys.argv[1] == 'constants':
         json.dump(constants(sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), 'effort.json')), sys.stdout)

@@ -100,9 +100,12 @@
     if (sch.days && sch.days[day]) return sch.days[day];
     // the rotation runs from the epoch, and backwards before it: the days before launch show the
     // scenarios before #1 in turn, so a new game each day now. number stays 1 there for the server
-    const offset = C.dayOffsetOf(day), L = sch.rotation.length;
+    // the previews walk the rotation they were served from (schedule.json previewRotation, the
+    // first ten), so a longer rotation never moves a day already played
+    const offset = C.dayOffsetOf(day);
+    const rot = offset < 0 && sch.previewRotation ? sch.previewRotation : sch.rotation, L = rot.length;
     const number = C.dayNumberOf(day);
-    return { pack: sch.rotation[((offset % L) + L) % L], number, preview: offset < 0 };
+    return { pack: rot[((offset % L) + L) % L], number, preview: offset < 0 };
   }
 
   async function loadPack(id) {

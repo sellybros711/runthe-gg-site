@@ -53,6 +53,10 @@ RETRO_TEAM = {'OAK': 'Oakland Athletics', 'NYA': 'New York Yankees', 'LAN': 'Los
 _SEASONS = {}
 
 
+class EmptyRow(RuntimeError):
+    """A cell where no outcome kept a real pitch."""
+
+
 def season(y):
     """One season of the library, prepped and cut to what the model reads. Kept
     in memory for the run."""
@@ -269,6 +273,21 @@ def build_one(spec, adv):
             pitches.append(row)
         return pidx[row[0]]
 
+    # The league pool, widened to every season in the library: the same type, pitcher hand and
+    # batter side, within VELO_EX of his speed. Used only for a cell where no pool has a single
+    # pitch of the type, which used to end the build with an empty row (2026-10-30: Hoffman's 74
+    # mph changeup in 2009-2011). A pack that built before never reaches it, so none moves.
+    wide_cache, wide_cells = {}, []
+
+    def wide(t, stand_, velo):
+        if t not in wide_cache:
+            years = [y for y in range(2008, 2026)]
+            df = prep.load(years, where=f"pitch_type = '{t}' AND p_throws = '{hand}' AND release_speed BETWEEN {velo - M.VELO_EX} AND {velo + M.VELO_EX}", cols=COLS)
+            p_ = prep.prep(df)
+            wide_cache[t] = p_[p_['pitch_type'].isin(prep.PITCH_TYPES)][KEEP_PREP].reset_index(drop=True)
+        w = wide_cache[t]
+        return w[w['stand'] == stand_]
+
     library, batters, tiers_used = [], [], defaultdict(int)
     for bi, meta in enumerate(batters_meta):
         s = meta['bats']
@@ -305,7 +324,8 @@ def build_one(spec, adv):
             pools = [(0, mine[mine['pitch_type'] == t]), (1, sim_rows[sim_rows['pitch_type'] == t]), (2, L['pool'])]
             pm = np.zeros((25, 4, M.NK), dtype=int)
             xs = []
-            for cell in range(25):
+            def fill(cell, cell_pools):
+                """One cell's outcome rows and their real pitches, or EmptyRow when no key keeps one."""
                 xcell = [-1] * M.NK
                 tried = set()
                 # Until stable: every key with a chance in any bucket needs a
@@ -315,14 +335,14 @@ def build_one(spec, adv):
                 while True:
                     for b in range(4):
                         if prob[cell, b].sum() <= 0:
-                            raise RuntimeError(f'empty outcome row {spec["id"]} batter {bi} {t} cell {cell}')
+                            raise EmptyRow(f'empty outcome row {spec["id"]} batter {bi} {t} cell {cell}')
                         pm[cell, b] = M.permille(prob[cell, b])
                     todo = [k for k in range(M.NK) if pm[cell, :, k].any() and xcell[k] < 0 and k not in tried]
                     if not todo:
                         break
                     for k in todo:
                         tried.add(k)
-                        r, tier = M.pick_exemplar(pools, bi, t, cell, prep.KEYS[k], a['velo'])
+                        r, tier = M.pick_exemplar(cell_pools, bi, t, cell, prep.KEYS[k], a['velo'])
                         if r is None:
                             prob[cell, :, k] = 0
                             continue
@@ -335,6 +355,20 @@ def build_one(spec, adv):
                             pm[cell, b] = M.permille(prob[cell, b])
                     if not pm[cell, :, k].any():
                         xcell[k] = -1
+                return xcell
+
+            for cell in range(25):
+                kept_row, kept_tiers = prob[cell].copy(), dict(tiers_used)
+                try:
+                    xcell = fill(cell, pools)
+                except EmptyRow:
+                    # no key kept a real pitch: the cell again, with the league pool widened to every
+                    # season (the same pitches found first stay first, so nothing picked moves)
+                    prob[cell] = kept_row
+                    tiers_used.clear()
+                    tiers_used.update(kept_tiers)
+                    xcell = fill(cell, pools + [(2, wide(t, s, a['velo']))])
+                    wide_cells.append(f'{bi}:{t}:{cell}')
                 xs.append(xcell)
             lib[t] = {'p': pm.tolist(), 'x': xs}
         library.append(lib)
@@ -365,6 +399,7 @@ def build_one(spec, adv):
             'library': library, 'advance': adv, 'reveal': reveal,
             **({'reveal1': reveal_first} if multi else {}),
             'build': {'window': window, 'batterWindow': bat_window, 'tiers': dict(tiers_used),
+                      **({'wideCells': len(wide_cells)} if wide_cells else {}),
                       'leaguePitches': int(len(lg)), 'arsenalSource': ars_src}}
     return pack
 

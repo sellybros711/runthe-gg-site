@@ -1,0 +1,213 @@
+{
+ "id": "hoffman-2010-600th",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 265883,
+ "date": "2010-09-07",
+ "game": "Regular Season Game 2: St. Louis Cardinals at Milwaukee Brewers",
+ "gameType": "R",
+ "pitcher": {
+  "id": 116034,
+  "name": "Trevor Hoffman",
+  "throws": "R",
+  "team": "Milwaukee Brewers",
+  "seasonLine": "5.89 ERA, 10 SV, 47.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 69,
+   "batterId": 458675,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "116034": 3
+   },
+   "pitches": 3,
+   "event": "single",
+   "des": "Colby Rasmus singles on a soft line drive to center fielder Carlos Gomez.",
+   "feedEvent": "single",
+   "feedDescription": "Colby Rasmus singles on a soft line drive to center fielder Carlos Gomez.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Colby Rasmus",
+   "batSideListed": "L",
+   "seasonLine": ".276/.361/.498, 23 HR"
+  },
+  {
+   "atBat": 70,
+   "batterId": 133160,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "116034": 5
+   },
+   "pitches": 5,
+   "event": "grounded_into_double_play",
+   "des": "Randy Winn grounds into a double play, second baseman Rickie Weeks Jr.  to shortstop Craig Counsell to first baseman Prince Fielder.   Colby Rasmus out at 2nd.    Randy Winn out at 1st.",
+   "feedEvent": "grounded_into_double_play",
+   "feedDescription": "Randy Winn grounds into a double play, second baseman Rickie Weeks Jr. to shortstop Craig Counsell to first baseman Prince Fielder. Colby Rasmus out at 2nd. Randy Winn out at 1st.",
+   "runs": 0,
+   "outs": 2,
+   "inSpot": true,
+   "name": "Randy Winn",
+   "batSideListed": "S",
+   "seasonLine": ".239/.307/.356, 4 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 425446,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "116034": 6
+   },
+   "pitches": 6,
+   "event": "field_out",
+   "des": "Aaron Miles grounds out, shortstop Craig Counsell to first baseman Prince Fielder.",
+   "feedEvent": "field_out",
+   "feedDescription": "Aaron Miles grounds out, shortstop Craig Counsell to first baseman Prince Fielder.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Aaron Miles",
+   "batSideListed": "S",
+   "seasonLine": ".281/.311/.317, 0 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 14,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 458003,
+   "name": "Blake Hawksworth",
+   "batSideListed": "R"
+  },
+  {
+   "id": 150479,
+   "name": "Felipe López",
+   "batSideListed": "S"
+  },
+  {
+   "id": 445055,
+   "name": "Jon Jay",
+   "batSideListed": "L"
+  },
+  {
+   "id": 405395,
+   "name": "Albert Pujols",
+   "batSideListed": "R"
+  },
+  {
+   "id": 407812,
+   "name": "Matt Holliday",
+   "batSideListed": "R"
+  },
+  {
+   "id": 425877,
+   "name": "Yadier Molina",
+   "batSideListed": "R"
+  },
+  {
+   "id": 458675,
+   "name": "Colby Rasmus",
+   "batSideListed": "L"
+  },
+  {
+   "id": 133160,
+   "name": "Randy Winn",
+   "batSideListed": "S"
+  },
+  {
+   "id": 425446,
+   "name": "Aaron Miles",
+   "batSideListed": "S"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 742,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 343,
+     "usage": 0.4623,
+     "velo": 85.5,
+     "pfxXin": -4.7,
+     "pfxZin": 20.3
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 167,
+     "usage": 0.2251,
+     "velo": 73.6,
+     "pfxXin": -6.6,
+     "pfxZin": 10.4
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 112,
+     "usage": 0.1509,
+     "velo": 80.2,
+     "pfxXin": 6.2,
+     "pfxZin": 4.0
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 89,
+     "usage": 0.1199,
+     "velo": 85.4,
+     "pfxXin": 1.8,
+     "pfxZin": 19.1
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 31,
+     "usage": 0.0418,
+     "velo": 72.5,
+     "pfxXin": 2.7,
+     "pfxZin": -6.3
+    }
+   ],
+   "dropped": {
+    "IN": 11
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2010%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=116034"
+  },
+  "postseason": {
+   "pitches": 0,
+   "types": [],
+   "dropped": {}
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 265883: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=265883",
+  "MLB Stats API schedule 2010-09-07 and live feed /api/v1.1/game/265883/feed/live",
+  "MLB Stats API people with 2010 season stats",
+  "Baseball Savant 116034 2010 season search (regular season and postseason) for the arsenal"
+ ]
+}

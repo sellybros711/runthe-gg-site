@@ -1,0 +1,213 @@
+{
+ "id": "sewald-2023-nlcs7",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 748537,
+ "date": "2023-10-24",
+ "game": "NL Championship Series Game 7: Arizona Diamondbacks at Philadelphia Phillies",
+ "gameType": "L",
+ "pitcher": {
+  "id": 623149,
+  "name": "Paul Sewald",
+  "throws": "R",
+  "team": "Arizona Diamondbacks",
+  "seasonLine": "3.12 ERA, 34 SV, 60.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 2
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 72,
+   "batterId": 592206,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Nick Castellanos flies out to right fielder Corbin Carroll.",
+   "feedEvent": "field_out",
+   "feedDescription": "Nick Castellanos flies out to right fielder Corbin Carroll.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Nick Castellanos",
+   "batSideListed": "R",
+   "seasonLine": ".272/.311/.476, 29 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 669016,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 6
+   },
+   "pitches": 6,
+   "event": "field_out",
+   "des": "Brandon Marsh flies out to left fielder Lourdes Gurriel Jr.",
+   "feedEvent": "field_out",
+   "feedDescription": "Brandon Marsh flies out to left fielder Lourdes Gurriel Jr.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Brandon Marsh",
+   "batSideListed": "L",
+   "seasonLine": ".277/.372/.458, 12 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 595909,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 6
+   },
+   "pitches": 6,
+   "event": "field_out",
+   "des": "Jake Cave flies out to right fielder Corbin Carroll.",
+   "feedEvent": "field_out",
+   "feedDescription": "Jake Cave flies out to right fielder Corbin Carroll.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Jake Cave",
+   "batSideListed": "L",
+   "seasonLine": ".212/.272/.348, 5 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 15,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 656941,
+   "name": "Kyle Schwarber",
+   "batSideListed": "L"
+  },
+  {
+   "id": 607208,
+   "name": "Trea Turner",
+   "batSideListed": "R"
+  },
+  {
+   "id": 547180,
+   "name": "Bryce Harper",
+   "batSideListed": "L"
+  },
+  {
+   "id": 664761,
+   "name": "Alec Bohm",
+   "batSideListed": "R"
+  },
+  {
+   "id": 681082,
+   "name": "Bryson Stott",
+   "batSideListed": "L"
+  },
+  {
+   "id": 592663,
+   "name": "J.T. Realmuto",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592206,
+   "name": "Nick Castellanos",
+   "batSideListed": "R"
+  },
+  {
+   "id": 669016,
+   "name": "Brandon Marsh",
+   "batSideListed": "L"
+  },
+  {
+   "id": 595909,
+   "name": "Jake Cave",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1037,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 590,
+     "usage": 0.5689,
+     "velo": 92.2,
+     "pfxXin": -10.5,
+     "pfxZin": 13.7
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 444,
+     "usage": 0.4282,
+     "velo": 83.8,
+     "pfxXin": 11.1,
+     "pfxZin": 9.1
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 3,
+     "usage": 0.0029,
+     "velo": 92.4,
+     "pfxXin": -12.6,
+     "pfxZin": 13.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623149"
+  },
+  "postseason": {
+   "pitches": 164,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 106,
+     "usage": 0.6463,
+     "velo": 92.9,
+     "pfxXin": -10.5,
+     "pfxZin": 13.5
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 58,
+     "usage": 0.3537,
+     "velo": 85.7,
+     "pfxXin": 8.3,
+     "pfxZin": 9.1
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623149"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 748537: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=748537",
+  "MLB Stats API schedule 2023-10-24 and live feed /api/v1.1/game/748537/feed/live",
+  "MLB Stats API people with 2023 season stats",
+  "Baseball Savant 623149 2023 season search (regular season and postseason) for the arsenal"
+ ]
+}

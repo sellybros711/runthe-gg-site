@@ -1,0 +1,231 @@
+{
+ "id": "kershaw-2016-nlds5",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 487616,
+ "date": "2016-10-13",
+ "game": "NL Division Series Game 5: Los Angeles Dodgers at Washington Nationals",
+ "gameType": "D",
+ "pitcher": {
+  "id": 477132,
+  "name": "Clayton Kershaw",
+  "throws": "L",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "1.69 ERA, 0 SV, 149.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 1,
+  "bases": 3,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 80,
+   "batterId": 502517,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "477132": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Daniel Murphy pops out to second baseman Charlie Culberson on the infield fly rule.",
+   "feedEvent": "field_out",
+   "feedDescription": "Daniel Murphy pops out to second baseman Charlie Culberson on the infield fly rule.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Daniel Murphy",
+   "batSideListed": "L",
+   "seasonLine": ".347/.390/.595, 25 HR"
+  },
+  {
+   "atBat": 81,
+   "batterId": 594694,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "477132": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Wilmer Difo strikes out swinging, catcher Carlos Ruiz to first baseman Adrian Gonzalez.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Wilmer Difo strikes out swinging, catcher Carlos Ruiz to first baseman Adrian Gonzalez.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Wilmer Difo",
+   "batSideListed": "S",
+   "seasonLine": ".276/.364/.379, 1 HR"
+  }
+ ],
+ "realFaced": 2,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 7,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 452220,
+   "name": "Stephen Drew",
+   "batSideListed": "L"
+  },
+  {
+   "id": 457787,
+   "name": "Danny Espinosa",
+   "batSideListed": "S"
+  },
+  {
+   "id": 600474,
+   "name": "Pedro Severino",
+   "batSideListed": "R"
+  },
+  {
+   "id": 572191,
+   "name": "Michael A. Taylor",
+   "batSideListed": "R"
+  },
+  {
+   "id": 607208,
+   "name": "Trea Turner",
+   "batSideListed": "R"
+  },
+  {
+   "id": 547180,
+   "name": "Bryce Harper",
+   "batSideListed": "L"
+  },
+  {
+   "id": 150029,
+   "name": "Jayson Werth",
+   "batSideListed": "R"
+  },
+  {
+   "id": 502517,
+   "name": "Daniel Murphy",
+   "batSideListed": "L"
+  },
+  {
+   "id": 594694,
+   "name": "Wilmer Difo",
+   "batSideListed": "S"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 2058,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 1032,
+     "usage": 0.5015,
+     "velo": 93.6,
+     "pfxXin": 0.4,
+     "pfxZin": 21.3
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 687,
+     "usage": 0.3338,
+     "velo": 88.4,
+     "pfxXin": -5.4,
+     "pfxZin": 7.1
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 321,
+     "usage": 0.156,
+     "velo": 73.5,
+     "pfxXin": -1.9,
+     "pfxZin": -16.9
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 11,
+     "usage": 0.0053,
+     "velo": 95.2,
+     "pfxXin": 12.0,
+     "pfxZin": 17.1
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 7,
+     "usage": 0.0034,
+     "velo": 87.8,
+     "pfxXin": 14.1,
+     "pfxZin": 16.7
+    }
+   ],
+   "dropped": {
+    "IN": 3
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2016%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=477132"
+  },
+  "postseason": {
+   "pitches": 393,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 216,
+     "usage": 0.5496,
+     "velo": 94.2,
+     "pfxXin": 0.0,
+     "pfxZin": 21.7
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 106,
+     "usage": 0.2697,
+     "velo": 89.6,
+     "pfxXin": -4.6,
+     "pfxZin": 9.8
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 58,
+     "usage": 0.1476,
+     "velo": 73.4,
+     "pfxXin": -2.2,
+     "pfxZin": -17.6
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 13,
+     "usage": 0.0331,
+     "velo": 95.0,
+     "pfxXin": 10.2,
+     "pfxZin": 18.5
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2016%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=477132"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 487616: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=487616",
+  "MLB Stats API schedule 2016-10-13 and live feed /api/v1.1/game/487616/feed/live",
+  "MLB Stats API people with 2016 season stats",
+  "Baseball Savant 477132 2016 season search (regular season and postseason) for the arsenal"
+ ]
+}

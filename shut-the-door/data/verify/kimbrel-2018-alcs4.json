@@ -1,0 +1,273 @@
+{
+ "id": "kimbrel-2018-alcs4",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 563396,
+ "date": "2018-10-17",
+ "game": "AL Championship Series Game 4: Boston Red Sox at Houston Astros",
+ "gameType": "L",
+ "pitcher": {
+  "id": 518886,
+  "name": "Craig Kimbrel",
+  "throws": "R",
+  "team": "Boston Red Sox",
+  "seasonLine": "2.74 ERA, 42 SV, 62.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 8,
+   "them": 6
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 88,
+   "batterId": 493329,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518886": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Yuli Gurriel pops out to second baseman Ian Kinsler in foul territory.",
+   "feedEvent": "field_out",
+   "feedDescription": "Yuli Gurriel pops out to second baseman Ian Kinsler in foul territory.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Yuli Gurriel",
+   "batSideListed": "R",
+   "seasonLine": ".291/.323/.428, 13 HR"
+  },
+  {
+   "atBat": 89,
+   "batterId": 502210,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518886": 5
+   },
+   "pitches": 5,
+   "event": "walk",
+   "des": "Josh Reddick walks.",
+   "feedEvent": "walk",
+   "feedDescription": "Josh Reddick walks.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Josh Reddick",
+   "batSideListed": "L",
+   "seasonLine": ".242/.318/.400, 17 HR"
+  },
+  {
+   "atBat": 90,
+   "batterId": 621043,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518886": 5
+   },
+   "pitches": 5,
+   "event": "walk",
+   "des": "Carlos Correa walks. Josh Reddick to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Carlos Correa walks. Josh Reddick to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Carlos Correa",
+   "batSideListed": "R",
+   "seasonLine": ".239/.323/.405, 15 HR"
+  },
+  {
+   "atBat": 91,
+   "batterId": 435263,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518886": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Brian McCann flies out to right fielder Mookie Betts. Josh Reddick to 3rd.",
+   "feedEvent": "field_out",
+   "feedDescription": "Brian McCann flies out to right fielder Mookie Betts. Josh Reddick to 3rd.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Brian McCann",
+   "batSideListed": "L",
+   "seasonLine": ".212/.301/.339, 7 HR"
+  },
+  {
+   "atBat": 92,
+   "batterId": 643393,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518886": 6
+   },
+   "pitches": 6,
+   "event": "walk",
+   "des": "Tony Kemp walks. Carlos Correa to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Tony Kemp walks. Carlos Correa to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Tony Kemp",
+   "batSideListed": "L",
+   "seasonLine": ".263/.351/.392, 6 HR"
+  },
+  {
+   "atBat": 93,
+   "batterId": 608324,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518886": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Alex Bregman lines out to left fielder Andrew Benintendi.",
+   "feedEvent": "field_out",
+   "feedDescription": "Alex Bregman lines out to left fielder Andrew Benintendi.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Alex Bregman",
+   "batSideListed": "R",
+   "seasonLine": ".286/.394/.532, 31 HR"
+  }
+ ],
+ "realFaced": 6,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 21,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 543807,
+   "name": "George Springer",
+   "batSideListed": "R"
+  },
+  {
+   "id": 514888,
+   "name": "Jose Altuve",
+   "batSideListed": "R"
+  },
+  {
+   "id": 503556,
+   "name": "Marwin Gonzalez",
+   "batSideListed": "S"
+  },
+  {
+   "id": 493329,
+   "name": "Yuli Gurriel",
+   "batSideListed": "R"
+  },
+  {
+   "id": 502210,
+   "name": "Josh Reddick",
+   "batSideListed": "L"
+  },
+  {
+   "id": 621043,
+   "name": "Carlos Correa",
+   "batSideListed": "R"
+  },
+  {
+   "id": 435263,
+   "name": "Brian McCann",
+   "batSideListed": "L"
+  },
+  {
+   "id": 643393,
+   "name": "Tony Kemp",
+   "batSideListed": "L"
+  },
+  {
+   "id": 608324,
+   "name": "Alex Bregman",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1110,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 718,
+     "usage": 0.6468,
+     "velo": 97.1,
+     "pfxXin": -9.3,
+     "pfxZin": 15.6
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 391,
+     "usage": 0.3523,
+     "velo": 86.6,
+     "pfxXin": 10.5,
+     "pfxZin": -8.0
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 1,
+     "usage": 0.0009,
+     "velo": 91.3,
+     "pfxXin": -13.6,
+     "pfxZin": 1.3
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2018%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=518886"
+  },
+  "postseason": {
+   "pitches": 193,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 116,
+     "usage": 0.601,
+     "velo": 97.6,
+     "pfxXin": -9.4,
+     "pfxZin": 16.1
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 77,
+     "usage": 0.399,
+     "velo": 86.8,
+     "pfxXin": 10.7,
+     "pfxZin": -9.7
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2018%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=518886"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 563396: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=563396",
+  "MLB Stats API schedule 2018-10-17 and live feed /api/v1.1/game/563396/feed/live",
+  "MLB Stats API people with 2018 season stats",
+  "Baseball Savant 518886 2018 season search (regular season and postseason) for the arsenal"
+ ]
+}

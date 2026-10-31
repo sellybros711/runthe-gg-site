@@ -3,13 +3,15 @@
  *
  *   node 4th-and-what/test/check-browser.mjs [outdir]
  *
- * On a phone (390x844 at 3x) and a desktop (1440x900): pick a distance, try
- * every formation, draw a route, move a receiver, draw a block, set a
- * target, snap it, watch it to the result, go back to the clipboard with the
- * play kept, replay it, then make it a run with the handoff tool and snap
- * that. Fails on any console error or uncaught exception. The site is
- * served from the repo; the CDN and fonts are blocked, which the page must
- * survive (signing in is optional). */
+ * On a phone (390x844 at 3x) and a desktop (1440x900), every view of the
+ * 2026-10-31 redesign: Play (any down and spot, the result, the timeline,
+ * the breakdown, 3D), the Studio (concepts, the route list and depth, Move
+ * and only Move moves a player, Read sets the 1st, 2nd and 3rd read, motion,
+ * play action, flip, the defense view), Test vs Defense, then signed in:
+ * Save Play, the library, a copy flipped, the card back, situations, Learn's
+ * quiz, every Print preset, and the playbook file out and back in. Fails on
+ * any console error or uncaught exception. The site is served from the repo;
+ * the CDN and fonts are blocked, which the page must survive. */
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -44,115 +46,232 @@ const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 
 async function run(name, viewport, scale) {
   console.log('\n' + name);
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: scale });
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: scale, acceptDownloads: true });
+  /* THE CLOUD, IN MEMORY. assets/cloudsave.js steps aside when RTG_SAVE is
+     already there, so no check ever writes a row on a real account. */
+  await ctx.addInitScript(() => {
+    const mem = {}; window.__mem = mem;
+    window.RTG_SAVE = { API_VERSION: 1, idle: () => true, signedIn: () => true,
+      all: g => Promise.resolve(Object.keys(mem).filter(k => k.startsWith(g + '/')).map(k => ({ slot: k.split('/')[1], progress: mem[k].progress, payload: JSON.parse(JSON.stringify(mem[k].payload)) }))),
+      queue: (g, sl, fn) => { const m = fn(); const k = g + '/' + sl; if (!m) return Promise.resolve(null); if (m.drop) { delete mem[k]; return Promise.resolve(null); }
+        if (mem[k] && mem[k].progress > m.progress) return Promise.resolve({ ok: false, payload: mem[k].payload, progress: mem[k].progress });
+        mem[k] = { progress: m.progress, payload: JSON.parse(JSON.stringify(m.payload)) }; return Promise.resolve({ ok: true }); },
+      drop: (g, sl) => { delete mem[g + '/' + sl]; return Promise.resolve(null); } };
+  });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  page.on('dialog', d => d.accept());
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text())) errs.push(m.text()); });
   await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
   const shot = async (f) => { if (OUT) await page.screenshot({ path: path.join(OUT, name + '-' + f + '.png') }); };
-  const yd = (p) => page.evaluate(q => window.FAW_UI.board().toScreen(q), p);
-  const play = () => page.evaluate(() => window.FAW_UI.board().play());
+  const yd = (p) => page.evaluate(q => { const c = document.getElementById('sField'), r = c.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) c.scrollIntoView({ block: 'center' }); return window.FAW_STUDIO.toScreen(q); }, p);
+  const play = () => page.evaluate(() => window.FAW_STUDIO.play());
   async function dragYd(from, ...to) {
-    const a = await yd(from); await page.mouse.move(a[0], a[1]); await page.mouse.down();
-    for (const q of to) { const b = await yd(q); await page.mouse.move(b[0], b[1], { steps: 8 }); }
+    const a = await yd(from), bs = []; for (const q of to) bs.push(await yd(q));
+    await page.mouse.move(a[0], a[1]); await page.mouse.down();
+    for (const b of bs) await page.mouse.move(b[0], b[1], { steps: 8 });
     await page.mouse.up();
   }
   async function tapYd(p) { const a = await yd(p); await page.mouse.click(a[0], a[1]); }
-  async function waitResult() {
-    await page.waitForSelector('#result:not([hidden])', { timeout: 30000 });
-    return page.evaluate(() => ({ title: document.getElementById('rTitle').textContent, why: document.getElementById('rWhy').textContent, call: document.getElementById('rCall').textContent, dbg: document.getElementById('dbgTxt').textContent }));
-  }
+  const tab = async (v) => { await page.click('.tab[data-view="' + v + '"]'); await page.waitForTimeout(150); };
+  const books = () => page.evaluate(() => window.FAW_APP.store.books());
 
+  /* ---------- Play ---------- */
   await page.goto(BASE + '/4th-and-what/?seed=11');
-  await page.waitForFunction(() => !!window.FAW_UI);
-  ok(await page.isVisible('#sPick') && (await page.$$('.dist')).length === 6, 'six distance buttons');
-  ok(!(await page.evaluate(() => document.getElementById('guide').open)), 'no guide opens by itself');
-  await shot('1-pick');
-  await page.click('.dist[data-d="5"]');
-  ok(await page.isVisible('#cBoard'), 'the clipboard is up');
-  ok((await page.textContent('#downTxt')).trim() === '4th and 5', 'the strip says 4th and 5');
-  for (const f of ['gun2x2', 'uc12', 'empty', 'iform', 'gun3x1']) {
-    await page.click('.form[data-f="' + f + '"]');
-    const box = await page.textContent('#boxTxt');
-    ok((await play()).formation === f && /^Box \d$/.test(box), f + ', ' + box);
-  }
-  ok(await page.isDisabled('#bSnap'), 'Snap It waits for a target or a handoff');
+  await page.waitForFunction(() => !!window.FAW_APP && !!window.FAW_GAME && !!window.FAW_STUDIO);
+  ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'opens on Play');
+  ok((await page.textContent('#gSit')) === '4th & 5' && (await page.textContent('#gSpot')) === 'Opp 40', 'the default: 4th and 5 on the opponent 40');
+  await shot('0-play');
+  await page.click('#gRun');
+  await page.waitForFunction(() => { const r = window.FAW_GAME.last(); return r && document.getElementById('gTime').value === '1000'; }, null, { timeout: 30000 });
+  const r1 = await page.evaluate(() => ({ big: document.getElementById('gResBig').textContent, why: document.getElementById('gWhy').textContent, rows: document.getElementById('gStats').children.length, off: +document.getElementById('gOff').textContent, def: +document.getElementById('gDefScore').textContent }));
+  ok(r1.big !== 'Run a play' && r1.why.length > 10 && r1.rows === 12, 'Run Play plays it to a result: ' + r1.big);
+  ok(r1.off + r1.def === 1, 'the scoreboard counts it');
+  await page.click('#gBreakBtn');
+  ok(await page.isVisible('#gBreak'), 'the defensive breakdown opens');
+  await page.fill('#gTime', '300'); await page.dispatchEvent('#gTime', 'input');
+  ok(/^0:0\d \/ 0:0\d$/.test(await page.textContent('#gClock')), 'the timeline scrubs');
+  await shot('1-result');
+  await page.click('#g3d');
+  ok(await page.isVisible('#watch'), 'Watch in 3D opens the stadium');
+  await page.waitForTimeout(400); await page.click('#bSkip'); await page.click('#bClose3d');
+  ok(!(await page.isVisible('#watch')), 'and closes');
+  /* any down and spot */
+  await page.selectOption('#gDown', '3'); await page.selectOption('#gDist', '7'); await page.selectOption('#gSide', 'own'); await page.selectOption('#gYard', '28');
+  ok((await page.textContent('#gSit')) === '3rd & 7' && (await page.textContent('#gSpot')) === 'Own 28', 'set to 3rd and 7 on the own 28');
+  await page.selectOption('#gDef', 'cover2');
+  await page.click('#gRun');
+  await page.waitForFunction(() => document.getElementById('gTime').value === '1000', null, { timeout: 30000 });
+  const r2 = await page.evaluate(() => { const r = window.FAW_GAME.last(); return { call: r.callKey, Y0: r.Y0, res: document.getElementById('gStats').textContent }; });
+  ok(r2.call === 'cover2' && r2.Y0 === 28 && !/Turnover on downs/.test(r2.res), 'a 3rd down snap from the own 28 against Cover 2 (' + r2.res.slice(6, 40) + ')');
 
-  /* Route: from X up the field and in */
-  await dragYd([-13.5, -0.9], [-13.5, 3], [-13.5, 6], [-9, 9]);
+  /* ---------- the Studio ---------- */
+  await tab('studio');
+  ok(await page.isVisible('#vStudio'), 'the Studio');
+  await page.click('[data-lib="concepts"]');
+  await page.click('[data-concept="Mesh"]');
   let p = await play();
-  ok(p.routes.length === 1 && p.routes[0].who === 'WR1' && p.routes[0].pts.length >= 2, 'a route for X, ' + (p.routes[0] ? p.routes[0].pts.length : 0) + ' points');
-  /* extend it from its end */
-  const end = p.routes[0].pts[p.routes[0].pts.length - 1];
-  await dragYd(end, [end[0] + 3, end[1] + 2], [end[0] + 6, end[1] + 3]);
+  ok(p.routes.length >= 4 && p.targets.length >= 2, 'a concept puts a whole play on the formation: ' + p.routes.length + ' routes, reads ' + p.targets.join(' '));
+  ok(/Drag/.test(await page.inputValue('#sName')), 'and names it from the terminology: ' + await page.inputValue('#sName'));
+  await page.selectOption('.prow[data-who="WR2"] select', 'post');
   p = await play();
-  ok(p.routes[0].pts.length > 2, 'the route grows from its end');
-  /* the slot's route is number 2 */
-  await dragYd([-9.5, -1.6], [-9.5, 2], [-14, 4]);
+  let z = p.routes.find(r => r.who === 'WR2');
+  ok(z && z.type === 'post' && z.depth === 10, 'the route list gives the Z a post at 10');
+  await page.click('.prow[data-who="WR2"] .depth button[aria-label="Deeper"]');
+  z = (await play()).routes.find(r => r.who === 'WR2');
+  ok(z.depth === 11, 'and the depth steps to 11');
+  await shot('2-studio');
+  /* Move, and only Move, moves a player */
+  await page.click('[data-concept="Four Verts"]');
+  await page.click('.tool[data-tool="route"]');
+  const zs = await yd([13.5, -0.9]); let z2 = await yd([11, 6]);
+  await page.mouse.move(zs[0], zs[1]); await page.mouse.down(); await page.waitForTimeout(420);
+  await page.mouse.move(z2[0], z2[1], { steps: 6 }); await page.mouse.up();
   p = await play();
-  ok(p.routes.length === 2 && p.routes[1].who === 'SLOT', 'routes keep their drawing order');
-  /* hold, then drag: move the Z */
-  const z = await yd([13.5, -0.9]);
-  await page.mouse.move(z[0], z[1]); await page.mouse.down(); await page.waitForTimeout(420);
-  const z2 = await yd([11, -1.5]); await page.mouse.move(z2[0], z2[1], { steps: 6 }); await page.mouse.up();
+  ok(!p.moved.WR2, 'a slow drag with Route never moves the Z');
+  await page.click('.tool[data-tool="move"]');
+  await dragYd([13.5, -0.9], [11, -1.5]);
   p = await play();
-  ok(p.moved.WR2 && Math.abs(p.moved.WR2[0] - 11) < 0.6, 'held and dragged, Z moves to ' + (p.moved.WR2 || []).map(v => v.toFixed(1)).join(','));
-  /* Block: the TE stays in */
+  ok(p.moved.WR2 && Math.abs(p.moved.WR2[0] - 11) < 0.7, 'Move lines the Z up at ' + (p.moved.WR2 || []).map(v => v.toFixed(1)).join(','));
   await page.click('.tool[data-tool="block"]');
-  await dragYd([-6.2, -1.4], [-5, -2.4]);
+  const te = await yd([-6.2, -1.4]); z2 = await yd([-5, -2.4]);
+  await page.mouse.move(te[0], te[1]); await page.mouse.down(); await page.waitForTimeout(420);
+  await page.mouse.move(z2[0], z2[1], { steps: 6 }); await page.mouse.up();
   p = await play();
-  ok(p.blocks.length === 1 && p.blocks[0].who === 'TE', 'the TE stays in to block');
-  /* Target: X first, H the checkdown */
-  await page.click('.tool[data-tool="target"]');
-  await tapYd([-13.5, -0.9]); await tapYd([-9.5, -1.6]);
+  ok(!p.moved.TE && p.blocks.some(b => b.who === 'TE'), 'a long press with Block draws the block and never moves the Y');
+  /* Read: the 1st, 2nd and 3rd read, in the order tapped */
+  await page.click('[data-concept="Four Verts"]');
+  await page.click('.tool[data-tool="read"]');
+  await page.evaluate(() => { window.FAW_APP.draft.play.targets = []; });
+  const spots = await page.evaluate(() => { const q = window.FAW_STUDIO.play(), O = window.FAW_FORMATIONS.place(q.formation, q.moved); return { X: O.WR1, Z: O.WR2, H: O.SLOT }; });
+  await tapYd(spots.Z); await tapYd(spots.H); await tapYd(spots.X);
   p = await play();
-  ok(p.targets.join() === 'WR1,SLOT', 'a star on X and a 2 on H');
-  ok(!(await page.isDisabled('#bSnap')), 'Snap It is ready');
-  await shot('2-board');
-  /* Undo takes the checkdown back, then put it back */
-  await page.click('#bUndo'); ok((await play()).targets.join() === 'WR1', 'undo'); await tapYd([-9.5, -1.6]);
+  ok(p.targets.join(',') === 'WR2,SLOT,WR1', 'Read sets the 1st, 2nd and 3rd read in the order tapped: ' + p.targets.join(','));
+  await tapYd(spots.H);
+  p = await play();
+  ok(p.targets.join(',') === 'WR2,WR1', 'tapping a read takes it away, and the rest move up');
+  await page.click('.prow[data-who="SLOT"] .readc button:nth-child(1)');
+  p = await play();
+  ok(p.targets[0] === 'SLOT', 'the Players panel sets the H as the 1st read');
+  /* motion, play action, the defense, flip */
+  await page.click('label:has(#sMotion)');
+  p = await play();
+  ok(p.motion && p.motion.pts.length > 0, 'Motion puts a man in motion: the ' + (p.motion && p.motion.who));
+  await page.click('label:has(#sPA)');
+  ok((await play()).playAction === true, 'Play Action is on');
+  await page.click('#sView button[data-v="both"]');
+  ok(await page.isVisible('#sCall'), 'the defense view offers the call to draw');
+  await shot('3-studio-defense');
+  const before = await play(), nameBefore = await page.inputValue('#sName');
+  await page.click('#sFlip');
+  const after = await play(), nameAfter = await page.inputValue('#sName');
+  ok(after.routes.length === before.routes.length && Math.sign(after.moved.WR1[0]) === -Math.sign(before.moved.WR1 ? before.moved.WR1[0] : -13.5), 'Flip mirrors the play');
+  ok(/Left/.test(nameBefore) !== /Left/.test(nameAfter) || nameBefore === nameAfter, 'and the name follows the side: ' + nameAfter);
+  await page.click('#sFlip');
 
-  await page.click('#bSnap');
-  await page.waitForTimeout(1300);
-  await shot('3-live');
-  const r1 = await waitResult();
-  ok(/^(FIRST DOWN|TOUCHDOWN|TURNOVER ON DOWNS)$/.test(r1.title), 'a result: ' + r1.title);
-  ok(r1.why.length > 8 && /^The defense: Cover [0-3] (man|zone), (no )?blitz\./.test(r1.call), 'a reason and the call: ' + r1.why + ' / ' + r1.call);
-  ok(/seed 11\b/.test(r1.dbg), 'the debug toggle shows the seed');
-  await shot('4-result');
-  await page.click('#bShare');
+  /* ---------- Test vs Defense ---------- */
+  await page.click('#sTest');
+  ok(await page.isVisible('#vTest'), 'Test vs Defense from the Studio');
+  await page.selectOption('#tN', '40');
+  await page.click('#tRun');
+  await page.waitForSelector('.testt', { timeout: 60000 });
+  ok(await page.$$eval('.testt tr', r => r.length) === 9, 'a row for each of the seven defenses, and every defense');
+  await shot('4-test');
+
+  /* ---------- signed out ---------- */
+  await tab('books');
+  ok(await page.isVisible('#bSignin') && !(await page.isVisible('#bMain')), 'signed out, Playbooks asks you to sign in');
+  await tab('studio');
+  await page.click('#sSave');
+  ok(await page.isVisible('#saveDlg') && /Sign in/.test(await page.textContent('#saveOut')), 'signed out, Save Play asks you to sign in');
+  await page.click('#bSaveCancel');
+
+  /* ---------- signed in ---------- */
+  await page.evaluate(() => { window.RTG_AUTH.state = () => ({ ready: true, resolved: true, signedIn: true, userId: 'check-user', name: 'Coach' }); window.RTG_AUTH.token = () => 'check'; });
+  await page.click('#sSave');
+  await page.waitForSelector('#bSaveOk:not([hidden])');
+  ok(await page.$('#saveOut .savecard canvas') !== null, 'the save box shows the play');
+  await page.click('#bSaveOk');
   await page.waitForTimeout(300);
-  const shared = await page.evaluate(() => navigator.clipboard.readText().catch(() => ''));
-  ok(/^4th and What [A-Z ]+[+-]?\d* · 4th and 5\n\S+\nhttps:\/\/runthe\.gg\/4th-and-what$/u.test(shared), 'the share line: ' + shared.split('\n')[0]);
-  await page.click('#bBack');
-  p = await play();
-  ok(await page.isVisible('#cBoard') && p.routes.length === 2 && p.targets.length === 2, 'back to the clipboard with the play kept');
-  await page.click('#bSnap');
-  await page.click('#bSkip');
-  const r2 = await waitResult();
-  ok(!!r2.title, 'snapped again and skipped to the end: ' + r2.title);
-  await page.click('#bReplay');
-  const r3 = await waitResult();
-  ok(!!r3.title, 'replay, the defense rolls again: ' + r3.title);
+  let bs = await books();
+  ok(bs.length === 1 && bs[0].plays.length === 1 && bs[0].plays[0].num != null, 'saved to a new playbook, with its own play number');
+  ok((await page.textContent('#sSave')) === 'Saved', 'the Studio now edits the playbook play');
+  await page.click('[data-side="card"]');
+  ok(await page.$$eval('#sCard .cardback li', l => l.length) >= 5, 'the card back has a line for each player');
+  await page.click('#sCard .chips button:nth-child(5)');
+  await page.waitForTimeout(900);
+  bs = await books();
+  ok((bs[0].plays[0].situations || []).indexOf('short') >= 0, 'a situation tag saves with the play');
 
-  /* a run: Handoff, QB then the back, then his path */
-  await page.click('#bBack');
-  await page.click('#bClear');
-  await page.click('.tool[data-tool="handoff"]');
-  await tapYd([0, -5]); await tapYd([1.8, -5.2]);
-  await dragYd([1.8, -5.2], [1.5, -2], [0.8, 1], [0.8, 6]);
-  p = await play();
-  const pe = p.handoff && p.handoff.path[p.handoff.path.length - 1];
-  ok(p.handoff && p.handoff.to === 'RB' && pe && Math.abs(pe[0] - 0.8) < 0.8 && Math.abs(pe[1] - 6) < 0.8, 'a handoff to the back, and the path drawn for him');
-  ok(await page.isDisabled('.tool[data-tool="target"]'), 'a run has no target');
-  ok(!(await page.isDisabled('#bSnap')), 'a run can be snapped');
-  await page.click('#bSnap');
-  const r4 = await waitResult();
-  ok(!!r4.title, 'the run: ' + r4.title + '. ' + r4.why);
-  await shot('5-run');
+  await tab('books');
+  ok(await page.isVisible('#bMain') && await page.$$eval('#bCards .pcard', c => c.length) === 1, 'the library shows the play as a card');
+  await page.click('#bCards .pcard .more');
+  await page.click('#bCards .menu button:has-text("Copy, flipped")');
+  bs = await books();
+  ok(bs[0].plays.length === 2 && bs[0].plays[1].num !== bs[0].plays[0].num, 'a flipped copy, with a new number');
+  await page.fill('#bSearch', 'zzz');
+  ok(await page.$$eval('#bCards .pcard', c => c.length) === 0, 'search filters the cards');
+  await page.fill('#bSearch', '');
+  await shot('5-library');
+
+  /* terminology renames plays never named by hand */
+  await page.click('#bTabs button[data-bt="terms"]');
+  ok(await page.isVisible('#bTerms .example'), 'the terminology tab');
+  await page.evaluate(() => { const t = window.FAW_APP.terms(); t.formations.gun3x1 = 'Rex'; window.FAW_APP.store.setTerms(t); });
+  ok(/^Rex/.test(await page.evaluate(() => window.FAW_APP.nameFor({ formation: 'gun3x1', moved: {}, routes: [], blocks: [], handoff: null, targets: [] }))), 'a formation word names the play');
+  await page.evaluate(() => { const t = window.FAW_APP.terms(); delete t.formations.gun3x1; window.FAW_APP.store.setTerms(t); });
+
+  /* ---------- Learn ---------- */
+  await tab('learn');
+  await page.selectOption('#lBook', 'concepts');
+  await page.click('#lTree button[data-key="c:Snag"]');
+  await page.selectOption('#lWho', 'TE');
+  ok(/Snag/.test(await page.textContent('#lTitle')) && await page.isVisible('#lQuiz .q h4'), 'Learn: the play and your job');
+  await page.click('#lQuiz .btn.gold');
+  ok(/Question 1 of/.test(await page.textContent('#lQuiz')), 'Practice asks the questions');
+  const ans = await page.evaluate(() => { const q = window.FAW_LEARN.questions(window.FAW_ROUTES.apply(window.FAW_APP.emptyPlay('gun3x1'), 'Snag'), 'TE', []); return q[0].answer; });
+  await page.click('#lQuiz .opt:has-text("' + ans + '")');
+  ok(/Correct/.test(await page.textContent('#lQuiz .fb')), 'the right answer is marked correct');
+  await page.click('#lAnim');
+  await page.waitForTimeout(300);
+  await shot('6-learn');
+
+  /* ---------- Print ---------- */
+  await tab('print');
+  await page.waitForSelector('#pPresets button');
+  for (const name of await page.$$eval('#pPresets button', b => b.map(x => x.textContent))) {
+    await page.click('#pPresets button:has-text("' + name + '")');
+    await page.waitForFunction(() => document.querySelectorAll('#pPreview img').length > 0 || /could not/.test(document.getElementById('pPreview').textContent), null, { timeout: 8000 });
+    const pv = await page.textContent('#pPreview');
+    ok(!/could not/.test(pv) && await page.$$eval('#pPreview img', i => i.length) > 0, 'Print: ' + name + ' previews');
+  }
+  await shot('7-print');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#pFile')]);
+  const txt = fs.readFileSync(await dl.path(), 'utf8');
+  ok(/4th-and-what-playbook/.test(txt), 'the playbook downloads as a file');
+  await tab('books');
+  await page.setInputFiles('#importFile', { name: 'book.json', mimeType: 'application/json', buffer: Buffer.from(txt) });
+  await page.waitForTimeout(400);
+  bs = await books();
+  ok(bs.length === 2, 'and imports back as a second copy');
+
   ok(errs.length === 0, 'no console errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* The real shared cloud saves (no stand-in): signed in through the arcade's
+   RTG_AUTH, assets/cloudsave.js has the token, so a playbook can reach the account. */
+{
+  console.log('\ncloud saves');
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.route(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/, r => r.abort());
+  await page.goto(BASE + '/4th-and-what/');
+  await page.waitForFunction(() => !!window.RTG_SAVE && !!window.RTG_AUTH);
+  ok(await page.evaluate(() => window.RTG_SAVE.signedIn() === false), 'signed out, the cloud saves have no token');
+  ok(await page.evaluate(() => { window.RTG_AUTH.token = () => 'arcade-token'; return window.RTG_SAVE.signedIn(); }), 'signed in through RTG_AUTH, the cloud saves have the token');
   await ctx.close();
 }
 
