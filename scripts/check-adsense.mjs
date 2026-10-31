@@ -166,7 +166,7 @@ if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missin
 /* Pages the owner asked to carry one unit at the bottom of every screen (2026-10-27): the unit sits
  * under all the screens in a data-ad-zone="page" block and is started once per load. The Fantasy
  * Challenge is a weekly lineup, not a live game, so nothing on it is played in real time. */
-const PAGE_ZONE_PAGES = new Set(['football/fantasy/index.html']);
+const PAGE_ZONE_PAGES = new Set(['football/fantasy/index.html', 'cfb/fantasy/index.html']);
 const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html', 'soccer/index.html']);
 /* Pages whose draft screen carries one pinned banner (the owner, 2026-10-28, live immediately):
  * built by draftAd() when the draft opens and emptied when it is left. Only a unit made inside

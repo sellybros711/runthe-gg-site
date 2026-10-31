@@ -491,6 +491,24 @@ async function playOuting(page, o) {
       const shown = await page.waitForSelector('#m-meter:not([hidden])', { timeout: 10000 }).then(() => true, () => false);
       if (!shown) { r.problems.push('pitch ' + (r.pitches + 1) + ': the release meter did not show after throw'); break; }
       await page.waitForTimeout(200);
+      /* RE-AIM (the owner, 2026-10-30): the zone is a stop while the meter runs, so the panel's RE-AIM
+         is the way back to aiming. On the third pitch: it cancels the meter with the aim kept, the
+         zone aims again, and throw starts a fresh meter */
+      if (i === 2) {
+        const bk = await page.evaluate(() => { const b = document.querySelector('#m-meter .rm-back'); const r = b && b.getBoundingClientRect(); return { h: r ? r.height : 0, w: r ? r.width : 0 }; });
+        await page.click('#m-meter .rm-back');
+        await page.waitForSelector('#m-meter', { state: 'hidden', timeout: 5000 });
+        const af = await page.evaluate(() => ({ cell: window.STD_UI.state.cell, busy: window.STD_UI.state.busy, throwOn: !document.getElementById('m-throw').disabled, calls: (window.__calls || []).length }));
+        const other = cellNo === 12 ? 7 : 12;
+        await page.click(`#m-aim .cell[data-cell="${other}"]`);
+        const re = await page.evaluate(() => window.STD_UI.state.cell);
+        ok(bk.h >= 38 && af.cell === cellNo && !af.busy && af.throwOn && re === other,
+          '5 RE-AIM on the meter cancels it with nothing thrown (' + Math.round(bk.w) + 'x' + Math.round(bk.h) + ' px), and the zone aims again (cell ' + cellNo + ' to ' + re + ')');
+        await page.click(`#m-aim .cell[data-cell="${cellNo}"]`);
+        await page.click('#m-throw');
+        await page.waitForSelector('#m-meter:not([hidden])', { timeout: 10000 });
+        await page.waitForTimeout(200);
+      }
       /* the meter (the owner, 2026-10-22: rebuilt): one panel over the pitch buttons and the throw
          button, so the scene never moves; the effort bar only when STD_METER.EFFORT is true */
       const eff = await page.evaluate(() => window.STD_METER.EFFORT === true);
@@ -527,16 +545,42 @@ async function playOuting(page, o) {
             '5 the power column is beside the zone, off the hitter and the plate, on screen and thumb wide (' + Math.round(cl.w) + 'x' + Math.round(cl.h) + (cl.on.length ? ', over ' + cl.on.join(' and ') : '') + (cl.onZone ? ', over the zone' : '') + (cl.on.length || cl.onZone ? '; ' + cl.at : '') + ')');
         }
       }
+      /* THE CUE (the owner, 2026-10-30: "It needs to be clear you must tap the bottom bar to time your
+         pitches"): the panel itself says the tap while it waits for one, the line over it is empty.
+         For the first releases (meter-ui.js QUIET_AFTER) the cue in the panel's biggest type; after,
+         the quiet panel: "tap" in the lit step. Either way it is on the panel and on screen. */
+      const tapSays = () => page.evaluate(() => {
+        const m = document.getElementById('m-meter'), vis = (x) => !!x && x.getClientRects().length > 0 && getComputedStyle(x).visibility !== 'hidden';
+        const cue = m.querySelector('.rm-cue-t b'), lit = m.querySelector('.rm-step.on span');
+        const big = m.classList.contains('cue');
+        const el = big ? cue : lit, mr = m.getBoundingClientRect(), r = el && el.getBoundingClientRect();
+        return { say: document.getElementById('m-say').textContent, big, text: el ? el.textContent : '', sub: (m.querySelector('.rm-cue-t small') || {}).textContent || '', shown: vis(el) && r.top >= mr.top && r.bottom <= mr.bottom && r.top >= 0 && r.bottom <= innerHeight };
+      });
+      const cueOk = (c, want) => c.say === '' && c.shown && (c.big ? c.text === want && /on the zone/.test(c.sub) : c.text === 'tap');
+      /* THE ZONE IS A STOP (the owner, 2026-10-30): on the second pitch both stops are taps on the
+         strike zone, not the panel. Each must stop the meter as the panel does, and never re-aim */
+      const viaZone = i === 1;
+      const zoneTap = async () => {
+        const z = await page.evaluate((c) => { const b = document.querySelector('#m-aim .cell[data-cell="' + c + '"]').getBoundingClientRect(); return [b.left + b.width * 0.3, b.top + b.height * 0.7]; }, cellNo === 12 ? 7 : 12);
+        await page.mouse.click(z[0], z[1]);
+      };
+      const stopTap = () => (viaZone ? zoneTap() : page.click('#m-meter'));
       if (eff) {
-        const say0 = await page.textContent('#m-say');
-        if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
-        await page.click('#m-meter');
+        const c0 = await tapSays();
+        if (!cueOk(c0, 'tap to set power')) r.problems.push('pitch ' + (r.pitches + 1) + ': the meter at power did not say the tap on its panel (' + JSON.stringify(c0) + ')');
+        if (freeTap) ok(cueOk(c0, 'tap to set power'), '5 the meter says the tap on its own panel at power ("' + c0.text + '", "' + c0.sub + '", the line over it empty)');
+        await stopTap();
         await page.waitForTimeout(450);
+        if (viaZone) {
+          const zs = await page.evaluate(() => ({ stage: window.STD_UI.state.meter.stage(), set: document.querySelector('.rm-col').classList.contains('is-set'), cell: window.STD_UI.state.cell }));
+          ok(zs.stage === 'acc' && zs.set && zs.cell === cellNo, '5 a tap on the zone stops power as the panel does, the aim unchanged (stage ' + zs.stage + ', cell ' + zs.cell + ')');
+        }
         if (freeTap) ok(await page.evaluate(() => !document.querySelector('.rm-ring').hidden), '5 the ring comes up once power is set');
       }
-      // the step line under the meter says how to stop it (the owner, 2026-10-26: the ring)
-      const say = await page.textContent('#m-say');
-      if (say !== 'tap when it hits the circle') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
+      // the panel says how to stop the ring (the owner, 2026-10-26: the ring; 2026-10-30: on the bar)
+      const c1 = await tapSays();
+      if (!cueOk(c1, 'tap to release')) r.problems.push('pitch ' + (r.pitches + 1) + ': the meter at the release did not say the tap on its panel (' + JSON.stringify(c1) + ')');
+      if (freeTap) ok(cueOk(c1, 'tap to release'), '5 the meter says the tap on its own panel at the release ("' + c1.text + '")');
       if (freeTap && !SHOTS) {
         /* the smooth sweep (the owner, 2026-10-26: "the meter is laggy"): while the ring runs the mound
            draws nothing (stage.js hush) and the ring moves by transform only, never its size */
@@ -548,7 +592,18 @@ async function playOuting(page, o) {
         }));
         ok(sw.draws === 0 && !sw.left && sw.moved > 1, '5 the ring closes by transform with the mound still (' + sw.draws + ' draws, ' + sw.moved + ' places in 20 frames)');
       }
-      await page.click('#m-meter');
+      const nCalls = viaZone ? await page.evaluate(() => {
+        const A = window.STD_API;
+        if (!A.__rec) { const t = A.throwPitch; window.__calls = []; A.throwPitch = function (id, call) { window.__calls.push(JSON.parse(JSON.stringify(call))); return t.apply(this, arguments); }; A.__rec = true; }
+        return window.__calls.length;
+      }) : 0;
+      await stopTap();
+      if (viaZone) {
+        await page.waitForFunction((n) => (window.__calls || []).length > n, nCalls, { timeout: 10000 }).catch(() => {});
+        const zc = await page.evaluate(() => ({ call: (window.__calls || []).slice(-1)[0] || {}, done: document.getElementById('m-meter').classList.contains('is-done') || document.getElementById('m-meter').hidden }));
+        ok(zc.done && zc.call.cell === cellNo && typeof zc.call.q === 'number' && (eff ? typeof zc.call.e === 'number' : true),
+          '5 a tap on the zone is the release: the pitch goes to the aimed cell with its q, nothing re-aimed (' + JSON.stringify(zc.call) + ')');
+      }
       if (freeTap) {
         /* the stop locks: the ring holds where it was stopped, the word goes up, and the call
            carries the cell, the free aim's at, the release q (and e with effort) */

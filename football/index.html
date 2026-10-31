@@ -6276,6 +6276,87 @@ window.GA_ID='G-L29P5MRWKE';
     background:#03060c;box-shadow:0 12px 34px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.03)}
   .pofield canvas{display:block;width:100%;height:auto}
 
+  /* ── THE BUG IN THE STANDS ─────────────────────────────────────────────────────
+     The owner, 2026-10-30: the score bug goes in the stands above the field so the game is
+     one picture. fieldcast.js gives the stands the top quarter of the canvas (camera(): Sy is
+     a quarter of the height) and the canvas is never shorter than 196px, so the band is at
+     least 49px. The bug is 38px and stands on the ribbon board, which stays in view under it,
+     and the light rigs at the top of the band stay clear above it.
+     One slim row in the manner of a modern network bug: each side a dark cell keyed by a bar
+     of its club colour, the score bright white when it leads and dimmed when it trails, then
+     the quarter and clock, then the round tag. Every rule hangs off .pofield .bug.stand, which
+     outranks the gloss, .big and .led rules above, so those stay exactly as they were for the
+     season card and the bowl. */
+  .pofield{position:relative}
+  .pofield .bug.stand{position:absolute;z-index:2;left:6px;right:6px;top:calc(25% - 39px);
+    height:38px;max-width:460px;margin:0 auto;padding:0;border-radius:10px;overflow:hidden;
+    display:flex;align-items:stretch;
+    background:rgba(7,11,20,.9);border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 6px 18px -6px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.07);
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+  .pofield .bug.stand .btop{flex:1 1 auto;min-width:0;display:flex;gap:0;background:none;padding:0;border-radius:0}
+  .pofield .bug.stand .bt{flex:1 1 0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;
+    align-content:center;align-items:center;column-gap:7px;row-gap:2px;padding:0 9px 0 13px;border-radius:0;overflow:hidden;filter:none;opacity:1;
+    background:linear-gradient(90deg,color-mix(in srgb,var(--tcol,#334155) 34%,transparent),transparent 80%);
+    box-shadow:none;text-align:left}
+  .pofield .bug.stand .bt.them{grid-template-columns:auto minmax(0,1fr);padding:0 13px 0 9px;text-align:right;
+    background:linear-gradient(270deg,color-mix(in srgb,var(--tcol,#334155) 34%,transparent),transparent 80%);
+    border-left:1px solid rgba(255,255,255,.08)}
+  /* The club bar, on the outside edge of its own cell. */
+  .pofield .bug.stand .bt:before{content:'';display:block;position:absolute;left:0;right:auto;top:0;bottom:0;
+    width:4px;height:auto;border-radius:0;background:var(--tcol,#334155);
+    box-shadow:inset -1px 0 0 var(--tcol2,rgba(255,255,255,.25))}
+  .pofield .bug.stand .bt.them:before{left:auto;right:0;box-shadow:inset 1px 0 0 var(--tcol2,rgba(255,255,255,.25))}
+  .pofield .bug.stand .bt:after{display:none}
+  /* The code over the record, in the column that gives way first when space runs out. The
+     grid placement is the gloss bug's own, so the two scores still meet at the seam. */
+  .pofield .bug.stand .bt .cd,.pofield .bug.stand .bt .rc{display:block;min-width:0;white-space:nowrap}
+  .pofield .bug.stand .bt .cd{font-family:var(--fbar);font-weight:800;font-size:16px;line-height:1;
+    letter-spacing:.02em;color:#fff;text-shadow:none;overflow:hidden;text-overflow:ellipsis}
+  .pofield .bug.stand .bt .rc{font-family:var(--fbar);font-weight:700;font-size:10.5px;line-height:1;
+    color:rgba(226,232,240,.62);text-shadow:none;overflow:hidden;text-overflow:ellipsis}
+  .pofield .bug.stand .bt .rc .yr{color:rgba(226,232,240,.45);margin-right:.35em}
+  .pofield .bug.stand .bt .sc{font-family:var(--fbar);font-weight:800;font-size:25px;line-height:1;
+    padding:0;border-radius:0;background:none;box-shadow:none;color:rgba(255,255,255,.5);
+    text-shadow:none;font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .pofield .bug.stand .bt.lead .sc{color:#fff}
+  .pofield .bug.stand .bt.scored{filter:brightness(1.35)}
+  /* The quarter over the clock, then the round, pressed into the right end. */
+  .pofield .bug.stand .bbot{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:0 6px 0 9px;
+    background:rgba(255,255,255,.04);border-left:1px solid rgba(255,255,255,.08);border-radius:0;box-shadow:none}
+  .pofield .bug.stand .bbot .q{font-size:11px;letter-spacing:.06em;color:#94a3b8;line-height:1}
+  .pofield .bug.stand .bbot .ck{font-size:16px;line-height:1;color:#fff;min-width:2.6em;text-align:left}
+  .pofield .bug.stand.final .bbot .ck{font-size:12px}
+  .pofield .bug.stand.urgent .bbot .ck{color:#fca5a5}
+  .pofield .bug.stand .bbot .rd{margin-left:0;font-size:10.5px;letter-spacing:.06em;padding:5px 7px;border-radius:6px}
+  /* The 2000s board keeps its jumbotron dress: the glowing faces on the same black row. */
+  .pofield .bug.stand.led{background:rgba(3,5,8,.94);border-color:rgba(201,206,214,.35)}
+  .pofield .bug.stand.led .bt .cd,.pofield .bug.stand.led .bt .sc,.pofield .bug.stand.led .bbot .q,
+  .pofield .bug.stand.led .bbot .ck,.pofield .bug.stand.led .bbot .rd{font-family:var(--fled);font-weight:900}
+  .pofield .bug.stand.led .bt .cd{font-size:13px}
+  .pofield .bug.stand.led .bt.lead .sc{color:#ffcf3f;text-shadow:0 0 8px rgba(255,180,20,.85)}
+  .pofield .bug.stand.led .bt .sc{font-size:21px}
+  .pofield .bug.stand.led .bbot .ck{font-size:13px;color:#7CFC5A;text-shadow:0 0 6px rgba(90,240,90,.6)}
+  .pofield .bug.stand.led .bbot .rd{font-size:9px;color:#ffcf3f;background:none;box-shadow:none;padding:0}
+  /* Orbitron is wide, so on a phone the round gives way: the eyebrow over the opponent's
+     name already says which round it is. */
+  @media (max-width:479px){ .pofield .bug.stand.led .bbot .rd{display:none} }
+  /* The year goes first on a narrow phone: the headline over the field already carries it. */
+  @media (max-width:399px){ .pofield .bug.stand .bt .rc .yr{display:none} }
+  @media (max-width:359px){
+    .pofield .bug.stand .bt{padding:0 6px 0 10px;gap:5px}
+    .pofield .bug.stand .bt.them{padding:0 10px 0 6px}
+    .pofield .bug.stand .bt .rc{display:none}
+    .pofield .bug.stand .bt .cd{grid-row:1/3}
+    .pofield .bug.stand .bbot .rd{display:none}
+  }
+  @media (min-width:640px){
+    .pofield .bug.stand{height:46px;top:calc(25% - 47px)}
+    .pofield .bug.stand .bt .cd{font-size:18px}
+    .pofield .bug.stand .bt .sc{font-size:29px}
+    .pofield .bug.stand .bbot .ck{font-size:18px}
+  }
+
   .bigrec{text-align:center;padding:6px 0 12px}
   .bigrec .r{font-family:var(--fd);font-size:62px;line-height:.95}
 
@@ -8160,20 +8241,22 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="eyebrow" id="po-round">Wild Card</div>
     <h2 class="display" style="font-size:25px;margin:5px 0 14px" id="po-opp">Opponent</h2>
 
-    <div class="bug" id="po-bug">
-      <div class="btop">
-        <div class="bt you" id="po-you"><span class="cd">YOU</span><span class="rc"></span>
-          <b class="sc">0</b></div>
-        <div class="bt them" id="po-them"><span class="cd">OPP</span><span class="rc"></span>
-          <b class="sc">0</b></div>
-      </div>
-      <div class="bbot"><span class="q" id="po-q">1ST</span>
-        <span class="ck" id="po-ck">15:00</span>
-        <span class="rd" id="po-rd">WILD CARD</span></div>
-    </div>
-
     <div class="pocap" id="po-cap"></div>
+    <!-- THE SCORE BUG LIVES IN THE STANDS (the owner, 2026-10-30): laid over the crowd above
+         the ribbon board, so the game is one picture and the screen gives back the bug's own
+         block. Same ids and cells as every other bug, so the painters are unchanged. -->
     <div class="pofield" id="po-field">
+      <div class="bug stand" id="po-bug">
+        <div class="btop">
+          <div class="bt you" id="po-you"><span class="cd">YOU</span><span class="rc"></span>
+            <b class="sc">0</b></div>
+          <div class="bt them" id="po-them"><span class="cd">OPP</span><span class="rc"></span>
+            <b class="sc">0</b></div>
+        </div>
+        <div class="bbot"><span class="q" id="po-q">1ST</span>
+          <span class="ck" id="po-ck">15:00</span>
+          <span class="rd" id="po-rd">WILD CARD</span></div>
+      </div>
       <canvas id="po-fcanvas" width="600" height="160"></canvas>
     </div>
     <!-- THE CONTROLS SIT UNDER THE FIELD, above the log (the owner, 2026-10-30: the game lives
@@ -8475,20 +8558,21 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   <div class="screen bossx" id="s-bgame">
     <div class="eyebrow red" id="bg-eye">Boss battle</div>
     <h2 class="display bg-opp" id="bg-opp">The Boss</h2>
-    <div class="bug big bossbug" id="bg-bug">
-      <div class="btop">
-        <div class="bt you lead" id="bg-you"><span class="cd">YOU</span>
-          <span class="rc"></span><b class="sc" id="bg-syou">0</b></div>
-        <div class="bt them" id="bg-them"><span class="cd">OPP</span>
-          <span class="rc"></span><b class="sc" id="bg-sthem">0</b></div>
-      </div>
-      <div class="bbot"><span class="q" id="bg-q">1ST</span>
-        <span class="ck" id="bg-ck">15:00</span>
-        <span class="rd" id="bg-state">BOSS</span></div>
-    </div>
     <!-- The same field the playoffs draw drives on, played forward here: each drive appears
-         as the sim produces it, and the situation a call is made in is the one on the field. -->
+         as the sim produces it, and the situation a call is made in is the one on the field.
+         The bug sits in its stands, as it does on the playoff broadcast. -->
     <div class="pofield" id="bg-field">
+      <div class="bug stand bossbug" id="bg-bug">
+        <div class="btop">
+          <div class="bt you lead" id="bg-you"><span class="cd">YOU</span>
+            <span class="rc"></span><b class="sc" id="bg-syou">0</b></div>
+          <div class="bt them" id="bg-them"><span class="cd">OPP</span>
+            <span class="rc"></span><b class="sc" id="bg-sthem">0</b></div>
+        </div>
+        <div class="bbot"><span class="q" id="bg-q">1ST</span>
+          <span class="ck" id="bg-ck">15:00</span>
+          <span class="rd" id="bg-state">BOSS</span></div>
+      </div>
       <canvas id="bg-fcanvas" width="600" height="150"></canvas>
     </div>
     <div class="bg-narr" id="bg-narr">The scout is in. Time to play.</div>
@@ -8750,7 +8834,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      save in localStorage and the same way of losing it. Optional like everything else up
      here: without it the game keeps its runs exactly where it always did, in this browser
      and nowhere else. See supabase/103_cloud_saves.sql. -->
-<script src="/assets/cloudsave.js?v=2"></script>
+<script src="/assets/cloudsave.js?v=3"></script>
 <!-- THE REWARDED VIDEO PLAYER (Ads Agent, 2026-10-28). Loaded here so the free re-spin can ask it
      whether a video is ready. RTG_AD.ready() stays false until the owner's network is approved, so
      the re-spin button is hidden on a live site until then. See assets/rewarded.js. -->
@@ -8761,7 +8845,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <script src="/assets/newsletter.js?v=2"></script>
 <!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
      keeps its own body as the fallback, so a blocked copy still draws the old chart. -->
-<script src="/assets/fieldcast.js?v=4"></script>
+<script src="/assets/fieldcast.js?v=5"></script>
 <script src="/assets/simspeed.js?v=1"></script>
 <script defer src="auth.js?v=8"></script>
 <script>
@@ -20663,7 +20747,7 @@ function playPlayoffGame(r,after){
   youEl.querySelector('.sc').textContent='0';
   themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you'; themEl.className='bt them';
-  bug.className='bug '+rcls+(run.era==='2000s'?' led':'');
+  bug.className='bug stand '+rcls+(run.era==='2000s'?' led':'');
   $('po-q').textContent=QNAME[0];
   $('po-ck').textContent='15:00';
   $('po-rd').textContent=ROUND_SHORT[round]||round.toUpperCase();
@@ -20743,7 +20827,7 @@ function playPlayoffGame(r,after){
   const oppCode=opp?E.eraCode(opp.franchise,opp.season):'OPP';
   const ticker=(ROUND_SHORT[round]||round).toUpperCase()+'   YOU VS '+oppCode+'   RUNTHE.GG   ';
   const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,
-    dcY,dcT,'YOU',oppCode,null,{ticker,home:crowdHome(round,r.opponent_id)}):()=>{};
+    dcY,dcT,'YOU',oppCode,null,{ticker,home:crowdHome(round,r.opponent_id),tag:false}):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
@@ -21777,7 +21861,7 @@ function bossDraw(upTo,live,anchor){
   }
   drawDriveChart(bossField,bossFcv.width,bossFcv.height,ds,upTo,bossYouCol,bossThemCol,
     'YOU',bossThreeLetter(bossOppNow),anchor||null,
-    {downs:false,home:bossHome,ticker:($('bg-eye').textContent||'Boss battle').toUpperCase()+'   YOU VS '+bossThreeLetter(bossOppNow)+'   RUNTHE.GG   '});
+    {downs:false,tag:false,home:bossHome,ticker:($('bg-eye').textContent||'Boss battle').toUpperCase()+'   YOU VS '+bossThreeLetter(bossOppNow)+'   RUNTHE.GG   '});
 }
 /* Absolute yard, mirrored for the boss, matching the engine's own frame. */
 function E_absYard(team,y){ const v=team==='you'?y:100-y; return Math.max(0,Math.min(100,v)); }
