@@ -23,11 +23,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <header class="topbar">
-  <a class="logo" href="#play" aria-label="4th and What"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></a>
+  <a class="logo" href="#home" aria-label="4th and What home"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></a>
   <nav class="tabs" id="tabs" aria-label="Sections">
     <button type="button" class="tab" data-view="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg><span>Play</span></button>
     <button type="button" class="tab" data-view="studio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16zM14 6l3 3"/></svg><span>Studio</span></button>
@@ -44,6 +44,32 @@
 </header>
 
 <main class="views">
+
+  <!-- HOME: where to go, to play or to build -->
+  <section class="view home" id="vHome" hidden>
+    <div class="hero">
+      <div class="herotext">
+        <p class="kicker">Draw it. Run it. Coach it.</p>
+        <h1>4th and what?</h1>
+        <p class="lede">Design football plays, run them against a real defense, and turn them into a playbook your team can learn and print.</p>
+        <div class="heroacts">
+          <button type="button" class="btn gold big" data-go="play">Play the game <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button>
+          <button type="button" class="btn big" data-go="studio">Build a play</button>
+        </div>
+      </div>
+      <div class="herofield fieldwrap"><canvas id="hField" aria-hidden="true"></canvas><p class="heroname" id="hName"></p></div>
+    </div>
+    <div class="paths">
+      <button type="button" class="path play" data-go="play"><b>Play</b><span>Pick the down, the distance and the spot. Call a play and beat the defense.</span><small>The game</small></button>
+      <button type="button" class="path studio" data-go="studio"><b>Build</b><span>Draw a play or start from a concept. Set the reads, motion and play action.</span><small>Coach Studio</small></button>
+    </div>
+    <div class="tiles">
+      <button type="button" class="tile" data-go="books"><b>My Playbooks</b><span>Your plays, named in your words.</span></button>
+      <button type="button" class="tile" data-go="learn"><b>Learn</b><span>Know your job, then take the quiz.</span></button>
+      <button type="button" class="tile" data-go="test"><b>Test vs Defense</b><span>Every defense, many snaps each.</span></button>
+      <button type="button" class="tile" data-go="print"><b>Print</b><span>Cards, call sheets and wristbands.</span></button>
+    </div>
+  </section>
 
   <!-- PLAY: the game. Any down, distance and spot; the play runs against a real defense. -->
   <section class="view play" id="vPlay" hidden>
@@ -307,7 +333,8 @@
 <script src="stage.js?v=1"></script>
 <script src="share.js?v=1"></script>
 <script src="play.js?v=1"></script>
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2"></script>
+<script src="home.js?v=2"></script>
 <script src="studio.js?v=1"></script>
 <script src="game.js?v=2"></script>
 <script src="library.js?v=1"></script>

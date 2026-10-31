@@ -1,6 +1,6 @@
 /* 4th and What: the shell every view shares.
  *
- *   FAW_APP.show(view)          one of play, studio, learn, books, test, print (also the url hash)
+ *   FAW_APP.show(view)          one of home, play, studio, learn, books, test, print (also the url hash)
  *   FAW_APP.on(view, fn)        run fn each time that view is shown
  *   FAW_APP.SC                  the situation: down, distance, ballOn (yards to the goal), ballX, roster
  *   FAW_APP.draft               the play in the Studio: { play, name, nameEdited, tag, fav, notes,
@@ -9,7 +9,9 @@
  *   FAW_APP.choices()           every play a view can pick: the Studio's, the concepts, the books'
  *   FAW_APP.saveDialog(play, o) save a play into a playbook (signed in) or ask to sign in
  *
- * The owner's template (2026-10-31) has five places along the top: Play,
+ * The page opens on Home (the owner, 2026-10-31: a homepage that points
+ * you to your options, to play or to build). The owner's template has five
+ * places along the top: Play,
  * Learn, Playbooks, Test vs Defense and Print, plus the Studio where a play
  * is made. Every view reads and writes the same draft, so a play drawn in the
  * Studio is the one Play runs, Test tests and Save saves.
@@ -23,7 +25,7 @@
   'use strict';
   var C = window.FAW_CONFIG, E = window.FAW_ENGINE, B = window.FAW_BOOK, N = window.FAW_NAMES, R = window.FAW_ROUTES, F = window.FAW_FORMATIONS;
   var $ = function (id) { return document.getElementById(id); };
-  var VIEWS = ['play', 'studio', 'learn', 'books', 'test', 'print'];
+  var VIEWS = ['home', 'play', 'studio', 'learn', 'books', 'test', 'print'];
   var hooks = {}, current = null;
 
   /* ---------- little helpers ---------- */
@@ -104,7 +106,7 @@
 
   /* ---------- the views ---------- */
   function show(v) {
-    if (VIEWS.indexOf(v) < 0) v = 'play';
+    if (VIEWS.indexOf(v) < 0) v = 'home';
     current = v;
     VIEWS.forEach(function (x) { var s = $('v' + x.charAt(0).toUpperCase() + x.slice(1)); if (s) s.hidden = x !== v; });
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { if (t.dataset.view === v) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
@@ -115,6 +117,8 @@
   function on(v, fn) { (hooks[v] = hooks[v] || []).push(fn); }
   function fire(k) { (hooks[k] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } }); if (k === 'remote' && current) (hooks[current] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } }); }
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { t.addEventListener('click', function () { show(t.dataset.view); }); });
+  document.querySelector('.logo').addEventListener('click', function (ev) { ev.preventDefault(); show('home'); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
   window.addEventListener('hashchange', function () { var v = location.hash.slice(1); if (v !== current) show(v); });
 
   /* ---------- save a play into a playbook ---------- */
@@ -192,5 +196,5 @@
     saveDialog: saveDialog, watch3d: watch3d
   };
   /* the views register themselves after this file; the first view is shown once they have */
-  window.addEventListener('DOMContentLoaded', function () { show(location.hash.slice(1) || 'play'); });
+  window.addEventListener('DOMContentLoaded', function () { show(location.hash.slice(1) || 'home'); });
 })();
