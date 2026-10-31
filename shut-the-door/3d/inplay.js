@@ -20,7 +20,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=23';
 import { SHADE } from './shade-data.js?v=5';
-import { Crew } from './fielders.js?v=9';
+import { Crew } from './fielders.js?v=10';
 import { buildBallpark } from './ballpark.js?v=24';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
@@ -371,7 +371,7 @@ export class InPlay {
           const f = this.fielders[sg.from], seen = f.root.visible;
           // (the runners at that moment too: a throw after a tag starts from the hand that tagged)
           const shown = plan.runners.map((r) => !!(r.fig && r.fig.root.visible));
-          for (const r of plan.runners) if (r.fig) this.poseRunner(r, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3));
+          for (const r of plan.runners) if (r.fig) this.poseRunner(r, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3), true);
           this.poseFielder(sg.from, f, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3));
           plan.runners.forEach((r, i) => { if (!r.fig) return; if (shown[i]) this.poseRunner(r, s, b); else r.fig.root.visible = false; });
           f.root.updateMatrixWorld(true);
@@ -1062,7 +1062,7 @@ export class InPlay {
     // on the runner as he is drawn then; the runners are put back as they were after)
     const plan = this.active.plan, b = plan.ballAt(t);
     const was = plan.runners.map((r) => r.fig ? { vis: r.fig.root.visible, at: r.fig.posedAt } : null);
-    for (const r of plan.runners) if (r.fig) this.poseRunner(r, t, b);
+    for (const r of plan.runners) if (r.fig) this.poseRunner(r, t, b, true);
     key[memo] = this.poseFielder(n, f, t, b, true);
     plan.runners.forEach((r, i) => {
       if (!r.fig) return;
@@ -1073,7 +1073,7 @@ export class InPlay {
 
   /* ---------------------------------------------------------------- the runners */
 
-  poseRunner(r, s, ball) {
+  poseRunner(r, s, ball, probe = false) {
     const f = r.fig, tr = r.track;
     let ss = s;
     if (tr.stopAt != null && s > tr.stopAt) ss = tr.stopAt + 0.3 * (1 - Math.exp(-(s - tr.stopAt) / 0.3));
@@ -1119,7 +1119,7 @@ export class InPlay {
     }
     const lead = s < 0.25 && r.from >= 1;
     const ph = this.crew.clips ? r.phase.at(ss) + 2 * Math.PI * (run - st.run) / this.crew.clips.jog.strideFt : 2 * Math.PI * run / CYCLE.runner + r.from;
-    const spec = { idleT: s + r.from * 1.1, run: { phase: ph, trot: this.active.plan.kind === 'hr', amp: walk ? 0.22 : clamp(spd / 26, 0, 1.1) }, crouch: lead ? 0.3 : 0, wide: lead ? 0.6 : 0, lean: walk ? 0.1 : 0, look: { x: ball.x, y: ball.y, z: ball.z } };
+    const spec = { idleT: s + r.from * 1.1, run: { phase: ph, trot: this.active.plan.kind === 'hr', amp: walk ? 0.22 : clamp(spd / 26, 0, 1.1) }, crouch: lead ? 0.3 : 0, wide: lead ? 0.6 : 0, lean: walk ? 0.1 : 0, look: { x: ball.x, y: ball.y, z: ball.z }, footLock: probe ? 'keep' : true, t: s };
     // the slide: feet first over his last few strides, down a beat, then up
     if (r.slide != null) {
       const t = r.slide, k = bump(s, t - 0.5, t - 0.28, t + 0.55, t + 1.0);

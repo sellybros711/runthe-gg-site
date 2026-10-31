@@ -3362,7 +3362,7 @@
     },
     "inplay.js": {
       "v": "35",
-      "sha": "c67a6554539739bd"
+      "sha": "76ed6a06a28d8872"
     },
     "preview.js": {
       "v": "9",
@@ -3457,8 +3457,8 @@
       "sha": "03cd975921e23213"
     },
     "fielders.js": {
-      "v": "9",
-      "sha": "6ebe8cd7abd92af9"
+      "v": "10",
+      "sha": "fa98d886f4c5f7bb"
     },
     "ballpark.js": {
       "v": "24",
