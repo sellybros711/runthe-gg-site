@@ -849,6 +849,15 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 @media (hover: hover) and (pointer: fine) { .rm-key { display: flex; } }
 .relm.cue:not(.is-done) .rm-step.on { box-shadow: inset 0 0 0 1.5px var(--signal); }
 .relm:not(.cue) .rm-step.on span { color: #ffb59c; }
+/* RE-AIM (the owner, 2026-10-30): the zone is a stop while the meter runs, so this is the way back to
+   aiming. Small, in the panel's top corner, away from the thumb's target; gone once the release lands */
+.rm-back { position: absolute; top: 8px; right: 8px; z-index: 1; display: inline-flex; align-items: center; gap: 4px; min-height: 38px; padding: 0 12px 0 8px;
+  border: 0; border-radius: 10px; background: rgba(255, 255, 255, .08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .26); color: #fff;
+  font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; touch-action: manipulation; }
+.rm-back svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rm-back:hover, .rm-back:focus-visible { background: rgba(255, 255, 255, .16); outline: 0; box-shadow: inset 0 0 0 1.5px #fff; }
+.relm.is-done .rm-back { display: none; }
+.relm:not(.is-done) .rm-head { padding-right: 96px; }
 
 /* the column: power, beside the zone (placed by meter-ui.js in viewport px), thumb wide */
 .rm-col { position: fixed; z-index: 7; width: 40px; border-radius: 11px; background: rgba(11, 15, 23, .72); cursor: pointer; touch-action: manipulation;

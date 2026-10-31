@@ -742,7 +742,27 @@ challenge(outingId)
 
 /** @returns {Promise<OutingResult>} */
 finishOuting(outingId)
+
+/** Today's finished daily that is not on the board yet, for the "sign in to save your score" prompt.
+ *  Same Eastern day only.  @returns {{day, number, scenarioId, score, outcome, pitches} | null} */
+pending()
+
+/** Signed in: post that daily now, once. Also runs by itself when STD_AUTH reports a sign-in, and then
+ *  fires a window event 'std-claimed' with the same answer.
+ *  @returns {Promise<{posted: boolean, account: Object|null} | null>}  null signed out */
+claim()
 ```
+
+The board, end to end (`159_shut_the_door_boards.sql`, 2026-10-30):
+
+- **A second device.** Signed in, `startOuting` in daily mode asks the account for the day's kept
+  outing (`STD_AUTH.myDay(day)`, at most 4 s). If there is one it is the day's outing on this device
+  too: its calls replay under the day's seed to the same result, the state carries
+  `fromAccount: true`, and nothing is posted again.
+- **A post that loses a race** (two devices that both played before either posted): the result's
+  `account` carries `taken: false` and `keptScore`, the score that counts. `taken: true` otherwise.
+- **Signed out, then signed in.** `pending()` reads the finished daily kept on the device. `claim()`
+  posts it once, today's only. A result from another day is never pending.
 
 Deterministic: the same scenario, seed and calls give the same results on any device. One seeded
 stream (`mulberry32`), drawn in a fixed order per pitch: miss x, miss z, the library draw, the
@@ -820,7 +840,10 @@ timed (section 5). `156_shut_the_door_release.sql` makes the submit's guard chec
 or a number 0..1.
 
 The streak is "doors shut in a row": a door shut on consecutive days. A blown save or a missed day
-resets it. A held tie is a blown save, so it resets it too. `155_shut_the_door_tie_held.sql` lets
+resets it. A held tie is a blown save, so it resets it too. Since `159_shut_the_door_boards.sql` the streak is read from the
+kept rows (`shutdoor_streak_of`), so a post for yesterday that arrives after today's counts in its
+place instead of resetting it. `shutdoor_my_day(day)` answers the caller's kept outing for a day
+(its calls, for a second device), and the submit's reply adds `keptScore` and `keptOutcome`. `155_shut_the_door_tie_held.sql` lets
 `tie_held` into the outcome check and the submit's guard, and adds `tieHeld` to
 `shutdoor_my_stats()`.
 

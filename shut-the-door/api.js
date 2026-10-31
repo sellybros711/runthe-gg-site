@@ -9,6 +9,8 @@
  *                                          {type, cell} plus q, the release, when timed,
  *                                          and at, the free aim's point in the cell
  *   finishOuting(outingId)                 the result; daily and signed in, submitted once
+ *   pending()                              today's finished daily not yet on the board, or null
+ *   claim()                                signed in: post that daily now, once (also run on sign-in)
  *
  * All of it runs in the browser from the day's pack (data/schedule.json, then
  * data/packs/<id>.json), as every daily on the site does. The engine is pure;
@@ -22,6 +24,16 @@
  *   startOuting never writes at pitch 0. finishOuting on an outing that is over
  *   returns the same result every time and submits at most once (a guest who
  *   signs in later is submitted on the next call; the server keeps the first).
+ *
+ * TWO DEVICES (159_shut_the_door_boards.sql). Signed in, startOuting asks the
+ *   server for the day's kept outing (STD_AUTH.myDay). If there is one, it is
+ *   the day's outing on every device: its calls replay to the same result under
+ *   the day's seed, and nothing is posted again. A post that loses a race says
+ *   so: result.account.taken is false and keptScore is the one that counts.
+ *
+ * SIGNED OUT, THEN SIGNED IN. pending() says a finished daily is waiting to be
+ *   posted (the UI's "sign in to save your score"). claim() posts it once, the
+ *   same Eastern day only, and runs by itself when STD_AUTH says you signed in.
  *
  * PRACTICE ("run it back"): any seed, never stored, never submitted.
  *
@@ -143,14 +155,47 @@
       for (const c of resume.calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
       rec.result = resume.result || null;
       rec.submitted = !!resume.submitted;
+      rec.by = resume.by || null;
     }
     outings[id] = rec;
-    return clone(E.publicState(o));     // nothing written at pitch 0
+    // signed in: the day may already be kept on the account from another device. That outing is
+    // the day's, here too: replay its calls (the same seed, so the same result), never post again
+    const kept = await keptDay(cur.day);
+    if (kept && kept.scenarioId === scenarioId && Array.isArray(kept.calls) && kept.calls.length
+        && JSON.stringify(kept.calls) !== JSON.stringify(rec.o.calls)) {
+      const k = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id, rules: E.rulesOf(kept.calls) });
+      for (const c of kept.calls) { if (k.status !== 'live') break; E.throwPitch(k, c); }
+      rec.o = k; rec.result = null; rec.submitted = true; rec.by = signedInUser(); rec.fromAccount = true;
+      save(rec);
+    } else if (kept && JSON.stringify(kept.calls) === JSON.stringify(rec.o.calls)) {
+      rec.submitted = true;
+    }
+    const out = clone(E.publicState(rec.o));
+    if (rec.fromAccount) out.fromAccount = true;     // the UI may say "played on another device"
+    return out;                                      // nothing written at pitch 0
+  }
+
+  function signedInUser() {
+    const A = AUTH();
+    let st = null;
+    try { st = A && A.state && A.state(); } catch (e) { st = null; }
+    return st && st.signedIn ? (st.userId || 'signed-in') : null;
+  }
+
+  /* The caller's kept outing for a day, or null: signed out, no row, or no answer within
+     KEPT_WAIT_MS (the page never waits long on the account to show the day). */
+  const KEPT_WAIT_MS = 4000;
+  async function keptDay(day) {
+    const A = AUTH();
+    if (!signedInUser() || !A || !A.myDay) return null;
+    try {
+      return await Promise.race([Promise.resolve(A.myDay(day)), new Promise(r => setTimeout(() => r(null), KEPT_WAIT_MS))]) || null;
+    } catch (e) { return null; }
   }
 
   function save(rec) {
     if (rec.o.mode !== 'daily') return;
-    writeSaved({ day: rec.day, scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, result: rec.result, submitted: rec.submitted });
+    writeSaved({ day: rec.day, scenarioId: rec.o.pack.scenario.id, calls: rec.o.calls, result: rec.result, submitted: rec.submitted, by: rec.by || null });
   }
 
   async function throwPitch(outingId, call) {
@@ -203,27 +248,80 @@
       save(rec);
     }
     if (o.mode === 'daily' && !rec.submitted) {
-      const A = AUTH();
-      let st = null;
-      try { st = A && A.state && A.state(); } catch (e) { st = null; }
-      if (st && st.signedIn && A.submit) {
-        const r = rec.result;
-        const acct = await A.submit({
-          day: rec.day, number: rec.number, scenarioId: o.pack.scenario.id, calls: o.calls, outcome: r.outcome,
-          pitches: r.pitches, score: r.score, percentile: r.percentile == null ? 0 : r.percentile,
-          pitchedLike: r.pitchedLike && r.pitchedLike.name, strip: r.strip,
-        });
-        if (acct) {
-          rec.submitted = true;
-          rec.result.account = { streak: acct.streak, best: acct.best, rank: acct.rank == null ? null : acct.rank, players: acct.players };
-          save(rec);
-        }
-      }
+      if (!rec.posting) rec.posting = post(rec).finally(() => { rec.posting = null; });
+      await rec.posting;
     }
     return clone(rec.result);
   }
 
-  const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, configure };
+  /* One post of a finished daily, signed in. The server keeps the first post for (user, day). */
+  async function post(rec) {
+    const o = rec.o, A = AUTH();
+    let st = null;
+    try { st = A && A.state && A.state(); } catch (e) { st = null; }
+    if (!(st && st.signedIn && A.submit)) return;
+    const r = rec.result;
+    const acct = await A.submit({
+      day: rec.day, number: rec.number, scenarioId: o.pack.scenario.id, calls: o.calls, outcome: r.outcome,
+      pitches: r.pitches, score: r.score, percentile: r.percentile == null ? 0 : r.percentile,
+      pitchedLike: r.pitchedLike && r.pitchedLike.name, strip: r.strip,
+    });
+    if (!acct) return;                 // could not ask: the next call tries again
+    rec.submitted = true;
+    rec.by = st.userId || 'signed-in';
+    // taken false: this account already has the day from another device, and that one counts
+    rec.result.account = { streak: acct.streak, best: acct.best, rank: acct.rank == null ? null : acct.rank, players: acct.players,
+      taken: acct.taken !== false, keptScore: acct.keptScore == null ? null : acct.keptScore };
+    save(rec);
+  }
+
+  /* Today's finished daily that is not on the board yet: {day, number, scenarioId, score, outcome,
+     pitches} or null. For the UI's prompt to sign in and save the score. Only today's (Eastern),
+     the owner's rule: same day, not already posted. */
+  function pending() {
+    const saved = readSaved();
+    if (!saved || saved.submitted || !saved.result || saved.day !== C.easternDay()) return null;
+    const r = saved.result;
+    return { day: saved.day, number: C.dayNumberOf(saved.day), scenarioId: saved.scenarioId, score: r.score, outcome: r.outcome, pitches: r.pitches };
+  }
+
+  /* Signed in: post today's finished daily once. Answers {posted, account} ({posted: false} when
+     there is nothing to post or the server did not answer; posted true with account.taken false
+     when the day was already kept from another device), or null signed out. Runs by itself when
+     STD_AUTH reports a sign-in, and is safe to call again. */
+  async function claim() {
+    if (!signedInUser()) return null;
+    if (!pending()) return { posted: false };
+    const saved = readSaved();
+    try {
+      const sch = await loadSchedule();
+      const e = entryFor(sch, saved.day);
+      if (e.pack !== saved.scenarioId) return { posted: false };
+      if (!current[saved.scenarioId]) current[saved.scenarioId] = { day: saved.day, number: e.number };
+      const id = 'daily:' + saved.day + ':' + saved.scenarioId;
+      if (!outings[id]) await startOuting(saved.scenarioId, null, { mode: 'daily' });
+      const rec = outings[id];
+      if (!rec || rec.o.status !== 'over') return { posted: false };
+      const res = await finishOuting(id);
+      return { posted: !!(rec.submitted && res.account), account: res.account || null };
+    } catch (e) { return { posted: false }; }
+  }
+
+  const api = { API_VERSION, getScenario, startOuting, throwPitch, challenge, pickoff, finishOuting, pending, claim, configure };
+  // a sign-in posts the day's finished daily by itself (the board and the result read it after)
+  try {
+    const A = AUTH();
+    let was = !!signedInUser();
+    if (A && A.onChange) A.onChange((st) => {
+      const now = !!(st && st.signedIn);
+      if (now && !was) claim().then((r) => {
+        if (r && r.posted && typeof window !== 'undefined' && window.dispatchEvent && typeof CustomEvent === 'function') {
+          window.dispatchEvent(new CustomEvent('std-claimed', { detail: r }));
+        }
+      });
+      was = now;
+    });
+  } catch (e) {}
   if (NODE) module.exports = api;
   if (typeof window !== 'undefined') window.STD_API = api;
 })();

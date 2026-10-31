@@ -8,7 +8,7 @@
      nowhere, not on the newsletter list. 4th-and-what/check-posture.mjs holds
      all of it. -->
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="4th and What: you are going for it. Pick the distance, draw the play on the clipboard, and watch it run.">
+<meta name="description" content="4th and What: draw a 4th down play and watch it run. Then build a playbook in your own words and print it for practice.">
 <meta name="theme-color" content="#10161f" id="themeMeta">
 <script>
 /* THEME BOOT, BEFORE FIRST PAINT. The key is shared across the suite, so a
@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Silkscreen:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div class="app">
@@ -34,8 +34,34 @@
     <button class="icon" id="themeBtn" type="button" aria-label="Light or dark"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
   </header>
 
+  <!-- 0. HOME: the game, or the playbooks -->
+  <section class="screen" id="sHome">
+    <p class="kicker">4th down. Your call.</p>
+    <h1 class="pix big">4th and&nbsp;what?</h1>
+    <!-- the clipboard: plays draw themselves and get named (home.js) -->
+    <div class="clip" aria-hidden="true">
+      <i class="clamp"></i>
+      <div class="wb"><canvas id="cHome"></canvas><p class="wbname" id="homeName"></p></div>
+    </div>
+    <div class="homes">
+      <button type="button" class="homecard play" id="goBuild">
+        <span class="sb pix" aria-hidden="true"><em>4TH</em><em class="amp">&amp;</em><em class="q">?</em></span>
+        <b class="pix">Build a Play</b>
+        <span>Pick the distance. Draw it up. Watch it run.</span>
+        <small class="tag">The game</small>
+      </button>
+      <button type="button" class="homecard book" id="goBooks">
+        <span class="rings" aria-hidden="true"><i></i><i></i><i></i></span>
+        <b class="pix">My Playbooks</b>
+        <span>Your plays, named your way. Test them. Print them.</span>
+        <small class="tag">For coaches</small>
+      </button>
+    </div>
+  </section>
+
   <!-- 1. THE DISTANCE -->
-  <section class="screen" id="sPick">
+  <section class="screen" id="sPick" hidden>
+    <button class="chip back" type="button" data-go="sHome">Home</button>
     <p class="kicker">You're going for it.</p>
     <h1 class="pix big">4th and&nbsp;what?</h1>
     <p class="lede" id="pickLede">Ball on the 40. Pick the distance.</p>
@@ -44,6 +70,16 @@
 
   <!-- 2. THE CLIPBOARD -->
   <section class="screen" id="sBoard" hidden>
+    <!-- in a playbook: the play's name, section and notes -->
+    <div class="editbar" id="editBar" hidden>
+      <div class="row"><button class="chip back" type="button" id="bToBook">Playbook</button><span class="booktag" id="bookTag"></span></div>
+      <label class="field"><span>Play name</span><input id="pName" maxlength="80" autocomplete="off"></label>
+      <p class="suggest" id="pSuggest"></p>
+      <div class="row">
+        <label class="field half"><span>Section</span><select id="pSection"></select></label>
+        <label class="field half"><span>Notes</span><input id="pNotes" maxlength="500" placeholder="Read the flat defender" autocomplete="off"></label>
+      </div>
+    </div>
     <div class="strip">
       <button class="chip down" id="bDist" type="button"><span id="downTxt">4th and 5</span> <small>change</small></button>
       <span class="chip" id="spotTxt">Ball on the 40</span>
@@ -63,6 +99,20 @@
       <button type="button" class="btn" id="bClear">Clear</button>
       <button type="button" class="btn go" id="bSnap" disabled>Snap It</button>
     </div>
+    <!-- Build a Play: keep what you drew -->
+    <div class="acts2" id="buildActs">
+      <button type="button" class="btn" id="bDownload">Download</button>
+      <button type="button" class="btn" id="bSaveTo">Save to playbook</button>
+    </div>
+    <!-- a playbook play: save it, test it, pick the defense to snap against -->
+    <div class="acts2" id="editActs" hidden>
+      <button type="button" class="btn" id="bSavePlay">Save play</button>
+      <button type="button" class="btn" id="bTest">Test vs every defense</button>
+      <label class="field"><span>Snap it against</span><select id="defSel"></select></label>
+      <button type="button" class="btn" id="bSaveForm">Save this formation</button>
+    </div>
+    <div class="testp" id="testPanel" hidden></div>
+    <p class="toast" id="boardToast" hidden></p>
   </section>
 
   <!-- 3. THE PLAY, AND THE RESULT OVER ITS LAST FRAME -->
@@ -83,11 +133,78 @@
           <button type="button" class="btn" id="bBack">Back to Clipboard</button>
           <button type="button" class="btn" id="bShare">Share</button>
         </div>
+        <div class="racts2" id="resActs">
+          <button type="button" class="btn" id="bResDownload">Download play</button>
+          <button type="button" class="btn" id="bResSave">Save to playbook</button>
+        </div>
         <p class="toast" id="toast" hidden></p>
         <details class="dbg" id="dbg"><summary>debug</summary><pre id="dbgTxt"></pre></details>
       </div>
     </div>
   </section>
+
+  <!-- 4. MY PLAYBOOKS -->
+  <section class="screen" id="sBooks" hidden>
+    <div class="row"><button class="chip back" type="button" data-go="sHome">Home</button></div>
+    <h2 class="pix h2">My Playbooks</h2>
+    <div id="booksOut"></div>
+    <div class="signin" id="booksSignin" hidden>
+      <p>Playbooks live on your Run The Games account. Sign in and they follow you to any phone or laptop.</p>
+      <button type="button" class="btn go" id="bSignin">Sign in</button>
+    </div>
+    <div class="acts2" id="booksActs" hidden>
+      <button type="button" class="btn go" id="bNewBook">New playbook</button>
+      <button type="button" class="btn" id="bImport">Import a file</button>
+      <button type="button" class="btn" id="bTerms">My terminology</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+  </section>
+
+  <!-- 5. ONE PLAYBOOK -->
+  <section class="screen" id="sBook" hidden>
+    <div class="row"><button class="chip back" type="button" data-go="sBooks">Playbooks</button></div>
+    <div class="row"><input class="bookname pix" id="bookName" maxlength="60" aria-label="Playbook name"></div>
+    <label class="field"><span>Team</span><input id="bookTeam" maxlength="60" placeholder="Westfield Varsity" autocomplete="off"></label>
+    <div class="acts2">
+      <button type="button" class="btn go" id="bNewPlay">New play</button>
+      <button type="button" class="btn" id="bNewSection">New section</button>
+      <button type="button" class="btn" id="bExport">Print or export</button>
+    </div>
+    <div id="bookOut"></div>
+    <div class="acts2">
+      <button type="button" class="btn" id="bBookFile">Download playbook file</button>
+      <button type="button" class="btn danger" id="bDelBook">Delete playbook</button>
+    </div>
+  </section>
+
+  <!-- 6. MY TERMINOLOGY -->
+  <section class="screen" id="sTerms" hidden>
+    <div class="row"><button class="chip back" type="button" data-go="sBooks">Playbooks</button></div>
+    <h2 class="pix h2">My terminology</h2>
+    <p class="lede">Teach it your words once. Every play is named from them. A name you type yourself never changes.</p>
+    <div class="example" id="termsExample"></div>
+    <div id="termsOut"></div>
+  </section>
+
+  <!-- 7. PRINT OR EXPORT -->
+  <section class="screen" id="sExport" hidden>
+    <div class="row"><button class="chip back" type="button" data-go="sBook">Playbook</button></div>
+    <h2 class="pix h2">Print or export</h2>
+    <div id="exportOut"></div>
+    <div class="preview" id="exportPreview"></div>
+    <div class="acts2">
+      <button type="button" class="btn go" id="bPrint">Print or save as PDF</button>
+      <button type="button" class="btn" id="bPagesPng">Download pages as images</button>
+      <button type="button" class="btn" id="bPlaysPng">Download each play</button>
+    </div>
+  </section>
+
+  <!-- save a drawn play into a playbook -->
+  <dialog class="guide" id="saveDlg">
+    <h2 class="pix">Save to playbook</h2>
+    <div id="saveOut"></div>
+    <div class="acts2"><button class="btn" type="button" id="bSaveCancel">Cancel</button><button class="btn go" type="button" id="bSaveOk">Save</button></div>
+  </dialog>
 
   <dialog class="guide" id="guide">
     <h2 class="pix">How it works</h2>
@@ -97,6 +214,9 @@
       <li><b>Draw the play.</b> Route: drag from a receiver. Block: drag a short bar. Handoff: tap the QB, then a back, then drag his path. Target: tap who the QB looks to first, then a checkdown.</li>
       <li><b>Snap it.</b> Your players run exactly what you drew. The defense picks its call every snap. You see it after.</li>
       <li><b>Get the first down or score.</b> Short, sacked, thrown away or incomplete, you lose.</li>
+      <li><b>Keep it.</b> Download a play, or save it to a playbook. Playbooks need a Run The Games account.</li>
+      <li><b>Name it your way.</b> In My terminology, say what you call a slant on the left or a slant and flat together. Every play is named from your words.</li>
+      <li><b>Test it and print it.</b> A playbook play can be tested against every defense, then printed as cards, a call sheet or wristbands.</li>
     </ol>
     <form method="dialog"><button class="btn go" type="submit">Got it</button></form>
   </dialog>
@@ -105,16 +225,23 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
+<script src="/assets/cloudsave.js?v=3"></script>
 <script src="config.js?v=1"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=1"></script>
+<script src="engine.js?v=2"></script>
+<script src="names.js?v=2"></script>
+<script src="book.js?v=1"></script>
+<script src="diagram.js?v=1"></script>
+<script src="export.js?v=1"></script>
 <script src="rig.js?v=1"></script>
 <script src="stage.js?v=1"></script>
 <script src="share.js?v=1"></script>
-<script src="clipboard.js?v=2"></script>
+<script src="clipboard.js?v=3"></script>
 <script src="play.js?v=1"></script>
-<script src="ui.js?v=1"></script>
+<script src="home.js?v=1"></script>
+<script src="ui.js?v=3"></script>
+<script src="book-ui.js?v=1"></script>
 <script type="module">
 /* PXHD, the painter the players and the goalpost are drawn with, from the
    copy Segue already serves (see rig.js). If it fails to load, the play is

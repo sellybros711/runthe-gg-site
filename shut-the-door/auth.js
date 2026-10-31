@@ -163,9 +163,9 @@
 
   /* ---------------- Shut The Door (supabase/153_shut_the_door.sql) ---------------- */
 
-  /* Post today's finished daily. {taken, streak, best, rank, players} or null.
-     The first post for (user, day) stands; a repeat answers what the server
-     holds. */
+  /* Post today's finished daily. {taken, streak, best, rank, players,
+     keptScore, keptOutcome} or null (the last two since 159). The first post
+     for (user, day) stands; a repeat answers what the server holds. */
   async function submit(row) {
     if (!sb || !session || !row) return null;
     try {
@@ -191,6 +191,19 @@
     return null;
   }
 
+  /* This account's kept outing for a day (supabase/159_shut_the_door_boards.sql):
+     {day, scenarioId, calls, outcome, pitches, score, percentile}, or null when
+     there is none, signed out, or on any failure. api.js replays its calls, so a
+     second device shows the day the first one played. */
+  async function myDay(day) {
+    if (!sb || !session || !day) return null;
+    try {
+      const r = await sb.rpc('shutdoor_my_day', { p_day: day });
+      if (r && !r.error && r.data && typeof r.data === 'object') return r.data;
+    } catch (e) {}
+    return null;
+  }
+
   /* This account's record: {played, doorShut, tieHeld, doorsOpen, walkOff,
      avgPercentile, bestScore, streak, best, lastDay}, or null. */
   async function myStats() {
@@ -206,6 +219,6 @@
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
-    submit, board, myStats,
+    submit, board, myStats, myDay,
   };
 })();
