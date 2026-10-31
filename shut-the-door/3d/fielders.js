@@ -451,20 +451,44 @@ function loopFix(t, tracks, period) {
     g[LOOP_N] = 1;
     return g;
   };
+  // (and none of it on a leg while its foot is down: the share is counted from the middle of its stance, so a
+  // planted leg is the capture's own pose and the swing takes the whole seam. Counted from the cycle's start,
+  // the share already taken in stood on the planted leg, and as the stride gave way to a set pose it slid
+  // the foot, check-jolt.mjs skate fielder set)
+  const anchor = (w, g) => {
+    let best = -1, bestLen = 0;
+    for (let k = 0; k < LOOP_N; k++) {
+      if (w[k] || !w[(k + LOOP_N - 1) % LOOP_N]) continue;
+      let len = 0;
+      while (len < LOOP_N && !w[(k + len) % LOOP_N]) len++;
+      if (len > bestLen) { bestLen = len; best = k; }
+    }
+    if (best < 0) return 0.5;
+    const mid = (best + Math.floor(bestLen / 2)) % LOOP_N;
+    return g[mid];
+  };
   const gL = share(moving.l), gR = share(moving.r), gP = share(moving.l.map((x, k) => x * moving.r[k]));
+  const oL = anchor(moving.l, gL), oR = anchor(moving.r, gR);
   const fix = [];
   for (const tr of qT) {
     const name = t.names[tr.i];
     if (UPPER.has(name)) continue;
     const q0 = new THREE.Quaternion().fromArray(tr.interp.evaluate(0)), q1 = new THREE.Quaternion().fromArray(tr.interp.evaluate(period));
-    fix.push({ i: tr.i, r: q1.invert().multiply(q0), g: /_l$/.test(name) ? gL : /_r$/.test(name) ? gR : gP });
+    const r = q1.invert().multiply(q0);
+    if (r.w < 0) r.set(-r.x, -r.y, -r.z, -r.w);
+    const ang = 2 * Math.acos(Math.min(1, r.w)), sn = Math.sqrt(Math.max(0, 1 - r.w * r.w));
+    const axis = sn > 1e-6 ? new THREE.Vector3(r.x / sn, r.y / sn, r.z / sn) : new THREE.Vector3(1, 0, 0);
+    const side = /_l$/.test(name) ? 'l' : /_r$/.test(name) ? 'r' : null;
+    fix.push({ i: tr.i, axis, ang, g: side === 'l' ? gL : side === 'r' ? gR : gP, off: side === 'l' ? oL : side === 'r' ? oR : 0.5 });
   }
   return fix;
 }
-/** How much of a seam is taken in at a share u of the cycle (loopFix g). */
-function loopShare(g, u) {
+/** A seam's correction at a share u of the cycle (loopFix): its rotation turned by the share taken in, less
+    the share at the anchor. Any constant there leaves the loop closed: it is the same at both ends. */
+function loopTurn(f, u, out) {
   const x = Math.min(LOOP_N - 1e-6, Math.max(0, u * LOOP_N)), k = Math.floor(x);
-  return g[k] + (g[k + 1] - g[k]) * (x - k);
+  const g = f.g[k] + (f.g[k + 1] - f.g[k]) * (x - k);
+  return out.setFromAxisAngle(f.axis, f.ang * (g - f.off));
 }
 
 export class Figure {
@@ -711,7 +735,7 @@ export class Figure {
         for (let i = 0; i < n; i++) qb[i].copy(qp[i]);
         this.sample(c, u * c.period, qb, pa);
         // (the legs' and pelvis' loop closed, a share u of the seam: setMotion c.fix)
-        if (c.fix) for (const f of c.fix) qb[f.i].multiply(_qf.identity().slerp(f.r, loopShare(f.g, u)));
+        if (c.fix) for (const f of c.fix) qb[f.i].multiply(loopTurn(f, u, _qf));
         // (the captures are not perfect loops: the pose a period on is not the pose at the start, and each new
         // cycle began with a jump of the arms, a hand at 40 m/s at the wrap, check-jolt.mjs. Over the start of a
         // cycle as long as the capture runs past its period (about two frames), the trunk, arms and head come
