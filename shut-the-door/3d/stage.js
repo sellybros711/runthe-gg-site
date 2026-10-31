@@ -85,11 +85,11 @@ import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from '.
 import { People } from './people.js?v=41';
 import { Pitch, releaseOf } from './pitch.js?v=13';
 import { fromResult, motion } from './play.js?v=13';
-import { look } from './looks.js?v=3';
+import { look } from './looks.js?v=4';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=36';
+import { InPlay } from './inplay.js?v=37';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=10';
-import { FirstPerson } from './firstperson.js?v=8';
+import { FirstPerson } from './firstperson.js?v=9';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -185,7 +185,7 @@ function factsFrom(scn, extra) {
     release: releaseOf(p),
     batters: scn.batters.map((b) => {
       const bi = extra.bio && extra.bio[b.id];
-      return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot, heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id) };
+      return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot, heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id, scn.id) };
     }),
     uniform: extra.uniform,
   };

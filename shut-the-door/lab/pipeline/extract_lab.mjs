@@ -54,7 +54,7 @@ for (const f of fs.readdirSync(PACKS).filter((x) => x.endsWith('.json')).sort())
     batters: sc.batters.map((b) => {
       const bi = bio[b.id];
       return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot,
-        heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id) };
+        heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id, sc.id) };
     }),
     plays,
   };
