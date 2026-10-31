@@ -691,7 +691,8 @@ function setClub(el, colors) {
   if (colors && colors[1]) el.style.setProperty('--club2', colors[1]); else el.style.removeProperty('--club2');
 }
 function renderHud(st) {
-  var sit = S.scn.situation;
+  /* rules 8: the half being pitched (st.half), else the spot's own inning */
+  var sit = st && st.half && st.half.inning ? st.half : S.scn.situation;
   setClub($('m-usclub'), S.scn.pitcher.teamColors);
   // the hitters' club, from the same rule the 3D kit uses (clubs.js, loaded by index.html); grey until it is
   var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: S.scn.title, scenarioId: S.scn.id, pitcher: S.scn.pitcher }) : null;
@@ -1322,7 +1323,7 @@ function fire(call) {
       if (byBatter) { pbp('called strike', lastName(batter.name) + ' challenges.'); return; }
       var t = playText(pr, batter, res.state);
       pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
-      renderHud(res.state);
+      renderHud(pr.halfOver ? halfEndState(res.state, pr.halfOver) : res.state);
       var sl = stealText(pr.steal);
       if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); }
     });
@@ -1344,6 +1345,13 @@ function fire(call) {
     }).then(function () {
       var pr = res.pitchResult;
       S.outing = res.state;
+      /* rules 8: three outs in a half before the last. His team bats its real half on the card, then
+         the next half (still busy until the mound is back) */
+      if (pr.halfOver && S.outing.status === 'live') return halfBreak(pr.halfOver).then(function () {
+        settle();
+        if (S.scene.setTarget) S.scene.setTarget(null);
+        nextHalf(pr.halfOver);
+      });
       // the last pitch: the play has finished on screen, then a beat, then the result (still busy).
       // A ball four that ended it can still be challenged: the button stays up a moment first.
       if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () {
@@ -1453,6 +1461,10 @@ function pickoffIt() {
     var t = pickoffText(ev, res.state);
     pbp(t.tag, t.rest);
     if (ev.out) baseOut(ev.base);
+    if (ev.halfOver && S.outing.status === 'live') {
+      renderHud(halfEndState(S.outing, ev.halfOver));
+      return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { return halfBreak(ev.halfOver); }).then(function () { settle(); nextHalf(ev.halfOver); });
+    }
     renderHud(S.outing);
     if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { settle(); return finish(); });
     S.busy = false;
@@ -1651,6 +1663,40 @@ function lastCall() {
     settle();
     finish();
   }, ms);
+}
+
+/* ---- between two of his halves (rules 8, CONTRACT.md 5j) -------------------------------------------
+   The owner (2026-10-30): finish the 8th, see his team bat on the box score, then back out for the 9th.
+   The pitch (or the steal or pickoff) that makes the third out of a half before the last carries
+   halfOver. The scorebug shows that third out on the half it ended, then the card (box-ui.js, its own
+   screen, a few seconds, a tap skips it), then the mound for the next half: its leadoff man, the
+   score his team left, nobody on. No grade, nothing to read before going on. */
+function halfEndState(st, ho) {
+  return Object.assign({}, st, { outs: 3, bases: 0, count: { b: 0, s: 0 }, score: ho.done.score,
+    half: { inning: ho.done.inning, half: ho.done.half } });
+}
+function halfBreak(ho) {
+  var BOX = window.STD_BOX_UI;
+  if (!BOX) return Promise.resolve();
+  return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () {
+    stopMeter(); meterDone(); closeDrawer(true);
+    show('s-half');
+    return BOX.play(ho, { quick: !!prefs.quick });
+  }).then(function () {
+    show('s-mound');
+  });
+}
+function nextHalf(ho) {
+  S.lastMarker = null;
+  S.grid.setMarks({});
+  hudRunners(null);
+  if (S.mini) S.mini.reset();
+  renderHud(S.outing);
+  setBatter(true);
+  var nx = ho.next, b = batterAt(S.outing.batterIndex);
+  pbp(isTied(S.outing) ? 'tied' : '', (nx.half === 'top' ? 'top' : 'bottom') + ' of the ' + ord(nx.inning) + '. ' + b.name + ' leads off.');
+  updateThrow();
+  if (S.sizeDue) { S.sizeDue = false; relayout(); } else drawPreview();
 }
 
 /* ---- the end ----------------------------------------------------------------------------- */

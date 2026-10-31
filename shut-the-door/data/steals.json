@@ -1134,11 +1134,33 @@
      "firstBase": 164,
      "speed": 27.9,
      "src": "SB, CS and sprint speed"
+    },
+    "492841": {
+     "name": "Michael Martinez",
+     "att": 1.278,
+     "z": -0.146,
+     "sb": 0,
+     "cs": 2,
+     "firstBase": 23,
+     "speed": 27.7,
+     "src": "SB, CS and sprint speed"
     }
    },
    "start": {
     "1": 608070
-   }
+   },
+   "halves": [
+    {
+     "catcher": {
+      "id": 471083,
+      "name": "Miguel Montero",
+      "z": 0.474,
+      "sb": 59,
+      "cs": 7,
+      "pop": 2.06
+     }
+    }
+   ]
   },
   "std-2024-ws5-buehler": {
    "season": 2024,
@@ -3438,7 +3460,19 @@
      "src": "no MLBAM id: the league runner"
     }
    },
-   "start": {}
+   "start": {},
+   "halves": [
+    {
+     "catcher": {
+      "id": 123660,
+      "name": "Jason Varitek",
+      "z": 0.037,
+      "sb": 63,
+      "cs": 20,
+      "pop": null
+     }
+    }
+   ]
   },
   "std-2023-hader-stl": {
    "season": 2023,
@@ -4193,6 +4227,300 @@
     "1": 150029,
     "2": 547180
    }
+  },
+  "std-2008-alcs7-price": {
+   "season": 2008,
+   "era": "2022",
+   "gamePk": 243842,
+   "eraAtt": 1.054,
+   "eraZ": -0.074,
+   "league": {
+    "sb": 2799,
+    "cs": 1035,
+    "sbPct": 0.73,
+    "attRate": 0.0812
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 456034,
+    "att": 0.939,
+    "z": 0.0,
+    "sb": 0,
+    "cs": 0,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 425900,
+    "name": "Dioner Navarro",
+    "z": -0.252,
+    "sb": 45,
+    "cs": 28,
+    "pop": null
+   },
+   "runners": {
+    "136770": {
+     "name": "J.D. Drew",
+     "att": 0.758,
+     "z": 0.043,
+     "sb": 4,
+     "cs": 1,
+     "firstBase": 140,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "424726": {
+     "name": "Jason Bay",
+     "att": 0.844,
+     "z": 0.303,
+     "sb": 10,
+     "cs": 0,
+     "firstBase": 180,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "117276": {
+     "name": "Mark Kotsay",
+     "att": 0.883,
+     "z": -0.259,
+     "sb": 2,
+     "cs": 4,
+     "firstBase": 108,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "123660": {
+     "name": "Jason Varitek",
+     "att": 0.651,
+     "z": -0.102,
+     "sb": 0,
+     "cs": 1,
+     "firstBase": 118,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "476704": {
+     "name": "Jed Lowrie",
+     "att": 0.764,
+     "z": 0.039,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 73,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "424825": {
+     "name": "Coco Crisp",
+     "att": 1.755,
+     "z": 0.019,
+     "sb": 20,
+     "cs": 7,
+     "firstBase": 110,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "456030": {
+     "name": "Dustin Pedroia",
+     "att": 1.161,
+     "z": 0.398,
+     "sb": 20,
+     "cs": 1,
+     "firstBase": 197,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "120074": {
+     "name": "David Ortiz",
+     "att": 0.632,
+     "z": 0.039,
+     "sb": 1,
+     "cs": 0,
+     "firstBase": 127,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "425903": {
+     "name": "Kevin Youkilis",
+     "att": 0.807,
+     "z": -0.285,
+     "sb": 3,
+     "cs": 5,
+     "firstBase": 166,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "133321": {
+     "name": "Alex Cora",
+     "att": 0.87,
+     "z": -0.062,
+     "sb": 1,
+     "cs": 1,
+     "firstBase": 56,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {
+    "1": 425903,
+    "2": 120074,
+    "3": 133321
+   },
+   "halves": [
+    {
+     "catcher": {
+      "id": 425900,
+      "name": "Dioner Navarro",
+      "z": -0.252,
+      "sb": 45,
+      "cs": 28,
+      "pop": null
+     }
+    }
+   ]
+  },
+  "std-2009-alcs6-rivera": {
+   "season": 2009,
+   "era": "2022",
+   "gamePk": 263172,
+   "eraAtt": 1.132,
+   "eraZ": -0.093,
+   "league": {
+    "sb": 2970,
+    "cs": 1133,
+    "sbPct": 0.7239,
+    "attRate": 0.0873
+   },
+   "bigBases": false,
+   "pitcher": {
+    "id": 121250,
+    "att": 0.938,
+    "z": -0.022,
+    "sb": 2,
+    "cs": 1,
+    "pickoffs": 0
+   },
+   "catcher": {
+    "id": 120691,
+    "name": "Jorge Posada",
+    "z": -0.008,
+    "sb": 80,
+    "cs": 31,
+    "pop": null
+   },
+   "runners": {
+    "408210": {
+     "name": "Chone Figgins",
+     "att": 2.044,
+     "z": -0.027,
+     "sb": 42,
+     "cs": 17,
+     "firstBase": 243,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "110029": {
+     "name": "Bobby Abreu",
+     "att": 1.578,
+     "z": 0.134,
+     "sb": 30,
+     "cs": 8,
+     "firstBase": 213,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "116338": {
+     "name": "Torii Hunter",
+     "att": 1.377,
+     "z": 0.155,
+     "sb": 18,
+     "cs": 4,
+     "firstBase": 136,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "115223": {
+     "name": "Vladimir Guerrero",
+     "att": 0.748,
+     "z": -0.022,
+     "sb": 2,
+     "cs": 1,
+     "firstBase": 104,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "434778": {
+     "name": "Kendrys Morales",
+     "att": 0.913,
+     "z": -0.386,
+     "sb": 3,
+     "cs": 7,
+     "firstBase": 142,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "435062": {
+     "name": "Howie Kendrick",
+     "att": 1.269,
+     "z": 0.012,
+     "sb": 11,
+     "cs": 4,
+     "firstBase": 99,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "407487": {
+     "name": "Juan Rivera",
+     "att": 0.588,
+     "z": -0.1,
+     "sb": 0,
+     "cs": 1,
+     "firstBase": 140,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "150439": {
+     "name": "Gary Matthews Jr.",
+     "att": 0.855,
+     "z": 0.046,
+     "sb": 4,
+     "cs": 1,
+     "firstBase": 96,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "430947": {
+     "name": "Erick Aybar",
+     "att": 1.262,
+     "z": -0.086,
+     "sb": 14,
+     "cs": 7,
+     "firstBase": 155,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    },
+    "435065": {
+     "name": "Reggie Willits",
+     "att": 1.254,
+     "z": 0.077,
+     "sb": 5,
+     "cs": 1,
+     "firstBase": 20,
+     "speed": null,
+     "src": "SB and CS (no sprint speed before 2015)"
+    }
+   },
+   "start": {},
+   "halves": [
+    {
+     "catcher": {
+      "id": 120691,
+      "name": "Jorge Posada",
+      "z": -0.008,
+      "sb": 80,
+      "cs": 31,
+      "pop": null
+     }
+    }
+   ]
   }
  }
 }

@@ -272,6 +272,11 @@ export class Track {
 
 /** The soonest after contact a fielder can take a ball in the air (s). */
 const AIR_PICK0 = 0.25;
+/** A batted ball's typical speed (mph) and angle (degrees) by kind, for a measurement that is missing. */
+const DEF = { ground: [86, -6], line: [96, 15], fly: [93, 33], popup: [78, 56] };
+/** A flight a fielder can take in the air: still at a glove's height or above it (planAir catchable, 0.6 ft)
+    when he can first get to it (AIR_PICK0). */
+const takeable = (f) => { const i = f.T.findIndex((t) => t >= AIR_PICK0); return i >= 0 && f.Z[i] >= 0.6; };
 
 /** The ball in the air: drag and backspin lift (none on a low liner), sampled each 1/120 s until it
     lands, or meets the wall (off it below WALL_H, over it above). */
@@ -381,7 +386,6 @@ export function planPlay(pr, o = {}) {
   // the batted ball: a missing measurement takes a typical value for its kind (and says so)
   let bb = ip.bb || (hit ? 'line' : 'fly');
   const guess = [];
-  const DEF = { ground: [86, -6], line: [96, 15], fly: [93, 33], popup: [78, 56] };
   let ev = ip.ev, la = ip.la, spray = ip.spray;
   if (ev == null) { ev = DEF[bb][0] - 6 + 12 * rnd(id, 'ev'); guess.push('ev'); }
   if (la == null) { la = DEF[bb][1] - 3 + 6 * rnd(id, 'la'); guess.push('la'); }
@@ -1143,6 +1147,15 @@ function planAir(ctx) {
     f = simAir(v, la, spray, z0, scale);
     if (kind === 'hr' && !f.over) { for (let k = 0; k < 20 && !f.over; k++) { scale *= 1.03; f = simAir(v, la, spray, z0, scale); } }
     if (kind !== 'hr' && f.over) { for (let k = 0; k < 40 && f.over; k++) { scale *= 0.98; f = simAir(v, la, spray, z0, scale); } }
+  }
+  // a ball caught in the air that, flown out to where its result needs it, is already below a glove when a
+  // fielder can first get to it is the same stand-in reading as one in the dirt at once (planPlay): Lidge 2005's
+  // fly ball at -1 degrees, sped up to carry 150 ft, was on the grass 0.275 s out and the first baseman
+  // "caught" it at his shoe, the glove 0.42 m off the ball (check-catch.mjs). Its angle takes the typical
+  // value for its kind, and it is planned again
+  if ((kind === 'air_out' || kind === 'air_drop') && !p.guess.includes('la') && !takeable(f)) {
+    ctx.la = p.la = DEF[ctx.bb][1] - 3 + 6 * rnd(ctx.id, 'la'); p.guess.push('la');
+    return planAir(ctx);
   }
   p.scale = scale;
   const u = f.u;
