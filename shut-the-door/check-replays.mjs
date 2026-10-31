@@ -71,6 +71,18 @@
  * under rules 7). A rules 7 row with steals and pickoffs replays exactly, and
  * with its pickoffs taken out it is flagged (the self-test).
  *
+ * RULES 8 (2026-10-30). The closer's real outing to the end of the game
+ * (grade.js THE HALVES, engine.js 11): a pack may hold more than one half,
+ * with his team's real half between. A new outing's calls carry r 8. A row
+ * with r 7 or before was played on the first half alone, and replays there
+ * exactly: on a pack with halves the engine plays it on the first half's own
+ * model (Model.singleModel, its table solved here, the centre pack.seq.L).
+ * The self-test holds six rules 7 rows made by main's engine before rules 8,
+ * three on Chapman's 2016 spot (today's daily on the day it shipped), in
+ * fixtures/replays-rules7-pre-full-close.json, to every pitch, call, runner
+ * and grade. The pool was replayed under rules 8, so a rules 7 row's
+ * percentile is not compared.
+ *
  * RULES 6 (2026-10-26). The runners read the ball (contract.js THE RUNNERS
  * READ THE BALL, engine.js 9). A new outing's calls carry r 6. A row with r 5
  * replays under rules 5 exactly (the self-test holds three, made by main's
@@ -433,6 +445,23 @@ function selfTest() {
       let flagged = true;
       try { flagged = !replayRow(stripped).ok; } catch (e) { flagged = true; }
       say(flagged, `${id}: the same row with its pickoffs taken out is flagged`);
+    }
+  }
+  /* rules 8: rules 7 rows made before it (main's engine at 7e2eab7, three on Chapman's spot, which
+     rules 8 plays to the end of the game) replay exactly on the first half, every pitch and grade */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules7-pre-full-close.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost)
+        && o.score.them - p.pack.scenario.situation.score.them === row.runs && !o.halves.length;
+      const H = (p.pack.scenario.halves || []).length;
+      say(a.ok && same && o.rules === G.STEAL_RULES, `${row.scenario_id}: a rules 7 row from before rules 8 replays exactly on the first half (${row.pitches} pitches, ${row.outcome}, the pack has ${H} ${H === 1 ? 'half' : 'halves'})` + (a.ok ? '' : ': ' + a.why));
     }
   }
   // Survivor: a run played through the engine replays; a doctored score, a situation out of its

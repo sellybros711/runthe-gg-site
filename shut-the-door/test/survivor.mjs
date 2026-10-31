@@ -224,9 +224,9 @@ S.locks[TODAY] = M.candidates(sched, TODAY)[1];     // the vote went to B today
     const at = M.survivorAt(sched, TODAY, 0, cur.index);
     if (!(cur.scenario.id === at.pack && cur.state.seed === at.seed)) { check('the next situation is the run\'s next', false); break; }
   }
-  const over = results.length && results[results.length - 1].survivor.over;
-  if (!over) {
-    // the best call every pitch can hold a long time; end the run with a blown save by hand
+  // the best call every pitch can hold a long time; end the run with a blown save by hand: heart
+  // fastballs, situation after situation, until one is blown (a heart fastball can still hold one)
+  for (let k = 0; k < 10 && !(results.length && results[results.length - 1].survivor.over); k++) {
     let x = await api.survivorStart(), y = x.state, h = 0;
     while (y.status === 'live' && h++ < 150) y = (await api.throwPitch(y.outingId, { type: x.scenario.pitcher.arsenal[0].type, cell: 12 })).state;
     const r = await api.finishOuting(y.outingId);
