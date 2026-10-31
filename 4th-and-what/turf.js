@@ -292,7 +292,10 @@
     /* ---------- the sim, at time t ---------- */
     V.frame = function (res, t, d) {
       d = d || {};
-      var fr = res.frames, dt = res.dt, i = Math.max(0, Math.min(fr.length - 2, Math.floor(t / dt))), a = fr[i], b = fr[i + 1] || a;
+      /* before the snap (t below 0) the motion plays from res.pre */
+      var fr = res.frames, dt = res.dt, base = 0;
+      if (t < 0 && res.pre && res.pre.length) { fr = res.pre; base = res.pre[0].t; }
+      var i = Math.max(0, Math.min(fr.length - 2, Math.floor((t - base) / dt))), a = fr[i], b = fr[i + 1] || a;
       var u = Math.max(0, Math.min(1, (t - a.t) / dt));
       var F = FM();
       if (d.pre) { a = d.pre; b = d.pre; u = 0; }

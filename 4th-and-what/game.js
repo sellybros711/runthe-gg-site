@@ -19,7 +19,7 @@
   'use strict';
   var A = window.FAW_APP, E = window.FAW_ENGINE, T = window.FAW_TURF, RNG = window.FAW_RNG, SH = window.FAW_SHARE, B = window.FAW_BOOK;
   var $ = function (id) { return document.getElementById(id); };
-  var V = null, res = null, plans = null, played = null, t = 0, playing = false, last = 0, raf = 0, tally = { off: 0, def: 0 };
+  var V = null, res = null, plans = null, played = null, t = 0, t0 = 0, playing = false, last = 0, raf = 0, tally = { off: 0, def: 0 };
   var forced = (location.search.match(/[?&]seed=(\d+)/) || [])[1];
 
   /* ---------- the settings ---------- */
@@ -73,11 +73,11 @@
     V.field();
     V.frame(res, t, { play: played, coverage: $('gCov').checked, plans: plans, icons: $('gIcons').checked });
     caption(t); clock(t);
-    $('gTime').value = String(Math.round(t / res.frames[res.frames.length - 1].t * 1000));
+    $('gTime').value = String(Math.round((t - t0) / (res.frames[res.frames.length - 1].t - t0) * 1000));
   }
   function clock(tt) {
-    var end = res ? res.frames[res.frames.length - 1].t : 0, f = function (s) { s = Math.max(0, s); return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); };
-    $('gClock').textContent = f(tt) + ' / ' + f(end);
+    var end = res ? res.frames[res.frames.length - 1].t : t0, f = function (s) { s = Math.max(0, s); return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); };
+    $('gClock').textContent = f(tt - t0) + ' / ' + f(end - t0);
   }
   function caption(tt) {
     var txt = '';
@@ -97,12 +97,13 @@
     var seed = forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
     played = A.copy(play);
     res = E.run(A.SC, played, seed, key ? { call: key } : undefined);
-    plans = plansFor(played, res.callKey);
+    plans = res.plans || plansFor(played, res.callKey);
+    t0 = res.pre && res.pre.length ? res.pre[0].t : 0;
     if (res.win) tally.off++; else tally.def++;
     $('gOff').textContent = tally.off; $('gDefScore').textContent = tally.def;
     /* a playbook play counts the snap against whatever the defense called */
     if (c.entry && c.book) { B.countSnap(c.entry, res.distance, res.callKey, res.win); A.store.put(c.book); }
-    t = 0; playing = true; last = 0;
+    t = t0; playing = true; last = 0;
     layout(); result(); tick();
   }
   function tick(now) {
@@ -118,10 +119,10 @@
   $('gRun').addEventListener('click', run);
   $('gPlayBtn').addEventListener('click', function () {
     if (!res) { run(); return; }
-    if (t >= res.frames[res.frames.length - 1].t) t = 0;
+    if (t >= res.frames[res.frames.length - 1].t) t = t0;
     playing = !playing; last = 0; if (playing) tick();
   });
-  $('gTime').addEventListener('input', function () { if (!res) return; playing = false; t = +this.value / 1000 * res.frames[res.frames.length - 1].t; redraw(); });
+  $('gTime').addEventListener('input', function () { if (!res) return; playing = false; t = t0 + +this.value / 1000 * (res.frames[res.frames.length - 1].t - t0); redraw(); });
 
   /* ---------- the result ---------- */
   function result() {
@@ -130,7 +131,7 @@
     big.className = 'resultbig ' + (r.win ? 'win' : 'lose');
     big.textContent = r.outcome === 'touchdown' ? 'Touchdown' : r.outcome === 'sack' ? 'Sack' : r.outcome === 'incomplete' ? 'Incomplete' : r.outcome === 'throwaway' ? 'Thrown away' : r.outcome === 'fumble' ? 'Fumble' : r.outcome === 'safety' ? 'Safety' : (gained >= 0 ? gained + ' yard gain' : (-gained) + ' yard loss');
     var target = r.throwInfo && r.throwInfo.to ? (T.LABEL[r.throwInfo.to] || r.throwInfo.to) + (r.throwInfo.primary ? ' (1st read)' : '') : r.isRun ? 'Run' : '-';
-    var verdict = r.outcome === 'touchdown' ? 'Touchdown' : r.outcome === 'safety' ? 'Safety' : r.win ? 'First down' : A.SC.down === 4 ? 'Turnover on downs' : 'Short of the sticks';
+    var verdict = r.title.charAt(0) + r.title.slice(1).toLowerCase();
     var rows = [['Result', verdict], ['Target', target],
       ['Completion', r.isRun ? '-' : r.outcome === 'incomplete' || r.outcome === 'throwaway' || r.outcome === 'sack' ? 'No' : r.throwInfo ? 'Yes' : '-'],
       ['Yards', String(gained)], ['First down', r.win ? 'Yes' : 'No'], ['Defense', r.callName]];

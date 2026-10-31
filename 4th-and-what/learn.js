@@ -143,7 +143,7 @@
     var pl = sel.play;
     if (!(pl.handoff && pl.handoff.to) && !(pl.targets && pl.targets.length)) { drawStill(); return; }
     anim = E.run(sc, pl, 1234, { call: 'cover3' });
-    t = 0; last = 0;
+    t = anim.pre && anim.pre.length ? anim.pre[0].t : 0; last = 0;
     var end = anim.frames[anim.frames.length - 1].t;
     (function tick(now) {
       if (now && last) t += (now - last) / 1000 * (+$('lSpeed').value || 1);
