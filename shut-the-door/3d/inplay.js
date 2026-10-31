@@ -521,7 +521,13 @@ export class InPlay {
           // half a turn apart, and the short way round between them flipped sides as the turn eased off, a left
           // fielder's head swinging 2.2 rad in a frame a third of a second after a pickup in the corner, check-jolt.mjs)
           const bh = heading(st, plan.ballAt(t - 0.3));
-          if (a.turnRef == null) { const st1 = tr.at(t + 0.12); a.turnRef = angDiff(faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3))); }
+          // (where he turns to after it: the throw he makes from it, else the infield. Read off the infield's middle,
+          // 9 ft behind a pitcher on the mound, it was any way round, and a pitcher going for a ball off his glove
+          // turned 258 degrees for a 102 degree turn, check-jolt.mjs pop fielder bobble)
+          if (a.turnRef == null) {
+            const st1 = tr.at(t + 0.12), th = plan.segs.find((sg) => sg.kind === 'throw' && sg.from === n && sg.t0 > t - 1e-6 && sg.t0 < t + 1.5);
+            a.turnRef = angDiff(th ? heading(st1, th.b) : faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3)));
+          }
           faceYaw = turnNear(faceYaw, bh, k, a.turnRef);
           // at range, on the move: a ball well off to one side is a backhand (his throwing hand's side, the glove
           // across his body) or a forehand (his glove side), his trunk turned to it and his feet wider
