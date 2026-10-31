@@ -99,6 +99,10 @@
     "printview.js": {
       "v": "1",
       "sha": "b8c2fca581834fac"
+    },
+    "ads.js": {
+      "v": "3",
+      "sha": "dd0d846338fe2651"
     }
   },
   "arcade/almamater/index.html": {
