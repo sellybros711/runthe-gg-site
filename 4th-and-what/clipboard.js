@@ -74,7 +74,10 @@
     function room() {
       var doc = root.document;
       if (!doc.body.classList.contains('rtg-sticky-on') || !box.offsetParent) return Infinity;
-      var last = box.parentNode.lastElementChild, b = box.getBoundingClientRect();
+      /* Down to the row that holds Snap It: the rows under it (download, save, test) are reached by
+         scrolling like any page, so they may pass under the banner. */
+      var snap = doc.getElementById('bSnap');
+      var last = (snap && snap.parentNode) || box.parentNode.lastElementChild, b = box.getBoundingClientRect();
       var below = last.getBoundingClientRect().bottom - b.bottom;
       var ad = parseFloat(root.getComputedStyle(doc.documentElement).getPropertyValue('--sticky-ad-h')) || 0;
       return root.innerHeight - ad - FIT_GAP - (b.top + root.scrollY) - below;
@@ -396,7 +399,7 @@
       setTool: function (t) { tool = t; armed = false; hint(); draw(); },
       tool: function () { return tool; },
       undo: function () { if (!undo.length) return false; P = JSON.parse(undo.pop()); armed = false; changed(); return true; },
-      clear: function () { save(); var f = P.formation, m = P.moved; P = emptyPlay(f); P.moved = m; armed = false; hint(); changed(); },
+      clear: function () { save(); var f = P.formation, m = P.moved, cf = P.customFormation; P = emptyPlay(f); P.moved = m; if (cf) P.customFormation = cf; armed = false; hint(); changed(); },
       isRun: isRun,
       ready: function () { return isRun() ? true : P.targets.length > 0; },
       box: function () { return FM.boxCount(defense()); },
