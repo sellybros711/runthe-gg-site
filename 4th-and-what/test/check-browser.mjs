@@ -81,7 +81,16 @@ async function run(name, viewport, scale) {
   /* ---------- Play ---------- */
   await page.goto(BASE + '/4th-and-what/?seed=11');
   await page.waitForFunction(() => !!window.FAW_APP && !!window.FAW_GAME && !!window.FAW_STUDIO);
-  ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'opens on Play');
+  ok(await page.isVisible('#vHome') && await page.isVisible('.path.play') && await page.isVisible('.path.studio'), 'opens on Home: Play and Build, and the other places');
+  await page.waitForFunction(() => document.getElementById('hName').textContent.length > 0, null, { timeout: 8000 });
+  ok(/ vs /.test(await page.textContent('#hName')), 'the home field runs a named play: ' + await page.textContent('#hName'));
+  await shot('00-home');
+  await page.click('.tile[data-go="books"]');
+  ok(await page.isVisible('#vBooks'), 'a tile goes to its place');
+  await page.click('.logo');
+  ok(await page.isVisible('#vHome'), 'the logo goes home');
+  await page.click('.path.play');
+  ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home');
   ok((await page.textContent('#gSit')) === '4th & 5' && (await page.textContent('#gSpot')) === 'Opp 40', 'the default: 4th and 5 on the opponent 40');
   await shot('0-play');
   await page.click('#gRun');

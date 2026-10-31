@@ -73,8 +73,12 @@
       "sha": "3dc28a7e95923a28"
     },
     "app.js": {
-      "v": "1",
-      "sha": "af7410a920b9b737"
+      "v": "2",
+      "sha": "589c2b9a1fa8d010"
+    },
+    "home.js": {
+      "v": "2",
+      "sha": "39eecff373473b8f"
     },
     "studio.js": {
       "v": "1",
