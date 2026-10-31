@@ -297,6 +297,61 @@
       motion = { who: mo.who, from: [c2(from.x - BX), c2(from.y - Y0)], to: [c2(end.x - BX), c2(end.y - Y0)], time: Math.round((track.length - 1) * T.dt * 1000) / 1000 };
     }
 
+    /* ---- the defense answers the motion, before the snap ----
+       The man over him is the nearest defender who could run with him where
+       he lined up. In man that defender travels with him: he runs a mirror of
+       the motion seen trail seconds late, so at the snap he is on him again,
+       a step behind. In zone the defense bumps: the man over him and the
+       nearest backer slide toward where the motion ends, and cover 3 spins
+       its safeties on a motion that crosses the ball. Nobody else moves. */
+    var traveler = null;
+    defense.forEach(function (d) { d.ax = d.x; d.ay = d.y; });
+    if (track) {
+      var M = T.motion, nT = track.length, mDx = end.x - from.x;
+      var wideFrom = Math.abs(from.x - BX) > 7, over = null, os = 1e9;
+      defense.forEach(function (d) {
+        if (d.role === 'dl' || d.y - Y0 > 9) return;
+        var s = len(d.x - from.x, d.y - from.y) + (wideFrom && d.role !== 'cb' ? 12 : 0);
+        if (s < os) { os = s; over = d; }
+      });
+      var movers = [];
+      if (over && call.man) {
+        traveler = over;
+        var lagF = Math.round(M.trail / T.dt), offX = over.x - from.x, offY = over.y - from.y;
+        movers.push({ d: over, speed: over.top * M.chase, at: function (k) { var q = track[Math.max(0, k - lagF)]; return { x: q[0] + offX, y: Math.max(Y0 + 1, q[1] + offY) }; } });
+      } else if (over && !call.man && Math.abs(mDx) > 2) {
+        var fixed = function (d, x, y, sp) { movers.push({ d: d, speed: d.top * sp, at: function () { return { x: x, y: y }; } }); };
+        fixed(over, over.x + mDx * M.bump, over.y, M.shuffle);
+        var bk = null, bs3 = 1e9;
+        defense.forEach(function (d) { if (d.role === 'lb' && d !== over) { var s = Math.abs(d.x - from.x); if (s < bs3) { bs3 = s; bk = d; } } });
+        if (bk) fixed(bk, bk.x + mDx * M.backer, bk.y, M.shuffle);
+        /* the spin: a cover 3 with two high safeties rotates to the motion */
+        var sf = defense.filter(function (d) { return d.role === 's' && d.y - Y0 > 9; });
+        var sFrom = from.x - BX, sEnd = end.x - BX;
+        if (call.coverage === 'cover3' && sf.length === 2 && sFrom * sEnd < 0 && Math.abs(sEnd) > M.spinFrom) {
+          var sg = sEnd > 0 ? 1 : -1, down = (sf[0].x - BX) * sg > (sf[1].x - BX) * sg ? sf[0] : sf[1], up = down === sf[0] ? sf[1] : sf[0];
+          fixed(down, BX + sg * M.spin[0], Y0 + M.spin[1], 1);
+          fixed(up, BX, Y0 + M.spin[2], 1);
+        }
+      }
+      movers.forEach(function (mv) {
+        var d = mv.d, x = d.x, y = d.y, v = 0, a = d.top / Math.max(0.1, d.burst), react = Math.round(M.react / T.dt);
+        d.ptrack = [[x, y, 0, 0]];
+        for (var k = 1; k < nT; k++) {
+          var tg = mv.at(k), dx = tg.x - x, dy = tg.y - y, L = len(dx, dy), vx = 0, vy = 0;
+          if (k >= react && L > 1e-6) {
+            v = Math.min(mv.speed, v + a * T.dt, L / T.dt);
+            var go = Math.min(L, v * T.dt); vx = dx / L * v; vy = dy / L * v;
+            x += dx / L * go; y += dy / L * go;
+          } else v = 0;
+          d.ptrack.push([x, y, vx, vy]);
+        }
+        d.x = d.x0 = x; d.y = d.y0 = y;
+        /* still moving at the snap */
+        var lt = d.ptrack[d.ptrack.length - 1]; d.vx = lt[2]; d.vy = lt[3]; d.v = len(lt[2], lt[3]);
+      });
+    }
+
     /* ---- play action: a pass with a back to fake to ---- */
     var faker = null;
     if (!isRun && play.playAction) {
@@ -341,6 +396,8 @@
     }
     coverers.forEach(function (d) { d.plan = 'stand'; });
     if (call.man) {
+      /* the man who travelled with the motion has him */
+      if (traveler && traveler.plan === 'stand') { traveler.plan = 'man'; traveler.man = byId[mo.who]; traveler.lag = traveler.role === 'lb' ? T.man.lagLB : T.man.lagDB; }
       if (call.coverage === 'cover1') {
         var fs = takeNearest(coverers, landmark(0, 14), ['s']);
         if (fs) { fs.plan = 'zone'; fs.mark = landmark(0, 14); fs.deep = true; fs.width = 15; }
@@ -348,6 +405,7 @@
       /* outside receivers first, each to the nearest free defender who can run
          with him, read off where he is at the snap (after any motion) */
       receivers.slice().sort(function (a, b) { return Math.abs(b.x - BX) - Math.abs(a.x - BX); }).forEach(function (r) {
+        if (traveler && traveler.man === r) return;
         var wide = Math.abs(r.x - BX) > 7;
         var d = takeNearest(coverers, r, wide ? ['cb'] : ['cb', 's', 'lb']);
         if (d) { d.plan = 'man'; d.man = r; d.lag = d.role === 'lb' ? T.man.lagLB : T.man.lagDB; }
@@ -373,11 +431,12 @@
       track: track, motion: motion, pa: pa };
   }
 
-  /* Each defender's job at the snap, relative to the ball, for a scout card. */
+  /* Each defender's job at the snap, relative to the ball, for a scout card:
+     at is where he lined up, snap where the motion left him. */
   function plansOf(ctx) {
     var r2 = function (v) { return Math.round(v * 100) / 100; };
     return ctx.defense.map(function (d) {
-      return { id: d.id, role: d.role, at: [r2(d.x0 - ctx.BX), r2(d.y0 - ctx.Y0)], plan: d.plan === 'rush' ? 'rush' : d.plan === 'man' ? 'man' : 'zone',
+      return { id: d.id, role: d.role, at: [r2(d.ax - ctx.BX), r2(d.ay - ctx.Y0)], snap: [r2(d.x0 - ctx.BX), r2(d.y0 - ctx.Y0)], plan: d.plan === 'rush' ? 'rush' : d.plan === 'man' ? 'man' : 'zone',
         blitz: !!d.blitz, man: d.plan === 'man' && d.man ? d.man.id : null, mark: d.mark ? [r2(d.mark.x - ctx.BX), r2(d.mark.y - ctx.Y0)] : null,
         deep: !!d.deep, width: d.width || null };
     });
@@ -523,14 +582,16 @@
     function flightTo(p) { var d3 = len(p.x - QB.x, p.y - QB.y); return d3 / QB.arch.arm + T.ball.loft * d3 * d3; }
     /* where a receiver will be in tf seconds, running the rest of his route and on past its end */
     function along(e, tf) {
-      var x = e.x, y = e.y, v = Math.max(e.v, 2), go = v * tf;
+      var x = e.x, y = e.y, v = Math.max(e.v, 2), go = v * tf, fin = e.lastDir;
       if (e.path) for (var k = e.wp; k < e.path.length && go > 0; k++) {
         var dx = e.path[k].x - x, dy = e.path[k].y - y, L3 = len(dx, dy);
         if (L3 >= go) return { x: x + dx / L3 * go, y: y + dy / L3 * go };
+        /* past the end he runs on the way the last leg of the route goes */
+        if (L3 > 1e-6) fin = [dx / L3, dy / L3];
         x = e.path[k].x; y = e.path[k].y; go -= L3;
       }
-      if (go > 0 && e.lastDir && e.lastDir[1] < -0.3) go = 0;
-      if (go > 0) { var u = (e.path && e.lastDir) || [e.vx / v, e.vy / v]; if (len(e.vx, e.vy) < 0.5 && !(e.path && e.wp < e.path.length)) u = [0, 0]; x += u[0] * go; y += u[1] * go; }
+      if (go > 0 && fin && fin[1] < -0.3) go = 0;
+      if (go > 0) { var u = (e.path && fin) || [e.vx / v, e.vy / v]; if (len(e.vx, e.vy) < 0.5 && !(e.path && e.wp < e.path.length)) u = [0, 0]; x += u[0] * go; y += u[1] * go; }
       return { x: x, y: y };
     }
     /* yards of drawn route still to run */
@@ -688,13 +749,13 @@
           var tr = thrownTo, at = ball.air.to;
           if (len(d.x - at.x, d.y - at.y) < T.breakRange && len(d.x - at.x, d.y - at.y) < len(tr.x - at.x, tr.y - at.y)) { stepToward(d, at.x, at.y, d.top * T.breakSpeed); return; }
         }
-        /* PLAY ACTION. The backers step up to the run they see and the safeties
-           hold, for a beat, before they play what was called. A man defender's
-           eyes are on his man, not the backfield: he does not bite. */
-        if (pa && t < pa.freeze && (d.role === 'lb' || d.role === 's') && d.plan === 'zone') {
+        /* PLAY ACTION. The underneath zone (the hook players, a safety down in
+           the box, the rats in the hole) reads the backfield: they step up to
+           the run they see for a beat before they play what was called. A deep
+           defender keeps his depth, and a man defender's eyes are on his man. */
+        if (pa && t < pa.freeze && (d.role === 'lb' || d.role === 's') && d.plan === 'zone' && !d.deep) {
           d.bit = true;
-          if (d.role === 'lb') stepToward(d, d.x, Math.max(Y0 + 1.5, d.y0 - 2.5), d.top * T.pa.step);
-          else stepToward(d, d.x, d.y0 - T.pa.safety, d.top * T.pa.step);
+          stepToward(d, d.x, Math.max(Y0 + 1.5, d.y0 - T.pa.bite), d.top * T.pa.step);
           return;
         }
         if (d.plan === 'rush') {
@@ -710,6 +771,12 @@
           if (r.plan === 'block' || (r.plan === 'stand')) { stepToward(d, r.x, r.y + 2, d.top * 0.6); return; }
           /* over the top of him: his depth now, plus the cushion; his side to side
              as it was lag seconds ago, which is the beat a break wins */
+          /* THE RUB. Another receiver in his path costs him a step, once each */
+          if (T.man.rub) for (var ri = 0; ri < receivers.length; ri++) {
+            var ro = receivers[ri];
+            if (ro === r || (d.rubbed && d.rubbed[ro.id]) || dist(ro, d) > T.man.rubRange) continue;
+            d.rubbed = d.rubbed || {}; d.rubbed[ro.id] = true; d.stumble = Math.max(d.stumble || 0, T.man.rub);
+          }
           var lp = lagOf(r, d.lag), cush = T.man.cushion;
           /* a man running straight at him eats the cushion: by eatBy seconds he is level, and the faster man wins */
           if (r.vy > 4) cush *= Math.max(0, 1 - t / T.man.eatBy);
@@ -889,7 +956,7 @@
       next = win ? { down: 1, distance: Math.min(10, nb), ballOn: nb } : { down: down + 1, distance: Math.max(1, distance - shown), ballOn: nb };
     }
 
-    /* the pre-snap picture: everybody set, the motion man running his motion */
+    /* the pre-snap picture: the motion man running his motion, and the defenders who answer it */
     var pre = [];
     if (ctx.track) {
       var mi = E.indexOf(byId[ctx.motion.who]), n = ctx.track.length, runAt = 0;
@@ -901,6 +968,9 @@
           if (j2 === mi) {
             var hh = heading(tr2[2], tr2[3]), mv = len(tr2[2], tr2[3]) > 0.6;
             P3.push([Math.round(tr2[0] * 100) / 100, Math.round(tr2[1] * 100) / 100, mv ? 'run' : 'idle', mv ? Math.floor(runAt / 0.9) % 4 : 0, hh != null && mv ? hh : 0]);
+          } else if (e2.ptrack) {
+            var dq = e2.ptrack[pk], dmv = len(dq[2], dq[3]) > 0.6, dh = heading(dq[2], dq[3]);
+            P3.push([Math.round(dq[0] * 100) / 100, Math.round(dq[1] * 100) / 100, dmv ? 'run' : 'idle', dmv ? Math.floor(pk / 8) % 4 : 0, dmv && dh != null ? dh : 180]);
           } else P3.push([Math.round(e2.x0 * 100) / 100, Math.round(e2.y0 * 100) / 100, 'idle', 0, e2.side === 'O' ? 0 : 180]);
         }
         pre.push({ t: Math.round((pk - (n - 1)) * dt * 1000) / 1000, p: P3, ball: [Math.round(BX * 100) / 100, Math.round(Y0 * 100) / 100, 0.4], held: true, pressure: 0 });

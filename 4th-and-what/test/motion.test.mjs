@@ -191,3 +191,34 @@ test('situationName says the down, the distance and the spot', () => {
   assert.equal(E.situationName(3, 15, 90), '3rd and 15 · Own 10');
   assert.equal(E.run(at({ down: 3, distance: 7, ballOn: 72 }), PLAYBOOK.mesh, 1).situation, '3rd and 7 · Own 28');
 });
+
+test('the defense answers motion: man travels with him, zone bumps, cover 3 spins', () => {
+  const sc = at({ distance: 5 });
+  /* man: the man over him before the motion has him at the snap, and moved with him */
+  const r = E.run(sc, JET, 7, { call: 'cover1' }), pl = r.plans;
+  const tr = pl.filter(d => d.man === 'SLOT');
+  assert.equal(tr.length, 1, 'one man on the motion man');
+  const t0 = tr[0], j = idx(r, t0.id), i = idx(r, 'SLOT');
+  assert.ok(Math.abs(t0.snap[0] - t0.at[0]) > 4, 'he travelled across: ' + t0.at + ' to ' + t0.snap);
+  near(r.pre[0].p[j][0], r.BX + t0.at[0], 0.011, 'the pre-snap starts at his alignment');
+  near(r.pre[r.pre.length - 1].p[j][0], r.BX + t0.snap[0], 0.011, 'and ends at his snap spot');
+  const lag = Math.abs(r.pre[r.pre.length - 1].p[j][0] - r.pre[r.pre.length - 1].p[i][0]);
+  assert.ok(lag > 0.5, 'a step behind at the snap: ' + lag);
+  /* everybody who did not answer the motion is set */
+  pl.filter(d => d.at[0] === d.snap[0] && d.at[1] === d.snap[1]).forEach(d => { const k = idx(r, d.id); assert.ok(r.pre.every(f => f.p[k][0] === r.pre[0].p[k][0])); });
+  /* zone: the man over him and a backer slide toward the motion, nobody is assigned to chase */
+  const z = E.plans(sc, JET, 'cover2');
+  const slid = z.filter(d => d.snap[0] < d.at[0] - 1);
+  assert.ok(slid.length >= 2, 'the bump: ' + slid.map(d => d.id).join(', '));
+  assert.ok(z.every(d => d.plan !== 'man'));
+  /* cover 3 spins on a full jet across the ball with two high safeties */
+  const wide = Object.assign({}, PLAYBOOK.stick, { motion: { who: 'WR2', pts: [[4, -1.5], [-6, -1.5]] } });
+  const s3 = E.plans(sc, wide, 'cover3'), saf = s3.filter(d => d.role === 's');
+  assert.equal(saf.length, 2);
+  const down = saf.find(d => d.snap[1] < d.at[1] - 3);
+  assert.ok(down, 'a safety rotates down: ' + JSON.stringify(saf.map(d => [d.at, d.snap])));
+  assert.ok(down.snap[0] < 0, 'on the side the motion went');
+  /* the same motion against cover 2 does not spin */
+  const s2 = E.plans(sc, wide, 'cover2').filter(d => d.role === 's');
+  assert.ok(s2.every(d => d.snap[1] === d.at[1]), 'no spin in cover 2');
+});
