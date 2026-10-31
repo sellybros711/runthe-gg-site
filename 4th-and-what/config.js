@@ -97,8 +97,10 @@
        side to side as it was lag seconds ago, carried forward lead of the way
        along the side to side speed he saw then (so a steady crosser is run
        down, and a break still wins its beat). A man running straight up the
-       field eats that cushion by eatBy seconds. */
-    man: { lagDB: 0.3, lagLB: 0.45, cushion: 1.6, eatBy: 2.2, lead: 0.6 },
+       field eats that cushion by eatBy seconds. THE RUB: a receiver other
+       than his man inside rubRange yards of him costs him rub seconds at half
+       speed, once a receiver (stacks, crossers and motion). */
+    man: { lagDB: 0.3, lagLB: 0.45, cushion: 1.6, eatBy: 2.2, lead: 0.6, rub: 0.15, rubRange: 1.0 },
     /* ZONE: a defender drops to his landmark and plays the nearest receiver
        inside radius yards of it, leaning pull of the way toward him at speed
        of his top speed. His zone runs from the landmark down to the line: a
@@ -161,15 +163,25 @@
        speed as any cut does). A motion longer than maxTime seconds is cut off
        there. The defense is aligned to the formation before the motion, and
        man coverage is matched at the snap. */
-    motion: { jog: 5.0, speed: 0.65, build: 3.0, maxTime: 8 },
+    motion: { jog: 5.0, speed: 0.65, build: 3.0, maxTime: 8,
+      /* THE DEFENSE ANSWERS IT. Nobody moves until react seconds into the
+         motion. In man the defender over him travels with him, running a
+         mirror of his path seen trail seconds late at chase of his top speed.
+         In zone the man over him slides bump of the motion's width and the
+         nearest backer backer of it, at shuffle of their speed; and a cover 3
+         with two high safeties spins on a motion that crosses the ball to more
+         than spinFrom yards: the safety on that side comes down to spin
+         [x, depth], the other goes to the middle at depth spin[2]. */
+      react: 0.3, trail: 0.35, chase: 0.9, bump: 0.5, backer: 0.35, shuffle: 0.6, spinFrom: 4, spin: [9, 7, 13] },
     /* PLAY ACTION (passes with a back to fake to). The QB cannot throw for
-       fake seconds and his reads start that much later; the back carries the
-       fake for carry seconds before his route or block; linebackers step up
-       at step of their speed and safeties hold for freeze seconds, plus box
-       for every defender past six in the box, before they play the call, and
-       then run at half speed for recover seconds while they turn. The fake
-       costs pocket seconds of protection. */
-    pa: { fake: 0.55, carry: 0.35, freeze: 0.5, box: 0.15, step: 0.5, safety: 3, recover: 0.5, pocket: 0.2 },
+       fake seconds and his reads start then; the back carries the fake for
+       carry seconds before his route or block. The underneath zone (backers,
+       a safety in the box, the rats) steps up to bite yards toward the line at
+       step of their speed for freeze seconds, plus box for every defender past
+       six in the box, then runs at half speed for recover seconds while they
+       turn. Deep defenders and man defenders do not bite. The fake costs
+       pocket seconds of protection. */
+    pa: { fake: 0.55, carry: 0.35, freeze: 0.7, box: 0.15, step: 0.7, bite: 3, recover: 0.5, pocket: 0.2 },
 
     /* PLAYBACK: how much slower the picture runs near the moments that decide it. */
     slow: { throw: 0.45, catch: 0.35, tackle: 0.4, window: 0.35 }
