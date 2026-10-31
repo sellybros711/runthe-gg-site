@@ -478,7 +478,12 @@ class Stage {
       this.fp.layout(w, h, this.safe, this.loaded ? this.gridRect() : null, this.hudPanels());
       // (a new screen moves his hand, so where the flight starts: the hitter and catcher read it again)
       if (this.pitch && this.loaded) { this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera); this.people.setPlay(this.pitch, this.pitch.play, this.m); }
-      this.fp.pose(this.t);
+      // setPlay plans the hitter's feet by posing him through his capture (planBatterFeet), which
+      // leaves his body at the plan's last frame while his bat stays where the set put it: the bat
+      // went through his head at every set after a layout (the owner, 2026-10-30). Pose the set
+      // again; a pitch in the air poses itself every frame
+      if (this.pitch && this.loaded && !this.playing) this.pose(this.t);
+      else this.fp.pose(this.t);
     }
     if (this.loaded) this.soon();
   }
