@@ -66,8 +66,12 @@
        been running `minRead` seconds), whichever comes first. Finishing is
        read on timing: the ball leaves when he is the release, plus timing,
        plus the ball's flight, from the end of the drawn route, so the ball
-       meets him about where the route ends. The ball is led along the route. */
-    read: { separation: 3.0, minRead: 0.85, release: 0.18, timing: 0.05 },
+       meets him about where the route ends. The ball is led along the route.
+       THE PROGRESSION (up to three reads): a read still `covered` (a defender
+       closer than that, in yards) at the end of his route is passed over, and
+       the eyes reach the next read `shift` seconds later. The last read always
+       gets the ball on time. */
+    read: { separation: 3.0, minRead: 0.85, release: 0.18, timing: 0.05, covered: 0.6, shift: 0.5 },
     ball: { loft: 0.0005, height: 2.0 },
     /* the receiver runs his route while the ball is in the air, and adjusts to it for the last adjust seconds */
     adjust: 0.35,

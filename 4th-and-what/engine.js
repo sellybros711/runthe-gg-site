@@ -13,8 +13,11 @@
  *   routes       run exactly as drawn, then on the same line; cuts cost speed
  *   coverage     man trails with a lag; zone drops to landmarks and plays the
  *                nearest receiver inside its zone
- *   the read     throw to the primary when his route ends or he is open; if
- *                the pocket goes first, the checkdown; if there is none, a
+ *   the read     up to three reads, in order. He throws to the read his eyes
+ *                are on when that man is open, or on time at the end of his
+ *                route; covered there, his eyes move to the next read. The
+ *                last read is the checkdown: if the pocket goes first, the
+ *                ball goes there; if there is none, a
  *                sack or a throwaway
  *   the catch    one roll on separation, distance, pressure and direction
  *   after it     the carrier runs until a free defender reaches him; contact
@@ -135,7 +138,8 @@
     var routes = {}, blocks = {};
     (play.routes || []).forEach(function (r, i) { if (r && r.pts && r.pts.length) routes[r.who] = { pts: r.pts, order: i + 1 }; });
     (play.blocks || []).forEach(function (b) { if (b && b.to) blocks[b.who] = b.to; });
-    var targets = isRun ? [] : (play.targets || []).filter(function (id) { return routes[id] && !blocks[id]; });
+    var targets = isRun ? [] : (play.targets || []).filter(function (id) { return routes[id] && !blocks[id]; }).slice(0, 3);
+    var eye = 0, eyeAt = 0;
     var abs = function (p) { return { x: clamp(BX + p[0], 0.3, FIELD_W - 0.3), y: Y0 + p[1] }; };
 
     /* The call is always rolled, so the dice after it fall the same way. A
@@ -385,12 +389,19 @@
       if (isRun && ballCarrierId === 'QB' && !carrier) { carrier = QB; }
 
       if (!isRun && !thrown && !windup && !collapseFate) {
-        var P = targets[0] ? byId[targets[0]] : null, C2 = targets[1] ? byId[targets[1]] : null;
+        /* the progression: his eyes are on one read at a time, in the order drawn */
+        var P = targets[eye] ? byId[targets[eye]] : null, C2 = targets.length > 1 ? byId[targets[targets.length - 1]] : null;
         /* "finishes the route" is a timing throw: the ball leaves as he is a beat
            from the end of what you drew, so it meets him there */
         var routeDone = P && P.path && left(P) <= Math.max(P.v, 3) * (T.read.release + T.read.timing + flightTo(P.path[P.path.length - 1]));
         if (t >= Tp && !collapsed) { collapsed = true; say(t, 'pressure', 'The pocket is gone.'); }
-        if (!collapsed && P && (routeDone || (t >= T.read.minRead && openBy(P) >= T.read.separation))) windup = { to: P, at: t + T.read.release, primary: true };
+        if (!collapsed && P && t >= eyeAt && (routeDone || (t >= T.read.minRead && openBy(P) >= T.read.separation))) {
+          /* covered at the top of his route, and there is another read: move on */
+          if (routeDone && eye < targets.length - 1 && openBy(P) < T.read.covered) {
+            eye++; eyeAt = t + T.read.shift;
+            say(t, 'progress', eye === 1 ? 'Covered. Second read.' : 'Covered. Third read.');
+          } else windup = { to: P, at: t + T.read.release, primary: eye === 0 };
+        }
         else if (collapsed) {
           if (C2) { windup = { to: C2, at: t + T.read.release * 0.6, primary: false }; say(t, 'checkdown', 'Checks it down.'); }
           else {
