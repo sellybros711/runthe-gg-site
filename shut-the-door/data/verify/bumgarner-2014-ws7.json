@@ -1,0 +1,280 @@
+{
+ "id": "bumgarner-2014-ws7",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 416387,
+ "date": "2014-10-29",
+ "game": "World Series Game 7: San Francisco Giants at Kansas City Royals",
+ "gameType": "W",
+ "pitcher": {
+  "id": 518516,
+  "name": "Madison Bumgarner",
+  "throws": "L",
+  "team": "San Francisco Giants",
+  "seasonLine": "2.98 ERA, 0 SV, 217.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 2
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 66,
+   "batterId": 543333,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518516": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Eric Hosmer strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Eric Hosmer strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Eric Hosmer",
+   "batSideListed": "L",
+   "seasonLine": ".270/.318/.398, 9 HR"
+  },
+  {
+   "atBat": 67,
+   "batterId": 456714,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518516": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Billy Butler pops out to first baseman Brandon Belt in foul territory.",
+   "feedEvent": "field_out",
+   "feedDescription": "Billy Butler pops out to first baseman Brandon Belt in foul territory.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Billy Butler",
+   "batSideListed": "R",
+   "seasonLine": ".271/.323/.379, 9 HR"
+  },
+  {
+   "atBat": 68,
+   "batterId": 460086,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518516": 2
+   },
+   "pitches": 2,
+   "event": "single",
+   "des": "Alex Gordon singles on a line drive to left fielder Juan Carlo Perez.   Alex Gordon to 3rd.  Alex Gordon advances to 3rd, on a fielding error by center fielder Gr�gor Blanco.",
+   "feedEvent": "single",
+   "feedDescription": "Alex Gordon singles on a line drive to left fielder Juan Carlo Perez. Alex Gordon to 3rd. Alex Gordon advances to 3rd, on a fielding error by center fielder Grégor Blanco.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Alex Gordon",
+   "batSideListed": "L",
+   "seasonLine": ".266/.351/.432, 19 HR"
+  },
+  {
+   "atBat": 69,
+   "batterId": 521692,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "518516": 6
+   },
+   "pitches": 6,
+   "event": "field_out",
+   "des": "Salvador Perez pops out to third baseman Pablo Sandoval in foul territory.",
+   "feedEvent": "field_out",
+   "feedDescription": "Salvador Perez pops out to third baseman Pablo Sandoval in foul territory.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Salvador Perez",
+   "batSideListed": "R",
+   "seasonLine": ".260/.289/.403, 17 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 16,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 519058,
+   "name": "Mike Moustakas",
+   "batSideListed": "L"
+  },
+  {
+   "id": 408299,
+   "name": "Omar Infante",
+   "batSideListed": "R"
+  },
+  {
+   "id": 444876,
+   "name": "Alcides Escobar",
+   "batSideListed": "R"
+  },
+  {
+   "id": 493114,
+   "name": "Norichika Aoki",
+   "batSideListed": "L"
+  },
+  {
+   "id": 456715,
+   "name": "Lorenzo Cain",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543333,
+   "name": "Eric Hosmer",
+   "batSideListed": "L"
+  },
+  {
+   "id": 456714,
+   "name": "Billy Butler",
+   "batSideListed": "R"
+  },
+  {
+   "id": 460086,
+   "name": "Alex Gordon",
+   "batSideListed": "L"
+  },
+  {
+   "id": 521692,
+   "name": "Salvador Perez",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 3363,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 1456,
+     "usage": 0.4329,
+     "velo": 92.7,
+     "pfxXin": 9.2,
+     "pfxZin": 15.8
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 1180,
+     "usage": 0.3509,
+     "velo": 88.8,
+     "pfxXin": -0.5,
+     "pfxZin": 8.3
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 471,
+     "usage": 0.1401,
+     "velo": 77.0,
+     "pfxXin": -11.7,
+     "pfxZin": -8.2
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 255,
+     "usage": 0.0758,
+     "velo": 84.3,
+     "pfxXin": 13.3,
+     "pfxZin": 9.7
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 1,
+     "usage": 0.0003,
+     "velo": 92.9,
+     "pfxXin": 20.3,
+     "pfxZin": 15.0
+    }
+   ],
+   "dropped": {
+    "IN": 7
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2014%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=518516"
+  },
+  "postseason": {
+   "pitches": 702,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 378,
+     "usage": 0.5385,
+     "velo": 93.5,
+     "pfxXin": 8.3,
+     "pfxZin": 17.1
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 199,
+     "usage": 0.2835,
+     "velo": 87.5,
+     "pfxXin": -3.0,
+     "pfxZin": 6.0
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 102,
+     "usage": 0.1453,
+     "velo": 76.4,
+     "pfxXin": -11.6,
+     "pfxZin": -9.9
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 21,
+     "usage": 0.0299,
+     "velo": 85.0,
+     "pfxXin": 14.3,
+     "pfxZin": 9.4
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 2,
+     "usage": 0.0028,
+     "velo": 92.9,
+     "pfxXin": 19.1,
+     "pfxZin": 12.5
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2014%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=518516"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 416387: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=416387",
+  "MLB Stats API schedule 2014-10-29 and live feed /api/v1.1/game/416387/feed/live",
+  "MLB Stats API people with 2014 season stats",
+  "Baseball Savant 518516 2014 season search (regular season and postseason) for the arsenal"
+ ]
+}
