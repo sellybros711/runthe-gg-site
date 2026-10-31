@@ -53,8 +53,8 @@
       "sha": "498dc23abaa80601"
     },
     "turf.js": {
-      "v": "1",
-      "sha": "ae042b6ed7725f38"
+      "v": "2",
+      "sha": "9e7680df6a643c30"
     },
     "rig.js": {
       "v": "1",
@@ -81,16 +81,16 @@
       "sha": "55e3f89e496b0f46"
     },
     "game.js": {
-      "v": "1",
-      "sha": "ddbece772abaf868"
+      "v": "2",
+      "sha": "993332fbfd33e717"
     },
     "library.js": {
       "v": "1",
       "sha": "54d6ce1b16e8cf96"
     },
     "learn.js": {
-      "v": "1",
-      "sha": "aad482d3dd5e1061"
+      "v": "2",
+      "sha": "2991ca80a3cc5c27"
     },
     "testview.js": {
       "v": "1",
