@@ -204,6 +204,12 @@ def build_one(spec, adv):
     # batters
     if proxy:
         order, cand = order_proxy(v)
+        n_first = len(order)
+        for h in (v.get('halves') or [])[1:]:      # rules 8: a later half's new batters (halves.py)
+            for bid in h['lineupIds']:
+                rid = str(bid).replace('retro:', '') if bid else None
+                if rid and rid not in order:
+                    order.append(rid)
         ids_retro = order
         mlb = retro.retro_to_mlbam(set(order))
         ros = retro.rosters(cand['season'], [cand['game'][:3], v['game'].split(' at ')[0]])
@@ -389,7 +395,7 @@ def build_one(spec, adv):
         'sources': sources,
     }
     if multi:
-        sc.update(halves_of(v, order, n_first if not proxy else len(order)))
+        sc.update(halves_of(v, [('retro:' + str(x)) if proxy else x for x in order], n_first))
         reveal_first = reveal
         reveal = reveal_of(v, full=True)
         sc['realFaced'] = len(reveal['plateAppearances'])
@@ -556,6 +562,7 @@ def halves_of(v, order, n_first):
         else:
             lineup = []
             for pos, bid in enumerate(h['lineupIds']):
+                bid = bid if bid in order else int(bid) if str(bid).isdigit() and int(bid) in order else bid
                 lineup.append(pos if pos < n_first and order[pos] == bid else order.index(bid))
         assert lineup and len(lineup) == 9, 'a lineup is nine'
         halves.append({'inning': h['inning'], 'half': h['half'], 'outs': h['outs'], 'bases': h['bases'],

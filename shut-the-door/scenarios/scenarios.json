@@ -32,7 +32,7 @@
   {"id": "std-2012-ws4-romo", "verify": "romo-2012-ws4", "title": "Game 4, 2012 World Series", "arsenal": "regular"},
   {"id": "std-2023-williams-sd", "verify": "rs-williams-2023-04-16", "title": "Brewers at Padres, April 16, 2023", "arsenal": "regular"},
   {"id": "std-2008-ws5-lidge", "verify": "lidge-2008-ws5", "title": "Game 5, 2008 World Series", "arsenal": "regular"},
-  {"id": "std-2020-nlds2-kelly", "verify": "kelly-2020-nlds2", "title": "Game 2, 2020 NLDS", "arsenal": "regular"},
+  {"id": "std-2008-alcs7-price", "verify": "price-2008-alcs7", "title": "Game 7, 2008 ALCS", "arsenal": "regular"},
   {"id": "std-2013-alcs6-uehara", "verify": "uehara-2013-alcs6", "title": "Game 6, 2013 ALCS", "arsenal": "regular"},
   {"id": "std-2023-ws1-sewald", "verify": "sewald-2023-ws1", "title": "Game 1, 2023 World Series", "arsenal": "regular"},
   {"id": "std-2011-rivera-min", "verify": "rivera-2011-602nd", "title": "Twins at Yankees, September 19, 2011", "arsenal": "regular"},
@@ -43,6 +43,6 @@
   {"id": "std-2008-krod-sea", "verify": "rodriguez-2008-58th", "title": "Mariners at Angels, September 13, 2008", "arsenal": "regular"},
   {"id": "std-2025-ws6-glasnow", "verify": "glasnow-2025-ws6", "title": "Game 6, 2025 World Series", "arsenal": "postseason"},
   {"id": "std-2010-ws5-wilson", "verify": "wilson-2010-ws5", "title": "Game 5, 2010 World Series", "arsenal": "regular"},
-  {"id": "std-2016-nlds5-kershaw", "verify": "kershaw-2016-nlds5", "title": "Game 5, 2016 NLDS", "arsenal": "postseason"}
+  {"id": "std-2009-alcs6-rivera", "verify": "rivera-2009-alcs6", "title": "Game 6, 2009 ALCS", "arsenal": "regular"}
  ]
 }

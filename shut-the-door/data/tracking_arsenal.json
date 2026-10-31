@@ -90,6 +90,54 @@
    },
    "note": "proxy spot: no pitch tracking that day"
   },
+  "std-2008-alcs7-price": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=456034",
+   "tracking": {
+    "system": "pitchfx",
+    "season": 2008,
+    "games": "regular",
+    "n": 230,
+    "active": null
+   },
+   "release": {
+    "x": 2.09,
+    "z": 6.06,
+    "ext": null
+   },
+   "armAngle": null,
+   "arsenal": {
+    "FF": {
+     "n": 126,
+     "release": {
+      "x": 2.06,
+      "z": 6.09,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    },
+    "FC": {
+     "n": 71,
+     "release": {
+      "x": 2.15,
+      "z": 5.98,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    },
+    "SI": {
+     "n": 33,
+     "release": {
+      "x": 2.07,
+      "z": 6.14,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    }
+   }
+  },
   "std-2008-krod-sea": {
    "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=408061",
    "tracking": {
@@ -169,6 +217,44 @@
      "release": {
       "x": -1.16,
       "z": 6.56,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    }
+   }
+  },
+  "std-2009-alcs6-rivera": {
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2009%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=121250",
+   "tracking": {
+    "system": "pitchfx",
+    "season": 2009,
+    "games": "regular",
+    "n": 1015,
+    "active": null
+   },
+   "release": {
+    "x": -2.54,
+    "z": 6.21,
+    "ext": null
+   },
+   "armAngle": null,
+   "arsenal": {
+    "FC": {
+     "n": 943,
+     "release": {
+      "x": -2.54,
+      "z": 6.2,
+      "ext": null
+     },
+     "armAngle": null,
+     "spin": null
+    },
+    "FF": {
+     "n": 72,
+     "release": {
+      "x": -2.54,
+      "z": 6.24,
       "ext": null
      },
      "armAngle": null,

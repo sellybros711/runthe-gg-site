@@ -465,11 +465,15 @@ def halves_main(ids):
         h, cf = stats(season, 'hitting'), stats(season, 'fielding', 'C')
         sp = leaderboard('sprint', season) if season >= 2015 else {}
         pop = leaderboard('pop', season) if season >= 2016 else {}
+        import retro
         for b in pack['scenario']['batters']:
             bid = str(b['id'])
-            if bid not in sc['runners'] and bid.isdigit():
-                sc['runners'][bid] = runner_entry(int(bid), b['name'], season, h, sp, S['speed'], lg['attRate'], lg['sbPct'])
-        f = gfeed(v['gamePk'])
+            if bid in sc['runners']:
+                continue
+            mid = int(bid) if bid.isdigit() else retro.retro_to_mlbam({bid[6:]}).get(bid[6:]) if bid.startswith('retro:') else None
+            sc['runners'][bid] = runner_entry(int(mid), b['name'], season, h, sp, S['speed'], lg['attRate'], lg['sbPct']) if mid else {
+                'name': b['name'], 'att': 1.0, 'z': 0.0, 'speed': None, 'src': 'no MLBAM id: the league runner'}
+        f = gfeed(v.get('gamePk') or scenario_facts(spec, v)[0])
         side = 'home' if v['situation']['usHome'] else 'away'
         out = []
         for hv in v['halves'][1:]:

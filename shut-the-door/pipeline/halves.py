@@ -23,8 +23,10 @@ What it writes, every fact from MLB's live feed for the game (statsapi /api/v1.1
             first batter), hits and errors so far.
 """
 
+import csv
 import json
 import os
+import re
 import sys
 
 from common import VERIFY, get, log, read_json, write_json
@@ -112,29 +114,28 @@ def short_of(play):
 
 
 def bases_after(on, play):
-    """Who is on after the play: each runner to the last base the feed moves him to, off when he is
-    out or scores. on: {1: id, 2: id, 3: id}."""
-    on = dict(on)
-    runs = 0
-    names = {}
+    """Who is on after the play. Each runner the feed moves goes from the base of his first movement
+    to the end of his last (off when he is out or scores); everyone else stays. A base a moved runner
+    started from is his, so a pinch runner the feed names takes the man he ran for off it. Order
+    free: the feed lists a runner reaching a base before the one leaving it. on: {1: id, 2: id, 3: id}."""
+    first, last, names = {}, {}, {}
     for r in play.get('runners', []):
         m, rid = r['movement'], r['details']['runner']['id']
         names[rid] = r['details']['runner'].get('fullName')
-        start = BASES.get(m.get('start') or m.get('originBase') or '')
-        if start and on.get(start) == rid:
-            on.pop(start)
-        for b in [k for k, v in on.items() if v == rid]:
-            on.pop(b)
+        if rid not in first:
+            first[rid] = BASES.get(m.get('originBase') or m.get('start') or '')
+        last[rid] = r
+    out = {b: rid for b, rid in on.items() if rid not in first and b not in set(first.values())}
+    runs = 0
+    for rid, r in last.items():
+        m = r['movement']
         if m.get('isOut'):
             continue
-        end = m.get('end')
-        if end == 'score':
-            if r['details'].get('isScoringEvent') is not False:
-                runs += 1
-            continue
-        if end in BASES:
-            on[BASES[end]] = rid
-    return on, runs, names
+        if m.get('end') == 'score':
+            runs += 1
+        elif m.get('end') in BASES:
+            out[BASES[m['end']]] = rid
+    return out, runs, names
 
 
 def half_plays(plays, inning, half):
@@ -305,11 +306,184 @@ def build(v):
     return halves, lineups, between, line, name_of, later, later_tot
 
 
+# ---- a proxy spot (before 2008): Retrosheet's event file -------------------------------------
+
+def retro_short(ev):
+    """The scorer's short form from a Retrosheet event: K, BB, IBB, HBP, 1B, 2B, 3B, HR, 6-3, F8,
+    L6, P4, 3U, 6-4-3 DP, SF9, SAC 1-3, E6, FC. null when the code does not say."""
+    main = ev.split('.')[0]
+    basic, mods = main.split('/')[0], main.split('/')[1:]
+    m = lambda x: any(y.startswith(x) for y in mods)
+    if basic.startswith('K'):
+        return 'K'
+    if basic.startswith('IW') or basic == 'I':
+        return 'IBB'
+    if basic.startswith('W'):
+        return 'BB'
+    if basic.startswith('HP'):
+        return 'HBP'
+    if basic.startswith('HR') or (basic.startswith('H') and not basic.startswith('HP')):
+        return 'HR'
+    if re.match(r'^[SDT]\d*', basic) and not basic.startswith('SB'):
+        return {'S': '1B', 'D': '2B', 'T': '3B'}[basic[0]]
+    if basic.startswith('E'):
+        return 'E' + basic[1:2]
+    if basic.startswith('FC'):
+        return 'FC'
+    if basic.startswith('C'):
+        return 'CI'
+    if re.match(r'^\d', basic):
+        digits = re.sub(r'\([B123]\)', '', basic)
+        chain = '-'.join(digits)
+        if m('SF'):
+            return 'SF' + digits[-1]
+        if m('SH'):
+            return 'SAC ' + chain
+        if m('GDP') or m('DP') or m('LDP') or m('FDP'):
+            return chain + ' DP'
+        if m('TP') or m('GTP'):
+            return chain + ' TP'
+        if len(digits) == 1:
+            t = 'L' if m('L') else 'P' if m('P') and not m('PB') else 'F' if m('F') else None
+            return (t + digits) if t else (digits + 'U' if m('G') else 'F' + digits)
+        if m('FO'):
+            return chain + ' FO'
+        return chain
+    return None
+
+
+RETRO_TEAMS = {'BOS': 'Boston Red Sox', 'COL': 'Colorado Rockies', 'HOU': 'Houston Astros', 'SLN': 'St. Louis Cardinals',
+               'NYA': 'New York Yankees', 'ARI': 'Arizona Diamondbacks', 'OAK': 'Oakland Athletics', 'LAN': 'Los Angeles Dodgers'}
+
+
+def build_retro(v, cand):
+    """The halves, between and line of a proxy spot from Retrosheet's event file, the same shape as
+    build(). The event code is the scorer's own; Retrosheet has no description, so des is null."""
+    import retro
+    lines = retro.game_lines(cand['season'], cand['file'], cand['game'])
+    s = v['situation']
+    us_home = s['usHome']
+    d_side = 0 if us_home else 1            # Retrosheet's team: 0 visitors (bat top), 1 home
+    bat_team = 1 - d_side                   # the side he faces bats ... his team is d_side's opposite
+    d_half = 'top' if us_home else 'bottom'
+    b_half = 'bottom' if us_home else 'top'
+    them_team = 0 if us_home else 1         # the side he faces
+    pid = v['pitcher'].get('retroId') or cand['pitcher']
+    holder, names = {0: {}, 1: {}}, {}
+    plays = []                               # (inning, team, batter, event, before, after, runs, outs, paOver, holders, pitcher)
+    state, half, fielding = None, None, {}
+    for line in lines:
+        f = next(csv.reader([line]), [])
+        if not f:
+            continue
+        if f[0] in ('start', 'sub'):
+            rid, name, team, order, pos = f[1], f[2], int(f[3]), int(f[4]), int(f[5])
+            names[rid] = name
+            if order >= 1:
+                holder[team][order] = rid
+            if pos == 1:
+                fielding[team] = rid
+        elif f[0] == 'play':
+            inning, team, batter, event = int(f[1]), int(f[2]), f[3], f[-1]
+            if (inning, team) != half:
+                half, state = (inning, team), {'outs': 0, 'bases': {}, 'batter': None}
+            state['batter'] = batter
+            before = {'outs': state['outs'], 'bases': dict(state['bases'])}
+            runs, outs, pa_over = retro.apply_event(state, event)
+            plays.append({'inning': inning, 'team': team, 'batter': batter, 'event': event, 'seq': f[5] if len(f) > 6 else '',
+                          'before': before, 'after': {'outs': state['outs'], 'bases': dict(state['bases'])},
+                          'runs': runs, 'outs': outs, 'paOver': pa_over, 'holders': {k: dict(x) for k, x in holder.items()},
+                          'pitcher': fielding.get(1 - team)})
+    tm = lambda t, inn: [p for p in plays if p['team'] == t and p['inning'] == inn]
+    first = v['plateAppearances'][0]['batterId']
+    i0 = next(i for i, p in enumerate(plays) if p['team'] == them_team and p['inning'] == s['inning'] and p['batter'] == first and p['paOver'])
+    # the spot starts at its first batter's first record (a no-play or a sub can sit before it)
+    while i0 > 0 and plays[i0 - 1]['batter'] == first and plays[i0 - 1]['team'] == them_team:
+        i0 -= 1
+    reg = max(9, s['inning'])
+    halves = []
+    for inn in range(s['inning'], reg + 1):
+        hp = tm(them_team, inn)
+        if not hp or (inn > s['inning'] and not any(p['pitcher'] == pid for p in hp)):
+            break
+        halves.append({'inning': inn, 'half': d_half, 'real': True, 'outs': s['outs'] if inn == s['inning'] else 0,
+                       'bases': s['bases'] if inn == s['inning'] else 0, 'walkOffLive': (not us_home) and inn >= 9})
+    slot_of = lambda h, rid: next((k for k, x in h.items() if x == rid), None)
+    slot0 = slot_of(plays[i0]['holders'][them_team], first)
+    assert slot0, "no slot for the spot's first batter"
+    lineups = []
+    for k, hv in enumerate(halves):
+        hp = tm(them_team, hv['inning'])
+        held = (plays[i0] if k == 0 else hp[0])['holders'][them_team]
+        batted = {}
+        for p in (hp if k else []):
+            if p['event'] == 'NP':      # a no-play (a substitution follows): not who batted
+                continue
+            sl = slot_of(p['holders'][them_team], p['batter'])
+            if sl and sl not in batted:
+                batted[sl] = p['batter']
+        lineups.append([batted.get((slot0 - 1 + pos) % 9 + 1, held.get((slot0 - 1 + pos) % 9 + 1)) for pos in range(9)])
+    between = []
+    us_team = 1 - them_team
+    code = v['game'].split(' at ')[1 if us_home else 0]
+    team_name = RETRO_TEAMS.get(code, code)
+    for k in range(len(halves) - 1):
+        inn = halves[k]['inning'] + (1 if b_half == 'top' else 0)
+        pas, pend_runs = [], 0
+        for p in tm(us_team, inn):
+            if not p['paOver']:
+                pend_runs += p['runs']
+                continue
+            a = p['after']
+            pas.append({'batter': {'id': 'retro:' + p['batter'], 'name': names.get(p['batter'])}, 'event': p['event'],
+                        'short': retro_short(p['event']), 'des': None, 'runs': p['runs'] + pend_runs, 'outs': a['outs'],
+                        'bases': sum(1 << (b - 1) for b in a['bases']), 'runners': [('retro:' + a['bases'][b]) if a['bases'].get(b) else None for b in (1, 2, 3)],
+                        'hit': retro_short(p['event']) in ('1B', '2B', '3B', 'HR'), 'err': len(re.findall(r'E\d', p['event']))})
+            pend_runs = 0
+        ls = retro.line_score(cand['game'])
+        total = sum(p['runs'] for p in tm(us_team, inn))
+        between.append({'inning': inn, 'half': b_half, 'team': team_name, 'abbr': code,
+                        'runs': total, 'pas': pas, 'source': f'Retrosheet event file {cand["season"]} {cand["file"]}, {cand["game"]}, {b_half} {inn}'})
+    # the line score when he came in, from the same file
+    innings = []
+    for inn in range(1, s['inning'] + 1):
+        a = sum(p['runs'] for p in tm(0, inn) if plays.index(p) < i0) if inn == s['inning'] and s['half'] == 'top' else sum(p['runs'] for p in tm(0, inn))
+        h = sum(p['runs'] for p in tm(1, inn) if plays.index(p) < i0) if inn == s['inning'] else sum(p['runs'] for p in tm(1, inn))
+        innings.append([a, None if (inn == s['inning'] and s['half'] == 'top') else h])
+    hits, errs = [0, 0], [0, 0]
+    for p in plays[:i0]:
+        if p['paOver'] and retro_short(p['event']) in ('1B', '2B', '3B', 'HR'):
+            hits[p['team']] += 1
+        errs[1 - p['team']] += len(re.findall(r'E\d', p['event']))
+    line = {'teams': [cand['game'][:3] if False else v['game'].split(' at ')[0], v['game'].split(' at ')[1]], 'innings': innings, 'H': hits, 'E': errs,
+            'source': f'Retrosheet event file {cand["season"]} {cand["file"]}, {cand["game"]}'}
+    later = []
+    for hv in halves[1:]:
+        for p in tm(them_team, hv['inning']):
+            if p['paOver'] and p['pitcher'] == pid:
+                later.append({'batterId': p['batter'], 'name': names.get(p['batter']), 'event': p['event'], 'runs': p['runs'],
+                              'pitches': retro.count_pitches(p['seq']), 'inning': hv['inning']})
+    end = tm(them_team, halves[-1]['inning'])[-1]
+    sc_us = sum(p['runs'] for p in plays[:plays.index(end) + 1] if p['team'] == us_team)
+    sc_them = sum(p['runs'] for p in plays[:plays.index(end) + 1] if p['team'] == them_team)
+    if v['real']['outcome'] in ('doors_open', 'walk_off'):
+        outcome = v['real']['outcome']
+    else:
+        outcome = 'door_shut' if sc_us > sc_them else 'tie_held' if sc_us == sc_them else ('walk_off' if halves[-1]['walkOffLive'] else 'doors_open')
+    real8 = {'outcome': outcome, 'pitches': (v['real']['pitches'] + sum(x['pitches'] for x in later)) if v['real'].get('pitches') is not None else None,
+             'runs': v['real']['runs'] + sum(x['runs'] for x in later), 'score': {'us': sc_us, 'them': sc_them}}
+    return halves, [[('retro:' + x) if x else None for x in ids] for ids in lineups], between, line, {('retro:' + k): v2 for k, v2 in names.items()}, later, real8
+
+
 def main(argv):
     for vid in argv[1:]:
         path = os.path.join(VERIFY, vid + '.json')
         v = read_json(path)
-        halves, lineups, between, line, names, later, real8 = build(v)
+        if v.get('resolution') == 'proxy':
+            cand = next(c for c in read_json(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'candidates.json'))['proxy'] if c['id'] == vid)
+            halves, lineups, between, line, names, later, real8 = build_retro(v, cand)
+        else:
+            halves, lineups, between, line, names, later, real8 = build(v)
         for h, ids in zip(halves, lineups):
             h['lineupIds'] = ids
             h['lineupNames'] = [names.get(i) for i in ids]
