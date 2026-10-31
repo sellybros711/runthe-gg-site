@@ -388,10 +388,11 @@
     html body.rtg-sticky-on .rrow{padding-top:5px; padding-bottom:5px;}
     html body.rtg-sticky-on .rows:empty{min-height:306px;}   /* 5 rows of 58 + 4 gaps of 4 */
   }
-  /* A 375x667 phone had Check order under the banner at first view. While it is up the board stands
-     tighter: smaller gaps, the same rows. Not on a 320x568 phone: there five rows and Check order
-     cannot both fit above the banner without cutting names, so Check order stays below the fold. */
-  @media (max-height:700px) and (min-height:601px) and (max-width:999px){
+  /* A 375x667 phone had Check order under the banner at first view, and so did a 720px or 736px one
+     (an iPhone 8 Plus, a small Android) by about 17px. While it is up the board stands tighter:
+     smaller gaps, the same rows. Not on a 320x568 phone: there five rows and Check order cannot both
+     fit above the banner without cutting names, so Check order stays below the fold. */
+  @media (max-height:760px) and (min-height:601px) and (max-width:999px){
     html body.rtg-sticky-on .wrap{padding-top:4px !important;}
     html body.rtg-sticky-on .topbar{min-height:0 !important; padding-top:2px !important; padding-bottom:2px !important;}
     html body.rtg-sticky-on .rtggh-strip{margin-bottom:2px !important;}
@@ -544,7 +545,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/stars.js?v=5"></script>
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
-<script src="/arcade/primary.js?v=60"></script>
+<script src="/arcade/primary.js?v=61"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=9"></script>
 <script src="/arcade/stats.js?v=4"></script>

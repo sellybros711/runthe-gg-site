@@ -1,6 +1,12 @@
 /* 4th and What: the play, simulated.
  *
- *   FAW_ENGINE.run(scenario, play, seed) -> result
+ *   FAW_ENGINE.run(scenario, play, seed, opt) -> result
+ *   FAW_ENGINE.plans(scenario, play, callKey) -> each defender's job at the snap
+ *   FAW_ENGINE.situationName(down, distance, ballOn) -> "3rd and 7 · Own 28"
+ *
+ * The scenario: { down 1 to 4, distance, ballOn (yards to the goal line the
+ * offense attacks, 1 to 99), ballX, roster }. The distance is capped by the
+ * goal line. The down changes only what the defense calls.
  *
  * A pure function. No DOM, no clock, no Math.random: every roll comes from
  * mulberry32 off the seed, and the decisions use only + - * / and sqrt,
@@ -9,18 +15,30 @@
  *
  * WHAT IT SIMULATES (the vault's 4th-and-what-sim note has the long form):
  *   the call     rolled per snap: cover 0, 1, 2 or 3, man or zone, blitz or not
+ *   motion       play.motion { who, pts }: one eligible man runs a path in the
+ *                backfield before the snap (result.pre has the frames). The
+ *                defense aligned to the set before it; man is matched at the
+ *                snap, and he starts his route from the motion's end, moving
+ *   play action  play.playAction on a pass: the QB fakes to the back, the
+ *                zone backers and safeties bite, the fake costs pocket time
  *   protection   the pocket holds for a time set by blockers against rushers
  *   routes       run exactly as drawn, then on the same line; cuts cost speed
- *   coverage     man trails with a lag; zone drops to landmarks and plays the
- *                nearest receiver inside its zone
- *   the read     throw to the primary when his route ends or he is open; if
- *                the pocket goes first, the checkdown; if there is none, a
+ *   coverage     man trails with a lag; zone drops to landmarks (underneath
+ *                ones defend the sticks) and plays the nearest receiver inside
+ *                its zone; the spare men in man coverage rob crossers
+ *   the read     up to three reads, in order. He throws to the read his eyes
+ *                are on when that man is open, or on time at the end of his
+ *                route; covered there, his eyes move to the next read. The
+ *                last read is the checkdown: if the pocket goes first, the
+ *                ball goes there; if there is none, a
  *                sack or a throwaway
  *   the catch    one roll on separation, distance, pressure and direction
  *   after it     the carrier runs until a free defender reaches him; contact
  *                is a roll to break it, then a fall forward
  *   runs         each blocker holds a defender for a window; unblocked
  *                defenders pursue; a tiny fumble roll at contact
+ *   the field    everybody stays inside the sidelines and the end lines; a
+ *                carrier downed in his own end zone is a safety
  *
  * A play is drawn relative to the ball (dx across, dy downfield); see
  * config.js. The result carries every frame for the picture, the events for
@@ -58,14 +76,20 @@
 
   /* ---------- copy ---------- */
 
+  var ORD = ['', '1st', '2nd', '3rd', '4th'];
   /* "the 33", "your 45", "midfield". y is field yards from the offense's goal line. */
   function spotName(y) {
     var r = Math.round(y);
     if (r >= 100) return 'the end zone';
+    if (r <= 0) return 'your end zone';
     if (r === 50) return 'midfield';
     return r > 50 ? 'the ' + (100 - r) : 'your ' + r;
   }
-  function downName(distance, Y0) { return Y0 + distance >= 100 ? '4th and goal' : '4th and ' + distance; }
+  /* "4th and 5", "3rd and goal". The down is 4 when it is not given. */
+  function downName(distance, Y0, down) {
+    var d = clamp(Math.round(+down || 4), 1, 4);
+    return ORD[d] + ' and ' + (Y0 + distance >= 100 ? 'goal' : distance);
+  }
   function yardsWord(n) { return n === 1 || n === -1 ? 'yard' : 'yards'; }
 
   /* What the defense was in, as the result screen says it. */
@@ -86,15 +110,33 @@
     var depth = last[1] - start[1], inward = (dx * (start[0] < 0 ? 1 : -1)) / L;
     if (dy / L < -0.4) return depth > 9 ? 'comeback' : 'curl';
     if (dy / L > 0.8) return depth > 14 ? 'go' : 'seam';
-    if (dy / L > 0.35) return inward > 0 ? (depth > 12 ? 'post' : 'slant') : (depth > 12 ? 'corner' : 'fade');
+    if (dy / L > 0.35) {
+      if (inward > 0) return depth > 12 ? 'post' : 'slant';
+      /* outside and up: a corner deep, a fade on the way, a flat when it stays short */
+      return depth > 12 ? 'corner' : depth <= 6 && dy / L < 0.65 ? 'flat' : 'fade';
+    }
     if (inward > 0) return depth > 6 ? 'dig' : 'drag';
     return depth > 3 ? 'out' : 'flat';
   }
 
   /* ---------- the call ---------- */
 
-  function rollCall(T, distance, box, rnd) {
-    var w = distance <= 3 ? T.calls.short : distance <= 7 ? T.calls.medium : T.calls.long;
+  /* Every call the defense can make, by its key. Test it runs a play against
+     each. Cover 0 is always a blitz. */
+  var CALLS = {
+    cover0: { coverage: 'cover0', blitz: true }, cover1: { coverage: 'cover1', blitz: false }, cover1b: { coverage: 'cover1', blitz: true },
+    cover2: { coverage: 'cover2', blitz: false }, cover2b: { coverage: 'cover2', blitz: true },
+    cover3: { coverage: 'cover3', blitz: false }, cover3b: { coverage: 'cover3', blitz: true }
+  };
+  var CALL_KEYS = Object.keys(CALLS);
+  function callKey(c) { return c.coverage === 'cover0' ? 'cover0' : c.coverage + (c.blitz ? 'b' : ''); }
+
+  /* The weights by distance band, shaded by the down: early downs blitz less
+     and rarely bring everybody. 4th down plays the bands as they stand. */
+  function rollCall(T, distance, box, rnd, down) {
+    var w0 = distance <= 3 ? T.calls.short : distance <= 7 ? T.calls.medium : T.calls.long;
+    var dm = T.calls.byDown && T.calls.byDown[down], w = w0;
+    if (dm) w = { cover0: w0.cover0 * dm.cover0, cover1: w0.cover1, cover2: w0.cover2, cover3: w0.cover3, blitz: w0.blitz * dm.blitz };
     var keys = ['cover0', 'cover1', 'cover2', 'cover3'], sum = 0, i;
     for (i = 0; i < 4; i++) sum += w[keys[i]];
     var r = rnd() * sum, cov = keys[3];
@@ -104,29 +146,75 @@
     return { coverage: cov, man: cov === 'cover0' || cov === 'cover1', blitz: blitz, rushers: 4 + (cov === 'cover0' ? 2 : blitz ? 1 : 0) };
   }
 
-  /* ---------- the run ---------- */
+  /* ---------- the situation ---------- */
 
-  function run(scenario, play, seed, opt) {
-    opt = opt || {};
+  /* The scenario as the sim plays it. ballOn is yards to the goal line the
+     offense attacks (1 is the opponent's 1, 99 the offense's own 1), the
+     distance is capped by that goal line, and the down is 1 to 4 (4 if it is
+     not given). */
+  function situation(sc) {
+    var ballOn = clamp(+sc.ballOn || 40, 1, 99);
+    var down = clamp(Math.round(+sc.down || 4), 1, 4);
+    var distance = Math.min(clamp(+sc.distance || 10, 1, 99), ballOn);
+    return { down: down, distance: distance, ballOn: ballOn, Y0: 100 - ballOn, goal: distance >= ballOn };
+  }
+  /* "3rd and 7 · Own 28", "4th and Goal · Opp 3", "1st and 10 · Opp 40". */
+  function situationName(down, distance, ballOn) {
+    var s = situation({ down: down, distance: distance, ballOn: ballOn });
+    var b = Math.round(s.ballOn);
+    var spot = b === 50 ? 'Midfield' : b > 50 ? 'Own ' + (100 - b) : 'Opp ' + b;
+    return ORD[s.down] + ' and ' + (s.goal ? 'Goal' : Math.round(s.distance)) + ' · ' + spot;
+  }
+
+  /* ---------- the setup: everything decided before the ball moves ---------- */
+
+  /* The motion a play asks for, made legal: an eligible receiver, a path of
+     points that stays in the backfield. Returns null when there is none. */
+  function motionOf(play) {
+    var m = play && play.motion;
+    if (!m || FM.ELIGIBLE.indexOf(m.who) < 0 || !m.pts || !m.pts.length) return null;
+    var pts = [];
+    for (var i = 0; i < m.pts.length; i++) {
+      var p = m.pts[i];
+      if (!p || !isFinite(p[0]) || !isFinite(p[1])) continue;
+      pts.push([+p[0], Math.min(-0.5, +p[1])]);
+    }
+    return pts.length ? { who: m.who, pts: pts } : null;
+  }
+
+  /* Who lines up where, what the defense calls, and every man's plan at the
+     snap. run() and plans() both start here, so a scout card shows exactly
+     the setup the sim plays. The only dice it rolls are the call's. */
+  function setup(scenario, play, opt, rnd) {
     var T = opt.tuning || CFG.TUNING, A = CFG.ARCHETYPES;
-    var rnd = RNG.mulberry32(seed >>> 0);
-    var dt = T.dt, distance = scenario.distance;
-    var Y0 = 100 - scenario.ballOn, BX = scenario.ballX;
+    var S = situation(scenario);
+    var distance = S.distance, Y0 = S.Y0, BX = scenario.ballX != null ? scenario.ballX : FIELD_W / 2;
     var marker = Math.min(100, Y0 + distance);
     var setDef = FM.BY_ID[play.formation] || FM.SETS[0];
-    var O = FM.place(setDef.id, play.moved);
+    /* the defense aligns to the formation before any motion */
+    var Oal = FM.place(setDef.id, play.moved);
     var Dal = FM.defense(setDef.id, play.moved, distance);
     var box = FM.boxCount(Dal);
+    var mo = motionOf(play);
+    /* O is where everybody is at the snap: the motion man at the end of his motion */
+    var O = FM.place(setDef.id, play.moved);
+    if (mo) O[mo.who] = mo.pts[mo.pts.length - 1].slice();
     var isRun = !!(play.handoff && play.handoff.to);
     var routes = {}, blocks = {};
     (play.routes || []).forEach(function (r, i) { if (r && r.pts && r.pts.length) routes[r.who] = { pts: r.pts, order: i + 1 }; });
     (play.blocks || []).forEach(function (b) { if (b && b.to) blocks[b.who] = b.to; });
-    var targets = isRun ? [] : (play.targets || []).filter(function (id) { return routes[id] && !blocks[id]; });
-    var abs = function (p) { return { x: clamp(BX + p[0], 0.3, FIELD_W - 0.3), y: Y0 + p[1] }; };
+    var targets = isRun ? [] : (play.targets || []).filter(function (id) { return routes[id] && !blocks[id]; }).slice(0, 3);
+    /* field yards, kept on the field: inside the sidelines and the end lines */
+    var abs = function (p) { return { x: clamp(BX + p[0], 0.3, FIELD_W - 0.3), y: clamp(Y0 + p[1], -9.7, 109.7) }; };
 
-    var call = rollCall(T, distance, box, rnd);
-    var events = [];
-    var say = function (t, kind, text, extra) { var e = { t: Math.round(t * 1000) / 1000, kind: kind, text: text }; if (extra) for (var k in extra) e[k] = extra[k]; events.push(e); };
+    /* The call is always rolled, so the dice after it fall the same way. A
+       forced call (Test it, against one defense) then replaces what it says. */
+    var call = rollCall(T, distance, box, rnd, S.down);
+    if (opt.call && CALLS[opt.call]) {
+      var fc = CALLS[opt.call];
+      call = { coverage: fc.coverage, man: fc.coverage === 'cover0' || fc.coverage === 'cover1', blitz: fc.blitz,
+        rushers: 4 + (fc.coverage === 'cover0' ? 2 : fc.blitz ? 1 : 0) };
+    }
 
     /* ---- the players ---- */
     var E = [], byId = {};
@@ -146,24 +234,138 @@
     var QB = byId.QB;
     var offense = E.filter(function (e) { return e.side === 'O'; }), defense = E.filter(function (e) { return e.side === 'D'; });
 
-    /* ---- the offense's plans ---- */
-    FM.ELIGIBLE.forEach(function (id) {
-      var e = byId[id];
-      if (blocks[id]) { e.plan = 'block'; e.blockTo = abs([O[id][0] + clampLen(blocks[id], O[id])[0], O[id][1] + clampLen(blocks[id], O[id])[1]]); }
-      else if (routes[id]) { e.plan = 'route'; e.path = routes[id].pts.map(abs); e.wp = 0; e.order = routes[id].order; }
-    });
+    /* ---- the offense's plans, every one from the snap spot ---- */
     function clampLen(to, from) {
       var dx = to[0] - from[0], dy = to[1] - from[1], L = len(dx, dy);
       var k = L > 3.5 ? 3.5 / L : 1;
       return [dx * k, dy * k];
     }
-    var carrier = null, ballCarrierId = null;
+    FM.ELIGIBLE.forEach(function (id) {
+      var e = byId[id];
+      if (blocks[id]) { var cl = clampLen(blocks[id], O[id]); e.plan = 'block'; e.blockTo = abs([O[id][0] + cl[0], O[id][1] + cl[1]]); }
+      else if (routes[id]) { e.plan = 'route'; e.path = routes[id].pts.map(abs); e.wp = 0; e.order = routes[id].order; }
+    });
+    var ballCarrierId = null;
     if (isRun) {
       var who = byId[play.handoff.to] || QB;
       who.plan = 'carry'; who.path = (play.handoff.path || []).map(abs); who.wp = 0;
       ballCarrierId = who.id;
     }
     var stayIns = FM.ELIGIBLE.filter(function (id) { return byId[id].plan === 'block'; }).length;
+
+    /* ---- motion: the path he ran before the snap, and his running start ---- */
+    var track = null, motion = null;
+    if (mo) {
+      var mm = byId[mo.who], from = abs(Oal[mo.who]), path = [from].concat(mo.pts.map(abs));
+      var snapV = mm.top * T.motion.speed, x = from.x, y = from.y, v = 0, k = 1, a = mm.top / Math.max(0.1, mm.burst);
+      var steps = 0, maxSteps = Math.round(T.motion.maxTime / T.dt);
+      track = [[x, y, 0, 0]];
+      while (k < path.length && steps < maxSteps) {
+        var rest = len(path[k].x - x, path[k].y - y);
+        for (var q = k + 1; q < path.length; q++) rest += len(path[q].x - path[q - 1].x, path[q].y - path[q - 1].y);
+        /* he jogs it, and opens up over the last few yards so he is moving at the snap */
+        var want = rest <= T.motion.build ? snapV : Math.min(snapV, T.motion.jog);
+        v = v < want ? Math.min(want, v + a * T.dt) : Math.max(want, v - a * T.dt);
+        var go = v * T.dt, ux = 0, uy = 0;
+        while (go > 0 && k < path.length) {
+          var dx = path[k].x - x, dy = path[k].y - y, L = len(dx, dy);
+          if (L < 1e-9) { k++; continue; }
+          ux = dx / L; uy = dy / L;
+          if (L <= go) { x = path[k].x; y = path[k].y; go -= L; k++; } else { x += ux * go; y += uy * go; go = 0; }
+        }
+        track.push([x, y, ux * v, uy * v]);
+        steps++;
+      }
+      var end = path[path.length - 1];
+      track[track.length - 1][0] = end.x; track[track.length - 1][1] = end.y;
+      /* at the snap he is moving along the last leg of his motion */
+      var pv = path[path.length - 2], lx = end.x - pv.x, ly = end.y - pv.y, lL = len(lx, ly);
+      if (lL > 1e-6) {
+        var ux2 = lx / lL, uy2 = ly / lL, v0 = snapV;
+        /* turning from that line into what was drawn costs speed, like any cut */
+        var nxt = mm.path && mm.path.length ? mm.path[0] : mm.blockTo || null;
+        if (nxt) {
+          var bx = nxt.x - end.x, by = nxt.y - end.y, bL = len(bx, by);
+          if (bL > 1e-6) {
+            var turn = 1 - (ux2 * bx + uy2 * by) / bL;
+            if (turn > 0.15) v0 *= 1 - (1 - (mm.cut || 0.6)) * Math.min(1.6, turn);
+          }
+        }
+        mm.v = v0; mm.vx = ux2 * v0; mm.vy = uy2 * v0; mm.lastDir = [ux2, uy2];
+      }
+      var c2 = function (v) { return Math.round(v * 100) / 100; };
+      motion = { who: mo.who, from: [c2(from.x - BX), c2(from.y - Y0)], to: [c2(end.x - BX), c2(end.y - Y0)], time: Math.round((track.length - 1) * T.dt * 1000) / 1000 };
+    }
+
+    /* ---- the defense answers the motion, before the snap ----
+       The man over him is the nearest defender who could run with him where
+       he lined up. In man that defender travels with him: he runs a mirror of
+       the motion seen trail seconds late, so at the snap he is on him again,
+       a step behind. In zone the defense bumps: the man over him and the
+       nearest backer slide toward where the motion ends, and cover 3 spins
+       its safeties on a motion that crosses the ball. Nobody else moves. */
+    var traveler = null;
+    defense.forEach(function (d) { d.ax = d.x; d.ay = d.y; });
+    if (track) {
+      var M = T.motion, nT = track.length, mDx = end.x - from.x;
+      var wideFrom = Math.abs(from.x - BX) > 7, over = null, os = 1e9;
+      defense.forEach(function (d) {
+        if (d.role === 'dl' || d.y - Y0 > 9) return;
+        var s = len(d.x - from.x, d.y - from.y) + (wideFrom && d.role !== 'cb' ? 12 : 0);
+        if (s < os) { os = s; over = d; }
+      });
+      var movers = [];
+      if (over && call.man) {
+        traveler = over;
+        var lagF = Math.round(M.trail / T.dt), offX = over.x - from.x, offY = over.y - from.y;
+        movers.push({ d: over, speed: over.top * M.chase, at: function (k) { var q = track[Math.max(0, k - lagF)]; return { x: q[0] + offX, y: Math.max(Y0 + 1, q[1] + offY) }; } });
+      } else if (over && !call.man && Math.abs(mDx) > 2) {
+        var fixed = function (d, x, y, sp) { movers.push({ d: d, speed: d.top * sp, at: function () { return { x: x, y: y }; } }); };
+        fixed(over, over.x + mDx * M.bump, over.y, M.shuffle);
+        var bk = null, bs3 = 1e9;
+        defense.forEach(function (d) { if (d.role === 'lb' && d !== over) { var s = Math.abs(d.x - from.x); if (s < bs3) { bs3 = s; bk = d; } } });
+        if (bk) fixed(bk, bk.x + mDx * M.backer, bk.y, M.shuffle);
+        /* the spin: a cover 3 with two high safeties rotates to the motion */
+        var sf = defense.filter(function (d) { return d.role === 's' && d.y - Y0 > 9; });
+        var sFrom = from.x - BX, sEnd = end.x - BX;
+        if (call.coverage === 'cover3' && sf.length === 2 && sFrom * sEnd < 0 && Math.abs(sEnd) > M.spinFrom) {
+          var sg = sEnd > 0 ? 1 : -1, down = (sf[0].x - BX) * sg > (sf[1].x - BX) * sg ? sf[0] : sf[1], up = down === sf[0] ? sf[1] : sf[0];
+          fixed(down, BX + sg * M.spin[0], Y0 + M.spin[1], 1);
+          fixed(up, BX, Y0 + M.spin[2], 1);
+        }
+      }
+      movers.forEach(function (mv) {
+        var d = mv.d, x = d.x, y = d.y, v = 0, a = d.top / Math.max(0.1, d.burst), react = Math.round(M.react / T.dt);
+        d.ptrack = [[x, y, 0, 0]];
+        for (var k = 1; k < nT; k++) {
+          var tg = mv.at(k), dx = tg.x - x, dy = tg.y - y, L = len(dx, dy), vx = 0, vy = 0;
+          if (k >= react && L > 1e-6) {
+            v = Math.min(mv.speed, v + a * T.dt, L / T.dt);
+            var go = Math.min(L, v * T.dt); vx = dx / L * v; vy = dy / L * v;
+            x += dx / L * go; y += dy / L * go;
+          } else v = 0;
+          d.ptrack.push([x, y, vx, vy]);
+        }
+        d.x = d.x0 = x; d.y = d.y0 = y;
+        /* still moving at the snap */
+        var lt = d.ptrack[d.ptrack.length - 1]; d.vx = lt[2]; d.vy = lt[3]; d.v = len(lt[2], lt[3]);
+      });
+    }
+
+    /* ---- play action: a pass with a back to fake to ---- */
+    var faker = null;
+    if (!isRun && play.playAction) {
+      if (FM.isBackfield(O.RB)) faker = byId.RB;
+      else FM.ELIGIBLE.forEach(function (id) { if (FM.isBackfield(O[id]) && (!faker || byId[id].y < faker.y)) faker = byId[id]; });
+    }
+    var pa = null;
+    if (faker) {
+      var sgn = faker.x0 >= QB.x0 ? 1 : -1;
+      pa = { faker: faker, fake: T.pa.fake, carry: T.pa.carry, freeze: T.pa.freeze + T.pa.box * Math.max(0, box - 6),
+        /* the mesh is at the QB's hip; the back carries it out across his face toward the line */
+        mesh: { x: QB.x0 + sgn * 0.7, y: setDef.under ? QB.y0 - 1.2 : QB.y0 },
+        fakeTo: { x: QB.x0 - sgn * 1.5, y: Y0 - 0.8 } };
+    }
 
     /* ---- the defense's plans ---- */
     var dlist = defense.slice();
@@ -179,7 +381,10 @@
     var coverers = dlist.filter(function (d) { return d.plan !== 'rush'; });
     var receivers = FM.ELIGIBLE.map(function (id) { return byId[id]; }).filter(function (e) { return e.plan !== 'block'; });
 
-    function landmark(dx, dy) { return { x: clamp(BX + dx, 1, FIELD_W - 1), y: Y0 + dy }; }
+    function landmark(dx, dy) { return { x: clamp(BX + dx, 1, FIELD_W - 1), y: Math.min(109.5, Y0 + dy) }; }
+    /* an underneath dropper defends the sticks: no deeper than sticks past the
+       marker, no shallower than floor */
+    var under = function (dy) { return T.zone.sticks ? Math.min(dy, Math.max(T.zone.floor, distance + T.zone.sticks)) : dy; };
     function takeNearest(list, pt, pref) {
       var best = null, bs = 1e9;
       list.forEach(function (d) {
@@ -191,31 +396,79 @@
     }
     coverers.forEach(function (d) { d.plan = 'stand'; });
     if (call.man) {
+      /* the man who travelled with the motion has him */
+      if (traveler && traveler.plan === 'stand') { traveler.plan = 'man'; traveler.man = byId[mo.who]; traveler.lag = traveler.role === 'lb' ? T.man.lagLB : T.man.lagDB; }
       if (call.coverage === 'cover1') {
         var fs = takeNearest(coverers, landmark(0, 14), ['s']);
         if (fs) { fs.plan = 'zone'; fs.mark = landmark(0, 14); fs.deep = true; fs.width = 15; }
       }
-      /* outside receivers first, each to the nearest free defender who can run with him */
+      /* outside receivers first, each to the nearest free defender who can run
+         with him, read off where he is at the snap (after any motion) */
       receivers.slice().sort(function (a, b) { return Math.abs(b.x - BX) - Math.abs(a.x - BX); }).forEach(function (r) {
+        if (traveler && traveler.man === r) return;
         var wide = Math.abs(r.x - BX) > 7;
         var d = takeNearest(coverers, r, wide ? ['cb'] : ['cb', 's', 'lb']);
         if (d) { d.plan = 'man'; d.man = r; d.lag = d.role === 'lb' ? T.man.lagLB : T.man.lagDB; }
       });
-      coverers.forEach(function (d) { if (d.plan === 'stand') { d.plan = 'zone'; d.mark = landmark(0, 6.5); } });
+      /* the men left over are rats: they sit in the hole and rob what crosses it */
+      coverers.forEach(function (d) { if (d.plan === 'stand') { d.plan = 'zone'; d.mark = landmark(0, under(6.5)); d.rat = true; } });
     } else {
       var L = call.coverage === 'cover2'
         ? [[-11, 16, 1, ['s']], [11, 16, 1, ['s']], [-15, 5, 0, ['cb']], [15, 5, 0, ['cb']], [0, 11, 0, null], [-7, 10, 0, null], [7, 10, 0, null]]
         : [[-15, 16, 1, ['cb']], [0, 18, 1, ['s']], [15, 16, 1, ['cb']], [-12, 8, 0, null], [12, 8, 0, null], [-5, 10, 0, null], [5, 10, 0, null]];
+      /* a fire zone, three under: two seam-curl-flat players and one hook in the middle */
+      if (call.coverage === 'cover3' && coverers.length <= 6) L = L.slice(0, 3).concat(T.zone.fire);
       L.forEach(function (z) {
-        var pt = landmark(z[0], z[1]), d = takeNearest(coverers, pt, z[3]);
+        var pt = landmark(z[0], z[2] ? z[1] : under(z[1])), d = takeNearest(coverers, pt, z[3]);
         if (d) { d.plan = 'zone'; d.mark = pt; d.deep = !!z[2]; d.width = call.coverage === 'cover2' ? 13.5 : 9; }
       });
-      coverers.forEach(function (d) { if (d.plan === 'stand') { d.plan = 'zone'; d.mark = landmark(0, 6); } });
+      coverers.forEach(function (d) { if (d.plan === 'stand') { d.plan = 'zone'; d.mark = landmark(0, under(6)); } });
     }
+
+    return { T: T, S: S, distance: distance, Y0: Y0, BX: BX, marker: marker, setDef: setDef, O: O, Oal: Oal, Dal: Dal, box: box,
+      isRun: isRun, routes: routes, blocks: blocks, targets: targets, abs: abs, call: call, E: E, byId: byId, QB: QB,
+      offense: offense, defense: defense, ballCarrierId: ballCarrierId, stayIns: stayIns, rushers: rushers, receivers: receivers,
+      track: track, motion: motion, pa: pa };
+  }
+
+  /* Each defender's job at the snap, relative to the ball, for a scout card:
+     at is where he lined up, snap where the motion left him. */
+  function plansOf(ctx) {
+    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    return ctx.defense.map(function (d) {
+      return { id: d.id, role: d.role, at: [r2(d.ax - ctx.BX), r2(d.ay - ctx.Y0)], snap: [r2(d.x0 - ctx.BX), r2(d.y0 - ctx.Y0)], plan: d.plan === 'rush' ? 'rush' : d.plan === 'man' ? 'man' : 'zone',
+        blitz: !!d.blitz, man: d.plan === 'man' && d.man ? d.man.id : null, mark: d.mark ? [r2(d.mark.x - ctx.BX), r2(d.mark.y - ctx.Y0)] : null,
+        deep: !!d.deep, width: d.width || null };
+    });
+  }
+
+  /* plans(scenario, play, callKey): the defense's setup against one call, no
+     simulation. With no valid call key it shows the call seed 0 would roll. */
+  function plans(scenario, play, callKey) {
+    var ctx = setup(scenario, play, { call: callKey }, RNG.mulberry32(0));
+    return plansOf(ctx);
+  }
+
+  /* ---------- the run ---------- */
+
+  function run(scenario, play, seed, opt) {
+    opt = opt || {};
+    var rnd = RNG.mulberry32(seed >>> 0);
+    var ctx = setup(scenario, play, opt, rnd);
+    var T = ctx.T, dt = T.dt, S = ctx.S, distance = ctx.distance, Y0 = ctx.Y0, BX = ctx.BX, marker = ctx.marker;
+    var setDef = ctx.setDef, box = ctx.box, isRun = ctx.isRun, routes = ctx.routes, targets = ctx.targets, call = ctx.call;
+    var E = ctx.E, byId = ctx.byId, QB = ctx.QB, offense = ctx.offense, defense = ctx.defense;
+    var ballCarrierId = ctx.ballCarrierId, stayIns = ctx.stayIns, rushers = ctx.rushers, receivers = ctx.receivers, pa = ctx.pa;
+    var carrier = null;
+    var eye = 0, eyeAt = pa ? pa.fake : 0, minRead = Math.max(T.read.minRead, pa ? pa.fake : 0);
+    var events = [];
+    var say = function (t, kind, text, extra) { var e = { t: Math.round(t * 1000) / 1000, kind: kind, text: text }; if (extra) for (var k in extra) e[k] = extra[k]; events.push(e); };
 
     /* ---- protection ---- */
     var blockers = 5 + stayIns;
     var Tp = T.pocket.base + T.pocket.perBlocker * (blockers - call.rushers) + T.pocket.jitter * (rnd() * 2 - 1) + (setDef.under ? T.pocket.underCenter : 0);
+    /* play action turns his back to the rush: that is pocket time spent on the fake */
+    if (pa) Tp -= T.pa.pocket;
     Tp = clamp(Tp, T.pocket.min, T.pocket.max);
 
     /* ---- run blocking: each lineman takes the nearest man in front of him ---- */
@@ -229,6 +482,7 @@
       });
     }
 
+    if (pa) say(Math.min(0.3, pa.fake * 0.5), 'fake', 'Play action.');
     if (call.blitz) say(0.35, 'blitz', call.rushers >= 6 ? 'Everybody is coming.' : 'Blitz off the edge.');
 
     /* ---- the loop ---- */
@@ -328,14 +582,16 @@
     function flightTo(p) { var d3 = len(p.x - QB.x, p.y - QB.y); return d3 / QB.arch.arm + T.ball.loft * d3 * d3; }
     /* where a receiver will be in tf seconds, running the rest of his route and on past its end */
     function along(e, tf) {
-      var x = e.x, y = e.y, v = Math.max(e.v, 2), go = v * tf;
+      var x = e.x, y = e.y, v = Math.max(e.v, 2), go = v * tf, fin = e.lastDir;
       if (e.path) for (var k = e.wp; k < e.path.length && go > 0; k++) {
         var dx = e.path[k].x - x, dy = e.path[k].y - y, L3 = len(dx, dy);
         if (L3 >= go) return { x: x + dx / L3 * go, y: y + dy / L3 * go };
+        /* past the end he runs on the way the last leg of the route goes */
+        if (L3 > 1e-6) fin = [dx / L3, dy / L3];
         x = e.path[k].x; y = e.path[k].y; go -= L3;
       }
-      if (go > 0 && e.lastDir && e.lastDir[1] < -0.3) go = 0;
-      if (go > 0) { var u = (e.path && e.lastDir) || [e.vx / v, e.vy / v]; if (len(e.vx, e.vy) < 0.5 && !(e.path && e.wp < e.path.length)) u = [0, 0]; x += u[0] * go; y += u[1] * go; }
+      if (go > 0 && fin && fin[1] < -0.3) go = 0;
+      if (go > 0) { var u = (e.path && fin) || [e.vx / v, e.vy / v]; if (len(e.vx, e.vy) < 0.5 && !(e.path && e.wp < e.path.length)) u = [0, 0]; x += u[0] * go; y += u[1] * go; }
       return { x: x, y: y };
     }
     /* yards of drawn route still to run */
@@ -348,7 +604,10 @@
 
     function finish(t, kind, why, y) {
       if (outcome) return;
-      outcome = kind; cause = why || ''; tEnd = t; if (y != null) spotY = y;
+      /* downed with the ball in his own end zone: a safety */
+      if ((kind === 'down' || kind === 'sack') && y != null && y <= 0) { cause = kind === 'sack' ? 'sack' : why || 'tackle'; kind = 'safety'; say(t, 'safety', 'Safety.'); }
+      else cause = why || '';
+      outcome = kind; tEnd = t; if (y != null) spotY = y;
     }
 
     for (var i = 0; i <= steps && !outcome; i++) {
@@ -364,14 +623,21 @@
       if (isRun && ballCarrierId === 'QB' && !carrier) { carrier = QB; }
 
       if (!isRun && !thrown && !windup && !collapseFate) {
-        var P = targets[0] ? byId[targets[0]] : null, C2 = targets[1] ? byId[targets[1]] : null;
+        /* the progression: his eyes are on one read at a time, in the order drawn */
+        var P = targets[eye] ? byId[targets[eye]] : null, C2 = targets.length > 1 ? byId[targets[targets.length - 1]] : null;
         /* "finishes the route" is a timing throw: the ball leaves as he is a beat
            from the end of what you drew, so it meets him there */
         var routeDone = P && P.path && left(P) <= Math.max(P.v, 3) * (T.read.release + T.read.timing + flightTo(P.path[P.path.length - 1]));
         if (t >= Tp && !collapsed) { collapsed = true; say(t, 'pressure', 'The pocket is gone.'); }
-        if (!collapsed && P && (routeDone || (t >= T.read.minRead && openBy(P) >= T.read.separation))) windup = { to: P, at: t + T.read.release, primary: true };
+        if (!collapsed && P && t >= eyeAt && (routeDone || (t >= minRead && openBy(P) >= T.read.separation))) {
+          /* covered at the top of his route, and there is another read: move on */
+          if (routeDone && eye < targets.length - 1 && openBy(P) < T.read.covered) {
+            eye++; eyeAt = t + T.read.shift;
+            say(t, 'progress', eye === 1 ? 'Covered. Second read.' : 'Covered. Third read.');
+          } else windup = { to: P, at: t + T.read.release, primary: eye === 0 };
+        }
         else if (collapsed) {
-          if (C2) { windup = { to: C2, at: t + T.read.release * 0.6, primary: false }; say(t, 'checkdown', 'Checks it down.'); }
+          if (C2) { windup = { to: C2, at: Math.max(t + T.read.release * 0.6, pa ? pa.fake : 0), primary: false }; say(t, 'checkdown', 'Checks it down.'); }
           else {
             collapseFate = rnd() < T.sackShare ? 'sack' : 'throwaway';
             if (collapseFate === 'sack') {
@@ -440,9 +706,13 @@
         }
         if (e === QB) {
           if (isRun && carrier !== QB) { stepToward(e, e.x0, e.y0 - 1, 2); return; }
+          /* the fake: he rides the mesh before he can set up */
+          if (pa && t < pa.fake) { stepToward(e, pa.mesh.x, pa.mesh.y, 3); return; }
           if (!isRun) { stepToward(e, e.x0, setDef.under ? Y0 - 6.5 : e.y0 - 1, t < 1.2 ? 6 : 1.5); return; }
         }
         if (e.plan === 'carry') { if (!follow(e)) openField(e); return; }
+        /* the back carries out the fake, then runs or blocks what you drew */
+        if (pa && e === pa.faker && t < pa.carry) { stepToward(e, pa.fakeTo.x, pa.fakeTo.y, e.top * 0.7); return; }
         /* he keeps running what you drew; in the last beat he adjusts to the ball */
         if (e.chase && e.chase.t1 - t < T.adjust) { var rem = Math.max(dt, e.chase.t1 - t); stepToward(e, e.chase.x, e.chase.y, Math.min(e.top, dist(e, e.chase) / rem + 0.5)); return; }
         if (e.plan === 'route') { if (!follow(e)) carryOn(e); return; }
@@ -464,6 +734,8 @@
       var readRun = function (d) { return isRun && t >= T.readRun[d.role === 'dl' ? 'dl' : d.role === 'lb' ? 'lb' : 'db']; };
       defense.forEach(function (d) {
         if (d.missed > 0) { d.missed -= dt; stepToward(d, d.x, d.y, 0); return; }
+        /* a man who bit has to stop and turn before he can play the call */
+        if (d.bit && pa && t >= pa.freeze) { d.bit = false; d.stumble = Math.max(d.stumble || 0, T.pa.recover); }
         if (d.stumble > 0) d.stumble -= dt;
         if (d.engaged) {
           if (t < d.engaged.until) { var c = carrier || QB; var dx = c.x - d.x, dy = c.y - d.y, L2 = len(dx, dy) || 1; stepToward(d, d.x + dx / L2, d.y + dy / L2, d.top * T.runBlock.heldSpeed); return; }
@@ -476,6 +748,15 @@
         if (thrown && ball.air && t >= ball.air.t0 + T.breakOnBall && d.plan !== 'rush') {
           var tr = thrownTo, at = ball.air.to;
           if (len(d.x - at.x, d.y - at.y) < T.breakRange && len(d.x - at.x, d.y - at.y) < len(tr.x - at.x, tr.y - at.y)) { stepToward(d, at.x, at.y, d.top * T.breakSpeed); return; }
+        }
+        /* PLAY ACTION. The underneath zone (the hook players, a safety down in
+           the box, the rats in the hole) reads the backfield: they step up to
+           the run they see for a beat before they play what was called. A deep
+           defender keeps his depth, and a man defender's eyes are on his man. */
+        if (pa && t < pa.freeze && (d.role === 'lb' || d.role === 's') && d.plan === 'zone' && !d.deep) {
+          d.bit = true;
+          stepToward(d, d.x, Math.max(Y0 + 1.5, d.y0 - T.pa.bite), d.top * T.pa.step);
+          return;
         }
         if (d.plan === 'rush') {
           if (isRun) { pursue(d, carrier || QB, d.top * 0.6); return; }
@@ -490,10 +771,20 @@
           if (r.plan === 'block' || (r.plan === 'stand')) { stepToward(d, r.x, r.y + 2, d.top * 0.6); return; }
           /* over the top of him: his depth now, plus the cushion; his side to side
              as it was lag seconds ago, which is the beat a break wins */
+          /* THE RUB. Another receiver in his path costs him a step, once each */
+          if (T.man.rub) for (var ri = 0; ri < receivers.length; ri++) {
+            var ro = receivers[ri];
+            if (ro === r || (d.rubbed && d.rubbed[ro.id]) || dist(ro, d) > T.man.rubRange) continue;
+            d.rubbed = d.rubbed || {}; d.rubbed[ro.id] = true; d.stumble = Math.max(d.stumble || 0, T.man.rub);
+          }
           var lp = lagOf(r, d.lag), cush = T.man.cushion;
           /* a man running straight at him eats the cushion: by eatBy seconds he is level, and the faster man wins */
           if (r.vy > 4) cush *= Math.max(0, 1 - t / T.man.eatBy);
-          stepToward(d, lp.x, r.y + cush, d.top); return;
+          /* he runs where he saw him heading: the side to side speed he saw lag
+             seconds ago, carried lead of the way forward. A steady crosser is
+             run down; a break still beats him, he was reading the old line */
+          var lq = lagOf(r, d.lag + 0.1), lx = lp.x + (lp.x - lq.x) / 0.1 * d.lag * (T.man.lead || 0);
+          stepToward(d, lx, Math.min(109.5, r.y + cush), d.top); return;
         }
         if (d.plan === 'zone') {
           if (d.deep) {
@@ -511,7 +802,15 @@
             stepToward(d, d.mark.x + (sx3 - d.mark.x) * T.zone.pull, Math.min(109, Math.max(d.mark.y - 3, dy3)), d.top); return;
           }
           var R = T.zone.radius, best = null, bs = 1e9;
-          receivers.forEach(function (r) { var s = len(r.x - d.mark.x, r.y - d.mark.y); if (s < R && s < bs) { bs = s; best = r; } });
+          /* a rat robs crossers (a man running across, away from the side he lined
+             up on): he looks for one from where he stands and runs with him;
+             anybody else he plays from the hole like any underneath zone */
+          var rob = null, rs = d.rat ? T.zone.ratRadius : 0;
+          if (d.rat) receivers.forEach(function (r) { var s = dist(r, d); if (Math.abs(r.vx) > 2 * Math.abs(r.vy) + 1 && r.vx * (r.x0 - BX) < 0 && s < rs) { rs = s; rob = r; } });
+          if (rob && t > T.zone.react) { stepToward(d, d.mark.x + (rob.x - d.mark.x) * T.zone.ratPull, d.mark.y + (rob.y - d.mark.y) * T.zone.pull, d.top); return; }
+          /* his zone runs from his landmark down to the line: a man underneath it
+             counts under of the yards he is in front of the landmark */
+          receivers.forEach(function (r) { var ry = r.y - d.mark.y; var s = len(r.x - d.mark.x, ry < 0 ? ry * (T.zone.under || 1) : ry); if (s < R && s < bs) { bs = s; best = r; } });
           /* he leans toward the man in his zone from his landmark, never all the way
              onto him: that is where the windows in a zone come from */
           if (best && t > T.zone.react) {
@@ -523,6 +822,9 @@
         }
         stepToward(d, d.x, d.y, 0);
       });
+
+      /* nobody runs off the field: inside the end lines, and only a step past a sideline */
+      for (var ci = 0; ci < E.length; ci++) { var ce = E[ci]; ce.y = clamp(ce.y, -9.9, 109.9); ce.x = clamp(ce.x, -1.5, FIELD_W + 1.5); }
 
       /* -- the ball's place -- */
       if (ball.air) {
@@ -569,7 +871,7 @@
     /* hold the end for the picture: the tackle on the ground, the ball dead */
     var hold = Math.round(1.1 / dt);
     for (var hI = 1; hI <= hold; hI++) {
-      offense.concat(defense).forEach(function (e) { e.vx *= 0.8; e.vy *= 0.8; e.x += e.vx * dt; e.y += e.vy * dt; });
+      offense.concat(defense).forEach(function (e) { e.vx *= 0.8; e.vy *= 0.8; e.x = clamp(e.x + e.vx * dt, -1.5, FIELD_W + 1.5); e.y = clamp(e.y + e.vy * dt, -9.9, 109.9); });
       frames.push(snapshot(tEnd + hI * dt, true));
     }
 
@@ -610,7 +912,9 @@
     var shown = Math.round(gained);
     if (win && outcome !== 'touchdown') shown = Math.max(distance, shown);
     if (!win && outcome === 'down' && shown >= distance) shown = distance - 1;
-    var title = outcome === 'touchdown' ? 'TOUCHDOWN' : win ? 'FIRST DOWN' : 'TURNOVER ON DOWNS';
+    var down = S.down;
+    var title = outcome === 'touchdown' ? 'TOUCHDOWN' : outcome === 'safety' ? 'SAFETY' : win ? 'FIRST DOWN'
+      : down === 4 ? 'TURNOVER ON DOWNS' : outcome === 'fumble' ? 'FUMBLE' : 'SHORT OF THE STICKS';
     var reason = reasonOf();
     function reasonOf() {
       var need = 'Needed ' + distance + '.';
@@ -618,6 +922,11 @@
         if (cause === 'catch') return 'Caught it in the end zone. Six.';
         if (cause === 'run') return 'Nobody laid a hand on him. Six.';
         return 'Got in from ' + spotName(Y0) + '. Six.';
+      }
+      if (outcome === 'safety') {
+        if (cause === 'sack') return 'Sacked in your own end zone. Safety.';
+        if (cause === 'oob') return 'Out of bounds in your own end zone. Safety.';
+        return 'Tackled in your own end zone. Safety.';
       }
       if (outcome === 'sack') return 'Sacked. The pocket held ' + (Math.round(Tp * 10) / 10) + ' seconds and there was no checkdown.';
       if (outcome === 'throwaway') return 'Threw it away. The pocket went and there was no checkdown.';
@@ -640,18 +949,48 @@
     }
     if (outcome === 'down') say(tEnd, 'spot', win ? 'First down.' : (marker - spotY < 1 ? 'Tackled a yard short.' : 'Short of the sticks.'));
 
+    /* the next snap, when the drive goes on: a first down, or the next down from the spot */
+    var next = null;
+    if (outcome !== 'touchdown' && outcome !== 'safety' && outcome !== 'fumble' && (win || down < 4)) {
+      var nb = clamp(S.ballOn - shown, 1, 99);
+      next = win ? { down: 1, distance: Math.min(10, nb), ballOn: nb } : { down: down + 1, distance: Math.max(1, distance - shown), ballOn: nb };
+    }
+
+    /* the pre-snap picture: the motion man running his motion, and the defenders who answer it */
+    var pre = [];
+    if (ctx.track) {
+      var mi = E.indexOf(byId[ctx.motion.who]), n = ctx.track.length, runAt = 0;
+      for (var pk = 0; pk < n; pk++) {
+        var tr2 = ctx.track[pk], P3 = [];
+        if (pk) runAt += len(tr2[0] - ctx.track[pk - 1][0], tr2[1] - ctx.track[pk - 1][1]);
+        for (var j2 = 0; j2 < E.length; j2++) {
+          var e2 = E[j2];
+          if (j2 === mi) {
+            var hh = heading(tr2[2], tr2[3]), mv = len(tr2[2], tr2[3]) > 0.6;
+            P3.push([Math.round(tr2[0] * 100) / 100, Math.round(tr2[1] * 100) / 100, mv ? 'run' : 'idle', mv ? Math.floor(runAt / 0.9) % 4 : 0, hh != null && mv ? hh : 0]);
+          } else if (e2.ptrack) {
+            var dq = e2.ptrack[pk], dmv = len(dq[2], dq[3]) > 0.6, dh = heading(dq[2], dq[3]);
+            P3.push([Math.round(dq[0] * 100) / 100, Math.round(dq[1] * 100) / 100, dmv ? 'run' : 'idle', dmv ? Math.floor(pk / 8) % 4 : 0, dmv && dh != null ? dh : 180]);
+          } else P3.push([Math.round(e2.x0 * 100) / 100, Math.round(e2.y0 * 100) / 100, 'idle', 0, e2.side === 'O' ? 0 : 180]);
+        }
+        pre.push({ t: Math.round((pk - (n - 1)) * dt * 1000) / 1000, p: P3, ball: [Math.round(BX * 100) / 100, Math.round(Y0 * 100) / 100, 0.4], held: true, pressure: 0 });
+      }
+    }
+
     return {
-      seed: seed >>> 0, distance: distance, down: downName(distance, Y0), Y0: Y0, BX: BX, marker: marker, box: box,
+      seed: seed >>> 0, distance: distance, callKey: callKey(call), down: downName(distance, Y0, down), downNum: down, ballOn: S.ballOn, goal: S.goal,
+      situation: situationName(down, distance, S.ballOn), next: next, Y0: Y0, BX: BX, marker: marker, box: box,
       formation: setDef.id, isRun: isRun, call: call, callName: callName(call), callLine: callLine(call),
       pocket: Math.round(Tp * 100) / 100, outcome: outcome, win: win, title: title,
       yards: shown, spotY: spotY, spot: spotY != null ? spotName(spotY) : null, reason: reason,
       throwInfo: throwInfo ? { dist: Math.round(throwInfo.dist * 10) / 10, sep: throwInfo.sep != null ? Math.round(throwInfo.sep * 10) / 10 : null, p: throwInfo.p != null ? Math.round(throwInfo.p * 1000) / 1000 : null, to: thrownTo ? thrownTo.id : null, primary: throwInfo.primary } : null,
       events: events, ids: E.map(function (e) { return { id: e.id, side: e.side, role: e.role, big: e.role === 'ol' || e.role === 'dl', label: e.label || '' }; }),
-      dt: dt, frames: frames, tEnd: tEnd
+      motion: ctx.motion, playAction: !!pa, plans: plansOf(ctx),
+      dt: dt, pre: pre, frames: frames, tEnd: tEnd
     };
   }
 
-  var API = { run: run, rollCall: rollCall, spotName: spotName, downName: downName, routeName: routeName, callName: callName, chance: chance, FIELD_W: FIELD_W };
+  var API = { run: run, plans: plans, situationName: situationName, situation: situation, rollCall: rollCall, CALLS: CALLS, CALL_KEYS: CALL_KEYS, callKey: callKey, spotName: spotName, downName: downName, routeName: routeName, callName: callName, chance: chance, FIELD_W: FIELD_W };
   if (isNode) module.exports = API;
   else root.FAW_ENGINE = API;
 })(typeof window !== 'undefined' ? window : this);
