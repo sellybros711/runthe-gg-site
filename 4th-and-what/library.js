@@ -119,7 +119,7 @@
     function item(text, fn) { return el('button', { type: 'button', text: text, on: { click: function () { m.remove(); menuOpen = null; fn(); } } }); }
     var m = el('div', { class: 'menu' }, [
       item('Edit in Studio', function () { window.FAW_STUDIO.open(b.id, p.id); }),
-      item('Run it', function () { A.runChoice = 'b:' + b.id + ':' + p.id; A.show('play'); window.FAW_GAME.run(); }),
+      item('Run it', function () { window.FAW_STUDIO.open(b.id, p.id, { mode: 'game' }); window.FAW_FLOW.snap(); }),
       item('Test vs Defense', function () { A.testChoice = 'b:' + b.id + ':' + p.id; A.show('test'); }),
       item('Learn it', function () { A.learnChoice = { book: b.id, play: p.id }; A.show('learn'); }),
       item(p.fav ? 'Unstar' : 'Star', function () { p.fav = !p.fav; put(b); render(); }),

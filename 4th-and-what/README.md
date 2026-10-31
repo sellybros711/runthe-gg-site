@@ -33,9 +33,10 @@ the defensive calls, the look, and the owner's decisions. Read
 | `stage.js` | the stadium and the perspective camera, with Putt Putt's console pass |
 | `play.js` | Watch in 3D: the play in the stadium, with slow motion and captions |
 | `home.js` | Home: Play and Build, the other places as tiles, and a field running concept plays |
+| `flow.js` | Play, the video game: 4th and what?, draw it (the Studio in game mode), snap it in 3D, the result card and its Save card |
 | `app.js` | the shell: the six views, the situation, the Studio's draft, the account, the save box |
 | `studio.js` | the Coach Studio: Move, Route, Block, Run, Read, Motion, Erase, the players panel, the card, flip |
-| `game.js` | Play: the situation, the defense, the playback on turf, the result and why |
+| `game.js` | the breakdown: a snap on turf, the coverage, the timeline, the result and why |
 | `library.js` | Playbooks: the books, the play cards, sections, terminology, the file |
 | `learn.js` | Learn: Learn, Practice, Quiz and Master for one position |
 | `testview.js` | Test vs Defense |

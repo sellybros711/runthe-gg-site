@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <header class="topbar">
@@ -49,30 +49,40 @@
   <section class="view home" id="vHome" hidden>
     <div class="hero">
       <div class="herotext">
-        <p class="kicker">Draw it. Run it. Coach it.</p>
         <h1>4th and what?</h1>
-        <p class="lede">Design football plays, run them against a real defense, and turn them into a playbook your team can learn and print.</p>
+        <p class="lede">Draw a play. Beat the defense.</p>
         <div class="heroacts">
-          <button type="button" class="btn gold big" data-go="play">Play the game <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button>
-          <button type="button" class="btn big" data-go="studio">Build a play</button>
+          <button type="button" class="btn gold big" data-go="play">Play <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button>
+          <button type="button" class="btn big" data-go="studio">Build</button>
         </div>
       </div>
       <div class="herofield fieldwrap"><canvas id="hField" aria-hidden="true"></canvas><p class="heroname" id="hName"></p></div>
     </div>
-    <div class="paths">
-      <button type="button" class="path play" data-go="play"><b>Play</b><span>Pick the down, the distance and the spot. Call a play and beat the defense.</span><small>The game</small></button>
-      <button type="button" class="path studio" data-go="studio"><b>Build</b><span>Draw a play or start from a concept. Set the reads, motion and play action.</span><small>Coach Studio</small></button>
-    </div>
     <div class="tiles">
-      <button type="button" class="tile" data-go="books"><b>My Playbooks</b><span>Your plays, named in your words.</span></button>
-      <button type="button" class="tile" data-go="learn"><b>Learn</b><span>Know your job, then take the quiz.</span></button>
-      <button type="button" class="tile" data-go="test"><b>Test vs Defense</b><span>Every defense, many snaps each.</span></button>
-      <button type="button" class="tile" data-go="print"><b>Print</b><span>Cards, call sheets and wristbands.</span></button>
+      <button type="button" class="tile" data-go="books"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg><b>Playbooks</b></button>
+      <button type="button" class="tile" data-go="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-4 9 4-9 4zM7 10v5c3 2 7 2 10 0v-5"/></svg><b>Learn</b></button>
+      <button type="button" class="tile" data-go="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>Test</b></button>
+      <button type="button" class="tile" data-go="print"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg><b>Print</b></button>
     </div>
   </section>
 
-  <!-- PLAY: the game. Any down, distance and spot; the play runs against a real defense. -->
-  <section class="view play" id="vPlay" hidden>
+  <!-- PLAY: the game. 4th and what? Pick it, draw it (the Studio in game mode), snap it. -->
+  <section class="view game" id="vPlay" hidden>
+    <div class="pick">
+      <p class="kicker">You're going for it.</p>
+      <h1>4th and what?</h1>
+      <div class="dists" id="pDists"></div>
+      <p class="spotline"><span id="pSpot"></span> <button type="button" class="link" id="pMore">Change</button></p>
+      <div class="pmore" id="pMoreBox" hidden>
+        <label class="field"><span>Down</span><select id="pDown"></select></label>
+        <label class="field"><span>Ball on</span><select id="pSide"><option value="opp">Opp</option><option value="own">Own</option></select></label>
+        <label class="field"><span>Yard line</span><select id="pYard"></select></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE BREAKDOWN: a snap on turf, with the coverage, a timeline and the defense's jobs -->
+  <section class="view play" id="vReplay" hidden>
     <aside class="panel">
       <h3>Game settings</h3>
       <label class="field"><span>Play</span><select id="gPlay"></select></label>
@@ -137,6 +147,7 @@
       <div class="liblist" id="sLib"></div>
     </aside>
     <div class="center">
+      <div class="gamebar"><button type="button" class="chip" id="sSit"></button><span class="hint">Draw it, then snap it.</span><button type="button" class="btn gold snap" id="sSnap">Snap it <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button></div>
       <div class="fieldwrap"><canvas id="sField" aria-label="The field. Draw your play here."></canvas></div>
       <p class="hint" id="sHint">Pick a tool. Drag from a player to draw.</p>
       <div class="toolbar" id="sTools" role="toolbar" aria-label="Tools">
@@ -291,6 +302,24 @@
     <div class="cap" id="cap" aria-live="polite"></div>
     <button type="button" class="skip" id="bSkip">Skip</button>
     <button type="button" class="close" id="bClose3d" aria-label="Close">&#10005;</button>
+    <div class="rescard" id="rCard" hidden>
+      <p class="rdown" id="rDown"></p>
+      <h2 id="rTitle"></h2>
+      <p class="rline" id="rLine"></p>
+      <p class="rwhy" id="rWhy"></p>
+      <div class="racts">
+        <button type="button" class="btn gold" id="rAgain">Run it back</button>
+        <button type="button" class="btn" id="rEdit">Edit play</button>
+        <button type="button" class="btn" id="rNew">New play</button>
+      </div>
+      <div class="racts">
+        <button type="button" class="btn" id="rSave">Save play</button>
+        <button type="button" class="btn" id="rCardBtn">Save card</button>
+        <button type="button" class="btn" id="rShare">Share</button>
+      </div>
+      <button type="button" class="link" id="rBreak">See the breakdown</button>
+      <p class="toast" id="rToast" hidden></p>
+    </div>
   </div>
 </div>
 
@@ -333,11 +362,12 @@
 <script src="stage.js?v=1"></script>
 <script src="share.js?v=1"></script>
 <script src="play.js?v=1"></script>
-<script src="app.js?v=2"></script>
-<script src="home.js?v=2"></script>
-<script src="studio.js?v=1"></script>
-<script src="game.js?v=2"></script>
-<script src="library.js?v=1"></script>
+<script src="app.js?v=3"></script>
+<script src="home.js?v=3"></script>
+<script src="studio.js?v=2"></script>
+<script src="game.js?v=3"></script>
+<script src="flow.js?v=1"></script>
+<script src="library.js?v=2"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=1"></script>
 <script src="printview.js?v=1"></script>
