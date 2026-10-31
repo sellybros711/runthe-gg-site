@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Silkscreen:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <div class="app">
@@ -89,6 +89,7 @@
     <div class="board"><canvas id="cBoard" aria-label="The clipboard. Draw your play here."></canvas></div>
     <p class="hint" id="hint">Pick a tool. Drag from a player to draw.</p>
     <div class="tools" id="tools" role="toolbar" aria-label="Tools">
+      <button type="button" class="tool" data-tool="move" aria-pressed="false"><b>Move</b><span>line a player up</span></button>
       <button type="button" class="tool" data-tool="route" aria-pressed="true"><b>Route</b><span>drag from a receiver</span></button>
       <button type="button" class="tool" data-tool="block" aria-pressed="false"><b>Block</b><span>drag a short bar</span></button>
       <button type="button" class="tool" data-tool="handoff" aria-pressed="false"><b>Handoff</b><span>QB, then a back</span></button>
@@ -210,7 +211,7 @@
     <h2 class="pix">How it works</h2>
     <ol>
       <li><b>Pick the distance.</b> You are going for it on 4th down.</li>
-      <li><b>Pick a formation.</b> Hold a player to move him.</li>
+      <li><b>Pick a formation.</b> Use Move to line a player up where you want him.</li>
       <li><b>Draw the play.</b> Route: drag from a receiver. Block: drag a short bar. Handoff: tap the QB, then a back, then drag his path. Target: tap who the QB looks to first, then a checkdown.</li>
       <li><b>Snap it.</b> Your players run exactly what you drew. The defense picks its call every snap. You see it after.</li>
       <li><b>Get the first down or score.</b> Short, sacked, thrown away or incomplete, you lose.</li>
@@ -237,11 +238,11 @@
 <script src="rig.js?v=1"></script>
 <script src="stage.js?v=1"></script>
 <script src="share.js?v=1"></script>
-<script src="clipboard.js?v=3"></script>
+<script src="clipboard.js?v=4"></script>
 <script src="play.js?v=1"></script>
 <script src="home.js?v=1"></script>
 <script src="ui.js?v=3"></script>
-<script src="book-ui.js?v=1"></script>
+<script src="book-ui.js?v=2"></script>
 <script type="module">
 /* PXHD, the painter the players and the goalpost are drawn with, from the
    copy Segue already serves (see rig.js). If it fails to load, the play is

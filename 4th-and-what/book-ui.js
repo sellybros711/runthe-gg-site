@@ -256,6 +256,12 @@
   /* ---------- save a drawn play into a playbook ---------- */
   UI.hook('saveTo', function (play, distance) {
     var dlg = $('saveDlg'), out = $('saveOut'); out.innerHTML = '';
+    /* the play stays in sight while it is saved: the card it will make */
+    var card = el('figure', { class: 'savecard' }), cap = el('figcaption', { text: N.suggest(play, terms()).name });
+    var cv = el('canvas', { width: '760', height: '520' }), cx = cv.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, 760, 520);
+    window.FAW_DIAGRAM.draw(cx, 8, 8, 744, 504, play, { color: true, defense: true, distance: distance, field: true, gain: true, letters: true, reads: true });
+    card.appendChild(cv); card.appendChild(cap); out.appendChild(card);
     if (!signedIn()) {
       out.appendChild(el('p', { text: 'Playbooks live on your Run The Games account. Sign in, then save it.' }));
       out.appendChild(el('button', { type: 'button', class: 'btn go', text: 'Sign in', on: { click: function () { dlg.close(); if (window.RTGAuthUI) window.RTGAuthUI.open(); } } }));
@@ -272,6 +278,8 @@
       bookSel = select(books.map(function (b) { return [b.id, b.name]; }).concat([['__new', 'A new playbook']]), books[0] ? books[0].id : '__new', secs);
       secSel = el('select');
       nameIn = el('input', { maxlength: '80', value: N.suggest(play, terms()).name });
+      cap.textContent = nameIn.value;
+      nameIn.addEventListener('input', function () { cap.textContent = nameIn.value.trim() || N.suggest(play, terms()).name; });
       out.appendChild(el('label', { class: 'field' }, [el('span', { text: 'Playbook' }), bookSel]));
       out.appendChild(el('label', { class: 'field' }, [el('span', { text: 'Section' }), secSel]));
       out.appendChild(el('label', { class: 'field' }, [el('span', { text: 'Name (from your terminology)' }), nameIn]));

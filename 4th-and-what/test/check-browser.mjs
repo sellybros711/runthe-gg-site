@@ -119,14 +119,26 @@ async function run(name, viewport, scale) {
   await dragYd([-9.5, -1.6], [-9.5, 2], [-14, 4]);
   p = await play();
   ok(p.routes.length === 2 && p.routes[1].who === 'SLOT', 'routes keep their drawing order');
-  /* hold, then drag: move the Z */
+  /* a slow press and drag with Route never moves a player */
   const z = await yd([13.5, -0.9]);
   await page.mouse.move(z[0], z[1]); await page.mouse.down(); await page.waitForTimeout(420);
-  const z2 = await yd([11, -1.5]); await page.mouse.move(z2[0], z2[1], { steps: 6 }); await page.mouse.up();
+  let z2 = await yd([11, -1.5]); await page.mouse.move(z2[0], z2[1], { steps: 6 }); await page.mouse.up();
   p = await play();
-  ok(p.moved.WR2 && Math.abs(p.moved.WR2[0] - 11) < 0.6, 'held and dragged, Z moves to ' + (p.moved.WR2 || []).map(v => v.toFixed(1)).join(','));
-  /* Block: the TE stays in */
+  ok(!p.moved.WR2, 'a slow drag with Route leaves the Z where he lines up');
+  await page.click('#bUndo');
+  /* Move: line the Z up tighter */
+  await page.click('.tool[data-tool="move"]');
+  await dragYd([13.5, -0.9], [11, -1.5]);
+  p = await play();
+  ok(p.moved.WR2 && Math.abs(p.moved.WR2[0] - 11) < 0.6, 'Move drags the Z to ' + (p.moved.WR2 || []).map(v => v.toFixed(1)).join(','));
+  /* Block never moves a player, even after a long press */
   await page.click('.tool[data-tool="block"]');
+  const te = await yd([-6.2, -1.4]);
+  await page.mouse.move(te[0], te[1]); await page.mouse.down(); await page.waitForTimeout(420);
+  z2 = await yd([-5, -2.4]); await page.mouse.move(z2[0], z2[1], { steps: 6 }); await page.mouse.up();
+  p = await play();
+  ok(!p.moved.TE && p.blocks.length === 1 && p.blocks[0].who === 'TE', 'a long press with Block draws the block and never moves the TE');
+  await page.click('#bUndo');
   await dragYd([-6.2, -1.4], [-5, -2.4]);
   p = await play();
   ok(p.blocks.length === 1 && p.blocks[0].who === 'TE', 'the TE stays in to block');
@@ -192,6 +204,14 @@ async function run(name, viewport, scale) {
   await page.evaluate(() => { window.RTG_AUTH.state = () => ({ ready: true, resolved: true, signedIn: true, userId: 'check-user', name: 'Coach' }); window.RTG_AUTH.token = () => 'check'; });
   await page.click('#bResSave');
   ok(await page.isVisible('#saveDlg') && await page.isVisible('#bSaveOk'), 'signed in, Save to playbook on the result offers a book, a section and a name');
+  const card = await page.evaluate(() => {
+    const c = document.querySelector('#saveOut .savecard canvas'); if (!c) return null;
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let ink = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] < 200 || d[i + 2] < 200) ink++;
+    return { ink, cap: document.querySelector('#saveOut .savecard figcaption').textContent };
+  });
+  ok(card && card.ink > 2000 && card.cap.length > 0, 'the save box shows the play and its name: ' + (card && card.cap));
+  await shot('5b-save');
   await page.click('#bSaveOk');
   let books = await page.evaluate(() => window.FAW_BOOKUI.store.books());
   ok(books.length === 1 && books[0].plays.length === 1 && /Power|Zone/.test(books[0].plays[0].name), 'the run is saved to a new playbook, named ' + (books[0] && books[0].plays[0] && books[0].plays[0].name));

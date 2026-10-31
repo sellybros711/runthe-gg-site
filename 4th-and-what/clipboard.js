@@ -6,7 +6,9 @@
  * offense: the five linemen are locked, the QB and five eligible receivers
  * are yours. Eleven X's on defense in the alignment the formation draws.
  *
- * EXACTLY FOUR TOOLS:
+ * FIVE TOOLS:
+ *   Move     drag the QB or a receiver to line him up before the snap. The
+ *            only tool that moves a player: no other tool ever does.
  *   Route    drag from a receiver to draw his route. Drag again from its end
  *            to add more. Routes are numbered in the order they are drawn.
  *   Block    drag a short bar from a receiver or back: he stays in to protect
@@ -15,7 +17,6 @@
  *            makes it a run: drag from the ball carrier to draw his path.
  *   Target   tap a receiver for the first read (a star), then another for
  *            the checkdown (a 2). Passes only.
- * Hold a player still for a moment, then drag, to move him before the snap.
  *
  * Pointer events, never mouse events, so one code path serves a thumb, a pen
  * and a mouse. The play is the engine's play object, relative to the ball.
@@ -27,7 +28,7 @@
   var FM = root.FAW_FORMATIONS;
   var X0 = -18, X1 = 18, YTOP = 30, YBOT = -9;
   var LABEL = { QB: 'Q', RB: 'R', WR1: 'X', WR2: 'Z', SLOT: 'H', TE: 'Y' };
-  var HOLD_MS = 280, MAX_UNDO = 60;
+  var MAX_UNDO = 60;
 
   function len(x, y) { return Math.sqrt(x * x + y * y); }
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -253,15 +254,14 @@
       if (drag) return;
       var p = toYd(ev.clientX, ev.clientY), who = hit(p, FM.EDITABLE);
       canvas.setPointerCapture && canvas.setPointerCapture(ev.pointerId);
-      drag = { id: ev.pointerId, start: p, who: who, kind: null, pts: null, t0: Date.now(), moved: false, timer: null };
-      if (who) drag.timer = setTimeout(function () { if (drag && !drag.moved) { drag.kind = 'move'; save(); hint('Move him, then let go.'); draw(); } }, HOLD_MS);
+      drag = { id: ev.pointerId, start: p, who: who, kind: null, pts: null, t0: Date.now(), moved: false };
       ev.preventDefault();
     }
     function move(ev) {
       if (!drag || ev.pointerId !== drag.id) return;
       var p = toYd(ev.clientX, ev.clientY), far = len(p[0] - drag.start[0], p[1] - drag.start[1]) * S;
       if (!drag.moved && far > 6) {
-        drag.moved = true; clearTimeout(drag.timer);
+        drag.moved = true;
         if (!drag.kind) begin(p);
       }
       if (drag.kind === 'move') {
@@ -285,6 +285,7 @@
     /* What a drag means, decided once it starts moving. */
     function begin(p) {
       var O = pos();
+      if (tool === 'move') { if (drag.who) { drag.kind = 'move'; save(); } return; }
       if (tool === 'route' || tool === 'handoff') {
         var endOf = routeEndNear(drag.start);
         var carrier = isRun() ? P.handoff.to : null;
@@ -298,7 +299,6 @@
     }
     function up(ev) {
       if (!drag || ev.pointerId !== drag.id) return;
-      clearTimeout(drag.timer);
       var d = drag; drag = null;
       if (d.kind === 'move') { hint(); changed(); return; }
       if (!d.moved) { tap(d.who, d.start); return; }
@@ -354,18 +354,19 @@
         hint(P.targets.length === 1 ? 'Tap another for the checkdown, if you want one.' : P.targets.length === 2 ? 'Snap it when you are ready.' : '');
         changed(); return;
       }
+      if (who && tool === 'move') hint('Drag him to where he lines up.');
       if (who && tool === 'route') hint(who === 'QB' ? 'The QB throws. Use Handoff to make it a run.' : 'Drag from him to draw his route.');
       if (who && tool === 'block') hint('Drag a short bar from him.');
     }
     function hint(t) { opt.onHint && opt.onHint(t == null ? defaultHint() : t); }
     function defaultHint() {
-      return { route: 'Drag from a receiver to draw his route.', block: 'Drag a short bar from a receiver or back.', handoff: 'Tap the QB, then a back.', target: isRun() ? 'A run has no target.' : 'Tap who the QB looks to first.' }[tool];
+      return { move: 'Drag the QB or a receiver to line him up.', route: 'Drag from a receiver to draw his route.', block: 'Drag a short bar from a receiver or back.', handoff: 'Tap the QB, then a back.', target: isRun() ? 'A run has no target.' : 'Tap who the QB looks to first.' }[tool];
     }
 
     canvas.addEventListener('pointerdown', down);
     canvas.addEventListener('pointermove', move);
     canvas.addEventListener('pointerup', up);
-    canvas.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.id) { clearTimeout(drag.timer); drag = null; draw(); } });
+    canvas.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.id) { drag = null; draw(); } });
     root.addEventListener('resize', layout);
 
     return {
