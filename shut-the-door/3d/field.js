@@ -162,28 +162,29 @@ function infieldMask() {
    [cx, cy, r] (outlines). Every line 3 in wide, centred on these. */
 const CH = 3 / 12;
 function chalkLayout() {
-  const seg = [], box = [], ring = [];
+  // grouped by where they are, so a pixel tests only the lines that can be near it (the shader's chalkD)
+  const near = [], foul = [], mid = [], box = [], ring = [];
   const half = 8.5 / 12, off = half + 6 / 12, mid = 8.5 / 12;   // the plate is 17 in deep: its middle 8.5 in up
   const front = mid + 3, back = mid - 3;                         // the boxes' front and back lines (y)
   // the batter's boxes
   for (const s of [-1, 1]) box.push([s * (off + 2), mid, 2, 3]);
   // the catcher's box: from the back of the batter's boxes, 8 ft back, 43 in wide
   const cx = 21.5 / 12;
-  seg.push([-cx, back, -cx, back - 8], [-cx, back - 8, cx, back - 8], [cx, back - 8, cx, back]);
+  near.push([-cx, back, -cx, back - 8], [-cx, back - 8, cx, back - 8], [cx, back - 8, cx, back]);
   // the foul lines: on the line through the plate's back point, from the box's front line to the pole
   const pole = 330 * Math.SQRT1_2;
-  for (const s of [-1, 1]) seg.push([s * front, front, s * pole, pole]);
+  for (const s of [-1, 1]) foul.push([s * front, front, s * pole, pole]);
   // along a line: t ft from the plate, o ft into foul ground
   const at = (s, t, o) => [s * (t + o) * Math.SQRT1_2, (t - o) * Math.SQRT1_2];
   // the runner's lane: 3 ft into foul ground, from the halfway mark to the bag
-  seg.push([...at(1, 45, 3), ...at(1, 90, 3)], [...at(1, 45, 0), ...at(1, 45, 3)]);
+  mid.push([...at(1, 45, 3), ...at(1, 90, 3)], [...at(1, 45, 0), ...at(1, 45, 3)]);
   // the coach's boxes, open at the back
   for (const s of [-1, 1]) {
-    seg.push([...at(s, 70, 15), ...at(s, 90, 15)], [...at(s, 70, 15), ...at(s, 70, 25)], [...at(s, 90, 15), ...at(s, 90, 25)]);
+    mid.push([...at(s, 70, 15), ...at(s, 90, 15)], [...at(s, 70, 15), ...at(s, 70, 25)], [...at(s, 90, 15), ...at(s, 90, 25)]);
   }
   // the next batter's boxes: 37 ft from the plate, toward the dugouts (125 degrees round from centre field)
   for (const s of [-1, 1]) ring.push([s * 37 * Math.sin(125 * Math.PI / 180), 37 * Math.cos(125 * Math.PI / 180), 2.5]);
-  return { seg, box, ring };
+  return { near, foul, mid, box, ring };
 }
 const glf = (v) => (Number.isInteger(v) ? v.toFixed(1) : String(+v.toFixed(4)));
 const vec4s = (rows) => rows.map((r) => `vec4(${r.map(glf).join(', ')})`).join(', ');
@@ -226,16 +227,25 @@ export function buildField(scene, tex, renderer) {
         uniform vec4 infRect;
         vec4 fm; float dirtK; vec3 nW;
         // the chalk (chalkLayout): distance in feet from p to the nearest line's middle
-        const vec4 CSEG[${L.seg.length}] = vec4[](${vec4s(L.seg)});
+        const vec4 CNEAR[${L.near.length}] = vec4[](${vec4s(L.near)});
+        const vec4 CFOUL[${L.foul.length}] = vec4[](${vec4s(L.foul)});
+        const vec4 CMID[${L.mid.length}] = vec4[](${vec4s(L.mid)});
         const vec4 CBOX[${L.box.length}] = vec4[](${vec4s(L.box)});
         const vec3 CRING[${L.ring.length}] = vec3[](${vec3s(L.ring)});
         float segD(vec2 p, vec4 s) { vec2 a = s.xy, ba = s.zw - s.xy; float h = clamp(dot(p - a, ba) / dot(ba, ba), 0.0, 1.0); return length(p - a - ba * h); }
         float boxD(vec2 p, vec4 b) { vec2 q = abs(p - b.xy) - b.zw; return abs(length(max(q, 0.0)) + min(max(q.x, q.y), 0.0)); }
-        float chalkD(vec2 p) {
+        // (the plate's boxes within 16 ft of it, the lane, coach's boxes and on deck circles 30-105 ft out:
+        // where a group is left out its nearest line is feet away, so the coverage there is nothing anyway)
+        float chalkD(vec2 p, float r) {
           float d = 1e4;
-          for (int i = 0; i < ${L.seg.length}; i++) d = min(d, segD(p, CSEG[i]));
-          for (int i = 0; i < ${L.box.length}; i++) d = min(d, boxD(p, CBOX[i]));
-          for (int i = 0; i < ${L.ring.length}; i++) d = min(d, abs(length(p - CRING[i].xy) - CRING[i].z));
+          for (int i = 0; i < ${L.foul.length}; i++) d = min(d, segD(p, CFOUL[i]));
+          if (r < 16.0) {
+            for (int i = 0; i < ${L.near.length}; i++) d = min(d, segD(p, CNEAR[i]));
+            for (int i = 0; i < ${L.box.length}; i++) d = min(d, boxD(p, CBOX[i]));
+          } else if (r > 30.0 && r < 105.0) {
+            for (int i = 0; i < ${L.mid.length}; i++) d = min(d, segD(p, CMID[i]));
+            for (int i = 0; i < ${L.ring.length}; i++) d = min(d, abs(length(p - CRING[i].xy) - CRING[i].z));
+          }
           return d;
         }
         // the front of the stands, feet from the plate at th degrees from centre field (ballpark.js
@@ -262,9 +272,11 @@ export function buildField(scene, tex, renderer) {
         float infK = (iuv.x >= 0.0 && iuv.x <= 1.0 && iuv.y >= 0.0 && iuv.y <= 1.0) ? smoothstep(0.35, 0.65, texture2D(infMask, iuv).r) : 0.0;
         // the warning track: 15 ft inside the front of the stands, all round the field (behind the plate
         // the plate's own mask draws it, as it always has)
-        float rFt = length(sft), thDeg = degrees(atan(sft.x, sft.y));
-        float fAt = frontAt(thDeg);
-        float trackK = abs(thDeg) < 128.0 ? smoothstep(-0.3, 0.3, rFt - (fAt - 15.0)) * (1.0 - smoothstep(2.0, 2.6, rFt - fAt)) : 0.0;
+        float rFt = length(sft), trackK = 0.0;
+        if (rFt > 40.0) {   // (the track is never nearer the plate than 41 ft)
+          float thDeg = degrees(atan(sft.x, sft.y)), fAt = frontAt(thDeg);
+          trackK = abs(thDeg) < 128.0 ? smoothstep(-0.3, 0.3, rFt - (fAt - 15.0)) * (1.0 - smoothstep(2.0, 2.6, rFt - fAt)) : 0.0;
+        }
         dirtK = max(smoothstep(0.35, 0.65, fm.r), max(infK, trackK));
         vec2 guv = vWPos.xz / 1.4, duv = vWPos.xz / 1.1;
         vec3 gcol = texture2D(grassC, guv).rgb;
@@ -282,7 +294,7 @@ export function buildField(scene, tex, renderer) {
         // the chalk: the share of a line in this pixel (the pixel's footprint across the line, px, from
         // the screen derivatives). A line thinner than half a pixel is drawn half a pixel wide and fainter
         // in step, so a far line stays a line, never a shimmer or a gap.
-        float cd = chalkD(sft), px = max(fwidth(cd), 1e-4);
+        float cd = chalkD(sft, rFt), px = max(fwidth(cd), 1e-4);
         float cw = ${(CH / 2).toFixed(4)}, we = max(cw, 0.25 * px);
         float cov = clamp((min(cd + px * 0.5, we) - max(cd - px * 0.5, -we)) / px, 0.0, 1.0) * pow(cw / we, 0.6);
         float chalkA = cov * (1.0 - wear * 0.85) * (0.75 + 0.25 * vnoise(sft * 9.0));
