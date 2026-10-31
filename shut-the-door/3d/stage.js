@@ -82,14 +82,14 @@
 import * as THREE from 'three';
 import { preload } from './load.js?v=8';
 import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=6';
-import { People } from './people.js?v=40';
-import { Pitch, releaseOf } from './pitch.js?v=12';
-import { fromResult, motion } from './play.js?v=12';
+import { People } from './people.js?v=41';
+import { Pitch, releaseOf } from './pitch.js?v=13';
+import { fromResult, motion } from './play.js?v=13';
 import { look } from './looks.js?v=3';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=35';
-import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=9';
-import { FirstPerson } from './firstperson.js?v=7';
+import { InPlay } from './inplay.js?v=36';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=10';
+import { FirstPerson } from './firstperson.js?v=8';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -106,8 +106,14 @@ const CELL_FT = 0.553, CELL_PX = 38, MARGIN = 0.03, ROOM = 1.04;
    least is covered; none of that either: the widest frame, the hitter, his bat and the plate
    covered least, then the rest. (The owner, 2026-10-26: the info "shouldn't be covering up the
    batter or home plate". A single weighted sum once traded the scorebar over the hitter's head for
-   the catcher's mitt under the pitch list, at 844x390.) */
+   the catcher's mitt under the pitch list, at 844x390.)
+   The plate stays near the middle across (CENTRE: its middle within that share of the width either
+   side of the canvas's), as the pitcher looks at it: the frame clears the panels by standing back,
+   not by sliding the set off to one side (the owner, 2026-10-30: on some screens "the view is off
+   center, so it no longer reads as the pitcher's POV"; the plate sat at 19% of a 1480 wide window).
+   It gives way only to the hitter, his bat and the plate being clear. */
 const FREE_W = { batter: 10, bat: 3, plate: 6, apron: 1, catcher: 2, umpire: 2 };
+const CENTRE = 0.12;
 const FREE_HARD = { batter: true, bat: true, plate: true };
 // and a little further back than the set alone asks (the owner, 2026-10-26: "a little too close")
 const FREE_BACK = 1.12;
@@ -124,9 +130,14 @@ function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
     // the moves that keep it all in the canvas (too big: the hitter's own box)
     const range = (a0, a1, size, m, b) => (a1 - a0 <= size - 2 * m ? [a1 - (size - m), a0 - m] : [b[1] - (size - m), b[0] - m]);
     const bt = B[0];
-    const [xl, xh] = range(U.x0, U.x1, w, mx, [bt.x0, bt.x1]), [yl, yh] = range(U.y0, U.y1, h, my, [bt.y0, bt.y1]);
+    let [xl, xh] = range(U.x0, U.x1, w, mx, [bt.x0, bt.x1]);
+    const [yl, yh] = range(U.y0, U.y1, h, my, [bt.y0, bt.y1]);
+    // the moves that keep the plate near the middle (off: how far a move is from there, in px)
+    const pl = B[keys.indexOf('plate')], pc = (pl.x0 + pl.x1) / 2 - w / 2, cl = pc - CENTRE * w, ch = pc + CENTRE * w;
+    if (Math.max(xl, cl) <= Math.min(xh, ch)) { xl = Math.max(xl, cl); xh = Math.min(xh, ch); }
+    const off = (cx) => Math.max(0, cl - cx, cx - ch);
     for (let a = 0; a <= n; a++) for (let b = 0; b <= n; b++) {
-      const cx = xl + (xh - xl) * a / n, cy = yl + (yh - yl) * b / n;
+      const cx = xl + (xh - xl) * a / n, cy = yl + (yh - yl) * b / n, offc = off(cx);
       let cost = 0, hard = 0, clear = Math.min(U.x0 - cx, w - (U.x1 - cx), U.y0 - cy, h - (U.y1 - cy));
       for (const q of B) {
         const x0 = q.x0 - cx, x1 = q.x1 - cx, y0 = q.y0 - cy, y1 = q.y1 - cy, area = Math.max(1, (x1 - x0) * (y1 - y0));
@@ -136,19 +147,23 @@ function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
           else clear = Math.min(clear, Math.max(-ox, -oy));
         }
       }
-      // the hitter, his bat and the plate first, then the rest, then the most room
-      const soft = cost - hard;
-      if (!best || hard < best.hard - 1e-9 || (Math.abs(hard - best.hard) <= 1e-9 && (soft < best.soft - 1e-9 || (Math.abs(soft - best.soft) <= 1e-9 && clear > best.clear)))) best = { fw, cx, cy, cost, hard, soft, clear };
+      // the hitter, his bat and the plate first, then the plate near the middle, then the rest, then
+      // the most room
+      const soft = cost - hard, e = 1e-9;
+      const better = !best || hard < best.hard - e || (Math.abs(hard - best.hard) <= e && (offc < best.offc - 0.5 || (Math.abs(offc - best.offc) <= 0.5 &&
+        (soft < best.soft - e || (Math.abs(soft - best.soft) <= e && clear > best.clear)))));
+      if (better) best = { fw, cx, cy, cost, hard, soft, clear, offc };
     }
     return best;
   };
-  // everyone clear, on a 16 by 16 set of moves
-  let best = null;
-  for (let i = 0; i <= steps; i++) { best = place(i, 16); if (best.cost <= 1e-9) return best; }
-  // none: the gap that clears the hitter, his bat and the plate can be narrower than a 16th of the
-  // room (at 844x390 it was 16 px of 523), so look again on a finer set of moves
-  for (let i = 0; i <= steps; i++) { const b = place(i, 64); if (b.hard <= 1e-9) return b; }
-  return best;
+  // everyone clear with the plate near the middle, on a 16 by 16 set of moves; then the hitter, his
+  // bat and the plate clear with it there, on a finer set (the gap that clears them can be narrower
+  // than a 16th of the room: at 844x390 it was 16 px of 523); then the same two off the middle
+  const all = [];
+  for (let i = 0; i <= steps; i++) { const b = place(i, 16); all.push(b); if (b.cost <= 1e-9 && b.offc <= 0.5) return b; }
+  const fine = [];
+  for (let i = 0; i <= steps; i++) { const b = place(i, 64); fine.push(b); if (b.hard <= 1e-9 && b.offc <= 0.5) return b; }
+  return all.find((b) => b.cost <= 1e-9) || fine.find((b) => b.hard <= 1e-9) || all[all.length - 1];
 }
 const AN = () => window.STD_ANIM;
 const TEST = () => window.STD_STAGE_TEST;
@@ -478,7 +493,12 @@ class Stage {
       this.fp.layout(w, h, this.safe, this.loaded ? this.gridRect() : null, this.hudPanels());
       // (a new screen moves his hand, so where the flight starts: the hitter and catcher read it again)
       if (this.pitch && this.loaded) { this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera); this.people.setPlay(this.pitch, this.pitch.play, this.m); }
-      this.fp.pose(this.t);
+      // setPlay plans the hitter's feet by posing him through his capture (planBatterFeet), which
+      // leaves his body at the plan's last frame while his bat stays where the set put it: the bat
+      // went through his head at every set after a layout (the owner, 2026-10-30). Pose the set
+      // again; a pitch in the air poses itself every frame
+      if (this.pitch && this.loaded && !this.playing) this.pose(this.t);
+      else this.fp.pose(this.t);
     }
     if (this.loaded) this.soon();
   }

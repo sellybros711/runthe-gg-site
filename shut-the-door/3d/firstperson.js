@@ -43,11 +43,11 @@
 import * as THREE from 'three';
 import { smooth, clamp01 } from './units.js?v=1';
 import { spline, reducedMotion, SUN } from './park.js?v=6';
-import { baseball } from './gear3d.js?v=3';
+import { baseball } from './gear3d.js?v=4';
 import { look } from './looks.js?v=3';
 import { assetUrl } from './load.js?v=8';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { T_RELEASE } from './pitch.js?v=12';
+import { T_RELEASE } from './pitch.js?v=13';
 
 const HALF = THREE.MathUtils.degToRad(30), TAN = Math.tan(HALF);   // the arm's lens, each way across the short side
 const GLOVE_M = 0.31;            // the glove, heel to fingertips, metres
@@ -111,6 +111,8 @@ export function armSlot(p, rel) {
    (-z), the thumb to +x. Its colours are per vertex (linear, over the leather map's own mean colour),
    so a club's colourway is a repaint (paintGlove), never a rebuild. */
 const GLOVE_UP = 0.035;
+// his forearm at the set, wrist to elbow (m), and his shoulders from his eyes (x each side, y, z)
+const FOREARM = 0.27, SHOULDER = [0.19, -0.24, 0.02];
 const TEX_MEAN = [0.082, 0.026, 0.0052];          // leather_color.webp's mean, linear
 const len3 = (x, y, z) => Math.sqrt(x * x + y * y + z * z);
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -461,7 +463,17 @@ export class FirstPerson {
     this.glove = gloveModel({ map: lm, normal: ln });
     this.gloveArm = limb(M.sleeve, 0.044, 0.04);
     this.setArm = limb(M.sleeve, 0.042, 0.034);
-    this.scene.add(this.glove, this.gloveArm, this.setArm);
+    // each forearm goes on to an elbow and the upper arm, back toward his shoulder beside his eyes
+    // and off the screen (armOn): a forearm alone ended on the screen beside a tall panel
+    this.gloveUpper = limb(M.sleeve, 0.056, 0.047);
+    this.setUpper = limb(M.sleeve, 0.054, 0.045);
+    this.gloveElbow = new THREE.Mesh(new THREE.SphereGeometry(0.046, 14, 10), M.sleeve);
+    this.setElbow = new THREE.Mesh(new THREE.SphereGeometry(0.044, 14, 10), M.sleeve);
+    // and his throwing hand on the end of its forearm, a loose fist round the ball: inside the glove
+    // at the set, seen as his hands break and it drops away (the forearm's open end showed there)
+    this.setFist = new THREE.Mesh(new THREE.SphereGeometry(0.043, 16, 12), M.skin);
+    this.setFist.scale.set(1, 1.15, 0.85);
+    this.scene.add(this.glove, this.gloveArm, this.setArm, this.gloveUpper, this.setUpper, this.gloveElbow, this.setElbow, this.setFist);
     // the throwing arm: shoulder, upper arm (the jersey's sleeve then the undershirt), elbow, forearm, hand
     this.ball = baseball();
     this.ball.castShadow = false;
@@ -694,6 +706,42 @@ export class FirstPerson {
     return { x: this.w / 2 + b.x * k, y: this.h / 2 - b.y * k, depth, px: BALL_M * k };
   }
 
+  /** One arm at the set, drawn from the hand end: the forearm from the wrist toward b (FOREARM
+      long), the elbow, and the upper arm from there back toward his shoulder on that side (sx: -1
+      his left, +1 his right, beside and under his eyes) until it is off the screen. */
+  armOn(fore, elbow, upper, wrist, b, sx, on) {
+    fore.visible = elbow.visible = upper.visible = on;
+    if (!on) return;
+    const d = b.clone().sub(wrist);
+    const e = wrist.clone().addScaledVector(d.normalize(), FOREARM);
+    fore.userData.set(e, wrist);
+    elbow.position.copy(e);
+    const shoulder = new THREE.Vector3(sx * SHOULDER[0], SHOULDER[1], SHOULDER[2]);
+    upper.userData.set(this.offScreen(e, shoulder, 0.056), e);
+  }
+
+  /** A limb's far end: from its near end a, on along the line through b until it is off the
+      screen by the limb's own radius r, so its cut end is never seen (the owner, 2026-10-30: "the
+      first person arms are cut off and you can see the cut", the sleeve's end in a corner beside a
+      tall HUD panel, where the glove stands higher than over the dock). Never nearer his eyes than
+      8 cm (the near plane). */
+  offScreen(a, b, r) {
+    const d = b.clone().sub(a), len0 = d.length();
+    if (len0 < 1e-6) return b;
+    d.divideScalar(len0);
+    const k = this.unit / TAN, out = (p) => {
+      const z = -p.z, x = this.w / 2 + p.x * k / z, y = this.h / 2 - p.y * k / z, m = r * k / z;
+      return x < -m || x > this.w + m || y < -m || y > this.h + m;
+    };
+    const p = new THREE.Vector3();
+    for (let len = len0; len < 2; len += 0.01) {
+      p.copy(a).addScaledVector(d, len);
+      if (-p.z < 0.08) return p.copy(a).addScaledVector(d, Math.max(len0, len - 0.01));
+      if (out(p)) return p.addScaledVector(d, 0.05);
+    }
+    return p;
+  }
+
   pose(t) {
     if (!this.ok || !this.w) return;
     this.t = t;
@@ -727,16 +775,17 @@ export class FirstPerson {
     // his forearm down out of the frame from the wrist opening, toward his body
     const wristG = new THREE.Vector3(0, GLOVE_UP - 0.13, 0.004).applyMatrix4(gm);
     const elbowG = wristG.clone().add(new THREE.Vector3(-side * 0.08, -0.3, 0.12));
-    this.gloveArm.userData.set(elbowG, wristG);
-    this.gloveArm.visible = !this.hidden;
+    this.armOn(this.gloveArm, this.gloveElbow, this.gloveUpper, wristG, elbowG, -side, !this.hidden);
     // his throwing hand in the pocket at the set; as his hands break it drops away down his arm side,
     // gone before the throw's own arm comes on
     const brk = smooth(clamp01((t - 0.1) / 0.3));
     const inG = new THREE.Vector3(0.035, GLOVE_UP - 0.05, -0.035).applyMatrix4(gm);
     const drop = new THREE.Vector3(side * 0.3, -0.2, 0.08).multiplyScalar(1 + 1.5 * brk);
     const handG = inG.clone().add(new THREE.Vector3(side * 0.1, -0.25, 0).multiplyScalar(brk));
-    this.setArm.userData.set(handG.clone().add(drop), handG);
-    this.setArm.visible = !this.hidden && t < 0.45;
+    this.armOn(this.setArm, this.setElbow, this.setUpper, handG, handG.clone().add(drop), side, !this.hidden && t < 0.45);
+    this.setFist.visible = this.setArm.visible;
+    this.setFist.position.copy(handG).addScaledVector(handG.clone().sub(this.setElbow.position).normalize(), 0.05);
+    this.setFist.quaternion.copy(this.setArm.quaternion);
     // ---- the throwing arm, around release only
     const r = t - T_RELEASE;
     const on = !this.hidden && !!this.fit && t > 0 && r > ARM_ON[0] && r < ARM_ON[1];
