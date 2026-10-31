@@ -25,7 +25,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 
 var LIMIT = 50;
 var WAIT_MS = 300, GIVE_UP_MS = 16000;
-var ctx = { day: null, scn: null, before: null, onBack: null, onSignIn: null, onPlay: null, played: function () { return false; } };
+var ctx = { day: null, scn: null, before: null, onBack: null, onSignIn: null, onPlay: null, pending: null, saveLabel: null, played: function () { return false; } };
 var seq = 0;
 
 function authState() {
@@ -49,21 +49,27 @@ function head() {
 /* the ink panel: your rank out of the total, or why you are not on it */
 function renderYou(rows, st) {
   var el = $('bd-you');
-  var mine = null, players = rows && rows.length ? rows[0].players : 0;
+  var mine = null;
   (rows || []).forEach(function (r) { if (r.mine) mine = r; });
   if (mine) {
     el.innerHTML =
-      '<div class="bd-rank"><b>#' + esc(mine.rank) + '</b><span>of ' + esc(mine.players) + ' today</span></div>' +
+      '<div class="bd-rank"><b>#' + esc(mine.rank) + '</b><span>your rank today</span></div>' +
       '<div class="bd-me">' + chip(mine.outcome) +
       '<span class="fact"><b>' + esc(mine.pitches) + '</b>' + (mine.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
       '<span class="fact"><b>' + esc(mine.score) + '</b>score</span></div>';
     return;
   }
-  var count = rows && rows.length ? '<p class="bd-count"><b>' + esc(players) + '</b> ' + (players === 1 ? 'closer' : 'closers') + ' on it today.</p>' : '';
+  /* the count of closers is said once, in the list's header (the owner, 2026-10-30) */
+  var count = '';
   if (!st.signedIn) {
-    el.innerHTML = count +
-      '<div class="bd-in"><p>sign in to put your outing on the board.</p>' +
-      '<button class="btn dk" type="button" id="bd-signin">sign in</button></div>';
+    /* a daily finished signed out is on this device, not on the board: say why, with the result's
+       own button (modes-ui.js). Signing in posts it once (api.js claim). */
+    var owed = ctx.pending ? ctx.pending() : null;
+    el.innerHTML = count + (owed && ctx.saveLabel
+      ? '<div class="bd-in"><p>you played as a guest, so your score isn\'t on the leaderboard. sign in to save it.</p>' +
+        '<button class="btn save-b" type="button" id="bd-signin">' + esc(ctx.saveLabel) + '</button></div>'
+      : '<div class="bd-in"><p>sign in to put your outing on the leaderboard.</p>' +
+        '<button class="btn dk" type="button" id="bd-signin">sign in</button></div>');
     $('bd-signin').addEventListener('click', function () { if (ctx.onSignIn) ctx.onSignIn(); });
     return;
   }
@@ -97,7 +103,8 @@ function renderList(rows) {
     html += rowHTML(r);
     prev = r.rank;
   });
-  el.innerHTML = '<div class="bd-lh"><b>top closers</b><span>' + esc(rows[0].players) + ' today</span></div>' +
+  var n = rows[0].players;
+  el.innerHTML = '<div class="bd-lh"><b>top closers</b><span class="bd-n">' + esc(n) + ' ' + (n === 1 ? 'closer' : 'closers') + ' today</span></div>' +
     '<div class="bd-cols-h" aria-hidden="true"><span>#</span><span>closer</span><span>result</span><span>p</span><span>score</span></div>' +
     '<ol class="bd-rows">' + html + '</ol>';
 }
@@ -105,11 +112,11 @@ function renderList(rows) {
 function renderState(kind) {
   var el = $('bd-list');
   if (kind === 'loading') {
-    el.innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><p>loading the board.</p></div>';
+    el.innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
     $('bd-you').innerHTML = '';
     return;
   }
-  el.innerHTML = '<div class="bd-empty"><b>the board did not load</b><p>your outing is safe. try again.</p>' +
+  el.innerHTML = '<div class="bd-empty"><b>the leaderboard did not load</b><p>your outing is safe. try again.</p>' +
     '<button class="btn ghost" type="button" id="bd-retry">try again</button></div>';
   $('bd-you').innerHTML = '';
   $('bd-retry').addEventListener('click', load);

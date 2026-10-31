@@ -50,8 +50,18 @@
  *      pitch by pitch with band and reason. On the real engine and on the
  *      mock: a pro, no pro (?mockPro=none) and no lesson (?mockLesson=none)
  *
- * Steps 1 to 10 play the real engine (no mock switch). Step 11 forces each
- * ending through mock-api.js.
+ *  17. the modes around the daily (CONTRACT.md 9, 16, 17), through the mock:
+ *      sign in to save your score (a button on the result and on the board,
+ *      never opened by itself; the sign-in posts it once), the vote for
+ *      tomorrow (two candidates, one line each, the vote counts; signed out the
+ *      same button; hidden before the vote's first day), how today was picked,
+ *      Survivor (the home's row, its screen, save after save with only a count
+ *      and the next closer between spots, a blown lead ends it on the
+ *      Survivor board, one run a day and when the next opens) and the
+ *      archive (only when entitlements say Pro)
+ *
+ * Steps 1 to 10 play the real engine (no mock switch). Steps 11 and 17 go
+ * through mock-api.js.
  *
  * SOFTWARE GL, AND WHY THE CHECK DRAWS ONLY WHERE IT LOOKS. Headless Chromium
  * here and on CI draws WebGL with SwiftShader, on the CPU. Measured in this
@@ -1200,6 +1210,7 @@ async function ending(w, h, end, extra) {
   const auth = /mockAuth/.test(extra || '');
   if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
   await revealCheck(page, '11 ' + end, k);
+  ok(await page.evaluate(() => document.getElementById('r-vote').hidden && document.getElementById('r-vote-go').hidden), '11 ' + end + ': no vote for tomorrow (and no row to it) before the vote\'s first day');
   await shot('result', true);
   /* 12 */
   await coachCheck(page, '12 ' + end, k, { lesson: !/mockLesson=none/.test(extra || ''), pro: !/mockPro=none/.test(extra || '') && !/mockLesson=none/.test(extra || '') }, shot);
@@ -1311,6 +1322,211 @@ async function sizeSweep() {
   await ctx.close();
 }
 
+/* 17. THE MODES AROUND THE DAILY (the owner, 2026-10-30), through the mock's switches. */
+async function modesPage(w, h, q, opts) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  if (opts && opts.meterOff) await page.addInitScript(() => { try { localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false, quick: true, sound: false })); } catch (e) {} });
+  if (opts && opts.theme) await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, opts.theme);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 60000 });
+  return { ctx, page, errors };
+}
+/* finish today's daily through the calls (the mound's own path is steps 5 and 11), then come back to it */
+async function dailyDone(page) {
+  await page.evaluate(async () => {
+    const A = window.STD_API, S = window.STD_UI.state;
+    let st = await A.startOuting(S.scn.id, null, { mode: 'daily' });
+    for (let i = 0; st.status === 'live' && i < 90; i++) st = (await A.throwPitch(st.outingId, { type: S.scn.pitcher.arsenal[0].type, cell: 12 })).state;
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#d-see', { timeout: 60000 });
+}
+const nothingOpen = (page) => page.evaluate(() => ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden));
+const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+/* the leaderboard (the owner, 2026-10-30): its heading is LEADERBOARD, and the count of closers is
+   said once, in the list's header. Read outside the rows, where a score or a rank could match it */
+const oneCount = (page, screen) => page.evaluate((id) => {
+  const sec = document.getElementById(id), n = (sec.querySelector('.bd-n') || {}).textContent || '';
+  const num = (/^(\d+) closers? today$/.exec(n) || [])[1];
+  const copy = sec.cloneNode(true);
+  copy.querySelectorAll('.bd-rows').forEach((x) => x.remove());
+  const times = num ? (copy.textContent.match(new RegExp('(^|\\D)' + num + '(\\D|$)', 'g')) || []).length : 0;
+  return { n, times, head: (sec.querySelector('h2') || {}).textContent };
+}, screen);
+const tall = (page, sel) => page.evaluate((q) => [...document.querySelectorAll(q)].filter((b) => b.offsetParent).every((b) => b.getBoundingClientRect().height >= 38), sel);
+
+async function modes(w, h, full) {
+  const tag = w + 'x' + h;
+  console.log('\nthe modes around the daily, ' + tag);
+  const shotM = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-modes-${name}.png`) }); };
+
+  /* sign in to save your score, and the vote signed out */
+  step(tag + ' 17 the save', 300);
+  let { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=late&mockVote=open');
+  await dailyDone(page);
+  ok(await nothingOpen(page), '17 nothing opens by itself on the home after the daily');
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on #r-save:not([hidden])', { timeout: 30000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const sv = await page.evaluate(() => { const s = document.getElementById('r-save'), b = s.querySelector('[data-save]'), r = s.getBoundingClientRect();
+    return { b: b.textContent, h: b.getBoundingClientRect().height, t: s.querySelector('p').textContent, bottom: r.bottom, top: r.top, nav: document.getElementById('r-nav').getBoundingClientRect().top, vh: innerHeight }; });
+  ok(sv.b === 'sign in to save your score' && sv.h >= 38 && /guest/.test(sv.t) && /leaderboard/.test(sv.t), '17 a guest\'s result says it plainly: "' + sv.t + '", with the button "' + sv.b + '" (' + Math.round(sv.h) + ' px)');
+  ok(sv.top >= 0 && sv.bottom <= sv.vh && sv.bottom <= sv.nav, '17 the guest\'s block is on screen without a scroll and above the menu (' + Math.round(sv.top) + '-' + Math.round(sv.bottom) + ' of ' + sv.vh + ' px, the menu at ' + Math.round(sv.nav) + ')');
+  ok(await nothingOpen(page), '17 the save is a button on the result, no sheet opened');
+  await page.waitForSelector('#r-vote:not([hidden]) .vt-o', { timeout: 30000 });
+  const gv = await page.evaluate(() => ({ n: document.querySelectorAll('#r-vote .vt-o').length, dis: [...document.querySelectorAll('#r-vote .vt-o')].every((b) => b.disabled), btn: (document.querySelector('#r-vote [data-save]') || {}).textContent }));
+  ok(gv.n === 2 && gv.dis && gv.btn === 'sign in to save your score', '17 signed out, the vote shows the two and the same sign-in button (' + gv.btn + ')');
+  ok(await noSideScroll(page), '17 the result has no sideways scroll');
+  await shotM(page, 'result-save');
+  await page.click('#r-board');
+  await page.waitForSelector('#bd-list .bd-rows', { timeout: 30000 });
+  const bd = await page.evaluate(() => ({ t: document.getElementById('bd-you').textContent, b: (document.getElementById('bd-signin') || {}).textContent }));
+  ok(/as a guest/.test(bd.t) && /leaderboard/.test(bd.t) && bd.b === 'sign in to save your score', '17 the leaderboard says why a guest is not on it, with the same button');
+  const c1 = await oneCount(page, 's-board');
+  ok(c1.head === 'leaderboard' && c1.times === 1, '17 the guest\'s leaderboard: heading "' + c1.head + '", the count once ("' + c1.n + '", ' + c1.times + ' time)');
+  await shotM(page, 'board-signed-out');
+  await page.click('#bd-signin');
+  await page.waitForSelector('#sheet-auth.on #au-form');
+  await page.fill('#au-email', 'mock@example.com');
+  await page.fill('#au-pass', 'mockpass');
+  await page.click('#au-form button[type=submit]');
+  await page.waitForSelector('#bd-you .bd-rank', { timeout: 30000 });
+  ok(true, '17 signing in posts the daily once: the leaderboard shows your rank');
+  const c2 = await oneCount(page, 's-board');
+  ok(c2.head === 'leaderboard' && c2.times === 1, '17 signed in, the leaderboard: heading "' + c2.head + '", the count once ("' + c2.n + '", ' + c2.times + ' time)');
+  await page.click('#bd-back');
+  await page.waitForSelector('#s-result.on #r-save.saved', { timeout: 30000 });
+  const sd = await page.evaluate(() => ({ s: document.getElementById('r-save').textContent, st: document.getElementById('r-streak').textContent, posted: window.STD_API.pending() }));
+  ok(/^saved\./.test(sd.s) && /#\d+ of \d+ today/.test(sd.st) && sd.posted === null, '17 the result says it is saved (' + sd.s + ', streak line "' + sd.st + '") and nothing is pending (' + JSON.stringify(sd.posted) + ')');
+  await shotM(page, 'result-saved');
+  ok(errors.length === 0, '17 the save: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* the vote, signed in */
+  step(tag + ' 17 the vote', 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockVote=open'));
+  await dailyDone(page);
+  await page.click('#d-see');
+  await page.waitForSelector('#r-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });
+  ok(await page.evaluate(() => document.getElementById('r-save').hidden), '17 signed in, no save button');
+  const vt = await page.evaluate(() => [...document.querySelectorAll('#r-vote .vt-o')].map((b) => ({ name: b.querySelector('.vt-t b').textContent, meta: b.querySelector('.vt-t span').textContent, h: b.getBoundingClientRect().height })));
+  ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(top|bot) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
+  /* the menu's row to the vote (the owner, 2026-10-30): only while it is open; it scrolls, nothing opens */
+  const vrow = await page.evaluate(() => { const b = document.getElementById('r-vote-go'); return { on: !b.hidden, t: b.textContent, h: b.getBoundingClientRect().height }; });
+  ok(vrow.on && /vote for tomorrow/.test(vrow.t) && vrow.h >= 38, '17 the result\'s menu has a row to the vote while it is open: "' + vrow.t + '"');
+  await page.click('#r-vote-go');
+  await page.waitForFunction(() => { const r = document.getElementById('r-vote').getBoundingClientRect(); return r.top >= -2 && r.top < 80; }, null, { timeout: 30000 });
+  ok(await nothingOpen(page) && await page.evaluate(() => document.activeElement && document.activeElement.closest('#r-vote') !== null),
+    '17 the row jumps to the vote tile and hands it the focus, no sheet opened');
+  await shotM(page, 'vote');
+  await page.click('#r-vote .vt-o >> nth=0');
+  await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 30000 });
+  const vd = await page.evaluate(() => ({ on: document.querySelectorAll('#r-vote .vt-o.on').length, n: document.querySelectorAll('#r-vote .vt-n').length, say: document.querySelector('#r-vote .vt-say').textContent }));
+  ok(vd.on === 1 && vd.n === 2 && /it counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
+  await shotM(page, 'vote-cast');
+  ok(errors.length === 0, '17 the vote: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* how today was picked, and the archive */
+  step(tag + ' 17 the pick and the archive', 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockVote=locked&mockEnt=pro'));
+  await page.waitForSelector('#h-pick:not([hidden])', { timeout: 30000 });
+  const pk = await page.textContent('#h-pick');
+  ok(/^picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
+  await page.evaluate(() => window.STD_MENUS.show('past'));
+  await page.waitForSelector('#sheet-past.on');
+  const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);
+  ok(arc > 0, '17 Pro: the past dailies are a list to play (' + arc + ' days)');
+  await page.click('#past-body .arc-list button >> nth=0', { timeout: 120000 });
+  await page.waitForFunction(() => window.STD_UI.state.mode === 'archive' && document.body.dataset.screen === 's-mound', null, { timeout: 120000 });
+  ok(true, '17 Pro: a past day opens on the mound, as the archive');
+  ok(errors.length === 0, '17 the pick and the archive: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut'));
+  await page.evaluate(() => window.STD_MENUS.show('past'));
+  await page.waitForSelector('#sheet-past.on');
+  const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
+  ok(!lk.list && /open later/.test(lk.t) && !/\$|price|buy|pro\b/i.test(lk.t), '17 free: the past dailies stay locked, no price and no buy button');
+  ok(lk.pick, '17 before the vote, the home says nothing about it');
+  await ctx.close();
+
+  /* Survivor */
+  step(tag + ' 17 survivor', full ? 1500 : 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockSurv=2', { meterOff: true }));
+  await page.waitForSelector('#h-surv:not([hidden]) .tm-s:not(:empty)', { timeout: 30000 });
+  const row = await page.evaluate(() => ({ t: document.getElementById('h-surv').textContent, h: document.getElementById('h-surv').getBoundingClientRect().height }));
+  ok(/survivor/.test(row.t) && row.h >= 38, '17 Survivor is on the home menu beside the daily: "' + row.t + '"');
+  ok(await nothingOpen(page), '17 nothing opens by itself on the home');
+  await page.click('#h-surv');
+  await page.waitForSelector('#s-surv.on #sv-go');
+  await page.waitForSelector('#sv-list .bd-rows', { timeout: 30000 });
+  ok(await page.textContent('#sv-go') === 'start the run' && await tall(page, '#s-surv button'), '17 the Survivor screen: a start button and the Survivor leaderboard');
+  const c3 = await oneCount(page, 's-surv');
+  ok(c3.times === 1, '17 the Survivor leaderboard says its count once ("' + c3.n + '", ' + c3.times + ' time)');
+  ok(await noSideScroll(page), '17 the Survivor screen has no sideways scroll');
+  await shotM(page, 'survivor-start');
+  if (full) {
+    await homeWarm(page);
+    await page.click('#sv-go');
+    await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 120000 });
+    await stageReady(page);
+    const betweens = [], problems = [];
+    let pitches = 0;
+    for (let i = 0; i < 160; i++) {
+      const scr = await page.evaluate(() => document.body.dataset.screen);
+      if (scr === 's-surv') break;
+      if (scr === 's-next') {
+        const nx = await page.evaluate(() => ({ s: document.getElementById('nx-saves').textContent, n: document.getElementById('nx-next').textContent,
+          graded: !!document.querySelector('#s-next .sq, #s-next .oc') || /\b(green|yellow|orange|red|best call|pts)\b/i.test(document.getElementById('s-next').innerText),
+          sheet: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden) }));
+        betweens.push(nx);
+        if (betweens.length === 1) await shotM(page, 'survivor-between');
+        await page.waitForSelector('#s-mound.on', { timeout: 60000 });
+        await stageReady(page);
+        continue;
+      }
+      if (scr !== 's-mound' || await page.evaluate(() => window.STD_UI.state.busy)) { await page.waitForTimeout(120); continue; }
+      await page.click('#m-arsenal .pitch >> nth=0');
+      await page.click('#m-aim .cell[data-cell="12"]');
+      await page.click('#m-throw');
+      pitches++;
+      await page.waitForFunction(() => !window.STD_UI.state.busy || document.body.dataset.screen !== 's-mound', null, { timeout: PITCH_MS });
+      const q = await quietProblems(page);
+      problems.push(...q.out);
+    }
+    ok(problems.length === 0, '17 Survivor: nothing graded or over the field during ' + pitches + ' pitches' + (problems.length ? ': ' + problems.slice(0, 3).join(' | ') : ''));
+    ok(betweens.length === 2 && betweens.every((b, i) => b.s === 'saves: ' + (i + 1) && /^next: .+, \d{4}$/.test(b.n) && !b.graded && !b.sheet),
+      '17 each save goes straight on: ' + betweens.map((b) => '"' + b.s + '. ' + b.n + '"').join(', ') + ', no grade and no popup');
+    await page.waitForSelector('#s-surv.on #sv-list .bd-rows', { timeout: 15000 });
+    const end = await page.evaluate(() => ({ saves: (document.querySelector('#sv-you .bd-rank b') || {}).textContent, go: !!document.getElementById('sv-go'),
+      next: (document.querySelector('#sv-you .sv-next') || {}).textContent, chips: [...document.querySelectorAll('#sv-you .sv-run .oc')].map((c) => c.textContent) }));
+    ok(end.saves === '2' && !end.go && /next one opens in (\d+h )?\d+m\./.test(end.next || '') && end.chips.join(',') === 'door shut,door shut,walk-off',
+      '17 the walk-off ends the run on the Survivor board: ' + end.saves + ' saves, "' + end.next + '"');
+    await shotM(page, 'survivor-over');
+    await page.click('#sv-back');
+    await page.waitForFunction(() => /2 saves today · next run in/.test(document.querySelector('#h-surv .tm-s').textContent), null, { timeout: 30000 });
+    ok(true, '17 the home row says the run is used and when the next opens');
+    const again = await page.evaluate(() => window.STD_API.survivorStart().then(() => 'started', (e) => e.message));
+    ok(again === 'one run a day', '17 one run a day: a second start is refused (' + again + ')');
+    const ent = await page.evaluate(() => window.STD_API.entitlements());
+    ok(ent.pro === false && ent.survivorRuns === 1, '17 the Pro hook is there and off: survivorRuns ' + ent.survivorRuns);
+  }
+  ok(errors.length === 0, '17 Survivor: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
@@ -1326,6 +1542,8 @@ try {
   await ending(1440, 900, 'tie_held', '&mockPro=none');
   await ending(1440, 900, 'doors_open', '&mockAuth=1');
   await ending(1440, 900, 'walk_off', '&mockPro=none');
+  await modes(390, 844, true);
+  await modes(1440, 900, false);
 } catch (e) {
   fails++;
   console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));

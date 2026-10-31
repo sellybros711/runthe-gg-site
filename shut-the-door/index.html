@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=39">
+<link rel="stylesheet" href="style.css?v=43">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -78,6 +78,7 @@
     <h1 class="t-head" id="h-head"><span class="t-l1">YOU ARE THE CLOSER.</span> <span class="t-l2">CAN YOU SHUT THE DOOR?</span></h1>
     <div class="t-sit">
       <p class="h-occ"><span class="h-title" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
+      <p class="h-pick" id="h-pick" hidden></p>
       <div class="hbug-wrap" id="h-sit" role="group"></div>
       <div class="t-who" id="h-pitcher"></div>
       <div class="t-who due" id="h-due"></div>
@@ -90,10 +91,12 @@
         <p class="streak" id="h-streak"></p>
       </div>
       <div class="done" id="h-done" hidden></div>
+      <!-- SURVIVOR, the mode beside the daily: a run of saves, one a day. The row says where today's run stands. -->
+      <button class="t-mode" id="h-surv" type="button" hidden><span class="tm-k">survivor</span><span class="tm-s"></span><i class="chev" aria-hidden="true"></i></button>
       <nav class="t-list" aria-label="More">
         <button type="button" data-open="how"><span>how to play</span></button>
         <button type="button" data-open="101"><span>pitching 101</span></button>
-        <button type="button" data-open="board"><span>today's board</span></button>
+        <button type="button" data-open="board"><span>leaderboard</span></button>
         <button type="button" data-open="stats"><span>stats</span></button>
         <button type="button" data-open="settings"><span>settings</span></button>
       </nav>
@@ -205,6 +208,9 @@
     <p class="eyebrow" id="r-eyebrow"></p>
     <h2 class="outcome" id="r-outcome"></h2>
     <div class="seam" aria-hidden="true"></div>
+    <!-- a guest's daily (the owner, 2026-10-30): sign in to save the score to the leaderboard. A block
+         near the top of the result, on screen without a scroll at 390x844, never a popup (modes-ui.js) -->
+    <div class="r-save" id="r-save" hidden></div>
     <div class="vsbar" id="r-real"></div>
     <div class="r-kn">
       <div class="kn" id="r-kp"></div>
@@ -218,7 +224,8 @@
   </div>
   <nav class="r-nav" id="r-nav" aria-label="after the outing">
     <button class="nv" id="r-coach" type="button"><b>talk to pitching coach</b><span>your costliest pitch</span><i class="chev" aria-hidden="true"></i></button>
-    <button class="nv" id="r-board" type="button"><b>today's board</b><span>where you rank</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-vote-go" type="button" hidden><b>vote for tomorrow</b><span>pick the next spot</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-board" type="button"><b>leaderboard</b><span>where you rank</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-share" type="button"><b>share</b><span>the card or the text</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-again" type="button"><b>run it back</b><span>practice. not scored.</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-home" type="button"><b>home</b><i class="chev" aria-hidden="true"></i></button>
@@ -230,6 +237,8 @@
   </div>
  </aside>
  <div class="r-main">
+  <!-- the vote for tomorrow's daily, after the daily, from the vote's first day (modes-ui.js) -->
+  <section class="r-tile r-vote" id="r-vote" aria-live="polite" hidden></section>
   <section class="r-tile r-pbp">
     <div class="r-sec-h"><h3>you vs the real game</h3><span>pitch by pitch</span><div class="legend" id="r-legend"></div></div>
     <div class="cmp" id="r-reveal"></div>
@@ -255,13 +264,41 @@
     <div class="bd-side">
       <div class="bd-hero">
         <p class="eyebrow" id="bd-eyebrow"></p>
-        <h2 class="bd-head" id="bd-head">the board</h2>
+        <h2 class="bd-head" id="bd-head">leaderboard</h2>
         <div class="seam" aria-hidden="true"></div>
         <div id="bd-you"></div>
       </div>
       <p class="quiet bd-note">today's daily only. ranked by score. a tie goes to whoever posted first.</p>
     </div>
     <div class="card bd-list" id="bd-list" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 7. SURVIVOR: today's run and its board. From the home's survivor row, and where a run ends. -->
+<section class="screen" id="s-surv" aria-labelledby="sv-head">
+  <button class="bd-back" id="sv-back" type="button"><i aria-hidden="true"></i>back</button>
+  <div class="bd-grid">
+    <div class="bd-side">
+      <div class="bd-hero sv-hero">
+        <p class="eyebrow" id="sv-eyebrow"></p>
+        <h2 class="bd-head" id="sv-head">survivor</h2>
+        <div class="seam" aria-hidden="true"></div>
+        <div id="sv-you"></div>
+      </div>
+      <p class="quiet bd-note">most saves in a row, then points. a held tie ends a run too.</p>
+    </div>
+    <div class="card bd-list" id="sv-list" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 8. BETWEEN TWO SURVIVOR SPOTS: the saves and the next closer. Goes on by itself; a tap goes sooner. -->
+<section class="screen" id="s-next" aria-live="polite">
+  <div class="nx-in">
+    <p class="eyebrow">survivor &middot; save made</p>
+    <h2 class="nx-saves" id="nx-saves"></h2>
+    <div class="seam" aria-hidden="true"></div>
+    <p class="nx-next" id="nx-next"></p>
+    <p class="nx-occ" id="nx-occ"></p>
   </div>
 </section>
 
@@ -277,7 +314,7 @@
       <button type="button" data-open="101"><i class="mi data"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></i><span class="mt"><b>pitching 101</b><span>the ideas the coach uses.</span></span><i class="chev" aria-hidden="true"></i></button>
     </div>
     <div class="menu-list">
-      <button type="button" data-open="board"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="mt"><b>today's board</b><span>every closer who posted today.</span></span><i class="chev" aria-hidden="true"></i></button>
+      <button type="button" data-open="board"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="mt"><b>leaderboard</b><span>every closer who posted today.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="stats"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="mt"><b>stats</b><span>every outing, every grade.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="past"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></i><span class="mt"><b>past dailies</b><span>every spot so far.</span></span><em class="tag">locked</em><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="settings"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="mt"><b>settings</b><span>sound, speed, meter, theme.</span></span><i class="chev" aria-hidden="true"></i></button>
@@ -329,7 +366,7 @@
 <script src="aim.js?v=5"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
-<script src="menus.js?v=8"></script>
+<script src="menus.js?v=10"></script>
 <script src="rng.js?v=1"></script>
 <script src="modes.js?v=1"></script>
 <script src="grade.js?v=13"></script>
@@ -340,10 +377,11 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=7"></script>
 <script src="api.js?v=21"></script>
-<script src="mock-api.js?v=12"></script>
+<script src="mock-api.js?v=13"></script>
 <script src="coach.js?v=2"></script>
-<script src="board.js?v=1"></script>
-<script src="ui.js?v=49"></script>
+<script src="board.js?v=4"></script>
+<script src="modes-ui.js?v=4"></script>
+<script src="ui.js?v=50"></script>
 <script type="module" src="3d/boot.js?v=71"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>

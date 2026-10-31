@@ -19,6 +19,8 @@
 (function () {
 'use strict';
 var C = window.STD_CONTRACT, API = window.STD_API, M = window.STD_MOUND, AN = window.STD_ANIM, MN = window.STD_MENUS;
+/* the modes around the daily (modes-ui.js): the save, the vote, Survivor, the archive */
+var MU = window.STD_MODES_UI || null;
 var METER = window.STD_METER || null;
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -88,7 +90,7 @@ function record(day, number, r) {
 /* ---- state ------------------------------------------------------------------- */
 
 var S = {
-  day: C.easternDay(), scn: null, daily: null, dailyResult: null,
+  day: C.easternDay(), scn: null, dailyScn: null, daily: null, dailyResult: null, arsFor: null, saved: false,
   outing: null, mode: 'daily', type: null, cell: null, at: null, busy: false,
   heat: 'damage', drawer: false, scout: false, guide: null, hover: null, scene: null, grid: null, mini: null, hero: null, result: null,
 };
@@ -128,10 +130,21 @@ function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; re
 var TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', ST: '#ddb33a', SV: '#93afd4', CU: '#00d1ed', KC: '#6236cd', CS: '#0068ff', CH: '#1dbe3a', FS: '#3bacac', FO: '#55ccab', KN: '#3c44cd', SC: '#60db33', EP: '#888888' };
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
+  /* Survivor and the archive put their own spot on the mound; the home and its links are today's */
+  if (id === 's-home' || id === 's-board') dailyBack();
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
-  if (id === 's-result') playResult();
+  if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
+}
+
+/* back to today's spot after a Survivor run or an archive day */
+function dailyBack() {
+  if (!S.dailyScn || S.scn === S.dailyScn) return;
+  S.scn = S.dailyScn;
+  S.mode = 'daily';
+  S.outing = S.daily;
+  S.result = S.dailyResult;
 }
 
 /* ---- sound: four noises made on the spot, nothing to download ---------------- */
@@ -302,6 +315,7 @@ function renderHome() {
   renderMatchup();
   $('h-proxy').hidden = s.resolution !== 'proxy';
   $('m-proxy').hidden = s.resolution !== 'proxy';
+  if (MU) MU.pickLine($('h-pick'), s);
   renderStreak();
   $('h-load').hidden = true;
   $('h-main').hidden = false;
@@ -350,7 +364,7 @@ function renderStreak() {
 }
 
 function renderHomeState() {
-  var d = S.daily, r = S.dailyResult;
+  var d = S.daily, r = S.dailyResult, hs = S.dailyScn || S.scn;
   var take = $('b-take');
   if (r) {
     $('h-go').hidden = true;
@@ -359,7 +373,7 @@ function renderHomeState() {
     done.hidden = false;
     var dp = Math.round(r.percentile);
     done.innerHTML =
-      '<div class="d-top"><div><p class="dc-lbl">today · #' + esc(S.scn.number) + '</p><p class="d-out ' + r.outcome + '">' + esc(C.OUTCOME_LABEL[r.outcome]) + '</p></div>' +
+      '<div class="d-top"><div><p class="dc-lbl">today · #' + esc(hs.number) + '</p><p class="d-out ' + r.outcome + '">' + esc(C.OUTCOME_LABEL[r.outcome]) + '</p></div>' +
       (r.vsReal ? '<span class="vs-pill ' + esc(r.vsReal) + '">' + esc(VS_SHORT[r.vsReal]) + '</span>' : '') + '</div>' +
       '<div class="d-mid"><div class="strip">' + stripHTML(r.strip) + '</div>' +
       '<div class="d-stats"><span><b>' + esc(r.pitches) + '</b> ' + (r.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
@@ -367,7 +381,7 @@ function renderHomeState() {
       '<div class="d-act"><button class="btn take sm" type="button" id="d-see">see it again</button>' +
       '<button class="btn dk" type="button" id="d-share">share</button>' +
       '<button class="btn dk" type="button" id="d-again">run it back</button></div>' +
-      '<p class="d-tmrw">back tomorrow for #' + esc(S.scn.number + 1) + '.</p>';
+      '<p class="d-tmrw">back tomorrow for #' + esc(hs.number + 1) + '.</p>';
     $('d-share').addEventListener('click', function () { share(r); });
     $('d-see').addEventListener('click', function () { S.mode = 'daily'; S.result = r; renderResult(); show('s-result'); });
     $('d-again').addEventListener('click', practice);
@@ -378,6 +392,7 @@ function renderHomeState() {
     take.textContent = d && d.pitchNo > 0 ? 'back to the mound · pitch ' + (d.pitchNo + 1) : 'take the mound';
   }
   renderStreak();
+  if (MU) MU.homeRow($('h-surv'));
 }
 
 /* the home's stadium: the stills, one after another, slowly. CSS does the pan and the fade (transform
@@ -423,6 +438,28 @@ function buildMound() {
   $('m-scene').insertBefore(S.grid.el, $('m-dbg'));
   /* the live field minimap: built into its slot, shown after the first play of the outing */
   S.mini = window.STD_MINIMAP ? window.STD_MINIMAP.create($('m-mini')) : null;
+  buildArsenal();
+  /* the number keys pick a pitch, on the mound, between pitches */
+  document.addEventListener('keydown', function (e) {
+    if (document.body.dataset.screen !== 's-mound' || e.ctrlKey || e.metaKey || e.altKey) return;
+    /* C challenges the call while the button is up */
+    if ((e.key === 'c' || e.key === 'C') && !$('m-abs-b').hidden) { e.preventDefault(); challengeIt(); return; }
+    if ((e.key === 'p' || e.key === 'P') && !$('m-run').hidden && !$('m-po').hidden) { e.preventDefault(); pickoffIt(); return; }
+    if ((e.key === 'q' || e.key === 'Q') && !$('m-run').hidden) { e.preventDefault(); setSlide(!S.slide); return; }
+    if (S.busy) return;
+    if (S.meter && S.meter.running()) return;
+    if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
+    var k = /^[1-9]$/.test(e.key) ? +e.key - 1 : -1, a = S.scn.pitcher.arsenal[k];
+    if (!a) return;
+    e.preventDefault();
+    pickType(a.type);
+  });
+  wireMound();
+}
+/* The pitch buttons for the spot's closer. Built with the mound, and again when Survivor or the
+   archive puts a different closer on it. */
+function buildArsenal() {
+  S.arsFor = S.scn.id;
   var ars = $('m-arsenal');
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
@@ -448,21 +485,9 @@ function buildMound() {
   });
   fitNames();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
-  /* the number keys pick a pitch, on the mound, between pitches */
-  document.addEventListener('keydown', function (e) {
-    if (document.body.dataset.screen !== 's-mound' || e.ctrlKey || e.metaKey || e.altKey) return;
-    /* C challenges the call while the button is up */
-    if ((e.key === 'c' || e.key === 'C') && !$('m-abs-b').hidden) { e.preventDefault(); challengeIt(); return; }
-    if ((e.key === 'p' || e.key === 'P') && !$('m-run').hidden && !$('m-po').hidden) { e.preventDefault(); pickoffIt(); return; }
-    if ((e.key === 'q' || e.key === 'Q') && !$('m-run').hidden) { e.preventDefault(); setSlide(!S.slide); return; }
-    if (S.busy) return;
-    if (S.meter && S.meter.running()) return;
-    if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
-    var k = /^[1-9]$/.test(e.key) ? +e.key - 1 : -1, a = S.scn.pitcher.arsenal[k];
-    if (!a) return;
-    e.preventDefault();
-    pickType(a.type);
-  });
+}
+/* the mound's own controls, wired once */
+function wireMound() {
   $('m-throw').addEventListener('click', throwIt);
   $('m-abs-b').addEventListener('click', challengeIt);
   $('m-po').addEventListener('click', pickoffIt);
@@ -620,6 +645,9 @@ function aimPoint(cell, at) {
 
 function enterMound() {
   buildMound();
+  /* a different closer (Survivor's next spot, an archive day): his own pitch buttons */
+  if (S.arsFor !== S.scn.id) { buildArsenal(); speedLabels(); S.grid.setMarks({}); }
+  $('m-proxy').hidden = S.scn.resolution !== 'proxy';
   stopMeter(); meterDone();
   S.scene.setScenario(S.scn);
   S.type = null; S.cell = null; S.at = null; S.lastMarker = null; S.paintedN = null;
@@ -1629,6 +1657,7 @@ function lastCall() {
 
 function finish() {
   return API.finishOuting(S.outing.outingId).then(function (r) {
+    if (S.mode === 'survivor') return survivorNext(r);
     S.result = r;
     if (S.mode === 'daily') {
       S.dailyResult = r;
@@ -1641,13 +1670,111 @@ function finish() {
   });
 }
 
+/* The daily's result carries the save (signed out) and the vote for tomorrow. Neither on practice or
+   an archive day. Both are blocks the player reads when they choose; nothing opens. */
+function renderModes() {
+  if (!MU) return;
+  var daily = S.mode === 'daily';
+  if (daily) MU.saveBlock($('r-save'), { account: S.result && S.result.account, justSaved: S.saved });
+  else { $('r-save').hidden = true; }
+  if (daily && S.dailyResult) MU.voteBlock($('r-vote')); else { $('r-vote').hidden = true; voteRow(null); }
+}
+/* The result's menu carries one row to the vote while it is open (the owner, 2026-10-30): on a phone
+   the vote's tile sits below the menu. The row only scrolls to it; it never opens anything. */
+function voteRow(v) {
+  var b = $('r-vote-go'), on = !!(v && v.open && v.candidates && v.candidates.length === 2) && S.mode === 'daily';
+  var was = !b.hidden;
+  b.hidden = !on;
+  if (on) b.querySelector('span').textContent = v.myVote ? 'your vote is in' : v.canVote ? 'pick the next spot' : 'see the two spots';
+  if (was && !on && b.classList.contains('sel')) navSelect($('r-coach'));
+}
+function jumpToVote() {
+  var t = $('r-vote');
+  if (t.hidden) return;
+  t.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  var f = t.querySelector('.vt-o:not([disabled]), [data-save]') || t;
+  if (f === t) t.setAttribute('tabindex', '-1');
+  try { f.focus({ preventScroll: true }); } catch (e) {}
+}
+
+/* ---- Survivor (CONTRACT.md 17): a run of saves --------------------------------------------------
+   The home's row opens its screen; start plays the day's run on the mound as the daily does. A
+   door shut goes straight on: a moment with the saves and the next closer (#s-next), then the next
+   spot. Anything else ends the run on the Survivor screen, with its board. No result screen and no
+   grade between spots. */
+function startSurvivor() {
+  if (!API.survivorStart) return;
+  Promise.resolve().then(function () { return API.survivorStart(); }).then(function (go) {
+    playSurvivor(go);
+  }).catch(function (e) {
+    var used = e && /one run a day/.test(e.message || '');
+    toast(used ? 'today\'s run is used. next one opens at midnight eastern.' : 'the run didn\'t start. try again.');
+    if (MU) MU.showSurvivor();
+    if (!used && window.console) console.warn(e);
+  });
+}
+function playSurvivor(go) {
+  S.scn = go.scenario;
+  S.mode = 'survivor';
+  S.outing = go.state;
+  S.result = null;
+  if (S.outing.status === 'over') return finish();
+  enterMound();
+  pbp('survivor', (go.saves ? go.saves + (go.saves === 1 ? ' save. ' : ' saves. ') : '') + batterAt(S.outing.batterIndex).name + ' leads off.');
+}
+function survivorNext(r) {
+  var sv = r.survivor || {};
+  if (sv.over) {
+    show('s-surv');
+    if (MU) MU.showSurvivor();
+    renderHomeState();
+    return;
+  }
+  /* the next spot loads while the saves show */
+  var next = Promise.resolve().then(function () { return API.survivorStart(); });
+  return next.then(function (go) {
+    show('s-next');
+    return MU.between(sv.saves, go.scenario, !!prefs.quick).then(function () { playSurvivor(go); });
+  }).catch(function (e) {
+    toast('the next spot didn\'t load. try again.');
+    show('s-surv');
+    if (MU) MU.showSurvivor();
+    if (window.console) console.warn(e);
+  });
+}
+function openSurvivor() {
+  if (!MU) return;
+  if (MN.isOpen()) MN.close(true);
+  show('s-surv');
+  MU.showSurvivor();
+}
+
+/* ---- the archive (Pro, CONTRACT.md 17): a past daily on its own spot and seed. Only reachable
+   when entitlements() says archive, which is false for everyone until Pro exists. */
+function playArchive(day) {
+  if (MN.isOpen()) MN.close(true);
+  API.getScenario(day).then(function (scn) {
+    return API.startOuting(scn.id, null, { mode: 'archive', day: day }).then(function (st) {
+      S.scn = scn;
+      S.mode = 'archive';
+      S.outing = st;
+      if (st.status === 'over') return finish();
+      enterMound();
+      pbp('archive', '#' + scn.number + '. ' + batterAt(st.batterIndex).name + ' leads off.');
+    });
+  }).catch(function (e) {
+    toast(e && /for Pro/.test(e.message || '') ? 'past dailies open later.' : 'that day didn\'t load. try again.');
+    if (window.console) console.warn(e);
+  });
+}
+
 /* runs allowed: the result's own, or the outing's score against the spot's */
 function runsOf(r, st) { return r.runs != null ? r.runs : st && st.score ? st.score.them - S.scn.situation.score.them : null; }
 
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
   var runs = runsOf(r, st);
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : (s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
+  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : (S.mode === 'archive' ? 'archive · ' : '') + (s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
@@ -2078,17 +2205,42 @@ function boot() {
       $('b-profile').setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
       if (MN.current() === 'sheet-auth') MN.renderAuth();
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
+      if (document.body.dataset.screen === 's-result' && S.result) renderModes();
+      if (document.body.dataset.screen === 's-surv' && MU) MU.showSurvivor();
+      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
     });
   } catch (e) {}
+  /* a daily played signed out, posted on the sign-in (api.js claim): say where it landed */
+  window.addEventListener('std-claimed', function (e) {
+    var acct = e.detail && e.detail.account;
+    if (!acct || !S.dailyResult) return;
+    S.dailyResult.account = acct;
+    S.saved = true;
+    if (S.mode === 'daily') S.result = S.dailyResult;
+    if (MN.current() === 'sheet-auth') MN.close(true);
+    if (document.body.dataset.screen === 's-result') { renderStreak(); renderModes(); }
+    if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
+  });
+  $('r-vote-go').addEventListener('click', jumpToVote);
+  if (MU) MU.init({
+    onVote: voteRow,
+    signIn: function () { MN.show('auth'); },
+    onSurvivor: startSurvivor,
+    onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
+  });
+  $('h-surv').addEventListener('click', openSurvivor);
   window.STD_BOARD.init({
     day: S.day, before: postIfOwed,
     played: function () { return !!S.dailyResult; },
     onBack: function () { show(boardFrom); if (boardFrom === 's-home') { renderHomeState(); drawHero(); } },
     onSignIn: function () { MN.show('auth'); },
     onPlay: function () { show('s-home'); takeMound(); },
+    pending: function () { return API.pending ? API.pending() : null; },
+    saveLabel: MU ? MU.SAVE_LABEL : null,
   });
   MN.init({
-    hist: hist, today: S.day, prefs: prefs, board: showBoard,
+    hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
+    archiveDays: MU ? MU.archiveDays : null,
     onPref: function (k, v) {
       if (k === 'theme') { setTheme(v); return; }
       prefs[k] = v; savePrefs();
@@ -2109,8 +2261,10 @@ function boot() {
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
 
+  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
+    S.dailyScn = scn;
     MN.init({ scn: scn });
     window.STD_BOARD.init({ scn: scn });
     renderHome();
