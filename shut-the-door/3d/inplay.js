@@ -18,10 +18,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=22';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=23';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=9';
-import { buildBallpark } from './ballpark.js?v=23';
+import { buildBallpark } from './ballpark.js?v=24';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -729,7 +729,9 @@ export class InPlay {
     // the throw's windup waits for the ball he is still taking
     if (take && spec.throwW > 0) { spec.throwW *= 1 - takeW; spec.twist = (spec.twist || 0) * (1 - takeW); }
     // a ground ball picked up: up from any dive first
-    if (take && take.z < 1) dive *= 1 - takeW;
+    // (a ball on the ground only: a liner trapped at his shoe is an air take, and up from his layout for it he
+    // fell back flat in the frame after the drop, 77 m/s at the pelvis, check-jolt.mjs pop fielder drop)
+    if (take && take.z < 1 && (take.key.kind === 'field' || take.key.kind === 'pickup')) dive *= 1 - takeW;
     if (take && take.z < 3.2) {
       spec.crouch = Math.max(spec.crouch, Math.min(1, (3.4 - take.z) / 2.6) * takeW);
       // (the run's capture gives way: he gets down to it, his stride broken down into the set)

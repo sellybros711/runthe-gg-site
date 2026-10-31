@@ -60,11 +60,13 @@
  *      Survivor board, one run a day and when the next opens) and the
  *      archive (only when entitlements say Pro)
  *
- *  18. between two of his halves (rules 8): a two-half daily played through the
- *      real page to the third out of the 8th, then his team's real half on the
- *      line score plate appearance by plate appearance (every number the
- *      halfOver record's), no grade or sheet, a few seconds or a tap, then
- *      the mound in the 9th with its leadoff man
+ *  18. rules 8: a two-half daily played through the page to the third out of
+ *      the 8th; the scorebug follows the half (the 9th, nobody out, nobody on,
+ *      the score his team left), as the outing's state says. Between the two
+ *      halves his team's real half plays on the line score plate appearance
+ *      by plate appearance (every number the halfOver record's), no grade or
+ *      sheet, a few seconds or a tap, then the mound in the 9th with its
+ *      leadoff man
  *
  * Steps 1 to 10 play the real engine (no mock switch). Steps 11 and 17 go
  * through mock-api.js.
@@ -1533,15 +1535,13 @@ async function modes(w, h, full) {
   await ctx.close();
 }
 
-/* 18. BETWEEN TWO OF HIS HALVES (rules 8, the owner 2026-10-30): "finish the eighth inning, and then
-   it should show a quick little animated game simulation of the box score of what's happening when
-   your team is hitting, and then it'll put you back into the ninth inning". Rivera 2009 (the
-   Yankees' 8th: 2 runs) on a day after rules 8 starts. From the vote's first day the page plays the
-   day the vote locked, kept on the device (std_picks_v1), so the check keeps Rivera's lock there, as a
-   device that has heard the server would. The calls to the third out of the 8th are found here with
-   the real engine on the day's seed (each pitch the one that does best for the out), then played
-   through the page with the meter off and the aim exact (a cell, then the arrow keys, which aim at
-   its centre), so the same pitches meet the same luck on the page. */
+/* 18. RULES 8, THE SWITCH (CONTRACT.md 5j). Rivera 2009 (the Yankees' 8th: 2 runs) on a day after
+   rules 8 starts. From the vote's first day the page plays the day the vote locked, kept on the device
+   (std_picks_v1), so the check keeps Rivera's lock there, as a device that has heard the server would.
+   The calls to the third out of the 8th are found here with the real engine on the day's seed (each
+   pitch the one that does best for the out), then played through the page with the meter off and the
+   aim exact (a cell, then the arrow keys, which aim at its centre), so the same pitches meet the same
+   luck on the page. */
 const HALF_DAY = '2026-11-24', HALF_PACK = 'std-2009-alcs6-rivera';
 function callsToHalf() {
   const E = require(path.join(ROOT, 'shut-the-door/engine.js')), G = require(path.join(ROOT, 'shut-the-door/grade.js'));
@@ -1563,13 +1563,8 @@ function callsToHalf() {
   const end = play(calls);
   return { calls, ho: end.halves[0] || null, pack };
 }
-async function halves(w, h, skip) {
-  const tag = w + 'x' + h;
-  console.log('\nbetween two halves, ' + tag);
-  step(tag + ' 18 between two halves', 900);
-  const plan = callsToHalf();
-  ok(!!plan.ho && plan.ho.between.pas.length > 0, '18 the engine finds the third out of the 8th in ' + plan.calls.length + ' pitches, with ' + (plan.ho ? plan.ho.between.pas.length : 0) + ' plate appearances between');
-  if (!plan.ho) return;
+/* open the two-half day on the page and play the calls; the last one's state is left to the caller */
+async function halfPage(w, h) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   await page.clock.setFixedTime(new Date(HALF_DAY + 'T16:00:00Z'));
@@ -1594,16 +1589,65 @@ async function halves(w, h, skip) {
   await page.click('#b-take', { timeout: 120000 });
   await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 120000 });
   await stageReady(page);
+  return { ctx, page, errors };
+}
+async function aimAndThrow(page, types, c) {
+  await page.keyboard.press(String(types.indexOf(c.type) + 1));
+  await page.click(`#m-aim .cell[data-cell="${c.cell}"]`);
+  const row = Math.floor(c.cell / 5);
+  await page.keyboard.press(row < 4 ? 'ArrowDown' : 'ArrowUp');
+  await page.keyboard.press(row < 4 ? 'ArrowUp' : 'ArrowDown');
+  await page.click('#m-throw');
+}
+/* the scorebug against the outing's state: the inning of the half being pitched, outs, bases, score, count */
+const bugReads = (page) => page.evaluate(() => {
+  const st = window.STD_UI.state.outing, hf = st.half || {};
+  const inn = document.getElementById('m-inn').textContent.replace(/tied/, '').trim();
+  const outs = document.querySelectorAll('#m-outs i.on').length;
+  const bases = ['b1', 'b2', 'b3'].reduce((a, k, i) => a | (document.querySelector('#m-bases .' + k).classList.contains('on') ? 1 << i : 0), 0);
+  const cnt = document.getElementById('m-count').getAttribute('aria-label');
+  return { inn, want: (hf.half === 'bottom' ? 'bot' : 'top') + ' ' + hf.inning, outs, wantOuts: st.outs, bases, wantBases: st.bases,
+    us: document.getElementById('m-us').textContent, them: document.getElementById('m-them').textContent, score: st.score, cnt, wantCnt: st.count.b + ' balls, ' + st.count.s + ' strikes' };
+});
+const bugOk = (b) => b.inn === b.want && b.outs === b.wantOuts && b.bases === b.wantBases && +b.us === b.score.us && +b.them === b.score.them && b.cnt === b.wantCnt;
+async function halfSwitch(w, h) {
+  const tag = w + 'x' + h;
+  console.log('\nrules 8, the switch, ' + tag);
+  step(tag + ' 18 the switch', 900);
+  const plan = callsToHalf();
+  ok(!!plan.ho, '18 the engine finds the third out of the 8th in ' + plan.calls.length + ' pitches');
+  if (!plan.ho) return;
+  const { ctx, page, errors } = await halfPage(w, h);
+  const types = await page.evaluate(() => window.STD_UI.state.scn.pitcher.arsenal.map((a) => a.type));
+  const b8 = await bugReads(page);
+  ok(bugOk(b8) && /8/.test(b8.inn), '18 before the switch the scorebug reads the 8th: "' + b8.inn + '"');
+  for (const c of plan.calls) {
+    await aimAndThrow(page, types, c);
+    await page.waitForFunction(() => !window.STD_UI.state.busy && document.body.dataset.screen === 's-mound', null, { timeout: PITCH_MS });
+  }
+  const b9 = await bugReads(page);
+  ok(bugOk(b9) && b9.want === (plan.ho.next.half === 'bottom' ? 'bot' : 'top') + ' ' + plan.ho.next.inning && b9.outs === 0 && b9.bases === 0 && +b9.us === plan.ho.next.score.us,
+    '18 after the switch the scorebug follows the half: "' + b9.inn + '", ' + b9.outs + ' out, bases ' + b9.bases + ', ' + b9.us + '-' + b9.them + ', ' + b9.cnt);
+  ok(errors.length === 0, '18 the switch: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* 18, THE CARD BETWEEN HIS HALVES (the owner 2026-10-30): "finish the eighth inning, and then it should
+   show a quick little animated game simulation of the box score of what's happening when your team is
+   hitting, and then it'll put you back into the ninth inning". The same day and calls as the switch;
+   at 390 the card plays out by itself, at 1440 a tap skips it. */
+async function halves(w, h, skip) {
+  const tag = w + 'x' + h;
+  console.log('\nbetween two halves, ' + tag);
+  step(tag + ' 18 between two halves', 900);
+  const plan = callsToHalf();
+  ok(!!plan.ho && plan.ho.between.pas.length > 0, '18 the engine finds the third out of the 8th in ' + plan.calls.length + ' pitches, with ' + (plan.ho ? plan.ho.between.pas.length : 0) + ' plate appearances between');
+  if (!plan.ho) return;
+  const { ctx, page, errors } = await halfPage(w, h);
   const types = await page.evaluate(() => window.STD_UI.state.scn.pitcher.arsenal.map((a) => a.type));
   let card = null;
   for (let i = 0; i < plan.calls.length; i++) {
-    const c = plan.calls[i];
-    await page.keyboard.press(String(types.indexOf(c.type) + 1));
-    await page.click(`#m-aim .cell[data-cell="${c.cell}"]`);
-    const row = Math.floor(c.cell / 5);
-    await page.keyboard.press(row < 4 ? 'ArrowDown' : 'ArrowUp');
-    await page.keyboard.press(row < 4 ? 'ArrowUp' : 'ArrowDown');
-    await page.click('#m-throw');
+    await aimAndThrow(page, types, plan.calls[i]);
     if (i < plan.calls.length - 1) { await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: PITCH_MS }); continue; }
     /* the third out: the card comes up once the play is seen, and only then */
     await page.waitForSelector('#s-half.on', { timeout: PITCH_MS });
@@ -1644,15 +1688,19 @@ async function halves(w, h, skip) {
   }
   if (card && card.skipped) ok(card.ms < 4500, '18 a tap skips the card (back on the mound ' + (card.ms / 1000).toFixed(1) + ' s after it came up)');
   await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
-  const nx = await page.evaluate(() => { const S = window.STD_UI.state; return { inn: document.getElementById('m-inn').textContent, half: S.outing.half, outs: S.outing.outs, bases: S.outing.bases, pbp: document.getElementById('m-pbp').textContent, bat: document.getElementById('m-bname').textContent, throwOn: !!S.outing && S.outing.status === 'live' }; });
-  ok(nx.half && nx.half.inning === 9 && /9/.test(nx.inn) && nx.outs === 0 && nx.bases === 0 && nx.pbp.includes(ho.next.leadoff.name) && nx.bat === ho.next.leadoff.name,
-    '18 back to the mound for the 9th: "' + nx.inn.trim() + '", nobody out, nobody on, "' + nx.pbp.trim() + '"');
+  const nx = await page.evaluate(() => { const S = window.STD_UI.state; return { half: S.outing.half, pbp: document.getElementById('m-pbp').textContent, bat: document.getElementById('m-bname').textContent }; });
+  const b9 = await bugReads(page);
+  ok(nx.half && nx.half.inning === 9 && nx.pbp.includes(ho.next.leadoff.name) && nx.bat === ho.next.leadoff.name,
+    '18 back to the mound for the 9th: "' + nx.pbp.trim() + '"');
+  ok(bugOk(b9) && b9.want === (ho.next.half === 'bottom' ? 'bot' : 'top') + ' ' + ho.next.inning && b9.outs === 0 && b9.bases === 0 && +b9.us === ho.next.score.us && +b9.them === ho.next.score.them,
+    '18 after the card the scorebug follows the half: "' + b9.inn + '", ' + b9.outs + ' out, bases ' + b9.bases + ', ' + b9.us + '-' + b9.them + ', ' + b9.cnt);
   /* one pitch of the 9th goes as any other */
   await page.keyboard.press('1');
   await page.click('#m-aim .cell[data-cell="12"]');
   await page.click('#m-throw');
   await page.waitForFunction(() => !window.STD_UI.state.busy || document.body.dataset.screen !== 's-mound', null, { timeout: PITCH_MS });
   ok(await page.evaluate(() => window.STD_UI.state.outing.half.inning === 9 && window.STD_UI.state.outing.pitchNo > 0), '18 a pitch of the 9th throws as any other');
+  ok(bugOk(await bugReads(page)), '18 and the scorebug still reads the 9th after it');
   ok(errors.length === 0, '18 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
@@ -1662,6 +1710,7 @@ try {
   await run(390, 844, 'light');
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
+  await halfSwitch(390, 844);
   await sizeSweep();
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
