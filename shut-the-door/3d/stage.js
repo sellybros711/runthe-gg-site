@@ -678,6 +678,7 @@ class Stage {
     try { run = this.inplay.begin({ pickoff: po, basesBefore: bases | (1 << (po.base - 1)) }, this.pitch, { hooks }); } catch (e) { console.error('the pickoff could not be staged', e); this.inplay.active = null; return { pickoff: false }; }
     // (a balk that walks a run in: the lead the next pitch's fielders read, sitBefore)
     if (po.runs) this.runsIn = (this.runsIn || 0) + po.runs;
+    if (po.halfOver) this.toHalf(po.halfOver);
     const tEnd = run.realDur + 0.3, callAt = run.resolveReal;
     return new Promise((done) => {
       let prev = null, clock = 0, frames = 0, raf = 0, called = false, finished = false;
@@ -722,12 +723,26 @@ class Stage {
       inning, and our lead (the scenario's, less the runs scored since the outing's first pitch, pr.n 1;
       an outing resumed mid way counts from its scenario's lead). Every pitch passes here, in order. */
   sitBefore(pr) {
-    if (!(pr.n > (this.lastN || 0))) this.runsIn = 0;
+    if (!(pr.n > (this.lastN || 0))) { this.runsIn = 0; this.halfAt = null; }
     this.lastN = pr.n || 0;
     const sc = this.scn && this.scn.situation ? this.scn.situation.score : null;
-    const sit = { inning: this.facts.situation.inning, margin: sc ? sc.us - sc.them - (this.runsIn || 0) : null };
+    // (rules 8: once a half is over, the next half's inning and lead, his team's runs between in it: halfAt)
+    const lead = this.halfAt ? this.halfAt.lead : sc ? sc.us - sc.them : null;
+    const sit = { inning: this.halfAt ? this.halfAt.inning : this.facts.situation.inning, margin: lead == null ? null : lead - (this.runsIn || 0) };
     this.runsIn = (this.runsIn || 0) + (pr.runs || 0);
+    if (pr.halfOver) this.toHalf(pr.halfOver);
     return sit;
+  }
+
+  /** A half is over (rules 8, the engine's halfOver record on the pitch or the pickoff that ended it): the
+      fielders read the next half's inning, and the lead after his team batted, from its first pitch on.
+      Read from the scenario's first half for the whole outing, the ninth was set as the eighth and his
+      team's runs between were never in the lead. */
+  toHalf(rec) {
+    const nx = rec && rec.next;
+    if (!nx || !nx.score) return;
+    this.halfAt = { inning: nx.inning, lead: nx.score.us - nx.score.them };
+    this.runsIn = 0;
   }
 
   /** One pitch, to the end of its play (THE PLAY'S TIMELINE, in the header). */
