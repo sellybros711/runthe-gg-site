@@ -26,7 +26,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
-import { selection, openCheckpoint } from './checkpoint.mjs';
+import { selection, openCheckpoint, pinDay } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -77,6 +77,8 @@ await page.route('**/*', (route) => {
   if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
   return route.abort();
 });
+// (the day pinned: the stage is that day's scenario, checkpoint.mjs pinDay)
+await pinDay(page);
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 // the clips (fielder.glb) in, so the bodies run and reach as the game shows them; nothing drawn
