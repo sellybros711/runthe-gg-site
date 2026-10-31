@@ -55,6 +55,11 @@ export function skin(src, opts = {}) {
           vec4 rim = texture2D(uGearRim, vec2(gph / 6.2831853 + 0.5, 0.5));
           float below = (gth - rim.r * 3.14159265) * gr;          // metres down the head from the rim
           float near = gr < 0.2 ? 1.0 : 0.0;
+          // the hair under it: a short cropped fade below the rim at the back and sides (rim.b), the
+          // hair colour with a grain, gone 3 cm down. The hair cards' own ragged edge showed there
+          float hg = fract(sin(dot(floor(vGearP * 1400.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+          float fade = rim.b * (below > 0.0 ? 1.0 - smoothstep(0.005, 0.03, below) : 0.0);
+          diffuseColor.rgb = mix(diffuseColor.rgb, uHairCol * (0.85 + 0.3 * hg), clamp(fade * (0.6 + 0.4 * hg), 0.0, 0.92) * near);
           float ao = below < 0.0 ? 0.45 : 1.0 - 0.5 * exp(-below / 0.01);
           ao *= 1.0 - 0.3 * rim.g * exp(-max(below, 0.0) / 0.035);   // the brim's shade on the brow and eyes
           diffuseColor.rgb *= mix(1.0, ao, near);
@@ -88,8 +93,8 @@ export function hair(src, color) {
     side: THREE.DoubleSide, alphaToCoverage: true,
   });
   m.name = src.name;
-  // under headgear (headgear.js wornShade) only the hair below the rim shows, and only where the
-  // rim texture's blue says hair may show (the back and sides, not a fringe under a brim)
+  // under headgear (headgear.js wornShade turns uGearOn on) the cards are not drawn: the skin draws
+  // his hair below the rim instead, where the rim texture's blue says it may show
   const u = { uGearOn: { value: 0 }, uGearM: { value: new THREE.Matrix4() }, uGearRim: { value: null } };
   m.userData.u = u;
   m.onBeforeCompile = (sh) => {
@@ -101,12 +106,9 @@ export function hair(src, color) {
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
         uniform sampler2D uGearRim; uniform float uGearOn; varying vec3 vGearP;`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
-        if (uGearOn > 0.5) {
-          float gr = length(vGearP);
-          float gth = acos(clamp(vGearP.y / max(gr, 1e-4), -1.0, 1.0)), gph = atan(vGearP.x, vGearP.z);
-          vec4 rim = texture2D(uGearRim, vec2(gph / 6.2831853 + 0.5, 0.5));
-          if ((gth - rim.r * 3.14159265) * gr < 0.004 || rim.b < 0.5) discard;
-        }`);
+        // under headgear none of the cards: the skin draws his hair as a short cropped fade below the
+        // rim (materials skin). The cards' alpha cut a ragged edge across the nape
+        if (uGearOn > 0.5) discard;`);
   };
   m.customProgramCacheKey = () => 'hair';
   return m;

@@ -45,11 +45,12 @@ export function measureHead(p, opts = {}) {
   p.root.updateMatrixWorld(true);
   const skin = p.meshes.find((m) => m.material.name === 'skin' && m.isSkinnedMesh);
   const bi = boneIndex(skin, 'head');
-  const idx = [], wts = [];
+  const idx = [], wts = [], low = [];
   const box = new THREE.Box3();
   const n = skin.geometry.attributes.position.count;
   for (let i = 0; i < n; i++) {
     const w = weightOf(skin, i, bi);
+    if (w >= 0.05) low.push(i);
     if (w < 0.35) continue;
     idx.push(i); wts.push(w);
     box.expandByPoint(worldVertex(skin, i, _v));
@@ -83,7 +84,10 @@ export function measureHead(p, opts = {}) {
     const pc = m.geometry.attributes.position.count;
     for (let i = 0; i < pc; i++) hairPts.push(worldVertex(m, i, new THREE.Vector3()).applyMatrix4(Finv));
   }
-  const head = { skin, idx, wts, nrm, F, Finv, pts, brow, hair: !!opts.hair, map: scalpMap(pts.concat(hairPts), wts) };
+  // and every skin vertex the head bone carries at all (the jaw and the cheeks are shared with the
+  // neck): what a piece held off the face (the jaw guard) must clear
+  const lowPts = low.map((i) => worldVertex(skin, i, new THREE.Vector3()).applyMatrix4(Finv));
+  const head = { skin, idx, wts, nrm, F, Finv, pts, brow, hair: !!opts.hair, map: scalpMap(pts.concat(hairPts), wts), lowPts };
   p.head = head;
   return head;
 }
@@ -334,6 +338,41 @@ export function rimAtHeights(head, yOf) {
 
 const gauss = (x, w) => Math.exp(-(x * x) / (w * w));
 
+/** A molded piece with a thickness: S(u, v) its outer surface over u, v in [0, 1], inward(u, v, q)
+    the offset from the outer surface to the inner (its length the thickness). Returns three
+    geometries: the outer face, the inner face (wound the other way) and the walls round its edge. */
+function thickSheet(S, inward, NU, NV) {
+  const O = [], I = [];
+  for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
+    const u = i / NU, v = j / NV, q = S(u, v);
+    O.push(q); I.push(q.clone().add(inward(u, v, q)));
+  }
+  const grid = (P, flip) => {
+    const pos = [], idx = [];
+    for (const q of P) pos.push(q.x, q.y, q.z);
+    for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
+      const a = j * (NU + 1) + i, b = a + 1, c = a + NU + 1, d = c + 1;
+      if (flip) idx.push(a, b, c, b, d, c); else idx.push(a, c, b, b, c, d);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    return g;
+  };
+  // the rim round the edge: the boundary in order, outer to inner
+  const ring = [];
+  for (let i = 0; i <= NU; i++) ring.push(i);
+  for (let j = 1; j <= NV; j++) ring.push(j * (NU + 1) + NU);
+  for (let i = NU - 1; i >= 0; i--) ring.push(NV * (NU + 1) + i);
+  for (let j = NV - 1; j >= 1; j--) ring.push(j * (NU + 1));
+  const pos = [], idx = [];
+  ring.forEach((k) => { pos.push(O[k].x, O[k].y, O[k].z, I[k].x, I[k].y, I[k].z); });
+  const m = ring.length;
+  for (let r = 0; r < m; r++) { const a = r * 2, b = ((r + 1) % m) * 2; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+  const walls = new THREE.BufferGeometry();
+  walls.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); walls.setIndex(idx); walls.computeVertexNormals();
+  return { outer: grid(O, false), inner: grid(I, true), walls };
+}
+
 /* ---------------------------------------------------------------- the batting helmet */
 
 /** A batting helmet worn on this head: the front rim just above the brows, the back down over the
@@ -377,45 +416,75 @@ export function battingHelmet(head, color, flapSide, opts = {}) {
   const hp = onOuter(ePh, thetaAtY(head, ePh, L.earY), 0.0008);
   const hole = new THREE.Mesh(new THREE.CircleGeometry(0.0095, 16), dark);
   hole.position.copy(hp); hole.lookAt(hp.clone().add(hp.clone().normalize())); g.add(hole);
-  // the bill: from the shell's front edge, short, stiff, a little down; a dark underside
-  const pts = [], under = [];
-  for (let i = 0; i <= 20; i++) {
-    const ph = (-50 + (100 * i) / 20) * D, th = edge(ph) - 0.03;
-    const base = sh.outer(ph, th).multiplyScalar(0.985);
-    const out = new THREE.Vector3(Math.sin(ph), 0, Math.cos(ph)).multiplyScalar(0.05 * Math.cos(ph * 0.95));
-    const tip = base.clone().add(out).add(new THREE.Vector3(0, -0.014 * Math.cos(ph), 0));
-    pts.push([base, tip]);
-    under.push([base.clone().add(new THREE.Vector3(0, -0.004, -0.004)), tip.clone().add(new THREE.Vector3(0, -0.003, 0))]);
+  // the bill: a stiff molded visor from the shell's front edge, a little down, the sides curving
+  // down with the shell, 6 mm thick, dark underneath (it was a thin plate with a ragged edge)
+  {
+    const PH = 52 * D, T = 0.006, droop = 17 * D;
+    const S = (u, v) => {
+      const ph = -PH + 2 * PH * u, c = Math.cos(ph / PH * Math.PI / 2);
+      const base = sh.outer(ph, edge(ph) - 0.02).multiplyScalar(0.99);
+      const len = 0.004 + 0.04 * Math.pow(c, 0.9);
+      const out = new THREE.Vector3(Math.sin(ph) * Math.cos(droop), -Math.sin(droop) - 0.35 * (1 - c), Math.cos(ph) * Math.cos(droop)).normalize();
+      return base.addScaledVector(out, len * v).add(new THREE.Vector3(0, -0.008 * v * v, 0));
+    };
+    const B = thickSheet(S, () => new THREE.Vector3(0, -T, 0), 40, 6);
+    const top = new THREE.Mesh(B.outer, mat), under = new THREE.Mesh(B.inner, dark), lip = new THREE.Mesh(B.walls, mat);
+    for (const m of [top, under, lip]) { m.name = 'bill'; m.castShadow = true; g.add(m); }
   }
-  // closed at the front and the sides, so the bill is one solid piece
-  const lip = pts.map(([, tip], i) => [tip, under[i][1]]);
-  g.add(strip(pts, mat), strip(under, dark), strip(lip, mat), strip([[pts[0][0], under[0][0]], [pts[0][1], under[0][1]]], mat), strip([[pts[20][0], under[20][0]], [pts[20][1], under[20][1]]], mat));
   if (opts.jaw) {
-    // the jaw guard: a curved plate from the flap's lower front edge forward along the jaw toward
-    // the chin, 12 mm off the skin, laid over a well smoothed copy of the head (so it is smooth)
-    const hull = smoothMap(head.map, 30);
-    for (let k = 0; k < hull.R.length; k++) hull.R[k] = Math.max(hull.R[k], head.map.R[k]);
-    const sx = flapSide < 0 ? -1 : 1;
-    // it starts inside the flap's front edge, in front of the ear, and runs forward to the cheek
-    const ph0 = sx * (L.earPh - 22 * D), th0 = edge(ph0) - 0.06;
-    const chin = polar(new THREE.Vector3(sx * 0.05, L.earBot - 0.008, 0.074));
-    const pos = [], idx = [], NU = 16, NV = 4;
-    for (let v = 0; v <= NV; v++) for (let u = 0; u <= NU; u++) {
-      const a = u / NU, ph = THREE.MathUtils.lerp(ph0, chin.ph, a);
-      const th = THREE.MathUtils.lerp(th0, chin.th, a) + (v / NV) * 0.34 * (1 - 0.3 * a);
-      const onFlap = sh.outer(ph, th).length() - 0.002;
-      const r = THREE.MathUtils.lerp(onFlap, radiusAt(hull, ph, th) + 0.014, Math.min(1, a * 3));
-      const q = dirOf(ph, th).multiplyScalar(r);
-      pos.push(q.x, q.y, q.z);
+    // the jaw guard: a molded C-flap from the ear flap's lower front edge forward along the jaw to
+    // near the corner of the mouth, 7 mm thick, 12 mm off the face. The face under it is measured in
+    // level slices from every skin vertex the head bone carries at all (lowPts: the jaw and cheeks
+    // are shared with the neck; a guard laid on the skull's map alone went into them, the skin
+    // through it in patches): at each height and azimuth the skin furthest from the head's axis
+    const P = head.lowPts || head.pts;
+    const sx = flapSide < 0 ? -1 : 1, T = 0.007, CLR = 0.012, NU = 24, NV = 8;
+    const ph0 = sx * (L.earPh - 22 * D), ph1 = sx * 30 * D;
+    const yTop0 = L.earBot + 0.012, yTop1 = L.earBot - 0.01, yBot0 = L.earBot - 0.04, yBot1 = L.earBot - 0.052;
+    const across = (ph, y) => {
+      let r = 0;
+      for (const q of P) {
+        if (Math.abs(q.y - y) > 0.008) continue;
+        let a = Math.atan2(q.x, q.z) - ph; a = Math.atan2(Math.sin(a), Math.cos(a));
+        if (Math.abs(a) < 6 * D) r = Math.max(r, Math.hypot(q.x, q.z) * Math.cos(a));
+      }
+      return r;
+    };
+    const PHI = [], Y = [], R = [];
+    for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
+      const u = i / NU, v = j / NV, ph = THREE.MathUtils.lerp(ph0, ph1, u);
+      // the front end rounded: the band closes toward its middle over the last fifth
+      const e = u > 0.8 ? Math.sqrt(Math.max(0, 1 - ((u - 0.8) / 0.2) ** 2)) : 1;
+      const yt = THREE.MathUtils.lerp(yTop0, yTop1, u), yb = THREE.MathUtils.lerp(yBot0, yBot1, u), ym = (yt + yb) / 2;
+      const y = ym + (yt - ym) * Math.max(0.08, e) * (1 - 2 * v);
+      PHI.push(ph); Y.push(y); R.push(across(ph, y));
     }
-    for (let v = 0; v < NV; v++) for (let u = 0; u < NU; u++) {
-      const a0 = v * (NU + 1) + u, b0 = a0 + 1, c0 = a0 + NU + 1, d0 = c0 + 1;
-      idx.push(a0, c0, b0, b0, c0, d0);
+    // a slice with no skin in it takes its neighbours'
+    for (let k = 0; k < R.length; k++) if (!R[k]) R[k] = Math.max(...R);
+    // smoothed over the guard's own grid (a molding, not a cast of the jaw), never nearer the skin
+    // than CLR less 3 mm
+    let Rs = R.slice();
+    for (let pass = 0; pass < 10; pass++) {
+      const N = Rs.slice();
+      for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
+        let sum = 0, c = 0;
+        for (const [di, dj, w] of [[0, 0, 2], [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1]]) {
+          const ii = i + di, jj = j + dj;
+          if (ii < 0 || ii > NU || jj < 0 || jj > NV) continue;
+          sum += Rs[jj * (NU + 1) + ii] * w; c += w;
+        }
+        N[j * (NU + 1) + i] = sum / c;
+      }
+      Rs = N;
     }
-    const jg = new THREE.BufferGeometry();
-    jg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); jg.setIndex(idx); jg.computeVertexNormals();
-    const jm = mat.clone(); jm.side = THREE.DoubleSide;
-    g.add(new THREE.Mesh(jg, jm));
+    const S = (u, v) => {
+      const k = Math.round(v * NV) * (NU + 1) + Math.round(u * NU), ph = PHI[k];
+      const r = Math.max(Rs[k] + CLR, R[k] + CLR - 0.003) + T;
+      return new THREE.Vector3(Math.sin(ph) * r, Y[k], Math.cos(ph) * r);
+    };
+    const J = thickSheet(S, (u, v, q) => new THREE.Vector3(-q.x, 0, -q.z).normalize().multiplyScalar(T), NU, NV);
+    const jm = mat.clone();
+    for (const m of [new THREE.Mesh(J.outer, jm), new THREE.Mesh(J.inner, padMat), new THREE.Mesh(J.walls, jm)]) { m.name = 'jaw guard'; m.castShadow = true; g.add(m); }
   }
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   g.userData.fit = sh.fit;

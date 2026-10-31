@@ -3350,7 +3350,7 @@
     },
     "people.js": {
       "v": "41",
-      "sha": "c071e73004085554"
+      "sha": "81a31843ff5dc38c"
     },
     "pitch.js": {
       "v": "13",
@@ -3403,8 +3403,8 @@
   },
   "shut-the-door/3d/people.js": {
     "materials.js": {
-      "v": "6",
-      "sha": "751e5dc48adfc7d7"
+      "v": "7",
+      "sha": "e854818d32cbf876"
     },
     "clubs.js": {
       "v": "2",
@@ -3419,8 +3419,8 @@
       "sha": "0bad52cc143e0887"
     },
     "headgear.js": {
-      "v": "3",
-      "sha": "479024cefd3ae8a5"
+      "v": "4",
+      "sha": "0dc7ce4a49866e2a"
     },
     "rig.js": {
       "v": "1",
@@ -3474,7 +3474,7 @@
     },
     "people.js": {
       "v": "41",
-      "sha": "c071e73004085554"
+      "sha": "81a31843ff5dc38c"
     },
     "looks.js": {
       "v": "3",

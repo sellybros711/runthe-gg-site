@@ -6,12 +6,12 @@
  * are our own posing laid over each capture's idle, and the umpire's strike call is blended in.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=6';
+import * as M from './materials.js?v=7';
 import { battingClub, clubNamed } from './clubs.js?v=2';
 import { capFor } from './uniforms.js?v=1';
 import * as G from './gear3d.js?v=4';
-import * as HG from './headgear.js?v=3';
-import { measureHead, wear, wornShade } from './headgear.js?v=3';
+import * as HG from './headgear.js?v=4';
+import { measureHead, wear, wornShade } from './headgear.js?v=4';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=8';
