@@ -13,8 +13,8 @@
       "sha": "7c8b2c13e2f5ecd5"
     },
     "config.js": {
-      "v": "1",
-      "sha": "7fc7924051909af5"
+      "v": "3",
+      "sha": "bd770b981d5d69d8"
     },
     "formations.js": {
       "v": "1",
@@ -25,24 +25,36 @@
       "sha": "9c6a7e1575b377f0"
     },
     "engine.js": {
-      "v": "2",
-      "sha": "26834fb40237508f"
+      "v": "4",
+      "sha": "f31b6035c3ded4bf"
     },
     "names.js": {
       "v": "2",
       "sha": "0f04e78c1e763a1f"
     },
+    "routes.js": {
+      "v": "2",
+      "sha": "3914eef4415a58e5"
+    },
     "book.js": {
+      "v": "2",
+      "sha": "3e2e865ce56d5e00"
+    },
+    "cards.js": {
       "v": "1",
-      "sha": "bc3423307ecf8d18"
+      "sha": "02e0a0d0a1aeb909"
     },
     "diagram.js": {
-      "v": "1",
-      "sha": "321983645565a333"
+      "v": "2",
+      "sha": "5949353e0955b976"
     },
     "export.js": {
-      "v": "1",
-      "sha": "6a429576a3794f09"
+      "v": "2",
+      "sha": "498dc23abaa80601"
+    },
+    "turf.js": {
+      "v": "2",
+      "sha": "9e7680df6a643c30"
     },
     "rig.js": {
       "v": "1",
@@ -56,25 +68,37 @@
       "v": "1",
       "sha": "ddf3f027cc22c5ac"
     },
-    "clipboard.js": {
-      "v": "3",
-      "sha": "867d63243aee0782"
-    },
     "play.js": {
       "v": "1",
       "sha": "3dc28a7e95923a28"
     },
-    "home.js": {
+    "app.js": {
       "v": "1",
-      "sha": "ff6c7cbb96c1351f"
+      "sha": "af7410a920b9b737"
     },
-    "ui.js": {
-      "v": "3",
-      "sha": "1b107f77ad2b0c82"
-    },
-    "book-ui.js": {
+    "studio.js": {
       "v": "1",
-      "sha": "9d8bf3ead3ad5886"
+      "sha": "55e3f89e496b0f46"
+    },
+    "game.js": {
+      "v": "2",
+      "sha": "993332fbfd33e717"
+    },
+    "library.js": {
+      "v": "1",
+      "sha": "54d6ce1b16e8cf96"
+    },
+    "learn.js": {
+      "v": "2",
+      "sha": "2991ca80a3cc5c27"
+    },
+    "testview.js": {
+      "v": "1",
+      "sha": "da77dcd7e7e60ef3"
+    },
+    "printview.js": {
+      "v": "1",
+      "sha": "b8c2fca581834fac"
     }
   },
   "arcade/almamater/index.html": {

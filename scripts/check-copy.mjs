@@ -93,14 +93,14 @@ const GUARDED = [
      build what a player reads (the screens, the result's reason and the
      captions, the clipboard's hints, the share line). */
   '4th-and-what/index.html',
-  '4th-and-what/ui.js',
   '4th-and-what/engine.js',
-  '4th-and-what/clipboard.js',
   '4th-and-what/share.js',
-  /* the playbook: its screens, the names it gives plays, and what an export prints */
-  '4th-and-what/book-ui.js',
+  /* the 2026-10-31 redesign: the shell, the Studio, Play, Learn, Playbooks, Test and Print */
+  '4th-and-what/app.js', '4th-and-what/studio.js', '4th-and-what/game.js', '4th-and-what/learn.js',
+  '4th-and-what/library.js', '4th-and-what/testview.js', '4th-and-what/printview.js',
+  /* the playbook: the names it gives plays, and what an export prints */
   '4th-and-what/names.js',
-  '4th-and-what/export.js',
+  '4th-and-what/export.js', '4th-and-what/cards.js',
   /* The guides (runthe.gg/guides/), from the day they were written: every page the
      guide builder writes, so a new guide is read here with no list to edit. */
   ...(() => { try { return readdirSync('guides').filter((f) => f.endsWith('.html')).map((f) => 'guides/' + f); } catch { return []; } })(),
