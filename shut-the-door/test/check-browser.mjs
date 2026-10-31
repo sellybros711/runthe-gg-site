@@ -62,7 +62,11 @@
  *
  *  18. rules 8: a two-half daily played through the page to the third out of
  *      the 8th; the scorebug follows the half (the 9th, nobody out, nobody on,
- *      the score his team left), as the outing's state says
+ *      the score his team left), as the outing's state says. Between the two
+ *      halves his team's real half plays on the line score plate appearance
+ *      by plate appearance (every number the halfOver record's), no grade or
+ *      sheet, a few seconds or a tap, then the mound in the 9th with its
+ *      leadoff man
  *
  * Steps 1 to 10 play the real engine (no mock switch). Steps 11 and 17 go
  * through mock-api.js.
@@ -1628,6 +1632,79 @@ async function halfSwitch(w, h) {
   await ctx.close();
 }
 
+/* 18, THE CARD BETWEEN HIS HALVES (the owner 2026-10-30): "finish the eighth inning, and then it should
+   show a quick little animated game simulation of the box score of what's happening when your team is
+   hitting, and then it'll put you back into the ninth inning". The same day and calls as the switch;
+   at 390 the card plays out by itself, at 1440 a tap skips it. */
+async function halves(w, h, skip) {
+  const tag = w + 'x' + h;
+  console.log('\nbetween two halves, ' + tag);
+  step(tag + ' 18 between two halves', 900);
+  const plan = callsToHalf();
+  ok(!!plan.ho && plan.ho.between.pas.length > 0, '18 the engine finds the third out of the 8th in ' + plan.calls.length + ' pitches, with ' + (plan.ho ? plan.ho.between.pas.length : 0) + ' plate appearances between');
+  if (!plan.ho) return;
+  const { ctx, page, errors } = await halfPage(w, h);
+  const types = await page.evaluate(() => window.STD_UI.state.scn.pitcher.arsenal.map((a) => a.type));
+  let card = null;
+  for (let i = 0; i < plan.calls.length; i++) {
+    await aimAndThrow(page, types, plan.calls[i]);
+    if (i < plan.calls.length - 1) { await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: PITCH_MS }); continue; }
+    /* the third out: the card comes up once the play is seen, and only then */
+    await page.waitForSelector('#s-half.on', { timeout: PITCH_MS });
+    const t0 = Date.now();
+    const first = await page.evaluate(() => ({ eye: document.getElementById('hx-eye').textContent, head: document.getElementById('hx-head').textContent,
+      sheet: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden) }));
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-half-card.png`) });
+    if (skip) {
+      await page.waitForTimeout(900);
+      await page.mouse.click(w / 2, h / 2);
+      await page.waitForSelector('#s-mound.on', { timeout: 5000 });
+      card = { first, ms: Date.now() - t0, skipped: true };
+    } else {
+      await page.waitForSelector('#s-half.hx-end', { timeout: 15000 });
+      const end = await page.evaluate(() => {
+        const sec = document.getElementById('s-half');
+        return { rows: [...document.querySelectorAll('#hx-pas li')].map((li) => li.textContent), runs: [...document.querySelectorAll('#hx-pas .hx-r')].map((r) => +r.textContent.slice(1)),
+          R: [...document.querySelectorAll('#hx-line tbody tr')].map((tr) => tr.querySelector('.hx-t').textContent), sum: document.getElementById('hx-sum').textContent, next: document.getElementById('hx-next').textContent,
+          graded: !!sec.querySelector('.sq, .oc, .strip') || /\b(green|yellow|orange|red|best call|pts)\b/i.test(sec.innerText), scroll: document.documentElement.scrollWidth > innerWidth + 1 };
+      });
+      if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-half-card-end.png`) });
+      await page.waitForSelector('#s-mound.on', { timeout: 15000 });
+      card = { first, end, ms: Date.now() - t0 };
+    }
+  }
+  const ho = plan.ho, bt = ho.between, bat = bt.half === 'bottom' ? 1 : 0;
+  ok(card && card.first.eye === (ho.done.half === 'top' ? 'middle of the ' : 'end of the ') + ho.done.inning + 'th' && /bat$/.test(card.first.head) && !card.first.sheet,
+    '18 the third out of the 8th brings up the card: "' + (card && card.first.eye) + '", "' + (card && card.first.head) + '", no sheet');
+  if (card && card.end) {
+    const e = card.end;
+    ok(e.rows.length === bt.pas.length && e.rows.every((r, k) => r.includes(bt.pas[k].short || bt.pas[k].event || '')),
+      '18 his team\'s half plays plate appearance by plate appearance from the record (' + e.rows.length + ' of ' + bt.pas.length + ')');
+    ok(e.runs.reduce((a, b) => a + b, 0) === bt.runs && +e.R[bat] === ho.line.R[bat] && e.sum === (bt.runs === 1 ? '1 run.' : bt.runs + ' runs.'),
+      '18 the runs tick onto the line score: ' + bt.runs + ' in the half, R ' + e.R.join('-') + ', "' + e.sum + '"');
+    ok(!e.graded && !e.scroll, '18 the card shows no grade and fits the width');
+    ok(card.ms >= 3500 && card.ms <= 9500, '18 the card takes a few seconds by itself (' + (card.ms / 1000).toFixed(1) + ' s)');
+    ok(/^back out for the (top|bottom) of the 9th\. (up \d+|tied)\.$/.test(e.next), '18 then where he goes back out: "' + e.next + '"');
+  }
+  if (card && card.skipped) ok(card.ms < 4500, '18 a tap skips the card (back on the mound ' + (card.ms / 1000).toFixed(1) + ' s after it came up)');
+  await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
+  const nx = await page.evaluate(() => { const S = window.STD_UI.state; return { half: S.outing.half, pbp: document.getElementById('m-pbp').textContent, bat: document.getElementById('m-bname').textContent }; });
+  const b9 = await bugReads(page);
+  ok(nx.half && nx.half.inning === 9 && nx.pbp.includes(ho.next.leadoff.name) && nx.bat === ho.next.leadoff.name,
+    '18 back to the mound for the 9th: "' + nx.pbp.trim() + '"');
+  ok(bugOk(b9) && b9.want === (ho.next.half === 'bottom' ? 'bot' : 'top') + ' ' + ho.next.inning && b9.outs === 0 && b9.bases === 0 && +b9.us === ho.next.score.us && +b9.them === ho.next.score.them,
+    '18 after the card the scorebug follows the half: "' + b9.inn + '", ' + b9.outs + ' out, bases ' + b9.bases + ', ' + b9.us + '-' + b9.them + ', ' + b9.cnt);
+  /* one pitch of the 9th goes as any other */
+  await page.keyboard.press('1');
+  await page.click('#m-aim .cell[data-cell="12"]');
+  await page.click('#m-throw');
+  await page.waitForFunction(() => !window.STD_UI.state.busy || document.body.dataset.screen !== 's-mound', null, { timeout: PITCH_MS });
+  ok(await page.evaluate(() => window.STD_UI.state.outing.half.inning === 9 && window.STD_UI.state.outing.pitchNo > 0), '18 a pitch of the 9th throws as any other');
+  ok(bugOk(await bugReads(page)), '18 and the scorebug still reads the 9th after it');
+  ok(errors.length === 0, '18 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
@@ -1646,6 +1723,8 @@ try {
   await ending(1440, 900, 'walk_off', '&mockPro=none');
   await modes(390, 844, true);
   await modes(1440, 900, false);
+  await halves(390, 844, false);
+  await halves(1440, 900, true);
 } catch (e) {
   fails++;
   console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));
