@@ -13,7 +13,7 @@ name: Shut The Door lab checks
 # sample: any case over its limit in the sample is over it in the whole run, so a sample cannot fail
 # what the whole run passes, and with no ceiling there is no rate to scale.
 #
-#   jolt     the held 8,438 (every 20th case), as four shards then --combine
+#   jolt     the held 8,297 (every 20th case), as four shards then --combine
 #   camera   every case (168,754), the set its ceilings were measured on      check-camera.mjs --stride 1
 #   frame    every case                                                        check-frame.mjs
 #   catch    about 6,000 cases of 168,754                                      check-catch.mjs --sample 6000
@@ -115,7 +115,7 @@ jobs:
         with:
           pattern: jolt-*
           path: jolt
-      - name: The held 8,438, combined
+      - name: The held 8,297, combined
         run: |
           set -o pipefail
           mkdir -p shards

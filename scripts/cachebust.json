@@ -3105,16 +3105,16 @@
       "sha": "7ea985fde3db5f01"
     },
     "grade.js": {
-      "v": "13",
-      "sha": "e6273d618608c800"
+      "v": "15",
+      "sha": "a7ef2e899563c882"
     },
     "lesson.js": {
-      "v": "4",
-      "sha": "97757da0db8cd9f0"
+      "v": "6",
+      "sha": "78e11f6d29432e27"
     },
     "engine.js": {
-      "v": "14",
-      "sha": "9f6734db2e34ab9c"
+      "v": "17",
+      "sha": "02f5e11dfd8d2147"
     },
     "share.js": {
       "v": "2",
@@ -3129,8 +3129,8 @@
       "sha": "65388a73bdcc15be"
     },
     "api.js": {
-      "v": "21",
-      "sha": "d4fc53d7ccdebd9b"
+      "v": "23",
+      "sha": "14dbf2fac2680a41"
     },
     "mock-api.js": {
       "v": "13",
@@ -3149,18 +3149,18 @@
       "sha": "12f74f2b441aa488"
     },
     "ui.js": {
-      "v": "50",
-      "sha": "92263b943bcf5500"
+      "v": "52",
+      "sha": "80e15d62cbb2fe9a"
     },
     "3d/boot.js": {
-      "v": "71",
-      "sha": "051a1ec39d266b1b"
+      "v": "73",
+      "sha": "66424fc21e311f3e"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "67",
-      "sha": "476cc470b0b504bc"
+      "v": "69",
+      "sha": "89749f5849eece75"
     }
   },
   "soccer/index.html": {
@@ -3283,8 +3283,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "75",
-      "sha": "9490fe21360d37b9"
+      "v": "77",
+      "sha": "839421f78a900f6c"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3361,8 +3361,8 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "33",
-      "sha": "f6883fb993e1110b"
+      "v": "35",
+      "sha": "32832cfc735571f7"
     },
     "preview.js": {
       "v": "9",
@@ -3449,20 +3449,20 @@
   },
   "shut-the-door/3d/inplay.js": {
     "inplay-plan.js": {
-      "v": "22",
-      "sha": "e3ef9db8849c20c1"
+      "v": "23",
+      "sha": "343971af4d89e202"
     },
     "shade-data.js": {
-      "v": "3",
-      "sha": "fbb2ef26a59c65c2"
+      "v": "5",
+      "sha": "03cd975921e23213"
     },
     "fielders.js": {
-      "v": "9",
-      "sha": "6ebe8cd7abd92af9"
+      "v": "10",
+      "sha": "38744633b6417574"
     },
     "ballpark.js": {
-      "v": "23",
-      "sha": "9924d6c4e3c0f12f"
+      "v": "24",
+      "sha": "40409ff78839a8ee"
     },
     "people.js": {
       "v": "40",
@@ -3563,8 +3563,8 @@
       "sha": "6740e4ce374039b0"
     },
     "inplay-plan.js": {
-      "v": "22",
-      "sha": "e3ef9db8849c20c1"
+      "v": "23",
+      "sha": "343971af4d89e202"
     }
   }
 }

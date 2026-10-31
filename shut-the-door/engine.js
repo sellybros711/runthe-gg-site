@@ -28,6 +28,16 @@
  *   4. In play: the advancement table for the drawn batted ball's category at
  *      the current outs and bases, chosen by the runner draw.
  *
+ * THE HALVES (rules 8, CONTRACT.md 5j, the owner's call 2026-10-30): the outing
+ * is the closer's real outing to the end of the game. A pack's scenario.halves
+ * lists every half he pitches; three outs in one that is not the last end the
+ * half, not the outing: his team bats its real half (scenario.between, from the
+ * play by play: its runs go on the score), and the next half starts with the
+ * batter after the last one he faced. The arm, what the hitters have seen and
+ * the challenges carry over. The result (door shut, held tie) is the score at
+ * the end of the last half. The halfOver record on the pitch that ended a half
+ * is what the UI's card between halves shows.
+ *
  * END RULES (CONTRACT.md section 8): three outs with the lead is door_shut. A
  * run that ties does NOT end it (the owner's call, 2026-10-20): the inning goes
  * on, and three outs with the game still tied is tie_held. A run that puts them
@@ -36,7 +46,15 @@
  * rule. After a tie every call is graded on the tie's goal (grade.js THE GOAL).
  *
  * THE OUTING SCORE (higher is better)
- *   score = max(0, 700 - SCORE_PER_PT * total pts lost) + RESULT_BONUS[outcome]
+ *   rules 8:  score = round(700 * exp(-total pts lost * 3 / outs asked / SCORE_DECAY)) + RESULT_BONUS[outcome]
+ *   before:   score = max(0, 700 - SCORE_PER_PT * total pts lost) + RESULT_BONUS[outcome]
+ *   Rules 8's curve (the lead's call on #830, 2026-10-30): the straight line hit 0 at 35 points
+ *   lost, and in a hard spot a quarter of the closer pool sat there with one score (Diaz 2025: 26%;
+ *   Chapman over two halves: 11%), so the percentile could not tell them apart. The curve has the
+ *   same slope at the start (20 a point: SCORE_DECAY is 700 / 20), never reaches 0, and divides the
+ *   points by the outs asked over three, so a spot of four or six outs is scored per out like one
+ *   of three. A spot of three outs from a fresh half scores what it did under the line until about
+ *   5 points lost, then less steeply. An outing played before rules 8 keeps the line, exactly.
  *   The first part is the hold% kept across the outing (20 points of score per
  *   point of hold% given away; after a tie, points of the tie's goal), the
  *   second the result. Tuned against the closer pool when the pool exists;
@@ -89,15 +107,22 @@ const MT = NODE ? require('./meter.js') : (window.STD_METER || null);
    10: rules 7 (grade.js STEAL_RULES): the running game. The lead runner may
    steal on a pitch (a stream of its own, so the four draws never move), the
    pitcher may throw over (pa: the throws after a pitch) and use a quick
-   delivery (ss: 1). A call with r 6 or before replays exactly as under 9. */
-const ENGINE_VERSION = 10;
+   delivery (ss: 1). A call with r 6 or before replays exactly as under 9.
+   11: rules 8 (grade.js FULL_RULES, THE HALVES): the closer's outing to the end of the game, half
+   after half, his team's real half between. A call with r 7 or before replays exactly as under
+   10, on the first half alone (Model.singleModel). */
+const ENGINE_VERSION = 11;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread.
    3: the hold table is solved with runs on a legal third out (rules 3), and
-   the advancement table's half-ending rows are the real plays. */
-const PACK_VERSION = 3;
+   the advancement table's half-ending rows are the real plays.
+   4: scenario.halves (every half he pitches, each with its lineup), scenario.between (his team's
+   real half between two) and scenario.line (the real line score when he came in); the hold table
+   runs over every half (rules 8). A pack with one half has the table it had under 3. */
+const PACK_VERSION = 4;
 const SCORE_BASE = 700;
 const SCORE_PER_PT = 20;
+const SCORE_DECAY = SCORE_BASE / SCORE_PER_PT;   // 35: the curve's slope at 0 is the line's
 /* The result's part of the score: 100 points a rank (contract.js OUTCOME_RANK).
    tie_held is 200. It is a blown save, so it sits a full step under door_shut
    (300): holding the tie never pays like holding the lead. The game goes on
@@ -115,8 +140,17 @@ function seedFor(mode, day, seed) {
   return mode === 'daily' ? R.hashSeed(K.DAILY_SEED_PREFIX + day) : (seed >>> 0);
 }
 
+/* The half being played: its place in the outing and the scenario's facts about it. */
+function halfOf(o, h) {
+  const sc = o.pack.scenario, hs = sc.halves;
+  const x = hs && hs[h] ? hs[h] : sc.situation;
+  return { index: h, of: o.model.H, inning: x.inning, half: x.half, walkOffLive: !!x.walkOffLive, last: h === o.model.H - 1 };
+}
+function curH(o) { return o.st.h || 0; }
+
 function publicState(o) {
   const st = o.st;
+  const hf = halfOf(o, curH(o));
   return {
     outingId: o.outingId,
     scenarioId: o.pack.scenario.id,
@@ -129,9 +163,13 @@ function publicState(o) {
     outs: st.outs,
     bases: st.bases,
     score: { us: o.score.us, them: o.score.them },
-    batterIndex: st.bi,
+    batterIndex: o.model.who(st),
     strip: o.grades.map(g => g.band),
-    shutItLive: o.status === 'live' && st.s === 2 && st.outs === 2,
+    shutItLive: o.status === 'live' && st.s === 2 && st.outs === 2 && hf.last,
+    // rules 8: the half being pitched, and the halves done so far (each its halfOver record)
+    half: hf,
+    halves: o.halves.slice(),
+    line: o.line ? lineOut(o.line) : null,
     log: o.log.slice(),
     grades: o.grades.slice(),
     debug: { seed: o.seed, tiers: o.log.map(p => p.drawn.tier) },
@@ -159,11 +197,13 @@ function challengeLive(o) {
 function createOuting(pack, opts) {
   if (!pack || pack.v !== PACK_VERSION) throw new Error('pack format ' + (pack && pack.v) + ', engine reads ' + PACK_VERSION);
   const sc = pack.scenario;
-  const model = opts.model || new G.Model(pack);
+  const rules = opts.rules == null ? G.RULES : opts.rules;
+  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.STEAL_RULES, G.FULL_RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
+  // rules 7 and before play the first half alone, as they were played (grade.js THE HALVES)
+  let model = opts.model || new G.Model(pack);
+  if (rules < G.FULL_RULES) model = model.singleModel();
   const seed = opts.seed >>> 0;
   const st = model.startState();
-  const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
   const o = {
     pack, model, seed, rules, mode: opts.mode || 'practice',
     outingId: opts.outingId || `${sc.id}:${seed}`,
@@ -171,6 +211,8 @@ function createOuting(pack, opts) {
     st, status: 'live', outcome: null,
     score: { us: sc.situation.score.us, them: sc.situation.score.them },
     log: [], grades: [], calls: [], before: [], ctxs: [],
+    // rules 8: the halves done (their halfOver records) and the line score, when the pack has halves
+    halves: [], line: model.H > 1 && sc.line ? lineStart(sc) : null,
     // rules 4: challenges left per side, and the batter's gamble on a stream of its own, so the
     // outing's four draws a pitch never move (contract.js ABS)
     abs: rules >= G.ABS_RULES ? { pitcher: K.ABS.PER_SIDE, batter: K.ABS.PER_SIDE } : null,
@@ -245,7 +287,7 @@ function throwPitch(o, call) {
   // 1. the grade, before anything is drawn (rules 2: with what the hitter has seen, and the arm)
   const ctx = G.contextOf(o.log, st, o.rules, model.center, model.zone0);
   const grade = G.gradeCall(model, st, call, ctx);
-  o.before.push({ bi: st.bi, b: st.b, s: st.s, outs: st.outs, bases: st.bases, margin: st.margin });
+  o.before.push(Object.assign(st.h != null ? { h: st.h } : {}, { bi: st.bi, b: st.b, s: st.s, outs: st.outs, bases: st.bases, margin: st.margin }));
   o.ctxs.push(ctx);
 
   // 2. the four draws, always all four
@@ -271,8 +313,9 @@ function throwPitch(o, call) {
   // 3. the outcome key, from the same per mille row the grade priced, then
   //    that key's real pitch
   const bucket = G.bucketOf(st.b, st.s);
-  const entry = model.entry(st.bi, call.type);
-  let row = ctx ? model.rowsCtx(st.bi, call.type, bucket, ctx)[actualCell] : entry.p[actualCell][bucket];
+  const who = model.who(st);
+  const entry = model.entry(who, call.type);
+  let row = ctx ? model.rowsCtx(who, call.type, bucket, ctx)[actualCell] : entry.p[actualCell][bucket];
   if (kept.e != null) row = G.effortRow(row, call.type, kept.e);   // effort: a pitch from further up (or down) his own speed
   const u = d.library * (ctx ? row.reduce((a, x) => a + x, 0) : 1000);
   let k = -1, acc = 0;
@@ -325,7 +368,8 @@ function throwPitch(o, call) {
   // rules 7: does the lead runner go on this pitch? Decided before it, on the steal stream
   const steal = o.run ? stealGoes(o) : null;
   if (abs) o.undo = { st, them: o.score.them, on: o.run ? o.run.on.slice() : null };   // for the pitcher's side's challenge on this pitch
-  const moved = applyTrans(o, st, t2);
+  if (o.line) o.lineBefore = JSON.stringify(o.line);
+  const moved = applyTrans(o, st, t2, cls);
   if (o.run) moveRunners(o, st, moved);
   const runs = moved.runs, paOver = moved.paOver;
 
@@ -348,6 +392,7 @@ function throwPitch(o, call) {
     paOver,
     drawn: { id: pitch[0], tier: TIER_NAME[tier] },
   };
+  if (moved.halfOver) pr.halfOver = moved.halfOver;   // rules 8: the half is over, his team batted
   if (abs && (res0 === 'ball' || res0 === 'called_strike')) {
     // the ABS zone's answer, for the challenge and the quick replay: d inches from the zone's edge
     pr.abs = { called: res0, strike: dIn >= 0, d: Math.round(dIn * 100) / 100 };
@@ -377,6 +422,7 @@ function throwPitch(o, call) {
   if (steal) {                              // rules 7: the steal, with the pitch
     pr.steal = resolveSteal(o, steal, playCls, kept.ss === 1, st);
     if (pr.steal.result === 'safe' || pr.steal.result === 'out') { pr.outs = o.st.outs; pr.bases = o.st.bases; }
+    if (pr.steal.halfOver) { pr.halfOver = pr.steal.halfOver; delete pr.steal.halfOver; pr.outs = 3; }
   }
   if (slide) pr.quick = { deliveryS: K.STEAL.QUICK.DELIVERY_S };
   if (kept.ch === 1) {                      // a replay: this call's ball was challenged right away
@@ -437,10 +483,16 @@ function stealOpp(o) {
 }
 /* Late and close, from the batting side's margin (pipeline/steals.py late). */
 function lateKey(o) {
-  const inn = o.pack.scenario.situation.inning;
+  const inn = halfOf(o, curH(o)).inning;
   if (inn < 8) return null;
   const m = o.score.them - o.score.us;
   return m <= -3 ? 'd3' : m === -2 ? 'd2' : m === -1 ? 'd1' : m === 0 ? 't0' : 'up';
+}
+/* The catcher on the field in the real game: the spot's, or in a later half (rules 8) the one
+   there when that half began (pack.steal.halves, steals.py --halves). */
+function catcherOf(o) {
+  const S = o.pack.steal, h = curH(o);
+  return (h > 0 && S.halves && S.halves[h - 1] && S.halves[h - 1].catcher) || S.catcher;
 }
 function runnerOf(o, rid) { return o.pack.steal.runners[rid] || { name: null, att: 1, z: 0, speed: null }; }
 /* The chance he goes on this pitch: the 2022 or 2024 rate for the base, outs and count, late and
@@ -456,7 +508,7 @@ function attemptP(o, opp) {
    close, the pickoff throws at him this plate appearance, and a quick delivery's time. */
 function stealZ(o, opp, quick) {
   const S = o.pack.steal, lk = lateKey(o);
-  let z = S.baseZ[opp.to] + S.eraZ + runnerOf(o, opp.rid).z + S.pitcher.z + S.catcher.z;
+  let z = S.baseZ[opp.to] + S.eraZ + runnerOf(o, opp.rid).z + S.pitcher.z + catcherOf(o).z;
   if (lk) z += S.sucZ[`late|${opp.to}|${lk}`] || 0;
   z += S.sucZ[`po|${opp.to}|${Math.min(2, o.run.po[opp.from])}`] || 0;
   if (quick) z -= K.STEAL.QUICK.DELIVERY_S * S.zPerSecond;
@@ -470,9 +522,10 @@ function stealGoes(o) {
 }
 /* Who is on, after a transition: each runner to where his move takes him, the batter to his. */
 function moveRunners(o, st, moved) {
-  if (!moved.paOver && !(moved.runnerMoves || []).length) return;
+  if (!moved.paOver && !(moved.runnerMoves || []).length && !moved.halfOver) return;
   const on = o.run.on, next = [null, null, null, null];
-  const batter = String(o.pack.scenario.batters[st.bi % o.model.N].id);
+  if (moved.halfOver) { o.run.on = [null, null, null, null]; o.run.po = { 1: 0, 2: 0, 3: 0 }; o.run.dis = 0; return; }
+  const batter = String(o.pack.scenario.batters[o.model.who(st)].id);
   for (let b = 1; b <= 3; b++) {
     if (!on[b]) continue;
     const m = moved.runnerMoves.find(x => x.from === b);
@@ -484,10 +537,21 @@ function moveRunners(o, st, moved) {
   o.run.on = next;
   if (moved.paOver) { o.run.po = { 1: 0, 2: 0, 3: 0 }; o.run.dis = 0; }
 }
-/* An out on the bases: the third ends the half, and the outing, held. */
+/* An out on the bases: the third ends the half, and in the last half the outing, held. In a
+   half before the last (rules 8) the batter at the plate leads off the next half, his count
+   wiped (Official Baseball Rules 5.06(c) and 5.08: his time at bat was not over). */
 function outOnBases(o) {
   const outs = o.st.outs + 1;
   if (outs >= 3) {
+    const h = curH(o);
+    if (h < o.model.H - 1) {
+      const m = o.st.margin;
+      const next = { h: h + 1, bi: o.st.bi, b: 0, s: 0, outs: 0, bases: 0, margin: m + o.model.R[h] };
+      o.st = Object.assign({}, o.st, { outs: 3 });
+      o.pendingHalf = endHalf(o, h, next);
+      o.run.on = [null, null, null, null]; o.run.po = { 1: 0, 2: 0, 3: 0 }; o.run.dis = 0;
+      return 3;
+    }
     o.status = 'over';
     o.outcome = o.score.us > o.score.them ? 'door_shut' : 'tie_held';
     o.st = Object.assign({}, o.st, { outs: 3 });
@@ -501,8 +565,8 @@ function outOnBases(o) {
 function resolveSteal(o, opp, cls, quick, st0) {
   const r = runnerOf(o, opp.rid), S = o.pack.steal;
   const ev = { runner: opp.rid, name: r.name, speed: r.speed, from: opp.from, to: opp.to,
-    catcher: { id: S.catcher.id, name: S.catcher.name, pop: S.catcher.pop },
-    cover: opp.to === 3 ? 5 : (o.pack.scenario.batters[st0.bi % o.model.N].bats === 'L' ? 6 : 4) };
+    catcher: { id: catcherOf(o).id, name: catcherOf(o).name, pop: catcherOf(o).pop },
+    cover: opp.to === 3 ? 5 : (o.pack.scenario.batters[o.model.who(st0)].bats === 'L' ? 6 : 4) };
   if (cls !== 'ball' && cls !== 'strike') { ev.result = 'back'; return ev; }   // a foul, a ball in play or a hit batter: he goes back, or the play takes him
   const toBit = 1 << (opp.to - 1);
   if (o.status !== 'live' || o.run.on[opp.from] !== opp.rid || (o.st.bases & toBit)) { ev.result = 'moot'; return ev; }   // the inning ended, or the walk moved him
@@ -523,6 +587,7 @@ function applySteal(o, ev, result) {
   } else {
     o.st = Object.assign({}, o.st, { bases: o.st.bases & ~fromBit });
     outOnBases(o);
+    if (o.pendingHalf) { ev.halfOver = o.pendingHalf; o.pendingHalf = null; }
   }
 }
 /* A pickoff is live: rules 7, a pitch thrown, the outing live, and a runner with a steal on. */
@@ -545,6 +610,7 @@ function pickoff(o) {
     o.run.on[opp.from] = null;
     o.st = Object.assign({}, o.st, { bases: o.st.bases & ~(1 << (opp.from - 1)) });
     outOnBases(o);
+    if (o.pendingHalf) { ev.halfOver = o.pendingHalf; o.pendingHalf = null; }
   } else if (o.run.dis > K.STEAL.DISENGAGE) {
     ev.balk = true;
     const on = o.run.on, next = [null, null, null, null];
@@ -557,9 +623,10 @@ function pickoff(o) {
     o.run.on = next;
     const margin = o.st.margin - runs;
     o.score.them += runs;
+    if (o.line && runs) addLine(o, halfOf(o, curH(o)), runs, 0, 0);
     ev.runs = runs;
     o.st = Object.assign({}, o.st, { bases, margin });
-    if (margin < 0) { o.status = 'over'; o.outcome = o.pack.scenario.situation.walkOffLive ? 'walk_off' : 'doors_open'; }
+    if (margin < 0) { o.status = 'over'; o.outcome = halfOf(o, curH(o)).walkOffLive ? 'walk_off' : 'doors_open'; }
   } else {
     o.run.po[opp.from]++;
   }
@@ -573,24 +640,83 @@ function pickoff(o) {
 
 /* What a transition does to the outing: the state, the runs, the end. One
    place, for the pitch and for a challenge that changes its call. */
-function applyTrans(o, st, t2) {
-  const sc = o.pack.scenario;
+function applyTrans(o, st, t2, cls) {
   const runs = t2.runs || 0;
   const paOver = !t2.self && (!!t2.end || (t2.st.b === 0 && t2.st.s === 0));
-  if (t2.st) o.st = t2.st;
+  const h = st.h || 0, hf = halfOf(o, h);
   o.score.them += runs;
+  // rules 8: the line score, his half (the play's runs, a hit, an error behind him)
+  if (o.line && !t2.self) {
+    const lbl = t2.label || null;
+    addLine(o, hf, runs, lbl === 'single' || lbl === 'double' || lbl === 'triple' || lbl === 'home_run' ? 1 : 0, lbl === 'error' ? 1 : 0);
+  }
+  let halfOver = null;
+  if (t2.half) halfOver = endHalf(o, h, t2.st);   // three outs in a half before the last: his team bats
+  else if (t2.st) o.st = t2.st;
   if (t2.end) {
     o.status = 'over';
     if (t2.end === 'hold') o.outcome = o.score.us > o.score.them ? 'door_shut' : 'tie_held';
-    else o.outcome = sc.situation.walkOffLive ? 'walk_off' : 'doors_open';   // 'lost': they went ahead
+    else o.outcome = hf.walkOffLive ? 'walk_off' : 'doors_open';   // 'lost': they went ahead
   }
+  const over = t2.end === 'hold' || !!t2.half;
   return {
-    runs, paOver,
+    runs, paOver, halfOver,
     count: paOver ? { b: 0, s: 0 } : { b: o.st.b, s: o.st.s },
-    outs: t2.end === 'hold' ? 3 : (t2.st ? t2.st.outs : st.outs),
-    bases: t2.st ? t2.st.bases : (t2.end ? endBases(st.bases, t2.moves) : st.bases),
+    outs: over ? 3 : (t2.st ? t2.st.outs : st.outs),
+    bases: t2.st && !t2.half ? t2.st.bases : (t2.end || t2.half ? endBases(st.bases, t2.moves) : st.bases),
     runnerMoves: (t2.moves || []).map(([from, to]) => ({ from, to })),
   };
+}
+
+/* ---- rules 8: the halves (THE HALVES above, CONTRACT.md 5j) ------------------ */
+
+/* The line score as the game stands: the real innings before he came in (scenario.line), then
+   his halves as the player pitched them and his team's real halves as they happened. */
+function lineStart(sc) {
+  const L = sc.line;
+  return { teams: Object.assign({}, L.teams), innings: L.innings.map(x => x.slice()), H: L.H.slice(), E: L.E.slice() };
+}
+function lineOut(L) { return { teams: L.teams, innings: L.innings.map(x => x.slice()), R: [0, 1].map(i => L.innings.reduce((a, x) => a + (x[i] || 0), 0)), H: L.H.slice(), E: L.E.slice() }; }
+/* Runs, hits and errors on one play of a half: the batting side gets the runs and the hit, the
+   fielding side the error. */
+function addLine(o, hf, runs, hit, err) {
+  const L = o.line, bat = hf.half === 'top' ? 0 : 1;
+  while (L.innings.length < hf.inning) L.innings.push([null, null]);
+  const row = L.innings[hf.inning - 1];
+  row[bat] = (row[bat] || 0) + runs;
+  L.H[bat] += hit;
+  L.E[1 - bat] += err;
+}
+
+/* The closer's half h is over: the record the card between halves shows, his team's real half
+   (each plate appearance with the score and line score after it, the player's game), then the
+   next half's start. Moves the outing to next (the next half's first state). */
+function endHalf(o, h, next) {
+  const sc = o.pack.scenario, hf = halfOf(o, h), bt = sc.between[h], nf = halfOf(o, h + 1);
+  const done = { index: h, inning: hf.inning, half: hf.half, runs: o.score.them - (h === 0 ? sc.situation.score.them : o.halves[h - 1].next.score.them),
+    score: { us: o.score.us, them: o.score.them } };
+  if (o.line) addLine(o, hf, 0, 0, 0);   // the half is on the board, a zero if nothing scored
+  const pas = bt.pas.map(pa => {
+    o.score.us += pa.runs || 0;
+    if (o.line) addLine(o, bt, pa.runs || 0, pa.hit ? 1 : 0, pa.err || 0);
+    return Object.assign({}, pa, { score: { us: o.score.us, them: o.score.them }, line: o.line ? lineOut(o.line) : null });
+  });
+  if (o.line && !bt.pas.length) addLine(o, bt, 0, 0, 0);
+  // his team's runs are the record's total: a run on no plate appearance (a balk, a steal of home) counts too
+  const extra = bt.runs - bt.pas.reduce((a, x) => a + (x.runs || 0), 0);
+  if (extra) { o.score.us += extra; if (o.line) addLine(o, bt, extra, 0, 0); }
+  o.st = next;
+  const lead = o.pack.scenario.batters[o.model.who(next)];
+  const rec = {
+    done,
+    between: { inning: bt.inning, half: bt.half, team: bt.team, abbr: bt.abbr, runs: bt.runs, pas, source: bt.source || null },
+    next: { index: h + 1, inning: nf.inning, half: nf.half, walkOffLive: nf.walkOffLive, last: nf.last, outs: 0, bases: 0,
+      leadoff: { index: o.model.who(next), id: lead.id, name: lead.name }, score: { us: o.score.us, them: o.score.them },
+      tied: o.score.us === o.score.them },
+    line: o.line ? lineOut(o.line) : null,
+  };
+  o.halves.push(rec);
+  return rec;
 }
 
 /* rules 4: the pitcher's side challenges the last pitch's called ball (the
@@ -610,12 +736,14 @@ function challengePitch(o) {
   if (!over) { o.abs.pitcher--; return { pitchResult: pr, state: publicState(o) }; }
   const st = o.undo.st;
   o.st = st; o.score.them = o.undo.them; o.status = 'live'; o.outcome = null;
+  if (o.line && o.lineBefore) o.line = JSON.parse(o.lineBefore);
   const t2 = o.model.transitions(st, 'strike', o.rules >= G.THIRD_OUT_RULES)[0][1];
   if (o.run) { o.run.on = o.undo.on.slice(); }
-  const moved = applyTrans(o, st, t2);
+  const moved = applyTrans(o, st, t2, 'strike');
   if (o.run) moveRunners(o, st, moved);
   pr.result = 'called_strike';
   Object.assign(pr, { count: moved.count, outs: moved.outs, bases: moved.bases, runnerMoves: moved.runnerMoves, runs: moved.runs, paOver: moved.paOver });
+  if (moved.halfOver) pr.halfOver = moved.halfOver;
   // rules 7: a steal on this pitch stands as it was decided (no new draw), if the strike leaves it on
   if (pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out')) {
     const toBit = 1 << (pr.steal.to - 1);
@@ -683,7 +811,12 @@ function inPlayText(label, bb, spray, runs) {
 
 function totalLost(o) { return o.grades.reduce((a, g) => a + g.lost, 0); }
 
+/* The outs a spot asks: the first half's, then three a half (rules 8). */
+function outsAsked(o) { return 3 * o.model.H - o.pack.scenario.situation.outs; }
 function outingScore(o) {
+  if (o.rules >= G.FULL_RULES) {
+    return Math.round(SCORE_BASE * Math.exp(-totalLost(o) * 3 / outsAsked(o) / SCORE_DECAY)) + RESULT_BONUS[o.outcome];
+  }
   return Math.max(0, Math.round(SCORE_BASE - SCORE_PER_PT * totalLost(o))) + RESULT_BONUS[o.outcome];
 }
 
@@ -777,7 +910,10 @@ function finishOuting(o, extra) {
   o.finished = true;   // rules 4: no challenge after the result
   const runs = o.score.them - o.pack.scenario.situation.score.them;
   const score = outingScore(o);
-  const reveal = o.pack.reveal || (o.pack.scenario && o.pack.scenario.reveal) || null;
+  // an outing played on the first half alone (rules 7 and before on a pack with halves) is set
+  // beside what he did in that half (pack.reveal1, the reveal such outings were shown)
+  const first = o.model.H === 1 && o.pack.scenario.halves && o.pack.scenario.halves.length > 1;
+  const reveal = (first && o.pack.reveal1) || o.pack.reveal || (o.pack.scenario && o.pack.scenario.reveal) || null;
   return {
     outcome: o.outcome,
     pitches: o.log.length,
@@ -805,7 +941,7 @@ function replay(pack, seed, calls, opts) {
 }
 
 const publicAPI = Object.freeze({
-  ENGINE_VERSION, PACK_VERSION, SCORE_BASE, SCORE_PER_PT, RESULT_BONUS,
+  ENGINE_VERSION, PACK_VERSION, SCORE_BASE, SCORE_PER_PT, SCORE_DECAY, RESULT_BONUS,
   seedFor, createOuting, throwPitch, challengePitch, challengeLive, pickoff, pickoffLive, finishOuting, publicState, replay, rulesOf, bestCall,
   outingScore, percentileOf, styleVector, vsReal,
 });

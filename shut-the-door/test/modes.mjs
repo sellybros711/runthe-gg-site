@@ -29,7 +29,12 @@ function check(name, cond, detail) {
 
 /* the server holds the same list and the same first day */
 const sql = readFileSync(join(ROOT, 'supabase', '160_shut_the_door_vote_survivor.sql'), 'utf8');
-const rows = [...sql.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m => [m[1], +m[2]]);
+// 160's seed, then 161 (rules 8): its deletes and its inserts at the same ord
+const sql161 = readFileSync(join(ROOT, 'supabase', '161_shut_the_door_full_close.sql'), 'utf8');
+const gone = new Set([...(sql161.match(/delete from public\.shutdoor_packs where id in \(([^)]*)\)/) || ['', ''])[1].matchAll(/'(std-[a-z0-9-]+)'/g)].map(m => m[1]));
+const put = [...sql161.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m => [m[1], +m[2]]);
+const rows = [...sql.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m => [m[1], +m[2]])
+  .filter(r => !gone.has(r[0])).concat(put).sort((a, b) => a[1] - b[1]);
 check('the server\'s situations are the schedule\'s rotation, in order',
   JSON.stringify(rows.map(r => r[0])) === JSON.stringify(sched.rotation) && rows.every((r, i) => r[1] === i),
   `${rows.length} rows against ${sched.rotation.length}`);
@@ -39,7 +44,8 @@ check('the server\'s fixed rotation length is the rotation\'s', sql.includes(`% 
 check('the vote begins after daily #1', M.VOTE.EPOCH > C.EPOCH);
 
 /* the server's own test expects modes.js's candidates */
-const test = readFileSync(join(ROOT, 'supabase', 'test', 'shut_the_door_vote_survivor_test.sql'), 'utf8');
+// the latest list's own test: 161's (rules 8), since its candidates are drawn from the new list
+const test = readFileSync(join(ROOT, 'supabase', 'test', 'shut_the_door_full_close_test.sql'), 'utf8');
 const expect = [...test.matchAll(/\('(\d{4}-\d\d-\d\d)', '(std-[a-z0-9-]+)', '(std-[a-z0-9-]+)'\)/g)].map(m => m.slice(1));
 check('the server test checks 60 days', expect.length === 60);
 check('and they are modes.js\'s candidates, day by day', expect.every(([d, a, b]) => {

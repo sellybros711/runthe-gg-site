@@ -54,7 +54,12 @@
   const M = NODE ? require('./modes.js') : window.STD_MODES;
 
   const API_VERSION = 1;
-  const SCHEDULE_V = 13;
+  const SCHEDULE_V = 16;
+  /* Rules 8 (the closer's outing to the end of the game, engine.js 11) starts with a whole day's
+     daily, never partway through one: a daily of a day before this is played as rules 7 (the
+     first half alone), so everybody on one day's board plays one game. Set it to the day after
+     the deploy if the deploy lands on a day whose pack has more than one half. */
+  const FULL_CLOSE_FROM = '2026-11-01';
   const STORE_V = 1;
   const PICKS_KEY = 'std_picks_v1';         // vote days the server has locked: {day: pack}
   const SURVIVOR_KEY = 'std_survivor_v1';   // today's run on this device
@@ -196,7 +201,7 @@
     const saved = readSaved();
     const resume = saved && saved.day === cur.day && saved.scenarioId === scenarioId && Array.isArray(saved.calls) ? saved : null;
     // an outing begun before rules 2 shipped (its calls carry no r) finishes under the rules it began with
-    const rules = resume && resume.calls.length ? E.rulesOf(resume.calls) : undefined;
+    const rules = resume && resume.calls.length ? E.rulesOf(resume.calls) : cur.day < FULL_CLOSE_FROM ? G.STEAL_RULES : undefined;
     const o = E.createOuting(p.pack, { seed: s, mode, model: p.model, outingId: id, rules });
     const rec = { o, day: cur.day, number: cur.number, result: null, submitted: false };
     if (resume) {

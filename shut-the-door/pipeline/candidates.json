@@ -28,6 +28,8 @@
   {"id": "vesia-2024-ws2", "plan": "30", "date": "2024-10-26", "gameType": "W", "pitcher": "Vesia", "inning": 9},
   {"id": "glasnow-2025-ws6", "plan": "30", "date": "2025-10-31", "gameType": "W", "pitcher": "Glasnow", "inning": 9},
   {"id": "kelly-2020-nlds2", "plan": "30", "date": "2020-10-07", "gameType": "D", "pitcher": "Joe Kelly", "inning": 9},
+  {"id": "price-2008-alcs7", "plan": "rules8", "date": "2008-10-19", "gameType": "L", "pitcher": "Price", "inning": 8},
+  {"id": "rivera-2009-alcs6", "plan": "rules8", "date": "2009-10-25", "gameType": "L", "pitcher": "Rivera", "inning": 8},
   {"id": "hoffman-2025-alcs7", "plan": "30", "date": "2025-10-20", "gameType": "L", "pitcher": "Jeff Hoffman"}
  ],
  "proxy": [
