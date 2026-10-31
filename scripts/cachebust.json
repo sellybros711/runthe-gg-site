@@ -14,7 +14,7 @@
     },
     "config.js": {
       "v": "1",
-      "sha": "7fc7924051909af5"
+      "sha": "fdd424656e2ab782"
     },
     "formations.js": {
       "v": "1",
@@ -26,23 +26,35 @@
     },
     "engine.js": {
       "v": "2",
-      "sha": "26834fb40237508f"
+      "sha": "be1ed4e140e86bb8"
     },
     "names.js": {
       "v": "2",
       "sha": "0f04e78c1e763a1f"
     },
-    "book.js": {
+    "routes.js": {
       "v": "1",
-      "sha": "bc3423307ecf8d18"
+      "sha": "4e7f9aad1b5581e5"
+    },
+    "book.js": {
+      "v": "2",
+      "sha": "3e2e865ce56d5e00"
+    },
+    "cards.js": {
+      "v": "1",
+      "sha": "02e0a0d0a1aeb909"
     },
     "diagram.js": {
-      "v": "1",
-      "sha": "321983645565a333"
+      "v": "2",
+      "sha": "5949353e0955b976"
     },
     "export.js": {
+      "v": "2",
+      "sha": "498dc23abaa80601"
+    },
+    "turf.js": {
       "v": "1",
-      "sha": "6a429576a3794f09"
+      "sha": "ae042b6ed7725f38"
     },
     "rig.js": {
       "v": "1",
@@ -56,25 +68,37 @@
       "v": "1",
       "sha": "ddf3f027cc22c5ac"
     },
-    "clipboard.js": {
-      "v": "4",
-      "sha": "cee3c1807ba3ee77"
-    },
     "play.js": {
       "v": "1",
       "sha": "3dc28a7e95923a28"
     },
-    "home.js": {
+    "app.js": {
       "v": "1",
-      "sha": "ff6c7cbb96c1351f"
+      "sha": "af7410a920b9b737"
     },
-    "ui.js": {
-      "v": "3",
-      "sha": "1b107f77ad2b0c82"
+    "studio.js": {
+      "v": "1",
+      "sha": "55e3f89e496b0f46"
     },
-    "book-ui.js": {
-      "v": "2",
-      "sha": "7f38dc084af9d9a3"
+    "game.js": {
+      "v": "1",
+      "sha": "ddbece772abaf868"
+    },
+    "library.js": {
+      "v": "1",
+      "sha": "54d6ce1b16e8cf96"
+    },
+    "learn.js": {
+      "v": "1",
+      "sha": "aad482d3dd5e1061"
+    },
+    "testview.js": {
+      "v": "1",
+      "sha": "da77dcd7e7e60ef3"
+    },
+    "printview.js": {
+      "v": "1",
+      "sha": "b8c2fca581834fac"
     }
   },
   "arcade/almamater/index.html": {
