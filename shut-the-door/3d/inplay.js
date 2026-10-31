@@ -21,7 +21,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=23';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=10';
-import { buildBallpark } from './ballpark.js?v=24';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=25';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=41';
 import { look } from './looks.js?v=3';
@@ -164,7 +164,7 @@ export class InPlay {
   }
 
   /** The broadcast's textures up to the GPU at load (stage.js init, behind the home screen): the
-      park's 2048 px infield mask, its dirt and seats, the shadow blob. Measured in Chromium (software
+      park's dirt and seats, the shadow blob. Measured in Chromium (software
       GL), the first broadcast frame uploaded 14 textures and 12 buffers on top of its draw; drawn
       ahead into a target instead, it still compiled a shader per variant the canvas never uses, so
       this only uploads (renderer.initTexture: no draw, nothing on screen). It takes six of the
@@ -1190,10 +1190,10 @@ export class InPlay {
     let dM = 0.55 + 2.6 * Math.sqrt(h);
     // never under a dozen pixels across, so a far camera still shows it
     const H = camera.userData.cssH || 800;
-    // on the ground, and on the mound where the ball is over it (ballpark.js: a cone 9 ft round and
-    // 10 in high, its 2.6 ft top flat, centred 1.5 ft behind the rubber)
-    const dm = Math.hypot(bp.x - MOUND.x, bp.y - MOUND.y - 1.5);
-    const g = dm < 2.6 ? 10 / 12 : dm < 9 ? (10 / 12) * (9 - dm) / 6.4 : 0;
+    // on the ground, and on the mound where the ball is over it (field.js MOUND_C: a cone 9 ft round
+    // and 10 in high, its 2.6 ft top flat, centred 18 in in front of the rubber)
+    const M = MOUND_C, dm = Math.hypot(bp.x - M.x, bp.y - M.y);
+    const g = dm < M.top ? M.h : dm < M.r ? M.h * (M.r - dm) / (M.r - M.top) : 0;
     mk.position.copy(P(bp.x, bp.y, g + 0.06));
     const d = camera.position.distanceTo(mk.position);
     const px = dM / (2 * d * Math.tan(camera.fov * D2R / 2)) * H;
