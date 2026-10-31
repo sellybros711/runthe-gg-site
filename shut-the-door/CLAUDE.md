@@ -24,6 +24,8 @@ node shut-the-door/check-posture.mjs           unlisted until launch (INDEXED an
 node shut-the-door/test/engine.mjs             the engine on a synthetic pack: determinism, end rules, grades
 node shut-the-door/test/packs.mjs              every real pack: the contract, all-green best play, median at the 50th
 node shut-the-door/test/api.mjs                the four calls, the daily, resume, one submit
+node shut-the-door/test/modes.mjs              the vote's candidates and Survivor's sequence, page and server alike
+node shut-the-door/test/survivor.mjs           the vote, Survivor, the archive and the Pro gate through the calls
 node shut-the-door/test/lesson.mjs             the lesson on the worst pitch
 node shut-the-door/check-replays.mjs           stored outings replayed against their scores (--self-test)
 node shut-the-door/check-rules.mjs             every in-play row in every pack a legal MLB play

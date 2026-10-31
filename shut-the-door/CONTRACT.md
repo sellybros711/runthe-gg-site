@@ -1093,3 +1093,93 @@ Rules:
 - **Grade cards** keep their one-line reason during play. The lesson is the one longer moment.
 - **How to play** gains a short "pitching 101" page listing the principles, one line each, behind
   the menu button like every guide.
+
+## 16. The vote for tomorrow's daily (the owner's call, 2026-10-30)
+
+From `modes.js VOTE.EPOCH` (2026-11-16) each day's daily is one of two candidates, chosen the day
+before by a vote. Before it, the day is the schedule's own (`data/schedule.json`), so no day already
+played moves. The rule, and the server's copy of it, are in `modes.js` and
+`supabase/160_shut_the_door_vote_survivor.sql`; `test/modes.mjs` holds the two to the same answers.
+
+- **Candidates for day D**: the packs nobody was offered (or given, before the vote) on any of the 13
+  days before D, ordered by `hashSeed('shut-the-door-vote-' + D + '-' + id)`, the first two. The first
+  is A. A played pack was offered, so nothing played in the last 13 days comes back. At least 4 of the
+  30 are eligible each day, so the pairs vary. A pure function of the day: every device and the
+  server agree without asking.
+- **Who votes**: signed in, once, after finishing today's daily (`shutdoor_outings` has today's row).
+  Not a device id: a device id is a string any script can mint, so it is no limit. Guests see the
+  candidates and the result.
+- **The lock**: voting for D closes when D begins (Eastern). The first read of D locks it, the same for
+  every reader: more votes wins, no votes or a tie is A. A daily post from the epoch on must be for the
+  locked situation.
+- **No server**: the page plays A, the default, and says so (`scenario.pick: 'default'`). Once the
+  server has answered, the lock is kept on the device (`std_picks_v1`).
+
+```js
+/** The vote for a day (default tomorrow).
+ *  @returns {Promise<{day, open, candidates: Card[2], myVote: string|null, votes: {a, b}|null,
+ *                     winner: string|null, canVote: boolean, why: string|null, offline: boolean}>}
+ *  votes show once you voted or the day is locked. why is the server's reason when canVote is false:
+ *  'sign in to vote', "finish today's daily to vote", 'you voted', 'voting is closed'. */
+vote(day)
+
+/** Cast this player's one vote for tomorrow. The same shape, with error set when refused. */
+castVote(scenarioId)
+```
+
+`Card` is the schedule's `packs[id].card` plus its `id`: `{id, title, pitcher, team, year, throws,
+situation: {inning, half, outs, bases, score}, resolution}`. Never the reveal. `getScenario(day)`
+from the epoch on carries `pick: 'vote' | 'default'`.
+
+## 17. Survivor, the archive and Pro (the owner's calls, 2026-10-30)
+
+**Survivor** is a run of saves. Each door shut sends the player straight into the next real
+situation; anything else ends the run (a held tie too, as in the daily's streak). The score is saves
+in a row, then points (the outings' scores added) to break a tie. Grading is the daily's.
+
+- **Deterministic** (`modes.js survivorAt`): run r of day D plays the rotation in the order of a
+  Fisher-Yates shuffle from `mulberry32(hashSeed('shut-the-door-survivor-' + D + '-' + r + '-' +
+  cycle))`, every pack once a cycle, and situation i on seed `hashSeed('shut-the-door-survivor-' + D +
+  '-' + r + '-' + i)`. Run 0 is the day's run: the same sequence for everyone.
+- **One run a day free**; Pro may start another once the last is over (run 1, 2, ...). Only run 0 is
+  on the Survivor board (`shutdoor_survivor_board`), which is separate from the daily's.
+- **Kept on the server** signed in (`shutdoor_survivor`): each finished situation is posted in order,
+  so a reload or another device goes on from where the run stands. Signed out it is kept on the
+  device (`std_survivor_v1`), one run a day, and a sign-in the same day puts it on the account once
+  when the account has no run that day. `check-replays.mjs` replays a stored run.
+
+```js
+/** @returns {Promise<{day, signedIn, pro, run, index, saves, points, over, canStart,
+ *                     entries: {scenarioId, title, outcome, pitches, score}[], runs, offline}>} */
+survivorState()
+
+/** Start today's run or go on with it: the next situation, or the live one where it stood.
+ *  Throws 'one run a day' when the allowance is used.
+ *  @returns {Promise<{run, index, saves, scenario (no reveal, scenario.survivor {run, index}), state}>}
+ *  Then throwPitch, challenge and pickoff on state.outingId as in the daily. */
+survivorStart()
+
+/** finishOuting on a Survivor outing answers the result (no share line) plus
+ *  survivor: {run, index, saves, over, posted}. over false: call survivorStart for the next one. */
+
+/** Signed in: put today's run played signed out on the account, once. Also runs on sign-in. */
+survivorClaim()
+
+/** @returns {Promise<{rank, username, saves, points, over, mine, players}[] | null>} */
+survivorBoard(day, limit)
+```
+
+**The archive** (Pro): any past daily from daily #1, on that day's own situation and seed.
+`startOuting(scenarioId, null, {mode: 'archive', day})`, then the usual calls. It is kept (on the
+device, and on the account in `shutdoor_archive`, first one per day) and never on the daily board:
+`finishOuting` answers `archive: {kept, taken}` and never `account`. Throws 'the archive is for Pro'
+for a free player and 'not an archive day' for today or later.
+
+**Pro** is one server gate, `shutdoor_is_pro(uid)`. It answers false for everyone until payments
+exist (the store agent turns it on in a later migration and adds `std_premium` to
+`premium_unlocks`). No price and no buy flow yet.
+
+```js
+/** @returns {Promise<{signedIn, pro, archive, survivorRuns (null is unlimited)}>} */
+entitlements()
+```

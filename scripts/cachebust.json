@@ -99,6 +99,10 @@
     "printview.js": {
       "v": "1",
       "sha": "b8c2fca581834fac"
+    },
+    "ads.js": {
+      "v": "3",
+      "sha": "dd0d846338fe2651"
     }
   },
   "arcade/almamater/index.html": {
@@ -3089,12 +3093,16 @@
       "sha": "8d8bbd62d19c78da"
     },
     "menus.js": {
-      "v": "8",
-      "sha": "d22e8d3bb7bc088b"
+      "v": "10",
+      "sha": "65b50b7454a50cb0"
     },
     "rng.js": {
       "v": "1",
       "sha": "07b7ca2277fe8038"
+    },
+    "modes.js": {
+      "v": "1",
+      "sha": "7ea985fde3db5f01"
     },
     "grade.js": {
       "v": "15",
@@ -3117,28 +3125,32 @@
       "sha": "43e316a9f7a3905c"
     },
     "auth.js": {
-      "v": "4",
-      "sha": "6aa69681624a7937"
+      "v": "7",
+      "sha": "65388a73bdcc15be"
     },
     "api.js": {
-      "v": "22",
-      "sha": "0e7fb2b6b6e0de4a"
+      "v": "23",
+      "sha": "14dbf2fac2680a41"
     },
     "mock-api.js": {
-      "v": "12",
-      "sha": "420ad371f276462f"
+      "v": "13",
+      "sha": "4db78975f69ec042"
     },
     "coach.js": {
       "v": "2",
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
-      "v": "1",
-      "sha": "75aebc9cd981db13"
+      "v": "4",
+      "sha": "949f0392725e94a0"
+    },
+    "modes-ui.js": {
+      "v": "4",
+      "sha": "12f74f2b441aa488"
     },
     "ui.js": {
-      "v": "49",
-      "sha": "52d6b67961cb8aed"
+      "v": "50",
+      "sha": "92263b943bcf5500"
     },
     "3d/boot.js": {
       "v": "73",
