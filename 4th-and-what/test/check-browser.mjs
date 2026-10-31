@@ -81,7 +81,7 @@ async function run(name, viewport, scale) {
   /* ---------- Play ---------- */
   await page.goto(BASE + '/4th-and-what/?seed=11');
   await page.waitForFunction(() => !!window.FAW_APP && !!window.FAW_GAME && !!window.FAW_STUDIO);
-  ok(await page.isVisible('#vHome') && await page.isVisible('.path.play') && await page.isVisible('.path.studio'), 'opens on Home: Play and Build, and the other places');
+  ok(await page.isVisible('#vHome') && await page.isVisible('.heroacts [data-go="play"]') && await page.isVisible('.heroacts [data-go="studio"]') && (await page.$$eval('.tile', t => t.length)) === 4, 'opens on Home: Play and Build, and four tiles');
   await page.waitForFunction(() => document.getElementById('hName').textContent.length > 0, null, { timeout: 8000 });
   ok(/ vs /.test(await page.textContent('#hName')), 'the home field runs a named play: ' + await page.textContent('#hName'));
   await shot('00-home');
@@ -89,15 +89,39 @@ async function run(name, viewport, scale) {
   ok(await page.isVisible('#vBooks'), 'a tile goes to its place');
   await page.click('.logo');
   ok(await page.isVisible('#vHome'), 'the logo goes home');
-  await page.click('.path.play');
-  ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home');
-  ok((await page.textContent('#gSit')) === '4th & 5' && (await page.textContent('#gSpot')) === 'Opp 40', 'the default: 4th and 5 on the opponent 40');
-  await shot('0-play');
+  /* ---------- Play, the video game: 4th and what, draw it, snap it, the card ---------- */
+  await page.click('.heroacts [data-go="play"]');
+  ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home: 4th and what?');
+  ok(await page.$$eval('#pDists .dist', d => d.length) === 6 && /opponent's 40/.test(await page.textContent('#pSpot')), 'six distances, ball on the opponent 40');
+  await shot('0-pick');
+  await page.click('#pDists .dist[data-d="5"]');
+  ok(await page.isVisible('#vStudio') && await page.isVisible('#sSnap') && !(await page.isVisible('.studiobar')) && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'draw it: the field, the tools and Snap it');
+  ok((await page.textContent('#sSit')) === '4th & 5 · Opp 40', 'the situation is on the draw screen');
+  await shot('0-draw');
+  await page.click('#sSnap');
+  ok(await page.isVisible('#watch'), 'Snap it plays it in the stadium');
+  await page.waitForTimeout(500); await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  const card = await page.evaluate(() => ({ t: document.getElementById('rTitle').textContent, why: document.getElementById('rWhy').textContent }));
+  ok(card.t.length > 3 && card.why.length > 10, 'the result card: ' + card.t);
+  await shot('0-card');
+  const [cardDl] = await Promise.all([page.waitForEvent('download'), page.click('#rCardBtn')]);
+  ok(/-card\.png$/.test(cardDl.suggestedFilename()), 'Save card downloads the card: ' + cardDl.suggestedFilename());
+  await page.click('#rAgain');
+  await page.waitForTimeout(400); await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  ok(true, 'Run it back snaps it again');
+  await page.click('#rBreak');
+  ok(await page.isVisible('#vReplay') && !(await page.isVisible('#watch')), 'See the breakdown opens the snap on turf');
+  await page.waitForFunction(() => document.getElementById('gTime').value === '1000', null, { timeout: 30000 });
+  ok((await page.textContent('#gResBig')) !== 'Run a play', 'the breakdown shows the result');
+
+  /* ---------- the breakdown, run from its own controls ---------- */
   await page.click('#gRun');
   await page.waitForFunction(() => { const r = window.FAW_GAME.last(); return r && document.getElementById('gTime').value === '1000'; }, null, { timeout: 30000 });
   const r1 = await page.evaluate(() => ({ big: document.getElementById('gResBig').textContent, why: document.getElementById('gWhy').textContent, rows: document.getElementById('gStats').children.length, off: +document.getElementById('gOff').textContent, def: +document.getElementById('gDefScore').textContent }));
   ok(r1.big !== 'Run a play' && r1.why.length > 10 && r1.rows === 12, 'Run Play plays it to a result: ' + r1.big);
-  ok(r1.off + r1.def === 1, 'the scoreboard counts it');
+  ok(r1.off + r1.def >= 1, 'the scoreboard counts it');
   await page.click('#gBreakBtn');
   ok(await page.isVisible('#gBreak'), 'the defensive breakdown opens');
   await page.fill('#gTime', '300'); await page.dispatchEvent('#gTime', 'input');

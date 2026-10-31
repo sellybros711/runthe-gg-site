@@ -25,7 +25,9 @@
   'use strict';
   var C = window.FAW_CONFIG, E = window.FAW_ENGINE, B = window.FAW_BOOK, N = window.FAW_NAMES, R = window.FAW_ROUTES, F = window.FAW_FORMATIONS;
   var $ = function (id) { return document.getElementById(id); };
-  var VIEWS = ['home', 'play', 'studio', 'learn', 'books', 'test', 'print'];
+  var VIEWS = ['home', 'play', 'studio', 'replay', 'learn', 'books', 'test', 'print'];
+  /* the Studio has two modes: 'game' (Play's draw step: the field, the tools, Snap it) and 'build' */
+  var mode = 'build';
   var hooks = {}, current = null;
 
   /* ---------- little helpers ---------- */
@@ -105,12 +107,17 @@
   function choice(key) { var l = choices(); for (var i = 0; i < l.length; i++) if (l[i].key === key) return l[i]; return l[0]; }
 
   /* ---------- the views ---------- */
-  function show(v) {
+  function show(v, o) {
     if (VIEWS.indexOf(v) < 0) v = 'home';
+    if (v === 'studio') mode = o && o.mode === 'game' ? 'game' : 'build';
+    document.body.classList.toggle('gamemode', v === 'studio' && mode === 'game');
     current = v;
     VIEWS.forEach(function (x) { var s = $('v' + x.charAt(0).toUpperCase() + x.slice(1)); if (s) s.hidden = x !== v; });
-    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { if (t.dataset.view === v) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
-    if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
+    /* Play's draw step and the breakdown belong to the Play tab */
+    var tabOf = (v === 'studio' && mode === 'game') || v === 'replay' ? 'play' : v;
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { if (t.dataset.view === tabOf) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    var hash = v === 'studio' && mode === 'game' ? 'draw' : v;
+    if (location.hash !== '#' + hash) history.replaceState(null, '', '#' + hash);
     (hooks[v] || []).forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
     window.scrollTo(0, 0);
   }
@@ -119,7 +126,8 @@
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { t.addEventListener('click', function () { show(t.dataset.view); }); });
   document.querySelector('.logo').addEventListener('click', function (ev) { ev.preventDefault(); show('home'); });
   Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
-  window.addEventListener('hashchange', function () { var v = location.hash.slice(1); if (v !== current) show(v); });
+  function fromHash(h) { return h === 'draw' ? show('studio', { mode: 'game' }) : show(h); }
+  window.addEventListener('hashchange', function () { var v = location.hash.slice(1); if (v !== current && !(v === 'draw' && current === 'studio')) fromHash(v); });
 
   /* ---------- save a play into a playbook ---------- */
   function saveDialog(play, o) {
@@ -173,14 +181,14 @@
 
   /* ---------- watch it in 3D ---------- */
   var live = null;
-  function watch3d(res) {
-    var w = $('watch'); w.hidden = false; $('cap').textContent = ''; $('bSkip').hidden = false;
+  function watch3d(res, done) {
+    var w = $('watch'); w.hidden = false; $('cap').textContent = ''; $('bSkip').hidden = false; $('rCard').hidden = true;
     if (live) live.stop();
     window.FAW_LIVE.prepare(res.BX, res.Y0);
     live = window.FAW_LIVE.show($('cLive'), res, {
       caption: function (t) { $('cap').textContent = t; },
       pressure: function (p) { $('pressFill').style.width = Math.round(p * 100) + '%'; $('press').style.opacity = res.isRun ? '0' : '1'; },
-      done: function () { $('bSkip').hidden = true; }
+      done: function (r) { $('bSkip').hidden = true; if (done) done(r || res); }
     });
   }
   $('bSkip').addEventListener('click', function () { live && live.skip(); });
@@ -192,9 +200,9 @@
     get draft() { return draft; }, setDraft: function (d) { draft = d; saveDraft(); }, saveDraft: saveDraft, emptyPlay: emptyPlay,
     store: store, signedIn: signedIn, openStore: openStore, terms: terms, nameFor: nameFor, tagOf: tagOf, customOf: customOf,
     choices: choices, choiceOptions: choiceOptions, choice: choice,
-    show: show, on: on, fire: fire, current: function () { return current; },
+    show: show, on: on, fire: fire, current: function () { return current; }, mode: function () { return mode; },
     saveDialog: saveDialog, watch3d: watch3d
   };
   /* the views register themselves after this file; the first view is shown once they have */
-  window.addEventListener('DOMContentLoaded', function () { show(location.hash.slice(1) || 'home'); });
+  window.addEventListener('DOMContentLoaded', function () { fromHash(location.hash.slice(1) || 'home'); });
 })();

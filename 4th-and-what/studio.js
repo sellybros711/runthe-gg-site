@@ -472,7 +472,7 @@
   }
 
   /* ---------- out of the Studio ---------- */
-  $('sRun').addEventListener('click', function () { A.runChoice = 'draft'; A.show('play'); if (window.FAW_GAME) window.FAW_GAME.run(); });
+  $('sRun').addEventListener('click', function () { if (window.FAW_FLOW) window.FAW_FLOW.snap(); });
   $('sTest').addEventListener('click', function () { A.testChoice = 'draft'; A.show('test'); });
   $('sDownload').addEventListener('click', function () {
     var c = document.createElement('canvas'); c.width = 1400; c.style.width = '1400px';
@@ -484,14 +484,14 @@
   });
 
   /* open a playbook play in the Studio */
-  function open(bookId, playId) {
+  function open(bookId, playId, o) {
     var b = A.store.book(bookId), e = null; if (!b) return;
     b.plays.forEach(function (p) { if (p.id === playId) e = p; });
     if (!e) return;
     A.setDraft({ play: A.copy(e.play), name: e.name, nameEdited: !!e.nameEdited, tag: e.tag || A.tagOf(e.play), fav: !!e.fav, notes: e.notes || '', situations: (e.situations || []).slice(), ref: { book: b.id, id: e.id } });
     if (e.distance) A.SC.distance = e.distance;
     undo = [];
-    A.show('studio');
+    A.show('studio', o);
   }
   function newPlay() {
     A.setDraft({ play: A.emptyPlay('gun3x1'), name: '', nameEdited: false, tag: 'pass', fav: false, notes: '', situations: [], ref: null });

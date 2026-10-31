@@ -1,4 +1,5 @@
-/* 4th and What: Play, the game.
+/* 4th and What: the breakdown (since 2026-10-31 Play is the video game in
+ * flow.js; this view is where a snap is studied on turf).
  *
  * Pick a play (the Studio's, a concept, or one from a playbook), the down,
  * the distance and the spot (the owner's call, 2026-10-31: any down and
@@ -169,9 +170,19 @@
     A.show('studio');
   });
 
-  A.on('play', function () { fillPlays(); writeSituation(); if (res) { layout(); redraw(); } else drawSet(); });
-  A.on('remote', function () { if (A.current() === 'play') fillPlays(); });
-  window.addEventListener('resize', function () { if (A.current() === 'play') { layout(); redraw(); } });
+  /* a snap already played (Play's 3D run): shown here on turf, from the start */
+  function load(r, play) {
+    fillPlays(); writeSituation();
+    res = r; played = A.copy(play);
+    plans = res.plans || plansFor(played, res.callKey);
+    t0 = res.pre && res.pre.length ? res.pre[0].t : 0;
+    t = t0; playing = true; last = 0;
+    layout(); result(); tick();
+  }
 
-  window.FAW_GAME = { run: run, last: function () { return res; }, seek: function (s) { playing = false; t = s; redraw(); } };
+  A.on('replay', function () { fillPlays(); writeSituation(); if (res) { layout(); redraw(); } else drawSet(); });
+  A.on('remote', function () { if (A.current() === 'replay') fillPlays(); });
+  window.addEventListener('resize', function () { if (A.current() === 'replay') { layout(); redraw(); } });
+
+  window.FAW_GAME = { run: run, load: load, last: function () { return res; }, seek: function (s) { playing = false; t = s; redraw(); } };
 })();
