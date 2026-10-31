@@ -31,7 +31,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=43">
+<link rel="stylesheet" href="style.css?v=44">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -291,6 +291,21 @@
   </div>
 </section>
 
+<!-- BETWEEN TWO OF HIS HALVES (rules 8): his team's real half on the line score, plate appearance by
+     plate appearance, then back to the mound. A few seconds; a tap skips it (box-ui.js). -->
+<section class="screen" id="s-half" aria-live="polite" aria-label="His team bats">
+  <div class="hx-in">
+    <p class="eyebrow" id="hx-eye"></p>
+    <h2 class="hx-head" id="hx-head"></h2>
+    <div class="hx-line" id="hx-line"></div>
+    <div class="hx-sit" id="hx-sit"></div>
+    <ol class="hx-pas" id="hx-pas"></ol>
+    <p class="hx-sum" id="hx-sum"></p>
+    <p class="hx-next" id="hx-next"></p>
+    <p class="hx-skip" aria-hidden="true">tap to skip</p>
+  </div>
+</section>
+
 <!-- 8. BETWEEN TWO SURVIVOR SPOTS: the saves and the next closer. Goes on by itself; a tap goes sooner. -->
 <section class="screen" id="s-next" aria-live="polite">
   <div class="nx-in">
@@ -381,7 +396,8 @@
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=4"></script>
 <script src="modes-ui.js?v=4"></script>
-<script src="ui.js?v=50"></script>
+<script src="box-ui.js?v=1"></script>
+<script src="ui.js?v=51"></script>
 <script type="module" src="3d/boot.js?v=73"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
