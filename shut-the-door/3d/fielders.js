@@ -940,7 +940,11 @@ export class Figure {
     const B = this.bones;
     const h = wpos(B.head);
     const d = target.clone().sub(h);
-    const yaw = clamp(Math.atan2(d.x, d.z), -1.3, 1.3) * w;
+    // (a target behind him: past the neck's 1.3 rad the head comes back toward straight ahead as it goes round,
+    // none at all straight behind. Clamped, it flipped from one shoulder to the other in a frame as a ball
+    // crossed behind him, the head at 18 m/s, check-jolt.mjs pop runner run)
+    const ya = Math.atan2(d.x, d.z), yb = Math.abs(ya) <= 1.3 ? ya : Math.sign(ya) * 1.3 * smooth((Math.PI - Math.abs(ya)) / (Math.PI - 1.3));
+    const yaw = yb * w;
     const pitch = clamp(-Math.atan2(d.y, Math.hypot(d.x, d.z)), -0.9, 0.7) * w;
     rotY(B.neck_01, yaw * 0.45); rotY(B.head, yaw * 0.55);
     rotX(B.neck_01, pitch * 0.4); rotX(B.head, pitch * 0.6);
