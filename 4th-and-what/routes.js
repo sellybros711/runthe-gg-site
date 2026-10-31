@@ -101,7 +101,7 @@
     { name: 'Smash', kind: 'pass', strong: [['hitch', 5], ['corner', 10], ['flat', 2]], weak: [['hitch', 5], ['corner', 10]], back: ['block'], reads: [['strong', 1], ['strong', 0], ['weak', 0]] },
     { name: 'Flood', kind: 'pass', strong: [['go'], ['out', 12], ['flat', 2]], weak: [['post', 12], ['dig', 12]], back: ['flat', 2], reads: [['strong', 1], ['strong', 2], ['back']] },
     { name: 'Stick', kind: 'pass', strong: [['go'], ['flat', 2], ['hitch', 6]], weak: [['slant', 2], ['hitch', 5]], back: ['block'], reads: [['strong', 2], ['strong', 1], ['weak', 0]] },
-    { name: 'Snag', kind: 'pass', strong: [['corner', 8], ['hitch', 5], ['flat', 2]], weak: [['slant', 2], ['go']], back: ['block'], reads: [['strong', 1], ['strong', 2], ['strong', 0]] },
+    { name: 'Snag', kind: 'pass', strong: [['corner', 8], ['hitch', 6.5], ['flat', 2]], weak: [['slant', 2], ['go']], back: ['block'], reads: [['strong', 1], ['strong', 2], ['strong', 0]] },
     { name: 'Slant Flat', kind: 'pass', strong: [['slant', 2], ['flat', 2], ['seam']], weak: [['slant', 2], ['flat', 2]], back: ['block'], reads: [['strong', 0], ['strong', 1], ['weak', 0]] },
     { name: 'Curl Flat', kind: 'pass', strong: [['curl', 12], ['flat', 2], ['seam']], weak: [['curl', 12], ['flat', 2]], back: ['block'], reads: [['strong', 0], ['strong', 1], ['weak', 0]] },
     { name: 'Spacing', kind: 'pass', strong: [['hitch', 5], ['hitch', 5], ['hitch', 5]], weak: [['hitch', 5], ['hitch', 5]], back: ['flat', 2], reads: [['strong', 1], ['strong', 0], ['back']] },
