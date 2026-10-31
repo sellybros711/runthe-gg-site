@@ -19,9 +19,21 @@
  * Edits on two devices at once: the later-saved one wins, whole.
  *
  * A playbook:
- *   { id, name, rev, updated, team, sections: [{ id, name }], formations: [{ id, name, base, moved }],
- *     plays: [{ id, name, nameEdited, section, notes, distance, play, stats, updated }] }
+ *   { id, name, rev, updated, team, week, sections: [{ id, name }], formations: [{ id, name, base, moved }],
+ *     plays: [{ id, num, name, nameEdited, section, notes, distance, play, stats, situations, tag, fav, updated }] }
  * stats: { [distance]: { byCall: { cover1: { n, w }, ... }, test: { cover1: { n, w, yds }, ..., at } } }
+ *
+ *   week        the week the wristband codes are shuffled for (bandCodes). 1 to start.
+ *   num         the play's own number, unique in the book. It is the number the
+ *               call sheet, the QB's band and the players' bands all print. A new
+ *               play takes the next one (one past the highest, so a deleted play's
+ *               number is never handed to another play mid season).
+ *   situations  the call sheet boxes it goes in: keys of SITUATIONS. A new play
+ *               starts in the box for its distance (short, medium or long).
+ *   tag         'pass', 'run', 'rpo' or 'special'. null means read it off the
+ *               play (tagOf): a handoff is a run, a handoff with reads is an RPO.
+ *   fav         a coach's favourite, for picking plays fast.
+ * Old books get these with upgrade(book) (ensureNumbers is the numbering part).
  *
  * Plain script: window.FAW_BOOK, module.exports in node (the model only).
  */
@@ -45,13 +57,97 @@
   function newBook(name) {
     var s = { id: newId(), name: 'Plays' };
     return { id: newId(), name: String(name || 'My playbook').slice(0, 60), rev: 1, updated: now(), team: '',
-      sections: [s], formations: [], plays: [] };
+      week: 1, sections: [s], formations: [], plays: [] };
+  }
+
+  /* ---------- situations, tags, numbers and codes (pure) ---------- */
+
+  /* The call sheet's boxes, in the order a call sheet runs. range is the
+     distance a box is for, where it has one: Test it results at those distances
+     are what its "if they, then we" lines read. */
+  var SITUATIONS = [
+    { key: 'openers', label: 'Openers' },
+    { key: 'first10', label: '1st and 10', range: [10, 10] },
+    { key: 'second-long', label: '2nd and long', range: [7, 99] },
+    { key: 'second-short', label: '2nd and short', range: [1, 3] },
+    { key: 'short', label: 'Short: 1-3', range: [1, 3] },
+    { key: 'medium', label: 'Medium: 4-6', range: [4, 6] },
+    { key: 'long', label: 'Long: 7+', range: [7, 99] },
+    { key: 'redzone', label: 'Red zone' },
+    { key: 'goalline', label: 'Goal line' },
+    { key: 'twominute', label: '2 minute' },
+    { key: 'backedup', label: 'Backed up' }
+  ];
+  var SITUATION_KEYS = SITUATIONS.map(function (s) { return s.key; });
+  function situationFor(distance) { var d = +distance || 5; return d <= 3 ? 'short' : d <= 6 ? 'medium' : 'long'; }
+  function situationsOf(entry) {
+    var s = Array.isArray(entry.situations) ? entry.situations.filter(function (k) { return SITUATION_KEYS.indexOf(k) >= 0; }) : null;
+    return s && s.length ? s : [situationFor(entry.distance)];
+  }
+  var TAGS = ['pass', 'run', 'rpo', 'special'];
+  function tagOf(entry) {
+    if (entry && TAGS.indexOf(entry.tag) >= 0) return entry.tag;
+    var p = entry && entry.play ? entry.play : entry || {};
+    if (p.handoff && p.handoff.to) return p.targets && p.targets.length ? 'rpo' : 'run';
+    return 'pass';
+  }
+  function validNum(n) { return typeof n === 'number' && n >= 1 && n <= 9999 && Math.floor(n) === n; }
+  function nextNum(book) {
+    var hi = 0; (book.plays || []).forEach(function (p) { if (validNum(p.num) && p.num > hi) hi = p.num; });
+    return hi + 1;
+  }
+  /* Every play gets a number, and no two share one. A play keeps its number
+     unless an earlier play has it; the rest take the next ones, in book order. */
+  function ensureNumbers(book) {
+    var seen = {}, need = [];
+    (book.plays || []).forEach(function (p) { if (validNum(p.num) && !seen[p.num]) seen[p.num] = true; else need.push(p); });
+    var hi = 0; Object.keys(seen).forEach(function (k) { if (+k > hi) hi = +k; });
+    need.forEach(function (p) { p.num = ++hi; });
+    return book;
+  }
+  /* An old book brought up to date: numbers, situations, tag, fav, week. */
+  function upgrade(book) {
+    if (!validNum(book.week)) book.week = 1;
+    ensureNumbers(book);
+    (book.plays || []).forEach(function (p) {
+      if (!Array.isArray(p.situations)) p.situations = [situationFor(p.distance)];
+      if (p.tag === undefined || (p.tag !== null && TAGS.indexOf(p.tag) < 0)) p.tag = null;
+      p.fav = !!p.fav;
+    });
+    return book;
+  }
+  function hash(str) {
+    var h = 2166136261; str = String(str);
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h >>> 0;
+  }
+  /* Wristband codes shuffled by the week: { playId: '47' }. The same book and
+     week give the same codes every time, a new week gives new ones, and no two
+     plays share one. Two digits while the book is small enough to spread out
+     (45 plays), three past that; opt.digits (2 or 3) fixes it. Worked in id
+     order, so the order of the book never moves a code. */
+  function bandCodes(book, opt) {
+    opt = opt || {};
+    var plays = (book.plays || []).slice().sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+    var digits = opt.digits === 2 || opt.digits === 3 ? opt.digits : plays.length <= 45 ? 2 : 3;
+    if (digits === 2 && plays.length > 90) digits = 3;
+    var lo = digits === 2 ? 10 : 100, size = digits === 2 ? 90 : 900, taken = {}, out = {};
+    var week = validNum(book.week) ? book.week : 1;
+    plays.forEach(function (p) {
+      var c = hash('wk' + week + ':' + p.id) % size;
+      for (var k = 0; k < size && taken[c]; k++) c = (c + 1) % size;
+      taken[c] = true; out[p.id] = String(lo + c);
+    });
+    return out;
   }
   function newPlay(book, play, opt) {
     opt = opt || {};
     return { id: newId(), name: String(opt.name || 'New play').slice(0, 80), nameEdited: !!opt.nameEdited,
       section: opt.section || (book.sections[0] && book.sections[0].id) || null, notes: String(opt.notes || '').slice(0, 500),
-      distance: opt.distance || 5, play: copy(play), stats: {}, updated: now() };
+      distance: opt.distance || 5, play: copy(play), stats: {}, updated: now(),
+      num: validNum(opt.num) ? opt.num : nextNum(book),
+      situations: Array.isArray(opt.situations) ? opt.situations.slice() : [situationFor(opt.distance || 5)],
+      tag: TAGS.indexOf(opt.tag) >= 0 ? opt.tag : null, fav: !!opt.fav };
   }
   /* Count a snap the player watched against whatever the defense rolled. */
   function countSnap(entry, distance, callKey, win) {
@@ -81,9 +177,12 @@
     b.formations = (b.formations || []).filter(function (f) { return f && f.base; }).map(function (f) { return { id: newId(), name: String(f.name || 'Formation').slice(0, 30), base: f.base, moved: f.moved || {} }; });
     b.plays = b.plays.filter(function (p) { return p && p.play && p.play.formation; }).slice(0, MAX_PLAYS).map(function (p) {
       return { id: newId(), name: String(p.name || 'Play').slice(0, 80), nameEdited: !!p.nameEdited, section: map[p.section] || b.sections[0].id,
-        notes: String(p.notes || '').slice(0, 500), distance: p.distance || 5, play: p.play, stats: p.stats || {}, updated: now() };
+        notes: String(p.notes || '').slice(0, 500), distance: p.distance || 5, play: p.play, stats: p.stats || {}, updated: now(),
+        num: p.num, situations: Array.isArray(p.situations) ? p.situations.filter(function (k) { return SITUATION_KEYS.indexOf(k) >= 0; }) : undefined,
+        tag: TAGS.indexOf(p.tag) >= 0 ? p.tag : null, fav: !!p.fav };
     });
     b.team = String(b.team || '').slice(0, 60);
+    upgrade(b);
     return { book: b, terms: o.terms || null };
   }
 
@@ -168,7 +267,9 @@
   }
 
   var API = { GAME: GAME, FORMAT: FORMAT, MAX_PLAYS: MAX_PLAYS, newBook: newBook, newPlay: newPlay, newId: newId,
-    countSnap: countSnap, totals: totals, exportFile: exportFile, importFile: importFile, createStore: createStore };
+    countSnap: countSnap, totals: totals,
+    SITUATIONS: SITUATIONS, SITUATION_KEYS: SITUATION_KEYS, situationFor: situationFor, situationsOf: situationsOf, TAGS: TAGS, tagOf: tagOf,
+    nextNum: nextNum, ensureNumbers: ensureNumbers, upgrade: upgrade, bandCodes: bandCodes, exportFile: exportFile, importFile: importFile, createStore: createStore };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.FAW_BOOK = API;
 })(typeof window !== 'undefined' ? window : this);

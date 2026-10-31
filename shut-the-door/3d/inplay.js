@@ -18,10 +18,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=21';
-import { SHADE } from './shade-data.js?v=2';
-import { Crew } from './fielders.js?v=8';
-import { buildBallpark } from './ballpark.js?v=22';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=22';
+import { SHADE } from './shade-data.js?v=3';
+import { Crew } from './fielders.js?v=9';
+import { buildBallpark } from './ballpark.js?v=23';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=40';
 import { look } from './looks.js?v=3';
@@ -491,7 +491,7 @@ export class InPlay {
     // (holding a runner, before the pitch reaches the plate he faces the mound; he comes round to the plate with it)
     if (R.faceMound && s < 0.3) faceYaw = turnTo(faceYaw, faceToward(st, MOUND), 0.67 * (1 - ramp(s, -0.35, 0.3)));
     f.throwing = false; f.reaching = false;
-    let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0, hop = 0;
+    let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0, hop = 0, layW = 0, layRun = 0, layHead = null;
     // a ball he takes (a catch in the air, a throw at a bag): the point, and how far his body is
     // moved so the glove is on it (catchFit, below)
     let take = null, takeW = 0;
@@ -572,7 +572,19 @@ export class InPlay {
           if (a.wall || q.z > 6.8) lift = Math.max(lift, Math.max(0, q.z - 6.2) * 0.9 * bump(s, t - 0.3, t, t, t + 0.3));
           if (a.wall || q.z > 7) spec.armsUp = 0;
           // a shoestring catch (the ball under his knees, out of reach bent over): he lays out for it
-          if (q.z < 2.4) dive = Math.max(dive, k * clamp((2.8 - q.z) / 1.8, 0.3, 1));
+          if (q.z < 2.4) {
+            const kd = k * clamp((2.8 - q.z) / 1.8, 0.3, 1);
+            dive = Math.max(dive, kd);
+            // (laid out, he does not spin: his run's share of his facing stays what it was at the ball until he
+            // comes up. Stopping dead there handed his facing from his run to the ball's line in a tenth of a
+            // second, and laid out his head swung through it at 20 m/s, check-jolt.mjs pop fielder drop)
+            // (and his heading then: read live, it flipped in a frame as his next run came within a tenth of a second)
+            if (kd > layW) {
+              const e = tr.at(t), ea = tr.at(Math.max(0, t - 0.1)), eb = tr.at(t + 0.1);
+              layW = kd; layRun = smooth((e.spd - 3) / 8);
+              layHead = Math.hypot(eb.x - ea.x, eb.y - ea.y) > 1 ? heading(ea, eb) : e.head;
+            }
+          }
         }
       }
       if (a.kind === 'receive' || a.kind === 'catch_throw' || a.kind === 'tag') {
@@ -746,7 +758,9 @@ export class InPlay {
     // the fit runs up to the moment he takes the ball; after it, what it did then is carried (below)
     if (take && s > take.t + 1e-6) { take = null; takeW = 0; }
     // facing: his run's heading while running, else where his attention is
-    const w = smooth((spd - 3) / 8);
+    // (laid out, part of it is the run he had at the ball, held: layW, layRun, layHead)
+    if (layHead == null) layW = 0;
+    const w = smooth((spd - 3) / 8) * (1 - layW);
     let yaw = faceYaw;
     if (st.head != null && w > 0) {
       // (through a corner of his path, the way he goes over a fifth of a second either side, so he
@@ -765,6 +779,7 @@ export class InPlay {
       if (up && Math.abs(rel) > Math.PI / 2) { const kb = 1 - Math.pow(w, 8); rel = rel * (1 - kb) + Math.sign(rel) * (Math.PI - Math.abs(rel)) * kb; }
       yaw = faceYaw + rel * w;
     }
+    if (layW > 0) yaw += angDiff(faceYaw, layHead) * layRun * layW;
     // (a ball picked up on the run: his track ends at the ball, and he comes round from the way he ran to
     // where he faces over a third of a second. Facing the run one frame and the infield the next, his planted
     // feet swung round him at 33 m/s, check-jolt.mjs skate fielder pickup)
@@ -1667,9 +1682,12 @@ export class InPlay {
       const coming = [];
       for (const r of home) { const q = r.track.at(s); if (Math.hypot(q.x, q.y) < 70) coming.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }); }
       pts.push(...coming);
-      if (ball && Math.hypot(ball.x, ball.y) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
-      // (from high behind the plate, third, first and second are in reach too)
-      const near = keys.filter((k) => Math.hypot(k.x, k.y) < (hs ? 135 : 75));
+      // (near the plate in the air too, not only over the ground: a towering fly 60 ft out and 400 ft up
+      // is not the plate camera's, and holding it tilted the low camera up off the run, check-frame.mjs)
+      if (ball && Math.hypot(ball.x, ball.y, ball.z || 0) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
+      // (from high behind the plate, third, first and second are in reach too; a moment still sliding in
+      // from a ball high overhead is in reach once it is down near the field)
+      const near = keys.filter((k) => Math.hypot(k.x, k.y, k.z || 0) < (hs ? 135 : 75));
       pts.push(...near);
       // (what it must hold: the runners coming in to the plate, and the moments in its reach; one at
       // first base is not this camera's)

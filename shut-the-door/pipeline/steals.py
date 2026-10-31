@@ -442,8 +442,17 @@ def main():
     a = sys.argv[1:]
     seasons = [int(x) for x in (a[a.index('--seasons') + 1] if '--seasons' in a else '2022,2024').split(',')]
     threads = int(a[a.index('--threads') + 1]) if '--threads' in a else 6
-    sample = {}
-    for se in seasons:
+    # --spots-only: keep the measured league sample (every game feed of its seasons) and the pop
+    # time slope from data/steals.json, and add only the spots it does not have yet: their people,
+    # catcher and runners. The spots already in it are kept as they are.
+    spots_only = '--spots-only' in a
+    prev = read_json(os.path.join(DATA, 'steals.json')) if spots_only else None
+    if spots_only and not prev:
+        raise SystemExit('--spots-only needs data/steals.json')
+    sample = dict(prev['sample']) if spots_only else {}
+    if spots_only:
+        seasons = [int(x) for x in sample]
+    for se in ([] if spots_only else seasons):
         ln = season_lines(se, threads)
         m = measure(ln)
         m['league'] = league(se)
@@ -454,8 +463,10 @@ def main():
             f'3rd {m["success"]["3"]} of {m["sucN"]["3"]}; pickoff {m["pickoff"]}')
     GAME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     specs = read_json(os.path.join(GAME, 'scenarios', 'scenarios.json'))['scenarios']
-    scen = {}
+    scen = dict(prev['scenarios']) if spots_only else {}
     for spec in specs:
+        if spots_only and spec['id'] in scen:
+            continue
         v = read_json(os.path.join(DATA, 'verify', spec['verify'] + '.json'))
         pack = read_json(os.path.join(DATA, 'packs', spec['id'] + '.json'))
         season = pack['scenario']['pitcher']['year']
@@ -520,7 +531,7 @@ def main():
             'start': {str(b): r['id'] for b, r in start.items()},
         }
         log(f'{spec["id"]}: catcher {cname} z {catcher["z"]}, pitcher z {pitcher["z"]} att {pitcher["att"]}, era att x{scen[spec["id"]]["eraAtt"]} z {scen[spec["id"]]["eraZ"]}')
-    zps = z_per_second()
+    zps = prev['zPerSecond'] if spots_only else z_per_second()
     log(f'pop time: {zps}')
     write_json(os.path.join(DATA, 'steals.json'), {
         'zPerSecond': zps,
