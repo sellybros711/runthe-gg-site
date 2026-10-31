@@ -691,7 +691,8 @@ function setClub(el, colors) {
   if (colors && colors[1]) el.style.setProperty('--club2', colors[1]); else el.style.removeProperty('--club2');
 }
 function renderHud(st) {
-  var sit = S.scn.situation;
+  /* rules 8: the half being pitched (st.half), else the spot's own inning */
+  var sit = st && st.half && st.half.inning ? st.half : S.scn.situation;
   setClub($('m-usclub'), S.scn.pitcher.teamColors);
   // the hitters' club, from the same rule the 3D kit uses (clubs.js, loaded by index.html); grey until it is
   var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: S.scn.title, scenarioId: S.scn.id, pitcher: S.scn.pitcher }) : null;
