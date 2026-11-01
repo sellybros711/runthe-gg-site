@@ -800,7 +800,12 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
    hitter. The ring closes on the crosshair once power is set. Frames move transforms only. The stop
    locks with the one word. Execution only: no grade colours (signal and data, never green to red). */
 .dock.metering .arsenal, .dock.metering .btn.throw { visibility: hidden; }
-.relm { position: absolute; z-index: 6; inset: 0; box-sizing: border-box; padding: 10px 14px 12px; border-radius: 16px;
+/* THE PANEL IS NEVER SHORTER THAN WHAT IT SAYS (2026-11-01). It covers the dock, so its height came
+   from the pitch buttons: a 2 pitch closer's dock (Tanner Scott, the first daily with one since the
+   cue grew) was 181 px on a desk and the cue and the two stops needed 236, so the cue was clipped.
+   It sits on the dock's bottom edge and is at least the dock's height; when the words need more it
+   grows up, over the running game row and the step line, both hidden while it runs. */
+.relm { position: absolute; z-index: 6; inset: auto 0 0; min-height: 100%; box-sizing: border-box; padding: 10px 14px 12px; border-radius: 16px;
   background: linear-gradient(180deg, rgba(34, 43, 62, .96), rgba(11, 15, 23, .97)); color: #f4f5f7; display: flex; flex-direction: column; justify-content: center; gap: 10px;
   box-shadow: 0 3px 0 var(--signal), 0 12px 30px rgba(11, 15, 23, .3); cursor: pointer;
   touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -1379,6 +1384,10 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .relm .rm-cue-t small { font-size: 14px; }
   .relm .rm-steps { grid-template-columns: 1fr; }
   .relm .rm-step { min-height: 52px; }
+  /* re-aim keeps its own row over the cue: the cue's big line ran under it when the panel was short */
+  .relm.cue:not(.is-done) { padding-top: 54px; }
+  /* a 2 pitch dock is short: the two stops side by side, so the panel grows as little as it can */
+  #m-dock:has(#m-arsenal[data-n="2"]) .relm.two .rm-steps { grid-template-columns: 1fr 1fr; }
 }
 
 /* ---- THE MODES AROUND THE DAILY (modes-ui.js, 2026-10-30): the save, the vote, Survivor ----
