@@ -2744,7 +2744,7 @@
     },
     "putt/putt.js": {
       "v": "119",
-      "sha": "72ff212592a35826"
+      "sha": "f38f9d22bdc862ce"
     },
     "putt/land.js": {
       "v": "15",
@@ -2804,11 +2804,11 @@
     },
     "putt/gymkinds/gravity.js": {
       "v": "1",
-      "sha": "d8b3ce5fe1eb2dbf"
+      "sha": "979c87aaa5399755"
     },
     "putt/trail.js": {
       "v": "46",
-      "sha": "163d052c4c3044b2"
+      "sha": "12127ce7c186086e"
     },
     "putt/mapland.js": {
       "v": "7",
