@@ -186,7 +186,9 @@
      snap. run() and plans() both start here, so a scout card shows exactly
      the setup the sim plays. The only dice it rolls are the call's. */
   function setup(scenario, play, opt, rnd) {
-    var T = opt.tuning || CFG.TUNING, A = CFG.ARCHETYPES;
+    /* the level (High School, College, the NFL) sets the tuning and the player types */
+    var LV = CFG.level ? CFG.level(scenario.level) : null;
+    var T = opt.tuning || (LV ? LV.tuning : CFG.TUNING), A = LV ? LV.archetypes : CFG.ARCHETYPES;
     var S = situation(scenario);
     var distance = S.distance, Y0 = S.Y0, BX = scenario.ballX != null ? scenario.ballX : FIELD_W / 2;
     var marker = Math.min(100, Y0 + distance);
@@ -1016,7 +1018,7 @@
 
     return {
       seed: seed >>> 0, distance: distance, callKey: callKey(call), down: downName(distance, Y0, down), downNum: down, ballOn: S.ballOn, goal: S.goal,
-      situation: situationName(down, distance, S.ballOn), next: next, Y0: Y0, BX: BX, marker: marker, box: box,
+      situation: situationName(down, distance, S.ballOn), next: next, Y0: Y0, BX: BX, marker: marker, box: box, level: scenario.level || 'nfl',
       formation: setDef.id, isRun: isRun, call: call, callName: callName(call), callLine: callLine(call),
       pocket: Math.round(Tp * 100) / 100, outcome: outcome, win: win, title: title,
       yards: shown, spotY: spotY, spot: spotY != null ? spotName(spotY) : null, reason: reason,

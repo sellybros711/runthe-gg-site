@@ -123,7 +123,7 @@
 
   function drawField() {
     if (!V) V = T.view($('tField'), {});
-    V.set({ BX: sc.ballX, Y0: 100 - sc.ballOn, marker: 100 - sc.ballOn + sc.distance, behind: 10, ahead: window.innerWidth < 700 ? 22 : 18, across: T.across() });
+    V.set({ hash: root.FAW_CONFIG.level('nfl').hash, BX: sc.ballX, Y0: 100 - sc.ballOn, marker: 100 - sc.ballOn + sc.distance, behind: 10, ahead: window.innerWidth < 700 ? 22 : 18, across: T.across() });
     V.layout(); V.field(); V.play(item.play, { reads: true });
   }
   function render() {

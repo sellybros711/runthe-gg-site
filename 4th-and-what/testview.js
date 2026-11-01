@@ -10,7 +10,7 @@
  */
 (function () {
   'use strict';
-  var A = window.FAW_APP, E = window.FAW_ENGINE, T = window.FAW_TURF;
+  var A = window.FAW_APP, E = window.FAW_ENGINE, T = window.FAW_TURF, B = window.FAW_BOOK;
   var $ = function (id) { return document.getElementById(id); }, el = A.el;
   var V = null, busy = false;
 
@@ -21,7 +21,8 @@
 
   function fillPlays() { A.fill($('tPlay'), A.choiceOptions(A.choices()), A.testChoice || 'draft'); if (!$('tPlay').value) $('tPlay').selectedIndex = 0; A.testChoice = $('tPlay').value; }
   function cur() { return A.choice(A.testChoice || 'draft'); }
-  $('tPlay').addEventListener('change', function () { A.testChoice = this.value; var c = cur(); if (c.distance) $('tDist').value = String(c.distance); drawPlay(); renderSaved(); });
+  /* a playbook's play is tested at the playbook's level */
+  $('tPlay').addEventListener('change', function () { A.testChoice = this.value; var c = cur(); if (c.distance) $('tDist').value = String(c.distance); if (c.book) A.setLevel(c.book.level || 'nfl'); drawPlay(); renderSaved(); });
   $('tDist').addEventListener('change', renderSaved);
 
   function drawPlay() {
@@ -52,7 +53,7 @@
       if (k < keys.length) { $('tOut').textContent = 'Testing against every defense. ' + Math.round(k * 100 / keys.length) + '%'; setTimeout(step, 0); return; }
       res.at = new Date().toISOString(); res.key = playKey(play); res.distance = sc.distance;
       if (c.entry && c.book) {
-        var st = c.entry.stats[sc.distance] = c.entry.stats[sc.distance] || {};
+        var S = B.statsOf(c.entry, sc.level), st = S[sc.distance] = S[sc.distance] || {};
         st.test = res; A.store.put(c.book);
       }
       busy = false; $('tRun').disabled = false;
@@ -71,7 +72,7 @@
       el('div', { text: 'Best against ' + A.CALL_LABEL[best.k] + ' (' + A.pct(best.w, best.n) + '). Worst against ' + A.CALL_LABEL[worst.k] + ' (' + A.pct(worst.w, worst.n) + ').' }),
       stale ? el('div', { class: 'help', text: 'The play has changed since this test. Test it again.' }) : null
     ]));
-    var live = c && c.entry && c.entry.stats[res.distance] ? c.entry.stats[res.distance].byCall || {} : {};
+    var LS = c && c.entry ? B.statsOf(c.entry, A.SC.level) : null, live = LS && LS[res.distance] ? LS[res.distance].byCall || {} : {};
     var tbl = el('table', { class: 'testt' }, [el('tr', {}, ['Defense', 'Converted', '', 'Avg yards', 'Sacks', 'Your snaps'].map(function (h) { return el('th', { text: h }); }))]);
     rows.forEach(function (r) {
       var l = live[r.k];
@@ -85,7 +86,7 @@
   }
   function renderSaved() {
     var c = cur(), d = +$('tDist').value;
-    var st = c.entry && c.entry.stats && c.entry.stats[d];
+    var st = c.entry && B.statsOf(c.entry, A.SC.level)[d];
     if (st && st.test) show(Object.assign({ distance: d }, st.test), c.play, c); else $('tOut').innerHTML = '';
     drawPlay();
   }

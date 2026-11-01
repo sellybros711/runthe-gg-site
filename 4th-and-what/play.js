@@ -23,14 +23,16 @@
   var W = 260, H = 400, BIG = 1.35, BUDGET_MS = 7;
   var scenes = {};
 
-  function stageFor(BX, Y0, PX) {
-    var key = BX + '|' + Y0 + '|' + (PX ? 1 : 0);
+  /* the hash marks are the level's (High School, College, the NFL) */
+  function hashOf(level) { var C = root.FAW_CONFIG; return C && C.level ? C.level(level).hash : 3.08; }
+  function stageFor(BX, Y0, PX, level) {
+    var key = BX + '|' + Y0 + '|' + (PX ? 1 : 0) + '|' + (level || 'nfl');
     if (scenes[key]) return scenes[key];
     var ST = root.FAW_STAGE, cam = ST.camera(W, H, BX, Y0);
-    return (scenes[key] = { cam: cam, bg: ST.render(cam, { pxhd: PX }) });
+    return (scenes[key] = { cam: cam, bg: ST.render(cam, { pxhd: PX, hash: hashOf(level) }) });
   }
   /* Build the stadium for a spot ahead of time, while the clipboard is up. */
-  function prepare(BX, Y0) { try { stageFor(BX, Y0, root.FAW_PXHD || null); } catch (e) {} }
+  function prepare(BX, Y0, level) { try { stageFor(BX, Y0, root.FAW_PXHD || null, level); } catch (e) {} }
 
   /* ---------- the sprites, on a budget ---------- */
   var spent = 0, frameStart = 0;
@@ -49,7 +51,7 @@
     ctx.imageSmoothingEnabled = false;
     var PX = root.FAW_PXHD || null, R = root.FAW_RIG, ST = root.FAW_STAGE, T = root.FAW_CONFIG.TUNING;
     if (PX) R.init(PX);
-    var sc = stageFor(res.BX, res.Y0, PX), cam = sc.cam;
+    var sc = stageFor(res.BX, res.Y0, PX, res.level), cam = sc.cam;
     var frames = res.frames, ids = res.ids, dt = res.dt;
     var lastT = frames[frames.length - 1].t;
     var SET = 0.75;                                 /* the beat at the line before the snap */

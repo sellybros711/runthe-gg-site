@@ -461,3 +461,8 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
   .tfield canvas { height: 300px; }
   .tbar { grid-template-columns: 112px minmax(0, 1fr) 40px; font-size: 12px; }
 }
+
+/* ---------- the level and the hash, on Play's first screen ---------- */
+.levelrow { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 4px 0 10px; }
+.levelrow .seg button { padding: 7px 12px; font-weight: 800; font-size: 13px; }
+.levelrow .seg button[aria-pressed="true"] { background: var(--teal); color: #04241e; border-radius: 8px; }

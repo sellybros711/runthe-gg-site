@@ -29,10 +29,18 @@
   function spotLine() {
     var s = A.sitText();
     $('pSpot').textContent = A.ordinal(A.SC.down) + ' down · Ball on ' + (A.SC.ballOn <= 50 ? 'the opponent\'s ' + A.SC.ballOn : 'your ' + (100 - A.SC.ballOn));
-    $('sSit').textContent = s.down + ' · ' + s.spot;
+    $('sSit').textContent = s.down + ' · ' + s.spot + (A.SC.level && A.SC.level !== 'nfl' ? ' · ' + A.levelShort(A.SC.level) : '');
+    renderLevel();
     $('pDown').value = String(A.SC.down); $('pSide').value = A.SC.ballOn <= 50 ? 'opp' : 'own'; $('pYard').value = String(A.SC.ballOn <= 50 ? A.SC.ballOn : 100 - A.SC.ballOn);
     renderDists();
   }
+  /* the level and the hash: High School, College or the NFL, the ball on a hash or in the middle */
+  function renderLevel() {
+    Array.prototype.forEach.call(document.querySelectorAll('#pLevel button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.level === (A.SC.level || 'nfl'))); });
+    Array.prototype.forEach.call(document.querySelectorAll('#pHash button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.hash === (A.SC.hash || 'mid'))); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#pLevel button'), function (b) { b.addEventListener('click', function () { A.setLevel(b.dataset.level); spotLine(); }); });
+  Array.prototype.forEach.call(document.querySelectorAll('#pHash button'), function (b) { b.addEventListener('click', function () { A.setHash(b.dataset.hash); spotLine(); }); });
   function renderDists() {
     var box = $('pDists'); box.innerHTML = '';
     C.DISTANCES.forEach(function (d) {
@@ -68,7 +76,7 @@
     remember(res, p, D && D.active());
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
-    if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win); A.store.put(b); } });
+    if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(b); } });
     A.watch3d(res, showCard);
     return true;
   }
@@ -183,7 +191,7 @@
     if (b) { A.toast('rToast', 'It is already in ' + b.name + '. This snap counted in its stats.'); return; }
     A.saveDialog(A.copy(played), { distance: A.SC.distance, tag: A.draft.tag, done: function (bk, e) {
       A.draft.ref = { book: bk.id, id: e.id }; A.draft.name = e.name; A.draft.nameEdited = e.nameEdited; A.saveDraft();
-      B.countSnap(e, res.distance, res.callKey, res.win); A.store.put(bk);
+      B.countSnap(e, res.distance, res.callKey, res.win, res.level); A.store.put(bk);
       A.toast('rToast', 'Saved to ' + bk.name + '.');
     } });
   });

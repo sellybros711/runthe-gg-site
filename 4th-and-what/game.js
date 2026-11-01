@@ -103,7 +103,7 @@
     if (res.win) tally.off++; else tally.def++;
     $('gOff').textContent = tally.off; $('gDefScore').textContent = tally.def;
     /* a playbook play counts the snap against whatever the defense called */
-    if (c.entry && c.book) { B.countSnap(c.entry, res.distance, res.callKey, res.win); A.store.put(c.book); }
+    if (c.entry && c.book) { B.countSnap(c.entry, res.distance, res.callKey, res.win, res.level); A.store.put(c.book); }
     t = t0; playing = true; last = 0;
     layout(); result(); tick();
   }
