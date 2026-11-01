@@ -138,10 +138,14 @@
 
     /* RUN BLOCKING: each block holds its man for a window, base seconds plus
        or minus jitter, scaled by the blocker's power. A held defender moves
-       at heldSpeed of his speed. */
-    runBlock: { base: 1.8, jitter: 0.7, heldSpeed: 0.25, leadBonus: 0.3 },
+       at heldSpeed of his speed. The wide jitter is the NFL's stuffs: a block
+       that loses fast puts about 19% of carries at no gain or worse. */
+    runBlock: { base: 1.8, jitter: 1.2, heldSpeed: 0.25, leadBonus: 0.3 },
     /* when the defense sees it is a run */
-    readRun: { dl: 0.0, lb: 0.55, db: 0.75 },
+    /* (2026-11-01, the NFL run spread) a deep safety triggers late on a run,
+       so a back through the second level can break one: that is the NFL's
+       10 yard carries, about 11% of them */
+    readRun: { dl: 0.0, lb: 0.62, db: 1.1 },
     /* THE MESH: the QB steps toward the man drawn to get it at qb yards a
        second. The ball changes hands once they are within reach, no sooner
        than min seconds; at pitchAt seconds he pitches it instead, the ball in
@@ -155,9 +159,10 @@
        chance, falling half as far. Fumbles are runs only. */
     tackle: { reach: 1.3, broken: 0.06, crowd: 0.05, momentum: 0.16, fall: 1.2, missed: 0.7, fumble: 0.008, pile: 0.12,
       /* A RUN, moving downhill, breaks more of them (runBroken more) and
-         drives the pile: up to drive yards more after contact (the NFL gets
-         about 2.8 yards after contact a carry; this makes runs read like it). */
-      runBroken: 0.08, drive: 1.8 },
+         drives the pile up to drive yards more after contact. Tuned 2026-11-01
+         to the NFL's spread of carries: about 19% for no gain or worse, 52%
+         3+, 35% 5+, 11% 10+, 3% 20+; measured 18, 54, 36, 11 and 2. */
+      runBroken: 0.19, drive: 1.2 },
 
     /* how hard a ball carrier in the open steers away from the nearest tacklers */
     avoid: 0.8,
