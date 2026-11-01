@@ -175,6 +175,17 @@ async function run(name, viewport, scale) {
   await page.mouse.move(z2[0], z2[1], { steps: 6 }); await page.mouse.up();
   p = await play();
   ok(!p.moved.TE && p.blocks.some(b => b.who === 'TE'), 'a long press with Block draws the block and never moves the Y');
+  /* Run: a drag from the back gives him the ball and the path, no QB tap first
+     (the owner, 2026-11-01: "i ran a run play and the play didn't take place") */
+  await page.click('[data-concept="Four Verts"]');
+  await page.click('.tool[data-tool="handoff"]');
+  const rbAt = (await play()).formation, rbO = await page.evaluate(() => { const p = window.FAW_STUDIO.play(); return window.FAW_FORMATIONS.place(p.formation, p.moved).RB; });
+  await dragYd(rbO, [rbO[0] + 1.5, rbO[1] + 2.5], [rbO[0] + 2.5, 0.5], [rbO[0] + 2.5, 7]);
+  p = await play();
+  ok(p.handoff && p.handoff.to === 'RB' && p.handoff.path.length >= 2 && !p.targets.length && !p.routes.some(r => r.who === 'RB'),
+    'a drag from the back with Run makes it a run on the path drawn (' + rbAt + ')');
+  const ran = await page.evaluate(() => { const A = window.FAW_APP, E = window.FAW_ENGINE; const r = E.run(A.SC, A.draft.play, 11); return { run: r.isRun, ev: r.events.map(e => e.kind) }; });
+  ok(ran.run && (ran.ev.includes('handoff') || ran.ev.includes('pitch')), 'and it snaps as a run: ' + ran.ev.join(' '));
   /* Read: the 1st, 2nd and 3rd read, in the order tapped */
   await page.click('[data-concept="Four Verts"]');
   await page.click('.tool[data-tool="read"]');

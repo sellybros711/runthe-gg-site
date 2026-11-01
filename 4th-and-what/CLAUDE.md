@@ -17,6 +17,11 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   tracking are the next build, with their own SQL.
 - **Only Move moves a player** (the owner, 2026-10-31). No other tool, and no long press, ever
   changes where a man lines up.
+- **A run is what was drawn** (the owner, 2026-11-01: "i ran a run play and the play didn't
+  take place"). With Run, a drag from any player gives him the ball and the drag is his path; no
+  QB tap first. The ball changes hands where the QB meets him (the mesh), or is pitched when the
+  path takes him away. The carrier runs the path to its end, then the open field. Runs have their
+  own tackle numbers (`runBroken`, `drive`) so they gain like real runs.
 - **Reads are ordered, up to three** (`play.targets`). The QB goes through them in order; the last
   one is the checkdown when the pocket goes.
 - **Every number in copy comes from the engine** (the distance, the yards, the spot, the pocket
