@@ -70,6 +70,44 @@ test('(d) a bad play with no checkdown ends in a sack', () => {
   assert.match(hit.r.reason, /no checkdown/);
 });
 
+test('a run is handed off where the QB meets the back, or pitched when the path takes him away', () => {
+  const dz = (r, a, b) => { const i = r.ids.findIndex(x => x.id === a), j = r.ids.findIndex(x => x.id === b); return (f) => Math.hypot(f.p[i][0] - f.p[j][0], f.p[i][1] - f.p[j][1]); };
+  for (let s = 1; s <= 30; s++) {
+    const r = E.run(at(5), PLAYBOOK['inside zone'], s), h = r.events.find(e => e.kind === 'handoff');
+    assert.ok(h, 'inside zone is a handoff');
+    const f = r.frames.find(x => x.t >= h.t);
+    assert.ok(dz(r, 'QB', 'RB')(f) <= C.TUNING.mesh.reach + 0.3, 'the ball changes hands at the mesh, not across the field');
+  }
+  const toss = { formation: 'gun3x1', routes: [], blocks: [], targets: [], handoff: { to: 'RB', path: [[8, -5], [14, -1], [16, 5]] } };
+  const r = E.run(at(5), toss, 3);
+  assert.ok(r.events.some(e => e.kind === 'pitch'), 'a toss is pitched');
+  const k = r.frames.findIndex(x => x.ball[2] > 1.3);
+  assert.ok(k > 0 && !r.frames[k].held, 'and the ball is in the air');
+});
+
+test('the carrier runs the path drawn, to the end of it', () => {
+  const play = PLAYBOOK['inside zone'], O = F.place(play.formation, {}), poly = [O.RB].concat(play.handoff.path);
+  const seg = (x, y, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy || 1; const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / L)); return Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy); };
+  for (let s = 1; s <= 30; s++) {
+    const r = E.run(at(5), play, s), i = r.ids.findIndex(x => x.id === 'RB');
+    const stop = (r.events.find(e => e.kind === 'broken') || { t: r.tEnd }).t;
+    for (const f of r.frames) {
+      if (f.t > stop) break;
+      const x = f.p[i][0] - r.BX, y = f.p[i][1] - r.Y0;
+      if (y > play.handoff.path[play.handoff.path.length - 1][1]) break;
+      let m = 1e9; for (let k = 1; k < poly.length; k++) m = Math.min(m, seg(x, y, poly[k - 1], poly[k]));
+      assert.ok(m < 0.6, 'within a step of the line drawn (' + m.toFixed(2) + ' at ' + f.t + ')');
+    }
+  }
+});
+
+test('runs gain like real runs: a long tail, not a wall at three yards', () => {
+  const ys = []; for (let s = 1; s <= 200; s++) ys.push(E.run(at(10), PLAYBOOK['inside zone'], s * 7919).yards);
+  const share = k => ys.filter(y => y >= k).length / ys.length;
+  assert.ok(share(5) > 0.2 && share(5) < 0.5, 'five or more about a third of the time: ' + share(5));
+  assert.ok(share(10) > 0.01, 'and now and then ten');
+});
+
 test('the same seed and the same play give the same result, frame for frame', () => {
   for (const [name, play] of Object.entries(PLAYBOOK)) for (const d of [1, 7, 15]) for (const s of [3, 99, 4242]) {
     const a = JSON.stringify(E.run(at(d), play, s)), b = JSON.stringify(E.run(at(d), play, s));

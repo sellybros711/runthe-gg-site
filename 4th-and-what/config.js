@@ -129,14 +129,22 @@
     runBlock: { base: 1.8, jitter: 0.7, heldSpeed: 0.25, leadBonus: 0.3 },
     /* when the defense sees it is a run */
     readRun: { dl: 0.0, lb: 0.55, db: 0.75 },
-    handoff: 0.35,
+    /* THE MESH: the QB steps toward the man drawn to get it at qb yards a
+       second. The ball changes hands once they are within reach, no sooner
+       than min seconds; at pitchAt seconds he pitches it instead, the ball in
+       the air at pitchSpeed yards a second. */
+    mesh: { qb: 5, reach: 2, min: 0.25, pitchAt: 0.55, pitchSpeed: 14 },
 
     /* CONTACT. A free defender within reach yards makes contact. The carrier
        breaks it with this chance (plus his elusiveness, less for every other
        defender close by), and otherwise falls forward up to fall yards.
        A defender still engaged in a block stops him only with the pile
        chance, falling half as far. Fumbles are runs only. */
-    tackle: { reach: 1.3, broken: 0.06, crowd: 0.05, momentum: 0.16, fall: 1.2, missed: 0.7, fumble: 0.008, pile: 0.12 },
+    tackle: { reach: 1.3, broken: 0.06, crowd: 0.05, momentum: 0.16, fall: 1.2, missed: 0.7, fumble: 0.008, pile: 0.12,
+      /* A RUN, moving downhill, breaks more of them (runBroken more) and
+         drives the pile: up to drive yards more after contact (the NFL gets
+         about 2.8 yards after contact a carry; this makes runs read like it). */
+      runBroken: 0.1, drive: 3 },
 
     /* how hard a ball carrier in the open steers away from the nearest tacklers */
     avoid: 0.8,

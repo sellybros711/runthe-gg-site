@@ -6,7 +6,9 @@
  *            moves a player (the owner's rule, 2026-10-31).
  *   Route    drag from a receiver to draw his route; drag from its end to add.
  *   Block    drag a short bar from a receiver or back: he stays in, or leads.
- *   Run      tap the QB, then a back (or the QB again): a handoff; drag the path.
+ *   Run      drag from any player: he gets the ball and runs the path drawn.
+ *            A tap gives it to him straight ahead; a tap on the QB, then the
+ *            QB again, is a QB run. Tap the ball carrier to make it a pass.
  *   Read     tap receivers in the order the QB reads them: 1st, 2nd, 3rd. The
  *            last one is the checkdown when the pocket goes (the owner's ask,
  *            2026-10-31: "choose the 1st, 2nd, and 3rd read").
@@ -296,7 +298,7 @@
 
   /* ---------- the tools ---------- */
   var HINTS = { move: 'Drag the QB or a receiver to line him up.', route: 'Drag from a receiver to draw his route.', block: 'Drag a short bar from a receiver or back.',
-    handoff: 'Tap the QB, then the back who gets it.', read: 'Tap receivers in the order the QB reads them: 1st, 2nd, 3rd.', motion: 'Drag from a receiver along the line: his motion before the snap.', erase: 'Tap a player to clear what he was given.' };
+    handoff: 'Drag from the man who gets the ball: that is his path.', read: 'Tap receivers in the order the QB reads them: 1st, 2nd, 3rd.', motion: 'Drag from a receiver along the line: his motion before the snap.', erase: 'Tap a player to clear what he was given.' };
   function hint(t) { $('sHint').textContent = t == null ? HINTS[tool] : t; }
   function setTool(t) {
     tool = t; armed = false;
@@ -387,7 +389,8 @@
       var endOf = routeEndNear(drag.start), carrier = isRun() ? p.handoff.to : null;
       if (drag.who && drag.who === carrier) { drag.kind = 'path'; drag.extend = false; drag.pts = [O2[drag.who]]; return; }
       if (!drag.who && endOf === '#path') { drag.kind = 'path'; drag.extend = true; drag.pts = [p.handoff.path[p.handoff.path.length - 1]]; return; }
-      if (tool === 'handoff') return;
+      /* Run: a drag from anybody gives him the ball, and the path is the drag */
+      if (tool === 'handoff') { if (drag.who) { drag.kind = 'path'; drag.extend = false; drag.give = true; drag.pts = [O2[drag.who]]; } return; }
       if (drag.who && drag.who !== 'QB') { drag.kind = 'route'; drag.extend = false; drag.pts = [snapSpot(drag.who)]; return; }
       if (!drag.who && endOf && endOf !== '#path') { drag.who = endOf; drag.kind = 'route'; drag.extend = true; var r = routeOf(endOf); drag.pts = [r.pts[r.pts.length - 1]]; return; }
     }
@@ -412,7 +415,9 @@
       if (!p.targets.length && !isRun()) p.targets.push(d.who);
       hint(isRun() ? '' : 'Use Read to set the 1st, 2nd and 3rd read.');
     } else if (d.kind === 'path') {
+      if (d.give) { give(d.who); p = P(); }
       p.handoff.path = d.extend ? p.handoff.path.concat(pts).slice(0, 8) : pts.slice(0, 6);
+      hint('A run. ' + (d.who === 'QB' ? 'The QB keeps it.' : WHO[d.who] + ' gets the ball.') + ' Snap it.');
     } else if (d.kind === 'block') {
       var a = d.pts[0], e = d.pts[d.pts.length - 1], dx = e[0] - a[0], dy = e[1] - a[1], L = len(dx, dy), k = L > 3.5 ? 3.5 / L : 1;
       p.blocks = p.blocks.filter(function (b) { return b.who !== d.who; });
@@ -429,22 +434,26 @@
   });
   canvas.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.id) { drag = null; draw(); } });
 
+  /* He gets the ball: a run. His route or block goes; the reads go (a run
+     has none). The path starts straight ahead until it is drawn. */
+  function give(who) {
+    var p = P(), at = O()[who];
+    p.handoff = { to: who, path: [[at[0], Math.max(4, at[1] + 6)]] };
+    p.targets = []; delete p.playAction;
+    p.blocks = p.blocks.filter(function (b) { return b.who !== who; });
+    p.routes = p.routes.filter(function (r) { return r.who !== who; });
+  }
   function tap(who) {
     var p = P();
     if (tool === 'handoff') {
-      if (!armed && who === 'QB') { armed = true; hint('Now tap the back who gets it. Tap the QB again to keep it.'); draw(); return; }
-      if (armed && who) {
-        save(); armed = false;
-        var at = O()[who];
-        p.handoff = { to: who, path: [[at[0], Math.max(4, at[1] + 6)]] };
-        p.targets = []; delete p.playAction;
-        p.blocks = p.blocks.filter(function (b) { return b.who !== who; });
-        p.routes = p.routes.filter(function (r) { return r.who !== who; });
-        hint('It is a run. Drag from ' + (who === 'QB' ? 'the QB' : 'him') + ' to draw the path.');
-        changed(); return;
-      }
-      if (!armed && who && isRun() && p.handoff.to === who) { save(); p.handoff = null; hint('Back to a pass.'); changed(); return; }
-      armed = false; hint('Tap the QB first.'); draw(); return;
+      if (!who) { armed = false; hint(); draw(); return; }
+      /* tap the man who has it: back to a pass */
+      if (!armed && isRun() && p.handoff.to === who) { save(); p.handoff = null; hint('Back to a pass.'); changed(); return; }
+      /* the QB: tap him, then the QB again to keep it, or the man who gets it */
+      if (!armed && who === 'QB') { armed = true; hint('Tap the QB again to keep it, or tap the man who gets it.'); draw(); return; }
+      save(); armed = false; give(who);
+      hint('A run. ' + (who === 'QB' ? 'The QB keeps it.' : WHO[who] + ' gets the ball.') + ' Drag from him to draw his path.');
+      changed(); return;
     }
     if (tool === 'read') {
       if (isRun()) { hint('A run has no reads.'); return; }
