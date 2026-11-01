@@ -102,7 +102,7 @@
   var A = root.FAW_APP, T = root.FAW_TURF, D = root.FAW_DAILY;
   var $ = function (id) { return document.getElementById(id); }, el = A.el;
   var day = D.core.dayOf(), number = D.core.numberOf(day), KEY = 'faw_defense_' + day;
-  var DATA = 'data/defense.json?v=2';
+  var DATA = 'data/defense.json?v=3';
   var item = null, sc = null, V = null, busy = false;
 
   function kept() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
