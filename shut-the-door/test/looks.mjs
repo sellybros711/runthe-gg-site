@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { look, hash, BEARD } from '../3d/looks.js';
 import { LOOKS } from '../3d/looks-data.js';
+import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKS = path.join(HERE, '..', 'data', 'packs');
@@ -37,5 +38,8 @@ if ('heightIn' in none) fail('a hitter with no data was handed a build');
 if (none.tone !== +(((hash('nobody:at-all') >>> 0) & 1023) / 1023).toFixed(3)) fail('the hash tone moved');
 // the catcher, fielders and umpires are never looked up
 if (Object.keys(LOOKS.players).some((k) => /:(f|r|u)\d$/.test(k))) fail('a generic figure is in the data');
+// the Retrosheet hitters' drawn zones are the ones their heights give (pipeline/height_zones.mjs)
+try { execFileSync(process.execPath, [path.join(HERE, '..', 'pipeline', 'height_zones.mjs'), '--check'], { stdio: 'pipe' }); }
+catch (e) { fail('height zones: ' + String(e.stderr || e.message).trim().split('\n').filter((l) => !/Warning|trace-warnings|Reparsing|type.: .module/.test(l)).join('; ')); }
 console.log(bad ? `${bad} failed` : 'looks ok');
 process.exit(bad ? 1 : 0);
