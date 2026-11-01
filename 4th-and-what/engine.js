@@ -619,7 +619,20 @@
 
       /* -- the ball: the snap, the handoff, the throw -- */
       if (i === 0) { ball.holder = 'QB'; }
-      if (isRun && ballCarrierId !== 'QB' && !carrier && t >= T.handoff) { carrier = byId[ballCarrierId]; ball.holder = carrier.id; say(t, 'handoff', 'Handoff.'); }
+      /* THE MESH. The QB meets the man drawn to get it and the ball changes
+         hands where they meet. If the path drawn takes him away (a toss, a
+         reverse), the QB pitches it to him and it is in the air until he has it. */
+      if (isRun && ballCarrierId !== 'QB' && !carrier) {
+        var bk2 = byId[ballCarrierId], gap = dist(QB, bk2);
+        if (ball.toss) {
+          var tk = clamp((t - ball.toss.t0) / (ball.toss.t1 - ball.toss.t0), 0, 1);
+          if (tk >= 1) { ball.toss = null; carrier = bk2; ball.holder = bk2.id; say(t, 'catch', 'He has it.'); }
+        } else if (t >= T.mesh.min && gap <= T.mesh.reach) { carrier = bk2; ball.holder = bk2.id; say(t, 'handoff', 'Handoff.'); }
+        else if (t >= T.mesh.pitchAt) {
+          ball.holder = null; ball.toss = { from: { x: QB.x, y: QB.y }, t0: t, t1: t + clamp(gap / T.mesh.pitchSpeed, 0.15, 0.6) };
+          say(t, 'pitch', 'The pitch.');
+        }
+      }
       if (isRun && ballCarrierId === 'QB' && !carrier) { carrier = QB; }
 
       if (!isRun && !thrown && !windup && !collapseFate) {
@@ -705,7 +718,12 @@
           return;
         }
         if (e === QB) {
-          if (isRun && carrier !== QB) { stepToward(e, e.x0, e.y0 - 1, 2); return; }
+          if (isRun && carrier !== QB) {
+            /* to the mesh: toward the man getting it, until it is handed or pitched */
+            var bk3 = byId[ballCarrierId];
+            if (!carrier && !ball.toss && ball.holder === 'QB') { stepToward(e, bk3.x, bk3.y, T.mesh.qb); return; }
+            stepToward(e, e.x, e.y, 0); return;
+          }
           /* the fake: he rides the mesh before he can set up */
           if (pa && t < pa.fake) { stepToward(e, pa.mesh.x, pa.mesh.y, 3); return; }
           if (!isRun) { stepToward(e, e.x0, setDef.under ? Y0 - 6.5 : e.y0 - 1, t < 1.2 ? 6 : 1.5); return; }
@@ -831,6 +849,10 @@
         var I2 = ball.air, k = clamp((t - I2.t0) / Math.max(0.01, I2.t1 - I2.t0), 0, 1);
         ball.x = I2.from.x + (I2.to.x - I2.from.x) * k; ball.y = I2.from.y + (I2.to.y - I2.from.y) * k;
         ball.z = T.ball.height + (1.2 - T.ball.height) * k + 4 * k * (1 - k) * (0.6 + I2.dist * 0.045);
+      } else if (ball.toss) {
+        var to2 = byId[ballCarrierId], k3 = clamp((t - ball.toss.t0) / (ball.toss.t1 - ball.toss.t0), 0, 1);
+        ball.x = ball.toss.from.x + (to2.x - ball.toss.from.x) * k3; ball.y = ball.toss.from.y + (to2.y - ball.toss.from.y) * k3;
+        ball.z = 1.2 + 2 * k3 * (1 - k3);
       } else if (ball.holder) { var h = byId[ball.holder]; ball.x = h.x; ball.y = h.y; ball.z = 1.1; }
 
       /* -- contact -- */
@@ -849,13 +871,13 @@
               dd.missed = T.tackle.missed; continue;
             }
             var crowd = 0; defense.forEach(function (o2) { if (o2 !== dd && !o2.engaged && dist(o2, carrier) < 2.5) crowd++; });
-            var pBreak = Math.max(0.02, T.tackle.broken + (carrier.arch.elusive || 0) - crowd * T.tackle.crowd);
+            var pBreak = Math.max(0.02, T.tackle.broken + (isRun ? T.tackle.runBroken : 0) + (carrier.arch.elusive || 0) - crowd * T.tackle.crowd);
             if (rnd() < pBreak) { dd.missed = T.tackle.missed; say(t, 'broken', 'Breaks a tackle.'); continue; }
             if (isRun && rnd() < T.tackle.fumble) { say(t, 'fumble', 'Fumble.'); finish(t, 'fumble', 'fumble', carrier.y); break; }
             var sp2 = len(carrier.vx, carrier.vy), fwd = sp2 > 0.5 ? clamp(carrier.vy / sp2, 0.2, 1) : 0.4;
             var headOn = dd.y > carrier.y ? 0.55 : 1;
             /* the fall: his momentum, how square he was hit, how strong he is, and a roll */
-            var fall = (sp2 * T.tackle.momentum + rnd() * T.tackle.fall) * fwd * headOn * (0.7 + (carrier.arch.power || 0.4) * 0.6);
+            var fall = (sp2 * T.tackle.momentum + rnd() * T.tackle.fall + (isRun ? rnd() * T.tackle.drive : 0)) * fwd * headOn * (0.7 + (carrier.arch.power || 0.4) * 0.6);
             dd.tackler = true;
             var y2 = carrier.y + fall;
             if (y2 >= 100) { say(t, 'td', 'Falls in for six.'); finish(t, 'touchdown', 'fall', 100); }
@@ -900,7 +922,7 @@
         var ps = poseOf(e, t, after);
         P2.push([Math.round(e.x * 100) / 100, Math.round(e.y * 100) / 100, ps[0], ps[1], e.face]);
       }
-      var bz = ball.air ? ball.z : ball.holder ? 1.1 : 0.15;
+      var bz = ball.air || ball.toss ? ball.z : ball.holder ? 1.1 : 0.15;
       var bx = ball.x, by = ball.y;
       if (!ball.air && !ball.holder && ball.drop) { bx = ball.drop.x; by = ball.drop.y; }
       return { t: Math.round(t * 1000) / 1000, p: P2, ball: [Math.round(bx * 100) / 100, Math.round(by * 100) / 100, Math.round(bz * 100) / 100], held: !!ball.holder, pressure: isRun ? 0 : Math.round(Math.min(1, t / Tp) * 100) / 100 };
