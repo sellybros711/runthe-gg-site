@@ -73,8 +73,8 @@
       "sha": "3dc28a7e95923a28"
     },
     "app.js": {
-      "v": "3",
-      "sha": "169460eb706af0f1"
+      "v": "4",
+      "sha": "b0d6f6958fa0b0e3"
     },
     "home.js": {
       "v": "4",
@@ -89,8 +89,12 @@
       "sha": "906b51a4748fa75a"
     },
     "flow.js": {
+      "v": "2",
+      "sha": "10c73e19e5f417ca"
+    },
+    "daily.js": {
       "v": "1",
-      "sha": "5a28e431bc3f7ee9"
+      "sha": "e4d01cee034ec1d1"
     },
     "library.js": {
       "v": "2",
