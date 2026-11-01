@@ -15,8 +15,13 @@
  * the zone, whatever its feet) and scale the miss and the call's edge distance by the pack's
  * kernelZoneFt, never by a hitter's szTop or szBot (engine.js, grade.js, contract.js zoneDist). So
  * every call and grade stays as it is, and the zone drawn is the one the engine plays.
- * Re-run after build_packs.py rebuilds a Retrosheet pack (test/looks.mjs fails until then), then
- * build_schedule.mjs to move the pack's v.
+ * Then build_schedule.mjs to move the pack's v, and SCHEDULE_V in api.js.
+ *
+ * NOT YET RUN ON THE PACKS (2026-11-01). Written, it makes one case of the 3D contact check fail
+ * (lab/pipeline/check-contact.mjs, std-2007-ws4-papelbon, Matt Holliday, 6 ft 4, zone 3.56/1.66: a
+ * low and away line drive at x -0.75, zn -0.35 is met 0.032 m into the wood, past the 0.03 limit;
+ * the aim's solve ends 0.028 m off). That is the swing solve's to fix (people.js aimSwing), so the
+ * packs keep the league zone for these 36 hitters until it is.
  */
 import fs from 'node:fs';
 import path from 'node:path';
