@@ -1714,7 +1714,7 @@ var LEVELS = [
     zoneR(H, M.MUD, 5, -42, 8, -44); zoneC(H, M.MUD, -6, -6, 1.1); bowl(H, 4, -40, 1.5, 0.12); return H; } },
   // Launch Pad: the long way round the crater of deep space, east, up and back west, three putts. The secret: the launch ramp by
   // the tee jumps the crater onto the top deck.
-  { par:4, three:3, f:function(T){ var H = hole([rm(-22, 0, 22, -19)], [-18, -3.5], [-15, -15]); zoneR(H, M.WATER, -22, -8, 14, -11);
+  { par:4, f:function(T){ var H = hole([rm(-22, 0, 22, -19)], [-18, -3.5], [-15, -15]); zoneR(H, M.WATER, -22, -8, 14, -11);
     blk(H, T, -22, -7.7, -16.2, -8); blk(H, T, -13.8, -7.7, 14, -8); blk(H, T, -22, -11, 14, -11.3); kicker(H, -15, -7.6);
     moon(H, 2, -4, 1.3, 4, 22); moon(H, 18, -9.5, 1.3, 4.6, 26); moon(H, 0, -15.5, 1.3, 4, 22); bumps(H, T, [[-8, -2, 0.5], [10, -6, 0.5], [8, -17, 0.5], [-6, -14, 0.5]]);
     zoneR(H, M.MUD, 19, -1, 22, -4); zoneC(H, M.MUD, -20, -17, 1.2); bowl(H, -15, -15, 1.5, 0.12); return H; } },
@@ -1875,7 +1875,7 @@ var SECRET_LEVELS = [
   // The Dark Side: one big moon in the middle of a dark room, the cup round the far side of it. Slow, and it keeps you.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -8], [8, -22], [3, -32], [-3, -32], [-8, -22], [-8, -8]])], [0, -2.5], [1.5, -28]);
     moon(H, 0, -16, 2.2, 7, 44); bumps(H, T, [[-5, -10, 0.55], [5.5, -12, 0.55], [-5.5, -21, 0.5], [4.5, -24, 0.5]]); zoneR(H, M.ICE, -8, -14, -4.4, -18);
-    slider(H, T, -25.5, -4, 4, 3.0, 0.3, 2.4); zoneR(H, M.MUD, -3, -30, 0, -32); bowl(H, 1.5, -28, 1.6, 0.12); return H; } }
+    slider(H, T, -22.5, -4, 4, 3.0, 0.3, 2.4); pen(H, T, 1.5, -28); zoneR(H, M.MUD, -3, -30, 0, -32); return H; } }
 ];
 var SECRET_NAMES = SECRETS.map(function(x){ return x.name; });
 var SECRET_WORLDS = SECRETS.map(function(x){ return { id:'s-' + x.theme, name:x.name, theme:x.theme, blurb:'A secret hole.', haz:['Found on a trail'] }; });
