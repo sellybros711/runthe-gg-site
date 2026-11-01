@@ -13,7 +13,7 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
 - **Players run exactly what was drawn.** The engine may decide when the QB throws, never where a
   receiver goes. The route and concept libraries (`routes.js`) only make drawn points.
 - **The layout is the owner's template** (2026-10-31): Play, Studio, Learn, Playbooks, Test vs
-  Defense, Print, on turf. The page opens on Home, which points to Play and Build first (the owner's ask). **Play is the video game** (the owner, 2026-10-31): 4th and what?, draw it, snap it in the 3D stadium, then the result card (Run it back, Save play, Save card, the breakdown). Keep Play a game first. Watch in 3D keeps the pixel stadium. Teams, team codes and player
+  Defense, Print, on turf. The page opens on Home (the owner, 2026-11-01): the 4TH & WHAT banner over hundreds of plays rotating, "Draw a play" beside "Playbook Builder", then the site footer. **Play is the video game** (the owner, 2026-10-31): 4th and what?, draw it, snap it in the 3D stadium, then the result card (Run it back, Save play, Save card, the breakdown). Keep Play a game first. Watch in 3D keeps the pixel stadium. Teams, team codes and player
   tracking are the next build, with their own SQL.
 - **Only Move moves a player** (the owner, 2026-10-31). No other tool, and no long press, ever
   changes where a man lines up.
