@@ -1119,11 +1119,11 @@ if (!args.includes('--no-browser')){
       const L3 = T().life(), P3 = T().plan(); out.ships = L3.ships.length; out.afloat = L3.ships.every(q => q.y < P3.b[1] || q.y > P3.b[3] || P3.seaAt(q.x, q.y));
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
-      out.greeters = []; for (let w = 0; w < 11; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      out.greeters = []; for (let w = 0; w < 12; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       out.secrets = []; out.secretElse = []; out.secretAt = [];
-      for (let w = 0; w < 11; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
+      for (let w = 0; w < 12; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
         out.secrets.push(!!(P.secret && P.secret.i === w + 1 && P.spur2 && P.spur2.length > 1 && P.secret.reach && P.items.some(t => t.k === 'npc'))); }
       for (let f = 0; f < 216; f++) if (window.RTT_PUTT._trailPlan(f).secret && out.secretAt[Math.floor(f / 18)] !== f % 18 + 1) out.secretElse.push(f + 1);
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'chk' }; return out; });
@@ -1172,7 +1172,7 @@ if (!args.includes('--no-browser')){
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'cld' };
       // short of the stars: 18 pars is 18 stars, under the 40 the gate asks
       localStorage.setItem(K, JSON.stringify(rec(18, 3))); openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="1"]'); i++) await sleep(50);
-      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 10 && !document.querySelector('.pp-map [data-lv="19"]');
+      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 11 && !document.querySelector('.pp-map [data-lv="19"]');
       out.card = window.RTT_PUTT.summary().world === 'The Clubhouse';
       window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
       out.walk = !hidden.test(document.body.innerText) && T().clouds() === 'on';
@@ -1278,7 +1278,7 @@ if (!args.includes('--no-browser')){
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 10), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the ten worlds ahead under cloud');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 11), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the eleven worlds ahead under cloud');
     // A RECORD SAVED SIGNED OUT IS CLAIMED, NEVER LOST. A player reached hole 18 and came back to hole 1, because
     // the record is keyed by account and a session that opened before sign-in resolved played under the bare key.
     const mrg = await pg.evaluate(async () => { window.RTT_PUTT.close(); const best = {}; for (let n = 1; n <= 17; n++) best[n] = 2;
@@ -1397,9 +1397,9 @@ if (!args.includes('--no-browser')){
       claim(/if \(!api\.guestCoins\) floatText\('\+' \+ COIN_V/.test(tr) && /if \(!api\.guestCoins\) floatText\('\+' \+ BRK_V/.test(tr) && /api\.guestCoins \? 'Sign in' : '\+' \+ coinsGot/.test(tr),
         'a guest\'s trail floats no +coins and its counter reads Sign in'); }
     // every world painted means every world revealed: a record that has walked through all twelve gates
-    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
+    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 11, null, { timeout:15000 }).catch(() => {});
+    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 12, null, { timeout:15000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
       return { cols:cols.size, exact:Math.abs(c.offsetWidth - c.width * 2) < 1 && Math.abs(c.offsetHeight - c.height * 2) < 1, covers:c.offsetWidth >= b.offsetWidth && c.offsetHeight >= b.offsetHeight }; }));
