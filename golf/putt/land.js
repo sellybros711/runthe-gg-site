@@ -4775,6 +4775,8 @@ window.RTT_PUTT_LAND = (function(){
   // the regolith: grey dust in broad patches, darker where a crater's floor lies, a pale ray thrown out round a fresh one
   function moonDust(dark){ var a = dark ? ['#5e5c66', '#6a6872', '#52505a', '#74727c'] : ['#9a98a2', '#a8a6b0', '#8a8892', '#b6b4bc'];
     return [a[0], a[1], a[2], 0.14, function(c, R){ var f = c.cr || 0, b = blot(c, 0.18, 71), n = blot(c, 0.5, 72);
+      // the big crater's rim round the hole: its inner face shaded on the sun side and lit on the far one, its outer face the other way about
+      if (c.rim) return R(c.rim === 2 ? (dark ? '#3a3842' : '#62606a') : c.rim === 3 ? (dark ? '#74727c' : '#c4c2ca') : c.rim === 4 ? a[3] : a[2]);
       if (f > 0.15) return R(f > 0.75 ? a[2] : n > 0.6 ? a[0] : a[2]); if (f < -0.05 && f > -0.35 && n > 0.55) return R(a[3]);
       return R(b > 0.66 ? a[1] : b < 0.3 ? a[2] : (c.ti * 7 + c.tj * 13) % 41 === 0 ? a[3] : a[0]); }]; }
   // craters as shallow bowls: cr > 0 inside (1 at the middle), a soft raised rim just outside it
@@ -4829,10 +4831,16 @@ window.RTT_PUTT_LAND = (function(){
       if (Math.abs(dx - 1.9) < 0.3 && Math.abs(dy) < 0.3 && t < H - 0.5) return (Math.abs(px - X - 1.9) > 0.22 || Math.abs(dy) > 0.22 || ((t * 2) | 0) % 2) ? '#8a7a5a' : null;   // the gantry
       if (Math.abs(t - 6) < 0.1 && dx > 0.7 && dx < 1.9 && Math.abs(dy) < 0.1) return '#8a7a5a'; return null; }); }
   function moonLows(B, x, y, i, seed, dark){ var k = hash(i, seed, 52); rockAt(B, x, y, 0.25 + k * 0.35, dark ? ['#4a4852', '#6a6872'] : ['#8a8892', '#b6b4bc']); }
+  /* EVERY MOON BASE HOLE SITS IN A CRATER (the owner, 2026-11-01): a broad rim rises round the back and the sides of the
+     course, from about six feet off its rail to ten, and falls away outside. It is kept off the near side, where it would
+     stand between the camera and the carpet. Its inner face toward the sun (the upper left) is in its own shadow. */
+  function moonRim(L, x, y){ var c = L.clearAt(x, y), k = y < L.P1[1] ? 1 : 1 - sm(L.P1[1], L.P1[1] + 4, y); if (k <= 0 || c < 5) return 0;
+    return k * (c < 10 ? 1.25 * sm(5, 10, c) : 1.25 * (1 - sm(10, 15, c))); }
   function moonBase(L, o){ var seed = L.seed, pits = moonPits(L, o.pits || 4, o.rMin || 1.4, o.rMax || 3, 31), dark = !!o.dark;
     return { pits:pits,
-      h:function(x, y){ return pits.h(x, y) * sm(0.6, 2.2, L.clearAt(x, y)) + (fbm(x * 0.08, y * 0.1, seed) - 0.45) * 0.8 * sm(1.3, 6, L.clearAt(x, y)); },
-      mat:function(x, y){ return ['reg', { cr:pits.cr(x, y) }]; },
+      h:function(x, y){ return pits.h(x, y) * sm(0.6, 2.2, L.clearAt(x, y)) + (fbm(x * 0.08, y * 0.1, seed) - 0.45) * 0.8 * sm(1.3, 6, L.clearAt(x, y)) + moonRim(L, x, y); },
+      mat:function(x, y){ var r = moonRim(L, x, y), c = L.clearAt(x, y), rf = 0; if (r > 0.15){ var sunSide = (x - L.cx) * -0.79 + (y - L.cy) * -0.61 > 0; rf = c < 10 ? (sunSide ? 2 : 3) : (sunSide ? 4 : 5); }
+        return ['reg', { cr:pits.cr(x, y), rim:rf }]; },
       fill:{ on:['reg'], trees:o.boulders == null ? 0.12 : o.boulders, lows:0.3, tree:function(B, x, y, i){ rockAt(B, x, y, 0.8 + hash(i, seed, 51) * 0.9, dark ? ['#52505a', '#74727c'] : ['#8a8892', '#c8c6ce']); },
         low:function(B, x, y, i){ moonLows(B, x, y, i, seed, dark); } },
       // the stars: only in the black over the horizon (the land's far edge), never on the ground
