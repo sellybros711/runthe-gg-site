@@ -32,7 +32,7 @@ the defensive calls, the look, and the owner's decisions. Read
 | `rig.js` | the players, traced from a small 3D model and painted by PXHD (Watch in 3D) |
 | `stage.js` | the stadium and the perspective camera, with Putt Putt's console pass |
 | `play.js` | Watch in 3D: the play in the stadium, with slow motion and captions |
-| `home.js` | Home: Play and Build, the other places as tiles, and a field running concept plays |
+| `home.js` | Home's banner: a package of hundreds of plays (every concept, formation, side and jet motion) run by the engine, rotating |
 | `flow.js` | Play, the video game: 4th and what?, draw it (the Studio in game mode), snap it in 3D, the result card and its Save card |
 | `app.js` | the shell: the six views, the situation, the Studio's draft, the account, the save box |
 | `studio.js` | the Coach Studio: Move, Route, Block, Run, Read, Motion, Erase, the players panel, the card, flip |
