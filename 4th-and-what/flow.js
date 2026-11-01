@@ -51,16 +51,21 @@
       spotLine();
     });
   });
-  $('sSit').addEventListener('click', function () { A.show('play'); });
+  /* the situation goes back to where it was picked: the daily's is the day's */
+  $('sSit').addEventListener('click', function () { A.show(window.FAW_DAILY && window.FAW_DAILY.active() ? 'daily' : 'play'); });
 
   /* ---------- 2 and 3. Snap it, watch it ---------- */
   function ready(p) { return (p.handoff && p.handoff.to) || (p.targets && p.targets.length); }
   function snap() {
     var p = A.copy(A.draft.play);
     if (!ready(p)) { A.toast('sToast', 'Give it a read (Read, then tap a receiver) or make it a run first.'); $('sHint').textContent = 'Give it a read, or make it a run.'; return false; }
-    var seed = forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
+    /* the daily's first snap is against the day's defense; every other one is fresh */
+    var D = window.FAW_DAILY, ds = D ? D.seed() : null;
+    var seed = ds != null ? ds : forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
     played = p;
     res = E.run(A.SC, p, seed);
+    if (D && D.active()) D.snapped(res, p);
+    remember(res, p, D && D.active());
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
     if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win); A.store.put(b); } });
@@ -68,6 +73,58 @@
     return true;
   }
   $('sSnap').addEventListener('click', snap);
+
+  /* ---------- every snap you ran (the owner, 2026-11-01: "I ran 2 plays, I
+     should be able to see the result of both") ----------
+     Each snap is kept as its situation, its play and its seed, and replayed
+     by the engine when you open it: same play, same seed, same result. The
+     daily's list starts with the day's snap (kept by daily.js, so it is there
+     after a reload); the rest are practice. Free play keeps its own list. */
+  var LOG_MAX = 12, log = [], shown = null;
+  function remember(r, p, daily) {
+    var e = { sc: A.copy(A.SC), play: A.copy(p), seed: r.seed, win: r.win, yards: r.yards, outcome: r.outcome, daily: !!daily };
+    log.push(e); if (log.length > LOG_MAX) log.shift();
+    shown = e;
+  }
+  function snapsNow() {
+    var D = window.FAW_DAILY, daily = !!(D && D.active());
+    var list = log.filter(function (e) { return e.daily === daily; });
+    if (daily) {
+      var k = D.kept(), t = D.today();
+      /* the day's snap from before a reload: rebuilt from what daily.js kept */
+      if (k && k.drawn && k.seed != null && !list.some(function (e) { return e.seed === k.seed; })) {
+        list.unshift({ sc: { down: 4, distance: Math.min(t.togo, t.ballOn), ballOn: t.ballOn, ballX: A.SC.ballX }, play: k.drawn, seed: k.seed, win: k.win, yards: k.yards, daily: true });
+      }
+    }
+    return list.map(function (e, i) { return { e: e, label: daily ? (i === 0 ? 'Daily' : 'Practice ' + i) : 'Snap ' + (i + 1) }; });
+  }
+  function chipText(x) {
+    var e = x.e, y = e.outcome === 'incomplete' || e.outcome === 'throwaway' ? 'no gain' : (e.yards > 0 ? '+' + e.yards : String(e.yards));
+    return x.label + ' · ' + (e.win ? 'First down' : 'Stopped') + ' ' + y;
+  }
+  function openSnap(e) {
+    Object.keys(e.sc).forEach(function (k) { A.SC[k] = e.sc[k]; });
+    var r = E.run(A.SC, e.play, e.seed);
+    res = r; played = A.copy(e.play); shown = e;
+    $('watch').hidden = true; $('rCard').hidden = true;
+    if (A.current() !== 'replay') A.show('replay');
+    window.FAW_GAME.load(r, e.play);
+    renderSnaps();
+  }
+  function renderSnaps() {
+    var list = snapsNow();
+    ['rSnaps', 'gSnaps'].forEach(function (id) {
+      var box = $(id); if (!box) return;
+      box.innerHTML = '';
+      box.hidden = list.length < 2;
+      if (list.length < 2) return;
+      box.appendChild(el('span', { class: 'rsnapsh', text: 'Your snaps' }));
+      list.forEach(function (x) {
+        box.appendChild(el('button', { type: 'button', class: 'snapchip ' + (x.e.win ? 'win' : 'lose'), 'aria-pressed': String(x.e === shown || (shown && x.e.seed === shown.seed && x.e.daily === shown.daily)),
+          text: chipText(x), on: { click: function () { openSnap(x.e); } } }));
+      });
+    });
+  }
 
   /* ---------- 4. the card ---------- */
   function title(r) { return r.title.charAt(0) + r.title.slice(1).toLowerCase(); }
@@ -80,6 +137,8 @@
     $('rLine').textContent = gained + ' · ' + r.callName;
     $('rWhy').textContent = r.reason;
     $('rToast').hidden = true;
+    if (window.FAW_DAILY) window.FAW_DAILY.card(r);
+    renderSnaps();
     c.hidden = false;
     card = null;
     $('dbgTxt').textContent = 'seed ' + r.seed + ' · replay this exact snap: ?seed=' + r.seed;
@@ -139,13 +198,15 @@
   });
   $('rShare').addEventListener('click', function () {
     if (!res) return;
-    SH.send(SH.text(res)).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
+    var D = window.FAW_DAILY;
+    SH.send(D && D.active() ? D.share(res) : SH.text(res)).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
   });
   $('rBreak').addEventListener('click', function () { close3d(); A.show('replay'); window.FAW_GAME.load(res, played); });
   $('bClose3d').addEventListener('click', function () { $('rCard').hidden = true; });
 
   A.on('play', spotLine);
+  A.on('replay', renderSnaps);
   A.on('studio', spotLine);
 
-  window.FAW_FLOW = { pick: pick, snap: snap, last: function () { return res; }, card: makeCard };
+  window.FAW_FLOW = { snaps: snapsNow, openSnap: openSnap, refresh: spotLine, pick: pick, snap: snap, last: function () { return res; }, card: makeCard };
 })();

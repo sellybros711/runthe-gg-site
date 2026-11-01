@@ -57,6 +57,11 @@ async function run(name, viewport, scale) {
         if (mem[k] && mem[k].progress > m.progress) return Promise.resolve({ ok: false, payload: mem[k].payload, progress: mem[k].progress });
         mem[k] = { progress: m.progress, payload: JSON.parse(JSON.stringify(m.payload)) }; return Promise.resolve({ ok: true }); },
       drop: (g, sl) => { delete mem[g + '/' + sl]; return Promise.resolve(null); } };
+    /* the daily's server, in memory too: it never posts to the real board */
+    window.__posts = [];
+    window.FAW_DAILY_API = { signedIn: () => true,
+      submit: r => { window.__posts.push(r); return Promise.resolve({ taken: true, streak: 3, best: 5, players: 10, convertedAll: 4 }); },
+      day: () => Promise.resolve({ players: 9, converted: 4 }), mine: () => Promise.resolve(null) };
   });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
   const page = await ctx.newPage();
@@ -90,6 +95,65 @@ async function run(name, viewport, scale) {
   ok(await page.isVisible('#vBooks'), 'Playbook Builder opens the playbooks');
   await page.click('.logo');
   ok(await page.isVisible('#vHome'), 'the logo goes home');
+  /* ---------- the daily 4th down: one real NFL 4th down a day ---------- */
+  await page.waitForSelector('#hdBox:not([hidden])', { timeout: 10000 });
+  const hd = await page.evaluate(() => { const t = window.FAW_DAILY.today(), b = document.getElementById('hDaily').textContent;
+    return { num: document.getElementById('hdNum').textContent, go: document.getElementById('hdGo').textContent, down: window.FAW_DAILY.core.downText(t),
+      spoils: b.indexOf(window.FAW_DAILY.core.teamsText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.downText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.spotText(t)) >= 0 }; });
+  ok(/Daily #\d+/.test(hd.num) && hd.go === 'Play today' && !hd.spoils, 'the banner is the way in, and says nothing of the situation: ' + hd.num);
+  await shot('d-home');
+  await page.click('#hDaily');
+  ok(await page.isVisible('#vDaily') && /^Daily #\d+/.test(await page.textContent('#dNum')) && (await page.textContent('#dDown')) === hd.down, 'a click on the banner opens the situation: ' + await page.textContent('#dNum'));
+  await shot('d-intro');
+  await page.click('#dGo');
+  const dsc = await page.evaluate(() => { const t = window.FAW_DAILY.today(), S = window.FAW_APP.SC; return { ok: S.down === 4 && S.ballOn === t.ballOn && S.distance === Math.min(t.togo, t.ballOn), empty: !window.FAW_STUDIO.play().routes.length }; });
+  ok(await page.isVisible('#sSnap') && dsc.ok && dsc.empty, 'Draw your call: the real down, distance and spot, on a clean board');
+  await page.click('.tool[data-tool="handoff"]');
+  const drb = await page.evaluate(() => { const p = window.FAW_STUDIO.play(); return window.FAW_FORMATIONS.place(p.formation, p.moved).RB; });
+  await dragYd(drb, [drb[0] + 1.5, drb[1] + 2.5], [drb[0] + 2.5, 0.5], [drb[0] + 2.5, 7]);
+  await page.click('#sSnap');
+  await page.waitForTimeout(400); await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  const dc = await page.evaluate(() => ({ head: document.getElementById('rDailyHead').textContent, real: document.getElementById('rReal').textContent, stats: document.getElementById('rDayStats').textContent,
+    posts: window.__posts.length, seed: window.FAW_FLOW.last().seed, want: window.FAW_DAILY.core.seedFor(window.FAW_DAILY.day()) }));
+  ok(/is in\./.test(dc.head) && dc.real.length > 10 && dc.posts === 1 && dc.seed === dc.want, 'the first snap is the day\'s, against the day\'s defense, posted once, with what really happened: ' + JSON.stringify(dc));
+  ok(/converted today/.test(dc.stats) && /Streak 3/.test(dc.stats), 'and the day so far comes back: ' + dc.stats);
+  await shot('d-card');
+  await page.click('#rAgain');
+  await page.waitForTimeout(400); await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  ok(/^Practice/.test(await page.textContent('#rDailyHead')) && await page.evaluate(() => window.__posts.length) === 1, 'Run it back is practice: nothing posted');
+  ok(!(await page.isHidden('#rSave')), 'Save play is there for the daily too');
+  const chips = await page.$$eval('#rSnaps .snapchip', b => b.map(x => x.textContent));
+  ok(chips.length === 2 && /^Daily · /.test(chips[0]) && /^Practice 1 · /.test(chips[1]), 'both snaps are on the card: ' + chips.join(' | '));
+  await page.click('#rSnaps .snapchip:first-of-type');
+  const opened = await page.evaluate(() => { const k = window.FAW_DAILY.kept(), g = window.FAW_GAME.last(); return { ok: g.seed === k.seed && g.win === k.win && g.yards === k.yards, n: document.querySelectorAll('#gSnaps .snapchip').length }; });
+  ok(await page.isVisible('#vReplay') && opened.ok && opened.n === 2, 'the Daily chip opens the day\'s own snap in the breakdown, with both listed there');
+  await page.click('#gSnaps .snapchip:nth-of-type(2)');
+  ok(await page.evaluate(() => window.FAW_GAME.last().seed !== window.FAW_DAILY.kept().seed), 'and the practice chip opens the practice snap');
+  await page.evaluate(() => { document.getElementById('watch').hidden = true; document.getElementById('rCard').hidden = true; });
+  await page.click('.logo');
+  const back = await page.evaluate(() => ({ go: document.getElementById('hdGo').textContent, daily: window.FAW_DAILY.active(), d: window.FAW_APP.SC.distance, b: window.FAW_APP.SC.ballOn }));
+  ok(/^You (converted|were stopped)\. See it$/.test(back.go) && !back.daily && back.d === 5 && back.b === 40, 'home again: the day is played, and Draw a play is back to 4th and 5 on the 40');
+  /* ---------- Daily Defense: one play, pick the call that stops it ---------- */
+  await page.click('.mode.trivia');
+  await page.waitForFunction(() => window.FAW_TRIVIA && window.FAW_TRIVIA.item() && document.querySelectorAll('#tCalls .tcall').length === 7, null, { timeout: 10000 });
+  ok(await page.isVisible('#vTrivia') && /^Daily Defense #\d+/.test(await page.textContent('#tNum')) && (await page.$$eval('#tCalls .tcall', b => b.every(x => !x.disabled))) && await page.isHidden('#tRes'),
+    'Daily Defense shows the play and seven calls, no answer yet: ' + await page.textContent('#tName'));
+  await shot('t-ask');
+  await page.click('#tCalls .tcall[data-call="cover2"]');
+  await page.waitForSelector('#tRes:not([hidden])', { timeout: 30000 });
+  const tv = await page.evaluate(() => { const k = window.FAW_TRIVIA.kept(), T = window.FAW_TRIVIA, it = T.item(), sc = T.scenario();
+    const again = T.core.solve(sc, it.play, window.FAW_DAILY.day());
+    return { pick: k.pick, same: JSON.stringify(again) === JSON.stringify(k.rates), bars: document.querySelectorAll('#tBars .tbar').length, mine: document.querySelectorAll('#tBars .tbar.mine').length,
+      best: document.querySelectorAll('#tBars .tbar.best').length, locked: [...document.querySelectorAll('#tCalls .tcall')].every(x => x.disabled), verdict: document.getElementById('tVerdict').textContent }; });
+  ok(tv.pick === 'cover2' && tv.same && tv.bars === 7 && tv.mine === 1 && tv.best >= 1 && tv.locked, 'the pick locks, and the answer is the engine run against every call: ' + tv.verdict);
+  await shot('t-answer');
+  await page.reload();
+  await page.evaluate(() => window.FAW_APP.show('trivia'));
+  await page.waitForSelector('#tRes:not([hidden])', { timeout: 10000 });
+  ok(await page.evaluate(() => [...document.querySelectorAll('#tCalls .tcall')].every(x => x.disabled)), 'one pick a day: it is still locked after a reload');
+  await page.click('.logo');
   /* ---------- Play, the video game: 4th and what, draw it, snap it, the card ---------- */
   await page.click('.mode.play');
   ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home: 4th and what?');
@@ -149,6 +213,11 @@ async function run(name, viewport, scale) {
   let p = await play();
   ok(p.routes.length >= 4 && p.targets.length >= 2, 'a concept puts a whole play on the formation: ' + p.routes.length + ' routes, reads ' + p.targets.join(' '));
   ok(/Drag/.test(await page.inputValue('#sName')), 'and names it from the terminology: ' + await page.inputValue('#sName'));
+  /* a space can be typed at the end of the name (the owner, 2026-11-01) */
+  await page.fill('#sName', ''); await page.click('#sName'); await page.keyboard.type('Big Ben Right');
+  ok((await page.inputValue('#sName')) === 'Big Ben Right' && await page.evaluate(() => window.FAW_APP.draft.name) === 'Big Ben Right', 'the play name takes spaces as it is typed');
+  await page.keyboard.type(' '); ok((await page.inputValue('#sName')) === 'Big Ben Right ', 'a space at the end stays while typing');
+  await page.click('.tool[data-tool="route"]'); ok((await page.inputValue('#sName')) === 'Big Ben Right', 'and is tidied when you leave the box');
   await page.selectOption('.prow[data-who="WR2"] select', 'post');
   p = await play();
   let z = p.routes.find(r => r.who === 'WR2');

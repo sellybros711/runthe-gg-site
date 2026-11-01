@@ -14,7 +14,7 @@
  * his id, the same on every device, as before. jawGuard and swing always come from the hash (no
  * real data yet). The catcher, the umpires and the fielders are not looked up: they stay generic.
  */
-import { LOOKS } from './looks-data.js?v=1';
+import { LOOKS } from './looks-data.js?v=2';
 
 // FNV-1a, then a little mixing: stable across machines
 export function hash(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } h ^= h >>> 15; h = Math.imul(h, 2246822507); h ^= h >>> 13; return h >>> 0; }

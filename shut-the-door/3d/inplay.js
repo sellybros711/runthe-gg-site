@@ -21,7 +21,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=23';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=10';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=25';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=26';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=43';
 import { look } from './looks.js?v=6';
@@ -143,6 +143,8 @@ export class InPlay {
   /** The kits: the fielders in the closer's club (kitFor 'us'), the runners in the hitters' club. */
   setFacts(facts) {
     this.facts = facts;
+    // the home club's colours on the park and in the crowd, its name on the scoreboard (ballpark.js)
+    this.park.userData.setClub(facts);
     const us = kitFor(facts, 'us'), them = kitFor(facts, 'them');
     for (let n = 1; n <= 9; n++) {
       const glove = n === 1 && facts.pitcher.throws === 'L' ? 'r' : 'l';
