@@ -106,7 +106,15 @@ function atlas() {
     const h = g.hair;
     h.fillStyle = grey(0.85);
     if (hair === 'short') { h.beginPath(); h.ellipse(cx, headY - headR * 0.35, headR * 0.92, headR * 0.8, 0, Math.PI, 2 * Math.PI); h.fill(); }
-    if (hair === 'long') { h.beginPath(); h.ellipse(cx, headY - headR * 0.3, headR * 1.0, headR * 0.85, 0, Math.PI, 2 * Math.PI); h.fill(); h.fillRect(cx - headR * 1.05, headY - 3, 6, headR + 16); h.fillRect(cx + headR * 1.05 - 6, headY - 3, 6, headR + 16); }
+    if (hair === 'long') {
+      // one fall of hair round the head to the shoulders, the face cut out of it (the B layer is drawn
+      // over the skin, so the face must be a hole in the hair, not under it)
+      h.beginPath(); h.ellipse(cx, headY + headR * 0.25, headR * 1.12, headR * 1.45, 0, 0, 7); h.fill();
+      h.globalCompositeOperation = 'destination-out';
+      h.beginPath(); h.ellipse(cx, headY + headR * 0.22, headR * 0.74, headR * 0.86, 0, 0, 7); h.fill();
+      h.fillRect(cx - headR * 0.3, headY + headR * 0.8, headR * 0.6, headR * 0.9);   // the neck
+      h.globalCompositeOperation = 'source-over';
+    }
     if (hair === 'bun') { h.beginPath(); h.ellipse(cx, headY - headR * 0.35, headR * 0.92, headR * 0.8, 0, Math.PI, 2 * Math.PI); h.ellipse(cx, headY - headR * 1.15, 5, 5, 0, 0, 7); h.fill(); }
     if (hair === 'cap') {
       h.fillStyle = grey(0.35);   // a cap: drawn dark on B, coloured as a cap in the shader (B under 0.5)
