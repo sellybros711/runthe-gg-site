@@ -593,7 +593,10 @@ if (!args.includes('--no-browser')){
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P.state !== 'roll' && P.strokes >= 1; }, null, { timeout:30000 });
     const after = await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return { ball:P.ball, strokes:P.strokes, state:P.state }; });
     await pg.mouse.up();
-    claim(after.strokes >= 1 && (after.state === 'done' || Math.hypot(after.ball[0] - before[0], after.ball[1] - before[1]) > 1), `a pull back let go outside the window still putts the ball (${after.strokes} stroke, ${after.state})`);
+    /* A putt that goes wet is a putt too: the ball comes back to where it was and the penalty makes it two strokes.
+       The Daily Hole changes every day, and on a day it was Rope Bridges (2026-11-01) this straight pull went in the
+       water and the check read it as no putt. */
+    claim(after.strokes >= 1 && (after.state === 'done' || after.strokes >= 2 || Math.hypot(after.ball[0] - before[0], after.ball[1] - before[1]) > 1), `a pull back let go outside the window still putts the ball (${after.strokes} stroke, ${after.state})`);
     if (after.state === 'aim'){
       await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5); await pg.mouse.down();
       await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5 + 120, { steps:6 }); await pg.mouse.up();
