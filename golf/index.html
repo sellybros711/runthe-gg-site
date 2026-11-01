@@ -15453,6 +15453,37 @@ function ftClouds(root){ root.querySelectorAll('canvas[data-cloud]').forEach((c,
     const lit=(py<base-H*0.32)||(best<1.6&&py<base-H*0.15);
     x.fillStyle = py>base-2 ? '#c98f6a' : (lit ? '#fff0d8' : (py>base-H*0.2 ? '#e2b48c' : '#f6d9b2')); x.fillRect(px,py,1,1); }
 }catch(e){} }); }
+/* THE HARVEST HALF OF SEASON 2 on the First Tee home (the owner, 2026-11-01): it follows the Tour Pass's harvest
+   theme (Nov 1 to Dec 3), so it starts and stops with the season. A warm evening sky, maple leaves drifting down, and
+   pumpkins in the rough on a desktop. The leaves stay still for reduced motion. QA: ?ptheme=harvest */
+function harvestLive(){ try{ return passThemeNow()==='harvest'; }catch(e){ return false; } }
+const _hvArt={};
+function hvPix(rows,pal,w,h){ const k=rows.join('|')+JSON.stringify(pal); if(_hvArt[k]) return _hvArt[k]; let r='';
+  rows.forEach((row,j)=>{ for(let i=0;i<row.length;i++){ const c=pal[row[i]]; if(c) r+=`<rect x="${i}" y="${j}" width="1.02" height="1.02" fill="${c}"/>`; } });
+  return _hvArt[k]=`<svg viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${r}</svg>`; }
+// the maple leaf from the Harvest drop's icon, in two warm halves; a plain pumpkin, ribbed, with a stem (no carved face)
+function hvLeafSVG(c1,c2){ return hvPix(['....a....','...aaa...','a..aaa..a','aa.aaa.aa','aaabbbaaa','.aabbbaa.','..aaaaa..','.aaaaaaa.','....s....','....s....'],
+  {a:c1,b:c2,s:'#7a3a12'},9,10); }
+function hvPumpkinSVG(){ return hvPix(['.....gg....','....gg.....','..oOooOoo..','.oOoooOooo.','oOooOooOooo','oOooOooOooo','oOooOooOooo','.oOoooOooo.','..oOooOoo..'],
+  {g:'#5a7a2a',o:'#f08a24',O:'#c25f10'},11,9); }
+function hvStyleOnce(){ if(document.getElementById('hv-css')) return; const s=document.createElement('style'); s.id='hv-css';
+  s.textContent='.ft-hvsky{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(126,48,16,.42),rgba(214,110,38,.2) 40%,transparent 62%);mix-blend-mode:soft-light}'+
+    '.ft-hvglow{position:absolute;left:0;right:0;top:28%;height:24%;pointer-events:none;background:radial-gradient(60% 100% at 50% 50%,rgba(255,168,76,.26),transparent 70%)}'+
+    '.ft-leaf{position:absolute;top:-6%;pointer-events:none;z-index:3;animation:hvFall linear infinite}'+
+    '.ft-leaf svg{display:block;width:100%;height:100%;animation:hvSway ease-in-out infinite alternate;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}'+
+    '@keyframes hvFall{0%{transform:translateY(0)}100%{transform:translateY(112vh)}}'+
+    '@keyframes hvSway{0%{transform:translateX(-16px) rotate(-32deg)}100%{transform:translateX(16px) rotate(38deg)}}'+
+    '.hv-pk{position:absolute;display:block;filter:drop-shadow(0 6px 8px rgba(0,0,0,.45))}.hv-pk svg{display:block;width:100%;height:100%}'+
+    '@media (max-width:700px){.hv-pk{display:none}}'+
+    '@media (prefers-reduced-motion:reduce){.ft-leaf{display:none}}';
+  document.head.appendChild(s); }
+function hvSceneHTML(){
+  const cols=[['#f2a23a','#d8641c'],['#e0483e','#a8281e'],['#ffd060','#e0962a'],['#d8641c','#9a3c14']];
+  // fixed spots, sizes and speeds, so every visit looks the same and nothing jumps on a re-render
+  const L=[[6,15,11,3.1,0],[18,12,14,2.6,-5],[31,18,12,3.4,-9],[44,13,15,2.9,-2],[57,16,10,3.6,-7],[69,12,13,2.7,-11],[80,19,16,3.2,-4],[91,14,12,2.8,-8],[25,11,17,3.0,-13]];
+  const leaves=L.map((l,i)=>{ const c=cols[i%cols.length], w=l[1]; return `<span class="ft-leaf" style="left:${l[0]}%;width:${w}px;height:${Math.round(w*10/9)}px;animation-duration:${l[2]}s;animation-delay:${l[4]}s"><span style="display:block;width:100%;height:100%">${hvLeafSVG(c[0],c[1]).replace('<svg ','<svg style="animation-duration:'+l[3]+'s" ')}</span></span>`; }).join('');
+  const pk=(cls,h)=>`<span class="hv-pk ${cls}" style="width:${Math.round(h*11/9)}px;height:${h}px">${hvPumpkinSVG()}</span>`;
+  return `<div class="ft-hvsky"></div><div class="ft-hvglow"></div>${leaves}${pk('ft-pk1',34)}${pk('ft-pk2',24)}${pk('ft-pk3',30)}`; }
 function ftScene(side){
   const putt=(()=>{ try{ return puttOn(); }catch(e){ return false; } })();
   const sc=$(`<div class="ft-scene${putt?'':' solo'}" aria-hidden="true">
@@ -15467,6 +15498,7 @@ function ftScene(side){
   if(decorLive()==='spooky'){ try{ spkStyleOnce(); sc.classList.add('spooky');
     sc.insertAdjacentHTML('beforeend',`<div class="ft-spksky"></div><img class="ft-moon" src="${spkMoonURL()}" alt=""><img class="spk-scene-web l" src="${spkWebURL()}" alt=""><img class="spk-scene-web r" src="${spkWebURL()}" alt=""><div class="spk-fog ft-fog"></div>
       <span class="spk-pk ft-pk1">${spkEl('pumpkin',38)}</span><span class="spk-pk ft-pk2" style="animation-delay:1.2s">${spkEl('pumpkin',26)}</span><span class="spk-pk ft-pk3" style="animation-delay:.6s">${spkEl('pumpkin',32)}</span>`); }catch(e){} }
+  else if(harvestLive()){ try{ hvStyleOnce(); sc.classList.add('harvest'); sc.insertAdjacentHTML('beforeend', hvSceneHTML()); }catch(e){} }
   // the Putt Putt side is the world you are in (the furthest one you have reached and uncovered)
   try{ const pl=sc.querySelector('.ft-plate'); if(pl){ let th='clubhouse'; try{ const m=window.RTT_PUTT.summary(puttHost()); if(m && FT_PLATES.includes(m.theme)) th=m.theme; }catch(e){}
     pl.style.backgroundImage=`url(home/putt-${th}-${ftDesk()?'d':'p'}.jpg?v=${FT_PLATE_V})`; } }catch(e){}
@@ -15563,38 +15595,52 @@ function golfAds(){
 
 /* ── THE FIRST TEE ──────────────────────────────────────────────────────────────────────────────── */
 /* ── THE TOUR PASS TRACKER on the First Tee home: always there, so the pass is never out of sight (the owner, 2026-11-01) ──
-   A card that shows the season, the days left, the tier and the progress to the next tier, and the rewards waiting.
-   Tapping it opens the Tour Pass. On the desktop it sits under the pin sheet; on a phone, under the pin strip. */
+   A ring with the tier, the season and the days left, a bar to the next tier, and the rewards waiting. It wears the
+   season's half (Hallows, Harvest). Tapping it opens the Tour Pass. On the desktop it sits under the pin sheet; on a
+   phone, under the pin strip. */
+const PTK_THEME={ halloween:{name:'Hallows', bg:'linear-gradient(150deg,#2c1846,#1a0e2c 60%,#120a1e)', ac1:'#ffb860', ac2:'#ff7a1f', bd:'#ff9a3c', glow:'rgba(255,140,50,.4)'},
+  harvest:{name:'Harvest', bg:'linear-gradient(150deg,#4e2610,#2c1508 58%,#1c0e06)', ac1:'#ffc27a', ac2:'#e0782a', bd:'#e8963a', glow:'rgba(232,150,58,.45)'} };
 function ftPtStyleOnce(){ if(document.getElementById('ptk-css')) return; const s=document.createElement('style'); s.id='ptk-css';
-  s.textContent='.ft-ptrack{position:relative;z-index:6;display:flex;align-items:center;gap:12px;width:100%;max-width:420px;margin:10px auto 0;padding:11px 14px;border-radius:16px;border:1.5px solid #f1d04a;background:linear-gradient(160deg,rgb(44,34,12),rgb(20,16,8));box-shadow:0 0 0 1px rgba(241,208,74,.2),0 10px 26px -10px rgba(0,0,0,.7),0 0 22px -4px rgba(241,208,74,.35);color:#fff;text-align:left;cursor:pointer;font:inherit}'+
-    '.ft-ptrack:focus-visible{outline:2px solid #ffe27a;outline-offset:3px}.ft-ptrack:active{transform:translateY(1px)}'+
-    '.ptk-tkt{flex:0 0 auto;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:linear-gradient(180deg,#ffe27a,#f1b62a);box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}'+
-    '.ptk-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}'+
-    '.ptk-k{font:800 10px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#f1d04a}'+
-    '.ptk-t{font:400 21px/1 var(--display);letter-spacing:.02em;display:flex;align-items:center;gap:7px}'+
-    '.ptk-pro{font:900 9px/1 var(--body);letter-spacing:.1em;color:#2a1a04;background:linear-gradient(90deg,#ffe27a,#f1b62a);border-radius:999px;padding:3px 6px}'+
-    '.ptk-bar{height:6px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}.ptk-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#f1b62a,#ffe27a)}'+
-    '.ptk-s{font:700 11px/1.25 var(--body);opacity:.82}'+
-    '.ptk-r{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:7px}'+
+  s.textContent='.ft-ptrack{--ac1:#ffe27a;--ac2:#f1b62a;--bd:#f1d04a;--glow:rgba(241,208,74,.38);--bg:linear-gradient(150deg,rgb(46,36,12),rgb(20,16,8));position:relative;z-index:6;overflow:hidden;display:flex;align-items:center;gap:13px;width:100%;max-width:420px;margin:10px auto 0;padding:12px 14px;border-radius:18px;border:1.5px solid var(--bd);background:var(--bg);box-shadow:0 0 0 1px rgba(255,255,255,.05) inset,0 12px 28px -12px rgba(0,0,0,.75),0 0 26px -6px var(--glow);color:#fff;text-align:left;cursor:pointer;font:inherit}'+
+    '.ft-ptrack::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.1),transparent 55%)}'+
+    '.ft-ptrack:focus-visible{outline:2px solid var(--ac1);outline-offset:3px}.ft-ptrack:active{transform:translateY(1px)}'+
+    '.ptk-ring{position:relative;flex:0 0 auto;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--ac1) calc(var(--p)*1%),rgba(255,255,255,.13) 0);box-shadow:0 0 14px -2px var(--glow)}'+
+    '.ptk-ring>span{width:45px;height:45px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.08),rgba(0,0,0,.55))}'+
+    '.ptk-ring b{font:400 21px/1 var(--display);color:var(--ac1)}.ptk-ring small{font:900 7px/1 var(--body);letter-spacing:.14em;margin-top:2px;opacity:.75}.ptk-ring i{font-style:normal;font-size:22px}'+
+    '.ptk-body{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}'+
+    '.ptk-k{font:800 10px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--ac1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
+    '.ptk-t{font:400 22px/1 var(--display);letter-spacing:.02em;display:flex;align-items:center;gap:7px}'+
+    '.ptk-pro{font:900 9px/1 var(--body);letter-spacing:.1em;color:#2a1a04;background:linear-gradient(90deg,var(--ac1),var(--ac2));border-radius:999px;padding:3px 6px}'+
+    '.ptk-bar{height:7px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}'+
+    '.ptk-bar i{position:relative;display:block;height:100%;border-radius:4px;overflow:hidden;background:linear-gradient(90deg,var(--ac2),var(--ac1))}'+
+    '.ptk-bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);transform:translateX(-100%);animation:ptkShine 2.8s ease-in-out infinite}'+
+    '@keyframes ptkShine{60%,100%{transform:translateX(100%)}}'+
+    '.ptk-s{font:700 11px/1.25 var(--body);opacity:.85}'+
+    '.ptk-r{position:relative;flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:7px}'+
     '.ptk-claim{font:900 10px/1 var(--body);letter-spacing:.06em;color:#fff;background:#d62a2a;border-radius:999px;padding:5px 8px;animation:ptkPulse 1.4s ease-in-out infinite}'+
     '@keyframes ptkPulse{0%,100%{box-shadow:0 0 0 0 rgba(214,42,42,.6)}50%{box-shadow:0 0 0 6px rgba(214,42,42,0)}}'+
-    '@media (prefers-reduced-motion:reduce){.ptk-claim{animation:none}}'+
-    '.ptk-go{font:900 12px/1 var(--body);color:#f1d04a}'+
+    '.ptk-go{font:900 12px/1 var(--body);color:var(--ac1)}'+
+    '.ptk-lf{position:absolute;pointer-events:none;opacity:.55}.ptk-lf svg{display:block;width:100%;height:100%}'+
+    '@media (prefers-reduced-motion:reduce){.ptk-claim,.ptk-bar i::after{animation:none}}'+
     '.ft-home .ft-rcol{position:absolute;z-index:14;right:56px;top:96px;width:360px;display:flex;flex-direction:column;gap:12px}.ft-home.has-gift .ft-rcol{top:160px}.ft-home .ft-rcol .ft-sheet{position:relative!important;right:auto!important;top:auto!important;width:100%!important}.ft-home .ft-rcol .ft-ptrack{margin:0;max-width:none}';
   document.head.appendChild(s); }
 function ftPassTrack(desk){
   ftPtStyleOnce();
-  const ssn=passSeason(), signed=sbSignedIn(); let kick, title, s2, pct=0, cl=0;
-  if(signed){ const st=passState(), xp=st.xp||0, tier=passTierAt(xp); cl=passClaimable();
+  const ssn=passSeason(), signed=sbSignedIn(), th=PTK_THEME[passThemeNow()]||null; let s2, pct=0, cl=0, tier=0;
+  if(signed){ const st=passState(), xp=st.xp||0; tier=passTierAt(xp); cl=passClaimable();
     const base=tier>0?passXpForTier(tier):0, next=tier<PASS_TIERS?passXpForTier(tier+1):null;
     pct=next?Math.max(0,Math.min(100,(xp-base)/(next-base)*100)):100;
-    s2=next?`Tier ${tier} of ${PASS_TIERS} · ${Math.max(0,next-xp).toLocaleString()} XP to tier ${tier+1}`:`Top tier · every XP still counts`; }
-  else s2='Sign in to track your progress';
-  kick=`Season ${ssn.n} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
-  title=`Tour Pass${signed&&passProActive()?' <span class="ptk-pro">PRO</span>':''}`;
-  const el=$(`<button type="button" class="ft-ptrack${desk?' ptk-desk':''}" aria-label="Tour Pass, season ${ssn.n}. ${s2}. Open the pass.">
-    <span class="ptk-tkt" aria-hidden="true">🎟️</span>
-    <span class="ptk-body"><span class="ptk-k">${kick}</span><span class="ptk-t">${title}</span>
+    s2=next?`${Math.max(0,next-xp).toLocaleString()} XP to tier ${tier+1}`:`Top tier`; }
+  else s2=`Sign in to climb ${PASS_TIERS} tiers`;
+  s2+=` · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
+  const kick=`Season ${ssn.n}${th?' · '+th.name:''}`;
+  const pro=signed&&passProActive()?' <span class="ptk-pro">PRO</span>':'';
+  const ring=signed?`<span class="ptk-ring" style="--p:${pct.toFixed(1)}"><span><b>${tier}</b><small>TIER</small></span></span>`:`<span class="ptk-ring" style="--p:0"><span><i>🎟️</i></span></span>`;
+  const lf=(th&&passThemeNow()==='harvest')?`<span class="ptk-lf" style="right:-4px;top:-6px;width:30px;height:33px;transform:rotate(24deg)">${hvLeafSVG('#f2a23a','#d8641c')}</span><span class="ptk-lf" style="right:46px;bottom:-9px;width:20px;height:22px;transform:rotate(-30deg)">${hvLeafSVG('#e0483e','#a8281e')}</span>`:'';
+  const style=th?` style="--ac1:${th.ac1};--ac2:${th.ac2};--bd:${th.bd};--glow:${th.glow};--bg:${th.bg}"`:'';
+  const el=$(`<button type="button" class="ft-ptrack${desk?' ptk-desk':''}"${style} aria-label="Tour Pass, season ${ssn.n}${signed?', tier '+tier:''}. ${s2}. Open the pass.">${lf}
+    ${ring}
+    <span class="ptk-body"><span class="ptk-k">${kick}</span><span class="ptk-t">Tour Pass${pro}</span>
       <span class="ptk-bar"><i style="width:${pct.toFixed(1)}%"></i></span><span class="ptk-s">${s2}</span></span>
     <span class="ptk-r">${cl>0?`<span class="ptk-claim">${cl} to claim</span>`:''}<span class="ptk-go">View ▸</span></span></button>`);
   el.onclick=()=>{ S.overlay='tourpass'; render(); };
@@ -15611,7 +15657,9 @@ function scrTitle(){
   // your golfer, on the tee. On a phone the tag, the pin strip and the gift note stack under the golfer, so the
   // golfer takes what is left above the doors (and the tab bar, the doors and their play buttons below)
   const pend=loginPend();
-  const h=desk?Math.round(Math.max(220,Math.min(380,innerHeight*0.38))):Math.round(Math.max(104,Math.min(236,innerHeight-458-ftSafeB()-(pend?54:0))));
+  // a smaller golfer leaves the home room to breathe; on a phone it also makes room for the Tour Pass card
+  const ptk=passEnabled()?104:0;
+  const h=desk?Math.round(Math.max(200,Math.min(300,innerHeight*0.30))):Math.round(Math.max(96,Math.min(190,innerHeight-458-ptk-ftSafeB()-(pend?54:0))));
   const tee=$(`<div class="ft-tee"><div class="ft-teebox"></div><div class="ft-markers"><i></i><i></i></div><button type="button" class="ft-fig" aria-label="Your golfer. Open the closet">${pxFigureHTML(S.look,h)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="ft-pk">'+spkEl('pumpkin',22)+'</span>'):''}</button></div>`);
   tee.querySelector('.ft-fig').onclick=()=>ftCloset();
   tee.appendChild(ftTag(desk));
