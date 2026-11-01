@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /* Daily Defense's schedule: which play, at which distance, each day.
  *
- *   node 4th-and-what/build/trivia.mjs [days]      (default 400)
+ *   node 4th-and-what/build/trivia.mjs [days] [--keep N]   (default 400)
+ *
+ * --keep N leaves the first N days as they are in defense.json (days that
+ * have been played) and rebuilds from day N + 1, skipping their plays.
  *
  * Walks the pool (every concept on every formation, both ways, in a fixed
  * shuffle: trivia.js) and gives each a 4th down distance that suits it: a
@@ -23,7 +26,8 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const Tr = require('../trivia.js'), RNG = require('../rng.js');
-const DAYS = +(process.argv[2] || 400), SPREAD = 0.15;
+const args = process.argv.slice(2), ki = args.indexOf('--keep');
+const DAYS = +(args.find((a, i) => /^\d+$/.test(a) && args[i - 1] !== '--keep') || 400), SPREAD = 0.15, KEEP = ki >= 0 ? +args[ki + 1] : 0;
 
 const P = Tr.pool();
 function distanceOf(it, k) {
@@ -32,10 +36,13 @@ function distanceOf(it, k) {
   if (it.kind === 'run') return 1 + r % 4;
   return [3, 4, 5, 6, 7, 8, 10][r % 7];
 }
-const out = [];
+const file0 = path.join(HERE, '..', 'data', 'defense.json');
+const out = KEEP ? JSON.parse(fs.readFileSync(file0, 'utf8')).days.slice(0, KEEP) : [];
+const kept = new Set(out.map((e) => e.concept + '|' + e.set + '|' + e.side + '|' + e.distance));
 let k = 0, tried = 0;
 while (out.length < DAYS && tried < DAYS * 6) {
   const it = P[k % P.length], d = distanceOf(it, k); k++; tried++;
+  if (kept.has(it.concept + '|' + it.set + '|' + it.side + '|' + d)) continue;
   const sc = Tr.scenarioFor('2026-01-01'); sc.distance = d;
   const rates = Tr.solve(sc, it.play, 'build-' + k);
   const v = Tr.CALLS.map((c) => rates[c]), best = Math.min(...v), worst = Math.max(...v);
