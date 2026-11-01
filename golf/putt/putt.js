@@ -1665,7 +1665,7 @@ var LEVELS = [
     bumps(H, T, [[-3, -10, 0.6], [3, -6, 0.55], [17.4, -23.4, 0.55], [12, -23.4, 0.5]]); zoneR(H, M.WATER, -5, -23, -2.6, -25); zoneR(H, M.MUD, 10.5, -15, 13, -16.6);
     zoneC(H, M.MUD, -3.4, -18, 1.1); blk(H, T, 2.2, -13.4, 5, -14.4); bowl(H, 15, -20, 1.6, 0.12); return H; } },
   // Airlock: the airlock cycles open and shut. Time it, and the moon past it bends you to the cup.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [0, -2.5], [-3, -34]); gateWall(H, T, -18, -6, 6, -1.6, 1.6, 3.2, 0.2);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [0, -2.5], [-3, -34]); gateWall(H, T, -18, -6, 6, -1.6, 1.6, 3.2, 0.2);
     moon(H, -2.6, -10, 1.2, 4.4, 20); moon(H, 2.4, -26, 1.4, 5, 26); bumps(H, T, [[-4.6, -29, 0.55], [4.6, -33, 0.55], [4.6, -5, 0.5]]);
     zoneR(H, M.MUD, -6, -36, -4.6, -38); zoneC(H, M.MUD, 4.4, -22, 1.1); bowl(H, -3, -34, 1.5, 0.12); return H; } },
   // Moon Dust: a band of moon dust across the middle, and a moon in it that pulls you through.
