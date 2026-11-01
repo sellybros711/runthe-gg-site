@@ -164,10 +164,10 @@ const CH = 3 / 12;
 function chalkLayout() {
   // grouped by where they are, so a pixel tests only the lines that can be near it (the shader's chalkD)
   const near = [], foul = [], mid = [], box = [], ring = [];
-  const half = 8.5 / 12, off = half + 6 / 12, mid = 8.5 / 12;   // the plate is 17 in deep: its middle 8.5 in up
-  const front = mid + 3, back = mid - 3;                         // the boxes' front and back lines (y)
+  const half = 8.5 / 12, off = half + 6 / 12, pm = 8.5 / 12;    // the plate is 17 in deep: its middle 8.5 in up
+  const front = pm + 3, back = pm - 3;                           // the boxes' front and back lines (y)
   // the batter's boxes
-  for (const s of [-1, 1]) box.push([s * (off + 2), mid, 2, 3]);
+  for (const s of [-1, 1]) box.push([s * (off + 2), pm, 2, 3]);
   // the catcher's box: from the back of the batter's boxes, 8 ft back, 43 in wide
   const cx = 21.5 / 12;
   near.push([-cx, back, -cx, back - 8], [-cx, back - 8, cx, back - 8], [cx, back - 8, cx, back]);
@@ -234,15 +234,17 @@ export function buildField(scene, tex, renderer) {
         const vec3 CRING[${L.ring.length}] = vec3[](${vec3s(L.ring)});
         float segD(vec2 p, vec4 s) { vec2 a = s.xy, ba = s.zw - s.xy; float h = clamp(dot(p - a, ba) / dot(ba, ba), 0.0, 1.0); return length(p - a - ba * h); }
         float boxD(vec2 p, vec4 b) { vec2 q = abs(p - b.xy) - b.zw; return abs(length(max(q, 0.0)) + min(max(q.x, q.y), 0.0)); }
-        // (the plate's boxes within 16 ft of it, the lane, coach's boxes and on deck circles 30-105 ft out:
-        // where a group is left out its nearest line is feet away, so the coverage there is nothing anyway)
+        // (the plate's boxes within 40 ft of it, the lane, coach's boxes and on deck circles 20-120 ft out.
+        // Where a group is left out its nearest line is 12 ft away or more: the distance jumps there, and
+        // the jump's footprint must never reach a line, or a far, grazing pixel takes a trace of chalk)
         float chalkD(vec2 p, float r) {
           float d = 1e4;
           for (int i = 0; i < ${L.foul.length}; i++) d = min(d, segD(p, CFOUL[i]));
-          if (r < 16.0) {
+          if (r < 40.0) {
             for (int i = 0; i < ${L.near.length}; i++) d = min(d, segD(p, CNEAR[i]));
             for (int i = 0; i < ${L.box.length}; i++) d = min(d, boxD(p, CBOX[i]));
-          } else if (r > 30.0 && r < 105.0) {
+          }
+          if (r > 20.0 && r < 120.0) {
             for (int i = 0; i < ${L.mid.length}; i++) d = min(d, segD(p, CMID[i]));
             for (int i = 0; i < ${L.ring.length}; i++) d = min(d, abs(length(p - CRING[i].xy) - CRING[i].z));
           }
@@ -273,7 +275,7 @@ export function buildField(scene, tex, renderer) {
         // the warning track: 15 ft inside the front of the stands, all round the field (behind the plate
         // the plate's own mask draws it, as it always has)
         float rFt = length(sft), trackK = 0.0;
-        if (rFt > 40.0) {   // (the track is never nearer the plate than 41 ft)
+        if (rFt > 34.0) {   // (the track is never nearer the plate than 36.5 ft: in foul ground at 110 degrees)
           float thDeg = degrees(atan(sft.x, sft.y)), fAt = frontAt(thDeg);
           trackK = abs(thDeg) < 128.0 ? smoothstep(-0.3, 0.3, rFt - (fAt - 15.0)) * (1.0 - smoothstep(2.0, 2.6, rFt - fAt)) : 0.0;
         }
