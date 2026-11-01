@@ -5,7 +5,9 @@ loads; the paths below are relative to it. This folder keeps the lab page and th
 
 Nothing here is loaded from a CDN. Everything is free and open (CC0 or MIT) except the motion,
 which is Adobe Mixamo's: royalty free inside the game, never shipped as raw files (see Motion). No
-asset carries a real person's likeness, a team name or a logo.
+asset carries a real person's face, a team name or a logo. A hitter's number, skin tone, facial hair
+and build are data about the real player (`looks-data.js`, the owner's call 2026-10-31), never a
+photo or a likeness of his face: the head is the same generic one for everybody.
 
 ## Code
 
