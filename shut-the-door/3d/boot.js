@@ -31,7 +31,7 @@ window.STD_STAGE = {
   supported,
   marks: {},
   current: null,
-  load() { return (mod ||= import('./stage.js?v=82')); },
+  load() { return (mod ||= import('./stage.js?v=83')); },
   create(canvas) {
     return this.load().then((m) => {
       if (!this.current || this.current.canvas !== canvas) this.current = m.create(canvas);
