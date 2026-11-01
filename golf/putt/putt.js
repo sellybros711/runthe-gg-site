@@ -132,6 +132,13 @@ function inClimb(C, x, y){ var Z = C.climbs; for (var i = 0; i < Z.length; i++){
    anywhere on the deck slides a foot clear of it on the carpet's grip), then stops. The ball keeps that speed and is put
    ashore, and never rests on the deck. k = (3 - e)w^2 + (e - 2)w^3: no jerk leaving, e times the mean speed arriving. */
 var DECK_GRIP = 8;
+/* ZERO GRAVITY (Moon Base, the owner, 2026-11-01: "there should definitely be some zero gravity elements"). Inside a zero-g field
+   nothing presses the ball to the carpet, so the carpet barely holds it (FLOAT_FRIC, against 2 ft/s/s for carpet) and no slope
+   or belt moves it: it drifts straight on at the speed it came in until a rail, a rock or the field's edge changes that. A moon
+   still pulls in there, and with nothing to slow the ball its pull bends the drift into a long swing round it. The ball floats
+   a little off the carpet while it is inside (FLOAT_Z), so the field reads. */
+var FLOAT_FRIC = 0.12, FLOAT_Z = 0.35;
+function floatAt(C, x, y){ var F = C.floats; for (var i = 0; i < F.length; i++){ var f = F[i]; if (x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) return f; } return null; }
 function ferryEase(e, w){ return { k:(3 - e) * w * w + (e - 2) * w * w * w, d:2 * (3 - e) * w + 3 * (e - 2) * w * w }; }
 function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w, z;
   if (f.e != null){
@@ -305,7 +312,7 @@ function hitCircle(s, cx, cy, r, e){
    the windmills read: the same putt at the same moment always meets the same blade. */
 function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
-  var onDeck = false, deckV = null, climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
+  var onDeck = false, deckV = null, floating = false, climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
   var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [], wells = C.wells || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
@@ -360,6 +367,7 @@ function simulate(C, x, y, vx, vy, t0){
     var gx = C.field.gx(s.x, s.y), gy = C.field.gy(s.x, s.y);
     var ax = -ROLL * G * gx, ay = -ROLL * G * gy, sp = Math.hypot(s.vx, s.vy), af = fricOf(C, m);
     if (m === M.BELT){ var bl = beltAt(C, s.x, s.y); if (bl){ ax += bl.ax; ay += bl.ay; } }
+    floating = C.floats.length > 0 && !over && !!floatAt(C, s.x, s.y); if (floating){ ax = 0; ay = 0; af = FLOAT_FRIC; }
     /* A MOON PULLS (Moon Base, World 12). Inside its pull every moon draws the ball toward its middle, g over the distance
        squared, so a putt that passes close is bent round it and one that passes slow falls in against its rock (the rock is
        a bumper). The pull is measured from the rock's edge in, never closer, so it stays finite. A ball held against the rock
@@ -454,7 +462,7 @@ function simulate(C, x, y, vx, vy, t0){
       z = 0; zv = 0;
     }
     t += DT; n++;
-    if (n % SUB === 0) out.pts.push([s.x, s.y, t]);
+    if (n % SUB === 0) out.pts.push(floating ? [s.x, s.y, t, 0, FLOAT_Z] : [s.x, s.y, t]);
     /* A ball held against a rail by a slope steeper than friction never meets the rule above: the
        slope pushes, the rail cancels it, and it sits still while the slope says it should roll. So a
        slow ball that has gone nowhere in half a second has come to rest. Measured, without this the
@@ -469,7 +477,7 @@ function simulate(C, x, y, vx, vy, t0){
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
   C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
-  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || [];
+  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || [];
   if (!C.polys) C.polys = C.poly ? [C.poly] : []; if (!C.allPts) C.allPts = C.polys.reduce(function(a, p){ return a.concat(p); }, []);
   if (!C.edges) C.edges = C.polys.length > 1 ? unionEdges(C.polys) : C.polys.length ? polyWalls(C.polys[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; }) : [];
   if (!C.tierAt) C.tierAt = function(){ return 0; };
@@ -816,7 +824,7 @@ function buildMini(tplName, seed, themeId, label, extra){
   if (r() < 0.5){
     var fx = function(p){ return [-p[0], p[1]]; };
     H.poly = H.poly.map(fx).reverse(); H.tee = fx(H.tee); H.cup = fx(H.cup);
-    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; });
+    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; });
     H.blocks = H.blocks.map(function(b){ return { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(rectWalls(b, 0.6)); });
     H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; if (m.k === 'door') m.px = -m.px; } });
@@ -843,7 +851,7 @@ function courseFromH(H, tplName, seed, themeId, label){
   var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:PS[0], polys:PS, allPts:all, edges:edges, rooms:rooms, comps:H.comps, flats:H.flats,
     stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
-    secret:H.secret || [], wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
+    secret:H.secret || [], floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
     rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ var st = H.stimp || (themeId === 'winter' ? 9.5 : 9), D = Math.hypot(f.dx, f.dy) || 1, L = Math.abs(f.dx) >= Math.abs(f.dy) ? f.x1 - f.x0 : f.y1 - f.y0,
       ve = Math.sqrt(2 * (V_STIMP * V_STIMP / (2 * st)) * (L + 1)), mv = f.move / PACE;
@@ -975,6 +983,8 @@ function bumps(H, T, list){ list.forEach(function(b){ addBumper(H, b[0], b[1], b
 /* moon(H, x, y, r, pull, g): a moon of rock radius r. Its rock is a bumper (it bounces like one) and its pull reaches pull ft
    from its middle with strength g (simulate). Defaults: the rock 1.5, the pull 5.5, g 30. */
 function moon(H, x, y, r, pull, g){ r = r || 1.5; H.bumpers.push({ x:x, y:y, r:r, e:0.7, skin:'moon' }); (H.wells = H.wells || []).push({ x:x, y:y, r:r, pull:pull || 5.5, g:g == null ? 30 : g }); }
+// zerog(H, x0, y0, x1, y1): a zero-g field over that rectangle of carpet (simulate, FLOAT_FRIC). Never over the cup.
+function zerog(H, x0, y0, x1, y1){ (H.floats = H.floats || []).push({ x0:x0, y0:y0, x1:x1, y1:y1 }); }
 function pads(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.75, e:1.32, skin:'pad' }); }); }
 function zoneR(H, m, x0, y0, x1, y1){ H.zones.push({ t:'rect', x0:x0, y0:y0, x1:x1, y1:y1, m:m }); }
 function zoneC(H, m, x, y, r){ H.zones.push({ t:'circle', x:x, y:y, r:r, m:m }); }
@@ -1660,8 +1670,8 @@ var LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [-3, -32.5]); moon(H, 2.5, -23.5, 1.4, 5, 26);
     bumps(H, T, [[-3, -9, 0.6], [2, -11, 0.6], [-1, -15, 0.55], [4.5, -15, 0.55], [-4.5, -19, 0.6], [0, -19.5, 0.5]]);
     gateWall(H, T, -28, -7, 7, -5.4, -2.4, 3, 0.2); zoneR(H, M.MUD, 4.5, -34, 7, -36); zoneC(H, M.MUD, -5, -12, 1.2); bowl(H, -3, -32.5, 1.5, 0.12); return H; } },
-  // Slingshot: a moon on the inside of the corner. Aim left of the turn and it whips you round to the right.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -25), rm(-5, -15, 19, -25)], [0, -2.5], [15, -20]); moon(H, 7, -17.6, 1.4, 6.5, 40);
+  // Slingshot: a moon on the inside of the corner, in a zero-g field. Float in and it swings you round to the right.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -25), rm(-5, -15, 19, -25)], [0, -2.5], [15, -20]); moon(H, 7, -17.6, 1.4, 6.5, 40); zerog(H, 1, -15.2, 12, -24.8);
     bumps(H, T, [[-3, -10, 0.6], [3, -6, 0.55], [17.4, -23.4, 0.55], [12, -23.4, 0.5]]); zoneR(H, M.WATER, -5, -23, -2.6, -25); zoneR(H, M.MUD, 10.5, -15, 13, -16.6);
     zoneC(H, M.MUD, -3.4, -18, 1.1); blk(H, T, 2.2, -13.4, 5, -14.4); bowl(H, 15, -20, 1.6, 0.12); return H; } },
   // Airlock: the airlock cycles open and shut. Time it, and the moon past it bends you to the cup.
@@ -1684,16 +1694,16 @@ var LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -41)], [0, -2.5], [-3.5, -37]); slider(H, T, -12, -6, 6, 3.2, 0); slider(H, T, -20, -6, 6, 2.8, 0.5);
     bumps(H, T, [[-4, -15.5, 0.6], [4, -16.5, 0.55], [-5.5, -24, 0.5]]); moon(H, 3.4, -27, 1.2, 4.6, 24); gateWall(H, T, -31, -7, 7, -4.8, -2.2, 3, 0.3);
     zoneR(H, M.MUD, 4, -39, 7, -41); zoneC(H, M.MUD, 5, -7, 1.1); bowl(H, -3.5, -37, 1.5, 0.12); return H; } },
-  // Space Walk: off the ramp over the trench of deep space, then round the moon to the cup.
+  // Space Walk: off the ramp over the trench of deep space into a zero-g field, then round the moon to the cup.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-6, -11.9, 6, -15.1), rm(-6, -15, 6, -34)], [0, -2.5], [3, -30]); jump(H, 0, -12, 0, -1, 2, 12, { w:5.2 });
-    moon(H, -0.5, -23, 1.4, 5, 26); bumps(H, T, [[3.5, -8, 0.55], [-3.5, -8, 0.55], [-4, -29, 0.55], [4.6, -20, 0.5]]); zoneR(H, M.MUD, -6, -32, -3, -34);
+    moon(H, -0.5, -23, 1.4, 5, 26); zerog(H, -6, -15.2, 6, -21); bumps(H, T, [[3.5, -8, 0.55], [-3.5, -8, 0.55], [-4, -29, 0.55], [4.6, -20, 0.5]]); zoneR(H, M.MUD, -6, -32, -3, -34);
     zoneC(H, M.ICE, -4.2, -19, 1.2); blk(H, T, 0.6, -31.4, 1.8, -32.6); bowl(H, 3, -30, 1.6, 0.12); return H; } },
   // Radar Dishes: two dishes sweep the lane, and two moons bend you between them.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [3, -36]); spinner(H, T, -2.5, -12, 2.2, 1.5, 2); spinner(H, T, 2.5, -26, 2.2, -1.6, 2);
     moon(H, -1.5, -19, 1.3, 4.8, 24); moon(H, -2.5, -32, 1.2, 4.4, 20); bumps(H, T, [[4.5, -14, 0.55], [-5, -24, 0.55], [5, -20.5, 0.5]]);
     zoneR(H, M.MUD, -7, -38, -4, -40); zoneC(H, M.MUD, 4.5, -8, 1.3); bowl(H, 3, -36, 1.5, 0.12); return H; } },
-  // Low Gravity: two slick craters, a moon over each. The ball runs on, and the moon decides where.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -42)], [-3, -2.5], [3, -38]); zoneR(H, M.ICE, -7, -10, 7, -16); zoneR(H, M.ICE, -7, -24, 7, -30);
+  // Zero G: two zero-g fields, a moon in each. The ball floats straight on, and the moon decides where.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -42)], [-3, -2.5], [3, -38]); zerog(H, -7, -9, 7, -17); zerog(H, -7, -23, 7, -31);
     moon(H, 2, -13, 1.3, 4.8, 24); moon(H, -2, -27, 1.3, 4.8, 24); bumps(H, T, [[-4.5, -19, 0.6], [4.5, -21, 0.55], [0, -34, 0.5], [-5, -6, 0.5]]);
     zoneR(H, M.WATER, -7, -40, -4.5, -42); blk(H, T, -1, -19.5, 1.5, -20.5); zoneC(H, M.MUD, 5, -33, 1.1); bowl(H, 3, -38, 1.5, 0.12); return H; } },
   // Rover Track: two moving walkways run opposite ways, with a moon between them and one by the cup.
@@ -1708,8 +1718,8 @@ var LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [-3, -34]); disc(H, 0, -16, 2.6, 1.3); moon(H, 3.5, -24, 1.3, 4.6, 24); moon(H, -4, -9, 1.1, 4, 18);
     bumps(H, T, [[2, -30, 0.55], [-5, -22, 0.5], [5, -12, 0.5], [0, -26.5, 0.5]]); zoneR(H, M.MUD, 3, -36, 7, -38); zoneC(H, M.ICE, -4, -28, 1.3); zoneC(H, M.MUD, 5, -5, 1);
     bowl(H, -3, -34, 1.5, 0.12); return H; } },
-  // Gravity Assist: three moons in a row. Ride the pull of each one in turn, with deep space at the edges.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -44)], [-4, -2.5], [4, -40]); moon(H, -2, -12, 1.3, 4.8, 26); moon(H, 2.5, -22, 1.3, 4.8, 26); moon(H, -1.5, -32, 1.3, 4.8, 26);
+  // Gravity Assist: three moons in a row, the middle one in a zero-g field. Ride the pull of each in turn, deep space at the edges.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -44)], [-4, -2.5], [4, -40]); moon(H, -2, -12, 1.3, 4.8, 26); moon(H, 2.5, -22, 1.3, 4.8, 26); moon(H, -1.5, -32, 1.3, 4.8, 26); zerog(H, -6.4, -18, 6.4, -26);
     bumps(H, T, [[5, -10, 0.55], [-5.5, -20, 0.55], [5.5, -30, 0.55], [-5, -40, 0.5]]); zoneR(H, M.WATER, -8, -26, -6.4, -30); zoneR(H, M.WATER, 6.4, -14, 8, -18);
     zoneR(H, M.MUD, 5, -42, 8, -44); zoneC(H, M.MUD, -6, -6, 1.1); bowl(H, 4, -40, 1.5, 0.12); return H; } },
   // Launch Pad: the long way round the crater of deep space, east, up and back west, three putts. The secret: the launch ramp by
@@ -1718,8 +1728,8 @@ var LEVELS = [
     blk(H, T, -22, -7.7, -16.2, -8); blk(H, T, -13.8, -7.7, 14, -8); blk(H, T, -22, -11, 14, -11.3); kicker(H, -15, -7.6);
     moon(H, 2, -4, 1.3, 4, 22); moon(H, 18, -9.5, 1.3, 4.6, 26); moon(H, 0, -15.5, 1.3, 4, 22); bumps(H, T, [[-8, -2, 0.5], [10, -6, 0.5], [8, -17, 0.5], [-6, -14, 0.5]]);
     zoneR(H, M.MUD, 19, -1, 22, -4); zoneC(H, M.MUD, -20, -17, 1.2); bowl(H, -15, -15, 1.5, 0.12); return H; } },
-  // Twin Moons: two moons on the line and a crater for a cup, behind the airlock. Round them, and the second sends you home.
-  { par:3, three:2, sig:true, f:function(T){ var H = hole([rm(-9, 0, 9, -44)], [0, -2.5], [0, -39.5]); moon(H, 0.3, -14, 2, 6.5, 40); moon(H, -0.3, -27, 2, 6.5, 40);
+  // Twin Moons: two moons on the line in one zero-g field, and a crater for a cup behind the airlock. Float round them and the second sends you home.
+  { par:3, three:2, sig:true, f:function(T){ var H = hole([rm(-9, 0, 9, -44)], [0, -2.5], [0, -39.5]); moon(H, 0.3, -14, 2, 6.5, 40); moon(H, -0.3, -27, 2, 6.5, 40); zerog(H, -7.2, -10, 7.2, -31);
     gateWall(H, T, -33, -9, 9, -2.4, 2.4, 3.2, 0.2); bumps(H, T, [[-6, -8, 0.6], [6, -8, 0.6], [-6.5, -21, 0.55], [6.5, -21, 0.55], [-5, -37, 0.5], [5, -37, 0.5]]);
     zoneR(H, M.WATER, -9, -26, -7.4, -32); zoneR(H, M.WATER, 7.4, -26, 9, -32); bowl(H, 0, -39.5, 2, 0.14); return H; } }
 ];
@@ -1872,9 +1882,9 @@ var SECRET_LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -10], [6, -24], [2, -34], [-3, -34], [-7, -22], [-6, -8]])], [0, -2.5], [-1, -30]);
     bumps(H, T, [[-2.5, -9, 0.5], [2.5, -12, 0.5], [-3.5, -16, 0.45], [3.5, -19, 0.45]]); blk(H, T, -4, -26.2, 2, -27.2); zoneR(H, M.ICE, -6, -20, 6, -22.5); slider(H, T, -25.5, -4, 3, 3.0, 0.2, 2.4);
     zoneR(H, M.MUD, 2, -32, 5, -34); bowl(H, -1, -30, 1.7, 0.12); return H; } },
-  // The Dark Side: one big moon in the middle of a dark room, the cup round the far side of it. Slow, and it keeps you.
+  // The Dark Side: one big moon in a zero-g field in the middle of a dark room, the cup in a pen round the far side of it.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -8], [8, -22], [3, -32], [-3, -32], [-8, -22], [-8, -8]])], [0, -2.5], [1.5, -28]);
-    moon(H, 0, -16, 2.2, 7, 44); bumps(H, T, [[-5, -10, 0.55], [5.5, -12, 0.55], [-5.5, -21, 0.5], [4.5, -24, 0.5]]); zoneR(H, M.ICE, -8, -14, -4.4, -18);
+    moon(H, 0, -16, 2.2, 7, 44); zerog(H, -4, -9, 4, -22); bumps(H, T, [[-5, -10, 0.55], [5.5, -12, 0.55], [-5.5, -21, 0.5], [4.5, -24, 0.5]]); zoneR(H, M.ICE, -8, -14, -4.4, -18);
     slider(H, T, -22.5, -4, 4, 3.0, 0.3, 2.4); pen(H, T, 1.5, -28); zoneR(H, M.MUD, -3, -30, 0, -32); return H; } }
 ];
 var SECRET_NAMES = SECRETS.map(function(x){ return x.name; });
@@ -1912,7 +1922,7 @@ var TOUR_NAMES = [
   'The Thaw', 'Mammoth Trail', 'Saber Tooth', 'Meltwater', 'Ice Bridge', 'Glacier Mill', 'Boulder Bounce', 'Cave Ledges', 'Frozen Crater',
   'Iceberg Drift', 'The Big Melt', 'Tar Pits', 'Cave Doors', 'Glacier Steps', 'Hailstorm', 'Saber Pass', 'Tundra Loop', 'Mammoth Peak',
   'First Orbit', 'Crater Row', 'Satellite Field', 'Slingshot', 'Airlock', 'Moon Dust', 'Docking Bay', 'Orbit Loop', 'Asteroid Belt',
-  'Space Walk', 'Radar Dishes', 'Low Gravity', 'Rover Track', 'Comet Bridges', 'Ring Station', 'Gravity Assist', 'Launch Pad', 'Twin Moons'];
+  'Space Walk', 'Radar Dishes', 'Zero G', 'Rover Track', 'Comet Bridges', 'Ring Station', 'Gravity Assist', 'Launch Pad', 'Twin Moons'];
 /* THE TOURS. Each is a list of worlds, a list of holes and their names, and what it pays. The Members
    Tour is one world of eighteen in two halves, on the season's theme, and pays the most on the site. */
 var TOURS = {
@@ -4731,6 +4741,15 @@ function drawPieces(ctx, C, cam, clock){
     for (var q = 0; q < 8; q++){ var a0 = th + q * Math.PI / 4, a1 = a0 + Math.PI / 8, c0 = w2s(cam, u.x, u.y), p0 = w2s(cam, u.x + Math.cos(a0) * u.r, u.y + Math.sin(a0) * u.r), p1 = w2s(cam, u.x + Math.cos(a1) * u.r, u.y + Math.sin(a1) * u.r);
       ctx.fillStyle = q % 2 ? (C.T.wallHi || '#ffd36a') : (C.T.wall || '#e5483a'); ctx.globalAlpha = 0.75; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.closePath(); ctx.fill(); }
     ctx.globalAlpha = 1; var cc = w2s(cam, u.x, u.y); ctx.fillStyle = '#f5f0e0'; ctx.beginPath(); ctx.arc(cc[0], cc[1], Math.max(3 * d, cam.s * 0.25), 0, 6.29); ctx.fill(); });
+  /* A ZERO-G FIELD: a faint violet sheen over its carpet, a dashed edge, and specks of dust drifting slowly up through it, so it
+     reads as the place where nothing is held down. */
+  (C.floats || []).forEach(function(f, fi){ var z = function(x, y){ return cam.v3 ? cam.v3.zAt(x, y) : 0; }, P = function(x, y){ return cam.v3 ? w2s(cam, x, y, z(x, y)) : w2s(cam, x, y); };
+    var q = [P(f.x0, f.y0), P(f.x1, f.y0), P(f.x1, f.y1), P(f.x0, f.y1)];
+    ctx.fillStyle = 'rgba(150,120,255,.16)'; ctx.beginPath(); q.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(190,170,255,.6)'; ctx.lineWidth = Math.max(1, d); ctx.setLineDash([4 * d, 4 * d]); ctx.stroke(); ctx.setLineDash([]);
+    var W = f.x1 - f.x0, Hh = f.y1 - f.y0, nd = Math.max(6, Math.round(W * Hh / 6)); ctx.fillStyle = 'rgba(230,220,255,.85)';
+    for (var k = 0; k < nd; k++){ var u = hash3(fi, k, 5), v = ((hash3(fi, k, 6) - clock * (0.04 + 0.05 * hash3(fi, k, 7))) % 1 + 1) % 1, p = P(f.x0 + u * W, f.y0 + v * Hh), r = Math.max(1, d * (0.8 + hash3(fi, k, 8)));
+      ctx.fillRect(Math.round(p[0] - r / 2), Math.round(p[1] - r / 2), Math.round(r), Math.round(r)); } });
   /* A MOON'S PULL: a dashed ring at its reach, the dashes drifting round it so it reads as alive. Only the dashes over carpet
      are drawn, so a ring that runs off the course never paints the rails or the ground. */
   (C.wells || []).forEach(function(w){ var nd = 44, ph = clock * 0.18;

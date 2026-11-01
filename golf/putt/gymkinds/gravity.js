@@ -34,10 +34,10 @@ var GYMS = [
   /* THE GRAVITY BAY, mid-world: the rule and nothing else. Three rocks, the moon rock and the crater out in the open.
      Tilt straight at the crater and the moon rock sails over it every time. The aha: send the other rocks first, so
      they wait beyond the crater, and then the moon rock stops on it. */
-  { id:'moon1', kind:'gravity', world:'moon', leg:9, name:'The Gravity Bay', badge:'Orbit Badge', mech:['gravity'], pay:500, look:{ wall:'stone' },
+  { id:'moon1', kind:'gravity', world:'moon', leg:9, name:'The Zero-G Bay', badge:'Orbit Badge', mech:['gravity'], pay:500, look:{ wall:'stone' },
     moves:12, proof:'DLULURDRDRUL',
     who:{ look:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'black', hairStyle:'short', cap:false, gender:'male' } },
-    say:['I run the gravity on this station. Whatever way I turn it, everything in that bay goes. Everything.',
+    say:['Gravity is off in this bay. One push from a thruster and everything floats that way till it hits something.',
       'The moon rock never stops on its own. Something has to be waiting for it.',
       'Forget the moon rock for a minute. Where do the other rocks end up?'],
     rows:[
@@ -133,7 +133,8 @@ function view(R){ var Q = R.Q, T = R.T, Z = R.DECK + 0.015, rocks = Q.rock0.slic
   function disc(x, y, z, rad, fill, line){ var ctx = R.ctx, c = P(x, y, z), e = P(x + rad, y, z), f = P(x, y + rad, z), rx = Math.max(1, Math.abs(e[0] - c[0])), ry = Math.max(1, Math.abs(f[1] - c[1]));
     ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, 7); ctx.fill(); if (line){ ctx.strokeStyle = line; ctx.lineWidth = Math.max(1, R.kk() * 0.5); ctx.stroke(); } }
   // a rock: a small grey ball standing on the deck, lit from the upper left, two craters; the moon rock glows cyan
-  function rock(x, y, moon, tsec){ var ctx = R.ctx, rad = T * 0.34, z = R.DECK + rad, c = P(x, y, z), e = P(x + rad, y, z), px = Math.max(2, Math.abs(e[0] - c[0]));
+  // gravity is off in the bay, so every rock floats a little off the deck and bobs, its shadow left on the floor beneath it
+  function rock(x, y, moon, tsec){ var ctx = R.ctx, rad = T * 0.34, bob = R.reduce ? T * 0.12 : T * (0.08 + 0.08 * Math.sin((tsec || 0) * 1.7 + x * 1.3 + y * 0.7)), z = R.DECK + rad + bob, c = P(x, y, z), e = P(x + rad, y, z), px = Math.max(2, Math.abs(e[0] - c[0]));
     disc(x + T * 0.06, y + T * 0.08, Z, rad * 0.9, 'rgba(0,0,0,0.3)');
     if (moon){ var g = 0.35 + 0.15 * Math.sin((tsec || 0) * 3); ctx.fillStyle = 'rgba(127,216,255,' + g + ')'; ctx.beginPath(); ctx.arc(c[0], c[1], px * 1.45, 0, 7); ctx.fill(); }
     var gr = ctx.createRadialGradient(c[0] - px * 0.35, c[1] - px * 0.35, px * 0.1, c[0], c[1], px);
@@ -167,6 +168,6 @@ function view(R){ var Q = R.Q, T = R.T, Z = R.DECK + 0.015, rocks = Q.rock0.slic
 
 root.RTT_GYMKIND_GRAVITY = { id:'gravity', gyms:GYMS, input:'tap', calm:true, parse:parse, init:init, key:key, act:act, moves:moves, won:won, proof:proof, enc:enc,
   goal:goal, tell:{ plain:'Tap a thruster on the console.', still:'Nothing moved. Every rock is already as far as that way goes.' },
-  hello:'Tap a thruster. Every rock in the bay slides that way.', unit:'tap', me:function(){ return null; }, place:function(G, s){ return s; },
+  hello:'Gravity is off in here. Tap a thruster and every rock floats that way.', unit:'tap', me:function(){ return null; }, place:function(G, s){ return s; },
   dur:function(){ return D_SLIDE; }, view:view };
 })();
