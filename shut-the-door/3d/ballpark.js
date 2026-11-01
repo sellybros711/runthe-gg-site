@@ -42,6 +42,8 @@ export const PARK = {
   eye: 9, pen: [-34, -22], penDepth: 40, board: [14, 30], upper: 50, dugout: [76, 100],
   towers: [[-38, 72, 140], [38, 72, 140], [-84, 140, 175], [84, 140, 175], [-116, 140, 175], [116, 140, 175]],
 };
+// the structure's colours (sRGB hex)
+const COL = { eye: 0x0b130f, dark: 0x15191d, roof: 0x8d949c, glass: 0x2b3b4e, steel: 0x9aa1a8, pole: 0xe8c21a };
 const isFair = (th) => Math.abs(th) <= 45.5;
 const h0At = (th) => (isFair(th) ? WALL_H : 4);
 const inPen = (th) => th >= PARK.pen[0] && th <= PARK.pen[1];
@@ -60,14 +62,15 @@ function crowdSpots() {
   const r = rng(53), out = [];
   const noise = Array.from({ length: 64 }, () => r());
   const patch = (th, k) => { const x = (th + 128) / 9 + k * 0.07, i = Math.floor(x), f = x - i, s = f * f * (3 - 2 * f); return noise[i % 64] * (1 - s) + noise[(i + 1) % 64] * s; };
-  // row k (0-19 the lower bowl, 20-39 the upper deck) at th: [back, up], or null where it has no seats
+  // row k (0-21 the lower bowl, 22-43 the upper deck) at th: [back, up], or null where it has no seats
   const rowOf = (th, k) => {
-    if (k < 20) { if (Math.abs(th) <= PARK.eye) return null; const b = 7 + 2.7 * k; if (inPen(th) && b < PARK.penDepth + 4) return null; return [b, inPen(th) ? 11.5 + (b - PARK.penDepth - 3) * (18.5 / 17) : 3 + (b - 6) * 0.5]; }
+    // (the lower bowl's rake starts at the wall: its first row 1.5 ft back, no empty seats below it)
+    if (k < 22) { if (Math.abs(th) <= PARK.eye) return null; const b = 1.5 + 2.7 * k; if (inPen(th) && b < PARK.penDepth + 4) return null; return [b, inPen(th) ? 11.5 + (b - PARK.penDepth - 3) * (18.5 / 17) : b * 0.5]; }
     if (Math.abs(th) < PARK.upper) return null;
-    const b = 77 + 2.7 * (k - 20); return [b, 59 + (b - 76) * (29 / 54)];
+    const b = 71.5 + 2.7 * (k - 22); return [b, b < 76 ? 56 + (b - 70) * 0.5 : 59 + (b - 76) * (29 / 54)];
   };
   // step round each row a seat at a time
-  for (let k = 0; k < 40; k++) {
+  for (let k = 0; k < 44; k++) {
     let th = -128 + r() * 0.5;
     while (th <= 128) {
       const row = rowOf(th, k);
@@ -113,13 +116,7 @@ function parkMaterials(renderer, tex) {
   const side = THREE.DoubleSide;
   return {
     wall: new THREE.MeshStandardMaterial({ vertexColors: true, map: padT, roughness: 0.85, side }),
-    dark: new THREE.MeshStandardMaterial({ color: 0x15191d, roughness: 0.95, side }),
     seats: new THREE.MeshStandardMaterial({ map: seatT, roughness: 0.8, side }),
-    eye: new THREE.MeshStandardMaterial({ color: 0x0d1712, roughness: 0.95, side }),
-    glass: new THREE.MeshStandardMaterial({ color: 0x1d2a38, roughness: 0.12, metalness: 0.6, side }),
-    club: new THREE.MeshStandardMaterial({ color: 0x2b3a55, roughness: 0.7, side }),
-    roof: new THREE.MeshStandardMaterial({ color: 0x8d949c, roughness: 0.85, side }),
-    steel: new THREE.MeshStandardMaterial({ color: 0x9aa1a8, roughness: 0.6, metalness: 0.3 }),
     lamps: new THREE.MeshBasicMaterial({ map: lampT, side, fog: true }),
     board: new THREE.MeshBasicMaterial({ map: boardT, side, fog: true, color: 0xb8b8b8 }),
   };
@@ -235,11 +232,22 @@ export function buildBallpark(scene, renderer) {
     const ths = ring.filter((th) => Math.sign(th) === sd && Math.abs(th) >= PARK.dugout[0] - 0.01 && Math.abs(th) <= PARK.dugout[1] + 0.01);
     inside.push(strip(ths, (th) => [[0, -h0At(th) + 0.05], [9, -h0At(th) + 0.05], [9, -h0At(th) + 3.6], [0.4, -h0At(th) + 3.6]]));
   }
+  // the bullpen's back wall: padded green like the outfield wall, up to the first row of seats
   const pen = ring.filter((th) => th >= PARK.pen[0] - 0.01 && th <= PARK.pen[1] + 0.01);
-  inside.push(strip(pen, () => [[PARK.penDepth, -WALL_H], [PARK.penDepth, 10]]));
-  group.add(new THREE.Mesh(wallG, mats.wall));
+  const penWall = strip(pen, () => [[PARK.penDepth, -WALL_H, GREEN], [PARK.penDepth, 10, GREEN]], { colors: true, uw: 5, vOf: (b, up, k) => k });
+  // THE STRUCTURE IS ONE MESH: the wall, the dugouts' and the bullpen's insides, the batter's eye, the
+  // suites, the upper deck's fascia (the club's colour), the roofs, the towers' steel and the foul poles,
+  // each painted in vertex colours on the wall's material (their uv on the padding's plain white). Every
+  // piece spans the ring, so a material of its own was a draw from any camera.
+  const solid = [wallG.toNonIndexed(), penWall.toNonIndexed()];
+  const paint = (g, hex) => {
+    const n = g.toNonIndexed(), c = new THREE.Color(hex), k = n.getAttribute('position').count;
+    n.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(k * 3).map((_, i) => [c.r, c.g, c.b][i % 3]), 3));
+    n.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(k * 2).fill(0.5), 2));
+    return n;
+  };
   // (each material's pieces gathered and merged at the end: one draw a material)
-  const by = { seats: [], dark: inside, roof: [], eye: [], glass: [] };
+  const by = { seats: [], dark: inside, roof: [], glass: [] };
   // the dugouts' roof lip in the club's colour, a rail along it
   const lip = [];
   for (const sd of [-1, 1]) {
@@ -247,13 +255,13 @@ export function buildBallpark(scene, renderer) {
     lip.push(strip(ths, (th) => [[-0.05, -h0At(th) + 3.4], [-0.05, 0.4]]));
   }
 
-  // the lower bowl: an aisle, then the rake at 27 degrees to a walkway (feet back from the front, up from
+  // the lower bowl: the rake at 27 degrees from the wall to a walkway (feet back from the front, up from
   // its top). Rows 2.7 ft deep, 1.35 ft a step. Not in the batter's eye; set back at the bullpen.
   const bowlRows = (th) => (inPen(th) ? [[PARK.penDepth, 10], [PARK.penDepth + 3, 11.5], [60, 30], [64, 30]] : [[0, 0], [6, 3], [60, 30], [64, 30]]);
   const vSeat = (b, up) => up / 1.35 / 32;
   by.seats.push(strip(ring, (th) => (Math.abs(th) >= PARK.eye - 0.01 ? bowlRows(th) : null), { uw: 1.8 * 8, vOf: vSeat }));
   // the batter's eye: dead centre, dark, the full height of the bleachers
-  by.eye.push(strip(ring.filter((th) => Math.abs(th) <= PARK.eye + 0.01), () => [[0, 0], [30, 40]]));
+  const eyeG = strip(ring.filter((th) => Math.abs(th) <= PARK.eye + 0.01), () => [[0, 0], [30, 40]]);
 
   // the suite level over the lower bowl (glass), the upper deck's fascia (the club's colour), its seats
   // and the roof's edge. Down the lines and round behind the plate only: the outfield is bleachers.
@@ -264,7 +272,7 @@ export function buildBallpark(scene, renderer) {
   by.glass.push(strip(ring, upper([[64, 30], [64, 44]])));
   by.dark.push(strip(ring, upper([[64, 44], [70, 48]])));
   lip.push(strip(ring, upper([[70, 48], [70, 56]])));
-  group.add(new THREE.Mesh(mergeGeometries(lip), mats.club));
+  // (the club's pieces last: setClub repaints them)
   by.seats.push(strip(ring, upper([[70, 56], [76, 59], [130, 88], [132, 96]]), { uw: 1.8 * 8, vOf: vSeat }));
   // the roof's edge over the upper deck, and the back of the bleachers in the outfield
   by.roof.push(strip(ring, upper([[124, 106], [150, 110]])));
@@ -281,7 +289,10 @@ export function buildBallpark(scene, renderer) {
     penBits.push(new THREE.BoxGeometry(2 * FT, 0.12 * FT, 0.5 * FT).translate(...W(m.x, m.y, 10 / 12 + 0.06).toArray()));
     penBits.push(new THREE.BoxGeometry(1.4 * FT, 0.05 * FT, 1.4 * FT).translate(...W(pl.x, pl.y, 0.03).toArray()));
   }
-  group.add(new THREE.Mesh(mergeGeometries(penDirt), dirtMat(tex, renderer, 4)), new THREE.Mesh(mergeGeometries(penBits), chalk.material));
+  // (into the mound's and the bags' meshes: no draw of their own)
+  const mg = mound.geometry.clone().translate(mound.position.x, mound.position.y, mound.position.z);
+  mound.geometry = mergeGeometries([mg, ...penDirt].map((g) => g.toNonIndexed())); mound.position.set(0, 0, 0);
+  chalk.geometry = mergeGeometries([chalk.geometry, ...penBits.map((g) => g.toNonIndexed())]);
 
   // the scoreboard: over the right centre field bleachers (no logos; the clubs' names, the innings, the
   // count's lights; no numbers, as no number on it would be the game's)
@@ -291,7 +302,11 @@ export function buildBallpark(scene, renderer) {
   for (let i = 0; i < uvs.count; i++) { const k = Math.floor(i / 2), j = i % 2; uvs.setXY(i, k / (board.length - 1), j); }
   group.add(new THREE.Mesh(sbG, mats.board));
   by.dark.push(strip(board, () => [[76, 30], [76, 74], [74, 74]]));
-  for (const [k, list] of Object.entries(by)) group.add(new THREE.Mesh(mergeGeometries(list.map((g) => g.toNonIndexed())), mats[k]));
+  group.add(new THREE.Mesh(mergeGeometries(by.seats.map((g) => g.toNonIndexed())), mats.seats));
+  for (const g of by.dark) solid.push(paint(g, COL.dark));
+  for (const g of by.roof) solid.push(paint(g, COL.roof));
+  for (const g of by.glass) solid.push(paint(g, COL.glass));
+  solid.push(paint(eyeG, COL.eye));
 
   // the light towers: three a side, behind the bleachers and the upper deck, banks facing the plate
   const poleG = [], bankG = [];
@@ -305,22 +320,30 @@ export function buildBallpark(scene, renderer) {
     bankG.push(bank.translate(head.x, head.y + 11 * FT, head.z));
     poleG.push(new THREE.BoxGeometry(38 * FT, 1.2 * FT, 1.2 * FT).rotateY(Math.atan2(-head.x, -head.z)).translate(head.x, head.y, head.z));
   }
-  group.add(new THREE.Mesh(mergeGeometries(poleG.map((g) => g.toNonIndexed())), mats.steel), new THREE.Mesh(mergeGeometries(bankG), mats.lamps));
+  for (const g of poleG) solid.push(paint(g, COL.steel));
+  group.add(new THREE.Mesh(mergeGeometries(bankG), mats.lamps));
 
   // the foul poles
   const poles = [];
   for (const sd of [-1, 1]) poles.push(new THREE.CylinderGeometry(0.2 * FT, 0.2 * FT, 70 * FT, 8).translate(...W(sd * 330 * Math.SQRT1_2, 330 * Math.SQRT1_2, 35).toArray()));
-  group.add(new THREE.Mesh(mergeGeometries(poles), new THREE.MeshStandardMaterial({ color: 0xe8c21a, roughness: 0.5 })));
+  for (const g of poles) solid.push(paint(g, COL.pole));
+  // the club's pieces at the end of the merged mesh, so setClub repaints one run of vertices
+  let clubFrom = 0;
+  for (const g of solid) clubFrom += g.getAttribute('position').count;
+  for (const g of lip) solid.push(paint(g, COL.dark));
+  const solidG = mergeGeometries(solid);
+  group.add(new THREE.Mesh(solidG, mats.wall));
+  const paintClub = (c) => { const col = solidG.getAttribute('color'); for (let i = clubFrom; i < col.count; i++) col.setXYZ(i, c.r, c.g, c.b); col.needsUpdate = true; };
 
   // ---- the crowd, in the lower bowl and the upper deck
-  group.add(buildCrowd(crowdSpots(), { sectors: 8, blur: 0, lift: 0.36 }));
+  group.add(buildCrowd(crowdSpots(), { sectors: 6, blur: 0, lift: 0.36, chest: true }));
 
   // the home club's colours on the park (the upper deck's fascia, the dugouts' lip, the seats) and the
   // names on the scoreboard: the stage's facts (crowd.js crowdClub has the rule)
   group.userData.setClub = (facts) => {
     const { home, away } = homeAndAway(facts);
     club.pri.set(home ? home.pri : '#2b3a55');
-    mats.club.color.copy(club.pri);
+    paintClub(club.pri);
     mats.seats.color.copy(club.pri).lerp(new THREE.Color(0x9aa0a8), 0.35);
     drawBoard(mats.board.map, away, home);
     crowdClub(facts);

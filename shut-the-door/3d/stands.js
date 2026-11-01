@@ -121,7 +121,7 @@ export function buildStands(scene, tex, renderer) {
     const a = it.a + (rf() - 0.5) * 0.1 / it.rad, rr = it.rad + (rf() - 0.5) * 0.08;   // not quite in the middle of his seat
     fans.push({ x: Math.sin(a) * rr, y: it.y, z: -Math.cos(a) * rr, yaw: -a + (rf() - 0.5) * 0.3, s: 0.9 + rf() * 0.2 });
   }
-  group.add(buildCrowd(fans, { sectors: 1, blur: 1.5, lift: 0.3 }));
+  group.add(buildCrowd(fans, { sectors: 1, blur: 1.5, lift: 0.02 }));
   group.userData.tick = () => {};
   return group;
 }

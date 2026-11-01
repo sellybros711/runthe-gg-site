@@ -19,8 +19,9 @@
 import * as THREE from 'three';
 import { clubNamed, battingClub } from './clubs.js?v=2';
 
-const CW = 96, CH = 128, COLS = 4, ROWS = 4;   // the atlas: 4 x 4 fans, 96 x 128 px each
-export const FAN = { w: 0.6, h: 0.8 };          // a fan's quad, metres (chest up, a seated adult)
+const CW = 96, CH = 176, COLS = 4, ROWS = 4;   // the atlas: 4 x 4 fans, 96 x 176 px each
+const WAIST = 128;                               // the shirt ends here; the lap and the shins below
+export const FAN = { w: 0.6, h: 1.1 };          // a fan's quad, metres: a seated adult, floor to the top of his head
 
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
@@ -33,12 +34,6 @@ function atlas() {
   const L = { shirt: mk(), skin: mk(), hair: mk() };
   const g = { shirt: L.shirt.getContext('2d'), skin: L.skin.getContext('2d'), hair: L.hair.getContext('2d') };
   const r = rng(29);
-  // a body's shading: lighter in the middle, darker round the sides, as a cylinder in a soft top light
-  const shade = (ctx, x0, x1, top, bot, lo = 0.45, hi = 1) => {
-    const gr = ctx.createLinearGradient(x0, 0, x1, 0);
-    gr.addColorStop(0, `rgb(${255 * lo},0,0)`); gr.addColorStop(0.45, `rgb(${255 * hi},0,0)`); gr.addColorStop(1, `rgb(${255 * lo * 0.9},0,0)`);
-    return gr;
-  };
   const grey = (v) => `rgb(${Math.round(255 * v)},${Math.round(255 * v)},${Math.round(255 * v)})`;
   for (let i = 0; i < COLS * ROWS; i++) {
     const ox = (i % COLS) * CW, oy = Math.floor(i / COLS) * CH;
@@ -49,16 +44,16 @@ function atlas() {
     const arms = ['down', 'down', 'crossed', 'cup', 'phone', 'up', 'down', 'crossed'][i % 8];
     const hair = ['short', 'cap', 'long', 'short', 'cap', 'bald', 'hood', 'long', 'cap', 'short', 'long', 'cap', 'short', 'bun', 'cap', 'short'][i];
     for (const k of ['shirt', 'skin', 'hair']) { g[k].save(); }
-    // ---- the shirt: shoulders and the chest, down out of the cell (the row in front hides the rest)
+    // ---- the shirt: shoulders and the chest, to the waist
     const s = g.shirt;
     s.fillStyle = (() => { const gr = s.createLinearGradient(cx - sh, 0, cx + sh, 0); gr.addColorStop(0, grey(0.5)); gr.addColorStop(0.45, grey(1)); gr.addColorStop(1, grey(0.45)); return gr; })();
     s.beginPath();
     // round shoulders falling from the neck, the chest narrowing a little to the waist
     s.moveTo(cx - 8, shY - 7);
     s.bezierCurveTo(cx - sh + 6, shY - 7, cx - sh - 1, shY - 2, cx - sh, shY + 14);
-    s.quadraticCurveTo(cx - sh + 1, oy + CH - 30, cx - sh + 5, oy + CH);
-    s.lineTo(cx + sh - 5, oy + CH);
-    s.quadraticCurveTo(cx + sh - 1, oy + CH - 30, cx + sh, shY + 14);
+    s.quadraticCurveTo(cx - sh + 1, oy + WAIST - 30, cx - sh + 5, oy + WAIST + 2);
+    s.lineTo(cx + sh - 5, oy + WAIST + 2);
+    s.quadraticCurveTo(cx + sh - 1, oy + WAIST - 30, cx + sh, shY + 14);
     s.bezierCurveTo(cx + sh + 1, shY - 2, cx + sh - 6, shY - 7, cx + 8, shY - 7);
     s.closePath(); s.fill();
     // a fold or two and the collar
@@ -87,6 +82,18 @@ function atlas() {
     } else {
       sleeve(cx - sh + 2, shY + 10, cx - sh + 1, shY + 50, 12); sleeve(cx + sh - 2, shY + 10, cx + sh - 1, shY + 50, 12);
     }
+    // ---- the lap and the shins (seen from the front, the thighs come at us: a short band, then the
+    // shins to the floor), on the B layer at 0.6: the shader gives it his trousers' colour. Seat backs
+    // in front hide it in every row but the first.
+    const p = g.hair;
+    const pg = p.createLinearGradient(0, oy + WAIST - 4, 0, oy + CH);
+    pg.addColorStop(0, grey(0.66)); pg.addColorStop(0.35, grey(0.6)); pg.addColorStop(1, grey(0.52));
+    p.fillStyle = pg;
+    p.beginPath();
+    if (p.roundRect) p.roundRect(cx - sh + 3, oy + WAIST - 2, 2 * sh - 6, 22, 7); else p.rect(cx - sh + 3, oy + WAIST - 2, 2 * sh - 6, 22);
+    p.fill();
+    const knee = 9 + r() * 4;
+    p.fillRect(cx - knee - 7, oy + WAIST + 16, 13, CH - WAIST - 16); p.fillRect(cx + knee - 6, oy + WAIST + 16, 13, CH - WAIST - 16);
     // ---- the neck and the head
     const k = g.skin;
     k.fillStyle = grey(0.65); k.fillRect(cx - 6, headY + headR - 4, 12, 14);
@@ -161,7 +168,7 @@ export function crowdClub(facts) {
 }
 
 const _clock = { t0: null };
-function material(blur) {
+function material(blur, crop) {
   const m = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.crowdAtlas = { value: atlas() };
@@ -177,7 +184,7 @@ function material(blur) {
         vFan = int(hh & 0x7fffffffU);
         float ph = float(hh & 1023U) / 1023.0 * 6.2831;
         float sp = 0.7 + float((hh >> 10) & 255U) / 255.0 * 0.6;
-        float up = clamp(position.y / ${FAN.h.toFixed(2)} + 0.5, 0.0, 1.0);   // 0 at the waist, 1 at the head
+        float up = clamp(position.y / ${(FAN.h * crop).toFixed(3)} + 0.5, 0.0, 1.0);   // 0 at the quad's foot, 1 at the head
         // a breath, a sway of the shoulders, and now and then a lean in (to see the play, to talk)
         float lean = smoothstep(0.82, 1.0, sin(crowdT * 0.21 * sp + ph * 3.0));
         transformed.y += 0.008 * sin(crowdT * 1.6 * sp + ph) * up;
@@ -192,7 +199,7 @@ function material(blur) {
         flat varying int vFan; varying vec2 vCell;
         vec3 skinTone(float k) { return mix(mix(vec3(0.62, 0.40, 0.29), vec3(0.32, 0.18, 0.11), smoothstep(0.35, 1.0, k)), vec3(0.80, 0.58, 0.45), 1.0 - smoothstep(0.0, 0.4, k)); }`)
       .replace('#include <map_fragment>', `
-        vec2 auv = (vCell + clamp(vec2(vUv.x, 1.0 - vUv.y), 0.015, 0.985)) / vec2(${COLS}.0, ${ROWS}.0);   // the atlas unflipped: v down the canvas
+        vec2 auv = (vCell + clamp(vec2(vUv.x, (1.0 - vUv.y) * ${crop.toFixed(4)}), 0.015, 0.985)) / vec2(${COLS}.0, ${ROWS}.0);   // the atlas unflipped: v down the canvas
         vec4 tx = texture2D(crowdAtlas, auv, ${blur.toFixed(2)});
         // keep the cutout's edge one pixel wide at every mip (alpha to coverage), so far fans never fade
         float aa = (tx.a - 0.5) / max(fwidth(tx.a), 1e-4) + 0.5;
@@ -200,27 +207,33 @@ function material(blur) {
         vec3 shirt = crowdPal[int(u & 15U)] * (0.8 + 0.4 * float((u >> 4) & 15U) / 15.0);
         vec3 skin = skinTone(float((u >> 8) & 255U) / 255.0);
         vec3 hair = mix(vec3(0.02, 0.015, 0.01), vec3(0.28, 0.17, 0.08), float((u >> 16) & 3U) / 3.0);
-        // B: hair (light) or a cap (dark): a cap in a club colour
+        // B: a cap (drawn at 0.35: a club colour), trousers (0.6: denim, khaki, black, grey) or hair (0.85)
         vec3 cap = crowdPal[int((u >> 24) & 15U)];
-        float isCap = tx.b > 0.0 ? step(tx.b / max(tx.a, 1e-3), 0.5) : 0.0;
-        vec3 col = shirt * tx.r + skin * tx.g + mix(hair * tx.b * 1.6, cap * tx.b * 2.4, isCap);
+        int pk = int((u >> 28) & 3U);
+        vec3 pants = pk == 0 ? vec3(0.05, 0.08, 0.16) : pk == 1 ? vec3(0.36, 0.30, 0.19) : pk == 2 ? vec3(0.03) : vec3(0.18, 0.19, 0.21);
+        float bv = tx.b / max(tx.a, 1e-3);
+        vec3 bcol = bv < 0.48 ? cap * 2.4 : bv < 0.74 ? pants * 1.6 : hair * 1.6;
+        vec3 col = shirt * tx.r + skin * tx.g + bcol * tx.b;
         diffuseColor = vec4(col / max(tx.a, 1e-3), clamp(aa, 0.0, 1.0));`)
       .replace('#include <alphatest_fragment>', 'if (diffuseColor.a < 0.02) discard;');
   };
   m.defines = { USE_UV: '' };
-  m.customProgramCacheKey = () => 'crowd' + blur;
+  m.customProgramCacheKey = () => `crowd${blur}/${crop}`;
   return m;
 }
 
 /** An instanced crowd from seats: spots [{ x, y, z (world, the seat's floor point), yaw (radians, the
     way he faces), s (scale) }]. sectors: how many meshes round the field (by the spot's bearing from the
     plate), each culled on its own. blur: the atlas's mip bias (the long lens's soft background behind
-    the plate). Returns a group. */
-export function buildCrowd(spots, { sectors = 1, blur = 0, lift = 0.42 } = {}) {
+    the plate). chest: the figures from the waist up (where no seat backs stand in front to hide the
+    legs, a whole seated figure reads as standing). lift: metres from the floor to the quad's foot.
+    Returns a group. */
+export function buildCrowd(spots, { sectors = 1, blur = 0, lift = 0, chest = false } = {}) {
   const group = new THREE.Group();
   group.name = 'crowd';
-  const geo = new THREE.PlaneGeometry(FAN.w, FAN.h);
-  const mat = material(blur);
+  const crop = chest ? (WAIST + 2) / CH : 1, h = FAN.h * crop;
+  const geo = new THREE.PlaneGeometry(FAN.w, h);
+  const mat = material(blur, crop);
   const by = Array.from({ length: sectors }, () => []);
   for (const p of spots) {
     const b = Math.atan2(p.x, p.z);   // bearing round the plate
@@ -233,7 +246,7 @@ export function buildCrowd(spots, { sectors = 1, blur = 0, lift = 0.42 } = {}) {
     const mesh = new THREE.InstancedMesh(geo, mat, list.length);
     list.forEach((p, i) => {
       const s = p.s || 1;
-      v.set(p.x, p.y + lift * s + (FAN.h * s) / 2, p.z);
+      v.set(p.x, p.y + lift * s + (h * s) / 2, p.z);
       q.setFromAxisAngle(Y, p.yaw);
       sc.set(s, s, s);
       mesh.setMatrixAt(i, m4.compose(v, q, sc));
