@@ -470,6 +470,11 @@
     /* play action turns his back to the rush: that is pocket time spent on the fake */
     if (pa) Tp -= T.pa.pocket;
     Tp = clamp(Tp, T.pocket.min, T.pocket.max);
+    /* THE FREE RUSHER. On a blitz, now and then a man comes clean: the pocket
+       goes at freeAt seconds (plus up to freeJit), whatever the protection, and
+       the QB has to get it out hot or eat it. Rolled only on a blitz, so a
+       snap against a straight rush rolls exactly what it did before. */
+    if (call.blitz && T.pocket.free && rnd() < T.pocket.free) Tp = Math.min(Tp, T.pocket.freeAt + T.pocket.freeJit * rnd());
 
     /* ---- run blocking: each lineman takes the nearest man in front of him ---- */
     function engage(blk, def, w) { def.engaged = { by: blk, until: w }; blk.engaging = def; }
@@ -697,8 +702,17 @@
           say(t, 'catch', r.y >= 100 ? 'Caught in the end zone.' : 'Caught at ' + spotName(r.y) + '.');
           if (r.y >= 100) { finish(t, 'touchdown', 'catch', r.y); break; }
         } else {
-          var why = sep < 1 ? 'tight' : I.pressure > 0.85 ? 'pressure' : I.dist > 28 ? 'long' : 'drop';
-          say(t, 'incomplete', why === 'tight' ? 'Broken up.' : why === 'long' ? 'Just out of reach.' : why === 'pressure' ? 'Off target under pressure.' : 'Dropped.');
+          /* WHY IT FELL. The same roll says why, so no new dice: where it landed
+             inside the miss. A drop is a catchable ball he did not hold, about
+             catch.drop of all targets (the NFL's rate), fewer for good hands, so
+             it is a share of the miss and rarer the likelier the catch was.
+             Otherwise it was the coverage, the pressure, the distance or the throw. */
+          var u = (roll - pc) / Math.max(1e-6, 1 - pc);
+          var dropShare = Math.min(1, Math.max(0, T.catch.drop - (r.arch.hands || 0) * T.catch.dropHands) / Math.max(1e-6, 1 - pc));
+          var why = u < dropShare ? 'drop' : sep < T.catch.brokenSep ? 'tight' : I.pressure > 0.85 ? 'pressure' : I.dist > 28 ? 'long' : 'off';
+          var missText = { drop: 'Dropped.', tight: 'Broken up.', pressure: 'Off target under pressure.', long: 'Just out of reach.' }[why] ||
+            (u - dropShare < (1 - dropShare) / 2 ? 'Overthrown.' : 'Thrown behind him.');
+          say(t, 'incomplete', missText);
           finish(t, 'incomplete', why, null); ball.drop = { x: I.to.x, y: I.to.y };
         }
       }
@@ -957,7 +971,8 @@
         if (cause === 'tight') return 'Incomplete. The throw went into tight coverage.';
         if (cause === 'long') return 'Incomplete. A ' + Math.round(throwInfo.dist) + ' yard throw, just out of reach.';
         if (cause === 'pressure') return 'Incomplete. He threw it with a man in his face.';
-        return 'Incomplete. It hit him in the hands.';
+        if (cause === 'drop') return 'Incomplete. It hit him in the hands.';
+        return 'Incomplete. The throw missed him.';
       }
       if (win) {
         if (cause === 'oob') return 'Got out of bounds past the marker. ' + need + ' Got ' + shown + '.';
