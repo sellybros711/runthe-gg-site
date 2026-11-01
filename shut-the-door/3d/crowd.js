@@ -1,17 +1,16 @@
-/* The crowd: fans in the seats, one flat figure each, drawn by instancing (a few draw calls for the
- * whole park).
+/* The crowd: fans in the seats, one flat figure each, a few draw calls for the whole park.
  *
  * Nothing is downloaded. At load a small atlas of 16 seated fans is drawn on a canvas (chest up, seen
  * from the front, as from the field): heads, hair, caps, hoods, arms down, crossed, a cup, a phone, a
  * hand up. Its channels are not colours but shading masks, R the shirt, G the skin, B the hair or cap
  * (A the figure), so every fan is coloured in the shader: his shirt from the crowd's palette (mostly the
  * home club's two colours, some of the visitors', the rest plain), his skin and hair from a range, all
- * from a hash of his instance, never Math.random. The same hash gives each his figure and a little life
+ * from a hash of his number, never Math.random. The same hash gives each his figure and a little life
  * (a slow breath and a sway, a lean every few seconds). Some seats are left empty.
  *
- * Phones: one quad a fan, an alpha tested cutout (alpha to coverage under the scene's antialiasing, the
+ * Phones: one quad a fan (one plain mesh a sector, buildCrowd says why), an alpha tested cutout (alpha to coverage under the scene's antialiasing, the
  * edge kept sharp at every mip, so far fans stay fans and never fade out). The park's fans are cut into
- * sectors round the field, each its own instanced mesh, so a camera's frustum skips the ones behind it.
+ * sectors round the field, each its own mesh, so a camera's frustum skips the ones behind it.
  * No shadows cast or taken. The clock is the frame's (onBeforeRender), so a still scene draws nothing new.
  *
  * No logos or club artwork: colours only ([[2026-10-19-shut-the-door-real-uniforms]]).
@@ -154,9 +153,10 @@ function atlas() {
 
 /* The shirts: 16 slots a fan's hash picks from. Mostly the home club (pri, sec), some visitors, plain. */
 const PAL = Array.from({ length: 16 }, () => new THREE.Color(0x808080));
+const HEX = Array.from({ length: 16 }, () => '#808080');   // the same, as sRGB for canvases
 const NEUTRAL = ['#f2f2ee', '#1c1c1e', '#7d8288', '#2b3a55', '#a8332f', '#e9e4d6'];
 function fillPalette(home, away) {
-  const set = (i, hex) => PAL[i].set(hex).convertSRGBToLinear();
+  const set = (i, hex) => { HEX[i] = hex; PAL[i].set(hex).convertSRGBToLinear(); };
   const h1 = home ? home.pri : '#2b3a55', h2 = home ? home.sec : '#f2f2ee';
   for (let i = 0; i < 7; i++) set(i, h1);
   set(7, h2); set(8, h2); set(9, h2);
@@ -164,7 +164,19 @@ function fillPalette(home, away) {
   for (let i = 12; i < 16; i++) set(i, NEUTRAL[i - 12]);
 }
 fillPalette(null, null);
-const U = { time: { value: 0 }, pal: { value: PAL } };
+// the light on the fans: the sun's direction (park.js sets it) and how much of it, and the sky's share.
+// The fans are lit per fan in the vertex shader, never per pixel: a crowd is thousands of small cutouts,
+// and the full lit shader on every one of their pixels cost the broadcast half its frame time again
+const U = { time: { value: 0 }, pal: { value: PAL }, sun: { value: new THREE.Vector3(0.75, 0.6, -0.3).normalize() }, lod: { value: 1000 } };
+/* THE CROWD'S LOD. A fan under LOD.hi device pixels tall (his chest up, FAN_VIS metres) starts to dissolve,
+   and under LOD.lo he is gone (his quad collapsed to a point: no pixels, no cost); the seats under him
+   (ballpark.js) fade in a painted crowd over the same span (crowdImpostor), so far stands stay full.
+   Thousands of quads two or three pixels tall cost a phone's GPU, and SwiftShader, more than the rest of
+   the broadcast frame together. lod: device pixels a metre at a metre (crowd.js sets it each frame). */
+export const LOD = { lo: 4, hi: 7, uniform: U.lod };
+export const FAN_VIS = 0.81;
+/** Where the sun is (world, toward it): park.js, from its key light. */
+export function crowdLight(dir) { U.sun.value.copy(dir).normalize(); }
 
 /** The home club's colours on the crowd (facts: the stage's or the lab's). The home club: the closer's
     when his side is at home (situation.usHome), else the hitters'. Unknown: a neutral crowd. */
@@ -175,94 +187,143 @@ export function crowdClub(facts) {
   fillPalette(usHome ? ours : theirs, usHome ? theirs : ours);
 }
 
-const _clock = { t0: null };
-function material(blur, crop) {
-  const m = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide });
+/** The far crowd painted on a seat texture's layout (64 x 256: 8 seats a row, 32 rows, 8 px a seat): a
+    shirt and a head in about seven seats in ten, from the crowd's own palette. Redrawn when the club
+    changes (ballpark.js setClub). */
+export function crowdImpostor(canvas) {
+  const g = canvas.getContext('2d'), r = rng(71);
+  g.clearRect(0, 0, canvas.width, canvas.height);
+  const skins = ['#c79a7d', '#a8765b', '#7a5038', '#4f3122', '#e0b99c'];
+  for (let row = 0; row < 32; row++) for (let seat = 0; seat < 8; seat++) {
+    if (r() > 0.72) continue;
+    const x = seat * 8, y = row * 8;
+    g.fillStyle = HEX[Math.floor(r() * 16)]; g.fillRect(x + 1, y + 3, 6, 5);
+    g.fillStyle = skins[Math.floor(r() * skins.length)]; g.fillRect(x + 3, y + 1, 2, 2);
+  }
+}
+
+const _clock = { t0: null }, _size = new THREE.Vector2();
+function material(blur, crop, lod) {
+  const m = new THREE.MeshBasicMaterial({ alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.crowdAtlas = { value: atlas() };
     sh.uniforms.crowdT = U.time;
     sh.uniforms.crowdPal = U.pal;
+    sh.uniforms.crowdSun = U.sun;
+    sh.uniforms.crowdLod = U.lod;
+    // Everything a fan is (his figure, his colours, his light) is worked out once a vertex, from his hash,
+    // never once a pixel: the pixel reads the atlas and mixes five colours handed to it
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
         uniform float crowdT;
-        flat varying int vFan; varying vec2 vCell;
-        uint fanHash(uint x) { x ^= x >> 16; x *= 0x7feb352dU; x ^= x >> 15; x *= 0x846ca68bU; x ^= x >> 16; return x; }`)
+        uniform vec3 crowdSun;
+        uniform vec3 crowdPal[16];
+        uniform float crowdLod;
+        attribute vec3 fanCenter; attribute float fanYaw; attribute float fanId;
+        flat varying vec3 vShirt, vSkin, vHair, vCap, vPants; flat varying float vAdd, vFade; varying vec2 vCell;
+        uint fanHash(uint x) { x ^= x >> 16; x *= 0x7feb352dU; x ^= x >> 15; x *= 0x846ca68bU; x ^= x >> 16; return x; }
+        vec3 skinTone(float k) { return mix(mix(vec3(0.62, 0.40, 0.29), vec3(0.32, 0.18, 0.11), smoothstep(0.35, 1.0, k)), vec3(0.80, 0.58, 0.45), 1.0 - smoothstep(0.0, 0.4, k)); }
+        // a little of the haze and the sheen the lit shader gave cloth (it read less saturated)
+        vec3 haze(vec3 c) { return mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), 0.18); }`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
-        uint hh = fanHash(uint(gl_InstanceID) * 2654435761U + 7U);
-        vFan = int(hh & 0x7fffffffU);
+        uint hh = fanHash(uint(fanId + 0.5) * 2654435761U + 7U);
+        vec3 side = vec3(cos(fanYaw), 0.0, -sin(fanYaw)), nW = vec3(sin(fanYaw), 0.0, cos(fanYaw));
+        uint u = hh & 0x7fffffffU;
         float ph = float(hh & 1023U) / 1023.0 * 6.2831;
         float sp = 0.7 + float((hh >> 10) & 255U) / 255.0 * 0.6;
-        float up = clamp(position.y / ${(FAN.h * crop).toFixed(3)} + 0.5, 0.0, 1.0);   // 0 at the quad's foot, 1 at the head
+        float up = uv.y;   // 0 at the quad's foot, 1 at the head
         // a breath, a sway of the shoulders, and now and then a lean in (to see the play, to talk)
         float lean = smoothstep(0.82, 1.0, sin(crowdT * 0.21 * sp + ph * 3.0));
         transformed.y += 0.008 * sin(crowdT * 1.6 * sp + ph) * up;
-        transformed.x += (0.018 * sin(crowdT * 0.55 * sp + ph * 1.7) + 0.05 * lean * (float((hh >> 18) & 1U) * 2.0 - 1.0)) * up * up;
+        transformed += side * (0.018 * sin(crowdT * 0.55 * sp + ph * 1.7) + 0.05 * lean * (float((hh >> 18) & 1U) * 2.0 - 1.0)) * up * up;
         transformed.y -= 0.04 * lean * up;
         int cell = int((hh >> 20) & 15U);
-        vCell = vec2(float(cell % ${COLS}), float(cell / ${COLS}));`);
+        vCell = vec2(float(cell % ${COLS}), float(cell / ${COLS}));
+        // his light: the sky, and the sun on the way he faces (a shade either way: he is not flat)
+        float lit = 0.66 + 0.55 * max(dot(nW, crowdSun), 0.0) + 0.1 * (1.0 - abs(dot(nW, crowdSun)));
+        // his colours: the shirt from the crowd's palette, skin, hair; the B layer is a cap (a club colour),
+        // trousers (denim, khaki, black, grey) or hair, told apart in the atlas by its shade
+        vShirt = haze(crowdPal[int(u & 15U)] * (0.8 + 0.4 * float((u >> 4) & 15U) / 15.0)) * lit;
+        vSkin = haze(skinTone(float((u >> 8) & 255U) / 255.0)) * lit;
+        vHair = haze(mix(vec3(0.02, 0.015, 0.01), vec3(0.28, 0.17, 0.08), float((u >> 16) & 3U) / 3.0)) * 1.6 * lit;
+        vCap = haze(crowdPal[int((u >> 24) & 15U)]) * 2.4 * lit;
+        int pk = int((u >> 28) & 3U);
+        vPants = haze(pk == 0 ? vec3(0.05, 0.08, 0.16) : pk == 1 ? vec3(0.36, 0.30, 0.19) : pk == 2 ? vec3(0.03) : vec3(0.18, 0.19, 0.21)) * 1.6 * lit;
+        vAdd = 0.012 * lit;
+        ${lod ? `// the LOD: his size on screen; gone (a point, nothing drawn) under ${LOD.lo} px, dissolving to ${LOD.hi}
+        vec3 cW = (modelMatrix * vec4(fanCenter, 1.0)).xyz;
+        vFade = smoothstep(${LOD.lo.toFixed(1)}, ${LOD.hi.toFixed(1)}, ${FAN_VIS.toFixed(2)} * crowdLod / max(distance(cameraPosition, cW), 1.0));
+        if (vFade <= 0.0) transformed = fanCenter;` : 'vFade = 1.0;'}`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform sampler2D crowdAtlas;
-        uniform vec3 crowdPal[16];
-        flat varying int vFan; varying vec2 vCell;
-        vec3 skinTone(float k) { return mix(mix(vec3(0.62, 0.40, 0.29), vec3(0.32, 0.18, 0.11), smoothstep(0.35, 1.0, k)), vec3(0.80, 0.58, 0.45), 1.0 - smoothstep(0.0, 0.4, k)); }`)
+        flat varying vec3 vShirt, vSkin, vHair, vCap, vPants; flat varying float vAdd, vFade; varying vec2 vCell;`)
       .replace('#include <map_fragment>', `
         vec2 auv = (vCell + clamp(vec2(vUv.x, (1.0 - vUv.y) * ${crop.toFixed(4)}), 0.015, 0.985)) / vec2(${COLS}.0, ${ROWS}.0);   // the atlas unflipped: v down the canvas
         vec4 tx = texture2D(crowdAtlas, auv, ${blur.toFixed(2)});
         // keep the cutout's edge one pixel wide at every mip (alpha to coverage), so far fans never fade
-        float aa = (tx.a - 0.5) / max(fwidth(tx.a), 1e-4) + 0.5;
-        uint u = uint(vFan);
-        vec3 shirt = crowdPal[int(u & 15U)] * (0.8 + 0.4 * float((u >> 4) & 15U) / 15.0);
-        vec3 skin = skinTone(float((u >> 8) & 255U) / 255.0);
-        vec3 hair = mix(vec3(0.02, 0.015, 0.01), vec3(0.28, 0.17, 0.08), float((u >> 16) & 3U) / 3.0);
-        // B: a cap (drawn at 0.35: a club colour), trousers (0.6: denim, khaki, black, grey) or hair (0.85)
-        vec3 cap = crowdPal[int((u >> 24) & 15U)];
-        int pk = int((u >> 28) & 3U);
-        vec3 pants = pk == 0 ? vec3(0.05, 0.08, 0.16) : pk == 1 ? vec3(0.36, 0.30, 0.19) : pk == 2 ? vec3(0.03) : vec3(0.18, 0.19, 0.21);
-        float bv = tx.b / max(tx.a, 1e-3);
-        vec3 bcol = bv < 0.48 ? cap * 2.4 : bv < 0.74 ? pants * 1.6 : hair * 1.6;
-        vec3 col = shirt * tx.r + skin * tx.g + bcol * tx.b;
-        diffuseColor = vec4(col / max(tx.a, 1e-3), clamp(aa, 0.0, 1.0));`)
+        // (the LOD's dissolve: the cutout's threshold rises as he fades, so he thins away, never a ghost)
+        float aa = (tx.a - mix(1.02, 0.5, vFade)) / max(fwidth(tx.a), 1e-4) + 0.5;
+        float ia = 1.0 / max(tx.a, 1e-3), bv = tx.b * ia;
+        vec3 bcol = bv < 0.48 ? vCap : bv < 0.74 ? vPants : vHair;
+        diffuseColor = vec4((vShirt * tx.r + vSkin * tx.g + bcol * tx.b) * ia + vAdd, clamp(aa, 0.0, 1.0));`)
       .replace('#include <alphatest_fragment>', 'if (diffuseColor.a < 0.02) discard;');
   };
   m.defines = { USE_UV: '' };
-  m.customProgramCacheKey = () => `crowd${blur}/${crop}`;
+  m.customProgramCacheKey = () => `crowd${blur}/${crop}/${lod}`;
   return m;
 }
 
-/** An instanced crowd from seats: spots [{ x, y, z (world, the seat's floor point), yaw (radians, the
+/** A crowd from seats: spots [{ x, y, z (world, the seat's floor point), yaw (radians, the
     way he faces), s (scale) }]. sectors: how many meshes round the field (by the spot's bearing from the
     plate), each culled on its own. blur: the atlas's mip bias (the long lens's soft background behind
-    the plate). chest: the figures from the waist up (where no seat backs stand in front to hide the
+    the plate). lod: far fans dissolve into the seats' painted crowd (LOD). chest: the figures from the waist up (where no seat backs stand in front to hide the
     legs, a whole seated figure reads as standing). lift: metres from the floor to the quad's foot.
     Returns a group. */
-export function buildCrowd(spots, { sectors = 1, blur = 0, lift = 0, chest = false } = {}) {
+export function buildCrowd(spots, { sectors = 1, blur = 0, lift = 0, chest = false, lod = false } = {}) {
   const group = new THREE.Group();
   group.name = 'crowd';
   const crop = chest ? (WAIST + 2) / CH : 1, h = FAN.h * crop;
-  const geo = new THREE.PlaneGeometry(FAN.w, h);
-  const mat = material(blur, crop);
+  const mat = material(blur, crop, lod);
   const by = Array.from({ length: sectors }, () => []);
-  for (const p of spots) {
+  spots.forEach((p, id) => {
     const b = Math.atan2(p.x, p.z);   // bearing round the plate
     const k = Math.min(sectors - 1, Math.max(0, Math.floor(((b + Math.PI) / (2 * Math.PI)) * sectors)));
-    by[k].push(p);
-  }
-  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), v = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
+    by[k].push({ ...p, id });
+  });
+  // ONE PLAIN MESH A SECTOR, not instancing: four fixed corners a fan, with his centre, the way he faces
+  // and his number as attributes (the shader's hash, his motion and his LOD read them). Instanced, every
+  // fan cost the software renderer about 10 microseconds before a pixel (it loops over instances); a mesh
+  // of the same quads costs it nearly nothing, and a phone's GPU the same either way.
   for (const list of by) {
     if (!list.length) continue;
-    const mesh = new THREE.InstancedMesh(geo, mat, list.length);
+    const n = list.length, pos = new Float32Array(n * 12), uv = new Float32Array(n * 8), cen = new Float32Array(n * 12);
+    const yaw = new Float32Array(n * 4), fid = new Float32Array(n * 4), idx = new Uint32Array(n * 6);
     list.forEach((p, i) => {
-      const s = p.s || 1;
-      v.set(p.x, p.y + lift * s + (h * s) / 2, p.z);
-      q.setFromAxisAngle(Y, p.yaw);
-      sc.set(s, s, s);
-      mesh.setMatrixAt(i, m4.compose(v, q, sc));
+      const s = p.s || 1, cx = p.x, cy = p.y + lift * s + (h * s) / 2, cz = p.z;
+      const ax = Math.cos(p.yaw), az = -Math.sin(p.yaw), hw = (FAN.w * s) / 2, hh = (h * s) / 2;
+      const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+      corners.forEach(([u, v], c) => {
+        const o = i * 4 + c;
+        pos.set([cx + ax * hw * u, cy + hh * v, cz + az * hw * u], o * 3);
+        uv.set([(u + 1) / 2, (v + 1) / 2], o * 2);
+        cen.set([cx, cy, cz], o * 3);
+        yaw[o] = p.yaw; fid[o] = p.id;
+      });
+      idx.set([i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3], i * 6);
     });
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingSphere();
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    g.setAttribute('fanCenter', new THREE.BufferAttribute(cen, 3));
+    g.setAttribute('fanYaw', new THREE.BufferAttribute(yaw, 1));
+    g.setAttribute('fanId', new THREE.BufferAttribute(fid, 1));
+    g.setIndex(new THREE.BufferAttribute(idx, 1));
+    g.computeBoundingSphere();
+    const mesh = new THREE.Mesh(g, mat);
     mesh.castShadow = mesh.receiveShadow = false;
-    mesh.onBeforeRender = () => {
+    mesh.onBeforeRender = (renderer, scene, camera) => {
+      U.lod.value = renderer.getDrawingBufferSize(_size).y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
       const now = performance.now() / 1000;
       if (_clock.t0 == null) _clock.t0 = now;
       U.time.value = now - _clock.t0;

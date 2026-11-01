@@ -15,7 +15,7 @@ import { FT } from './units.js?v=1';
 import { assetUrl } from './load.js?v=8';
 import { BASE, MOUND, WALL_H, wallDist } from './inplay-plan.js?v=23';
 import { MOUND_C } from './field.js?v=8';
-import { buildCrowd, crowdClub } from './crowd.js?v=1';
+import { buildCrowd, crowdClub, crowdImpostor, LOD, FAN_VIS } from './crowd.js?v=1';
 import { clubNamed, battingClub } from './clubs.js?v=2';
 export { MOUND_C };
 
@@ -116,10 +116,33 @@ function parkMaterials(renderer, tex) {
   const side = THREE.DoubleSide;
   return {
     wall: new THREE.MeshStandardMaterial({ vertexColors: true, map: padT, roughness: 0.85, side }),
-    seats: new THREE.MeshStandardMaterial({ map: seatT, roughness: 0.8, side }),
+    seats: seatMaterial(seatT, canvasTex(64, 256, () => {}), side),
     lamps: new THREE.MeshBasicMaterial({ map: lampT, side, fog: true }),
     board: new THREE.MeshBasicMaterial({ map: boardT, side, fog: true, color: 0xb8b8b8 }),
   };
+}
+
+/* The seats: the seat rows (tinted the club's colour), and the far crowd painted over them where the fans
+   themselves have dissolved (crowd.js LOD: the same size on screen, the same span). */
+function seatMaterial(seatT, crowdT, side) {
+  const m = new THREE.MeshStandardMaterial({ map: seatT, roughness: 0.8, side });
+  crowdT.premultiplyAlpha = true;   // (its gaps are clear: premultiplied, a far mip is a true mix of fans and seats)
+  m.userData.crowd = crowdT;
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.crowdTex = { value: crowdT };
+    sh.uniforms.crowdLod = LOD.uniform;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vSeatW;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvSeatW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform sampler2D crowdTex;\nuniform float crowdLod;\nvarying vec3 vSeatW;')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        float fanPx = ${FAN_VIS.toFixed(2)} * crowdLod / max(distance(cameraPosition, vSeatW), 1.0);
+        vec4 ct = texture2D(crowdTex, vMapUv);
+        float farK = 1.0 - smoothstep(${LOD.lo.toFixed(1)}, ${LOD.hi.toFixed(1)}, fanPx);
+        diffuseColor.rgb = diffuseColor.rgb * (1.0 - farK * ct.a) + farK * ct.rgb;`);
+  };
+  return m;
 }
 
 /** The scoreboard's face: the innings, the clubs' names (words only), and the count's lights. */
@@ -336,7 +359,7 @@ export function buildBallpark(scene, renderer) {
   const paintClub = (c) => { const col = solidG.getAttribute('color'); for (let i = clubFrom; i < col.count; i++) col.setXYZ(i, c.r, c.g, c.b); col.needsUpdate = true; };
 
   // ---- the crowd, in the lower bowl and the upper deck
-  group.add(buildCrowd(crowdSpots(), { sectors: 6, blur: 0, lift: 0.36, chest: true }));
+  group.add(buildCrowd(crowdSpots(), { sectors: 6, blur: 0, lift: 0.36, chest: true, lod: true }));
 
   // the home club's colours on the park (the upper deck's fascia, the dugouts' lip, the seats) and the
   // names on the scoreboard: the stage's facts (crowd.js crowdClub has the rule)
@@ -347,6 +370,7 @@ export function buildBallpark(scene, renderer) {
     mats.seats.color.copy(club.pri).lerp(new THREE.Color(0x9aa0a8), 0.35);
     drawBoard(mats.board.map, away, home);
     crowdClub(facts);
+    crowdImpostor(mats.seats.userData.crowd.image); mats.seats.userData.crowd.needsUpdate = true;
   };
   group.userData.setClub(null);
   return group;
