@@ -17,11 +17,11 @@
  * every call and grade stays as it is, and the zone drawn is the one the engine plays.
  * Then build_schedule.mjs to move the pack's v, and SCHEDULE_V in api.js.
  *
- * NOT YET RUN ON THE PACKS (2026-11-01). Written, it makes one case of the 3D contact check fail
- * (lab/pipeline/check-contact.mjs, std-2007-ws4-papelbon, Matt Holliday, 6 ft 4, zone 3.56/1.66: a
- * low and away line drive at x -0.75, zn -0.35 is met 0.032 m into the wood, past the 0.03 limit;
- * the aim's solve ends 0.028 m off). That is the swing solve's to fix (people.js aimSwing), so the
- * packs keep the league zone for these 36 hitters until it is.
+ * Run on the packs 2026-11-01. Held back a day before: written, it made one case of the 3D contact
+ * check fail (lab/pipeline/check-contact.mjs, std-2007-ws4-papelbon, Matt Holliday, 6 ft 4, zone
+ * 3.56/1.66: a low and away line drive at x -0.75, zn -0.35 met 0.032 m into the wood, past the
+ * 0.03 limit). The swing's aim had stalled 0.028 m off the ball (people.js aimAt: a damped step was
+ * taken from no aim, not from where the solve was); with that fixed the case ends 0.001 m off.
  */
 import fs from 'node:fs';
 import path from 'node:path';

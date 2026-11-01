@@ -4,7 +4,8 @@
  * The owner's call (2026-10-31, vault decision std-hitter-looks): a hitter looks like the real
  * player he is in the parts that are data, and the face stays generic.
  *  - number: the jersey number he wore in that game, from MLB Stats API (looks-data.js, written by
- *    pipeline/fetch_looks.mjs from the boxscore, or the team's roster on that date).
+ *    pipeline/fetch_looks.mjs from the boxscore, or the team's roster on that date), and numberSrc
+ *    ('box' or 'roster') when it is; without it the number is the hash's.
  *  - heightIn, weightLb: his listed height and weight (MLB Stats API), so his build is data.
  *  - tone and beard: set by hand from public photos of him in that season, each with its source
  *    note in looks-data.js. No photo is used or stored, only the values.
@@ -43,7 +44,8 @@ export function look(id, game) {
   }
   const g = game && LOOKS.games[game] && LOOKS.games[game].hitters[id];
   if (g) {
-    if (g.number != null) out.number = String(g.number);
+    // (numberSrc says the number is his real one: the scene draws a front number only then)
+    if (g.number != null) { out.number = String(g.number); out.numberSrc = g.numberSrc; }
     if (g.beard in BEARD) out.beard = BEARD[g.beard];
   }
   return out;

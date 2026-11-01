@@ -6,9 +6,9 @@
  * are our own posing laid over each capture's idle, and the umpire's strike call is blended in.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=7';
+import * as M from './materials.js?v=8';
 import { battingClub, clubNamed } from './clubs.js?v=2';
-import { capFor } from './uniforms.js?v=1';
+import { capFor, frontFor } from './uniforms.js?v=2';
 import * as G from './gear3d.js?v=4';
 import * as HG from './headgear.js?v=5';
 import { measureHead, wear, wornShade } from './headgear.js?v=5';
@@ -83,7 +83,8 @@ const UNIFORM = new Set(['uniform', 'socks', 'gloves', 'undershirt', 'belt', 'nu
 /* Team kits. The closer's side (the catcher) wears the pack's club colours (pitcher.teamColors). The
    hitters wear their own club's real colours (clubs.js): the other club of the scenario's title, or of
    the series. Home whites, road greys: the home side is the pack's (usHome). The chest carries the
-   club's nickname in words, and nothing else: no logos, no crests, no wordmark artwork. */
+   club's nickname in words and, where the club's real jersey carried one that day (uniforms.js
+   FRONT), his number under it, and nothing else: no logos, no crests, no wordmark artwork. */
 const WHITE = '#f2f1ec', GREY = '#a3a6aa';
 const FALLBACK = ['#1b2a4a', '#c4ced4'];          // a scenario that names no second club (no words)
 const hsl = (c) => new THREE.Color(c).getHSL({}, THREE.SRGBColorSpace);   // perceptual: the lightness is sRGB's
@@ -115,8 +116,11 @@ export function kitFor(facts, side) {
   if (side !== 'us' && alike(trim, ourTrim) && !alike(other, ourTrim) && contrast(other, home ? WHITE : GREY) >= 1.8) [trim, other] = [other, trim];
   const C = (x) => new THREE.Color(x);
   const words = club && club.nick ? (club.as || club.nick).toUpperCase() : null;
+  // (only with the words: a side with no club named wears a neutral kit, with nothing on the chest)
+  const fr = words ? frontFor(facts.scenarioId, side) : null;
+  const front = fr ? { at: fr.at, color: C(fr.color || trim), outline: fr.outline ? C(fr.outline) : null } : null;
   return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim), cap: C(capFor(facts.scenarioId, side) || trim),
-    undershirt: C(trim), belt: C('#111111'), glove: C(lum(other) > 0.85 ? '#f2f2f2' : other), gloveAccent: C(trim), home, words };
+    undershirt: C(trim), belt: C('#111111'), glove: C(lum(other) > 0.85 ? '#f2f2f2' : other), gloveAccent: C(trim), home, words, front };
 }
 
 // the nameplate on the jersey's front, as shares of the jersey's own box (x across, y up from the hem):
@@ -130,9 +134,21 @@ function wordBox(geo) {
   const cx = b.min.x + (b.max.x - b.min.x) * WORD_AT.x, cy = b.min.y + (b.max.y - b.min.y) * WORD_AT.y;
   return [cx - W / 2, cy - H / 2, W, H];
 }
+// the front number, as shares of the same box: its figures FRONT_AT.h of the box's height (5 in, the
+// Dodgers' own numerals, on a 6 ft hitter, scaling with him as the kit does), its centre FRONT_AT.dx
+// of the box's width off the jersey's middle to the wearer's side, the top of the figures about 4 cm
+// under the words. The model faces +z in the bind pose, so the wearer's left is +x.
+const FRONT_AT = { dx: 0.1, y: 0.47, h: 0.17 };
+function frontBox(geo, at) {
+  if (!geo.boundingBox) geo.computeBoundingBox();
+  const b = geo.boundingBox, bw = b.max.x - b.min.x, bh = b.max.y - b.min.y;
+  const H = bh * FRONT_AT.h, W = H * M.FRONT_ASPECT;
+  const cx = b.min.x + bw * (0.5 + (at === 'R' ? -1 : 1) * FRONT_AT.dx), cy = b.min.y + bh * FRONT_AT.y;
+  return [cx - W / 2, cy - H / 2, W, H];
+}
 
 /** Put a kit on a person: the uniform's trim mask coloured, the club's name on the jersey's front, the
-    number drawn on the back. */
+    number drawn on the back, and on the front too where the club wore it there (kit.front). */
 export function dress(p, kit, numberText, weave) {
   p.kit = kit;
   for (const o of p.meshes) {
@@ -145,13 +161,17 @@ export function dress(p, kit, numberText, weave) {
     const was = o.material;
     if (was && was.userData.dressed) {
       if (was.name === 'number' && was.map) was.map.dispose();
+      if (was.userData.frontTex) was.userData.frontTex.dispose();
       was.dispose();
     }
     if (part === 'uniform') {
       // the pants are a 'uniform' too: only the jersey (its node is named so) carries the words
       const jersey = !!(o.parent && /jersey/i.test(o.parent.name));
       const words = jersey && kit.words ? { text: kit.words, color: kit.trim, box: wordBox(o.geometry) } : null;
-      o.material = M.uniform(src, { base: kit.base, trim: kit.trim, stripe: kit.stripe, slot: kit.base }, { weave, words });
+      const front = jersey && kit.front && numberText
+        ? { tex: M.frontNumberTexture(String(numberText), !!kit.front.outline), box: frontBox(o.geometry, kit.front.at), color: kit.front.color, outline: kit.front.outline }
+        : null;
+      o.material = M.uniform(src, { base: kit.base, trim: kit.trim, stripe: kit.stripe, slot: kit.base }, { weave, words, front });
     }
     else if (part === 'number') { o.material = M.numberMaterial(numberText, kit.number, kit.base, src); o.visible = !!numberText; }
     else if (part === 'socks') o.material = M.uniform(src, { base: kit.sock, trim: kit.sock, stripe: kit.sock, slot: kit.slot }, { weave });
@@ -564,7 +584,10 @@ export class People {
     b.root.position.set(0, 0, 0); b.root.rotation.set(0, 0, 0); b.root.scale.setScalar(1);
     b.root.updateMatrixWorld(true);
     b.chain = null; b.feetSwing = null; b.feetTake = null; b.footGeom = null; b.clavBind = null;
-    dress(b, kitFor(this.facts, 'them'), f.number ?? '24', this.knit);
+    // (the front number only with his real number: a number the hash made up stays on his back)
+    const kit = kitFor(this.facts, 'them');
+    if (!f.numberSrc) kit.front = null;
+    dress(b, kit, f.number ?? '24', this.knit);
     this.look(b, f);
     this.setupBatter(b);
     if (this.umpire) this.placeUmpire(this.umpire);
@@ -606,8 +629,10 @@ export class People {
   }
 
   /* ---------------------------------------------------------------- batter */
-  /** His look from the pack's facts (a hash of his id: skin tone and facial hair, never a
-      likeness): the darker skin map mixed in, the beard mask darkened. */
+  /** His look from the pack's facts (looks.js): the skin tone set for the real player where known,
+      else a hash of his id, and the facial hair the same way. The face itself is the one generic
+      head (the vault decision 2026-10-31-shut-the-door-hitter-looks). The darker skin map mixed in,
+      the beard mask darkened. */
   look(p, f) {
     const skin = p.meshes.find((m) => m.material.name === 'skin');
     if (!skin || !skin.material.userData.u) return;
@@ -1162,7 +1187,12 @@ export class People {
       }
       J.push(cur.axis.clone().multiplyScalar(-S[9] * IN));
     };
-    let cur, fresh = false;
+    // local: once a step from a freshly measured model fails, every step is taken from where the
+    // solve is (dq from p) instead of from no aim: the damping then shortens the step toward p, as a
+    // trust region should. From no aim, a damped step only shrank toward no aim, away from a p that
+    // was already near the ball, and the solve stalled there (a tall hitter's low, away pitch ended
+    // 3 cm off the ball and so 3 cm into the wood)
+    let cur, fresh = false, local = false;
     const solve = () => {
       set(p);
       cur = errAt(y0 + p[9]);
@@ -1172,16 +1202,16 @@ export class People {
         // linear model says puts the bat on the ball, each kept within its range
         // (an active set: a parameter the solution pushes past its range is held at the limit and the
         // rest solved again, so the others take up what it cannot)
-        const qv = p.map((v, i) => v / S[i]), fixed = new Array(N).fill(null);
+        const qv = p.map((v, i) => v / S[i]), fixed = new Array(N).fill(null), from = local ? qv : qv.map(() => 0);
         let want = null;
         for (let pass = 0; pass < 4; pass++) {
           const r = cur.e.clone();
-          J.forEach((c, i) => r.addScaledVector(c, (fixed[i] != null ? fixed[i] / S[i] : 0) - qv[i]));
+          J.forEach((c, i) => r.addScaledVector(c, (fixed[i] != null ? fixed[i] / S[i] : from[i]) - qv[i]));
           const e = M.set(0, 0, 0, 0, 0, 0, 0, 0, 0).elements;
           J.forEach((c, j) => { if (fixed[j] != null) return; const v = [c.x, c.y, c.z]; for (let i = 0; i < 3; i++) for (let k = 0; k < 3; k++) e[k * 3 + i] += v[i] * v[k]; });
           e[0] += mu; e[4] += mu; e[8] += mu;
           const y = r.applyMatrix3(M.invert());
-          const raw = p.map((_, i) => (fixed[i] != null ? fixed[i] : -J[i].dot(y) * S[i]));
+          const raw = p.map((_, i) => (fixed[i] != null ? fixed[i] : (from[i] - J[i].dot(y)) * S[i]));
           let more = false;
           want = raw.map((v, i) => {
             const c = THREE.MathUtils.clamp(v, LO[i], HI[i]);
@@ -1207,7 +1237,8 @@ export class People {
           mu = Math.max(1e-5, mu / 3);
           fresh = false;
         } else if (!fresh) J = null;            // (a stale model: measure it again)
-        else mu *= 8;                            // (a fresh one: a shorter, more cautious step)
+        else if (!local) local = true;           // (a fresh one: a step from here instead)
+        else mu *= 8;                            // (and then a shorter, more cautious one)
       }
     };
     solve();
