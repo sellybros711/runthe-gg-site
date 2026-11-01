@@ -1,14 +1,18 @@
-/* Behind home plate: the padded backstop wall, the net, and the empty seats rising behind it.
+/* Behind home plate: the padded backstop wall, the net, and the seats rising behind it, with fans in them.
  *
  * Only a narrow wedge behind the plate is ever in the pitcher's view, so the stands are an arc of
- * about 50 degrees. The seats are empty: the owner's reference shows that empty seats read as
- * real, and a repeated crowd does not.
+ * about 50 degrees. The seats were empty until 2026-10-31 (an earlier reference showed empty seats
+ * reading as real where a repeated crowd did not); the owner then asked for a crowd. So the crowd is
+ * never one figure repeated: crowd.js gives every fan his own figure, shirt, skin and hair from a hash,
+ * a seat in about seven is empty, and seen down the pitcher's long lens the fans are drawn a little
+ * soft (the atlas a mip coarser), as a real long lens holds the hitter sharp and the stands behind not.
  */
 import * as THREE from 'three';
 import { FT } from './units.js?v=1';
 import { BACKSTOP_FT } from './field.js?v=8';
 import { assetUrl } from './load.js?v=8';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { buildCrowd } from './crowd.js?v=1';
 
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
@@ -109,6 +113,15 @@ export function buildStands(scene, tex, renderer) {
   });
   seatMesh.receiveShadow = true;
   group.add(seatMesh);
+
+  // ---- the fans: in about six seats in seven (their own stream, so the seats keep their shades)
+  const rf = rng(41), fans = [];
+  for (const it of seats) {
+    if (rf() < 0.15) continue;
+    const a = it.a + (rf() - 0.5) * 0.1 / it.rad, rr = it.rad + (rf() - 0.5) * 0.08;   // not quite in the middle of his seat
+    fans.push({ x: Math.sin(a) * rr, y: it.y, z: -Math.cos(a) * rr, yaw: -a + (rf() - 0.5) * 0.3, s: 0.9 + rf() * 0.2 });
+  }
+  group.add(buildCrowd(fans, { sectors: 1, blur: 1.5, lift: 0.3 }));
   group.userData.tick = () => {};
   return group;
 }

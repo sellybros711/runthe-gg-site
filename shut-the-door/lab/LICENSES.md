@@ -53,6 +53,12 @@ Every one is resized to 512 px and re-encoded as WebP.
 The layout of the field (dirt circle, chalk, damp, scuffs), the bat, the helmets, caps, masks, the
 mitt, shin guards, chest protector and the ball are modelled in code (`field.js`, `gear3d.js`).
 
+The ballpark round the field and its crowd are our own, made in code at load, nothing downloaded
+(2026-10-31): the decks, suites, dugouts, bullpen, batter's eye, scoreboard and light towers
+(`ballpark.js`, its seat, padding, lamp and scoreboard faces drawn on canvases), and the fans
+(`crowd.js`: an atlas of 16 seated figures drawn on a canvas, coloured in the shader). No logos or
+club artwork: the clubs' colours, and their nicknames in plain type on the scoreboard.
+
 ## The people (`assets/batter.glb`, `catcher.glb`, `umpire.glb`, made by `pipeline/build_people.py`, packed by `pipeline/pack.sh`)
 
 ### Bodies, clothes and hair: MakeHuman, CC0
