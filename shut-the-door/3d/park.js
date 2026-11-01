@@ -3,7 +3,7 @@
  */
 import * as THREE from 'three';
 import { buildField } from './field.js?v=7';
-import { buildStands } from './stands.js?v=8';
+import { buildStands } from './stands.js?v=9';
 import { P, FT, smooth } from './units.js?v=1';
 
 export function makeRenderer(canvas, maxDpr = 2) {

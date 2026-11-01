@@ -3165,14 +3165,14 @@
       "sha": "613ee8a571dd3580"
     },
     "3d/boot.js": {
-      "v": "76",
-      "sha": "6a37163712be015a"
+      "v": "77",
+      "sha": "2f6dcf9b4a38f2f8"
     }
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "72",
-      "sha": "147fcd085b9455ce"
+      "v": "73",
+      "sha": "26958425b02590a4"
     }
   },
   "soccer/index.html": {
@@ -3295,8 +3295,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "80",
-      "sha": "96057032fe50526b"
+      "v": "81",
+      "sha": "d5370273e1077e7f"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3349,8 +3349,8 @@
       "sha": "6740e4ce374039b0"
     },
     "park.js": {
-      "v": "6",
-      "sha": "2109e489b22e1f70"
+      "v": "7",
+      "sha": "b4a2d1146ca250e1"
     },
     "people.js": {
       "v": "42",
@@ -3373,16 +3373,16 @@
       "sha": "e771dbef0b67350e"
     },
     "inplay.js": {
-      "v": "38",
-      "sha": "205a3066fbb3bc52"
+      "v": "39",
+      "sha": "83dfc3c2a427b975"
     },
     "preview.js": {
       "v": "10",
       "sha": "33685a59bf0a3640"
     },
     "firstperson.js": {
-      "v": "9",
-      "sha": "29f99940fa8f7ae9"
+      "v": "10",
+      "sha": "30b18b7f98cd50da"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3397,8 +3397,8 @@
       "sha": "dd4417fa8ea9af2f"
     },
     "stands.js": {
-      "v": "8",
-      "sha": "9e7577d2dcb9eb00"
+      "v": "9",
+      "sha": "e290b707141e7fdc"
     },
     "units.js": {
       "v": "1",
@@ -3511,8 +3511,8 @@
       "sha": "e771dbef0b67350e"
     },
     "park.js": {
-      "v": "6",
-      "sha": "2109e489b22e1f70"
+      "v": "7",
+      "sha": "b4a2d1146ca250e1"
     },
     "gear3d.js": {
       "v": "4",

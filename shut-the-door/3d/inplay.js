@@ -298,9 +298,10 @@ export class InPlay {
     if (pt.overlays) for (const o of [pt.tracer, pt.aimRing, pt.hitDot]) o.visible = !broadcast;
     pp.catcher.root.visible = !(broadcast && A.usesCatcher);
     this.park.visible = broadcast;
-    // (the backstop net's three poles stand between the high home camera and the field: on television a
-    // net's cables are lost in the distance, so the broadcast leaves them out)
-    if (!this.netPoles) this.netPoles = this.scene.getObjectsByProperty('name', 'netPole');
+    // (the backstop net and its three poles stand between the high home camera and the field: on
+    // television the camera shoots over the net and its cables are lost in the distance, so the
+    // broadcast leaves them out. From up there the net read as a grey arc across the bottom third.)
+    if (!this.netPoles) this.netPoles = [...this.scene.getObjectsByProperty('name', 'netPole'), ...this.scene.getObjectsByProperty('name', 'backstopNet')];
     for (const o of this.netPoles) o.visible = !broadcast;
     // the sun's shadow map covers the plate only: in the broadcast it is not drawn again each frame
     this.renderer.shadowMap.autoUpdate = !broadcast;
