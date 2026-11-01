@@ -32,8 +32,8 @@ export const LOOKS = {
    "mlbam": 115223,
    "heightIn": 75,
    "weightLb": 235,
-   "tone": 1,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.85,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "116338": {
    "name": "Torii Hunter",
@@ -112,8 +112,8 @@ export const LOOKS = {
    "mlbam": 136860,
    "heightIn": 73,
    "weightLb": 215,
-   "tone": 0.629,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.35,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "150212": {
    "name": "Michael Cuddyer",
@@ -128,8 +128,8 @@ export const LOOKS = {
    "mlbam": 150289,
    "heightIn": 74,
    "weightLb": 225,
-   "tone": 0.553,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.35,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "150439": {
    "name": "Gary Matthews Jr.",
@@ -152,32 +152,32 @@ export const LOOKS = {
    "mlbam": 204020,
    "heightIn": 73,
    "weightLb": 220,
-   "tone": 0.692,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.08,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "276545": {
    "name": "Michael Young",
    "mlbam": 276545,
    "heightIn": 73,
    "weightLb": 200,
-   "tone": 0.63,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.15,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "285078": {
    "name": "Josh Hamilton",
    "mlbam": 285078,
    "heightIn": 76,
    "weightLb": 240,
-   "tone": 0.341,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.08,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "346798": {
    "name": "Kyle Lohse",
    "mlbam": 346798,
    "heightIn": 74,
    "weightLb": 215,
-   "tone": 0.479,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.3,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "400085": {
    "name": "Ichiro Suzuki",
@@ -232,8 +232,8 @@ export const LOOKS = {
    "mlbam": 408042,
    "heightIn": 73,
    "weightLb": 230,
-   "tone": 0.479,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.15,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "408210": {
    "name": "Chone Figgins",
@@ -272,16 +272,16 @@ export const LOOKS = {
    "mlbam": 424726,
    "heightIn": 74,
    "weightLb": 210,
-   "tone": 0.908,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.05,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "424825": {
    "name": "Coco Crisp",
    "mlbam": 424825,
    "heightIn": 70,
    "weightLb": 185,
-   "tone": 0.294,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.45,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "425446": {
    "name": "Aaron Miles",
@@ -296,8 +296,8 @@ export const LOOKS = {
    "mlbam": 425509,
    "heightIn": 74,
    "weightLb": 225,
-   "tone": 0.473,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.35,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "425834": {
    "name": "B.J. Upton",
@@ -360,8 +360,8 @@ export const LOOKS = {
    "mlbam": 430603,
    "heightIn": 76,
    "weightLb": 215,
-   "tone": 0.52,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.08,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "430832": {
    "name": "José Bautista",
@@ -400,8 +400,8 @@ export const LOOKS = {
    "mlbam": 434442,
    "heightIn": 72,
    "weightLb": 180,
-   "tone": 0.474,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.12,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "434605": {
    "name": "Wladimir Balentien",
@@ -480,16 +480,16 @@ export const LOOKS = {
    "mlbam": 435559,
    "heightIn": 71,
    "weightLb": 210,
-   "tone": 0.418,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.25,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "443558": {
    "name": "Nelson Cruz",
    "mlbam": 443558,
    "heightIn": 74,
    "weightLb": 230,
-   "tone": 0.421,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.7,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "444135": {
    "name": "Ryan Theriot",
@@ -576,16 +576,16 @@ export const LOOKS = {
    "mlbam": 456715,
    "heightIn": 74,
    "weightLb": 214,
-   "tone": 0.458,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.75,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "457706": {
    "name": "Austin Jackson",
    "mlbam": 457706,
    "heightIn": 73,
    "weightLb": 198,
-   "tone": 0.499,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.7,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "458036": {
    "name": "Nick Stavinoha",
@@ -688,8 +688,8 @@ export const LOOKS = {
    "mlbam": 476633,
    "heightIn": 73,
    "weightLb": 220,
-   "tone": 0.332,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.1,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "476704": {
    "name": "Jed Lowrie",
@@ -720,8 +720,8 @@ export const LOOKS = {
    "mlbam": 493114,
    "heightIn": 69,
    "weightLb": 180,
-   "tone": 0.384,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.15,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "493127": {
    "name": "Akinori Iwamura",
@@ -736,16 +736,16 @@ export const LOOKS = {
    "mlbam": 493329,
    "heightIn": 72,
    "weightLb": 215,
-   "tone": 0.53,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.35,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "499624": {
    "name": "Chris Colabello",
    "mlbam": 499624,
    "heightIn": 76,
    "weightLb": 210,
-   "tone": 0.574,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.15,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "501800": {
    "name": "Allen Craig",
@@ -896,8 +896,8 @@ export const LOOKS = {
    "mlbam": 521692,
    "heightIn": 74,
    "weightLb": 255,
-   "tone": 0.308,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.45,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "543108": {
    "name": "Andy Dirks",
@@ -1032,8 +1032,8 @@ export const LOOKS = {
    "mlbam": 592206,
    "heightIn": 75,
    "weightLb": 203,
-   "tone": 0.447,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.2,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "592450": {
    "name": "Aaron Judge",
@@ -1096,8 +1096,8 @@ export const LOOKS = {
    "mlbam": 605141,
    "heightIn": 69,
    "weightLb": 180,
-   "tone": 0.363,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.55,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "607208": {
    "name": "Trea Turner",
@@ -1216,8 +1216,8 @@ export const LOOKS = {
    "mlbam": 656555,
    "heightIn": 75,
    "weightLb": 241,
-   "tone": 0.34,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.1,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "656941": {
    "name": "Kyle Schwarber",
@@ -1248,8 +1248,8 @@ export const LOOKS = {
    "mlbam": 663609,
    "heightIn": 76,
    "weightLb": 285,
-   "tone": 0.349,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.08,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "663647": {
    "name": "Ke'Bryan Hayes",
@@ -1328,8 +1328,8 @@ export const LOOKS = {
    "mlbam": 665750,
    "heightIn": 74,
    "weightLb": 210,
-   "tone": 0.362,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.55,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "665862": {
    "name": "Jazz Chisholm Jr.",
@@ -1360,8 +1360,8 @@ export const LOOKS = {
    "mlbam": 666181,
    "heightIn": 76,
    "weightLb": 230,
-   "tone": 0.451,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.65,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "666182": {
    "name": "Bo Bichette",
@@ -1600,8 +1600,8 @@ export const LOOKS = {
    "mlbam": 121919,
    "heightIn": 74,
    "weightLb": 220,
-   "tone": 0.376,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.1,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:hamij001": {
    "name": "Jeff Hamilton",
@@ -1632,8 +1632,8 @@ export const LOOKS = {
    "mlbam": 121732,
    "heightIn": 71,
    "weightLb": 185,
-   "tone": 0.75,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.08,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:stubf001": {
    "name": "Franklin Stubbs",
@@ -1672,8 +1672,8 @@ export const LOOKS = {
    "mlbam": 115007,
    "heightIn": 74,
    "weightLb": 200,
-   "tone": 0.813,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.05,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:milld002": {
    "name": "Damian Miller",
@@ -1688,16 +1688,16 @@ export const LOOKS = {
    "mlbam": 110826,
    "heightIn": 72,
    "weightLb": 185,
-   "tone": 0.688,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.05,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:womat001": {
    "name": "Tony Womack",
    "mlbam": 124523,
    "heightIn": 69,
    "weightLb": 170,
-   "tone": 0.569,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.85,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:counc001": {
    "name": "Craig Counsell",
@@ -1712,24 +1712,24 @@ export const LOOKS = {
    "mlbam": 114935,
    "heightIn": 74,
    "weightLb": 210,
-   "tone": 0,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.05,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:willm003": {
    "name": "Matt Williams",
    "mlbam": 124326,
    "heightIn": 74,
    "weightLb": 225,
-   "tone": 0.675,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.08,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:finls001": {
    "name": "Steve Finley",
    "mlbam": 114135,
    "heightIn": 74,
    "weightLb": 195,
-   "tone": 0.771,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.1,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:bautd001": {
    "name": "Danny Bautista",
@@ -1768,8 +1768,8 @@ export const LOOKS = {
    "mlbam": 113744,
    "heightIn": 73,
    "weightLb": 210,
-   "tone": 0.341,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.1,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:pujoa001": {
    "name": "Albert Pujols",
@@ -1784,24 +1784,24 @@ export const LOOKS = {
    "mlbam": 121673,
    "heightIn": 73,
    "weightLb": 200,
-   "tone": 0.971,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.85,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:walkl001": {
    "name": "Larry Walker",
    "mlbam": 123833,
    "heightIn": 75,
    "weightLb": 235,
-   "tone": 0.611,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.1,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:grudm001": {
    "name": "Mark Grudzielanek",
    "mlbam": 115210,
    "heightIn": 73,
    "weightLb": 195,
-   "tone": 1,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.05,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:moliy001": {
    "name": "Yadier Molina",
@@ -1824,8 +1824,8 @@ export const LOOKS = {
    "mlbam": 425547,
    "heightIn": 74,
    "weightLb": 190,
-   "tone": 0.455,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.08,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:torry001": {
    "name": "Yorvit Torrealba",
@@ -1872,8 +1872,8 @@ export const LOOKS = {
    "mlbam": 115732,
    "heightIn": 74,
    "weightLb": 220,
-   "tone": 0.464,
-   "toneSrc": "MLB headshot (img.mlbstatic.com), sampled 2026-11-01"
+   "tone": 0.1,
+   "toneSrc": "set by hand from MLB headshot"
   },
   "retro:atkig001": {
    "name": "Garrett Atkins",
