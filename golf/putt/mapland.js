@@ -360,6 +360,10 @@ WORLD.moon=function(P,th,seed){
   // grey regolith pocked with craters, the base's domes up top, the lander, and the launch pad with its rocket by the trail's end. No trees.
   // the dark seas: broad smooth patches of darker ground, the way the moon looks from earth
   for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var mr=fbm(x*.025,y*.025,seed+31); if(mr>.58&&P.pathD(x,y)>=7)P.set(x,y,hex(mr>.66?'#6a6872':'#7a7882')); }
+  // the trail crosses massive craters: four big bowls sat on the path, the walk running down through each (the owner, 2026-11-01)
+  [.16,.4,.64,.87].forEach(function(f,i){ var yy=Math.round(P.h*f), px=P.pathX(yy); if(px==null)return; var R=16+hash(i,9,seed)*8, X=px+(hash(i,8,seed)-.5)*R*.6;
+    P.ell(X,yy,R*1.25,R,function(a,b,dx,dy){ var d=Math.hypot(dx,dy); P.set(a,b,hex(d>.84?(dx+dy<0?'#c8c6ce':'#6e6c76'):d>.62?(dx+dy<0?'#5e5c66':'#b6b4bc'):(hash(a,b,seed+5)<.06?'#6a6872':'#7e7c86'))); });
+    for(var q=0;q<10;q++){ var an=q/10*6.283+hash(i,q,seed)*.5, bx=X+Math.cos(an)*R*1.35, by=yy+Math.sin(an)*R*1.08; P.ell(bx+.6,by+1,1.5,.6,function(a,b){ P.shade(a,b,.55); }); P.ell(bx,by,1.3,1,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.3?'#c8c6ce':'#5e5c66')); }); } });
   var cr=[]; for(var k=0;k<30;k++){ var r=2.5+hash(k,3,seed)*9, q=spot(P,P.w*(.08+.84*hash(k,1,seed)),P.h*hash(k,2,seed),r*2,r*2,4,tk); if(q)cr.push([q[0]+r,q[1]+r,r]); }
   cr.forEach(function(c){ P.ell(c[0],c[1],c[2],c[2]*.8,function(a,b,dx,dy){ var d=Math.hypot(dx,dy); P.set(a,b,hex(d>.8?(dx+dy<0?'#6e6c76':'#c8c6ce'):(dx+dy<0?'#c0bec6':'#7e7c86'))); }); });
   var dm=spot(P,P.w*.38,P.h*.06,26,12,9,tk); if(dm){ [[6,6,6],[18,5,5]].forEach(function(o){ P.ell(dm[0]+o[0]+1,dm[1]+o[1]+2,o[2],o[2]*.6,function(a,b){ P.shade(a,b,.6); });
