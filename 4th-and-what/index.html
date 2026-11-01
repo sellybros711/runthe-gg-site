@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 <header class="topbar">
@@ -47,23 +47,21 @@
 
   <!-- HOME: where to go, to play or to build -->
   <section class="view home" id="vHome" hidden>
-    <div class="hero">
-      <div class="herotext">
-        <h1>4th and what?</h1>
-        <p class="lede">Draw a play. Beat the defense.</p>
-        <div class="heroacts">
-          <button type="button" class="btn gold big" data-go="play">Play <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button>
-          <button type="button" class="btn big" data-go="studio">Build</button>
-        </div>
-      </div>
-      <div class="herofield fieldwrap"><canvas id="hField" aria-hidden="true"></canvas><p class="heroname" id="hName"></p></div>
+    <div class="banner">
+      <canvas id="hField" aria-hidden="true"></canvas>
+      <h1 class="bannerlogo"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></h1>
+      <p class="heroname" id="hName"></p>
     </div>
-    <div class="tiles">
-      <button type="button" class="tile" data-go="books"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg><b>Playbooks</b></button>
-      <button type="button" class="tile" data-go="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-4 9 4-9 4zM7 10v5c3 2 7 2 10 0v-5"/></svg><b>Learn</b></button>
-      <button type="button" class="tile" data-go="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>Test</b></button>
-      <button type="button" class="tile" data-go="print"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg><b>Print</b></button>
+    <div class="modes">
+      <button type="button" class="mode play" data-go="play"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></button>
+      <button type="button" class="mode book" data-go="books"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></button>
     </div>
+    <footer class="legal">
+      <img src="/assets/wm-runthegg.png?v=1" alt="RunThe.GG" width="1200" height="171" loading="lazy">
+      <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a href="/about.html" target="_blank" rel="noopener">About</a><span>&middot;</span><a href="/contact.html" target="_blank" rel="noopener">Contact</a><span>&middot;</span><a href="/" target="_blank" rel="noopener">More games</a></p>
+      <p class="fund"><span>Free to play, funded by players.</span><a class="kofi" href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi">&#9829; Support us</a></p>
+      <p class="src">An unofficial fan project, not affiliated with or endorsed by the NFL or any team.</p>
+    </footer>
   </section>
 
   <!-- PLAY: the game. 4th and what? Pick it, draw it (the Studio in game mode), snap it. -->
@@ -363,7 +361,7 @@
 <script src="share.js?v=1"></script>
 <script src="play.js?v=1"></script>
 <script src="app.js?v=3"></script>
-<script src="home.js?v=3"></script>
+<script src="home.js?v=4"></script>
 <script src="studio.js?v=2"></script>
 <script src="game.js?v=3"></script>
 <script src="flow.js?v=1"></script>
