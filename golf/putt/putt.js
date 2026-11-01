@@ -1701,9 +1701,9 @@ var LEVELS = [
     moon(H, -3, -21, 1.3, 4.6, 24); moon(H, 3, -33, 1.3, 4.6, 22); bumps(H, T, [[4, -8, 0.55], [-4.5, -9, 0.55], [4.5, -22, 0.5]]);
     zoneR(H, M.MUD, 3.5, -40, 7, -42); zoneC(H, M.MUD, -5, -33, 1.1); bowl(H, -3, -38, 1.5, 0.12); return H; } },
   // Comet Bridges: two bridges over deep space on their own clocks, a moon after each.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [2, -36]); zoneR(H, M.WATER, -6, -12, 6, -15); drawb(H, -1.6, -12, 1.6, -15, 3, 0, 0.55);
-    zoneR(H, M.WATER, -6, -24, 6, -27); drawb(H, 1, -24, 4, -27, 3.4, 0.4, 0.55); moon(H, -2.5, -19, 1.3, 4.6, 22); moon(H, -1.5, -31, 1.3, 4.6, 22);
-    bumps(H, T, [[3.5, -7, 0.55], [-4, -33, 0.5], [4.4, -19.5, 0.5]]); blk(H, T, -6, -11.4, -1.6, -12); blk(H, T, 1.6, -11.4, 6, -12); bowl(H, 2, -36, 1.5, 0.12); return H; } },
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [2, -36]); zoneR(H, M.WATER, -6, -12, 6, -15); drawb(H, -2.2, -12, 2.2, -15, 3, 0, 0.7);
+    zoneR(H, M.WATER, -6, -24, 6, -27); drawb(H, 0.2, -24, 4.6, -27, 3.4, 0.4, 0.7); moon(H, -2.5, -19, 1.3, 4.6, 22); moon(H, -1.5, -31, 1.3, 4.6, 22);
+    bumps(H, T, [[3.5, -7, 0.55], [-4, -33, 0.5], [4.4, -19.5, 0.5]]); blk(H, T, -6, -11.4, -2.2, -12); blk(H, T, 2.2, -11.4, 6, -12); bowl(H, 2, -36, 1.5, 0.12); return H; } },
   // Ring Station: a ring that turns, and a moon either side of it.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [-3, -34]); disc(H, 0, -16, 2.6, 1.3); moon(H, 3.5, -24, 1.3, 4.6, 24); moon(H, -4, -9, 1.1, 4, 18);
     bumps(H, T, [[2, -30, 0.55], [-5, -22, 0.5], [5, -12, 0.5], [0, -26.5, 0.5]]); zoneR(H, M.MUD, 3, -36, 7, -38); zoneC(H, M.ICE, -4, -28, 1.3); zoneC(H, M.MUD, 5, -5, 1);

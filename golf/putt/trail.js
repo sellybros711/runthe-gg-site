@@ -140,7 +140,7 @@ var KIT = {
     low:['rocksnow', 'bushsnow', 'rock'], brk:'ice', haz:'slow', hazC:['#1e1a16', '#3a3028'], bogC:['#1e1a16', '#3a3028'], lm:['mammoth', 'cave', 'tusks'], wall:['#cfeaf2', '#6fb6d0'],
     npc:{ skin:'tan', polo:'gold', hat:'tan', pants:'khaki', hair:'darkbrown', hairStyle:'long', cap:false, gender:'male' }, who:'the cave dweller' },
   // Moon Base: grey regolith, a pale beaten path, rock spires and antenna masts for trees, moon dust for the bog, supply crates to break
-  moon:{ g:['#9a98a2', '#a8a6b0', '#8a8892', 0.2], gpat:'moonReg', p:['#c8ccd8', '#dfe3ec', '#b4b8c4'], tree:['basalt'], leaves:['#6a6872', '#7a7882', '#5a5862'], bark:'#4a4852', dens:0.04,
+  moon:{ g:['#9a98a2', '#a8a6b0', '#8a8892', 0.2], gpat:'moonReg', p:['#c8ccd8', '#dfe3ec', '#b4b8c4'], tree:['basalt'], leaves:['#6a6872', '#7a7882', '#5a5862'], bark:'#4a4852', dens:0.001,
     low:['rock', 'rockdark', 'rock'], brk:'crate', haz:'slow', hazC:['#b6b4bc', '#9a98a6'], bogC:['#b6b4bc', '#9a98a6'], lm:['moonLander', 'moonDome', 'moonDish'], wall:['#eef2f8', '#3f7fe0'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'black', hairStyle:'bun', cap:false, gender:'female' }, who:'the astronaut' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
@@ -3557,10 +3557,10 @@ GPAT.moonDark = function(c){ var a = vn(c.ti * 0.03, c.tj * 0.03, 83), b = vn(c.
 GPAT.moonCrater = function(c){ var gi = Math.floor(c.ti / 48), gj = Math.floor(c.tj / 48), cx = (gi + 0.3 + vn(gi, gj, 85) * 0.4) * 48, cy = (gj + 0.3 + vn(gj, gi, 86) * 0.4) * 48, r = 10 + vn(gi, gj, 87) * 12, d = Math.hypot(c.ti - cx, c.tj - cy) / r;
   if (d < 0.85) return d < 0.5 ? '#7e7c86' : (c.ti - cx) + (c.tj - cy) < 0 ? '#6e6c76' : '#8a8892'; if (d < 1.05) return (c.ti - cx) + (c.tj - cy) < 0 ? '#c8c6ce' : '#7a7882'; return GPAT.moonReg(c); };
 KIT['moon~landing'] = kitFrom(KIT.moon, { nlm:3, lm:['moonLander', 'moonDish', 'moonLander'] });
-KIT['moon~craters'] = kitFrom(KIT.moon, { gpat:'moonCrater', dens:0.06, nlm:3, low:['rock', 'rockdark', 'rockdark', 'rock'], lm:['moonDish', 'moonLander', 'moonDish'] });
-KIT['moon~station'] = kitFrom(KIT.moon, { p:['#d8dce6', '#eef0f6', '#c4c8d4'], paved:true, dens:0.06, nlm:5, lm:['moonDome', 'moonDish', 'moonDome', 'moonLander', 'moonDome'] });
-KIT['moon~farside'] = kitFrom(KIT.moon, { g:['#5a5862', '#625f6a', '#4e4c56', 0.2], gpat:'moonDark', tree:['basalt'], dens:0.1, nlm:3, low:['rockdark', 'rockdark', 'rock'], lm:['moonDish', 'moonDish', 'moonDish'], wall:['#4a5878', '#141a2c'] });
-KIT['moon~launch'] = kitFrom(KIT.moon, { p:['#5a5e6a', '#6a6e7a', '#4a4e5a'], paved:true, dens:0.06, nlm:4, lm:['moonRocket', 'moonDish', 'moonDome', 'moonRocket'] });
+KIT['moon~craters'] = kitFrom(KIT.moon, { gpat:'moonCrater', dens:0.001, nlm:3, low:['rock', 'rockdark', 'rockdark', 'rock'], lm:['moonDish', 'moonLander', 'moonDish'] });
+KIT['moon~station'] = kitFrom(KIT.moon, { p:['#d8dce6', '#eef0f6', '#c4c8d4'], paved:true, dens:0.001, nlm:5, lm:['moonDome', 'moonDish', 'moonDome', 'moonLander', 'moonDome'] });
+KIT['moon~farside'] = kitFrom(KIT.moon, { g:['#5a5862', '#625f6a', '#4e4c56', 0.2], gpat:'moonDark', tree:['basalt'], dens:0.001, nlm:3, low:['rockdark', 'rockdark', 'rock'], lm:['moonDish', 'moonDish', 'moonDish'], wall:['#4a5878', '#141a2c'] });
+KIT['moon~launch'] = kitFrom(KIT.moon, { p:['#5a5e6a', '#6a6e7a', '#4a4e5a'], paved:true, dens:0.001, nlm:4, lm:['moonRocket', 'moonDish', 'moonDome', 'moonRocket'] });
 LIFE_AS['moon~landing'] = { fly:['drone', 2], mote:['spark', 24] };
 LIFE_AS['moon~craters'] = { fly:['drone', 1], mote:[['spark', 20], ['dust', 10]] };
 LIFE_AS['moon~station'] = { fly:['drone', 3], mote:['spark', 20] };
