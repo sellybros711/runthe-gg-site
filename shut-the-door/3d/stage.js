@@ -81,15 +81,15 @@
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=8';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=7';
-import { People } from './people.js?v=42';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=9';
+import { People } from './people.js?v=43';
 import { Pitch, releaseOf } from './pitch.js?v=13';
 import { fromResult, motion } from './play.js?v=13';
-import { look } from './looks.js?v=4';
+import { look } from './looks.js?v=6';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=39';
+import { InPlay } from './inplay.js?v=43';
 import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=10';
-import { FirstPerson } from './firstperson.js?v=10';
+import { FirstPerson } from './firstperson.js?v=14';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -169,6 +169,8 @@ const AN = () => window.STD_ANIM;
 const TEST = () => window.STD_STAGE_TEST;
 // the most a frame moves the play on, in real seconds (see THE CLOCK above)
 const MAX_STEP = 0.1;
+// the browser check's finer samples of the swing (keepSub in play): poses between frames, and the span round the result
+const SUB = 4, SUB_PRE = 0.3, SUB_POST = 0.2;
 // a foul is seen foul when the umpire starts his signal: 0.6 s after contact (people.js umpireMove)
 const FOUL_SIGNAL = 0.6;
 
@@ -821,6 +823,27 @@ class Stage {
       rel: P(pt.rel.x, pt.rel.y, pt.rel.z).toArray().map((v) => Math.round(v * 1000) / 1000),
       zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
+    /* THE SWING, SAMPLED FINELY (the browser check only). Its stepped clock moves a quick play 0.06 s a
+       frame, and a fast swing goes from the stance through the ball to its held finish in two frames,
+       so a trace of frames alone caught the whip at whatever phase a frame landed on: Bobby Witt Jr.'s
+       foul tip read 0.79 m at 1440x900 and 1.16 m at 390x844, where it moves 1.79 m (the daily of
+       2026-11-01 turned the browser check red on it). So from SUB_PRE before the result to SUB_POST
+       after it the trace also takes SUB - 1 poses between frames: posed and sampled, never drawn, in
+       time order, the frame's own pose put back after. For a ball in play it stops at the result: the
+       broadcast owns the ball after it. */
+    let subPrev = null;
+    const keepSub = (ts) => {
+      if (TEST() && subPrev != null && ts > subPrev) {
+        const hi = run ? resultAt : resultAt + SUB_POST;
+        for (let k = 1; k < SUB; k++) {
+          const tk = subPrev + (ts - subPrev) * k / SUB;
+          if (tk < resultAt - SUB_PRE || tk > hi) continue;
+          this.pose(tk);
+          keep(tk);
+        }
+      }
+      subPrev = ts;
+    };
     // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, the
     // umpire's signal
     const landAt = run && run.land ? resultAt + run.land.real : pr.result === 'foul' ? resultAt + FOUL_SIGNAL : null;
@@ -896,6 +919,7 @@ class Stage {
         const ts = sceneT(Math.min(t, tEnd));
         // the broadcast's camera moves worked out ahead, one shot a frame, while the pitch is in the air
         if (run && ts <= resultAt) this.inplay.prepare(this.camera.aspect);
+        keepSub(ts);
         this.pose(ts);
         if (run && ts > resultAt) { this.inplay.update(ts - resultAt, this.camera); this.firstPersonCut(); }
         if (!TEST() || trace.frames % (TEST().renderEvery || 1) === 0) this.render();

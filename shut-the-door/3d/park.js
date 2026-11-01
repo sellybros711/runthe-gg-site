@@ -2,9 +2,10 @@
  * Shared by the game (stage.js) and the lab (lab/scene.js).
  */
 import * as THREE from 'three';
-import { buildField } from './field.js?v=7';
-import { buildStands } from './stands.js?v=9';
+import { buildField } from './field.js?v=8';
+import { buildStands } from './stands.js?v=11';
 import { P, FT, smooth } from './units.js?v=1';
+import { crowdLight } from './crowd.js?v=1';
 
 export function makeRenderer(canvas, maxDpr = 2) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -49,6 +50,7 @@ function addSun(scene) {
   sun.shadow.normalBias = 0.02;
   sun.shadow.radius = 3;
   scene.add(sun, sun.target);
+  crowdLight(d);
   scene.add(new THREE.HemisphereLight(0xbcd2ff, 0x5a4a35, 0.25));
 }
 
