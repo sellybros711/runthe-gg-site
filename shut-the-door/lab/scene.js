@@ -25,6 +25,7 @@ import { Pitch } from '../3d/pitch.js?v=13';
 import { labPlay, motion, describe } from '../3d/play.js?v=13';
 import { FT, P, smooth } from '../3d/units.js?v=1';
 import { InPlay } from '../3d/inplay.js?v=39';
+import { crowdClock } from '../3d/crowd.js?v=1';
 
 const Q = new URLSearchParams(location.search);
 const MODE = Q.get('take') === '1' ? 'take' : 'swing';   // kept for the checks' URLs (take=1)
@@ -179,6 +180,8 @@ function start(update, resize) {
   addEventListener('resize', resize);
   resize();
   const clock = { last: performance.now(), t: FREEZE ?? 0, playing: FREEZE == null };
+  // the crowd's idle life on the lab's clock, so a stepped video shows it at true speed
+  crowdClock(() => lab.t || 0);
   lab.setTime = (t) => { clock.t = t; clock.playing = false; };
   // for pipeline/shoot.mjs: one frame at a moment, drawn now, the page's own loop held (a frame read
   // straight off the canvas costs a draw; a screenshot waits on the compositor)

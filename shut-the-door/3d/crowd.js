@@ -202,7 +202,9 @@ export function crowdImpostor(canvas) {
   }
 }
 
-const _clock = { t0: null }, _size = new THREE.Vector2();
+const _clock = { t0: null, fn: null }, _size = new THREE.Vector2();
+/** The crowd's clock, seconds (the lab's stepped clock for its videos; the game keeps the frame's own). */
+export function crowdClock(fn) { _clock.fn = fn; }
 function material(blur, crop, lod) {
   const m = new THREE.MeshBasicMaterial({ alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
@@ -324,6 +326,7 @@ export function buildCrowd(spots, { sectors = 1, blur = 0, lift = 0, chest = fal
     mesh.castShadow = mesh.receiveShadow = false;
     mesh.onBeforeRender = (renderer, scene, camera) => {
       U.lod.value = renderer.getDrawingBufferSize(_size).y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+      if (_clock.fn) { U.time.value = _clock.fn(); return; }
       const now = performance.now() / 1000;
       if (_clock.t0 == null) _clock.t0 = now;
       U.time.value = now - _clock.t0;

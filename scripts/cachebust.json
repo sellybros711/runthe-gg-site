@@ -3171,8 +3171,8 @@
   },
   "shut-the-door/lab/index.html": {
     "./scene.js": {
-      "v": "73",
-      "sha": "01626508d88af7e0"
+      "v": "74",
+      "sha": "ebc957c5ade135ec"
     }
   },
   "soccer/index.html": {
@@ -3406,7 +3406,7 @@
     },
     "crowd.js": {
       "v": "1",
-      "sha": "69aa563aad40d255"
+      "sha": "3927849175e216ae"
     }
   },
   "shut-the-door/3d/people.js": {
@@ -3558,7 +3558,7 @@
     },
     "crowd.js": {
       "v": "1",
-      "sha": "69aa563aad40d255"
+      "sha": "3927849175e216ae"
     }
   },
   "shut-the-door/3d/crowd.js": {
@@ -3602,7 +3602,7 @@
     },
     "crowd.js": {
       "v": "1",
-      "sha": "69aa563aad40d255"
+      "sha": "3927849175e216ae"
     },
     "clubs.js": {
       "v": "2",
