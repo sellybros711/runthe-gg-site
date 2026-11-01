@@ -91,7 +91,11 @@
          + the receiver's hands + the QB's accuracy
        Separation is to the nearest defender, and one trailing the receiver
        (nearer the QB than he is) counts trail yards further away. */
-    catch: { base: 0.55, perSep: 0.85, sepCap: 6, perTen: 0.6, deepFrom: 20, deep: 0.15, trail: 1.5, pressure: 0.9, toward: 0.35, tight: 0.7 },
+    catch: { base: 0.55, perSep: 0.85, sepCap: 6, perTen: 0.6, deepFrom: 20, deep: 0.15, trail: 1.5, pressure: 0.9, toward: 0.35, tight: 0.7,
+      /* why a miss fell (it never changes whether it fell): a drop is drop of
+         all targets (the NFL drops about 3 to 4%), dropHands less per point of
+         the receiver's hands; inside brokenSep yards it was broken up */
+      drop: 0.035, dropHands: 0.1, brokenSep: 1.2 },
 
     /* MAN COVERAGE stays cushion yards over the top of his man, and plays his
        side to side as it was lag seconds ago, carried forward lead of the way

@@ -120,7 +120,8 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
 .studiobar .field.grow { flex: 1; min-width: 180px; }
 .studiobar .btn { margin-bottom: 8px; }
 .suggest { margin: -6px 0 0; font-size: 12px; color: var(--dim); cursor: pointer; min-height: 0; }
-.liblist { display: flex; flex-direction: column; gap: 8px; max-height: 560px; overflow: auto; }
+.liblist { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); align-content: start; gap: 8px; max-height: 560px; overflow-x: hidden; overflow-y: auto; }
+.liblist .libgroup { grid-column: 1 / -1; }
 .libitem { display: flex; align-items: center; gap: 10px; border: 1px solid var(--edge); background: var(--panel2); border-radius: 10px; padding: 8px; text-align: left; }
 .libitem canvas { border-radius: 6px; flex: none; }
 .libitem b { font-size: 13px; display: block; }
@@ -273,8 +274,6 @@ h3 { font: 800 13px/1.2 'Inter', sans-serif; text-transform: uppercase; letter-s
   .view.play, .view.learn { grid-template-columns: minmax(0, 1fr) 300px; }
   .view.play > .panel:first-child, .view.learn > .panel:first-child { grid-column: 1 / -1; }
   .view.studio { grid-template-columns: minmax(0, 1fr) 290px; grid-template-areas: "bar bar" "sug sug" "center side" "lib lib"; }
-  .view.studio .liblist { flex-direction: row; overflow-x: auto; max-height: none; }
-  .view.studio .libitem { flex: none; }
 }
 @media (max-width: 820px) {
   .topbar { flex-wrap: wrap; padding: max(6px, env(safe-area-inset-top)) 10px 0; gap: 6px; min-height: 0; }
@@ -378,12 +377,12 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 }
 
 /* ---------- the daily 4th down (daily.js) ---------- */
-.dailycard { border-radius: 18px; padding: 22px 24px; background: linear-gradient(135deg, #3a2a08, #1d1606); border: 1px solid #5c4410; color: #fff; display: grid; gap: 6px; box-shadow: 0 6px 0 rgba(0, 0, 0, .3); }
-.dailycard .dnum { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #e8c97a; }
-.dailycard .dtag { color: var(--gold); }
-.dailycard h2 { margin: 0; font: italic 900 52px/1 'Barlow Condensed', sans-serif; color: var(--gold); }
-.dailycard .dteams { margin: 0; font-size: 18px; font-weight: 800; }
-.dailycard .dgame { margin: 0 0 8px; font-size: 14px; color: rgba(255, 255, 255, .78); }
+#hDaily.live { cursor: pointer; }
+#hDaily.live:hover .btn.gold, #hDaily.live:focus-visible .btn.gold { filter: brightness(1.08); }
+#hDaily:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.bannergo { position: absolute; z-index: 2; left: 0; right: 0; top: 52%; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+.bannergo .btn { flex: none; width: auto; max-width: 80%; align-self: center; padding: 12px 40px; box-shadow: 0 3px 0 var(--gold2), 0 8px 24px rgba(0, 0, 0, .45); }
+.bannergo .dnum { padding: 5px 12px; border-radius: 999px; background: rgba(6, 14, 24, .75); color: #fff; font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .btn.big { min-height: 52px; font-size: 17px; padding: 12px 22px; justify-self: start; }
 .view.daily { grid-template-columns: minmax(0, 1fr); }
 .dintro { max-width: 640px; margin: 0 auto; text-align: center; display: grid; gap: 6px; justify-items: center; padding: 18px 0 30px; }
@@ -406,6 +405,17 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 .rescard .rdhead { font-weight: 800; color: var(--gold); margin-bottom: 4px !important; }
 .rescard .rdstats { color: var(--teal); font-weight: 800; margin-top: 4px !important; }
 @media (max-width: 700px) {
-  .dailycard h2 { font-size: 42px; }
+  .bannergo { top: 46%; gap: 6px; }
+  .bannergo .dnum { font-size: 11px; }
   .dintro h1 { font-size: 58px; }
 }
+
+/* ---------- every snap you ran (flow.js) ---------- */
+.rsnaps { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin: 6px 0; }
+.rsnaps .rsnapsh { width: 100%; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.snapchip { border: 1px solid var(--edge); background: var(--panel2); color: var(--ink); border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 800; min-height: 32px; }
+.rescard .snapchip { background: rgba(255, 255, 255, .06); color: #fff; border-color: rgba(255, 255, 255, .18); }
+.snapchip.win { box-shadow: inset 3px 0 0 var(--green); }
+.snapchip.lose { box-shadow: inset 3px 0 0 var(--red); }
+.snapchip[aria-pressed="true"] { border-color: var(--gold); outline: 1px solid var(--gold); }
+.panel .rsnaps { justify-content: flex-start; margin: 0 0 10px; }
