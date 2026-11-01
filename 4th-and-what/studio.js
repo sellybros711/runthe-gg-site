@@ -78,11 +78,15 @@
   function name() {
     var sug = A.nameFor(P(), book());
     if (!A.draft.nameEdited) A.draft.name = sug;
-    $('sName').value = A.draft.name;
+    /* while it is being typed in, the box keeps what was typed, a space at
+       the end included (the owner, 2026-11-01); the saved name is trimmed */
+    var box = $('sName');
+    if (document.activeElement !== box) box.value = A.draft.name;
     $('sSuggest').textContent = A.draft.nameEdited ? 'Your terminology says: ' + sug + '. Tap to use it.' : 'Named from your terminology.';
     $('sSuggest').dataset.sug = sug;
   }
   $('sName').addEventListener('input', function () { A.draft.name = this.value.trim() || 'Play'; A.draft.nameEdited = true; name(); A.saveDraft(); var e = entry(); if (e) { e.name = A.draft.name; e.nameEdited = true; saveSoon(); } });
+  $('sName').addEventListener('blur', function () { this.value = A.draft.name; });
   $('sSuggest').addEventListener('click', function () { if (!A.draft.nameEdited) return; A.draft.nameEdited = false; changed(); });
 
   /* ---------- the top bar ---------- */
