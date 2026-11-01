@@ -3,7 +3,7 @@
  */
 import * as THREE from 'three';
 import { buildField } from './field.js?v=8';
-import { buildStands } from './stands.js?v=10';
+import { buildStands } from './stands.js?v=11';
 import { P, FT, smooth } from './units.js?v=1';
 import { crowdLight } from './crowd.js?v=1';
 

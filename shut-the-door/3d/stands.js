@@ -53,6 +53,8 @@ export function buildStands(scene, tex, renderer) {
   const netH = 32 * FT;
   const net = new THREE.Mesh(new THREE.CylinderGeometry(R0 + 0.2, R0 + 0.2, netH, 64, 1, true, Math.PI - A * 1.6, A * 3.2),
     new THREE.MeshBasicMaterial({ color: 0x101418, transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false, fog: true }));
+  // (named: like its poles, the broadcast's high home camera looks out over it and hides it, inplay.js)
+  net.name = 'backstopNet';
   net.position.y = wallH + netH / 2; group.add(net);
   for (const a of [-0.45, 0, 0.45]) {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, netH, 6), new THREE.MeshStandardMaterial({ color: 0x2a2f33, roughness: 0.5 }));
