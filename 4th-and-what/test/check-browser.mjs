@@ -96,12 +96,14 @@ async function run(name, viewport, scale) {
   await page.click('.logo');
   ok(await page.isVisible('#vHome'), 'the logo goes home');
   /* ---------- the daily 4th down: one real NFL 4th down a day ---------- */
-  await page.waitForSelector('#hDaily:not([hidden])', { timeout: 10000 });
-  const hd = await page.evaluate(() => ({ down: document.getElementById('hdDown').textContent, teams: document.getElementById('hdTeams').textContent, go: document.getElementById('hdGo').textContent }));
-  ok(/^4th & (Goal|\d+) at /.test(hd.down) && / (vs|at) /.test(hd.teams) && hd.go === 'Play today', 'Home has today\'s 4th down: ' + hd.down + ', ' + hd.teams);
+  await page.waitForSelector('#hdBox:not([hidden])', { timeout: 10000 });
+  const hd = await page.evaluate(() => { const t = window.FAW_DAILY.today(), b = document.getElementById('hDaily').textContent;
+    return { num: document.getElementById('hdNum').textContent, go: document.getElementById('hdGo').textContent, down: window.FAW_DAILY.core.downText(t),
+      spoils: b.indexOf(window.FAW_DAILY.core.teamsText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.downText(t)) >= 0 || b.indexOf(window.FAW_DAILY.core.spotText(t)) >= 0 }; });
+  ok(/Daily #\d+/.test(hd.num) && hd.go === 'Play today' && !hd.spoils, 'the banner is the way in, and says nothing of the situation: ' + hd.num);
   await shot('d-home');
-  await page.click('#hdGo');
-  ok(await page.isVisible('#vDaily') && /^Daily #\d+/.test(await page.textContent('#dNum')) && (await page.textContent('#dDown')) === hd.down.split(' at ')[0], 'Play today opens the situation: ' + await page.textContent('#dNum'));
+  await page.click('#hDaily');
+  ok(await page.isVisible('#vDaily') && /^Daily #\d+/.test(await page.textContent('#dNum')) && (await page.textContent('#dDown')) === hd.down, 'a click on the banner opens the situation: ' + await page.textContent('#dNum'));
   await shot('d-intro');
   await page.click('#dGo');
   const dsc = await page.evaluate(() => { const t = window.FAW_DAILY.today(), S = window.FAW_APP.SC; return { ok: S.down === 4 && S.ballOn === t.ballOn && S.distance === Math.min(t.togo, t.ballOn), empty: !window.FAW_STUDIO.play().routes.length }; });
@@ -122,6 +124,13 @@ async function run(name, viewport, scale) {
   await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
   ok(/^Practice/.test(await page.textContent('#rDailyHead')) && await page.evaluate(() => window.__posts.length) === 1, 'Run it back is practice: nothing posted');
   ok(!(await page.isHidden('#rSave')), 'Save play is there for the daily too');
+  const chips = await page.$$eval('#rSnaps .snapchip', b => b.map(x => x.textContent));
+  ok(chips.length === 2 && /^Daily · /.test(chips[0]) && /^Practice 1 · /.test(chips[1]), 'both snaps are on the card: ' + chips.join(' | '));
+  await page.click('#rSnaps .snapchip:first-of-type');
+  const opened = await page.evaluate(() => { const k = window.FAW_DAILY.kept(), g = window.FAW_GAME.last(); return { ok: g.seed === k.seed && g.win === k.win && g.yards === k.yards, n: document.querySelectorAll('#gSnaps .snapchip').length }; });
+  ok(await page.isVisible('#vReplay') && opened.ok && opened.n === 2, 'the Daily chip opens the day\'s own snap in the breakdown, with both listed there');
+  await page.click('#gSnaps .snapchip:nth-of-type(2)');
+  ok(await page.evaluate(() => window.FAW_GAME.last().seed !== window.FAW_DAILY.kept().seed), 'and the practice chip opens the practice snap');
   await page.evaluate(() => { document.getElementById('watch').hidden = true; document.getElementById('rCard').hidden = true; });
   await page.click('.logo');
   const back = await page.evaluate(() => ({ go: document.getElementById('hdGo').textContent, daily: window.FAW_DAILY.active(), d: window.FAW_APP.SC.distance, b: window.FAW_APP.SC.ballOn }));

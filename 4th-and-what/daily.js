@@ -160,18 +160,19 @@
     mine: function () { return rpc('faw_daily_my_stats', {}, true); }
   };
 
-  /* ---- Home: the Daily card under the banner ---- */
+  /* ---- Home: the banner is the way in (the owner, 2026-11-01: "it shouldnt
+     tell you the situation until you click into it"). It says which daily it
+     is and whether you have played it. Nothing about the situation. ---- */
   function renderHome() {
-    var box = $('hDaily'); if (!box) return;
-    if (!today) { box.hidden = true; return; }
-    box.hidden = false;
+    var box = $('hdBox'); if (!box) return;
+    box.hidden = !today;
+    $('hDaily').classList.toggle('live', !!today);
+    if (!today) return;
     var k = kept();
-    $('hdNum').textContent = 'Daily #' + number;
-    $('hdTeams').textContent = teamsText(today) + ' · ' + roundText(today);
-    $('hdDown').textContent = downText(today) + ' at ' + spotText(today);
-    $('hdGame').textContent = clockText(today) + ' · ' + scoreText(today);
+    $('hdNum').textContent = "Today's 4th down · Daily #" + number;
     $('hdGo').textContent = k ? (k.win ? 'You converted. See it' : 'You were stopped. See it') : 'Play today';
   }
+  function openDaily() { if (today) A.show('daily'); }
 
   /* ---- the intro: the situation, big ---- */
   function renderIntro() {
@@ -266,7 +267,11 @@
   }
   function share(res) { return shareText(today, number, res); }
 
-  $('hdGo') && $('hdGo').addEventListener('click', function () { A.show('daily'); });
+  var banner = $('hDaily');
+  if (banner) {
+    banner.addEventListener('click', openDaily);
+    banner.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openDaily(); } });
+  }
   $('dGo') && $('dGo').addEventListener('click', enter);
   $('dBack') && $('dBack').addEventListener('click', function () { leave(); A.show('home'); });
   A.on('daily', renderIntro);

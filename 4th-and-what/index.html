@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
 <header class="topbar">
@@ -47,19 +47,16 @@
 
   <!-- HOME: where to go, to play or to build -->
   <section class="view home" id="vHome" hidden>
-    <div class="banner">
+    <!-- the banner is the way into the daily (the owner, 2026-11-01): no situation until you click in -->
+    <div class="banner" id="hDaily" role="button" tabindex="0" aria-label="Play today's 4th down">
       <canvas id="hField" aria-hidden="true"></canvas>
       <h1 class="bannerlogo"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></h1>
+      <div class="bannergo" id="hdBox" hidden>
+        <span class="dnum" id="hdNum"></span>
+        <span class="btn gold big" id="hdGo">Play today</span>
+      </div>
       <p class="heroname" id="hName"></p>
     </div>
-    <!-- the daily 4th down: one real NFL 4th down a day (daily.js) -->
-    <section class="dailycard" id="hDaily" hidden aria-label="Today's 4th down">
-      <p class="dnum"><span class="dtag">Today's 4th down</span> <span id="hdNum"></span></p>
-      <h2 id="hdDown"></h2>
-      <p class="dteams" id="hdTeams"></p>
-      <p class="dgame" id="hdGame"></p>
-      <button type="button" class="btn gold big" id="hdGo">Play today</button>
-    </section>
     <div class="modes">
       <button type="button" class="mode play" data-go="play"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></button>
       <button type="button" class="mode book" data-go="books"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></button>
@@ -143,6 +140,7 @@
       </div>
     </div>
     <aside class="panel">
+      <div class="rsnaps" id="gSnaps" hidden></div>
       <h3>Play result</h3>
       <div class="resultbig" id="gResBig">Run a play</div>
       <dl class="stats" id="gStats"></dl>
@@ -335,6 +333,7 @@
       <h2 id="rTitle"></h2>
       <p class="rline" id="rLine"></p>
       <p class="rwhy" id="rWhy"></p>
+      <div class="rsnaps" id="rSnaps" hidden></div>
       <div class="rdaily" id="rDaily" hidden>
         <p class="rdhead" id="rDailyHead"></p>
         <p class="rdreal"><b>What really happened:</b> <span id="rReal"></span> <span id="rVerdict"></span></p>
@@ -380,10 +379,10 @@
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/assets/cloudsave.js?v=3"></script>
-<script src="config.js?v=4"></script>
+<script src="config.js?v=5"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=5"></script>
+<script src="engine.js?v=6"></script>
 <script src="names.js?v=2"></script>
 <script src="routes.js?v=2"></script>
 <script src="book.js?v=2"></script>
@@ -399,8 +398,8 @@
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=3"></script>
 <script src="game.js?v=3"></script>
-<script src="flow.js?v=2"></script>
-<script src="daily.js?v=1"></script>
+<script src="flow.js?v=3"></script>
+<script src="daily.js?v=2"></script>
 <script src="library.js?v=2"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=1"></script>
