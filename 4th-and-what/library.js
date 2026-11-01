@@ -42,7 +42,7 @@
     $('bMain').hidden = !b;
     if (!b) { $('bSignin').hidden = false; $('bSignin').querySelector('h2').textContent = 'No playbooks yet'; $('bSignin').querySelector('p').textContent = 'Start one with + New Playbook, or save a play from the Studio.'; $('bSigninBtn').hidden = true; return; }
     if (B.upgrade && !upgraded[b.id]) { upgraded[b.id] = true; var was = JSON.stringify(b); B.upgrade(b); if (JSON.stringify(b) !== was) put(b); }
-    $('bName').value = b.name; $('bTeam').value = b.team || '';
+    $('bName').value = b.name; $('bTeam').value = b.team || ''; $('bLevel').value = b.level || 'nfl';
     $('bMeta').textContent = b.plays.length + (b.plays.length === 1 ? ' play' : ' plays') + ' · Updated ' + fmtDate(b.updated);
     Array.prototype.forEach.call(document.querySelectorAll('#bTabs button'), function (x) { x.classList.toggle('on', x.dataset.bt === tab); });
     $('bPlays').hidden = tab !== 'plays'; $('bSections').hidden = tab !== 'sections'; $('bTerms').hidden = tab !== 'terms'; $('bShare').hidden = tab !== 'share';
@@ -53,6 +53,8 @@
   }
   Array.prototype.forEach.call(document.querySelectorAll('#bTabs button'), function (x) { x.addEventListener('click', function () { tab = x.dataset.bt; render(); }); });
   $('bSigninBtn').addEventListener('click', function () { if (window.RTGAuthUI && window.RTGAuthUI.open) window.RTGAuthUI.open(); });
+  /* the level the playbook plays at: Run it, Test and the play's stats use it */
+  $('bLevel').addEventListener('change', function () { var b = book(); if (b) { b.level = this.value; put(b); A.setLevel(b.level); render(); } });
   $('bName').addEventListener('change', function () { var b = book(); if (b) { b.name = this.value.trim() || 'My playbook'; put(b); render(); } });
   $('bTeam').addEventListener('change', function () { var b = book(); if (b) { b.team = this.value.trim(); put(b); } });
   $('bNewBook').addEventListener('click', function () {
@@ -84,7 +86,7 @@
     window.FAW_STUDIO.open(b.id, e.id);
   });
   function tested(p) {
-    var st = p.stats && p.stats[p.distance], t = st && st.test, n = 0, w = 0;
+    var S = B.statsOf(p, book() && book().level), st = S[p.distance], t = st && st.test, n = 0, w = 0;
     if (t) E.CALL_KEYS.forEach(function (k) { if (t[k]) { n += t[k].n; w += t[k].w; } });
     return n ? Math.round(w * 100 / n) : null;
   }
@@ -119,7 +121,7 @@
     function item(text, fn) { return el('button', { type: 'button', text: text, on: { click: function () { m.remove(); menuOpen = null; fn(); } } }); }
     var m = el('div', { class: 'menu' }, [
       item('Edit in Studio', function () { window.FAW_STUDIO.open(b.id, p.id); }),
-      item('Run it', function () { window.FAW_STUDIO.open(b.id, p.id, { mode: 'game' }); window.FAW_FLOW.snap(); }),
+      item('Run it', function () { A.setLevel(b.level || 'nfl'); window.FAW_STUDIO.open(b.id, p.id, { mode: 'game' }); window.FAW_FLOW.snap(); }),
       item('Test vs Defense', function () { A.testChoice = 'b:' + b.id + ':' + p.id; A.show('test'); }),
       item('Learn it', function () { A.learnChoice = { book: b.id, play: p.id }; A.show('learn'); }),
       item(p.fav ? 'Unstar' : 'Star', function () { p.fav = !p.fav; put(b); render(); }),

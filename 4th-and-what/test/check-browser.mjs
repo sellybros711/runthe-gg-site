@@ -158,6 +158,16 @@ async function run(name, viewport, scale) {
   await page.click('.mode.play');
   ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home: 4th and what?');
   ok(await page.$$eval('#pDists .dist', d => d.length) === 6 && /opponent's 40/.test(await page.textContent('#pSpot')), 'six distances, ball on the opponent 40');
+  /* the level and the hash (the owner, 2026-11-01): High School on the left hash */
+  await page.click('#pLevel button[data-level="hs"]'); await page.click('#pHash button[data-hash="left"]');
+  const lv = await page.evaluate(() => { const A = window.FAW_APP, r = window.FAW_ENGINE.run(A.SC, A.draft.play, 1);
+    return { level: r.level, off: 80 / 3 - r.BX, sit: document.getElementById('sSit').textContent, kept: localStorage.getItem('faw_level'),
+      pressed: [...document.querySelectorAll('#pLevel [aria-pressed="true"], #pHash [aria-pressed="true"]')].map(b => b.textContent).join('+') }; });
+  ok(lv.level === 'hs' && Math.abs(lv.off - 8.89) < 0.01 && /HS$/.test(lv.sit) && lv.kept === 'hs' && lv.pressed === 'High School+Left hash',
+    'High School on the left hash: the snap plays at that level from the high school hash: ' + lv.sit);
+  await shot('0-level');
+  await page.click('#pLevel button[data-level="nfl"]'); await page.click('#pHash button[data-hash="mid"]');
+  ok(await page.evaluate(() => window.FAW_APP.SC.level === 'nfl' && window.FAW_APP.SC.ballX === 80 / 3), 'and back to the NFL in the middle');
   await shot('0-pick');
   await page.click('#pDists .dist[data-d="5"]');
   ok(await page.isVisible('#vStudio') && await page.isVisible('#sSnap') && !(await page.isVisible('.studiobar')) && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'draw it: the field, the tools and Snap it');

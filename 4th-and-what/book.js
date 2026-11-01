@@ -22,6 +22,9 @@
  *   { id, name, rev, updated, team, week, sections: [{ id, name }], formations: [{ id, name, base, moved }],
  *     plays: [{ id, num, name, nameEdited, section, notes, distance, play, stats, situations, tag, fav, updated }] }
  * stats: { [distance]: { byCall: { cover1: { n, w }, ... }, test: { cover1: { n, w, yds }, ..., at } } }
+ *        the NFL's. statsBy: { hs: { same shape }, college: { same shape } } for the other levels
+ *        (2026-11-01): a play's high school numbers never mix with its NFL numbers.
+ * level: 'hs' | 'college' | 'nfl' (none is the NFL), the level the playbook plays at.
  *
  *   week        the week the wristband codes are shuffled for (bandCodes). 1 to start.
  *   num         the play's own number, unique in the book. It is the number the
@@ -150,8 +153,14 @@
       tag: TAGS.indexOf(opt.tag) >= 0 ? opt.tag : null, fav: !!opt.fav };
   }
   /* Count a snap the player watched against whatever the defense rolled. */
-  function countSnap(entry, distance, callKey, win) {
-    var st = entry.stats[distance] = entry.stats[distance] || {};
+  /* the stats a play keeps at a level: the NFL's in stats, the others in statsBy */
+  function statsOf(entry, level) {
+    if (!level || level === 'nfl') return (entry.stats = entry.stats || {});
+    entry.statsBy = entry.statsBy || {};
+    return (entry.statsBy[level] = entry.statsBy[level] || {});
+  }
+  function countSnap(entry, distance, callKey, win, level) {
+    var S = statsOf(entry, level), st = S[distance] = S[distance] || {};
     var b = st.byCall = st.byCall || {};
     var c = b[callKey] = b[callKey] || { n: 0, w: 0 };
     c.n++; if (win) c.w++;
@@ -267,7 +276,7 @@
   }
 
   var API = { GAME: GAME, FORMAT: FORMAT, MAX_PLAYS: MAX_PLAYS, newBook: newBook, newPlay: newPlay, newId: newId,
-    countSnap: countSnap, totals: totals,
+    countSnap: countSnap, statsOf: statsOf, totals: totals,
     SITUATIONS: SITUATIONS, SITUATION_KEYS: SITUATION_KEYS, situationFor: situationFor, situationsOf: situationsOf, TAGS: TAGS, tagOf: tagOf,
     nextNum: nextNum, ensureNumbers: ensureNumbers, upgrade: upgrade, bandCodes: bandCodes, exportFile: exportFile, importFile: importFile, createStore: createStore };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

@@ -213,7 +213,55 @@
     slow: { throw: 0.45, catch: 0.35, tackle: 0.4, window: 0.35 }
   };
 
-  var API = { DISTANCES: DISTANCES, ARCHETYPES: ARCHETYPES, SCENARIO: SCENARIO, TUNING: TUNING };
+  /* ---------- LEVELS (the owner, 2026-11-01) ----------
+     High School, College and the NFL. The NFL is the tuning above, measured
+     against real NFL rates. A level is a patch on it: how fast everybody
+     runs (offense and defense scaled apart), the QB's arm and accuracy, how
+     fast the defense reads and closes, how sure the hands and the tackles
+     are. Each level also has its hash marks, in yards from the middle of the
+     field (the field is 53 1/3 wide): the NFL's are 70 feet 9 inches from each
+     sideline, college 60 feet, high school 53 feet 4 inches (the field in
+     thirds). High school and college are tuned to sensible ranges, not to
+     exact data: their public stats are thinner and vary by league. */
+  var LEVELS = {
+    nfl: { name: 'NFL', hash: 3.08, offense: 1, defense: 1, arm: 26, accuracy: 0, patch: {} },
+    college: { name: 'College', hash: 6.67, offense: 0.95, defense: 0.94, arm: 24, accuracy: -0.12, patch: {
+      man: { lagDB: 0.28, cushion: 1.35 }, zone: { react: 0.36 }, breakSpeed: 0.6, breakOnBall: 0.28,
+      pocket: { base: 2.25, jitter: 0.55 }, catch: { drop: 0.05 },
+      tackle: { broken: 0.08, runBroken: 0.21 }, readRun: { lb: 0.66, db: 1.15 } } },
+    hs: { name: 'High School', hash: 8.89, offense: 0.86, defense: 0.84, arm: 21, accuracy: -0.35, patch: {
+      man: { lagDB: 0.34, lagLB: 0.55, cushion: 1.7 }, zone: { react: 0.45, deepLag: 0.45 }, breakSpeed: 0.5, breakOnBall: 0.32,
+      pocket: { base: 2.45, jitter: 0.7, free: 0.22 }, catch: { drop: 0.07 },
+      tackle: { broken: 0.12, runBroken: 0.24, fumble: 0.015 }, readRun: { lb: 0.72, db: 1.25 } } }
+  };
+  var LEVEL_KEYS = ['hs', 'college', 'nfl'];
+  function merge(a, b) {
+    var o = JSON.parse(JSON.stringify(a));
+    (function deep(x, y) { for (var k in y) { if (y[k] && typeof y[k] === 'object' && !Array.isArray(y[k])) { x[k] = x[k] || {}; deep(x[k], y[k]); } else x[k] = y[k]; } })(o, b);
+    return o;
+  }
+  var levelCache = {};
+  /* the tuning and the player types a level plays with */
+  function level(key) {
+    if (!LEVELS[key]) key = 'nfl';
+    if (levelCache[key]) return levelCache[key];
+    var L = LEVELS[key], T = merge(TUNING, L.patch), A = {};
+    for (var r in T.speed) T.speed[r] = T.speed[r] * L.defense;
+    for (var k in ARCHETYPES) {
+      A[k] = JSON.parse(JSON.stringify(ARCHETYPES[k]));
+      A[k].speed = A[k].speed * L.offense;
+      if (k === 'qb') { A[k].arm = L.arm; A[k].accuracy = L.accuracy; }
+    }
+    return (levelCache[key] = { key: key, name: L.name, hash: L.hash, tuning: key === 'nfl' ? TUNING : T, archetypes: key === 'nfl' ? ARCHETYPES : A });
+  }
+  /* where the ball is spotted across the field: on a hash or in the middle */
+  function ballXFor(key, hash) {
+    var h = (LEVELS[key] || LEVELS.nfl).hash, mid = 80 / 3;
+    return hash === 'left' ? mid - h : hash === 'right' ? mid + h : mid;
+  }
+
+  var API = { DISTANCES: DISTANCES, ARCHETYPES: ARCHETYPES, SCENARIO: SCENARIO, TUNING: TUNING,
+    LEVELS: LEVELS, LEVEL_KEYS: LEVEL_KEYS, level: level, ballXFor: ballXFor };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.FAW_CONFIG = API;
 })(typeof window !== 'undefined' ? window : this);

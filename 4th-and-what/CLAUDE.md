@@ -29,6 +29,14 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   two clearly best calls). Your pick locks; then the play is snapped 100 times against each call
   with the day's seeds, and the fewest first downs given up is the best call. Never type an
   answer by hand. Never reorder live days. Kept on the device, no server.
+- **Levels: High School, College, NFL** (the owner, 2026-11-01). `config.js` `LEVELS`: each is a
+  patch on the NFL tuning (speeds, the QB's arm and accuracy, how fast the defense reads and
+  closes, hands, tackling) plus its real hash marks. `SC.level` and `SC.hash` pick it; the engine
+  plays it and `res.level` says which. Play has a Level and Hash picker (the level is kept on the
+  device); a playbook has a level that Run it and Test use. A play's NFL numbers stay in `stats`,
+  the others in `statsBy[level]` (`B.statsOf`). The daily 4th down and Daily Defense are always the
+  NFL from the middle. The NFL patch is empty: never retune the NFL through a level. High school
+  and college are sensible ranges, not exact data; say so in copy that quotes them.
 - **Only Move moves a player** (the owner, 2026-10-31). No other tool, and no long press, ever
   changes where a man lines up.
 - **A run is what was drawn** (the owner, 2026-11-01: "i ran a run play and the play didn't
@@ -49,7 +57,8 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
   `RTG_AUTH`; it is shared by five games, so a change to it bumps its `?v=` on every page.
 - **A name typed by hand is never changed.** Rules rename only plays whose name was never edited
   (`nameEdited`). Concepts beat single route words; the most exact route rule wins.
-- **Any down, distance and spot** in Play. 4th and 5 on the opponent's 40 stays the default.
+- **Any down, distance, spot, level and hash** in Play. 4th and 5 on the opponent's 40, the NFL, the
+  middle of the field stays the default.
 - **Test it forces each call** (`run(..., { call })`), still rolling the call first so the dice
   after it fall the same way. Results are stored per distance and flagged when the play changes.
 - **No guide opens by itself.** How it works is behind the `?` button.

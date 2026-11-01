@@ -191,7 +191,9 @@
           }
         } else {
           pen('rgba(255,255,255,.5)', 1.2);
-          [0.6, 23.58, 29.75, FIELD_W - 0.6].forEach(function (hx) { ctx.beginPath(); ctx.moveTo(sx(hx - 0.35), sy(yl)); ctx.lineTo(sx(hx + 0.35), sy(yl)); ctx.stroke(); });
+          /* the level's hash marks: o.hash yards each side of the middle, else Play's level */
+          var hw = o.hash != null ? o.hash : (root.FAW_CONFIG && root.FAW_APP && root.FAW_CONFIG.level ? root.FAW_CONFIG.level(root.FAW_APP.SC.level).hash : 3.08);
+          [0.6, FIELD_W / 2 - hw, FIELD_W / 2 + hw, FIELD_W - 0.6].forEach(function (hx) { ctx.beginPath(); ctx.moveTo(sx(hx - 0.35), sy(yl)); ctx.lineTo(sx(hx + 0.35), sy(yl)); ctx.stroke(); });
         }
       }
       /* the line of scrimmage and the line to gain */

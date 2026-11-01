@@ -222,7 +222,9 @@
       stash = { sc: A.copy(A.SC), draft: A.copy(A.draft) };
       active = true;
       document.body.classList.add('daily');
-      A.SC.down = 4; A.SC.distance = Math.min(today.togo, today.ballOn); A.SC.ballOn = today.ballOn; A.SC.ballX = E.FIELD_W / 2;
+      A.SC.down = 4; A.SC.distance = Math.min(today.togo, today.ballOn); A.SC.ballOn = today.ballOn;
+      /* the daily is a real NFL down: the NFL level, from the middle of the field */
+      A.SC.level = 'nfl'; A.SC.hash = 'mid'; A.SC.ballX = E.FIELD_W / 2;
       var k = kept();
       var play = k && k.drawn ? k.drawn : A.emptyPlay('gun3x1');
       A.setDraft({ play: A.copy(play), name: '', nameEdited: false, tag: A.tagOf(play), fav: false, notes: '', situations: [], ref: null });

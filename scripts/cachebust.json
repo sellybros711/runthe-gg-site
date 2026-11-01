@@ -13,8 +13,8 @@
       "sha": "7c8b2c13e2f5ecd5"
     },
     "config.js": {
-      "v": "7",
-      "sha": "5b0304fd7ce6b7c9"
+      "v": "8",
+      "sha": "0671db86931441eb"
     },
     "formations.js": {
       "v": "1",
@@ -25,8 +25,8 @@
       "sha": "9c6a7e1575b377f0"
     },
     "engine.js": {
-      "v": "7",
-      "sha": "9a23ae98f0aef67f"
+      "v": "8",
+      "sha": "0f119114ee09debe"
     },
     "names.js": {
       "v": "2",
@@ -37,8 +37,8 @@
       "sha": "3914eef4415a58e5"
     },
     "book.js": {
-      "v": "2",
-      "sha": "3e2e865ce56d5e00"
+      "v": "3",
+      "sha": "a4e9a3168dfac69c"
     },
     "cards.js": {
       "v": "1",
@@ -53,28 +53,28 @@
       "sha": "498dc23abaa80601"
     },
     "turf.js": {
-      "v": "2",
-      "sha": "9e7680df6a643c30"
+      "v": "3",
+      "sha": "546c05483ff389de"
     },
     "rig.js": {
       "v": "1",
       "sha": "d5be652ec6dbd043"
     },
     "stage.js": {
-      "v": "1",
-      "sha": "62f6c8c3d1c0bfd0"
+      "v": "2",
+      "sha": "ff5a4357d74041fd"
     },
     "share.js": {
       "v": "1",
       "sha": "ddf3f027cc22c5ac"
     },
     "play.js": {
-      "v": "1",
-      "sha": "3dc28a7e95923a28"
+      "v": "2",
+      "sha": "c8cdd974177fb9c4"
     },
     "app.js": {
-      "v": "5",
-      "sha": "d838c61501f84e97"
+      "v": "6",
+      "sha": "7a5298961636970e"
     },
     "home.js": {
       "v": "4",
@@ -85,32 +85,32 @@
       "sha": "9ce5a2bb030b3dbc"
     },
     "game.js": {
-      "v": "3",
-      "sha": "906b51a4748fa75a"
+      "v": "4",
+      "sha": "3af1970ebee67474"
     },
     "flow.js": {
-      "v": "3",
-      "sha": "4d5f92aa936e287d"
+      "v": "4",
+      "sha": "fc8a80acac50a730"
     },
     "daily.js": {
-      "v": "3",
-      "sha": "cc3c22e444a253a9"
+      "v": "4",
+      "sha": "24eb855cee25fe69"
     },
     "trivia.js": {
-      "v": "3",
-      "sha": "1d641e486d936c44"
+      "v": "4",
+      "sha": "b218a340a3641fdb"
     },
     "library.js": {
-      "v": "2",
-      "sha": "0f80e7203a66fd95"
+      "v": "3",
+      "sha": "0e10656847809bfa"
     },
     "learn.js": {
       "v": "2",
       "sha": "2991ca80a3cc5c27"
     },
     "testview.js": {
-      "v": "1",
-      "sha": "da77dcd7e7e60ef3"
+      "v": "2",
+      "sha": "b9b076bdeaf7f03d"
     },
     "printview.js": {
       "v": "1",

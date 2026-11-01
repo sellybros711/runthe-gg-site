@@ -60,6 +60,15 @@
 
   /* ---------- the situation ---------- */
   var SC = copy(C.SCENARIO); SC.down = 4;
+  /* THE LEVEL AND THE HASH (the owner, 2026-11-01): High School, College or
+     the NFL, kept on this device; the ball on the left hash, the right hash
+     or in the middle, at the level's own hash marks. */
+  var LEVEL_KEY = 'faw_level', SHORT = { hs: 'HS', college: 'College', nfl: 'NFL' };
+  try { SC.level = C.LEVELS[localStorage.getItem(LEVEL_KEY)] ? localStorage.getItem(LEVEL_KEY) : 'nfl'; } catch (e) { SC.level = 'nfl'; }
+  SC.hash = 'mid'; SC.ballX = C.ballXFor(SC.level, SC.hash);
+  function setLevel(l) { SC.level = C.LEVELS[l] ? l : 'nfl'; SC.ballX = C.ballXFor(SC.level, SC.hash); try { localStorage.setItem(LEVEL_KEY, SC.level); } catch (e) {} }
+  function setHash(h) { SC.hash = h === 'left' || h === 'right' ? h : 'mid'; SC.ballX = C.ballXFor(SC.level, SC.hash); }
+  function levelShort(l) { return SHORT[l] || 'NFL'; }
   function ordinal(n) { return n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : '4th'; }
   function spotText(ballOn) { return ballOn === 50 ? 'Midfield' : ballOn < 50 ? 'Opp ' + ballOn : 'Own ' + (100 - ballOn); }
   function sitText(sc) {
@@ -184,7 +193,7 @@
   function watch3d(res, done) {
     var w = $('watch'); w.hidden = false; $('cap').textContent = ''; $('bSkip').hidden = false; $('rCard').hidden = true;
     if (live) live.stop();
-    window.FAW_LIVE.prepare(res.BX, res.Y0);
+    window.FAW_LIVE.prepare(res.BX, res.Y0, res.level);
     live = window.FAW_LIVE.show($('cLive'), res, {
       caption: function (t) { $('cap').textContent = t; },
       pressure: function (p) { $('pressFill').style.width = Math.round(p * 100) + '%'; $('press').style.opacity = res.isRun ? '0' : '1'; },
@@ -196,7 +205,7 @@
 
   window.FAW_APP = {
     el: el, fill: fill, select: select, toast: toast, copy: copy, pct: pct, CALL_LABEL: CALL_LABEL,
-    SC: SC, sitText: sitText, spotText: spotText, ordinal: ordinal,
+    SC: SC, setLevel: setLevel, setHash: setHash, levelShort: levelShort, sitText: sitText, spotText: spotText, ordinal: ordinal,
     get draft() { return draft; }, setDraft: function (d) { draft = d; saveDraft(); }, saveDraft: saveDraft, emptyPlay: emptyPlay,
     store: store, signedIn: signedIn, openStore: openStore, terms: terms, nameFor: nameFor, tagOf: tagOf, customOf: customOf,
     choices: choices, choiceOptions: choiceOptions, choice: choice,

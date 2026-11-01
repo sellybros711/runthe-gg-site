@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <header class="topbar">
@@ -124,6 +124,10 @@
     <div class="pick">
       <p class="kicker">You're going for it.</p>
       <h1>4th and what?</h1>
+      <div class="levelrow">
+        <div class="seg" id="pLevel" role="group" aria-label="Level"><button type="button" data-level="hs">High School</button><button type="button" data-level="college">College</button><button type="button" data-level="nfl">NFL</button></div>
+        <div class="seg" id="pHash" role="group" aria-label="Ball on the"><button type="button" data-hash="left">Left hash</button><button type="button" data-hash="mid">Middle</button><button type="button" data-hash="right">Right hash</button></div>
+      </div>
       <div class="dists" id="pDists"></div>
       <p class="spotline"><span id="pSpot"></span> <button type="button" class="link" id="pMore">Change</button></p>
       <div class="pmore" id="pMoreBox" hidden>
@@ -290,6 +294,7 @@
         <div class="bookhead">
           <div><input class="bookname" id="bName" maxlength="60" aria-label="Playbook name"><small id="bMeta"></small></div>
           <label class="field"><span>Team</span><input id="bTeam" maxlength="60" placeholder="Westfield Varsity" autocomplete="off"></label>
+          <label class="field"><span>Level</span><select id="bLevel"><option value="hs">High School</option><option value="college">College</option><option value="nfl">NFL</option></select></label>
         </div>
         <div class="subtabs" id="bTabs"><button type="button" class="on" data-bt="plays">Plays</button><button type="button" data-bt="sections">Sections</button><button type="button" data-bt="terms">Terminology</button><button type="button" data-bt="share">Share</button></div>
         <div id="bPlays">
@@ -407,31 +412,31 @@
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/assets/cloudsave.js?v=3"></script>
-<script src="config.js?v=7"></script>
+<script src="config.js?v=8"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=7"></script>
+<script src="engine.js?v=8"></script>
 <script src="names.js?v=2"></script>
 <script src="routes.js?v=2"></script>
-<script src="book.js?v=2"></script>
+<script src="book.js?v=3"></script>
 <script src="cards.js?v=1"></script>
 <script src="diagram.js?v=2"></script>
 <script src="export.js?v=2"></script>
-<script src="turf.js?v=2"></script>
+<script src="turf.js?v=3"></script>
 <script src="rig.js?v=1"></script>
-<script src="stage.js?v=1"></script>
+<script src="stage.js?v=2"></script>
 <script src="share.js?v=1"></script>
-<script src="play.js?v=1"></script>
-<script src="app.js?v=5"></script>
+<script src="play.js?v=2"></script>
+<script src="app.js?v=6"></script>
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=4"></script>
-<script src="game.js?v=3"></script>
-<script src="flow.js?v=3"></script>
-<script src="daily.js?v=3"></script>
-<script src="trivia.js?v=3"></script>
-<script src="library.js?v=2"></script>
+<script src="game.js?v=4"></script>
+<script src="flow.js?v=4"></script>
+<script src="daily.js?v=4"></script>
+<script src="trivia.js?v=4"></script>
+<script src="library.js?v=3"></script>
 <script src="learn.js?v=2"></script>
-<script src="testview.js?v=1"></script>
+<script src="testview.js?v=2"></script>
 <script src="printview.js?v=1"></script>
 <!-- The ads (Ads Agent, 2026-10-30): ready, and inert until the launch commit adds the ad tag. -->
 <script src="ads.js?v=3"></script>

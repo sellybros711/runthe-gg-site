@@ -9,6 +9,7 @@ name: 4th and What checks
 #   node 4th-and-what/test/check-browser.mjs          the whole game in Chromium, phone and desktop
 #   node --test 4th-and-what/test/daily.test.mjs      the daily: the plays, the schedule, the copy
 #   node --test 4th-and-what/test/trivia.test.mjs     Daily Defense: the pool, the schedule, the answer
+#   node --test 4th-and-what/test/levels.test.mjs     High School, College and the NFL: hashes, play, stats
 #   supabase/162 twice, then supabase/test/fourth_and_what_daily_test.sql   the daily's server
 #
 # The posture job runs on EVERY pull request, with no path filter: a link
@@ -57,7 +58,7 @@ jobs:
           if git diff --name-only "$base" HEAD | grep -qE '^(4th-and-what/|supabase/162_fourth_and_what_daily\.sql|supabase/test/fourth_and_what_daily_test\.sql|setlist/pxhd\.js|arcade/auth(-ui)?\.js|assets/cloudsave\.js|\.github/workflows/4th-and-what-checks\.yml)'; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
       - name: The sim (the four plays, determinism, the conversion rates)
         if: steps.changed.outputs.run == 'true'
-        run: node --test 4th-and-what/test/engine.test.mjs 4th-and-what/test/playbook.test.mjs 4th-and-what/test/print.test.mjs 4th-and-what/test/daily.test.mjs 4th-and-what/test/trivia.test.mjs
+        run: node --test 4th-and-what/test/engine.test.mjs 4th-and-what/test/playbook.test.mjs 4th-and-what/test/print.test.mjs 4th-and-what/test/daily.test.mjs 4th-and-what/test/trivia.test.mjs 4th-and-what/test/levels.test.mjs
       - name: Install Chromium
         if: steps.changed.outputs.run == 'true'
         run: |
