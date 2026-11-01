@@ -23,8 +23,8 @@ import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=10';
 import { buildBallpark, MOUND_C } from './ballpark.js?v=26';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=42';
-import { look } from './looks.js?v=5';
+import { kitFor } from './people.js?v=43';
+import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
