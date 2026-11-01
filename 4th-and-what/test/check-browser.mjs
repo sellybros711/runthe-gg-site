@@ -194,6 +194,11 @@ async function run(name, viewport, scale) {
   let p = await play();
   ok(p.routes.length >= 4 && p.targets.length >= 2, 'a concept puts a whole play on the formation: ' + p.routes.length + ' routes, reads ' + p.targets.join(' '));
   ok(/Drag/.test(await page.inputValue('#sName')), 'and names it from the terminology: ' + await page.inputValue('#sName'));
+  /* a space can be typed at the end of the name (the owner, 2026-11-01) */
+  await page.fill('#sName', ''); await page.click('#sName'); await page.keyboard.type('Big Ben Right');
+  ok((await page.inputValue('#sName')) === 'Big Ben Right' && await page.evaluate(() => window.FAW_APP.draft.name) === 'Big Ben Right', 'the play name takes spaces as it is typed');
+  await page.keyboard.type(' '); ok((await page.inputValue('#sName')) === 'Big Ben Right ', 'a space at the end stays while typing');
+  await page.click('.tool[data-tool="route"]'); ok((await page.inputValue('#sName')) === 'Big Ben Right', 'and is tidied when you leave the box');
   await page.selectOption('.prow[data-who="WR2"] select', 'post');
   p = await play();
   let z = p.routes.find(r => r.who === 'WR2');
