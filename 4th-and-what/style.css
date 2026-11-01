@@ -376,3 +376,36 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
   .dist b { font-size: 44px; }
   body.gamemode .view.studio { grid-template-columns: minmax(0, 1fr); grid-template-areas: "center" "lib"; }
 }
+
+/* ---------- the daily 4th down (daily.js) ---------- */
+.dailycard { border-radius: 18px; padding: 22px 24px; background: linear-gradient(135deg, #3a2a08, #1d1606); border: 1px solid #5c4410; color: #fff; display: grid; gap: 6px; box-shadow: 0 6px 0 rgba(0, 0, 0, .3); }
+.dailycard .dnum { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #e8c97a; }
+.dailycard .dtag { color: var(--gold); }
+.dailycard h2 { margin: 0; font: italic 900 52px/1 'Barlow Condensed', sans-serif; color: var(--gold); }
+.dailycard .dteams { margin: 0; font-size: 18px; font-weight: 800; }
+.dailycard .dgame { margin: 0 0 8px; font-size: 14px; color: rgba(255, 255, 255, .78); }
+.btn.big { min-height: 52px; font-size: 17px; padding: 12px 22px; justify-self: start; }
+.view.daily { grid-template-columns: minmax(0, 1fr); }
+.dintro { max-width: 640px; margin: 0 auto; text-align: center; display: grid; gap: 6px; justify-items: center; padding: 18px 0 30px; }
+.dintro .kicker { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.dintro .dteams { margin: 0; font: italic 900 34px/1.05 'Barlow Condensed', sans-serif; }
+.dintro .dround { margin: 0; color: var(--dim); font-weight: 700; }
+.dintro .dbug { display: inline-flex; gap: 14px; background: var(--panel2); border: 1px solid var(--edge); border-radius: 10px; padding: 8px 14px; font-weight: 800; margin: 6px 0; }
+.dintro h1 { margin: 6px 0 0; font: italic 900 72px/1 'Barlow Condensed', sans-serif; color: var(--gold); }
+.dintro .dspot { margin: 0 0 10px; font-size: 20px; font-weight: 800; }
+.dintro .btn.big { justify-self: center; }
+.dintro .dstats { margin: 4px 0 0; color: var(--teal); font-weight: 800; }
+.ddone { margin-top: 12px; background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 14px 16px; text-align: left; width: 100%; box-sizing: border-box; }
+.ddone h3 { margin: 10px 0 4px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.ddone p { margin: 0; line-height: 1.45; }
+.dmine { font-weight: 800; }
+.dverdict { font-weight: 800; margin-top: 4px !important; }
+.dintro .src { margin-top: 14px; font-size: 12px; color: var(--dim); }
+.rescard .rdaily { margin: 6px 0 8px; padding: 8px 10px; border-radius: 10px; background: rgba(245, 183, 42, .1); text-align: left; font-size: 13px; line-height: 1.4; }
+.rescard .rdaily p { margin: 0; }
+.rescard .rdhead { font-weight: 800; color: var(--gold); margin-bottom: 4px !important; }
+.rescard .rdstats { color: var(--teal); font-weight: 800; margin-top: 4px !important; }
+@media (max-width: 700px) {
+  .dailycard h2 { font-size: 42px; }
+  .dintro h1 { font-size: 58px; }
+}

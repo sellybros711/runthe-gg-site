@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 <header class="topbar">
@@ -52,6 +52,14 @@
       <h1 class="bannerlogo"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></h1>
       <p class="heroname" id="hName"></p>
     </div>
+    <!-- the daily 4th down: one real NFL 4th down a day (daily.js) -->
+    <section class="dailycard" id="hDaily" hidden aria-label="Today's 4th down">
+      <p class="dnum"><span class="dtag">Today's 4th down</span> <span id="hdNum"></span></p>
+      <h2 id="hdDown"></h2>
+      <p class="dteams" id="hdTeams"></p>
+      <p class="dgame" id="hdGame"></p>
+      <button type="button" class="btn gold big" id="hdGo">Play today</button>
+    </section>
     <div class="modes">
       <button type="button" class="mode play" data-go="play"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></button>
       <button type="button" class="mode book" data-go="books"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></button>
@@ -62,6 +70,28 @@
       <p class="fund"><span>Free to play, funded by players.</span><a class="kofi" href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi">&#9829; Support us</a></p>
       <p class="src">An unofficial fan project, not affiliated with or endorsed by the NFL or any team.</p>
     </footer>
+  </section>
+
+  <!-- DAILY: today's real 4th down, then draw your call (the Studio in game mode) -->
+  <section class="view daily" id="vDaily" hidden>
+    <div class="dintro">
+      <p class="kicker" id="dNum"></p>
+      <p class="dteams big" id="dTeams"></p>
+      <p class="dround" id="dRound"></p>
+      <div class="dbug"><span id="dScore"></span><span id="dClock"></span></div>
+      <h1 id="dDown"></h1>
+      <p class="dspot" id="dSpot"></p>
+      <button type="button" class="btn gold big" id="dGo">Draw your call</button>
+      <p class="dstats" id="dStats" hidden></p>
+      <div class="ddone" id="dDone" hidden>
+        <p class="dmine" id="dMine"></p>
+        <h3>What really happened</h3>
+        <p class="dreal" id="dReal"></p>
+        <p class="dverdict" id="dVerdict"></p>
+      </div>
+      <button type="button" class="link" id="dBack">Back home</button>
+      <p class="src">Real plays from nflverse play-by-play (CC-BY 4.0).</p>
+    </div>
   </section>
 
   <!-- PLAY: the game. 4th and what? Pick it, draw it (the Studio in game mode), snap it. -->
@@ -305,6 +335,11 @@
       <h2 id="rTitle"></h2>
       <p class="rline" id="rLine"></p>
       <p class="rwhy" id="rWhy"></p>
+      <div class="rdaily" id="rDaily" hidden>
+        <p class="rdhead" id="rDailyHead"></p>
+        <p class="rdreal"><b>What really happened:</b> <span id="rReal"></span> <span id="rVerdict"></span></p>
+        <p class="rdstats" id="rDayStats" hidden></p>
+      </div>
       <div class="racts">
         <button type="button" class="btn gold" id="rAgain">Run it back</button>
         <button type="button" class="btn" id="rEdit">Edit play</button>
@@ -360,11 +395,12 @@
 <script src="stage.js?v=1"></script>
 <script src="share.js?v=1"></script>
 <script src="play.js?v=1"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=3"></script>
 <script src="game.js?v=3"></script>
-<script src="flow.js?v=1"></script>
+<script src="flow.js?v=2"></script>
+<script src="daily.js?v=1"></script>
 <script src="library.js?v=2"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=1"></script>

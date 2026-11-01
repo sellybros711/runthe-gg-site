@@ -51,16 +51,20 @@
       spotLine();
     });
   });
-  $('sSit').addEventListener('click', function () { A.show('play'); });
+  /* the situation goes back to where it was picked: the daily's is the day's */
+  $('sSit').addEventListener('click', function () { A.show(window.FAW_DAILY && window.FAW_DAILY.active() ? 'daily' : 'play'); });
 
   /* ---------- 2 and 3. Snap it, watch it ---------- */
   function ready(p) { return (p.handoff && p.handoff.to) || (p.targets && p.targets.length); }
   function snap() {
     var p = A.copy(A.draft.play);
     if (!ready(p)) { A.toast('sToast', 'Give it a read (Read, then tap a receiver) or make it a run first.'); $('sHint').textContent = 'Give it a read, or make it a run.'; return false; }
-    var seed = forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
+    /* the daily's first snap is against the day's defense; every other one is fresh */
+    var D = window.FAW_DAILY, ds = D ? D.seed() : null;
+    var seed = ds != null ? ds : forced != null ? (+forced >>> 0) : RNG.freshSeed(); forced = null;
     played = p;
     res = E.run(A.SC, p, seed);
+    if (D && D.active()) D.snapped(res, p);
     /* a playbook play counts the snap against whatever the defense called */
     var r = A.draft.ref, b = r && A.signedIn() ? A.store.book(r.book) : null;
     if (b) b.plays.forEach(function (e) { if (e.id === r.id) { B.countSnap(e, res.distance, res.callKey, res.win); A.store.put(b); } });
@@ -80,6 +84,7 @@
     $('rLine').textContent = gained + ' · ' + r.callName;
     $('rWhy').textContent = r.reason;
     $('rToast').hidden = true;
+    if (window.FAW_DAILY) window.FAW_DAILY.card(r);
     c.hidden = false;
     card = null;
     $('dbgTxt').textContent = 'seed ' + r.seed + ' · replay this exact snap: ?seed=' + r.seed;
@@ -139,7 +144,8 @@
   });
   $('rShare').addEventListener('click', function () {
     if (!res) return;
-    SH.send(SH.text(res)).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
+    var D = window.FAW_DAILY;
+    SH.send(D && D.active() ? D.share(res) : SH.text(res)).then(function (how) { A.toast('rToast', how === 'copied' ? 'Copied. Paste it anywhere.' : how === 'shared' ? 'Shared.' : how === 'cancelled' ? '' : 'Could not share from here.'); });
   });
   $('rBreak').addEventListener('click', function () { close3d(); A.show('replay'); window.FAW_GAME.load(res, played); });
   $('bClose3d').addEventListener('click', function () { $('rCard').hidden = true; });
@@ -147,5 +153,5 @@
   A.on('play', spotLine);
   A.on('studio', spotLine);
 
-  window.FAW_FLOW = { pick: pick, snap: snap, last: function () { return res; }, card: makeCard };
+  window.FAW_FLOW = { refresh: spotLine, pick: pick, snap: snap, last: function () { return res; }, card: makeCard };
 })();

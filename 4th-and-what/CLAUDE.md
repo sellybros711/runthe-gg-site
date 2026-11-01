@@ -13,8 +13,16 @@ The why behind each rule is in the knowledge base, `games/4th-and-what/` (start 
 - **Players run exactly what was drawn.** The engine may decide when the QB throws, never where a
   receiver goes. The route and concept libraries (`routes.js`) only make drawn points.
 - **The layout is the owner's template** (2026-10-31): Play, Studio, Learn, Playbooks, Test vs
-  Defense, Print, on turf. The page opens on Home (the owner, 2026-11-01): the 4TH & WHAT banner over hundreds of plays rotating, "Draw a play" beside "Playbook Builder", then the site footer. **Play is the video game** (the owner, 2026-10-31): 4th and what?, draw it, snap it in the 3D stadium, then the result card (Run it back, Save play, Save card, the breakdown). Keep Play a game first. Watch in 3D keeps the pixel stadium. Teams, team codes and player
+  Defense, Print, on turf. The page opens on Home (the owner, 2026-11-01): the 4TH & WHAT banner over hundreds of plays rotating, the Daily card, "Draw a play" beside "Playbook Builder", then the site footer. **Play is the video game** (the owner, 2026-10-31): 4th and what?, draw it, snap it in the 3D stadium, then the result card (Run it back, Save play, Save card, the breakdown). Keep Play a game first. Watch in 3D keeps the pixel stadium. Teams, team codes and player
   tracking are the next build, with their own SQL.
+- **The daily is one real NFL 4th down a day** (the owner, 2026-11-01). `daily.js` picks it from
+  `data/fourths.json` (built by `build/fourths.mjs` from nflverse play-by-play, CC-BY 4.0, credited
+  on the page) on the Eastern day, the same for everybody. Every fact on its card is a field of
+  that row; never type one by hand. The first snap is the day's, against the day's seed; every
+  snap after it is practice and never posted. Save play stays on the card. The server is
+  `supabase/162_fourth_and_what_daily.sql` (one row a player a day, the first post stands). Rebuild
+  the data after a season and bump `fourths.json`'s `?v=` in `daily.js`. Never reshuffle the order
+  once it is live: the day's play would change under people mid-streak.
 - **Only Move moves a player** (the owner, 2026-10-31). No other tool, and no long press, ever
   changes where a man lines up.
 - **A run is what was drawn** (the owner, 2026-11-01: "i ran a run play and the play didn't

@@ -25,7 +25,7 @@
   'use strict';
   var C = window.FAW_CONFIG, E = window.FAW_ENGINE, B = window.FAW_BOOK, N = window.FAW_NAMES, R = window.FAW_ROUTES, F = window.FAW_FORMATIONS;
   var $ = function (id) { return document.getElementById(id); };
-  var VIEWS = ['home', 'play', 'studio', 'replay', 'learn', 'books', 'test', 'print'];
+  var VIEWS = ['home', 'daily', 'play', 'studio', 'replay', 'learn', 'books', 'test', 'print'];
   /* the Studio has two modes: 'game' (Play's draw step: the field, the tools, Snap it) and 'build' */
   var mode = 'build';
   var hooks = {}, current = null;

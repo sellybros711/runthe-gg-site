@@ -7,6 +7,8 @@ name: 4th and What checks
 #   node --test 4th-and-what/test/playbook.test.mjs   the names your terminology gives, Test it's calls, the playbook file
 #   node --test 4th-and-what/test/print.test.mjs      card backs, the quiz, flip, play numbers, wristband codes
 #   node 4th-and-what/test/check-browser.mjs          the whole game in Chromium, phone and desktop
+#   node --test 4th-and-what/test/daily.test.mjs      the daily: the plays, the schedule, the copy
+#   supabase/162 twice, then supabase/test/fourth_and_what_daily_test.sql   the daily's server
 #
 # The posture job runs on EVERY pull request, with no path filter: a link
 # added anywhere on the site is what would launch the game, and a filter on
@@ -51,10 +53,10 @@ jobs:
           base="${{ github.event.pull_request.base.sha || github.event.before }}"
           if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           git fetch --no-tags --depth=1 origin "$base" 2>/dev/null || true
-          if git diff --name-only "$base" HEAD | grep -qE '^(4th-and-what/|setlist/pxhd\.js|arcade/auth(-ui)?\.js|assets/cloudsave\.js|\.github/workflows/4th-and-what-checks\.yml)'; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+          if git diff --name-only "$base" HEAD | grep -qE '^(4th-and-what/|supabase/162_fourth_and_what_daily\.sql|supabase/test/fourth_and_what_daily_test\.sql|setlist/pxhd\.js|arcade/auth(-ui)?\.js|assets/cloudsave\.js|\.github/workflows/4th-and-what-checks\.yml)'; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
       - name: The sim (the four plays, determinism, the conversion rates)
         if: steps.changed.outputs.run == 'true'
-        run: node --test 4th-and-what/test/engine.test.mjs 4th-and-what/test/playbook.test.mjs 4th-and-what/test/print.test.mjs
+        run: node --test 4th-and-what/test/engine.test.mjs 4th-and-what/test/playbook.test.mjs 4th-and-what/test/print.test.mjs 4th-and-what/test/daily.test.mjs
       - name: Install Chromium
         if: steps.changed.outputs.run == 'true'
         run: |
@@ -63,3 +65,30 @@ jobs:
       - name: The game in a browser, phone and desktop
         if: steps.changed.outputs.run == 'true'
         run: node 4th-and-what/test/check-browser.mjs
+
+  # The daily's server: the migration twice (it must be safe to rerun), then its checks.
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migration 162 against Postgres 16
+        run: |
+          createdb faw
+          P="psql -q -d faw -v ON_ERROR_STOP=1"
+          $P -f supabase/test/baseball_pro_base.sql
+          $P -c "create table if not exists public.profiles (id uuid primary key, username text)"
+          $P -f supabase/162_fourth_and_what_daily.sql
+          $P -f supabase/162_fourth_and_what_daily.sql
+          $P -f supabase/test/fourth_and_what_daily_test.sql | tee out.txt
+          grep -q 'fourth_and_what_daily_test: all ok' out.txt

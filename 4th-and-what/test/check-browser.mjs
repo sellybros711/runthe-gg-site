@@ -57,6 +57,11 @@ async function run(name, viewport, scale) {
         if (mem[k] && mem[k].progress > m.progress) return Promise.resolve({ ok: false, payload: mem[k].payload, progress: mem[k].progress });
         mem[k] = { progress: m.progress, payload: JSON.parse(JSON.stringify(m.payload)) }; return Promise.resolve({ ok: true }); },
       drop: (g, sl) => { delete mem[g + '/' + sl]; return Promise.resolve(null); } };
+    /* the daily's server, in memory too: it never posts to the real board */
+    window.__posts = [];
+    window.FAW_DAILY_API = { signedIn: () => true,
+      submit: r => { window.__posts.push(r); return Promise.resolve({ taken: true, streak: 3, best: 5, players: 10, convertedAll: 4 }); },
+      day: () => Promise.resolve({ players: 9, converted: 4 }), mine: () => Promise.resolve(null) };
   });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
   const page = await ctx.newPage();
@@ -90,6 +95,37 @@ async function run(name, viewport, scale) {
   ok(await page.isVisible('#vBooks'), 'Playbook Builder opens the playbooks');
   await page.click('.logo');
   ok(await page.isVisible('#vHome'), 'the logo goes home');
+  /* ---------- the daily 4th down: one real NFL 4th down a day ---------- */
+  await page.waitForSelector('#hDaily:not([hidden])', { timeout: 10000 });
+  const hd = await page.evaluate(() => ({ down: document.getElementById('hdDown').textContent, teams: document.getElementById('hdTeams').textContent, go: document.getElementById('hdGo').textContent }));
+  ok(/^4th & (Goal|\d+) at /.test(hd.down) && / (vs|at) /.test(hd.teams) && hd.go === 'Play today', 'Home has today\'s 4th down: ' + hd.down + ', ' + hd.teams);
+  await shot('d-home');
+  await page.click('#hdGo');
+  ok(await page.isVisible('#vDaily') && /^Daily #\d+/.test(await page.textContent('#dNum')) && (await page.textContent('#dDown')) === hd.down.split(' at ')[0], 'Play today opens the situation: ' + await page.textContent('#dNum'));
+  await shot('d-intro');
+  await page.click('#dGo');
+  const dsc = await page.evaluate(() => { const t = window.FAW_DAILY.today(), S = window.FAW_APP.SC; return { ok: S.down === 4 && S.ballOn === t.ballOn && S.distance === Math.min(t.togo, t.ballOn), empty: !window.FAW_STUDIO.play().routes.length }; });
+  ok(await page.isVisible('#sSnap') && dsc.ok && dsc.empty, 'Draw your call: the real down, distance and spot, on a clean board');
+  await page.click('.tool[data-tool="handoff"]');
+  const drb = await page.evaluate(() => { const p = window.FAW_STUDIO.play(); return window.FAW_FORMATIONS.place(p.formation, p.moved).RB; });
+  await dragYd(drb, [drb[0] + 1.5, drb[1] + 2.5], [drb[0] + 2.5, 0.5], [drb[0] + 2.5, 7]);
+  await page.click('#sSnap');
+  await page.waitForTimeout(400); await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  const dc = await page.evaluate(() => ({ head: document.getElementById('rDailyHead').textContent, real: document.getElementById('rReal').textContent, stats: document.getElementById('rDayStats').textContent,
+    posts: window.__posts.length, seed: window.FAW_FLOW.last().seed, want: window.FAW_DAILY.core.seedFor(window.FAW_DAILY.day()) }));
+  ok(/is in\./.test(dc.head) && dc.real.length > 10 && dc.posts === 1 && dc.seed === dc.want, 'the first snap is the day\'s, against the day\'s defense, posted once, with what really happened: ' + JSON.stringify(dc));
+  ok(/converted today/.test(dc.stats) && /Streak 3/.test(dc.stats), 'and the day so far comes back: ' + dc.stats);
+  await shot('d-card');
+  await page.click('#rAgain');
+  await page.waitForTimeout(400); await page.click('#bSkip');
+  await page.waitForSelector('#rCard:not([hidden])', { timeout: 20000 });
+  ok(/^Practice/.test(await page.textContent('#rDailyHead')) && await page.evaluate(() => window.__posts.length) === 1, 'Run it back is practice: nothing posted');
+  ok(!(await page.isHidden('#rSave')), 'Save play is there for the daily too');
+  await page.evaluate(() => { document.getElementById('watch').hidden = true; document.getElementById('rCard').hidden = true; });
+  await page.click('.logo');
+  const back = await page.evaluate(() => ({ go: document.getElementById('hdGo').textContent, daily: window.FAW_DAILY.active(), d: window.FAW_APP.SC.distance, b: window.FAW_APP.SC.ballOn }));
+  ok(/^You (converted|were stopped)\. See it$/.test(back.go) && !back.daily && back.d === 5 && back.b === 40, 'home again: the day is played, and Draw a play is back to 4th and 5 on the 40');
   /* ---------- Play, the video game: 4th and what, draw it, snap it, the card ---------- */
   await page.click('.mode.play');
   ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home: 4th and what?');

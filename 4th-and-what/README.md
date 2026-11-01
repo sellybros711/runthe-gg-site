@@ -1,7 +1,8 @@
 # 4th and What
 
 A game and a coaching tool, laid out on the owner's template (2026-10-31):
-**Play** (any down, distance and spot, against a defense that picks its call
+the **Daily** (one real NFL 4th down a day: draw your call, snap it once,
+then see what really happened), **Play** (any down, distance and spot, against a defense that picks its call
 every snap), the **Studio** (draw a play, or build it from the route and
 concept libraries), **Learn** (a position at a time, with a quiz),
 **Playbooks** (plays kept on your Run The Games account, named in your own
@@ -33,6 +34,8 @@ the defensive calls, the look, and the owner's decisions. Read
 | `stage.js` | the stadium and the perspective camera, with Putt Putt's console pass |
 | `play.js` | Watch in 3D: the play in the stadium, with slow motion and captions |
 | `home.js` | Home's banner: a package of hundreds of plays (every concept, formation, side and jet motion) run by the engine, rotating |
+| `daily.js` | The daily 4th down: the day's play (Eastern day, a fixed shuffle by rank), Home's Daily card, the situation screen, one scored snap, what really happened, the share line, the server calls (supabase/162) |
+| `data/fourths.json` | The daily's plays: every crucial 4th down go-for-it since 1999, from nflverse play-by-play (CC-BY 4.0), built by `build/fourths.mjs` |
 | `flow.js` | Play, the video game: 4th and what?, draw it (the Studio in game mode), snap it in 3D, the result card and its Save card |
 | `app.js` | the shell: the six views, the situation, the Studio's draft, the account, the save box |
 | `studio.js` | the Coach Studio: Move, Route, Block, Run, Read, Motion, Erase, the players panel, the card, flip |
@@ -66,6 +69,7 @@ node 4th-and-what/test/check-browser.mjs [shots dir]
 node 4th-and-what/check-posture.mjs
 node 4th-and-what/build/tune.mjs [seeds] [--plays]
 node 4th-and-what/build/sheet.mjs [out dir]
+node 4th-and-what/build/fourths.mjs [pbp cache dir]   (rebuild the daily's plays; then bump fourths.json's ?v= in daily.js)
 ```
 
 Add `?seed=N` to the url to replay an exact snap (Play's debug toggle shows
