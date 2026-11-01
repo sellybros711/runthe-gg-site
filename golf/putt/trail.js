@@ -362,10 +362,12 @@ function plan(spec){
   // in the sun or out of it (the sun is low in the upper left), or one of the bright rays thrown out across the plain.
   P.craterAt = function(x, y){ var best = null, bd = 9; for (var i = 0; i < P.craters.length; i++){ var c = P.craters[i], d = Math.hypot(x - c.x, y - c.y) / c.r; if (d < bd){ bd = d; best = c; } } return best ? { c:best, d:bd } : null; };
   P.craterH = function(x, y){ var q = P.craterAt(x, y); if (!q || q.d > 1.55) return 0; var d = q.d;
-    if (d < 0.6) return -1.6 + 0.25 * (d / 0.6) * (d / 0.6); if (d < 1) return -1.35 + 2.3 * sm(0.6, 1, d); return 0.95 * (1 - sm(1, 1.55, d)); };
+    if (d < 0.45) return -1.2 + 0.15 * (d / 0.45) * (d / 0.45); if (d < 1) return -1.05 + 1.85 * sm(0.45, 1, d); return 0.8 * (1 - sm(1, 1.55, d)); };
   P.craterPaint = function(x, y){ var q = P.craterAt(x, y); if (!q || q.d > 2.7) return 0; var d = q.d, c = q.c, ux = (x - c.x) / (d * c.r || 1), uy = (y - c.y) / (d * c.r || 1), sun = -0.79 * ux - 0.61 * uy;
-    if (d < 0.6) return 1; if (d < 1) return sun > 0.15 ? 2 : sun < -0.25 ? 3 : 7; if (d < 1.4) return sun > 0 ? 4 : 5;
-    var a = Math.atan2(uy, ux); return hash(Math.floor((a + 3.2) * 4.5), Math.floor(c.x), 96) > 0.62 && hash(Math.floor(d * 6), Math.floor((a + 3.2) * 30), 97) < 0.75 - (d - 1.4) * 0.5 ? 6 : 0; };
+    if (d < 0.45) return 1; if (d < 1) return sun > 0.15 ? 2 : sun < -0.25 ? 3 : 7; if (d < 1.4) return sun > 0 ? 4 : 5;
+    // a ray: one of a dozen narrow spokes, each its own length, thinning to nothing at its end
+    var a = (Math.atan2(uy, ux) + Math.PI) / (2 * Math.PI) * 14, k = Math.floor(a), f = a - k, len = 0.4 + hash(k, Math.floor(c.x * 7), 96) * 1.2, w = 0.22 * (1 - (d - 1.4) / len);
+    return hash(k, Math.floor(c.y * 7), 97) > 0.45 && d - 1.4 < len && Math.abs(f - 0.5) < w ? 6 : 0; };
   P.near = function(x, y){ var best = 1e9, out = path[0]; for (var i = 0; i < path.length; i++){ var d = Math.hypot(path[i][0] - x, path[i][1] - y); if (d < best){ best = d; out = path[i]; } } return out; };
 
   // ---- the world's ground to keep off: ponds, lava pools, ice sheets, bogs. Never on the path or a clearing.
