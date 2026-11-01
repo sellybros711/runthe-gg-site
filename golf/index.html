@@ -15562,6 +15562,44 @@ function golfAds(){
 }
 
 /* ── THE FIRST TEE ──────────────────────────────────────────────────────────────────────────────── */
+/* ── THE TOUR PASS TRACKER on the First Tee home: always there, so the pass is never out of sight (the owner, 2026-11-01) ──
+   A card that shows the season, the days left, the tier and the progress to the next tier, and the rewards waiting.
+   Tapping it opens the Tour Pass. On the desktop it sits under the pin sheet; on a phone, under the pin strip. */
+function ftPtStyleOnce(){ if(document.getElementById('ptk-css')) return; const s=document.createElement('style'); s.id='ptk-css';
+  s.textContent='.ft-ptrack{position:relative;z-index:6;display:flex;align-items:center;gap:12px;width:100%;max-width:420px;margin:10px auto 0;padding:11px 14px;border-radius:16px;border:1.5px solid #f1d04a;background:linear-gradient(160deg,rgb(44,34,12),rgb(20,16,8));box-shadow:0 0 0 1px rgba(241,208,74,.2),0 10px 26px -10px rgba(0,0,0,.7),0 0 22px -4px rgba(241,208,74,.35);color:#fff;text-align:left;cursor:pointer;font:inherit}'+
+    '.ft-ptrack:focus-visible{outline:2px solid #ffe27a;outline-offset:3px}.ft-ptrack:active{transform:translateY(1px)}'+
+    '.ptk-tkt{flex:0 0 auto;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:linear-gradient(180deg,#ffe27a,#f1b62a);box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}'+
+    '.ptk-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}'+
+    '.ptk-k{font:800 10px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#f1d04a}'+
+    '.ptk-t{font:400 21px/1 var(--display);letter-spacing:.02em;display:flex;align-items:center;gap:7px}'+
+    '.ptk-pro{font:900 9px/1 var(--body);letter-spacing:.1em;color:#2a1a04;background:linear-gradient(90deg,#ffe27a,#f1b62a);border-radius:999px;padding:3px 6px}'+
+    '.ptk-bar{height:6px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}.ptk-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#f1b62a,#ffe27a)}'+
+    '.ptk-s{font:700 11px/1.25 var(--body);opacity:.82}'+
+    '.ptk-r{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:7px}'+
+    '.ptk-claim{font:900 10px/1 var(--body);letter-spacing:.06em;color:#fff;background:#d62a2a;border-radius:999px;padding:5px 8px;animation:ptkPulse 1.4s ease-in-out infinite}'+
+    '@keyframes ptkPulse{0%,100%{box-shadow:0 0 0 0 rgba(214,42,42,.6)}50%{box-shadow:0 0 0 6px rgba(214,42,42,0)}}'+
+    '@media (prefers-reduced-motion:reduce){.ptk-claim{animation:none}}'+
+    '.ptk-go{font:900 12px/1 var(--body);color:#f1d04a}'+
+    '.ft-home .ft-rcol{position:absolute;z-index:14;right:56px;top:96px;width:360px;display:flex;flex-direction:column;gap:12px}.ft-home.has-gift .ft-rcol{top:160px}.ft-home .ft-rcol .ft-sheet{position:relative!important;right:auto!important;top:auto!important;width:100%!important}.ft-home .ft-rcol .ft-ptrack{margin:0;max-width:none}';
+  document.head.appendChild(s); }
+function ftPassTrack(desk){
+  ftPtStyleOnce();
+  const ssn=passSeason(), signed=sbSignedIn(); let kick, title, s2, pct=0, cl=0;
+  if(signed){ const st=passState(), xp=st.xp||0, tier=passTierAt(xp); cl=passClaimable();
+    const base=tier>0?passXpForTier(tier):0, next=tier<PASS_TIERS?passXpForTier(tier+1):null;
+    pct=next?Math.max(0,Math.min(100,(xp-base)/(next-base)*100)):100;
+    s2=next?`Tier ${tier} of ${PASS_TIERS} · ${Math.max(0,next-xp).toLocaleString()} XP to tier ${tier+1}`:`Top tier · every XP still counts`; }
+  else s2='Sign in to track your progress';
+  kick=`Season ${ssn.n} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
+  title=`Tour Pass${signed&&passProActive()?' <span class="ptk-pro">PRO</span>':''}`;
+  const el=$(`<button type="button" class="ft-ptrack${desk?' ptk-desk':''}" aria-label="Tour Pass, season ${ssn.n}. ${s2}. Open the pass.">
+    <span class="ptk-tkt" aria-hidden="true">🎟️</span>
+    <span class="ptk-body"><span class="ptk-k">${kick}</span><span class="ptk-t">${title}</span>
+      <span class="ptk-bar"><i style="width:${pct.toFixed(1)}%"></i></span><span class="ptk-s">${s2}</span></span>
+    <span class="ptk-r">${cl>0?`<span class="ptk-claim">${cl} to claim</span>`:''}<span class="ptk-go">View ▸</span></span></button>`);
+  el.onclick=()=>{ S.overlay='tourpass'; render(); };
+  return el;
+}
 function scrTitle(){
   if(!S.daily) restoreProfileIdentity();   // a Legend round swaps the look to the legend's; the home must show the player's own
   reconcileDailyAttempts();
@@ -15581,7 +15619,9 @@ function scrTitle(){
   // today's pin sheet: a card on a desktop, a strip of pins under the bag tag that opens into the card on a phone
   if(pend){ const n=$(`<button type="button" class="ft-giftnote"><span class="ft-gi">${ftIcon('gift')}</span><span><b>Your day ${pend.n} gift is here</b>${esc(loginRewLabel(pend.rew))}. Tap to open it.</span></button>`);
     n.onclick=()=>{ ftBurst(n); claimLoginGift(); }; (desk?root:tee).appendChild(n); root.classList.add('has-gift'); }
-  (desk?root:tee).appendChild(desk?ftSheet(false):ftSheet(true));
+  // the desktop stacks the pin sheet and the Tour Pass card in one column, so a taller sheet never covers the card
+  if(desk){ const col=$(`<div class="ft-rcol"></div>`); col.appendChild(ftSheet(false)); if(passEnabled()) col.appendChild(ftPassTrack(true)); root.appendChild(col); }
+  else { tee.appendChild(ftSheet(true)); if(passEnabled()) tee.appendChild(ftPassTrack(false)); }
   // the two doors
   const cs=careerSaveInfo(), ri=resumeInfo();
   let pc=[]; try{ if(cs && !cs.ended) pc.push(`<span class="ft-chip g">${cs.circuitMode?'Legend Circuit':'Career'} · Yr ${cs.year||1}</span>`); else if(ri) pc.push(`<span class="ft-chip g">Golfer ${ri.n} of 8</span>`); }catch(e){}
