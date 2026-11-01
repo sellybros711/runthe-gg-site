@@ -135,6 +135,25 @@ async function run(name, viewport, scale) {
   await page.click('.logo');
   const back = await page.evaluate(() => ({ go: document.getElementById('hdGo').textContent, daily: window.FAW_DAILY.active(), d: window.FAW_APP.SC.distance, b: window.FAW_APP.SC.ballOn }));
   ok(/^You (converted|were stopped)\. See it$/.test(back.go) && !back.daily && back.d === 5 && back.b === 40, 'home again: the day is played, and Draw a play is back to 4th and 5 on the 40');
+  /* ---------- Daily Defense: one play, pick the call that stops it ---------- */
+  await page.click('.mode.trivia');
+  await page.waitForFunction(() => window.FAW_TRIVIA && window.FAW_TRIVIA.item() && document.querySelectorAll('#tCalls .tcall').length === 7, null, { timeout: 10000 });
+  ok(await page.isVisible('#vTrivia') && /^Daily Defense #\d+/.test(await page.textContent('#tNum')) && (await page.$$eval('#tCalls .tcall', b => b.every(x => !x.disabled))) && await page.isHidden('#tRes'),
+    'Daily Defense shows the play and seven calls, no answer yet: ' + await page.textContent('#tName'));
+  await shot('t-ask');
+  await page.click('#tCalls .tcall[data-call="cover2"]');
+  await page.waitForSelector('#tRes:not([hidden])', { timeout: 30000 });
+  const tv = await page.evaluate(() => { const k = window.FAW_TRIVIA.kept(), T = window.FAW_TRIVIA, it = T.item(), sc = T.scenario();
+    const again = T.core.solve(sc, it.play, window.FAW_DAILY.day());
+    return { pick: k.pick, same: JSON.stringify(again) === JSON.stringify(k.rates), bars: document.querySelectorAll('#tBars .tbar').length, mine: document.querySelectorAll('#tBars .tbar.mine').length,
+      best: document.querySelectorAll('#tBars .tbar.best').length, locked: [...document.querySelectorAll('#tCalls .tcall')].every(x => x.disabled), verdict: document.getElementById('tVerdict').textContent }; });
+  ok(tv.pick === 'cover2' && tv.same && tv.bars === 7 && tv.mine === 1 && tv.best >= 1 && tv.locked, 'the pick locks, and the answer is the engine run against every call: ' + tv.verdict);
+  await shot('t-answer');
+  await page.reload();
+  await page.evaluate(() => window.FAW_APP.show('trivia'));
+  await page.waitForSelector('#tRes:not([hidden])', { timeout: 10000 });
+  ok(await page.evaluate(() => [...document.querySelectorAll('#tCalls .tcall')].every(x => x.disabled)), 'one pick a day: it is still locked after a reload');
+  await page.click('.logo');
   /* ---------- Play, the video game: 4th and what, draw it, snap it, the card ---------- */
   await page.click('.mode.play');
   ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home: 4th and what?');

@@ -13,8 +13,8 @@
       "sha": "7c8b2c13e2f5ecd5"
     },
     "config.js": {
-      "v": "5",
-      "sha": "20ebc3a3f2ff0201"
+      "v": "6",
+      "sha": "26dd4f488684bd7a"
     },
     "formations.js": {
       "v": "1",
@@ -25,8 +25,8 @@
       "sha": "9c6a7e1575b377f0"
     },
     "engine.js": {
-      "v": "6",
-      "sha": "a4590aaee077dc58"
+      "v": "7",
+      "sha": "9a23ae98f0aef67f"
     },
     "names.js": {
       "v": "2",
@@ -73,8 +73,8 @@
       "sha": "3dc28a7e95923a28"
     },
     "app.js": {
-      "v": "4",
-      "sha": "b0d6f6958fa0b0e3"
+      "v": "5",
+      "sha": "d838c61501f84e97"
     },
     "home.js": {
       "v": "4",
@@ -93,8 +93,12 @@
       "sha": "4d5f92aa936e287d"
     },
     "daily.js": {
+      "v": "3",
+      "sha": "cc3c22e444a253a9"
+    },
+    "trivia.js": {
       "v": "2",
-      "sha": "8ee1b5a4fef8a7eb"
+      "sha": "52dd75ff10d664c6"
     },
     "library.js": {
       "v": "2",

@@ -470,6 +470,11 @@
     /* play action turns his back to the rush: that is pocket time spent on the fake */
     if (pa) Tp -= T.pa.pocket;
     Tp = clamp(Tp, T.pocket.min, T.pocket.max);
+    /* THE FREE RUSHER. On a blitz, now and then a man comes clean: the pocket
+       goes at freeAt seconds (plus up to freeJit), whatever the protection, and
+       the QB has to get it out hot or eat it. Rolled only on a blitz, so a
+       snap against a straight rush rolls exactly what it did before. */
+    if (call.blitz && T.pocket.free && rnd() < T.pocket.free) Tp = Math.min(Tp, T.pocket.freeAt + T.pocket.freeJit * rnd());
 
     /* ---- run blocking: each lineman takes the nearest man in front of him ---- */
     function engage(blk, def, w) { def.engaged = { by: blk, until: w }; blk.engaging = def; }

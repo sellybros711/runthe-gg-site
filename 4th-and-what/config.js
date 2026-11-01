@@ -61,7 +61,11 @@
        blocker over the rushers (five linemen plus whoever you keep in), less
        for every rusher over them, plus or minus jitter. Under center adds the
        time of the drop. */
-    pocket: { base: 2.55, perBlocker: 0.42, jitter: 0.3, underCenter: 0.2, min: 1.35, max: 4.4 },
+    pocket: { base: 2.1, perBlocker: 0.42, jitter: 0.5, underCenter: 0.2, min: 1.35, max: 4.4,
+      /* THE FREE RUSHER (2026-11-01): on a blitz, free of the time a man comes
+         clean and the pocket goes at freeAt seconds, plus up to freeJit. Pressure
+         in the NFL comes at about 2.5 seconds, sooner against the blitz. */
+      free: 0.3, freeAt: 0.9, freeJit: 0.5 },
     /* A collapsed pocket with nobody to dump it to: this share are sacks, the rest thrown away. */
     sackShare: 0.6,
 
@@ -91,7 +95,12 @@
          + the receiver's hands + the QB's accuracy
        Separation is to the nearest defender, and one trailing the receiver
        (nearer the QB than he is) counts trail yards further away. */
-    catch: { base: 0.55, perSep: 0.85, sepCap: 6, perTen: 0.6, deepFrom: 20, deep: 0.15, trail: 1.5, pressure: 0.9, toward: 0.35, tight: 0.7,
+    /* The NFL's completion by separation at the catch (Next Gen Stats, roughly:
+       under a yard about 45% on short and middle throws, 1 to 2 yards about 60%,
+       2 to 3 about 70%, 3 and more about 80%), the owner's ask 2026-11-01: "retune
+       it to match the NFL". Measured: tight short and middle 47%, tight deep 18%,
+       1 to 2 yards 56%, 2 to 3 73%, open 80%, 59% overall. */
+    catch: { base: 1.25, perSep: 0.55, sepCap: 4, perTen: 0.6, deepFrom: 20, deep: 0.08, trail: 1.5, pressure: 1.2, toward: 0.35, tight: 0,
       /* why a miss fell (it never changes whether it fell): a drop is drop of
          all targets (the NFL drops about 3 to 4%), dropHands less per point of
          the receiver's hands; inside brokenSep yards it was broken up */
@@ -104,7 +113,7 @@
        field eats that cushion by eatBy seconds. THE RUB: a receiver other
        than his man inside rubRange yards of him costs him rub seconds at half
        speed, once a receiver (stacks, crossers and motion). */
-    man: { lagDB: 0.3, lagLB: 0.45, cushion: 1.6, eatBy: 2.2, lead: 0.6, rub: 0.15, rubRange: 1.0 },
+    man: { lagDB: 0.25, lagLB: 0.45, cushion: 1.2, eatBy: 2.2, lead: 0.6, rub: 0.15, rubRange: 1.0 },
     /* ZONE: a defender drops to his landmark and plays the nearest receiver
        inside radius yards of it, leaning pull of the way toward him at speed
        of his top speed. His zone runs from the landmark down to the line: a
@@ -125,7 +134,7 @@
     /* A receiver's sharp cut costs the man on him this many seconds at half speed, per right angle. */
     breakStumble: 0.3,
     /* After the throw, a defender in front of the receiver and within breakRange yards of the catch plays the spot after breakOnBall seconds, at breakSpeed of his top speed. Anybody behind keeps playing his coverage. */
-    breakOnBall: 0.3, breakRange: 9, breakSpeed: 0.5,
+    breakOnBall: 0.25, breakRange: 9, breakSpeed: 0.65,
 
     /* RUN BLOCKING: each block holds its man for a window, base seconds plus
        or minus jitter, scaled by the blocker's power. A held defender moves
@@ -148,7 +157,7 @@
       /* A RUN, moving downhill, breaks more of them (runBroken more) and
          drives the pile: up to drive yards more after contact (the NFL gets
          about 2.8 yards after contact a carry; this makes runs read like it). */
-      runBroken: 0.1, drive: 3 },
+      runBroken: 0.08, drive: 1.8 },
 
     /* how hard a ball carrier in the open steers away from the nearest tacklers */
     avoid: 0.8,

@@ -277,7 +277,7 @@
   A.on('daily', renderIntro);
   A.on('home', function () { leave(); renderHome(); });
   A.on('play', leave);
-  A.on('books', leave); A.on('learn', leave); A.on('test', leave); A.on('print', leave); A.on('replay', function () {});
+  A.on('books', leave); A.on('trivia', leave); A.on('learn', leave); A.on('test', leave); A.on('print', leave); A.on('replay', function () {});
 
   fetch(DATA).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
     if (!d || !d.plays || !d.plays.length) return;
