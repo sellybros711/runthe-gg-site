@@ -135,6 +135,8 @@ function show(id) {
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
+  /* the ads (ads.js): the bottom banner and the rails on the screens that carry them */
+  if (window.STD_ADS) STD_ADS.screen(id);
   if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
 }
 
@@ -1780,7 +1782,12 @@ function survivorNext(r) {
   var next = Promise.resolve().then(function () { return API.survivorStart(); });
   return next.then(function (go) {
     show('s-next');
-    return MU.between(sv.saves, go.scenario, !!prefs.quick).then(function () { playSurvivor(go); });
+    return MU.between(sv.saves, go.scenario, !!prefs.quick).then(function () {
+      /* THE VIDEO BREAK between two spots (ads.js): a player who is not Pro, after the saves show.
+         A Pro player goes straight on. */
+      var ent = MU.ent && MU.ent(), pro = !!(ent && ent.pro);
+      return window.STD_ADS ? STD_ADS.between(pro) : null;
+    }).then(function () { playSurvivor(go); });
   }).catch(function (e) {
     toast('the next spot didn\'t load. try again.');
     show('s-surv');
