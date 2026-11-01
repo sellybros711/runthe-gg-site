@@ -41,6 +41,9 @@
     h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
       font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
     .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
@@ -96,6 +99,12 @@
 
       <p>Full Team is the biggest draft in The Perfect Season. You sign twelve men instead of six: a whole offense and a whole defense, out of one salary cap. Then you pick a coach, or you don't. This guide answers one question: what do your calls during a run actually change? Short answer: more than you'd think, and most of it happens in January.</p>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>Getting in</h2>
 
       <p>Full Team is open to everybody with a free RunThe.GG account and a username. A free account gets one run a day. The day turns over at midnight Eastern.</p>
@@ -127,6 +136,12 @@
       </ul>
 
       <p>That number isn't just for show. The game reads it every week. A higher overall wins more ordinary Sundays. It decides how much home field you get in the playoffs. A team rated 100 or better gets the first round off with only 13 wins. The results screen shows every step from your men to the overall, so you can check it.</p>
+
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
 
       <h2>Choosing a coach</h2>
 
@@ -174,6 +189,12 @@
 
       <p>Every call goes in the drive log, his or yours, so you can scroll back and check him.</p>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>Tips</h2>
 
       <ul>
@@ -200,5 +221,27 @@
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
+  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+      var lazy=document.querySelectorAll('ins.adsbygoogle-lazy');
+      var start=function(u){ u.className='adsbygoogle'; (adsbygoogle=window.adsbygoogle||[]).push({}); };
+      var io='IntersectionObserver' in window ? new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); try{ start(e.target); }catch(x){} } });
+      },{rootMargin:'600px 0px'}) : null;
+      for(var j=0;j<lazy.length;j++){
+        var ls=lazy[j].getAttribute('data-ad-slot');
+        if(!ls||/^0+$/.test(ls)) continue;
+        if(io) io.observe(lazy[j]); else start(lazy[j]);
+      }
+    }catch(e){}
+  })();
+  </script>
 </body>
 </html>

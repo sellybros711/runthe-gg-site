@@ -74,6 +74,13 @@
   .stage{position:relative; min-height:100dvh; padding-bottom:10px;}
   .wrap{width:100%; max-width:1280px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
   @media (max-width:640px){ .wrap{padding-left:14px; padding-right:14px;} }
+  /* Room for the two 160x600 rails (assets/rtg-ads.js). A rail is built only
+     while it sits 150px clear of this column's content box, so each side needs
+     310px. From the window where three cards at a 940px column still fit
+     beside two rails, the column gives up width to make that room. Below it
+     the column is unchanged, because narrowing it there would buy no rails.
+     The 18px is a classic scrollbar, which 100vw counts and the rails do not. */
+  @media (min-width:1580px){ .wrap{max-width:min(1280px, calc(100vw - 602px));} }
 
   /* ---- top bar ---- */
   .top{display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-bottom:20px;}
@@ -784,6 +791,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -1295,6 +1303,19 @@ window.GA_ID='G-L29P5MRWKE';
       </main>
     </div>
 
+    <!-- THE MENU AD (Ads Agent, 2026-10-26). The hub is a menu: every game opens on its own
+         page, so nothing is ever played beside this. One unit, under the whole menu and above
+         the footer, 150px clear of the last link once it holds an ad. A slim 320x50 on a phone, 728x90
+         from 768px. Empty, it takes no space
+         and shows no label. -->
+    <style>.arc-ad{max-width:728px;margin:26px auto 0;padding:0 14px;text-align:center}.arc-ad .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}.arc-ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none}.arc-ad:has(ins[data-ad-status="filled"]){margin-top:150px}.arc-ad ins.adsbygoogle{display:inline-block!important;width:320px;height:50px}@media (min-width:768px){.arc-ad ins.adsbygoogle{width:728px;height:90px}}.arc-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none!important}</style>
+    <div class="arc-ad">
+      <span class="ad-label">Advertisement</span>
+      <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5952069078178257"
+           data-ad-slot="1538358580"></ins>
+    </div>
+    <script>(function(){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}})();</script>
+
     <div class="foot">
       <div class="soc">
         <a href="https://tiktok.com/@runthegames" target="_blank" rel="noopener" aria-label="TikTok"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2 1.5 3.6 3.5 4v3c-1.4 0-2.7-.4-3.8-1.1V15a5.5 5.5 0 1 1-5.5-5.5c.3 0 .6 0 .9.1v3a2.5 2.5 0 1 0 1.8 2.4V3z"/></svg></a>
@@ -1314,7 +1335,7 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=25"></script>
@@ -1949,6 +1970,21 @@ window.GA_ID='G-L29P5MRWKE';
 /* the date under Today's Games, in the reader's own words for it */
 (function(){ var el=document.getElementById('dayDate'); if(!el) return;
   try{ el.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}); }catch(e){} })();
+</script>
+<script>
+/* THE HUB'S ADS (Ads Agent, 2026-10-29, the owner's calls). The closeable bottom banner (its X closes
+   it for the rest of the visit) and the Arcade's two desktop rails, built only where each one can sit
+   150px clear of the column and never on a phone. /assets/rtg-ads.js owns how both look and behave. */
+(function(){
+  var SITE_STICKY_SLOT = {sticky:'5122323877'};                      // site-sticky
+  var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  function go(){
+    if(!window.RTG_ADS) return;
+    RTG_ADS.sticky(true, SITE_STICKY_SLOT.sticky, 'site', {above:'.rtgnav'});
+    RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); });
+  }
+  if(document.readyState === 'complete') go(); else window.addEventListener('load', go);
+})();
 </script>
 </body>
 </html>

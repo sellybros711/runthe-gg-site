@@ -60,6 +60,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -611,6 +612,26 @@ body:has(#s-intro.on) header .lockup{visibility:hidden}
 .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
   background:linear-gradient(180deg,var(--bg) 92%,var(--bg-fade))}
 #s-draft{--sq:0}
+/* ROOM FOR THE PINNED DRAFT BANNER (the owner's call, 2026-10-28: a banner pinned
+   to the bottom of the draft, draft only). The ads code owns the banner and sets
+   --draft-ad-h on the root to its rendered height while it is up, and removes it on
+   leaving the draft. This side only makes room: the draft scrolls its last tiles
+   and Quit clear of it, and the pick bar and a toast sit above it, so nothing a
+   player presses is ever under an ad. Unset, every value here is today's. */
+#s-draft.on{padding-bottom:var(--draft-ad-h,0px)}
+.draft-ad{position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;box-sizing:border-box;background:var(--bg,#0b0f17);padding:0}
+.draft-ad:has(ins[data-ad-status="filled"]){padding:4px 0 6px}
+.draft-ad:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}
+.draft-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:300px;height:50px}
+.draft-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+.draft-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}
+.draft-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+/* The desktop rails (railAds below): 160x600 each side of the column, scrolling with the page. */
+.rail-ad{position:absolute;width:160px;z-index:1;text-align:center}
+.rail-ad[data-ad-zone] ins.adsbygoogle{display:inline-block;width:160px;height:600px}
+.rail-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+.rail-ad .ad-label{display:none;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin:0 0 6px}
+.rail-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
 .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
   background:var(--line);opacity:var(--sq)}
 .cap-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -1764,7 +1785,7 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 .pf-sw2{display:flex;flex-direction:column;gap:1px;min-width:0}
 .pf-sw2 b{font-size:13px;color:var(--ink)}
 .pf-when{color:var(--dim-2)!important}
-.pf-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:200;max-width:min(92vw,420px);
+.pf-toast{position:fixed;left:50%;bottom:calc(24px + var(--draft-ad-h,0px));transform:translate(-50%,20px);opacity:0;z-index:200;max-width:min(92vw,420px);
   padding:10px 14px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:13px;pointer-events:none;
   transition:opacity .2s,transform .2s;text-align:center}
 .pf-toast.on{opacity:1;transform:translate(-50%,0)}
@@ -1828,7 +1849,7 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
    everything else steps back, and a tap on a glowing spot signs him there. The same
    targets light on the staff strip and the lineup card, because the mound is one
    disc and a starter who can also close has two places on it. */
-.pickbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));
+.pickbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom) + var(--draft-ad-h,0px));
   transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;
   width:min(520px,calc(100% - 24px));padding:10px 10px 10px 16px;border-radius:14px;
   background:var(--ink);color:var(--bg);box-shadow:0 10px 30px -8px rgba(0,0,0,.55);
@@ -2595,6 +2616,38 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
         <path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11"/><path d="M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/>
         <path d="M12 14v3"/><path d="M8.5 20h7"/><path d="M10 17h4l.6 3h-5.2z"/></svg>
       <b><span class="hu-long">Trophy case</span><span class="hu-short">Trophies</span></b><span class="hu-s">Past winners and top scores.</span></button>
+  </div>
+
+  <!-- THE MENU AD (Ads Agent, 2026-10-26, the owner's rule: ads on a game's start screen,
+       never in play). The one live unit in this game. menuAd() in show() starts it the first
+       time the start screen shows and REMOVES it the moment any other screen opens (AdSense
+       does not allow a loaded ad to be hidden). It is not started again until the page
+       reloads. Once filled it sits 160px below the buttons above (150 is the floor); empty, it takes no space.
+       check-adsense holds the zone and the removal. -->
+  <style>
+  .menu-ad{max-width:728px;margin:0 auto;text-align:center}
+  .menu-ad .adsbygoogle{display:block}
+  .menu-ad .ad-label{display:none;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim,#8a97a8);margin:0 0 6px}
+  .menu-ad:has(ins[data-ad-status="filled"]){margin-top:160px}
+  .menu-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  /* THE MENU AD'S SIZE, fixed (the owner, 2026-10-26: a full-width responsive unit filled half a
+     phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
+     unfilled unit collapses to nothing. */
+  [data-ad-zone="menu"] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  /* SIZED BY THE COLUMN, NOT THE SCREEN (QA, 2026-10-27). A 768px media query handed the
+     728x90 to a column that can be narrower: the college start screen is 572px wide at every
+     desktop width, and at 768 the football, college and baseball columns are 572 to 612. The
+     leaderboard then hung 156px past the column, past the screen at 768. The zone is a size
+     container, so the slim standard size that fits is the one served: 320x50, 468x60 from a
+     468px column, the 728x90 from a 728px column. */
+  [data-ad-zone="menu"]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
+  [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  </style>
+  <div class="menu-ad" data-ad-zone="menu">
+    <span class="ad-label">Advertisement</span>
+    <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="7614354332"></ins>
   </div>
 
   <details class="about">
@@ -3907,11 +3960,173 @@ var PICK=null;
    so tuning POSITION_FIT rewrites every label that names it. */
 const OFF_PCT=Math.round(E.POSITION_FIT.OFF*100)+'%';
 const OFF_TAG='-'+OFF_PCT;
+/* THE MENU AD lives on the start screen and nowhere else. Started the first time the start
+   screen shows, removed (not hidden) the first time any other screen opens, and never started
+   again on this page load. The boot screen is the one exception, since every load passes
+   through it on the way to the start screen. It is the only ad unit on this page. */
+/* THE DRAFT BANNER (Ads Agent, 2026-10-28, the owner: "Diamond can go now", and the banners "fixed to
+   the bottom of the phone when drafting"). A slim banner pinned to the bottom of the draft while it is
+   open. Built as a child of body when the draft opens and removed when the player leaves, so the
+   screen's transform cannot move it. Its rendered height is set on --draft-ad-h, which the draft's
+   padding, the pick bar and the toast already read, so nothing a player presses sits under it.
+   Unit diamond-draft (8070696087). */
+let draftAdSize=null;
+function draftAd(id){
+  const old=document.querySelector('[data-ad-zone="draft"]');
+  if(id!=='s-draft'){
+    if(draftAdSize){ draftAdSize.disconnect(); draftAdSize=null; }
+    document.documentElement.style.removeProperty('--draft-ad-h');
+    if(old) old.remove();
+    return;
+  }
+  if(old) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="draft-ad" data-ad-zone="draft"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="8070696087"></ins></div>';
+  const z=wrap.firstChild;
+  document.body.appendChild(z);
+  if(window.ResizeObserver){
+    draftAdSize=new ResizeObserver(()=>document.documentElement.style.setProperty('--draft-ad-h',z.offsetHeight+'px'));
+    draftAdSize.observe(z);
+  }
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE DESKTOP RAILS (Ads Agent, 2026-10-29, the owner: side banners on the home screen and the
+   draft, "these are also good places for ads"). Two 160x600 units, left and right of the column,
+   on every screen, beside play too, as on Run The Pitch. They scroll with the page. The column is
+   a different width per screen (640 on the menus, 860 in the season, 1040 on the home screen, the
+   draft and the squad), so it is measured on every screen change and resize. The rails are built
+   only while the window leaves 150px between each rail and the column, and removed (never hidden)
+   when it does not: the home screen and the draft need a window about 1640px wide. Never on a
+   phone. Units diamond-rail-left (5477547093) and diamond-rail-right (7508106222). */
+const RAIL_GAP=150, RAIL_W=160;
+const RAIL_SLOTS={left:'5477547093', right:'7508106222'};
+function railAds(){
+  const have=document.querySelectorAll('[data-ad-zone="rail"]');
+  const col=document.querySelector('.wrap');
+  if(!col){ have.forEach(r=>r.remove()); return; }
+  const r=col.getBoundingClientRect(), cs=getComputedStyle(col);
+  const left=r.left+parseFloat(cs.paddingLeft), right=r.right-parseFloat(cs.paddingRight);
+  if(left-RAIL_GAP-RAIL_W<0||right+RAIL_GAP+RAIL_W>document.documentElement.clientWidth){ have.forEach(x=>x.remove()); return; }
+  const top=Math.round(r.top+window.scrollY+parseFloat(cs.paddingTop)+40)+'px';
+  const at={left:Math.round(left-RAIL_GAP-RAIL_W+window.scrollX)+'px', right:Math.round(right+RAIL_GAP+window.scrollX)+'px'};
+  const clear=()=>{ if(window.RTG_ADS) RTG_ADS.clear(document.querySelectorAll('[data-ad-zone="rail"]')); };   // 150px clear of every control
+  if(have.length){ have.forEach(x=>{ x.style.left=at[x.dataset.side]; x.style.top=top; }); clear(); return; }
+  Object.entries(RAIL_SLOTS).forEach(([side,slot])=>{
+    const wrap=document.createElement('div');
+    wrap.innerHTML='<div class="rail-ad" data-ad-zone="rail" data-side="'+side+'"><span class="ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="'+slot+'"></ins></div>';
+    const z=wrap.firstChild;
+    z.style.left=at[side]; z.style.top=top;
+    document.body.appendChild(z);
+  });
+  clear();
+  document.querySelectorAll('[data-ad-zone="rail"]').forEach(()=>{ try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} });
+}
+window.addEventListener('resize',()=>{ try{ railAds(); }catch(e){} });
+/* THE CLOSEABLE BOTTOM BANNER (Ads Agent, 2026-10-29, the owner's call). On the home screen, the
+   boards and the results, never on a screen where a run is drafted or played. Its X closes it for
+   the rest of the visit. /assets/rtg-ads.js owns how it looks and behaves. */
+const STICKY_SLOT={sticky:'4631369283'};   // diamond-sticky
+const STICKY_ON=['s-intro','s-board','s-over'];
+function stickyAd(id){
+  if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(id)>=0, STICKY_SLOT.sticky, 'diamond');
+  foldH=innerHeight;
+  screenFold();
+}
+/* A SCREEN'S FIRST VIEW STOPS ABOVE THE BANNER (the owner, 2026-10-29: move each screen's content
+   up so the bottom banner never covers it). The page is already padded by the banner, so everything
+   can be scrolled clear, but at scroll 0 the banner sat on the Daily card, More ways to play or the
+   mode tiles, on a 375x667 phone on Draft Your Team itself, and on the results screen on whichever
+   card a run happened to put at the fold. Every move here is measured, and all of them are undone
+   the moment the banner closes or never fills (--sticky-ad-h is 0 then):
+   1. Home: logo to tagline is the first view. If it runs into the banner, the ballpark picture
+      gives up the difference, down to FOLD_FIELD_MIN, then the logo, down to FOLD_LOGO_MIN wide.
+      They are the two parts that are only pictures.
+   2. Home and results: the first block holding a control that the banner would cover starts just
+      below the screen's bottom edge instead, so the banner sits over empty page, not over a door.
+      Blocks that already fit above the banner stay where they are.
+   The leaderboard is left as it is: its tabs and sort sit at the top, and the list below them is
+   a list, read by scrolling, so its rows pass under the banner like any page. */
+const FOLD_FIELD_MIN=120, FOLD_LOGO_MIN=96;
+/* THE HEIGHT IS TAKEN ONCE, when a screen opens or the window changes width. A phone's address
+   bar folds away as the player scrolls and fires a resize with a taller window every time; a
+   fold that followed it would move the page under the player's thumb. */
+let foldH=innerHeight, foldW=innerWidth;
+function foldPush(from,line,y){
+  for(let el=from;el;el=el.nextElementSibling){
+    if(!el.offsetHeight) continue;
+    const r=el.getBoundingClientRect(), top=r.top+y;
+    if(top>=foldH) break;
+    if(r.bottom+y<=line||!el.matches('button,a[href]')&&!el.querySelector('button,a[href],[role=button]')) continue;
+    /* Measured twice, because the margin above it collapses with the one before it: the
+       first push is short by whatever gap was already there. */
+    el.dataset.foldPush='1';
+    const m=Math.ceil(parseFloat(getComputedStyle(el).marginTop)+foldH-top)+1;
+    el.style.marginTop=m+'px';
+    const short=foldH-(el.getBoundingClientRect().top+y);
+    if(short>0) el.style.marginTop=(m+Math.ceil(short)+1)+'px';
+    return;
+  }
+}
+function screenFold(){
+  const intro=$('s-intro'), over=$('s-over'), field=$('h-field');
+  const tag=intro&&intro.querySelector('.htag'), logo=intro&&intro.querySelector('.hlogo');
+  if(field){ field.style.height='';field.style.aspectRatio=''; }
+  if(logo) logo.style.width='';
+  document.querySelectorAll('[data-fold-push]').forEach(e=>{e.style.marginTop='';delete e.dataset.foldPush;});
+  const ad=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-ad-h'))||0;
+  if(!ad||!document.body.classList.contains('rtg-sticky-on')) return;
+  const y=window.scrollY, line=foldH-ad-8;
+  if(over&&over.classList.contains('on')){ foldPush(over.firstElementChild,line,y); return; }
+  if(!intro||!intro.classList.contains('on')||!field||!tag) return;
+  const past=()=>tag.getBoundingClientRect().bottom+y-line;
+  const over0=past();
+  if(over0>0){
+    const h=field.getBoundingClientRect().height;
+    field.style.aspectRatio='auto';field.style.height=Math.max(FOLD_FIELD_MIN,Math.round(h-over0))+'px';
+  }
+  /* Still past it (a short phone with a saved draft's Resume card): the logo gives up the rest. */
+  const still=past();
+  if(still>0&&logo){
+    const r=logo.getBoundingClientRect();
+    if(r.width) logo.style.width=Math.max(FOLD_LOGO_MIN,Math.floor(r.width-still*r.width/r.height))+'px';
+  }
+  foldPush(tag.nextElementSibling,line,y);
+}
+window.addEventListener('resize',()=>{
+  if(innerWidth===foldW) return;
+  foldW=innerWidth;foldH=innerHeight;
+  try{ screenFold(); }catch(e){}
+});
+/* The banner fills (or closes) after the screen shows: its height lands on --sticky-ad-h on the
+   root and its switch on the body's class, so a change to either folds again. Cards paint after
+   the screen shows too (the saved draft, the daily, the results' badges and parks), and each
+   moves what sits under the banner. A margin is not a size, so a fold never re-triggers itself,
+   and the screens themselves are not watched for the same reason. */
+try{
+  const refold=new MutationObserver(()=>screenFold());
+  refold.observe(document.documentElement,{attributes:true,attributeFilter:['style']});
+  refold.observe(document.body,{attributes:true,attributeFilter:['class']});
+  const resized=new ResizeObserver(()=>screenFold());
+  ['resume-card','daily-card','hp-tiles','ro-hero','r-goat','ro-coach','ro-newparks','ro-newbadges','r-stats']
+    .forEach(id=>{ if($(id)) resized.observe($(id)); });
+}catch(e){}
+function menuAd(id){
+  const z=document.querySelector('[data-ad-zone="menu"]');
+  if(!z||id==='s-load') return;
+  if(id!=='s-intro'){ z.remove(); return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
 const show=id=>{
   /* A placing left open on the draft would be a gold board waiting on the next
      screen's clicks, so any screen change drops it. */
   if(PICK&&id!=='s-draft'){PICK=null;paintPickBar();}
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');
+  menuAd(id);
+  draftAd(id);
+  railAds(id);
+  stickyAd(id);};
 const M=v=>'$'+v.toFixed(1)+'M';
 /* ── A NUMBER A PLAYER READS HAS TO BE THE NUMBER THE GAME PLAYS ──
    The cap is written out by hand a dozen times across this page and how-to-play.html,
@@ -4250,7 +4465,10 @@ function dressInTeamColors(team){
     const tc=E.teamColors(team);
     box.style.setProperty('--c1',tc[0]);
     box.style.setProperty('--c2',tc[1]||'#333');
-    box.style.setProperty('--on','#fff');
+    /* The ink the club's colour can carry, the same answer the lineup card's club
+       plate gets from inkOn(). It was white for every club, and two primaries
+       cannot carry white: Miami's blue at 2.87:1 and Milwaukee's gold at 1.58:1. */
+    box.style.setProperty('--on',inkOn(tc[0]));
     box.classList.add('clubbed');
   };
 }

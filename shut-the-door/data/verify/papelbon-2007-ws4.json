@@ -1,0 +1,317 @@
+{
+ "id": "papelbon-2007-ws4",
+ "plan": "30",
+ "resolution": "proxy",
+ "retroGame": "COL200710280",
+ "date": "2007/10/28",
+ "game": "BOS at COL",
+ "pitcher": {
+  "retroId": "papej001",
+  "mlbamId": 449097,
+  "name": "Jonathan Papelbon",
+  "throws": "R",
+  "seasonLine": "1.85 ERA, 37 SV, 58.1 IP"
+ },
+ "situation": {
+  "inning": 8,
+  "half": "bottom",
+  "outs": 1,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": false,
+  "walkOffLive": false
+ },
+ "plateAppearances": [
+  {
+   "batterId": "spilr001",
+   "records": [
+    "63/G"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": ".FBCFFBX",
+   "count": "22",
+   "pitcher": "papej001",
+   "name": "Ryan Spilborghs",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 7,
+   "event": "63/G",
+   "mlbamId": 448676,
+   "fullName": "Ryan Spilborghs",
+   "batSideListed": "R",
+   "seasonLine": ".299/.363/.485, 11 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "hawpb001",
+   "records": [
+    "8/F"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": "CSBFX",
+   "count": "12",
+   "pitcher": "papej001",
+   "name": "Brad Hawpe",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 5,
+   "event": "8/F",
+   "mlbamId": 425547,
+   "fullName": "Brad Hawpe",
+   "batSideListed": "L",
+   "seasonLine": ".291/.387/.539, 29 HR",
+   "inSpot": true
+  }
+ ],
+ "realFaced": 2,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 12,
+  "pitchesKnown": 12,
+  "pitchesUnknownPAs": 0,
+  "runs": 0
+ },
+ "scoreCheck": {
+  "lineScore": {
+   "away": "100010110",
+   "home": "000000120",
+   "awayRuns": 4,
+   "homeRuns": 3,
+   "log": "gamelog/GLWS.TXT"
+  },
+  "replay": {
+   "away": 4,
+   "home": 3
+  },
+  "agrees": true
+ },
+ "arsenal": null,
+ "sources": [
+  "Retrosheet event file 2007WS.EVE, game COL200710280 (via github.com/chadwickbureau/retrosheet)",
+  "Retrosheet rosters BOS2007.ROS and COL2007.ROS for bat and throw hands",
+  "Retrosheet game log gamelog/GLWS.TXT for the line score check",
+  "Chadwick Bureau register (github.com/chadwickbureau/register) for Retrosheet to MLBAM ids",
+  "MLB Stats API people with 2007 season stats for names and season lines",
+  "The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at www.retrosheet.org."
+ ],
+ "halves": [
+  {
+   "inning": 8,
+   "half": "bottom",
+   "real": true,
+   "outs": 1,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    "retro:spilr001",
+    "retro:hawpb001",
+    "retro:torry001",
+    "retro:carrj001",
+    "retro:corpm001",
+    "retro:tulot001",
+    "retro:hollm001",
+    "retro:heltt001",
+    "retro:atkig001"
+   ],
+   "lineupNames": [
+    "Ryan Spilborghs",
+    "Brad Hawpe",
+    "Yorvit Torrealba",
+    "Jamey Carroll",
+    "Manny Corpas",
+    "Troy Tulowitzki",
+    "Matt Holliday",
+    "Todd Helton",
+    "Garrett Atkins"
+   ]
+  },
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    "retro:spilr001",
+    "retro:hawpb001",
+    "retro:torry001",
+    "retro:carrj001",
+    "retro:smits002",
+    "retro:tulot001",
+    "retro:hollm001",
+    "retro:heltt001",
+    "retro:atkig001"
+   ],
+   "lineupNames": [
+    "Ryan Spilborghs",
+    "Brad Hawpe",
+    "Yorvit Torrealba",
+    "Jamey Carroll",
+    "Seth Smith",
+    "Troy Tulowitzki",
+    "Matt Holliday",
+    "Todd Helton",
+    "Garrett Atkins"
+   ]
+  }
+ ],
+ "between": [
+  {
+   "inning": 9,
+   "half": "top",
+   "team": "Boston Red Sox",
+   "abbr": "BOS",
+   "runs": 0,
+   "pas": [
+    {
+     "batter": {
+      "id": "retro:lowem001",
+      "name": "Mike Lowell"
+     },
+     "event": "7/F",
+     "short": "F7",
+     "des": null,
+     "runs": 0,
+     "outs": 1,
+     "bases": 0,
+     "runners": [
+      null,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": "retro:drewj001",
+      "name": "J.D. Drew"
+     },
+     "event": "43/G",
+     "short": "4-3",
+     "des": null,
+     "runs": 0,
+     "outs": 2,
+     "bases": 0,
+     "runners": [
+      null,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": "retro:varij001",
+      "name": "Jason Varitek"
+     },
+     "event": "143/G",
+     "short": "1-4-3",
+     "des": null,
+     "runs": 0,
+     "outs": 3,
+     "bases": 0,
+     "runners": [
+      null,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    }
+   ],
+   "source": "Retrosheet event file 2007 2007WS.EVE, COL200710280, top 9"
+  }
+ ],
+ "line": {
+  "teams": [
+   "BOS",
+   "COL"
+  ],
+  "innings": [
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    1,
+    2
+   ]
+  ],
+  "H": [
+   9,
+   7
+  ],
+  "E": [
+   0,
+   0
+  ],
+  "source": "Retrosheet event file 2007 2007WS.EVE, COL200710280"
+ },
+ "laterPlateAppearances": [
+  {
+   "batterId": "torry001",
+   "name": "Yorvit Torrealba",
+   "event": "43/G",
+   "runs": 0,
+   "pitches": 3,
+   "inning": 9
+  },
+  {
+   "batterId": "carrj001",
+   "name": "Jamey Carroll",
+   "event": "7/L7DW",
+   "runs": 0,
+   "pitches": 3,
+   "inning": 9
+  },
+  {
+   "batterId": "smits002",
+   "name": "Seth Smith",
+   "event": "K",
+   "runs": 0,
+   "pitches": 5,
+   "inning": 9
+  }
+ ],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 23,
+  "runs": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  }
+ }
+}

@@ -28,7 +28,7 @@ const COLUMNS = [
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
   'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
-  'teases',
+  'teases', 'feel',
 ];
 
 // Goose today: 7504 performances / 655 shows. The bounds are deliberately wide
@@ -467,7 +467,12 @@ check(/body\.inshow \.sfoot\{display:none;?\}/.test(game)
 console.log('the tab bar');
 check(/\.tabbar\{[^}]*position:fixed/.test(game) && /\.tabbar\{[^}]*bottom:0/.test(game),
       'the tab bar is pinned to the foot of the screen, not scrolled with the page');
-check((game.match(/data-tab="/g) || []).length === 5, 'it carries five tabs');
+check((game.match(/<button class="tab" type="button" data-tab="/g) || []).length === 5, 'it carries five tabs');
+/* Each tab is its own colour on its own tile (owner's call, 2026-10-28: five grey outlines blended
+   together), so every tab has a colour and an icon tile. */
+check(['home', 'tour', 'songs', 'board', 'profile'].every(t => new RegExp(`\\.tab\\[data-tab="${t}"\\]\\{--tc:#`).test(game))
+  && (game.match(/<i class="ti" aria-hidden="true"><svg/g) || []).length === 5,
+  'and each tab has its own colour on its own tile');
 check(/data-tab="songs"/.test(game), 'and the songs list is one of them');
 for (const dest of ['home', 'tour', 'songs', 'board', 'profile'])
   check(new RegExp(`data-tab="${dest}"`).test(game), `  including ${dest}`);
@@ -1067,6 +1072,19 @@ check((gameBare.match(/Close anyway, lose the segue/g) || []).length === 2,
 check(/close the set\s*\n?\s*and let it go/.test(gameBare),
   'the hunt banner offers closing as a way out');
 
+/* A SET THAT CANNOT TAKE ANOTHER SONG CLOSES ITSELF (2026-10-27, the owner's ask: closing "should
+   be automatic in most cases"). 97% of simulated sets ended with nothing in the dealt show fitting
+   and a Close tap that was no choice at all. The draft settles before it renders; it holds back only
+   when a respin would still leave real time to spend. And the close button is not on every pick. */
+{
+  const settle = gameBare.slice(gameBare.indexOf('function settleSets(){'), gameBare.indexOf('function settleSets(){') + 900);
+  check(/S\.show\.songs\.some\(p => !pickBlock\(p, si\)\)/.test(settle), 'a set closes itself only when nothing on screen can go in it');
+  check(/left - cost >= AUTO_CLOSE_SPIN_ROOM/.test(settle), 'and not while a respin could still give it something');
+  check(/if \(name === 'draft' && settleSets\(\)\) return;/.test(gameBare), 'the draft settles before it renders');
+  check(/S\.settled = null;\s*if \(settleSets\(\)\) return;/.test(gameBare), 'and so does a manual close');
+  check(/fits\.length && !closeArmed \? '' :/.test(gameBare), 'the pick panel offers Close only when the player is stuck');
+}
+
 /* TIME CARRIES ONE SET FORWARD, and three separate bits of copy promise it to
    the player. They used to say "for the encore", which was true when both sets
    paid straight into it and is a lie now that Set I's leftovers are Set II's.
@@ -1117,8 +1135,10 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
      same omission in the other direction. */
   check(/Short sets score less/.test(say),
     'the close button states what a short set costs');
-  check(/the crowd notices a short set/.test(say),
-    'and so does the hint beside it');
+  /* The hint that repeated it under every pick went with the close button it sat beside (2026-10-27):
+     closing is offered only where it is an exit, and both places that offer it say the cost. */
+  check((say.match(/Short sets score less/g) || []).length >= 2,
+    'both close buttons say what a short set costs');
   /* WHERE it goes is still true and still said: the cascade is real. */
   check(/carries to \$\{esc\(bankGoesTo\(si\)\)\}/.test(gameBare),
     'while still saying where the time actually goes');
@@ -1283,6 +1303,12 @@ console.log('the first five minutes');
 check(/Add to \$\{esc\(cfg\.label\)\} \(\$\{fmtClock\(lenOf\(S\.pickedSong\)\)\}\)/.test(gameBare),
   'the confirm button and the panel above it use the same verb');
 check(!/`Play it \(/.test(gameBare), 'and "Play it" is gone');
+/* THE ADD BUTTON SITS UNDER THE SONG (2026-10-27, the owner's call): a tap no longer slides a sheet over
+   the list. Same verb as the panel, still a second tap because picks are final. */
+check(/\$\{S\.pickedSong === p \? rowAddHTML\(p, cfg\) : ''\}/.test(gameBare) && /data-lock>Add to \$\{esc\(cfg\.label\)\}/.test(gameBare),
+  'the Add button opens under the song that was tapped, with the same verb');
+check(/toggle\('sheet-on',\s*S\.sheetForced \|\| !fits\.length\)/.test(gameBare),
+  'and picking a song no longer covers the list with the sheet');
 /* THE RECEIPT. Confirming a song used to drop you straight into a full-screen
    slot machine labelled "Spinning the archive" with nothing about the song just
    added, and two people read it as the game restarting: "it spun the wheel
@@ -1336,19 +1362,20 @@ const cdSlice = (from, to) => {
 const homePage = cdSlice('function renderHome(){', '\n}');
 check(!!homePage, 'renderHome can be read');
 
-/* 1. THE RULES WERE BELOW THE PLAY BUTTON. "How it works" is the clearest
-      explanation on the site and it sat 420px under the thing it explains, so
-      the walkthrough existed to carry it up. It is above the band panel now,
-      and the order is asserted because it is one edit away from drifting back:
-      both blocks live in the same template literal. */
+/* 1. THE RULES FOLD AWAY UNDER THE PLAY BUTTONS (owner's call, 2026-10-28). They were moved above the
+      band panel once, to sit next to the thing they explain, and that pushed Build your show and the
+      daily below the fold on a phone. Now they are a closed <details> under the band panel: one tap
+      for whoever wants them, out of the way of everybody else. Closed by default, because nothing on
+      this game opens by itself. */
 {
-  const how = homePage.indexOf('<section class="how">');
+  const how = homePage.indexOf('<details class="how">');
   const bands = homePage.indexOf('<div class="bands">');
   check(how > -1 && bands > -1, 'the home screen has rules and a band panel');
-  check(how < bands, 'and the rules come before the button that needs them');
+  check(how > bands, 'and the rules sit under the buttons, not in front of them');
+  check(!/<details class="how" open/.test(homePage), 'folded shut until somebody opens them');
   /* Exactly one copy of it. It was moved rather than duplicated, and a second
      "How it works" further down is the obvious bad merge. */
-  check((homePage.match(/<section class="how">/g) || []).length === 1,
+  check((homePage.match(/class="how"/g) || []).length === 1,
     'stated once, not twice');
 }
 /* AND THE HERO STATES THE LOOP. "Choose a band. Build the show you've always
@@ -2528,7 +2555,7 @@ check(latest.upcoming.every(s => /^\d{4}-\d{2}-\d{2}$/.test(s.date || '')),
   'every upcoming date is YYYY-MM-DD');
 /* SET ORDER COMES FROM THE GAME'S OWN LOADER, not a second implementation that
    could disagree with it about where an encore goes. */
-check(/import \{ loadBand, setLabel \} from '\.\.\/\.\.\/setlist\/dataLoader\.js'/
+check(/import \{ loadBand, setLabel[^}]*\} from '\.\.\/\.\.\/setlist\/dataLoader\.js'/
   .test(read('scripts/setlist/ingest_band.mjs')),
   'the ingester groups it with the loader the game reads with');
 check(/git add[\s\S]{0,180}goose_latest\.json/.test(wf), 'the refresh commits it');
@@ -2768,21 +2795,149 @@ if (prose) {
    able to take the playback down with it: a stage that throws is a show that
    never reaches the scorecard. Both fail silently, so both are read here. */
 {
-  const stage = read('setlist/stage.js');
-  check(!/from\s+['"]\.\/scoring\.js/.test(stage) && !/scoreShow|scorePerf|show_gap/.test(stage),
-    'the stage reads nothing but the cues it is handed');
+  /* The stage was split on 2026-10-27: world.js builds the room and the band, world-worker.js runs
+     that build off the main thread. All three are the renderer, so all three are held to it. */
+  const stage = read('setlist/stage.js'), world = read('setlist/world.js'), worker = read('setlist/world-worker.js');
+  check([stage, world, worker].every(f => !/from\s+['"]\.\/scoring\.js/.test(f) && !/scoreShow|scorePerf|show_gap/.test(f)),
+    'the stage reads nothing but the cues it is handed (stage.js, world.js, world-worker.js)');
+  check(/buildWorld\(R, RIG, seed, false, dress\)/.test(stage) && /setTimeout\(\(\) => \{ waiting\.delete\(id\); res\(null\); \}/.test(stage),
+    'a room the worker cannot build is built on the main thread, so a show always has a room');
   const show = (() => {
     const at = gameBare.indexOf('function renderShow(');
     return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\nfunction ', at + 10));
   })();
   check(/try\s*\{\s*stage = createStage\(/.test(show), 'a stage that fails to start leaves the playback running');
+  check(/Promise\.race\(\[stage\.ready,/.test(show), 'the first song waits for the room, but never forever');
   check(/if \(S\.stage\)\s*\{\s*S\.stage\.destroy\(\)/.test(gameBare), 'leaving the show stops the stage');
   /* THE STAGE IS PAINTED BY RUN THE TOUR'S OWN RENDERER, so the concert and the putt putt world are
      one style. setlist/pxhd.js is generated from golf/index.html; a hand edit there, or a change to
      PXHD in golf that was never carried over, is two renderers that look almost alike. */
   const { extract } = await import('./extract_pxhd.mjs');
   check(read('setlist/pxhd.js') === extract(), 'setlist/pxhd.js is golf\'s PXHD, unedited (run scripts/setlist/extract_pxhd.mjs)');
-  check(/from '\.\/pxhd\.js\?v=\d+'/.test(stage), 'and the stage draws with it');
+  check(/from '\.\/pxhd\.js\?v=\d+'/.test(world) && /from '\.\/world\.js\?v=\d+'/.test(stage), 'and the stage draws with it (through world.js)');
+}
+/* THE BAND MOVES (2026-10-27): it walks on, off, to the lip for a solo and down for the bow, all from
+   the cues the lights already follow. Reduced motion, or a cue marked instant, puts every player on
+   his mark rather than walking him there, and a fill only plays in real time. */
+{
+  const stage = read('setlist/stage.js');
+  check(/if \(snapBand \|\| reduce \|\| d < \.05\)/.test(stage), 'reduced motion and instant cues put the band on its marks');
+  check(/if \(reduce \|\| ev\.instant\)\{\s*snapBand = true;/.test(stage), 'an instant cue snaps the band');
+  check(/if \(!ev\.instant && !reduce\)\s*\{\s*st\.fillUntil/.test(stage), 'a drum fill only plays in real time');
+  /* The big moments (2026-10-27): the jam's arc, the segue's dip and ribbon, the bustout's banner and
+     flames all move the camera or flash, so they live inside that same real-time block, and the
+     push-in is never applied with reduced motion. A thumbnail or a replay jump shows none of them. */
+  const live = (stage.match(/if \(!ev\.instant && !reduce\)\s*\{([\s\S]*?)\n      \}/) || [, ''])[1];
+  check(/st\.arc =/.test(live) && /st\.dipUntil =/.test(live) && /st\.bannerAt =/.test(live) && /st\.flameUntil =/.test(live),
+    'the big moments only play in real time');
+  check(/reduce \? '1' : \(1 \+ [.\d]+ \* st\.push\)/.test(stage), 'the push-in stays still with reduced motion');
+  /* The crowd (2026-10-27): arms up and the beach ball are moments too, so they live in the same block.
+     What a person does beyond the original pose comes off its own stream, so where the night's crowd
+     stands never moved; the forty kinds keep the first twenty eight on the night's own stream. */
+  check(/st\.armsUntil =/.test(live) && /ball = \{/.test(live), 'arms up and the beach ball only happen in real time');
+  check(/const more = mulberry32\(seed \^ 0x[0-9a-f]+\)/.test(stage) && /vi < 28 \? rand : more/.test(read('setlist/world.js')),
+    'the new crowd draws come off their own stream, so nobody moved');
+  /* The weather (2026-10-27): the room says what its sky can do and the night's seed rolls it. Never a
+     cue, never a score. It only moves once frames are running, so thumbnails and reduced-motion stills
+     are clear skies, and a struggling phone drops it first. */
+  const wxRoll = (stage.match(/const WX = opts\.weather \|\| \(\(\) => \{([\s\S]*?)\}\)\(\);/) || [, ''])[1];
+  check(/R\.weather/.test(wxRoll) && /mulberry32\(seed/.test(wxRoll) && !/ev\.|score|grade|st\./.test(wxRoll),
+    'the weather comes from the room and the night\'s seed, nothing else');
+  check(/if \(wxLive && !lite\) drawWeather/.test(stage) && /if \(wxLive && !lite\) drawBolt/.test(stage) && /if \(wxLive && !lite && WX\.fog\) drawFog/.test(stage),
+    'and it only runs live, and drops under lite');
+  // The roadie at the set break (2026-10-27) is a moment too: real time only.
+  check(/if \(!ev\.last && !ev\.instant && !reduce\) roadie = \{/.test(stage), 'the roadie only crosses in real time');
+  check(/walk: \{/.test(read('setlist/world.js')) && /frames\.walk\[role\]/.test(stage), 'the walk frames are the world\'s');
+}
+
+/* BACKSTAGE (2026-10-27): the band soundchecking behind the front screen. The same sprites and the
+   same motion as the show, so it must come from world.js and nowhere else; it is scenery, so it
+   reads no song, score or rule; and its bus sign is the next show's DATE, never its venue, because
+   no room or venue is named on screen. It must load after the screen is up and stop when it is
+   left, or the front screen pays for a picture nobody can see. */
+{
+  const back = read('setlist/backstage.js');
+  check(/import \{[^}]*bandPose[^}]*\} from '\.\/world\.js\?v=\d+'/.test(back),
+    'the backstage band moves with world.js\'s bandPose, the same as the show');
+  check(!/from\s+['"]\.\/scoring\.js/.test(back) && !/scoreShow|scorePerf|show_gap/.test(back),
+    'and reads nothing but its band and its sign');
+  const sign = cdSlice('function busSign(){', '\n}');
+  check(!!sign && /next\.date/.test(sign) && !/venue|city|state/.test(sign),
+    'the bus sign is the next show\'s date, never where it is');
+  const mount = cdSlice('function mountBackstage(){', '\n}');
+  check(/requestIdleCallback/.test(mount) && /import\('\.\/backstage\.js\?v=\d+'\)/.test(mount),
+    'the scene loads after the screen is up, on its own');
+  check(/if \(S\.backstage\)\s*\{\s*S\.backstage\.destroy\(\)/.test(cdSlice('function setScreen(name){', '\n}')),
+    'and stops when the screen changes');
+}
+
+/* THE BAND STRIP (2026-10-27) over Tour, Songs, Board and You: backstage.js again, so the same rules.
+   It sits outside #app so a screen re-rendering itself cannot rebuild it, it is hidden from screen
+   readers, and it loads after the screen is up. */
+{
+  check(/<div class="stripbox" aria-hidden="true"><canvas id="bandStrip"><\/canvas><\/div>\s*<main id="app"/.test(game),
+    'the band strip is scenery, outside #app');
+  const strip = cdSlice('function mountStrip(name){', '\n}');
+  check(/requestIdleCallback/.test(strip) && /import\('\.\/backstage\.js\?v=\d+'\)/.test(strip) && /createStrip/.test(strip),
+    'and it loads after the screen is up, from backstage.js');
+}
+
+/* LIGHTS DOWN (2026-10-27): the front screen going dark into a show. It runs alongside the archive
+   loading, not in front of it, only from the front screen, and never with reduced motion. */
+{
+  const down = cdSlice('function lightsDown(){', '\n}');
+  check(/S\.screen !== 'home'/.test(down) && /prefers-reduced-motion/.test(down), 'lights down only from the front screen, and never with reduced motion');
+  const st = cdSlice('async function start(bandId, opts){', '\n}');
+  check(/const data = fetchBand\(band\);[\s\S]*await lightsDown\(\);/.test(st), 'and the archive is already loading while it plays');
+}
+
+/* BALLADS ARE CURATED (2026-10-27). The length rule tagged Whip It and Psycho Killer as ballads
+   and missed most of the real ones, so the tag comes from goose_feels.json: the owner's reviews,
+   then research, then guesses for the rare songs. The CSV must agree with it, or the game plays
+   a ballad list nobody chose. A new song from a refresh has no feel yet, which is allowed. */
+{
+  const f = JSON.parse(read('setlist/data/goose_feels.json'));
+  const songs = Object.entries(f.songs);
+  const bad = songs.filter(([, s]) => !f.feels.includes(s.feel) || (s.feel2 && !f.feels.includes(s.feel2))
+    || !['owner', 'research', 'guess'].includes(s.by));
+  check(!bad.length, 'every feel is one of the seven, with who set it', bad.length ? bad[0][0] : '');
+  check(songs.filter(([, s]) => s.by === 'owner').length >= 96, 'and the owner\'s 96 reviews are all there');
+  const rows = parseCSV(read('setlist/data/goose.csv'));
+  const off = [...new Map(rows.map(r => [r.song_id, r])).values()].filter(r =>
+    /(^|\|)ballad(\||$)/.test(r.tags || '') !== ((f.songs[r.song_id] || {}).feel === 'Ballad'));
+  check(!off.length, 'goose.csv tags a ballad exactly when its feel says Ballad',
+    off.length ? `${off.length} off, e.g. ${off[0].song}. Run ingest_band.mjs --retag` : '');
+  /* THE FEEL COLUMN (2026-10-28). Every row carries its song's feel, so scoring and the stage read
+     it off the performance. It must be the feels file's, or the energy is somebody else's. */
+  const offFeel = rows.filter(r => (r.feel || '') !== ((f.songs[r.song_id] || {}).feel || ''));
+  check(!offFeel.length, 'every row carries its song\'s feel',
+    offFeel.length ? `${offFeel.length} off, e.g. ${offFeel[0].song}. Run ingest_band.mjs --retag` : '');
+  const sc = read('setlist/scoring.js');
+  check(/FEEL_ENERGY\[perf\.feel\]/.test(sc), 'scoring takes a song\'s energy from its feel');
+  check(/feel: p\.feel \|\| null/.test(read('setlist/index.html')) && /st\.feel = ev\.feel/.test(read('setlist/stage.js')),
+    'and the stage is told the feel of every song');
+  const ing = read('scripts/setlist/ingest_band.mjs');
+  check(/feels\.get\(id\) === 'Ballad'/.test(ing) && !/BALLAD_MEDIAN_LEN/.test(ing), 'and the ingester takes it from the feel, not from length');
+}
+
+/* WHAT THE BAND WEARS (2026-10-28). The owner's calls: known by signature, never named, outfits
+   earned through play and never sold. Unlocks are derived from the same rows as the rooms; only the
+   choice is stored. The choice has to reach the worker, or every scene paints the first outfits. */
+{
+  const o = read('setlist/outfits.js');
+  check(!/\b(Rick|Mitarotonda|Peter|Anspach|Trevor|Weekz|Cotter|Ellis|Ben Atkind|Jeff)\b/.test(o),
+    'no band member is named in the outfits');
+  check(!/\b(price|cost|sku|product)\s*:/i.test(o), 'and nothing in them carries a price');
+  const M = await import('../../setlist/outfits.js');
+  check(M.ROLES.every(r => M.OUTFITS[r.id].length === M.LADDER.length + 1), 'every player has one outfit per rung, plus a free one');
+  const game2 = read('setlist/index.html');
+  check(/const OUTFIT_KEY = 'segue_outfits_v1';/.test(game2) && !/localStorage\.setItem\([^)]*(unlock|earned)/i.test(game2),
+    'only the outfit choice is stored, never an unlock');
+  check(/tally\(rows \|\| VSTATE\.rows/.test(game2), 'and the ladder is worked out from the filed shows');
+  const wk = read('setlist/world-worker.js');
+  check(/bandFrames\(dress\)/.test(wk) && /seed, true, dress\)/.test(wk), 'the worker paints the band in what they wear');
+  check(/dress: S\.playedDress/.test(game2) && /createBackstage\(cv, \{[^}]*dress: bandDress\(\)/.test(game2),
+    'and the show, the crowd shot and the front screen all ask for it');
 }
 
 console.log();

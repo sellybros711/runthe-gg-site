@@ -1219,10 +1219,30 @@ async function signOne(page, nth = 0) {
     before, { timeout: 10000 });
 }
 
+/* A FRESH BOARD, FOR A SEARCH THAT NEEDS MANY. Players cannot do this: "Start this draft
+   again" was removed (the owner's call, 2026-10-27) because it was an unlimited reroll. So a
+   search drops its own unfinished draft out of storage and reloads, which deals the next
+   chance from a new seed exactly as a first visit would, and never spends one of the week's
+   chances because the dropped draft was never finished. */
+async function freshDraft(page) {
+  await page.evaluate(() => {
+    for (let k = 0; k < localStorage.length; k++) {
+      const key = localStorage.key(k);
+      if (!/^ps_fantasy_\d+_w\d+$/.test(key)) continue;
+      const st = JSON.parse(localStorage.getItem(key) || '{}');
+      st.chances = (st.chances || []).filter((c) => (c.ids || []).length >= 6);
+      localStorage.setItem(key, JSON.stringify(st));
+    }
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#s-home.on', { timeout: 15000 });
+  await page.click('#b-draft');
+}
+
 async function openPage(browser, url, opts = {}) {
   const { who = null, viewport = { width: 390, height: 844 }, at = null,
     results = null, storage = null, server = null, reduced = false,
-    injuries = null, script = null } = opts;
+    injuries = null, script = null, ads = false } = opts;
   const page = await browser.newPage({ viewport,
     reducedMotion: reduced ? 'reduce' : 'no-preference' });
   const boom = [];
@@ -1291,6 +1311,11 @@ async function openPage(browser, url, opts = {}) {
           + '/' + (count ? total : '*'),
           'access-control-expose-headers': 'content-range' },
         body: JSON.stringify(rows) });
+    }
+    /* A STAND-IN FOR ADSENSE that fills every unit, for the section on the bottom banner. Off
+       by default, so every other section runs with the ad script refused, as before. */
+    if (ads && /adsbygoogle\.js$/.test(u.pathname)) {
+      return r.fulfill({ status: 200, contentType: 'text/javascript', body: AD_STUB });
     }
     if (u.hostname !== 'local.test') return r.abort();
     let rel = decodeURIComponent(u.pathname);
@@ -1374,10 +1399,17 @@ const boardOf = (o) => {
 const TESTER = { name: ACCESS.TESTERS[0], userId: null };
 const STRANGER = { name: 'somebody-else', userId: '00000000-0000-0000-0000-000000000000' };
 const FANTASY = 'http://local.test/football/fantasy/';
+/* The Ads Agent's stand-in for adsbygoogle.js: every unit with a real slot is marked filled. */
+const AD_STUB = "(function(){function f(){document.querySelectorAll('ins.adsbygoogle:not([data-ad-status])').forEach(function(i){var z=i.closest('[data-ad-zone]');if(!z||/^0+$/.test(i.getAttribute('data-ad-slot')||''))return;i.setAttribute('data-ad-status','filled');i.style.background='#c33'})} window.adsbygoogle={push:function(){f()}}; f(); setInterval(f,200);})();";
 const BEFORE = Date.parse(POOL.locks_at) - 36 * 3600 * 1000;
 /* THREE HOURS PAST THE LOCK: the Thursday game is on, which is the only clock at which a
    live board is a real screen. Every section about movement runs at this one. */
 const LIVE_AT = Date.parse(POOL.locks_at) + 3 * 3600 * 1000;
+/* HOW MANY GAMES THE WEEK HAS, counted the way the page's slate() counts them: one per
+   pairing of clubs on the board. It was written as 16, a week with no byes, and every week
+   with a bye (weeks 7 and 8 have 14) went red with the page right. */
+const SLATE_GAMES = new Set(POOL.pool.filter((m) => m.team && m.opp && m.kick)
+  .map((m) => (m.home ? m.opp + '|' + m.team : m.team + '|' + m.opp))).size;
 const AFTER = Date.parse(POOL.locks_at) + 60 * 1000;
 
 const browser = await pw.chromium.launch({ executablePath: CHROME });
@@ -2421,7 +2453,7 @@ console.log('\nAND SOMEBODY WHO NEVER ENTERED CAN STILL WATCH');
   }));
   ok('  and they get the whole board', seen.rows === 2, seen.rows + '');
   ok('  with nobody picked out as them', seen.mine === 0, seen.mine + '');
-  ok('  and the games beside it', seen.games === 16, seen.games + '');
+  ok('  and the games beside it', seen.games === SLATE_GAMES, seen.games + ' of ' + SLATE_GAMES);
   /* BACK GOES SOMEWHERE THAT EXISTS. A single destination would send a reader with no
      lineup to a screen about one. */
   await page.click('#b-live-back');
@@ -2512,8 +2544,8 @@ console.log('\nTHE SCOREBOARD IS THE SCHEDULE UNTIL SOMETHING HAS HAPPENED');
         .filter((e) => e.textContent.trim()).length,
       text: document.getElementById('lv-games').textContent,
     }));
-    ok('with nothing written the whole slate is still drawn', seen.games === 16,
-      seen.games + ' games');
+    ok('with nothing written the whole slate is still drawn', seen.games === SLATE_GAMES,
+      seen.games + ' of ' + SLATE_GAMES + ' games');
     ok('  and not one of them claims a score', seen.scores === 0, seen.scores + ' numbers');
     ok('  and none of them claims to be live', seen.live === 0, seen.live + '');
     ok('  the clubs are named', seen.text.includes(AWAY) && seen.text.includes(HOME));
@@ -2556,7 +2588,8 @@ console.log('\nTHE SCOREBOARD IS THE SCHEDULE UNTIL SOMETHING HAS HAPPENED');
       seen.leads.filter((x) => x[0] === '*').length === 1
       && seen.leads.find((x) => x[0] === '*').includes(HOME),
       seen.leads.join(' | '));
-    ok('  and it did not replace the rest of the slate', seen.total === 16, seen.total + '');
+    ok('  and it did not replace the rest of the slate', seen.total === SLATE_GAMES,
+      seen.total + ' of ' + SLATE_GAMES);
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
   }
@@ -2965,8 +2998,26 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
   /* One of each slot, drawn from the real pool so the names and clubs are real. Listed OUT
      of position order on purpose, so a lineup drawn in pick order is caught. */
   const byPos = (pos, n) => POOL.pool.filter((m) => m.position === pos).slice(n, n + 1)[0];
-  const SIX = [byPos('TE', 0), byPos('WR', 0), byPos('RB', 0), byPos('QB', 0),
-    byPos('WR', 1), byPos('RB', 1)];
+  /* THE RECEIVERS' GAMES HAVE NOT STARTED, and that has to be made true rather than hoped
+     for, the tight end's lesson below from the other side. Taken as the first two receivers
+     on the board, one of week 8's played for the quarterback's opponent, so his game was the
+     live one and he rightly showed a projection: red with the page right. So they are the
+     dearest two from clubs that have no game in this fixture at all. */
+  /* AND THE RUNNING BACK'S GAME IS NOT THE QUARTERBACK'S. One is live and one is over, and
+     in week 7 the dearest of each both played for Detroit: the finished game was written
+     over the live one, the quarterback lost his projection, and the check went red with
+     the page right. So the back is the dearest one from another game. */
+  const QB_GAME = [byPos('QB', 0).team, byPos('QB', 0).opp];
+  /* Nor the tight end's, whose game has to be live (see below), never the finished one. */
+  const TE_GAME = [byPos('TE', 0).team, byPos('TE', 0).opp];
+  const RB_LEAD = POOL.pool.find((m) => m.position === 'RB'
+    && !QB_GAME.includes(m.team) && !TE_GAME.includes(m.team));
+  const RB_NEXT = POOL.pool.find((m) => m.position === 'RB' && m !== RB_LEAD);
+  const BUSY = new Set([byPos('QB', 0), RB_LEAD, byPos('TE', 0)]
+    .flatMap((m) => [m.team, m.opp]));
+  const idleWR = POOL.pool.filter((m) => m.position === 'WR' && !BUSY.has(m.team));
+  const SIX = [byPos('TE', 0), idleWR[0], RB_LEAD, byPos('QB', 0),
+    idleWR[1], RB_NEXT];
   const ADA = SIX.map((m) => m.player_id);
   const YOU = POOL.pool.slice(0, 6).map((m) => m.player_id);
   const r = (place, name, score, picks, me, played) => ({ place, display_name: name, score,
@@ -2975,7 +3026,7 @@ console.log('\nA ROW OPENS INTO ITS LINEUP, AND THE LEADER WEARS THE PRIZE');
      man who has not played. The quarterback's game is LIVE, a third of the way through the
      third quarter, and the running back's is over: one man with somewhere to go and one
      whose number is the answer. */
-  const QB0 = byPos('QB', 0), RB0 = byPos('RB', 0);
+  const QB0 = byPos('QB', 0), RB0 = RB_LEAD;
   /* AND BOTH ARE PAST THE FIRST 1,000 ROWS. The writer files every man with a stat line,
      1,049 of them in week 3, and a read that took one page drew the 49 past the cap as 0.0
      under FINAL. So 1,100 other men come first, in the table's order and in the stub's. */
@@ -3399,21 +3450,32 @@ console.log('\nA PRESS ASKS BEFORE IT SPENDS');
     await page.evaluate(() => document.getElementById('cf-sheet').hidden));
 
   /*
-   * A SHEET SITS OPEN FOR AS LONG AS SOMEBODY LEAVES IT OPEN, so the board it was asked
-   * about can go. Opened on one board, then the draft is started again underneath it, and
-   * what must not happen is a man signed into a draft that no longer exists. This is
-   * `dynNewSheet`'s lesson in the football game: the gate is above the line that spends.
+   * A SHEET SITS OPEN FOR AS LONG AS SOMEBODY LEAVES IT OPEN, and the draft can be left
+   * underneath it: Back goes home and keeps the draft. What must not happen is a man signed
+   * after the reader has left. Back closes the sheet, and a confirm answered anyway signs
+   * nobody. This is `dynNewSheet`'s lesson in the football game: the gate is above the line
+   * that spends.
    */
   const stale = page.locator('#d-men .man:not([disabled]):not(.hurt)').first();
   await stale.click({ force: true });
   await page.waitForSelector('#cf-sheet:not([hidden])', { timeout: 5000 });
-  await page.evaluate(() => document.getElementById('b-abandon').click());
+  const beforeBack = await filled();
+  await page.evaluate(() => document.getElementById('b-draft-back').click());
   await page.waitForTimeout(300);
-  const afterReset = await filled();
+  ok('  Back goes home and closes the sheet',
+    await page.evaluate(() => document.getElementById('s-home').classList.contains('on')
+      && document.getElementById('cf-sheet').hidden));
   await page.evaluate(() => document.getElementById('cf-go').click());
   await page.waitForTimeout(400);
-  ok('  a confirm answered after the draft was restarted signs nobody',
-    (await filled()) === afterReset, `${afterReset} -> ${await filled()}`);
+  /* And the draft is kept, not dealt again: back in, it is the same board with the same
+     picks. That is the reroll this replaced. */
+  await page.click('#b-draft');
+  await page.waitForSelector('#s-draft.on', { timeout: 10000 });
+  ok('  a confirm answered after Back signs nobody, and the draft is kept as it was',
+    (await filled()) === beforeBack, `${beforeBack} -> ${await filled()}`);
+  ok('  and there is no button left that deals the draft again',
+    await page.evaluate(() => !document.getElementById('b-abandon')
+      && ![...document.querySelectorAll('button')].some((b) => /again/i.test(b.textContent))));
 
   /*
    * AND IT FITS THE SHORTEST PHONE HOLDING THE LONGEST NAME.
@@ -3606,11 +3668,10 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
    * exactly what the first version of this section did, and the feature it was reporting
    * missing was on one board in eight the whole time.
    *
-   * THE ANSWER IS TO NEVER LEAVE THE DRAFT SCREEN. `#b-abandon` re-seeds the current chance
-   * and costs nothing, and the only reason it failed before is that the walk had finished a
-   * draft and moved on. So the walk signs at most five of the six, inspects all six boards,
-   * and abandons rather than completing. The button is then always there, chances are never
-   * spent, and the search can run as long as it needs to.
+   * THE ANSWER IS TO NEVER FINISH A DRAFT. `freshDraft` drops the unfinished draft and deals
+   * a new one, and costs nothing (the button that used to do this in the page is gone). So
+   * the walk signs at most five of the six, inspects all six boards, and starts fresh rather
+   * than completing. Chances are never spent, and the search can run as long as it needs.
    *
    * TWENTY FOUR, against a measured p99 of 16 and a worst case of 33 over 4,000 drafts.
    */
@@ -3618,16 +3679,15 @@ console.log('\nA MAN YOU CANNOT AFFORD IS SHOWN, AND THE PRESS IS REFUSED');
   let sawGrey = null, drafts = 0;
   for (; drafts < MAX_DRAFTS && !sawGrey; drafts++) {
     if (drafts) {
-      await page.waitForSelector('#s-draft.on', { timeout: 10000 });
-      await page.click('#b-abandon');
+      await freshDraft(page);
       await page.waitForTimeout(200);
     }
     for (let i = 0; i < D.SLOTS.length && !sawGrey; i++) {
       await page.locator('#d-men .man').first().waitFor({ timeout: 10000 });
       sawGrey = await look();
       /* THE LAST BOARD IS INSPECTED AND NEVER SIGNED FROM. Signing the sixth man finishes
-         the draft and moves to the review screen, which is where `#b-abandon` does not
-         exist. Every board is looked at; only five are drafted from. */
+         the draft and spends a chance. Every board is looked at; only five are drafted
+         from. */
       if (!sawGrey && i < D.SLOTS.length - 1) await signOne(page);
     }
   }
@@ -3728,7 +3788,7 @@ console.log('\nA MAN WHO WILL NOT PLAY IS NOT OFFERED, AND A CHIP STILL OPENS TH
       if (b.chip) { chipAt = true; break; }
       await signOne(page);
     }
-    if (!chipAt) await page.click('#b-abandon');
+    if (!chipAt) await freshDraft(page);
   }
   ok('no board offers a man who is Out, Doubtful or on reserve', !offered.length,
     offered.length ? 'offered: ' + [...new Set(offered)].join(', ') : `${seen} rows read`);
@@ -4289,7 +4349,10 @@ for (const vp of [{ width: 360, height: 740 }, { width: 390, height: 844 }]) {
         /* One line, measured as the ink's height against the line box rather than counted
            in characters: the column depends on the face and the face depends on the
            sandbox. */
-        subLines: Math.round(ink.height / parseFloat(getComputedStyle(sub).lineHeight)) };
+        subLines: Math.round(ink.height / parseFloat(getComputedStyle(sub).lineHeight)),
+        /* WHILE THE BOTTOM BANNER IS UP the doors share a row as compact tiles (the owner's
+           call, 2026-10-29), and half a phone is too narrow for the guest's line on one row. */
+        compact: document.body.classList.contains('rtg-sticky-on') && innerWidth < 920 };
     });
     const at = `${vp.width}x${vp.height} ${what}`;
     ok(`${at}: the door is drawn`, !!m, m ? `${m.w.toFixed(0)}x${m.h.toFixed(0)}` : 'missing');
@@ -4308,7 +4371,8 @@ for (const vp of [{ width: 360, height: 740 }, { width: 390, height: 844 }]) {
       /* THE SUB LINE IS THE LONGEST STRING ON THE DOOR and the guest's is longer than the
          account's, so this is where a phone gives out first. One line, and the ink inside
          its own column. */
-      ok(`  ${at}: the sub line holds one line`, m.subLines <= 1, m.subLines + ' lines');
+      ok(m.compact ? `  ${at}: the sub line holds two lines in the compact tile`
+        : `  ${at}: the sub line holds one line`, m.subLines <= (m.compact ? 2 : 1), m.subLines + ' lines');
       ok(`  ${at}: and does not spill its column`, m.subInk <= m.subBox + 0.5,
         `${m.subInk.toFixed(1)} of ${m.subBox.toFixed(1)}`);
     }
@@ -4635,6 +4699,96 @@ console.log('\nA FINISHED WEEK HAS A DOOR AFTER THE BOARD ROLLS OVER');
       String(total));
     ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
     await page.close();
+  }
+}
+
+/* ================================================================
+   THE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW
+
+   The owner's call (2026-10-29): with the closeable banner from assets/rtg-ads.js filled,
+   no button or link on a screen that carries it may sit under it before the player scrolls.
+   Content further down still scrolls under it; what is asked is the first view, of each
+   screen's own actions (the home's draft button, the entry's way to the board). The notes and
+   the way back to the game below them may pass under it like any long page. Measured
+   the way the Ads Agent measures every game: the banner hidden, then every control that
+   overlaps its box and is the thing actually at that point. Four sizes, every screen the
+   banner is on (s-shut, s-home, s-in and both tabs of s-live).
+   ================================================================ */
+console.log('\nTHE BOTTOM BANNER COVERS NOTHING AT FIRST VIEW');
+{
+  const ENTRY = { picks: POOL.pool.slice(0, 6).map((m) => m.player_id),
+    spend: 80, projected: 50, score: 0, scored: false };
+  const row = (place, name, score, me) => ({ place, display_name: name, score,
+    projected: 58, spend: 88, picks: [], is_me: !!me,
+    entry_no: name.length * 7 + name.charCodeAt(0), played: 6 });
+  const board = boardOf({ rows: [row(1, 'Somebody', 91.2), row(2, 'You', 77.5, true)],
+    me: { place: 2, entries: 2, score: 77.5 } });
+  const covered = (page, main) => page.evaluate((main) => {
+    const s = document.querySelector('[data-ad-zone=sticky]');
+    const inner = s && s.querySelector('.rtg-sticky-in');
+    if (!inner) return 'no banner';
+    const z = inner.getBoundingClientRect();
+    if (z.height < 5) return 'banner not filled';
+    /* The old phone strip (.rtp-ad-mobile-bottom) is transparent and pinned to the same edge,
+       and elementFromPoint would land on it and call whatever is behind it clear. */
+    document.querySelectorAll('.rtp-ad-mobile-bottom').forEach((x) => { x.style.visibility = 'hidden'; });
+    s.style.visibility = 'hidden';
+    const hit = [...document.querySelectorAll(main || 'button,a[href],[role=button]')].filter((e) => e.offsetWidth)
+      .filter((e) => {
+        const t = e.getBoundingClientRect();
+        if (!(t.bottom > z.top && t.top < z.bottom && t.right > z.left && t.left < z.right)) return false;
+        const h = document.elementFromPoint(t.left + t.width / 2, Math.min(innerHeight - 1, t.top + t.height / 2));
+        return h && (h === e || e.contains(h));
+      }).map((e) => (e.id ? '#' + e.id + ' ' : '') + e.textContent.trim().replace(/\s+/g, ' ').slice(0, 30));
+    s.style.visibility = '';
+    return hit;
+  }, main || null);
+  const settle = async (page) => {
+    await page.evaluate(() => scrollTo(0, 0));
+    await page.waitForTimeout(700);
+  };
+  for (const [w, h] of [[390, 844], [360, 640], [1440, 900], [1920, 1080]]) {
+    const at = w + 'x' + h;
+    {
+      const { page, boom } = await openPage(browser, FANTASY, { who: null, at: BEFORE, ads: true,
+        viewport: { width: w, height: h } });
+      await page.waitForSelector('#s-shut.on', { timeout: 15000 }).catch(() => {});
+      await settle(page);
+      const c = await covered(page);
+      ok(at + ': the sign-in screen has nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+      await page.close();
+    }
+    {
+      const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: BEFORE, ads: true,
+        viewport: { width: w, height: h } });
+      await page.waitForSelector('#s-home.on', { timeout: 15000 }).catch(() => {});
+      await settle(page);
+      const c = await covered(page, '#b-draft,#b-review');
+      ok(at + ': the week\'s home has its buttons clear of the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+      await page.close();
+    }
+    {
+      const { page, boom } = await openPage(browser, FANTASY, { who: TESTER, at: LIVE_AT, ads: true,
+        viewport: { width: w, height: h }, server: { mine: ENTRY, board } });
+      await page.waitForSelector('#s-in.on', { timeout: 15000 }).catch(() => {});
+      await settle(page);
+      let c = await covered(page, '#b-in-board');
+      ok(at + ': the entry screen has its way to the board clear of the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      await page.waitForSelector('#b-live:not([hidden])', { timeout: 10000 }).catch(() => {});
+      await page.click('#b-live').catch(() => {});
+      await page.waitForSelector('#s-live.on', { timeout: 10000 }).catch(() => {});
+      await settle(page);
+      c = await covered(page);
+      ok(at + ': the live games have nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      await page.click('#lv-tab-board').catch(() => {});
+      await settle(page);
+      c = await covered(page);
+      ok(at + ': the standings have nothing under the banner', Array.isArray(c) && !c.length, JSON.stringify(c));
+      ok('  nothing threw', !boom.length, boom.join(' | ') || 'clean');
+      await page.close();
+    }
   }
 }
 

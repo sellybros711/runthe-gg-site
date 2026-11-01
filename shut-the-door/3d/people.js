@@ -6,12 +6,12 @@
  * are our own posing laid over each capture's idle, and the umpire's strike call is blended in.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=6';
+import * as M from './materials.js?v=7';
 import { battingClub, clubNamed } from './clubs.js?v=2';
 import { capFor } from './uniforms.js?v=1';
-import * as G from './gear3d.js?v=3';
-import * as HG from './headgear.js?v=2';
-import { measureHead, wear, wornShade } from './headgear.js?v=2';
+import * as G from './gear3d.js?v=4';
+import * as HG from './headgear.js?v=5';
+import { measureHead, wear, wornShade } from './headgear.js?v=5';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=8';
@@ -139,6 +139,14 @@ export function dress(p, kit, numberText, weave) {
     const part = o.userData.part;
     if (!part) continue;
     const src = o.userData.src;
+    // the kit it wore until now goes, its own number texture with it (a new hitter every at bat was a
+    // new set of materials and a number texture each, never freed: a long session grew without end).
+    // The shared maps (the weave, the club's words, the source's maps) stay.
+    const was = o.material;
+    if (was && was.userData.dressed) {
+      if (was.name === 'number' && was.map) was.map.dispose();
+      was.dispose();
+    }
     if (part === 'uniform') {
       // the pants are a 'uniform' too: only the jersey (its node is named so) carries the words
       const jersey = !!(o.parent && /jersey/i.test(o.parent.name));
@@ -151,6 +159,7 @@ export function dress(p, kit, numberText, weave) {
     else if (part === 'undershirt') o.material = M.plain('undershirt', kit.undershirt, { roughness: 0.7 });
     else if (part === 'belt') o.material = M.plain('belt', kit.belt, { roughness: 0.35, sheen: 0, clearcoat: 0.4 });
     o.material.name = part;
+    o.material.userData.dressed = true;
   }
 }
 
@@ -549,7 +558,8 @@ export class People {
       b.helmet.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       b.helmet = null;
     }
-    if (b.bat) { this.scene.remove(b.bat); b.bat = null; }
+    // (his bat goes too: a new one is made for each hitter; its wood map is shared and stays)
+    if (b.bat) { this.scene.remove(b.bat); b.bat.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); b.bat = null; }
     for (const [bone, pos, q] of b.bind) { bone.position.copy(pos); bone.quaternion.copy(q); }
     b.root.position.set(0, 0, 0); b.root.rotation.set(0, 0, 0); b.root.scale.setScalar(1);
     b.root.updateMatrixWorld(true);
@@ -603,8 +613,16 @@ export class People {
     if (!skin || !skin.material.userData.u) return;
     const u = skin.material.userData.u;
     u.uTone.value = 0; u.uBeardAmt.value = 0;
-    if (f.tone > 0.01) { const d = this.tex.load(assetUrl('tex/skin_dark.webp')); d.colorSpace = THREE.SRGBColorSpace; d.flipY = false; u.uDark.value = d; u.uTone.value = f.tone; }
-    if (f.beard > 0) { const bm = this.tex.load(assetUrl('tex/beard_mask.webp')); bm.colorSpace = THREE.NoColorSpace; bm.flipY = false; u.uBeard.value = bm; u.uBeardAmt.value = f.beard; }
+    // (the two maps are loaded once and shared by every hitter: loaded again for each one, every at bat
+    // fetched, decoded and uploaded a new copy of each, and never freed the last)
+    if (f.tone > 0.01) {
+      if (!this.skinDark) { const d = this.skinDark = this.tex.load(assetUrl('tex/skin_dark.webp')); d.colorSpace = THREE.SRGBColorSpace; d.flipY = false; }
+      u.uDark.value = this.skinDark; u.uTone.value = f.tone;
+    }
+    if (f.beard > 0) {
+      if (!this.beardMask) { const bm = this.beardMask = this.tex.load(assetUrl('tex/beard_mask.webp')); bm.colorSpace = THREE.NoColorSpace; bm.flipY = false; }
+      u.uBeard.value = this.beardMask; u.uBeardAmt.value = f.beard;
+    }
   }
 
   /** His real height (root scale against the model's own) and build (the heavy and lean shape
@@ -1399,8 +1417,40 @@ export class People {
     // the chest protector on the upper spine, in front of the chest
     const torso = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'spine_03', 0.5);
     const tc = torso.getCenter(new THREE.Vector3());
-    const cp = G.chestProtector(team, 0.33, 0.47);
-    attach(c.bones.spine_03, cp, new THREE.Matrix4().setPosition(tc.x, tc.y - 0.17, torso.max.z + 0.088));   // out over the jersey
+    // (its hinged pads, each on the spine bone at its height and laid just off the jersey there: one
+    // board on the chest stood 9 cm off it so the belly could not come through as he crouched, and
+    // from the side it read as a board, the owner 2026-10-30)
+    const PW = 0.33, PH = 0.47, PN = 5, top = tc.y - 0.17 + PH / 2;
+    const front = (y0, y1) => {
+      let z = -Infinity;
+      const v = new THREE.Vector3();
+      for (const m of c.meshes) {
+        if (!m.isSkinnedMesh || !/^(skin|uniform)$/.test(m.material.name)) continue;
+        const pos = m.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+          if (v.y >= y0 && v.y <= y1 && Math.abs(v.x - tc.x) < 0.09 && v.z > z) z = v.z;
+        }
+      }
+      return z;
+    };
+    const spineY = ['spine_01', 'spine_02', 'spine_03'].map((n) => [n, wpos(c.bones[n]).y]);
+    for (let i = 0; i < PN; i++) {
+      const pad = G.chestPad(team, PW, PH, PN, i);
+      const y1 = top - (PH / PN) * i, y0 = y1 - PH / PN, yc = (y0 + y1) / 2;
+      // the highest spine bone at or below the pad's middle carries it (less a little: a bone sits
+      // at the bottom of the trunk it turns)
+      let bone = 'spine_01';
+      for (const [n, y] of spineY) if (y <= yc + 0.02) bone = n;
+      const z = front(y0 - 0.02, y1 + 0.02) + 0.012;
+      attach(c.bones[bone], pad.mesh, new THREE.Matrix4().setPosition(tc.x, yc, z));
+    }
+    const zTop = front(top - PH / PN, top + 0.02);
+    for (const sx of [-1, 1]) {
+      const cap = G.shoulderCap(team);
+      const m = new THREE.Matrix4().makeRotationZ(-sx * 0.5).setPosition(tc.x + sx * PW * 0.5, top - 0.035, zTop - 0.035);
+      attach(c.bones.spine_03, cap, m);
+    }
     // the mitt on his left hand, pocket toward the palm
     const hb = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'hand_l', 0.5);
     const hc = hb.getCenter(new THREE.Vector3());
@@ -1415,8 +1465,10 @@ export class People {
     c.mitt = mitt;
     c.mittBindQ = mitt.quaternion.clone();
     face(c, P(0.1 + 0.4 * this.aimX(), -2.85, 0));
-    // a catcher's crouch: hips just above the heels, knees wide, on the balls of his feet
-    c.crouch = { drop: 0.5, back: 0.02, width: 0.27, toeOut: 0.42, heel: 0.35, lean: 0.18, kneeOut: 0.9 };
+    // a catcher's crouch, as a big league catcher sets with the bases empty: hips down at his heels,
+    // knees wide, up on the balls of his feet, his trunk over his knees (the owner, 2026-10-30: the
+    // old set, hips high and trunk upright, read as a man sitting on a chair)
+    c.crouch = { drop: 0.62, back: 0.06, width: 0.25, toeOut: 0.42, heel: 0.55, lean: 0.42, kneeOut: 0.9 };
     crouchFromClip(c);
     stance(c);
     // the block's stance, for a ball in the dirt
@@ -1535,11 +1587,11 @@ export class People {
 
   catcherArms(c, t) {
     const B = c.bones;
-    // the bare hand, a loose fist, resting on the outside of his right knee
-    const f = c.fwd, l = c.left;
-    const knee = wpos(B.calf_r);
-    const tuck = knee.clone().addScaledVector(l, -0.09).addScaledVector(f, -0.05).add(new THREE.Vector3(0, 0.07, 0));
-    const pole = wpos(B.lowerarm_r).addScaledVector(l, -0.6).addScaledVector(f, -0.4);
+    // the bare hand tucked behind his back, out of the way of a foul tip, as a catcher keeps it with
+    // the bases empty (it rested on his right knee and went into his thigh, the owner 2026-10-30)
+    const f = c.fwd, l = c.left, sc = c.root.scale.y;
+    const tuck = wpos(B.pelvis).addScaledVector(f, -0.14 * sc).addScaledVector(l, -0.05 * sc).add(new THREE.Vector3(0, 0.16 * sc, 0));
+    const pole = wpos(B.lowerarm_r).addScaledVector(l, -0.7).addScaledVector(f, -0.5);
     twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tuck, pole, 1);
     this.catcherReach(c, t);
   }

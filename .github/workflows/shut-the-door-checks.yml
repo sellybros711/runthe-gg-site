@@ -17,11 +17,15 @@ name: Shut The Door checks
 #              then supabase/test/shut_the_door_test.sql; then
 #              155_shut_the_door_tie_held.sql (the held tie) twice and its test;
 #              then 156_shut_the_door_release.sql (the release's q) twice and its test; then
-#              157_shut_the_door_effort.sql (the effort's e) twice and its test
+#              157_shut_the_door_effort.sql (the effort's e) twice and its test; then
+#              159_shut_the_door_boards.sql (the board end to end) twice and its test; then
+#              160_shut_the_door_vote_survivor.sql (the vote, Survivor, the archive, Pro) twice and its test; then
+#              161_shut_the_door_full_close.sql (rules 8's two new spots) twice and its test
 #
 # Runs locally, unchanged:
 #   node shut-the-door/check-posture.mjs
 #   node shut-the-door/test/engine.mjs && node shut-the-door/test/packs.mjs && node shut-the-door/test/api.mjs
+#   node shut-the-door/test/modes.mjs && node shut-the-door/test/survivor.mjs
 #   node shut-the-door/check-replays.mjs --self-test
 #   node shut-the-door/check-rules.mjs
 #
@@ -61,8 +65,14 @@ jobs:
         run: node shut-the-door/test/packs.mjs
       - name: The four calls and the daily's promises
         run: node shut-the-door/test/api.mjs
+      - name: The vote's candidates and Survivor's sequence, the same on the page and the server
+        run: node shut-the-door/test/modes.mjs
+      - name: The vote, Survivor, the archive and the Pro gate through the page's calls
+        run: node shut-the-door/test/survivor.mjs
       - name: The lesson
         run: node shut-the-door/test/lesson.mjs
+      - name: The release meter on the page keeps the same e and q
+        run: node shut-the-door/test/meter.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: Every in-play row is a legal MLB play (no passing, runs on the third out, outs, bases)
@@ -114,3 +124,21 @@ jobs:
           $P -f supabase/157_shut_the_door_effort.sql
           $P -f supabase/157_shut_the_door_effort.sql
           $P -f supabase/test/shut_the_door_effort_test.sql
+      - name: 159 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/159_shut_the_door_boards.sql
+          $P -f supabase/159_shut_the_door_boards.sql
+          $P -f supabase/test/shut_the_door_boards_test.sql
+      - name: 160 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/160_shut_the_door_vote_survivor.sql
+          $P -f supabase/160_shut_the_door_vote_survivor.sql
+          $P -f supabase/test/shut_the_door_vote_survivor_test.sql
+      - name: 161 applied twice, then its test
+        run: |
+          P="psql -X -q -v ON_ERROR_STOP=1 -d std"
+          $P -f supabase/161_shut_the_door_full_close.sql
+          $P -f supabase/161_shut_the_door_full_close.sql
+          $P -f supabase/test/shut_the_door_full_close_test.sql

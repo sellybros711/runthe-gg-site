@@ -140,7 +140,9 @@ export function rowBreaks(cat, outs, bases, row) {
 /* Every row of one pack, played through the engine. */
 export function auditPack(pack) {
   const G = require('./grade.js');
-  const model = new G.Model(pack);
+  // the rows themselves, on the first half alone (where a third out ends it); the switch between
+  // halves is auditHalves below
+  const model = new G.Model(pack, { single: true });
   const breaks = [];
   const margin = pack.scenario.situation.score.us - pack.scenario.situation.score.them;
   for (const cat of G.IN_PLAY) for (let o = 0; o < 3; o++) for (let b = 0; b < 8; b++) {
@@ -160,6 +162,72 @@ export function auditPack(pack) {
   return breaks;
 }
 
+/* Rules 8: the switch between halves, legal. The halves are his team's defensive halves in order,
+   each later one from no outs and nobody on, with the walk-off rule where it belongs; his team's
+   half between two is the right half of the right inning, and every plate appearance in it keeps
+   the runners (on before + the batter = on after + runs + outs added), its outs climb to three and
+   its runs are the half's. Then outings are played through the engine: at each switch the next half
+   starts at 0-0, no outs, nobody on, the batter after the last one he faced leading off (the same
+   one when the third out was made on the bases), and the score is the half's plus his team's runs. */
+export function auditHalves(pack, outings = 60) {
+  const G = require('./grade.js'), E = require('./engine.js'), R = require('./rng.js');
+  const sc = pack.scenario, hs = sc.halves || [], out = [];
+  const add = why => out.push(why);
+  if (hs.length < 2) return out;
+  const side = sc.situation.usHome ? 'top' : 'bottom';
+  hs.forEach((h, k) => {
+    if (h.half !== side) add(`half ${k} is the ${h.half}, he pitches the ${side}`);
+    if (k && h.inning !== hs[k - 1].inning + 1) add(`half ${k} is inning ${h.inning} after ${hs[k - 1].inning}`);
+    if (k && (h.outs !== 0 || h.bases !== 0)) add(`half ${k} does not start empty`);
+    if (h.walkOffLive !== (!sc.situation.usHome && h.inning >= 9)) add(`half ${k}: the walk-off rule`);
+    if (!Array.isArray(h.lineup) || h.lineup.length !== 9 || h.lineup.some(i => !(i >= 0 && i < sc.batters.length))) add(`half ${k}: the lineup`);
+  });
+  if (!sc.between || sc.between.length !== hs.length - 1) add('one half of his team\'s between each two of his');
+  (sc.between || []).forEach((bt, k) => {
+    const inn = side === 'bottom' ? hs[k].inning + 1 : hs[k].inning;
+    if (bt.half === side || bt.inning !== inn) add(`between ${k} is the ${bt.half} ${bt.inning}`);
+    let on = 0, outs = 0, runs = 0;
+    const count = b => [1, 2, 4].filter(x => b & x).length;
+    bt.pas.forEach((pa, i) => {
+      const dOuts = pa.outs - outs;
+      if (dOuts < 0 || pa.outs > 3) add(`between ${k} PA ${i}: outs ${outs} to ${pa.outs}`);
+      if (count(on) + 1 !== count(pa.bases) + pa.runs + dOuts) add(`between ${k} PA ${i} (${pa.short}): ${count(on)} on and the batter, ${count(pa.bases)} on after, ${pa.runs} in, ${dOuts} out`);
+      if ([1, 2, 4].some((x, j) => !!(pa.bases & x) !== (pa.runners[j] != null))) add(`between ${k} PA ${i}: the runners and the bases differ`);
+      on = pa.bases; outs = pa.outs; runs += pa.runs;
+    });
+    if (outs !== 3) add(`between ${k} ends with ${outs} outs`);
+    if (runs !== bt.runs) add(`between ${k}: the plays score ${runs}, the half ${bt.runs}`);
+  });
+  const model = new G.Model(pack);
+  for (let n = 0; n < outings; n++) {
+    const rng = R.mulberry32(R.hashSeed(sc.id + '|halves|' + n));
+    const o = E.createOuting(pack, { seed: R.hashSeed(sc.id + '|halves-seed|' + n), model });
+    let guard = 0;
+    while (o.status === 'live' && guard++ < 300) {
+      const before = { bi: o.st.bi, h: o.st.h || 0, us: o.score.us, them: o.score.them };
+      let rec = null;
+      if (E.pickoffLive(o) && rng() < 0.1) rec = E.pickoff(o).pickoff.halfOver;
+      else {
+        const r = E.throwPitch(o, { type: model.types[Math.floor(rng() * model.types.length)], cell: Math.floor(rng() * 25), q: Math.round(rng() * 100) / 100 });
+        rec = r.pitchResult.halfOver;
+        if (rec && !r.pitchResult.paOver && !(r.pitchResult.steal && r.pitchResult.steal.result === 'out')) add(`outing ${n}: a half ended on a pitch that ended no plate appearance and made no out on the bases`);
+        if (rec) {
+          const same = !r.pitchResult.paOver;
+          const want = same ? before.bi : (before.bi + 1) % model.N;
+          if (o.st.bi !== want) add(`outing ${n}: the next half leads off with ${o.st.bi}, not ${want}`);
+        }
+      }
+      if (!rec) continue;
+      const st = o.st, bt = sc.between[before.h];
+      if (st.h !== before.h + 1 || st.outs || st.bases || st.b || st.s) add(`outing ${n}: the next half does not start at 0-0, no outs, nobody on`);
+      if (o.score.us !== before.us + bt.runs) add(`outing ${n}: his team's ${bt.runs} runs are not on the score`);
+      if (st.margin !== o.score.us - o.score.them) add(`outing ${n}: the margin ${st.margin} is not the score`);
+      if (rec.next.leadoff.index !== model.who(st)) add(`outing ${n}: the card's leadoff is not the batter up`);
+    }
+  }
+  return out;
+}
+
 export function packFiles() {
   const dir = join(HERE, 'data', 'packs');
   return readdirSync(dir).filter(f => f.endsWith('.json')).sort().map(f => join(dir, f));
@@ -171,7 +239,7 @@ if (isMain) {
   const json = process.argv.includes('--json');
   const total = Object.fromEntries(KINDS.map(k => [k, 0]));
   let rows = 0, bad = 0;
-  const byPack = {};
+  const byPack = {}, halvesOk = [];
   for (const f of packFiles()) {
     const pack = JSON.parse(readFileSync(f, 'utf8'));
     const breaks = auditPack(pack);
@@ -190,12 +258,17 @@ if (isMain) {
       if (list) console.log(`${id}  ${x.cat} state ${x.state} (${x.outs} out, bases ${x.bases}) row ${x.i} p ${x.p}  ${x.kind}: ${x.why}  ${JSON.stringify(x.row)}`);
     }
     byPack[id] = kinds;
+    // rules 8: the switch between halves
+    const hb = auditHalves(pack);
+    if (hb.length) { bad += hb.length; total.half = (total.half || 0) + hb.length; kinds.half = hb.length; for (const w of hb) console.log(`${id}  half: ${w}`); }
+    else if ((pack.scenario.halves || []).length > 1) halvesOk.push(`${id} (${pack.scenario.halves.length} halves)`);
   }
   if (json) console.log(JSON.stringify({ rows, bad, total, byPack }, null, 1));
-  const line = KINDS.filter(k => total[k]).map(k => `${k} ${total[k]}`).join(', ');
+  const line = KINDS.concat(['half']).filter(k => total[k]).map(k => `${k} ${total[k]}`).join(', ');
   if (bad) {
     console.error(`check-rules: ${bad} of ${rows} in-play rows break an MLB rule (${line})`);
     process.exit(1);
   }
   console.log(`check-rules: all ${rows} in-play rows in ${packFiles().length} packs are legal MLB plays`);
+  if (halvesOk.length) console.log(`check-rules: the switch between halves is legal in ${halvesOk.join(', ')}`);
 }

@@ -114,6 +114,60 @@ function bodyHtml(body, where) {
   return out.join('\n\n');
 }
 
+/* AdSense units on the guides (the owner's rule, 2026-10-27: an ad between each change in topic).
+   An in-article unit goes before a ## heading: always before the first one (after the intro), then
+   before any later heading with at least AD_GAP words of reading since the last ad, and never
+   more than AD_MAX in one guide. The gap and the cap are what keep "between every topic" from
+   stacking ads on short sections, which reads as a page built for ads and earns less per ad.
+   The hub has none. The initialiser at the foot of the page starts each unit once and skips a
+   placeholder slot, the same as every other page. */
+const AD_GAP = 250;
+const AD_MAX = 4;
+const AD_CLIENT = 'ca-pub-5952069078178257';
+const AD_IN_ARTICLE = '9845074071';
+/* The first unit starts with the page. The rest are adsbygoogle-lazy: AD_INIT starts each one
+   only once it is within 600px of the screen, so an ad nobody reads down to is never requested. */
+const adUnit = (lazy) => `      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="${lazy ? 'adsbygoogle-lazy' : 'adsbygoogle'}" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_IN_ARTICLE}"></ins>
+      </div>`;
+function withAds(html) {
+  const blocks = html.split('\n\n');
+  const words = (b) => b.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+  const at = new Set();
+  let since = 0, first = true;
+  blocks.forEach((b, i) => {
+    if (i > 0 && /^\s*<h2>/.test(b) && at.size < AD_MAX && (first || since >= AD_GAP)) { at.add(i); since = 0; first = false; }
+    since += words(b);
+  });
+  let n = 0;
+  return blocks.map((b, i) => (at.has(i) ? adUnit(n++ > 0) + '\n\n' + b : b)).join('\n\n');
+}
+const AD_INIT = `  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+      var lazy=document.querySelectorAll('ins.adsbygoogle-lazy');
+      var start=function(u){ u.className='adsbygoogle'; (adsbygoogle=window.adsbygoogle||[]).push({}); };
+      var io='IntersectionObserver' in window ? new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); try{ start(e.target); }catch(x){} } });
+      },{rootMargin:'600px 0px'}) : null;
+      for(var j=0;j<lazy.length;j++){
+        var ls=lazy[j].getAttribute('data-ad-slot');
+        if(!ls||/^0+$/.test(ls)) continue;
+        if(io) io.observe(lazy[j]); else start(lazy[j]);
+      }
+    }catch(e){}
+  })();
+  </script>
+`;
+
 /* The head, the consent defaults (Europe first, then everywhere) before the ad tag, and the
    footer are about.html's, so check-adsense reads a guide the way it reads every other page. */
 function page({ title, description, url, h1, sub, main, cta }) {
@@ -160,6 +214,9 @@ function page({ title, description, url, h1, sub, main, cta }) {
     h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
       font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
     .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
@@ -229,7 +286,7 @@ ${cta ? `
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
-</body>
+${AD_INIT}</body>
 </html>
 `;
 }
@@ -249,7 +306,7 @@ export function build() {
       title: meta.title, description: meta.description, url: `${SITE}/guides/${meta.slug}.html`,
       h1: `      <p class="crumb"><a href="/guides/">Guides</a> · ${GAME_NAME[meta.game]}</p>\n      <h1>${inline(meta.title, where)}</h1>`,
       sub: `A guide to ${esc(GAME_NAME[meta.game])}`,
-      main: bodyHtml(body, where),
+      main: withAds(bodyHtml(body, where)),
       cta: `<a class="cta" href="${meta.play_url}">Play ${esc(GAME_NAME[meta.game])}</a>`,
     });
   }

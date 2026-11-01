@@ -35,6 +35,8 @@ node football/check-gameday.mjs       the Game Day shelf
 node football/check-boss.mjs          the boss battle (add go: going for it on fourth down)
 node football/check-overtime.mjs      a tie goes to overtime
 node football/check-simspeed.mjs      Slow and Slower pace by the drive, Normal untouched
+node football/check-freespin.mjs      the free re-spin: when it shows, what a watched or closed video does
+node football/check-banner.mjs        the closeable bottom banner covers no button at first view
 node football/check-fantasy.mjs       the Fantasy Challenge (--quick: the engine, no browser)
 psql ... -f supabase/test/launch_preflight.sql    the live modes' migrations are applied
 ```
@@ -76,6 +78,21 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
   `otPlanFor` in `engine.js` is the one place that decides it; the broadcast and the drive picture play
   its plan (`script.ot`) and never invent a possession of their own.
 
+**The free re-spin**
+
+- Watching a short ad buys one re-spin of both wheels (the owner's call, 2026-10-28). It is not one
+  of the three paid re-spins and it costs nothing: `R.freeRespin` never touches `respinsUsed` or the
+  fee ladder. The cap (three a day), the sign in and "watched to the end" are the server's
+  (`ad_reward_*`, kind `ps_respin`), reached through `window.RTG_AD`. The page never grants one.
+
+**The bottom banner**
+
+- With the closeable banner from `assets/rtg-ads.js` up, no button or link may sit under it at
+  first view (the owner's call, 2026-10-29). Layout keys on `body.rtg-sticky-on`, never on the
+  ad filling, so nothing moves when the ad arrives; `clearBand()` moves the first lower block
+  that would straddle it to just under the fold. A new block on the front page, the board, the
+  results or a Fantasy banner screen has to keep `check-banner` and check-fantasy's banner section green.
+
 **The Fantasy Challenge**
 
 - **A price never moves once anybody has drafted against it.** The board is written on the Tuesday
@@ -86,10 +103,11 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
   that talks to `109_fantasy_challenge.sql`.
 - A published week's cap is that week's. The constant is only the next week's.
 - **The week opens Tuesday, and three things make sure of it** (the owner's rule, 2026-10-22):
-  `fantasy-pool.yml` (Tuesday 11am Eastern, catch-ups Wednesday and Thursday morning),
-  `fantasy-watchdog.yml` (every two hours Tuesday afternoon to Thursday, dispatches the build
-  if the week is not live), and the issue "Fantasy Challenge: the week did not open". A
-  scheduled or watchdog run never rebuilds a week that is already live.
+  `fantasy-pool.yml` (Tuesday 8am Eastern, the owner's call 2026-10-27; it waits for last week's
+  stats until noon, then a settle pass at 11am and catch-ups Wednesday and Thursday morning),
+  `fantasy-watchdog.yml` (hourly Tuesday from 9am, then every two hours to Thursday, dispatches
+  the build if the week is not live), and the issue "Fantasy Challenge: the week did not open".
+  A scheduled or watchdog run never rebuilds a week that is already live.
 - Pro buys drafts, never a price, a board or a score. One entry each.
 
 **Accounts and money**

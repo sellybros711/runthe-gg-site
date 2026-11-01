@@ -241,6 +241,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
    is always in view next to the keys that answer it. */
 .playbar{position:sticky; bottom:0; z-index:20; margin:0 -2px; padding:9px 2px calc(4px + env(safe-area-inset-bottom));
   background:var(--bg); border-top:1px solid var(--line2); box-shadow:0 -10px 22px -14px rgba(0,0,0,.55);}
+/* the closeable bottom banner (/assets/rtg-ads.js) comes up on the finished puzzle, and the bar rides on it */
+body.rtg-sticky-on .playbar{bottom:var(--sticky-ad-h,0px);}
 .playbar .cluebar{margin-bottom:8px;}
 .playbar .controls{margin-bottom:6px;}
 .krow{display:flex; justify-content:center; gap:5px; margin-bottom:6px;}
@@ -386,6 +388,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     .wrap > .gj{ grid-area:gj; } .wrap > .foot{ grid-area:foot; }
     .playbar .kbd{ display:none; }   /* physical keyboard on desktop */
   }
+
+  /* Room for the two 160x600 rails (assets/rtg-ads.js), which need 310px of
+     window beside this column's content box. The floor is the 1000px grid
+     this page already plays at in a 1000px window, so no layout appears that
+     does not ship already. Below 1614px nothing changes, because narrowing
+     there would buy no rails. The 18px is a classic scrollbar. */
+  @media (min-width:1614px){ .wrap{ max-width:min(1040px, calc(100vw - 614px)); } }
   /* the crossword's grey title looked doubled/distorted with the shared hard
      offset shadow - use a clean soft drop instead in both themes */
   .a-gametitle__plate{ text-shadow:0 2px 10px color-mix(in srgb, var(--a-tc,#64748B) 30%, transparent) !important; }
@@ -401,6 +410,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -584,7 +594,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
 <script src="/arcade/cluebank.js?v=3"></script>
-<script src="/arcade/primary.js?v=56"></script>
+<script src="/arcade/primary.js?v=62"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=9"></script>
 <script src="/arcade/flags.js?v=8"></script>
@@ -601,7 +611,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=2"></script>
-<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <script src="/arcade/archive.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1066,7 +1076,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(cwToastT) clearTimeout(cwToastT); cwToastT=setTimeout(function(){ el.classList.remove('on'); }, 2800);
   }
 
-  function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('crossword', DATE);
+  function finish(){ if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(true); if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('crossword', DATE);
     if(!done && !TESTER && !ARCHIVE && window.RTGTokens && RTGTokens.complete) RTGTokens.complete('crossword');
     done=true; if(tick) clearInterval(tick);
     clearResume();   // attempt is over - nothing left to restore
@@ -1345,6 +1355,7 @@ window.GA_ID='G-L29P5MRWKE';
   }
   // out of plays: lock the board and show the previous result in review state
   function showLocked(saved){
+    if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(true);
     done=true; if(tick){ clearInterval(tick); tick=null; }
     var b=document.getElementById('board'); if(b){ b.style.pointerEvents='none'; b.style.opacity='.55'; }
     var seg=document.getElementById('dateSeg'); if(seg) seg.innerHTML = fmtDate(DATE)+' <small>'+(window.RTGTokens?RTGTokens.lockLine('crossword'):'Back tomorrow.')+'</small>';
@@ -1492,6 +1503,23 @@ window.GA_ID='G-L29P5MRWKE';
     RTG_LB.mount({ el:el, game:'crossword', date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'time' });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+</script>
+<script>
+/* THE ARCADE'S ADS (Ads Agent, 2026-10-29, the owner's calls). Two desktop rails beside the game on
+   every screen, play included, built only where each one can sit 150px clear of the column and never
+   on a phone. And the closeable bottom banner on every screen, play included (the owner's call,
+   2026-10-29); its X closes it for the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
+(function(){
+  var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
+  function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
+  if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
+  /* The owner's call (2026-10-29): the bottom banner is up on every Arcade game, play included.
+     The game's own calls still arrive (a screen change, a finished run) and every one now asks for
+     it on. The X still closes it for the rest of the visit. */
+  window.RTG_ARCADE_STICKY = function(){ if(window.RTG_ADS) RTG_ADS.sticky(true, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
+  if(document.readyState === 'complete') window.RTG_ARCADE_STICKY(true); else window.addEventListener('load', function(){ window.RTG_ARCADE_STICKY(true); });
 })();
 </script>
 </body>

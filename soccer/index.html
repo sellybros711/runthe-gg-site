@@ -875,6 +875,19 @@
     -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%);
             mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%);}
   .flag-marquee.top{margin:0 -22px 10px;}
+  /* EVERY BANNER SCREEN MAKES ROOM FOR THE BOTTOM BANNER (the owner, 2026-10-29: the banner may never sit
+     over a main control on the first view). pitchClear() measures, and only where a control would sit
+     under the banner does anything give: first the masthead's blurb and logo and, on the start screen,
+     the flag strip, the demo scoreline and the trophy's size (pitch-tight), then the start screen's
+     subtitle and trophy (pitch-tighter). A block that would still sit under the banner moves below the
+     fold whole. Screens with room keep everything. The footer scrolls under it like any long page. */
+  body.pitch-tight .acct-bar .fa-lock{display:none}
+  body.pitch-tight .masthead .logo-badge img{height:48px}
+  body.pitch-tight #screen-start .flag-marquee.top,
+  body.pitch-tight #screen-start .home-demo{display:none}
+  body.pitch-tight #screen-start .trophy-svg{width:42px;height:60px}
+  body.pitch-tighter #screen-start .hero-sub,
+  body.pitch-tighter #screen-start .ball{display:none}
   .flag-marquee.bottom{margin:14px -22px 0;}
   .flag-lane{display:flex;gap:12px;width:max-content;flex:0 0 auto;will-change:transform;}
   .flag-lane.left{animation:flagScrollLeft linear infinite;}
@@ -3206,6 +3219,35 @@
     letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
     margin:0 0 6px; padding-top:16px; border-top:1px solid var(--border-soft); }
   .rtp-ad-inline:has(ins[data-ad-status="filled"]) .rtp-ad-label{ display:block; }
+  /* The menu ad keeps 150px from the controls above it, but only once it holds an ad. */
+  .rtp-ad-inline[data-ad-zone="menu"]:has(ins[data-ad-status="filled"]){ margin-top:150px; }
+  /* THE MENU AD'S SIZE, fixed (the owner, 2026-10-26: a full-width responsive unit filled half a
+     phone screen). A 320x50 banner on a phone (the smallest standard size, the owner's pick), the 728x90 leaderboard from 768px up. An
+     unfilled unit collapses to nothing. */
+  [data-ad-zone="menu"] ins.adsbygoogle{display:inline-block;width:320px;height:50px}
+  /* SIZED BY THE COLUMN, NOT THE SCREEN (QA, 2026-10-27). A 768px media query handed the
+     728x90 to a column that can be narrower: the college start screen is 572px wide at every
+     desktop width, and at 768 the football, college and baseball columns are 572 to 612. The
+     leaderboard then hung 156px past the column, past the screen at 768. The zone is a size
+     container, so the slim standard size that fits is the one served: 320x50, 468x60 from a
+     468px column, the 728x90 from a 728px column. */
+  [data-ad-zone="menu"]{container-type:inline-size;width:100%;box-sizing:border-box}
+  @container (min-width:468px){ [data-ad-zone="menu"] ins.adsbygoogle{width:468px;height:60px} }
+  @container (min-width:728px){ [data-ad-zone="menu"] ins.adsbygoogle{width:728px;height:90px} }
+  [data-ad-zone="menu"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  /* THE TOURNAMENT AD: in the flow under the match cards, the mid-size 300x250. Empty, it takes no space. */
+  .stage-ad{text-align:center}
+  .stage-ad:has(ins[data-ad-status="filled"]){margin:150px auto 0}
+  .stage-ad ins.adsbygoogle{display:inline-block;width:300px;height:250px}
+  .stage-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .stage-ad .rtp-ad-label{display:none}
+  .stage-ad:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
+  /* THE DESKTOP RAILS: absolute on the page, so they scroll with it. 150px clear of the 640px column. */
+  .rail-ad{position:absolute;top:140px;width:160px;text-align:center;z-index:1}
+  .rail-ad ins.adsbygoogle{display:inline-block;width:160px;height:600px}
+  .rail-ad ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+  .rail-ad .rtp-ad-label{display:none}
+  .rail-ad:has(ins[data-ad-status="filled"]) .rtp-ad-label{display:block}
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{ display:block; }    /* mobile bottom anchor only */
     .rtp-ad-rail{ display:none !important; }     /* never side rails on mobile */
@@ -3228,6 +3270,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
      crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 <!-- Supabase JS (auth: email/password + Google OAuth, session persistence) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
@@ -4260,15 +4303,17 @@ window.GA_ID='G-L29P5MRWKE';
     </div>
   </section>
 
-  <!-- The banner, above the footer. Placeholder slot: the initialiser refuses to start one,
-       so this renders nothing until a real unit id is pasted in. -->
-  <div class="rtp-ad-inline">
+  <!-- THE MENU AD (Ads Agent, 2026-10-26, the owner's rule: ads on a game's start screen,
+       never in play). The one live unit in this game. It sits under the screens, above the
+       footer, so it shows under the start screen. menuAd() starts it while the start screen is
+       showing and REMOVES it the moment showScreen() opens any other screen (AdSense does not
+       allow a loaded ad to be hidden). It is not started again until the page reloads. Once
+       filled it sits 150px below the last control; empty, it takes no space. -->
+  <div class="rtp-ad-inline" data-ad-zone="menu">
     <span class="rtp-ad-label">Advertisement</span>
     <ins class="adsbygoogle"
          data-ad-client="ca-pub-5952069078178257"
-         data-ad-slot="0000000000"
-         data-ad-format="horizontal"
-         data-full-width-responsive="true"></ins>
+         data-ad-slot="6301272665"></ins>
   </div>
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
@@ -4295,27 +4340,9 @@ window.GA_ID='G-L29P5MRWKE';
 
 </div>
 
-<!-- ===== Google AdSense units (manual; loader in <head>). Placed before the
-     modal overlays so any modal, all z-index ≥ 40, paints over them. ===== -->
-<div class="rtp-ad-rail rtp-ad-left">
-  <ins class="adsbygoogle"
-       style="display:block;width:160px;height:600px"
-       data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="0000000000"></ins>
-</div>
-<div class="rtp-ad-rail rtp-ad-right">
-  <ins class="adsbygoogle"
-       style="display:block;width:160px;height:600px"
-       data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="0000000000"></ins>
-</div>
-<!-- Mobile strip: fixed 320x50, NOT responsive, it cannot grow over a button. -->
-<div class="rtp-ad-mobile-bottom">
-  <ins class="adsbygoogle"
-       style="display:inline-block;width:320px;height:50px"
-       data-ad-client="ca-pub-5952069078178257"
-       data-ad-slot="0000000000"></ins>
-</div>
+<!-- No ad unit is written into this page's markup. A never-started <ins class="adsbygoogle"> takes
+     the next adsbygoogle.push(), so a placeholder here used to swallow the draft, season, banner
+     and rail units built later in code (Ads Agent, 2026-10-30). Every unit is built where it shows. -->
 
 <div class="sheet-bg" id="sheet-bg">
   <div class="sheet">
@@ -4820,9 +4847,125 @@ function draftTotalSlots(){ return gs ? gs.picks.length + gs.openSlots.length : 
 function isFullDraft(){ return !!(gs && gs.draftType==='full'); }
 
 function $(id){return document.getElementById(id);}
+/* THE MENU AD lives under the start screen and nowhere else. Started while the start screen
+   shows, removed (not hidden) the first time any other screen opens, and never started again
+   on this page load. A push fills the first unstarted unit in the page, and this one comes
+   before the rails and the strip, which are never started. */
+function menuAd(name){
+  const z=document.querySelector('[data-ad-zone="menu"]');
+  if(!z) return;
+  if(name!=='start'){ z.remove(); return; }
+  if(z.dataset.started) return;
+  z.dataset.started='1';
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE TOURNAMENT AD (Ads Agent, 2026-10-28, the owner's call: "another good place for an ad").
+   One unit in the page flow under the match cards while the tournament screen is open, above
+   the "More games" promo. Built when the screen opens and removed (never hidden) when it is left,
+   so a new tournament gets a fresh unit. 150px below the cards once filled. Unit pitch-stage. */
+function stageAd(name){
+  const old=document.querySelector('[data-ad-zone="stage"]');
+  if(name!=='sim'){ if(old) old.remove(); return; }
+  if(old) return;
+  const host=document.querySelector('#screen-sim .sim-wrap');
+  if(!host) return;
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="stage-ad" data-ad-zone="stage"><span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="3559841093"></ins></div>';
+  host.after(wrap.firstChild);
+  try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+}
+/* THE DESKTOP RAILS (Ads Agent, 2026-10-28, the owner's call: side banners on desktop only, beside
+   gameplay too, scrolling with the page). Two 160x600 units, left and right of the game. The column
+   is MEASURED on every screen, not assumed: the start screen's button row is about 925px wide while
+   the other screens are 608, so each rail is placed 150px clear of the widest control on the open
+   screen, and is built only where the window leaves that room (about 1545px on the start screen,
+   1230px elsewhere). RTG_ADS.clear() then moves them below anything above them, the corner buttons
+   included. Removed (never hidden) where they do not fit. Units pitch-rail-left and pitch-rail-right. */
+const RAIL_GAP=150, RAIL_W=160;
+const RAIL_SLOTS={left:'5343696050', right:'3846781551'};   // pitch-rail-left, pitch-rail-right
+function railCol(){
+  const sc=document.querySelector('.screen.active'); if(!sc) return null;
+  const r=sc.getBoundingClientRect(); let L=r.left, R=r.right;
+  sc.querySelectorAll('a[href],button,input,select,[role="button"]').forEach(e=>{
+    if(!e.offsetWidth) return;
+    const q=e.getBoundingClientRect(); if(q.right<=0||q.left>=window.innerWidth) return;
+    L=Math.min(L,q.left); R=Math.max(R,q.right);
+  });
+  return {L,R};
+}
+function railAds(){
+  const have=document.querySelectorAll('[data-ad-zone="rail"]');
+  const c=railCol();
+  if(!c||c.L-RAIL_GAP-RAIL_W<0||c.R+RAIL_GAP+RAIL_W>document.documentElement.clientWidth){ have.forEach(r=>r.remove()); return; }
+  const at={left:Math.round(c.L-RAIL_GAP-RAIL_W+window.scrollX)+'px', right:Math.round(c.R+RAIL_GAP+window.scrollX)+'px'};
+  const clear=()=>{ if(window.RTG_ADS) RTG_ADS.clear(document.querySelectorAll('[data-ad-zone="rail"]')); };
+  if(have.length){ have.forEach(z=>{ z.style.left=at[z.dataset.side]; z.style.top='140px'; }); clear(); return; }
+  Object.entries(RAIL_SLOTS).forEach(([side,slot])=>{
+    const wrap=document.createElement('div');
+    wrap.innerHTML='<div class="rail-ad rail-'+side+'" data-ad-zone="rail" data-side="'+side+'"><span class="rtp-ad-label">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="'+slot+'"></ins></div>';
+    const z=wrap.firstChild; z.style.left=at[side]; z.style.top='140px';
+    document.body.appendChild(z);
+  });
+  clear();
+  document.querySelectorAll('[data-ad-zone="rail"]').forEach(()=>{ try{ (adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} });
+}
+window.addEventListener('resize',()=>{ try{ railAds(); }catch(e){} });
+/* THE CLOSEABLE BOTTOM BANNER (Ads Agent, 2026-10-29, the owner's call). On the start screen, the
+   online hub, the results and the boards, never on a screen where a match is picked or played.
+   Its X closes it for the rest of the visit. /assets/rtg-ads.js owns how it looks and behaves.
+   The rails above already cover every screen, the boards included. */
+const STICKY_SLOT={sticky:'2005205943'};   // pitch-sticky
+const STICKY_ON=['start','online-hub','report','friendly-result','h2h-result','h2h-board','wc-board'];
+function stickyAd(name){
+  if(window.RTG_ADS) RTG_ADS.sticky(STICKY_ON.indexOf(name)>=0, STICKY_SLOT.sticky, 'pitch');
+}
+/* Where the bottom banner would cover a main control on the first view of a banner screen, the
+   masthead and the start screen's decoration step aside (the pitch-tight CSS above), and a block that
+   would still sit under the banner moves down past the bottom of the window, whole. The first view
+   then shows whole controls, never one under the banner. The footer is not a main control. Re-run on
+   every screen change, resize and banner change ('rtg-sticky' from /assets/rtg-ads.js). */
+function pitchClear(){
+  const B=document.body;
+  B.classList.remove('pitch-tight','pitch-tighter');
+  document.querySelectorAll('[data-pitch-push]').forEach(e=>{ e.style.removeProperty('margin-top'); e.removeAttribute('data-pitch-push'); });
+  const z=document.querySelector('[data-ad-zone="sticky"] .rtg-sticky-in'), sc=document.querySelector('.screen.active');
+  if(!z||!z.offsetHeight||!sc||STICKY_ON.indexOf(sc.id.replace(/^screen-/,''))<0) return;
+  const sy=window.scrollY, fold=window.innerHeight, bannerTop=()=>z.getBoundingClientRect().top+sy;
+  const ctl=()=>[...sc.querySelectorAll('a[href],button,[role="button"]')].filter(e=>e.offsetWidth&&!e.closest('footer,.site-footer'));
+  const under=e=>{ const b=e.getBoundingClientRect(); return b.bottom+sy>bannerTop()-4&&b.top+sy<fold; };
+  const main=sc.id==='screen-start'?$('btn-start'):null;
+  const low=()=>main&&main.getBoundingClientRect().bottom+sy>bannerTop()-4;   // Start World Cup not wholly above the banner
+  if(low()||ctl().some(under)) B.classList.add('pitch-tight');                // lift first
+  if(low()) B.classList.add('pitch-tighter');
+  const host=sc.children.length===1?sc.firstElementChild:sc;
+  for(let n=0;n<4;n++){
+    const c=ctl().find(under); if(!c) break;
+    let blk=c; while(blk.parentElement&&blk.parentElement!==host) blk=blk.parentElement;
+    if(!blk.parentElement) break;
+    const t=blk.getBoundingClientRect().top+sy; if(t>=fold) break;
+    blk.style.marginTop=(parseFloat(getComputedStyle(blk).marginTop)+fold-t+24)+'px'; blk.setAttribute('data-pitch-push','1');
+  }
+}
+window.addEventListener('resize',()=>{ try{ pitchClear(); }catch(e){} });
+window.addEventListener('rtg-sticky',()=>{ try{ pitchClear(); }catch(e){} });
+/* The start screen is open in the markup, so showScreen() never runs for it on a fresh load, and the
+   rails and the banner would wait for the first resize or screen change (the owner saw none, 2026-10-29).
+   So the screen that is open at load gets them too. */
+window.addEventListener('load',()=>{ try{
+  const a=document.querySelector('.screen.active');
+  railAds();
+  if(a) stickyAd(a.id.replace(/^screen-/,''));
+}catch(e){} });
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $('screen-'+name).classList.add('active');
+  menuAd(name);
+  stageAd(name);
+  railAds();
+  try{ pitchClear(); }catch(e){}
+  setTimeout(()=>{ try{ pitchClear(); }catch(e){} },400);   // and once the screen has drawn
+  setTimeout(()=>{ try{ railAds(); }catch(e){} },350);   // again once the screen has drawn its content
+  stickyAd(name);
   // compact mode hides the masthead so the select page fits one screen
   document.body.classList.toggle('sel-mode', name==='select');
   document.body.classList.toggle('home-mode', name==='home');
@@ -14947,17 +15090,17 @@ boot().then(async ()=>{
     try{
       var ads = document.querySelectorAll('ins.adsbygoogle');
       for (var i=0;i<ads.length;i++){
-        /* Never start a unit whose slot is still all zeros. A placeholder pushed here would
-           either serve nothing or, worse, be filled against whichever unit the id was copied
-           from. All three are placeholders since 2026-10-24: the rails sit about 116px from
-           the board and the strip sits under the game's buttons, closer than Google's 150px,
-           so they stay off until there is a placement that clears it (agents/ads/ in the
-           vault). The real ids were 1816473106, 4576322214 and 8100634252. */
+        /* Never start a unit whose slot is still all zeros. There are none in the markup any more:
+           a never-started placeholder swallowed the next push, which is why the rails and the
+           banner went unfilled (Ads Agent, 2026-10-30). Every unit is built where it shows. */
         var slot = ads[i].getAttribute('data-ad-slot');
         if (!slot || /^0+$/.test(slot)) continue;
+        if (ads[i].closest('[data-ad-zone]')) continue;   // the menu ad starts in menuAd()
         (adsbygoogle = window.adsbygoogle || []).push({});
       }
     }catch(e){}
+    /* The page opens on the start screen without a showScreen() call, so start it here. */
+    try{ var st=document.getElementById('screen-start'); if (st && st.classList.contains('active')) menuAd('start'); }catch(e){}
   })();
 </script>
 

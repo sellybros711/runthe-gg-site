@@ -24,12 +24,21 @@ node shut-the-door/check-posture.mjs           unlisted until launch (INDEXED an
 node shut-the-door/test/engine.mjs             the engine on a synthetic pack: determinism, end rules, grades
 node shut-the-door/test/packs.mjs              every real pack: the contract, all-green best play, median at the 50th
 node shut-the-door/test/api.mjs                the four calls, the daily, resume, one submit
+node shut-the-door/test/modes.mjs              the vote's candidates and Survivor's sequence, page and server alike
+node shut-the-door/test/survivor.mjs           the vote, Survivor, the archive and the Pro gate through the calls
 node shut-the-door/test/lesson.mjs             the lesson on the worst pitch
 node shut-the-door/check-replays.mjs           stored outings replayed against their scores (--self-test)
 node shut-the-door/check-rules.mjs             every in-play row in every pack a legal MLB play
 node shut-the-door/test/check-browser.mjs      the whole game in Chromium at 390x844 and 1440x900
 node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real packs (--relative)
 ```
+
+Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says how they sample and resume):
+
+- Push work to the branch after each meaningful step. A container restart loses what is not pushed.
+- Locally, run the sampled checks (`--sample N`, or the check's default) and add `--resume` after a
+  restart. Leave the full runs to CI and the nightly (`shut-the-door-nightly.yml`).
+- Write long run output to a file (`> run.txt 2>&1`), not only to stdout.
 
 ## Rules a change here must keep
 
@@ -67,7 +76,20 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
   the history (one pitch ahead, then the table). Rules 5 (2026-10-25, CONTRACT.md 5g) is rules 4
   plus the routine play: an error on a routine ball (`contract.js ROUTINE`) keeps only `KEEP` of its
   share, read inside the error's slice of the same library draw, and the rest is the cell's real out
-  of its kind; a call with `r: 4` replays as rules 4 (`fixtures/replays-rules4-pre-routine.json`). The strengths live in `grade.js R2`; change them only
+  of its kind; a call with `r: 4` replays as rules 4 (`fixtures/replays-rules4-pre-routine.json`).
+  Rules 6 (2026-10-26, CONTRACT.md 5h) is rules 5 plus the runners reading the ball: the same runner
+  draw on the advancement rows weighted by 2024 runners on a ball of that carry and side
+  (`pack.runners`, `pipeline/runners.py`); the grade keeps the table's mix; a call with `r: 5`
+  replays as rules 5 (`fixtures/replays-rules5-pre-runners.json`). Rules 7 (2026-10-26, CONTRACT.md
+  5i) is rules 6 plus the running game: steals on their own seeded stream (drawn only when a steal
+  is on, so the four draws never move), the pickoff (`pa` on the call before) and the quick delivery
+  (`ss: 1`, never called "quick pitch"; its costs live in `meter.js QUICK`). None of it is graded. A
+  call with `r: 6` replays as rules 6 (`fixtures/replays-rules6-pre-steals.json`). Rules 8 (2026-10-30,
+  CONTRACT.md 5j) is rules 7 plus the closer's real outing to the end of the game: every half he
+  pitched (`scenario.halves`, at least three outs), his team's real half between (`scenario.between`,
+  from the play by play, `pipeline/halves.py`), one value function over every half. A call with `r: 7`
+  replays on the first half alone (`Model.singleModel`, `fixtures/replays-rules7-pre-full-close.json`).
+  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

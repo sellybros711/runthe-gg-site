@@ -25,6 +25,11 @@
  *   light    per frame, pools of light on the world (the room's own lamps)
  *   beam     per frame, cones in the haze
  *   glow     per frame, what glows by itself
+ *   weather  optional, what the sky does on some nights: a chance (0 to 1) of `rain`, `snow` or
+ *            `fog`, `storm` the chance a rainy night also has lightning far off (or, with no rain,
+ *            a dry summer storm), `shimmer` heat over the horizon in daylight, and `wind` what it
+ *            carries across the lawn ('leaf' or 'sand'). The night's seed rolls the chances; nothing
+ *            else does, and it never touches a score.
  *
  * THE SIGNATURE MOMENT. Each room has one thing that belongs to it and is made of light the stage
  * already has: a pool, a glowing dot, a cone. They live in light/beam/glow and are keyed off the
@@ -83,6 +88,7 @@ function grassAt(K, x, y){
 
 const lawn = {
   sky: 'open', rig: 'shed', far: -40,
+  weather: { rain: .25, storm: .5 },
   ground(K, x, y){
     let col = grassAt(K, x, y);
     if (y > -20 && y < -16 && Math.abs(x) < 26) col = '#b9a78a';
@@ -565,6 +571,7 @@ const rockAt = (x, y) => {
 };
 const rocks = {
   sky: 'open', rig: 'shed', far: -78, dither: .06,
+  weather: { fog: .3 },
   skyMap: p => Math.min(1, p * 1.05),
   ground(K, x, y){
     if (y < -24){
@@ -699,6 +706,7 @@ const palm = (K, x, y, lean, h) => {
 const CABO_SUN = -24;
 const cabo = {
   sky: 'open', rig: 'shed', far: -80, dither: .05,
+  weather: { shimmer: 1, wind: 'sand' },
   // Gold for most of the night: the show starts in the afternoon and is still at sunset by Set II.
   skyMap: p => p < .2 ? p * 2 : Math.min(.74, .4 + (p - .2) * .5),
   ground(K, x, y){
@@ -1001,6 +1009,7 @@ for (const y of [14, 24, 34, 44]) for (let x = -36; x <= 36; x += 9) CARS.push([
 const CAR_COLS = ['#c83a3a', '#3a6ac8', '#e8e0d0', '#2a2a30', '#4a8a4a', '#c8a03a', '#8a8a92'];
 const farm = {
   sky: 'open', rig: 'shed', far: -46, dither: .02,
+  weather: { rain: .25, storm: .5, wind: 'leaf' },
   ground(K, x, y){
     if (y > 8 && Math.abs(((y - 9) % 10) - 9.2) < .8) return '#c8b48a';   // the lanes between rows
     // Cut hay in stripes running away from the stage.
@@ -1039,6 +1048,7 @@ const farm = {
 const WV_POLES = [[-40, -14], [40, -14], [-44, 22], [44, 22]];
 const westville = {
   sky: 'open', rig: 'shed', far: -44, dither: .04,
+  weather: { rain: .2, storm: .4, wind: 'leaf' },
   ground(K, x, y){
     // The concrete stands: rows stepping up round the sides and back.
     const bowl = Math.max(Math.abs(x) - 30, y - 42, -y - 24);
@@ -1069,6 +1079,7 @@ const westville = {
    dark, and they are the moment. */
 const spac = {
   sky: 'open', rig: 'shed', far: -44, dither: .04,
+  weather: { rain: .2, storm: .4, wind: 'leaf' },
   ground(K, x, y){
     // Seats in rows under the roof, then the lawn.
     if (y > 4 && y < 28 && Math.abs(x) < 30){
@@ -1110,6 +1121,7 @@ const spac = {
 const GREEK_COLS = [-30, -26, -22, -18, 18, 22, 26, 30];
 const greek = {
   sky: 'open', rig: 'shed', far: -40, dither: .05,
+  weather: { fog: .25 },
   ground(K, x, y){
     if (y > 4){
       // Seats climbing toward you in arcs, grey stone aisles.
@@ -1152,6 +1164,7 @@ const greek = {
 const KH_MOON = 21;
 const kettle = {
   sky: 'open', rig: 'shed', far: -60, dither: .05,
+  weather: { fog: .3, storm: .2, wind: 'leaf' },
   ground(K, x, y){
     if (y < -20 && y > -25){
       if (y > -20.8 || y < -24.4) return '#8a7a5a';
@@ -1190,6 +1203,7 @@ const kettle = {
    catching the last pink light, then the stars coming out over them. */
 const dillon = {
   sky: 'open', rig: 'shed', far: -60, dither: .04,
+  weather: { snow: .35 },
   ground(K, x, y){
     if (y < -19){
       if (y > -19.8) return '#c8b89a';
@@ -1231,6 +1245,7 @@ const dillon = {
    the sunset one after another, and the river holds the last of the light. */
 const gorge = {
   sky: 'open', rig: 'shed', far: -70, dither: .04,
+  weather: { fog: .35, storm: .2 },
   skyMap: p => Math.min(1, p * 1.1),
   ground(K, x, y){
     if (y < -19){
@@ -1354,6 +1369,7 @@ const hampton = {
    the sky, slowly, all night. */
 const forest = {
   sky: 'open', rig: 'shed', far: -24, dither: .03,
+  weather: { rain: .2, storm: .4 },
   ground(K, x, y){
     const ax = Math.abs(x), bowl = Math.max(ax - 32, y - 44);
     if (bowl > 0){ const r = bowl % 1.9; return r < .4 ? '#7a766c' : (r < .9 ? '#a8a296' : '#b4aea2'); }
@@ -1394,6 +1410,7 @@ const forest = {
 const MP_MOON = 14;
 const moon = {
   sky: 'open', rig: 'shed', far: -60, dither: .03,
+  weather: { wind: 'sand' },
   skyMap: p => Math.min(1, .55 + p * .6),
   ground(K, x, y){
     if (y < -19){
@@ -1438,6 +1455,7 @@ const moon = {
    the moment, warm against the stone once it is dark. */
 const caverns = {
   sky: 'open', rig: 'theatre', far: -24, dither: .04,
+  weather: { fog: 1 },
   ground(K, x, y){
     if (Math.abs(x) > 34 && rnoise(x * .3, y * .3, 4) > .45) return K.hash(Math.floor(x), Math.floor(y), 2) < .5 ? '#7a8a6a' : '#8a947a';
     return meadow(K, x, y, ['#4e7a44', '#466e3e', '#58864c'], ['#3a5a34', '#6a5a44'], .04);

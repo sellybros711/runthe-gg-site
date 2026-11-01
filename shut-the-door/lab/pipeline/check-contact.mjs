@@ -4,6 +4,17 @@
  *   node shut-the-door/lab/pipeline/check-contact.mjs --quick      the grid alone, on two packs
  *   node shut-the-door/lab/pipeline/check-contact.mjs --show N     print the N worst cases in full
  *   node shut-the-door/lab/pipeline/check-contact.mjs --json FILE  every measured case
+ *   node shut-the-door/lab/pipeline/check-contact.mjs --sample N   about N cases, spread over all of them
+ *   node shut-the-door/lab/pipeline/check-contact.mjs --stride N   every Nth case
+ *   node shut-the-door/lab/pipeline/check-contact.mjs --shard I/N  the I-th of N parts (CI runs four side by side)
+ *   node shut-the-door/lab/pipeline/check-contact.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ *
+ * The run is planned first, whole: every case, by pack and hitter (a unit: one hitter of one pack, dressed
+ * once, his cases measured in turn). Each pack is measured on a freshly loaded page, its hitters in
+ * turn, so a pack is measured the same in a whole run, in any shard or in a resumed run (a pack is the
+ * checkpoint's chunk). The shards split the packs between them by size (each to the lightest so far),
+ * so the N parts together are the whole run, every case once. Every limit here is per case with no
+ * ceiling, so a shard or a sample is held exactly as the whole run is.
  *
  * The owner (2026-10-23): "I threw a low pitch, batter swung high and it said foul ball." So the game
  * page is loaded in Chromium (its own stage and people, drawing nothing) and every pitch the engine
@@ -33,6 +44,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { selection, openCheckpoint } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -73,18 +85,28 @@ const PACKS = path.join(ROOT, 'shut-the-door', 'data', 'packs');
 let packs = fs.readdirSync(PACKS).filter((f) => f.endsWith('.json')).sort();
 if (QUICK) packs = [packs[0], packs[packs.length - 1]];
 const browser = await loadPlaywright().chromium.launch({ executablePath: CHROME, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'] });
-const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 const errors = [];
-page.on('pageerror', (e) => errors.push(String(e).slice(0, 300)));
-await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`);
-await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
-await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {}; });
+// (a page freshly loaded for the plan and again for each pack: what one pack's hitters leave in the page
+// (the shared glTF, the stage) moves the next pack's solves by a millimetre or so, so each pack starts
+// from the same fresh page, whatever ran before it, in a whole run, a shard or a resumed run)
+let page = null;
+async function freshPage() {
+  if (page) await page.close();
+  page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on('pageerror', (e) => errors.push(String(e).slice(0, 300)));
+  await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`);
+  await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
+  await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {}; });
+}
+await freshPage();
 
 // FNV-1a: a pack's ball goes to a grid point by its id, the same every run
 const hashId = (s) => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 
 const rows = [];
 const covered = new Set();
+// the plan: every unit (a pack's hitter and his cases), in the order a whole run takes them
+const units = [];
 for (const [pi, file] of packs.entries()) {
   const pack = JSON.parse(fs.readFileSync(path.join(PACKS, file), 'utf8'));
   const scn = pack.scenario, bats = scn.batters, ars = scn.pitcher.arsenal;
@@ -110,10 +132,32 @@ for (const [pi, file] of packs.entries()) {
       byHitter[bi].push({ src: 'grid', result, velo: ars[0].velo, type: ars[0].type, at, inPlay: bb ? { bb, ev, la, spray: b.bats === 'L' ? -spray : spray, result: 'out', text: 'out' } : null, id: null });
     }
   });
-  for (const [bi, cases] of byHitter.entries()) {
-    if (!cases.length) continue;
-    const got = await page.evaluate(({ b, cases }) => {
+  for (const [bi, cases] of byHitter.entries()) if (cases.length) units.push({ file, scn, b: bats[bi], cases });
+}
+// a sample: every STRIDE-th case of the whole run, counted across the units in order
+const SEL = selection({ heldStride: 1, total: units.reduce((a, u) => a + u.cases.length, 0) });
+let g = 0;
+for (const u of units) u.cases = u.cases.filter(() => g++ % SEL.stride === 0);
+// a shard: the packs split by size, each to the lightest shard so far (ties to the lower shard)
+const size = packs.map((f) => units.filter((u) => u.file === f).reduce((a, u) => a + u.cases.length, 0));
+const load = Array(SEL.shard.n).fill(0), mine = new Set();
+packs.map((f, i) => [i, size[i]]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).forEach(([i, len]) => {
+  const s = load.indexOf(Math.min(...load));
+  load[s] += len;
+  if (s === SEL.shard.i) mine.add(packs[i]);
+});
+const CK = openCheckpoint('check-contact', { QUICK, STRIDE: SEL.stride, SHARD: SEL.shard });
+if (SEL.shard.n > 1) console.log(`shard ${SEL.shard.i} of ${SEL.shard.n} (0-based): ${mine.size} of ${packs.length} packs, ${load[SEL.shard.i]} of ${load.reduce((x, y) => x + y, 0)} cases`);
+for (const file of packs) {
+  if (!mine.has(file) || !units.some((x) => x.file === file && x.cases.length)) continue;
+  if (CK.has(file)) { rows.push(...CK.get(file)); continue; }
+  await freshPage();
+  const done = [];
+  for (const u of units.filter((x) => x.file === file && x.cases.length)) {
+    const got = await page.evaluate(({ scn, b, cases }) => {
       const st = window.STD_STAGE.current, C = window.STD_CONTRACT;
+      // (the unit's own scenario, the people built afresh: a unit measures the same wherever it runs)
+      st.setScenario(scn);
       st.setBatter(b);
       const ppl = st.people, B = ppl.batter;
       // the batter alone is posed (the catcher and umpire are not measured)
@@ -171,11 +215,14 @@ for (const [pi, file] of packs.entries()) {
       }
       ppl.catcher = keep[0]; ppl.umpire = keep[1];
       return out;
-    }, { b: bats[bi], cases });
+    }, { scn: u.scn, b: u.b, cases: u.cases });
     rows.push(...got);
-    process.stdout.write(`\r${file} ${rows.length} cases   `);
+    done.push(...got);
+    process.stdout.write(`\r${u.file} ${rows.length} cases   `);
   }
+  CK.put(file, done);
 }
+CK.close();
 console.log('');
 
 const band = (r) => (r.zn < 1 / 3 ? 'low' : r.zn > 2 / 3 ? 'high' : 'middle');

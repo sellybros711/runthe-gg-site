@@ -41,7 +41,11 @@ function check(name, cond, detail) {
 /* Release and spin (pipeline/tracking.py, CONTRACT.md 4): for the picture only. A proxy spot is null
    throughout. A tracked pitcher has his release side by his hand (catcher's view: a righty's hand is
    on the third base side, x < 0), a sane height and extension, and on Statcast every pitch type has
-   a spin rate of 1,000 to 3,500 rpm and an axis of 0 to 360. PITCHf/x carries x and z only. */
+   a spin rate of 1,000 to 3,500 rpm and an axis of 0 to 360. PITCHf/x carries x and z only.
+   Gaps in the source stay null (pipeline/tracking.py): a PITCHf/x pitch whose mean release is on the
+   wrong side for his hand has no release (the picture uses his overall one), and a Statcast spin the
+   picture cannot draw is null with its reason in tracking.spinNull: no axis (Savant has none in 2015:
+   0 of 4,202 pitches on 2015-07-01, 4,055 with a rate), or a mean axis pushing against his own pfx. */
 const inR = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
 function releaseErrs(r, hand, where, statcast) {
   if (!r) return [where + ' has no release'];
@@ -68,11 +72,11 @@ function trackingErrs(sc) {
   const armOk = (v) => (statcast && t.season >= 2020 ? inR(v, -30, 90) : v === null);
   if (!armOk(p.armAngle)) errs.push('pitcher arm angle ' + p.armAngle);
   for (const a of p.arsenal) {
-    errs.push(...releaseErrs(a.release, p.throws, a.type, statcast));
+    if (!(a.release === null && !statcast)) errs.push(...releaseErrs(a.release, p.throws, a.type, statcast));
     if (!armOk(a.armAngle)) errs.push(a.type + ' arm angle ' + a.armAngle);
     const s = a.spin;
     if (!statcast) { if (s !== null) errs.push(a.type + ' spin before Statcast'); continue; }
-    if (!s) { errs.push(a.type + ' has no spin'); continue; }
+    if (!s) { if (!(t.spinNull && t.spinNull[a.type])) errs.push(a.type + ' has no spin'); continue; }
     if (!inR(s.rate, 1000, 3500) || !Number.isInteger(s.rate)) errs.push(`${a.type} spin rate ${s.rate}`);
     if (!inR(s.axis, 0, 360)) errs.push(`${a.type} spin axis ${s.axis}`);
     if (s.active !== null && !inR(s.active, 0, 100)) errs.push(`${a.type} active spin ${s.active}`);
@@ -108,6 +112,25 @@ function shapeChecks(pack, file) {
   const lead = s.score.us - s.score.them;
   if (!(lead >= 1)) errs.push('us does not lead');
   if (s.walkOffLive !== (!s.usHome && s.inning >= 9)) errs.push('walkOffLive does not follow the rule');
+  // rules 8 (the owner's call, 2026-10-30): the closer's real outing to the end of the game, at least three outs
+  const hs = sc.halves || [];
+  if (!hs.length) errs.push('no halves');
+  else {
+    const h0 = hs[0];
+    if (h0.inning !== s.inning || h0.half !== s.half || h0.outs !== s.outs || h0.bases !== s.bases || h0.walkOffLive !== s.walkOffLive) errs.push('the first half is not the situation');
+    const asks = (3 - s.outs) + 3 * (hs.length - 1);
+    if (asks < 3) errs.push(`the spot asks ${asks} outs, the rule is at least 3`);
+    if (hs.some(h => h.walkOffLive !== (!s.usHome && h.inning >= 9) || h.half !== s.half)) errs.push('a half breaks the walk-off rule or the side');
+    if ((sc.between || []).length !== hs.length - 1) errs.push('between: one of his team\'s halves between each two of his');
+    if (hs.length > 1) {
+      if (!sc.line || !Array.isArray(sc.line.innings) || sc.line.innings.length !== s.inning) errs.push('the line score when he came in');
+      if (!pack.reveal1) errs.push('no first-half reveal for a rules 7 outing');
+      if (hs.some(h => h.lineup.length !== 9 || h.lineup.some(i => !(i >= 0 && i < sc.batters.length)))) errs.push('a half\'s lineup');
+      if (JSON.stringify(hs[0].lineup) !== JSON.stringify([0, 1, 2, 3, 4, 5, 6, 7, 8])) errs.push('the first half is not the order he faced');
+      for (const bt of sc.between) if (!bt.pas || !bt.pas.length || bt.pas[bt.pas.length - 1].outs !== 3 || bt.pas.reduce((a, x) => a + x.runs, 0) !== bt.runs) errs.push(`between ${bt.half} ${bt.inning}: the record`);
+    }
+  }
+  const leadEnd = lead + (sc.between || []).reduce((a, x) => a + x.runs, 0);   // the lead his team's real runs could make
   if (sc.batters.length < 9) errs.push('fewer than 9 batters');
   if (sc.realFaced > sc.batters.length) errs.push('realFaced past the batters');
   if (!['real', 'proxy'].includes(sc.resolution)) errs.push('resolution');
@@ -163,17 +186,19 @@ function shapeChecks(pack, file) {
   const model = new G.Model(pack);
   if (pack.v !== E.PACK_VERSION) errs.push(`pack format ${pack.v}, the engine reads ${E.PACK_VERSION}`);
   // a slot for every margin from 0 (tied: the inning goes on) to the starting lead
-  if (pack.hold.h.length !== model.N * 12 * 3 * 8 * (model.M + 1)) errs.push('hold table size');
+  if (pack.hold.h.length !== model.H * model.N * 12 * 3 * 8 * (model.M + 1) || (pack.hold.halves || 1) !== model.H) errs.push('hold table size');
   if (pack.hold.h.some(v => v == null)) errs.push('hold table has a hole');
   // a tied state is valued on the tie's goal: three outs before they go ahead
   const tieStart = { ...model.startState(), margin: 0 };
   const tv = model.solve(tieStart).hold;
   if (!(tv > 0 && tv < 1)) errs.push('a tied start is not a probability: ' + tv);
   // the reveal: the end rules say the real outing ran to its result
-  if (rv.outcome === 'tie_held' && rv.runs !== lead) errs.push('a held tie whose runs are not the lead');
-  if (rv.outcome === 'door_shut' && !(rv.runs < lead)) errs.push('a door shut that gave up the lead');
+  // (with halves the lead is the start plus his team's real runs between: a tie, a lead kept, or behind)
+  if (rv.outcome === 'tie_held' && rv.runs !== leadEnd) errs.push('a held tie whose runs are not the lead');
+  if (rv.outcome === 'door_shut' && !(rv.runs < leadEnd)) errs.push('a door shut that gave up the lead');
   if ((rv.outcome === 'walk_off' || rv.outcome === 'doors_open') && !(rv.runs > lead)) errs.push('a blown lead that never went behind');
-  if (rv.outcome === 'walk_off' && !s.walkOffLive) errs.push('a walk-off with the walk-off off');
+  const lastWo = hs.length ? hs[hs.length - 1].walkOffLive : s.walkOffLive;
+  if (rv.outcome === 'walk_off' && !lastWo) errs.push('a walk-off with the walk-off off');
   if (rv.outcome === 'doors_open' && s.walkOffLive) errs.push("door's open with the walk-off live");
   if (sc.realFaced !== rv.plateAppearances.length) errs.push(`realFaced ${sc.realFaced}, the reveal has ${rv.plateAppearances.length}`);
   const po = pack.build && pack.build.pool && pack.build.pool.outcomes;
@@ -271,7 +296,7 @@ for (const f of files) {
   if (!calibOnly) { shapeChecks(pack, f); determinism(pack); }
   // the release and spin check bites: a hand on the wrong side, a spin rate past 3,500 and an axis
   // past 360 on a copy of the first Statcast pitcher are each caught
-  if (!calibOnly && !bitten && pack.scenario.pitcher.tracking && pack.scenario.pitcher.tracking.system === 'statcast') {
+  if (!calibOnly && !bitten && pack.scenario.pitcher.tracking && pack.scenario.pitcher.tracking.system === 'statcast' && pack.scenario.pitcher.arsenal[0].spin) {
     bitten = true;
     const bad = (fn) => { const sc = JSON.parse(JSON.stringify(pack.scenario)); fn(sc.pitcher); return trackingErrs(sc).length > 0; };
     check(`${pack.scenario.id}: the release and spin check catches a wrong side, a fast spin and an axis past 360`,

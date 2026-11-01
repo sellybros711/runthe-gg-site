@@ -1,5 +1,5 @@
 {
- "_about": "The ten approved scenarios (CONTRACT.md section 14), in daily rotation order. 'verify' names the data/verify file that holds the facts. 'arsenal' is which season mix the pitcher's arsenal uses: 'postseason' for the starters, by the owner's ruling. Proxy spots carry the arsenal source they use.",
+ "_about": "The approved scenarios in daily rotation order: the ten of CONTRACT.md section 14, then twenty more (2026-10-30). 'verify' names the data/verify file that holds the facts. 'arsenal' is which season mix the pitcher's arsenal uses: 'postseason' for the starters, by the owner's ruling. Proxy spots carry the arsenal source they use.",
  "scenarios": [
   {"id": "std-2025-ws7-yamamoto", "verify": "yamamoto-2025-ws7", "title": "Game 7, 2025 World Series", "arsenal": "postseason"},
   {"id": "std-2011-ws6-feliz", "verify": "feliz-2011-ws6", "title": "Game 6, 2011 World Series", "arsenal": "regular"},
@@ -23,6 +23,26 @@
    "proxyArsenal": {
     "note": "No pitch tracking before 2008. The arsenal is Rivera's own from 2008, his first tracked season, the nearest data to 2001.",
     "fromSeason": 2008, "pitcherId": 121250
-   }}
+   }},
+  {"id": "std-2017-ws2-jansen", "verify": "jansen-2017-ws2", "title": "Game 2, 2017 World Series", "arsenal": "regular"},
+  {"id": "std-2010-hoffman-stl", "verify": "hoffman-2010-600th", "title": "Cardinals at Brewers, September 7, 2010", "arsenal": "regular"},
+  {"id": "std-2021-nlcs6-smith", "verify": "smith-2021-nlcs6", "title": "Game 6, 2021 NLCS", "arsenal": "regular"},
+  {"id": "std-2005-nlcs5-lidge", "verify": "lidge-2005-nlcs5", "title": "Game 5, 2005 NLCS", "arsenal": "proxy", "proxyArsenal": {"note": "No pitch tracking before 2008. The arsenal is his own from 2008, his first tracked season, the nearest data to this spot.", "fromSeason": 2008, "pitcherId": 400058}},
+  {"id": "std-2018-alcs4-kimbrel", "verify": "kimbrel-2018-alcs4", "title": "Game 4, 2018 ALCS", "arsenal": "regular"},
+  {"id": "std-2012-ws4-romo", "verify": "romo-2012-ws4", "title": "Game 4, 2012 World Series", "arsenal": "regular"},
+  {"id": "std-2023-williams-sd", "verify": "rs-williams-2023-04-16", "title": "Brewers at Padres, April 16, 2023", "arsenal": "regular"},
+  {"id": "std-2008-ws5-lidge", "verify": "lidge-2008-ws5", "title": "Game 5, 2008 World Series", "arsenal": "regular"},
+  {"id": "std-2008-alcs7-price", "verify": "price-2008-alcs7", "title": "Game 7, 2008 ALCS", "arsenal": "regular"},
+  {"id": "std-2013-alcs6-uehara", "verify": "uehara-2013-alcs6", "title": "Game 6, 2013 ALCS", "arsenal": "regular"},
+  {"id": "std-2023-ws1-sewald", "verify": "sewald-2023-ws1", "title": "Game 1, 2023 World Series", "arsenal": "regular"},
+  {"id": "std-2011-rivera-min", "verify": "rivera-2011-602nd", "title": "Twins at Yankees, September 19, 2011", "arsenal": "regular"},
+  {"id": "std-2014-ws7-bumgarner", "verify": "bumgarner-2014-ws7", "title": "Game 7, 2014 World Series", "arsenal": "postseason"},
+  {"id": "std-2007-ws4-papelbon", "verify": "papelbon-2007-ws4", "title": "Game 4, 2007 World Series", "arsenal": "proxy", "proxyArsenal": {"note": "No pitch tracking before 2008. The arsenal is his own from 2008, his first tracked season, the nearest data to this spot.", "fromSeason": 2008, "pitcherId": 449097}},
+  {"id": "std-2023-hader-stl", "verify": "rs-hader-2023-08-30", "title": "Padres at Cardinals, August 30, 2023", "arsenal": "regular"},
+  {"id": "std-2015-alcs6-davis", "verify": "davis-2015-alcs6", "title": "Game 6, 2015 ALCS", "arsenal": "regular"},
+  {"id": "std-2008-krod-sea", "verify": "rodriguez-2008-58th", "title": "Mariners at Angels, September 13, 2008", "arsenal": "regular"},
+  {"id": "std-2025-ws6-glasnow", "verify": "glasnow-2025-ws6", "title": "Game 6, 2025 World Series", "arsenal": "postseason"},
+  {"id": "std-2010-ws5-wilson", "verify": "wilson-2010-ws5", "title": "Game 5, 2010 World Series", "arsenal": "regular"},
+  {"id": "std-2009-alcs6-rivera", "verify": "rivera-2009-alcs6", "title": "Game 6, 2009 ALCS", "arsenal": "regular"}
  ]
 }

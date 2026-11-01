@@ -6,7 +6,7 @@
  */
 import * as THREE from 'three';
 import { FT } from './units.js?v=1';
-import { BACKSTOP_FT } from './field.js?v=7';
+import { BACKSTOP_FT } from './field.js?v=8';
 import { assetUrl } from './load.js?v=8';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -52,6 +52,8 @@ export function buildStands(scene, tex, renderer) {
   net.position.y = wallH + netH / 2; group.add(net);
   for (const a of [-0.45, 0, 0.45]) {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, netH, 6), new THREE.MeshStandardMaterial({ color: 0x2a2f33, roughness: 0.5 }));
+    // (named: the broadcast's high home camera looks out over the net, and hides them, inplay.js)
+    pole.name = 'netPole';
     pole.position.set(Math.sin(a) * (R0 + 0.3), wallH + netH / 2, -Math.cos(a) * (R0 + 0.3));
     group.add(pole);
   }

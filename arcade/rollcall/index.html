@@ -165,6 +165,8 @@
 
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(12px); background:var(--card3); color:var(--ink);
     border:1px solid var(--line2); border-radius:10px; padding:10px 14px; font-size:13px; font-weight:800; opacity:0; pointer-events:none; transition:.2s; z-index:60;}
+  /* the bottom banner (/assets/rtg-ads.js) is up on every screen, so a toast rides on top of it */
+  body.rtg-sticky-on .toast{bottom:calc(26px + var(--sticky-ad-h,0px));}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
   /* how-to tab lives at the bottom of every game, collapsed by default */
@@ -181,6 +183,10 @@ window.gtag=window.gtag||function(){dataLayer.push(arguments);};
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
+<!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
+     defaults above so no advertising cookie is set before the certified CMP answers. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
@@ -301,7 +307,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/flags.js?v=8"></script>
 <script src="/arcade/icons.js?v=3"></script>
-<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
 <script src="/arcade/archive.js?v=3"></script>
@@ -325,7 +331,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/resultstats.js?v=4"></script>
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/sfx.js?v=4"></script>
-<script src="/arcade/teammates.js?v=57"></script>
+<script src="/arcade/teammates.js?v=63"></script>
 <script src="/arcade/livecheck.js?v=11"></script>
 <script src="/arcade/teamcheck.js?v=3"></script>
 <script src="/arcade/type.js?v=5"></script>
@@ -997,5 +1003,28 @@ window.GA_ID='G-L29P5MRWKE';
 </script>
 <script src="/arcade/howto.js?v=26"></script>
 <script>if (window.RTGHowto) RTGHowto.init('rollcall');</script>
+<script>
+/* THE ARCADE'S ADS (2026-10-29, the owner's call: every game carries them, the card games too).
+   Two desktop rails beside the game, built only where each one can sit 150px clear of the column
+   and never on a phone. The same slots as the free games. /assets/rtg-ads.js owns how they look
+   and behave. The closeable bottom banner too, on every screen, play included (the owner's call,
+   2026-10-29); its X closes it for the rest of the visit, across the Arcade. */
+(function(){
+  var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
+  function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
+  function banner(){ if(window.RTG_ADS) RTG_ADS.sticky(true, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); }
+  if(document.readyState === 'complete'){ rails(); banner(); } else window.addEventListener('load', function(){ rails(); banner(); });
+  /* A sheet over the page (the pre-game gate, the Arcade Card sheet, sign in) hides the site bar,
+     and RTG_ADS.clear() ignores controls a sheet covers, so rails placed under one can sit beside a
+     site bar that comes back when it goes. The pre-game gate is removed from the page and the other
+     two drop a hidden attribute, so watch for both and place the rails again. */
+  if(window.MutationObserver){
+    var t=0, again=function(){ clearTimeout(t); t=setTimeout(rails, 120); }, mo=new MutationObserver(again);
+    mo.observe(document.body, { childList:true });
+    mo.observe(document.body, { subtree:true, attributes:true, attributeFilter:['hidden'] });
+  }
+})();
+</script>
 </body>
 </html>

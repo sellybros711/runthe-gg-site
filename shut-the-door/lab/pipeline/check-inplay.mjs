@@ -6,6 +6,9 @@
  *   node shut-the-door/lab/pipeline/check-inplay.mjs            every pack in data/packs
  *   node shut-the-door/lab/pipeline/check-inplay.mjs --all      every real batted ball with every row of its kind (slow)
  *   node shut-the-door/lab/pipeline/check-inplay.mjs --show N   print the first N problems in full
+ *   node shut-the-door/lab/pipeline/check-inplay.mjs --sample N about N plays, spread over all of them
+ *   node shut-the-door/lab/pipeline/check-inplay.mjs --stride N every Nth play
+ *   node shut-the-door/lab/pipeline/check-inplay.mjs --resume   pick up a killed run (checkpoint.mjs says how)
  *
  * Each in-play outcome key (single ... out_popup) has real batted balls (the pack's pitches the library
  * points at) and advancement rows for every base and out state (each row a label and the runners'
@@ -14,22 +17,47 @@
  * angle and spray, and a few between), so each ball and each row is covered. The plan is pure, so a
  * failure here is the same failure on screen.
  */
+import { execFileSync } from 'node:child_process';
 import { planPlay, verify } from '../../3d/inplay-plan.js';
 import { inplayCases } from './inplay-cases.mjs';
+import { selection, openCheckpoint } from './checkpoint.mjs';
 
 const ALL = process.argv.includes('--all');
 const SHOW = +(process.argv[process.argv.indexOf('--show') + 1] || 0) || 0;
 
+// (each play is planned once and kept as [pack, key, label, st, moves, ball, the plan's length or null,
+// what is wrong], a chunk of CHUNK at a time to the checkpoint, so a killed run resumes)
+const SEL = selection({ heldStride: 1, total: [...inplayCases({ all: ALL })].length });
+const CHUNK = 2000;
+const CK = openCheckpoint('check-inplay', { ALL, STRIDE: SEL.stride, SHARD: SEL.shard, CHUNK });
+function* planned() {
+  let kk = 0, chunk = [], ci = 0;
+  const flush = () => { const out = CK.has(ci) ? CK.get(ci) : chunk.map(planOne); if (!CK.has(ci)) CK.put(ci, out); ci++; chunk = []; return out; };
+  for (const c of inplayCases({ all: ALL })) {
+    const k = kk++;
+    if (k % SEL.stride || Math.floor(k / SEL.stride) % SEL.shard.n !== SEL.shard.i) continue;
+    // (a chunk already done is not planned again)
+    chunk.push(CK.has(ci) ? null : c);
+    if (chunk.length === CHUNK) yield* flush();
+  }
+  if (chunk.length) yield* flush();
+}
+function planOne(c) {
+  const { pr, key, label, st, moves } = c;
+  let bad, dur = null;
+  try {
+    const plan = planPlay(pr, { bats: c.hand, basesBefore: c.bases0, id: c.id, ...c.align });
+    bad = verify(pr, plan);
+    dur = plan.realDur;
+  } catch (e) { bad = ['threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')]; }
+  return [c.pack, key, label, st, moves, c.ball, dur, bad];
+}
+
 let plays = 0, fails = 0;
 const byKind = {}, problems = [], durs = [], perPack = new Map();
-for (const c of inplayCases({ all: ALL })) {
-  const { pr, key, label, st, moves } = c;
-  let bad;
-  try {
-    const plan = planPlay(pr, { bats: c.hand, basesBefore: c.bases0, id: c.id });
-    bad = verify(pr, plan);
-    durs.push(plan.realDur);
-  } catch (e) { bad = ['threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')]; }
+for (const [pack, key, label, st, moves, ball, dur, bad] of planned()) {
+  const c = { pack, ball };
+  if (dur != null) durs.push(dur);
   plays++;
   const pp = perPack.get(c.pack) || { n: 0, bad: 0 };
   pp.n++;
@@ -42,6 +70,7 @@ for (const c of inplayCases({ all: ALL })) {
     if (problems.length < 4000) problems.push({ pack: c.pack, key, label, st, moves: JSON.stringify(moves), ball: JSON.stringify(c.ball), bad });
   }
 }
+CK.close();
 for (const [f, pp] of perPack) console.log(`${pp.bad ? 'FAIL' : 'ok  '} ${f}: ${pp.n} plays, ${pp.bad} wrong`);
 
 console.log('\nby kind (outcome key / label): plays, wrong');
@@ -57,4 +86,7 @@ durs.sort((a, b) => a - b);
 const q = (x) => durs[Math.floor(x * (durs.length - 1))].toFixed(1);
 console.log(`\nlength on screen (s, after contact): median ${q(0.5)}, 90th ${q(0.9)}, longest ${q(1)}`);
 console.log(`\n${plays} plays, ${fails} wrong`);
-process.exit(fails ? 1 : 0);
+// where the fielders stand comes from the packs (build-shade.mjs): the table must be what they give now
+let shadeOk = true;
+try { console.log(execFileSync(process.execPath, [new URL('./build-shade.mjs', import.meta.url).pathname, '--check'], { encoding: 'utf8' }).trim()); } catch (e) { shadeOk = false; console.log(String(e.stdout || e).trim()); }
+process.exit(fails || !shadeOk ? 1 : 0);

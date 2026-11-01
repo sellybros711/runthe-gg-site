@@ -41,6 +41,9 @@
     h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
       font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
     .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
@@ -96,6 +99,12 @@
 
       <p>Run The Pitch hands you a real World Cup squad every round, from 1966 to 2026. Your XI ends up a mix of decades either way. This guide is about doing it on purpose. It covers how eras get dealt, what each one is good at, and how the sim reads the side you build. It's written for Full Team, the 11-round draft.</p>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>How the wheel deals eras</h2>
 
       <p>The year spins first. Then the nation, from the teams at that tournament.</p>
@@ -137,6 +146,12 @@
 
       <p>The rule that falls out: fill each slot from the era that's strongest there. Land 2026, take a forward. Land the 60s or 70s, check the keeper first.</p>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>How the sim reads your XI</h2>
 
       <p>Team OVR is the average of your eleven. Shape doesn't change it. But in a knockout match the sim also lines you up against the opponent.</p>
@@ -163,6 +178,12 @@
 
       <p>Match the shape to where your eras landed. A 2026-heavy front line wants Attacking, since the forwards carry more weight there. An old-era keeper behind five good defenders wants Defensive. If no line stands out, 3-5-2 is never worse than Balanced in the matchup.</p>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>Judging an era pick</h2>
 
       <ul>
@@ -188,5 +209,27 @@
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
+  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+      var lazy=document.querySelectorAll('ins.adsbygoogle-lazy');
+      var start=function(u){ u.className='adsbygoogle'; (adsbygoogle=window.adsbygoogle||[]).push({}); };
+      var io='IntersectionObserver' in window ? new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); try{ start(e.target); }catch(x){} } });
+      },{rootMargin:'600px 0px'}) : null;
+      for(var j=0;j<lazy.length;j++){
+        var ls=lazy[j].getAttribute('data-ad-slot');
+        if(!ls||/^0+$/.test(ls)) continue;
+        if(io) io.observe(lazy[j]); else start(lazy[j]);
+      }
+    }catch(e){}
+  })();
+  </script>
 </body>
 </html>

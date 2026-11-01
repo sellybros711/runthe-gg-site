@@ -13,6 +13,12 @@
  * draw one shape. Arm side or glove side is the sign of pfxX and nothing else (a righty's arm side is
  * x < 0); the pitcher's view mirror comes from the camera through P().
  *
+ * Where the flight starts. Built, a pitch flies from his release (below). In the game his release is
+ * far off the long lens's screen, so the first person lens (firstperson.js lensFor) moves the start
+ * onto the line of sight through his drawn hand (fly): the same time, crossing and break, a shorter
+ * run (its depth speed scaled to keep his time). The ball is drawn on that flight (seenAt), plus his
+ * head's carry near the hand. pointAt(0) is where the drawn flight starts; this.rel is his release.
+ *
  * Each pitch leaves his hand from its own release point (the arsenal pitch's release, Savant's mean
  * for that type) when the pack carries it, else his overall release (facts.release), else a labelled
  * stand in for his hand (releaseOf, releaseFor). The same order gives its arm angle (armAngleFor),
@@ -23,9 +29,11 @@
  */
 import * as THREE from 'three';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
-import * as G from './gear3d.js?v=3';
+import * as G from './gear3d.js?v=4';
 
 const G_FT = 32.17;
+const SPARKS = 36;
+const CARRY = new THREE.Vector3();          // the sparkle's quads (a perfect power and a perfect release, buildSparkle)
 export const T_RELEASE = 0.8;
 
 /** Contract section 2: a cell's centre, moved by the free aim point at = [u, v] inside it
@@ -71,11 +79,13 @@ export function armAngleFor(a, p) {
 
 /** The flight from rel (release, feet) to plate (the crossing point at the front of the plate), at
     velo mph out of the hand, with pfxX and pfxZ inches of spin movement over the whole flight. */
-export function flight(rel, plate, velo, pfxX, pfxZ) {
+export function flight(rel, plate, velo, pfxX, pfxZ, time = null) {
   const yPlate = 17 / 12;
-  const v0 = velo * 1.46667, v1 = v0 * 0.92;
   const dist = rel.y - yPlate;
-  const T = dist / ((v0 + v1) / 2);
+  // (time: the flight takes this long, its speed scaled to fit: a flight from nearer the plate that
+  // keeps the real one's time)
+  const v0 = time ? dist / (0.96 * time) : velo * 1.46667, v1 = v0 * 0.92;
+  const T = time || dist / ((v0 + v1) / 2);
   const ay = (v1 - v0) / T;                   // deceleration along y (toward the plate is -y)
   // the spin's push, constant over the flight, sized so it moves the ball pfx against no spin
   const sx = 2 * (pfxX / 12) / (T * T), sz = 2 * (pfxZ / 12) / (T * T);
@@ -87,7 +97,7 @@ export function flight(rel, plate, velo, pfxX, pfxZ) {
     y: rel.y - v0 * t - 0.5 * ay * t * t,
     z: rel.z + vz * t + 0.5 * az * t * t,
   });
-  return { T, at, ax, az, vx, vz, sx, sz };
+  return { T, at, ax, az, vx, vz, sx, sz, v0 };
 }
 
 export class Pitch {
@@ -99,7 +109,7 @@ export class Pitch {
     this.overlays = overlays;
     const a = facts.pitcher.arsenal.find((x) => x.type === play.call.type) || facts.pitcher.arsenal[0];
     this.p = { ...a, aimCell: play.call.cell, velo: play.velo ?? a.velo };
-    this.play = play; this.m = m || { ball: 'glove' };
+    this.play = play;
     const { szTop, szBot } = batter;
     const aim = cellPoint(play.call.cell, szTop, szBot, play.call.at);
     this.aim = aim;
@@ -108,21 +118,19 @@ export class Pitch {
     // out of his hand from this pitch's own release point when the pack has it (releaseFor)
     this.rel = releaseFor(a, facts.release);
     this.armAngle = armAngleFor(a, facts.pitcher);
-    this.f = flight(this.rel, this.actual, this.p.velo, play.pfxX ?? a.pfxX, play.pfxZ ?? a.pfxZ);
-    // the glove: about 3 ft behind the front of the plate, out in front of the catcher's knees
-    const yGlove = -1.45;
-    const tg = this.timeAtY(yGlove);
-    this.tg = tg;
-    this.retime(T_RELEASE);
-    const g = this.f.at(tg);
-    this.catchPoint = P(g.x, Math.max(g.y, yGlove), Math.max(g.z, 0.25));
-    const ga = { x: aim.x, z: aim.z + (g.z - this.actual.z) * 0.6 };
-    this.aimGlove = P(ga.x, yGlove, ga.z);
+    this.spec = { velo: this.p.velo, pfxX: play.pfxX ?? a.pfxX, pfxZ: play.pfxZ ?? a.pfxZ };
+    this.m = m || { ball: 'glove' };
+    this.fly(this.rel);
     this.after = null;                       // the ball's path after the plate (setAfter)
     this.ball = G.baseball();
     this.ball.visible = false;
     scene.add(this.ball);
     this.buildTracer();
+    // a perfect power and a perfect release on one pitch (meter.js perfectOf, on the call the engine
+    // kept): a slight sparkle behind the ball (the owner, 2026-10-26). An overlay only: nothing it
+    // does reaches the ball, its flight, its timing or the first person.
+    const M = typeof window !== 'undefined' ? window.STD_METER : null, pc = play.call || {};
+    if (M && M.perfectOf && M.perfectOf(pc.e ?? null, pc.q ?? null).both) this.buildSparkle();
     this.buildMarkers();
     this.buildGrid(batter);
     if (!grid) for (const o of this.grid) o.visible = false;
@@ -131,6 +139,27 @@ export class Pitch {
     // backspin for the riding pitches, topspin for the drops, little for a splitter
     const sh = a.shape;
     this.spinRate = (sh === 'drop' ? -2400 : sh === 'split' ? 1300 : sh === 'slide' || sh === 'sweep' ? 2500 : 2300) / 60 * Math.PI * 2;
+  }
+
+  /** The flight from the point from (catcher's view feet): one constant acceleration path (flight)
+      to the engine's actual, at his speed with his break, and everything that hangs on it (the
+      glove, the dirt). The game flies it from where the ball is seen to leave his hand (fromHand,
+      the first person lens); the pitch is built flying from his release (this.rel). */
+  fly(from) {
+    const { velo, pfxX, pfxZ } = this.spec;
+    this.from = from;
+    // the time is always his: his speed from his release (a start nearer the plate flies it as long)
+    const T = flight(this.rel, this.actual, velo, pfxX, pfxZ).T;
+    this.f = flight(from, this.actual, velo, pfxX, pfxZ, from === this.rel ? null : T);
+    // the glove: about 3 ft behind the front of the plate, out in front of the catcher's knees
+    const yGlove = -1.45;
+    const tg = this.timeAtY(yGlove);
+    this.tg = tg;
+    this.retime(this.tRel ?? T_RELEASE);
+    const g = this.f.at(tg);
+    this.catchPoint = P(g.x, Math.max(g.y, yGlove), Math.max(g.z, 0.25));
+    const ga = { x: this.aim.x, z: this.aim.z + (g.z - this.actual.z) * 0.6 };
+    this.aimGlove = P(ga.x, yGlove, ga.z);
     this.bounce = this.m.ball === 'dirt' ? this.dirtPath() : null;
   }
 
@@ -188,7 +217,7 @@ export class Pitch {
 
   /** Take this pitch's ball, trail, grid and markers out of the scene (the next pitch has its own). */
   dispose() {
-    for (const o of [this.ball, this.tracer, this.aimRing, this.hitDot, ...(this.grid || [])]) {
+    for (const o of [this.ball, this.tracer, this.sparkle, this.aimRing, this.hitDot, ...(this.grid || [])]) {
       if (!o) continue;
       this.scene.remove(o);
       o.traverse((x) => { if (x.geometry) x.geometry.dispose(); if (x.material && x.material.map && x.material.map.isCanvasTexture) x.material.map.dispose(); if (x.material) x.material.dispose(); });
@@ -216,10 +245,18 @@ export class Pitch {
       const z = Math.max(0.12, b.z + v.z * d - 16.1 * d * d);
       return P(b.x + v.x * d, Math.max(b.y + v.y * d, -1.9), z);
     }
-    return this.pointAt(t);
+    return this.seenAt(t);
   }
 
   pointAt(t) { const s = this.f.at(t); return P(s.x, s.y, s.z); }
+
+  /** Where the ball is drawn t seconds out of his hand, in flight: its own path, plus the share of
+      his head's move it carries under the first person lens (lens.carry, nothing at the plate). */
+  seenAt(t) {
+    const p = this.pointAt(t);
+    if (this.lens && t <= this.f.T) p.add(this.lens.carry(t, CARRY));
+    return p;
+  }
 
   buildTracer() {
     const N = 64;
@@ -247,16 +284,16 @@ export class Pitch {
   updateTracer(t, camera) {
     const tf = clamp01((t - this.tRel) / this.f.T) * this.f.T;
     const fade = 1 - smooth(clamp01((t - this.tPlate - 0.9) / 0.8));
-    this.tracer.material.uniforms.uOpacity.value = t > this.tRel + (this.lens ? this.lens.join : 0) ? 0.55 * fade : 0;
+    this.tracer.material.uniforms.uOpacity.value = t > this.tRel + (this.lens ? this.lens.trail : 0) ? 0.55 * fade : 0;
     const pos = this.tracer.geometry.attributes.position, a = this.tracer.geometry.attributes.a;
     const cam = camera.position;
-    // (the trail starts where the ball joins its own path, under the first person lens)
-    const tStart = Math.max(this.lens ? this.lens.join : 0, tf - this.f.T * 1.0);
+    // (under the first person lens the trail starts a beat out of his hand, lens.trail, as it always has)
+    const tStart = Math.max(this.lens ? this.lens.trail : 0, tf - this.f.T * 1.0);
     for (let i = 0; i < this.N; i++) {
       const s = i / (this.N - 1);
       const tt = tStart + (tf - tStart) * s;
-      const p = this.pointAt(tt);
-      const p2 = this.pointAt(tt + 0.002);
+      const p = this.seenAt(tt);
+      const p2 = this.seenAt(tt + 0.002);
       const dir = p2.sub(p).normalize();
       const toCam = cam.clone().sub(p).normalize();
       const side = new THREE.Vector3().crossVectors(dir, toCam).normalize();
@@ -264,6 +301,59 @@ export class Pitch {
       pos.setXYZ(i * 2, p.x - side.x * w, p.y - side.y * w, p.z - side.z * w);
       pos.setXYZ(i * 2 + 1, p.x + side.x * w, p.y + side.y * w, p.z + side.z * w);
       a.setX(i * 2, 0); a.setX(i * 2 + 1, 1);
+    }
+    pos.needsUpdate = true; a.needsUpdate = true;
+  }
+
+  /** THE SPARKLE: SPARKS little star quads trailing the ball for a third of a second, warm gold,
+      each a fixed jitter (a hash of its index, never a random draw) that spreads as it ages, twinkling
+      and fading with age. Drawn only from a beat out of his hand (lens.trail), gone at the plate.
+      One mesh, one draw; dispose() takes it with the rest. */
+  buildSparkle() {
+    const N = SPARKS, geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 4 * 3), 3));
+    geo.setAttribute('a', new THREE.BufferAttribute(new Float32Array(N * 4), 1));
+    const uv = new Float32Array(N * 4 * 2), idx = [];
+    for (let i = 0; i < N; i++) {
+      uv.set([-1, -1, 1, -1, 1, 1, -1, 1], i * 8);
+      const b = i * 4; idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(idx);
+    const mat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uColor: { value: new THREE.Color(1.0, 0.8, 0.42) } },
+      vertexShader: 'attribute float a; varying float vA; varying vec2 vUv; void main(){ vA = a; vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      // a soft core and a four point glint
+      fragmentShader: 'uniform vec3 uColor; varying float vA; varying vec2 vUv; void main(){ float r = length(vUv); float core = pow(max(0.0, 1.0 - r), 3.0); float glint = max(0.0, 1.0 - abs(vUv.x) * 9.0) + max(0.0, 1.0 - abs(vUv.y) * 9.0); glint *= max(0.0, 1.0 - r); gl_FragColor = vec4(uColor * (core + 0.7 * glint) * vA, 1.0); }',
+    });
+    this.sparkle = new THREE.Mesh(geo, mat);
+    this.sparkle.frustumCulled = false;
+    this.sparkle.renderOrder = 5;
+    this.scene.add(this.sparkle);
+    this.sparkR = new THREE.Vector3(); this.sparkU = new THREE.Vector3();
+  }
+
+  updateSparkle(t, camera) {
+    const pos = this.sparkle.geometry.attributes.position, a = this.sparkle.geometry.attributes.a;
+    const tt = t - this.tRel, join = this.lens ? this.lens.trail : 0;
+    const fade = 1 - clamp01((t - this.tPlate) / 0.12);
+    const R = this.sparkR.setFromMatrixColumn(camera.matrixWorld, 0), U = this.sparkU.setFromMatrixColumn(camera.matrixWorld, 1);
+    for (let i = 0; i < SPARKS; i++) {
+      const k = i / SPARKS, age = (i + 1) * 0.009, ts = tt - age;
+      const on = ts >= join && ts <= this.f.T && fade > 0 ? 1 : 0;
+      const p = on ? this.seenAt(ts) : this.sparkR.clone().set(0, 0, 0);
+      // the fixed jitter: a hash of i, spreading with age
+      const h1 = Math.sin(i * 12.9898) * 43758.5453, h2 = Math.sin(i * 78.233) * 12543.1234, h3 = Math.sin(i * 39.425) * 24634.6345;
+      const sp = 0.35 * age;
+      p.x += (h1 - Math.floor(h1) - 0.5) * sp; p.y += (h2 - Math.floor(h2) - 0.5) * sp; p.z += (h3 - Math.floor(h3) - 0.5) * sp;
+      const w = 0.032 * (1 - 0.55 * k) * on;
+      const tw = 0.6 + 0.4 * Math.sin(tt * 47 + i * 2.3);
+      for (let c = 0; c < 4; c++) {
+        const sx = c === 0 || c === 3 ? -1 : 1, sy = c < 2 ? -1 : 1;
+        pos.setXYZ(i * 4 + c, p.x + (R.x * sx + U.x * sy) * w, p.y + (R.y * sx + U.y * sy) * w, p.z + (R.z * sx + U.z * sy) * w);
+        a.setX(i * 4 + c, Math.pow(1 - k, 1.5) * tw * fade * 0.9 * on);
+      }
     }
     pos.needsUpdate = true; a.needsUpdate = true;
   }
@@ -318,14 +408,16 @@ export class Pitch {
     if (inHand) this.ball.position.copy(this.handPoint());
     if (inFlight) {
       const tt = t - this.tRel;
-      this.ball.position.copy(free ? this.ballAt(tt) : this.pointAt(Math.min(tt, this.tCatch - this.tRel)));
+      const tf = Math.min(tt, this.tCatch - this.tRel);
+      this.ball.position.copy(free ? this.ballAt(tt) : this.seenAt(tf));
       this.ball.rotation.x = tt * this.spinRate;
-      // the first person lens (firstperson.js): out of his hand, the ball is drawn from where his
-      // hand is on screen onto its own path, which it joins at lens.join (well before the plate)
-      if (this.lens) { this.ball.scale.setScalar(1); if (camera && tt < this.lens.join) this.lens.place(tt, this.ball, camera); }
+      // the first person lens (firstperson.js): its own size (or, where its start was held nearer
+      // his eyes, the size of the ball in his hand easing onto its own by lens.join)
+      this.ball.scale.setScalar(this.lens && camera ? this.lens.scale(tt, camera.position.distanceTo(this.ball.position)) : 1);
     }
     if (camera) {
       this.updateTracer(t, camera);
+      if (this.sparkle) this.updateSparkle(t, camera);
       for (const m of [this.aimRing, this.hitDot]) m.lookAt(camera.position);
     }
     // aiming: the grid is up until a beat before release, then gone for the pitch

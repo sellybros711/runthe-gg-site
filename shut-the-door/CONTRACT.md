@@ -166,6 +166,18 @@ Statcast codes. The shape tells the UI how to draw the flight.
  */
 
 /**
+ * @typedef {Object} Half            rules 8 (section 5j)
+ * @property {number} inning
+ * @property {'top'|'bottom'} half
+ * @property {number} outs          when it starts (0 after the first)
+ * @property {number} bases
+ * @property {boolean} walkOffLive
+ * @property {number[]} lineup      nine indices into scenario.batters, from the spot's first
+ *                                  batter's slot: who bats in each slot in this half
+ * @property {boolean} real         he pitched it in the real game (always, so far)
+ */
+
+/**
  * @typedef {Object} Reveal          withheld from the browser until the outing is finished
  * @property {'door_shut'|'tie_held'|'doors_open'|'walk_off'} outcome   under the end rules (section 8)
  * @property {number|null} pitches  what the real pitcher threw in this spot; null when the record
@@ -187,9 +199,13 @@ Statcast codes. The shape tells the UI how to draw the flight.
  *             throws: Hand, arsenal: ArsenalPitch[], release: Release|null,
  *             armAngle: number|null, tracking: Tracking|null}} pitcher
  *                                  release and armAngle: over all his arsenal pitches
- * @property {Situation} situation
+ * @property {Situation} situation   where the spot starts (the first half)
+ * @property {Half[]} halves        rules 8: every half he pitched from the spot (section 5j)
+ * @property {Object[]} between     rules 8: his team's real half between each two of his
+ * @property {Object} [line]        rules 8: the real line score when he came in (more than one half)
  * @property {Batter[]} batters     the real order he faced, then the lineup continuing,
- *                                  at least 9 entries; the engine wraps if it runs out
+ *                                  at least 9 entries; the engine wraps if it runs out. With
+ *                                  halves, then any substitute a later half's lineup names
  * @property {number} realFaced     how many of `batters` the real pitcher faced
  * @property {'real'|'proxy'} resolution   proxy = no pitch tracking for that game;
  *                                  pitches drawn from modern pitches of a similar profile
@@ -336,8 +352,23 @@ Each part is marked **data**, **game choice (not data)**, **game rule** or **mod
 3. **The miss (data, then a game choice).** His fastest slice misses wider than his middle one:
    fastballs 3%, breaking balls 11%, offspeed 6% (`EFFORT.SPREAD`). **Game choice:** that is
    doubled (`SPREAD_GAME` 2), and applies above the middle only.
-4. **The window (a game rule).** The accuracy window is x1.25 at `e = 0`, x1 at 0.5 and x0.6 at 1,
-   straight between (`meter.js windowScale`). Both bands shrink with it.
+4. **The window, as the ring's speed (a game rule).** The accuracy window is x1.25 at `e = 0`, x1
+   at 0.5 and x0.6 at 1, straight between (`meter.js windowScale`), so at command 50 the bright band
+   is +/-20.6 ms at the softest, +/-16.5 at his ordinary effort and +/-9.9 at max. Since the combo
+   meter (the owner, 2026-10-26: power on a column, then a ring closing on the aim point) the player
+   sees that window as the ring's speed: one pass takes `ringMs(e) = SWEEP_MS x windowScale(e)`
+   (1062.5 ms soft, 850 ordinary, 510 max), so the bands sit at the same place on the ring at every
+   power and max closes fastest. q is `qOf(ringErrAt(t, e), command, e)`: for the same miss in ms it
+   is exactly the q the two bar meter gave, so a stored call's `q` and `e` mean what they meant and
+   every outing replays unchanged. Measured on the meter's ordinary tap (`meter.js TIMING`, 60 ms,
+   one slip in ten) at command 50: mean q 0.59 soft, 0.52 ordinary, 0.35 max; the bright band 24%,
+   19%, 12%. Those are the bar's numbers, because the window in ms did not move. If real players'
+   misses in ms grow with the ring's speed, max is harder than that model says (a strategy run on
+   real stored calls settles it).
+   **Perfect** (execution only, never the grade): a perfect power is `e >= PERFECT_E` (0.97, the top
+   of the column) and a perfect release `q >= PERFECT_Q` (0.9, the word's "perfect release",
+   `meter.js perfectOf`). Both on one pitch plays the one celebration (the stitches, a gold sparkle
+   behind the ball); it changes nothing the engine reads.
 5. **The arm (a model, tuned).** A pitch counts `1 + 1 x (2e - 1)` pitches on the arm above the
    middle (2 at max) and `1 - 0.5 x (1 - 2e)` below (0.5 at the softest) for every later pitch
    (`grade.js loadOf`, `fatigueOf`). The extra over 1 builds a **strain** that easier pitches pay
@@ -478,6 +509,197 @@ reads where the library draw fell inside the error's slice, and past KEEP it is 
 and no other key's draw moves. The grade moves the same share one pitch ahead (`grade.js keyMixCtx`);
 the hold table after it is unchanged, like the call by location.
 
+## 5h. Rules 6: the runners read the ball (2026-10-26)
+
+Rules 5 and everything before it. The owner: "We need to ensure runners are advancing in realistic
+situations, and tagging up in realistic situations." A new outing's calls carry `r: 6`; a call with
+`r: 5` or before replays under its own rules, exactly (`fixtures/replays-rules5-pre-runners.json`).
+
+The advancement table (`pack.advance`) is the real share of each runner outcome for a key at a base
+and out state. Before rules 6 the row ignored the ball: a 180 ft fly scored the runner from third as
+often as a 380 ft one. Now each row's chance is multiplied by a measured ratio and renormalised:
+
+- **The ball's class** (`contract.js runnerClass`): an air ball's carry band (`carryOf`, the 2024
+  fit of Statcast distance from exit velocity and launch angle) and side (left, centre, right); a
+  ground ball's speed (under 85 mph or not) and side. A ball with no spray or no speed has no class.
+- **The row's category** (`runnerCategory`): X when a runner is put out on the bases, else how many
+  bases the lead runner went (0 to 3).
+- **The ratio** (`pack.runners.ratio`, `pipeline/runners.py`): for each key, lead runner's base, outs
+  (0-1 or 2) and class, the category's share on 2024 balls of that class over its share in the key,
+  shrunk toward the key's mix by 10 plays.
+
+Every row is still the table's own legal play, and the runner draw is the same draw. The grade keeps
+the table's mix: one real ball stands for each key in a cell, and its depth is that ball's, not the
+hitter's. A ball in play under rules 6 carries `carry` (feet, air balls) and `cls` for the scene.
+
+## 5i. Rules 7: the running game (2026-10-26)
+
+Rules 6 and everything before it. The owner: "Runners could also steal ... They may win or lose that
+moment", and "yes add pickoffs and slide step". A new outing's calls carry `r: 7`; a call with `r: 6`
+or before replays under its own rules, exactly (`fixtures/replays-rules6-pre-steals.json`).
+
+**The steal** (`engine.js stealGoes`, `resolveSteal`). The lead runner with the base ahead open
+(first with second open, or second with third open) may go on a pitch. Home, the double steal and the
+delayed steal are not played. Before the pitch, one draw on the steal stream (`steal|seed`, drawn
+only when a steal is on, so the four draws never move) against:
+
+- the 2022 or 2024 rate per pitch for the base, outs and count (`pack.steal.attempt`, every regular
+  season pitch in the Stats API feeds; 2022 for spots before 2023, 2024 from 2023);
+- late and close (inning 8 on, by the batting side's margin), measured against the same runners;
+- him (his attempts per time on first, shrunk toward what his sprint speed predicts; SB and CS
+  alone before 2015), the pitcher (attempts against) and the era (that season's league against the
+  sample's).
+
+He goes with the pitch. A foul, a ball in play or a hit batter sends him back (`result: 'back'`). A walk
+that moves him, or a third out, makes it moot. On a ball or a strike, a second draw decides it:
+safe when it falls under the normal cdf of z (`contract.js normCdf`, arithmetic only). z is the base's
+success, plus the era, him, the pitcher, the catcher on the field in the real game (stolen bases
+and caught stealing against him), late and close, the pickoff throws at him this plate appearance,
+and a quick delivery. A caught stealing that is the third out ends the half: the door is shut. The
+steal is not graded. The state after it carries into the next call's grade.
+
+**The pickoff** (`E.pickoff(o)`, `E.pickoffLive(o)`). It is the player's call between pitches, to
+the lead runner's base. It is not open before the outing's first pitch. One draw on the steal stream
+gets him at the season's rate per throw at that base. Two disengagements a plate appearance (MLB
+2023, `contract.js STEAL.DISENGAGE`, a GAME RULE in every era). Past them, a throw that does not get
+him is a balk, and every runner moves up. A throw that does not get him shortens his jump for that
+plate appearance (`pack.steal.sucZ po|...`, measured against the same runner). The attempt rate is
+not lowered: the feeds show more attempts after a throw, because pitchers throw to the runner about
+to go. A pickoff rides on the call before it as `pa` (throws after that pitch).
+
+**The quick delivery** (the slide step, a call's `ss: 1`; on screen "QUICK DELIVERY", never "quick
+pitch"). The delivery gets quicker, not the ball: `STEAL.QUICK.DELIVERY_S` (0.25 s, a MODEL of the
+owner's 0.2 to 0.3 s) off his time to the plate. That is the only thing it moves in the steal draw:
+z falls by 0.25 times `pack.steal.zPerSecond`, measured as stolen base success against a catcher's
+pop time (Savant pop time, 2016 to 2025, 330 catcher seasons). Its costs are the meter's (`meter.js
+QUICK`): power stops at `E_MAX` (no max power, about 1 mph off his top; the engine refuses more), and
+the accuracy ring closes a touch faster (`WINDOW`). Neither the pickoff nor the quick delivery is
+graded in this version.
+
+**For the scene.** A pitch with a steal carries `steal {runner, name, speed, from, to, result: 'safe'
+| 'out' | 'back' | 'moot', p, margin (seconds, plus is safe by), catcher {id, name, pop}, cover (4,
+5 or 6)}`. A pickoff is `{n, base, runner, name, dis, out, balk, runs?, margin}` on the pitch before it
+(`pickoffs`) and in `state.run.pickoffs`. `state.run` has who is on, `pickoff {live, base, left,
+balkRisk}` and `quick {deliveryS, eMax}`.
+
+## 5j. Rules 8: the closer's outing to the end of the game (2026-10-30)
+
+Rules 7 and everything before it. The owner: "This game is specifically for closing baseball games,
+so we need to ensure that we're giving users real challenges where they have to close the game with
+at least three outs. In some situations, maybe the closer comes in the eighth, and then you'll have
+to finish the eighth and the ninth inning like they did in real life." A new outing's calls carry
+`r: 8`; a call with `r: 7` or before replays exactly on the first half alone
+(`fixtures/replays-rules7-pre-full-close.json`, `grade.js Model.singleModel`). On a pack with one
+half, rules 8 plays exactly as rules 7.
+
+**What a scenario is.** The closer's real outing, from the spot to the end of the game: every half he
+pitched (`scenario.halves`), through the game's final out, or through the last out of regulation
+when extras followed (a held tie ends it there; extras are never played). It asks for at least three
+outs: `(3 - situation.outs) + 3 x (halves - 1) >= 3` (`test/packs.mjs`). Between two of his halves
+his team bats its real half (`scenario.between`), exactly as it happened. A half he did not pitch in
+the real game is never played: a spot ends where his real outing ended.
+
+**The switch.** Three outs in a half that is not the last end the half, not the outing:
+
+- his team's real half goes on the score, plate appearance by plate appearance (its runs are real,
+  whatever happened in the player's half);
+- the next half starts at 0-0, no outs, nobody on, with the batter after the last one he faced (the
+  same batter, count wiped, when the third out was made on the bases: OBR 5.08). The lineup is that
+  half's real one by slot (`halves[h].lineup`): a substitute who batted in that slot in that real
+  half, else who held the slot when it began;
+- the arm (rules 2 fatigue, effort's strain), what the hitters have seen, the ABS challenges left and
+  the pitch count carry over. The runners, pickoff throws and disengagements do not.
+
+**The end.** The result is the score when his last half ends, by the end rules (section 8). So:
+
+| what happens | result |
+|---|---|
+| a go-ahead run in any half | `doors_open`, or `walk_off` in a half with `walkOffLive` (the home team in the 9th or later) |
+| a tie in the 8th | the 8th goes on; three outs tied, his team bats; the 9th starts at the score that leaves |
+| tied after the 8th, his team scores in the 9th | the 9th is a lead to hold; three outs with it is `door_shut` |
+| tied when his last half ends | `tie_held` (the last out of regulation; extras are not played) |
+| home team, he pitches the top of the 9th | the game ends with his three outs: no bottom half |
+
+A tie in the 8th is still a blown lead in the grade: the goal of the state the call is made in.
+
+**The grade.** One value function over every half: a state carries `h` (the half) when the pack has
+more than one, and three outs in a half before the last are worth the next half's first state, the
+margin plus his team's real runs. A state's value is the chance its goal is met when the outing ENDS
+(hold the lead, or after a tie keep them from going ahead). With halves after it, his team can still
+score, so a tie in the 8th is not worth 0 to the lead goal when his team scores in the 9th; the
+table stores each state's own goal (`hold.h`) and the other goal where one can be asked
+(`hold.alt`). Rules 2's hitter adjustment is centred on the pool's sequencing over whole outings
+(`pack.seq.full`). The grade is still one pitch ahead with the history, then the table; the arm's
+fatigue is in the history.
+
+**For the UI: the card between halves.** The pitch that makes the third out of a half before the
+last carries `halfOver` (on the pitch result, or on the steal or pickoff that made the out). It is a
+short card between halves, never a popup between pitches. The owner (2026-10-30): "a quick little
+animated game simulation of the box score of what's happening when your team is hitting", a few
+seconds, with a skip, then back to the mound. Every number on it comes from this record:
+
+```js
+/**
+ * @typedef {Object} BetweenPA        one real plate appearance of his team, in order
+ * @property {{id: number, name: string}} batter
+ * @property {string|null} event      the feed's event ('Walk', 'Forceout', 'Home Run')
+ * @property {string|null} short      the scorer's short form: K, BB, IBB, HBP, 1B, 2B, 3B, HR, 6-3,
+ *                                    F8, L6, P4, 3U, 6-4-3 DP, SF9, SAC 1-3, E6, FC, 4-6 FO. null
+ *                                    when the feed does not say (show event then)
+ * @property {string|null} des        the feed's description of the play
+ * @property {number} runs            scored on the play
+ * @property {number} outs            outs after it
+ * @property {number} bases           bitmask after it (1 first, 2 second, 4 third)
+ * @property {(number|null)[]} runners   who is on first, second, third after it (ids)
+ * @property {boolean} hit            a hit (for H on the line score)
+ * @property {number} err             errors the fielders made on it (for E)
+ * @property {{us: number, them: number}} score   the player's game after it
+ * @property {LineScore} line         the player's game's line score after it
+ *
+ * @typedef {Object} LineScore
+ * @property {[string, string]} teams           [away, home] abbreviations
+ * @property {[number|null, number|null][]} innings   runs by inning, [away, home]; null not yet batted
+ * @property {[number, number]} R               runs, [away, home]
+ * @property {[number, number]|null} H          hits; null when the feed's count did not add up
+ * @property {[number, number]|null} E          errors; null likewise
+ *
+ * @typedef {Object} HalfOver
+ * @property {{index: number, inning: number, half: 'top'|'bottom', runs: number,
+ *             score: {us: number, them: number}}} done      the half he just finished
+ * @property {{inning: number, half: 'top'|'bottom', team: string, abbr: string, runs: number,
+ *             pas: BetweenPA[], source: string}} between   his team's real half
+ * @property {{index: number, inning: number, half: 'top'|'bottom', walkOffLive: boolean, last: boolean,
+ *             outs: 0, bases: 0, leadoff: {index: number, id: string, name: string},
+ *             score: {us: number, them: number}, tied: boolean}} next   the half he goes back out for
+ * @property {LineScore} line         after his team's half
+ */
+```
+
+Copy for the card, short, from these numbers: `top 9th. CUBS scored 1.` then the line per batter
+(`Ross BB`, `Heyward 4-6 FO`), then `bottom 9th. you lead 7-6. Santana leads off.` (or `tied 6-6.`).
+The line score fills in as the batters go. A half with no runs says so: `CUBS went down. still 6-6.`
+
+**On the state** (section 8): `half {index, of, inning, half, walkOffLive, last}` (the half being
+pitched: the scoreboard's inning reads it, not `scenario.situation`), `halves` (every `HalfOver` so
+far, so a reload can show the card again), `line` (the line score now, `null` on a pack with one
+half) and `batterIndex` (into `scenario.batters`, by the half's lineup). `shutItLive` is true only in
+the last half.
+
+**The pack** (section 10): `scenario.halves[]` `{inning, half, outs, bases, walkOffLive, lineup, real}`
+(the first is the spot), `scenario.between[]` (the record above without score and line, which the
+engine adds), `scenario.line` (the real line score when he came in: innings before his, his own half
+up to his first batter, hits and errors so far), `pack.reveal` (his whole outing) and `pack.reveal1`
+(the first half's, what a rules 7 outing is set beside), `pack.steal.halves[h - 1].catcher` (the
+catcher on the field when a later half began). Every fact from the play by play (`pipeline/halves.py`,
+MLB's live feed; Retrosheet for a proxy spot); a missing one is null.
+
+**The score** (section 8): rules 8 scores `round(700 x exp(-points lost x 3 / outs asked / 35))` plus
+the result's bonus, with no floor (the README has why and the measurements). Before rules 8 the line
+`max(0, 700 - 20 x points lost)`, which an older outing keeps.
+
+**The daily's rollout.** A daily is never switched partway through a day: `api.js FULL_CLOSE_FROM`.
+Outings stored before rules 8 replay as they were played.
+
 ## 6. Pitch result
 
 ```js
@@ -498,8 +720,10 @@ the hold table after it is unchanged, like the call by location.
  * @property {'take'|'swing'} batter
  * @property {PitchCallResult} result
  * @property {{bb: 'ground'|'line'|'fly'|'popup', ev: number, la: number, spray: number,
- *             result: InPlayResult, text: string}} [inPlay]   spray: degrees, 0 = centre field,
- *                                    negative = the left field side
+ *             result: InPlayResult, text: string, carry?: number, cls?: string}} [inPlay]
+ *                                    spray: degrees, 0 = centre field, negative = the left field
+ *                                    side. Rules 6: carry, how far the air ball goes (feet,
+ *                                    contract.js carryOf), and cls, its class (section 5h)
  * @property {{b: number, s: number}} countBefore
  * @property {{b: number, s: number}} count     after; resets to 0-0 when the plate appearance ends
  * @property {number} outs           after
@@ -517,6 +741,10 @@ the hold table after it is unchanged, like the call by location.
  * @property {{by: 'batter'|'pitcher', call: string, abs: 'ball'|'strike', overturned: boolean}} [challenge]
  *                                    rules 4: the challenge on this pitch (section 5f)
  * @property {boolean} [perfect]      rules 4: a bright band release, on the aim point
+ * @property {HalfOver} [halfOver]    rules 8: this pitch made the third out of a half before the
+ *                                    last; his team batted and the next half is set (section 5j).
+ *                                    outs reads 3 and bases the end of the half; the state is the
+ *                                    next half's
  */
 ```
 
@@ -588,7 +816,11 @@ one unit covers every state. Run expectancy is kept as `reDelta` for debug.
  * @property {number} outs
  * @property {number} bases
  * @property {{us: number, them: number}} score
- * @property {number} batterIndex    into scenario.batters (wrapped)
+ * @property {number} batterIndex    into scenario.batters (by the half's lineup, rules 8)
+ * @property {{index: number, of: number, inning: number, half: 'top'|'bottom', walkOffLive: boolean,
+ *             last: boolean}} half   rules 8: the half being pitched (section 5j)
+ * @property {HalfOver[]} halves     rules 8: the halves done so far
+ * @property {LineScore|null} line   rules 8: the line score now; null on a pack with one half
  * @property {Band[]} strip          one per pitch so far
  * @property {boolean} shutItLive    two strikes and two outs: the confirm button reads 'shut it'
  * @property {PitchResult[]} log
@@ -619,6 +851,8 @@ one unit covers every state. Run expectancy is kept as `reDelta` for debug.
 
 End rules (the owner's call, 2026-10-20: "blowing the save but holding the tie"):
 
+- Rules 8: the outing is every half the closer pitched (section 5j). Three outs in a half before
+  the last end the half; the rules below are about the score when the LAST half ends.
 - Three outs with our lead intact: `door_shut`.
 - A run that ties does not end the outing. Play goes on in the same inning.
 - After a tie, three outs with the game still tied: `tie_held` (label `HELD THE TIE`, in
@@ -652,7 +886,27 @@ challenge(outingId)
 
 /** @returns {Promise<OutingResult>} */
 finishOuting(outingId)
+
+/** Today's finished daily that is not on the board yet, for the "sign in to save your score" prompt.
+ *  Same Eastern day only.  @returns {{day, number, scenarioId, score, outcome, pitches} | null} */
+pending()
+
+/** Signed in: post that daily now, once. Also runs by itself when STD_AUTH reports a sign-in, and then
+ *  fires a window event 'std-claimed' with the same answer.
+ *  @returns {Promise<{posted: boolean, account: Object|null} | null>}  null signed out */
+claim()
 ```
+
+The board, end to end (`159_shut_the_door_boards.sql`, 2026-10-30):
+
+- **A second device.** Signed in, `startOuting` in daily mode asks the account for the day's kept
+  outing (`STD_AUTH.myDay(day)`, at most 4 s). If there is one it is the day's outing on this device
+  too: its calls replay under the day's seed to the same result, the state carries
+  `fromAccount: true`, and nothing is posted again.
+- **A post that loses a race** (two devices that both played before either posted): the result's
+  `account` carries `taken: false` and `keptScore`, the score that counts. `taken: true` otherwise.
+- **Signed out, then signed in.** `pending()` reads the finished daily kept on the device. `claim()`
+  posts it once, today's only. A result from another day is never pending.
 
 Deterministic: the same scenario, seed and calls give the same results on any device. One seeded
 stream (`mulberry32`), drawn in a fixed order per pitch: miss x, miss z, the library draw, the
@@ -686,7 +940,8 @@ what the real pitcher did is public history, and the UI shows it only after the 
  * @property {Object} library        per batter x pitch type x actual cell x count bucket:
  *                                   the candidate real pitches and their tier
  * @property {Object} advance        runner advancement by in-play result and base-out state
- * @property {Object} hold           hold% by state (batterIndex, count, outs, bases, margin)
+ * @property {Object} hold           hold% by state (half, batterIndex, count, outs, bases, margin);
+ *                                   rules 8: halves, and alt (the other goal where one is asked)
  * @property {Object} kernel         per arsenal pitch: the 25x25 miss table (target cell to actual cell)
  * @property {{scores: number[], closers: Object[]}} pool   the closer pool's outing scores (sorted)
  *                                   and the vectors for 'pitched like'
@@ -730,7 +985,10 @@ timed (section 5). `156_shut_the_door_release.sql` makes the submit's guard chec
 or a number 0..1.
 
 The streak is "doors shut in a row": a door shut on consecutive days. A blown save or a missed day
-resets it. A held tie is a blown save, so it resets it too. `155_shut_the_door_tie_held.sql` lets
+resets it. A held tie is a blown save, so it resets it too. Since `159_shut_the_door_boards.sql` the streak is read from the
+kept rows (`shutdoor_streak_of`), so a post for yesterday that arrives after today's counts in its
+place instead of resetting it. `shutdoor_my_day(day)` answers the caller's kept outing for a day
+(its calls, for a second device), and the submit's reply adds `keptScore` and `keptOutcome`. `155_shut_the_door_tie_held.sql` lets
 `tie_held` into the outcome check and the submit's guard, and adds `tieHeld` to
 `shutdoor_my_stats()`.
 
@@ -835,3 +1093,93 @@ Rules:
 - **Grade cards** keep their one-line reason during play. The lesson is the one longer moment.
 - **How to play** gains a short "pitching 101" page listing the principles, one line each, behind
   the menu button like every guide.
+
+## 16. The vote for tomorrow's daily (the owner's call, 2026-10-30)
+
+From `modes.js VOTE.EPOCH` (2026-11-16) each day's daily is one of two candidates, chosen the day
+before by a vote. Before it, the day is the schedule's own (`data/schedule.json`), so no day already
+played moves. The rule, and the server's copy of it, are in `modes.js` and
+`supabase/160_shut_the_door_vote_survivor.sql`; `test/modes.mjs` holds the two to the same answers.
+
+- **Candidates for day D**: the packs nobody was offered (or given, before the vote) on any of the 13
+  days before D, ordered by `hashSeed('shut-the-door-vote-' + D + '-' + id)`, the first two. The first
+  is A. A played pack was offered, so nothing played in the last 13 days comes back. At least 4 of the
+  30 are eligible each day, so the pairs vary. A pure function of the day: every device and the
+  server agree without asking.
+- **Who votes**: signed in, once, after finishing today's daily (`shutdoor_outings` has today's row).
+  Not a device id: a device id is a string any script can mint, so it is no limit. Guests see the
+  candidates and the result.
+- **The lock**: voting for D closes when D begins (Eastern). The first read of D locks it, the same for
+  every reader: more votes wins, no votes or a tie is A. A daily post from the epoch on must be for the
+  locked situation.
+- **No server**: the page plays A, the default, and says so (`scenario.pick: 'default'`). Once the
+  server has answered, the lock is kept on the device (`std_picks_v1`).
+
+```js
+/** The vote for a day (default tomorrow).
+ *  @returns {Promise<{day, open, candidates: Card[2], myVote: string|null, votes: {a, b}|null,
+ *                     winner: string|null, canVote: boolean, why: string|null, offline: boolean}>}
+ *  votes show once you voted or the day is locked. why is the server's reason when canVote is false:
+ *  'sign in to vote', "finish today's daily to vote", 'you voted', 'voting is closed'. */
+vote(day)
+
+/** Cast this player's one vote for tomorrow. The same shape, with error set when refused. */
+castVote(scenarioId)
+```
+
+`Card` is the schedule's `packs[id].card` plus its `id`: `{id, title, pitcher, team, year, throws,
+situation: {inning, half, outs, bases, score}, resolution}`. Never the reveal. `getScenario(day)`
+from the epoch on carries `pick: 'vote' | 'default'`.
+
+## 17. Survivor, the archive and Pro (the owner's calls, 2026-10-30)
+
+**Survivor** is a run of saves. Each door shut sends the player straight into the next real
+situation; anything else ends the run (a held tie too, as in the daily's streak). The score is saves
+in a row, then points (the outings' scores added) to break a tie. Grading is the daily's.
+
+- **Deterministic** (`modes.js survivorAt`): run r of day D plays the rotation in the order of a
+  Fisher-Yates shuffle from `mulberry32(hashSeed('shut-the-door-survivor-' + D + '-' + r + '-' +
+  cycle))`, every pack once a cycle, and situation i on seed `hashSeed('shut-the-door-survivor-' + D +
+  '-' + r + '-' + i)`. Run 0 is the day's run: the same sequence for everyone.
+- **One run a day free**; Pro may start another once the last is over (run 1, 2, ...). Only run 0 is
+  on the Survivor board (`shutdoor_survivor_board`), which is separate from the daily's.
+- **Kept on the server** signed in (`shutdoor_survivor`): each finished situation is posted in order,
+  so a reload or another device goes on from where the run stands. Signed out it is kept on the
+  device (`std_survivor_v1`), one run a day, and a sign-in the same day puts it on the account once
+  when the account has no run that day. `check-replays.mjs` replays a stored run.
+
+```js
+/** @returns {Promise<{day, signedIn, pro, run, index, saves, points, over, canStart,
+ *                     entries: {scenarioId, title, outcome, pitches, score}[], runs, offline}>} */
+survivorState()
+
+/** Start today's run or go on with it: the next situation, or the live one where it stood.
+ *  Throws 'one run a day' when the allowance is used.
+ *  @returns {Promise<{run, index, saves, scenario (no reveal, scenario.survivor {run, index}), state}>}
+ *  Then throwPitch, challenge and pickoff on state.outingId as in the daily. */
+survivorStart()
+
+/** finishOuting on a Survivor outing answers the result (no share line) plus
+ *  survivor: {run, index, saves, over, posted}. over false: call survivorStart for the next one. */
+
+/** Signed in: put today's run played signed out on the account, once. Also runs on sign-in. */
+survivorClaim()
+
+/** @returns {Promise<{rank, username, saves, points, over, mine, players}[] | null>} */
+survivorBoard(day, limit)
+```
+
+**The archive** (Pro): any past daily from daily #1, on that day's own situation and seed.
+`startOuting(scenarioId, null, {mode: 'archive', day})`, then the usual calls. It is kept (on the
+device, and on the account in `shutdoor_archive`, first one per day) and never on the daily board:
+`finishOuting` answers `archive: {kept, taken}` and never `account`. Throws 'the archive is for Pro'
+for a free player and 'not an archive day' for today or later.
+
+**Pro** is one server gate, `shutdoor_is_pro(uid)`. It answers false for everyone until payments
+exist (the store agent turns it on in a later migration and adds `std_premium` to
+`premium_unlocks`). No price and no buy flow yet.
+
+```js
+/** @returns {Promise<{signedIn, pro, archive, survivorRuns (null is unlimited)}>} */
+entitlements()
+```

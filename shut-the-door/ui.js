@@ -19,6 +19,8 @@
 (function () {
 'use strict';
 var C = window.STD_CONTRACT, API = window.STD_API, M = window.STD_MOUND, AN = window.STD_ANIM, MN = window.STD_MENUS;
+/* the modes around the daily (modes-ui.js): the save, the vote, Survivor, the archive */
+var MU = window.STD_MODES_UI || null;
 var METER = window.STD_METER || null;
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -88,9 +90,9 @@ function record(day, number, r) {
 /* ---- state ------------------------------------------------------------------- */
 
 var S = {
-  day: C.easternDay(), scn: null, daily: null, dailyResult: null,
+  day: C.easternDay(), scn: null, dailyScn: null, daily: null, dailyResult: null, arsFor: null, saved: false,
   outing: null, mode: 'daily', type: null, cell: null, at: null, busy: false,
-  heat: 'damage', scout: false, guide: null, hover: null, scene: null, grid: null, mini: null, hero: null, result: null,
+  heat: 'damage', drawer: false, scout: false, guide: null, hover: null, scene: null, grid: null, mini: null, hero: null, result: null,
 };
 
 /* ---- small things ------------------------------------------------------------- */
@@ -128,9 +130,21 @@ function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; re
 var TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', ST: '#ddb33a', SV: '#93afd4', CU: '#00d1ed', KC: '#6236cd', CS: '#0068ff', CH: '#1dbe3a', FS: '#3bacac', FO: '#55ccab', KN: '#3c44cd', SC: '#60db33', EP: '#888888' };
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
+  /* Survivor and the archive put their own spot on the mound; the home and its links are today's */
+  if (id === 's-home' || id === 's-board') dailyBack();
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
+  if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
+}
+
+/* back to today's spot after a Survivor run or an archive day */
+function dailyBack() {
+  if (!S.dailyScn || S.scn === S.dailyScn) return;
+  S.scn = S.dailyScn;
+  S.mode = 'daily';
+  S.outing = S.daily;
+  S.result = S.dailyResult;
 }
 
 /* ---- sound: four noises made on the spot, nothing to download ---------------- */
@@ -301,6 +315,7 @@ function renderHome() {
   renderMatchup();
   $('h-proxy').hidden = s.resolution !== 'proxy';
   $('m-proxy').hidden = s.resolution !== 'proxy';
+  if (MU) MU.pickLine($('h-pick'), s);
   renderStreak();
   $('h-load').hidden = true;
   $('h-main').hidden = false;
@@ -349,7 +364,7 @@ function renderStreak() {
 }
 
 function renderHomeState() {
-  var d = S.daily, r = S.dailyResult;
+  var d = S.daily, r = S.dailyResult, hs = S.dailyScn || S.scn;
   var take = $('b-take');
   if (r) {
     $('h-go').hidden = true;
@@ -358,7 +373,7 @@ function renderHomeState() {
     done.hidden = false;
     var dp = Math.round(r.percentile);
     done.innerHTML =
-      '<div class="d-top"><div><p class="dc-lbl">today · #' + esc(S.scn.number) + '</p><p class="d-out ' + r.outcome + '">' + esc(C.OUTCOME_LABEL[r.outcome]) + '</p></div>' +
+      '<div class="d-top"><div><p class="dc-lbl">today · #' + esc(hs.number) + '</p><p class="d-out ' + r.outcome + '">' + esc(C.OUTCOME_LABEL[r.outcome]) + '</p></div>' +
       (r.vsReal ? '<span class="vs-pill ' + esc(r.vsReal) + '">' + esc(VS_SHORT[r.vsReal]) + '</span>' : '') + '</div>' +
       '<div class="d-mid"><div class="strip">' + stripHTML(r.strip) + '</div>' +
       '<div class="d-stats"><span><b>' + esc(r.pitches) + '</b> ' + (r.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
@@ -366,7 +381,7 @@ function renderHomeState() {
       '<div class="d-act"><button class="btn take sm" type="button" id="d-see">see it again</button>' +
       '<button class="btn dk" type="button" id="d-share">share</button>' +
       '<button class="btn dk" type="button" id="d-again">run it back</button></div>' +
-      '<p class="d-tmrw">back tomorrow for #' + esc(S.scn.number + 1) + '.</p>';
+      '<p class="d-tmrw">back tomorrow for #' + esc(hs.number + 1) + '.</p>';
     $('d-share').addEventListener('click', function () { share(r); });
     $('d-see').addEventListener('click', function () { S.mode = 'daily'; S.result = r; renderResult(); show('s-result'); });
     $('d-again').addEventListener('click', practice);
@@ -377,6 +392,7 @@ function renderHomeState() {
     take.textContent = d && d.pitchNo > 0 ? 'back to the mound · pitch ' + (d.pitchNo + 1) : 'take the mound';
   }
   renderStreak();
+  if (MU) MU.homeRow($('h-surv'));
 }
 
 /* the home's stadium: the stills, one after another, slowly. CSS does the pan and the fade (transform
@@ -422,12 +438,36 @@ function buildMound() {
   $('m-scene').insertBefore(S.grid.el, $('m-dbg'));
   /* the live field minimap: built into its slot, shown after the first play of the outing */
   S.mini = window.STD_MINIMAP ? window.STD_MINIMAP.create($('m-mini')) : null;
+  buildArsenal();
+  /* the number keys pick a pitch, on the mound, between pitches */
+  document.addEventListener('keydown', function (e) {
+    if (document.body.dataset.screen !== 's-mound' || e.ctrlKey || e.metaKey || e.altKey) return;
+    /* C challenges the call while the button is up */
+    if ((e.key === 'c' || e.key === 'C') && !$('m-abs-b').hidden) { e.preventDefault(); challengeIt(); return; }
+    if ((e.key === 'p' || e.key === 'P') && !$('m-run').hidden && !$('m-po').hidden) { e.preventDefault(); pickoffIt(); return; }
+    if ((e.key === 'q' || e.key === 'Q') && !$('m-run').hidden) { e.preventDefault(); setSlide(!S.slide); return; }
+    if (S.busy) return;
+    if (S.meter && S.meter.running()) return;
+    if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
+    var k = /^[1-9]$/.test(e.key) ? +e.key - 1 : -1, a = S.scn.pitcher.arsenal[k];
+    if (!a) return;
+    e.preventDefault();
+    pickType(a.type);
+  });
+  wireMound();
+}
+/* The pitch buttons for the spot's closer. Built with the mound, and again when Survivor or the
+   archive puts a different closer on it. */
+function buildArsenal() {
+  S.arsFor = S.scn.id;
   var ars = $('m-arsenal');
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
   var big = maxBreak(S.scn.pitcher.arsenal);
-  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name and its break glyph.
-     No speed: it is revealed after the throw (the owner, 2026-10-23). The number is the key that picks it. */
+  /* BIG PITCH BUTTONS (the owner, 2026-10-22): each one its number, its name, its speed range and
+     its break glyph. The exact speed of a pitch is revealed after the throw (the owner, 2026-10-23);
+     the range is what his arm can do with it (the owner, 2026-10-26), see speedOf. The number is the
+     key that picks it. */
   S.scn.pitcher.arsenal.forEach(function (a, i) {
     var b = document.createElement('button');
     b.type = 'button';
@@ -438,31 +478,38 @@ function buildMound() {
     b.setAttribute('aria-pressed', 'false');
     b.setAttribute('aria-label', (i + 1) + ', ' + a.name);
     b.innerHTML = '<span class="pk" aria-hidden="true">' + (i + 1) + '</span><span class="pt" aria-hidden="true"><b>' + esc(a.name) + '</b>' +
-      '<span class="pv">' + breakGlyph(a, colorOf(a), big) + '</span></span>';
+      '<span class="ps"></span><span class="pv">' + breakGlyph(a, colorOf(a), big) + '</span></span>';
     var held = holdToLearn(b, a.type);
     b.addEventListener('click', function () { if (!held()) pickType(a.type); });
     ars.appendChild(b);
   });
   fitNames();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
-  /* the number keys pick a pitch, on the mound, between pitches */
-  document.addEventListener('keydown', function (e) {
-    if (document.body.dataset.screen !== 's-mound' || e.ctrlKey || e.metaKey || e.altKey) return;
-    /* C challenges the call while the button is up */
-    if ((e.key === 'c' || e.key === 'C') && !$('m-abs-b').hidden) { e.preventDefault(); challengeIt(); return; }
-    if (S.busy) return;
-    if (S.meter && S.meter.running()) return;
-    if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
-    var k = /^[1-9]$/.test(e.key) ? +e.key - 1 : -1, a = S.scn.pitcher.arsenal[k];
-    if (!a) return;
-    e.preventDefault();
-    pickType(a.type);
-  });
+}
+/* the mound's own controls, wired once */
+function wireMound() {
   $('m-throw').addEventListener('click', throwIt);
   $('m-abs-b').addEventListener('click', challengeIt);
+  $('m-po').addEventListener('click', pickoffIt);
+  $('m-quick').addEventListener('click', function () { setSlide(!S.slide); });
   /* the meter on the page is meter-ui.js (the look); meter.js keeps the numbers */
   S.meter = METER && $('m-meter') ? (window.STD_METER_UI || METER).create($('m-meter')) : null;
+  /* the speed ranges read the meter setting, so they go on once the meter is built */
+  speedLabels();
+  $('m-drawer-b').addEventListener('click', function () { if (S.drawer) closeDrawer(); else openDrawer(); });
   $('m-batter').addEventListener('click', toggleScout);
+  /* a tap outside closes the drawer. Outside is the scene, the scorebug, the menu. The zone and the
+     dock are play, so aiming and picking a pitch keep the heat up; the sheets the drawer opened are
+     part of it. */
+  document.addEventListener('pointerdown', function (e) {
+    if (!S.drawer || document.body.dataset.screen !== 's-mound') return;
+    var t = e.target;
+    if (t && t.closest && t.closest('#m-card, #m-scout, #m-guide, #m-aim, #m-dock')) return;
+    closeDrawer();
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && S.drawer && document.body.dataset.screen === 's-mound') closeDrawer();
+  });
   $('m-guide-b').addEventListener('click', function () { setGuide(S.guide ? null : S.type || S.scn.pitcher.arsenal[0].type); });
   $('m-guide').addEventListener('click', function (e) {
     if (e.target.closest('.gd-x')) setGuide(null);
@@ -482,7 +529,9 @@ function buildMound() {
   });
   /* FULL SCREEN (the owner, 2026-10-24): the canvas is the viewport, so a turn of the phone, a
      resize and the browser's bars coming and going all lay the stage and the aim out again */
-  var onSize = function () { if (document.body.dataset.screen !== 's-mound') return; if (S.busy) S.sizeDue = true; else relayout(); };
+  /* the stage frames around the lasting panels (stage.js framePanels), so a new layout shuts the
+     scout drawer first: the set is framed for the slim line, never for the drawer */
+  var onSize = function () { if (document.body.dataset.screen !== 's-mound') return; if (S.busy) S.sizeDue = true; else { if (S.drawer) closeDrawer(true); relayout(); } };
   window.addEventListener('resize', onSize);
   window.addEventListener('orientationchange', function () { onSize(); setTimeout(onSize, 250); });
   if (window.visualViewport) window.visualViewport.addEventListener('resize', onSize);
@@ -501,6 +550,32 @@ function buildMound() {
 
 /* A pitch's name on its button, whole: five in a row are narrow (curveball, four-seam), so a name
    that does not fit steps down half a pixel at a time, never under 12 px, before it would cut. */
+/* The speed range on a pitch button: the slowest and the fastest the power stop can make of that
+   pitch (meter.js veloOf at e 0 and e 1, his own real speeds), whole mph. With the meter off there is
+   no power stop and the engine plays his ordinary pitch, so it is that one speed. */
+function speedOf(a) {
+  var one = function (v) { return v != null && isFinite(v) ? Math.round(v) : null; };
+  if (!(METER && METER.POWER === true && typeof METER.veloOf === 'function' && meterOn())) {
+    var v = METER && typeof METER.veloOf === 'function' ? one(METER.veloOf(a)) : one(a.velo);
+    return v == null ? '' : v + ' mph';
+  }
+  var lo = one(METER.veloOf(a, 0)), hi = one(METER.veloOf(a, 1));
+  if (lo == null || hi == null) return '';
+  if (lo > hi) { var t = lo; lo = hi; hi = t; }
+  return (lo === hi ? lo : lo + '-' + hi) + ' mph';
+}
+function speedLabels() {
+  if (!S.scn) return;
+  var ars = S.scn.pitcher.arsenal;
+  document.querySelectorAll('#m-arsenal .pitch').forEach(function (b, i) {
+    var a = ars[i], ps = b.querySelector('.ps');
+    if (!a || !ps) return;
+    var txt = speedOf(a);
+    /* the unit a size down, so the two numbers carry the button */
+    ps.innerHTML = txt ? esc(txt.replace(/ mph$/, '')) + '<small>mph</small>' : '';
+    b.setAttribute('aria-label', (i + 1) + ', ' + a.name + (txt ? ', ' + txt : ''));
+  });
+}
 function fitNames() {
   document.querySelectorAll('#m-arsenal .pt b').forEach(function (b) {
     b.style.fontSize = '';
@@ -524,7 +599,9 @@ function relayout() {
 }
 /* The HUD over the full screen scene: where the top left column ends (the minimap hangs under it),
    and the open sheet placed off the zone. */
-function wideHud() { return !!(window.matchMedia && matchMedia('(orientation: landscape)').matches); }
+/* the corner layout (style.css THE CORNER LAYOUT): sideways, or upright with room for corners */
+var WIDE_HUD = '(orientation: landscape), (min-width: 700px) and (min-height: 600px)';
+function wideHud() { return !!(window.matchMedia && matchMedia(WIDE_HUD).matches); }
 function placeHud() {
   var host = $('s-mound'), tl = host.querySelector('.mh-tl');
   if (!tl || !host.classList.contains('on')) return;
@@ -568,6 +645,9 @@ function aimPoint(cell, at) {
 
 function enterMound() {
   buildMound();
+  /* a different closer (Survivor's next spot, an archive day): his own pitch buttons */
+  if (S.arsFor !== S.scn.id) { buildArsenal(); speedLabels(); S.grid.setMarks({}); }
+  $('m-proxy').hidden = S.scn.resolution !== 'proxy';
   stopMeter(); meterDone();
   S.scene.setScenario(S.scn);
   S.type = null; S.cell = null; S.at = null; S.lastMarker = null; S.paintedN = null;
@@ -584,11 +664,17 @@ function enterMound() {
 
 function setBatter(first) {
   var b = batterAt(S.outing.batterIndex);
+  /* every at bat starts with the drawer shut (the owner, 2026-10-27), before the stage frames the
+     new hitter around the lasting panels (stage.js framePanels) */
+  closeDrawer(true);
   S.scene.setBatter(b);
   S.grid.setHand(b.bats);
   $('m-bname').textContent = b.name;
-  $('m-bhand').textContent = 'bats ' + handWord(b.bats);
-  $('m-bline').textContent = b.line;
+  $('m-bhand').textContent = 'bats ' + (b.bats === 'L' ? 'L' : 'R');
+  $('m-bhand').setAttribute('aria-label', 'bats ' + handWord(b.bats));
+  /* the slash line and the homers, as the pack writes them */
+  var lp = lineParts(b.line);
+  $('m-bline').textContent = lp ? lp.slash + (lp.hr != null ? ' \u00b7 ' + lp.hr + ' HR' : '') : (b.line || '');
   relayout();
   renderScout();
   if (!first) pbp(isTied(S.outing) ? 'tied' : '', b.name + ' up.', true);
@@ -605,7 +691,8 @@ function setClub(el, colors) {
   if (colors && colors[1]) el.style.setProperty('--club2', colors[1]); else el.style.removeProperty('--club2');
 }
 function renderHud(st) {
-  var sit = S.scn.situation;
+  /* rules 8: the half being pitched (st.half), else the spot's own inning */
+  var sit = st && st.half && st.half.inning ? st.half : S.scn.situation;
   setClub($('m-usclub'), S.scn.pitcher.teamColors);
   // the hitters' club, from the same rule the 3D kit uses (clubs.js, loaded by index.html); grey until it is
   var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: S.scn.title, scenarioId: S.scn.id, pitcher: S.scn.pitcher }) : null;
@@ -704,6 +791,7 @@ function updateThrow() {
   else b.innerHTML = '<b>throw</b>' + (ready ? '<span>' + esc(pitchOf(S.type).name) + ' \u00b7 ' + esc(M.cellWords(S.cell, bt.bats)) + '</span>' : '');
   stepLine();
   absButton();
+  runBar();
 }
 /* THE STEP LINE (the owner, 2026-10-22): one short line under the throw button and the release
    meter, saying the next thing to do. It never grades and is empty while the pitch plays. */
@@ -712,11 +800,44 @@ function stepLine() {
   if (!el) return;
   var say = '';
   if (S.busy || !S.outing || S.outing.status !== 'live') say = '';
-  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your power' : 'stop it in the bright band';
+  /* the meter says its own tap on the panel itself (meter-ui.js, the cue: the owner, 2026-10-30), so
+     the line over it stays empty: one message, on the thing to tap */
+  else if (S.meter && S.meter.running()) say = '';
   else if (!S.type) say = 'pick a pitch';
   else if (S.cell == null) say = 'aim: drag or tap the zone';
   else say = 'tap throw';
   if (el.textContent !== say) el.textContent = say;
+}
+
+/* THE SCOUT DRAWER (the owner, 2026-10-27: "minimal clutter on the gameplay"). The at bat line
+   stays one slim row; SCOUT opens the rest under it. The heat map shows only while it is open, so
+   the field is clear by default and the scouting is one tap away. Only a tap opens it. */
+function openDrawer() {
+  if (S.drawer) return;
+  S.drawer = true;
+  $('m-drawer').hidden = false;
+  drawerState();
+}
+/* quiet: on a new at bat, before the layout runs anyway */
+function closeDrawer(quiet) {
+  var was = S.drawer || S.scout || S.guide || S.viewPA || !$('m-key').hidden, hadView = !!S.viewPA;
+  S.drawer = false;
+  S.scout = false;
+  S.viewPA = null;
+  $('m-drawer').hidden = true;
+  $('m-key').hidden = true;
+  $('m-key-b').setAttribute('aria-expanded', 'false');
+  if (S.guide) setGuide(null);
+  if (!was) return;
+  drawerState();
+  /* an earlier at bat on the zone goes back to this one's dots */
+  if ((hadView || !quiet) && S.outing) renderPAs(S.outing);
+}
+function drawerState() {
+  $('m-drawer-b').setAttribute('aria-expanded', S.drawer ? 'true' : 'false');
+  $('m-card').classList.toggle('open', !!S.drawer);
+  if (S.outing && S.grid) renderScout();
+  placeHud();
 }
 
 function toggleScout() {
@@ -725,14 +846,15 @@ function toggleScout() {
   renderScout();
 }
 
-/* The heat map is always on the grid (S.heat is its mode); the scout card is the reading of
-   the hitter, opened by the batter bar. It is a sheet over the lower HUD, under the grid. */
+/* The heat map is on the grid only while the scout drawer is open (S.heat is its mode); the
+   report is the reading of the hitter, opened from the drawer. It is a sheet over the lower HUD,
+   under the grid. */
 function renderScout() {
   var b = batterAt(S.outing.batterIndex), box = $('m-scout');
   /* rules 2: the screen reads the scouting view (grade.js scoutView: the chase area in four quadrants,
      values in steps), never the exact profile the engine plays */
   var G = window.STD_GRADE, view = G && G.scoutView && S.outing.rules >= 2 ? G.scoutView(b.profile) : b.profile;
-  S.grid.setHeat(view, S.heat);
+  S.grid.setHeat(S.drawer ? view : null, S.heat);
   $('m-batter').setAttribute('aria-expanded', S.scout ? 'true' : 'false');
   $('m-batter').classList.toggle('on', !!S.scout);
   document.querySelectorAll('#m-heat [data-heat]').forEach(function (x) {
@@ -981,6 +1103,12 @@ function renderPAs(st) {
     return '<button type="button" class="pa-chip' + (on ? ' on' : '') + '" data-pa="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
       esc(p.name) + ' <b>' + esc(String(p.word || '').toLowerCase()) + '</b>' + (p.abs ? '<i class="pa-abs" title="a call overturned">abs</i>' : '') + '</button>';
   }).join('');
+  /* one sideways row: the chip being viewed in view, else the newest */
+  if (pas.length) {
+    var show = box.querySelector('.pa-chip.on') || box.lastElementChild;
+    var end = show.offsetLeft + show.offsetWidth;   // .pa-hist is positioned, so offsets are its own
+    if (end > box.scrollLeft + box.clientWidth || show.offsetLeft < box.scrollLeft) box.scrollLeft = Math.max(0, end - box.clientWidth + 2);
+  }
   box.querySelectorAll('.pa-chip').forEach(function (b) {
     b.addEventListener('click', function () {
       var p = pas[+b.dataset.pa];
@@ -1045,32 +1173,63 @@ function meterOn() { return !!(S.meter && prefs.meter !== false); }
 function stopMeter() { if (S.meter && S.meter.running()) S.meter.cancel(); }
 function throwIt() {
   if (S.busy || !S.type || S.cell == null || S.outing.status !== 'live') return;
-  if (!meterOn()) return fire({ type: S.type, cell: S.cell, at: S.at || [0, 0] });
+  if (!meterOn()) return fire(slideCall({ type: S.type, cell: S.cell, at: S.at || [0, 0] }));
   if (S.meter.running()) return;
+  closeDrawer();
   audio();
   var ap = pitchOf(S.type), bt = batterAt(S.outing.batterIndex);
   var type = S.type, cell = S.cell, at = S.at || [0, 0];
   /* the meter is one panel over the dock (the pitch buttons and the throw button), so it is big
      to hit and nothing over the scene moves */
   $('m-dock').classList.add('metering');
+  hush(true);
+  runBar();
   var run = S.meter.run({
+    quick: !!S.slide,
     command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type), pitch: ap,
     onStage: stepLine,
     verb: S.outing.shutItLive ? 'shut it' : 'release',
     label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
     /* the step line under the meter says what to do; the meter's own corner keeps its word for after the tap */
     hint: ' ',
+    place: meterPlace(bt),
+    /* the zone is a stop too while the meter runs (the owner, 2026-10-30): its taps go to the meter,
+       never to the aim. RE-AIM on the panel (or Escape) cancels it to aim again */
+    zone: S.grid.el,
     onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
+    /* a perfect release: the snap again, and with a perfect power a second one like a mitt's pop */
+    onPerfect: function (level) { sound('snap', 60); if (level === 2) sound('pop', 140); },
   });
   stepLine();
   absButton();
   run.then(function (r) {
+    hush(false);
     if (!r) { $('m-dock').classList.remove('metering'); updateThrow(); return; }
-    var call = { type: type, cell: cell, at: at, q: r.q };
+    var call = slideCall({ type: type, cell: cell, at: at, q: r.q });
     if (r.e != null) call.e = r.e;      // effort: only when the meter offered it (STD_METER.EFFORT)
     fire(call);
   });
 }
+/* where the combo meter goes (meter-ui.js): the aim layer, the crosshair, and the side of the zone
+   away from the hitter for the power column (his box on the 3D mound, else the side he bats from:
+   a right handed hitter stands on the right of the pitcher's view) */
+function meterPlace(bt) {
+  var aim = $('m-aim'), x = aim && aim.querySelector('.aim-x');
+  if (!aim) return null;
+  var a = aim.getBoundingClientRect(), c = x && x.offsetParent ? x.getBoundingClientRect() : null;
+  var side = bt && bt.bats === 'L' ? 'right' : 'left';
+  try {
+    var st = S.scene && S.scene.real, cv = $('m-canvas');
+    if (st && st.figureBoxes && cv) {
+      var b = st.figureBoxes(400).batter, r = cv.getBoundingClientRect();
+      if (b && isFinite(b.x0)) side = r.left + (b.x0 + b.x1) / 2 > (a.left + a.right) / 2 ? 'left' : 'right';
+    }
+  } catch (e) {}
+  var zEl = aim.querySelector('.aim-zone');
+  return { aim: a, zone: zEl ? zEl.getBoundingClientRect() : null, x: c ? c.left + c.width / 2 : null, y: c ? c.top + c.height / 2 : null, side: side };
+}
+/* the mound holds still while the meter runs (stage.js hush), so nothing redraws under the needle */
+function hush(on) { var st = S.scene && S.scene.real; if (st && st.hush) st.hush(on); }
 /* rules 2: how many pitches in a row before this one were this type (a good release helps less on a repeat) */
 function repeatOf(type) {
   var log = (S.outing && S.outing.rules >= 2 && S.outing.log) || [], n = 0;
@@ -1147,9 +1306,9 @@ function fire(call) {
   audio();
   updateThrow();
   S.grid.setDisabled(true);
-  var scoutWas = S.scout, guideWas = S.guide;
-  if (S.scout) { S.scout = false; renderScout(); }
-  if (S.guide) setGuide(null);
+  /* the throw closes the scout drawer and everything it opened (the owner, 2026-10-27); it stays
+     shut after the pitch */
+  closeDrawer();
   S.hover = null;
   drawPreview();
   $('m-scene').classList.add('flying');
@@ -1164,7 +1323,9 @@ function fire(call) {
       if (byBatter) { pbp('called strike', lastName(batter.name) + ' challenges.'); return; }
       var t = playText(pr, batter, res.state);
       pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
-      renderHud(res.state);
+      renderHud(pr.halfOver ? halfEndState(res.state, pr.halfOver) : res.state);
+      var sl = stealText(pr.steal);
+      if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); }
     });
     var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: sound, field: hudRunners } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
@@ -1184,6 +1345,13 @@ function fire(call) {
     }).then(function () {
       var pr = res.pitchResult;
       S.outing = res.state;
+      /* rules 8: three outs in a half before the last. His team bats its real half on the card, then
+         the next half (still busy until the mound is back) */
+      if (pr.halfOver && S.outing.status === 'live') return halfBreak(pr.halfOver).then(function () {
+        settle();
+        if (S.scene.setTarget) S.scene.setTarget(null);
+        nextHalf(pr.halfOver);
+      });
       // the last pitch: the play has finished on screen, then a beat, then the result (still busy).
       // A ball four that ended it can still be challenged: the button stays up a moment first.
       if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () {
@@ -1193,8 +1361,6 @@ function fire(call) {
       settle();
       if (S.scene.setTarget) S.scene.setTarget(null);
       if (pr.paOver) { S.lastMarker = null; S.grid.setMarks({}); setBatter(false); } else S.scene.draw(idleFrame());
-      if (scoutWas) { S.scout = true; renderScout(); }
-      if (guideWas) setGuide(guideWas);
       updateThrow();
       if (S.sizeDue) { S.sizeDue = false; relayout(); } else drawPreview();
       renderHud(S.outing);
@@ -1204,10 +1370,111 @@ function fire(call) {
     meterDone();
     S.grid.setDisabled(false);
     $('m-scene').classList.remove('flying');
-    if (guideWas) setGuide(guideWas);
     drawPreview();
     updateThrow();
     toast('that pitch did not go. try again.');
+    if (window.console) console.warn(e);
+  });
+}
+
+/* ---- the running game (rules 7, CONTRACT.md 5i) ----------------------------------------------
+   The owner (2026-10-26): "Runners could also steal", "yes add pickoffs and slide step". With a
+   runner on, a row over the pitch buttons: QUICK DELIVERY (the slide step: a call's ss 1, beats the
+   steal, costs him the top of his power, meter.js QUICK) and PICKOFF while state.run.pickoff.live,
+   with the disengagements left this plate appearance (two; past them a throw that misses is a
+   balk). The steal and the pickoff go in the play by play; an out on the bases is a red dot on the
+   scorebug's diamond for a moment. None of it is graded, and nothing here opens by itself. */
+var BASE_WORD = { 1: 'first', 2: 'second', 3: 'third', 4: 'home' };
+function slideCall(call) { if (S.slide && runnersOn()) call.ss = 1; return call; }
+function runnersOn() { var run = S.outing && S.outing.run; return !!(run && run.on && run.on.some(Boolean)); }
+function setSlide(on) {
+  S.slide = !!on;
+  var b = $('m-quick');
+  if (b) b.setAttribute('aria-pressed', S.slide ? 'true' : 'false');
+}
+/* about how much speed a quick delivery costs this pitch: his own speed at max against at QUICK's top */
+function slideMph() {
+  var run = S.outing && S.outing.run, eMax = run && run.quick && run.quick.eMax, ap = S.type ? pitchOf(S.type) : S.scn.pitcher.arsenal[0];
+  if (eMax == null || !ap || !METER || !METER.veloOf) return null;
+  var d = METER.veloOf(ap, 1) - METER.veloOf(ap, eMax);
+  return isFinite(d) ? Math.max(1, Math.round(d)) : null;
+}
+function runBar() {
+  var bar = $('m-run'), st = S.outing, run = st && st.run;
+  if (!bar) return;
+  var on = runnersOn();
+  if (!on && S.slide) setSlide(false);
+  var show = !!(on && st.status === 'live' && !S.busy && !S.absBusy && !(S.meter && S.meter.running()));
+  if (bar.hidden !== !show) bar.hidden = !show;
+  $('m-dock').classList.toggle('running-game', show);
+  if (!show) return;
+  var mph = slideMph();
+  $('m-quick-l').textContent = 'slide step \u00b7 beats the steal' + (mph ? ' \u00b7 about -' + mph + ' mph' : '');
+  var po = run.pickoff || {}, b = $('m-po');
+  b.hidden = !po.live;
+  if (!po.live) return;
+  $('m-po-l').textContent = 'to ' + (BASE_WORD[po.base] || 'the bag') + ' \u00b7 ' + (po.left > 0 ? po.left + ' left' : 'one more is a balk');
+  var dots = b.querySelectorAll('.ab-dots i');
+  for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('on', i < po.left);
+  b.classList.toggle('balk', !po.left);
+  b.setAttribute('aria-label', 'Pickoff to ' + (BASE_WORD[po.base] || 'the bag') + '. ' + (po.left > 0 ? po.left + ' left before a balk.' : 'A miss now is a balk.'));
+}
+function stealText(sl) {
+  if (!sl || (sl.result !== 'safe' && sl.result !== 'out')) return null;
+  var who = lastName(sl.name || 'the runner');
+  return sl.result === 'safe' ? { tag: 'stolen base', rest: who + ' takes ' + BASE_WORD[sl.to] + '.' } : { tag: 'caught stealing', rest: who + ' out at ' + BASE_WORD[sl.to] + '.' };
+}
+function pickoffText(ev, st) {
+  var who = lastName(ev.name || 'the runner');
+  if (ev.out) return { tag: 'picked off', rest: who + ' out at ' + BASE_WORD[ev.base] + '.' };
+  if (ev.balk) return { tag: 'balk', rest: 'runners move up' + (ev.runs ? ' \u00b7 ' + (ev.runs === 1 ? 'a run scores' : ev.runs + ' runs score') : '') + '.' };
+  var left = st && st.run && st.run.pickoff ? st.run.pickoff.left : 0;
+  return { tag: 'pickoff', rest: who + ' gets back \u00b7 ' + (left > 0 ? left + ' left' : 'one more is a balk') + '.' };
+}
+/* an out on the bases: a red dot on the scorebug's diamond at that base, for a moment */
+function baseOut(base) {
+  hudRunners([{ p: base, out: true }]);
+  clearTimeout(baseOut._t);
+  baseOut._t = setTimeout(function () { hudRunners(null); }, 1600);
+}
+function pickoffIt() {
+  var st = S.outing;
+  if (S.busy || S.absBusy || !st || !st.run || !st.run.pickoff || !st.run.pickoff.live) return;
+  stopMeter();
+  S.busy = true;
+  S.grid.setDisabled(true);
+  updateThrow();
+  var basesBefore = st.bases | 0;
+  API.pickoff(st.outingId).then(function (res) {
+    var ev = res.pickoff;
+    /* the throw on the field, when the stage plays one (stage.js pickoff, the camera agent's #744);
+       without it the line and the scorebug say what happened */
+    var real = S.scene && S.scene.real;
+    var thrown = real && typeof real.pickoff === 'function'
+      ? Promise.resolve(real.pickoff({ po: ev, bases: basesBefore, hooks: { sound: sound, field: hudRunners } })).catch(function (e) { if (window.console) console.warn(e); })
+      : Promise.resolve();
+    return thrown.then(function () { return res; });
+  }).then(function (res) {
+    var ev = res.pickoff;
+    hudRunners(null);
+    S.outing = res.state;
+    var t = pickoffText(ev, res.state);
+    pbp(t.tag, t.rest);
+    if (ev.out) baseOut(ev.base);
+    if (ev.halfOver && S.outing.status === 'live') {
+      renderHud(halfEndState(S.outing, ev.halfOver));
+      return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { return halfBreak(ev.halfOver); }).then(function () { settle(); nextHalf(ev.halfOver); });
+    }
+    renderHud(S.outing);
+    if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { settle(); return finish(); });
+    S.busy = false;
+    S.grid.setDisabled(false);
+    updateThrow();
+  }).catch(function (e) {
+    S.busy = false;
+    S.grid.setDisabled(false);
+    updateThrow();
+    toast('that throw did not go. try again.');
     if (window.console) console.warn(e);
   });
 }
@@ -1398,10 +1665,45 @@ function lastCall() {
   }, ms);
 }
 
+/* ---- between two of his halves (rules 8, CONTRACT.md 5j) -------------------------------------------
+   The owner (2026-10-30): finish the 8th, see his team bat on the box score, then back out for the 9th.
+   The pitch (or the steal or pickoff) that makes the third out of a half before the last carries
+   halfOver. The scorebug shows that third out on the half it ended, then the card (box-ui.js, its own
+   screen, a few seconds, a tap skips it), then the mound for the next half: its leadoff man, the
+   score his team left, nobody on. No grade, nothing to read before going on. */
+function halfEndState(st, ho) {
+  return Object.assign({}, st, { outs: 3, bases: 0, count: { b: 0, s: 0 }, score: ho.done.score,
+    half: { inning: ho.done.inning, half: ho.done.half } });
+}
+function halfBreak(ho) {
+  var BOX = window.STD_BOX_UI;
+  if (!BOX) return Promise.resolve();
+  return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () {
+    stopMeter(); meterDone(); closeDrawer(true);
+    show('s-half');
+    return BOX.play(ho, { quick: !!prefs.quick });
+  }).then(function () {
+    show('s-mound');
+  });
+}
+function nextHalf(ho) {
+  S.lastMarker = null;
+  S.grid.setMarks({});
+  hudRunners(null);
+  if (S.mini) S.mini.reset();
+  renderHud(S.outing);
+  setBatter(true);
+  var nx = ho.next, b = batterAt(S.outing.batterIndex);
+  pbp(isTied(S.outing) ? 'tied' : '', (nx.half === 'top' ? 'top' : 'bottom') + ' of the ' + ord(nx.inning) + '. ' + b.name + ' leads off.');
+  updateThrow();
+  if (S.sizeDue) { S.sizeDue = false; relayout(); } else drawPreview();
+}
+
 /* ---- the end ----------------------------------------------------------------------------- */
 
 function finish() {
   return API.finishOuting(S.outing.outingId).then(function (r) {
+    if (S.mode === 'survivor') return survivorNext(r);
     S.result = r;
     if (S.mode === 'daily') {
       S.dailyResult = r;
@@ -1414,99 +1716,311 @@ function finish() {
   });
 }
 
+/* The daily's result carries the save (signed out) and the vote for tomorrow. Neither on practice or
+   an archive day. Both are blocks the player reads when they choose; nothing opens. */
+function renderModes() {
+  if (!MU) return;
+  var daily = S.mode === 'daily';
+  if (daily) MU.saveBlock($('r-save'), { account: S.result && S.result.account, justSaved: S.saved });
+  else { $('r-save').hidden = true; }
+  if (daily && S.dailyResult) MU.voteBlock($('r-vote')); else { $('r-vote').hidden = true; voteRow(null); }
+}
+/* The result's menu carries one row to the vote while it is open (the owner, 2026-10-30): on a phone
+   the vote's tile sits below the menu. The row only scrolls to it; it never opens anything. */
+function voteRow(v) {
+  var b = $('r-vote-go'), on = !!(v && v.open && v.candidates && v.candidates.length === 2) && S.mode === 'daily';
+  var was = !b.hidden;
+  b.hidden = !on;
+  if (on) b.querySelector('span').textContent = v.myVote ? 'your vote is in' : v.canVote ? 'pick the next spot' : 'see the two spots';
+  if (was && !on && b.classList.contains('sel')) navSelect($('r-coach'));
+}
+function jumpToVote() {
+  var t = $('r-vote');
+  if (t.hidden) return;
+  t.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  var f = t.querySelector('.vt-o:not([disabled]), [data-save]') || t;
+  if (f === t) t.setAttribute('tabindex', '-1');
+  try { f.focus({ preventScroll: true }); } catch (e) {}
+}
+
+/* ---- Survivor (CONTRACT.md 17): a run of saves --------------------------------------------------
+   The home's row opens its screen; start plays the day's run on the mound as the daily does. A
+   door shut goes straight on: a moment with the saves and the next closer (#s-next), then the next
+   spot. Anything else ends the run on the Survivor screen, with its board. No result screen and no
+   grade between spots. */
+function startSurvivor() {
+  if (!API.survivorStart) return;
+  Promise.resolve().then(function () { return API.survivorStart(); }).then(function (go) {
+    playSurvivor(go);
+  }).catch(function (e) {
+    var used = e && /one run a day/.test(e.message || '');
+    toast(used ? 'today\'s run is used. next one opens at midnight eastern.' : 'the run didn\'t start. try again.');
+    if (MU) MU.showSurvivor();
+    if (!used && window.console) console.warn(e);
+  });
+}
+function playSurvivor(go) {
+  S.scn = go.scenario;
+  S.mode = 'survivor';
+  S.outing = go.state;
+  S.result = null;
+  if (S.outing.status === 'over') return finish();
+  enterMound();
+  pbp('survivor', (go.saves ? go.saves + (go.saves === 1 ? ' save. ' : ' saves. ') : '') + batterAt(S.outing.batterIndex).name + ' leads off.');
+}
+function survivorNext(r) {
+  var sv = r.survivor || {};
+  if (sv.over) {
+    show('s-surv');
+    if (MU) MU.showSurvivor();
+    renderHomeState();
+    return;
+  }
+  /* the next spot loads while the saves show */
+  var next = Promise.resolve().then(function () { return API.survivorStart(); });
+  return next.then(function (go) {
+    show('s-next');
+    return MU.between(sv.saves, go.scenario, !!prefs.quick).then(function () { playSurvivor(go); });
+  }).catch(function (e) {
+    toast('the next spot didn\'t load. try again.');
+    show('s-surv');
+    if (MU) MU.showSurvivor();
+    if (window.console) console.warn(e);
+  });
+}
+function openSurvivor() {
+  if (!MU) return;
+  if (MN.isOpen()) MN.close(true);
+  show('s-surv');
+  MU.showSurvivor();
+}
+
+/* ---- the archive (Pro, CONTRACT.md 17): a past daily on its own spot and seed. Only reachable
+   when entitlements() says archive, which is false for everyone until Pro exists. */
+function playArchive(day) {
+  if (MN.isOpen()) MN.close(true);
+  API.getScenario(day).then(function (scn) {
+    return API.startOuting(scn.id, null, { mode: 'archive', day: day }).then(function (st) {
+      S.scn = scn;
+      S.mode = 'archive';
+      S.outing = st;
+      if (st.status === 'over') return finish();
+      enterMound();
+      pbp('archive', '#' + scn.number + '. ' + batterAt(st.batterIndex).name + ' leads off.');
+    });
+  }).catch(function (e) {
+    toast(e && /for Pro/.test(e.message || '') ? 'past dailies open later.' : 'that day didn\'t load. try again.');
+    if (window.console) console.warn(e);
+  });
+}
+
 /* runs allowed: the result's own, or the outing's score against the spot's */
 function runsOf(r, st) { return r.runs != null ? r.runs : st && st.score ? st.score.them - S.scn.situation.score.them : null; }
 
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
   var runs = runsOf(r, st);
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice \u00b7 not scored' : (s.preview ? 'preview' : '#' + s.number) + ' \u00b7 final \u00b7 ' + s.title.toLowerCase();
+  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : (S.mode === 'archive' ? 'archive · ' : '') + (s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
   $('r-hero').className = 'r-hero ' + r.outcome;
+  /* the closer's club on the rail's edge, from the pack */
+  var tc = s.pitcher.teamColors;
+  $('s-result').style.setProperty('--club', tc && tc[0] ? tc[0] : '');
   var p = Math.round(r.percentile);
-  $('r-line').innerHTML =
-    '<span class="fact"><b>' + esc(r.pitches) + '</b>' + (r.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
-    (runs != null ? '<span class="fact"><b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') + '</span>' : '');
+  R.nums = { p: r.pitches, r: runs, pct: p };
+  $('r-kp').innerHTML = '<b>' + esc(r.pitches) + '</b>' + (r.pitches === 1 ? 'pitch' : 'pitches');
+  $('r-kr').hidden = runs == null;
+  $('r-kr').innerHTML = runs != null ? '<b>' + esc(runs) + '</b>' + (runs === 1 ? 'run' : 'runs') : '';
   $('r-npitch').textContent = r.pitches + (r.pitches === 1 ? ' pitch' : ' pitches');
   $('r-strip').innerHTML = stripHTML(r.strip, true);
   var WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
   $('r-legend').innerHTML = C.BANDS.map(function (b) { return '<span><i class="sq ' + b.band + '"></i>' + WORD[b.band] + '</span>'; }).join('');
   $('r-pct').innerHTML = p + '<sup>' + ordSuffix(p) + '</sup>';
+  $('r-kpct').setAttribute('aria-label', p + ordSuffix(p) + ' of closers');
   $('r-pctline').innerHTML = 'better than <b>' + esc(p) + '%</b> of the closer pool in this spot.';
   $('r-score').textContent = r.score != null ? 'score ' + r.score : '';
   $('r-chart').innerHTML = poolChart(r);
   $('r-like').textContent = r.pitchedLike ? r.pitchedLike.name : '-';
   $('r-why').textContent = r.pitchedLike ? r.pitchedLike.reason : '';
-  var rv = r.reveal || {}, his = lastName(s.pitcher.name);
+  var rv = r.reveal || {};
   $('r-real').className = 'vsbar ' + (r.vsReal || 'none');
-  $('r-real').innerHTML = '<div class="vs-t"><small>you vs the real ' + esc(his.toLowerCase()) + '</small>' +
-    '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal, his)) + '</b>' +
+  $('r-real').innerHTML = '<div class="vs-t"><small>' + VS_LABEL + '</small>' +
+    '<b class="vs ' + esc(r.vsReal) + '">' + esc(vsHead(r.vsReal)) + '</b>' +
     vsWhy(r, rv, runs) + '</div>';
   $('r-reveal').innerHTML = compareCard(r, rv, runs, st);
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
   renderStreak();
+  /* the stagger's order: the strip's squares, the menu's rows, the tiles, the pitches */
+  ['#r-strip .sq', '#r-nav .nv:not([hidden])', '#s-result .r-tile', '#r-reveal .pc'].forEach(function (q) {
+    document.querySelectorAll(q).forEach(function (el, i) { el.style.setProperty('--i', Math.min(i, 24)); });
+  });
+  navSelect($('r-coach'));
 }
 
-/* ---- you against the real pitcher ------------------------------------------------------------
-   The verdict is the engine's (vsReal: the outcome, then runs, then pitches when his count is
-   known). The line under it says which of the three decided it, in the result's own numbers. */
-var VS_SHORT = { beat: 'beat him', matched: 'matched him', lost: 'he won' };
-function vsHead(v, his) {
-  return v === 'beat' ? 'you beat ' + his : v === 'matched' ? 'you matched ' + his : v === 'lost' ? his + ' did better' : '-';
+/* ---- the result's motion and its menu ------------------------------------------------------
+   The entrance plays once each time the result comes up: the outcome slams in, the rail and the
+   tiles rise, the three numbers count up to the engine's own. Reduced motion shows them at once.
+   The menu is console rows: the selected one is signal, arrow keys or a pad's d-pad move it, enter
+   or the pad's A picks it. Nothing on it opens by itself. */
+var R = { nums: null, run: 0, pad: 0, padHeld: 0 };
+function reducedMotion() { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+function playResult() {
+  var sec = $('s-result');
+  sec.classList.remove('r-play'); void sec.offsetWidth; sec.classList.add('r-play');
+  var n = R.nums, my = ++R.run;
+  if (!n) return;
+  var set = function (k) {
+    var pv = Math.round(n.p * k), rv = n.r == null ? null : Math.round(n.r * k), cv = Math.round(n.pct * k);
+    $('r-kp').firstChild.textContent = pv;
+    if (rv != null) $('r-kr').firstChild.textContent = rv;
+    $('r-pct').innerHTML = cv + '<sup>' + ordSuffix(cv) + '</sup>';
+  };
+  if (reducedMotion()) { set(1); return; }
+  var t0 = null, MS = 900, DELAY = 420;
+  set(0);
+  function tick(t) {
+    if (my !== R.run) return;
+    if (t0 == null) t0 = t;
+    var k = Math.max(0, Math.min(1, (t - t0 - DELAY) / MS));
+    set(1 - Math.pow(1 - k, 3));
+    if (k < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
+function navRows() { return [].slice.call(document.querySelectorAll('#r-nav .nv')).filter(function (b) { return !b.hidden; }); }
+function navSelect(b) {
+  if (!b) return;
+  navRows().forEach(function (x) { x.classList.toggle('sel', x === b); });
+}
+function navMove(d) {
+  var rows = navRows(), cur = rows.indexOf(document.querySelector('#r-nav .nv.sel'));
+  var next = rows[Math.max(0, Math.min(rows.length - 1, cur + d))] || rows[0];
+  navSelect(next);
+  next.focus({ preventScroll: true });
+}
+function resultIdle() { return document.body.dataset.screen === 's-result' && !document.querySelector('.sheet.on'); }
+function initResultNav() {
+  var nav = $('r-nav');
+  nav.addEventListener('mouseover', function (e) { var b = e.target.closest('.nv'); if (b) navSelect(b); });
+  nav.addEventListener('focusin', function (e) { var b = e.target.closest('.nv'); if (b) navSelect(b); });
+  document.addEventListener('keydown', function (e) {
+    if (!resultIdle() || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    /* inside the menu the arrows move it; elsewhere they scroll, except on a desk with nothing focused */
+    var inNav = nav.contains(document.activeElement);
+    var desk = window.matchMedia && matchMedia('(min-width: 1100px)').matches;
+    if (!inNav && !(desk && (document.activeElement === document.body || !document.activeElement))) return;
+    e.preventDefault();
+    if (!inNav) { var sel = nav.querySelector('.nv.sel') || navRows()[0]; sel.focus({ preventScroll: true }); return; }
+    navMove(e.key === 'ArrowDown' ? 1 : -1);
+  });
+  /* a pad: the d-pad or the left stick moves the menu, A picks. Read only while a pad is connected */
+  window.addEventListener('gamepadconnected', function () { if (!R.pad) R.pad = requestAnimationFrame(padTick); });
+}
+function padTick(t) {
+  var pads = navigator.getGamepads ? [].slice.call(navigator.getGamepads()).filter(Boolean) : [];
+  if (!pads.length) { R.pad = 0; return; }
+  R.pad = requestAnimationFrame(padTick);
+  if (!resultIdle()) return;
+  var g = pads[0], btn = function (i) { return !!(g.buttons[i] && g.buttons[i].pressed); };
+  var y = g.axes && g.axes[1] || 0;
+  var dir = btn(12) || y < -0.6 ? -1 : btn(13) || y > 0.6 ? 1 : 0, a = btn(0);
+  var key = dir ? 'd' + dir : a ? 'a' : '';
+  if (!key) { R.padHeld = 0; R.padKey = ''; return; }
+  if (key === R.padKey && t - R.padHeld < 260) return;
+  R.padKey = key; R.padHeld = t;
+  if (dir) navMove(dir);
+  else { var sel = document.querySelector('#r-nav .nv.sel'); if (sel) sel.click(); }
+}
+
+/* ---- you against the real game ---------------------------------------------------------------
+   You pitch as him, so the comparison is with what really happened (the owner, 2026-10-26: "you
+   beat Yamamoto sounds weird when you're also playing as him"). The verdict is the engine's
+   (vsReal: the outcome, then runs, then pitches when his count is known). The line under it says
+   which of the three decided it, in the result's own numbers. */
+var VS_LABEL = 'you vs the real game';
+var VS_SHORT = { beat: 'rewrote history', matched: 'matched history', lost: 'history did better' };
+function vsHead(v) {
+  return v === 'beat' ? 'you rewrote history' : v === 'matched' ? 'you matched history' : v === 'lost' ? 'history did better' : '-';
+}
+/* the real game's column: the year when the pack has it */
+function realCol() { var y = S.scn && S.scn.pitcher && S.scn.pitcher.year; return y ? String(y) : 'real game'; }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
-/* two labelled lines, like the side by side card: your result, his result. The outcome first, then
-   runs when the outcomes tie, then pitches when the runs tie too (the order vsReal decides by). */
+/* two labelled lines, like the side by side card: your result, the real result. The outcome first,
+   then runs when the outcomes tie, then pitches when the runs tie too (the order vsReal decides by). */
 function vsParts(r, rv, runs) {
   var label = function (o) { return (C.OUTCOME_LABEL[o] || '').toLowerCase(); };
   if (!label(r.outcome) || !label(rv.outcome)) return null;
-  var mine = [label(r.outcome)], his = [label(rv.outcome)];
+  var mine = [label(r.outcome)], real = [label(rv.outcome)];
   if (r.outcome === rv.outcome && runs != null && rv.runs != null) {
-    mine.push(plural(runs, 'run', 'runs')); his.push(plural(rv.runs, 'run', 'runs'));
+    mine.push(plural(runs, 'run', 'runs')); real.push(plural(rv.runs, 'run', 'runs'));
     if (runs === rv.runs && typeof rv.pitches === 'number') {
-      mine.push(plural(r.pitches, 'pitch', 'pitches')); his.push(plural(rv.pitches, 'pitch', 'pitches'));
+      mine.push(plural(r.pitches, 'pitch', 'pitches')); real.push(plural(rv.pitches, 'pitch', 'pitches'));
     }
   }
-  return { mine: mine.join(' · '), his: his.join(' · ') };
+  return { mine: mine.join(' · '), real: real.join(' · ') };
 }
 function vsWhy(r, rv, runs) {
   var p = vsParts(r, rv, runs);
-  return p ? '<span class="vs-l"><i>your result</i>' + esc(p.mine) + '</span><span class="vs-l"><i>his result</i>' + esc(p.his) + '</span>' : '';
+  return p ? '<span class="vs-l"><i>your result</i>' + esc(p.mine) + '</span><span class="vs-l"><i>real result</i>' + esc(p.real) + '</span>' : '';
 }
 /* the same two lines as plain text, for the share card's canvas */
 function vsText(r, rv, runs) {
   var p = vsParts(r, rv, runs);
-  return p ? 'your result: ' + p.mine + '. his result: ' + p.his + '.' : null;
+  return p ? 'your result: ' + p.mine + '. real result: ' + p.real + '.' : null;
 }
 
-/* Your plate appearances from the outing's log: one per batter, in order. The word is the play by
-   play's tag on the pitch that ended it. */
-function myPAs(log) {
+/* Your plate appearances from the outing's log: one per batter, in order, each with its pitches.
+   The word is the play by play's tag on the pitch that ended it; each pitch keeps its own tag. */
+function myPAs(log, strip) {
   var out = [], start = 0, bi = 0, runs = 0;
   (log || []).forEach(function (pr, i) {
     runs += pr.runs || 0;
     if (!pr.paOver && i < log.length - 1) return;
     var b = batterAt(bi);
-    out.push({ batter: b.name, word: playText(pr, b).tag, pitches: i - start + 1, runs: runs });
+    var calls = log.slice(start, i + 1).map(function (q, j) {
+      return { n: start + j + 1, type: q.call && q.call.type, velo: q.velo, count: q.countBefore, tag: playText(q, b).tag, band: strip && strip[start + j] };
+    });
+    out.push({ batter: b.name, bats: b.bats, word: playText(pr, b).tag, pitches: i - start + 1, runs: runs, calls: calls });
     start = i + 1; runs = 0;
     if (pr.paOver) bi++;
   });
   return out;
 }
+/* a pitch type's chip takes ink text on a light colour */
+function lightColor(hex) {
+  var m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return false;
+  var v = parseInt(m[1], 16), r = v >> 16 & 255, g = v >> 8 & 255, b = v & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150;
+}
+/* the card is narrow: the two long strike tags get their short form (the title keeps the long one) */
+var CARD_TAG = { 'swinging strike': 'swinging', 'called strike': 'called' };
+var BAND_WORD = { green: 'the call', yellow: 'close', orange: 'costly', red: 'wrong idea' };
+function pitchCard(c) {
+  var col = TYPE_COLORS[c.type] || '#64748b', nm = typeName(c.type);
+  var v = c.velo != null && isFinite(c.velo) ? Math.round(c.velo) : null;
+  var cnt = c.count ? c.count.b + '-' + c.count.s : '';
+  var meta = [v, cnt].filter(function (x) { return x != null && x !== ''; }).join(' · ');
+  var title = 'pitch ' + c.n + ': ' + nm + (v != null ? ', ' + v + ' mph' : '') + (cnt ? ', ' + cnt : '') + ', ' + c.tag + (c.band ? ', ' + BAND_WORD[c.band] : '');
+  return '<span class="pc" title="' + esc(title) + '"><b class="n">' + c.n + '</b>' +
+    '<span class="ty' + (lightColor(col) ? ' lt' : '') + '" style="--tc:' + col + '">' + esc(c.type) + '</span>' +
+    '<span class="m">' + esc(meta) + '</span><span class="m">' + esc(CARD_TAG[c.tag] || c.tag) + '</span><i class="bd ' + esc(c.band || '') + '"></i></span>';
+}
 
-/* Two columns, you and him. The outcome, runs and pitches, then one row per batter faced in the
-   real order. A batter one side never faced is a quiet dash. Only an unambiguous edge is marked:
-   the better outcome, fewer runs, fewer pitches. A plate appearance is never judged. */
+/* Two columns, you and the real game. The outcome, runs and pitches, then one row per batter faced
+   in the real order, with your pitches between his name and the two results. A batter one side
+   never faced is a quiet dash. Only an unambiguous edge is marked: the better outcome, fewer runs,
+   fewer pitches. A plate appearance is never judged. */
 function compareCard(r, rv, runs, st) {
-  var s = S.scn, his = lastName(s.pitcher.name);
   var none = '<span class="v none">-</span>';
   var cell = function (html, win, cls) { return '<span class="v' + (cls ? ' ' + cls : '') + (win ? ' win' : '') + '">' + html + '</span>'; };
   var row = function (k, a, b) { return '<div class="cmp-row"><span class="k">' + k + '</span>' + a + b + '</div>'; };
   var rk = C.OUTCOME_RANK, mineO = rk[r.outcome], hisO = rk[rv.outcome];
   var hp = typeof rv.pitches === 'number' ? rv.pitches : null;
+  var col = realCol();
   var rows =
     row('result', cell('<b class="o ' + esc(r.outcome) + '">' + esc((C.OUTCOME_LABEL[r.outcome] || '').toLowerCase()) + '</b>', mineO > hisO),
       rv.outcome ? cell('<b class="o ' + esc(rv.outcome) + '">' + esc((C.OUTCOME_LABEL[rv.outcome] || '').toLowerCase()) + '</b>', hisO > mineO) : none) +
@@ -1514,21 +2028,24 @@ function compareCard(r, rv, runs, st) {
       rv.runs == null ? none : cell('<b>' + esc(rv.runs) + '</b>', runs != null && rv.runs < runs)) +
     row('pitches', cell('<b>' + esc(r.pitches) + '</b>', hp != null && r.pitches < hp),
       hp != null ? cell('<b>' + esc(hp) + '</b>', hp < r.pitches) : cell(esc(rv.pitchesNote || 'not on record'), false, 'note'));
-  var mine = myPAs(st && st.log), real = rv.plateAppearances || [];
+  var mine = myPAs(st && st.log, r.strip), real = rv.plateAppearances || [];
   var n = Math.max(mine.length, real.length), bats = '';
+  var bat = (clubsOf(S.scn).them || {}).pri || '';
   for (var i = 0; i < n; i++) {
     var a = mine[i], b = real[i], name = a ? a.batter : b.batter;
-    var side = function (pa, word) {
-      if (!pa) return none;
-      return '<span class="v">' + esc(word) + (pa.pitches != null ? '<small>' + plural(pa.pitches, 'pitch', 'pitches') + '</small>' : '') + '</span>';
+    var side = function (pa, word, cls, lbl) {
+      if (!pa) return '<span class="v none ' + cls + '"><i>' + lbl + '</i>-</span>';
+      return '<span class="v ' + cls + '"><i>' + lbl + '</i>' + esc(word) + (pa.pitches != null ? '<small>' + plural(pa.pitches, 'pitch', 'pitches') + '</small>' : '') + '</span>';
     };
-    bats += '<div class="cmp-bat"><span class="k"><i>' + (i + 1) + '</i></span><b class="nm">' + esc(name) + '</b>' +
-      side(a, a && a.word) + side(b, b && b.result) + '</div>';
+    var bats1 = a ? a.bats : null;
+    bats += '<div class="cmp-bat"' + (bat ? ' style="--bat:' + esc(bat) + '"' : '') + '>' +
+      '<span class="ab-who"><span class="i">AB ' + (i + 1) + '</span><b class="nm">' + esc(name) + '</b>' + (bats1 ? '<small>bats ' + esc(bats1) + '</small>' : a ? '' : '<small>you never faced him</small>') + '</span>' +
+      (a ? '<span class="ab-trk">' + a.calls.map(pitchCard).join('') + '</span>' : '<span class="ab-trk empty"></span>') +
+      side(a, a && a.word, 'you', 'you') + side(b, b && b.result, 'real', col) + '</div>';
   }
-  return '<div class="cmp-h"><b>you vs the real one</b><span>side by side</span></div>' +
-    '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">you</span><span class="who him">' + esc(his) + '</span></div>' +
-    rows + (bats ? '<p class="cmp-sub">batter by batter</p>' + bats : '') +
-    (rv.summary ? '<p class="cmp-sum"><b>his night</b> ' + esc(rv.summary) + '.</p>' : '');
+  return '<div class="cmp-row cmp-head"><span class="k"></span><span class="who you">you</span><span class="who him">' + esc(col) + '</span></div>' +
+    rows + bats +
+    (rv.summary ? '<p class="cmp-sum"><b>what happened</b> ' + esc(rv.summary) + '.</p>' : '');
 }
 
 /* Your score on the real distribution of the closer pool's outings in this
@@ -1604,13 +2121,13 @@ function shareTextOnly(text) {
 }
 /* what the card shows, every piece from the result */
 function cardOf(r) {
-  var s = S.scn, st = S.daily || S.outing, his = lastName(s.pitcher.name);
+  var s = S.scn, st = S.daily || S.outing;
   var rv = r.reveal || {};
   return {
     outcome: r.outcome, strip: r.strip || [], pitches: r.pitches, percentile: r.percentile,
     label: s.preview ? 'preview' : '#' + s.number, title: s.title,
-    vsReal: r.vsReal || null, vsLabel: 'you vs the real ' + his.toLowerCase(),
-    vsHead: r.vsReal ? vsHead(r.vsReal, his) : null, vsWhy: r.vsReal && rv.outcome ? vsText(r, rv, runsOf(r, st)) : null,
+    vsReal: r.vsReal || null, vsLabel: VS_LABEL,
+    vsHead: r.vsReal ? vsHead(r.vsReal) : null, vsWhy: r.vsReal && rv.outcome ? vsText(r, rv, runsOf(r, st)) : null,
     pitchedLike: r.pitchedLike && r.pitchedLike.name || null,
   };
 }
@@ -1734,21 +2251,47 @@ function boot() {
       $('b-profile').setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
       if (MN.current() === 'sheet-auth') MN.renderAuth();
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
+      if (document.body.dataset.screen === 's-result' && S.result) renderModes();
+      if (document.body.dataset.screen === 's-surv' && MU) MU.showSurvivor();
+      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
     });
   } catch (e) {}
+  /* a daily played signed out, posted on the sign-in (api.js claim): say where it landed */
+  window.addEventListener('std-claimed', function (e) {
+    var acct = e.detail && e.detail.account;
+    if (!acct || !S.dailyResult) return;
+    S.dailyResult.account = acct;
+    S.saved = true;
+    if (S.mode === 'daily') S.result = S.dailyResult;
+    if (MN.current() === 'sheet-auth') MN.close(true);
+    if (document.body.dataset.screen === 's-result') { renderStreak(); renderModes(); }
+    if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
+  });
+  $('r-vote-go').addEventListener('click', jumpToVote);
+  if (MU) MU.init({
+    onVote: voteRow,
+    signIn: function () { MN.show('auth'); },
+    onSurvivor: startSurvivor,
+    onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
+  });
+  $('h-surv').addEventListener('click', openSurvivor);
   window.STD_BOARD.init({
     day: S.day, before: postIfOwed,
     played: function () { return !!S.dailyResult; },
     onBack: function () { show(boardFrom); if (boardFrom === 's-home') { renderHomeState(); drawHero(); } },
     onSignIn: function () { MN.show('auth'); },
     onPlay: function () { show('s-home'); takeMound(); },
+    pending: function () { return API.pending ? API.pending() : null; },
+    saveLabel: MU ? MU.SAVE_LABEL : null,
   });
   MN.init({
-    hist: hist, today: S.day, prefs: prefs, board: showBoard,
+    hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
+    archiveDays: MU ? MU.archiveDays : null,
     onPref: function (k, v) {
       if (k === 'theme') { setTheme(v); return; }
       prefs[k] = v; savePrefs();
       if (k === 'sound' && v) sound('pop');
+      if (k === 'meter') speedLabels();
     },
   });
   $('b-theme').addEventListener('click', function () {
@@ -1760,11 +2303,14 @@ function boot() {
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
   $('r-coach').addEventListener('click', openCoach);
   $('r-board').addEventListener('click', showBoard);
+  initResultNav();
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
 
+  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
+    S.dailyScn = scn;
     MN.init({ scn: scn });
     window.STD_BOARD.init({ scn: scn });
     renderHome();

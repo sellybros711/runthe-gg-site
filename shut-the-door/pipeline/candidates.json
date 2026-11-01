@@ -8,12 +8,35 @@
   {"id": "hader-2019-nlwc", "plan": 5, "date": "2019-10-01", "gameType": "F", "pitcher": "Hader"},
   {"id": "feliz-2011-ws6", "plan": 6, "date": "2011-10-27", "gameType": "W", "pitcher": "Feliz"},
   {"id": "jansen-2017-ws2", "plan": "alternate", "date": "2017-10-25", "gameType": "W", "pitcher": "Jansen", "inning": 9},
-  {"id": "pressly-2022-ws6", "plan": "alternate", "date": "2022-11-05", "gameType": "W", "pitcher": "Pressly"}
+  {"id": "pressly-2022-ws6", "plan": "alternate", "date": "2022-11-05", "gameType": "W", "pitcher": "Pressly"},
+  {"id": "lidge-2008-ws5", "plan": "30", "date": "2008-10-29", "gameType": "W", "pitcher": "Brad Lidge"},
+  {"id": "rodriguez-2008-58th", "plan": "30", "date": "2008-09-13", "gameType": "R", "pitcher": "Francisco Rod"},
+  {"id": "hoffman-2010-600th", "plan": "30", "date": "2010-09-07", "gameType": "R", "pitcher": "Trevor Hoffman"},
+  {"id": "wilson-2010-ws5", "plan": "30", "date": "2010-11-01", "gameType": "W", "pitcher": "Brian Wilson"},
+  {"id": "rivera-2011-602nd", "plan": "30", "date": "2011-09-19", "gameType": "R", "pitcher": "Mariano Rivera"},
+  {"id": "romo-2012-ws4", "plan": "30", "date": "2012-10-28", "gameType": "W", "pitcher": "Romo", "inning": 10},
+  {"id": "uehara-2013-alcs6", "plan": "30", "date": "2013-10-19", "gameType": "L", "pitcher": "Uehara"},
+  {"id": "bumgarner-2014-ws7", "plan": "30", "date": "2014-10-29", "gameType": "W", "pitcher": "Bumgarner", "inning": 9},
+  {"id": "davis-2015-alcs6", "plan": "30", "date": "2015-10-23", "gameType": "L", "pitcher": "Wade Davis", "inning": 9},
+  {"id": "kimbrel-2018-alcs4", "plan": "30", "date": "2018-10-17", "gameType": "L", "pitcher": "Kimbrel", "inning": 9},
+  {"id": "urias-2020-ws6", "plan": "30", "date": "2020-10-27", "gameType": "W", "pitcher": "Julio Ur", "inning": 9},
+  {"id": "smith-2021-nlcs6", "plan": "30", "date": "2021-10-23", "gameType": "L", "pitcher": "Will Smith"},
+  {"id": "sewald-2023-nlcs7", "plan": "30", "date": "2023-10-24", "gameType": "L", "pitcher": "Sewald"},
+  {"id": "familia-2015-ws1", "plan": "30", "date": "2015-10-27", "gameType": "W", "pitcher": "Familia", "inning": 9},
+  {"id": "sewald-2023-ws1", "plan": "30", "date": "2023-10-27", "gameType": "W", "pitcher": "Sewald", "inning": 9},
+  {"id": "kershaw-2016-nlds5", "plan": "30", "date": "2016-10-13", "gameType": "D", "pitcher": "Kershaw", "inning": 9},
+  {"id": "vesia-2024-ws2", "plan": "30", "date": "2024-10-26", "gameType": "W", "pitcher": "Vesia", "inning": 9},
+  {"id": "glasnow-2025-ws6", "plan": "30", "date": "2025-10-31", "gameType": "W", "pitcher": "Glasnow", "inning": 9},
+  {"id": "kelly-2020-nlds2", "plan": "30", "date": "2020-10-07", "gameType": "D", "pitcher": "Joe Kelly", "inning": 9},
+  {"id": "price-2008-alcs7", "plan": "rules8", "date": "2008-10-19", "gameType": "L", "pitcher": "Price", "inning": 8},
+  {"id": "rivera-2009-alcs6", "plan": "rules8", "date": "2009-10-25", "gameType": "L", "pitcher": "Rivera", "inning": 8},
+  {"id": "hoffman-2025-alcs7", "plan": "30", "date": "2025-10-20", "gameType": "L", "pitcher": "Jeff Hoffman"}
  ],
  "proxy": [
   {"id": "eckersley-1988-ws1", "plan": 9, "season": 1988, "file": "1988WS.EVE", "game": "LAN198810150", "pitcher": "ecked001"},
   {"id": "rivera-2001-ws7", "plan": 10, "season": 2001, "file": "2001WS.EVE", "game": "ARI200111040", "pitcher": "rivem002", "inning": 9},
   {"id": "williams-1993-ws6", "plan": "alternate", "season": 1993, "file": "1993WS.EVE", "game": "TOR199310230", "pitcher": "willm002"},
-  {"id": "lidge-2005-nlcs5", "plan": "alternate", "season": 2005, "file": "2005NLCS.EVE", "game": "HOU200510170", "pitcher": "lidgb001"}
+  {"id": "lidge-2005-nlcs5", "plan": "alternate", "season": 2005, "file": "2005NLCS.EVE", "game": "HOU200510170", "pitcher": "lidgb001"},
+  {"id": "papelbon-2007-ws4", "plan": "30", "season": 2007, "file": "2007WS.EVE", "game": "COL200710280", "pitcher": "papej001"}
  ]
 }

@@ -8,6 +8,7 @@
  * so the machinery is held now.
  */
 import { createRequire } from 'module';
+import { readFileSync } from 'fs';
 import { synthPack, testRng } from './synth.mjs';
 const require = createRequire(import.meta.url);
 const K = require('../contract.js');
@@ -191,7 +192,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('a tie, then three outs: tie_held', held.status === 'over' && held.outcome === 'tie_held', held.outcome);
   const heldR = E.finishOuting(held);
   check('a held tie scores the tie_held bonus',
-    heldR.score === Math.max(0, Math.round(E.SCORE_BASE - E.SCORE_PER_PT * held.grades.reduce((a, g) => a + g.lost, 0))) + E.RESULT_BONUS.tie_held,
+    heldR.score === Math.round(E.SCORE_BASE * Math.exp(-held.grades.reduce((a, g) => a + g.lost, 0) / E.SCORE_DECAY)) + E.RESULT_BONUS.tie_held,
     String(heldR.score));
   check('the held tie\'s runs are the runs that tied it', heldR.runs === 1);
   check('a held tie is HELD THE TIE', K.OUTCOME_LABEL[heldR.outcome] === 'HELD THE TIE');
@@ -619,8 +620,192 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
     r('fly', 88, 38, 10) === 'air' && r('popup', 99, 70, 0) === 'air' && r('line', 80, 15, 0) === null && r('fly', 99, 30, 10) === null && r('fly', 88, 22, 10) === null);
   check('rules 5: an untracked ball is judged by its type and spray', r('ground', null, null, 18) === 'ground' && r('ground', null, null, 0) === null && r('fly', null, null, 30) === 'air');
   check('rules 5: a routine error still happens, rarely', K.ROUTINE.KEEP.ground > 0 && K.ROUTINE.KEEP.ground < 0.1 && K.ROUTINE.KEEP.air > 0 && K.ROUTINE.KEEP.air < 0.5);
-  check('rules 5: a new outing plays rules 5, a rules 4 one replays as rules 4', G.RULES === G.ROUTINE_RULES && E.createOuting(pack, { seed: 1, model }).rules === 5
+  check('rules 5: a rules 5 outing plays, a rules 4 one replays as rules 4', E.createOuting(pack, { seed: 1, model, rules: G.ROUTINE_RULES }).rules === 5
     && E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 4 }], { model }).rules === 4);
+}
+
+/* rules 6: the runners read the ball (contract.js THE RUNNERS READ THE BALL) */
+{
+  const RN = JSON.parse(readFileSync(new URL('../data/runners.json', import.meta.url), 'utf8'));
+  const rn = { dist: { coef: RN.dist.coef }, edges: RN.edges, ratio: RN.ratio };
+  const c = (ev, la) => K.carryOf(ev, la, RN.dist.coef);
+  check('rules 6: the carry fit reads Statcast distance (100 mph at 28 degrees near 380 ft, a 76 mph popup near 130)',
+    Math.abs(c(100, 28) - 380) < 20 && Math.abs(c(76, 65) - 135) < 25 && c(93, 16) < c(100, 20) && c(null, 20) === null);
+  let bad = 0;
+  for (const [key, bb, ev, la, sp, cl] of RN.check) if (K.runnerClass(key, bb, ev, la, sp, rn) !== cl) bad++;
+  check(`rules 6: runnerClass is runners.py's class on all ${RN.check.length} sampled real balls`, bad === 0);
+  check('rules 6: a runner out is X, else the lead runner\'s bases', K.runnerCategory(4, [[3, -1], [0, -1]]) === 'X' && K.runnerCategory(4, [[3, 4], [0, -1]]) === '1'
+    && K.runnerCategory(4, [[0, -1]]) === '0' && K.runnerCategory(1, [[1, 4], [0, 2]]) === '3' && K.runnerCategory(0, [[0, 1]]) === null);
+  const r = (cl) => RN.ratio[`out_fly|3|0|${cl}`];
+  check('rules 6: on a fly with a runner on third, a shallow one holds him and a deep one scores him (2024)',
+    r('bC') && r('fC') && r('bC')[1] > 1 && r('bC')[2] < 1 && r('fC')[2] >= 1 && r('fC')[1] < 0.2);
+  check('rules 6: the infield liner doubles the runner off more, the deep liner less', RN.ratio['out_line|1|0|aC'][0] > 1 && RN.ratio['out_line|1|0|gC'][0] < 1);
+  check('rules 6: a rules 6 outing plays, a rules 5 one replays as rules 5', E.createOuting(pack, { seed: 1, model, rules: G.RUNNER_RULES }).rules === 6
+    && E.replay(pack, 1, [{ type: model.types[0], cell: 12, r: 5 }], { model }).rules === 5);
+}
+
+/* rules 7: the running game (contract.js THE RUNNING GAME) on a real pack */
+{
+  const MT = require('../meter.js');
+  const real = JSON.parse(readFileSync(new URL('../data/packs/std-2016-ws7-chapman.json', import.meta.url), 'utf8'));
+  const rm = new G.Model(real);
+  check('rules 7: the normal cdf from arithmetic matches the inverse to 1e-4', [-2, -0.5, 0, 0.8, 1.7].every(z => Math.abs(K.normInv(K.normCdf(z)) - z) < 1e-4));
+  check('rules 7: a rules 7 outing plays, a rules 6 one replays as rules 6, with no steal', G.STEAL_RULES === 7 && E.createOuting(real, { seed: 1, model: rm, rules: 7 }).rules === 7 && !!E.createOuting(real, { seed: 1, model: rm, rules: 7 }).run
+    && E.replay(real, 1, [{ type: rm.types[0], cell: 12, r: 6 }], { model: rm }).run === null);
+  const o0 = E.createOuting(real, { seed: 3, model: rm });
+  check('rules 7: the spot starts with its real runner on first (Jose Ramirez, 2016 WS 7)', o0.run.on[1] === '608070' && o0.st.bases === 1);
+  check('rules 7: no pickoff before the first pitch', !E.pickoffLive(o0));
+  check('rules 7: a pickoff never raises the steal attempt (the data\'s 1.8x after a throw is the pitcher reading the runner, not caused by the throw)',
+    Object.keys(real.steal.attMult).every(k => !k.startsWith('po|')) && Object.entries(real.steal.sucZ).filter(([k]) => k.startsWith('po|2|1')).every(([, z]) => z <= 0));
+  let bad = '';
+  try { E.throwPitch(E.createOuting(real, { seed: 3, model: rm }), { type: rm.types[0], cell: 12, q: 0.5, e: 1, ss: 1 }); bad = 'max power on a quick delivery was taken'; } catch (e) { /* refused */ }
+  try { E.throwPitch(E.createOuting(real, { seed: 3, model: rm, rules: 6 }), { type: rm.types[0], cell: 12, ss: 1 }); bad = 'a quick delivery under rules 6 was taken'; } catch (e) { /* refused */ }
+  check('rules 7: a quick delivery has no max power, and is a rules 7 call', bad === '' && MT.QUICK.E_MAX < 1 && MT.windowMs(50, null, true) < MT.windowMs(50, null, false));
+  // the four draws never move: the same calls throw the same pitches with steals on or off
+  const calls = [];
+  for (let i = 0; i < 12; i++) calls.push({ type: rm.types[i % rm.types.length], cell: [6, 12, 18, 2, 22][i % 5], q: 0.5 });
+  const a = E.createOuting(real, { seed: 77, model: rm }), b = E.createOuting(real, { seed: 77, model: rm, rules: 6 });
+  let sameFirst = true;
+  for (const c of calls) {
+    if (a.status !== 'live' || b.status !== 'live') break;
+    const pa = E.throwPitch(a, c).pitchResult, pb = E.throwPitch(b, c).pitchResult;
+    if (pa.actual.x !== pb.actual.x || pa.actual.zn !== pb.actual.zn) sameFirst = false;
+    if (JSON.stringify(a.st) !== JSON.stringify(b.st)) break;   // a steal moved the state: past here the rows can differ
+  }
+  check('rules 7: the steal stream never moves the four draws (same miss as rules 6 until a steal changes the state)', sameFirst);
+  // pickoffs: a third throw that does not get him is a balk
+  let balked = false, ended = 0;
+  for (let sd = 1; sd < 400 && !balked; sd++) {
+    const o = E.createOuting(real, { seed: sd, model: rm });
+    E.throwPitch(o, { type: rm.types[0], cell: 0, q: 0.5 });
+    for (let k = 0; k < 3 && E.pickoffLive(o); k++) {
+      const ev = E.pickoff(o).pickoff;
+      if (ev.balk) { balked = k === 2 && o.st.bases === 2 && o.calls[0].pa === 3; }
+      if (ev.out) { ended++; break; }
+    }
+  }
+  check('rules 7: past two disengagements a failed pickoff is a balk, and the runner moves up', balked);
+  // steals happen, at about the real rate and success
+  let att = 0, safe = 0;
+  for (let sd = 1; sd <= 600; sd++) {
+    const o = E.createOuting(real, { seed: sd, model: rm });
+    while (o.status === 'live') {
+      const pr = E.throwPitch(o, { type: rm.types[sd % rm.types.length], cell: 0, q: 0.5 }).pitchResult;
+      if (pr.steal && (pr.steal.result === 'safe' || pr.steal.result === 'out')) { att++; if (pr.steal.result === 'safe') safe++; if (typeof pr.steal.margin !== 'number') att = -1e9; }
+    }
+  }
+  check(`rules 7: Ramirez runs and is mostly safe, with a margin (${att} attempts, ${safe} safe in 600 outings of chase pitches)`, att > 5 && safe / att > 0.5 && safe / att < 0.98);
+}
+
+/* rules 8: the closer's outing to the end of the game (grade.js THE HALVES, engine.js 11) */
+{
+  const HR = G.KEYS.indexOf('home_run'), SW = G.KEYS.indexOf('swinging_strike');
+  // the scripted pack (a four-seam is a home run, a slider a swinging strike), made two halves: he
+  // comes in for the bottom 8th, his team bats the top 9th (runs R), then the bottom 9th. In the 9th
+  // a defensive substitute bats in the third slot (a new batter, index 9).
+  const twoHalves = (lead, R, outs = 0) => {
+    const pack = synthPack({ walkOffLive: false, lead, outs, override: (library, pitches, pitchFor) => {
+      for (const lib of library) for (const t in lib) {
+        const hr = pitchFor(t, 'home_run') * 3, sw = pitchFor(t, 'swinging_strike') * 3;
+        for (let cell = 0; cell < 25; cell++) {
+          const k = t === 'FF' ? HR : SW, ref = t === 'FF' ? hr : sw;
+          lib[t].p[cell] = [0, 1, 2, 3].map(() => G.KEYS.map((x, i) => (i === k ? 1000 : 0)));
+          lib[t].x[cell] = G.KEYS.map((x, i) => (i === k ? ref : -1));
+        }
+      }
+    } });
+    const sc = pack.scenario;
+    sc.situation.inning = 8;
+    sc.batters.push(Object.assign({}, sc.batters[2], { id: 'synth-sub', name: 'Synth Sub' }));
+    pack.library.push(pack.library[2]);
+    sc.halves = [
+      { inning: 8, half: 'bottom', outs, bases: 0, walkOffLive: false, lineup: [0, 1, 2, 3, 4, 5, 6, 7, 8], real: true },
+      { inning: 9, half: 'bottom', outs: 0, bases: 0, walkOffLive: true, lineup: [0, 1, 9, 3, 4, 5, 6, 7, 8], real: true },
+    ];
+    const pas = [{ batter: { id: 1, name: 'A' }, short: 'K', runs: 0, outs: 1, bases: 0, runners: [null, null, null], hit: false, err: 0 },
+      { batter: { id: 2, name: 'B' }, short: R ? 'HR' : '1B', runs: R ? 1 : 0, outs: 1, bases: R ? 0 : 1, runners: [R ? null : 2, null, null], hit: true, err: 0 },
+      { batter: { id: 3, name: 'C' }, short: '6-3', runs: 0, outs: 2, bases: R ? 0 : 2, runners: [null, R ? null : 2, null], hit: false, err: 0 },
+      { batter: { id: 4, name: 'D' }, short: 'F8', runs: Math.max(0, R - 1), outs: 3, bases: R ? 0 : 2, runners: [null, R ? null : 2, null], hit: false, err: 0 }];
+    sc.between = [{ inning: 9, half: 'top', team: 'Synth', abbr: 'SYN', runs: R, pas }];
+    sc.line = { teams: ['SYN', 'OPP'], innings: [[1, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [lead - 1 + 3, 3 - 0]].map((x, i) => (i < 7 ? [i === 0 ? 3 + lead : 0, i === 0 ? 3 : 0] : [0, 0])), H: [5, 4], E: [0, 0] };
+    return pack;
+  };
+  const HOMER = { type: 'FF', cell: 12 }, STRIKE = { type: 'SL', cell: 12 };
+  const strikes = n => Array.from({ length: n }, () => STRIKE);
+  const run = (pack, calls, rules) => {
+    const o = E.createOuting(pack, { seed: 1, rules });
+    for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
+    return o;
+  };
+
+  const p0 = twoHalves(1, 0), m0 = new G.Model(p0);
+  check('rules 8: a pack with two halves is two halves, the margins to the lead plus his team\'s runs', m0.H === 2 && m0.M === 1 && new G.Model(twoHalves(1, 2)).M === 3);
+  const t3 = m0.transitions({ h: 0, bi: 4, b: 0, s: 2, outs: 2, bases: 0, margin: 1 }, 'strike')[0][1];
+  check('rules 8: three outs in the 8th go on to the 9th: 0-0, no outs, nobody on, the next batter, the margin plus his runs',
+    !t3.end && t3.half && t3.st.h === 1 && t3.st.bi === 5 && t3.st.outs === 0 && t3.st.bases === 0 && t3.st.b === 0 && t3.st.margin === 1, JSON.stringify(t3));
+  check('rules 8: in the 9th the third slot is the substitute', m0.who({ h: 1, bi: 2 }) === 9 && m0.who({ h: 0, bi: 2 }) === 2);
+  const one = synthPack({ walkOffLive: true, lead: 1 }), m1 = new G.Model(one);
+  const two = synthPack({ walkOffLive: false, lead: 1 });
+  two.scenario.halves = [{ inning: 8, half: 'bottom', outs: 0, bases: 0, walkOffLive: false, lineup: [0, 1, 2, 3, 4, 5, 6, 7, 8] },
+    { inning: 9, half: 'bottom', outs: 0, bases: 0, walkOffLive: true, lineup: [0, 1, 2, 3, 4, 5, 6, 7, 8] }];
+  two.scenario.between = [{ inning: 9, half: 'top', runs: 0, pas: [] }];
+  const m2 = new G.Model(two), v2 = m2.solve(m2.startState()).hold, v1 = m1.solve(m1.startState()).hold;
+  check('rules 8: holding the 8th and the 9th is worth less than holding one inning', v2 < v1 - 0.05, `${v2} vs ${v1}`);
+  // the goal: a tie in the 8th is worth 0 for the lead when his team scores no more, and more than 0 when it does
+  const pR = twoHalves(1, 1), mR = new G.Model(pR);
+  const tieFrom = (m) => m.after({ h: 0, bi: 0, b: 0, s: 0, outs: 0, bases: 1, margin: 1 }, { st: { h: 0, bi: 1, b: 0, s: 0, outs: 0, bases: 0, margin: 0 }, runs: 1 });
+  check('rules 8: a tie in the 8th is a blown lead (0) with no runs of his to come', tieFrom(m0) === 0);
+  check('rules 8: and worth the chance of a lead again when his team scores in the 9th', tieFrom(mR) > 0.2 && tieFrom(mR) < 1, String(tieFrom(mR)));
+  const tbl = mR.holdTable();
+  check('rules 8: the table runs over both halves, with the other goal where one is asked',
+    tbl.halves === 2 && tbl.h.length === 2 * mR.N * 288 * (mR.M + 1) && !!tbl.alt && tbl.alt.h.filter(x => x != null).length > 0 && !m0.holdTable().alt);
+  pR.hold = tbl;
+  const mT = new G.Model(pR);
+  const probe = [mR.startState(), { h: 1, bi: 3, b: 1, s: 2, outs: 1, bases: 3, margin: 1 }, { h: 0, bi: 2, b: 0, s: 1, outs: 2, bases: 4, margin: 0 }];
+  check('rules 8: the stored table reads back what the solve gave, for each goal', probe.every(st => Math.abs(mT.solve(st).hold - mR.solve(st).hold) < 1e-6
+    && Math.abs(mT.solve(st, 1 - G.goalOf(st)).hold - mR.solve(st, 1 - G.goalOf(st)).hold) < 1e-6));
+
+  // the engine
+  const o = run(p0, strikes(9));
+  const last = o.log[o.log.length - 1];
+  check('rules 8: three outs in the 8th end the half, not the outing', o.status === 'live' && last.halfOver && last.outs === 3);
+  const ho = last.halfOver;
+  check('rules 8: the card: the 8th done, his team\'s real half, the 9th\'s leadoff', ho.done.inning === 8 && ho.between.inning === 9 && ho.between.half === 'top'
+    && ho.between.pas.length === 4 && ho.next.inning === 9 && ho.next.leadoff.index === 3 && ho.next.score.us === 4 && ho.next.score.them === 3, JSON.stringify(ho.next));
+  const st1 = E.publicState(o);
+  check('rules 8: the state is the 9th: no outs, 0-0, the walk-off live, the half done kept', st1.half.index === 1 && st1.half.inning === 9 && st1.half.walkOffLive
+    && st1.outs === 0 && st1.count.b === 0 && st1.halves.length === 1 && st1.batterIndex === 3);
+  check('rules 8: the line score: the 8th on the board, his team\'s 9th, the hits', ho.line.innings[7][1] === 0 && ho.line.innings[8][0] === 0 && ho.line.H[0] === 6);
+  const full = run(p0, strikes(18));
+  check('rules 8: three outs in the 9th with the lead: door shut, 18 pitches', full.status === 'over' && full.outcome === 'door_shut' && full.log.length === 18);
+  check('rules 8: the shut it button only in the last half', !E.publicState(run(p0, strikes(8))).shutItLive && E.publicState(run(p0, strikes(17))).shutItLive);
+  check('rules 8: a go-ahead run in the 8th ends it: door\'s open (the walk-off is the 9th\'s)', run(twoHalves(1, 0, 0), [HOMER, HOMER]).outcome === 'doors_open');
+  check('rules 8: a go-ahead run in the 9th is a walk-off', run(p0, [...strikes(9), HOMER, HOMER]).outcome === 'walk_off');
+  const tie8 = run(p0, [HOMER, ...strikes(9)]);
+  check('rules 8: tied after the 8th, no runs of his: the 9th starts tied and the tie plays on', tie8.status === 'live' && tie8.st.h === 1 && tie8.st.margin === 0
+    && run(p0, [HOMER, ...strikes(18)]).outcome === 'tie_held');
+  const back = run(twoHalves(1, 1), [HOMER, ...strikes(9)]);
+  check('rules 8: tied after the 8th, his team scores in the 9th: he pitches the 9th with the lead', back.st.h === 1 && back.st.margin === 1 && back.score.us === 5
+    && run(twoHalves(1, 1), [HOMER, ...strikes(18)]).outcome === 'door_shut');
+  const rr = E.finishOuting(run(twoHalves(1, 2), [HOMER, ...strikes(18)]));
+  check('rules 8: the runs he allowed are his halves\' (his team\'s runs are not his)', rr.runs === 1 && rr.outcome === 'door_shut');
+  // rules 7 on the same pack: the first half alone
+  const r7 = run(p0, strikes(9), 7);
+  check('rules 8: a rules 7 outing on a pack with halves is the first half alone', r7.status === 'over' && r7.outcome === 'door_shut' && r7.model.H === 1 && !r7.halves.length);
+  // determinism: the same seed and calls give the same outing, card and all
+  const a1 = run(p0, strikes(18)), a2 = run(p0, strikes(18));
+  check('rules 8: deterministic, the half switch included', JSON.stringify(a1.log) === JSON.stringify(a2.log) && JSON.stringify(a1.halves) === JSON.stringify(a2.halves));
+  check('rules 8: a new outing\'s calls carry r 8', a1.calls.every(c => c.r === 8) && G.RULES === 8 && G.FULL_RULES === 8);
+  // the grade of the 9th's first pitch is the 9th's own state
+  // the score (rules 8): a curve with the line's slope at 0, no floor, per out asked; the line before
+  {
+    const L = 50, mk = (rules, H, outs) => ({ rules, grades: [{ lost: L }], outcome: 'door_shut', model: { H }, pack: { scenario: { situation: { outs } } } });
+    check('rules 8: the score is a curve that never reaches 0 (50 points lost: 168 + 300, not 0 + 300)', E.outingScore(mk(8, 1, 0)) === Math.round(700 * Math.exp(-50 / 35)) + 300 && E.outingScore(mk(8, 1, 0)) > 300);
+    check('rules 8: four outs asked score their points at three quarters', E.outingScore(mk(8, 2, 2)) === Math.round(700 * Math.exp(-50 * 0.75 / 35)) + 300);
+    check('rules 8: an outing before rules 8 keeps the line, floor and all', E.outingScore(mk(7, 1, 0)) === 300 && E.outingScore({ grades: [{ lost: 10 }], outcome: 'door_shut' }) === 800);
+    check('rules 8: the slope at 0 is the line\'s (one point lost: 680 either way)', E.outingScore(Object.assign(mk(8, 1, 0), { grades: [{ lost: 1 }] })) === 980 && E.outingScore(Object.assign(mk(7, 1, 0), { grades: [{ lost: 1 }] })) === 980);
+  }
+  check('rules 8: the 9th is graded from its own state (the hold table over both halves)', a1.grades[9].best > 0 && a1.before[9].h === 1 && a1.before[9].outs === 0);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');

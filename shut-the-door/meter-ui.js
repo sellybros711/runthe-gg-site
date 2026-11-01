@@ -1,136 +1,247 @@
-/* Shut The Door: the release meter on the page (the owner, 2026-10-22: "the pitch meter still is the
- * same. It doesn't look updated").
+/* Shut The Door: the release meter on the page, the combo (the owner, 2026-10-26: "Vertical bar for
+ * power, and then the ring around the circle starts to go for accuracy and you have to tap when it is
+ * as close to the circle as you can for the most accuracy").
  *
- * window.STD_METER_UI, after meter.js. meter.js keeps the numbers (the sweep, the mark, the window,
- * q, the word); this file is only how the meter looks and takes the tap. The mechanics are meter
- * pitching's (a broadcast baseball game, a golf swing meter), never their pixel style: the Strike
- * Zone brand, its tokens and its two faces.
+ * window.STD_METER_UI, after meter.js. meter.js keeps every number (the power sweep, the ring's
+ * speed at that power, the bands, q, perfect, the word); this file is only how the meter looks and
+ * takes the tap. The Strike Zone brand, its tokens and its two faces.
  *
- * THE PANEL. After the tap on throw it takes over the pitch buttons and the throw button as one
- * night panel (it is placed over them, so the scene above never moves), big enough to hit without
- * looking. The head says the verb (release, or shut it), the pitch and the spot. No speed: it is
- * revealed after the throw (the owner, 2026-10-23).
+ * THREE PARTS.
+ *   the column  power, a vertical bar beside the zone on the side away from the hitter, off the
+ *               zone, the batter and the plate (it carries data-hud, so the glove keeps off it too).
+ *               It goes once the release is stopped (the power it set stays in the panel).
+ *               A fill runs up through soft, normal and max and back; the tap stops it (e, 0..1).
+ *               Its top is perfect power (meter.js PERFECT_E). Shown only when STD_METER.POWER.
+ *   the ring    the release. It is not there until power is set (the owner's rule). Then it closes
+ *               onto the aim point at the speed power sets (meter.js ringMs(e): max is fastest), past
+ *               it and back, until the tap. The target circle sits on the crosshair with the soft
+ *               band and the bright band around it as rings. q is qOf(ringErrAt(t, e), command, e).
+ *   the panel   over the pitch buttons and the throw button, as before: the verb, the pitch and the
+ *               spot, the two stops as they land, and the big thumb target. A tap anywhere on it (or
+ *               on the column, or on the zone) is the stop; space or enter on a keyboard.
  *
- * TWO BARS, ONE WHEN EFFORT IS NOT A RULE YET.
- *   power     (top) shown only when STD_METER.POWER (= EFFORT) === true. The player's word for the e stop. A fill runs left to right through
- *             three zones, soft, normal and max, and back; the tap stops it. e is where it stopped,
- *             0..1.
- *   accuracy  (bottom) the needle sweeps; the tap stops it. The soft band is a release tighter than
- *             his command, the bright band the best release. With effort, the bright band is
- *             STD_METER.windowOf(e) ([lo, hi], fractions of the bar) and q is qOf(err, command, e).
- *   Without effort the accuracy bar is the whole meter, with today's bands and reward unchanged
- *   (bandsFor(command), qOf(err, command)). Nothing inert is shown.
+ * THE ZONE IS A STOP TOO (the owner, 2026-10-30). While the meter runs, a tap or a click on the aim
+ * layer (opts.zone) stops it exactly as a tap on the panel does: power, then the release, read at
+ * the tap's own timestamp, through the same stop(). It replaces the rule of 2026-10-22 that a tap on
+ * the zone re-aimed and cancelled the meter. The listener takes the press in the capture phase and
+ * stops it there, so the aim (aim.js) never sees it: no drag, no new cell, no re-aim. A tap inside
+ * the guard or between the two stops is swallowed the same way. Nothing about the timing, the
+ * windows, q or e changes: only where the tap may land. To aim again mid meter there is RE-AIM on
+ * the panel (and Escape on a keyboard): it cancels the meter, as the old zone tap did, and the next
+ * tap on the zone aims.
  *
- * THE STOP. The needle (or the fill) locks where it was stopped: a short flash, a ring that opens
- * from the lock, the bar's value held. The word after the release is meter.js wordOf, execution
- * only, never a grade, stamped in the head in place of the call. No popup: it sits in the panel,
- * which goes away when the pitch is over.
+ * SMOOTH (the owner, 2026-10-26: "the meter is laggy"). Frames write transforms only: the column's
+ * fill slides in a clip, its needle is a rail slid by translate3d, the ring is one element scaled
+ * down from its widest (so it stays crisp). Where each one is comes from the clock (the stage's
+ * elapsed ms through meter.js), never a frame count, and a stop reads the tap's own timestamp, so a
+ * dropped frame never moves e or q. The mound holds still meanwhile (stage.js hush, from ui.js).
+ *
+ * PERFECT AND PERFECT (the owner, 2026-10-26: "something that's a little more baseball themed"),
+ * execution only, never the grade, under a second and never over the pitch. Both stops perfect
+ * (meter.js perfectOf): the red stitches of a baseball light up round the aim point and spin a
+ * quarter turn as they open and fade, with a sharp double buzz like a mitt's pop; in flight the ball
+ * leaves a slight gold sparkle (3d/pitch.js buildSparkle, from the same perfectOf on the call). One
+ * perfect: the stitches flash smaller, still, with a short buzz. Reduced motion: the stitches only
+ * fade in and out, nothing moves. The ring fades a beat after the stop, so the pitch is seen.
+ *
+ * THE CUE (the owner, 2026-10-30: "It needs to be clear you must tap the bottom bar to time your
+ * pitches"; later that day: the zone counts too, "players must know"). The panel says so itself, on
+ * the panel, while it waits for a tap: "tap to set power" with "here or on the zone" under it, then
+ * "tap to release" with "here or on the zone · ring on the circle". A dot with a signal ring breathes beside it so the panel reads as live; on a mouse and
+ * keyboard "or press space" follows it, with a key cap. It never opens anything: it is the panel's own words,
+ * and it goes the moment the tap lands (the one quiet word takes its place, as before). Once a
+ * player has finished QUIET_AFTER releases (a count in localStorage, TAPS_KEY) the panel is the
+ * quiet one again: the verb and the call on top, and "tap" in the lit step. No storage, the cue
+ * stays. The key moved to std_meter_taps_v2 when the zone became a stop, so a player who had
+ * already stepped down to the quiet panel reads the new cue for QUIET_AFTER more releases.
  *
  * create(el) -> { el, run(opts), cancel(), hide(), running(), stage() }
- *   run({ command, pitch, verb, label, practice, repeat, onSnap, onStage }) resolves
- *   { q, err, word, e } on the last stop (e only with effort), or null when cancelled.
+ *   run({ command, verb, label, practice, repeat, place, zone, quick, onSnap, onStage, onPerfect }) resolves
+ *   { q, err, word, e, perfect } on the release (e only with power), or null when cancelled.
+ *   place: { aim: the aim layer's box, x, y: the crosshair's centre, side: 'left' or 'right' (the
+ *   column's side, away from the hitter) }, all in viewport px. zone: the aim layer's element, whose
+ *   taps are stops while the meter runs.
  */
 (function () {
 'use strict';
 var C = window.STD_CONTRACT, MT = window.STD_METER;
 if (!MT) return;
 
-var LOCK_MS = 260;          // the pause between the effort stop and the accuracy needle, so the lock is seen
+var LOCK_MS = 260;          // the pause between the power stop and the ring, so the lock is seen
 var GUARD_MS = 120;         // a tap this soon after a stage starts is the tap that started it, or a bounce
+var FADE_MS = 380;          // the ring holds this long after the release, then fades off the pitch
+var COL_W = 40, GAP = 12, EDGE = 16;
+var RT = 24;                // the target circle's radius, round the crosshair
+var QUIET_AFTER = 10;       // releases finished before the cue steps down to a quiet "tap"
+var TAPS_KEY = 'std_meter_taps_v2';
+var CUE = { effort: ['tap to set power', 'here or on the zone'], acc: ['tap to release', 'here or on the zone \u00b7 ring on the circle'] };
+
+function tapsUsed() { try { return Math.max(0, parseInt(localStorage.getItem(TAPS_KEY), 10) || 0); } catch (e) { return 0; } }
+function countTap() { try { localStorage.setItem(TAPS_KEY, String(Math.min(999, tapsUsed() + 1))); } catch (e) {} }
 
 function effortOn() { return MT.EFFORT === true; }
-function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function pct(x) { return (Math.max(0, Math.min(1, x)) * 100).toFixed(2) + '%'; }
-
-/* effort at t ms: meter.js's own sweep when it has one, else back and forth over EFFORT_SWEEP_MS */
-function effortAt(t) {
-  if (typeof MT.effortAt === 'function') return MT.effortAt(t);
-  var ph = (t / (MT.EFFORT_SWEEP_MS || 900)) % 2, e = ph < 1 ? ph : 2 - ph;
-  return C.effortE ? C.effortE(e) : Math.round(e * 100) / 100;
+function reduced() { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
+function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+function zoneOf(e) { return e >= MT.PERFECT_E ? 'perfect' : e < 1 / 3 ? 'soft' : e < 2 / 3 ? 'normal' : 'max'; }
+function pct(x) { return (Math.max(0, Math.min(1, x)) * 100).toFixed(3) + '%'; }
+function ty(x, f) { x.style.transform = 'translate3d(0,' + (f * 100).toFixed(3) + '%,0)'; }
+function anim(x, kf, ms) { if (reduced() || !x.animate) return; try { x.animate(kf, { duration: ms, easing: 'cubic-bezier(.2,.8,.3,1)' }); } catch (e) {} }
+/* a baseball's two seams round the target, each with its red stitches (a V every few px along it) */
+function seams() {
+  var S = RT + 14, out = '';
+  function cub(p, t) { var u = 1 - t; return [u * u * u * p[0] + 3 * u * u * t * p[2] + 3 * u * t * t * p[4] + t * t * t * p[6], u * u * u * p[1] + 3 * u * u * t * p[3] + 3 * u * t * t * p[5] + t * t * t * p[7]]; }
+  [-1, 1].forEach(function (sd) {
+    var p = [sd * S * 0.62, -S * 0.78, sd * S * 0.18, -S * 0.3, sd * S * 0.18, S * 0.3, sd * S * 0.62, S * 0.78];
+    out += '<path class="rm-seam" d="M' + p[0] + ' ' + p[1] + 'C' + p.slice(2).join(' ') + '"/>';
+    for (var k = 1; k < 10; k++) {
+      var a = cub(p, k / 10), b = cub(p, k / 10 + 0.01), dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l * 4.5, ny = dx / l * 4.5, tx = dx / l * 2.2, ty0 = dy / l * 2.2;
+      out += '<path class="rm-stitch" d="M' + (a[0] + nx - tx).toFixed(1) + ' ' + (a[1] + ny - ty0).toFixed(1) + 'L' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + 'L' + (a[0] - nx - tx).toFixed(1) + ' ' + (a[1] - ny - ty0).toFixed(1) + '"/>';
+    }
+  });
+  return '<svg class="rm-seams" viewBox="' + (-S - 8) + ' ' + (-S - 8) + ' ' + (2 * S + 16) + ' ' + (2 * S + 16) + '" aria-hidden="true">' +
+    '<circle class="rm-hide" cx="0" cy="0" r="' + S + '"/>' + out + '</svg>';
 }
-/* the two bands on the bar, [lo, hi] as fractions: the soft one from bandsFor, the bright one from
-   windowOf(e) when effort is a rule (and gives a sane band), else bandsFor too */
-function bandsOf(command, e) {
-  var b = e == null ? MT.bandsFor(command) : MT.bandsFor(command, e);
-  var good = [MT.MARK - b.good, MT.MARK + b.good], best = [MT.MARK - b.best, MT.MARK + b.best];
-  if (e != null && typeof MT.windowOf === 'function') {
-    var w = MT.windowOf(e, command);
-    if (w && w.length === 2 && w[0] >= 0 && w[1] <= 1 && w[0] < w[1]) best = [w[0], w[1]];
-  }
-  return { good: good, best: best };
-}
-function zoneOf(e) { return e < 1 / 3 ? 'soft' : e < 2 / 3 ? 'normal' : 'max'; }
 
 function create(el) {
   el.classList.add('relm');
   el.setAttribute('role', 'button');
   el.setAttribute('tabindex', '-1');
   el.innerHTML =
+    '<div class="rm-cue" aria-hidden="true"><i class="rm-tap"></i><span class="rm-cue-t"><b></b><span class="rm-sub"><small></small><span class="rm-key">or press <kbd>space</kbd></span></span></span></div>' +
     '<div class="rm-head"><b class="rm-verb"></b><span class="rm-call"></span><span class="rm-word" aria-live="polite"></span></div>' +
-    '<div class="rm-row rm-eff">' +
-      '<span class="rm-lbl">power</span>' +
-      '<div class="rm-track rm-etrack"><i class="rm-efill"></i>' +
-        '<span class="rm-zones"><b data-z="soft">soft</b><b data-z="normal">normal</b><b data-z="max">max</b></span>' +
-        '<i class="rm-eneedle"></i><i class="rm-lock"></i></div>' +
-    '</div>' +
-    '<div class="rm-row rm-acc">' +
-      '<span class="rm-lbl">accuracy</span>' +
-      '<div class="rm-track rm-atrack"><i class="rm-good"></i><i class="rm-best"></i><i class="rm-mark"></i>' +
-        '<i class="rm-needle"></i><i class="rm-lock"></i></div>' +
-    '</div>';
-  var q = function (s) { return el.querySelector(s); };
-  var verb = q('.rm-verb'), call = q('.rm-call');
-  var effRow = q('.rm-eff'), efill = q('.rm-efill'), eneedle = q('.rm-eneedle'), elock = q('.rm-eff .rm-lock');
-  var needle = q('.rm-needle'), good = q('.rm-good'), best = q('.rm-best'), mark = q('.rm-mark'), alock = q('.rm-acc .rm-lock'), word = q('.rm-word');
-  var live = null;
+    '<div class="rm-steps"><div class="rm-step rm-s-pow"><b>power</b><span></span></div><div class="rm-step rm-s-rel"><b>release</b><span></span></div></div>' +
+    '<button class="rm-back" type="button" aria-label="Re-aim. Stops the meter."><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M7.5 2.5 4 6l3.5 3.5"/></svg>re-aim</button>';
+  var q = function (s, root) { return (root || el).querySelector(s); };
+  var cueB = q('.rm-cue-t b'), cueS = q('.rm-cue-t small');
+  var verb = q('.rm-verb'), call = q('.rm-call'), word = q('.rm-word');
+  var sPow = q('.rm-s-pow'), sRel = q('.rm-s-rel'), vPow = q('.rm-s-pow span'), vRel = q('.rm-s-rel span');
+  var host = (el.closest && el.closest('.screen')) || document.body;
+  /* RE-AIM: the one way back to the zone mid meter. Its press never reaches the panel's stop */
+  var back = q('.rm-back');
+  back.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  back.addEventListener('click', function (e) { e.stopPropagation(); cancel(); });
+
+  var col = document.createElement('div');
+  col.className = 'rm-col';
+  col.setAttribute('data-hud', '');
+  col.hidden = true;
+  col.innerHTML = '<i class="rm-cclip"><i class="rm-cfill"><i class="rm-cgrad"></i></i></i><span class="rm-czones"><i></i><i></i><i></i></span>' +
+    '<i class="rm-ccap"></i><i class="rm-ctop"></i><i class="rm-cneedle"></i><i class="rm-lock"></i><span class="rm-clbl">power</span>';
+  host.appendChild(col);
+  var ccap = q('.rm-ccap', col), cfill = q('.rm-cfill', col), cgrad = q('.rm-cgrad', col), cneedle = q('.rm-cneedle', col), clock = q('.rm-lock', col), ctop = q('.rm-ctop', col);
+
+  var ring = document.createElement('div');
+  ring.className = 'rm-ring';
+  ring.hidden = true;
+  ring.innerHTML = '<svg class="rm-rsvg" aria-hidden="true"></svg><i class="rm-rmove"></i>' + seams();
+  host.appendChild(ring);
+  var rsvg = q('.rm-rsvg', ring), rmove = q('.rm-rmove', ring), seam = q('.rm-seams', ring);
+
+  var live = null, geo = { R0: 150, K: 180 }, fadeT = 0;
 
   function setStage(s) {
     el.dataset.stage = s;
-    el.setAttribute('aria-label', s === 'effort' ? 'Power. Tap to set it.' : 'Release. Tap when the needle is in the bright band.');
+    el.setAttribute('aria-label', s === 'effort' ? 'Power. Tap to set it.' : 'Release. Tap when the ring hits the circle.');
+    sPow.classList.toggle('on', s === 'effort'); sRel.classList.toggle('on', s === 'acc');
+    /* the cue says the tap on the panel for this stop; the quiet panel says "tap" in the lit step */
+    var c = CUE[s] || CUE.acc;
+    cueB.textContent = c[0]; cueS.textContent = c[1];
+    if (!el.classList.contains('cue')) {
+      if (s === 'effort') vPow.textContent = 'tap';
+      else { vRel.textContent = 'tap'; if (vPow.textContent === 'tap') vPow.textContent = '-'; }
+    }
     if (live && live.opts.onStage) live.opts.onStage(s);
   }
-  function placeBands(e) {
-    var b = bandsOf(live.opts.command, e);
-    good.style.left = pct(b.good[0]); good.style.width = pct(b.good[1] - b.good[0]);
-    best.style.left = pct(b.best[0]); best.style.width = pct(b.best[1] - b.best[0]);
-    mark.style.left = pct(MT.MARK);
-  }
+  /* the ring's radius at pos (0..1 of its travel): R0 at the start, the target at the mark, a straight map */
+  function rad(pos) { return Math.max(0, RT + (MT.MARK - pos) * geo.K); }
+  function placeRing(pos) { rmove.style.transform = 'scale(' + (Math.max(0.001, rad(pos) / geo.R0)).toFixed(4) + ')'; }
   function placeEffort(e) {
-    efill.style.width = pct(e);
-    eneedle.style.left = pct(e);
-    el.dataset.zone = zoneOf(e);
+    ty(cfill, 1 - e); ty(cgrad, e - 1); ty(cneedle, -e);
+    var z = zoneOf(e);
+    if (col.dataset.zone !== z) col.dataset.zone = z;
   }
-  function placeNeedle(pos) { needle.style.left = pct(pos); }
-  function lockAt(lockEl, pos) {
-    lockEl.style.left = pct(pos);
-    lockEl.classList.remove('go'); void lockEl.offsetWidth; lockEl.classList.add('go');
+  /* where the column and the ring go: beside the aim layer on the side away from the hitter, kept
+     on screen; the ring centred on the crosshair, as wide as the screen allows */
+  function layout(place) {
+    var W = window.innerWidth || 390, Hs = window.innerHeight || 844;
+    var a = place && place.aim, x = place && place.x, y = place && place.y;
+    if (!a) a = { left: W / 2 - 80, right: W / 2 + 80, top: Hs * 0.4, bottom: Hs * 0.4 + 200, width: 160, height: 200 };
+    if (x == null) { x = (a.left + a.right) / 2; y = (a.top + a.bottom) / 2; }
+    /* beside the strike zone itself (the aim layer's middle 3x3; its shadow cells are already aimed) */
+    var z = (place && place.zone) || a;
+    var h = Math.max(150, Math.min(240, a.height));
+    /* on the away side, closing the gap down to 4 px before it would ever go to the hitter's side */
+    function fit(r) {
+      var l = r ? z.right + GAP : z.left - GAP - COL_W;
+      l = Math.max(EDGE, Math.min(W - EDGE - COL_W, l));
+      var ok = r ? l >= z.right + 4 : l + COL_W <= z.left - 4;
+      return ok ? l : null;
+    }
+    var right = place && place.side === 'right';
+    var left = fit(right);
+    if (left == null) left = fit(!right);
+    if (left == null) left = right ? W - EDGE - COL_W : EDGE;
+    col.style.left = left + 'px'; col.style.top = (a.top + (a.height - h) / 2) + 'px'; col.style.height = h + 'px';
+    geo.R0 = Math.max(110, Math.min(170, Math.min(W, Hs) * 0.4));
+    geo.K = (geo.R0 - RT) / MT.MARK;
+    ring.style.left = x + 'px'; ring.style.top = y + 'px';
+    rmove.style.width = rmove.style.height = (2 * geo.R0) + 'px';
+    rmove.style.margin = (-geo.R0) + 'px 0 0 ' + (-geo.R0) + 'px';
+  }
+  /* the target circle and the two bands round it, drawn once a pitch (they do not move) */
+  function drawBands(e) {
+    var b = MT.ringBands(live.opts.command, e, live.quick), R = geo.R0, out = '';
+    function annulus(cls, half) {
+      var r0 = rad(MT.MARK + half), r1 = rad(MT.MARK - half);
+      return '<circle class="' + cls + '" cx="0" cy="0" r="' + ((r0 + r1) / 2).toFixed(2) + '" stroke-width="' + Math.max(1.5, r1 - r0).toFixed(2) + '"/>';
+    }
+    out += annulus('rm-rgood', b.good) + annulus('rm-rbest', b.best) + '<circle class="rm-rtarget" cx="0" cy="0" r="' + RT + '"/>';
+    rsvg.setAttribute('viewBox', (-R) + ' ' + (-R) + ' ' + (2 * R) + ' ' + (2 * R));
+    rsvg.style.width = rsvg.style.height = (2 * R) + 'px';
+    rsvg.style.margin = (-R) + 'px 0 0 ' + (-R) + 'px';
+    rsvg.innerHTML = out;
   }
   function tick(now) {
     if (!live || live.done) return;
     var t = Math.max(0, now - live.t0);
-    if (live.stage === 'effort') placeEffort(effortAt(t));
-    else if (live.stage === 'acc') placeNeedle(MT.needleAt(t).pos);
+    if (live.stage === 'effort') placeEffort(MT.powerAt(t, live.quick));
+    else if (live.stage === 'acc') placeRing(MT.ringAt(t, live.e, live.quick).pos);
     live.raf = requestAnimationFrame(tick);
   }
   function startAcc() {
     if (!live) return;
     live.stage = 'acc';
+    drawBands(live.e);
+    placeRing(0);
+    ring.hidden = false;
+    ring.classList.remove('is-out', 'is-best', 'is-perfect');
     live.t0 = performance.now();
-    placeBands(live.e);
-    placeNeedle(0);
     setStage('acc');
+  }
+  function burst(x, big) {
+    x.classList.remove('go'); x.classList.toggle('big', !!big);
+    if (reduced() || !x.animate) return;
+    x.animate(big ? [{ opacity: 1, transform: 'scale(.35)' }, { opacity: .9, offset: .35 }, { opacity: 0, transform: 'scale(2.6)' }]
+      : [{ opacity: 1, transform: 'scale(.5)' }, { opacity: 0, transform: 'scale(1.5)' }], { duration: big ? 620 : 420, easing: 'cubic-bezier(.15,.85,.3,1)' });
   }
   function stop(ts) {
     if (!live || live.done) return;
     var t = (ts || performance.now()) - live.t0;
     if (t < GUARD_MS) return;
     if (live.stage === 'effort') {
-      var e = effortAt(t);
+      var e = MT.powerAt(t, live.quick);
       live.e = e;
       live.stage = 'lock';
       placeEffort(e);
-      lockAt(elock, e);
-      el.classList.add('is-edone');
+      clock.style.top = pct(1 - e);
+      burst(clock, false);
+      col.classList.add('is-set');
+      vPow.textContent = zoneOf(e);
+      if (e >= MT.PERFECT_E) {
+        col.classList.add('is-perfect'); sPow.classList.add('perfect');
+        anim(ctop, [{ transform: 'scaleY(1)', opacity: 1 }, { transform: 'scaleY(1.6)', opacity: 1, offset: .3 }, { transform: 'scaleY(1)', opacity: 1 }], 360);
+        buzz(18);
+      }
       live.lockT = setTimeout(startAcc, LOCK_MS);
       if (live.opts.onStage) live.opts.onStage('acc');
       return;
@@ -138,27 +249,55 @@ function create(el) {
     if (live.stage !== 'acc') return;
     live.done = true;
     cancelAnimationFrame(live.raf);
-    var n = MT.needleAt(t);
-    placeNeedle(n.pos);
-    lockAt(alock, n.pos);
-    var err = MT.errAt(t);
-    var qq = live.e == null ? MT.qOf(err, live.opts.command) : MT.qOf(err, live.opts.command, live.e);
-    var w = MT.wordOf(qq, err);
+    var n = MT.ringAt(t, live.e, live.quick);
+    placeRing(n.pos);
+    var err = MT.ringErrAt(t, live.e, live.quick);
+    var qq = live.e == null ? MT.qOf(err, live.opts.command, undefined, live.quick) : MT.qOf(err, live.opts.command, live.e, live.quick);
+    var w = MT.wordOf(qq, err), pf = MT.perfectOf(live.e, qq);
     el.classList.add('is-done');
     el.classList.toggle('is-best', qq >= MT.BEST_Q);
     el.classList.toggle('is-good', qq >= MT.GOOD_Q && qq < MT.BEST_Q);
+    ring.classList.toggle('is-best', qq >= MT.BEST_Q);
+    col.hidden = true;                        // power is in the panel now; the pitch gets the field
     var extra = live.opts.practice && C.spreadOf ? ' · miss ' + C.spreadOf(qq, live.opts.repeat).toFixed(2) + 'x' : '';
     word.textContent = w + extra;
+    vRel.textContent = 'q ' + qq.toFixed(2);
+    countTap();
+    if (pf.release) sRel.classList.add('perfect');
     if (qq >= MT.BEST_Q && live.opts.onSnap) live.opts.onSnap(qq);
-    var res = live.resolve, out = { q: qq, err: Math.round(err), word: w };
+    celebrate(pf);
+    /* the ring holds a beat on the stop, then gets off the pitch */
+    clearTimeout(fadeT);
+    fadeT = setTimeout(function () { ring.classList.add('is-out'); }, FADE_MS);
+    var res = live.resolve, out = { q: qq, err: Math.round(err), word: w, perfect: pf };
     if (live.e != null) out.e = live.e;
     detach();
     res(out);
+  }
+  /* the stitches light up: both perfect, they open and spin a quarter turn; one, a small still flash */
+  function celebrate(pf) {
+    var level = pf.both ? 2 : pf.release ? 1 : 0;
+    if (!level) return;
+    if (live.opts.onPerfect) live.opts.onPerfect(level);
+    ring.classList.toggle('is-perfect', level === 2);
+    el.classList.toggle('is-perfect', level === 2);
+    buzz(level === 2 ? [14, 36, 42] : 16);
+    if (!seam.animate) return;
+    var kf = reduced() ? [{ opacity: 0 }, { opacity: 1, offset: .25 }, { opacity: 0 }]
+      : level === 2 ? [{ opacity: 0, transform: 'scale(.7) rotate(0deg)' }, { opacity: 1, transform: 'scale(1) rotate(40deg)', offset: .3 }, { opacity: 0, transform: 'scale(1.55) rotate(95deg)' }]
+        : [{ opacity: 0, transform: 'scale(.85)' }, { opacity: .85, transform: 'scale(.95)', offset: .35 }, { opacity: 0, transform: 'scale(1.05)' }];
+    try { seam.animate(kf, { duration: level === 2 ? 700 : 420, easing: 'cubic-bezier(.2,.8,.3,1)' }); } catch (x) {}
   }
   function onDown(e) {
     e.preventDefault();
     var now = performance.now(), ts = e.timeStamp;
     stop(typeof ts === 'number' && ts > 0 && Math.abs(now - ts) < 500 ? ts : now);
+  }
+  /* a press on the zone: the same stop, and the aim never hears it (capture phase, stopped here) */
+  function onZone(e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.stopPropagation();
+    onDown(e);
   }
   function onKey(e) {
     if (!live || live.done) return;
@@ -168,6 +307,8 @@ function create(el) {
   }
   function detach() {
     el.removeEventListener('pointerdown', onDown);
+    col.removeEventListener('pointerdown', onDown);
+    if (live && live.zone) live.zone.removeEventListener('pointerdown', onZone, true);
     document.removeEventListener('keydown', onKey, true);
   }
   function cancel() {
@@ -181,38 +322,50 @@ function create(el) {
     res(null);
   }
   function hide() {
-    el.hidden = true;
-    el.classList.remove('is-done', 'is-best', 'is-good', 'is-edone');
-    el.querySelectorAll('.rm-lock').forEach(function (x) { x.classList.remove('go'); });
-    word.textContent = '';
+    el.hidden = true; col.hidden = true; ring.hidden = true;
+    clearTimeout(fadeT);
+    el.classList.remove('is-done', 'is-best', 'is-good', 'is-perfect');
+    col.classList.remove('is-set', 'is-perfect');
+    ring.classList.remove('is-out', 'is-best', 'is-perfect');
+    sPow.classList.remove('perfect', 'on'); sRel.classList.remove('perfect', 'on');
+    word.textContent = ''; vPow.textContent = ''; vRel.textContent = '';
     live = null;
   }
   function run(opts) {
     if (live) cancel();
+    hide();
+    try { seam.getAnimations().forEach(function (a) { a.cancel(); }); } catch (x) {}
     var eff = effortOn();
     el.classList.toggle('two', eff);
-    effRow.hidden = !eff;
-    el.classList.remove('is-done', 'is-best', 'is-good', 'is-edone');
-    word.textContent = '';
+    el.classList.toggle('cue', tapsUsed() < QUIET_AFTER);
+    sPow.hidden = !eff;
     verb.textContent = opts.verb || 'release';
     call.textContent = opts.label || '';
+    vPow.textContent = eff ? '-' : ''; vRel.textContent = '-';
     el.hidden = false;
-    /* the fill's colours run the whole track, so the zone it reaches has its own colour */
-    if (eff) el.style.setProperty('--tw', Math.max(0, q('.rm-etrack').clientWidth - 6) + 'px');
+    layout(opts.place);
+    /* QUICK DELIVERY (opts.quick, the slide step): meter.js says how high power goes (powerCap, from
+       its QUICK) and the needle turns there (powerAt); the top of the column above it is greyed out
+       and perfect power goes with it. The ring is quicker the same way (ringMs). */
+    var cap = MT.powerCap ? MT.powerCap(!!opts.quick) : 1;
+    ccap.style.height = ((1 - cap) * 100).toFixed(2) + '%';
+    col.classList.toggle('is-capped', cap < 1);
     return new Promise(function (resolve) {
-      live = { t0: performance.now(), opts: opts, resolve: resolve, done: false, raf: 0, e: null, stage: eff ? 'effort' : 'acc' };
-      if (eff) { placeEffort(0); placeBands(MT.EFFORT_MID != null ? MT.EFFORT_MID : 0.5); placeNeedle(0); setStage('effort'); }
-      else { placeBands(null); placeNeedle(0); setStage('acc'); }
+      live = { t0: performance.now(), opts: opts, resolve: resolve, done: false, raf: 0, e: null, quick: !!opts.quick, stage: eff ? 'effort' : 'acc', zone: opts.zone || null };
+      if (eff) { col.hidden = false; placeEffort(0); setStage('effort'); }
+      else startAcc();
       el.addEventListener('pointerdown', onDown);
+      col.addEventListener('pointerdown', onDown);
+      if (live.zone) live.zone.addEventListener('pointerdown', onZone, true);
       document.addEventListener('keydown', onKey, true);
       try { el.focus({ preventScroll: true }); } catch (x) {}
       live.raf = requestAnimationFrame(tick);
     });
   }
-  return { el: el, run: run, cancel: cancel, hide: hide,
+  return { el: el, col: col, ring: ring, run: run, cancel: cancel, hide: hide,
     running: function () { return !!(live && !live.done); },
     stage: function () { return live && !live.done ? (live.stage === 'lock' ? 'acc' : live.stage) : null; } };
 }
 
-window.STD_METER_UI = { create: create, effortOn: effortOn, bandsOf: bandsOf };
+window.STD_METER_UI = { create: create, effortOn: effortOn, QUIET_AFTER: QUIET_AFTER, TAPS_KEY: TAPS_KEY };
 })();

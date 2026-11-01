@@ -347,6 +347,135 @@ pool 77.9 to 78.0, 51 to 51. `BANDS` unchanged; the pool's bands 19.8/26.9/33.6/
 19.9/26.8/33.6/19.6 (band_sweep: 20/27/33/19 both). Packs rebuilt with `pool.js`: `hold`, `seq` and
 `pros` byte-identical, pack v10, `SCHEDULE_V` 10.
 
+## Rules 6: the runners read the ball (2026-10-26)
+
+The owner: "We need to ensure runners are advancing in realistic situations, and tagging up in
+realistic situations." CONTRACT.md 5h. The advancement row is drawn from the table's rows, each
+weighted by how real runners went on a ball of that carry band and side (`pack.runners`, from
+`pipeline/runners.py`: every 2024 ball in play with a runner on, Savant's play text read runner by
+runner). Same draw, same legal rows. A new outing's calls carry `r: 6`; `r: 5` rows replay exactly
+(`fixtures/replays-rules5-pre-runners.json`). `pool.js` copies `data/runners.json` into each pack.
+
+```
+python3 shut-the-door/pipeline/runners.py [--season 2024] [--from DIR]   writes data/runners.json
+```
+
+**Carry** (`contract.js carryOf`): Statcast distance from exit velocity and launch angle, R2 0.94,
+15.6 ft mean error on 65,405 air balls.
+
+**2024 against the engine** (closer pool calls, 1,500 outings a pack, all ten packs; hold / score /
+thrown out, or as labelled):
+
+| play | real 2024 | rules 5 | rules 6 |
+|---|---|---|---|
+| fly out, runner on 3rd, under 2 outs, carry 200-250 ft | 79 / 13 / 7 | 28 / 67 / 5 | 68 / 25 / 7 |
+| the same, 250-280 ft | 38 / 52 / 10 | 22 / 76 / 2 | 31 / 58 / 11 |
+| the same, 300 ft and up | 0 / 99 / 1 | 22 / 76 / 2 | 2 / 97 / 1 |
+| fly out, runner on 2nd tags to 3rd, 300 ft and up | 53 | 34 | 56 |
+| the same, 200-250 ft | 3 | 44 | 2 |
+| line out, runner on 1st doubled off, under 200 ft | 29 | 10 | 20 |
+| the same, 300 ft and up | 2 | 12 | 2 |
+| single, runner on 1st to 3rd, ball to left / right | 10 / 40 | 26 / 27 | 13 / 36 |
+
+The marginals stay real (fly out with a runner on 3rd, all depths: 23 / 73 / 4 real, 17 / 79 / 4
+rules 6). Scoring from 2nd on a single by outs (0-1, 2) and from 1st on a double were already the
+table's real rates and stay so. The closer pool's hold rate moves 0 to 0.9 points; the grade, the
+hold table, `seq` and BANDS are unchanged. The 2011 and 1988 packs move least: their balls carry no
+tracked speed, so most have no class.
+
+**Arm strength** (2024 Savant outfield arm, report only, no fielder is in the pack): on a 240-300 ft
+fly with a runner on 3rd, the strongest third of arms (92 mph) hold him 41% against 19-20% for the
+rest; on a single with a runner on 2nd the arm barely moves the send (70 / 68 / 72 scored).
+
+## Rules 7: the running game (2026-10-26)
+
+The owner: "Runners could also steal ... They may win or lose that moment", then "yes add pickoffs
+and slide step". CONTRACT.md 5i. `pipeline/steals.py` reads every 2022 and 2024 regular season game
+feed from the Stats API, pitch by pitch (a compact line a pitch, `cache/steals-<season>.json.gz`).
+It adds the people's season stats, Savant's sprint speed and pop time, and each spot's real catcher
+and runners, and writes `data/steals.json`. `pool.js` copies a spot's part in as `pack.steal`.
+
+```
+python3 shut-the-door/pipeline/steals.py [--seasons 2022,2024] [--threads 6]
+```
+
+**Real** (the feeds; 2024, then 2022): steal of second 81.7% safe of 3,554 (78.1% of 2,602), third
+86.2% of 530 (81.8% of 351). League 2024: 3,617 SB, 961 CS, 79.0%. Late (8th inning on), a steal of
+second per pitch with one on: down 1 2.53%, down 2 0.81%, down 3 0.25%, tied 3.98% (early 2.39%),
+safe 85-89%. Pickoff, out per throw: first 1.6% of 9,219 throws, second 4.2% of 684, third 9.7% of 93
+(2022: 0.7%, 5.6%, 13.3%). After one throw at him the runner is safe less often (-0.14 z, about 3
+points), after two no less (-0.02). He also goes 1.8 times as often after a throw, measured against
+the same runner. That is the pitcher reading the runner, so the engine does not use it.
+
+**The quick delivery**: a second of pop time is worth 1.95 z of steal success (330 catcher seasons
+2016-2025), so 0.25 s quicker is -0.49 z (79% to about 63% for an average steal). Cross-check: the
+best fifth of 2024 pitchers at holding runners allowed 71.3% (-0.24 z).
+
+**The engine** (closer pool calls, 1,500 outings a pack, all ten packs): 1.0% of pitches with a steal
+on see an attempt, safe 80.5%; with a quick delivery on every pitch, 65.7%. 5.9% of outings have a
+steal, and 74 caught stealings ended an outing. By pack, from 0.24% (Pressly 2022)
+to 2.67% (Diaz 2025). The closer pool's hold rate moves -1.0 to +0.2 points; the grade, the
+hold table and BANDS are unchanged.
+
+## Rules 8: the closer's outing to the end of the game (2026-10-30)
+
+The owner: "I don't want a daily scenario to ever only let a user play one out." CONTRACT.md 5j. A
+spot is the closer's real outing from the spot to the end of the game: every half he pitched, to the
+final out, or to the last out of regulation when extras followed. It asks for at least three outs
+(`test/packs.mjs`). Between two of his halves his team bats its real half, from the play by play.
+
+```
+python3 shut-the-door/pipeline/halves.py <verify id> ...             halves, between, line into the verify file
+python3 shut-the-door/pipeline/build_packs.py <scenario id>          stages the pack with the later halves' batters
+node shut-the-door/pipeline/add_halves.cjs <pack> <staged> <pack>    adds them to the committed pack, nothing else moves
+python3 shut-the-door/pipeline/steals.py --halves <scenario id>      their runners, and each later half's catcher
+node shut-the-door/pool.js <pack> data/closers.json <pack>           the table over every half, both centres, the pool
+node shut-the-door/pipeline/halves_meta.cjs <pack> ...               a one-half pack's format 4 (nothing else moves)
+```
+
+**The record** (`halves.py`, MLB's live feed): his halves are his team's defensive halves from the
+spot, each one he pitched in, through regulation. A later half's lineup is by batting slot from the
+spot's first batter's slot: whoever batted in that slot in that real half, else whoever held it when
+the half began (the feed's substitutions in order). His team's half is every plate appearance with
+the feed's event and description, the scorer's short form (from the event, the batted ball's
+trajectory and the fielders the feed credits), runs, outs, the runners after it, hits and errors.
+The plays' runs must equal the line score's for the half, and the hits and errors counted over the
+whole game must equal the feed's totals, or H and E are null.
+
+**The model** (`grade.js THE HALVES`): a state carries its half; three outs before the last half go
+to the next half's first state with his team's real runs on the margin. The value is the goal's
+chance at the outing's end, so a state is solved for a goal (`solve(st, g)`), and a state below the
+goal is 0 only when his team's runs to come cannot lift it. The table covers every half
+(`hold.halves`) and the other goal where one is asked (`hold.alt`, only when his team scored
+between). The first half is the one-half model exactly: a rules 7 outing plays there
+(`Model.singleModel`, its table solved on load, a few seconds; `pack.seq.L` as before). Rules 8
+reads `pack.seq.full`, the pool's sequencing over whole outings: hitters who have seen him for two
+innings are more familiar, and the adjustment is centred on what real closers face then.
+
+**Four spots have more than one half**: Chapman 2016 (four outs), Papelbon 2007 (five, the Red Sox's
+top 9th from Retrosheet), Price 2008 (four) and Rivera 2009 (six). The other twenty-six keep one half,
+pack format 4 with their table byte for byte. `halves.py` reads a proxy spot from Retrosheet's event
+file: the event code is the scorer's own, and there is no description (des null).
+
+**Chapman 2016 (today's daily when it shipped).** In with two out and a man on in the bottom of the
+8th, 6-3. Rules 7 asked one out; rules 8 asks four: the 8th, the Cubs' real top of the 9th (Ross
+walked, Heyward forced Coghlan 4-6 and stole second, Báez struck out on a foul bunt as Heyward took
+third on Gomes's throwing error, Fowler 6-3: no runs), then the bottom of the 9th, Michael Martinez
+in Crisp's slot and Miguel Montero catching. Real: 35 pitches, 3 runs, held the tie.
+
+| Chapman 2016 | rules 7 | rules 8 |
+|---|---|---|
+| start hold% (best play) | 99.77 | 99.17 |
+| pool door shut / held tie / door's open / walk-off | 1964 / 27 / 9 / 0 | 1831 / 87 / 5 / 77 |
+| pool pitches an outing | 6.0 | 23.4 |
+| pool calls green / yellow / orange / red | 25 / 30 / 28 / 16% | 22 / 27 / 33 / 18% |
+| pool score median, share at 300 or less (the line) | 993, 1.3% | 916, 12.1% |
+| pack | 0.75 MB | 0.97 MB |
+
+The best-call outing is all green and the median pool outing lands at the 50th (`test/packs.mjs`).
+**The score floor.** Under the line `700 - 20 x points lost`, 12% of the pool's two-half outings scored
+only their result bonus. Rules 8 scores on a curve instead (The outing score, below).
+
 ## Release and spin, for the picture (2026-10-24)
 
 `pipeline/tracking.py arsenal` reads each scenario pitcher's own pitches from the Savant search his
@@ -442,8 +571,34 @@ pitcher's miss per axis): Statcast does not record the catcher's target, so it i
 ## The outing score and percentile
 
 ```
-score = max(0, 700 - 20 * total pts lost) + {door_shut: 300, tie_held: 200, doors_open: 100, walk_off: 0}
+rules 8:  score = round(700 * exp(-total pts lost * 3 / outs asked / 35)) + {door_shut: 300, tie_held: 200, doors_open: 100, walk_off: 0}
+before:   score = max(0, 700 - 20 * total pts lost) + the same
 ```
+
+Rules 8's curve (2026-10-30, the lead on #830). The line reached 0 at 35 points lost, and in hard
+spots a quarter of the pool sat there on one score, so the percentile could not tell them apart.
+The curve has the line's slope at 0 (35 is 700 / 20: one point lost is 680 either way), never
+reaches 0, and counts points per out asked (`3 x halves - outs at the start`), so a four out spot
+is scored per out like a three out one. An outing played before rules 8 keeps the line, exactly.
+The pools of all ten packs were replayed for it (nothing else in them moved):
+
+| pack | at the floor, before | after | 10th outing's percentile, before | after |
+|---|---|---|---|---|
+| Eckersley 1988 | 29% | 0% | 10 | 10 |
+| Rivera 2001 | 42% | 0% | 6 | 10 |
+| Feliz 2011 | 23% | 0% | 10 | 10 |
+| Chapman 2016 | 11% | 0% | 9 | 10 |
+| Hader 2019 | 17% | 0% | 8 | 10 |
+| Pressly 2022 | 9% | 0% | 8 | 10 |
+| Buehler 2024 | 28% | 0% | 10 | 10 |
+| Diaz 2025 | 26% | 0% | 13 | 10 |
+| Scott 2025 | 32% | 0% | 10 | 10 |
+| Yamamoto 2025 | 31% | 0% | 10 | 10 |
+
+Options measured on Chapman's two halves and Diaz's one (share of the pool on one score): the line
+11% and 26%; the line per out asked 8% and 26%; the line per half 14% and 26%; the curve 2% (the
+perfect outings at the top) and 0%. Only the curve reaches the one-half spots, where the floor was
+already worst. The grade, the bands and `band_sweep` do not read the score, so they are unchanged.
 
 The result's part is 100 points a rank (`contract.js OUTCOME_RANK`). A held tie is a blown save, a
 full step under a door shut, and the game goes on level, a full step over door's open. After a tie
@@ -505,11 +660,81 @@ that type, hand and velocity band (2021-2025); the similar tier is matched on se
 
 ## Adding a scenario
 
-1. Add it to `pipeline/candidates.json` and run `verify_scenarios.py`; read `data/verify/<id>.json`.
-2. Add it to `scenarios/scenarios.json` with its title and arsenal source (`regular`,
-   `postseason`, or `proxy` with the source).
-3. `build_packs.py <id>`, `pool.js`, `build_schedule.mjs`, then `node test/packs.mjs`. Report its
-   band spread before it goes in the rotation.
+1. Add it to `pipeline/candidates.json` and run `verify_scenarios.py <id>`; read `data/verify/<id>.json`.
+   A verify file from before 2026-10-20 was judged under the old end rules: run it again.
+2. Add it to the end of `scenarios/scenarios.json` (never in the middle: the rotation is by day number,
+   so a pack added at the end moves no day already served) with its title and arsenal (`regular`,
+   `postseason` for a starter, or `proxy` with the source).
+3. The steps, as run for the twenty of 2026-10-30 (the library 2008-2025 rebuilt in a session, the
+   SQLite file in `/dev/shm` through `STD_LIBRARY`):
+
+```
+python3 build_packs.py <ids>                                  staged in cache/stage
+node ../pool.js cache/stage/<id>.json ../data/closers.json ../data/packs/<id>.json --runs 2000 --pros cache/pros.json
+python3 steals.py --spots-only                                the new spots' people, catcher and runners
+python3 effort.py arsenal <ids> && python3 effort.py packs <ids>
+python3 tracking.py arsenal <ids> && python3 tracking.py packs <ids>
+node ../pool.js ../data/packs/<id>.json ../data/closers.json ../data/packs/<id>.json --runs 2000 --pros cache/pros.json
+node build_schedule.mjs                                       then SCHEDULE_V in api.js, and check-cachebust --update
+python3 check_pros.py && node ../test/packs.mjs && node band_sweep.mjs --relative
+```
+
+`cache/advance.json` can be seeded from any committed pack (`pack.advance`, the same table in every pack,
+third outs applied). `pros.py` over 2015-2025 rebuilds `cache/pros.json`. Rebuilt on 2026-10-30, one
+committed pack (Scott 2025) came out of `pool.js` with its hold table, pool and `seq` byte for byte the
+same, and four more pro examples (Savant's 2025 data has grown since); the committed packs were left
+as they are.
+
+**A cell with no real pitch.** Every outcome a pack can draw is a real pitch of that type. When no
+key in a cell keeps one in the batter's, the similar batters' or the window's league pool (a pitcher
+far from the league's speed in a thin season: Hoffman's 74 mph changeup in 2009-2011), `build_packs.py`
+takes that cell again with the league pool widened to every season in the library (the same type,
+pitcher hand and batter side, within 3 mph of his speed). The pack counts them in `build.wideCells`:
+Hoffman 2010 4, Uehara 2013 3, Davis 2015 2, of 2,500 to 3,000 type-cells each. A pack that built before
+never reaches it, so none moved. Familia 2015 (36 such cells, his splitter) was left out for Jansen.
+
+**Release and spin the picture cannot draw** (`tracking.py`). A PITCHf/x pitch whose mean release is
+on the wrong side for his hand has no release (Hoffman's 2010 cutter: park calibration), and the 3D
+uses his overall release. A Statcast spin with no axis (Savant has none in 2015: Davis) or whose mean
+axis pushes against his own pfx (a cosine under 0.8, `lab/pipeline/check-pitches.mjs SPIN_AGREE`:
+Smith's 2021 and Hader's 2023 sliders, gyro heavy) is null, with the reason in
+`pitcher.tracking.spinNull`, and the ball uses its family's default.
+
+**The thirty (2026-10-30).** The first ten as before, then twenty, interleaved by era and kind:
+
+| # | pack | spot | start | real |
+|---|---|---|---|---|
+| 11 | `std-2017-ws2-jansen` | 2017 WS G2, HOU at LAD | top 9, 0 out, empty, up 3-2 | held the tie |
+| 12 | `std-2010-hoffman-stl` | 2010-09-07, STL at MIL | top 9, 0 out, empty, up 4-2 | door shut |
+| 13 | `std-2021-nlcs6-smith` | 2021 NLCS G6, LAD at ATL | top 9, 0 out, empty, up 4-2 | door shut |
+| 14 | `std-2005-nlcs5-lidge` | 2005 NLCS G5, STL at HOU (proxy) | top 9, 0 out, empty, up 4-2 | door's open |
+| 15 | `std-2018-alcs4-kimbrel` | 2018 ALCS G4, BOS at HOU | bottom 9, 0 out, empty, up 8-6 | door shut |
+| 16 | `std-2012-ws4-romo` | 2012 WS G4, SF at DET | bottom 10, 0 out, empty, up 4-3 | door shut |
+| 17 | `std-2023-williams-sd` | 2023-04-16, MIL at SD | bottom 9, 0 out, empty, up 1-0 | door shut |
+| 18 | `std-2008-ws5-lidge` | 2008 WS G5, TB at PHI | top 9, 0 out, empty, up 4-3 | door shut |
+| 19 | `std-2008-alcs7-price` | 2008 ALCS G7, BOS at TB | top 8, 2 out, bases loaded, up 3-1; then the 9th | door shut |
+| 20 | `std-2013-alcs6-uehara` | 2013 ALCS G6, DET at BOS | top 9, 0 out, empty, up 5-2 | door shut |
+| 21 | `std-2023-ws1-sewald` | 2023 WS G1, ARI at TEX | bottom 9, 0 out, empty, up 5-3 | held the tie |
+| 22 | `std-2011-rivera-min` | 2011-09-19, MIN at NYY | top 9, 0 out, empty, up 6-4 | door shut |
+| 23 | `std-2014-ws7-bumgarner` | 2014 WS G7, SF at KC | bottom 9, 0 out, empty, up 3-2 | door shut |
+| 24 | `std-2007-ws4-papelbon` | 2007 WS G4, BOS at COL (proxy) | bottom 8, 1 out, empty, up 4-3; then the 9th | door shut |
+| 25 | `std-2023-hader-stl` | 2023-08-30, SD at STL | bottom 9, 0 out, empty, up 4-3 | walk-off |
+| 26 | `std-2015-alcs6-davis` | 2015 ALCS G6, TOR at KC | top 9, 0 out, empty, up 4-3 | door shut |
+| 27 | `std-2008-krod-sea` | 2008-09-13, SEA at LAA | top 9, 0 out, empty, up 5-2 | door shut |
+| 28 | `std-2025-ws6-glasnow` | 2025 WS G6, LAD at TOR | bottom 9, 0 out, 2nd and 3rd, up 3-1 | door shut |
+| 29 | `std-2010-ws5-wilson` | 2010 WS G5, SF at TEX | bottom 9, 0 out, empty, up 3-1 | door shut |
+| 30 | `std-2009-alcs6-rivera` | 2009 ALCS G6, LAA at NYY | top 8, 0 out, empty, up 3-1; then the 9th | door shut |
+
+Rules 8 (2026-10-30) replaced Kelly 2020 NLDS G2 (in with two out in the 9th) and Kershaw 2016 NLDS G5
+(in with one out): each asked fewer than three outs and had no earlier moment of his outing that
+asked more. Price 2008 ALCS G7 (in with two out and the bases loaded in the 8th, four outs) and Rivera
+2009 ALCS G6 (the 8th and the 9th, six outs, the Yankees' two runs between) took their places, the
+same day numbers. Their verify files stay. The runners-on spots (Kelly, Glasnow, Kershaw) came from a search of the library: every postseason
+game from 2015 whose last pitcher entered in the 8th or later, mid-inning with a man on, 1 to 3 ahead.
+Starters in relief (Bumgarner, Glasnow, Kershaw) use their postseason mix, as Yamamoto and Buehler do.
+Left out, with the reason: Urías 2020 WS G6 (his slurve, SV, has too few left-handed slurves in
+2019-2021 for a table), Vesia 2024 WS G2 (one pitch to one batter, the lead's reason for leaving out
+Montgomery), Montgomery 2016, Familia 2015 (above). Their verify files stay.
 
 ## Accounts
 

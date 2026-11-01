@@ -252,6 +252,8 @@
   .abtn.go{background:var(--sp); color:var(--onAccent,#160B02); border-color:transparent; font-family:var(--hero); font-weight:400; font-size:18px; letter-spacing:.05em; text-transform:uppercase;}
 
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none;}
+  /* the bottom banner (/assets/rtg-ads.js) is up on every screen, so a toast rides on top of it */
+  body.rtg-sticky-on .toast{bottom:calc(26px + var(--sticky-ad-h,0px));}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
   .foot{margin-top:22px; text-align:center; font-size:11.5px; color:var(--dim); line-height:1.6;}
   .foot a{color:var(--mut); text-decoration:underline;}
@@ -266,6 +268,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
      defaults above so no advertising cookie is set before the certified CMP answers. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
 <script>
@@ -399,7 +402,7 @@ window.GA_ID='G-L29P5MRWKE';
 
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/icons.js?v=3"></script>
-<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/day.js?v=4"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
 <script src="/arcade/archive.js?v=3"></script>
@@ -426,7 +429,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/sfx.js?v=4"></script>
 <script src="/arcade/flags.js?v=8"></script>
-<script src="/arcade/sportegories-data.js?v=56"></script>
+<script src="/arcade/sportegories-data.js?v=62"></script>
 <script src="/arcade/type.js?v=5"></script>
 <script src="/arcade/sportegories.js?v=21"></script>
 <script src="/arcade/livecheck.js?v=11"></script>
@@ -471,7 +474,7 @@ window.GA_ID='G-L29P5MRWKE';
   function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
   var P = { setup:$('panelSetup'), spin:$('panelSpin'), play:$('panelPlay') };
-  function show(n){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===n); }); }
+  function show(n){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===n); }); if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(n==='setup'); }
 
   var puz=null, inputs=[], timer=null, left=SECONDS, graded=false, isDaily=true;
 
@@ -804,6 +807,7 @@ window.GA_ID='G-L29P5MRWKE';
       filed=true;
     }
     function finish(){
+      if(window.RTG_ARCADE_STICKY) RTG_ARCADE_STICKY(true);
       clearReveal();
       $('tally').classList.remove('on');
       var st=load(); var prevBest=st.best||0; var best=Math.max(prevBest, total);
@@ -1067,5 +1071,24 @@ window.GA_ID='G-L29P5MRWKE';
 </script>
 <script src="/arcade/howto.js?v=26"></script>
 <script>if (window.RTGHowto) RTGHowto.init('sportegories');</script>
+<script>
+/* THE ARCADE'S ADS (Ads Agent, 2026-10-29, the owner's calls). Two desktop rails beside the game on
+   every screen, play included, built only where each one can sit 150px clear of the column and never
+   on a phone. And the closeable bottom banner on every screen, play included (the owner's call,
+   2026-10-29); its X closes it for the rest of the visit. /assets/rtg-ads.js owns how both look and behave. */
+(function(){
+  var ARCADE_RAIL_SLOTS = {left:'2533699881', right:'4030614380'};   // arcade-rail-left, arcade-rail-right
+  var ARCADE_STICKY_SLOT = {sticky:'8869997198'};                    // arcade-sticky
+  function rails(){ if(window.RTG_ADS) RTG_ADS.rails(true, ARCADE_RAIL_SLOTS, function(){ return document.querySelector('.wrap'); }); }
+  if(document.readyState === 'complete') rails(); else window.addEventListener('load', rails);
+  /* The owner's call (2026-10-29): the bottom banner is up on every Arcade game, play included.
+     The game's own calls still arrive (a screen change, a finished run) and every one now asks for
+     it on. The X still closes it for the rest of the visit. */
+  window.RTG_ARCADE_STICKY = function(){ if(window.RTG_ADS) RTG_ADS.sticky(true, ARCADE_STICKY_SLOT.sticky, 'arcade', {above:'.rtgnav'}); };
+  /* the setup screen is open in the markup, so the screen switch never announces it on load */
+  var setup = document.getElementById('panelSetup');
+  window.RTG_ARCADE_STICKY(true);
+})();
+</script>
 </body>
 </html>

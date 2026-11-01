@@ -41,6 +41,9 @@
     h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
       font-size:18px;margin:26px 0 8px;display:flex;align-items:center;color:var(--ink);}
     h2:before{content:"";width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:10px;flex:0 0 auto;}
+    .ad{margin:26px 0;text-align:center;min-height:0;}
+    .ad-label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;opacity:.55;margin-bottom:6px;}
+    .ad:not(:has(ins[data-ad-status="filled"])) .ad-label{display:none;}
     .card p,.card li{font-size:15px;color:var(--mut);}
     .card p{margin:0 0 14px;}
     .card ul,.card ol{margin:0 0 14px;padding-left:20px;}
@@ -96,6 +99,12 @@
 
       <p>In Run The Diamond you draft an all-time roster under a salary cap, play 162 games, then chase a ring. A great regular season doesn't guarantee one. This guide is about the arms: how the game sets your staff, what October does to it, and where your money goes furthest.</p>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>The cap</h2>
 
       <p>You get <b>$190M</b> for twelve spots, in every draft mode. Prices come from WAR, so the best arms cost the most. The budget always holds back at least <b>$1M</b> for each open spot. A re-spin costs <b>$5M</b>, then <b>$10M</b>, then <b>$15M</b>, and you get <b>three</b>.</p>
@@ -127,6 +136,12 @@
       <p>A starter can work out of the pen. A reliever can't start, and a starter can't close. So CL needs a real reliever or closer.</p>
 
       <p>Inside a group, the order doesn't change your season. The starters are averaged together, and so is the pen. It does change October: Game 1 of a series goes to SP1, Game 2 to SP2, and on down. A Pro player can swap arms inside a group before the first pitch.</p>
+
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
 
       <h2>Two-spot players</h2>
 
@@ -166,6 +181,12 @@
         <li><b>The stops.</b> The game asks at <b>95</b>, <b>110</b> and <b>125</b> pitches, when the coach wants a change, for a save in the 8th or 9th, and for the tying run from the 7th on. The Mound button changes pitchers between any two batters.</li>
       </ul>
 
+      <div class="ad">
+        <span class="ad-label">Advertisement</span>
+        <ins class="adsbygoogle-lazy" style="display:block;text-align:center" data-ad-layout="in-article"
+             data-ad-format="fluid" data-ad-client="ca-pub-5952069078178257" data-ad-slot="9845074071"></ins>
+      </div>
+
       <h2>Tips</h2>
 
       <ul>
@@ -193,5 +214,27 @@
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
+  <script>
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+      var lazy=document.querySelectorAll('ins.adsbygoogle-lazy');
+      var start=function(u){ u.className='adsbygoogle'; (adsbygoogle=window.adsbygoogle||[]).push({}); };
+      var io='IntersectionObserver' in window ? new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ io.unobserve(e.target); try{ start(e.target); }catch(x){} } });
+      },{rootMargin:'600px 0px'}) : null;
+      for(var j=0;j<lazy.length;j++){
+        var ls=lazy[j].getAttribute('data-ad-slot');
+        if(!ls||/^0+$/.test(ls)) continue;
+        if(io) io.observe(lazy[j]); else start(lazy[j]);
+      }
+    }catch(e){}
+  })();
+  </script>
 </body>
 </html>

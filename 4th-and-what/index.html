@@ -8,8 +8,8 @@
      nowhere, not on the newsletter list. 4th-and-what/check-posture.mjs holds
      all of it. -->
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="4th and What: you are going for it. Pick the distance, draw the play on the clipboard, and watch it run.">
-<meta name="theme-color" content="#10161f" id="themeMeta">
+<meta name="description" content="4th and What: design football plays, run them against a real defense, learn them and print them. A game and a coaching playbook.">
+<meta name="theme-color" content="#0b1522" id="themeMeta">
 <script>
 /* THEME BOOT, BEFORE FIRST PAINT. The key is shared across the suite, so a
    player who set dark anywhere arrives dark. */
@@ -17,104 +17,424 @@
   var t; try { t = localStorage.getItem('runthegrid_theme'); } catch (e) {}
   if (t !== 'light' && t !== 'dark') t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', t);
-  var m = document.getElementById('themeMeta'); if (m) m.setAttribute('content', t === 'dark' ? '#10161f' : '#ece7dc');
+  var m = document.getElementById('themeMeta'); if (m) m.setAttribute('content', t === 'dark' ? '#0b1522' : '#eef2f6');
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Silkscreen:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
-<div class="app">
-  <header class="topbar">
+<header class="topbar">
+  <a class="logo" href="#home" aria-label="4th and What home"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></a>
+  <nav class="tabs" id="tabs" aria-label="Sections">
+    <button type="button" class="tab" data-view="play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg><span>Play</span></button>
+    <button type="button" class="tab" data-view="studio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16zM14 6l3 3"/></svg><span>Studio</span></button>
+    <button type="button" class="tab" data-view="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-4 9 4-9 4zM7 10v5c3 2 7 2 10 0v-5"/></svg><span>Learn</span></button>
+    <button type="button" class="tab" data-view="books"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg><span>Playbooks</span></button>
+    <button type="button" class="tab" data-view="test"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Test vs Defense</span></button>
+    <button type="button" class="tab" data-view="print"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg><span>Print</span></button>
+  </nav>
+  <div class="navr">
     <a class="home" href="/" aria-label="RunThe.GG home">RunThe.GG</a>
-    <div class="brand"><span class="pix">4TH</span> <span class="and">and</span> <span class="pix">WHAT</span></div>
-    <button class="icon" id="bGuide" type="button" aria-label="How to play">?</button>
+    <button class="icon" id="bGuide" type="button" aria-label="How it works">?</button>
     <button class="icon" id="themeBtn" type="button" aria-label="Light or dark"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
-  </header>
+  </div>
+</header>
 
-  <!-- 1. THE DISTANCE -->
-  <section class="screen" id="sPick">
-    <p class="kicker">You're going for it.</p>
-    <h1 class="pix big">4th and&nbsp;what?</h1>
-    <p class="lede" id="pickLede">Ball on the 40. Pick the distance.</p>
-    <div class="dists" id="dists"></div>
+<main class="views">
+
+  <!-- HOME: where to go, to play or to build -->
+  <section class="view home" id="vHome" hidden>
+    <!-- the banner is the way into the daily (the owner, 2026-11-01): no situation until you click in -->
+    <div class="banner" id="hDaily" role="button" tabindex="0" aria-label="Play today's 4th down">
+      <canvas id="hField" aria-hidden="true"></canvas>
+      <h1 class="bannerlogo"><span class="l4">4TH</span><span class="lamp">&amp;</span><span class="lw">WHAT</span></h1>
+      <div class="bannergo" id="hdBox" hidden>
+        <span class="dnum" id="hdNum"></span>
+        <span class="btn gold big" id="hdGo">Play today</span>
+      </div>
+      <p class="heroname" id="hName"></p>
+    </div>
+    <div class="modes">
+      <button type="button" class="mode play" data-go="play"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></button>
+      <button type="button" class="mode book" data-go="books"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></button>
+      <button type="button" class="mode trivia" data-go="trivia"><b>Daily Defense</b><span>One play a day. Pick the defense that stops it.</span></button>
+    </div>
+    <footer class="legal">
+      <img src="/assets/wm-runthegg.png?v=1" alt="RunThe.GG" width="1200" height="171" loading="lazy">
+      <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a href="/about.html" target="_blank" rel="noopener">About</a><span>&middot;</span><a href="/contact.html" target="_blank" rel="noopener">Contact</a><span>&middot;</span><a href="/" target="_blank" rel="noopener">More games</a></p>
+      <p class="fund"><span>Free to play, funded by players.</span><a class="kofi" href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi">&#9829; Support us</a></p>
+      <p class="src">An unofficial fan project, not affiliated with or endorsed by the NFL or any team.</p>
+    </footer>
   </section>
 
-  <!-- 2. THE CLIPBOARD -->
-  <section class="screen" id="sBoard" hidden>
-    <div class="strip">
-      <button class="chip down" id="bDist" type="button"><span id="downTxt">4th and 5</span> <small>change</small></button>
-      <span class="chip" id="spotTxt">Ball on the 40</span>
-      <span class="chip box" id="boxTxt">Box 6</span>
-    </div>
-    <div class="forms" id="forms" role="radiogroup" aria-label="Formation"></div>
-    <div class="board"><canvas id="cBoard" aria-label="The clipboard. Draw your play here."></canvas></div>
-    <p class="hint" id="hint">Pick a tool. Drag from a player to draw.</p>
-    <div class="tools" id="tools" role="toolbar" aria-label="Tools">
-      <button type="button" class="tool" data-tool="route" aria-pressed="true"><b>Route</b><span>drag from a receiver</span></button>
-      <button type="button" class="tool" data-tool="block" aria-pressed="false"><b>Block</b><span>drag a short bar</span></button>
-      <button type="button" class="tool" data-tool="handoff" aria-pressed="false"><b>Handoff</b><span>QB, then a back</span></button>
-      <button type="button" class="tool" data-tool="target" aria-pressed="false"><b>Target</b><span>tap who gets it</span></button>
-    </div>
-    <div class="acts">
-      <button type="button" class="btn" id="bUndo">Undo</button>
-      <button type="button" class="btn" id="bClear">Clear</button>
-      <button type="button" class="btn go" id="bSnap" disabled>Snap It</button>
+  <!-- DAILY: today's real 4th down, then draw your call (the Studio in game mode) -->
+  <section class="view daily" id="vDaily" hidden>
+    <div class="dintro">
+      <p class="kicker" id="dNum"></p>
+      <p class="dteams big" id="dTeams"></p>
+      <p class="dround" id="dRound"></p>
+      <div class="dbug"><span id="dScore"></span><span id="dClock"></span></div>
+      <h1 id="dDown"></h1>
+      <p class="dspot" id="dSpot"></p>
+      <button type="button" class="btn gold big" id="dGo">Draw your call</button>
+      <p class="dstats" id="dStats" hidden></p>
+      <div class="ddone" id="dDone" hidden>
+        <p class="dmine" id="dMine"></p>
+        <h3>What really happened</h3>
+        <p class="dreal" id="dReal"></p>
+        <p class="dverdict" id="dVerdict"></p>
+      </div>
+      <button type="button" class="link" id="dBack">Back home</button>
+      <p class="src">Real plays from nflverse play-by-play (CC-BY 4.0).</p>
     </div>
   </section>
 
-  <!-- 3. THE PLAY, AND THE RESULT OVER ITS LAST FRAME -->
-  <section class="screen" id="sLive" hidden>
-    <div class="stage" id="stage">
-      <canvas id="cLive" aria-label="The play"></canvas>
-      <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
-      <div class="cap" id="cap" aria-live="polite"></div>
-      <button type="button" class="skip" id="bSkip">Skip</button>
-      <div class="result" id="result" hidden>
-        <p class="rdown" id="rDown"></p>
-        <h2 class="pix rtitle" id="rTitle"></h2>
-        <p class="rline" id="rLine"></p>
-        <p class="rwhy" id="rWhy"></p>
-        <p class="rcall" id="rCall"></p>
-        <div class="racts">
-          <button type="button" class="btn go" id="bReplay">Replay</button>
-          <button type="button" class="btn" id="bBack">Back to Clipboard</button>
-          <button type="button" class="btn" id="bShare">Share</button>
+  <!-- DAILY DEFENSE: one play a day, pick the call that stops it (trivia.js) -->
+  <section class="view trivia" id="vTrivia" hidden>
+    <div class="tintro">
+      <p class="kicker" id="tNum"></p>
+      <h1>Call the defense</h1>
+      <p class="tsit" id="tSit"></p>
+      <div class="tfield"><canvas id="tField" aria-label="Today's play"></canvas></div>
+      <p class="tname" id="tName"></p>
+      <p class="task" id="tAsk">Which call stops it best?</p>
+      <div class="tcalls" id="tCalls"></div>
+      <div class="tprog" id="tProg" hidden><div class="tprogbar"><i id="tProgBar"></i></div><span id="tProgTxt"></span></div>
+      <div class="tres" id="tRes" hidden>
+        <h2 id="tVerdict"></h2>
+        <p class="tline" id="tLine"></p>
+        <p class="tstreak" id="tStreak" hidden></p>
+        <h3>First downs given up, every call</h3>
+        <div class="tbars" id="tBars"></div>
+        <div class="tacts">
+          <button type="button" class="btn gold" id="tWatch">Watch it vs your call</button>
+          <button type="button" class="btn" id="tShare">Share</button>
         </div>
-        <p class="toast" id="toast" hidden></p>
-        <details class="dbg" id="dbg"><summary>debug</summary><pre id="dbgTxt"></pre></details>
+        <p class="toast" id="tToast" hidden></p>
+      </div>
+      <button type="button" class="link" id="tBack">Back home</button>
+    </div>
+  </section>
+
+  <!-- PLAY: the game. 4th and what? Pick it, draw it (the Studio in game mode), snap it. -->
+  <section class="view game" id="vPlay" hidden>
+    <div class="pick">
+      <p class="kicker">You're going for it.</p>
+      <h1>4th and what?</h1>
+      <div class="dists" id="pDists"></div>
+      <p class="spotline"><span id="pSpot"></span> <button type="button" class="link" id="pMore">Change</button></p>
+      <div class="pmore" id="pMoreBox" hidden>
+        <label class="field"><span>Down</span><select id="pDown"></select></label>
+        <label class="field"><span>Ball on</span><select id="pSide"><option value="opp">Opp</option><option value="own">Own</option></select></label>
+        <label class="field"><span>Yard line</span><select id="pYard"></select></label>
       </div>
     </div>
   </section>
 
-  <dialog class="guide" id="guide">
-    <h2 class="pix">How it works</h2>
-    <ol>
-      <li><b>Pick the distance.</b> You are going for it on 4th down.</li>
-      <li><b>Pick a formation.</b> Hold a player to move him.</li>
-      <li><b>Draw the play.</b> Route: drag from a receiver. Block: drag a short bar. Handoff: tap the QB, then a back, then drag his path. Target: tap who the QB looks to first, then a checkdown.</li>
-      <li><b>Snap it.</b> Your players run exactly what you drew. The defense picks its call every snap. You see it after.</li>
-      <li><b>Get the first down or score.</b> Short, sacked, thrown away or incomplete, you lose.</li>
-    </ol>
-    <form method="dialog"><button class="btn go" type="submit">Got it</button></form>
-  </dialog>
+  <!-- THE BREAKDOWN: a snap on turf, with the coverage, a timeline and the defense's jobs -->
+  <section class="view play" id="vReplay" hidden>
+    <aside class="panel">
+      <h3>Game settings</h3>
+      <label class="field"><span>Play</span><select id="gPlay"></select></label>
+      <div class="two">
+        <label class="field"><span>Down</span><select id="gDown"></select></label>
+        <label class="field"><span>Distance</span><select id="gDist"></select></label>
+      </div>
+      <div class="two">
+        <label class="field"><span>Ball on</span><select id="gSide"><option value="own">Own</option><option value="opp">Opp</option></select></label>
+        <label class="field"><span>Yard line</span><select id="gYard"></select></label>
+      </div>
+      <button type="button" class="btn go big" id="gRun">Run Play <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button>
+      <h3>Defense</h3>
+      <label class="field"><span>Call</span><select id="gDef"></select></label>
+      <label class="switch"><input type="checkbox" id="gCov" checked><i></i>Show coverage</label>
+      <label class="switch"><input type="checkbox" id="gIcons" checked><i></i>Show player icons</label>
+    </aside>
+    <div class="center">
+      <div class="scorebug">
+        <div class="team"><span class="helm off" aria-hidden="true"></span><small>Offense</small><b id="gOff">0</b></div>
+        <div class="sit"><b id="gSit">4th &amp; 5</b><small id="gSpot">Opp 40</small></div>
+        <div class="team"><small>Defense</small><b id="gDefScore">0</b><span class="helm def" aria-hidden="true"></span></div>
+      </div>
+      <div class="fieldwrap"><canvas id="gField" aria-label="The field"></canvas><div class="cap" id="gCap" aria-live="polite"></div></div>
+      <div class="scrub">
+        <button type="button" class="icon play" id="gPlayBtn" aria-label="Play or pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button>
+        <input type="range" id="gTime" min="0" max="1000" value="0" aria-label="Time in the play">
+        <span class="clock" id="gClock">0:00 / 0:00</span>
+        <select id="gSpeed" aria-label="Speed"><option value="1">1x</option><option value="0.5">0.5x</option><option value="0.25">0.25x</option><option value="2">2x</option></select>
+      </div>
+    </div>
+    <aside class="panel">
+      <div class="rsnaps" id="gSnaps" hidden></div>
+      <h3>Play result</h3>
+      <div class="resultbig" id="gResBig">Run a play</div>
+      <dl class="stats" id="gStats"></dl>
+      <h3>Why it worked</h3>
+      <p class="why" id="gWhy">Pick a play and the situation, then Run Play.</p>
+      <button type="button" class="btn gold" id="gBreakBtn" disabled>View defensive breakdown</button>
+      <div class="breakdown" id="gBreak" hidden></div>
+      <div class="acts">
+        <button type="button" class="btn" id="g3d" disabled>Watch in 3D</button>
+        <button type="button" class="btn" id="gShare" disabled>Share</button>
+        <button type="button" class="btn" id="gEdit">Edit in Studio</button>
+      </div>
+      <p class="toast" id="gToast" hidden></p>
+      <details class="dbg"><summary>debug</summary><pre id="dbgTxt"></pre></details>
+    </aside>
+  </section>
+
+  <!-- STUDIO: design a play -->
+  <section class="view studio" id="vStudio" hidden>
+    <div class="studiobar">
+      <label class="field"><span>Formation</span><select id="sForm"></select></label>
+      <label class="field grow"><span>Play name</span><input id="sName" maxlength="80" autocomplete="off"></label>
+      <label class="field"><span>Tag</span><select id="sTag"><option value="pass">Pass</option><option value="run">Run</option><option value="rpo">RPO</option><option value="special">Special</option></select></label>
+      <button type="button" class="star" id="sFav" aria-pressed="false" aria-label="Favorite">&#9733;</button>
+      <button type="button" class="btn gold" id="sSave">Save Play</button>
+    </div>
+    <p class="suggest" id="sSuggest"></p>
+    <aside class="panel lib">
+      <div class="seg" role="tablist"><button type="button" class="on" data-lib="formations">Formations</button><button type="button" data-lib="concepts">Concepts</button></div>
+      <div class="liblist" id="sLib"></div>
+    </aside>
+    <div class="center">
+      <div class="gamebar"><button type="button" class="chip" id="sSit"></button><span class="hint">Draw it, then snap it.</span><button type="button" class="btn gold snap" id="sSnap">Snap it <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg></button></div>
+      <div class="fieldwrap"><canvas id="sField" aria-label="The field. Draw your play here."></canvas></div>
+      <p class="hint" id="sHint">Pick a tool. Drag from a player to draw.</p>
+      <div class="toolbar" id="sTools" role="toolbar" aria-label="Tools">
+        <button type="button" class="tool" data-tool="move" aria-pressed="false">Move</button>
+        <button type="button" class="tool" data-tool="route" aria-pressed="true">Route</button>
+        <button type="button" class="tool" data-tool="block" aria-pressed="false">Block</button>
+        <button type="button" class="tool" data-tool="handoff" aria-pressed="false">Run</button>
+        <button type="button" class="tool" data-tool="read" aria-pressed="false">Read</button>
+        <button type="button" class="tool" data-tool="motion" aria-pressed="false">Motion</button>
+        <button type="button" class="tool" data-tool="erase" aria-pressed="false">Erase</button>
+        <span class="sep"></span>
+        <button type="button" class="tool" id="sUndo">Undo</button>
+        <button type="button" class="tool" id="sClear">Clear</button>
+        <button type="button" class="tool" id="sFlip">Flip</button>
+      </div>
+      <div class="viewrow">
+        <span>Field view</span>
+        <div class="seg" id="sView"><button type="button" class="on" data-v="offense">Offense</button><button type="button" data-v="defense">Defense</button><button type="button" data-v="both">Both</button></div>
+        <select id="sCall" aria-label="Defense to show" hidden></select>
+      </div>
+    </div>
+    <aside class="panel side">
+      <div class="seg" role="tablist"><button type="button" class="on" data-side="players">Players</button><button type="button" data-side="card">Card</button></div>
+      <div id="sPlayers"></div>
+      <div id="sCard" hidden></div>
+      <h3>Play settings</h3>
+      <label class="switch"><input type="checkbox" id="sMotion"><i></i>Motion</label>
+      <div class="motionrow" id="sMotionRow" hidden>
+        <select id="sMotionWho" aria-label="Who goes in motion"></select>
+        <select id="sMotionType" aria-label="Motion"><option value="jet">Jet</option><option value="orbit">Orbit</option><option value="zip">Zip</option><option value="return">Return</option></select>
+      </div>
+      <label class="switch"><input type="checkbox" id="sPA"><i></i>Play Action</label>
+      <label class="switch"><input type="checkbox" id="sShowD"><i></i>Show Defense</label>
+      <div class="acts">
+        <button type="button" class="btn go" id="sRun">Run it</button>
+        <button type="button" class="btn" id="sTest">Test vs Defense</button>
+        <button type="button" class="btn" id="sDownload">Download</button>
+      </div>
+      <p class="toast" id="sToast" hidden></p>
+    </aside>
+  </section>
+
+  <!-- LEARN: the playbook, a play at a time, for the players -->
+  <section class="view learn" id="vLearn" hidden>
+    <aside class="panel tree">
+      <label class="field"><span>Playbook</span><select id="lBook"></select></label>
+      <div id="lTree"></div>
+    </aside>
+    <div class="center">
+      <div class="learnhead">
+        <div><h2 id="lTitle">Pick a play</h2><small id="lSub"></small></div>
+        <ol class="steps" id="lSteps">
+          <li data-step="learn"><i>1</i>Learn</li><li data-step="practice"><i>2</i>Practice</li><li data-step="quiz"><i>3</i>Quiz</li><li data-step="master"><i>4</i>Master</li>
+        </ol>
+      </div>
+      <div class="fieldwrap"><canvas id="lField" aria-label="The play"></canvas></div>
+      <div class="scrub">
+        <button type="button" class="btn gold" id="lAnim">Play Animation</button>
+        <select id="lSpeed" aria-label="Speed"><option value="1">1x</option><option value="0.5">0.5x</option><option value="0.25">0.25x</option></select>
+        <label class="switch"><input type="checkbox" id="lRoutes" checked><i></i>Show Routes</label>
+        <label class="switch"><input type="checkbox" id="lAssign" checked><i></i>Show Assignments</label>
+      </div>
+    </div>
+    <aside class="panel quiz">
+      <label class="field"><span>I play</span><select id="lWho"></select></label>
+      <div id="lQuiz"></div>
+    </aside>
+  </section>
+
+  <!-- PLAYBOOKS: the library -->
+  <section class="view books" id="vBooks" hidden>
+    <aside class="panel">
+      <h3>My playbooks</h3>
+      <button type="button" class="btn gold" id="bNewBook">+ New Playbook</button>
+      <div class="booklist" id="bList"></div>
+      <button type="button" class="btn" id="bImport">Import a file</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </aside>
+    <div class="center">
+      <div class="signin" id="bSignin" hidden>
+        <h2>Your playbooks live on your account</h2>
+        <p>Sign in with your Run The Games account. Your plays follow you to any phone or laptop.</p>
+        <button type="button" class="btn gold" id="bSigninBtn">Sign in</button>
+      </div>
+      <div id="bMain" hidden>
+        <div class="bookhead">
+          <div><input class="bookname" id="bName" maxlength="60" aria-label="Playbook name"><small id="bMeta"></small></div>
+          <label class="field"><span>Team</span><input id="bTeam" maxlength="60" placeholder="Westfield Varsity" autocomplete="off"></label>
+        </div>
+        <div class="subtabs" id="bTabs"><button type="button" class="on" data-bt="plays">Plays</button><button type="button" data-bt="sections">Sections</button><button type="button" data-bt="terms">Terminology</button><button type="button" data-bt="share">Share</button></div>
+        <div id="bPlays">
+          <div class="filters">
+            <input type="search" id="bSearch" placeholder="Search plays" aria-label="Search plays">
+            <select id="bFForm" aria-label="Formation"></select>
+            <select id="bFType" aria-label="Type"><option value="">All types</option><option value="pass">Pass</option><option value="run">Run</option><option value="rpo">RPO</option><option value="special">Special</option></select>
+            <div class="seg" id="bLayout"><button type="button" class="on" data-l="grid" aria-label="Grid">&#9638;</button><button type="button" data-l="list" aria-label="List">&#9776;</button></div>
+            <button type="button" class="btn gold" id="bNewPlay">+ New Play</button>
+          </div>
+          <div class="cards" id="bCards"></div>
+        </div>
+        <div id="bSections" hidden></div>
+        <div id="bTerms" hidden></div>
+        <div id="bShare" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEST VS DEFENSE -->
+  <section class="view test" id="vTest" hidden>
+    <aside class="panel">
+      <h3>Test a play</h3>
+      <label class="field"><span>Play</span><select id="tPlay"></select></label>
+      <div class="two">
+        <label class="field"><span>Down</span><select id="tDown"></select></label>
+        <label class="field"><span>Distance</span><select id="tDist"></select></label>
+      </div>
+      <label class="field"><span>Snaps against each defense</span><select id="tN"><option value="40">40</option><option value="100">100</option><option value="250">250</option></select></label>
+      <button type="button" class="btn go big" id="tRun">Test vs every defense</button>
+      <p class="help">Each defense is forced. The dice after the call fall the same way, so the only thing that changes is the defense.</p>
+    </aside>
+    <div class="center">
+      <div class="fieldwrap small"><canvas id="tField" aria-label="The play"></canvas></div>
+      <div id="tOut"></div>
+    </div>
+  </section>
+
+  <!-- PRINT -->
+  <section class="view print" id="vPrint" hidden>
+    <aside class="panel">
+      <h3>Print or export</h3>
+      <label class="field"><span>Playbook</span><select id="pBook"></select></label>
+      <div class="presets" id="pPresets"></div>
+      <div id="pOpts"></div>
+    </aside>
+    <div class="center">
+      <div class="acts top">
+        <button type="button" class="btn gold" id="pPrint">Print or save as PDF</button>
+        <button type="button" class="btn" id="pPng">Download pages as images</button>
+        <button type="button" class="btn" id="pPlays">Download each play</button>
+        <button type="button" class="btn" id="pFile">Download playbook file</button>
+      </div>
+      <div class="preview" id="pPreview"></div>
+    </div>
+  </section>
+</main>
+
+<!-- WATCH IN 3D: the stadium playback, over everything -->
+<div class="watch" id="watch" hidden>
+  <div class="stage" id="stage">
+    <canvas id="cLive" aria-label="The play in the stadium"></canvas>
+    <div class="press" id="press" aria-hidden="true"><i id="pressFill"></i><span>Pocket</span></div>
+    <div class="cap" id="cap" aria-live="polite"></div>
+    <button type="button" class="skip" id="bSkip">Skip</button>
+    <button type="button" class="close" id="bClose3d" aria-label="Close">&#10005;</button>
+    <div class="rescard" id="rCard" hidden>
+      <p class="rdown" id="rDown"></p>
+      <h2 id="rTitle"></h2>
+      <p class="rline" id="rLine"></p>
+      <p class="rwhy" id="rWhy"></p>
+      <div class="rsnaps" id="rSnaps" hidden></div>
+      <div class="rdaily" id="rDaily" hidden>
+        <p class="rdhead" id="rDailyHead"></p>
+        <p class="rdreal"><b>What really happened:</b> <span id="rReal"></span> <span id="rVerdict"></span></p>
+        <p class="rdstats" id="rDayStats" hidden></p>
+      </div>
+      <div class="racts">
+        <button type="button" class="btn gold" id="rAgain">Run it back</button>
+        <button type="button" class="btn" id="rEdit">Edit play</button>
+        <button type="button" class="btn" id="rNew">New play</button>
+      </div>
+      <div class="racts">
+        <button type="button" class="btn" id="rSave">Save play</button>
+        <button type="button" class="btn" id="rCardBtn">Save card</button>
+        <button type="button" class="btn" id="rShare">Share</button>
+      </div>
+      <button type="button" class="link" id="rBreak">See the breakdown</button>
+      <p class="toast" id="rToast" hidden></p>
+    </div>
+  </div>
 </div>
+
+<!-- save a play into a playbook -->
+<dialog class="dlg" id="saveDlg">
+  <h2>Save to playbook</h2>
+  <div id="saveOut"></div>
+  <div class="acts"><button class="btn" type="button" id="bSaveCancel">Cancel</button><button class="btn gold" type="button" id="bSaveOk">Save</button></div>
+</dialog>
+
+<dialog class="dlg" id="guide">
+  <h2>How it works</h2>
+  <ol>
+    <li><b>Studio.</b> Pick a formation or a concept. Give each player a route from the list, or draw one: Route, Block, Run (drag from the man who gets the ball: that is his path), Read (the 1st, 2nd and 3rd read), Motion. Move lines a player up. Nothing else moves him.</li>
+    <li><b>Play.</b> Set the down, the distance and the spot. Pick the defense, or let it pick. Run Play. Your players run exactly what you drew.</li>
+    <li><b>Test vs Defense.</b> Every defense, many snaps each, and the rate for each one.</li>
+    <li><b>Playbooks.</b> Save plays to a book on your Run The Games account. Name them in your own words.</li>
+    <li><b>Learn.</b> Pick a position. Watch the play, then answer what your job is.</li>
+    <li><b>Print.</b> Play cards with backs, call sheets by situation, wristbands, scout cards, practice scripts and install packets.</li>
+  </ol>
+  <form method="dialog"><button class="btn gold" type="submit">Got it</button></form>
+</dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
-<script src="config.js?v=1"></script>
+<script src="/assets/cloudsave.js?v=3"></script>
+<script src="config.js?v=6"></script>
 <script src="formations.js?v=1"></script>
 <script src="rng.js?v=1"></script>
-<script src="engine.js?v=1"></script>
+<script src="engine.js?v=7"></script>
+<script src="names.js?v=2"></script>
+<script src="routes.js?v=2"></script>
+<script src="book.js?v=2"></script>
+<script src="cards.js?v=1"></script>
+<script src="diagram.js?v=2"></script>
+<script src="export.js?v=2"></script>
+<script src="turf.js?v=2"></script>
 <script src="rig.js?v=1"></script>
 <script src="stage.js?v=1"></script>
 <script src="share.js?v=1"></script>
-<script src="clipboard.js?v=2"></script>
 <script src="play.js?v=1"></script>
-<script src="ui.js?v=1"></script>
+<script src="app.js?v=5"></script>
+<script src="home.js?v=4"></script>
+<script src="studio.js?v=4"></script>
+<script src="game.js?v=3"></script>
+<script src="flow.js?v=3"></script>
+<script src="daily.js?v=3"></script>
+<script src="trivia.js?v=2"></script>
+<script src="library.js?v=2"></script>
+<script src="learn.js?v=2"></script>
+<script src="testview.js?v=1"></script>
+<script src="printview.js?v=1"></script>
+<!-- The ads (Ads Agent, 2026-10-30): ready, and inert until the launch commit adds the ad tag. -->
+<script src="ads.js?v=3"></script>
 <script type="module">
 /* PXHD, the painter the players and the goalpost are drawn with, from the
    copy Segue already serves (see rig.js). If it fails to load, the play is

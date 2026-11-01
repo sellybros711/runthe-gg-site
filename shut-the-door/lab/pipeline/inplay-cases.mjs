@@ -1,7 +1,7 @@
 /* Every ball in play the packs can produce, as the in-play checks plan them (check-inplay.mjs, and
  * check-catch.mjs on the posed bodies). Pure: reads data/packs, plans nothing.
  *
- *   for (const c of inplayCases({ all })) c.pack, c.key, c.label, c.st, c.pr, c.hand, c.bases0, c.id
+ *   for (const c of inplayCases({ all })) c.pack, c.key, c.label, c.st, c.pr, c.hand, c.bases0, c.id, c.align
  *
  * Each in-play outcome key (single ... out_popup) has real batted balls (the pack's pitches the library
  * points at) and advancement rows for every base and out state (each row a label and the runners'
@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SHADE } from '../../3d/shade-data.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PACKS = path.resolve(HERE, '..', '..', 'data', 'packs');
@@ -23,13 +24,15 @@ export function* inplayCases({ all = false, packs = null } = {}) {
     if (packs && !packs.includes(f)) continue;
     const pack = JSON.parse(fs.readFileSync(path.join(PACKS, f), 'utf8'));
     const keys = pack.keys, P = pack.pitches, bats = pack.scenario.batters;
-    // the real batted balls of each key, with the hand of a hitter who drew it
-    const balls = {};
+    // the real batted balls of each key, with the hand of a hitter who drew it (and the hitter: the one
+    // whose own ball it is, tier batter, else that same hitter)
+    const balls = {}, owner = new Map();
     pack.library.forEach((lib, bi) => {
       for (const e of Object.values(lib)) for (const row of e.x) row.forEach((ref, k) => {
         if (ref == null || ref < 0 || !KEYS_IP.includes(keys[k])) return;
         const i = Math.floor(ref / 3);
         (balls[keys[k]] ||= new Map()).set(i, bats[bi % bats.length].bats);
+        if (ref % 3 === 0 || !owner.has(i) || owner.get(i).t) owner.set(i, { b: bats[bi % bats.length], t: ref % 3 });
       });
     });
     for (const key of KEYS_IP) {
@@ -57,7 +60,12 @@ export function* inplayCases({ all = false, packs = null } = {}) {
           result: 'in_play', inPlay: { bb: pt[3], ev: pt[4], la: pt[5], spray: pt[6], result: label || 'out' },
           runnerMoves: (moves || []).map(([from, to]) => ({ from, to })), bases: nb, outs: Math.min(3, outs0 + oa), runs, drawn: { id: pt[0] },
         };
-        yield { pack: f, key, label, st, moves, ball: pt.slice(3), pr, hand, bases0, id: pt[0] };
+        // where the fielders stand (inplay-plan.js alignment): his shading, the spot's inning and our lead
+        // at the start of it (the margin the stage reads before a run has scored)
+        const who = owner.get(pi) ? owner.get(pi).b : null, sit = pack.scenario.situation;
+        const rowsS = SHADE[pack.scenario.id], sh = who && rowsS ? rowsS[String(who.id)] || null : null;
+        const align = { shade: sh && sh.bats === hand ? sh : null, inning: sit.inning, margin: sit.score.us - sit.score.them };
+        yield { pack: f, key, label, st, moves, ball: pt.slice(3), pr, hand, bases0, id: pt[0], align, own: !!(owner.get(pi) && owner.get(pi).t === 0) };
       }
     }
   }

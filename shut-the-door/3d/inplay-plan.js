@@ -9,14 +9,15 @@
  * and launch angle (a drag and lift flight, constants set to Statcast carry: 100 mph at 28 degrees
  * goes about 390 ft), held to the band the result needs: an out in the air is caught, a single
  * falls in front of the outfield or through the infield, a double reaches a gap or the line, a home
- * run clears the wall. Where the fielders stand is ours (no positioning data): a fielder who would
- * catch a ball the engine called a hit starts a step further off, and one who must make a catch
- * starts close enough to make it.
+ * run clears the wall. Where the fielders stand is alignment(): the standard spots, shaded to the
+ * hitter's own batted balls in the pack (shade-data.js) and set for the bases, outs and score. Then a
+ * fielder who would catch a ball the engine called a hit starts a step further off, and one who must
+ * make a catch starts close enough to make it.
  *
  * Units: feet and seconds, catcher's view (x toward first base, y out to centre field, z up), home
  * plate at the origin, s = seconds after contact.
  *
- *   const p = planPlay(pr, { bats, contact, basesBefore, id })
+ *   const p = planPlay(pr, { bats, contact, basesBefore, id, shade, inning, margin })
  *   p.ballAt(s)        { x, y, z, by }    by: the fielder holding it, or null
  *   p.fielders[n]      a Track for positions 1..9 (scoring numbers), p.runners[] the same for runners
  *   p.events           [{ s, kind, ... }] catches, pickups, throws, outs, runs, crowd cues
@@ -25,7 +26,12 @@
  */
 
 const D2R = Math.PI / 180, G = 32.17;
-const KD = 0.0019, KL = 0.001;            // drag and lift per foot (see the header)
+// drag and lift per foot, and the launch angles the lift works over (it rises from LIFT_LO over 14
+// degrees and falls to nothing at LIFT_HI over LIFT_FALL): fitted (2026-10-27) to the Statcast carry fit
+// the engine uses (contract.js carryOf, R2 0.94) over exit velocity 60-115 mph and launch angle 8-70
+// degrees, 188 balls: 11.9 ft rms against it, where the old drag and lift (0.0019, 0.001, tuned on one
+// 100 mph ball at 28 degrees) were 43.7 ft, every ball long (93 mph at 16 degrees: 292 ft, Statcast 259)
+const KD = 0.002313, KL = 0.001552, LIFT_LO = 11.25, LIFT_HI = 80, LIFT_FALL = 10;
 export const BALL_R = 0.12;
 export const WALL_H = 8;
 export const BASE = [{ x: 0, y: 0 }, { x: 63.64, y: 63.64 }, { x: 0, y: 127.28 }, { x: -63.64, y: 63.64 }, { x: 0, y: 0 }];
@@ -59,6 +65,83 @@ export function spots(bats) {
     7: pol(-28 + pull, 285), 8: pol(0 + pull, 315), 9: pol(28 + pull, 285),
   };
 }
+
+// a step, for the spot's conventions below (two steps in and two toward second at double play depth, two
+// toward the line guarding it): a stride of an infielder setting himself, 3 ft
+const STEP = 3;
+/** On the base path at this spray (the line between the bags; the infield grass stops 3 ft inside it,
+    ballpark.js): where an infield playing in stands, at the grass. */
+const lineAt = (deg) => 127.28 / (Math.abs(Math.sin(deg * D2R)) + Math.cos(deg * D2R));
+/** The spot's late and close (the engine's own: the eighth inning on, engine.js lateKey; close, the margin
+    within a run either way, pipeline/effects.py). o.inning, o.margin: our lead before the pitch. */
+export function lateClose(o) {
+  return (o.inning || 0) >= 8 && Number.isFinite(o.margin) && Math.abs(o.margin) <= 1;
+}
+
+/** Where the nine stand at this pitch, for this hitter in this spot (site PRs: the outfield, #785; the
+    infield, fielders shade by hitter). o.shade: the hitter's row of shade-data.js
+    (lab/pipeline/build-shade.mjs: his own batted balls in the pack, the league's as the prior), or null:
+    the standard alignment, spots(). o.bases (bitmask) and o.outs: before the pitch. o.inning, o.margin
+    (our lead before the pitch): the late game.
+      the infield: each man turns about home to where this hitter's ground balls put the league's share of
+      them that his standard spot takes (inf, degrees)
+      the outfield: each fielder at the median spray of his third of the hitter's air balls (a one
+      dimensional three median), at the median carry of that third, inside the lines and short of the wall
+      the 2023 rules (held for every era, as the owner asked): two infielders each side of second, all four
+      on the infield dirt, so no overshift
+    then the spot, the conventions every club plays:
+      a runner on third, under two outs, late and close: the infield in, at the grass
+      else a runner on first, under two outs: the middle infielders at double play depth, two steps in and
+      two toward second
+      late and close (and not in): the corners guard the lines, two steps toward them
+    Pure: the same hitter in the same spot always stands the same. Never decides anything: the engine's
+    play is staged from here exactly as from the stock spots (the plan moves whoever must make or miss a
+    play, as before). */
+export function alignment(bats, o = {}) {
+  const F = spots(bats);
+  const sh = o.shade && o.shade.bats === bats ? o.shade : null;
+  if (sh && sh.inf) [5, 6, 4, 3].forEach((n, j) => { F[n] = pol(sprayOf(F[n]) + sh.inf[j], rad(F[n])); });
+  if (sh && sh.of) {
+    for (const [j, n, lo, hi] of [[0, 7, -42, 15], [1, 8, -25, 25], [2, 9, -15, 42]]) {
+      const a = clamp(sh.of[j][0], lo, hi);
+      F[n] = pol(a, Math.min(sh.of[j][1], wallDist(a) - 25));
+    }
+  }
+  // the 2023 rules: the shortstop and third baseman left of second, the second and first basemen right of
+  // it (a body's width clear, 1.5 ft), the corners inside their lines (as far), all four on the dirt
+  const side = (n, s) => {
+    const p = F[n], r = rad(p), a = sprayOf(p), m = Math.asin(Math.min(1, 1.5 / r)) / D2R;
+    let lo = s < 0 ? -45 + m : m, hi = s < 0 ? -m : 45 - m;
+    // (the dirt's edge, an arc 95 ft from the rubber: a stride inside it)
+    const aa = clamp(a, lo, hi), u = pol(aa, 1), b = u.x * MOUND.x + u.y * MOUND.y, c = MOUND.x * MOUND.x + MOUND.y * MOUND.y - 92 * 92;
+    F[n] = pol(aa, Math.min(r, b + Math.sqrt(b * b - c)));
+  };
+  side(5, -1); side(6, -1); side(4, 1); side(3, 1);
+  // (and in their order: a corner never turned past the man beside him, a body's width clear)
+  const wid = (n) => Math.asin(Math.min(1, 1.5 / rad(F[n]))) / D2R;
+  if (sprayOf(F[5]) > sprayOf(F[6]) - wid(5)) F[5] = pol(sprayOf(F[6]) - wid(5), rad(F[5]));
+  if (sprayOf(F[3]) < sprayOf(F[4]) + wid(3)) F[3] = pol(sprayOf(F[4]) + wid(3), rad(F[3]));
+  const bases = o.bases || 0, outs = o.outs ?? 0, late = lateClose(o);
+  const inn = (bases & 4) && outs < 2 && late;
+  if (inn) for (const n of IF) { const a = sprayOf(F[n]); F[n] = pol(a, Math.min(rad(F[n]), lineAt(a))); }
+  else if ((bases & 1) && outs < 2) {
+    for (const n of [4, 6]) {
+      const p = F[n], r = rad(p) || 1, to = { x: BASE[2].x - p.x, y: BASE[2].y - p.y }, d = Math.hypot(to.x, to.y) || 1;
+      F[n] = { x: p.x - (p.x / r) * 2 * STEP + (to.x / d) * 2 * STEP, y: p.y - (p.y / r) * 2 * STEP + (to.y / d) * 2 * STEP };
+    }
+  }
+  if (late && !inn) {
+    for (const n of [3, 5]) {
+      const a = sprayOf(F[n]), r = rad(F[n]), m = Math.asin(Math.min(1, 1.5 / r)) / D2R;
+      F[n] = pol(clamp(a + Math.sign(a) * (2 * STEP / r) / D2R, -45 + m, 45 - m), r);
+    }
+  }
+  return F;
+}
+
+/** Does the first baseman hold the runner on first at this pitch? A runner on first with second base open, as
+    every club plays it (the bag behind him taken, he plays off it). bases: before the pitch, bitmask. */
+export function holdsRunner(bases) { return !!((bases & 1) && !(bases & 2)); }
 
 /* ------------------------------------------------------------------ motion along a path */
 
@@ -106,6 +189,9 @@ export class Track {
   run(t0, pts, o = {}) {
     const v = o.v ?? this.v, a = o.a ?? this.a;
     if (this.legs.length) t0 = Math.max(t0, this.free);
+    // (a leg chained a hair after the last one starts where it ended: a frame in the sliver between read him
+    // standing still for a frame, his stride gone, check-jolt.mjs)
+    if (this.legs.length && t0 - this.free < 1e-6) t0 = this.free;
     let from = this.end;
     const fromRest = o.fromRest ?? true, toRest = o.toRest ?? true;
     const seg = []; let total = 0;
@@ -146,6 +232,12 @@ export class Track {
       if (g.be > 0 || (nx.t0 < g.t0 + g.T + 0.02 && nx.al === 0)) continue;
       // (its top speed rises to fit the stop into the same time, by no more than a sixth)
       g.be = Math.min(STOP_S / g.T, 2 * (1 - g.al / 2) * (1 - 1 / 1.15));
+      // (a run that was speeding up the whole way, a sprint from rest to a ball he only just reaches, has no
+      // room for a stop after it: the ramps overlapped, so he reached the spot at nine tenths of the leg and
+      // stood there with his stride going at full speed, then stopped in a frame, his body snapping from the
+      // way he ran to the ball, the bobble's skate and pop, check-jolt.mjs. Then it speeds up and pulls up
+      // inside the leg, a rise and a stop, the same top speed, the same time and spot)
+      if (g.al + g.be > 1) { g.be = Math.min(STOP_S / g.T, 0.5); g.al = Math.min(g.al, 1 - g.be); }
     }
   }
   /** Stay where he is until t (whatever comes next starts no sooner). */
@@ -178,10 +270,18 @@ export class Track {
 
 /* ------------------------------------------------------------------ the ball */
 
+/** The soonest after contact a fielder can take a ball in the air (s). */
+const AIR_PICK0 = 0.25;
+/** A batted ball's typical speed (mph) and angle (degrees) by kind, for a measurement that is missing. */
+const DEF = { ground: [86, -6], line: [96, 15], fly: [93, 33], popup: [78, 56] };
+/** A flight a fielder can take in the air: still at a glove's height or above it (planAir catchable, 0.6 ft)
+    when he can first get to it (AIR_PICK0). */
+const takeable = (f) => { const i = f.T.findIndex((t) => t >= AIR_PICK0); return i >= 0 && f.Z[i] >= 0.6; };
+
 /** The ball in the air: drag and backspin lift (none on a low liner), sampled each 1/120 s until it
     lands, or meets the wall (off it below WALL_H, over it above). */
 function simAir(v, la, spray, z0, scale = 1, stopAt = null) {
-  const dt = 1 / 120, lift = clamp((la - 4) / 14, 0, 1) * clamp((72 - la) / 22, 0, 1) * KL;
+  const dt = 1 / 120, lift = clamp((la - LIFT_LO) / 14, 0, 1) * clamp((LIFT_HI - la) / LIFT_FALL, 0, 1) * KL;
   const u = { x: Math.sin(spray * D2R), y: Math.cos(spray * D2R) };
   let vv = v * scale;
   let vh = vv * Math.cos(la * D2R), vz = vv * Math.sin(la * D2R);
@@ -189,7 +289,7 @@ function simAir(v, la, spray, z0, scale = 1, stopAt = null) {
   const T = [0], H = [0], Z = [z0];
   let wall = null, over = false, bounced = false;
   const fair = Math.abs(spray) <= 45.5, W = wallDist(spray);
-  while (t < 9) {
+  while (t < 12) {
     const s = Math.hypot(vh, vz);
     const ah = -KD * s * vh - lift * s * vz, az = -KD * s * vz + lift * s * Math.abs(vh) - G;
     vh += ah * dt; vz += az * dt; h += vh * dt; z += vz * dt; t += dt;
@@ -212,10 +312,10 @@ function simAir(v, la, spray, z0, scale = 1, stopAt = null) {
 
 /** The same flight, coarser and storing nothing: how far it carries (or that it left the park). */
 function carry(v, la, spray, z0, scale) {
-  const dt = 1 / 60, lift = clamp((la - 4) / 14, 0, 1) * clamp((72 - la) / 22, 0, 1) * KL, W = wallDist(spray), fair = Math.abs(spray) <= 45.5;
+  const dt = 1 / 60, lift = clamp((la - LIFT_LO) / 14, 0, 1) * clamp((LIFT_HI - la) / LIFT_FALL, 0, 1) * KL, W = wallDist(spray), fair = Math.abs(spray) <= 45.5;
   const vv = v * scale;
   let vh = vv * Math.cos(la * D2R), vz = vv * Math.sin(la * D2R), h = 0, z = z0, t = 0;
-  while (t < 9) {
+  while (t < 12) {
     const s = Math.sqrt(vh * vh + vz * vz);
     const ah = -KD * s * vh - lift * s * vz, az = -KD * s * vz + lift * s * Math.abs(vh) - G;
     vh += ah * dt; vz += az * dt; h += vh * dt; z += vz * dt; t += dt;
@@ -272,7 +372,8 @@ const INF = 1e9;
 
 /** The plan of one ball in play. pr: the engine's PitchResult (in_play). o: { bats, contact
     {x,y,z} feet (where the bat met it), basesBefore (bitmask; derived from the moves when left
-    out), id (the drawn pitch's id, for the plan's own picks) }. */
+    out), id (the drawn pitch's id, for the plan's own picks), shade (the hitter's shade-data.js row, or
+    null), inning and margin (our lead before the pitch; alignment()) }. */
 export function planPlay(pr, o = {}) {
   const ip = pr.inPlay || {};
   const id = o.id || (pr.drawn && pr.drawn.id) || 'x';
@@ -285,7 +386,6 @@ export function planPlay(pr, o = {}) {
   // the batted ball: a missing measurement takes a typical value for its kind (and says so)
   let bb = ip.bb || (hit ? 'line' : 'fly');
   const guess = [];
-  const DEF = { ground: [86, -6], line: [96, 15], fly: [93, 33], popup: [78, 56] };
   let ev = ip.ev, la = ip.la, spray = ip.spray;
   if (ev == null) { ev = DEF[bb][0] - 6 + 12 * rnd(id, 'ev'); guess.push('ev'); }
   if (la == null) { la = DEF[bb][1] - 3 + 6 * rnd(id, 'la'); guess.push('la'); }
@@ -302,12 +402,24 @@ export function planPlay(pr, o = {}) {
   // foul pop ups behind the plate stay inside the backstop
   const contact = o.contact || { x: (o.bats === 'L' ? 0.3 : -0.3), y: 1.2, z: 2.6 };
   const z0 = clamp(contact.z, 1, 5);
+  // a ball the engine has caught in the air whose measured angle drives it into the dirt before anyone
+  // could reach it (Statcast's pop up at -82 degrees, a liner at -20: a missed track's stand-in values)
+  // is not a reading the picture can fly. Flown as measured, the catcher "caught" it at the bat and threw
+  // a ball he never had (check-inplay.mjs). Its angle takes the typical value for its kind, as a missing
+  // one does (and says so); the speed off the bat stays the measured one the result copy reads.
+  if ((kind === 'air_out' || kind === 'air_drop') && !guess.includes('la') && simAir(ev * 1.4667, la, spray, z0).land.t < AIR_PICK0) {
+    la = DEF[bb][1] - 3 + 6 * rnd(id, 'la'); guess.push('la');
+  }
   const ctx = { pr, o, id, label, moves, before, hit, bb, ev, la, spray, kind, contact, z0, bats: o.bats || 'R' };
   // the outs before the pitch: the engine gives the outs after it and every runner put out on it
   ctx.outs0 = Math.max(0, Math.min(2, (pr.outs ?? 0) - moves.filter((m) => m.to === -1).length));
-  const F = spots(ctx.bats);
+  const F = alignment(ctx.bats, { shade: o.shade || null, bases: before, outs: ctx.outs0, inning: o.inning, margin: o.margin });
+  // the first baseman holds a runner on first with second base open: on the bag at the pitch, his right foot on
+  // its front edge, facing the pitcher (holdsRunner). Over the spot's own alignment: holding him comes first
+  const hold1 = holdsRunner(before);
+  if (hold1) F[3] = { x: BASE[1].x - 1.4, y: BASE[1].y - 0.6 };
   ctx.F = F;
-  const p = { kind, label, bb, ev, la, spray, guess, events: [], segs: [], fielders: {}, runners: [], notes: [] };
+  const p = { kind, label, bb, ev, la, spray, guess, events: [], segs: [], fielders: {}, runners: [], notes: [], hold1 };
   ctx.p = p;
   const tracks = {};
   for (let n = 1; n <= 9; n++) tracks[n] = new Track(F[n], { v: SPEED(n).v, a: SPEED(n).a });
@@ -325,7 +437,8 @@ export function planPlay(pr, o = {}) {
     const sc = p.runners.find((r) => r.scoreAt != null);
     if (sc && OF.includes(ctx.catchAt.n)) {
       const from = ctx.catchAt.q, home = basePoint(4, 'bag'), fly = dist(from, home) / 125 + 0.1;
-      const rel = Math.max(ctx.catchAt.s + 0.55, sc.scoreAt + 0.3 - fly);
+      // (by a tenth to a third of a second, never the same twice: the slide beats the tag, or only just)
+      const rel = Math.max(ctx.catchAt.s + 0.55, sc.scoreAt + 0.1 + 0.25 * rnd(ctx.id, 'late') - fly);
       // the catcher out to the plate for it, and the cutoff man in line between them
       ctx.T[2].run(Math.max(0.6, ctx.T[2].free === -Infinity ? 0.6 : ctx.T[2].free), [home], { toRest: true, v: 12 });
       if (dist(from, home) > 150) {
@@ -347,6 +460,240 @@ export function planPlay(pr, o = {}) {
   p.segs.sort((a, b) => a.t0 - b.t0);
   p.ballAt = (s) => ballAt(p, s);
   p.outcome = outcomeOf(ctx);
+  p.umps = planUmps(p, 0.35);
+  return p;
+}
+
+/* ------------------------------------------------------------------ the base umpires */
+
+/** Where the first, second and third base umpires stand at the pitch, for the bases before it (MLB's four
+    man crew): the first and third base umpires a step into foul ground, about 18 ft beyond their bag down
+    the line; the second base umpire on the outfield grass behind second with the bases empty, and inside
+    the infield with a runner on (on the shortstop side with first base alone occupied, else on the second
+    baseman's side), where he sees a play at second from in front of it. */
+export function umpSpots(bases) {
+  const out = (k) => { const u = k === 1 ? { x: Math.SQRT1_2, y: Math.SQRT1_2 } : { x: -Math.SQRT1_2, y: Math.SQRT1_2 }, f = k === 1 ? { x: Math.SQRT1_2, y: -Math.SQRT1_2 } : { x: -Math.SQRT1_2, y: -Math.SQRT1_2 }; return { x: BASE[k].x + u.x * 18 + f.x * 4, y: BASE[k].y + u.y * 18 + f.y * 4 }; };
+  const u2 = !bases ? { x: -8, y: 146 } : bases === 1 ? { x: -14, y: 112 } : { x: 14, y: 112 };
+  return { 1: out(1), 2: u2, 3: out(3) };
+}
+
+// an umpire's run: brisker than a jog, never a sprint (feet a second, and per second)
+const UMP = { v: 19, a: 11 };
+
+/** The base umpires through the play: each at his spot (umpSpots, for the runners on at the start), and
+    on a play at his base (an out there, or a runner safe there with a throw arriving within a second of
+    him) he goes to a spot 15 ft from the bag square to the throw, on his own side of it, set before the
+    ball gets there, and makes the call at once (the fist up within a fifth of a second of the out): out on an out, safe on a safe. Nothing here
+    decides anything: the call is the plan's own out or safe, which is the engine's (verify holds it).
+    go: when they can start moving (seconds of plan time). Returns { 1, 2, 3: Track, calls: [{ base, s,
+    call: 'out' | 'safe', at }] }. */
+function planUmps(p, go) {
+  let bases = 0;
+  for (const r of p.runners) if (r.from >= 1 && r.from <= 3) bases |= 1 << (r.from - 1);
+  const S = umpSpots(bases), T = {};
+  for (const k of [1, 2, 3]) T[k] = new Track(S[k], UMP);
+  const plays = [];
+  for (const e of p.events) if (e.kind === 'out' && e.base >= 1 && e.base <= 3) plays.push({ base: e.base, s: e.s + 0.05, call: 'out', thr: lastThrowTo(p, e.base, e.s) });
+  for (const sg of p.segs) {
+    if (sg.kind !== 'throw') continue;
+    const k = [1, 2, 3].find((b) => dist(sg.b, BASE[b]) < 8);
+    if (!k) continue;
+    for (const r of p.runners) {
+      if (r.out || r.safeAt !== k || r.arrive == null || r.from === k && !p.pickoff) continue;
+      if (Math.abs(r.arrive - sg.t1) > 1.0) continue;
+      plays.push({ base: k, s: Math.max(r.arrive, sg.t1) + 0.05, call: 'safe', thr: sg });
+    }
+  }
+  plays.sort((a, b) => a.s - b.s);
+  const calls = [];
+  for (const pl of plays) {
+    // (one call a base: a second play there, a runner and a throw that came to nothing, is not called again)
+    if (calls.some((c) => c.base === pl.base)) continue;
+    const tr = T[pl.base], bag = BASE[pl.base], from = tr.end;
+    // square to the throw, on his side of it (no throw: square to the line from home)
+    const d = pl.thr ? { x: bag.x - pl.thr.a.x, y: bag.y - pl.thr.a.y } : { x: bag.x, y: bag.y };
+    const L = Math.hypot(d.x, d.y) || 1, n1 = { x: -d.y / L, y: d.x / L };
+    const c1 = { x: bag.x + n1.x * 15, y: bag.y + n1.y * 15 }, c2 = { x: bag.x - n1.x * 15, y: bag.y - n1.y * 15 };
+    // (at first and third, on the far side of the bag from home and in fair ground, out of the runner's way,
+    // where he sees the bag, the runner's foot and the glove at once; at second, on the side he is already on)
+    const R = rad(bag), score = (q) => ((q.x - bag.x) * bag.x + (q.y - bag.y) * bag.y) / R + 0.5 * Math.sign(q.y - Math.abs(q.x));
+    const spot = pl.base !== 2 ? (score(c1) >= score(c2) ? c1 : c2) : dist(from, c1) <= dist(from, c2) ? c1 : c2;
+    const t0 = Math.max(go, pl.s - 3.2), t1 = Math.max(t0 + 0.4, pl.s - 0.45);
+    // (no time for the whole way: as far toward it as he can go and still pull up before the call. Run
+    // through, he stopped dead from a full run in a frame, check-jolt.mjs)
+    const dd = dist(from, spot);
+    let go2 = spot;
+    if (runTime(dd, UMP.v, UMP.a, true, true) > t1 - t0) {
+      let lo = 0, hi = dd;
+      for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (runTime(m, UMP.v, UMP.a, true, true) <= t1 - t0) lo = m; else hi = m; }
+      go2 = lerp(from, spot, lo / Math.max(1e-6, dd));
+    }
+    if (dist(from, go2) > 0.5) tr.arrive(t0, go2, t1, { toRest: true });
+    tr.act(pl.s, 'call', { call: pl.call, base: pl.base });
+    calls.push({ base: pl.base, s: pl.s, call: pl.call, at: tr.at(pl.s) });
+  }
+  for (const k of [1, 2, 3]) T[k].settle();
+  return { 1: T[1], 2: T[2], 3: T[3], calls, bases };
+}
+function lastThrowTo(p, base, s) {
+  let best = null;
+  for (const sg of p.segs) if (sg.kind === 'throw' && sg.t1 <= s + 0.05 && dist(sg.b, BASE[base]) < 8 && (!best || sg.t1 > best.t1)) best = sg;
+  return best;
+}
+
+/** A steal (rules 7, CONTRACT.md 5i: pr.steal, on a ball or a strike), staged as a play from the catch:
+    the runner already gone with the pitch, the catcher's throw down (his own pop time, catch to glove),
+    the cover man on the bag, the slide and the tag, safe or out by the engine's margin (seconds, plus is
+    safe by). Plan time 0 is the catch. Nothing here decides anything: the engine's result and margin
+    are what it shows. Returns a plan of the same shape planPlay returns (kind 'steal'). */
+export function planSteal(pr, o = {}) {
+  const st = pr.steal, id = o.id || (pr.drawn && pr.drawn.id) || 'x';
+  const from = st.from, to = st.to, out = st.result === 'out';
+  const F = spots(o.bats || 'R');
+  const p = { kind: 'steal', label: 'steal', bb: null, ev: null, la: null, spray: to === 3 ? -30 : 0, guess: [], events: [], segs: [], fielders: {}, runners: [], notes: [], flight: null };
+  const T = {};
+  for (let n = 1; n <= 9; n++) T[n] = new Track(F[n], { v: SPEED(n).v, a: SPEED(n).a });
+  p.fielders = T;
+  const ctx = { p, T, F, pr, o, id, kind: 'steal', label: 'steal', moves: [], spray: p.spray, bats: o.bats || 'R', outs0: 0 };
+  // the catcher: the ball in his glove at 0, up and throwing; the ball in the cover man's glove at his
+  // pop time (Savant's, catch to glove at second; a throw to third is shorter)
+  const home = { x: 0, y: -1.5 }, bag = basePoint(to, 'bag');
+  const pop = clamp(st.catcher && st.catcher.pop ? st.catcher.pop : 2.0, 1.75, 2.3) * (to === 3 ? 0.8 : 1);
+  const fly = dist(home, bag) / 122 + 0.05, rel = pop - fly;
+  p.segs.push({ kind: 'held', t0: 0, by: 2, t1: null });
+  T[2].act(0, 'catch_throw', { from: home });
+  const cov = st.cover || (to === 3 ? 5 : 4);
+  // (the cover man broke for the bag when the runner went, with the pitch: at the catch he is well on
+  // his way, and on the bag a beat before the ball)
+  T[cov] = p.fielders[cov] = new Track(lerp(F[cov], basePoint(to, 'bag'), 0.45), { v: SPEED(cov).v, a: SPEED(cov).a });
+  const onBag = T[cov].arrive(0, basePoint(to, 'bag'), Math.max(0.6, pop - 0.35), { toRest: true });
+  T[cov].act(onBag, 'cover', { base: to });
+  ctx.cover = { [cov + ':' + to]: onBag };
+  throwBall(ctx, 2, cov, rel, home, { ...bag, z: 2.2 }, fly);
+  const tBall = rel + fly;
+  // the runner: off with the pitch (at the catch he is a third of the way), at the bag by the margin
+  const lead = leadOff(from), path = basePath(from, to);
+  const tr = new Track(lerp(lead, BASE[to], 0.3), { v: 27, a: 16 });
+  const margin = Number.isFinite(st.margin) ? st.margin : (out ? -0.1 : 0.1);
+  const arrive = Math.max(0.9, tBall - margin);
+  tr.arrive(0, path[path.length - 1], arrive, { toRest: true, v: 29 });
+  const r = { from, to, track: tr, out, batter: false, safeAt: out ? null : to, arrive };
+  // the tag: on him as he gets there, or the instant the ball does
+  const tagAt = Math.max(arrive, tBall) + 0.03;
+  T[cov].act(tagAt, 'tag', { base: to, runner: from });
+  if (out) { r.outAt = tagAt; r.outBase = to; p.events.push({ s: tagAt, kind: 'out', base: to, runner: from }); }
+  p.runners.push(r);
+  // whoever else is on stays on his bag
+  for (const b of [1, 2, 3]) if (b !== from && pr.bases != null && (pr.bases & (1 << (b - 1))) && b !== to) {
+    const t2 = new Track(leadOff(b), { v: 27, a: 16 });
+    t2.run(0.3, [lerp(leadOff(b), BASE[b], 0.5)], { v: 8, toRest: true });
+    p.runners.push({ from: b, to: b, track: t2, out: false, batter: false, safeAt: b, arrive: t2.free });
+  }
+  ctx.firstTouch = { s: 0, n: 2, how: 'catch', at: home, fell: false };
+  ctx.lastHolder = cov;
+  for (let n = 1; n <= 9; n++) T[n].settle();
+  for (const x of p.runners) x.track.settle();
+  // the cut: the pitcher's view a beat, then the high home on the throw down and the bag, one shot; a
+  // bang bang one slowed at the tag
+  const CUT = 0.2, end = tagAt + 1.1;
+  const pieces = [{ s0: 0, s1: CUT, cam: 'pitcher', rate: 1 }, { s0: CUT, s1: end, cam: 'follow', rate: 1, m: tagAt }];
+  if (Math.abs(margin) < 0.12) {
+    const out2 = [];
+    for (const pc of pieces) {
+      const a = tagAt - 0.3, b = tagAt + 0.15;
+      if (pc.cam === 'pitcher' || b <= pc.s0 || a >= pc.s1) { out2.push(pc); continue; }
+      out2.push({ ...pc, s1: a }, { ...pc, s0: a, s1: b, rate: 0.38 }, { ...pc, s0: b });
+    }
+    pieces.splice(0, pieces.length, ...out2);
+    p.decisive = { s: tagAt, kind: 'bang' };
+    p.events.push({ s: tagAt, kind: 'crowd', cue: 'big' });
+  } else p.decisive = null;
+  p.edit = pieces;
+  p.realDur = pieces.reduce((acc, x) => acc + (x.s1 - x.s0) / x.rate, 0);
+  p.dur = pieces[pieces.length - 1].s1;
+  p.resolveAt = tagAt + 0.05;
+  p.steal = { from, to, out, tagAt, tBall, arrive, margin };
+  p.events.sort((a, b) => a.s - b.s);
+  p.segs.sort((a, b) => a.t0 - b.t0);
+  p.ballAt = (s) => ballAt(p, s);
+  p.outcome = outcomeOf(ctx);
+  p.umps = planUmps(p, 0.1);
+  return p;
+}
+
+/** A pickoff throw (rules 7, CONTRACT.md 5i: { base, out, balk, margin, runs? } with the bases before
+    it), staged from the pitcher's move: he steps off and throws over, the runner dives back, the man on
+    the bag tags, and the engine's call stands (margin seconds, plus is safe by). On a balk every runner
+    then moves up a base. Plan time 0 is his move. Returns a plan of planPlay's shape (kind 'pickoff'). */
+export function planPickoff(po, o = {}) {
+  const base = po.base, out = !!po.out, id = o.id || 'po' + (po.n ?? 0);
+  const F = spots(o.bats || 'R');
+  const cov = base === 1 ? 3 : base === 3 ? 5 : (o.bats === 'L' ? 6 : 4);
+  // (the man holding a runner on is on the bag already; a middle infielder breaks in behind him)
+  if (base === 1) F[3] = { x: BASE[1].x - 1.5, y: BASE[1].y + 1.5 };
+  if (base === 3) F[5] = { x: BASE[3].x + 6, y: BASE[3].y - 3 };
+  if (base === 2) F[cov] = lerp(F[cov], BASE[2], 0.5);
+  const p = { kind: 'pickoff', label: 'pickoff', bb: null, ev: null, la: null, spray: base === 3 ? -40 : base === 1 ? 40 : 0, guess: [], events: [], segs: [], fielders: {}, runners: [], notes: [], flight: null };
+  const T = {};
+  for (let n = 1; n <= 9; n++) T[n] = new Track(F[n], { v: SPEED(n).v, a: SPEED(n).a });
+  p.fielders = T;
+  const ctx = { p, T, F, o, id, kind: 'pickoff', label: 'pickoff', moves: [], spray: p.spray, bats: o.bats || 'R', outs0: 0 };
+  const bag = basePoint(base, 'bag'), rubber = { x: 0, y: 59.5 };
+  const onBag = base === 1 ? 0 : T[cov].arrive(0.1, bag, 0.75, { toRest: true });
+  if (base !== 1) T[cov].act(onBag, 'cover', { base });
+  const fly = dist(rubber, bag) / 115 + 0.05, rel = Math.max(0.55, onBag - fly + 0.25);
+  p.segs.push({ kind: 'held', t0: 0, by: 1, t1: null });
+  T[1].act(0, 'set');
+  throwBall(ctx, 1, cov, rel, rubber, { ...bag, z: 1.6 }, fly);
+  const tBall = rel + fly;
+  // the runner: a lead off the bag, back on the move, a dive in to beat it (or not, by the margin)
+  const lead = lerp(BASE[base], BASE[Math.min(4, base + 1)], base === 3 ? 0.14 : 0.15);
+  const tr = new Track(lead, { v: 27, a: 16 });
+  const margin = Number.isFinite(po.margin) ? po.margin : (out ? -0.08 : 0.25);
+  const back = Math.max(0.5, tBall - margin);
+  tr.arrive(0.2, BASE[base], back, { toRest: true, v: 24 });
+  const r = { from: base, to: out ? -1 : base, track: tr, out, batter: false, safeAt: out ? null : base, arrive: back };
+  const tagAt = Math.max(back, tBall) + 0.03;
+  T[cov].act(tagAt, 'tag', { base, runner: base });
+  if (out) { r.outAt = tagAt; r.outBase = base; p.events.push({ s: tagAt, kind: 'out', base, runner: base }); }
+  p.runners.push(r);
+  // the others: a step off and back. A balk moves every runner up a base once it is called.
+  const bases = o.basesBefore || (1 << (base - 1));
+  for (const b of [1, 2, 3]) if (b !== base && (bases & (1 << (b - 1)))) {
+    const t2 = new Track(leadOff(b), { v: 27, a: 16 });
+    t2.run(0.3, [lerp(leadOff(b), BASE[b], 0.6)], { v: 8, toRest: true });
+    p.runners.push({ from: b, to: b, track: t2, out: false, batter: false, safeAt: b, arrive: t2.free });
+  }
+  if (po.balk) for (const x of p.runners) {
+    if (x.out) continue;
+    const nx = Math.min(4, x.from + 1);
+    x.arrive = x.track.run(Math.max(x.track.free, tagAt + 0.5), [BASE[nx]], { v: 20, toRest: true });
+    x.to = nx; x.safeAt = nx < 4 ? nx : null;
+    if (nx === 4) x.scoreAt = x.arrive;
+  }
+  ctx.firstTouch = { s: 0, n: 1, how: 'catch', at: rubber, fell: false };
+  ctx.lastHolder = cov;
+  for (let n = 1; n <= 9; n++) T[n].settle();
+  for (const x of p.runners) x.track.settle();
+  // (a balk: the call and the first strides of the walk up; the diamond on the scorebar has the rest)
+  const end = tagAt + (po.balk ? 2.6 : 1.0);
+  const pieces = [{ s0: 0, s1: end, cam: 'follow', rate: 1, m: tagAt }];
+  if (Math.abs(margin) < 0.12) {
+    const a = tagAt - 0.3, b = tagAt + 0.15;
+    pieces.splice(0, 1, { ...pieces[0], s1: a }, { ...pieces[0], s0: a, s1: b, rate: 0.38 }, { ...pieces[0], s0: b });
+    p.decisive = { s: tagAt, kind: 'bang' };
+    p.events.push({ s: tagAt, kind: 'crowd', cue: 'big' });
+  } else p.decisive = null;
+  p.edit = pieces;
+  p.realDur = pieces.reduce((acc, x) => acc + (x.s1 - x.s0) / x.rate, 0);
+  p.dur = pieces[pieces.length - 1].s1;
+  p.resolveAt = tagAt + 0.05;
+  p.pickoff = { base, out, tagAt, tBall, back, margin, balk: !!po.balk };
+  p.events.sort((a, b) => a.s - b.s);
+  p.segs.sort((a, b) => a.t0 - b.t0);
+  p.ballAt = (s) => ballAt(p, s);
+  p.outcome = outcomeOf(ctx);
+  p.umps = planUmps(p, 0.1);
   return p;
 }
 
@@ -418,9 +765,25 @@ function planGround(ctx) {
       if (!near || m < near.m) near = { n, m, s: ms };
     }
     if (near && near.m < 30) {
-      const b = at(near.s), tgt = lerp(F[near.n], b, Math.min(1, (near.m - 4) / near.m));
-      T[near.n].run(SPEED(near.n).react, [tgt], { toRest: true });
-      T[near.n].act(near.s - 0.1, 'dive', { to: b });
+      // (as far toward it as he gets by the dive, never further: he ran on to a spot he reached half a second
+      // after he had laid out, sliding along the grass flat out, and his next run began while he was still
+      // down, check-jolt.mjs. He dives from where he is, and is up before he runs again)
+      const n = near.n, sp = SPEED(n), b = at(near.s), tD = Math.max(sp.react + 0.05, near.s - 0.1);
+      const go = Math.min(Math.max(0, near.m - 4), reach(tD, sp.react, sp.v, sp.a));
+      const tgt = lerp(F[n], b, go / near.m);
+      // (off his run, not from a stand: pulled up first and then laid out from standing, his head went over a
+      // body's speed. The dive carries him on a few feet as he goes down, over a third of a second)
+      // (from the moment his run ends, as the plan has it, not the moment asked for: a hair apart, a frame between
+      // the two read him standing, his stride gone and his feet down for a frame in the middle of the dive)
+      let tDv = tD;
+      if (go > 0.5) {
+        tDv = T[n].arrive(sp.react, tgt, tD, { toRest: false });
+        const v0 = T[n].at(tDv - 1e-3).spd, u = { x: (tgt.x - F[n].x) / go, y: (tgt.y - F[n].y) / go };
+        if (v0 > 2) T[n].run(tDv, [{ x: tgt.x + u.x * v0 * 0.175, y: tgt.y + u.y * v0 * 0.175 }], { fromRest: false, toRest: true, v: v0, a: v0 / 0.35 });
+      }
+      T[n].act(tDv, 'dive', { to: b });
+      // (the dive's get up: down from tDv to 0.75 s after it, up by 1.35 s, inplay.js)
+      T[n].hold(tDv + 1.2);
     }
     // an outfielder cuts it off as it rolls
     const of = retrieveRolling(ctx, at, g, 0);
@@ -451,8 +814,9 @@ function planGround(ctx) {
   if (!best) best = { n: 1, s: 1.5, b: at(1.5) };
   const n = best.n, sp = SPEED(n);
   // he gets to the spot a beat before the ball and fields it in front of him
+  const standFor = (bb) => lerp(F[n], bb, Math.max(0, (dist(F[n], bb) - 1.5) / Math.max(1e-3, dist(F[n], bb))));
   const b = best.b;
-  const stand = lerp(F[n], b, Math.max(0, (dist(F[n], b) - 1.5) / Math.max(1e-3, dist(F[n], b))));
+  const stand = standFor(b);
   T[n].arrive(sp.react, stand, Math.max(sp.react + 0.2, best.s - 0.12), { toRest: true });
   T[n].act(best.s - 0.25, 'set');
   T[n].act(best.s, 'field', { ball: b });
@@ -508,7 +872,19 @@ function holdThenThrow(ctx, n, s, at, late) {
   for (const o of outs) {
     const cov = coverer(ctx, o.base, holder, done);
     const tgtPt = basePoint(o.base, o.base === 1 ? 'in' : 'bag');
-    if (cov === holder || dist(pos, tgtPt) < 22) {
+    // (or he gets to the bag sooner than a throw could: the man who would cover it comes from far off. A third
+    // baseman who fielded a ball 30 ft from his bag stood three seconds holding it for the shortstop to come
+    // over from deep short, and the broadcast waited on him while the batter was safe at first out of frame,
+    // check-frame.mjs)
+    const selfAt = () => {
+      const T0 = ctx.T[cov], sp0 = SPEED(cov), key = cov + ':' + o.base;
+      const ready = ctx.cover && ctx.cover[key] != null ? ctx.cover[key]
+        : Math.max(sp0.react, T0.free === -Infinity ? sp0.react : T0.free) + runTime(dist(T0.end, basePoint(o.base, 'bag')), sp0.v, sp0.a, true, true);
+      const fly = dist(pos, tgtPt) / (OF.includes(holder) ? 125 : 118) + 0.06;
+      const ball = Math.max(t + (done.length ? 0.32 : 0.65), ready - fly + 0.05) + fly;
+      return !OF.includes(holder) && t + 0.05 + runTime(dist(pos, tgtPt), 22, 18, true, false) <= ball;
+    };
+    if (cov === holder || dist(pos, tgtPt) < 22 || selfAt()) {
       // close enough to take it himself (and a tag he makes himself waits for the runner too)
       runnerEta(ctx, o);
       const arr = ctx.T[holder].run(t + 0.05, [tgtPt], { v: 22 });
@@ -744,13 +1120,18 @@ function planAir(ctx) {
     else band = [W - 45, W - 4];
   } else {
     // an out (or a drop): pop ups stay in or near the infield; foul ones behind the plate stay short
-    if (pop) band = Math.abs(spray) > 90 ? [12, 45] : [20, 185];
+    // (a pop up comes down where its own flight takes it, in the infield or just past it: no longer
+    // pinned to 185 ft, where the old long carry held most of them)
+    if (pop) band = Math.abs(spray) > 90 ? [12, 45] : [20, 240];
     else if (ctx.bb === 'line') band = [80, W - 20];
-    else band = [150, W - 6];
+    // (a towering one, over 50 degrees, comes down shallower: its own carry, Statcast's, is short)
+    else band = [la > 50 ? 90 : 150, W - 6];
   }
   // fly the measured ball; hold its distance to the band by scaling its speed (the angles stay)
   const natural = simAir(v, la, spray, z0);
-  const nat = natural.over ? natural.wall.h + 40 : natural.land.h;
+  // (rules 6 and on: the engine's own carry for the real ball, Statcast's distance, is where it lands)
+  const real = ctx.pr.inPlay && Number.isFinite(ctx.pr.inPlay.carry) && kind !== 'hr' ? ctx.pr.inPlay.carry : null;
+  const nat = real != null ? real : natural.over ? natural.wall.h + 40 : natural.land.h;
   // (a ball hit nearly straight up keeps its own carry when short: a pop up is not sped up to reach
   // somewhere, it comes down where it comes down)
   const want = la > 70 && nat < band[0] ? nat : clamp(nat, band[0], band[1]);
@@ -766,6 +1147,15 @@ function planAir(ctx) {
     f = simAir(v, la, spray, z0, scale);
     if (kind === 'hr' && !f.over) { for (let k = 0; k < 20 && !f.over; k++) { scale *= 1.03; f = simAir(v, la, spray, z0, scale); } }
     if (kind !== 'hr' && f.over) { for (let k = 0; k < 40 && f.over; k++) { scale *= 0.98; f = simAir(v, la, spray, z0, scale); } }
+  }
+  // a ball caught in the air that, flown out to where its result needs it, is already below a glove when a
+  // fielder can first get to it is the same stand-in reading as one in the dirt at once (planPlay): Lidge 2005's
+  // fly ball at -1 degrees, sped up to carry 150 ft, was on the grass 0.275 s out and the first baseman
+  // "caught" it at his shoe, the glove 0.42 m off the ball (check-catch.mjs). Its angle takes the typical
+  // value for its kind, and it is planned again
+  if ((kind === 'air_out' || kind === 'air_drop') && !p.guess.includes('la') && !takeable(f)) {
+    ctx.la = p.la = DEF[ctx.bb][1] - 3 + 6 * rnd(ctx.id, 'la'); p.guess.push('la');
+    return planAir(ctx);
   }
   p.scale = scale;
   const u = f.u;
@@ -789,21 +1179,27 @@ function planAir(ctx) {
     return;
   }
   // where a fielder can take it: a point on its way down, under 8 ft (a liner: anywhere under 8 ft)
-  const catchable = (s) => { const q = airAt(s); if (q.z > 8.2) return null; const q2 = airAt(s + 0.02); return (q2.z < q.z || ctx.bb === 'line') ? q : null; };
+  const catchable = (s) => { const q = airAt(s); if (q.z > 8.2 || q.z < 0.6) return null; const q2 = airAt(s + 0.02); return (q2.z < q.z || ctx.bb === 'line') ? q : null; };
   const tEnd = f.bounced ? f.wall.t : f.land.t;
   const who = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const pick = () => {
     let best = null;
     for (const n of who) {
       const sp = SPEED(n);
-      for (let s = 0.25; s <= tEnd + 1e-6; s += 1 / 60) {
+      for (let s = AIR_PICK0; s <= tEnd + 1e-6; s += 1 / 60) {
         const q = catchable(s); if (!q) continue;
         if (n === 2 && rad(q) > 70 && Math.abs(ctx.spray) < 60) break;
         const d = dist(F[n], q);
         if (d <= reach(s, sp.react, sp.v, sp.a) + 3) {
           // an outfielder coming in has it over an infielder going out
-          const pri = s + (OF.includes(n) ? -0.4 : 0) + (n === 2 && Math.abs(ctx.spray) < 90 ? 0.6 : 0) + (n === 1 ? 0.8 : 0);
-          if (!best || pri < best.pri) best = { n, s, q, pri };
+          // (a pop up is the infielders' and the catcher's: they call off an outfielder short of the
+          // grass's edge, and the pitcher gives way to anyone)
+          const popIn = pop && rad(q) < 200;
+          const pri = s + (OF.includes(n) ? (popIn ? 0.6 : -0.4) : popIn && n !== 1 ? -0.5 : 0) + (n === 2 && Math.abs(ctx.spray) < 90 && !popIn ? 0.6 : 0) + (n === 1 ? 0.8 : 0);
+          // (two who get there at the same moment: the one standing nearer it takes it, the man under it
+          // calling off the one running; before, the lower number won, a centre fielder running 90 ft past
+          // a right fielder camped under the ball)
+          if (!best || pri < best.pri - 1e-9 || (pri <= best.pri + 1e-9 && d < best.d)) best = { n, s, q, pri, d };
           break;
         }
       }
@@ -843,8 +1239,31 @@ function planAir(ctx) {
     const stand = { x: q.x, y: q.y };
     const deep = rad(stand) > W - 22 && OF.includes(n);
     ctx.deep = rad(stand) > 200;
-    const arrive = T[n].arrive(sp.react, stand, Math.max(sp.react + 0.4, s - (deep ? 0.04 : 0.35)), { toRest: !deep, v: sp.v });
-    void arrive;
+    // (a routine one: he gets there and settles under it, a second or more before it comes down, as a
+    // real fielder does; one he has to run down he takes on the run, as before)
+    const need = sp.react + runTime(dist(F[n], stand), sp.v, sp.a, true, true);
+    const settle = !deep && ctx.bb !== 'line' && need < s - 1.2 ? Math.max(need + 0.15, s - 1.6) : null;
+    // (a runner on third tagging: an outfielder with the time sets up a few steps behind the catch and comes
+    // in through it, his momentum toward the plate, as a strong arm does to throw through)
+    const tagHome = kind === 'air_out' && OF.includes(n) && settle != null && ctx.moves.some((m) => m.from === 3 && (m.to === 4 || m.to === -1));
+    if (tagHome) {
+      const toHome = { x: -stand.x, y: -stand.y }, dl = Math.hypot(toHome.x, toHome.y) || 1;
+      const behind = { x: stand.x - toHome.x / dl * 7, y: stand.y - toHome.y / dl * 7 };
+      T[n].arrive(sp.react, behind, Math.max(need + 0.15, s - 1.4), { toRest: true, v: sp.v });
+      T[n].hold(s - 0.55);
+      T[n].arrive(s - 0.55, stand, s, { toRest: false, v: 18 });
+    } else {
+      const t1 = settle != null ? settle : Math.max(sp.react + 0.4, s - (deep ? 0.04 : 0.35));
+      const nLegs = T[n].legs.length;
+      const arrive = T[n].arrive(sp.react, stand, t1, { toRest: !deep, v: sp.v });
+      // (there early and at rest, he waits under it: whatever he does next starts at the catch, never
+      // before it. One who could only run through the spot takes it on the run instead, there exactly at
+      // the catch: held there he stopped dead in a frame, check-jolt.mjs)
+      if (!deep && arrive < s) {
+        if (Math.abs(arrive - t1) < 1e-3) T[n].hold(s);
+        else { T[n].legs.length = nLegs; T[n].arrive(sp.react, stand, s, { toRest: false, v: sp.v }); }
+      }
+    }
     T[n].act(s - 0.45, 'reach', { ball: q });
     T[n].act(s, kind === 'air_drop' ? 'drop' : 'catch', { ball: q, high: q.z, wall: deep });
     p.segs.push({ kind: 'air', t0: 0, t1: s, at: airAt });
@@ -1006,6 +1425,18 @@ function planRunners(ctx) {
       }
       // stays: on a ground ball a step off and back; on a fly with fewer than two out he goes partway
       // (farther on a deep one), watches, and goes back to the bag once it is caught or played
+      // (a fly caught with fewer than two out: he tags, on the bag at the catch, and bluffs: a few hard
+      // strides toward the next bag as the ball is caught, a stop, and back)
+      if (caught && ctx.outs0 < 2) {
+        const tc = ctx.catchAt.s;
+        tr.run(0.2, [BASE[m.from]], { v: 9, toRest: true });
+        tr.hold(tc + 0.08);
+        const fake = lerp(BASE[m.from], next, m.from === 3 ? 0.2 : 0.15);
+        tr.run(tc + 0.08, [fake], { fromRest: true, toRest: true, v: 22 });
+        r.arrive = tr.run(tr.free + 0.25, [BASE[m.from]], { v: 12, toRest: true });
+        r.bluff = true;
+        continue;
+      }
       const deep = air && ctx.flight ? clamp((p.flight && p.flight.land ? rad(p.flight.land) : 200) / 300, 0, 1) : 0;
       const half = lerp(off, next, air ? 0.2 + 0.2 * deep : 0.12);
       const t1 = tr.run(0.3, [half], { v: air ? 16 : 12 });
@@ -1033,7 +1464,8 @@ function planRunners(ctx) {
           r.arrive = back; r.outAt = po ? po.ballAt : back; r.outBase = m.from;
         } else {
           // tagged and went: thrown out at the next base
-          const tAt = po && po.ballAt ? po.ballAt + 0.15 + 0.3 * rnd(ctx.id, 'tag') : ctx.catchAt.s + 3;
+          // (a step late, bang bang: the throw beats him by a few hundredths to a fifth of a second)
+          const tAt = po && po.ballAt ? po.ballAt + 0.06 + 0.16 * rnd(ctx.id, 'tag') : ctx.catchAt.s + 3;
           tr.arrive(ctx.catchAt.s + 0.08, BASE[ob], tAt, { v: 27, toRest: true });
           r.arrive = tAt; r.outAt = po ? po.ballAt : tAt; r.outBase = ob;
         }
@@ -1265,18 +1697,24 @@ function planEdit(ctx) {
     const groundish = kind === 'ground_play' || kind === 'ground_hit';
     const beats = [];
     const touch = ctx.catchAt ? ctx.catchAt.s : ctx.landAt != null ? ctx.landAt : ft.s;
-    const ballCam = groundish ? 'follow' : ctx.bb === 'line' ? 'track' : 'follow';
-    if (groundish) beats.push({ s0: CUT, s1: Math.max(ft.s + 0.55, CUT + 1.6), cam: 'follow', pri: 9 });
-    else if (ctx.bb === 'line') beats.push({ s0: CUT, s1: Math.max(touch + 0.55, CUT + 1.6), cam: 'track', pri: 9 });
-    else {
-      // up into the sky, then down to whoever is under it (a long hang is cut: up, then the catch)
-      const apexT = apexTime(ctx);
-      const skyEnd = Math.min(Math.max(CUT + 0.6, apexT * 0.7), 1.4, touch - 0.8);
+    // the broadcast's camera plan (the owner, 2026-10-26: "a true broadcast feel... show more of the
+    // field at once and not pan so fast"): the high home camera ('follow', high behind the plate) is the
+    // game camera from contact, a ball on the ground, a liner and a fly ball alike, and holds the infield
+    // play whole (the fielder, the ball, the base) in one shot. The high first and third base cameras
+    // ('wide') take a runner's moment the high home cannot hold with the ball, the low plate camera a run
+    // scoring out of its frame, and the low angle behind the plate ('sky') only a home run or a towering fly.
+    const ballCam = 'follow';
+    // (a towering one, over four seconds up and down, is cut as before: the low angle on its climb, then
+    // the high home on its way down to the man under it)
+    if (!groundish && touch - CUT > 4.2) {
+      const skyEnd = Math.min(Math.max(CUT + 0.6, apexTime(ctx) * 0.7), 1.4, touch - 0.8);
       beats.push({ s0: CUT, s1: skyEnd, cam: 'sky', pri: 9 });
       beats.push({ s0: Math.max(skyEnd, touch - 2.1), s1: touch + 0.55, cam: 'follow', pri: 9 });
-    }
+    } else beats.push({ s0: CUT, s1: Math.max(touch + 0.55, CUT + 1.6), cam: 'follow', pri: 9 });
+    // (an infield play: fielded by an infielder on the infield, the high home's one shot)
+    const infPlay = groundish && ft.n != null && ft.n <= 6 && Math.hypot(ft.at ? ft.at.x : 0, ft.at ? ft.at.y : 0) < 160;
     // the ball picked up after a hit, and the throw in
-    if (ft.s > touch + 0.2) beats.push({ s0: ft.s - 0.8, s1: ft.s + 0.4, cam: ballCam === 'track' ? 'track' : 'follow', pri: 3 });
+    if (ft.s > touch + 0.2) beats.push({ s0: ft.s - 0.8, s1: ft.s + 0.4, cam: ballCam, pri: 3 });
     // every putout: the throw and the tag or the bag
     for (const po of (ctx.putouts || [])) {
       const thr = ev.filter((e) => e.kind === 'throw' && e.s <= po.ballAt + 1e-6).pop();
@@ -1288,7 +1726,8 @@ function planEdit(ctx) {
       const sg = thr && p.segs.find((x) => x.kind === 'throw' && Math.abs(x.t0 - thr.s) < 1e-6);
       const relay = (ctx.putouts || []).indexOf(po) > 0;
       const long = relay && sg && Math.hypot(sg.b.x - sg.a.x, sg.b.y - sg.a.y) > 70;
-      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: po.base === 4 ? 'plate' : long ? 'wide' : 'follow', pri: 8, m: outT });
+      // (on the ground the high home holds it all, the plate too: one shot)
+      beats.push({ s0: (thr ? thr.s : po.ballAt) - 0.35, s1: outT + 0.45, cam: infPlay ? 'follow' : po.base === 4 ? 'plate' : long ? 'wide' : 'follow', pri: 8, m: outT });
     }
     // a tag-up: the catch, then straight to the runner leaving his bag on it (the umpire's look)
     if (ctx.catchAt && kind === 'air_out') {
@@ -1296,12 +1735,14 @@ function planEdit(ctx) {
       if (tg.length) beats.push({ s0: ctx.catchAt.s + 0.12, s1: ctx.catchAt.s + 1.2, cam: 'wide', pri: 7, m: ctx.catchAt.s + 0.3, tagUp: true });
     }
     // runs that score
-    for (const r of runs) beats.push({ s0: r - 0.9, s1: r + 0.4, cam: 'plate', pri: 7, m: r });
+    // (in an infield play the high home has the plate under it already)
+    for (const r of runs) beats.push({ s0: r - 0.9, s1: r + 0.4, cam: infPlay && r < ft.s + 4 ? 'follow' : 'plate', pri: 7, m: r });
     // every runner pulling into his base safe (the hitter on a hit above all): the owner, 2026-10-22,
     // wants to see the play unfold, the out or the safe at the base
     for (const r of p.runners) {
       if (r.out || !(r.to >= 1 && r.to <= 3) || r.arrive == null || r.from === r.to || r.arrive <= 0.8) continue;
-      beats.push({ s0: r.arrive - 1.1, s1: r.arrive + 0.4, cam: 'wide', pri: r.from === 0 && ctx.hit ? 7 : 6, m: r.arrive });
+      // (an infield play's runners are in the high home's frame with it; a ball in the outfield leaves them to the base cameras)
+      beats.push({ s0: r.arrive - 1.1, s1: r.arrive + 0.4, cam: infPlay ? 'follow' : 'wide', pri: r.from === 0 && ctx.hit ? 7 : 6, m: r.arrive });
     }
     const build = (list) => {
       list = list.slice().sort((x, y) => x.s0 - y.s0);
@@ -1315,13 +1756,16 @@ function planEdit(ctx) {
           if (bt.cam !== cur.cam && bt.pri >= 6 && !(cur.m != null && cur.m >= bt.s0 - 0.2 && cur.m <= bt.s1 + 0.2)) {
             const tail = { ...cur, s0: bt.s1 };
             if (bt.s0 > cur.s0 + 0.4) { cur.s1 = bt.s0; out.push({ s0: bt.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m }); }
-            // (it starts with the shot: it opens the shot, the rest follows)
-            else { out.pop(); out.push({ s0: cur.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m }); }
+            // (it starts with the shot: it opens the shot, the rest follows. A shot that changed camera
+            // only for its jump cut goes back to its own once another camera opens it: the jump is now
+            // to that one. Held on the other, a run at home, a throw from deep centre and the out at
+            // second fell to the high first base camera, which cannot hold them all, check-frame.mjs)
+            else { out.pop(); out.push({ s0: cur.s0, s1: bt.s1, cam: bt.cam, rate: 1, m: bt.m }); if (cur.own && cur.own !== bt.cam) tail.cam = cur.own; }
             if (tail.s1 - tail.s0 > 0.4) out.push(tail);
           }
           continue;
         }
-        if (bt.s0 <= cur.s1 + 1.0) {
+        if (bt.s0 <= cur.s1 + (bt.cam === cur.cam && infPlay ? 2.0 : 1.0)) {
           // continuous: the same camera runs on; a new one takes over from where the last ended
           if (bt.cam === cur.cam || cur.cam === 'pitcher' && false) { cur.s1 = bt.s1; if (bt.m != null) cur.m = bt.m; }
           else if (cur.m != null && bt.m != null && bt.m > cur.m + 0.3) {
@@ -1337,8 +1781,8 @@ function planEdit(ctx) {
         } else {
           let cam = bt.cam;
           // (a jump cut changes camera, but a deciding moment keeps the one that shows it)
-          if (cam === cur.cam && bt.m == null) cam = cam === 'wide' ? 'follow' : 'wide';
-          out.push({ s0: bt.s0, s1: bt.s1, cam, rate: 1, m: bt.m });
+          if (cam === cur.cam && (bt.m == null || cam === 'follow')) cam = cam === 'wide' ? 'follow' : 'wide';
+          out.push({ s0: bt.s0, s1: bt.s1, cam, rate: 1, m: bt.m, own: cam !== bt.cam ? bt.cam : undefined });
         }
       }
       return out;
@@ -1363,6 +1807,8 @@ function planEdit(ctx) {
       const main = pcs.find((x) => x.cam !== 'pitcher' && x.cam !== 'sky' && x.s1 - x.s0 > 2.2);
       // (never past a deciding moment in it: the trim takes only the run up to it)
       const ms = list.filter((b) => b.m != null && main && b.m >= main.s0 && b.m <= main.s1).map((b) => b.m);
+      // (nor past the catch or the ball's landing: the one shot from contact holds it)
+      if (main && touch >= main.s0 && touch <= main.s1) ms.push(touch);
       if (main) main.s0 = Math.min(main.s1 - 1.6, main.s0 + over, ms.length ? Math.min(...ms) - 0.7 : Infinity);
     }
     pieces.splice(0, pieces.length, ...pcs);
@@ -1385,7 +1831,11 @@ function planEdit(ctx) {
   // backwards (a cut placed between two moments before its own shot began made a piece that ended
   // before it started, and the next one replayed the play). The shot that holds on frames the moment
   // it took in (inplay.js brings each deciding moment into whatever shot is on).
-  tidyCut(pieces);
+  throwSafe(pieces, p);
+  tidyCut(pieces, p.segs);
+  // (tidying can lay a short shot's start back into a throw: once more, then tidy what that left)
+  throwSafe(pieces, p);
+  tidyCut(pieces, p.segs);
   // the slow motion piece: split whatever piece holds it
   if (slow) {
     const out = [];
@@ -1408,16 +1858,113 @@ function planEdit(ctx) {
   p.events.sort((a, b) => a.s - b.s);
 }
 
+/** No cut while a throw is in the air (the owner, 2026-10-26: the throw, then the base and the result,
+    each beat its moment, none over another). A cut that falls while a throw flies moves to the nearest
+    edge of the throw that keeps both shots' own deciding moments in them: before the release (the shot
+    after takes the throw, from the hand) or a beat after the catch (the shot before holds it to the
+    glove). Of the two it picks the one whose shot holds that throw (the ball's own cameras, the plate
+    for a throw home, a runner's shot for a throw to his own bag). Only the cut moves: no shot runs
+    over another's moment. Pieces are { s0, s1, cam, rate, m }, in order. */
+const THROW_HOLD = 0.25, PRE_RELEASE = 0.05, EARLY_THROW = 0.3;
+function throwSafe(pieces, p) {
+  const throws = p.segs.filter((sg) => sg.kind === 'throw');
+  const inAir = (t) => throws.find((sg) => t > sg.t0 + 0.03 && t < sg.t1 - 0.03);
+  const home = (sg) => Math.hypot(sg.b.x, sg.b.y) < 12;
+  const toBag = (pc, sg) => { const b = bagOf(p, pc.m); return !!b && Math.hypot(sg.b.x - b.x, sg.b.y - b.y) < 20; };
+  const holds = (pc, sg) => pc.cam === 'follow' || pc.cam === 'track' || pc.cam === 'sky' || (pc.cam === 'plate' && home(sg)) || toBag(pc, sg);
+  // (each shot's deciding moments: every out, run and runner safe, and a tag-up, inside it as built)
+  const all = [];
+  for (const r of p.runners) { const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.from !== r.to ? r.arrive : null; if (tq != null) all.push(tq); }
+  const ca = p.events.find((e) => e.kind === 'catch');
+  if (ca && p.runners.some((r) => !r.batter && r.to > r.from)) all.push(ca.s + 0.3);
+  for (const pc of pieces) pc.ms = all.filter((t) => t >= pc.s0 - 1e-6 && t <= pc.s1 + 1e-6);
+  // (a piece's own m can be a moment outside it, a cut away and back again: only what is in it counts)
+  const first = (pc) => (pc.ms.length ? Math.min(...pc.ms) : null), last = (pc) => (pc.ms.length ? Math.max(...pc.ms) : null);
+  for (let guard = 0; guard < 4; guard++) {
+    let moved = false;
+    for (let i = 1; i < pieces.length; i++) {
+      const A = pieces[i - 1], B = pieces[i];
+      if (A.cam === 'pitcher') continue;
+      const th = inAir(A.s1) || inAir(B.s0);
+      if (!th || A.earlyCut === th) continue;
+      // (a jump cut skips dead time between the two shots: that time stays out. Only the edges move, each
+      // within its own side: the shot before holds the throw to the glove as far as the gap allows, and
+      // the shot after starts before the release, so it takes the throw from the hand)
+      if (B.s0 - A.s1 > 0.05) {
+        const e0 = th.t0 - PRE_RELEASE, l0 = th.t1 + THROW_HOLD;
+        if (th === inAir(A.s1)) { const to = Math.min(B.s0, l0); if (to > A.s1 + 1e-6) { A.s1 = to; moved = true; } }
+        if (th === inAir(B.s0)) { const to = Math.max(A.s1, e0); if (to < B.s0 - 1e-6) { B.s0 = to; moved = true; } }
+        continue;
+      }
+      // (the beat after the catch shortens, to a twentieth of a second at least, when the next shot's
+      // moment comes that soon after it)
+      const early = th.t0 - PRE_RELEASE, bF0 = first(B), late = bF0 == null ? th.t1 + THROW_HOLD : clamp(bF0 - 0.2, th.t1 + 0.05, th.t1 + THROW_HOLD);
+      // (a shot keeps its moment with a fifth of a second around it)
+      const aL = last(A), bF = first(B);
+      // (two runners' shots at bags far apart are two shots: one crane cannot hold both, so the one
+      // before never holds on into the other's)
+      const ba = bagOf(p, aL), bb = bagOf(p, bF);
+      const apart = A.cam === 'wide' && B.cam === 'wide' && ba && bb && Math.hypot(ba.x - bb.x, ba.y - bb.y) > 80;
+      const okEarly = (aL == null || aL <= early - 0.2) && (bF == null || bF >= early);
+      const okLate = !apart && (bF == null || bF >= late + 0.2) && (aL == null || aL <= late) && late < B.s1 - 0.1;
+      // (a shot that holds this throw keeps it to the glove when the next shot's moment is the throw's own
+      // arrival: a runner doubled off his bag is the tag-up shot's to show, not a cut's)
+      const arrival = !apart && bF != null && bF >= th.t1 - 0.1 && bF <= late && toBag(B, th) && A.cam !== 'track' && A.cam !== 'sky' && B.ms.every((t) => t <= late);
+      // (and an early cut that would leave the shot before too short to read is no option when the late one is)
+      const shortA = early - A.s0 < MIN_SHOT;
+      const useLate = (holds(A, th) && (okLate || arrival)) || (okLate && (!okEarly || shortA)) ? true : okEarly ? false : holds(A, th) && !apart;
+      // (neither: the shot before has its moment just as the throw leaves. It shows it, and the cut comes
+      // in the throw's first stretch, EARLY_THROW of its flight at most, to a shot that holds the ball in
+      // the air: the ball has only just left the hand, and the next shot picks it up on its way)
+      const soon = th.t0 + EARLY_THROW * (th.t1 - th.t0);
+      if (!useLate && !okEarly && aL != null && aL + 0.15 <= soon && holds(B, th) && (bF == null || bF >= soon)) {
+        const cut = Math.max(aL + 0.15, early);
+        A.s1 = cut; B.s0 = cut; A.earlyCut = th; moved = true;
+        continue;
+      }
+      if (useLate) { A.s1 = Math.max(A.s1, late); B.s0 = Math.max(B.s0, late); A.ms = A.ms.concat(B.ms.filter((t) => t < B.s0)); B.ms = B.ms.filter((t) => t >= B.s0); if (B.s0 >= B.s1 - 1e-6) { if (A.m == null) A.m = B.m; A.ms = A.ms.concat(B.ms); A.s1 = Math.max(A.s1, B.s1); pieces.splice(i, 1); i--; } }
+      else { A.s1 = Math.max(A.s0, Math.min(A.s1, early)); B.s0 = Math.min(B.s0, early); if (B.s0 < A.s1) B.s0 = A.s1; B.ms = B.ms.concat(A.ms.filter((t) => t > A.s1)); A.ms = A.ms.filter((t) => t <= A.s1); if (A.s1 <= A.s0 + 1e-6) { pieces.splice(i - 1, 1); i--; } }
+      moved = true;
+    }
+    if (!moved) break;
+  }
+}
+
+/** The bag a runner's shot is about: the base of the deciding moment at m (an out, a run, a runner
+    safe, or a runner tagging up off his bag a beat after a catch), or null. Feet, catcher's view. */
+export function bagOf(p, m) {
+  if (m == null) return null;
+  for (const r of p.runners) {
+    const tq = r.out ? r.outAt : r.scoreAt != null ? r.scoreAt : r.arrive;
+    if (tq != null && Math.abs(tq - m) < 0.05) return BASE[r.out ? r.outBase : Math.min(4, r.to)] || null;
+  }
+  const ca = p.events.find((e) => e.kind === 'catch');
+  if (ca && Math.abs(ca.s + 0.3 - m) < 0.05) { const r = p.runners.filter((x) => !x.batter && x.to > x.from).sort((x, y) => y.from - x.from)[0]; if (r) return BASE[r.from]; }
+  return null;
+}
+
 /** The cut, in order: never backwards, no shot under MIN_SHOT (folded into the one before it, or
     lengthened back into the gap before a jump cut). Pieces are { s0, s1, cam, rate, m }. */
-const MIN_SHOT = 0.4;
-function tidyCut(pieces) {
+const MIN_SHOT = 0.6;
+function tidyCut(pieces, segs = []) {
+  const flying = (t) => segs.some((sg) => sg.kind === 'throw' && t > sg.t0 + 0.03 && t < sg.t1 - 0.03);
   const out = [pieces[0]];
-  for (const src of pieces.slice(1)) {
+  for (let k = 1; k < pieces.length; k++) {
+    const src = pieces[k];
     const pc = { ...src }, prev = out[out.length - 1];
     if (pc.s0 < prev.s1) pc.s0 = prev.s1;                       // (never back over what was shown)
-    if (pc.s1 - pc.s0 >= MIN_SHOT) { out.push(pc); continue; }
+    // (a shot is the run of pieces of one camera that follow straight on: two beats of the wide camera
+    // back to back are one shot, however short each)
+    let end = pc.s1;
+    for (let j = k + 1; j < pieces.length && pieces[j].cam === pc.cam && Math.abs(pieces[j].s0 - end) < 1e-6; j++) end = pieces[j].s1;
+    if (end - pc.s0 >= MIN_SHOT) { out.push(pc); continue; }
     if (pc.s1 <= pc.s0) continue;                               // (nothing left of it)
+    // (straight on from a shot with room to spare, and a moment of its own: the cut comes earlier, so it
+    // is long enough to read)
+    const cut = pc.s1 - MIN_SHOT;
+    if (pc.s0 - prev.s1 < 1e-6 && prev.cam !== 'pitcher' && pc.m != null && cut - prev.s0 >= MIN_SHOT && (prev.m == null || prev.m <= cut - 0.15) && !flying(cut)) {
+      prev.s1 = cut; pc.s0 = cut; out.push(pc); continue;
+    }
     if (pc.s0 - prev.s1 < 1e-6 && prev.cam !== 'pitcher') {
       // straight on from the shot before: that camera holds on through it
       prev.s1 = pc.s1;
@@ -1434,6 +1981,8 @@ function tidyCut(pieces) {
   for (let i = 1; i < out.length - 1; i++) {
     const pc = out[i], nx = out[i + 1];
     if (pc.s1 - pc.s0 < MIN_SHOT && out[i - 1].cam === 'pitcher' && nx.s0 - pc.s1 < 1e-6) { nx.s0 = pc.s0; if (pc.m != null && nx.m == null) nx.m = pc.m; out.splice(i, 1); i--; }
+    // (or, with a jump cut after it, it runs on into the gap until it is long enough to read)
+    else if (pc.s1 - pc.s0 < MIN_SHOT && out[i - 1].cam === 'pitcher' && nx.s0 - pc.s1 > 1e-6) pc.s1 = Math.min(nx.s0, pc.s0 + MIN_SHOT);
   }
   pieces.splice(0, pieces.length, ...out);
 }
@@ -1538,6 +2087,16 @@ export function verify(pr, plan) {
       pb = prog(back.track.at(t), pb); pf = prog(front.track.at(t), pf);
       if (!live(back, t) || !live(front, t)) continue;
       if (pb > pf + 0.02) { bad.push(`the runner from ${back.from} passes the runner from ${front.from} at ${t.toFixed(2)} s`); break passing; }
+    }
+  }
+  // the base umpires call what the plan shows: an out at first, second or third called out by that base's
+  // umpire a beat after it, every safe call a runner safe on that bag, never a call against the play
+  if (plan.umps) {
+    const outs = plan.events.filter((e) => e.kind === 'out' && e.base >= 1 && e.base <= 3);
+    for (const e of outs) if (!plan.umps.calls.some((c) => c.base === e.base && c.call === 'out' && c.s >= e.s && c.s <= e.s + 0.5)) bad.push(`the out at ${e.base} has no out call`);
+    for (const c of plan.umps.calls) {
+      if (c.call === 'out' && !outs.some((e) => e.base === c.base && c.s >= e.s && c.s <= e.s + 0.5)) bad.push(`an out call at ${c.base} with no out there`);
+      if (c.call === 'safe' && (outs.some((e) => e.base === c.base) || !plan.runners.some((r) => !r.out && r.safeAt === c.base))) bad.push(`a safe call at ${c.base} against the play`);
     }
   }
   // every throw is taken by a man already there: at the bag (or his spot in line) before it arrives

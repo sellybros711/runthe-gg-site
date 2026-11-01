@@ -1,10 +1,17 @@
 /* No body snaps, pops, teleports or slides in the ball in play: every fielder and runner, every frame.
  *
- *   node shut-the-door/lab/pipeline/check-jolt.mjs              every 20th case check-inplay plans (2,925)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs              every 20th case check-inplay plans (8,297)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --all        every case (about three and a half hours)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --stride N   every Nth case
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --limit N    the first N of those (reported, not held)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --show N     print N of the worst in full
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --sample N   about N of the held 8,297 (held at the ceilings' rate)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --resume     pick up a killed run (checkpoint.mjs says how)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --shard I/4 --rows-out F   a quarter of the run, its plays to F
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --combine DIR the shards' files in DIR, held as one run
+ *   (CI runs the held 8,297 as four shards and then --combine: the same plays, the same verdict, exactly)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --every-body  every body measured, on screen or not
+ *       (ownCamera = false, the vault's way to compare two trees' motion; reported, never held)
  *
  * The owner (2026-10-24): "the fielding is extremely glitchy". check-catch holds the glove on the ball at
  * the moment of each catch; this holds every moment in between. Each case is staged the way the game
@@ -31,16 +38,19 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
+import { selection, holding, capStr, openCheckpoint, treeHash, pinDay } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? +process.argv[i + 1] : d; };
 const ALL = process.argv.includes('--all');
-const STRIDE = ALL ? 1 : arg('--stride', 20), LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
+const SEL = selection({ heldStride: 20, total: [...inplayCases()].length });
+const STRIDE = ALL ? 1 : SEL.stride, LIMIT = arg('--limit', Infinity), SHOW = arg('--show', 0);
 const FPS = 60;
 // (--only N plays case N alone; JOLT_TRACE=F9:2.4:2.6 prints that body's points frame by frame)
 const ONLY = process.argv.includes('--only') ? arg('--only', 0) : null, TRACE = process.env.JOLT_TRACE || '';
+const EVERY = process.argv.includes('--every-body');
 export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS = 4;
 // What is still there, all of it measured on the default sample (every 20th case, 2026-10-25): plays
 // with a pop or a skate, by who and his last act. On main before this check (#708) a pop was in
@@ -49,36 +59,91 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // The wider broadcast (#710) draws more of the field, so more bodies are on screen and measured: the
 // count rose to 1,043 plays with a pop and 1,704 with a skate (runners and covering fielders, now in
 // frame) with the worst of each unchanged. The same motion, more of it seen; recorded here once.
+// The eased broadcast (2026-10-26) holds each shot longer and keeps throws and runners in frame, so again
+// more bodies are measured (runners and covering fielders). The motion is the same: with every body measured
+// whether on screen or not, main had 9,147 plays over and this change 8,978, with no body code touched.
+// Recorded here once, for that reason only.
+// The broadcast camera plan (site PR #741, 2026-10-27) holds an infield play in one high shot and cuts less:
+// 108 fewer jump cuts and 2.0% more of each play shown (every 40th case), so frames a jump cut skipped are now
+// measured. With every body measured, on screen or not, main had 801 plays with a pop and 993 with a skate,
+// and #741 811 and 1,003. The rise is the frames shown, not motion: every fielder's and runner's track and
+// every act is identical to main's at every plan time (1,463 plays, max difference 0 ft), the posing change
+// (fielders.js aimFast) gives the same bones to the bit, and each row's worst speed holds. Accepted by the
+// coordinator on the terms of #710 and #725; these are the on screen counts at the default stride, once.
+// The flight and who catches it (site PR #742, 2026-10-27) changes the plays themselves: the same rows now have
+// new flights, catch spots and catchers, so a row's count is a count of different plays. Three pops it brought
+// were fixed at the source first (a run through catch held dead, the held glove dropped at a windup, a
+// backpedal that spun divers, reverted). With every body measured against main (0ed4342): plays with a pop
+// 1,641 against 1,635, with a skate 2,001 against 2,039. Recorded here once, on the coordinator's decision.
+// Close plays (site PR #743, 2026-10-27) tighten a tag-up thrown out to bang bang. Three rows rose: skate runner run
+// 863 to 869, pop fielder - 433 to 437, skate fielder - 212 to 215. The new runner skates are runners thrown out
+// tagging who slide into the tag faster (a real slide moves its feet over the dirt). The F7 and F8 hits come from
+// tracks and acts identical to main, read at the threshold (40.6 m/s against 40) on frames the slowed beat moved.
+// With every body measured against main (c6922cc) the totals fall: plays with a pop 1,641 to 1,624, with a skate
+// 2,001 to 1,968. Recorded here once, on the coordinator's decision.
+// The outfield shades to each hitter (site PR #785, 2026-10-28), so the broadcast keeps more of each play's
+// runners in frame. skate runner run rose 869 to 872 on screen. With every body measured against main the
+// runner skates fall 1,103 to 1,100 and the plays with any skate 1,967 to 1,812. Recorded here once, on the
+// coordinator's decision.
+// pop fielder bobble went 106 to 107 on CI with no change to the lab (site PR #818, 2026-10-30). Main and that
+// branch both give 107 locally, the identical plays and speeds, so it is the runner, not a code change. Recorded
+// here once, on the coordinator's decision.
+// The infield shades to each hitter and sets for the bases, outs and score (site PR #810, 2026-10-30). On CI's held
+// 2,925 three rows rose: skate fielder dive 14 to 27, pop fielder set 16 to 17, skate fielder catch_throw 3 to 4. The
+// dive row is the sprint foot slide after a dive, not the dive itself: an infielder playing in dives at more ground
+// hits, then sprints to a relay or cover spot, and the sprint capture's planted foot slides about 5 m/s, booked
+// under his last act. With every body measured against main (1,463 plays, every 40th case) the plays with a pop
+// fall 705 to 653 and with a skate 897 to 873; catch_throw is level there (3 and 3). Its bobble fix (a sprint to a
+// ball he only just reaches now pulls up) takes pop fielder bobble from 107 to 0 and skate fielder bobble from 22
+// to 1 on that held run. Recorded here once, on the coordinator's decision.
+// Thirty situations (site PR #825, 2026-10-30): the packs went from 10 to 30, so the held set (every 20th case) went
+// from 2,925 plays to 8,438. Fixed at the source first, on main's same 2,925 with every body measured: the run and
+// sprint loops close (a capture's legs jumped back a period at every stride, the runner's foot at 40-45 m/s: the
+// seam is now taken in while each foot is in the air, a planted leg keeping the capture's own pose), and a fielder
+// laid out at a shoestring drop no longer spins as he stops (pop fielder drop and bobble). Main had 1,291 plays
+// with a pop and 1,747 with a skate there; this branch had 1,299 and 1,746 before the fixes, 658 and 1,639 after.
+// pop fielder drop and bobble are 0 on the held 8,438. These are CI's counts on those 8,438, recorded once on the
+// coordinator's decision: only their coverage grew.
+// Every daily closes the game (rules 8, site PR #830, 2026-10-31): all thirty packs rebuilt, Kelly 2020 and Kershaw
+// 2016 out for Price 2008 and Rivera 2009, so the held set (every 20th case) is 8,297 plays and they are other plays
+// than main's. Fixed at the source first: a runner's planted foot stays where it lands (the pose put the foot about to
+// land on the dirt while the capture still had it in the air, and it skidded 0.4 m), a head turned to a ball behind
+// him comes round instead of flipping shoulder to shoulder, a pitcher turns to a loose ball the short way round, a
+// liner trapped at the shoe no longer stands a man up from his layout. Every body measured, each held set on its own
+// tree: main (5ddd447) 8,438 plays, 1,927 with a pop (22.84%) and 4,766 with a skate (56.48%); this branch before the
+// fixes 8,297 plays, 1,940 (23.38%) and 4,771 (57.50%); after them 1,788 (21.55%) and 4,090 (49.29%). Both down per
+// play, so these are CI's counts on the 8,297 at b8082f9, recorded once on the coordinator's decision. pop fielder
+// bobble is 2 (18.6 m/s at worst, heads just over the body's 16): it was 0 on main's 8,438.
 const CEILING = {
-  'pop fielder -': 343,
-  'pop fielder bobble': 104,
-  'pop fielder catch': 31,
-  'pop fielder catch_throw': 4,
-  'pop fielder cover': 34,
-  'pop fielder dive': 13,
-  'pop fielder dive_short': 64,
-  'pop fielder field': 96,
-  'pop fielder leap_miss': 5,
-  'pop fielder pickup': 47,
-  'pop fielder reach': 20,
-  'pop fielder set': 20,
-  'pop fielder tag': 182,
-  'pop fielder throw': 7,
-  'pop runner run': 333,
+  'pop fielder -': 425,
+  'pop fielder bobble': 2,
+  'pop fielder catch': 32,
+  'pop fielder catch_throw': 6,
+  'pop fielder cover': 1,
+  'pop fielder dive': 0,
+  'pop fielder dive_short': 201,
+  'pop fielder field': 175,
+  'pop fielder leap_miss': 0,
+  'pop fielder pickup': 35,
+  'pop fielder reach': 7,
+  'pop fielder set': 56,
+  'pop fielder tag': 523,
+  'pop fielder throw': 22,
+  'pop runner run': 436,
   'skate fielder -': 174,
-  'skate fielder bobble': 22,
-  'skate fielder catch_throw': 5,
-  'skate fielder cover': 291,
-  'skate fielder dive': 10,
-  'skate fielder field': 461,
-  'skate fielder leap_miss': 1,
-  'skate fielder pickup': 556,
-  'skate fielder reach': 40,
-  'skate fielder receive': 22,
-  'skate fielder set': 27,
-  'skate fielder tag': 344,
-  'skate fielder throw': 4,
-  'skate runner run': 556,
+  'skate fielder bobble': 3,
+  'skate fielder catch_throw': 15,
+  'skate fielder cover': 387,
+  'skate fielder dive': 60,
+  'skate fielder field': 1118,
+  'skate fielder leap_miss': 0,
+  'skate fielder pickup': 1766,
+  'skate fielder reach': 64,
+  'skate fielder receive': 31,
+  'skate fielder set': 48,
+  'skate fielder tag': 98,
+  'skate fielder throw': 7,
+  'skate runner run': 960,
 };
 
 function loadPlaywright() {
@@ -87,7 +152,11 @@ function loadPlaywright() {
 }
 const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
 const TYPES = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary' };
-const server = http.createServer((req, res) => {
+// (the page is opened only when there is something to measure: not for --combine, nor for a run whose
+// every chunk is in the checkpoint)
+let server = null, browser = null;
+async function openPage() {
+server = http.createServer((req, res) => {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (rel.endsWith('/')) rel += 'index.html';
   const f = path.join(ROOT, rel);
@@ -96,7 +165,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
+browser = await loadPlaywright().chromium.launch(CHROME ? { executablePath: CHROME } : {});
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 page.on('pageerror', (e) => console.log('page error', String(e).slice(0, 300)));
 await page.route('**/*', (route) => {
@@ -106,21 +175,46 @@ await page.route('**/*', (route) => {
   if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
   return route.abort();
 });
+// (the day pinned: the stage is that day's scenario, checkpoint.mjs pinDay)
+await pinDay(page);
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 // the clips (fielder.glb) in, so the bodies run as the game shows them; nothing drawn
-await page.evaluate(async () => { const st = window.STD_STAGE.current; await st.inplay.motion; st.renderer.render = () => {}; });
+await page.evaluate(async (every) => { const st = window.STD_STAGE.current; await st.inplay.motion; st.renderer.render = () => {}; if (every) st.inplay.ownCamera = false; }, EVERY);
+return page;
+}
+const COMBINE = process.argv.includes('--combine') ? process.argv[process.argv.indexOf('--combine') + 1] : null;
+const ROWS_OUT = process.argv.includes('--rows-out') ? process.argv[process.argv.indexOf('--rows-out') + 1] : null;
 
 const cases = [];
 let idx = 0;
 for (const c of inplayCases()) {
-  if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
+  if ((ONLY != null ? idx === ONLY : idx % STRIDE === 0 && Math.floor(idx / STRIDE) % SEL.shard.n === SEL.shard.i) && cases.length < LIMIT) cases.push({ pr: c.pr, hand: c.hand, align: c.align, tag: `#${idx} ${c.pack} ${c.key}/${c.label} st ${c.st}` });
   idx++;
 }
 const rows = [];
 const CHUNK = 50;
 const t0 = Date.now();
-for (let i = 0; i < cases.length; i += CHUNK) {
+let page = null, nCases = cases.length, shardOf = SEL.shard;
+if (COMBINE) {
+  // the shards' plays, one run: each file the same code (its tree), stride and number of shards, every
+  // shard there once
+  const tree = treeHash();
+  const parts = fs.readdirSync(COMBINE).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(path.join(COMBINE, f), 'utf8')));
+  const n = parts[0] ? parts[0].shard.n : 0, got = new Set(parts.map((q) => q.shard.i));
+  for (const q of parts) if (q.tree !== tree || q.stride !== STRIDE || q.shard.n !== n || q.limit !== String(LIMIT) || q.only !== ONLY) throw new Error('--combine: a shard of another run (tree, stride, shards or limit differ)');
+  if (!n || got.size !== n || parts.length !== n) throw new Error(`--combine: ${parts.length} files for ${n} shards (${[...got].sort().join(', ')})`);
+  // (in the order a single run takes them: by case number, the tag's #N)
+  for (const q of parts) rows.push(...q.rows);
+  rows.sort((a, b) => +a.tag.slice(1, a.tag.indexOf(' ')) - +b.tag.slice(1, b.tag.indexOf(' ')));
+  nCases = parts.reduce((a, q) => a + q.n, 0);
+  shardOf = { i: 0, n: 1 };
+  console.log(`combined ${n} shards: ${nCases} plays`);
+}
+const CK = COMBINE ? null : openCheckpoint('check-jolt', { STRIDE, LIMIT: String(LIMIT), ONLY, SHARD: SEL.shard, CHUNK, TRACE, ...(EVERY ? { EVERY } : {}) });
+for (let i = 0; !COMBINE && i < cases.length; i += CHUNK) {
+  if (CK.has(i)) { rows.push(...CK.get(i)); continue; }
+  page ||= await openPage();
   const got = await page.evaluate(({ part, FPS, BODY_MS, LIMB_MS, PLANT_M, PLANT_N, SKATE_MS, TRACE }) => {
     const st = window.STD_STAGE.current, ip = st.inplay, out = [];
     const facts0 = ip.facts, stub = { after: { t0: 0 }, f: { at: () => ({ x: 0, y: 1.2, z: 2.6 }) }, ball: st.pitch.ball, overlays: false };
@@ -129,7 +223,7 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     for (const c of part) {
       ip.facts = { ...facts0, batter: { ...facts0.batter, bats: c.hand } };
       let run;
-      try { run = ip.begin(c.pr, stub, {}); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
+      try { run = ip.begin(c.pr, stub, { align: c.align }); } catch (e) { out.push({ tag: c.tag, err: String(e) }); continue; }
       const plan = run.plan, hist = new Map(), hits = [], trace = [];
       const lastAct = (n, s) => { const a = plan.fielders[n].acts.filter((x) => x.t <= s + 1e-6).pop(); return a ? a.kind : '-'; };
       let sPrev = null;
@@ -144,6 +238,8 @@ for (let i = 0; i < cases.length; i += CHUNK) {
           const bodies = [];
           for (let n = 1; n <= 9; n++) bodies.push(['F' + n, ip.fielders[n], n]);
           for (const rr of plan.runners) if (rr.fig) bodies.push(['R' + rr.from, rr.fig, 0]);
+          // (the base umpires: held to no pop and no skate at all, CEILING has no row for them)
+          if (ip.umps && plan.umps) for (const k of [1, 2, 3]) bodies.push(['U' + k, ip.umps[k], -k]);
           for (const [id, f, n] of bodies) {
             if (!f.root.visible) { hist.delete(id); continue; }
             f.root.updateMatrixWorld(true);
@@ -152,13 +248,14 @@ for (let i = 0; i < cases.length; i += CHUNK) {
             P.root = { x: -rp.x / FT, y: rp.z / FT, z: rp.y / FT };
             for (const j of J) P[j] = f.jointPoint(j);
             const h = hist.get(id) || [];
-            if (TRACE) { const [tid, ta, tb] = TRACE.split(':'); if (tid === id && s >= +ta && s <= +tb) trace.push({ id, s: +s.toFixed(3), act: n ? lastAct(n, s) : 'run', pitch: +(f.pitch || 0).toFixed(2), vis: f.root.visible, sp: f.lastSpec && { gw: f.lastSpec.gloveW, g: f.lastSpec.glove, tw: f.lastSpec.throwW, hw: f.lastSpec.handW, th: f.lastSpec.throw }, yaw: +(f.yaw || 0).toFixed(2), g0: +(f.g0 || 0).toFixed(2), sc: f.scale, P: Object.fromEntries(Object.entries(P).map(([q, v]) => [q, [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)]])) }); }
+            if (TRACE) { const [tid, ta, tb] = TRACE.split(':'); if (tid === id && s >= +ta && s <= +tb) trace.push({ id, s: +s.toFixed(3), act: n > 0 ? lastAct(n, s) : 'run', pitch: +(f.pitch || 0).toFixed(2), vis: f.root.visible, sp: f.lastSpec && { gw: f.lastSpec.gloveW, g: f.lastSpec.glove, tw: f.lastSpec.throwW, hw: f.lastSpec.handW, th: f.lastSpec.throw }, yaw: +(f.yaw || 0).toFixed(2), g0: +(f.g0 || 0).toFixed(2), sc: f.scale, P: Object.fromEntries(Object.entries(P).map(([q, v]) => [q, [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)]])) }); }
             h.push({ s, P }); if (h.length > PLANT_N) h.shift(); hist.set(id, h);
             if (h.length < 3) continue;
             const [a, b, cc] = h.slice(-3);
             const d1 = b.s - a.s, d2 = cc.s - b.s;
             if (d1 < 1e-5 || d2 < 1e-5) continue;
-            const who = id[0] === 'F' ? 'fielder' : 'runner', act = n ? lastAct(n, s) : 'run';
+            const who = id[0] === 'F' ? 'fielder' : id[0] === 'U' ? 'umpire' : 'runner';
+            const act = n > 0 ? lastAct(n, s) : n < 0 ? ((plan.umps[-n].acts.filter((x) => x.t <= s + 1e-6).pop() || {}).kind || '-') : 'run';
             for (const k of ['root', ...J]) {
               const rel = k !== 'root' && k !== 'pelvis' && k !== 'head';
               const base = (q) => (rel ? q.pelvis : { x: 0, y: 0, z: 0 });
@@ -185,9 +282,12 @@ for (let i = 0; i < cases.length; i += CHUNK) {
     return out;
   }, { part: cases.slice(i, i + CHUNK), FPS, BODY_MS, LIMB_MS, PLANT_M, PLANT_N, SKATE_MS, TRACE });
   rows.push(...got);
+  CK.put(i, got);
   process.stdout.write(`\r${Math.min(i + CHUNK, cases.length)} of ${cases.length} cases`);
 }
+if (CK) CK.close();
 console.log('');
+if (ROWS_OUT) fs.writeFileSync(ROWS_OUT, JSON.stringify({ tree: treeHash(), stride: STRIDE, limit: String(LIMIT), only: ONLY, shard: SEL.shard, n: cases.length, rows }));
 const errs = rows.filter((r) => r.err);
 for (const e of errs.slice(0, 5)) console.log('  threw:', e.tag, e.err);
 // plays with each, by what and who and his last act
@@ -204,24 +304,27 @@ for (const r of rows) {
   }
   if (r.hits.length) worst.push({ tag: r.tag, ...r.hits.reduce((x, y) => (y.ms > x.ms ? y : x)) });
 }
-const held = LIMIT === Infinity && STRIDE === 20;
+// (held: the default 8,297, as the ceilings were measured; a sample of them, --sample or a stride that
+// is a multiple of 20, at the same rate; anything else reported)
+const HOLD = holding({ stride: STRIDE, heldStride: 20, n: nCases, heldN: Math.ceil(SEL.total / 20), partial: LIMIT !== Infinity || ONLY != null || EVERY, shard: shardOf });
+const held = HOLD.mode !== 'report';
 let fails = 0;
 const any = (w) => rows.filter((r) => !r.err && r.hits.some((h) => h.what === w)).length;
-console.log(`\nbodies on screen at ${FPS} frames a second, ${rows.length - errs.length} plays (every ${STRIDE}${STRIDE === 1 ? 'st' : 'th'} case), ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+console.log(`\nbodies ${EVERY ? 'every one, on screen or not,' : 'on screen'} at ${FPS} frames a second, ${rows.length - errs.length} plays (every ${STRIDE}${STRIDE === 1 ? 'st' : 'th'} case), ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 console.log(`  plays with a pop: ${any('pop')}, with a skate: ${any('skate')}`);
 const keys = new Set([...Object.keys(by), ...(held ? Object.keys(CEILING) : [])]);
 for (const key of [...keys].sort((a, b) => (by[b]?.plays ?? 0) - (by[a]?.plays ?? 0))) {
   const b = by[key] || { plays: 0, worst: 0 };
-  const cap = held ? CEILING[key] ?? 0 : Infinity;
+  const cap = held ? HOLD.cap(CEILING[key] ?? 0) : Infinity;
   const over = b.plays > cap;
-  if (over) fails += b.plays - cap;
-  console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(28)} ${String(b.plays).padStart(6)} plays${cap !== Infinity ? ' (ceiling ' + cap + ')' : ''}  worst ${b.worst.toFixed(1)} m/s`);
+  if (over) fails += Math.ceil(b.plays - cap);
+  console.log(`  ${over ? 'FAIL' : 'ok  '} ${key.padEnd(28)} ${String(b.plays).padStart(6)} plays${cap !== Infinity ? ' (ceiling ' + capStr(cap) + ')' : ''}  worst ${b.worst.toFixed(1)} m/s`);
 }
 for (const r of rows) for (const q of r.trace || []) console.log('TRACE', JSON.stringify(q));
 if (process.env.JOLT_DUMP) for (const r of rows) for (const h of (r.hits || []).filter((x) => !process.env.JOLT_WHAT || `${x.what} ${x.who} ${x.act}` === process.env.JOLT_WHAT)) console.log('HIT', r.tag, JSON.stringify(h));
 if (SHOW) for (const w of worst.sort((a, b) => b.ms - a.ms).slice(0, SHOW)) console.log(JSON.stringify(w));
 if (process.env.JOLT_CEILING) console.log('\nCEILING = ' + JSON.stringify(Object.fromEntries(Object.entries(by).map(([k, b]) => [k, b.plays]).sort())));
-console.log(`\n${rows.length - errs.length} plays, ${fails} over the ceiling${held ? '' : ' (a partial run: reported, not held)'}`);
-await browser.close();
-server.close();
+console.log(`\n${rows.length - errs.length} plays, ${fails} over the ceiling (${HOLD.label})`);
+if (browser) await browser.close();
+if (server) server.close();
 process.exit(fails || errs.length ? 1 : 0);

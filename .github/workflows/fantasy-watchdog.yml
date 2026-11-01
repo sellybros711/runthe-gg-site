@@ -1,15 +1,18 @@
 name: Fantasy Challenge watchdog
 
-# THE WEEK MUST BE OPEN BY TUESDAY AFTERNOON, AND THIS IS WHAT MAKES SURE. The owner's rule
-# (2026-10-22): the week's contest opens first thing Tuesday after the previous week is over.
-# fantasy-pool.yml builds it at 11am Eastern Tuesday, with catch-ups Wednesday and Thursday
+# THE WEEK OPENS FIRST THING TUESDAY, AND THIS IS WHAT MAKES SURE. The owner's rule
+# (2026-10-22, moved to 8am on 2026-10-27): the week's contest opens at 8am Eastern Tuesday.
+# fantasy-pool.yml builds it then, settles at 11am, and catches up Wednesday and Thursday
 # morning. That is three chances, all on GitHub's cron, which is best effort: it has delayed
 # the Tuesday run by four hours and dropped live-scoring firings outright. Week 7 of 2026
 # sat on week 6 into game day and nobody heard.
 #
-# SO THIS ASKS EVERY TWO HOURS FROM TUESDAY 1PM EASTERN UNTIL THURSDAY EVENING: is the week
+# SO THIS ASKS EVERY HOUR ON TUESDAY FROM 9AM EASTERN, THEN EVERY TWO HOURS UNTIL THURSDAY
+# EVENING: is the week
 # about to be played the one fantasy_now.json points at? If not, it dispatches the build with
-# catchup=true, which builds only a week that is not live yet. That flag matters: a build
+# catchup=true, which builds only a week that is not live yet. On a Tuesday morning a week not
+# yet open may only mean Monday night's stats are late: the build then waits (until noon
+# Eastern at most) and this asks again on the hour. The catchup flag matters: a build
 # that lands while this one is queued must never be rebuilt, because a price never moves once
 # somebody has drafted against it. From Wednesday on, a week still not open also opens the
 # issue "Fantasy Challenge: the week did not open", which emails the owner.
@@ -19,7 +22,7 @@ name: Fantasy Challenge watchdog
 
 on:
   schedule:
-    - cron: '7 17-23/2 * * 2'   # Tuesday from 1pm Eastern (EDT; noon in EST)
+    - cron: '7 13-23 * * 2'     # Tuesday hourly from 9am Eastern (EDT; 8am in EST)
     - cron: '7 */2 * * 3'       # all of Wednesday
     - cron: '7 0-22/2 * * 4'    # Thursday until early evening Eastern
   workflow_dispatch: {}
