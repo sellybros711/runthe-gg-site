@@ -23,7 +23,7 @@ import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=10';
 import { buildBallpark } from './ballpark.js?v=24';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=41';
+import { kitFor } from './people.js?v=42';
 import { look } from './looks.js?v=4';
 import { P, FT } from './units.js?v=1';
 

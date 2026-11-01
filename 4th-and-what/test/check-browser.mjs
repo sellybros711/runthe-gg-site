@@ -81,16 +81,17 @@ async function run(name, viewport, scale) {
   /* ---------- Play ---------- */
   await page.goto(BASE + '/4th-and-what/?seed=11');
   await page.waitForFunction(() => !!window.FAW_APP && !!window.FAW_GAME && !!window.FAW_STUDIO);
-  ok(await page.isVisible('#vHome') && await page.isVisible('.heroacts [data-go="play"]') && await page.isVisible('.heroacts [data-go="studio"]') && (await page.$$eval('.tile', t => t.length)) === 4, 'opens on Home: Play and Build, and four tiles');
+  ok(await page.isVisible('#vHome') && await page.isVisible('.bannerlogo') && await page.isVisible('.mode.play') && await page.isVisible('.mode.book') && await page.isVisible('#vHome .legal'), 'opens on Home: the banner, Draw a play, Playbook Builder and the footer');
   await page.waitForFunction(() => document.getElementById('hName').textContent.length > 0, null, { timeout: 8000 });
+  ok(await page.evaluate(() => window.FAW_HOME.size()) >= 200, 'the front screen rotates a package of ' + await page.evaluate(() => window.FAW_HOME.size()) + ' plays');
   ok(/ vs /.test(await page.textContent('#hName')), 'the home field runs a named play: ' + await page.textContent('#hName'));
   await shot('00-home');
-  await page.click('.tile[data-go="books"]');
-  ok(await page.isVisible('#vBooks'), 'a tile goes to its place');
+  await page.click('.mode.book');
+  ok(await page.isVisible('#vBooks'), 'Playbook Builder opens the playbooks');
   await page.click('.logo');
   ok(await page.isVisible('#vHome'), 'the logo goes home');
   /* ---------- Play, the video game: 4th and what, draw it, snap it, the card ---------- */
-  await page.click('.heroacts [data-go="play"]');
+  await page.click('.mode.play');
   ok(await page.isVisible('#vPlay') && (await page.getAttribute('.tab[data-view="play"]', 'aria-current')) === 'page', 'Play from Home: 4th and what?');
   ok(await page.$$eval('#pDists .dist', d => d.length) === 6 && /opponent's 40/.test(await page.textContent('#pSpot')), 'six distances, ball on the opponent 40');
   await shot('0-pick');

@@ -432,15 +432,23 @@ export function battingHelmet(head, color, flapSide, opts = {}) {
     for (const m of [top, under, lip]) { m.name = 'bill'; m.castShadow = true; g.add(m); }
   }
   if (opts.jaw) {
-    // the jaw guard: a molded C-flap from the ear flap's lower front edge forward along the jaw to
-    // near the corner of the mouth, 7 mm thick, 12 mm off the face. The face under it is measured in
-    // level slices from every skin vertex the head bone carries at all (lowPts: the jaw and cheeks
-    // are shared with the neck; a guard laid on the skull's map alone went into them, the skin
-    // through it in patches): at each height and azimuth the skin furthest from the head's axis
+    // the jaw guard, a C-flap as big league helmets wear it: one piece with the shell, bolted on over
+    // the ear flap's lower front just under the ear hole, sweeping forward and down along the jaw to
+    // a rounded end at the cheek short of the mouth, in the shell's own gloss (the owner, 2026-10-31:
+    // the guard floated as a patch on the cheek with a gap to the shell). Its inner face is the
+    // larger of two surfaces: the shell's outside (where it laps over the flap, LAP off it) and the
+    // face, CLR off the skin. The face is measured in level slices from every skin vertex the head
+    // bone carries at all (lowPts: the jaw and cheeks are shared with the neck): at each height and
+    // azimuth the skin furthest from the head's axis
     const P = head.lowPts || head.pts;
-    const sx = flapSide < 0 ? -1 : 1, T = 0.007, CLR = 0.012, NU = 24, NV = 8;
-    const ph0 = sx * (L.earPh - 22 * D), ph1 = sx * 30 * D;
-    const yTop0 = L.earBot + 0.012, yTop1 = L.earBot - 0.01, yBot0 = L.earBot - 0.04, yBot1 = L.earBot - 0.052;
+    const sx = flapSide < 0 ? -1 : 1, T = 0.006, CLR = 0.012, LAP = 0.0015, NU = 32, NV = 12;
+    // from just behind the ear's middle forward to 28 degrees off the nose
+    const ph0 = sx * (L.earPh + 4 * D), ph1 = sx * 28 * D;
+    // its top edge under the ear hole at the back, down to the cheekbone's foot at the front; its
+    // bottom edge just above the flap's rim at the back (the whole back edge is bolted on the flap:
+    // a corner hanging below it stood off the neck as a fin, seen from behind), down to the jawline
+    const yRim0 = sh.outer(ph0, edge(ph0)).y;
+    const yTop0 = L.earY - 0.014, yTop1 = L.earBot - 0.008, yBot0 = Math.min(yTop0 - 0.02, yRim0 + 0.006), yBot1 = L.earBot - 0.05;
     const across = (ph, y) => {
       let r = 0;
       for (const q of P) {
@@ -450,41 +458,94 @@ export function battingHelmet(head, color, flapSide, opts = {}) {
       }
       return r;
     };
-    const PHI = [], Y = [], R = [];
+    // the shell's outside (or its smooth continuation past the rim) at height y toward ph, across
+    const shellAcross = (ph, y) => {
+      let lo = 0.05, hi = Math.PI - 0.3;
+      for (let i = 0; i < 30; i++) { const th = (lo + hi) / 2; if (sh.outer(ph, th).y > y) lo = th; else hi = th; }
+      const q = sh.outer(ph, (lo + hi) / 2);
+      return { r: Math.hypot(q.x, q.z), on: (lo + hi) / 2 <= edge(ph) };
+    };
+    const PHI = [], Y = [], RF = [], RS = [], ON = [];
     for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
       const u = i / NU, v = j / NV, ph = THREE.MathUtils.lerp(ph0, ph1, u);
-      // the front end rounded: the band closes toward its middle over the last fifth
-      const e = u > 0.8 ? Math.sqrt(Math.max(0, 1 - ((u - 0.8) / 0.2) ** 2)) : 1;
-      const yt = THREE.MathUtils.lerp(yTop0, yTop1, u), yb = THREE.MathUtils.lerp(yBot0, yBot1, u), ym = (yt + yb) / 2;
-      const y = ym + (yt - ym) * Math.max(0.08, e) * (1 - 2 * v);
-      PHI.push(ph); Y.push(y); R.push(across(ph, y));
+      // the front end rounded: the band closes toward its middle over the last quarter
+      const e = u > 0.75 ? Math.sqrt(Math.max(0, 1 - ((u - 0.75) / 0.25) ** 2)) : 1;
+      const k = u * u * (3 - 2 * u), kb = Math.sqrt(u);
+      const yt = THREE.MathUtils.lerp(yTop0, yTop1, k), yb = THREE.MathUtils.lerp(yBot0, yBot1, kb), ym = (yt + yb) / 2;
+      const y = ym + (yt - ym) * Math.max(0.06, e) * (1 - 2 * v);
+      const sa = shellAcross(ph, y);
+      PHI.push(ph); Y.push(y); RF.push(across(ph, y)); RS.push(sa.r); ON.push(sa.on);
     }
-    // a slice with no skin in it takes its neighbours'
-    for (let k = 0; k < R.length; k++) if (!R[k]) R[k] = Math.max(...R);
-    // smoothed over the guard's own grid (a molding, not a cast of the jaw), never nearer the skin
-    // than CLR less 3 mm
-    let Rs = R.slice();
-    for (let pass = 0; pass < 10; pass++) {
-      const N = Rs.slice();
+    // a slice with no skin in it takes the largest
+    const rfMax = Math.max(...RF);
+    for (let k = 0; k < RF.length; k++) if (!RF[k]) RF[k] = rfMax;
+    // the inner face: on the shell where it laps over it, off the face everywhere. A molding has no
+    // bumps, so it is a smooth surface (cubic along, quadratic across) fitted to that floor and lifted
+    // by the most the fit falls short of it anywhere (the ear and its lobe pushed bumps into a guard
+    // that followed the floor)
+    // (the face measure through a 3 by 3 median first: a slice can catch a lone vertex standing well
+    // out of its neighbours, and the guard grew a spike over it)
+    const RM = RF.map((_, k) => {
+      const i = k % (NU + 1), j = Math.floor(k / (NU + 1)), w = [];
+      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+        const ii = i + di, jj = j + dj;
+        if (ii >= 0 && ii <= NU && jj >= 0 && jj <= NV) w.push(RF[jj * (NU + 1) + ii]);
+      }
+      return w.sort((a, b) => a - b)[w.length >> 1];
+    });
+    const need = RM.map((rf, k) => Math.max(rf + CLR, ON[k] ? RS[k] + LAP : 0));
+    const basis = (u, v) => { const o = []; for (let a = 0; a <= 3; a++) for (let c = 0; c <= 2; c++) o.push(u ** a * v ** c); return o; };
+    const nb = 12, A = Array.from({ length: nb }, () => new Float64Array(nb + 1));
+    for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
+      const f = basis(i / NU, j / NV), y = need[j * (NU + 1) + i];
+      for (let r = 0; r < nb; r++) { for (let c = 0; c < nb; c++) A[r][c] += f[r] * f[c]; A[r][nb] += f[r] * y; }
+    }
+    for (let c = 0; c < nb; c++) {
+      let piv = c; for (let r = c + 1; r < nb; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+      [A[c], A[piv]] = [A[piv], A[c]];
+      for (let r = 0; r < nb; r++) if (r !== c) { const f = A[r][c] / A[c][c]; for (let k = c; k <= nb; k++) A[r][k] -= f * A[c][k]; }
+    }
+    const coef = A.map((row, r) => row[nb] / row[r]);
+    const fit = need.map((_, k) => { const i = k % (NU + 1), j = Math.floor(k / (NU + 1)); return basis(i / NU, j / NV).reduce((s2, f, r) => s2 + f * coef[r], 0); });
+    // and lifted where it falls short, as a broad smooth swelling (a membrane laid over the shortfall:
+    // the most of it and the blur of its neighbours, many times), never a bump
+    const short = need.map((n, k) => Math.max(0, n - fit[k]));
+    let up = short.slice();
+    for (let pass = 0; pass < 60; pass++) {
+      const N = up.slice();
       for (let j = 0; j <= NV; j++) for (let i = 0; i <= NU; i++) {
         let sum = 0, c = 0;
-        for (const [di, dj, w] of [[0, 0, 2], [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1]]) {
+        for (const [di, dj] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
           const ii = i + di, jj = j + dj;
           if (ii < 0 || ii > NU || jj < 0 || jj > NV) continue;
-          sum += Rs[jj * (NU + 1) + ii] * w; c += w;
+          sum += up[jj * (NU + 1) + ii]; c++;
         }
-        N[j * (NU + 1) + i] = sum / c;
+        const k = j * (NU + 1) + i;
+        N[k] = Math.max(short[k], sum / c);
       }
-      Rs = N;
+      up = N;
     }
-    const S = (u, v) => {
-      const k = Math.round(v * NV) * (NU + 1) + Math.round(u * NU), ph = PHI[k];
-      const r = Math.max(Rs[k] + CLR, R[k] + CLR - 0.003) + T;
-      return new THREE.Vector3(Math.sin(ph) * r, Y[k], Math.cos(ph) * r);
-    };
+    // and over its back third, where it is bolted on, exactly on the shell (the fit could stand off it
+    // a little), easing into the molding forward
+    const Ri = fit.map((f, k) => {
+      const u = (k % (NU + 1)) / NU, w = THREE.MathUtils.smoothstep(u, 0.12, 0.4);
+      return ON[k] ? THREE.MathUtils.lerp(need[k], Math.max(need[k], f + up[k]), w) : Math.max(need[k], f + up[k]);
+    });
+    const at = (k, r) => new THREE.Vector3(Math.sin(PHI[k]) * r, Y[k], Math.cos(PHI[k]) * r);
+    const S = (u, v) => { const k = Math.round(v * NV) * (NU + 1) + Math.round(u * NU); return at(k, Ri[k] + T); };
     const J = thickSheet(S, (u, v, q) => new THREE.Vector3(-q.x, 0, -q.z).normalize().multiplyScalar(T), NU, NV);
     const jm = mat.clone();
-    for (const m of [new THREE.Mesh(J.outer, jm), new THREE.Mesh(J.inner, padMat), new THREE.Mesh(J.walls, jm)]) { m.name = 'jaw guard'; m.castShadow = true; g.add(m); }
+    for (const m of [new THREE.Mesh(J.outer, jm), new THREE.Mesh(J.inner, jm), new THREE.Mesh(J.walls, jm)]) { m.name = 'jaw guard'; m.castShadow = true; g.add(m); }
+    // the rivets that bolt it to the flap: three, where it lies on the shell
+    const steel = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, roughness: 0.3, metalness: 0.9 });
+    for (const [u, v] of [[0.07, 0.3], [0.07, 0.72], [0.24, 0.5]]) {
+      const k = Math.round(v * NV) * (NU + 1) + Math.round(u * NU), q = at(k, Ri[k] + T + 0.0008);
+      const rv = new THREE.Mesh(new THREE.SphereGeometry(0.0042, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), steel);
+      rv.position.copy(q);
+      rv.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(q.x, 0, q.z).normalize());
+      rv.name = 'jaw guard rivet';
+      g.add(rv);
+    }
   }
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   g.userData.fit = sh.fit;
