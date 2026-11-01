@@ -46,7 +46,9 @@ export function geodesic(C, avoid){
   // the jumps a search can take backward: a tunnel's exit reaches its mouth, a landing reaches its lip
   const back = [];
   C.portals.forEach(p => { if (inZ(p.ax, p.ay)) return; const a = near(p.bx, p.by), e = near(p.ax, p.ay); if (a >= 0 && e >= 0) back.push([a, e, 1]); });
-  C.ramps.forEach(R => { const e = near(R.x - R.dx * 0.6, R.y - R.dy * 0.6); if (e < 0) return;
+  // a kicker is a secret line in plain sight: avoiding the secrets, its jump is no shortcut either, or the search for the
+  // obvious route is led to a ramp it may not use (Launch Pad, Moon Base, came back with no route at all)
+  C.ramps.forEach(R => { if (inZ(R.x, R.y)) return; const e = near(R.x - R.dx * 0.6, R.y - R.dy * 0.6); if (e < 0) return;
     for (let k = 1.5; k <= 9; k += 0.5) for (const s of [-0.5, 0, 0.5]){ const a = near(R.x + R.dx * k - R.dy * s * R.w, R.y + R.dy * k + R.dx * s * R.w); if (a >= 0) back.push([a, e, k * 0.6]); } });
   C.loops.forEach(L => { const a = near(L.x + L.dx * 0.8, L.y + L.dy * 0.8), e = near(L.x - L.dx * 0.8, L.y - L.dy * 0.8); if (a >= 0 && e >= 0) back.push([a, e, 1.6]); });
   const outOf = new Map(); back.forEach(([a, e, w]) => { if (!outOf.has(a)) outOf.set(a, []); outOf.get(a).push([e, w]); });

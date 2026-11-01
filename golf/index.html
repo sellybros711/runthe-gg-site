@@ -62,9 +62,9 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=118"></script>
-<script defer src="putt/land.js?v=14"></script>
-<script defer src="putt/hole3d.js?v=19"></script>
+<script defer src="putt/putt.js?v=119"></script>
+<script defer src="putt/land.js?v=15"></script>
+<script defer src="putt/hole3d.js?v=20"></script>
 <script defer src="putt/gyms.js?v=4"></script>
 <script defer src="putt/gymkinds/push.js?v=2"></script>
 <script defer src="putt/gymkinds/trickshot.js?v=1"></script>
@@ -77,10 +77,11 @@
 <script defer src="putt/gymkinds/railyard.js?v=2"></script>
 <script defer src="putt/gymkinds/rock.js?v=1"></script>
 <script defer src="putt/gymkinds/runes.js?v=1"></script>
-<script defer src="putt/trail.js?v=45"></script>
-<script defer src="putt/mapland.js?v=6"></script>
+<script defer src="putt/gymkinds/gravity.js?v=1"></script>
+<script defer src="putt/trail.js?v=46"></script>
+<script defer src="putt/mapland.js?v=7"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=21"></script>
+<script defer src="golfer3d.js?v=22"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11318,6 +11319,8 @@ const PP_REWARDS=[
  {cat:'ball',id:'ppcloud',name:'Cloud Ball',hist:'A Putt Putt world prize',col:'#86c8ff',tracer:{g:'rgba(134,200,255,.5)',c:'#c4e6ff'}},
  {cat:'ew',id:'ppaviatorgoggles',name:'Aviator Goggles',hist:'A Putt Putt world prize'},
  {cat:'ball',id:'ppdinoegg',name:'Dino Egg Ball',hist:'A Putt Putt world prize',col:'#f2ecc4',tracer:{g:'rgba(242,236,196,.5)',c:'#fffbea'}},
+ {cat:'ball',id:'ppmoon',name:'Moon Ball',hist:'A Putt Putt world prize',col:'#c8c5be',tracer:{g:'rgba(200,197,190,.5)',c:'#f1eee7'}},
+ {cat:'ball',id:'ppplanet',name:'Ringed Planet Ball',hist:'A Putt Putt world prize',col:'#e8a65a',tracer:{g:'rgba(232,166,90,.5)',c:'#ffe9b0'}},
  {cat:'cleats',id:'ppdinoclaw',name:'Dino Claw Cleats',hist:'A Putt Putt world prize'},
  {cat:'putter',id:'pptusk',name:'Mammoth Tusk Putter',hist:'A Putt Putt world prize'},
  {cat:'ew',id:'ppsnowgoggles',name:'Snow Goggles',hist:'A Putt Putt world prize'},
@@ -12077,7 +12080,7 @@ Object.assign(COS_BOOST,{
 Object.assign(COS_BOOST,{
   'hw:ppvisor':{acc:2}, 'hw:pphallcap':{clu:2}, 'hw:pptricorn':{dist:2}, 'hw:ppminer':{app:2}, 'hw:ppexplorer':{bnk:2}, 'hw:pphallowscrown':{scr:2},
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
-  'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2},
+  'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'bl:ppmoon':{acc:2}, 'bl:ppplanet':{dist:2},
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
   'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}
 });
@@ -15328,7 +15331,7 @@ const FT_HUBS=['protour','putthub','me'];
 const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
 const FT_PLATE_V=2;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
 // the worlds that have a picture for the home's Putt Putt side. A world added without one shows the Clubhouse
-const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage'];
+const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon'];
 // THE FIRST TEE IS THE HOME, for everybody (live since 2026-10-18; the classic home and the PUTT_LIVE switch were
 // removed the same day, at the owner's call). It does not wait for putt.js: its Putt Putt side is drawn once the module
 // has run.
@@ -18061,6 +18064,12 @@ PXG_BALL_PAL.ppcloud={o:'#3a78b8',W:'#ffffff',w:'#d0e4f6',C:'#86c8ff',h:'#c4e6ff
 // Dino Egg Ball
 PXG_BALL.ppdinoegg=pxgRows([[46,36,'oo'],[47,35,'ohCo'],[48,34,'ohCgCo'],[49,34,'ogCCdo'],[50,34,'oCdCgo'],[51,34,'oCgsso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.ppdinoegg={o:'#4e5a2a',C:'#f2ecc4',h:'#fffbea',s:'#c8c690',g:'#5aae3a',d:'#2f6e2a',T:'#e8ebf0'};
+// Moon Ball: a little moon, lit from the upper left, with its craters
+PXG_BALL.ppmoon=pxgRows([[47,35,'oooo'],[48,34,'ohCCdo'],[49,34,'oCdCCo'],[50,34,'oCCCdo'],[51,34,'odCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppmoon={o:'#4a4852',C:'#c8c5be',h:'#f1eee7',d:'#8e8b94',s:'#a29fa6',T:'#e8ebf0'};
+// Ringed Planet Ball: an orange banded planet with a pale ring across it
+PXG_BALL.ppplanet=pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'RRRRRR'],[50,34,'oBBBBo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppplanet={o:'#5a3a8a',C:'#e8a65a',h:'#ffd9a0',B:'#c8743a',s:'#a85a2a',R:'#ffe9b0',T:'#e8ebf0'};
 // Gold Nugget Ball
 PXG_BALL.ppnugget=pxgRows([[46,33,'*...oo'],[47,35,'oohCo'],[48,34,'ohwCCso'],[49,34,'oCCdCo'],[50,33,'ohCCswo'],[51,34,'osCddo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.ppnugget={o:'#4a2e08',C:'#eebc2c',h:'#fff0a0',s:'#c08818',d:'#8a5a10',w:'#ffffff','*':'#fff6c0',T:'#e8ebf0'};
