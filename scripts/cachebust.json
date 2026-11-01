@@ -73,8 +73,8 @@
       "sha": "3dc28a7e95923a28"
     },
     "app.js": {
-      "v": "4",
-      "sha": "b0d6f6958fa0b0e3"
+      "v": "5",
+      "sha": "d838c61501f84e97"
     },
     "home.js": {
       "v": "4",
@@ -93,8 +93,12 @@
       "sha": "4d5f92aa936e287d"
     },
     "daily.js": {
-      "v": "2",
-      "sha": "8ee1b5a4fef8a7eb"
+      "v": "3",
+      "sha": "cc3c22e444a253a9"
+    },
+    "trivia.js": {
+      "v": "1",
+      "sha": "b0c9ea381b7c2cc7"
     },
     "library.js": {
       "v": "2",

@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <header class="topbar">
@@ -60,6 +60,7 @@
     <div class="modes">
       <button type="button" class="mode play" data-go="play"><b>Draw a play</b><span>Draw any play you want, from any distance you want, and see if you can convert.</span></button>
       <button type="button" class="mode book" data-go="books"><b>Playbook Builder</b><span>Build a useable playbook and track the success of your plays.</span></button>
+      <button type="button" class="mode trivia" data-go="trivia"><b>Daily Defense</b><span>One play a day. Pick the defense that stops it.</span></button>
     </div>
     <footer class="legal">
       <img src="/assets/wm-runthegg.png?v=1" alt="RunThe.GG" width="1200" height="171" loading="lazy">
@@ -88,6 +89,33 @@
       </div>
       <button type="button" class="link" id="dBack">Back home</button>
       <p class="src">Real plays from nflverse play-by-play (CC-BY 4.0).</p>
+    </div>
+  </section>
+
+  <!-- DAILY DEFENSE: one play a day, pick the call that stops it (trivia.js) -->
+  <section class="view trivia" id="vTrivia" hidden>
+    <div class="tintro">
+      <p class="kicker" id="tNum"></p>
+      <h1>Call the defense</h1>
+      <p class="tsit" id="tSit"></p>
+      <div class="tfield"><canvas id="tField" aria-label="Today's play"></canvas></div>
+      <p class="tname" id="tName"></p>
+      <p class="task" id="tAsk">Which call stops it best?</p>
+      <div class="tcalls" id="tCalls"></div>
+      <div class="tprog" id="tProg" hidden><div class="tprogbar"><i id="tProgBar"></i></div><span id="tProgTxt"></span></div>
+      <div class="tres" id="tRes" hidden>
+        <h2 id="tVerdict"></h2>
+        <p class="tline" id="tLine"></p>
+        <p class="tstreak" id="tStreak" hidden></p>
+        <h3>First downs given up, every call</h3>
+        <div class="tbars" id="tBars"></div>
+        <div class="tacts">
+          <button type="button" class="btn gold" id="tWatch">Watch it vs your call</button>
+          <button type="button" class="btn" id="tShare">Share</button>
+        </div>
+        <p class="toast" id="tToast" hidden></p>
+      </div>
+      <button type="button" class="link" id="tBack">Back home</button>
     </div>
   </section>
 
@@ -394,12 +422,13 @@
 <script src="stage.js?v=1"></script>
 <script src="share.js?v=1"></script>
 <script src="play.js?v=1"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 <script src="home.js?v=4"></script>
 <script src="studio.js?v=4"></script>
 <script src="game.js?v=3"></script>
 <script src="flow.js?v=3"></script>
-<script src="daily.js?v=2"></script>
+<script src="daily.js?v=3"></script>
+<script src="trivia.js?v=1"></script>
 <script src="library.js?v=2"></script>
 <script src="learn.js?v=2"></script>
 <script src="testview.js?v=1"></script>

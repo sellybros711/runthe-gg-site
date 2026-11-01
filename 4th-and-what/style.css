@@ -419,3 +419,45 @@ body.gamemode .view.studio { grid-template-columns: 230px minmax(0, 1fr); grid-t
 .snapchip.lose { box-shadow: inset 3px 0 0 var(--red); }
 .snapchip[aria-pressed="true"] { border-color: var(--gold); outline: 1px solid var(--gold); }
 .panel .rsnaps { justify-content: flex-start; margin: 0 0 10px; }
+
+/* ---------- Daily Defense (trivia.js) ---------- */
+.modes { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.mode.trivia { background: linear-gradient(135deg, #6b1f2a, #451219); border: 1px solid #7a2a35; }
+.mode.trivia b { color: #ffd0d6; }
+.view.trivia { grid-template-columns: minmax(0, 1fr); }
+.tintro { max-width: 720px; margin: 0 auto; display: grid; gap: 8px; justify-items: center; text-align: center; padding: 14px 0 30px; width: 100%; }
+.tintro .kicker { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.tintro h1 { margin: 0; font: italic 900 46px/1 'Barlow Condensed', sans-serif; }
+.tsit { margin: 0; font-weight: 700; color: var(--dim); }
+.tfield { width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid #2c5a36; background: var(--field); }
+.tfield canvas { display: block; width: 100%; height: 340px; }
+.tname { margin: 0; font-weight: 800; }
+.task { margin: 6px 0 0; font: italic 900 26px/1.1 'Barlow Condensed', sans-serif; color: var(--gold); }
+.tcalls { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; width: 100%; }
+.tcall { border: 1px solid var(--edge); background: var(--panel2); color: var(--ink); border-radius: 10px; padding: 12px 10px; font-weight: 800; font-size: 14px; min-height: 48px; }
+.tcall:not(:disabled):hover { border-color: var(--gold); }
+.tcall[aria-pressed="true"] { border-color: var(--gold); background: rgba(245, 183, 42, .16); color: var(--gold); }
+.tcall:disabled { cursor: default; }
+.tprog { width: 100%; display: grid; gap: 6px; }
+.tprogbar { height: 8px; border-radius: 99px; background: var(--panel2); overflow: hidden; }
+.tprogbar i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .1s linear; }
+.tprog span { font-size: 13px; color: var(--dim); font-weight: 700; }
+.tres { width: 100%; background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 14px 16px; text-align: left; box-sizing: border-box; }
+.tres h2 { margin: 0; font: italic 900 38px/1 'Barlow Condensed', sans-serif; }
+.tres h2.win { color: var(--green); } .tres h2.lose { color: var(--red); }
+.tres h3 { margin: 12px 0 6px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.tline { margin: 4px 0 0; font-weight: 700; }
+.tstreak { margin: 4px 0 0; color: var(--teal); font-weight: 800; }
+.tbars { display: grid; gap: 6px; }
+.tbar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: 13px; font-weight: 700; }
+.tbar .tt { height: 12px; border-radius: 99px; background: var(--panel2); overflow: hidden; }
+.tbar .tt i { display: block; height: 100%; background: var(--dim); }
+.tbar.best .tt i { background: var(--green); }
+.tbar.mine .tl { color: var(--gold); }
+.tbar.mine .tl::after { content: ' (you)'; font-weight: 600; color: var(--dim); }
+.tbar b { text-align: right; }
+.tacts { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+@media (max-width: 700px) {
+  .tfield canvas { height: 300px; }
+  .tbar { grid-template-columns: 112px minmax(0, 1fr) 40px; font-size: 12px; }
+}
