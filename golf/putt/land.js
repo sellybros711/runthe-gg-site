@@ -1286,6 +1286,21 @@ window.RTT_PUTT_LAND = (function(){
           if (c.n && z > 2.2 && z < 4.6 && hash(c.ti >> 1, c.tj >> 1, 7) < 0.16) return R(hash(c.ti, c.tj, 9) < 0.5 ? '#b5452e' : '#e0b070');
           return R(((c.ti + (z * 2 | 0)) % 7) ? '#5a4e44' : '#4a4038'); }] } }; };
 
+  // the Dark Side: a hangar on the far side of the moon. Black blue walls lined with panel lights and lit portholes, crates and
+  // fuel tanks along them, and the earth's light falling faint through the hangar door on the floor.
+  BUILD['s-darkside'] = function(L){ var R0 = room(L, { floor:'hfloor', wall:'hwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 41, 3.2).forEach(function(q, i){ var x = q[0], y = q[1], zb = B.gz(x, y);
+          if (i % 2) cyl(B, x, y, 0.6, 1.8, function(d, t){ return t > 1.65 ? '#9aa6c0' : Math.abs(t - 0.9) < 0.08 ? '#ff5577' : d > 0.85 ? '#4a5878' : '#6a7898'; });   // a fuel tank, its red band
+          else B.solid(x - 0.8, y - 0.8, zb, x + 0.8, y + 0.8, zb + 1.3, function(px, py, pz){ var t = pz - zb, e = Math.abs(px - x) > 0.66 || t > 1.16; return Math.abs(px - x) < 0.8 && Math.abs(py - y) < 0.8 ? (e ? '#5a6680' : (Math.abs(px - x - (py - y)) < 0.1 ? '#3a4460' : '#7a869e')) : null; }); });   // a crate
+        byWall(L, 5, 47, 2.2).forEach(function(q){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 4.2, '#7fd8ff'); });
+        var d = byWall(L, 1, 53, 3)[0]; if (d && B.light) B.light(d[0], d[1] + 3, B.gz(d[0], d[1]) + 3, '#3f6ad8'); },   // the earthlight
+      bg:'#05060f', gain:2,
+      mats:{ hfloor:['#20263c', '#2a3048', '#181d30', 0.1, function(c, R){ return R(((c.ti % 8) && (c.tj % 8)) ? ((c.ti + c.tj) % 29 ? '#20263c' : '#3f7fe0') : '#141a2c'); }],
+        hwall:['#141a2c', '#1c2238', '#0e1220', 0.16, function(c, R){ var z = c.z || 0;
+          if (c.n && z > 3.4 && z < 4.6 && (c.ti % 9) < 2) return R((c.ti % 9) ? '#bfefff' : '#7fd8ff');   // the portholes, lit
+          if (Math.abs(z - 1.6) < 0.12) return R('#3f7fe0'); return R((c.ti % 6) ? '#141a2c' : '#0e1220'); }] } }; };
+
   // the Potting Shed: plank floor and walls, shelves of clay pots, a wheelbarrow, sacks
   BUILD['s-shed'] = function(L){ var R0 = room(L, { floor:'boards', wall:'shedwall', wallH:6.5, gap:2.4 });
     return { h:R0.h, mat:R0.mat,
@@ -4749,6 +4764,104 @@ window.RTT_PUTT_LAND = (function(){
           if (z > 7.5) return iceFace(R, w2 < 0.4 ? '#b4c0ce' : '#dce6ee'); return iceFace(R, w2 < 0.34 ? '#7a7e8a' : w2 > 0.66 ? '#a8acb6' : '#8e929e'); }] }
     };
   }
+  /* ---------------- MOON BASE IS A JOURNEY. Out of the lander onto the grey plain, the flag planted and the rover parked
+     (1 to 4), across the crater field with its boulders (5 to 8), into the base with its domes, modules and radar dish (9 to
+     12), round to the far side where the earth never rises and the big dish listens (13 to 16), and out to the launch pad,
+     the rocket standing ready (17 and 18). The earth hangs in the black sky over every stop but the far side. Gentle ground
+     only: a crater is a shallow bowl with a soft rim, never a cliff, so the land's rows never part. */
+  STOPS.moon = [[1, 'landing'], [5, 'craters'], [9, 'station'], [13, 'farside'], [17, 'launch']];
+  (function(){ BUILD.moon = function(L){ var s = L.stop; return s === 'launch' ? moonLaunch(L) : s === 'farside' ? moonFar(L) : s === 'station' ? moonStation(L) : s === 'craters' ? moonCraters(L) : moonLanding(L); }; })();
+
+  // the regolith: grey dust in broad patches, darker where a crater's floor lies, a pale ray thrown out round a fresh one
+  function moonDust(dark){ var a = dark ? ['#5e5c66', '#6a6872', '#52505a', '#74727c'] : ['#9a98a2', '#a8a6b0', '#8a8892', '#b6b4bc'];
+    return [a[0], a[1], a[2], 0.14, function(c, R){ var f = c.cr || 0, b = blot(c, 0.18, 71), n = blot(c, 0.5, 72);
+      if (f > 0.15) return R(f > 0.75 ? a[2] : n > 0.6 ? a[0] : a[2]); if (f < -0.05 && f > -0.35 && n > 0.55) return R(a[3]);
+      return R(b > 0.66 ? a[1] : b < 0.3 ? a[2] : (c.ti * 7 + c.tj * 13) % 41 === 0 ? a[3] : a[0]); }]; }
+  // craters as shallow bowls: cr > 0 inside (1 at the middle), a soft raised rim just outside it
+  function moonPits(L, n, rMin, rMax, salt){ var out = []; for (var i = 0; i < n; i++){ var r = rMin + hash(i, salt, L.seed) * (rMax - rMin);
+      var q = L.spot(r + 0.6, function(x, y){ return hash(x | 0, y | 0, L.seed + salt + i) * 3 + L.north(x, y) * 0.1; }); if (q) out.push({ x:q.x, y:q.y, r:r }); }
+    function cr(x, y){ var best = -1; for (var k = 0; k < out.length; k++){ var p = out[k], d = Math.hypot(x - p.x, (y - p.y) * 1.1) / p.r; best = Math.max(best, 1 - d); } return best; }
+    function h(x, y){ var t = cr(x, y); return t > 0 ? -0.45 * Math.sin(t * Math.PI / 2) : t > -0.4 ? 0.18 * Math.sin((t + 0.4) / 0.4 * Math.PI) : 0; }
+    return { list:out, cr:cr, h:h }; }
+  // the earth, hanging high over the back of the land: blue seas, green and brown land, white cloud, the night side dark
+  function moonEarth(B, L){ var X = L.cx + (L.P1[0] - L.P0[0]) * 0.3, Y = L.E[1] - 3.2, Z = 7.6, R = 2.6;   // north of the land, so the shadow pass never reaches its column and lays a blue pool under it
+    B.solid(X - R, Y - R, Z - R, X + R, Y + R, Z + R, function(px, py, pz){ var dx = (px - X) / R, dy = (py - Y) / R, dz = (pz - Z) / R; if (dx * dx + dy * dy + dz * dz > 1) return null;
+      if (dx * 0.7 - dz * 0.5 > 0.42) return '#0e1a3a'; var n = vn(px * 1.3 + 4, pz * 1.3 + py * 0.5, 91), c = vn(px * 2.2, pz * 2.2 + 9, 92);
+      if (c > 0.72) return '#f4f8ff'; if (n > 0.6) return n > 0.7 ? '#8a7a4a' : '#4a8a3a'; return dz > 0.5 ? '#5a9ae8' : '#2f6fd0'; }); }
+  // the lander: gold foil descent stage on four splayed legs and pads, the white ascent stage on top with its dark window
+  function moonLander(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 2.2, Y - 2.2, zb - 0.05, X + 2.2, Y + 2.2, zb + 4.2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, ax = Math.abs(dx), ay = Math.abs(dy);
+      for (var q = 0; q < 4; q++){ var sx = q & 1 ? 1 : -1, sy = q & 2 ? 1 : -1, u = 1 - t / 1.6; if (t < 1.6 && Math.hypot(dx - sx * (0.9 + u * 0.9), dy - sy * (0.9 + u * 0.9)) < 0.1) return '#c8c8d0';
+        if (t < 0.12 && Math.hypot(dx - sx * 1.8, dy - sy * 1.8) < 0.32) return '#9a9aa4'; }
+      if (t > 1.1 && t < 2.3 && ax < 1.05 && ay < 1.05) return (((px * 4 | 0) + (pz * 4 | 0)) % 3) ? '#e0b040' : '#b8862a';
+      if (t >= 2.3 && t < 3.6 && ax + ay * 0.6 < 1 && ay < 0.9) return dy > 0.6 && t > 2.8 && t < 3.3 && ax < 0.35 ? '#1a2240' : t > 3.4 ? '#c8ccd8' : '#eef0f4';
+      if (ax < 0.05 && ay < 0.05 && t >= 3.6 && t < 4.1) return '#c8c8d0'; return null; }); }
+  // a flag on its pole, the top bar holding it out where no wind will
+  function moonFlag(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 0.1, Y - 0.1, zb, X + 1.4, Y + 0.1, zb + 2.6, function(px, py, pz){ var t = pz - zb, dx = px - X;
+      if (dx < 0.06 && t < 2.6) return '#e8e8ec'; if (t > 1.7 && t < 2.5 && dx > 0.06 && dx < 1.35 && Math.abs(py - Y) < 0.05) return t > 2.3 ? '#3f7fe0' : (((dx * 5) | 0) % 2 ? '#ffffff' : '#e5483a'); return null; }); }
+  // the rover: a low grey chassis on four wire wheels, two seats, an antenna and a little gold dish
+  function moonRover(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 1.4, Y - 1, zb - 0.05, X + 1.4, Y + 1, zb + 2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, ax = Math.abs(dx), ay = Math.abs(dy);
+      if (Math.abs(ax - 0.95) < 0.2 && Math.abs(ay - 0.75) < 0.12 && Math.hypot(ax - 0.95, t - 0.32) < 0.32) return Math.hypot(ax - 0.95, t - 0.32) > 0.22 ? '#3a3a42' : '#8a8a94';
+      if (t > 0.5 && t < 0.72 && ax < 1.3 && ay < 0.7) return '#b8bcc8'; if (t >= 0.72 && t < 1.1 && Math.abs(ax - 0.3) < 0.2 && ay < 0.5 && dx > -0.6) return '#4a5470';
+      if (Math.abs(dx + 1) < 0.04 && Math.abs(dy) < 0.04 && t < 1.8) return '#c8c8d0'; if (Math.hypot(dx + 1, dy, t - 1.8) < 0.28 && dx > -1.05) return '#e0b040'; return null; }); }
+  // a white dome with its panel seams and a lit window band
+  function moonDome(B, X, Y, R){ var zb = B.gz(X, Y) - 0.05; if (B.light) B.light(X, Y + R, zb + R * 0.4, '#7fd8ff');
+    B.solid(X - R, Y - R, zb, X + R, Y + R, zb + R, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy, t) / R; if (d > 1 || d < 0.9) return null;
+      if (t < R * 0.42 && t > R * 0.28) return (((Math.atan2(dy, dx) * 6) | 0) % 2) ? '#bfefff' : '#3f6ad8'; return (Math.abs(Math.sin(Math.atan2(dy, dx) * 5)) < 0.08 || Math.abs(t - R * 0.7) < 0.05) ? '#b8c0d0' : '#eef2f8'; }); }
+  // a station module: a long white box on its side, a blue band, a porthole, its end caps grey
+  function moonModule(B, X, Y, w){ var zb = B.gz(X, Y), H = 1.6;
+    B.solid(X - w / 2, Y - 0.9, zb, X + w / 2, Y + 0.9, zb + H, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, r = Math.hypot(dy, t - 0.85);
+      if (r > 0.85 || Math.abs(dx) > w / 2) return null; if (Math.abs(dx) > w / 2 - 0.2) return '#8a96b0'; if (Math.abs(t - 0.4) < 0.1) return '#3f7fe0';
+      if (dy > 0.6 && Math.abs(t - 1.05) < 0.14 && (((dx + 9) * 0.8 | 0) % 2)) return '#7fd8ff'; return ((dx * 1.5 | 0) % 3) ? '#eef2f8' : '#c8d0de'; }); }
+  // a radar dish on its post, tipped up to the sky
+  function moonDish(B, X, Y, R){ var zb = B.gz(X, Y), H = R * 1.4;
+    B.solid(X - R, Y - R, zb, X + R, Y + R, zb + H + R, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+      if (Math.hypot(dx, dy) < 0.12 && t < H) return '#8a96b0'; var u = dx, v = (dy * 0.6 + (t - H) * 0.8), w2 = (-dy * 0.8 + (t - H) * 0.6);   // the dish's own frame, tipped back
+      var rr = Math.hypot(u, v); if (rr < R && Math.abs(w2 - rr * rr / (R * 2.2)) < 0.12) return rr > R * 0.92 ? '#8a96b0' : '#e8ecf4'; if (rr < 0.08 && w2 > 0 && w2 < R * 0.7) return '#c8ccd8'; return null; }); }
+  // the rocket on its pad: a tall white body with a black band and red fins, the gantry beside it, its lights lit
+  function moonRocket(B, X, Y){ var zb = B.gz(X, Y), H = 9; if (B.light){ B.light(X + 1.8, Y, zb + 4, '#ff5577'); B.light(X, Y + 2, zb + 0.5, '#ffd34d'); }
+    B.solid(X - 2.6, Y - 2.6, zb - 0.05, X + 2.6, Y + 2.6, zb + H + 1.6, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, r = Math.hypot(dx, dy);
+      if (t < 0.3 && Math.abs(dx) < 2.5 && Math.abs(dy) < 2.5) return (((px * 2 | 0) + (py * 2 | 0)) % 2) ? '#5a5e6a' : '#4a4e5a';   // the pad
+      var rr = t > H - 1.6 ? 0.75 * (H + 1.4 - t) / 3 : 0.75; if (t >= 0.3 && t < H + 1.4 && r < rr) return Math.abs(t - 5.2) < 0.4 ? '#1a1e2a' : t > H - 1.6 ? '#e5483a' : (dy > 0.5 && Math.abs(t - 7) < 0.25 && Math.abs(dx) < 0.2) ? '#7fd8ff' : '#f4f6fa';
+      if (t >= 0.3 && t < 2.2 && Math.abs(dy) < 0.08 && Math.abs(dx) < 0.75 + (2.2 - t) * 0.5 && Math.abs(dx) > 0.7) return '#e5483a';   // the fins
+      if (Math.abs(dx - 1.9) < 0.3 && Math.abs(dy) < 0.3 && t < H - 0.5) return (Math.abs(px - X - 1.9) > 0.22 || Math.abs(dy) > 0.22 || ((t * 2) | 0) % 2) ? '#8a7a5a' : null;   // the gantry
+      if (Math.abs(t - 6) < 0.1 && dx > 0.7 && dx < 1.9 && Math.abs(dy) < 0.1) return '#8a7a5a'; return null; }); }
+  function moonLows(B, x, y, i, seed, dark){ var k = hash(i, seed, 52); rockAt(B, x, y, 0.25 + k * 0.35, dark ? ['#4a4852', '#6a6872'] : ['#8a8892', '#b6b4bc']); }
+  function moonBase(L, o){ var seed = L.seed, pits = moonPits(L, o.pits || 4, o.rMin || 1.4, o.rMax || 3, 31), dark = !!o.dark;
+    return { pits:pits,
+      h:function(x, y){ return pits.h(x, y) * sm(0.6, 2.2, L.clearAt(x, y)) + (fbm(x * 0.08, y * 0.1, seed) - 0.45) * 0.8 * sm(1.3, 6, L.clearAt(x, y)); },
+      mat:function(x, y){ return ['reg', { cr:pits.cr(x, y) }]; },
+      fill:{ on:['reg'], trees:o.boulders == null ? 0.12 : o.boulders, lows:0.3, tree:function(B, x, y, i){ rockAt(B, x, y, 0.8 + hash(i, seed, 51) * 0.9, dark ? ['#52505a', '#74727c'] : ['#8a8892', '#c8c6ce']); },
+        low:function(B, x, y, i){ moonLows(B, x, y, i, seed, dark); } },
+      // the stars: only in the black over the horizon (the land's far edge), never on the ground
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        for (var i = 0; i < 140; i++){ var x = hash(i, 1, seed) * V.W, y = hash(i, 2, seed) * top, a = 0.35 + hash(i, 3, seed) * 0.65;
+          ctx.fillStyle = 'rgba(232,240,255,' + a.toFixed(2) + ')'; ctx.fillRect(x | 0, y | 0, hash(i, 4, seed) < 0.12 ? 2 : 1, hash(i, 4, seed) < 0.12 ? 2 : 1); } },
+      bg:'#05060f', gain:2, mats:{ reg:moonDust(dark) } }; }
+
+  // 1. THE LANDING (and every Moon Base hole with no place): the lander behind the hole, the flag beside it, the rover parked
+  function moonLanding(L){ var O = moonBase(L, { pits:4 }), ld = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.6 - Math.abs(x - L.cx) * 0.2; }),
+      fl = L.spot(0.8, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 2; }), rv = L.spot(1.5, function(x, y){ return L.side(x) * 3 + L.north(x, y) * 0.2; });
+    O.build = function(B){ moonEarth(B, L); if (ld) moonLander(B, ld.x, ld.y); if (fl) moonFlag(B, fl.x, fl.y); if (rv) moonRover(B, rv.x, rv.y); }; return O; }
+  // 2. THE CRATER FIELD: big shallow craters close together, boulders thrown out round them
+  function moonCraters(L){ var O = moonBase(L, { pits:8, rMin:1.8, rMax:4, boulders:0.3 }), rv = L.spot(1.5, function(x, y){ return L.side(x) * 3 - L.north(x, y) * 0.1; });
+    O.build = function(B){ moonEarth(B, L); if (rv) moonRover(B, rv.x, rv.y); }; return O; }
+  // 3. THE STATION: domes and modules behind the hole, the radar dish, lamps along the way in
+  function moonStation(L){ var O = moonBase(L, { pits:2, boulders:0.05 }), dm = [], md = [], i;
+    for (i = 0; i < 2; i++){ var d = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.7 + hash(x | 0, y | 0, L.seed + 3 + i); }); if (d) dm.push(d); }
+    for (i = 0; i < 2; i++){ var m = L.spotRect(4.2, 2, function(x, y){ return L.north(x, y) * 0.5 + L.side(x) * 2 + hash(x | 0, y | 0, L.seed + 7 + i); }); if (m) md.push(m); }
+    var ds = L.spot(1.8, function(x, y){ return L.side(x) * 3 + L.north(x, y) * 0.3; }), lp = L.scatter(5, function(x, y){ return L.clearAt(x, y) < 3; }, 61).slice(0, 4);
+    O.build = function(B){ moonEarth(B, L); dm.forEach(function(d){ moonDome(B, d.x, d.y, 2.2); }); md.forEach(function(m){ moonModule(B, m.x, m.y, 4); }); if (ds) moonDish(B, ds.x, ds.y, 1.5);
+      lp.forEach(function(q){ lamp(B, q[0], q[1], '#8a96b0', '#7fd8ff'); }); }; return O; }
+  // 4. THE FAR SIDE: darker ground and no earth in the sky, only the big dish listening
+  function moonFar(L){ var O = moonBase(L, { pits:5, dark:true, boulders:0.2 }), ds = L.spot(3, function(x, y){ return L.north(x, y) * 0.8; });
+    O.build = function(B){ if (ds) moonDish(B, ds.x, ds.y, 2.8); }; O.bg = '#020308'; return O; }
+  // 5. THE LAUNCH PAD: the rocket standing ready behind the hole, the earth over it
+  function moonLaunch(L){ var O = moonBase(L, { pits:3, boulders:0.08 }), rk = L.spot(2.8, function(x, y){ return L.north(x, y) * 0.8 - Math.abs(x - L.cx) * 0.15; }),
+      fl = L.spot(0.8, function(x, y){ return L.side(x) * 2 + L.north(x, y) * 0.2; });
+    O.build = function(B){ moonEarth(B, L); if (rk) moonRocket(B, rk.x, rk.y); if (fl) moonFlag(B, fl.x, fl.y); }; return O; }
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();

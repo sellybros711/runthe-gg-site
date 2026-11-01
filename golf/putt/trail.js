@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -139,6 +139,10 @@ var KIT = {
   iceage:{ g:['#e6edf2', '#f2f6f9', '#d6e0e7', 0.2], p:['#b8aa92', '#c8bca6', '#a89a82'], tree:['pine', 'pine', 'dead'], leaves:['#1e3f30', '#28503e', '#173a2a'], bark:'#4a3626', snow:true,
     low:['rocksnow', 'bushsnow', 'rock'], brk:'ice', haz:'slow', hazC:['#1e1a16', '#3a3028'], bogC:['#1e1a16', '#3a3028'], lm:['mammoth', 'cave', 'tusks'], wall:['#cfeaf2', '#6fb6d0'],
     npc:{ skin:'tan', polo:'gold', hat:'tan', pants:'khaki', hair:'darkbrown', hairStyle:'long', cap:false, gender:'male' }, who:'the cave dweller' },
+  // Moon Base: grey regolith, a pale beaten path, rock spires and antenna masts for trees, moon dust for the bog, supply crates to break
+  moon:{ g:['#9a98a2', '#a8a6b0', '#8a8892', 0.2], gpat:'moonReg', p:['#c8ccd8', '#dfe3ec', '#b4b8c4'], tree:['basalt'], leaves:['#6a6872', '#7a7882', '#5a5862'], bark:'#4a4852', dens:0.04,
+    low:['rock', 'rockdark', 'rock'], brk:'crate', haz:'slow', hazC:['#b6b4bc', '#9a98a6'], bogC:['#b6b4bc', '#9a98a6'], lm:['moonLander', 'moonDome', 'moonDish'], wall:['#eef2f8', '#3f7fe0'],
+    npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'black', hairStyle:'bun', cap:false, gender:'female' }, who:'the astronaut' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -752,7 +756,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -766,11 +770,12 @@ var SECRET_SAY = {
   sky:'I saw a secret hole on this trail from my balloon. Can\'t say where.',
   dino:'I dug up an old map. It says there\'s a secret hole on this trail.',
   iceage:'The old drawings say there\'s a secret hole on this trail.',
+  moon:'Mission control logged a secret hole on this trail. On the dark side, they think.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -1228,6 +1233,7 @@ var LIFE = {
   harvest:{ fly:['crow', 3], mote:['leaf', 16] },
   school:{ fly:['song', 4], mote:[['leaf', 10], ['butter', 6]] },
   iceage:{ mote:['snow', 60], fly:['crow', 2] },
+  moon:{ fly:['drone', 2], mote:['spark', 30] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -3542,6 +3548,43 @@ BUILD.icePeakRock = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(
 // the walk is drawn bigger than a hole (a shed is 9 by 6 by 11), and these stand among pines twice a man's height and more
 LMSIZE.iceHerd = [21, 10.5, 10]; LMSIZE.iceSaber = [10, 6.8, 6.8]; LMSIZE.iceSeracs = [15, 8, 12.3]; LMSIZE.iceArch = [13.5, 3, 6.6]; LMSIZE.iceMill = [8.4, 7, 0.8]; LMSIZE.iceErratic = [7.5, 6, 5.4];
 LMSIZE.iceTarpit = [13, 9.8, 5.5]; LMSIZE.iceBergs = [15, 11.7, 7]; LMSIZE.iceCliff = [17, 7, 10.5]; LMSIZE.iceCamp = [15, 10.5, 7.5]; LMSIZE.icePeakRock = [16, 13, 19];
+/* ---- Moon Base's stops on the walk, the same places its holes stand in (land.js): the landing site with the lander and
+   the flag, the crater field, the base with its domes and dish, the dark far side, and the launch pad with the rocket. The
+   moon has no trees: a rock spire stands in for one, here and there. A drone is the satellite going over, and the
+   sparks are stars. */
+GPAT.moonReg = function(c){ var a = vn(c.ti * 0.03, c.tj * 0.03, 81), b = vn(c.ti * 0.12, c.tj * 0.12, 82); return a > 0.7 ? '#8a8892' : b > 0.74 ? '#b6b4bc' : a < 0.3 ? '#a2a0aa' : '#9a98a2'; };
+GPAT.moonDark = function(c){ var a = vn(c.ti * 0.03, c.tj * 0.03, 83), b = vn(c.ti * 0.12, c.tj * 0.12, 84); return a > 0.7 ? '#4e4c56' : b > 0.74 ? '#74727c' : a < 0.3 ? '#625f6a' : '#5a5862'; };
+GPAT.moonCrater = function(c){ var gi = Math.floor(c.ti / 48), gj = Math.floor(c.tj / 48), cx = (gi + 0.3 + vn(gi, gj, 85) * 0.4) * 48, cy = (gj + 0.3 + vn(gj, gi, 86) * 0.4) * 48, r = 10 + vn(gi, gj, 87) * 12, d = Math.hypot(c.ti - cx, c.tj - cy) / r;
+  if (d < 0.85) return d < 0.5 ? '#7e7c86' : (c.ti - cx) + (c.tj - cy) < 0 ? '#6e6c76' : '#8a8892'; if (d < 1.05) return (c.ti - cx) + (c.tj - cy) < 0 ? '#c8c6ce' : '#7a7882'; return GPAT.moonReg(c); };
+KIT['moon~landing'] = kitFrom(KIT.moon, { nlm:3, lm:['moonLander', 'moonDish', 'moonLander'] });
+KIT['moon~craters'] = kitFrom(KIT.moon, { gpat:'moonCrater', dens:0.06, nlm:3, low:['rock', 'rockdark', 'rockdark', 'rock'], lm:['moonDish', 'moonLander', 'moonDish'] });
+KIT['moon~station'] = kitFrom(KIT.moon, { p:['#d8dce6', '#eef0f6', '#c4c8d4'], paved:true, dens:0.06, nlm:5, lm:['moonDome', 'moonDish', 'moonDome', 'moonLander', 'moonDome'] });
+KIT['moon~farside'] = kitFrom(KIT.moon, { g:['#5a5862', '#625f6a', '#4e4c56', 0.2], gpat:'moonDark', tree:['basalt'], dens:0.1, nlm:3, low:['rockdark', 'rockdark', 'rock'], lm:['moonDish', 'moonDish', 'moonDish'], wall:['#4a5878', '#141a2c'] });
+KIT['moon~launch'] = kitFrom(KIT.moon, { p:['#5a5e6a', '#6a6e7a', '#4a4e5a'], paved:true, dens:0.06, nlm:4, lm:['moonRocket', 'moonDish', 'moonDome', 'moonRocket'] });
+LIFE_AS['moon~landing'] = { fly:['drone', 2], mote:['spark', 24] };
+LIFE_AS['moon~craters'] = { fly:['drone', 1], mote:[['spark', 20], ['dust', 10]] };
+LIFE_AS['moon~station'] = { fly:['drone', 3], mote:['spark', 20] };
+LIFE_AS['moon~farside'] = { mote:['spark', 50] };
+LIFE_AS['moon~launch'] = { fly:['drone', 2], mote:[['spark', 24], ['ember', 6]] };
+// the lander: gold foil on four splayed legs, the white cabin on top with its dark window
+BUILD.moonLander = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy), u = 1 - tt / 2.4;
+  if (tt < 2.4 && Math.abs(ax - (1.2 + u * 1.3)) < 0.14 && Math.abs(ay - (1.2 + u * 1.3)) < 0.14) return '#c8c8d0'; if (tt < 0.2 && Math.hypot(ax - 2.5, ay - 2.5) < 0.45) return '#9a9aa4';
+  if (tt > 1.6 && tt < 3.4 && ax < 1.5 && ay < 1.5) return (((dx * 3 | 0) + (tt * 3 | 0)) % 3) ? '#e0b040' : '#b8862a';
+  if (tt >= 3.4 && tt < 5.2 && ax + ay * 0.6 < 1.4 && ay < 1.2) return dy > 0.8 && tt > 4 && tt < 4.7 && ax < 0.5 ? '#1a2240' : '#eef0f4'; if (ax < 0.08 && ay < 0.08 && tt >= 5.2 && tt < 5.9) return '#c8c8d0'; return null; }); };
+// a white dome with its panel seams and a lit window band, half sunk in the regolith
+BUILD.moonDome = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2, d = Math.hypot(dx, dy, tt) / R; if (d > 1) return null;
+  if (tt > R * 0.28 && tt < R * 0.42) return (((Math.atan2(dy, dx) * 6) | 0) % 2) ? '#bfefff' : '#3f6ad8'; return Math.abs(Math.sin(Math.atan2(dy, dx) * 5)) < 0.06 ? '#b8c0d0' : '#eef2f8'; }); };
+// a radar dish on its post, tipped back to the sky
+BUILD.moonDish = function(B, t){ var R = t.w / 2 - 0.3, H = t.h - R; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.hypot(dx, dy) < 0.15 && tt < H) return '#8a96b0';
+  var v = dy * 0.6 + (tt - H) * 0.8, w2 = -dy * 0.8 + (tt - H) * 0.6, rr = Math.hypot(dx, v); if (rr < R && Math.abs(w2 - rr * rr / (R * 2.2)) < 0.16) return rr > R * 0.9 ? '#8a96b0' : '#e8ecf4';
+  if (rr < 0.1 && w2 > 0 && w2 < R * 0.7) return '#c8ccd8'; return null; }); };
+// the rocket on its pad, the gantry beside it
+BUILD.moonRocket = function(B, t){ var H = t.h - 1.5; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3) return (((dx * 2 | 0) + (dy * 2 | 0)) % 2) ? '#5a5e6a' : '#4a4e5a'; var rr = tt > H - 2 ? 0.8 * (H + 1.2 - tt) / 3.2 : 0.8;
+  if (tt < H + 1.2 && r < rr) return Math.abs(tt - H * 0.55) < 0.4 ? '#1a1e2a' : tt > H - 2 ? '#e5483a' : '#f4f6fa';
+  if (tt < 2.6 && Math.abs(dy) < 0.1 && Math.abs(dx) > 0.75 && Math.abs(dx) < 0.8 + (2.6 - tt) * 0.5) return '#e5483a';
+  if (Math.abs(dx - 1.9) < 0.3 && Math.abs(dy) < 0.3 && tt < H - 0.5) return (Math.abs(dx - 1.9) > 0.2 || Math.abs(dy) > 0.2 || ((tt * 2) | 0) % 2) ? '#8a7a5a' : null; return null; }); };
+LMSIZE.moonLander = [6, 6, 6.2]; LMSIZE.moonDome = [8, 8, 4]; LMSIZE.moonDish = [6, 5, 7]; LMSIZE.moonRocket = [5, 5, 14];
 // @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

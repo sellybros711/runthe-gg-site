@@ -1649,7 +1649,7 @@ var LEVELS = [
      that passes near one is bent round it, so the line to the cup is a curve, never the straight one. Past the rails and in
      the trenches is deep space (the hazard), and moon dust is the slow ground. */
   // First Orbit: a moon sits on the line. Aim wide of it and its pull curls you back round to the cup.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [0, -2.5], [0.6, -28]); moon(H, 0, -15, 1.6, 5.5, 28);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [0, -2.5], [0.6, -28]); moon(H, 0, -15, 1.6, 5.5, 28);
     bumps(H, T, [[-4.2, -7, 0.6], [4.2, -9, 0.6], [-3.8, -24, 0.6], [4, -26, 0.55]]); zoneR(H, M.MUD, -6, -11, -3.6, -19); zoneR(H, M.MUD, 3.6, -11, 6, -19);
     blk(H, T, -1.2, -23.4, 1.2, -24.4); zoneC(H, M.MUD, -4.2, -30, 1.2); zoneC(H, M.MUD, 4.4, -4.5, 1); bowl(H, 0.6, -28, 1.6, 0.12); return H; } },
   // Crater Row: two small moons, one each side. Thread the bend between them.
@@ -1657,11 +1657,11 @@ var LEVELS = [
     bumps(H, T, [[3.8, -8, 0.55], [-3.8, -27, 0.55], [0, -30.5, 0.5], [4.6, -15, 0.5]]); zoneC(H, M.MUD, -4, -19, 1.6); zoneC(H, M.MUD, 4.2, -26.5, 1.2);
     zoneR(H, M.MUD, -6, -34, -2.5, -36); blk(H, T, 0.4, -16.6, 2.6, -17.6); bowl(H, 3, -32, 1.6, 0.12); return H; } },
   // Satellite Field: a field of satellites, a moon, and a gate in front of the cup.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [-3, -32.5]); moon(H, 2.5, -23.5, 1.4, 5, 26);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [-3, -32.5]); moon(H, 2.5, -23.5, 1.4, 5, 26);
     bumps(H, T, [[-3, -9, 0.6], [2, -11, 0.6], [-1, -15, 0.55], [4.5, -15, 0.55], [-4.5, -19, 0.6], [0, -19.5, 0.5]]);
     gateWall(H, T, -28, -7, 7, -5.4, -2.4, 3, 0.2); zoneR(H, M.MUD, 4.5, -34, 7, -36); zoneC(H, M.MUD, -5, -12, 1.2); bowl(H, -3, -32.5, 1.5, 0.12); return H; } },
   // Slingshot: a moon on the inside of the corner. Aim left of the turn and it whips you round to the right.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -25), rm(-5, -15, 19, -25)], [0, -2.5], [15, -20]); moon(H, 7, -17.6, 1.4, 6.5, 40);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -25), rm(-5, -15, 19, -25)], [0, -2.5], [15, -20]); moon(H, 7, -17.6, 1.4, 6.5, 40);
     bumps(H, T, [[-3, -10, 0.6], [3, -6, 0.55], [17.4, -23.4, 0.55], [12, -23.4, 0.5]]); zoneR(H, M.WATER, -5, -23, -2.6, -25); zoneR(H, M.MUD, 10.5, -15, 13, -16.6);
     zoneC(H, M.MUD, -3.4, -18, 1.1); blk(H, T, 2.2, -13.4, 5, -14.4); bowl(H, 15, -20, 1.6, 0.12); return H; } },
   // Airlock: roll over the plate to open the airlock, and the moon past it bends you to the cup.
@@ -1669,23 +1669,23 @@ var LEVELS = [
     moon(H, -2.6, -10, 1.2, 4.4, 20); moon(H, 2.4, -26, 1.4, 5, 26); bumps(H, T, [[-4.6, -29, 0.55], [4.6, -33, 0.55], [4.6, -5, 0.5]]);
     zoneR(H, M.MUD, -6, -36, -4.6, -38); zoneC(H, M.MUD, 4.4, -22, 1.1); bowl(H, -3, -34, 1.5, 0.12); return H; } },
   // Moon Dust: a band of moon dust across the middle, and a moon in it that pulls you through.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [-4, -2.5], [4, -32]); zoneR(H, M.MUD, -7, -12, 7, -20); moon(H, 0, -16, 1.5, 6, 32);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [-4, -2.5], [4, -32]); zoneR(H, M.MUD, -7, -12, 7, -20); moon(H, 0, -16, 1.5, 6, 32);
     zoneC(H, M.MUD, 4, -26, 1.5); bumps(H, T, [[-4, -25, 0.6], [2, -8, 0.55], [5.5, -9, 0.5], [-5.5, -30, 0.5], [0, -28, 0.5]]); blk(H, T, -2, -22.6, 0, -23.6);
     zoneC(H, M.ICE, -4.6, -8, 1.2); bowl(H, 4, -32, 1.6, 0.12); return H; } },
   // Docking Bay: roll onto the shuttle while it waits, ride it over deep space, and putt round the moon by the cup.
   { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, -2, -18.1), rm(-8, -17.9, 15, -22.1), rm(7, -21.9, 15, -42)], [-5, -2.5], [11, -38]); zoneR(H, M.WATER, -8, -18, 7, -22);
-    ferry(H, -8, -17.6, -3.6, -22, 10.6, 0, 2.2, 1.5, 0); moon(H, 11, -30, 1.3, 4.6, 24); bumps(H, T, [[-5, -10, 0.6], [-3, -14, 0.5], [13.6, -24, 0.5], [8.4, -35, 0.5]]);
+    ferry(H, -8, -17.6, -3.6, -22, 11, 0, 2.2, 1.5, 0); moon(H, 11, -30, 1.3, 4.6, 24); bumps(H, T, [[-5, -10, 0.6], [-3, -14, 0.5], [13.6, -24, 0.5], [8.4, -35, 0.5]]);
     zoneR(H, M.MUD, 7, -40, 9, -42); zoneC(H, M.MUD, -6.6, -6, 1); blk(H, T, 12.6, -34.4, 15, -35.4); bowl(H, 11, -38, 1.6, 0.12); return H; } },
   // Orbit Loop: round the loop, and a moon waits on the way out to turn you to the cup.
-  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-6, -19.4, 6, -37)], [0, -2.5], [-3.2, -33]);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-6, -19.4, 6, -37)], [0, -2.5], [-3.2, -33]);
     loopAt(H, 0, -17.5, 0, -1, 0.6, 1.6); moon(H, 1, -27, 1.4, 5, 26); bumps(H, T, [[-2.5, -8, 0.55], [2.5, -8, 0.55], [4.2, -34, 0.5], [-4.6, -23, 0.5], [4.6, -21.5, 0.5]]);
     zoneR(H, M.MUD, 3, -35, 6, -37); zoneC(H, M.MUD, -4.6, -28, 1.1); bowl(H, -3.2, -33, 1.5, 0.12); return H; } },
   // Asteroid Belt: modules drift across the lane on a clock, and a small moon by the airlock bends the last putt in.
-  { par:4, three:3, f:function(T){ var H = hole([rm(-7, 0, 7, -41)], [0, -2.5], [-3.5, -37]); slider(H, T, -12, -6, 6, 3.2, 0); slider(H, T, -20, -6, 6, 2.8, 0.5);
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -41)], [0, -2.5], [-3.5, -37]); slider(H, T, -12, -6, 6, 3.2, 0); slider(H, T, -20, -6, 6, 2.8, 0.5);
     bumps(H, T, [[-4, -15.5, 0.6], [4, -16.5, 0.55], [-5.5, -24, 0.5]]); moon(H, 3.4, -27, 1.2, 4.6, 24); gateWall(H, T, -31, -7, 7, -4.8, -2.2, 3, 0.3);
     zoneR(H, M.MUD, 4, -39, 7, -41); zoneC(H, M.MUD, 5, -7, 1.1); bowl(H, -3.5, -37, 1.5, 0.12); return H; } },
   // Space Walk: off the ramp over the trench of deep space, then round the moon to the cup.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-6, -11.9, 6, -15.1), rm(-6, -15, 6, -34)], [0, -2.5], [3, -30]); jump(H, 0, -12, 0, -1, 2, 12, { w:5.2 });
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-6, -11.9, 6, -15.1), rm(-6, -15, 6, -34)], [0, -2.5], [3, -30]); jump(H, 0, -12, 0, -1, 2, 12, { w:5.2 });
     moon(H, -0.5, -23, 1.4, 5, 26); bumps(H, T, [[3.5, -8, 0.55], [-3.5, -8, 0.55], [-4, -29, 0.55], [4.6, -20, 0.5]]); zoneR(H, M.MUD, -6, -32, -3, -34);
     zoneC(H, M.ICE, -4.2, -19, 1.2); blk(H, T, 0.6, -31.4, 1.8, -32.6); bowl(H, 3, -30, 1.6, 0.12); return H; } },
   // Radar Dishes: two dishes sweep the lane, and two moons bend you between them.
@@ -1712,13 +1712,15 @@ var LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -44)], [-4, -2.5], [4, -40]); moon(H, -2, -12, 1.3, 4.8, 26); moon(H, 2.5, -22, 1.3, 4.8, 26); moon(H, -1.5, -32, 1.3, 4.8, 26);
     bumps(H, T, [[5, -10, 0.55], [-5.5, -20, 0.55], [5.5, -30, 0.55], [-5, -40, 0.5]]); zoneR(H, M.WATER, -8, -26, -6.4, -30); zoneR(H, M.WATER, 6.4, -14, 8, -18);
     zoneR(H, M.MUD, 5, -42, 8, -44); zoneC(H, M.MUD, -6, -6, 1.1); bowl(H, 4, -40, 1.5, 0.12); return H; } },
-  // Launch Pad: up the ramp to the pad, over the trench on the bridge, round the moon. The secret: the kicker jumps the trench.
-  { par:4, three:3, f:function(T){ var H = hole([rm(-6, 0, 6, -16), rm(-6, -20, 6, -46, 0.8)], [0, -2.5], [-3, -42]); climb(H, 3, -16, -20, 2.4); moon(H, -3, -9, 1.2, 4.4, 20);
-    zoneR(H, M.WATER, -6, -28, 6, -31); drawb(H, -4.5, -28, -1.5, -31, 3.2, 0.1, 0.55); kicker(H, 2.6, -27.4); moon(H, -1.6, -36, 1.3, 4.6, 24);
-    bumps(H, T, [[4, -38, 0.55], [-4.5, -24, 0.5], [4.6, -6, 0.5]]); zoneR(H, M.MUD, 2, -44, 6, -46); zoneC(H, M.MUD, 4.4, -23, 1); bowl(H, -3, -42, 1.5, 0.12); return H; } },
-  // Twin Moons: two moons on the line and a crater for a cup. Round them the safe way, or thread the gap between them.
-  { par:4, three:3, sig:true, f:function(T){ var H = hole([rm(-9, 0, 9, -44)], [0, -2.5], [0, -39.5]); moon(H, 0.3, -14, 2, 6.5, 40); moon(H, -0.3, -27, 2, 6.5, 40);
-    secret(H, -1.4, -21.4, 1.4, -19.6); gateWall(H, T, -33, -9, 9, -2.4, 2.4, 3.2, 0.2); bumps(H, T, [[-6, -8, 0.6], [6, -8, 0.6], [-6.5, -21, 0.55], [6.5, -21, 0.55], [-5, -37, 0.5], [5, -37, 0.5]]);
+  // Launch Pad: the long way round the crater of deep space, east, up and back west, three putts. The secret: the launch ramp by
+  // the tee jumps the crater onto the top deck.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-22, 0, 22, -19)], [-18, -3.5], [-15, -15]); zoneR(H, M.WATER, -22, -8, 14, -11);
+    blk(H, T, -22, -7.7, -16.2, -8); blk(H, T, -13.8, -7.7, 14, -8); blk(H, T, -22, -11, 14, -11.3); kicker(H, -15, -7.6);
+    moon(H, 2, -4, 1.3, 4, 22); moon(H, 18, -9.5, 1.3, 4.6, 26); moon(H, 0, -15.5, 1.3, 4, 22); bumps(H, T, [[-8, -2, 0.5], [10, -6, 0.5], [8, -17, 0.5], [-6, -14, 0.5]]);
+    zoneR(H, M.MUD, 19, -1, 22, -4); zoneC(H, M.MUD, -20, -17, 1.2); bowl(H, -15, -15, 1.5, 0.12); return H; } },
+  // Twin Moons: two moons on the line and a crater for a cup, behind the airlock. Round them, and the second sends you home.
+  { par:3, three:2, sig:true, f:function(T){ var H = hole([rm(-9, 0, 9, -44)], [0, -2.5], [0, -39.5]); moon(H, 0.3, -14, 2, 6.5, 40); moon(H, -0.3, -27, 2, 6.5, 40);
+    gateWall(H, T, -33, -9, 9, -2.4, 2.4, 3.2, 0.2); bumps(H, T, [[-6, -8, 0.6], [6, -8, 0.6], [-6.5, -21, 0.55], [6.5, -21, 0.55], [-5, -37, 0.5], [5, -37, 0.5]]);
     zoneR(H, M.WATER, -9, -26, -7.4, -32); zoneR(H, M.WATER, 7.4, -26, 9, -32); bowl(H, 0, -39.5, 2, 0.14); return H; } }
 ];
 /* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders, two halves of nine on the season's two
