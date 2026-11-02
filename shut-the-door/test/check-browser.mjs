@@ -788,7 +788,8 @@ async function run(w, h, theme) {
       stakes: (document.getElementById('h-setup') || {}).textContent || '',
       stakesShown: !!document.getElementById('h-setup') && document.getElementById('h-setup').getBoundingClientRect().height > 0,
       openSheets: [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden).length,
-      robots: document.querySelector('meta[name=robots]').content,
+      robots: (document.querySelector('meta[name=robots]') || {}).content || '',
+      canonical: (document.querySelector('link[rel=canonical]') || {}).href || '',
     };
   });
   ok(home.title.length > 0, '1 home shows the occasion ("' + home.title + '")');
@@ -806,7 +807,8 @@ async function run(w, h, theme) {
     '1 the scorebug has the score (' + home.runs.join('-') + '), the inning (' + home.inn.trim() + '), the outs and the bases, as the pack has them ("' + home.aria + '")');
   ok(home.stakesShown && /door is shut/.test(home.stakes), '1 the stakes line is under it ("' + home.stakes.trim() + '")');
   ok(home.openSheets === 0, '1 no sheet or tutorial opened by itself');
-  ok(/noindex/.test(home.robots), '1 the page is noindexed');
+  /* Launched 2026-11-02 (check-posture.mjs holds the rest): indexable, with its canonical. */
+  ok(!/noindex/.test(home.robots) && home.canonical === 'https://runthe.gg/shut-the-door/', '1 the page is indexable with its canonical ("' + home.robots + '", "' + home.canonical + '")');
   await shot('home', true);
 
   /* 13: the brand. The outlined lockup in the header, the icons, the manifest */
