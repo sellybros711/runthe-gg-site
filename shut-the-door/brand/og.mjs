@@ -5,7 +5,8 @@
  * The first stadium still, darkened from the left, the crest at the top left, the title line
  * YOU ARE THE CLOSER. CAN YOU SHUT THE DOOR? in Barlow Condensed (the game's own fonts/) and a
  * signal bar along the foot. Chromium draws it, so the PNG is exactly what the page shows.
- * Bump og.png's ?v= in index.html when it changes.
+ * The page names it in its og:image and twitter:image tags (and the JSON-LD image); bump their
+ * ?v= when it changes.
  */
 import fs from 'node:fs';
 import path from 'node:path';
