@@ -1966,7 +1966,7 @@ var RTT_PUTT = {
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
   simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
-  makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
+  makeField:makeField, finishCourse:finishCourse, inPoly:inPoly, _spaceTrip:spaceTrip,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
   CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, TGT_R:TGT_R, TGT_KEEP:TGT_KEEP, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
 };
@@ -2474,6 +2474,10 @@ var CSS = '\
 /* A WORLD DOOR: two leaves made of that world, a lock that fills with the stars you have */\
 .pp-door{position:absolute;z-index:6;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(ellipse at center,rgba(0,0,0,.35),rgba(0,0,0,.75))}.pp-door.in{opacity:1}\
 .pp-dl,.pp-dr{position:absolute;top:6%;bottom:6%;width:min(44vw,300px);background:linear-gradient(180deg,var(--dc),var(--db));border:6px solid color-mix(in srgb,var(--da) 70%,#000);box-shadow:inset 0 0 0 4px rgba(0,0,0,.35),0 20px 40px rgba(0,0,0,.6);transition:transform .9s cubic-bezier(.6,0,.3,1)}\
+.pp-trip{position:absolute;inset:0;z-index:60;background:#05060f;display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity .35s}.pp-trip.out{opacity:0}\
+.pp-trip canvas{width:100%;height:100%;image-rendering:pixelated}.pp-trip small{position:absolute;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));color:rgba(255,255,255,.6);font:600 12px system-ui,sans-serif}\
+.pp-tripcap{position:absolute;left:0;right:0;top:22%;text-align:center;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s;color:#fff;text-shadow:0 2px 0 #000}.pp-trip.cap .pp-tripcap{opacity:1;transform:none}\
+.pp-tripcap i{display:block;font:800 13px system-ui,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#9fe8ff}.pp-tripcap b{display:block;font:34px Anton,Impact,sans-serif;letter-spacing:.06em;text-transform:uppercase}\
 .pp-dl{right:50%;border-radius:22px 0 0 22px;border-right-width:3px}.pp-dr{left:50%;border-radius:0 22px 22px 0;border-left-width:3px}.pp-door .pp-dl,.pp-door .pp-dr{transform:scale(.92)}.pp-door.in .pp-dl,.pp-door.in .pp-dr{transform:none}\
 .pp-door.open .pp-dl{transform:translateX(-110%)}.pp-door.open .pp-dr{transform:translateX(110%)}.pp-door.open .pp-dlock{opacity:0;transform:translate(-50%,-50%) scale(1.3)}\
 .pp-door.shut .pp-dlock{animation:ppshake .45s}@keyframes ppshake{20%,60%{margin-left:-9px}40%,80%{margin-left:9px}}\
@@ -3361,6 +3365,61 @@ function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el
    world (a temple's carved stone, a ship's hull, a mine's iron gate, a glacier), and the stars he has
    fill the lock. Enough and it opens; short and it stays shut and says how many more. Tapping anywhere
    skips the walk, and reduced motion skips it outright (the door still says whether it opened). */
+/* TO SPACE BY ROCKET (the owner, 2026-11-02: "you should get into a rocket ship and fly up to space to go to the moon world").
+   Crossing into Moon Base there is no gate to walk through: you board a rocket on Earth, it counts down and lifts off, the sky
+   goes black, the Earth falls away and the Moon comes up to meet you. Drawn here on its own canvas over the trail or the map,
+   about six seconds, a tap skips it, and with reduced motion it is the arrival card alone. The space worlds after the Moon
+   will each get their own leg of the trip from here (SPACE_TRIP). */
+var SPACE_TRIP = { moon:'rocket' };
+function spaceTrip(theme, label, name, host, cb){
+  var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  var wrap = el('<div class="pp-trip"><canvas></canvas><div class="pp-tripcap"><i>' + esc(label) + '</i><b>' + esc(name) + '</b></div><small>Tap to skip</small></div>');
+  host.appendChild(wrap); var cv = wrap.querySelector('canvas'), ctx = cv.getContext('2d'), done = false, t0 = performance.now(), DUR = reduce ? 1.6 : 7;
+  var LW = 180, LH = Math.max(240, Math.round(180 * (host.clientHeight || 640) / Math.max(1, host.clientWidth || 360)));
+  cv.width = LW; cv.height = LH; ctx.imageSmoothingEnabled = false;
+  var stars = []; for (var i = 0; i < 90; i++) stars.push([hash3(i, 1, 41) * LW, hash3(i, 2, 41) * LH * 3, hash3(i, 3, 41)]);
+  function finish(){ if (done) return; done = true; wrap.classList.add('out'); setTimeout(function(){ if (wrap.isConnected) wrap.remove(); cb(); }, 350); }
+  wrap.addEventListener('pointerdown', function(e){ e.preventDefault(); e.stopPropagation(); finish(); });
+  function px(x, y, w, h, c){ ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
+  function disc(x, y, r, c){ ctx.fillStyle = c; ctx.beginPath(); ctx.arc(Math.round(x), Math.round(y), Math.max(0.5, r), 0, 7); ctx.fill(); }
+  function rocket(x, y, flame, tsec){
+    px(x - 4, y - 22, 8, 22, '#f2f4f8'); px(x - 4, y - 22, 2, 22, '#ffffff'); px(x + 2, y - 22, 2, 22, '#c8ccd8');
+    for (var k = 0; k < 6; k++) px(x - 3 + k * 0.5, y - 28 + k, 6 - k, 1, '#e5383b');                          // the nose
+    px(x - 3, y - 26, 6, 2, '#e5383b'); px(x - 2, y - 15, 4, 4, '#3a6fd8'); px(x - 1, y - 14, 2, 2, '#9fe8ff');    // a porthole
+    px(x - 8, y - 6, 4, 6, '#e5383b'); px(x + 4, y - 6, 4, 6, '#e5383b'); px(x - 3, y, 6, 2, '#5a5e6a');            // fins and the nozzle
+    if (flame > 0){ var fl = flame * (8 + 4 * Math.sin(tsec * 40));
+      px(x - 3, y + 2, 6, fl, '#ffb020'); px(x - 2, y + 2, 4, fl * 0.75, '#fff27a'); px(x - 1, y + 2, 2, fl * 0.45, '#ffffff'); } }
+  function frame(){ if (done) return; var t = (performance.now() - t0) / 1000;
+    if (reduce){ ctx.fillStyle = '#05060f'; ctx.fillRect(0, 0, LW, LH); stars.forEach(function(s){ px(s[0], s[1] % LH, 1, 1, '#ffffff'); });
+      disc(LW / 2, LH * 0.78, LW * 0.55, '#c8c5be'); if (t > DUR) return finish(); return requestAnimationFrame(frame); }
+    // the climb: 0 on the pad, 1 well clear of the Earth
+    var up = Math.max(0, Math.min(1, (t - 1.9) / 2.4)), dark = Math.max(0, Math.min(1, (t - 2.4) / 1.3)), land = Math.max(0, Math.min(1, (t - 4.2) / 1.6));
+    var sky = [Math.round(110 * (1 - dark) + 5 * dark), Math.round(180 * (1 - dark) + 6 * dark), Math.round(240 * (1 - dark) + 15 * dark)];
+    ctx.fillStyle = 'rgb(' + sky.join(',') + ')'; ctx.fillRect(0, 0, LW, LH);
+    stars.forEach(function(s){ if (s[2] < dark) px(s[0], (s[1] + up * LH * 1.5) % LH, 1, 1, s[2] > 0.85 ? '#ffe9b0' : '#ffffff'); });
+    var groundY = LH * 0.82 + up * LH * 1.2, rx = LW / 2, ry = LH * 0.82 - Math.min(1, up * 1.4) * LH * 0.32;
+    // Earth: the pad and its tower going down, then the blue curve of the planet
+    if (groundY < LH + 40){ px(0, groundY, LW, LH, '#4a9a4a'); px(0, groundY, LW, 3, '#6ab86a'); px(rx - 16, groundY - 4, 32, 4, '#8a8e9a');
+      px(rx + 12, groundY - 44, 4, 40, '#c0392b'); for (var k = 0; k < 10; k++) px(rx + 10, groundY - 42 + k * 4, 8, 1, '#7a2a20'); }
+    if (dark > 0.2 && land < 0.6){ var ey = LH + LW * 0.9 - up * LH * 0.15 + land * LH * 0.6; disc(rx, ey, LW * 1.1, '#1f5fb8'); disc(rx, ey + 4, LW * 1.08, '#2f7fd8');
+      ctx.globalAlpha = 0.6; disc(rx - 30, ey - LW * 0.95, 14, '#5aa84a'); disc(rx + 40, ey - LW * 1.0, 10, '#5aa84a'); ctx.globalAlpha = 1; }
+    // the Moon comes up to meet the rocket
+    // the Moon: first a small disc high up, then its surface rises under the rocket until the rocket stands on it
+    if (land > 0){ var mR = LW * 2.2, sTop = LH + 30 - land * (LH + 30 - (ry + 2)), mcy = sTop + mR;
+      if (land < 0.35){ var sm = 6 + land * 60; disc(rx + 30 - land * 80, LH * 0.25 + land * 60, sm, '#c8c5be'); }
+      else { disc(rx, mcy, mR, '#c8c5be'); disc(rx, mcy + 3, mR - 2, '#b4b1aa');
+        for (var cr = 0; cr < 7; cr++){ var cx = rx - LW * 0.45 + hash3(cr, 4, 9) * LW * 0.9, cy = sTop + 8 + hash3(cr, 5, 9) * (LH - sTop); if (cy < LH) disc(cx, cy, 3 + hash3(cr, 6, 9) * 9, '#8e8b94'); } } }
+    // smoke on the pad, billowing out as it lifts
+    if (t > 1.2 && groundY < LH + 30){ for (var k2 = 0; k2 < 14; k2++){ var a = hash3(k2, 7, 3) * Math.PI, sp = (t - 1.2) * (10 + hash3(k2, 8, 3) * 18);
+      disc(rx + Math.cos(a) * sp * (k2 % 2 ? 1 : -1), groundY - 4 - Math.sin(a) * sp * 0.4, 4 + sp * 0.18, 'rgba(235,235,240,' + Math.max(0, 0.75 - (t - 1.2) * 0.18) + ')'); } }
+    var ryLand = ry;
+    rocket(rx, ryLand, t < 1.2 ? 0 : land > 0.95 ? 0 : 1, t);
+    // the countdown, big over the pad
+    if (t < 1.9){ var n = t < 0.6 ? '3' : t < 1.2 ? '2' : '1'; ctx.fillStyle = '#ffffff'; ctx.font = 'bold 34px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(t < 1.75 ? n : 'LIFTOFF', rx, LH * 0.3); }
+    if (land > 0.9){ ctx.globalAlpha = Math.min(1, (land - 0.9) * 10); for (var k3 = 0; k3 < 8; k3++) disc(rx + (k3 - 3.5) * 5, ryLand + 2, 3 + k3 % 3, 'rgba(200,197,190,.7)'); ctx.globalAlpha = 1; wrap.classList.add('cap'); }
+    if (t > DUR) return finish(); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+}
 var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
@@ -3799,6 +3858,7 @@ function openTrail(tid, from){
         var cb0 = cb; cb = function(o){ cb0(o); if (o && clouded){ clouded = false; var gl = S.ov.querySelector('.pp-tgoal'); if (gl) gl.innerHTML = goalHtml();
           var tr = S.ov.querySelector('.pp-trail'); if (tr){ tr.setAttribute('data-wv', Wd.theme); var bn = el(banHtml()); tr.appendChild(bn); S.wban = TR.id + ':' + sp.w;
             setTimeout(function(){ if (bn.isConnected) bn.classList.add('out'); setTimeout(function(){ if (bn.isConnected) bn.remove(); }, 700); }, 2600); } } };
+        if (open && SPACE_TRIP[Wd.theme]) return spaceTrip(Wd.theme, TR.members ? 'Members Tour' : 'World ' + (sp.w + 1), Wd.name, S.ov, function(){ cb(true); });
         S.ov.appendChild(door);
         requestAnimationFrame(function(){ door.classList.add('in'); setTimeout(function(){ if (!door.isConnected) return; door.classList.add('fill');
           setTimeout(function(){ if (!door.isConnected) return; door.classList.add(open ? 'open' : 'shut');
@@ -3870,6 +3930,8 @@ function walkFlat(n, tid){
   if (!cross) return tween(0, 1, 2100, finish);
   var gw = w - 1, have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw), T = THEMES[Wd.theme] || {}, hide = !open && !revealed(TR, w);
   if (open) reveal(TR, w);
+  if (open && SPACE_TRIP[Wd.theme]) return tween(0, 0.5, reduce ? 1 : 1260, function(){ if (!alive()) return;
+    spaceTrip(Wd.theme, TR.members ? 'Members Tour' : 'World ' + (w + 1), Wd.name, hub, function(){ if (alive()) tween(0.5, 1, reduce ? 1 : 1150, finish); }); });
   door = el('<div class="pp-door" data-door="' + (hide ? 'clouds' : Wd.theme) + '" style="--da:' + (hide ? '#cfd9e8' : T.acc || '#F1D04A') + ';--db:' + (hide ? '#4a5a72' : T.bg || '#20302a') + ';--dc:' + (hide ? '#6d7f99' : T.bg2 || '#34483e') + '">\
     <div class="pp-dl"></div><div class="pp-dr"></div>\
     <div class="pp-dlock"><i>' + (TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + esc(hide ? CLOUD_NAME : Wd.name) + '</b>\
