@@ -142,6 +142,10 @@ var FLOAT_FRIC = 0.12, FLOAT_Z = 0.35;
    pushed round its middle (w ft/s/s at the eye, nothing at its edge), so a putt that runs through one is spun off its line,
    left or right by which way it turns. It moves, so where it will be when the ball gets there is the read. */
 function devilPos(d, tt){ var u = Math.sin(2 * Math.PI * (tt / d.period + (d.phase || 0))); return [d.x + d.dx * u, d.y + d.dy * u]; }
+// the ring rail a point is on, if any, with the unit vector out from its middle (simulate, the carpet branch)
+function ringAt(C, x, y){ var R = C.rings; if (!R) return null; for (var i = 0; i < R.length; i++){ var g = R[i], dx = x - g.cx, dy = y - g.cy, d = Math.hypot(dx, dy);
+    if (d < 1e-6 || Math.abs(d - g.r) > g.w / 2) continue; var sg = g.span < 0 ? -1 : 1, u = (((Math.atan2(dy, dx) - g.a0) * sg) % 6.283185307 + 6.283185307) % 6.283185307;
+    if (u <= Math.abs(g.span)) return { ring:g, ux:dx / d, uy:dy / d }; } return null; }
 function floatAt(C, x, y){ var F = C.floats; for (var i = 0; i < F.length; i++){ var f = F[i]; if (x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) return f; } return null; }
 function ferryEase(e, w){ return { k:(3 - e) * w * w + (e - 2) * w * w * w, d:2 * (3 - e) * w + 3 * (e - 2) * w * w }; }
 function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w, z;
@@ -318,7 +322,7 @@ function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
   var onDeck = false, deckV = null, floating = false, climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
-  var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [], wells = C.wells || [], devils = C.devils || [];
+  var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [], wells = C.wells || [], devils = C.devils || [], rings = C.rings || [], hazes = C.hazes || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
   /* TRICK SHOT TARGETS (the Clubhouse's gyms, gymkinds/trickshot.js): numbered targets that must go down in order. tk is
      how many are down when the putt is struck (C.tk, kept by whoever plays the room, never by the hole). The cup is shut
@@ -380,6 +384,9 @@ function simulate(C, x, y, vx, vy, t0){
       if (wr2 < wl.pull * wl.pull && wr2 > 1e-6){ var wr = Math.sqrt(wr2), wa = wl.g / Math.max(wr2, wl.r * wl.r); ax += wdx / wr * wa; ay += wdy / wr * wa; } }
     for (var dvi = 0; dvi < devils.length; dvi++){ var dv = devils[dvi], dp = devilPos(dv, t0 + t), ddx = s.x - dp[0], ddy = s.y - dp[1], dr = Math.hypot(ddx, ddy);
       if (dr < dv.r && dr > 1e-3){ var dk = dv.w * (1 - dr / dv.r); ax += -ddy / dr * dk; ay += ddx / dr * dk; } }
+    /* TITAN HAZE (Saturn, World 14): orange fog that drags on the ball (its friction times f) and leans on it with the wind
+       (wx, wy ft/s/s), so a putt through it slows and drifts downwind. */
+    for (var hzi = 0; hzi < hazes.length; hzi++){ var hz = hazes[hzi]; if (s.x >= hz.x0 && s.x <= hz.x1 && s.y >= hz.y0 && s.y <= hz.y1){ af *= hz.f; ax += hz.wx; ay += hz.wy; } }
     var sl = Math.hypot(ax, ay);
     /* A RAMP LANE HOLDS NOTHING. On the carpet the slope's pull is usually under friction, so a ball that ran
        out of pace half way up would sit on the ramp. In a climb lane static friction is gone and the rolling
@@ -391,6 +398,10 @@ function simulate(C, x, y, vx, vy, t0){
       // friction can stop a ball, never send it backwards
       if (sl <= af && dvx * dvx + dvy * dvy >= sp * sp){ s.vx = 0; s.vy = 0; } else { s.vx += dvx; s.vy += dvy; } }
     s.vx += ax * DT; s.vy += ay * DT;
+    /* A RING RAIL (Saturn, World 14): a banked lane of ring ice round (cx, cy) at radius r, w wide, through the angle a0 to
+       a0 + span. On it the bank takes away every push across the lane, so the ball runs round the curve at whatever pace
+       it has and leaves the far end going the new way (ringAt). */
+    if (rings.length && !over){ var rg = ringAt(C, s.x, s.y); if (rg){ var rvr = s.vx * rg.ux + s.vy * rg.uy; s.vx -= rg.ux * rvr; s.vy -= rg.uy * rvr; } }
     }
     s.x += s.vx * DT; s.y += s.vy * DT;
     var rode = false;
@@ -483,7 +494,7 @@ function simulate(C, x, y, vx, vy, t0){
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
   C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
-  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || [];
+  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || []; C.rings = C.rings || []; C.hazes = C.hazes || [];
   if (!C.polys) C.polys = C.poly ? [C.poly] : []; if (!C.allPts) C.allPts = C.polys.reduce(function(a, p){ return a.concat(p); }, []);
   if (!C.edges) C.edges = C.polys.length > 1 ? unionEdges(C.polys) : C.polys.length ? polyWalls(C.polys[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; }) : [];
   if (!C.tierAt) C.tierAt = function(){ return 0; };
@@ -835,7 +846,7 @@ function buildMini(tplName, seed, themeId, label, extra){
   if (r() < 0.5){
     var fx = function(p){ return [-p[0], p[1]]; };
     H.poly = H.poly.map(fx).reverse(); H.tee = fx(H.tee); H.cup = fx(H.cup);
-    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; });
+    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; }); (H.rings || []).forEach(function(g){ g.cx = -g.cx; g.a0 = Math.PI - g.a0; g.span = -g.span; }); (H.hazes || []).forEach(function(h){ var a = -h.x1; h.x1 = -h.x0; h.x0 = a; h.wx = -(h.wx || 0); });
     H.blocks = H.blocks.map(function(b){ return { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(rectWalls(b, 0.6)); });
     H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; if (m.k === 'door') m.px = -m.px; } });
@@ -862,7 +873,7 @@ function courseFromH(H, tplName, seed, themeId, label){
   var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:PS[0], polys:PS, allPts:all, edges:edges, rooms:rooms, comps:H.comps, flats:H.flats,
     stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
-    secret:H.secret || [], devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
+    secret:H.secret || [], rings:(H.rings || []).slice(), hazes:(H.hazes || []).map(function(h){ return { x0:Math.min(h.x0, h.x1), y0:Math.min(h.y0, h.y1), x1:Math.max(h.x0, h.x1), y1:Math.max(h.y0, h.y1), f:h.f || 2.2, wx:h.wx || 0, wy:h.wy || 0 }; }), devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
     rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ var st = H.stimp || (themeId === 'winter' ? 9.5 : 9), D = Math.hypot(f.dx, f.dy) || 1, L = Math.abs(f.dx) >= Math.abs(f.dy) ? f.x1 - f.x0 : f.y1 - f.y0,
       ve = Math.sqrt(2 * (V_STIMP * V_STIMP / (2 * st)) * (L + 1)), mv = f.move / PACE;
@@ -1000,6 +1011,11 @@ function zerog(H, x0, y0, x1, y1){ (H.floats = H.floats || []).push({ x0:x0, y0:
 // devil(H, x, y, r, w, dx, dy, period, phase): a dust devil of radius r spinning at w (positive anticlockwise on screen), swaying
 // dx, dy either side of x, y once a period (simulate, devilPos).
 function devil(H, x, y, r, w, dx, dy, period, phase){ (H.devils = H.devils || []).push({ x:x, y:y, r:r || 3, w:w || 6, dx:dx || 0, dy:dy || 0, period:period || 6, phase:phase || 0 }); }
+// ring(H, cx, cy, r, w, a0, span): a ring rail round (cx, cy) at radius r, w wide, from angle a0 (radians, x right, y down the
+// screen) through span (signed: positive turns the way the angle grows). haze(H, x0, y0, x1, y1, wx, wy, f): a bank of Titan
+// haze with its wind and drag (simulate).
+function ring(H, cx, cy, r, w, a0, span){ (H.rings = H.rings || []).push({ cx:cx, cy:cy, r:r, w:w || 3, a0:a0, span:span }); }
+function haze(H, x0, y0, x1, y1, wx, wy, f){ (H.hazes = H.hazes || []).push({ x0:x0, y0:y0, x1:x1, y1:y1, wx:wx || 0, wy:wy || 0, f:f || 2.2 }); }
 function pads(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.75, e:1.32, skin:'pad' }); }); }
 function zoneR(H, m, x0, y0, x1, y1){ H.zones.push({ t:'rect', x0:x0, y0:y0, x1:x1, y1:y1, m:m }); }
 function zoneC(H, m, x, y, r){ H.zones.push({ t:'circle', x:x, y:y, r:r, m:m }); }
@@ -4947,6 +4963,28 @@ function drawPieces(ctx, C, cam, clock){
     // grit flung round the eye the way it turns
     ctx.fillStyle = 'rgba(255,220,180,.9)'; for (var g = 0; g < 14; g++){ var ga = clock * 3.4 * sg + g * 0.45 + di, gz = hash3(di, g, 12) * 3.6, gr = R * (0.2 + gz * 0.18);
       q = P(p[0] + Math.cos(ga) * gr, p[1] + Math.sin(ga) * gr * 0.55, gz); var gs = Math.max(2, Math.round(d * 1.6)); ctx.fillRect(Math.round(q[0]), Math.round(q[1]), gs, gs); } });
+  /* TITAN HAZE: a soft orange bank over its carpet, puffs of it drifting downwind, so where it drags and which way it pushes
+     both read. A RING RAIL: a band of pale blue ring ice with gold edges, and chevrons running along it the way it carries. */
+  (C.hazes || []).forEach(function(h, hi){ var P = function(x, y, zz){ return cam.v3 ? w2s(cam, x, y, cam.v3.zAt(x, y) + (zz || 0)) : w2s(cam, x, y); };
+    var q = [P(h.x0, h.y0), P(h.x1, h.y0), P(h.x1, h.y1), P(h.x0, h.y1)];
+    ctx.fillStyle = 'rgba(255,140,50,.32)'; ctx.beginPath(); q.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill();
+    var W = h.x1 - h.x0, Hh = h.y1 - h.y0, wl = Math.hypot(h.wx, h.wy) || 1, ux = h.wx / wl, uy = h.wy / wl, np = Math.max(6, Math.round(W * Hh / 5));
+    for (var k = 0; k < np; k++){ var u = ((hash3(hi, k, 21) + clock * 0.05 * ux) % 1 + 1) % 1, v = ((hash3(hi, k, 22) + clock * 0.05 * uy) % 1 + 1) % 1, p = P(h.x0 + u * W, h.y0 + v * Hh, 0.3 + hash3(hi, k, 23) * 0.6), r = cam.s * (0.5 + hash3(hi, k, 24) * 0.7);
+      ctx.fillStyle = 'rgba(255,190,120,' + (0.18 + 0.14 * hash3(hi, k, 25)) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.283); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(120,40,0,.6)'; ctx.lineWidth = Math.max(1.5, d * 1.2);
+    for (var k2 = 0; k2 < 3; k2++){ var cx = h.x0 + W * (0.25 + 0.25 * k2), cy = h.y0 + Hh * (k2 % 2 ? 0.35 : 0.65), sh = ((clock * 0.6 + k2 * 0.33) % 1) * 1.2, a = P(cx - ux * (0.8 - sh), cy - uy * (0.8 - sh)), b = P(cx + ux * (0.6 + sh), cy + uy * (0.6 + sh)), e1 = P(cx + ux * (0.2 + sh) - uy * 0.35, cy + uy * (0.2 + sh) + ux * 0.35), e2 = P(cx + ux * (0.2 + sh) + uy * 0.35, cy + uy * (0.2 + sh) - ux * 0.35);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.moveTo(e1[0], e1[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(e2[0], e2[1]); ctx.stroke(); } });
+  (C.rings || []).forEach(function(g){ var P = function(x, y){ return cam.v3 ? w2s(cam, x, y, cam.v3.zAt(x, y) + 0.02) : w2s(cam, x, y); }, n = Math.max(12, Math.round(Math.abs(g.span) * g.r * 2)), k;
+    var pt = function(a, rr){ return P(g.cx + Math.cos(a) * rr, g.cy + Math.sin(a) * rr); };
+    ctx.fillStyle = 'rgba(170,220,255,.72)'; ctx.beginPath();
+    for (k = 0; k <= n; k++){ var q = pt(g.a0 + g.span * k / n, g.r + g.w / 2); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+    for (k = n; k >= 0; k--){ var q2 = pt(g.a0 + g.span * k / n, g.r - g.w / 2); ctx.lineTo(q2[0], q2[1]); } ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = Math.max(1.5, d * 1.4);
+    [-1, 1].forEach(function(sd){ ctx.beginPath(); for (var j = 0; j <= n; j++){ var q3 = pt(g.a0 + g.span * j / n, g.r + sd * g.w / 2); j ? ctx.lineTo(q3[0], q3[1]) : ctx.moveTo(q3[0], q3[1]); } ctx.stroke(); });
+    ctx.strokeStyle = 'rgba(40,90,140,.85)'; ctx.lineWidth = Math.max(1.5, d * 1.3); var nc = Math.max(3, Math.round(Math.abs(g.span) * g.r / 1.6)), sg = g.span < 0 ? -1 : 1, off = (clock * 0.5) % 1;
+    for (var c = 0; c < nc; c++){ var a = g.a0 + g.span * (c + off) / nc, tx = -Math.sin(a) * sg, ty = Math.cos(a) * sg, ox = Math.cos(a), oy = Math.sin(a), cx2 = g.cx + ox * g.r, cy2 = g.cy + oy * g.r, hw = g.w * 0.3;
+      var p1 = P(cx2 - tx * 0.35 + ox * hw, cy2 - ty * 0.35 + oy * hw), p2 = P(cx2 + tx * 0.35, cy2 + ty * 0.35), p3 = P(cx2 - tx * 0.35 - ox * hw, cy2 - ty * 0.35 - oy * hw);
+      ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]); ctx.stroke(); } });
   /* A ZERO-G FIELD: a faint violet sheen over its carpet, a dashed edge, and specks of dust drifting slowly up through it, so it
      reads as the place where nothing is held down. */
   (C.floats || []).forEach(function(f, fi){ var z = function(x, y){ return cam.v3 ? cam.v3.zAt(x, y) : 0; }, P = function(x, y){ return cam.v3 ? w2s(cam, x, y, z(x, y)) : w2s(cam, x, y); };
