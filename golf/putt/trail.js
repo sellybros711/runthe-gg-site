@@ -141,11 +141,11 @@ var KIT = {
     npc:{ skin:'tan', polo:'gold', hat:'tan', pants:'khaki', hair:'darkbrown', hairStyle:'long', cap:false, gender:'male' }, who:'the cave dweller' },
   // Moon Base: grey regolith, a pale beaten path, no trees at all (tree:[]: the owner, 2026-11-01), moon dust for the bog, supply crates to break
   moon:{ g:['#9a98a2', '#a8a6b0', '#8a8892', 0.2], gpat:'moonReg', p:['#c8ccd8', '#dfe3ec', '#b4b8c4'], tree:[], leaves:['#6a6872', '#7a7882', '#5a5862'], bark:'#4a4852', dens:0.001,
-    low:['rock', 'rockdark', 'rock'], brk:'crate', haz:'slow', hazC:['#b6b4bc', '#9a98a6'], bogC:['#b6b4bc', '#9a98a6'], lm:['moonLander', 'moonDome', 'moonDish'], wall:['#eef2f8', '#3f7fe0'],
+    low:['rock', 'rockdark', 'rock'], brk:'crate', haz:'slow', hazC:['#b6b4bc', '#9a98a6'], waterC:['#05060f', '#1a1f3a'], bogC:['#b6b4bc', '#9a98a6'], lm:['moonLander', 'moonDome', 'moonDish'], wall:['#eef2f8', '#3f7fe0'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'black', hairStyle:'bun', cap:false, gender:'female' }, who:'the astronaut' },
   // Red Planet: rust dust, a pale swept path, no trees (as on the moon), red dust for the bog, supply crates to break
   mars:{ g:['#c4683e', '#d27a48', '#a8502e', 0.2], gpat:'marsReg', p:['#e8b088', '#f2c4a0', '#d8a078'], tree:[], leaves:['#7a3a22', '#8a4a2a', '#5a2a1c'], bark:'#3a2420', dens:0.001,
-    low:['rockbasalt', 'rockred', 'rockred'], brk:'crate', haz:'slow', hazC:['#8a3420', '#6a2414'], bogC:['#8a3420', '#6a2414'], lm:['moonLander', 'marsRover', 'marsHab'], wall:['#e8d8c4', '#b85a32'],
+    low:['rockbasalt', 'rockred', 'rockred'], brk:'crate', haz:'slow', hazC:['#8a3420', '#6a2414'], waterC:['#1a0604', '#4a160a'], bogC:['#8a3420', '#6a2414'], lm:['moonLander', 'marsRover', 'marsHab'], wall:['#e8d8c4', '#b85a32'],
     npc:{ skin:'tan', polo:'white', hat:'white', pants:'white', hair:'darkbrown', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'male' }, who:'the colonist' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
