@@ -1442,10 +1442,12 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 }
 /* a phone on its side is short: two columns of pitches */
 @media (orientation: landscape) and (max-height: 520px) {
-  /* the at bat line in Inter on a phone on its side: the slash line keeps room beside AT BAT and SCOUT */
-  .bb-eye { gap: 5px; }
+  /* the at bat line on a phone on its side: the column is 284 px, too narrow for AT BAT, his side, the
+     slash line and SCOUT on one row (the line was clipped to 56 of 118 px). The slash line takes its own
+     row under AT BAT and his side, as wide as the card's text, and the name stays under it */
+  .bb-eye { gap: 2px 5px; flex-wrap: wrap; }
   .bb-hand { font-size: 10px; letter-spacing: 0; }
-  .bb-line { font-size: 10.5px; }
+  .bb-line { font-size: 10.5px; flex-basis: 100%; }
   .bb-drawer { padding: 0 8px 0 10px; gap: 4px; }
   :root:not([data-theme="dark"]) .bb-ab { padding: 2px 4px 1px; letter-spacing: .04em; }
   #s-mound { --col: 284px; --dock-w: 244px; }
