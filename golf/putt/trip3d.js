@@ -131,7 +131,9 @@ var TANK = voxels(14, 22, 14, 0.18, [-1.26, 0, -1.26], function(x, y, z){ var r 
   return Math.abs(y - 1.8) < 0.18 ? '#3a7fd8' : '#eef0f4'; });
 var TREE = voxels(14, 26, 14, 0.2, [-1.4, 0, -1.4], function(x, y, z){ var r = Math.hypot(x, z);
   if (y < 1.6) return r < 0.28 ? '#6a4628' : null;
-  var c = Math.hypot(x, (y - 2.9) * 1.1, z); if (c < 1.35) return c < 1.0 && hash(Math.round(x * 5), Math.round(y * 5), Math.round(z * 5)) < 0.25 ? '#4f9a3a' : (y > 3.3 ? '#3f8a3a' : '#2f6e2e');
+  // a snowy pine, Ice Age's: three tiers of dark needles narrowing upward, snow on each tier's top
+  var tier = Math.floor((y - 1.6) / 1.4); if (tier > 2) return y < 6.4 && r < 0.35 ? '#ffffff' : null; var ty = (y - 1.6) - tier * 1.4, tr = (1.35 - tier * 0.32) * (1 - ty / 1.9);
+  if (r < tr) return (ty > 0.9 || r > tr - 0.25 && ty > 0.6) ? '#f4f8ff' : (hash(Math.round(x * 5), Math.round(y * 5), Math.round(z * 5)) < 0.25 ? '#2f6e4a' : '#1f4e3a');
   return null; });
 
 // ---------------------------------------------------------------- planets
@@ -252,7 +254,8 @@ function play(host, o, cb){
      dark lowlands from afar, and near the ground the dust, scattered dark rocks and the odd crater. */
   function surf(kind, ro, rd, tt, C, near){ var pe = add(ro, mul(rd, tt)), ne = norm(sub(pe, C)), col;
     if (kind === 'earth'){ var nr = Math.hypot(pe[0], pe[2]);
-      if (nr < 80 && near){ var gh = hash(Math.floor(pe[0] * 3.5), Math.floor(pe[2] * 3.5), 1); col = gh < 0.18 ? [63, 138, 58] : gh > 0.9 ? [118, 186, 92] : [84, 160, 72]; }
+      // the pad stands in Ice Age's snow, the last world on Earth before the rocket: drifts of white with blue shadows
+      if (nr < 80 && near){ var gh = hash(Math.floor(pe[0] * 3.5), Math.floor(pe[2] * 3.5), 1); col = gh < 0.18 ? [196, 214, 236] : gh > 0.9 ? [255, 255, 255] : [232, 240, 250]; }
       else { var uv = sphUV(ne), ti = (Math.floor(uv[1] * TEX.EH) * TEX.EW + Math.floor(uv[0] * TEX.EW)) * 3; col = [TEX.earth[ti], TEX.earth[ti + 1], TEX.earth[ti + 2]]; }
       return [col, ne]; }
     var nn = ne, gx = pe[0], gz = pe[2], lv, di, dj;

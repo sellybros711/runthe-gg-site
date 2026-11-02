@@ -190,6 +190,23 @@ function zoneDist(x, zn, zoneFt) {
   const ox = Math.min(0, dx), oz = Math.min(0, dz);
   return -Math.sqrt(ox * ox + oz * oz);
 }
+/* THE ABS TOUCH (rules 9, 2026-11-02, the owner's call: "if the ball is touching the strike zone,
+   it should be overturned to a strike"). MLB's ABS rule: any part of the ball touching the zone is a
+   strike. absDist is the signed distance, in inches, from the ball's edge to the batter's bare zone
+   (the plate, 17 inches, and his height, zn 0..1): positive while any part of the ball touches it.
+   That is the bare zone grown by BALL_IN on every side, round at the corners (the ball's centre
+   within BALL_IN of the bare zone). On the sides it is zoneDist's own edge; on the top and the
+   bottom it reaches BALL_IN further; at a corner it is round, where zoneDist's is square. Only the
+   ABS's answer reads it. The umpire's call (calledStrikeP on zoneDist) is the 2024 data's own
+   geometry and does not move. BALL_IN is a baseball's radius (2.9 inches across). */
+const BALL_IN = 1.45;
+function absDist(x, zn, zoneFt) {
+  const dx = (GRID.ZONE_HALF_FT * 12 - BALL_IN) - Math.abs(x) * 12;
+  const dz = Math.min(zn, 1 - zn) * zoneFt * 12;
+  if (dx >= 0 && dz >= 0) return Math.min(dx, dz) + BALL_IN;
+  const ox = Math.min(0, dx), oz = Math.min(0, dz);
+  return BALL_IN - Math.sqrt(ox * ox + oz * oz);
+}
 function calledStrikeP(d) {
   const D = UMPIRE.D, P = UMPIRE.P;
   if (d <= D[0]) return P[0];
@@ -202,7 +219,8 @@ function calledStrikeP(d) {
 /* ABS CHALLENGES (rules 4, MLB's 2026 rules). Each side has PER_SIDE a game
    (here, the outing); a challenge that wins is kept. Only a called ball or
    strike, only right away (before the next pitch). The ABS zone decides: the
-   ball's actual location against the zone above (zoneDist >= 0 is a strike).
+   ball's actual location against the zone above (zoneDist >= 0 is a strike; from
+   rules 9, absDist >= 0: the ball touching the zone).
    The pitcher's side challenges a called ball with the player's button. The
    batter challenges a called strike by BATTER, a MODEL fitted to sourced
    rates: MLB's 2025 spring training ABS test (288 games: batters challenged
@@ -448,7 +466,7 @@ const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
-  UMPIRE, zoneDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
+  UMPIRE, zoneDist, BALL_IN, absDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

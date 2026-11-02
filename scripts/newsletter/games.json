@@ -6,7 +6,8 @@
     { "dir": "golf",     "name": "Run The Tour", "url": "https://runthe.gg/golf/" },
     { "dir": "soccer",   "name": "Run The Pitch", "url": "https://runthe.gg/soccer/" },
     { "dir": "arcade",   "name": "Run The Arcade", "url": "https://runthe.gg/arcade/" },
-    { "dir": "baseball", "name": "Run The Diamond", "url": "https://runthe.gg/baseball/" }
+    { "dir": "baseball", "name": "Run The Diamond", "url": "https://runthe.gg/baseball/" },
+    { "dir": "shut-the-door", "name": "Shut The Door", "url": "https://runthe.gg/shut-the-door/" }
   ],
   "site": { "dir": "index.html", "name": "RunThe.GG", "url": "https://runthe.gg/" }
 }

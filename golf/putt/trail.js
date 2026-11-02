@@ -183,7 +183,13 @@ function baseTh(th){ return String(th || '').split('~')[0]; }
    carpet: [colour, colour], flag } */
 function plan(spec){
   if (spec.kitAs && !KIT[spec.kitAs]) spec.kitAs = null;   // a stop with no kit of its own walks in its world's
-  var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.kitAs || spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
+  /* A LAUNCH PAD, NOT A DOOR (the owner, 2026-11-02: "After Ice age I want there to simply be a rocket ship there and no world
+     beyond it. You board the ship and it will take you to the moon world"). A trail into a space world (spec.space, putt.js's
+     SPACE_TRIP) is the world being left from end to end: no wall, no next world's land and no hole beyond the end. The walk
+     ends at the ship on its pad; walking up to it asks the door (the stars still hold it shut), and aboard, the trip plays and
+     the hole opens on the far side (run(), the gate). */
+  var SPACE = !!(spec.cross && spec.space), WALL = spec.cross && !SPACE;
+  var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = SPACE ? (spec.theme0 || spec.theme) : (spec.kitAs || spec.theme), th0 = spec.cross ? (spec.theme0 || th) : th;
   var HW = spec.halfW || HALFW, b = [-HW, -18, HW, L + 16];
   /* NO TWO WALKS ARE THE SAME WALK, AND THEY DO NOT ALL WALK UP THE SCREEN. A trail is laid out the way a course
      is routed: from the hole you left to the next tee by a dogleg, by switchbacks across the whole width, by a
@@ -241,7 +247,7 @@ function plan(spec){
       if (c[i] > 16 && Math.hypot(q[0] - st[0], q[1] - L - 6) < 12) return false;
       if (c[i] < SLn - 16 && Math.hypot(q[0] - ar[0], q[1] - 3) < 10) return false;
       for (var j = i + 1; j < n; j++) if (c[j] - c[i] > 26 && Math.hypot(p[j][0] - q[0], p[j][1] - q[1]) < MINSEP) return false; }
-    return !spec.cross || gyy != null; }
+    return !WALL || gyy != null; }
   var path = null, cum = null, gy = null, style = 'straight', route = null;
   /* A GYM'S TRAIL IS ROUTED ROUND ITS GYM (gyms.js). The arena is a walled box of tiles beside the walk with its gate
      facing the camera, and a route is only taken if the box fits clear of it with the gate a few steps off the path
@@ -267,9 +273,9 @@ function plan(spec){
     // every bend wanders a little of its own, so two doglegs are two different doglegs, not one drawn twice
     var stretch = 0.9 + R() * 0.2; rt.p.forEach(function(q){ ctrl.push([ux(Math.max(-0.95, Math.min(0.95, q[0] * stretch + jit(0.18)))), Math.max(0.1, Math.min(0.97, q[1] + jit(0.06))) * Y0]); });
     ctrl.push([ax, 7], [ax, -1]);
-    var pp = even(spline(ctrl)), cc = cumOf(pp), gg = spec.cross ? wallLine(pp) : null;
+    var pp = even(spline(ctrl)), cc = cumOf(pp), gg = WALL ? wallLine(pp) : null;
     if (sane(pp, cc, gg, nm) && (!GYD || (gfit = gymFit(pp)))){ path = pp; cum = cc; gy = gg; style = nm; route = rt; } }
-  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = spec.cross ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; if (GYD) gfit = gymFit(path); }
+  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = WALL ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; if (GYD) gfit = gymFit(path); }
   if (!gfit) GYD = null;   // nowhere for it: this trail walks without its gym (check-putt fails on that)
   /* ONLY A WORLD STARTS IN A PLAZA. Every walk used to set off from the same round clearing behind the hole just
      played, so every trail opened on the same picture. The owner's call: the start of a world is a circle, and
@@ -335,7 +341,7 @@ function plan(spec){
   // what the clearing holds: a chest most often, else a pile of things to smash
   var clrKind = R() < 0.7 ? 'chest' : 'pile';
   // the key and the locked gate are the trail's little puzzle: more than half the chests are behind one
-  var locked = !spec.cross && clrKind === 'chest' && R() < 0.55;
+  var locked = !spec.cross && clrKind === 'chest' && R() < 0.55 && !spec.landed;
   /* THE REAL HOLES AT EACH END (spec.holeTo, spec.holeFrom, rastered by putt.js). The hole you are walking to
      lies beyond the arch with its tee at the path; the hole you just left lies behind the start with its cup
      nearest you. Each is a grid of codes at a quarter of a trail foot, placed by its south west corner. */
@@ -473,7 +479,13 @@ function plan(spec){
   P.place = place;
 
   // the end: an arch over the path at y = 0, and the hole's carpet beyond it
-  place('arch', archX, 0, 0.1, 9);
+  /* AND ON THE FAR SIDE, THE SAME SHIP (the owner, 2026-11-02: "After the rocket ship lands it needs to put you on the
+     starting path on your way to the next hole"). A landing walk (spec.landed, putt.js) is the new world's own: it sets off
+     from the ship standing on its pad behind the start, and goes to the hole the usual way. It carries no chest and no
+     golden ball, so a world's eighteen are still the eighteen walks into its holes. */
+  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5); place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); used.push({ x:lx, y:L + 5, r:5.5 }); }
+  if (SPACE){ place('padRocket', archX, -5.5, 2.6, 19, { w:9, d:6 }); place('launchpad', archX, -5.5, 0.1, 0.3, { w:9, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }
+  else place('arch', archX, 0, 0.1, 9);
   // the gym's walls, gate and posts are one build (BUILD.gym); as a thing it keeps everything else out and blocks the walk
   if (GYM) place('gym', GYM.x0 + GYM.w / 2, GYM.y0 + GYM.d / 2, 0.1, 1.6, { w:GYM.w, d:GYM.d, th:themeAt(GYM.y0 + GYM.d / 2) });
   // the flag still in the cup of the hole you just left, behind you
@@ -547,13 +559,13 @@ function plan(spec){
     return spotOff(minD, maxD, 1.4, 80); }
   // ONE CHEST A TRAIL, the owner's call: in the clearing when the clearing holds one, else tucked in behind a tree.
   // The rest of what there is to find is the rare things below, for whoever wants more.
-  if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
+  if (spec.landed){} else if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
   else { var hsp = hideSpot(6, 13) || hideSpot(5, 16) || spotOff(5, 14, 1.2, 200) || [clr.x, clr.y - 1.2]; if (hsp){ chest(hsp[0], hsp[1], 10 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); }
     for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
   if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var kq = beside(SL * (0.15 + R() * 0.7), R() < 0.5 ? -1 : 1, 8 + R() * 10), ky = kq[1], kxp = kq[0];
       if (okGround(kxp, ky, 1) && free(kxp, ky, 1) && walkD(kxp, ky) > PW + 3 && !inClear(kxp, ky, 2) && !(gy && Math.abs(ky - gy) < 6)){ item('key', kxp, ky); used.push({ x:kxp, y:ky, r:1 }); break; } } }
   // the golden ball: off the path, tucked behind a landmark or a tree if it can be
-  var gs = spotOff(10, 26, 1.1, 90) || spotOff(6, 20, 1, 60); if (gs){ item('golden', gs[0], gs[1]); used.push({ x:gs[0], y:gs[1], r:1 }); }
+  var gs = spec.landed ? null : spotOff(10, 26, 1.1, 90) || spotOff(6, 20, 1, 60); if (gs){ item('golden', gs[0], gs[1]); used.push({ x:gs[0], y:gs[1], r:1 }); }
   /* THE RARE THINGS, handed in by putt.js (spec.loot): a world's trinket, a part for one of the Putt Putt
      putters, and once in a while a spare life. They go further off the path than anything else, and a
      trinket goes in the hidden clearing when there is one, so they have to be looked for. */
@@ -2198,7 +2210,8 @@ function run(box, P, pic, api){
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
-      api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000; }); }
+      api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000;
+        if (open && P.gate.pad && !ended){ ended = true; if (api.landed) api.landed(); else api.arrive(); } }); }   // aboard the ship: the trip has played, the hole opens
     if (gate && gate.asked && !gate.open && Math.abs(g.y - P.gate.y) > 7) gate.asked = false;
     // the secret entrance: a word coming near it, and walking into its doorway offers the hole
     if (P.secret && api.secret){ var dsx = Math.hypot(g.x - P.secret.x, g.y - P.secret.y);
@@ -2226,7 +2239,7 @@ function run(box, P, pic, api){
     if (P.pen && P.pen.gated) ds.push({ k:'pzgate', x:P.pen.x, y:P.pen.y + P.pen.r });
     if (PZ && PZ.crate) ds.push({ k:'crate', x:PZ.crate.x, y:PZ.crate.y });
     if (gym){ gView.things(ds, tsec); var lq = gT(GY.Q.lever); ds.push({ k:'glever', x:lq[0], y:lq[1] }); }
-    if (P.gate) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
+    if (P.gate && !P.gate.pad) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
     if (hs) ds.push({ k:'hostfig', x:hs.x, y:hs.y });
@@ -2334,7 +2347,7 @@ function run(box, P, pic, api){
     // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
     if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
-    label = shut ? 'World door' : (api.holeLabel || 'Next hole');
+    label = P.gate && P.gate.pad ? (P.spec.space === 'ship' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
     cls(pin, 'on', false); cls(way, 'on', true); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
     put(way.style, 'left', Math.round(cxs + vx * s2) + 'px'); put(way.style, 'top', Math.round(cys + vy * s2) + 'px'); put(wayI.style, 'transform', 'rotate(' + Math.round(Math.atan2(vy, vx) * 180 / Math.PI + 90) + 'deg)');
@@ -3628,6 +3641,26 @@ BUILD.moonDish = function(B, t){ var R = t.w / 2 - 0.3, H = t.h - R; box(B, t.x,
   var v = dy * 0.6 + (tt - H) * 0.8, w2 = -dy * 0.8 + (tt - H) * 0.6, rr = Math.hypot(dx, v); if (rr < R && Math.abs(w2 - rr * rr / (R * 2.2)) < 0.16) return rr > R * 0.9 ? '#8a96b0' : '#e8ecf4';
   if (rr < 0.1 && w2 > 0 && w2 < R * 0.7) return '#c8ccd8'; return null; }); };
 // the rocket on its pad, the gantry beside it
+// a launch pad: a square of grey plates with yellow hazard edging, the ship standing on it (SPACE above)
+BUILD.launchpad = function(B, t){ box(B, t.x, t.y, t.w, t.d, 0.3, function(dx, dy, tt){ var e = Math.max(Math.abs(dx), Math.abs(dy)); if (e > t.w / 2 - 0.5) return ((Math.floor((dx + dy) * 1.5) % 2) + 2) % 2 ? '#ffd34d' : '#2a2a30';
+  return (((Math.floor(dx * 0.7) + Math.floor(dy * 0.7)) % 2) + 2) % 2 ? '#8a8e9a' : '#a8acb6'; }); };
+/* the ship on its pad (a space crossing's end): a white rocket three feet round and sixteen tall, a red nose, two lit
+   portholes, a gold band and three red fins, its launch tower of red lattice beside it with the arm across to the hatch */
+BUILD.padRocket = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), R = 1.5, H = 13;
+  B.solid(x - 2.6, y - 2.6, zb, x + 2.6, y + 2.6, zb + H + 4.5, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), tt = pz - zb, a = Math.atan2(dx, dy);
+    if (tt < 0.8){ for (var f = 0; f < 3; f++){ var fa = f * 2.094 + 0.5, u = dx * Math.sin(fa) + dy * Math.cos(fa), w = dx * Math.cos(fa) - dy * Math.sin(fa); if (Math.abs(w) < 0.22 && u > R - 0.2 && u < R + 1) return '#a82a22'; } return r < 0.9 ? '#3a3e48' : null; }
+    for (var f2 = 0; f2 < 3; f2++){ var fa2 = f2 * 2.094 + 0.5, u2 = dx * Math.sin(fa2) + dy * Math.cos(fa2), w2 = dx * Math.cos(fa2) - dy * Math.sin(fa2);
+      if (Math.abs(w2) < 0.2 && u2 > R - 0.2 && u2 < R + 1.1 - tt * 0.25 && tt < 4.2) return '#e5483a'; }
+    if (tt < H){ if (r > R) return null; if (r < R - 0.45) return null;
+      if (dy > 0.6 && Math.abs(dx) < 0.55 && (Math.abs(tt - 9.6) < 0.55 || Math.abs(tt - 7.2) < 0.45)) return Math.hypot(dx, tt - 9.6) < 0.3 || Math.hypot(dx, tt - 7.2) < 0.22 ? '#7fd8ff' : '#c99a2e';
+      if (Math.abs(tt - 6) < 0.3) return '#e2b23b'; return (((tt * 1.2) | 0) % 3 === 0 && Math.abs(Math.sin(a * 4)) < 0.2) ? '#c8ccd8' : '#f4f6fa'; }
+    var nr = R * Math.max(0, 1 - (tt - H) / 4.2); return r <= nr && r > nr - 0.5 ? (tt > H + 3.4 ? '#ffffff' : '#e5483a') : null; }, 0.25);
+  // the tower: four red posts with cross braces, beside the rocket, and the arm to the hatch
+  var tx = x - 3.6, H2 = H + 1.5; B.solid(tx - 1.2, y - 1.2, zb, tx + 1.2, y + 1.2, zb + H2, function(px, py, pz){ var ax = Math.abs(px - tx), ay = Math.abs(py - y), tt = pz - zb;
+    if (ax > 1.05 || ay > 1.05) return null; if (ax > 0.8 && ay > 0.8) return '#c0392b'; var face = ax > 0.85 || ay > 0.85, sx = ax > 0.85 ? py - y : px - tx;
+    if (face && (Math.abs(((tt + sx) % 1.6 + 1.6) % 1.6 - 0.8) < 0.14 || Math.abs(((tt - sx) % 1.6 + 1.6) % 1.6 - 0.8) < 0.14 || (tt % 1.6) < 0.18)) return '#d84a3a'; return null; }, 0.25);
+  B.solid(tx + 1, y - 0.3, zb + H - 3.6, x - 1.3, y + 0.3, zb + H - 3, function(){ return '#9a2a20'; }, 0.25); };
+LMSIZE.padRocket = [9, 6, 19];
 BUILD.moonRocket = function(B, t){ var H = t.h - 1.5; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
   if (tt < 0.3) return (((dx * 2 | 0) + (dy * 2 | 0)) % 2) ? '#5a5e6a' : '#4a4e5a'; var rr = tt > H - 2 ? 0.8 * (H + 1.2 - tt) / 3.2 : 0.8;
   if (tt < H + 1.2 && r < rr) return Math.abs(tt - H * 0.55) < 0.4 ? '#1a1e2a' : tt > H - 2 ? '#e5483a' : '#f4f6fa';

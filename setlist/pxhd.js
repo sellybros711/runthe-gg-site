@@ -120,7 +120,8 @@ function build(o){ const s=new Sprite();
 
   // long hair hangs behind the shoulders, so it goes first
   const pk=o.head==='pumpkin';   // a Pumpkin Head skin: the head, ears, face and hair become a carved pumpkin
-  if(!pk&&hairHD&&longHair){ const back=[[14.2,11],[17,11],[17.5,26],[15.5,30],[13.2,28]];
+  const sk=o.head==='sack', stuffed=pk||sk;   // the Scarecrow: a burlap sack, with the same straw arms and neck
+  if(!stuffed&&hairHD&&longHair){ const back=[[14.2,11],[17,11],[17.5,26],[15.5,30],[13.2,28]];
     s.fill(or(poly(back),poly(mir(back))),{m:'hair',n:nCylV(C,9.5,-.1),gloss:1,bias:-.14}); }
   // legs and shoes. The shoes sit on rows 50 to 55, where the authored cleats and the club expect them.
   const leg=[[14.6,38.5],[22.2,38.5],[21.6,52.4],[15.2,52.4]];
@@ -160,17 +161,17 @@ function build(o){ const s=new Sprite();
   // arms and hands go IN FRONT of any outerwear: the grip is in front of the body
   if(blazer){ s.tag='top'; s.fill(or(poly(slv),seg(12.6,28,19.2,37.4,2.2)),{m:'jacket',n:nCylSeg(12.6,26,19.2,37.4,2.6)});
     s.fill(or(poly(mir(slv)),seg(32.4,28,25.8,37.4,2.2)),{m:'jacket',n:nCylSeg(32.4,26,25.8,37.4,2.6)}); s.tag=''; }
-  else { const am=pk?'straw':'skin'; s.fill(seg(12.4,30.6,19.6,38.6,1.9),{m:am,n:nCylSeg(12.4,30.6,19.6,38.6,1.9)}); s.fill(seg(32.6,30.6,25.4,38.6,1.9),{m:am,n:nCylSeg(32.6,30.6,25.4,38.6,1.9)});
-    if(pk){ [[13,31],[15,33],[17,35],[31,31],[29,33],[27,35]].forEach(([x,y])=>s.nudge(x,y,-1));                 // straw strands along the arms
+  else { const am=stuffed?'straw':'skin'; s.fill(seg(12.4,30.6,19.6,38.6,1.9),{m:am,n:nCylSeg(12.4,30.6,19.6,38.6,1.9)}); s.fill(seg(32.6,30.6,25.4,38.6,1.9),{m:am,n:nCylSeg(32.6,30.6,25.4,38.6,1.9)});
+    if(stuffed){ [[13,31],[15,33],[17,35],[31,31],[29,33],[27,35]].forEach(([x,y])=>s.nudge(x,y,-1));                 // straw strands along the arms
       [[10,31],[11,32],[34,31],[33,32],[9,30],[35,30]].forEach(([x,y])=>s.set(x,y,'straw',3,{noCast:1})); } }   // and straw poking out of the cuffs
-  s.fill(rect(19,19,25,23),{m:pk?'straw':'skin',n:nCylV(C,4,0)},{under:1,dt:-1});   // neck, under the collar
+  s.fill(rect(19,19,25,23),{m:stuffed?'straw':'skin',n:nCylV(C,4,0)},{under:1,dt:-1});   // neck, under the collar
   // the lead hand is gloved and on top of the grip, the trail hand below it
   s.fill(ell(22.4,38.9,3.3,2.4),{m:'glove',n:nEll(22.0,38.3,3.6,2.9)});
-  s.fill(ell(22.6,41.4,2.9,2.0),{m:pk?'straw':'skin',n:nEll(22.2,40.9,3.2,2.6)});
+  s.fill(ell(22.6,41.4,2.9,2.0),{m:stuffed?'straw':'skin',n:nEll(22.2,40.9,3.2,2.6)});
   s.set(21,39,'glove',1); s.set(23,39,'glove',1);
   // head, ears and face
   const NC={noCast:1};
-  if(pk) pumpkinHead(); else {
+  if(pk) pumpkinHead(); else if(sk) sackHead(); else {
   const headM=or(and(ell(C,14,7.9,8.4),(x,y)=>y<15.5),poly([[14.8,15],[30.2,15],[29.6,18.2],[26.4,21.2],[18.6,21.2],[15.4,18.2]]));
   const headN=nEll(C,15.6,9.6,11.5);
   s.fill(or(ell(14.6,15.6,1.3,1.9),ell(30.4,15.6,1.3,1.9)),{m:'skin',n:nEll(C,15,9.6,7)});
@@ -226,6 +227,20 @@ function build(o){ const s=new Sprite();
     for(let x=16;x<=29;x++) glow(x,18,(x===18||x===22||x===26)?1:3);                                       // the grin, with teeth
     for(let x=17;x<=28;x++) if(x!==20&&x!==24) glow(x,19,x%3?2:3);
     glow(19,20,2); glow(22,20,2); glow(25,20,2); }
+  // The Scarecrow's head: a burlap sack stuffed with straw, a coarse weave, twine cinched at the neck with straw poking
+  // out, straw out of the top, stitched X eyes and a stitched grin. The stitches are fixed tones, like the pumpkin's glow.
+  function sackHead(){ const ST={noCast:1,nl:1,noEdge:1};
+    const hm=ell(C,13.8,8.7,8.4);
+    s.fill(hm,{m:'sack',n:(x,y)=>{ const r=nEll(C,13.6,9.2,9.0)(x,y); return [r[0]+0.12*Math.sin(y*1.7),r[1],r[2]]; }});   // lumpy where the straw pushes
+    for(let y=6;y<=21;y++) for(let x=13;x<=32;x++){ if(hm(x+.5,y+.5)&&((x*3+y*5)%6===0)) s.nudge(x,y,-1); }      // the weave
+    s.fill(ell(C,21.6,7.6,1.3),{m:'rope',n:nCylV(C,7.6,0),gloss:1});                                            // twine at the neck
+    [[16,23],[17,24],[19,24],[26,24],[28,24],[29,23]].forEach(([x,y])=>s.set(x,y,'straw',3,{noCast:1}));        // straw from under it
+    [[18,5],[20,4],[22,4],[24,4],[26,5]].forEach(([x,y])=>s.set(x,y,'straw',3,{noCast:1}));                  // and out of the top
+    const st=(x,y)=>s.set(x,y,'stitch',1,ST);
+    // set low on purpose, as the pumpkin's are: a cap's brim comes down to row 13 and must not cover the eyes
+    [[17,13],[19,15],[19,13],[17,15],[18,14],[26,13],[28,15],[28,13],[26,15],[27,14]].forEach(([x,y])=>st(x,y));   // X eyes
+    for(let x=17;x<=28;x++) st(x,(x===17||x===28)?17:18);                                                             // the grin
+    [18,21,24,27].forEach(x=>{ st(x,17); st(x,19); }); }                                                              // its cross stitches
   // hats
   s.tag='hat';
   if(hs==='cap'){
@@ -311,7 +326,7 @@ function render(o){ const av=o.av, s=build(o), px=o.px||7, only=o.only||'';
     sole:ramp('#e8e2d4'), hat:ramp(hatHex), patch:ramp(lum(hatHex)>.6?'#1b2b4a':'#f1ede2'), patchmark:ramp(lum(hatHex)>.6?'#f4f1e6':'#1b2b4a'),
     hatbtn:ramp(mix(hatHex,'#000000',.18)), band:ramp('#2a2f3b'), belt:ramp('#2a2420'), button:ramp('#f4f1ea'),
     glove:ramp('#f7f8f5',{spread:.8}), dlens:['#040508','#08090e','#0e1018','#2e3d58','#56708f'], frame:ramp('#26272d'),
-    gold:ramp('#d6a640'), strap:ramp('#3a3f4a'), pumpkin:ramp(av.skinHex), stem:ramp('#4a6a22'), straw:ramp(o.straw||'#d8b04e'),
+    gold:ramp('#d6a640'), strap:ramp('#3a3f4a'), pumpkin:ramp(av.skinHex), stem:ramp('#4a6a22'), straw:ramp(o.straw||'#d8b04e'), sack:ramp(av.skinHex), rope:ramp('#7a5a2e'), stitch:ramp('#2a1c10'),
     carve:['#8a3a08','#e0761a','#ffb02e','#ffe066','#fff6c4'], mirror:['#4b2a7a','#5f4bb0','#5c8fd6','#7fc3ec','#bfe9fb'],
     jacket:ramp((o.topPal&&o.topPal.blazer&&o.topPal.blazer['1'])||'#7a1f2b'), tie:ramp('#243040'), jbutton:ramp('#d8b24a') };
   const lace=mix(R.shoe[1],'#000000',.25), skinR=R.skin;

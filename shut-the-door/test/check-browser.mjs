@@ -780,6 +780,8 @@ async function run(w, h, theme) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => {
@@ -827,7 +829,8 @@ async function run(w, h, theme) {
       stakes: (document.getElementById('h-setup') || {}).textContent || '',
       stakesShown: !!document.getElementById('h-setup') && document.getElementById('h-setup').getBoundingClientRect().height > 0,
       openSheets: [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden).length,
-      robots: document.querySelector('meta[name=robots]').content,
+      robots: (document.querySelector('meta[name=robots]') || {}).content || '',
+      canonical: (document.querySelector('link[rel=canonical]') || {}).href || '',
     };
   });
   ok(home.title.length > 0, '1 home shows the occasion ("' + home.title + '")');
@@ -845,7 +848,8 @@ async function run(w, h, theme) {
     '1 the scorebug has the score (' + home.runs.join('-') + '), the inning (' + home.inn.trim() + '), the outs and the bases, as the pack has them ("' + home.aria + '")');
   ok(home.stakesShown && /door is shut/.test(home.stakes), '1 the stakes line is under it ("' + home.stakes.trim() + '")');
   ok(home.openSheets === 0, '1 no sheet or tutorial opened by itself');
-  ok(/noindex/.test(home.robots), '1 the page is noindexed');
+  /* Launched 2026-11-02 (check-posture.mjs holds the rest): indexable, with its canonical. */
+  ok(!/noindex/.test(home.robots) && home.canonical === 'https://runthe.gg/shut-the-door/', '1 the page is indexable with its canonical ("' + home.robots + '", "' + home.canonical + '")');
   await shot('home', true);
 
   /* 13: the brand. The outlined lockup in the header, the icons, the manifest */
@@ -1024,11 +1028,15 @@ async function run(w, h, theme) {
      is play), a tap outside shuts it and the heat goes with it. */
   const painted = () => page.evaluate(() => [...document.querySelectorAll('#m-aim .aim-heat i')].filter((c) => c.style.background).length);
   const shut = await page.evaluate(() => ({ drawer: document.getElementById('m-drawer').hidden, exp: document.getElementById('m-drawer-b').getAttribute('aria-expanded'),
-    h: Math.round(document.getElementById('m-card').getBoundingClientRect().height), tap: Math.round(document.getElementById('m-drawer-b').getBoundingClientRect().height),
+    h: Math.round(document.getElementById('m-card').getBoundingClientRect().height - document.getElementById('m-pit').getBoundingClientRect().height - 5),
+    pit: { h: Math.round(document.getElementById('m-pit').getBoundingClientRect().height), on: !!document.getElementById('m-pit').offsetParent,
+      name: document.getElementById('m-pname').textContent, want: window.STD_UI.state.scn.pitcher.name }, tap: Math.round(document.getElementById('m-drawer-b').getBoundingClientRect().height),
     name: document.getElementById('m-bname').textContent, line: document.getElementById('m-bline').textContent, hand: document.getElementById('m-bhand').textContent,
     want: (() => { const S = window.STD_UI.state, b = S.scn.batters[S.outing.batterIndex]; return { name: b.name, line: b.line, bats: b.bats }; })() }));
   ok(shut.drawer && shut.exp === 'false' && (await painted()) === 0, '4 the scout drawer starts shut and the zone carries no heat');
   ok(shut.h <= 64 && shut.tap >= 38, '4 the at bat line is one slim row (' + shut.h + ' px), SCOUT thumb tall (' + shut.tap + ' px)');
+  /* WHO YOU PITCH AS (the owner, 2026-11-02): one slim line over the at bat row, the closer by name */
+  ok(shut.pit.on && shut.pit.h <= 22 && shut.pit.name && shut.pit.want.endsWith(shut.pit.name), '4 the pitching line names the closer (' + shut.pit.name + ', ' + shut.pit.h + ' px)');
   const lineNums = (t) => (String(t).match(/\d*\.?\d+/g) || []).join(' ');
   ok(shut.name === shut.want.name && shut.hand === 'bats ' + shut.want.bats && lineNums(shut.line) === lineNums(shut.want.line),
     '4 the line reads his name, his side and his numbers from the pack ("' + shut.hand + ' ' + shut.line + '")');
@@ -1237,6 +1245,8 @@ async function ending(w, h, end, extra) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${tag}-${nextN(tag)}-${end}-${name}.png`), fullPage: !!full }); };
@@ -1322,6 +1332,8 @@ async function runningGame(w, h) {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
@@ -1395,6 +1407,8 @@ async function sizeSweep() {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
@@ -1468,6 +1482,8 @@ async function modesPage(w, h, q, opts) {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
@@ -1703,6 +1719,8 @@ async function halfPage(w, h) {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });

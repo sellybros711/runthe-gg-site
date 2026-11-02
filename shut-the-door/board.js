@@ -92,7 +92,7 @@ function rowHTML(r) {
 function renderList(rows) {
   var el = $('bd-list');
   if (!rows.length) {
-    el.innerHTML = '<div class="bd-empty"><img src="brand/mark.svg?v=1" alt="" width="56" height="56">' +
+    el.innerHTML = '<div class="bd-empty"><img src="brand/mark.svg?v=2" alt="" width="56" height="56">' +
       '<b>nobody\'s on it yet</b><p>no outings posted today. be the first.</p></div>';
     return;
   }
@@ -112,7 +112,7 @@ function renderList(rows) {
 function renderState(kind) {
   var el = $('bd-list');
   if (kind === 'loading') {
-    el.innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
+    el.innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=2" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
     $('bd-you').innerHTML = '';
     return;
   }
