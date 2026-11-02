@@ -117,7 +117,9 @@ function seam(ctx, x, y, w, s) {
 function brand(ctx, marks, x, y, h) {
   if (marks.mark) ctx.drawImage(marks.mark.img, x, y, h, h);
   if (marks.word) {
-    var wh = h * .5, ww = wh * marks.word.w / marks.word.h;
+    /* the crest's wordmark is stacked (SHUT THE over DOOR), so it stands nearly as tall as the mark */
+    var stacked = marks.word.w / marks.word.h < 4;
+    var wh = h * (stacked ? .92 : .5), ww = wh * marks.word.w / marks.word.h;
     ctx.drawImage(marks.word.img, x + h + h * .26, y + (h - wh) / 2, ww, wh);
   }
 }
@@ -289,7 +291,7 @@ function drawWide(ctx, c, marks) {
 
 function render(c, size) {
   var dim = SIZES[size] || SIZES.tall;
-  return Promise.all([fonts(), svgImage('brand/mark.svg?v=1'), svgImage('brand/wordmark-dark.svg?v=1')]).then(function (got) {
+  return Promise.all([fonts(), svgImage('brand/mark.svg?v=2'), svgImage('brand/wordmark-dark.svg?v=2')]).then(function (got) {
     var marks = { mark: got[1], word: got[2] };
     var cv = document.createElement('canvas');
     cv.width = dim.w; cv.height = dim.h;

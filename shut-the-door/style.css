@@ -51,7 +51,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .hdr { height: 56px; flex: 0 0 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 14px; background: var(--bg); position: relative; z-index: 30; }
 .lockup { display: flex; align-items: center; gap: 9px; text-decoration: none; }
 .lockup .mark { width: 30px; height: 30px; border-radius: 8px; display: block; }
-.lockup .wm { height: 25px; width: auto; display: block; }
+.lockup .wm { height: 42px; width: auto; display: block; }
 :root[data-theme="dark"] .wm-light, :root:not([data-theme="dark"]) .wm-dark { display: none; }
 .hdr-r { display: flex; gap: 2px; }
 .hdr-btn { width: 42px; height: 42px; border: 0; background: none; border-radius: 12px; display: grid; place-items: center; }
@@ -102,7 +102,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 :root[data-theme="dark"] .scorebar { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .09), var(--shadow); }
 /* the stakes, one line from the pack's own setup */
 .stakes { display: flex; align-items: center; gap: 12px; margin: 10px 0 0; padding: 11px 14px; border-radius: 16px; background: var(--data-soft); color: var(--ink); font-weight: 600; font-size: 14px; line-height: 1.3; }
-.st-mark { flex: 0 0 28px; height: 28px; border-radius: 8px; background: url(brand/mark.svg?v=1) center / cover no-repeat; }
+.st-mark { flex: 0 0 28px; height: 28px; border-radius: 8px; background: url(brand/mark.svg?v=2) center / cover no-repeat; }
 /* the call to action, cut like a ticket: two notches and a perforation */
 .btn.take { width: 100%; min-height: 62px; background: var(--signal); color: #fff; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 30px; letter-spacing: .02em; text-transform: uppercase; border-radius: 14px; box-shadow: 0 3px 0 #c43a12; }
 .streak { text-align: center; color: var(--dim); font-size: 14px; margin: 10px 0; }
@@ -165,7 +165,7 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .r-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
 .proxy { font-size: 12px; color: var(--dim); text-align: center; margin: 8px 0; }
 .legal { margin-top: 22px; text-align: center; font-size: 12px; color: var(--dim); }
-.legal-mark { display: block; margin: 0 auto 10px; height: 46px; width: auto; opacity: .9; }
+.legal-mark { display: block; margin: 0 auto 10px; height: 96px; width: auto; opacity: .9; }
 .legal p { margin: 4px 0; }
 .legal a { color: var(--dim); }
 .legal span { margin: 0 6px; }
@@ -371,7 +371,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .r-rail { position: relative; overflow: hidden; color: #f4f5f7; padding: 4px 16px 18px 22px;
   background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 28px), linear-gradient(180deg, #121a2a 0%, #0a0e17 100%); }
 .r-rail::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--club); }
-.r-rail::after { content: ''; position: absolute; right: -60px; top: 40px; width: 230px; height: 230px; background: url(brand/mark.svg?v=1) center / contain no-repeat; opacity: .06; transform: rotate(-10deg); pointer-events: none; }
+.r-rail::after { content: ''; position: absolute; right: -60px; top: 40px; width: 230px; height: 230px; background: url(brand/mark.svg?v=2) center / contain no-repeat; opacity: .06; transform: rotate(-10deg); pointer-events: none; }
 .r-rail > * { position: relative; z-index: 1; }
 .r-hero .outcome { font-size: 80px; }
 .r-hero .seam { width: 280px; max-width: 80%; }
@@ -578,7 +578,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
   background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 26px), linear-gradient(180deg, #1a2130, #0b0f17); }
 :root[data-theme="dark"] .bd-hero { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), var(--shadow); }
 .bd-hero > * { position: relative; }
-.bd-hero::before { content: ''; position: absolute; right: -46px; top: -44px; width: 150px; height: 150px; background: url(brand/mark.svg?v=1) center / contain no-repeat; opacity: .06; transform: rotate(-10deg); pointer-events: none; }
+.bd-hero::before { content: ''; position: absolute; right: -46px; top: -44px; width: 150px; height: 150px; background: url(brand/mark.svg?v=2) center / contain no-repeat; opacity: .06; transform: rotate(-10deg); pointer-events: none; }
 .bd-head { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 64px; line-height: .9; margin: 4px 0 6px; text-transform: uppercase; color: #fff; }
 .bd-head::after { content: '.'; color: var(--signal); }
 #bd-head::after { content: none; }
@@ -634,7 +634,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .sh-prev.tall { aspect-ratio: 1080 / 1350; }
 .sh-prev.wide { aspect-ratio: 1200 / 630; max-width: 100%; }
 .sh-prev img { display: block; width: 100%; height: 100%; }
-.sh-prev .load-mark { width: 44px; height: 44px; border-radius: 12px; background: url(brand/mark.svg?v=1) center / cover no-repeat; }
+.sh-prev .load-mark { width: 44px; height: 44px; border-radius: 12px; background: url(brand/mark.svg?v=2) center / cover no-repeat; }
 .sh-act { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; }
 .sh-act .btn.go { background: var(--signal); color: #fff; }
 .sh-act .btn:disabled { opacity: .5; }

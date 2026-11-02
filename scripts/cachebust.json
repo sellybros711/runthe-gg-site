@@ -3159,8 +3159,8 @@
       "sha": "7a13d168ba82631e"
     },
     "card.js": {
-      "v": "2",
-      "sha": "43e316a9f7a3905c"
+      "v": "3",
+      "sha": "a8c85a9c06307ff8"
     },
     "auth.js": {
       "v": "7",
@@ -3179,12 +3179,12 @@
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
-      "v": "4",
-      "sha": "949f0392725e94a0"
+      "v": "5",
+      "sha": "a21a33c4cc2aaaa9"
     },
     "modes-ui.js": {
-      "v": "4",
-      "sha": "12f74f2b441aa488"
+      "v": "5",
+      "sha": "abe0aa5618ef355b"
     },
     "box-ui.js": {
       "v": "1",

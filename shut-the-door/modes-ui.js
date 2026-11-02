@@ -186,7 +186,7 @@ function showSurvivor() {
   var my = ++SV.seq;
   $('sv-eyebrow').textContent = 'today · one run a day';
   $('sv-you').innerHTML = '<p class="sv-say">loading your run.</p>';
-  $('sv-list').innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
+  $('sv-list').innerHTML = '<div class="bd-empty"><img class="load-mark" src="brand/mark.svg?v=2" alt="" width="56" height="56"><p>loading the leaderboard.</p></div>';
   var stP = has('survivorState') ? Promise.resolve().then(function () { return API().survivorState(); }).catch(function () { return null; }) : Promise.resolve(null);
   stP.then(function (s) { if (my === SV.seq) { SV.state = s; drawRun(s); } });
   loadBoard(my);
@@ -228,7 +228,7 @@ function loadBoard(my) {
       return;
     }
     if (!rows.length) {
-      el.innerHTML = '<div class="bd-empty"><img src="brand/mark.svg?v=1" alt="" width="56" height="56"><b>nobody\'s on it yet</b><p>no runs posted today. be the first.</p></div>';
+      el.innerHTML = '<div class="bd-empty"><img src="brand/mark.svg?v=2" alt="" width="56" height="56"><b>nobody\'s on it yet</b><p>no runs posted today. be the first.</p></div>';
       return;
     }
     rows = rows.slice().sort(function (a, b) { return a.rank - b.rank; });
