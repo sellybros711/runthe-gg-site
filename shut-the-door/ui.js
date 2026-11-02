@@ -861,6 +861,7 @@ function enterMound() {
   clearTimeout(S.endWinT); S.endWin = null; S.absBusy = false;
   if (S.mini) S.mini.reset();
   show('s-mound');
+  setPitcher();
   setBatter(true);
   renderHud(S.outing);
   if (S.outing.pitchNo === 0) pbp('', batterAt(S.outing.batterIndex).name + ' leads off.');
@@ -869,6 +870,17 @@ function enterMound() {
   if (DEBUG) { $('m-dbg').hidden = false; $('m-dbg').textContent = 'seed ' + S.outing.seed + ' · ' + S.outing.mode; }
 }
 
+/* WHO YOU PITCH AS (the owner, 2026-11-02): the closer and his club over the at bat row, every mode.
+   The full name; it shortens (names.js) only when the line has no room for it. */
+function setPitcher() {
+  var p = S.scn.pitcher || {}, c = window.STD_CLUB_NAMED ? window.STD_CLUB_NAMED(p.team) : null;
+  var club = c ? c.nick : String(p.team || '').trim();   // the club's whole name until clubs.js is in
+  var nm = $('m-pname');
+  nm.textContent = p.name || '';
+  $('m-pteam').textContent = club;
+  $('m-pit').setAttribute('aria-label', 'pitching: ' + (p.name || '') + (club ? ', ' + club : ''));
+  if (p.name && nm.scrollWidth > nm.clientWidth + 1) nm.textContent = lastName(p.name);
+}
 function setBatter(first) {
   var b = batterAt(S.outing.batterIndex);
   /* every at bat starts with the drawer shut (the owner, 2026-10-27), before the stage frames the
@@ -2529,6 +2541,7 @@ function boot() {
   initResultNav();
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
+  window.addEventListener('std-clubs', function () { if (S.scn && document.body.dataset.screen === 's-mound') setPitcher(); });
 
   if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
   API.getScenario(S.day).then(function (scn) {
