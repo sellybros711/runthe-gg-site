@@ -35,21 +35,45 @@ var LIB = function(){ return root.RTT_PUTT_GYMS.lib; };
    The civilian's lines nudge, never solve. */
 var GYMS = [
   /* THE DUST BOWL, mid-world: air, tanks and samples, nothing else. */
-  { id:'mars1', kind:'air', world:'mars', leg:9, name:'The Dust Bowl', badge:'Dune Badge', mech:['air'], pay:500, look:{ wall:'stone' }, air:6,
-    moves:0, proof:'',
+  { id:'mars1', kind:'air', world:'mars', leg:9, name:'The Dust Bowl', badge:'Dune Badge', mech:['air'], pay:500, look:{ wall:'stone' }, air:5,
+    moves:21, proof:'ULLULUUUURRDDDDUUUURU',
     who:{ look:{ skin:'medium', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'male' } },
-    say:['Your suit holds six breaths. Every step out there takes one.',
+    say:['Your suit doesn\'t hold much air. Every step out there takes a breath.',
       'A tank fills you right up. Fill up when you are nearly empty, not when you are nearly full.',
       'You don\'t have to grab a sample the first time you pass it.'],
-    rows:[] },
+    rows:[
+      '#########',
+      '####C####',
+      '#.o.....#',
+      '#s.sx...#',
+      '#.xs....#',
+      '#.......#',
+      '#o.o.x..#',
+      '#.......#',
+      '###L@####',
+      '####G####'
+    ] },
   /* THE ICE SHELF, the gatekeeper: the same budget, and a sheet of polar ice where a whole slide costs one breath. */
   { id:'mars2', kind:'air', world:'mars', leg:18, name:'The Ice Shelf', badge:'Polar Badge', mech:['air', 'ice'], pay:1000, keeper:true, look:{ wall:'stone' }, air:6,
-    moves:0, proof:'',
+    moves:23, proof:'UUULDLRRRRDRLUUUUUDLULU',
     who:{ look:{ skin:'light', polo:'white', hat:'white', pants:'white', hair:'red', hairStyle:'ponytail', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' } },
     say:['The ice is the cheap way across. One breath and you go till something stops you.',
       'Walking the long way round costs you. Look for what stops a slide where you want it.',
       'A boulder in the right place is worth more than a tank.'],
-    rows:[] }
+    rows:[
+      '#########',
+      '####C####',
+      '#.....o.#',
+      '#....s..#',
+      '#x.....x#',
+      '#..s....#',
+      '#====x==#',
+      '#.o.s...#',
+      '#======.#',
+      '#......o#',
+      '###L@####',
+      '####G####'
+    ] }
 ];
 
 var PARSED = {};
@@ -108,10 +132,10 @@ function view(R){ var Q = R.Q, T = R.T, ctx = R.ctx, s0 = null, anim = {};
     ctx.fillStyle = '#2a2a32'; ctx.fillRect(t[0] - px * 0.25, t[1] - px * 0.7, px * 0.5, px * 0.6);
     if (!used && !R.reduce){ var g = 0.25 + 0.2 * Math.sin(tsec * 3 + i); ctx.fillStyle = 'rgba(120,255,170,' + g.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(t[0], t[1] - px * 0.9, px * 0.8, 0, 7); ctx.fill(); } }
   // a rock sample: a small red rock split open on a blue crystal, glowing until picked up
-  function sample(i, tsec){ var q = R.at(i), x = q[0], y = q[1], c = P(x, y, DECK + T * 0.2), e = P(x + T * 0.26, y, DECK + T * 0.2), px = Math.max(2, Math.abs(e[0] - c[0]));
+  function sample(i, tsec){ var q = R.at(i), x = q[0], y = q[1], c = P(x, y, DECK + T * 0.3), e = P(x + T * 0.4, y, DECK + T * 0.3), px = Math.max(2, Math.abs(e[0] - c[0]));
     var g = R.reduce ? 0.35 : 0.3 + 0.15 * Math.sin(tsec * 2.6 + i); ctx.fillStyle = 'rgba(120,210,255,' + g.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(c[0], c[1], px * 1.5, 0, 7); ctx.fill();
-    ctx.fillStyle = '#8a3a1c'; ctx.beginPath(); ctx.moveTo(c[0] - px, c[1] + px * 0.5); ctx.lineTo(c[0] - px * 0.6, c[1] - px * 0.4); ctx.lineTo(c[0] + px * 0.7, c[1] - px * 0.5); ctx.lineTo(c[0] + px, c[1] + px * 0.5); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#7fd8ff'; ctx.beginPath(); ctx.moveTo(c[0] - px * 0.3, c[1]); ctx.lineTo(c[0], c[1] - px * 1.1); ctx.lineTo(c[0] + px * 0.35, c[1]); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#5a1a0a'; ctx.beginPath(); ctx.moveTo(c[0] - px, c[1] + px * 0.5); ctx.lineTo(c[0] - px * 0.6, c[1] - px * 0.4); ctx.lineTo(c[0] + px * 0.7, c[1] - px * 0.5); ctx.lineTo(c[0] + px, c[1] + px * 0.5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3fb8ff'; ctx.strokeStyle = '#0a2a4a'; ctx.lineWidth = Math.max(1, R.kk() * 0.5); ctx.beginPath(); ctx.moveTo(c[0] - px * 0.45, c[1]); ctx.lineTo(c[0] - px * 0.1, c[1] - px * 1.3); ctx.lineTo(c[0] + px * 0.5, c[1]); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#e6f8ff'; ctx.fillRect(c[0] - px * 0.08, c[1] - px * 0.8, Math.max(1, px * 0.16), px * 0.5); }
   // a boulder: rust red, lit from the upper left
   function boulder(i){ var q = R.at(i), x = q[0], y = q[1], rad = T * 0.42, c = P(x, y, DECK + rad * 0.8), e = P(x + rad, y, DECK + rad * 0.8), px = Math.max(2, Math.abs(e[0] - c[0]));

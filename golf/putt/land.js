@@ -4883,6 +4883,91 @@ window.RTT_PUTT_LAND = (function(){
   function moonLaunch(L){ var O = moonBase(L, { pits:3, boulders:0.08 }), rk = L.spot(2.8, function(x, y){ return L.north(x, y) * 0.8 - Math.abs(x - L.cx) * 0.15; }),
       fl = L.spot(0.8, function(x, y){ return L.side(x) * 2 + L.north(x, y) * 0.2; });
     O.build = function(B){ moonEarth(B, L); if (rk) moonRocket(B, rk.x, rk.y); if (fl) moonFlag(B, fl.x, fl.y); }; return O; }
+  /* ---------------- RED PLANET IS A JOURNEY. Down from the lander onto the rust plain, the rover parked by it (1 to 4), out
+     over the rippled dunes where a dust devil walks (5 to 8), along the rim of the great canyon, its walls banded in red
+     rock (9 to 12), into the colony with its habs, the green glow of its greenhouse and rows of solar panels (13 to 16), and
+     at last under Olympus Mons, the biggest volcano anywhere, standing over the back of the land (17 and 18). The sky is a
+     dusty butterscotch, Phobos small and grey in it. Gentle ground only, as on the moon: dunes are low ripples, never
+     cliffs; what stands tall (the canyon walls, the volcano) is built behind the land. */
+  STOPS.mars = [[1, 'landing'], [5, 'dunes'], [9, 'canyon'], [13, 'colony'], [17, 'olympus']];
+  (function(){ BUILD.mars = function(L){ var s = L.stop; return s === 'olympus' ? marsOlympus(L) : s === 'colony' ? marsColony(L) : s === 'canyon' ? marsCanyon(L) : s === 'dunes' ? marsDunes(L) : marsLanding(L); }; })();
+
+  // the dust: rust and butterscotch in broad patches, darker basalt grit, paler where the wind has swept it; dune crests lit
+  function marsDust(){ var a = ['#c4683e', '#d27a48', '#a8502e', '#e0905a', '#7a3220'];
+    return [a[0], a[1], a[2], 0.14, function(c, R){ var b = blot(c, 0.18, 81), n = blot(c, 0.55, 82), f = c.cr || 0;
+      if (c.dn) return R(c.dn > 0 ? a[3] : a[2]);
+      if (f > 0.15) return R(f > 0.7 ? a[2] : a[0]); if (f < -0.05 && f > -0.35 && n > 0.5) return R(a[3]);
+      return R(b > 0.68 ? a[1] : b < 0.28 ? a[2] : (c.ti * 7 + c.tj * 13) % 37 === 0 ? a[4] : n > 0.72 ? a[3] : a[0]); }]; }
+  // dunes: low parallel ripples across the land, laid by one wind, fading in near the course
+  function marsDune(L, x, y, amp){ var c = L.clearAt(x, y), k = sm(1.4, 5, c) * amp, t = x * 0.42 + y * 0.18 + Math.sin(y * 0.11) * 1.6; return { h:k * 0.28 * Math.sin(t), d:Math.cos(t) * k }; }
+  function marsBase(L, o){ var seed = L.seed, pits = moonPits(L, o.pits == null ? 3 : o.pits, o.rMin || 1.4, o.rMax || 2.8, 37), amp = o.dunes == null ? 0.5 : o.dunes;
+    return { pits:pits,
+      h:function(x, y){ return pits.h(x, y) * 0.8 * sm(0.6, 2.2, L.clearAt(x, y)) + (fbm(x * 0.07, y * 0.09, seed) - 0.45) * 0.7 * sm(1.3, 6, L.clearAt(x, y)) + marsDune(L, x, y, amp).h; },
+      mat:function(x, y){ var dd = marsDune(L, x, y, amp).d; return ['red', { cr:pits.cr(x, y), dn:amp > 0.6 && Math.abs(dd) > 0.55 * amp ? (dd > 0 ? 1 : -1) : 0 }]; },
+      fill:{ on:['red'], trees:o.boulders == null ? 0.04 : o.boulders, lows:0.18, tree:function(B, x, y, i){ rockAt(B, x, y, 0.7 + hash(i, seed, 61) * 0.9, ['#5a2a1c', '#8a3a22', '#3a2420']); },
+        low:function(B, x, y, i){ rockAt(B, x, y, 0.25 + hash(i, seed, 62) * 0.35, hash(i, seed, 63) < 0.5 ? ['#3a2420', '#5a3428'] : ['#a8502e', '#c4683e']); } },
+      // the sky over the horizon: dusty butterscotch bands, and Phobos, small and grey
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        for (var i = 0; i < 4; i++){ ctx.fillStyle = 'rgba(255,214,170,' + (0.06 + i * 0.03).toFixed(2) + ')'; ctx.fillRect(0, top * (0.3 + i * 0.17) | 0, V.W, Math.max(2, top * 0.12) | 0); }
+        if (o.phobos !== false){ var px = V.W * (0.7 + hash(1, 9, seed) * 0.15), py = top * 0.3, pr = Math.max(3, V.W * 0.012);
+          ctx.fillStyle = '#8a7a72'; ctx.beginPath(); ctx.ellipse(px, py, pr * 1.25, pr, 0.4, 0, 7); ctx.fill(); ctx.fillStyle = '#b4a49a'; ctx.beginPath(); ctx.ellipse(px - pr * 0.3, py - pr * 0.25, pr * 0.6, pr * 0.45, 0.4, 0, 7); ctx.fill(); } },
+      bg:o.bg || '#c8805a', gain:2, mats:{ red:marsDust() } }; }
+  // the rover: six wheels on rockers, a white body with a solar deck, a mast with its camera head
+  function marsRover(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 1.8, Y - 1.2, zb - 0.05, X + 1.8, Y + 1.2, zb + 2.6, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, ax = Math.abs(dx), ay = Math.abs(dy);
+      for (var w = -1; w <= 1; w++) if (Math.abs(ay - 0.95) < 0.18 && Math.hypot(dx - w * 1.15, t - 0.36) < 0.36) return Math.hypot(dx - w * 1.15, t - 0.36) > 0.24 ? '#2a2a30' : '#8a8a94';
+      if (t > 0.6 && t < 0.72 && ay < 1.05 && ax < 1.5) return '#8a8a94';
+      if (t >= 0.72 && t < 1.15 && ax < 1.3 && ay < 0.75) return t > 1.05 ? '#1e2a4a' : '#eeeef2';
+      if (Math.abs(dx - 0.9) < 0.07 && Math.abs(dy - 0.5) < 0.07 && t >= 1.15 && t < 2.2) return '#c8c8d0';
+      if (Math.abs(dx - 0.9) < 0.28 && Math.abs(dy - 0.5) < 0.18 && t >= 2.2 && t < 2.55) return Math.abs(dy - 0.5) > 0.1 && dx > 0.9 ? '#3fd0ff' : '#f4f4f8'; return null; }); }
+  // a hab: a squat white dome on a rust ring, a lit window band and an airlock tube out the front
+  function marsHab(B, X, Y, R){ var zb = B.gz(X, Y) - 0.05; if (B.light) B.light(X, Y + R, zb + R * 0.4, '#ffc890');
+    B.solid(X - R, Y - R, zb, X + R, Y + R + 1, zb + R, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy, t) / R;
+      if (dy > R * 0.7 && Math.abs(dx) < 0.55 && t < 1.05 && dy < R + 0.9) return t > 0.9 || Math.abs(dx) > 0.45 ? '#c8c0b4' : '#e8e2d8';
+      if (d > 1 || d < 0.88) return null; if (t < 0.25) return '#b84a26';
+      if (t < R * 0.45 && t > R * 0.3) return (((Math.atan2(dy, dx) * 6) | 0) % 2) ? '#ffd8a0' : '#6a3a2a'; return Math.abs(Math.sin(Math.atan2(dy, dx) * 4)) < 0.07 ? '#c8bcae' : '#f2ece2'; }); }
+  // the greenhouse: a glass dome, green rows of plants glowing inside it
+  function marsGreen(B, X, Y, R){ var zb = B.gz(X, Y) - 0.05; if (B.light) B.light(X, Y, zb + R * 0.6, '#7cff8a');
+    B.solid(X - R, Y - R, zb, X + R, Y + R, zb + R, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy, t) / R; if (d > 1) return null;
+      if (d > 0.93) return (Math.abs(Math.sin(Math.atan2(dy, dx) * 6)) < 0.1 || Math.abs(t - R * 0.5) < 0.06) ? '#d8e2e8' : null;
+      if (t < 0.6 && ((Math.abs(dx) * 2.2 | 0) % 2 === 0)) return t < 0.15 ? '#5a3a24' : (hash(px * 4 | 0, pz * 4 | 0, 7) < 0.5 ? '#3fae4a' : '#7cdc5a'); return null; }); }
+  // a row of solar panels on short legs, tilted to the sun
+  function marsSolar(B, X, Y, w){ var zb = B.gz(X, Y);
+    B.solid(X - w / 2, Y - 0.8, zb, X + w / 2, Y + 0.8, zb + 1.3, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, pt = 0.6 + dy * 0.45;
+      if (Math.abs(t - pt) < 0.09 && Math.abs(dy) < 0.75) return ((((dx + 9) * 2.5) | 0) % 4 === 0 || Math.abs(dy) > 0.68) ? '#c8c8d0' : '#1e3a6a';
+      if (t < pt && Math.abs(dy) < 0.06 && (((dx + 9) * 1.2) | 0) % 3 === 0 && Math.abs(((dx + 9) * 1.2) % 1) < 0.15) return '#8a8a94'; return null; }); }
+  // a dust devil standing in the dunes: a tall column of tan dust, narrow at the foot and wide at the top
+  function marsDevil(B, X, Y){ var zb = B.gz(X, Y), H = 7;
+    B.solid(X - 2, Y - 2, zb, X + 2, Y + 2, zb + H, function(px, py, pz){ var t = (pz - zb) / H, cx = X + Math.sin(t * 3) * 0.4, r = 0.35 + t * 1.5, d = Math.hypot(px - cx, py - Y);
+      if (d > r || d < r * 0.55) return null; var a = Math.atan2(py - Y, px - cx) + t * 9; return ((a * 2 | 0) % 2) ? (hash(px * 3 | 0, pz * 3 | 0, 5) < 0.3 ? null : '#e8b088') : (hash(px * 3 | 0, pz * 3 | 0, 6) < 0.5 ? null : '#c88a62'); }); }
+  // the canyon's far wall: a long cliff of banded red rock behind the land, its top broken into buttes
+  function marsWall(B, L, zTop){ var X0 = L.E[0] + 1, X1 = L.E[2] - 1, Y = L.E[1] + 1.5;
+    B.solid(X0, Y - 2.5, -1, X1, Y + 1.2, zTop, function(px, py, pz){ var top = zTop - 1.6 + fbm(px * 0.12, 3, L.seed) * 2.6 - (Math.abs(Math.sin(px * 0.21)) < 0.18 ? 1.4 : 0), face = Y + 1.2 - (pz / zTop) * 1.2;
+      if (pz > top || py > face) return null; var band = ((pz + fbm(px * 0.3, pz * 0.3, 9) * 0.4) * 1.6 | 0) % 4; return ['#a8502e', '#8a3a22', '#c4683e', '#e0905a'][band]; }); }
+  // Olympus Mons on the skyline: a broad shield volcano's flank, so wide its top is cut by the horizon, a pale caldera rim
+  function marsOlympus(L){ var O = marsBase(L, { pits:1, dunes:0.25, boulders:0.06, bg:'#d89a72' }),
+      rv = L.spot(1.6, function(x, y){ return L.side(x) * 3 + L.north(x, y) * 0.2; });
+    O.build = function(B){ var X = L.cx, Y = L.E[1] - 3.5, R = 14, H = 6;
+      B.solid(X - R, Y - 3, -1, X + R, Y + 3, H, function(px, py, pz){ var d = Math.hypot((px - X) / R, (py - Y) / 6), top = H * (1 - d) * 1.6; if (pz > top || pz > H) return null;
+        if (pz > H - 0.5) return '#e8c8a8'; return ((pz * 1.3 + fbm(px * 0.1, pz, 4)) | 0) % 3 ? '#b86a44' : '#9a5232'; });
+      if (rv) marsRover(B, rv.x, rv.y); }; return O; }
+  // 1. THE LANDING (and every Red Planet hole with no place): the lander behind the hole, the rover parked beside it
+  function marsLanding(L){ var O = marsBase(L, { pits:3 }), ld = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.6 - Math.abs(x - L.cx) * 0.2; }),
+      rv = L.spot(1.8, function(x, y){ return L.side(x) * 3 + L.north(x, y) * 0.2; }), fl = L.spot(0.8, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 2; });
+    O.build = function(B){ if (ld) moonLander(B, ld.x, ld.y); if (rv) marsRover(B, rv.x, rv.y); if (fl) moonFlag(B, fl.x, fl.y); }; return O; }
+  // 2. THE DUNES: big ripples all round, boulders few, a dust devil walking behind the hole
+  function marsDunes(L){ var O = marsBase(L, { pits:0, dunes:1.1, boulders:0.04 }), dv = L.spot(2, function(x, y){ return L.north(x, y) * 0.7 + L.side(x) * 1.5; });
+    O.build = function(B){ if (dv) marsDevil(B, dv.x, dv.y); }; return O; }
+  // 3. THE CANYON RIM: the great canyon's banded far wall standing behind the land, boulders fallen from it
+  function marsCanyon(L){ /* the wall stands just behind the land's far edge */ var O = marsBase(L, { pits:1, dunes:0.3, boulders:0.1, bg:'#b8704a' });
+    O.build = function(B){ marsWall(B, L, 6.5); }; return O; }
+  // 4. THE COLONY: habs and the greenhouse behind the hole, solar panels to the side, the comms dish, lamps on the way in
+  function marsColony(L){ var O = marsBase(L, { pits:0, dunes:0.25, boulders:0.04 }), hb = [], i;
+    for (i = 0; i < 2; i++){ var d = L.spot(2.2, function(x, y){ return L.north(x, y) * 0.7 + hash(x | 0, y | 0, L.seed + 13 + i); }); if (d) hb.push(d); }
+    var gh = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.6 - Math.abs(x - L.cx) * 0.1; }), sp = L.spotRect(4.2, 2, function(x, y){ return L.side(x) * 2 + L.north(x, y) * 0.3; }),
+      ds = L.spot(1.8, function(x, y){ return L.side(x) * 3 - L.north(x, y) * 0.1; }), lp = L.scatter(5, function(x, y){ return L.clearAt(x, y) < 3; }, 67).slice(0, 4);
+    O.build = function(B){ hb.forEach(function(d){ marsHab(B, d.x, d.y, 2); }); if (gh) marsGreen(B, gh.x, gh.y, 2.2); if (sp) marsSolar(B, sp.x, sp.y, 4); if (ds) moonDish(B, ds.x, ds.y, 1.5);
+      lp.forEach(function(q){ lamp(B, q[0], q[1], '#8a8a94', '#ffc890'); }); }; return O; }
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
