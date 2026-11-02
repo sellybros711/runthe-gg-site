@@ -1980,10 +1980,10 @@ var SECRET_LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -8], [8, -22], [3, -32], [-3, -32], [-8, -22], [-8, -8]])], [0, -2.5], [1.5, -28]);
     moon(H, 0, -16, 2.2, 7, 44); zerog(H, -4, -9, 4, -22); bumps(H, T, [[-5, -10, 0.55], [5.5, -12, 0.55], [-5.5, -21, 0.5], [4.5, -24, 0.5]]); zoneR(H, M.ICE, -8, -14, -4.4, -18);
     slider(H, T, -22.5, -4, 4, 3.0, 0.3, 2.4); pen(H, T, 1.5, -28); zoneR(H, M.MUD, -3, -30, 0, -32); return H; } },
-  // The Ice Cave: under the polar cap, a floor of ice, a cold draft whirling down the middle and ice pillars to bank off.
+  // The Ice Cave: under the polar cap, a floor of ice, a cold draft whirling down the middle, ice pillars to bank off and the cup in a pen.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -8], [7, -24], [3, -32], [-3, -32], [-7, -24], [-7, -8]])], [0, -2.5], [-1.5, -28]);
     zoneR(H, M.ICE, -7, -9, 7, -22); devil(H, 0, -15.5, 2.4, 6, 2.6, 0, 5, 0); bumps(H, T, [[-4.5, -10, 0.6], [4.5, -11, 0.6], [-5, -21, 0.55], [5, -20, 0.55], [2.5, -26, 0.5]]);
-    dune(H, 0, -25, 0.3, -1, 1.2, 0.1); zoneR(H, M.MUD, 1.5, -30, 3, -32); bowl(H, -1.5, -28, 1.5, 0.14); return H; } }
+    dune(H, 0, -25, 0.3, -1, 1.2, 0.1); zoneR(H, M.MUD, 1.5, -30, 3, -32); blk(H, T, -7, -23.4, 1.2, -24.4); pen(H, T, -1.5, -28); bowl(H, -1.5, -28, 1.5, 0.14); return H; } }
 ];
 var SECRET_NAMES = SECRETS.map(function(x){ return x.name; });
 var SECRET_WORLDS = SECRETS.map(function(x){ return { id:'s-' + x.theme, name:x.name, theme:x.theme, blurb:'A secret hole.', haz:['Found on a trail'] }; });
