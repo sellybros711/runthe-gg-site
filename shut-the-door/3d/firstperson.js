@@ -44,7 +44,9 @@ import * as THREE from 'three';
 import { smooth, clamp01 } from './units.js?v=1';
 import { spline, reducedMotion, SUN } from './park.js?v=9';
 import { baseball } from './gear3d.js?v=4';
-import { look } from './looks.js?v=6';
+import { look, hash } from './looks.js?v=6';
+import { LOOKS } from './looks-data.js?v=2';
+import { skin as skinMaterial } from './materials.js?v=8';
 import { assetUrl } from './load.js?v=8';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { T_RELEASE } from './pitch.js?v=13';
@@ -426,6 +428,37 @@ function limb(mat, r0, r1) {
 }
 const UP = new THREE.Vector3(0, 1, 0);
 
+/* HIS FOREARMS (the owner, 2026-11-02: "the arms of the pitcher is a solid blue ... you should see the
+   skin of the pitcher or the team colors of their gear"). Each forearm is his skin from the elbow to
+   the wrist, a forearm's own shape (fullest a fifth of the way down, slim at the wrist), lit with the
+   hitters' skin (materials.js skin: the wrapped falloff and the sheen), and over it his undershirt's
+   sleeve in the club's colour from the elbow down to its cuff: SLEEVES, his by a hash of his name
+   (relievers wear both: to just past the elbow, or three quarter, to mid forearm). No logo on it.
+   The upper arm and the elbow stay in the sleeve. */
+const FORE_R = [[0, 0.04], [0.1, 0.045], [0.24, 0.047], [0.45, 0.042], [0.7, 0.034], [0.9, 0.029], [1, 0.028]];
+const SLEEVES = [0.14, 0.46];   // the cuff, as a share of the forearm from the elbow
+function forearm(mats, k = 1) {
+  const g = new THREE.Group();
+  const geo = new THREE.LatheGeometry(FORE_R.map(([y, r]) => new THREE.Vector2(r * k, y)), 18);
+  const skin = new THREE.Mesh(geo, mats.skin);
+  // the sleeve a little looser than the forearm under it, its cuff's edge a closed ring
+  const rs = 0.05 * k, sleeve = new THREE.Mesh(new THREE.CylinderGeometry(rs * 0.97, rs, 1, 18, 1, false), mats.sleeve);
+  g.add(skin, sleeve);
+  g.userData.cuff = SLEEVES[0];
+  const d = new THREE.Vector3(), c = new THREE.Vector3();
+  /** From the elbow a to the wrist b. */
+  g.userData.set = (a, b) => {
+    d.subVectors(b, a);
+    const len = d.length();
+    d.divideScalar(len || 1);
+    skin.position.copy(a); skin.quaternion.setFromUnitVectors(UP, d); skin.scale.set(1, len, 1);
+    const cl = Math.max(0.02, g.userData.cuff * len);
+    c.copy(a).addScaledVector(d, cl / 2);
+    sleeve.position.copy(c); sleeve.quaternion.copy(skin.quaternion); sleeve.scale.set(1, cl, 1);
+  };
+  return g;
+}
+
 export class FirstPerson {
   constructor(renderer, world) {
     this.renderer = renderer;
@@ -455,14 +488,14 @@ export class FirstPerson {
     this.mats = {
       sleeve: new THREE.MeshStandardMaterial({ color: 0x1b2a44, roughness: 0.85, normalMap: kn, normalScale: new THREE.Vector2(0.35, 0.35) }),
       jersey: new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.85, normalMap: kn, normalScale: new THREE.Vector2(0.35, 0.35) }),
-      skin: new THREE.MeshStandardMaterial({ color: SKIN_LIGHT.clone(), roughness: 0.55 }),
+      skin: skinMaterial({}, { tint: SKIN_LIGHT.clone() }),
     };
     const M = this.mats;
     // the glove and the forearm under it, and at the set his throwing hand in it (only his forearm
     // shows, going into the pocket from his arm side)
     this.glove = gloveModel({ map: lm, normal: ln });
-    this.gloveArm = limb(M.sleeve, 0.044, 0.04);
-    this.setArm = limb(M.sleeve, 0.042, 0.034);
+    this.gloveArm = forearm(M, 1);
+    this.setArm = forearm(M, 0.95);
     // each forearm goes on to an elbow and the upper arm, back toward his shoulder beside his eyes
     // and off the screen (armOn): a forearm alone ended on the screen beside a tall panel
     this.gloveUpper = limb(M.sleeve, 0.056, 0.047);
@@ -481,7 +514,7 @@ export class FirstPerson {
     this.hand = handModel(M.skin, this.ball);
     this.upper = limb(M.sleeve, 0.048, 0.042);
     this.cuff = limb(M.jersey, 0.062, 0.058);
-    this.fore = limb(M.sleeve, 0.04, 0.029);
+    this.fore = forearm(M, 0.92);
     this.elbow = new THREE.Mesh(new THREE.SphereGeometry(0.042, 16, 12), M.sleeve);
     this.wrist = new THREE.Mesh(new THREE.SphereGeometry(0.027, 12, 10), M.skin);
     this.arm = new THREE.Group();
@@ -502,8 +535,13 @@ export class FirstPerson {
     const p = facts.pitcher;
     this.side = p.throws === 'L' ? -1 : 1;
     this.slot = THREE.MathUtils.degToRad(armSlot(p, facts.release));
-    const tone = look(p.name || 'pitcher').tone;
+    // his tone: looks-data.js's where he is there (by name: the closers are not keyed there), else
+    // the hash of his name, as for the hitters (looks.js)
+    const known = Object.values(LOOKS.players).find((x) => x.name === p.name && Number.isFinite(x.tone));
+    const tone = known ? known.tone : look(p.name || 'pitcher').tone;
     this.mats.skin.color.copy(SKIN_LIGHT).lerp(SKIN_DARK, tone);
+    const cuff = SLEEVES[(hash('sleeve ' + (p.name || 'pitcher')) >>> 7) % SLEEVES.length];
+    for (const a of [this.gloveArm, this.setArm, this.fore]) a.userData.cuff = cuff;
     if (kit) {
       this.mats.sleeve.color.copy(kit.undershirt);
       this.mats.jersey.color.copy(kit.base);
