@@ -392,10 +392,136 @@ function renderHome() {
   $('m-proxy').hidden = s.resolution !== 'proxy';
   if (MU) MU.pickLine($('h-pick'), s);
   renderStreak();
-  $('h-load').hidden = true;
-  $('h-main').hidden = false;
-  startHomeBg();
+  bootClubs(s);
+  /* the 3D mound starts now, behind the loading screen; the home shows when the first screen has
+     everything it needs (bootLoader) */
   drawHero();
+  BOOT.spot = true;
+  BOOT.ready.then(function () {
+    $('h-load').hidden = true;
+    $('h-err').hidden = true;   // a spot that came after the loading screen gave up on it
+    $('h-main').hidden = false;
+    startHomeBg();
+  });
+}
+
+/* ---- THE LOADING SCREEN (the owner, 2026-11-02) ------------------------------------------------
+   #boot covers the page from the first paint and .app is inert under it, so nothing is tappable or
+   focusable until the first screen has what it needs: today's spot (the pack), the fonts, the stadium
+   photo behind the home, and the 3D mound (STD_STAGE.current.loaded; a browser without WebGL keeps the
+   old drawing and skips it). The bar is real: each step fills its own share when it lands, the 3D's by
+   the stage's own marks (STD_STAGE.marks: created, assets, lit, people, compiled, then his arm's throw).
+   Inside a step the bar
+   eases toward the step's end and never reaches it until the step does.
+   It never flashes: unseen for its first 300 ms (style.css), and once seen it stays up at least until
+   BOOT_MIN_MS, so it never blinks in and out.
+   It never hangs: a mound that has not warmed in BOOT_CAP_MS lets the home show anyway, saying so
+   for a moment ("the ballpark is still loading"); take the mound then shows the mound's own warming
+   word (.scene.warming) until it is ready. A spot that has not come in BOOT_SPOT_MS puts up the home's
+   error and its try again. A failed spot does that at once (boot). The inline guard in index.html
+   covers a script that never ran. */
+var BOOT_CAP_MS = window.STD_BOOT_TEST_CAP || 30000, BOOT_SPOT_MS = BOOT_CAP_MS * 1.5, BOOT_MIN_MS = 900, BOOT_SAY_MS = 1400;
+var BOOT_STEPS = [
+  { k: 'spot', w: 14, say: 'today\'s spot' },
+  { k: 'fonts', w: 4, say: 'today\'s spot' },
+  { k: 'photo', w: 6, say: 'the ballpark' },
+  { k: 'created', w: 6, say: 'the ballpark' },
+  { k: 'assets', w: 34, say: 'the ballpark' },
+  { k: 'lit', w: 6, say: 'the lights' },
+  { k: 'people', w: 12, say: 'the players' },
+  { k: 'compiled', w: 18, say: 'warming up' },
+];
+var BOOT = { spot: false, fonts: false, photo: false, t0: Date.now(), shown: 0, done: false, capped: false };
+BOOT.ready = new Promise(function (res) { BOOT.release = res; });
+window.STD_BOOT_RUNS = true;
+function bootHas(k) {
+  if (k === 'spot' || k === 'fonts' || k === 'photo') return BOOT[k];
+  if (!use3d()) return true;
+  var st = window.STD_STAGE, m = st && st.marks;
+  /* warmed, and his arm's throw is in (3d/firstperson.js fetches it beside the scene, and until it
+     lands the first pitch flies without his arm or the first person lens) */
+  if (k === 'compiled') { var cu = st && st.current, fp = cu && cu.fp; return !!(cu && cu.loaded) && (!fp || !fp.ok || !!fp.throw); }
+  return !!(m && m[k] != null) || !!(st && st.current && st.current.loaded);
+}
+function bootClubs(s) {
+  try {
+    var c = clubsOf(s), bug = $('boot-bug');
+    $('boot-occ').textContent = occasionOf(s.title) || ' ';
+    [['boot-us', c.us], ['boot-them', c.them]].forEach(function (r) {
+      var row = $(r[0]); if (!row || !r[1]) return;
+      row.querySelector('b').textContent = r[1].name || '';
+      if (r[1].pri) row.style.setProperty('--club', r[1].pri);
+    });
+    if (bug) bug.classList.add('on');
+  } catch (e) {}
+}
+/* the screen steps aside: the page under it wakes, and the promise lets the home show */
+function bootEnd(now) {
+  if (BOOT.done) return;
+  BOOT.done = true;
+  var el = $('boot');
+  var go = function () {
+    if (el) { el.classList.add('boot-off'); el.setAttribute('aria-hidden', 'true'); }
+    var app = $('app'); if (app) app.removeAttribute('inert');
+    BOOT.release();
+  };
+  /* seen (past its 300 ms) but only just: hold it to BOOT_MIN_MS so it never blinks */
+  var age = Date.now() - BOOT.t0;
+  if (now || age < 300 || age >= BOOT_MIN_MS) go(); else setTimeout(go, BOOT_MIN_MS - age);
+}
+function bootLoader() {
+  var el = $('boot');
+  if (!el) { BOOT.release(); var app = $('app'); if (app) app.removeAttribute('inert'); return; }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { BOOT.fonts = true; }); else BOOT.fonts = true;
+  var img = document.querySelector('#h-bg .t-bgi[src]');
+  var photo = function () { BOOT.photo = true; };
+  if (!img || img.complete) photo(); else { img.addEventListener('load', photo, { once: true }); img.addEventListener('error', photo, { once: true }); }
+  /* the club table is a module that may land after the spot: fill the scorebug's names again then */
+  window.addEventListener('std-clubs', function () { if (S.scn && !BOOT.done) bootClubs(S.scn); });
+  var fill = $('boot-fill'), pct = $('boot-pct'), say = $('boot-step');
+  var stepAt = 0, stepT = Date.now();
+  (function tick() {
+    if (BOOT.done) return;
+    var done = 0, cur = null;
+    for (var i = 0; i < BOOT_STEPS.length; i++) {
+      var s = BOOT_STEPS[i];
+      if (bootHas(s.k)) { done += s.w; continue; }
+      if (!cur) cur = s;
+    }
+    /* inside the step under way: ease toward its end over a few seconds, never reaching it */
+    if (cur) {
+      if (cur.k !== stepAt) { stepAt = cur.k; stepT = Date.now(); }
+      done += cur.w * 0.9 * (1 - Math.exp(-(Date.now() - stepT) / 4000));
+    }
+    var p = Math.max(BOOT.shown, Math.min(100, done));
+    BOOT.shown = p;
+    fill.style.transform = 'scaleX(' + (p / 100).toFixed(3) + ')';
+    pct.textContent = Math.floor(p) + '%';
+    el.setAttribute('aria-valuenow', String(Math.floor(p)));
+    if (cur && say.textContent !== cur.say) say.textContent = cur.say;
+    var age = Date.now() - BOOT.t0;
+    if (!cur) {
+      fill.style.transform = 'scaleX(1)'; pct.textContent = '100%'; el.setAttribute('aria-valuenow', '100');
+      return bootEnd();
+    }
+    /* the timeout: the spot is in and the 3D is not. In, with a word, and the mound finishes warming */
+    if (BOOT.spot && BOOT.fonts && age > BOOT_CAP_MS) {
+      BOOT.capped = true;
+      $('boot-say').textContent = 'the ballpark is still loading. it finishes on the mound.';
+      setTimeout(function () { bootEnd(true); }, BOOT_SAY_MS);
+      return;
+    }
+    /* the spot never came: the home's error and its try again */
+    if (!BOOT.spot && age > BOOT_SPOT_MS) { bootFail(); return; }
+    setTimeout(tick, 100);
+  })();
+}
+function bootFail() {
+  bootEnd(true);
+  $('h-load').hidden = true;
+  var er = $('h-err');
+  er.hidden = false;
+  er.innerHTML = '<p>today\'s spot did not load.</p><button class="btn ghost" type="button" onclick="location.reload()">try again</button>';
 }
 
 /* The arsenal as a break chart, seen from the pitcher's side: induced vertical
@@ -503,8 +629,14 @@ function buildMound() {
   if (S.grid) return;
   if (!S.scene) S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas'));
   $('m-scene').classList.toggle('s3d', !!S.scene.is3d);
-  /* the 3D module lands after this: put the aim on its zone then */
-  if (S.scene.arrived) S.scene.arrived.then(function (st) { return st.ready; }).then(function () { if (document.body.dataset.screen === 's-mound') relayout(); });
+  /* the 3D module lands after this: put the aim on its zone then. If it is still on its way (the
+     loading screen stopped waiting at BOOT_CAP_MS), the mound says it is warming up and the zone is
+     not there until it is ready: never a bare zone over a black field */
+  if (S.scene.arrived) {
+    var sc = $('m-scene'), warm = function () { sc.classList.remove('warming'); };
+    if (!(S.scene.real && S.scene.real.loaded)) sc.classList.add('warming');
+    S.scene.arrived.then(function (st) { return st.ready; }).then(function () { warm(); if (document.body.dataset.screen === 's-mound') relayout(); }, warm);
+  }
   /* AIM ON THE FIELD (the owner, 2026-10-22): the crosshair on the stage's own zone (aim.js), with
      the heat, the pitch dots and the preview's line in the same box. S.grid keeps its old name: it
      is the aim, the only grid on the mound. A drag or a mouse over it moves the break preview. */
@@ -2332,6 +2464,7 @@ function takeMound() {
 /* ---- boot --------------------------------------------------------------------------------- */
 
 function boot() {
+  bootLoader();
   try { if (window.STD_AUTH && window.STD_AUTH.boot) window.STD_AUTH.boot(); } catch (e) {}
   try {
     if (window.STD_AUTH && window.STD_AUTH.onChange) window.STD_AUTH.onChange(function () {
@@ -2413,10 +2546,8 @@ function boot() {
   }).then(function () {
     renderHomeState();
   }).catch(function (e) {
-    $('h-load').hidden = true;
-    var er = $('h-err');
-    er.hidden = false;
-    er.innerHTML = '<p>today\'s spot did not load.</p><button class="btn ghost" type="button" onclick="location.reload()">try again</button>';
+    /* nothing to wait for: the error and its try again go up at once */
+    bootFail();
     if (window.console) console.warn(e);
   });
 }

@@ -80,6 +80,49 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 /* ---- home: the hero (the matchup), the scorebug, the stakes, the ticket, then who you are and who you face ---- */
 .load { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 140px 0; color: var(--dim); font-family: var(--display); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; font-size: 13px; }
 .load-mark { border-radius: 14px; animation: pulse 1.4s ease-in-out infinite; }
+
+/* ---- THE LOADING SCREEN (ui.js bootLoader, the owner 2026-11-02) ----
+   The whole page under it until the first screen is ready. Unseen for 300 ms (a fast load never
+   flashes it), then a fade. A broadcast slate: the lockup with its stitch line, today's two clubs in their
+   colours on a scorebug once the spot is in, one bar in signal orange with the step and the share
+   done. Light is the studio, dark is the night, the same tokens as the home. */
+.boot { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px 16px;
+  background: radial-gradient(110% 70% at 50% 0%, rgba(255, 255, 255, .9) 0%, rgba(244, 245, 247, .94) 62%), url("home-bg/wide.webp") center / cover, var(--bg); color: var(--ink);
+  opacity: 0; animation: boot-in .35s ease-out .3s forwards; transition: opacity .32s ease, visibility 0s linear .32s; }
+:root[data-theme="dark"] .boot { background: radial-gradient(110% 70% at 50% 0%, rgba(26, 35, 54, .84) 0%, rgba(11, 15, 23, .95) 64%), url("home-bg/wide.webp") center / cover, #0b0f17; }
+/* the lockup for the slate's own theme (the home's rule that whitens the header's marks must not reach it) */
+.boot .lk-d, :root[data-theme="dark"] .boot .lk-l { display: none; }
+:root[data-theme="dark"] .boot .lk-d { display: block; }
+.boot.boot-off { opacity: 0 !important; visibility: hidden; pointer-events: none; animation: none; }
+@keyframes boot-in { to { opacity: 1; } }
+.boot-in { width: min(340px, 100%); display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.boot-lock { width: 220px; height: auto; margin-bottom: 4px; animation: boot-breathe 2.4s ease-in-out infinite; }
+@keyframes boot-breathe { 50% { transform: scale(.97); opacity: .86; } }
+.boot-card { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.boot-occ { margin: 0; min-height: 16px; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--signal); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* signal is 3:1 on the light slate, too faint for 12 px: a deeper orange there (4.9:1), signal in the dark (5.6:1) */
+:root:not([data-theme="dark"]) .boot-occ { color: #c2390f; }
+.boot-bug { width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 9px 14px; border-radius: 12px; background: #0b0f17; color: #f4f5f7;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), var(--shadow); }
+/* before the spot is in, each row is a placeholder bar that shimmers */
+.boot-bug:not(.on) .bt-row b { width: 46%; height: 13px; border-radius: 4px; background: linear-gradient(90deg, rgba(255, 255, 255, .07) 30%, rgba(255, 255, 255, .2) 50%, rgba(255, 255, 255, .07) 70%) 0 0 / 300% 100%; animation: boot-shim 1.4s linear infinite; }
+.boot-bug:not(.on) .bt-row + .bt-row b { width: 34%; }
+@keyframes boot-shim { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.bt-row { display: flex; align-items: center; gap: 10px; height: 28px; }
+.bt-row i { flex: none; width: 5px; height: 20px; border-radius: 3px; background: var(--club, rgba(255, 255, 255, .22)); box-shadow: 0 0 0 1px rgba(255, 255, 255, .14); }
+.bt-row b { min-width: 0; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 19px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.boot-bar { width: 100%; height: 6px; margin-top: 6px; border-radius: 999px; background: var(--line-2); overflow: hidden; }
+.boot-bar i { display: block; height: 100%; width: 100%; border-radius: inherit; background: var(--signal); transform-origin: 0 50%; transform: scaleX(0); transition: transform .25s ease-out; }
+.boot-lbl { width: 100%; margin-top: -6px; display: flex; justify-content: space-between; align-items: baseline; font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.boot-lbl b { font-style: italic; font-weight: 800; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.boot-say { margin: 0; min-height: 18px; font-size: 13px; color: var(--dim); text-align: center; }
+.boot-re { margin-left: 6px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--signal); color: #0b0f17; font: 700 13px var(--sans); }
+@media (min-width: 700px) { .boot-in { width: 380px; gap: 18px; } .boot-lock { width: 260px; } }
+@media (prefers-reduced-motion: reduce) { .boot { animation-duration: .01s; } .boot-lock, .boot-bug .bt-row b { animation: none !important; } .boot-bar i { transition: none; } }
+/* the mound, in the rare case the 3D is still on its way (the loading screen gave up waiting): a word, no bare zone */
+.m-load { display: none; }
+.scene.warming .m-load { display: flex; position: absolute; inset: 0; z-index: 5; justify-content: center; padding: 0; background: #0b0f17; color: rgba(255, 255, 255, .72); pointer-events: none; }
+.scene.warming .aim { visibility: hidden; }
 @keyframes pulse { 50% { transform: scale(.92); opacity: .7; } }
 @keyframes blink { 0%, 100% { opacity: .2; } 50% { opacity: 1; } }
 /* the matchup: away at home, each club with its two colour bar */

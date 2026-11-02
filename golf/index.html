@@ -62,9 +62,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=119"></script>
-<script defer src="putt/land.js?v=15"></script>
+<script defer src="putt/putt.js?v=122"></script>
+<script defer src="putt/land.js?v=16"></script>
 <script defer src="putt/hole3d.js?v=20"></script>
+<script defer src="putt/trip3d.js?v=2"></script>
 <script defer src="putt/gyms.js?v=4"></script>
 <script defer src="putt/gymkinds/push.js?v=2"></script>
 <script defer src="putt/gymkinds/trickshot.js?v=1"></script>
@@ -78,10 +79,11 @@
 <script defer src="putt/gymkinds/rock.js?v=1"></script>
 <script defer src="putt/gymkinds/runes.js?v=1"></script>
 <script defer src="putt/gymkinds/gravity.js?v=1"></script>
-<script defer src="putt/trail.js?v=46"></script>
-<script defer src="putt/mapland.js?v=7"></script>
+<script defer src="putt/gymkinds/air.js?v=1"></script>
+<script defer src="putt/trail.js?v=47"></script>
+<script defer src="putt/mapland.js?v=8"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=22"></script>
+<script defer src="golfer3d.js?v=24"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11319,9 +11321,11 @@ const PP_REWARDS=[
  {cat:'ball',id:'ppcloud',name:'Cloud Ball',hist:'A Putt Putt world prize',col:'#86c8ff',tracer:{g:'rgba(134,200,255,.5)',c:'#c4e6ff'}},
  {cat:'ew',id:'ppaviatorgoggles',name:'Aviator Goggles',hist:'A Putt Putt world prize'},
  {cat:'ball',id:'ppdinoegg',name:'Dino Egg Ball',hist:'A Putt Putt world prize',col:'#f2ecc4',tracer:{g:'rgba(242,236,196,.5)',c:'#fffbea'}},
- {cat:'ball',id:'ppmoon',name:'Moon Ball',hist:'A Putt Putt world prize',col:'#c8c5be',tracer:{g:'rgba(200,197,190,.5)',c:'#f1eee7'}},
- {cat:'ball',id:'ppplanet',name:'Ringed Planet Ball',hist:'A Putt Putt world prize',col:'#e8a65a',tracer:{g:'rgba(232,166,90,.5)',c:'#ffe9b0'}},
+ {cat:'hw',id:'ppastrohelmet',name:'Astronaut Helmet',hist:'A Putt Putt world prize'},
+ {cat:'top',id:'ppspacesuit',name:'Space Suit',hist:'A Putt Putt world prize'},
  {cat:'cleats',id:'ppdinoclaw',name:'Dino Claw Cleats',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppmars',name:'Red Planet Ball',hist:'A Putt Putt world prize',col:'#c8562a',tracer:{g:'rgba(255,120,60,.55)',c:'#ffd0b0'}},
+ {cat:'cleats',id:'ppmarsboots',name:'Mars Boots',hist:'A Putt Putt world prize'},
  {cat:'putter',id:'pptusk',name:'Mammoth Tusk Putter',hist:'A Putt Putt world prize'},
  {cat:'ew',id:'ppsnowgoggles',name:'Snow Goggles',hist:'A Putt Putt world prize'},
  {cat:'hw',id:'pphallowscrown',name:'Hallows Crown',hist:'A Members Tour prize'},
@@ -12080,9 +12084,9 @@ Object.assign(COS_BOOST,{
 Object.assign(COS_BOOST,{
   'hw:ppvisor':{acc:2}, 'hw:pphallcap':{clu:2}, 'hw:pptricorn':{dist:2}, 'hw:ppminer':{app:2}, 'hw:ppexplorer':{bnk:2}, 'hw:pphallowscrown':{scr:2},
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
-  'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'bl:ppmoon':{acc:2}, 'bl:ppplanet':{dist:2},
+  'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'hw:ppastrohelmet':{sht:2},
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
-  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}
+  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}
 });
 // THE PRO SHOP LINE (PRO_LINE): the ladder's power for its rarity, a common 1 point and a rare 2, leaning on the stats gear
 // touches least (Bunker, Short Game, Accuracy, Scrambling). Its outerwear and legwear are style and carry none.
@@ -15329,9 +15333,9 @@ function replayTour(){
 const FT_SCREENS=['title','protour','putthub','me'];
 const FT_HUBS=['protour','putthub','me'];
 const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
-const FT_PLATE_V=2;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
+const FT_PLATE_V=3;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
 // the worlds that have a picture for the home's Putt Putt side. A world added without one shows the Clubhouse
-const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon'];
+const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage','moon','mars'];
 // THE FIRST TEE IS THE HOME, for everybody (live since 2026-10-18; the classic home and the PUTT_LIVE switch were
 // removed the same day, at the owner's call). It does not wait for putt.js: its Putt Putt side is drawn once the module
 // has run.
@@ -15456,6 +15460,37 @@ function ftClouds(root){ root.querySelectorAll('canvas[data-cloud]').forEach((c,
     const lit=(py<base-H*0.32)||(best<1.6&&py<base-H*0.15);
     x.fillStyle = py>base-2 ? '#c98f6a' : (lit ? '#fff0d8' : (py>base-H*0.2 ? '#e2b48c' : '#f6d9b2')); x.fillRect(px,py,1,1); }
 }catch(e){} }); }
+/* THE HARVEST HALF OF SEASON 2 on the First Tee home (the owner, 2026-11-01): it follows the Tour Pass's harvest
+   theme (Nov 1 to Dec 3), so it starts and stops with the season. A warm evening sky, maple leaves drifting down, and
+   pumpkins in the rough on a desktop. The leaves stay still for reduced motion. QA: ?ptheme=harvest */
+function harvestLive(){ try{ return passThemeNow()==='harvest'; }catch(e){ return false; } }
+const _hvArt={};
+function hvPix(rows,pal,w,h){ const k=rows.join('|')+JSON.stringify(pal); if(_hvArt[k]) return _hvArt[k]; let r='';
+  rows.forEach((row,j)=>{ for(let i=0;i<row.length;i++){ const c=pal[row[i]]; if(c) r+=`<rect x="${i}" y="${j}" width="1.02" height="1.02" fill="${c}"/>`; } });
+  return _hvArt[k]=`<svg viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${r}</svg>`; }
+// the maple leaf from the Harvest drop's icon, in two warm halves; a plain pumpkin, ribbed, with a stem (no carved face)
+function hvLeafSVG(c1,c2){ return hvPix(['....a....','...aaa...','a..aaa..a','aa.aaa.aa','aaabbbaaa','.aabbbaa.','..aaaaa..','.aaaaaaa.','....s....','....s....'],
+  {a:c1,b:c2,s:'#7a3a12'},9,10); }
+function hvPumpkinSVG(){ return hvPix(['.....gg....','....gg.....','..oOooOoo..','.oOoooOooo.','oOooOooOooo','oOooOooOooo','oOooOooOooo','.oOoooOooo.','..oOooOoo..'],
+  {g:'#5a7a2a',o:'#f08a24',O:'#c25f10'},11,9); }
+function hvStyleOnce(){ if(document.getElementById('hv-css')) return; const s=document.createElement('style'); s.id='hv-css';
+  s.textContent='.ft-hvsky{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(126,48,16,.42),rgba(214,110,38,.2) 40%,transparent 62%);mix-blend-mode:soft-light}'+
+    '.ft-hvglow{position:absolute;left:0;right:0;top:28%;height:24%;pointer-events:none;background:radial-gradient(60% 100% at 50% 50%,rgba(255,168,76,.26),transparent 70%)}'+
+    '.ft-leaf{position:absolute;top:-6%;pointer-events:none;z-index:3;animation:hvFall linear infinite}'+
+    '.ft-leaf svg{display:block;width:100%;height:100%;animation:hvSway ease-in-out infinite alternate;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}'+
+    '@keyframes hvFall{0%{transform:translateY(0)}100%{transform:translateY(112vh)}}'+
+    '@keyframes hvSway{0%{transform:translateX(-16px) rotate(-32deg)}100%{transform:translateX(16px) rotate(38deg)}}'+
+    '.hv-pk{position:absolute;display:block;filter:drop-shadow(0 6px 8px rgba(0,0,0,.45))}.hv-pk svg{display:block;width:100%;height:100%}'+
+    '@media (max-width:700px){.hv-pk{display:none}}'+
+    '@media (prefers-reduced-motion:reduce){.ft-leaf{display:none}}';
+  document.head.appendChild(s); }
+function hvSceneHTML(){
+  const cols=[['#f2a23a','#d8641c'],['#e0483e','#a8281e'],['#ffd060','#e0962a'],['#d8641c','#9a3c14']];
+  // fixed spots, sizes and speeds, so every visit looks the same and nothing jumps on a re-render
+  const L=[[6,15,11,3.1,0],[18,12,14,2.6,-5],[31,18,12,3.4,-9],[44,13,15,2.9,-2],[57,16,10,3.6,-7],[69,12,13,2.7,-11],[80,19,16,3.2,-4],[91,14,12,2.8,-8],[25,11,17,3.0,-13]];
+  const leaves=L.map((l,i)=>{ const c=cols[i%cols.length], w=l[1]; return `<span class="ft-leaf" style="left:${l[0]}%;width:${w}px;height:${Math.round(w*10/9)}px;animation-duration:${l[2]}s;animation-delay:${l[4]}s"><span style="display:block;width:100%;height:100%">${hvLeafSVG(c[0],c[1]).replace('<svg ','<svg style="animation-duration:'+l[3]+'s" ')}</span></span>`; }).join('');
+  const pk=(cls,h)=>`<span class="hv-pk ${cls}" style="width:${Math.round(h*11/9)}px;height:${h}px">${hvPumpkinSVG()}</span>`;
+  return `<div class="ft-hvsky"></div><div class="ft-hvglow"></div>${leaves}${pk('ft-pk1',34)}${pk('ft-pk2',24)}${pk('ft-pk3',30)}`; }
 function ftScene(side){
   const putt=(()=>{ try{ return puttOn(); }catch(e){ return false; } })();
   const sc=$(`<div class="ft-scene${putt?'':' solo'}" aria-hidden="true">
@@ -15470,6 +15505,7 @@ function ftScene(side){
   if(decorLive()==='spooky'){ try{ spkStyleOnce(); sc.classList.add('spooky');
     sc.insertAdjacentHTML('beforeend',`<div class="ft-spksky"></div><img class="ft-moon" src="${spkMoonURL()}" alt=""><img class="spk-scene-web l" src="${spkWebURL()}" alt=""><img class="spk-scene-web r" src="${spkWebURL()}" alt=""><div class="spk-fog ft-fog"></div>
       <span class="spk-pk ft-pk1">${spkEl('pumpkin',38)}</span><span class="spk-pk ft-pk2" style="animation-delay:1.2s">${spkEl('pumpkin',26)}</span><span class="spk-pk ft-pk3" style="animation-delay:.6s">${spkEl('pumpkin',32)}</span>`); }catch(e){} }
+  else if(harvestLive()){ try{ hvStyleOnce(); sc.classList.add('harvest'); sc.insertAdjacentHTML('beforeend', hvSceneHTML()); }catch(e){} }
   // the Putt Putt side is the world you are in (the furthest one you have reached and uncovered)
   try{ const pl=sc.querySelector('.ft-plate'); if(pl){ let th='clubhouse'; try{ const m=window.RTT_PUTT.summary(puttHost()); if(m && FT_PLATES.includes(m.theme)) th=m.theme; }catch(e){}
     pl.style.backgroundImage=`url(home/putt-${th}-${ftDesk()?'d':'p'}.jpg?v=${FT_PLATE_V})`; } }catch(e){}
@@ -15565,6 +15601,58 @@ function golfAds(){
 }
 
 /* ── THE FIRST TEE ──────────────────────────────────────────────────────────────────────────────── */
+/* ── THE TOUR PASS TRACKER on the First Tee home: always there, so the pass is never out of sight (the owner, 2026-11-01) ──
+   A ring with the tier, the season and the days left, a bar to the next tier, and the rewards waiting. It wears the
+   season's half (Hallows, Harvest). Tapping it opens the Tour Pass. On the desktop it sits under the pin sheet; on a
+   phone, under the pin strip. */
+const PTK_THEME={ halloween:{name:'Hallows', bg:'linear-gradient(150deg,#2c1846,#1a0e2c 60%,#120a1e)', ac1:'#ffb860', ac2:'#ff7a1f', bd:'#ff9a3c', glow:'rgba(255,140,50,.4)'},
+  harvest:{name:'Harvest', bg:'linear-gradient(150deg,#4e2610,#2c1508 58%,#1c0e06)', ac1:'#ffc27a', ac2:'#e0782a', bd:'#e8963a', glow:'rgba(232,150,58,.45)'} };
+function ftPtStyleOnce(){ if(document.getElementById('ptk-css')) return; const s=document.createElement('style'); s.id='ptk-css';
+  s.textContent='.ft-ptrack{--ac1:#ffe27a;--ac2:#f1b62a;--bd:#f1d04a;--glow:rgba(241,208,74,.38);--bg:linear-gradient(150deg,rgb(46,36,12),rgb(20,16,8));position:relative;z-index:6;overflow:hidden;display:flex;align-items:center;gap:13px;width:100%;max-width:420px;margin:10px auto 0;padding:12px 14px;border-radius:18px;border:1.5px solid var(--bd);background:var(--bg);box-shadow:0 0 0 1px rgba(255,255,255,.05) inset,0 12px 28px -12px rgba(0,0,0,.75),0 0 26px -6px var(--glow);color:#fff;text-align:left;cursor:pointer;font:inherit}'+
+    '.ft-ptrack::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 0% 0%,rgba(255,255,255,.1),transparent 55%)}'+
+    '.ft-ptrack:focus-visible{outline:2px solid var(--ac1);outline-offset:3px}.ft-ptrack:active{transform:translateY(1px)}'+
+    '.ptk-ring{position:relative;flex:0 0 auto;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--ac1) calc(var(--p)*1%),rgba(255,255,255,.13) 0);box-shadow:0 0 14px -2px var(--glow)}'+
+    '.ptk-ring>span{width:45px;height:45px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,#2e2014,#0e0a06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}'+
+    '.ptk-ring b{font:400 24px/1 var(--display);color:#fff;text-shadow:0 0 8px var(--glow),0 1px 0 rgba(0,0,0,.6)}.ptk-ring small{font:900 7px/1 var(--body);letter-spacing:.14em;margin-top:2px;color:var(--ac1)}.ptk-ring i{font-style:normal;font-size:22px}'+
+    '.ptk-body{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}'+
+    '.ptk-k{font:800 10px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--ac1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
+    '.ptk-t{font:400 22px/1 var(--display);letter-spacing:.02em;display:flex;align-items:center;gap:7px}'+
+    '.ptk-pro{font:900 9px/1 var(--body);letter-spacing:.1em;color:#2a1a04;background:linear-gradient(90deg,var(--ac1),var(--ac2));border-radius:999px;padding:3px 6px}'+
+    '.ptk-bar{height:7px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}'+
+    '.ptk-bar i{position:relative;display:block;height:100%;border-radius:4px;overflow:hidden;background:linear-gradient(90deg,var(--ac2),var(--ac1))}'+
+    '.ptk-bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);transform:translateX(-100%);animation:ptkShine 2.8s ease-in-out infinite}'+
+    '@keyframes ptkShine{60%,100%{transform:translateX(100%)}}'+
+    '.ptk-s{font:700 11px/1.25 var(--body);opacity:.85}'+
+    '.ptk-r{position:relative;flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:7px}'+
+    '.ptk-claim{font:900 10px/1 var(--body);letter-spacing:.06em;color:#fff;background:#d62a2a;border-radius:999px;padding:5px 8px;animation:ptkPulse 1.4s ease-in-out infinite}'+
+    '@keyframes ptkPulse{0%,100%{box-shadow:0 0 0 0 rgba(214,42,42,.6)}50%{box-shadow:0 0 0 6px rgba(214,42,42,0)}}'+
+    '.ptk-go{font:900 12px/1 var(--body);color:var(--ac1)}'+
+    '.ptk-lf{position:absolute;pointer-events:none;opacity:.55}.ptk-lf svg{display:block;width:100%;height:100%}'+
+    '@media (prefers-reduced-motion:reduce){.ptk-claim,.ptk-bar i::after{animation:none}}'+
+    '.ft-home .ft-rcol{position:absolute;z-index:14;right:56px;top:96px;width:360px;display:flex;flex-direction:column;gap:12px}.ft-home.has-gift .ft-rcol{top:160px}.ft-home .ft-rcol .ft-sheet{position:relative!important;right:auto!important;top:auto!important;width:100%!important}.ft-home .ft-rcol .ft-ptrack{margin:0;max-width:none}';
+  document.head.appendChild(s); }
+function ftPassTrack(desk){
+  ftPtStyleOnce();
+  const ssn=passSeason(), signed=sbSignedIn(), th=PTK_THEME[passThemeNow()]||null; let s2, pct=0, cl=0, tier=0;
+  if(signed){ const st=passState(), xp=st.xp||0; tier=passTierAt(xp); cl=passClaimable();
+    const base=tier>0?passXpForTier(tier):0, next=tier<PASS_TIERS?passXpForTier(tier+1):null;
+    pct=next?Math.max(0,Math.min(100,(xp-base)/(next-base)*100)):100;
+    s2=next?`${Math.max(0,next-xp).toLocaleString()} XP to tier ${tier+1}`:`Top tier`; }
+  else s2=`Sign in to climb ${PASS_TIERS} tiers`;
+  s2+=` · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
+  const kick=`Season ${ssn.n}${th?' · '+th.name:''}`;
+  const pro=signed&&passProActive()?' <span class="ptk-pro">PRO</span>':'';
+  const ring=signed?`<span class="ptk-ring" style="--p:${pct.toFixed(1)}"><span><b>${tier}</b><small>TIER</small></span></span>`:`<span class="ptk-ring" style="--p:0"><span><i>🎟️</i></span></span>`;
+  const lf=(th&&passThemeNow()==='harvest')?`<span class="ptk-lf" style="right:-4px;top:-6px;width:30px;height:33px;transform:rotate(24deg)">${hvLeafSVG('#f2a23a','#d8641c')}</span><span class="ptk-lf" style="right:46px;bottom:-9px;width:20px;height:22px;transform:rotate(-30deg)">${hvLeafSVG('#e0483e','#a8281e')}</span>`:'';
+  const style=th?` style="--ac1:${th.ac1};--ac2:${th.ac2};--bd:${th.bd};--glow:${th.glow};--bg:${th.bg}"`:'';
+  const el=$(`<button type="button" class="ft-ptrack${desk?' ptk-desk':''}"${style} aria-label="Tour Pass, season ${ssn.n}${signed?', tier '+tier:''}. ${s2}. Open the pass.">${lf}
+    ${ring}
+    <span class="ptk-body"><span class="ptk-k">${kick}</span><span class="ptk-t">Tour Pass${pro}</span>
+      <span class="ptk-bar"><i style="width:${pct.toFixed(1)}%"></i></span><span class="ptk-s">${s2}</span></span>
+    <span class="ptk-r">${cl>0?`<span class="ptk-claim">${cl} to claim</span>`:''}<span class="ptk-go">View ▸</span></span></button>`);
+  el.onclick=()=>{ S.overlay='tourpass'; render(); };
+  return el;
+}
 function scrTitle(){
   if(!S.daily) restoreProfileIdentity();   // a Legend round swaps the look to the legend's; the home must show the player's own
   reconcileDailyAttempts();
@@ -15576,7 +15664,9 @@ function scrTitle(){
   // your golfer, on the tee. On a phone the tag, the pin strip and the gift note stack under the golfer, so the
   // golfer takes what is left above the doors (and the tab bar, the doors and their play buttons below)
   const pend=loginPend();
-  const h=desk?Math.round(Math.max(220,Math.min(380,innerHeight*0.38))):Math.round(Math.max(104,Math.min(236,innerHeight-458-ftSafeB()-(pend?54:0))));
+  // a smaller golfer leaves the home room to breathe; on a phone it also makes room for the Tour Pass card
+  const ptk=passEnabled()?104:0;
+  const h=desk?Math.round(Math.max(200,Math.min(300,innerHeight*0.30))):Math.round(Math.max(96,Math.min(190,innerHeight-458-ptk-ftSafeB()-(pend?54:0))));
   const tee=$(`<div class="ft-tee"><div class="ft-teebox"></div><div class="ft-markers"><i></i><i></i></div><button type="button" class="ft-fig" aria-label="Your golfer. Open the closet">${pxFigureHTML(S.look,h)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="ft-pk">'+spkEl('pumpkin',22)+'</span>'):''}</button></div>`);
   tee.querySelector('.ft-fig').onclick=()=>ftCloset();
   tee.appendChild(ftTag(desk));
@@ -15584,7 +15674,9 @@ function scrTitle(){
   // today's pin sheet: a card on a desktop, a strip of pins under the bag tag that opens into the card on a phone
   if(pend){ const n=$(`<button type="button" class="ft-giftnote"><span class="ft-gi">${ftIcon('gift')}</span><span><b>Your day ${pend.n} gift is here</b>${esc(loginRewLabel(pend.rew))}. Tap to open it.</span></button>`);
     n.onclick=()=>{ ftBurst(n); claimLoginGift(); }; (desk?root:tee).appendChild(n); root.classList.add('has-gift'); }
-  (desk?root:tee).appendChild(desk?ftSheet(false):ftSheet(true));
+  // the desktop stacks the pin sheet and the Tour Pass card in one column, so a taller sheet never covers the card
+  if(desk){ const col=$(`<div class="ft-rcol"></div>`); col.appendChild(ftSheet(false)); if(passEnabled()) col.appendChild(ftPassTrack(true)); root.appendChild(col); }
+  else { tee.appendChild(ftSheet(true)); if(passEnabled()) tee.appendChild(ftPassTrack(false)); }
   // the two doors
   const cs=careerSaveInfo(), ri=resumeInfo();
   let pc=[]; try{ if(cs && !cs.ended) pc.push(`<span class="ft-chip g">${cs.circuitMode?'Legend Circuit':'Career'} · Yr ${cs.year||1}</span>`); else if(ri) pc.push(`<span class="ft-chip g">Golfer ${ri.n} of 8</span>`); }catch(e){}
@@ -18027,6 +18119,10 @@ PXG_HATS.pptricorn=pxgRows([[1,31,'F'],[2,30,'FR'],[3,19,'TTUUUUV...RRD'],[4,18,
 PXG_HERITAGE_HAT_PAL.pptricorn={T:'#7a4b2e',U:'#553220',V:'#371f13',W:'#1c0f09',G:'#f2c94c',H:'#b5862a',Y:'#fff1a6',K:'#f3eee0',J:'#b8b2a0',E:'#181019',R:'#e8402e',D:'#a02018',F:'#ff9a78'};
 // Miner's Lamp Cap
 PXG_HATS.ppminer=pxgRows([[3,19,'AAABBBC'],[4,17,'AAAAALBBBBC'],[5,16,'AASOAGGHBOBBC'],[6,15,'AAAAAGGGGHBBBCC'],[7,15,'ASALBGWWLHBLSCC'],[8,14,'AAAABBGWLOHBBBCCC'],[9,14,'AAABBBGLOOHBBBCCC'],[10,14,'ABBBBBHHHHHBBBCCC'],[11,14,'CRCCCCRCCCRCCCCRD'],[12,11,'BAAAAAAAAAAAAAAAAAAABBC'],[13,12,'DCCCCCCCCCCCCCCCCCCCD']]);
+// Astronaut Helmet (Moon Base): a white dome round the whole head, the gold visor raised on the brow so the face shows
+// through the window, a lamp on the side, a short antenna, and the grey neck ring it locks into
+PXG_HATS.ppastrohelmet=pxgRows([[0,27,'r'],[1,27,'s'],[2,18,'kkWWWWWWkk'],[3,16,'kWWWWWWWWWWWWk'],[4,15,'kWWGGGGGGGGGWWk'],[5,14,'kWWGgGGGGGGGgGWWk'],[6,14,'kWWGGGGGGGGGGGWWk'],[7,13,'LkWWk.........kWWk'],[8,13,'LkWw...........wWk'],[9,14,'kWw...........wWk'],[10,14,'kWw...........wWk'],[11,14,'kWw...........wWk'],[12,14,'kWWw.........wWWk'],[13,14,'kWWWkkkkkkkkkWWWk'],[14,15,'kSSSSSSSSSSSSSk'],[15,16,'kSSSSSSSSSSSk']]);
+PXG_HERITAGE_HAT_PAL.ppastrohelmet={k:'#2a2e3a',W:'#f4f6fa',w:'#cfd6e2',G:'#e8b923',g:'#fff1a8',S:'#9aa4b4',L:'#fff4b8',r:'#ff4a4a',s:'#c8ccd8'};
 PXG_HERITAGE_HAT_PAL.ppminer={A:'#626874',B:'#434752',C:'#2c2f38',D:'#1a1c22',S:'#8a909c',R:'#d9a84a',G:'#e0b04c',H:'#9a6e22',Y:'#fff4b8',W:'#fffbe8',L:'#ffe066',O:'#ffaa2a'};
 // Explorer Hat
 PXG_HATS.ppexplorer=pxgRows([[2,21,'ABC'],[3,18,'AAABBBBCC'],[4,17,'AAAABBBBBCC'],[5,16,'AAAAABBBBBBCC'],[6,15,'AAAAABBBBBBBBCC'],[7,15,'AAAABBBBBBBBBCC'],[8,14,'AAAABBBYGHBBBBCCC'],[9,14,'JJJJKKKEGEKKKKNNN'],[10,14,'JKKKKKKGGHKKKKNNN'],[11,12,'BAAAAAAAAHAHAAAAAAABC'],[12,11,'CBBBBBBBBBBBBBBBBBBBBCD'],[13,12,'DCCCCCCCCCCCCCCCCCCCD']]);
@@ -18063,13 +18159,9 @@ PXG_BALL.ppcloud=pxgRows([[47,35,'oooo'],[48,34,'ohCWCo'],[49,34,'oWWWWo'],[50,3
 PXG_BALL_PAL.ppcloud={o:'#3a78b8',W:'#ffffff',w:'#d0e4f6',C:'#86c8ff',h:'#c4e6ff',B:'#5aa8ec',T:'#e8ebf0'};
 // Dino Egg Ball
 PXG_BALL.ppdinoegg=pxgRows([[46,36,'oo'],[47,35,'ohCo'],[48,34,'ohCgCo'],[49,34,'ogCCdo'],[50,34,'oCdCgo'],[51,34,'oCgsso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL.ppmars=pxgRows([[46,36,'oo'],[47,35,'oWWo'],[48,34,'ohCdCo'],[49,34,'oCCssCo'],[50,34,'odCCdo'],[51,34,'oCCdso'],[52,35,'oWWo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppmars={o:'#4a160a',C:'#c8562a',h:'#e8865a',d:'#7a2a14',s:'#3a0e06',W:'#fff6ee',T:'#e8ebf0'};
 PXG_BALL_PAL.ppdinoegg={o:'#4e5a2a',C:'#f2ecc4',h:'#fffbea',s:'#c8c690',g:'#5aae3a',d:'#2f6e2a',T:'#e8ebf0'};
-// Moon Ball: a little moon, lit from the upper left, with its craters
-PXG_BALL.ppmoon=pxgRows([[47,35,'oooo'],[48,34,'ohCCdo'],[49,34,'oCdCCo'],[50,34,'oCCCdo'],[51,34,'odCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
-PXG_BALL_PAL.ppmoon={o:'#4a4852',C:'#c8c5be',h:'#f1eee7',d:'#8e8b94',s:'#a29fa6',T:'#e8ebf0'};
-// Ringed Planet Ball: an orange banded planet with a pale ring across it
-PXG_BALL.ppplanet=pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'RRRRRR'],[50,34,'oBBBBo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
-PXG_BALL_PAL.ppplanet={o:'#5a3a8a',C:'#e8a65a',h:'#ffd9a0',B:'#c8743a',s:'#a85a2a',R:'#ffe9b0',T:'#e8ebf0'};
 // Gold Nugget Ball
 PXG_BALL.ppnugget=pxgRows([[46,33,'*...oo'],[47,35,'oohCo'],[48,34,'ohwCCso'],[49,34,'oCCdCo'],[50,33,'ohCCswo'],[51,34,'osCddo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.ppnugget={o:'#4a2e08',C:'#eebc2c',h:'#fff0a0',s:'#c08818',d:'#8a5a10',w:'#ffffff','*':'#fff6c0',T:'#e8ebf0'};
@@ -18087,6 +18179,8 @@ PXG_CLEATS.pplavarock=pxgRows([[48,31,'y'],[49,13,'o'],[50,15,'kqRRk.....kqRRk']
 PXG_CLEATS_PAL.pplavarock={k:'#181019',R:'#2e2629',r:'#1f1a1d',q:'#6e5e5c',M:'#4a3e40',o:'#ff7a1a',y:'#ffd04a',s:'#e0401a'};
 // Dino Claw Cleats
 PXG_CLEATS.ppdinoclaw=pxgRows([[50,15,'kgTTk.....kgTTk'],[51,13,'kgTgTgTbk.kgTgTgTbk'],[52,13,'kgfFfgTbk.kgfFfgTbk'],[53,13,'kTcTcTcbk.kTcTcTcbk'],[54,13,'kbcbcbcbk.kbcbcbcbk'],[55,14,'ksssssk...ksssssk']]);
+PXG_CLEATS.ppmarsboots=pxgRows([[49,15,'kbbk.......kbbk'],[50,15,'kWWk.......kWWk'],[51,13,'kWWWgWWWk.kWWWgWWWk'],[52,13,'kWWWWWWok.kWWWWWWok'],[53,13,'kWWWWWWWk.kWWWWWWWk'],[54,13,'ksssssssk.ksssssssk'],[55,13,'krsrsrsrk.krsrsrsrk']]);
+PXG_CLEATS_PAL.ppmarsboots={k:'#181019',W:'#f4f2ee',g:'#c8c4bc',b:'#2f6fe0',o:'#ff8a3a',s:'#b84a26',r:'#6a2410'};
 PXG_CLEATS_PAL.ppdinoclaw={k:'#181019',g:'#7ccc4a',T:'#3e8a34',b:'#235224',f:'#efe6c4',F:'#a89c74',c:'#fffaf0',s:'#14301a'};
 // Lollipop Putter
 PXG_CLUBS.pu_pplollipop=pxgRows([[40,34,'K'],[41,35,'K'],[42,35,'L'],[43,36,'K'],[44,36,'L'],[45,37,'K'],[46,37,'L'],[47,38,'K'],[48,37,'ooooo'],[49,36,'ohPPPWo'],[50,35,'oPWWWWPWo'],[51,35,'oPWPPWPWo'],[52,35,'oPWPWWPWo'],[53,35,'oPWPPPPWo'],[54,36,'oWWWWWo'],[55,37,'ooooo']]);
@@ -18108,6 +18202,10 @@ PXG_CLUBS.pu_ppdiamond=pxgRows([[40,34,'G'],[41,35,'D'],[42,35,'G'],[43,36,'l'],
 PXG_CLUB_PAL.pu_ppdiamond={o:'#181019',G:'#2a2f3a',D:'#bff4ff',l:'#eef2f7',W:'#ffffff',w:'#d6f8ff',h:'#ffffff',B:'#8fe0f6',b:'#4aa8d8',H:'#bff4ff',F:'#ffffff',S:'#ffffff'};
 // Members Champion Jacket
 PXG_TOPS.ppchampjacket=pxgRows([[23,16,'1111.....1111'],[24,12,'11111111.....11111111'],[25,12,'111111186776811112211'],[26,10,'1111111118677681882221111'],[27,10,'1111111186677668122cc1111'],[28,10,'111111118667.668122cC1111'],[29,10,'1111111866677666822CC1111'],[30,10,'1111111866677666822221111'],[31,10,'1111111111124211122221111'],[32,10,'111111111112.211122221111'],[33,14,'11111112221112222'],[34,14,'11111112421112222'],[35,14,'11111112221112222'],[36,14,'11111112221112222'],[37,14,'11111112421112222'],[38,14,'22222222222222222'],[39,14,'22222222222222222']]);
+// Space Suit (Moon Base): a white EVA suit with a grey neck ring, a chest control panel with three lit buttons, a blue
+// mission stripe across the chest and another at the waist
+PXG_TOPS.ppspacesuit=pxgRows([[23,16,'SSSSSSSSSSSSS'],[24,12,'11111SSSSSSSSSSS11111'],[25,12,'111111111111111111111'],[26,10,'1111111111111111111111111'],[27,10,'1111111PPPPPPP11111111111'],[28,10,'1111111PrPbPgP11111111111'],[29,10,'1111111PPPPPPP11111111111'],[30,10,'1444444444444444444444441'],[31,10,'1111111111111111111111111'],[32,10,'1111111111111111111111111'],[33,14,'11111111111111111'],[34,14,'11111111111111111'],[35,14,'11112111111121111'],[36,14,'11111111111111111'],[37,14,'44444444444444444'],[38,14,'22222222222222222'],[39,14,'22222222222222222']]);
+PXG_TOP_PAL.ppspacesuit={'1':'#eef2f8','2':'#c8d0de','3':'#ffffff','4':'#3f7fe0',S:'#9aa4b4',P:'#5a6680',r:'#ff5a5a',b:'#7fd8ff',g:'#3df2c2'};
 PXG_TOP_PAL.ppchampjacket={'1':'#4a1f7a','2':'#321456','3':'#6a37a0','4':'#e8b923','6':'#ece3cf','7':'#2a1840','8':'#7a4ab8',c:'#ffe680',C:'#c9961a'};
 // THE PRO SHOP LINE'S ART (PRO_LINE): what the flat golfer draws and the course golfer models its hats from. pxgSpan paints
 // row spans [row, from, to, tag] cell by cell through f(x, y, tag), so a pattern (a tartan, a quilt, an argyle) follows the
