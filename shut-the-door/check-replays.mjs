@@ -83,6 +83,15 @@
  * and grade. The pool was replayed under rules 8, so a rules 7 row's
  * percentile is not compared.
  *
+ * RULES 9 (2026-11-02). The ABS touch (contract.js absDist, engine.js 12): a
+ * challenge is answered by whether any part of the ball touched the zone, the
+ * ball's radius on the top and the bottom too. A new outing's calls carry r 9.
+ * A row with r 8 replays under rules 8 exactly: the self-test holds three rows
+ * made by main's engine before rules 9, each with a challenge on a ball that
+ * touched the zone off the bare edge (so it resolves the other way under 9), in
+ * fixtures/replays-rules8-pre-abs-touch.json. The pool was not replayed: it was
+ * built under rules 8, and only a catcher's challenge on a touching ball moves.
+ *
  * RULES 6 (2026-10-26). The runners read the ball (contract.js THE RUNNERS
  * READ THE BALL, engine.js 9). A new outing's calls carry r 6. A row with r 5
  * replays under rules 5 exactly (the self-test holds three, made by main's
@@ -462,6 +471,27 @@ function selfTest() {
         && o.score.them - p.pack.scenario.situation.score.them === row.runs && !o.halves.length;
       const H = (p.pack.scenario.halves || []).length;
       say(a.ok && same && o.rules === G.STEAL_RULES, `${row.scenario_id}: a rules 7 row from before rules 8 replays exactly on the first half (${row.pitches} pitches, ${row.outcome}, the pack has ${H} ${H === 1 ? 'half' : 'halves'})` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 9: rules 8 rows made before it (main's engine at df0bc51), each with a challenge on a ball
+     touching the zone off the bare edge, replay exactly as rules 8; as rules 9 they part */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules8-pre-abs-touch.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const touched = o.log.filter(x => x.abs && x.challenge && x.abs.d < 0 && K.absDist(x.actual.x, x.actual.zn, p.pack.kernelZoneFt) >= 0);
+      let parts = true;   // a call the rules 9 outing cannot take (a challenge with none live) parts it too
+      try {
+        const o9 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.TOUCH_RULES })), { mode: 'daily', model: p.model });
+        parts = JSON.stringify(o9.log.map(x => x.result)) !== JSON.stringify(row.result) || o9.calls.length !== row.calls.length || o9.status !== 'over';
+      } catch (e) { parts = true; }
+      say(a.ok && same && o.rules === G.FULL_RULES && touched.length > 0 && parts, `${row.scenario_id}: a rules 8 row from before the ABS touch replays exactly, ${touched.length} challenge on a ball touching the zone included (${row.pitches} pitches); as rules 9 it parts` + (a.ok ? '' : ': ' + a.why));
     }
   }
   // Survivor: a run played through the engine replays; a doctored score, a situation out of its

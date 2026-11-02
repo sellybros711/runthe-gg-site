@@ -700,6 +700,31 @@ the result's bonus, with no floor (the README has why and the measurements). Bef
 **The daily's rollout.** A daily is never switched partway through a day: `api.js FULL_CLOSE_FROM`.
 Outings stored before rules 8 replay as they were played.
 
+## 5k. Rules 9: a ball touching the zone is an ABS strike (2026-11-02)
+
+Rules 8 and everything before it, plus one thing. A new outing's calls carry `r: 9`; a call with
+`r: 8` or before replays under its own rules, exactly (`fixtures/replays-rules8-pre-abs-touch.json`).
+
+**The ABS touch** (the owner: "if the ball is touching the strike zone, it should be overturned to a
+strike"; MLB's ABS rule: any part of the ball touching the zone is a strike). A challenge, the
+batter's or the pitcher's side's, is answered by `contract.js absDist(x, zn, zoneFt) >= 0`: the
+ball's centre within a ball's radius (`BALL_IN`, 1.45 inches) of the batter's bare zone (the plate's
+17 inches, his height zn 0..1). Before, the sides held a ball's radius (`GRID.ZONE_HALF_FT`) but the
+top and the bottom were the bare zone, so a ball touching the top or the bottom was an ABS ball.
+Now the radius counts on all four sides, round at the corners (a ball's centre just past the old
+square corner is off it).
+
+Only the ABS's answer moves: `pitchResult.abs.strike` and the challenge's `abs` and `overturned`.
+The umpire's call (`calledStrikeP(zoneDist(...))`, the 2024 data's own geometry), the grade, the
+batter's chance to challenge (`challengeP` on `zoneDist`) and every draw are rules 8's.
+`pitchResult.abs.d` stays the inches from the edge the quick replay draws (the plate plus a ball
+wide, his bare height). So on the top or the bottom a touching ball can read `strike` beside a
+`d` that is off, by up to 1.45 inches.
+
+**The daily's rollout.** `api.js ABS_TOUCH_FROM` (2026-11-03): a daily of a day before it plays
+rules 8. Survivor, practice and the archive start new outings under rules 9 and resume under the
+rules their calls carry.
+
 ## 6. Pitch result
 
 ```js

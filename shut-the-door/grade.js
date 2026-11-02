@@ -491,7 +491,7 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 8;
+const RULES = 9;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
@@ -531,6 +531,11 @@ const STEAL_RULES = 7;
    before on such a pack replays on the first half alone (Model.singleModel), exactly as it was
    played. On a pack with one half, rules 8 plays exactly as rules 7. */
 const FULL_RULES = 8;
+/* Rules 9 (2026-11-02, the owner's call) is rules 8 with the ABS touch (contract.js absDist): a
+   challenge asks whether any part of the ball touched the zone, the ball's radius counting on the
+   top and the bottom too, round at the corners. Only a challenge's answer moves; the umpire's call,
+   the grade and the draws do not. A call with r 8 replays as rules 8. */
+const TOUCH_RULES = 9;
 const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
@@ -1139,7 +1144,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, TOUCH_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;
