@@ -1,0 +1,293 @@
+{
+ "id": "sewald-2023-ws1",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 748542,
+ "date": "2023-10-27",
+ "game": "World Series Game 1: Arizona Diamondbacks at Texas Rangers",
+ "gameType": "W",
+ "pitcher": {
+  "id": 623149,
+  "name": "Paul Sewald",
+  "throws": "R",
+  "team": "Arizona Diamondbacks",
+  "seasonLine": "3.12 ERA, 34 SV, 60.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 3
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 73,
+   "batterId": 665750,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 5
+   },
+   "pitches": 5,
+   "event": "walk",
+   "des": "Leody Taveras walks.",
+   "feedEvent": "walk",
+   "feedDescription": "Leody Taveras walks.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Leody Taveras",
+   "batSideListed": "S",
+   "seasonLine": ".266/.312/.421, 14 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 543760,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Marcus Semien strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Marcus Semien strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Marcus Semien",
+   "batSideListed": "R",
+   "seasonLine": ".276/.348/.478, 29 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 608369,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 1
+   },
+   "pitches": 1,
+   "event": "home_run",
+   "des": "Corey Seager homers (4) on a fly ball to right field. Leody Taveras scores.",
+   "feedEvent": "home_run",
+   "feedDescription": "Corey Seager homers (4) on a fly ball to right field. Leody Taveras scores.",
+   "runs": 2,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Corey Seager",
+   "batSideListed": "L",
+   "seasonLine": ".327/.390/.623, 33 HR"
+  },
+  {
+   "atBat": 76,
+   "batterId": 694497,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Evan Carter strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Evan Carter strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Evan Carter",
+   "batSideListed": "L",
+   "seasonLine": ".306/.413/.645, 5 HR"
+  },
+  {
+   "atBat": 77,
+   "batterId": 666969,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 3
+   },
+   "pitches": 3,
+   "event": "hit_by_pitch",
+   "des": "Adolis Garcia hit by pitch.",
+   "feedEvent": "hit_by_pitch",
+   "feedDescription": "Adolis Garcia hit by pitch.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Adolis García",
+   "batSideListed": "R",
+   "seasonLine": ".245/.328/.508, 39 HR"
+  },
+  {
+   "atBat": 78,
+   "batterId": 641598,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 4
+   },
+   "pitches": 4,
+   "event": "intent_walk",
+   "des": "Paul Sewald intentionally walks Mitch Garver.",
+   "feedEvent": "intent_walk",
+   "feedDescription": "Paul Sewald intentionally walks Mitch Garver.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Mitch Garver",
+   "batSideListed": "R",
+   "seasonLine": ".270/.370/.500, 19 HR"
+  },
+  {
+   "atBat": 79,
+   "batterId": 595978,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623149": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Austin Hedges strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Austin Hedges strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Austin Hedges",
+   "batSideListed": "R",
+   "seasonLine": ".184/.234/.227, 1 HR"
+  }
+ ],
+ "realFaced": 7,
+ "real": {
+  "outcome": "tie_held",
+  "pitches": 25,
+  "runs": 2,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 663993,
+   "name": "Nathaniel Lowe",
+   "batSideListed": "L"
+  },
+  {
+   "id": 673962,
+   "name": "Josh Jung",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665750,
+   "name": "Leody Taveras",
+   "batSideListed": "S"
+  },
+  {
+   "id": 543760,
+   "name": "Marcus Semien",
+   "batSideListed": "R"
+  },
+  {
+   "id": 608369,
+   "name": "Corey Seager",
+   "batSideListed": "L"
+  },
+  {
+   "id": 694497,
+   "name": "Evan Carter",
+   "batSideListed": "L"
+  },
+  {
+   "id": 666969,
+   "name": "Adolis García",
+   "batSideListed": "R"
+  },
+  {
+   "id": 641598,
+   "name": "Mitch Garver",
+   "batSideListed": "R"
+  },
+  {
+   "id": 595978,
+   "name": "Austin Hedges",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1037,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 590,
+     "usage": 0.5689,
+     "velo": 92.2,
+     "pfxXin": -10.5,
+     "pfxZin": 13.7
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 444,
+     "usage": 0.4282,
+     "velo": 83.8,
+     "pfxXin": 11.1,
+     "pfxZin": 9.1
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 3,
+     "usage": 0.0029,
+     "velo": 92.4,
+     "pfxXin": -12.6,
+     "pfxZin": 13.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623149"
+  },
+  "postseason": {
+   "pitches": 164,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 106,
+     "usage": 0.6463,
+     "velo": 92.9,
+     "pfxXin": -10.5,
+     "pfxZin": 13.5
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 58,
+     "usage": 0.3537,
+     "velo": 85.7,
+     "pfxXin": 8.3,
+     "pfxZin": 9.1
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623149"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 748542: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=748542",
+  "MLB Stats API schedule 2023-10-27 and live feed /api/v1.1/game/748542/feed/live",
+  "MLB Stats API people with 2023 season stats",
+  "Baseball Savant 623149 2023 season search (regular season and postseason) for the arsenal"
+ ]
+}

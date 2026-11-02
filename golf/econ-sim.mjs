@@ -39,12 +39,12 @@ const PROFILES = {
              packsWeek: { base: 5, tour: 1 }, shardsWeek: { common: 9, rare: 4, epic: 2 },
              passTier: 60, pro: true, buy: 'champ', note: 'the regular\'s play with the Tour Pass bought (x1.5 play coins, 30,000 coins, 2 seasonal packs, the Pro lane)' },
 };
-const PUTT_WORLDS = 11, PUTT_WORLD_COINS = 4000 + 13000;
+const PUTT_WORLDS = 12, PUTT_WORLD_COINS = 4000 + 13000;
 /* THE TRAIL GYMS (golf/putt/gyms.js) replace a world's small trail puzzles: its two vaults pay (read off gyms.js) and
    its puzzles, each 6 coins of 50, no longer do. PZ_WORLD is how many puzzles each world's trails carried, counted off
-   the plans on 2026-10-17 (103 over the tour, 30,900 coins). A world with no gyms yet is as it was. */
-const PZ_WORLD = { clubhouse: 7, school: 6, candy: 12, neon: 7, pirate: 11, temple: 10, canyon: 12, volcano: 9, sky: 12, dino: 10, iceage: 7 }, PZ_PAY = 6 * 50;
-const WORLD_ORDER = ['clubhouse', 'school', 'candy', 'neon', 'pirate', 'temple', 'canyon', 'volcano', 'sky', 'dino', 'iceage'];
+   the plans on 2026-10-17 (103 over the tour, 30,900 coins). A world with no gyms yet is as it was. Moon Base (World 12) was built with its gyms, so it never carried any puzzles. */
+const PZ_WORLD = { clubhouse: 7, school: 6, candy: 12, neon: 7, pirate: 11, temple: 10, canyon: 12, volcano: 9, sky: 12, dino: 10, iceage: 7, moon: 0 }, PZ_PAY = 6 * 50;
+const WORLD_ORDER = ['clubhouse', 'school', 'candy', 'neon', 'pirate', 'temple', 'canyon', 'volcano', 'sky', 'dino', 'iceage', 'moon'];
 // every gym of every kind (gyms.js and gymkinds/, loaded as the page loads them), the test kind's out of every world
 const GYMS = (() => { try { return loadGyms().GYMS.filter((g) => g.world); } catch (e) { return []; } })();
 const gymDelta = (w) => { const gs = GYMS.filter((g) => g.world === WORLD_ORDER[w]); return gs.length ? gs.reduce((a, g) => a + g.pay, 0) - PZ_WORLD[WORLD_ORDER[w]] * PZ_PAY : 0; };

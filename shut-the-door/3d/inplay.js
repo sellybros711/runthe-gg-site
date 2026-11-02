@@ -18,13 +18,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=21';
-import { SHADE } from './shade-data.js?v=2';
-import { Crew } from './fielders.js?v=8';
-import { buildBallpark } from './ballpark.js?v=22';
+import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=23';
+import { SHADE } from './shade-data.js?v=5';
+import { Crew } from './fielders.js?v=10';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=26';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=40';
-import { look } from './looks.js?v=3';
+import { kitFor } from './people.js?v=43';
+import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -143,6 +143,8 @@ export class InPlay {
   /** The kits: the fielders in the closer's club (kitFor 'us'), the runners in the hitters' club. */
   setFacts(facts) {
     this.facts = facts;
+    // the home club's colours on the park and in the crowd, its name on the scoreboard (ballpark.js)
+    this.park.userData.setClub(facts);
     const us = kitFor(facts, 'us'), them = kitFor(facts, 'them');
     for (let n = 1; n <= 9; n++) {
       const glove = n === 1 && facts.pitcher.throws === 'L' ? 'r' : 'l';
@@ -164,7 +166,7 @@ export class InPlay {
   }
 
   /** The broadcast's textures up to the GPU at load (stage.js init, behind the home screen): the
-      park's 2048 px infield mask, its dirt and seats, the shadow blob. Measured in Chromium (software
+      park's dirt and seats, the shadow blob. Measured in Chromium (software
       GL), the first broadcast frame uploaded 14 textures and 12 buffers on top of its draw; drawn
       ahead into a target instead, it still compiled a shader per variant the canvas never uses, so
       this only uploads (renderer.initTexture: no draw, nothing on screen). It takes six of the
@@ -298,9 +300,10 @@ export class InPlay {
     if (pt.overlays) for (const o of [pt.tracer, pt.aimRing, pt.hitDot]) o.visible = !broadcast;
     pp.catcher.root.visible = !(broadcast && A.usesCatcher);
     this.park.visible = broadcast;
-    // (the backstop net's three poles stand between the high home camera and the field: on television a
-    // net's cables are lost in the distance, so the broadcast leaves them out)
-    if (!this.netPoles) this.netPoles = this.scene.getObjectsByProperty('name', 'netPole');
+    // (the backstop net and its three poles stand between the high home camera and the field: on
+    // television the camera shoots over the net and its cables are lost in the distance, so the
+    // broadcast leaves them out. From up there the net read as a grey arc across the bottom third.)
+    if (!this.netPoles) this.netPoles = [...this.scene.getObjectsByProperty('name', 'netPole'), ...this.scene.getObjectsByProperty('name', 'backstopNet')];
     for (const o of this.netPoles) o.visible = !broadcast;
     // the sun's shadow map covers the plate only: in the broadcast it is not drawn again each frame
     this.renderer.shadowMap.autoUpdate = !broadcast;
@@ -371,7 +374,7 @@ export class InPlay {
           const f = this.fielders[sg.from], seen = f.root.visible;
           // (the runners at that moment too: a throw after a tag starts from the hand that tagged)
           const shown = plan.runners.map((r) => !!(r.fig && r.fig.root.visible));
-          for (const r of plan.runners) if (r.fig) this.poseRunner(r, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3));
+          for (const r of plan.runners) if (r.fig) this.poseRunner(r, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3), true);
           this.poseFielder(sg.from, f, sg.t0 - 1e-3, plan.ballAt(sg.t0 - 1e-3));
           plan.runners.forEach((r, i) => { if (!r.fig) return; if (shown[i]) this.poseRunner(r, s, b); else r.fig.root.visible = false; });
           f.root.updateMatrixWorld(true);
@@ -491,7 +494,7 @@ export class InPlay {
     // (holding a runner, before the pitch reaches the plate he faces the mound; he comes round to the plate with it)
     if (R.faceMound && s < 0.3) faceYaw = turnTo(faceYaw, faceToward(st, MOUND), 0.67 * (1 - ramp(s, -0.35, 0.3)));
     f.throwing = false; f.reaching = false;
-    let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0, hop = 0;
+    let gloveW = 0, glove = null, handW = 0, hand = null, lift = 0, dive = 0, hop = 0, layW = 0, layRun = 0, layHead = null;
     // a ball he takes (a catch in the air, a throw at a bag): the point, and how far his body is
     // moved so the glove is on it (catchFit, below)
     let take = null, takeW = 0;
@@ -521,7 +524,13 @@ export class InPlay {
           // half a turn apart, and the short way round between them flipped sides as the turn eased off, a left
           // fielder's head swinging 2.2 rad in a frame a third of a second after a pickup in the corner, check-jolt.mjs)
           const bh = heading(st, plan.ballAt(t - 0.3));
-          if (a.turnRef == null) { const st1 = tr.at(t + 0.12); a.turnRef = angDiff(faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3))); }
+          // (where he turns to after it: the throw he makes from it, else the infield. Read off the infield's middle,
+          // 9 ft behind a pitcher on the mound, it was any way round, and a pitcher going for a ball off his glove
+          // turned 258 degrees for a 102 degree turn, check-jolt.mjs pop fielder bobble)
+          if (a.turnRef == null) {
+            const st1 = tr.at(t + 0.12), th = plan.segs.find((sg) => sg.kind === 'throw' && sg.from === n && sg.t0 > t - 1e-6 && sg.t0 < t + 1.5);
+            a.turnRef = angDiff(th ? heading(st1, th.b) : faceToward(st1, { x: 0, y: 70 }), heading(st1, plan.ballAt(t - 0.3)));
+          }
           faceYaw = turnNear(faceYaw, bh, k, a.turnRef);
           // at range, on the move: a ball well off to one side is a backhand (his throwing hand's side, the glove
           // across his body) or a forehand (his glove side), his trunk turned to it and his feet wider
@@ -572,7 +581,19 @@ export class InPlay {
           if (a.wall || q.z > 6.8) lift = Math.max(lift, Math.max(0, q.z - 6.2) * 0.9 * bump(s, t - 0.3, t, t, t + 0.3));
           if (a.wall || q.z > 7) spec.armsUp = 0;
           // a shoestring catch (the ball under his knees, out of reach bent over): he lays out for it
-          if (q.z < 2.4) dive = Math.max(dive, k * clamp((2.8 - q.z) / 1.8, 0.3, 1));
+          if (q.z < 2.4) {
+            const kd = k * clamp((2.8 - q.z) / 1.8, 0.3, 1);
+            dive = Math.max(dive, kd);
+            // (laid out, he does not spin: his run's share of his facing stays what it was at the ball until he
+            // comes up. Stopping dead there handed his facing from his run to the ball's line in a tenth of a
+            // second, and laid out his head swung through it at 20 m/s, check-jolt.mjs pop fielder drop)
+            // (and his heading then: read live, it flipped in a frame as his next run came within a tenth of a second)
+            if (kd > layW) {
+              const e = tr.at(t), ea = tr.at(Math.max(0, t - 0.1)), eb = tr.at(t + 0.1);
+              layW = kd; layRun = smooth((e.spd - 3) / 8);
+              layHead = Math.hypot(eb.x - ea.x, eb.y - ea.y) > 1 ? heading(ea, eb) : e.head;
+            }
+          }
         }
       }
       if (a.kind === 'receive' || a.kind === 'catch_throw' || a.kind === 'tag') {
@@ -717,7 +738,9 @@ export class InPlay {
     // the throw's windup waits for the ball he is still taking
     if (take && spec.throwW > 0) { spec.throwW *= 1 - takeW; spec.twist = (spec.twist || 0) * (1 - takeW); }
     // a ground ball picked up: up from any dive first
-    if (take && take.z < 1) dive *= 1 - takeW;
+    // (a ball on the ground only: a liner trapped at his shoe is an air take, and up from his layout for it he
+    // fell back flat in the frame after the drop, 77 m/s at the pelvis, check-jolt.mjs pop fielder drop)
+    if (take && take.z < 1 && (take.key.kind === 'field' || take.key.kind === 'pickup')) dive *= 1 - takeW;
     if (take && take.z < 3.2) {
       spec.crouch = Math.max(spec.crouch, Math.min(1, (3.4 - take.z) / 2.6) * takeW);
       // (the run's capture gives way: he gets down to it, his stride broken down into the set)
@@ -746,7 +769,9 @@ export class InPlay {
     // the fit runs up to the moment he takes the ball; after it, what it did then is carried (below)
     if (take && s > take.t + 1e-6) { take = null; takeW = 0; }
     // facing: his run's heading while running, else where his attention is
-    const w = smooth((spd - 3) / 8);
+    // (laid out, part of it is the run he had at the ball, held: layW, layRun, layHead)
+    if (layHead == null) layW = 0;
+    const w = smooth((spd - 3) / 8) * (1 - layW);
     let yaw = faceYaw;
     if (st.head != null && w > 0) {
       // (through a corner of his path, the way he goes over a fifth of a second either side, so he
@@ -765,6 +790,7 @@ export class InPlay {
       if (up && Math.abs(rel) > Math.PI / 2) { const kb = 1 - Math.pow(w, 8); rel = rel * (1 - kb) + Math.sign(rel) * (Math.PI - Math.abs(rel)) * kb; }
       yaw = faceYaw + rel * w;
     }
+    if (layW > 0) yaw += angDiff(faceYaw, layHead) * layRun * layW;
     // (a ball picked up on the run: his track ends at the ball, and he comes round from the way he ran to
     // where he faces over a third of a second. Facing the run one frame and the infield the next, his planted
     // feet swung round him at 33 m/s, check-jolt.mjs skate fielder pickup)
@@ -1045,7 +1071,7 @@ export class InPlay {
     // on the runner as he is drawn then; the runners are put back as they were after)
     const plan = this.active.plan, b = plan.ballAt(t);
     const was = plan.runners.map((r) => r.fig ? { vis: r.fig.root.visible, at: r.fig.posedAt } : null);
-    for (const r of plan.runners) if (r.fig) this.poseRunner(r, t, b);
+    for (const r of plan.runners) if (r.fig) this.poseRunner(r, t, b, true);
     key[memo] = this.poseFielder(n, f, t, b, true);
     plan.runners.forEach((r, i) => {
       if (!r.fig) return;
@@ -1056,7 +1082,7 @@ export class InPlay {
 
   /* ---------------------------------------------------------------- the runners */
 
-  poseRunner(r, s, ball) {
+  poseRunner(r, s, ball, probe = false) {
     const f = r.fig, tr = r.track;
     let ss = s;
     if (tr.stopAt != null && s > tr.stopAt) ss = tr.stopAt + 0.3 * (1 - Math.exp(-(s - tr.stopAt) / 0.3));
@@ -1102,7 +1128,7 @@ export class InPlay {
     }
     const lead = s < 0.25 && r.from >= 1;
     const ph = this.crew.clips ? r.phase.at(ss) + 2 * Math.PI * (run - st.run) / this.crew.clips.jog.strideFt : 2 * Math.PI * run / CYCLE.runner + r.from;
-    const spec = { idleT: s + r.from * 1.1, run: { phase: ph, trot: this.active.plan.kind === 'hr', amp: walk ? 0.22 : clamp(spd / 26, 0, 1.1) }, crouch: lead ? 0.3 : 0, wide: lead ? 0.6 : 0, lean: walk ? 0.1 : 0, look: { x: ball.x, y: ball.y, z: ball.z } };
+    const spec = { idleT: s + r.from * 1.1, run: { phase: ph, trot: this.active.plan.kind === 'hr', amp: walk ? 0.22 : clamp(spd / 26, 0, 1.1) }, crouch: lead ? 0.3 : 0, wide: lead ? 0.6 : 0, lean: walk ? 0.1 : 0, look: { x: ball.x, y: ball.y, z: ball.z }, footLock: probe ? 'keep' : true, t: s };
     // the slide: feet first over his last few strides, down a beat, then up
     if (r.slide != null) {
       const t = r.slide, k = bump(s, t - 0.5, t - 0.28, t + 0.55, t + 1.0);
@@ -1167,10 +1193,10 @@ export class InPlay {
     let dM = 0.55 + 2.6 * Math.sqrt(h);
     // never under a dozen pixels across, so a far camera still shows it
     const H = camera.userData.cssH || 800;
-    // on the ground, and on the mound where the ball is over it (ballpark.js: a cone 9 ft round and
-    // 10 in high, its 2.6 ft top flat, centred 1.5 ft behind the rubber)
-    const dm = Math.hypot(bp.x - MOUND.x, bp.y - MOUND.y - 1.5);
-    const g = dm < 2.6 ? 10 / 12 : dm < 9 ? (10 / 12) * (9 - dm) / 6.4 : 0;
+    // on the ground, and on the mound where the ball is over it (field.js MOUND_C: a cone 9 ft round
+    // and 10 in high, its 2.6 ft top flat, centred 18 in in front of the rubber)
+    const M = MOUND_C, dm = Math.hypot(bp.x - M.x, bp.y - M.y);
+    const g = dm < M.top ? M.h : dm < M.r ? M.h * (M.r - dm) / (M.r - M.top) : 0;
     mk.position.copy(P(bp.x, bp.y, g + 0.06));
     const d = camera.position.distanceTo(mk.position);
     const px = dM / (2 * d * Math.tan(camera.fov * D2R / 2)) * H;
@@ -1667,9 +1693,12 @@ export class InPlay {
       const coming = [];
       for (const r of home) { const q = r.track.at(s); if (Math.hypot(q.x, q.y) < 70) coming.push({ x: q.x, y: q.y, z: 0 }, { x: q.x, y: q.y, z: 6 }); }
       pts.push(...coming);
-      if (ball && Math.hypot(ball.x, ball.y) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
-      // (from high behind the plate, third, first and second are in reach too)
-      const near = keys.filter((k) => Math.hypot(k.x, k.y) < (hs ? 135 : 75));
+      // (near the plate in the air too, not only over the ground: a towering fly 60 ft out and 400 ft up
+      // is not the plate camera's, and holding it tilted the low camera up off the run, check-frame.mjs)
+      if (ball && Math.hypot(ball.x, ball.y, ball.z || 0) < 60) pts.push({ x: ball.x, y: ball.y, z: ball.z });
+      // (from high behind the plate, third, first and second are in reach too; a moment still sliding in
+      // from a ball high overhead is in reach once it is down near the field)
+      const near = keys.filter((k) => Math.hypot(k.x, k.y, k.z || 0) < (hs ? 135 : 75));
       pts.push(...near);
       // (what it must hold: the runners coming in to the plate, and the moments in its reach; one at
       // first base is not this camera's)

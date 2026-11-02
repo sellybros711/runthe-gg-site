@@ -1,0 +1,231 @@
+{
+ "id": "kelly-2020-nlds2",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 635933,
+ "date": "2020-10-07",
+ "game": "NL Division Series Game 2: San Diego Padres at Los Angeles Dodgers",
+ "gameType": "D",
+ "pitcher": {
+  "id": 523260,
+  "name": "Joe Kelly",
+  "throws": "R",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "1.80 ERA, 0 SV, 10.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 2,
+  "bases": 1,
+  "score": {
+   "us": 6,
+   "them": 5
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 72,
+   "batterId": 665487,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "523260": 6
+   },
+   "pitches": 6,
+   "event": "walk",
+   "des": "Fernando Tatis Jr. walks. Trent Grisham to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Fernando Tatis Jr. walks. Trent Grisham to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Fernando Tatis Jr.",
+   "batSideListed": "R",
+   "seasonLine": ".277/.366/.571, 17 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 592518,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "523260": 8
+   },
+   "pitches": 8,
+   "event": "walk",
+   "des": "Manny Machado walks. Trent Grisham to 3rd. Fernando Tatis Jr. to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Manny Machado walks. Trent Grisham to 3rd. Fernando Tatis Jr. to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Manny Machado",
+   "batSideListed": "R",
+   "seasonLine": ".304/.370/.580, 16 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 543333,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "523260": 5
+   },
+   "pitches": 5,
+   "event": "field_out",
+   "des": "Eric Hosmer grounds out sharply, second baseman Enrique Hernandez to first baseman Max Muncy.",
+   "feedEvent": "field_out",
+   "feedDescription": "Eric Hosmer grounds out sharply, second baseman Enrique Hernandez to first baseman Max Muncy.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Eric Hosmer",
+   "batSideListed": "L",
+   "seasonLine": ".287/.333/.517, 9 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 19,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 502054,
+   "name": "Tommy Pham",
+   "batSideListed": "R"
+  },
+  {
+   "id": 571976,
+   "name": "Wil Myers",
+   "batSideListed": "R"
+  },
+  {
+   "id": 630105,
+   "name": "Jake Cronenworth",
+   "batSideListed": "L"
+  },
+  {
+   "id": 519048,
+   "name": "Mitch Moreland",
+   "batSideListed": "L"
+  },
+  {
+   "id": 543592,
+   "name": "Austin Nola",
+   "batSideListed": "R"
+  },
+  {
+   "id": 663757,
+   "name": "Trent Grisham",
+   "batSideListed": "L"
+  },
+  {
+   "id": 665487,
+   "name": "Fernando Tatis Jr.",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592518,
+   "name": "Manny Machado",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543333,
+   "name": "Eric Hosmer",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 171,
+   "types": [
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 105,
+     "usage": 0.614,
+     "velo": 87.0,
+     "pfxXin": 10.0,
+     "pfxZin": -10.4
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 32,
+     "usage": 0.1871,
+     "velo": 96.5,
+     "pfxXin": -15.7,
+     "pfxZin": 8.2
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 31,
+     "usage": 0.1813,
+     "velo": 97.4,
+     "pfxXin": -11.4,
+     "pfxZin": 12.7
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 3,
+     "usage": 0.0175,
+     "velo": 89.2,
+     "pfxXin": 7.6,
+     "pfxZin": -5.6
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2020%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=523260"
+  },
+  "postseason": {
+   "pitches": 63,
+   "types": [
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 38,
+     "usage": 0.6032,
+     "velo": 86.7,
+     "pfxXin": 12.1,
+     "pfxZin": -9.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 24,
+     "usage": 0.381,
+     "velo": 96.2,
+     "pfxXin": -17.5,
+     "pfxZin": 7.2
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 1,
+     "usage": 0.0159,
+     "velo": 95.8,
+     "pfxXin": -7.7,
+     "pfxZin": 15.1
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2020%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=523260"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 635933: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=635933",
+  "MLB Stats API schedule 2020-10-07 and live feed /api/v1.1/game/635933/feed/live",
+  "MLB Stats API people with 2020 season stats",
+  "Baseball Savant 523260 2020 season search (regular season and postseason) for the arsenal"
+ ]
+}

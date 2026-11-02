@@ -55,6 +55,11 @@ export function skin(src, opts = {}) {
           vec4 rim = texture2D(uGearRim, vec2(gph / 6.2831853 + 0.5, 0.5));
           float below = (gth - rim.r * 3.14159265) * gr;          // metres down the head from the rim
           float near = gr < 0.2 ? 1.0 : 0.0;
+          // the hair under it: a short cropped fade below the rim at the back and sides (rim.b), the
+          // hair colour with a grain, gone 3 cm down. The hair cards' own ragged edge showed there
+          float hg = fract(sin(dot(floor(vGearP * 1400.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+          float fade = rim.b * (below > 0.0 ? 1.0 - smoothstep(0.005, 0.03, below) : 0.0);
+          diffuseColor.rgb = mix(diffuseColor.rgb, uHairCol * (0.85 + 0.3 * hg), clamp(fade * (0.6 + 0.4 * hg), 0.0, 0.92) * near);
           float ao = below < 0.0 ? 0.45 : 1.0 - 0.5 * exp(-below / 0.01);
           ao *= 1.0 - 0.3 * rim.g * exp(-max(below, 0.0) / 0.035);   // the brim's shade on the brow and eyes
           diffuseColor.rgb *= mix(1.0, ao, near);
@@ -88,8 +93,8 @@ export function hair(src, color) {
     side: THREE.DoubleSide, alphaToCoverage: true,
   });
   m.name = src.name;
-  // under headgear (headgear.js wornShade) only the hair below the rim shows, and only where the
-  // rim texture's blue says hair may show (the back and sides, not a fringe under a brim)
+  // under headgear (headgear.js wornShade turns uGearOn on) the cards are not drawn: the skin draws
+  // his hair below the rim instead, where the rim texture's blue says it may show
   const u = { uGearOn: { value: 0 }, uGearM: { value: new THREE.Matrix4() }, uGearRim: { value: null } };
   m.userData.u = u;
   m.onBeforeCompile = (sh) => {
@@ -101,12 +106,9 @@ export function hair(src, color) {
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
         uniform sampler2D uGearRim; uniform float uGearOn; varying vec3 vGearP;`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
-        if (uGearOn > 0.5) {
-          float gr = length(vGearP);
-          float gth = acos(clamp(vGearP.y / max(gr, 1e-4), -1.0, 1.0)), gph = atan(vGearP.x, vGearP.z);
-          vec4 rim = texture2D(uGearRim, vec2(gph / 6.2831853 + 0.5, 0.5));
-          if ((gth - rim.r * 3.14159265) * gr < 0.004 || rim.b < 0.5) discard;
-        }`);
+        // under headgear none of the cards: the skin draws his hair as a short cropped fade below the
+        // rim (materials skin). The cards' alpha cut a ragged edge across the nape
+        if (uGearOn > 0.5) discard;`);
   };
   m.customProgramCacheKey = () => 'hair';
   return m;
@@ -159,6 +161,32 @@ if (typeof FontFace !== 'undefined' && typeof document !== 'undefined' && docume
     .catch(() => { /* no font: the fallback stays */ });
 }
 
+/* The number on the jersey's front, for a club that wears one there (uniforms.js FRONT): the same
+   heavy block figures as the back number, drawn 2 to 1 and laid on the jersey as a decal like the
+   words. The canvas holds no colour, only which part is which: red the figure, green its outline
+   (none when the club's has none), alpha the coverage, so the shader colours it from the kit. A new
+   texture for each hitter: dress() frees it with his kit. */
+export const FRONT_ASPECT = 2;
+export function frontNumberTexture(text, outline) {
+  const W = 256 * FRONT_ASPECT, H = 256, cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.lineJoin = 'round';
+  // the largest size whose figures fill the height (an outline's width inside it) and fit the width
+  const line = outline ? H * 0.07 : 0;
+  g.font = '900 200px Arial Black, Arial, sans-serif';
+  const m0 = g.measureText(text), cap0 = m0.actualBoundingBoxAscent || 145;
+  const size = 200 * Math.min((W * 0.96 - line) / m0.width, (H * 0.96 - line) / cap0);
+  g.font = `900 ${size.toFixed(2)}px Arial Black, Arial, sans-serif`;
+  const cap = g.measureText(text).actualBoundingBoxAscent || size * 0.72;
+  const y = H / 2 + cap / 2;
+  if (outline) { g.lineWidth = line; g.strokeStyle = '#00ff00'; g.strokeText(text, W / 2, y); }
+  g.fillStyle = '#ff0000'; g.fillText(text, W / 2, y);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.NoColorSpace; t.anisotropy = 8; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
 /* The uniform: the glTF's map is a trim mask in the body's UV layout (pipeline/uniform.py), not a
    colour. R is the jersey's piping, G the pants' side stripe, B the sock's white slot or the glove's
    back. The colours are the club's, set per team at run time (colors below, all THREE.Color), and a
@@ -185,7 +213,13 @@ export function uniform(src, colors, opts = {}) {
     uWords: { value: opts.words ? wordsTexture(opts.words.text) : null }, uHasWords: { value: opts.words ? 1 : 0 },
     uWordBox: { value: opts.words ? new THREE.Vector4(...opts.words.box) : new THREE.Vector4() },
     uWordCol: { value: opts.words ? new THREE.Color(opts.words.color) : new THREE.Color(0) },
+    // the front number: a decal like the words, box = [x, y, w, h], its figure and outline colours
+    uFront: { value: opts.front ? opts.front.tex : null }, uHasFront: { value: opts.front ? 1 : 0 },
+    uFrontBox: { value: opts.front ? new THREE.Vector4(...opts.front.box) : new THREE.Vector4() },
+    uFrontCol: { value: new THREE.Color(opts.front ? opts.front.color : 0) },
+    uFrontLine: { value: new THREE.Color(opts.front && opts.front.outline ? opts.front.outline : 0) },
   };
+  if (opts.front) m.userData.frontTex = opts.front.tex;
   m.userData.u = u;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u);
@@ -196,10 +230,10 @@ export function uniform(src, colors, opts = {}) {
       .replace('#include <common>', `#include <common>
         varying vec2 vUvU;
         varying vec3 vWordP, vWordN;
-        uniform sampler2D uMask, uNumber, uWeave, uWords;
-        uniform vec3 uBase, uTrim, uStripe, uSlot, uNumberColor, uWordCol;
-        uniform vec4 uWordBox;
-        uniform float uHasNumber, uHasWeave, uHasWords;`)
+        uniform sampler2D uMask, uNumber, uWeave, uWords, uFront;
+        uniform vec3 uBase, uTrim, uStripe, uSlot, uNumberColor, uWordCol, uFrontCol, uFrontLine;
+        uniform vec4 uWordBox, uFrontBox;
+        uniform float uHasNumber, uHasWeave, uHasWords, uHasFront;`)
       .replace('#include <map_fragment>', `
         vec3 mk = texture2D(uMask, vUvU).rgb;
         vec3 col = uBase;
@@ -212,6 +246,13 @@ export function uniform(src, colors, opts = {}) {
           vec2 inside = step(vec2(0.0), wt) * step(wt, vec2(1.0));
           float facing = smoothstep(0.2, 0.6, normalize(vWordN).z);   // the front, turned up to about 70 degrees
           col = mix(col, uWordCol, texture2D(uWords, wt).a * inside.x * inside.y * facing);
+        }
+        if (uHasFront > 0.5) {
+          vec2 ft = (vWordP.xy - uFrontBox.xy) / uFrontBox.zw;
+          vec2 fin = step(vec2(0.0), ft) * step(ft, vec2(1.0));
+          vec4 fn = texture2D(uFront, ft);
+          float facingF = smoothstep(0.2, 0.6, normalize(vWordN).z);
+          col = mix(col, mix(uFrontLine, uFrontCol, fn.r / max(1e-3, fn.r + fn.g)), fn.a * fin.x * fin.y * facingF);
         }
         if (uHasWeave > 0.5) col *= 0.88 + 0.24 * texture2D(uWeave, vUvU * 48.0).r;
         diffuseColor.rgb *= col;`);
@@ -228,7 +269,7 @@ export function plain(name, color, opts = {}) {
   return m;
 }
 
-/** The number on the back: a generic one (never a player's real number), drawn on the jersey's
+/** The number on the back: his real one where looks.js has it (else the hash's), drawn on the jersey's
     number patch (its UVs are flat, 0.3 m square, seen from behind). Club colour, outlined in the
     jersey's base colour the way a sewn number is. */
 export function numberMaterial(text, color, outline, src) {

@@ -1,0 +1,283 @@
+{
+ "id": "davis-2015-alcs6",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 446269,
+ "date": "2015-10-23",
+ "game": "AL Championship Series Game 6: Toronto Blue Jays at Kansas City Royals",
+ "gameType": "L",
+ "pitcher": {
+  "id": 451584,
+  "name": "Wade Davis",
+  "throws": "R",
+  "team": "Kansas City Royals",
+  "seasonLine": "0.94 ERA, 17 SV, 67.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 68,
+   "batterId": 431145,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "451584": 1
+   },
+   "pitches": 1,
+   "event": "single",
+   "des": "Russell Martin singles on a soft fly ball to center fielder Lorenzo Cain.",
+   "feedEvent": "single",
+   "feedDescription": "Russell Martin singles on a soft fly ball to center fielder Lorenzo Cain.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Russell Martin",
+   "batSideListed": "R",
+   "seasonLine": ".240/.329/.458, 23 HR"
+  },
+  {
+   "atBat": 69,
+   "batterId": 607680,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "451584": 8
+   },
+   "pitches": 8,
+   "event": "walk",
+   "des": "Kevin Pillar walks.",
+   "feedEvent": "walk",
+   "feedDescription": "Kevin Pillar walks.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Kevin Pillar",
+   "batSideListed": "R",
+   "seasonLine": ".278/.314/.399, 12 HR"
+  },
+  {
+   "atBat": 70,
+   "batterId": 425900,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "451584": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Dioner Navarro strikes out swinging.  Kevin Pillar steals (2) 2nd base.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Dioner Navarro strikes out swinging. Kevin Pillar steals (2) 2nd base.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Dioner Navarro",
+   "batSideListed": "S",
+   "seasonLine": ".246/.307/.374, 5 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 519184,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "451584": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Ben Revere strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Ben Revere strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Ben Revere",
+   "batSideListed": "L",
+   "seasonLine": ".306/.342/.377, 2 HR"
+  },
+  {
+   "atBat": 72,
+   "batterId": 518626,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "451584": 4
+   },
+   "pitches": 4,
+   "event": "field_out",
+   "des": "Josh Donaldson grounds out, third baseman Mike Moustakas to first baseman Eric Hosmer.",
+   "feedEvent": "field_out",
+   "feedDescription": "Josh Donaldson grounds out, third baseman Mike Moustakas to first baseman Eric Hosmer.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Josh Donaldson",
+   "batSideListed": "R",
+   "seasonLine": ".297/.371/.568, 41 HR"
+  }
+ ],
+ "realFaced": 5,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 22,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 430832,
+   "name": "José Bautista",
+   "batSideListed": "R"
+  },
+  {
+   "id": 429665,
+   "name": "Edwin Encarnación",
+   "batSideListed": "R"
+  },
+  {
+   "id": 499624,
+   "name": "Chris Colabello",
+   "batSideListed": "R"
+  },
+  {
+   "id": 453064,
+   "name": "Troy Tulowitzki",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592647,
+   "name": "Dalton Pompey",
+   "batSideListed": "S"
+  },
+  {
+   "id": 607680,
+   "name": "Kevin Pillar",
+   "batSideListed": "R"
+  },
+  {
+   "id": 425900,
+   "name": "Dioner Navarro",
+   "batSideListed": "S"
+  },
+  {
+   "id": 519184,
+   "name": "Ben Revere",
+   "batSideListed": "L"
+  },
+  {
+   "id": 518626,
+   "name": "Josh Donaldson",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1045,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 571,
+     "usage": 0.5464,
+     "velo": 96.5,
+     "pfxXin": -3.5,
+     "pfxZin": 18.0
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 267,
+     "usage": 0.2555,
+     "velo": 93.2,
+     "pfxXin": 4.7,
+     "pfxZin": 10.1
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 197,
+     "usage": 0.1885,
+     "velo": 85.1,
+     "pfxXin": 5.4,
+     "pfxZin": -8.5
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 10,
+     "usage": 0.0096,
+     "velo": 95.9,
+     "pfxXin": -13.2,
+     "pfxZin": 13.5
+    }
+   ],
+   "dropped": {
+    "IN": 4,
+    "PO": 1
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2015%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=451584"
+  },
+  "postseason": {
+   "pitches": 159,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 86,
+     "usage": 0.5409,
+     "velo": 96.8,
+     "pfxXin": -3.9,
+     "pfxZin": 17.4
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 38,
+     "usage": 0.239,
+     "velo": 92.9,
+     "pfxXin": 4.8,
+     "pfxZin": 8.1
+    },
+    {
+     "type": "KC",
+     "name": "Knuckle Curve",
+     "n": 34,
+     "usage": 0.2138,
+     "velo": 85.6,
+     "pfxXin": 6.4,
+     "pfxZin": -12.4
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 1,
+     "usage": 0.0063,
+     "velo": 95.5,
+     "pfxXin": -11.0,
+     "pfxZin": 18.7
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2015%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=451584"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 446269: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=446269",
+  "MLB Stats API schedule 2015-10-23 and live feed /api/v1.1/game/446269/feed/live",
+  "MLB Stats API people with 2015 season stats",
+  "Baseball Savant 451584 2015 season search (regular season and postseason) for the arsenal"
+ ]
+}

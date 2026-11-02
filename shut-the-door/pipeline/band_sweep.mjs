@@ -41,7 +41,7 @@ const REL = process.argv.includes('--relative');
 files = files.filter(f => !f.startsWith('--'));
 const meanCache = new Map();
 function meanLost(model, st) {
-  const k = G.stateIndex(model.N, model.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin);
+  const k = G.stateIndex(model.N, model.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin, st.h);
   if (meanCache.has(model) && meanCache.get(model).has(k)) return meanCache.get(model).get(k);
   const best = model.solve(st).hold;
   let sum = 0, n = 0;

@@ -132,3 +132,22 @@ export function openCheckpoint(name, params) {
     close() { fs.closeSync(fd); },
   };
 }
+
+/** The day the lab's game page plays (a page's clock pinned to it, before it loads). The checks that stage
+    the ball in play on the game page (check-jolt, check-catch, check-frame, check-camera) use the stage the
+    home screen boots, and that is the day's scenario: its hitters and fielders, so the bodies and their
+    speeds. Left to the calendar, the same code gave a different count on another day, a row or two over its
+    ceiling on main the morning after #825 merged (the day turned at midnight Eastern, Chapman 2016 to
+    Buehler 2024). Pinned to the day the ceilings were measured (2026-10-30, Eastern), every run is the same
+    run. The clock still runs from there, so nothing that times itself changes. */
+export const LAB_DAY = '2026-10-30T21:00:00-04:00';
+export function pinDay(page, at = LAB_DAY) {
+  return page.addInitScript((at) => {
+    const R = Date, T = new R(at).getTime(), t0 = R.now();
+    class D extends R {
+      constructor(...a) { if (a.length) super(...a); else super(T + (R.now() - t0)); }
+      static now() { return T + (R.now() - t0); }
+    }
+    window.Date = D;
+  }, at);
+}

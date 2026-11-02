@@ -215,10 +215,56 @@
     return null;
   }
 
+  /* ---------------- the vote, Survivor, the archive, Pro (supabase/160_shut_the_door_vote_survivor.sql) ---------------- */
+
+  /* One call that answers the server's json, or null on any failure. */
+  async function rpc(name, args, signedInOnly) {
+    if (!sb || (signedInOnly && !session)) return null;
+    try {
+      const r = await sb.rpc(name, args || {});
+      if (r && !r.error && r.data != null) return r.data;
+    } catch (e) {}
+    return null;
+  }
+  /* A write that says why it was refused: {data} or {error: the server's words}. */
+  async function act(name, args) {
+    if (!sb) return { error: 'Accounts are not available right now.' };
+    if (!session) return { error: 'sign in first' };
+    try {
+      const r = await sb.rpc(name, args);
+      if (r && r.error) return { error: r.error.message || String(r.error) };
+      return { data: r ? r.data : null };
+    } catch (e) { return { error: (e && e.message) || 'that did not work' }; }
+  }
+
+  /* A day's vote: {day, epoch, open, candidates [A, B], myVote, votes {a, b} | null, winner,
+     canVote, why}. Reads signed out too. */
+  const vote = (day) => rpc('shutdoor_vote', { p_day: day });
+  const voteCast = (day, pack) => act('shutdoor_vote_cast', { p_day: day, p_pack: pack });
+  /* {signedIn, pro, archive, survivorRuns}: Pro answers false for everyone until payments exist. */
+  const entitlements = () => rpc('shutdoor_entitlements', {});
+  /* Survivor: the caller's runs for a day, start or resume one, post a finished situation, the board. */
+  const survivorState = (day) => rpc('shutdoor_survivor_state', { p_day: day }, true);
+  const survivorStart = (day) => act('shutdoor_survivor_start', { p_day: day });
+  const survivorPost = (row) => act('shutdoor_survivor_post', {
+    p_day: row.day, p_run: row.run, p_index: row.index, p_scenario: row.scenarioId, p_calls: row.calls,
+    p_outcome: row.outcome, p_pitches: row.pitches, p_score: row.score,
+  });
+  async function survivorBoard(day, limit) {
+    const r = await rpc('shutdoor_survivor_board', { p_day: day, p_limit: limit || 50 });
+    return Array.isArray(r) ? r : null;
+  }
+  /* A past daily played from the archive (Pro), kept and never on the daily board. */
+  const archiveSubmit = (row) => act('shutdoor_archive_submit', {
+    p_day: row.day, p_scenario: row.scenarioId, p_calls: row.calls, p_outcome: row.outcome,
+    p_pitches: row.pitches, p_score: row.score, p_percentile: row.percentile,
+  });
+
   window.STD_AUTH = {
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,
+    vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, archiveSubmit,
   };
 })();

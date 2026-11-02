@@ -50,8 +50,26 @@
  *      pitch by pitch with band and reason. On the real engine and on the
  *      mock: a pro, no pro (?mockPro=none) and no lesson (?mockLesson=none)
  *
- * Steps 1 to 10 play the real engine (no mock switch). Step 11 forces each
- * ending through mock-api.js.
+ *  17. the modes around the daily (CONTRACT.md 9, 16, 17), through the mock:
+ *      sign in to save your score (a button on the result and on the board,
+ *      never opened by itself; the sign-in posts it once), the vote for
+ *      tomorrow (two candidates, one line each, the vote counts; signed out the
+ *      same button; hidden before the vote's first day), how today was picked,
+ *      Survivor (the home's row, its screen, save after save with only a count
+ *      and the next closer between spots, a blown lead ends it on the
+ *      Survivor board, one run a day and when the next opens) and the
+ *      archive (only when entitlements say Pro)
+ *
+ *  18. rules 8: a two-half daily played through the page to the third out of
+ *      the 8th; the scorebug follows the half (the 9th, nobody out, nobody on,
+ *      the score his team left), as the outing's state says. Between the two
+ *      halves his team's real half plays on the line score plate appearance
+ *      by plate appearance (every number the halfOver record's), no grade or
+ *      sheet, a few seconds or a tap, then the mound in the 9th with its
+ *      leadoff man
+ *
+ * Steps 1 to 10 play the real engine (no mock switch). Steps 11 and 17 go
+ * through mock-api.js.
  *
  * SOFTWARE GL, AND WHY THE CHECK DRAWS ONLY WHERE IT LOOKS. Headless Chromium
  * here and on CI draws WebGL with SwiftShader, on the CPU. Measured in this
@@ -1200,6 +1218,7 @@ async function ending(w, h, end, extra) {
   const auth = /mockAuth/.test(extra || '');
   if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
   await revealCheck(page, '11 ' + end, k);
+  ok(await page.evaluate(() => document.getElementById('r-vote').hidden && document.getElementById('r-vote-go').hidden), '11 ' + end + ': no vote for tomorrow (and no row to it) before the vote\'s first day');
   await shot('result', true);
   /* 12 */
   await coachCheck(page, '12 ' + end, k, { lesson: !/mockLesson=none/.test(extra || ''), pro: !/mockPro=none/.test(extra || '') && !/mockLesson=none/.test(extra || '') }, shot);
@@ -1311,11 +1330,387 @@ async function sizeSweep() {
   await ctx.close();
 }
 
+/* 17. THE MODES AROUND THE DAILY (the owner, 2026-10-30), through the mock's switches. */
+async function modesPage(w, h, q, opts) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  if (opts && opts.meterOff) await page.addInitScript(() => { try { localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false, quick: true, sound: false })); } catch (e) {} });
+  if (opts && opts.theme) await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, opts.theme);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 60000 });
+  return { ctx, page, errors };
+}
+/* finish today's daily through the calls (the mound's own path is steps 5 and 11), then come back to it */
+async function dailyDone(page) {
+  await page.evaluate(async () => {
+    const A = window.STD_API, S = window.STD_UI.state;
+    let st = await A.startOuting(S.scn.id, null, { mode: 'daily' });
+    for (let i = 0; st.status === 'live' && i < 90; i++) st = (await A.throwPitch(st.outingId, { type: S.scn.pitcher.arsenal[0].type, cell: 12 })).state;
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#d-see', { timeout: 60000 });
+}
+const nothingOpen = (page) => page.evaluate(() => ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden));
+const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+/* the leaderboard (the owner, 2026-10-30): its heading is LEADERBOARD, and the count of closers is
+   said once, in the list's header. Read outside the rows, where a score or a rank could match it */
+const oneCount = (page, screen) => page.evaluate((id) => {
+  const sec = document.getElementById(id), n = (sec.querySelector('.bd-n') || {}).textContent || '';
+  const num = (/^(\d+) closers? today$/.exec(n) || [])[1];
+  const copy = sec.cloneNode(true);
+  copy.querySelectorAll('.bd-rows').forEach((x) => x.remove());
+  const times = num ? (copy.textContent.match(new RegExp('(^|\\D)' + num + '(\\D|$)', 'g')) || []).length : 0;
+  return { n, times, head: (sec.querySelector('h2') || {}).textContent };
+}, screen);
+const tall = (page, sel) => page.evaluate((q) => [...document.querySelectorAll(q)].filter((b) => b.offsetParent).every((b) => b.getBoundingClientRect().height >= 38), sel);
+
+async function modes(w, h, full) {
+  const tag = w + 'x' + h;
+  console.log('\nthe modes around the daily, ' + tag);
+  const shotM = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-modes-${name}.png`) }); };
+
+  /* sign in to save your score, and the vote signed out */
+  step(tag + ' 17 the save', 300);
+  let { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=late&mockVote=open');
+  await dailyDone(page);
+  ok(await nothingOpen(page), '17 nothing opens by itself on the home after the daily');
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on #r-save:not([hidden])', { timeout: 30000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const sv = await page.evaluate(() => { const s = document.getElementById('r-save'), b = s.querySelector('[data-save]'), r = s.getBoundingClientRect();
+    return { b: b.textContent, h: b.getBoundingClientRect().height, t: s.querySelector('p').textContent, bottom: r.bottom, top: r.top, nav: document.getElementById('r-nav').getBoundingClientRect().top, vh: innerHeight }; });
+  ok(sv.b === 'sign in to save your score' && sv.h >= 38 && /guest/.test(sv.t) && /leaderboard/.test(sv.t), '17 a guest\'s result says it plainly: "' + sv.t + '", with the button "' + sv.b + '" (' + Math.round(sv.h) + ' px)');
+  ok(sv.top >= 0 && sv.bottom <= sv.vh && sv.bottom <= sv.nav, '17 the guest\'s block is on screen without a scroll and above the menu (' + Math.round(sv.top) + '-' + Math.round(sv.bottom) + ' of ' + sv.vh + ' px, the menu at ' + Math.round(sv.nav) + ')');
+  ok(await nothingOpen(page), '17 the save is a button on the result, no sheet opened');
+  await page.waitForSelector('#r-vote:not([hidden]) .vt-o', { timeout: 30000 });
+  const gv = await page.evaluate(() => ({ n: document.querySelectorAll('#r-vote .vt-o').length, dis: [...document.querySelectorAll('#r-vote .vt-o')].every((b) => b.disabled), btn: (document.querySelector('#r-vote [data-save]') || {}).textContent }));
+  ok(gv.n === 2 && gv.dis && gv.btn === 'sign in to save your score', '17 signed out, the vote shows the two and the same sign-in button (' + gv.btn + ')');
+  ok(await noSideScroll(page), '17 the result has no sideways scroll');
+  await shotM(page, 'result-save');
+  await page.click('#r-board');
+  await page.waitForSelector('#bd-list .bd-rows', { timeout: 30000 });
+  const bd = await page.evaluate(() => ({ t: document.getElementById('bd-you').textContent, b: (document.getElementById('bd-signin') || {}).textContent }));
+  ok(/as a guest/.test(bd.t) && /leaderboard/.test(bd.t) && bd.b === 'sign in to save your score', '17 the leaderboard says why a guest is not on it, with the same button');
+  const c1 = await oneCount(page, 's-board');
+  ok(c1.head === 'leaderboard' && c1.times === 1, '17 the guest\'s leaderboard: heading "' + c1.head + '", the count once ("' + c1.n + '", ' + c1.times + ' time)');
+  await shotM(page, 'board-signed-out');
+  await page.click('#bd-signin');
+  await page.waitForSelector('#sheet-auth.on #au-form');
+  await page.fill('#au-email', 'mock@example.com');
+  await page.fill('#au-pass', 'mockpass');
+  await page.click('#au-form button[type=submit]');
+  await page.waitForSelector('#bd-you .bd-rank', { timeout: 30000 });
+  ok(true, '17 signing in posts the daily once: the leaderboard shows your rank');
+  const c2 = await oneCount(page, 's-board');
+  ok(c2.head === 'leaderboard' && c2.times === 1, '17 signed in, the leaderboard: heading "' + c2.head + '", the count once ("' + c2.n + '", ' + c2.times + ' time)');
+  await page.click('#bd-back');
+  await page.waitForSelector('#s-result.on #r-save.saved', { timeout: 30000 });
+  const sd = await page.evaluate(() => ({ s: document.getElementById('r-save').textContent, st: document.getElementById('r-streak').textContent, posted: window.STD_API.pending() }));
+  ok(/^saved\./.test(sd.s) && /#\d+ of \d+ today/.test(sd.st) && sd.posted === null, '17 the result says it is saved (' + sd.s + ', streak line "' + sd.st + '") and nothing is pending (' + JSON.stringify(sd.posted) + ')');
+  await shotM(page, 'result-saved');
+  ok(errors.length === 0, '17 the save: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* the vote, signed in */
+  step(tag + ' 17 the vote', 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockVote=open'));
+  await dailyDone(page);
+  await page.click('#d-see');
+  await page.waitForSelector('#r-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });
+  ok(await page.evaluate(() => document.getElementById('r-save').hidden), '17 signed in, no save button');
+  const vt = await page.evaluate(() => [...document.querySelectorAll('#r-vote .vt-o')].map((b) => ({ name: b.querySelector('.vt-t b').textContent, meta: b.querySelector('.vt-t span').textContent, h: b.getBoundingClientRect().height })));
+  ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(top|bot) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
+  /* the menu's row to the vote (the owner, 2026-10-30): only while it is open; it scrolls, nothing opens */
+  const vrow = await page.evaluate(() => { const b = document.getElementById('r-vote-go'); return { on: !b.hidden, t: b.textContent, h: b.getBoundingClientRect().height }; });
+  ok(vrow.on && /vote for tomorrow/.test(vrow.t) && vrow.h >= 38, '17 the result\'s menu has a row to the vote while it is open: "' + vrow.t + '"');
+  await page.click('#r-vote-go');
+  await page.waitForFunction(() => { const r = document.getElementById('r-vote').getBoundingClientRect(); return r.top >= -2 && r.top < 80; }, null, { timeout: 30000 });
+  ok(await nothingOpen(page) && await page.evaluate(() => document.activeElement && document.activeElement.closest('#r-vote') !== null),
+    '17 the row jumps to the vote tile and hands it the focus, no sheet opened');
+  await shotM(page, 'vote');
+  await page.click('#r-vote .vt-o >> nth=0');
+  await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 30000 });
+  const vd = await page.evaluate(() => ({ on: document.querySelectorAll('#r-vote .vt-o.on').length, n: document.querySelectorAll('#r-vote .vt-n').length, say: document.querySelector('#r-vote .vt-say').textContent }));
+  ok(vd.on === 1 && vd.n === 2 && /it counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
+  await shotM(page, 'vote-cast');
+  ok(errors.length === 0, '17 the vote: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* how today was picked, and the archive */
+  step(tag + ' 17 the pick and the archive', 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockVote=locked&mockEnt=pro'));
+  await page.waitForSelector('#h-pick:not([hidden])', { timeout: 30000 });
+  const pk = await page.textContent('#h-pick');
+  ok(/^picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
+  await page.evaluate(() => window.STD_MENUS.show('past'));
+  await page.waitForSelector('#sheet-past.on');
+  const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);
+  ok(arc > 0, '17 Pro: the past dailies are a list to play (' + arc + ' days)');
+  await page.click('#past-body .arc-list button >> nth=0', { timeout: 120000 });
+  await page.waitForFunction(() => window.STD_UI.state.mode === 'archive' && document.body.dataset.screen === 's-mound', null, { timeout: 120000 });
+  ok(true, '17 Pro: a past day opens on the mound, as the archive');
+  ok(errors.length === 0, '17 the pick and the archive: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut'));
+  await page.evaluate(() => window.STD_MENUS.show('past'));
+  await page.waitForSelector('#sheet-past.on');
+  const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
+  ok(!lk.list && /open later/.test(lk.t) && !/\$|price|buy|pro\b/i.test(lk.t), '17 free: the past dailies stay locked, no price and no buy button');
+  ok(lk.pick, '17 before the vote, the home says nothing about it');
+  await ctx.close();
+
+  /* Survivor */
+  step(tag + ' 17 survivor', full ? 1500 : 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockSurv=2', { meterOff: true }));
+  await page.waitForSelector('#h-surv:not([hidden]) .tm-s:not(:empty)', { timeout: 30000 });
+  const row = await page.evaluate(() => ({ t: document.getElementById('h-surv').textContent, h: document.getElementById('h-surv').getBoundingClientRect().height }));
+  ok(/survivor/.test(row.t) && row.h >= 38, '17 Survivor is on the home menu beside the daily: "' + row.t + '"');
+  ok(await nothingOpen(page), '17 nothing opens by itself on the home');
+  await page.click('#h-surv');
+  await page.waitForSelector('#s-surv.on #sv-go');
+  await page.waitForSelector('#sv-list .bd-rows', { timeout: 30000 });
+  ok(await page.textContent('#sv-go') === 'start the run' && await tall(page, '#s-surv button'), '17 the Survivor screen: a start button and the Survivor leaderboard');
+  const c3 = await oneCount(page, 's-surv');
+  ok(c3.times === 1, '17 the Survivor leaderboard says its count once ("' + c3.n + '", ' + c3.times + ' time)');
+  ok(await noSideScroll(page), '17 the Survivor screen has no sideways scroll');
+  await shotM(page, 'survivor-start');
+  if (full) {
+    await homeWarm(page);
+    await page.click('#sv-go');
+    await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 120000 });
+    await stageReady(page);
+    const betweens = [], problems = [];
+    let pitches = 0;
+    for (let i = 0; i < 160; i++) {
+      const scr = await page.evaluate(() => document.body.dataset.screen);
+      if (scr === 's-surv') break;
+      if (scr === 's-next') {
+        const nx = await page.evaluate(() => ({ s: document.getElementById('nx-saves').textContent, n: document.getElementById('nx-next').textContent,
+          graded: !!document.querySelector('#s-next .sq, #s-next .oc') || /\b(green|yellow|orange|red|best call|pts)\b/i.test(document.getElementById('s-next').innerText),
+          sheet: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden) }));
+        betweens.push(nx);
+        if (betweens.length === 1) await shotM(page, 'survivor-between');
+        await page.waitForSelector('#s-mound.on', { timeout: 60000 });
+        await stageReady(page);
+        continue;
+      }
+      if (scr !== 's-mound' || await page.evaluate(() => window.STD_UI.state.busy)) { await page.waitForTimeout(120); continue; }
+      await page.click('#m-arsenal .pitch >> nth=0');
+      await page.click('#m-aim .cell[data-cell="12"]');
+      await page.click('#m-throw');
+      pitches++;
+      await page.waitForFunction(() => !window.STD_UI.state.busy || document.body.dataset.screen !== 's-mound', null, { timeout: PITCH_MS });
+      const q = await quietProblems(page);
+      problems.push(...q.out);
+    }
+    ok(problems.length === 0, '17 Survivor: nothing graded or over the field during ' + pitches + ' pitches' + (problems.length ? ': ' + problems.slice(0, 3).join(' | ') : ''));
+    ok(betweens.length === 2 && betweens.every((b, i) => b.s === 'saves: ' + (i + 1) && /^next: .+, \d{4}$/.test(b.n) && !b.graded && !b.sheet),
+      '17 each save goes straight on: ' + betweens.map((b) => '"' + b.s + '. ' + b.n + '"').join(', ') + ', no grade and no popup');
+    await page.waitForSelector('#s-surv.on #sv-list .bd-rows', { timeout: 15000 });
+    const end = await page.evaluate(() => ({ saves: (document.querySelector('#sv-you .bd-rank b') || {}).textContent, go: !!document.getElementById('sv-go'),
+      next: (document.querySelector('#sv-you .sv-next') || {}).textContent, chips: [...document.querySelectorAll('#sv-you .sv-run .oc')].map((c) => c.textContent) }));
+    ok(end.saves === '2' && !end.go && /next one opens in (\d+h )?\d+m\./.test(end.next || '') && end.chips.join(',') === 'door shut,door shut,walk-off',
+      '17 the walk-off ends the run on the Survivor board: ' + end.saves + ' saves, "' + end.next + '"');
+    await shotM(page, 'survivor-over');
+    await page.click('#sv-back');
+    await page.waitForFunction(() => /2 saves today · next run in/.test(document.querySelector('#h-surv .tm-s').textContent), null, { timeout: 30000 });
+    ok(true, '17 the home row says the run is used and when the next opens');
+    const again = await page.evaluate(() => window.STD_API.survivorStart().then(() => 'started', (e) => e.message));
+    ok(again === 'one run a day', '17 one run a day: a second start is refused (' + again + ')');
+    const ent = await page.evaluate(() => window.STD_API.entitlements());
+    ok(ent.pro === false && ent.survivorRuns === 1, '17 the Pro hook is there and off: survivorRuns ' + ent.survivorRuns);
+  }
+  ok(errors.length === 0, '17 Survivor: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* 18. RULES 8, THE SWITCH (CONTRACT.md 5j). Rivera 2009 (the Yankees' 8th: 2 runs) on a day after
+   rules 8 starts. From the vote's first day the page plays the day the vote locked, kept on the device
+   (std_picks_v1), so the check keeps Rivera's lock there, as a device that has heard the server would.
+   The calls to the third out of the 8th are found here with the real engine on the day's seed (each
+   pitch the one that does best for the out), then played through the page with the meter off and the
+   aim exact (a cell, then the arrow keys, which aim at its centre), so the same pitches meet the same
+   luck on the page. */
+const HALF_DAY = '2026-11-24', HALF_PACK = 'std-2009-alcs6-rivera';
+function callsToHalf() {
+  const E = require(path.join(ROOT, 'shut-the-door/engine.js')), G = require(path.join(ROOT, 'shut-the-door/grade.js'));
+  const pack = JSON.parse(fs.readFileSync(path.join(ROOT, 'shut-the-door/data/packs', HALF_PACK + '.json'), 'utf8'));
+  const model = new G.Model(pack), seed = E.seedFor('daily', HALF_DAY);
+  const play = (calls) => { const o = E.createOuting(pack, { seed, mode: 'daily', model, outingId: 'check' }); for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); } return E.publicState(o); };
+  const types = pack.scenario.pitcher.arsenal.map((a) => a.type), calls = [];
+  for (let k = 0; k < 40; k++) {
+    const s0 = play(calls);
+    if (s0.status !== 'live' || s0.halves.length) break;
+    let best = null;
+    for (const type of types) for (let cell = 0; cell < 25; cell++) {
+      const c = { type, cell, at: [0, 0] }, st = play(calls.concat([c]));
+      const sc = (st.halves.length ? 1e6 : 0) - (st.score.them - s0.score.them) * 1e4 - (st.status === 'over' ? 1e5 : 0) + (st.outs - s0.outs) * 100 + st.count.s * 10 - st.count.b * 5 - (st.bases ? 20 : 0);
+      if (!best || sc > best.sc) best = { sc, c };
+    }
+    calls.push(best.c);
+  }
+  const end = play(calls);
+  return { calls, ho: end.halves[0] || null, pack };
+}
+/* open the two-half day on the page and play the calls; the last one's state is left to the caller */
+async function halfPage(w, h) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(HALF_DAY + 'T16:00:00Z'));
+  await page.addInitScript(STAGE_TEST);
+  await page.addInitScript(([day, id]) => { try {
+    localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false, sound: false }));
+    localStorage.setItem('std_picks_v1', JSON.stringify({ v: 1, days: { [day]: id } }));
+  } catch (e) {} }, [HALF_DAY, HALF_PACK]);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 60000 });
+  ok(await page.evaluate((id) => window.STD_UI.state.scn.id === id, HALF_PACK), '18 the day plays ' + HALF_PACK + ', two halves');
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 120000 });
+  await stageReady(page);
+  return { ctx, page, errors };
+}
+async function aimAndThrow(page, types, c) {
+  await page.keyboard.press(String(types.indexOf(c.type) + 1));
+  await page.click(`#m-aim .cell[data-cell="${c.cell}"]`);
+  const row = Math.floor(c.cell / 5);
+  await page.keyboard.press(row < 4 ? 'ArrowDown' : 'ArrowUp');
+  await page.keyboard.press(row < 4 ? 'ArrowUp' : 'ArrowDown');
+  await page.click('#m-throw');
+}
+/* the scorebug against the outing's state: the inning of the half being pitched, outs, bases, score, count */
+const bugReads = (page) => page.evaluate(() => {
+  const st = window.STD_UI.state.outing, hf = st.half || {};
+  const inn = document.getElementById('m-inn').textContent.replace(/tied/, '').trim();
+  const outs = document.querySelectorAll('#m-outs i.on').length;
+  const bases = ['b1', 'b2', 'b3'].reduce((a, k, i) => a | (document.querySelector('#m-bases .' + k).classList.contains('on') ? 1 << i : 0), 0);
+  const cnt = document.getElementById('m-count').getAttribute('aria-label');
+  return { inn, want: (hf.half === 'bottom' ? 'bot' : 'top') + ' ' + hf.inning, outs, wantOuts: st.outs, bases, wantBases: st.bases,
+    us: document.getElementById('m-us').textContent, them: document.getElementById('m-them').textContent, score: st.score, cnt, wantCnt: st.count.b + ' balls, ' + st.count.s + ' strikes' };
+});
+const bugOk = (b) => b.inn === b.want && b.outs === b.wantOuts && b.bases === b.wantBases && +b.us === b.score.us && +b.them === b.score.them && b.cnt === b.wantCnt;
+async function halfSwitch(w, h) {
+  const tag = w + 'x' + h;
+  console.log('\nrules 8, the switch, ' + tag);
+  step(tag + ' 18 the switch', 900);
+  const plan = callsToHalf();
+  ok(!!plan.ho, '18 the engine finds the third out of the 8th in ' + plan.calls.length + ' pitches');
+  if (!plan.ho) return;
+  const { ctx, page, errors } = await halfPage(w, h);
+  const types = await page.evaluate(() => window.STD_UI.state.scn.pitcher.arsenal.map((a) => a.type));
+  const b8 = await bugReads(page);
+  ok(bugOk(b8) && /8/.test(b8.inn), '18 before the switch the scorebug reads the 8th: "' + b8.inn + '"');
+  for (const c of plan.calls) {
+    await aimAndThrow(page, types, c);
+    await page.waitForFunction(() => !window.STD_UI.state.busy && document.body.dataset.screen === 's-mound', null, { timeout: PITCH_MS });
+  }
+  const b9 = await bugReads(page);
+  ok(bugOk(b9) && b9.want === (plan.ho.next.half === 'bottom' ? 'bot' : 'top') + ' ' + plan.ho.next.inning && b9.outs === 0 && b9.bases === 0 && +b9.us === plan.ho.next.score.us,
+    '18 after the switch the scorebug follows the half: "' + b9.inn + '", ' + b9.outs + ' out, bases ' + b9.bases + ', ' + b9.us + '-' + b9.them + ', ' + b9.cnt);
+  ok(errors.length === 0, '18 the switch: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* 18, THE CARD BETWEEN HIS HALVES (the owner 2026-10-30): "finish the eighth inning, and then it should
+   show a quick little animated game simulation of the box score of what's happening when your team is
+   hitting, and then it'll put you back into the ninth inning". The same day and calls as the switch;
+   at 390 the card plays out by itself, at 1440 a tap skips it. */
+async function halves(w, h, skip) {
+  const tag = w + 'x' + h;
+  console.log('\nbetween two halves, ' + tag);
+  step(tag + ' 18 between two halves', 900);
+  const plan = callsToHalf();
+  ok(!!plan.ho && plan.ho.between.pas.length > 0, '18 the engine finds the third out of the 8th in ' + plan.calls.length + ' pitches, with ' + (plan.ho ? plan.ho.between.pas.length : 0) + ' plate appearances between');
+  if (!plan.ho) return;
+  const { ctx, page, errors } = await halfPage(w, h);
+  const types = await page.evaluate(() => window.STD_UI.state.scn.pitcher.arsenal.map((a) => a.type));
+  let card = null;
+  for (let i = 0; i < plan.calls.length; i++) {
+    await aimAndThrow(page, types, plan.calls[i]);
+    if (i < plan.calls.length - 1) { await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: PITCH_MS }); continue; }
+    /* the third out: the card comes up once the play is seen, and only then */
+    await page.waitForSelector('#s-half.on', { timeout: PITCH_MS });
+    const t0 = Date.now();
+    const first = await page.evaluate(() => ({ eye: document.getElementById('hx-eye').textContent, head: document.getElementById('hx-head').textContent,
+      sheet: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden) }));
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-half-card.png`) });
+    if (skip) {
+      await page.waitForTimeout(900);
+      await page.mouse.click(w / 2, h / 2);
+      await page.waitForSelector('#s-mound.on', { timeout: 5000 });
+      card = { first, ms: Date.now() - t0, skipped: true };
+    } else {
+      await page.waitForSelector('#s-half.hx-end', { timeout: 15000 });
+      const end = await page.evaluate(() => {
+        const sec = document.getElementById('s-half');
+        return { rows: [...document.querySelectorAll('#hx-pas li')].map((li) => li.textContent), runs: [...document.querySelectorAll('#hx-pas .hx-r')].map((r) => +r.textContent.slice(1)),
+          R: [...document.querySelectorAll('#hx-line tbody tr')].map((tr) => tr.querySelector('.hx-t').textContent), sum: document.getElementById('hx-sum').textContent, next: document.getElementById('hx-next').textContent,
+          graded: !!sec.querySelector('.sq, .oc, .strip') || /\b(green|yellow|orange|red|best call|pts)\b/i.test(sec.innerText), scroll: document.documentElement.scrollWidth > innerWidth + 1 };
+      });
+      if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-half-card-end.png`) });
+      await page.waitForSelector('#s-mound.on', { timeout: 15000 });
+      card = { first, end, ms: Date.now() - t0 };
+    }
+  }
+  const ho = plan.ho, bt = ho.between, bat = bt.half === 'bottom' ? 1 : 0;
+  ok(card && card.first.eye === (ho.done.half === 'top' ? 'middle of the ' : 'end of the ') + ho.done.inning + 'th' && /bat$/.test(card.first.head) && !card.first.sheet,
+    '18 the third out of the 8th brings up the card: "' + (card && card.first.eye) + '", "' + (card && card.first.head) + '", no sheet');
+  if (card && card.end) {
+    const e = card.end;
+    ok(e.rows.length === bt.pas.length && e.rows.every((r, k) => r.includes(bt.pas[k].short || bt.pas[k].event || '')),
+      '18 his team\'s half plays plate appearance by plate appearance from the record (' + e.rows.length + ' of ' + bt.pas.length + ')');
+    ok(e.runs.reduce((a, b) => a + b, 0) === bt.runs && +e.R[bat] === ho.line.R[bat] && e.sum === (bt.runs === 1 ? '1 run.' : bt.runs + ' runs.'),
+      '18 the runs tick onto the line score: ' + bt.runs + ' in the half, R ' + e.R.join('-') + ', "' + e.sum + '"');
+    ok(!e.graded && !e.scroll, '18 the card shows no grade and fits the width');
+    ok(card.ms >= 3500 && card.ms <= 9500, '18 the card takes a few seconds by itself (' + (card.ms / 1000).toFixed(1) + ' s)');
+    ok(/^back out for the (top|bottom) of the 9th\. (up \d+|tied)\.$/.test(e.next), '18 then where he goes back out: "' + e.next + '"');
+  }
+  if (card && card.skipped) ok(card.ms < 4500, '18 a tap skips the card (back on the mound ' + (card.ms / 1000).toFixed(1) + ' s after it came up)');
+  await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
+  const nx = await page.evaluate(() => { const S = window.STD_UI.state; return { half: S.outing.half, pbp: document.getElementById('m-pbp').textContent, bat: document.getElementById('m-bname').textContent }; });
+  const b9 = await bugReads(page);
+  ok(nx.half && nx.half.inning === 9 && nx.pbp.includes(ho.next.leadoff.name) && nx.bat === ho.next.leadoff.name,
+    '18 back to the mound for the 9th: "' + nx.pbp.trim() + '"');
+  ok(bugOk(b9) && b9.want === (ho.next.half === 'bottom' ? 'bot' : 'top') + ' ' + ho.next.inning && b9.outs === 0 && b9.bases === 0 && +b9.us === ho.next.score.us && +b9.them === ho.next.score.them,
+    '18 after the card the scorebug follows the half: "' + b9.inn + '", ' + b9.outs + ' out, bases ' + b9.bases + ', ' + b9.us + '-' + b9.them + ', ' + b9.cnt);
+  /* one pitch of the 9th goes as any other */
+  await page.keyboard.press('1');
+  await page.click('#m-aim .cell[data-cell="12"]');
+  await page.click('#m-throw');
+  await page.waitForFunction(() => !window.STD_UI.state.busy || document.body.dataset.screen !== 's-mound', null, { timeout: PITCH_MS });
+  ok(await page.evaluate(() => window.STD_UI.state.outing.half.inning === 9 && window.STD_UI.state.outing.pitchNo > 0), '18 a pitch of the 9th throws as any other');
+  ok(bugOk(await bugReads(page)), '18 and the scorebug still reads the 9th after it');
+  ok(errors.length === 0, '18 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
+  await halfSwitch(390, 844);
   await sizeSweep();
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
@@ -1326,6 +1721,10 @@ try {
   await ending(1440, 900, 'tie_held', '&mockPro=none');
   await ending(1440, 900, 'doors_open', '&mockAuth=1');
   await ending(1440, 900, 'walk_off', '&mockPro=none');
+  await modes(390, 844, true);
+  await modes(1440, 900, false);
+  await halves(390, 844, false);
+  await halves(1440, 900, true);
 } catch (e) {
   fails++;
   console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));

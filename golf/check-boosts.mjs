@@ -415,7 +415,7 @@ try {
     // Diamond Putter, nothing on the Members Champion Jacket
     const WANT = { 'hw:ppvisor': { acc: 2 }, 'hw:pphallcap': { clu: 2 }, 'hw:pptricorn': { dist: 2 }, 'hw:ppminer': { app: 2 }, 'hw:ppexplorer': { bnk: 2 },
       'hw:pphallowscrown': { scr: 2 }, 'ew:pppixelshades': { app: 2 }, 'ew:ppeyepatch': { acc: 2 }, 'ew:ppaviatorgoggles': { clu: 2 }, 'ew:ppsnowgoggles': { sht: 2 },
-      'ew:ppphantommask': { dist: 2 }, 'bl:ppgoldstar': { sht: 2 }, 'bl:ppsprinkle': { scr: 2 }, 'bl:ppnugget': { dist: 2 }, 'bl:pplava': { dist: 2 }, 'bl:ppcloud': { acc: 2 },
+      'ew:ppphantommask': { dist: 2 }, 'bl:ppgoldstar': { sht: 2 }, 'bl:ppsprinkle': { scr: 2 }, 'bl:ppnugget': { dist: 2 }, 'bl:pplava': { dist: 2 }, 'bl:ppcloud': { acc: 2 }, 'bl:ppmoon': { acc: 2 }, 'bl:ppplanet': { dist: 2 },
       'bl:ppdinoegg': { scr: 2 }, 'bl:ppgoldleaf': { app: 2 }, 'bl:pphallowslantern': { bnk: 2 }, 'ct:ppclubhouse': { sht: 2 }, 'ct:pplavarock': { bnk: 2 }, 'ct:ppdinoclaw': { sht: 2 },
       'pu:pplollipop': { put: 2 }, 'pu:ppneon': { put: 2 }, 'pu:ppjadeidol': { put: 2 }, 'pu:pptusk': { put: 2 }, 'pu:ppharvest': { put: 2 }, 'pu:ppdiamond': { put: 4 },
       'tp:ppchampjacket': null };

@@ -1,0 +1,206 @@
+{
+ "id": "rivera-2011-602nd",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 286969,
+ "date": "2011-09-19",
+ "game": "Regular Season Game 1: Minnesota Twins at New York Yankees",
+ "gameType": "R",
+ "pitcher": {
+  "id": 121250,
+  "name": "Mariano Rivera",
+  "throws": "R",
+  "team": "New York Yankees",
+  "seasonLine": "1.91 ERA, 44 SV, 61.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 6,
+   "them": 4
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 80,
+   "batterId": 461858,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "121250": 5
+   },
+   "pitches": 5,
+   "event": "field_out",
+   "des": "Trevor Plouffe grounds out, second baseman Robinson Cano to first baseman Mark Teixeira.",
+   "feedEvent": "field_out",
+   "feedDescription": "Trevor Plouffe grounds out, second baseman Robinson Cano to first baseman Mark Teixeira.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Trevor Plouffe",
+   "batSideListed": "R",
+   "seasonLine": ".238/.305/.392, 8 HR"
+  },
+  {
+   "atBat": 81,
+   "batterId": 150212,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "121250": 5
+   },
+   "pitches": 5,
+   "event": "field_out",
+   "des": "Michael Cuddyer lines out to right fielder Chris Dickerson.",
+   "feedEvent": "field_out",
+   "feedDescription": "Michael Cuddyer lines out to right fielder Chris Dickerson.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Michael Cuddyer",
+   "batSideListed": "R",
+   "seasonLine": ".284/.346/.459, 20 HR"
+  },
+  {
+   "atBat": 82,
+   "batterId": 476633,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "121250": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Chris Parmelee called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Chris Parmelee called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Chris Parmelee",
+   "batSideListed": "L",
+   "seasonLine": ".355/.443/.592, 4 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 13,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 502143,
+   "name": "Danny Valencia",
+   "batSideListed": "R"
+  },
+  {
+   "id": 501920,
+   "name": "Brian Dinkelman",
+   "batSideListed": "L"
+  },
+  {
+   "id": 471863,
+   "name": "Luke Hughes",
+   "batSideListed": "R"
+  },
+  {
+   "id": 501994,
+   "name": "Joe Benson",
+   "batSideListed": "R"
+  },
+  {
+   "id": 460077,
+   "name": "Drew Butera",
+   "batSideListed": "R"
+  },
+  {
+   "id": 519184,
+   "name": "Ben Revere",
+   "batSideListed": "L"
+  },
+  {
+   "id": 461858,
+   "name": "Trevor Plouffe",
+   "batSideListed": "R"
+  },
+  {
+   "id": 150212,
+   "name": "Michael Cuddyer",
+   "batSideListed": "R"
+  },
+  {
+   "id": 476633,
+   "name": "Chris Parmelee",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 904,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 800,
+     "usage": 0.885,
+     "velo": 92.1,
+     "pfxXin": 5.8,
+     "pfxZin": 12.8
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 104,
+     "usage": 0.115,
+     "velo": 92.7,
+     "pfxXin": -6.5,
+     "pfxZin": 9.3
+    }
+   ],
+   "dropped": {
+    "IN": 8
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2011%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=121250"
+  },
+  "postseason": {
+   "pitches": 8,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 7,
+     "usage": 0.875,
+     "velo": 92.8,
+     "pfxXin": 5.2,
+     "pfxZin": 14.9
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 1,
+     "usage": 0.125,
+     "velo": 93.7,
+     "pfxXin": -4.9,
+     "pfxZin": 10.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2011%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=121250"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 286969: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=286969",
+  "MLB Stats API schedule 2011-09-19 and live feed /api/v1.1/game/286969/feed/live",
+  "MLB Stats API people with 2011 season stats",
+  "Baseball Savant 121250 2011 season search (regular season and postseason) for the arsenal"
+ ]
+}

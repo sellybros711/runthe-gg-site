@@ -37,12 +37,19 @@ let chromium;
 try { ({ chromium } = createRequire(path.join(ROOT, 'package.json'))('playwright')); }
 catch { console.error('needs Playwright: npm install --no-save playwright'); process.exit(2); }
 
+const AD_HOSTS = /^https?:\/\/([^/]*\.)?(googlesyndication\.com|doubleclick\.net|googleadservices\.com|googletagservices\.com|adtrafficquality\.google|fundingchoicesmessages\.google\.com|google-analytics\.com|googletagmanager\.com)\//;
 const host = new URL(BASE).host;
 const ours = (u) => { try { return new URL(u, BASE).host === host; } catch { return false; } };
 const browser = await chromium.launch();
 const rows = [];
 for (const p of PAGES) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  /* NEVER ASK GOOGLE FOR AN AD (Ads Agent, 2026-10-31). This runs every hour from a data centre, so
+     every ad it loaded was a robot's ad request and impression on the owner's AdSense account (576
+     page loads a day), and analytics counted it as a visitor. AdSense limited the account for
+     traffic quality on 2026-10-30. The ad and analytics hosts are refused here, so the check still
+     sees the site's own files and errors and never touches the ad account. */
+  await ctx.route(AD_HOSTS, (r) => r.abort('aborted'));
   const page = await ctx.newPage();
   const errors = [], missing = [], thirdParty = [];
   page.on('pageerror', (e) => {

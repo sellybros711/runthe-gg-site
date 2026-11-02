@@ -24,6 +24,8 @@ node shut-the-door/check-posture.mjs           unlisted until launch (INDEXED an
 node shut-the-door/test/engine.mjs             the engine on a synthetic pack: determinism, end rules, grades
 node shut-the-door/test/packs.mjs              every real pack: the contract, all-green best play, median at the 50th
 node shut-the-door/test/api.mjs                the four calls, the daily, resume, one submit
+node shut-the-door/test/modes.mjs              the vote's candidates and Survivor's sequence, page and server alike
+node shut-the-door/test/survivor.mjs           the vote, Survivor, the archive and the Pro gate through the calls
 node shut-the-door/test/lesson.mjs             the lesson on the worst pitch
 node shut-the-door/check-replays.mjs           stored outings replayed against their scores (--self-test)
 node shut-the-door/check-rules.mjs             every in-play row in every pack a legal MLB play
@@ -82,7 +84,12 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
   5i) is rules 6 plus the running game: steals on their own seeded stream (drawn only when a steal
   is on, so the four draws never move), the pickoff (`pa` on the call before) and the quick delivery
   (`ss: 1`, never called "quick pitch"; its costs live in `meter.js QUICK`). None of it is graded. A
-  call with `r: 6` replays as rules 6 (`fixtures/replays-rules6-pre-steals.json`). The strengths live in `grade.js R2`; change them only
+  call with `r: 6` replays as rules 6 (`fixtures/replays-rules6-pre-steals.json`). Rules 8 (2026-10-30,
+  CONTRACT.md 5j) is rules 7 plus the closer's real outing to the end of the game: every half he
+  pitched (`scenario.halves`, at least three outs), his team's real half between (`scenario.between`,
+  from the play by play, `pipeline/halves.py`), one value function over every half. A call with `r: 7`
+  replays on the first half alone (`Model.singleModel`, `fixtures/replays-rules7-pre-full-close.json`).
+  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

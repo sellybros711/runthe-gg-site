@@ -6,12 +6,12 @@
  * are our own posing laid over each capture's idle, and the umpire's strike call is blended in.
  */
 import * as THREE from 'three';
-import * as M from './materials.js?v=6';
+import * as M from './materials.js?v=8';
 import { battingClub, clubNamed } from './clubs.js?v=2';
-import { capFor } from './uniforms.js?v=1';
-import * as G from './gear3d.js?v=3';
-import * as HG from './headgear.js?v=3';
-import { measureHead, wear, wornShade } from './headgear.js?v=3';
+import { capFor, frontFor } from './uniforms.js?v=2';
+import * as G from './gear3d.js?v=4';
+import * as HG from './headgear.js?v=5';
+import { measureHead, wear, wornShade } from './headgear.js?v=5';
 import { wpos, wquat, boneBox, attach, twoBoneIK, bendWorld, rotateWorld } from './rig.js?v=1';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import { assetUrl } from './load.js?v=8';
@@ -83,7 +83,8 @@ const UNIFORM = new Set(['uniform', 'socks', 'gloves', 'undershirt', 'belt', 'nu
 /* Team kits. The closer's side (the catcher) wears the pack's club colours (pitcher.teamColors). The
    hitters wear their own club's real colours (clubs.js): the other club of the scenario's title, or of
    the series. Home whites, road greys: the home side is the pack's (usHome). The chest carries the
-   club's nickname in words, and nothing else: no logos, no crests, no wordmark artwork. */
+   club's nickname in words and, where the club's real jersey carried one that day (uniforms.js
+   FRONT), his number under it, and nothing else: no logos, no crests, no wordmark artwork. */
 const WHITE = '#f2f1ec', GREY = '#a3a6aa';
 const FALLBACK = ['#1b2a4a', '#c4ced4'];          // a scenario that names no second club (no words)
 const hsl = (c) => new THREE.Color(c).getHSL({}, THREE.SRGBColorSpace);   // perceptual: the lightness is sRGB's
@@ -115,8 +116,11 @@ export function kitFor(facts, side) {
   if (side !== 'us' && alike(trim, ourTrim) && !alike(other, ourTrim) && contrast(other, home ? WHITE : GREY) >= 1.8) [trim, other] = [other, trim];
   const C = (x) => new THREE.Color(x);
   const words = club && club.nick ? (club.as || club.nick).toUpperCase() : null;
+  // (only with the words: a side with no club named wears a neutral kit, with nothing on the chest)
+  const fr = words ? frontFor(facts.scenarioId, side) : null;
+  const front = fr ? { at: fr.at, color: C(fr.color || trim), outline: fr.outline ? C(fr.outline) : null } : null;
   return { base: C(home ? WHITE : GREY), trim: C(trim), stripe: C(trim), sock: C(trim), slot: C(WHITE), number: C(trim), cap: C(capFor(facts.scenarioId, side) || trim),
-    undershirt: C(trim), belt: C('#111111'), glove: C(lum(other) > 0.85 ? '#f2f2f2' : other), gloveAccent: C(trim), home, words };
+    undershirt: C(trim), belt: C('#111111'), glove: C(lum(other) > 0.85 ? '#f2f2f2' : other), gloveAccent: C(trim), home, words, front };
 }
 
 // the nameplate on the jersey's front, as shares of the jersey's own box (x across, y up from the hem):
@@ -130,9 +134,21 @@ function wordBox(geo) {
   const cx = b.min.x + (b.max.x - b.min.x) * WORD_AT.x, cy = b.min.y + (b.max.y - b.min.y) * WORD_AT.y;
   return [cx - W / 2, cy - H / 2, W, H];
 }
+// the front number, as shares of the same box: its figures FRONT_AT.h of the box's height (5 in, the
+// Dodgers' own numerals, on a 6 ft hitter, scaling with him as the kit does), its centre FRONT_AT.dx
+// of the box's width off the jersey's middle to the wearer's side, the top of the figures about 4 cm
+// under the words. The model faces +z in the bind pose, so the wearer's left is +x.
+const FRONT_AT = { dx: 0.1, y: 0.47, h: 0.17 };
+function frontBox(geo, at) {
+  if (!geo.boundingBox) geo.computeBoundingBox();
+  const b = geo.boundingBox, bw = b.max.x - b.min.x, bh = b.max.y - b.min.y;
+  const H = bh * FRONT_AT.h, W = H * M.FRONT_ASPECT;
+  const cx = b.min.x + bw * (0.5 + (at === 'R' ? -1 : 1) * FRONT_AT.dx), cy = b.min.y + bh * FRONT_AT.y;
+  return [cx - W / 2, cy - H / 2, W, H];
+}
 
 /** Put a kit on a person: the uniform's trim mask coloured, the club's name on the jersey's front, the
-    number drawn on the back. */
+    number drawn on the back, and on the front too where the club wore it there (kit.front). */
 export function dress(p, kit, numberText, weave) {
   p.kit = kit;
   for (const o of p.meshes) {
@@ -145,13 +161,17 @@ export function dress(p, kit, numberText, weave) {
     const was = o.material;
     if (was && was.userData.dressed) {
       if (was.name === 'number' && was.map) was.map.dispose();
+      if (was.userData.frontTex) was.userData.frontTex.dispose();
       was.dispose();
     }
     if (part === 'uniform') {
       // the pants are a 'uniform' too: only the jersey (its node is named so) carries the words
       const jersey = !!(o.parent && /jersey/i.test(o.parent.name));
       const words = jersey && kit.words ? { text: kit.words, color: kit.trim, box: wordBox(o.geometry) } : null;
-      o.material = M.uniform(src, { base: kit.base, trim: kit.trim, stripe: kit.stripe, slot: kit.base }, { weave, words });
+      const front = jersey && kit.front && numberText
+        ? { tex: M.frontNumberTexture(String(numberText), !!kit.front.outline), box: frontBox(o.geometry, kit.front.at), color: kit.front.color, outline: kit.front.outline }
+        : null;
+      o.material = M.uniform(src, { base: kit.base, trim: kit.trim, stripe: kit.stripe, slot: kit.base }, { weave, words, front });
     }
     else if (part === 'number') { o.material = M.numberMaterial(numberText, kit.number, kit.base, src); o.visible = !!numberText; }
     else if (part === 'socks') o.material = M.uniform(src, { base: kit.sock, trim: kit.sock, stripe: kit.sock, slot: kit.slot }, { weave });
@@ -564,7 +584,10 @@ export class People {
     b.root.position.set(0, 0, 0); b.root.rotation.set(0, 0, 0); b.root.scale.setScalar(1);
     b.root.updateMatrixWorld(true);
     b.chain = null; b.feetSwing = null; b.feetTake = null; b.footGeom = null; b.clavBind = null;
-    dress(b, kitFor(this.facts, 'them'), f.number ?? '24', this.knit);
+    // (the front number only with his real number: a number the hash made up stays on his back)
+    const kit = kitFor(this.facts, 'them');
+    if (!f.numberSrc) kit.front = null;
+    dress(b, kit, f.number ?? '24', this.knit);
     this.look(b, f);
     this.setupBatter(b);
     if (this.umpire) this.placeUmpire(this.umpire);
@@ -606,8 +629,10 @@ export class People {
   }
 
   /* ---------------------------------------------------------------- batter */
-  /** His look from the pack's facts (a hash of his id: skin tone and facial hair, never a
-      likeness): the darker skin map mixed in, the beard mask darkened. */
+  /** His look from the pack's facts (looks.js): the skin tone set for the real player where known,
+      else a hash of his id, and the facial hair the same way. The face itself is the one generic
+      head (the vault decision 2026-10-31-shut-the-door-hitter-looks). The darker skin map mixed in,
+      the beard mask darkened. */
   look(p, f) {
     const skin = p.meshes.find((m) => m.material.name === 'skin');
     if (!skin || !skin.material.userData.u) return;
@@ -1162,7 +1187,12 @@ export class People {
       }
       J.push(cur.axis.clone().multiplyScalar(-S[9] * IN));
     };
-    let cur, fresh = false;
+    // local: once a step from a freshly measured model fails, every step is taken from where the
+    // solve is (dq from p) instead of from no aim: the damping then shortens the step toward p, as a
+    // trust region should. From no aim, a damped step only shrank toward no aim, away from a p that
+    // was already near the ball, and the solve stalled there (a tall hitter's low, away pitch ended
+    // 3 cm off the ball and so 3 cm into the wood)
+    let cur, fresh = false, local = false;
     const solve = () => {
       set(p);
       cur = errAt(y0 + p[9]);
@@ -1172,16 +1202,16 @@ export class People {
         // linear model says puts the bat on the ball, each kept within its range
         // (an active set: a parameter the solution pushes past its range is held at the limit and the
         // rest solved again, so the others take up what it cannot)
-        const qv = p.map((v, i) => v / S[i]), fixed = new Array(N).fill(null);
+        const qv = p.map((v, i) => v / S[i]), fixed = new Array(N).fill(null), from = local ? qv : qv.map(() => 0);
         let want = null;
         for (let pass = 0; pass < 4; pass++) {
           const r = cur.e.clone();
-          J.forEach((c, i) => r.addScaledVector(c, (fixed[i] != null ? fixed[i] / S[i] : 0) - qv[i]));
+          J.forEach((c, i) => r.addScaledVector(c, (fixed[i] != null ? fixed[i] / S[i] : from[i]) - qv[i]));
           const e = M.set(0, 0, 0, 0, 0, 0, 0, 0, 0).elements;
           J.forEach((c, j) => { if (fixed[j] != null) return; const v = [c.x, c.y, c.z]; for (let i = 0; i < 3; i++) for (let k = 0; k < 3; k++) e[k * 3 + i] += v[i] * v[k]; });
           e[0] += mu; e[4] += mu; e[8] += mu;
           const y = r.applyMatrix3(M.invert());
-          const raw = p.map((_, i) => (fixed[i] != null ? fixed[i] : -J[i].dot(y) * S[i]));
+          const raw = p.map((_, i) => (fixed[i] != null ? fixed[i] : (from[i] - J[i].dot(y)) * S[i]));
           let more = false;
           want = raw.map((v, i) => {
             const c = THREE.MathUtils.clamp(v, LO[i], HI[i]);
@@ -1207,7 +1237,8 @@ export class People {
           mu = Math.max(1e-5, mu / 3);
           fresh = false;
         } else if (!fresh) J = null;            // (a stale model: measure it again)
-        else mu *= 8;                            // (a fresh one: a shorter, more cautious step)
+        else if (!local) local = true;           // (a fresh one: a step from here instead)
+        else mu *= 8;                            // (and then a shorter, more cautious one)
       }
     };
     solve();
@@ -1417,8 +1448,40 @@ export class People {
     // the chest protector on the upper spine, in front of the chest
     const torso = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'spine_03', 0.5);
     const tc = torso.getCenter(new THREE.Vector3());
-    const cp = G.chestProtector(team, 0.33, 0.47);
-    attach(c.bones.spine_03, cp, new THREE.Matrix4().setPosition(tc.x, tc.y - 0.17, torso.max.z + 0.088));   // out over the jersey
+    // (its hinged pads, each on the spine bone at its height and laid just off the jersey there: one
+    // board on the chest stood 9 cm off it so the belly could not come through as he crouched, and
+    // from the side it read as a board, the owner 2026-10-30)
+    const PW = 0.33, PH = 0.47, PN = 5, top = tc.y - 0.17 + PH / 2;
+    const front = (y0, y1) => {
+      let z = -Infinity;
+      const v = new THREE.Vector3();
+      for (const m of c.meshes) {
+        if (!m.isSkinnedMesh || !/^(skin|uniform)$/.test(m.material.name)) continue;
+        const pos = m.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+          if (v.y >= y0 && v.y <= y1 && Math.abs(v.x - tc.x) < 0.09 && v.z > z) z = v.z;
+        }
+      }
+      return z;
+    };
+    const spineY = ['spine_01', 'spine_02', 'spine_03'].map((n) => [n, wpos(c.bones[n]).y]);
+    for (let i = 0; i < PN; i++) {
+      const pad = G.chestPad(team, PW, PH, PN, i);
+      const y1 = top - (PH / PN) * i, y0 = y1 - PH / PN, yc = (y0 + y1) / 2;
+      // the highest spine bone at or below the pad's middle carries it (less a little: a bone sits
+      // at the bottom of the trunk it turns)
+      let bone = 'spine_01';
+      for (const [n, y] of spineY) if (y <= yc + 0.02) bone = n;
+      const z = front(y0 - 0.02, y1 + 0.02) + 0.012;
+      attach(c.bones[bone], pad.mesh, new THREE.Matrix4().setPosition(tc.x, yc, z));
+    }
+    const zTop = front(top - PH / PN, top + 0.02);
+    for (const sx of [-1, 1]) {
+      const cap = G.shoulderCap(team);
+      const m = new THREE.Matrix4().makeRotationZ(-sx * 0.5).setPosition(tc.x + sx * PW * 0.5, top - 0.035, zTop - 0.035);
+      attach(c.bones.spine_03, cap, m);
+    }
     // the mitt on his left hand, pocket toward the palm
     const hb = boneBox(c.meshes.filter((m) => m.material.name === 'skin'), 'hand_l', 0.5);
     const hc = hb.getCenter(new THREE.Vector3());
@@ -1433,8 +1496,10 @@ export class People {
     c.mitt = mitt;
     c.mittBindQ = mitt.quaternion.clone();
     face(c, P(0.1 + 0.4 * this.aimX(), -2.85, 0));
-    // a catcher's crouch: hips just above the heels, knees wide, on the balls of his feet
-    c.crouch = { drop: 0.5, back: 0.02, width: 0.27, toeOut: 0.42, heel: 0.35, lean: 0.18, kneeOut: 0.9 };
+    // a catcher's crouch, as a big league catcher sets with the bases empty: hips down at his heels,
+    // knees wide, up on the balls of his feet, his trunk over his knees (the owner, 2026-10-30: the
+    // old set, hips high and trunk upright, read as a man sitting on a chair)
+    c.crouch = { drop: 0.62, back: 0.06, width: 0.25, toeOut: 0.42, heel: 0.55, lean: 0.42, kneeOut: 0.9 };
     crouchFromClip(c);
     stance(c);
     // the block's stance, for a ball in the dirt
@@ -1553,11 +1618,11 @@ export class People {
 
   catcherArms(c, t) {
     const B = c.bones;
-    // the bare hand, a loose fist, resting on the outside of his right knee
-    const f = c.fwd, l = c.left;
-    const knee = wpos(B.calf_r);
-    const tuck = knee.clone().addScaledVector(l, -0.09).addScaledVector(f, -0.05).add(new THREE.Vector3(0, 0.07, 0));
-    const pole = wpos(B.lowerarm_r).addScaledVector(l, -0.6).addScaledVector(f, -0.4);
+    // the bare hand tucked behind his back, out of the way of a foul tip, as a catcher keeps it with
+    // the bases empty (it rested on his right knee and went into his thigh, the owner 2026-10-30)
+    const f = c.fwd, l = c.left, sc = c.root.scale.y;
+    const tuck = wpos(B.pelvis).addScaledVector(f, -0.14 * sc).addScaledVector(l, -0.05 * sc).add(new THREE.Vector3(0, 0.16 * sc, 0));
+    const pole = wpos(B.lowerarm_r).addScaledVector(l, -0.7).addScaledVector(f, -0.5);
     twoBoneIK(B.upperarm_r, B.lowerarm_r, B.hand_r, tuck, pole, 1);
     this.catcherReach(c, t);
   }

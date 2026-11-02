@@ -1,15 +1,15 @@
 /* No body snaps, pops, teleports or slides in the ball in play: every fielder and runner, every frame.
  *
- *   node shut-the-door/lab/pipeline/check-jolt.mjs              every 20th case check-inplay plans (2,925)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs              every 20th case check-inplay plans (8,297)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --all        every case (about three and a half hours)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --stride N   every Nth case
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --limit N    the first N of those (reported, not held)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --show N     print N of the worst in full
- *   node shut-the-door/lab/pipeline/check-jolt.mjs --sample N   about N of the held 2,925 (held at the ceilings' rate)
+ *   node shut-the-door/lab/pipeline/check-jolt.mjs --sample N   about N of the held 8,297 (held at the ceilings' rate)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --resume     pick up a killed run (checkpoint.mjs says how)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --shard I/4 --rows-out F   a quarter of the run, its plays to F
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --combine DIR the shards' files in DIR, held as one run
- *   (CI runs the held 2,925 as four shards and then --combine: the same plays, the same verdict, exactly)
+ *   (CI runs the held 8,297 as four shards and then --combine: the same plays, the same verdict, exactly)
  *   node shut-the-door/lab/pipeline/check-jolt.mjs --every-body  every body measured, on screen or not
  *       (ownCamera = false, the vault's way to compare two trees' motion; reported, never held)
  *
@@ -38,7 +38,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
-import { selection, holding, capStr, openCheckpoint, treeHash } from './checkpoint.mjs';
+import { selection, holding, capStr, openCheckpoint, treeHash, pinDay } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -96,36 +96,54 @@ export const BODY_MS = 16, LIMB_MS = 40, PLANT_M = 0.09, PLANT_N = 6, SKATE_MS =
 // fall 705 to 653 and with a skate 897 to 873; catch_throw is level there (3 and 3). Its bobble fix (a sprint to a
 // ball he only just reaches now pulls up) takes pop fielder bobble from 107 to 0 and skate fielder bobble from 22
 // to 1 on that held run. Recorded here once, on the coordinator's decision.
+// Thirty situations (site PR #825, 2026-10-30): the packs went from 10 to 30, so the held set (every 20th case) went
+// from 2,925 plays to 8,438. Fixed at the source first, on main's same 2,925 with every body measured: the run and
+// sprint loops close (a capture's legs jumped back a period at every stride, the runner's foot at 40-45 m/s: the
+// seam is now taken in while each foot is in the air, a planted leg keeping the capture's own pose), and a fielder
+// laid out at a shoestring drop no longer spins as he stops (pop fielder drop and bobble). Main had 1,291 plays
+// with a pop and 1,747 with a skate there; this branch had 1,299 and 1,746 before the fixes, 658 and 1,639 after.
+// pop fielder drop and bobble are 0 on the held 8,438. These are CI's counts on those 8,438, recorded once on the
+// coordinator's decision: only their coverage grew.
+// Every daily closes the game (rules 8, site PR #830, 2026-10-31): all thirty packs rebuilt, Kelly 2020 and Kershaw
+// 2016 out for Price 2008 and Rivera 2009, so the held set (every 20th case) is 8,297 plays and they are other plays
+// than main's. Fixed at the source first: a runner's planted foot stays where it lands (the pose put the foot about to
+// land on the dirt while the capture still had it in the air, and it skidded 0.4 m), a head turned to a ball behind
+// him comes round instead of flipping shoulder to shoulder, a pitcher turns to a loose ball the short way round, a
+// liner trapped at the shoe no longer stands a man up from his layout. Every body measured, each held set on its own
+// tree: main (5ddd447) 8,438 plays, 1,927 with a pop (22.84%) and 4,766 with a skate (56.48%); this branch before the
+// fixes 8,297 plays, 1,940 (23.38%) and 4,771 (57.50%); after them 1,788 (21.55%) and 4,090 (49.29%). Both down per
+// play, so these are CI's counts on the 8,297 at b8082f9, recorded once on the coordinator's decision. pop fielder
+// bobble is 2 (18.6 m/s at worst, heads just over the body's 16): it was 0 on main's 8,438.
 const CEILING = {
-  'pop fielder -': 437,
-  'pop fielder bobble': 0,
-  'pop fielder catch': 12,
-  'pop fielder catch_throw': 2,
-  'pop fielder cover': 71,
-  'pop fielder dive': 16,
-  'pop fielder dive_short': 75,
-  'pop fielder field': 100,
-  'pop fielder leap_miss': 2,
-  'pop fielder pickup': 19,
-  'pop fielder reach': 10,
-  'pop fielder set': 17,
-  'pop fielder tag': 195,
-  'pop fielder throw': 8,
-  'pop runner run': 614,
-  'skate fielder -': 215,
-  'skate fielder bobble': 1,
-  'skate fielder catch_throw': 4,
-  'skate fielder cover': 434,
-  'skate fielder dive': 27,
-  'skate fielder field': 461,
+  'pop fielder -': 425,
+  'pop fielder bobble': 2,
+  'pop fielder catch': 32,
+  'pop fielder catch_throw': 6,
+  'pop fielder cover': 1,
+  'pop fielder dive': 0,
+  'pop fielder dive_short': 201,
+  'pop fielder field': 175,
+  'pop fielder leap_miss': 0,
+  'pop fielder pickup': 35,
+  'pop fielder reach': 7,
+  'pop fielder set': 56,
+  'pop fielder tag': 523,
+  'pop fielder throw': 22,
+  'pop runner run': 436,
+  'skate fielder -': 174,
+  'skate fielder bobble': 3,
+  'skate fielder catch_throw': 15,
+  'skate fielder cover': 387,
+  'skate fielder dive': 60,
+  'skate fielder field': 1118,
   'skate fielder leap_miss': 0,
-  'skate fielder pickup': 619,
-  'skate fielder reach': 12,
-  'skate fielder receive': 22,
-  'skate fielder set': 28,
-  'skate fielder tag': 331,
-  'skate fielder throw': 6,
-  'skate runner run': 872,
+  'skate fielder pickup': 1766,
+  'skate fielder reach': 64,
+  'skate fielder receive': 31,
+  'skate fielder set': 48,
+  'skate fielder tag': 98,
+  'skate fielder throw': 7,
+  'skate runner run': 960,
 };
 
 function loadPlaywright() {
@@ -157,6 +175,8 @@ await page.route('**/*', (route) => {
   if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
   return route.abort();
 });
+// (the day pinned: the stage is that day's scenario, checkpoint.mjs pinDay)
+await pinDay(page);
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 // the clips (fielder.glb) in, so the bodies run as the game shows them; nothing drawn
@@ -284,7 +304,7 @@ for (const r of rows) {
   }
   if (r.hits.length) worst.push({ tag: r.tag, ...r.hits.reduce((x, y) => (y.ms > x.ms ? y : x)) });
 }
-// (held: the default 2,925, as the ceilings were measured; a sample of them, --sample or a stride that
+// (held: the default 8,297, as the ceilings were measured; a sample of them, --sample or a stride that
 // is a multiple of 20, at the same rate; anything else reported)
 const HOLD = holding({ stride: STRIDE, heldStride: 20, n: nCases, heldN: Math.ceil(SEL.total / 20), partial: LIMIT !== Infinity || ONLY != null || EVERY, shard: shardOf });
 const held = HOLD.mode !== 'report';

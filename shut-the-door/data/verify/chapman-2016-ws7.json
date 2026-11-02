@@ -238,5 +238,245 @@
   "MLB Stats API schedule 2016-11-02 and live feed /api/v1.1/game/487637/feed/live",
   "MLB Stats API people with 2016 season stats",
   "Baseball Savant 547973 2016 season search (regular season and postseason) for the arsenal"
- ]
+ ],
+ "halves": [
+  {
+   "inning": 8,
+   "half": "bottom",
+   "real": true,
+   "outs": 2,
+   "bases": 1,
+   "walkOffLive": false,
+   "lineupIds": [
+    446386,
+    434658,
+    424825,
+    543228,
+    467793,
+    543401,
+    596019,
+    435063,
+    608070
+   ],
+   "lineupNames": [
+    "Brandon Guyer",
+    "Rajai Davis",
+    "Coco Crisp",
+    "Yan Gomes",
+    "Carlos Santana",
+    "Jason Kipnis",
+    "Francisco Lindor",
+    "Mike Napoli",
+    "José Ramírez"
+   ]
+  },
+  {
+   "inning": 9,
+   "half": "bottom",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": true,
+   "lineupIds": [
+    446386,
+    434658,
+    492841,
+    543228,
+    467793,
+    543401,
+    596019,
+    435063,
+    608070
+   ],
+   "lineupNames": [
+    "Brandon Guyer",
+    "Rajai Davis",
+    "Michael Martinez",
+    "Yan Gomes",
+    "Carlos Santana",
+    "Jason Kipnis",
+    "Francisco Lindor",
+    "Mike Napoli",
+    "José Ramírez"
+   ]
+  }
+ ],
+ "between": [
+  {
+   "inning": 9,
+   "half": "top",
+   "team": "Chicago Cubs",
+   "abbr": "CHC",
+   "runs": 0,
+   "pas": [
+    {
+     "batter": {
+      "id": 424325,
+      "name": "David Ross"
+     },
+     "event": "Walk",
+     "short": "BB",
+     "des": "David Ross walks.",
+     "runs": 0,
+     "outs": 0,
+     "bases": 1,
+     "runners": [
+      424325,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 518792,
+      "name": "Jason Heyward"
+     },
+     "event": "Forceout",
+     "short": "4-6 FO",
+     "des": "Indians challenged (slide interference), call on the field was upheld: Jason Heyward grounds into a force out, second baseman Jason Kipnis to shortstop Francisco Lindor. Chris Coghlan out at 2nd. Jason Heyward to 1st.",
+     "runs": 0,
+     "outs": 1,
+     "bases": 1,
+     "runners": [
+      518792,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 595879,
+      "name": "Javier Báez"
+     },
+     "event": "Strikeout",
+     "short": "K",
+     "des": "Javier Baez strikes out on a foul bunt.",
+     "runs": 0,
+     "outs": 2,
+     "bases": 4,
+     "runners": [
+      null,
+      null,
+      518792
+     ],
+     "hit": false,
+     "err": 1
+    },
+    {
+     "batter": {
+      "id": 451594,
+      "name": "Dexter Fowler"
+     },
+     "event": "Groundout",
+     "short": "6-3",
+     "des": "Dexter Fowler grounds out, shortstop Francisco Lindor to first baseman Mike Napoli.",
+     "runs": 0,
+     "outs": 3,
+     "bases": 4,
+     "runners": [
+      null,
+      null,
+      518792
+     ],
+     "hit": false,
+     "err": 0
+    }
+   ],
+   "source": "MLB Stats API live feed /api/v1.1/game/487637/feed/live, top 9"
+  }
+ ],
+ "line": {
+  "teams": [
+   "CHC",
+   "CLE"
+  ],
+  "innings": [
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    2,
+    0
+   ],
+   [
+    2,
+    2
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ]
+  ],
+  "H": [
+   10,
+   7
+  ],
+  "E": [
+   3,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/487637/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [
+  {
+   "atBat": 74,
+   "batterId": 467793,
+   "name": "Carlos Santana",
+   "event": "field_out",
+   "des": "Carlos Santana flies out to left fielder Ben Zobrist.",
+   "runs": 0,
+   "pitches": 6,
+   "inning": 9
+  },
+  {
+   "atBat": 75,
+   "batterId": 543401,
+   "name": "Jason Kipnis",
+   "event": "strikeout",
+   "des": "Jason Kipnis strikes out swinging.",
+   "runs": 0,
+   "pitches": 7,
+   "inning": 9
+  },
+  {
+   "atBat": 76,
+   "batterId": 596019,
+   "name": "Francisco Lindor",
+   "event": "field_out",
+   "des": "Francisco Lindor flies out to right fielder Jason Heyward.",
+   "runs": 0,
+   "pitches": 1,
+   "inning": 9
+  }
+ ],
+ "realFull": {
+  "outcome": "tie_held",
+  "pitches": 35,
+  "runs": 3,
+  "score": {
+   "us": 6,
+   "them": 6
+  }
+ }
 }

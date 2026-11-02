@@ -1,0 +1,258 @@
+{
+ "id": "urias-2020-ws6",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 635886,
+ "date": "2020-10-27",
+ "game": "World Series Game 6: Tampa Bay Rays at Los Angeles Dodgers",
+ "gameType": "W",
+ "pitcher": {
+  "id": 628711,
+  "name": "Julio Urías",
+  "throws": "L",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "3.27 ERA, 0 SV, 55.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 63,
+   "batterId": 622534,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "628711": 4
+   },
+   "pitches": 4,
+   "event": "field_out",
+   "des": "Manuel Margot flies out to right fielder Mookie Betts.",
+   "feedEvent": "field_out",
+   "feedDescription": "Manuel Margot flies out to right fielder Mookie Betts.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Manuel Margot",
+   "batSideListed": "R",
+   "seasonLine": ".269/.327/.352, 1 HR"
+  },
+  {
+   "atBat": 64,
+   "batterId": 670712,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "628711": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Mike Brosseau called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Mike Brosseau called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Mike Brosseau",
+   "batSideListed": "R",
+   "seasonLine": ".302/.378/.558, 5 HR"
+  },
+  {
+   "atBat": 65,
+   "batterId": 642715,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "628711": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Willy Adames called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Willy Adames called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Willy Adames",
+   "batSideListed": "R",
+   "seasonLine": ".259/.332/.481, 8 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 13,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 595281,
+   "name": "Kevin Kiermaier",
+   "batSideListed": "L"
+  },
+  {
+   "id": 605421,
+   "name": "Michael Pérez",
+   "batSideListed": "L"
+  },
+  {
+   "id": 650490,
+   "name": "Yandy Díaz",
+   "batSideListed": "R"
+  },
+  {
+   "id": 668227,
+   "name": "Randy Arozarena",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592669,
+   "name": "Hunter Renfroe",
+   "batSideListed": "R"
+  },
+  {
+   "id": 664040,
+   "name": "Brandon Lowe",
+   "batSideListed": "L"
+  },
+  {
+   "id": 622534,
+   "name": "Manuel Margot",
+   "batSideListed": "R"
+  },
+  {
+   "id": 670712,
+   "name": "Mike Brosseau",
+   "batSideListed": "R"
+  },
+  {
+   "id": 642715,
+   "name": "Willy Adames",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 875,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 489,
+     "usage": 0.5589,
+     "velo": 94.2,
+     "pfxXin": 4.2,
+     "pfxZin": 17.4
+    },
+    {
+     "type": "SV",
+     "name": "Slurve",
+     "n": 192,
+     "usage": 0.2194,
+     "velo": 80.9,
+     "pfxXin": -16.2,
+     "pfxZin": -2.2
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 116,
+     "usage": 0.1326,
+     "velo": 84.9,
+     "pfxXin": 14.7,
+     "pfxZin": 7.5
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 48,
+     "usage": 0.0549,
+     "velo": 86.3,
+     "pfxXin": -4.6,
+     "pfxZin": 4.0
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 26,
+     "usage": 0.0297,
+     "velo": 77.2,
+     "pfxXin": -8.5,
+     "pfxZin": -9.5
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 4,
+     "usage": 0.0046,
+     "velo": 93.9,
+     "pfxXin": 11.4,
+     "pfxZin": 14.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2020%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=628711"
+  },
+  "postseason": {
+   "pitches": 367,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 192,
+     "usage": 0.5232,
+     "velo": 94.6,
+     "pfxXin": 5.1,
+     "pfxZin": 18.1
+    },
+    {
+     "type": "SV",
+     "name": "Slurve",
+     "n": 135,
+     "usage": 0.3678,
+     "velo": 82.2,
+     "pfxXin": -15.0,
+     "pfxZin": 0.9
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 37,
+     "usage": 0.1008,
+     "velo": 87.6,
+     "pfxXin": 16.1,
+     "pfxZin": 6.1
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 3,
+     "usage": 0.0082,
+     "velo": 94.7,
+     "pfxXin": 11.5,
+     "pfxZin": 14.8
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2020%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=628711"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 635886: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=635886",
+  "MLB Stats API schedule 2020-10-27 and live feed /api/v1.1/game/635886/feed/live",
+  "MLB Stats API people with 2020 season stats",
+  "Baseball Savant 628711 2020 season search (regular season and postseason) for the arsenal"
+ ]
+}

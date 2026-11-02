@@ -81,15 +81,15 @@
  */
 import * as THREE from 'three';
 import { preload } from './load.js?v=8';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=6';
-import { People } from './people.js?v=40';
-import { Pitch, releaseOf } from './pitch.js?v=12';
-import { fromResult, motion } from './play.js?v=12';
-import { look } from './looks.js?v=3';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, reducedMotion } from './park.js?v=9';
+import { People } from './people.js?v=43';
+import { Pitch, releaseOf } from './pitch.js?v=13';
+import { fromResult, motion } from './play.js?v=13';
+import { look } from './looks.js?v=6';
 import { P } from './units.js?v=1';
-import { InPlay } from './inplay.js?v=32';
-import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=9';
-import { FirstPerson } from './firstperson.js?v=7';
+import { InPlay } from './inplay.js?v=43';
+import { Ghost, PITCH_COLORS, TYPE_COLORS } from './preview.js?v=10';
+import { FirstPerson } from './firstperson.js?v=14';
 
 const C = () => window.STD_CONTRACT;
 /* the picked pitch's colour to the page (aim.js tints the crosshair with it); null: none */
@@ -106,8 +106,14 @@ const CELL_FT = 0.553, CELL_PX = 38, MARGIN = 0.03, ROOM = 1.04;
    least is covered; none of that either: the widest frame, the hitter, his bat and the plate
    covered least, then the rest. (The owner, 2026-10-26: the info "shouldn't be covering up the
    batter or home plate". A single weighted sum once traded the scorebar over the hitter's head for
-   the catcher's mitt under the pitch list, at 844x390.) */
+   the catcher's mitt under the pitch list, at 844x390.)
+   The plate stays near the middle across (CENTRE: its middle within that share of the width either
+   side of the canvas's), as the pitcher looks at it: the frame clears the panels by standing back,
+   not by sliding the set off to one side (the owner, 2026-10-30: on some screens "the view is off
+   center, so it no longer reads as the pitcher's POV"; the plate sat at 19% of a 1480 wide window).
+   It gives way only to the hitter, his bat and the plate being clear. */
 const FREE_W = { batter: 10, bat: 3, plate: 6, apron: 1, catcher: 2, umpire: 2 };
+const CENTRE = 0.12;
 const FREE_HARD = { batter: true, bat: true, plate: true };
 // and a little further back than the set alone asks (the owner, 2026-10-26: "a little too close")
 const FREE_BACK = 1.12;
@@ -124,9 +130,14 @@ function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
     // the moves that keep it all in the canvas (too big: the hitter's own box)
     const range = (a0, a1, size, m, b) => (a1 - a0 <= size - 2 * m ? [a1 - (size - m), a0 - m] : [b[1] - (size - m), b[0] - m]);
     const bt = B[0];
-    const [xl, xh] = range(U.x0, U.x1, w, mx, [bt.x0, bt.x1]), [yl, yh] = range(U.y0, U.y1, h, my, [bt.y0, bt.y1]);
+    let [xl, xh] = range(U.x0, U.x1, w, mx, [bt.x0, bt.x1]);
+    const [yl, yh] = range(U.y0, U.y1, h, my, [bt.y0, bt.y1]);
+    // the moves that keep the plate near the middle (off: how far a move is from there, in px)
+    const pl = B[keys.indexOf('plate')], pc = (pl.x0 + pl.x1) / 2 - w / 2, cl = pc - CENTRE * w, ch = pc + CENTRE * w;
+    if (Math.max(xl, cl) <= Math.min(xh, ch)) { xl = Math.max(xl, cl); xh = Math.min(xh, ch); }
+    const off = (cx) => Math.max(0, cl - cx, cx - ch);
     for (let a = 0; a <= n; a++) for (let b = 0; b <= n; b++) {
-      const cx = xl + (xh - xl) * a / n, cy = yl + (yh - yl) * b / n;
+      const cx = xl + (xh - xl) * a / n, cy = yl + (yh - yl) * b / n, offc = off(cx);
       let cost = 0, hard = 0, clear = Math.min(U.x0 - cx, w - (U.x1 - cx), U.y0 - cy, h - (U.y1 - cy));
       for (const q of B) {
         const x0 = q.x0 - cx, x1 = q.x1 - cx, y0 = q.y0 - cy, y1 = q.y1 - cy, area = Math.max(1, (x1 - x0) * (y1 - y0));
@@ -136,24 +147,30 @@ function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
           else clear = Math.min(clear, Math.max(-ox, -oy));
         }
       }
-      // the hitter, his bat and the plate first, then the rest, then the most room
-      const soft = cost - hard;
-      if (!best || hard < best.hard - 1e-9 || (Math.abs(hard - best.hard) <= 1e-9 && (soft < best.soft - 1e-9 || (Math.abs(soft - best.soft) <= 1e-9 && clear > best.clear)))) best = { fw, cx, cy, cost, hard, soft, clear };
+      // the hitter, his bat and the plate first, then the plate near the middle, then the rest, then
+      // the most room
+      const soft = cost - hard, e = 1e-9;
+      const better = !best || hard < best.hard - e || (Math.abs(hard - best.hard) <= e && (offc < best.offc - 0.5 || (Math.abs(offc - best.offc) <= 0.5 &&
+        (soft < best.soft - e || (Math.abs(soft - best.soft) <= e && clear > best.clear)))));
+      if (better) best = { fw, cx, cy, cost, hard, soft, clear, offc };
     }
     return best;
   };
-  // everyone clear, on a 16 by 16 set of moves
-  let best = null;
-  for (let i = 0; i <= steps; i++) { best = place(i, 16); if (best.cost <= 1e-9) return best; }
-  // none: the gap that clears the hitter, his bat and the plate can be narrower than a 16th of the
-  // room (at 844x390 it was 16 px of 523), so look again on a finer set of moves
-  for (let i = 0; i <= steps; i++) { const b = place(i, 64); if (b.hard <= 1e-9) return b; }
-  return best;
+  // everyone clear with the plate near the middle, on a 16 by 16 set of moves; then the hitter, his
+  // bat and the plate clear with it there, on a finer set (the gap that clears them can be narrower
+  // than a 16th of the room: at 844x390 it was 16 px of 523); then the same two off the middle
+  const all = [];
+  for (let i = 0; i <= steps; i++) { const b = place(i, 16); all.push(b); if (b.cost <= 1e-9 && b.offc <= 0.5) return b; }
+  const fine = [];
+  for (let i = 0; i <= steps; i++) { const b = place(i, 64); fine.push(b); if (b.hard <= 1e-9 && b.offc <= 0.5) return b; }
+  return all.find((b) => b.cost <= 1e-9) || fine.find((b) => b.hard <= 1e-9) || all[all.length - 1];
 }
 const AN = () => window.STD_ANIM;
 const TEST = () => window.STD_STAGE_TEST;
 // the most a frame moves the play on, in real seconds (see THE CLOCK above)
 const MAX_STEP = 0.1;
+// the browser check's finer samples of the swing (keepSub in play): poses between frames, and the span round the result
+const SUB = 4, SUB_PRE = 0.3, SUB_POST = 0.2;
 // a foul is seen foul when the umpire starts his signal: 0.6 s after contact (people.js umpireMove)
 const FOUL_SIGNAL = 0.6;
 
@@ -170,7 +187,7 @@ function factsFrom(scn, extra) {
     release: releaseOf(p),
     batters: scn.batters.map((b) => {
       const bi = extra.bio && extra.bio[b.id];
-      return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot, heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id) };
+      return { id: b.id, bats: b.bats, szTop: b.szTop, szBot: b.szBot, heightIn: bi ? bi.heightIn : null, weightLb: bi ? bi.weightLb : null, ...look(b.id, scn.id) };
     }),
     uniform: extra.uniform,
   };
@@ -478,7 +495,12 @@ class Stage {
       this.fp.layout(w, h, this.safe, this.loaded ? this.gridRect() : null, this.hudPanels());
       // (a new screen moves his hand, so where the flight starts: the hitter and catcher read it again)
       if (this.pitch && this.loaded) { this.pitch.lens = this.fp.lensFor(this.pitch, this.eye, this.camera); this.people.setPlay(this.pitch, this.pitch.play, this.m); }
-      this.fp.pose(this.t);
+      // setPlay plans the hitter's feet by posing him through his capture (planBatterFeet), which
+      // leaves his body at the plan's last frame while his bat stays where the set put it: the bat
+      // went through his head at every set after a layout (the owner, 2026-10-30). Pose the set
+      // again; a pitch in the air poses itself every frame
+      if (this.pitch && this.loaded && !this.playing) this.pose(this.t);
+      else this.fp.pose(this.t);
     }
     if (this.loaded) this.soon();
   }
@@ -678,6 +700,7 @@ class Stage {
     try { run = this.inplay.begin({ pickoff: po, basesBefore: bases | (1 << (po.base - 1)) }, this.pitch, { hooks }); } catch (e) { console.error('the pickoff could not be staged', e); this.inplay.active = null; return { pickoff: false }; }
     // (a balk that walks a run in: the lead the next pitch's fielders read, sitBefore)
     if (po.runs) this.runsIn = (this.runsIn || 0) + po.runs;
+    if (po.halfOver) this.toHalf(po.halfOver);
     const tEnd = run.realDur + 0.3, callAt = run.resolveReal;
     return new Promise((done) => {
       let prev = null, clock = 0, frames = 0, raf = 0, called = false, finished = false;
@@ -722,12 +745,26 @@ class Stage {
       inning, and our lead (the scenario's, less the runs scored since the outing's first pitch, pr.n 1;
       an outing resumed mid way counts from its scenario's lead). Every pitch passes here, in order. */
   sitBefore(pr) {
-    if (!(pr.n > (this.lastN || 0))) this.runsIn = 0;
+    if (!(pr.n > (this.lastN || 0))) { this.runsIn = 0; this.halfAt = null; }
     this.lastN = pr.n || 0;
     const sc = this.scn && this.scn.situation ? this.scn.situation.score : null;
-    const sit = { inning: this.facts.situation.inning, margin: sc ? sc.us - sc.them - (this.runsIn || 0) : null };
+    // (rules 8: once a half is over, the next half's inning and lead, his team's runs between in it: halfAt)
+    const lead = this.halfAt ? this.halfAt.lead : sc ? sc.us - sc.them : null;
+    const sit = { inning: this.halfAt ? this.halfAt.inning : this.facts.situation.inning, margin: lead == null ? null : lead - (this.runsIn || 0) };
     this.runsIn = (this.runsIn || 0) + (pr.runs || 0);
+    if (pr.halfOver) this.toHalf(pr.halfOver);
     return sit;
+  }
+
+  /** A half is over (rules 8, the engine's halfOver record on the pitch or the pickoff that ended it): the
+      fielders read the next half's inning, and the lead after his team batted, from its first pitch on.
+      Read from the scenario's first half for the whole outing, the ninth was set as the eighth and his
+      team's runs between were never in the lead. */
+  toHalf(rec) {
+    const nx = rec && rec.next;
+    if (!nx || !nx.score) return;
+    this.halfAt = { inning: nx.inning, lead: nx.score.us - nx.score.them };
+    this.runsIn = 0;
   }
 
   /** One pitch, to the end of its play (THE PLAY'S TIMELINE, in the header). */
@@ -786,6 +823,27 @@ class Stage {
       rel: P(pt.rel.x, pt.rel.y, pt.rel.z).toArray().map((v) => Math.round(v * 1000) / 1000),
       zn: pr.actual ? pr.actual.zn : null, drawn: pr.drawn ? pr.drawn.id : null, bats: this.facts.batter.bats, resultAt, tEnd, frames: 0, skipped: false, s: [] };
     const keep = (t) => { if (trace.s.length < 400) trace.s.push(this.sample(t)); };
+    /* THE SWING, SAMPLED FINELY (the browser check only). Its stepped clock moves a quick play 0.06 s a
+       frame, and a fast swing goes from the stance through the ball to its held finish in two frames,
+       so a trace of frames alone caught the whip at whatever phase a frame landed on: Bobby Witt Jr.'s
+       foul tip read 0.79 m at 1440x900 and 1.16 m at 390x844, where it moves 1.79 m (the daily of
+       2026-11-01 turned the browser check red on it). So from SUB_PRE before the result to SUB_POST
+       after it the trace also takes SUB - 1 poses between frames: posed and sampled, never drawn, in
+       time order, the frame's own pose put back after. For a ball in play it stops at the result: the
+       broadcast owns the ball after it. */
+    let subPrev = null;
+    const keepSub = (ts) => {
+      if (TEST() && subPrev != null && ts > subPrev) {
+        const hi = run ? resultAt : resultAt + SUB_POST;
+        for (let k = 1; k < SUB; k++) {
+          const tk = subPrev + (ts - subPrev) * k / SUB;
+          if (tk < resultAt - SUB_PRE || tk > hi) continue;
+          this.pose(tk);
+          keep(tk);
+        }
+      }
+      subPrev = ts;
+    };
     // the ball's first moment after contact (hooks.land): in play, from the plan; a foul, the
     // umpire's signal
     const landAt = run && run.land ? resultAt + run.land.real : pr.result === 'foul' ? resultAt + FOUL_SIGNAL : null;
@@ -861,6 +919,7 @@ class Stage {
         const ts = sceneT(Math.min(t, tEnd));
         // the broadcast's camera moves worked out ahead, one shot a frame, while the pitch is in the air
         if (run && ts <= resultAt) this.inplay.prepare(this.camera.aspect);
+        keepSub(ts);
         this.pose(ts);
         if (run && ts > resultAt) { this.inplay.update(ts - resultAt, this.camera); this.firstPersonCut(); }
         if (!TEST() || trace.frames % (TEST().renderEvery || 1) === 0) this.render();

@@ -418,6 +418,30 @@
         "cfb/fantasy/index.html"
       ],
       "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The standings tab"
+    },
+    "shut-the-door-sticky": {
+      "slot": "2811195197",
+      "status": "live",
+      "where": [
+        "shut-the-door/ads.js"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Home, result, board, Survivor; never the mound or the tap-to-skip moments"
+    },
+    "shut-the-door-rail-left": {
+      "slot": "4451579924",
+      "status": "live",
+      "where": [
+        "shut-the-door/ads.js"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. Home, result, board, Survivor"
+    },
+    "shut-the-door-rail-right": {
+      "slot": "7871950188",
+      "status": "live",
+      "where": [
+        "shut-the-door/ads.js"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. Home, result, board, Survivor"
     }
   },
   "retired": {

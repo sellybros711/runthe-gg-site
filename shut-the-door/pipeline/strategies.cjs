@@ -54,7 +54,7 @@ const view = pr => (RULES >= 2 && G.scoutView && process.env.FUZZ !== '0' ? G.sc
 
 /* what the screen shows, scored: a swing is worth its whiff chance (a strike) against its damage on contact, a take is a strike in the zone and a ball out of it (dearer with more balls); every call, sorted */
 function visibleRank(o) {
-  const st = o.st, b = o.pack.scenario.batters[st.bi % o.model.N];
+  const st = o.st, b = o.pack.scenario.batters[o.model.who(st)];
   const pr = view(b.profile || {});
   const out = [];
   for (const a of o.pack.scenario.pitcher.arsenal) {
@@ -84,7 +84,7 @@ function averageCall(o) {
   return { type: t, cell: cells[Math.floor(o.pol() * cells.length)] };
 }
 function visible2(o) {
-  const st = o.st, b = o.pack.scenario.batters[st.bi % o.model.N];
+  const st = o.st, b = o.pack.scenario.batters[o.model.who(st)];
   const pr = view(b.profile || {});
   const ars = o.pack.scenario.pitcher.arsenal;
   const wh = t => (pr.whiff && pr.whiff[t] != null) ? pr.whiff[t] : 0.2;
@@ -119,7 +119,7 @@ function fixedTop(pack) {
   for (const type of pack.scenario.pitcher.arsenal.map(a => a.type)) for (let cell = 0; cell < 25; cell++) {
     const m = new G.Model(pack, { fresh: true });
     m.solve = function (st) {
-      const idx = G.stateIndex(this.N, this.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin);
+      const idx = G.stateIndex(this.N, this.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin, st.h);
       const hit = this._V.get(idx); if (hit) return hit;
       const cv = this.callValue(st, type, cell); const r = { hold: cv.hold, runs: cv.runs, type, cell };
       this._V.set(idx, r); return r; };

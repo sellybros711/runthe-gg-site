@@ -1659,6 +1659,10 @@
         if(c) return {c:y<-0.15?P.w:P.W,gloss:1}; }
       if(p[2]<-0.1&&Math.hypot(x+0.3,y-0.35)<0.3) return {c:P.W,gloss:1};                                      // a little one round the back
       return {c:y>0.6?P.h:P.C}; } },
+    // Moon Base: a moon with its craters (lit upper left), and a banded planet with a pale ring round its middle
+    ppmoon:{ f:(p,P)=>{ for(const [x,y,z,r] of [[-0.35,-0.3,0.88,0.28],[0.4,0.25,0.88,0.22],[0.05,0.6,0.8,0.17],[0.55,-0.45,0.7,0.14],[-0.2,0.2,-0.95,0.3]])
+        if(Math.hypot(p[0]-x,p[1]-y,p[2]-z)<r) return {c:P.d,dt:-1}; return {c:p[0]+p[1]<-0.4?P.h:P.C}; } },
+    ppplanet:{ f:(p,P)=>{ if(Math.abs(p[1]+0.22*p[0])<0.08) return {c:P.R,gloss:2}; return {c:((Math.floor((p[1]+1)*3.5))&1)?P.B:P.C,gloss:1}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};

@@ -572,7 +572,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 
 /* ---- the board: the ink panel with your rank, then the rows ---- */
 #s-board { padding: 4px 16px 32px; }
-.bd-back { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 8px 4px; margin: 0 0 4px; font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.bd-back { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; border: 0; background: none; padding: 8px 4px; margin: 0 0 4px; font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
 .bd-back i { width: 9px; height: 9px; border: solid currentColor; border-width: 0 0 2px 2px; transform: rotate(45deg); }
 .bd-hero { position: relative; overflow: hidden; padding: 18px 18px 18px; border-radius: 24px; color: var(--on-night); box-shadow: var(--shadow);
   background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 26px), linear-gradient(180deg, #1a2130, #0b0f17); }
@@ -581,6 +581,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .bd-hero::before { content: ''; position: absolute; right: -46px; top: -44px; width: 150px; height: 150px; background: url(brand/mark.svg?v=1) center / contain no-repeat; opacity: .06; transform: rotate(-10deg); pointer-events: none; }
 .bd-head { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 64px; line-height: .9; margin: 4px 0 6px; text-transform: uppercase; color: #fff; }
 .bd-head::after { content: '.'; color: var(--signal); }
+#bd-head::after { content: none; }
 .bd-hero .seam { margin-bottom: 14px; }
 .bd-rank { display: flex; align-items: baseline; gap: 10px; }
 .bd-rank b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 64px; line-height: .9; color: var(--signal); }
@@ -799,7 +800,12 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
    hitter. The ring closes on the crosshair once power is set. Frames move transforms only. The stop
    locks with the one word. Execution only: no grade colours (signal and data, never green to red). */
 .dock.metering .arsenal, .dock.metering .btn.throw { visibility: hidden; }
-.relm { position: absolute; z-index: 6; inset: 0; box-sizing: border-box; padding: 10px 14px 12px; border-radius: 16px;
+/* THE PANEL IS NEVER SHORTER THAN WHAT IT SAYS (2026-11-01). It covers the dock, so its height came
+   from the pitch buttons: a 2 pitch closer's dock (Tanner Scott, the first daily with one since the
+   cue grew) was 181 px on a desk and the cue and the two stops needed 236, so the cue was clipped.
+   It sits on the dock's bottom edge and is at least the dock's height; when the words need more it
+   grows up, over the running game row and the step line, both hidden while it runs. */
+.relm { position: absolute; z-index: 6; inset: auto 0 0; min-height: 100%; box-sizing: border-box; padding: 10px 14px 12px; border-radius: 16px;
   background: linear-gradient(180deg, rgba(34, 43, 62, .96), rgba(11, 15, 23, .97)); color: #f4f5f7; display: flex; flex-direction: column; justify-content: center; gap: 10px;
   box-shadow: 0 3px 0 var(--signal), 0 12px 30px rgba(11, 15, 23, .3); cursor: pointer;
   touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -1035,6 +1041,38 @@ body[data-screen="s-home"] .wm-dark { display: block !important; }
   .t-l1 { font-size: 58px; }
   .t-l2 { font-size: 86px; }
   .t-sit { padding: 14px; }
+}
+
+/* THE BOTTOM BANNER (ads.js, the owner 2026-11-01: "we can adjust layouts and gameplay so nothing is
+   clashing"). Only while body.rtg-sticky-on is set, so a closed banner leaves the layout as it was.
+   The home tightens and its links become a two row panel (one row on a desk), so on a tall phone
+   every control sits above the banner. On a short one, homeFold() in ui.js puts the first control
+   that would sit under it below the fold instead. */
+body.rtg-sticky-on .title { gap: 8px; }
+body.rtg-sticky-on .t-sit { gap: 6px; }
+body.rtg-sticky-on .t-menu { gap: 8px; }
+body.rtg-sticky-on .t-list { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+body.rtg-sticky-on .t-list button { grid-column: span 2; justify-content: center; min-height: 40px; padding: 0 6px; font-size: 17px; text-align: center; white-space: nowrap; }
+body.rtg-sticky-on .t-list button:nth-child(n+4) { grid-column: span 3; }
+body.rtg-sticky-on .t-list button + button { border-top: 0; box-shadow: inset 1px 0 0 rgba(255, 255, 255, .09); }
+body.rtg-sticky-on .t-list button:nth-child(4) { box-shadow: none; }
+body.rtg-sticky-on .t-list button:nth-child(n+4) { border-top: 1px solid rgba(255, 255, 255, .09); }
+body.rtg-sticky-on .t-list button::after { display: none; }
+@media (max-width: 370px) { body.rtg-sticky-on .t-list button { font-size: 15.5px; } }
+@media (min-width: 700px) {
+  body.rtg-sticky-on .title { gap: 12px; }
+  body.rtg-sticky-on .t-list { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  body.rtg-sticky-on .t-list button, body.rtg-sticky-on .t-list button:nth-child(n+4) { grid-column: auto; border-top: 0; font-size: 16px; }
+  body.rtg-sticky-on .t-list button:nth-child(4) { box-shadow: inset 1px 0 0 rgba(255, 255, 255, .09); }
+}
+/* the result: the after-the-outing list is a little shorter on a phone, and on a desk the rail stops
+   at the banner so its foot is never behind it */
+body.rtg-sticky-on .nv { min-height: 48px; }
+@media (min-width: 1100px) {
+  body.rtg-sticky-on .r-rail { bottom: var(--sticky-ad-h, 0px); }
+}
+@media (min-width: 1700px) {
+  body.rtg-sticky-on .nv { min-height: 54px; }
 }
 
 /* ---- THE MOUND, FULL SCREEN (the owner, 2026-10-24: "the game should take up the entire screen with
@@ -1378,4 +1416,155 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .relm .rm-cue-t small { font-size: 14px; }
   .relm .rm-steps { grid-template-columns: 1fr; }
   .relm .rm-step { min-height: 52px; }
+  /* re-aim keeps its own row over the cue: the cue's big line ran under it when the panel was short */
+  .relm.cue:not(.is-done) { padding-top: 54px; }
+  /* a 2 pitch dock is short: the two stops side by side, so the panel grows as little as it can */
+  #m-dock:has(#m-arsenal[data-n="2"]) .relm.two .rm-steps { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---- THE MODES AROUND THE DAILY (modes-ui.js, 2026-10-30): the save, the vote, Survivor ----
+   Each is a block on a screen the player opened, never a popup. Ink and signal, the board's look. */
+
+/* sign in to save your score: on the result's rail (ink), one line and one clear button */
+.r-save { margin: 0 0 14px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 79, 31, .14); box-shadow: inset 0 0 0 1.5px rgba(255, 79, 31, .55); }
+.r-save p { margin: 0 0 10px; font-size: 14px; color: rgba(244, 245, 247, .85); }
+.r-save p b { color: #fff; }
+.r-save.saved { background: rgba(34, 164, 93, .16); box-shadow: inset 0 0 0 1.5px rgba(34, 164, 93, .6); }
+.r-save.saved p { margin: 0; }
+.btn.save-b { width: 100%; min-height: 48px; background: var(--signal); color: #fff; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 21px; letter-spacing: .02em; text-transform: uppercase; box-shadow: 0 2px 0 #c43a12; }
+.btn.save-b:active { transform: translateY(2px); box-shadow: none; }
+.bd-in .btn.save-b { width: auto; flex: 1 1 220px; }
+
+/* the vote for tomorrow: two choices, one line each; after the vote the count fills behind them */
+.r-vote .r-sec-h > span { margin-left: auto; }
+.vt-opts { display: grid; gap: 8px; }
+@media (min-width: 1100px) { .vt-opts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.vt-o { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 10px 14px; border-radius: 14px; border: 1.5px solid var(--line-2); background: var(--panel); text-align: left; transition: border-color .15s, background .15s; }
+.vt-o:not([disabled]):hover, .vt-o:not([disabled]):focus-visible { border-color: var(--signal); background: var(--signal-soft); }
+.vt-o[disabled] { cursor: default; }
+.vt-o.on { border-color: var(--signal); }
+.vt-bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--data-soft); pointer-events: none; }
+.vt-o.on .vt-bar { background: var(--signal-soft); }
+.vt-t { position: relative; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.vt-t b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 21px; line-height: 1.05; text-transform: uppercase; }
+.vt-t span { font-size: 12.5px; color: var(--dim); }
+.vt-me { position: relative; margin-left: 10px; vertical-align: 3px; font-style: normal; font-family: var(--display); font-weight: 600; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--signal); }
+.vt-n { position: relative; flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.vt-n b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 22px; line-height: 1; color: var(--ink); }
+.vt-say { margin: 10px 2px 0; font-size: 13.5px; color: var(--dim); }
+.vt-say.ok b { color: var(--ink); }
+.vt-say.err { color: var(--red); }
+.vt-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 0 0; }
+.vt-in p { margin: 0; flex: 1 1 120px; font-size: 13.5px; color: var(--dim); }
+.vt-in .btn.save-b { width: auto; flex: 1 1 220px; }
+
+/* how today was picked, once the vote is on: one small line in the situation block */
+.t-sit .h-pick { margin: 0 2px; font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: #9db4ff; }
+
+/* the home's Survivor row, beside the daily: a mode, so a glass bar with its own name and its state */
+.t-mode { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 12px; align-items: center; gap: 2px 14px; min-height: 60px; padding: 9px 16px 9px 18px; border: 0; border-radius: 16px; text-align: left; color: #fff;
+  background: linear-gradient(90deg, rgba(43, 89, 255, .34), rgba(10, 14, 22, .62) 60%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.t-mode::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 3px 3px 0; background: var(--data); }
+.t-mode.live::before { background: var(--signal); }
+.t-mode .tm-k { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 26px; letter-spacing: .03em; text-transform: uppercase; line-height: 1; }
+.t-mode .tm-k { grid-row: 1; grid-column: 1; }
+.t-mode .tm-s { grid-row: 2; grid-column: 1; font-size: 13px; color: rgba(255, 255, 255, .8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-mode .chev { grid-row: 1 / span 2; grid-column: 2; }
+.t-mode .chev { width: 9px; height: 9px; border: solid rgba(255, 255, 255, .6); border-width: 2.5px 2.5px 0 0; transform: rotate(45deg); }
+.t-mode:hover, .t-mode:focus-visible { box-shadow: inset 0 0 0 1.5px var(--signal); outline: 0; }
+.t-mode:hover .chev, .t-mode:focus-visible .chev { border-color: var(--signal); }
+
+/* the Survivor screen: the board's frame, your run on the ink panel */
+#s-surv { padding: 4px 16px 32px; }
+.sv-say { margin: 0 0 14px; font-size: 14.5px; color: rgba(244, 245, 247, .85); }
+.sv-hero .btn.sv-go { margin-top: 14px; min-height: 56px; font-size: 26px; }
+.sv-hero .bd-head::after { color: var(--data); }
+.sv-hero .bd-rank b { color: var(--data); }
+:root[data-theme="dark"] .sv-hero .bd-rank b { color: #7d9bff; }
+.sv-run { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.sv-run li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 13px; color: rgba(244, 245, 247, .82); }
+.sv-run .sv-i { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: rgba(255, 255, 255, .1); font-family: var(--display); font-style: italic; font-weight: 900; font-size: 14px; color: #fff; }
+.sv-run .sv-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sv-next { margin: 14px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .07); font-size: 14px; color: rgba(244, 245, 247, .85); }
+.sv-next b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 20px; color: #fff; }
+.sv-hero .bd-in { margin-top: 16px; }
+.sv-cols, .sv-rows li { grid-template-columns: 32px minmax(0, 1fr) 44px 56px; }
+.bd-rows .nm em.live { color: var(--data); }
+.bd-rows .n.sv-sv { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 19px; color: var(--ink); }
+.sv-rows .n.sc { font-family: var(--sans); font-style: normal; font-weight: 600; font-size: 13px; color: var(--dim); }
+.sv-rows li.mine .n.sv-sv { color: var(--signal); }
+@media (min-width: 880px) { body[data-screen="s-surv"] .app { max-width: 1040px; } #s-surv { padding-top: 8px; } }
+
+/* between two Survivor spots: the saves and the next closer, on a night of its own. No grade. */
+body[data-screen="s-next"] .hdr { display: none; }
+body[data-screen="s-next"] .app { max-width: none; border: 0; }
+#s-next.on { display: grid; place-items: center; position: fixed; inset: 0; z-index: 25; padding: 24px 16px; color: #fff; cursor: pointer;
+  background: radial-gradient(70% 50% at 50% 0%, rgba(43, 89, 255, .35), transparent 70%), linear-gradient(180deg, #121a2a, #080b12); }
+.nx-in { width: 100%; max-width: 560px; }
+.nx-in .eyebrow { color: rgba(244, 245, 247, .7); }
+.nx-saves { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 92px; line-height: .9; text-transform: uppercase; color: #fff; animation: t-slam .34s cubic-bezier(.2, .9, .3, 1) both; }
+.nx-in .seam { width: 70%; margin: 10px 0 16px; }
+.nx-next { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 34px; line-height: 1; text-transform: uppercase; animation: t-up .4s .18s ease-out both; }
+.nx-next span { color: var(--signal); }
+.nx-occ { margin: 8px 0 0; font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: rgba(244, 245, 247, .7); animation: t-up .4s .26s ease-out both; }
+@media (min-width: 880px) { .nx-saves { font-size: 150px; } .nx-next { font-size: 52px; } .nx-occ { font-size: 18px; } }
+@media (prefers-reduced-motion: reduce) { .nx-saves, .nx-next, .nx-occ { animation: none; } }
+
+/* the archive (Pro): past dailies as a list of days. Shown only when entitlements() says so */
+.arc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin: 12px 0 0; }
+.arc-list button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 58px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--panel); text-align: left; }
+.arc-list button b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 22px; line-height: 1; }
+.arc-list button span { font-size: 12px; color: var(--dim); }
+.arc-list button:hover, .arc-list button:focus-visible { border-color: var(--signal); }
+.r-vote { scroll-margin-top: 12px; }
+/* LEADERBOARD is a longer word than "the board.": on a phone it scales with the width so it stays in its card */
+@media (max-width: 879px) { #bd-head { font-size: min(64px, 15.5vw); } }
+
+/* ---- BETWEEN TWO OF HIS HALVES (rules 8, box-ui.js): his team bats on the line score ----
+   The broadcast's look at the other dugout: a night of its own over the whole screen, the line score
+   by inning with R H E, the plate appearances ticking in, then where he goes back out. No grade. */
+body[data-screen="s-half"] .hdr { display: none; }
+body[data-screen="s-half"] .app { max-width: none; border: 0; }
+#s-half.on { display: flex; justify-content: center; align-items: flex-start; position: fixed; inset: 0; z-index: 25; padding: max(20px, 7vh) 16px 20px; color: #fff; cursor: pointer; overflow: hidden;
+  background: radial-gradient(70% 50% at 50% 0%, rgba(43, 89, 255, .32), transparent 70%), linear-gradient(180deg, #121a2a, #080b12); }
+:root:not([data-theme="dark"]) #s-half.on { background: radial-gradient(70% 50% at 50% 0%, rgba(43, 89, 255, .28), transparent 70%), linear-gradient(180deg, #1a2333, #0e1420); }
+.hx-in { width: 100%; max-width: 560px; max-height: 100%; display: flex; flex-direction: column; gap: 12px; }
+.hx-in > * { flex: none; }
+.hx-in .eyebrow { margin: 0; color: rgba(244, 245, 247, .7); }
+.hx-head { margin: -4px 0 0; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 52px; line-height: .92; text-transform: uppercase; color: #fff; animation: t-slam .34s cubic-bezier(.2, .9, .3, 1) both; }
+.hx-line { border-radius: 14px; background: rgba(0, 0, 0, .34); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); padding: 8px 8px 6px; overflow: hidden; }
+.hx-ls { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.hx-ls th, .hx-ls td { padding: 4px 0; text-align: center; font-size: 14px; }
+.hx-ls thead th { font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: rgba(244, 245, 247, .55); }
+.hx-ls tbody th { width: 46px; text-align: left; padding-left: 6px; font-family: var(--display); font-weight: 800; font-style: italic; font-size: 16px; letter-spacing: .04em; color: #fff; }
+.hx-ls thead th:first-child { width: 46px; }
+.hx-ls td { color: rgba(244, 245, 247, .82); }
+.hx-ls .hx-t { width: 30px; font-family: var(--display); font-weight: 900; font-style: italic; font-size: 17px; color: #fff; }
+.hx-ls thead .hx-t { font-size: 12px; font-style: normal; font-weight: 600; color: rgba(244, 245, 247, .7); }
+.hx-ls td.hx-t:first-of-type, .hx-ls thead th.hx-t:first-of-type { border-left: 1px solid rgba(255, 255, 255, .14); }
+.hx-ls tr.bat th { color: var(--signal); }
+.hx-ls td.live { box-shadow: inset 0 0 0 1.5px var(--signal); border-radius: 6px; color: #fff; font-weight: 700; }
+.hx-ls .pop { animation: hx-pop .5s cubic-bezier(.2, 1.6, .4, 1); color: var(--signal); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@keyframes hx-pop { 0% { transform: scale(1.7); } 100% { transform: none; } }
+.hx-sit { display: flex; align-items: center; gap: 14px; min-height: 30px; }
+.hx-bases { width: 40px; height: 30px; }
+.hx-bases .sb-path { fill: none; stroke: rgba(255, 255, 255, .25); }
+.hx-bases rect { fill: rgba(255, 255, 255, .12); stroke: rgba(255, 255, 255, .45); stroke-width: 1; }
+.hx-bases rect.on { fill: var(--signal); stroke: var(--signal); }
+.hx-outs { display: inline-flex; gap: 6px; }
+.hx-outs i { width: 11px; height: 11px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .45); }
+.hx-outs i.on { background: #fff; box-shadow: none; }
+.hx-in > .hx-pas { flex: 0 1 auto; min-height: 0; }
+.hx-pas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+.hx-pas li { flex: none; }
+.hx-pas li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 10px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .06); animation: t-up .28s ease-out both; }
+.hx-pas li b { font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hx-ev { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 17px; letter-spacing: .03em; text-transform: uppercase; color: rgba(244, 245, 247, .85); }
+.hx-r { font-style: normal; font-family: var(--display); font-weight: 900; font-size: 15px; color: #fff; background: var(--signal); border-radius: 6px; padding: 2px 7px 1px; }
+.hx-sum { margin: 0; min-height: 22px; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 22px; text-transform: uppercase; }
+.hx-next { margin: 0; min-height: 22px; font-size: 15px; color: rgba(244, 245, 247, .85); opacity: 0; transition: opacity .25s; }
+.hx-next.on { opacity: 1; }
+.hx-skip { margin: 4px 0 0; font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: rgba(244, 245, 247, .45); }
+@media (min-width: 880px) { .hx-in { max-width: 720px; gap: 16px; } .hx-head { font-size: 84px; } .hx-ls th, .hx-ls td { font-size: 17px; } .hx-ls .hx-t { width: 40px; font-size: 21px; } .hx-pas li b { font-size: 17px; } }
+@media (prefers-reduced-motion: reduce) { .hx-head, .hx-pas li, .hx-ls .pop { animation: none; } .hx-next { transition: none; } }

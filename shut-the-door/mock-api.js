@@ -58,7 +58,7 @@ function mockBoard(day, limit) {
   var mode = (/[?&]mockBoard=([^&]*)/.exec(location.search) || [])[1] || 'full';
   if (mode === 'fail') return Promise.resolve(null);
   if (mode === 'empty') return Promise.resolve([]);
-  var signed = /[?&]mockAuth=1(&|$)/.test(location.search);
+  var signed = mockSignedIn();
   var players = 240, mine = signed ? (mode === 'deep' ? 131 : 18) : 0, lim = Math.max(1, Math.min(100, limit || 50));
   var rows = [];
   for (var rk = 1; rk <= players; rk++) {
@@ -78,16 +78,27 @@ function mockBoard(day, limit) {
   }
   return Promise.resolve(rows);
 }
+/* ?mockAuth=late starts signed out and lets the sheet's sign in succeed (any email and password), so
+   "sign in to save your score" can be walked end to end: the listeners hear it, as auth.js's do. */
+var AUTH_MODE = (/[?&]mockAuth=([^&]*)/.exec(location.search) || [])[1] || '';
+var mockIn = AUTH_MODE === '1';
+var authListeners = [];
+function mockSignedIn() { return mockIn; }
 if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
-  var mockIn = /[?&]mockAuth=1(&|$)/.test(location.search);
+  var authState = function () { return mockIn ? { ready: true, waiting: false, signedIn: true, name: 'mockplayer', email: 'mock@example.com', userId: 'mock-user' } : { ready: AUTH_MODE === 'late', waiting: false, signedIn: false }; };
+  var lateIn = function () {
+    mockIn = true;
+    setTimeout(function () { authListeners.slice().forEach(function (f) { try { f(authState()); } catch (e) {} }); }, 0);
+    return Promise.resolve({ error: null });
+  };
   window.STD_AUTH = {
     API_VERSION: 0,
     MOCK: true,
     boot: function () { return false; },
-    state: function () { return mockIn ? { ready: true, waiting: false, signedIn: true, name: 'mockplayer', email: 'mock@example.com', userId: 'mock-user' } : { ready: false, waiting: false, signedIn: false }; },
-    onChange: function () { return function () {}; },
-    signIn: none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
+    state: authState,
+    onChange: function (f) { authListeners.push(f); return function () { authListeners = authListeners.filter(function (x) { return x !== f; }); }; },
+    signIn: AUTH_MODE === 'late' ? lateIn : none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
     board: mockBoard,
     /* shutdoor_my_stats()'s shape (153, and tieHeld from 155), plus the
@@ -294,7 +305,8 @@ function resolve(scn, st, call, rng, absRng) {
   /* the library draw, cut into the decisions a real pitch would carry */
   var u1 = lib, u2 = (lib * 7.13) % 1, u3 = (lib * 31.7) % 1, u4 = (lib * 97.3) % 1;
   var swing = u1 < sw;
-  var forcedR = MOCK.script ? MOCK.script[Math.min(st.pitchNo, MOCK.script.length - 1)] : null;
+  var scr = st._script || MOCK.script;
+  var forcedR = scr ? scr[Math.min(st.pitchNo, scr.length - 1)] : null;
   if (forcedR) swing = true;
   var res = { batter: swing ? 'swing' : 'take' };
   var inBatterSide = bt.bats === 'R' ? C.colOf(cell) === 0 : C.colOf(cell) === 4;
@@ -456,7 +468,7 @@ function challengePitch(o) {
 
 var OUTINGS = {};
 function snapshot(o) {
-  var s = clone(o.st); delete s.outcome; delete s._pre; delete s._undo;
+  var s = clone(o.st); delete s.outcome; delete s._pre; delete s._undo; delete s._script;
   s.abs.challengeLive = absLive(o);
   s.abs.events = s.log.filter(function (p) { return p.challenge; }).map(function (p) { return Object.assign({ n: p.n }, p.challenge); });
   return s;
@@ -471,18 +483,24 @@ function getScenario(day) {
     var s = clone(j.scenario);
     delete s.reveal;
     s.day = day || s.day;
+    if (day && day !== C.easternDay()) s.number = C.dayNumberOf(day);
     if (MOCK.proxy) s.resolution = 'proxy';
+    if (VOTE_MODE === 'locked' && (!day || day === C.easternDay())) s.pick = 'vote';
     return s;
   });
 }
 
 function startOuting(scenarioId, seed, opts) {
-  var mode = (opts && opts.mode) === 'practice' ? 'practice' : 'daily';
+  var mode = (opts && opts.mode) === 'practice' ? 'practice' : (opts && opts.mode) === 'archive' ? 'archive' : 'daily';
+  if (mode === 'archive' && !ENT_PRO) return Promise.reject(new Error('the archive is for Pro'));
+  if (mode === 'archive' && !(opts.day && opts.day < C.easternDay())) return Promise.reject(new Error('not an archive day'));
   return load().then(function (j) {
     var scn = j.scenario;
     if (scenarioId !== scn.id) throw new Error('no such scenario: ' + scenarioId);
-    var day = C.easternDay();
+    var day = mode === 'archive' ? opts.day : C.easternDay();
+    if (mode === 'archive') seed = hashSeed(C.DAILY_SEED_PREFIX + day);
     var sd = mode === 'daily' ? hashSeed(C.DAILY_SEED_PREFIX + day) : (seed >>> 0);
+    if (mode === 'archive' && OUTINGS['archive:' + day + ':' + sd]) return snapshot(OUTINGS['archive:' + day + ':' + sd]);
     var id = mode + ':' + day + ':' + sd;
     var o = { scn: scn, day: day, calls: [], rng: mulberry32(sd), absRng: mulberry32(hashSeed('abs|' + sd)), st: freshState(scn, mode, sd, id) };
     if (mode === 'daily') {
@@ -499,6 +517,7 @@ function startOuting(scenarioId, seed, opts) {
       }
     }
     OUTINGS[id] = o;
+    if (mode === 'daily') DAILY = o;
     return snapshot(o);
   });
 }
@@ -564,9 +583,11 @@ function finishOuting(outingId) {
     r.lesson = MOCK.lessonNone ? null : mockLesson(o);
     /* the pool's scores for the end screen's chart (CONTRACT_REQUESTS.md B11) */
     r.pool = { scores: sc.slice() };
-    r.share = window.STD_SHARE.text(r, o.scn.number);
+    if (o.st.mode !== 'survivor') r.share = window.STD_SHARE.text(r, o.scn.number);
     var au = window.STD_AUTH && window.STD_AUTH.state && window.STD_AUTH.state();
-    if (o.st.mode === 'daily' && au && au.signedIn) r.account = { streak: st.outcome === 'door_shut' ? 4 : 0, best: 5, rank: 18, players: 240 };
+    if (o.st.mode === 'daily' && au && au.signedIn) { r.account = mockAccount(st.outcome); o.posted = true; }
+    if (o.st.mode === 'archive') r.archive = { kept: true, taken: true };
+    if (o.surv) r.survivor = survivorFinished(o, r);
     o.result = r;
     return clone(r);
   });
@@ -632,5 +653,156 @@ function mockLesson(o) {
   };
 }
 
-window.STD_API = { API_VERSION: 1, MOCK: true, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting };
+/* ---- the board's paths, the vote, Survivor, the archive (CONTRACT.md 9, 16, 17) ------------
+   Test switches, mock only:
+   ?mockAuth=late   signed out, and the account sheet's sign in succeeds (see the stub above)
+   ?mockVote=       open: tomorrow's two candidates, a vote to cast; voted: already cast; locked:
+                    today's daily was picked by a vote (the home says so). Without it the vote is
+                    not on yet, as before VOTE.EPOCH. The two cards are the real schedule's
+                    candidates for the vote's first day (modes.js), never a reveal.
+   ?mockSurv=N      Survivor: situations before index N are doors shut, N is a walk-off (default 2)
+   ?mockSurvBoard=  empty | fail, for the Survivor board's states
+   ?mockEnt=pro     entitlements say Pro: the archive and unlimited Survivor runs. The real gate is
+                    false for everyone. */
+var DAILY = null;
+var VOTE_MODE = QS.get('mockVote') || '';
+var ENT_PRO = QS.get('mockEnt') === 'pro';
+var SURV_END = QS.get('mockSurv') != null ? Math.max(0, +QS.get('mockSurv') | 0) : 2;
+var SURV_KEY = 'std_mock_survivor_v1';
+function signedIn() { var a = window.STD_AUTH; try { return !!(a && a.state && a.state().signedIn); } catch (e) { return false; } }
+function mockAccount(outcome) { return { streak: outcome === 'door_shut' ? 4 : 0, best: 5, rank: 18, players: 240, taken: true, keptScore: null }; }
+
+function entitlements() { return Promise.resolve({ signedIn: signedIn(), pro: ENT_PRO, archive: ENT_PRO, survivorRuns: ENT_PRO ? null : 1 }); }
+
+/* today's finished daily that is not on the board yet (the real one reads std_outing_v1) */
+function pending() {
+  var o = DAILY;
+  if (!o || !o.result || o.posted || o.day !== C.easternDay()) return null;
+  return { day: o.day, number: o.scn.number, scenarioId: o.scn.id, score: o.result.score, outcome: o.result.outcome, pitches: o.result.pitches };
+}
+function claim() {
+  if (!signedIn()) return Promise.resolve(null);
+  if (!pending()) return Promise.resolve({ posted: false });
+  DAILY.result.account = mockAccount(DAILY.result.outcome);
+  DAILY.posted = true;
+  return Promise.resolve({ posted: true, account: clone(DAILY.result.account) });
+}
+/* a sign-in posts the day's finished daily by itself and says so, as api.js does */
+if (window.STD_AUTH && window.STD_AUTH.onChange) window.STD_AUTH.onChange(function (st) {
+  if (!st || !st.signedIn) return;
+  claim().then(function (r) { if (r && r.posted) window.dispatchEvent(new CustomEvent('std-claimed', { detail: r })); });
+});
+
+var SCH = null;
+function schedule() {
+  if (!SCH) SCH = fetch('data/schedule.json').then(function (r) { if (!r.ok) throw new Error('no schedule'); return r.json(); });
+  return SCH;
+}
+function addDay(d, n) { return new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
+function voteShape(day) {
+  var M = window.STD_MODES, today = C.easternDay(), tmrw = addDay(today, 1);
+  var none = { day: day, open: false, candidates: [], myVote: null, votes: null, winner: null, canVote: false, why: 'no vote for that day', offline: false };
+  if (!VOTE_MODE || !M) return Promise.resolve(none);
+  if (day === today && VOTE_MODE !== 'locked') return Promise.resolve(none);
+  if (day === tmrw && VOTE_MODE === 'locked') return Promise.resolve(none);
+  return Promise.all([schedule(), load()]).then(function (got) {
+    var sch = got[0], fx = got[1].scenario;
+    var ids = M.candidates(sch, M.VOTE.EPOCH), cards = ids.map(function (id) { return Object.assign({ id: id }, sch.packs[id].card); });
+    /* today's locked vote: the mock's own spot won it */
+    if (day === today) return Object.assign(none, { candidates: [{ id: fx.id, title: fx.title, pitcher: fx.pitcher.name, year: fx.pitcher.year, situation: fx.situation }, cards[1]],
+      winner: fx.id, votes: { a: 63, b: 48 }, why: 'voting is closed' });
+    var mine = MY_VOTE || (VOTE_MODE === 'voted' ? ids[1] : null);
+    var done = !!(DAILY && DAILY.result);
+    return Object.assign(none, {
+      open: true, candidates: cards, myVote: mine,
+      votes: mine ? { a: 41 + (mine === ids[0] ? 1 : 0), b: 56 + (mine === ids[1] ? 1 : 0) } : null,
+      canVote: !mine && signedIn() && done,
+      why: mine ? 'you voted' : !signedIn() ? 'sign in to vote' : !done ? 'finish today\'s daily to vote' : null,
+    });
+  });
+}
+var MY_VOTE = null;
+function vote(day) { return voteShape(day || addDay(C.easternDay(), 1)); }
+function castVote(id) {
+  var tmrw = addDay(C.easternDay(), 1);
+  return voteShape(tmrw).then(function (v) {
+    if (!signedIn()) return Object.assign(v, { error: 'sign in to vote' });
+    if (!v.canVote) return Object.assign(v, { error: v.why || 'voting is closed' });
+    if (!v.candidates.some(function (c) { return c.id === id; })) return Object.assign(v, { error: 'not a candidate' });
+    MY_VOTE = id;
+    return voteShape(tmrw);
+  });
+}
+
+/* Survivor over the fixture: every situation is the mock spot on its own seed */
+function survRead() { try { var r = JSON.parse(localStorage.getItem(SURV_KEY) || 'null'); return r && r.day === C.easternDay() ? r : null; } catch (e) { return null; } }
+function survWrite(r) { try { localStorage.setItem(SURV_KEY, JSON.stringify(r)); } catch (e) {} }
+function survSum(r) {
+  var e = r ? r.entries : [];
+  return { run: r ? r.run : null, index: e.length, saves: e.filter(function (x) { return x.outcome === 'door_shut'; }).length,
+    points: e.reduce(function (a, x) { return a + x.score; }, 0), over: e.some(function (x) { return x.outcome !== 'door_shut'; }) };
+}
+function survivorState() {
+  return load().then(function (j) {
+    var r = survRead(), sum = survSum(r);
+    return Object.assign(sum, {
+      day: C.easternDay(), signedIn: signedIn(), pro: ENT_PRO, canStart: !r || !sum.over || ENT_PRO,
+      entries: r ? r.entries.map(function (x) { return { scenarioId: x.scenarioId, title: j.scenario.title, outcome: x.outcome, pitches: x.pitches, score: x.score }; }) : [],
+      runs: [], offline: false,
+    });
+  });
+}
+function survivorStart() {
+  return load().then(function (j) {
+    var day = C.easternDay(), r = survRead();
+    if (r && survSum(r).over) {
+      if (!ENT_PRO) throw new Error('one run a day');
+      r = { day: day, run: r.run + 1, entries: [] };
+    }
+    if (!r) r = { day: day, run: 0, entries: [] };
+    survWrite(r);
+    var i = r.entries.length, scn = j.scenario;
+    var sd = hashSeed('mock-survivor-' + day + '-' + r.run + '-' + i), id = 'survivor:' + day + ':' + r.run + ':' + i;
+    var o = OUTINGS[id];
+    if (!o) {
+      o = { scn: scn, day: day, calls: [], rng: mulberry32(sd), absRng: mulberry32(hashSeed('abs|' + sd)), st: freshState(scn, 'survivor', sd, id), surv: { run: r.run, index: i } };
+      o.st._script = SCRIPTS[i >= SURV_END ? 'walk_off' : 'door_shut'];
+      OUTINGS[id] = o;
+    }
+    var sc = clone(scn); delete sc.reveal;
+    sc.day = day; sc.number = null; sc.survivor = { run: r.run, index: i };
+    return { run: r.run, index: i, saves: survSum(r).saves, scenario: sc, state: snapshot(o) };
+  });
+}
+function survivorFinished(o, res) {
+  var r = survRead() || { day: o.day, run: o.surv.run, entries: [] };
+  if (r.run === o.surv.run && r.entries.length === o.surv.index) {
+    r.entries.push({ scenarioId: o.scn.id, outcome: res.outcome, pitches: res.pitches, score: res.score });
+    survWrite(r);
+  }
+  var sum = survSum(r);
+  return { run: o.surv.run, index: o.surv.index, saves: sum.saves, over: sum.over, posted: signedIn() };
+}
+function survivorClaim() { return Promise.resolve(signedIn() ? { posted: false } : null); }
+/* the Survivor board, FICTIONAL: made up handles, run 0 of each */
+function survivorBoard(day, limit) {
+  var mode = QS.get('mockSurvBoard') || 'full';
+  if (mode === 'fail') return Promise.resolve(null);
+  if (mode === 'empty') return Promise.resolve([]);
+  var r = survRead(), sum = survSum(r), mine = signedIn() && r && r.run === 0 ? sum : null;
+  var players = 96, lim = Math.max(1, Math.min(100, limit || 50)), rows = [];
+  var at = mine ? Math.max(1, 31 - mine.saves * 6) : 0;
+  for (var rk = 1, k = 0; rk <= players; rk++) {
+    if (rk === at) { rows.push({ rank: rk, username: 'mockplayer', saves: mine.saves, points: mine.points, over: mine.over, mine: true, players: players }); continue; }
+    if (rk > lim) continue;
+    k++;
+    var saves = Math.max(0, 9 - Math.floor(rk / 6)), pts = saves * 410 + 380 - (rk % 6) * 37;
+    rows.push({ rank: rk, username: BOARD_NAMES[k % BOARD_NAMES.length] + (k > BOARD_NAMES.length ? k : ''), saves: saves, points: pts, over: rk % 7 !== 3, mine: false, players: players });
+  }
+  return Promise.resolve(rows);
+}
+
+window.STD_API = { API_VERSION: 1, MOCK: true, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, challenge: challenge, finishOuting: finishOuting,
+  pending: pending, claim: claim, entitlements: entitlements, vote: vote, castVote: castVote,
+  survivorState: survivorState, survivorStart: survivorStart, survivorClaim: survivorClaim, survivorBoard: survivorBoard };
 })();
