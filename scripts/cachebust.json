@@ -3107,8 +3107,8 @@
       "sha": "cc149708e8a0216e"
     },
     "contract.js": {
-      "v": "10",
-      "sha": "804b37c86a4e4224"
+      "v": "11",
+      "sha": "f8e0282871c4a4ec"
     },
     "meter.js": {
       "v": "6",
@@ -3151,8 +3151,8 @@
       "sha": "7ea985fde3db5f01"
     },
     "grade.js": {
-      "v": "15",
-      "sha": "a7ef2e899563c882"
+      "v": "16",
+      "sha": "f97cf44f4eb3bb98"
     },
     "names.js": {
       "v": "1",
@@ -3163,8 +3163,8 @@
       "sha": "39299b08c1e9d276"
     },
     "engine.js": {
-      "v": "17",
-      "sha": "02f5e11dfd8d2147"
+      "v": "18",
+      "sha": "a2218fa0f98c5aad"
     },
     "share.js": {
       "v": "2",
@@ -3179,8 +3179,8 @@
       "sha": "65388a73bdcc15be"
     },
     "api.js": {
-      "v": "24",
-      "sha": "7df7bb96fad8598b"
+      "v": "25",
+      "sha": "5e166094275beccb"
     },
     "mock-api.js": {
       "v": "13",
@@ -3207,8 +3207,8 @@
       "sha": "0532e84f54b65a4e"
     },
     "ui.js": {
-      "v": "60",
-      "sha": "c6b4b68bd2f794df"
+      "v": "61",
+      "sha": "7dfb9fa04deb2e24"
     },
     "3d/boot.js": {
       "v": "83",

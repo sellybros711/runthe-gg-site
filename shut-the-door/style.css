@@ -1202,6 +1202,13 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .bb-drawer { padding: 0 8px 0 10px; gap: 4px; }
   :root:not([data-theme="dark"]) .bb-ab { padding: 2px 4px 1px; letter-spacing: .04em; }
 }
+/* WHO YOU PITCH AS (the owner, 2026-11-02): one slim line over the at bat row. The label is AT BAT's
+   type in the quiet ink (AT BAT keeps the accent), the name in the card's ink, the club dim. */
+.bb-pit { display: flex; align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; line-height: 1.1; padding: 1px 0 4px; margin: 0 4px 4px 0; border-bottom: 1px solid var(--g-line); }
+.bb-pk { flex: none; font-family: var(--sans); font-weight: 700; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--g-dim); }
+.bb-pn { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--sans); font-weight: 700; font-size: 12px; color: var(--g-ink); }
+.bb-pt { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--sans); font-weight: 600; font-size: 11px; color: var(--g-dim); }
+.bb-pt:not(:empty)::before { content: '\00b7'; margin-right: 6px; }
 .bb-nm { display: block; min-width: 0; font-family: var(--sans); font-weight: 700; font-size: 16px; line-height: 1.05; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 2px; }
 .bb-drawer { display: inline-flex; align-items: center; gap: 6px; padding: 0 11px 0 13px; }
 .bb-drawer svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: transform .18s ease; }

@@ -795,7 +795,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   // determinism: the same seed and calls give the same outing, card and all
   const a1 = run(p0, strikes(18)), a2 = run(p0, strikes(18));
   check('rules 8: deterministic, the half switch included', JSON.stringify(a1.log) === JSON.stringify(a2.log) && JSON.stringify(a1.halves) === JSON.stringify(a2.halves));
-  check('rules 8: a new outing\'s calls carry r 8', a1.calls.every(c => c.r === 8) && G.RULES === 8 && G.FULL_RULES === 8);
+  check('rules 8: a rules 8 outing\'s calls carry r 8', run(p0, strikes(3), 8).calls.every(c => c.r === 8) && G.FULL_RULES === 8);
   // the grade of the 9th's first pitch is the 9th's own state
   // the score (rules 8): a curve with the line's slope at 0, no floor, per out asked; the line before
   {
@@ -806,6 +806,47 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
     check('rules 8: the slope at 0 is the line\'s (one point lost: 680 either way)', E.outingScore(Object.assign(mk(8, 1, 0), { grades: [{ lost: 1 }] })) === 980 && E.outingScore(Object.assign(mk(7, 1, 0), { grades: [{ lost: 1 }] })) === 980);
   }
   check('rules 8: the 9th is graded from its own state (the hold table over both halves)', a1.grades[9].best > 0 && a1.before[9].h === 1 && a1.before[9].outs === 0);
+}
+
+/* rules 9 (the ABS touch, contract.js absDist): a ball touching the zone is a strike on a challenge.
+   The top edge: a ball whose centre is 1 inch over the batter's zone is 0.45 inches into it with the
+   ball's radius (an ABS strike under rules 9) and 1 inch off the bare zone (an ABS ball under 8). */
+{
+  const zf = pack.kernelZoneFt, over = 1 + 1 / (zf * 12), under = -1 / (zf * 12);
+  check('rules 9: a ball touching the top of the zone is an ABS strike, under rules 8 a ball',
+    G.RULES === 9 && G.TOUCH_RULES === 9 && K.absDist(0, over, zf) >= 0 && K.zoneDist(0, over, zf) < 0
+    && Math.abs(K.absDist(0, over, zf) - 0.45) < 1e-9 && K.absDist(0, under, zf) >= 0 && K.zoneDist(0, under, zf) < 0);
+  const cx = K.GRID.ZONE_HALF_FT, ct = 1 + (K.BALL_IN / 12) / zf;
+  check('rules 9: the sides are the same edge as before, the corners round, the umpire unchanged',
+    Math.abs(K.absDist(0.5, 0.5, zf) - K.zoneDist(0.5, 0.5, zf)) < 0.02 && Math.abs(K.absDist(cx, 0.5, zf) - K.zoneDist(cx, 0.5, zf)) < 0.02
+    && K.zoneDist(cx, ct, zf) < 0 && K.absDist(cx, ct, zf) < 0 && K.absDist(cx - 0.12, 1 + 0.06 / zf, zf) >= 0
+    && Math.abs(K.calledStrikeP(K.zoneDist(0, over, zf)) - K.calledStrikeP(-1)) < 1e-9);
+  // the engine: the same seed and calls under 8 and 9, the pitcher challenging every called ball he
+  // can. Only the ABS answer moves, and only where the ball touched the zone off the bare edge
+  let flips = 0, wrong = 0, other = 0;
+  for (let s = 0; s < 60; s++) {
+    const rng = R.mulberry32(R.hashSeed('touch' + s));
+    const calls = Array.from({ length: 40 }, () => ({ type: model.types[Math.floor(rng() * model.types.length)], cell: [1, 2, 3, 21, 22, 23, 12][Math.floor(rng() * 7)], q: Math.round(rng() * 100) / 100 }));
+    const outs = [8, 9].map(r => {
+      const o = E.createOuting(pack, { seed: 900 + s, model, rules: r });
+      for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); if (E.challengeLive(o) && o.abs.pitcher > 0 && o.log.length < 4) E.challengePitch(o); }
+      return o;
+    });
+    const n = Math.min(outs[0].log.length, outs[1].log.length);
+    for (let i = 0; i < n; i++) {
+      const a = outs[0].log[i], b = outs[1].log[i];
+      if (JSON.stringify(a.actual) !== JSON.stringify(b.actual) || a.drawn.id !== b.drawn.id) { other++; break; }
+      if (!a.abs) continue;
+      if (a.abs.called !== b.abs.called || a.abs.d !== b.abs.d) other++;
+      if (a.abs.strike !== b.abs.strike) {
+        const t = K.absDist(a.actual.x, a.actual.zn, zf);
+        if (!(a.abs.d < 0 && t >= 0 && b.abs.strike)) wrong++;
+        flips++;
+        break;   // the outings may part after a challenge that went the other way
+      }
+    }
+  }
+  check(`rules 9: the engine's ABS answers a ball touching the zone a strike, and nothing else moves (${flips} flips)`, flips > 0 && !wrong && !other);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');
