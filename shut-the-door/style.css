@@ -136,8 +136,8 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
    the runs slid under the inning column (main too, at 320). Now the name gives way first */
 .scorebar.hb .sb-team { min-width: 0; }
 .scorebar.hb .sb-team b { flex: none; }
-/* WALK-OFF LIVE stacks in two short lines under the inning, so the column is the inning's width, not the chip's */
-.scorebar.hb .sb-wo { white-space: normal; max-width: 52px; text-align: center; line-height: 1.1; padding: 3px 5px 2px; }
+/* WALK-OFF LIVE stays one line under the inning, small and untracked, so the column stays about the inning's width */
+.scorebar.hb .sb-wo { white-space: nowrap; font-size: 8.5px; letter-spacing: 0; padding: 2px 4px 1px; }
 .scorebar.hb .sb-club { width: 5px; height: 26px; }
 .scorebar.hb .sb-team .tm { font-size: 14px; letter-spacing: .02em; color: #c9cfdb; max-width: none; flex: 1; min-width: 0; }
 .scorebar.hb .sb-team b { font-size: 24px; }
@@ -1188,12 +1188,20 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 .bb-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .bb-id { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .bb-eye { display: flex; align-items: baseline; gap: 7px; min-width: 0; white-space: nowrap; line-height: 1.1; }
-.bb-ab { flex: none; font-family: var(--sans); font-weight: 700; font-size: 11px; letter-spacing: 0.066em; text-transform: uppercase; color: var(--signal); }
+.bb-ab { flex: none; font-family: var(--sans); font-weight: 700; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--signal); }
 /* light glass over a sunlit field is mid grey green, where orange text cannot reach AA (QA, 2026-11-02).
    In light the label is a small signal chip with ink on it (5.6:1 whatever is behind the glass) */
-:root:not([data-theme="dark"]) .bb-ab { color: #0b0f17; background: var(--signal); padding: 2px 5px 1px; border-radius: 4px; letter-spacing: .1em; }
-.bb-hand { flex: none; font-family: var(--sans); font-weight: 700; font-size: 11px; letter-spacing: .02em; text-transform: uppercase; color: var(--g-dim); }
+:root:not([data-theme="dark"]) .bb-ab { color: #0b0f17; background: var(--signal); padding: 2px 5px 1px; border-radius: 4px; letter-spacing: .06em; }
+.bb-hand { flex: none; font-family: var(--sans); font-weight: 700; font-size: 11px; letter-spacing: 0; text-transform: uppercase; color: var(--g-dim); }
 .bb-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--sans); font-weight: 600; font-size: 12px; letter-spacing: 0; color: var(--g-ink); opacity: .86; font-variant-numeric: tabular-nums; }
+/* a narrow phone: the slash line keeps its room beside AT BAT, the side and SCOUT (Inter runs wider than the old face) */
+@media (max-width: 379px) {
+  .bb-eye { gap: 5px; }
+  .bb-hand { font-size: 10.5px; letter-spacing: 0; }
+  .bb-line { font-size: 11px; }
+  .bb-drawer { padding: 0 8px 0 10px; gap: 4px; }
+  :root:not([data-theme="dark"]) .bb-ab { padding: 2px 4px 1px; letter-spacing: .04em; }
+}
 .bb-nm { display: block; min-width: 0; font-family: var(--sans); font-weight: 700; font-size: 16px; line-height: 1.05; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 2px; }
 .bb-drawer { display: inline-flex; align-items: center; gap: 6px; padding: 0 11px 0 13px; }
 .bb-drawer svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: transform .18s ease; }
@@ -1212,7 +1220,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 .bb-togs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
 .bb-togs .mh-tog { min-width: 0; }
 .mh-tog { flex: none; height: var(--tap); min-width: var(--tap); padding: 0 12px; border-radius: 11px; border: 1px solid var(--g-line); background: var(--g-2); color: var(--g-ink);
-  font-family: var(--sans); font-weight: 700; font-size: 13.5px; letter-spacing: 0.044em; text-transform: uppercase; white-space: nowrap; }
+  font-family: var(--sans); font-weight: 700; font-size: 12.5px; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; }
 .mh-tog.on, .mh-tog[aria-expanded="true"] { background: var(--signal); border-color: var(--signal); color: #fff; }
 .mh-card .seg { flex: 1 1 auto; min-width: 0; height: var(--tap); padding: 0; background: var(--g-2); box-shadow: inset 0 0 0 1px var(--g-line); border-radius: 11px; }
 .mh-card .seg button { flex: 1 1 0; min-width: 0; height: 100%; padding: 0 8px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--g-dim); }
@@ -1436,8 +1444,10 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 @media (orientation: landscape) and (max-height: 520px) {
   /* the at bat line in Inter on a phone on its side: the slash line keeps room beside AT BAT and SCOUT */
   .bb-eye { gap: 5px; }
-  .bb-line { font-size: 11px; }
+  .bb-hand { font-size: 10px; letter-spacing: 0; }
+  .bb-line { font-size: 10.5px; }
   .bb-drawer { padding: 0 8px 0 10px; gap: 4px; }
+  :root:not([data-theme="dark"]) .bb-ab { padding: 2px 4px 1px; letter-spacing: .04em; }
   #s-mound { --col: 284px; --dock-w: 244px; }
   #m-arsenal[data-n="5"], #m-arsenal[data-n="6"] { grid-template-columns: 1fr 1fr; }
   #m-arsenal[data-n="5"] .pitch, #m-arsenal[data-n="6"] .pitch { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "k n v" "k s v"; row-gap: 2px; }
@@ -1470,8 +1480,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .mh-bug .sb-bases { width: 40px; height: 30px; }
   .mh-card { padding: 6px 6px 6px 14px; }
   .bb-nm { font-size: 18.4px; }
-  .bb-ab, .bb-hand { font-size: 12px; }
-  .bb-line { font-size: 13.5px; }
+  .bb-ab, .bb-hand { font-size: 11px; }
+  .bb-line { font-size: 12px; }
   #m-arsenal[data-n] .pitch { min-height: 50px; padding: 6px 12px; }
   #m-arsenal[data-n] .pt b { font-size: 21px; }
   #m-arsenal[data-n] .pk { width: 26px; height: 26px; font-size: 16px; }
