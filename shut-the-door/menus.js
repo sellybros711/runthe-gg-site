@@ -60,17 +60,30 @@ function wire() {
 /* THE CLIPS (the owner, 2026-11-02: "show each control with a looped animation"). Each control is a
    short muted loop recorded from the real game (test/record-how.mjs), in the reader's theme, with one
    line under it. The markup is written only when the sheet opens, so nothing downloads on boot; the
-   poster shows first and the clip streams. With reduced motion a clip waits for a tap. */
+   poster shows first and a clip streams when it scrolls into view (watchClips). With reduced motion a
+   clip waits for a tap. */
 var HOW_V = 1;
 function clip(k, line) {
   var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   var still = false; try { still = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   var b = 'how/' + k + '-' + t, q = '?v=' + HOW_V;
-  return '<figure class="hw-clip"><video muted playsinline loop ' + (still ? 'controls ' : 'autoplay ') + 'preload="' + (still ? 'none' : 'auto') + '" poster="' + b + '.webp' + q + '" aria-hidden="true">' +
+  return '<figure class="hw-clip"><video muted playsinline loop ' + (still ? 'controls ' : 'data-auto ') + 'preload="' + (still ? 'none' : 'metadata') + '" poster="' + b + '.webp' + q + '" aria-hidden="true">' +
     '<source src="' + b + '.webm' + q + '" type="video/webm"><source src="' + b + '.mp4' + q + '" type="video/mp4"></video>' +
     '<figcaption>' + esc(line) + '</figcaption></figure>';
 }
+/* a clip plays only while it is on screen, so a phone runs one or two at a time, never eight; each
+   streams when it first comes into view. Without IntersectionObserver they all play. */
+var clipSeen = null;
+function watchClips() {
+  var vs = [].slice.call(document.querySelectorAll('#how-body video[data-auto]'));
+  var go = function (v, on) { try { if (on) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); } catch (e) {} };
+  if (clipSeen) clipSeen.disconnect();
+  if (!('IntersectionObserver' in window)) { vs.forEach(function (v) { go(v, true); }); return; }
+  clipSeen = new IntersectionObserver(function (es) { es.forEach(function (e) { go(e.target, e.isIntersecting); }); }, { threshold: 0.4 });
+  vs.forEach(function (v) { clipSeen.observe(v); });
+}
 function renderHow(ctx) {
+  setTimeout(watchClips, 0);
   /* The bands are relative to the moment (CONTRACT.md section 7), so the
      words say what each colour means rather than printing a cutoff. */
   var MEANS = { green: 'the best call, or close to it.', yellow: 'gave a little away.',

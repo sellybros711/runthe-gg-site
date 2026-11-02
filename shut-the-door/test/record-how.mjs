@@ -145,14 +145,15 @@ if (['aim', 'power', 'release', 'reaim', 'scout'].some(want)) {
   await close(S);
 }
 
-/* ---- CHALLENGE: pitches near the edge until a called ball can be challenged (?mockAbs=miss: the
-   mock's umpire calls a take near the edge the wrong way, a state a real outing rarely reaches) ---- */
+/* ---- CHALLENGE: pitches on the zone's inside edge until a called ball can be challenged (?mockAbs=miss:
+   the mock's umpire calls a take near the edge the wrong way, a state a real outing rarely reaches), so
+   the clip shows a challenge won ---- */
 if (want('challenge')) {
   const S = await open({ day: '2026-11-01', query: '?mockAbs=miss', meter: false });
   const page = S.page;
   let live = false;
   for (let i = 0; i < 20 && !live; i++) {
-    await throwOne(page, [3, 11, 13, 21, 1, 23][i % 6]);
+    await throwOne(page, [11, 13, 7, 17][i % 4]);   // the zone's inside edge: a ball called there is the umpire's miss, so the challenge wins
     await page.waitForFunction(() => !window.STD_UI.state.busy || !document.getElementById('m-abs-b').hidden, null, { timeout: 300000 });
     live = await page.isVisible('#m-abs-b');
     if (!live) await idle(page);
