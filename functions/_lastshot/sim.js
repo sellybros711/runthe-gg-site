@@ -16,12 +16,20 @@ import { IDS, problems, planOf } from './playbook.js';
 export const DT = 1 / 60;
 const FRAME_EVERY = 2;
 
-export function simulate(sc, play, seed) {
-  const bad = problems(sc, play);
+/* opt (both optional, both leave every other run exactly as it was):
+ *   scheme   force the screen scheme ('switch', 'over', 'under'). It is still
+ *            rolled first and then replaced, so every draw after it falls the
+ *            same way (Test it, against one scheme).
+ *   preview  run the play only as far as its steps go, with no shot, no
+ *            bail-out and no result: the storyboard's Play frame. The play
+ *            passed in is the steps up to the end of that frame. */
+export function simulate(sc, play, seed, opt = {}) {
+  const bad = problems(sc, play, { preview: !!opt.preview });
   if (bad.length) throw new Error('play cannot run: ' + bad.join(' '));
   const T = sc.tuning, rng = mulberry32(seed >>> 0);
+  const rolled = SCHEMES[Math.floor(rng() * SCHEMES.length)];
   const st = {
-    clock: sc.clock, scheme: SCHEMES[Math.floor(rng() * SCHEMES.length)], screened: {}, lastScreen: null,
+    clock: sc.clock, scheme: SCHEMES.includes(opt.scheme) ? opt.scheme : rolled, screened: {}, lastScreen: null,
     O: {}, X: [], ball: { holder: sc.handler, pos: null, flight: null }, k: -1, pass: null, shot: null,
     events: [], frames: [], end: null, bailPending: false, passes: []
   };
@@ -75,6 +83,13 @@ export function simulate(sc, play, seed) {
 
     st.clock = Math.max(0, st.clock - DT);
     if (!st.shot) stepCheck(sc, play, st, T, rng, cap);
+    if (opt.preview) {
+      // A frame is over once every step in it is done and the ball has landed.
+      const done = st.run && st.run.every(r => r.state === 'done') && !st.ball.flight && !st.pass;
+      if (done || st.clock <= 0) st.end = { outcome: 'preview', how: 'preview' };
+      if (tick % FRAME_EVERY === 0 || st.end) frame(st);
+      continue;
+    }
     if (!st.shot && !st.end && st.clock <= sc.bailoutAt + 1e-9) {
       if (st.ball.holder) shoot(sc, st, T, rng, cap, st.ball.holder, true);
       else st.bailPending = true;
@@ -83,6 +98,7 @@ export function simulate(sc, play, seed) {
     if (tick % FRAME_EVERY === 0 || st.end) frame(st);
   }
   frame(st);
+  if (opt.preview) return { seed: seed >>> 0, preview: true, scheme: st.scheme, schemeName: SCHEME_NAMES[st.scheme], endClock: round1(st.clock), events: st.events, frames: st.frames };
   return result(sc, play, st, seed);
 }
 
