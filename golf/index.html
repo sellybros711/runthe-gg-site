@@ -84,7 +84,7 @@
 <script defer src="putt/trail.js?v=49"></script>
 <script defer src="putt/mapland.js?v=9"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=25"></script>
+<script defer src="golfer3d.js?v=26"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11252,7 +11252,7 @@ const PXFX_PARTS={
   ecto:     {c2:'#d0ffb0', p:{t:'drift', s:'orb', cols:['#a8ff8a','#7dff5a'], n:6, d:3.8}},
   cauldron: {c2:'#7ae89a', p:{t:'rise', s:'bubble', cols:['#b89ae8','#7ae89a','#8a6ac8'], n:8, d:3.2}},
   stadium:  {c2:'#ffffff', p:{t:'twinkle', s:'flash', cols:['#ffffff','#e8f2ff'], n:6, d:3}},
-  leaffall: {c2:'#e8b83a', h:'slow', p:{t:'fall', s:'leaf', cols:['#e0762a','#c8341e','#e8b83a'], n:7, d:4.4}},
+  leaffall: {c2:'#e8b83a', h:'slow', p:{t:'fall', s:'maple', cols:['#e0762a','#c8341e','#e8b83a'], n:7, d:4.4}},
   batswarm: {c2:'#e0ccff', p:{t:'drift', s:'bat', cols:['#b98aff','#9a4ad8','#e0ccff'], n:6, d:3.8}},
   emerald:  {c2:'#bfffe6'}, crimson:{c2:'#ffc4bc'}, sapphire:{c2:'#c4e2ff'} };
 // the shapes, drawn in a 10 x 10 box and filled (or stroked) with the particle's own colour
@@ -11266,6 +11266,8 @@ const AURA_SHAPE={
   flake: '<path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M5 .6V9.4M1.2 2.8L8.8 7.2M1.2 7.2L8.8 2.8"/>',
   bubble:'<circle fill="none" stroke="currentColor" stroke-width="1.2" cx="5" cy="5" r="3.4"/><circle fill="currentColor" cx="3.8" cy="3.8" r=".8"/>',
   flash: '<path fill="currentColor" d="M5 0L5.7 4.3L10 5L5.7 5.7L5 10L4.3 5.7L0 5L4.3 4.3Z"/><circle fill="currentColor" cx="5" cy="5" r="1.6"/>',
+  // a maple leaf for Falling Leaves (polished 2026-11-02): five pointed lobes, a stem, a vein up the middle
+  maple: '<path fill="currentColor" d="M5 .5L6 2.6L8 2L7.4 4.2L9.5 4.6L7.6 6L8.2 7.2L5.6 6.8L5.4 9.5H4.6L4.4 6.8L1.8 7.2L2.4 6L.5 4.6L2.6 4.2L2 2L4 2.6Z"/><path fill="none" stroke="rgba(0,0,0,.35)" stroke-width=".6" d="M5 9.2V2.4M5 5.6L7.2 4.4M5 5.6L2.8 4.4"/>',
   leaf:  '<path fill="currentColor" d="M1 9C1 4 4 1 9 1C9 6 6 9 1 9Z"/><path fill="none" stroke="rgba(0,0,0,.35)" stroke-width=".7" d="M1.5 8.5L6.5 3.5"/>',
   bat:   '<path fill="currentColor" d="M5 3.4L5.7 2.2L6.4 3.4C7.8 2.6 8.9 3 10 4C8.6 4 8.5 5.4 7.6 6.2C7 5.5 6.2 5.6 5.7 6.4L5 5.9L4.3 6.4C3.8 5.6 3 5.5 2.4 6.2C1.5 5.4 1.4 4 0 4C1.1 3 2.2 2.6 3.6 3.4L4.3 2.2Z"/>' };
 const FXP_POS=[[8,74],[84,58],[24,86],[66,18],[44,64],[92,38],[2,32],[54,90],[34,10],[74,80]];   // fixed spots, no rng
@@ -11369,8 +11371,14 @@ const PRO_LINE=[
  {cat:'ball',id:'range',name:'Range Ball',price:6000,hist:'Striped and well travelled.',col:'#f2f2ec',tracer:{g:'rgba(226,59,46,.45)',c:'#ffd0c8'}},
  {cat:'ball',id:'optic',name:'Optic Yellow',price:7000,hist:'Easy to find in the rough.',col:'#e6f03a',tracer:{g:'rgba(230,240,58,.5)',c:'#f8ffc0'}},
  {cat:'ball',id:'alignment',name:'Alignment Ball',price:11000,hist:'A line to aim down.',col:'#f4f6fb',tracer:{g:'rgba(40,110,220,.45)',c:'#cfe0ff'}} ];
-const PRO_LINE_BY={}; PRO_LINE.forEach(function(o){ PRO_LINE_BY[o.cat+':'+o.id]=o; });
-function proLineItems(cat){ return PRO_LINE.filter(function(o){ return o.cat===cat; }).map(function(o){ const r={id:o.id,name:o.name,hist:o.hist}; r[cat]=1; if(o.col) r.col=o.col; return r; }); }
+// THE PILGRIM OUTFIT (the owner, 2026-11-02): Harvest Classic pieces, so they are November only like the rest of the drop.
+// They pair with the Season 2 Tour Pass Pilgrim Hat (tier 46). Priced and listed through the same lookups as the Pro Shop line.
+const HARVEST_LINE=[
+ {cat:'top',id:'pilgrimcoat',name:'Pilgrim Doublet',price:16000,hist:'Black wool and a wide white collar. Pair it with the Pilgrim Hat.'},
+ {cat:'leg',id:'breeches',name:'Knee Breeches',price:14000,hist:'Buttoned at the knee. White stockings below.'},
+ {cat:'cleats',id:'buckle',name:'Buckle Shoes',price:15000,hist:'Square toes and a brass buckle.'} ];
+const PRO_LINE_BY={}; PRO_LINE.concat(HARVEST_LINE).forEach(function(o){ PRO_LINE_BY[o.cat+':'+o.id]=o; });
+function proLineItems(cat){ return PRO_LINE.concat(HARVEST_LINE).filter(function(o){ return o.cat===cat; }).map(function(o){ const r={id:o.id,name:o.name,hist:o.hist}; r[cat]=1; if(o.col) r.col=o.col; return r; }); }
 // CS414, BALL cosmetics. A ball is a small teed sprite beside the standing golfer (PXG_BALL overlay) plus
 // an optional hole-view tint on the shot ball/tracer. `tracer` recolors the in-play ball (Comet → fire).
 const PXBALL=[
@@ -11434,10 +11442,11 @@ const PLATE_STYLE={
   sunsplash:   {c1:'#ff9d3a',c2:'#e2554e',tx:'#2a1204',bd:'#ffd9a0'},
   pass2plate:  {c1:'#3a1a4e',c2:'#140a1e',tx:'#ff9d3a',bd:'#9a4ad8'},
   hayride:     {c1:'#d9b15a',c2:'#8a6424',tx:'#2a1606',bd:'#efd58a'},
-  harvesttable:{c1:'#8a3a14',c2:'#4a1a08',tx:'#f5c86a',bd:'#e0762a'},
+  // polished 2026-11-02: a waxed wooden tabletop, its grain and a soft top light (bg is the CSS only; c1 and c2 stay for the card)
+  harvesttable:{c1:'#8a3a14',c2:'#4a1a08',tx:'#f5c86a',bd:'#e0762a',bg:'linear-gradient(180deg,rgba(255,220,160,.22),transparent 45%),repeating-linear-gradient(90deg,rgba(0,0,0,.14) 0 1px,transparent 1px 7px,rgba(255,200,140,.06) 7px 9px,transparent 9px 15px),linear-gradient(180deg,#9a4418,#5a2008)'},
   graveyard:   {c1:'#2c3a34',c2:'#0c1410',tx:'#b8f0b0',bd:'#7dff5a'},
 };
-function plateCss(id){ const p=PLATE_STYLE[id]||PLATE_STYLE.classic; return 'background:linear-gradient(180deg,'+p.c1+','+p.c2+');border:1px solid '+p.bd+';color:'+p.tx; }
+function plateCss(id){ const p=PLATE_STYLE[id]||PLATE_STYLE.classic; return 'background:'+(p.bg||('linear-gradient(180deg,'+p.c1+','+p.c2+')'))+';border:1px solid '+p.bd+';color:'+p.tx; }
 const CARDBGS=[
   {id:'club',         name:'The Clubhouse',    hist:'Home turf'},
   {id:'parkland',     name:'Parkland Gold',    hist:'Golden hour through the trees'},
@@ -12096,7 +12105,8 @@ Object.assign(COS_BOOST,{
 Object.assign(COS_BOOST,{
   'hw:ropecap':{acc:1}, 'hw:trucker':{dist:1}, 'hw:tam':{bnk:1,sht:1}, 'hw:panama':{scr:1,acc:1},
   'ct:spikeless':{sht:1}, 'ct:kiltie':{bnk:1,sht:1}, 'ct:tourdial':{acc:1,dist:1},
-  'bl:range':{scr:1}, 'bl:optic':{acc:1}, 'bl:alignment':{put:1,app:1}
+  'bl:range':{scr:1}, 'bl:optic':{acc:1}, 'bl:alignment':{put:1,app:1},
+  'ct:buckle':{bnk:1,sht:1}   // the Pilgrim outfit's shoes (HARVEST_LINE): rare, 2 points; the doublet and breeches are style
 });
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 // the WORN, OWNED, boost-carrying cosmetics right now - the single source of truth the boost math AND the
@@ -12180,7 +12190,7 @@ function cosmeticItems(cat){
   if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'no1cap',name:'World No.1 Cap',hw:1,hist:'Reach World No.1'}].concat(ppRewardItems('hw'),proLineItems('hw'));
   if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}].concat(ppRewardItems('ew'));
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
-  if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'}];
+  if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'},{id:'scarecrow',name:'Scarecrow',body:1,hist:'Harvest Classic collection reward'}];
   if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}].concat(ppRewardItems('top'),proLineItems('top'));   // CS411
   if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}].concat(proLineItems('leg'));   // CS411
   if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });
@@ -16848,6 +16858,12 @@ const BODY_SKINS={
     rags:(x,y)=>{ if(x>=25&&x<=28&&y>=30&&y<=33) return ((x===25||x===28)&&(y===30||y===33))?'#5a4428':'#a8844e';   // a burlap patch, stitched at the corners
       if(x>=11&&x<=13&&y>=26&&y<=28) return (x+y)%2?'#7a2a2a':'#9c3a2e';                                           // a red check patch on the sleeve
       if(y===35&&(x===16||x===18||x===27)) return '#5a4428'; return null; } },
+  // THE SCARECROW (the owner, 2026-11-02): Harvest Classic's collection reward. The Pumpkin Head's scarecrow body (straw
+  // arms, a patched shirt, burlap trousers) with a stuffed burlap sack for a head: twine at the neck, stitched eyes and grin.
+  scarecrow:{ skin:'#c9a46a', hair:'#d8b04e', grime:'#6a5434', eye:'#2a1c10', mouth:'#2a1c10', pants:'#5e4c30', head:'sack', straw:'#d8b04e',
+    rags:(x,y)=>{ if(x>=15&&x<=18&&y>=31&&y<=34) return ((x===15||x===18)&&(y===31||y===34))?'#3a2a16':'#3f6a8a';   // a denim patch, stitched at the corners
+      if(x>=30&&x<=32&&y>=26&&y<=28) return (x+y)%2?'#c8a03a':'#a8802a';                                           // a mustard patch on the sleeve
+      if(y===36&&(x===17||x===26||x===28)) return '#3a2a16'; return null; } },
   zombie:{ skin:'#8fa872', hair:'#2e2c22', grime:'#5a5444', eye:'#d6ff3a', mouth:'#3a1420', pants:'#4e4a3c',
     // the tears are placed by hand: a symmetric hole reads as a badge rather than as torn cloth
     rags:(x,y,skin)=>{ const k=x+','+y;
@@ -16875,11 +16891,11 @@ function avLook(L){L=L||DEFLOOK;
   const aged=(gT>0||tanned);
   // FULL-BODY SKIN (owner, Oct 2026: a skin for completing a collection, Haunted Links first). It reskins
   // the body every renderer draws from this resolver: skin, hair, shirt and the face. Gear stays wearable.
-  if(L.body==='pumpkinhead'){ const z=BODY_SKINS.pumpkinhead;
+  if(L.body==='pumpkinhead'||L.body==='scarecrow'){ const z=BODY_SKINS[L.body];
     return{ gender:g, skinHex:z.skin, hairHex:z.hair, hairBaseHex:z.hair, hairTempleHex:z.hair, age:age, greyC:0, greyT:0,
       shirtHex:avMixHex(po.m,z.grime,.3), hatHex:ht.m, shoesHex:avMixHex(shoeCol(so),z.grime,.55), shirtPat:sp, hatPat:hp,
-      body:'pumpkinhead', pupilHex:z.eye, mouthHex:z.mouth,
-      key:g+'_pumpkinhead_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp+'_'+so }; }
+      body:L.body, pupilHex:z.eye, mouthHex:z.mouth,
+      key:g+'_'+L.body+'_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp+'_'+so }; }
   if(L.body==='zombie'){ const z=BODY_SKINS.zombie;
     return{ gender:g, skinHex:z.skin, hairHex:z.hair, hairBaseHex:z.hair, hairTempleHex:z.hair, age:age, greyC:0, greyT:0,
       shirtHex:avMixHex(po.m,z.grime,.6), hatHex:ht.m, shoesHex:avMixHex(shoeCol(so),z.grime,.5), shirtPat:sp, hatPat:hp,
@@ -18074,13 +18090,13 @@ const PXG_S2_BALL={
   acorn: pxgRows([[45,36,'g'],[46,35,'cccc'],[47,34,'cdcdcc'],[48,34,'dddddd'],[49,34,'ohCCCo'],[50,34,'oCCCCo'],[51,35,'oCso'],[52,36,'oo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]),
   // the Run The Games Ball had a catalog row and no sprite, so its tile read "None" and it never showed on the tee
   rungames: pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'ogggMo'],[50,34,'oCCCCo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]),
-  cranberry: pxgRows([[46,37,'gg'],[47,35,'oooo'],[48,34,'oCCCCo'],[49,34,'ohhCCo'],[50,34,'ohCCCo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]),
+  cranberry: pxgRows([[46,37,'gg'],[47,35,'oooo'],[48,34,'oCCCCo'],[49,34,'ohhCCo'],[50,34,'ohCCdo'],[51,34,'oCdsso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]),
 };
 const PXG_S2_BALL_PAL={
   jackolantern:{o:'#8a3a0a',C:'#f08a1e',h:'#ffc06a',s:'#c05a10',g:'#3f7a2a',f:'#2a1606',T:'#e8ebf0'},
   acorn:{o:'#5a3414',C:'#c08a4a',h:'#e6b878',s:'#9a6428',c:'#7a5028',d:'#5a3818',g:'#4a3a1a',T:'#e8ebf0'},
   rungames:{o:'#0d2b4a',C:'#5bcfe8',h:'#d8f6ff',s:'#3a8fb0',g:'#80ff76',M:'#3fbf4a',T:'#e8ebf0'},
-  cranberry:{o:'#5a0a18',C:'#b0162e',h:'#ff8a96',s:'#7a0c20',g:'#3f7a2a',T:'#e8ebf0'},
+  cranberry:{o:'#5a0a18',C:'#b0162e',h:'#ff8a96',s:'#7a0c20',d:'#8e1024',g:'#3f7a2a',T:'#e8ebf0'},
 };
 Object.assign(PXG_BALL, PXG_S2_BALL); Object.assign(PXG_BALL_PAL, PXG_S2_BALL_PAL);
 // The Spooky Szn hunt prize (owner, Oct 2026): a black cat with two ears and yellow eyes. Never sold.
@@ -18296,6 +18312,12 @@ PXG_TOPS.puffervest=pxgOver(pxgCut(PXG_CARDIGAN,function(x,y){
   if(pxgSlv(x,y)||(y<=26&&(x<=14||x>=30))) return '.'; if(x===22) return '3'; if(x===14||x===30) return '2';
   return ((y-24)%3===2)?'2':'1'; }),[[22,18,'111111111'],[23,18,'211111112']]);
 PXG_TOP_PAL.puffervest={'1':'#2b2f38','2':'#1d2028','3':'#0f1116'};
+// THE PILGRIM OUTFIT (HARVEST_LINE). The doublet: black wool, a broad white falling collar over the shoulders, white cuffs
+// turned back at the wrist, gold buttons down the front.
+PXG_TOPS.pilgrimcoat=pxgOver(pxgCut(PXG_CARDIGAN,function(x,y){ const v=Math.abs(x-22);
+  if(!pxgSlv(x,y)&&(y<=25&&v<=6||y===26&&v<=4)) return '4'; if(pxgSlv(x,y)&&y>=32) return '4';
+  if(x===22&&y>=27&&y<=37) return (y%2)?'3':'2'; if(y>=39) return '2'; return x>=27?'2':((x+y)%5?'1':'5'); }),[[22,19,'4444444'],[23,18,'444444444']]);
+PXG_TOP_PAL.pilgrimcoat={'1':'#24212a','2':'#17151c','3':'#d8b24a','4':'#f2efe6','5':'#2e2a36'};
 // the legwear: '1' the cloth, '2' its shade or hem, '3' a cuff, '4' a line, 's' bare skin, 'w' a sock
 const pxgLegSp=function(y0,y1){ const o=[]; for(let y=y0;y<=y1;y++){ o.push([y,15,21,'L']); o.push([y,23,29,'R']); } return o; };
 PXG_LEGS.shorts=pxgSpan(pxgLegSp(39,51),function(x,y){ if(y<=44) return y===44?'2':(x===18||x===26)&&y>=41?'2':'1'; if(y>=48) return 'w'; return 's'; });
@@ -18306,12 +18328,18 @@ PXG_LEG_PAL.joggers={'1':'#2b2e35','2':'#1f2127','3':'#15171b'};
 PXG_LEGS.tartan=pxgSpan(pxgLegSp(39,51),function(x,y){ const v=((x-15)%5+5)%5, h=((y-39)%5+5)%5;
   if(v===2&&h===2) return '4'; if(v===2||h===2) return '2'; return '1'; });
 PXG_LEG_PAL.tartan={'1':'#b52a2e','2':'#1e2f52','4':'#f2d24a'};
+// the knee breeches: dark wool to a band at the knee, a gold button on it, white stockings below
+PXG_LEGS.breeches=pxgSpan(pxgLegSp(39,51),function(x,y,t){ const c=t==='L'?18:26;
+  if(y>=47) return 'w'; if(y===46) return (x===c+2)?'3':'2'; if(x===c+3&&y>=41) return '2'; return '1'; });
+PXG_LEG_PAL.breeches={'1':'#2a2430','2':'#1a1620','3':'#d8b24a',w:'#f2efe6'};
 // the shoes: T the upper, M its accent, s the sole (the course golfer reads those three), k the outline
 PXG_CLEATS.spikeless=pxgRows([[52,13,'kTTLTTk...kTTLTTk'],[53,13,'TTTTMMMM..TTTTMMMM'],[54,13,'WWWWWWWW..WWWWWWWW'],[55,13,'ssssssss..ssssssss']]);
 PXG_CLEATS_PAL.spikeless={T:'#c9ccd2',M:'#2f8a5a',W:'#f6f6f2',L:'#ffffff',s:'#7a7f88',k:'#3a3f48'};
 PXG_CLEATS.kiltie=pxgRows([[52,13,'.TMmMmT...TMmMmT.'],[53,13,'TTMmMmTT..TTMmMmTT'],[54,13,'TpTpTpTT..TpTpTpTT'],[55,13,'ssssssss..ssssssss']]);
 PXG_CLEATS_PAL.kiltie={T:'#6b3b1f',M:'#b8834e',m:'#8e5c30',p:'#3a1e0c',s:'#24160c'};
 PXG_CLEATS.tourdial=pxgRows([[52,13,'.TTdTTk...TTdTTk.'],[53,13,'TMTTTTMM..TMTTTTMM'],[54,13,'WWWWWWWW..WWWWWWWW'],[55,13,'ssssssss..ssssssss']]);
+PXG_CLEATS.buckle=pxgRows([[52,13,'.TTMMTT...TTMMTT.'],[53,13,'TTTMmTTT..TTTMmTTT'],[54,13,'TTTTTTTT..TTTTTTTT'],[55,13,'ssssssss..ssssssss']]);   // the buckle shoes
+PXG_CLEATS_PAL.buckle={T:'#1c1a20',M:'#d8b24a',m:'#8a6a1a',s:'#3a2a1c'};
 PXG_CLEATS_PAL.tourdial={T:'#f4f6f8',M:'#2563c9',d:'#1a1d22',W:'#e6e9ee',k:'#c9ced6',s:'#3a3f48'};
 // the balls, teed beside the golfer
 PXG_BALL.range=pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'oRRRRo'],[50,34,'oCCCso'],[51,35,'oooo'],[52,35,'TTTT'],[53,36,'TT'],[54,36,'T']]);
@@ -18409,10 +18437,14 @@ const PXPAT=[
       const sag=r*(1+0.08*Math.cos(a*8)); if(Math.abs(((sag+0.5)%4.2)-0.5)<0.55) return 3; return 0; } },
   {id:'autumnleaves', name:'Autumn Leaves', price:0, hist:'Season 2 Tour Pass', fixed:true, cols:['#4a2a18','#e0762a','#c8341e','#e8b83a','#7a3a16'], f:(x,y)=>{ const cy=Math.floor(y/7), off=(cy%2)*3, cx=Math.floor((x+off)/7);
       let lx=(x+off)%7, ly=y%7; if(lx>5||ly>5) return 0; if((cx+cy)%2) lx=5-lx; const ch=_PXLEAF[ly][lx]; if(ch==='.') return 0; if(ch!=='X') return 4; return 1+((cx*7+cy*5)%3); } },
-  {id:'pielattice', name:'Pie Crust Lattice', price:15000, hist:'Fresh from the oven', fixed:true, cols:['#a8481a','#ecc98a','#9a6a36','#f8e4b8'], f:(x,y)=>{ const vx=x%7, hy=y%7, onV=vx<3, onH=hy<3; if(!onV&&!onH) return 0;
-      const top=((Math.floor(x/7)+Math.floor(y/7))%2===0)?'v':'h';
-      if(onV&&onH) return top==='v'?(vx===0?3:1):(hy===0?3:1);
-      if(onV) return (hy===3||hy===6)?2:(vx===0?3:1); return (vx===3||vx===6)?2:(hy===0?3:1); } },
+  // polished 2026-11-02: a real woven lattice. Crust strips each way over the filling, over and under in turn, each strip lit
+  // on its top edge and shaded where it dives under its neighbour. Name, price and colours are as released.
+  {id:'pielattice', name:'Pie Crust Lattice', price:15000, hist:'Fresh from the oven', fixed:true, cols:['#a8481a','#ecc98a','#9a6a36','#f8e4b8'], f:(x,y)=>{
+      const P=6, vx=((x%P)+P)%P, hy=((y%P)+P)%P, onV=vx<2, onH=hy<2; if(!onV&&!onH) return 0;
+      const vOver=((Math.floor(x/P)+Math.floor(y/P))%2)===0;
+      if(onV&&onH) return vOver?(vx===0?3:1):(hy===0?3:1);
+      if(onV) return (hy===2&&!vOver)?2:(vx===0?3:1);
+      return (vx===2&&vOver)?2:(hy===0?3:1); } },
 ];
 const PXPAT_BY={}; PXPAT.forEach(p=>PXPAT_BY[p.id]=p);
 function pxLum(hex){ hex=(hex||'#888').replace('#',''); if(hex.length<6) return .5; return (parseInt(hex.slice(0,2),16)*.299+parseInt(hex.slice(2,4),16)*.587+parseInt(hex.slice(4,6),16)*.114)/255; }
@@ -18604,7 +18636,8 @@ function build(o){ const s=new Sprite();
 
   // long hair hangs behind the shoulders, so it goes first
   const pk=o.head==='pumpkin';   // a Pumpkin Head skin: the head, ears, face and hair become a carved pumpkin
-  if(!pk&&hairHD&&longHair){ const back=[[14.2,11],[17,11],[17.5,26],[15.5,30],[13.2,28]];
+  const sk=o.head==='sack', stuffed=pk||sk;   // the Scarecrow: a burlap sack, with the same straw arms and neck
+  if(!stuffed&&hairHD&&longHair){ const back=[[14.2,11],[17,11],[17.5,26],[15.5,30],[13.2,28]];
     s.fill(or(poly(back),poly(mir(back))),{m:'hair',n:nCylV(C,9.5,-.1),gloss:1,bias:-.14}); }
   // legs and shoes. The shoes sit on rows 50 to 55, where the authored cleats and the club expect them.
   const leg=[[14.6,38.5],[22.2,38.5],[21.6,52.4],[15.2,52.4]];
@@ -18644,17 +18677,17 @@ function build(o){ const s=new Sprite();
   // arms and hands go IN FRONT of any outerwear: the grip is in front of the body
   if(blazer){ s.tag='top'; s.fill(or(poly(slv),seg(12.6,28,19.2,37.4,2.2)),{m:'jacket',n:nCylSeg(12.6,26,19.2,37.4,2.6)});
     s.fill(or(poly(mir(slv)),seg(32.4,28,25.8,37.4,2.2)),{m:'jacket',n:nCylSeg(32.4,26,25.8,37.4,2.6)}); s.tag=''; }
-  else { const am=pk?'straw':'skin'; s.fill(seg(12.4,30.6,19.6,38.6,1.9),{m:am,n:nCylSeg(12.4,30.6,19.6,38.6,1.9)}); s.fill(seg(32.6,30.6,25.4,38.6,1.9),{m:am,n:nCylSeg(32.6,30.6,25.4,38.6,1.9)});
-    if(pk){ [[13,31],[15,33],[17,35],[31,31],[29,33],[27,35]].forEach(([x,y])=>s.nudge(x,y,-1));                 // straw strands along the arms
+  else { const am=stuffed?'straw':'skin'; s.fill(seg(12.4,30.6,19.6,38.6,1.9),{m:am,n:nCylSeg(12.4,30.6,19.6,38.6,1.9)}); s.fill(seg(32.6,30.6,25.4,38.6,1.9),{m:am,n:nCylSeg(32.6,30.6,25.4,38.6,1.9)});
+    if(stuffed){ [[13,31],[15,33],[17,35],[31,31],[29,33],[27,35]].forEach(([x,y])=>s.nudge(x,y,-1));                 // straw strands along the arms
       [[10,31],[11,32],[34,31],[33,32],[9,30],[35,30]].forEach(([x,y])=>s.set(x,y,'straw',3,{noCast:1})); } }   // and straw poking out of the cuffs
-  s.fill(rect(19,19,25,23),{m:pk?'straw':'skin',n:nCylV(C,4,0)},{under:1,dt:-1});   // neck, under the collar
+  s.fill(rect(19,19,25,23),{m:stuffed?'straw':'skin',n:nCylV(C,4,0)},{under:1,dt:-1});   // neck, under the collar
   // the lead hand is gloved and on top of the grip, the trail hand below it
   s.fill(ell(22.4,38.9,3.3,2.4),{m:'glove',n:nEll(22.0,38.3,3.6,2.9)});
-  s.fill(ell(22.6,41.4,2.9,2.0),{m:pk?'straw':'skin',n:nEll(22.2,40.9,3.2,2.6)});
+  s.fill(ell(22.6,41.4,2.9,2.0),{m:stuffed?'straw':'skin',n:nEll(22.2,40.9,3.2,2.6)});
   s.set(21,39,'glove',1); s.set(23,39,'glove',1);
   // head, ears and face
   const NC={noCast:1};
-  if(pk) pumpkinHead(); else {
+  if(pk) pumpkinHead(); else if(sk) sackHead(); else {
   const headM=or(and(ell(C,14,7.9,8.4),(x,y)=>y<15.5),poly([[14.8,15],[30.2,15],[29.6,18.2],[26.4,21.2],[18.6,21.2],[15.4,18.2]]));
   const headN=nEll(C,15.6,9.6,11.5);
   s.fill(or(ell(14.6,15.6,1.3,1.9),ell(30.4,15.6,1.3,1.9)),{m:'skin',n:nEll(C,15,9.6,7)});
@@ -18710,6 +18743,20 @@ function build(o){ const s=new Sprite();
     for(let x=16;x<=29;x++) glow(x,18,(x===18||x===22||x===26)?1:3);                                       // the grin, with teeth
     for(let x=17;x<=28;x++) if(x!==20&&x!==24) glow(x,19,x%3?2:3);
     glow(19,20,2); glow(22,20,2); glow(25,20,2); }
+  // The Scarecrow's head: a burlap sack stuffed with straw, a coarse weave, twine cinched at the neck with straw poking
+  // out, straw out of the top, stitched X eyes and a stitched grin. The stitches are fixed tones, like the pumpkin's glow.
+  function sackHead(){ const ST={noCast:1,nl:1,noEdge:1};
+    const hm=ell(C,13.8,8.7,8.4);
+    s.fill(hm,{m:'sack',n:(x,y)=>{ const r=nEll(C,13.6,9.2,9.0)(x,y); return [r[0]+0.12*Math.sin(y*1.7),r[1],r[2]]; }});   // lumpy where the straw pushes
+    for(let y=6;y<=21;y++) for(let x=13;x<=32;x++){ if(hm(x+.5,y+.5)&&((x*3+y*5)%6===0)) s.nudge(x,y,-1); }      // the weave
+    s.fill(ell(C,21.6,7.6,1.3),{m:'rope',n:nCylV(C,7.6,0),gloss:1});                                            // twine at the neck
+    [[16,23],[17,24],[19,24],[26,24],[28,24],[29,23]].forEach(([x,y])=>s.set(x,y,'straw',3,{noCast:1}));        // straw from under it
+    [[18,5],[20,4],[22,4],[24,4],[26,5]].forEach(([x,y])=>s.set(x,y,'straw',3,{noCast:1}));                  // and out of the top
+    const st=(x,y)=>s.set(x,y,'stitch',1,ST);
+    // set low on purpose, as the pumpkin's are: a cap's brim comes down to row 13 and must not cover the eyes
+    [[17,13],[19,15],[19,13],[17,15],[18,14],[26,13],[28,15],[28,13],[26,15],[27,14]].forEach(([x,y])=>st(x,y));   // X eyes
+    for(let x=17;x<=28;x++) st(x,(x===17||x===28)?17:18);                                                             // the grin
+    [18,21,24,27].forEach(x=>{ st(x,17); st(x,19); }); }                                                              // its cross stitches
   // hats
   s.tag='hat';
   if(hs==='cap'){
@@ -18795,7 +18842,7 @@ function render(o){ const av=o.av, s=build(o), px=o.px||7, only=o.only||'';
     sole:ramp('#e8e2d4'), hat:ramp(hatHex), patch:ramp(lum(hatHex)>.6?'#1b2b4a':'#f1ede2'), patchmark:ramp(lum(hatHex)>.6?'#f4f1e6':'#1b2b4a'),
     hatbtn:ramp(mix(hatHex,'#000000',.18)), band:ramp('#2a2f3b'), belt:ramp('#2a2420'), button:ramp('#f4f1ea'),
     glove:ramp('#f7f8f5',{spread:.8}), dlens:['#040508','#08090e','#0e1018','#2e3d58','#56708f'], frame:ramp('#26272d'),
-    gold:ramp('#d6a640'), strap:ramp('#3a3f4a'), pumpkin:ramp(av.skinHex), stem:ramp('#4a6a22'), straw:ramp(o.straw||'#d8b04e'),
+    gold:ramp('#d6a640'), strap:ramp('#3a3f4a'), pumpkin:ramp(av.skinHex), stem:ramp('#4a6a22'), straw:ramp(o.straw||'#d8b04e'), sack:ramp(av.skinHex), rope:ramp('#7a5a2e'), stitch:ramp('#2a1c10'),
     carve:['#8a3a08','#e0761a','#ffb02e','#ffe066','#fff6c4'], mirror:['#4b2a7a','#5f4bb0','#5c8fd6','#7fc3ec','#bfe9fb'],
     jacket:ramp((o.topPal&&o.topPal.blazer&&o.topPal.blazer['1'])||'#7a1f2b'), tie:ramp('#243040'), jbutton:ramp('#d8b24a') };
   const lace=mix(R.shoe[1],'#000000',.25), skinR=R.skin;
@@ -38637,8 +38684,9 @@ const DROPS=[
   items:[['hw','elf'],['hw','antlers'],['hw','santa'],['hw','beanie'],['ew','goggles'],['pat','uglysweater'],['ball','snowball'],['ball','frost'],['club','candycane'],['club','frostdriver']]},
  // November had no drop at all, so the month between Halloween and the holidays sold nothing themed.
  {id:'harvest', name:'Harvest Classic', kicker:'November Only', accent:'#d8843a', window:[[11,1],[11,30]],
-  blurb:'A roast turkey hat, a pie-crust print and a cranberry off the tee. Complete it to unlock the Cornfield Sunset card backdrop and 100,000 coins. Returns every November.',
-  items:[['hw','turkey'],['pat','pielattice'],['ball','cranberry'],['fx','leaffall'],['plate','harvesttable']]},
+  blurb:'A roast turkey hat, a pie-crust print, a cranberry off the tee and a full pilgrim outfit. Complete it to unlock the Scarecrow skin, the Cornfield Sunset card backdrop and 100,000 coins. Returns every November.',
+  items:[['hw','turkey'],['pat','pielattice'],['ball','cranberry'],['fx','leaffall'],['plate','harvesttable'],
+         ['top','pilgrimcoat'],['leg','breeches'],['cleats','buckle']]},
  {id:'biggame', name:'The Big Game', kicker:'Championship Sunday', accent:'#8fce5a', window:[[1,25],[2,15]],
   blurb:'Helmets on. Gridiron leather, eye black and stadium lights for the biggest Sunday in sports.',
   items:[['hw','football'],['pat','gridiron'],['ball','pigskin'],['ew','eyeblack'],['fx','stadium']]} ];
@@ -39529,7 +39577,8 @@ const DROP_REWARDS={
   spooky:{ coins:100000, fromSeason:2, v:2, items:[
     {cat:'body',   id:'zombie',       name:'Zombie Skin'},
     {cat:'cardbg', id:'hauntedhollow',name:'Haunted Hollow Backdrop'} ]},
-  harvest:{ coins:100000, items:[
+  harvest:{ coins:100000, v:2, items:[
+    {cat:'body',   id:'scarecrow',    name:'Scarecrow Skin'},
     {cat:'cardbg', id:'cornfield',    name:'Cornfield Sunset Backdrop'} ]},
 };
 function dropReward(d){ const r=d?(DROP_REWARDS[d.id]||null):null; return (r && r.fromSeason && passSeason().n<r.fromSeason)?null:r; }
