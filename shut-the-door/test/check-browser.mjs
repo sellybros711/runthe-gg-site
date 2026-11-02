@@ -1285,6 +1285,11 @@ async function runningGame(w, h) {
    corners; and the canvas's drawing buffer the shape of its box (a canvas sized for one box and drawn
    into another is stretched). */
 const SWEEP = [[390, 844], [844, 390], [768, 1024], [900, 900], [1000, 1020], [1100, 800], [1280, 720], [1440, 900], [1920, 1080]];
+/* Short narrow phones (the QA audit, 2026-11-02): the set is wider than the canvas there, and the frame
+   kept the hitter and dropped the far side, the zone with it (at 360x640 it sat at x -108 to 10), so
+   nobody could aim and THROW never lit. At these the zone and the plate must be on screen and clear of
+   the HUD, with every one of the 25 cells tappable (38 px at least); the hitter may run under a panel. */
+const SHORT = [[360, 640], [320, 568]];
 async function sizeSweep() {
   console.log('\nevery window size');
   step('16 the window sizes', 900);
@@ -1326,6 +1331,30 @@ async function sizeSweep() {
     ok(m.over.length === 0 && m.cut.length === 0 && m.aspect < 0.01 && (!m.wide || m.card <= 420),
       `16 ${w}x${h}: the batter, his bat, the plate and the zone clear and on screen, the card ${m.card} px, the canvas its box's shape` +
       (m.over.length ? ' (' + m.over.join(', ') + ')' : '') + (m.cut.length ? ' (cut: ' + m.cut.join(', ') + ')' : '') + (m.aspect >= 0.01 ? ' (stretched ' + (m.aspect * 100).toFixed(1) + '%)' : ''));
+  }
+  for (const [w, h] of SHORT) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(700);
+    const m = await page.evaluate(() => {
+      const st = window.STD_STAGE.current, c = document.getElementById('m-canvas').getBoundingClientRect(), fb = st.figureBoxes(800);
+      const R = (r) => ({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+      const cells = [...document.querySelectorAll('#m-aim .cell')].map((el) => el.getBoundingClientRect());
+      const grid = cells.reduce((u, r) => ({ left: Math.min(u.left, r.left), right: Math.max(u.right, r.right), top: Math.min(u.top, r.top), bottom: Math.max(u.bottom, r.bottom) }), { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity });
+      const figs = { zone: R(document.querySelector('#m-aim .aim-zone').getBoundingClientRect()), grid, plate: { left: c.left + fb.plate.x0, right: c.left + fb.plate.x1, top: c.top + fb.plate.y0, bottom: c.top + fb.plate.y1 } };
+      const vis = (el) => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && !el.hidden; };
+      const hit = (a, b) => a.left < b.right - 2 && a.right > b.left + 2 && a.top < b.bottom - 2 && a.bottom > b.top + 2;
+      const over = [];
+      for (const el of [...document.querySelectorAll('#s-mound [data-hud]')].filter(vis).filter((el) => !el.closest('.msheet'))) {
+        const r = el.getBoundingClientRect();
+        for (const k of Object.keys(figs)) if (hit(r, figs[k])) over.push((el.id || el.className.split(' ')[0]) + ' over ' + k);
+      }
+      const cut = Object.keys(figs).filter((k) => { const f = figs[k]; return f.left < -2 || f.top < -2 || f.right > innerWidth + 2 || f.bottom > innerHeight + 2; });
+      const cell = cells.reduce((a, r) => [Math.min(a[0], r.width), Math.min(a[1], r.height)], [Infinity, Infinity]);
+      return { over, cut, n: cells.length, cell, zone: [figs.zone.left, figs.zone.right].map(Math.round) };
+    });
+    ok(m.over.length === 0 && m.cut.length === 0, `16 ${w}x${h}: the zone, all 25 cells and the plate on screen and clear of the HUD (zone x ${m.zone.join(' to ')})` +
+      (m.over.length ? ' (' + m.over.join(', ') + ')' : '') + (m.cut.length ? ' (cut: ' + m.cut.join(', ') + ')' : ''));
+    ok(m.n === 25 && m.cell[0] >= 38 && m.cell[1] >= 38, `16 ${w}x${h}: cells stay tappable (${Math.round(m.cell[0])}x${Math.round(m.cell[1])}, 38 at least)`);
   }
   await ctx.close();
 }

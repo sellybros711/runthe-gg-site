@@ -111,10 +111,18 @@ const CELL_FT = 0.553, CELL_PX = 38, MARGIN = 0.03, ROOM = 1.04;
    side of the canvas's), as the pitcher looks at it: the frame clears the panels by standing back,
    not by sliding the set off to one side (the owner, 2026-10-30: on some screens "the view is off
    center, so it no longer reads as the pitcher's POV"; the plate sat at 19% of a 1480 wide window).
-   It gives way only to the hitter, his bat and the plate being clear. */
-const FREE_W = { batter: 10, bat: 3, plate: 6, apron: 1, catcher: 2, umpire: 2 };
+   It gives way only to the hitter, his bat and the plate being clear.
+   Before all of that, the aim grid (zone: the 5x5 box the player taps) and the plate are whole on the
+   canvas and clear of the panels (MUST). On a short narrow phone (360x640, 320x568) the set is wider
+   than the canvas at the cell rule's frame; the hitter was kept whole and the far side dropped, the
+   zone with it, so nobody could aim (the QA audit, 2026-11-02). Now the moves that keep the grid and
+   the plate in come first, the hitter kept whole within them if he can be, and a figure's part off
+   the canvas counts as covered (it read as clear, so pushing the plate off the edge "cleared" it of
+   the pitch buttons). */
+const FREE_W = { batter: 10, bat: 3, plate: 6, apron: 1, catcher: 2, umpire: 2, zone: 8 };
 const CENTRE = 0.12;
-const FREE_HARD = { batter: true, bat: true, plate: true };
+const FREE_HARD = { batter: true, bat: true, plate: true, zone: true };
+const MUST = { zone: true, plate: true };
 // and a little further back than the set alone asks (the owner, 2026-10-26: "a little too close")
 const FREE_BACK = 1.12;
 function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
@@ -128,31 +136,45 @@ function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
     const B = keys.map((k) => ({ k, x0: w / 2 + (fb[k].x0 - w / 2) * sc, x1: w / 2 + (fb[k].x1 - w / 2) * sc, y0: h / 2 + (fb[k].y0 - h / 2) * sc, y1: h / 2 + (fb[k].y1 - h / 2) * sc }));
     const U = B.reduce((u, b) => ({ x0: Math.min(u.x0, b.x0), x1: Math.max(u.x1, b.x1), y0: Math.min(u.y0, b.y0), y1: Math.max(u.y1, b.y1) }), { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity });
     // the moves that keep it all in the canvas (too big: the hitter's own box)
-    const range = (a0, a1, size, m, b) => (a1 - a0 <= size - 2 * m ? [a1 - (size - m), a0 - m] : [b[1] - (size - m), b[0] - m]);
+    // (too big: the grid and the plate whole, and the hitter too if both fit, he to the very edge;
+    // else the grid and plate)
+    const M = B.filter((b) => MUST[b.k]).reduce((u, b) => ({ x0: Math.min(u.x0, b.x0), x1: Math.max(u.x1, b.x1), y0: Math.min(u.y0, b.y0), y1: Math.max(u.y1, b.y1) }), { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity });
+    const inside = (a0, a1, size, m) => [a1 - (size - m), a0 - m];
+    const range = (a0, a1, size, m, b, k) => {
+      if (a1 - a0 <= size - 2 * m) return inside(a0, a1, size, m);
+      const [kl, kh] = inside(k[0], k[1], size, m), [bl, bh] = inside(b[0], b[1], size, 0);
+      return Math.max(kl, bl) <= Math.min(kh, bh) ? [Math.max(kl, bl), Math.min(kh, bh)] : [kl, kh];
+    };
     const bt = B[0];
-    let [xl, xh] = range(U.x0, U.x1, w, mx, [bt.x0, bt.x1]);
-    const [yl, yh] = range(U.y0, U.y1, h, my, [bt.y0, bt.y1]);
+    let [xl, xh] = range(U.x0, U.x1, w, mx, [bt.x0, bt.x1], [M.x0, M.x1]);
+    const [yl, yh] = range(U.y0, U.y1, h, my, [bt.y0, bt.y1], [M.y0, M.y1]);
     // the moves that keep the plate near the middle (off: how far a move is from there, in px)
     const pl = B[keys.indexOf('plate')], pc = (pl.x0 + pl.x1) / 2 - w / 2, cl = pc - CENTRE * w, ch = pc + CENTRE * w;
     if (Math.max(xl, cl) <= Math.min(xh, ch)) { xl = Math.max(xl, cl); xh = Math.min(xh, ch); }
     const off = (cx) => Math.max(0, cl - cx, cx - ch);
     for (let a = 0; a <= n; a++) for (let b = 0; b <= n; b++) {
       const cx = xl + (xh - xl) * a / n, cy = yl + (yh - yl) * b / n, offc = off(cx);
-      let cost = 0, hard = 0, clear = Math.min(U.x0 - cx, w - (U.x1 - cx), U.y0 - cy, h - (U.y1 - cy));
+      let cost = 0, hard = 0, must = 0, clear = Math.min(U.x0 - cx, w - (U.x1 - cx), U.y0 - cy, h - (U.y1 - cy));
       for (const q of B) {
         const x0 = q.x0 - cx, x1 = q.x1 - cx, y0 = q.y0 - cy, y1 = q.y1 - cy, area = Math.max(1, (x1 - x0) * (y1 - y0));
+        // the share of it off the canvas counts as covered (nothing when the whole set is in)
+        // (a point, the apron, by whether it is in)
+        const inX = x1 - x0 < 1 ? (x0 >= 0 && x0 <= w ? 1 : 0) : Math.max(0, Math.min(x1, w) - Math.max(x0, 0)) / (x1 - x0);
+        const inY = y1 - y0 < 1 ? (y0 >= 0 && y0 <= h ? 1 : 0) : Math.max(0, Math.min(y1, h) - Math.max(y0, 0)) / (y1 - y0);
+        const off = 1 - inX * inY;
+        if (off > 1e-6) { const c = FREE_W[q.k] * off; cost += c; if (FREE_HARD[q.k]) hard += c; if (MUST[q.k]) must += c; }
         for (const p of P) {
           const ox = Math.min(x1, p.x1) - Math.max(x0, p.x0), oy = Math.min(y1, p.y1) - Math.max(y0, p.y0);
-          if (ox > 0 && oy > 0) { const c = FREE_W[q.k] * ox * oy / area; cost += c; if (FREE_HARD[q.k]) hard += c; }
-          else clear = Math.min(clear, Math.max(-ox, -oy));
+          if (ox > 0 && oy > 0) { const c = FREE_W[q.k] * ox * oy / area; cost += c; if (FREE_HARD[q.k]) hard += c; if (MUST[q.k]) must += c; }
+          else if (q.k !== 'zone') clear = Math.min(clear, Math.max(-ox, -oy));
         }
       }
-      // the hitter, his bat and the plate first, then the plate near the middle, then the rest, then
-      // the most room
+      // the grid and the plate first, then the hitter and his bat, then the plate near the middle,
+      // then the rest, then the most room
       const soft = cost - hard, e = 1e-9;
-      const better = !best || hard < best.hard - e || (Math.abs(hard - best.hard) <= e && (offc < best.offc - 0.5 || (Math.abs(offc - best.offc) <= 0.5 &&
-        (soft < best.soft - e || (Math.abs(soft - best.soft) <= e && clear > best.clear)))));
-      if (better) best = { fw, cx, cy, cost, hard, soft, clear, offc };
+      const better = !best || must < best.must - e || (Math.abs(must - best.must) <= e && (hard < best.hard - e || (Math.abs(hard - best.hard) <= e && (offc < best.offc - 0.5 || (Math.abs(offc - best.offc) <= 0.5 &&
+        (soft < best.soft - e || (Math.abs(soft - best.soft) <= e && clear > best.clear)))))));
+      if (better) best = { fw, cx, cy, cost, hard, must, soft, clear, offc };
     }
     return best;
   };
@@ -163,7 +185,9 @@ function freeFit(fb, fw0, fwLo, fwHi, panels, w, h) {
   for (let i = 0; i <= steps; i++) { const b = place(i, 16); all.push(b); if (b.cost <= 1e-9 && b.offc <= 0.5) return b; }
   const fine = [];
   for (let i = 0; i <= steps; i++) { const b = place(i, 64); fine.push(b); if (b.hard <= 1e-9 && b.offc <= 0.5) return b; }
-  return all.find((b) => b.cost <= 1e-9) || fine.find((b) => b.hard <= 1e-9) || all[all.length - 1];
+  const last = all[all.length - 1];
+  return all.find((b) => b.cost <= 1e-9) || fine.find((b) => b.hard <= 1e-9) || (last.must <= 1e-9 ? last :
+    fine.reduce((a, b) => (b.must < a.must - 1e-9 || (Math.abs(b.must - a.must) <= 1e-9 && b.hard < a.hard - 1e-9) ? b : a)));
 }
 const AN = () => window.STD_ANIM;
 const TEST = () => window.STD_STAGE_TEST;
@@ -569,11 +593,23 @@ class Stage {
     return { batter: box([pp.batter.root]), bat: box([pp.batter.bat]), catcher: box([pp.catcher.root]), umpire: box([pp.umpire.root]), plate, apron, W: w, H: h };
   }
 
+  /** The aim grid's box (gridRect's five columns and rows) on this.camera, in CSS px, for fit. */
+  zoneBox(zb) {
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight, t = (zb.szTop - zb.szBot) / 3, b = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+    for (const [x, zz] of [[-2.5 * CELL_FT, zb.szBot - t], [2.5 * CELL_FT, zb.szBot - t], [-2.5 * CELL_FT, zb.szTop + t], [2.5 * CELL_FT, zb.szTop + t]]) {
+      const q = P(x, 17 / 12, zz).project(this.camera), sx = (q.x + 1) / 2 * w, sy = (1 - q.y) / 2 * h;
+      b.x0 = Math.min(b.x0, sx); b.x1 = Math.max(b.x1, sx); b.y0 = Math.min(b.y0, sy); b.y1 = Math.max(b.y1, sy);
+    }
+    return b;
+  }
+
   /** Fit the frame to the set: the hitter, the catcher, the umpire and home plate all in, with a
       margin and a little room, as the lab frames it, but never so wide that a cell of the grid is
       under CELL_PX (38 px; the owner approved the lab's looser frame over a thumb sized 44). If a
-      phone is too narrow even so, the hitter stays whole and the catcher's far side goes first. On
-      a short screen the bodies win over the cell size: nobody loses his head.
+      phone is too narrow even so, the aim grid and the plate stay whole on the canvas and clear of
+      the panels (the player must be able to aim: 2026-11-02, at 360x640 the zone sat at x -108 to
+      10 and THROW never lit), then the hitter as whole as he can be, then the catcher. On a short
+      landscape screen the bodies win over the cell size: nobody loses his head.
       With the HUD's safe rect (setSafeRect) the set is sized to the rect instead of the canvas (the
       cell rule as before, on the canvas's px), and the zone, not the set, is centred in the rect: the
       bodies may run under the panels, never off the canvas top to bottom.
@@ -593,6 +629,8 @@ class Stage {
     for (let it = 0; it < 3; it++) {
       eye.resize(w, h); eye.update(0);
       const f = { ...eye.frame }, fb = this.figureBoxes(800);
+      // the aim grid's box (gridRect's, on this camera): it must stay on the canvas, off the panels
+      fb.zone = this.zoneBox(zb);
       const u = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
       for (const k of ['batter', 'bat', 'catcher', 'umpire', 'plate', 'apron']) {
         const b = fb[k];
@@ -602,11 +640,14 @@ class Stage {
       const o = P(f.x, 0, f.z).project(this.camera), ox = P(f.x + 1, 0, f.z).project(this.camera), oz = P(f.x, 0, f.z + 1).project(this.camera);
       const kx = (ox.x - o.x) / 2 * w, kz = -(oz.y - o.y) / 2 * h;
       const ftPx = f.fw / w;
+      // the cell rule down the grid too: a row is a third of his zone (a short zone's rows are under
+      // a column's CELL_FT), and no frame wider than keeps a row CELL_PX tall
+      const rowFw = ((zb.szTop - zb.szBot) / 3) * Math.abs(kz) * f.fw / CELL_PX;
       const need = ROOM * Math.max((u.x1 - u.x0) * ftPx / (1 - 2 * MARGIN) * w / rw, (u.y1 - u.y0) * ftPx / (1 - 2 * MARGIN) * w / rh);
       // the bodies (not the bat) always fit top to bottom, even if a short screen's cells get smaller
       const by0 = Math.min(fb.batter.y0, fb.catcher.y0, fb.umpire.y0), by1 = Math.max(fb.batter.y1, fb.catcher.y1, fb.umpire.y1, fb.apron.y1);
       const needBody = (by1 - by0) * ftPx / (1 - 2 * MARGIN) * w / h;
-      let fw = Math.max(Math.min(need, maxFw), needBody), sc = f.fw / fw;
+      let fw = Math.max(Math.min(need, maxFw, rowFw), needBody), sc = f.fw / fw;
       // the content's box after the zoom (it scales about the canvas centre)
       const z = (a, c) => c + (a - c) * sc;
       const n = { x0: z(u.x0, w / 2), x1: z(u.x1, w / 2), y0: z(u.y0, h / 2), y1: z(u.y1, h / 2) };
@@ -626,7 +667,16 @@ class Stage {
         const bx0 = z(fb.batter.x0, w / 2), bx1 = z(fb.batter.x1, w / 2);
         if (bx1 - cx > w * (1 - MARGIN)) cx = bx1 - w * (1 - MARGIN);
         if (bx0 - cx < w * MARGIN) cx = bx0 - w * MARGIN;
-      } else if (panels.length) {
+      }
+      if (!panels.length) {
+        // and before him, the aim grid and the plate whole on the canvas (the hitter gives way)
+        const mx0 = z(Math.min(fb.zone.x0, fb.plate.x0), w / 2), mx1 = z(Math.max(fb.zone.x1, fb.plate.x1), w / 2);
+        if (mx1 - cx > w * (1 - MARGIN)) cx = mx1 - w * (1 - MARGIN);
+        if (mx0 - cx < w * MARGIN) cx = mx0 - w * MARGIN;
+        const my0 = z(Math.min(fb.zone.y0, fb.plate.y0), h / 2), my1 = z(Math.max(fb.zone.y1, fb.plate.y1), h / 2);
+        if (my1 - cy > h * (1 - MARGIN)) cy = my1 - h * (1 - MARGIN);
+        if (my0 - cy < h * MARGIN) cy = my0 - h * MARGIN;
+      } else {
         // no safe rect: the HUD's own panels. The hitter, his bat, the plate, the catcher and the
         // umpire all in the canvas and clear of every panel, as large as that allows (the cell rule
         // still the widest the frame goes)
@@ -637,7 +687,7 @@ class Stage {
         // one size to try: at 844x390 the set is wider than the gap between the scorebar and the pitch
         // list, so the scorebar sat over the hitter's head. There it may stand back as far as
         // FREE_BACK, from the frame the bodies ask for, to clear him)
-        const cellHi = (w * CELL_FT) / CELL_PX, short = fw > cellHi * 1.001;
+        const cellHi = Math.min((w * CELL_FT) / CELL_PX, rowFw), short = fw > cellHi * 1.001;
         const freeHi = short ? fw * FREE_BACK : Math.max(fw, cellHi);
         const sol = freeFit(fb, f.fw, short ? fw : Math.min(fw * FREE_BACK, freeHi), freeHi, panels, w, h);
         fw = sol.fw; sc = f.fw / fw; cx = sol.cx; cy = sol.cy;
