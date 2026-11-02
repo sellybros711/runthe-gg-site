@@ -44,7 +44,9 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # A full run takes about 25 minutes on a typical runner and 30 on a slow one (#863, 2026-11-02,
+    # cancelled at 30 with every line ok). 45 leaves room for that and for the sections still coming.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
