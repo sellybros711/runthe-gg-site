@@ -1,7 +1,9 @@
 /* Every ball in play in every pack, staged by the scene's planner (3d/inplay-plan.js), against what the
  * engine decided: the ball where the result puts it (caught, fielded, fell in, over the wall), every
  * runner on the base his move ends on (or across the plate), every runner put out beaten by the ball,
- * and the whole sequence a few seconds long.
+ * and the whole sequence a few seconds long. Last, the running game (running-cases.mjs): every steal
+ * and pickoff on seeded outings, the runner on the bag before the tag when the engine says safe, the
+ * tag on him before he gets there when it says out.
  *
  *   node shut-the-door/lab/pipeline/check-inplay.mjs            every pack in data/packs
  *   node shut-the-door/lab/pipeline/check-inplay.mjs --all      every real batted ball with every row of its kind (slow)
@@ -20,6 +22,7 @@
 import { execFileSync } from 'node:child_process';
 import { planPlay, verify } from '../../3d/inplay-plan.js';
 import { inplayCases } from './inplay-cases.mjs';
+import { runningCases, GAP } from './running-cases.mjs';
 import { selection, openCheckpoint } from './checkpoint.mjs';
 
 const ALL = process.argv.includes('--all');
@@ -89,4 +92,16 @@ console.log(`\n${plays} plays, ${fails} wrong`);
 // where the fielders stand comes from the packs (build-shade.mjs): the table must be what they give now
 let shadeOk = true;
 try { console.log(execFileSync(process.execPath, [new URL('./build-shade.mjs', import.meta.url).pathname, '--check'], { encoding: 'utf8' }).trim()); } catch (e) { shadeOk = false; console.log(String(e.stdout || e).trim()); }
-process.exit(fails || !shadeOk ? 1 : 0);
+// the running game: every steal and pickoff looks like the engine's call (running-cases.mjs)
+const runs = runningCases({ seeds: 20 }), runBy = {};
+let runBad = 0;
+for (const x of runs) {
+  const k = `${x.kind} ${x.out ? 'out' : 'safe'}`;
+  runBy[k] ||= { n: 0, bad: 0, ex: null };
+  runBy[k].n++;
+  if (x.bad) { runBad++; runBy[k].bad++; runBy[k].ex ||= x; }
+}
+console.log(`\nthe running game: the runner on the bag against the tag, by the call (gap ${GAP} s)`);
+for (const [k, v] of Object.entries(runBy).sort()) console.log(`  ${v.bad ? 'FAIL' : 'ok  '} ${k.padEnd(16)} ${String(v.n).padStart(6)} ${v.bad}${v.ex ? '  e.g. ' + JSON.stringify(v.ex) : ''}`);
+console.log(`${runs.length} steals and pickoffs, ${runBad} wrong`);
+process.exit(fails || runBad || !shadeOk ? 1 : 0);

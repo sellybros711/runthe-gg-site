@@ -541,6 +541,13 @@ function lastThrowTo(p, base, s) {
   return best;
 }
 
+/** How far apart a call on the bases is shown (seconds, runner on the bag against the tag): the engine's
+    margin, never less than a phone reads the right way round (a bang bang one still slows at the tag),
+    never so much that the tag lunges a man's length (out) or the runner idles on the bag (safe). */
+function callGap(margin, out) {
+  return clamp(Math.abs(margin), 0.18, out ? 0.35 : 0.6);
+}
+
 /** A steal (rules 7, CONTRACT.md 5i: pr.steal, on a ball or a strike), staged as a play from the catch:
     the runner already gone with the pitch, the catcher's throw down (his own pop time, catch to glove),
     the cover man on the bag, the slide and the tag, safe or out by the engine's margin (seconds, plus is
@@ -571,15 +578,19 @@ export function planSteal(pr, o = {}) {
   ctx.cover = { [cov + ':' + to]: onBag };
   throwBall(ctx, 2, cov, rel, home, { ...bag, z: 2.2 }, fly);
   const tBall = rel + fly;
-  // the runner: off with the pitch (at the catch he is a third of the way), at the bag by the margin
-  const lead = leadOff(from), path = basePath(from, to);
-  const tr = new Track(lerp(lead, BASE[to], 0.3), { v: 27, a: 16 });
+  // the runner: off with the pitch, at full stride at the catch, and on the bag on the right side of the
+  // tag by the engine's call. The order comes from the result, the gap from the margin (seconds; on a
+  // phone a call closer than callGap reads as the wrong one). He starts where a run at his speed gets
+  // him there then: from rest a third of the way down, he got to the bag up to a second after the ball
+  // even on a steal the engine had safe by a mile, and the tag beat him on every safe steal.
+  const lead = leadOff(from), path = basePath(from, to), goal = path[path.length - 1];
   const margin = Number.isFinite(st.margin) ? st.margin : (out ? -0.1 : 0.1);
-  const arrive = Math.max(0.9, tBall - margin);
-  tr.arrive(0, path[path.length - 1], arrive, { toRest: true, v: 29 });
+  const tagAt = tBall + 0.03, slideIn = 0.3;
+  const arrive = out ? tagAt + callGap(margin, true) + slideIn : tagAt - callGap(margin, false);
+  const L = dist(lead, goal), d = clamp(27 * arrive, 6, L - 8), v = d / arrive;
+  const tr = new Track(lerp(goal, lead, d / L), { v, a: 16 });
+  tr.run(0, [goal], { v, fromRest: false, toRest: false });
   const r = { from, to, track: tr, out, batter: false, safeAt: out ? null : to, arrive };
-  // the tag: on him as he gets there, or the instant the ball does
-  const tagAt = Math.max(arrive, tBall) + 0.03;
   T[cov].act(tagAt, 'tag', { base: to, runner: from });
   if (out) { r.outAt = tagAt; r.outBase = to; p.events.push({ s: tagAt, kind: 'out', base: to, runner: from }); }
   p.runners.push(r);
@@ -641,19 +652,29 @@ export function planPickoff(po, o = {}) {
   const bag = basePoint(base, 'bag'), rubber = { x: 0, y: 59.5 };
   const onBag = base === 1 ? 0 : T[cov].arrive(0.1, bag, 0.75, { toRest: true });
   if (base !== 1) T[cov].act(onBag, 'cover', { base });
-  const fly = dist(rubber, bag) / 115 + 0.05, rel = Math.max(0.55, onBag - fly + 0.25);
+  const fly = dist(rubber, bag) / 115 + 0.05, rel0 = Math.max(0.55, onBag - fly + 0.25);
+  // the runner: a lead off the bag, back on the move, in on the right side of the tag by the engine's
+  // call. The engine's pickoff margin is plus for OUT by (engine.js pickoff), the other way round from a
+  // steal's: read as safe by, every pickoff showed the opposite of its call. Only its size is read here;
+  // the order comes from po.out. Back from his lead he is on the bag no sooner than his legs take him,
+  // so on a safe one the throw waits for him (the move held a beat), never the tag beating him.
+  const margin = Number.isFinite(po.margin) ? po.margin : 0.1;
+  const lead = lerp(BASE[base], BASE[Math.min(4, base + 1)], base === 3 ? 0.14 : 0.15);
+  const tr = new Track(lead, { v: 24, a: 22 });
+  let tagAt = rel0 + fly + 0.03, back;
+  // (out: caught leaning, he breaks back late at full effort, never a jog in that gets there late)
+  // (with no time to pull up on the bag he runs onto it, from the moment that gets him there then)
+  if (out) {
+    const want = tagAt + callGap(margin, true) + (base >= 2 ? 0.3 : 0), dd = dist(lead, BASE[base]);
+    const go = want - runTime(dd, 24, 22, true, true);
+    back = go >= 0.2 ? tr.arrive(go, BASE[base], want, { toRest: true }) : tr.run(Math.max(0.2, want - runTime(dd, 24, 22, true, false)), [BASE[base]], { toRest: false });
+  }
+  else { back = tr.arrive(0.2, BASE[base], Math.max(0.5, tagAt - callGap(margin, false)), { toRest: true }); tagAt = Math.max(tagAt, back + callGap(margin, false)); }
+  const rel = tagAt - 0.03 - fly, tBall = rel + fly;
   p.segs.push({ kind: 'held', t0: 0, by: 1, t1: null });
   T[1].act(0, 'set');
   throwBall(ctx, 1, cov, rel, rubber, { ...bag, z: 1.6 }, fly);
-  const tBall = rel + fly;
-  // the runner: a lead off the bag, back on the move, a dive in to beat it (or not, by the margin)
-  const lead = lerp(BASE[base], BASE[Math.min(4, base + 1)], base === 3 ? 0.14 : 0.15);
-  const tr = new Track(lead, { v: 27, a: 16 });
-  const margin = Number.isFinite(po.margin) ? po.margin : (out ? -0.08 : 0.25);
-  const back = Math.max(0.5, tBall - margin);
-  tr.arrive(0.2, BASE[base], back, { toRest: true, v: 24 });
   const r = { from: base, to: out ? -1 : base, track: tr, out, batter: false, safeAt: out ? null : base, arrive: back };
-  const tagAt = Math.max(back, tBall) + 0.03;
   T[cov].act(tagAt, 'tag', { base, runner: base });
   if (out) { r.outAt = tagAt; r.outBase = base; p.events.push({ s: tagAt, kind: 'out', base, runner: base }); }
   p.runners.push(r);
