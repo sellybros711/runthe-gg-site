@@ -1766,13 +1766,13 @@ var LEVELS = [
   // Twin Devils: two dust devils turning opposite ways. Pick the gap, or let one carry you round.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [2.5, -34]); devil(H, -2.6, -14, 2.4, 6, 1.8, 0, 5, 0); devil(H, 2.6, -24, 2.4, -6, 1.8, 0, 5, 0.5);
     H.comps.push({ k:'mound', x:-3.5, y:-29, s:2.4, a:0.18 }); bumps(H, T, [[4.6, -10, 0.6], [-4.6, -20, 0.55], [5, -28, 0.5], [-5, -6, 0.5], [0, -30.5, 0.5]]);
-    zoneR(H, M.MUD, -7, -36, -4, -38); zoneC(H, M.MUD, 5, -17, 1.1); bumps(H, T, [[-1, -9, 0.5]]); zoneC(H, M.MUD, 4.6, -24.5, 0.9); bowl(H, 2.5, -34, 1.5, 0.14); return H; } },
+    zoneR(H, M.MUD, -7, -36, -4, -38); zoneC(H, M.MUD, 5, -17, 1.1); bumps(H, T, [[-1, -9, 0.5]]); zoneC(H, M.MUD, 4.6, -24.5, 0.9); pen(H, T, 2.5, -34); bowl(H, 2.5, -34, 1.5, 0.14); return H; } },
   // Crater Rim: the cup sits in a crater. Come over the rim at the right pace and it drops you in.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [-3, -2.5], [2, -29]); H.comps.push({ k:'ring', x:2, y:-29, r:3, s:0.9, a:0.32 }); H.flats.push({ x:2, y:-29, s:0.6, keep:0.2 });
     devil(H, 0, -16, 2.4, 6, 3, 0, 5.5, 0.2); bumps(H, T, [[-4.5, -9, 0.6], [4.5, -11, 0.55], [-5, -22, 0.55], [5.5, -21, 0.5], [-4, -32, 0.5]]); zoneC(H, M.MUD, -4.5, -27, 1.2);
-    zoneR(H, M.MUD, 4.5, -34, 7, -36); blk(H, T, -1.4, -6.4, 1, -7.4); zoneC(H, M.MUD, 5, -6, 1); bumps(H, T, [[0, -22, 0.5]]); bowl(H, 2, -29, 1.2, 0.1); return H; } },
+    zoneR(H, M.MUD, 4.5, -34, 7, -36); blk(H, T, -1.4, -6.4, 1, -7.4); zoneC(H, M.MUD, 5, -6, 1); bumps(H, T, [[0, -22, 0.5]]); pen(H, T, 2, -29); bowl(H, 2, -29, 1.2, 0.1); return H; } },
   // Canyon Jump: off the ramp over the canyon, and a devil waits on the far rim.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-6, -11.9, 6, -15.1), rm(-6, -15, 6, -34)], [0, -2.5], [-3, -30]); zoneR(H, M.WATER, -6, -12, 6, -15); jump(H, 0, -12, 0, -1, 2, 12, { w:5.2 });
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-6, -11.9, 6, -15.1), rm(-6, -15, 6, -34)], [0, -2.5], [-3, -30]); jump(H, 0, -12, 0, -1, 2, 12, { w:5.2 });
     devil(H, 1, -23, 2.4, 6, 2.4, 0, 5, 0.6); dune(H, 0, -7, 0, -1, 1.4, 0.1); bumps(H, T, [[3.8, -6, 0.55], [-3.8, -6, 0.55], [4, -28, 0.55], [-4.6, -19, 0.5]]); zoneR(H, M.MUD, 3, -32, 6, -34);
     blk(H, T, -1.4, -26.4, 0.4, -27.4); zoneC(H, M.MUD, -4.6, -25, 1); bumps(H, T, [[4.6, -19, 0.5]]); bowl(H, -3, -30, 1.6, 0.14); return H; } },
   // Phobos and Deimos: Mars has two little moons, and here they pull like the ones on Moon Base. A devil sits between.
@@ -1794,7 +1794,7 @@ var LEVELS = [
   // Polar Cap: the north pole's ice, fast and true, and a devil skating across it.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [-3, -2.5], [3, -36]); zoneR(H, M.ICE, -7, -14, 7, -26); devil(H, 0, -20, 2.4, 6, 3.4, 0, 5.6, 0);
     dune(H, 0, -30, 0.2, -1, 1.4, 0.12); bumps(H, T, [[-4.5, -9, 0.6], [4.5, -10, 0.55], [-4.6, -31, 0.55], [5, -28, 0.5], [0, -33.5, 0.5]]); zoneR(H, M.MUD, -7, -38, -4, -40); zoneC(H, M.MUD, 5, -5, 1.1);
-    zoneC(H, M.MUD, -5.5, -21, 0.9); bumps(H, T, [[-1, -7, 0.5]]); bowl(H, 3, -36, 1.5, 0.14); return H; } },
+    zoneC(H, M.MUD, -5.5, -21, 0.9); bumps(H, T, [[-1, -7, 0.5]]); pen(H, T, 3, -36); bowl(H, 3, -36, 1.5, 0.14); return H; } },
   // Sample Return: roll onto the rover while it waits, ride it over the canyon, and putt round the devil to the cup.
   { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, -2, -18.1), rm(-8, -17.9, 15, -22.1), rm(7, -21.9, 15, -42)], [-5, -2.5], [11, -38]); zoneR(H, M.WATER, -8, -18, 7, -22);
     ferry(H, -8, -17.6, -3.6, -22, 11, 0, 2.2, 1.5, 0); devil(H, 11, -30, 2, 5, 1.6, 0, 4.6, 0); dune(H, -5, -10, 0, -1, 1.2, 0.1); bumps(H, T, [[-6.6, -14, 0.5], [13.6, -25, 0.5], [8.4, -35, 0.5]]);
@@ -1802,7 +1802,7 @@ var LEVELS = [
   // Wind Turbines: two turbines sweep the lane, a devil between them, all on a slope that falls right.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [3, -36]); spinner(H, T, -2.5, -12, 2.2, 1.5, 2); spinner(H, T, 2.5, -27, 2.2, -1.6, 2); devil(H, -1, -19.5, 2.2, 6, 2.6, 0, 5, 0.1);
     H.comps.push({ k:'plane', gx:-0.02, gy:0 }); bumps(H, T, [[4.5, -14, 0.55], [-5, -25, 0.55], [5, -21, 0.5], [-4, -33, 0.5]]); zoneR(H, M.MUD, -7, -38, -4, -40); zoneC(H, M.MUD, 4.5, -7, 1.2);
-    zoneC(H, M.MUD, 5, -31, 1); bumps(H, T, [[-5, -17, 0.5]]); bowl(H, 3, -36, 1.5, 0.14); return H; } },
+    zoneC(H, M.MUD, 5, -31, 1); bumps(H, T, [[-5, -17, 0.5]]); pen(H, T, 3, -36); bowl(H, 3, -36, 1.5, 0.14); return H; } },
   // Lava Tube: round the old lava tube's loop, over a dune and past the devil on the way out.
   { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-6, -19.4, 6, -38)], [0, -2.5], [-3, -34]);
     loopAt(H, 0, -17.5, 0, -1, 0.6, 1.6); devil(H, 1.4, -27, 2.2, 6, 2.6, 0, 5, 0.2); H.comps.push({ k:'mound', x:-2.5, y:-7, s:1.6, a:0.12 });
@@ -1810,7 +1810,7 @@ var LEVELS = [
   // Dust Storm: three devils at once, crossing on their own clocks. Find the moment the lane is clear.
   { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -42)], [0, -2.5], [0, -38]); devil(H, 0, -11, 2.2, 6, 4, 0, 5.4, 0); devil(H, 0, -20, 2.2, -6, 4, 0, 4.6, 0.33); devil(H, 0, -29, 2.2, 6, 4, 0, 5.8, 0.66);
     dune(H, 0, -34, 0, -1, 1.3, 0.12); bumps(H, T, [[-6, -15, 0.6], [6, -16, 0.55], [-6, -25, 0.55], [6, -24, 0.5], [-4, -36, 0.5], [4, -36, 0.5]]); zoneC(H, M.MUD, -6, -6, 1.2); zoneC(H, M.MUD, 6, -6, 1.2);
-    zoneR(H, M.MUD, -8, -40, -5.5, -42); zoneR(H, M.MUD, 5.5, -40, 8, -42); bowl(H, 0, -38, 1.5, 0.14); return H; } },
+    zoneR(H, M.MUD, -8, -40, -5.5, -42); zoneR(H, M.MUD, 5.5, -40, 8, -42); pen(H, T, 0, -38); bowl(H, 0, -38, 1.5, 0.14); return H; } },
   // Rille Bridges: two bridges over the rilles on their own clocks, a devil between them.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [2, -36]); zoneR(H, M.WATER, -6, -12, 6, -15); drawb(H, -2.6, -12, 2.6, -15, 3, 0, 0.7);
     zoneR(H, M.WATER, -6, -24, 6, -27); drawb(H, -0.6, -24, 5, -27, 3.4, 0.4, 0.7); devil(H, 0, -19.5, 2, 5, 1.6, 0, 4.4, 0.2); H.comps.push({ k:'plane', gx:0.014, gy:0 });
@@ -1825,7 +1825,7 @@ var LEVELS = [
   { par:3, three:2, sig:true, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-8, -16, 8, -42, 0.8)], [0, -2.5], [0, -37]); climb(H, 0, -12, -16, 2.6);
     devil(H, -2.8, -23, 2.2, 6, 1.8, 0, 4.8, 0); devil(H, 2.8, -31, 2.2, -6, 1.8, 0, 4.8, 0.5); H.comps.push({ k:'ring', x:0, y:-37, r:2.8, s:0.8, a:0.28 }); H.flats.push({ x:0, y:-37, s:0.6, keep:0.2 });
     bumps(H, T, [[-4, -6, 0.55], [4, -7, 0.55], [6, -20, 0.55], [-6, -28, 0.55], [-5, -40, 0.5], [5, -40, 0.5]]); zoneR(H, M.MUD, -8, -16.5, -5, -18); zoneR(H, M.MUD, 5, -16.5, 8, -18);
-    zoneC(H, M.MUD, 5, -34, 0.9); bowl(H, 0, -37, 1.2, 0.1); return H; } }
+    zoneC(H, M.MUD, 5, -34, 0.9); pen(H, T, 0, -37); bowl(H, 0, -37, 1.2, 0.1); return H; } }
 ];
 /* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders, two halves of nine on the season's two
    themes. Par is the solver's, the same rule as the Putt Putt Tour.
