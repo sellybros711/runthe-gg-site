@@ -33,6 +33,7 @@
   const NODE = typeof module !== 'undefined' && module.exports;
   const K = NODE ? require('./contract.js') : window.STD_CONTRACT;
   const G = NODE ? require('./grade.js') : window.STD_GRADE;
+  const NM = NODE ? require('./names.js') : window.STD_NAMES;
 
   const PRINCIPLES = Object.freeze(['chase_when_ahead', 'strike_when_behind', 'first_pitch_strike', 'avoid_his_damage',
     'attack_his_hole', 'same_side_breaker_away', 'change_eye_level', 'double_play_ball',
@@ -209,7 +210,7 @@
     const { st, call, best, fc, fb, model, batter, grade, pitcherHand } = c;
     const bn = nameOf(model, best.type), cn = nameOf(model, call.type);
     const bp = G.placeOf(best.cell, batter.bats), cp = G.placeOf(call.cell, batter.bats);
-    const last = batter.name.split(' ').slice(1).filter(w => !/^(Jr\.|Sr\.|II|III)$/.test(w)).join(' ') || batter.name;
+    const last = NM.shortName(batter.name);   // the surname with its suffix ("Witt Jr."), names.js
     const pr = batter.profile || {};
     const cw = countWords(st.b, st.s);
     const hand = pitcherHand === 'R' ? 'righty' : 'lefty';

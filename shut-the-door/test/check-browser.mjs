@@ -451,8 +451,25 @@ async function playOuting(page, o) {
       ok(rb.q.h >= 38 && !rb.q.onZone && (!rb.po || (rb.po.h >= 38 && !rb.po.onZone)), '5 the running game row is thumb tall and off the zone (' + Math.round(rb.q.h) + ' px' + (rb.po ? ', pickoff live' : '') + ')');
       ok(/^slide step · beats the steal/.test(rb.quickLabel), '5 QUICK DELIVERY says what it is: "' + rb.quickLabel + '"');
       if (rb.po) {
+        /* the zone steps aside while the pickoff plays on the broadcast, and is back for the next pitch
+           (the owner, 2026-11-02: it sat over the infield through the throw) */
+        const zoneUp = () => { const a = document.getElementById('m-aim'), cs = a && getComputedStyle(a); return !!cs && cs.visibility !== 'hidden' && +cs.opacity > 0.05; };
         await page.click('#m-po');
+        const mid = await page.evaluate(({ up }) => new Promise((res) => {
+          const f = new Function('return (' + up + ')()'), seen = [];
+          /* only the looks while the stage's broadcast is on (inplay.active): before it the call is still on its way */
+          const t0 = Date.now();
+          const tick = () => { const busy = window.STD_UI.state.busy, sc = window.STD_UI.state.scene, ip = sc && sc.real && sc.real.inplay;
+            if (busy && ip && ip.active) seen.push(f());
+            if (busy || Date.now() - t0 < 400) setTimeout(tick, 60); else res(seen); };
+          tick();
+        }), { up: zoneUp.toString() });
         await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
+        await page.waitForTimeout(250);
+        const zoneBack = await page.evaluate(zoneUp);
+        const plays3d = await page.evaluate(() => !!(window.STD_UI.state.scene && window.STD_UI.state.scene.real && window.STD_UI.state.scene.real.pickoff));
+        ok(!plays3d || (mid.length > 0 && mid.filter(Boolean).length === 0 && zoneBack),
+          '5 the zone steps aside while the pickoff plays and is back for the next pitch (up in ' + mid.filter(Boolean).length + ' of ' + mid.length + ' looks, back: ' + zoneBack + ')');
         const af = await page.evaluate(() => ({ tag: document.querySelector('#m-pbp .pbp-tag').textContent, st: window.STD_UI.state.outing }));
         ok(/^(pickoff|picked off|balk)$/.test(af.tag) && af.st.run.pickoffs.length === rb.n + 1,
           '5 a pickoff throw goes in the play by play ("' + af.tag + '") and spends a disengagement (' + rb.dis + ' left before, ' + (af.st.run.pickoff.left) + ' after)');
@@ -628,7 +645,8 @@ async function playOuting(page, o) {
         const n0 = await page.evaluate(() => document.querySelector('.rm-ring .rm-rmove').style.transform);
         await page.waitForTimeout(150);
         const st = await page.evaluate(() => ({ colGone: document.querySelector('.rm-col').hidden, n1: document.querySelector('.rm-ring .rm-rmove').style.transform, done: document.getElementById('m-meter').classList.contains('is-done'),
-          word: document.querySelector('#m-meter .rm-word').textContent, call: (window.__calls || []).slice(-1)[0] }));
+          word: document.querySelector('#m-meter .rm-word').textContent, rel: document.querySelector('#m-meter .rm-s-rel span').textContent, call: (window.__calls || []).slice(-1)[0] }));
+        ok(/^[a-z ]+$/.test(st.rel) && !/^q\b/.test(st.rel), '5 the release box says the release in a word, never q ("' + st.rel + '")');
         ok(st.colGone, '5 the power column goes once the release is stopped, so the pitch has the field');
         ok(st.done && !!n0 && st.n1 === n0 && st.word.length > 0, '5 the meter locks on the stop: the ring holds at ' + n0 + ' and says "' + st.word + '"');
         const c = st.call || {};
@@ -857,6 +875,13 @@ async function run(w, h, theme) {
   await page.click('#sheet-101 .sh-x');
   await page.click('#h-main [data-open="how"]');
   await page.waitForSelector('#sheet-how.on');
+  /* back closes the sheet and stays on the page (the QA audit, 2026-11-02) */
+  await page.goBack({ waitUntil: 'commit' }).catch(() => null);
+  await page.waitForTimeout(300);
+  const backed = await page.evaluate(() => ({ open: !document.getElementById('sheet-how').hidden, here: /shut-the-door/.test(location.pathname), screen: document.body.dataset.screen }));
+  ok(!backed.open && backed.here && backed.screen === 's-home', '2 back closes the sheet and stays on the game (' + JSON.stringify(backed) + ')');
+  await page.click('#h-main [data-open="how"]');
+  await page.waitForSelector('#sheet-how.on');
   await page.click('#how-body [data-open-101]');
   ok(await page.isVisible('#sheet-101'), '2 how to play links to pitching 101');
   await page.click('#sheet-101 .sh-x');
@@ -867,6 +892,8 @@ async function run(w, h, theme) {
   await page.click('#b-theme');
   const t1 = await page.evaluate(() => [document.documentElement.dataset.theme, localStorage.getItem('runthegrid_theme')]);
   ok(t1[0] !== t0 && t1[1] === t1[0], '2 the theme button flips the site theme key (' + t0 + ' to ' + t1[0] + ')');
+  const nm = await page.evaluate(() => [window.STD_UI.lastName('Bobby Witt Jr.'), window.STD_UI.lastName('Mariano Rivera'), window.STD_UI.lastName('Ken Griffey Sr.')]);
+  ok(nm.join('|') === 'Witt Jr.|Rivera|Griffey Sr.', '2 the play by play\'s names keep their suffix, never "Jr." alone (' + nm.join(', ') + ')');
   await shot('home-' + t1[0], true);
   await page.click('#b-theme');
 
