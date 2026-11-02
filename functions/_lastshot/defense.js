@@ -28,8 +28,62 @@
  *           off for underTime. The rim and the roll stay covered, the
  *           jumper is wide open. Going under a pin-down for a shooter is the
  *           one thing a coach screams about.
- * The sim calls useScreen() when a cutter reaches a screen he was drawn off. */
+ * The sim calls useScreen() when a cutter reaches a screen he was drawn off.
+ *
+ * ZONES (2026-10-30). Instead of a man, a zone defender owns a spot in the
+ * zone's shape (ZONE_SHAPES), and the whole shape shifts toward the ball.
+ * He takes the man nearest his spot within zoneReach, stands between him and
+ * the rim on a leash back to the spot, and closes out on the ball when it
+ * comes into his area. A zone does not chase screens: it sits. The gaps a
+ * coach attacks come out of the shapes, not out of rules: a 2-3 is soft in
+ * the corners and the high post, a 1-3-1 on the short corner and the
+ * baseline, a 3-2 in the middle and on the block.
+ * The MATCH-UP zone plays man principles, switches every screen and sags into
+ * the lane like a zone. */
 import { COURT, dist, toRim } from './court-geo.js';
+import { isAreaZone } from './scenario.js';
+
+/* Each zone's spots, by defender (X1 the PG's size up to X5 the C's). */
+export const ZONE_SHAPES = Object.freeze({
+  zone23: { X1: { x: 18, y: 21 }, X2: { x: 32, y: 21 }, X3: { x: 10, y: 9 }, X4: { x: 40, y: 9 }, X5: { x: 25, y: 7 } },
+  zone131: { X1: { x: 25, y: 29 }, X2: { x: 39, y: 18 }, X3: { x: 11, y: 18 }, X4: { x: 25, y: 16 }, X5: { x: 25, y: 5.5 } },
+  zone32: { X1: { x: 25, y: 27 }, X2: { x: 39, y: 20 }, X3: { x: 11, y: 20 }, X4: { x: 19, y: 8 }, X5: { x: 31, y: 8 } }
+});
+
+/* Where a zone defender stands. Sets x.man to the man he has, so help, the
+   result and the debug lines read the same as in man. */
+function zoneTarget(x, st, T) {
+  const shape = ZONE_SHAPES[st.scheme], R = COURT.RIM;
+  /* A zone reacts to the catch: while a pass is in the air the shape follows
+     the ball, and nobody leaves his spot to meet it. That is what a skip pass
+     beats. */
+  const b = ballPos(st);
+  const spot = id => {
+    const a = shape[id];
+    return { x: a.x + ((b ? b.x : 25) - 25) * (T.zoneShiftX ?? 0.35), y: Math.max(3, a.y + ((b ? b.y : 16) - 16) * (T.zoneShiftY ?? 0.22)) };
+  };
+  const me = spot(x.id);
+  // the ball is mine when my spot is the nearest to it
+  if (b) {
+    let near = null, nd = Infinity;
+    for (const y of st.X) { const d = dist(spot(y.id), b); if (d < nd) { nd = d; near = y; } }
+    const holder = st.ball.holder;
+    if (near === x && holder) {
+      x.man = holder;
+      const L = toRim(b) || 1, g = Math.min(T.onBallGap ?? 3, L * 0.6);
+      return { x: b.x + (R.x - b.x) / L * g, y: b.y + (R.y - b.y) / L * g };
+    }
+  }
+  // else the man nearest my spot, on a leash back to it
+  let man = null, md = T.zoneReach ?? 9.5;
+  for (const id of Object.keys(st.O)) { const d = dist(st.O[id].pos, me); if (d < md) { md = d; man = id; } }
+  if (!man) return me;
+  x.man = man;
+  const P = st.O[man].pos, L = toRim(P) || 1, g = Math.min(T.zoneGap ?? 3.2, L * 0.6);
+  const t = { x: P.x + (R.x - P.x) / L * g, y: P.y + (R.y - P.y) / L * g };
+  const k = T.zoneLeash ?? 0.6;
+  return { x: me.x + (t.x - me.x) * k, y: me.y + (t.y - me.y) * k };
+}
 
 const sizeOf = (T, a) => (T.size && T.size[a]) || 3;
 
@@ -38,6 +92,7 @@ export function targetFor(x, st, T) {
   if (!x.arch) x.arch = st.O[x.man].arch;
   const R = COURT.RIM;
   if (x.freezeT > 0 && x.pos) return { ...x.pos };
+  if (isAreaZone(st.scheme) && !(st.help && st.help.x === x.id)) return zoneTarget(x, st, T);
   if (st.help && st.help.x === x.id) return { ...st.help.spot };
   if (x.showT > 0 && x.showOn) return showSpot(st, x.showOn);
 
@@ -51,13 +106,13 @@ export function targetFor(x, st, T) {
     gap = T.onBallGap ?? 3;
     const edge = sizeOf(T, x.arch) - sizeOf(T, man.arch);
     if (edge >= 2 && toRim(P) > 16) gap += (T.cushion ?? 1.4) * (edge - 1);
-  } else gap = (T.offGap && T.offGap[man.arch]) ?? 4;
+  } else gap = ((T.offGap && T.offGap[man.arch]) ?? 4) + (st.scheme === 'matchup' ? (T.matchupGap ?? 1.5) : 0);
   if (x.underT > 0) gap = Math.max(gap, T.underGap);
   gap = Math.min(gap, L * 0.6);
   let tx = P.x + toRimX / L * gap, ty = P.y + toRimY / L * gap;
   if (!onBall && b) {
     const far = dist(man.pos, b) > (T.farSide ?? 24);
-    const h = (far ? (T.helpFar ?? 0.28) : (T.helpNear ?? 0.1)) * ((T.sag && T.sag[man.arch]) ?? 1);
+    const h = (far ? (T.helpFar ?? 0.28) : (T.helpNear ?? 0.1)) * ((T.sag && T.sag[man.arch]) ?? 1) * (st.scheme === 'matchup' ? (T.matchupSag ?? 2) : 1);
     tx += (b.x - tx) * h; ty += (b.y - ty) * h;
   }
   return { x: tx, y: ty };
@@ -128,7 +183,9 @@ export function useScreen(st, T, screener, cutter, name) {
   const xc = defenderOf(st, cutter), xs = defenderOf(st, screener);
   if (!xc || !xs || xc === xs) return null;
   const scheme = st.scheme, ball = st.ball.holder === cutter;
-  if (scheme === 'switch') {
+  if (isAreaZone(scheme)) {
+    // a zone sits: nobody chases the cutter over or under, the next spot picks him up
+  } else if (scheme === 'switch' || scheme === 'matchup') {
     const m = xc.man; xc.man = xs.man; xs.man = m;
     xc.freezeT = xs.freezeT = T.switchBeat ?? 0.2;
   } else if (scheme === 'over') {

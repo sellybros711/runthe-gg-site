@@ -92,7 +92,8 @@ test('the sim never calls Math.random', () => {
 
 test('pin-down: O2 comes off it for a three and it reads as a pin-down', () => {
   assert.equal(labelsOf(SC, PINDOWN)[2], 'pin-down');
-  const r = simulate(SC, PINDOWN, 7);
+  // forced after the roll, so this is exactly the run seed 7 dealt before zones
+  const r = simulate(SC, PINDOWN, 7, { scheme: 'switch' });
   assert.equal(r.shooter, 'O2');
   assert.equal(r.shot.zone, 'three');
   assert.equal(r.shot.bailout, false);
@@ -109,7 +110,7 @@ test('pick and roll: O4 rolls and finishes, the roll is labelled', () => {
   const labels = labelsOf(SC, PNR);
   assert.equal(labels[3], 'pick and roll');
   assert.equal(labels[4], 'roll');
-  const r = simulate(SC, PNR, 8);
+  const r = simulate(SC, PNR, 8, { scheme: 'switch' });
   assert.equal(r.shooter, 'O4');
   assert.equal(r.shot.zone, 'rim');
   assert.equal(r.shot.bailout, false);

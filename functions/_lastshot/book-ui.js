@@ -289,7 +289,7 @@ export function mountBooks(app) {
     const tm = B.totals(mine);
     tbl.appendChild(el('tr', { class: 'tall' }, [el('td', { text: 'Every defense' }), el('td', { text: pct(res.all.w, res.all.n) }), el('td', { text: '' }), el('td', { text: tm.n ? tm.w + ' of ' + tm.n : '-' })]));
     card.appendChild(tbl);
-    card.appendChild(el('p', { class: 'muted', text: 'Zones are coming next. Your runs count against the defense the game picked.' }));
+    card.appendChild(el('p', { class: 'muted', text: 'Man rows are the screen call. Zone rows are the zone. Your runs count against the defense the game picked.' }));
     addClose(card);
     if (screen === 'book') renderBook();
   }
