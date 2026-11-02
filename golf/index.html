@@ -11326,6 +11326,8 @@ const PP_REWARDS=[
  {cat:'cleats',id:'ppdinoclaw',name:'Dino Claw Cleats',hist:'A Putt Putt world prize'},
  {cat:'ball',id:'ppmars',name:'Red Planet Ball',hist:'A Putt Putt world prize',col:'#c8562a',tracer:{g:'rgba(255,120,60,.55)',c:'#ffd0b0'}},
  {cat:'cleats',id:'ppmarsboots',name:'Mars Boots',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppsaturn',name:'Saturn Ball',hist:'A Putt Putt world prize',col:'#e8c88c',tracer:{g:'rgba(255,217,138,.55)',c:'#bfe6ff'}},
+ {cat:'ew',id:'pptitangoggles',name:'Titan Goggles',hist:'A Putt Putt world prize'},
  {cat:'putter',id:'pptusk',name:'Mammoth Tusk Putter',hist:'A Putt Putt world prize'},
  {cat:'ew',id:'ppsnowgoggles',name:'Snow Goggles',hist:'A Putt Putt world prize'},
  {cat:'hw',id:'pphallowscrown',name:'Hallows Crown',hist:'A Members Tour prize'},
@@ -12086,7 +12088,7 @@ Object.assign(COS_BOOST,{
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
   'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'hw:ppastrohelmet':{sht:2},
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
-  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}
+  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}, 'bl:ppmars':{acc:2}, 'ct:ppmarsboots':{bnk:2}, 'bl:ppsaturn':{dist:2}, 'ew:pptitangoggles':{app:2}
 });
 // THE PRO SHOP LINE (PRO_LINE): the ladder's power for its rarity, a common 1 point and a rare 2, leaning on the stats gear
 // touches least (Bunker, Short Game, Accuracy, Scrambling). Its outerwear and legwear are style and carry none.
@@ -18141,6 +18143,8 @@ PXG_EYEWEAR.ppaviatorgoggles=pxgRows([[12,15,'######...######'],[13,14,'#@@%%%&#
 PXG_EW_PAL.ppaviatorgoggles={'#':'#181019','@':'#ffe08a','%':'#d9a441','&':'#8f6020','*':'#7a4a2a','+':'#4a2c18','=':'#ffe08a',P:'#ffffff',Q:'#9ee0ff',R:'#4fb0ee',E:'#2a72c0'};
 // Snow Goggles
 PXG_EYEWEAR.ppsnowgoggles=pxgRows([[12,15,'###############'],[13,14,'#@@@%%%%%%%%%%%&#'],[14,10,'#+=#@%PPPPPPffPfPPP%&#=+#'],[15,10,'#~+#@%QQQQQffQfQQQQ&&#+~#'],[16,10,'#~~#%&RRRRfRRRRRRRR&&#~~#'],[17,13,'#%&OOOOOO###OOOOO&#'],[18,14,'#&&&&&#...#&&&**#'],[19,15,'#####.....#####']]);
+PXG_EYEWEAR.pptitangoggles=PXG_EYEWEAR.ppsnowgoggles;
+PXG_EW_PAL.pptitangoggles={'#':'#181019','@':'#fff2d0','%':'#e8c88c','&':'#b8905a','*':'#8a6a3a','+':'#ffd98a','=':'#fff2d0','~':'#a87a40',f:'#ffffff',P:'#ffd0a0',Q:'#ffa860',R:'#e8742a',O:'#a83a14'};
 PXG_EW_PAL.ppsnowgoggles={'#':'#181019','@':'#ffffff','%':'#e6eef8','&':'#b4c4da','*':'#8496b4','+':'#d8eefa','=':'#ffffff','~':'#94b8d4',f:'#ffffff',P:'#e4f4ff',Q:'#a6d8f6',R:'#8fa6f0',O:'#8a62dc'};
 // Phantom Mask
 PXG_EYEWEAR.ppphantommask=pxgRows([[10,13,'#.................#'],[11,13,'##......###......##'],[12,13,'#@#...##%=%##...#&#'],[13,13,'#@@###%%*=*%%###&&#'],[14,13,'#@@aaaaa%*%aaaaa&&#'],[15,13,'#%aEEEEa%+%aEEEEa&#'],[16,14,'#*%aaaa%%%%aaaa&*#'],[17,15,'#*%%%%##.##%%&*#'],[18,16,'#####.....####']]);
@@ -18161,6 +18165,8 @@ PXG_BALL_PAL.ppcloud={o:'#3a78b8',W:'#ffffff',w:'#d0e4f6',C:'#86c8ff',h:'#c4e6ff
 PXG_BALL.ppdinoegg=pxgRows([[46,36,'oo'],[47,35,'ohCo'],[48,34,'ohCgCo'],[49,34,'ogCCdo'],[50,34,'oCdCgo'],[51,34,'oCgsso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL.ppmars=pxgRows([[46,36,'oo'],[47,35,'oWWo'],[48,34,'ohCdCo'],[49,34,'oCCssCo'],[50,34,'odCCdo'],[51,34,'oCCdso'],[52,35,'oWWo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.ppmars={o:'#4a160a',C:'#c8562a',h:'#e8865a',d:'#7a2a14',s:'#3a0e06',W:'#fff6ee',T:'#e8ebf0'};
+PXG_BALL.ppsaturn=pxgRows([[46,36,'oo'],[47,35,'ohCo'],[48,34,'ohCCCo'],[49,34,'obbbbo'],[50,32,'RRoCCCCoRR'],[51,34,'obbsbo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppsaturn={o:'#5a4220',C:'#e8c88c',h:'#fff2d0',b:'#c8a060',s:'#a87a40',R:'#bfe6ff',W:'#ffffff',T:'#e8ebf0'};
 PXG_BALL_PAL.ppdinoegg={o:'#4e5a2a',C:'#f2ecc4',h:'#fffbea',s:'#c8c690',g:'#5aae3a',d:'#2f6e2a',T:'#e8ebf0'};
 // Gold Nugget Ball
 PXG_BALL.ppnugget=pxgRows([[46,33,'*...oo'],[47,35,'oohCo'],[48,34,'ohwCCso'],[49,34,'oCCdCo'],[50,33,'ohCCswo'],[51,34,'osCddo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);

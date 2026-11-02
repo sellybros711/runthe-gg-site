@@ -2038,7 +2038,8 @@ var SECRETS = [
   { theme:'neon', at:11, name:'Glitch Level', scene:'s-glitch' }, { theme:'pirate', at:8, name:'The Captain’s Deck', scene:'s-ship' }, { theme:'temple', at:16, name:'Treasure Chamber', scene:'s-treasure' },
   { theme:'canyon', at:5, name:'Lost Mine', scene:'s-mine' }, { theme:'volcano', at:13, name:'Lava Tube', scene:'s-lava' }, { theme:'sky', at:9, name:'Above the Clouds', scene:'s-clouds' },
   { theme:'dino', at:17, name:'The Nest', scene:'s-nest' }, { theme:'iceage', at:7, name:'The Painted Cave', scene:'s-cave' },
-  { theme:'moon', at:12, name:'The Dark Side', scene:'s-darkside' }, { theme:'mars', at:10, name:'The Ice Cave', scene:'s-polarcave' }
+  { theme:'moon', at:12, name:'The Dark Side', scene:'s-darkside' }, { theme:'mars', at:10, name:'The Ice Cave', scene:'s-polarcave' },
+  { theme:'saturn', at:15, name:'The Hexagon Eye', scene:'s-hexeye' }
 ];
 var SECRET_LEVELS = [
   // The Potting Shed: crates stacked down both walls, the mower rolling across the middle, and a crate in front of the cup.
@@ -2086,7 +2087,11 @@ var SECRET_LEVELS = [
   // The Ice Cave: under the polar cap, a floor of ice, a cold draft whirling down the middle, ice pillars to bank off and the cup in a pen.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -8], [7, -24], [3, -32], [-3, -32], [-7, -24], [-7, -8]])], [0, -2.5], [-1.5, -28]);
     zoneR(H, M.ICE, -7, -9, 7, -22); devil(H, 0, -15.5, 2.4, 6, 2.6, 0, 5, 0); bumps(H, T, [[-4.5, -10, 0.6], [4.5, -11, 0.6], [-5, -21, 0.55], [5, -20, 0.55], [2.5, -26, 0.5]]);
-    dune(H, 0, -25, 0.3, -1, 1.2, 0.1); zoneR(H, M.MUD, 1.5, -30, 3, -32); blk(H, T, -7, -23.4, 1.2, -24.4); pen(H, T, -1.5, -28); bowl(H, -1.5, -28, 1.5, 0.14); return H; } }
+    dune(H, 0, -25, 0.3, -1, 1.2, 0.1); zoneR(H, M.MUD, 1.5, -30, 3, -32); blk(H, T, -7, -23.4, 1.2, -24.4); pen(H, T, -1.5, -28); bowl(H, -1.5, -28, 1.5, 0.14); return H; } },
+  // The Hexagon Eye: inside the storm at Saturn's pole, a six sided room. The storm whirls round its middle and haze drifts with it.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -8], [8, -22], [3, -30], [-3, -30], [-8, -22], [-8, -8]])], [0, -2.5], [2, -26]);
+    devil(H, 0, -15, 3.6, -5, 1.4, 0, 6, 0); haze(H, -8, -22, -3, -10, 0, -2); bumps(H, T, [[-5, -9, 0.55], [5, -10, 0.55], [-5, -21, 0.5], [5.5, -20, 0.5]]); ring(H, 0, -15, 6.2, 1.8, -0.6, -1.6);
+    pen(H, T, 2, -26); bowl(H, 2, -26, 1.5, 0.14); return H; } }
 ];
 var SECRET_NAMES = SECRETS.map(function(x){ return x.name; });
 var SECRET_WORLDS = SECRETS.map(function(x){ return { id:'s-' + x.theme, name:x.name, theme:x.theme, blurb:'A secret hole.', haz:['Found on a trail'] }; });
@@ -2515,6 +2520,8 @@ var CSS = '\
 .wm-moon b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 30%,#c8e8ff 50%,#6a8ee0);-webkit-text-stroke:.9px #060814;filter:drop-shadow(0 2px 0 #2a3f80) drop-shadow(0 4px 0 #060814) drop-shadow(0 0 10px rgba(127,216,255,.7))}\
 .wm-mars i{background:#4a1c10;color:#ffb08a;border:1px solid #ff8a4a}\
 .wm-mars b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#fff2e0 0 30%,#ffb08a 50%,#c8562a);-webkit-text-stroke:.9px #1e0804;filter:drop-shadow(0 2px 0 #6a2410) drop-shadow(0 4px 0 #1e0804) drop-shadow(0 0 10px rgba(255,138,74,.7))}\
+.wm-saturn i{background:#342a50;color:#ffd98a;border:1px solid #ffd98a}\
+.wm-saturn b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#fffaf0 0 30%,#ffd98a 50%,#c8a060);-webkit-text-stroke:.9px #120f1e;filter:drop-shadow(0 2px 0 #4a3f6a) drop-shadow(0 4px 0 #120f1e) drop-shadow(0 0 10px rgba(255,217,138,.7))}\
 .wm-iceage b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 30%,#bfe9f4 50%,#5aa8c4);-webkit-text-stroke:.9px #2a241c;filter:drop-shadow(0 2px 0 #5a4630) drop-shadow(0 4px 0 #2a241c) drop-shadow(0 0 8px rgba(143,208,224,.6))}\
 .wm-candy i{background:#5a2e14;color:#ffd6e6;border:1px solid #ff5fa2}\
 .wm-candy b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 22%,#ffa8cc 45%,#ff3b7a);-webkit-text-stroke:.9px #4a1a2e;filter:drop-shadow(0 2px 0 #9a2a5a) drop-shadow(0 4px 0 #3a1c0c) drop-shadow(0 0 8px rgba(255,154,208,.6))}\
@@ -2612,6 +2619,8 @@ var CSS = '\
 .pp-lv.wt-moon.lock{background:radial-gradient(circle at 38% 30%,#5a6680,#2a3050);border-color:#141a36;color:#c8d4ff}.pp-lv.wt-moon.cur{background:radial-gradient(circle at 40% 35%,#e6f8ff,#7fd8ff 55%,#3f7fe0);border-color:#060814;color:#060814;box-shadow:0 0 14px rgba(159,232,255,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-mars{background:radial-gradient(circle at 36% 30%,#ffd0b0,#c8562a 52%,#7a2a14);border-color:#6a2410;color:#1e0804}\
 .pp-lv.wt-mars.lock{background:radial-gradient(circle at 38% 30%,#7a4a3a,#3a1a10);border-color:#1e0804;color:#ffd0b0}.pp-lv.wt-mars.cur{background:radial-gradient(circle at 40% 35%,#fff2e0,#ff8a4a 55%,#c8562a);border-color:#1e0804;color:#1e0804;box-shadow:0 0 14px rgba(255,138,74,.95),0 4px 0 rgba(0,0,0,.35)}\
+.pp-lv.wt-saturn{background:radial-gradient(circle at 36% 30%,#fff2d0,#e8c88c 52%,#a87a40);border-color:#4a3f6a;color:#120f1e}\
+.pp-lv.wt-saturn.lock{background:radial-gradient(circle at 38% 30%,#6a6090,#2a2140);border-color:#120f1e;color:#ffe8c0}.pp-lv.wt-saturn.cur{background:radial-gradient(circle at 40% 35%,#ffffff,#bfe6ff 55%,#7670b0);border-color:#120f1e;color:#120f1e;box-shadow:0 0 14px rgba(255,217,138,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-iceage{border-radius:44% 56% 48% 52%/52% 46% 54% 48%;background:radial-gradient(circle at 38% 30%,#ffffff,#bfe9f4 50%,#7fc0d6);border-color:#4a3a28;color:#2a241c}\
 .pp-lv.wt-iceage.lock{background:radial-gradient(circle at 38% 30%,#a89884,#7a6a56);border-color:#4a3a28;color:#efe4cc}.pp-lv.wt-iceage.cur{background:radial-gradient(circle at 40% 35%,#fff4d8,#d9c9a6 55%,#a88a5a);border-color:#2a241c;color:#2a1a0a;box-shadow:0 0 14px rgba(174,240,255,.9),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-candy{border-radius:50%;background:repeating-conic-gradient(from 20deg,#ff5fa2 0 30deg,#fff4f8 30deg 60deg);border-color:#9a2a5a;color:#3a1c0c;text-shadow:0 0 3px #fff,0 0 2px #fff}\
@@ -2633,6 +2642,7 @@ var CSS = '\
 .pp-hub[data-wt=school]{--wa:#ffd23f;--wi:#1f2430;--wb1:#3a4a6a;--wb2:#1f2430;--wt:rgba(31,36,48,.92)}\
 .pp-hub[data-wt=moon]{--wa:#7fd8ff;--wi:#060814;--wb1:#2a3f80;--wb2:#060814;--wt:rgba(6,8,20,.92)}\
 .pp-hub[data-wt=mars]{--wa:#ff8a4a;--wi:#1e0804;--wb1:#6a2410;--wb2:#1e0804;--wt:rgba(30,8,4,.92)}\
+.pp-hub[data-wt=saturn]{--wa:#ffd98a;--wi:#120f1e;--wb1:#4a3f6a;--wb2:#120f1e;--wt:rgba(18,15,30,.92)}\
 .pp-hub[data-wt=iceage]{--wa:#8fd0e0;--wi:#2a241c;--wb1:#5a4630;--wb2:#2a241c;--wt:rgba(42,36,28,.92)}\
 .pp-hub[data-wt=candy]{--wa:#ff5fa2;--wi:#3a1c0c;--wb1:#7a4422;--wb2:#3a1c0c;--wt:rgba(58,28,12,.92)}\
 .pp-hub[data-wt=haunted]{--wa:#ff9a3a;--wi:#2a1606;--wb1:#3a1f63;--wb2:#1c1438;--wt:rgba(28,20,44,.92)}\
@@ -2725,6 +2735,7 @@ var CSS = '\
 .pp-door[data-door=candy] .pp-dl,.pp-door[data-door=candy] .pp-dr{background:repeating-linear-gradient(135deg,#ff3b7a 0 14px,#fff4f8 14px 28px);border-color:#7a4422}\
 .pp-door[data-door=moon] .pp-dl,.pp-door[data-door=moon] .pp-dr{background:repeating-linear-gradient(90deg,rgba(6,8,20,.35) 0 2px,transparent 2px 24px),linear-gradient(180deg,#eef2f8,#8a96b0);border-color:#3f7fe0}\
 .pp-door[data-door=mars] .pp-dl,.pp-door[data-door=mars] .pp-dr{background:repeating-linear-gradient(90deg,rgba(30,8,4,.3) 0 2px,transparent 2px 24px),linear-gradient(180deg,#f2e8da,#c8a088);border-color:#ff8a4a}\
+.pp-door[data-door=saturn] .pp-dl,.pp-door[data-door=saturn] .pp-dr{background:repeating-linear-gradient(90deg,rgba(18,15,30,.3) 0 2px,transparent 2px 24px),linear-gradient(180deg,#eef0f8,#9a98c0);border-color:#ffd98a}\
 .pp-door[data-door=iceage] .pp-dl,.pp-door[data-door=iceage] .pp-dr{background:repeating-linear-gradient(170deg,rgba(255,255,255,.35) 0 3px,transparent 3px 26px),linear-gradient(180deg,#dcf4fa,#6fb6d0);border-color:#d9c9a6}\
 .pp-tabs u{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5a4e;margin-left:5px;vertical-align:2px;box-shadow:0 0 0 2px rgba(0,0,0,.35)}.pp-tabs .on u{display:none}\
 /* THE DAILY TAB: a month to a page, the page ruled like a wall calendar, the days tear-off sheets on the trail */\
@@ -2947,8 +2958,8 @@ function top(title, sub, right){
    holes, plus rewards nobody else can earn. No coin price anywhere changes. */
 var PAY = {
   main:{ hole:80, sig:280, ace:20, world:2000,
-    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball'],
-    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots'] },
+    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball', 'Saturn Ball'],
+    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
     worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
@@ -2987,7 +2998,7 @@ var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Centur
 var REWARD_ITEM = {
   'Clubhouse Visor':'hw:ppvisor', 'Hall Monitor Cap':'hw:pphallcap', 'Lollipop Putter':'pu:pplollipop', 'Neon Putter':'pu:ppneon',
   'Tricorn Hat':'hw:pptricorn', 'Jade Idol Putter':'pu:ppjadeidol', 'Miner’s Lamp Cap':'hw:ppminer', 'Lava Ball':'bl:pplava',
-  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk', 'Astronaut Helmet':'hw:ppastrohelmet', 'Space Suit':'tp:ppspacesuit', 'Red Planet Ball':'bl:ppmars', 'Mars Boots':'ct:ppmarsboots',
+  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk', 'Astronaut Helmet':'hw:ppastrohelmet', 'Space Suit':'tp:ppspacesuit', 'Red Planet Ball':'bl:ppmars', 'Mars Boots':'ct:ppmarsboots', 'Saturn Ball':'bl:ppsaturn', 'Titan Goggles':'ew:pptitangoggles',
   'Clubhouse Cleats':'ct:ppclubhouse', 'Gold Star Ball':'bl:ppgoldstar', 'Sprinkle Ball':'bl:ppsprinkle', 'Pixel Shades':'ew:pppixelshades',
   'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
   'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
@@ -3599,7 +3610,7 @@ function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el
    about six seconds, a tap skips it, and with reduced motion it is the arrival card alone. The space worlds after the Moon
    will each get their own leg of the trip from here (SPACE_TRIP). */
 /* Moon Base to Red Planet is the colony ship, from the Moon's launch pad (SPACE_FROM says where each leg leaves from). */
-var SPACE_TRIP = { moon:'rocket', mars:'ship' }, SPACE_FROM = { moon:'earth', mars:'moon' };
+var SPACE_TRIP = { moon:'rocket', mars:'ship', saturn:'ship' }, SPACE_FROM = { moon:'earth', mars:'moon', saturn:'mars' };
 function spaceTrip(theme, label, name, host, cb){
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   // the real 3D trip (putt/trip3d.js) when it is loaded and knows the way; this flat one is the fallback and the reduced motion card
@@ -3651,7 +3662,7 @@ function spaceTrip(theme, label, name, host, cb){
     if (t > DUR) return finish(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 }
-var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
 /* THE WALK IS A PLACE (golf/putt/trail.js). Winning a hole and pressing Next opens the trail to the next
@@ -3675,10 +3686,10 @@ var TRINKETS = {
   pirate:['Doubloon Marker', 'Spyglass', 'Parrot Feather'], canyon:['Gold Nugget', 'Lucky Horseshoe', 'Prospector Pan'],
   volcano:['Obsidian Shard', 'Ember Stone', 'Fire Opal'], dino:['Raptor Claw', 'Fossil Fern', 'Trilobite'],
   sky:['Cloud Feather', 'Kite Charm', 'Weather Vane'], neon:['Arcade Token', 'Joystick Charm', 'Prize Ticket'],
-  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'], moon:['Moon Rock', 'Mission Patch', 'Space Pen'], mars:['Red Rock', 'Rover Wheel', 'Ice Core'],
+  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'], moon:['Moon Rock', 'Mission Patch', 'Space Pen'], mars:['Red Rock', 'Rover Wheel', 'Ice Core'], saturn:['Ring Ice', 'Probe Dish', 'Titan Stone'],
   candy:['Lucky Gumball', 'Candy Wrapper', 'Sugar Crystal']
 };
-var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', moon:'#7fd8ff', mars:'#ff8a4a', candy:'#ff5fa2' };
+var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', moon:'#7fd8ff', mars:'#ff8a4a', saturn:'#ffd98a', candy:'#ff5fa2' };
 var TRINKET_SET_COINS = 300;
 var PP_PUTTERS = [
   { id:'scope', name:'Scope Putter', worlds:[0, 1, 2], tells:'The aim line reaches four feet further.' },
@@ -3821,6 +3832,10 @@ var GREETERS = {
     hi:['Welcome to Mars. Watch the wind.', 'I study the rocks here. You get to putt on them.'],
     tip:['A dust devil spins your ball the way it turns. Wait for it, or use it.', 'Every hole here rolls. Read the dunes.', 'The canyons are deep. Nothing comes back up.'],
     bye:'Clear skies. Look out for storms.' },
+  saturn:{ name:'Captain Lyra Okoye', role:'Ring Station Captain', look:{ skin:'brown', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'bun', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' },
+    hi:['Welcome aboard the ring station.', 'I run this station. The course is the rings.'],
+    tip:['Roll into a ring rail and it carries you round. Play the exit.', 'Titan haze drags and drifts. Aim upwind.', 'Off the deck is a long fall into the clouds.'],
+    bye:'Safe travels. Wave at Titan for me.' },
   candy:{ name:'Wendell', role:'Factory Foreman', look:{ skin:'deep', polo:'white', hat:'red', pants:'wine', hair:'black', hairStyle:'short', cap:true, hatStyle:'flat', gender:'male' },
     hi:['Hey! Welcome to Candy Works.', 'I’m Wendell. I run the floor.'],
     tip:['Chocolate on every side. Wafer bridges run on a clock.', 'Taffy grabs your ball. Watch a press go round once before you putt.'],
@@ -4528,7 +4543,7 @@ function v3Asp(){ var r = S.stage && S.stage.isConnected && S.stage.getBoundingC
 function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
 /* THE FINE PICTURE: a world in FINE_WORLDS is painted three times finer, so it reads as clearly as the golfer.
    Piloted on Pirate Cove; the owner then asked for it on every world (2026-10-15). */
-var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1, moon:1, mars:1 }, FINE_ART = 1 / 12;
+var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1, moon:1, mars:1, saturn:1 }, FINE_ART = 1 / 12;
 // RTT_PUTT_FINE_TEST names one more world to paint fine, so a world's stops can be built and looked at before it joins FINE_WORLDS
 function fineOn(d){ return (!!FINE_WORLDS[d.theme] || window.RTT_PUTT_FINE_TEST === d.theme) && window.RTT_PUTT_FINE !== 'off'; }
 // a fine picture's zoom can round up (camFor), so it is built a little taller than the stage to leave no band below the land
