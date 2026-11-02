@@ -3,7 +3,9 @@
  * runner on the base his move ends on (or across the plate), every runner put out beaten by the ball,
  * and the whole sequence a few seconds long. Last, the running game (running-cases.mjs): every steal
  * and pickoff on seeded outings, the runner on the bag before the tag when the engine says safe, the
- * tag on him before he gets there when it says out.
+ * tag on him before he gets there when it says out. On every play, steal and pickoff no runner is
+ * carried more than a foot past the bag he stops on (only the batter on first and a run across the
+ * plate go through).
  *
  *   node shut-the-door/lab/pipeline/check-inplay.mjs            every pack in data/packs
  *   node shut-the-door/lab/pipeline/check-inplay.mjs --all      every real batted ball with every row of its kind (slow)
@@ -22,7 +24,7 @@
 import { execFileSync } from 'node:child_process';
 import { planPlay, verify } from '../../3d/inplay-plan.js';
 import { inplayCases } from './inplay-cases.mjs';
-import { runningCases, GAP } from './running-cases.mjs';
+import { runningCases, overrun, GAP } from './running-cases.mjs';
 import { selection, openCheckpoint } from './checkpoint.mjs';
 
 const ALL = process.argv.includes('--all');
@@ -50,7 +52,7 @@ function planOne(c) {
   let bad, dur = null;
   try {
     const plan = planPlay(pr, { bats: c.hand, basesBefore: c.bases0, id: c.id, ...c.align });
-    bad = verify(pr, plan);
+    bad = [...verify(pr, plan), ...overrun(plan)];
     dur = plan.realDur;
   } catch (e) { bad = ['threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')]; }
   return [c.pack, key, label, st, moves, c.ball, dur, bad];

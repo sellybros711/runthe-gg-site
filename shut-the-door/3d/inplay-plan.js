@@ -240,6 +240,16 @@ export class Track {
       if (g.al + g.be > 1) { g.be = Math.min(STOP_S / g.T, 0.5); g.al = Math.min(g.al, 1 - g.be); }
     }
   }
+  /** His last run ends standing where it ends, in the same time to the same spot: a pull up (or the
+      slide inplay.js lays over it) over its last STOP_S, as settle() does between runs. Past a run that
+      ended at full speed the body coasts on (inplay.js), which carried a runner ten feet and more past
+      second or third and left him standing off the bag (the owner, 2026-11-02: he stops on the base). */
+  stopAtEnd() {
+    const groups = [...new Set(this.legs.map((l) => l.g))], g = groups[groups.length - 1];
+    if (!g || g.be > 0 || g.total < 1) return;
+    g.be = Math.min(STOP_S / g.T, 2 * (1 - g.al / 2) * (1 - 1 / 1.15));
+    if (g.al + g.be > 1) { g.be = Math.min(STOP_S / g.T, 0.5); g.al = Math.min(g.al, 1 - g.be); }
+  }
   /** Stay where he is until t (whatever comes next starts no sooner). */
   hold(t) { const e = this.end; if (t > this.free) this.run(t, [{ x: e.x + 0.02, y: e.y }], { v: 1 }); }
   act(t, kind, extra = {}) { this.acts.push({ t, kind, ...extra }); this.acts.sort((a, b) => a.t - b.t); return t; }
@@ -455,6 +465,7 @@ export function planPlay(pr, o = {}) {
   // ---- no run stops dead
   for (let n = 1; n <= 9; n++) if (p.fielders[n]) p.fielders[n].settle();
   for (const r of p.runners) if (r.track && r.track.settle) r.track.settle();
+  stopOnBags(p);
   // ---- the cut
   planEdit(ctx);
   p.segs.sort((a, b) => a.t0 - b.t0);
@@ -541,6 +552,21 @@ function lastThrowTo(p, base, s) {
   return best;
 }
 
+/** Every runner stops on the bag he ends on, but the batter on first (he runs through it), a runner
+    across the plate (the owner, 2026-11-02) and a runner doubled off (out before he is back). */
+export const doubledOff = (r, p) => p.kind !== 'pickoff' && p.kind !== 'steal' && r.out && r.outBase === r.from && r.outAt != null && r.outAt <= (r.arrive ?? Infinity);
+function stopOnBags(p) {
+  for (const r of p.runners) {
+    // (a runner doubled off is out before he is back, and walks off from there: his scramble back is a
+    // turn from a standstill that a stop on its end sharpened into a pop, check-jolt.mjs)
+    if (!r.track || !r.track.stopAtEnd || r.scoreAt != null || doubledOff(r, p)) continue;
+    const e = r.track.end;
+    if (Math.hypot(e.x, e.y) < 6) continue;
+    if (r.batter && (Math.hypot(e.x - BASE[1].x, e.y - BASE[1].y) < 8 || r.to === 1 || r.to === -1 && r.outBase === 1)) continue;
+    r.track.stopAtEnd();
+  }
+}
+
 /** How far apart a call on the bases is shown (seconds, runner on the bag against the tag): the engine's
     margin, never less than a phone reads the right way round (a bang bang one still slows at the tag),
     never so much that the tag lunges a man's length (out) or the runner idles on the bag (safe). */
@@ -604,6 +630,7 @@ export function planSteal(pr, o = {}) {
   ctx.lastHolder = cov;
   for (let n = 1; n <= 9; n++) T[n].settle();
   for (const x of p.runners) x.track.settle();
+  stopOnBags(p);
   // the cut: the pitcher's view a beat, then the high home on the throw down and the bag, one shot; a
   // bang bang one slowed at the tag
   const CUT = 0.2, end = tagAt + 1.1;
@@ -665,7 +692,7 @@ export function planPickoff(po, o = {}) {
   // (out: caught leaning, he breaks back late at full effort, never a jog in that gets there late)
   // (with no time to pull up on the bag he runs onto it, from the moment that gets him there then)
   if (out) {
-    const want = tagAt + callGap(margin, true) + (base >= 2 ? 0.3 : 0), dd = dist(lead, BASE[base]);
+    const want = tagAt + callGap(margin, true) + 0.1 + (base >= 2 ? 0.3 : 0), dd = dist(lead, BASE[base]);
     const go = want - runTime(dd, 24, 22, true, true);
     back = go >= 0.2 ? tr.arrive(go, BASE[base], want, { toRest: true }) : tr.run(Math.max(0.2, want - runTime(dd, 24, 22, true, false)), [BASE[base]], { toRest: false });
   }
@@ -696,6 +723,7 @@ export function planPickoff(po, o = {}) {
   ctx.lastHolder = cov;
   for (let n = 1; n <= 9; n++) T[n].settle();
   for (const x of p.runners) x.track.settle();
+  stopOnBags(p);
   // (a balk: the call and the first strides of the walk up; the diamond on the scorebar has the rest)
   const end = tagAt + (po.balk ? 2.6 : 1.0);
   const pieces = [{ s0: 0, s1: end, cam: 'follow', rate: 1, m: tagAt }];
@@ -1586,6 +1614,9 @@ function planRunners(ctx) {
       const f = back.track.at === at0 ? 1 : 1 / Math.max(0.5, k);
       for (const key of ['arrive', 'scoreAt', 'firstAt']) if (back[key] != null && !(back.out && key === 'arrive' && back.outAt != null)) back[key] *= f;
       if (back.track.stopAt != null) back.track.stopAt *= f;
+      // (and his run ends when the eased one does: inplay.js coasts a body on past its track's end, and
+      // at the plain end he was still running, carried on at speed past his bag)
+      if (f !== 1) { const free = back.track.free * f; Object.defineProperty(back.track, 'free', { value: free, configurable: true }); }
     }
   }
   // the order in time of everything that ends a runner's part

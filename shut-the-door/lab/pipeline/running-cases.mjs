@@ -11,6 +11,9 @@ import { createRequire } from 'node:module';
 import { readdirSync, readFileSync } from 'node:fs';
 import { planSteal, planPickoff, BASE } from '../../3d/inplay-plan.js';
 
+// (a runner doubled off on a ball in play: out before he is back on his bag, he walks off from there)
+const doubledOff = (r, p) => p.kind !== 'pickoff' && p.kind !== 'steal' && r.out && r.outBase === r.from && r.outAt != null && r.outAt <= (r.arrive ?? Infinity);
+
 const require = createRequire(import.meta.url);
 const G = require('../../grade.js');
 const E = require('../../engine.js');
@@ -74,6 +77,33 @@ export function runningCases({ seeds = 40 } = {}) {
   return out;
 }
 
+/** Where a runner stops against his bag (the owner, 2026-11-02: he stops on the base; only the batter
+    on first and a runner across the plate run through; a runner doubled off is out before he is back). Each runner who ends by a bag, his path as
+    drawn: the plan's track, then the coast inplay.js adds past a run that ends at speed (tau 0.6 s, so
+    0.6 x his speed there). Returns a problem for each one carried more than OVERRUN ft past the bag
+    along his way in. */
+export const OVERRUN = 1.2;
+export function overrun(plan) {
+  const bad = [];
+  for (const r of plan.runners) {
+    if (!r.track || r.scoreAt != null || !r.track.legs.length || doubledOff(r, plan)) continue;
+    const e = r.track.end;
+    const k = [1, 2, 3].find((b) => Math.hypot(e.x - BASE[b].x, e.y - BASE[b].y) < 8);
+    if (!k || (r.batter && k === 1)) continue;
+    const bag = BASE[k], free = r.track.free;
+    // (his way in: from where he was a beat before his run ended)
+    const a = r.track.at(Math.max(r.track.legs[0].t0, free - 0.4)), L = Math.hypot(bag.x - a.x, bag.y - a.y);
+    if (L < 2) continue;
+    const ux = (bag.x - a.x) / L, uy = (bag.y - a.y) / L;
+    let worst = -Infinity;
+    for (let s = Math.max(0, free - 0.6); s <= free + 1e-6; s += 0.01) { const q = r.track.at(s); worst = Math.max(worst, (q.x - bag.x) * ux + (q.y - bag.y) * uy); }
+    const q = r.track.at(free - 1e-3);
+    if (q.spd > 4 && q.head != null) worst = Math.max(worst, (e.x + Math.sin(q.head) * q.spd * 0.6 - bag.x) * ux + (e.y + Math.cos(q.head) * q.spd * 0.6 - bag.y) * uy);
+    if (worst > OVERRUN) bad.push(`runner from ${r.from} carried ${worst.toFixed(1)} ft past ${k === 2 ? 'second' : k === 3 ? 'third' : 'first'} (wants ${OVERRUN})`);
+  }
+  return bad;
+}
+
 function judge(kind, pack, seed, isOut, margin, plan, base) {
   const r = plan.runners[0];
   // (the slide as inplay.js begin decides it)
@@ -85,5 +115,6 @@ function judge(kind, pack, seed, isOut, margin, plan, base) {
   const bad = isOut ? (tag + GAP > touch + 1e-6 ? `out, but his hand is on the bag ${(tag - touch).toFixed(2)} s before the tag (wants ${GAP})` : null)
     : touch + GAP > tag + 1e-6 ? `safe, but the tag is on him ${(touch - tag).toFixed(2)} s before he is on the bag (wants ${GAP})`
     : touch > tBall + 1e-6 ? `safe, but the ball is in the glove ${(touch - tBall).toFixed(2)} s before he is on the bag` : null;
-  return { kind, pack, seed, out: isOut, margin, touch: +touch.toFixed(3), tag: +tag.toFixed(3), ball: +tBall.toFixed(3), bad };
+  const over = overrun(plan);
+  return { kind, pack, seed, out: isOut, margin, touch: +touch.toFixed(3), tag: +tag.toFixed(3), ball: +tBall.toFixed(3), bad: bad || over[0] || null };
 }
