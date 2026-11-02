@@ -1043,6 +1043,38 @@ body[data-screen="s-home"] .wm-dark { display: block !important; }
   .t-sit { padding: 14px; }
 }
 
+/* THE BOTTOM BANNER (ads.js, the owner 2026-11-01: "we can adjust layouts and gameplay so nothing is
+   clashing"). Only while body.rtg-sticky-on is set, so a closed banner leaves the layout as it was.
+   The home tightens and its links become a two row panel (one row on a desk), so on a tall phone
+   every control sits above the banner. On a short one, homeFold() in ui.js puts the first control
+   that would sit under it below the fold instead. */
+body.rtg-sticky-on .title { gap: 8px; }
+body.rtg-sticky-on .t-sit { gap: 6px; }
+body.rtg-sticky-on .t-menu { gap: 8px; }
+body.rtg-sticky-on .t-list { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+body.rtg-sticky-on .t-list button { grid-column: span 2; justify-content: center; min-height: 40px; padding: 0 6px; font-size: 17px; text-align: center; white-space: nowrap; }
+body.rtg-sticky-on .t-list button:nth-child(n+4) { grid-column: span 3; }
+body.rtg-sticky-on .t-list button + button { border-top: 0; box-shadow: inset 1px 0 0 rgba(255, 255, 255, .09); }
+body.rtg-sticky-on .t-list button:nth-child(4) { box-shadow: none; }
+body.rtg-sticky-on .t-list button:nth-child(n+4) { border-top: 1px solid rgba(255, 255, 255, .09); }
+body.rtg-sticky-on .t-list button::after { display: none; }
+@media (max-width: 370px) { body.rtg-sticky-on .t-list button { font-size: 15.5px; } }
+@media (min-width: 700px) {
+  body.rtg-sticky-on .title { gap: 12px; }
+  body.rtg-sticky-on .t-list { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  body.rtg-sticky-on .t-list button, body.rtg-sticky-on .t-list button:nth-child(n+4) { grid-column: auto; border-top: 0; font-size: 16px; }
+  body.rtg-sticky-on .t-list button:nth-child(4) { box-shadow: inset 1px 0 0 rgba(255, 255, 255, .09); }
+}
+/* the result: the after-the-outing list is a little shorter on a phone, and on a desk the rail stops
+   at the banner so its foot is never behind it */
+body.rtg-sticky-on .nv { min-height: 48px; }
+@media (min-width: 1100px) {
+  body.rtg-sticky-on .r-rail { bottom: var(--sticky-ad-h, 0px); }
+}
+@media (min-width: 1700px) {
+  body.rtg-sticky-on .nv { min-height: 54px; }
+}
+
 /* ---- THE MOUND, FULL SCREEN (the owner, 2026-10-24: "the game should take up the entire screen with
    the box score in a corner, the pitch selection there for you"). The 3D scene fills the viewport and
    the HUD floats over it like a console game: the scorebug and the batter card top left, the menu
