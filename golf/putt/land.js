@@ -1301,6 +1301,19 @@ window.RTT_PUTT_LAND = (function(){
           if (c.n && z > 3.4 && z < 4.6 && (c.ti % 9) < 2) return R((c.ti % 9) ? '#bfefff' : '#7fd8ff');   // the portholes, lit
           if (Math.abs(z - 1.6) < 0.12) return R('#3f7fe0'); return R((c.ti % 6) ? '#141a2c' : '#0e1220'); }] } }; };
 
+  // the Ice Cave: under Mars' north pole. Walls of blue ice banded with old red dust, ice pillars along them, and a cold
+  // light coming down through the ice above.
+  BUILD['s-polarcave'] = function(L){ var R0 = room(L, { floor:'pfloor', wall:'pwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 61, 3).forEach(function(q, i){ var x = q[0], y = q[1], zb = B.gz(x, y), hh = i % 2 ? 2.6 : 1.6;
+          B.solid(x - 0.7, y - 0.7, zb, x + 0.7, y + 0.7, zb + hh, function(px, py, pz){ var t = (pz - zb) / hh, d = Math.hypot(px - x, py - y); return d < 0.65 * (1 - t * 0.7) ? (t > 0.8 ? '#ffffff' : (d > 0.45 ? '#9fd8f0' : '#d8f2ff')) : null; }); });
+        byWall(L, 4, 67, 3).forEach(function(q){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 4.6, '#bfefff'); }); },
+      bg:'#081420', gain:2,
+      mats:{ pfloor:['#c8e6f4', '#d8f0fa', '#b0d4e8', 0.1, function(c, R){ return R(((c.ti * 3 + c.tj * 5) % 23) ? '#c8e6f4' : '#ffffff'); }],
+        pwall:['#7fb8d8', '#9fd0e8', '#5a98c0', 0.16, function(c, R){ var z = c.z || 0;
+          if (Math.abs(z - 2.2) < 0.18 || Math.abs(z - 4.1) < 0.1) return R('#b8644a');   // the dust of old storms, laid down in the ice
+          return R(((c.ti + (z * 2 | 0)) % 5) ? '#7fb8d8' : '#9fd0e8'); }] } }; };
+
   // the Potting Shed: plank floor and walls, shelves of clay pots, a wheelbarrow, sacks
   BUILD['s-shed'] = function(L){ var R0 = room(L, { floor:'boards', wall:'shedwall', wallH:6.5, gap:2.4 });
     return { h:R0.h, mat:R0.mat,
