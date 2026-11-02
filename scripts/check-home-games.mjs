@@ -37,11 +37,12 @@ const KNOWN = {
   golf: { name: 'Run The Tour', kw: 'golf', sport: 'golf' },
   soccer: { name: 'Run The Pitch', kw: 'World Cup', sport: 'soccer' },
   arcade: { name: 'Run The Arcade', kw: 'puzzle', sport: 'puzzles' },
+  'shut-the-door': { name: 'Shut The Door', kw: 'save', sport: 'baseball' },
 };
 
 // Games that exist in the repo and are not launched. None may be named or linked here.
-const UNLAUNCHED = /\b(Stumpire|Arcade Lab|Last Shot|4th and What|Run The Floor|MythiBall|Wrestling|Basketball|Shut The Door|Segue)\b/i;
-const UNLAUNCHED_HREF = /href="\/(hoops|wrestling|mythiball|4th-and-what|shut-the-door|setlist|last-shot|fumble|pitch|watch)(\/|")/i;
+const UNLAUNCHED = /\b(Stumpire|Arcade Lab|Last\\sShot|4th and What|Run The Floor|MythiBall|Wrestling|Basketball|Segue)\b/i;
+const UNLAUNCHED_HREF = /href="\/(hoops|wrestling|mythiball|4th-and-what|setlist|last-?shot|fumble|pitch|watch)(\/|")/i;
 
 const problems = [];
 const fail = (m) => problems.push(m);
