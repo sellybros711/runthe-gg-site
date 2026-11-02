@@ -29,6 +29,7 @@ function openSheet(id, after) {
   onClose = after || null;
   var f = el.querySelector('[data-autofocus]') || el.querySelector('.sh-x');
   if (f) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 30);
+  if (api.onChange) api.onChange();
 }
 function closeSheet(silent) {
   if (!open) return;
@@ -40,6 +41,7 @@ function closeSheet(silent) {
   var cb = onClose; onClose = null;
   if (!silent && cb) cb();
   if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) {}
+  if (api.onChange) api.onChange();
 }
 
 function wire() {
