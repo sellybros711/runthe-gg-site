@@ -25,13 +25,12 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="preload" href="fonts/barlowcondensed-900italic.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
-<link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=54">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="manifest" href="manifest.webmanifest?v=2">
+<link rel="stylesheet" href="style.css?v=56">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -52,8 +51,8 @@
      reload if the game's script never ran. -->
 <div class="boot" id="boot" role="progressbar" aria-label="Loading Shut The Door" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
   <div class="boot-in">
-    <img class="boot-lock lk-l" src="brand/lockup-light.svg?v=1" alt="Shut The Door" width="220" height="107">
-    <img class="boot-lock lk-d" src="brand/lockup-dark.svg?v=1" alt="" width="220" height="107">
+    <img class="boot-lock lk-l" src="brand/lockup-light.svg?v=2" alt="Shut The Door" width="168" height="168">
+    <img class="boot-lock lk-d" src="brand/lockup-dark.svg?v=2" alt="" width="168" height="168">
     <div class="boot-card">
       <p class="boot-occ" id="boot-occ">&nbsp;</p>
       <div class="boot-bug" id="boot-bug" aria-hidden="true">
@@ -79,9 +78,9 @@ setTimeout(function () {
 
 <header class="hdr">
   <a class="lockup" href="./" aria-label="Shut The Door, back to the start">
-    <img class="mark" src="brand/mark.svg?v=1" alt="" width="30" height="30">
-    <img class="wm wm-light" src="brand/wordmark-light.svg?v=1" alt="Shut The Door" width="148" height="25">
-    <img class="wm wm-dark" src="brand/wordmark-dark.svg?v=1" alt="" width="148" height="25">
+    <img class="mark" src="brand/mark.svg?v=2" alt="" width="32" height="32">
+    <img class="wm wm-light" src="brand/wordmark-light.svg?v=3" alt="Shut The Door" width="125" height="20">
+    <img class="wm wm-dark" src="brand/wordmark-dark.svg?v=3" alt="" width="125" height="20">
   </a>
   <div class="hdr-r">
     <button class="hdr-btn" id="b-theme" type="button" aria-label="Switch between light and dark" title="Light or dark">
@@ -104,7 +103,7 @@ setTimeout(function () {
     <img class="t-bgi" data-src="home-bg/outfield.webp" alt="" width="2048" height="1024" decoding="async">
   </div>
   <div class="t-scrim" aria-hidden="true"></div>
-  <div class="load" id="h-load"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><span>warming up</span></div>
+  <div class="load" id="h-load"><img class="load-mark" src="brand/mark.svg?v=2" alt="" width="56" height="56"><span>warming up</span></div>
   <div class="title" id="h-main" hidden>
     <h1 class="t-head" id="h-head"><span class="t-l1">YOU ARE THE CLOSER.</span> <span class="t-l2">CAN YOU SHUT THE DOOR?</span></h1>
     <div class="t-sit">
@@ -133,8 +132,8 @@ setTimeout(function () {
       </nav>
     </div>
     <footer class="legal">
-      <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=1" alt="Shut The Door" width="160" height="63">
-      <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=1" alt="" width="160" height="63">
+      <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=2" alt="Shut The Door" width="96" height="96">
+      <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=2" alt="" width="96" height="96">
       <p><a href="/privacy.html" target="_blank" rel="noopener">privacy</a><span>&middot;</span><a href="/terms.html" target="_blank" rel="noopener">terms</a><span>&middot;</span><a href="/disclaimer.html" target="_blank" rel="noopener">disclaimer</a><span>&middot;</span><a href="/" target="_blank" rel="noopener">more games</a></p>
       <p class="src" id="h-src">Pitch data from Baseball Savant. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</p>
     </footer>
@@ -150,7 +149,7 @@ setTimeout(function () {
     <canvas id="m-canvas" aria-hidden="true"></canvas>
     <div class="dbg" id="m-dbg" hidden></div>
     <div class="mini" id="m-mini" hidden></div>
-    <div class="load m-load" id="m-load" aria-live="polite"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><span>warming up</span></div>
+    <div class="load m-load" id="m-load" aria-live="polite"><img class="load-mark" src="brand/mark.svg?v=2" alt="" width="56" height="56"><span>warming up</span></div>
   </div>
   <div class="mhud">
     <div class="mh-tl">
@@ -421,14 +420,14 @@ setTimeout(function () {
 <script src="lesson.js?v=7"></script>
 <script src="engine.js?v=17"></script>
 <script src="share.js?v=2"></script>
-<script src="card.js?v=2"></script>
+<script src="card.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=7"></script>
 <script src="api.js?v=24"></script>
 <script src="mock-api.js?v=13"></script>
 <script src="coach.js?v=2"></script>
-<script src="board.js?v=4"></script>
-<script src="modes-ui.js?v=4"></script>
+<script src="board.js?v=5"></script>
+<script src="modes-ui.js?v=5"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=2"></script>
 <script src="ui.js?v=60"></script>
