@@ -62,7 +62,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it. -->
-<script defer src="putt/putt.js?v=119"></script>
+<script defer src="putt/putt.js?v=120"></script>
 <script defer src="putt/land.js?v=15"></script>
 <script defer src="putt/hole3d.js?v=20"></script>
 <script defer src="putt/gyms.js?v=4"></script>
@@ -81,7 +81,7 @@
 <script defer src="putt/trail.js?v=46"></script>
 <script defer src="putt/mapland.js?v=7"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=22"></script>
+<script defer src="golfer3d.js?v=23"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11319,8 +11319,8 @@ const PP_REWARDS=[
  {cat:'ball',id:'ppcloud',name:'Cloud Ball',hist:'A Putt Putt world prize',col:'#86c8ff',tracer:{g:'rgba(134,200,255,.5)',c:'#c4e6ff'}},
  {cat:'ew',id:'ppaviatorgoggles',name:'Aviator Goggles',hist:'A Putt Putt world prize'},
  {cat:'ball',id:'ppdinoegg',name:'Dino Egg Ball',hist:'A Putt Putt world prize',col:'#f2ecc4',tracer:{g:'rgba(242,236,196,.5)',c:'#fffbea'}},
- {cat:'ball',id:'ppmoon',name:'Moon Ball',hist:'A Putt Putt world prize',col:'#c8c5be',tracer:{g:'rgba(200,197,190,.5)',c:'#f1eee7'}},
- {cat:'ball',id:'ppplanet',name:'Ringed Planet Ball',hist:'A Putt Putt world prize',col:'#e8a65a',tracer:{g:'rgba(232,166,90,.5)',c:'#ffe9b0'}},
+ {cat:'hw',id:'ppastrohelmet',name:'Astronaut Helmet',hist:'A Putt Putt world prize'},
+ {cat:'top',id:'ppspacesuit',name:'Space Suit',hist:'A Putt Putt world prize'},
  {cat:'cleats',id:'ppdinoclaw',name:'Dino Claw Cleats',hist:'A Putt Putt world prize'},
  {cat:'putter',id:'pptusk',name:'Mammoth Tusk Putter',hist:'A Putt Putt world prize'},
  {cat:'ew',id:'ppsnowgoggles',name:'Snow Goggles',hist:'A Putt Putt world prize'},
@@ -12080,7 +12080,7 @@ Object.assign(COS_BOOST,{
 Object.assign(COS_BOOST,{
   'hw:ppvisor':{acc:2}, 'hw:pphallcap':{clu:2}, 'hw:pptricorn':{dist:2}, 'hw:ppminer':{app:2}, 'hw:ppexplorer':{bnk:2}, 'hw:pphallowscrown':{scr:2},
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
-  'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'bl:ppmoon':{acc:2}, 'bl:ppplanet':{dist:2},
+  'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2}, 'hw:ppastrohelmet':{sht:2},
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
   'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}
 });
@@ -18027,6 +18027,10 @@ PXG_HATS.pptricorn=pxgRows([[1,31,'F'],[2,30,'FR'],[3,19,'TTUUUUV...RRD'],[4,18,
 PXG_HERITAGE_HAT_PAL.pptricorn={T:'#7a4b2e',U:'#553220',V:'#371f13',W:'#1c0f09',G:'#f2c94c',H:'#b5862a',Y:'#fff1a6',K:'#f3eee0',J:'#b8b2a0',E:'#181019',R:'#e8402e',D:'#a02018',F:'#ff9a78'};
 // Miner's Lamp Cap
 PXG_HATS.ppminer=pxgRows([[3,19,'AAABBBC'],[4,17,'AAAAALBBBBC'],[5,16,'AASOAGGHBOBBC'],[6,15,'AAAAAGGGGHBBBCC'],[7,15,'ASALBGWWLHBLSCC'],[8,14,'AAAABBGWLOHBBBCCC'],[9,14,'AAABBBGLOOHBBBCCC'],[10,14,'ABBBBBHHHHHBBBCCC'],[11,14,'CRCCCCRCCCRCCCCRD'],[12,11,'BAAAAAAAAAAAAAAAAAAABBC'],[13,12,'DCCCCCCCCCCCCCCCCCCCD']]);
+// Astronaut Helmet (Moon Base): a white dome round the whole head, the gold visor raised on the brow so the face shows
+// through the window, a lamp on the side, a short antenna, and the grey neck ring it locks into
+PXG_HATS.ppastrohelmet=pxgRows([[0,27,'r'],[1,27,'s'],[2,18,'kkWWWWWWkk'],[3,16,'kWWWWWWWWWWWWk'],[4,15,'kWWGGGGGGGGGWWk'],[5,14,'kWWGgGGGGGGGgGWWk'],[6,14,'kWWGGGGGGGGGGGWWk'],[7,13,'LkWWk.........kWWk'],[8,13,'LkWw...........wWk'],[9,14,'kWw...........wWk'],[10,14,'kWw...........wWk'],[11,14,'kWw...........wWk'],[12,14,'kWWw.........wWWk'],[13,14,'kWWWkkkkkkkkkWWWk'],[14,15,'kSSSSSSSSSSSSSk'],[15,16,'kSSSSSSSSSSSk']]);
+PXG_HERITAGE_HAT_PAL.ppastrohelmet={k:'#2a2e3a',W:'#f4f6fa',w:'#cfd6e2',G:'#e8b923',g:'#fff1a8',S:'#9aa4b4',L:'#fff4b8',r:'#ff4a4a',s:'#c8ccd8'};
 PXG_HERITAGE_HAT_PAL.ppminer={A:'#626874',B:'#434752',C:'#2c2f38',D:'#1a1c22',S:'#8a909c',R:'#d9a84a',G:'#e0b04c',H:'#9a6e22',Y:'#fff4b8',W:'#fffbe8',L:'#ffe066',O:'#ffaa2a'};
 // Explorer Hat
 PXG_HATS.ppexplorer=pxgRows([[2,21,'ABC'],[3,18,'AAABBBBCC'],[4,17,'AAAABBBBBCC'],[5,16,'AAAAABBBBBBCC'],[6,15,'AAAAABBBBBBBBCC'],[7,15,'AAAABBBBBBBBBCC'],[8,14,'AAAABBBYGHBBBBCCC'],[9,14,'JJJJKKKEGEKKKKNNN'],[10,14,'JKKKKKKGGHKKKKNNN'],[11,12,'BAAAAAAAAHAHAAAAAAABC'],[12,11,'CBBBBBBBBBBBBBBBBBBBBCD'],[13,12,'DCCCCCCCCCCCCCCCCCCCD']]);
@@ -18064,12 +18068,6 @@ PXG_BALL_PAL.ppcloud={o:'#3a78b8',W:'#ffffff',w:'#d0e4f6',C:'#86c8ff',h:'#c4e6ff
 // Dino Egg Ball
 PXG_BALL.ppdinoegg=pxgRows([[46,36,'oo'],[47,35,'ohCo'],[48,34,'ohCgCo'],[49,34,'ogCCdo'],[50,34,'oCdCgo'],[51,34,'oCgsso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.ppdinoegg={o:'#4e5a2a',C:'#f2ecc4',h:'#fffbea',s:'#c8c690',g:'#5aae3a',d:'#2f6e2a',T:'#e8ebf0'};
-// Moon Ball: a little moon, lit from the upper left, with its craters
-PXG_BALL.ppmoon=pxgRows([[47,35,'oooo'],[48,34,'ohCCdo'],[49,34,'oCdCCo'],[50,34,'oCCCdo'],[51,34,'odCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
-PXG_BALL_PAL.ppmoon={o:'#4a4852',C:'#c8c5be',h:'#f1eee7',d:'#8e8b94',s:'#a29fa6',T:'#e8ebf0'};
-// Ringed Planet Ball: an orange banded planet with a pale ring across it
-PXG_BALL.ppplanet=pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'RRRRRR'],[50,34,'oBBBBo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
-PXG_BALL_PAL.ppplanet={o:'#5a3a8a',C:'#e8a65a',h:'#ffd9a0',B:'#c8743a',s:'#a85a2a',R:'#ffe9b0',T:'#e8ebf0'};
 // Gold Nugget Ball
 PXG_BALL.ppnugget=pxgRows([[46,33,'*...oo'],[47,35,'oohCo'],[48,34,'ohwCCso'],[49,34,'oCCdCo'],[50,33,'ohCCswo'],[51,34,'osCddo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.ppnugget={o:'#4a2e08',C:'#eebc2c',h:'#fff0a0',s:'#c08818',d:'#8a5a10',w:'#ffffff','*':'#fff6c0',T:'#e8ebf0'};
@@ -18108,6 +18106,10 @@ PXG_CLUBS.pu_ppdiamond=pxgRows([[40,34,'G'],[41,35,'D'],[42,35,'G'],[43,36,'l'],
 PXG_CLUB_PAL.pu_ppdiamond={o:'#181019',G:'#2a2f3a',D:'#bff4ff',l:'#eef2f7',W:'#ffffff',w:'#d6f8ff',h:'#ffffff',B:'#8fe0f6',b:'#4aa8d8',H:'#bff4ff',F:'#ffffff',S:'#ffffff'};
 // Members Champion Jacket
 PXG_TOPS.ppchampjacket=pxgRows([[23,16,'1111.....1111'],[24,12,'11111111.....11111111'],[25,12,'111111186776811112211'],[26,10,'1111111118677681882221111'],[27,10,'1111111186677668122cc1111'],[28,10,'111111118667.668122cC1111'],[29,10,'1111111866677666822CC1111'],[30,10,'1111111866677666822221111'],[31,10,'1111111111124211122221111'],[32,10,'111111111112.211122221111'],[33,14,'11111112221112222'],[34,14,'11111112421112222'],[35,14,'11111112221112222'],[36,14,'11111112221112222'],[37,14,'11111112421112222'],[38,14,'22222222222222222'],[39,14,'22222222222222222']]);
+// Space Suit (Moon Base): a white EVA suit with a grey neck ring, a chest control panel with three lit buttons, a blue
+// mission stripe across the chest and another at the waist
+PXG_TOPS.ppspacesuit=pxgRows([[23,16,'SSSSSSSSSSSSS'],[24,12,'11111SSSSSSSSSSS11111'],[25,12,'111111111111111111111'],[26,10,'1111111111111111111111111'],[27,10,'1111111PPPPPPP11111111111'],[28,10,'1111111PrPbPgP11111111111'],[29,10,'1111111PPPPPPP11111111111'],[30,10,'1444444444444444444444441'],[31,10,'1111111111111111111111111'],[32,10,'1111111111111111111111111'],[33,14,'11111111111111111'],[34,14,'11111111111111111'],[35,14,'11112111111121111'],[36,14,'11111111111111111'],[37,14,'44444444444444444'],[38,14,'22222222222222222'],[39,14,'22222222222222222']]);
+PXG_TOP_PAL.ppspacesuit={'1':'#eef2f8','2':'#c8d0de','3':'#ffffff','4':'#3f7fe0',S:'#9aa4b4',P:'#5a6680',r:'#ff5a5a',b:'#7fd8ff',g:'#3df2c2'};
 PXG_TOP_PAL.ppchampjacket={'1':'#4a1f7a','2':'#321456','3':'#6a37a0','4':'#e8b923','6':'#ece3cf','7':'#2a1840','8':'#7a4ab8',c:'#ffe680',C:'#c9961a'};
 // THE PRO SHOP LINE'S ART (PRO_LINE): what the flat golfer draws and the course golfer models its hats from. pxgSpan paints
 // row spans [row, from, to, tag] cell by cell through f(x, y, tag), so a pattern (a tartan, a quilt, an argyle) follows the

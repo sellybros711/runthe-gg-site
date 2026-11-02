@@ -331,6 +331,15 @@
       if(top==='ppchampjacket'){ const zs=(walk?-1:1)*(lefty?-1:1);   // the Members jacket: its lapels, and the gold crest on the wearer's left chest
         push(over(tc,TAX,TR.map(v=>v*1.005),'x:'+tpal['8'],l=>l[0]>0.25&&l[1]>-0.2&&Math.abs(l[2])>=0.36*(l[1]+0.2)&&Math.abs(l[2])<0.36*(l[1]+0.2)+0.13));
         push(ellipsoid(tsurf(0.24,zs*3.7),TAX,[0.55,1.05,0.95],'x:'+tpal.C,{gloss:2})); push(ellipsoid(add(tsurf(0.26,zs*3.7),sc(TAX[0],0.2)),TAX,[0.5,0.6,0.55],'x:'+tpal.c,{gloss:3})); } }
+    // the Space Suit (Moon Base): a chest control panel with three lit buttons, a blue mission stripe, the grey neck ring
+    // and the life-support pack on the back
+    if(top==='ppspacesuit'){ const X2=h=>'x:'+h;
+      push(over(tc,TAX,TR.map(v=>v*1.006),X2(tpal.P||'#5a6680'),l=>l[0]>0.42&&l[1]>0.08&&l[1]<0.48&&Math.abs(l[2])<0.36));
+      [[-1.3,tpal.r||'#ff5a5a'],[0,tpal.b||'#7fd8ff'],[1.3,tpal.g||'#3df2c2']].forEach(b=>push(ellipsoid(tsurf(0.28,b[0]),TAX,[0.45,0.45,0.45],X2(b[1]),{gloss:3,noCast:1})));
+      push(over(tc,TAX,TR.map(v=>v*1.004),X2(tpal['4']||'#3f7fe0'),l=>Math.abs(l[1]+0.12)<0.08,{noCast:1}));
+      push(ellipsoid(tp(Pu(0.9,29.6,0)),TAX,[4.6,1.0,5.4],X2(tpal.S||'#9aa4b4'),{gloss:2}));
+      push(ellipsoid(tp(Pu(-6.6,23.8,0)),TAX,[2.1,5.4,6.0],X2(tpal['2']||'#c8d0de'),{gloss:1}));
+      push(ellipsoid(tp(Pu(-7.6,27.2,0)),TAX,[1.4,1.2,4.8],X2(tpal.S||'#9aa4b4'),{gloss:2})); }
     if(top==='cape'){ const cc=tp(Pu(-4.9,19.5,0)); push(ellipsoid(cc,TAX,[1.6,11.2,8.8],'x:'+tpal['1'],{cut:l=>l[1]<0.55||l[0]<0.2}));
       push(over(cc,TAX,[1.6,11.2,8.8],'x:'+tpal['4'],l=>l[0]>0.55&&l[1]<0.4));
       push(ellipsoid(tp(Pu(0.4,29.4,0)),TAX,[5.4,1.6,6.8],'x:'+tpal['4'],{cut:l=>l[0]<0.35}));
@@ -346,8 +355,8 @@
       // the arms swing against the legs, and the putter rides in the carrying hand, its head off the grass
       for(const s of [1,-1]){ const carry=s>0, ang=-s*cyc*(carry?0.32:0.55), sh=tp(Pu(2.2,27.6,6.2*s));
         const hand=add(sh,rot(sc(U,-12.2),T,ang),sc(T,s*0.9)), elb=add(sc(add(sh,hand),0.5),sc(F,-0.7+Math.max(0,ang)*1.6),sc(T,s*0.5));
-        push(capsule(sh,elb,2.6,body)); push(capsule(elb,hand,1.75,'skin'));
-        push(ellipsoid(hand,[F,U,T],[2.1,2.1,2.1],carry?'skin':'glove'));
+        push(capsule(sh,elb,2.6,body)); push(capsule(elb,hand,1.75,top==='ppspacesuit'?body:'skin'));
+        push(ellipsoid(hand,[F,U,T],[2.1,2.1,2.1],carry&&top!=='ppspacesuit'?'skin':'glove'));
         if(carry){ const cdir=norm(rot(norm(add(sc(U,-0.86),sc(F,0.5))),T,ang*0.8)), head=add(hand,sc(cdir,14.2));
           clubParts(push,add(hand,sc(cdir,0.6)),cdir,F,head,'putt',gear.club||'',gear.clubPal||{}); } }
     } else {
@@ -359,7 +368,7 @@
       const head=add(handsW,cvec), cdir=norm(cvec);
       for(const s of [1,-1]){ const sh=tp(P(2.2,27.6,6.6*s)); const toH=sub(handsW,sh);
         const elb=add(sh,sc(toH,.5),sc(norm(cross(toH,spine)),-1.0*s));
-        push(capsule(sh,elb,2.6,body)); push(capsule(elb,add(handsW,sc(cdir,-1.2*s)),1.75,'skin')); }
+        push(capsule(sh,elb,2.6,body)); push(capsule(elb,add(handsW,sc(cdir,-1.2*s)),1.75,top==='ppspacesuit'?body:'skin')); }   // a space suit's sleeves run to the gloves
       push(ellipsoid(add(handsW,sc(cdir,-1.0)),[F,U,T],[2.4,2.4,2.4],'glove'));
       push(ellipsoid(add(handsW,sc(cdir,1.2)),[F,U,T],[2.1,2.1,2.1],'skin'));
       const face=norm(rot(T,ax,(pose.phi+pose.hinge)*D2R));
@@ -806,7 +815,7 @@
     // little blousing where it tucks into the belt, and tension folds from each armpit toward the buckle.
     // The menu's phase (0 to 1) breathes it: the chest swells a touch, the shoulders lift, the folds drift.
     const ph=(MO?MO.phase:0)*2*Math.PI, br=Math.sin(ph), sw=Math.sin(ph+1.1);
-    const jacket=top==='cardigan'||blz||top==='shacket'||!!PLL[top]; tag=jacket||pl?'top':'shirt';
+    const jacket=top==='cardigan'||blz||top==='shacket'||!!PLL[top]||top==='ppspacesuit'; tag=jacket||pl?'top':'shirt';
     const puff=top==='puffervest'?1.08:1, tc=P(0,27,0), TR=[4.6*(1+0.012*br)*puff,22,8.55*BW*(1+0.014*br)*(puff>1?1.04:1)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
     push(ellipsoid(tc,AX,TR,body,{cut:inT}));
     for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.6*s),P(-0.2,30.6+0.15*br,6.5*s),2.1,body));    // the shoulders, sloping
@@ -903,6 +912,13 @@
         push(ellipsoid(P(4.9,30.0,3.0*sd),AX,[0.4,0.4,0.4],'x:'+tpal['4'],{gloss:2,noCast:1})); }
       push(over(tc,AX,TR.map(v=>v*1.012),'plaid',l=>inT(l)&&l[0]>0.25&&l[1]<0.18&&Math.abs(l[2])<0.06,{dt:1,noCast:1}));                       // the placket
       for(const u of [19.6,22.4,25.2]) push(ellipsoid(P(4.85,u,0),AX,[0.45,0.45,0.45],'x:'+tpal['4'],{gloss:2,noCast:1})); }
+    else if(top==='ppspacesuit'){ const X2=h=>'x:'+h;   // the Space Suit: the chest panel and its buttons, the blue stripes, the neck ring, the pack
+      push(over(tc,AX,TR.map(v=>v*1.012),X2(tpal.P||'#5a6680'),l=>inT(l)&&l[0]>0.3&&l[1]>0.02&&l[1]<0.17&&Math.abs(l[2])<0.34,{noCast:1}));
+      [[-1.7,tpal.r||'#ff5a5a'],[0,tpal.b||'#7fd8ff'],[1.7,tpal.g||'#3df2c2']].forEach(b=>push(ellipsoid(P(4.95,29.4,b[0]),AX,[0.42,0.42,0.42],X2(b[1]),{gloss:3,noCast:1})));
+      for(const y0 of [-0.1,-0.37]) push(over(tc,AX,TR.map(v=>v*1.008),X2(tpal['4']||'#3f7fe0'),l=>inT(l)&&Math.abs(l[1]-y0)<0.022,{noCast:1}));
+      push(ellipsoid(P(0,33.4,0),AX,[3.9,0.9,5.0],X2(tpal.S||'#9aa4b4'),{gloss:2}));
+      push(ellipsoid(P(-5.7,27.4,0),AX,[1.9,4.8,5.4],X2(tpal['2']||'#c8d0de'),{gloss:1}));
+      push(ellipsoid(P(-6.4,31.4,0),AX,[1.2,1.0,4.4],X2(tpal.S||'#9aa4b4'),{gloss:2})); }
     else if(blz){ const champ=top==='ppchampjacket', vE=l=>0.5*(l[1]+0.05), cl='x:'+tpal['1'], dkc='x:'+tpal['2'];
       push(over(tc,AX,TR,'x:'+tpal['6'],l=>inT(l)&&l[0]>0.25&&l[1]>0.0&&Math.abs(l[2])<vE(l)));                                   // the shirt
       push(over(tc,AX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>inT(l)&&l[0]>0.25&&l[1]>-0.1&&Math.abs(l[2])<0.07));                      // the tie
@@ -1518,7 +1534,23 @@
         HP.crown(H*0.28,H*1.18,rh,H*0.86,band,{rr:1.3,sq:1.14,grow:0.28,clip:[H*0.3,H*0.52]}),
         HP.brim(H*0.3,H*1.72,0.8,st,{r0:rh,tex:TEX.straw(st),curl:(L,u)=>{ const cs=L.a/(L.r||1); return u*(cs>0?-H*0.3*cs:H*0.22*-cs)+H*0.05*u*u; }})],
         {tilt:0.1,R:H*2.1}) ]; } });   // the Putt Putt tricorn, modelled (and on the course golfer too)
-  const HAT_COURSE={pptricorn:1};   // a modelled hat that is modelled on the course golfer too
+  /* THE ASTRONAUT HELMET (Moon Base): a white dome round the whole head, open at the face so the wearer still reads,
+     its gold visor raised on the brow, a rim round the window, a lamp on one side, a short antenna, and the grey ring
+     at the neck it locks into. Modelled on the course golfer too, so Commander Vega wears it on the trail. */
+  HAT_MODEL.ppastrohelmet=(M,c,P)=>{ const {hc,look,hup,Lf,hr}=M, out=[], X2=h=>'x:'+h, AXh=[look,hup,Lf];
+    const wh=X2((P&&P.W)||'#f4f6fa'), sh=X2((P&&P.w)||'#cfd6e2'), gold=X2((P&&P.G)||'#e8b923'), grey=X2((P&&P.S)||'#9aa4b4');
+    const C=add(hc,sc(hup,hr*0.1)), R=[hr*1.2,hr*1.24,hr*1.2], win=l=>l[0]>0.38&&l[1]<0.44&&l[1]>-0.82&&Math.abs(l[2])<0.7;
+    out.push(ellipsoid(C,AXh,R,wh,{gloss:3,cut:l=>l[1]>-0.9&&!win(l)}));                                                     // the shell
+    out.push(over(C,AXh,R.map(v=>v*1.01),sh,l=>l[0]>0.32&&l[1]<0.5&&l[1]>-0.88&&Math.abs(l[2])<0.76&&!win(l),{noCast:1}));   // the rim round the window
+    out.push(over(C,AXh,R.map(v=>v*1.025),gold,l=>l[0]>0.2&&l[1]>0.48&&l[1]<0.8&&Math.abs(l[2])<0.7,{gloss:3,noCast:1}));   // the raised visor
+    out.push(over(C,AXh,R.map(v=>v*1.03),X2('#fff1a8'),l=>l[0]>0.3&&l[1]>0.66&&l[1]<0.73&&l[2]>-0.45&&l[2]<-0.15,{noCast:1}));   // its shine
+    out.push(ellipsoid(add(hc,sc(hup,-hr*1.12)),AXh,[hr*1.16,hr*0.26,hr*1.16],grey,{gloss:2}));                               // the neck ring
+    out.push(ellipsoid(add(C,sc(Lf,R[2]*0.98),sc(hup,hr*0.1)),[Lf,hup,look],[hr*0.16,hr*0.24,hr*0.24],X2((P&&P.L)||'#fff4b8'),{gloss:3,noCast:1}));   // the lamp
+    const ab=add(C,sc(hup,R[1]*0.9),sc(Lf,-hr*0.45),sc(look,-hr*0.2)), at=add(ab,sc(hup,hr*0.38));
+    out.push(capsule(ab,at,hr*0.06,X2((P&&P.s)||'#c8ccd8'),{noCast:1})); out.push(ellipsoid(at,AXh,[hr*0.11,hr*0.11,hr*0.11],X2((P&&P.r)||'#ff4a4a'),{gloss:3,noCast:1}));   // the antenna
+    return out; };
+  HAT_OVER_HAIR.ppastrohelmet=1;
+  const HAT_COURSE={pptricorn:1, ppastrohelmet:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
      which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
@@ -1659,10 +1691,6 @@
         if(c) return {c:y<-0.15?P.w:P.W,gloss:1}; }
       if(p[2]<-0.1&&Math.hypot(x+0.3,y-0.35)<0.3) return {c:P.W,gloss:1};                                      // a little one round the back
       return {c:y>0.6?P.h:P.C}; } },
-    // Moon Base: a moon with its craters (lit upper left), and a banded planet with a pale ring round its middle
-    ppmoon:{ f:(p,P)=>{ for(const [x,y,z,r] of [[-0.35,-0.3,0.88,0.28],[0.4,0.25,0.88,0.22],[0.05,0.6,0.8,0.17],[0.55,-0.45,0.7,0.14],[-0.2,0.2,-0.95,0.3]])
-        if(Math.hypot(p[0]-x,p[1]-y,p[2]-z)<r) return {c:P.d,dt:-1}; return {c:p[0]+p[1]<-0.4?P.h:P.C}; } },
-    ppplanet:{ f:(p,P)=>{ if(Math.abs(p[1]+0.22*p[0])<0.08) return {c:P.R,gloss:2}; return {c:((Math.floor((p[1]+1)*3.5))&1)?P.B:P.C,gloss:1}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};
