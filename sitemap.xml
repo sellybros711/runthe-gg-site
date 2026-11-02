@@ -55,6 +55,13 @@
     <image:image><image:loc>https://runthe.gg/baseball/og.png</image:loc></image:image>
   </url>
   <url>
+    <loc>https://runthe.gg/shut-the-door/</loc>
+    <lastmod>2026-11-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <image:image><image:loc>https://runthe.gg/shut-the-door/og.png</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://runthe.gg/baseball/how-to-play.html</loc>
     <lastmod>2026-10-24</lastmod>
     <changefreq>monthly</changefreq>

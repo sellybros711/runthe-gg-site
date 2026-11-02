@@ -3,11 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Shut The Door | RunThe.GG</title>
-<!-- UNLISTED UNTIL THE OWNER PUTS IT LIVE: noindex, no ad tag, linked from
-     nowhere. shut-the-door/check-posture.mjs holds all three. -->
-<meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Shut The Door: one real save situation a day. You are the closer. Every pitch graded.">
+<title>Shut The Door: Daily MLB Closer Game | RunThe.GG</title>
+<!-- LAUNCHED 2026-11-02: indexable, in the sitemap, carrying the ad tag and
+     linked from the home page. shut-the-door/check-posture.mjs holds all four. -->
+<meta name="description" content="Shut The Door: one real save situation a day. You are the closer. Every pitch graded. Free, no download.">
+<link rel="canonical" href="https://runthe.gg/shut-the-door/">
+<meta property="og:title" content="Shut The Door: Daily MLB Closer Game">
+<meta property="og:description" content="One real save situation a day. You are the closer. Every pitch graded.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/shut-the-door/">
+<meta property="og:image" content="https://runthe.gg/shut-the-door/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Shut The Door: you are the closer. Can you shut the door?">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@RunTheGG">
+<meta name="twitter:title" content="Shut The Door: Daily MLB Closer Game">
+<meta name="twitter:description" content="One real save situation a day. You are the closer. Every pitch graded.">
+<meta name="twitter:image" content="https://runthe.gg/shut-the-door/og.png?v=1">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Shut The Door","url":"https://runthe.gg/shut-the-door/",
+"description":"A daily baseball game. Every day everyone gets the same real save situation from MLB history. You are the closer, every pitch is graded, and you finish against the real game.",
+"genre":["Sports","Strategy"],"gamePlatform":["Web browser"],"applicationCategory":"Game",
+"playMode":"SinglePlayer","inLanguage":"en","isAccessibleForFree":true,
+"image":"https://runthe.gg/shut-the-door/og.png?v=1",
+"publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
+</script>
 <meta name="theme-color" content="#0b0f17" id="themeMeta">
 <script>
 /* THEME BOOT, BEFORE FIRST PAINT, as baseball/index.html does it: the key is
@@ -41,6 +63,16 @@
 <!-- stamp:preload:begin -->
 <link rel="preload" as="image" href="3d/assets/hero.webp?h=a8b96e3af7">
 <!-- stamp:preload:end -->
+<!-- Consent Mode defaults first (Europe denies all four until the certified CMP answers), then the AdSense tag with the H5 games ad break shim (the Survivor video break, ads.js), then the shared banner and rails. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async data-ad-frequency-hint="30s" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script>window.adsbygoogle=window.adsbygoogle||[];var adBreak=adConfig=function(o){adsbygoogle.push(o);};adConfig({preloadAdBreaks:'on',sound:'on'});</script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 </head>
 <body data-screen="s-home">
 <!-- THE LOADING SCREEN (the owner, 2026-11-02). Over the whole page from the first paint, so nothing is
@@ -135,6 +167,7 @@ setTimeout(function () {
       <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=2" alt="Shut The Door" width="96" height="96">
       <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=2" alt="" width="96" height="96">
       <p><a href="/privacy.html" target="_blank" rel="noopener">privacy</a><span>&middot;</span><a href="/terms.html" target="_blank" rel="noopener">terms</a><span>&middot;</span><a href="/disclaimer.html" target="_blank" rel="noopener">disclaimer</a><span>&middot;</span><a href="/" target="_blank" rel="noopener">more games</a></p>
+      <p class="src about">A daily baseball game. One real save situation from MLB history, the same for everybody. You are the closer, and every pitch is graded.</p>
       <p class="src" id="h-src">Pitch data from Baseball Savant. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</p>
     </footer>
   </div>
