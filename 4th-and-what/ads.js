@@ -17,6 +17,10 @@
  */
 (function () {
   'use strict';
+  /* THE UNITS EXIST (the owner made them, 2026-10-30). The launch commit puts these ids in the two
+     tables below and records them in scripts/ad-units.json; until then the tables stay zeros, because
+     the posture check counts the registry naming this game as a link to it:
+       fourth-sticky 6590975339, fourth-rail-left 2380267585, fourth-rail-right 8614503443 */
   var STICKY_SLOT = { sticky: '0000000000' };                          // fourth-sticky
   var RAIL_SLOTS = { left: '0000000000', right: '0000000000' };        // fourth-rail-left, fourth-rail-right
   function go() {

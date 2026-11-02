@@ -135,8 +135,48 @@ function show(id) {
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
+  /* the ads (ads.js): the bottom banner and the rails on the screens that carry them */
+  if (window.STD_ADS) STD_ADS.screen(id);
+  homeFold();
   if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
 }
+
+/* THE BOTTOM BANNER ON THE HOME (ads.js, style.css). At the top of the page no control may sit behind
+   the banner, where a tap meant for it would land on the ad. When the home is too tall for the space
+   above the banner, the first row of the menu that would sit behind it (today's card once the daily
+   is done, Survivor or the links) moves below the fold instead, so the player scrolls to it. Take the
+   mound never moves. Measured with offsetTop, so the menu's entrance animation does not move the line. */
+function homeFold() {
+  var menu = $('h-menu');
+  if (!menu) return;
+  var rows = [].slice.call(menu.children).filter(function (k) { return k.id !== 'h-go'; });
+  rows.forEach(function (k) { k.style.marginTop = ''; });
+  var b = document.body;
+  if (!b.classList.contains('rtg-sticky-on') || b.dataset.screen !== 's-home') return;
+  var ad = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-ad-h')) || 0;
+  if (!ad) return;
+  var vh = window.innerHeight, line = vh - ad;
+  for (var i = 0; i < rows.length; i++) {
+    var k = rows[i];
+    if (k.hidden || !k.offsetHeight) continue;
+    var y = 0;
+    for (var e = k; e; e = e.offsetParent) y += e.offsetTop;
+    if (y >= vh) return;
+    if (y + k.offsetHeight > line) { k.style.marginTop = (vh - y + 8) + 'px'; return; }
+  }
+}
+window.addEventListener('rtg-sticky', homeFold);
+/* a phone's address bar changes the height as the page scrolls: refold only for a new width or at the top */
+var foldW = window.innerWidth;
+window.addEventListener('resize', function () {
+  if (window.innerWidth !== foldW || !window.scrollY) { foldW = window.innerWidth; homeFold(); }
+});
+/* the home fills in after the spot loads, so the fold is measured again whenever its column changes size */
+function homeFoldWatch() {
+  var m = $('h-main');
+  if (m && window.ResizeObserver) new ResizeObserver(function () { homeFold(); }).observe(m);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', homeFoldWatch); else homeFoldWatch();
 
 /* back to today's spot after a Survivor run or an archive day */
 function dailyBack() {
@@ -1780,7 +1820,12 @@ function survivorNext(r) {
   var next = Promise.resolve().then(function () { return API.survivorStart(); });
   return next.then(function (go) {
     show('s-next');
-    return MU.between(sv.saves, go.scenario, !!prefs.quick).then(function () { playSurvivor(go); });
+    return MU.between(sv.saves, go.scenario, !!prefs.quick).then(function () {
+      /* THE VIDEO BREAK between two spots (ads.js): a player who is not Pro, after the saves show.
+         A Pro player goes straight on. */
+      var ent = MU.ent && MU.ent(), pro = !!(ent && ent.pro);
+      return window.STD_ADS ? STD_ADS.between(pro) : null;
+    }).then(function () { playSurvivor(go); });
   }).catch(function (e) {
     toast('the next spot didn\'t load. try again.');
     show('s-surv');
