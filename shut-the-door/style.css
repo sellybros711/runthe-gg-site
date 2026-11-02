@@ -1668,3 +1668,34 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
 .hx-skip { margin: 4px 0 0; font-family: var(--sans); font-weight: 600; font-size: 12px; letter-spacing: 0.077em; text-transform: uppercase; color: rgba(244, 245, 247, .45); }
 @media (min-width: 880px) { .hx-in { max-width: 720px; gap: 16px; } .hx-head { font-size: 84px; } .hx-ls th, .hx-ls td { font-size: 17px; } .hx-ls .hx-t { width: 40px; font-size: 16.8px; } .hx-pas li b { font-size: 17px; } }
 @media (prefers-reduced-motion: reduce) { .hx-head, .hx-pas li, .hx-ls .pop { animation: none; } .hx-next { transition: none; } }
+
+/* THE MODES SWITCHER (the owner, 2026-11-02): daily, survivor, archive. A glass bar like the menu, one
+   pill that slides to the pick, and the panels cross-slide in the direction of travel. Every moving
+   part is transform and opacity; the panels' box eases its height so the page below never jumps. */
+.h-modes { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 4px; border-radius: 16px; background: rgba(10, 14, 22, .74); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); --n: 3; --i: 0; }
+.hm-pill { position: absolute; left: 4px; top: 4px; bottom: 4px; width: calc((100% - 8px) / var(--n)); border-radius: 12px; background: var(--signal); box-shadow: 0 2px 0 #c43a12, 0 6px 18px rgba(255, 79, 31, .3); transform: translate3d(calc(var(--i) * 100%), 0, 0); transition: transform .28s cubic-bezier(.22, .8, .24, 1); will-change: transform; pointer-events: none; }
+.hm-t { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 6px; border: 0; border-radius: 12px; background: transparent; color: rgba(255, 255, 255, .72); font-family: var(--sans); font-weight: 700; font-size: 13.5px; letter-spacing: .07em; text-transform: uppercase; transition: color .2s; -webkit-tap-highlight-color: transparent; }
+.hm-t[hidden] { display: none; }
+.hm-t .tm-k { font: inherit; }
+.hm-t.on { color: #fff; }
+.hm-t:not(.on):hover { color: #fff; }
+.hm-t:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+.hm-t.live .tm-k::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #3ddc84; vertical-align: 1px; box-shadow: 0 0 0 2px rgba(10, 14, 22, .6); }
+.h-panes { position: relative; touch-action: pan-y; }
+.h-panes.anim { overflow-x: clip; overflow-clip-margin: 12px; transition: height .28s cubic-bezier(.22, .8, .24, 1); }
+.h-pane { display: flex; flex-direction: column; gap: 10px; }
+.h-pane[hidden] { display: none; }
+.h-pane.go { position: absolute; left: 0; right: 0; top: 0; }
+.h-pane.mv { transition: transform .28s cubic-bezier(.22, .8, .24, 1), opacity .22s ease-out; will-change: transform, opacity; }
+#hp-surv .bd-hero { padding: 14px 16px 16px; }
+#hp-surv .bd-head { font-size: 44px; }
+#hp-surv .bd-list, .hp-arc-c { margin: 0; }
+#hp-surv .bd-note { margin: 0 4px; color: rgba(255, 255, 255, .75); }
+.hp-arc-c { color: var(--ink); }
+.hp-h { margin: 0 0 8px; font-family: var(--sans); font-weight: 700; font-size: 17.6px; }
+.hp-arc-c p { margin: 0; color: var(--dim); font-size: 14px; }
+@media (prefers-reduced-motion: reduce) {
+  .hm-pill { transition-duration: .01s; }
+  .h-panes.anim { transition: none; }
+  .h-pane.mv { transition: opacity .15s linear; }
+}
