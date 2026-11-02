@@ -375,7 +375,8 @@ function renderHome() {
    focusable until the first screen has what it needs: today's spot (the pack), the fonts, the stadium
    photo behind the home, and the 3D mound (STD_STAGE.current.loaded; a browser without WebGL keeps the
    old drawing and skips it). The bar is real: each step fills its own share when it lands, the 3D's by
-   the stage's own marks (STD_STAGE.marks: created, assets, lit, people, compiled). Inside a step the bar
+   the stage's own marks (STD_STAGE.marks: created, assets, lit, people, compiled, then his arm's throw).
+   Inside a step the bar
    eases toward the step's end and never reaches it until the step does.
    It never flashes: unseen for its first 300 ms (style.css), and once seen it stays up at least until
    BOOT_MIN_MS, so it never blinks in and out.
@@ -402,7 +403,9 @@ function bootHas(k) {
   if (k === 'spot' || k === 'fonts' || k === 'photo') return BOOT[k];
   if (!use3d()) return true;
   var st = window.STD_STAGE, m = st && st.marks;
-  if (k === 'compiled') return !!(st && st.current && st.current.loaded);
+  /* warmed, and his arm's throw is in (3d/firstperson.js fetches it beside the scene, and until it
+     lands the first pitch flies without his arm or the first person lens) */
+  if (k === 'compiled') { var cu = st && st.current, fp = cu && cu.fp; return !!(cu && cu.loaded) && (!fp || !fp.ok || !!fp.throw); }
   return !!(m && m[k] != null) || !!(st && st.current && st.current.loaded);
 }
 function bootClubs(s) {
