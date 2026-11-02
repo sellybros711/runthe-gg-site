@@ -2753,20 +2753,20 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "122",
-      "sha": "9fe2af14a62bc521"
+      "v": "124",
+      "sha": "7f65643def97e4b5"
     },
     "putt/land.js": {
-      "v": "16",
-      "sha": "afdcbbd1666d51a0"
+      "v": "17",
+      "sha": "0b44799b5066d2c1"
     },
     "putt/hole3d.js": {
       "v": "20",
       "sha": "ff389fb15ea156e7"
     },
     "putt/trip3d.js": {
-      "v": "2",
-      "sha": "52ce25f66e5911ea"
+      "v": "4",
+      "sha": "4ab5c144564fcacb"
     },
     "putt/gyms.js": {
       "v": "4",
@@ -2824,17 +2824,21 @@
       "v": "1",
       "sha": "c4c1a83f9ba63d6a"
     },
+    "putt/gymkinds/orbit.js": {
+      "v": "1",
+      "sha": "aa44bfcf89fb87e2"
+    },
     "putt/trail.js": {
-      "v": "47",
-      "sha": "f4c4a7b501cd69b3"
+      "v": "49",
+      "sha": "f4135b23b6152d18"
     },
     "putt/mapland.js": {
-      "v": "8",
-      "sha": "31fd187bb522015b"
+      "v": "9",
+      "sha": "ce540ddb2eff169d"
     },
     "golfer3d.js": {
-      "v": "24",
-      "sha": "f5ac173e036c50e5"
+      "v": "25",
+      "sha": "291f6a4809ec54d7"
     },
     "tracer3d.js": {
       "v": "2",
@@ -3111,8 +3115,8 @@
       "sha": "29905a0435a9794a"
     },
     "meter-ui.js": {
-      "v": "8",
-      "sha": "4c53452f7f88a334"
+      "v": "9",
+      "sha": "d500f4469003cd3c"
     },
     "sprites.js": {
       "v": "2",
@@ -3135,8 +3139,8 @@
       "sha": "8d8bbd62d19c78da"
     },
     "menus.js": {
-      "v": "10",
-      "sha": "65b50b7454a50cb0"
+      "v": "13",
+      "sha": "4e91ee92a131689f"
     },
     "rng.js": {
       "v": "1",
@@ -3150,9 +3154,13 @@
       "v": "15",
       "sha": "a7ef2e899563c882"
     },
+    "names.js": {
+      "v": "1",
+      "sha": "7f987e7c810e5688"
+    },
     "lesson.js": {
-      "v": "6",
-      "sha": "78e11f6d29432e27"
+      "v": "7",
+      "sha": "39299b08c1e9d276"
     },
     "engine.js": {
       "v": "17",
@@ -3163,8 +3171,8 @@
       "sha": "7a13d168ba82631e"
     },
     "card.js": {
-      "v": "2",
-      "sha": "43e316a9f7a3905c"
+      "v": "4",
+      "sha": "f42ddd13c70685d0"
     },
     "auth.js": {
       "v": "7",
@@ -3183,24 +3191,24 @@
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
-      "v": "4",
-      "sha": "949f0392725e94a0"
+      "v": "5",
+      "sha": "a21a33c4cc2aaaa9"
     },
     "modes-ui.js": {
-      "v": "4",
-      "sha": "12f74f2b441aa488"
+      "v": "5",
+      "sha": "abe0aa5618ef355b"
     },
     "box-ui.js": {
-      "v": "1",
-      "sha": "84f0df846f560e87"
+      "v": "2",
+      "sha": "e7860ce740a44c4c"
     },
     "ads.js": {
       "v": "2",
       "sha": "0532e84f54b65a4e"
     },
     "ui.js": {
-      "v": "59",
-      "sha": "222b2664a48a57e5"
+      "v": "60",
+      "sha": "c6b4b68bd2f794df"
     },
     "3d/boot.js": {
       "v": "83",

@@ -110,7 +110,8 @@ function basesWords(b) {
 function outsWords(o) { return o === 0 ? 'no outs' : o === 1 ? 'one out' : 'two outs'; }
 function pitchOf(type) { var a = S.scn.pitcher.arsenal; for (var i = 0; i < a.length; i++) if (a[i].type === type) return a[i]; return null; }
 function batterAt(i) { var bs = S.scn.batters; return bs[((i % bs.length) + bs.length) % bs.length]; }
-function lastName(n) { var p = String(n).split(' '); return p[p.length - 1]; }
+/* the short name, suffix and all ("Witt Jr.", never "Jr." or "Witt"): names.js, the one helper */
+function lastName(n) { return window.STD_NAMES.shortName(n); }
 function fmtDay(day) {
   var d = new Date(Date.parse(day + 'T12:00:00Z'));
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).toLowerCase().replace(',', '');
@@ -139,7 +140,41 @@ function show(id) {
   if (window.STD_ADS) STD_ADS.screen(id);
   homeFold();
   if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
+  backSync();
 }
+
+/* BACK CLOSES WHAT IS OPEN (the QA audit, 2026-11-02: back left the page from the board, a sheet or
+   the menu on the mound). While a sheet or any screen but the home is up, the page keeps one history
+   entry of its own, so back closes the sheet, or goes home from the screen. Back on the home with
+   nothing open leaves, as before. One entry, never a stack: a close by a tap drops it (history.back,
+   whose own popstate is skipped), and a back that leaves something still open puts it back. The mound
+   goes home the way the header's lockup does (a fresh home, where the outing resumes); a play in
+   flight finishes first, so back then does nothing. */
+var BACK_SKIP = false;
+function openNow() { return (MN && MN.isOpen()) || (document.body.dataset.screen || 's-home') !== 's-home'; }
+function backSync() {
+  var mine = !!(history.state && history.state.std);
+  if (openNow()) { if (!mine) try { history.pushState({ std: 1 }, ''); } catch (e) {} return; }
+  if (!mine) return;
+  setTimeout(function () {
+    if (openNow() || !(history.state && history.state.std)) return;
+    BACK_SKIP = true;
+    try { history.back(); } catch (e) { BACK_SKIP = false; }
+  }, 0);
+}
+function backPressed() {
+  if (BACK_SKIP) { BACK_SKIP = false; backSync(); return; }
+  if (MN && MN.isOpen()) { MN.close(); return; }
+  var id = document.body.dataset.screen || 's-home';
+  if (id === 's-home') return;
+  if (id === 's-mound' || id === 's-half' || id === 's-next') {
+    if (S.busy) { backSync(); return; }
+    location.replace(location.pathname + location.search);
+    return;
+  }
+  renderHomeState(); show('s-home'); drawHero();
+}
+window.addEventListener('popstate', backPressed);
 
 /* THE BOTTOM BANNER ON THE HOME (ads.js, style.css). At the top of the page no control may sit behind
    the banner, where a tap meant for it would land on the ad. When the home is too tall for the space
@@ -1617,17 +1652,25 @@ function pickoffIt() {
   S.grid.setDisabled(true);
   updateThrow();
   var basesBefore = st.bases | 0;
+  /* The broadcast of the throw is not his view of the plate, so the zone steps aside, as it does for
+     a pitch (the owner, 2026-11-02: the zone sat over the infield through the pickoff). It goes on the
+     tap, as he steps off, and at once (po-off: no fade), since the broadcast cuts to the throw; every path
+     below brings it back */
+  var real0 = S.scene && S.scene.real;
+  if (real0 && typeof real0.pickoff === 'function') $('m-scene').classList.add('flying', 'po-off');
   API.pickoff(st.outingId).then(function (res) {
     var ev = res.pickoff;
     /* the throw on the field, when the stage plays one (stage.js pickoff, the camera agent's #744);
        without it the line and the scorebug say what happened */
     var real = S.scene && S.scene.real;
-    var thrown = real && typeof real.pickoff === 'function'
+    var plays = real && typeof real.pickoff === 'function';
+    var thrown = plays
       ? Promise.resolve(real.pickoff({ po: ev, bases: basesBefore, hooks: { sound: sound, field: hudRunners } })).catch(function (e) { if (window.console) console.warn(e); })
       : Promise.resolve();
     return thrown.then(function () { return res; });
   }).then(function (res) {
     var ev = res.pickoff;
+    $('m-scene').classList.remove('flying', 'po-off');
     hudRunners(null);
     S.outing = res.state;
     var t = pickoffText(ev, res.state);
@@ -1644,6 +1687,7 @@ function pickoffIt() {
     updateThrow();
   }).catch(function (e) {
     S.busy = false;
+    $('m-scene').classList.remove('flying', 'po-off');
     S.grid.setDisabled(false);
     updateThrow();
     toast('that throw did not go. try again.');
@@ -2462,6 +2506,7 @@ function boot() {
     pending: function () { return API.pending ? API.pending() : null; },
     saveLabel: MU ? MU.SAVE_LABEL : null,
   });
+  MN.onChange = backSync;
   MN.init({
     hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
     archiveDays: MU ? MU.archiveDays : null,
@@ -2507,6 +2552,6 @@ function boot() {
   });
 }
 
-window.STD_UI = { state: S, cellWords: M.cellWords };
+window.STD_UI = { state: S, cellWords: M.cellWords, lastName: lastName };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

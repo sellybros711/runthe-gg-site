@@ -131,7 +131,9 @@ var TANK = voxels(14, 22, 14, 0.18, [-1.26, 0, -1.26], function(x, y, z){ var r 
   return Math.abs(y - 1.8) < 0.18 ? '#3a7fd8' : '#eef0f4'; });
 var TREE = voxels(14, 26, 14, 0.2, [-1.4, 0, -1.4], function(x, y, z){ var r = Math.hypot(x, z);
   if (y < 1.6) return r < 0.28 ? '#6a4628' : null;
-  var c = Math.hypot(x, (y - 2.9) * 1.1, z); if (c < 1.35) return c < 1.0 && hash(Math.round(x * 5), Math.round(y * 5), Math.round(z * 5)) < 0.25 ? '#4f9a3a' : (y > 3.3 ? '#3f8a3a' : '#2f6e2e');
+  // a snowy pine, Ice Age's: three tiers of dark needles narrowing upward, snow on each tier's top
+  var tier = Math.floor((y - 1.6) / 1.4); if (tier > 2) return y < 6.4 && r < 0.35 ? '#ffffff' : null; var ty = (y - 1.6) - tier * 1.4, tr = (1.35 - tier * 0.32) * (1 - ty / 1.9);
+  if (r < tr) return (ty > 0.9 || r > tr - 0.25 && ty > 0.6) ? '#f4f8ff' : (hash(Math.round(x * 5), Math.round(y * 5), Math.round(z * 5)) < 0.25 ? '#2f6e4a' : '#1f4e3a');
   return null; });
 
 // ---------------------------------------------------------------- planets
@@ -149,7 +151,9 @@ var PLANETS = {
   mars:{ R:300, paint:function(n){ if (Math.abs(n[2]) > 0.9) return Math.abs(n[2]) > 0.93 ? '#f6f2ee' : '#e8d8cc';
       var c = fbm([n[0] * 2.4 + 5, n[1] * 2.4, n[2] * 2.4], 4), v = fbm([n[0] * 8, n[1] * 8, n[2] * 8], 2), cy = Math.abs(n[2] + 0.12 + 0.08 * Math.sin(n[0] * 5));
       if (cy < 0.025 && n[1] > -0.6) return '#5a1e0e';
-      if (c < 0.42) return v > 0.5 ? '#6e2e1a' : '#7a3420'; return c > 0.6 ? (v > 0.55 ? '#d8784a' : '#c8643a') : (v > 0.55 ? '#b4502a' : '#c25a30'); }, air:'#d89a72' }
+      if (c < 0.42) return v > 0.5 ? '#6e2e1a' : '#7a3420'; return c > 0.6 ? (v > 0.55 ? '#d8784a' : '#c8643a') : (v > 0.55 ? '#b4502a' : '#c25a30'); }, air:'#d89a72' },
+  // Saturn: the ship comes down on a great deck of ring ice (this body), with Saturn itself and its rings hanging in the sky
+  saturn:{ R:240, paint:null, air:null, giant:{ R:900, off:[-1500, 900, -2600], band:['#e8d2a0', '#d8b878', '#f0dfb4', '#c8a060', '#e2c88c', '#b8905a'] } }
 };
 // the Moon's craters: a few big ones seen from afar, and a field of smaller ones round the landing spot (its underside, -y)
 var CRATERS = []; for (var ci = 0; ci < 46; ci++){ var th = hash(ci, 1, 7) * 6.283, ph = Math.acos(1 - 2 * hash(ci, 2, 7)); CRATERS.push([Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th), 0.05 + hash(ci, 3, 7) * 0.2]); }
@@ -250,10 +254,18 @@ function play(host, o, cb){
      dark lowlands from afar, and near the ground the dust, scattered dark rocks and the odd crater. */
   function surf(kind, ro, rd, tt, C, near){ var pe = add(ro, mul(rd, tt)), ne = norm(sub(pe, C)), col;
     if (kind === 'earth'){ var nr = Math.hypot(pe[0], pe[2]);
-      if (nr < 80 && near){ var gh = hash(Math.floor(pe[0] * 3.5), Math.floor(pe[2] * 3.5), 1); col = gh < 0.18 ? [63, 138, 58] : gh > 0.9 ? [118, 186, 92] : [84, 160, 72]; }
+      // the pad stands in Ice Age's snow, the last world on Earth before the rocket: drifts of white with blue shadows
+      if (nr < 80 && near){ var gh = hash(Math.floor(pe[0] * 3.5), Math.floor(pe[2] * 3.5), 1); col = gh < 0.18 ? [196, 214, 236] : gh > 0.9 ? [255, 255, 255] : [232, 240, 250]; }
       else { var uv = sphUV(ne), ti = (Math.floor(uv[1] * TEX.EH) * TEX.EW + Math.floor(uv[0] * TEX.EW)) * 3; col = [TEX.earth[ti], TEX.earth[ti + 1], TEX.earth[ti + 2]]; }
       return [col, ne]; }
     var nn = ne, gx = pe[0], gz = pe[2], lv, di, dj;
+    if (kind === 'saturn'){ var nz = noise3(gx * 0.15, 5, gz * 0.15), fz = clamp((tt - 25) / 80, 0, 1); col = lerpV([214, 220, 240], [190 + nz * 40, 196 + nz * 40, 226 + nz * 20], fz);
+      if (near && tt < 140){ var cr3 = Math.abs(noise3(gx * 0.6, 1, gz * 0.6) - 0.5) < 0.02; if (cr3) col = [150, 160, 196];
+        var icx = Math.floor(gx / 1.9), icz = Math.floor(gz / 1.9);
+        for (var ii = -1; ii <= 1; ii++) for (var ij = -1; ij <= 1; ij++){ var bx2 = icx + ii, bz2 = icz + ij; if (hash(bx2, bz2, 51) > 0.14) continue;
+          var ex = (bx2 + hash(bx2, bz2, 52)) * 1.9, ez = (bz2 + hash(bx2, bz2, 53)) * 1.9, er = 0.15 + hash(bx2, bz2, 54) * 0.45, ed = Math.hypot(gx - ex, (gz - ez) * 1.15) / er;
+          if (ed < 1){ col = ed < 0.5 && (gx - ex) + (gz - ez) < 0 ? [255, 255, 255] : [168, 196, 232]; nn = norm(add(nn, mul(norm(V(gx - ex, 0.01, gz - ez)), 0.6 * ed))); } } }
+      return [col, nn]; }
     if (kind === 'mars'){ var uvr = sphUV(ne), tr = (Math.floor(uvr[1] * TEX.EH) * TEX.EW + Math.floor(uvr[0] * TEX.EW)) * 3, fr = clamp((tt - 25) / 80, 0, 1);
       col = lerpV([200, 104, 58], [TEX.mars[tr], TEX.mars[tr + 1], TEX.mars[tr + 2]], fr);
       if (near && tt < 140){ var rip = Math.sin(gx * 1.3 + gz * 0.4 + noise3(gx * 0.2, 0, gz * 0.2) * 4), mott = noise3(gx * 0.35, 3, gz * 0.35);
@@ -282,8 +294,9 @@ function play(host, o, cb){
 
   function render(t){
     var rk = rocketAt(t), cam = camAt(t, rk), sun = sunAt(t), f = norm(sub(cam.tg, cam.pos)), r = norm(cross(f, cam.up)), u = cross(r, f), foc = (W / 2) / Math.tan(cam.fov * Math.PI / 360);
+    var GI = PLANETS[TOK].giant, GC = GI ? add(CM, GI.off) : null, GN = GI ? norm(V(0.25, 0.94, 0.22)) : null;
     var alt = len(sub(cam.pos, CE)) - Re, sky = FROMK === 'earth' ? smooth(alt / 260) : 1, padOn = alt < 120, altM = len(sub(cam.pos, CM)) - Rm, nearMoon = altM < 260,
-      air = TOK === 'mars' ? 1 - smooth(altM / 90) : 0, upM = norm(sub(cam.pos, CM));
+      air = TOK === 'mars' ? 1 - smooth(altM / 90) : 0, upM = norm(sub(cam.pos, CM)), airF = FROMK === 'mars' ? 1 - smooth(alt / 90) : 0, upE = norm(sub(cam.pos, CE));
     var models = [];
     if (padOn){ models.push([PAD, V(0, 0, 0), I3, 2], [TOWER, V(-3.6, 0, 0), I3, 3], [ARM, V(-2.4, 6.6, 0), I3, 3], [TANK, V(4.2, 0, -3.4), I3, 4], [TANK, V(5.6, 0, -0.8), I3, 4]);
       if (FROMK === 'earth') trees.forEach(function(p){ models.push([TREE, p, I3, 5]); }); }
@@ -300,6 +313,11 @@ function play(host, o, cb){
       var te = hitSphere(cam.pos, rd, CE, Re); if (te > 0 && te < best){ best = te; id = 6; var se = surf(FROMK, cam.pos, rd, te, CE, alt < 120); col = se[0]; n = se[1];
         if (FROMK === 'earth' && alt > 60 && dot(n, sun) < -0.1) col = mul(col, 0.35); }
       var tm = hitSphere(cam.pos, rd, CM, Rm); if (tm > 0 && tm < best){ best = tm; id = 7; var sm2 = surf(TOK, cam.pos, rd, tm, CM, nearMoon); col = sm2[0]; n = sm2[1]; }
+      // a giant in the sky (Saturn): its cloud bands, and its rings, a flat band of ice round it with the Cassini gap in it
+      if (GI && alt > 160){ var tg = hitSphere(cam.pos, rd, GC, GI.R); if (tg > 0 && tg < best){ best = tg; id = 8; var pg = add(cam.pos, mul(rd, tg)), ng = norm(sub(pg, GC)), lat = dot(ng, GN);
+          var bi = Math.floor((lat + 1) * 9 + noise3(ng[0] * 3, ng[1] * 3, ng[2] * 3) * 1.4) % GI.band.length; col = hex(GI.band[(bi + GI.band.length) % GI.band.length]); n = ng; }
+        var dn = dot(rd, GN); if (Math.abs(dn) > 1e-4){ var tr = dot(sub(GC, cam.pos), GN) / dn; if (tr > 0 && tr < best){ var pr = add(cam.pos, mul(rd, tr)), rr = len(sub(pr, GC)) / GI.R;
+            if (rr > 1.3 && rr < 2.3 && !(rr > 1.92 && rr < 1.99)){ best = tr; id = 8; var rk2 = noise3(rr * 30, 0, 0); col = rr < 1.55 ? [160, 140, 120] : rr < 1.92 ? (rk2 > 0.5 ? [236, 222, 196] : [214, 196, 166]) : [200, 186, 168]; n = dot(GN, sun) > 0 ? GN : mul(GN, -1); } } } }
       // the voxel models
       for (var mi = 0; mi < models.length; mi++){ var Mo = models[mi], bx4 = Mo[4]; if (x < bx4[0] || x > bx4[2] || y < bx4[1] || y > bx4[3]) continue; var hv = hitVox(Mo[0], Mo[5], Mo[2], rd, best); if (hv && hv.t < best){ best = hv.t; id = Mo[3]; col = [hv.col >> 16 & 255, hv.col >> 8 & 255, hv.col & 255]; n = hv.n; } }
       var out;
@@ -309,14 +327,15 @@ function play(host, o, cb){
         var g = clamp(dot(rd, norm(sub(cam.pos, CE))) * 0.5 + 0.5, 0, 1); out = lerpV([150 + 40 * (1 - g), 200 + 20 * (1 - g), 255], [5, 7, 18], sky);
         if (sky > 0.25){ for (var si = 0; si < 0; si++); }
         if (air > 0){ var gm = clamp(dot(rd, upM), 0, 1); out = lerpV(out, lerpV([236, 182, 140], [176, 108, 80], Math.sqrt(gm)), air); }
+        if (airF > 0){ var gf = clamp(dot(rd, upE), 0, 1); out = lerpV(out, lerpV([236, 182, 140], [176, 108, 80], Math.sqrt(gf)), airF); }
         var oc = sub(cam.pos, CE), bb = dot(oc, rd), dmin = Math.sqrt(Math.max(0, dot(oc, oc) - bb * bb)); if (FROMK === 'earth' && bb < 0 && dmin < Re * 1.05 && alt > 60){ var gl = 1 - (dmin - Re) / (Re * 0.05); out = lerpV(out, [110, 190, 255], clamp(gl, 0, 1) * 0.8); }
         best = 1e12; id = 0; }
       D[o2] = out[0]; D[o2 + 1] = out[1]; D[o2 + 2] = out[2]; D[o2 + 3] = 255; Z[y * W + x] = best; ID[y * W + x] = id; }
     // the stars, at infinity behind everything
     if (sky > 0.2 && air < 0.95) stars.forEach(function(s3){ var rel = s3, z = dot(rel, f); if (z <= 0) return; var sx = Math.round(W / 2 + dot(rel, r) * foc / z), sy = Math.round(H / 2 - dot(rel, u) * foc / z);
-      if (sx < 0 || sy < 0 || sx >= W || sy >= H || ID[sy * W + sx]) return; var b2 = (sky - 0.2) * (1 - air) * (0.5 + s3[3] * 0.6) * 255, oo = (sy * W + sx) * 4; D[oo] = Math.max(D[oo], b2); D[oo + 1] = Math.max(D[oo + 1], b2); D[oo + 2] = Math.max(D[oo + 2], b2 * (s3[3] > 0.85 ? 0.8 : 1)); });
+      if (sx < 0 || sy < 0 || sx >= W || sy >= H || ID[sy * W + sx]) return; var b2 = (sky - 0.2) * (1 - air) * (1 - airF) * (0.5 + s3[3] * 0.6) * 255, oo = (sy * W + sx) * 4; D[oo] = Math.max(D[oo], b2); D[oo + 1] = Math.max(D[oo + 1], b2); D[oo + 2] = Math.max(D[oo + 2], b2 * (s3[3] > 0.85 ? 0.8 : 1)); });
     // the outline: one dark pixel round every model in front of whatever is behind it, as the courses are inked
-    for (var y2 = 1; y2 < H - 1; y2++) for (var x2 = 1; x2 < W - 1; x2++){ var k2 = y2 * W + x2, idc = ID[k2]; if (idc === 0 || idc === 6 || idc === 7) continue;
+    for (var y2 = 1; y2 < H - 1; y2++) for (var x2 = 1; x2 < W - 1; x2++){ var k2 = y2 * W + x2, idc = ID[k2]; if (idc === 0 || idc === 6 || idc === 7 || idc === 8) continue;
       var zc = Z[k2], edge = false, nb = [k2 - 1, k2 + 1, k2 - W, k2 + W];
       for (var q = 0; q < 4; q++){ var kk = nb[q]; if (ID[kk] !== idc && Z[kk] > zc * 1.04){ edge = true; break; } }
       if (edge){ var o3 = k2 * 4; D[o3] *= 0.32; D[o3 + 1] *= 0.3; D[o3 + 2] *= 0.36; } }
@@ -338,9 +357,9 @@ function play(host, o, cb){
       parts.push({ lp:V(j[0], -0.8, j[2]), lv:V(j[0] * 2, -sp, j[2] * 2), r:0.42, life:0.32, age:0, kind:'fire', c:[255, 255, 230], a:1 }); } }
     if (FROMK === 'earth' && t < 2.35 && Math.floor(t * 12) !== Math.floor((t - dt) * 12)) parts.push({ p:V(-2.4 + hash(t, 1, 1), 6.2, (hash(t, 2, 1) - 0.5)), v:V(1.2, 0.6, 0.4), r:0.3, life:1.2, age:0, kind:'vapour', c:[245, 248, 252], a:0.8 });
     if (t > 2.3 && t < 4.6){ for (var s = 0, ns = many(90); s < ns; s++){ var an = hash(s, t * 1e3, 7) * 6.283, spd = 4 + hash(s, t * 1e3, 8) * 6;
-      parts.push({ p:V(Math.cos(an) * 1.2, 0.6, Math.sin(an) * 1.2), v:V(Math.cos(an) * spd, 0.4 + hash(s, t, 9) * 1.2, Math.sin(an) * spd), r:0.9, life:3, age:0, kind:'smoke', c:FROMK === 'moon' ? [190, 188, 184] : [232, 232, 238], a:0.85 }); } }
+      parts.push({ p:V(Math.cos(an) * 1.2, 0.6, Math.sin(an) * 1.2), v:V(Math.cos(an) * spd, 0.4 + hash(s, t, 9) * 1.2, Math.sin(an) * spd), r:0.9, life:3, age:0, kind:'smoke', c:FROMK === 'moon' ? [190, 188, 184] : FROMK === 'mars' ? [214, 150, 112] : [232, 232, 238], a:0.85 }); } }
     if (t > 8.7 && t < 9.4){ for (var d = 0, nd = many(70); d < nd; d++){ var a2 = hash(d, t * 1e3, 17) * 6.283, s2 = 3 + hash(d, t * 1e3, 18) * 5;
-      parts.push({ p:V(Math.cos(a2) * 0.8, HM - 0.15, Math.sin(a2) * 0.8), v:V(Math.cos(a2) * s2, -0.6 - hash(d, t, 19), Math.sin(a2) * s2), r:0.35, life:1.5, age:0, kind:'dust', c:TOK === 'mars' ? [206, 122, 80] : [196, 192, 184], a:0.7 }); } }
+      parts.push({ p:V(Math.cos(a2) * 0.8, HM - 0.15, Math.sin(a2) * 0.8), v:V(Math.cos(a2) * s2, -0.6 - hash(d, t, 19), Math.sin(a2) * s2), r:0.35, life:1.5, age:0, kind:'dust', c:TOK === 'mars' ? [206, 122, 80] : TOK === 'saturn' ? [230, 236, 250] : [196, 192, 184], a:0.7 }); } }
     parts.forEach(function(p){ p.age += dt; if (p.lp) p.lp = add(p.lp, mul(p.lv, dt)); else p.p = add(p.p, mul(p.v, dt)); var k = p.age / p.life;
       if (p.kind === 'fire'){ p.c = k < 0.25 ? [255, 255, 220] : k < 0.5 ? [255, 214, 80] : k < 0.75 ? [255, 140, 40] : [200, 70, 30]; p.r = 0.4 + k * 0.5; }
       else if (p.kind === 'smoke'){ p.v = mul(p.v, 1 - dt * 0.9); p.r = 0.9 + k * 3.2; p.a = 0.85 * (1 - k); }
