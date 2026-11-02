@@ -510,7 +510,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .band:not(.soon) > *{grid-column:1;}
     .band:not(.soon) > .lastset{grid-column:2; grid-row:1 / span 6; margin:14px 6px 6px;}
     .band-hd h2{font-size:56px;}
-    .how, .bands{max-width:960px; margin-left:auto; margin-right:auto;}
+    .how, .bands, .look, .statsline{max-width:960px; margin-left:auto; margin-right:auto;}
     .md-t{font-size:26px;}
     .mode{padding:16px 16px 14px;}
   }
@@ -2347,7 +2347,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .tab[data-tab="tour"]{--tc:#E0742E;}
   .tab[data-tab="songs"]{--tc:#D13F86;}
   .tab[data-tab="board"]{--tc:#C9940F;}
-  .tab[data-tab="profile"]{--tc:#7553D0;}
   .tab .ti{display:grid; place-items:center; width:38px; height:28px; border-radius:3px;
     color:var(--tc); background:color-mix(in srgb, var(--tc) 15%, transparent);
     border:2px solid transparent;}
@@ -2893,15 +2892,11 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      Props are objects, so they carry their own colours in BOTH themes, the way the hero always has:
      each one re-scopes the tokens it is drawn with, so everything inside it follows. Square corners,
      hard offset shadows and thick outlines are the pixel kit; the faces stay the game's own. */
-  #app .hero{--stageH:106px; padding-top:12px; padding-bottom:calc(var(--stageH) + 2px);}
-  #app .hero > .hero-stage{position:absolute; left:0; right:0; bottom:0; width:100%;
-    height:var(--stageH); z-index:-1; image-rendering:pixelated; image-rendering:crisp-edges;
-    opacity:0; transition:opacity .6s ease; pointer-events:none;}
-  #app .hero > .hero-stage.on{opacity:1;}
-  #app .hero h1{font-size:clamp(52px,15vw,120px);}
-  #app .hero .tagline{font-size:clamp(15px,4vw,26px); margin:0 0 6px; text-wrap:balance;}
-  #app .hero p{font-size:12.5px;}
-  @media (min-width:900px){ #app .hero{--stageH:184px;} }
+  /* The headline is the promise, not the wordmark: the top bar already says Segue. */
+  #app .hero{padding-top:16px; padding-bottom:18px;}
+  #app .hero h1{font-size:clamp(28px,8vw,52px); line-height:1.05; width:auto; text-wrap:balance;}
+  #app .hero p{font-size:14px; max-width:36ch;}
+  #app .hero .loopline{font-size:12px; font-weight:600; opacity:.8; margin-top:6px;}
 
   /* The rules, on a setlist taped to the floor. */
   .how{--card:#FFF8EA; --card2:#F4EBD8; --card3:#E8DECB; --ink:#1B1726; --mut:#4E4560; --dim:#6E6352;
@@ -2911,7 +2906,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .how:before{content:''; position:absolute; left:50%; top:-7px; width:58px; height:14px;
     transform:translateX(-50%) rotate(-3deg); background:rgba(255,236,170,.78);
     box-shadow:0 1px 0 rgba(0,0,0,.08);}
-  #app .how{margin:14px 0 14px; padding-top:4px; padding-bottom:4px;}
+  #app .how{margin:14px auto 14px; padding-top:4px; padding-bottom:4px;}
   .how .how-tour{background:transparent; color:var(--ink); border:2px solid var(--ink); border-radius:2px;
     box-shadow:2px 2px 0 rgba(8,5,18,.25);}
   .how .loop b{font-family:var(--hand); font-weight:400; font-size:13px; letter-spacing:.2px; white-space:nowrap;}
@@ -2988,6 +2983,35 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .op-role + .op-role{margin-top:8px;}
   .op-lbl{font-size:11px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; color:var(--dim); margin-bottom:4px;}
   .op-row{display:flex; gap:6px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:thin;}
+  /* Your outfits and venue. The players' stages are dark in both themes: a stage is an object. */
+  .look{padding:14px 14px 12px; margin:var(--sp-2, 14px) auto;}
+  .lk-hd{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .lk-hd h2{font-family:var(--ui); font-weight:400; font-size:21px; letter-spacing:1.4px; text-transform:uppercase; margin:0;}
+  .lk-lede{margin:4px 0 12px; font-size:13px; font-weight:600; color:var(--mut);}
+  .lk-k{font-size:11px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase; color:var(--dim); margin:4px 0 8px;}
+  .wardrobe{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+  @media (min-width:760px){ .wardrobe{grid-template-columns:repeat(4,minmax(0,1fr));} }
+  .wr-player{background:#120E24; color:#F6F2EA; border:3px solid #05030C; border-radius:2px; box-shadow:3px 3px 0 rgba(5,3,12,.5); overflow:hidden;}
+  .wr-stage{height:112px; display:flex; align-items:flex-end; justify-content:center; position:relative;
+    background:linear-gradient(#221a40 0 70%, #8a5e3e 70% 74%, #a8744c 74% 78%, #8a5e3e 78% 100%); border-bottom:3px solid #05030C;}
+  .wr-stage:before{content:''; position:absolute; left:50%; top:0; width:90px; height:100%; transform:translateX(-50%);
+    background:radial-gradient(ellipse at 50% 0%, rgba(255,236,190,.35), transparent 70%); pointer-events:none;}
+  .wr-cv{width:96px; height:124px; image-rendering:pixelated; image-rendering:crisp-edges; position:relative; margin-bottom:-6px;}
+  .wr-meta{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:8px 9px 6px;}
+  .wr-role{font-family:var(--ui); font-size:16px; letter-spacing:1.2px; text-transform:uppercase;}
+  .wr-now{font-size:11.5px; font-weight:800; color:#B8AFCB; text-align:right;}
+  .wr-chips{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px; padding:0 8px 10px;}
+  .wr-chips .ochip{min-height:44px; height:44px; padding:0; gap:0; flex-direction:column; align-items:stretch;
+    border:2px solid #2E2850; background:#1B1636; overflow:hidden;}
+  .wr-chips .ochip i{flex:1; display:block;}
+  .wr-chips .ochip.locked{background:#1B1636; opacity:.45; filter:saturate(.35);}
+  .wr-chips .ochip.on{border-color:var(--teal); box-shadow:0 0 0 2px var(--teal); opacity:1; filter:none;}
+  .wr-chips .ochip.locked.peek{border-color:var(--violet); opacity:.8;}
+  .look .vp-row{margin-bottom:4px;}
+  .look .vthumb{border-radius:2px; border-color:#15151F;}
+  .shareline{margin:10px 2px 2px; font-size:12.5px; font-weight:700; color:inherit; opacity:.8;}
+  .statsline{margin:4px auto 16px; padding:0 2px; font-size:12.5px; font-weight:600; color:var(--dim); line-height:1.5;}
+  .statsline .linkbtn{font-size:12.5px;}
   .ochip{flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; min-height:44px; padding:0 11px 0 8px;
     border:2px solid #15151F; border-radius:2px; background:#F6F2EA; color:#1B1726; font:inherit;
     font-size:12.5px; font-weight:800; cursor:pointer;}
@@ -3181,9 +3205,6 @@ window.GA_ID='G-L29P5MRWKE';
     <button class="tab" type="button" data-tab="board" aria-label="Leaderboard">
       <i class="ti" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h11V8a5.5 5.5 0 0 1-11 0V4.5z"/><path d="M6.5 6H4v1.2A2.9 2.9 0 0 0 6.9 10.1M17.5 6H20v1.2a2.9 2.9 0 0 1-2.9 2.9"/><path d="M12 13.4V17M9.2 20h5.6M10.6 17h2.8"/></svg></i>
       <span>Board</span></button>
-    <button class="tab" type="button" data-tab="profile" aria-label="Your shows">
-      <i class="ti" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.8 19.6a6.2 6.2 0 0 1 12.4 0"/></svg></i>
-      <span>You</span></button>
   </div>
 </nav>
 
@@ -3839,7 +3860,7 @@ function mountStrip(name){
   const mine = S.stripSeq = (S.stripSeq || 0) + 1;
   const cv = document.getElementById('bandStrip');
   if (!act || !cv) return;
-  const go = () => import('./backstage.js?v=7').then(m => {
+  const go = () => import('./backstage.js?v=8').then(m => {
     if (mine !== S.stripSeq || S.strip) return;
     S.strip = { act, h: m.createStrip(cv, { act, sign: busSign(), dress: bandDress(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches }) };
@@ -3945,8 +3966,8 @@ const GUIDE_STEPS = [
     eyebrow: 'Everything else',
     hd: 'The rest lives down here',
     body: `<p><b>Tour</b> has every date Goose has announced. <b>Songs</b> is the
-        whole catalog. <b>Board</b> is the leaderboard. <b>You</b> is where you
-        check off the shows you've been to.</p>
+        whole catalog. <b>Board</b> is the leaderboard. Sign in, top right, to keep
+        your stats.</p>
       <p>You don't need any of it to play. Let's build your show.</p>`,
   },
 ];
@@ -4084,16 +4105,20 @@ function busSign(){
   const d = new Date(next.date + 'T12:00:00');
   return d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getDate();
 }
-function mountBackstage(){
+/* THE WARDROBE'S PLAYERS, painted once the section is near the screen, so the first screen is text
+   and buttons and nothing else. backstage.js draws them from the show's own frames. */
+function mountWardrobe(){
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
-  const cv = document.getElementById('heroStage');
-  if (!cv) return;
-  const go = () => import('./backstage.js?v=7').then(m => {
-    if (!cv.isConnected || S.backstage) return;
-    S.backstage = m.createBackstage(cv, { sign: busSign(), dress: bandDress(),
+  const box = document.querySelector('.wardrobe');
+  if (!box) return;
+  const go = () => import('./backstage.js?v=8').then(m => {
+    if (!box.isConnected || S.backstage) return;
+    S.backstage = m.createWardrobe([...box.querySelectorAll('.wr-cv')], { dress: bandDress(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
   }).catch(() => {});
-  (window.requestIdleCallback || (f => setTimeout(f, 200)))(go);
+  if (typeof IntersectionObserver !== 'function'){ (window.requestIdleCallback || (f => setTimeout(f, 200)))(go); return; }
+  const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)){ io.disconnect(); go(); } }, { rootMargin: '200px' });
+  io.observe(box);
 }
 
 /* THE DAILY, on the band panel under the main button. Three states, and each
@@ -4190,6 +4215,8 @@ function renderHome(){
         </div>
         ${saved ? `<button class="linkbtn freshlink" type="button" data-start="${b.id}"
           data-fresh="1">Throw it away and start a new one</button>` : ''}
+        ${/* Sharing is the point of building one: say so where the buttons are. */''}
+        <p class="shareline">Every show you build makes a card to send your friends. No account needed.</p>
 
         ${next ? `<div class="nextline">
           <span class="nl-k">Next show</span>
@@ -4218,7 +4245,6 @@ function renderHome(){
 
         ${b.shows ? `<div class="bandlinks">
           <button type="button" data-go="tour">${goIcon('tour')}Tour dates</button>
-          <button type="button" data-go="browse">${goIcon('browse')}Track your shows</button>
           <button type="button" data-go="songs">${goIcon('songs')}All songs</button>
           <button type="button" data-go="board">${goIcon('board')}Leaderboard</button>
         </div>` : ''}
@@ -4234,17 +4260,16 @@ function renderHome(){
      sit above the band panel rather than below it. The play button is still
      the biggest thing on the screen; it is now the biggest thing on the screen
      AFTER you have been told what pressing it does. */
-  /* THE HERO IS BACKSTAGE (2026-10-27): the band soundchecking on a deck at dusk, drawn by
-     backstage.js with the show's own sprites, under the wordmark. The eyebrow went to pay for it:
-     the tagline now names the band, and the play button still has to clear the fold. */
+  /* THE GAME FIRST (owner's call, 2026-11-02, layout A of two prototypes). The front screen leads
+     with what Segue is and the two ways to play; the band picture that sat under the wordmark is
+     gone from here and the band stands in "Your outfits and venue", where you dress them. Segue
+     is a game you can play anytime and share; your stats are an extra for people who sign up. */
   const who = real.length === 1 ? real[0].label + ' ' : '';
   app.innerHTML = `
     <div class="hero">
-      <canvas class="hero-stage" id="heroStage" aria-hidden="true"></canvas>
-      <h1><span class="accent">Segue</span></h1>
-      <div class="tagline">Build the ${esc(who)}show that never happened.</div>
-      <p>Real shows, one at a time. Take one song from each and pay its
-        running time.</p>
+      <h1><span class="accent">Build the ${esc(who)}show that never happened.</span></h1>
+      <p>Build a ${esc(who)}setlist anytime, anywhere. Share it with your friends.</p>
+      <p class="loopline">Real shows, one at a time. Take one song from each and pay its running time.</p>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
@@ -4254,6 +4279,11 @@ function renderHome(){
         <div><div class="band-hd"><h2>More bands coming soon</h2></div></div>
         <button class="linkbtn" type="button" id="reqBand">Request one</button>
       </section></div>
+
+
+    ${lookHTML()}
+
+    ${statsLineHTML()}
 
     ${/* HOW IT WORKS, FOLDED (owner's call, 2026-10-28). It sat above the band panel and pushed
           Build your show and the daily below the fold on a phone. Now it waits under them, closed,
@@ -4343,10 +4373,6 @@ function renderHome(){
       <button class="btn ghost tiny how-tour" type="button" id="guideBtn">Show me around</button>
     </details>
 
-    ${venuePickerHTML()}
-
-    ${outfitPickerHTML()}
-
     ${/* THE "YOURS" ROW IS GONE. Leaderboard and Your shows were the only two
           links on it, and both are tabs on the bar that sits under this screen
           on a phone and over it on a desktop. The board, which is the band's,
@@ -4355,7 +4381,7 @@ function renderHome(){
       <button class="btn ghost" data-start="${test[0].id}">Try the sample data</button>
       <span>Made-up data we use for testing.</span>
     </div>` : ''}`;
-  mountBackstage();
+  mountWardrobe();
 
   /* The walkthrough no longer opens by itself (owner's call: no auto tutorial
      on any game). "Show me around" under How it works is the way in. */
@@ -5358,16 +5384,16 @@ const venueLabel = v => {
 };
 
 /* THE PICKER, on the home screen: every room as a picture, open ones pressable, locked ones dark. */
-function venuePickerHTML(){
+function venuePickerHTML(bare){
   const prog = venueProg(), cur = chosenVenue();
   const open = new Set(prog.filter(p => p.open).map(p => p.id));
-  const hint = !ME.signedIn ? 'Sign in to earn new rooms. Every show you build counts.'
+  const hint = !ME.signedIn ? 'Sign in to earn new venues. Every show you build counts.'
     : VSTATE.rows === null && VSTATE.busy ? 'Checking which rooms you have earned...'
-    : `${open.size} of ${VENUE_LIST.length} rooms open. ${cur === 'random' ? 'Each show draws one of them.' : 'Tap a dark one to see what it takes.'}`;
+    : `${open.size} of ${VENUE_LIST.length} venues open. ${cur === 'random' ? 'Each show draws one of them.' : 'Tap a dark one to see what it takes.'}`;
   const rnd = cur === 'random';
-  return `<section class="card vpick">
+  return `${bare ? '' : `<section class="card vpick">
     <div class="vp-hd"><span class="eyebrow">Where your show is played</span>
-      ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
+      ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>`}
     <div class="vp-row" role="radiogroup" aria-label="Choose where your show is played">
       <button type="button" class="vthumb vrand${rnd ? ' on' : ''}" data-venue="random" role="radio"
         aria-checked="${rnd}" aria-label="A random room each show">
@@ -5383,7 +5409,7 @@ function venuePickerHTML(){
       }).join('')}
     </div>
     <div class="vp-say" id="vpSay">${esc(hint)}</div>
-  </section>`;
+  ${bare ? '' : '</section>'}`;
 }
 function venueClueHTML(id){
   const v = VENUE_BY_ID[id], p = venueProg().find(x => x.id === id);
@@ -5421,29 +5447,46 @@ function outfitSwatch(o){
   const L = o.look;
   return [L.jacket || L.shirt || '#efe6cf', L.pants || '#e8dec4'];
 }
-function outfitPickerHTML(){
+/* YOUR OUTFITS AND VENUE (owner's call, 2026-11-02): one section for everything you customise. Each
+   player stands on a little lit stage over their six outfits, so the band is on the front screen
+   where you dress them, and the venue you play in sits under them. */
+function lookHTML(){
   const prog = outfitLadder(), dress = bandDress();
   const rungs = prog.filter(p => p.open).length;
   const hint = !ME.signedIn ? 'Sign in to earn new outfits. Every show you build counts.'
     : VSTATE.rows === null && VSTATE.busy ? 'Checking which outfits you have earned...'
     : `${ROLES.length * (rungs + 1)} of ${ROLES.length * OUTFITS.guitar.length} outfits open. Tap a dark one to see what it takes.`;
-  return `<section class="card vpick opick">
-    <div class="vp-hd"><span class="eyebrow">What your band wears</span>
+  return `<section class="card look">
+    <div class="lk-hd"><h2>Your outfits and venue</h2>
       ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
-    ${ROLES.map(r => `<div class="op-role">
-      <div class="op-lbl">${esc(r.label)}</div>
-      <div class="op-row" role="radiogroup" aria-label="What ${esc(r.label.toLowerCase())} wears">
-        ${OUTFITS[r.id].map((o, i) => {
-          const on = outfitOpen(prog, i), cur = dress[r.id] === o.id, [a, b] = outfitSwatch(o);
-          return `<button type="button" class="ochip${on ? '' : ' locked'}${cur ? ' on' : ''}" role="radio"
-            aria-checked="${cur}" data-outfit="${r.id}:${o.id}" data-rung="${i}"
-            aria-label="${esc(o.name)}${on ? '' : ', locked'}">
-            <span class="osw" aria-hidden="true"><i style="background:${a}"></i><i style="background:${b}"></i></span>
-            <span class="onm">${esc(o.name)}</span></button>`;
-        }).join('')}
-      </div></div>`).join('')}
+    <p class="lk-lede">Dress the band and pick where they play. They wear it on stage.</p>
+    <div class="lk-k">Outfits</div>
+    <div class="wardrobe">${ROLES.map(r => {
+      const cur = OUTFITS[r.id].find(o => o.id === dress[r.id]) || OUTFITS[r.id][0];
+      return `<div class="wr-player">
+        <div class="wr-stage"><canvas class="wr-cv" data-player="${r.id}" aria-hidden="true"></canvas></div>
+        <div class="wr-meta"><span class="wr-role">${esc(r.label)}</span><span class="wr-now">${esc(cur.name)}</span></div>
+        <div class="wr-chips" role="radiogroup" aria-label="What ${esc(r.label.toLowerCase())} wears">
+          ${OUTFITS[r.id].map((o, i) => {
+            const on = outfitOpen(prog, i), isCur = o.id === cur.id, [a, b] = outfitSwatch(o);
+            return `<button type="button" class="ochip${on ? '' : ' locked'}${isCur ? ' on' : ''}" role="radio"
+              aria-checked="${isCur}" data-outfit="${r.id}:${o.id}" data-rung="${i}"
+              aria-label="${esc(o.name)}${on ? '' : ', locked'}"><i style="background:${a}"></i><i style="background:${b}"></i></button>`;
+          }).join('')}
+        </div></div>`;
+    }).join('')}</div>
     <div class="vp-say" id="opSay">${esc(hint)}</div>
+    <div class="lk-k">Venue</div>
+    ${venuePickerHTML(true)}
   </section>`;
+}
+/* YOUR STATS ARE AN EXTRA, not a reason to come (owner's call, 2026-11-02): one quiet line. */
+function statsLineHTML(){
+  return ME.signedIn
+    ? `<p class="statsline">Your stats and the shows you were at are under your name, top right.
+        <button class="linkbtn" type="button" data-go="profile">See your stats</button></p>`
+    : `<p class="statsline">Sign up and Segue keeps your stats: every setlist you've built, and the real shows
+        you were at. Optional, and free. <button class="linkbtn" type="button" data-venue-auth>Sign up</button></p>`;
 }
 function outfitClueHTML(i){
   const p = outfitLadder()[i - 1];
@@ -6451,7 +6494,9 @@ function openAuth(mode){
 }
 function closeAuth(){ authSheet.classList.remove('on'); authMsg = null; }
 
-meBtn.addEventListener('click', () => openAuth());
+/* Signed in, your name opens your stats, which is where your name and sign out also live. Signed
+   out, it signs you in. Stats have no tab of their own: the games are the point (2026-11-02). */
+meBtn.addEventListener('click', () => { if (ME.signedIn) setScreen('profile'); else openAuth(); });
 
 authSheet.addEventListener('click', async e => {
   if (e.target === authSheet){ closeAuth(); return; }
