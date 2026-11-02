@@ -707,6 +707,10 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .tiles3 .tl span { white-space: normal; line-height: 1.25; }
 .prose h3, .sh-body h3 { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 20px; text-transform: uppercase; margin: 18px 0 4px; }
 .prose p { margin: 0 0 8px; }
+/* how to play's clips: the real game, one control each, with one line under it */
+.hw-clip { margin: 8px 0 14px; }
+.hw-clip video { display: block; width: 100%; height: auto; border-radius: 14px; background: var(--panel-2); box-shadow: 0 0 0 1px var(--line, rgba(127, 127, 127, .2)); }
+.hw-clip figcaption { margin-top: 7px; font-size: 14px; line-height: 1.35; color: var(--ink); }
 .bands, .ends { list-style: none; margin: 6px 0; padding: 0; }
 .bands li, .ends li { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
 .ends b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 17px; min-width: 112px; }

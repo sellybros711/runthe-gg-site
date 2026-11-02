@@ -34,6 +34,7 @@ function openSheet(id, after) {
 function closeSheet(silent) {
   if (!open) return;
   var el = $(open);
+  [].forEach.call(el.querySelectorAll('video'), function (v) { try { v.pause(); } catch (e) {} });
   el.classList.remove('on');
   el.hidden = true;
   el.setAttribute('aria-hidden', 'true');
@@ -58,7 +59,33 @@ function wire() {
 
 /* ---- how to play -------------------------------------------------------- */
 
+/* THE CLIPS (the owner, 2026-11-02: "show each control with a looped animation"). Each control is a
+   short muted loop recorded from the real game (test/record-how.mjs), in the reader's theme, with one
+   line under it. The markup is written only when the sheet opens, so nothing downloads on boot; the
+   poster shows first and a clip streams when it scrolls into view (watchClips). With reduced motion a
+   clip waits for a tap. */
+var HOW_V = 1;
+function clip(k, line) {
+  var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  var still = false; try { still = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  var b = 'how/' + k + '-' + t, q = '?v=' + HOW_V;
+  return '<figure class="hw-clip"><video muted playsinline loop ' + (still ? 'controls ' : 'data-auto ') + 'preload="' + (still ? 'none' : 'metadata') + '" poster="' + b + '.webp' + q + '" aria-hidden="true">' +
+    '<source src="' + b + '.webm' + q + '" type="video/webm"><source src="' + b + '.mp4' + q + '" type="video/mp4"></video>' +
+    '<figcaption>' + esc(line) + '</figcaption></figure>';
+}
+/* a clip plays only while it is on screen, so a phone runs one or two at a time, never eight; each
+   streams when it first comes into view. Without IntersectionObserver they all play. */
+var clipSeen = null;
+function watchClips() {
+  var vs = [].slice.call(document.querySelectorAll('#how-body video[data-auto]'));
+  var go = function (v, on) { try { if (on) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); } catch (e) {} };
+  if (clipSeen) clipSeen.disconnect();
+  if (!('IntersectionObserver' in window)) { vs.forEach(function (v) { go(v, true); }); return; }
+  clipSeen = new IntersectionObserver(function (es) { es.forEach(function (e) { go(e.target, e.isIntersecting); }); }, { threshold: 0.4 });
+  vs.forEach(function (v) { clipSeen.observe(v); });
+}
 function renderHow(ctx) {
+  setTimeout(watchClips, 0);
   /* The bands are relative to the moment (CONTRACT.md section 7), so the
      words say what each colour means rather than printing a cutoff. */
   var MEANS = { green: 'the best call, or close to it.', yellow: 'gave a little away.',
@@ -71,16 +98,27 @@ function renderHow(ctx) {
     var b = document.querySelector('#how-body [data-open-101]');
     if (b) b.addEventListener('click', function () { api.show('101'); });
   }, 0);
+  var power = !!(window.STD_METER && window.STD_METER.EFFORT);
+  var dis = C.STEAL && C.STEAL.DISENGAGE, abs = C.ABS && C.ABS.PER_SIDE;
   $('how-body').innerHTML =
     '<button type="button" class="btn ghost p101-go" data-open-101>pitching 101: the ideas behind the grade</button>' +
     '<h3>you are the closer</h3>' +
     '<p>one real save spot a day. the real batters, in order. his real pitches. the same spot for everybody.</p>' +
-    '<h3>two taps and a release</h3>' +
-    '<p>pick a pitch from his arsenal. pick a spot on the grid. hit throw.</p>' +
-    '<p>a needle sweeps the meter. tap when it hits the mark. that is the release.</p>' +
+    '<h3>how to pitch</h3>' +
+    clip('aim', 'pick a pitch. tap or drag on the zone to aim. then hit throw.') +
+    (power ? clip('power', 'tap to stop the power. max is faster. the release gets tighter.') : '') +
+    clip('release', 'the ring closes on your aim. tap when it lands on the circle.') +
+    clip('reaim', 'want a new spot? hit re-aim.') +
     '<p>a clean release misses less than his usual. a bad one misses more. the grade never sees it. it grades the call.</p>' +
     '<p>timing is hard for some. turn the meter off in settings. every pitch then goes with his usual command.</p>' +
-    '<p>the grid is what you see from the mound. the middle nine are the zone. the ring around it is for chasing. inside and away are the batter\'s.</p>' +
+    '<p>the zone is what you see from the mound. inside and away are the batter\'s.</p>' +
+    '<h3>scout him</h3>' +
+    clip('scout', 'tap scout. damage shows where he hits it hard. swings shows where he chases.') +
+    '<h3>challenges</h3>' +
+    clip('challenge', 'a called ball you think was a strike? hit challenge right away.' + (abs ? ' you get ' + abs + '. win it and you keep it.' : '')) +
+    '<h3>runners on</h3>' +
+    clip('quick', 'quick delivery is a slide step. it beats the steal. it costs a little speed.') +
+    clip('pickoff', 'pickoff throws over to the bag.' + (dis ? ' you get ' + dis + ' per batter. after that a miss is a balk.' : '')) +
     '<h3>where it goes</h3>' +
     '<p>the ball misses by his command and your release. then a real pitch from that spot plays out: take, swing, foul or in play.</p>' +
     '<h3>the grade</h3>' +
@@ -94,8 +132,6 @@ function renderHow(ctx) {
     '<li><b>' + esc(C.OUTCOME_LABEL.doors_open) + '</b> the go-ahead run scores</li>' +
     '<li><b>' + esc(C.OUTCOME_LABEL.walk_off) + '</b> the winning run scores in their last at-bat</li></ul>' +
     '<p>a tie does not end it. keep pitching. only a door shut keeps your streak.</p>' +
-    '<h3>scouting</h3>' +
-    '<p>tap the batter\'s name. the grid turns into his map: where he does damage, and where he swings.</p>' +
     '<h3>one a day</h3>' +
     '<p>the daily counts once. run it back to practice. practice is never scored.</p>' +
     '<p>practice is the place to learn the meter. after each release it shows how much the miss grew or shrank.</p>' +
