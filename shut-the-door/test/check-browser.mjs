@@ -754,6 +754,8 @@ async function run(w, h, theme) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => {
@@ -1180,6 +1182,8 @@ async function ending(w, h, end, extra) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${tag}-${nextN(tag)}-${end}-${name}.png`), fullPage: !!full }); };
@@ -1265,6 +1269,8 @@ async function runningGame(w, h) {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
@@ -1298,6 +1304,8 @@ async function sizeSweep() {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
@@ -1347,6 +1355,8 @@ async function modesPage(w, h, q, opts) {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
@@ -1582,6 +1592,8 @@ async function halfPage(w, h) {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
