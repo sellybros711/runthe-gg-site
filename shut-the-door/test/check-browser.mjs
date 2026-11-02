@@ -427,6 +427,9 @@ async function everyResult(page) {
    goes on by itself; later ones are skipped with a tap. The quiet rule is
    checked through each flight and after it. */
 const PITCH_MS = SHOTS ? 300000 : 60000;
+/* the home shows behind the loading screen once the first screen is ready, the 3D mound included
+   (ui.js bootLoader, at most BOOT_CAP_MS 30 s and then it lets the home show): software GL takes that long */
+const BOOT_WAIT = 120000;
 async function playOuting(page, o) {
   const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
   const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
@@ -764,7 +767,20 @@ async function run(w, h, theme) {
   /* 1 */
   at('1 home');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  /* THE LOADING SCREEN (the owner, 2026-11-02): over the page from the first paint, and nothing on
+     the home is shown or tappable under it until the first screen is ready */
+  const early = await page.evaluate(() => { const b = document.getElementById('boot'), r = b && b.getBoundingClientRect();
+    return { there: !!b, covers: !!r && r.width >= innerWidth && r.height >= innerHeight, home: !document.getElementById('h-main').hidden,
+      inert: document.getElementById('app').hasAttribute('inert'),
+      top: (() => { const e = document.elementFromPoint(innerWidth / 2, innerHeight - 60); return e ? (e.closest('#boot') ? 'boot' : e.id || e.className) : ''; })() }; });
+  ok(early.there && early.covers && early.top === 'boot', '1 the loading screen covers the page from the first paint (on top: ' + early.top + ')');
+  ok(early.home || early.inert, '1 and the page under it takes no tap and no focus (inert) until the home shows');
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+  const boot = await page.evaluate(() => { const b = document.getElementById('boot'), cs = getComputedStyle(b), st = window.STD_STAGE;
+    return { gone: b.classList.contains('boot-off') && cs.pointerEvents === 'none' && !document.getElementById('app').hasAttribute('inert'), pct: document.getElementById('boot-pct').textContent,
+      stage: !(st && st.supported()) || !!(st.current && st.current.loaded), fonts: document.fonts.status }; });
+  ok(boot.gone, '1 the loading screen steps aside when the home shows (' + boot.pct + ')');
+  ok(boot.stage || boot.pct !== '100%', '1 the bar says 100% only with the 3D mound ready (' + boot.pct + ', mound ready: ' + boot.stage + ')');
   await homeWarm(page);
   await page.waitForSelector('#b-take', { state: 'visible' });
   const home = await page.evaluate(() => {
@@ -1149,7 +1165,7 @@ async function run(w, h, theme) {
   /* 8 */
   at('8 debug');
   await page.goto(BASE + '?debug=1', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])');
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#d-again');
   await page.waitForSelector('#s-mound.on');
@@ -1266,7 +1282,7 @@ async function runningGame(w, h) {
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#b-take');
   await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
@@ -1275,6 +1291,41 @@ async function runningGame(w, h) {
   ok(play.ranGame, '15 the running game row came up with a runner on');
   ok(play.problems.length === 0, '15 nothing graded, tipped or over the field' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
   ok(errors.length === 0, '15 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* 1b. THE LOADING SCREEN NEVER HANGS (the owner, 2026-11-02). The 3D's downloads never answer and the
+   cap is cut to 3 s (window.STD_BOOT_TEST_CAP): the home still shows, the screen says why for a moment,
+   and take the mound shows the mound's warming word with no bare zone. */
+async function bootStuck(w, h) {
+  console.log(`\nthe loading screen when the 3D never comes, ${w}x${h}`);
+  step('1b the loading screen never hangs', 300);
+  const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => { window.STD_BOOT_TEST_CAP = 3000; });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return /\/3d\/assets\//.test(u.pathname) ? undefined : route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  const said = await page.waitForFunction(() => document.getElementById('boot-say').textContent, null, { timeout: 60000 }).then((x) => x.jsonValue(), () => '');
+  ok(/still loading/.test(said), '1b past the cap the loading screen says why: "' + said + '"');
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 30000 });
+  const st = await page.evaluate(() => ({ off: document.getElementById('boot').classList.contains('boot-off'), inert: document.getElementById('app').hasAttribute('inert'),
+    pct: document.getElementById('boot-pct').textContent, loaded: !!(window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded) }));
+  ok(st.off && !st.inert && !st.loaded && st.pct !== '100%', '1b and lets the player in with the 3D still on its way (' + st.pct + ')');
+  await page.click('#b-take');
+  await page.waitForSelector('#s-mound.on');
+  await page.waitForTimeout(400);
+  const m = await page.evaluate(() => { const sc = document.getElementById('m-scene'), a = document.getElementById('m-aim');
+    return { warming: sc.classList.contains('warming'), word: (document.getElementById('m-load') || {}).textContent || '', zone: a ? getComputedStyle(a).visibility : 'none' }; });
+  ok(m.warming && /warming up/.test(m.word) && m.zone !== 'visible', '1b on the mound: the warming word and no bare zone (zone ' + m.zone + ')');
+  ok(errors.length === 0, '1b no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
 
@@ -1304,7 +1355,7 @@ async function sizeSweep() {
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#b-take');
   await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
@@ -1377,7 +1428,7 @@ async function modesPage(w, h, q, opts) {
     return route.abort();
   });
   await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 60000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   return { ctx, page, errors };
 }
 /* finish today's daily through the calls (the mound's own path is steps 5 and 11), then come back to it */
@@ -1612,7 +1663,7 @@ async function halfPage(w, h) {
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 60000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   ok(await page.evaluate((id) => window.STD_UI.state.scn.id === id, HALF_PACK), '18 the day plays ' + HALF_PACK + ', two halves');
   await homeWarm(page);
   await page.click('#b-take', { timeout: 120000 });
@@ -1737,6 +1788,7 @@ async function halves(w, h, skip) {
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
+  await bootStuck(390, 844);
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
   await halfSwitch(390, 844);
