@@ -3,7 +3,7 @@
  *   node shut-the-door/brand/og.mjs      (after build.py)
  *
  * The first stadium still, darkened from the left, the crest at the top left, the title line
- * YOU ARE THE CLOSER. CAN YOU SHUT THE DOOR? in Barlow Condensed (the game's own fonts/) and a
+ * YOU ARE THE CLOSER. CAN YOU SHUT THE DOOR? in Anton (the game's face for its big moments, brand/fonts/) and a
  * signal bar along the foot. Chromium draws it, so the PNG is exactly what the page shows.
  * The page names it in its og:image and twitter:image tags (and the JSON-LD image); bump their
  * ?v= when it changes.
@@ -24,11 +24,11 @@ const CHROME = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chr
 const b64 = (f, type) => 'data:' + type + ';base64,' + fs.readFileSync(path.join(GAME, f)).toString('base64');
 
 const html = `<!doctype html><html><head><style>
-  @font-face { font-family: BC; src: url(${b64('fonts/barlowcondensed-900italic.woff2', 'font/woff2')}) format('woff2'); font-weight: 900; font-style: italic; }
+  @font-face { font-family: AN; src: url(${b64('brand/fonts/Anton-Regular.ttf', 'font/ttf')}) format('truetype'); font-weight: 400; font-style: normal; }
   html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #0b0f17; }
   .bg { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(11, 15, 23, .92) 0%, rgba(11, 15, 23, .7) 55%, rgba(11, 15, 23, .35) 100%), url(${b64('home-bg/wide.webp', 'image/webp')}) center / cover; }
   .crest { position: absolute; left: 84px; top: 48px; height: 196px; }
-  h1 { position: absolute; left: 80px; bottom: 170px; margin: 0; font: italic 900 96px/.98 BC, sans-serif; color: #fff; text-transform: uppercase; letter-spacing: .5px; }
+  h1 { position: absolute; left: 80px; bottom: 170px; margin: 0; font: 400 92px/1.04 AN, sans-serif; color: #fff; text-transform: uppercase; letter-spacing: .5px; }
   h1 b { display: block; color: #ff4f1f; }
   .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 12px; background: #ff4f1f; }
 </style></head><body><div class="bg"></div><img class="crest" src="${b64('brand/lockup-dark.svg', 'image/svg+xml')}" alt="">

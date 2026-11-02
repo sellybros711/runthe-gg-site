@@ -33,9 +33,11 @@ from fontTools.ttLib import TTFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FONT = os.path.join(HERE, 'fonts', 'Graduate-Regular.ttf')
+# the header wordmark's face, the game's display face for its big moments (OFL, brand/fonts/)
+ANTON = os.path.join(HERE, 'fonts', 'Anton-Regular.ttf')
 INK, NAVY, WHITE, SIGNAL = '#0b0f17', '#1d2536', '#ffffff', '#ff4f1f'
 
-_tt = None
+_tt = {}
 _ids = [0]
 _defs = []
 
@@ -45,11 +47,11 @@ def f2(v):
     return '0' if s == '-0' else s
 
 
-def tt():
-    global _tt
-    if _tt is None:
-        _tt = TTFont(FONT)
-    return _tt
+def tt(path=None):
+    path = path or FONT
+    if path not in _tt:
+        _tt[path] = TTFont(path)
+    return _tt[path]
 
 
 def uid(kind):
@@ -93,8 +95,8 @@ class WarpPen(BasePen):
         self.out.append('Z')
 
 
-def layout(txt, size, tracking):
-    f = tt()
+def layout(txt, size, tracking, font=None):
+    f = tt(font)
     s = size / f['head'].unitsPerEm
     cmap, hmtx = f.getBestCmap(), f['hmtx']
     kern = {}
@@ -111,24 +113,24 @@ def layout(txt, size, tracking):
     return names, xs, x - tracking, s
 
 
-def measure(txt, size, tracking=0.0):
-    return layout(txt, size, tracking)[2]
+def measure(txt, size, tracking=0.0, font=None):
+    return layout(txt, size, tracking, font)[2]
 
 
-def cap(size):
-    f = tt()
+def cap(size, font=None):
+    f = tt(font)
     gs = f.getGlyphSet()
     bp = BoundsPen(gs)
     gs[f.getBestCmap()[ord('H')]].draw(bp)
     return bp.bounds[3] * size / f['head'].unitsPerEm
 
 
-def text(txt, size, x, y, tracking=0.0, anchor='start', warp=None):
+def text(txt, size, x, y, tracking=0.0, anchor='start', warp=None, font=None):
     """Path data for a line with its baseline at y. warp(x, y) -> (x, y) bends it."""
-    names, xs, width, s = layout(txt, size, tracking)
+    names, xs, width, s = layout(txt, size, tracking, font)
     if anchor == 'middle':
         x -= width / 2
-    gs = tt().getGlyphSet()
+    gs = tt(font).getGlyphSet()
     parts = []
     for g, gx in zip(names, xs):
         def fn(px, py, gx=gx):
@@ -285,15 +287,18 @@ def icon_plate(simple):
 
 
 def wordmark(ground):
-    """SHUT THE over DOOR, set to one width, like a club's chest lockup. For the header."""
+    """One line for the header, beside the crest: SHUT THE DOOR in Anton, DOOR in signal (the owner,
+    2026-11-02: option 3 of the font round, Anton for the big moments). Plain letters, no rings: it
+    sits at about 25 px. A viewBox only; card.js and the page give it its size."""
     face = WHITE if ground == 'dark' else INK
-    w = 150
-    ds = 60 * (w / measure('DOOR', 60, 2))
-    tr = (w - measure('SHUT THE', 20, 2)) / 7 + 2
-    a, _ = text('SHUT THE', 20, 4, 20, tracking=tr)
-    b, _ = text('DOOR', ds, 4, 22 + cap(ds) + 3, tracking=2)
-    body = layered(a, face, [(face, 1.6)]) + layered(b, SIGNAL, [(SIGNAL, 2.2)])
-    return svg((0, 0, w + 10, 22 + cap(ds) + 7), body)
+    # the stacked wordmark this replaced drew two layered paths, two ids; keep the count so the marks
+    # written after it (cached at ?v=2) keep their ids byte for byte
+    _ids[0] += 2
+    size, tr = 40, 1.2
+    a, wa = text('SHUT THE ', size, 2, 2 + cap(size, ANTON), tracking=tr, font=ANTON)
+    b, wb = text('DOOR', size, 2 + wa + tr, 2 + cap(size, ANTON), tracking=tr, font=ANTON)
+    w, h = 2 + wa + tr + wb + 2, cap(size, ANTON) + 4
+    return svg((0, 0, w, h), '<path d="%s" fill="%s"/><path d="%s" fill="%s"/>' % (a, face, b, SIGNAL))
 
 
 def main():
