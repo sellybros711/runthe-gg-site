@@ -4968,6 +4968,113 @@ window.RTT_PUTT_LAND = (function(){
       ds = L.spot(1.8, function(x, y){ return L.side(x) * 3 - L.north(x, y) * 0.1; }), lp = L.scatter(5, function(x, y){ return L.clearAt(x, y) < 3; }, 67).slice(0, 4);
     O.build = function(B){ hb.forEach(function(d){ marsHab(B, d.x, d.y, 2); }); if (gh) marsGreen(B, gh.x, gh.y, 2.2); if (sp) marsSolar(B, sp.x, sp.y, 4); if (ds) moonDish(B, ds.x, ds.y, 1.5);
       lp.forEach(function(q){ lamp(B, q[0], q[1], '#8a8a94', '#ffc890'); }); }; return O; }
+  /* ---------------- SATURN RINGS IS A JOURNEY. Out across the rings, the course on a deck of ring ice with chunks of it
+     drifting all round (1 to 4), into the ring station with its modules, masts and docking arm (5 to 8), under Titan in its
+     orange haze, the Titan lander parked on the deck (9 to 12), over Enceladus, its ice geysers venting white plumes
+     (13 to 16), and at last out over the pole, where the hexagon storm turns in the clouds far below (17 and 18). The decks
+     float: past their edge the ground falls gently away to Saturn's banded cloud tops, gold and cream, and Saturn itself,
+     ringed, hangs huge in the black sky over most stops. Gentle ground only (the land's rows never part): the fall from
+     deck to cloud is a long soft slope, never a cliff. */
+  STOPS.saturn = [[1, 'rings'], [5, 'cassini'], [9, 'titan'], [13, 'enceladus'], [17, 'hexagon']];
+  (function(){ BUILD.saturn = function(L){ var s = L.stop; return s === 'hexagon' ? satHex(L) : s === 'enceladus' ? satEnc(L) : s === 'titan' ? satTitan(L) : s === 'cassini' ? satStation(L) : satRings(L); }; })();
+
+  // the deck's reach: how far off the course the ring ice runs before it falls away to the clouds, wobbling along its edge
+  function satEdge(L, x, y){ return 4.2 + fbm(x * 0.09, y * 0.09, L.seed + 71) * 3; }
+  /* the paint: the deck pale lavender ring ice with plate seams, its edge a bright rim and a shaded underside, and the
+     clouds below in bands of gold, cream and tan, curled by the wind, the hexagon drawn into them at the pole */
+  function satMats(icy){ var dk = icy ? ['#dceaf6', '#eef6fc', '#c4d8ea', '#ffffff'] : ['#9a94cc', '#a8a2d8', '#8a84bc', '#c8c4ec'];
+    return { sdeck:[dk[0], dk[1], dk[2], 0.12, function(c, R){ if (c.rim === 1) return R(dk[3]); if (c.rim === 2) return R('#5a5488');
+        var b = blot(c, 0.2, 91); if (((c.ti >> 3) + (c.tj >> 3)) % 2 === 0 && ((c.ti & 7) === 0 || (c.tj & 7) === 0)) return R(dk[2]); return R(b > 0.68 ? dk[1] : b < 0.25 ? dk[2] : dk[0]); }],
+      scloud:['#e2c88c', '#f0dfb4', '#c8a060', 0.1, function(c, R){ if (c.hex) return R(c.hex === 2 ? '#8a5a2a' : '#fff2d0');
+        var band = Math.sin(c.cy * 0.42 + Math.sin(c.cx * 0.07) * 1.4 + blot(c, 0.06, 93) * 3), n = blot(c, 0.3, 94);
+        if (n > 0.8) return R('#fff8e8'); return R(band > 0.6 ? '#f0dfb4' : band > 0.1 ? '#e2c88c' : band > -0.5 ? '#d8b878' : '#b8905a'); }] }; }
+  function satBase(L, o){ var seed = L.seed, icy = !!o.icy;
+    function fall(x, y){ var c = L.clearAt(x, y), e = satEdge(L, x, y); return sm(e, e + 3, c); }
+    return {
+      h:function(x, y){ var f = fall(x, y); return (fbm(x * 0.1, y * 0.1, seed) - 0.45) * 0.3 * (1 - f) * sm(1.3, 4, L.clearAt(x, y)) - 1.25 * f; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = satEdge(L, x, y);
+        if (c < e + 0.5){ var rim = c > e - 0.35 ? 1 : c > e ? 2 : 0; return ['sdeck', { rim:rim }]; }
+        var hx = 0; if (o.hex){ var dx = x - o.hex[0], dy = (y - o.hex[1]) * 1.25, a = Math.atan2(dy, dx), r = Math.hypot(dx, dy), R0 = o.hex[2] / Math.cos(((a % (Math.PI / 3)) + Math.PI / 3) % (Math.PI / 3) - Math.PI / 6);
+          if (Math.abs(r - R0) < 0.7) hx = 1; else if (Math.abs(r - R0 - 0.9) < 0.35) hx = 2; else if (r < R0 * 0.25) hx = 2; }
+        return ['scloud', { cx:x, cy:y, hex:hx }]; },
+      fill:{ on:['scloud', 'sdeck'], trees:o.chunks == null ? 0.16 : o.chunks, lows:0.12,
+        tree:function(B, x, y, i){ rockAt(B, x, y, 0.5 + hash(i, seed, 71) * 0.8, hash(i, seed, 72) < 0.5 ? ['#dceaf6', '#a8c4e8'] : ['#c8d8ee', '#ffffff']); },
+        low:function(B, x, y, i){ rockAt(B, x, y, 0.2 + hash(i, seed, 73) * 0.3, ['#b8c8e0', '#eef4fa']); } },
+      // the sky over the horizon: the stars, and Saturn hanging huge with its rings (or Titan, orange in its haze)
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        for (var i = 0; i < 120; i++){ var sx = hash(i, 1, seed) * V.W, sy = hash(i, 2, seed) * top, a = 0.35 + hash(i, 3, seed) * 0.6;
+          ctx.fillStyle = 'rgba(240,236,255,' + a.toFixed(2) + ')'; ctx.fillRect(sx | 0, sy | 0, hash(i, 4, seed) < 0.12 ? 2 : 1, hash(i, 4, seed) < 0.12 ? 2 : 1); }
+        if (o.titan){ var tx = V.W * 0.28, ty = top * 0.5, tr = Math.min(top * 0.42, V.W * 0.13), g = ctx.createRadialGradient(tx - tr * 0.3, ty - tr * 0.3, tr * 0.1, tx, ty, tr);
+          g.addColorStop(0, '#ffd8a0'); g.addColorStop(0.7, '#e08a3a'); g.addColorStop(1, '#a8501a'); ctx.fillStyle = 'rgba(255,170,90,0.25)'; ctx.beginPath(); ctx.arc(tx, ty, tr * 1.25, 0, 7); ctx.fill();
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(tx, ty, tr, 0, 7); ctx.fill(); }
+        if (o.saturn !== false) satPlanet(ctx, V.W * (o.titan ? 0.8 : 0.68), top * 0.52, Math.min(top * (o.titan ? 0.26 : 0.4), V.W * (o.titan ? 0.08 : 0.15)));
+        if (o.haze){ ctx.fillStyle = 'rgba(255,150,60,0.16)'; ctx.fillRect(0, 0, V.W, V.H || top * 4); } },
+      bg:o.bg || '#120e20', gain:2, mats:satMats(icy) }; }
+  // Saturn in the sky: banded gold and cream, its rings tipped across it (the back half behind the planet, the front over it)
+  function satPlanet(ctx, x, y, r){ if (r < 3) return; var tilt = -0.32;
+    function ringHalf(back){ [[2.25, 'rgba(232,214,170,0.75)', 0.22], [1.85, 'rgba(255,240,205,0.9)', 0.3], [1.5, 'rgba(200,170,120,0.7)', 0.16]].forEach(function(q){
+      ctx.strokeStyle = q[1]; ctx.lineWidth = Math.max(1, r * q[2]); ctx.beginPath(); ctx.ellipse(x, y, r * q[0], r * q[0] * 0.28, tilt, back ? Math.PI : 0, back ? Math.PI * 2 : Math.PI); ctx.stroke(); }); }
+    ringHalf(true);
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.clip();
+    var bands = ['#f0dfb4', '#e2c88c', '#d8b878', '#c8a060', '#e8d2a0', '#b8905a', '#f0dfb4'];
+    for (var i = 0; i < bands.length; i++){ ctx.fillStyle = bands[i]; ctx.fillRect(x - r, y - r + (2 * r) * i / bands.length, 2 * r, (2 * r) / bands.length + 1); }
+    var g = ctx.createRadialGradient(x - r * 0.4, y - r * 0.4, r * 0.2, x, y, r * 1.05); g.addColorStop(0, 'rgba(255,255,255,0.15)'); g.addColorStop(0.75, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,10,30,0.55)');
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.restore();
+    ringHalf(false); }
+  // a station module: a white cylinder lying on its side, a gold band, round windows lit blue, grey end caps
+  function satModule(B, X, Y, w){ var zb = B.gz(X, Y), H = 1.7; if (B.light) B.light(X, Y + 1, zb + 1, '#9fd8ff');
+    B.solid(X - w / 2, Y - 0.95, zb, X + w / 2, Y + 0.95, zb + H, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, r = Math.hypot(dy, t - 0.9);
+      if (r > 0.9 || Math.abs(dx) > w / 2) return null; if (Math.abs(dx) > w / 2 - 0.2) return '#8a8eb0'; if (Math.abs(dx) < 0.18) return '#ffd34d';
+      if (dy > 0.55 && Math.abs(t - 1.05) < 0.16 && (((dx + 9) * 0.9 | 0) % 2)) return '#9fd8ff'; return ((dx * 1.5 | 0) % 3) ? '#eef0f8' : '#c8cce0'; }); }
+  // an antenna mast: a lattice post, a dish tipped to the sky at the top, a red light
+  function satMast(B, X, Y, H){ var zb = B.gz(X, Y); if (B.light) B.light(X, Y, zb + H + 0.3, '#ff5577');
+    B.solid(X - 1.1, Y - 1.1, zb, X + 1.1, Y + 1.1, zb + H + 1.2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+      if (t < H && Math.abs(dx) < 0.2 && Math.abs(dy) < 0.2) return (Math.abs(dx) > 0.12 || Math.abs(dy) > 0.12 || ((t * 3) | 0) % 2) ? '#c8cce0' : null;
+      var u = dx, v = dy * 0.6 + (t - H) * 0.8, w2 = -dy * 0.8 + (t - H) * 0.6, rr = Math.hypot(u, v); if (rr < 1 && Math.abs(w2 - rr * rr / 2.2) < 0.12) return rr > 0.9 ? '#8a8eb0' : '#eef0f8';
+      if (Math.hypot(dx, dy, t - H - 0.9) < 0.14) return '#ff5577'; return null; }); }
+  // the docking arm: a long truss out over the edge of the deck, a ship's docking ring at its end
+  function satArm(B, X, Y, len){ var zb = B.gz(X, Y) + 0.6;
+    B.solid(X - len / 2, Y - 0.5, zb - 0.6, X + len / 2 + 1, Y + 0.5, zb + 1.2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+      if (dx > len / 2 - 0.3){ var rr = Math.hypot(dy, t - 0.3); return rr < 0.5 && rr > 0.3 ? '#ffd34d' : null; }
+      if (Math.abs(dy) < 0.35 && Math.abs(t) < 0.35 && (Math.abs(Math.abs(dy) - 0.3) < 0.06 || Math.abs(Math.abs(t) - 0.3) < 0.06 || Math.abs(((dx + 9) % 0.8) - 0.4) < 0.06)) return '#c8cce0';
+      if (t < -0.35 && t > -0.6 && Math.abs(dx + len / 2) < 0.4 && Math.abs(dy) < 0.4) return '#8a8eb0'; return null; }); }
+  // the Titan lander: a gold heat shield like a shallow saucer, a white instrument deck on it, a whip antenna
+  function satLander(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 1.5, Y - 1.5, zb, X + 1.5, Y + 1.5, zb + 2.4, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, r = Math.hypot(dx, dy);
+      if (t < 0.5 && r < 1.4 - t * 0.6) return t < 0.12 ? '#8a5a1a' : ((r * 4 | 0) % 2 ? '#e0b040' : '#c8962a');
+      if (t >= 0.5 && t < 0.9 && r < 0.8) return Math.abs(t - 0.7) < 0.05 ? '#3a3a52' : '#eef0f4'; if (Math.abs(dx - 0.4) < 0.04 && Math.abs(dy) < 0.04 && t >= 0.9 && t < 2.3) return '#c8c8d0'; return null; }); }
+  // an ice geyser: a vent in the ice, a tall white plume rising and spreading, broken into puffs
+  function satGeyser(B, X, Y, H){ var zb = B.gz(X, Y);
+    B.solid(X - 1.6, Y - 1.6, zb - 0.1, X + 1.6, Y + 1.6, zb + H, function(px, py, pz){ var t = (pz - zb) / H, r = 0.25 + t * 1.3, d = Math.hypot(px - X - Math.sin(t * 2) * 0.3, py - Y);
+      if (pz - zb < 0.2) return d < 0.6 && d > 0.3 ? '#9fb8d8' : null; if (d > r) return null; var n = hash(px * 3 | 0, pz * 3 | 0, py * 3 | 0); return n < 0.2 + t * 0.4 ? null : (n > 0.85 ? '#dceaf6' : '#ffffff'); }); }
+
+  // 1. THE RINGS (and every Saturn hole with no place): the deck and ring ice drifting all round
+  function satRings(L){ var O = satBase(L, { chunks:0.3 }); O.build = function(){}; return O; }
+  // 2. THE RING STATION: modules and a mast behind the hole, the docking arm out over the edge, lamps on the way in
+  function satStation(L){ var O = satBase(L, { chunks:0.08 }), md = [], i;
+    for (i = 0; i < 2; i++){ var m = L.spotRect(4.2, 2, function(x, y){ return L.north(x, y) * 0.6 + L.side(x) * 1.5 + hash(x | 0, y | 0, L.seed + 11 + i); }); if (m) md.push(m); }
+    var ms = L.spot(1.4, function(x, y){ return L.north(x, y) * 0.5 + L.side(x) * 2.5; }), ar = L.spotRect(5, 1.2, function(x, y){ return L.side(x) * 3 - L.north(x, y) * 0.1; }),
+      lp = L.scatter(5, function(x, y){ return L.clearAt(x, y) < 3; }, 71).slice(0, 4);
+    O.build = function(B){ md.forEach(function(m){ satModule(B, m.x, m.y, 4); }); if (ms) satMast(B, ms.x, ms.y, 3.6); if (ar) satArm(B, ar.x, ar.y, 4.4); lp.forEach(function(q){ lamp(B, q[0], q[1], '#8a8eb0', '#9fd8ff'); }); }; return O; }
+  // 3. TITAN: the moon huge and orange in the sky, its haze over everything, the lander parked on the deck
+  function satTitan(L){ var O = satBase(L, { chunks:0.1, titan:true, haze:true, bg:'#2a1a20' }), ld = L.spot(1.6, function(x, y){ return L.north(x, y) * 0.5 + L.side(x) * 2; });
+    O.build = function(B){ if (ld) satLander(B, ld.x, ld.y); }; return O; }
+  // 4. ENCELADUS: the deck turned to bright ice, geysers venting white plumes behind the hole
+  function satEnc(L){ var O = satBase(L, { chunks:0.14, icy:true }), gs = [], i;
+    for (i = 0; i < 2; i++){ var q = L.spot(1.6, function(x, y){ return L.north(x, y) * 0.7 + hash(x | 0, y | 0, L.seed + 21 + i) * 2; }); if (q) gs.push(q); }
+    O.build = function(B){ gs.forEach(function(q, k){ satGeyser(B, q.x, q.y, 5 + k * 1.2); }); }; return O; }
+  // 5. THE HEXAGON: out over the pole, the six sided storm turning in the clouds far below, Saturn small and the rings overhead
+  function satHex(L){ var O = satBase(L, { chunks:0.06, hex:[L.cx, L.E[1] + 4, 9] }); O.build = function(){}; return O; }
+
+  // the Hexagon Eye: a round storm chamber, its walls the swirling gold and cream clouds, a calm eye of light above
+  BUILD['s-hexeye'] = function(L){ var R0 = room(L, { floor:'hxfloor', wall:'hxwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ if (B.light){ B.light(L.cx, L.cy, 6.5, '#fff2d0'); B.light(L.cx, L.cy - 4, 4, '#ffd98a'); }
+        byWall(L, 6, 73, 2.6).forEach(function(q){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 3.8, '#ffcc88'); }); },
+      bg:'#1a1208', gain:2,
+      mats:{ hxfloor:['#c8a060', '#d8b878', '#b8905a', 0.1, function(c, R){ var a = Math.sin(c.ti * 0.21 + Math.sin(c.tj * 0.13) * 2 + c.tj * 0.05); return R(a > 0.55 ? '#f0dfb4' : a > -0.2 ? '#d8b878' : '#b8905a'); }],
+        hxwall:['#e2c88c', '#f0dfb4', '#b8905a', 0.16, function(c, R){ var z = c.z || 0, a = Math.sin(c.ti * 0.35 + z * 1.6 + Math.sin(c.ti * 0.05 + z * 0.4) * 2);
+          if (z > 5.6) return R('#fff8e8'); return R(a > 0.6 ? '#fff2d0' : a > 0 ? '#e2c88c' : a > -0.6 ? '#c8a060' : '#8a5a2a'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();

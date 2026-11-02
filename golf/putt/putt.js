@@ -142,6 +142,10 @@ var FLOAT_FRIC = 0.12, FLOAT_Z = 0.35;
    pushed round its middle (w ft/s/s at the eye, nothing at its edge), so a putt that runs through one is spun off its line,
    left or right by which way it turns. It moves, so where it will be when the ball gets there is the read. */
 function devilPos(d, tt){ var u = Math.sin(2 * Math.PI * (tt / d.period + (d.phase || 0))); return [d.x + d.dx * u, d.y + d.dy * u]; }
+// the ring rail a point is on, if any, with the unit vector out from its middle (simulate, the carpet branch)
+function ringAt(C, x, y){ var R = C.rings; if (!R) return null; for (var i = 0; i < R.length; i++){ var g = R[i], dx = x - g.cx, dy = y - g.cy, d = Math.hypot(dx, dy);
+    if (d < 1e-6 || Math.abs(d - g.r) > g.w / 2) continue; var sg = g.span < 0 ? -1 : 1, u = (((Math.atan2(dy, dx) - g.a0) * sg) % 6.283185307 + 6.283185307) % 6.283185307;
+    if (u <= Math.abs(g.span)) return { ring:g, ux:dx / d, uy:dy / d }; } return null; }
 function floatAt(C, x, y){ var F = C.floats; for (var i = 0; i < F.length; i++){ var f = F[i]; if (x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) return f; } return null; }
 function ferryEase(e, w){ return { k:(3 - e) * w * w + (e - 2) * w * w * w, d:2 * (3 - e) * w + 3 * (e - 2) * w * w }; }
 function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w, z;
@@ -318,7 +322,7 @@ function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
   var onDeck = false, deckV = null, floating = false, climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
-  var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [], wells = C.wells || [], devils = C.devils || [];
+  var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [], wells = C.wells || [], devils = C.devils || [], rings = C.rings || [], hazes = C.hazes || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
   /* TRICK SHOT TARGETS (the Clubhouse's gyms, gymkinds/trickshot.js): numbered targets that must go down in order. tk is
      how many are down when the putt is struck (C.tk, kept by whoever plays the room, never by the hole). The cup is shut
@@ -380,6 +384,9 @@ function simulate(C, x, y, vx, vy, t0){
       if (wr2 < wl.pull * wl.pull && wr2 > 1e-6){ var wr = Math.sqrt(wr2), wa = wl.g / Math.max(wr2, wl.r * wl.r); ax += wdx / wr * wa; ay += wdy / wr * wa; } }
     for (var dvi = 0; dvi < devils.length; dvi++){ var dv = devils[dvi], dp = devilPos(dv, t0 + t), ddx = s.x - dp[0], ddy = s.y - dp[1], dr = Math.hypot(ddx, ddy);
       if (dr < dv.r && dr > 1e-3){ var dk = dv.w * (1 - dr / dv.r); ax += -ddy / dr * dk; ay += ddx / dr * dk; } }
+    /* TITAN HAZE (Saturn, World 14): orange fog that drags on the ball (its friction times f) and leans on it with the wind
+       (wx, wy ft/s/s), so a putt through it slows and drifts downwind. */
+    for (var hzi = 0; hzi < hazes.length; hzi++){ var hz = hazes[hzi]; if (s.x >= hz.x0 && s.x <= hz.x1 && s.y >= hz.y0 && s.y <= hz.y1){ af *= hz.f; ax += hz.wx; ay += hz.wy; } }
     var sl = Math.hypot(ax, ay);
     /* A RAMP LANE HOLDS NOTHING. On the carpet the slope's pull is usually under friction, so a ball that ran
        out of pace half way up would sit on the ramp. In a climb lane static friction is gone and the rolling
@@ -391,6 +398,10 @@ function simulate(C, x, y, vx, vy, t0){
       // friction can stop a ball, never send it backwards
       if (sl <= af && dvx * dvx + dvy * dvy >= sp * sp){ s.vx = 0; s.vy = 0; } else { s.vx += dvx; s.vy += dvy; } }
     s.vx += ax * DT; s.vy += ay * DT;
+    /* A RING RAIL (Saturn, World 14): a banked lane of ring ice round (cx, cy) at radius r, w wide, through the angle a0 to
+       a0 + span. On it the bank takes away every push across the lane, so the ball runs round the curve at whatever pace
+       it has and leaves the far end going the new way (ringAt). */
+    if (rings.length && !over){ var rg = ringAt(C, s.x, s.y); if (rg){ var rvr = s.vx * rg.ux + s.vy * rg.uy; s.vx -= rg.ux * rvr; s.vy -= rg.uy * rvr; } }
     }
     s.x += s.vx * DT; s.y += s.vy * DT;
     var rode = false;
@@ -483,7 +494,7 @@ function simulate(C, x, y, vx, vy, t0){
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
   C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
-  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || [];
+  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || []; C.rings = C.rings || []; C.hazes = C.hazes || [];
   if (!C.polys) C.polys = C.poly ? [C.poly] : []; if (!C.allPts) C.allPts = C.polys.reduce(function(a, p){ return a.concat(p); }, []);
   if (!C.edges) C.edges = C.polys.length > 1 ? unionEdges(C.polys) : C.polys.length ? polyWalls(C.polys[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; }) : [];
   if (!C.tierAt) C.tierAt = function(){ return 0; };
@@ -705,6 +716,11 @@ var THEMES = {
     bumper:'marsrock', block:'habmod', spinner:'#ffd34d', slider:'rover', flag:'#ffd34d',
     decor:['marsrock', 'rover'], acc:'#ff8a4a', river:['#a83a1a', '#ff9a6a'], kicker:'#3fd0ff', loopCol:['#ff8a4a', '#ffffff', '#6a2410'],
     holes:[] },
+  saturn:{ name:'Saturn Rings', kick:'World 14', bg:'#2a2140', bg2:'#342a50', carpet:'#7670b0', carpet2:'#6c66a6', wall:'#eef2ff', wallHi:'#ffffff', wallLo:'#7a80a8', ink:'#120f1e',
+    haz:'water', hazCol:'#d8b878', hazCol2:'#fff2d0', hazName:'The clouds', slow:'mud', slowCol:'#a8a0c8', slowName:'Ring dust', iceCol:'#bfe6ff', iceCol2:'#ffffff',
+    bumper:'ringice', block:'ringmod', spinner:'#ffd34d', slider:'moonlet', flag:'#ffd34d',
+    decor:['ringice', 'moonlet'], acc:'#ffd98a', river:['#c8a060', '#f0dfb4'], kicker:'#9fd8ff', loopCol:['#9fd8ff', '#ffffff', '#3a3a6a'],
+    holes:[] },
   candy:{ name:'Candy Works', kick:'World 3', bg:'#4a2a1e', bg2:'#58331f', carpet:'#2fae8a', carpet2:'#2a9e7e', wall:'#ff5fa2', wallHi:'#ffa8cc', wallLo:'#9a2a5a', ink:'#1e0e08',
     haz:'water', hazCol:'#5a2e14', hazCol2:'#8a5230', hazName:'Chocolate', slow:'mud', slowCol:'#f2a65a', slowName:'Taffy', iceCol:'#ffd6e6', iceCol2:'#fff4f8',
     bumper:'gumball', block:'sugarcube', spinner:'#ffe14a', slider:'wrapper', flag:'#ff3b7a',
@@ -718,7 +734,7 @@ var THEMES = {
 };
 /* the light that comes up out of the cup when the ball drops, one colour a theme (the real greens use gold) */
 var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
-  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', moon:'#9fe8ff', mars:'#ffb08a', candy:'#ff9ad0', beach:'#5ce1ff' };
+  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', moon:'#9fe8ff', mars:'#ffb08a', saturn:'#ffd98a', candy:'#ff9ad0', beach:'#5ce1ff' };
 Object.keys(GLOW).forEach(function(k){ if (THEMES[k]) THEMES[k].glow = GLOW[k]; });
 // the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
 var CAL_THEMES = ['haunted', 'harvest', 'winter', 'sweetheart', 'shamrock', 'spring', 'firework', 'beach'];
@@ -835,7 +851,7 @@ function buildMini(tplName, seed, themeId, label, extra){
   if (r() < 0.5){
     var fx = function(p){ return [-p[0], p[1]]; };
     H.poly = H.poly.map(fx).reverse(); H.tee = fx(H.tee); H.cup = fx(H.cup);
-    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; });
+    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; }); (H.rings || []).forEach(function(g){ g.cx = -g.cx; g.a0 = Math.PI - g.a0; g.span = -g.span; }); (H.hazes || []).forEach(function(h){ var a = -h.x1; h.x1 = -h.x0; h.x0 = a; h.wx = -(h.wx || 0); });
     H.blocks = H.blocks.map(function(b){ return { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(rectWalls(b, 0.6)); });
     H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; if (m.k === 'door') m.px = -m.px; } });
@@ -862,7 +878,7 @@ function courseFromH(H, tplName, seed, themeId, label){
   var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:PS[0], polys:PS, allPts:all, edges:edges, rooms:rooms, comps:H.comps, flats:H.flats,
     stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
-    secret:H.secret || [], devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
+    secret:H.secret || [], rings:(H.rings || []).slice(), hazes:(H.hazes || []).map(function(h){ return { x0:Math.min(h.x0, h.x1), y0:Math.min(h.y0, h.y1), x1:Math.max(h.x0, h.x1), y1:Math.max(h.y0, h.y1), f:h.f || 2.2, wx:h.wx || 0, wy:h.wy || 0 }; }), devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
     rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ var st = H.stimp || (themeId === 'winter' ? 9.5 : 9), D = Math.hypot(f.dx, f.dy) || 1, L = Math.abs(f.dx) >= Math.abs(f.dy) ? f.x1 - f.x0 : f.y1 - f.y0,
       ve = Math.sqrt(2 * (V_STIMP * V_STIMP / (2 * st)) * (L + 1)), mv = f.move / PACE;
@@ -982,7 +998,8 @@ var WORLDS = [
   { id:'dino', name:'Dino Valley', theme:'dino', blurb:'Slick clay that runs on, swamp pools that keep it, logs on the roll.', haz:['Swamp pools', 'Slick clay', 'Rolling logs'] },
   { id:'iceage', name:'Ice Age', theme:'iceage', blurb:'Glacier ice, tar pits, and a herd that never stops.', haz:['Tar pits', 'Glacier ice', 'The herd'] },
   { id:'moon', name:'Moon Base', theme:'moon', blurb:'Every moon pulls. Aim wide and let it bend you home.', haz:['Moons', 'Deep space', 'Moon dust'] },
-  { id:'mars', name:'Red Planet', theme:'mars', blurb:'Dust devils roam and the dunes roll. Read the wind.', haz:['Dust devils', 'Canyons', 'Red dust'] }
+  { id:'mars', name:'Red Planet', theme:'mars', blurb:'Dust devils roam and the dunes roll. Read the wind.', haz:['Dust devils', 'Canyons', 'Red dust'] },
+  { id:'saturn', name:'Saturn Rings', theme:'saturn', blurb:'Ride the ring rails. Mind the haze. The clouds are a long way down.', haz:['Ring rails', 'Titan haze', 'The clouds'] }
 ];
 // a room: a rectangle at a height (for the picture; the drop between rooms is crossed by a set piece)
 function rm(x0, y0, x1, y1, z){ var a = Math.min(x0, x1), b = Math.max(x0, x1), c = Math.max(y0, y1), d = Math.min(y0, y1); return { pts:[[a, c], [b, c], [b, d], [a, d]], z:z || 0 }; }
@@ -1000,6 +1017,14 @@ function zerog(H, x0, y0, x1, y1){ (H.floats = H.floats || []).push({ x0:x0, y0:
 // devil(H, x, y, r, w, dx, dy, period, phase): a dust devil of radius r spinning at w (positive anticlockwise on screen), swaying
 // dx, dy either side of x, y once a period (simulate, devilPos).
 function devil(H, x, y, r, w, dx, dy, period, phase){ (H.devils = H.devils || []).push({ x:x, y:y, r:r || 3, w:w || 6, dx:dx || 0, dy:dy || 0, period:period || 6, phase:phase || 0 }); }
+// ring(H, cx, cy, r, w, a0, span): a ring rail round (cx, cy) at radius r, w wide, from angle a0 (radians, x right, y down the
+// screen) through span (signed: positive turns the way the angle grows). haze(H, x0, y0, x1, y1, wx, wy, f): a bank of Titan
+// haze with its wind and drag (simulate).
+function ring(H, cx, cy, r, w, a0, span){ (H.rings = H.rings || []).push({ cx:cx, cy:cy, r:r, w:w || 3, a0:a0, span:span }); }
+// teeSide(H, T): a patch of ring dust in one back corner of the tee's room and a chunk of ring ice in the other, clear of every line
+function teeSide(H, T){ var p = H.polys[0].pts, yb = Math.max.apply(null, p.map(function(q){ return q[1]; })), xs = p.filter(function(q){ return Math.abs(q[1] - yb) < 1e-6; }).map(function(q){ return q[0]; });
+  var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs); zoneC(H, M.MUD, x0 + 1.3, yb - 1.5, 0.9); addBumper(H, x1 - 1.1, yb - 1.3, 0.45, T.bumper); }
+function haze(H, x0, y0, x1, y1, wx, wy, f){ (H.hazes = H.hazes || []).push({ x0:x0, y0:y0, x1:x1, y1:y1, wx:wx || 0, wy:wy || 0, f:f || 2.2 }); }
 function pads(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.75, e:1.32, skin:'pad' }); }); }
 function zoneR(H, m, x0, y0, x1, y1){ H.zones.push({ t:'rect', x0:x0, y0:y0, x1:x1, y1:y1, m:m }); }
 function zoneC(H, m, x, y, r){ H.zones.push({ t:'circle', x:x, y:y, r:r, m:m }); }
@@ -1825,7 +1850,85 @@ var LEVELS = [
   { par:3, three:2, sig:true, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-8, -16, 8, -42, 0.8)], [0, -2.5], [0, -37]); climb(H, 0, -12, -16, 2.6);
     devil(H, -2.8, -23, 2.2, 6, 1.8, 0, 4.8, 0); devil(H, 2.8, -31, 2.2, -6, 1.8, 0, 4.8, 0.5); H.comps.push({ k:'ring', x:0, y:-37, r:2.8, s:0.8, a:0.28 }); H.flats.push({ x:0, y:-37, s:0.6, keep:0.2 });
     bumps(H, T, [[-4, -6, 0.55], [4, -7, 0.55], [6, -20, 0.55], [-6, -28, 0.55], [-5, -40, 0.5], [5, -40, 0.5]]); zoneR(H, M.MUD, -8, -16.5, -5, -18); zoneR(H, M.MUD, 5, -16.5, 8, -18);
-    zoneC(H, M.MUD, 5, -34, 0.9); pen(H, T, 0, -37); bowl(H, 0, -37, 1.2, 0.1); return H; } }
+    zoneC(H, M.MUD, 5, -34, 0.9); pen(H, T, 0, -37); bowl(H, 0, -37, 1.2, 0.1); return H; } },
+  /* ---- WORLD 14, SATURN (holes 235 to 252). The course floats on the rings, high over Saturn's clouds. Ring rails carry the
+     ball round a bend at any pace (ring(), simulate), and banks of Titan haze drag on it and drift it with the wind (haze()).
+     Past the deck's edge is cloud (the hazard), ring dust is the slow ground and ring ice is the fast. Every hole rolls. */
+  // Ring Road: up the lane into the ring rail, and it carries you round the corner to the right. Clouds lie inside the bend.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 6, -24), rm(-4, -12, 26, -24)], [1, -2.5], [20, -18]); ring(H, 7, -14, 6, 3, Math.PI, Math.PI / 2); zoneR(H, M.WATER, 8, -12, 26, -13.8);
+    H.comps.push({ k:'mound', x:16, y:-21, s:2.4, a:0.16 }); bumps(H, T, [[22.5, -22.5, 0.5], [-2, -20, 0.6], [3.6, -6, 0.55], [12, -22.6, 0.5]]); zoneC(H, M.MUD, -2, -8, 1.1); zoneR(H, M.MUD, 24, -16, 26, -18);
+    blk(H, T, 15.4, -16.2, 16.4, -21.5); teeSide(H, T); bowl(H, 20, -18, 1.5, 0.14); return H; } },
+  // Titan Haze: a bank of haze across the middle drifts you right, toward the clouds on that side. Aim left and let it bring you back.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [-3, -2.5], [3, -32]); haze(H, -7, -22, 7, -12, 4.5, 0); zoneR(H, M.WATER, 5.2, -22, 7, -12);
+    H.comps.push({ k:'mound', x:-3, y:-27, s:2.6, a:0.18 }); bumps(H, T, [[-4.5, -7, 0.6], [4, -8, 0.55], [-5, -30, 0.55], [5, -27, 0.5], [0, -26, 0.5]]); zoneC(H, M.MUD, 4.6, -4, 1); zoneR(H, M.MUD, -7, -34, -4, -36);
+    blk(H, T, 0.6, -29.4, 2.4, -30.4); pen(H, T, 3, -32); teeSide(H, T); bowl(H, 3, -32, 1.5, 0.14); return H; } },
+  // Ice Field: a field of ring ice chunks on a deck that tilts left. Find the lane through them.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [-2, -32]); H.comps.push({ k:'plane', gx:0.022, gy:0 });
+    bumps(H, T, [[-3, -9, 0.6], [2, -11, 0.6], [-1, -15, 0.55], [4.5, -15, 0.55], [-4.5, -19, 0.6], [0.5, -20, 0.5], [3, -25, 0.55], [-3.5, -26, 0.5]]);
+    zoneR(H, M.ICE, -7, -14, 7, -22); zoneR(H, M.MUD, 4.5, -34, 7, -36); zoneC(H, M.MUD, 5, -6, 1.1); teeSide(H, T); bowl(H, -2, -32, 1.5, 0.14); return H; } },
+  // Cassini Loop: up the left lane, into the ring rail, and it swings you over the top and down the right to the cup. Inside the
+  // ring is the Cassini gap: nothing but cloud.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-10, 0, 10, -28)], [-5.5, -2.5], [5.5, -4.5]); blk(H, T, -1.2, 0, 1.2, -14); ring(H, 0, -18, 5.5, 3.2, Math.PI, Math.PI); zoneC(H, M.WATER, 0, -18, 3.2);
+    H.comps.push({ k:'mound', x:6, y:-10, s:2.2, a:0.12 }); bumps(H, T, [[-8, -12, 0.55], [8, -14, 0.55], [-8.4, -25.5, 0.5], [8.4, -25.5, 0.5]]); zoneC(H, M.MUD, -7.5, -5, 1); zoneC(H, M.MUD, 8, -22, 1);
+    teeSide(H, T); bowl(H, 5.5, -4.5, 1.5, 0.14); return H; } },
+  // Shepherd Moons: two small moons guard the lane, one each side, and haze blows across past them.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [0, -34]); moon(H, -3.6, -16, 1.2, 4.4, 20); moon(H, 3.6, -20, 1.2, 4.4, 20); haze(H, -7, -29, 7, -24, -3, 0);
+    dune(H, 0, -9, 0.2, -1, 1.3, 0.12); bumps(H, T, [[-5, -6, 0.55], [5, -10, 0.55], [-5.4, -33, 0.5], [5.4, -31, 0.5]]); zoneR(H, M.WATER, -7, -29, -5.6, -24); zoneR(H, M.MUD, 4, -36, 7, -38);
+    teeSide(H, T); bowl(H, 0, -34, 1.5, 0.14); return H; } },
+  // The Hexagon: Saturn's north pole storm, a great slow whirl in a six sided room. Ride its edge.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [9, -9], [9, -25], [4, -34], [-4, -34], [-9, -25], [-9, -9]])], [0, -2.5], [-2, -30]); devil(H, 0, -17, 4, 5, 1.8, 0, 7, 0);
+    bumps(H, T, [[-5.5, -9, 0.6], [5.5, -9, 0.6], [-6.5, -22, 0.55], [6.5, -24, 0.55], [2.5, -28, 0.5]]); zoneC(H, M.MUD, 5, -29, 1.1); zoneR(H, M.ICE, -8, -14, -5, -20); H.comps.push({ k:'plane', gx:-0.012, gy:0 });
+    pen(H, T, -2, -30); teeSide(H, T); bowl(H, -2, -30, 1.5, 0.14); return H; } },
+  // Ring Lane: the ring rail turns you left this time, and haze leans on you toward the clouds.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 4, -24), rm(-26, -12, 4, -24)], [-1, -2.5], [-20, -18]); ring(H, -7, -14, 6, 3, 0, -Math.PI / 2); haze(H, -18, -24, -12, -12, 0, 2.5);
+    zoneR(H, M.WATER, -26, -12, -8, -13.8); H.comps.push({ k:'mound', x:-16, y:-21, s:2.2, a:-0.14 }); bumps(H, T, [[-22.5, -22.5, 0.5], [2, -20, 0.6], [-3.6, -6, 0.55], [-10, -22.6, 0.5]]); zoneC(H, M.MUD, 2, -8, 1.1);
+    zoneR(H, M.MUD, -26, -16, -24, -18); blk(H, T, -16.4, -16.2, -15.4, -21.5); teeSide(H, T); bowl(H, -20, -18, 1.5, 0.14); return H; } },
+  // Encke Gap: a gap of cloud across the deck, an ice bridge over it on its clock.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [0, -2.5], [2, -34]); zoneR(H, M.WATER, -6, -16, 6, -20); drawb(H, -2.4, -16, 2.4, -20, 3.2, 0, 0.7); blk(H, T, -6, -15.4, -2.4, -16); blk(H, T, 2.4, -15.4, 6, -16);
+    haze(H, -6, -30, 6, -25, 2.5, 0); dune(H, 0, -9, 0.3, -1, 1.2, 0.12); bumps(H, T, [[3.6, -7, 0.55], [-4, -31, 0.5], [4.4, -28, 0.5], [-4.4, -23, 0.5]]); zoneR(H, M.MUD, -6, -36, -3, -38);
+    teeSide(H, T); bowl(H, 2, -34, 1.5, 0.14); return H; } },
+  // Enceladus: off the ice ramp over the cloud gap, onto a deck where geysers kick the ball on.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-6, -11.9, 6, -15.1), rm(-6, -15, 6, -34)], [0, -2.5], [3, -30]); jump(H, 0, -12, 0, -1, 2, 12, { w:5.2 });
+    pads(H, [[-4, -23, 0.6], [4.4, -21, 0.6]]); dune(H, 0, -7, 0, -1, 1.3, 0.1); bumps(H, T, [[3.8, -6, 0.55], [-3.8, -6, 0.55], [-4, -29, 0.55], [0, -26.5, 0.5]]); zoneR(H, M.MUD, -6, -32, -3, -34);
+    zoneC(H, M.ICE, 3, -18.5, 1.2); teeSide(H, T); bowl(H, 3, -30, 1.6, 0.14); return H; } },
+  // Ice Rink: a sheet of ring ice, and the haze over it blows left. On ice nothing stops the drift.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [3, -2.5], [2, -36]); zoneR(H, M.ICE, -7, -12, 7, -28); haze(H, -7, -28, 7, -12, -3, 0, 1.6); zoneR(H, M.WATER, -7, -28, -5.6, -12);
+    bumps(H, T, [[-3, -8, 0.6], [4.5, -9, 0.55], [2, -20, 0.55], [-2, -24, 0.5], [-4.6, -33, 0.5], [5, -31, 0.5]]); dune(H, 0, -31, 0.2, -1, 1.2, 0.1); zoneR(H, M.MUD, 4, -38, 7, -40);
+    teeSide(H, T); bowl(H, 2, -36, 1.5, 0.14); return H; } },
+  // Cassini Probe: roll onto the probe while it waits, ride it over the clouds, and putt through the haze to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, -2, -18.1), rm(-8, -17.9, 15, -22.1), rm(7, -21.9, 15, -42)], [-5, -2.5], [11, -38]); zoneR(H, M.WATER, -8, -18, 7, -22);
+    ferry(H, -8, -17.6, -3.6, -22, 11, 0, 2.2, 1.5, 0); haze(H, 7, -34, 15, -28, 2.5, 0); dune(H, -5, -10, 0, -1, 1.2, 0.1); bumps(H, T, [[-6.6, -14, 0.5], [13.6, -25, 0.5], [8.4, -36, 0.5], [-3, -12, 0.5]]);
+    zoneR(H, M.MUD, 7, -40, 9, -42); zoneC(H, M.MUD, -6.6, -6, 1); blk(H, T, 12.6, -33.4, 15, -34.4); teeSide(H, T); bowl(H, 11, -38, 1.6, 0.14); return H; } },
+  // Ring Spin: a turntable of ring ice in the middle, haze past it.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [-3, -34]); disc(H, 0, -16, 2.8, 1.3); haze(H, -7, -28, 7, -23, 3, 0);
+    H.comps.push({ k:'mound', x:3.5, y:-31, s:2.2, a:0.16 }); bumps(H, T, [[-4.6, -9, 0.6], [4.6, -10, 0.55], [-5, -20, 0.5], [5, -21, 0.5], [0, -30, 0.5]]); zoneR(H, M.WATER, 5.6, -28, 7, -23);
+    zoneC(H, M.MUD, -5, -32, 1); zoneR(H, M.MUD, 4, -36, 7, -38); teeSide(H, T); bowl(H, -3, -34, 1.5, 0.14); return H; } },
+  // Loop the Ring: round the loop, then past a ring ice chunk and through the haze to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-6, -19.4, 6, -38)], [0, -2.5], [-3, -34]);
+    loopAt(H, 0, -17.5, 0, -1, 0.6, 1.6); haze(H, -6, -30, 6, -26, -2.5, 0); H.comps.push({ k:'mound', x:-2.5, y:-7, s:1.6, a:0.12 });
+    bumps(H, T, [[2.5, -8, 0.55], [4.2, -35, 0.5], [-4.6, -23, 0.5], [4.6, -22, 0.5], [1, -24, 0.5]]); zoneR(H, M.MUD, 3, -36, 6, -38); zoneC(H, M.ICE, 3, -32, 1.1); teeSide(H, T); bowl(H, -3, -34, 1.5, 0.14); return H; } },
+  // Moonlets: two little moonlets cross the lane on their clocks, over a dune and through the haze.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [3, -34]); slider(H, T, -12, -6, 6, 3.2, 0); slider(H, T, -24, -6, 6, 2.8, 0.5); dune(H, 0, -18, 0, -1, 1.5, 0.14);
+    haze(H, -7, -32, 7, -28, -2.5, 0); bumps(H, T, [[-4.5, -18, 0.6], [4.5, -18, 0.6], [-4, -35, 0.55], [-5.5, -6, 0.5]]); zoneR(H, M.MUD, 4, -36, 7, -38); zoneC(H, M.MUD, 5, -6, 1.1);
+    teeSide(H, T); bowl(H, 3, -34, 1.5, 0.14); return H; } },
+  // Crosswinds: two banks of haze, their winds opposite. Clouds wait at the downwind edge of each.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [0, -34]); haze(H, -7, -16, 7, -10, 4, 0); haze(H, -7, -27, 7, -21, -4, 0); zoneR(H, M.WATER, 5.6, -16, 7, -10); zoneR(H, M.WATER, -7, -27, -5.6, -21);
+    dune(H, 0, -31, 0.25, -1, 1.2, 0.12); bumps(H, T, [[-4, -6, 0.55], [4, -6, 0.55], [-3, -18.5, 0.5], [3, -18.5, 0.5], [-4.4, -32, 0.5], [4.4, -36, 0.5]]); zoneC(H, M.MUD, 0, -6, 0.9);
+    teeSide(H, T); bowl(H, 0, -34, 1.5, 0.14); return H; } },
+  // Ring Gate: the ring station's gate cycles open and shut. Time it, then the dish sweeps the lane past it.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [-3, -36]); gateWall(H, T, -12, -7, 7, -1.6, 1.6, 3.2, 0.2); spinner(H, T, 2, -24, 2.2, -1.5, 2);
+    haze(H, -7, -32, 7, -28, 2.5, 0); H.comps.push({ k:'plane', gx:0.012, gy:0 }); bumps(H, T, [[-4.6, -17, 0.6], [4.6, -18, 0.55], [-5, -25, 0.5], [4.5, -35, 0.5]]); zoneR(H, M.MUD, 3.5, -38, 7, -40);
+    zoneC(H, M.MUD, -5, -6, 1.1); teeSide(H, T); bowl(H, -3, -36, 1.5, 0.14); return H; } },
+  // Grand Ring: up the right lane, into the ring rail, over the top of the Cassini gap and down the left to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-10, 0, 10, -30)], [5.5, -2.5], [-5.5, -4.5]); blk(H, T, -1.2, 0, 1.2, -15); ring(H, 0, -20, 5.5, 3.2, 0, -Math.PI); zoneC(H, M.WATER, 0, -20, 3.2);
+    haze(H, -10, -14, -1.2, -9, 2, 0); H.comps.push({ k:'mound', x:-6, y:-11, s:2.2, a:-0.12 }); bumps(H, T, [[8, -12, 0.55], [-8, -16, 0.55], [-8.4, -27.5, 0.5], [8.4, -27.5, 0.5]]);
+    zoneC(H, M.MUD, 7.5, -5, 1); teeSide(H, T); bowl(H, -5.5, -4.5, 1.5, 0.14); return H; } },
+  // Titan Rising: the long way round the cloud gap, east, round the ring rail and back west through the haze past Titan, three
+  // putts. The secret: the ice ramp by the tee jumps the gap onto the top deck.
+  { par:4, three:3, sig:true, f:function(T){ var H = hole([rm(-22, 0, 22, -19)], [-18, -3.5], [-15, -15]); zoneR(H, M.WATER, -22, -8, 14, -11);
+    blk(H, T, -22, -7.7, -16.2, -8); blk(H, T, -13.8, -7.7, 14, -8); blk(H, T, -22, -11, 14, -11.3); kicker(H, -15, -7.6); ring(H, 15, -9.5, 5, 3, Math.PI / 2, -Math.PI);
+    haze(H, -8, -19, 4, -11.3, 0, 2); moon(H, 2, -16, 1.4, 4.6, 24); bumps(H, T, [[-8, -2, 0.5], [6, -5, 0.5], [-6, -16, 0.5], [9, -17, 0.5]]); H.comps.push({ k:'plane', gx:0, gy:0.006 });
+    zoneR(H, M.MUD, 19, -1, 22, -3); zoneC(H, M.MUD, -20, -17, 1.2); teeSide(H, T); bowl(H, -15, -15, 1.5, 0.14); return H; } }
 ];
 /* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders, two halves of nine on the season's two
    themes. Par is the solver's, the same rule as the Putt Putt Tour.
@@ -1935,7 +2038,8 @@ var SECRETS = [
   { theme:'neon', at:11, name:'Glitch Level', scene:'s-glitch' }, { theme:'pirate', at:8, name:'The Captain’s Deck', scene:'s-ship' }, { theme:'temple', at:16, name:'Treasure Chamber', scene:'s-treasure' },
   { theme:'canyon', at:5, name:'Lost Mine', scene:'s-mine' }, { theme:'volcano', at:13, name:'Lava Tube', scene:'s-lava' }, { theme:'sky', at:9, name:'Above the Clouds', scene:'s-clouds' },
   { theme:'dino', at:17, name:'The Nest', scene:'s-nest' }, { theme:'iceage', at:7, name:'The Painted Cave', scene:'s-cave' },
-  { theme:'moon', at:12, name:'The Dark Side', scene:'s-darkside' }, { theme:'mars', at:10, name:'The Ice Cave', scene:'s-polarcave' }
+  { theme:'moon', at:12, name:'The Dark Side', scene:'s-darkside' }, { theme:'mars', at:10, name:'The Ice Cave', scene:'s-polarcave' },
+  { theme:'saturn', at:15, name:'The Hexagon Eye', scene:'s-hexeye' }
 ];
 var SECRET_LEVELS = [
   // The Potting Shed: crates stacked down both walls, the mower rolling across the middle, and a crate in front of the cup.
@@ -1983,7 +2087,11 @@ var SECRET_LEVELS = [
   // The Ice Cave: under the polar cap, a floor of ice, a cold draft whirling down the middle, ice pillars to bank off and the cup in a pen.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -8], [7, -24], [3, -32], [-3, -32], [-7, -24], [-7, -8]])], [0, -2.5], [-1.5, -28]);
     zoneR(H, M.ICE, -7, -9, 7, -22); devil(H, 0, -15.5, 2.4, 6, 2.6, 0, 5, 0); bumps(H, T, [[-4.5, -10, 0.6], [4.5, -11, 0.6], [-5, -21, 0.55], [5, -20, 0.55], [2.5, -26, 0.5]]);
-    dune(H, 0, -25, 0.3, -1, 1.2, 0.1); zoneR(H, M.MUD, 1.5, -30, 3, -32); blk(H, T, -7, -23.4, 1.2, -24.4); pen(H, T, -1.5, -28); bowl(H, -1.5, -28, 1.5, 0.14); return H; } }
+    dune(H, 0, -25, 0.3, -1, 1.2, 0.1); zoneR(H, M.MUD, 1.5, -30, 3, -32); blk(H, T, -7, -23.4, 1.2, -24.4); pen(H, T, -1.5, -28); bowl(H, -1.5, -28, 1.5, 0.14); return H; } },
+  // The Hexagon Eye: inside the storm at Saturn's pole, a six sided room. The storm whirls round its middle and haze drifts with it.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -8], [8, -22], [3, -30], [-3, -30], [-8, -22], [-8, -8]])], [0, -2.5], [2, -26]);
+    devil(H, 0, -15, 3.6, -5, 1.4, 0, 6, 0); haze(H, -8, -22, -3, -10, 0, -2); bumps(H, T, [[-5, -9, 0.55], [5, -10, 0.55], [-5, -21, 0.5], [5.5, -20, 0.5]]); ring(H, 0, -15, 6.2, 1.8, -0.6, -1.6);
+    pen(H, T, 2, -26); bowl(H, 2, -26, 1.5, 0.14); return H; } }
 ];
 var SECRET_NAMES = SECRETS.map(function(x){ return x.name; });
 var SECRET_WORLDS = SECRETS.map(function(x){ return { id:'s-' + x.theme, name:x.name, theme:x.theme, blurb:'A secret hole.', haz:['Found on a trail'] }; });
@@ -2022,7 +2130,9 @@ var TOUR_NAMES = [
   'First Orbit', 'Crater Row', 'Satellite Field', 'Slingshot', 'Airlock', 'Moon Dust', 'Docking Bay', 'Orbit Loop', 'Asteroid Belt',
   'Space Walk', 'Radar Dishes', 'Zero G', 'Rover Track', 'Comet Bridges', 'Ring Station', 'Gravity Assist', 'Launch Pad', 'Twin Moons',
   'Touchdown', 'Red Dust', 'Rover Tracks', 'Twin Devils', 'Crater Rim', 'Canyon Jump', 'Phobos and Deimos', 'Olympus Mons', 'Dune Sea',
-  'Hab Dome', 'Polar Cap', 'Sample Return', 'Wind Turbines', 'Lava Tube', 'Dust Storm', 'Rille Bridges', 'Mariner Valley', 'Olympus Summit'];
+  'Hab Dome', 'Polar Cap', 'Sample Return', 'Wind Turbines', 'Lava Tube', 'Dust Storm', 'Rille Bridges', 'Mariner Valley', 'Olympus Summit',
+  'Ring Road', 'Titan Haze', 'Ice Field', 'Cassini Loop', 'Shepherd Moons', 'The Hexagon', 'Ring Lane', 'Encke Gap', 'Enceladus',
+  'Ice Rink', 'Cassini Probe', 'Ring Spin', 'Loop the Ring', 'Moonlets', 'Crosswinds', 'Ring Gate', 'Grand Ring', 'Titan Rising'];
 /* THE TOURS. Each is a list of worlds, a list of holes and their names, and what it pays. The Members
    Tour is one world of eighteen in two halves, on the season's theme, and pays the most on the site. */
 var TOURS = {
@@ -2235,6 +2345,14 @@ var SKIN = {
   habmod:function(u, v){ if (Math.abs(u) > 0.94 || Math.abs(v) > 0.92) return null; if (Math.abs(u) > 0.84 || Math.abs(v) > 0.82) return '#8a5a40';
     if (Math.abs(v - 0.3) < 0.1) return '#ff8a4a'; var pr = Math.hypot(u, v + 0.25); if (pr < 0.2) return pr > 0.14 ? '#6a4a3a' : '#3fd0ff';
     return (((u + 1) * 3) % 1) < 0.06 ? '#d8c8b4' : '#f2e8da'; },
+  // ---- Saturn Rings: a chunk of ring ice with its shine, a ring station module with its gold band, a little grey moonlet
+  ringice:function(u, v){ var e = Math.abs(u) * 1.05 + Math.abs(v) * 0.9 + Math.abs(u + v) * 0.25; if (e > 1.02) return null; if (e > 0.88) return '#6a7aa8';
+    if (u + v < -0.55) return '#ffffff'; return (u - v > 0.3) ? '#a8c4e8' : '#d8e8fa'; },
+  ringmod:function(u, v){ if (Math.abs(u) > 0.94 || Math.abs(v) > 0.92) return null; if (Math.abs(u) > 0.84 || Math.abs(v) > 0.82) return '#7a80a8';
+    if (Math.abs(v - 0.3) < 0.1) return '#ffd34d'; var pr = Math.hypot(u, v + 0.25); if (pr < 0.2) return pr > 0.14 ? '#4a4a7a' : '#9fd8ff';
+    return (((u + 1) * 3) % 1) < 0.06 ? '#c8cce0' : '#eef0f8'; },
+  moonlet:function(u, v){ var r = Math.hypot(u, v * 1.1); if (r > 0.94) return null; if (r > 0.82) return '#4a4a5a'; if (Math.hypot(u - 0.2, v - 0.15) < 0.16) return '#6a6a7a';
+    return (u + v < -0.3) ? '#c8c6ce' : '#9a98a6'; },
   // ---- Candy Works: a gumball with its shine, a sugar cube, a wrapped sweet with its twisted ends
   gumball:function(u, v){ var r = Math.hypot(u, v); if (r > 0.94) return null; if (r > 0.84) return '#a8164a'; if (Math.hypot(u + 0.3, v + 0.34) < 0.18) return '#ffd0e2'; return u + v < -0.2 ? '#ff4f8f' : '#e8236a'; },
   sugarcube:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.92) return null; if (Math.abs(u) > 0.82 || Math.abs(v) > 0.82) return '#d9cfc4';
@@ -2402,6 +2520,8 @@ var CSS = '\
 .wm-moon b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 30%,#c8e8ff 50%,#6a8ee0);-webkit-text-stroke:.9px #060814;filter:drop-shadow(0 2px 0 #2a3f80) drop-shadow(0 4px 0 #060814) drop-shadow(0 0 10px rgba(127,216,255,.7))}\
 .wm-mars i{background:#4a1c10;color:#ffb08a;border:1px solid #ff8a4a}\
 .wm-mars b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#fff2e0 0 30%,#ffb08a 50%,#c8562a);-webkit-text-stroke:.9px #1e0804;filter:drop-shadow(0 2px 0 #6a2410) drop-shadow(0 4px 0 #1e0804) drop-shadow(0 0 10px rgba(255,138,74,.7))}\
+.wm-saturn i{background:#342a50;color:#ffd98a;border:1px solid #ffd98a}\
+.wm-saturn b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#fffaf0 0 30%,#ffd98a 50%,#c8a060);-webkit-text-stroke:.9px #120f1e;filter:drop-shadow(0 2px 0 #4a3f6a) drop-shadow(0 4px 0 #120f1e) drop-shadow(0 0 10px rgba(255,217,138,.7))}\
 .wm-iceage b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 30%,#bfe9f4 50%,#5aa8c4);-webkit-text-stroke:.9px #2a241c;filter:drop-shadow(0 2px 0 #5a4630) drop-shadow(0 4px 0 #2a241c) drop-shadow(0 0 8px rgba(143,208,224,.6))}\
 .wm-candy i{background:#5a2e14;color:#ffd6e6;border:1px solid #ff5fa2}\
 .wm-candy b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 22%,#ffa8cc 45%,#ff3b7a);-webkit-text-stroke:.9px #4a1a2e;filter:drop-shadow(0 2px 0 #9a2a5a) drop-shadow(0 4px 0 #3a1c0c) drop-shadow(0 0 8px rgba(255,154,208,.6))}\
@@ -2499,6 +2619,8 @@ var CSS = '\
 .pp-lv.wt-moon.lock{background:radial-gradient(circle at 38% 30%,#5a6680,#2a3050);border-color:#141a36;color:#c8d4ff}.pp-lv.wt-moon.cur{background:radial-gradient(circle at 40% 35%,#e6f8ff,#7fd8ff 55%,#3f7fe0);border-color:#060814;color:#060814;box-shadow:0 0 14px rgba(159,232,255,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-mars{background:radial-gradient(circle at 36% 30%,#ffd0b0,#c8562a 52%,#7a2a14);border-color:#6a2410;color:#1e0804}\
 .pp-lv.wt-mars.lock{background:radial-gradient(circle at 38% 30%,#7a4a3a,#3a1a10);border-color:#1e0804;color:#ffd0b0}.pp-lv.wt-mars.cur{background:radial-gradient(circle at 40% 35%,#fff2e0,#ff8a4a 55%,#c8562a);border-color:#1e0804;color:#1e0804;box-shadow:0 0 14px rgba(255,138,74,.95),0 4px 0 rgba(0,0,0,.35)}\
+.pp-lv.wt-saturn{background:radial-gradient(circle at 36% 30%,#fff2d0,#e8c88c 52%,#a87a40);border-color:#4a3f6a;color:#120f1e}\
+.pp-lv.wt-saturn.lock{background:radial-gradient(circle at 38% 30%,#6a6090,#2a2140);border-color:#120f1e;color:#ffe8c0}.pp-lv.wt-saturn.cur{background:radial-gradient(circle at 40% 35%,#ffffff,#bfe6ff 55%,#7670b0);border-color:#120f1e;color:#120f1e;box-shadow:0 0 14px rgba(255,217,138,.95),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-iceage{border-radius:44% 56% 48% 52%/52% 46% 54% 48%;background:radial-gradient(circle at 38% 30%,#ffffff,#bfe9f4 50%,#7fc0d6);border-color:#4a3a28;color:#2a241c}\
 .pp-lv.wt-iceage.lock{background:radial-gradient(circle at 38% 30%,#a89884,#7a6a56);border-color:#4a3a28;color:#efe4cc}.pp-lv.wt-iceage.cur{background:radial-gradient(circle at 40% 35%,#fff4d8,#d9c9a6 55%,#a88a5a);border-color:#2a241c;color:#2a1a0a;box-shadow:0 0 14px rgba(174,240,255,.9),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-candy{border-radius:50%;background:repeating-conic-gradient(from 20deg,#ff5fa2 0 30deg,#fff4f8 30deg 60deg);border-color:#9a2a5a;color:#3a1c0c;text-shadow:0 0 3px #fff,0 0 2px #fff}\
@@ -2520,6 +2642,7 @@ var CSS = '\
 .pp-hub[data-wt=school]{--wa:#ffd23f;--wi:#1f2430;--wb1:#3a4a6a;--wb2:#1f2430;--wt:rgba(31,36,48,.92)}\
 .pp-hub[data-wt=moon]{--wa:#7fd8ff;--wi:#060814;--wb1:#2a3f80;--wb2:#060814;--wt:rgba(6,8,20,.92)}\
 .pp-hub[data-wt=mars]{--wa:#ff8a4a;--wi:#1e0804;--wb1:#6a2410;--wb2:#1e0804;--wt:rgba(30,8,4,.92)}\
+.pp-hub[data-wt=saturn]{--wa:#ffd98a;--wi:#120f1e;--wb1:#4a3f6a;--wb2:#120f1e;--wt:rgba(18,15,30,.92)}\
 .pp-hub[data-wt=iceage]{--wa:#8fd0e0;--wi:#2a241c;--wb1:#5a4630;--wb2:#2a241c;--wt:rgba(42,36,28,.92)}\
 .pp-hub[data-wt=candy]{--wa:#ff5fa2;--wi:#3a1c0c;--wb1:#7a4422;--wb2:#3a1c0c;--wt:rgba(58,28,12,.92)}\
 .pp-hub[data-wt=haunted]{--wa:#ff9a3a;--wi:#2a1606;--wb1:#3a1f63;--wb2:#1c1438;--wt:rgba(28,20,44,.92)}\
@@ -2612,6 +2735,7 @@ var CSS = '\
 .pp-door[data-door=candy] .pp-dl,.pp-door[data-door=candy] .pp-dr{background:repeating-linear-gradient(135deg,#ff3b7a 0 14px,#fff4f8 14px 28px);border-color:#7a4422}\
 .pp-door[data-door=moon] .pp-dl,.pp-door[data-door=moon] .pp-dr{background:repeating-linear-gradient(90deg,rgba(6,8,20,.35) 0 2px,transparent 2px 24px),linear-gradient(180deg,#eef2f8,#8a96b0);border-color:#3f7fe0}\
 .pp-door[data-door=mars] .pp-dl,.pp-door[data-door=mars] .pp-dr{background:repeating-linear-gradient(90deg,rgba(30,8,4,.3) 0 2px,transparent 2px 24px),linear-gradient(180deg,#f2e8da,#c8a088);border-color:#ff8a4a}\
+.pp-door[data-door=saturn] .pp-dl,.pp-door[data-door=saturn] .pp-dr{background:repeating-linear-gradient(90deg,rgba(18,15,30,.3) 0 2px,transparent 2px 24px),linear-gradient(180deg,#eef0f8,#9a98c0);border-color:#ffd98a}\
 .pp-door[data-door=iceage] .pp-dl,.pp-door[data-door=iceage] .pp-dr{background:repeating-linear-gradient(170deg,rgba(255,255,255,.35) 0 3px,transparent 3px 26px),linear-gradient(180deg,#dcf4fa,#6fb6d0);border-color:#d9c9a6}\
 .pp-tabs u{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5a4e;margin-left:5px;vertical-align:2px;box-shadow:0 0 0 2px rgba(0,0,0,.35)}.pp-tabs .on u{display:none}\
 /* THE DAILY TAB: a month to a page, the page ruled like a wall calendar, the days tear-off sheets on the trail */\
@@ -2834,8 +2958,8 @@ function top(title, sub, right){
    holes, plus rewards nobody else can earn. No coin price anywhere changes. */
 var PAY = {
   main:{ hole:80, sig:280, ace:20, world:2000,
-    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball'],
-    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots'] },
+    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter', 'Astronaut Helmet', 'Red Planet Ball', 'Saturn Ball'],
+    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles', 'Space Suit', 'Mars Boots', 'Titan Goggles'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
     worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
@@ -2874,7 +2998,7 @@ var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Centur
 var REWARD_ITEM = {
   'Clubhouse Visor':'hw:ppvisor', 'Hall Monitor Cap':'hw:pphallcap', 'Lollipop Putter':'pu:pplollipop', 'Neon Putter':'pu:ppneon',
   'Tricorn Hat':'hw:pptricorn', 'Jade Idol Putter':'pu:ppjadeidol', 'Miner’s Lamp Cap':'hw:ppminer', 'Lava Ball':'bl:pplava',
-  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk', 'Astronaut Helmet':'hw:ppastrohelmet', 'Space Suit':'tp:ppspacesuit', 'Red Planet Ball':'bl:ppmars', 'Mars Boots':'ct:ppmarsboots',
+  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk', 'Astronaut Helmet':'hw:ppastrohelmet', 'Space Suit':'tp:ppspacesuit', 'Red Planet Ball':'bl:ppmars', 'Mars Boots':'ct:ppmarsboots', 'Saturn Ball':'bl:ppsaturn', 'Titan Goggles':'ew:pptitangoggles',
   'Clubhouse Cleats':'ct:ppclubhouse', 'Gold Star Ball':'bl:ppgoldstar', 'Sprinkle Ball':'bl:ppsprinkle', 'Pixel Shades':'ew:pppixelshades',
   'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
   'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
@@ -3486,7 +3610,7 @@ function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el
    about six seconds, a tap skips it, and with reduced motion it is the arrival card alone. The space worlds after the Moon
    will each get their own leg of the trip from here (SPACE_TRIP). */
 /* Moon Base to Red Planet is the colony ship, from the Moon's launch pad (SPACE_FROM says where each leg leaves from). */
-var SPACE_TRIP = { moon:'rocket', mars:'ship' }, SPACE_FROM = { moon:'earth', mars:'moon' };
+var SPACE_TRIP = { moon:'rocket', mars:'ship', saturn:'ship' }, SPACE_FROM = { moon:'earth', mars:'moon', saturn:'mars' };
 function spaceTrip(theme, label, name, host, cb){
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   // the real 3D trip (putt/trip3d.js) when it is loaded and knows the way; this flat one is the fallback and the reduced motion card
@@ -3538,7 +3662,7 @@ function spaceTrip(theme, label, name, host, cb){
     if (t > DUR) return finish(); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 }
-var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', moon:'Airlock', mars:'Hab Door', saturn:'Station Hatch', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
 /* THE WALK IS A PLACE (golf/putt/trail.js). Winning a hole and pressing Next opens the trail to the next
@@ -3562,10 +3686,10 @@ var TRINKETS = {
   pirate:['Doubloon Marker', 'Spyglass', 'Parrot Feather'], canyon:['Gold Nugget', 'Lucky Horseshoe', 'Prospector Pan'],
   volcano:['Obsidian Shard', 'Ember Stone', 'Fire Opal'], dino:['Raptor Claw', 'Fossil Fern', 'Trilobite'],
   sky:['Cloud Feather', 'Kite Charm', 'Weather Vane'], neon:['Arcade Token', 'Joystick Charm', 'Prize Ticket'],
-  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'], moon:['Moon Rock', 'Mission Patch', 'Space Pen'], mars:['Red Rock', 'Rover Wheel', 'Ice Core'],
+  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'], moon:['Moon Rock', 'Mission Patch', 'Space Pen'], mars:['Red Rock', 'Rover Wheel', 'Ice Core'], saturn:['Ring Ice', 'Probe Dish', 'Titan Stone'],
   candy:['Lucky Gumball', 'Candy Wrapper', 'Sugar Crystal']
 };
-var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', moon:'#7fd8ff', mars:'#ff8a4a', candy:'#ff5fa2' };
+var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', moon:'#7fd8ff', mars:'#ff8a4a', saturn:'#ffd98a', candy:'#ff5fa2' };
 var TRINKET_SET_COINS = 300;
 var PP_PUTTERS = [
   { id:'scope', name:'Scope Putter', worlds:[0, 1, 2], tells:'The aim line reaches four feet further.' },
@@ -3708,6 +3832,10 @@ var GREETERS = {
     hi:['Welcome to Mars. Watch the wind.', 'I study the rocks here. You get to putt on them.'],
     tip:['A dust devil spins your ball the way it turns. Wait for it, or use it.', 'Every hole here rolls. Read the dunes.', 'The canyons are deep. Nothing comes back up.'],
     bye:'Clear skies. Look out for storms.' },
+  saturn:{ name:'Captain Lyra Okoye', role:'Ring Station Captain', look:{ skin:'brown', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'bun', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' },
+    hi:['Welcome aboard the ring station.', 'I run this station. The course is the rings.'],
+    tip:['Roll into a ring rail and it carries you round. Play the exit.', 'Titan haze drags and drifts. Aim upwind.', 'Off the deck is a long fall into the clouds.'],
+    bye:'Safe travels. Wave at Titan for me.' },
   candy:{ name:'Wendell', role:'Factory Foreman', look:{ skin:'deep', polo:'white', hat:'red', pants:'wine', hair:'black', hairStyle:'short', cap:true, hatStyle:'flat', gender:'male' },
     hi:['Hey! Welcome to Candy Works.', 'I’m Wendell. I run the floor.'],
     tip:['Chocolate on every side. Wafer bridges run on a clock.', 'Taffy grabs your ball. Watch a press go round once before you putt.'],
@@ -4415,7 +4543,7 @@ function v3Asp(){ var r = S.stage && S.stage.isConnected && S.stage.getBoundingC
 function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
 /* THE FINE PICTURE: a world in FINE_WORLDS is painted three times finer, so it reads as clearly as the golfer.
    Piloted on Pirate Cove; the owner then asked for it on every world (2026-10-15). */
-var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1, moon:1, mars:1 }, FINE_ART = 1 / 12;
+var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1, moon:1, mars:1, saturn:1 }, FINE_ART = 1 / 12;
 // RTT_PUTT_FINE_TEST names one more world to paint fine, so a world's stops can be built and looked at before it joins FINE_WORLDS
 function fineOn(d){ return (!!FINE_WORLDS[d.theme] || window.RTT_PUTT_FINE_TEST === d.theme) && window.RTT_PUTT_FINE !== 'off'; }
 // a fine picture's zoom can round up (camFor), so it is built a little taller than the stage to leave no band below the land
@@ -4947,6 +5075,28 @@ function drawPieces(ctx, C, cam, clock){
     // grit flung round the eye the way it turns
     ctx.fillStyle = 'rgba(255,220,180,.9)'; for (var g = 0; g < 14; g++){ var ga = clock * 3.4 * sg + g * 0.45 + di, gz = hash3(di, g, 12) * 3.6, gr = R * (0.2 + gz * 0.18);
       q = P(p[0] + Math.cos(ga) * gr, p[1] + Math.sin(ga) * gr * 0.55, gz); var gs = Math.max(2, Math.round(d * 1.6)); ctx.fillRect(Math.round(q[0]), Math.round(q[1]), gs, gs); } });
+  /* TITAN HAZE: a soft orange bank over its carpet, puffs of it drifting downwind, so where it drags and which way it pushes
+     both read. A RING RAIL: a band of pale blue ring ice with gold edges, and chevrons running along it the way it carries. */
+  (C.hazes || []).forEach(function(h, hi){ var P = function(x, y, zz){ return cam.v3 ? w2s(cam, x, y, cam.v3.zAt(x, y) + (zz || 0)) : w2s(cam, x, y); };
+    var q = [P(h.x0, h.y0), P(h.x1, h.y0), P(h.x1, h.y1), P(h.x0, h.y1)];
+    ctx.fillStyle = 'rgba(255,140,50,.32)'; ctx.beginPath(); q.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill();
+    var W = h.x1 - h.x0, Hh = h.y1 - h.y0, wl = Math.hypot(h.wx, h.wy) || 1, ux = h.wx / wl, uy = h.wy / wl, np = Math.max(6, Math.round(W * Hh / 5));
+    for (var k = 0; k < np; k++){ var u = ((hash3(hi, k, 21) + clock * 0.05 * ux) % 1 + 1) % 1, v = ((hash3(hi, k, 22) + clock * 0.05 * uy) % 1 + 1) % 1, p = P(h.x0 + u * W, h.y0 + v * Hh, 0.3 + hash3(hi, k, 23) * 0.6), r = cam.s * (0.5 + hash3(hi, k, 24) * 0.7);
+      ctx.fillStyle = 'rgba(255,190,120,' + (0.18 + 0.14 * hash3(hi, k, 25)) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.283); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(120,40,0,.6)'; ctx.lineWidth = Math.max(1.5, d * 1.2);
+    for (var k2 = 0; k2 < 3; k2++){ var cx = h.x0 + W * (0.25 + 0.25 * k2), cy = h.y0 + Hh * (k2 % 2 ? 0.35 : 0.65), sh = ((clock * 0.6 + k2 * 0.33) % 1) * 1.2, a = P(cx - ux * (0.8 - sh), cy - uy * (0.8 - sh)), b = P(cx + ux * (0.6 + sh), cy + uy * (0.6 + sh)), e1 = P(cx + ux * (0.2 + sh) - uy * 0.35, cy + uy * (0.2 + sh) + ux * 0.35), e2 = P(cx + ux * (0.2 + sh) + uy * 0.35, cy + uy * (0.2 + sh) - ux * 0.35);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.moveTo(e1[0], e1[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(e2[0], e2[1]); ctx.stroke(); } });
+  (C.rings || []).forEach(function(g){ var P = function(x, y){ return cam.v3 ? w2s(cam, x, y, cam.v3.zAt(x, y) + 0.02) : w2s(cam, x, y); }, n = Math.max(12, Math.round(Math.abs(g.span) * g.r * 2)), k;
+    var pt = function(a, rr){ return P(g.cx + Math.cos(a) * rr, g.cy + Math.sin(a) * rr); };
+    ctx.fillStyle = 'rgba(170,220,255,.72)'; ctx.beginPath();
+    for (k = 0; k <= n; k++){ var q = pt(g.a0 + g.span * k / n, g.r + g.w / 2); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+    for (k = n; k >= 0; k--){ var q2 = pt(g.a0 + g.span * k / n, g.r - g.w / 2); ctx.lineTo(q2[0], q2[1]); } ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = Math.max(1.5, d * 1.4);
+    [-1, 1].forEach(function(sd){ ctx.beginPath(); for (var j = 0; j <= n; j++){ var q3 = pt(g.a0 + g.span * j / n, g.r + sd * g.w / 2); j ? ctx.lineTo(q3[0], q3[1]) : ctx.moveTo(q3[0], q3[1]); } ctx.stroke(); });
+    ctx.strokeStyle = 'rgba(40,90,140,.85)'; ctx.lineWidth = Math.max(1.5, d * 1.3); var nc = Math.max(3, Math.round(Math.abs(g.span) * g.r / 1.6)), sg = g.span < 0 ? -1 : 1, off = (clock * 0.5) % 1;
+    for (var c = 0; c < nc; c++){ var a = g.a0 + g.span * (c + off) / nc, tx = -Math.sin(a) * sg, ty = Math.cos(a) * sg, ox = Math.cos(a), oy = Math.sin(a), cx2 = g.cx + ox * g.r, cy2 = g.cy + oy * g.r, hw = g.w * 0.3;
+      var p1 = P(cx2 - tx * 0.35 + ox * hw, cy2 - ty * 0.35 + oy * hw), p2 = P(cx2 + tx * 0.35, cy2 + ty * 0.35), p3 = P(cx2 - tx * 0.35 - ox * hw, cy2 - ty * 0.35 - oy * hw);
+      ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]); ctx.stroke(); } });
   /* A ZERO-G FIELD: a faint violet sheen over its carpet, a dashed edge, and specks of dust drifting slowly up through it, so it
      reads as the place where nothing is held down. */
   (C.floats || []).forEach(function(f, fi){ var z = function(x, y){ return cam.v3 ? cam.v3.zAt(x, y) : 0; }, P = function(x, y){ return cam.v3 ? w2s(cam, x, y, z(x, y)) : w2s(cam, x, y); };
@@ -5325,7 +5475,7 @@ RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, 
 RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 /* The home card wears the world you are in: the top band of that world's signature hole, cut from the
    game's own render by build-cards.mjs, so it is the same pixel art as the courses. */
-var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1, moon:1, mars:1 }, CARD_V = 7;
+var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1, moon:1, mars:1, saturn:1 }, CARD_V = 8;
 RTT_PUTT.cardArt = function(theme){ var t = CARD_ART[theme] ? theme : 'clubhouse';
   return '<img class="gc-art" src="putt/cards/' + t + '.png?v=' + CARD_V + '" alt="" aria-hidden="true">'; };
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR }; RTT_PUTT.PAY = PAY;

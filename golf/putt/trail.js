@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -147,6 +147,10 @@ var KIT = {
   mars:{ g:['#c4683e', '#d27a48', '#a8502e', 0.2], gpat:'marsReg', p:['#e8b088', '#f2c4a0', '#d8a078'], tree:[], leaves:['#7a3a22', '#8a4a2a', '#5a2a1c'], bark:'#3a2420', dens:0.001,
     low:['rockbasalt', 'rockred', 'rockred'], brk:'crate', haz:'slow', hazC:['#8a3420', '#6a2414'], waterC:['#1a0604', '#4a160a'], bogC:['#8a3420', '#6a2414'], lm:['moonLander', 'marsRover', 'marsHab'], wall:['#e8d8c4', '#b85a32'],
     npc:{ skin:'tan', polo:'white', hat:'white', pants:'white', hair:'darkbrown', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'male' }, who:'the colonist' },
+  // Saturn Rings: decks of lavender ring ice, a pale walkway, no trees, ring dust for the bog, gold clouds for the water, crates to break
+  saturn:{ g:['#9a94cc', '#a8a2d8', '#8a84bc', 0.18], gpat:'satDeck', p:['#e8e6f6', '#f4f2fc', '#d4d0ec'], paved:true, tree:[], leaves:['#c8d8ee', '#dceaf6', '#a8c4e8'], bark:'#6a6488', dens:0.001,
+    low:['rockice', 'rockice', 'rock'], brk:'crate', haz:'slow', hazC:['#a8a0c8', '#8a84b0'], waterC:['#d8b878', '#f0dfb4'], bogC:['#a8a0c8', '#8a84b0'], lm:['satModule', 'satMast', 'satProbe'], wall:['#d8dcec', '#7670b0'],
+    npc:{ skin:'deep', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the station hand' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -762,8 +766,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
-var LOWH = { bush:1.8, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
+var LOWR = { bush:1.1, rockice:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
+var LOWH = { bush:1.8, rockice:1.3, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -782,7 +786,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -798,11 +802,12 @@ var SECRET_SAY = {
   iceage:'The old drawings say there\'s a secret hole on this trail.',
   moon:'Mission control logged a secret hole on this trail. On the dark side, they think.',
   mars:'The colony found a cave under the ice. The way in is on this trail.',
+  saturn:'There\'s a storm room somewhere on this trail. The eye of it is calm.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -972,6 +977,7 @@ BUILD.rock = function(B, t, i){ rockAt(B, t.x, t.y, 1.1, ['#8a8a86', '#6e6e6a', 
 BUILD.rockdark = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#3e383c', '#2a2428', '#5a5054'], i); };
 // Red Planet's rocks: rust red, and dark basalt
 BUILD.rockred = function(B, t, i){ rockAt(B, t.x, t.y, 1.1, ['#a8502e', '#7a3220', '#d27a48'], i); };
+BUILD.rockice = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#dceaf6', '#a8c4e8', '#ffffff'], i); };
 BUILD.rockbasalt = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#3a2420', '#2a1814', '#6a3a2a'], i); };
 BUILD.rocksnow = function(B, t, i){ rockAt(B, t.x, t.y, 1.2, ['#7a8494', '#5e6878', '#ffffff'], i); };
 BUILD.bushsnow = function(B, t, i){ bushAt(B, t.x, t.y, 1.1, ['#1f4f3e', '#ffffff', '#2a6450']); };
@@ -1268,6 +1274,7 @@ var LIFE = {
   iceage:{ mote:['snow', 60], fly:['crow', 2] },
   moon:{ fly:['drone', 2], mote:['spark', 30] },
   mars:{ fly:['drone', 1], mote:['dust', 40] },
+  saturn:{ fly:['drone', 2], mote:[['snow', 30], ['spark', 12]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -3670,6 +3677,51 @@ BUILD.marsDevil = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, d
 BUILD.marsButte = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = (t.w / 2 - 0.3) * (1 - tt / t.h * 0.35), d = Math.hypot(dx, dy * t.w / t.d);
   if (d > R + vn(dx * 0.8 + 4, tt * 0.8, 5) * 0.8 - 0.4) return null; return ['#a8502e', '#8a3a22', '#c4683e', '#e0905a'][((tt * 1.4 + vn(dx, tt, 9) * 0.5) | 0) % 4]; }); };
 LMSIZE.marsRover = [5, 4, 4]; LMSIZE.marsHab = [7, 8, 3.6]; LMSIZE.marsGreenhouse = [7, 7, 3.6]; LMSIZE.marsSolar = [7, 3, 1.8]; LMSIZE.marsDevil = [5, 5, 11]; LMSIZE.marsButte = [10, 7, 7];
+/* ---- Saturn Rings' stops on the walk, the same places its holes stand in (land.js): out across the rings, the ring
+   station with its modules, masts and the Cassini probe, under Titan with its lander, over Enceladus and its geysers, and
+   out over the pole. No trees: the walk is a paved walkway along decks of ring ice. */
+// an opening in the deck, where Saturn's clouds show far below: bands of gold and cream, a bright rim of ice round the gap
+function satGap(c){ var o = vn(c.ti * 0.016, c.tj * 0.016, 105); if (o < 0.64) return null; if (o < 0.665) return '#ffffff'; if (o < 0.685) return '#5a5488';
+  var band = Math.sin(c.tj * 0.09 + Math.sin(c.ti * 0.02) * 1.5 + vn(c.ti * 0.05, c.tj * 0.05, 106) * 2.5); return band > 0.6 ? '#f0dfb4' : band > 0.1 ? '#e2c88c' : band > -0.5 ? '#d8b878' : '#b8905a'; }
+GPAT.satDeck = function(c){ var gp = satGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 101), b = vn(c.ti * 0.14, c.tj * 0.14, 102);
+  if (((c.ti >> 4) + (c.tj >> 4)) % 2 === 0 && ((c.ti & 15) === 0 || (c.tj & 15) === 0)) return '#7a74ac';
+  return a > 0.72 ? '#b8b2e4' : b > 0.8 ? '#c8c4ec' : a < 0.28 ? '#8a84bc' : '#9a94cc'; };
+GPAT.satIce = function(c){ var gp = satGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 103), b = vn(c.ti * 0.14, c.tj * 0.14, 104);
+  if (((c.ti >> 4) + (c.tj >> 4)) % 2 === 0 && ((c.ti & 15) === 0 || (c.tj & 15) === 0)) return '#a8c4e8'; return a > 0.7 ? '#ffffff' : b > 0.78 ? '#c4d8ea' : '#dceaf6'; };
+KIT['saturn~rings'] = kitFrom(KIT.saturn, { nlm:3, lm:['satProbe', 'satMast', 'satModule'] });
+KIT['saturn~cassini'] = kitFrom(KIT.saturn, { nlm:5, lm:['satModule', 'satMast', 'satModule', 'satProbe', 'satMast'] });
+KIT['saturn~titan'] = kitFrom(KIT.saturn, { nlm:3, lm:['satLander', 'satMast', 'satLander'] });
+KIT['saturn~enceladus'] = kitFrom(KIT.saturn, { g:['#dceaf6', '#eef6fc', '#c4d8ea', 0.15], gpat:'satIce', nlm:4, low:['rockice', 'rockice', 'rocksnow'], lm:['satGeyser', 'satGeyser', 'satProbe', 'satGeyser'] });
+KIT['saturn~hexagon'] = kitFrom(KIT.saturn, { nlm:3, lm:['satMast', 'satProbe', 'satModule'] });
+LIFE_AS['saturn~rings'] = { fly:['drone', 2], mote:[['snow', 30], ['spark', 14]] };
+LIFE_AS['saturn~cassini'] = { fly:['drone', 4], mote:['spark', 20] };
+LIFE_AS['saturn~titan'] = { fly:['drone', 1], mote:['ember', 30] };
+LIFE_AS['saturn~enceladus'] = { mote:['snow', 70] };
+LIFE_AS['saturn~hexagon'] = { fly:['drone', 1], mote:[['snow', 24], ['spark', 20]] };
+// a ring station module: a white cylinder on its side on short legs, a gold band, a row of lit blue windows, grey end caps
+BUILD.satModule = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dy, tt - 1.4), hw = t.w / 2 - 0.4;
+  if (tt < 0.5) return (Math.abs(Math.abs(dx) - hw * 0.6) < 0.12 && Math.abs(dy) < 0.12) ? '#8a8eb0' : null; if (r > 1.0 || Math.abs(dx) > hw) return null;
+  if (Math.abs(dx) > hw - 0.25) return '#8a8eb0'; if (Math.abs(dx) < 0.2) return '#ffd34d'; if (dy > 0.6 && Math.abs(tt - 1.6) < 0.18 && (((dx + 9) * 1.1 | 0) % 2)) return '#9fd8ff';
+  return ((dx * 1.4 | 0) % 3) ? '#eef0f8' : '#c8cce0'; }); };
+// an antenna mast: a lattice post, a dish tipped to the sky, a red light at the top
+BUILD.satMast = function(B, t){ var H = t.h - 1.6; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (tt < H && Math.abs(dx) < 0.22 && Math.abs(dy) < 0.22) return (Math.abs(dx) > 0.14 || Math.abs(dy) > 0.14 || ((tt * 3) | 0) % 2) ? '#c8cce0' : null;
+  var v = dy * 0.6 + (tt - H) * 0.8, w2 = -dy * 0.8 + (tt - H) * 0.6, rr = Math.hypot(dx, v); if (rr < 1.3 && Math.abs(w2 - rr * rr / 2.8) < 0.15) return rr > 1.15 ? '#8a8eb0' : '#eef0f8';
+  if (Math.hypot(dx, dy, tt - t.h + 0.3) < 0.2) return '#ff5577'; return null; }); };
+// the Cassini probe: a gold foil body, a big white dish on top, a long boom out one side
+BUILD.satProbe = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3) return (Math.abs(Math.abs(dx) - 0.7) < 0.12 && Math.abs(dy) < 0.12) ? '#8a8eb0' : null;
+  if (tt < 2.2 && r < 0.75) return ((tt * 4 | 0) + (Math.atan2(dy, dx) * 3 | 0)) % 2 ? '#e0b040' : '#b8862a';
+  if (tt >= 2.2 && tt < 2.8 && r < 1.6 - (tt - 2.2) * 0.4 && r > 1.2 - (tt - 2.2) * 1.4) return '#f4f6fa'; if (tt >= 2.2 && tt < 2.5 && r < 1.3) return '#dfe3ec';
+  if (Math.abs(tt - 1.4) < 0.06 && Math.abs(dy) < 0.06 && dx > 0.7 && dx < t.w / 2) return '#c8c8d0'; return null; }); };
+// the Titan lander: a gold heat shield like a shallow saucer, a white deck on it, a whip antenna
+BUILD.satLander = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.6 && r < 1.8 - tt * 0.8) return tt < 0.14 ? '#8a5a1a' : ((r * 4 | 0) % 2 ? '#e0b040' : '#c8962a');
+  if (tt >= 0.6 && tt < 1.1 && r < 1) return Math.abs(tt - 0.85) < 0.06 ? '#3a3a52' : '#eef0f4'; if (Math.abs(dx - 0.5) < 0.05 && Math.abs(dy) < 0.05 && tt >= 1.1 && tt < t.h - 0.2) return '#c8c8d0'; return null; }); };
+// an ice geyser: a vent in the ice and a tall white plume, rising and spreading, broken into puffs
+BUILD.satGeyser = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, r = 0.3 + u * (t.w / 2 - 0.4), d = Math.hypot(dx - Math.sin(u * 2) * 0.3, dy);
+  if (tt < 0.25) return d < 0.7 && d > 0.35 ? '#9fb8d8' : null; if (d > r) return null; var n = hash(dx * 3 | 0, tt * 3 | 0, dy * 3 | 0); return n < 0.25 + u * 0.4 ? null : (n > 0.85 ? '#dceaf6' : '#ffffff'); }); };
+LMSIZE.satModule = [7, 3, 2.6]; LMSIZE.satMast = [4, 4, 7]; LMSIZE.satProbe = [5, 5, 3.4]; LMSIZE.satLander = [5, 5, 3.2]; LMSIZE.satGeyser = [5, 5, 10];
 // @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();
