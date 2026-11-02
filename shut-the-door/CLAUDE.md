@@ -20,7 +20,7 @@ PR and never merges it.
 ## Commands
 
 ```
-node shut-the-door/check-posture.mjs           unlisted until launch (INDEXED and LINKED both false)
+node shut-the-door/check-posture.mjs           launched: INDEXED and LINKED both true, the lab held out
 node shut-the-door/test/engine.mjs             the engine on a synthetic pack: determinism, end rules, grades
 node shut-the-door/test/packs.mjs              every real pack: the contract, all-green best play, median at the 50th
 node shut-the-door/test/api.mjs                the four calls, the daily, resume, one submit
@@ -42,8 +42,9 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
 
 ## Rules a change here must keep
 
-- **Unlisted until the owner launches it.** Noindexed, no ad tag, not in the sitemap, linked from no
-  page, not on the newsletter list. Launching is an edit to `check-posture.mjs` in the same commit.
+- **Launched 2026-11-02.** Indexable with a canonical, in the sitemap, the ad tag behind its consent
+  defaults, on the home page (Play today and All games, the JSON-LD) and on the newsletter list. The
+  lab stays noindexed and unlinked. Changing any of it is an edit to `check-posture.mjs` in the same commit.
 - **Not part of the Arcade.** No Arcade link, tile or scaffolding.
 - **Grade the decision, never the outcome.** Every call is graded before it resolves. The band is
   relative to the moment (`rel` = lost over the state's mean lost); score and percentile use absolute

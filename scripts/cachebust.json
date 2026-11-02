@@ -3080,6 +3080,10 @@
     }
   },
   "shut-the-door/index.html": {
+    "/assets/rtg-ads.js": {
+      "v": "3",
+      "sha": "cc149708e8a0216e"
+    },
     "contract.js": {
       "v": "10",
       "sha": "804b37c86a4e4224"
