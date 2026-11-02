@@ -364,21 +364,27 @@ function renderHome() {
   BOOT.spot = true;
   BOOT.ready.then(function () {
     $('h-load').hidden = true;
+    $('h-err').hidden = true;   // a spot that came after the loading screen gave up on it
     $('h-main').hidden = false;
     startHomeBg();
   });
 }
 
 /* ---- THE LOADING SCREEN (the owner, 2026-11-02) ------------------------------------------------
-   #boot covers the page from the first paint, so nothing is tappable until the first screen has what
-   it needs: today's spot (the pack), the fonts, the stadium photo behind the home, and the 3D mound
-   (STD_STAGE.current.loaded; a browser without WebGL keeps the old drawing and skips it). The bar is
-   real: each step fills its own share when it lands, the 3D's by the stage's own marks (3d/boot.js
-   STD_STAGE.marks: created, assets, lit, people, compiled). Inside a step the bar eases toward the
-   step's end and never reaches it until the step does. A mound that has not warmed in BOOT_CAP_MS
-   lets the home show anyway; take the mound then shows the mound's own warming word (.scene.warming).
-   The screen is unseen for its first 300 ms (style.css), so a fast load never flashes it. */
-var BOOT_CAP_MS = 30000;
+   #boot covers the page from the first paint and .app is inert under it, so nothing is tappable or
+   focusable until the first screen has what it needs: today's spot (the pack), the fonts, the stadium
+   photo behind the home, and the 3D mound (STD_STAGE.current.loaded; a browser without WebGL keeps the
+   old drawing and skips it). The bar is real: each step fills its own share when it lands, the 3D's by
+   the stage's own marks (STD_STAGE.marks: created, assets, lit, people, compiled). Inside a step the bar
+   eases toward the step's end and never reaches it until the step does.
+   It never flashes: unseen for its first 300 ms (style.css), and once seen it stays up at least until
+   BOOT_MIN_MS, so it never blinks in and out.
+   It never hangs: a mound that has not warmed in BOOT_CAP_MS lets the home show anyway, saying so
+   for a moment ("the ballpark is still loading"); take the mound then shows the mound's own warming
+   word (.scene.warming) until it is ready. A spot that has not come in BOOT_SPOT_MS puts up the home's
+   error and its try again. A failed spot does that at once (boot). The inline guard in index.html
+   covers a script that never ran. */
+var BOOT_CAP_MS = window.STD_BOOT_TEST_CAP || 30000, BOOT_SPOT_MS = BOOT_CAP_MS * 1.5, BOOT_MIN_MS = 900, BOOT_SAY_MS = 1400;
 var BOOT_STEPS = [
   { k: 'spot', w: 14, say: 'today\'s spot' },
   { k: 'fonts', w: 4, say: 'today\'s spot' },
@@ -389,8 +395,9 @@ var BOOT_STEPS = [
   { k: 'people', w: 12, say: 'the players' },
   { k: 'compiled', w: 18, say: 'warming up' },
 ];
-var BOOT = { spot: false, fonts: false, photo: false, t0: Date.now(), shown: 0, done: false };
+var BOOT = { spot: false, fonts: false, photo: false, t0: Date.now(), shown: 0, done: false, capped: false };
 BOOT.ready = new Promise(function (res) { BOOT.release = res; });
+window.STD_BOOT_RUNS = true;
 function bootHas(k) {
   if (k === 'spot' || k === 'fonts' || k === 'photo') return BOOT[k];
   if (!use3d()) return true;
@@ -401,6 +408,7 @@ function bootHas(k) {
 function bootClubs(s) {
   try {
     var c = clubsOf(s), bug = $('boot-bug');
+    $('boot-occ').textContent = occasionOf(s.title) || ' ';
     [['boot-us', c.us], ['boot-them', c.them]].forEach(function (r) {
       var row = $(r[0]); if (!row || !r[1]) return;
       row.querySelector('b').textContent = r[1].name || '';
@@ -409,13 +417,29 @@ function bootClubs(s) {
     if (bug) bug.classList.add('on');
   } catch (e) {}
 }
+/* the screen steps aside: the page under it wakes, and the promise lets the home show */
+function bootEnd(now) {
+  if (BOOT.done) return;
+  BOOT.done = true;
+  var el = $('boot');
+  var go = function () {
+    if (el) { el.classList.add('boot-off'); el.setAttribute('aria-hidden', 'true'); }
+    var app = $('app'); if (app) app.removeAttribute('inert');
+    BOOT.release();
+  };
+  /* seen (past its 300 ms) but only just: hold it to BOOT_MIN_MS so it never blinks */
+  var age = Date.now() - BOOT.t0;
+  if (now || age < 300 || age >= BOOT_MIN_MS) go(); else setTimeout(go, BOOT_MIN_MS - age);
+}
 function bootLoader() {
   var el = $('boot');
-  if (!el) { BOOT.release(); return; }
+  if (!el) { BOOT.release(); var app = $('app'); if (app) app.removeAttribute('inert'); return; }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { BOOT.fonts = true; }); else BOOT.fonts = true;
   var img = document.querySelector('#h-bg .t-bgi[src]');
   var photo = function () { BOOT.photo = true; };
   if (!img || img.complete) photo(); else { img.addEventListener('load', photo, { once: true }); img.addEventListener('error', photo, { once: true }); }
+  /* the club table is a module that may land after the spot: fill the scorebug's names again then */
+  window.addEventListener('std-clubs', function () { if (S.scn && !BOOT.done) bootClubs(S.scn); });
   var fill = $('boot-fill'), pct = $('boot-pct'), say = $('boot-step');
   var stepAt = 0, stepT = Date.now();
   (function tick() {
@@ -437,16 +461,29 @@ function bootLoader() {
     pct.textContent = Math.floor(p) + '%';
     el.setAttribute('aria-valuenow', String(Math.floor(p)));
     if (cur && say.textContent !== cur.say) say.textContent = cur.say;
-    if (!cur || (BOOT.spot && BOOT.fonts && Date.now() - BOOT.t0 > BOOT_CAP_MS)) {
-      BOOT.done = true;
-      if (!cur) { fill.style.transform = 'scaleX(1)'; pct.textContent = '100%'; el.setAttribute('aria-valuenow', '100'); }
-      el.classList.add('done');
-      el.setAttribute('aria-hidden', 'true');
-      BOOT.release();
+    var age = Date.now() - BOOT.t0;
+    if (!cur) {
+      fill.style.transform = 'scaleX(1)'; pct.textContent = '100%'; el.setAttribute('aria-valuenow', '100');
+      return bootEnd();
+    }
+    /* the timeout: the spot is in and the 3D is not. In, with a word, and the mound finishes warming */
+    if (BOOT.spot && BOOT.fonts && age > BOOT_CAP_MS) {
+      BOOT.capped = true;
+      $('boot-say').textContent = 'the ballpark is still loading. it finishes on the mound.';
+      setTimeout(function () { bootEnd(true); }, BOOT_SAY_MS);
       return;
     }
+    /* the spot never came: the home's error and its try again */
+    if (!BOOT.spot && age > BOOT_SPOT_MS) { bootFail(); return; }
     setTimeout(tick, 100);
   })();
+}
+function bootFail() {
+  bootEnd(true);
+  $('h-load').hidden = true;
+  var er = $('h-err');
+  er.hidden = false;
+  er.innerHTML = '<p>today\'s spot did not load.</p><button class="btn ghost" type="button" onclick="location.reload()">try again</button>';
 }
 
 /* The arsenal as a break chart, seen from the pitcher's side: induced vertical
@@ -2462,11 +2499,7 @@ function boot() {
     renderHomeState();
   }).catch(function (e) {
     /* nothing to wait for: the error and its try again go up at once */
-    BOOT.done = true; if ($('boot')) $('boot').classList.add('done'); BOOT.release();
-    $('h-load').hidden = true;
-    var er = $('h-err');
-    er.hidden = false;
-    er.innerHTML = '<p>today\'s spot did not load.</p><button class="btn ghost" type="button" onclick="location.reload()">try again</button>';
+    bootFail();
     if (window.console) console.warn(e);
   });
 }
