@@ -15,7 +15,7 @@
  *     gated API like /api/arcade/*, replayed on the server by sim.js.
  *   TODO(trophies, streaks, leaderboards): once results are saved; a daily
  *     scenario would take a dated seed and a board like RTG_BOARD's. */
-import { SCENARIO as SC } from './scenario.js';
+import { SCENARIO as SC, isZone } from './scenario.js';
 import { simulate } from './sim.js';
 import { emptyPlay, problems, playKey, scenarioFor, previewOf, framesOf } from './playbook.js';
 import { createBoard } from './board.js';
@@ -230,7 +230,7 @@ function showResult(res) {
   const add = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; c.appendChild(e); return e; };
   add('h2', 'verdict ' + (win ? 'win' : 'lose'), win ? 'WINNER' : 'LOSE');
   add('div', 'finalscore', res.us + '-' + res.them);
-  add('p', 'facts', when + ' Their call on screens: ' + res.schemeName + '.');
+  add('p', 'facts', when + (isZone(res.scheme) ? ' Their defense: ' : ' Their call on screens: ') + res.schemeName + '.');
   add('p', 'reason', res.reason);
   const row = add('div', 'row');
   const btn = (label, cls, fn, id) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; if (id) b.id = id; b.addEventListener('click', fn); row.appendChild(b); return b; };

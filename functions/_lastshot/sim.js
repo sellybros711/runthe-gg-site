@@ -6,7 +6,7 @@
  * The rng is drawn in one order: the screen scheme first, then each risky
  * pass, then the shot, then their answer. */
 import { mulberry32 } from './rng.js';
-import { SCHEMES, SCHEME_NAMES } from './scenario.js';
+import { SCHEMES, ZONES, DEFENSES, SCHEME_NAMES, isZone } from './scenario.js';
 import { COURT, dist, segDist, toRim, zoneOf } from './court-geo.js';
 import { advanceRunner, advanceDefender, speedOf, separate, pinBehind, turnFace } from './motion.js';
 import { targetFor, screens, defenderOf, useScreen } from './defense.js';
@@ -27,9 +27,9 @@ export function simulate(sc, play, seed, opt = {}) {
   const bad = problems(sc, play, { preview: !!opt.preview });
   if (bad.length) throw new Error('play cannot run: ' + bad.join(' '));
   const T = sc.tuning, rng = mulberry32(seed >>> 0);
-  const rolled = SCHEMES[Math.floor(rng() * SCHEMES.length)];
+  const rolled = rollDefense(rng(), T.zoneShare || 0);
   const st = {
-    clock: sc.clock, scheme: SCHEMES.includes(opt.scheme) ? opt.scheme : rolled, screened: {}, lastScreen: null,
+    clock: sc.clock, scheme: DEFENSES.includes(opt.scheme) ? opt.scheme : rolled, screened: {}, lastScreen: null,
     O: {}, X: [], ball: { holder: sc.handler, pos: null, flight: null }, k: -1, pass: null, shot: null,
     events: [], frames: [], end: null, bailPending: false, passes: []
   };
@@ -40,6 +40,7 @@ export function simulate(sc, play, seed, opt = {}) {
     st.X.push(x);
   }
   const cap = (text, extra) => st.events.push({ t: round1(st.clock), kind: 'caption', text, ...extra });
+  if (isZone(st.scheme)) cap('They are in a ' + SCHEME_NAMES[st.scheme], { slow: true });
 
   let tick = 0;
   frame(st);
@@ -365,8 +366,18 @@ function finish(sc, st, T, rng, cap) {
   else end(st, 'win', 'stop', cap, 'They missed');
 }
 
+/* One draw picks the defense: below zoneShare a zone, above it a man scheme.
+   With zoneShare 0 this is the old roll exactly. */
+export function rollDefense(r, zoneShare) {
+  if (r < zoneShare) return ZONES[Math.min(ZONES.length - 1, Math.floor(r / zoneShare * ZONES.length))];
+  const u = zoneShare ? (r - zoneShare) / (1 - zoneShare) : r;
+  return SCHEMES[Math.min(SCHEMES.length - 1, Math.floor(u * SCHEMES.length))];
+}
+
 function schemeCaption(use) {
   const n = use.name;
+  if (use.scheme === 'matchup') return 'They switch the ' + n;
+  if (isZone(use.scheme)) return 'The zone sits on the ' + n;
   if (use.scheme === 'switch') return 'They switch the ' + n;
   if (use.scheme === 'over') return 'Over the top of the ' + n;
   return 'Under the ' + n;
@@ -542,6 +553,7 @@ export function reasonOf(sc, st) {
   else if (use && use.scheme === 'switch') d = ' They switched it.';
   else if (use && use.scheme === 'under') d = s.q.zone === 'rim' ? ' They went under and sat in the lane.' : s.q.open >= 4 ? ' They went under and gave him room.' : ' They went under and still got there.';
   else if (use && use.scheme === 'over') d = s.q.open >= 4 ? ' His man got caught on the screen.' : ' They fought over and got a hand up.';
+  if (!d && isZone(st.scheme)) d = s.q.open >= 4 ? ' He found the gap in the ' + SCHEME_NAMES[st.scheme] + '.' : ' The ' + SCHEME_NAMES[st.scheme] + ' closed out.';
 
   const when = s.at.toFixed(1);
   if (how === 'miss') return lead + d + ' The ' + zoneWord(s.q.zone) + ' rimmed out.';

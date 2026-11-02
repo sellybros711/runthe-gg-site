@@ -8,15 +8,15 @@
  * same play always tests the same. The result carries the play's key; when
  * the play or its situation changes, the stored result is stale.
  *
- * DEFENSES is the list Test it walks. Zones (2-3, 1-3-1, 3-2, match-up) join
- * it in the next PR (the owner's call, 2026-10-30): each is one more key the
- * sim understands, and one more row here. */
+ * DEFENSES is the list Test it walks: the three man schemes and the four
+ * zones (2-3, 1-3-1, 3-2, match-up). Each is one key the sim understands and
+ * one row here. */
 import { simulate } from './sim.js';
-import { SCHEMES, SCHEME_NAMES } from './scenario.js';
+import { DEFENSES as ALL, SCHEME_NAMES } from './scenario.js';
 import { playKey, situationKey } from './playbook.js';
 import { hashStr } from './rng.js';
 
-export const DEFENSES = SCHEMES;
+export const DEFENSES = ALL;
 export const DEFENSE_NAMES = SCHEME_NAMES;
 export const RUNS = 40;
 
