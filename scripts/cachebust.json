@@ -2743,8 +2743,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "120",
-      "sha": "896dda462371d4a8"
+      "v": "121",
+      "sha": "b1ee43c97c09e06c"
     },
     "putt/land.js": {
       "v": "15",
@@ -2753,6 +2753,10 @@
     "putt/hole3d.js": {
       "v": "20",
       "sha": "ff389fb15ea156e7"
+    },
+    "putt/trip3d.js": {
+      "v": "1",
+      "sha": "8bbf0857cfe18918"
     },
     "putt/gyms.js": {
       "v": "4",

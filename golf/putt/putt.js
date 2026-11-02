@@ -3373,6 +3373,8 @@ function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el
 var SPACE_TRIP = { moon:'rocket' };
 function spaceTrip(theme, label, name, host, cb){
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  // the real 3D trip (putt/trip3d.js) when it is loaded and knows the way; this flat one is the fallback and the reduced motion card
+  if (!reduce && window.RTT_PUTT_TRIP && window.RTT_PUTT_TRIP.play){ try{ return window.RTT_PUTT_TRIP.play(host, { from:'earth', to:theme, vehicle:SPACE_TRIP[theme], label:label, name:name }, cb); }catch(e){} }
   var wrap = el('<div class="pp-trip"><canvas></canvas><div class="pp-tripcap"><i>' + esc(label) + '</i><b>' + esc(name) + '</b></div><small>Tap to skip</small></div>');
   host.appendChild(wrap); var cv = wrap.querySelector('canvas'), ctx = cv.getContext('2d'), done = false, t0 = performance.now(), DUR = reduce ? 1.6 : 7;
   var LW = 180, LH = Math.max(240, Math.round(180 * (host.clientHeight || 640) / Math.max(1, host.clientWidth || 360)));
