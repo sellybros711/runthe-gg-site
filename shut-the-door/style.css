@@ -129,17 +129,38 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 /* the scorebug: the mound's, a size up */
 .hbug-wrap { margin: 12px 0 0; }
 .scorebar.hb { padding: 10px 16px; border-radius: 18px; gap: 10px; }
-.scorebar.hb .sb-teams { gap: 6px; flex: 1; min-width: 0; }
+/* the runs keep clear of the inning and its walk-off chip (Inter's capitals run wider than the old condensed face) */
+.scorebar.hb .sb-teams { gap: 6px; flex: 1; min-width: 0; margin-right: 4px; }
 .scorebar.hb .sb-team { height: 28px; gap: 9px; }
+/* the rows sit in a grid track: without min-width 0 a long club name grew the row past the track and
+   the runs slid under the inning column (main too, at 320). Now the name gives way first */
+.scorebar.hb .sb-team { min-width: 0; }
+.scorebar.hb .sb-team b { flex: none; }
+/* WALK-OFF LIVE stacks in two short lines under the inning, so the column is the inning's width, not the chip's */
+.scorebar.hb .sb-wo { white-space: normal; max-width: 52px; text-align: center; line-height: 1.1; padding: 3px 5px 2px; }
 .scorebar.hb .sb-club { width: 5px; height: 26px; }
-.scorebar.hb .sb-team .tm { font-size: 15px; color: #c9cfdb; max-width: none; flex: 1; min-width: 0; }
+.scorebar.hb .sb-team .tm { font-size: 14px; letter-spacing: .02em; color: #c9cfdb; max-width: none; flex: 1; min-width: 0; }
 .scorebar.hb .sb-team b { font-size: 24px; }
-.scorebar.hb .sb-inn { font-size: 16px; padding: 8px 10px; }
+.scorebar.hb .sb-inn { font-size: 14px; padding: 8px 10px; }
 .sb-innw { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.sb-wo { font-family: var(--sans); font-weight: 700; font-size: 10.5px; letter-spacing: 0.055em; text-transform: uppercase; color: #fff; background: var(--signal); border-radius: 5px; padding: 2px 6px 1px; white-space: nowrap; }
+.sb-wo { font-family: var(--sans); font-weight: 700; font-size: 9.5px; letter-spacing: .03em; text-transform: uppercase; color: #fff; background: var(--signal); border-radius: 5px; padding: 2px 6px 1px; white-space: nowrap; }
 .scorebar.hb .sb-bases { width: 50px; height: 38px; }
 .scorebar.hb .sb-outs { height: 13px; gap: 6px; }
 .scorebar.hb .sb-outs i { width: 13px; height: 13px; }
+@media (max-width: 379px) {
+  .scorebar.hb { padding: 10px 12px; gap: 7px; }
+  .scorebar.hb .sb-team { gap: 7px; }
+  .scorebar.hb .sb-team .tm { font-size: 13px; }
+  .scorebar.hb .sb-team b { font-size: 21px; }
+  .scorebar.hb .sb-inn { font-size: 13px; padding: 7px 8px; }
+  .scorebar.hb .sb-bases { width: 40px; height: 30px; }
+}
+@media (max-width: 339px) {
+  .scorebar.hb { padding: 9px 10px; gap: 6px; }
+  .scorebar.hb .sb-team .tm { font-size: 12px; letter-spacing: 0; }
+  .scorebar.hb .sb-bases { width: 32px; height: 24px; }
+  .scorebar.hb .sb-lbl { display: none; }
+}
 .scorebar.hb .sb-lbl { font-size: 11px; }
 :root[data-theme="dark"] .scorebar { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .09), var(--shadow); }
 /* the stakes, one line from the pack's own setup */
@@ -639,7 +660,7 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .bd-in .btn { min-height: 42px; padding: 8px 16px; }
 .bd-in .btn.take { width: auto; min-height: 46px; font-size: 21px; box-shadow: 0 2px 0 #c43a12; }
 /* the outcome as a chip, in the result screen's colours */
-.oc { display: inline-block; font-family: var(--sans); font-weight: 700; font-size: 12px; line-height: 1; letter-spacing: .02em; text-transform: uppercase; padding: 5px 8px 4px; border-radius: 8px; white-space: nowrap; color: #fff; background: var(--green); }
+.oc { display: inline-block; font-family: var(--sans); font-weight: 700; font-size: 11px; line-height: 1; letter-spacing: .01em; text-transform: uppercase; padding: 5px 8px 4px; border-radius: 8px; white-space: nowrap; color: #fff; background: var(--green); }
 .oc.tie_held { background: var(--yellow); color: #2a2000; } .oc.doors_open { background: var(--orange); } .oc.walk_off { background: var(--red); }
 .oc.none { background: var(--panel-2); color: var(--faint); }
 .bd-list { padding: 14px 10px 8px; }
@@ -1171,8 +1192,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 /* light glass over a sunlit field is mid grey green, where orange text cannot reach AA (QA, 2026-11-02).
    In light the label is a small signal chip with ink on it (5.6:1 whatever is behind the glass) */
 :root:not([data-theme="dark"]) .bb-ab { color: #0b0f17; background: var(--signal); padding: 2px 5px 1px; border-radius: 4px; letter-spacing: .1em; }
-.bb-hand { flex: none; font-family: var(--sans); font-weight: 700; font-size: 11.5px; letter-spacing: 0.033em; text-transform: uppercase; color: var(--g-dim); }
-.bb-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--sans); font-weight: 600; font-size: 12.5px; letter-spacing: 0.011em; color: var(--g-ink); opacity: .86; font-variant-numeric: tabular-nums; }
+.bb-hand { flex: none; font-family: var(--sans); font-weight: 700; font-size: 11px; letter-spacing: .02em; text-transform: uppercase; color: var(--g-dim); }
+.bb-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--sans); font-weight: 600; font-size: 12px; letter-spacing: 0; color: var(--g-ink); opacity: .86; font-variant-numeric: tabular-nums; }
 .bb-nm { display: block; min-width: 0; font-family: var(--sans); font-weight: 700; font-size: 16px; line-height: 1.05; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 2px; }
 .bb-drawer { display: inline-flex; align-items: center; gap: 6px; padding: 0 11px 0 13px; }
 .bb-drawer svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: transform .18s ease; }
@@ -1413,6 +1434,10 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 }
 /* a phone on its side is short: two columns of pitches */
 @media (orientation: landscape) and (max-height: 520px) {
+  /* the at bat line in Inter on a phone on its side: the slash line keeps room beside AT BAT and SCOUT */
+  .bb-eye { gap: 5px; }
+  .bb-line { font-size: 11px; }
+  .bb-drawer { padding: 0 8px 0 10px; gap: 4px; }
   #s-mound { --col: 284px; --dock-w: 244px; }
   #m-arsenal[data-n="5"], #m-arsenal[data-n="6"] { grid-template-columns: 1fr 1fr; }
   #m-arsenal[data-n="5"] .pitch, #m-arsenal[data-n="6"] .pitch { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "k n v" "k s v"; row-gap: 2px; }
