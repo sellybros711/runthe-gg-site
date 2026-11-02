@@ -3089,8 +3089,8 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "20",
-      "sha": "76e09747d6ec2ae5"
+      "v": "21",
+      "sha": "20b58f83561fd1f3"
     },
     "venues.js": {
       "v": "2",
@@ -3327,16 +3327,16 @@
   },
   "setlist/stage.js": {
     "pxhd.js": {
-      "v": "2",
-      "sha": "82d8338da1a8ffd3"
+      "v": "3",
+      "sha": "fd43453e1997ba7e"
     },
     "rooms.js": {
       "v": "4",
       "sha": "c5def90922ef7838"
     },
     "world.js": {
-      "v": "5",
-      "sha": "3023ba22d6fa7043"
+      "v": "6",
+      "sha": "fd5ec0121ffff17a"
     }
   },
   "shut-the-door/3d/boot.js": {
@@ -3381,8 +3381,8 @@
   },
   "setlist/world.js": {
     "pxhd.js": {
-      "v": "2",
-      "sha": "82d8338da1a8ffd3"
+      "v": "3",
+      "sha": "fd43453e1997ba7e"
     },
     "outfits.js": {
       "v": "1",
