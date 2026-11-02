@@ -362,8 +362,8 @@ function laceMesh() {
     tube([k.clone().add(new THREE.Vector3(-0.003, 0, 0)), k.clone().add(new THREE.Vector3(0, 0.002, 0.001)), k.clone().add(new THREE.Vector3(0.003, 0, 0))], 0.0028, 6, 0);
   }
   // the web's basket on its back: three across, two up
-  for (const y of [0.06, 0.088, 0.114]) tube(laidLace([[0.07, y], [0.09, y + 0.004], [0.118 - Math.max(0, y - 0.1) * 1.2, y + 0.002]], 0.0022, 0.004, 0.02), 0.0026, 5, 0);
-  for (const x of [0.084, 0.102]) tube(laidLace([[x - 0.004, 0.03], [x, 0.08], [x - 0.004, 0.134 - (x - 0.084) * 1.2]], 0.0016, 0.004, 0.02), 0.0026, 5, 0);
+  for (const y of [0.06, 0.088, 0.114]) tube(laidLace([[0.07, y], [0.09, y + 0.004], [0.118 - Math.max(0, y - 0.1) * 1.2, y + 0.002]], 0.0022, 0.004, -0.012), 0.0026, 5, 0);
+  for (const x of [0.084, 0.102]) tube(laidLace([[x - 0.004, 0.03], [x, 0.08], [x - 0.004, 0.134 - (x - 0.084) * 1.2]], 0.0016, 0.004, -0.012), 0.0026, 5, 0);
   // welting: the raised leather piping down each seam between the stalls on the back, and the thumb's
   for (const [x, top] of [[-0.035, 0.084], [0, 0.11], [0.035, 0.106]]) tube(laidLace([[x, -0.03], [x - 0.001, top * 0.6], [x - 0.002, top]], 0.0012, 0.005), 0.0024, 6, 2);
   // stitches: two rows down each seam beside the welting, round the patch, along the strap's edges
@@ -497,10 +497,11 @@ const UP = new THREE.Vector3(0, 1, 0);
    the wrist, a forearm's own shape (fullest a fifth of the way down, slim at the wrist), lit with the
    hitters' skin (materials.js skin: the wrapped falloff and the sheen), and over it his undershirt's
    sleeve in the club's colour from the elbow down to its cuff: SLEEVES, his by a hash of his name
-   (relievers wear both: to just past the elbow, or three quarter, to mid forearm). No logo on it.
+   (relievers wear both: to just past the elbow, or a little longer, toward mid forearm; most of
+   the forearm he sees at the set is skin). No logo on it.
    The upper arm and the elbow stay in the sleeve. */
 const FORE_R = [[0, 0.04], [0.1, 0.045], [0.24, 0.047], [0.45, 0.042], [0.7, 0.034], [0.9, 0.029], [1, 0.028]];
-const SLEEVES = [0.14, 0.46];   // the cuff, as a share of the forearm from the elbow
+const SLEEVES = [0.1, 0.3];     // the cuff, as a share of the forearm from the elbow
 function forearm(mats, k = 1) {
   const g = new THREE.Group();
   const geo = new THREE.LatheGeometry(FORE_R.map(([y, r]) => new THREE.Vector2(r * k, y)), 18);
