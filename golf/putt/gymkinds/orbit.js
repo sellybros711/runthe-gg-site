@@ -91,7 +91,6 @@ function parse(G){ if (PARSED[G.id]) return PARSED[G.id]; var raw = {}, sw = {},
     if (c === 'w'){ if (!q) throw new Error(G.id + ': a bulkhead off a turntable at ' + i); wall0[q[0] + ':' + q[1] + ':' + q[2]] = 1; }
     else shards.push(q ? [i, q[0], q[1], q[2]] : [i, -1, 0, 0]); });
   shards.sort(function(a, b){ return a[0] - b[0]; });
-  Object.keys(sw).forEach(function(t){ Q.cell[+t] = '.'; }); Object.keys(ice).forEach(function(t){ Q.cell[+t] = '.'; });
   Q.sec = sec; Q.wall0 = wall0; Q.shards = shards; Q.sw = sw; Q.ice = ice; Q.allK = (1 << shards.length) - 1; Q.nd = (G.discs || []).length;
   return PARSED[G.id] = Q; }
 function init(G){ var Q = parse(G); return { p:Q.start, r:0, k:0 }; }
