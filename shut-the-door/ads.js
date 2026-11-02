@@ -53,4 +53,24 @@
   }
 
   window.STD_ADS = { screen: screen, between: between };
+
+  /* THE FIRST SCREEN. The page opens on the home already showing (its markup has .screen.on), so
+     show() is never called for it and the banner was never asked for there (the owner, 2026-11-02:
+     "I don't see any"). Ask once the loading screen has lifted (#app loses inert), never over the
+     loader, which has no content for an ad to sit beside. */
+  function first() {
+    var app = document.getElementById('app');
+    var go = function () {
+      var on = document.querySelector('.screen.on');
+      screen(on ? on.id : document.body.dataset.screen);
+    };
+    if (!app || !app.hasAttribute('inert')) return go();
+    var mo = new MutationObserver(function () {
+      if (app.hasAttribute('inert')) return;
+      mo.disconnect();
+      go();
+    });
+    mo.observe(app, { attributes: true, attributeFilter: ['inert'] });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', first); else first();
 })();
