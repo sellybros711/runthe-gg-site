@@ -20,7 +20,8 @@ Home has two parts: **Play the scenario** (the game) and **My Playbooks** (needs
 account). A playbook play is drawn as a **storyboard**: Next frame opens a frame where everyone
 ended, earlier frames show faintly, Play frame runs just that frame. Frames are presentation only:
 the sim never reads them. Plays are named from the coach's terminology, tested against every
-defense (switch, fight over, go under; zones come next), and printed as frames side by side.
+defense (switch, fight over, go under, and the 2-3, 1-3-1, 3-2 and match-up zones), and printed as
+frames side by side.
 Storage is the shared cloud saves (`/assets/cloudsave.js`, game `last_shot`), no new table.
 
 ## Where things are
