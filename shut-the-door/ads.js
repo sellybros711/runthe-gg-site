@@ -19,8 +19,8 @@
  */
 (function () {
   'use strict';
-  var STICKY_SLOT = { sticky: '0000000000' };                          // shut-the-door-sticky
-  var RAIL_SLOTS = { left: '0000000000', right: '0000000000' };        // shut-the-door-rail-left, shut-the-door-rail-right
+  var STICKY_SLOT = { sticky: '2811195197' };                          // shut-the-door-sticky
+  var RAIL_SLOTS = { left: '4451579924', right: '7871950188' };        // shut-the-door-rail-left, shut-the-door-rail-right
   var ON = ['s-home', 's-result', 's-board', 's-surv'];
 
   function screen(id) {

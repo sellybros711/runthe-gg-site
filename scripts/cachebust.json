@@ -117,8 +117,8 @@
       "sha": "b8c2fca581834fac"
     },
     "ads.js": {
-      "v": "3",
-      "sha": "dd0d846338fe2651"
+      "v": "4",
+      "sha": "730f65c38c3be65e"
     }
   },
   "arcade/almamater/index.html": {
@@ -3173,8 +3173,8 @@
       "sha": "84f0df846f560e87"
     },
     "ads.js": {
-      "v": "1",
-      "sha": "63f345bb3f27c92e"
+      "v": "2",
+      "sha": "0532e84f54b65a4e"
     },
     "ui.js": {
       "v": "55",
