@@ -3181,8 +3181,8 @@
       "sha": "b7678693ee2dce28"
     },
     "3d/boot.js": {
-      "v": "82",
-      "sha": "ba76c2a17f049231"
+      "v": "83",
+      "sha": "170b80b9d1d908f2"
     }
   },
   "shut-the-door/lab/index.html": {
@@ -3311,8 +3311,8 @@
   },
   "shut-the-door/3d/boot.js": {
     "stage.js": {
-      "v": "86",
-      "sha": "9a40f167186a817a"
+      "v": "87",
+      "sha": "e5286e19c9989b15"
     }
   },
   "wrestling/ring3d/boot.js": {
@@ -3397,8 +3397,8 @@
       "sha": "33685a59bf0a3640"
     },
     "firstperson.js": {
-      "v": "14",
-      "sha": "35b6a4870b818f58"
+      "v": "15",
+      "sha": "3f7ced0f79832b55"
     }
   },
   "wrestling/ring3d/arena.js": {
@@ -3541,6 +3541,14 @@
     "looks.js": {
       "v": "6",
       "sha": "7a7a7a9a59f2db72"
+    },
+    "looks-data.js": {
+      "v": "2",
+      "sha": "eddb901816701f48"
+    },
+    "materials.js": {
+      "v": "8",
+      "sha": "7cf9dc9116ed14f1"
     },
     "load.js": {
       "v": "8",
