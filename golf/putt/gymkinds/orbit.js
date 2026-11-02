@@ -32,44 +32,48 @@ var LIB = function(){ return root.RTT_PUTT_GYMS.lib; };
 /* THE GYMS. moves and proof are the solver's fewest steps and one shortest solution (U R D L), recorded from solve().
    The civilian's lines nudge, never solve. */
 var GYMS = [
-  /* THE TURNING DECK, mid-world: one turntable between the gate and the vault, a shard riding it. */
+  /* THE TURNING DECK, mid-world: one turntable between the gate and the vault, a shard in the alcove beside it. The way
+     north is open from the start; the alcove opens on one turn, and the way north again on the next, not a turn back. */
   { id:'saturn1', kind:'orbit', world:'saturn', leg:9, name:'The Turning Deck', badge:'Ring Badge', mech:['orbit'], pay:500, look:{ wall:'stone' },
-    discs:[[4, 4]], moves:0, proof:'',
+    discs:[[4, 5]], moves:28, proof:'UURRRLLUULLLRRRDDRRLLLUUUUUU',
     who:{ look:{ skin:'medium', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'male' } },
     say:['This deck turns. Step on the gold plate and watch what comes round.',
       'The wall that blocks you one turn is the way through the next.',
-      'A shard on the deck rides with it. Bring it round to you.'],
+      'Going back the way it came is not the only way to undo a turn.'],
     rows:[
       '#########',
       '####C####',
       '#.......#',
       '#.......#',
-      '###.w.###',
-      '###ww.###',
-      '###.s.###',
-      '#1......#',
+      '###w..###',
+      '##sw.w###',
+      '###w..###',
+      '#......1#',
       '#.......#',
       '###L@####',
       '####G####'
     ] },
-  /* THE ICE RING, the gatekeeper: two turntables and a sheet of ring ice. */
+  /* THE ICE RING, the gatekeeper: two turntables, three shards (one riding the lower deck) and a hall of ring ice between
+     them, whose slide ends on the upper deck's plate. */
   { id:'saturn2', kind:'orbit', world:'saturn', leg:18, name:'The Ice Ring', badge:'Titan Badge', mech:['orbit', 'ice'], pay:1000, keeper:true, look:{ wall:'stone' },
-    discs:[[2, 4], [6, 7]], moves:0, proof:'',
+    discs:[[4, 9], [4, 4]], moves:33, proof:'URRLLUUUUULLRRUURLDDLLRLRUULRUURU',
     who:{ look:{ skin:'light', polo:'white', hat:'white', pants:'white', hair:'red', hairStyle:'ponytail', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' } },
     say:['Two decks, two plates. Each plate only turns its own deck.',
-      'The ice takes you a long way for one step. Make sure something stops you where you want.',
-      'Turn a deck so it stops your slide.'],
+      'The ice takes you a long way for one step. See where it leaves you.',
+      'A shard on a deck rides with it. Bring it round before you leave it behind.'],
     rows:[
       '#########',
       '####C####',
       '#.......#',
-      '#.ww....#',
-      '#.s.==2.#',
-      '#www....#',
-      '#1...w..#',
-      '#....s..#',
-      '#....w..#',
+      '###...###',
+      '##sw..s##',
+      '###www###',
+      '#2=.=.=.#',
       '#.......#',
+      '###www###',
+      '###..s.##',
+      '###ww.###',
+      '#.....1.#',
       '###L@####',
       '####G####'
     ] }
@@ -136,8 +140,8 @@ function mats(){ return {
 function view(R){ var Q = R.Q, T = R.T, ctx = R.ctx, G = Q.G, s0 = null, swing = {};
   function P(x, y, z){ return R.scr(x, y, z == null ? DECK + 0.015 : z); }
   function mid(k){ var d = G.discs[k], i = d[1] * Q.W + d[0], q = R.at(i); return q; }
-  // the angle a section stands at now, a quarter turn swinging in while it turns
-  function ang(k, s){ var a = rotOf(s, k) * Math.PI / 2, w = swing[k]; if (w && w.u < 1) a -= (1 - w.u) * Math.PI / 2; return a; }
+  // the angle a section stands at now: while it turns, swinging from where it was to a quarter on
+  function ang(k, s){ var w = swing[k]; if (w) return (w.from + w.u) * Math.PI / 2; return rotOf(s, k) * Math.PI / 2; }
   function spot(k, dx, dy, a){ var c = mid(k), ca = Math.cos(a), sa = Math.sin(a); return [c[0] + (dx * ca - dy * sa) * T, c[1] + (dx * sa + dy * ca) * T]; }
   // the turntable's disc on the deck: pale ring ice inside a gold rim, three ticks so its turn reads
   function plate(k, s, tsec){ var c = mid(k), a = ang(k, s), n = 40, rr = T * 1.45, j;
@@ -168,7 +172,7 @@ function view(R){ var Q = R.Q, T = R.T, ctx = R.ctx, G = Q.G, s0 = null, swing =
     if (Q.nd > 1){ ctx.font = '700 ' + Math.max(8, Math.round(rr * 1.1)) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff'; ctx.fillText(String(k + 1), c[0], c[1]); } }
   return {
     lay:function(s){ s0 = s; swing = {}; },
-    move:function(m, u){ if (m[0] === 'deck'){ swing[m[1]] = { u:u }; if (u >= 1){ var c = mid(m[1]); R.burst(c[0], c[1], DECK + 0.3, ['#ffe48a', '#ffffff'], 8, 0.7, 0.5); R.sfx('blip'); } }
+    move:function(m, u){ if (m[0] === 'deck'){ swing[m[1]] = { u:u, from:m[2] }; if (u >= 1){ var c = mid(m[1]); R.burst(c[0], c[1], DECK + 0.3, ['#ffe48a', '#ffffff'], 8, 0.7, 0.5); R.sfx('blip'); } }
       if (u >= 1 && m[0] === 'shard'){ var q = R.at(m[1]); R.burst(q[0], q[1], DECK + 0.3, ['#9fd8ff', '#ffffff'], 8, 0.8, 0.6); } },
     things:function(ds, tsec){ if (!s0) return; var s = s0;
       for (var k = 0; k < Q.nd; k++){ var a = ang(k, s);
