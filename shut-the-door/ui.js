@@ -1520,15 +1520,17 @@ function pickoffIt() {
   S.grid.setDisabled(true);
   updateThrow();
   var basesBefore = st.bases | 0;
+  /* The broadcast of the throw is not his view of the plate, so the zone steps aside, as it does for
+     a pitch (the owner, 2026-11-02: the zone sat over the infield through the pickoff). It goes on the
+     tap, as he steps off, so its fade is done before the throw plays; every path below brings it back */
+  var real0 = S.scene && S.scene.real;
+  if (real0 && typeof real0.pickoff === 'function') $('m-scene').classList.add('flying');
   API.pickoff(st.outingId).then(function (res) {
     var ev = res.pickoff;
     /* the throw on the field, when the stage plays one (stage.js pickoff, the camera agent's #744);
-       without it the line and the scorebug say what happened. The broadcast is not his view of the
-       plate, so the zone steps aside while it plays, as it does for a pitch (the owner, 2026-11-02:
-       the zone sat over the infield through the pickoff) */
+       without it the line and the scorebug say what happened */
     var real = S.scene && S.scene.real;
     var plays = real && typeof real.pickoff === 'function';
-    if (plays) $('m-scene').classList.add('flying');
     var thrown = plays
       ? Promise.resolve(real.pickoff({ po: ev, bases: basesBefore, hooks: { sound: sound, field: hudRunners } })).catch(function (e) { if (window.console) console.warn(e); })
       : Promise.resolve();
