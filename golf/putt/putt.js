@@ -1857,11 +1857,11 @@ var LEVELS = [
   // Ring Road: up the lane into the ring rail, and it carries you round the corner to the right. Clouds lie inside the bend.
   { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 6, -24), rm(-4, -12, 26, -24)], [1, -2.5], [20, -18]); ring(H, 7, -14, 6, 3, Math.PI, Math.PI / 2); zoneR(H, M.WATER, 8, -12, 26, -13.8);
     H.comps.push({ k:'mound', x:16, y:-21, s:2.4, a:0.16 }); bumps(H, T, [[22.5, -22.5, 0.5], [-2, -20, 0.6], [3.6, -6, 0.55], [12, -22.6, 0.5]]); zoneC(H, M.MUD, -2, -8, 1.1); zoneR(H, M.MUD, 24, -16, 26, -18);
-    teeSide(H, T); bowl(H, 20, -18, 1.5, 0.14); return H; } },
+    blk(H, T, 15.4, -16.2, 16.4, -21.5); teeSide(H, T); bowl(H, 20, -18, 1.5, 0.14); return H; } },
   // Titan Haze: a bank of haze across the middle drifts you right, toward the clouds on that side. Aim left and let it bring you back.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [-3, -2.5], [3, -32]); haze(H, -7, -22, 7, -12, 4.5, 0); zoneR(H, M.WATER, 5.2, -22, 7, -12);
     H.comps.push({ k:'mound', x:-3, y:-27, s:2.6, a:0.18 }); bumps(H, T, [[-4.5, -7, 0.6], [4, -8, 0.55], [-5, -30, 0.55], [5, -27, 0.5], [0, -26, 0.5]]); zoneC(H, M.MUD, 4.6, -4, 1); zoneR(H, M.MUD, -7, -34, -4, -36);
-    blk(H, T, 0.6, -29.4, 2.4, -30.4); teeSide(H, T); bowl(H, 3, -32, 1.5, 0.14); return H; } },
+    blk(H, T, 0.6, -29.4, 2.4, -30.4); pen(H, T, 3, -32); teeSide(H, T); bowl(H, 3, -32, 1.5, 0.14); return H; } },
   // Ice Field: a field of ring ice chunks on a deck that tilts left. Find the lane through them.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [-2, -32]); H.comps.push({ k:'plane', gx:0.022, gy:0 });
     bumps(H, T, [[-3, -9, 0.6], [2, -11, 0.6], [-1, -15, 0.55], [4.5, -15, 0.55], [-4.5, -19, 0.6], [0.5, -20, 0.5], [3, -25, 0.55], [-3.5, -26, 0.5]]);
@@ -1878,11 +1878,11 @@ var LEVELS = [
   // The Hexagon: Saturn's north pole storm, a great slow whirl in a six sided room. Ride its edge.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [9, -9], [9, -25], [4, -34], [-4, -34], [-9, -25], [-9, -9]])], [0, -2.5], [-2, -30]); devil(H, 0, -17, 4, 5, 1.8, 0, 7, 0);
     bumps(H, T, [[-5.5, -9, 0.6], [5.5, -9, 0.6], [-6.5, -22, 0.55], [6.5, -24, 0.55], [2.5, -28, 0.5]]); zoneC(H, M.MUD, 5, -29, 1.1); zoneR(H, M.ICE, -8, -14, -5, -20); H.comps.push({ k:'plane', gx:-0.012, gy:0 });
-    teeSide(H, T); bowl(H, -2, -30, 1.5, 0.14); return H; } },
+    pen(H, T, -2, -30); teeSide(H, T); bowl(H, -2, -30, 1.5, 0.14); return H; } },
   // Ring Lane: the ring rail turns you left this time, and haze leans on you toward the clouds.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 4, -24), rm(-26, -12, 4, -24)], [-1, -2.5], [-20, -18]); ring(H, -7, -14, 6, 3, 0, -Math.PI / 2); haze(H, -18, -24, -12, -12, 0, 2.5);
     zoneR(H, M.WATER, -26, -12, -8, -13.8); H.comps.push({ k:'mound', x:-16, y:-21, s:2.2, a:-0.14 }); bumps(H, T, [[-22.5, -22.5, 0.5], [2, -20, 0.6], [-3.6, -6, 0.55], [-10, -22.6, 0.5]]); zoneC(H, M.MUD, 2, -8, 1.1);
-    zoneR(H, M.MUD, -26, -16, -24, -18); teeSide(H, T); bowl(H, -20, -18, 1.5, 0.14); return H; } },
+    zoneR(H, M.MUD, -26, -16, -24, -18); blk(H, T, -16.4, -16.2, -15.4, -21.5); teeSide(H, T); bowl(H, -20, -18, 1.5, 0.14); return H; } },
   // Encke Gap: a gap of cloud across the deck, an ice bridge over it on its clock.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [0, -2.5], [2, -34]); zoneR(H, M.WATER, -6, -16, 6, -20); drawb(H, -2.4, -16, 2.4, -20, 3.2, 0, 0.7); blk(H, T, -6, -15.4, -2.4, -16); blk(H, T, 2.4, -15.4, 6, -16);
     haze(H, -6, -30, 6, -25, 2.5, 0); dune(H, 0, -9, 0.3, -1, 1.2, 0.12); bumps(H, T, [[3.6, -7, 0.55], [-4, -31, 0.5], [4.4, -28, 0.5], [-4.4, -23, 0.5]]); zoneR(H, M.MUD, -6, -36, -3, -38);
