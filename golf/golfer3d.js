@@ -1610,7 +1610,18 @@
       for(let j=0;j<4;j++) push(ellipsoid(Q(-3.9-0.1*j,7.0-1.5*j,0),[AXs[0],AXs[1],AXs[2]],[0.9,0.75,0.42],X(P.g),{gloss:2,noCast:1}));   // spines down the back
       for(const k of [-1.55,0,1.55]){ let prev=Q(5.9,1.75,k*1.05);                                          // three claws, curling down off the toe
         for(let j=0;j<5;j++){ const c=Q(6.3+0.72*j,1.75-0.075*j*j-0.05*j,k*(1.05+0.06*j)), r=0.78*(1-0.16*j);
-          push(ellipsoid(c,AXs,[r*1.15,r,r],X(j<1?P.F:j<2?P.f:P.c),{gloss:3,noCast:j>0?1:0})); prev=c; } } } };
+          push(ellipsoid(c,AXs,[r*1.15,r,r],X(j<1?P.F:j<2?P.f:P.c),{gloss:3,noCast:j>0?1:0})); prev=c; } } },
+    // Mars Boots (Red Planet's world prize): a padded white surface boot on a thick rust tread, a blue band at the ankle
+    ppmarsboots(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.6,0.55),AXs,[5.8,0.8,3.4],X(P.s),{gloss:0}));                                         // the rust tread
+      for(let j=0;j<5;j++) push(ellipsoid(Q(-2.6+1.9*j,0.2),AXs,[0.5,0.35,3.2],X(P.r),{noCast:1}));            // its lugs
+      push(ellipsoid(Q(3.9,1.9),AXs,[2.9,1.45,3.15],X(P.W),{gloss:2}));                                        // the padded toe
+      push(ellipsoid(Q(0.9,2.5),AXs,[3.4,2.05,3.05],X(P.W),{gloss:2}));
+      push(ellipsoid(Q(-0.2,4.8),AXs,[3.75,3.0,3.8],X(P.W),{gloss:2}));                                        // the boot, up over the trouser hem
+      push(ellipsoid(Q(-0.2,3.4),AXs,[3.85,0.55,3.9],X(P.g),{gloss:1,noCast:1}));                              // a quilted seam round it
+      push(ellipsoid(Q(-0.2,6.6),AXs,[3.9,0.7,3.95],X(P.b),{gloss:2,cut:l=>Math.hypot(l[0],l[2])>0.78}));   // the blue ankle band
+      push(ellipsoid(Q(-0.2,7.3),AXs,[3.1,0.5,3.15],X('#1a1a22'),{noCast:1}));
+      push(ellipsoid(Q(2.4,3.3,2.95*s),AXs,[0.75,0.75,0.25],X(P.o),{gloss:3,noCast:1})); } };
   /* THE PRO SHOP LINE'S SHOES. Spikeless: a knit upper on a deep white foam midsole and a grey rubber outsole of nubs,
      a coloured stripe along the side, white laces. Kiltie brogues: polished leather on a thin welted sole, a wingtip toe
      cap punched with brogueing, and the kiltie: a fringed leather flap laid over the laces. Tour dial: a sleek white
@@ -1658,6 +1669,9 @@
     pplavarock(push,sc0,sax,sr,P,ank){ const S=seeds(7,5); push(ellipsoid(sc0,sax,sr,'shoe',{paint:magma(P,S,0.2,0.08),gloss:1}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45,{dt:1,gloss:0})); push(over(sc0,sax,sr.map(v=>v*1.01),'x:'+P.y,l=>l[1]>=-0.45&&l[1]<-0.25,{dt:1,gloss:0}));
       push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'shoe',{paint:magma(P,seeds(6,9),0.2,0.08),gloss:1})); },
+    ppmarsboots(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'x:'+P.W,{gloss:2,bias:.15}));
+      push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45)); push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'x:'+P.W,{gloss:2}));
+      push(ellipsoid(add(ank,sc(sax[1],1.6)),sax,[2.85,0.6,2.95],'x:'+P.b,{gloss:2})); },
     ppdinoclaw(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'shoe',{paint:scales(P,4,2),gloss:2}));
       push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5));
       push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'shoe',{paint:scales(P,4,2),gloss:2}));
@@ -1691,6 +1705,9 @@
         if(c) return {c:y<-0.15?P.w:P.W,gloss:1}; }
       if(p[2]<-0.1&&Math.hypot(x+0.3,y-0.35)<0.3) return {c:P.W,gloss:1};                                      // a little one round the back
       return {c:y>0.6?P.h:P.C}; } },
+    // the Red Planet Ball: rust with dark lowlands, a white cap at each pole and the great canyon across its middle
+    ppmars:{ f:(p,P)=>{ if(Math.abs(p[1])>0.84) return {c:P.W,gloss:2}; if(Math.abs(p[1]+0.08+0.12*Math.sin(p[0]*3))<0.035&&p[2]>0) return {c:P.s};
+      for(const s of SPOT) if(s.k&&Math.hypot(...sub(p,s.c))<s.r*1.3) return {c:P.d,gloss:1}; return {c:p[1]+p[0]*0.3>0.25?P.h:P.C,gloss:1}; } },
     ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
     ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
       if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};
