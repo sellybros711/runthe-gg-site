@@ -3825,15 +3825,15 @@ var GREETERS = {
     tip:['Glacier ice slide forever. Tar pit keep ball forever. Choose.', 'Mammoths walk where they want. You wait for mammoth.'],
     bye:'Go now. Before big melt.' },
   moon:{ name:'Commander Vega', role:'Base Commander', look:{ skin:'medium', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'bun', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' },
-    hi:['Welcome to Moon Base. Mind the edges.', 'I run this base. Every putt up here bends.'],
+    hi:['All aboard for Moon Base.', 'I run the base up there. Every putt up there bends.'],
     tip:['Every moon pulls. Aim wide and let it bring you round.', 'Too slow near a moon and it keeps your ball.', 'Past the rails is deep space. Nothing comes back.'],
     bye:'Safe orbit. See you back on Earth.' },
   mars:{ name:'Dr. Sol Amari', role:'Colony Geologist', look:{ skin:'deep', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'male' },
-    hi:['Welcome to Mars. Watch the wind.', 'I study the rocks here. You get to putt on them.'],
+    hi:['Next stop, Mars. Climb aboard.', 'I study the rocks there. You get to putt on them.'],
     tip:['A dust devil spins your ball the way it turns. Wait for it, or use it.', 'Every hole here rolls. Read the dunes.', 'The canyons are deep. Nothing comes back up.'],
     bye:'Clear skies. Look out for storms.' },
   saturn:{ name:'Captain Lyra Okoye', role:'Ring Station Captain', look:{ skin:'brown', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'bun', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' },
-    hi:['Welcome aboard the ring station.', 'I run this station. The course is the rings.'],
+    hi:['Next stop, Saturn. All aboard.', 'I run the ring station out there. The course is the rings.'],
     tip:['Roll into a ring rail and it carries you round. Play the exit.', 'Titan haze drags and drifts. Aim upwind.', 'Off the deck is a long fall into the clouds.'],
     bye:'Safe travels. Wave at Titan for me.' },
   candy:{ name:'Wendell', role:'Factory Foreman', look:{ skin:'deep', polo:'white', hat:'red', pants:'wine', hair:'black', hairStyle:'short', cap:true, hatStyle:'flat', gender:'male' },
@@ -3955,7 +3955,7 @@ function trailSpec(tid, from){
   var leg = (to - 1) % K + 1, st = !cross && tid === 'main' ? stopOf(th, leg) : '', kitAs = st ? th + '~' + st : null;   // the walk goes where its holes go (land.js, STOPS)
   // a world with gyms (gyms.js) carries them on its two trails and none of the small puzzles on the rest
   var gd = !cross && tid === 'main' ? gymAt(th, leg) : null;
-  return { gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
+  return { gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, space:cross && tid === 'main' && SPACE_TRIP[th] ? SPACE_TRIP[th] : null, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length && !(cross && tid === 'main' && SPACE_TRIP[th]) ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
    hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
