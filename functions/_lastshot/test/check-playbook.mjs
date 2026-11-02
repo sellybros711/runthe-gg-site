@@ -116,7 +116,7 @@ async function run(name, viewport, mobile) {
   // Test it: every defense
   await page.click('#pbTest');
   await page.waitForSelector('#testTable', { timeout: 60000 });
-  ok((await page.locator('#testTable tr[data-def]').count()) === 3, 'Test it gives a row for each defense');
+  ok((await page.locator('#testTable tr[data-def]').count()) === 7, 'Test it gives a row for each defense, the four zones included');
   await shot('4-testit');
   await page.click('#testClose');
 

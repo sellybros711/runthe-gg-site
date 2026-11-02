@@ -2,12 +2,13 @@
  * coach's words, and the playbook file. Pure: no browser, no account. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SCENARIO as SC, SCHEMES } from '../scenario.js';
+import { SCENARIO as SC, SCHEMES, ZONES, DEFENSES } from '../scenario.js';
+import { rollDefense } from '../sim.js';
 import { simulate } from '../sim.js';
 import * as P from '../playbook.js';
 import * as N from '../names.js';
 import * as B from '../book.js';
-import { testPlay, testKey, DEFENSES } from '../testit.js';
+import { testPlay, testKey, DEFENSES as TEST_DEFENSES } from '../testit.js';
 
 const pt = (x, y) => ({ x, y });
 const spots = () => JSON.parse(JSON.stringify(SC.spots));
@@ -68,16 +69,17 @@ test('a forced scheme is rolled first, so the rest falls the same way', () => {
     const r = simulate(SC, PIN, seed);
     assert.deepEqual(simulate(SC, PIN, seed, { scheme: r.scheme }), r, 'forcing the rolled scheme changes nothing (seed ' + seed + ')');
   }
-  for (const s of SCHEMES) assert.equal(simulate(SC, PIN, 3, { scheme: s }).scheme, s);
+  for (const s of DEFENSES) assert.equal(simulate(SC, PIN, 3, { scheme: s }).scheme, s);
   assert.equal(simulate(SC, PIN, 3, { scheme: 'zone' }).scheme, simulate(SC, PIN, 3).scheme, 'an unknown scheme is ignored');
 });
 
 test('Test it runs every defense, the same every time', () => {
   const a = testPlay(SC, PIN, { runs: 12 }), b = testPlay(SC, PIN, { runs: 12 });
   assert.deepEqual(a, b);
-  assert.deepEqual(Object.keys(a.rows), DEFENSES);
-  for (const d of DEFENSES) { assert.equal(a.rows[d].n, 12); assert.ok(a.rows[d].w <= 12); }
-  assert.equal(a.all.n, 12 * DEFENSES.length);
+  assert.deepEqual(Object.keys(a.rows), TEST_DEFENSES);
+  assert.deepEqual(TEST_DEFENSES, DEFENSES, 'Test it walks every defense, zones included');
+  for (const d of TEST_DEFENSES) { assert.equal(a.rows[d].n, 12); assert.ok(a.rows[d].w <= 12); }
+  assert.equal(a.all.n, 12 * TEST_DEFENSES.length);
 });
 
 test('a test goes stale when the play or its situation changes, not when frames do', () => {
@@ -169,4 +171,39 @@ test('a full book stays under the cloud save cap', () => {
   const b = B.newBook('Big');
   for (let i = 0; i < B.MAX_PLAYS; i++) b.plays.push(B.newPlay(b, PIN, { name: 'Play ' + i }));
   assert.ok(B.bytesOf(b) < B.MAX_BYTES, 'bytes ' + B.bytesOf(b));
+});
+
+/* ---------- zones ---------- */
+
+test('the roll picks a zone zoneShare of the time, and with no zones it is the old roll', () => {
+  for (let i = 0; i < 100; i++) { const r = i / 100; assert.equal(rollDefense(r, 0), SCHEMES[Math.floor(r * 3)]); }
+  const n = {}; for (let i = 0; i < 1000; i++) { const d = rollDefense(i / 1000, 0.25); n[d] = (n[d] || 0) + 1; }
+  assert.equal(ZONES.reduce((a, z) => a + (n[z] || 0), 0), 250);
+  for (const z of ZONES) assert.ok(n[z] > 50, z);
+  for (const s of SCHEMES) assert.ok(n[s] > 200, s);
+});
+
+const CORNER = { spots: spots(), steps: [
+  { kind: 'move', who: 'O1', pts: [...KILL, pt(25, 31)] }, { kind: 'move', who: 'O3', pts: [pt(2, 3)] },
+  { kind: 'pass', from: 'O1', to: 'O3' }, { kind: 'shoot', who: 'O3' }] };
+const DRIVE = { spots: spots(), steps: [{ kind: 'move', who: 'O1', pts: [...KILL, pt(25, 31), pt(25, 7)] }, { kind: 'shoot', who: 'O1' }] };
+const avg = (play, d, f) => { let t = 0; for (let s = 1; s <= 30; s++) t += f(simulate(SC, play, s * 7919, { scheme: d })); return t / 30; };
+
+test('each zone has the soft spot a coach attacks', () => {
+  const open = (p, d) => avg(p, d, r => r.shot ? r.shot.open : 0);
+  // a 1-3-1 and a 3-2 give up the corner three; a 2-3 covers it low
+  assert.ok(open(CORNER, 'zone131') > open(CORNER, 'zone23') + 3, '1-3-1 corner');
+  assert.ok(open(CORNER, 'zone32') > open(CORNER, 'zone23') + 3, '3-2 corner');
+  // a 2-3 gives up the wing three off a pin-down; the 1-3-1 and 3-2 sit on the wings
+  assert.ok(open(noBeats(PIN), 'zone23') > open(noBeats(PIN), 'zone131') + 2, '2-3 wing');
+  // every zone packs the lane against a drive
+  const p = d => avg(DRIVE, d, r => r.shot ? r.shot.p : 0);
+  for (const z of ['zone23', 'zone131', 'zone32']) assert.ok(p(z) < p('switch') - 0.05, z + ' packs the lane');
+});
+
+test('a zone tells you it is a zone, and the result says so', () => {
+  const r = simulate(SC, noBeats(PIN), 11, { scheme: 'zone23' });
+  assert.ok(r.events.some(e => e.text === 'They are in a 2-3 zone'));
+  assert.equal(r.schemeName, '2-3 zone');
+  assert.ok(/zone/.test(r.reason) || r.how === 'turnover' || r.how === 'clock', r.reason);
 });
