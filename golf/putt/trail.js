@@ -341,7 +341,7 @@ function plan(spec){
   // what the clearing holds: a chest most often, else a pile of things to smash
   var clrKind = R() < 0.7 ? 'chest' : 'pile';
   // the key and the locked gate are the trail's little puzzle: more than half the chests are behind one
-  var locked = !spec.cross && clrKind === 'chest' && R() < 0.55;
+  var locked = !spec.cross && clrKind === 'chest' && R() < 0.55 && !spec.landed;
   /* THE REAL HOLES AT EACH END (spec.holeTo, spec.holeFrom, rastered by putt.js). The hole you are walking to
      lies beyond the arch with its tee at the path; the hole you just left lies behind the start with its cup
      nearest you. Each is a grid of codes at a quarter of a trail foot, placed by its south west corner. */
@@ -479,6 +479,11 @@ function plan(spec){
   P.place = place;
 
   // the end: an arch over the path at y = 0, and the hole's carpet beyond it
+  /* AND ON THE FAR SIDE, THE SAME SHIP (the owner, 2026-11-02: "After the rocket ship lands it needs to put you on the
+     starting path on your way to the next hole"). A landing walk (spec.landed, putt.js) is the new world's own: it sets off
+     from the ship standing on its pad behind the start, and goes to the hole the usual way. It carries no chest and no
+     golden ball, so a world's eighteen are still the eighteen walks into its holes. */
+  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5); place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); used.push({ x:lx, y:L + 5, r:5.5 }); }
   if (SPACE){ place('padRocket', archX, -5.5, 2.6, 19, { w:9, d:6 }); place('launchpad', archX, -5.5, 0.1, 0.3, { w:9, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }
   else place('arch', archX, 0, 0.1, 9);
   // the gym's walls, gate and posts are one build (BUILD.gym); as a thing it keeps everything else out and blocks the walk
@@ -554,13 +559,13 @@ function plan(spec){
     return spotOff(minD, maxD, 1.4, 80); }
   // ONE CHEST A TRAIL, the owner's call: in the clearing when the clearing holds one, else tucked in behind a tree.
   // The rest of what there is to find is the rare things below, for whoever wants more.
-  if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
+  if (spec.landed){} else if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
   else { var hsp = hideSpot(6, 13) || hideSpot(5, 16) || spotOff(5, 14, 1.2, 200) || [clr.x, clr.y - 1.2]; if (hsp){ chest(hsp[0], hsp[1], 10 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); }
     for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
   if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var kq = beside(SL * (0.15 + R() * 0.7), R() < 0.5 ? -1 : 1, 8 + R() * 10), ky = kq[1], kxp = kq[0];
       if (okGround(kxp, ky, 1) && free(kxp, ky, 1) && walkD(kxp, ky) > PW + 3 && !inClear(kxp, ky, 2) && !(gy && Math.abs(ky - gy) < 6)){ item('key', kxp, ky); used.push({ x:kxp, y:ky, r:1 }); break; } } }
   // the golden ball: off the path, tucked behind a landmark or a tree if it can be
-  var gs = spotOff(10, 26, 1.1, 90) || spotOff(6, 20, 1, 60); if (gs){ item('golden', gs[0], gs[1]); used.push({ x:gs[0], y:gs[1], r:1 }); }
+  var gs = spec.landed ? null : spotOff(10, 26, 1.1, 90) || spotOff(6, 20, 1, 60); if (gs){ item('golden', gs[0], gs[1]); used.push({ x:gs[0], y:gs[1], r:1 }); }
   /* THE RARE THINGS, handed in by putt.js (spec.loot): a world's trinket, a part for one of the Putt Putt
      putters, and once in a while a spare life. They go further off the path than anything else, and a
      trinket goes in the hidden clearing when there is one, so they have to be looked for. */
@@ -2206,7 +2211,7 @@ function run(box, P, pic, api){
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
       api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000;
-        if (open && P.gate.pad && !ended){ ended = true; api.arrive(); } }); }   // aboard the ship: the trip has played, the hole opens
+        if (open && P.gate.pad && !ended){ ended = true; if (api.landed) api.landed(); else api.arrive(); } }); }   // aboard the ship: the trip has played, the hole opens
     if (gate && gate.asked && !gate.open && Math.abs(g.y - P.gate.y) > 7) gate.asked = false;
     // the secret entrance: a word coming near it, and walking into its doorway offers the hole
     if (P.secret && api.secret){ var dsx = Math.hypot(g.x - P.secret.x, g.y - P.secret.y);
