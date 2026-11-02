@@ -138,6 +138,10 @@ var DECK_GRIP = 8;
    still pulls in there, and with nothing to slow the ball its pull bends the drift into a long swing round it. The ball floats
    a little off the carpet while it is inside (FLOAT_Z), so the field reads. */
 var FLOAT_FRIC = 0.12, FLOAT_Z = 0.35;
+/* A DUST DEVIL (Mars, World 13): a whirlwind that wanders back and forth across the course on a clock. Inside it the ball is
+   pushed round its middle (w ft/s/s at the eye, nothing at its edge), so a putt that runs through one is spun off its line,
+   left or right by which way it turns. It moves, so where it will be when the ball gets there is the read. */
+function devilPos(d, tt){ var u = Math.sin(2 * Math.PI * (tt / d.period + (d.phase || 0))); return [d.x + d.dx * u, d.y + d.dy * u]; }
 function floatAt(C, x, y){ var F = C.floats; for (var i = 0; i < F.length; i++){ var f = F[i]; if (x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) return f; } return null; }
 function ferryEase(e, w){ return { k:(3 - e) * w * w + (e - 2) * w * w * w, d:2 * (3 - e) * w + 3 * (e - 2) * w * w }; }
 function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w, z;
@@ -314,7 +318,7 @@ function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
   var onDeck = false, deckV = null, floating = false, climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
-  var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [], wells = C.wells || [];
+  var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [], wells = C.wells || [], devils = C.devils || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
   /* TRICK SHOT TARGETS (the Clubhouse's gyms, gymkinds/trickshot.js): numbered targets that must go down in order. tk is
      how many are down when the putt is struck (C.tk, kept by whoever plays the room, never by the hole). The cup is shut
@@ -374,6 +378,8 @@ function simulate(C, x, y, vx, vy, t0){
        by a pull stronger than friction comes to rest by the half-second rule below. */
     for (var wi = 0; wi < wells.length; wi++){ var wl = wells[wi], wdx = wl.x - s.x, wdy = wl.y - s.y, wr2 = wdx * wdx + wdy * wdy;
       if (wr2 < wl.pull * wl.pull && wr2 > 1e-6){ var wr = Math.sqrt(wr2), wa = wl.g / Math.max(wr2, wl.r * wl.r); ax += wdx / wr * wa; ay += wdy / wr * wa; } }
+    for (var dvi = 0; dvi < devils.length; dvi++){ var dv = devils[dvi], dp = devilPos(dv, t0 + t), ddx = s.x - dp[0], ddy = s.y - dp[1], dr = Math.hypot(ddx, ddy);
+      if (dr < dv.r && dr > 1e-3){ var dk = dv.w * (1 - dr / dv.r); ax += -ddy / dr * dk; ay += ddx / dr * dk; } }
     var sl = Math.hypot(ax, ay);
     /* A RAMP LANE HOLDS NOTHING. On the carpet the slope's pull is usually under friction, so a ball that ran
        out of pace half way up would sit on the ramp. In a climb lane static friction is gone and the rolling
@@ -477,7 +483,7 @@ function simulate(C, x, y, vx, vy, t0){
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
   C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
-  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || [];
+  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || []; C.wells = C.wells || []; C.floats = C.floats || []; C.devils = C.devils || [];
   if (!C.polys) C.polys = C.poly ? [C.poly] : []; if (!C.allPts) C.allPts = C.polys.reduce(function(a, p){ return a.concat(p); }, []);
   if (!C.edges) C.edges = C.polys.length > 1 ? unionEdges(C.polys) : C.polys.length ? polyWalls(C.polys[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; }) : [];
   if (!C.tierAt) C.tierAt = function(){ return 0; };
@@ -824,7 +830,7 @@ function buildMini(tplName, seed, themeId, label, extra){
   if (r() < 0.5){
     var fx = function(p){ return [-p[0], p[1]]; };
     H.poly = H.poly.map(fx).reverse(); H.tee = fx(H.tee); H.cup = fx(H.cup);
-    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; });
+    H.bumpers.forEach(function(b){ b.x = -b.x; }); (H.wells || []).forEach(function(w){ w.x = -w.x; }); (H.floats || []).forEach(function(f){ var a = -f.x1; f.x1 = -f.x0; f.x0 = a; }); (H.devils || []).forEach(function(d){ d.x = -d.x; d.dx = -d.dx; d.w = -d.w; });
     H.blocks = H.blocks.map(function(b){ return { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(rectWalls(b, 0.6)); });
     H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; if (m.k === 'door') m.px = -m.px; } });
@@ -851,7 +857,7 @@ function courseFromH(H, tplName, seed, themeId, label){
   var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:PS[0], polys:PS, allPts:all, edges:edges, rooms:rooms, comps:H.comps, flats:H.flats,
     stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
-    secret:H.secret || [], floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
+    secret:H.secret || [], devils:(H.devils || []).map(function(d){ return { x:d.x, y:d.y, r:d.r, w:d.w, dx:d.dx || 0, dy:d.dy || 0, period:(d.period || 6) / PACE, phase:d.phase || 0 }; }), floats:(H.floats || []).map(function(f){ return { x0:Math.min(f.x0, f.x1), y0:Math.min(f.y0, f.y1), x1:Math.max(f.x0, f.x1), y1:Math.max(f.y0, f.y1) }; }), wells:(H.wells || []).map(function(w){ return { x:w.x, y:w.y, r:w.r, pull:w.pull, g:w.g }; }), loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
     rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ var st = H.stimp || (themeId === 'winter' ? 9.5 : 9), D = Math.hypot(f.dx, f.dy) || 1, L = Math.abs(f.dx) >= Math.abs(f.dy) ? f.x1 - f.x0 : f.y1 - f.y0,
       ve = Math.sqrt(2 * (V_STIMP * V_STIMP / (2 * st)) * (L + 1)), mv = f.move / PACE;
@@ -985,6 +991,9 @@ function bumps(H, T, list){ list.forEach(function(b){ addBumper(H, b[0], b[1], b
 function moon(H, x, y, r, pull, g){ r = r || 1.5; H.bumpers.push({ x:x, y:y, r:r, e:0.7, skin:'moon' }); (H.wells = H.wells || []).push({ x:x, y:y, r:r, pull:pull || 5.5, g:g == null ? 30 : g }); }
 // zerog(H, x0, y0, x1, y1): a zero-g field over that rectangle of carpet (simulate, FLOAT_FRIC). Never over the cup.
 function zerog(H, x0, y0, x1, y1){ (H.floats = H.floats || []).push({ x0:x0, y0:y0, x1:x1, y1:y1 }); }
+// devil(H, x, y, r, w, dx, dy, period, phase): a dust devil of radius r spinning at w (positive anticlockwise on screen), swaying
+// dx, dy either side of x, y once a period (simulate, devilPos).
+function devil(H, x, y, r, w, dx, dy, period, phase){ (H.devils = H.devils || []).push({ x:x, y:y, r:r || 3, w:w || 6, dx:dx || 0, dy:dy || 0, period:period || 6, phase:phase || 0 }); }
 function pads(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.75, e:1.32, skin:'pad' }); }); }
 function zoneR(H, m, x0, y0, x1, y1){ H.zones.push({ t:'rect', x0:x0, y0:y0, x1:x1, y1:y1, m:m }); }
 function zoneC(H, m, x, y, r){ H.zones.push({ t:'circle', x:x, y:y, r:r, m:m }); }
@@ -4805,6 +4814,14 @@ function drawPieces(ctx, C, cam, clock){
     for (var q = 0; q < 8; q++){ var a0 = th + q * Math.PI / 4, a1 = a0 + Math.PI / 8, c0 = w2s(cam, u.x, u.y), p0 = w2s(cam, u.x + Math.cos(a0) * u.r, u.y + Math.sin(a0) * u.r), p1 = w2s(cam, u.x + Math.cos(a1) * u.r, u.y + Math.sin(a1) * u.r);
       ctx.fillStyle = q % 2 ? (C.T.wallHi || '#ffd36a') : (C.T.wall || '#e5483a'); ctx.globalAlpha = 0.75; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.closePath(); ctx.fill(); }
     ctx.globalAlpha = 1; var cc = w2s(cam, u.x, u.y); ctx.fillStyle = '#f5f0e0'; ctx.beginPath(); ctx.arc(cc[0], cc[1], Math.max(3 * d, cam.s * 0.25), 0, 6.29); ctx.fill(); });
+  /* A DUST DEVIL: a column of dust turning where it stands this moment, rings of grit spinning round its eye the way it pushes,
+     so a player sees both where it is and which way it will throw the ball. */
+  (C.devils || []).forEach(function(dv, di){ var p = devilPos(dv, clock), sg = dv.w >= 0 ? 1 : -1, P = function(x, y, zz){ return cam.v3 ? w2s(cam, x, y, cam.v3.zAt(x, y) + (zz || 0)) : w2s(cam, x, y - (zz || 0) * 0.5); };
+    for (var ring = 0; ring < 4; ring++){ var rr = dv.r * (0.3 + ring * 0.22), sp = clock * (2.4 - ring * 0.35) * sg;
+      ctx.strokeStyle = 'rgba(232,170,120,' + (0.55 - ring * 0.1) + ')'; ctx.lineWidth = Math.max(1.5 * d, cam.s * 0.1); ctx.beginPath();
+      for (var k = 0; k <= 14; k++){ var a = sp + k / 14 * 4.2, q = P(p[0] + Math.cos(a) * rr, p[1] + Math.sin(a) * rr, ring * 0.35); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,214,170,.85)'; for (var g = 0; g < 10; g++){ var ga = clock * 3.1 * sg + g * 0.63 + di, gr = dv.r * (0.25 + hash3(di, g, 11) * 0.7), q2 = P(p[0] + Math.cos(ga) * gr, p[1] + Math.sin(ga) * gr, hash3(di, g, 12) * 1.4);
+      ctx.fillRect(Math.round(q2[0]), Math.round(q2[1]), Math.max(2, Math.round(d * 1.5)), Math.max(2, Math.round(d * 1.5))); } });
   /* A ZERO-G FIELD: a faint violet sheen over its carpet, a dashed edge, and specks of dust drifting slowly up through it, so it
      reads as the place where nothing is held down. */
   (C.floats || []).forEach(function(f, fi){ var z = function(x, y){ return cam.v3 ? cam.v3.zAt(x, y) : 0; }, P = function(x, y){ return cam.v3 ? w2s(cam, x, y, z(x, y)) : w2s(cam, x, y); };
