@@ -15198,7 +15198,7 @@ function tourSteps(){ return [
     target:'.ft-home .ft-door.putt' },
   { title:'Today\'s pin sheet',
     body:'Everything worth doing today, in one place: Play 18, your free spin, your login gift, the daily quests and the Daily Hole. It resets at midnight Eastern.',
-    target:'.ft-home .ft-sheet, .ft-home .ft-strip' },
+    target:'.ft-home .ft-sheet, .ft-home .ft-strip, .ft-home .ft-prail' },
   { title:'Your season track',
     body:'Everything you play feeds this. Tiers of rewards, free the whole way down, with a paid lane if you want the rest of it.',
     target:'.ft-tb .ft-ticket, #rttnav [data-nav="pass"]' },
@@ -15420,6 +15420,30 @@ function ftPinTile(p){
 function ftWeekNext(){ try{ const w=streakWeekState(), n=Math.min(7,(w.days||0)+1), k=STREAK_WEEK_TRACK[n];
   const lab={coins:'coins', mulligan:'a Mulli-Spin', basepack:'a Base pack', tourpack:'a Tour pack'}[k]||'a reward';
   return { days:w.days||0, played:w.lastDay===todayKey(), next:(w.days||0)>=7?'Week complete':`Day ${n}: ${lab}` }; }catch(e){ return null; } }
+// THE PIN RAIL: on a phone, today's pin sheet is a slim column of pins down the top-left corner (the owner, 2026-11-02),
+// so the strip no longer takes a row from the golfer, the Tour Pass card and the doors. Tapping it opens the full sheet.
+function ftPinRail(){
+  const pins=ftPins(), done=pins.filter(p=>p.state==='done').length, claims=pins.filter(p=>p.state==='claim').length;
+  if(!document.getElementById('prail-css')){ const st=document.createElement('style'); st.id='prail-css';
+    st.textContent='.ft-prail{position:absolute;z-index:14;left:max(8px,env(safe-area-inset-left,0px));top:calc(env(safe-area-inset-top,0px) + 64px);display:flex;flex-direction:column;align-items:center;gap:7px;padding:6px 5px 8px;border-radius:12px;background:linear-gradient(180deg,rgba(40,56,44,.62),rgba(24,36,28,.66));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--glt);box-shadow:0 8px 18px rgba(0,0,0,.3);cursor:pointer;color:var(--cream)}'+
+      '.ft-prc{font:900 9px/1 var(--body);letter-spacing:.04em}.ft-prc b{color:var(--gold)}'+
+      '.ft-prail .ft-pf{width:28px;height:28px;border-radius:7px}.ft-prail .ft-pi,.ft-prail .ft-pi svg{width:18px;height:18px}.ft-prail .ft-pf.part .ft-pi svg{width:15px;height:15px}'+
+      '.ft-prail .ft-ck{width:14px;height:14px;right:-4px;bottom:-4px}.ft-prail .ft-ck svg{width:14px;height:14px}.ft-prail .ft-pf.ready::after{inset:-3px;border-radius:9px}'+
+      '.ft-prail .ft-pq{left:3px;right:3px;bottom:2px}.ft-prail:focus-visible{outline:2px solid var(--gold);outline-offset:2px}'+
+      '.ft-tee .ft-ptrack{width:calc(100vw - 24px);max-width:520px}'+
+      // a short phone: the cards under the golfer step right of the rail instead of running under it
+      '.ft-home.ft-railx .ft-tee .ft-giftnote,.ft-home.ft-railx .ft-tee .ft-ptrack{width:calc(100vw - 76px);left:26px}';
+    document.head.appendChild(st); }
+  const el=$(`<button type="button" class="ft-prail" aria-label="Today's pin sheet, ${done} of ${pins.length} done${claims?', '+claims+' to claim':''}. Open the sheet.">
+    <span class="ft-prc"><b>${done}</b>/${pins.length}</span>${pins.map(p=>ftPinTile(p)).join('')}</button>`);
+  el.onclick=()=>{ S.ftSheetOpen=true; render(); };
+  return el;
+}
+// after layout: if the rail meets the gift note or the Tour Pass card, those step right of it (ft-railx)
+function ftRailFit(root){ const run=()=>{ try{ const r=root.querySelector('.ft-prail'); if(!r||!root.isConnected) return; root.classList.remove('ft-railx');
+    const a=r.getBoundingClientRect(), hit=[...root.querySelectorAll('.ft-tee .ft-giftnote,.ft-tee .ft-ptrack')].some(e=>{ const b=e.getBoundingClientRect(); return b.top<a.bottom+6&&b.bottom>a.top&&b.left<a.right+6; });
+    root.classList.toggle('ft-railx',hit); }catch(e){} };
+  requestAnimationFrame(run); setTimeout(run,400); }
 function ftSheet(compact){
   const pins=ftPins(), done=pins.filter(p=>p.state==='done').length, claims=pins.filter(p=>p.state==='claim').length, all=pins.length&&done===pins.length;
   const reset=(()=>{ try{ return dCd('hm'); }catch(e){ return ''; } })();
@@ -15669,7 +15693,7 @@ function scrTitle(){
   const pend=loginPend();
   // a smaller golfer leaves the home room to breathe; on a phone it also makes room for the Tour Pass card
   const ptk=passEnabled()?104:0;
-  const h=desk?Math.round(Math.max(200,Math.min(300,innerHeight*0.30))):Math.round(Math.max(96,Math.min(190,innerHeight-458-ptk-ftSafeB()-(pend?54:0))));
+  const h=desk?Math.round(Math.max(200,Math.min(300,innerHeight*0.30))):Math.round(Math.max(96,Math.min(190,innerHeight-400-ptk-ftSafeB()-(pend?54:0))));
   const tee=$(`<div class="ft-tee"><div class="ft-teebox"></div><div class="ft-markers"><i></i><i></i></div><button type="button" class="ft-fig" aria-label="Your golfer. Open the closet">${pxFigureHTML(S.look,h)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="ft-pk">'+spkEl('pumpkin',22)+'</span>'):''}</button></div>`);
   tee.querySelector('.ft-fig').onclick=()=>ftCloset();
   tee.appendChild(ftTag(desk));
@@ -15679,7 +15703,7 @@ function scrTitle(){
     n.onclick=()=>{ ftBurst(n); claimLoginGift(); }; (desk?root:tee).appendChild(n); root.classList.add('has-gift'); }
   // the desktop stacks the pin sheet and the Tour Pass card in one column, so a taller sheet never covers the card
   if(desk){ const col=$(`<div class="ft-rcol"></div>`); col.appendChild(ftSheet(false)); if(passEnabled()) col.appendChild(ftPassTrack(true)); root.appendChild(col); }
-  else { tee.appendChild(ftSheet(true)); if(passEnabled()) tee.appendChild(ftPassTrack(false)); }
+  else { root.appendChild(ftPinRail()); if(passEnabled()) tee.appendChild(ftPassTrack(false)); }
   // the two doors
   const cs=careerSaveInfo(), ri=resumeInfo();
   let pc=[]; try{ if(cs && !cs.ended) pc.push(`<span class="ft-chip g">${cs.circuitMode?'Legend Circuit':'Career'} · Yr ${cs.year||1}</span>`); else if(ri) pc.push(`<span class="ft-chip g">Golfer ${ri.n} of 8</span>`); }catch(e){}
@@ -15701,7 +15725,7 @@ function scrTitle(){
     const box=$(`<div class="ft-sheetbox" role="dialog" aria-label="Today's pin sheet"><div class="ft-grab"></div></div>`); box.appendChild(ftSheet(false));
     root.appendChild(scrim); root.appendChild(box); }
   add(root);
-  if(!desk) ftFitHome(root);
+  if(!desk){ ftFitHome(root); ftRailFit(root); }
   // seasonal finds keep their spots on the home screen
   if(decorLive()==='spooky'){ try{ spkStyleOnce(); spookyHomeEggs().forEach(b=>app.appendChild(b)); }catch(e){} }
   // the popups the home has always owed (welcome, season launch, roster arrow, and so on); the login gift is no longer one of them
