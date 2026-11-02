@@ -33,7 +33,7 @@
  * VENUES are a table so the next one is a row. A venue changes the room and how many people it holds.
  * It never changes a score.
  */
-import PXHD from './pxhd.js?v=2';
+import PXHD from './pxhd.js?v=3';
 import { ROOMS, RIGS } from './rooms.js?v=4';
 /* The camera, the solids, the people, the band and the venue's painted layers live in world.js, which
    the room builder in world-worker.js and the menus share. This file lights and moves them. */
@@ -41,7 +41,7 @@ import {
   ART, WPX, sx, sy, depth, rgb, mixc, clamp01, hash, mulberry32,
   canvas, SKINS, HAIRS, face, personSprite, DECK, FIX,
   podCorners, CE, HPX, PAX, PAY, bandPose, buildWorld, rigFor, PLAYERS, KEY_SEQ, crowdVariants, crowdPose, GLOWS,
-} from './world.js?v=5';
+} from './world.js?v=6';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
    setlist/rooms.js what each looks like; this file only draws whichever it is handed. */
@@ -91,7 +91,7 @@ function worldWorker(){
   if (worker !== null) return worker;
   try {
     worker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
-      ? new Worker(new URL('./world-worker.js?v=7', import.meta.url), { type: 'module' }) : false;
+      ? new Worker(new URL('./world-worker.js?v=8', import.meta.url), { type: 'module' }) : false;
   } catch (err) { worker = false; }
   if (worker){
     worker.onmessage = e => { const cb = waiting.get(e.data.id); if (cb){ waiting.delete(e.data.id); cb(e.data); } };

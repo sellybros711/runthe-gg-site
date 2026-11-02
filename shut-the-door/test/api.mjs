@@ -286,12 +286,19 @@ check('practice is never stored', mem[C.OUTING_KEY] === before && pr.mode === 'p
     card = r.pitchResult.halfOver || null;
   }
   check(`rules 8: on ${after} the first half ends with the card and the next is set`, !!card && r.state.half.inning === s8.halves[1].inning && r.state.outs === 0
-    && r.state.halves.length === 1 && r.pitchResult.call.r === 8 && card.between.abbr === s8.between[0].abbr && card.between.pas.length === s8.between[0].pas.length && card.next.leadoff.name);
+    && r.state.halves.length === 1 && r.pitchResult.call.r >= 8 && card.between.abbr === s8.between[0].abbr && card.between.pas.length === s8.between[0].pas.length && card.next.leadoff.name);
   // a reload replays to the same 9th
   const Q3 = freshApi();
   await Q3.getScenario(after);
   const back = await Q3.startOuting(s8.id, null, { mode: 'daily' });
   check('rules 8: a reload resumes in the second half, the card kept', back.half.inning === s8.halves[1].inning && back.halves.length === 1 && back.pitchNo === r.state.pitchNo);
+  /* rules 9 (CONTRACT.md 5k): the ABS touch starts with a whole day's daily too (api.js ABS_TOUCH_FROM) */
+  for (const [day, want] of [['2026-11-02', 8], ['2026-11-03', 9]]) {
+    for (const k of Object.keys(mem)) delete mem[k];
+    const Qd = freshApi(), sd = await Qd.getScenario(day), od = await Qd.startOuting(sd.id, null, { mode: 'daily' });
+    const rd = await Qd.throwPitch(od.outingId, { type: sd.pitcher.arsenal[0].type, cell: 12 });
+    check(`rules 9: the daily of ${day} plays rules ${want}`, rd.pitchResult.call.r === want);
+  }
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');

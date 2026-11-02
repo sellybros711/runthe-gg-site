@@ -1028,11 +1028,15 @@ async function run(w, h, theme) {
      is play), a tap outside shuts it and the heat goes with it. */
   const painted = () => page.evaluate(() => [...document.querySelectorAll('#m-aim .aim-heat i')].filter((c) => c.style.background).length);
   const shut = await page.evaluate(() => ({ drawer: document.getElementById('m-drawer').hidden, exp: document.getElementById('m-drawer-b').getAttribute('aria-expanded'),
-    h: Math.round(document.getElementById('m-card').getBoundingClientRect().height), tap: Math.round(document.getElementById('m-drawer-b').getBoundingClientRect().height),
+    h: Math.round(document.getElementById('m-card').getBoundingClientRect().height - document.getElementById('m-pit').getBoundingClientRect().height - 5),
+    pit: { h: Math.round(document.getElementById('m-pit').getBoundingClientRect().height), on: !!document.getElementById('m-pit').offsetParent,
+      name: document.getElementById('m-pname').textContent, want: window.STD_UI.state.scn.pitcher.name }, tap: Math.round(document.getElementById('m-drawer-b').getBoundingClientRect().height),
     name: document.getElementById('m-bname').textContent, line: document.getElementById('m-bline').textContent, hand: document.getElementById('m-bhand').textContent,
     want: (() => { const S = window.STD_UI.state, b = S.scn.batters[S.outing.batterIndex]; return { name: b.name, line: b.line, bats: b.bats }; })() }));
   ok(shut.drawer && shut.exp === 'false' && (await painted()) === 0, '4 the scout drawer starts shut and the zone carries no heat');
   ok(shut.h <= 64 && shut.tap >= 38, '4 the at bat line is one slim row (' + shut.h + ' px), SCOUT thumb tall (' + shut.tap + ' px)');
+  /* WHO YOU PITCH AS (the owner, 2026-11-02): one slim line over the at bat row, the closer by name */
+  ok(shut.pit.on && shut.pit.h <= 22 && shut.pit.name && shut.pit.want.endsWith(shut.pit.name), '4 the pitching line names the closer (' + shut.pit.name + ', ' + shut.pit.h + ' px)');
   const lineNums = (t) => (String(t).match(/\d*\.?\d+/g) || []).join(' ');
   ok(shut.name === shut.want.name && shut.hand === 'bats ' + shut.want.bats && lineNums(shut.line) === lineNums(shut.want.line),
     '4 the line reads his name, his side and his numbers from the pack ("' + shut.hand + ' ' + shut.line + '")');
