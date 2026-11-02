@@ -14,7 +14,7 @@ export const init = `window.PS_CFB_SEED = ${SEED};`;
 // what the trailer's camera frames (record.mjs writes where each is, every frame)
 export const track = {
   budget: '#s-draft.on #c-amt', hud: '#s-draft.on #c-bar', count: '#s-draft.on #d-count', field: '#s-draft.on #field',
-  reels: '#s-draft.on #reel-t', reely: '#s-draft.on #reel-y', respin: '#s-draft.on #d-respin', opts: '#s-draft.on #opts',
+  reels: '#s-draft.on #box-t', reely: '#s-draft.on #box-y',   // the reel windows (the strips inside them scroll far off screen) respin: '#s-draft.on #d-respin', opts: '#s-draft.on #opts',
   ...Object.fromEntries(PICKS.filter((k) => !k.startsWith('respin')).map((k, i) => [`p${i}`, `#opts button.tile[data-k="${k}"]`])),
   squad: '#s-squad.on', play: '#b-play',
   bug: '#s-season.on #v-bug', rec: '#s-season.on #v-rec', streak: '#s-season.on #v-streak', gameday: '#s-season.on #v-gameday', cal: '#s-season.on #v-list',

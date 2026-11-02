@@ -8,6 +8,7 @@
      THE WORDS: an $11M NIL budget, six players, 12 games, and 15-0 is the run on screen (12-0, a
      first-round bye, three playoff wins). All of it is CAP_MUSD, SLOTS, REGULAR_SEASON_GAMES and
      PLAYOFF_BYES in cfb/engine.js, and the result screen the take ends on. -->
+<script src="/scripts/marketing/trailer/lib/camera.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;700;800;900&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=block" rel="stylesheet">
 <style>
 @font-face{font-family:DSEG7;src:url(/cfb/fonts/DSEG7Classic-Bold.woff2) format('woff2')}
@@ -97,7 +98,7 @@ const span = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
 
 /* THE FOOTAGE, by clip: frames on disk at 30 fps, 1080x1920 (the phone layout, 432x768 at 2.5x). */
 const SRC = { w: 1080, h: 1920 };
-const COUNT = { run: 1655 };
+const COUNT = { run: 1660 };
 function frameOf(clip, sec) { return clamp(Math.round(sec * FPS) + 1, 1, COUNT[clip]); }
 const loaded = {};
 function setImg(img, clip, sec) {
@@ -164,6 +165,8 @@ function footage(clip, sec, cx, cy, cw, { dim = 1, blur = 0 } = {}) {
 let LAST = null;
 /* a frosted strip over part of the source (source px), for game text that should not read */
 function frost(y0, y1) { const m = $('frost'); if (!LAST) return; Object.assign(m.style, { display: 'block', left: LAST.ox + 'px', width: (TALL ? W : Math.round((H - 120) * 9 / 16)) + 'px', top: LAST.oy + (y0 - LAST.y) * LAST.s + 'px', height: (y1 - y0) * LAST.s + 'px' }); }
+/* film a clip through the camera: CAM.path picks the crop, footage() draws it */
+function shoot(clip, sec, l, shots, o) { const c = CAM.path(clip, sec, l, shots); return footage(clip, sec, c.cx, c.cy, c.cw, o); }
 /* in 5:4 a caption sits left of the panel */
 function side(html) { return TALL ? html : `<div style="position:absolute;left:${70}px;top:0;bottom:0;width:${W - Math.round((H - 120) * 9 / 16) - 220}px;display:flex;align-items:center">${html.replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`; }
 
@@ -182,7 +185,8 @@ const S = [
 ];
 window.DURATION = 24.0;
 // where the budget reads after each signing in the take (run seconds), $11.0M down to $1.2M
-const SPENT = [[1.2, '$11.0M'], [6.6, '$8.3M'], [11.4, '$5.2M'], [16.3, '$4.0M'], [21.3, '$2.8M'], [25.3, '$1.2M']];
+// each signing's tap in the take (run.track.json), and the budget a beat after it: $8.3M down to $1.2M
+const SIGNED = [6.27, 11.3, 16.33, 20.63, 24.9];
 
 window.render = async function (t) {
   const frame = Math.round(t * FPS);
@@ -194,8 +198,11 @@ window.render = async function (t) {
 
   if (sc.id === 'hook') {
     // the end of the dream run first: the game's own 15-0 card, confetti still falling
-    wait = footage('run', 50.6 + l * 0.9, 540, 480, 1080 * (0.86 - 0.05 * out(span(l, 0, d))));
-    if (!TALL) { $('footpanelwrap').classList.add('hide'); $('foot').classList.remove('hide'); place($('fimg'), W, H, 540, 470, 1080 * (0.95 - 0.05 * out(span(l, 0, d)))); $('fimg').style.filter = ''; wait = setImg($('fimg'), 'run', 50.6 + l * 0.9); }
+    { const sec = 50.75 + l * 0.9, c = CAM.focus('run', sec, ['card'], { pad: 10, w: 1000 - 80 * out(span(l, 0, d)), at: 0.3 });
+      if (TALL) wait = footage('run', sec, c.cx, c.cy, c.cw);
+      else { const b = CAM.box('run', Math.round(sec * 30), ['card']) || [0, 160, 1080, 780]; $('foot').classList.remove('hide');
+        // 5:4, full bleed: the card's middle a little above the frame's, the caption under it
+        place($('fimg'), W, H, (b[0] + b[2]) / 2, (b[1] + b[3]) / 2 + 140, 1080 * (1.0 - 0.05 * out(span(l, 0, d)))); $('fimg').style.filter = ''; wait = setImg($('fimg'), 'run', sec); } }
     shake = l < 0.2 ? (1 - l / 0.2) * 10 : 0;
     $('capbg').classList.remove('hide');
     text = `<div class="cap big" style="top:${(TALL ? 0.74 : 0.80) * H}px;font-size:${(TALL ? 150 : 120) * K}px;transform:translateY(-50%) scale(${1 + 0.08 * (1 - out(span(l, 0, 0.3)))})">Can you go<br><span class="gold">15-0?</span></div>`;
@@ -212,45 +219,49 @@ window.render = async function (t) {
     text = cap(l, 0.55, [['Six', ''], ['players.', 'gold']], { y: TALL ? 0.66 : 0.74, size: 140, step: 0.1 });
   }
   if (sc.id === 'spin') {
-    const sec = 1.5 + l * 1.15, z = 0.80 - 0.10 * ease(span(l, 0, d));
-    wait = footage('run', sec, 540, 1250, 1080 * z);
+    // the two reels, the year then the school, landing on 2008 USC
+    const sec = 1.5 + l * 1.15;
+    wait = shoot('run', sec, l, [[0, { names: ['reely', 'reels'], pad: 16, w: 660 - 100 * l / d, at: 0.4 }]]);
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.1, [['Spin a year.', ''], ['| Spin a school.', 'green']], { size: 108, step: 0.07 }));
   }
   if (sc.id === 'sign') {
-    const sec = 4.6 + l * 1.0, z = 0.9 - 0.12 * ease(span(l, 0, d));
-    wait = footage('run', sec, 540, 1200, 1080 * z);
+    // Mark Sanchez's 2008 card, tapped at 6.27 s, then the budget it came off
+    const sec = 4.7 + l * 1.0;
+    wait = shoot('run', sec, l, [[0, { names: ['p0'], pad: 20, w: 600, ax: 'left' }], [1.65, { names: ['budget', 'count'], pad: 20, w: 640, ax: 'left' }]]);
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.1, [['Sign one', ''], ['player.', 'gold']], { size: 116 }));
   }
   if (sc.id === 'spend') {
     // five signings in five beats: the budget readout after each, cut on the drum
-    const i = Math.min(SPENT.length - 2, Math.floor(l / 0.5)), sec = SPENT[i + 1][0] + (l - i * 0.5) * 0.6;
-    wait = footage('run', sec, 540, TALL ? 760 : 700, 1080 * 0.82);
+    // five signings in five beats: tight on the budget a beat after each one, cut on the drum
+    const i = Math.min(SIGNED.length - 1, Math.floor(l / 0.5)), sec = SIGNED[i] + 0.35 + (l - i * 0.5) * 0.6;
+    wait = shoot('run', sec, l, [[0, { names: ['budget', 'count'], pad: 20, w: 600 - 40 * (l - i * 0.5), ax: 'left' }]]);
     flash = 0.18 * (1 - span(l - i * 0.5, 0, 0.08));
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.1, [['Spend', ''], ['every dollar.', 'green']], { size: 116 }));
   }
   if (sc.id === 'season') {
-    const sec = 34.0 + l * 2.35, z = 0.98;
-    wait = footage('run', sec, 540, TALL ? 900 : 640, 1080 * z);
+    // the scorebug week by week, then the record and the calendar filling with wins
+    const sec = 34.3 + l * 2.3;
+    wait = shoot('run', sec, l, [[0, { names: ['bug'], pad: 20, w: 800 }], [2.2, { names: ['cal'], pad: 20, w: 820 }]]);
     $('capbg').classList.remove('hide');
     text = l < 2.2 ? side(cap(l, 0.1, [['Twelve', ''], ['games.', 'gold']], { size: 130 }))
                    : side(cap(l - 2.2, 0.05, [['No room', ''], ['for a loss.', 'red']], { size: 120 }));
   }
   if (sc.id === 'seed') {
-    wait = footage('run', 45.4 + l * 0.6, 540, 560, 1080 * (0.86 - 0.06 * ease(span(l, 0, d))));
+    wait = shoot('run', 45.55 + l * 0.6, l, [[0, { names: ['seedrec', 'badges'], pad: 30, w: 820 - 80 * l / d }]]);
     flash = 0.3 * (1 - span(l, 0, 0.1));
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.15, [['12-0.', 'gold'], ['| Then the playoff.', '']], { size: 110, step: 0.08 }));
   }
   if (sc.id === 'bracket') {
-    wait = footage('run', 48.1 + l * 0.9, 540, 760, 1080 * 0.9);
+    wait = shoot('run', 48.25 + l * 0.9, l, [[0, { names: ['rail'], pad: 20, w: 900 }]]);
     $('capbg').classList.remove('hide');
     text = side(cap(l, 0.1, [['Three wins', ''], ['from a title.', 'green']], { size: 110 }));
   }
   if (sc.id === 'perfect') {
-    wait = footage('run', 49.9 + l * 1.25, 540, 470, 1080 * (0.95 - 0.18 * ease(span(l, 0.2, d))));
+    wait = shoot('run', 50.05 + l * 1.25, l, [[0, { names: ['card'], pad: 10, w: 1000 - 260 * ease(span(l, 0.2, d)), at: 0.32 }]]);
     flash = 0.95 * (1 - span(l, 0, 0.18));
     shake = l < 0.35 ? (1 - l / 0.35) * 16 : 0;
     $('capbg').classList.remove('hide');
@@ -279,5 +290,7 @@ window.render = async function (t) {
   await wait;
   await document.fonts.ready;
 };
-window.ready = document.fonts.ready.then(() => true);
+CAM.at = TALL ? 0.36 : 0.5;   // in 9:16 the caption band takes the lower third
+CAM.fit = !TALL;               // in 5:4 the panel is narrow: frame whole cards, never part of one
+window.ready = Promise.all([document.fonts.ready, CAM.load({ run: '/foot/run.track.json' })]).then(() => true);
 </script></body></html>
