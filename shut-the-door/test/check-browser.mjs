@@ -427,6 +427,9 @@ async function everyResult(page) {
    goes on by itself; later ones are skipped with a tap. The quiet rule is
    checked through each flight and after it. */
 const PITCH_MS = SHOTS ? 300000 : 60000;
+/* the home shows behind the loading screen once the first screen is ready, the 3D mound included
+   (ui.js bootLoader, at most BOOT_CAP_MS 30 s and then it lets the home show): software GL takes that long */
+const BOOT_WAIT = 120000;
 async function playOuting(page, o) {
   const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
   const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
@@ -764,7 +767,18 @@ async function run(w, h, theme) {
   /* 1 */
   at('1 home');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  /* THE LOADING SCREEN (the owner, 2026-11-02): over the page from the first paint, and nothing on
+     the home is shown or tappable under it until the first screen is ready */
+  const early = await page.evaluate(() => { const b = document.getElementById('boot'), r = b && b.getBoundingClientRect();
+    return { there: !!b, covers: !!r && r.width >= innerWidth && r.height >= innerHeight, home: !document.getElementById('h-main').hidden,
+      top: (() => { const e = document.elementFromPoint(innerWidth / 2, innerHeight - 60); return e ? (e.closest('#boot') ? 'boot' : e.id || e.className) : ''; })() }; });
+  ok(early.there && early.covers && early.top === 'boot', '1 the loading screen covers the page from the first paint (on top: ' + early.top + ')');
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+  const boot = await page.evaluate(() => { const b = document.getElementById('boot'), cs = getComputedStyle(b), st = window.STD_STAGE;
+    return { gone: b.classList.contains('done') && cs.pointerEvents === 'none', pct: document.getElementById('boot-pct').textContent,
+      stage: !(st && st.supported()) || !!(st.current && st.current.loaded), fonts: document.fonts.status }; });
+  ok(boot.gone, '1 the loading screen steps aside when the home shows (' + boot.pct + ')');
+  ok(boot.stage || boot.pct !== '100%', '1 the bar says 100% only with the 3D mound ready (' + boot.pct + ', mound ready: ' + boot.stage + ')');
   await homeWarm(page);
   await page.waitForSelector('#b-take', { state: 'visible' });
   const home = await page.evaluate(() => {
@@ -1149,7 +1163,7 @@ async function run(w, h, theme) {
   /* 8 */
   at('8 debug');
   await page.goto(BASE + '?debug=1', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])');
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#d-again');
   await page.waitForSelector('#s-mound.on');
@@ -1266,7 +1280,7 @@ async function runningGame(w, h) {
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#b-take');
   await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
@@ -1299,7 +1313,7 @@ async function sizeSweep() {
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#b-take');
   await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
@@ -1348,7 +1362,7 @@ async function modesPage(w, h, q, opts) {
     return route.abort();
   });
   await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 60000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   return { ctx, page, errors };
 }
 /* finish today's daily through the calls (the mound's own path is steps 5 and 11), then come back to it */
@@ -1583,7 +1597,7 @@ async function halfPage(w, h) {
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 60000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   ok(await page.evaluate((id) => window.STD_UI.state.scn.id === id, HALF_PACK), '18 the day plays ' + HALF_PACK + ', two halves');
   await homeWarm(page);
   await page.click('#b-take', { timeout: 120000 });
