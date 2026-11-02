@@ -6386,7 +6386,7 @@ function useMulliSpin(){ const s=xpState(); if(Math.max(0,(s.mulliEarned||0)-(s.
 const DAILY_QUEST_DEFS=[
   {k:'daily',  label:'Play the Daily Challenge',      hint:'Play 18'},
   {k:'season', label:'Complete a Career season',      hint:'Career Mode'},
-  {k:'h2h',    label:'Play a Head to Head match',     hint:'Play Online'},
+  {k:'pass',   label:'Climb a Tour Pass tier',        hint:'Tour Pass'},   // was Play a Head to Head match (the owner, 2026-11-02: promote the pass)
   {k:'share',  label:'Share a result',                hint:'Friend or social'},
 ];
 // PUTT PUTT IN THE DAILY QUESTS. With Putt Putt (puttOn) the day's quests carry its Daily Hole too, so the all-done
@@ -6394,7 +6394,7 @@ const DAILY_QUEST_DEFS=[
 const PUTT_QUEST={k:'putt', label:'Play the Putt Putt Daily Hole', hint:'Putt Putt'};
 function dailyQuestDefs(){ let on=false; try{ on=puttOn(); }catch(e){} return on?DAILY_QUEST_DEFS.concat([PUTT_QUEST]):DAILY_QUEST_DEFS; }
 function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquests'),null);
-  if(!q||typeof q!=='object'||q.day!==t) q={day:t,daily:0,season:0,h2h:0,share:0,xpDone:0}; return q; }
+  if(!q||typeof q!=='object'||q.day!==t) q={day:t,daily:0,season:0,pass:0,share:0,xpDone:0}; return q; }
 function dailyQuestsAllDone(q){ q=q||dailyQuests(); return dailyQuestDefs().every(d=>q[d.k]); }
 function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
   let leveled=null;
@@ -10378,7 +10378,8 @@ function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s
   if(wm>1) S._passPop.boost=true;                        // the level-up popup calls it out
   if(em>1){ const ev=passEventNow(); if(ev) S._passPop.event=ev.id; }
   s.xp+=Math.round(n*mult);
-  passSave(s); passHistNote(s.season, passTierX(s.xp)); }
+  passSave(s); passHistNote(s.season, passTierX(s.xp));
+  if(passTierShown(s.xp)>before){ try{ questDaily('pass'); }catch(e){} } }   // the daily quest: climb a Tour Pass tier
 // Owner: a proper level-up moment after a season / daily / h2h round, not a toast mid-play. Deferred the
 // same way as the welcome gift: passAddXp only records the climb, and the result screens flush it once
 // they're safely on screen. Only fires when a TIER was actually gained.
@@ -43389,8 +43390,8 @@ function h2hCaptureAch(){ if(!sbSignedIn()) return;
   const inc={h2hMatches:1}; if(won){ inc.h2hWins=1; inc[key]=1; }
   recordAchEvent({inc}); const fresh=evaluateAch&&evaluateAch(); if(fresh&&fresh.length&&typeof achToast==='function') achToast(fresh);
   if(won && !S.h2h._coined){ S.h2h._coined=true; const c=h2hWinCoins(); if(c>0) awardPlayCoins(c, 'online win'); }   // coins for winning an online match, to H2H_COIN_DAY_CAP a day
-  // Challenges: daily quest "Play a Head to Head match" + weekly matches/wins
-  questDaily('h2h'); questWeekly('h2hMatches',1); if(won) questWeekly('h2hWins',1); }
+  // Challenges: weekly matches/wins (the daily quest that was a Head to Head match is now a Tour Pass tier)
+  questWeekly('h2hMatches',1); if(won) questWeekly('h2hWins',1); }
 async function h2hReport(){
   try{ const {data,error}=await sb.rpc('h2h_report',{p_match_id:S.h2h.matchId,p_result:{win:S.h2h.winVal,kind:S.h2h.winKind}});
     if(error) throw error;
