@@ -1522,9 +1522,10 @@ function pickoffIt() {
   var basesBefore = st.bases | 0;
   /* The broadcast of the throw is not his view of the plate, so the zone steps aside, as it does for
      a pitch (the owner, 2026-11-02: the zone sat over the infield through the pickoff). It goes on the
-     tap, as he steps off, so its fade is done before the throw plays; every path below brings it back */
+     tap, as he steps off, and at once (po-off: no fade), since the broadcast cuts to the throw; every path
+     below brings it back */
   var real0 = S.scene && S.scene.real;
-  if (real0 && typeof real0.pickoff === 'function') $('m-scene').classList.add('flying');
+  if (real0 && typeof real0.pickoff === 'function') $('m-scene').classList.add('flying', 'po-off');
   API.pickoff(st.outingId).then(function (res) {
     var ev = res.pickoff;
     /* the throw on the field, when the stage plays one (stage.js pickoff, the camera agent's #744);
@@ -1537,7 +1538,7 @@ function pickoffIt() {
     return thrown.then(function () { return res; });
   }).then(function (res) {
     var ev = res.pickoff;
-    $('m-scene').classList.remove('flying');
+    $('m-scene').classList.remove('flying', 'po-off');
     hudRunners(null);
     S.outing = res.state;
     var t = pickoffText(ev, res.state);
@@ -1554,7 +1555,7 @@ function pickoffIt() {
     updateThrow();
   }).catch(function (e) {
     S.busy = false;
-    $('m-scene').classList.remove('flying');
+    $('m-scene').classList.remove('flying', 'po-off');
     S.grid.setDisabled(false);
     updateThrow();
     toast('that throw did not go. try again.');

@@ -457,11 +457,13 @@ async function playOuting(page, o) {
         await page.click('#m-po');
         const mid = await page.evaluate(({ up }) => new Promise((res) => {
           const f = new Function('return (' + up + ')()'), seen = [];
-          /* only the looks while the stage's broadcast is on (inplay.active): before it the call is still on its way */
-          const t0 = Date.now();
+          /* only the looks while the stage's broadcast is on (inplay.active): before it the call is still on its way.
+             performance.now, not Date.now: step 15 runs on page.clock.setFixedTime, where Date.now never moves
+             and this loop never ended (CI's browser job stalled here at 900 s) */
+          const t0 = performance.now();
           const tick = () => { const busy = window.STD_UI.state.busy, sc = window.STD_UI.state.scene, ip = sc && sc.real && sc.real.inplay;
             if (busy && ip && ip.active) seen.push(f());
-            if (busy || Date.now() - t0 < 400) setTimeout(tick, 60); else res(seen); };
+            if (busy || performance.now() - t0 < 400) setTimeout(tick, 60); else res(seen); };
           tick();
         }), { up: zoneUp.toString() });
         await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
