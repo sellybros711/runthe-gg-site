@@ -742,6 +742,9 @@ async function run(w, h, theme) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE.replace(/\/shut-the-door\/$/, '') });
   const page = await ctx.newPage();
+  /* how to play's clips load only when its sheet opens (the owner, 2026-11-02) */
+  const clipAsks = [];
+  page.on('request', (rq) => { if (/\/shut-the-door\/how\//.test(rq.url())) clipAsks.push({ url: rq.url(), how: false }); });
   await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, theme);
   await page.addInitScript(STAGE_TEST);
   const errors = [];
@@ -832,6 +835,7 @@ async function run(w, h, theme) {
 
   /* 2 */
   at('2 the sheets');
+  const askedBefore = clipAsks.length;   // before any sheet has opened
   for (const [btn, id, name] of [['#b-menu', 'sheet-menu', 'menu'], ['[data-open="how"]', 'sheet-how', 'how'], ['[data-open="stats"]', 'sheet-stats', 'stats'],
     ['@menu [data-open="past"]', 'sheet-past', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
     /* past dailies lives in the menu only */
@@ -857,6 +861,16 @@ async function run(w, h, theme) {
   await page.click('#sheet-101 .sh-x');
   await page.click('#h-main [data-open="how"]');
   await page.waitForSelector('#sheet-how.on');
+  /* how to play says today's controls, a clip for each (the QA audit and the owner, 2026-11-02) */
+  const how = await page.evaluate(() => ({ text: document.getElementById('how-body').textContent.toLowerCase(),
+    clips: [...document.querySelectorAll('#how-body .hw-clip video')].map((v) => (v.querySelector('source') || {}).src || ''),
+    lines: [...document.querySelectorAll('#how-body .hw-clip figcaption')].map((f) => f.textContent.trim()) }));
+  const howHas = ['re-aim', 'quick delivery', 'pickoff', 'challenge', 'scout', 'ring'].filter((w) => !how.text.includes(w));
+  const howOld = ['needle', 'grid', 'batter\'s name', 'ring around'].filter((w) => how.text.includes(w));
+  ok(!howHas.length && !howOld.length, '2 how to play says today\'s controls' + (howHas.length ? ', missing: ' + howHas.join(', ') : '') + (howOld.length ? ', old: ' + howOld.join(', ') : ''));
+  const kinds = ['aim', 'release', 'reaim', 'scout', 'challenge', 'quick', 'pickoff'].filter((k) => !how.clips.some((u) => u.includes('/how/' + k + '-' + theme + '.')));
+  ok(!kinds.length && how.lines.every((l) => l.length > 0 && l.length <= 110), '2 how to play has a clip in this theme and a short line for each control (' + how.clips.length + ' clips' + (kinds.length ? ', missing: ' + kinds.join(', ') : '') + ')');
+  ok(askedBefore === 0, '2 no clip is fetched before how to play opens (' + askedBefore + ' asked)');
   await page.click('#how-body [data-open-101]');
   ok(await page.isVisible('#sheet-101'), '2 how to play links to pitching 101');
   await page.click('#sheet-101 .sh-x');
