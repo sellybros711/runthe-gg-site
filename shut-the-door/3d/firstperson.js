@@ -44,7 +44,9 @@ import * as THREE from 'three';
 import { smooth, clamp01 } from './units.js?v=1';
 import { spline, reducedMotion, SUN } from './park.js?v=9';
 import { baseball } from './gear3d.js?v=4';
-import { look } from './looks.js?v=6';
+import { look, hash } from './looks.js?v=6';
+import { LOOKS } from './looks-data.js?v=2';
+import { skin as skinMaterial } from './materials.js?v=8';
 import { assetUrl } from './load.js?v=8';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { T_RELEASE } from './pitch.js?v=13';
@@ -152,23 +154,25 @@ function polygon(px, py, V) {
   return s * Math.sqrt(d);
 }
 // the finger stalls, pinky to index: [x, y, z, radius] from the base to the tip, curled toward the pocket
+// (2026-11-02: curled further into the pocket, a broken in glove's C seen from the side, where the old
+// stalls stood nearly flat and the glove read as a board from the side)
 const STALLS = [
-  [[-0.051, -0.035, 0, 0.0205], [-0.054, 0.04, -0.004, 0.0195], [-0.062, 0.104, -0.014, 0.017]],
-  [[-0.017, -0.03, 0, 0.0205], [-0.019, 0.06, -0.004, 0.0195], [-0.023, 0.134, -0.017, 0.0175]],
-  [[0.017, -0.03, 0, 0.0205], [0.017, 0.065, -0.004, 0.0195], [0.016, 0.151, -0.019, 0.0175]],
-  [[0.051, -0.03, 0, 0.0205], [0.052, 0.055, -0.004, 0.0195], [0.056, 0.138, -0.017, 0.017]],
+  [[-0.051, -0.035, 0, 0.021], [-0.054, 0.04, -0.008, 0.02], [-0.06, 0.1, -0.03, 0.0175]],
+  [[-0.017, -0.03, 0, 0.021], [-0.019, 0.06, -0.009, 0.02], [-0.022, 0.13, -0.034, 0.018]],
+  [[0.017, -0.03, 0, 0.021], [0.017, 0.065, -0.009, 0.02], [0.016, 0.146, -0.036, 0.018]],
+  [[0.051, -0.03, 0, 0.021], [0.052, 0.055, -0.009, 0.02], [0.055, 0.134, -0.033, 0.0175]],
 ];
-const THUMB = [[0.06, -0.1, -0.012, 0.022], [0.094, -0.02, -0.02, 0.019], [0.122, 0.058, -0.03, 0.016]];
-const WEB = [[0.07, -0.01], [0.126, 0.062], [0.12, 0.1], [0.098, 0.13], [0.072, 0.144], [0.058, 0.05]];
-const HEEL = [[-0.054, -0.122, -0.006, 0.026], [0.05, -0.126, -0.006, 0.026]];
+const THUMB = [[0.06, -0.1, -0.014, 0.023], [0.094, -0.02, -0.026, 0.02], [0.12, 0.056, -0.042, 0.017]];
+const WEB = [[0.07, -0.01], [0.126, 0.062], [0.12, 0.1], [0.098, 0.13], [0.072, 0.142], [0.058, 0.05]];
+const HEEL = [[-0.056, -0.122, -0.008, 0.03], [0.052, -0.126, -0.008, 0.03]];
 /** The glove's parts at a point: palm, heel, the four stalls, thumb, web (each its own distance). */
 function gloveParts(x, y, z, o) {
   const w = 0.078 * (1 + 0.12 * Math.max(-1, Math.min(1, (y + 0.06) / 0.08)));
-  o[0] = ellipsoid(x, y + 0.06, z, w, 0.082, 0.029);
+  o[0] = ellipsoid(x, y + 0.06, z, w, 0.082, 0.032);
   o[1] = cone(x, y, z, HEEL, 1);
   for (let i = 0; i < 4; i++) o[2 + i] = cone(x, y, z, STALLS[i], 1.12);
   o[6] = cone(x, y, z, THUMB, 1.2);
-  const dw = polygon(x, y, WEB) - 0.003, dz = Math.abs(z + 0.014) - 0.0042;
+  const dw = polygon(x, y, WEB) - 0.003, dz = Math.abs(z + 0.022 + 0.1 * Math.max(0, y - 0.04)) - 0.0045;
   o[7] = Math.min(Math.max(dw, dz), 0) + Math.sqrt(Math.max(dw, 0) ** 2 + Math.max(dz, 0) ** 2);
   return o;
 }
@@ -259,8 +263,11 @@ function leatherMesh() {
     for (let i = 2; i < 8; i++) { if (o[i] < o[a]) { b = a; a = i; } else if (o[i] < o[b]) b = i; }
     const crease = (a >= 2 && a <= 5 && b >= 2 && b <= 5 ? 0.5 : 0.3) * Math.exp(-(o[b] - o[a]) / 0.0035) * sstep(0.006, 0, o[a] + 0.004);
     const s = strapAt(p.x, p.y, p.z);
-    region[q] = patchAt(p.x, p.y, s) > 0.5 ? 2 : s > 0.5 ? 1 : 0;
-    ao[q] = (1 - crease) * (0.72 + 0.28 * sstep(-0.6, 0.4, n[2])) * (0.85 + 0.15 * sstep(-0.15, -0.1, p.y));
+    // the palm side (the pocket, the thumb's inside, the web's front: a two tone glove's second colour)
+    region[q] = patchAt(p.x, p.y, s) > 0.5 ? 2 : s > 0.5 ? 1 : n[2] < -0.25 ? 3 : 0;
+    // and the pocket darker, worn in where the ball lands
+    const pk = len3(p.x - 0.02, p.y - 0.02, p.z + 0.087);
+    ao[q] = (1 - crease) * (0.72 + 0.28 * sstep(-0.6, 0.4, n[2])) * (0.85 + 0.15 * sstep(-0.15, -0.1, p.y)) * (n[2] < 0 ? 0.74 + 0.26 * sstep(0.07, 0.095, pk) : 1);
   }
   // each triangle wound outward (the field's gradient)
   for (let t = 0; t < idx.length; t += 3) {
@@ -279,19 +286,11 @@ function leatherMesh() {
   geo.userData = { region, ao };
   return geo;
 }
-/** Lace wrapped round a core line inside the leather (a helix, pitch metres a turn, pulled onto the
-    surface), as points on the leather. */
-function wrapLace(core, wrap, pitch) {
-  const c = new THREE.CatmullRomCurve3(core.map((p) => new THREE.Vector3(...p))), L = c.getLength();
-  const n = Math.ceil(L / pitch * 8), out = [], Z = new THREE.Vector3(0, 0, 1);
-  for (let i = 0; i <= n; i++) {
-    const u = i / n, p = c.getPointAt(u), T = c.getTangentAt(u);
-    const Nn = Z.clone().addScaledVector(T, -T.dot(Z)).normalize(), B = new THREE.Vector3().crossVectors(T, Nn);
-    const th = 2 * Math.PI * u * L / pitch;
-    p.addScaledVector(Nn, wrap * Math.cos(th)).addScaledVector(B, wrap * Math.sin(th));
-    out.push(onLeather(p.toArray(), 0.0018));
-  }
-  return out;
+/** The leather's two faces at (x, y): [front z, back z] where the field is inside, or null. */
+function faces(x, y) {
+  let z0 = null, z1 = null;
+  for (let z = -0.075; z <= 0.066; z += 0.0015) if (gloveD(x, y, z) < 0) { if (z0 === null) z0 = z; z1 = z; }
+  return z0 === null ? null : [z0, z1];
 }
 /** A line laid on the back of the leather (from z0 down onto it). */
 function laidLace(pts, off, step = 0.004, z0 = 0.06) {
@@ -302,34 +301,89 @@ function laidLace(pts, off, step = 0.004, z0 = 0.06) {
   }
   return out;
 }
-/** The rawhide: laces (kind 0) and stitches (kind 1) in one mesh. */
+/* THE LACING (2026-11-02, the owner: "the glove needs to be improved and a lot more realistic"). A real
+   glove's rawhide binds its edges in short whip stitches: through a hole on the back, over the rolled
+   edge, through a hole on the front, each loop lying on the leather and slanted along the edge. The
+   old lace was a helix round a line on the edge, pulled onto the leather: where the leather was far it
+   stood off as a fringe of spikes. Each loop here is laid from the leather's own two faces (faces) at
+   holes a little in from the edge, over a point just outside it. */
+function rimLoops(edge, spacing, reach, out) {
+  const P = edge.map((q) => new THREE.Vector2(q[0], q[1]));
+  let L = 0;
+  const cum = [0];
+  for (let i = 1; i < P.length; i++) cum.push(L += P[i].distanceTo(P[i - 1]));
+  const at = (u) => {
+    let i = 1;
+    while (i < P.length - 1 && cum[i] < u) i++;
+    const t = (u - cum[i - 1]) / Math.max(1e-9, cum[i] - cum[i - 1]), d = P[i].clone().sub(P[i - 1]).normalize();
+    return { p: P[i - 1].clone().lerp(P[i], Math.min(1, Math.max(0, t))), t: d, n: new THREE.Vector2(d.y, -d.x) };
+  };
+  const n = Math.max(1, Math.floor(L / spacing));
+  for (let k = 0; k <= n; k++) {
+    const { p, t, n: n0 } = at(k * L / n), sl = 0.32 * spacing;
+    // the normal out of the leather, whichever way the edge was listed
+    const nn = faces(p.x - n0.x * reach, p.y - n0.y * reach) ? n0 : n0.clone().negate();
+    const hole = (s) => p.clone().addScaledVector(nn, -reach).addScaledVector(t, s);
+    const hb = hole(-sl), hf = hole(sl), fb = faces(hb.x, hb.y), ff = faces(hf.x, hf.y), fm = faces(p.x - nn.x * 0.002, p.y - nn.y * 0.002);
+    if (!fb || !ff || !fm) continue;
+    const zm = (fm[0] + fm[1]) / 2, half = (fm[1] - fm[0]) / 2;
+    const back = onLeather([hb.x, hb.y, fb[1]], 0.0016), front = onLeather([hf.x, hf.y, ff[0]], 0.0016);
+    const rim = (f) => onLeather([p.x + nn.x * 0.003, p.y + nn.y * 0.003, zm + f * half], 0.0019);
+    out.push([back, rim(0.6), rim(0), rim(-0.6), front]);
+  }
+}
+/** The rawhide (kind 0), the stitching (kind 1), the welting (kind 2) and the strap's tab (kind 3), in
+    one mesh. */
 function laceMesh() {
   const parts = [];
-  const tube = (pts, r, radial, kind) => {
-    const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(1, pts.length - 1), r, radial, false);
+  const tube = (pts, r, radial, kind, closed = false) => {
+    const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, closed), Math.max(2, (pts.length - 1) * 2), r, radial, closed);
     g.userData.kind = kind; parts.push(g);
   };
-  // along the fingertips: up the pinky's side and over each tip; then the web's top edge, tighter
-  // (it is one thin piece); then over the thumb's tip and down its side
-  tube(wrapLace([[-0.074, -0.03, -0.004], [-0.074, 0.04, -0.008], [-0.07, 0.094, -0.013], [-0.056, 0.11, -0.015], [-0.038, 0.11, -0.016], [-0.02, 0.13, -0.017],
-    [-0.002, 0.128, -0.018], [0.016, 0.146, -0.019], [0.034, 0.13, -0.018], [0.056, 0.134, -0.017], [0.066, 0.13, -0.016]], 0.017, 0.0105), 0.0022, 4, 0);
-  tube(wrapLace([[0.066, 0.14, -0.014], [0.098, 0.128, -0.014], [0.12, 0.099, -0.014], [0.125, 0.075, -0.014]], 0.0075, 0.009), 0.0022, 4, 0);
-  tube(wrapLace([[0.124, 0.07, -0.028], [0.123, 0.05, -0.03], [0.114, 0.0, -0.022], [0.094, -0.07, -0.016]], 0.017, 0.0105), 0.0022, 4, 0);
-  // round the heel
-  tube(wrapLace([[0.058, -0.127, -0.006], [0.0, -0.126, -0.006], [-0.06, -0.122, -0.006]], 0.027, 0.012), 0.0022, 4, 0);
-  // the web's basket: three across, two up, laid on its back
-  for (const y of [0.06, 0.088, 0.114]) tube(laidLace([[0.07, y], [0.09, y + 0.004], [0.118 - Math.max(0, y - 0.1) * 1.2, y + 0.002]], 0.0022, 0.004, -0.004), 0.0026, 4, 0);
-  for (const x of [0.084, 0.102]) tube(laidLace([[x - 0.004, 0.03], [x, 0.08], [x - 0.004, 0.138 - (x - 0.084) * 1.2]], 0.0016, 0.004, -0.004), 0.0026, 4, 0);
-  // stitches: two rows down each seam between the stalls, round the patch, along the strap's edges
+  const arc = (c, r, a0, a1, n = 12) => Array.from({ length: n + 1 }, (_, i) => { const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]; });
+  // the edges it binds: the pinky's outer side and over every fingertip, the web's top, the thumb's
+  // tip and its outer side, and round the heel
+  const loops = [];
+  const tip = (S) => S[S.length - 1], R = (q) => q[3];
+  rimLoops([[-0.074, -0.045], [-0.075, 0.03], ...arc(tip(STALLS[0]), R(tip(STALLS[0])), 175, 40, 8)], 0.0105, 0.006, loops);
+  for (let i = 1; i < 4; i++) rimLoops(arc(tip(STALLS[i]), R(tip(STALLS[i])), 150, 30, 8), 0.0105, 0.006, loops);
+  rimLoops([[0.066, 0.138], [0.084, 0.136], [0.1, 0.127], [0.114, 0.108], [0.121, 0.086]], 0.0105, 0.005, loops);
+  rimLoops([...arc(tip(THUMB), R(tip(THUMB)), 120, -20, 6), [0.132, 0.01], [0.122, -0.05], [0.104, -0.1]], 0.0105, 0.006, loops);
+  rimLoops([[0.082, -0.13], [0.03, -0.157], [-0.03, -0.155], [-0.084, -0.128]], 0.011, 0.007, loops);
+  for (const l of loops) tube(l, 0.0021, 5, 0);
+  // the laces that tie each stall's top to the next, in the V between them, and a knot at each
+  for (let i = 0; i < 3; i++) {
+    const a = tip(STALLS[i]), b = tip(STALLS[i + 1]), m = [(a[0] + b[0]) / 2, Math.min(a[1], b[1]) - 0.004];
+    const fa = faces(m[0], m[1] - 0.01);
+    if (!fa) continue;
+    const zc = (fa[0] + fa[1]) / 2;
+    tube([onLeather([a[0] + 0.012, a[1] + 0.008, zc], 0.002), onLeather([m[0], m[1] + 0.002, zc], 0.0035), onLeather([b[0] - 0.012, b[1] + 0.008, zc], 0.002)], 0.0023, 5, 0);
+    const k = onLeather([m[0], m[1], fa[1]], 0.003);
+    tube([k.clone().add(new THREE.Vector3(-0.003, 0, 0)), k.clone().add(new THREE.Vector3(0, 0.002, 0.001)), k.clone().add(new THREE.Vector3(0.003, 0, 0))], 0.0028, 6, 0);
+  }
+  // the web's basket on its back: three across, two up
+  for (const y of [0.06, 0.088, 0.114]) tube(laidLace([[0.07, y], [0.09, y + 0.004], [0.118 - Math.max(0, y - 0.1) * 1.2, y + 0.002]], 0.0022, 0.004, -0.012), 0.0026, 5, 0);
+  for (const x of [0.084, 0.102]) tube(laidLace([[x - 0.004, 0.03], [x, 0.08], [x - 0.004, 0.134 - (x - 0.084) * 1.2]], 0.0016, 0.004, -0.012), 0.0026, 5, 0);
+  // welting: the raised leather piping down each seam between the stalls on the back, and the thumb's
+  for (const [x, top] of [[-0.035, 0.084], [0, 0.11], [0.035, 0.106]]) tube(laidLace([[x, -0.03], [x - 0.001, top * 0.6], [x - 0.002, top]], 0.0012, 0.005), 0.0024, 6, 2);
+  // stitches: two rows down each seam beside the welting, round the patch, along the strap's edges
   const dashes = (pts) => {
     for (let i = 0; i + 1 < pts.length; i += 2) tube([pts[i], pts[i + 1]], 0.0009, 3, 1);
   };
   const row = (a, b, step = 0.0032) => dashes(laidLace([a, b], 0.0006, step));
-  for (const [x, top] of [[-0.035, 0.08], [0, 0.115], [0.035, 0.11]]) for (const s of [-1, 1]) row([x + s * 0.0055, -0.02], [x + s * 0.0075, top]);
+  for (const [x, top] of [[-0.035, 0.078], [0, 0.104], [0.035, 0.1]]) for (const s of [-1, 1]) row([x + s * 0.0062, -0.02], [x + s * 0.0072, top]);
   for (const y of [-0.0705, -0.1065]) row([-0.064, y], [0.06, y]);
   const ring = [];
   for (let k = 0; k <= 36; k++) { const a = k / 36 * 2 * Math.PI; ring.push([-0.016 + 0.0205 * Math.cos(a), -0.0885 + 0.0085 * Math.sin(a)]); }
   dashes(laidLace(ring, 0.0024, 0.0032));
+  // the strap's adjuster: a rounded tab over its thumb side end, stitched round
+  const tab = [];
+  for (let k = 0; k <= 24; k++) { const a = k / 24 * 2 * Math.PI; tab.push([0.052 + 0.014 * Math.cos(a), -0.0885 + 0.0125 * Math.sin(a)]); }
+  const tabPts = laidLace(tab, 0.004, 0.003);
+  tube(tabPts, 0.0045, 6, 3, true);
+  const tabIn = []; for (let k = 0; k <= 24; k++) { const a = k / 24 * 2 * Math.PI; tabIn.push([0.052 + 0.009 * Math.cos(a), -0.0885 + 0.0075 * Math.sin(a)]); }
+  tube(laidLace(tabIn, 0.0062, 0.003), 0.0045, 6, 3, true);
+  dashes(laidLace(tab.map(([x, y]) => [0.052 + (x - 0.052) * 0.82, -0.0885 + (y + 0.0885) * 0.8]), 0.0088, 0.0028));
   // one mesh: position, normal, kind
   let nv = 0, ni = 0;
   for (const g of parts) { nv += g.attributes.position.count; ni += g.index.count; }
@@ -349,19 +403,24 @@ function laceMesh() {
   geo.userData = { kind: K };
   return geo;
 }
-/* Real colourways (sRGB): the shell, the strap, the patch, the lace, the stitching. */
+/* Real pitchers' colourways (sRGB), no brand: the back, the strap, the patch (blank), the palm side,
+   the lace, the stitching, the welting. Black with tan lace, a tan with dark lace, a cognac with tan
+   lace, and a two tone (black back, tan palm and welting). */
 const GLOVES = {
-  tan: ['#a8784a', '#86592f', '#e9e0cf', '#2e1c12', '#3a2416'],
-  black: ['#121010', '#1c1816', '#e4dccb', '#c08a52', '#b98a5a'],
-  brown: ['#5e3720', '#47291a', '#e9e0cf', '#c99c62', '#c3955c'],
+  tan: ['#b07c4a', '#8a5a32', '#e9e0cf', '#b07c4a', '#3a2416', '#3a2416', '#9a683c'],
+  black: ['#141111', '#1d1916', '#e4dccb', '#141111', '#c08a52', '#b98a5a', '#141111'],
+  cognac: ['#86431f', '#663218', '#e9e0cf', '#86431f', '#d6a068', '#d0985e', '#743819'],
+  twotone: ['#141111', '#1d1916', '#e4dccb', '#b07c4a', '#c08a52', '#b98a5a', '#b07c4a'],
 };
-/** The club's glove: black for the navy and black clubs, a dark brown for the reds, else tan. */
+/** The club's glove: black for the navy and black clubs, cognac for the reds, two tone for the greens
+    and golds, else tan. */
 export function gloveFor(kit) {
   if (!kit || !kit.trim) return 'tan';
   const c = { h: 0, s: 0, l: 0 };
   kit.trim.getHSL(c);
   if (c.l < 0.14 || (c.h > 0.52 && c.h < 0.78 && c.l < 0.4)) return 'black';
-  if (c.s > 0.35 && (c.h < 0.06 || c.h > 0.9)) return 'brown';
+  if (c.s > 0.35 && (c.h < 0.06 || c.h > 0.9)) return 'cognac';
+  if (c.s > 0.3 && c.h > 0.1 && c.h < 0.48) return 'twotone';
   return 'tan';
 }
 function paintGlove(glove, name) {
@@ -374,7 +433,12 @@ function paintGlove(glove, name) {
   }
   C.needsUpdate = true;
   const { kind } = lace.geometry.userData, L = lace.geometry.attributes.color;
-  for (let q = 0; q < L.count; q++) { const c = lin[3 + kind[q]]; L.setXYZ(q, c.r, c.g, c.b); }
+  // the lace and stitching their own, the welting the leather's (over the map's mean, as the shell),
+  // the strap's tab the strap's
+  for (let q = 0; q < L.count; q++) {
+    const k = kind[q], c = lin[[4, 5, 6, 1][k]], m = k === 3 ? 0.85 : 1;
+    L.setXYZ(q, c.r * m, c.g * m, c.b * m);
+  }
   L.needsUpdate = true;
   glove.userData.name = name;
 }
@@ -383,8 +447,10 @@ function gloveModel(tex) {
   for (const t of [tex.map, tex.normal]) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   const g = new THREE.Group();
   // its origin a little under the middle of the palm (so the strap and the heel show over the screen's foot)
-  g.add(new THREE.Mesh(leatherMesh().translate(0, GLOVE_UP, 0), new THREE.MeshPhysicalMaterial({ map: tex.map, normalMap: tex.normal, normalScale: new THREE.Vector2(0.6, 0.6), vertexColors: true, roughness: 0.6, clearcoat: 0.15, clearcoatRoughness: 0.4 })));
-  g.add(new THREE.Mesh(laceMesh().translate(0, GLOVE_UP, 0), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62 })));
+  // oiled leather: a soft sheen over a broad coat (the old one read as matte rubber)
+  g.add(new THREE.Mesh(leatherMesh().translate(0, GLOVE_UP, 0), new THREE.MeshPhysicalMaterial({ map: tex.map, normalMap: tex.normal, normalScale: new THREE.Vector2(0.7, 0.7), vertexColors: true,
+    roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.38, sheen: 0.12, sheenRoughness: 0.5, sheenColor: new THREE.Color(0.5, 0.36, 0.26) })));
+  g.add(new THREE.Mesh(laceMesh().translate(0, GLOVE_UP, 0), new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.55, clearcoat: 0.15, clearcoatRoughness: 0.45 })));
   paintGlove(g, 'tan');
   return g;
 }
@@ -426,6 +492,38 @@ function limb(mat, r0, r1) {
 }
 const UP = new THREE.Vector3(0, 1, 0);
 
+/* HIS FOREARMS (the owner, 2026-11-02: "the arms of the pitcher is a solid blue ... you should see the
+   skin of the pitcher or the team colors of their gear"). Each forearm is his skin from the elbow to
+   the wrist, a forearm's own shape (fullest a fifth of the way down, slim at the wrist), lit with the
+   hitters' skin (materials.js skin: the wrapped falloff and the sheen), and over it his undershirt's
+   sleeve in the club's colour from the elbow down to its cuff: SLEEVES, his by a hash of his name
+   (relievers wear both: to just past the elbow, or a little longer, toward mid forearm; most of
+   the forearm he sees at the set is skin). No logo on it.
+   The upper arm and the elbow stay in the sleeve. */
+const FORE_R = [[0, 0.04], [0.1, 0.045], [0.24, 0.047], [0.45, 0.042], [0.7, 0.034], [0.9, 0.029], [1, 0.028]];
+const SLEEVES = [0.1, 0.3];     // the cuff, as a share of the forearm from the elbow
+function forearm(mats, k = 1) {
+  const g = new THREE.Group();
+  const geo = new THREE.LatheGeometry(FORE_R.map(([y, r]) => new THREE.Vector2(r * k, y)), 18);
+  const skin = new THREE.Mesh(geo, mats.skin);
+  // the sleeve a little looser than the forearm under it, its cuff's edge a closed ring
+  const rs = 0.05 * k, sleeve = new THREE.Mesh(new THREE.CylinderGeometry(rs * 0.97, rs, 1, 18, 1, false), mats.sleeve);
+  g.add(skin, sleeve);
+  g.userData.cuff = SLEEVES[0];
+  const d = new THREE.Vector3(), c = new THREE.Vector3();
+  /** From the elbow a to the wrist b. */
+  g.userData.set = (a, b) => {
+    d.subVectors(b, a);
+    const len = d.length();
+    d.divideScalar(len || 1);
+    skin.position.copy(a); skin.quaternion.setFromUnitVectors(UP, d); skin.scale.set(1, len, 1);
+    const cl = Math.max(0.02, g.userData.cuff * len);
+    c.copy(a).addScaledVector(d, cl / 2);
+    sleeve.position.copy(c); sleeve.quaternion.copy(skin.quaternion); sleeve.scale.set(1, cl, 1);
+  };
+  return g;
+}
+
 export class FirstPerson {
   constructor(renderer, world) {
     this.renderer = renderer;
@@ -455,14 +553,14 @@ export class FirstPerson {
     this.mats = {
       sleeve: new THREE.MeshStandardMaterial({ color: 0x1b2a44, roughness: 0.85, normalMap: kn, normalScale: new THREE.Vector2(0.35, 0.35) }),
       jersey: new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.85, normalMap: kn, normalScale: new THREE.Vector2(0.35, 0.35) }),
-      skin: new THREE.MeshStandardMaterial({ color: SKIN_LIGHT.clone(), roughness: 0.55 }),
+      skin: skinMaterial({}, { tint: SKIN_LIGHT.clone() }),
     };
     const M = this.mats;
     // the glove and the forearm under it, and at the set his throwing hand in it (only his forearm
     // shows, going into the pocket from his arm side)
     this.glove = gloveModel({ map: lm, normal: ln });
-    this.gloveArm = limb(M.sleeve, 0.044, 0.04);
-    this.setArm = limb(M.sleeve, 0.042, 0.034);
+    this.gloveArm = forearm(M, 1);
+    this.setArm = forearm(M, 0.95);
     // each forearm goes on to an elbow and the upper arm, back toward his shoulder beside his eyes
     // and off the screen (armOn): a forearm alone ended on the screen beside a tall panel
     this.gloveUpper = limb(M.sleeve, 0.056, 0.047);
@@ -481,7 +579,7 @@ export class FirstPerson {
     this.hand = handModel(M.skin, this.ball);
     this.upper = limb(M.sleeve, 0.048, 0.042);
     this.cuff = limb(M.jersey, 0.062, 0.058);
-    this.fore = limb(M.sleeve, 0.04, 0.029);
+    this.fore = forearm(M, 0.92);
     this.elbow = new THREE.Mesh(new THREE.SphereGeometry(0.042, 16, 12), M.sleeve);
     this.wrist = new THREE.Mesh(new THREE.SphereGeometry(0.027, 12, 10), M.skin);
     this.arm = new THREE.Group();
@@ -502,8 +600,13 @@ export class FirstPerson {
     const p = facts.pitcher;
     this.side = p.throws === 'L' ? -1 : 1;
     this.slot = THREE.MathUtils.degToRad(armSlot(p, facts.release));
-    const tone = look(p.name || 'pitcher').tone;
+    // his tone: looks-data.js's where he is there (by name: the closers are not keyed there), else
+    // the hash of his name, as for the hitters (looks.js)
+    const known = Object.values(LOOKS.players).find((x) => x.name === p.name && Number.isFinite(x.tone));
+    const tone = known ? known.tone : look(p.name || 'pitcher').tone;
     this.mats.skin.color.copy(SKIN_LIGHT).lerp(SKIN_DARK, tone);
+    const cuff = SLEEVES[(hash('sleeve ' + (p.name || 'pitcher')) >>> 7) % SLEEVES.length];
+    for (const a of [this.gloveArm, this.setArm, this.fore]) a.userData.cuff = cuff;
     if (kit) {
       this.mats.sleeve.color.copy(kit.undershirt);
       this.mats.jersey.color.copy(kit.base);

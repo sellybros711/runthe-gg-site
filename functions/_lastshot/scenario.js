@@ -131,9 +131,32 @@ export const SCENARIO = Object.freeze({
     answerBase: 0.32, answerPerSec: 0.013, answerMax: 0.5,
     /* Up 2 after a three, a two only ties it (overtime, a coin flip) and a
        three beats you: this share of their scores still loses it for you. */
-    answerNeedThree: 0.7
+    answerNeedThree: 0.7,
+
+    /* ZONES. How often the rolled defense is a zone (late in a close game,
+       about one possession in four at most levels below the pros). */
+    zoneShare: 0.25,
+    /* A zone shifts its shape toward the ball by this share of how far the
+       ball is from the middle (across, and up and down the floor). */
+    zoneShiftX: 0.35, zoneShiftY: 0.22,
+    /* A zone defender takes the man nearest his spot within zoneReach feet,
+       and never strays more than zoneLeash of the way to him. */
+    zoneReach: 8, zoneLeash: 0.45, zoneGap: 3.2,
+    /* The match-up zone: man to man that switches every screen and sags into
+       the lane, by this much more than man does. */
+    matchupSag: 1.5, matchupGap: 0.8
   }
 });
 
+/* THE DEFENSES. Man to man with one of three screen schemes, or a zone
+   (the owner, 2026-10-30: zones next, for Test it above all). The rolled
+   defense is a zone zoneShare of the time; the rest splits evenly across the
+   man schemes. With zoneShare 0 the roll is exactly what it was before zones. */
 export const SCHEMES = Object.freeze(['switch', 'over', 'under']);
-export const SCHEME_NAMES = Object.freeze({ switch: 'Switch', over: 'Fight over', under: 'Go under' });
+export const ZONES = Object.freeze(['zone23', 'zone131', 'zone32', 'matchup']);
+export const DEFENSES = Object.freeze([...SCHEMES, ...ZONES]);
+export const SCHEME_NAMES = Object.freeze({ switch: 'Switch', over: 'Fight over', under: 'Go under',
+  zone23: '2-3 zone', zone131: '1-3-1 zone', zone32: '3-2 zone', matchup: 'Match-up zone' });
+export const isZone = d => ZONES.includes(d);
+/* A zone that sits in its spots (the match-up zone follows its men instead). */
+export const isAreaZone = d => d === 'zone23' || d === 'zone131' || d === 'zone32';
