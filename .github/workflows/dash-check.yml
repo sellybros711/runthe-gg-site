@@ -26,6 +26,7 @@ on:
       - 'arcade/**'
       - '4th-and-what/**'
       - 'guides/**'
+      - 'shut-the-door/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   push:
@@ -42,6 +43,7 @@ on:
       - 'arcade/**'
       - '4th-and-what/**'
       - 'guides/**'
+      - 'shut-the-door/**'
       - 'scripts/check-dashes.mjs'
       - '.github/workflows/dash-check.yml'
   workflow_dispatch: {}
