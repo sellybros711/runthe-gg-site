@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=61">
+<link rel="stylesheet" href="style.css?v=62">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -273,6 +273,10 @@ setTimeout(function () {
         </div>
       </div>
       <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
+      <!-- HOME (the owner, 2026-11-03: "a way to go home while you're playing"). Under the batter card,
+           out of the column's flow, so the scorebug and the card never move. A header, so a tap on it
+           never skips the play; the play in flight finishes first, then a fresh home where the outing resumes. -->
+      <header class="mh-hm"><button class="mh-home" id="m-home" type="button" data-hud aria-label="Home" title="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7M6.5 9.5V19.5h4v-5h3v5h4V9.5"/></svg><span>home</span></button></header>
     </div>
     <header class="mh-tr">
       <button class="mh-menu" type="button" data-open="menu" data-hud aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -408,6 +412,7 @@ setTimeout(function () {
 <div class="sheet" id="sheet-menu" hidden aria-hidden="true" role="dialog" aria-label="Menu">
   <div class="sh-in">
     <div class="sh-h"><h2>you</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div>
+    <div class="menu-list menu-home"><button type="button" id="menu-home"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7M6.5 9.5V19.5h4v-5h3v5h4V9.5"/></svg></i><span class="mt"><b>home</b><span>your outing waits where you left it.</span></span><i class="chev" aria-hidden="true"></i></button></div>
     <div class="tiles3" id="menu-tiles"></div>
     <div class="menu-list">
       <button type="button" data-open="how"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="3"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></i><span class="mt"><b>how to play</b><span>a pitch and a spot. three outs.</span></span><i class="chev" aria-hidden="true"></i></button>
@@ -480,7 +485,7 @@ setTimeout(function () {
 <script src="modes-ui.js?v=6"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=3"></script>
-<script src="ui.js?v=63"></script>
+<script src="ui.js?v=64"></script>
 <script type="module" src="3d/boot.js?v=84"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>

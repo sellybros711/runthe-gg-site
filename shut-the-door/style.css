@@ -1772,3 +1772,14 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
   .t-l1 { font-size: 64px; }
   .t-l2 { font-size: 96px; }
 }
+
+/* HOME on the mound (the owner, 2026-11-03): under the batter card, out of the column's flow, so the
+   scorebug, the card and the stage's frame of them never move */
+.mh-hm { position: absolute; top: calc(100% + 8px); left: 0; }
+.mh-home { height: 38px; min-width: 38px; padding: 0 12px 0 9px; border-radius: 11px; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--g); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); color: var(--g-ink); -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3);
+  font-family: var(--sans); font-weight: 700; font-size: 12.5px; letter-spacing: .02em; text-transform: uppercase; }
+.mh-home svg { width: 19px; height: 19px; fill: none; stroke: var(--g-ink); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.mh-home.wait { opacity: .6; }
+/* the menu's home: only while an outing is on screen */
+body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="s-next"]) #sheet-menu .menu-home { display: none; }
