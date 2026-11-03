@@ -124,8 +124,14 @@ export function fwdAt(rel) {
   return Math.max(3.2, Math.min(5.6, EYE.y - (y + 1.9)));
 }
 /** Is the delivery's head motion off (the player asked for less motion)? */
+// (one query list, kept: its matches is live. A new matchMedia each frame cost the pitch more JS
+// than its pose, measured at 4x CPU on 2026-11-03)
+let MQ = null;
 export function reducedMotion() {
-  try { return !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; }
+  try {
+    if (MQ === null) MQ = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : false;
+    return !!(MQ && MQ.matches);
+  } catch (e) { return false; }
 }
 
 /** The pitcher's eye: framed toward the hitter's side of the plate (a left handed hitter stands on
