@@ -290,9 +290,11 @@
     /* for the browser check: the switch, and the master gain the speakers get */
     state: function () { return { on: on, started: !!ac, gain: master ? master.gain.value : 0, ctx: ac ? ac.state : 'none' }; },
     pitch: run(pitch), pop: run(pop), crack: run(crack), miss: run(miss), thud: run(thud), snap: run(snap),
-    ump: run(say), roar: run(roar), groan: run(groan), cheer: run(cheer), sting: run(sting),
+    /* the crowd is off (the owner, 2026-11-03: "the crowd noise sounds like white noise, let's remove
+       it"). roar, groan, cheer and the bed stay callable and do nothing, so no caller changes. */
+    ump: run(say), roar: function () {}, groan: function () {}, cheer: function () {}, sting: run(sting),
     tick: run(tick), chime: run(chime), tap: run(tap), tab: run(tab),
-    bed: function (level) { try { bed(level); } catch (e) {} },
+    bed: function () {},
     buzz: function (p) { if (!on || !canBuzz()) return; try { navigator.vibrate(p); } catch (e) {} },
   };
 })();
