@@ -491,7 +491,7 @@ Model.prototype.holdTable = function () {
  * pitch ahead with the history and leans on the table after that. The
  * release (q) is still never read: it is execution.
  */
-const RULES = 9;
+const RULES = 10;
 /* Rules 3 (2026-10-24) is rules 2 with MLB's third out: a run that crosses
    before a third out that is neither a force nor the batter before first
    counts (Model.prototype.transitions, THE THIRD OUT). Everything below
@@ -536,6 +536,12 @@ const FULL_RULES = 8;
    top and the bottom too, round at the corners. Only a challenge's answer moves; the umpire's call,
    the grade and the draws do not. A call with r 8 replays as rules 8. */
 const TOUCH_RULES = 9;
+/* Rules 10 (2026-11-03, the owner's call: "I challenged pitch 8 which was a ball and it stood as a
+   ball. That is a strike.") is rules 9 with the touch measured on the zone as drawn (contract.js
+   touchDist): the ball's edge against the grid's box, the plate plus a ball on the sides. Rules 9
+   took the ball's radius off the drawn sides, so a ball the screen shows on the box could stand as a
+   ball. Only a challenge's answer moves. A call with r 9 replays as rules 9. */
+const DRAWN_RULES = 10;
 const KEY_ERROR = 9, KEY_OUT = Object.freeze({ ground: 10, fly: 12, popup: 13 });
 /* The settings of rules 2, in one place.
    FAMILIAR   how familiar a pitch is (the level L), by the pitches of the same
@@ -1144,7 +1150,7 @@ function gradeCall(model, st, call, ctx) {
 
 const publicAPI = Object.freeze({
   BUCKETS, BUCKET_INDEX, KEYS, IN_PLAY, CLASS, kernelFor, kernelRowAt, forceWalk, stateIndex, goalOf, Model, gradeCall,
-  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, TOUCH_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
+  placeOf, bucketOf, keeps, RULES, THIRD_OUT_RULES, ABS_RULES, ROUTINE_RULES, RUNNER_RULES, STEAL_RULES, FULL_RULES, TOUCH_RULES, DRAWN_RULES, R2, adjustOf, familiarOf, familiarRaw, fatigueOf, contextOf,
   scoutView, SCOUT_STEP, EFFORT, effortMult, effortRow, effortSpread, loadOf,
 });
 if (NODE) module.exports = publicAPI;

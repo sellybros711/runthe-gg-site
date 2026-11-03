@@ -1858,6 +1858,8 @@ function absSvg(pr, batter, color) {
     '<line class="ar-edge" x1="' + f(ex) + '" y1="' + f(ey) + '" x2="' + f(x) + '" y2="' + f(y) + '"/>' +
     '<circle class="ar-ball" cx="' + f(x) + '" cy="' + f(y) + '" r="' + R + '" fill="' + color + '"/></svg>';
 }
+/* the words under the replay: the ball's edge to the zone the ABS read (pr.abs.t, rules 9 on), so a
+   strike reads "in" and a ball "off"; before rules 9, the centre's distance (pr.abs.d) */
 function inchWords(d) {
   var a = Math.abs(d);
   if (a < 0.05) return 'on the edge';
@@ -1874,7 +1876,7 @@ function absReplay(pr, batter) {
   box.className = 'absr ' + (ch.overturned ? 'over' : 'stands') + (prefs.quick ? ' quick' : '');
   box.innerHTML = '<div class="ar-zone">' + absSvg(pr, batter, ap ? colorOf(ap) : '#f4f5f7') + '</div>' +
     '<div class="ar-txt"><span class="ar-k"><b>abs</b> ' + esc(who) + '</span>' +
-    '<span class="ar-d"><b>' + (pr.abs.strike ? 'strike' : 'ball') + '</b> ' + esc(inchWords(pr.abs.d)) + '</span>' +
+    '<span class="ar-d"><b>' + (pr.abs.strike ? 'strike' : 'ball') + '</b> ' + esc(inchWords(pr.abs.t != null ? pr.abs.t : pr.abs.d)) + '</span>' +
     '<span class="ar-v">' + (ch.overturned ? 'overturned' : 'call stands') + '</span></div>';
   box.hidden = false;
   $('m-dock').classList.add('replaying');

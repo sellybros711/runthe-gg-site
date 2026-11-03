@@ -725,6 +725,27 @@ wide, his bare height). So on the top or the bottom a touching ball can read `st
 rules 8. Survivor, practice and the archive start new outings under rules 9 and resume under the
 rules their calls carry.
 
+## 5l. Rules 10: the touch is measured on the zone as drawn (2026-11-03)
+
+Rules 9 and everything before it, plus one thing. A new outing's calls carry `r: 10`; a call with
+`r: 9` or before replays under its own rules, exactly (`fixtures/replays-rules9-pre-drawn-touch.json`).
+
+**Why.** The owner, 2026-11-03: "I challenged pitch 8 which was a ball and it stood as a ball. That
+is a strike." Rules 9 measured the touch from the bare plate. The grid draws the zone with sides at
+`GRID.ZONE_HALF_FT` (the plate plus a ball), so on the sides a ball had to sit a whole ball's width
+inside the drawn box's edge to touch, and a dot on the drawn corner (0.24 inches past the side, 0.22
+over the top) stood as a ball (`absDist` -0.25).
+
+**The drawn touch.** A challenge is answered by `contract.js touchDist(x, zn, zoneFt) >= 0`, which is
+`zoneDist + BALL_IN`: the ball's edge against the drawn box, round at the corners. A ball the grid
+shows touching the box is a strike; one clear of it is a ball. The aim grid draws the at bat's dots a
+ball's size (`style.css .aim .pd.cur`, 2.9 inches over a 6.64 inch column). The umpire's call, the
+grade, the batter's chance to challenge and every draw are rules 9's. `pitchResult.abs.t` (rules 9 on)
+is the ball's edge to the zone the ABS read, the inches the quick replay prints.
+
+**The daily's rollout.** `api.js DRAWN_TOUCH_FROM` (2026-11-04): a daily of a day before it plays
+rules 9. Survivor, practice and the archive start new outings under rules 10.
+
 ## 6. Pitch result
 
 ```js
