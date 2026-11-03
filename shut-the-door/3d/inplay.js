@@ -20,7 +20,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=24';
 import { SHADE } from './shade-data.js?v=5';
-import { Crew } from './fielders.js?v=10';
+import { Crew } from './fielders.js?v=11';
 import { buildBallpark, MOUND_C } from './ballpark.js?v=27';
 // (the same URL stage.js imports, so both share one copy of people.js)
 import { kitFor } from './people.js?v=43';
@@ -860,10 +860,15 @@ export class InPlay {
         const p = ramp(s, t0, t1), q = ramp(s, t1 + 0.15, t1 + 0.4);
         const lead = -cT.dx * Math.cos(cT.yaw) + cT.dy * Math.sin(cT.yaw) >= 0 ? 'l' : 'r', trail = lead === 'l' ? 'r' : 'l';
         const kl = smooth(p) - k, kt = -k * (1 - smooth(q));
+        // (and from the tag he turns on his feet, never with them: he comes round to his throw or the ball as the
+        // tag goes down, and a foot on the dirt is a pivot, kept where it stood at the tag as he turns. Turned
+        // with his body, the planted foot swept round him at 4 to 6 m/s, check-jolt.mjs skate fielder tag. The
+        // trail foot lets go as it steps up under him, the lead one after it, in a short step of its own)
+        const r = ramp(s, t1 + 0.36, t1 + 0.5), dYaw = s > t1 ? angDiff(cT.yaw, yaw) : 0;
         spec.plant = {
           w: 1 - moving,
-          [lead]: { x: cT.dx * kl, y: cT.dy * kl, z: 0.35 * Math.sin(Math.PI * p) },
-          [trail]: { x: cT.dx * kt, y: cT.dy * kt, z: 0.3 * Math.sin(Math.PI * q) },
+          [lead]: { x: cT.dx * kl, y: cT.dy * kl, z: 0.35 * Math.sin(Math.PI * p) + 0.3 * Math.sin(Math.PI * r), turn: dYaw * (1 - smooth(r)) },
+          [trail]: { x: cT.dx * kt, y: cT.dy * kt, z: 0.3 * Math.sin(Math.PI * q), turn: dYaw * (1 - smooth(q)) },
         };
       }
       f.place(at.x, at.y, yaw, { lift: lift + hop });
