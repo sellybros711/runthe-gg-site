@@ -57,6 +57,26 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .hdr-btn:hover { background: var(--panel-2); }
 .hdr-btn svg { width: 21px; height: 21px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .hdr-btn.in svg { stroke: var(--signal); }
+/* the header's account button (the owner, 2026-11-03): signed out a sign in pill, signed in your plate */
+.hdr-btn.pill { width: auto; min-width: 38px; height: 38px; padding: 0 14px; border-radius: 999px; background: var(--signal); color: var(--signal-ink);
+  font: 700 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; margin: 0 2px; }
+.hdr-btn.pill:hover { background: var(--signal); filter: brightness(1.06); }
+.hdr-btn .plate.hp { width: 30px; height: 30px; stroke: none; }
+/* the picker, in the account sheet */
+.plk-h { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 8px; }
+.plk-h b { font-size: 14px; } .plk-h span { font-size: 12px; color: var(--dim); }
+.plk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.plk { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 38px; padding: 10px 6px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font: 600 12px var(--sans); text-align: center; }
+.plk .plate { width: 40px; height: 40px; }
+.plk[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--signal); border-color: transparent; }
+.plk.locked { cursor: default; color: var(--dim); }
+.plk small { font-size: 10.5px; font-weight: 500; line-height: 1.25; color: var(--dim); }
+/* the unlock, on the result after the save that earned it */
+.r-unlock { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, .08); color: #fff; font-size: 14px; }
+.r-unlock[hidden] { display: none; }
+.r-unlock .plate { width: 32px; height: 32px; }
+.r-unlock span { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.ru-go { min-height: 38px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--signal); color: #fff; font: 700 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 [data-theme="dark"] .th-sun, [data-theme="light"] .th-moon { display: none; }
 
 /* ---- screens ---- */
@@ -687,6 +707,13 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .bd-rows .rk { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--panel-2); font-family: var(--sans); font-weight: 700; font-size: 12.8px; }
 .bd-rows li.top .rk { background: var(--ink); color: var(--bg); }
 .bd-rows .nm { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the plates (plate.js): each row's, about 24px, the letters in the club's contrast */
+.bd-rows .nm { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bd-rows .nm .un { font-style: normal; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.plate { display: block; flex: none; overflow: visible; }
+.plate text { stroke: none; }
+.plate.bp { width: 24px; height: 24px; }
+.plate.locked { opacity: .34; filter: grayscale(1); }
 .bd-rows .nm em { font-style: normal; margin-left: 6px; font-family: var(--sans); font-weight: 600; font-size: 11px; letter-spacing: 0.055em; text-transform: uppercase; color: var(--signal); }
 .bd-rows .n { text-align: right; font-size: 14px; color: var(--dim); }
 .bd-rows .n.sc { font-family: var(--sans); font-weight: 700; font-size: 15.2px; color: var(--ink); }

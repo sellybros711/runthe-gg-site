@@ -3138,9 +3138,13 @@
       "v": "1",
       "sha": "8d8bbd62d19c78da"
     },
+    "plate.js": {
+      "v": "1",
+      "sha": "bf474e5493daa5d1"
+    },
     "menus.js": {
-      "v": "18",
-      "sha": "6e525dc3ffdc994c"
+      "v": "19",
+      "sha": "b368d3cfaf591231"
     },
     "rng.js": {
       "v": "1",
@@ -3179,28 +3183,28 @@
       "sha": "f42ddd13c70685d0"
     },
     "auth.js": {
-      "v": "7",
-      "sha": "65388a73bdcc15be"
+      "v": "8",
+      "sha": "7418302df8dc54da"
     },
     "api.js": {
       "v": "27",
       "sha": "a2a9ced2dfd423bd"
     },
     "mock-api.js": {
-      "v": "13",
-      "sha": "4db78975f69ec042"
+      "v": "14",
+      "sha": "a18d9c8507e94b6c"
     },
     "coach.js": {
       "v": "2",
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
-      "v": "6",
-      "sha": "752a5239bfae0d4b"
+      "v": "7",
+      "sha": "33aac98592cad168"
     },
     "modes-ui.js": {
-      "v": "6",
-      "sha": "fcdf3e57e308511f"
+      "v": "7",
+      "sha": "905435c85f683744"
     },
     "box-ui.js": {
       "v": "2",
@@ -3213,6 +3217,8 @@
     "ui.js": {
       "v": "67",
       "sha": "20aced0257527f6b"
+      "v": "68",
+      "sha": "0687823295ca8593"
     },
     "3d/boot.js": {
       "v": "85",

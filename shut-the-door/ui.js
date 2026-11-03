@@ -2025,14 +2025,19 @@ function nextHalf(ho) {
 
 function finish() {
   return API.finishOuting(S.outing.outingId).then(function (r) {
+    /* a save as a club's closer unlocks its plate (plate.js). Practice is not kept, so it unlocks nothing */
+    var won = r.outcome === 'door_shut' && S.mode !== 'practice' && window.STD_PLATE ? window.STD_PLATE.earn(S.scn.id) : null;
+    if (won) paintProfile();
     if (S.mode === 'survivor') return survivorNext(r);
     S.result = r;
+    S.unlocked = won;
     if (S.mode === 'daily') {
       S.dailyResult = r;
       S.daily = S.outing;
       record(S.day, S.scn.number, r);
     }
     renderResult();
+    unlockNote();
     show('s-result');
     renderHomeState();
     if (SFX) {
@@ -2042,6 +2047,48 @@ function finish() {
     }
     if (r.outcome === 'door_shut') confetti();
   });
+}
+
+/* The unlock, on the result after a save that earned a new club's plate. A line, never a popup. */
+function unlockNote() {
+  var el = $('r-unlock'), k = S.unlocked, PL = window.STD_PLATE;
+  if (!el) return;
+  el.hidden = !k || !PL;
+  if (!k || !PL) { el.innerHTML = ''; return; }
+  var st = authNow();
+  el.innerHTML = PL.svg(k, PL.initials(st.name, st.initials), { cls: 'ru-p' }) +
+    '<span><b>' + esc(PL.nameOf(k)) + ' plate unlocked</b><button type="button" class="ru-go" id="r-unlock-go">wear it</button></span>';
+  $('r-unlock-go').addEventListener('click', function () { MN.show('auth'); });
+}
+function authNow() { try { return (window.STD_AUTH && window.STD_AUTH.state()) || {}; } catch (e) { return {}; } }
+/* THE HEADER'S ACCOUNT BUTTON (the owner, 2026-11-03): signed out, a sign in pill. Signed in, your
+   plate with your initials. */
+function paintProfile() {
+  var b = $('b-profile'), st = authNow(), PL = window.STD_PLATE;
+  if (!b) return;
+  b.classList.toggle('in', !!st.signedIn);
+  b.classList.toggle('pill', !st.signedIn);
+  b.setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
+  b.title = st.signedIn ? 'Account' : 'Sign in';
+  b.innerHTML = st.signedIn && PL ? PL.svg(PL.current(), PL.initials(st.name, st.initials), { cls: 'hp' }) : '<span>sign in</span>';
+}
+/* signed in: the account's plates, and a guest's chosen plate carried over when the account has it */
+function syncPlates() {
+  var A = window.STD_AUTH, PL = window.STD_PLATE, st = authNow();
+  if (!PL) return;
+  if (!st.signedIn || !A || !A.plates) { PL.setServer(null); paintProfile(); return; }
+  Promise.resolve(A.plates()).then(function (r) {
+    if (!r) return;
+    PL.setServer(r);
+    var mine = PL.local().plate;
+    if (!r.plate && mine && (r.unlocked || []).indexOf(mine) >= 0 && A.setPlate) {
+      return Promise.resolve(A.setPlate(mine)).then(function (w) { if (w && w.data) PL.setServer(w.data); });
+    }
+  }).then(function () {
+    paintProfile();
+    if (MN.current() === 'sheet-auth') MN.renderAuth();
+    if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
+  }, function () {});
 }
 
 /* The daily's result carries the save (signed out) and the vote for tomorrow. Neither on practice or
@@ -2674,11 +2721,14 @@ function takeMound() {
 function boot() {
   bootLoader();
   try { if (window.STD_AUTH && window.STD_AUTH.boot) window.STD_AUTH.boot(); } catch (e) {}
+  paintProfile();
+  syncPlates();
+  /* clubs.js lands as a module, after this: the plates take its colours then */
+  window.addEventListener('std-clubs', function () { paintProfile(); unlockNote(); });
   try {
     if (window.STD_AUTH && window.STD_AUTH.onChange) window.STD_AUTH.onChange(function () {
-      var st = window.STD_AUTH.state() || {};
-      $('b-profile').classList.toggle('in', !!st.signedIn);
-      $('b-profile').setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
+      paintProfile();
+      syncPlates();
       if (MN.current() === 'sheet-auth') MN.renderAuth();
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
       if (document.body.dataset.screen === 's-result' && S.result) renderModes();
@@ -2716,6 +2766,7 @@ function boot() {
   });
   MN.onChange = backSync;
   MN.init({
+    onPlate: function () { paintProfile(); if (document.body.dataset.screen === 's-board') window.STD_BOARD.load(); },
     hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
     onPast: function () { if (MN.isOpen()) MN.close(true); if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); } setTab('arc', null, true); },
     archiveDays: MU ? MU.archiveDays : null,

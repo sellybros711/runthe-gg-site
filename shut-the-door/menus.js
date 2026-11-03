@@ -314,7 +314,9 @@ function renderAuth() {
   if (st.signedIn) {
     body.innerHTML = '<p>signed in as <b>' + esc(st.name || st.email || 'you') + '</b>.</p>' +
       '<p class="quiet">your daily result, streak and stats are kept on your account.</p>' +
+      platePicker(st) +
       '<button class="btn ghost" id="au-out" type="button">sign out</button>';
+    wirePicker(st);
     $('au-out').addEventListener('click', function () {
       Promise.resolve(A.signOut && A.signOut()).then(function () { renderAuth(); });
     });
@@ -333,6 +335,7 @@ function renderAuth() {
     '</form>' +
     '<button class="btn ghost" id="au-google" type="button">continue with google</button>' +
     '<p class="quiet">one account covers every runthe.gg game. it keeps your streak across devices.</p>' +
+    '<p class="quiet">shut the door as a club\'s closer to unlock its plate. sign in to wear it on the board.</p>' +
     (st.ready === false && !st.waiting ? '<p class="quiet">accounts are not available right now. you can still play.</p>' : '');
   $('au-tin').addEventListener('click', function () { authMode = 'in'; renderAuth(); });
   $('au-tup').addEventListener('click', function () { authMode = 'up'; renderAuth(); });
@@ -355,6 +358,40 @@ function renderAuth() {
   });
 }
 
+/* THE PLATE PICKER (the owner, 2026-11-03): the neutral plate, then every club a save can unlock.
+   A locked one says how to get it. A pick goes to the account, which checks the unlock. */
+function platePicker(st) {
+  var PL = window.STD_PLATE;
+  if (!PL) return '';
+  var ini = PL.initials(st.name, st.initials), have = PL.unlocked(), cur = PL.current();
+  var tile = function (k) {
+    var open = !k || have.indexOf(k) >= 0, nm = k ? PL.nameOf(k) : 'plain';
+    return '<button type="button" class="plk' + (open ? '' : ' locked') + '" data-plate="' + esc(k || '') + '" aria-pressed="' + (k === cur || (!k && !cur)) + '"' +
+      (open ? '' : ' aria-disabled="true"') + ' aria-label="' + esc(open ? nm + ' plate' : 'shut the door as the ' + nm + ' closer to unlock') + '">' +
+      PL.svg(k, ini, { locked: !open }) + '<span>' + esc(nm) + '</span>' +
+      (open ? '' : '<small>shut the door as the ' + esc(nm) + ' closer to unlock</small>') + '</button>';
+  };
+  return '<div class="plk-h"><b>your plate</b><span>' + esc(have.length) + ' of ' + esc(PL.earnable().length) + ' clubs</span></div>' +
+    '<div class="plk-grid" id="pk-grid">' + [null].concat(PL.earnable()).map(tile).join('') + '</div>' +
+    '<p class="au-err" id="pk-err" role="alert"></p>';
+}
+function wirePicker(st) {
+  var A = window.STD_AUTH, PL = window.STD_PLATE, g = $('pk-grid');
+  if (!g || !PL) return;
+  g.addEventListener('click', function (e) {
+    var b = e.target.closest('.plk');
+    if (!b || b.classList.contains('locked')) return;
+    var k = b.getAttribute('data-plate') || null;
+    PL.chooseLocal(k);
+    Promise.resolve(A.setPlate ? A.setPlate(k) : null).then(function (r) {
+      if (r && r.error) { $('pk-err').textContent = String(r.error).toLowerCase(); return; }
+      if (r && r.data) PL.setServer(r.data);
+      renderAuth();
+      if (ctx.onPlate) ctx.onPlate();
+    });
+  });
+}
+
 /* the menu's three tiles: the streak, the best, the last percentile */
 function renderMenuTiles() {
   var h = ctx.hist(), st = streakOf(h, ctx.today), days = Object.keys(h).sort();
@@ -364,7 +401,7 @@ function renderMenuTiles() {
     tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
 }
 
-var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null };
+var ctx = { onPlate: null, hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   open: openSheet,
