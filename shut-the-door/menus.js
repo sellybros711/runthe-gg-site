@@ -22,6 +22,8 @@ function openSheet(id, after) {
   var el = $(id);
   if (!el) return;
   lastFocus = document.activeElement;
+  /* on a desk the header's menu drops from its button (style.css): its right edge, measured */
+  if (id === 'sheet-menu') { var mb = $('b-menu'), mr = mb && mb.getBoundingClientRect(); if (mr && mr.width) el.style.setProperty('--menu-r', Math.max(8, Math.round(document.documentElement.clientWidth - mr.right)) + 'px'); }
   el.hidden = false;
   el.setAttribute('aria-hidden', 'false');
   requestAnimationFrame(function () { el.classList.add('on'); });

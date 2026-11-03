@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=60">
+<link rel="stylesheet" href="style.css?v=61">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -185,13 +185,16 @@ setTimeout(function () {
         <div class="card hp-arc-c"><h2 class="hp-h">past dailies</h2><div id="past-body"></div></div>
       </div>
     </div>
+    <!-- THE SIDE (the owner, 2026-11-03): on a desk the menu and the footer stand in a column beside the modes.
+         On a phone it is display: contents, so the page is exactly as it was. -->
+    <div class="t-side" id="h-side">
     <div class="t-menu" id="h-menu">
       <nav class="t-list" aria-label="More">
-        <button type="button" data-open="how"><span>how to play</span></button>
-        <button type="button" data-open="101"><span>pitching 101</span></button>
-        <button type="button" data-open="board"><span>leaderboard</span></button>
-        <button type="button" data-open="stats"><span>stats</span></button>
-        <button type="button" data-open="settings"><span>settings</span></button>
+        <button type="button" data-open="how"><i class="mi tl-i hot" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="3"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></i><span class="tl-t"><span>how to play</span><small class="tl-s">a pitch and a spot. three outs.</small></span></button>
+        <button type="button" data-open="101"><i class="mi tl-i data" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></i><span class="tl-t"><span>pitching 101</span><small class="tl-s">the ideas the coach uses.</small></span></button>
+        <button type="button" data-open="board"><i class="mi tl-i hot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="tl-t"><span>leaderboard</span><small class="tl-s">every closer who posted today.</small></span></button>
+        <button type="button" data-open="stats"><i class="mi tl-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="tl-t"><span>stats</span><small class="tl-s">every outing, every grade.</small></span></button>
+        <button type="button" data-open="settings"><i class="mi tl-i" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="tl-t"><span>settings</span><small class="tl-s">sound, speed, meter, theme.</small></span></button>
       </nav>
     </div>
     <footer class="legal">
@@ -201,6 +204,7 @@ setTimeout(function () {
       <p class="src about">A daily baseball game. One real save situation from MLB history, the same for everybody. You are the closer, and every pitch is graded.</p>
       <p class="src" id="h-src">Pitch data from Baseball Savant. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</p>
     </footer>
+    </div>
   </div>
   <div class="err" id="h-err" hidden></div>
 </section>
@@ -458,7 +462,7 @@ setTimeout(function () {
 <script src="aim.js?v=5"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
-<script src="menus.js?v=14"></script>
+<script src="menus.js?v=15"></script>
 <script src="rng.js?v=1"></script>
 <script src="modes.js?v=1"></script>
 <script src="grade.js?v=16"></script>
