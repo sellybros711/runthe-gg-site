@@ -20,10 +20,12 @@ PR and never merges it.
 ## Commands
 
 ```
-node shut-the-door/check-posture.mjs           unlisted until launch (INDEXED and LINKED both false)
+node shut-the-door/check-posture.mjs           launched: INDEXED and LINKED both true, the lab held out
 node shut-the-door/test/engine.mjs             the engine on a synthetic pack: determinism, end rules, grades
 node shut-the-door/test/packs.mjs              every real pack: the contract, all-green best play, median at the 50th
 node shut-the-door/test/api.mjs                the four calls, the daily, resume, one submit
+node shut-the-door/test/modes.mjs              the vote's candidates and Survivor's sequence, page and server alike
+node shut-the-door/test/survivor.mjs           the vote, Survivor, the archive and the Pro gate through the calls
 node shut-the-door/test/lesson.mjs             the lesson on the worst pitch
 node shut-the-door/check-replays.mjs           stored outings replayed against their scores (--self-test)
 node shut-the-door/check-rules.mjs             every in-play row in every pack a legal MLB play
@@ -40,8 +42,9 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
 
 ## Rules a change here must keep
 
-- **Unlisted until the owner launches it.** Noindexed, no ad tag, not in the sitemap, linked from no
-  page, not on the newsletter list. Launching is an edit to `check-posture.mjs` in the same commit.
+- **Launched 2026-11-02.** Indexable with a canonical, in the sitemap, the ad tag behind its consent
+  defaults, on the home page (Play today and All games, the JSON-LD) and on the newsletter list. The
+  lab stays noindexed and unlinked. Changing any of it is an edit to `check-posture.mjs` in the same commit.
 - **Not part of the Arcade.** No Arcade link, tile or scaffolding.
 - **Grade the decision, never the outcome.** Every call is graded before it resolves. The band is
   relative to the moment (`rel` = lost over the state's mean lost); score and percentile use absolute
@@ -82,7 +85,19 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
   5i) is rules 6 plus the running game: steals on their own seeded stream (drawn only when a steal
   is on, so the four draws never move), the pickoff (`pa` on the call before) and the quick delivery
   (`ss: 1`, never called "quick pitch"; its costs live in `meter.js QUICK`). None of it is graded. A
-  call with `r: 6` replays as rules 6 (`fixtures/replays-rules6-pre-steals.json`). The strengths live in `grade.js R2`; change them only
+  call with `r: 6` replays as rules 6 (`fixtures/replays-rules6-pre-steals.json`). Rules 8 (2026-10-30,
+  CONTRACT.md 5j) is rules 7 plus the closer's real outing to the end of the game: every half he
+  pitched (`scenario.halves`, at least three outs), his team's real half between (`scenario.between`,
+  from the play by play, `pipeline/halves.py`), one value function over every half. A call with `r: 7`
+  replays on the first half alone (`Model.singleModel`, `fixtures/replays-rules7-pre-full-close.json`).
+  Rules 9 (2026-11-02, CONTRACT.md 5k) is rules 8 plus the ABS touch: a challenge is answered by any
+  part of the ball touching the zone (`contract.js absDist`, the ball's radius on the top and the
+  bottom too); the umpire's call stays on `zoneDist`. A call with `r: 8` replays as rules 8
+  (`fixtures/replays-rules8-pre-abs-touch.json`). Rules 10 (2026-11-03, CONTRACT.md 5l) is rules 9
+  with the touch on the zone as drawn (`contract.js touchDist`, `zoneDist` plus the ball's radius): a
+  ball the grid shows touching the box is a strike. A call with `r: 9` replays as rules 9
+  (`fixtures/replays-rules9-pre-drawn-touch.json`).
+  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`, `ABS_TOUCH_FROM`, `DRAWN_TOUCH_FROM`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

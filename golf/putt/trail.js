@@ -78,9 +78,9 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
+  school:'lanterns', iceage:'fire pits', moon:'beacons', mars:'beacons', saturn:'beacons', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { moon:['#7fd8ff', '#e6f8ff'], mars:['#ffb347', '#fff2d8'], saturn:['#ffd98a', '#fff6dc'], neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', moon:'rockdark', mars:'rockred', saturn:'rockice', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -139,6 +139,18 @@ var KIT = {
   iceage:{ g:['#e6edf2', '#f2f6f9', '#d6e0e7', 0.2], p:['#b8aa92', '#c8bca6', '#a89a82'], tree:['pine', 'pine', 'dead'], leaves:['#1e3f30', '#28503e', '#173a2a'], bark:'#4a3626', snow:true,
     low:['rocksnow', 'bushsnow', 'rock'], brk:'ice', haz:'slow', hazC:['#1e1a16', '#3a3028'], bogC:['#1e1a16', '#3a3028'], lm:['mammoth', 'cave', 'tusks'], wall:['#cfeaf2', '#6fb6d0'],
     npc:{ skin:'tan', polo:'gold', hat:'tan', pants:'khaki', hair:'darkbrown', hairStyle:'long', cap:false, gender:'male' }, who:'the cave dweller' },
+  // Moon Base: grey regolith, a pale beaten path, no trees at all (tree:[]: the owner, 2026-11-01), moon dust for the bog, supply crates to break
+  moon:{ g:['#9a98a2', '#a8a6b0', '#8a8892', 0.2], gpat:'moonReg', p:['#c8ccd8', '#dfe3ec', '#b4b8c4'], tree:[], leaves:['#6a6872', '#7a7882', '#5a5862'], bark:'#4a4852', dens:0.001,
+    low:['rock', 'rockdark', 'rock'], brk:'crate', haz:'slow', hazC:['#b6b4bc', '#9a98a6'], waterC:['#05060f', '#1a1f3a'], bogC:['#b6b4bc', '#9a98a6'], lm:['moonLander', 'moonDome', 'moonDish'], wall:['#eef2f8', '#3f7fe0'],
+    npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'black', hairStyle:'bun', cap:false, gender:'female' }, who:'the astronaut' },
+  // Red Planet: rust dust, a pale swept path, no trees (as on the moon), red dust for the bog, supply crates to break
+  mars:{ g:['#c4683e', '#d27a48', '#a8502e', 0.2], gpat:'marsReg', p:['#e8b088', '#f2c4a0', '#d8a078'], tree:[], leaves:['#7a3a22', '#8a4a2a', '#5a2a1c'], bark:'#3a2420', dens:0.001,
+    low:['rockbasalt', 'rockred', 'rockred'], brk:'crate', haz:'slow', hazC:['#8a3420', '#6a2414'], waterC:['#1a0604', '#4a160a'], bogC:['#8a3420', '#6a2414'], lm:['moonLander', 'marsRover', 'marsHab'], wall:['#e8d8c4', '#b85a32'],
+    npc:{ skin:'tan', polo:'white', hat:'white', pants:'white', hair:'darkbrown', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'male' }, who:'the colonist' },
+  // Saturn Rings: decks of lavender ring ice, a pale walkway, no trees, ring dust for the bog, gold clouds for the water, crates to break
+  saturn:{ g:['#9a94cc', '#a8a2d8', '#8a84bc', 0.18], gpat:'satDeck', p:['#e8e6f6', '#f4f2fc', '#d4d0ec'], paved:true, tree:[], leaves:['#c8d8ee', '#dceaf6', '#a8c4e8'], bark:'#6a6488', dens:0.001,
+    low:['rockice', 'rockice', 'rock'], brk:'crate', haz:'slow', hazC:['#a8a0c8', '#8a84b0'], waterC:['#d8b878', '#f0dfb4'], bogC:['#a8a0c8', '#8a84b0'], lm:['satModule', 'satMast', 'satProbe'], wall:['#d8dcec', '#7670b0'],
+    npc:{ skin:'deep', polo:'white', hat:'white', pants:'white', hair:'black', hairStyle:'short', cap:true, hatStyle:'ppastrohelmet', top:'ppspacesuit', shoes:'white', gender:'female' }, who:'the station hand' },
   candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
     low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
     npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
@@ -171,7 +183,13 @@ function baseTh(th){ return String(th || '').split('~')[0]; }
    carpet: [colour, colour], flag } */
 function plan(spec){
   if (spec.kitAs && !KIT[spec.kitAs]) spec.kitAs = null;   // a stop with no kit of its own walks in its world's
-  var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.kitAs || spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
+  /* A LAUNCH PAD, NOT A DOOR (the owner, 2026-11-02: "After Ice age I want there to simply be a rocket ship there and no world
+     beyond it. You board the ship and it will take you to the moon world"). A trail into a space world (spec.space, putt.js's
+     SPACE_TRIP) is the world being left from end to end: no wall, no next world's land and no hole beyond the end. The walk
+     ends at the ship on its pad; walking up to it asks the door (the stars still hold it shut), and aboard, the trip plays and
+     the hole opens on the far side (run(), the gate). */
+  var SPACE = !!(spec.cross && spec.space), WALL = spec.cross && !SPACE;
+  var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = SPACE ? (spec.theme0 || spec.theme) : (spec.kitAs || spec.theme), th0 = spec.cross ? (spec.theme0 || th) : th;
   var HW = spec.halfW || HALFW, b = [-HW, -18, HW, L + 16];
   /* NO TWO WALKS ARE THE SAME WALK, AND THEY DO NOT ALL WALK UP THE SCREEN. A trail is laid out the way a course
      is routed: from the hole you left to the next tee by a dogleg, by switchbacks across the whole width, by a
@@ -229,7 +247,7 @@ function plan(spec){
       if (c[i] > 16 && Math.hypot(q[0] - st[0], q[1] - L - 6) < 12) return false;
       if (c[i] < SLn - 16 && Math.hypot(q[0] - ar[0], q[1] - 3) < 10) return false;
       for (var j = i + 1; j < n; j++) if (c[j] - c[i] > 26 && Math.hypot(p[j][0] - q[0], p[j][1] - q[1]) < MINSEP) return false; }
-    return !spec.cross || gyy != null; }
+    return !WALL || gyy != null; }
   var path = null, cum = null, gy = null, style = 'straight', route = null;
   /* A GYM'S TRAIL IS ROUTED ROUND ITS GYM (gyms.js). The arena is a walled box of tiles beside the walk with its gate
      facing the camera, and a route is only taken if the box fits clear of it with the gate a few steps off the path
@@ -255,9 +273,9 @@ function plan(spec){
     // every bend wanders a little of its own, so two doglegs are two different doglegs, not one drawn twice
     var stretch = 0.9 + R() * 0.2; rt.p.forEach(function(q){ ctrl.push([ux(Math.max(-0.95, Math.min(0.95, q[0] * stretch + jit(0.18)))), Math.max(0.1, Math.min(0.97, q[1] + jit(0.06))) * Y0]); });
     ctrl.push([ax, 7], [ax, -1]);
-    var pp = even(spline(ctrl)), cc = cumOf(pp), gg = spec.cross ? wallLine(pp) : null;
+    var pp = even(spline(ctrl)), cc = cumOf(pp), gg = WALL ? wallLine(pp) : null;
     if (sane(pp, cc, gg, nm) && (!GYD || (gfit = gymFit(pp)))){ path = pp; cum = cc; gy = gg; style = nm; route = rt; } }
-  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = spec.cross ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; if (GYD) gfit = gymFit(path); }
+  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = WALL ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; if (GYD) gfit = gymFit(path); }
   if (!gfit) GYD = null;   // nowhere for it: this trail walks without its gym (check-putt fails on that)
   /* ONLY A WORLD STARTS IN A PLAZA. Every walk used to set off from the same round clearing behind the hole just
      played, so every trail opened on the same picture. The owner's call: the start of a world is a circle, and
@@ -323,7 +341,7 @@ function plan(spec){
   // what the clearing holds: a chest most often, else a pile of things to smash
   var clrKind = R() < 0.7 ? 'chest' : 'pile';
   // the key and the locked gate are the trail's little puzzle: more than half the chests are behind one
-  var locked = !spec.cross && clrKind === 'chest' && R() < 0.55;
+  var locked = !spec.cross && clrKind === 'chest' && R() < 0.55 && !spec.landed;
   /* THE REAL HOLES AT EACH END (spec.holeTo, spec.holeFrom, rastered by putt.js). The hole you are walking to
      lies beyond the arch with its tee at the path; the hole you just left lies behind the start with its cup
      nearest you. Each is a grid of codes at a quarter of a trail foot, placed by its south west corner. */
@@ -345,6 +363,25 @@ function plan(spec){
 
   var P = { spec:spec, seed:seed, L:L, b:b, plaza:plaza, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, spur2:spur2, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
     gym:GYM, inGym:inGym, gymCell:memo2(gymCell), things:[], cols:[], items:[], hazards:[] };
+  /* MOON BASE'S WALK CROSSES CRATERS (the owner, 2026-11-01: "you should be traversing through massive craters"). Down the
+     walk, a crater every thirty feet or so, wider than the path by far, centred a little off it so the path runs down its
+     inner wall, across the floor and up over the far rim. They are real ground (land().h) the golfer walks down into and
+     out of, and kept off the clearings, the holes, a gym's room and the wall between worlds, where the ground must be flat.
+     Positions come from hashes, not R, so the rest of the plan is drawn the same as before. */
+  P.craters = [];
+  if (baseTh(th) === 'moon' || baseTh(th) === 'mars') for (var cs = 20 + hash(seed, 1, 91) * 8; cs < SL - 18; ){ var crr = 12 + hash(seed, cs | 0, 92) * 3.5, cq = beside(cs, hash(seed, cs | 0, 93) < 0.5 ? -1 : 1, crr * (0.1 + hash(seed, cs | 0, 94) * 0.25));
+    if (!inClear(cq[0], cq[1], crr * 0.75) && !(gy && Math.abs(cq[1] - gy) < crr + 4)) P.craters.push({ x:cq[0], y:cq[1], r:crr }); cs += crr * 2.3 + 4 + hash(seed, cs | 0, 95) * 6; }
+  // its shape: a sunken floor, an inner wall up to a raised rim, and the rim falling away outside. Gentle enough (under 0.45)
+  // that the land's rows never part on the inner wall. And what the paint needs to know of a point: floor, a wall or the rim
+  // in the sun or out of it (the sun is low in the upper left), or one of the bright rays thrown out across the plain.
+  P.craterAt = function(x, y){ var best = null, bd = 9; for (var i = 0; i < P.craters.length; i++){ var c = P.craters[i], d = Math.hypot(x - c.x, y - c.y) / c.r; if (d < bd){ bd = d; best = c; } } return best ? { c:best, d:bd } : null; };
+  P.craterH = function(x, y){ var q = P.craterAt(x, y); if (!q || q.d > 1.55) return 0; var d = q.d;
+    if (d < 0.45) return -1.2 + 0.15 * (d / 0.45) * (d / 0.45); if (d < 1) return -1.05 + 1.85 * sm(0.45, 1, d); return 0.8 * (1 - sm(1, 1.55, d)); };
+  P.craterPaint = function(x, y){ var q = P.craterAt(x, y); if (!q || q.d > 2.7) return 0; var d = q.d, c = q.c, ux = (x - c.x) / (d * c.r || 1), uy = (y - c.y) / (d * c.r || 1), sun = -0.79 * ux - 0.61 * uy;
+    if (d < 0.45) return 1; if (d < 1) return sun > 0.15 ? 2 : sun < -0.25 ? 3 : 7; if (d < 1.4) return sun > 0 ? 4 : 5;
+    // a ray: one of a dozen narrow spokes, each its own length, thinning to nothing at its end
+    var a = (Math.atan2(uy, ux) + Math.PI) / (2 * Math.PI) * 14, k = Math.floor(a), f = a - k, len = 0.4 + hash(k, Math.floor(c.x * 7), 96) * 1.2, w = 0.22 * (1 - (d - 1.4) / len);
+    return hash(k, Math.floor(c.y * 7), 97) > 0.45 && d - 1.4 < len && Math.abs(f - 0.5) < w ? 6 : 0; };
   P.near = function(x, y){ var best = 1e9, out = path[0]; for (var i = 0; i < path.length; i++){ var d = Math.hypot(path[i][0] - x, path[i][1] - y); if (d < best){ best = d; out = path[i]; } } return out; };
 
   // ---- the world's ground to keep off: ponds, lava pools, ice sheets, bogs. Never on the path or a clearing.
@@ -442,7 +479,13 @@ function plan(spec){
   P.place = place;
 
   // the end: an arch over the path at y = 0, and the hole's carpet beyond it
-  place('arch', archX, 0, 0.1, 9);
+  /* AND ON THE FAR SIDE, THE SAME SHIP (the owner, 2026-11-02: "After the rocket ship lands it needs to put you on the
+     starting path on your way to the next hole"). A landing walk (spec.landed, putt.js) is the new world's own: it sets off
+     from the ship standing on its pad behind the start, and goes to the hole the usual way. It carries no chest and no
+     golden ball, so a world's eighteen are still the eighteen walks into its holes. */
+  if (spec.landed){ var lx = start.x + (start.x > 0 ? -6.5 : 6.5); place('launchpad', lx, L + 5, 0.1, 0.3, { w:9, d:9 }); place('padRocket', lx, L + 5, 2.6, 19, { w:9, d:6 }); used.push({ x:lx, y:L + 5, r:5.5 }); }
+  if (SPACE){ place('padRocket', archX, -5.5, 2.6, 19, { w:9, d:6 }); place('launchpad', archX, -5.5, 0.1, 0.3, { w:9, d:9 }); P.gate = { x:archX, y:2.2, s:sAtY(2.2), pad:true }; }
+  else place('arch', archX, 0, 0.1, 9);
   // the gym's walls, gate and posts are one build (BUILD.gym); as a thing it keeps everything else out and blocks the walk
   if (GYM) place('gym', GYM.x0 + GYM.w / 2, GYM.y0 + GYM.d / 2, 0.1, 1.6, { w:GYM.w, d:GYM.d, th:themeAt(GYM.y0 + GYM.d / 2) });
   // the flag still in the cup of the hole you just left, behind you
@@ -463,6 +506,9 @@ function plan(spec){
   if (sc){ place(sc.kind, sc.x, sc.y, Math.max(sc.w, sc.d) / 2 + 0.3, sc.h, { w:sc.w, d:sc.d, th:themeAt(sc.y), secret:1, face:sc.ox < sc.x ? -1 : 1 });
     if (sc.kind === 'mooredship') place('gangplank', (sc.x + sc.mx) / 2, sc.y, 0.1, 0.6, { th:themeAt(sc.y), face:sc.ox < sc.x ? -1 : 1 });
     P.secret = { x:sc.mx, y:sc.my, r:1.5, i:spec.secret.i, kind:sc.kind, hint:SECRET_HINT[sc.kind] || SECRET_HINT.secretdoor }; used.push({ x:sc.mx, y:sc.my, r:1.6 }); }
+  // boulders thrown out round each crater's rim, off the path
+  P.craters.forEach(function(c, ci){ for (var bk = 0; bk < 12; bk++){ var ba = bk / 12 * 6.283 + hash(ci, bk, 98) * 0.4, bd = c.r * (1.05 + hash(ci, bk, 99) * 0.3), bx = c.x + Math.cos(ba) * bd, by = c.y + Math.sin(ba) * bd, bkind = baseTh(th) === 'mars' ? (hash(bk, ci, 100) < 0.5 ? 'rockred' : 'rockbasalt') : hash(bk, ci, 100) < 0.5 ? 'rock' : 'rockdark', br = LOWR[bkind];
+    if (walkD(bx, by) < PW + 1.4 || inClear(bx, by, 1.2) || !okGround(bx, by, br) || !free(bx, by, br + 0.4) || screensPath(bx, by, br, LOWH[bkind])) continue; place(bkind, bx, by, br, LOWH[bkind]); } });
   // landmarks: one or two of the world's, beside the path in open ground
   var lms = kitOf(th).lm, nlm = kitOf(th).nlm || (2 + (R() < 0.4 ? 1 : 0));   // a stop that is a place (a town) can ask for more
   for (var li = 0; li < nlm; li++){ var kind = lms[(seed + li) % lms.length];
@@ -475,7 +521,7 @@ function plan(spec){
     var jx = gx2 + (hash(gx2 * 7 | 0, gy2 * 7 | 0, seed + 41) - 0.5) * 2.8, jy = gy2 + (hash(gy2 * 5 | 0, gx2 * 3 | 0, seed + 43) - 0.5) * 2.8, wd = walkD(jx, jy);
     if (wd < PW + 1.2 || inClear(jx, jy, 1.2) || (gy && Math.abs(jy - gy) < 2.5)) continue;
     var kx2 = kitOf(themeAt(jy)), roll = hash(jx * 13 | 0, jy * 13 | 0, seed + 47), dens = (wd < 14 ? 0.5 : wd < 26 ? 0.4 : 0.3) * (kx2.dens || 1);
-    if (roll < dens){ var tk = kx2.tree[(hash(jx | 0, jy | 0, seed + 3) * kx2.tree.length) | 0], H = TREEH[tk][0] + hash(jx * 3 | 0, jy * 3 | 0, seed) * TREEH[tk][1], tr = TREEH[tk][2];
+    if (kx2.tree.length && roll < dens){ var tk = kx2.tree[(hash(jx | 0, jy | 0, seed + 3) * kx2.tree.length) | 0], H = TREEH[tk][0] + hash(jx * 3 | 0, jy * 3 | 0, seed) * TREEH[tk][1], tr = TREEH[tk][2];
       if (wd > tr + PW + 0.8 && okGround(jx, jy, tr * 0.6) && free(jx, jy, tr * 0.7) && !screensPath(jx, jy, tr, H)){ place(tk, jx, jy, tr * 0.45, H, { cr:tr }); continue; } }
     if (roll < dens + 0.12){ var lk = kx2.low[(hash(jx * 3 | 0, jy * 5 | 0, seed + 9) * kx2.low.length) | 0], lr = LOWR[lk] || 0.8, lh = (LOWH[lk] || 1.4);
       if (okGround(jx, jy, lr) && free(jx, jy, lr + 0.3) && !screensPath(jx, jy, lr, lh)) place(lk, jx, jy, lr, lh); }
@@ -513,13 +559,13 @@ function plan(spec){
     return spotOff(minD, maxD, 1.4, 80); }
   // ONE CHEST A TRAIL, the owner's call: in the clearing when the clearing holds one, else tucked in behind a tree.
   // The rest of what there is to find is the rare things below, for whoever wants more.
-  if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
+  if (spec.landed){} else if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
   else { var hsp = hideSpot(6, 13) || hideSpot(5, 16) || spotOff(5, 14, 1.2, 200) || [clr.x, clr.y - 1.2]; if (hsp){ chest(hsp[0], hsp[1], 10 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); }
     for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
   if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var kq = beside(SL * (0.15 + R() * 0.7), R() < 0.5 ? -1 : 1, 8 + R() * 10), ky = kq[1], kxp = kq[0];
       if (okGround(kxp, ky, 1) && free(kxp, ky, 1) && walkD(kxp, ky) > PW + 3 && !inClear(kxp, ky, 2) && !(gy && Math.abs(ky - gy) < 6)){ item('key', kxp, ky); used.push({ x:kxp, y:ky, r:1 }); break; } } }
   // the golden ball: off the path, tucked behind a landmark or a tree if it can be
-  var gs = spotOff(10, 26, 1.1, 90) || spotOff(6, 20, 1, 60); if (gs){ item('golden', gs[0], gs[1]); used.push({ x:gs[0], y:gs[1], r:1 }); }
+  var gs = spec.landed ? null : spotOff(10, 26, 1.1, 90) || spotOff(6, 20, 1, 60); if (gs){ item('golden', gs[0], gs[1]); used.push({ x:gs[0], y:gs[1], r:1 }); }
   /* THE RARE THINGS, handed in by putt.js (spec.loot): a world's trinket, a part for one of the Putt Putt
      putters, and once in a while a spare life. They go further off the path than anything else, and a
      trinket goes in the hidden clearing when there is one, so they have to be looked for. */
@@ -732,8 +778,8 @@ function plan(spec){
 }
 // a tree's height, how much it can vary, and its crown's radius (ft, at the trail's scale)
 var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[5, 3, 1.6], dead:[10, 4, 3.4], basalt:[6, 5, 1.6], puff:[9, 4, 3.6], pylon:[10, 4, 1.4], cab:[5.2, 0.4, 1.6], corn:[5, 1, 1.2] };
-var LOWR = { bush:1.1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
-var LOWH = { bush:1.8, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
+var LOWR = { bush:1.1, rockice:1, rockred:1.1, rockbasalt:1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
+var LOWH = { bush:1.8, rockice:1.3, rockred:1.4, rockbasalt:1.3, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
 /* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
@@ -752,7 +798,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'], moon:['A supply chest. Somebody lost it in the drop.'], mars:['A supply drop. Still sealed.'], saturn:['A cargo pod. It drifted in off the rings.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -766,11 +812,14 @@ var SECRET_SAY = {
   sky:'I saw a secret hole on this trail from my balloon. Can\'t say where.',
   dino:'I dug up an old map. It says there\'s a secret hole on this trail.',
   iceage:'The old drawings say there\'s a secret hole on this trail.',
+  moon:'Mission control logged a secret hole on this trail. On the dark side, they think.',
+  mars:'The colony found a cave under the ice. The way in is on this trail.',
+  saturn:'There\'s a storm room somewhere on this trail. The eye of it is calm.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave', moon:'secretdoor', mars:'cave', saturn:'secretdoor' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -793,7 +842,9 @@ function land(P){
       var wd = P.walkD(x, y), z = (fbm(x * 0.045, y * 0.045, seed) - 0.45) * 2.4 * sm(PW + 0.5, PW + 7, wd);
       if (P.inClear(x, y)) z *= 0.3; if (P.deckAt(x, y)){ var dk = P.creekD(x, y) + P.creek.hw; return 0.22 + 0.4 * Math.max(0, 1 - dk * dk / ((P.creek.hw + 1.1) * (P.creek.hw + 1.1))); }
       if (P.creek){ var cd = P.creekD(x, y); if (cd < 1.4 && cd > 0) z = Math.min(z, -0.12 * (1.4 - cd)); } var o = P.poolAt(x, y); if (o) z = o.k === 'lava' ? -0.45 : o.k === 'water' ? -0.55 : o.k === 'ice' ? -0.05 : -0.12;
-      if (P.seaAt(x, y)) z = -0.7; if (wd < PW) z -= 0.06; return z; },
+      if (P.seaAt(x, y)) z = -0.7; if (wd < PW) z -= 0.06;
+      if (P.craters && P.craters.length){ var ch = P.craterH(x, y); if (ch) z += ch * (P.inClear(x, y, 0) ? 0 : P.inClear(x, y, 3) ? 0.35 : 1); }
+      return z; },
     mat:function(x, y){ var gc = P.gym && P.gymCell(x, y);
       if (gc){ var gf2 = gymFloor(P, gc); if (gf2 && gf2.mat) return gf2.mat;
         return [gc.k === '#' ? 'gwall' : 'gdeck', { gu:gc.u, gv:gc.v, gc:gc.c, gr:gc.r }]; }
@@ -809,6 +860,7 @@ function land(P){
       if (P.sea && P.sea.side * x > P.seaEdge(y) - 3.5) return ['sand', ex];
       if (dIn < 0.3){ ex = ex || {}; ex.edge = 1; }
       var fb = vn(x * 0.22, y * 0.22, seed + 77); if (fb > 0.74 && dIn > 1.2){ ex = ex || {}; ex.fl = Math.min(0.55, (fb - 0.74) * 4); }
+      if (P.craters && P.craters.length){ var cp = P.craterPaint(x, y); if (cp){ ex = ex || {}; ex.crt = cp; } }
       return [P.themeAt(y) === (sp.kitAs || sp.theme) ? 'g' : 'g0', ex]; },
     build:function(B){ P.things.forEach(function(t, i){ if (PLANT[t.k]) return; try{ (BUILD[t.k] || BUILD.rock)(B, t, i, P); }catch(e){} }); },
     mats:mats(P)
@@ -935,6 +987,10 @@ BUILD.fern = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y); B.vox(x -
   for (var f = 0; f < 7; f++){ var a = f / 7 * 6.28 + i; B.tube(set, x, y, zb, x + Math.cos(a) * 1.2, y + Math.sin(a) * 0.9, zb + 1.2 + hash(i, f, 2) * 0.4, 0.16, 0.06, f % 2 ? '#2b6e30' : '#3f8a3a'); } }, 0.125); };
 BUILD.rock = function(B, t, i){ rockAt(B, t.x, t.y, 1.1, ['#8a8a86', '#6e6e6a', '#a4a49c'], i); };
 BUILD.rockdark = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#3e383c', '#2a2428', '#5a5054'], i); };
+// Red Planet's rocks: rust red, and dark basalt
+BUILD.rockred = function(B, t, i){ rockAt(B, t.x, t.y, 1.1, ['#a8502e', '#7a3220', '#d27a48'], i); };
+BUILD.rockice = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#dceaf6', '#a8c4e8', '#ffffff'], i); };
+BUILD.rockbasalt = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#3a2420', '#2a1814', '#6a3a2a'], i); };
 BUILD.rocksnow = function(B, t, i){ rockAt(B, t.x, t.y, 1.2, ['#7a8494', '#5e6878', '#ffffff'], i); };
 BUILD.bushsnow = function(B, t, i){ bushAt(B, t.x, t.y, 1.1, ['#1f4f3e', '#ffffff', '#2a6450']); };
 BUILD.bushdry = function(B, t, i){ bushAt(B, t.x, t.y, 0.9, ['#8a7a3e', '#a4924a', '#6e5e2e']); };
@@ -1228,6 +1284,9 @@ var LIFE = {
   harvest:{ fly:['crow', 3], mote:['leaf', 16] },
   school:{ fly:['song', 4], mote:[['leaf', 10], ['butter', 6]] },
   iceage:{ mote:['snow', 60], fly:['crow', 2] },
+  moon:{ fly:['drone', 2], mote:['spark', 30] },
+  mars:{ fly:['drone', 1], mote:['dust', 40] },
+  saturn:{ fly:['drone', 2], mote:[['snow', 30], ['spark', 12]] },
   candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
@@ -1541,9 +1600,9 @@ function run(box, P, pic, api){
   /* A frame not yet decoded is never a blank: who drew a frame last keeps it on screen until the new one is ready,
      or the golfer blinks out for a frame every time his foot or his facing changes. */
   var lastFig = {};
-  function drawFigure(f, x, y, see, who){ if (!f || !f.url){ if (!who || !lastFig[who]) return null; f = lastFig[who].f; }
+  function drawFigure(f, x, y, see, who, z){ if (!f || !f.url){ if (!who || !lastFig[who]) return null; f = lastFig[who].f; }
     var im = img(f.url); if (!im.complete || !im.naturalWidth){ var lf = who && lastFig[who]; if (!lf) return null; f = lf.f; im = lf.im; } else if (who) lastFig[who] = { f:f, im:im };
-    var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
+    var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y, z), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
     ctx.save(); ctx.imageSmoothingEnabled = false; if (who === 'me') meGlow(k2); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore();
     if (!(who === 'me' && calmFloor(x, y))) occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
   /* IN A CALM ROOM (a kind with calm:true) only a wall can stand in front of him: the near wall, or an inner wall one row
@@ -2151,7 +2210,8 @@ function run(box, P, pic, api){
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
-      api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000; }); }
+      api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000;
+        if (open && P.gate.pad && !ended){ ended = true; if (api.landed) api.landed(); else api.arrive(); } }); }   // aboard the ship: the trip has played, the hole opens
     if (gate && gate.asked && !gate.open && Math.abs(g.y - P.gate.y) > 7) gate.asked = false;
     // the secret entrance: a word coming near it, and walking into its doorway offers the hole
     if (P.secret && api.secret){ var dsx = Math.hypot(g.x - P.secret.x, g.y - P.secret.y);
@@ -2179,7 +2239,7 @@ function run(box, P, pic, api){
     if (P.pen && P.pen.gated) ds.push({ k:'pzgate', x:P.pen.x, y:P.pen.y + P.pen.r });
     if (PZ && PZ.crate) ds.push({ k:'crate', x:PZ.crate.x, y:PZ.crate.y });
     if (gym){ gView.things(ds, tsec); var lq = gT(GY.Q.lever); ds.push({ k:'glever', x:lq[0], y:lq[1] }); }
-    if (P.gate) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
+    if (P.gate && !P.gate.pad) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
     if (hs) ds.push({ k:'hostfig', x:hs.x, y:hs.y });
@@ -2262,12 +2322,15 @@ function run(box, P, pic, api){
     ctx.restore(); }
   var lastFace = null;
   // the frame asked for if it is drawn, else any frame of this facing that is, else draw it now (once a facing)
-  function drawMe(tsec){ var h = api.host, f = null, fv = g.face, i = g.moving ? Math.floor(g.dist / STRIDE * 8) % 8 : 8;
+  /* ON THE MOON HE HOPS: a stride half again as long and a slow, high float between footfalls, his shadow left on the
+     ground under him so it reads as low gravity. Only where the ground is the moon's. */
+  function moonHere(){ return baseTh(P.themeAt(g.y)) === 'moon'; }
+  function drawMe(tsec){ var h = api.host, f = null, fv = g.face, mh = moonHere(), st = mh ? STRIDE * 1.6 : STRIDE, i = g.moving ? Math.floor(g.dist / st * 8) % 8 : 8;
     try{ if (h.golferWalkHas(fv[0], fv[1], i)) f = h.golferWalk(fv[0], fv[1], i);
       else { for (var j = 8; j >= 0 && !f; j--) if (h.golferWalkHas(fv[0], fv[1], j)) f = h.golferWalk(fv[0], fv[1], j); if (!f) f = h.golferWalk(fv[0], fv[1], i); } }catch(e){ f = null; }
     if (!f) f = lastFace; else lastFace = f;
     var shp = scr(g.x, g.y), s = kk; ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 5 * s, 2 * s, 0, 0, 7); ctx.fill();
-    drawFigure(f, g.x, g.y, true, 'me'); }
+    drawFigure(f, g.x, g.y, true, 'me', mh && g.moving ? pic.zAt(g.x, g.y) + Math.abs(Math.sin(g.dist / st * Math.PI)) * 1.1 : null); }
   /* A WRITE TO THE PAGE ONLY WHEN IT CHANGES. The waypoint and the speech bubble are asked every frame, and writing
      the same text or the same position back each time still makes the browser restyle and lay the page out again,
      and fires every observer on the page (the game's own watches every node added), sixty times a second. */
@@ -2284,7 +2347,7 @@ function run(box, P, pic, api){
     // a pin that would stand on a gym's room is the arrow at the edge instead, so the room and its gate stay clear
     if (inside && gym){ var A = gymArtRect(); if (tx > (A.x0 * kk + ox) / dpr - 40 && tx < (A.x1 * kk + ox) / dpr + 40 && ty > (A.y0 * kk + oy) / dpr - 20 && ty < (A.y1 * kk + oy) / dpr + 50) inside = false; }
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
-    label = shut ? 'World door' : (api.holeLabel || 'Next hole');
+    label = P.gate && P.gate.pad ? (P.spec.space === 'ship' ? 'The ship' : 'The rocket') : shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
     cls(pin, 'on', false); cls(way, 'on', true); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
     put(way.style, 'left', Math.round(cxs + vx * s2) + 'px'); put(way.style, 'top', Math.round(cys + vy * s2) + 'px'); put(wayI.style, 'transform', 'rotate(' + Math.round(Math.atan2(vy, vx) * 180 / Math.PI + 90) + 'deg)');
@@ -3542,6 +3605,156 @@ BUILD.icePeakRock = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(
 // the walk is drawn bigger than a hole (a shed is 9 by 6 by 11), and these stand among pines twice a man's height and more
 LMSIZE.iceHerd = [21, 10.5, 10]; LMSIZE.iceSaber = [10, 6.8, 6.8]; LMSIZE.iceSeracs = [15, 8, 12.3]; LMSIZE.iceArch = [13.5, 3, 6.6]; LMSIZE.iceMill = [8.4, 7, 0.8]; LMSIZE.iceErratic = [7.5, 6, 5.4];
 LMSIZE.iceTarpit = [13, 9.8, 5.5]; LMSIZE.iceBergs = [15, 11.7, 7]; LMSIZE.iceCliff = [17, 7, 10.5]; LMSIZE.iceCamp = [15, 10.5, 7.5]; LMSIZE.icePeakRock = [16, 13, 19];
+/* ---- Moon Base's stops on the walk, the same places its holes stand in (land.js): the landing site with the lander and
+   the flag, the crater field, the base with its domes and dish, the dark far side, and the launch pad with the rocket. The
+   moon has no trees at all: its walks cross crater after crater instead (P.craters). A drone is the satellite going over, and the
+   sparks are stars. */
+// a crater's paint over the moon's ground (P.craterPaint): 1 its floor, 2 the inner wall out of the sun, 3 the inner wall in it, 7 the
+// wall side on, 4 the rim's lit outer face, 5 the rim's shaded one, 6 a bright ray thrown out across the plain. dk: the far side's darker ground
+function moonCrt(c, dk){ var n = vn(c.ti * 0.1, c.tj * 0.1, 88), k = c.crt;
+  if (k === 1) return dk ? (n > 0.6 ? '#46444e' : '#3e3c46') : (n > 0.6 ? '#7e7c86' : '#74727c'); if (k === 2) return dk ? '#2e2c36' : '#55535e'; if (k === 3) return dk ? '#74727c' : '#c4c2ca';
+  if (k === 7) return dk ? '#52505a' : '#8e8c96'; if (k === 4) return dk ? '#7a7882' : '#d2d0d8'; if (k === 5) return dk ? '#3a3842' : '#7a7882'; return dk ? '#6e6c76' : '#c8c6ce'; }
+GPAT.moonReg = function(c){ if (c.crt) return moonCrt(c, false); var a = vn(c.ti * 0.03, c.tj * 0.03, 81), b = vn(c.ti * 0.12, c.tj * 0.12, 82); return a > 0.7 ? '#8a8892' : b > 0.74 ? '#b6b4bc' : a < 0.3 ? '#a2a0aa' : '#9a98a2'; };
+GPAT.moonDark = function(c){ if (c.crt) return moonCrt(c, true); var a = vn(c.ti * 0.03, c.tj * 0.03, 83), b = vn(c.ti * 0.12, c.tj * 0.12, 84); return a > 0.7 ? '#4e4c56' : b > 0.74 ? '#74727c' : a < 0.3 ? '#625f6a' : '#5a5862'; };
+GPAT.moonCrater = function(c){ if (c.crt) return moonCrt(c, false); var gi = Math.floor(c.ti / 48), gj = Math.floor(c.tj / 48), cx = (gi + 0.3 + vn(gi, gj, 85) * 0.4) * 48, cy = (gj + 0.3 + vn(gj, gi, 86) * 0.4) * 48, r = 10 + vn(gi, gj, 87) * 12, d = Math.hypot(c.ti - cx, c.tj - cy) / r;
+  if (d < 0.85) return d < 0.5 ? '#7e7c86' : (c.ti - cx) + (c.tj - cy) < 0 ? '#6e6c76' : '#8a8892'; if (d < 1.05) return (c.ti - cx) + (c.tj - cy) < 0 ? '#c8c6ce' : '#7a7882'; return GPAT.moonReg(c); };
+KIT['moon~landing'] = kitFrom(KIT.moon, { nlm:3, lm:['moonLander', 'moonDish', 'moonLander'] });
+KIT['moon~craters'] = kitFrom(KIT.moon, { gpat:'moonCrater', dens:0.001, nlm:3, low:['rock', 'rockdark', 'rockdark', 'rock'], lm:['moonDish', 'moonLander', 'moonDish'] });
+KIT['moon~station'] = kitFrom(KIT.moon, { p:['#d8dce6', '#eef0f6', '#c4c8d4'], paved:true, dens:0.001, nlm:5, lm:['moonDome', 'moonDish', 'moonDome', 'moonLander', 'moonDome'] });
+KIT['moon~farside'] = kitFrom(KIT.moon, { g:['#5a5862', '#625f6a', '#4e4c56', 0.2], gpat:'moonDark', dens:0.001, nlm:3, low:['rockdark', 'rockdark', 'rock'], lm:['moonDish', 'moonDish', 'moonDish'], wall:['#4a5878', '#141a2c'] });
+KIT['moon~launch'] = kitFrom(KIT.moon, { p:['#5a5e6a', '#6a6e7a', '#4a4e5a'], paved:true, dens:0.001, nlm:4, lm:['moonRocket', 'moonDish', 'moonDome', 'moonRocket'] });
+LIFE_AS['moon~landing'] = { fly:['drone', 2], mote:['spark', 24] };
+LIFE_AS['moon~craters'] = { fly:['drone', 1], mote:[['spark', 20], ['dust', 10]] };
+LIFE_AS['moon~station'] = { fly:['drone', 3], mote:['spark', 20] };
+LIFE_AS['moon~farside'] = { mote:['spark', 50] };
+LIFE_AS['moon~launch'] = { fly:['drone', 2], mote:[['spark', 24], ['ember', 6]] };
+// the lander: gold foil on four splayed legs, the white cabin on top with its dark window
+BUILD.moonLander = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy), u = 1 - tt / 2.4;
+  if (tt < 2.4 && Math.abs(ax - (1.2 + u * 1.3)) < 0.14 && Math.abs(ay - (1.2 + u * 1.3)) < 0.14) return '#c8c8d0'; if (tt < 0.2 && Math.hypot(ax - 2.5, ay - 2.5) < 0.45) return '#9a9aa4';
+  if (tt > 1.6 && tt < 3.4 && ax < 1.5 && ay < 1.5) return (((dx * 3 | 0) + (tt * 3 | 0)) % 3) ? '#e0b040' : '#b8862a';
+  if (tt >= 3.4 && tt < 5.2 && ax + ay * 0.6 < 1.4 && ay < 1.2) return dy > 0.8 && tt > 4 && tt < 4.7 && ax < 0.5 ? '#1a2240' : '#eef0f4'; if (ax < 0.08 && ay < 0.08 && tt >= 5.2 && tt < 5.9) return '#c8c8d0'; return null; }); };
+// a white dome with its panel seams and a lit window band, half sunk in the regolith
+BUILD.moonDome = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2, d = Math.hypot(dx, dy, tt) / R; if (d > 1) return null;
+  if (tt > R * 0.28 && tt < R * 0.42) return (((Math.atan2(dy, dx) * 6) | 0) % 2) ? '#bfefff' : '#3f6ad8'; return Math.abs(Math.sin(Math.atan2(dy, dx) * 5)) < 0.06 ? '#b8c0d0' : '#eef2f8'; }); };
+// a radar dish on its post, tipped back to the sky
+BUILD.moonDish = function(B, t){ var R = t.w / 2 - 0.3, H = t.h - R; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.hypot(dx, dy) < 0.15 && tt < H) return '#8a96b0';
+  var v = dy * 0.6 + (tt - H) * 0.8, w2 = -dy * 0.8 + (tt - H) * 0.6, rr = Math.hypot(dx, v); if (rr < R && Math.abs(w2 - rr * rr / (R * 2.2)) < 0.16) return rr > R * 0.9 ? '#8a96b0' : '#e8ecf4';
+  if (rr < 0.1 && w2 > 0 && w2 < R * 0.7) return '#c8ccd8'; return null; }); };
+// the rocket on its pad, the gantry beside it
+// a launch pad: a square of grey plates with yellow hazard edging, the ship standing on it (SPACE above)
+BUILD.launchpad = function(B, t){ box(B, t.x, t.y, t.w, t.d, 0.3, function(dx, dy, tt){ var e = Math.max(Math.abs(dx), Math.abs(dy)); if (e > t.w / 2 - 0.5) return ((Math.floor((dx + dy) * 1.5) % 2) + 2) % 2 ? '#ffd34d' : '#2a2a30';
+  return (((Math.floor(dx * 0.7) + Math.floor(dy * 0.7)) % 2) + 2) % 2 ? '#8a8e9a' : '#a8acb6'; }); };
+/* the ship on its pad (a space crossing's end): a white rocket three feet round and sixteen tall, a red nose, two lit
+   portholes, a gold band and three red fins, its launch tower of red lattice beside it with the arm across to the hatch */
+BUILD.padRocket = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), R = 1.5, H = 13;
+  B.solid(x - 2.6, y - 2.6, zb, x + 2.6, y + 2.6, zb + H + 4.5, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), tt = pz - zb, a = Math.atan2(dx, dy);
+    if (tt < 0.8){ for (var f = 0; f < 3; f++){ var fa = f * 2.094 + 0.5, u = dx * Math.sin(fa) + dy * Math.cos(fa), w = dx * Math.cos(fa) - dy * Math.sin(fa); if (Math.abs(w) < 0.22 && u > R - 0.2 && u < R + 1) return '#a82a22'; } return r < 0.9 ? '#3a3e48' : null; }
+    for (var f2 = 0; f2 < 3; f2++){ var fa2 = f2 * 2.094 + 0.5, u2 = dx * Math.sin(fa2) + dy * Math.cos(fa2), w2 = dx * Math.cos(fa2) - dy * Math.sin(fa2);
+      if (Math.abs(w2) < 0.2 && u2 > R - 0.2 && u2 < R + 1.1 - tt * 0.25 && tt < 4.2) return '#e5483a'; }
+    if (tt < H){ if (r > R) return null; if (r < R - 0.45) return null;
+      if (dy > 0.6 && Math.abs(dx) < 0.55 && (Math.abs(tt - 9.6) < 0.55 || Math.abs(tt - 7.2) < 0.45)) return Math.hypot(dx, tt - 9.6) < 0.3 || Math.hypot(dx, tt - 7.2) < 0.22 ? '#7fd8ff' : '#c99a2e';
+      if (Math.abs(tt - 6) < 0.3) return '#e2b23b'; return (((tt * 1.2) | 0) % 3 === 0 && Math.abs(Math.sin(a * 4)) < 0.2) ? '#c8ccd8' : '#f4f6fa'; }
+    var nr = R * Math.max(0, 1 - (tt - H) / 4.2); return r <= nr && r > nr - 0.5 ? (tt > H + 3.4 ? '#ffffff' : '#e5483a') : null; }, 0.25);
+  // the tower: four red posts with cross braces, beside the rocket, and the arm to the hatch
+  var tx = x - 3.6, H2 = H + 1.5; B.solid(tx - 1.2, y - 1.2, zb, tx + 1.2, y + 1.2, zb + H2, function(px, py, pz){ var ax = Math.abs(px - tx), ay = Math.abs(py - y), tt = pz - zb;
+    if (ax > 1.05 || ay > 1.05) return null; if (ax > 0.8 && ay > 0.8) return '#c0392b'; var face = ax > 0.85 || ay > 0.85, sx = ax > 0.85 ? py - y : px - tx;
+    if (face && (Math.abs(((tt + sx) % 1.6 + 1.6) % 1.6 - 0.8) < 0.14 || Math.abs(((tt - sx) % 1.6 + 1.6) % 1.6 - 0.8) < 0.14 || (tt % 1.6) < 0.18)) return '#d84a3a'; return null; }, 0.25);
+  B.solid(tx + 1, y - 0.3, zb + H - 3.6, x - 1.3, y + 0.3, zb + H - 3, function(){ return '#9a2a20'; }, 0.25); };
+LMSIZE.padRocket = [9, 6, 19];
+BUILD.moonRocket = function(B, t){ var H = t.h - 1.5; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3) return (((dx * 2 | 0) + (dy * 2 | 0)) % 2) ? '#5a5e6a' : '#4a4e5a'; var rr = tt > H - 2 ? 0.8 * (H + 1.2 - tt) / 3.2 : 0.8;
+  if (tt < H + 1.2 && r < rr) return Math.abs(tt - H * 0.55) < 0.4 ? '#1a1e2a' : tt > H - 2 ? '#e5483a' : '#f4f6fa';
+  if (tt < 2.6 && Math.abs(dy) < 0.1 && Math.abs(dx) > 0.75 && Math.abs(dx) < 0.8 + (2.6 - tt) * 0.5) return '#e5483a';
+  if (Math.abs(dx - 1.9) < 0.3 && Math.abs(dy) < 0.3 && tt < H - 0.5) return (Math.abs(dx - 1.9) > 0.2 || Math.abs(dy) > 0.2 || ((tt * 2) | 0) % 2) ? '#8a7a5a' : null; return null; }); };
+LMSIZE.moonLander = [6, 6, 6.2]; LMSIZE.moonDome = [8, 8, 4]; LMSIZE.moonDish = [6, 5, 7]; LMSIZE.moonRocket = [5, 5, 14];
+/* ---- Red Planet's stops on the walk, the same places its holes stand in (land.js): the landing with the lander and the
+   rover, the dunes and their dust devils, the canyon rim, the colony with its habs, greenhouse and panels, and the foot of
+   Olympus Mons. No trees, as on the moon: the walk crosses craters (P.craters) and red dust blows across it. */
+function marsCrt(c){ var k = c.crt; if (k === 1) return vn(c.ti * 0.1, c.tj * 0.1, 89) > 0.6 ? '#a04a28' : '#984426'; if (k === 2) return '#6a2a16'; if (k === 3) return '#e0905a';
+  if (k === 7) return '#b45a32'; if (k === 4) return '#e8a070'; if (k === 5) return '#7a3220'; return '#e8a878'; }
+GPAT.marsReg = function(c){ if (c.crt) return marsCrt(c); var a = vn(c.ti * 0.03, c.tj * 0.03, 91), b = vn(c.ti * 0.12, c.tj * 0.12, 92), r = Math.sin(c.ti * 0.09 + c.tj * 0.04 + a * 3);
+  return r > 0.86 ? '#e0905a' : r < -0.9 ? '#a04a28' : a > 0.7 ? '#b85a32' : b > 0.76 ? '#3a2420' : a < 0.3 ? '#d27a48' : '#c4683e'; };
+KIT['mars~landing'] = kitFrom(KIT.mars, { nlm:3, lm:['moonLander', 'marsRover', 'marsHab'] });
+KIT['mars~dunes'] = kitFrom(KIT.mars, { nlm:3, low:['rockred', 'rockbasalt'], lm:['marsDevil', 'marsRover', 'marsDevil'] });
+KIT['mars~canyon'] = kitFrom(KIT.mars, { nlm:3, low:['rockbasalt', 'rockred', 'rockred', 'rockbasalt'], lm:['marsButte', 'marsRover', 'marsButte'] });
+KIT['mars~colony'] = kitFrom(KIT.mars, { p:['#e8e0d4', '#f2ece2', '#d8d0c4'], paved:true, nlm:5, lm:['marsHab', 'marsGreenhouse', 'marsSolar', 'moonDish', 'marsHab'] });
+KIT['mars~olympus'] = kitFrom(KIT.mars, { nlm:3, lm:['marsButte', 'marsRover', 'moonLander'] });
+LIFE_AS['mars~landing'] = { fly:['drone', 1], mote:['dust', 30] };
+LIFE_AS['mars~dunes'] = { mote:['dust', 70] };
+LIFE_AS['mars~canyon'] = { fly:['drone', 1], mote:['dust', 40] };
+LIFE_AS['mars~colony'] = { fly:['drone', 3], mote:['dust', 20] };
+LIFE_AS['mars~olympus'] = { mote:[['dust', 40], ['ember', 4]] };
+// the rover: six wheels, a white body under its dark solar deck, a mast with its camera head
+BUILD.marsRover = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy);
+  for (var w = -1; w <= 1; w++){ var wd = Math.hypot(dx - w * 1.4, tt - 0.45); if (Math.abs(ay - 1.15) < 0.22 && wd < 0.45) return wd > 0.3 ? '#2a2a30' : '#8a8a94'; }
+  if (tt > 0.75 && tt < 0.9 && ay < 1.3 && ax < 1.8) return '#8a8a94'; if (tt >= 0.9 && tt < 1.45 && ax < 1.6 && ay < 0.95) return tt > 1.3 ? '#1e2a4a' : '#eeeef2';
+  if (Math.abs(dx - 1.1) < 0.09 && Math.abs(dy - 0.6) < 0.09 && tt >= 1.45 && tt < 2.7) return '#c8c8d0';
+  if (Math.abs(dx - 1.1) < 0.32 && Math.abs(dy - 0.6) < 0.22 && tt >= 2.7 && tt < 3.1) return dy > 0.7 ? '#3fd0ff' : '#f4f4f8'; return null; }); };
+// a hab: a white dome on a rust ring, a band of warm lit windows, an airlock tube out the front
+BUILD.marsHab = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2 - 0.6, d = Math.hypot(dx, dy, tt) / R;
+  if (dy > R * 0.6 && Math.abs(dx) < 0.7 && tt < 1.3) return tt > 1.15 || Math.abs(dx) > 0.55 ? '#c8c0b4' : '#e8e2d8'; if (d > 1) return null; if (tt < 0.3) return '#b84a26';
+  if (tt > R * 0.3 && tt < R * 0.45) return (((Math.atan2(dy, dx) * 6) | 0) % 2) ? '#ffd8a0' : '#6a3a2a'; return Math.abs(Math.sin(Math.atan2(dy, dx) * 4)) < 0.06 ? '#c8bcae' : '#f2ece2'; }); };
+// the greenhouse: a glass dome, rows of green plants inside
+BUILD.marsGreenhouse = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = t.w / 2, d = Math.hypot(dx, dy, tt) / R; if (d > 1) return null;
+  if (d > 0.93) return (Math.abs(Math.sin(Math.atan2(dy, dx) * 6)) < 0.1 || Math.abs(tt - R * 0.5) < 0.08) ? '#d8e2e8' : null;
+  if (tt < 0.8 && ((Math.abs(dx) * 1.6 | 0) % 2 === 0)) return tt < 0.2 ? '#5a3a24' : ((((dy + 9) * 3) | 0) % 3 ? '#3fae4a' : '#7cdc5a'); return null; }); };
+// a row of solar panels on short legs, tilted to the sun
+BUILD.marsSolar = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var pt = 0.9 + dy * 0.5;
+  if (Math.abs(tt - pt) < 0.12 && Math.abs(dy) < t.d / 2 - 0.2) return ((((dx + 9) * 2) | 0) % 4 === 0 || Math.abs(dy) > t.d / 2 - 0.35) ? '#c8c8d0' : '#1e3a6a';
+  if (tt < pt && Math.abs(dy) < 0.08 && Math.abs(((dx + 9) * 0.8) % 1) < 0.12) return '#8a8a94'; return null; }); };
+// a dust devil: a tall twisting column of tan dust, narrow at the foot and wide at the top
+BUILD.marsDevil = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, cx = Math.sin(u * 3) * 0.5, r = 0.4 + u * (t.w / 2 - 0.6), d = Math.hypot(dx - cx, dy);
+  if (d > r || d < r * 0.6) return null; var a = Math.atan2(dy, dx - cx) + u * 9, n = hash(dx * 3 | 0, tt * 3 | 0, dy * 3 | 0);
+  return ((a * 2 | 0) % 2) ? (n < 0.3 ? null : '#e8b088') : (n < 0.5 ? null : '#c88a62'); }); };
+// a butte: a flat topped hill of banded red rock, fallen from the canyon wall
+BUILD.marsButte = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R = (t.w / 2 - 0.3) * (1 - tt / t.h * 0.35), d = Math.hypot(dx, dy * t.w / t.d);
+  if (d > R + vn(dx * 0.8 + 4, tt * 0.8, 5) * 0.8 - 0.4) return null; return ['#a8502e', '#8a3a22', '#c4683e', '#e0905a'][((tt * 1.4 + vn(dx, tt, 9) * 0.5) | 0) % 4]; }); };
+LMSIZE.marsRover = [5, 4, 4]; LMSIZE.marsHab = [7, 8, 3.6]; LMSIZE.marsGreenhouse = [7, 7, 3.6]; LMSIZE.marsSolar = [7, 3, 1.8]; LMSIZE.marsDevil = [5, 5, 11]; LMSIZE.marsButte = [10, 7, 7];
+/* ---- Saturn Rings' stops on the walk, the same places its holes stand in (land.js): out across the rings, the ring
+   station with its modules, masts and the Cassini probe, under Titan with its lander, over Enceladus and its geysers, and
+   out over the pole. No trees: the walk is a paved walkway along decks of ring ice. */
+// an opening in the deck, where Saturn's clouds show far below: bands of gold and cream, a bright rim of ice round the gap
+function satGap(c){ var o = vn(c.ti * 0.016, c.tj * 0.016, 105); if (o < 0.64) return null; if (o < 0.665) return '#ffffff'; if (o < 0.685) return '#5a5488';
+  var band = Math.sin(c.tj * 0.09 + Math.sin(c.ti * 0.02) * 1.5 + vn(c.ti * 0.05, c.tj * 0.05, 106) * 2.5); return band > 0.6 ? '#f0dfb4' : band > 0.1 ? '#e2c88c' : band > -0.5 ? '#d8b878' : '#b8905a'; }
+GPAT.satDeck = function(c){ var gp = satGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 101), b = vn(c.ti * 0.14, c.tj * 0.14, 102);
+  if (((c.ti >> 4) + (c.tj >> 4)) % 2 === 0 && ((c.ti & 15) === 0 || (c.tj & 15) === 0)) return '#7a74ac';
+  return a > 0.72 ? '#b8b2e4' : b > 0.8 ? '#c8c4ec' : a < 0.28 ? '#8a84bc' : '#9a94cc'; };
+GPAT.satIce = function(c){ var gp = satGap(c); if (gp) return gp; var a = vn(c.ti * 0.04, c.tj * 0.04, 103), b = vn(c.ti * 0.14, c.tj * 0.14, 104);
+  if (((c.ti >> 4) + (c.tj >> 4)) % 2 === 0 && ((c.ti & 15) === 0 || (c.tj & 15) === 0)) return '#a8c4e8'; return a > 0.7 ? '#ffffff' : b > 0.78 ? '#c4d8ea' : '#dceaf6'; };
+KIT['saturn~rings'] = kitFrom(KIT.saturn, { nlm:3, lm:['satProbe', 'satMast', 'satModule'] });
+KIT['saturn~cassini'] = kitFrom(KIT.saturn, { nlm:5, lm:['satModule', 'satMast', 'satModule', 'satProbe', 'satMast'] });
+KIT['saturn~titan'] = kitFrom(KIT.saturn, { nlm:3, lm:['satLander', 'satMast', 'satLander'] });
+KIT['saturn~enceladus'] = kitFrom(KIT.saturn, { g:['#dceaf6', '#eef6fc', '#c4d8ea', 0.15], gpat:'satIce', nlm:4, low:['rockice', 'rockice', 'rocksnow'], lm:['satGeyser', 'satGeyser', 'satProbe', 'satGeyser'] });
+KIT['saturn~hexagon'] = kitFrom(KIT.saturn, { nlm:3, lm:['satMast', 'satProbe', 'satModule'] });
+LIFE_AS['saturn~rings'] = { fly:['drone', 2], mote:[['snow', 30], ['spark', 14]] };
+LIFE_AS['saturn~cassini'] = { fly:['drone', 4], mote:['spark', 20] };
+LIFE_AS['saturn~titan'] = { fly:['drone', 1], mote:['ember', 30] };
+LIFE_AS['saturn~enceladus'] = { mote:['snow', 70] };
+LIFE_AS['saturn~hexagon'] = { fly:['drone', 1], mote:[['snow', 24], ['spark', 20]] };
+// a ring station module: a white cylinder on its side on short legs, a gold band, a row of lit blue windows, grey end caps
+BUILD.satModule = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dy, tt - 1.4), hw = t.w / 2 - 0.4;
+  if (tt < 0.5) return (Math.abs(Math.abs(dx) - hw * 0.6) < 0.12 && Math.abs(dy) < 0.12) ? '#8a8eb0' : null; if (r > 1.0 || Math.abs(dx) > hw) return null;
+  if (Math.abs(dx) > hw - 0.25) return '#8a8eb0'; if (Math.abs(dx) < 0.2) return '#ffd34d'; if (dy > 0.6 && Math.abs(tt - 1.6) < 0.18 && (((dx + 9) * 1.1 | 0) % 2)) return '#9fd8ff';
+  return ((dx * 1.4 | 0) % 3) ? '#eef0f8' : '#c8cce0'; }); };
+// an antenna mast: a lattice post, a dish tipped to the sky, a red light at the top
+BUILD.satMast = function(B, t){ var H = t.h - 1.6; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (tt < H && Math.abs(dx) < 0.22 && Math.abs(dy) < 0.22) return (Math.abs(dx) > 0.14 || Math.abs(dy) > 0.14 || ((tt * 3) | 0) % 2) ? '#c8cce0' : null;
+  var v = dy * 0.6 + (tt - H) * 0.8, w2 = -dy * 0.8 + (tt - H) * 0.6, rr = Math.hypot(dx, v); if (rr < 1.3 && Math.abs(w2 - rr * rr / 2.8) < 0.15) return rr > 1.15 ? '#8a8eb0' : '#eef0f8';
+  if (Math.hypot(dx, dy, tt - t.h + 0.3) < 0.2) return '#ff5577'; return null; }); };
+// the Cassini probe: a gold foil body, a big white dish on top, a long boom out one side
+BUILD.satProbe = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3) return (Math.abs(Math.abs(dx) - 0.7) < 0.12 && Math.abs(dy) < 0.12) ? '#8a8eb0' : null;
+  if (tt < 2.2 && r < 0.75) return ((tt * 4 | 0) + (Math.atan2(dy, dx) * 3 | 0)) % 2 ? '#e0b040' : '#b8862a';
+  if (tt >= 2.2 && tt < 2.8 && r < 1.6 - (tt - 2.2) * 0.4 && r > 1.2 - (tt - 2.2) * 1.4) return '#f4f6fa'; if (tt >= 2.2 && tt < 2.5 && r < 1.3) return '#dfe3ec';
+  if (Math.abs(tt - 1.4) < 0.06 && Math.abs(dy) < 0.06 && dx > 0.7 && dx < t.w / 2) return '#c8c8d0'; return null; }); };
+// the Titan lander: a gold heat shield like a shallow saucer, a white deck on it, a whip antenna
+BUILD.satLander = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.6 && r < 1.8 - tt * 0.8) return tt < 0.14 ? '#8a5a1a' : ((r * 4 | 0) % 2 ? '#e0b040' : '#c8962a');
+  if (tt >= 0.6 && tt < 1.1 && r < 1) return Math.abs(tt - 0.85) < 0.06 ? '#3a3a52' : '#eef0f4'; if (Math.abs(dx - 0.5) < 0.05 && Math.abs(dy) < 0.05 && tt >= 1.1 && tt < t.h - 0.2) return '#c8c8d0'; return null; }); };
+// an ice geyser: a vent in the ice and a tall white plume, rising and spreading, broken into puffs
+BUILD.satGeyser = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = tt / t.h, r = 0.3 + u * (t.w / 2 - 0.4), d = Math.hypot(dx - Math.sin(u * 2) * 0.3, dy);
+  if (tt < 0.25) return d < 0.7 && d > 0.35 ? '#9fb8d8' : null; if (d > r) return null; var n = hash(dx * 3 | 0, tt * 3 | 0, dy * 3 | 0); return n < 0.25 + u * 0.4 ? null : (n > 0.85 ? '#dceaf6' : '#ffffff'); }); };
+LMSIZE.satModule = [7, 3, 2.6]; LMSIZE.satMast = [4, 4, 7]; LMSIZE.satProbe = [5, 5, 3.4]; LMSIZE.satLander = [5, 5, 3.2]; LMSIZE.satGeyser = [5, 5, 10];
 // @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

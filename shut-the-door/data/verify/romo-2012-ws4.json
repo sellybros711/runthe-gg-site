@@ -1,0 +1,252 @@
+{
+ "id": "romo-2012-ws4",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 345633,
+ "date": "2012-10-28",
+ "game": "World Series Game 4: San Francisco Giants at Detroit Tigers",
+ "gameType": "W",
+ "pitcher": {
+  "id": 489265,
+  "name": "Sergio Romo",
+  "throws": "R",
+  "team": "San Francisco Giants",
+  "seasonLine": "1.79 ERA, 14 SV, 55.1 IP"
+ },
+ "situation": {
+  "inning": 10,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 76,
+   "batterId": 457706,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "489265": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Austin Jackson strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Austin Jackson strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Austin Jackson",
+   "batSideListed": "R",
+   "seasonLine": ".300/.377/.479, 16 HR"
+  },
+  {
+   "atBat": 77,
+   "batterId": 430603,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "489265": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Don Kelly strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Don Kelly strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Don Kelly",
+   "batSideListed": "L",
+   "seasonLine": ".186/.276/.248, 1 HR"
+  },
+  {
+   "atBat": 78,
+   "batterId": 408234,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "489265": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Miguel Cabrera called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Miguel Cabrera called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Miguel Cabrera",
+   "batSideListed": "R",
+   "seasonLine": ".330/.393/.606, 44 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 15,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 425902,
+   "name": "Prince Fielder",
+   "batSideListed": "L"
+  },
+  {
+   "id": 430321,
+   "name": "Delmon Young",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543108,
+   "name": "Andy Dirks",
+   "batSideListed": "L"
+  },
+  {
+   "id": 425509,
+   "name": "Jhonny Peralta",
+   "batSideListed": "R"
+  },
+  {
+   "id": 519445,
+   "name": "Danny Worth",
+   "batSideListed": "R"
+  },
+  {
+   "id": 408042,
+   "name": "Gerald Laird",
+   "batSideListed": "R"
+  },
+  {
+   "id": 457706,
+   "name": "Austin Jackson",
+   "batSideListed": "R"
+  },
+  {
+   "id": 430603,
+   "name": "Don Kelly",
+   "batSideListed": "L"
+  },
+  {
+   "id": 408234,
+   "name": "Miguel Cabrera",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 801,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 493,
+     "usage": 0.6155,
+     "velo": 78.1,
+     "pfxXin": 19.3,
+     "pfxZin": 3.1
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 171,
+     "usage": 0.2135,
+     "velo": 88.7,
+     "pfxXin": -11.9,
+     "pfxZin": 11.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 97,
+     "usage": 0.1211,
+     "velo": 87.6,
+     "pfxXin": -16.3,
+     "pfxZin": 4.1
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 39,
+     "usage": 0.0487,
+     "velo": 82.6,
+     "pfxXin": -12.8,
+     "pfxZin": 2.2
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 1,
+     "usage": 0.0012,
+     "velo": 54.0,
+     "pfxXin": 22.8,
+     "pfxZin": 3.2
+    }
+   ],
+   "dropped": {
+    "IN": 4,
+    "PO": 1
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2012%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=489265"
+  },
+  "postseason": {
+   "pitches": 151,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 72,
+     "usage": 0.4768,
+     "velo": 78.7,
+     "pfxXin": 18.9,
+     "pfxZin": 5.2
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 44,
+     "usage": 0.2914,
+     "velo": 87.9,
+     "pfxXin": -18.5,
+     "pfxZin": 4.6
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 30,
+     "usage": 0.1987,
+     "velo": 88.7,
+     "pfxXin": -13.1,
+     "pfxZin": 12.4
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 5,
+     "usage": 0.0331,
+     "velo": 83.8,
+     "pfxXin": -17.1,
+     "pfxZin": 6.9
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2012%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=489265"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 345633: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=345633",
+  "MLB Stats API schedule 2012-10-28 and live feed /api/v1.1/game/345633/feed/live",
+  "MLB Stats API people with 2012 season stats",
+  "Baseball Savant 489265 2012 season search (regular season and postseason) for the arsenal"
+ ]
+}

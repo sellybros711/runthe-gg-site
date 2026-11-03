@@ -24,7 +24,7 @@ none of it, so no outcome, score, band or percentile moves.
             that day: Eckersley 1988, Rivera 2001) is null throughout, so the 3D code's labelled
             fallbacks apply; Rivera's 2008 arsenal is a proxy for his stuff, not his 2001 hand.
 
-  packs     python3 tracking.py packs                  puts data/tracking_arsenal.json into the
+  packs     python3 tracking.py packs [pack ids]       puts data/tracking_arsenal.json into the
             committed packs (scenario.pitcher and each arsenal pitch), then rebuild with pool.js
 """
 import io
@@ -88,6 +88,9 @@ def active_table(year, pid):
             f'Savant active spin leaderboard, {year} regular season, {method}')
 
 
+SPIN_AGREE = 0.8   # the picture's own rule (lab/pipeline/check-pitches.mjs)
+
+
 def one(pid, pack, spec):
     sc = pack['scenario']
     p = sc['pitcher']
@@ -120,14 +123,40 @@ def one(pid, pack, spec):
         spin = {'rate': None if mean(g['release_spin_rate'], 0) is None else int(mean(g['release_spin_rate'], 0)),
                 'axis': circ_mean(g['spin_axis']),
                 'active': active.get(col) if col else None}
-        rows[t] = {'n': int(len(g)), 'release': release_of(g), 'armAngle': mean(g['arm_angle'], 1),
+        rel = release_of(g)
+        # a mean release on the wrong side of the plate for his hand is not his release: PITCHf/x
+        # seasons were calibrated park by park (Hoffman 2010 reads about 0.2 ft off centre on every
+        # pitch, his cutter on the first base side). Null, so the picture uses his overall release
+        if rel and rel.get('x') is not None and (rel['x'] >= 0 if p['throws'] == 'R' else rel['x'] <= 0):
+            log(pid, t, f'release x {rel["x"]} is on the wrong side for a {p["throws"]} hand: null')
+            rel = None
+        rows[t] = {'n': int(len(g)), 'release': rel, 'armAngle': mean(g['arm_angle'], 1),
                    'spin': spin if any(v is not None for v in spin.values()) else None}
         log(pid, t, json.dumps(rows[t]))
+    # A spin the picture cannot draw is null, so the ball uses its family's default (as before
+    # Statcast), and the reason is kept: no axis (Savant has none in 2015), or a mean axis whose
+    # push is against his own pfx (a cosine under 0.8, lab/pipeline/check-pitches.mjs SPIN_AGREE:
+    # gyro-heavy sliders, Smith 2021 and Hader 2023)
+    spin_null = {}
+    for a in p['arsenal']:
+        sp = rows[a['type']]['spin']
+        if not sp:
+            continue
+        if sp['axis'] is None:
+            spin_null[a['type']] = 'Savant has no spin axis for it that season'
+        else:
+            th, pm = math.radians(sp['axis']), math.hypot(a['pfxX'], a['pfxZ'])
+            cos = (math.sin(th) * a['pfxX'] - math.cos(th) * a['pfxZ']) / pm if pm > 2 else 1.0
+            if cos < SPIN_AGREE:
+                spin_null[a['type']] = f'his mean spin axis ({sp["axis"]}) pushes against his own pfx (cosine {cos:.2f})'
+        if a['type'] in spin_null:
+            log(pid, a['type'], 'spin null:', spin_null[a['type']])
+            rows[a['type']]['spin'] = None
     gt = set(df['game_type'].dropna())
     return {'source': url,
             'tracking': {'system': 'statcast' if year >= 2015 else 'pitchfx', 'season': year,
                          'games': 'regular' if gt == {'R'} else 'postseason', 'n': int(len(df)),
-                         'active': active_src},
+                         'active': active_src, **({'spinNull': spin_null} if spin_null else {})},
             'release': release_of(df), 'armAngle': mean(df['arm_angle'], 1), 'arsenal': rows}
 
 
@@ -148,9 +177,11 @@ def arsenal(ids):
     log('wrote', path)
 
 
-def packs():
+def packs(ids=None):
     tr = json.load(open(os.path.join(DATA, 'tracking_arsenal.json')))['packs']
     for pid, row in tr.items():
+        if ids and pid not in ids:
+            continue
         path = os.path.join(DATA, 'packs', pid + '.json')
         pack = json.load(open(path))
         p = pack['scenario']['pitcher']
@@ -170,4 +201,4 @@ if __name__ == '__main__':
     if sys.argv[1] == 'arsenal':
         arsenal(sys.argv[2:])
     elif sys.argv[1] == 'packs':
-        packs()
+        packs(sys.argv[2:])

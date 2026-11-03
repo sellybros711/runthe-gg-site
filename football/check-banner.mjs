@@ -115,7 +115,8 @@ for (const [w, h] of [...SIZES, [375, 667], [430, 932], [320, 568]]) {
     /* A WHOLE RUN TO THE RESULTS: six signings, the season, and every round skipped. */
     await page.click('#b-start');
     await page.waitForTimeout(4500);
-    for (let i = 0; i < 6; i++) {
+    /* Until the draft is done, not six taps: a tap can land on a man the cap or a full spot refuses. */
+    for (let i = 0; i < 12 && (await screenOn(page)) === 's-draft'; i++) {
       await page.click('#opts .tile:not(.off)', { timeout: 3000 }).catch(() => {});
       await page.waitForTimeout(300);
       await page.evaluate(() => {
@@ -127,7 +128,7 @@ for (const [w, h] of [...SIZES, [375, 667], [430, 932], [320, 568]]) {
     }
     await page.click('#b-play', { timeout: 5000 }).catch(() => {});
     await page.waitForTimeout(1500);
-    for (let k = 0; k < 60 && (await screenOn(page)) !== 's-over'; k++) {
+    for (let k = 0; k < 120 && (await screenOn(page)) !== 's-over'; k++) {
       await page.evaluate(() => {
         for (const id of ['b-sim', 'b-po-skip', 'b-seed-go', 'b-po-fast', 'b-boss-fast']) {
           const e = document.getElementById(id);

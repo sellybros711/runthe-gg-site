@@ -60,7 +60,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
-<script src="/assets/rtg-ads.js?v=2"></script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 <script>
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
@@ -1433,6 +1433,69 @@ button.rslot{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointe
 @media (max-width:370px){.sl-yr .tc{display:none}}
 
 /* ─── results v2 ─── */
+/* THE SHUT THE DOOR PROMO (the owner, 2026-11-02): a full-screen ad for our own closer game,
+   over the results screen once a run is over, once an Eastern day, for everyone. It wears Shut
+   The Door's look, not this game's: its night ballpark, its badge, its signal orange and its
+   Barlow Condensed, loaded from its own folder only when the promo opens. Built by stdPromo(). */
+@font-face{font-family:'STD Barlow';font-style:italic;font-weight:900;font-display:swap;
+  src:url(/shut-the-door/fonts/barlowcondensed-900italic.woff2) format('woff2')}
+@font-face{font-family:'STD Barlow';font-style:italic;font-weight:800;font-display:swap;
+  src:url(/shut-the-door/fonts/barlowcondensed-800italic.woff2) format('woff2')}
+@font-face{font-family:'STD Barlow';font-style:normal;font-weight:600;font-display:swap;
+  src:url(/shut-the-door/fonts/barlowcondensed-600.woff2) format('woff2')}
+.stdp{--sig:#ff4f1f;--nt:#0b0f17;position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;
+  background:var(--nt);color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden;opacity:0;transition:opacity .28s ease}
+.stdp.on{opacity:1}
+.stdp-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 62%;transform:scale(1.06);
+  transition:transform 6s ease-out}
+.stdp.on .stdp-bg{transform:scale(1)}
+.stdp:before{content:'';position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(11,15,23,.72) 0%,rgba(11,15,23,.55) 30%,rgba(11,15,23,.86) 62%,rgba(11,15,23,.97) 100%)}
+.stdp:after{content:'';position:absolute;left:0;right:0;bottom:0;height:6px;z-index:2;background:var(--sig)}
+.stdp-in{position:relative;z-index:3;width:min(520px,100%);max-height:100%;overflow-y:auto;box-sizing:border-box;
+  padding:max(56px,env(safe-area-inset-top)) 24px calc(30px + env(safe-area-inset-bottom));text-align:center;
+  transform:translateY(14px);transition:transform .45s cubic-bezier(.2,.9,.3,1)}
+.stdp.on .stdp-in{transform:none}
+.stdp-x{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;z-index:4;width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.28);background:rgba(11,15,23,.55);color:#fff;font:600 22px/1 system-ui,sans-serif;cursor:pointer}
+.stdp-x:hover{background:rgba(11,15,23,.85)}
+.stdp-eye{display:inline-block;font:600 13px/1 'STD Barlow',system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;
+  color:#fff;background:rgba(255,79,31,.16);border:1px solid rgba(255,79,31,.55);border-radius:999px;padding:7px 13px 6px}
+.stdp-logo{display:block;width:clamp(120px,32vw,168px);height:auto;margin:18px auto 6px;filter:drop-shadow(0 10px 24px rgba(0,0,0,.5))}
+.stdp-h{margin:6px 0 0;font:900 italic clamp(38px,11.5vw,62px)/.92 'STD Barlow','Arial Narrow',sans-serif;
+  text-transform:uppercase;letter-spacing:.005em;text-shadow:0 3px 18px rgba(0,0,0,.45);text-wrap:balance}
+.stdp-h span{display:block;color:var(--sig)}
+.stdp-p{margin:14px auto 0;max-width:30em;font-size:16px;line-height:1.45;color:rgba(255,255,255,.86)}
+.stdp-list{list-style:none;margin:18px auto 0;padding:0;display:inline-flex;flex-direction:column;gap:9px;text-align:left}
+.stdp-list li{display:flex;align-items:center;gap:10px;font:600 17px/1.15 'STD Barlow',system-ui,sans-serif;
+  letter-spacing:.02em;color:#fff}
+.stdp-list li:before{content:'';flex:0 0 auto;width:9px;height:9px;transform:rotate(45deg);background:var(--sig)}
+.stdp-go{display:block;margin:24px auto 0;width:100%;max-width:380px;box-sizing:border-box;padding:17px 20px 15px;border-radius:10px;
+  background:var(--sig);color:#fff;text-decoration:none;font:800 italic 25px/1 'STD Barlow','Arial Narrow',sans-serif;
+  text-transform:uppercase;letter-spacing:.03em;box-shadow:0 12px 30px -10px rgba(255,79,31,.75),inset 0 -3px 0 rgba(0,0,0,.18)}
+.stdp-go:hover{filter:brightness(1.06)}
+.stdp-go:focus-visible,.stdp-x:focus-visible,.stdp-later:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.stdp-later{display:inline-block;margin-top:12px;padding:10px 14px;background:none;border:0;color:rgba(255,255,255,.75);
+  font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.stdp-free{margin:6px 0 0;font:600 12px/1 'STD Barlow',system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+@media(min-width:900px){
+  .stdp:before{background:linear-gradient(90deg,rgba(11,15,23,.2) 0%,rgba(11,15,23,.62) 38%,rgba(11,15,23,.92) 72%),
+    linear-gradient(180deg,rgba(11,15,23,.35),rgba(11,15,23,.6))}
+  .stdp{justify-content:flex-end}
+  .stdp-in{width:min(620px,100%);margin-right:max(48px,calc((100vw - 1180px)/2));text-align:left}
+  .stdp-h{font-size:64px}
+  .stdp-logo{margin-left:0}
+  .stdp-p{margin-left:0}
+  .stdp-go{margin-left:0}
+  .stdp-later{margin-left:-14px}
+}
+@media(max-height:700px){
+  .stdp-logo{width:96px;margin-top:10px}
+  .stdp-h{font-size:clamp(32px,10vw,46px)}
+  .stdp-list{margin-top:12px;gap:6px}
+  .stdp-go{margin-top:16px}
+}
+@media(prefers-reduced-motion:reduce){.stdp,.stdp-bg,.stdp-in{transition:none!important;transform:none!important}}
 .ro-hero{position:relative;text-align:center;margin:14px 0 12px;padding:22px 18px 20px;
   border-radius:16px;overflow:hidden;background:var(--grad-panel);
   border:1px solid rgba(var(--edge),.10);box-shadow:0 4px 16px -6px rgba(0,0,0,.18)}
@@ -5277,6 +5340,13 @@ function openModes(){
         '</button>').join('')+
     '</div>'+
     '<div class="xpromo"><p class="xp-h">More games like this one</p><div class="modecards mc-grid">'+
+      /* Shut The Door first: the other baseball game (the owner, 2026-11-02). */
+      '<a class="modecard mc-std" href="/shut-the-door/">'+
+        '<span class="mc-sticker free">New</span>'+
+        '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
+        '<img src="/shut-the-door/icon-192.png?v=2" alt="" width="32" height="32" loading="lazy">'+
+        '</div><div class="mc-title">Shut The Door</div>'+ARROW+'</div>'+
+        '<p>Our daily closer game. One real save from MLB history. You\'re the closer.</p></a>'+
       '<a class="modecard" href="/football/">'+
         '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
         '<img src="/football/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
@@ -8263,6 +8333,73 @@ function paintSpeed(){
   };
 })();
 
+/* ─── the Shut The Door promo ───
+   The owner's call (2026-11-02): a full-screen ad for Shut The Door, our daily closer game.
+   - WHEN: over the results screen, once a run is over. Never in a draft, a season or a game.
+   - HOW OFTEN: once an Eastern day (Shut The Door's own day), for everyone, Pro included. It is
+     marked seen when it shows, so closing it or playing are the same to tomorrow.
+   - IT WAITS for the result to land (longer after a title, for the confetti), and gives up
+     without spending the day if the player has moved on or a sheet is open: the next run that
+     ends gets it instead. */
+const STD_PROMO_KEY='rtd_std_promo_v1';
+function etDay(){
+  try{return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+  catch(_){return new Date().toISOString().slice(0,10);}
+}
+function stdPromoDue(){
+  try{return localStorage.getItem(STD_PROMO_KEY)!==etDay();}catch(_){return false;}
+}
+function stdPromoSoon(big){
+  if(!stdPromoDue())return;
+  setTimeout(()=>{
+    const busy=document.querySelector('.sheet.on');
+    if(!$('s-over').classList.contains('on')||busy||$('std-promo'))return;
+    stdPromo();
+  },big?3600:1800);
+}
+function stdPromo(){
+  try{localStorage.setItem(STD_PROMO_KEY,etDay());}catch(_){}
+  const was=document.activeElement;
+  const el=document.createElement('div');
+  el.className='stdp';el.id='std-promo';
+  el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','stdp-h');
+  el.innerHTML='<img class="stdp-bg" src="/shut-the-door/home-bg/wide.webp" alt="" width="2048" height="1024" decoding="async">'+
+    '<button type="button" class="stdp-x" aria-label="Close">&times;</button>'+
+    '<div class="stdp-in">'+
+      '<span class="stdp-eye">New from Run The Games</span>'+
+      '<img class="stdp-logo" src="/shut-the-door/brand/lockup-dark.svg?v=2" alt="Shut The Door" width="640" height="640">'+
+      '<h2 class="stdp-h" id="stdp-h">You are the closer.<span>Can you shut the door?</span></h2>'+
+      '<p class="stdp-p">One real save from MLB history. A new one every day. Everybody gets the same one.</p>'+
+      '<ul class="stdp-list"><li>The real hitters, in order</li><li>His real pitches</li><li>Graded on the call, not the luck</li></ul>'+
+      '<a class="stdp-go" href="/shut-the-door/">Close today\'s game</a>'+
+      '<button type="button" class="stdp-later">Back to my season</button>'+
+      '<p class="stdp-free">Free · No download</p>'+
+    '</div>';
+  document.body.appendChild(el);
+  const close=how=>{
+    ga('std_promo',{act:how});
+    document.removeEventListener('keydown',keys,true);
+    el.classList.remove('on');
+    setTimeout(()=>el.remove(),280);
+    try{if(was&&was.focus)was.focus();}catch(_){}
+  };
+  const keys=e=>{
+    if(e.key==='Escape'){e.preventDefault();close('escape');return;}
+    if(e.key!=='Tab')return;
+    const f=[...el.querySelectorAll('button,a[href]')];
+    const i=f.indexOf(document.activeElement);
+    if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus();}
+    else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus();}
+  };
+  document.addEventListener('keydown',keys,true);
+  el.querySelector('.stdp-x').onclick=()=>close('close');
+  el.querySelector('.stdp-later').onclick=()=>close('later');
+  el.querySelector('.stdp-go').onclick=()=>ga('std_promo',{act:'play'});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('on')));
+  el.querySelector('.stdp-go').focus({preventScroll:true});
+  ga('std_promo',{act:'shown'});
+}
+
 /* ─── result ─── */
 function ordinal(n){
   const s=['th','st','nd','rd'],v=n%100;
@@ -8380,6 +8517,7 @@ function showResult(){
   lineupList($('r-roster'),{chem:o.chemistry});
 
   if(o.titleWon||o.beatRecord) setTimeout(()=>fireConfetti(o.isGOAT||o.titleWon),300);
+  stdPromoSoon(o.titleWon||o.beatRecord);
   /* Last, and never awaited: the screen is already up and a board that is down
      must not cost anybody the season they just played. */
   setTimeout(()=>{postToBoard(o).catch(e=>console.error('board',e));},60);

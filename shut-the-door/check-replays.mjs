@@ -1,6 +1,7 @@
 /* Shut The Door: replay stored daily results and flag any the calls do not produce.
  *
- *   node shut-the-door/check-replays.mjs rows.json     rows exported from shutdoor_outings
+ *   node shut-the-door/check-replays.mjs rows.json     rows exported from shutdoor_outings (or
+ *                                                      shutdoor_survivor: a row with entries)
  *   node shut-the-door/check-replays.mjs --self-test   plays some outings, checks them, and
  *                                                      checks that a doctored row is caught
  *
@@ -69,6 +70,35 @@
  * (fixtures/replays-rules6-pre-steals.json: three rows whose calls see a steal
  * under rules 7). A rules 7 row with steals and pickoffs replays exactly, and
  * with its pickoffs taken out it is flagged (the self-test).
+ *
+ * RULES 8 (2026-10-30). The closer's real outing to the end of the game
+ * (grade.js THE HALVES, engine.js 11): a pack may hold more than one half,
+ * with his team's real half between. A new outing's calls carry r 8. A row
+ * with r 7 or before was played on the first half alone, and replays there
+ * exactly: on a pack with halves the engine plays it on the first half's own
+ * model (Model.singleModel, its table solved here, the centre pack.seq.L).
+ * The self-test holds six rules 7 rows made by main's engine before rules 8,
+ * three on Chapman's 2016 spot (today's daily on the day it shipped), in
+ * fixtures/replays-rules7-pre-full-close.json, to every pitch, call, runner
+ * and grade. The pool was replayed under rules 8, so a rules 7 row's
+ * percentile is not compared.
+ *
+ * RULES 9 (2026-11-02). The ABS touch (contract.js absDist, engine.js 12): a
+ * challenge is answered by whether any part of the ball touched the zone, the
+ * ball's radius on the top and the bottom too. A new outing's calls carry r 9.
+ * A row with r 8 replays under rules 8 exactly: the self-test holds three rows
+ * made by main's engine before rules 9, each with a challenge on a ball that
+ * touched the zone off the bare edge (so it resolves the other way under 9), in
+ * fixtures/replays-rules8-pre-abs-touch.json. The pool was not replayed: it was
+ * built under rules 8, and only a catcher's challenge on a touching ball moves.
+ *
+ * RULES 10 (2026-11-03). The touch on the zone as drawn (contract.js touchDist,
+ * engine.js 13): the ball's edge against the grid's box, the plate plus a ball
+ * on the sides. A new outing's calls carry r 10. A row with r 9 replays under
+ * rules 9 exactly: the self-test holds three rows made by main's engine before
+ * rules 10, each with a pitcher's challenge on a ball touching the drawn box
+ * but not the bare zone (it stood under 9, it is overturned under 10), in
+ * fixtures/replays-rules9-pre-drawn-touch.json. The pool was not replayed.
  *
  * RULES 6 (2026-10-26). The runners read the ball (contract.js THE RUNNERS
  * READ THE BALL, engine.js 9). A new outing's calls carry r 6. A row with r 5
@@ -140,6 +170,42 @@ export function replayRow(row) {
   // the pool plays the current rules, so a rules 1 row's percentile is not compared (RULES 2 above)
   if (!legacy && o.rules === G.RULES && res.percentile != null && Math.abs(res.percentile - row.percentile) > 1) diffs.push(`percentile ${row.percentile} replays as ${res.percentile}`);
   return { ok: !diffs.length, why: diffs.join('; '), res, legacy };
+}
+
+/* SURVIVOR (2026-10-30, CONTRACT.md 17). A row from shutdoor_survivor: {day, run, entries
+   [{scenarioId, calls, outcome, pitches, score}], saves, points, over}. Each entry must be the
+   situation modes.js gives that (day, run, index), played on its seed; it is replayed like a daily
+   row. Every entry but the last is a door shut, and saves, points and over add up. */
+let SCHED = null;
+const MODES = () => require('./modes.js');
+function schedOf() {
+  if (!SCHED) SCHED = JSON.parse(readFileSync(join(HERE, 'data', 'schedule.json'), 'utf8'));
+  return SCHED;
+}
+export function replaySurvivor(row) {
+  const entries = typeof row.entries === 'string' ? JSON.parse(row.entries) : row.entries;
+  const diffs = [];
+  let saves = 0, points = 0;
+  entries.forEach((e, i) => {
+    const at = MODES().survivorAt(schedOf(), String(row.day).slice(0, 10), row.run, i);
+    if (e.scenarioId !== at.pack) { diffs.push(`#${i} is ${e.scenarioId}, the run plays ${at.pack} there`); return; }
+    const p = packOf(e.scenarioId);
+    if (!p) { diffs.push(`#${i}: no pack ${e.scenarioId}`); return; }
+    const o = E.replay(p.pack, at.seed, e.calls, { mode: 'survivor', model: p.model });
+    if (o.status !== 'over' || o.calls.length !== e.calls.length) { diffs.push(`#${i}: the calls do not finish the outing`); return; }
+    const res = E.finishOuting(o);
+    if (res.outcome !== e.outcome) diffs.push(`#${i}: outcome ${e.outcome} replays as ${res.outcome}`);
+    if (res.pitches !== e.pitches) diffs.push(`#${i}: pitches ${e.pitches} replays as ${res.pitches}`);
+    if (res.score !== e.score) diffs.push(`#${i}: score ${e.score} replays as ${res.score}`);
+    if (e.outcome !== 'door_shut' && i !== entries.length - 1) diffs.push(`#${i}: the run went on after ${e.outcome}`);
+    if (e.outcome === 'door_shut') saves++;
+    points += e.score;
+  });
+  const over = entries.some(e => e.outcome !== 'door_shut');
+  if (row.saves != null && row.saves !== saves) diffs.push(`saves ${row.saves}, the entries make ${saves}`);
+  if (row.points != null && row.points !== points) diffs.push(`points ${row.points}, the entries make ${points}`);
+  if (row.over != null && !!row.over !== over) diffs.push(`over ${row.over}, the entries say ${over}`);
+  return { ok: !diffs.length, why: diffs.join('; '), saves, points, over };
 }
 
 /* A row from before the tie rule that ended on its tying run: stored as
@@ -398,6 +464,97 @@ function selfTest() {
       say(flagged, `${id}: the same row with its pickoffs taken out is flagged`);
     }
   }
+  /* rules 8: rules 7 rows made before it (main's engine at 7e2eab7, three on Chapman's spot, which
+     rules 8 plays to the end of the game) replay exactly on the first half, every pitch and grade */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules7-pre-full-close.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost)
+        && o.score.them - p.pack.scenario.situation.score.them === row.runs && !o.halves.length;
+      const H = (p.pack.scenario.halves || []).length;
+      say(a.ok && same && o.rules === G.STEAL_RULES, `${row.scenario_id}: a rules 7 row from before rules 8 replays exactly on the first half (${row.pitches} pitches, ${row.outcome}, the pack has ${H} ${H === 1 ? 'half' : 'halves'})` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 9: rules 8 rows made before it (main's engine at df0bc51), each with a challenge on a ball
+     touching the zone off the bare edge, replay exactly as rules 8; as rules 9 they part */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules8-pre-abs-touch.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const touched = o.log.filter(x => x.abs && x.challenge && x.abs.d < 0 && K.absDist(x.actual.x, x.actual.zn, p.pack.kernelZoneFt) >= 0);
+      let parts = true;   // a call the rules 9 outing cannot take (a challenge with none live) parts it too
+      try {
+        const o9 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.TOUCH_RULES })), { mode: 'daily', model: p.model });
+        parts = JSON.stringify(o9.log.map(x => x.result)) !== JSON.stringify(row.result) || o9.calls.length !== row.calls.length || o9.status !== 'over';
+      } catch (e) { parts = true; }
+      say(a.ok && same && o.rules === G.FULL_RULES && touched.length > 0 && parts, `${row.scenario_id}: a rules 8 row from before the ABS touch replays exactly, ${touched.length} challenge on a ball touching the zone included (${row.pitches} pitches); as rules 9 it parts` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 10: rules 9 rows made before it (main's engine at fcc49b9), each with a pitcher's challenge
+     on a ball touching the drawn zone but not the bare one, replay exactly as rules 9; as rules 10 they part */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules9-pre-drawn-touch.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const touched = o.log.filter(x => x.challenge && x.challenge.by === 'pitcher' && !x.challenge.overturned && K.touchDist(x.actual.x, x.actual.zn, p.pack.kernelZoneFt) >= 0);
+      let parts = true;
+      try {
+        const o10 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.DRAWN_RULES })), { mode: 'daily', model: p.model });
+        parts = JSON.stringify(o10.log.map(x => x.result)) !== JSON.stringify(row.result) || JSON.stringify(o10.log.map(x => !!(x.challenge && x.challenge.overturned))) !== JSON.stringify(o.log.map(x => !!(x.challenge && x.challenge.overturned))) || o10.calls.length !== row.calls.length || o10.status !== 'over';
+      } catch (e) { parts = true; }
+      say(a.ok && same && o.rules === G.TOUCH_RULES && touched.length > 0 && parts, `${row.scenario_id}: a rules 9 row from before the drawn touch replays exactly, ${touched.length} challenge on a ball touching the drawn zone included (${row.pitches} pitches); as rules 10 it parts` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  // Survivor: a run played through the engine replays; a doctored score, a situation out of its
+  // place in the run, and a run that went on after a blown save are each flagged
+  {
+    const day = '2026-11-20', M = MODES(), sched = schedOf();
+    const rng = R.mulberry32(R.hashSeed('survivor-self-test'));
+    const entries = [];
+    for (let i = 0; i < 4; i++) {
+      const at = M.survivorAt(sched, day, 0, i), p = packOf(at.pack);
+      if (!p) break;
+      const o = E.createOuting(p.pack, { seed: at.seed, mode: 'survivor', model: p.model });
+      // the grade's best call, so the run tends to go on for a few situations
+      while (o.status === 'live') E.throwPitch(o, Object.assign({ cell: 12 }, E.bestCall(o) || { type: p.model.types[0] }, { q: 0.9, e: 0.5 + rng() * 0.1 }));
+      const res = E.finishOuting(o);
+      entries.push({ scenarioId: at.pack, calls: JSON.parse(JSON.stringify(o.calls)), outcome: res.outcome, pitches: res.pitches, score: res.score });
+      if (res.outcome !== 'door_shut') break;
+    }
+    const sum = (es) => ({ saves: es.filter(e => e.outcome === 'door_shut').length, points: es.reduce((a, e) => a + e.score, 0), over: es.some(e => e.outcome !== 'door_shut') });
+    const row = Object.assign({ day, run: 0, entries }, sum(entries));
+    const ok = replaySurvivor(row);
+    say(entries.length > 0 && ok.ok, `survivor: a run of ${entries.length} (${row.saves} saves) replays, every situation in its place` + (ok.ok ? '' : ': ' + ok.why));
+    const doctored = JSON.parse(JSON.stringify(row)); doctored.entries[0].score += 40; doctored.points += 40;
+    say(!replaySurvivor(doctored).ok, 'survivor: a doctored score is flagged');
+    if (entries.length > 1) {
+      const swapped = JSON.parse(JSON.stringify(row));
+      [swapped.entries[0], swapped.entries[1]] = [swapped.entries[1], swapped.entries[0]];
+      say(!replaySurvivor(swapped).ok, 'survivor: a situation out of its place in the run is flagged');
+    }
+    const other = Object.assign({}, row, { run: 1 });
+    say(!replaySurvivor(other).ok, 'survivor: the same entries claimed for another run are flagged');
+    const padded = JSON.parse(JSON.stringify(row)); padded.saves += 1;
+    say(!replaySurvivor(padded).ok, 'survivor: saves the entries do not make are flagged');
+  }
   process.exit(fails ? 1 : 0);
 }
 
@@ -410,6 +567,11 @@ if (process.argv[1] && process.argv[1].endsWith('check-replays.mjs')) {
     let bad = 0;
     const rel = { timed: 0, of: 0, spread: 0 };
     for (const r of rows) {
+      if (r.entries != null) {     // a Survivor row (shutdoor_survivor)
+        const x = replaySurvivor(r);
+        if (!x.ok) { bad++; console.log(`FLAG ${r.user_id || '?'} ${r.day} survivor run ${r.run}: ${x.why}`); }
+        continue;
+      }
       const x = replayRow(r);
       if (!x.ok) { bad++; console.log(`FLAG ${r.user_id || '?'} ${r.day} ${r.scenario_id}: ${x.why}`); }
       const calls = typeof r.calls === 'string' ? JSON.parse(r.calls) : r.calls;

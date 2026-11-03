@@ -109,7 +109,7 @@ function closerCall(closer, o, rng) {
   const fi = pick(closer.fam[bk], rng());
   const type = typeForFamily(o.pack.scenario.pitcher.arsenal, FAMS[fi], o.rules >= 2 ? rng() : undefined);
   let cell = pick(aimOf(closer, o.pack)[fi][bk], rng());
-  const bats = o.pack.scenario.batters[st.bi % o.model.N].bats;
+  const bats = o.pack.scenario.batters[o.model.who(st)].bats;
   if (bats === 'L') cell = K.rowOf(cell) * 5 + (4 - K.colOf(cell));
   return { type, cell };
 }
@@ -164,17 +164,18 @@ function runPool(pack, closers, runs, model) {
    reads this centre, so it must not move under it, and the call by location and ABS (rules 4)
    change no pitch the closers choose, only how some takes are called. */
 const SEQ_RULES = 3;
-function seqCenter(pack, closers, model, runs) {
+function seqCenter(pack, closers, model, runs, rules) {
+  const R0 = rules || SEQ_RULES;
   let sum = 0, n = 0, zone = 0;
   const per = Math.max(1, Math.ceil((runs || 400) / closers.length));
   closers.forEach((c, ci) => {
     for (let r = 0; r < per; r++) {
-      const o = E.createOuting(pack, { seed: R.hashSeed(`${pack.scenario.id}|seq|${ci}|${r}`), mode: 'practice', model, rules: SEQ_RULES });
+      const o = E.createOuting(pack, { seed: R.hashSeed(`${pack.scenario.id}|seq|${ci}|${r}`), mode: 'practice', model, rules: R0 });
       const policy = R.mulberry32(R.hashSeed(`${pack.scenario.id}|seqpolicy|${ci}|${r}`));
       let guard = 0;
       while (o.status === 'live' && guard++ < 150) {
         const call = closerCall(c, o, policy);
-        sum += G.familiarRaw(G.contextOf(o.log, o.st, SEQ_RULES, 0), call.type, call.cell);
+        sum += G.familiarRaw(G.contextOf(o.log, o.st, R0, 0), call.type, call.cell);
         if (K.inZone(call.cell)) zone++;
         n++;
         E.throwPitch(o, call);
@@ -205,13 +206,14 @@ function attachPros(pack, pros, model) {
   const thr = pack.scenario.pitcher.throws;
   const want = new Map();             // bucket|platoon|family -> Set(rel cells)
   const h = pack.hold;
-  for (let bi = 0; bi < model.N; bi++) {
-    const bats = pack.scenario.batters[bi].bats;
+  // every half's lineup (rules 8), and in it the main table and the other goal's (hold.alt)
+  for (let hh = 0; hh < model.H; hh++) for (let bi = 0; bi < model.N; bi++) for (const T of [h, h.alt].filter(Boolean)) {
+    const bats = pack.scenario.batters[model.lineup[hh][bi]].bats;
     const platoon = bats === thr ? 'same' : 'opp';
     for (let b = 0; b < 4; b++) for (let s = 0; s < 3; s++) for (let o = 0; o < 3; o++) for (let bs = 0; bs < 8; bs++)
       for (let m = 0; m <= model.M; m++) {
-        const i = G.stateIndex(model.N, model.M, bi, b, s, o, bs, m);
-        const bc = h.b[i];
+        const i = G.stateIndex(model.N, model.M, bi, b, s, o, bs, m, model.H > 1 ? hh : undefined);
+        const bc = T.b[i];
         if (bc == null) continue;
         const type = model.types[Math.floor(bc / 25)], cell = bc % 25;
         const rel = bats === 'L' ? K.rowOf(cell) * 5 + (4 - K.colOf(cell)) : cell;
@@ -261,6 +263,8 @@ function build(pack, closersFile, opts) {
         pickoff: Object.fromEntries(Object.entries(S.pickoff).map(([b, v]) => [b, { out: v.out }])),
         pitcher: sc.pitcher, catcher: sc.catcher, runners: sc.runners, start: sc.start,
       };
+      // rules 8: the catcher on the field when each later half began (steals.py --halves)
+      if (sc.halves && sc.halves.length) pack.steal.halves = sc.halves;
     }
   }
   const t0 = Date.now();
@@ -270,6 +274,12 @@ function build(pack, closersFile, opts) {
   // rules 2: the familiarity the real closers' sequencing shows here (the centre the hitter adjusts from)
   delete pack.seq;
   pack.seq = seqCenter(pack, closersFile.closers, new G.Model(pack), opts && opts.seqRuns);
+  // rules 8: with more than one half the hitters see him longer, so the centre is measured again
+  // over whole outings (rules 8), and rules 8 reads that one (grade.js Model, seq.full)
+  if (new G.Model(pack).H > 1) {
+    const full = seqCenter(pack, closersFile.closers, new G.Model(pack), opts && opts.seqRuns, G.FULL_RULES);
+    pack.seq.full = full;
+  }
   const model = new G.Model(pack);
   attachPros(pack, opts && opts.pros, model);
   const closers = closersFile.closers;

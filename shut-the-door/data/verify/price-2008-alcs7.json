@@ -1,0 +1,422 @@
+{
+ "id": "price-2008-alcs7",
+ "plan": "rules8",
+ "resolution": "real",
+ "gamePk": 243842,
+ "date": "2008-10-19",
+ "game": "AL Championship Series Game 7: Boston Red Sox at Tampa Bay Rays",
+ "gameType": "L",
+ "pitcher": {
+  "id": 456034,
+  "name": "David Price",
+  "throws": "L",
+  "team": "Tampa Bay Rays",
+  "seasonLine": "1.93 ERA, 0 SV, 14.0 IP"
+ },
+ "situation": {
+  "inning": 8,
+  "half": "top",
+  "outs": 2,
+  "bases": 7,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 59,
+   "batterId": 136770,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "456034": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "J.D. Drew strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "J.D. Drew strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "J.D. Drew",
+   "batSideListed": "L",
+   "seasonLine": ".280/.408/.519, 19 HR"
+  }
+ ],
+ "realFaced": 1,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 4,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 424726,
+   "name": "Jason Bay",
+   "batSideListed": "R"
+  },
+  {
+   "id": 117276,
+   "name": "Mark Kotsay",
+   "batSideListed": "L"
+  },
+  {
+   "id": 123660,
+   "name": "Jason Varitek",
+   "batSideListed": "S"
+  },
+  {
+   "id": 476704,
+   "name": "Jed Lowrie",
+   "batSideListed": "S"
+  },
+  {
+   "id": 424825,
+   "name": "Coco Crisp",
+   "batSideListed": "S"
+  },
+  {
+   "id": 456030,
+   "name": "Dustin Pedroia",
+   "batSideListed": "R"
+  },
+  {
+   "id": 120074,
+   "name": "David Ortiz",
+   "batSideListed": "L"
+  },
+  {
+   "id": 425903,
+   "name": "Kevin Youkilis",
+   "batSideListed": "R"
+  },
+  {
+   "id": 136770,
+   "name": "J.D. Drew",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 233,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 126,
+     "usage": 0.5408,
+     "velo": 95.1,
+     "pfxXin": 7.5,
+     "pfxZin": 14.1
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 71,
+     "usage": 0.3047,
+     "velo": 87.7,
+     "pfxXin": -2.3,
+     "pfxZin": 4.2
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 33,
+     "usage": 0.1416,
+     "velo": 94.6,
+     "pfxXin": 12.4,
+     "pfxZin": 12.1
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 3,
+     "usage": 0.0129,
+     "velo": 86.4,
+     "pfxXin": 18.3,
+     "pfxZin": 10.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=456034"
+  },
+  "postseason": {
+   "pitches": 98,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 49,
+     "usage": 0.5,
+     "velo": 95.3,
+     "pfxXin": 7.7,
+     "pfxZin": 15.3
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 39,
+     "usage": 0.398,
+     "velo": 87.8,
+     "pfxXin": -1.6,
+     "pfxZin": 2.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 10,
+     "usage": 0.102,
+     "velo": 95.2,
+     "pfxXin": 11.7,
+     "pfxZin": 12.3
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2008%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=456034"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 243842: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=243842",
+  "MLB Stats API schedule 2008-10-19 and live feed /api/v1.1/game/243842/feed/live",
+  "MLB Stats API people with 2008 season stats",
+  "Baseball Savant 456034 2008 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 8,
+   "half": "top",
+   "real": true,
+   "outs": 2,
+   "bases": 7,
+   "walkOffLive": false,
+   "lineupIds": [
+    136770,
+    424726,
+    117276,
+    123660,
+    133321,
+    424825,
+    456030,
+    120074,
+    425903
+   ],
+   "lineupNames": [
+    "J.D. Drew",
+    "Jason Bay",
+    "Mark Kotsay",
+    "Jason Varitek",
+    "Alex Cora",
+    "Coco Crisp",
+    "Dustin Pedroia",
+    "David Ortiz",
+    "Kevin Youkilis"
+   ]
+  },
+  {
+   "inning": 9,
+   "half": "top",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    136770,
+    424726,
+    117276,
+    123660,
+    476704,
+    424825,
+    456030,
+    120074,
+    425903
+   ],
+   "lineupNames": [
+    "J.D. Drew",
+    "Jason Bay",
+    "Mark Kotsay",
+    "Jason Varitek",
+    "Jed Lowrie",
+    "Coco Crisp",
+    "Dustin Pedroia",
+    "David Ortiz",
+    "Kevin Youkilis"
+   ]
+  }
+ ],
+ "between": [
+  {
+   "inning": 8,
+   "half": "bottom",
+   "team": "Tampa Bay Rays",
+   "abbr": "TB",
+   "runs": 0,
+   "pas": [
+    {
+     "batter": {
+      "id": 493127,
+      "name": "Akinori Iwamura"
+     },
+     "event": "Groundout",
+     "short": "4-3",
+     "des": "Akinori Iwamura grounds out, second baseman Dustin Pedroia to first baseman Mark Kotsay.",
+     "runs": 0,
+     "outs": 1,
+     "bases": 0,
+     "runners": [
+      null,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 425834,
+      "name": "B.J. Upton"
+     },
+     "event": "Flyout",
+     "short": "F8",
+     "des": "B.J. Upton flies out to center fielder Coco Crisp.",
+     "runs": 0,
+     "outs": 2,
+     "bases": 0,
+     "runners": [
+      null,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 150289,
+      "name": "Carlos Pena"
+     },
+     "event": "Strikeout",
+     "short": "K",
+     "des": "Carlos Pena called out on strikes.",
+     "runs": 0,
+     "outs": 3,
+     "bases": 0,
+     "runners": [
+      null,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    }
+   ],
+   "source": "MLB Stats API live feed /api/v1.1/game/243842/feed/live, bottom 8"
+  }
+ ],
+ "line": {
+  "teams": [
+   "BOS",
+   "TB"
+  ],
+  "innings": [
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    null
+   ]
+  ],
+  "H": [
+   3,
+   6
+  ],
+  "E": [
+   0,
+   1
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/243842/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [
+  {
+   "atBat": 63,
+   "batterId": 424726,
+   "name": "Jason Bay",
+   "event": "walk",
+   "des": "Jason Bay walks.",
+   "runs": 0,
+   "pitches": 8,
+   "inning": 9
+  },
+  {
+   "atBat": 64,
+   "batterId": 117276,
+   "name": "Mark Kotsay",
+   "event": "strikeout",
+   "des": "Mark Kotsay called out on strikes.",
+   "runs": 0,
+   "pitches": 5,
+   "inning": 9
+  },
+  {
+   "atBat": 65,
+   "batterId": 123660,
+   "name": "Jason Varitek",
+   "event": "strikeout",
+   "des": "Jason Varitek strikes out swinging.",
+   "runs": 0,
+   "pitches": 5,
+   "inning": 9
+  },
+  {
+   "atBat": 66,
+   "batterId": 476704,
+   "name": "Jed Lowrie",
+   "event": "force_out",
+   "des": "Jed Lowrie grounds into a force out, fielded by second baseman Akinori Iwamura. Jason Bay out at 2nd. Jed Lowrie to 1st.",
+   "runs": 0,
+   "pitches": 2,
+   "inning": 9
+  }
+ ],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 24,
+  "runs": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  }
+ }
+}

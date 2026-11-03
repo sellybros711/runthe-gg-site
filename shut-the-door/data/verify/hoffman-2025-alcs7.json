@@ -1,0 +1,242 @@
+{
+ "id": "hoffman-2025-alcs7",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 813037,
+ "date": "2025-10-20",
+ "game": "AL Championship Series Game 7: Seattle Mariners at Toronto Blue Jays",
+ "gameType": "L",
+ "pitcher": {
+  "id": 656546,
+  "name": "Jeff Hoffman",
+  "throws": "R",
+  "team": "Toronto Blue Jays",
+  "seasonLine": "4.37 ERA, 33 SV, 68.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 70,
+   "batterId": 660844,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656546": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Leo Rivas strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Leo Rivas strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Leo Rivas",
+   "batSideListed": "S",
+   "seasonLine": ".244/.387/.333, 2 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 686527,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656546": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Dominic Canzone strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Dominic Canzone strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Dominic Canzone",
+   "batSideListed": "L",
+   "seasonLine": ".300/.358/.481, 11 HR"
+  },
+  {
+   "atBat": 72,
+   "batterId": 677594,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656546": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Julio Rodríguez strikes out on a foul tip.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Julio Rodríguez strikes out on a foul tip.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Julio Rodríguez",
+   "batSideListed": "R",
+   "seasonLine": ".267/.324/.474, 32 HR"
+  }
+ ],
+ "realFaced": 3,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 17,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 663728,
+   "name": "Cal Raleigh",
+   "batSideListed": "S"
+  },
+  {
+   "id": 647304,
+   "name": "Josh Naylor",
+   "batSideListed": "L"
+  },
+  {
+   "id": 593871,
+   "name": "Jorge Polanco",
+   "batSideListed": "S"
+  },
+  {
+   "id": 668227,
+   "name": "Randy Arozarena",
+   "batSideListed": "R"
+  },
+  {
+   "id": 553993,
+   "name": "Eugenio Suárez",
+   "batSideListed": "R"
+  },
+  {
+   "id": 641487,
+   "name": "J.P. Crawford",
+   "batSideListed": "L"
+  },
+  {
+   "id": 660844,
+   "name": "Leo Rivas",
+   "batSideListed": "S"
+  },
+  {
+   "id": 686527,
+   "name": "Dominic Canzone",
+   "batSideListed": "L"
+  },
+  {
+   "id": 677594,
+   "name": "Julio Rodríguez",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1127,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 422,
+     "usage": 0.3744,
+     "velo": 96.3,
+     "pfxXin": -12.1,
+     "pfxZin": 17.4
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 337,
+     "usage": 0.299,
+     "velo": 87.0,
+     "pfxXin": 4.3,
+     "pfxZin": 0.0
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 268,
+     "usage": 0.2378,
+     "velo": 89.9,
+     "pfxXin": -15.5,
+     "pfxZin": 4.4
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 100,
+     "usage": 0.0887,
+     "velo": 96.4,
+     "pfxXin": -15.2,
+     "pfxZin": 14.0
+    }
+   ],
+   "dropped": {
+    "PO": 1
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=656546"
+  },
+  "postseason": {
+   "pitches": 207,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 77,
+     "usage": 0.372,
+     "velo": 87.3,
+     "pfxXin": 1.8,
+     "pfxZin": 2.8
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 74,
+     "usage": 0.3575,
+     "velo": 95.6,
+     "pfxXin": -12.6,
+     "pfxZin": 17.0
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 52,
+     "usage": 0.2512,
+     "velo": 89.1,
+     "pfxXin": -15.6,
+     "pfxZin": 4.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 4,
+     "usage": 0.0193,
+     "velo": 95.5,
+     "pfxXin": -16.1,
+     "pfxZin": 13.9
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=656546"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 813037: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=813037",
+  "MLB Stats API schedule 2025-10-20 and live feed /api/v1.1/game/813037/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 656546 2025 season search (regular season and postseason) for the arsenal"
+ ]
+}

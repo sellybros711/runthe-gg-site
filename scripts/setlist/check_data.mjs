@@ -467,14 +467,18 @@ check(/body\.inshow \.sfoot\{display:none;?\}/.test(game)
 console.log('the tab bar');
 check(/\.tabbar\{[^}]*position:fixed/.test(game) && /\.tabbar\{[^}]*bottom:0/.test(game),
       'the tab bar is pinned to the foot of the screen, not scrolled with the page');
-check((game.match(/<button class="tab" type="button" data-tab="/g) || []).length === 5, 'it carries five tabs');
+/* FOUR TABS, ALL GAME (owner's call, 2026-11-02): your stats have no tab of their own. They are an
+   extra for people who sign up, reached from your name in the top bar. */
+check((game.match(/<button class="tab" type="button" data-tab="/g) || []).length === 4, 'it carries four tabs');
+check(!/data-tab="profile"/.test(game) && /meBtn\.addEventListener\('click', \(\) => \{ if \(ME\.signedIn\) setScreen\('profile'\)/.test(gameBare),
+  'and your stats are behind your name, not a tab');
 /* Each tab is its own colour on its own tile (owner's call, 2026-10-28: five grey outlines blended
    together), so every tab has a colour and an icon tile. */
-check(['home', 'tour', 'songs', 'board', 'profile'].every(t => new RegExp(`\\.tab\\[data-tab="${t}"\\]\\{--tc:#`).test(game))
-  && (game.match(/<i class="ti" aria-hidden="true"><svg/g) || []).length === 5,
+check(['home', 'tour', 'songs', 'board'].every(t => new RegExp(`\\.tab\\[data-tab="${t}"\\]\\{--tc:#`).test(game))
+  && (game.match(/<i class="ti" aria-hidden="true"><svg/g) || []).length === 4,
   'and each tab has its own colour on its own tile');
 check(/data-tab="songs"/.test(game), 'and the songs list is one of them');
-for (const dest of ['home', 'tour', 'songs', 'board', 'profile'])
+for (const dest of ['home', 'tour', 'songs', 'board'])
   check(new RegExp(`data-tab="${dest}"`).test(game), `  including ${dest}`);
 /* ON A DESKTOP THE SAME FIVE TABS ARE THE HEADER'S NAV, still fixed (so the
    rule above holds), moved to the top and never pinned under a 1440px screen. */
@@ -2440,8 +2444,8 @@ const litSrc = (() => {
 })();
 const lit = [...new Set([...litSrc.matchAll(/([a-z]+):\s*'[a-z]+'/g)].map(m => m[1]))];
 const stranded = homeGos.filter(g => !tabs.includes(g) && !lit.includes(g));
-check(homeGos.length >= 4, `the home screen offers ${homeGos.length} screens`);
-check(tabs.length >= 5, `the tab bar carries ${tabs.length} tabs`);
+check(homeGos.length >= 3, `the home screen offers ${homeGos.length} screens`);
+check(tabs.length >= 4, `the tab bar carries ${tabs.length} tabs`);
 check(!stranded.length, 'every screen the home screen links to is on the tab bar',
   stranded.length ? `no tab reaches ${stranded.map(g => `"${g}"`).join(', ')}` : '');
 /* AND THE STEP NAMES THEM. Pointing a ring at a bar of five icons and saying
@@ -2454,7 +2458,7 @@ const tabStep = (() => {
   const at = guideSrc.indexOf(`aim: () => document.getElementById('tabbar')`);
   return at < 0 ? '' : guideSrc.slice(at);
 })();
-check(tabWords.length >= 4, `the bar labels ${tabWords.length} tabs beyond Home`);
+check(tabWords.length >= 3, `the bar labels ${tabWords.length} tabs beyond Home`);
 const unnamed = tabWords.filter(t => !new RegExp(`<b>${t.word}</b>`).test(tabStep));
 check(!unnamed.length, 'and the step says what each one is',
   unnamed.length ? `unexplained: ${unnamed.map(t => t.word).join(', ')}` : '');
@@ -2864,9 +2868,12 @@ if (prose) {
   const sign = cdSlice('function busSign(){', '\n}');
   check(!!sign && /next\.date/.test(sign) && !/venue|city|state/.test(sign),
     'the bus sign is the next show\'s date, never where it is');
-  const mount = cdSlice('function mountBackstage(){', '\n}');
-  check(/requestIdleCallback/.test(mount) && /import\('\.\/backstage\.js\?v=\d+'\)/.test(mount),
-    'the scene loads after the screen is up, on its own');
+  /* The front screen has no stage picture since 2026-11-02: the band stands in the wardrobe, painted
+     only once that section nears the screen, so the first screen is text and buttons. */
+  const mount = cdSlice('function mountWardrobe(){', '\n}');
+  check(/IntersectionObserver/.test(mount) && /import\('\.\/backstage\.js\?v=\d+'\)/.test(mount) && /createWardrobe/.test(mount),
+    'the wardrobe\'s players load when their section nears the screen, from backstage.js');
+  check(!/id="heroStage"/.test(game), 'and the front screen has no stage picture over the headline');
   check(/if \(S\.backstage\)\s*\{\s*S\.backstage\.destroy\(\)/.test(cdSlice('function setScreen(name){', '\n}')),
     'and stops when the screen changes');
 }
@@ -2936,8 +2943,8 @@ if (prose) {
   check(/tally\(rows \|\| VSTATE\.rows/.test(game2), 'and the ladder is worked out from the filed shows');
   const wk = read('setlist/world-worker.js');
   check(/bandFrames\(dress\)/.test(wk) && /seed, true, dress\)/.test(wk), 'the worker paints the band in what they wear');
-  check(/dress: S\.playedDress/.test(game2) && /createBackstage\(cv, \{[^}]*dress: bandDress\(\)/.test(game2),
-    'and the show, the crowd shot and the front screen all ask for it');
+  check(/dress: S\.playedDress/.test(game2) && /createWardrobe\(\[[^\]]*\], \{ dress: bandDress\(\)/.test(game2),
+    'and the show, the crowd shot and the wardrobe all ask for it');
 }
 
 console.log();

@@ -3,11 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Shut The Door | RunThe.GG</title>
-<!-- UNLISTED UNTIL THE OWNER PUTS IT LIVE: noindex, no ad tag, linked from
-     nowhere. shut-the-door/check-posture.mjs holds all three. -->
-<meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Shut The Door: one real save situation a day. You are the closer. Every pitch graded.">
+<title>Shut The Door: Daily MLB Closer Game | RunThe.GG</title>
+<!-- LAUNCHED 2026-11-02: indexable, in the sitemap, carrying the ad tag and
+     linked from the home page. shut-the-door/check-posture.mjs holds all four. -->
+<meta name="description" content="Shut The Door: one real save situation a day. You are the closer. Every pitch graded. Free, no download.">
+<link rel="canonical" href="https://runthe.gg/shut-the-door/">
+<meta property="og:title" content="Shut The Door: Daily MLB Closer Game">
+<meta property="og:description" content="One real save situation a day. You are the closer. Every pitch graded.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/shut-the-door/">
+<meta property="og:image" content="https://runthe.gg/shut-the-door/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Shut The Door: you are the closer. Can you shut the door?">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@RunTheGG">
+<meta name="twitter:title" content="Shut The Door: Daily MLB Closer Game">
+<meta name="twitter:description" content="One real save situation a day. You are the closer. Every pitch graded.">
+<meta name="twitter:image" content="https://runthe.gg/shut-the-door/og.png?v=1">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Shut The Door","url":"https://runthe.gg/shut-the-door/",
+"description":"A daily baseball game. Every day everyone gets the same real save situation from MLB history. You are the closer, every pitch is graded, and you finish against the real game.",
+"genre":["Sports","Strategy"],"gamePlatform":["Web browser"],"applicationCategory":"Game",
+"playMode":"SinglePlayer","inLanguage":"en","isAccessibleForFree":true,
+"image":"https://runthe.gg/shut-the-door/og.png?v=1",
+"publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"}}
+</script>
 <meta name="theme-color" content="#0b0f17" id="themeMeta">
 <script>
 /* THEME BOOT, BEFORE FIRST PAINT, as baseball/index.html does it: the key is
@@ -25,13 +47,12 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="preload" href="fonts/barlowcondensed-900italic.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
-<link rel="manifest" href="manifest.webmanifest?v=1">
-<link rel="stylesheet" href="style.css?v=35">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="manifest" href="manifest.webmanifest?v=2">
+<link rel="stylesheet" href="style.css?v=68">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -42,15 +63,56 @@
 <!-- stamp:preload:begin -->
 <link rel="preload" as="image" href="3d/assets/hero.webp?h=a8b96e3af7">
 <!-- stamp:preload:end -->
+<!-- Consent Mode defaults first (Europe denies all four until the certified CMP answers), then the AdSense tag with the H5 games ad break shim (the Survivor video break, ads.js), then the shared banner and rails. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async data-ad-frequency-hint="30s" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script>window.adsbygoogle=window.adsbygoogle||[];var adBreak=adConfig=function(o){adsbygoogle.push(o);};adConfig({preloadAdBreaks:'on',sound:'on'});</script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 </head>
 <body data-screen="s-home">
-<div class="app">
+<!-- THE LOADING SCREEN (the owner, 2026-11-02). Over the whole page from the first paint, so nothing is
+     tappable until the first screen has what it needs: today's spot, the fonts, the stadium behind the
+     home and the 3D mound. It stays unseen for 300 ms, so a fast load never flashes it, and fades.
+     The bar is real: each step fills its share as it lands (ui.js bootLoader, the stage's own marks).
+     It never hangs: past 30 s the home shows anyway, saying so, and the inline guard below offers a
+     reload if the game's script never ran. -->
+<div class="boot" id="boot" role="progressbar" aria-label="Loading Shut The Door" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+  <div class="boot-in">
+    <img class="boot-lock lk-l" src="brand/lockup-light.svg?v=2" alt="Shut The Door" width="168" height="168">
+    <img class="boot-lock lk-d" src="brand/lockup-dark.svg?v=2" alt="" width="168" height="168">
+    <div class="boot-card">
+      <p class="boot-occ" id="boot-occ">&nbsp;</p>
+      <div class="boot-bug" id="boot-bug" aria-hidden="true">
+        <span class="bt-row" id="boot-us"><i></i><b>&nbsp;</b></span>
+        <span class="bt-row" id="boot-them"><i></i><b>&nbsp;</b></span>
+      </div>
+    </div>
+    <div class="boot-bar"><i id="boot-fill"></i></div>
+    <div class="boot-lbl"><span id="boot-step">today's spot</span><b id="boot-pct">0%</b></div>
+    <p class="boot-say" id="boot-say" aria-live="polite"></p>
+  </div>
+</div>
+<script>
+/* THE GUARD: if the game's script never runs (a failed download, an old browser), the loading screen
+   says so after 45 s and offers a reload. ui.js sets STD_BOOT_RUNS as it starts. */
+setTimeout(function () {
+  if (window.STD_BOOT_RUNS) return;
+  var s = document.getElementById('boot-say'); if (!s) return;
+  s.innerHTML = 'the game did not load. <button type="button" class="boot-re" onclick="location.reload()">reload</button>';
+}, 45000);
+</script>
+<div class="app" id="app" inert>
 
 <header class="hdr">
   <a class="lockup" href="./" aria-label="Shut The Door, back to the start">
-    <img class="mark" src="brand/mark.svg?v=1" alt="" width="30" height="30">
-    <img class="wm wm-light" src="brand/wordmark-light.svg?v=1" alt="Shut The Door" width="148" height="25">
-    <img class="wm wm-dark" src="brand/wordmark-dark.svg?v=1" alt="" width="148" height="25">
+    <img class="mark" src="brand/mark.svg?v=2" alt="" width="32" height="32">
+    <img class="wm wm-light" src="brand/wordmark-light.svg?v=3" alt="Shut The Door" width="125" height="20">
+    <img class="wm wm-dark" src="brand/wordmark-dark.svg?v=3" alt="" width="125" height="20">
   </a>
   <div class="hdr-r">
     <button class="hdr-btn" id="b-theme" type="button" aria-label="Switch between light and dark" title="Light or dark">
@@ -73,37 +135,76 @@
     <img class="t-bgi" data-src="home-bg/outfield.webp" alt="" width="2048" height="1024" decoding="async">
   </div>
   <div class="t-scrim" aria-hidden="true"></div>
-  <div class="load" id="h-load"><img class="load-mark" src="brand/mark.svg?v=1" alt="" width="56" height="56"><span>warming up</span></div>
+  <div class="load" id="h-load"><img class="load-mark" src="brand/mark.svg?v=2" alt="" width="56" height="56"><span>warming up</span></div>
   <div class="title" id="h-main" hidden>
     <h1 class="t-head" id="h-head"><span class="t-l1">YOU ARE THE CLOSER.</span> <span class="t-l2">CAN YOU SHUT THE DOOR?</span></h1>
-    <div class="t-sit">
-      <p class="h-occ"><span class="h-title" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
-      <div class="hbug-wrap" id="h-sit" role="group"></div>
-      <div class="t-who" id="h-pitcher"></div>
-      <div class="t-who due" id="h-due"></div>
-      <p class="stakes" id="h-setup"></p>
-      <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
+    <!-- THE MODES (the owner, 2026-11-02): daily, survivor and archive on one switcher, so all three are on
+         screen above the fold. A tab swaps the panel below it and nothing else; the pick is kept on the device. -->
+    <div class="h-modes" id="h-modes" role="tablist" aria-label="Modes">
+      <i class="hm-pill" aria-hidden="true"></i>
+      <button class="hm-t on" id="hm-daily" type="button" role="tab" data-tab="daily" aria-selected="true" aria-controls="hp-daily">daily</button>
+      <button class="hm-t" id="h-surv" type="button" role="tab" data-tab="surv" aria-selected="false" aria-controls="hp-surv" tabindex="-1" hidden><span class="tm-k">survivor</span><span class="tm-s" hidden></span></button>
+      <button class="hm-t" id="hm-arc" type="button" role="tab" data-tab="arc" aria-selected="false" aria-controls="hp-arc" tabindex="-1">archive</button>
     </div>
-    <div class="t-menu" id="h-menu">
-      <div class="t-go" id="h-go">
-        <button class="btn take" id="b-take" type="button">take the mound</button>
-        <p class="streak" id="h-streak"></p>
+    <div class="h-panes" id="h-panes">
+      <div class="h-pane on" id="hp-daily" role="tabpanel" aria-labelledby="hm-daily">
+        <div class="t-sit">
+          <p class="h-occ"><span class="h-title" id="h-title"></span><span class="h-moment" id="h-moment" hidden></span></p>
+          <p class="h-pick" id="h-pick" hidden></p>
+          <div class="hbug-wrap" id="h-sit" role="group"></div>
+          <div class="t-who" id="h-pitcher"></div>
+          <div class="t-who due" id="h-due"></div>
+          <p class="stakes" id="h-setup"></p>
+          <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
+        </div>
+        <div class="t-go" id="h-go">
+          <button class="btn take" id="b-take" type="button">take the mound</button>
+          <p class="streak" id="h-streak"></p>
+        </div>
+        <div class="done" id="h-done" hidden></div>
+        <!-- TODAY'S TOP 3 (the owner, 2026-11-03): the board's top three by score, read only while this tab shows (board.js peek) -->
+        <div class="card bd-list hb-top" id="h-top">
+          <div class="bd-lh"><b>today's top 3</b><span class="bd-n" id="h-top-n"></span></div>
+          <div class="hb-body" id="h-top-body" aria-live="polite"></div>
+          <button class="btn ghost hb-all" id="h-top-all" type="button" data-open="board">full leaderboard</button>
+        </div>
       </div>
-      <div class="done" id="h-done" hidden></div>
+      <!-- SURVIVOR: today's run and its board. A run starts here, and a run that ends comes back here. -->
+      <div class="h-pane" id="hp-surv" role="tabpanel" aria-labelledby="h-surv" hidden>
+        <div class="bd-hero sv-hero">
+          <p class="eyebrow" id="sv-eyebrow"></p>
+          <h2 class="bd-head" id="sv-head">survivor</h2>
+          <div class="seam" aria-hidden="true"></div>
+          <div id="sv-you"></div>
+        </div>
+        <p class="quiet bd-note">most saves in a row, then points. a held tie ends a run too.</p>
+        <div class="card bd-list" id="sv-list" aria-live="polite"></div>
+      </div>
+      <!-- THE ARCHIVE (Pro, CONTRACT.md 17): the past dailies. Locked for everyone until Pro exists, with no price and no buy button. -->
+      <div class="h-pane" id="hp-arc" role="tabpanel" aria-labelledby="hm-arc" hidden>
+        <div class="card hp-arc-c"><h2 class="hp-h">past dailies</h2><div id="past-body"></div></div>
+      </div>
+    </div>
+    <!-- THE SIDE (the owner, 2026-11-03): on a desk the menu and the footer stand in a column beside the modes.
+         On a phone it is display: contents, so the page is exactly as it was. -->
+    <div class="t-side" id="h-side">
+    <div class="t-menu" id="h-menu">
       <nav class="t-list" aria-label="More">
-        <button type="button" data-open="how"><span>how to play</span></button>
-        <button type="button" data-open="101"><span>pitching 101</span></button>
-        <button type="button" data-open="board"><span>today's board</span></button>
-        <button type="button" data-open="stats"><span>stats</span></button>
-        <button type="button" data-open="settings"><span>settings</span></button>
+        <button type="button" data-open="how"><i class="mi tl-i hot" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="3"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></i><span class="tl-t"><span>how to play</span><small class="tl-s">a pitch and a spot. three outs.</small></span></button>
+        <button type="button" data-open="101"><i class="mi tl-i data" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></i><span class="tl-t"><span>pitching 101</span><small class="tl-s">the ideas the coach uses.</small></span></button>
+        <button type="button" data-open="board"><i class="mi tl-i hot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="tl-t"><span>leaderboard</span><small class="tl-s">every closer who posted today.</small></span></button>
+        <button type="button" data-open="stats"><i class="mi tl-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="tl-t"><span>stats</span><small class="tl-s">every outing, every grade.</small></span></button>
+        <button type="button" data-open="settings"><i class="mi tl-i" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="tl-t"><span>settings</span><small class="tl-s">sound, speed, meter, theme.</small></span></button>
       </nav>
     </div>
     <footer class="legal">
-      <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=1" alt="Shut The Door" width="160" height="63">
-      <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=1" alt="" width="160" height="63">
+      <img class="legal-mark wm-light" src="brand/lockup-light.svg?v=2" alt="Shut The Door" width="96" height="96">
+      <img class="legal-mark wm-dark" src="brand/lockup-dark.svg?v=2" alt="" width="96" height="96">
       <p><a href="/privacy.html" target="_blank" rel="noopener">privacy</a><span>&middot;</span><a href="/terms.html" target="_blank" rel="noopener">terms</a><span>&middot;</span><a href="/disclaimer.html" target="_blank" rel="noopener">disclaimer</a><span>&middot;</span><a href="/" target="_blank" rel="noopener">more games</a></p>
+      <p class="src about">A daily baseball game. One real save situation from MLB history, the same for everybody. You are the closer, and every pitch is graded.</p>
       <p class="src" id="h-src">Pitch data from Baseball Savant. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</p>
     </footer>
+    </div>
   </div>
   <div class="err" id="h-err" hidden></div>
 </section>
@@ -116,6 +217,7 @@
     <canvas id="m-canvas" aria-hidden="true"></canvas>
     <div class="dbg" id="m-dbg" hidden></div>
     <div class="mini" id="m-mini" hidden></div>
+    <div class="load m-load" id="m-load" aria-live="polite"><img class="load-mark" src="brand/mark.svg?v=2" alt="" width="56" height="56"><span>warming up</span></div>
   </div>
   <div class="mhud">
     <div class="mh-tl">
@@ -143,6 +245,9 @@
            (the zone's heat, the report, the guide, the key, the earlier at bats). It starts closed
            every at bat, closes on SCOUT, a tap outside or the throw, and never opens by itself. -->
       <div class="mh-card" id="m-card" data-hud>
+        <!-- WHO YOU PITCH AS (the owner, 2026-11-02: "so you always know who you're playing as"). One
+             slim line over the at bat row, in every mode: the closer and his club. -->
+        <div class="bb-pit" id="m-pit"><span class="bb-pk">pitching</span><b class="bb-pn" id="m-pname"></b><span class="bb-pt" id="m-pteam"></span></div>
         <div class="bb-row">
           <div class="bb-id">
             <span class="bb-eye"><span class="bb-ab">at bat</span><span class="bb-hand" id="m-bhand"></span><span class="bb-line" id="m-bline"></span></span>
@@ -171,6 +276,12 @@
     </div>
     <header class="mh-tr">
       <button class="mh-menu" type="button" data-open="menu" data-hud aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <button class="mh-menu mh-snd" id="m-sound" type="button" data-hud aria-label="Sound" title="Sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wav" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/><path class="mut" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg></button>
+      <!-- HOME (the owner, 2026-11-03: "a way to go home while you're playing"). In the top right stack under
+           the sound, a thumb's size, so it never sits by the zone and the stage frames the field as before.
+           A header, so a tap on it never skips the play; the play in flight finishes first, then a fresh home
+           where the outing resumes. -->
+      <button class="mh-menu mh-home" id="m-home" type="button" data-hud aria-label="Home" title="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7M6.5 9.5V19.5h4v-5h3v5h4V9.5"/></svg></button>
     </header>
     <div class="scout msheet" id="m-scout" data-hud hidden></div>
     <div class="guide msheet" id="m-guide" data-hud role="region" aria-label="Pitch guide" hidden></div>
@@ -205,6 +316,9 @@
     <p class="eyebrow" id="r-eyebrow"></p>
     <h2 class="outcome" id="r-outcome"></h2>
     <div class="seam" aria-hidden="true"></div>
+    <!-- a guest's daily (the owner, 2026-10-30): sign in to save the score to the leaderboard. A block
+         near the top of the result, on screen without a scroll at 390x844, never a popup (modes-ui.js) -->
+    <div class="r-save" id="r-save" hidden></div>
     <div class="vsbar" id="r-real"></div>
     <div class="r-kn">
       <div class="kn" id="r-kp"></div>
@@ -218,7 +332,8 @@
   </div>
   <nav class="r-nav" id="r-nav" aria-label="after the outing">
     <button class="nv" id="r-coach" type="button"><b>talk to pitching coach</b><span>your costliest pitch</span><i class="chev" aria-hidden="true"></i></button>
-    <button class="nv" id="r-board" type="button"><b>today's board</b><span>where you rank</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-vote-go" type="button" hidden><b>vote for tomorrow</b><span>pick the next spot</span><i class="chev" aria-hidden="true"></i></button>
+    <button class="nv" id="r-board" type="button"><b>leaderboard</b><span>where you rank</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-share" type="button"><b>share</b><span>the card or the text</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-again" type="button"><b>run it back</b><span>practice. not scored.</span><i class="chev" aria-hidden="true"></i></button>
     <button class="nv" id="r-home" type="button"><b>home</b><i class="chev" aria-hidden="true"></i></button>
@@ -230,6 +345,8 @@
   </div>
  </aside>
  <div class="r-main">
+  <!-- the vote for tomorrow's daily, after the daily, from the vote's first day (modes-ui.js) -->
+  <section class="r-tile r-vote" id="r-vote" aria-live="polite" hidden></section>
   <section class="r-tile r-pbp">
     <div class="r-sec-h"><h3>you vs the real game</h3><span>pitch by pitch</span><div class="legend" id="r-legend"></div></div>
     <div class="cmp" id="r-reveal"></div>
@@ -255,7 +372,7 @@
     <div class="bd-side">
       <div class="bd-hero">
         <p class="eyebrow" id="bd-eyebrow"></p>
-        <h2 class="bd-head" id="bd-head">the board</h2>
+        <h2 class="bd-head" id="bd-head">leaderboard</h2>
         <div class="seam" aria-hidden="true"></div>
         <div id="bd-you"></div>
       </div>
@@ -265,21 +382,47 @@
   </div>
 </section>
 
+<!-- BETWEEN TWO OF HIS HALVES (rules 8): his team's real half on the line score, plate appearance by
+     plate appearance, then back to the mound. A few seconds; a tap skips it (box-ui.js). -->
+<section class="screen" id="s-half" aria-live="polite" aria-label="His team bats">
+  <div class="hx-in">
+    <p class="eyebrow" id="hx-eye"></p>
+    <h2 class="hx-head" id="hx-head"></h2>
+    <div class="hx-line" id="hx-line"></div>
+    <div class="hx-sit" id="hx-sit"></div>
+    <ol class="hx-pas" id="hx-pas"></ol>
+    <p class="hx-sum" id="hx-sum"></p>
+    <p class="hx-next" id="hx-next"></p>
+    <p class="hx-skip" aria-hidden="true">tap to skip</p>
+  </div>
+</section>
+
+<!-- 8. BETWEEN TWO SURVIVOR SPOTS: the saves and the next closer. Goes on by itself; a tap goes sooner. -->
+<section class="screen" id="s-next" aria-live="polite">
+  <div class="nx-in">
+    <p class="eyebrow">survivor &middot; save made</p>
+    <h2 class="nx-saves" id="nx-saves"></h2>
+    <div class="seam" aria-hidden="true"></div>
+    <p class="nx-next" id="nx-next"></p>
+    <p class="nx-occ" id="nx-occ"></p>
+  </div>
+</section>
+
 </main>
 
 <!-- 7. THE SHEETS. Every one opens from a button. None opens by itself. -->
 <div class="sheet" id="sheet-menu" hidden aria-hidden="true" role="dialog" aria-label="Menu">
   <div class="sh-in">
     <div class="sh-h"><h2>you</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div>
+    <div class="menu-list menu-home"><button type="button" id="menu-home"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7M6.5 9.5V19.5h4v-5h3v5h4V9.5"/></svg></i><span class="mt"><b>home</b><span>your outing waits where you left it.</span></span><i class="chev" aria-hidden="true"></i></button></div>
     <div class="tiles3" id="menu-tiles"></div>
     <div class="menu-list">
       <button type="button" data-open="how"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="3"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></i><span class="mt"><b>how to play</b><span>a pitch and a spot. three outs.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="101"><i class="mi data"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></i><span class="mt"><b>pitching 101</b><span>the ideas the coach uses.</span></span><i class="chev" aria-hidden="true"></i></button>
     </div>
     <div class="menu-list">
-      <button type="button" data-open="board"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="mt"><b>today's board</b><span>every closer who posted today.</span></span><i class="chev" aria-hidden="true"></i></button>
+      <button type="button" data-open="board"><i class="mi hot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg></i><span class="mt"><b>leaderboard</b><span>every closer who posted today.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="stats"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"/></svg></i><span class="mt"><b>stats</b><span>every outing, every grade.</span></span><i class="chev" aria-hidden="true"></i></button>
-      <button type="button" data-open="past"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></i><span class="mt"><b>past dailies</b><span>every spot so far.</span></span><em class="tag">locked</em><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="settings"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></i><span class="mt"><b>settings</b><span>sound, speed, meter, theme.</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" data-open="auth"><i class="mi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></i><span class="mt"><b>account</b><span>sign in to keep your streak.</span></span><i class="chev" aria-hidden="true"></i></button>
     </div>
@@ -300,9 +443,6 @@
 <div class="sheet" id="sheet-stats" hidden aria-hidden="true" role="dialog" aria-label="Stats">
   <div class="sh-in"><div class="sh-h"><h2>stats</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="stats-body"></div></div>
 </div>
-<div class="sheet" id="sheet-past" hidden aria-hidden="true" role="dialog" aria-label="Past dailies">
-  <div class="sh-in"><div class="sh-h"><h2>past dailies</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="past-body"></div></div>
-</div>
 <div class="sheet" id="sheet-settings" hidden aria-hidden="true" role="dialog" aria-label="Settings">
   <div class="sh-in"><div class="sh-h"><h2>settings</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="set-body"></div></div>
 </div>
@@ -321,29 +461,35 @@
      takes over when the address carries a mock test switch (?mockEnd= and
      the rest, used by test/check-browser.mjs); a player always gets the real
      engine. -->
-<script src="contract.js?v=10"></script>
+<script src="contract.js?v=12"></script>
 <script src="meter.js?v=6"></script>
-<script src="meter-ui.js?v=6"></script>
+<script src="meter-ui.js?v=11"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=4"></script>
 <script src="aim.js?v=5"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
-<script src="menus.js?v=8"></script>
+<script src="menus.js?v=16"></script>
 <script src="rng.js?v=1"></script>
-<script src="grade.js?v=13"></script>
-<script src="lesson.js?v=4"></script>
-<script src="engine.js?v=14"></script>
+<script src="modes.js?v=1"></script>
+<script src="grade.js?v=17"></script>
+<script src="names.js?v=1"></script>
+<script src="lesson.js?v=7"></script>
+<script src="engine.js?v=19"></script>
+<script src="sound.js?v=2"></script>
 <script src="share.js?v=2"></script>
-<script src="card.js?v=2"></script>
+<script src="card.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="auth.js?v=3"></script>
-<script src="api.js?v=14"></script>
-<script src="mock-api.js?v=12"></script>
+<script src="auth.js?v=7"></script>
+<script src="api.js?v=26"></script>
+<script src="mock-api.js?v=13"></script>
 <script src="coach.js?v=2"></script>
-<script src="board.js?v=1"></script>
-<script src="ui.js?v=45"></script>
-<script type="module" src="3d/boot.js?v=66"></script>
+<script src="board.js?v=6"></script>
+<script src="modes-ui.js?v=6"></script>
+<script src="box-ui.js?v=2"></script>
+<script src="ads.js?v=3"></script>
+<script src="ui.js?v=66"></script>
+<script type="module" src="3d/boot.js?v=84"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>
 </html>

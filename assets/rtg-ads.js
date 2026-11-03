@@ -47,9 +47,12 @@
   var GAP = 150, RAIL_W = 160;
 
   var CSS = [
-    '.rtg-sticky{position:fixed;left:0;right:0;bottom:var(--rtg-sticky-lift,0px);z-index:35;text-align:center;pointer-events:none}',
+    /* The strip is full width and opaque (the owner, 2026-10-30: "cover the space to the left and right
+     * of the sticky ad so you can't see behind it"). It takes taps too, so nothing behind it is pressed
+     * by accident; the page is padded by its height, so nothing is lost under it. */
+    '.rtg-sticky{position:fixed;left:0;right:0;bottom:var(--rtg-sticky-lift,0px);z-index:35;text-align:center;background:#0b0f17;box-shadow:0 -4px 14px rgba(0,0,0,.25)}',
     '.rtg-sticky:not(:has(ins[data-ad-status="filled"])){height:0;overflow:hidden}',
-    '.rtg-sticky-in{display:inline-block;pointer-events:auto;background:#0b0f17;border-radius:8px 8px 0 0;padding:0 4px 4px;box-shadow:0 -4px 14px rgba(0,0,0,.25);padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}',
+    '.rtg-sticky-in{display:inline-block;padding:0 4px 4px;padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}',
     '.rtg-sticky-top{display:flex;align-items:center;justify-content:space-between;height:22px}',
     '.rtg-sticky-lbl{font:600 9px/1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8a97a8;padding-left:2px}',
     '.rtg-sticky-x{appearance:none;border:0;background:none;color:#cfd8e3;font:700 16px/1 system-ui,sans-serif;width:28px;height:22px;cursor:pointer;padding:0}',

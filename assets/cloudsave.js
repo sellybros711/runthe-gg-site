@@ -53,9 +53,11 @@
      session would spend a round trip to be told what it already knew.
      A page loads exactly one of these, so the order is arbitrary and the list is the whole
      rule: a game missing from it saves nothing, silently, because `token` answering null is
-     also what "signed out" looks like. */
+     also what "signed out" looks like.
+     RTG_AUTH is the arcade's client (/arcade/auth.js), which 4th and What's playbooks sign in
+     with. It is last so a page that loads a game's own client as well keeps using that one. */
   function token() {
-    var a = root.PS_AUTH || root.PS_CFB_AUTH || root.RTF_AUTH;
+    var a = root.PS_AUTH || root.PS_CFB_AUTH || root.RTF_AUTH || root.RTG_AUTH;
     var t = a && typeof a.token === 'function' ? a.token() : null;
     return t || null;
   }

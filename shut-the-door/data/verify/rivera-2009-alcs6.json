@@ -1,0 +1,564 @@
+{
+ "id": "rivera-2009-alcs6",
+ "plan": "rules8",
+ "resolution": "real",
+ "gamePk": 263172,
+ "date": "2009-10-25",
+ "game": "AL Championship Series Game 6: Los Angeles Angels at New York Yankees",
+ "gameType": "L",
+ "pitcher": {
+  "id": 121250,
+  "name": "Mariano Rivera",
+  "throws": "R",
+  "team": "New York Yankees",
+  "seasonLine": "1.76 ERA, 44 SV, 66.1 IP"
+ },
+ "situation": {
+  "inning": 8,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 61,
+   "batterId": 408210,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "121250": 3
+   },
+   "pitches": 3,
+   "event": "single",
+   "des": "Chone Figgins singles on a soft fly ball to left fielder Johnny Damon.",
+   "feedEvent": "single",
+   "feedDescription": "Chone Figgins singles on a soft fly ball to left fielder Johnny Damon.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Chone Figgins",
+   "batSideListed": "S",
+   "seasonLine": ".298/.395/.393, 5 HR"
+  },
+  {
+   "atBat": 62,
+   "batterId": 110029,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "121250": 4
+   },
+   "pitches": 4,
+   "event": "field_out",
+   "des": "Bobby Abreu grounds out to first baseman Mark Teixeira.   Chone Figgins to 2nd.",
+   "feedEvent": "field_out",
+   "feedDescription": "Bobby Abreu grounds out to first baseman Mark Teixeira. Chone Figgins to 2nd.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Bobby Abreu",
+   "batSideListed": "L",
+   "seasonLine": ".293/.390/.435, 15 HR"
+  },
+  {
+   "atBat": 63,
+   "batterId": 116338,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "121250": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Torii Hunter grounds out, second baseman Robinson Cano to first baseman Mark Teixeira.",
+   "feedEvent": "field_out",
+   "feedDescription": "Torii Hunter grounds out, second baseman Robinson Cano to first baseman Mark Teixeira.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Torii Hunter",
+   "batSideListed": "R",
+   "seasonLine": ".299/.366/.508, 22 HR"
+  },
+  {
+   "atBat": 64,
+   "batterId": 115223,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "121250": 8
+   },
+   "pitches": 8,
+   "event": "single",
+   "des": "Vladimir Guerrero singles on a ground ball to right fielder Nick Swisher.   Chone Figgins scores.",
+   "feedEvent": "single",
+   "feedDescription": "Vladimir Guerrero singles on a ground ball to right fielder Nick Swisher. Chone Figgins scores.",
+   "runs": 1,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Vladimir Guerrero",
+   "batSideListed": "R",
+   "seasonLine": ".295/.334/.460, 15 HR"
+  },
+  {
+   "atBat": 65,
+   "batterId": 434778,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "121250": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Kendrys Morales grounds out, second baseman Robinson Cano to first baseman Mark Teixeira.",
+   "feedEvent": "field_out",
+   "feedDescription": "Kendrys Morales grounds out, second baseman Robinson Cano to first baseman Mark Teixeira.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Kendrys Morales",
+   "batSideListed": "S",
+   "seasonLine": ".306/.355/.569, 34 HR"
+  }
+ ],
+ "realFaced": 5,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 21,
+  "runs": 1,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 435062,
+   "name": "Howie Kendrick",
+   "batSideListed": "R"
+  },
+  {
+   "id": 407487,
+   "name": "Juan Rivera",
+   "batSideListed": "R"
+  },
+  {
+   "id": 150439,
+   "name": "Gary Matthews Jr.",
+   "batSideListed": "S"
+  },
+  {
+   "id": 430947,
+   "name": "Erick Aybar",
+   "batSideListed": "S"
+  },
+  {
+   "id": 408210,
+   "name": "Chone Figgins",
+   "batSideListed": "S"
+  },
+  {
+   "id": 110029,
+   "name": "Bobby Abreu",
+   "batSideListed": "L"
+  },
+  {
+   "id": 116338,
+   "name": "Torii Hunter",
+   "batSideListed": "R"
+  },
+  {
+   "id": 435065,
+   "name": "Reggie Willits",
+   "batSideListed": "S"
+  },
+  {
+   "id": 434778,
+   "name": "Kendrys Morales",
+   "batSideListed": "S"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1015,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 943,
+     "usage": 0.9291,
+     "velo": 91.9,
+     "pfxXin": 5.2,
+     "pfxZin": 10.5
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 72,
+     "usage": 0.0709,
+     "velo": 92.5,
+     "pfxXin": -8.2,
+     "pfxZin": 6.9
+    }
+   ],
+   "dropped": {
+    "IN": 4
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2009%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=121250"
+  },
+  "postseason": {
+   "pitches": 257,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 244,
+     "usage": 0.9494,
+     "velo": 91.1,
+     "pfxXin": 6.1,
+     "pfxZin": 11.0
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 13,
+     "usage": 0.0506,
+     "velo": 92.3,
+     "pfxXin": -7.4,
+     "pfxZin": 9.0
+    }
+   ],
+   "dropped": {
+    "IN": 4
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2009%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=121250"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 263172: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=263172",
+  "MLB Stats API schedule 2009-10-25 and live feed /api/v1.1/game/263172/feed/live",
+  "MLB Stats API people with 2009 season stats",
+  "Baseball Savant 121250 2009 season search (regular season and postseason) for the arsenal"
+ ],
+ "halves": [
+  {
+   "inning": 8,
+   "half": "top",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    408210,
+    110029,
+    116338,
+    115223,
+    434778,
+    435062,
+    407487,
+    435063,
+    430947
+   ],
+   "lineupNames": [
+    "Chone Figgins",
+    "Bobby Abreu",
+    "Torii Hunter",
+    "Vladimir Guerrero",
+    "Kendrys Morales",
+    "Howie Kendrick",
+    "Juan Rivera",
+    "Mike Napoli",
+    "Erick Aybar"
+   ]
+  },
+  {
+   "inning": 9,
+   "half": "top",
+   "real": true,
+   "outs": 0,
+   "bases": 0,
+   "walkOffLive": false,
+   "lineupIds": [
+    408210,
+    110029,
+    116338,
+    435065,
+    434778,
+    435062,
+    407487,
+    150439,
+    430947
+   ],
+   "lineupNames": [
+    "Chone Figgins",
+    "Bobby Abreu",
+    "Torii Hunter",
+    "Reggie Willits",
+    "Kendrys Morales",
+    "Howie Kendrick",
+    "Juan Rivera",
+    "Gary Matthews Jr.",
+    "Erick Aybar"
+   ]
+  }
+ ],
+ "between": [
+  {
+   "inning": 8,
+   "half": "bottom",
+   "team": "New York Yankees",
+   "abbr": "NYY",
+   "runs": 2,
+   "pas": [
+    {
+     "batter": {
+      "id": 429664,
+      "name": "Robinson Canó"
+     },
+     "event": "Walk",
+     "short": "BB",
+     "des": "Robinson Cano walks.",
+     "runs": 0,
+     "outs": 0,
+     "bases": 1,
+     "runners": [
+      429664,
+      null,
+      null
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 430897,
+      "name": "Nick Swisher"
+     },
+     "event": "Sac Bunt",
+     "short": "SAC",
+     "des": "Nick Swisher hits a sacrifice bunt. Missed catch error by second baseman Howie Kendrick, assist to first baseman Kendrys Morales. Robinson Cano to 2nd. Nick Swisher to 1st.",
+     "runs": 0,
+     "outs": 0,
+     "bases": 3,
+     "runners": [
+      430897,
+      429664,
+      null
+     ],
+     "hit": false,
+     "err": 1
+    },
+    {
+     "batter": {
+      "id": 466320,
+      "name": "Melky Cabrera"
+     },
+     "event": "Sac Bunt",
+     "short": "SAC",
+     "des": "Melky Cabrera hits a sacrifice bunt. Throwing error by pitcher Scott Kazmir. Robinson Cano scores. Brett Gardner to 3rd. Melky Cabrera to 2nd.",
+     "runs": 1,
+     "outs": 0,
+     "bases": 6,
+     "runners": [
+      null,
+      466320,
+      458731
+     ],
+     "hit": false,
+     "err": 1
+    },
+    {
+     "batter": {
+      "id": 116539,
+      "name": "Derek Jeter"
+     },
+     "event": "Groundout",
+     "short": "1-3",
+     "des": "Derek Jeter grounds out, pitcher Scott Kazmir to first baseman Kendrys Morales.",
+     "runs": 0,
+     "outs": 1,
+     "bases": 6,
+     "runners": [
+      null,
+      466320,
+      458731
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 113028,
+      "name": "Johnny Damon"
+     },
+     "event": "Walk",
+     "short": "BB",
+     "des": "Johnny Damon walks.",
+     "runs": 0,
+     "outs": 1,
+     "bases": 7,
+     "runners": [
+      113028,
+      466320,
+      458731
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 407893,
+      "name": "Mark Teixeira"
+     },
+     "event": "Sac Fly",
+     "short": "SF8",
+     "des": "Mark Teixeira out on a sacrifice fly to center fielder Torii Hunter. Brett Gardner scores. Melky Cabrera to 3rd.",
+     "runs": 1,
+     "outs": 2,
+     "bases": 5,
+     "runners": [
+      113028,
+      null,
+      466320
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 121347,
+      "name": "Alex Rodriguez"
+     },
+     "event": "Walk",
+     "short": "BB",
+     "des": "Alex Rodriguez walks. Johnny Damon to 2nd.",
+     "runs": 0,
+     "outs": 2,
+     "bases": 7,
+     "runners": [
+      121347,
+      113028,
+      466320
+     ],
+     "hit": false,
+     "err": 0
+    },
+    {
+     "batter": {
+      "id": 120691,
+      "name": "Jorge Posada"
+     },
+     "event": "Strikeout",
+     "short": "K",
+     "des": "Jorge Posada called out on strikes.",
+     "runs": 0,
+     "outs": 3,
+     "bases": 7,
+     "runners": [
+      121347,
+      113028,
+      466320
+     ],
+     "hit": false,
+     "err": 0
+    }
+   ],
+   "source": "MLB Stats API live feed /api/v1.1/game/263172/feed/live, bottom 8"
+  }
+ ],
+ "line": {
+  "teams": [
+   "LAA",
+   "NYY"
+  ],
+  "innings": [
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    1,
+    0
+   ],
+   [
+    0,
+    3
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    0,
+    null
+   ]
+  ],
+  "H": [
+   7,
+   9
+  ],
+  "E": [
+   0,
+   0
+  ],
+  "source": "MLB Stats API live feed /api/v1.1/game/263172/feed/live (linescore, and the plays before his first batter)"
+ },
+ "laterPlateAppearances": [
+  {
+   "atBat": 74,
+   "batterId": 435062,
+   "name": "Howie Kendrick",
+   "event": "field_out",
+   "des": "Howie Kendrick grounds out to first baseman Mark Teixeira.",
+   "runs": 0,
+   "pitches": 3,
+   "inning": 9
+  },
+  {
+   "atBat": 75,
+   "batterId": 407487,
+   "name": "Juan Rivera",
+   "event": "field_out",
+   "des": "Juan Rivera flies out to right fielder Melky Cabrera.",
+   "runs": 0,
+   "pitches": 4,
+   "inning": 9
+  },
+  {
+   "atBat": 76,
+   "batterId": 150439,
+   "name": "Gary Matthews Jr.",
+   "event": "strikeout",
+   "des": "Gary Matthews strikes out swinging.",
+   "runs": 0,
+   "pitches": 6,
+   "inning": 9
+  }
+ ],
+ "realFull": {
+  "outcome": "door_shut",
+  "pitches": 34,
+  "runs": 1,
+  "score": {
+   "us": 5,
+   "them": 2
+  }
+ }
+}

@@ -192,7 +192,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('a tie, then three outs: tie_held', held.status === 'over' && held.outcome === 'tie_held', held.outcome);
   const heldR = E.finishOuting(held);
   check('a held tie scores the tie_held bonus',
-    heldR.score === Math.max(0, Math.round(E.SCORE_BASE - E.SCORE_PER_PT * held.grades.reduce((a, g) => a + g.lost, 0))) + E.RESULT_BONUS.tie_held,
+    heldR.score === Math.round(E.SCORE_BASE * Math.exp(-held.grades.reduce((a, g) => a + g.lost, 0) / E.SCORE_DECAY)) + E.RESULT_BONUS.tie_held,
     String(heldR.score));
   check('the held tie\'s runs are the runs that tied it', heldR.runs === 1);
   check('a held tie is HELD THE TIE', K.OUTCOME_LABEL[heldR.outcome] === 'HELD THE TIE');
@@ -650,7 +650,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   const real = JSON.parse(readFileSync(new URL('../data/packs/std-2016-ws7-chapman.json', import.meta.url), 'utf8'));
   const rm = new G.Model(real);
   check('rules 7: the normal cdf from arithmetic matches the inverse to 1e-4', [-2, -0.5, 0, 0.8, 1.7].every(z => Math.abs(K.normInv(K.normCdf(z)) - z) < 1e-4));
-  check('rules 7: a new outing plays rules 7, a rules 6 one replays as rules 6, with no steal', G.RULES === G.STEAL_RULES && E.createOuting(real, { seed: 1, model: rm }).rules === 7
+  check('rules 7: a rules 7 outing plays, a rules 6 one replays as rules 6, with no steal', G.STEAL_RULES === 7 && E.createOuting(real, { seed: 1, model: rm, rules: 7 }).rules === 7 && !!E.createOuting(real, { seed: 1, model: rm, rules: 7 }).run
     && E.replay(real, 1, [{ type: rm.types[0], cell: 12, r: 6 }], { model: rm }).run === null);
   const o0 = E.createOuting(real, { seed: 3, model: rm });
   check('rules 7: the spot starts with its real runner on first (Jose Ramirez, 2016 WS 7)', o0.run.on[1] === '608070' && o0.st.bases === 1);
@@ -695,6 +695,206 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
     }
   }
   check(`rules 7: Ramirez runs and is mostly safe, with a margin (${att} attempts, ${safe} safe in 600 outings of chase pitches)`, att > 5 && safe / att > 0.5 && safe / att < 0.98);
+}
+
+/* rules 8: the closer's outing to the end of the game (grade.js THE HALVES, engine.js 11) */
+{
+  const HR = G.KEYS.indexOf('home_run'), SW = G.KEYS.indexOf('swinging_strike');
+  // the scripted pack (a four-seam is a home run, a slider a swinging strike), made two halves: he
+  // comes in for the bottom 8th, his team bats the top 9th (runs R), then the bottom 9th. In the 9th
+  // a defensive substitute bats in the third slot (a new batter, index 9).
+  const twoHalves = (lead, R, outs = 0) => {
+    const pack = synthPack({ walkOffLive: false, lead, outs, override: (library, pitches, pitchFor) => {
+      for (const lib of library) for (const t in lib) {
+        const hr = pitchFor(t, 'home_run') * 3, sw = pitchFor(t, 'swinging_strike') * 3;
+        for (let cell = 0; cell < 25; cell++) {
+          const k = t === 'FF' ? HR : SW, ref = t === 'FF' ? hr : sw;
+          lib[t].p[cell] = [0, 1, 2, 3].map(() => G.KEYS.map((x, i) => (i === k ? 1000 : 0)));
+          lib[t].x[cell] = G.KEYS.map((x, i) => (i === k ? ref : -1));
+        }
+      }
+    } });
+    const sc = pack.scenario;
+    sc.situation.inning = 8;
+    sc.batters.push(Object.assign({}, sc.batters[2], { id: 'synth-sub', name: 'Synth Sub' }));
+    pack.library.push(pack.library[2]);
+    sc.halves = [
+      { inning: 8, half: 'bottom', outs, bases: 0, walkOffLive: false, lineup: [0, 1, 2, 3, 4, 5, 6, 7, 8], real: true },
+      { inning: 9, half: 'bottom', outs: 0, bases: 0, walkOffLive: true, lineup: [0, 1, 9, 3, 4, 5, 6, 7, 8], real: true },
+    ];
+    const pas = [{ batter: { id: 1, name: 'A' }, short: 'K', runs: 0, outs: 1, bases: 0, runners: [null, null, null], hit: false, err: 0 },
+      { batter: { id: 2, name: 'B' }, short: R ? 'HR' : '1B', runs: R ? 1 : 0, outs: 1, bases: R ? 0 : 1, runners: [R ? null : 2, null, null], hit: true, err: 0 },
+      { batter: { id: 3, name: 'C' }, short: '6-3', runs: 0, outs: 2, bases: R ? 0 : 2, runners: [null, R ? null : 2, null], hit: false, err: 0 },
+      { batter: { id: 4, name: 'D' }, short: 'F8', runs: Math.max(0, R - 1), outs: 3, bases: R ? 0 : 2, runners: [null, R ? null : 2, null], hit: false, err: 0 }];
+    sc.between = [{ inning: 9, half: 'top', team: 'Synth', abbr: 'SYN', runs: R, pas }];
+    sc.line = { teams: ['SYN', 'OPP'], innings: [[1, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [lead - 1 + 3, 3 - 0]].map((x, i) => (i < 7 ? [i === 0 ? 3 + lead : 0, i === 0 ? 3 : 0] : [0, 0])), H: [5, 4], E: [0, 0] };
+    return pack;
+  };
+  const HOMER = { type: 'FF', cell: 12 }, STRIKE = { type: 'SL', cell: 12 };
+  const strikes = n => Array.from({ length: n }, () => STRIKE);
+  const run = (pack, calls, rules) => {
+    const o = E.createOuting(pack, { seed: 1, rules });
+    for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); }
+    return o;
+  };
+
+  const p0 = twoHalves(1, 0), m0 = new G.Model(p0);
+  check('rules 8: a pack with two halves is two halves, the margins to the lead plus his team\'s runs', m0.H === 2 && m0.M === 1 && new G.Model(twoHalves(1, 2)).M === 3);
+  const t3 = m0.transitions({ h: 0, bi: 4, b: 0, s: 2, outs: 2, bases: 0, margin: 1 }, 'strike')[0][1];
+  check('rules 8: three outs in the 8th go on to the 9th: 0-0, no outs, nobody on, the next batter, the margin plus his runs',
+    !t3.end && t3.half && t3.st.h === 1 && t3.st.bi === 5 && t3.st.outs === 0 && t3.st.bases === 0 && t3.st.b === 0 && t3.st.margin === 1, JSON.stringify(t3));
+  check('rules 8: in the 9th the third slot is the substitute', m0.who({ h: 1, bi: 2 }) === 9 && m0.who({ h: 0, bi: 2 }) === 2);
+  const one = synthPack({ walkOffLive: true, lead: 1 }), m1 = new G.Model(one);
+  const two = synthPack({ walkOffLive: false, lead: 1 });
+  two.scenario.halves = [{ inning: 8, half: 'bottom', outs: 0, bases: 0, walkOffLive: false, lineup: [0, 1, 2, 3, 4, 5, 6, 7, 8] },
+    { inning: 9, half: 'bottom', outs: 0, bases: 0, walkOffLive: true, lineup: [0, 1, 2, 3, 4, 5, 6, 7, 8] }];
+  two.scenario.between = [{ inning: 9, half: 'top', runs: 0, pas: [] }];
+  const m2 = new G.Model(two), v2 = m2.solve(m2.startState()).hold, v1 = m1.solve(m1.startState()).hold;
+  check('rules 8: holding the 8th and the 9th is worth less than holding one inning', v2 < v1 - 0.05, `${v2} vs ${v1}`);
+  // the goal: a tie in the 8th is worth 0 for the lead when his team scores no more, and more than 0 when it does
+  const pR = twoHalves(1, 1), mR = new G.Model(pR);
+  const tieFrom = (m) => m.after({ h: 0, bi: 0, b: 0, s: 0, outs: 0, bases: 1, margin: 1 }, { st: { h: 0, bi: 1, b: 0, s: 0, outs: 0, bases: 0, margin: 0 }, runs: 1 });
+  check('rules 8: a tie in the 8th is a blown lead (0) with no runs of his to come', tieFrom(m0) === 0);
+  check('rules 8: and worth the chance of a lead again when his team scores in the 9th', tieFrom(mR) > 0.2 && tieFrom(mR) < 1, String(tieFrom(mR)));
+  const tbl = mR.holdTable();
+  check('rules 8: the table runs over both halves, with the other goal where one is asked',
+    tbl.halves === 2 && tbl.h.length === 2 * mR.N * 288 * (mR.M + 1) && !!tbl.alt && tbl.alt.h.filter(x => x != null).length > 0 && !m0.holdTable().alt);
+  pR.hold = tbl;
+  const mT = new G.Model(pR);
+  const probe = [mR.startState(), { h: 1, bi: 3, b: 1, s: 2, outs: 1, bases: 3, margin: 1 }, { h: 0, bi: 2, b: 0, s: 1, outs: 2, bases: 4, margin: 0 }];
+  check('rules 8: the stored table reads back what the solve gave, for each goal', probe.every(st => Math.abs(mT.solve(st).hold - mR.solve(st).hold) < 1e-6
+    && Math.abs(mT.solve(st, 1 - G.goalOf(st)).hold - mR.solve(st, 1 - G.goalOf(st)).hold) < 1e-6));
+
+  // the engine
+  const o = run(p0, strikes(9));
+  const last = o.log[o.log.length - 1];
+  check('rules 8: three outs in the 8th end the half, not the outing', o.status === 'live' && last.halfOver && last.outs === 3);
+  const ho = last.halfOver;
+  check('rules 8: the card: the 8th done, his team\'s real half, the 9th\'s leadoff', ho.done.inning === 8 && ho.between.inning === 9 && ho.between.half === 'top'
+    && ho.between.pas.length === 4 && ho.next.inning === 9 && ho.next.leadoff.index === 3 && ho.next.score.us === 4 && ho.next.score.them === 3, JSON.stringify(ho.next));
+  const st1 = E.publicState(o);
+  check('rules 8: the state is the 9th: no outs, 0-0, the walk-off live, the half done kept', st1.half.index === 1 && st1.half.inning === 9 && st1.half.walkOffLive
+    && st1.outs === 0 && st1.count.b === 0 && st1.halves.length === 1 && st1.batterIndex === 3);
+  check('rules 8: the line score: the 8th on the board, his team\'s 9th, the hits', ho.line.innings[7][1] === 0 && ho.line.innings[8][0] === 0 && ho.line.H[0] === 6);
+  const full = run(p0, strikes(18));
+  check('rules 8: three outs in the 9th with the lead: door shut, 18 pitches', full.status === 'over' && full.outcome === 'door_shut' && full.log.length === 18);
+  check('rules 8: the shut it button only in the last half', !E.publicState(run(p0, strikes(8))).shutItLive && E.publicState(run(p0, strikes(17))).shutItLive);
+  check('rules 8: a go-ahead run in the 8th ends it: door\'s open (the walk-off is the 9th\'s)', run(twoHalves(1, 0, 0), [HOMER, HOMER]).outcome === 'doors_open');
+  check('rules 8: a go-ahead run in the 9th is a walk-off', run(p0, [...strikes(9), HOMER, HOMER]).outcome === 'walk_off');
+  const tie8 = run(p0, [HOMER, ...strikes(9)]);
+  check('rules 8: tied after the 8th, no runs of his: the 9th starts tied and the tie plays on', tie8.status === 'live' && tie8.st.h === 1 && tie8.st.margin === 0
+    && run(p0, [HOMER, ...strikes(18)]).outcome === 'tie_held');
+  const back = run(twoHalves(1, 1), [HOMER, ...strikes(9)]);
+  check('rules 8: tied after the 8th, his team scores in the 9th: he pitches the 9th with the lead', back.st.h === 1 && back.st.margin === 1 && back.score.us === 5
+    && run(twoHalves(1, 1), [HOMER, ...strikes(18)]).outcome === 'door_shut');
+  const rr = E.finishOuting(run(twoHalves(1, 2), [HOMER, ...strikes(18)]));
+  check('rules 8: the runs he allowed are his halves\' (his team\'s runs are not his)', rr.runs === 1 && rr.outcome === 'door_shut');
+  // rules 7 on the same pack: the first half alone
+  const r7 = run(p0, strikes(9), 7);
+  check('rules 8: a rules 7 outing on a pack with halves is the first half alone', r7.status === 'over' && r7.outcome === 'door_shut' && r7.model.H === 1 && !r7.halves.length);
+  // determinism: the same seed and calls give the same outing, card and all
+  const a1 = run(p0, strikes(18)), a2 = run(p0, strikes(18));
+  check('rules 8: deterministic, the half switch included', JSON.stringify(a1.log) === JSON.stringify(a2.log) && JSON.stringify(a1.halves) === JSON.stringify(a2.halves));
+  check('rules 8: a rules 8 outing\'s calls carry r 8', run(p0, strikes(3), 8).calls.every(c => c.r === 8) && G.FULL_RULES === 8);
+  // the grade of the 9th's first pitch is the 9th's own state
+  // the score (rules 8): a curve with the line's slope at 0, no floor, per out asked; the line before
+  {
+    const L = 50, mk = (rules, H, outs) => ({ rules, grades: [{ lost: L }], outcome: 'door_shut', model: { H }, pack: { scenario: { situation: { outs } } } });
+    check('rules 8: the score is a curve that never reaches 0 (50 points lost: 168 + 300, not 0 + 300)', E.outingScore(mk(8, 1, 0)) === Math.round(700 * Math.exp(-50 / 35)) + 300 && E.outingScore(mk(8, 1, 0)) > 300);
+    check('rules 8: four outs asked score their points at three quarters', E.outingScore(mk(8, 2, 2)) === Math.round(700 * Math.exp(-50 * 0.75 / 35)) + 300);
+    check('rules 8: an outing before rules 8 keeps the line, floor and all', E.outingScore(mk(7, 1, 0)) === 300 && E.outingScore({ grades: [{ lost: 10 }], outcome: 'door_shut' }) === 800);
+    check('rules 8: the slope at 0 is the line\'s (one point lost: 680 either way)', E.outingScore(Object.assign(mk(8, 1, 0), { grades: [{ lost: 1 }] })) === 980 && E.outingScore(Object.assign(mk(7, 1, 0), { grades: [{ lost: 1 }] })) === 980);
+  }
+  check('rules 8: the 9th is graded from its own state (the hold table over both halves)', a1.grades[9].best > 0 && a1.before[9].h === 1 && a1.before[9].outs === 0);
+}
+
+/* rules 9 (the ABS touch, contract.js absDist): a ball touching the zone is a strike on a challenge.
+   The top edge: a ball whose centre is 1 inch over the batter's zone is 0.45 inches into it with the
+   ball's radius (an ABS strike under rules 9) and 1 inch off the bare zone (an ABS ball under 8). */
+{
+  const zf = pack.kernelZoneFt, over = 1 + 1 / (zf * 12), under = -1 / (zf * 12);
+  check('rules 9: a ball touching the top of the zone is an ABS strike, under rules 8 a ball',
+    G.TOUCH_RULES === 9 && K.absDist(0, over, zf) >= 0 && K.zoneDist(0, over, zf) < 0
+    && Math.abs(K.absDist(0, over, zf) - 0.45) < 1e-9 && K.absDist(0, under, zf) >= 0 && K.zoneDist(0, under, zf) < 0);
+  const cx = K.GRID.ZONE_HALF_FT, ct = 1 + (K.BALL_IN / 12) / zf;
+  check('rules 9: the sides are the same edge as before, the corners round, the umpire unchanged',
+    Math.abs(K.absDist(0.5, 0.5, zf) - K.zoneDist(0.5, 0.5, zf)) < 0.02 && Math.abs(K.absDist(cx, 0.5, zf) - K.zoneDist(cx, 0.5, zf)) < 0.02
+    && K.zoneDist(cx, ct, zf) < 0 && K.absDist(cx, ct, zf) < 0 && K.absDist(cx - 0.12, 1 + 0.06 / zf, zf) >= 0
+    && Math.abs(K.calledStrikeP(K.zoneDist(0, over, zf)) - K.calledStrikeP(-1)) < 1e-9);
+  // the engine: the same seed and calls under 8 and 9, the pitcher challenging every called ball he
+  // can. Only the ABS answer moves, and only where the ball touched the zone off the bare edge
+  let flips = 0, wrong = 0, other = 0;
+  for (let s = 0; s < 60; s++) {
+    const rng = R.mulberry32(R.hashSeed('touch' + s));
+    const calls = Array.from({ length: 40 }, () => ({ type: model.types[Math.floor(rng() * model.types.length)], cell: [1, 2, 3, 21, 22, 23, 12][Math.floor(rng() * 7)], q: Math.round(rng() * 100) / 100 }));
+    const outs = [8, 9].map(r => {
+      const o = E.createOuting(pack, { seed: 900 + s, model, rules: r });
+      for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); if (E.challengeLive(o) && o.abs.pitcher > 0 && o.log.length < 4) E.challengePitch(o); }
+      return o;
+    });
+    const n = Math.min(outs[0].log.length, outs[1].log.length);
+    for (let i = 0; i < n; i++) {
+      const a = outs[0].log[i], b = outs[1].log[i];
+      if (JSON.stringify(a.actual) !== JSON.stringify(b.actual) || a.drawn.id !== b.drawn.id) { other++; break; }
+      if (!a.abs) continue;
+      if (a.abs.called !== b.abs.called || a.abs.d !== b.abs.d) other++;
+      if (a.abs.strike !== b.abs.strike) {
+        const t = K.absDist(a.actual.x, a.actual.zn, zf);
+        if (!(a.abs.d < 0 && t >= 0 && b.abs.strike)) wrong++;
+        flips++;
+        break;   // the outings may part after a challenge that went the other way
+      }
+    }
+  }
+  check(`rules 9: the engine's ABS answers a ball touching the zone a strike, and nothing else moves (${flips} flips)`, flips > 0 && !wrong && !other);
+}
+
+/* rules 10 (the touch on the zone as drawn, contract.js touchDist): the owner's pitch 8, 2026-11-03
+   (Rivera to Grace, 2001 World Series game 7, 2-2): a called ball whose dot sat on the drawn zone's
+   top corner, the centre 0.24 inches past the drawn side and 0.22 over the top. The challenge stood
+   under rules 9 (absDist -0.25: the radius came off the drawn side); the drawn ball touches the drawn
+   box, so under rules 10 it is a strike. A ball clear of the box is still a ball, and the umpire's
+   call does not move. */
+{
+  const rp = JSON.parse(readFileSync(new URL('../data/packs/std-2001-ws7-rivera.json', import.meta.url), 'utf8'));
+  const zf = rp.kernelZoneFt, x8 = 0.85, z8 = 1.01;
+  check('rules 10: the owner\'s pitch 8 on the drawn corner stood as a ball under rules 9, a strike now',
+    G.RULES === 10 && G.DRAWN_RULES === 10 && K.absDist(x8, z8, zf) < 0 && K.touchDist(x8, z8, zf) >= 0 && K.zoneDist(x8, z8, zf) < 0
+    && Math.abs(K.touchDist(x8, z8, zf) - (K.zoneDist(x8, z8, zf) + K.BALL_IN)) < 1e-12);
+  // the drawn picture: the ball's centre within BALL_IN of the drawn box is touching, and only then
+  const half = K.GRID.ZONE_HALF_FT * 12, H = zf * 12;
+  let bad = 0;
+  for (let i = 0; i < 4000; i++) {
+    const xi = -16 + (i % 80) * 0.4, yi = -4 + Math.floor(i / 80) * (H + 8) / 50;   // inches, catcher's view, from the bottom
+    const ox = Math.max(0, Math.abs(xi) - half), oy = Math.max(0, -yi, yi - H);
+    const touches = Math.sqrt(ox * ox + oy * oy) <= K.BALL_IN;
+    if (touches !== (K.touchDist(xi / 12, yi / H, zf) >= 0)) bad++;
+  }
+  check('rules 10: the ABS strike is the drawn ball touching the drawn box, everywhere on the grid', !bad);
+  // the engine: the same seed and calls under 9 and 10, the pitcher challenging every called ball
+  let flips = 0, wrong = 0, other = 0;
+  for (let s = 0; s < 60; s++) {
+    const rng = R.mulberry32(R.hashSeed('drawn' + s));
+    const calls = Array.from({ length: 40 }, () => ({ type: model.types[Math.floor(rng() * model.types.length)], cell: [0, 4, 5, 9, 10, 14, 15, 19, 20, 24, 12][Math.floor(rng() * 11)], q: Math.round(rng() * 100) / 100 }));
+    const outs = [9, 10].map(r => {
+      const o = E.createOuting(pack, { seed: 700 + s, model, rules: r });
+      for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); if (E.challengeLive(o) && o.abs.pitcher > 0 && o.log.length < 4) E.challengePitch(o); }
+      return o;
+    });
+    const n = Math.min(outs[0].log.length, outs[1].log.length);
+    for (let i = 0; i < n; i++) {
+      const a = outs[0].log[i], b = outs[1].log[i];
+      if (JSON.stringify(a.actual) !== JSON.stringify(b.actual) || a.drawn.id !== b.drawn.id) { other++; break; }
+      if (!a.abs) continue;
+      if (a.abs.called !== b.abs.called || a.abs.d !== b.abs.d) other++;
+      if (a.abs.strike !== b.abs.strike) {
+        if (!(a.abs.t < 0 && b.abs.t >= 0 && b.abs.strike)) wrong++;
+        flips++;
+        break;
+      }
+    }
+  }
+  check(`rules 10: the engine's ABS answers a ball touching the drawn zone a strike, and nothing else moves (${flips} flips)`, flips > 0 && !wrong && !other);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');

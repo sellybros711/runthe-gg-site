@@ -46,31 +46,42 @@ export function shinGuard(color, len) {
   return g;
 }
 
-/** A chest protector: a padded shield, curved around the chest, its top under the chin. Front +z. */
-export function chestProtector(color, w = 0.38, h = 0.56) {
+/** A catcher's chest protector as its hinged pads, so it can lie on a torso that bends: band i of n
+    (0 the top, at the collar) is one quilted slab, wrapped round the chest, its back face at z = 0,
+    centred on y = 0 in its own frame. Each band is hung on the spine bone at its height (people.js
+    setupCatcher), so the protector folds with his trunk in the crouch instead of standing off it as
+    one board. Returns { mesh, h } (its height). */
+export function chestPad(color, w, h, n, i) {
   const mat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.55, sheen: 0.4, sheenRoughness: 0.6, sheenColor: new THREE.Color(0x333333) });
-  const shape = new THREE.Shape();
-  shape.moveTo(-w * 0.32, h * 0.5); shape.quadraticCurveTo(0, h * 0.42, w * 0.32, h * 0.5);
-  shape.lineTo(w * 0.5, h * 0.3); shape.lineTo(w * 0.46, -h * 0.4);
-  shape.quadraticCurveTo(0, -h * 0.56, -w * 0.46, -h * 0.4); shape.lineTo(-w * 0.5, h * 0.3); shape.closePath();
-  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.018, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.01, bevelSegments: 3, curveSegments: 12 });
-  // wrap it round the chest (z falls off with x) and quilt it in horizontal pads (a ripple in z)
+  const bh = h / n + 0.008;   // each pad laps a little over the one below, as hinged pads do
+  // the outline narrows toward the belly; the top band is scooped for the throat
+  const u = (i + 0.5) / n, bw = w * (0.98 - 0.16 * u * u), r = Math.min(0.03, bh * 0.45);
+  const s = new THREE.Shape(), x0 = -bw / 2, x1 = bw / 2, y0 = -bh / 2, y1 = bh / 2;
+  s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.quadraticCurveTo(x1, y0, x1, y0 + r); s.lineTo(x1, y1 - r); s.quadraticCurveTo(x1, y1, x1 - r, y1);
+  if (i === 0) { s.lineTo(w * 0.17, y1); s.quadraticCurveTo(0, y1 - bh * 0.55, -w * 0.17, y1); }
+  s.lineTo(x0 + r, y1); s.quadraticCurveTo(x0, y1, x0, y1 - r); s.lineTo(x0, y0 + r); s.quadraticCurveTo(x0, y0, x0 + r, y0);
+  const depth = 0.016;
+  const geo = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: 0.009, bevelSize: 0.008, bevelSegments: 3, curveSegments: 10, steps: 1 });
+  // wrap round the chest (z falls off with x) and puff the middle of the pad a little
   const p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i);
-    p.setZ(i, p.getZ(i) - (x * x) * 2.6 + Math.abs(Math.sin((y / h) * Math.PI * 5)) * 0.008);
+  for (let k = 0; k < p.count; k++) {
+    const x = p.getX(k), y = p.getY(k), z = p.getZ(k);
+    const front = (z + 0.009) / (depth + 0.018);
+    p.setZ(k, z + 0.009 - x * x * 2.4 + front * 0.006 * Math.cos((y / bh) * Math.PI) * Math.cos((x / bw) * Math.PI));
   }
   geo.computeVertexNormals();
   const m = new THREE.Mesh(geo, mat);
   m.castShadow = true; m.receiveShadow = true;
-  const g = new THREE.Group(); g.add(m);
-  // shoulder caps
-  for (const sx of [-1, 1]) {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), mat);
-    cap.scale.set(1, 0.55, 1.1); cap.position.set(sx * w * 0.5, h * 0.42, -0.05); cap.rotation.z = -sx * 0.5;
-    cap.castShadow = true; g.add(cap);
-  }
-  return g;
+  return { mesh: m, h: bh };
+}
+
+/** A catcher's shoulder cap, for the protector's top corners. */
+export function shoulderCap(color) {
+  const mat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.55, sheen: 0.4, sheenRoughness: 0.6, sheenColor: new THREE.Color(0x333333) });
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), mat);
+  cap.scale.set(1, 0.55, 1.1);
+  cap.castShadow = true;
+  return cap;
 }
 
 /** A catcher's mitt: a round pillow with a deep pocket and a rolled rim, wider at the top.

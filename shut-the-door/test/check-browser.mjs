@@ -50,8 +50,26 @@
  *      pitch by pitch with band and reason. On the real engine and on the
  *      mock: a pro, no pro (?mockPro=none) and no lesson (?mockLesson=none)
  *
- * Steps 1 to 10 play the real engine (no mock switch). Step 11 forces each
- * ending through mock-api.js.
+ *  17. the modes around the daily (CONTRACT.md 9, 16, 17), through the mock (and the daily tab's top 3):
+ *      sign in to save your score (a button on the result and on the board,
+ *      never opened by itself; the sign-in posts it once), the vote for
+ *      tomorrow (two candidates, one line each, the vote counts; signed out the
+ *      same button; hidden before the vote's first day), how today was picked,
+ *      Survivor (the home's row, its screen, save after save with only a count
+ *      and the next closer between spots, a blown lead ends it on the
+ *      Survivor board, one run a day and when the next opens) and the
+ *      archive (only when entitlements say Pro)
+ *
+ *  18. rules 8: a two-half daily played through the page to the third out of
+ *      the 8th; the scorebug follows the half (the 9th, nobody out, nobody on,
+ *      the score his team left), as the outing's state says. Between the two
+ *      halves his team's real half plays on the line score plate appearance
+ *      by plate appearance (every number the halfOver record's), no grade or
+ *      sheet, a few seconds or a tap, then the mound in the 9th with its
+ *      leadoff man
+ *
+ * Steps 1 to 10 play the real engine (no mock switch). Steps 11 and 17 go
+ * through mock-api.js.
  *
  * SOFTWARE GL, AND WHY THE CHECK DRAWS ONLY WHERE IT LOOKS. Headless Chromium
  * here and on CI draws WebGL with SwiftShader, on the CPU. Measured in this
@@ -98,6 +116,8 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SHOTS = process.env.SHOTS || '';
+/* STD_QUICK=1: steps 1 and 2 at both sizes, the home button, the running game (15) at both and the window sizes (16), for a local pass. CI runs it all */
+const QUICK = process.env.STD_QUICK === '1';
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
 function loadPlaywright() {
@@ -409,6 +429,9 @@ async function everyResult(page) {
    goes on by itself; later ones are skipped with a tap. The quiet rule is
    checked through each flight and after it. */
 const PITCH_MS = SHOTS ? 300000 : 60000;
+/* the home shows behind the loading screen once the first screen is ready, the 3D mound included
+   (ui.js bootLoader, at most BOOT_CAP_MS 30 s and then it lets the home show): software GL takes that long */
+const BOOT_WAIT = 120000;
 async function playOuting(page, o) {
   const CELLS = o.cells || [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
   const r = { pitches: 0, problems: [], sawMove: false, sawOut: false, pbp: [], traces: [], lastN: null };
@@ -433,8 +456,27 @@ async function playOuting(page, o) {
       ok(rb.q.h >= 38 && !rb.q.onZone && (!rb.po || (rb.po.h >= 38 && !rb.po.onZone)), '5 the running game row is thumb tall and off the zone (' + Math.round(rb.q.h) + ' px' + (rb.po ? ', pickoff live' : '') + ')');
       ok(/^slide step · beats the steal/.test(rb.quickLabel), '5 QUICK DELIVERY says what it is: "' + rb.quickLabel + '"');
       if (rb.po) {
+        /* the zone steps aside while the pickoff plays on the broadcast, and is back for the next pitch
+           (the owner, 2026-11-02: it sat over the infield through the throw) */
+        const zoneUp = () => { const a = document.getElementById('m-aim'), cs = a && getComputedStyle(a); return !!cs && cs.visibility !== 'hidden' && +cs.opacity > 0.05; };
         await page.click('#m-po');
+        const mid = await page.evaluate(({ up }) => new Promise((res) => {
+          const f = new Function('return (' + up + ')()'), seen = [];
+          /* only the looks while the stage's broadcast is on (inplay.active): before it the call is still on its way.
+             performance.now, not Date.now: step 15 runs on page.clock.setFixedTime, where Date.now never moves
+             and this loop never ended (CI's browser job stalled here at 900 s) */
+          const t0 = performance.now();
+          const tick = () => { const busy = window.STD_UI.state.busy, sc = window.STD_UI.state.scene, ip = sc && sc.real && sc.real.inplay;
+            if (busy && ip && ip.active) seen.push(f());
+            if (busy || performance.now() - t0 < 400) setTimeout(tick, 60); else res(seen); };
+          tick();
+        }), { up: zoneUp.toString() });
         await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
+        await page.waitForTimeout(250);
+        const zoneBack = await page.evaluate(zoneUp);
+        const plays3d = await page.evaluate(() => !!(window.STD_UI.state.scene && window.STD_UI.state.scene.real && window.STD_UI.state.scene.real.pickoff));
+        ok(!plays3d || (mid.length > 0 && mid.filter(Boolean).length === 0 && zoneBack),
+          '5 the zone steps aside while the pickoff plays and is back for the next pitch (up in ' + mid.filter(Boolean).length + ' of ' + mid.length + ' looks, back: ' + zoneBack + ')');
         const af = await page.evaluate(() => ({ tag: document.querySelector('#m-pbp .pbp-tag').textContent, st: window.STD_UI.state.outing }));
         ok(/^(pickoff|picked off|balk)$/.test(af.tag) && af.st.run.pickoffs.length === rb.n + 1,
           '5 a pickoff throw goes in the play by play ("' + af.tag + '") and spends a disengagement (' + rb.dis + ' left before, ' + (af.st.run.pickoff.left) + ' after)');
@@ -491,6 +533,24 @@ async function playOuting(page, o) {
       const shown = await page.waitForSelector('#m-meter:not([hidden])', { timeout: 10000 }).then(() => true, () => false);
       if (!shown) { r.problems.push('pitch ' + (r.pitches + 1) + ': the release meter did not show after throw'); break; }
       await page.waitForTimeout(200);
+      /* RE-AIM (the owner, 2026-10-30): the zone is a stop while the meter runs, so the panel's RE-AIM
+         is the way back to aiming. On the third pitch: it cancels the meter with the aim kept, the
+         zone aims again, and throw starts a fresh meter */
+      if (i === 2) {
+        const bk = await page.evaluate(() => { const b = document.querySelector('#m-meter .rm-back'); const r = b && b.getBoundingClientRect(); return { h: r ? r.height : 0, w: r ? r.width : 0 }; });
+        await page.click('#m-meter .rm-back');
+        await page.waitForSelector('#m-meter', { state: 'hidden', timeout: 5000 });
+        const af = await page.evaluate(() => ({ cell: window.STD_UI.state.cell, busy: window.STD_UI.state.busy, throwOn: !document.getElementById('m-throw').disabled, calls: (window.__calls || []).length }));
+        const other = cellNo === 12 ? 7 : 12;
+        await page.click(`#m-aim .cell[data-cell="${other}"]`);
+        const re = await page.evaluate(() => window.STD_UI.state.cell);
+        ok(bk.h >= 38 && af.cell === cellNo && !af.busy && af.throwOn && re === other,
+          '5 RE-AIM on the meter cancels it with nothing thrown (' + Math.round(bk.w) + 'x' + Math.round(bk.h) + ' px), and the zone aims again (cell ' + cellNo + ' to ' + re + ')');
+        await page.click(`#m-aim .cell[data-cell="${cellNo}"]`);
+        await page.click('#m-throw');
+        await page.waitForSelector('#m-meter:not([hidden])', { timeout: 10000 });
+        await page.waitForTimeout(200);
+      }
       /* the meter (the owner, 2026-10-22: rebuilt): one panel over the pitch buttons and the throw
          button, so the scene never moves; the effort bar only when STD_METER.EFFORT is true */
       const eff = await page.evaluate(() => window.STD_METER.EFFORT === true);
@@ -527,16 +587,42 @@ async function playOuting(page, o) {
             '5 the power column is beside the zone, off the hitter and the plate, on screen and thumb wide (' + Math.round(cl.w) + 'x' + Math.round(cl.h) + (cl.on.length ? ', over ' + cl.on.join(' and ') : '') + (cl.onZone ? ', over the zone' : '') + (cl.on.length || cl.onZone ? '; ' + cl.at : '') + ')');
         }
       }
+      /* THE CUE (the owner, 2026-10-30: "It needs to be clear you must tap the bottom bar to time your
+         pitches"): the panel itself says the tap while it waits for one, the line over it is empty.
+         For the first releases (meter-ui.js QUIET_AFTER) the cue in the panel's biggest type; after,
+         the quiet panel: "tap" in the lit step. Either way it is on the panel and on screen. */
+      const tapSays = () => page.evaluate(() => {
+        const m = document.getElementById('m-meter'), vis = (x) => !!x && x.getClientRects().length > 0 && getComputedStyle(x).visibility !== 'hidden';
+        const cue = m.querySelector('.rm-cue-t b'), lit = m.querySelector('.rm-step.on span');
+        const big = m.classList.contains('cue');
+        const el = big ? cue : lit, mr = m.getBoundingClientRect(), r = el && el.getBoundingClientRect();
+        return { say: document.getElementById('m-say').textContent, big, text: el ? el.textContent : '', sub: (m.querySelector('.rm-cue-t small') || {}).textContent || '', shown: vis(el) && r.top >= mr.top && r.bottom <= mr.bottom && r.top >= 0 && r.bottom <= innerHeight };
+      });
+      const cueOk = (c, want) => c.say === '' && c.shown && (c.big ? c.text === want && /on the zone/.test(c.sub) : c.text === 'tap');
+      /* THE ZONE IS A STOP (the owner, 2026-10-30): on the second pitch both stops are taps on the
+         strike zone, not the panel. Each must stop the meter as the panel does, and never re-aim */
+      const viaZone = i === 1;
+      const zoneTap = async () => {
+        const z = await page.evaluate((c) => { const b = document.querySelector('#m-aim .cell[data-cell="' + c + '"]').getBoundingClientRect(); return [b.left + b.width * 0.3, b.top + b.height * 0.7]; }, cellNo === 12 ? 7 : 12);
+        await page.mouse.click(z[0], z[1]);
+      };
+      const stopTap = () => (viaZone ? zoneTap() : page.click('#m-meter'));
       if (eff) {
-        const say0 = await page.textContent('#m-say');
-        if (say0 !== 'set your power') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line at the effort bar read "' + say0 + '"');
-        await page.click('#m-meter');
+        const c0 = await tapSays();
+        if (!cueOk(c0, 'tap to set power')) r.problems.push('pitch ' + (r.pitches + 1) + ': the meter at power did not say the tap on its panel (' + JSON.stringify(c0) + ')');
+        if (freeTap) ok(cueOk(c0, 'tap to set power'), '5 the meter says the tap on its own panel at power ("' + c0.text + '", "' + c0.sub + '", the line over it empty)');
+        await stopTap();
         await page.waitForTimeout(450);
+        if (viaZone) {
+          const zs = await page.evaluate(() => ({ stage: window.STD_UI.state.meter.stage(), set: document.querySelector('.rm-col').classList.contains('is-set'), cell: window.STD_UI.state.cell }));
+          ok(zs.stage === 'acc' && zs.set && zs.cell === cellNo, '5 a tap on the zone stops power as the panel does, the aim unchanged (stage ' + zs.stage + ', cell ' + zs.cell + ')');
+        }
         if (freeTap) ok(await page.evaluate(() => !document.querySelector('.rm-ring').hidden), '5 the ring comes up once power is set');
       }
-      // the step line under the meter says how to stop it (the owner, 2026-10-26: the ring)
-      const say = await page.textContent('#m-say');
-      if (say !== 'tap when it hits the circle') r.problems.push('pitch ' + (r.pitches + 1) + ': the step line under the meter read "' + say + '"');
+      // the panel says how to stop the ring (the owner, 2026-10-26: the ring; 2026-10-30: on the bar)
+      const c1 = await tapSays();
+      if (!cueOk(c1, 'tap to release')) r.problems.push('pitch ' + (r.pitches + 1) + ': the meter at the release did not say the tap on its panel (' + JSON.stringify(c1) + ')');
+      if (freeTap) ok(cueOk(c1, 'tap to release'), '5 the meter says the tap on its own panel at the release ("' + c1.text + '")');
       if (freeTap && !SHOTS) {
         /* the smooth sweep (the owner, 2026-10-26: "the meter is laggy"): while the ring runs the mound
            draws nothing (stage.js hush) and the ring moves by transform only, never its size */
@@ -548,14 +634,26 @@ async function playOuting(page, o) {
         }));
         ok(sw.draws === 0 && !sw.left && sw.moved > 1, '5 the ring closes by transform with the mound still (' + sw.draws + ' draws, ' + sw.moved + ' places in 20 frames)');
       }
-      await page.click('#m-meter');
+      const nCalls = viaZone ? await page.evaluate(() => {
+        const A = window.STD_API;
+        if (!A.__rec) { const t = A.throwPitch; window.__calls = []; A.throwPitch = function (id, call) { window.__calls.push(JSON.parse(JSON.stringify(call))); return t.apply(this, arguments); }; A.__rec = true; }
+        return window.__calls.length;
+      }) : 0;
+      await stopTap();
+      if (viaZone) {
+        await page.waitForFunction((n) => (window.__calls || []).length > n, nCalls, { timeout: 10000 }).catch(() => {});
+        const zc = await page.evaluate(() => ({ call: (window.__calls || []).slice(-1)[0] || {}, done: document.getElementById('m-meter').classList.contains('is-done') || document.getElementById('m-meter').hidden }));
+        ok(zc.done && zc.call.cell === cellNo && typeof zc.call.q === 'number' && (eff ? typeof zc.call.e === 'number' : true),
+          '5 a tap on the zone is the release: the pitch goes to the aimed cell with its q, nothing re-aimed (' + JSON.stringify(zc.call) + ')');
+      }
       if (freeTap) {
         /* the stop locks: the ring holds where it was stopped, the word goes up, and the call
            carries the cell, the free aim's at, the release q (and e with effort) */
         const n0 = await page.evaluate(() => document.querySelector('.rm-ring .rm-rmove').style.transform);
         await page.waitForTimeout(150);
         const st = await page.evaluate(() => ({ colGone: document.querySelector('.rm-col').hidden, n1: document.querySelector('.rm-ring .rm-rmove').style.transform, done: document.getElementById('m-meter').classList.contains('is-done'),
-          word: document.querySelector('#m-meter .rm-word').textContent, call: (window.__calls || []).slice(-1)[0] }));
+          word: document.querySelector('#m-meter .rm-word').textContent, rel: document.querySelector('#m-meter .rm-s-rel span').textContent, call: (window.__calls || []).slice(-1)[0] }));
+        ok(/^[a-z ]+$/.test(st.rel) && !/^q\b/.test(st.rel), '5 the release box says the release in a word, never q ("' + st.rel + '")');
         ok(st.colGone, '5 the power column goes once the release is stopped, so the pitch has the field');
         ok(st.done && !!n0 && st.n1 === n0 && st.word.length > 0, '5 the meter locks on the stop: the ring holds at ' + n0 + ' and says "' + st.word + '"');
         const c = st.call || {};
@@ -669,6 +767,9 @@ async function run(w, h, theme) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
   await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE.replace(/\/shut-the-door\/$/, '') });
   const page = await ctx.newPage();
+  /* how to play's clips load only when its sheet opens (the owner, 2026-11-02) */
+  const clipAsks = [];
+  page.on('request', (rq) => { if (/\/shut-the-door\/how\//.test(rq.url())) clipAsks.push({ url: rq.url(), how: false }); });
   await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, theme);
   await page.addInitScript(STAGE_TEST);
   const errors = [];
@@ -681,6 +782,8 @@ async function run(w, h, theme) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => {
@@ -691,7 +794,20 @@ async function run(w, h, theme) {
   /* 1 */
   at('1 home');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  /* THE LOADING SCREEN (the owner, 2026-11-02): over the page from the first paint, and nothing on
+     the home is shown or tappable under it until the first screen is ready */
+  const early = await page.evaluate(() => { const b = document.getElementById('boot'), r = b && b.getBoundingClientRect();
+    return { there: !!b, covers: !!r && r.width >= innerWidth && r.height >= innerHeight, home: !document.getElementById('h-main').hidden,
+      inert: document.getElementById('app').hasAttribute('inert'),
+      top: (() => { const e = document.elementFromPoint(innerWidth / 2, innerHeight - 60); return e ? (e.closest('#boot') ? 'boot' : e.id || e.className) : ''; })() }; });
+  ok(early.there && early.covers && early.top === 'boot', '1 the loading screen covers the page from the first paint (on top: ' + early.top + ')');
+  ok(early.home || early.inert, '1 and the page under it takes no tap and no focus (inert) until the home shows');
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+  const boot = await page.evaluate(() => { const b = document.getElementById('boot'), cs = getComputedStyle(b), st = window.STD_STAGE;
+    return { gone: b.classList.contains('boot-off') && cs.pointerEvents === 'none' && !document.getElementById('app').hasAttribute('inert'), pct: document.getElementById('boot-pct').textContent,
+      stage: !(st && st.supported()) || !!(st.current && st.current.loaded), fonts: document.fonts.status }; });
+  ok(boot.gone, '1 the loading screen steps aside when the home shows (' + boot.pct + ')');
+  ok(boot.stage || boot.pct !== '100%', '1 the bar says 100% only with the 3D mound ready (' + boot.pct + ', mound ready: ' + boot.stage + ')');
   await homeWarm(page);
   await page.waitForSelector('#b-take', { state: 'visible' });
   const home = await page.evaluate(() => {
@@ -715,7 +831,8 @@ async function run(w, h, theme) {
       stakes: (document.getElementById('h-setup') || {}).textContent || '',
       stakesShown: !!document.getElementById('h-setup') && document.getElementById('h-setup').getBoundingClientRect().height > 0,
       openSheets: [...document.querySelectorAll('.sheet')].filter((s) => !s.hidden).length,
-      robots: document.querySelector('meta[name=robots]').content,
+      robots: (document.querySelector('meta[name=robots]') || {}).content || '',
+      canonical: (document.querySelector('link[rel=canonical]') || {}).href || '',
     };
   });
   ok(home.title.length > 0, '1 home shows the occasion ("' + home.title + '")');
@@ -733,7 +850,8 @@ async function run(w, h, theme) {
     '1 the scorebug has the score (' + home.runs.join('-') + '), the inning (' + home.inn.trim() + '), the outs and the bases, as the pack has them ("' + home.aria + '")');
   ok(home.stakesShown && /door is shut/.test(home.stakes), '1 the stakes line is under it ("' + home.stakes.trim() + '")');
   ok(home.openSheets === 0, '1 no sheet or tutorial opened by itself');
-  ok(/noindex/.test(home.robots), '1 the page is noindexed');
+  /* Launched 2026-11-02 (check-posture.mjs holds the rest): indexable, with its canonical. */
+  ok(!/noindex/.test(home.robots) && home.canonical === 'https://runthe.gg/shut-the-door/', '1 the page is indexable with its canonical ("' + home.robots + '", "' + home.canonical + '")');
   await shot('home', true);
 
   /* 13: the brand. The outlined lockup in the header, the icons, the manifest */
@@ -759,19 +877,46 @@ async function run(w, h, theme) {
 
   /* 2 */
   at('2 the sheets');
+  const askedBefore = clipAsks.length;   // before any sheet has opened
   for (const [btn, id, name] of [['#b-menu', 'sheet-menu', 'menu'], ['[data-open="how"]', 'sheet-how', 'how'], ['[data-open="stats"]', 'sheet-stats', 'stats'],
-    ['@menu [data-open="past"]', 'sheet-past', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
-    /* past dailies lives in the menu only */
-    if (btn.startsWith('@menu')) { await page.click('header #b-menu'); await page.waitForSelector('#sheet-menu.on'); await page.click('#sheet-menu ' + btn.slice(6)); }
-    else await page.click('#h-main ' + btn + ', header ' + btn);
-    await page.waitForSelector('#' + id + '.on', { timeout: 3000 });
-    await page.waitForTimeout(260);
-    const filled = await page.evaluate((i) => document.querySelector('#' + i + ' .sh-in').textContent.trim().length, id);
+    ['#hm-arc', 'hp-arc', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
+    /* past dailies is the home's archive tab (the switcher, the owner 2026-11-02): a panel, not a sheet */
+    const pane = id.startsWith('hp-');
+    await page.click('#h-main ' + btn + ', header ' + btn);
+    await page.waitForSelector('#' + id + '.on' + (pane ? ':not([hidden]):not(.go)' : ''), { timeout: 3000 });
+    await page.waitForTimeout(pane ? 360 : 260);
+    const filled = await page.evaluate((i) => document.querySelector('#' + i + (i.startsWith('hp-') ? '' : ' .sh-in')).textContent.trim().length, id);
     ok(filled > 20, '2 ' + name + ' opens and has something in it');
-    await shot('sheet-' + name);
+    await shot((pane ? 'tab-' : 'sheet-') + name);
+    if (pane) { await page.click('#hm-daily'); await page.waitForSelector('#' + id, { state: 'hidden', timeout: 3000 }); continue; }
     await page.click('#' + id + ' .sh-x');
     await page.waitForSelector('#' + id, { state: 'hidden', timeout: 3000 });
   }
+  /* the switcher (the owner, 2026-11-02): every tab on screen at once, a move that lands where it began,
+     no sideways scroll, and the bottom banner where it was. Offline the ad tag fills nothing, so a
+     stand-in banner rides the bottom the way rtg-ads.js pins the real one. */
+  await page.waitForTimeout(400);
+  const sw0 = await page.evaluate(() => {
+    let ad = document.querySelector('[data-ad-zone="sticky"]');
+    if (!ad) { ad = document.createElement('div'); ad.id = 'ck-ad'; ad.style.cssText = 'position:fixed;left:50%;bottom:0;width:320px;height:50px;margin-left:-160px;pointer-events:none'; document.body.appendChild(ad); }
+    const tabs = [...document.querySelectorAll('#h-modes [role="tab"]')].filter((b) => !b.hidden).map((b) => b.getBoundingClientRect());
+    return { n: tabs.length, onScreen: tabs.every((r) => r.bottom <= innerHeight && r.top >= 0), tall: tabs.every((r) => r.height >= 38),
+      ad: JSON.stringify(ad.getBoundingClientRect()), menu: Math.round(document.getElementById('h-menu').getBoundingClientRect().top) };
+  });
+  ok(sw0.n === 3 && sw0.onScreen && sw0.tall, '2 the switcher: daily, survivor and archive all on screen, each 38 px or taller (' + sw0.n + ')');
+  const swScroll = [];
+  for (const t of ['#h-surv', '#hm-arc', '#hm-daily']) { await page.click(t); await page.waitForTimeout(140); swScroll.push(await noSideScroll(page)); await page.waitForTimeout(260); swScroll.push(await noSideScroll(page)); }
+  /* a fast double tap lands on the second tab, with only its panel showing and nothing left mid-move */
+  await page.click('#hm-arc'); await page.click('#hm-daily');
+  await page.waitForTimeout(400);
+  const sw1 = await page.evaluate(() => ({ ad: JSON.stringify((document.querySelector('[data-ad-zone="sticky"]') || document.getElementById('ck-ad')).getBoundingClientRect()),
+    menu: Math.round(document.getElementById('h-menu').getBoundingClientRect().top),
+    shown: [...document.querySelectorAll('.h-pane')].filter((p) => !p.hidden).map((p) => p.id).join(),
+    still: ![...document.querySelectorAll('.h-pane, .h-panes')].some((p) => p.style.transform || p.style.opacity || p.style.height || p.classList.contains('go') || p.classList.contains('anim')) }));
+  ok(swScroll.every(Boolean), '2 switching tabs leaves no sideways scroll, mid-move and after');
+  ok(sw1.ad === sw0.ad && sw1.menu === sw0.menu, '2 after the switch the ad and the page below settle back where they were (' + sw0.menu + ' / ' + sw1.menu + ')');
+  ok(sw1.shown === 'hp-daily' && sw1.still, '2 a fast double tap lands on daily alone, nothing left mid-move (' + sw1.shown + ')');
+  await page.evaluate(() => { const a = document.getElementById('ck-ad'); if (a) a.remove(); try { localStorage.removeItem('std_home_tab_v1'); } catch (e) {} });
   /* pitching 101: from the menu, and from inside how to play */
   await page.click('header #b-menu');
   await page.waitForSelector('#sheet-menu.on');
@@ -784,6 +929,23 @@ async function run(w, h, theme) {
   await page.click('#sheet-101 .sh-x');
   await page.click('#h-main [data-open="how"]');
   await page.waitForSelector('#sheet-how.on');
+  /* how to play says today's controls, a clip for each (the QA audit and the owner, 2026-11-02) */
+  const how = await page.evaluate(() => ({ text: document.getElementById('how-body').textContent.toLowerCase(),
+    clips: [...document.querySelectorAll('#how-body .hw-clip video')].map((v) => (v.querySelector('source') || {}).src || ''),
+    lines: [...document.querySelectorAll('#how-body .hw-clip figcaption')].map((f) => f.textContent.trim()) }));
+  const howHas = ['re-aim', 'quick delivery', 'pickoff', 'challenge', 'scout', 'ring'].filter((w) => !how.text.includes(w));
+  const howOld = ['needle', 'grid', 'batter\'s name', 'ring around'].filter((w) => how.text.includes(w));
+  ok(!howHas.length && !howOld.length, '2 how to play says today\'s controls' + (howHas.length ? ', missing: ' + howHas.join(', ') : '') + (howOld.length ? ', old: ' + howOld.join(', ') : ''));
+  const kinds = ['aim', 'release', 'reaim', 'scout', 'challenge', 'quick', 'pickoff'].filter((k) => !how.clips.some((u) => u.includes('/how/' + k + '-' + theme + '.')));
+  ok(!kinds.length && how.lines.every((l) => l.length > 0 && l.length <= 110), '2 how to play has a clip in this theme and a short line for each control (' + how.clips.length + ' clips' + (kinds.length ? ', missing: ' + kinds.join(', ') : '') + ')');
+  ok(askedBefore === 0, '2 no clip is fetched before how to play opens (' + askedBefore + ' asked)');
+  /* back closes the sheet and stays on the page (the QA audit, 2026-11-02) */
+  await page.goBack({ waitUntil: 'commit' }).catch(() => null);
+  await page.waitForTimeout(300);
+  const backed = await page.evaluate(() => ({ open: !document.getElementById('sheet-how').hidden, here: /shut-the-door/.test(location.pathname), screen: document.body.dataset.screen }));
+  ok(!backed.open && backed.here && backed.screen === 's-home', '2 back closes the sheet and stays on the game (' + JSON.stringify(backed) + ')');
+  await page.click('#h-main [data-open="how"]');
+  await page.waitForSelector('#sheet-how.on');
   await page.click('#how-body [data-open-101]');
   ok(await page.isVisible('#sheet-101'), '2 how to play links to pitching 101');
   await page.click('#sheet-101 .sh-x');
@@ -794,8 +956,32 @@ async function run(w, h, theme) {
   await page.click('#b-theme');
   const t1 = await page.evaluate(() => [document.documentElement.dataset.theme, localStorage.getItem('runthegrid_theme')]);
   ok(t1[0] !== t0 && t1[1] === t1[0], '2 the theme button flips the site theme key (' + t0 + ' to ' + t1[0] + ')');
+  const nm = await page.evaluate(() => [window.STD_UI.lastName('Bobby Witt Jr.'), window.STD_UI.lastName('Mariano Rivera'), window.STD_UI.lastName('Ken Griffey Sr.')]);
+  ok(nm.join('|') === 'Witt Jr.|Rivera|Griffey Sr.', '2 the play by play\'s names keep their suffix, never "Jr." alone (' + nm.join(', ') + ')');
   await shot('home-' + t1[0], true);
   await page.click('#b-theme');
+
+  /* the sound switch (sound.js): off in settings sets the master gain to 0, and it holds over a reload */
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
+  await page.waitForTimeout(260);
+  if (await page.isChecked('#set-sound')) await page.click('#set-sound');
+  const mute = await page.evaluate(() => ({ s: window.STD_SFX.state(), kept: JSON.parse(localStorage.getItem('std_ui_v1') || '{}').sound }));
+  ok(!mute.s.on && mute.s.gain === 0 && mute.kept === false, '2 the sound switch off silences the master gain and is kept (' + JSON.stringify(mute) + ')');
+  const p2 = await ctx.newPage();
+  await p2.route('**/*', (r) => (new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort()));
+  await p2.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await p2.waitForFunction(() => window.STD_SFX && document.getElementById('m-sound').hasAttribute('aria-pressed'), null, { timeout: 30000 });
+  await p2.mouse.click(2, 300);
+  const kept = await p2.evaluate(() => ({ s: window.STD_SFX.state(), hud: document.getElementById('m-sound').getAttribute('aria-pressed') }));
+  ok(!kept.s.on && kept.s.gain === 0 && kept.hud === 'false', '2 after a reload the sound is still off, the gain 0 after a tap (' + JSON.stringify(kept) + ')');
+  await p2.close();
+  await page.click('#set-sound');
+  const back = await page.evaluate(() => window.STD_SFX.state());
+  ok(back.on && back.started && back.gain > 0, '2 the switch back on lifts the master gain (' + JSON.stringify(back) + ')');
+  await page.click('#sheet-settings .sh-x');
+  await page.waitForSelector('#sheet-settings', { state: 'hidden', timeout: 3000 });
+  if (QUICK) { ok(errors.length === 0, '2 no page errors' + (errors.length ? ': ' + errors.join(' | ') : '')); await ctx.close(); return; }
 
   /* 3 and 4 */
   at('3 take the mound');
@@ -818,6 +1004,12 @@ async function run(w, h, theme) {
   ok(mirror.c20 > mirror.c0t, '3 row 0 is high, row 4 is low');
   ok(mirror.w >= 36 && mirror.hgt >= 36, '3 a cell is big enough to tap (' + Math.round(mirror.w) + 'x' + Math.round(mirror.hgt) + ')');
   await shot('mound');
+  /* the mound's speaker button is the same switch */
+  await page.click('#m-sound');
+  const hm = await page.evaluate(() => [window.STD_SFX.state().gain, JSON.parse(localStorage.getItem('std_ui_v1')).sound, document.getElementById('m-sound').getAttribute('aria-pressed')]);
+  await page.click('#m-sound');
+  const hm2 = await page.evaluate(() => [window.STD_SFX.state().gain, JSON.parse(localStorage.getItem('std_ui_v1')).sound]);
+  ok(hm[0] === 0 && hm[1] === false && hm[2] === 'false' && hm2[0] > 0 && hm2[1] === true, '3 the mound\'s speaker mutes the master gain and back, and keeps it (' + hm.concat(hm2).join(', ') + ')');
   /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number and
      the name, and no speed (it is revealed after the throw, the owner 2026-10-23); one throw button; the step line. A drag over the zone moves the
      crosshair with the pointer (free aim, never snapped) and picks the cell it is let go in,
@@ -892,11 +1084,15 @@ async function run(w, h, theme) {
      is play), a tap outside shuts it and the heat goes with it. */
   const painted = () => page.evaluate(() => [...document.querySelectorAll('#m-aim .aim-heat i')].filter((c) => c.style.background).length);
   const shut = await page.evaluate(() => ({ drawer: document.getElementById('m-drawer').hidden, exp: document.getElementById('m-drawer-b').getAttribute('aria-expanded'),
-    h: Math.round(document.getElementById('m-card').getBoundingClientRect().height), tap: Math.round(document.getElementById('m-drawer-b').getBoundingClientRect().height),
+    h: Math.round(document.getElementById('m-card').getBoundingClientRect().height - document.getElementById('m-pit').getBoundingClientRect().height - 5),
+    pit: { h: Math.round(document.getElementById('m-pit').getBoundingClientRect().height), on: !!document.getElementById('m-pit').offsetParent,
+      name: document.getElementById('m-pname').textContent, want: window.STD_UI.state.scn.pitcher.name }, tap: Math.round(document.getElementById('m-drawer-b').getBoundingClientRect().height),
     name: document.getElementById('m-bname').textContent, line: document.getElementById('m-bline').textContent, hand: document.getElementById('m-bhand').textContent,
     want: (() => { const S = window.STD_UI.state, b = S.scn.batters[S.outing.batterIndex]; return { name: b.name, line: b.line, bats: b.bats }; })() }));
   ok(shut.drawer && shut.exp === 'false' && (await painted()) === 0, '4 the scout drawer starts shut and the zone carries no heat');
   ok(shut.h <= 64 && shut.tap >= 38, '4 the at bat line is one slim row (' + shut.h + ' px), SCOUT thumb tall (' + shut.tap + ' px)');
+  /* WHO YOU PITCH AS (the owner, 2026-11-02): one slim line over the at bat row, the closer by name */
+  ok(shut.pit.on && shut.pit.h <= 22 && shut.pit.name && shut.pit.want.endsWith(shut.pit.name), '4 the pitching line names the closer (' + shut.pit.name + ', ' + shut.pit.h + ' px)');
   const lineNums = (t) => (String(t).match(/\d*\.?\d+/g) || []).join(' ');
   ok(shut.name === shut.want.name && shut.hand === 'bats ' + shut.want.bats && lineNums(shut.line) === lineNums(shut.want.line),
     '4 the line reads his name, his side and his numbers from the pack ("' + shut.hand + ' ' + shut.line + '")');
@@ -1076,7 +1272,7 @@ async function run(w, h, theme) {
   /* 8 */
   at('8 debug');
   await page.goto(BASE + '?debug=1', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])');
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#d-again');
   await page.waitForSelector('#s-mound.on');
@@ -1105,6 +1301,8 @@ async function ending(w, h, end, extra) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${tag}-${nextN(tag)}-${end}-${name}.png`), fullPage: !!full }); };
@@ -1145,6 +1343,7 @@ async function ending(w, h, end, extra) {
   const auth = /mockAuth/.test(extra || '');
   if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
   await revealCheck(page, '11 ' + end, k);
+  ok(await page.evaluate(() => document.getElementById('r-vote').hidden && document.getElementById('r-vote-go').hidden), '11 ' + end + ': no vote for tomorrow (and no row to it) before the vote\'s first day');
   await shot('result', true);
   /* 12 */
   await coachCheck(page, '12 ' + end, k, { lesson: !/mockLesson=none/.test(extra || ''), pro: !/mockPro=none/.test(extra || '') && !/mockLesson=none/.test(extra || '') }, shot);
@@ -1173,6 +1372,62 @@ function runnerDay() {
   }
   return null;
 }
+/* HOME ON THE MOUND (the owner, 2026-11-03): a tap on home while the pitch flies waits for the play,
+   then lands on a fresh home, and take the mound resumes the same outing at the same pitch */
+async function homeTrip(w, h) {
+  console.log(`\nhome from the mound, ${w}x${h}`);
+  step('16 home from the mound', 600);
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  await page.addInitScript(() => { try { if (!sessionStorage.getItem('ck-home')) { sessionStorage.setItem('ck-home', '1'); localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false })); } } catch (e) {} });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net' || /(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE + '?mockEnd=door_shut', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 60000 });
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 30000 });
+  await stageReady(page);
+  const hb = await page.evaluate(() => { const r = document.getElementById('m-home').getBoundingClientRect(); return [r.width, r.height]; });
+  ok(hb[0] >= 38 && hb[1] >= 38, '16 the mound\'s home button is big enough to tap (' + hb.map(Math.round).join('x') + ')');
+  await page.keyboard.press('1');
+  await page.click('#m-aim .cell[data-cell="12"]');
+  await page.click('#m-throw');
+  const flying = await page.evaluate(() => window.STD_UI.state.busy);
+  const nav = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: PITCH_MS });
+  await page.click('#m-home');
+  await nav;
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 60000 });
+  const home = await page.evaluate(() => ({ screen: document.body.dataset.screen, take: document.getElementById('b-take').textContent }));
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 30000 });
+  const back = await page.evaluate(() => ({ n: window.STD_UI.state.outing.pitchNo, pn: document.getElementById('m-pn').textContent }));
+  ok(home.screen === 's-home' && /pitch 2/.test(home.take) && back.n === 1 && back.pn === '2',
+    '16 home mid-outing' + (flying ? ' (tapped while the pitch flew)' : '') + ' lands on the home ("' + home.take + '"), and take the mound resumes at pitch ' + back.pn);
+  /* the menu's home is at the top of the sheet on the mound, and only there */
+  await page.click('.mh-menu');
+  await page.waitForSelector('#sheet-menu.on', { timeout: 3000 });
+  const mh = await page.evaluate(() => { const b = document.getElementById('menu-home'), f = document.querySelector('#sheet-menu .sh-in button:not(.sh-x)'); return { vis: !!b.offsetParent, first: f === b, h: b.getBoundingClientRect().height }; });
+  ok(mh.vis && mh.first && mh.h >= 38, '16 the mound\'s menu has home at its top (' + JSON.stringify(mh) + ')');
+  const nav2 = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: PITCH_MS });
+  await page.click('#menu-home');
+  await nav2;
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 60000 });
+  await page.waitForTimeout(300);
+  const hm = await page.evaluate(() => ({ screen: document.body.dataset.screen, take: document.getElementById('b-take').textContent }));
+  ok(hm.screen === 's-home' && /pitch 2/.test(hm.take), '16 the menu\'s home goes home too ("' + hm.take + '")');
+  ok(errors.length === 0, '16 home: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
 async function runningGame(w, h) {
   const day = runnerDay();
   console.log(`\nthe running game, ${w}x${h}, ${day}`);
@@ -1189,10 +1444,12 @@ async function runningGame(w, h) {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#b-take');
   await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
@@ -1204,6 +1461,41 @@ async function runningGame(w, h) {
   await ctx.close();
 }
 
+/* 1b. THE LOADING SCREEN NEVER HANGS (the owner, 2026-11-02). The 3D's downloads never answer and the
+   cap is cut to 3 s (window.STD_BOOT_TEST_CAP): the home still shows, the screen says why for a moment,
+   and take the mound shows the mound's warming word with no bare zone. */
+async function bootStuck(w, h) {
+  console.log(`\nthe loading screen when the 3D never comes, ${w}x${h}`);
+  step('1b the loading screen never hangs', 300);
+  const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => { window.STD_BOOT_TEST_CAP = 3000; });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return /\/3d\/assets\//.test(u.pathname) ? undefined : route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  const said = await page.waitForFunction(() => document.getElementById('boot-say').textContent, null, { timeout: 60000 }).then((x) => x.jsonValue(), () => '');
+  ok(/still loading/.test(said), '1b past the cap the loading screen says why: "' + said + '"');
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: 30000 });
+  const st = await page.evaluate(() => ({ off: document.getElementById('boot').classList.contains('boot-off'), inert: document.getElementById('app').hasAttribute('inert'),
+    pct: document.getElementById('boot-pct').textContent, loaded: !!(window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded) }));
+  ok(st.off && !st.inert && !st.loaded && st.pct !== '100%', '1b and lets the player in with the 3D still on its way (' + st.pct + ')');
+  await page.click('#b-take');
+  await page.waitForSelector('#s-mound.on');
+  await page.waitForTimeout(400);
+  const m = await page.evaluate(() => { const sc = document.getElementById('m-scene'), a = document.getElementById('m-aim');
+    return { warming: sc.classList.contains('warming'), word: (document.getElementById('m-load') || {}).textContent || '', zone: a ? getComputedStyle(a).visibility : 'none' }; });
+  ok(m.warming && /warming up/.test(m.word) && m.zone !== 'visible', '1b on the mound: the warming word and no bare zone (zone ' + m.zone + ')');
+  ok(errors.length === 0, '1b no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 /* 16. EVERY WINDOW SIZE (the owner, 2026-10-27: at half a desk's width the card covered the batter and
    the scene looked distorted). One mound, resized through phones, a tablet, square and half width
    windows and desks. At each: no HUD panel over the batter, his bat, the plate or the zone; the
@@ -1211,6 +1503,11 @@ async function runningGame(w, h) {
    corners; and the canvas's drawing buffer the shape of its box (a canvas sized for one box and drawn
    into another is stretched). */
 const SWEEP = [[390, 844], [844, 390], [768, 1024], [900, 900], [1000, 1020], [1100, 800], [1280, 720], [1440, 900], [1920, 1080]];
+/* Short narrow phones (the QA audit, 2026-11-02): the set is wider than the canvas there, and the frame
+   kept the hitter and dropped the far side, the zone with it (at 360x640 it sat at x -108 to 10), so
+   nobody could aim and THROW never lit. At these the zone and the plate must be on screen and clear of
+   the HUD, with every one of the 25 cells tappable (38 px at least); the hitter may run under a panel. */
+const SHORT = [[360, 640], [320, 568]];
 async function sizeSweep() {
   console.log('\nevery window size');
   step('16 the window sizes', 900);
@@ -1222,10 +1519,12 @@ async function sizeSweep() {
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#h-main:not([hidden])', { timeout: 15000 });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
   await homeWarm(page);
   await page.click('#b-take');
   await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
@@ -1253,14 +1552,445 @@ async function sizeSweep() {
       `16 ${w}x${h}: the batter, his bat, the plate and the zone clear and on screen, the card ${m.card} px, the canvas its box's shape` +
       (m.over.length ? ' (' + m.over.join(', ') + ')' : '') + (m.cut.length ? ' (cut: ' + m.cut.join(', ') + ')' : '') + (m.aspect >= 0.01 ? ' (stretched ' + (m.aspect * 100).toFixed(1) + '%)' : ''));
   }
+  for (const [w, h] of SHORT) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(700);
+    const m = await page.evaluate(() => {
+      const st = window.STD_STAGE.current, c = document.getElementById('m-canvas').getBoundingClientRect(), fb = st.figureBoxes(800);
+      const R = (r) => ({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+      const cells = [...document.querySelectorAll('#m-aim .cell')].map((el) => el.getBoundingClientRect());
+      const grid = cells.reduce((u, r) => ({ left: Math.min(u.left, r.left), right: Math.max(u.right, r.right), top: Math.min(u.top, r.top), bottom: Math.max(u.bottom, r.bottom) }), { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity });
+      const figs = { zone: R(document.querySelector('#m-aim .aim-zone').getBoundingClientRect()), grid, plate: { left: c.left + fb.plate.x0, right: c.left + fb.plate.x1, top: c.top + fb.plate.y0, bottom: c.top + fb.plate.y1 } };
+      const vis = (el) => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && !el.hidden; };
+      const hit = (a, b) => a.left < b.right - 2 && a.right > b.left + 2 && a.top < b.bottom - 2 && a.bottom > b.top + 2;
+      const over = [];
+      for (const el of [...document.querySelectorAll('#s-mound [data-hud]')].filter(vis).filter((el) => !el.closest('.msheet'))) {
+        const r = el.getBoundingClientRect();
+        for (const k of Object.keys(figs)) if (hit(r, figs[k])) over.push((el.id || el.className.split(' ')[0]) + ' over ' + k);
+      }
+      const cut = Object.keys(figs).filter((k) => { const f = figs[k]; return f.left < -2 || f.top < -2 || f.right > innerWidth + 2 || f.bottom > innerHeight + 2; });
+      const cell = cells.reduce((a, r) => [Math.min(a[0], r.width), Math.min(a[1], r.height)], [Infinity, Infinity]);
+      return { over, cut, n: cells.length, cell, zone: [figs.zone.left, figs.zone.right].map(Math.round) };
+    });
+    ok(m.over.length === 0 && m.cut.length === 0, `16 ${w}x${h}: the zone, all 25 cells and the plate on screen and clear of the HUD (zone x ${m.zone.join(' to ')})` +
+      (m.over.length ? ' (' + m.over.join(', ') + ')' : '') + (m.cut.length ? ' (cut: ' + m.cut.join(', ') + ')' : ''));
+    ok(m.n === 25 && m.cell[0] >= 38 && m.cell[1] >= 38, `16 ${w}x${h}: cells stay tappable (${Math.round(m.cell[0])}x${Math.round(m.cell[1])}, 38 at least)`);
+  }
+  await ctx.close();
+}
+
+/* 17. THE MODES AROUND THE DAILY (the owner, 2026-10-30), through the mock's switches. */
+async function modesPage(w, h, q, opts) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  if (opts && opts.meterOff) await page.addInitScript(() => { try { localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false, quick: true, sound: false })); } catch (e) {} });
+  if (opts && opts.theme) await page.addInitScript((t) => { try { localStorage.setItem('runthegrid_theme', t); } catch (e) {} }, opts.theme);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+  return { ctx, page, errors };
+}
+/* finish today's daily through the calls (the mound's own path is steps 5 and 11), then come back to it */
+async function dailyDone(page) {
+  await page.evaluate(async () => {
+    const A = window.STD_API, S = window.STD_UI.state;
+    let st = await A.startOuting(S.scn.id, null, { mode: 'daily' });
+    for (let i = 0; st.status === 'live' && i < 90; i++) st = (await A.throwPitch(st.outingId, { type: S.scn.pitcher.arsenal[0].type, cell: 12 })).state;
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#d-see', { timeout: 60000 });
+}
+const nothingOpen = (page) => page.evaluate(() => ![...document.querySelectorAll('.sheet')].some((s) => !s.hidden));
+const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+/* the leaderboard (the owner, 2026-10-30): its heading is LEADERBOARD, and the count of closers is
+   said once, in the list's header. Read outside the rows, where a score or a rank could match it */
+const oneCount = (page, screen) => page.evaluate((id) => {
+  const sec = document.getElementById(id), n = (sec.querySelector('.bd-n') || {}).textContent || '';
+  const num = (/^(\d+) closers? today$/.exec(n) || [])[1];
+  const copy = sec.cloneNode(true);
+  copy.querySelectorAll('.bd-rows').forEach((x) => x.remove());
+  const times = num ? (copy.textContent.match(new RegExp('(^|\\D)' + num + '(\\D|$)', 'g')) || []).length : 0;
+  return { n, times, head: (sec.querySelector('h2') || {}).textContent };
+}, screen);
+const tall = (page, sel) => page.evaluate((q) => [...document.querySelectorAll(q)].filter((b) => b.offsetParent).every((b) => b.getBoundingClientRect().height >= 38), sel);
+
+async function modes(w, h, full) {
+  const tag = w + 'x' + h;
+  console.log('\nthe modes around the daily, ' + tag);
+  const shotM = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-modes-${name}.png`) }); };
+
+  /* sign in to save your score, and the vote signed out */
+  step(tag + ' 17 the save', 300);
+  let { ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=late&mockVote=open');
+  await dailyDone(page);
+  ok(await nothingOpen(page), '17 nothing opens by itself on the home after the daily');
+  await page.click('#d-see');
+  await page.waitForSelector('#s-result.on #r-save:not([hidden])', { timeout: 30000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const sv = await page.evaluate(() => { const s = document.getElementById('r-save'), b = s.querySelector('[data-save]'), r = s.getBoundingClientRect();
+    return { b: b.textContent, h: b.getBoundingClientRect().height, t: s.querySelector('p').textContent, bottom: r.bottom, top: r.top, nav: document.getElementById('r-nav').getBoundingClientRect().top, vh: innerHeight }; });
+  ok(sv.b === 'sign in to save your score' && sv.h >= 38 && /guest/.test(sv.t) && /leaderboard/.test(sv.t), '17 a guest\'s result says it plainly: "' + sv.t + '", with the button "' + sv.b + '" (' + Math.round(sv.h) + ' px)');
+  ok(sv.top >= 0 && sv.bottom <= sv.vh && sv.bottom <= sv.nav, '17 the guest\'s block is on screen without a scroll and above the menu (' + Math.round(sv.top) + '-' + Math.round(sv.bottom) + ' of ' + sv.vh + ' px, the menu at ' + Math.round(sv.nav) + ')');
+  ok(await nothingOpen(page), '17 the save is a button on the result, no sheet opened');
+  await page.waitForSelector('#r-vote:not([hidden]) .vt-o', { timeout: 30000 });
+  const gv = await page.evaluate(() => ({ n: document.querySelectorAll('#r-vote .vt-o').length, dis: [...document.querySelectorAll('#r-vote .vt-o')].every((b) => b.disabled), btn: (document.querySelector('#r-vote [data-save]') || {}).textContent }));
+  ok(gv.n === 2 && gv.dis && gv.btn === 'sign in to save your score', '17 signed out, the vote shows the two and the same sign-in button (' + gv.btn + ')');
+  ok(await noSideScroll(page), '17 the result has no sideways scroll');
+  await shotM(page, 'result-save');
+  await page.click('#r-board');
+  await page.waitForSelector('#bd-list .bd-rows', { timeout: 30000 });
+  const bd = await page.evaluate(() => ({ t: document.getElementById('bd-you').textContent, b: (document.getElementById('bd-signin') || {}).textContent }));
+  ok(/as a guest/.test(bd.t) && /leaderboard/.test(bd.t) && bd.b === 'sign in to save your score', '17 the leaderboard says why a guest is not on it, with the same button');
+  const c1 = await oneCount(page, 's-board');
+  ok(c1.head === 'leaderboard' && c1.times === 1, '17 the guest\'s leaderboard: heading "' + c1.head + '", the count once ("' + c1.n + '", ' + c1.times + ' time)');
+  await shotM(page, 'board-signed-out');
+  await page.click('#bd-signin');
+  await page.waitForSelector('#sheet-auth.on #au-form');
+  await page.fill('#au-email', 'mock@example.com');
+  await page.fill('#au-pass', 'mockpass');
+  await page.click('#au-form button[type=submit]');
+  await page.waitForSelector('#bd-you .bd-rank', { timeout: 30000 });
+  ok(true, '17 signing in posts the daily once: the leaderboard shows your rank');
+  const c2 = await oneCount(page, 's-board');
+  ok(c2.head === 'leaderboard' && c2.times === 1, '17 signed in, the leaderboard: heading "' + c2.head + '", the count once ("' + c2.n + '", ' + c2.times + ' time)');
+  await page.click('#bd-back');
+  await page.waitForSelector('#s-result.on #r-save.saved', { timeout: 30000 });
+  const sd = await page.evaluate(() => ({ s: document.getElementById('r-save').textContent, st: document.getElementById('r-streak').textContent, posted: window.STD_API.pending() }));
+  ok(/^saved\./.test(sd.s) && /#\d+ of \d+ today/.test(sd.st) && sd.posted === null, '17 the result says it is saved (' + sd.s + ', streak line "' + sd.st + '") and nothing is pending (' + JSON.stringify(sd.posted) + ')');
+  await shotM(page, 'result-saved');
+  ok(errors.length === 0, '17 the save: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* the vote, signed in */
+  step(tag + ' 17 the vote', 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut&mockAuth=1&mockVote=open'));
+  await dailyDone(page);
+  await page.click('#d-see');
+  await page.waitForSelector('#r-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });
+  ok(await page.evaluate(() => document.getElementById('r-save').hidden), '17 signed in, no save button');
+  const vt = await page.evaluate(() => [...document.querySelectorAll('#r-vote .vt-o')].map((b) => ({ name: b.querySelector('.vt-t b').textContent, meta: b.querySelector('.vt-t span').textContent, h: b.getBoundingClientRect().height })));
+  ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(top|bot) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
+  /* the menu's row to the vote (the owner, 2026-10-30): only while it is open; it scrolls, nothing opens */
+  const vrow = await page.evaluate(() => { const b = document.getElementById('r-vote-go'); return { on: !b.hidden, t: b.textContent, h: b.getBoundingClientRect().height }; });
+  ok(vrow.on && /vote for tomorrow/.test(vrow.t) && vrow.h >= 38, '17 the result\'s menu has a row to the vote while it is open: "' + vrow.t + '"');
+  await page.click('#r-vote-go');
+  await page.waitForFunction(() => { const r = document.getElementById('r-vote').getBoundingClientRect(); return r.top >= -2 && r.top < 80; }, null, { timeout: 30000 });
+  ok(await nothingOpen(page) && await page.evaluate(() => document.activeElement && document.activeElement.closest('#r-vote') !== null),
+    '17 the row jumps to the vote tile and hands it the focus, no sheet opened');
+  await shotM(page, 'vote');
+  await page.click('#r-vote .vt-o >> nth=0');
+  await page.waitForSelector('#r-vote .vt-say.ok', { timeout: 30000 });
+  const vd = await page.evaluate(() => ({ on: document.querySelectorAll('#r-vote .vt-o.on').length, n: document.querySelectorAll('#r-vote .vt-n').length, say: document.querySelector('#r-vote .vt-say').textContent }));
+  ok(vd.on === 1 && vd.n === 2 && /it counts/.test(vd.say), '17 a vote is cast once, marked, and the count shows: "' + vd.say + '"');
+  await shotM(page, 'vote-cast');
+  ok(errors.length === 0, '17 the vote: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* how today was picked, and the archive */
+  step(tag + ' 17 the pick and the archive', 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockVote=locked&mockEnt=pro'));
+  await page.waitForSelector('#h-pick:not([hidden])', { timeout: 30000 });
+  const pk = await page.textContent('#h-pick');
+  ok(/^picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
+  await page.click('#hm-arc');
+  await page.waitForSelector('#hp-arc.on:not([hidden])');
+  const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);
+  ok(arc > 0, '17 Pro: the past dailies are a list to play (' + arc + ' days)');
+  await page.click('#past-body .arc-list button >> nth=0', { timeout: 120000 });
+  await page.waitForFunction(() => window.STD_UI.state.mode === 'archive' && document.body.dataset.screen === 's-mound', null, { timeout: 120000 });
+  ok(true, '17 Pro: a past day opens on the mound, as the archive');
+  ok(errors.length === 0, '17 the pick and the archive: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut'));
+  await page.click('#hm-arc');
+  await page.waitForSelector('#hp-arc.on:not([hidden])');
+  const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
+  ok(!lk.list && /open later/.test(lk.t) && !/\$|price|buy|pro\b/i.test(lk.t), '17 free: the past dailies stay locked, no price and no buy button');
+  ok(lk.pick, '17 before the vote, the home says nothing about it');
+  await ctx.close();
+
+  /* today's top 3 on the daily tab (the owner, 2026-11-03): the board's top three by score, and its button to the
+     full board. Empty is one quiet line, never an error, and the box keeps its height either way. */
+  step(tag + ' 17 the top 3', 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockBoard=full'));
+  await page.waitForSelector('#hp-daily:not([hidden]) #h-top .hb-rows', { timeout: 30000 });
+  const top = await page.evaluate(() => window.STD_AUTH.board(null, 3).then((all) => ({
+    rows: [...document.querySelectorAll('#h-top .hb-rows li')].map((li) => li.querySelector('.rk').textContent + ' ' + li.querySelector('.nm').textContent + ' ' + li.querySelector('.sc').textContent),
+    want: all.filter((r) => r.rank <= 3).map((r) => r.rank + ' ' + r.username + ' ' + r.score), h: document.getElementById('h-top-body').offsetHeight,
+    btn: document.getElementById('h-top-all').getBoundingClientRect().height })));
+  ok(top.rows.length === 3 && top.rows.join('|') === top.want.join('|') && top.btn >= 38, '17 the daily tab shows today\'s top 3 by score, as the board has them (' + top.rows.join(', ') + ')');
+  ok(await noSideScroll(page), '17 the top 3 leaves no sideways scroll');
+  await shotM(page, 'daily-top3');
+  await page.click('#h-top-all');
+  await page.waitForSelector('#s-board.on #bd-list .bd-rows', { timeout: 30000 });
+  ok(await nothingOpen(page), '17 full leaderboard opens the day\'s board, and no sheet');
+  await ctx.close();
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockBoard=empty'));
+  await page.waitForSelector('#h-top .hb-say', { timeout: 30000 });
+  await page.waitForFunction(() => !/loading/.test(document.getElementById('h-top-body').textContent), null, { timeout: 30000 });
+  const none = await page.evaluate(() => ({ t: document.getElementById('h-top-body').textContent, h: document.getElementById('h-top-body').offsetHeight }));
+  ok(/nobody/.test(none.t) && none.h === top.h, '17 no rows yet: one quiet line in a box of the same height ("' + none.t + '", ' + none.h + ' px)');
+  ok(errors.length === 0, '17 the top 3: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+
+  /* Survivor */
+  step(tag + ' 17 survivor', full ? 1500 : 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockSurv=2', { meterOff: true }));
+  await page.waitForSelector('#h-surv:not([hidden]) .tm-s:not(:empty)', { state: 'attached', timeout: 30000 });
+  const row = await page.evaluate(() => ({ t: document.getElementById('h-surv').textContent, h: document.getElementById('h-surv').getBoundingClientRect().height }));
+  ok(/survivor/.test(row.t) && row.h >= 38, '17 Survivor is on the home menu beside the daily: "' + row.t + '"');
+  ok(await nothingOpen(page), '17 nothing opens by itself on the home');
+  await page.click('#h-surv');
+  await page.waitForSelector('#hp-surv.on:not([hidden]) #sv-go');
+  await page.waitForSelector('#sv-list .bd-rows', { timeout: 30000 });
+  ok(await page.textContent('#sv-go') === 'start the run' && await tall(page, '#hp-surv button'), '17 the Survivor screen: a start button and the Survivor leaderboard');
+  const c3 = await oneCount(page, 'hp-surv');
+  ok(c3.times === 1, '17 the Survivor leaderboard says its count once ("' + c3.n + '", ' + c3.times + ' time)');
+  ok(await noSideScroll(page), '17 the Survivor screen has no sideways scroll');
+  await shotM(page, 'survivor-start');
+  if (full) {
+    await homeWarm(page);
+    await page.click('#sv-go');
+    await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 120000 });
+    await stageReady(page);
+    const betweens = [], problems = [];
+    let pitches = 0;
+    for (let i = 0; i < 160; i++) {
+      const scr = await page.evaluate(() => document.body.dataset.screen);
+      if (scr === 's-home') break;
+      if (scr === 's-next') {
+        const nx = await page.evaluate(() => ({ s: document.getElementById('nx-saves').textContent, n: document.getElementById('nx-next').textContent,
+          graded: !!document.querySelector('#s-next .sq, #s-next .oc') || /\b(green|yellow|orange|red|best call|pts)\b/i.test(document.getElementById('s-next').innerText),
+          sheet: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden) }));
+        betweens.push(nx);
+        if (betweens.length === 1) await shotM(page, 'survivor-between');
+        await page.waitForSelector('#s-mound.on', { timeout: 60000 });
+        await stageReady(page);
+        continue;
+      }
+      if (scr !== 's-mound' || await page.evaluate(() => window.STD_UI.state.busy)) { await page.waitForTimeout(120); continue; }
+      await page.click('#m-arsenal .pitch >> nth=0');
+      await page.click('#m-aim .cell[data-cell="12"]');
+      await page.click('#m-throw');
+      pitches++;
+      await page.waitForFunction(() => !window.STD_UI.state.busy || document.body.dataset.screen !== 's-mound', null, { timeout: PITCH_MS });
+      const q = await quietProblems(page);
+      problems.push(...q.out);
+    }
+    ok(problems.length === 0, '17 Survivor: nothing graded or over the field during ' + pitches + ' pitches' + (problems.length ? ': ' + problems.slice(0, 3).join(' | ') : ''));
+    ok(betweens.length === 2 && betweens.every((b, i) => b.s === 'saves: ' + (i + 1) && /^next: .+, \d{4}$/.test(b.n) && !b.graded && !b.sheet),
+      '17 each save goes straight on: ' + betweens.map((b) => '"' + b.s + '. ' + b.n + '"').join(', ') + ', no grade and no popup');
+    await page.waitForSelector('#s-home.on #hp-surv.on:not([hidden]) #sv-list .bd-rows', { timeout: 15000 });
+    const end = await page.evaluate(() => ({ saves: (document.querySelector('#sv-you .bd-rank b') || {}).textContent, go: !!document.getElementById('sv-go'),
+      next: (document.querySelector('#sv-you .sv-next') || {}).textContent, chips: [...document.querySelectorAll('#sv-you .sv-run .oc')].map((c) => c.textContent) }));
+    ok(end.saves === '2' && !end.go && /next one opens in (\d+h )?\d+m\./.test(end.next || '') && end.chips.join(',') === 'door shut,door shut,walk-off',
+      '17 the walk-off ends the run on the Survivor board: ' + end.saves + ' saves, "' + end.next + '"');
+    await shotM(page, 'survivor-over');
+    await page.click('#hm-daily');
+    await page.waitForFunction(() => /2 saves today · next run in/.test(document.querySelector('#h-surv .tm-s').textContent), null, { timeout: 30000 });
+    ok(true, '17 the home row says the run is used and when the next opens');
+    const again = await page.evaluate(() => window.STD_API.survivorStart().then(() => 'started', (e) => e.message));
+    ok(again === 'one run a day', '17 one run a day: a second start is refused (' + again + ')');
+    const ent = await page.evaluate(() => window.STD_API.entitlements());
+    ok(ent.pro === false && ent.survivorRuns === 1, '17 the Pro hook is there and off: survivorRuns ' + ent.survivorRuns);
+  }
+  ok(errors.length === 0, '17 Survivor: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* 18. RULES 8, THE SWITCH (CONTRACT.md 5j). Rivera 2009 (the Yankees' 8th: 2 runs) on a day after
+   rules 8 starts. From the vote's first day the page plays the day the vote locked, kept on the device
+   (std_picks_v1), so the check keeps Rivera's lock there, as a device that has heard the server would.
+   The calls to the third out of the 8th are found here with the real engine on the day's seed (each
+   pitch the one that does best for the out), then played through the page with the meter off and the
+   aim exact (a cell, then the arrow keys, which aim at its centre), so the same pitches meet the same
+   luck on the page. */
+const HALF_DAY = '2026-11-24', HALF_PACK = 'std-2009-alcs6-rivera';
+function callsToHalf() {
+  const E = require(path.join(ROOT, 'shut-the-door/engine.js')), G = require(path.join(ROOT, 'shut-the-door/grade.js'));
+  const pack = JSON.parse(fs.readFileSync(path.join(ROOT, 'shut-the-door/data/packs', HALF_PACK + '.json'), 'utf8'));
+  const model = new G.Model(pack), seed = E.seedFor('daily', HALF_DAY);
+  const play = (calls) => { const o = E.createOuting(pack, { seed, mode: 'daily', model, outingId: 'check' }); for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); } return E.publicState(o); };
+  const types = pack.scenario.pitcher.arsenal.map((a) => a.type), calls = [];
+  for (let k = 0; k < 40; k++) {
+    const s0 = play(calls);
+    if (s0.status !== 'live' || s0.halves.length) break;
+    let best = null;
+    for (const type of types) for (let cell = 0; cell < 25; cell++) {
+      const c = { type, cell, at: [0, 0] }, st = play(calls.concat([c]));
+      const sc = (st.halves.length ? 1e6 : 0) - (st.score.them - s0.score.them) * 1e4 - (st.status === 'over' ? 1e5 : 0) + (st.outs - s0.outs) * 100 + st.count.s * 10 - st.count.b * 5 - (st.bases ? 20 : 0);
+      if (!best || sc > best.sc) best = { sc, c };
+    }
+    calls.push(best.c);
+  }
+  const end = play(calls);
+  return { calls, ho: end.halves[0] || null, pack };
+}
+/* open the two-half day on the page and play the calls; the last one's state is left to the caller */
+async function halfPage(w, h) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  await page.clock.setFixedTime(new Date(HALF_DAY + 'T16:00:00Z'));
+  await page.addInitScript(STAGE_TEST);
+  await page.addInitScript(([day, id]) => { try {
+    localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false, sound: false }));
+    localStorage.setItem('std_picks_v1', JSON.stringify({ v: 1, days: { [day]: id } }));
+  } catch (e) {} }, [HALF_DAY, HALF_PACK]);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
+    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#h-main:not([hidden])', { timeout: BOOT_WAIT });
+  ok(await page.evaluate((id) => window.STD_UI.state.scn.id === id, HALF_PACK), '18 the day plays ' + HALF_PACK + ', two halves');
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 120000 });
+  await stageReady(page);
+  return { ctx, page, errors };
+}
+async function aimAndThrow(page, types, c) {
+  await page.keyboard.press(String(types.indexOf(c.type) + 1));
+  await page.click(`#m-aim .cell[data-cell="${c.cell}"]`);
+  const row = Math.floor(c.cell / 5);
+  await page.keyboard.press(row < 4 ? 'ArrowDown' : 'ArrowUp');
+  await page.keyboard.press(row < 4 ? 'ArrowUp' : 'ArrowDown');
+  await page.click('#m-throw');
+}
+/* the scorebug against the outing's state: the inning of the half being pitched, outs, bases, score, count */
+const bugReads = (page) => page.evaluate(() => {
+  const st = window.STD_UI.state.outing, hf = st.half || {};
+  const inn = document.getElementById('m-inn').textContent.replace(/tied/, '').trim();
+  const outs = document.querySelectorAll('#m-outs i.on').length;
+  const bases = ['b1', 'b2', 'b3'].reduce((a, k, i) => a | (document.querySelector('#m-bases .' + k).classList.contains('on') ? 1 << i : 0), 0);
+  const cnt = document.getElementById('m-count').getAttribute('aria-label');
+  return { inn, want: (hf.half === 'bottom' ? 'bot' : 'top') + ' ' + hf.inning, outs, wantOuts: st.outs, bases, wantBases: st.bases,
+    us: document.getElementById('m-us').textContent, them: document.getElementById('m-them').textContent, score: st.score, cnt, wantCnt: st.count.b + ' balls, ' + st.count.s + ' strikes' };
+});
+const bugOk = (b) => b.inn === b.want && b.outs === b.wantOuts && b.bases === b.wantBases && +b.us === b.score.us && +b.them === b.score.them && b.cnt === b.wantCnt;
+async function halfSwitch(w, h) {
+  const tag = w + 'x' + h;
+  console.log('\nrules 8, the switch, ' + tag);
+  step(tag + ' 18 the switch', 900);
+  const plan = callsToHalf();
+  ok(!!plan.ho, '18 the engine finds the third out of the 8th in ' + plan.calls.length + ' pitches');
+  if (!plan.ho) return;
+  const { ctx, page, errors } = await halfPage(w, h);
+  const types = await page.evaluate(() => window.STD_UI.state.scn.pitcher.arsenal.map((a) => a.type));
+  const b8 = await bugReads(page);
+  ok(bugOk(b8) && /8/.test(b8.inn), '18 before the switch the scorebug reads the 8th: "' + b8.inn + '"');
+  for (const c of plan.calls) {
+    await aimAndThrow(page, types, c);
+    await page.waitForFunction(() => !window.STD_UI.state.busy && document.body.dataset.screen === 's-mound', null, { timeout: PITCH_MS });
+  }
+  const b9 = await bugReads(page);
+  ok(bugOk(b9) && b9.want === (plan.ho.next.half === 'bottom' ? 'bot' : 'top') + ' ' + plan.ho.next.inning && b9.outs === 0 && b9.bases === 0 && +b9.us === plan.ho.next.score.us,
+    '18 after the switch the scorebug follows the half: "' + b9.inn + '", ' + b9.outs + ' out, bases ' + b9.bases + ', ' + b9.us + '-' + b9.them + ', ' + b9.cnt);
+  ok(errors.length === 0, '18 the switch: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
+/* 18, THE CARD BETWEEN HIS HALVES (the owner 2026-10-30): "finish the eighth inning, and then it should
+   show a quick little animated game simulation of the box score of what's happening when your team is
+   hitting, and then it'll put you back into the ninth inning". The same day and calls as the switch;
+   at 390 the card plays out by itself, at 1440 a tap skips it. */
+async function halves(w, h, skip) {
+  const tag = w + 'x' + h;
+  console.log('\nbetween two halves, ' + tag);
+  step(tag + ' 18 between two halves', 900);
+  const plan = callsToHalf();
+  ok(!!plan.ho && plan.ho.between.pas.length > 0, '18 the engine finds the third out of the 8th in ' + plan.calls.length + ' pitches, with ' + (plan.ho ? plan.ho.between.pas.length : 0) + ' plate appearances between');
+  if (!plan.ho) return;
+  const { ctx, page, errors } = await halfPage(w, h);
+  const types = await page.evaluate(() => window.STD_UI.state.scn.pitcher.arsenal.map((a) => a.type));
+  let card = null;
+  for (let i = 0; i < plan.calls.length; i++) {
+    await aimAndThrow(page, types, plan.calls[i]);
+    if (i < plan.calls.length - 1) { await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: PITCH_MS }); continue; }
+    /* the third out: the card comes up once the play is seen, and only then */
+    await page.waitForSelector('#s-half.on', { timeout: PITCH_MS });
+    const t0 = Date.now();
+    const first = await page.evaluate(() => ({ eye: document.getElementById('hx-eye').textContent, head: document.getElementById('hx-head').textContent,
+      sheet: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden) }));
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-half-card.png`) });
+    if (skip) {
+      await page.waitForTimeout(900);
+      await page.mouse.click(w / 2, h / 2);
+      await page.waitForSelector('#s-mound.on', { timeout: 5000 });
+      card = { first, ms: Date.now() - t0, skipped: true };
+    } else {
+      await page.waitForSelector('#s-half.hx-end', { timeout: 15000 });
+      const end = await page.evaluate(() => {
+        const sec = document.getElementById('s-half');
+        return { rows: [...document.querySelectorAll('#hx-pas li')].map((li) => li.textContent), runs: [...document.querySelectorAll('#hx-pas .hx-r')].map((r) => +r.textContent.slice(1)),
+          R: [...document.querySelectorAll('#hx-line tbody tr')].map((tr) => tr.querySelector('.hx-t').textContent), sum: document.getElementById('hx-sum').textContent, next: document.getElementById('hx-next').textContent,
+          graded: !!sec.querySelector('.sq, .oc, .strip') || /\b(green|yellow|orange|red|best call|pts)\b/i.test(sec.innerText), scroll: document.documentElement.scrollWidth > innerWidth + 1 };
+      });
+      if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${w}-${nextN(String(w))}-half-card-end.png`) });
+      await page.waitForSelector('#s-mound.on', { timeout: 15000 });
+      card = { first, end, ms: Date.now() - t0 };
+    }
+  }
+  const ho = plan.ho, bt = ho.between, bat = bt.half === 'bottom' ? 1 : 0;
+  ok(card && card.first.eye === (ho.done.half === 'top' ? 'middle of the ' : 'end of the ') + ho.done.inning + 'th' && /bat$/.test(card.first.head) && !card.first.sheet,
+    '18 the third out of the 8th brings up the card: "' + (card && card.first.eye) + '", "' + (card && card.first.head) + '", no sheet');
+  if (card && card.end) {
+    const e = card.end;
+    ok(e.rows.length === bt.pas.length && e.rows.every((r, k) => r.includes(bt.pas[k].short || bt.pas[k].event || '')),
+      '18 his team\'s half plays plate appearance by plate appearance from the record (' + e.rows.length + ' of ' + bt.pas.length + ')');
+    ok(e.runs.reduce((a, b) => a + b, 0) === bt.runs && +e.R[bat] === ho.line.R[bat] && e.sum === (bt.runs === 1 ? '1 run.' : bt.runs + ' runs.'),
+      '18 the runs tick onto the line score: ' + bt.runs + ' in the half, R ' + e.R.join('-') + ', "' + e.sum + '"');
+    ok(!e.graded && !e.scroll, '18 the card shows no grade and fits the width');
+    ok(card.ms >= 3500 && card.ms <= 9500, '18 the card takes a few seconds by itself (' + (card.ms / 1000).toFixed(1) + ' s)');
+    ok(/^back out for the (top|bottom) of the 9th\. (up \d+|tied)\.$/.test(e.next), '18 then where he goes back out: "' + e.next + '"');
+  }
+  if (card && card.skipped) ok(card.ms < 4500, '18 a tap skips the card (back on the mound ' + (card.ms / 1000).toFixed(1) + ' s after it came up)');
+  await page.waitForFunction(() => !window.STD_UI.state.busy, null, { timeout: 30000 });
+  const nx = await page.evaluate(() => { const S = window.STD_UI.state; return { half: S.outing.half, pbp: document.getElementById('m-pbp').textContent, bat: document.getElementById('m-bname').textContent }; });
+  const b9 = await bugReads(page);
+  ok(nx.half && nx.half.inning === 9 && nx.pbp.includes(ho.next.leadoff.name) && nx.bat === ho.next.leadoff.name,
+    '18 back to the mound for the 9th: "' + nx.pbp.trim() + '"');
+  ok(bugOk(b9) && b9.want === (ho.next.half === 'bottom' ? 'bot' : 'top') + ' ' + ho.next.inning && b9.outs === 0 && b9.bases === 0 && +b9.us === ho.next.score.us && +b9.them === ho.next.score.them,
+    '18 after the card the scorebug follows the half: "' + b9.inn + '", ' + b9.outs + ' out, bases ' + b9.bases + ', ' + b9.us + '-' + b9.them + ', ' + b9.cnt);
+  /* one pitch of the 9th goes as any other */
+  await page.keyboard.press('1');
+  await page.click('#m-aim .cell[data-cell="12"]');
+  await page.click('#m-throw');
+  await page.waitForFunction(() => !window.STD_UI.state.busy || document.body.dataset.screen !== 's-mound', null, { timeout: PITCH_MS });
+  ok(await page.evaluate(() => window.STD_UI.state.outing.half.inning === 9 && window.STD_UI.state.outing.pitchNo > 0), '18 a pitch of the 9th throws as any other');
+  ok(bugOk(await bugReads(page)), '18 and the scorebug still reads the 9th after it');
+  ok(errors.length === 0, '18 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 }
 
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
+  if (QUICK) { await run(1440, 900, 'dark'); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
+  await bootStuck(390, 844);
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
+  await halfSwitch(390, 844);
+  await homeTrip(390, 844);
   await sizeSweep();
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
@@ -1271,11 +2001,17 @@ try {
   await ending(1440, 900, 'tie_held', '&mockPro=none');
   await ending(1440, 900, 'doors_open', '&mockAuth=1');
   await ending(1440, 900, 'walk_off', '&mockPro=none');
+  await modes(390, 844, true);
+  await modes(1440, 900, false);
+  await halves(390, 844, false);
+  await halves(1440, 900, true);
 } catch (e) {
-  fails++;
+  if (e === 'quick') e = null; else fails++;
+  if (e) {
   console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));
   // Playwright's call log says why an action waited (not visible, not stable, another element on top)
   if (e && e.message && e.message.includes('\n')) console.log('       ' + e.message.split('\n').slice(1).filter((l) => l.trim()).slice(-6).map((l) => l.trim()).join(' / '));
+  }
 }
 await browser.close();
 server.close();

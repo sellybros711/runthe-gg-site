@@ -1,0 +1,271 @@
+{
+ "id": "uehara-2013-alcs6",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 379727,
+ "date": "2013-10-19",
+ "game": "AL Championship Series Game 6: Detroit Tigers at Boston Red Sox",
+ "gameType": "L",
+ "pitcher": {
+  "id": 493157,
+  "name": "Koji Uehara",
+  "throws": "R",
+  "team": "Boston Red Sox",
+  "seasonLine": "1.09 ERA, 21 SV, 74.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 68,
+   "batterId": 488671,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "493157": 3
+   },
+   "pitches": 3,
+   "event": "strikeout",
+   "des": "Alex Avila strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Alex Avila strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Alex Avila",
+   "batSideListed": "L",
+   "seasonLine": ".227/.317/.376, 11 HR"
+  },
+  {
+   "atBat": 69,
+   "batterId": 408299,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "493157": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Omar Infante bunt grounds out, pitcher Koji Uehara to first baseman Mike Napoli.",
+   "feedEvent": "field_out",
+   "feedDescription": "Omar Infante bunt grounds out, pitcher Koji Uehara to first baseman Mike Napoli.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Omar Infante",
+   "batSideListed": "R",
+   "seasonLine": ".318/.345/.450, 10 HR"
+  },
+  {
+   "atBat": 70,
+   "batterId": 457706,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "493157": 2
+   },
+   "pitches": 2,
+   "event": "single",
+   "des": "Austin Jackson singles on a ground ball to second baseman Dustin Pedroia, deflected by shortstop Stephen Drew.",
+   "feedEvent": "single",
+   "feedDescription": "Austin Jackson singles on a ground ball to second baseman Dustin Pedroia, deflected by shortstop Stephen Drew.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Austin Jackson",
+   "batSideListed": "R",
+   "seasonLine": ".272/.337/.417, 12 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 578428,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "493157": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Jos� Iglesias strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "José Iglesias strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Jose Iglesias",
+   "batSideListed": "R",
+   "seasonLine": ".303/.349/.386, 3 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 11,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 116338,
+   "name": "Torii Hunter",
+   "batSideListed": "R"
+  },
+  {
+   "id": 408234,
+   "name": "Miguel Cabrera",
+   "batSideListed": "R"
+  },
+  {
+   "id": 425902,
+   "name": "Prince Fielder",
+   "batSideListed": "L"
+  },
+  {
+   "id": 400121,
+   "name": "Victor Martinez",
+   "batSideListed": "S"
+  },
+  {
+   "id": 430603,
+   "name": "Don Kelly",
+   "batSideListed": "L"
+  },
+  {
+   "id": 488671,
+   "name": "Alex Avila",
+   "batSideListed": "L"
+  },
+  {
+   "id": 408299,
+   "name": "Omar Infante",
+   "batSideListed": "R"
+  },
+  {
+   "id": 457706,
+   "name": "Austin Jackson",
+   "batSideListed": "R"
+  },
+  {
+   "id": 578428,
+   "name": "Jose Iglesias",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1037,
+   "types": [
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 504,
+     "usage": 0.486,
+     "velo": 81.6,
+     "pfxXin": -11.5,
+     "pfxZin": 8.3
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 444,
+     "usage": 0.4282,
+     "velo": 89.8,
+     "pfxXin": -8.4,
+     "pfxZin": 20.2
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 54,
+     "usage": 0.0521,
+     "velo": 84.6,
+     "pfxXin": 2.7,
+     "pfxZin": 11.5
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 31,
+     "usage": 0.0299,
+     "velo": 90.0,
+     "pfxXin": -13.6,
+     "pfxZin": 17.8
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 3,
+     "usage": 0.0029,
+     "velo": 70.2,
+     "pfxXin": 12.2,
+     "pfxZin": -6.2
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 1,
+     "usage": 0.001,
+     "velo": 88.8,
+     "pfxXin": -2.0,
+     "pfxZin": 21.5
+    }
+   ],
+   "dropped": {
+    "IN": 5
+   },
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2013%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=493157"
+  },
+  "postseason": {
+   "pitches": 169,
+   "types": [
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 82,
+     "usage": 0.4852,
+     "velo": 81.6,
+     "pfxXin": -12.4,
+     "pfxZin": 8.0
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 72,
+     "usage": 0.426,
+     "velo": 89.3,
+     "pfxXin": -9.3,
+     "pfxZin": 20.5
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 15,
+     "usage": 0.0888,
+     "velo": 89.4,
+     "pfxXin": -15.5,
+     "pfxZin": 17.6
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2013%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=493157"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 379727: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=379727",
+  "MLB Stats API schedule 2013-10-19 and live feed /api/v1.1/game/379727/feed/live",
+  "MLB Stats API people with 2013 season stats",
+  "Baseball Savant 493157 2013 season search (regular season and postseason) for the arsenal"
+ ]
+}

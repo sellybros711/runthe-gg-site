@@ -1286,6 +1286,34 @@ window.RTT_PUTT_LAND = (function(){
           if (c.n && z > 2.2 && z < 4.6 && hash(c.ti >> 1, c.tj >> 1, 7) < 0.16) return R(hash(c.ti, c.tj, 9) < 0.5 ? '#b5452e' : '#e0b070');
           return R(((c.ti + (z * 2 | 0)) % 7) ? '#5a4e44' : '#4a4038'); }] } }; };
 
+  // the Dark Side: a hangar on the far side of the moon. Black blue walls lined with panel lights and lit portholes, crates and
+  // fuel tanks along them, and the earth's light falling faint through the hangar door on the floor.
+  BUILD['s-darkside'] = function(L){ var R0 = room(L, { floor:'hfloor', wall:'hwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 41, 3.2).forEach(function(q, i){ var x = q[0], y = q[1], zb = B.gz(x, y);
+          if (i % 2) cyl(B, x, y, 0.6, 1.8, function(d, t){ return t > 1.65 ? '#9aa6c0' : Math.abs(t - 0.9) < 0.08 ? '#ff5577' : d > 0.85 ? '#4a5878' : '#6a7898'; });   // a fuel tank, its red band
+          else B.solid(x - 0.8, y - 0.8, zb, x + 0.8, y + 0.8, zb + 1.3, function(px, py, pz){ var t = pz - zb, e = Math.abs(px - x) > 0.66 || t > 1.16; return Math.abs(px - x) < 0.8 && Math.abs(py - y) < 0.8 ? (e ? '#5a6680' : (Math.abs(px - x - (py - y)) < 0.1 ? '#3a4460' : '#7a869e')) : null; }); });   // a crate
+        byWall(L, 5, 47, 2.2).forEach(function(q){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 4.2, '#7fd8ff'); });
+        var d = byWall(L, 1, 53, 3)[0]; if (d && B.light) B.light(d[0], d[1] + 3, B.gz(d[0], d[1]) + 3, '#3f6ad8'); },   // the earthlight
+      bg:'#05060f', gain:2,
+      mats:{ hfloor:['#20263c', '#2a3048', '#181d30', 0.1, function(c, R){ return R(((c.ti % 8) && (c.tj % 8)) ? ((c.ti + c.tj) % 29 ? '#20263c' : '#3f7fe0') : '#141a2c'); }],
+        hwall:['#141a2c', '#1c2238', '#0e1220', 0.16, function(c, R){ var z = c.z || 0;
+          if (c.n && z > 3.4 && z < 4.6 && (c.ti % 9) < 2) return R((c.ti % 9) ? '#bfefff' : '#7fd8ff');   // the portholes, lit
+          if (Math.abs(z - 1.6) < 0.12) return R('#3f7fe0'); return R((c.ti % 6) ? '#141a2c' : '#0e1220'); }] } }; };
+
+  // the Ice Cave: under Mars' north pole. Walls of blue ice banded with old red dust, ice pillars along them, and a cold
+  // light coming down through the ice above.
+  BUILD['s-polarcave'] = function(L){ var R0 = room(L, { floor:'pfloor', wall:'pwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 61, 3).forEach(function(q, i){ var x = q[0], y = q[1], zb = B.gz(x, y), hh = i % 2 ? 2.6 : 1.6;
+          B.solid(x - 0.7, y - 0.7, zb, x + 0.7, y + 0.7, zb + hh, function(px, py, pz){ var t = (pz - zb) / hh, d = Math.hypot(px - x, py - y); return d < 0.65 * (1 - t * 0.7) ? (t > 0.8 ? '#ffffff' : (d > 0.45 ? '#9fd8f0' : '#d8f2ff')) : null; }); });
+        byWall(L, 4, 67, 3).forEach(function(q){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 4.6, '#bfefff'); }); },
+      bg:'#081420', gain:2,
+      mats:{ pfloor:['#c8e6f4', '#d8f0fa', '#b0d4e8', 0.1, function(c, R){ return R(((c.ti * 3 + c.tj * 5) % 23) ? '#c8e6f4' : '#ffffff'); }],
+        pwall:['#7fb8d8', '#9fd0e8', '#5a98c0', 0.16, function(c, R){ var z = c.z || 0;
+          if (Math.abs(z - 2.2) < 0.18 || Math.abs(z - 4.1) < 0.1) return R('#b8644a');   // the dust of old storms, laid down in the ice
+          return R(((c.ti + (z * 2 | 0)) % 5) ? '#7fb8d8' : '#9fd0e8'); }] } }; };
+
   // the Potting Shed: plank floor and walls, shelves of clay pots, a wheelbarrow, sacks
   BUILD['s-shed'] = function(L){ var R0 = room(L, { floor:'boards', wall:'shedwall', wallH:6.5, gap:2.4 });
     return { h:R0.h, mat:R0.mat,
@@ -4749,6 +4777,304 @@ window.RTT_PUTT_LAND = (function(){
           if (z > 7.5) return iceFace(R, w2 < 0.4 ? '#b4c0ce' : '#dce6ee'); return iceFace(R, w2 < 0.34 ? '#7a7e8a' : w2 > 0.66 ? '#a8acb6' : '#8e929e'); }] }
     };
   }
+  /* ---------------- MOON BASE IS A JOURNEY. Out of the lander onto the grey plain, the flag planted and the rover parked
+     (1 to 4), across the crater field with its boulders (5 to 8), into the base with its domes, modules and radar dish (9 to
+     12), round to the far side where the earth never rises and the big dish listens (13 to 16), and out to the launch pad,
+     the rocket standing ready (17 and 18). The earth hangs in the black sky over every stop but the far side. Gentle ground
+     only: a crater is a shallow bowl with a soft rim, never a cliff, so the land's rows never part. */
+  STOPS.moon = [[1, 'landing'], [5, 'craters'], [9, 'station'], [13, 'farside'], [17, 'launch']];
+  (function(){ BUILD.moon = function(L){ var s = L.stop; return s === 'launch' ? moonLaunch(L) : s === 'farside' ? moonFar(L) : s === 'station' ? moonStation(L) : s === 'craters' ? moonCraters(L) : moonLanding(L); }; })();
+
+  // the regolith: grey dust in broad patches, darker where a crater's floor lies, a pale ray thrown out round a fresh one
+  function moonDust(dark){ var a = dark ? ['#5e5c66', '#6a6872', '#52505a', '#74727c'] : ['#9a98a2', '#a8a6b0', '#8a8892', '#b6b4bc'];
+    return [a[0], a[1], a[2], 0.14, function(c, R){ var f = c.cr || 0, b = blot(c, 0.18, 71), n = blot(c, 0.5, 72);
+      // the big crater's rim round the hole: its inner face shaded on the sun side and lit on the far one, its outer face the other way about
+      if (c.rim) return R(c.rim === 2 ? (dark ? '#3a3842' : '#62606a') : c.rim === 3 ? (dark ? '#74727c' : '#c4c2ca') : c.rim === 4 ? a[3] : a[2]);
+      if (f > 0.15) return R(f > 0.75 ? a[2] : n > 0.6 ? a[0] : a[2]); if (f < -0.05 && f > -0.35 && n > 0.55) return R(a[3]);
+      return R(b > 0.66 ? a[1] : b < 0.3 ? a[2] : (c.ti * 7 + c.tj * 13) % 41 === 0 ? a[3] : a[0]); }]; }
+  // craters as shallow bowls: cr > 0 inside (1 at the middle), a soft raised rim just outside it
+  function moonPits(L, n, rMin, rMax, salt){ var out = []; for (var i = 0; i < n; i++){ var r = rMin + hash(i, salt, L.seed) * (rMax - rMin);
+      var q = L.spot(r + 0.6, function(x, y){ return hash(x | 0, y | 0, L.seed + salt + i) * 3 + L.north(x, y) * 0.1; }); if (q) out.push({ x:q.x, y:q.y, r:r }); }
+    function cr(x, y){ var best = -1; for (var k = 0; k < out.length; k++){ var p = out[k], d = Math.hypot(x - p.x, (y - p.y) * 1.1) / p.r; best = Math.max(best, 1 - d); } return best; }
+    function h(x, y){ var t = cr(x, y); return t > 0 ? -0.45 * Math.sin(t * Math.PI / 2) : t > -0.4 ? 0.18 * Math.sin((t + 0.4) / 0.4 * Math.PI) : 0; }
+    return { list:out, cr:cr, h:h }; }
+  // the earth, hanging high over the back of the land: blue seas, green and brown land, white cloud, the night side dark
+  function moonEarth(B, L){ var X = L.cx + (L.P1[0] - L.P0[0]) * 0.3, Y = L.E[1] - 3.2, Z = 7.6, R = 2.6;   // north of the land, so the shadow pass never reaches its column and lays a blue pool under it
+    B.solid(X - R, Y - R, Z - R, X + R, Y + R, Z + R, function(px, py, pz){ var dx = (px - X) / R, dy = (py - Y) / R, dz = (pz - Z) / R; if (dx * dx + dy * dy + dz * dz > 1) return null;
+      if (dx * 0.7 - dz * 0.5 > 0.42) return '#0e1a3a'; var n = vn(px * 1.3 + 4, pz * 1.3 + py * 0.5, 91), c = vn(px * 2.2, pz * 2.2 + 9, 92);
+      if (c > 0.72) return '#f4f8ff'; if (n > 0.6) return n > 0.7 ? '#8a7a4a' : '#4a8a3a'; return dz > 0.5 ? '#5a9ae8' : '#2f6fd0'; }); }
+  // the lander: gold foil descent stage on four splayed legs and pads, the white ascent stage on top with its dark window
+  function moonLander(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 2.2, Y - 2.2, zb - 0.05, X + 2.2, Y + 2.2, zb + 4.2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, ax = Math.abs(dx), ay = Math.abs(dy);
+      for (var q = 0; q < 4; q++){ var sx = q & 1 ? 1 : -1, sy = q & 2 ? 1 : -1, u = 1 - t / 1.6; if (t < 1.6 && Math.hypot(dx - sx * (0.9 + u * 0.9), dy - sy * (0.9 + u * 0.9)) < 0.1) return '#c8c8d0';
+        if (t < 0.12 && Math.hypot(dx - sx * 1.8, dy - sy * 1.8) < 0.32) return '#9a9aa4'; }
+      if (t > 1.1 && t < 2.3 && ax < 1.05 && ay < 1.05) return (((px * 4 | 0) + (pz * 4 | 0)) % 3) ? '#e0b040' : '#b8862a';
+      if (t >= 2.3 && t < 3.6 && ax + ay * 0.6 < 1 && ay < 0.9) return dy > 0.6 && t > 2.8 && t < 3.3 && ax < 0.35 ? '#1a2240' : t > 3.4 ? '#c8ccd8' : '#eef0f4';
+      if (ax < 0.05 && ay < 0.05 && t >= 3.6 && t < 4.1) return '#c8c8d0'; return null; }); }
+  // a flag on its pole, the top bar holding it out where no wind will
+  function moonFlag(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 0.1, Y - 0.1, zb, X + 1.4, Y + 0.1, zb + 2.6, function(px, py, pz){ var t = pz - zb, dx = px - X;
+      if (dx < 0.06 && t < 2.6) return '#e8e8ec'; if (t > 1.7 && t < 2.5 && dx > 0.06 && dx < 1.35 && Math.abs(py - Y) < 0.05) return t > 2.3 ? '#3f7fe0' : (((dx * 5) | 0) % 2 ? '#ffffff' : '#e5483a'); return null; }); }
+  // the rover: a low grey chassis on four wire wheels, two seats, an antenna and a little gold dish
+  function moonRover(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 1.4, Y - 1, zb - 0.05, X + 1.4, Y + 1, zb + 2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, ax = Math.abs(dx), ay = Math.abs(dy);
+      if (Math.abs(ax - 0.95) < 0.2 && Math.abs(ay - 0.75) < 0.12 && Math.hypot(ax - 0.95, t - 0.32) < 0.32) return Math.hypot(ax - 0.95, t - 0.32) > 0.22 ? '#3a3a42' : '#8a8a94';
+      if (t > 0.5 && t < 0.72 && ax < 1.3 && ay < 0.7) return '#b8bcc8'; if (t >= 0.72 && t < 1.1 && Math.abs(ax - 0.3) < 0.2 && ay < 0.5 && dx > -0.6) return '#4a5470';
+      if (Math.abs(dx + 1) < 0.04 && Math.abs(dy) < 0.04 && t < 1.8) return '#c8c8d0'; if (Math.hypot(dx + 1, dy, t - 1.8) < 0.28 && dx > -1.05) return '#e0b040'; return null; }); }
+  // a white dome with its panel seams and a lit window band
+  function moonDome(B, X, Y, R){ var zb = B.gz(X, Y) - 0.05; if (B.light) B.light(X, Y + R, zb + R * 0.4, '#7fd8ff');
+    B.solid(X - R, Y - R, zb, X + R, Y + R, zb + R, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy, t) / R; if (d > 1 || d < 0.9) return null;
+      if (t < R * 0.42 && t > R * 0.28) return (((Math.atan2(dy, dx) * 6) | 0) % 2) ? '#bfefff' : '#3f6ad8'; return (Math.abs(Math.sin(Math.atan2(dy, dx) * 5)) < 0.08 || Math.abs(t - R * 0.7) < 0.05) ? '#b8c0d0' : '#eef2f8'; }); }
+  // a station module: a long white box on its side, a blue band, a porthole, its end caps grey
+  function moonModule(B, X, Y, w){ var zb = B.gz(X, Y), H = 1.6;
+    B.solid(X - w / 2, Y - 0.9, zb, X + w / 2, Y + 0.9, zb + H, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, r = Math.hypot(dy, t - 0.85);
+      if (r > 0.85 || Math.abs(dx) > w / 2) return null; if (Math.abs(dx) > w / 2 - 0.2) return '#8a96b0'; if (Math.abs(t - 0.4) < 0.1) return '#3f7fe0';
+      if (dy > 0.6 && Math.abs(t - 1.05) < 0.14 && (((dx + 9) * 0.8 | 0) % 2)) return '#7fd8ff'; return ((dx * 1.5 | 0) % 3) ? '#eef2f8' : '#c8d0de'; }); }
+  // a radar dish on its post, tipped up to the sky
+  function moonDish(B, X, Y, R){ var zb = B.gz(X, Y), H = R * 1.4;
+    B.solid(X - R, Y - R, zb, X + R, Y + R, zb + H + R, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+      if (Math.hypot(dx, dy) < 0.12 && t < H) return '#8a96b0'; var u = dx, v = (dy * 0.6 + (t - H) * 0.8), w2 = (-dy * 0.8 + (t - H) * 0.6);   // the dish's own frame, tipped back
+      var rr = Math.hypot(u, v); if (rr < R && Math.abs(w2 - rr * rr / (R * 2.2)) < 0.12) return rr > R * 0.92 ? '#8a96b0' : '#e8ecf4'; if (rr < 0.08 && w2 > 0 && w2 < R * 0.7) return '#c8ccd8'; return null; }); }
+  // the rocket on its pad: a tall white body with a black band and red fins, the gantry beside it, its lights lit
+  function moonRocket(B, X, Y){ var zb = B.gz(X, Y), H = 9; if (B.light){ B.light(X + 1.8, Y, zb + 4, '#ff5577'); B.light(X, Y + 2, zb + 0.5, '#ffd34d'); }
+    B.solid(X - 2.6, Y - 2.6, zb - 0.05, X + 2.6, Y + 2.6, zb + H + 1.6, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, r = Math.hypot(dx, dy);
+      if (t < 0.3 && Math.abs(dx) < 2.5 && Math.abs(dy) < 2.5) return (((px * 2 | 0) + (py * 2 | 0)) % 2) ? '#5a5e6a' : '#4a4e5a';   // the pad
+      var rr = t > H - 1.6 ? 0.75 * (H + 1.4 - t) / 3 : 0.75; if (t >= 0.3 && t < H + 1.4 && r < rr) return Math.abs(t - 5.2) < 0.4 ? '#1a1e2a' : t > H - 1.6 ? '#e5483a' : (dy > 0.5 && Math.abs(t - 7) < 0.25 && Math.abs(dx) < 0.2) ? '#7fd8ff' : '#f4f6fa';
+      if (t >= 0.3 && t < 2.2 && Math.abs(dy) < 0.08 && Math.abs(dx) < 0.75 + (2.2 - t) * 0.5 && Math.abs(dx) > 0.7) return '#e5483a';   // the fins
+      if (Math.abs(dx - 1.9) < 0.3 && Math.abs(dy) < 0.3 && t < H - 0.5) return (Math.abs(px - X - 1.9) > 0.22 || Math.abs(dy) > 0.22 || ((t * 2) | 0) % 2) ? '#8a7a5a' : null;   // the gantry
+      if (Math.abs(t - 6) < 0.1 && dx > 0.7 && dx < 1.9 && Math.abs(dy) < 0.1) return '#8a7a5a'; return null; }); }
+  function moonLows(B, x, y, i, seed, dark){ var k = hash(i, seed, 52); rockAt(B, x, y, 0.25 + k * 0.35, dark ? ['#4a4852', '#6a6872'] : ['#8a8892', '#b6b4bc']); }
+  /* EVERY MOON BASE HOLE SITS IN A CRATER (the owner, 2026-11-01): a broad rim rises round the back and the sides of the
+     course, from about six feet off its rail to ten, and falls away outside. It is kept off the near side, where it would
+     stand between the camera and the carpet. Its inner face toward the sun (the upper left) is in its own shadow. */
+  function moonRim(L, x, y){ var c = L.clearAt(x, y), k = y < L.P1[1] ? 1 : 1 - sm(L.P1[1], L.P1[1] + 4, y); if (k <= 0 || c < 5) return 0;
+    return k * (c < 10 ? 1.25 * sm(5, 10, c) : 1.25 * (1 - sm(10, 15, c))); }
+  function moonBase(L, o){ var seed = L.seed, pits = moonPits(L, o.pits || 4, o.rMin || 1.4, o.rMax || 3, 31), dark = !!o.dark;
+    return { pits:pits,
+      h:function(x, y){ return pits.h(x, y) * sm(0.6, 2.2, L.clearAt(x, y)) + (fbm(x * 0.08, y * 0.1, seed) - 0.45) * 0.8 * sm(1.3, 6, L.clearAt(x, y)) + moonRim(L, x, y); },
+      mat:function(x, y){ var r = moonRim(L, x, y), c = L.clearAt(x, y), rf = 0; if (r > 0.15){ var sunSide = (x - L.cx) * -0.79 + (y - L.cy) * -0.61 > 0; rf = c < 10 ? (sunSide ? 2 : 3) : (sunSide ? 4 : 5); }
+        return ['reg', { cr:pits.cr(x, y), rim:rf }]; },
+      fill:{ on:['reg'], trees:o.boulders == null ? 0.12 : o.boulders, lows:0.3, tree:function(B, x, y, i){ rockAt(B, x, y, 0.8 + hash(i, seed, 51) * 0.9, dark ? ['#52505a', '#74727c'] : ['#8a8892', '#c8c6ce']); },
+        low:function(B, x, y, i){ moonLows(B, x, y, i, seed, dark); } },
+      // the stars: only in the black over the horizon (the land's far edge), never on the ground
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        for (var i = 0; i < 140; i++){ var x = hash(i, 1, seed) * V.W, y = hash(i, 2, seed) * top, a = 0.35 + hash(i, 3, seed) * 0.65;
+          ctx.fillStyle = 'rgba(232,240,255,' + a.toFixed(2) + ')'; ctx.fillRect(x | 0, y | 0, hash(i, 4, seed) < 0.12 ? 2 : 1, hash(i, 4, seed) < 0.12 ? 2 : 1); } },
+      bg:'#05060f', gain:2, mats:{ reg:moonDust(dark) } }; }
+
+  // 1. THE LANDING (and every Moon Base hole with no place): the lander behind the hole, the flag beside it, the rover parked
+  function moonLanding(L){ var O = moonBase(L, { pits:4 }), ld = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.6 - Math.abs(x - L.cx) * 0.2; }),
+      fl = L.spot(0.8, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 2; }), rv = L.spot(1.5, function(x, y){ return L.side(x) * 3 + L.north(x, y) * 0.2; });
+    O.build = function(B){ moonEarth(B, L); if (ld) moonLander(B, ld.x, ld.y); if (fl) moonFlag(B, fl.x, fl.y); if (rv) moonRover(B, rv.x, rv.y); }; return O; }
+  // 2. THE CRATER FIELD: big shallow craters close together, boulders thrown out round them
+  function moonCraters(L){ var O = moonBase(L, { pits:8, rMin:1.8, rMax:4, boulders:0.3 }), rv = L.spot(1.5, function(x, y){ return L.side(x) * 3 - L.north(x, y) * 0.1; });
+    O.build = function(B){ moonEarth(B, L); if (rv) moonRover(B, rv.x, rv.y); }; return O; }
+  // 3. THE STATION: domes and modules behind the hole, the radar dish, lamps along the way in
+  function moonStation(L){ var O = moonBase(L, { pits:2, boulders:0.05 }), dm = [], md = [], i;
+    for (i = 0; i < 2; i++){ var d = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.7 + hash(x | 0, y | 0, L.seed + 3 + i); }); if (d) dm.push(d); }
+    for (i = 0; i < 2; i++){ var m = L.spotRect(4.2, 2, function(x, y){ return L.north(x, y) * 0.5 + L.side(x) * 2 + hash(x | 0, y | 0, L.seed + 7 + i); }); if (m) md.push(m); }
+    var ds = L.spot(1.8, function(x, y){ return L.side(x) * 3 + L.north(x, y) * 0.3; }), lp = L.scatter(5, function(x, y){ return L.clearAt(x, y) < 3; }, 61).slice(0, 4);
+    O.build = function(B){ moonEarth(B, L); dm.forEach(function(d){ moonDome(B, d.x, d.y, 2.2); }); md.forEach(function(m){ moonModule(B, m.x, m.y, 4); }); if (ds) moonDish(B, ds.x, ds.y, 1.5);
+      lp.forEach(function(q){ lamp(B, q[0], q[1], '#8a96b0', '#7fd8ff'); }); }; return O; }
+  // 4. THE FAR SIDE: darker ground and no earth in the sky, only the big dish listening
+  function moonFar(L){ var O = moonBase(L, { pits:5, dark:true, boulders:0.2 }), ds = L.spot(3, function(x, y){ return L.north(x, y) * 0.8; });
+    O.build = function(B){ if (ds) moonDish(B, ds.x, ds.y, 2.8); }; O.bg = '#020308'; return O; }
+  // 5. THE LAUNCH PAD: the rocket standing ready behind the hole, the earth over it
+  function moonLaunch(L){ var O = moonBase(L, { pits:3, boulders:0.08 }), rk = L.spot(2.8, function(x, y){ return L.north(x, y) * 0.8 - Math.abs(x - L.cx) * 0.15; }),
+      fl = L.spot(0.8, function(x, y){ return L.side(x) * 2 + L.north(x, y) * 0.2; });
+    O.build = function(B){ moonEarth(B, L); if (rk) moonRocket(B, rk.x, rk.y); if (fl) moonFlag(B, fl.x, fl.y); }; return O; }
+  /* ---------------- RED PLANET IS A JOURNEY. Down from the lander onto the rust plain, the rover parked by it (1 to 4), out
+     over the rippled dunes where a dust devil walks (5 to 8), along the rim of the great canyon, its walls banded in red
+     rock (9 to 12), into the colony with its habs, the green glow of its greenhouse and rows of solar panels (13 to 16), and
+     at last under Olympus Mons, the biggest volcano anywhere, standing over the back of the land (17 and 18). The sky is a
+     dusty butterscotch, Phobos small and grey in it. Gentle ground only, as on the moon: dunes are low ripples, never
+     cliffs; what stands tall (the canyon walls, the volcano) is built behind the land. */
+  STOPS.mars = [[1, 'landing'], [5, 'dunes'], [9, 'canyon'], [13, 'colony'], [17, 'olympus']];
+  (function(){ BUILD.mars = function(L){ var s = L.stop; return s === 'olympus' ? marsOlympus(L) : s === 'colony' ? marsColony(L) : s === 'canyon' ? marsCanyon(L) : s === 'dunes' ? marsDunes(L) : marsLanding(L); }; })();
+
+  // the dust: rust and butterscotch in broad patches, darker basalt grit, paler where the wind has swept it; dune crests lit
+  function marsDust(){ var a = ['#c4683e', '#d27a48', '#a8502e', '#e0905a', '#7a3220'];
+    return [a[0], a[1], a[2], 0.14, function(c, R){ var b = blot(c, 0.18, 81), n = blot(c, 0.55, 82), f = c.cr || 0;
+      if (c.dn) return R(c.dn > 0 ? a[3] : a[2]);
+      if (f > 0.15) return R(f > 0.7 ? a[2] : a[0]); if (f < -0.05 && f > -0.35 && n > 0.5) return R(a[3]);
+      return R(b > 0.68 ? a[1] : b < 0.28 ? a[2] : (c.ti * 7 + c.tj * 13) % 37 === 0 ? a[4] : n > 0.72 ? a[3] : a[0]); }]; }
+  // dunes: low parallel ripples across the land, laid by one wind, fading in near the course
+  function marsDune(L, x, y, amp){ var c = L.clearAt(x, y), k = sm(1.4, 5, c) * amp, t = x * 0.42 + y * 0.18 + Math.sin(y * 0.11) * 1.6; return { h:k * 0.28 * Math.sin(t), d:Math.cos(t) * k }; }
+  function marsBase(L, o){ var seed = L.seed, pits = moonPits(L, o.pits == null ? 3 : o.pits, o.rMin || 1.4, o.rMax || 2.8, 37), amp = o.dunes == null ? 0.5 : o.dunes;
+    return { pits:pits,
+      h:function(x, y){ return pits.h(x, y) * 0.8 * sm(0.6, 2.2, L.clearAt(x, y)) + (fbm(x * 0.07, y * 0.09, seed) - 0.45) * 0.7 * sm(1.3, 6, L.clearAt(x, y)) + marsDune(L, x, y, amp).h; },
+      mat:function(x, y){ var dd = marsDune(L, x, y, amp).d; return ['red', { cr:pits.cr(x, y), dn:amp > 0.6 && Math.abs(dd) > 0.55 * amp ? (dd > 0 ? 1 : -1) : 0 }]; },
+      fill:{ on:['red'], trees:o.boulders == null ? 0.04 : o.boulders, lows:0.18, tree:function(B, x, y, i){ rockAt(B, x, y, 0.7 + hash(i, seed, 61) * 0.9, ['#5a2a1c', '#8a3a22', '#3a2420']); },
+        low:function(B, x, y, i){ rockAt(B, x, y, 0.25 + hash(i, seed, 62) * 0.35, hash(i, seed, 63) < 0.5 ? ['#3a2420', '#5a3428'] : ['#a8502e', '#c4683e']); } },
+      // the sky over the horizon: dusty butterscotch bands, and Phobos, small and grey
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        for (var i = 0; i < 4; i++){ ctx.fillStyle = 'rgba(255,214,170,' + (0.06 + i * 0.03).toFixed(2) + ')'; ctx.fillRect(0, top * (0.3 + i * 0.17) | 0, V.W, Math.max(2, top * 0.12) | 0); }
+        if (o.phobos !== false){ var px = V.W * (0.7 + hash(1, 9, seed) * 0.15), py = top * 0.3, pr = Math.max(3, V.W * 0.012);
+          ctx.fillStyle = '#8a7a72'; ctx.beginPath(); ctx.ellipse(px, py, pr * 1.25, pr, 0.4, 0, 7); ctx.fill(); ctx.fillStyle = '#b4a49a'; ctx.beginPath(); ctx.ellipse(px - pr * 0.3, py - pr * 0.25, pr * 0.6, pr * 0.45, 0.4, 0, 7); ctx.fill(); } },
+      bg:o.bg || '#c8805a', gain:2, mats:{ red:marsDust() } }; }
+  // the rover: six wheels on rockers, a white body with a solar deck, a mast with its camera head
+  function marsRover(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 1.8, Y - 1.2, zb - 0.05, X + 1.8, Y + 1.2, zb + 2.6, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, ax = Math.abs(dx), ay = Math.abs(dy);
+      for (var w = -1; w <= 1; w++) if (Math.abs(ay - 0.95) < 0.18 && Math.hypot(dx - w * 1.15, t - 0.36) < 0.36) return Math.hypot(dx - w * 1.15, t - 0.36) > 0.24 ? '#2a2a30' : '#8a8a94';
+      if (t > 0.6 && t < 0.72 && ay < 1.05 && ax < 1.5) return '#8a8a94';
+      if (t >= 0.72 && t < 1.15 && ax < 1.3 && ay < 0.75) return t > 1.05 ? '#1e2a4a' : '#eeeef2';
+      if (Math.abs(dx - 0.9) < 0.07 && Math.abs(dy - 0.5) < 0.07 && t >= 1.15 && t < 2.2) return '#c8c8d0';
+      if (Math.abs(dx - 0.9) < 0.28 && Math.abs(dy - 0.5) < 0.18 && t >= 2.2 && t < 2.55) return Math.abs(dy - 0.5) > 0.1 && dx > 0.9 ? '#3fd0ff' : '#f4f4f8'; return null; }); }
+  // a hab: a squat white dome on a rust ring, a lit window band and an airlock tube out the front
+  function marsHab(B, X, Y, R){ var zb = B.gz(X, Y) - 0.05; if (B.light) B.light(X, Y + R, zb + R * 0.4, '#ffc890');
+    B.solid(X - R, Y - R, zb, X + R, Y + R + 1, zb + R, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy, t) / R;
+      if (dy > R * 0.7 && Math.abs(dx) < 0.55 && t < 1.05 && dy < R + 0.9) return t > 0.9 || Math.abs(dx) > 0.45 ? '#c8c0b4' : '#e8e2d8';
+      if (d > 1 || d < 0.88) return null; if (t < 0.25) return '#b84a26';
+      if (t < R * 0.45 && t > R * 0.3) return (((Math.atan2(dy, dx) * 6) | 0) % 2) ? '#ffd8a0' : '#6a3a2a'; return Math.abs(Math.sin(Math.atan2(dy, dx) * 4)) < 0.07 ? '#c8bcae' : '#f2ece2'; }); }
+  // the greenhouse: a glass dome, green rows of plants glowing inside it
+  function marsGreen(B, X, Y, R){ var zb = B.gz(X, Y) - 0.05; if (B.light) B.light(X, Y, zb + R * 0.6, '#7cff8a');
+    B.solid(X - R, Y - R, zb, X + R, Y + R, zb + R, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, d = Math.hypot(dx, dy, t) / R; if (d > 1) return null;
+      if (d > 0.93) return (Math.abs(Math.sin(Math.atan2(dy, dx) * 6)) < 0.1 || Math.abs(t - R * 0.5) < 0.06) ? '#d8e2e8' : null;
+      if (t < 0.6 && ((Math.abs(dx) * 2.2 | 0) % 2 === 0)) return t < 0.15 ? '#5a3a24' : (hash(px * 4 | 0, pz * 4 | 0, 7) < 0.5 ? '#3fae4a' : '#7cdc5a'); return null; }); }
+  // a row of solar panels on short legs, tilted to the sun
+  function marsSolar(B, X, Y, w){ var zb = B.gz(X, Y);
+    B.solid(X - w / 2, Y - 0.8, zb, X + w / 2, Y + 0.8, zb + 1.3, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, pt = 0.6 + dy * 0.45;
+      if (Math.abs(t - pt) < 0.09 && Math.abs(dy) < 0.75) return ((((dx + 9) * 2.5) | 0) % 4 === 0 || Math.abs(dy) > 0.68) ? '#c8c8d0' : '#1e3a6a';
+      if (t < pt && Math.abs(dy) < 0.06 && (((dx + 9) * 1.2) | 0) % 3 === 0 && Math.abs(((dx + 9) * 1.2) % 1) < 0.15) return '#8a8a94'; return null; }); }
+  // a dust devil standing in the dunes: a tall column of tan dust, narrow at the foot and wide at the top
+  function marsDevil(B, X, Y){ var zb = B.gz(X, Y), H = 7;
+    B.solid(X - 2, Y - 2, zb, X + 2, Y + 2, zb + H, function(px, py, pz){ var t = (pz - zb) / H, cx = X + Math.sin(t * 3) * 0.4, r = 0.35 + t * 1.5, d = Math.hypot(px - cx, py - Y);
+      if (d > r || d < r * 0.55) return null; var a = Math.atan2(py - Y, px - cx) + t * 9; return ((a * 2 | 0) % 2) ? (hash(px * 3 | 0, pz * 3 | 0, 5) < 0.3 ? null : '#e8b088') : (hash(px * 3 | 0, pz * 3 | 0, 6) < 0.5 ? null : '#c88a62'); }); }
+  // the canyon's far wall: a long cliff of banded red rock behind the land, its top broken into buttes
+  function marsWall(B, L, zTop){ var X0 = L.E[0] + 1, X1 = L.E[2] - 1, Y = L.E[1] + 1.5;
+    B.solid(X0, Y - 2.5, -1, X1, Y + 1.2, zTop, function(px, py, pz){ var top = zTop - 1.6 + fbm(px * 0.12, 3, L.seed) * 2.6 - (Math.abs(Math.sin(px * 0.21)) < 0.18 ? 1.4 : 0), face = Y + 1.2 - (pz / zTop) * 1.2;
+      if (pz > top || py > face) return null; var band = ((pz + fbm(px * 0.3, pz * 0.3, 9) * 0.4) * 1.6 | 0) % 4; return ['#a8502e', '#8a3a22', '#c4683e', '#e0905a'][band]; }); }
+  // Olympus Mons on the skyline: a broad shield volcano's flank, so wide its top is cut by the horizon, a pale caldera rim
+  function marsOlympus(L){ var O = marsBase(L, { pits:1, dunes:0.25, boulders:0.06, bg:'#d89a72' }),
+      rv = L.spot(1.6, function(x, y){ return L.side(x) * 3 + L.north(x, y) * 0.2; });
+    O.build = function(B){ var X = L.cx, Y = L.E[1] - 3.5, R = 14, H = 6;
+      B.solid(X - R, Y - 3, -1, X + R, Y + 3, H, function(px, py, pz){ var d = Math.hypot((px - X) / R, (py - Y) / 6), top = H * (1 - d) * 1.6; if (pz > top || pz > H) return null;
+        if (pz > H - 0.5) return '#e8c8a8'; return ((pz * 1.3 + fbm(px * 0.1, pz, 4)) | 0) % 3 ? '#b86a44' : '#9a5232'; });
+      if (rv) marsRover(B, rv.x, rv.y); }; return O; }
+  // 1. THE LANDING (and every Red Planet hole with no place): the lander behind the hole, the rover parked beside it
+  function marsLanding(L){ var O = marsBase(L, { pits:3 }), ld = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.6 - Math.abs(x - L.cx) * 0.2; }),
+      rv = L.spot(1.8, function(x, y){ return L.side(x) * 3 + L.north(x, y) * 0.2; }), fl = L.spot(0.8, function(x, y){ return L.north(x, y) * 0.3 + L.side(x) * 2; });
+    O.build = function(B){ if (ld) moonLander(B, ld.x, ld.y); if (rv) marsRover(B, rv.x, rv.y); if (fl) moonFlag(B, fl.x, fl.y); }; return O; }
+  // 2. THE DUNES: big ripples all round, boulders few, a dust devil walking behind the hole
+  function marsDunes(L){ var O = marsBase(L, { pits:0, dunes:1.1, boulders:0.04 }), dv = L.spot(2, function(x, y){ return L.north(x, y) * 0.7 + L.side(x) * 1.5; });
+    O.build = function(B){ if (dv) marsDevil(B, dv.x, dv.y); }; return O; }
+  // 3. THE CANYON RIM: the great canyon's banded far wall standing behind the land, boulders fallen from it
+  function marsCanyon(L){ /* the wall stands just behind the land's far edge */ var O = marsBase(L, { pits:1, dunes:0.3, boulders:0.1, bg:'#b8704a' });
+    O.build = function(B){ marsWall(B, L, 6.5); }; return O; }
+  // 4. THE COLONY: habs and the greenhouse behind the hole, solar panels to the side, the comms dish, lamps on the way in
+  function marsColony(L){ var O = marsBase(L, { pits:0, dunes:0.25, boulders:0.04 }), hb = [], i;
+    for (i = 0; i < 2; i++){ var d = L.spot(2.2, function(x, y){ return L.north(x, y) * 0.7 + hash(x | 0, y | 0, L.seed + 13 + i); }); if (d) hb.push(d); }
+    var gh = L.spot(2.4, function(x, y){ return L.north(x, y) * 0.6 - Math.abs(x - L.cx) * 0.1; }), sp = L.spotRect(4.2, 2, function(x, y){ return L.side(x) * 2 + L.north(x, y) * 0.3; }),
+      ds = L.spot(1.8, function(x, y){ return L.side(x) * 3 - L.north(x, y) * 0.1; }), lp = L.scatter(5, function(x, y){ return L.clearAt(x, y) < 3; }, 67).slice(0, 4);
+    O.build = function(B){ hb.forEach(function(d){ marsHab(B, d.x, d.y, 2); }); if (gh) marsGreen(B, gh.x, gh.y, 2.2); if (sp) marsSolar(B, sp.x, sp.y, 4); if (ds) moonDish(B, ds.x, ds.y, 1.5);
+      lp.forEach(function(q){ lamp(B, q[0], q[1], '#8a8a94', '#ffc890'); }); }; return O; }
+  /* ---------------- SATURN RINGS IS A JOURNEY. Out across the rings, the course on a deck of ring ice with chunks of it
+     drifting all round (1 to 4), into the ring station with its modules, masts and docking arm (5 to 8), under Titan in its
+     orange haze, the Titan lander parked on the deck (9 to 12), over Enceladus, its ice geysers venting white plumes
+     (13 to 16), and at last out over the pole, where the hexagon storm turns in the clouds far below (17 and 18). The decks
+     float: past their edge the ground falls gently away to Saturn's banded cloud tops, gold and cream, and Saturn itself,
+     ringed, hangs huge in the black sky over most stops. Gentle ground only (the land's rows never part): the fall from
+     deck to cloud is a long soft slope, never a cliff. */
+  STOPS.saturn = [[1, 'rings'], [5, 'cassini'], [9, 'titan'], [13, 'enceladus'], [17, 'hexagon']];
+  (function(){ BUILD.saturn = function(L){ var s = L.stop; return s === 'hexagon' ? satHex(L) : s === 'enceladus' ? satEnc(L) : s === 'titan' ? satTitan(L) : s === 'cassini' ? satStation(L) : satRings(L); }; })();
+
+  // the deck's reach: how far off the course the ring ice runs before it falls away to the clouds, wobbling along its edge
+  function satEdge(L, x, y){ return 4.2 + fbm(x * 0.09, y * 0.09, L.seed + 71) * 3; }
+  /* the paint: the deck pale lavender ring ice with plate seams, its edge a bright rim and a shaded underside, and the
+     clouds below in bands of gold, cream and tan, curled by the wind, the hexagon drawn into them at the pole */
+  function satMats(icy){ var dk = icy ? ['#dceaf6', '#eef6fc', '#c4d8ea', '#ffffff'] : ['#9a94cc', '#a8a2d8', '#8a84bc', '#c8c4ec'];
+    return { sdeck:[dk[0], dk[1], dk[2], 0.12, function(c, R){ if (c.rim === 1) return R(dk[3]); if (c.rim === 2) return R('#5a5488');
+        var b = blot(c, 0.2, 91); if (((c.ti >> 3) + (c.tj >> 3)) % 2 === 0 && ((c.ti & 7) === 0 || (c.tj & 7) === 0)) return R(dk[2]); return R(b > 0.68 ? dk[1] : b < 0.25 ? dk[2] : dk[0]); }],
+      scloud:['#e2c88c', '#f0dfb4', '#c8a060', 0.1, function(c, R){ if (c.hex) return R(c.hex === 2 ? '#8a5a2a' : '#fff2d0');
+        var band = Math.sin(c.cy * 0.42 + Math.sin(c.cx * 0.07) * 1.4 + blot(c, 0.06, 93) * 3), n = blot(c, 0.3, 94);
+        if (n > 0.8) return R('#fff8e8'); return R(band > 0.6 ? '#f0dfb4' : band > 0.1 ? '#e2c88c' : band > -0.5 ? '#d8b878' : '#b8905a'); }] }; }
+  function satBase(L, o){ var seed = L.seed, icy = !!o.icy;
+    function fall(x, y){ var c = L.clearAt(x, y), e = satEdge(L, x, y); return sm(e, e + 3, c); }
+    return {
+      h:function(x, y){ var f = fall(x, y); return (fbm(x * 0.1, y * 0.1, seed) - 0.45) * 0.3 * (1 - f) * sm(1.3, 4, L.clearAt(x, y)) - 1.25 * f; },
+      mat:function(x, y){ var c = L.clearAt(x, y), e = satEdge(L, x, y);
+        if (c < e + 0.5){ var rim = c > e - 0.35 ? 1 : c > e ? 2 : 0; return ['sdeck', { rim:rim }]; }
+        var hx = 0; if (o.hex){ var dx = x - o.hex[0], dy = (y - o.hex[1]) * 1.25, a = Math.atan2(dy, dx), r = Math.hypot(dx, dy), R0 = o.hex[2] / Math.cos(((a % (Math.PI / 3)) + Math.PI / 3) % (Math.PI / 3) - Math.PI / 6);
+          if (Math.abs(r - R0) < 0.7) hx = 1; else if (Math.abs(r - R0 - 0.9) < 0.35) hx = 2; else if (r < R0 * 0.25) hx = 2; }
+        return ['scloud', { cx:x, cy:y, hex:hx }]; },
+      fill:{ on:['scloud', 'sdeck'], trees:o.chunks == null ? 0.16 : o.chunks, lows:0.12,
+        tree:function(B, x, y, i){ rockAt(B, x, y, 0.5 + hash(i, seed, 71) * 0.8, hash(i, seed, 72) < 0.5 ? ['#dceaf6', '#a8c4e8'] : ['#c8d8ee', '#ffffff']); },
+        low:function(B, x, y, i){ rockAt(B, x, y, 0.2 + hash(i, seed, 73) * 0.3, ['#b8c8e0', '#eef4fa']); } },
+      // the sky over the horizon: the stars, and Saturn hanging huge with its rings (or Titan, orange in its haze)
+      after:function(ctx, V){ var top = V.pr(L.cx, L.E[1], 0)[1] - 2; if (top < 4) return;
+        for (var i = 0; i < 120; i++){ var sx = hash(i, 1, seed) * V.W, sy = hash(i, 2, seed) * top, a = 0.35 + hash(i, 3, seed) * 0.6;
+          ctx.fillStyle = 'rgba(240,236,255,' + a.toFixed(2) + ')'; ctx.fillRect(sx | 0, sy | 0, hash(i, 4, seed) < 0.12 ? 2 : 1, hash(i, 4, seed) < 0.12 ? 2 : 1); }
+        if (o.titan){ var tx = V.W * 0.28, ty = top * 0.5, tr = Math.min(top * 0.42, V.W * 0.13), g = ctx.createRadialGradient(tx - tr * 0.3, ty - tr * 0.3, tr * 0.1, tx, ty, tr);
+          g.addColorStop(0, '#ffd8a0'); g.addColorStop(0.7, '#e08a3a'); g.addColorStop(1, '#a8501a'); ctx.fillStyle = 'rgba(255,170,90,0.25)'; ctx.beginPath(); ctx.arc(tx, ty, tr * 1.25, 0, 7); ctx.fill();
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(tx, ty, tr, 0, 7); ctx.fill(); }
+        if (o.saturn !== false) satPlanet(ctx, V.W * (o.titan ? 0.8 : 0.68), top * 0.52, Math.min(top * (o.titan ? 0.26 : 0.4), V.W * (o.titan ? 0.08 : 0.15)));
+        if (o.haze){ ctx.fillStyle = 'rgba(255,150,60,0.16)'; ctx.fillRect(0, 0, V.W, V.H || top * 4); } },
+      bg:o.bg || '#120e20', gain:2, mats:satMats(icy) }; }
+  // Saturn in the sky: banded gold and cream, its rings tipped across it (the back half behind the planet, the front over it)
+  function satPlanet(ctx, x, y, r){ if (r < 3) return; var tilt = -0.32;
+    function ringHalf(back){ [[2.25, 'rgba(232,214,170,0.75)', 0.22], [1.85, 'rgba(255,240,205,0.9)', 0.3], [1.5, 'rgba(200,170,120,0.7)', 0.16]].forEach(function(q){
+      ctx.strokeStyle = q[1]; ctx.lineWidth = Math.max(1, r * q[2]); ctx.beginPath(); ctx.ellipse(x, y, r * q[0], r * q[0] * 0.28, tilt, back ? Math.PI : 0, back ? Math.PI * 2 : Math.PI); ctx.stroke(); }); }
+    ringHalf(true);
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.clip();
+    var bands = ['#f0dfb4', '#e2c88c', '#d8b878', '#c8a060', '#e8d2a0', '#b8905a', '#f0dfb4'];
+    for (var i = 0; i < bands.length; i++){ ctx.fillStyle = bands[i]; ctx.fillRect(x - r, y - r + (2 * r) * i / bands.length, 2 * r, (2 * r) / bands.length + 1); }
+    var g = ctx.createRadialGradient(x - r * 0.4, y - r * 0.4, r * 0.2, x, y, r * 1.05); g.addColorStop(0, 'rgba(255,255,255,0.15)'); g.addColorStop(0.75, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(20,10,30,0.55)');
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.restore();
+    ringHalf(false); }
+  // a station module: a white cylinder lying on its side, a gold band, round windows lit blue, grey end caps
+  function satModule(B, X, Y, w){ var zb = B.gz(X, Y), H = 1.7; if (B.light) B.light(X, Y + 1, zb + 1, '#9fd8ff');
+    B.solid(X - w / 2, Y - 0.95, zb, X + w / 2, Y + 0.95, zb + H, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, r = Math.hypot(dy, t - 0.9);
+      if (r > 0.9 || Math.abs(dx) > w / 2) return null; if (Math.abs(dx) > w / 2 - 0.2) return '#8a8eb0'; if (Math.abs(dx) < 0.18) return '#ffd34d';
+      if (dy > 0.55 && Math.abs(t - 1.05) < 0.16 && (((dx + 9) * 0.9 | 0) % 2)) return '#9fd8ff'; return ((dx * 1.5 | 0) % 3) ? '#eef0f8' : '#c8cce0'; }); }
+  // an antenna mast: a lattice post, a dish tipped to the sky at the top, a red light
+  function satMast(B, X, Y, H){ var zb = B.gz(X, Y); if (B.light) B.light(X, Y, zb + H + 0.3, '#ff5577');
+    B.solid(X - 1.1, Y - 1.1, zb, X + 1.1, Y + 1.1, zb + H + 1.2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+      if (t < H && Math.abs(dx) < 0.2 && Math.abs(dy) < 0.2) return (Math.abs(dx) > 0.12 || Math.abs(dy) > 0.12 || ((t * 3) | 0) % 2) ? '#c8cce0' : null;
+      var u = dx, v = dy * 0.6 + (t - H) * 0.8, w2 = -dy * 0.8 + (t - H) * 0.6, rr = Math.hypot(u, v); if (rr < 1 && Math.abs(w2 - rr * rr / 2.2) < 0.12) return rr > 0.9 ? '#8a8eb0' : '#eef0f8';
+      if (Math.hypot(dx, dy, t - H - 0.9) < 0.14) return '#ff5577'; return null; }); }
+  // the docking arm: a long truss out over the edge of the deck, a ship's docking ring at its end
+  function satArm(B, X, Y, len){ var zb = B.gz(X, Y) + 0.6;
+    B.solid(X - len / 2, Y - 0.5, zb - 0.6, X + len / 2 + 1, Y + 0.5, zb + 1.2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+      if (dx > len / 2 - 0.3){ var rr = Math.hypot(dy, t - 0.3); return rr < 0.5 && rr > 0.3 ? '#ffd34d' : null; }
+      if (Math.abs(dy) < 0.35 && Math.abs(t) < 0.35 && (Math.abs(Math.abs(dy) - 0.3) < 0.06 || Math.abs(Math.abs(t) - 0.3) < 0.06 || Math.abs(((dx + 9) % 0.8) - 0.4) < 0.06)) return '#c8cce0';
+      if (t < -0.35 && t > -0.6 && Math.abs(dx + len / 2) < 0.4 && Math.abs(dy) < 0.4) return '#8a8eb0'; return null; }); }
+  // the Titan lander: a gold heat shield like a shallow saucer, a white instrument deck on it, a whip antenna
+  function satLander(B, X, Y){ var zb = B.gz(X, Y);
+    B.solid(X - 1.5, Y - 1.5, zb, X + 1.5, Y + 1.5, zb + 2.4, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, r = Math.hypot(dx, dy);
+      if (t < 0.5 && r < 1.4 - t * 0.6) return t < 0.12 ? '#8a5a1a' : ((r * 4 | 0) % 2 ? '#e0b040' : '#c8962a');
+      if (t >= 0.5 && t < 0.9 && r < 0.8) return Math.abs(t - 0.7) < 0.05 ? '#3a3a52' : '#eef0f4'; if (Math.abs(dx - 0.4) < 0.04 && Math.abs(dy) < 0.04 && t >= 0.9 && t < 2.3) return '#c8c8d0'; return null; }); }
+  // an ice geyser: a vent in the ice, a tall white plume rising and spreading, broken into puffs
+  function satGeyser(B, X, Y, H){ var zb = B.gz(X, Y);
+    B.solid(X - 1.6, Y - 1.6, zb - 0.1, X + 1.6, Y + 1.6, zb + H, function(px, py, pz){ var t = (pz - zb) / H, r = 0.25 + t * 1.3, d = Math.hypot(px - X - Math.sin(t * 2) * 0.3, py - Y);
+      if (pz - zb < 0.2) return d < 0.6 && d > 0.3 ? '#9fb8d8' : null; if (d > r) return null; var n = hash(px * 3 | 0, pz * 3 | 0, py * 3 | 0); return n < 0.2 + t * 0.4 ? null : (n > 0.85 ? '#dceaf6' : '#ffffff'); }); }
+
+  // 1. THE RINGS (and every Saturn hole with no place): the deck and ring ice drifting all round
+  function satRings(L){ var O = satBase(L, { chunks:0.3 }); O.build = function(){}; return O; }
+  // 2. THE RING STATION: modules and a mast behind the hole, the docking arm out over the edge, lamps on the way in
+  function satStation(L){ var O = satBase(L, { chunks:0.08 }), md = [], i;
+    for (i = 0; i < 2; i++){ var m = L.spotRect(4.2, 2, function(x, y){ return L.north(x, y) * 0.6 + L.side(x) * 1.5 + hash(x | 0, y | 0, L.seed + 11 + i); }); if (m) md.push(m); }
+    var ms = L.spot(1.4, function(x, y){ return L.north(x, y) * 0.5 + L.side(x) * 2.5; }), ar = L.spotRect(5, 1.2, function(x, y){ return L.side(x) * 3 - L.north(x, y) * 0.1; }),
+      lp = L.scatter(5, function(x, y){ return L.clearAt(x, y) < 3; }, 71).slice(0, 4);
+    O.build = function(B){ md.forEach(function(m){ satModule(B, m.x, m.y, 4); }); if (ms) satMast(B, ms.x, ms.y, 3.6); if (ar) satArm(B, ar.x, ar.y, 4.4); lp.forEach(function(q){ lamp(B, q[0], q[1], '#8a8eb0', '#9fd8ff'); }); }; return O; }
+  // 3. TITAN: the moon huge and orange in the sky, its haze over everything, the lander parked on the deck
+  function satTitan(L){ var O = satBase(L, { chunks:0.1, titan:true, haze:true, bg:'#2a1a20' }), ld = L.spot(1.6, function(x, y){ return L.north(x, y) * 0.5 + L.side(x) * 2; });
+    O.build = function(B){ if (ld) satLander(B, ld.x, ld.y); }; return O; }
+  // 4. ENCELADUS: the deck turned to bright ice, geysers venting white plumes behind the hole
+  function satEnc(L){ var O = satBase(L, { chunks:0.14, icy:true }), gs = [], i;
+    for (i = 0; i < 2; i++){ var q = L.spot(1.6, function(x, y){ return L.north(x, y) * 0.7 + hash(x | 0, y | 0, L.seed + 21 + i) * 2; }); if (q) gs.push(q); }
+    O.build = function(B){ gs.forEach(function(q, k){ satGeyser(B, q.x, q.y, 5 + k * 1.2); }); }; return O; }
+  // 5. THE HEXAGON: out over the pole, the six sided storm turning in the clouds far below, Saturn small and the rings overhead
+  function satHex(L){ var O = satBase(L, { chunks:0.06, hex:[L.cx, L.E[1] + 4, 9] }); O.build = function(){}; return O; }
+
+  // the Hexagon Eye: a round storm chamber, its walls the swirling gold and cream clouds, a calm eye of light above
+  BUILD['s-hexeye'] = function(L){ var R0 = room(L, { floor:'hxfloor', wall:'hxwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ if (B.light){ B.light(L.cx, L.cy, 6.5, '#fff2d0'); B.light(L.cx, L.cy - 4, 4, '#ffd98a'); }
+        byWall(L, 6, 73, 2.6).forEach(function(q){ if (B.light) B.light(q[0], q[1], B.gz(q[0], q[1]) + 3.8, '#ffcc88'); }); },
+      bg:'#1a1208', gain:2,
+      mats:{ hxfloor:['#c8a060', '#d8b878', '#b8905a', 0.1, function(c, R){ var a = Math.sin(c.ti * 0.21 + Math.sin(c.tj * 0.13) * 2 + c.tj * 0.05); return R(a > 0.55 ? '#f0dfb4' : a > -0.2 ? '#d8b878' : '#b8905a'); }],
+        hxwall:['#e2c88c', '#f0dfb4', '#b8905a', 0.16, function(c, R){ var z = c.z || 0, a = Math.sin(c.ti * 0.35 + z * 1.6 + Math.sin(c.ti * 0.05 + z * 0.4) * 2);
+          if (z > 5.6) return R('#fff8e8'); return R(a > 0.6 ? '#fff2d0' : a > 0 ? '#e2c88c' : a > -0.6 ? '#c8a060' : '#8a5a2a'); }] } }; };
   // @@WORLD STOPS END@@
   return { make:make, stops:STOPS, fly:FLY };
 })();
