@@ -148,6 +148,14 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
   every green and walk, and the career's age stamped on. An aura shows wherever the golfer is drawn (the
   `hvsw-glow` pulse, `host.aura()` on a canvas). `check-golfer3d.mjs` section 4 holds all of it.
 
+**The roster**
+
+- **Legend cards never change in a roster refresh** (the owner, 2026-10-27). Every card in `ROSTER` with
+  `era: "leg"` or `tier: "legend"` (the peaks, the Primes and the present-day vets) stays byte for byte.
+  The weekly refresh (`golf-rosters.yml`, `golf/roster/dg_refresh.py`) re-rates current cards only. Never pass
+  `--rerate-legends`. `golf/roster/check_refresh.py` fails a refresh that moves one. A legend is edited by hand,
+  only when the owner asks, in its own pull request.
+
 **Economy**
 
 - **A boost in `golf/boosts-baseline.json` is never lowered, removed, moved or re-statted** (the owner,
