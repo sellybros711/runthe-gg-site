@@ -2155,7 +2155,25 @@ function stopOf(th, leg){ var LD = typeof window !== 'undefined' && window.RTT_P
    we've already built. It gives the game a lot more depth and feel"). A hole listed in ROLLS gets a roll in its carpet on top of
    what it was built with: a gentle tilt across it, and a mound, a hollow or a tier where nothing else stands (roll()). The number
    is the seed the search (roll-search.mjs) settled on: the first that kept the hole's par, its secret line and its fairness. */
-var ROLLS = {};
+var ROLLS = {
+  'main:1':1, 'main:3':1, 'main:4':2, 'main:7':3, 'main:8':1, 'main:9':3, 'main:10':1, 'main:11':6, 'main:12':1, 'main:13':1, 'main:14':4, 'main:16':3,
+  'main:17':4, 'main:20':4, 'main:22':3, 'main:23':1, 'main:26':2, 'main:28':2, 'main:30':12, 'main:31':3, 'main:33':1, 'main:35':6, 'main:37':1,
+  'main:38':2, 'main:40':12, 'main:41':2, 'main:42':1, 'main:44':1, 'main:45':1, 'main:47':1, 'main:48':3, 'main:51':1, 'main:52':1, 'main:53':1,
+  'main:56':5, 'main:58':1, 'main:60':1, 'main:61':1, 'main:62':1, 'main:63':1, 'main:64':1, 'main:66':1, 'main:67':1, 'main:68':1, 'main:69':1,
+  'main:70':5, 'main:71':1, 'main:73':1, 'main:74':1, 'main:75':2, 'main:76':1, 'main:77':5, 'main:79':5, 'main:80':1, 'main:81':1, 'main:82':5,
+  'main:84':5, 'main:85':1, 'main:86':1, 'main:88':1, 'main:89':1, 'main:91':1, 'main:92':2, 'main:93':2, 'main:94':1, 'main:96':1, 'main:97':4,
+  'main:98':2, 'main:99':1, 'main:101':1, 'main:102':1, 'main:103':1, 'main:104':1, 'main:105':1, 'main:106':3, 'main:107':1, 'main:109':1,
+  'main:110':6, 'main:111':1, 'main:112':1, 'main:113':1, 'main:115':8, 'main:116':4, 'main:117':1, 'main:118':1, 'main:120':1, 'main:121':2,
+  'main:122':1, 'main:123':1, 'main:124':3, 'main:125':1, 'main:127':2, 'main:128':1, 'main:129':1, 'main:130':1, 'main:131':2, 'main:132':1,
+  'main:133':4, 'main:134':4, 'main:135':2, 'main:136':1, 'main:138':1, 'main:139':1, 'main:140':1, 'main:141':1, 'main:142':1, 'main:143':3,
+  'main:145':2, 'main:146':1, 'main:147':2, 'main:148':1, 'main:149':1, 'main:151':2, 'main:152':1, 'main:153':1, 'main:154':1, 'main:155':1,
+  'main:156':1, 'main:157':1, 'main:158':1, 'main:159':1, 'main:160':1, 'main:161':3, 'main:163':3, 'main:164':1, 'main:165':4, 'main:166':1,
+  'main:167':2, 'main:168':5, 'main:169':1, 'main:170':1, 'main:171':1, 'main:172':1, 'main:173':1, 'main:174':1, 'main:175':1, 'main:176':1,
+  'main:177':2, 'main:178':4, 'main:181':1, 'main:182':1, 'main:183':1, 'main:184':1, 'main:185':1, 'main:186':1, 'main:187':1, 'main:190':1,
+  'main:193':1, 'main:195':1, 'main:196':1, 'main:197':2, 'main:199':1, 'main:200':1, 'main:201':1, 'main:202':1, 'main:203':1, 'main:204':1,
+  'main:205':1, 'main:206':1, 'main:207':1, 'main:208':1, 'main:209':1, 'main:210':1, 'main:211':1, 'main:212':1, 'main:213':2, 'main:214':1,
+  'main:215':1, 'main:216':1
+};
 function roll(H, seed){
   var r = mulberry(hstr('roll:' + seed)), rooms = (H.polys || [{ pts:H.poly }]).map(function(q){ return q.pts || q; });
   var all = rooms.reduce(function(a, p){ return a.concat(p); }, []), xs = all.map(function(p){ return p[0]; }), ys = all.map(function(p){ return p[1]; });
