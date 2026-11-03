@@ -658,6 +658,15 @@ the pitcher's own nearest tracked season (Rivera: 2008). The league tier uses mo
 that type, hand and velocity band (2021-2025); the similar tier is matched on season line. Each is
 `resolution: 'proxy'`.
 
+The hitters of the four Retrosheet packs (1988, 2001, 2005, 2007) have no Statcast zone, so each
+gets one from his listed height (MLB Stats API, `3d/looks-data.js`): height times the mean `szTop`
+and `szBot` per foot of height of the 198 Statcast hitters in the packs (top 0.5627, bottom 0.2627;
+`pipeline/height_zones.mjs`, `--check` in CI). Against each of the 198's own measured zone the fit's
+error is top RMSE 1.51 in (MAE 1.21), bottom RMSE 0.85 in (MAE 0.69); one league zone for all is 1.97
+and 1.10. Each carries `szSrc: 'height'` (an estimate, the owner's call 2026-11-03), and a proxy spot
+says so. The zone is drawn; the engine and the grade play `zn` and the pack's `kernelZoneFt`, the
+same for every hitter of a pack, so no call or grade moves (`fixtures/replays-rules10-pre-height-src.json`).
+
 ## Adding a scenario
 
 1. Add it to `pipeline/candidates.json` and run `verify_scenarios.py <id>`; read `data/verify/<id>.json`.

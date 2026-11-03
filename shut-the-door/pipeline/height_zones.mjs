@@ -17,6 +17,11 @@
  * every call and grade stays as it is, and the zone drawn is the one the engine plays.
  * Then build_schedule.mjs to move the pack's v, and SCHEDULE_V in api.js.
  *
+ * Each such hitter carries szSrc: 'height', so the data says his zone is an estimate, not measured
+ * (the owner's call, 2026-11-03), and the at bat line says so on a proxy spot. A Statcast hitter has
+ * no szSrc. The fit's error on the 198 (his own measured zone against height times the ratio): top
+ * RMSE 1.51 in (MAE 1.21), bottom RMSE 0.85 in (MAE 0.69), against 1.97 and 1.10 for the league mean.
+ *
  * Run on the packs 2026-11-01. Held back a day before: written, it made one case of the 3D contact
  * check fail (lab/pipeline/check-contact.mjs, std-2007-ws4-papelbon, Matt Holliday, 6 ft 4, zone
  * 3.56/1.66: a low and away line drive at x -0.75, zn -0.35 met 0.032 m into the wood, past the
@@ -60,9 +65,9 @@ for (const [f, pack] of packs) {
     const h = LOOKS.players[b.id] && LOOKS.players[b.id].heightIn;
     if (!h) { wrong.push(`${sc.id} ${b.name}: no listed height`); continue; }
     const top = r2(h / 12 * r.top), bot = r2(h / 12 * r.bot);
-    if (b.szTop !== top || b.szBot !== bot) {
-      if (CHECK) wrong.push(`${sc.id} ${b.name}: ${b.szTop}/${b.szBot}, height gives ${top}/${bot}`);
-      b.szTop = top; b.szBot = bot; touched = true;
+    if (b.szTop !== top || b.szBot !== bot || b.szSrc !== 'height') {
+      if (CHECK) wrong.push(`${sc.id} ${b.name}: ${b.szTop}/${b.szBot} (${b.szSrc}), height gives ${top}/${bot} (height)`);
+      b.szTop = top; b.szBot = bot; b.szSrc = 'height'; touched = true;
     }
   }
   if (!sc.sources.includes(SOURCE)) { if (CHECK) wrong.push(`${sc.id}: no zone source`); sc.sources.push(SOURCE); touched = true; }
