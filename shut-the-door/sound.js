@@ -253,13 +253,21 @@
   function tap() { tone(at(0), 0.03, { f: 720, f2: 520, g: 0.045 }); }
   function tab() { var t = at(0); tone(t, 0.035, { type: 'triangle', f: 880, f2: 1250, g: 0.05 }); nz(t, 0.01, { type: 'highpass', f: 4000, g: 0.05 }); }
 
+  /* a phone buzz only after the player has tapped the page: before that Chrome blocks the call
+     and logs it as an error (the browser check's Survivor step caught it) */
+  function canBuzz() {
+    if (!navigator.vibrate) return false;
+    const ua = navigator.userActivation;
+    return !ua || ua.hasBeenActive;
+  }
+
   /* ---- the switch, the gesture, the hidden tab ------------------------------------------- */
   function setOn(v) {
     on = !!v;
     if (!on) {
       if (master) { master.gain.cancelScheduledValues(0); master.gain.value = 0; }
       if (bedNodes) { bedNodes.stop(0); bedNodes = null; }
-      try { if (navigator.vibrate) navigator.vibrate(0); } catch (e) {}
+      try { if (canBuzz()) navigator.vibrate(0); } catch (e) {}
       return;
     }
     if (ctx()) { master.gain.cancelScheduledValues(0); master.gain.value = 0.9; if (bedLevel > 0) bed(bedLevel); }
@@ -285,6 +293,6 @@
     ump: run(say), roar: run(roar), groan: run(groan), cheer: run(cheer), sting: run(sting),
     tick: run(tick), chime: run(chime), tap: run(tap), tab: run(tab),
     bed: function (level) { try { bed(level); } catch (e) {} },
-    buzz: function (p) { if (!on) return; try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} },
+    buzz: function (p) { if (!on || !canBuzz()) return; try { navigator.vibrate(p); } catch (e) {} },
   };
 })();

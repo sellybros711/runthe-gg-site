@@ -1183,6 +1183,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 .mh-bug .sb-outs { gap: 4px; height: 8px; }
 .mh-bug .sb-outs i { width: 8px; height: 8px; }
 .mh-card { align-self: stretch; border-radius: 14px; padding: 5px 5px 5px 12px; min-width: 0; }
+/* an upright phone: the card stops short of the top right rail (menu, sound, home), as the scorebug does */
+#s-mound .mh-card { margin-right: calc(var(--tap) + 8px); }
 /* THE AT BAT LINE: one slim row (the owner, 2026-10-27). The eyebrow carries at bat, his side and
    his line; the name under it; SCOUT on the right opens the drawer. */
 .bb-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -1430,6 +1432,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   #s-mound { --col: 330px; --dock-w: 252px; }
   .dock { left: auto; }
   #s-mound .mh-bug { max-width: none; }
+  #s-mound .mh-card { margin-right: 0; }
   /* a list: one pitch a row, the key, the name, the speed and the glyph on one line */
   #m-arsenal[data-n] { grid-template-columns: 1fr; gap: 5px; }
   #m-arsenal[data-n] .pitch { grid-column: auto; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "k n s v"; column-gap: 9px;
@@ -1440,7 +1443,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   .pbp { position: fixed; left: calc(var(--sl) + var(--gut)); right: auto; bottom: calc(var(--sb) + var(--gut)); width: max-content;
     max-width: calc(100vw - var(--dock-w) - var(--gut) * 3 - var(--sl) - var(--sr)); justify-content: flex-start; }
   .msheet { right: auto; width: calc(var(--col) - var(--gut) * 2); }
-  #s-mound .mini { top: calc(var(--st) + var(--gut) + var(--tap) + 8px); }
+  #s-mound .mini { top: calc(var(--st) + var(--gut) + var(--tap) * 3 + 24px); }
   /* the dock is a narrow tall corner: the replay stacks, the zone over the words */
   .absr { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px 12px 14px; text-align: center; }
   .ar-zone { align-self: center; width: auto; height: min(46%, 150px); aspect-ratio: 1; flex: 0 1 auto; min-height: 0; }
@@ -1797,13 +1800,9 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
   #m-scene.k-shake, .k-flash, #h-streak.pulse { animation: none; }
   .confetti { display: none; }
 }
-/* HOME on the mound (the owner, 2026-11-03): under the batter card, out of the column's flow, so the
-   scorebug, the card and the stage's frame of them never move */
-.mh-hm { position: absolute; top: calc(100% + 8px); left: 0; }
-.mh-home { height: 38px; min-width: 38px; padding: 0 12px 0 9px; border-radius: 11px; display: inline-flex; align-items: center; gap: 6px;
-  background: var(--g); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); color: var(--g-ink); -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3);
-  font-family: var(--sans); font-weight: 700; font-size: 12.5px; letter-spacing: .02em; text-transform: uppercase; }
-.mh-home svg { width: 19px; height: 19px; fill: none; stroke: var(--g-ink); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+/* HOME on the mound (the owner, 2026-11-03): the third button in the top right stack, a thumb's size like the
+   menu. Under the batter card it was a HUD panel by the zone, and the stage's frame of a short phone hung on it */
+.mh-home svg { stroke-linejoin: round; }
 .mh-home.wait { opacity: .6; }
 /* the menu's home: only while an outing is on screen */
 body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="s-next"]) #sheet-menu .menu-home { display: none; }

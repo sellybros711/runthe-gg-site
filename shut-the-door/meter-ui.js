@@ -82,7 +82,7 @@ function countTap() { try { localStorage.setItem(TAPS_KEY, String(Math.min(999, 
 function effortOn() { return MT.EFFORT === true; }
 function reduced() { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
 /* the phone's buzz rides with the sound switch (sound.js) */
-function buzz(p) { if (window.STD_SFX) return window.STD_SFX.buzz(p); try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+function buzz(p) { if (window.STD_SFX) return window.STD_SFX.buzz(p); try { const ua = navigator.userActivation; if (navigator.vibrate && (!ua || ua.hasBeenActive)) navigator.vibrate(p); } catch (e) {} }
 /* the release box's word: the stop's own word, short ("perfect", "sharp", "on time", "early", "late"), never q */
 function relWord(w) { return String(w).replace(/ release$/, '').replace(/^a bit /, ''); }
 function zoneOf(e) { return e >= MT.PERFECT_E ? 'perfect' : e < 1 / 3 ? 'soft' : e < 2 / 3 ? 'normal' : 'max'; }
