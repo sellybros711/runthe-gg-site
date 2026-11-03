@@ -387,7 +387,7 @@ window.render = async function (t) {
   if (sc.id === 'last') {
     // the last pitch: strike three looking, painted, and the door is shut
     const sec = 6.9 + l * 0.8, pu = l > 1.0 ? 0.24 * out(span(l, 1.0, 1.6)) : 0.04 * l;
-    wait = phone('last', sec, { push: pu, focus: ['scene'] });
+    wait = phone('last', sec, { push: pu, focus: null });   // the finish stays centred: the push is about the phone's own middle
     flash = l > 1.0 ? 0.6 * (1 - span(l, 1.0, 1.2)) : 0;
     shake = l > 1.0 && l < 1.2 ? 6 : 0;
     text = l > 0.95 ? capAbove(l, 1.0, [['Strike three,', ''], ['| looking.', 'org']], { size: TALL ? 124 : 96, step: 0.08 }) : '';
@@ -396,10 +396,10 @@ window.render = async function (t) {
   if (sc.id === 'shut') {
     // the result: DOOR SHUT, then you against the real game and the percentile against real closers
     const sec = 10.1 + l * 0.8, part = l < 1.8 ? ['outcome'] : ['real', 'pct'], pu = PE(PUSH * 0.5);
-    wait = phone('last', sec, { push: pu, focus: part });
+    wait = phone('last', sec, { push: pu, focus: null });
     flash = 0.4 * (1 - span(l, 0, 0.12));
     // the result says DOOR SHUT itself: no caption, and in 5:4 no callout (the phone is in the middle)
-    if (TALL && l >= 1.8) callout('last', sec, ['real', 'pct'], { zoom: 1.5, cx: CO.cx, cy: CO.low, pop: seg(1.8, d + 0.3), push: pu, focus: part });
+    if (TALL && l >= 1.8) callout('last', sec, ['real', 'pct'], { zoom: 1.5, cx: CO.cx, cy: CO.low, pop: seg(1.8, d + 0.3), push: pu, focus: null });
     text = '';
   }
   if (sc.id === 'cards') {
