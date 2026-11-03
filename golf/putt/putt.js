@@ -2156,7 +2156,7 @@ function stopOf(th, leg){ var LD = typeof window !== 'undefined' && window.RTT_P
    what it was built with: a gentle tilt across it, and a mound, a hollow or a tier where nothing else stands (roll()). The number
    is the seed the search (roll-search.mjs) settled on: the first that kept the hole's par, its secret line and its fairness. */
 var ROLLS = {
-  'main:1':1, 'main:3':1, 'main:4':2, 'main:7':3, 'main:8':1, 'main:9':3, 'main:10':1, 'main:11':6, 'main:12':1, 'main:13':1, 'main:14':4, 'main:16':3,
+  'main:192':1, 'main:1':1, 'main:3':1, 'main:4':2, 'main:7':3, 'main:8':1, 'main:9':3, 'main:10':1, 'main:11':6, 'main:12':1, 'main:13':1, 'main:14':4, 'main:16':3,
   'main:17':4, 'main:20':4, 'main:22':3, 'main:23':1, 'main:26':2, 'main:28':2, 'main:30':12, 'main:31':3, 'main:33':1, 'main:35':6, 'main:37':1,
   'main:38':2, 'main:40':12, 'main:41':2, 'main:42':1, 'main:44':1, 'main:45':1, 'main:47':1, 'main:48':3, 'main:51':1, 'main:52':1, 'main:53':1,
   'main:56':5, 'main:58':1, 'main:60':1, 'main:61':1, 'main:62':1, 'main:63':1, 'main:64':1, 'main:66':1, 'main:67':1, 'main:68':1, 'main:69':1,
