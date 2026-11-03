@@ -1120,8 +1120,10 @@ export class People {
     // the way the ball leaves (catcher's view feet to the scene, as pitch.js setAfter launches it)
     let out = null;
     if (kind === 'play' || kind === 'foul') {
-      const la = THREE.MathUtils.degToRad(kind === 'play' ? ip?.la ?? 10 : m.ball === 'back' ? 62 : ip?.la ?? 8);
-      const sp = THREE.MathUtils.degToRad(kind === 'play' ? ip?.spray ?? 0 : m.ball === 'back' ? 180 + (lefty ? -12 : 12) : (lefty ? 1 : -1) * 54);
+      // (a foul leaves the way foul.js launches it: m.foul, from play.js motion)
+      const fl = m.foul || { la: 30, spray: 180 };
+      const la = THREE.MathUtils.degToRad(kind === 'play' ? ip?.la ?? 10 : fl.la);
+      const sp = THREE.MathUtils.degToRad(kind === 'play' ? ip?.spray ?? 0 : fl.spray);
       out = P(Math.cos(la) * Math.sin(sp), Math.cos(la) * Math.cos(sp), Math.sin(la)).normalize();
     }
     // over the top of a low or breaking pitch, under a high one
@@ -1705,7 +1707,7 @@ export class People {
     const pt = this.pitch, m = this.m, b = this.batter;
     if (!pt || !b) return;
     if (m.batter === 'swing' && ['play', 'back', 'pulled'].includes(m.ball)) {
-      pt.setAfter(m.ball, pt.f.T + (b.meetBall ?? m.contactShift), { inPlay: this.play && this.play.inPlay, lefty: b.lefty });
+      pt.setAfter(m.ball, pt.f.T + (b.meetBall ?? m.contactShift), { inPlay: this.play && this.play.inPlay, lefty: b.lefty, foul: m.foul });
     } else if (m.ball === 'hbp') {
       // where his hip is, in the catcher's view feet the flight uses
       pose(b, { [b.clip]: [Math.max(0, b.tContact - 0.2), 1] });

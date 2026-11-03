@@ -21,9 +21,9 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planPlay, planSteal, planPickoff, warp, realAt, bagOf, BASE, MOUND, wallDist } from './inplay-plan.js?v=24';
 import { SHADE } from './shade-data.js?v=5';
 import { Crew } from './fielders.js?v=10';
-import { buildBallpark, MOUND_C } from './ballpark.js?v=27';
+import { buildBallpark, MOUND_C } from './ballpark.js?v=28';
 // (the same URL stage.js imports, so both share one copy of people.js)
-import { kitFor } from './people.js?v=43';
+import { kitFor } from './people.js?v=44';
 import { look } from './looks.js?v=6';
 import { P, FT } from './units.js?v=1';
 

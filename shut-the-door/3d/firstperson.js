@@ -49,7 +49,7 @@ import { LOOKS } from './looks-data.js?v=2';
 import { skin as skinMaterial } from './materials.js?v=8';
 import { assetUrl } from './load.js?v=8';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { T_RELEASE } from './pitch.js?v=13';
+import { T_RELEASE } from './pitch.js?v=14';
 
 const HALF = THREE.MathUtils.degToRad(30), TAN = Math.tan(HALF);   // the arm's lens, each way across the short side
 const GLOVE_M = 0.31;            // the glove, heel to fingertips, metres

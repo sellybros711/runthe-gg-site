@@ -25,11 +25,13 @@
  * which the first person arm reads (firstperson.js lensFor). Both are for the picture only. In the lab the aimed cell and the miss are a sample (play.js,
  * labelled so); in the game they are the engine's. Cells follow CONTRACT.md section 2, catcher's view.
  * After the plate the ball goes where the play sends it: into the glove, off the bat (the real exit
- * velocity, launch angle and spray), off the dirt, off the hitter.
+ * velocity, launch angle and spray; a foul in its shape through foul ground, foul.js), off the dirt,
+ * off the hitter.
  */
 import * as THREE from 'three';
 import { P, FT, smooth, clamp01 } from './units.js?v=1';
 import * as G from './gear3d.js?v=4';
+import { foulFlight, foulAt } from './foul.js?v=1';
 
 const G_FT = 32.17;
 const SPARKS = 36;
@@ -180,9 +182,13 @@ export class Pitch {
     const mph = (v) => v * 1.46667;
     let ev, la, spray;
     if (kind === 'play') { ev = ip.ev ?? 85; la = ip.la ?? 10; spray = ip.spray ?? 0; }
-    else if (kind === 'back') { ev = 65; la = 62; spray = 180 + (opts.lefty ? -12 : 12); }
-    else if (kind === 'pulled') { ev = ip.ev ?? 80; la = ip.la ?? 8; spray = (opts.lefty ? 1 : -1) * 54; }
-    else if (kind === 'hbp') {
+    else if (kind === 'back' || kind === 'pulled') {
+      // a foul: its launch from play.js motion (foul.js foulLaunch), its whole flight through the
+      // park's foul ground worked out now (foul.js foulFlight), so it never wanders into fair ground
+      if (!opts.foul) return;
+      this.after = { t0: contactT, c, foul: foulFlight(c, opts.foul), ground: false };
+      return;
+    } else if (kind === 'hbp') {
       // off his body: it drops away toward the pitcher's side of the plate
       const side = opts.lefty ? -1 : 1;     // away from the hitter, catcher's view x
       this.after = { t0: contactT, c, vel: { x: side * 5, y: 7, z: 4 }, ground: false };
@@ -195,6 +201,7 @@ export class Pitch {
   }
 
   afterAt(dt) {
+    if (this.after.foul) return foulAt(this.after.foul, dt);
     const { c, vel, ground } = this.after;
     // drag: the speed falls about a third over the first two seconds
     const k = 0.2, s = (1 - Math.exp(-k * dt)) / k;
