@@ -2462,7 +2462,7 @@ check(tabWords.length >= 3, `the bar labels ${tabWords.length} tabs beyond Home`
 const unnamed = tabWords.filter(t => !new RegExp(`<b>${t.word}</b>`).test(tabStep));
 check(!unnamed.length, 'and the step says what each one is',
   unnamed.length ? `unexplained: ${unnamed.map(t => t.word).join(', ')}` : '');
-check(/class="card band"/.test(gameBare) && /class="card band soon"/.test(gameBare)
+check(/class="card band play"/.test(gameBare) && /class="card band soon"/.test(gameBare)
   && /data-start="\$\{b\.id\}"/.test(gameBare),
   'and the home screen still carries the hooks they aim at');
 
@@ -2588,8 +2588,40 @@ check(/class="bandlinks"/.test(gameBare), "the band's own pages sit inside the b
    with the band's links, and the two ways to play are a pair of equal tiles. */
 check(!/class="youlinks"/.test(homeSrc) && /data-go="board"/.test(homeSrc),
   'no second row of tab links, and the band panel reaches its own board');
-check(/class="modes"/.test(homeSrc) && /class="mode free"/.test(homeSrc)
+check(/playModesHTML\(b, saved\)/.test(homeSrc) && /class="modes"/.test(gameBare) && /class="mode free"/.test(gameBare)
   && /class="mode dailycard/.test(gameBare), 'free play and the daily are two tiles side by side');
+
+/* THE HOME TABS (owner's call, 2026-11-03): the game, how your show looks, and the fan side, apart.
+   Play is first and is where every visit opens. The main mode says Start here. Your stats live on
+   the fan side, never on the Play tab. */
+console.log('the home tabs');
+check(/const HOME_TABS = \['play', 'look', 'fan'\]/.test(gameBare)
+  && /role="tablist"/.test(homeSrc) && /role="tabpanel"/.test(homeSrc),
+  'the home screen is three tabs: Play, Outfits & venue, Fan side');
+check(/if \(!HOME_TABS\.includes\(S\.homeTab\)\) S\.homeTab = 'play'/.test(homeSrc), 'and it opens on Play');
+check(/class="starthere"[\s\S]{0,120}Classic/.test(gameBare), 'the Classic tile says Start here');
+{
+  const fanAt = homeSrc.indexOf('const fanCard'), playEnd = homeSrc.indexOf('const fanCard');
+  const fan = fanAt < 0 ? '' : homeSrc.slice(fanAt, homeSrc.indexOf('};', fanAt));
+  const play = homeSrc.slice(0, playEnd);
+  check(/statsLineHTML\(\)/.test(fan) && !/statsLineHTML\(\)/.test(play)
+    && /class="lastset"/.test(fan) && /data-go="tour"/.test(fan),
+    'your stats, the tour and the last show sit on the fan side, not on Play');
+}
+/* WALK THE GROUNDS: the venue world, as a screen. It is not a venue: rooms.js never holds it, and the
+   worker fetches grounds.js only for a grounds room. */
+console.log('walk the grounds');
+{
+  const roomsSrc = read('setlist/rooms.js');
+  const workerSrc = read('setlist/world-worker.js');
+  check(/data-grounds="1"/.test(homeSrc) && /if \(S\.screen === 'grounds'\) return renderGrounds\(\)/.test(gameBare),
+    'Play opens the grounds, and render draws them');
+  check(!/grounds/.test(roomsSrc), 'the grounds are not a room in rooms.js');
+  check(/startsWith\('grounds_'\)\) await import\('\.\/grounds\.js\?v=\d+'\)/.test(workerSrc),
+    'and the worker fetches them only for a grounds room');
+  check(/if \(S\.grounds\)\{ S\.grounds\.destroy\(\); S\.grounds = null; \}/.test(gameBare),
+    'leaving the grounds stops their stage');
+}
 check(!/class="homelinks"/.test(homeSrc), 'the old grid of equal ghost buttons is gone');
 {
   /* The order is load-bearing and was wrong once. The setlist is the LAST

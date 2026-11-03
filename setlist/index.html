@@ -510,7 +510,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .band:not(.soon) > *{grid-column:1;}
     .band:not(.soon) > .lastset{grid-column:2; grid-row:1 / span 6; margin:14px 6px 6px;}
     .band-hd h2{font-size:56px;}
-    .how, .bands, .look, .statsline{max-width:960px; margin-left:auto; margin-right:auto;}
+    .how, .bands, .look, .statsline, .hmodes{max-width:960px; margin-left:auto; margin-right:auto;}
+    /* The play card has no setlist beside it now (that moved to the fan side): one column, full width. */
+    .band.play > *{grid-column:1 / -1;}
     .md-t{font-size:26px;}
     .mode{padding:16px 16px 14px;}
   }
@@ -3077,6 +3079,112 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   body.lightsdown #app > *:nth-child(3){transition-delay:.1s;}
   body.lightsdown #app > *:nth-child(n+4){transition-delay:.15s;}
   @media (prefers-reduced-motion: reduce){ #houseDim{display:none;} body.lightsdown #app > *{transform:none; opacity:1;} }
+
+  /* THE HOME TABS (owner's call, 2026-11-03), Shut The Door's switcher in Segue's kit: a dark road case
+     with a sliding lit plate. Three tabs, so --n is 3; showHomeTab moves --i. */
+  .hmodes{position:relative; display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr);
+    --n:3; --i:0; padding:4px; margin:0 auto 14px; background:#17112B; border:3px solid #0B0818;
+    border-radius:4px; box-shadow:3px 3px 0 rgba(8,5,18,.35);}
+  .hm-pill{position:absolute; left:4px; top:4px; bottom:4px; width:calc((100% - 8px) / var(--n));
+    background:var(--teal); border-radius:2px; box-shadow:inset 0 -3px 0 rgba(11,8,24,.28);
+    transform:translate3d(calc(var(--i) * 100%),0,0); transition:transform .26s cubic-bezier(.22,.8,.24,1);
+    pointer-events:none;}
+  .hm-t{position:relative; z-index:1; min-height:44px; padding:0 6px; border:0; background:transparent;
+    color:#CFC4E6; font-family:var(--ui); font-weight:400; font-size:15px; letter-spacing:1.2px;
+    text-transform:uppercase; line-height:1.05; transition:color .2s; -webkit-tap-highlight-color:transparent;}
+  .hm-t.on{color:#0B0818;}
+  .hm-t:not(.on):hover{color:#fff;}
+  .hm-t:focus-visible{outline:3px solid #fff; outline-offset:-3px;}
+  @media (max-width:389px){ .hm-t{font-size:13px; letter-spacing:.6px;} }
+  @media (prefers-reduced-motion: reduce){ .hm-pill{transition:none;} }
+  .hpane[hidden]{display:none;}
+
+  /* START HERE: a sticker on the Classic slip, so the main mode is never a guess. */
+  .mode.free{overflow:visible;}
+  .starthere{position:absolute; top:-22px; right:8px; z-index:2; padding:4px 9px 3px;
+    font-family:var(--ui); font-weight:400; font-size:13px; letter-spacing:1.4px; text-transform:uppercase;
+    color:#0B0818; background:#F2C43A; border:2px solid #0B0818; border-radius:2px;
+    box-shadow:2px 2px 0 #0B0818; transform:rotate(3deg); animation:shPulse 2.4s ease-in-out infinite;}
+  .starthere:after{content:''; display:inline-block; margin-left:6px; vertical-align:1px;
+    border:5px solid transparent; border-top:6px solid #0B0818; border-bottom:0;}
+  @keyframes shPulse{50%{transform:rotate(3deg) translateY(-2px); box-shadow:2px 4px 0 #0B0818;}}
+  @media (prefers-reduced-motion: reduce){ .starthere{animation:none;} }
+  .modes{padding-top:18px;}
+
+  /* WALK THE GROUNDS: a ticket into the venue world, painted with a slice of the lawn. */
+  .groundsgo{display:flex; align-items:stretch; width:100%; margin:12px 0 4px; padding:0; text-align:left;
+    font-family:inherit; color:#F6F2EA; background:#0E0B1C; border:3px solid #0B0818;
+    border-radius:2px; box-shadow:3px 3px 0 #000; overflow:hidden; cursor:pointer;}
+  .groundsgo:active{transform:translate(2px,2px); box-shadow:1px 1px 0 #000;}
+  .groundsgo:focus-visible{outline:3px solid var(--teal); outline-offset:2px;}
+  .gg-art{flex:0 0 96px; min-height:74px; background:#221a40 url('/setlist/venues/lawn.png?v=4') center / cover no-repeat;
+    image-rendering:pixelated; border-right:3px solid #0B0818;}
+  .gg-tx{flex:1; display:flex; flex-direction:column; justify-content:center; gap:2px; padding:9px 10px;}
+  .gg-k{font-size:10.5px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:#9FE7EF;}
+  .gg-tx b{font-family:var(--ui); font-weight:400; font-size:21px; letter-spacing:1.2px; text-transform:uppercase; line-height:1;}
+  .gg-s{font-size:12px; font-weight:600; color:#CFC4E6; line-height:1.3;}
+  .gg-go{display:grid; place-items:center; flex:0 0 40px; font-size:30px; font-weight:900; color:#0B0818; background:#9FE7EF;
+    border-left:3px solid #0B0818;}
+  .band:not(.soon) .playlinks{grid-template-columns:minmax(0,1fr); margin-top:8px;}
+  .band.fan .statsline{margin:12px 0 0; padding:0; color:#B8AFCB;}
+  .band.fan .statsline .linkbtn{color:#9FE7EF;}
+
+  /* ── Walk the grounds: the venue world full screen, every building a door ── */
+  body[data-screen="grounds"]{overflow:hidden;}
+  body[data-screen="grounds"] .topbar, body[data-screen="grounds"] .sfoot{display:none;}
+  body[data-screen="grounds"] #app{padding:0; max-width:none;}
+  .grounds{position:fixed; inset:0; z-index:30; background:#07051A; overflow:hidden;}
+  .grounds canvas{position:absolute; left:0; top:0; image-rendering:pixelated;}
+  .gr-hud{position:absolute; left:0; right:0; top:0; z-index:3; display:flex; justify-content:space-between; align-items:center;
+    padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 0; pointer-events:none;}
+  .gr-hud > *{pointer-events:auto;}
+  .gr-btn{min-height:44px; padding:0 14px; font-family:var(--ui); font-weight:400; font-size:15px; letter-spacing:1.2px;
+    text-transform:uppercase; color:#1B1726; background:#F6F2EA; border:2px solid #0B0818; border-radius:2px;
+    box-shadow:2px 2px 0 #0B0818;}
+  .gr-btn:active{transform:translate(2px,2px); box-shadow:none;}
+  .gr-spots{position:absolute; inset:0; z-index:2;}
+  .gr-spot{position:absolute; background:none; border:0; padding:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:flex-start; cursor:pointer;}
+  .gr-spot .sign{font-family:var(--ui); font-weight:400; font-size:13px; letter-spacing:1.2px; text-transform:uppercase;
+    white-space:nowrap; color:#fff; background:var(--sc); border:2px solid #0B0818; border-radius:2px; padding:3px 8px 2px;
+    box-shadow:2px 2px 0 #0B0818; transform:translateY(-70%); transition:transform .12s;}
+  .gr-spot:hover .sign, .gr-spot:focus-visible .sign{transform:translateY(-85%) scale(1.06);}
+  .gr-spot:focus-visible{outline:none;}
+  .gr-spot:focus-visible .sign{outline:3px solid #fff; outline-offset:2px;}
+  .gr-spot:active .sign{transform:translateY(-60%);}
+  /* Your stats are an extra for people who sign up: a smaller, quieter sign. */
+  .gr-spot.minor .sign{font-family:var(--body); font-weight:800; font-size:10.5px; letter-spacing:.3px; text-transform:none;
+    background:#1B1726; color:#D8D0EA; border-color:#3a3550; box-shadow:1px 1px 0 #0B0818; padding:2px 6px;}
+  .gr-spot.play .sign{font-size:20px; padding:5px 16px 3px; letter-spacing:2px; animation:grPulse 1.6s ease-in-out infinite;}
+  @keyframes grPulse{50%{box-shadow:2px 2px 0 #0B0818, 0 0 18px var(--sc);}}
+  @media (prefers-reduced-motion: reduce){ .gr-spot.play .sign{animation:none;} }
+  .gr-cta{position:absolute; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 14px); z-index:3; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; white-space:nowrap;}
+  .gr-go{min-height:52px; padding:0 22px; font-family:var(--ui); font-weight:400; font-size:17px; letter-spacing:1.5px;
+    text-transform:uppercase; color:#0B0818; background:var(--teal); border:3px solid #0B0818; border-radius:2px;
+    box-shadow:3px 3px 0 #0B0818;}
+  .gr-go:active{transform:translate(2px,2px); box-shadow:1px 1px 0 #0B0818;}
+  .gr-veil{position:fixed; inset:0; z-index:60; background:rgba(5,3,14,.55); opacity:0; pointer-events:none; transition:opacity .2s;}
+  .gr-veil.on{opacity:1; pointer-events:auto;}
+  .gr-sheet{--card:#17112B; --card2:#211A3A; --ink:#F6F2EA; --mut:#CFC4E6; --dim:#A99FC4; --line2:rgba(255,255,255,.18);
+    position:fixed; left:0; right:0; bottom:0; z-index:61; max-height:78dvh; overflow:auto; color:#F6F2EA;
+    background:#14102A; border-top:3px solid var(--sc, var(--teal)); box-shadow:0 -4px 0 #0B0818;
+    transform:translateY(105%); transition:transform .26s cubic-bezier(.33,1,.68,1); visibility:hidden;
+    padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 18px);}
+  @media (min-width:760px){ .gr-sheet{left:50%; right:auto; width:640px; margin-left:-320px; border:3px solid var(--sc, var(--teal)); border-bottom:0;} }
+  .gr-sheet.on{transform:none; visibility:visible;}
+  @media (prefers-reduced-motion: reduce){ .gr-sheet, .gr-veil{transition:none;} }
+  .gs-hd{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;}
+  .gs-hd h2{font-family:var(--ui); font-weight:400; font-size:24px; letter-spacing:1.6px; text-transform:uppercase; margin:0; color:var(--sc, var(--teal));}
+  .gs-x{min-height:44px; padding:0 14px; background:none; color:#F6F2EA; border:2px solid rgba(255,255,255,.3); border-radius:2px; font-weight:800; font-size:13px;}
+  .gs-p{font-size:14px; font-weight:600; color:#CFC4E6; line-height:1.45; margin:0 0 12px;}
+  .gs-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .gs-row .gr-go{min-height:48px; font-size:15px;}
+  .gr-sheet .modes{margin-top:4px;}
+  .gr-sheet .lastset{margin:0;}
+  .gs-how{margin:0 0 12px; padding:12px 14px 12px 34px; background:#1B1726; border:3px solid #3a3550;
+    font-family:var(--hand); font-size:16px; line-height:1.55; color:#F6F2EA;}
+  .gs-how li::marker{color:#F2B632;}
 </style>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
@@ -3401,7 +3509,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=45';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=45';
-import { createStage } from './stage.js?v=21';
+import { createStage } from './stage.js?v=22';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones, tally } from './venues.js?v=2';
 import { ROLES, OUTFITS, ladderProgress, outfitOpen, dressFor } from './outfits.js?v=1';
 
@@ -3776,7 +3884,7 @@ const app = document.getElementById('app');
 /* Only home and the profile ever lead to these, so anything else is a stale
    breadcrumb and the profile is the safer of the two to land on. */
 function backFrom(){
-  return S.cameFrom === 'home' ? 'home' : 'profile';
+  return S.cameFrom === 'home' || S.cameFrom === 'grounds' ? S.cameFrom : 'profile';
 }
 
 function setScreen(name){
@@ -3786,6 +3894,7 @@ function setScreen(name){
   if (S.stage){ S.stage.destroy(); S.stage = null; }
   if (S.crowdStage){ S.crowdStage.destroy(); S.crowdStage = null; }
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
+  if (S.grounds){ S.grounds.destroy(); S.grounds = null; }
   /* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
      scorecard" at the foot of a long playback landed half way down the
      scorecard, and every round after the first opened its reveal wherever the
@@ -3860,7 +3969,7 @@ function mountStrip(name){
   const mine = S.stripSeq = (S.stripSeq || 0) + 1;
   const cv = document.getElementById('bandStrip');
   if (!act || !cv) return;
-  const go = () => import('./backstage.js?v=9').then(m => {
+  const go = () => import('./backstage.js?v=10').then(m => {
     if (mine !== S.stripSeq || S.strip) return;
     S.strip = { act, h: m.createStrip(cv, { act, sign: busSign(), dress: bandDress(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches }) };
@@ -4111,7 +4220,7 @@ function mountWardrobe(){
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
   const box = document.querySelector('.wardrobe');
   if (!box) return;
-  const go = () => import('./backstage.js?v=9').then(m => {
+  const go = () => import('./backstage.js?v=10').then(m => {
     if (!box.isConnected || S.backstage) return;
     S.backstage = m.createWardrobe([...box.querySelectorAll('.wr-cv')], { dress: bandDress(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
@@ -4147,7 +4256,59 @@ function dailyCardHTML(b, saved){
     </button>`;
 }
 
+/* The tabs take the arrow keys, the way a tablist does: focus follows the selection. */
+document.addEventListener('keydown', e => {
+  const t = e.target.closest && e.target.closest('[data-htab]');
+  if (!t) return;
+  const i = HOME_TABS.indexOf(t.dataset.htab), n = HOME_TABS.length;
+  const j = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i + n - 1) % n
+    : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+  if (j < 0) return;
+  e.preventDefault();
+  showHomeTab(HOME_TABS[j]);
+  const nb = document.getElementById('hm-' + HOME_TABS[j]); if (nb) nb.focus();
+});
+
+/* THE TWO WAYS TO PLAY, the same tiles on the home card and on the grounds' stage. */
+function playModesHTML(b, saved){
+  return `
+        <div class="modes">
+          ${saved && !saved.daily
+            ? `<button type="button" class="mode free" data-resume="${b.id}">
+                <span class="md-k">In progress</span>
+                <span class="md-t">Resume your setlist</span>
+                <span class="md-s">${esc(draftSummary(saved))}</span>
+                <span class="md-go">Resume</span></button>`
+            : `<button type="button" class="mode free" data-start="${b.id}">
+                ${/* START HERE (owner's call, 2026-11-03): the main mode says so, on the tile itself. */''}
+                <span class="starthere" aria-hidden="true">Start here</span>
+                <span class="md-k">Classic &middot; Free play</span>
+                <span class="md-t">Build a setlist</span>
+                <span class="md-s">Random nights, as many as you like.</span>
+                <span class="md-go">Build your show</span></button>`}
+          ${b.sample ? '' : dailyCardHTML(b, saved)}
+        </div>`;
+}
+
+const HOME_TABS = ['play', 'look', 'fan'];
+const HOME_TAB_LABEL = { play: 'Play', look: 'Outfits &amp; venue', fan: 'Fan side' };
+/* Swaps the panel without a render, so nothing on screen reloads: the pill slides, one pane shows. */
+function showHomeTab(t){
+  if (!HOME_TABS.includes(t)) return;
+  S.homeTab = t;
+  const bar = document.querySelector('.hmodes');
+  if (!bar) return;
+  bar.style.setProperty('--i', HOME_TABS.indexOf(t));
+  for (const b of bar.querySelectorAll('[data-htab]')){
+    const on = b.dataset.htab === t;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on));
+    if (on) b.removeAttribute('tabindex'); else b.setAttribute('tabindex', '-1');
+  }
+  for (const k of HOME_TABS){ const p = document.getElementById('hp-' + k); if (p) p.hidden = k !== t; }
+}
+
 function renderHome(){
+  if (!HOME_TABS.includes(S.homeTab)) S.homeTab = 'play';
   const real = BANDS.filter(b => !b.sample);
   /* THE SAMPLE BAND IS A DEVELOPMENT FIXTURE and it was on the live page, one
      tap under the real one, labelled "Made-up data we use for testing". A
@@ -4175,16 +4336,11 @@ function renderHome(){
    */
   const card = b => {
     const mine = attendedCount(b.id);
-    const live = b.latest ? LATEST.data : null;
-    const next = b.latest ? nextShow() : null;
-    const last = live && live.last;
-    const days = next ? daysUntil(next.date) : null;
-    const place = s => [s.city, s.state || s.country].filter(Boolean).join(', ');
     const draft = readDraft();
     const saved = draft && draft.band === b.id ? draft : null;
 
     return `
-      <section class="card band">
+      <section class="card band play">
         <div class="band-hd"><span class="eyebrow">Now playing</span><h2>${esc(b.label)}</h2></div>
         <div class="band-meta">${esc(b.note)}${mine
           ? ` <b class="mine">&middot; you've been to ${mine}</b>` : ''}</div>
@@ -4199,25 +4355,37 @@ function renderHome(){
               peers: a random night that is yours alone, or today's night that is
               everybody's. Starting over is a quiet link under them, never a
               second big button that looks like the first. */''}
-        <div class="modes">
-          ${saved && !saved.daily
-            ? `<button type="button" class="mode free" data-resume="${b.id}">
-                <span class="md-k">In progress</span>
-                <span class="md-t">Resume your setlist</span>
-                <span class="md-s">${esc(draftSummary(saved))}</span>
-                <span class="md-go">Resume</span></button>`
-            : `<button type="button" class="mode free" data-start="${b.id}">
-                <span class="md-k">Free play</span>
-                <span class="md-t">Build a setlist</span>
-                <span class="md-s">Random nights, as many as you like.</span>
-                <span class="md-go">Build your show</span></button>`}
-          ${b.sample ? '' : dailyCardHTML(b, saved)}
-        </div>
+        ${playModesHTML(b, saved)}
         ${saved ? `<button class="linkbtn freshlink" type="button" data-start="${b.id}"
           data-fresh="1">Throw it away and start a new one</button>` : ''}
         ${/* Sharing is the point of building one: say so where the buttons are. */''}
         <p class="shareline">Every show you build makes a card to send your friends. No account needed.</p>
 
+        ${/* WALK THE GROUNDS (owner's call, 2026-11-03): the venue world from the layout prototypes, a
+              place to look around in. Every building is a door to the real screen it stands for. */''}
+        ${b.shows ? `<button type="button" class="groundsgo" data-grounds="1">
+          <span class="gg-art" aria-hidden="true"></span>
+          <span class="gg-tx"><span class="gg-k">Explore</span><b>Walk the grounds</b>
+            <span class="gg-s">The stage, the bus, the merch. Every booth is a door.</span></span>
+          <span class="gg-go" aria-hidden="true">&rsaquo;</span></button>
+        <div class="bandlinks playlinks">
+          <button type="button" data-go="board">${goIcon('board')}Leaderboard</button>
+        </div>` : ''}
+      </section>`;
+  };
+
+  /* THE FAN SIDE (owner's call, 2026-11-03): what the band is up to, and what you have tracked. It is
+     its own tab, apart from the game, so a player never mistakes a stats page for the way to play. */
+  const fanCard = b => {
+    const live = b.latest ? LATEST.data : null;
+    const next = b.latest ? nextShow() : null;
+    const last = live && live.last;
+    const days = next ? daysUntil(next.date) : null;
+    const place = s => [s.city, s.state || s.country].filter(Boolean).join(', ');
+    return `
+      <section class="card band fan">
+        <div class="band-hd"><span class="eyebrow">The fan side</span><h2>${esc(b.label)}</h2></div>
+        <div class="band-meta">Where they're playing, what they played, and every song they know.</div>
         ${next ? `<div class="nextline">
           <span class="nl-k">Next show</span>
           <b class="nl-v">${esc(countdownWords(days))}</b>
@@ -4246,8 +4414,8 @@ function renderHome(){
         ${b.shows ? `<div class="bandlinks">
           <button type="button" data-go="tour">${goIcon('tour')}Tour dates</button>
           <button type="button" data-go="songs">${goIcon('songs')}All songs</button>
-          <button type="button" data-go="board">${goIcon('board')}Leaderboard</button>
         </div>` : ''}
+        ${statsLineHTML()}
       </section>`;
   };
 
@@ -4274,16 +4442,22 @@ function renderHome(){
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
 
+    ${/* THE HOME TABS (owner's call, 2026-11-03), the same switcher Shut The Door has: Play is the game,
+          Outfits & venue is how your show looks, and the fan side is the band and your stats. A tab swaps
+          the panel under it and nothing else. Every visit opens on Play: the game comes first. */''}
+    <div class="hmodes" role="tablist" aria-label="Sections" style="--i:${HOME_TABS.indexOf(S.homeTab)}">
+      <i class="hm-pill" aria-hidden="true"></i>
+      ${HOME_TABS.map(t => `<button class="hm-t${S.homeTab === t ? ' on' : ''}" id="hm-${t}" type="button" role="tab"
+        data-htab="${t}" aria-selected="${S.homeTab === t}" aria-controls="hp-${t}"${S.homeTab === t ? '' : ' tabindex="-1"'}>${HOME_TAB_LABEL[t]}</button>`).join('')}
+    </div>
+
+    <div class="hpane" id="hp-play" role="tabpanel" aria-labelledby="hm-play"${S.homeTab === 'play' ? '' : ' hidden'}>
     <div class="bands">${real.map(card).join('')}
       <section class="card band soon">
         <div><div class="band-hd"><h2>More bands coming soon</h2></div></div>
         <button class="linkbtn" type="button" id="reqBand">Request one</button>
       </section></div>
 
-
-    ${lookHTML()}
-
-    ${statsLineHTML()}
 
     ${/* HOW IT WORKS, FOLDED (owner's call, 2026-10-28). It sat above the band panel and pushed
           Build your show and the daily below the fold on a phone. Now it waits under them, closed,
@@ -4372,6 +4546,16 @@ function renderHome(){
            makes it a manual rather than a popup. -->
       <button class="btn ghost tiny how-tour" type="button" id="guideBtn">Show me around</button>
     </details>
+
+    </div>
+
+    <div class="hpane" id="hp-look" role="tabpanel" aria-labelledby="hm-look"${S.homeTab === 'look' ? '' : ' hidden'}>
+      ${lookHTML()}
+    </div>
+
+    <div class="hpane" id="hp-fan" role="tabpanel" aria-labelledby="hm-fan"${S.homeTab === 'fan' ? '' : ' hidden'}>
+      <div class="bands">${real.map(fanCard).join('')}</div>
+    </div>
 
     ${/* THE "YOURS" ROW IS GONE. Leaderboard and Your shows were the only two
           links on it, and both are tabs on the bar that sits under this screen
@@ -7898,6 +8082,156 @@ function renderShow(){
   else go();
 }
 
+
+/* ── walk the grounds ──────────────────────────────────────────────────────────
+ *
+ * THE VENUE WORLD (owner's call, 2026-11-03, layout B of the two prototypes, as a place to visit rather
+ * than the front screen). stage.js draws it, in a room made of the stage kit's solids (grounds.js), with
+ * the band in their real frames and the crowd, sky and lights it draws every show. This screen only
+ * hangs signs on it, worked out from the same feet the buildings were built in, and every sign opens
+ * the real screen it stands for. It is not a venue: it earns nothing and is never drawn for a show.
+ */
+const GR_ROTATE = ['jam', 'closer', 'opener', 'peak', 'cover'];
+const GR_SIGNS = [
+  ['stage', 'Play', '#37C5D5', 'play'], ['board', 'Leaderboard', '#C9940F'], ['foh', 'Last show', '#6A58A8'],
+  ['bus', 'Tour dates', '#E0742E'], ['trailer', 'Outfits', '#7553D0'], ['records', 'All songs', '#D13F86'],
+  ['food', 'How it works', '#B8860B'], ['box', 'Your stats', '#7553D0', 'minor'], ['gate', 'Venue', '#2E9AA8'],
+];
+const grArr = () => innerWidth > innerHeight * 1.1 ? 'wide' : 'tall';
+
+function renderGrounds(){
+  const b = BANDS.find(x => !x.sample);
+  if (!b || !b.shows){ S.screen = 'home'; return renderHome(); }
+  loadLatest();
+  app.innerHTML = `
+    <main class="grounds" id="grounds">
+      <canvas id="grCv" aria-hidden="true"></canvas>
+      <div class="gr-spots" id="grSpots"></div>
+      <div class="gr-hud">
+        <button class="gr-btn" type="button" data-gr-back>&lsaquo; Back</button>
+      </div>
+      ${/* No tagline here: it sat over the soundboard and the gate, and the home screen already says it. */''}
+      <div class="gr-cta">
+        <button class="gr-go" type="button" data-gr-open="stage">Build your show</button></div>
+      <div class="gr-veil" id="grVeil" data-gr-close></div>
+      <section class="gr-sheet" id="grSheet" role="dialog" aria-modal="true" aria-labelledby="grHd" aria-hidden="true">
+        <div class="gs-hd"><h2 id="grHd"></h2><button class="gs-x" type="button" data-gr-close>Close</button></div>
+        <div id="grBody"></div>
+      </section>
+    </main>`;
+
+  const host = document.getElementById('grounds'), cv = document.getElementById('grCv');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const G = S.grounds = { arr: grArr(), stage: null, tick: 0, dead: false, cam: null, n: 0,
+    destroy(){
+      G.dead = true; clearInterval(G.tick);
+      if (G.stage){ G.stage.destroy(); G.stage = null; }
+      removeEventListener('resize', onResize); removeEventListener('keydown', onKey);
+    } };
+
+  Promise.all([import('./grounds.js?v=1'), import('./world.js?v=6')]).then(([gm, wm]) => {
+    if (G.dead) return;
+    G.SPOTS = gm.SPOTS; G.ROOMS = gm.GROUNDS; G.cam = wm;
+    start();
+  }).catch(() => { if (!G.dead){ S.screen = 'home'; setScreen('home'); } });
+
+  function start(){
+    if (G.stage) G.stage.destroy();
+    G.stage = createStage(cv, { venue: 'grounds_' + G.arr, seed: 23, shot: 'crowd', dress: bandDress(),
+      you: { d: 1, rnd: null, seed: 5 }, reduce });
+    // Not the end of the night: the band is playing, the lights are on the lawn.
+    G.stage.cue({ kind: 'set', progress: .92 });
+    G.stage.cue({ kind: 'song', instant: true, progress: .92, energy: .6, palette: 'jam' });
+    place();
+  }
+  // A new song every so often, so the lights move round the grounds the way a show does.
+  if (!reduce) G.tick = setInterval(() => {
+    if (G.stage && !document.hidden) G.stage.cue({ kind: 'song', progress: .92, energy: .45 + Math.random() * .4,
+      palette: GR_ROTATE[G.n++ % GR_ROTATE.length], hold: 7000 });
+  }, 7000);
+
+  /* The renderer's own camera, worked the same way stage.js works it, so a sign lands on its building. */
+  function camera(){
+    const { sx, sy, WPX, HPX } = G.cam;
+    const dpr = devicePixelRatio || 1, cw = host.clientWidth, ch = host.clientHeight;
+    const devW = Math.round(cw * dpr), devH = Math.round(ch * dpr);
+    let k = Math.max(1, Math.round(devW / 340)); k = Math.max(k, Math.ceil(devW / WPX), Math.ceil(devH / HPX));
+    const visW = Math.ceil(devW / k), visH = Math.ceil(devH / k), back = G.ROOMS[G.arr].floor.back;
+    const camX = Math.round(sx(0) - visW / 2), camY = Math.round(Math.min(Math.max(0, sy(back + .5, 0) + 5 - visH), HPX - visH));
+    const u = k / dpr;
+    return (x, y, z) => [(sx(x) - camX) * u, (sy(y, z) - camY) * u];
+  }
+  function place(){
+    const P = camera(), at = Object.assign({ stage: [-14, 14, -14.5, 0, 17] }, G.SPOTS[G.arr]);
+    document.getElementById('grSpots').innerHTML = GR_SIGNS.map(([id, label, c, cls]) => {
+      const [x0, x1, y0, y1, h] = at[id], [l, t] = P(x0, y0, h), [r, bt] = P(x1, y1, 0);
+      return `<button type="button" class="gr-spot ${cls || ''}" ${grAction(id)} style="--sc:${c}; left:${l}px; top:${t}px; width:${r - l}px; height:${bt - t}px"><span class="sign">${esc(label)}</span></button>`;
+    }).join('');
+  }
+  function onResize(){
+    if (!G.cam) return;
+    const a = grArr();
+    if (a !== G.arr){ G.arr = a; start(); } else place();
+  }
+  function onKey(e){ if (e.key === 'Escape') grClose(); }
+  addEventListener('resize', onResize);
+  addEventListener('keydown', onKey);
+}
+
+/* What each sign does. The pages are the real ones; the sheets hold what fits on one panel. */
+function grAction(id){
+  switch (id){
+    case 'board': return 'data-go="board"';
+    case 'bus': return 'data-go="tour"';
+    case 'records': return 'data-go="songs"';
+    case 'trailer': case 'gate': return 'data-gr-look';
+    case 'box': return ME.signedIn ? 'data-go="profile"' : 'data-gr-open="box"';
+    default: return `data-gr-open="${id}"`;
+  }
+}
+function grPanel(id){
+  const b = BANDS.find(x => !x.sample);
+  const last = LATEST.data && LATEST.data.last;
+  const place = s => [s.city, s.state || s.country].filter(Boolean).join(', ');
+  if (id === 'stage'){
+    const draft = readDraft();
+    return ['Play', '#37C5D5', `${playModesHTML(b, draft && draft.band === b.id ? draft : null)}
+      <p class="gs-p" style="margin:12px 0 0">Every show you build makes a card to send your friends. No account needed.</p>`];
+  }
+  if (id === 'foh') return ['Last show', '#8A7AE0', last && last.sets.length ? `<div class="lastset">
+      <div class="ls-hd"><span class="ls-hk">Last show</span> <b>${esc(fmtDate(last.date))}</b>
+        <span class="ls-hp">${esc(last.venue)}${place(last) ? `, ${esc(place(last))}` : ''}</span></div>
+      ${last.sets.map(st => `<div class="ls-row"><span class="ls-k">${esc(st.label)}</span>
+        <span class="ls-v">${st.songs.map((sg, i) => esc(sg.n) + (i === st.songs.length - 1 ? ''
+          : sg.s ? '<i class="ls-seg">&gt;</i>' : '<i class="ls-sep">,</i>')).join(' ')}</span></div>`).join('')}
+    </div>` : `<p class="gs-p">${LATEST.tried ? 'No setlist yet.' : 'Loading the last show.'}</p>`];
+  if (id === 'food') return ['How it works', '#E0A82E', `<ol class="gs-how">
+      <li>The wheel picks a real night. Not you.</li>
+      <li>Take one song. It costs every second it ran.</li>
+      <li>Fill 75, 70 and 10 minutes. Then the crowd decides.</li></ol>
+      <p class="gs-p">Real segues are where the points are. Grabbing every monster jam is how you lose.</p>`];
+  if (id === 'box') return ['Your stats', '#A982F3', `<p class="gs-p">Sign up and Segue keeps your stats: every setlist you've built, and the real shows you were at. Optional, and free.</p>
+      <div class="gs-row"><button class="gr-go" type="button" data-venue-auth>Sign up</button></div>`];
+  return null;
+}
+function grOpen(id){
+  const p = grPanel(id), sh = document.getElementById('grSheet');
+  if (!p || !sh) return;
+  const [title, col, body] = p;
+  sh.style.setProperty('--sc', col);
+  document.getElementById('grHd').textContent = title;
+  document.getElementById('grBody').innerHTML = body;
+  sh.classList.add('on'); sh.setAttribute('aria-hidden', 'false');
+  document.getElementById('grVeil').classList.add('on');
+  const x = sh.querySelector('.gs-x'); if (x) x.focus({ preventScroll: true });
+}
+function grClose(){
+  const sh = document.getElementById('grSheet');
+  if (!sh || !sh.classList.contains('on')) return;
+  sh.classList.remove('on'); sh.setAttribute('aria-hidden', 'true');
+  document.getElementById('grVeil').classList.remove('on');
+}
+
 function render(){
   paintTabs();
   if (S.screen === 'home')    return renderHome();
@@ -7912,6 +8246,7 @@ function render(){
   if (S.screen === 'browse')  return renderBrowse();
   if (S.screen === 'songs')   return renderSongs();
   if (S.screen === 'nights')  return renderNights();
+  if (S.screen === 'grounds') return renderGrounds();
 }
 
 /* ── your nights ─────────────────────────────────────────────────────────────
@@ -8970,6 +9305,14 @@ function renderProfile(){
 
 // ── events ───────────────────────────────────────────────────────────────────
 app.addEventListener('click', e => {
+  const hTab = e.target.closest('[data-htab]');
+  if (hTab){ showHomeTab(hTab.dataset.htab); return; }
+  if (e.target.closest('[data-grounds]')){ S.cameFrom = S.screen; setScreen('grounds'); return; }
+  if (e.target.closest('[data-gr-back]')){ S.homeTab = 'play'; setScreen('home'); return; }
+  if (e.target.closest('[data-gr-close]')){ grClose(); return; }
+  const grO = e.target.closest('[data-gr-open]');
+  if (grO){ grOpen(grO.dataset.grOpen); return; }
+  if (e.target.closest('[data-gr-look]')){ S.homeTab = 'look'; setScreen('home'); return; }
   const vAuth = e.target.closest('[data-venue-auth]');
   if (vAuth){ openAuth('in'); return; }
   const vNext = e.target.closest('[data-venue-next]');
