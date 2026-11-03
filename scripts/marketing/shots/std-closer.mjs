@@ -7,6 +7,10 @@
    page keeps a vote it already knows (std_picks_v1, as test/check-browser.mjs does), so no server is
    asked. The outing is the real engine, seeded by the day as it is for everyone.
 
+   STD_SAVED, an outing kept the way the page keeps one (std_outing_v1: the day, the scenario and its calls),
+   starts the take part way through: the page resumes it, so a highlight is filmed without the pitches
+   before it. Make it with the engine (the calls of the same plan), so the resumed state is exact.
+
    PLAN is the pitches thrown, in order: [arsenal index, zone cell 0-24 in screen order, power ms,
    release ms], the waits from the meter showing to each tap. A different plan is a different outing. */
 export const page = '/shut-the-door/';
@@ -24,6 +28,7 @@ export const init = `(() => {
     localStorage.setItem('std_picks_v1', JSON.stringify({ v: 1, days: { '${DAY}': '${PACK}' } }));
     localStorage.setItem('std_ui_v1', JSON.stringify({ meter: true, quick: false, sound: false }));
     localStorage.setItem('runthegrid_theme', 'dark');
+    ${process.env.STD_SAVED ? `localStorage.setItem('std_outing_v1', ${JSON.stringify(process.env.STD_SAVED)});` : ''}
   } catch (e) {}
 })();`;
 
