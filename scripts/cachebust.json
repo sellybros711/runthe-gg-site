@@ -3139,8 +3139,8 @@
       "sha": "8d8bbd62d19c78da"
     },
     "menus.js": {
-      "v": "13",
-      "sha": "4e91ee92a131689f"
+      "v": "14",
+      "sha": "5789e94c1f0a30e5"
     },
     "rng.js": {
       "v": "1",
@@ -3195,20 +3195,20 @@
       "sha": "a21a33c4cc2aaaa9"
     },
     "modes-ui.js": {
-      "v": "5",
-      "sha": "abe0aa5618ef355b"
+      "v": "6",
+      "sha": "fcdf3e57e308511f"
     },
     "box-ui.js": {
       "v": "2",
       "sha": "e7860ce740a44c4c"
     },
     "ads.js": {
-      "v": "2",
-      "sha": "0532e84f54b65a4e"
+      "v": "3",
+      "sha": "9314ac5af2667f8b"
     },
     "ui.js": {
-      "v": "61",
-      "sha": "7dfb9fa04deb2e24"
+      "v": "62",
+      "sha": "c1b1fe02b889fb79"
     },
     "3d/boot.js": {
       "v": "84",

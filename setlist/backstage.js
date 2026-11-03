@@ -62,6 +62,52 @@ export function createStrip(view, opts = {}){
   return run(view, opts, drawStrip);
 }
 
+/* THE WARDROBE (2026-11-02): each player on a little lit stage of their own, over the outfits you can
+   dress them in. One canvas a player, all four painted from the same frames the show uses, at twelve
+   frames a second while any of them is on screen, one still frame with reduced motion. The page lays
+   the stage out in CSS; this only draws the player standing on it. */
+export function createWardrobe(canvases, opts = {}){
+  const reduce = !!opts.reduce, K = 3;
+  let frames = null, dead = false, raf = 0, last = 0, seen = true;
+  const t0 = performance.now();
+  for (const cv of canvases){ cv.width = 34 * K; cv.height = 44 * K; }
+  function draw(now){
+    if (!frames) return;
+    const t = (now - t0) / 1000;
+    for (const cv of canvases){
+      const role = cv.dataset.player, i = PLAYERS.findIndex(p => p[0] === role);
+      if (i < 0) continue;
+      // The keys player at his red guitar, so he faces you like the other three.
+      const { img, bob } = bandPose(frames, i, reduce ? 0 : t, { energy: .55, mode: role === 'keys' ? 12 : 0, bow: false });
+      const g = cv.getContext('2d');
+      g.imageSmoothingEnabled = false;
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.drawImage(img, 0, (4 - bob) * K, 34 * K, 46 * K);
+    }
+  }
+  function frame(now){
+    if (dead) return;
+    if (!canvases[0] || !canvases[0].isConnected){ destroy(); return; }
+    raf = requestAnimationFrame(frame);
+    if (!seen || document.hidden || now - last < 80) return;
+    last = now;
+    draw(now);
+  }
+  let io = null;
+  if (typeof IntersectionObserver === 'function' && canvases[0]){
+    io = new IntersectionObserver(es => { seen = es.some(e => e.isIntersecting); });
+    canvases.forEach(cv => io.observe(cv));
+  }
+  function destroy(){ dead = true; cancelAnimationFrame(raf); if (io) io.disconnect(); }
+  const ready = bandFramesOnce(opts.dress).then(f => {
+    if (dead || !f) return;
+    frames = f;
+    draw(performance.now());
+  }).catch(() => {});
+  if (!reduce) raf = requestAnimationFrame(frame);
+  return { destroy, ready };
+}
+
 /* What both share: the pixel buffer and its size, the band's frames, twelve frames a second while it
    is on screen and the tab is shown, one still frame with reduced motion. */
 function run(view, opts, paint){

@@ -593,7 +593,8 @@ function renderHomeState() {
     take.textContent = d && d.pitchNo > 0 ? 'back to the mound · pitch ' + (d.pitchNo + 1) : 'take the mound';
   }
   renderStreak();
-  if (MU) MU.homeRow($('h-surv'));
+  if (MU) MU.homeRow($('h-surv')).then(placePill);
+  placePill();
 }
 
 /* the home's stadium: the stills, one after another, slowly. CSS does the pan and the fade (transform
@@ -1999,9 +2000,11 @@ function playSurvivor(go) {
 function survivorNext(r) {
   var sv = r.survivor || {};
   if (sv.over) {
-    show('s-surv');
-    if (MU) MU.showSurvivor();
+    /* the run is over: back to the home's Survivor tab, with its board */
     renderHomeState();
+    show('s-home');
+    setTab('surv', 'snap', true);
+    drawHero();
     return;
   }
   /* the next spot loads while the saves show */
@@ -2016,16 +2019,108 @@ function survivorNext(r) {
     }).then(function () { playSurvivor(go); });
   }).catch(function (e) {
     toast('the next spot didn\'t load. try again.');
-    show('s-surv');
-    if (MU) MU.showSurvivor();
+    renderHomeState();
+    show('s-home');
+    setTab('surv', 'snap', true);
     if (window.console) console.warn(e);
   });
 }
-function openSurvivor() {
-  if (!MU) return;
-  if (MN.isOpen()) MN.close(true);
-  show('s-surv');
-  MU.showSurvivor();
+/* ---- THE MODES SWITCHER on the home (the owner, 2026-11-02): daily, survivor and archive. A tab swaps
+   the panel under it, and nothing opens by itself. The pick is kept on the device (TAB_KEY) and the
+   page starts on daily when there is none. The move: the pill slides to the tab; the panels cross-slide
+   in the direction of travel with a short fade (transform and opacity only), while the panels' box
+   eases from one height to the other so the page below never jumps. A second tap mid-move lands the
+   first move at once, then starts the next, so the wrong panel never shows. */
+var TAB_KEY = 'std_home_tab_v1', TABS = ['daily', 'surv', 'arc'], TAB_MS = 290, tab = 'daily', tabMove = null;
+function tabBtn(t) { return document.querySelector('#h-modes [data-tab="' + t + '"]'); }
+function placePill() {
+  var live = TABS.filter(function (t) { var b = tabBtn(t); return b && !b.hidden; });
+  var bar = $('h-modes');
+  bar.style.setProperty('--n', live.length);
+  bar.style.setProperty('--i', Math.max(0, live.indexOf(tab)));
+}
+function fillTab(t) {
+  if (t === 'surv' && MU) MU.showSurvivor();
+  if (t === 'arc' && MN.renderPast) MN.renderPast();
+}
+function landTab() { if (tabMove) { clearTimeout(tabMove.t); tabMove.land(); } }
+/* how: 'snap' with no move; keep: remember the pick on this device */
+function setTab(t, how, keep) {
+  var b = tabBtn(t);
+  if (!b || b.hidden) t = 'daily';
+  landTab();
+  var from = tab, A = $('hp-' + from), B = $('hp-' + t);
+  tab = t;
+  TABS.forEach(function (x) {
+    var e = tabBtn(x); if (!e) return;
+    var on = x === t;
+    e.classList.toggle('on', on); e.setAttribute('aria-selected', on ? 'true' : 'false'); e.tabIndex = on ? 0 : -1;
+  });
+  placePill();
+  if (keep) { try { localStorage.setItem(TAB_KEY, t); } catch (e) {} }
+  fillTab(t);
+  if (from === t) return;
+  var panes = $('h-panes');
+  var seen = document.body.dataset.screen === 's-home' && !$('h-main').hidden;
+  if (how === 'snap' || !seen) {
+    A.hidden = true; A.classList.remove('on'); B.hidden = false; B.classList.add('on');
+    return;
+  }
+  var still = false;
+  try { still = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  var dir = TABS.indexOf(t) > TABS.indexOf(from) ? 1 : -1, dx = still ? 0 : 26;
+  /* the start: B laid over A, off to the side of travel and clear; the box held at A's height */
+  var h0 = panes.offsetHeight;
+  B.hidden = false; B.classList.add('on', 'go');
+  B.style.transform = 'translate3d(' + (dir * dx) + '%,0,0)'; B.style.opacity = '0';
+  var h1 = B.offsetHeight;
+  panes.style.height = h0 + 'px';
+  panes.classList.add('anim');
+  A.classList.add('mv'); B.classList.add('mv');
+  void panes.offsetHeight;
+  /* the end state; the transitions carry it */
+  panes.style.height = h1 + 'px';
+  A.style.transform = 'translate3d(' + (-dir * dx) + '%,0,0)'; A.style.opacity = '0';
+  B.style.transform = ''; B.style.opacity = '';
+  tabMove = {
+    land: function () {
+      tabMove = null;
+      A.hidden = true; A.classList.remove('on', 'mv'); A.style.transform = ''; A.style.opacity = '';
+      B.classList.remove('go', 'mv');
+      panes.classList.remove('anim'); panes.style.height = '';
+    },
+  };
+  tabMove.t = setTimeout(tabMove.land, TAB_MS);
+}
+function restoreTab() {
+  var t = 'daily';
+  try { t = localStorage.getItem(TAB_KEY) || 'daily'; } catch (e) {}
+  setTab(TABS.indexOf(t) < 0 ? 'daily' : t, 'snap');
+}
+function wireTabs() {
+  TABS.forEach(function (t) { var b = tabBtn(t); if (b) b.addEventListener('click', function () { setTab(t, null, true); }); });
+  /* the arrows walk the tabs, as a tablist does */
+  $('h-modes').addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var live = TABS.filter(function (x) { var b = tabBtn(x); return b && !b.hidden; });
+    var i = live.indexOf(tab) + (e.key === 'ArrowRight' ? 1 : -1);
+    if (i < 0 || i >= live.length) return;
+    e.preventDefault(); setTab(live[i], null, true); tabBtn(live[i]).focus();
+  });
+  /* a sideways swipe on the panels moves one tab; an upright drag stays a scroll (touch-action: pan-y) */
+  var sw = null;
+  $('h-panes').addEventListener('touchstart', function (e) {
+    sw = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, at: Date.now() } : null;
+  }, { passive: true });
+  $('h-panes').addEventListener('touchend', function (e) {
+    if (!sw || !e.changedTouches.length) return;
+    var dx = e.changedTouches[0].clientX - sw.x, dy = e.changedTouches[0].clientY - sw.y, quick = Date.now() - sw.at < 700;
+    sw = null;
+    if (!quick || Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    var live = TABS.filter(function (x) { var b = tabBtn(x); return b && !b.hidden; });
+    var i = live.indexOf(tab) + (dx < 0 ? 1 : -1);
+    if (i >= 0 && i < live.length) setTab(live[i], null, true);
+  }, { passive: true });
 }
 
 /* ---- the archive (Pro, CONTRACT.md 17): a past daily on its own spot and seed. Only reachable
@@ -2486,8 +2581,8 @@ function boot() {
       if (MN.current() === 'sheet-auth') MN.renderAuth();
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
       if (document.body.dataset.screen === 's-result' && S.result) renderModes();
-      if (document.body.dataset.screen === 's-surv' && MU) MU.showSurvivor();
-      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
+      if (document.body.dataset.screen === 's-home' && tab === 'surv' && MU) MU.showSurvivor();
+      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
     });
   } catch (e) {}
   /* a daily played signed out, posted on the sign-in (api.js claim): say where it landed */
@@ -2508,7 +2603,7 @@ function boot() {
     onSurvivor: startSurvivor,
     onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
   });
-  $('h-surv').addEventListener('click', openSurvivor);
+  wireTabs();
   window.STD_BOARD.init({
     day: S.day, before: postIfOwed,
     played: function () { return !!S.dailyResult; },
@@ -2521,6 +2616,7 @@ function boot() {
   MN.onChange = backSync;
   MN.init({
     hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
+    onPast: function () { if (MN.isOpen()) MN.close(true); if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); } setTab('arc', null, true); },
     archiveDays: MU ? MU.archiveDays : null,
     onPref: function (k, v) {
       if (k === 'theme') { setTheme(v); return; }
@@ -2543,7 +2639,7 @@ function boot() {
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
   window.addEventListener('std-clubs', function () { if (S.scn && document.body.dataset.screen === 's-mound') setPitcher(); });
 
-  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); });
+  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
     S.dailyScn = scn;
@@ -2558,6 +2654,7 @@ function boot() {
     });
   }).then(function () {
     renderHomeState();
+    restoreTab();
   }).catch(function (e) {
     /* nothing to wait for: the error and its try again go up at once */
     bootFail();

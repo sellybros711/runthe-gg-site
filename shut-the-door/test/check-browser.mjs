@@ -877,18 +877,44 @@ async function run(w, h, theme) {
   at('2 the sheets');
   const askedBefore = clipAsks.length;   // before any sheet has opened
   for (const [btn, id, name] of [['#b-menu', 'sheet-menu', 'menu'], ['[data-open="how"]', 'sheet-how', 'how'], ['[data-open="stats"]', 'sheet-stats', 'stats'],
-    ['@menu [data-open="past"]', 'sheet-past', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
-    /* past dailies lives in the menu only */
-    if (btn.startsWith('@menu')) { await page.click('header #b-menu'); await page.waitForSelector('#sheet-menu.on'); await page.click('#sheet-menu ' + btn.slice(6)); }
-    else await page.click('#h-main ' + btn + ', header ' + btn);
-    await page.waitForSelector('#' + id + '.on', { timeout: 3000 });
-    await page.waitForTimeout(260);
-    const filled = await page.evaluate((i) => document.querySelector('#' + i + ' .sh-in').textContent.trim().length, id);
+    ['#hm-arc', 'hp-arc', 'past'], ['[data-open="settings"]', 'sheet-settings', 'settings'], ['#b-profile', 'sheet-auth', 'account']]) {
+    /* past dailies is the home's archive tab (the switcher, the owner 2026-11-02): a panel, not a sheet */
+    const pane = id.startsWith('hp-');
+    await page.click('#h-main ' + btn + ', header ' + btn);
+    await page.waitForSelector('#' + id + '.on' + (pane ? ':not([hidden]):not(.go)' : ''), { timeout: 3000 });
+    await page.waitForTimeout(pane ? 360 : 260);
+    const filled = await page.evaluate((i) => document.querySelector('#' + i + (i.startsWith('hp-') ? '' : ' .sh-in')).textContent.trim().length, id);
     ok(filled > 20, '2 ' + name + ' opens and has something in it');
-    await shot('sheet-' + name);
+    await shot((pane ? 'tab-' : 'sheet-') + name);
+    if (pane) { await page.click('#hm-daily'); await page.waitForSelector('#' + id, { state: 'hidden', timeout: 3000 }); continue; }
     await page.click('#' + id + ' .sh-x');
     await page.waitForSelector('#' + id, { state: 'hidden', timeout: 3000 });
   }
+  /* the switcher (the owner, 2026-11-02): every tab on screen at once, a move that lands where it began,
+     no sideways scroll, and the bottom banner where it was. Offline the ad tag fills nothing, so a
+     stand-in banner rides the bottom the way rtg-ads.js pins the real one. */
+  await page.waitForTimeout(400);
+  const sw0 = await page.evaluate(() => {
+    let ad = document.querySelector('[data-ad-zone="sticky"]');
+    if (!ad) { ad = document.createElement('div'); ad.id = 'ck-ad'; ad.style.cssText = 'position:fixed;left:50%;bottom:0;width:320px;height:50px;margin-left:-160px;pointer-events:none'; document.body.appendChild(ad); }
+    const tabs = [...document.querySelectorAll('#h-modes [role="tab"]')].filter((b) => !b.hidden).map((b) => b.getBoundingClientRect());
+    return { n: tabs.length, onScreen: tabs.every((r) => r.bottom <= innerHeight && r.top >= 0), tall: tabs.every((r) => r.height >= 38),
+      ad: JSON.stringify(ad.getBoundingClientRect()), menu: Math.round(document.getElementById('h-menu').getBoundingClientRect().top) };
+  });
+  ok(sw0.n === 3 && sw0.onScreen && sw0.tall, '2 the switcher: daily, survivor and archive all on screen, each 38 px or taller (' + sw0.n + ')');
+  const swScroll = [];
+  for (const t of ['#h-surv', '#hm-arc', '#hm-daily']) { await page.click(t); await page.waitForTimeout(140); swScroll.push(await noSideScroll(page)); await page.waitForTimeout(260); swScroll.push(await noSideScroll(page)); }
+  /* a fast double tap lands on the second tab, with only its panel showing and nothing left mid-move */
+  await page.click('#hm-arc'); await page.click('#hm-daily');
+  await page.waitForTimeout(400);
+  const sw1 = await page.evaluate(() => ({ ad: JSON.stringify((document.querySelector('[data-ad-zone="sticky"]') || document.getElementById('ck-ad')).getBoundingClientRect()),
+    menu: Math.round(document.getElementById('h-menu').getBoundingClientRect().top),
+    shown: [...document.querySelectorAll('.h-pane')].filter((p) => !p.hidden).map((p) => p.id).join(),
+    still: ![...document.querySelectorAll('.h-pane, .h-panes')].some((p) => p.style.transform || p.style.opacity || p.style.height || p.classList.contains('go') || p.classList.contains('anim')) }));
+  ok(swScroll.every(Boolean), '2 switching tabs leaves no sideways scroll, mid-move and after');
+  ok(sw1.ad === sw0.ad && sw1.menu === sw0.menu, '2 after the switch the ad and the page below settle back where they were (' + sw0.menu + ' / ' + sw1.menu + ')');
+  ok(sw1.shown === 'hp-daily' && sw1.still, '2 a fast double tap lands on daily alone, nothing left mid-move (' + sw1.shown + ')');
+  await page.evaluate(() => { const a = document.getElementById('ck-ad'); if (a) a.remove(); try { localStorage.removeItem('std_home_tab_v1'); } catch (e) {} });
   /* pitching 101: from the menu, and from inside how to play */
   await page.click('header #b-menu');
   await page.waitForSelector('#sheet-menu.on');
@@ -1592,8 +1618,8 @@ async function modes(w, h, full) {
   await page.waitForSelector('#h-pick:not([hidden])', { timeout: 30000 });
   const pk = await page.textContent('#h-pick');
   ok(/^picked by your votes · \d+-\d+$/.test(pk), '17 the home says today was picked by the vote: "' + pk + '"');
-  await page.evaluate(() => window.STD_MENUS.show('past'));
-  await page.waitForSelector('#sheet-past.on');
+  await page.click('#hm-arc');
+  await page.waitForSelector('#hp-arc.on:not([hidden])');
   const arc = await page.evaluate(() => document.querySelectorAll('#past-body .arc-list button').length);
   ok(arc > 0, '17 Pro: the past dailies are a list to play (' + arc + ' days)');
   await page.click('#past-body .arc-list button >> nth=0', { timeout: 120000 });
@@ -1602,8 +1628,8 @@ async function modes(w, h, full) {
   ok(errors.length === 0, '17 the pick and the archive: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
   ({ ctx, page, errors } = await modesPage(w, h, '?mockEnd=door_shut'));
-  await page.evaluate(() => window.STD_MENUS.show('past'));
-  await page.waitForSelector('#sheet-past.on');
+  await page.click('#hm-arc');
+  await page.waitForSelector('#hp-arc.on:not([hidden])');
   const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
   ok(!lk.list && /open later/.test(lk.t) && !/\$|price|buy|pro\b/i.test(lk.t), '17 free: the past dailies stay locked, no price and no buy button');
   ok(lk.pick, '17 before the vote, the home says nothing about it');
@@ -1612,15 +1638,15 @@ async function modes(w, h, full) {
   /* Survivor */
   step(tag + ' 17 survivor', full ? 1500 : 300);
   ({ ctx, page, errors } = await modesPage(w, h, '?mockSurv=2', { meterOff: true }));
-  await page.waitForSelector('#h-surv:not([hidden]) .tm-s:not(:empty)', { timeout: 30000 });
+  await page.waitForSelector('#h-surv:not([hidden]) .tm-s:not(:empty)', { state: 'attached', timeout: 30000 });
   const row = await page.evaluate(() => ({ t: document.getElementById('h-surv').textContent, h: document.getElementById('h-surv').getBoundingClientRect().height }));
   ok(/survivor/.test(row.t) && row.h >= 38, '17 Survivor is on the home menu beside the daily: "' + row.t + '"');
   ok(await nothingOpen(page), '17 nothing opens by itself on the home');
   await page.click('#h-surv');
-  await page.waitForSelector('#s-surv.on #sv-go');
+  await page.waitForSelector('#hp-surv.on:not([hidden]) #sv-go');
   await page.waitForSelector('#sv-list .bd-rows', { timeout: 30000 });
-  ok(await page.textContent('#sv-go') === 'start the run' && await tall(page, '#s-surv button'), '17 the Survivor screen: a start button and the Survivor leaderboard');
-  const c3 = await oneCount(page, 's-surv');
+  ok(await page.textContent('#sv-go') === 'start the run' && await tall(page, '#hp-surv button'), '17 the Survivor screen: a start button and the Survivor leaderboard');
+  const c3 = await oneCount(page, 'hp-surv');
   ok(c3.times === 1, '17 the Survivor leaderboard says its count once ("' + c3.n + '", ' + c3.times + ' time)');
   ok(await noSideScroll(page), '17 the Survivor screen has no sideways scroll');
   await shotM(page, 'survivor-start');
@@ -1633,7 +1659,7 @@ async function modes(w, h, full) {
     let pitches = 0;
     for (let i = 0; i < 160; i++) {
       const scr = await page.evaluate(() => document.body.dataset.screen);
-      if (scr === 's-surv') break;
+      if (scr === 's-home') break;
       if (scr === 's-next') {
         const nx = await page.evaluate(() => ({ s: document.getElementById('nx-saves').textContent, n: document.getElementById('nx-next').textContent,
           graded: !!document.querySelector('#s-next .sq, #s-next .oc') || /\b(green|yellow|orange|red|best call|pts)\b/i.test(document.getElementById('s-next').innerText),
@@ -1656,13 +1682,13 @@ async function modes(w, h, full) {
     ok(problems.length === 0, '17 Survivor: nothing graded or over the field during ' + pitches + ' pitches' + (problems.length ? ': ' + problems.slice(0, 3).join(' | ') : ''));
     ok(betweens.length === 2 && betweens.every((b, i) => b.s === 'saves: ' + (i + 1) && /^next: .+, \d{4}$/.test(b.n) && !b.graded && !b.sheet),
       '17 each save goes straight on: ' + betweens.map((b) => '"' + b.s + '. ' + b.n + '"').join(', ') + ', no grade and no popup');
-    await page.waitForSelector('#s-surv.on #sv-list .bd-rows', { timeout: 15000 });
+    await page.waitForSelector('#s-home.on #hp-surv.on:not([hidden]) #sv-list .bd-rows', { timeout: 15000 });
     const end = await page.evaluate(() => ({ saves: (document.querySelector('#sv-you .bd-rank b') || {}).textContent, go: !!document.getElementById('sv-go'),
       next: (document.querySelector('#sv-you .sv-next') || {}).textContent, chips: [...document.querySelectorAll('#sv-you .sv-run .oc')].map((c) => c.textContent) }));
     ok(end.saves === '2' && !end.go && /next one opens in (\d+h )?\d+m\./.test(end.next || '') && end.chips.join(',') === 'door shut,door shut,walk-off',
       '17 the walk-off ends the run on the Survivor board: ' + end.saves + ' saves, "' + end.next + '"');
     await shotM(page, 'survivor-over');
-    await page.click('#sv-back');
+    await page.click('#hm-daily');
     await page.waitForFunction(() => /2 saves today · next run in/.test(document.querySelector('#h-surv .tm-s').textContent), null, { timeout: 30000 });
     ok(true, '17 the home row says the run is used and when the next opens');
     const again = await page.evaluate(() => window.STD_API.survivorStart().then(() => 'started', (e) => e.message));

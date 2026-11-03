@@ -284,7 +284,9 @@ function archiveDays(today) {
 }
 
 function wire() {
-  $('sv-back').addEventListener('click', function () { SV.seq++; if (ctx.onBack) ctx.onBack(); });
+  /* Survivor lives on the home's tab now (ui.js setTab): no screen of its own, so no back button */
+  var bk = $('sv-back');
+  if (bk) bk.addEventListener('click', function () { SV.seq++; if (ctx.onBack) ctx.onBack(); });
 }
 
 var api = {
