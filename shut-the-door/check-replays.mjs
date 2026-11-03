@@ -523,6 +523,24 @@ function selfTest() {
       say(a.ok && same && o.rules === G.TOUCH_RULES && touched.length > 0 && parts, `${row.scenario_id}: a rules 9 row from before the drawn touch replays exactly, ${touched.length} challenge on a ball touching the drawn zone included (${row.pitches} pitches); as rules 10 it parts` + (a.ok ? '' : ': ' + a.why));
     }
   }
+  /* the height zones (2026-11-03): rules 10 rows on the four Retrosheet packs, made on main's packs at
+     e197bde1 (before szSrc), replay exactly on today's packs, and again on a pack whose hitters all
+     carry one zone with no szSrc (the league mean, as before #849): the drawn zone never reaches the
+     engine or the grade, which play zn and the pack's kernelZoneFt */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules10-pre-height-src.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const flat = JSON.parse(JSON.stringify(p.pack));
+      for (const b of flat.scenario.batters) { b.szTop = 3.45; b.szBot = 1.61; delete b.szSrc; }
+      const keys = (pk, m) => { const o = E.replay(pk, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: m });
+        return JSON.stringify([o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell]), o.log.map(x => x.result), o.grades.map(g => g.lost)]); };
+      const want = JSON.stringify([row.actual, row.result, row.lost]);
+      const est = p.pack.scenario.batters.every(b => b.szSrc === 'height');
+      say(a.ok && est && keys(p.pack, p.model) === want && keys(flat, new G.Model(flat)) === want, `${row.scenario_id}: a rules 10 row from before the zone's source mark replays exactly, on height zones and on one league zone alike (${row.pitches} pitches)` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
   // Survivor: a run played through the engine replays; a doctored score, a situation out of its
   // place in the run, and a run that went on after a blown save are each flagged
   {
