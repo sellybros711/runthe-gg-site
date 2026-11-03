@@ -207,6 +207,17 @@ function absDist(x, zn, zoneFt) {
   const ox = Math.min(0, dx), oz = Math.min(0, dz);
   return BALL_IN - Math.sqrt(ox * ox + oz * oz);
 }
+/* THE DRAWN TOUCH (rules 10, 2026-11-03, the owner's call: a ball touching the zone as drawn is a
+   strike on a challenge). The grid draws the zone with GRID.ZONE_HALF_FT sides (the plate plus a
+   ball) and the batter's height (zn 0..1), and draws the ball at its size (BALL_IN a side). Rules 9
+   measured the touch from the bare plate, so on the sides a ball overlapping the drawn box by up to
+   a ball's width was an ABS ball, and at a corner a dot sitting on the drawn corner was one too.
+   touchDist is the signed distance, in inches, from the ball's edge to the drawn zone: zoneDist
+   plus BALL_IN, round at the corners. It is >= 0 exactly when the drawn ball touches the drawn box.
+   Only the ABS's answer reads it; the umpire's call stays on zoneDist. */
+function touchDist(x, zn, zoneFt) {
+  return zoneDist(x, zn, zoneFt) + BALL_IN;
+}
 function calledStrikeP(d) {
   const D = UMPIRE.D, P = UMPIRE.P;
   if (d <= D[0]) return P[0];
@@ -220,7 +231,8 @@ function calledStrikeP(d) {
    (here, the outing); a challenge that wins is kept. Only a called ball or
    strike, only right away (before the next pitch). The ABS zone decides: the
    ball's actual location against the zone above (zoneDist >= 0 is a strike; from
-   rules 9, absDist >= 0: the ball touching the zone).
+   rules 9, absDist >= 0: the ball touching the bare zone; from rules 10, touchDist >= 0:
+   the ball touching the zone as drawn).
    The pitcher's side challenges a called ball with the player's button. The
    batter challenges a called strike by BATTER, a MODEL fitted to sourced
    rates: MLB's 2025 spring training ABS test (288 games: batters challenged
@@ -466,7 +478,7 @@ const publicAPI = Object.freeze({
   API_VERSION, GRID, cellOf, rowOf, colOf, inZone, targetOf, AIM, aimAt, aimPoint, cellAt, screenCol,
   PITCH_TYPES, SHAPE_OF, FAMILY_OF, BANDS, bandOf, SQUARE, SQUARES_PER_LINE,
   OUTCOMES, OUTCOME_RANK, OUTCOME_LABEL, RELEASE, releaseQ, spreadOf, PERFECT, perfectLanding,
-  UMPIRE, zoneDist, BALL_IN, absDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
+  UMPIRE, zoneDist, BALL_IN, absDist, touchDist, calledStrikeP, ABS, challengeP, ROUTINE, routineOf, carryOf, runnerClass, runnerCategory, RUNNER_CATS, STEAL, normCdf, normInv, EFFORT, effortE, stuffAt, BASE, countBucket,
   ZONE, EPOCH, easternDay, dayNumberOf, dayOffsetOf, DAILY_SEED_PREFIX, OUTING_KEY,
   SHARE_TITLE, SHARE_URL,
 });

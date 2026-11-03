@@ -93,8 +93,11 @@ Long runs (the lab checks in `lab/pipeline/`, `lab/pipeline/checkpoint.mjs` says
   Rules 9 (2026-11-02, CONTRACT.md 5k) is rules 8 plus the ABS touch: a challenge is answered by any
   part of the ball touching the zone (`contract.js absDist`, the ball's radius on the top and the
   bottom too); the umpire's call stays on `zoneDist`. A call with `r: 8` replays as rules 8
-  (`fixtures/replays-rules8-pre-abs-touch.json`).
-  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`, `ABS_TOUCH_FROM`). The strengths live in `grade.js R2`; change them only
+  (`fixtures/replays-rules8-pre-abs-touch.json`). Rules 10 (2026-11-03, CONTRACT.md 5l) is rules 9
+  with the touch on the zone as drawn (`contract.js touchDist`, `zoneDist` plus the ball's radius): a
+  ball the grid shows touching the box is a strike. A call with `r: 9` replays as rules 9
+  (`fixtures/replays-rules9-pre-drawn-touch.json`).
+  A daily switches rules only at a day's start (`api.js FULL_CLOSE_FROM`, `ABS_TOUCH_FROM`, `DRAWN_TOUCH_FROM`). The strengths live in `grade.js R2`; change them only
   with the strategy measurements in the README, and rebuild the packs (`pool.js`: the pool and
   `pack.seq`) when they move.
 - **Every ball in play is a legal MLB play** (`check-rules.mjs`): nobody passes anybody, the runs on a

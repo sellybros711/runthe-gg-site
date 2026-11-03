@@ -92,6 +92,14 @@
  * fixtures/replays-rules8-pre-abs-touch.json. The pool was not replayed: it was
  * built under rules 8, and only a catcher's challenge on a touching ball moves.
  *
+ * RULES 10 (2026-11-03). The touch on the zone as drawn (contract.js touchDist,
+ * engine.js 13): the ball's edge against the grid's box, the plate plus a ball
+ * on the sides. A new outing's calls carry r 10. A row with r 9 replays under
+ * rules 9 exactly: the self-test holds three rows made by main's engine before
+ * rules 10, each with a pitcher's challenge on a ball touching the drawn box
+ * but not the bare zone (it stood under 9, it is overturned under 10), in
+ * fixtures/replays-rules9-pre-drawn-touch.json. The pool was not replayed.
+ *
  * RULES 6 (2026-10-26). The runners read the ball (contract.js THE RUNNERS
  * READ THE BALL, engine.js 9). A new outing's calls carry r 6. A row with r 5
  * replays under rules 5 exactly (the self-test holds three, made by main's
@@ -492,6 +500,27 @@ function selfTest() {
         parts = JSON.stringify(o9.log.map(x => x.result)) !== JSON.stringify(row.result) || o9.calls.length !== row.calls.length || o9.status !== 'over';
       } catch (e) { parts = true; }
       say(a.ok && same && o.rules === G.FULL_RULES && touched.length > 0 && parts, `${row.scenario_id}: a rules 8 row from before the ABS touch replays exactly, ${touched.length} challenge on a ball touching the zone included (${row.pitches} pitches); as rules 9 it parts` + (a.ok ? '' : ': ' + a.why));
+    }
+  }
+  /* rules 10: rules 9 rows made before it (main's engine at fcc49b9), each with a pitcher's challenge
+     on a ball touching the drawn zone but not the bare one, replay exactly as rules 9; as rules 10 they part */
+  {
+    const old = JSON.parse(readFileSync(join(HERE, 'fixtures', 'replays-rules9-pre-drawn-touch.json'), 'utf8'));
+    for (const row of old) {
+      const a = replayRow(row);
+      const p = packOf(row.scenario_id);
+      const o = E.replay(p.pack, E.seedFor('daily', row.day), row.calls, { mode: 'daily', model: p.model });
+      const same = JSON.stringify(o.log.map(x => [x.actual.x, x.actual.zn, x.actualCell])) === JSON.stringify(row.actual)
+        && JSON.stringify(o.log.map(x => x.result)) === JSON.stringify(row.result)
+        && JSON.stringify(o.log.map(x => x.runnerMoves || null)) === JSON.stringify(row.moves)
+        && JSON.stringify(o.grades.map(g => g.lost)) === JSON.stringify(row.lost);
+      const touched = o.log.filter(x => x.challenge && x.challenge.by === 'pitcher' && !x.challenge.overturned && K.touchDist(x.actual.x, x.actual.zn, p.pack.kernelZoneFt) >= 0);
+      let parts = true;
+      try {
+        const o10 = E.replay(p.pack, E.seedFor('daily', row.day), row.calls.map(c => Object.assign({}, c, { r: G.DRAWN_RULES })), { mode: 'daily', model: p.model });
+        parts = JSON.stringify(o10.log.map(x => x.result)) !== JSON.stringify(row.result) || JSON.stringify(o10.log.map(x => !!(x.challenge && x.challenge.overturned))) !== JSON.stringify(o.log.map(x => !!(x.challenge && x.challenge.overturned))) || o10.calls.length !== row.calls.length || o10.status !== 'over';
+      } catch (e) { parts = true; }
+      say(a.ok && same && o.rules === G.TOUCH_RULES && touched.length > 0 && parts, `${row.scenario_id}: a rules 9 row from before the drawn touch replays exactly, ${touched.length} challenge on a ball touching the drawn zone included (${row.pitches} pitches); as rules 10 it parts` + (a.ok ? '' : ': ' + a.why));
     }
   }
   // Survivor: a run played through the engine replays; a doctored score, a situation out of its

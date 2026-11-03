@@ -113,8 +113,12 @@ const MT = NODE ? require('./meter.js') : (window.STD_METER || null);
    10, on the first half alone (Model.singleModel).
    12: rules 9 (grade.js TOUCH_RULES): a challenge is answered by the ball touching the zone
    (contract.js absDist), the ball's radius on the top and the bottom too. A call with r 8 or
-   before replays exactly as under 11. */
-const ENGINE_VERSION = 12;
+   before replays exactly as under 11.
+   13: rules 10 (grade.js DRAWN_RULES): the touch is measured on the zone as drawn (contract.js
+   touchDist), so a ball the grid shows touching the box is a strike on a challenge. A call with
+   r 9 or before replays exactly as under 12. pr.abs carries t, the ball's edge to the zone the
+   ABS read (rules 9 on). */
+const ENGINE_VERSION = 13;
 /* 2: the hold table has a slot for a tied game (margin 0), so a pack solved
    for the old end rules is refused rather than misread.
    3: the hold table is solved with runs on a legal third out (rules 3), and
@@ -201,7 +205,7 @@ function createOuting(pack, opts) {
   if (!pack || pack.v !== PACK_VERSION) throw new Error('pack format ' + (pack && pack.v) + ', engine reads ' + PACK_VERSION);
   const sc = pack.scenario;
   const rules = opts.rules == null ? G.RULES : opts.rules;
-  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.STEAL_RULES, G.FULL_RULES, G.TOUCH_RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
+  if (![1, 2, 3, G.ABS_RULES, G.ROUTINE_RULES, G.RUNNER_RULES, G.STEAL_RULES, G.FULL_RULES, G.TOUCH_RULES, G.DRAWN_RULES].includes(rules)) throw new Error('rules ' + rules + ', engine plays 1 to ' + G.RULES);
   // rules 7 and before play the first half alone, as they were played (grade.js THE HALVES)
   let model = opts.model || new G.Model(pack);
   if (rules < G.FULL_RULES) model = model.singleModel();
@@ -333,8 +337,10 @@ function throwPitch(o, call) {
   // library draw, read inside the take's share of the row: no new draw
   const abs = o.rules >= G.ABS_RULES;
   const dIn = abs ? K.zoneDist(actual.x, actual.zn, pack.kernelZoneFt) : null;
-  // the ABS's answer to a challenge: rules 9 counts the ball touching the zone (contract.js absDist)
-  const dAbs = !abs ? null : o.rules >= G.TOUCH_RULES ? K.absDist(actual.x, actual.zn, pack.kernelZoneFt) : dIn;
+  // the ABS's answer to a challenge: rules 9 counts the ball touching the bare zone (contract.js
+  // absDist), rules 10 the ball touching the zone as drawn (contract.js touchDist)
+  const dAbs = !abs ? null : o.rules >= G.DRAWN_RULES ? K.touchDist(actual.x, actual.zn, pack.kernelZoneFt)
+    : o.rules >= G.TOUCH_RULES ? K.absDist(actual.x, actual.zn, pack.kernelZoneFt) : dIn;
   if (abs && k <= 1 && row[0] + row[1] > 0) k = u / (row[0] + row[1]) < K.calledStrikeP(dIn) ? 1 : 0;
   let ref = entry.x[actualCell][k];
   if (abs && (ref == null || ref < 0)) ref = nearestRef(entry, actualCell, k);
@@ -400,8 +406,10 @@ function throwPitch(o, call) {
   if (moved.halfOver) pr.halfOver = moved.halfOver;   // rules 8: the half is over, his team batted
   if (abs && (res0 === 'ball' || res0 === 'called_strike')) {
     // the ABS zone's answer, for the challenge and the quick replay: d inches from the zone's edge
-    // (the drawn zone's, as rules 8 measured it; strike is the ABS's answer, rules 9 the ball touching)
+    // (the drawn zone's, as rules 8 measured it; strike is the ABS's answer, rules 9 the ball touching
+    // the bare zone, rules 10 the drawn one)
     pr.abs = { called: res0, strike: dAbs >= 0, d: Math.round(dIn * 100) / 100 };
+    if (o.rules >= G.TOUCH_RULES) pr.abs.t = Math.round(dAbs * 100) / 100;   // the ball's edge to the zone the ABS read
   }
   if (challenge) pr.challenge = challenge;
   if (perfect) pr.perfect = true;

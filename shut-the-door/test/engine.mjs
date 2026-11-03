@@ -814,7 +814,7 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
 {
   const zf = pack.kernelZoneFt, over = 1 + 1 / (zf * 12), under = -1 / (zf * 12);
   check('rules 9: a ball touching the top of the zone is an ABS strike, under rules 8 a ball',
-    G.RULES === 9 && G.TOUCH_RULES === 9 && K.absDist(0, over, zf) >= 0 && K.zoneDist(0, over, zf) < 0
+    G.TOUCH_RULES === 9 && K.absDist(0, over, zf) >= 0 && K.zoneDist(0, over, zf) < 0
     && Math.abs(K.absDist(0, over, zf) - 0.45) < 1e-9 && K.absDist(0, under, zf) >= 0 && K.zoneDist(0, under, zf) < 0);
   const cx = K.GRID.ZONE_HALF_FT, ct = 1 + (K.BALL_IN / 12) / zf;
   check('rules 9: the sides are the same edge as before, the corners round, the umpire unchanged',
@@ -847,6 +847,54 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
     }
   }
   check(`rules 9: the engine's ABS answers a ball touching the zone a strike, and nothing else moves (${flips} flips)`, flips > 0 && !wrong && !other);
+}
+
+/* rules 10 (the touch on the zone as drawn, contract.js touchDist): the owner's pitch 8, 2026-11-03
+   (Rivera to Grace, 2001 World Series game 7, 2-2): a called ball whose dot sat on the drawn zone's
+   top corner, the centre 0.24 inches past the drawn side and 0.22 over the top. The challenge stood
+   under rules 9 (absDist -0.25: the radius came off the drawn side); the drawn ball touches the drawn
+   box, so under rules 10 it is a strike. A ball clear of the box is still a ball, and the umpire's
+   call does not move. */
+{
+  const rp = JSON.parse(readFileSync(new URL('../data/packs/std-2001-ws7-rivera.json', import.meta.url), 'utf8'));
+  const zf = rp.kernelZoneFt, x8 = 0.85, z8 = 1.01;
+  check('rules 10: the owner\'s pitch 8 on the drawn corner stood as a ball under rules 9, a strike now',
+    G.RULES === 10 && G.DRAWN_RULES === 10 && K.absDist(x8, z8, zf) < 0 && K.touchDist(x8, z8, zf) >= 0 && K.zoneDist(x8, z8, zf) < 0
+    && Math.abs(K.touchDist(x8, z8, zf) - (K.zoneDist(x8, z8, zf) + K.BALL_IN)) < 1e-12);
+  // the drawn picture: the ball's centre within BALL_IN of the drawn box is touching, and only then
+  const half = K.GRID.ZONE_HALF_FT * 12, H = zf * 12;
+  let bad = 0;
+  for (let i = 0; i < 4000; i++) {
+    const xi = -16 + (i % 80) * 0.4, yi = -4 + Math.floor(i / 80) * (H + 8) / 50;   // inches, catcher's view, from the bottom
+    const ox = Math.max(0, Math.abs(xi) - half), oy = Math.max(0, -yi, yi - H);
+    const touches = Math.sqrt(ox * ox + oy * oy) <= K.BALL_IN;
+    if (touches !== (K.touchDist(xi / 12, yi / H, zf) >= 0)) bad++;
+  }
+  check('rules 10: the ABS strike is the drawn ball touching the drawn box, everywhere on the grid', !bad);
+  // the engine: the same seed and calls under 9 and 10, the pitcher challenging every called ball
+  let flips = 0, wrong = 0, other = 0;
+  for (let s = 0; s < 60; s++) {
+    const rng = R.mulberry32(R.hashSeed('drawn' + s));
+    const calls = Array.from({ length: 40 }, () => ({ type: model.types[Math.floor(rng() * model.types.length)], cell: [0, 4, 5, 9, 10, 14, 15, 19, 20, 24, 12][Math.floor(rng() * 11)], q: Math.round(rng() * 100) / 100 }));
+    const outs = [9, 10].map(r => {
+      const o = E.createOuting(pack, { seed: 700 + s, model, rules: r });
+      for (const c of calls) { if (o.status !== 'live') break; E.throwPitch(o, c); if (E.challengeLive(o) && o.abs.pitcher > 0 && o.log.length < 4) E.challengePitch(o); }
+      return o;
+    });
+    const n = Math.min(outs[0].log.length, outs[1].log.length);
+    for (let i = 0; i < n; i++) {
+      const a = outs[0].log[i], b = outs[1].log[i];
+      if (JSON.stringify(a.actual) !== JSON.stringify(b.actual) || a.drawn.id !== b.drawn.id) { other++; break; }
+      if (!a.abs) continue;
+      if (a.abs.called !== b.abs.called || a.abs.d !== b.abs.d) other++;
+      if (a.abs.strike !== b.abs.strike) {
+        if (!(a.abs.t < 0 && b.abs.t >= 0 && b.abs.strike)) wrong++;
+        flips++;
+        break;
+      }
+    }
+  }
+  check(`rules 10: the engine's ABS answers a ball touching the drawn zone a strike, and nothing else moves (${flips} flips)`, flips > 0 && !wrong && !other);
 }
 
 console.log(fails ? `${fails} FAILED` : 'all ok');
