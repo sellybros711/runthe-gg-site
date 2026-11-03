@@ -1773,6 +1773,30 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
   .t-l2 { font-size: 96px; }
 }
 
+/* ---- sound (sound.js) and the moments that ride with it ------------------------------------ */
+.mh-tr { display: flex; flex-direction: column; gap: 8px; }
+.mh-snd svg path { fill: none; stroke: var(--g-ink); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.mh-snd .mut { display: none; }
+.mh-snd.off .wav { display: none; }
+.mh-snd.off .mut { display: inline; }
+.mh-snd.off { opacity: .72; }
+/* strike three: a short shake of the scene, and the zone flashes once in signal orange */
+@keyframes k-shake { 0%, 100% { transform: none; } 15% { transform: translate(-6px, 2px); } 30% { transform: translate(5px, -3px); } 45% { transform: translate(-4px, 1px); } 60% { transform: translate(3px, -1px); } 80% { transform: translate(-1px, 0); } }
+#m-scene.k-shake { animation: k-shake .42s cubic-bezier(.36, .07, .19, .97); }
+@keyframes k-flash { 0% { box-shadow: 0 0 0 0 rgba(255, 79, 31, 0); } 18% { box-shadow: 0 0 0 3px #fff, 0 0 28px 10px var(--signal); } 100% { box-shadow: 0 0 0 0 rgba(255, 79, 31, 0); } }
+.k-flash { animation: k-flash .8s ease-out; border-radius: 8px; }
+/* the streak on the home: one pulse when it is new */
+@keyframes s-pulse { 0% { transform: scale(1); } 30% { transform: scale(1.08); color: var(--signal); } 100% { transform: scale(1); } }
+#h-streak.pulse { animation: s-pulse .9s ease-out 2; transform-origin: left center; }
+#h-streak.pulse b { color: var(--signal); }
+/* the save: confetti over the result */
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.confetti i { position: absolute; top: -14px; width: 8px; height: 13px; border-radius: 2px; opacity: .95; animation-name: cf-fall; animation-timing-function: cubic-bezier(.25, .6, .5, 1); animation-fill-mode: forwards; }
+@keyframes cf-fall { to { transform: translate(var(--dx), 105vh) rotate(var(--r)); opacity: .9; } }
+@media (prefers-reduced-motion: reduce) {
+  #m-scene.k-shake, .k-flash, #h-streak.pulse { animation: none; }
+  .confetti { display: none; }
+}
 /* HOME on the mound (the owner, 2026-11-03): under the batter card, out of the column's flow, so the
    scorebug, the card and the stage's frame of them never move */
 .mh-hm { position: absolute; top: calc(100% + 8px); left: 0; }

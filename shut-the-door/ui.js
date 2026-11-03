@@ -140,6 +140,7 @@ function show(id) {
   if (window.STD_ADS) STD_ADS.screen(id);
   homeFold();
   if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
+  if (SFX) SFX.bed(id === 's-mound' && S.outing ? leverage(S.outing) : 0);
   backSync();
 }
 
@@ -231,43 +232,95 @@ function dailyBack() {
   S.result = S.dailyResult;
 }
 
-/* ---- sound: four noises made on the spot, nothing to download ---------------- */
+/* ---- sound (sound.js): the glove, the bat, the umpire and the crowd, made on the spot -------
+   sound(name, ms) is the one hook the stage and the 2D drawing call. pitchSounds(pr) is the same hook
+   for one pitch: it knows the result, so the glove pops big on a called strike and the bat cracks
+   clean on hard contact. The umpire and the crowd go with the reveal (moment), never before it.
+   Nothing here is a grade and nothing pops up. */
 
-var AC = null;
-function audio() {
-  if (!prefs.sound) return null;
-  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; }
-  return AC;
-}
-function noise(ac, dur) {
-  var n = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
-  for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
-  var s = ac.createBufferSource(); s.buffer = buf; return s;
-}
+var SFX = window.STD_SFX || null;
+if (SFX) SFX.setOn(prefs.sound !== false);
+function audio() { return SFX; }
 function sound(name, delay) {
-  var ac = audio(); if (!ac) return;
-  try {
-    var t0 = ac.currentTime + (delay ? delay / 1000 : 0);
-    var g = ac.createGain(), f = ac.createBiquadFilter(), src;
-    g.connect(ac.destination);
+  if (!SFX) return;
+  if (name === 'whoosh') SFX.pitch(0, delay, !!prefs.quick);
+  else if (name === 'pop') SFX.pop(1, delay);
+  else if (name === 'crack') SFX.crack('dull', delay);
+  else if (name === 'thud') SFX.thud(delay);
+  else if (name === 'snap') SFX.snap(delay);
+}
+var STRIKE_RES = { called_strike: 1, swinging_strike: 1, foul_tip: 1 };
+function pitchSounds(pr) {
+  return function (name, delay) {
+    if (!SFX) return;
+    var r = pr.result;
+    if (name === 'whoosh') return SFX.pitch(pr.velo, delay, !!prefs.quick);
     if (name === 'pop') {
-      src = noise(ac, 0.07); f.type = 'lowpass'; f.frequency.value = 1100; g.gain.setValueAtTime(0.5, t0);
-      var o = ac.createOscillator(), og = ac.createGain(); o.frequency.setValueAtTime(140, t0); o.frequency.exponentialRampToValueAtTime(60, t0 + 0.08);
-      og.gain.setValueAtTime(0.35, t0); og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1); o.connect(og); og.connect(ac.destination); o.start(t0); o.stop(t0 + 0.12);
-    } else if (name === 'crack') {
-      src = noise(ac, 0.05); f.type = 'highpass'; f.frequency.value = 1400; g.gain.setValueAtTime(0.6, t0);
-    } else if (name === 'snap') {
-      /* the best release: a short bright click, quieter than the glove */
-      src = noise(ac, 0.035); f.type = 'highpass'; f.frequency.value = 2600; g.gain.setValueAtTime(0.32, t0);
-      var so = ac.createOscillator(), sg = ac.createGain(); so.type = 'triangle'; so.frequency.setValueAtTime(1500, t0); so.frequency.exponentialRampToValueAtTime(900, t0 + 0.06);
-      sg.gain.setValueAtTime(0.12, t0); sg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08); so.connect(sg); sg.connect(ac.destination); so.start(t0); so.stop(t0 + 0.1);
-    } else if (name === 'thud') {
-      src = noise(ac, 0.09); f.type = 'lowpass'; f.frequency.value = 400; g.gain.setValueAtTime(0.5, t0);
-    } else {
-      src = noise(ac, 0.22); f.type = 'bandpass'; f.frequency.setValueAtTime(500, t0); f.frequency.exponentialRampToValueAtTime(1800, t0 + 0.2); g.gain.setValueAtTime(0.07, t0);
+      if (r === 'swinging_strike' || r === 'foul_tip') SFX.miss(delay);
+      return SFX.pop(r === 'called_strike' ? 2 : r === 'ball' ? 0 : 1, (delay || 0) + (r === 'swinging_strike' ? 40 : 0));
     }
-    src.connect(f); f.connect(g); src.start(t0);
-  } catch (e) {}
+    if (name === 'crack') {
+      if (r === 'foul') return SFX.crack('foul', delay);
+      return SFX.crack(pr.inPlay && pr.inPlay.ev >= 95 ? 'clean' : 'dull', delay);
+    }
+    sound(name, delay);
+  };
+}
+/* the leverage the crowd hears: two strikes, two outs, the tying run aboard or up, a tie */
+function leverage(st) {
+  if (!st || !st.score || !st.count) return 0.3;
+  var lead = st.score.us - st.score.them, on = (st.bases & 1 ? 1 : 0) + (st.bases & 2 ? 1 : 0) + (st.bases & 4 ? 1 : 0);
+  var l = 0.25 + (st.count.s === 2 ? 0.2 : 0) + (st.outs === 2 ? 0.2 : 0);
+  if (lead <= 0) l += 0.35; else if (on >= lead) l += 0.3; else if (on + 1 >= lead) l += 0.15;
+  return Math.min(1, l);
+}
+/* the moment the tag goes up: the umpire's call, the crowd, and on strike three the shake and the flash */
+var HIT_RES = { single: 1, double: 1, triple: 1, home_run: 1, error: 1 };
+function moment(pr, st) {
+  if (!SFX) return;
+  var r = pr.result;
+  if (pr.paOver && STRIKE_RES[r]) {
+    SFX.ump('k'); SFX.roar(1); SFX.buzz([24, 40, 70]);
+    kCue();
+  } else if (r === 'called_strike') SFX.ump('strike');
+  else if (r === 'ball') SFX.ump(pr.paOver ? 'ball4' : 'ball');
+  else if (r === 'swinging_strike') SFX.roar(0.3);
+  else if (r === 'in_play' && pr.inPlay) {
+    if (HIT_RES[pr.inPlay.result] || pr.runs) { SFX.groan(pr.inPlay.result === 'home_run' || pr.runs ? 1.5 : 1); SFX.buzz(30); }
+    else SFX.roar(pr.halfOver ? 1.1 : 0.55);
+  }
+  SFX.bed(leverage(st));
+}
+function kCue() {
+  if (reducedMotion()) return;
+  var sc = $('m-scene'), z = S.grid && S.grid.el;
+  [sc, z].forEach(function (el, i) {
+    if (!el) return;
+    var c = i ? 'k-flash' : 'k-shake';
+    el.classList.remove(c); void el.offsetWidth; el.classList.add(c);
+    setTimeout(function () { el.classList.remove(c); }, 900);
+  });
+}
+/* the save on the result: confetti in the brand's colours and the club's, gone in three seconds */
+function confetti() {
+  if (reducedMotion()) return;
+  var box = document.createElement('div'), tc = S.scn && S.scn.pitcher.teamColors, cols = ['#ff4f1f', '#2b59ff', '#ffffff', tc && tc[0] || '#ff4f1f'];
+  box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+  var h = '';
+  for (var i = 0; i < 44; i++) {
+    h += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;background:' + cols[i % 4] + ';animation-delay:' + (Math.random() * 0.5).toFixed(2) +
+      's;animation-duration:' + (1.8 + Math.random() * 1.2).toFixed(2) + 's;--dx:' + Math.round(Math.random() * 120 - 60) + 'px;--r:' + Math.round(Math.random() * 720 - 360) + 'deg"></i>';
+  }
+  box.innerHTML = h;
+  document.body.appendChild(box);
+  setTimeout(function () { box.remove(); }, 3400);
+}
+function soundSwitch(v) {
+  prefs.sound = !!v; savePrefs();
+  if (SFX) SFX.setOn(prefs.sound);
+  var b = $('m-sound');
+  if (b) { b.classList.toggle('off', !prefs.sound); b.setAttribute('aria-pressed', prefs.sound ? 'true' : 'false'); b.setAttribute('aria-label', prefs.sound ? 'Sound on' : 'Sound off'); }
+  if (prefs.sound) { if (SFX) SFX.tap(); if (document.body.dataset.screen === 's-mound' && S.outing) SFX.bed(leverage(S.outing)); }
 }
 
 /* ---- theme ---------------------------------------------------------------------- */
@@ -568,6 +621,11 @@ function renderStreak() {
   var st = streakNow();
   var line = '<b>' + st.cur + '</b> ' + (st.cur === 1 ? 'door' : 'doors') + ' shut in a row' + (st.best > st.cur ? ' · best ' + st.best : '');
   $('h-streak').innerHTML = line;
+  /* the streak pulses when it is new to this page: the first look with one going, or one more */
+  if (st.cur > 0 && st.cur !== S.streakSeen) {
+    S.streakSeen = st.cur;
+    var hs = $('h-streak'); hs.classList.remove('pulse'); void hs.offsetWidth; hs.classList.add('pulse');
+  }
   var acct = S.mode === 'daily' && S.dailyResult && S.dailyResult.account;
   if (acct && acct.rank != null) line += ' · #' + acct.rank + ' of ' + acct.players + ' today';
   $('r-streak').innerHTML = S.mode === 'daily' ? line : '';
@@ -1416,7 +1474,6 @@ function throwIt() {
   var run = S.meter.run({
     quick: !!S.slide,
     command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type), pitch: ap,
-    onStage: stepLine,
     verb: S.outing.shutItLive ? 'shut it' : 'release',
     label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
     /* the step line under the meter says what to do; the meter's own corner keeps its word for after the tap */
@@ -1425,9 +1482,10 @@ function throwIt() {
     /* the zone is a stop too while the meter runs (the owner, 2026-10-30): its taps go to the meter,
        never to the aim. RE-AIM on the panel (or Escape) cancels it to aim again */
     zone: S.grid.el,
-    onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
+    onSnap: function () { sound('snap'); if (SFX) SFX.buzz(12); },
+    onStage: function (st) { stepLine(st); if (SFX) SFX.tick(); },
     /* a perfect release: the snap again, and with a perfect power a second one like a mitt's pop */
-    onPerfect: function (level) { sound('snap', 60); if (level === 2) sound('pop', 140); },
+    onPerfect: function (level) { if (SFX) SFX.chime(level); },
   });
   stepLine();
   absButton();
@@ -1553,10 +1611,11 @@ function fire(call) {
       var t = playText(pr, batter, res.state);
       pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
       renderHud(pr.halfOver ? halfEndState(res.state, pr.halfOver) : res.state);
+      moment(pr, res.state);
       var sl = stealText(pr.steal);
       if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); }
     });
-    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: sound, field: hudRunners } };
+    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: pitchSounds(pr), field: hudRunners } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       rv.now();
       S.lastMarker = S.scene.toScreen(pr.actual);
@@ -1951,6 +2010,12 @@ function finish() {
     renderResult();
     show('s-result');
     renderHomeState();
+    if (SFX) {
+      SFX.bed(0); SFX.sting(r.outcome);
+      if (r.outcome === 'door_shut') { SFX.cheer(); SFX.buzz([30, 60, 30, 60, 90]); }
+      else if (r.outcome === 'walk_off' || r.outcome === 'doors_open') SFX.groan(1);
+    }
+    if (r.outcome === 'door_shut') confetti();
   });
 }
 
@@ -2060,6 +2125,7 @@ function setTab(t, how, keep) {
   if (!b || b.hidden) t = 'daily';
   landTab();
   var from = tab, A = $('hp-' + from), B = $('hp-' + t);
+  if (SFX && how !== 'snap' && from !== t) SFX.tab();
   tab = t;
   TABS.forEach(function (x) {
     var e = tabBtn(x); if (!e) return;
@@ -2631,10 +2697,19 @@ function boot() {
     onPref: function (k, v) {
       if (k === 'theme') { setTheme(v); return; }
       prefs[k] = v; savePrefs();
-      if (k === 'sound' && v) sound('pop');
+      if (k === 'sound') soundSwitch(v);
       if (k === 'meter') speedLabels();
     },
   });
+  /* the mound's speaker: the same switch as settings, kept in std_ui_v1.sound */
+  $('m-sound').addEventListener('click', function () { soundSwitch(!prefs.sound); });
+  soundSwitch(prefs.sound !== false);
+  /* a soft tap under the buttons; the throw, the meter and the tabs have their own */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button');
+    if (!b || !SFX || b.id === 'm-throw' || b.id === 'm-sound' || b.closest('.relm') || b.closest('#m-aim') || b.getAttribute('role') === 'tab' || TABS.some(function (t) { return tabBtn(t) === b; })) return;
+    SFX.tap();
+  }, true);
   $('b-theme').addEventListener('click', function () {
     setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });

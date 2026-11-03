@@ -292,7 +292,7 @@ function renderSettings(prefs, onChange) {
       '<input type="checkbox" class="sw" id="' + id + '"' + (on ? ' checked' : '') + '></label>';
   }
   $('set-body').innerHTML =
-    row('set-sound', 'sound', 'the glove, the bat, the call', !!prefs.sound) +
+    row('set-sound', 'sound', 'the glove, the bat, the crowd', !!prefs.sound) +
     row('set-quick', 'quick pitches', 'shorter animation', !!prefs.quick) +
     row('set-meter', 'release meter', 'time each release. off throws his usual command', prefs.meter !== false) +
     row('set-dark', 'dark mode', 'shared with every runthe.gg game', theme === 'dark');
