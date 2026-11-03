@@ -178,13 +178,13 @@ window.addEventListener('popstate', backPressed);
 
 /* THE BOTTOM BANNER ON THE HOME (ads.js, style.css). At the top of the page no control may sit behind
    the banner, where a tap meant for it would land on the ad. When the home is too tall for the space
-   above the banner, the first row of the menu that would sit behind it (today's card once the daily
-   is done, Survivor or the links) moves below the fold instead, so the player scrolls to it. Take the
+   above the banner, the first row that would sit behind it (today's top 3, or the links) moves below the fold instead, so the player scrolls to it. Take the
    mound never moves. Measured with offsetTop, so the menu's entrance animation does not move the line. */
 function homeFold() {
   var menu = $('h-menu');
   if (!menu) return;
-  var rows = [].slice.call(menu.children).filter(function (k) { return k.id !== 'h-go'; });
+  /* today's top 3 (its full leaderboard button) is the first row that can fold, then the links */
+  var rows = [$('h-top')].concat([].slice.call(menu.children)).filter(function (k) { return k && k.id !== 'h-go'; });
   rows.forEach(function (k) { k.style.marginTop = ''; });
   var b = document.body;
   if (!b.classList.contains('rtg-sticky-on') || b.dataset.screen !== 's-home') return;
@@ -2040,6 +2040,7 @@ function placePill() {
   bar.style.setProperty('--i', Math.max(0, live.indexOf(tab)));
 }
 function fillTab(t) {
+  if (t === 'daily' && window.STD_BOARD && window.STD_BOARD.peek) window.STD_BOARD.peek();
   if (t === 'surv' && MU) MU.showSurvivor();
   if (t === 'arc' && MN.renderPast) MN.renderPast();
 }

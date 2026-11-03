@@ -3139,8 +3139,8 @@
       "sha": "8d8bbd62d19c78da"
     },
     "menus.js": {
-      "v": "14",
-      "sha": "5789e94c1f0a30e5"
+      "v": "15",
+      "sha": "33d89277e54e848d"
     },
     "rng.js": {
       "v": "1",
@@ -3191,8 +3191,8 @@
       "sha": "076fe0032a7f0ce0"
     },
     "board.js": {
-      "v": "5",
-      "sha": "a21a33c4cc2aaaa9"
+      "v": "6",
+      "sha": "752a5239bfae0d4b"
     },
     "modes-ui.js": {
       "v": "6",
@@ -3207,8 +3207,8 @@
       "sha": "9314ac5af2667f8b"
     },
     "ui.js": {
-      "v": "62",
-      "sha": "c1b1fe02b889fb79"
+      "v": "63",
+      "sha": "5f889abd0fe2c9b1"
     },
     "3d/boot.js": {
       "v": "84",
