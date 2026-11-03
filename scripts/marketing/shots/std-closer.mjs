@@ -31,12 +31,15 @@ export const init = `(() => {
 export const track = {
   head: '#h-head', title: '#h-title', sit: '#h-sit', hpitcher: '#h-pitcher', setup: '#h-setup', take: '#b-take',
   score: '#s-mound.on #m-us', inn: '#s-mound.on #m-inn', count: '#s-mound.on #m-count', outs: '#s-mound.on #m-outs', bases: '#s-mound.on #m-bases',
+  abs: '#m-abs-b', absr: '#m-absr:not([hidden])', zone: '#s-mound.on #m-aim',
   card: '#s-mound.on #m-card', pname: '#m-pname', bname: '#m-bname', say: '#m-say',
   arsenal: '#s-mound.on #m-arsenal', aim: '#s-mound.on #m-aim', throw: '#m-throw', meter: '#m-meter:not([hidden])', pbp: '#m-pbp', scene: '#m-scene',
   outcome: '#s-result.on #r-outcome', pct: '#s-result.on #r-pct', pctline: '#r-pctline', like: '#r-like', real: '#r-real', eyebrow: '#r-eyebrow',
 };
 
 export const PLAN = JSON.parse(process.env.STD_PLAN || '[]');
+// the pitches (0-based) whose called ball the pitcher's side challenges with ABS, right after the call
+const CH = JSON.parse(process.env.STD_CH || '[]');
 const on = (sel) => `!!document.querySelector('${sel}')`;
 
 export async function setup(page, t) {
@@ -69,6 +72,11 @@ export async function play(page, t) {
     // the pitch flies and plays out: wait for the next call or the result
     await t.until(() => !!document.querySelector('#s-result.on') || (() => { const b = document.querySelector('#m-throw'); return b && !/pitch/i.test(b.textContent) && !document.querySelector('#m-meter:not([hidden])'); })(), 60000);
     await t.hold(900);
+    // ABS: don't like the call? challenge it, before the next throw, and let the replay box play out
+    if (CH.includes(i) && !(await page.locator('#s-result.on').count())) {
+      await t.tap('#m-abs-b', { before: 500, after: 300 });
+      await t.hold(4500);
+    }
     // a half over: the card between halves, or the box score, waits for a tap
     for (let k = 0; k < 4 && !(await page.locator('#s-result.on').count()) && !(await page.locator('#s-mound.on #m-aim .cell').count()); k++) {
       const go = page.locator('#s-mound.on button:visible, .sheet.on button:visible').first();
