@@ -169,12 +169,21 @@ function backPressed() {
   if (id === 's-home') return;
   if (id === 's-mound' || id === 's-half' || id === 's-next') {
     if (S.busy) { backSync(); return; }
-    location.replace(location.pathname + location.search);
+    moundHome();
     return;
   }
   renderHomeState(); show('s-home'); drawHero();
 }
 window.addEventListener('popstate', backPressed);
+/* the mound goes home: a fresh home where the outing resumes, as back does. The home button and the
+   menu's home wait for a play in flight to finish (the stage's own end), then go; nothing is lost,
+   the outing is kept after every pitch */
+function moundHome() { location.replace(location.pathname + location.search); }
+function homeWhenSettled() {
+  if (MN && MN.isOpen()) MN.close(true);
+  var b = $('m-home'); if (b) b.classList.add('wait');
+  (function go() { if (S.busy) { setTimeout(go, 120); return; } moundHome(); })();
+}
 
 /* THE BOTTOM BANNER ON THE HOME (ads.js, style.css). At the top of the page no control may sit behind
    the banner, where a tap meant for it would land on the ad. When the home is too tall for the space
@@ -2630,6 +2639,8 @@ function boot() {
     setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
   $('b-take').addEventListener('click', takeMound);
+  $('m-home').addEventListener('click', homeWhenSettled);
+  $('menu-home').addEventListener('click', homeWhenSettled);
   $('r-again').addEventListener('click', practice);
   $('r-home').addEventListener('click', function () { renderHomeState(); show('s-home'); drawHero(); });
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
