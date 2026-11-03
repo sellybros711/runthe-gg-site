@@ -91,7 +91,7 @@ function worldWorker(){
   if (worker !== null) return worker;
   try {
     worker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
-      ? new Worker(new URL('./world-worker.js?v=8', import.meta.url), { type: 'module' }) : false;
+      ? new Worker(new URL('./world-worker.js?v=9', import.meta.url), { type: 'module' }) : false;
   } catch (err) { worker = false; }
   if (worker){
     worker.onmessage = e => { const cb = waiting.get(e.data.id); if (cb){ waiting.delete(e.data.id); cb(e.data); } };
