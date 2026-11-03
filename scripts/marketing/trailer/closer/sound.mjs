@@ -4,8 +4,9 @@
    node scripts/marketing/trailer/closer/sound.mjs out.wav
 
    The sound of a postseason broadcast, not a game jingle (the owner, 2026-11-03: "should feel true to
-   MLB baseball"): a stadium crowd under everything, the catcher's mitt popping on the strikes, and a
-   broadcast score of low brass, timpani and a string pulse. Every cue sits on a cut in index.html (the
+   MLB baseball"): the catcher's mitt popping on the strikes and a broadcast score of low brass,
+   timpani and a string pulse. No crowd: a crowd made of noise sounds like noise (the owner, the same
+   day), so it waits for a real stadium recording we hold the rights to; crowd() is kept for that mix. Every cue sits on a cut in index.html (the
    scene table S): the chains over a heartbeat and low strings, a full brass and timpani hit as they snap,
    the crowd on every strikeout, strings under the ABS replay and a brass sting when it is overturned,
    and a held brass chord under the badge. D minor to F major, 112 BPM. */
@@ -95,35 +96,35 @@ function score(t0, t1, vol) {
 }
 
 // 0 THE LOCK: low strings, the chains, a heartbeat, the crowd far off and hushed; the snap at SNAP
-crowd(0, T.snap + 0.2, 0.05);
 strings(0, T.snap + 0.3, 38, 0.12); strings(0, T.snap + 0.3, 45, 0.06);
 rattle(0.05, T.snap - 0.05, 0.06);
 heart(0.15, 0.7); heart(0.85, 0.75); heart(1.35, 0.8);
 swellCym(T.snap - 1.0, T.snap, 0.08); roll(T.snap - 0.8, T.snap, 38, 0.35);
 snap(T.snap, 0.55); boom(T.snap, 1.0, 2.4, 100, 30); cymbal(T.snap, 0.16);
 brass(T.snap, [38, 50, 57, 62, 65], 2.2, 0.32, { attack: 0.03, bright: 0.32 }); timp(T.snap, 38, 0.7);
-crowd(T.snap, T.home + 0.8, 0.26, 1);
 // 4.0 THE GAME: the stadium settles to a murmur; the score comes in under the walkthrough
-crowd(T.home, T.end + 4, 0.13);
 score(T.home, T.call, 1.9);
 for (const c of [T.pick, T.aim, T.meter]) { timp(c, 38, 0.35); }
 // the first strikeout: the pop, the crowd up, a horn hit
-mitt(T.k + KAT.k, 0.8); crowd(T.k + KAT.k, T.call + 0.8, 0.26, 1); brass(T.k + KAT.k, [50, 57, 62], 0.9, 0.18, { attack: 0.03, bright: 0.3 }); timp(T.k + KAT.k, 38, 0.5);
+mitt(T.k + KAT.k, 0.8); brass(T.k + KAT.k, [50, 57, 62], 0.9, 0.18, { attack: 0.03, bright: 0.3 }); timp(T.k + KAT.k, 38, 0.5);
 // 16.4 THE CALL: the score drops away, the strings hold a question
 strings(T.call, ABS_OVER + 0.1, 45, 0.11, { tremolo: 7 }); strings(T.call, ABS_OVER + 0.1, 52, 0.07, { tremolo: 7 }); strings(T.call, ABS_OVER + 0.1, 38, 0.08);
 mitt(T.call + 0.1, 0.45);
 // 19.0 THE CHALLENGE: a roll under the replay, then the sting when it is overturned and the crowd's cheer
 roll(T.abs + 0.3, ABS_OVER, 45, 0.45); swellCym(T.abs + 0.3, ABS_OVER, 0.07);
 brass(ABS_OVER, [41, 53, 57, 60, 65], 1.4, 0.26, { attack: 0.03, bright: 0.3 }); timp(ABS_OVER, 41, 0.6); cymbal(ABS_OVER, 0.1);
-crowd(ABS_OVER, T.k2 + 0.5, 0.22, 1);
 score(ABS_OVER + 0.4, T.last, 1.9);
 // 23.0 THE SECOND STRIKEOUT
-mitt(T.k2 + KAT.k2, 0.8); crowd(T.k2 + KAT.k2, T.last + 0.4, 0.26, 1); brass(T.k2 + KAT.k2, [53, 57, 60], 0.9, 0.16, { attack: 0.03, bright: 0.3 });
+mitt(T.k2 + KAT.k2, 0.8); brass(T.k2 + KAT.k2, [53, 57, 60], 0.9, 0.16, { attack: 0.03, bright: 0.3 });
 // 25.4 THE LAST PITCH: a timpani roll in, strike three looking: the pop, the biggest hit, the crowd on its feet
 roll(T.last, T.last + KAT.last - 0.02, 38, 0.4); swellCym(T.last, T.last + KAT.last, 0.09);
 mitt(T.last + KAT.last, 0.9); boom(T.last + KAT.last, 1.1, 2.6, 110, 28); cymbal(T.last + KAT.last, 0.18);
 brass(T.last + KAT.last, [41, 53, 57, 60, 65, 69], 3.0, 0.34, { attack: 0.03, bright: 0.3 }); timp(T.last + KAT.last, 41, 0.75);
-crowd(T.last + KAT.last, T.cards + 1.0, 0.27, 1);
+// 28.0 THE RESULT: the strings and horns hold F major under DOOR SHUT and lead into the cards
+strings(T.shut - 0.2, T.cards + 0.4, 41, 0.12); strings(T.shut - 0.2, T.cards + 0.4, 53, 0.08); strings(T.shut - 0.2, T.cards + 0.4, 57, 0.05);
+brass(T.shut + 0.6, [41, 53, 60], T.cards - T.shut - 0.4, 0.12, { swell: 0.8, bright: 0.12 });
+timp(T.shut + 0.6, 41, 0.3); timp(T.shut + 0.6 + BEAT * 2, 41, 0.22); timp(T.shut + 0.6 + BEAT * 4, 41, 0.26);
+roll(T.cards - 0.6, T.cards, 41, 0.3);
 // 31.5 THE CARDS: a timpani and horn on each
 for (let i = 0; i < 3; i++) { timp(T.cards + i, [38, 41, 45][i], 0.5); brass(T.cards + i, [[50, 57], [53, 60], [57, 65]][i], 0.7, 0.14, { attack: 0.03, bright: 0.25 }); }
 // 34.5 THE BADGE: the full section on F major, held, the crowd behind it
@@ -131,7 +132,6 @@ roll(T.end - 0.5, T.end, 41, 0.35);
 boom(T.end, 0.8, 2.5, 80, 36); cymbal(T.end, 0.14); timp(T.end, 41, 0.7);
 brass(T.end, [41, 53, 57, 60, 65, 69, 72], LEN - T.end - 0.4, 0.32, { attack: 0.04, bright: 0.24 });
 strings(T.end, LEN - 0.3, 53, 0.04); strings(T.end, LEN - 0.3, 60, 0.03);
-crowd(T.end, LEN - 0.2, 0.16, 1);
 
 // a stadium's room: two longer echoes, then level and clip softly
 const out = [new Float32Array(N), new Float32Array(N)];
