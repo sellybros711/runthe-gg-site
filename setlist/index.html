@@ -3087,7 +3087,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     border-radius:4px; box-shadow:3px 3px 0 rgba(8,5,18,.35);}
   .hm-pill{position:absolute; left:4px; top:4px; bottom:4px; width:calc((100% - 8px) / var(--n));
     background:var(--teal); border-radius:2px; box-shadow:inset 0 -3px 0 rgba(11,8,24,.28);
-    transform:translate3d(calc(var(--i) * 100%),0,0); transition:transform .26s cubic-bezier(.22,.8,.24,1);
+    transform:translate3d(calc(var(--i) * 100%),0,0); transition:transform .28s cubic-bezier(.22,.8,.24,1); will-change:transform;
     pointer-events:none;}
   .hm-t{position:relative; z-index:1; min-height:44px; padding:0 6px; border:0; background:transparent;
     color:#CFC4E6; font-family:var(--ui); font-weight:400; font-size:15px; letter-spacing:1.2px;
@@ -3098,6 +3098,11 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   @media (max-width:389px){ .hm-t{font-size:13px; letter-spacing:.6px;} }
   @media (prefers-reduced-motion: reduce){ .hm-pill{transition:none;} }
   .hpane[hidden]{display:none;}
+  .hpanes{position:relative; touch-action:pan-y;}
+  .hpanes.anim{overflow-x:clip; overflow-clip-margin:12px; transition:height .28s cubic-bezier(.22,.8,.24,1);}
+  .hpane.go{position:absolute; left:0; right:0; top:0;}
+  .hpane.mv{transition:transform .28s cubic-bezier(.22,.8,.24,1), opacity .22s ease-out; will-change:transform, opacity;}
+  @media (prefers-reduced-motion: reduce){ .hpanes.anim{transition:none;} .hpane.mv{transition:opacity .15s linear;} }
 
   /* START HERE: a sticker on the Classic slip, so the main mode is never a guess. */
   .mode.free{overflow:visible;}
@@ -4292,9 +4297,18 @@ function playModesHTML(b, saved){
 
 const HOME_TABS = ['play', 'look', 'fan'];
 const HOME_TAB_LABEL = { play: 'Play', look: 'Outfits &amp; venue', fan: 'Fan side' };
-/* Swaps the panel without a render, so nothing on screen reloads: the pill slides, one pane shows. */
-function showHomeTab(t){
+/* THE MOVE, Shut The Door's (shut-the-door/ui.js setTab). A tab swaps the panel without a render, so
+   nothing on screen reloads. The pill slides to the tab; the panels cross-slide in the direction of
+   travel with a short fade (transform and opacity only), while the panels' box eases from one height
+   to the other so the page below never jumps. A second tap mid-move lands the first move at once,
+   then starts the next, so the wrong panel never shows. how: 'snap' for no move. */
+const TAB_MS = 290;
+let tabMove = null;
+function landTab(){ if (tabMove){ clearTimeout(tabMove.t); tabMove.land(); } }
+function showHomeTab(t, how){
   if (!HOME_TABS.includes(t)) return;
+  landTab();
+  const from = S.homeTab;
   S.homeTab = t;
   const bar = document.querySelector('.hmodes');
   if (!bar) return;
@@ -4304,10 +4318,53 @@ function showHomeTab(t){
     b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on));
     if (on) b.removeAttribute('tabindex'); else b.setAttribute('tabindex', '-1');
   }
-  for (const k of HOME_TABS){ const p = document.getElementById('hp-' + k); if (p) p.hidden = k !== t; }
+  if (from === t) return;
+  const panes = document.getElementById('hpanes');
+  const A = document.getElementById('hp-' + from), B = document.getElementById('hp-' + t);
+  if (!panes || !A || !B) return;
+  if (how === 'snap'){ A.hidden = true; B.hidden = false; return; }
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const dir = HOME_TABS.indexOf(t) > HOME_TABS.indexOf(from) ? 1 : -1, dx = still ? 0 : 26;
+  // The start: B laid over A, off to the side of travel and clear; the box held at A's height.
+  const h0 = panes.offsetHeight;
+  B.hidden = false; B.classList.add('go');
+  B.style.transform = `translate3d(${dir * dx}%,0,0)`; B.style.opacity = '0';
+  const h1 = B.offsetHeight;
+  panes.style.height = h0 + 'px';
+  panes.classList.add('anim');
+  A.classList.add('mv'); B.classList.add('mv');
+  void panes.offsetHeight;
+  // The end state; the transitions carry it.
+  panes.style.height = h1 + 'px';
+  A.style.transform = `translate3d(${-dir * dx}%,0,0)`; A.style.opacity = '0';
+  B.style.transform = ''; B.style.opacity = '';
+  tabMove = { land(){
+    tabMove = null;
+    A.hidden = true; A.classList.remove('mv'); A.style.transform = ''; A.style.opacity = '';
+    B.classList.remove('go', 'mv');
+    panes.classList.remove('anim'); panes.style.height = '';
+  } };
+  tabMove.t = setTimeout(tabMove.land, TAB_MS);
 }
+/* A sideways swipe on the panels moves one tab; an upright drag stays a scroll (touch-action: pan-y). */
+let tabSwipe = null;
+document.addEventListener('touchstart', e => {
+  tabSwipe = e.touches.length === 1 && e.target.closest && e.target.closest('#hpanes')
+    && !e.target.closest('.op-row, .vp-row, .wr-chips')
+    ? { x: e.touches[0].clientX, y: e.touches[0].clientY, at: Date.now() } : null;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!tabSwipe || !e.changedTouches.length) return;
+  const dx = e.changedTouches[0].clientX - tabSwipe.x, dy = e.changedTouches[0].clientY - tabSwipe.y;
+  const quick = Date.now() - tabSwipe.at < 700;
+  tabSwipe = null;
+  if (!quick || Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+  const i = HOME_TABS.indexOf(S.homeTab) + (dx < 0 ? 1 : -1);
+  if (i >= 0 && i < HOME_TABS.length) showHomeTab(HOME_TABS[i]);
+}, { passive: true });
 
 function renderHome(){
+  landTab();
   if (!HOME_TABS.includes(S.homeTab)) S.homeTab = 'play';
   const real = BANDS.filter(b => !b.sample);
   /* THE SAMPLE BAND IS A DEVELOPMENT FIXTURE and it was on the live page, one
@@ -4451,6 +4508,7 @@ function renderHome(){
         data-htab="${t}" aria-selected="${S.homeTab === t}" aria-controls="hp-${t}"${S.homeTab === t ? '' : ' tabindex="-1"'}>${HOME_TAB_LABEL[t]}</button>`).join('')}
     </div>
 
+    <div class="hpanes" id="hpanes">
     <div class="hpane" id="hp-play" role="tabpanel" aria-labelledby="hm-play"${S.homeTab === 'play' ? '' : ' hidden'}>
     <div class="bands">${real.map(card).join('')}
       <section class="card band soon">
@@ -4555,6 +4613,7 @@ function renderHome(){
 
     <div class="hpane" id="hp-fan" role="tabpanel" aria-labelledby="hm-fan"${S.homeTab === 'fan' ? '' : ' hidden'}>
       <div class="bands">${real.map(fanCard).join('')}</div>
+    </div>
     </div>
 
     ${/* THE "YOURS" ROW IS GONE. Leaderboard and Your shows were the only two
