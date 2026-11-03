@@ -116,7 +116,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SHOTS = process.env.SHOTS || '';
-/* STD_QUICK=1: steps 1 and 2 at both sizes and the running game (15) at both, for a local pass. CI runs it all */
+/* STD_QUICK=1: steps 1 and 2 at both sizes, the home button, the running game (15) at both and the window sizes (16), for a local pass. CI runs it all */
 const QUICK = process.env.STD_QUICK === '1';
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -1372,6 +1372,62 @@ function runnerDay() {
   }
   return null;
 }
+/* HOME ON THE MOUND (the owner, 2026-11-03): a tap on home while the pitch flies waits for the play,
+   then lands on a fresh home, and take the mound resumes the same outing at the same pitch */
+async function homeTrip(w, h) {
+  console.log(`\nhome from the mound, ${w}x${h}`);
+  step('16 home from the mound', 600);
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  await page.addInitScript(STAGE_TEST);
+  await page.addInitScript(() => { try { if (!sessionStorage.getItem('ck-home')) { sessionStorage.setItem('ck-home', '1'); localStorage.setItem('std_ui_v1', JSON.stringify({ meter: false })); } } catch (e) {} });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net' || /(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    return route.abort();
+  });
+  await page.goto(BASE + '?mockEnd=door_shut', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 60000 });
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 30000 });
+  await stageReady(page);
+  const hb = await page.evaluate(() => { const r = document.getElementById('m-home').getBoundingClientRect(); return [r.width, r.height]; });
+  ok(hb[0] >= 38 && hb[1] >= 38, '16 the mound\'s home button is big enough to tap (' + hb.map(Math.round).join('x') + ')');
+  await page.keyboard.press('1');
+  await page.click('#m-aim .cell[data-cell="12"]');
+  await page.click('#m-throw');
+  const flying = await page.evaluate(() => window.STD_UI.state.busy);
+  const nav = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: PITCH_MS });
+  await page.click('#m-home');
+  await nav;
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 60000 });
+  const home = await page.evaluate(() => ({ screen: document.body.dataset.screen, take: document.getElementById('b-take').textContent }));
+  await homeWarm(page);
+  await page.click('#b-take', { timeout: 120000 });
+  await page.waitForSelector('#s-mound.on #m-aim .cell', { timeout: 30000 });
+  const back = await page.evaluate(() => ({ n: window.STD_UI.state.outing.pitchNo, pn: document.getElementById('m-pn').textContent }));
+  ok(home.screen === 's-home' && /pitch 2/.test(home.take) && back.n === 1 && back.pn === '2',
+    '16 home mid-outing' + (flying ? ' (tapped while the pitch flew)' : '') + ' lands on the home ("' + home.take + '"), and take the mound resumes at pitch ' + back.pn);
+  /* the menu's home is at the top of the sheet on the mound, and only there */
+  await page.click('.mh-menu');
+  await page.waitForSelector('#sheet-menu.on', { timeout: 3000 });
+  const mh = await page.evaluate(() => { const b = document.getElementById('menu-home'), f = document.querySelector('#sheet-menu .sh-in button:not(.sh-x)'); return { vis: !!b.offsetParent, first: f === b, h: b.getBoundingClientRect().height }; });
+  ok(mh.vis && mh.first && mh.h >= 38, '16 the mound\'s menu has home at its top (' + JSON.stringify(mh) + ')');
+  const nav2 = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: PITCH_MS });
+  await page.click('#menu-home');
+  await nav2;
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 60000 });
+  await page.waitForTimeout(300);
+  const hm = await page.evaluate(() => ({ screen: document.body.dataset.screen, take: document.getElementById('b-take').textContent }));
+  ok(hm.screen === 's-home' && /pitch 2/.test(hm.take), '16 the menu\'s home goes home too ("' + hm.take + '")');
+  ok(errors.length === 0, '16 home: no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
 async function runningGame(w, h) {
   const day = runnerDay();
   console.log(`\nthe running game, ${w}x${h}, ${day}`);
@@ -1929,11 +1985,12 @@ async function halves(w, h, skip) {
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
-  if (QUICK) { await run(1440, 900, 'dark'); await runningGame(390, 844); await runningGame(1440, 900); throw 'quick'; }
+  if (QUICK) { await run(1440, 900, 'dark'); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
   await bootStuck(390, 844);
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
   await halfSwitch(390, 844);
+  await homeTrip(390, 844);
   await sizeSweep();
   console.log('\nthe four endings');
   await ending(390, 844, 'door_shut', '&mockLesson=none');
