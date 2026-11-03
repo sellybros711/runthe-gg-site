@@ -137,7 +137,7 @@ function renderHow(ctx) {
     '<h3>one a day</h3>' +
     '<p>the daily counts once. run it back to practice. practice is never scored.</p>' +
     '<p>practice is the place to learn the meter. after each release it shows how much the miss grew or shrank.</p>' +
-    (ctx && ctx.proxy ? '<p class="quiet">older spots have no pitch tracking. their pitches come from modern pitch data.</p>' : '');
+    (ctx && ctx.proxy ? '<p class="quiet">older spots have no pitch tracking. their pitches come from modern pitch data. each hitter\'s strike zone is estimated from his height.</p>' : '');
 }
 
 /* ---- pitching 101 -----------------------------------------------------------

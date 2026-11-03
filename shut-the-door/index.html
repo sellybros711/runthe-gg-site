@@ -52,7 +52,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
 <link rel="manifest" href="manifest.webmanifest?v=2">
-<link rel="stylesheet" href="style.css?v=68">
+<link rel="stylesheet" href="style.css?v=69">
 <script type="importmap">
 { "imports": {
   "three": "./3d/vendor/three-0.170.0/three.module.min.js",
@@ -73,6 +73,16 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <script async data-ad-frequency-hint="30s" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <script>window.adsbygoogle=window.adsbygoogle||[];var adBreak=adConfig=function(o){adsbygoogle.push(o);};adConfig({preloadAdBreaks:'on',sound:'on'});</script>
 <script src="/assets/rtg-ads.js?v=3"></script>
+<!-- Google Analytics, the site's one property, the same block as the other live games (behind the Consent Mode defaults above) -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
+gtag('js',new Date());gtag('set',{game_name:'Shut The Door'}); gtag('config',id);
+var s=document.createElement('script');s.async=true;
+s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+document.head.appendChild(s);})();
+</script>
 </head>
 <body data-screen="s-home">
 <!-- THE LOADING SCREEN (the owner, 2026-11-02). Over the whole page from the first paint, so nothing is
@@ -155,7 +165,7 @@ setTimeout(function () {
           <div class="t-who" id="h-pitcher"></div>
           <div class="t-who due" id="h-due"></div>
           <p class="stakes" id="h-setup"></p>
-          <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
+          <p class="proxy" id="h-proxy" hidden>modern pitch data · zones from height</p>
         </div>
         <div class="t-go" id="h-go">
           <button class="btn take" id="b-take" type="button">take the mound</button>
@@ -466,29 +476,29 @@ setTimeout(function () {
 <script src="meter-ui.js?v=11"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=4"></script>
-<script src="aim.js?v=5"></script>
+<script src="aim.js?v=6"></script>
 <script src="anim.js?v=3"></script>
 <script src="minimap.js?v=1"></script>
-<script src="menus.js?v=16"></script>
+<script src="menus.js?v=18"></script>
 <script src="rng.js?v=1"></script>
 <script src="modes.js?v=1"></script>
 <script src="grade.js?v=17"></script>
 <script src="names.js?v=1"></script>
 <script src="lesson.js?v=7"></script>
 <script src="engine.js?v=19"></script>
-<script src="sound.js?v=2"></script>
+<script src="sound.js?v=3"></script>
 <script src="share.js?v=2"></script>
 <script src="card.js?v=4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="auth.js?v=7"></script>
-<script src="api.js?v=26"></script>
+<script src="api.js?v=27"></script>
 <script src="mock-api.js?v=13"></script>
 <script src="coach.js?v=2"></script>
 <script src="board.js?v=6"></script>
 <script src="modes-ui.js?v=6"></script>
 <script src="box-ui.js?v=2"></script>
 <script src="ads.js?v=3"></script>
-<script src="ui.js?v=66"></script>
+<script src="ui.js?v=67"></script>
 <script type="module" src="3d/boot.js?v=84"></script>
 <script type="module">import { battingClub, clubNamed } from './3d/clubs.js?v=2'; window.STD_BATTING_CLUB = battingClub; window.STD_CLUB_NAMED = clubNamed; window.dispatchEvent(new Event('std-clubs'));</script>
 </body>

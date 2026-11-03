@@ -163,8 +163,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -419,8 +419,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -677,8 +677,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "65",
-      "sha": "6b2f033d662bb9e1"
+      "v": "66",
+      "sha": "f8e0ff66a38cbdda"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -747,8 +747,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -933,8 +933,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1107,8 +1107,8 @@
       "sha": "42bbabae620fcfbf"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1127,8 +1127,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "64",
-      "sha": "3bf9ec95ed5513fe"
+      "v": "65",
+      "sha": "bfa0085425792c5f"
     },
     "/arcade/stats.js": {
       "v": "4",
@@ -1381,8 +1381,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1551,8 +1551,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1725,8 +1725,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1975,8 +1975,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "65",
-      "sha": "6b2f033d662bb9e1"
+      "v": "66",
+      "sha": "f8e0ff66a38cbdda"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -2171,8 +2171,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "64",
-      "sha": "652edaba0a8b380e"
+      "v": "65",
+      "sha": "c28a644f91c78c52"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -2195,8 +2195,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "64",
-      "sha": "3bf9ec95ed5513fe"
+      "v": "65",
+      "sha": "bfa0085425792c5f"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -3127,8 +3127,8 @@
       "sha": "5a8530bc11408f24"
     },
     "aim.js": {
-      "v": "5",
-      "sha": "576c1cdb1e3b7552"
+      "v": "6",
+      "sha": "199b31bdddc40b37"
     },
     "anim.js": {
       "v": "3",
@@ -3139,8 +3139,8 @@
       "sha": "8d8bbd62d19c78da"
     },
     "menus.js": {
-      "v": "16",
-      "sha": "cb3fe79a8d696714"
+      "v": "18",
+      "sha": "6e525dc3ffdc994c"
     },
     "rng.js": {
       "v": "1",
@@ -3167,8 +3167,8 @@
       "sha": "51be41db7957c9a8"
     },
     "sound.js": {
-      "v": "2",
-      "sha": "faf50231bb51585d"
+      "v": "3",
+      "sha": "1f660a7b8b6b801b"
     },
     "share.js": {
       "v": "2",
@@ -3183,8 +3183,8 @@
       "sha": "65388a73bdcc15be"
     },
     "api.js": {
-      "v": "26",
-      "sha": "0c159de3fee881c5"
+      "v": "27",
+      "sha": "a2a9ced2dfd423bd"
     },
     "mock-api.js": {
       "v": "13",
@@ -3211,8 +3211,8 @@
       "sha": "9314ac5af2667f8b"
     },
     "ui.js": {
-      "v": "66",
-      "sha": "c50a7a26e0cc314a"
+      "v": "67",
+      "sha": "20aced0257527f6b"
     },
     "3d/boot.js": {
       "v": "84",

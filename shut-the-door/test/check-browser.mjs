@@ -783,7 +783,7 @@ async function run(w, h, theme) {
     // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
-    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    if (/(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => {
@@ -1302,7 +1302,7 @@ async function ending(w, h, end, extra) {
     // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
-    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    if (/(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${tag}-${nextN(tag)}-${end}-${name}.png`), fullPage: !!full }); };
@@ -1387,7 +1387,7 @@ async function homeTrip(w, h) {
     const u = new URL(route.request().url());
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
-    if (u.hostname === 'cdn.jsdelivr.net' || /(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    if (u.hostname === 'cdn.jsdelivr.net' || /(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE + '?mockEnd=door_shut', { waitUntil: 'domcontentloaded' });
@@ -1445,7 +1445,7 @@ async function runningGame(w, h) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
-    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    if (/(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
@@ -1454,11 +1454,46 @@ async function runningGame(w, h) {
   await page.click('#b-take');
   await page.waitForSelector('#m-arsenal .pitch', { state: 'visible', timeout: 120000 });
   await stageReady(page);
+  await breakArrows(page, w + 'x' + h);
   const play = await playOuting(page, { w, h });
   ok(play.ranGame, '15 the running game row came up with a runner on');
   ok(play.problems.length === 0, '15 nothing graded, tipped or over the field' + (play.problems.length ? ': ' + play.problems.slice(0, 3).join(' | ') : ''));
   ok(errors.length === 0, '15 no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
+}
+
+/* 15b. THE BREAK ARROWS (the owner, 2026-11-03). With a pitch picked and the zone aimed, one to three
+   yellow chevrons start at the reticle and point the way the pitch moves: sideways is pfxX put on
+   screen through screenCol() (the pitcher's view, so a righty's slider, positive pfxX, points left to
+   his glove side), down for a pitch that drops more than the average four-seam. */
+async function breakArrows(page, tag) {
+  step(tag + ' 15b the break arrows', 300);
+  /* the zone takes a tap once the at bat is up; the reticle shows once it does */
+  await page.waitForSelector('#m-aim:not(.off)', { timeout: 60000 });
+  await page.click('#m-aim .cell[data-cell="12"]');
+  await page.waitForSelector('#m-aim.aiming', { timeout: 10000 });
+  const n = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
+  const seen = [];
+  for (let i = 0; i < n; i++) {
+    await page.click(`#m-arsenal .pitch >> nth=${i}`);
+    await page.waitForTimeout(350);
+    seen.push(await page.evaluate((i) => {
+      const S = window.STD_UI.state, p = S.scn.pitcher, a = p.arsenal.filter((x) => x.type === S.type)[0];
+      const ax = document.querySelector('#m-aim .aim-x').getBoundingClientRect(), cx = ax.left + ax.width / 2, cy = ax.top + ax.height / 2;
+      const ab = [...document.querySelectorAll('#m-aim .ax-brk .ab')].filter((e) => e.getBoundingClientRect().width > 0 && +getComputedStyle(e).opacity > 0.9);
+      const r = ab.length ? ab[ab.length - 1].getBoundingClientRect() : null;
+      const fill = ab.length ? getComputedStyle(ab[0]).fill : '';
+      return { type: a.type, throws: p.throws, pfxX: a.pfxX, n: ab.length, dx: r ? r.left + r.width / 2 - cx : 0, dy: r ? r.top + r.height / 2 - cy : 0, fill: fill, i: i };
+    }, i));
+  }
+  ok(seen.every((s) => s.n >= 1 && s.n <= 3), '15b every pitch shows 1 to 3 chevrons at the reticle (' + seen.map((s) => s.type + ' ' + s.n).join(', ') + ')');
+  ok(seen.every((s) => /rgb\(242, 184, 39\)/.test(s.fill)), '15b the chevrons are the yellow token (' + (seen[0] || {}).fill + ')');
+  /* sideways on screen: the sign of pfxX flipped (pitcher's view), wherever the break has a side */
+  const side = seen.filter((s) => Math.abs(s.pfxX) >= 3);
+  ok(side.length && side.every((s) => Math.sign(s.dx) === -Math.sign(s.pfxX)), '15b each chevron points the pitcher\'s view way (' + side.map((s) => s.type + ' pfxX ' + s.pfxX + ' dx ' + Math.round(s.dx)).join(', ') + ')');
+  const glove = seen.filter((s) => /^(SL|ST|SV|CU|KC)$/.test(s.type) && Math.abs(s.pfxX) >= 3);
+  if (glove.length) ok(glove.every((s) => (s.throws === 'R' ? s.dx < 0 : s.dx > 0) && s.dy > 0), '15b a breaking ball points down and to his glove side (' + glove.map((s) => s.throws + ' ' + s.type + ' ' + Math.round(s.dx) + ',' + Math.round(s.dy)).join('; ') + ')');
+  await page.click('#m-arsenal .pitch >> nth=0');
 }
 
 /* 1b. THE LOADING SCREEN NEVER HANGS (the owner, 2026-11-02). The 3D's downloads never answer and the
@@ -1520,7 +1555,7 @@ async function sizeSweep() {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
-    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    if (/(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
@@ -1595,7 +1630,7 @@ async function modesPage(w, h, q, opts) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
-    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    if (/(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE + q, { waitUntil: 'domcontentloaded' });
@@ -1856,7 +1891,7 @@ async function halfPage(w, h) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     /* the ad tag (launched 2026-11-02): offline here like the fonts, so an empty script, never a failed load */
-    if (/(^|\.)googlesyndication\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    if (/(^|\.)(googlesyndication|googletagmanager)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });

@@ -1236,6 +1236,28 @@ function breakGlyph(a, color, big) {
     '<path d="M' + f(ex) + ' ' + f(ey) + 'L' + f(hx - uy * 2.6) + ' ' + f(hy + ux * 2.6) + 'L' + f(hx + uy * 2.6) + ' ' + f(hy - ux * 2.6) + 'Z" fill="' + color + '"/></svg>';
 }
 
+/* THE BREAK ARROWS (the owner, 2026-11-03): one, two or three yellow chevrons from the reticle, the way
+   the picked pitch moves. The way is what the hitter sees the ball do: total movement with gravity,
+   measured against the path of the league's average four-seam (the straight fastball the eye
+   expects). So its vertical is pfxZ (induced) less the drop gravity adds at his own speed, less that
+   of the average four-seam: a riding four-seam reads flat or up, a sinker, splitter or curve down.
+   Sideways is pfxX (catcher's view) put on screen through screenCol() (aim.js SCREEN_U), so a
+   righty's slider points to his glove side. Nothing here is a number on screen.
+   The count is the size of that movement. Measured on every pitch in the 30 packs (81 arsenal rows,
+   2026-11-03): the thirds fall at 10.8 and 19.6 inches, so under 11 is one arrow, 11 to 20 two, 20 and
+   over three (the four-seams land in one, most sliders and every curve in three). BRK_REF is that
+   four-seam average (pfxZ less the drop, -11.7 inches). */
+var BRK_REF = -11.7, BRK_TWO = 11, BRK_THREE = 20;
+/* the drop gravity adds over the last 50 feet at 95% of his release speed, in inches */
+function gravityDrop(velo) { var t = 50 / (0.95 * velo * 1.4667); return 0.5 * 32.174 * t * t * 12; }
+function breakArrows(a) {
+  if (!a || a.pfxX == null || a.pfxZ == null || !a.velo) return null;
+  var x = a.pfxX, z = a.pfxZ - gravityDrop(a.velo) - BRK_REF, mag = Math.sqrt(x * x + z * z);
+  if (mag < 0.5) return null;
+  var U = window.STD_AIM.SCREEN_U;
+  return { dx: x * U / mag, dy: -z / mag, n: mag >= BRK_THREE ? 3 : mag >= BRK_TWO ? 2 : 1 };
+}
+
 /* A long press on a pitch button opens its guide (and does not pick it). Returns a test for the
    click that follows a long press, so that click is not a pick. */
 function holdToLearn(b, type) {
@@ -1260,6 +1282,7 @@ function drawPreview() {
   /* at rides on the spec, so the stage ends the ghost on the exact point */
   var spec = live ? (cell == null ? { type: S.type, cell: 12 } : { type: S.type, cell: cell, at: at || [0, 0] }) : null;
   if (S.scene.setPreview) S.scene.setPreview(spec);
+  if (S.grid.setBreak) S.grid.setBreak(live ? breakArrows(S.scn.pitcher.arsenal.filter(function (a) { return a.type === S.type; })[0]) : null);
   var svg = gridLine();
   /* the 3D stage draws its own animated indicator; this 2D line is only for the no WebGL drawing */
   if (S.scene.is3d) { svg.style.display = 'none'; return; }
