@@ -372,7 +372,7 @@ window.render = async function (t) {
     // the button, the replay box, then the call as it now stands
     const sec = 10.0 + l * 1.0, pu = 0.14, F0 = ['aim'];
     wait = phone('abs', sec, { push: pu, focus: F0 });
-    if (l < 0.9) callout('abs', sec, ['abs'], { zoom: 2.0, cx: CO.cx, cy: CO.low,   // where the call scene left it pop: Math.min(1, 1 - span(l, 0.65, 0.9)), push: pu, focus: F0 });
+    if (l < 0.9) callout('abs', sec, ['abs'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: Math.min(1, 1 - span(l, 0.65, 0.9)), push: pu, focus: F0 });
     else if (l < 3.0) callout('abs', sec, ['absr'], { zoom: 2.0, cx: CO.cx, cy: CO.high, pop: seg(0.9, 3.0), push: pu, focus: F0 });
     else callout('abs', sec, ['pbp'], { zoom: 2.0, cx: CO.cx, cy: CO.high, pop: seg(3.0, d + 0.3), push: pu, focus: F0 });
     text = capAbove(l, 0.1, [['Challenge it', ''], ['with ABS.', 'org']], { size: 112 });
