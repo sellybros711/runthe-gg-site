@@ -431,11 +431,12 @@ class Stage {
       canvas size, which clears it, is drawn in the same task. Tier 0 is the look as it was. The stepped test clock never
       changes it; window.STD_STAGE_TIER forces one (a measurement). The tier is kept for the next visit. */
   judgeTier(gaps) {
-    if (TEST() || !gaps || gaps.length < 20) return;
-    const g = gaps.slice(4).sort((a, b) => a - b), med = g[g.length >> 1], p75 = g[Math.floor(g.length * 0.75)];
-    // (a steady 30 a second, a phone in Low Power Mode, is the screen's own cap, not a slow draw)
-    const capped30 = med > 31 && med < 36 && p75 < 38;
-    if (med > TIER_SLOW && !capped30) this.tierNext = Math.min(TIERS.length - 1, this.tier + 1);
+    if (TEST() || !gaps || gaps.length < 12) return;
+    // (the median: the broadcast's first frame, or a hitch, is not the phone's pace. A steady 30 a
+    // second steps down too: a phone held to 30 by Low Power Mode cannot be told from one held there
+    // by its GPU, and the cheaper tier is what Low Power Mode asks for anyway)
+    const g = gaps.slice(3).sort((a, b) => a - b), med = g[g.length >> 1];
+    if (med > TIER_SLOW) this.tierNext = Math.min(TIERS.length - 1, this.tier + 1);
     else if (med < TIER_FAST && this.tier > 0) this.tierNext = this.tier - 1;
   }
 
