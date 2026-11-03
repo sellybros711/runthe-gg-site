@@ -190,6 +190,7 @@ function side(html) { return TALL ? html : `<div style="position:absolute;left:$
    9:16, so the whole game shows. */
 const PH = TALL ? { h: 0.66 * H, cx: 0.5 * W, top: 0.30 * H } : { h: 0.84 * H, cx: 0.70 * W, top: 0.08 * H };
 PH.w = PH.h * 9 / 16;
+const PHC = PH.cx;
 function phone(clip, sec, { push = 0, focus = null, x = 0, y = 0 } = {}) {
   const p = $('phone'), pb = 18 * K, pr = 46 * K;
   p.style.setProperty('--pb', pb + 'px'); p.style.setProperty('--pr', pr + 'px');
@@ -293,6 +294,7 @@ const CARDS = [['Survivor', 'How many saves in a row?'], ['Real data', 'Real pit
 
 window.render = async function (t) {
   const frame = Math.round(t * FPS);
+  PH.cx = TALL ? PHC : PHC + (0.5 * W - PHC) * ease(span(t, 25.4, 26.2));
   const sc = S.find((s) => t >= s.t0 && t < s.t1) || S[S.length - 1], l = t - sc.t0, d = sc.t1 - sc.t0;
   for (const id of ['spot', 'vote', 'end', 'capbg']) $(id).classList.add('hide');
   $('foot').classList.add('hide'); $('footpanelwrap').classList.add('hide');
@@ -317,6 +319,7 @@ window.render = async function (t) {
   /* FROM HERE THE GAME IS IN THE PHONE. Each beat pushes the phone toward the part its words are about,
      and a callout pops out with that part magnified. All of it reads the take's own tracking. */
   const pop = (a, b2) => out(span(l, a + 0.35, b2 + 0.65)), PUSH = 0.14, PE = (x) => ease(span(l, 0, 1.0)) * x;
+  const seg = (a, b2) => out(span(l, a, a + 0.35)) * (1 - span(l, b2 - 0.25, b2));
   if (sc.id === 'home') {
     // the day's spot on the home: a real save situation, the same for everybody
     const sec = 0.2 + l * 0.6, pu = PE(PUSH * 0.6);
@@ -356,17 +359,22 @@ window.render = async function (t) {
   }
   if (sc.id === 'call') {
     // a ball called on a pitch at the edge (the abs take, 7.6 s on): the call, then the challenge button up
-    const sec = 7.6 + l * 0.5, pu = PE(PUSH);
-    wait = phone('abs', sec, { push: pu, focus: ['pbp'] });
-    callout('abs', sec, l < 1.5 ? ['pbp'] : ['abs'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: l < 1.5 ? pop(0.1, 0.4) : pop(1.3, 1.6), push: pu, focus: ['pbp'] });
+    // the camera holds one aim (the zone) for the whole beat; the callouts take turns
+    const sec = 7.6 + l * 0.5, pu = PE(PUSH), F0 = ['aim'];
+    wait = phone('abs', sec, { push: pu, focus: F0 });
+    if (l < 1.5) callout('abs', sec, ['pbp'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: seg(0.45, 1.5), push: pu, focus: F0 });
+    else callout('abs', sec, ['abs'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: seg(1.5, d + 0.3), push: pu, focus: F0 });
     text = capAbove(l, 0.1, [['Don\'t like', ''], ['the call?', 'org']], { size: 120 });
   }
   if (sc.id === 'abs') {
     // CHALLENGE tapped (10.27 s), the ABS replay: strike, overturned
-    const sec = 10.0 + l * 1.0, pu = PE(PUSH), part = l < 0.9 ? ['abs'] : l < 3.0 ? ['absr'] : ['pbp'];
-    wait = phone('abs', sec, { push: pu, focus: part });
-    flash = 0;
-    callout('abs', sec, part, { zoom: 2.0, cx: CO.cx, cy: CO.high, pop: l < 0.9 ? pop(-0.2, 0.1) : l < 3.0 ? pop(0.7, 1.0) : pop(2.8, 3.1), push: pu, focus: part });
+    // one aim for the whole beat (the zone), so the phone never jumps; the callouts take turns:
+    // the button, the replay box, then the call as it now stands
+    const sec = 10.0 + l * 1.0, pu = 0.14, F0 = ['aim'];
+    wait = phone('abs', sec, { push: pu, focus: F0 });
+    if (l < 0.9) callout('abs', sec, ['abs'], { zoom: 2.0, cx: CO.cx, cy: CO.low,   // where the call scene left it pop: Math.min(1, 1 - span(l, 0.65, 0.9)), push: pu, focus: F0 });
+    else if (l < 3.0) callout('abs', sec, ['absr'], { zoom: 2.0, cx: CO.cx, cy: CO.high, pop: seg(0.9, 3.0), push: pu, focus: F0 });
+    else callout('abs', sec, ['pbp'], { zoom: 2.0, cx: CO.cx, cy: CO.high, pop: seg(3.0, d + 0.3), push: pu, focus: F0 });
     text = capAbove(l, 0.1, [['Challenge it', ''], ['with ABS.', 'org']], { size: 112 });
   }
   if (sc.id === 'k2') {
@@ -382,15 +390,17 @@ window.render = async function (t) {
     wait = phone('last', sec, { push: pu, focus: ['scene'] });
     flash = l > 1.0 ? 0.6 * (1 - span(l, 1.0, 1.2)) : 0;
     shake = l > 1.0 && l < 1.2 ? 6 : 0;
-    text = l > 0.95 ? capAbove(l, 1.0, [['Shut the', ''], ['door.', 'org']], { size: 140, step: 0.08 }) : '';
+    text = l > 0.95 ? capAbove(l, 1.0, [['Strike three,', ''], ['| looking.', 'org']], { size: TALL ? 124 : 96, step: 0.08 }) : '';
+    if (!TALL) text = '';   // 5:4: the phone is in the middle now, the game says it
   }
   if (sc.id === 'shut') {
     // the result: DOOR SHUT, then you against the real game and the percentile against real closers
     const sec = 10.1 + l * 0.8, part = l < 1.8 ? ['outcome'] : ['real', 'pct'], pu = PE(PUSH * 0.5);
     wait = phone('last', sec, { push: pu, focus: part });
     flash = 0.4 * (1 - span(l, 0, 0.12));
-    callout('last', sec, part, { zoom: 1.5, cx: CO.cx, cy: CO.low, pop: l < 1.8 ? pop(0.1, 0.4) : pop(1.7, 2.0), push: pu, focus: part });
-    text = capAbove(l, 0.1, [['Door', ''], ['shut.', 'org']], { size: 130 });
+    // the result says DOOR SHUT itself: no caption, and in 5:4 no callout (the phone is in the middle)
+    if (TALL && l >= 1.8) callout('last', sec, ['real', 'pct'], { zoom: 1.5, cx: CO.cx, cy: CO.low, pop: seg(1.8, d + 0.3), push: pu, focus: part });
+    text = '';
   }
   if (sc.id === 'cards') {
     // three quick cards on the beat: Survivor, the data, the grade
