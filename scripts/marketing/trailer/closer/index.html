@@ -68,6 +68,16 @@ html,body{width:var(--W);height:var(--H);overflow:hidden;background:#000}
 #end .pt{position:absolute;left:50%;transform:translateX(-50%)}
 #end .pt svg{width:100%;height:100%}
 .pill{display:inline-block;background:var(--green);color:#04130c;font:900 calc(40px*var(--k))/1 Archivo;padding:calc(18px*var(--k)) calc(34px*var(--k));border-radius:99px;letter-spacing:.02em}
+/* THE PHONE: a drawn handset, the game on its screen at the take's own shape (9:16), never covered */
+#phone{position:absolute;display:none;transform-origin:50% 50%}
+#phone .bez{position:absolute;inset:0;border-radius:calc(var(--pr) + var(--pb));background:linear-gradient(145deg,#2b3140,#0d1118 45%,#1d2330);box-shadow:0 40px 90px rgba(0,0,0,.65),inset 0 0 0 2px rgba(255,255,255,.08)}
+#phone .scr{position:absolute;overflow:hidden;border-radius:var(--pr);background:#000}
+#phone .scr img{position:absolute;left:0;top:0;width:100%;height:100%}
+#phone .isl{position:absolute;left:50%;transform:translateX(-50%);background:#000;border-radius:99px}
+/* THE CALLOUT: the part a caption is about, magnified, with a leader back to where it is on the phone */
+#co{position:absolute;display:none;overflow:hidden;border-radius:calc(26px*var(--k));border:calc(5px*var(--k)) solid var(--org);box-shadow:0 30px 70px rgba(0,0,0,.6),0 0 40px rgba(255,79,31,.35);background:#000}
+#co img{position:absolute;left:0;top:0;transform-origin:0 0}
+#coline{position:absolute;inset:0;display:none;pointer-events:none}
 </style></head>
 <body><div id="frame">
   <div id="foot" class="layer"><img id="fimg" alt=""></div>
@@ -77,6 +87,9 @@ html,body{width:var(--W);height:var(--H);overflow:hidden;background:#000}
   <svg id="lock" class="layer" style="display:none" xmlns="http://www.w3.org/2000/svg"></svg>
   <div id="footpanelwrap" class="layer hide"><div id="footpanel"><img id="pimg" alt=""></div></div>
   <div id="frost" style="position:absolute;display:none;backdrop-filter:blur(14px) brightness(.55);-webkit-backdrop-filter:blur(14px) brightness(.55)"></div>
+  <div id="phone"><div class="bez"></div><div class="scr"><img id="simg" alt=""></div><div class="isl"></div></div>
+  <svg id="coline" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="co"><img id="cimg" alt=""></div>
   <div id="tint" class="layer"></div>
   <div id="capbg" class="layer hide"></div>
   <div id="text" class="layer"></div>
@@ -173,6 +186,56 @@ function shoot(clip, sec, l, shots, o) { const c = CAM.path(clip, sec, l, shots)
 function side(html) { return TALL ? html : `<div style="position:absolute;left:${70}px;top:0;bottom:0;width:${W - Math.round((H - 120) * 9 / 16) - 220}px;display:flex;align-items:center">${html.replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`; }
 
 
+/* WHERE THE PHONE SITS: centred under the caption in 9:16, right of it in 5:4. Its screen is the take's
+   9:16, so the whole game shows. */
+const PH = TALL ? { h: 0.66 * H, cx: 0.5 * W, top: 0.30 * H } : { h: 0.84 * H, cx: 0.70 * W, top: 0.08 * H };
+PH.w = PH.h * 9 / 16;
+function phone(clip, sec, { push = 0, focus = null, x = 0, y = 0 } = {}) {
+  const p = $('phone'), pb = 18 * K, pr = 46 * K;
+  p.style.setProperty('--pb', pb + 'px'); p.style.setProperty('--pr', pr + 'px');
+  Object.assign(p.style, { display: 'block', width: PH.w + 2 * pb + 'px', height: PH.h + 2 * pb + 'px', left: PH.cx - PH.w / 2 - pb + x + 'px', top: PH.top - pb + y + 'px' });
+  Object.assign(p.querySelector('.scr').style, { left: pb + 'px', top: pb + 'px', width: PH.w + 'px', height: PH.h + 'px' });
+  Object.assign(p.querySelector('.isl').style, { top: pb + 14 * K + 'px', width: PH.w * 0.28 + 'px', height: 26 * K + 'px' });
+  // a push toward the part (its place on the screen is the transform's origin), so the camera moves to it
+  let ox = 50, oy = 50;
+  if (focus) { const b = CAM.box(clip, Math.round(sec * 30), focus); if (b) { ox = (pb + (b[0] + b[2]) / 2 / 1080 * PH.w) / (PH.w + 2 * pb) * 100; oy = (pb + (b[1] + b[3]) / 2 / 1920 * PH.h) / (PH.h + 2 * pb) * 100; } }
+  p.style.transformOrigin = `${ox}% ${oy}%`;
+  p.style.transform = `scale(${1 + push})`;
+  return setImg($('simg'), clip, sec);
+}
+// a point on the source (clip px) to the frame, through the phone and its push
+function onFrame(px, py, push, focus, clip, sec) {
+  const pb = 18 * K, L = PH.cx - PH.w / 2 - pb, T0 = PH.top - pb, Wp = PH.w + 2 * pb, Hp = PH.h + 2 * pb;
+  let ox = 0.5, oy = 0.5;
+  if (focus) { const b = CAM.box(clip, Math.round(sec * 30), focus); if (b) { ox = (pb + (b[0] + b[2]) / 2 / 1080 * PH.w) / Wp; oy = (pb + (b[1] + b[3]) / 2 / 1920 * PH.h) / Hp; } }
+  const x = L + pb + px / 1080 * PH.w, y = T0 + pb + py / 1920 * PH.h, s = 1 + push;
+  return [L + ox * Wp + (x - L - ox * Wp) * s, T0 + oy * Hp + (y - T0 - oy * Hp) * s];
+}
+/* the callout: the named parts of the take, magnified `zoom` times the phone's own scale, in a card at
+   (cx, cy) of the frame, popping in from p = 0 to 1; a leader runs back to the part on the phone */
+function callout(clip, sec, names, { zoom = 2.2, cx, cy, pop = 1, push = 0, focus = null, pad = 14 } = {}) {
+  const b = CAM.box(clip, Math.round(sec * 30), names); if (!b || pop <= 0) return;
+  const x0 = b[0] - pad, y0 = b[1] - pad, bw = b[2] - b[0] + 2 * pad, bh = b[3] - b[1] + 2 * pad;
+  const s = PH.w / 1080 * zoom, cw = Math.min(TALL ? W * 0.9 : LEFTW - 40 * K, bw * s), ch = Math.min(bh * s * (cw / (bw * s)), TALL ? H : 0.5 * H);
+  const sc = cw / bw, co = $('co'), im = $('cimg');
+  Object.assign(co.style, { display: 'block', width: cw + 'px', height: ch + 'px', left: cx - cw / 2 + 'px', top: cy - ch / 2 + 'px', transform: `scale(${0.6 + 0.4 * back(pop)})`, opacity: Math.min(1, pop * 2) });
+  im.style.width = '1080px'; im.style.height = '1920px';
+  im.style.transform = `translate(${-x0 * sc}px,${-y0 * sc}px) scale(${sc})`;
+  setImg(im, clip, sec);
+  const [tx, ty] = onFrame((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, push, focus, clip, sec);
+  const ln = $('coline'); ln.style.display = 'block'; ln.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const ex = cx, ey = cy + (ty > cy ? ch / 2 : -ch / 2) * (0.6 + 0.4 * back(pop));
+  ln.innerHTML = `<line x1="${tx}" y1="${ty}" x2="${ex}" y2="${ey}" stroke="#ff4f1f" stroke-width="${4 * K}" stroke-dasharray="${8 * K} ${6 * K}" opacity="${Math.min(1, pop * 2)}"/><circle cx="${tx}" cy="${ty}" r="${12 * K}" fill="none" stroke="#ff4f1f" stroke-width="${4 * K}" opacity="${Math.min(1, pop * 2)}"/>`;
+}
+/* a caption above the phone (9:16) or left of it (5:4), never over the game */
+function capAbove(l, at, parts, o = {}) {
+  if (TALL) return cap(l, at, parts, Object.assign({ y: 0.155, size: 108 }, o));
+  return `<div style="position:absolute;left:${50 * K}px;top:${0.08 * H}px;width:${LEFTW - 40 * K}px">${cap(l, at, parts, Object.assign({ size: 100 }, o)).replace(/class="cap big" style="top:[^;]*;/, 'class="big" style="position:relative;text-align:left;').replace('transform:translateY(-50%)', '')}</div>`;
+}
+// in 5:4 the left column holds the caption on top and the callout under it
+const LEFTW = PH.cx - PH.w / 2 - 80 * K;
+const CO = TALL ? { cx: 0.5 * W, low: 0.78 * H, high: 0.42 * H } : { cx: 40 * K + LEFTW / 2, low: 0.64 * H, high: 0.64 * H };
+
 /* THE LOCK: two chains across the frame and a padlock where they cross. They hang still for the hook,
    then snap at SNAP: the links fly out, the lock drops. Drawn here, so it is ours. */
 const SNAP = 1.15;
@@ -234,6 +297,7 @@ window.render = async function (t) {
   for (const id of ['spot', 'vote', 'end', 'capbg']) $(id).classList.add('hide');
   $('foot').classList.add('hide'); $('footpanelwrap').classList.add('hide');
   $('frost').style.display = 'none'; $('lock').style.display = 'none'; $('capbg').classList.remove('top');
+  $('phone').style.display = 'none'; $('co').style.display = 'none'; $('coline').style.display = 'none';
   let text = '', flash = 0, scan = 0, tint = '', tintA = 0, shake = 0, wait = Promise.resolve();
 
   if (sc.id === 'hook' || sc.id === 'lockin') {
@@ -250,71 +314,83 @@ window.render = async function (t) {
       : cap(l, 0.15, [['Now it\'s time', ''], ['| for you to', ''], ['lock in.', 'gold']], { size: TALL ? 116 : 100, step: 0.07, y: TALL ? 0.74 : 0.80 });
     if (sc.id === 'lockin') text = text.replace(/class="w gold"/g, 'class="w" style="color:var(--org)" data-x');
   }
+  /* FROM HERE THE GAME IS IN THE PHONE. Each beat pushes the phone toward the part its words are about,
+     and a callout pops out with that part magnified. All of it reads the take's own tracking. */
+  const pop = (a, b2) => span(l, a, b2), PUSH = 0.18;
   if (sc.id === 'home') {
     // the day's spot on the home: a real save situation, the same for everybody
-    wait = shoot('home', 0.2 + l * 1.0, l, [[0, { names: ['title', 'sit', 'hpitcher', 'setup'], pad: 24, w: 940 }]]);
+    const sec = 0.2 + l * 1.0, pu = PUSH * 0.6 * ease(span(l, 0.2, 1.2));
+    wait = phone('home', sec, { push: pu, focus: ['sit'] });
     flash = 0.3 * (1 - span(l, 0, 0.12));
-    $('capbg').classList.remove('hide');
-    text = side(cap(l, 0.15, [['A real save situation.', ''], ['| Every day.', 'org']], { size: 100, step: 0.07 }));
+    callout('home', sec, ['title', 'sit', 'hpitcher'], { zoom: 1.6, cx: CO.cx, cy: CO.low, pop: pop(0.4, 0.75), push: pu, focus: ['sit'] });
+    text = capAbove(l, 0.15, [['A real save situation.', ''], ['| Every day.', 'org']], { size: TALL ? 96 : 88, step: 0.07 });
   }
   if (sc.id === 'pick') {
     // the arsenal: his cutter, picked (4.17 s of the take)
-    wait = shoot('k2', 3.4 + l * 1.0, l, [[0, { names: ['arsenal'], pad: 16, w: 1040, at: LOW }]]);
-    capTop();
-    text = side(cap(l, 0.1, [['Pick the', ''], ['pitch.', 'org']], { size: 124, y: TOPCAP }));
+    const sec = 3.4 + l * 1.0, pu = PUSH * ease(span(l, 0, 0.9));
+    wait = phone('k2', sec, { push: pu, focus: ['arsenal'] });
+    callout('k2', sec, ['arsenal'], { zoom: 1.9, cx: CO.cx, cy: CO.high, pop: pop(0.25, 0.6), push: pu, focus: ['arsenal'] });
+    text = capAbove(l, 0.1, [['Pick the', ''], ['pitch.', 'org']], { size: 120 });
   }
   if (sc.id === 'aim') {
     // the zone and the crosshair, the cell tapped at 4.73 s
-    wait = shoot('k2', 4.55 + l * 0.6, l, [[0, { names: ['aim'], pad: 30, w: 660 - 80 * l / d }]]);
-    $('capbg').classList.remove('hide');
-    text = side(cap(l, 0.1, [['Paint the', ''], ['corner.', 'org']], { size: 124 }));
+    const sec = 4.55 + l * 0.6, pu = PUSH * ease(span(l, 0, 0.8));
+    wait = phone('k2', sec, { push: pu, focus: ['aim'] });
+    callout('k2', sec, ['aim'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: pop(0.2, 0.55), push: pu, focus: ['aim'] });
+    text = capAbove(l, 0.1, [['Paint the', ''], ['corner.', 'org']], { size: 120 });
   }
   if (sc.id === 'meter') {
     // the two stops: power, then the release ring (the meter shows at 5.23 s)
-    wait = shoot('k2', 5.25 + l * 0.85, l, [[0, { names: ['aim', 'meter'], pad: 20, w: 820, at: 0.62 }]]);
-    capTop();
-    text = side(cap(l, 0.1, [['Time the', ''], ['release.', 'org']], { size: 124, y: TOPCAP }));
+    const sec = 5.25 + l * 0.85, pu = PUSH * ease(span(l, 0, 0.8));
+    wait = phone('k2', sec, { push: pu, focus: ['meter'] });
+    callout('k2', sec, ['meter'], { zoom: 1.9, cx: CO.cx, cy: CO.high, pop: pop(0.15, 0.5), push: pu, focus: ['meter'] });
+    text = capAbove(l, 0.1, [['Time the', ''], ['release.', 'org']], { size: 120 });
   }
   if (sc.id === 'k') {
-    // the pitch flies and Guerrero swings through it: STRIKEOUT
-    wait = shoot('k2', 7.0 + l * 0.9, l, [[0, { names: ['scene'], pad: 0, w: 1000 - 160 * out(span(l, 0.4, d)) }]]);
+    // the pitch flies and Guerrero swings through it: STRIKEOUT, and the phone jumps toward it
+    const sec = 7.0 + l * 0.9, pu = l > 0.75 ? 0.3 * out(span(l, 0.75, 1.1)) : 0.06 * l;
+    wait = phone('k2', sec, { push: pu, focus: ['scene'] });
     flash = l > 0.75 ? 0.6 * (1 - span(l, 0.75, 0.9)) : 0;
     shake = l > 0.75 && l < 1.0 ? 10 : 0;
-    $('capbg').classList.remove('hide');
-    text = l > 0.7 ? side(cap(l, 0.75, [['Strike', ''], ['three.', 'org']], { size: 150, step: 0.08 })) : '';
+    text = l > 0.7 ? capAbove(l, 0.75, [['Strike', ''], ['three.', 'org']], { size: 140, step: 0.08 }) : '';
   }
   if (sc.id === 'call') {
-    // a ball called on a pitch at the edge (the abs take, 7.6 s on), the challenge button up
-    wait = shoot('abs', 7.6 + l * 1.4, l, [[0, { names: ['aim'], pad: 40, w: 760, at: 0.55 }], [0.9, { names: ['abs', 'aim'], pad: 30, w: 860, at: 0.6 }]]);
-    capTop();
-    text = side(cap(l, 0.1, [['Don\'t like', ''], ['the call?', 'org']], { size: 124, y: TOPCAP }));
+    // a ball called on a pitch at the edge (the abs take, 7.6 s on): the call, then the challenge button up
+    const sec = 7.6 + l * 1.4, pu = PUSH * ease(span(l, 0, 0.8));
+    wait = phone('abs', sec, { push: pu, focus: ['pbp'] });
+    callout('abs', sec, l < 0.9 ? ['pbp'] : ['abs'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: l < 0.9 ? pop(0.15, 0.45) : pop(0.9, 1.2), push: pu, focus: ['pbp'] });
+    text = capAbove(l, 0.1, [['Don\'t like', ''], ['the call?', 'org']], { size: 120 });
   }
   if (sc.id === 'abs') {
     // CHALLENGE tapped (10.27 s), the ABS replay: strike, overturned
-    wait = shoot('abs', 10.0 + l * 1.25, l, [[0, { names: ['abs'], pad: 40, w: 720, at: LOW }], [0.6, { names: ['absr'], pad: 30, w: 700, at: LOW }], [2.2, { names: ['absr', 'aim'], pad: 30, w: 900, at: 0.6 }]]);
-    flash = l > 1.0 && l < 1.3 ? 0.35 : 0;
-    capTop();
-    text = side(cap(l, 0.1, [['Challenge it', ''], ['with ABS.', 'org']], { size: 118, y: TOPCAP }));
+    const sec = 10.0 + l * 1.25, pu = PUSH * ease(span(l, 0, 0.6)), part = l < 0.5 ? ['abs'] : l < 2.2 ? ['absr'] : ['pbp'];
+    wait = phone('abs', sec, { push: pu, focus: part });
+    flash = l > 1.0 && l < 1.3 ? 0.3 : 0;
+    callout('abs', sec, part, { zoom: 2.0, cx: CO.cx, cy: CO.high, pop: l < 0.5 ? pop(0, 0.3) : l < 2.2 ? pop(0.5, 0.8) : pop(2.2, 2.5), push: pu, focus: part });
+    text = capAbove(l, 0.1, [['Challenge it', ''], ['with ABS.', 'org']], { size: 112 });
   }
   if (sc.id === 'k2') {
     // Abreu, swinging: the second strikeout of the take (25 s)
-    wait = shoot('abs', 24.1 + l * 0.9, l, [[0, { names: ['scene'], pad: 0, w: 1000 - 140 * out(span(l, 0.3, d)) }]]);
+    const sec = 24.1 + l * 0.9, pu = l > 0.55 ? 0.28 * out(span(l, 0.55, 0.9)) : 0.04 * l;
+    wait = phone('abs', sec, { push: pu, focus: ['scene'] });
     flash = l > 0.55 ? 0.5 * (1 - span(l, 0.55, 0.7)) : 0;
-    $('capbg').classList.remove('hide');
-    text = side(cap(l, 0.5, [['Sit him', ''], ['down.', 'org']], { size: 140 }));
+    text = capAbove(l, 0.5, [['Sit him', ''], ['down.', 'org']], { size: 136 });
   }
   if (sc.id === 'last') {
     // the last pitch: strike three looking, painted, and the door is shut
-    wait = shoot('last', 6.9 + l * 0.9, l, [[0, { names: ['scene'], pad: 0, w: 1000 - 160 * out(span(l, 0.3, d)) }]]);
+    const sec = 6.9 + l * 0.9, pu = l > 0.9 ? 0.32 * out(span(l, 0.9, 1.3)) : 0.05 * l;
+    wait = phone('last', sec, { push: pu, focus: ['scene'] });
     flash = l > 0.9 ? 0.8 * (1 - span(l, 0.9, 1.06)) : 0;
     shake = l > 0.9 && l < 1.2 ? 14 : 0;
-    $('capbg').classList.remove('hide');
-    text = l > 0.85 ? side(cap(l, 0.9, [['Shut the', ''], ['door.', 'org']], { size: 150, step: 0.08 })) : '';
+    text = l > 0.85 ? capAbove(l, 0.9, [['Shut the', ''], ['door.', 'org']], { size: 140, step: 0.08 }) : '';
   }
   if (sc.id === 'shut') {
-    // the result: DOOR SHUT, you against the real game, the percentile against real closers
-    wait = shoot('last', 10.1 + l * 1.2, l, [[0, { names: ['outcome'], pad: 20, w: 1080, at: 0.3 }], [1.1, { names: ['real', 'pct'], pad: 20, w: 1080, at: 0.4 }]]);
+    // the result: DOOR SHUT, then you against the real game and the percentile against real closers
+    const sec = 10.1 + l * 1.2, part = l < 1.1 ? ['outcome'] : ['real', 'pct'], pu = PUSH * 0.5 * ease(span(l, 0, 0.6));
+    wait = phone('last', sec, { push: pu, focus: part });
     flash = 0.4 * (1 - span(l, 0, 0.12));
+    callout('last', sec, part, { zoom: 1.5, cx: CO.cx, cy: CO.low, pop: l < 1.1 ? pop(0.2, 0.5) : pop(1.1, 1.4), push: pu, focus: part });
+    text = capAbove(l, 0.1, [['Door', ''], ['shut.', 'org']], { size: 130 });
   }
   if (sc.id === 'cards') {
     // three quick cards on the beat: Survivor, the data, the grade
