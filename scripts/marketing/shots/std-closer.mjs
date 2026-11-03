@@ -55,20 +55,26 @@ export async function play(page, t) {
   await t.until(() => !!(window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded), 120000).catch(() => {});
   await t.hold(1200);
   if (process.env.STD_ONLY_MOUND) { await t.hold(3000); return; }
-  for (let i = 0; i < 40; i++) {
+  const MAX = +(process.env.STD_MAX || 60);   // a test take stops after this many pitches
+  for (let i = 0; i < MAX; i++) {
     if (await page.locator('#s-result.on').count()) break;
     // power at 600 ms is his ordinary effort (meter.js effortAt 0.67); the ring is best 260 + 514 ms later
     const [pi, cell, pw = 600, rl = 774] = PLAN[i] || [0, 12];
     const pitches = page.locator('#m-arsenal .pitch');
     await t.tap(pitches.nth(Math.min(pi, (await pitches.count()) - 1)), { before: 300, after: 250 });
     await t.tap(page.locator(`#m-aim .cell[data-cell="${cell}"]`), { before: 200, after: 250 });
+    /* THE TWO STOPS, ON THE METER'S OWN CLOCK. Watching for the meter from here lands a frame or more late
+       (a late power stop reads MAX and changes the pitch), so the page itself presses the meter's stop key
+       (Space, meter-ui.js onKey) pw ms after the meter shows and rl ms after that, in page time. */
+    await page.evaluate(([pw, rl]) => {
+      const m = document.getElementById('m-meter'), key = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      const go = () => { setTimeout(key, pw); setTimeout(key, pw + rl); };
+      if (!m.hidden) return go();
+      const ob = new MutationObserver(() => { if (!m.hidden) { ob.disconnect(); go(); } });
+      ob.observe(m, { attributes: true, attributeFilter: ['hidden'] });
+    }, [pw, rl]);
     await t.tap('#m-throw', { before: 150, after: 0 });
-    // the meter's clock starts when it shows: watch for it every frame, so the stops land when planned
-    for (let f = 0; f < 600 && !(await page.locator('#m-meter:not([hidden])').count()); f++) await t.hold(1);
-    await t.hold(pw);
-    await t.tap('#m-meter', { before: 0, after: 0 });
-    await t.hold(rl);
-    await t.tap('#m-meter', { before: 0, after: 0 });
+    await t.hold(pw + rl + 200);
     // the pitch flies and plays out: wait for the next call or the result
     await t.until(() => !!document.querySelector('#s-result.on') || (() => { const b = document.querySelector('#m-throw'); return b && !/pitch/i.test(b.textContent) && !document.querySelector('#m-meter:not([hidden])'); })(), 60000);
     await t.hold(900);
@@ -83,6 +89,7 @@ export async function play(page, t) {
       if (await go.count()) await t.tap(go, { before: 600, after: 600 }); else await t.hold(800);
     }
   }
+  if (process.env.STD_MAX) { await t.hold(1500); return; }
   await t.until(new Function(`return ${on('#s-result.on')}`), 60000);
   await t.hold(5000);
 }
