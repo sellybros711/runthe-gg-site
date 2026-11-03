@@ -32,7 +32,7 @@
   /* EPOCH: the first day picked by a vote (votes for it are cast the day before). The same date is
      in shutdoor_vote_epoch() in the SQL; test/modes.mjs reads both. Move them together, and only
      to a day after the SQL has run and the page has shipped. */
-  const VOTE = Object.freeze({ EPOCH: '2026-11-16', WINDOW: 13, PREFIX: 'shut-the-door-vote-' });
+  const VOTE = Object.freeze({ EPOCH: '2026-11-05', WINDOW: 13, PREFIX: 'shut-the-door-vote-' });
   const SURVIVOR = Object.freeze({ PREFIX: 'shut-the-door-survivor-', CONTINUES: 'door_shut' });
 
   const addDays = (day, n) => new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) + n * 86400000)

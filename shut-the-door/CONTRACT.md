@@ -1142,7 +1142,7 @@ Rules:
 
 ## 16. The vote for tomorrow's daily (the owner's call, 2026-10-30)
 
-From `modes.js VOTE.EPOCH` (2026-11-16) each day's daily is one of two candidates, chosen the day
+From `modes.js VOTE.EPOCH` (2026-11-05, moved up from 2026-11-16 on the owner's call, 2026-11-03) each day's daily is one of two candidates, chosen the day
 before by a vote. Before it, the day is the schedule's own (`data/schedule.json`), so no day already
 played moves. The rule, and the server's copy of it, are in `modes.js` and
 `supabase/160_shut_the_door_vote_survivor.sql`; `test/modes.mjs` holds the two to the same answers.

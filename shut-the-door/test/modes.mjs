@@ -38,14 +38,18 @@ const rows = [...sql.matchAll(/^\s*\('(std-[a-z0-9-]+)', (\d+)\)/gm)].map(m => [
 check('the server\'s situations are the schedule\'s rotation, in order',
   JSON.stringify(rows.map(r => r[0])) === JSON.stringify(sched.rotation) && rows.every((r, i) => r[1] === i),
   `${rows.length} rows against ${sched.rotation.length}`);
-const ep = (sql.match(/shutdoor_vote_epoch\(\) returns date\s+language sql immutable as \$\$ select date '(\d{4}-\d\d-\d\d)'/) || [])[1];
-check('the server\'s vote epoch is modes.js\'s', ep === M.VOTE.EPOCH, `${ep} against ${M.VOTE.EPOCH}`);
+// the first day: 163 moved it (2026-11-16 in 160, 2026-11-05 from 163), the live database's last word
+const ep = (readFileSync(join(ROOT, 'supabase', '163_shut_the_door_vote_nov5.sql'), 'utf8')
+  .match(/shutdoor_vote_epoch\(\) returns date\s+language sql immutable as \$\$ select date '(\d{4}-\d\d-\d\d)'/) || [])[1];
+check('the server\'s vote epoch (163) is modes.js\'s', ep === M.VOTE.EPOCH, `${ep} against ${M.VOTE.EPOCH}`);
 check('the server\'s fixed rotation length is the rotation\'s', sql.includes(`% ${sched.rotation.length}) + ${sched.rotation.length}) % ${sched.rotation.length}`));
 check('the vote begins after daily #1', M.VOTE.EPOCH > C.EPOCH);
+// 163's shutdoor_fixed_pack walks ord 0 to 9 before daily #1: the preview rotation must be the rotation's first ten
+check('the preview rotation is the rotation\'s first ten (163)', JSON.stringify(sched.previewRotation) === JSON.stringify(sched.rotation.slice(0, 10)));
 
 /* the server's own test expects modes.js's candidates */
-// the latest list's own test: 161's (rules 8), since its candidates are drawn from the new list
-const test = readFileSync(join(ROOT, 'supabase', 'test', 'shut_the_door_full_close_test.sql'), 'utf8');
+// the latest test: 163's, drawn from the rules 8 list (161) and the first day 163 set
+const test = readFileSync(join(ROOT, 'supabase', 'test', 'shut_the_door_vote_nov5_test.sql'), 'utf8');
 const expect = [...test.matchAll(/\('(\d{4}-\d\d-\d\d)', '(std-[a-z0-9-]+)', '(std-[a-z0-9-]+)'\)/g)].map(m => m.slice(1));
 check('the server test checks 60 days', expect.length === 60);
 check('and they are modes.js\'s candidates, day by day', expect.every(([d, a, b]) => {
