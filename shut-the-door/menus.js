@@ -362,7 +362,7 @@ function renderMenuTiles() {
     tl(last && last.percentile != null ? Math.round(last.percentile) : null, 'last percentile');
 }
 
-var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null };
+var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {}, board: null, ent: null, onArchive: null, archiveDays: null, onPast: null };
 var api = {
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   open: openSheet,
@@ -372,11 +372,13 @@ var api = {
   streakOf: streakOf,
   PRINCIPLE: PRINCIPLE,
   renderAuth: renderAuth,
+  /* the past dailies live on the home's archive tab (ui.js setTab) */
+  renderPast: function () { renderPast(ctx.scn); },
   show: function (which) {
     if (which === 'how') { renderHow({ proxy: ctx.scn && ctx.scn.resolution === 'proxy' }); openSheet('sheet-how'); }
     else if (which === 'stats') showStats();
     else if (which === '101') { render101(); openSheet('sheet-101'); }
-    else if (which === 'past') { renderPast(ctx.scn); openSheet('sheet-past'); }
+    else if (which === 'past') { if (ctx.onPast) ctx.onPast(); }
     else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
     else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }
     else if (which === 'menu') { renderMenuTiles(); openSheet('sheet-menu'); }
