@@ -1805,5 +1805,8 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
   font-family: var(--sans); font-weight: 700; font-size: 12.5px; letter-spacing: .02em; text-transform: uppercase; }
 .mh-home svg { width: 19px; height: 19px; fill: none; stroke: var(--g-ink); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .mh-home.wait { opacity: .6; }
+/* a short phone has no room under the batter card without covering the zone: there the way home is
+   the first item in the mound's menu (one tap more), so the zone stays clear (browser check step 16) */
+@media (max-height: 700px) { .mh-hm { display: none; } }
 /* the menu's home: only while an outing is on screen */
 body:not([data-screen="s-mound"]):not([data-screen="s-half"]):not([data-screen="s-next"]) #sheet-menu .menu-home { display: none; }
