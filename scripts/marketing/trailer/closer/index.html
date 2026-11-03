@@ -147,7 +147,7 @@ function words(parts, t, at, step = 0.06, kind = 'pop') {
   }
   return html;
 }
-function cap(t, at, parts, { y = TALL ? 0.73 : 0.70, size = 112, kind = 'pop', step = 0.06, sub = '' } = {}) {
+function cap(t, at, parts, { y = TALL ? 0.73 : 0.70, size = 112, kind = 'pop', step = 0.09, sub = '' } = {}) {
   return `<div class="cap big" style="top:${y * H}px;font-size:${size * K}px;transform:translateY(-50%)">${words(parts, t, at, step, kind)}`
     + (sub ? `<div style="font:600 ${34 * K}px/1.3 Inter;text-transform:none;letter-spacing:0;color:#cbd5e1;margin-top:${18 * K}px;opacity:${span(t, at + 0.35, at + 0.6)}">${sub}</div>` : '') + '</div>';
 }
@@ -238,7 +238,7 @@ const CO = TALL ? { cx: 0.5 * W, low: 0.78 * H, high: 0.42 * H } : { cx: 40 * K 
 
 /* THE LOCK: two chains across the frame and a padlock where they cross. They hang still for the hook,
    then snap at SNAP: the links fly out, the lock drops. Drawn here, so it is ours. */
-const SNAP = 1.15;
+const SNAP = 1.6;
 function chainLinks(x0, y0, x1, y1, n, w) {
   const out = [];
   for (let i = 0; i < n; i++) { const k = (i + 0.5) / n; out.push({ x: x0 + (x1 - x0) * k, y: y0 + (y1 - y0) * k, a: Math.atan2(y1 - y0, x1 - x0) * 180 / Math.PI, w, odd: i % 2, i }); }
@@ -274,21 +274,21 @@ function capTop() { $('capbg').classList.remove('hide'); if (TALL) $('capbg').cl
 /* THE CUT. Every scene draws itself from its own local time. */
 const S = [
   { id: 'hook', t0: 0, t1: SNAP },
-  { id: 'lockin', t0: SNAP, t1: 2.9 },
-  { id: 'home', t0: 2.9, t1: 4.7 },
-  { id: 'pick', t0: 4.7, t1: 6.2 },
-  { id: 'aim', t0: 6.2, t1: 7.5 },
-  { id: 'meter', t0: 7.5, t1: 9.3 },
-  { id: 'k', t0: 9.3, t1: 10.9 },
-  { id: 'call', t0: 10.9, t1: 12.6 },
-  { id: 'abs', t0: 12.6, t1: 15.6 },
-  { id: 'k2', t0: 15.6, t1: 17.0 },
-  { id: 'last', t0: 17.0, t1: 18.6 },
-  { id: 'shut', t0: 18.6, t1: 21.0 },
-  { id: 'cards', t0: 21.0, t1: 23.4 },
-  { id: 'end', t0: 23.4, t1: 27.0 },
+  { id: 'lockin', t0: SNAP, t1: 4.0 },
+  { id: 'home', t0: 4.0, t1: 7.0 },
+  { id: 'pick', t0: 7.0, t1: 9.2 },
+  { id: 'aim', t0: 9.2, t1: 11.2 },
+  { id: 'meter', t0: 11.2, t1: 14.0 },
+  { id: 'k', t0: 14.0, t1: 16.4 },
+  { id: 'call', t0: 16.4, t1: 19.0 },
+  { id: 'abs', t0: 19.0, t1: 23.0 },
+  { id: 'k2', t0: 23.0, t1: 25.4 },
+  { id: 'last', t0: 25.4, t1: 28.0 },
+  { id: 'shut', t0: 28.0, t1: 31.5 },
+  { id: 'cards', t0: 31.5, t1: 34.5 },
+  { id: 'end', t0: 34.5, t1: 38.5 },
 ];
-window.DURATION = 27.0;
+window.DURATION = 38.5;
 const CARDS = [['Survivor', 'How many saves in a row?'], ['Real data', 'Real pitches. Real hitters.'], ['Every pitch graded', 'Who has the best pitching IQ?']];
 
 window.render = async function (t) {
@@ -302,12 +302,12 @@ window.render = async function (t) {
 
   if (sc.id === 'hook' || sc.id === 'lockin') {
     // the mound, Rivera set against Abreu, the lights low; the chains across it until the snap
-    const sec = 3.0 + t * 0.4, dim = t < SNAP ? 0.42 : 0.42 + 0.58 * out(span(t, SNAP, SNAP + 0.6));
-    wait = shoot('abs', sec, t, [[0, { names: ['scene'], pad: 0, w: 1080 - 140 * out(span(t, 0, 2.9)) }]], { dim });
+    const sec = 3.0 + t * 0.3, dim = t < SNAP ? 0.42 : 0.42 + 0.58 * out(span(t, SNAP, SNAP + 0.6));
+    wait = shoot('abs', sec, t, [[0, { names: ['scene'], pad: 0, w: 1080 - 120 * out(span(t, 0, 4.0)) }]], { dim });
     if (!TALL) { $('footpanelwrap').classList.add('hide'); $('foot').classList.remove('hide'); place($('fimg'), W, H, 540, 900, 1080); $('fimg').style.filter = `brightness(${dim})`; wait = setImg($('fimg'), 'abs', sec); }
     if (t < SNAP + 1.0) lockSvg(t);
     flash = t >= SNAP ? 0.9 * (1 - span(t, SNAP, SNAP + 0.16)) : 0;
-    shake = t >= SNAP && t < SNAP + 0.3 ? (1 - (t - SNAP) / 0.3) * 18 : 0;
+    shake = t >= SNAP && t < SNAP + 0.3 ? (1 - (t - SNAP) / 0.3) * 10 : 0;
     $('capbg').classList.remove('hide');
     text = sc.id === 'hook'
       ? `<div class="cap big" style="top:${(TALL ? 0.74 : 0.80) * H}px;font-size:${(TALL ? 132 : 112) * K}px;transform:translateY(-50%)">Baseball is<br><span style="color:var(--org)">locking out.</span></div>`
@@ -316,10 +316,10 @@ window.render = async function (t) {
   }
   /* FROM HERE THE GAME IS IN THE PHONE. Each beat pushes the phone toward the part its words are about,
      and a callout pops out with that part magnified. All of it reads the take's own tracking. */
-  const pop = (a, b2) => span(l, a, b2), PUSH = 0.18;
+  const pop = (a, b2) => out(span(l, a + 0.35, b2 + 0.65)), PUSH = 0.14, PE = (x) => ease(span(l, 0, 1.0)) * x;
   if (sc.id === 'home') {
     // the day's spot on the home: a real save situation, the same for everybody
-    const sec = 0.2 + l * 1.0, pu = PUSH * 0.6 * ease(span(l, 0.2, 1.2));
+    const sec = 0.2 + l * 0.6, pu = PE(PUSH * 0.6);
     wait = phone('home', sec, { push: pu, focus: ['sit'] });
     flash = 0.3 * (1 - span(l, 0, 0.12));
     callout('home', sec, ['title', 'sit', 'hpitcher'], { zoom: 1.6, cx: CO.cx, cy: CO.low, pop: pop(0.4, 0.75), push: pu, focus: ['sit'] });
@@ -327,75 +327,75 @@ window.render = async function (t) {
   }
   if (sc.id === 'pick') {
     // the arsenal: his cutter, picked (4.17 s of the take)
-    const sec = 3.4 + l * 1.0, pu = PUSH * ease(span(l, 0, 0.9));
+    const sec = 3.5 + l * 0.45, pu = PE(PUSH);
     wait = phone('k2', sec, { push: pu, focus: ['arsenal'] });
     callout('k2', sec, ['arsenal'], { zoom: 1.9, cx: CO.cx, cy: CO.high, pop: pop(0.25, 0.6), push: pu, focus: ['arsenal'] });
     text = capAbove(l, 0.1, [['Pick the', ''], ['pitch.', 'org']], { size: 120 });
   }
   if (sc.id === 'aim') {
     // the zone and the crosshair, the cell tapped at 4.73 s
-    const sec = 4.55 + l * 0.6, pu = PUSH * ease(span(l, 0, 0.8));
+    const sec = 4.5 + l * 0.35, pu = PE(PUSH);
     wait = phone('k2', sec, { push: pu, focus: ['aim'] });
     callout('k2', sec, ['aim'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: pop(0.2, 0.55), push: pu, focus: ['aim'] });
     text = capAbove(l, 0.1, [['Paint the', ''], ['corner.', 'org']], { size: 120 });
   }
   if (sc.id === 'meter') {
     // the two stops: power, then the release ring (the meter shows at 5.23 s)
-    const sec = 5.25 + l * 0.85, pu = PUSH * ease(span(l, 0, 0.8));
+    const sec = 5.2 + l * 0.55, pu = PE(PUSH);
     wait = phone('k2', sec, { push: pu, focus: ['meter'] });
     callout('k2', sec, ['meter'], { zoom: 1.9, cx: CO.cx, cy: CO.high, pop: pop(0.15, 0.5), push: pu, focus: ['meter'] });
     text = capAbove(l, 0.1, [['Time the', ''], ['release.', 'org']], { size: 120 });
   }
   if (sc.id === 'k') {
     // the pitch flies and Guerrero swings through it: STRIKEOUT, and the phone jumps toward it
-    const sec = 7.0 + l * 0.9, pu = l > 0.75 ? 0.3 * out(span(l, 0.75, 1.1)) : 0.06 * l;
+    const sec = 6.75 + l * 0.8, pu = l > 1.16 ? 0.22 * out(span(l, 1.16, 1.7)) : 0.04 * l;
     wait = phone('k2', sec, { push: pu, focus: ['scene'] });
-    flash = l > 0.75 ? 0.6 * (1 - span(l, 0.75, 0.9)) : 0;
-    shake = l > 0.75 && l < 1.0 ? 10 : 0;
-    text = l > 0.7 ? capAbove(l, 0.75, [['Strike', ''], ['three.', 'org']], { size: 140, step: 0.08 }) : '';
+    flash = l > 1.16 ? 0.45 * (1 - span(l, 1.16, 1.35)) : 0;
+    shake = l > 1.16 && l < 1.3 ? 5 : 0;
+    text = l > 1.1 ? capAbove(l, 1.16, [['Strike', ''], ['three.', 'org']], { size: 140, step: 0.08 }) : '';
   }
   if (sc.id === 'call') {
     // a ball called on a pitch at the edge (the abs take, 7.6 s on): the call, then the challenge button up
-    const sec = 7.6 + l * 1.4, pu = PUSH * ease(span(l, 0, 0.8));
+    const sec = 7.6 + l * 0.5, pu = PE(PUSH);
     wait = phone('abs', sec, { push: pu, focus: ['pbp'] });
-    callout('abs', sec, l < 0.9 ? ['pbp'] : ['abs'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: l < 0.9 ? pop(0.15, 0.45) : pop(0.9, 1.2), push: pu, focus: ['pbp'] });
+    callout('abs', sec, l < 1.5 ? ['pbp'] : ['abs'], { zoom: 2.0, cx: CO.cx, cy: CO.low, pop: l < 1.5 ? pop(0.1, 0.4) : pop(1.3, 1.6), push: pu, focus: ['pbp'] });
     text = capAbove(l, 0.1, [['Don\'t like', ''], ['the call?', 'org']], { size: 120 });
   }
   if (sc.id === 'abs') {
     // CHALLENGE tapped (10.27 s), the ABS replay: strike, overturned
-    const sec = 10.0 + l * 1.25, pu = PUSH * ease(span(l, 0, 0.6)), part = l < 0.5 ? ['abs'] : l < 2.2 ? ['absr'] : ['pbp'];
+    const sec = 10.0 + l * 1.0, pu = PE(PUSH), part = l < 0.9 ? ['abs'] : l < 3.0 ? ['absr'] : ['pbp'];
     wait = phone('abs', sec, { push: pu, focus: part });
-    flash = l > 1.0 && l < 1.3 ? 0.3 : 0;
-    callout('abs', sec, part, { zoom: 2.0, cx: CO.cx, cy: CO.high, pop: l < 0.5 ? pop(0, 0.3) : l < 2.2 ? pop(0.5, 0.8) : pop(2.2, 2.5), push: pu, focus: part });
+    flash = 0;
+    callout('abs', sec, part, { zoom: 2.0, cx: CO.cx, cy: CO.high, pop: l < 0.9 ? pop(-0.2, 0.1) : l < 3.0 ? pop(0.7, 1.0) : pop(2.8, 3.1), push: pu, focus: part });
     text = capAbove(l, 0.1, [['Challenge it', ''], ['with ABS.', 'org']], { size: 112 });
   }
   if (sc.id === 'k2') {
     // Abreu, swinging: the second strikeout of the take (25 s)
-    const sec = 24.1 + l * 0.9, pu = l > 0.55 ? 0.28 * out(span(l, 0.55, 0.9)) : 0.04 * l;
+    const sec = 24.1 + l * 0.8, pu = l > 0.62 ? 0.2 * out(span(l, 0.62, 1.2)) : 0.03 * l;
     wait = phone('abs', sec, { push: pu, focus: ['scene'] });
-    flash = l > 0.55 ? 0.5 * (1 - span(l, 0.55, 0.7)) : 0;
-    text = capAbove(l, 0.5, [['Sit him', ''], ['down.', 'org']], { size: 136 });
+    flash = l > 0.62 ? 0.35 * (1 - span(l, 0.62, 0.8)) : 0;
+    text = capAbove(l, 0.62, [['Sit him', ''], ['down.', 'org']], { size: 136 });
   }
   if (sc.id === 'last') {
     // the last pitch: strike three looking, painted, and the door is shut
-    const sec = 6.9 + l * 0.9, pu = l > 0.9 ? 0.32 * out(span(l, 0.9, 1.3)) : 0.05 * l;
+    const sec = 6.9 + l * 0.8, pu = l > 1.0 ? 0.24 * out(span(l, 1.0, 1.6)) : 0.04 * l;
     wait = phone('last', sec, { push: pu, focus: ['scene'] });
-    flash = l > 0.9 ? 0.8 * (1 - span(l, 0.9, 1.06)) : 0;
-    shake = l > 0.9 && l < 1.2 ? 14 : 0;
-    text = l > 0.85 ? capAbove(l, 0.9, [['Shut the', ''], ['door.', 'org']], { size: 140, step: 0.08 }) : '';
+    flash = l > 1.0 ? 0.6 * (1 - span(l, 1.0, 1.2)) : 0;
+    shake = l > 1.0 && l < 1.2 ? 6 : 0;
+    text = l > 0.95 ? capAbove(l, 1.0, [['Shut the', ''], ['door.', 'org']], { size: 140, step: 0.08 }) : '';
   }
   if (sc.id === 'shut') {
     // the result: DOOR SHUT, then you against the real game and the percentile against real closers
-    const sec = 10.1 + l * 1.2, part = l < 1.1 ? ['outcome'] : ['real', 'pct'], pu = PUSH * 0.5 * ease(span(l, 0, 0.6));
+    const sec = 10.1 + l * 0.8, part = l < 1.8 ? ['outcome'] : ['real', 'pct'], pu = PE(PUSH * 0.5);
     wait = phone('last', sec, { push: pu, focus: part });
     flash = 0.4 * (1 - span(l, 0, 0.12));
-    callout('last', sec, part, { zoom: 1.5, cx: CO.cx, cy: CO.low, pop: l < 1.1 ? pop(0.2, 0.5) : pop(1.1, 1.4), push: pu, focus: part });
+    callout('last', sec, part, { zoom: 1.5, cx: CO.cx, cy: CO.low, pop: l < 1.8 ? pop(0.1, 0.4) : pop(1.7, 2.0), push: pu, focus: part });
     text = capAbove(l, 0.1, [['Door', ''], ['shut.', 'org']], { size: 130 });
   }
   if (sc.id === 'cards') {
     // three quick cards on the beat: Survivor, the data, the grade
     $('vote').classList.remove('hide');
-    const i = Math.min(CARDS.length - 1, Math.floor(l / 0.8)), u = l - i * 0.8, [a, b] = CARDS[i];
+    const i = Math.min(CARDS.length - 1, Math.floor(l / 1.0)), u = l - i * 1.0, [a, b] = CARDS[i];
     flash = 0.25 * (1 - span(u, 0, 0.08));
     $('vote').style.background = 'radial-gradient(ellipse at 50% 40%,#1a2236 0%,#0b0f17 70%)';
     $('vote').innerHTML = `<div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%) scale(${1 + 0.06 * (1 - out(span(u, 0, 0.25)))});text-align:center;padding:0 ${60 * K}px">

@@ -9,11 +9,13 @@
    again under the badge. C major, 120 BPM. */
 import fs from 'node:fs';
 
-const SR = 44100, LEN = 27.0, N = Math.round(LEN * SR);
+const SR = 44100, LEN = 38.5, N = Math.round(LEN * SR);
 const L = new Float32Array(N), R = new Float32Array(N);
 const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
 let seed = 11; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x3fffffff - 1; };
-const T = { hook: 0, snap: 1.15, home: 2.9, pick: 4.7, aim: 6.2, meter: 7.5, k: 9.3, call: 10.9, abs: 12.6, k2: 15.6, last: 17.0, shut: 18.6, cards: 21.0, end: 23.4 };
+const T = { hook: 0, snap: 1.6, home: 4.0, pick: 7.0, aim: 9.2, meter: 11.2, k: 14.0, call: 16.4, abs: 19.0, k2: 23.0, last: 25.4, shut: 28.0, cards: 31.5, end: 34.5 };
+// where the strikes land inside their scenes (index.html): the first and second K, the last strike
+const KAT = { k: 1.16, k2: 0.62, last: 1.0 };
 const BEAT = 0.5;
 
 function add(i, v, pan = 0) { if (i < 0 || i >= N) return; L[i] += v * (1 - Math.max(0, pan)); R[i] += v * (1 + Math.min(0, pan)); }
@@ -91,31 +93,31 @@ function riff(t0, vol, up = 0) { for (const [o, m] of RIFF) organ(t0 + o, m + up
 // 0 THE LOCK: a low room, the chains rattling, a heartbeat; the snap at SNAP
 drone(0, T.snap + 0.1, 36, 0.05);
 rattle(0.05, T.snap - 0.05, 0.07);
-heart(0.15, 0.7); heart(0.75, 0.75);
+heart(0.15, 0.7); heart(0.8, 0.75); heart(1.3, 0.8);
 snap(T.snap, 0.6); boom(T.snap, 1.1, 2.2, 100, 30); crash(T.snap, 0.14);
 crowd(T.snap, T.home + 1.2, 0.3);
 // 2.9 THE GAME: the organ riff over a drum groove, a hit on every cut
-riff(T.home, 0.05); riff(T.home + 3, 0.05, 5);
+riff(T.home, 0.05); riff(T.home + 3, 0.05, 5); riff(T.home + 6, 0.05);
 groove(T.home, T.call, 0.9);
 for (const c of [T.home, T.pick, T.aim, T.meter, T.k]) boom(c, 0.35, 0.8, 70, 40);
 crowd(T.home + 1.0, T.call, 0.08);
 // the strikeout: a hit and the crowd
-boom(T.k + 0.75, 0.8, 1.8, 100, 32); crash(T.k + 0.75, 0.1); crowd(T.k + 0.75, T.call + 0.6, 0.3);
+boom(T.k + KAT.k, 0.8, 1.8, 100, 32); crash(T.k + KAT.k, 0.1); crowd(T.k + KAT.k, T.call + 0.6, 0.3);
 // 10.9 THE CALL: the band drops to the hats, a question; 12.6 the challenge: a replay sweep, beeps, the stinger
 for (let t = T.call; t < T.abs; t += BEAT / 2) hat(t, 0.06);
 drone(T.call, T.k2, 38, 0.04);
 riser(T.abs - 0.6, T.abs + 0.9, 0.16);
 for (let i = 0; i < 4; i++) tone(T.abs + 0.3 + i * 0.16, 88 + (i % 2) * 7, 0.07, 0.06, 'sq', 0.5, 0.2);
-stab(T.abs + 1.0, [60, 64, 67, 72], 0.2, 0.8, 0.45); boom(T.abs + 1.0, 0.6, 1.2, 90, 40); crowd(T.abs + 1.0, T.k2, 0.2);
-groove(T.abs + 1.0, T.shut, 0.9);
+stab(T.abs + 1.3, [60, 64, 67, 72], 0.2, 0.8, 0.45); boom(T.abs + 1.3, 0.6, 1.2, 90, 40); crowd(T.abs + 1.3, T.k2, 0.2);
+groove(T.abs + 1.3, T.shut, 0.9);
 // 15.6 ANOTHER: the second strikeout
-boom(T.k2 + 0.55, 0.75, 1.6, 100, 32); crowd(T.k2 + 0.55, T.last, 0.26);
+boom(T.k2 + KAT.k2, 0.75, 1.6, 100, 32); crowd(T.k2 + KAT.k2, T.last, 0.26);
 // 17.0 THE LAST PITCH: a snare roll in, strike three looking, the biggest hit and the crowd
-for (let t = T.last, g = 0.12; t < T.last + 0.88; t += g, g = Math.max(0.04, g * 0.9)) snare(t, 0.08 + (t - T.last) * 0.15, 34);
-boom(T.last + 0.9, 1.15, 2.6, 110, 28); crash(T.last + 0.9, 0.16); crowd(T.last + 0.9, T.cards + 0.5, 0.36);
+for (let t = T.last, g = 0.12; t < T.last + KAT.last - 0.02; t += g, g = Math.max(0.04, g * 0.9)) snare(t, 0.08 + (t - T.last) * 0.15, 34);
+boom(T.last + KAT.last, 1.15, 2.6, 110, 28); crash(T.last + KAT.last, 0.16); crowd(T.last + KAT.last, T.cards + 0.5, 0.36);
 organ(T.shut, 60, 1.6, 0.05); organ(T.shut, 64, 1.6, 0.04); organ(T.shut, 67, 1.6, 0.04);
 // 21.0 THE CARDS: a hit on each
-for (let i = 0; i < 3; i++) { boom(T.cards + i * 0.8, 0.45, 0.8, 80, 40); stab(T.cards + i * 0.8, [60 + i * 2, 67 + i * 2], 0.1, 0.4, 0.3); }
+for (let i = 0; i < 3; i++) { boom(T.cards + i * 1.0, 0.45, 0.8, 80, 40); stab(T.cards + i * 1.0, [60 + i * 2, 67 + i * 2], 0.1, 0.4, 0.3); }
 // 23.4 THE BADGE: the riff once more, and the last chord held
 riff(T.end, 0.055);
 boom(T.end, 0.8, 2.5, 80, 36); kick(T.end, 0.9);
