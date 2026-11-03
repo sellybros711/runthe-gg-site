@@ -116,6 +116,8 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SHOTS = process.env.SHOTS || '';
+/* STD_QUICK=1: steps 1 and 2 at both sizes and the running game (15) at both, for a local pass. CI runs it all */
+const QUICK = process.env.STD_QUICK === '1';
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
 function loadPlaywright() {
@@ -959,6 +961,28 @@ async function run(w, h, theme) {
   await shot('home-' + t1[0], true);
   await page.click('#b-theme');
 
+  /* the sound switch (sound.js): off in settings sets the master gain to 0, and it holds over a reload */
+  await page.click('#h-main [data-open="settings"], header [data-open="settings"]');
+  await page.waitForSelector('#sheet-settings.on', { timeout: 3000 });
+  await page.waitForTimeout(260);
+  if (await page.isChecked('#set-sound')) await page.click('#set-sound');
+  const mute = await page.evaluate(() => ({ s: window.STD_SFX.state(), kept: JSON.parse(localStorage.getItem('std_ui_v1') || '{}').sound }));
+  ok(!mute.s.on && mute.s.gain === 0 && mute.kept === false, '2 the sound switch off silences the master gain and is kept (' + JSON.stringify(mute) + ')');
+  const p2 = await ctx.newPage();
+  await p2.route('**/*', (r) => (new URL(r.request().url()).hostname === '127.0.0.1' ? r.continue() : r.abort()));
+  await p2.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await p2.waitForFunction(() => window.STD_SFX && document.getElementById('m-sound').hasAttribute('aria-pressed'), null, { timeout: 30000 });
+  await p2.mouse.click(2, 300);
+  const kept = await p2.evaluate(() => ({ s: window.STD_SFX.state(), hud: document.getElementById('m-sound').getAttribute('aria-pressed') }));
+  ok(!kept.s.on && kept.s.gain === 0 && kept.hud === 'false', '2 after a reload the sound is still off, the gain 0 after a tap (' + JSON.stringify(kept) + ')');
+  await p2.close();
+  await page.click('#set-sound');
+  const back = await page.evaluate(() => window.STD_SFX.state());
+  ok(back.on && back.started && back.gain > 0, '2 the switch back on lifts the master gain (' + JSON.stringify(back) + ')');
+  await page.click('#sheet-settings .sh-x');
+  await page.waitForSelector('#sheet-settings', { state: 'hidden', timeout: 3000 });
+  if (QUICK) { ok(errors.length === 0, '2 no page errors' + (errors.length ? ': ' + errors.join(' | ') : '')); await ctx.close(); return; }
+
   /* 3 and 4 */
   at('3 take the mound');
   await homeWarm(page);
@@ -980,6 +1004,12 @@ async function run(w, h, theme) {
   ok(mirror.c20 > mirror.c0t, '3 row 0 is high, row 4 is low');
   ok(mirror.w >= 36 && mirror.hgt >= 36, '3 a cell is big enough to tap (' + Math.round(mirror.w) + 'x' + Math.round(mirror.hgt) + ')');
   await shot('mound');
+  /* the mound's speaker button is the same switch */
+  await page.click('#m-sound');
+  const hm = await page.evaluate(() => [window.STD_SFX.state().gain, JSON.parse(localStorage.getItem('std_ui_v1')).sound, document.getElementById('m-sound').getAttribute('aria-pressed')]);
+  await page.click('#m-sound');
+  const hm2 = await page.evaluate(() => [window.STD_SFX.state().gain, JSON.parse(localStorage.getItem('std_ui_v1')).sound]);
+  ok(hm[0] === 0 && hm[1] === false && hm[2] === 'false' && hm2[0] > 0 && hm2[1] === true, '3 the mound\'s speaker mutes the master gain and back, and keeps it (' + hm.concat(hm2).join(', ') + ')');
   /* 3: aim on the field and the pad (the owner, 2026-10-22). Big pitch buttons with the number and
      the name, and no speed (it is revealed after the throw, the owner 2026-10-23); one throw button; the step line. A drag over the zone moves the
      crosshair with the pointer (free aim, never snapped) and picks the cell it is let go in,
@@ -1899,6 +1929,7 @@ async function halves(w, h, skip) {
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
+  if (QUICK) { await run(1440, 900, 'dark'); await runningGame(390, 844); await runningGame(1440, 900); throw 'quick'; }
   await bootStuck(390, 844);
   await run(1440, 900, 'dark');
   await runningGame(390, 844);
@@ -1918,10 +1949,12 @@ try {
   await halves(390, 844, false);
   await halves(1440, 900, true);
 } catch (e) {
-  fails++;
+  if (e === 'quick') e = null; else fails++;
+  if (e) {
   console.log(secs() + '  FAIL in "' + STEP.name + '": ' + (e && e.message ? e.message.split('\n')[0] : e));
   // Playwright's call log says why an action waited (not visible, not stable, another element on top)
   if (e && e.message && e.message.includes('\n')) console.log('       ' + e.message.split('\n').slice(1).filter((l) => l.trim()).slice(-6).map((l) => l.trim()).join(' / '));
+  }
 }
 await browser.close();
 server.close();
