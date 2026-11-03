@@ -54,6 +54,10 @@ if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true
    ?mockAuth=1 makes one of the rows yours. */
 var BOARD_NAMES = ['paintsblack', 'highcheese', 'backdoorslider', 'ninthinning', 'lockdownlefty', 'gasmonkey', 'splitfinger', 'bullpencart',
   'framejob', 'chinmusic', 'upstairs', 'sweeperking', 'knucklepuck', 'tunnelvision', 'fullcount', 'corners', 'runnersonsecond', 'pitchclock'];
+/* the plates (supabase/162): a few club keys on the board's rows, and the mock account's unlocks.
+   ?mockPlates=none unlocks nothing */
+var MOCK_PLATES = ['dodgers', null, 'yankees', 'giants', null, 'redsox', 'brewers'];
+var mockPlates = { plate: null, unlocked: /[?&]mockPlates=none/.test(location.search) ? [] : ['dodgers', 'astros', 'giants'], initials: null };
 function mockBoard(day, limit) {
   var mode = (/[?&]mockBoard=([^&]*)/.exec(location.search) || [])[1] || 'full';
   if (mode === 'fail') return Promise.resolve(null);
@@ -74,6 +78,7 @@ function mockBoard(day, limit) {
       rank: rk, username: rk === mine ? 'mockplayer' : BOARD_NAMES[rk % BOARD_NAMES.length] + (rk > BOARD_NAMES.length ? rk : ''),
       outcome: outcome, pitches: pitches, score: score, percentile: Math.round((1 - f) * 100), pitched_like: null,
       strip: strip, mine: rk === mine, players: players,
+      plate: rk === mine ? mockPlates.plate : MOCK_PLATES[rk % MOCK_PLATES.length], initials: null,
     });
   }
   return Promise.resolve(rows);
@@ -101,6 +106,13 @@ if (!window.STD_AUTH || FORCE) {
     signIn: AUTH_MODE === 'late' ? lateIn : none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
     board: mockBoard,
+    plates: function () { return Promise.resolve(mockIn ? JSON.parse(JSON.stringify(mockPlates)) : null); },
+    setPlate: function (k) {
+      if (!mockIn) return Promise.resolve({ error: 'sign in first' });
+      if (k && mockPlates.unlocked.indexOf(k) < 0) return Promise.resolve({ error: 'that plate is locked' });
+      mockPlates.plate = k || null;
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(mockPlates)) });
+    },
     /* shutdoor_my_stats()'s shape (153, and tieHeld from 155), plus the
        bands and recent rows the device history also carries */
     myStats: function () {
@@ -793,11 +805,11 @@ function survivorBoard(day, limit) {
   var players = 96, lim = Math.max(1, Math.min(100, limit || 50)), rows = [];
   var at = mine ? Math.max(1, 31 - mine.saves * 6) : 0;
   for (var rk = 1, k = 0; rk <= players; rk++) {
-    if (rk === at) { rows.push({ rank: rk, username: 'mockplayer', saves: mine.saves, points: mine.points, over: mine.over, mine: true, players: players }); continue; }
+    if (rk === at) { rows.push({ rank: rk, username: 'mockplayer', saves: mine.saves, points: mine.points, over: mine.over, mine: true, players: players, plate: mockPlates.plate, initials: null }); continue; }
     if (rk > lim) continue;
     k++;
     var saves = Math.max(0, 9 - Math.floor(rk / 6)), pts = saves * 410 + 380 - (rk % 6) * 37;
-    rows.push({ rank: rk, username: BOARD_NAMES[k % BOARD_NAMES.length] + (k > BOARD_NAMES.length ? k : ''), saves: saves, points: pts, over: rk % 7 !== 3, mine: false, players: players });
+    rows.push({ rank: rk, username: BOARD_NAMES[k % BOARD_NAMES.length] + (k > BOARD_NAMES.length ? k : ''), saves: saves, points: pts, over: rk % 7 !== 3, mine: false, players: players, plate: MOCK_PLATES[rk % MOCK_PLATES.length], initials: null });
   }
   return Promise.resolve(rows);
 }

@@ -91,7 +91,8 @@ export function spinOf(pitch, hand) {
   return { axis, rps: d.rps, grip: d.grip, src: 'family default' };
 }
 
-const reduced = () => { try { return !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
+let MQ = null;   // (one query list, kept: its matches is live; park.js reducedMotion says why)
+const reduced = () => { try { if (MQ === null) MQ = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : false; return !!(MQ && MQ.matches); } catch (e) { return false; } };
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
 const ease = (x) => { const k = Math.min(1, Math.max(0, x)); return k * k * (3 - 2 * k); };
 const X = new THREE.Vector3(1, 0, 0);

@@ -17,6 +17,11 @@
 var C = window.STD_CONTRACT;
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+/* the row's plate (plate.js): the club key and initials the server answers, the neutral plate without */
+function plateOf(r) {
+  var PL = window.STD_PLATE;
+  return PL ? PL.svg(r.plate || null, PL.initials(r.username === 'Closer' ? '' : r.username, r.initials), { cls: 'bp' }) : '';
+}
 function API() { return window.STD_API || {}; }
 function has(n) { return typeof API()[n] === 'function'; }
 function authState() {
@@ -236,7 +241,7 @@ function loadBoard(my) {
     rows.forEach(function (r) {
       if (prev && r.rank > prev + 1) html += '<li class="gap" aria-hidden="true"><span>···</span></li>';
       html += '<li class="' + (r.mine ? 'mine' : '') + (r.rank <= 3 ? ' top' : '') + '"><span class="rk">' + esc(r.rank) + '</span>' +
-        '<span class="nm">' + esc(r.username) + (r.mine ? '<em>you</em>' : '') + (r.over ? '' : '<em class="live">live</em>') + '</span>' +
+        '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + (r.over ? '' : '<em class="live">live</em>') + '</span>' +
         '<span class="n sv-sv">' + esc(r.saves) + '</span><span class="n sc">' + esc(num(r.points)) + '</span></li>';
       prev = r.rank;
     });

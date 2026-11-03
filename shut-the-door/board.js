@@ -82,10 +82,15 @@ function renderYou(rows, st) {
   if (!played) $('bd-play').addEventListener('click', function () { if (ctx.onPlay) ctx.onPlay(); });
 }
 
+/* the row's plate (plate.js): the club key and initials the server answers, the neutral plate without */
+function plateOf(r) {
+  var PL = window.STD_PLATE;
+  return PL ? PL.svg(r.plate || null, PL.initials(r.username === 'Closer' ? '' : r.username, r.initials), { cls: 'bp' }) : '';
+}
 function rowHTML(r) {
   return '<li class="' + (r.mine ? 'mine' : '') + (r.rank <= 3 ? ' top' : '') + '">' +
     '<span class="rk">' + esc(r.rank) + '</span>' +
-    '<span class="nm">' + esc(r.username) + (r.mine ? '<em>you</em>' : '') + '</span>' +
+    '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + '</span>' +
     chip(r.outcome) +
     '<span class="n">' + esc(r.pitches) + '</span>' +
     '<span class="n sc">' + esc(r.score) + '</span></li>';
@@ -179,7 +184,7 @@ function peek() {
     el.innerHTML = '<div class="bd-cols-h hb-cols" aria-hidden="true"><span>#</span><span>closer</span><span>score</span></div>' +
       '<ol class="bd-rows hb-rows">' + rows.map(function (r) {
         return '<li class="top' + (r.mine ? ' mine' : '') + '"><span class="rk">' + esc(r.rank) + '</span>' +
-          '<span class="nm">' + esc(r.username) + (r.mine ? '<em>you</em>' : '') + '</span><span class="n sc">' + esc(r.score) + '</span></li>';
+          '<span class="nm">' + plateOf(r) + '<i class="un">' + esc(r.username) + '</i>' + (r.mine ? '<em>you</em>' : '') + '</span><span class="n sc">' + esc(r.score) + '</span></li>';
       }).join('') + '</ol>' + (rows.length < PEEK ? peekLine('only ' + rows.length + ' on it so far.') : '');
   });
 }

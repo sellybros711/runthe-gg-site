@@ -19,7 +19,7 @@
  */
 import * as THREE from 'three';
 import { preload } from '../3d/load.js?v=8';
-import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=10';
+import { makeRenderer, buildPark, lightFrom, pitcherEye, SUN } from '../3d/park.js?v=11';
 import { People } from '../3d/people.js?v=43';
 import { Pitch } from '../3d/pitch.js?v=13';
 import { labPlay, motion, describe } from '../3d/play.js?v=13';

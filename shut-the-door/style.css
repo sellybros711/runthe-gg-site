@@ -57,6 +57,26 @@ main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .hdr-btn:hover { background: var(--panel-2); }
 .hdr-btn svg { width: 21px; height: 21px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .hdr-btn.in svg { stroke: var(--signal); }
+/* the header's account button (the owner, 2026-11-03): signed out a sign in pill, signed in your plate */
+.hdr-btn.pill { width: auto; min-width: 38px; height: 38px; padding: 0 14px; border-radius: 999px; background: var(--signal); color: var(--signal-ink);
+  font: 700 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; margin: 0 2px; }
+.hdr-btn.pill:hover { background: var(--signal); filter: brightness(1.06); }
+.hdr-btn .plate.hp { width: 30px; height: 30px; stroke: none; }
+/* the picker, in the account sheet */
+.plk-h { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 8px; }
+.plk-h b { font-size: 14px; } .plk-h span { font-size: 12px; color: var(--dim); }
+.plk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.plk { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 38px; padding: 10px 6px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font: 600 12px var(--sans); text-align: center; }
+.plk .plate { width: 40px; height: 40px; }
+.plk[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--signal); border-color: transparent; }
+.plk.locked { cursor: default; color: var(--dim); }
+.plk small { font-size: 10.5px; font-weight: 500; line-height: 1.25; color: var(--dim); }
+/* the unlock, on the result after the save that earned it */
+.r-unlock { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, .08); color: #fff; font-size: 14px; }
+.r-unlock[hidden] { display: none; }
+.r-unlock .plate { width: 32px; height: 32px; }
+.r-unlock span { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.ru-go { min-height: 38px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--signal); color: #fff; font: 700 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 [data-theme="dark"] .th-sun, [data-theme="light"] .th-moon { display: none; }
 
 /* ---- screens ---- */
@@ -687,6 +707,13 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 .bd-rows .rk { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--panel-2); font-family: var(--sans); font-weight: 700; font-size: 12.8px; }
 .bd-rows li.top .rk { background: var(--ink); color: var(--bg); }
 .bd-rows .nm { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the plates (plate.js): each row's, about 24px, the letters in the club's contrast */
+.bd-rows .nm { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bd-rows .nm .un { font-style: normal; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.plate { display: block; flex: none; overflow: visible; }
+.plate text { stroke: none; }
+.plate.bp { width: 24px; height: 24px; }
+.plate.locked { opacity: .34; filter: grayscale(1); }
 .bd-rows .nm em { font-style: normal; margin-left: 6px; font-family: var(--sans); font-weight: 600; font-size: 11px; letter-spacing: 0.055em; text-transform: uppercase; color: var(--signal); }
 .bd-rows .n { text-align: right; font-size: 14px; color: var(--dim); }
 .bd-rows .n.sc { font-family: var(--sans); font-weight: 700; font-size: 15.2px; color: var(--ink); }
@@ -715,6 +742,11 @@ body[data-screen="s-result"] .wm-dark { display: block !important; }
 
 /* ---- sheets ---- */
 .sheet { position: fixed; inset: 0; z-index: 50; background: rgba(5, 7, 12, .45); display: flex; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); }
+/* the only blurs left open over a page that holds still. Asked for less transparency, they go solid */
+@media (prefers-reduced-transparency: reduce) {
+  .sheet { background: rgba(5, 7, 12, .72); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  :root[data-theme="dark"] .r-tile { background: #141a26; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 .sh-in { width: 100%; max-width: 520px; max-height: 88vh; max-height: 88dvh; overflow: auto; background: var(--bg); border-radius: 26px 26px 0 0; padding: 0 16px 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); box-shadow: var(--shadow); transform: translateY(30px); opacity: 0; transition: transform .22s, opacity .22s; }
 .sheet.on .sh-in { transform: none; opacity: 1; }
 .sh-h { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); padding: 16px 0 10px; z-index: 1; }
@@ -1057,7 +1089,7 @@ body[data-screen="s-home"] .wm-dark { display: block !important; }
 .t-l1 { font-size: 11.4vw; color: #fff; }
 .t-l2 { margin-top: 6px; font-size: 16.6vw; color: var(--signal); }
 
-.t-sit { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 20px; background: rgba(10, 14, 22, .62); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.t-sit { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 20px; background: rgba(10, 14, 22, .8); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); }
 .t-sit .h-occ { margin: 0 2px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .h-title { font-family: var(--sans); font-weight: 600; font-size: 15px; letter-spacing: 0.066em; text-transform: uppercase; color: rgba(255, 255, 255, .86); }
 .h-moment { font-family: var(--sans); font-weight: 600; font-size: 13px; letter-spacing: 0.055em; text-transform: uppercase; color: #fff; padding: 3px 9px 2px; border-radius: 999px; background: rgba(255, 79, 31, .3); box-shadow: inset 0 0 0 1.5px var(--signal); }
@@ -1085,7 +1117,7 @@ body[data-screen="s-home"] .wm-dark { display: block !important; }
 .t-go .streak b { color: #fff; }
 #s-home .done { margin: 0; }
 #s-home .done::before, #s-home .done::after { display: none; }
-.t-list { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: rgba(10, 14, 22, .62); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.t-list { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: rgba(10, 14, 22, .8); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); }
 .t-list button { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 16px 0 18px; border: 0; background: transparent; color: #fff; text-align: left;
   font-family: var(--sans); font-weight: 700; font-size: 16.8px; letter-spacing: 0; text-transform: none; }
 .t-list button + button { border-top: 1px solid rgba(255, 255, 255, .09); }
@@ -1160,16 +1192,17 @@ body.rtg-sticky-on .nv { min-height: 48px; }
    the HUD floats over it like a console game: the scorebug and the batter card top left, the menu
    top right, the pitch buttons and THROW in the dock (along the bottom on a phone held upright, the
    bottom right corner otherwise), the play by play as a lower third that fades. Every panel is glass
-   (translucent, the scene blurred behind it) and carries data-hud; none of them covers the zone
+   (a semi-opaque fill, never a backdrop blur: a blur over the live canvas redraws every frame and
+   lagged iPhones, 2026-11-03) and carries data-hud; none of them covers the zone
    (ui.js placeHud, and the browser check measures it). Everything here is scoped to the mound. */
 #s-mound {
-  --g: rgba(255, 255, 255, .42); --g-strong: rgba(255, 255, 255, .9); --g-ink: #0b0f17; --g-dim: #4a5366; --g-line: rgba(11, 15, 23, .1); --g-2: rgba(11, 15, 23, .06);
+  --g: rgba(255, 255, 255, .8); --g-strong: rgba(255, 255, 255, .9); --g-ink: #0b0f17; --g-dim: #4a5366; --g-line: rgba(11, 15, 23, .1); --g-2: rgba(11, 15, 23, .06);
   --g-sel: #0b0f17; --g-sel-ink: #fff; --g-shadow: 0 6px 22px rgba(8, 12, 20, .22);
   --st: env(safe-area-inset-top, 0px); --sb: env(safe-area-inset-bottom, 0px); --sl: env(safe-area-inset-left, 0px); --sr: env(safe-area-inset-right, 0px);
   --gut: 12px; --tap: 44px; --col: 100%; --dock-w: auto;
 }
 :root[data-theme="dark"] #s-mound {
-  --g: rgba(12, 16, 25, .42); --g-strong: rgba(14, 19, 29, .9); --g-ink: #f4f5f7; --g-dim: #a3acbd; --g-line: rgba(255, 255, 255, .12); --g-2: rgba(255, 255, 255, .08);
+  --g: rgba(12, 16, 25, .76); --g-strong: rgba(14, 19, 29, .9); --g-ink: #f4f5f7; --g-dim: #a3acbd; --g-line: rgba(255, 255, 255, .12); --g-2: rgba(255, 255, 255, .08);
   --g-sel: #f4f5f7; --g-sel-ink: #0b0f17; --g-shadow: 0 8px 26px rgba(0, 0, 0, .42);
 }
 body[data-screen="s-mound"] { overflow: hidden; }
@@ -1179,15 +1212,14 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 #s-mound .scene { position: absolute; inset: 0; overflow: hidden; background: #0b1020; touch-action: manipulation; }
 .mhud { position: absolute; inset: 0; z-index: 10; pointer-events: none; color: var(--g-ink); }
 .mhud [data-hud] { pointer-events: auto; }
-.mh-card, .mh-menu, .arsenal, .runbar, .msheet, .pad-say, .mini { -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3); }
 .mh-card, .mh-menu, .arsenal, .runbar, .msheet, .pad-say { background: var(--g); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); color: var(--g-ink); }
 
 /* top left: the scorebug, the batter card under it, the proxy note */
 .mh-tl { position: absolute; top: calc(var(--st) + var(--gut)); left: calc(var(--sl) + var(--gut)); width: calc(var(--col) - var(--gut) * 2 - var(--sl) - var(--sr));
   display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .mh-bug { max-width: calc(100% - var(--tap) - 8px); gap: 10px; padding: 6px 12px 6px 10px; border-radius: 12px;
-  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 24px), linear-gradient(180deg, rgba(26, 33, 48, .9), rgba(11, 15, 23, .9));
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 6px 22px rgba(0, 0, 0, .3); }
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 24px), linear-gradient(180deg, rgba(26, 33, 48, .94), rgba(11, 15, 23, .94));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 6px 22px rgba(0, 0, 0, .3); }
 .mh-bug .sb-team .tm { max-width: 76px; }
 .mh-bug .sb-outs-wrap { gap: 4px; }
 .mh-bug .sb-bases { width: 32px; height: 24px; }
@@ -1257,7 +1289,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 .pa-chip.on { background: var(--g-sel); border-color: var(--g-sel); color: var(--g-sel-ink); }
 .pa-chip.on b { color: var(--g-sel-ink); }
 .mh-card .dotkey .pd { box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
-.mh-tl .proxy.pin { margin: 0; pointer-events: none; background: rgba(10, 14, 22, .66); color: #dfe3ea; padding: 3px 9px; border-radius: 7px; font-size: 11px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.mh-tl .proxy.pin { margin: 0; pointer-events: none; background: rgba(10, 14, 22, .82); color: #dfe3ea; padding: 3px 9px; border-radius: 7px; font-size: 11px; }
 
 /* top right: the menu (a header, so a tap on it never skips the play), the minimap under the card */
 .mh-tr { position: absolute; top: calc(var(--st) + var(--gut)); right: calc(var(--sr) + var(--gut)); }
@@ -1304,7 +1336,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   font-family: var(--sans); font-weight: 700; text-transform: uppercase; box-shadow: 0 3px 0 #c43a12, 0 8px 24px rgba(0, 0, 0, .3); padding: 4px 14px; }
 .btn.throw b { font-size: 28px; letter-spacing: .03em; line-height: 1; }
 .btn.throw span { font-family: var(--sans); font-style: normal; font-size: 12px; font-weight: 600; line-height: 1.25; text-transform: none; opacity: .92; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.btn.throw:disabled { background: var(--g); color: var(--g-dim); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.btn.throw:disabled { background: var(--g); color: var(--g-dim); border: 1px solid var(--g-line); box-shadow: var(--g-shadow); }
 .btn.throw:disabled b { opacity: .75; }
 .btn.throw.shut { background: #0b0f17; color: #fff; box-shadow: 0 3px 0 var(--signal), 0 8px 24px rgba(0, 0, 0, .3); }
 
@@ -1317,7 +1349,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
   color: #fff; background: var(--signal); border-radius: 9px 0 0 9px; padding: 6px 11px 5px; line-height: 1.1; }
 .pbp-tag:empty { display: none; }
 .pbp-rest { min-width: 0; display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 6px 12px; font-size: 14px; font-weight: 600; color: #f4f5f7;
-  background: rgba(11, 15, 23, .8); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-radius: 0 9px 9px 0; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); }
+  background: rgba(11, 15, 23, .9); border-radius: 0 9px 9px 0; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); }
 .pbp-tag:empty + .pbp-rest { border-radius: 9px; }
 .mh-card .seg button[aria-selected="true"] { border-radius: 11px; }
 .pbp-rest:empty { display: none; }
@@ -1369,8 +1401,8 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 .pad.abs-live .btn.throw { flex: 1 1 auto; min-width: 0; width: auto; }
 .btn.abs-b { position: relative; flex: 0 0 42%; height: 54px; min-height: 54px; margin: 0; padding: 4px 10px; border-radius: 14px; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; line-height: 1;
-  background: rgba(11, 15, 23, .86); color: #fff; border: 1.5px solid var(--data); box-shadow: 0 3px 0 #1c3db8, 0 8px 24px rgba(0, 0, 0, .3);
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); font-family: var(--sans); font-weight: 700; text-transform: uppercase;
+  background: rgba(11, 15, 23, .93); color: #fff; border: 1.5px solid var(--data); box-shadow: 0 3px 0 #1c3db8, 0 8px 24px rgba(0, 0, 0, .3);
+  font-family: var(--sans); font-weight: 700; text-transform: uppercase;
   animation: ab-in .22s ease-out; }
 .btn.abs-b[hidden] { display: none; }
 .btn.abs-b b { font-size: 22px; letter-spacing: .04em; }
@@ -1388,7 +1420,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 .dock.replaying .arsenal, .dock.replaying .pad, .dock.replaying .pad-say { visibility: hidden; }
 .absr { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; gap: 14px; padding: 10px 16px 10px 12px; border-radius: 16px; overflow: hidden;
   background: linear-gradient(180deg, rgba(20, 26, 40, .92), rgba(8, 11, 18, .94)); color: #f4f5f7; border: 1px solid rgba(255, 255, 255, .12);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, .42); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); cursor: pointer;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .42); cursor: pointer;
   opacity: 0; transform: translateY(8px); transition: opacity .18s ease, transform .18s ease; --ar: 1; }
 .absr[hidden] { display: none; }
 .absr.show { opacity: 1; transform: none; }
@@ -1577,7 +1609,7 @@ body[data-screen="s-mound"] .app { max-width: none; border: 0; }
 
 /* the home's Survivor row, beside the daily: a mode, so a glass bar with its own name and its state */
 .t-mode { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 12px; align-items: center; gap: 2px 14px; min-height: 60px; padding: 9px 16px 9px 18px; border: 0; border-radius: 16px; text-align: left; color: #fff;
-  background: linear-gradient(90deg, rgba(43, 89, 255, .34), rgba(10, 14, 22, .62) 60%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  background: linear-gradient(90deg, rgba(43, 89, 255, .4), rgba(10, 14, 22, .8) 60%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
 .t-mode::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 3px 3px 0; background: var(--data); }
 .t-mode.live::before { background: var(--signal); }
 .t-mode .tm-k { font-family: var(--sans); font-weight: 700; font-size: 20.8px; letter-spacing: 0; text-transform: none; line-height: 1; }

@@ -118,6 +118,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const SHOTS = process.env.SHOTS || '';
 /* STD_QUICK=1: steps 1 and 2 at both sizes, the home button, the running game (15) at both and the window sizes (16), for a local pass. CI runs it all */
 const QUICK = process.env.STD_QUICK === '1';
+/* STD_MODES=1: steps 1 and 2 at 390x844, then the modes (17) at both sizes, for a local pass on the boards */
+const MODES = process.env.STD_MODES === '1';
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
 function loadPlaywright() {
@@ -876,6 +878,9 @@ async function run(w, h, theme) {
   ok(['32x32=32x32', '16x16=16x16', 'touch=180x180'].every((x) => brand.heads.includes(x)), '13 favicon 32 and 16 and the apple touch icon 180 are linked and the right size');
 
   /* 2 */
+  /* the header's account button signed out (the owner, 2026-11-03): a sign in pill, 38 px or taller */
+  const pill = await page.evaluate(() => { const b = document.getElementById('b-profile'), r = b.getBoundingClientRect(); return { t: b.textContent.trim(), pill: b.classList.contains('pill'), h: r.height, w: r.width, on: r.right <= innerWidth && r.left >= 0 }; });
+  ok(pill.pill && pill.t === 'sign in' && pill.h >= 38 && pill.on, '2 signed out, the header says sign in in a pill (' + JSON.stringify(pill) + ')');
   at('2 the sheets');
   const askedBefore = clipAsks.length;   // before any sheet has opened
   for (const [btn, id, name] of [['#b-menu', 'sheet-menu', 'menu'], ['[data-open="how"]', 'sheet-how', 'how'], ['[data-open="stats"]', 'sheet-stats', 'stats'],
@@ -981,7 +986,7 @@ async function run(w, h, theme) {
   ok(back.on && back.started && back.gain > 0, '2 the switch back on lifts the master gain (' + JSON.stringify(back) + ')');
   await page.click('#sheet-settings .sh-x');
   await page.waitForSelector('#sheet-settings', { state: 'hidden', timeout: 3000 });
-  if (QUICK) { ok(errors.length === 0, '2 no page errors' + (errors.length ? ': ' + errors.join(' | ') : '')); await ctx.close(); return; }
+  if (QUICK || MODES) { ok(errors.length === 0, '2 no page errors' + (errors.length ? ': ' + errors.join(' | ') : '')); await ctx.close(); return; }
 
   /* 3 and 4 */
   at('3 take the mound');
@@ -1715,6 +1720,9 @@ async function modes(w, h, full) {
   await page.click('#d-see');
   await page.waitForSelector('#r-vote:not([hidden]) .vt-o:not([disabled])', { timeout: 30000 });
   ok(await page.evaluate(() => document.getElementById('r-save').hidden), '17 signed in, no save button');
+  /* signed in, the header wears the plate with the initials; the picker shows locked clubs and how to get them */
+  const hp = await page.evaluate(() => { const b = document.getElementById('b-profile'), p = b.querySelector('svg.plate'); return { pill: b.classList.contains('pill'), plate: !!p, t: p && p.querySelector('text') ? p.querySelector('text').textContent : '', h: b.getBoundingClientRect().height }; });
+  ok(!hp.pill && hp.plate && hp.t === 'MO' && hp.h >= 38, '17 signed in, the header shows your plate with your initials (' + JSON.stringify(hp) + ')');
   const vt = await page.evaluate(() => [...document.querySelectorAll('#r-vote .vt-o')].map((b) => ({ name: b.querySelector('.vt-t b').textContent, meta: b.querySelector('.vt-t span').textContent, h: b.getBoundingClientRect().height })));
   ok(vt.length === 2 && vt.every((c) => c.name && /\d{4}/.test(c.meta) && /(top|bot) \d+/.test(c.meta) && c.h >= 38), '17 the two candidates, one line each: ' + vt.map((c) => c.name + ', ' + c.meta).join(' | '));
   /* the menu's row to the vote (the owner, 2026-10-30): only while it is open; it scrolls, nothing opens */
@@ -1762,10 +1770,12 @@ async function modes(w, h, full) {
   ({ ctx, page, errors } = await modesPage(w, h, '?mockBoard=full'));
   await page.waitForSelector('#hp-daily:not([hidden]) #h-top .hb-rows', { timeout: 30000 });
   const top = await page.evaluate(() => window.STD_AUTH.board(null, 3).then((all) => ({
-    rows: [...document.querySelectorAll('#h-top .hb-rows li')].map((li) => li.querySelector('.rk').textContent + ' ' + li.querySelector('.nm').textContent + ' ' + li.querySelector('.sc').textContent),
+    rows: [...document.querySelectorAll('#h-top .hb-rows li')].map((li) => li.querySelector('.rk').textContent + ' ' + li.querySelector('.nm .un').textContent + ' ' + li.querySelector('.sc').textContent),
+    plates: [...document.querySelectorAll('#h-top .hb-rows li')].map((li) => { const p = li.querySelector('.nm svg.plate'); if (!p) return null; const r = p.getBoundingClientRect(); return { w: Math.round(r.width), t: (p.querySelector('text') || {}).textContent || '' }; }),
     want: all.filter((r) => r.rank <= 3).map((r) => r.rank + ' ' + r.username + ' ' + r.score), h: document.getElementById('h-top-body').offsetHeight,
     btn: document.getElementById('h-top-all').getBoundingClientRect().height })));
   ok(top.rows.length === 3 && top.rows.join('|') === top.want.join('|') && top.btn >= 38, '17 the daily tab shows today\'s top 3 by score, as the board has them (' + top.rows.join(', ') + ')');
+  ok(top.plates.length === 3 && top.plates.every((p) => p && p.w >= 20 && p.w <= 28 && /^[A-Z0-9]{1,2}$/.test(p.t)), '17 each top 3 row wears its plate with initials, about 24 px (' + JSON.stringify(top.plates) + ')');
   ok(await noSideScroll(page), '17 the top 3 leaves no sideways scroll');
   await shotM(page, 'daily-top3');
   await page.click('#h-top-all');
@@ -2020,6 +2030,7 @@ async function halves(w, h, skip) {
 try {
   if (!SHOTS) console.log('the fast path: the game\'s own WebGL draws are skipped, the check draws where it reads pixels (see the header)');
   await run(390, 844, 'light');
+  if (MODES) { await modes(390, 844, true); await modes(1440, 900, false); throw 'quick'; }
   if (QUICK) { await run(1440, 900, 'dark'); await homeTrip(390, 844); await runningGame(390, 844); await runningGame(1440, 900); await sizeSweep(); throw 'quick'; }
   await bootStuck(390, 844);
   await run(1440, 900, 'dark');
