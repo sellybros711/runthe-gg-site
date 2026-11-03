@@ -34,6 +34,9 @@ var N = 5;
 /* +1 when a cell one column to the catcher's right is drawn further right on screen, -1 when the
    screen is mirrored (the pitcher's view). Read from screenCol(), the one mirror. */
 var SCREEN_U = C.screenCol(C.cellOf(0, 1)) - C.screenCol(C.cellOf(0, 0)) > 0 ? 1 : -1;
+/* where each break chevron sits from the crosshair's centre, in its own viewBox units (100 = a cell):
+   the first just past the ring (r 30), so they start at the reticle and stay inside about a cell */
+var BRK_AT = [45, 66, 87];
 var r2 = function (x) { return Math.round(x * 100) / 100 || 0; };
 var clamp = function (x, lo, hi) { return Math.max(lo, Math.min(hi, x)); };
 
@@ -107,9 +110,9 @@ function create(host, opts) {
   cross.setAttribute('aria-hidden', 'true');
   cross.innerHTML = '<svg viewBox="-50 -50 100 100"><circle class="ax-halo" r="30"/><circle class="ax-ring" r="30"/>' +
     '<path class="ax-halo" d="M0-46V-36M0 36V46M-46 0H-36M36 0H46"/><path class="ax-tick" d="M0-46V-36M0 36V46M-46 0H-36M36 0H46"/>' +
-    '<circle class="ax-dot" r="4.5"/></svg><span class="aim-tag"></span>';
+    '<circle class="ax-dot" r="4.5"/></svg><svg class="ax-brk" viewBox="-50 -50 100 100"></svg><span class="aim-tag"></span>';
   el.appendChild(cross);
-  var tag = cross.querySelector('.aim-tag');
+  var tag = cross.querySelector('.aim-tag'), brkEl = cross.querySelector('.ax-brk');
   /* the 3D stage says the picked pitch's colour (stage.js, 'std-pitch-color'): the crosshair takes
      it and frames the stage's aim ball (no centre dot). null, on the throw: back to the signal. */
   window.addEventListener('std-pitch-color', function (e) {
@@ -148,6 +151,23 @@ function create(host, opts) {
     },
     setPitches: setPitches,
     setHeat: setHeat,
+    /* The break arrows (ui.js breakArrows): b = { dx, dy, n }, a unit direction on screen (pitcher's
+       view, y down, already mirrored through screenCol() by the caller) and 1 to 3 chevrons, or null
+       to clear. Redrawn (and faded in again) only when the pitch changes, never on an aim move. */
+    setBreak: function (b) {
+      var key = b ? b.n + ':' + b.dx.toFixed(2) + ':' + b.dy.toFixed(2) : '';
+      if (key === api.brkKey) return;
+      api.brkKey = key; api.brk = b || null;
+      var html = '';
+      if (b) {
+        var ang = Math.atan2(b.dy, b.dx) * 180 / Math.PI;
+        for (var k = 0; k < b.n; k++) {
+          html += '<path class="ab" style="--i:' + k + '" transform="rotate(' + ang.toFixed(1) + ') translate(' + BRK_AT[k] + ' 0)" d="M-7-9L8 0L-7 9Z"/>';
+        }
+      }
+      brkEl.innerHTML = html;
+      paint();
+    },
   };
 
   /* the crosshair sits on the shown point: the one being dragged, else the picked one. Never snapped. */
@@ -165,6 +185,13 @@ function create(host, opts) {
     cross.classList.toggle('sl', C.screenCol(c) === 0);
     cross.classList.toggle('sr', C.screenCol(c) === N - 1);
     tag.textContent = opts.label ? opts.label(c) : M.cellWords(c, api.bats);
+    /* near the edge of the aim box the arrows that would fall off it are dropped (the first one stays,
+       so the direction still reads) */
+    var b = api.brk, ab = brkEl.children;
+    for (var k = 0; b && k < ab.length; k++) {
+      var d = BRK_AT[k] / 100 / N, x = p[0] + b.dx * d, y = p[1] + b.dy * d;
+      ab[k].style.display = k && (x < 0.02 || x > 0.98 || y < 0.02 || y > 0.98) ? 'none' : '';
+    }
   }
   function roving(c) {
     for (var i = 0; i < cells.length; i++) cells[i].tabIndex = i === c ? 0 : -1;
