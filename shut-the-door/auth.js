@@ -87,12 +87,13 @@
     email: session && session.user && session.user.email,
     userId: session && session.user && session.user.id,
     name: profile && profile.username,
+    initials: profile && profile.avatar_initials,
   });
 
   async function loadProfile() {
     if (!session) { profile = null; return; }
     try {
-      const { data } = await sb.from('profiles').select('username').eq('id', session.user.id).maybeSingle();
+      const { data } = await sb.from('profiles').select('username, avatar_initials').eq('id', session.user.id).maybeSingle();
       profile = data || null;
     } catch (e) { profile = null; }
   }
@@ -260,11 +261,17 @@
     p_pitches: row.pitches, p_score: row.score, p_percentile: row.percentile,
   });
 
+  /* The plate (supabase/162_shut_the_door_plates.sql): {plate, unlocked, initials}, the unlocks read
+     from the caller's stored saves. setPlate('') goes back to the neutral plate. */
+  const plates = () => rpc('shutdoor_my_plates', {}, true);
+  const setPlate = (key) => act('shutdoor_set_plate', { p_plate: key || '' });
+
   window.STD_AUTH = {
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut, token, available,
     submit, board, myStats, myDay,
     vote, voteCast, entitlements, survivorState, survivorStart, survivorPost, survivorBoard, archiveSubmit,
+    plates, setPlate,
   };
 })();

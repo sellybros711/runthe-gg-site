@@ -109,5 +109,32 @@ check('the default is candidate A', M.defaultPack(sched, M.VOTE.EPOCH) === M.can
   check('only a door shut goes on', M.SURVIVOR.CONTINUES === 'door_shut');
 }
 
+// ---- the plates: plate.js PACK_CLUBS, the server's shutdoor_pack_clubs and the packs agree -----------
+{
+  console.log('\nthe plates (plate.js, supabase/162)');
+  const fs = await import('fs');
+  const win = { STD_CLUBS: [], localStorage: null };
+  new Function('window', 'localStorage', readFileSync(join(HERE, '..', 'plate.js'), 'utf8'))(win, null);
+  const PC = win.STD_PLATE.PACK_CLUBS;
+  const { CLUBS, clubNamed } = await import(join(HERE, '..', '3d', 'clubs.js'));
+  const key = (c) => c ? c.nick.toLowerCase().replace(/[^a-z]/g, '') : null;
+  const want = {};
+  for (const f of fs.readdirSync(join(HERE, '..', 'data', 'packs'))) {
+    const p = JSON.parse(readFileSync(join(HERE, '..', 'data', 'packs', f), 'utf8'));
+    const id = f.replace(/\.json$/, '');
+    let team = null;
+    const walk = (o) => { if (team || !o || typeof o !== 'object') return; if (o.pitcher && o.id === id) { team = o.pitcher.team; return; } Object.values(o).forEach(walk); };
+    walk(p);
+    const k = key(clubNamed(team));
+    if (k) want[id] = k;
+  }
+  check('plate.js keys every pack with a team by its closer\'s club', JSON.stringify(Object.keys(PC).sort().map((id) => id + ':' + PC[id])) === JSON.stringify(Object.keys(want).sort().map((id) => id + ':' + want[id])));
+  const sql = readFileSync(join(HERE, '..', '..', 'supabase', '162_shut_the_door_plates.sql'), 'utf8');
+  const rows = {};
+  for (const m of sql.matchAll(/\('(std-[a-z0-9-]+)', '([a-z]+)'\)/g)) rows[m[1]] = m[2];
+  check('the server\'s shutdoor_pack_clubs is the same list', JSON.stringify(rows) === JSON.stringify(Object.fromEntries(Object.keys(PC).map((id) => [id, PC[id]]))));
+  check('every key is a club in clubs.js', Object.values(PC).every((k) => CLUBS.some((c) => key(c) === k)));
+}
+
 console.log(fails ? `${fails} FAILED` : 'all ok');
 process.exit(fails ? 1 : 0);
