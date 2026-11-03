@@ -2176,15 +2176,15 @@ function roll(H, seed){
     if ((H.rivers || []).length && near(x, y, need + 2)) { var rv = H.rivers.some(function(R){ return (R.pts || []).some(near(x, y, need + 2.5)); }); if (rv) return false; }
     return true; }
   // the tilt: a gentle fall across the hole, mostly side to side so it bends a putt rather than speeding or stalling it
-  var ang = (r() < 0.5 ? 0 : Math.PI) + (r() - 0.5) * 1.1, tg = 0.008 + r() * 0.012;
+  var ang = (r() < 0.5 ? 0 : Math.PI) + (r() - 0.5) * 1.1, tg = 0.014 + r() * 0.018;
   H.comps.push({ k:'plane', gx:Math.cos(ang) * tg, gy:Math.sin(ang) * tg * 0.6 });
   // then one or two shapes in the open carpet: a mound or a hollow, or a tier across the hole
   var want = 1 + (r() < 0.55 ? 1 : 0), placed = 0, tries = 0;
   while (placed < want && tries++ < 200){ var x = x0 + r() * (x1 - x0), y = y0 + r() * (y1 - y0), kind = r();
     if (kind < 0.25 && placed === 0){ var hw = (x1 - x0) / 2; if (!clear((x0 + x1) / 2, y, 1.6)) continue;
-      H.comps.push({ k:'ridge', x:(x0 + x1) / 2, y:y, nx:0, ny:r() < 0.5 ? 1 : -1, w:1.6 + r() * 1.4, a:0.12 + r() * 0.12 }); placed++; continue; }
+      H.comps.push({ k:'ridge', x:(x0 + x1) / 2, y:y, nx:0, ny:r() < 0.5 ? 1 : -1, w:1.6 + r() * 1.4, a:0.22 + r() * 0.18 }); placed++; continue; }
     var sz = 1.6 + r() * 1.6; if (!clear(x, y, sz)) continue;
-    H.comps.push({ k:'mound', x:x, y:y, s:sz, a:(r() < 0.6 ? 1 : -1) * (0.14 + r() * 0.16) }); placed++; }
+    H.comps.push({ k:'mound', x:x, y:y, s:sz, a:(r() < 0.6 ? 1 : -1) * (0.26 + r() * 0.22) }); placed++; }
   // and the cup sits on a near level patch, as every pin does
   H.flats.push({ x:H.cup[0], y:H.cup[1], s:1.4, keep:0.3 });
 }
