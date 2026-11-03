@@ -36,7 +36,7 @@ var N = 5;
 var SCREEN_U = C.screenCol(C.cellOf(0, 1)) - C.screenCol(C.cellOf(0, 0)) > 0 ? 1 : -1;
 /* where each break chevron sits from the crosshair's centre, in its own viewBox units (100 = a cell):
    the first just past the ring (r 30), so they start at the reticle and stay inside about a cell */
-var BRK_AT = [45, 66, 87];
+var BRK_AT = [50, 76, 102];
 var r2 = function (x) { return Math.round(x * 100) / 100 || 0; };
 var clamp = function (x, lo, hi) { return Math.max(lo, Math.min(hi, x)); };
 
@@ -162,7 +162,7 @@ function create(host, opts) {
       if (b) {
         var ang = Math.atan2(b.dy, b.dx) * 180 / Math.PI;
         for (var k = 0; k < b.n; k++) {
-          html += '<path class="ab" style="--i:' + k + '" transform="rotate(' + ang.toFixed(1) + ') translate(' + BRK_AT[k] + ' 0)" d="M-7-9L8 0L-7 9Z"/>';
+          html += '<g transform="rotate(' + ang.toFixed(1) + ') translate(' + BRK_AT[k] + ' 0)"><path class="ab" style="--i:' + k + '" d="M-9-10L12 0L-9 10L-3 0Z"/></g>';
         }
       }
       brkEl.innerHTML = html;

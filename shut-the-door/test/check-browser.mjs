@@ -1468,7 +1468,10 @@ async function runningGame(w, h) {
    his glove side), down for a pitch that drops more than the average four-seam. */
 async function breakArrows(page, tag) {
   step(tag + ' 15b the break arrows', 300);
+  /* the zone takes a tap once the at bat is up; the reticle shows once it does */
+  await page.waitForSelector('#m-aim:not(.off)', { timeout: 60000 });
   await page.click('#m-aim .cell[data-cell="12"]');
+  await page.waitForSelector('#m-aim.aiming', { timeout: 10000 });
   const n = await page.$$eval('#m-arsenal .pitch', (b) => b.length);
   const seen = [];
   for (let i = 0; i < n; i++) {
@@ -1477,7 +1480,7 @@ async function breakArrows(page, tag) {
     seen.push(await page.evaluate((i) => {
       const S = window.STD_UI.state, p = S.scn.pitcher, a = p.arsenal.filter((x) => x.type === S.type)[0];
       const ax = document.querySelector('#m-aim .aim-x').getBoundingClientRect(), cx = ax.left + ax.width / 2, cy = ax.top + ax.height / 2;
-      const ab = [...document.querySelectorAll('#m-aim .ax-brk .ab')].filter((e) => getComputedStyle(e).display !== 'none' && +getComputedStyle(e).opacity > 0.9);
+      const ab = [...document.querySelectorAll('#m-aim .ax-brk .ab')].filter((e) => e.getBoundingClientRect().width > 0 && +getComputedStyle(e).opacity > 0.9);
       const r = ab.length ? ab[ab.length - 1].getBoundingClientRect() : null;
       const fill = ab.length ? getComputedStyle(ab[0]).fill : '';
       return { type: a.type, throws: p.throws, pfxX: a.pfxX, n: ab.length, dx: r ? r.left + r.width / 2 - cx : 0, dy: r ? r.top + r.height / 2 - cy : 0, fill: fill, i: i };
