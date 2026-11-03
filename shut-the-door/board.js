@@ -13,6 +13,8 @@
  * Signed out the board still reads (the call is public), with one quiet line
  * and a sign in button under it. No modal, no sheet that opens by itself.
  *
+ * peek() fills the home's today's top 3 (#h-top) from the same call.
+ *
  * The mock (mock-api.js) serves a fictional board on ?mockBoard=:
  *   (any) a full board   empty  no rows   fail  the call answers null
  *   deep  your row far below the top
@@ -124,16 +126,17 @@ function renderState(kind) {
 
 /* ask for the rows. supabase-js arrives deferred, so while auth.js says it is
    still waiting, wait with it rather than call a failure */
-function fetchRows(my) {
+function fetchRows(my, limit, live) {
   var A = window.STD_AUTH;
   var t0 = Date.now();
+  live = live || function () { return my === seq; };
   return new Promise(function (res) {
     (function go() {
-      if (my !== seq) return res(undefined);
+      if (!live()) return res(undefined);
       var st = authState();
       if (st.waiting && Date.now() - t0 < GIVE_UP_MS) { setTimeout(go, WAIT_MS); return; }
       if (!A || !A.board) return res(null);
-      Promise.resolve().then(function () { return A.board(ctx.day, LIMIT); }).then(res, function () { res(null); });
+      Promise.resolve().then(function () { return A.board(ctx.day, limit || LIMIT); }).then(res, function () { res(null); });
     })();
   });
 }
@@ -152,6 +155,35 @@ function load() {
   });
 }
 
+/* TODAY'S TOP 3 on the home's daily tab (the owner, 2026-11-03): the same rows as the board, ranked by
+   the same score, cut to the top three. The board is public and never hidden before you play, so
+   neither is this. It is read only while the daily tab shows; a failed or empty read is one quiet
+   line, never an error. The box keeps one height in every state, so nothing under it moves. */
+var PEEK = 3, pseq = 0, peeked = null;
+function peekLine(t) { return '<p class="hb-say">' + t + '</p>'; }
+function peek() {
+  var el = $('h-top-body');
+  if (!el) return;
+  if (peeked && peeked.day === ctx.day && Date.now() - peeked.at < 30000) return;
+  var my = ++pseq;
+  if (!peeked) el.innerHTML = peekLine('loading the leaderboard.');
+  fetchRows(my, PEEK, function () { return my === pseq; }).then(function (rows) {
+    if (my !== pseq || rows === undefined) return;
+    var n = $('h-top-n');
+    if (!Array.isArray(rows)) { peeked = null; n.textContent = ''; el.innerHTML = peekLine('the leaderboard shows here once it can load.'); return; }
+    peeked = { day: ctx.day, at: Date.now() };
+    rows = rows.filter(function (r) { return r.rank <= PEEK; }).sort(function (a, b) { return a.rank - b.rank; });
+    if (!rows.length) { n.textContent = ''; el.innerHTML = peekLine('nobody\'s on it yet. be the first.'); return; }
+    var c = rows[0].players;
+    n.textContent = c + ' ' + (c === 1 ? 'closer' : 'closers') + ' today';
+    el.innerHTML = '<div class="bd-cols-h hb-cols" aria-hidden="true"><span>#</span><span>closer</span><span>score</span></div>' +
+      '<ol class="bd-rows hb-rows">' + rows.map(function (r) {
+        return '<li class="top' + (r.mine ? ' mine' : '') + '"><span class="rk">' + esc(r.rank) + '</span>' +
+          '<span class="nm">' + esc(r.username) + (r.mine ? '<em>you</em>' : '') + '</span><span class="n sc">' + esc(r.score) + '</span></li>';
+      }).join('') + '</ol>' + (rows.length < PEEK ? peekLine('only ' + rows.length + ' on it so far.') : '');
+  });
+}
+
 function wire() {
   $('bd-back').addEventListener('click', function () { seq++; if (ctx.onBack) ctx.onBack(); });
 }
@@ -160,6 +192,7 @@ var api = {
   API_VERSION: 1,
   init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
   load: load,
+  peek: peek,
   chip: chip,
 };
 window.STD_BOARD = api;

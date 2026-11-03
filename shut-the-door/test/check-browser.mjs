@@ -50,7 +50,7 @@
  *      pitch by pitch with band and reason. On the real engine and on the
  *      mock: a pro, no pro (?mockPro=none) and no lesson (?mockLesson=none)
  *
- *  17. the modes around the daily (CONTRACT.md 9, 16, 17), through the mock:
+ *  17. the modes around the daily (CONTRACT.md 9, 16, 17), through the mock (and the daily tab's top 3):
  *      sign in to save your score (a button on the result and on the board,
  *      never opened by itself; the sign-in posts it once), the vote for
  *      tomorrow (two candidates, one line each, the vote counts; signed out the
@@ -1633,6 +1633,30 @@ async function modes(w, h, full) {
   const lk = await page.evaluate(() => ({ list: !!document.querySelector('#past-body .arc-list'), t: document.getElementById('past-body').textContent, pick: document.getElementById('h-pick').hidden }));
   ok(!lk.list && /open later/.test(lk.t) && !/\$|price|buy|pro\b/i.test(lk.t), '17 free: the past dailies stay locked, no price and no buy button');
   ok(lk.pick, '17 before the vote, the home says nothing about it');
+  await ctx.close();
+
+  /* today's top 3 on the daily tab (the owner, 2026-11-03): the board's top three by score, and its button to the
+     full board. Empty is one quiet line, never an error, and the box keeps its height either way. */
+  step(tag + ' 17 the top 3', 300);
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockBoard=full'));
+  await page.waitForSelector('#hp-daily:not([hidden]) #h-top .hb-rows', { timeout: 30000 });
+  const top = await page.evaluate(() => window.STD_AUTH.board(null, 3).then((all) => ({
+    rows: [...document.querySelectorAll('#h-top .hb-rows li')].map((li) => li.querySelector('.rk').textContent + ' ' + li.querySelector('.nm').textContent + ' ' + li.querySelector('.sc').textContent),
+    want: all.filter((r) => r.rank <= 3).map((r) => r.rank + ' ' + r.username + ' ' + r.score), h: document.getElementById('h-top-body').offsetHeight,
+    btn: document.getElementById('h-top-all').getBoundingClientRect().height })));
+  ok(top.rows.length === 3 && top.rows.join('|') === top.want.join('|') && top.btn >= 38, '17 the daily tab shows today\'s top 3 by score, as the board has them (' + top.rows.join(', ') + ')');
+  ok(await noSideScroll(page), '17 the top 3 leaves no sideways scroll');
+  await shotM(page, 'daily-top3');
+  await page.click('#h-top-all');
+  await page.waitForSelector('#s-board.on #bd-list .bd-rows', { timeout: 30000 });
+  ok(await nothingOpen(page), '17 full leaderboard opens the day\'s board, and no sheet');
+  await ctx.close();
+  ({ ctx, page, errors } = await modesPage(w, h, '?mockBoard=empty'));
+  await page.waitForSelector('#h-top .hb-say', { timeout: 30000 });
+  await page.waitForFunction(() => !/loading/.test(document.getElementById('h-top-body').textContent), null, { timeout: 30000 });
+  const none = await page.evaluate(() => ({ t: document.getElementById('h-top-body').textContent, h: document.getElementById('h-top-body').offsetHeight }));
+  ok(/nobody/.test(none.t) && none.h === top.h, '17 no rows yet: one quiet line in a box of the same height ("' + none.t + '", ' + none.h + ' px)');
+  ok(errors.length === 0, '17 the top 3: no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await ctx.close();
 
   /* Survivor */

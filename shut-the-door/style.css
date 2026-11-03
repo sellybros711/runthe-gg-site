@@ -1699,3 +1699,21 @@ body[data-screen="s-half"] .app { max-width: none; border: 0; }
   .h-panes.anim { transition: none; }
   .h-pane.mv { transition: opacity .15s linear; }
 }
+
+/* TODAY'S TOP 3 on the daily tab (the owner, 2026-11-03): the Survivor board's look, three rows and a
+   way to the full board. Its body keeps one height loading, empty and full, so the switcher's height
+   move and the page below never jump when the rows land. */
+#hp-daily .hb-top { margin: 0; padding: 12px 10px 10px; }
+#hp-daily .hb-top, #hp-surv .bd-list { color: var(--ink); }
+.hb-body { height: 144px; display: flex; flex-direction: column; overflow: hidden; }
+.hb-cols { box-sizing: border-box; height: 24px; padding-bottom: 0; }
+.hb-cols, .hb-rows li { grid-template-columns: 30px minmax(0, 1fr) 56px; }
+.hb-cols span:nth-child(3) { text-align: right; }
+.hb-rows li { box-sizing: border-box; height: 40px; padding: 0 8px; }
+.hb-rows .rk { width: 26px; height: 26px; border-radius: 8px; }
+.hb-say { margin: auto 0; padding: 8px; text-align: center; color: var(--dim); font-size: 14px; }
+.hb-rows + .hb-say { margin: 4px 0 0; padding: 4px 8px 0; font-size: 13px; }
+.hb-all { width: 100%; min-height: 44px; margin-top: 8px; font-family: var(--sans); font-size: 13.5px; letter-spacing: .07em; text-transform: uppercase; }
+.hb-all:hover { border-color: var(--signal); color: var(--signal); }
+.hb-all:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
