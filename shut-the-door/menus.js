@@ -366,20 +366,20 @@ function platePicker(st) {
   var ini = PL.initials(st.name, st.initials), have = PL.unlocked(), cur = PL.current();
   var tile = function (k) {
     var open = !k || have.indexOf(k) >= 0, nm = k ? PL.nameOf(k) : 'plain';
-    return '<button type="button" class="pk' + (open ? '' : ' locked') + '" data-plate="' + esc(k || '') + '" aria-pressed="' + (k === cur || (!k && !cur)) + '"' +
+    return '<button type="button" class="plk' + (open ? '' : ' locked') + '" data-plate="' + esc(k || '') + '" aria-pressed="' + (k === cur || (!k && !cur)) + '"' +
       (open ? '' : ' aria-disabled="true"') + ' aria-label="' + esc(open ? nm + ' plate' : 'shut the door as the ' + nm + ' closer to unlock') + '">' +
       PL.svg(k, ini, { locked: !open }) + '<span>' + esc(nm) + '</span>' +
       (open ? '' : '<small>shut the door as the ' + esc(nm) + ' closer to unlock</small>') + '</button>';
   };
-  return '<div class="pk-h"><b>your plate</b><span>' + esc(have.length) + ' of ' + esc(PL.earnable().length) + ' clubs</span></div>' +
-    '<div class="pk-grid" id="pk-grid">' + [null].concat(PL.earnable()).map(tile).join('') + '</div>' +
+  return '<div class="plk-h"><b>your plate</b><span>' + esc(have.length) + ' of ' + esc(PL.earnable().length) + ' clubs</span></div>' +
+    '<div class="plk-grid" id="pk-grid">' + [null].concat(PL.earnable()).map(tile).join('') + '</div>' +
     '<p class="au-err" id="pk-err" role="alert"></p>';
 }
 function wirePicker(st) {
   var A = window.STD_AUTH, PL = window.STD_PLATE, g = $('pk-grid');
   if (!g || !PL) return;
   g.addEventListener('click', function (e) {
-    var b = e.target.closest('.pk');
+    var b = e.target.closest('.plk');
     if (!b || b.classList.contains('locked')) return;
     var k = b.getAttribute('data-plate') || null;
     PL.chooseLocal(k);
