@@ -19,6 +19,8 @@
 (function () {
 'use strict';
 var C = window.STD_CONTRACT, API = window.STD_API, M = window.STD_MOUND, AN = window.STD_ANIM, MN = window.STD_MENUS;
+/* the modes around the daily (modes-ui.js): the save, the vote, Survivor, the archive */
+var MU = window.STD_MODES_UI || null;
 var METER = window.STD_METER || null;
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -88,7 +90,7 @@ function record(day, number, r) {
 /* ---- state ------------------------------------------------------------------- */
 
 var S = {
-  day: C.easternDay(), scn: null, daily: null, dailyResult: null,
+  day: C.easternDay(), scn: null, dailyScn: null, daily: null, dailyResult: null, arsFor: null, saved: false,
   outing: null, mode: 'daily', type: null, cell: null, at: null, busy: false,
   heat: 'damage', drawer: false, scout: false, guide: null, hover: null, scene: null, grid: null, mini: null, hero: null, result: null,
 };
@@ -108,7 +110,8 @@ function basesWords(b) {
 function outsWords(o) { return o === 0 ? 'no outs' : o === 1 ? 'one out' : 'two outs'; }
 function pitchOf(type) { var a = S.scn.pitcher.arsenal; for (var i = 0; i < a.length; i++) if (a[i].type === type) return a[i]; return null; }
 function batterAt(i) { var bs = S.scn.batters; return bs[((i % bs.length) + bs.length) % bs.length]; }
-function lastName(n) { var p = String(n).split(' '); return p[p.length - 1]; }
+/* the short name, suffix and all ("Witt Jr.", never "Jr." or "Witt"): names.js, the one helper */
+function lastName(n) { return window.STD_NAMES.shortName(n); }
 function fmtDay(day) {
   var d = new Date(Date.parse(day + 'T12:00:00Z'));
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).toLowerCase().replace(',', '');
@@ -128,49 +131,196 @@ function ordSuffix(n) { var t = n % 100; if (t >= 11 && t <= 13) return 'th'; re
 var TYPE_COLORS = { FF: '#d22d49', SI: '#fe9d00', FC: '#933f2c', SL: '#eee716', ST: '#ddb33a', SV: '#93afd4', CU: '#00d1ed', KC: '#6236cd', CS: '#0068ff', CH: '#1dbe3a', FS: '#3bacac', FO: '#55ccab', KN: '#3c44cd', SC: '#60db33', EP: '#888888' };
 var PITCH_COLORS = ['#ff4f1f', '#2b59ff', '#8b5cf6', '#14b8a6', '#f2b827', '#ec4899', '#64748b'];
 function show(id) {
+  /* Survivor and the archive put their own spot on the mound; the home and its links are today's */
+  if (id === 's-home' || id === 's-board') dailyBack();
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.dataset.screen = id;
   window.scrollTo(0, 0);
-  if (id === 's-result') playResult();
+  /* the ads (ads.js): the bottom banner and the rails on the screens that carry them */
+  if (window.STD_ADS) STD_ADS.screen(id);
+  homeFold();
+  if (id === 's-result') { renderModes(); renderStreak(); playResult(); }
+  if (SFX) SFX.bed(id === 's-mound' && S.outing ? leverage(S.outing) : 0);
+  backSync();
 }
 
-/* ---- sound: four noises made on the spot, nothing to download ---------------- */
+/* BACK CLOSES WHAT IS OPEN (the QA audit, 2026-11-02: back left the page from the board, a sheet or
+   the menu on the mound). While a sheet or any screen but the home is up, the page keeps one history
+   entry of its own, so back closes the sheet, or goes home from the screen. Back on the home with
+   nothing open leaves, as before. One entry, never a stack: a close by a tap drops it (history.back,
+   whose own popstate is skipped), and a back that leaves something still open puts it back. The mound
+   goes home the way the header's lockup does (a fresh home, where the outing resumes); a play in
+   flight finishes first, so back then does nothing. */
+var BACK_SKIP = false;
+function openNow() { return (MN && MN.isOpen()) || (document.body.dataset.screen || 's-home') !== 's-home'; }
+function backSync() {
+  var mine = !!(history.state && history.state.std);
+  if (openNow()) { if (!mine) try { history.pushState({ std: 1 }, ''); } catch (e) {} return; }
+  if (!mine) return;
+  setTimeout(function () {
+    if (openNow() || !(history.state && history.state.std)) return;
+    BACK_SKIP = true;
+    try { history.back(); } catch (e) { BACK_SKIP = false; }
+  }, 0);
+}
+function backPressed() {
+  if (BACK_SKIP) { BACK_SKIP = false; backSync(); return; }
+  if (MN && MN.isOpen()) { MN.close(); return; }
+  var id = document.body.dataset.screen || 's-home';
+  if (id === 's-home') return;
+  if (id === 's-mound' || id === 's-half' || id === 's-next') {
+    if (S.busy) { backSync(); return; }
+    moundHome();
+    return;
+  }
+  renderHomeState(); show('s-home'); drawHero();
+}
+window.addEventListener('popstate', backPressed);
+/* the mound goes home: a fresh home where the outing resumes, as back does. The home button and the
+   menu's home wait for a play in flight to finish (the stage's own end), then go; nothing is lost,
+   the outing is kept after every pitch */
+function moundHome() { location.replace(location.pathname + location.search); }
+function homeWhenSettled() {
+  if (MN && MN.isOpen()) MN.close(true);
+  var b = $('m-home'); if (b) b.classList.add('wait');
+  (function go() { if (S.busy) { setTimeout(go, 120); return; } moundHome(); })();
+}
 
-var AC = null;
-function audio() {
-  if (!prefs.sound) return null;
-  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; }
-  return AC;
+/* THE BOTTOM BANNER ON THE HOME (ads.js, style.css). At the top of the page no control may sit behind
+   the banner, where a tap meant for it would land on the ad. When the home is too tall for the space
+   above the banner, the first row that would sit behind it (today's top 3, or the links) moves below the fold instead, so the player scrolls to it. Take the
+   mound never moves. Measured with offsetTop, so the menu's entrance animation does not move the line. */
+function homeFold() {
+  var menu = $('h-menu');
+  if (!menu) return;
+  /* today's top 3 (its full leaderboard button) is the first row that can fold, then the links */
+  var rows = [$('h-top')].concat([].slice.call(menu.children)).filter(function (k) { return k && k.id !== 'h-go'; });
+  rows.forEach(function (k) { k.style.marginTop = ''; });
+  var b = document.body;
+  if (!b.classList.contains('rtg-sticky-on') || b.dataset.screen !== 's-home') return;
+  var ad = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-ad-h')) || 0;
+  if (!ad) return;
+  var vh = window.innerHeight, line = vh - ad;
+  for (var i = 0; i < rows.length; i++) {
+    var k = rows[i];
+    if (k.hidden || !k.offsetHeight) continue;
+    var y = 0;
+    for (var e = k; e; e = e.offsetParent) y += e.offsetTop;
+    if (y >= vh) return;
+    if (y + k.offsetHeight > line) { k.style.marginTop = (vh - y + 8) + 'px'; return; }
+  }
 }
-function noise(ac, dur) {
-  var n = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
-  for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
-  var s = ac.createBufferSource(); s.buffer = buf; return s;
+window.addEventListener('rtg-sticky', homeFold);
+/* a phone's address bar changes the height as the page scrolls: refold only for a new width or at the top */
+var foldW = window.innerWidth;
+window.addEventListener('resize', function () {
+  if (window.innerWidth !== foldW || !window.scrollY) { foldW = window.innerWidth; homeFold(); }
+});
+/* the home fills in after the spot loads, so the fold is measured again whenever its column changes size */
+function homeFoldWatch() {
+  var m = $('h-main');
+  if (m && window.ResizeObserver) new ResizeObserver(function () { homeFold(); }).observe(m);
 }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', homeFoldWatch); else homeFoldWatch();
+
+/* back to today's spot after a Survivor run or an archive day */
+function dailyBack() {
+  if (!S.dailyScn || S.scn === S.dailyScn) return;
+  S.scn = S.dailyScn;
+  S.mode = 'daily';
+  S.outing = S.daily;
+  S.result = S.dailyResult;
+}
+
+/* ---- sound (sound.js): the glove, the bat, the umpire and the crowd, made on the spot -------
+   sound(name, ms) is the one hook the stage and the 2D drawing call. pitchSounds(pr) is the same hook
+   for one pitch: it knows the result, so the glove pops big on a called strike and the bat cracks
+   clean on hard contact. The umpire and the crowd go with the reveal (moment), never before it.
+   Nothing here is a grade and nothing pops up. */
+
+var SFX = window.STD_SFX || null;
+if (SFX) SFX.setOn(prefs.sound !== false);
+function audio() { return SFX; }
 function sound(name, delay) {
-  var ac = audio(); if (!ac) return;
-  try {
-    var t0 = ac.currentTime + (delay ? delay / 1000 : 0);
-    var g = ac.createGain(), f = ac.createBiquadFilter(), src;
-    g.connect(ac.destination);
+  if (!SFX) return;
+  if (name === 'whoosh') SFX.pitch(0, delay, !!prefs.quick);
+  else if (name === 'pop') SFX.pop(1, delay);
+  else if (name === 'crack') SFX.crack('dull', delay);
+  else if (name === 'thud') SFX.thud(delay);
+  else if (name === 'snap') SFX.snap(delay);
+}
+var STRIKE_RES = { called_strike: 1, swinging_strike: 1, foul_tip: 1 };
+function pitchSounds(pr) {
+  return function (name, delay) {
+    if (!SFX) return;
+    var r = pr.result;
+    if (name === 'whoosh') return SFX.pitch(pr.velo, delay, !!prefs.quick);
     if (name === 'pop') {
-      src = noise(ac, 0.07); f.type = 'lowpass'; f.frequency.value = 1100; g.gain.setValueAtTime(0.5, t0);
-      var o = ac.createOscillator(), og = ac.createGain(); o.frequency.setValueAtTime(140, t0); o.frequency.exponentialRampToValueAtTime(60, t0 + 0.08);
-      og.gain.setValueAtTime(0.35, t0); og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1); o.connect(og); og.connect(ac.destination); o.start(t0); o.stop(t0 + 0.12);
-    } else if (name === 'crack') {
-      src = noise(ac, 0.05); f.type = 'highpass'; f.frequency.value = 1400; g.gain.setValueAtTime(0.6, t0);
-    } else if (name === 'snap') {
-      /* the best release: a short bright click, quieter than the glove */
-      src = noise(ac, 0.035); f.type = 'highpass'; f.frequency.value = 2600; g.gain.setValueAtTime(0.32, t0);
-      var so = ac.createOscillator(), sg = ac.createGain(); so.type = 'triangle'; so.frequency.setValueAtTime(1500, t0); so.frequency.exponentialRampToValueAtTime(900, t0 + 0.06);
-      sg.gain.setValueAtTime(0.12, t0); sg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08); so.connect(sg); sg.connect(ac.destination); so.start(t0); so.stop(t0 + 0.1);
-    } else if (name === 'thud') {
-      src = noise(ac, 0.09); f.type = 'lowpass'; f.frequency.value = 400; g.gain.setValueAtTime(0.5, t0);
-    } else {
-      src = noise(ac, 0.22); f.type = 'bandpass'; f.frequency.setValueAtTime(500, t0); f.frequency.exponentialRampToValueAtTime(1800, t0 + 0.2); g.gain.setValueAtTime(0.07, t0);
+      if (r === 'swinging_strike' || r === 'foul_tip') SFX.miss(delay);
+      return SFX.pop(r === 'called_strike' ? 2 : r === 'ball' ? 0 : 1, (delay || 0) + (r === 'swinging_strike' ? 40 : 0));
     }
-    src.connect(f); f.connect(g); src.start(t0);
-  } catch (e) {}
+    if (name === 'crack') {
+      if (r === 'foul') return SFX.crack('foul', delay);
+      return SFX.crack(pr.inPlay && pr.inPlay.ev >= 95 ? 'clean' : 'dull', delay);
+    }
+    sound(name, delay);
+  };
+}
+/* the leverage the crowd hears: two strikes, two outs, the tying run aboard or up, a tie */
+function leverage(st) {
+  if (!st || !st.score || !st.count) return 0.3;
+  var lead = st.score.us - st.score.them, on = (st.bases & 1 ? 1 : 0) + (st.bases & 2 ? 1 : 0) + (st.bases & 4 ? 1 : 0);
+  var l = 0.25 + (st.count.s === 2 ? 0.2 : 0) + (st.outs === 2 ? 0.2 : 0);
+  if (lead <= 0) l += 0.35; else if (on >= lead) l += 0.3; else if (on + 1 >= lead) l += 0.15;
+  return Math.min(1, l);
+}
+/* the moment the tag goes up: the umpire's call, the crowd, and on strike three the shake and the flash */
+var HIT_RES = { single: 1, double: 1, triple: 1, home_run: 1, error: 1 };
+function moment(pr, st) {
+  if (!SFX) return;
+  var r = pr.result;
+  if (pr.paOver && STRIKE_RES[r]) {
+    SFX.ump('k'); SFX.roar(1); SFX.buzz([24, 40, 70]);
+    kCue();
+  } else if (r === 'called_strike') SFX.ump('strike');
+  else if (r === 'ball') SFX.ump(pr.paOver ? 'ball4' : 'ball');
+  else if (r === 'swinging_strike') SFX.roar(0.3);
+  else if (r === 'in_play' && pr.inPlay) {
+    if (HIT_RES[pr.inPlay.result] || pr.runs) { SFX.groan(pr.inPlay.result === 'home_run' || pr.runs ? 1.5 : 1); SFX.buzz(30); }
+    else SFX.roar(pr.halfOver ? 1.1 : 0.55);
+  }
+  SFX.bed(leverage(st));
+}
+function kCue() {
+  if (reducedMotion()) return;
+  var sc = $('m-scene'), z = S.grid && S.grid.el;
+  [sc, z].forEach(function (el, i) {
+    if (!el) return;
+    var c = i ? 'k-flash' : 'k-shake';
+    el.classList.remove(c); void el.offsetWidth; el.classList.add(c);
+    setTimeout(function () { el.classList.remove(c); }, 900);
+  });
+}
+/* the save on the result: confetti in the brand's colours and the club's, gone in three seconds */
+function confetti() {
+  if (reducedMotion()) return;
+  var box = document.createElement('div'), tc = S.scn && S.scn.pitcher.teamColors, cols = ['#ff4f1f', '#2b59ff', '#ffffff', tc && tc[0] || '#ff4f1f'];
+  box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+  var h = '';
+  for (var i = 0; i < 44; i++) {
+    h += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;background:' + cols[i % 4] + ';animation-delay:' + (Math.random() * 0.5).toFixed(2) +
+      's;animation-duration:' + (1.8 + Math.random() * 1.2).toFixed(2) + 's;--dx:' + Math.round(Math.random() * 120 - 60) + 'px;--r:' + Math.round(Math.random() * 720 - 360) + 'deg"></i>';
+  }
+  box.innerHTML = h;
+  document.body.appendChild(box);
+  setTimeout(function () { box.remove(); }, 3400);
+}
+function soundSwitch(v) {
+  prefs.sound = !!v; savePrefs();
+  if (SFX) SFX.setOn(prefs.sound);
+  var b = $('m-sound');
+  if (b) { b.classList.toggle('off', !prefs.sound); b.setAttribute('aria-pressed', prefs.sound ? 'true' : 'false'); b.setAttribute('aria-label', prefs.sound ? 'Sound on' : 'Sound off'); }
+  if (prefs.sound) { if (SFX) SFX.tap(); if (document.body.dataset.screen === 's-mound' && S.outing) SFX.bed(leverage(S.outing)); }
 }
 
 /* ---- theme ---------------------------------------------------------------------- */
@@ -302,11 +452,138 @@ function renderHome() {
   renderMatchup();
   $('h-proxy').hidden = s.resolution !== 'proxy';
   $('m-proxy').hidden = s.resolution !== 'proxy';
+  if (MU) MU.pickLine($('h-pick'), s);
   renderStreak();
-  $('h-load').hidden = true;
-  $('h-main').hidden = false;
-  startHomeBg();
+  bootClubs(s);
+  /* the 3D mound starts now, behind the loading screen; the home shows when the first screen has
+     everything it needs (bootLoader) */
   drawHero();
+  BOOT.spot = true;
+  BOOT.ready.then(function () {
+    $('h-load').hidden = true;
+    $('h-err').hidden = true;   // a spot that came after the loading screen gave up on it
+    $('h-main').hidden = false;
+    startHomeBg();
+  });
+}
+
+/* ---- THE LOADING SCREEN (the owner, 2026-11-02) ------------------------------------------------
+   #boot covers the page from the first paint and .app is inert under it, so nothing is tappable or
+   focusable until the first screen has what it needs: today's spot (the pack), the fonts, the stadium
+   photo behind the home, and the 3D mound (STD_STAGE.current.loaded; a browser without WebGL keeps the
+   old drawing and skips it). The bar is real: each step fills its own share when it lands, the 3D's by
+   the stage's own marks (STD_STAGE.marks: created, assets, lit, people, compiled, then his arm's throw).
+   Inside a step the bar
+   eases toward the step's end and never reaches it until the step does.
+   It never flashes: unseen for its first 300 ms (style.css), and once seen it stays up at least until
+   BOOT_MIN_MS, so it never blinks in and out.
+   It never hangs: a mound that has not warmed in BOOT_CAP_MS lets the home show anyway, saying so
+   for a moment ("the ballpark is still loading"); take the mound then shows the mound's own warming
+   word (.scene.warming) until it is ready. A spot that has not come in BOOT_SPOT_MS puts up the home's
+   error and its try again. A failed spot does that at once (boot). The inline guard in index.html
+   covers a script that never ran. */
+var BOOT_CAP_MS = window.STD_BOOT_TEST_CAP || 30000, BOOT_SPOT_MS = BOOT_CAP_MS * 1.5, BOOT_MIN_MS = 900, BOOT_SAY_MS = 1400;
+var BOOT_STEPS = [
+  { k: 'spot', w: 14, say: 'today\'s spot' },
+  { k: 'fonts', w: 4, say: 'today\'s spot' },
+  { k: 'photo', w: 6, say: 'the ballpark' },
+  { k: 'created', w: 6, say: 'the ballpark' },
+  { k: 'assets', w: 34, say: 'the ballpark' },
+  { k: 'lit', w: 6, say: 'the lights' },
+  { k: 'people', w: 12, say: 'the players' },
+  { k: 'compiled', w: 18, say: 'warming up' },
+];
+var BOOT = { spot: false, fonts: false, photo: false, t0: Date.now(), shown: 0, done: false, capped: false };
+BOOT.ready = new Promise(function (res) { BOOT.release = res; });
+window.STD_BOOT_RUNS = true;
+function bootHas(k) {
+  if (k === 'spot' || k === 'fonts' || k === 'photo') return BOOT[k];
+  if (!use3d()) return true;
+  var st = window.STD_STAGE, m = st && st.marks;
+  /* warmed, and his arm's throw is in (3d/firstperson.js fetches it beside the scene, and until it
+     lands the first pitch flies without his arm or the first person lens) */
+  if (k === 'compiled') { var cu = st && st.current, fp = cu && cu.fp; return !!(cu && cu.loaded) && (!fp || !fp.ok || !!fp.throw); }
+  return !!(m && m[k] != null) || !!(st && st.current && st.current.loaded);
+}
+function bootClubs(s) {
+  try {
+    var c = clubsOf(s), bug = $('boot-bug');
+    $('boot-occ').textContent = occasionOf(s.title) || ' ';
+    [['boot-us', c.us], ['boot-them', c.them]].forEach(function (r) {
+      var row = $(r[0]); if (!row || !r[1]) return;
+      row.querySelector('b').textContent = r[1].name || '';
+      if (r[1].pri) row.style.setProperty('--club', r[1].pri);
+    });
+    if (bug) bug.classList.add('on');
+  } catch (e) {}
+}
+/* the screen steps aside: the page under it wakes, and the promise lets the home show */
+function bootEnd(now) {
+  if (BOOT.done) return;
+  BOOT.done = true;
+  var el = $('boot');
+  var go = function () {
+    if (el) { el.classList.add('boot-off'); el.setAttribute('aria-hidden', 'true'); }
+    var app = $('app'); if (app) app.removeAttribute('inert');
+    BOOT.release();
+  };
+  /* seen (past its 300 ms) but only just: hold it to BOOT_MIN_MS so it never blinks */
+  var age = Date.now() - BOOT.t0;
+  if (now || age < 300 || age >= BOOT_MIN_MS) go(); else setTimeout(go, BOOT_MIN_MS - age);
+}
+function bootLoader() {
+  var el = $('boot');
+  if (!el) { BOOT.release(); var app = $('app'); if (app) app.removeAttribute('inert'); return; }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { BOOT.fonts = true; }); else BOOT.fonts = true;
+  var img = document.querySelector('#h-bg .t-bgi[src]');
+  var photo = function () { BOOT.photo = true; };
+  if (!img || img.complete) photo(); else { img.addEventListener('load', photo, { once: true }); img.addEventListener('error', photo, { once: true }); }
+  /* the club table is a module that may land after the spot: fill the scorebug's names again then */
+  window.addEventListener('std-clubs', function () { if (S.scn && !BOOT.done) bootClubs(S.scn); });
+  var fill = $('boot-fill'), pct = $('boot-pct'), say = $('boot-step');
+  var stepAt = 0, stepT = Date.now();
+  (function tick() {
+    if (BOOT.done) return;
+    var done = 0, cur = null;
+    for (var i = 0; i < BOOT_STEPS.length; i++) {
+      var s = BOOT_STEPS[i];
+      if (bootHas(s.k)) { done += s.w; continue; }
+      if (!cur) cur = s;
+    }
+    /* inside the step under way: ease toward its end over a few seconds, never reaching it */
+    if (cur) {
+      if (cur.k !== stepAt) { stepAt = cur.k; stepT = Date.now(); }
+      done += cur.w * 0.9 * (1 - Math.exp(-(Date.now() - stepT) / 4000));
+    }
+    var p = Math.max(BOOT.shown, Math.min(100, done));
+    BOOT.shown = p;
+    fill.style.transform = 'scaleX(' + (p / 100).toFixed(3) + ')';
+    pct.textContent = Math.floor(p) + '%';
+    el.setAttribute('aria-valuenow', String(Math.floor(p)));
+    if (cur && say.textContent !== cur.say) say.textContent = cur.say;
+    var age = Date.now() - BOOT.t0;
+    if (!cur) {
+      fill.style.transform = 'scaleX(1)'; pct.textContent = '100%'; el.setAttribute('aria-valuenow', '100');
+      return bootEnd();
+    }
+    /* the timeout: the spot is in and the 3D is not. In, with a word, and the mound finishes warming */
+    if (BOOT.spot && BOOT.fonts && age > BOOT_CAP_MS) {
+      BOOT.capped = true;
+      $('boot-say').textContent = 'the ballpark is still loading. it finishes on the mound.';
+      setTimeout(function () { bootEnd(true); }, BOOT_SAY_MS);
+      return;
+    }
+    /* the spot never came: the home's error and its try again */
+    if (!BOOT.spot && age > BOOT_SPOT_MS) { bootFail(); return; }
+    setTimeout(tick, 100);
+  })();
+}
+function bootFail() {
+  bootEnd(true);
+  $('h-load').hidden = true;
+  var er = $('h-err');
+  er.hidden = false;
+  er.innerHTML = '<p>today\'s spot did not load.</p><button class="btn ghost" type="button" onclick="location.reload()">try again</button>';
 }
 
 /* The arsenal as a break chart, seen from the pitcher's side: induced vertical
@@ -344,13 +621,18 @@ function renderStreak() {
   var st = streakNow();
   var line = '<b>' + st.cur + '</b> ' + (st.cur === 1 ? 'door' : 'doors') + ' shut in a row' + (st.best > st.cur ? ' · best ' + st.best : '');
   $('h-streak').innerHTML = line;
+  /* the streak pulses when it is new to this page: the first look with one going, or one more */
+  if (st.cur > 0 && st.cur !== S.streakSeen) {
+    S.streakSeen = st.cur;
+    var hs = $('h-streak'); hs.classList.remove('pulse'); void hs.offsetWidth; hs.classList.add('pulse');
+  }
   var acct = S.mode === 'daily' && S.dailyResult && S.dailyResult.account;
   if (acct && acct.rank != null) line += ' · #' + acct.rank + ' of ' + acct.players + ' today';
   $('r-streak').innerHTML = S.mode === 'daily' ? line : '';
 }
 
 function renderHomeState() {
-  var d = S.daily, r = S.dailyResult;
+  var d = S.daily, r = S.dailyResult, hs = S.dailyScn || S.scn;
   var take = $('b-take');
   if (r) {
     $('h-go').hidden = true;
@@ -359,7 +641,7 @@ function renderHomeState() {
     done.hidden = false;
     var dp = Math.round(r.percentile);
     done.innerHTML =
-      '<div class="d-top"><div><p class="dc-lbl">today · #' + esc(S.scn.number) + '</p><p class="d-out ' + r.outcome + '">' + esc(C.OUTCOME_LABEL[r.outcome]) + '</p></div>' +
+      '<div class="d-top"><div><p class="dc-lbl">today · #' + esc(hs.number) + '</p><p class="d-out ' + r.outcome + '">' + esc(C.OUTCOME_LABEL[r.outcome]) + '</p></div>' +
       (r.vsReal ? '<span class="vs-pill ' + esc(r.vsReal) + '">' + esc(VS_SHORT[r.vsReal]) + '</span>' : '') + '</div>' +
       '<div class="d-mid"><div class="strip">' + stripHTML(r.strip) + '</div>' +
       '<div class="d-stats"><span><b>' + esc(r.pitches) + '</b> ' + (r.pitches === 1 ? 'pitch' : 'pitches') + '</span>' +
@@ -367,7 +649,7 @@ function renderHomeState() {
       '<div class="d-act"><button class="btn take sm" type="button" id="d-see">see it again</button>' +
       '<button class="btn dk" type="button" id="d-share">share</button>' +
       '<button class="btn dk" type="button" id="d-again">run it back</button></div>' +
-      '<p class="d-tmrw">back tomorrow for #' + esc(S.scn.number + 1) + '.</p>';
+      '<p class="d-tmrw">back tomorrow for #' + esc(hs.number + 1) + '.</p>';
     $('d-share').addEventListener('click', function () { share(r); });
     $('d-see').addEventListener('click', function () { S.mode = 'daily'; S.result = r; renderResult(); show('s-result'); });
     $('d-again').addEventListener('click', practice);
@@ -378,6 +660,8 @@ function renderHomeState() {
     take.textContent = d && d.pitchNo > 0 ? 'back to the mound · pitch ' + (d.pitchNo + 1) : 'take the mound';
   }
   renderStreak();
+  if (MU) MU.homeRow($('h-surv')).then(placePill);
+  placePill();
 }
 
 /* the home's stadium: the stills, one after another, slowly. CSS does the pan and the fade (transform
@@ -413,8 +697,14 @@ function buildMound() {
   if (S.grid) return;
   if (!S.scene) S.scene = use3d() ? new Pending($('m-canvas')) : new M.Scene($('m-canvas'));
   $('m-scene').classList.toggle('s3d', !!S.scene.is3d);
-  /* the 3D module lands after this: put the aim on its zone then */
-  if (S.scene.arrived) S.scene.arrived.then(function (st) { return st.ready; }).then(function () { if (document.body.dataset.screen === 's-mound') relayout(); });
+  /* the 3D module lands after this: put the aim on its zone then. If it is still on its way (the
+     loading screen stopped waiting at BOOT_CAP_MS), the mound says it is warming up and the zone is
+     not there until it is ready: never a bare zone over a black field */
+  if (S.scene.arrived) {
+    var sc = $('m-scene'), warm = function () { sc.classList.remove('warming'); };
+    if (!(S.scene.real && S.scene.real.loaded)) sc.classList.add('warming');
+    S.scene.arrived.then(function (st) { return st.ready; }).then(function () { warm(); if (document.body.dataset.screen === 's-mound') relayout(); }, warm);
+  }
   /* AIM ON THE FIELD (the owner, 2026-10-22): the crosshair on the stage's own zone (aim.js), with
      the heat, the pitch dots and the preview's line in the same box. S.grid keeps its old name: it
      is the aim, the only grid on the mound. A drag or a mouse over it moves the break preview. */
@@ -423,6 +713,28 @@ function buildMound() {
   $('m-scene').insertBefore(S.grid.el, $('m-dbg'));
   /* the live field minimap: built into its slot, shown after the first play of the outing */
   S.mini = window.STD_MINIMAP ? window.STD_MINIMAP.create($('m-mini')) : null;
+  buildArsenal();
+  /* the number keys pick a pitch, on the mound, between pitches */
+  document.addEventListener('keydown', function (e) {
+    if (document.body.dataset.screen !== 's-mound' || e.ctrlKey || e.metaKey || e.altKey) return;
+    /* C challenges the call while the button is up */
+    if ((e.key === 'c' || e.key === 'C') && !$('m-abs-b').hidden) { e.preventDefault(); challengeIt(); return; }
+    if ((e.key === 'p' || e.key === 'P') && !$('m-run').hidden && !$('m-po').hidden) { e.preventDefault(); pickoffIt(); return; }
+    if ((e.key === 'q' || e.key === 'Q') && !$('m-run').hidden) { e.preventDefault(); setSlide(!S.slide); return; }
+    if (S.busy) return;
+    if (S.meter && S.meter.running()) return;
+    if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
+    var k = /^[1-9]$/.test(e.key) ? +e.key - 1 : -1, a = S.scn.pitcher.arsenal[k];
+    if (!a) return;
+    e.preventDefault();
+    pickType(a.type);
+  });
+  wireMound();
+}
+/* The pitch buttons for the spot's closer. Built with the mound, and again when Survivor or the
+   archive puts a different closer on it. */
+function buildArsenal() {
+  S.arsFor = S.scn.id;
   var ars = $('m-arsenal');
   ars.innerHTML = '';
   ars.dataset.n = S.scn.pitcher.arsenal.length;
@@ -448,21 +760,9 @@ function buildMound() {
   });
   fitNames();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
-  /* the number keys pick a pitch, on the mound, between pitches */
-  document.addEventListener('keydown', function (e) {
-    if (document.body.dataset.screen !== 's-mound' || e.ctrlKey || e.metaKey || e.altKey) return;
-    /* C challenges the call while the button is up */
-    if ((e.key === 'c' || e.key === 'C') && !$('m-abs-b').hidden) { e.preventDefault(); challengeIt(); return; }
-    if ((e.key === 'p' || e.key === 'P') && !$('m-run').hidden && !$('m-po').hidden) { e.preventDefault(); pickoffIt(); return; }
-    if ((e.key === 'q' || e.key === 'Q') && !$('m-run').hidden) { e.preventDefault(); setSlide(!S.slide); return; }
-    if (S.busy) return;
-    if (S.meter && S.meter.running()) return;
-    if (e.target && e.target.closest && e.target.closest('input, textarea, select, .sheet')) return;
-    var k = /^[1-9]$/.test(e.key) ? +e.key - 1 : -1, a = S.scn.pitcher.arsenal[k];
-    if (!a) return;
-    e.preventDefault();
-    pickType(a.type);
-  });
+}
+/* the mound's own controls, wired once */
+function wireMound() {
   $('m-throw').addEventListener('click', throwIt);
   $('m-abs-b').addEventListener('click', challengeIt);
   $('m-po').addEventListener('click', pickoffIt);
@@ -620,12 +920,16 @@ function aimPoint(cell, at) {
 
 function enterMound() {
   buildMound();
+  /* a different closer (Survivor's next spot, an archive day): his own pitch buttons */
+  if (S.arsFor !== S.scn.id) { buildArsenal(); speedLabels(); S.grid.setMarks({}); }
+  $('m-proxy').hidden = S.scn.resolution !== 'proxy';
   stopMeter(); meterDone();
   S.scene.setScenario(S.scn);
   S.type = null; S.cell = null; S.at = null; S.lastMarker = null; S.paintedN = null;
   clearTimeout(S.endWinT); S.endWin = null; S.absBusy = false;
   if (S.mini) S.mini.reset();
   show('s-mound');
+  setPitcher();
   setBatter(true);
   renderHud(S.outing);
   if (S.outing.pitchNo === 0) pbp('', batterAt(S.outing.batterIndex).name + ' leads off.');
@@ -634,6 +938,17 @@ function enterMound() {
   if (DEBUG) { $('m-dbg').hidden = false; $('m-dbg').textContent = 'seed ' + S.outing.seed + ' · ' + S.outing.mode; }
 }
 
+/* WHO YOU PITCH AS (the owner, 2026-11-02): the closer and his club over the at bat row, every mode.
+   The full name; it shortens (names.js) only when the line has no room for it. */
+function setPitcher() {
+  var p = S.scn.pitcher || {}, c = window.STD_CLUB_NAMED ? window.STD_CLUB_NAMED(p.team) : null;
+  var club = c ? c.nick : String(p.team || '').trim();   // the club's whole name until clubs.js is in
+  var nm = $('m-pname');
+  nm.textContent = p.name || '';
+  $('m-pteam').textContent = club;
+  $('m-pit').setAttribute('aria-label', 'pitching: ' + (p.name || '') + (club ? ', ' + club : ''));
+  if (p.name && nm.scrollWidth > nm.clientWidth + 1) nm.textContent = lastName(p.name);
+}
 function setBatter(first) {
   var b = batterAt(S.outing.batterIndex);
   /* every at bat starts with the drawer shut (the owner, 2026-10-27), before the stage frames the
@@ -663,7 +978,8 @@ function setClub(el, colors) {
   if (colors && colors[1]) el.style.setProperty('--club2', colors[1]); else el.style.removeProperty('--club2');
 }
 function renderHud(st) {
-  var sit = S.scn.situation;
+  /* rules 8: the half being pitched (st.half), else the spot's own inning */
+  var sit = st && st.half && st.half.inning ? st.half : S.scn.situation;
   setClub($('m-usclub'), S.scn.pitcher.teamColors);
   // the hitters' club, from the same rule the 3D kit uses (clubs.js, loaded by index.html); grey until it is
   var them = window.STD_BATTING_CLUB ? window.STD_BATTING_CLUB({ title: S.scn.title, scenarioId: S.scn.id, pitcher: S.scn.pitcher }) : null;
@@ -771,7 +1087,9 @@ function stepLine() {
   if (!el) return;
   var say = '';
   if (S.busy || !S.outing || S.outing.status !== 'live') say = '';
-  else if (S.meter && S.meter.running()) say = S.meter.stage && S.meter.stage() === 'effort' ? 'set your power' : 'tap when it hits the circle';
+  /* the meter says its own tap on the panel itself (meter-ui.js, the cue: the owner, 2026-10-30), so
+     the line over it stays empty: one message, on the thing to tap */
+  else if (S.meter && S.meter.running()) say = '';
   else if (!S.type) say = 'pick a pitch';
   else if (S.cell == null) say = 'aim: drag or tap the zone';
   else say = 'tap throw';
@@ -1156,15 +1474,18 @@ function throwIt() {
   var run = S.meter.run({
     quick: !!S.slide,
     command: ap.command, practice: S.mode === 'practice', repeat: repeatOf(type), pitch: ap,
-    onStage: stepLine,
     verb: S.outing.shutItLive ? 'shut it' : 'release',
     label: ap.name + ' \u00b7 ' + M.cellWords(cell, bt.bats),
     /* the step line under the meter says what to do; the meter's own corner keeps its word for after the tap */
     hint: ' ',
     place: meterPlace(bt),
-    onSnap: function () { sound('snap'); try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} },
+    /* the zone is a stop too while the meter runs (the owner, 2026-10-30): its taps go to the meter,
+       never to the aim. RE-AIM on the panel (or Escape) cancels it to aim again */
+    zone: S.grid.el,
+    onSnap: function () { sound('snap'); if (SFX) SFX.buzz(12); },
+    onStage: function (st) { stepLine(st); if (SFX) SFX.tick(); },
     /* a perfect release: the snap again, and with a perfect power a second one like a mitt's pop */
-    onPerfect: function (level) { sound('snap', 60); if (level === 2) sound('pop', 140); },
+    onPerfect: function (level) { if (SFX) SFX.chime(level); },
   });
   stepLine();
   absButton();
@@ -1289,11 +1610,12 @@ function fire(call) {
       if (byBatter) { pbp('called strike', lastName(batter.name) + ' challenges.'); return; }
       var t = playText(pr, batter, res.state);
       pbp(t.tag, t.rest + (painted ? ' \u00b7 painted' : ''));
-      renderHud(res.state);
+      renderHud(pr.halfOver ? halfEndState(res.state, pr.halfOver) : res.state);
+      moment(pr, res.state);
       var sl = stealText(pr.steal);
       if (sl) { pbp(sl.tag, sl.rest, true); if (pr.steal.result === 'out') baseOut(pr.steal.to); }
     });
-    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: sound, field: hudRunners } };
+    var opts = { pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick, hooks: { call: rv.call, land: rv.land, sound: pitchSounds(pr), field: hudRunners } };
     return (S.scene.is3d ? S.scene.play(opts) : AN.play(S.scene, opts)).then(function () {
       rv.now();
       S.lastMarker = S.scene.toScreen(pr.actual);
@@ -1311,6 +1633,13 @@ function fire(call) {
     }).then(function () {
       var pr = res.pitchResult;
       S.outing = res.state;
+      /* rules 8: three outs in a half before the last. His team bats its real half on the card, then
+         the next half (still busy until the mound is back) */
+      if (pr.halfOver && S.outing.status === 'live') return halfBreak(pr.halfOver).then(function () {
+        settle();
+        if (S.scene.setTarget) S.scene.setTarget(null);
+        nextHalf(pr.halfOver);
+      });
       // the last pitch: the play has finished on screen, then a beat, then the result (still busy).
       // A ball four that ended it can still be challenged: the button stays up a moment first.
       if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () {
@@ -1404,22 +1733,34 @@ function pickoffIt() {
   S.grid.setDisabled(true);
   updateThrow();
   var basesBefore = st.bases | 0;
+  /* The broadcast of the throw is not his view of the plate, so the zone steps aside, as it does for
+     a pitch (the owner, 2026-11-02: the zone sat over the infield through the pickoff). It goes on the
+     tap, as he steps off, and at once (po-off: no fade), since the broadcast cuts to the throw; every path
+     below brings it back */
+  var real0 = S.scene && S.scene.real;
+  if (real0 && typeof real0.pickoff === 'function') $('m-scene').classList.add('flying', 'po-off');
   API.pickoff(st.outingId).then(function (res) {
     var ev = res.pickoff;
     /* the throw on the field, when the stage plays one (stage.js pickoff, the camera agent's #744);
        without it the line and the scorebug say what happened */
     var real = S.scene && S.scene.real;
-    var thrown = real && typeof real.pickoff === 'function'
+    var plays = real && typeof real.pickoff === 'function';
+    var thrown = plays
       ? Promise.resolve(real.pickoff({ po: ev, bases: basesBefore, hooks: { sound: sound, field: hudRunners } })).catch(function (e) { if (window.console) console.warn(e); })
       : Promise.resolve();
     return thrown.then(function () { return res; });
   }).then(function (res) {
     var ev = res.pickoff;
+    $('m-scene').classList.remove('flying', 'po-off');
     hudRunners(null);
     S.outing = res.state;
     var t = pickoffText(ev, res.state);
     pbp(t.tag, t.rest);
     if (ev.out) baseOut(ev.base);
+    if (ev.halfOver && S.outing.status === 'live') {
+      renderHud(halfEndState(S.outing, ev.halfOver));
+      return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { return halfBreak(ev.halfOver); }).then(function () { settle(); nextHalf(ev.halfOver); });
+    }
     renderHud(S.outing);
     if (S.outing.status === 'over') return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () { settle(); return finish(); });
     S.busy = false;
@@ -1427,6 +1768,7 @@ function pickoffIt() {
     updateThrow();
   }).catch(function (e) {
     S.busy = false;
+    $('m-scene').classList.remove('flying', 'po-off');
     S.grid.setDisabled(false);
     updateThrow();
     toast('that throw did not go. try again.');
@@ -1516,6 +1858,8 @@ function absSvg(pr, batter, color) {
     '<line class="ar-edge" x1="' + f(ex) + '" y1="' + f(ey) + '" x2="' + f(x) + '" y2="' + f(y) + '"/>' +
     '<circle class="ar-ball" cx="' + f(x) + '" cy="' + f(y) + '" r="' + R + '" fill="' + color + '"/></svg>';
 }
+/* the words under the replay: the ball's edge to the zone the ABS read (pr.abs.t, rules 9 on), so a
+   strike reads "in" and a ball "off"; before rules 9, the centre's distance (pr.abs.d) */
 function inchWords(d) {
   var a = Math.abs(d);
   if (a < 0.05) return 'on the edge';
@@ -1532,7 +1876,7 @@ function absReplay(pr, batter) {
   box.className = 'absr ' + (ch.overturned ? 'over' : 'stands') + (prefs.quick ? ' quick' : '');
   box.innerHTML = '<div class="ar-zone">' + absSvg(pr, batter, ap ? colorOf(ap) : '#f4f5f7') + '</div>' +
     '<div class="ar-txt"><span class="ar-k"><b>abs</b> ' + esc(who) + '</span>' +
-    '<span class="ar-d"><b>' + (pr.abs.strike ? 'strike' : 'ball') + '</b> ' + esc(inchWords(pr.abs.d)) + '</span>' +
+    '<span class="ar-d"><b>' + (pr.abs.strike ? 'strike' : 'ball') + '</b> ' + esc(inchWords(pr.abs.t != null ? pr.abs.t : pr.abs.d)) + '</span>' +
     '<span class="ar-v">' + (ch.overturned ? 'overturned' : 'call stands') + '</span></div>';
   box.hidden = false;
   $('m-dock').classList.add('replaying');
@@ -1620,10 +1964,45 @@ function lastCall() {
   }, ms);
 }
 
+/* ---- between two of his halves (rules 8, CONTRACT.md 5j) -------------------------------------------
+   The owner (2026-10-30): finish the 8th, see his team bat on the box score, then back out for the 9th.
+   The pitch (or the steal or pickoff) that makes the third out of a half before the last carries
+   halfOver. The scorebug shows that third out on the half it ended, then the card (box-ui.js, its own
+   screen, a few seconds, a tap skips it), then the mound for the next half: its leadoff man, the
+   score his team left, nobody on. No grade, nothing to read before going on. */
+function halfEndState(st, ho) {
+  return Object.assign({}, st, { outs: 3, bases: 0, count: { b: 0, s: 0 }, score: ho.done.score,
+    half: { inning: ho.done.inning, half: ho.done.half } });
+}
+function halfBreak(ho) {
+  var BOX = window.STD_BOX_UI;
+  if (!BOX) return Promise.resolve();
+  return wait(prefs.quick ? END_BEAT_MS / 1.8 : END_BEAT_MS).then(function () {
+    stopMeter(); meterDone(); closeDrawer(true);
+    show('s-half');
+    return BOX.play(ho, { quick: !!prefs.quick });
+  }).then(function () {
+    show('s-mound');
+  });
+}
+function nextHalf(ho) {
+  S.lastMarker = null;
+  S.grid.setMarks({});
+  hudRunners(null);
+  if (S.mini) S.mini.reset();
+  renderHud(S.outing);
+  setBatter(true);
+  var nx = ho.next, b = batterAt(S.outing.batterIndex);
+  pbp(isTied(S.outing) ? 'tied' : '', (nx.half === 'top' ? 'top' : 'bottom') + ' of the ' + ord(nx.inning) + '. ' + b.name + ' leads off.');
+  updateThrow();
+  if (S.sizeDue) { S.sizeDue = false; relayout(); } else drawPreview();
+}
+
 /* ---- the end ----------------------------------------------------------------------------- */
 
 function finish() {
   return API.finishOuting(S.outing.outingId).then(function (r) {
+    if (S.mode === 'survivor') return survivorNext(r);
     S.result = r;
     if (S.mode === 'daily') {
       S.dailyResult = r;
@@ -1633,6 +2012,211 @@ function finish() {
     renderResult();
     show('s-result');
     renderHomeState();
+    if (SFX) {
+      SFX.bed(0); SFX.sting(r.outcome);
+      if (r.outcome === 'door_shut') { SFX.cheer(); SFX.buzz([30, 60, 30, 60, 90]); }
+      else if (r.outcome === 'walk_off' || r.outcome === 'doors_open') SFX.groan(1);
+    }
+    if (r.outcome === 'door_shut') confetti();
+  });
+}
+
+/* The daily's result carries the save (signed out) and the vote for tomorrow. Neither on practice or
+   an archive day. Both are blocks the player reads when they choose; nothing opens. */
+function renderModes() {
+  if (!MU) return;
+  var daily = S.mode === 'daily';
+  if (daily) MU.saveBlock($('r-save'), { account: S.result && S.result.account, justSaved: S.saved });
+  else { $('r-save').hidden = true; }
+  if (daily && S.dailyResult) MU.voteBlock($('r-vote')); else { $('r-vote').hidden = true; voteRow(null); }
+}
+/* The result's menu carries one row to the vote while it is open (the owner, 2026-10-30): on a phone
+   the vote's tile sits below the menu. The row only scrolls to it; it never opens anything. */
+function voteRow(v) {
+  var b = $('r-vote-go'), on = !!(v && v.open && v.candidates && v.candidates.length === 2) && S.mode === 'daily';
+  var was = !b.hidden;
+  b.hidden = !on;
+  if (on) b.querySelector('span').textContent = v.myVote ? 'your vote is in' : v.canVote ? 'pick the next spot' : 'see the two spots';
+  if (was && !on && b.classList.contains('sel')) navSelect($('r-coach'));
+}
+function jumpToVote() {
+  var t = $('r-vote');
+  if (t.hidden) return;
+  t.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  var f = t.querySelector('.vt-o:not([disabled]), [data-save]') || t;
+  if (f === t) t.setAttribute('tabindex', '-1');
+  try { f.focus({ preventScroll: true }); } catch (e) {}
+}
+
+/* ---- Survivor (CONTRACT.md 17): a run of saves --------------------------------------------------
+   The home's row opens its screen; start plays the day's run on the mound as the daily does. A
+   door shut goes straight on: a moment with the saves and the next closer (#s-next), then the next
+   spot. Anything else ends the run on the Survivor screen, with its board. No result screen and no
+   grade between spots. */
+function startSurvivor() {
+  if (!API.survivorStart) return;
+  Promise.resolve().then(function () { return API.survivorStart(); }).then(function (go) {
+    playSurvivor(go);
+  }).catch(function (e) {
+    var used = e && /one run a day/.test(e.message || '');
+    toast(used ? 'today\'s run is used. next one opens at midnight eastern.' : 'the run didn\'t start. try again.');
+    if (MU) MU.showSurvivor();
+    if (!used && window.console) console.warn(e);
+  });
+}
+function playSurvivor(go) {
+  S.scn = go.scenario;
+  S.mode = 'survivor';
+  S.outing = go.state;
+  S.result = null;
+  if (S.outing.status === 'over') return finish();
+  enterMound();
+  pbp('survivor', (go.saves ? go.saves + (go.saves === 1 ? ' save. ' : ' saves. ') : '') + batterAt(S.outing.batterIndex).name + ' leads off.');
+}
+function survivorNext(r) {
+  var sv = r.survivor || {};
+  if (sv.over) {
+    /* the run is over: back to the home's Survivor tab, with its board */
+    renderHomeState();
+    show('s-home');
+    setTab('surv', 'snap', true);
+    drawHero();
+    return;
+  }
+  /* the next spot loads while the saves show */
+  var next = Promise.resolve().then(function () { return API.survivorStart(); });
+  return next.then(function (go) {
+    show('s-next');
+    return MU.between(sv.saves, go.scenario, !!prefs.quick).then(function () {
+      /* THE VIDEO BREAK between two spots (ads.js): a player who is not Pro, after the saves show.
+         A Pro player goes straight on. */
+      var ent = MU.ent && MU.ent(), pro = !!(ent && ent.pro);
+      return window.STD_ADS ? STD_ADS.between(pro) : null;
+    }).then(function () { playSurvivor(go); });
+  }).catch(function (e) {
+    toast('the next spot didn\'t load. try again.');
+    renderHomeState();
+    show('s-home');
+    setTab('surv', 'snap', true);
+    if (window.console) console.warn(e);
+  });
+}
+/* ---- THE MODES SWITCHER on the home (the owner, 2026-11-02): daily, survivor and archive. A tab swaps
+   the panel under it, and nothing opens by itself. The pick is kept on the device (TAB_KEY) and the
+   page starts on daily when there is none. The move: the pill slides to the tab; the panels cross-slide
+   in the direction of travel with a short fade (transform and opacity only), while the panels' box
+   eases from one height to the other so the page below never jumps. A second tap mid-move lands the
+   first move at once, then starts the next, so the wrong panel never shows. */
+var TAB_KEY = 'std_home_tab_v1', TABS = ['daily', 'surv', 'arc'], TAB_MS = 290, tab = 'daily', tabMove = null;
+function tabBtn(t) { return document.querySelector('#h-modes [data-tab="' + t + '"]'); }
+function placePill() {
+  var live = TABS.filter(function (t) { var b = tabBtn(t); return b && !b.hidden; });
+  var bar = $('h-modes');
+  bar.style.setProperty('--n', live.length);
+  bar.style.setProperty('--i', Math.max(0, live.indexOf(tab)));
+}
+function fillTab(t) {
+  if (t === 'daily' && window.STD_BOARD && window.STD_BOARD.peek) window.STD_BOARD.peek();
+  if (t === 'surv' && MU) MU.showSurvivor();
+  if (t === 'arc' && MN.renderPast) MN.renderPast();
+}
+function landTab() { if (tabMove) { clearTimeout(tabMove.t); tabMove.land(); } }
+/* how: 'snap' with no move; keep: remember the pick on this device */
+function setTab(t, how, keep) {
+  var b = tabBtn(t);
+  if (!b || b.hidden) t = 'daily';
+  landTab();
+  var from = tab, A = $('hp-' + from), B = $('hp-' + t);
+  if (SFX && how !== 'snap' && from !== t) SFX.tab();
+  tab = t;
+  TABS.forEach(function (x) {
+    var e = tabBtn(x); if (!e) return;
+    var on = x === t;
+    e.classList.toggle('on', on); e.setAttribute('aria-selected', on ? 'true' : 'false'); e.tabIndex = on ? 0 : -1;
+  });
+  placePill();
+  if (keep) { try { localStorage.setItem(TAB_KEY, t); } catch (e) {} }
+  fillTab(t);
+  if (from === t) return;
+  var panes = $('h-panes');
+  var seen = document.body.dataset.screen === 's-home' && !$('h-main').hidden;
+  if (how === 'snap' || !seen) {
+    A.hidden = true; A.classList.remove('on'); B.hidden = false; B.classList.add('on');
+    return;
+  }
+  var still = false;
+  try { still = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  var dir = TABS.indexOf(t) > TABS.indexOf(from) ? 1 : -1, dx = still ? 0 : 26;
+  /* the start: B laid over A, off to the side of travel and clear; the box held at A's height */
+  var h0 = panes.offsetHeight;
+  B.hidden = false; B.classList.add('on', 'go');
+  B.style.transform = 'translate3d(' + (dir * dx) + '%,0,0)'; B.style.opacity = '0';
+  var h1 = B.offsetHeight;
+  panes.style.height = h0 + 'px';
+  panes.classList.add('anim');
+  A.classList.add('mv'); B.classList.add('mv');
+  void panes.offsetHeight;
+  /* the end state; the transitions carry it */
+  panes.style.height = h1 + 'px';
+  A.style.transform = 'translate3d(' + (-dir * dx) + '%,0,0)'; A.style.opacity = '0';
+  B.style.transform = ''; B.style.opacity = '';
+  tabMove = {
+    land: function () {
+      tabMove = null;
+      A.hidden = true; A.classList.remove('on', 'mv'); A.style.transform = ''; A.style.opacity = '';
+      B.classList.remove('go', 'mv');
+      panes.classList.remove('anim'); panes.style.height = '';
+    },
+  };
+  tabMove.t = setTimeout(tabMove.land, TAB_MS);
+}
+function restoreTab() {
+  var t = 'daily';
+  try { t = localStorage.getItem(TAB_KEY) || 'daily'; } catch (e) {}
+  setTab(TABS.indexOf(t) < 0 ? 'daily' : t, 'snap');
+}
+function wireTabs() {
+  TABS.forEach(function (t) { var b = tabBtn(t); if (b) b.addEventListener('click', function () { setTab(t, null, true); }); });
+  /* the arrows walk the tabs, as a tablist does */
+  $('h-modes').addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var live = TABS.filter(function (x) { var b = tabBtn(x); return b && !b.hidden; });
+    var i = live.indexOf(tab) + (e.key === 'ArrowRight' ? 1 : -1);
+    if (i < 0 || i >= live.length) return;
+    e.preventDefault(); setTab(live[i], null, true); tabBtn(live[i]).focus();
+  });
+  /* a sideways swipe on the panels moves one tab; an upright drag stays a scroll (touch-action: pan-y) */
+  var sw = null;
+  $('h-panes').addEventListener('touchstart', function (e) {
+    sw = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, at: Date.now() } : null;
+  }, { passive: true });
+  $('h-panes').addEventListener('touchend', function (e) {
+    if (!sw || !e.changedTouches.length) return;
+    var dx = e.changedTouches[0].clientX - sw.x, dy = e.changedTouches[0].clientY - sw.y, quick = Date.now() - sw.at < 700;
+    sw = null;
+    if (!quick || Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    var live = TABS.filter(function (x) { var b = tabBtn(x); return b && !b.hidden; });
+    var i = live.indexOf(tab) + (dx < 0 ? 1 : -1);
+    if (i >= 0 && i < live.length) setTab(live[i], null, true);
+  }, { passive: true });
+}
+
+/* ---- the archive (Pro, CONTRACT.md 17): a past daily on its own spot and seed. Only reachable
+   when entitlements() says archive, which is false for everyone until Pro exists. */
+function playArchive(day) {
+  if (MN.isOpen()) MN.close(true);
+  API.getScenario(day).then(function (scn) {
+    return API.startOuting(scn.id, null, { mode: 'archive', day: day }).then(function (st) {
+      S.scn = scn;
+      S.mode = 'archive';
+      S.outing = st;
+      if (st.status === 'over') return finish();
+      enterMound();
+      pbp('archive', '#' + scn.number + '. ' + batterAt(st.batterIndex).name + ' leads off.');
+    });
+  }).catch(function (e) {
+    toast(e && /for Pro/.test(e.message || '') ? 'past dailies open later.' : 'that day didn\'t load. try again.');
+    if (window.console) console.warn(e);
   });
 }
 
@@ -1642,7 +2226,7 @@ function runsOf(r, st) { return r.runs != null ? r.runs : st && st.score ? st.sc
 function renderResult() {
   var r = S.result, s = S.scn, st = S.mode === 'daily' ? S.daily || S.outing : S.outing;
   var runs = runsOf(r, st);
-  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : (s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
+  $('r-eyebrow').textContent = S.mode === 'practice' ? 'practice · not scored' : (S.mode === 'archive' ? 'archive · ' : '') + (s.preview ? 'preview' : '#' + s.number) + ' · final · ' + s.title.toLowerCase();
   var o = $('r-outcome');
   o.textContent = C.OUTCOME_LABEL[r.outcome];
   o.className = 'outcome ' + r.outcome;
@@ -2065,6 +2649,7 @@ function takeMound() {
 /* ---- boot --------------------------------------------------------------------------------- */
 
 function boot() {
+  bootLoader();
   try { if (window.STD_AUTH && window.STD_AUTH.boot) window.STD_AUTH.boot(); } catch (e) {}
   try {
     if (window.STD_AUTH && window.STD_AUTH.onChange) window.STD_AUTH.onChange(function () {
@@ -2073,28 +2658,66 @@ function boot() {
       $('b-profile').setAttribute('aria-label', st.signedIn ? 'Account' : 'Sign in');
       if (MN.current() === 'sheet-auth') MN.renderAuth();
       if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
+      if (document.body.dataset.screen === 's-result' && S.result) renderModes();
+      if (document.body.dataset.screen === 's-home' && tab === 'surv' && MU) MU.showSurvivor();
+      if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
     });
   } catch (e) {}
+  /* a daily played signed out, posted on the sign-in (api.js claim): say where it landed */
+  window.addEventListener('std-claimed', function (e) {
+    var acct = e.detail && e.detail.account;
+    if (!acct || !S.dailyResult) return;
+    S.dailyResult.account = acct;
+    S.saved = true;
+    if (S.mode === 'daily') S.result = S.dailyResult;
+    if (MN.current() === 'sheet-auth') MN.close(true);
+    if (document.body.dataset.screen === 's-result') { renderStreak(); renderModes(); }
+    if (document.body.dataset.screen === 's-board') window.STD_BOARD.load();
+  });
+  $('r-vote-go').addEventListener('click', jumpToVote);
+  if (MU) MU.init({
+    onVote: voteRow,
+    signIn: function () { MN.show('auth'); },
+    onSurvivor: startSurvivor,
+    onBack: function () { renderHomeState(); show('s-home'); drawHero(); },
+  });
+  wireTabs();
   window.STD_BOARD.init({
     day: S.day, before: postIfOwed,
     played: function () { return !!S.dailyResult; },
     onBack: function () { show(boardFrom); if (boardFrom === 's-home') { renderHomeState(); drawHero(); } },
     onSignIn: function () { MN.show('auth'); },
     onPlay: function () { show('s-home'); takeMound(); },
+    pending: function () { return API.pending ? API.pending() : null; },
+    saveLabel: MU ? MU.SAVE_LABEL : null,
   });
+  MN.onChange = backSync;
   MN.init({
-    hist: hist, today: S.day, prefs: prefs, board: showBoard,
+    hist: hist, today: S.day, prefs: prefs, board: showBoard, onArchive: playArchive,
+    onPast: function () { if (MN.isOpen()) MN.close(true); if (document.body.dataset.screen !== 's-home') { renderHomeState(); show('s-home'); drawHero(); } setTab('arc', null, true); },
+    archiveDays: MU ? MU.archiveDays : null,
     onPref: function (k, v) {
       if (k === 'theme') { setTheme(v); return; }
       prefs[k] = v; savePrefs();
-      if (k === 'sound' && v) sound('pop');
+      if (k === 'sound') soundSwitch(v);
       if (k === 'meter') speedLabels();
     },
   });
+  /* the mound's speaker: the same switch as settings, kept in std_ui_v1.sound */
+  $('m-sound').addEventListener('click', function () { soundSwitch(!prefs.sound); });
+  soundSwitch(prefs.sound !== false);
+  /* a soft tap under the buttons; the throw, the meter and the tabs have their own */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button');
+    if (!b || !SFX || b.id === 'm-throw' || b.id === 'm-sound' || b.closest('.relm') || b.closest('#m-aim') || b.getAttribute('role') === 'tab' || TABS.some(function (t) { return tabBtn(t) === b; })) return;
+    SFX.tap();
+  }, true);
   $('b-theme').addEventListener('click', function () {
     setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
   $('b-take').addEventListener('click', takeMound);
+  $('m-home').addEventListener('click', homeWhenSettled);
+  $('menu-home').addEventListener('click', homeWhenSettled);
   $('r-again').addEventListener('click', practice);
   $('r-home').addEventListener('click', function () { renderHomeState(); show('s-home'); drawHero(); });
   $('r-share').addEventListener('click', function () { if (S.result) share(S.result); });
@@ -2103,9 +2726,12 @@ function boot() {
   initResultNav();
   /* the club table is a module (index.html): when it lands after the home screen, draw the matchup again */
   window.addEventListener('std-clubs', function () { if (S.scn && !$('h-main').hidden) renderMatchup(); });
+  window.addEventListener('std-clubs', function () { if (S.scn && document.body.dataset.screen === 's-mound') setPitcher(); });
 
+  if (MU) MU.entitlements().then(function (e) { MN.init({ ent: e }); if (tab === 'arc') MN.renderPast(); });
   API.getScenario(S.day).then(function (scn) {
     S.scn = scn;
+    S.dailyScn = scn;
     MN.init({ scn: scn });
     window.STD_BOARD.init({ scn: scn });
     renderHome();
@@ -2117,15 +2743,14 @@ function boot() {
     });
   }).then(function () {
     renderHomeState();
+    restoreTab();
   }).catch(function (e) {
-    $('h-load').hidden = true;
-    var er = $('h-err');
-    er.hidden = false;
-    er.innerHTML = '<p>today\'s spot did not load.</p><button class="btn ghost" type="button" onclick="location.reload()">try again</button>';
+    /* nothing to wait for: the error and its try again go up at once */
+    bootFail();
     if (window.console) console.warn(e);
   });
 }
 
-window.STD_UI = { state: S, cellWords: M.cellWords };
+window.STD_UI = { state: S, cellWords: M.cellWords, lastName: lastName };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

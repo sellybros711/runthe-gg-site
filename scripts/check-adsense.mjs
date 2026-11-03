@@ -89,19 +89,18 @@ for (const file of walk(ROOT).sort()) {
       if (adTag !== -1 && adTag < europe.index) fail('AdSense tag loads before the Europe consent default');
     }
   }
-  /* Our own "Do Not Sell or Share" link (assets/privacy-choices.js) replaces Google's floating
-   * bar, the owner's call (2026-10-29). The file sets the flag that suppresses the bar AND draws
-   * the link, so a page that has ads and lacks it shows the bar again, and a page that loaded it
-   * async could set the flag after the CMP read it. So: present, not async, before the ad tag. */
-  const adTagAt = src.search(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/);
-  if (adTagAt !== -1) {
-    const dns = src.match(/<script([^>]*)src="\/assets\/privacy-choices\.js\?v=\d+"([^>]*)><\/script>/);
-    if (!dns) fail('loads the ad tag without /assets/privacy-choices.js (the Do Not Sell link)');
-    else {
-      if (/\b(async|defer)\b/.test(dns[1] + dns[2])) fail('privacy-choices.js must load without async or defer');
-      if (dns.index > adTagAt) fail('privacy-choices.js loads after the ad tag (the flag would be set too late)');
-    }
-  }
+  /* GOOGLE'S US STATES OPT-OUT IS LEFT TO GOOGLE. Site PR 800 set googlefc.usstatesoptout.overrideDnsLink
+   * to replace Google's floating "Do Not Sell" bar with a footer link. That override works on Google Ad
+   * Manager only; on AdSense the bar stayed and the link opened nothing (the owner, 2026-10-29). A dead
+   * opt-out link is worse than none, so it was removed, and nothing may set the override again on AdSense. */
+  if (/overrideDnsLink/.test(src.replace(/<!--[\s\S]*?-->/g, ''))) fail('sets overrideDnsLink, which AdSense ignores: Google keeps its bar and a custom link opens nothing');
+
+  /* NO PLACEHOLDER UNIT ON A PAGE WITH THE AD TAG (2026-10-30). adsbygoogle.push({}) starts the first
+   * <ins class="adsbygoogle"> in the page that has not been started yet. A placeholder slot is never
+   * started, so it sat first in line and took the push meant for a unit built later in code: the NFL
+   * and College draft and season banners, Pitch's rails and banner, and golf's leaderboard rails went
+   * unfilled. A unit that is not ready to serve is left out of the page, not written in as zeros. */
+  if (/<ins[^>]*class=["']adsbygoogle["'][^>]*data-ad-slot=["']0+["']/.test(src.replace(/<!--[\s\S]*?-->/g, ''))) fail('has a placeholder ad unit (slot all zeros). It takes the next adsbygoogle.push() from a real unit, so leave it out of the page');
 
   if (!/rel=["']canonical["']/i.test(src)) fail('no canonical');
   if (!/<title>\s*\S/i.test(src)) fail('no title');
@@ -167,7 +166,7 @@ if (!fs.existsSync(path.join(ROOT, 'ads.txt'))) problems.push('ads.txt is missin
 /* Pages the owner asked to carry one unit at the bottom of every screen (2026-10-27): the unit sits
  * under all the screens in a data-ad-zone="page" block and is started once per load. The Fantasy
  * Challenge is a weekly lineup, not a live game, so nothing on it is played in real time. */
-const PAGE_ZONE_PAGES = new Set(['football/fantasy/index.html']);
+const PAGE_ZONE_PAGES = new Set(['football/fantasy/index.html', 'cfb/fantasy/index.html']);
 const MENU_ZONE_PAGES = new Set(['football/index.html', 'cfb/index.html', 'baseball/index.html', 'soccer/index.html']);
 /* Pages whose draft screen carries one pinned banner (the owner, 2026-10-28, live immediately):
  * built by draftAd() when the draft opens and emptied when it is left. Only a unit made inside

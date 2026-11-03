@@ -5,7 +5,7 @@
  * the pictures back as ImageBitmaps, which cost the page nothing to receive. stage.js falls back to
  * building on the main thread if this worker cannot start or answers with an error.
  */
-import { buildWorld, rigFor, bandFrames } from './world.js?v=5';
+import { buildWorld, rigFor, bandFrames } from './world.js?v=6';
 
 self.onmessage = async e => {
   // `dress` is what each player wears (outfits.js), drawn into the frames.
@@ -21,6 +21,8 @@ self.onmessage = async e => {
     }
     // The rooms are 80KB, so they are fetched only for a room, never for the menu's band.
     const { ROOMS, RIGS } = await import('./rooms.js?v=4');
+    // The grounds are not a venue, so they are not in rooms.js: grounds.js adds them to ROOMS.
+    if (String(vid).startsWith('grounds_')) await import('./grounds.js?v=1');
     const R = ROOMS[vid] || ROOMS.lawn;
     const W = buildWorld(R, rigFor(R, RIGS), seed, true, dress);
     const moved = [];

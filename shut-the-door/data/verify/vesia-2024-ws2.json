@@ -1,0 +1,182 @@
+{
+ "id": "vesia-2024-ws2",
+ "plan": "30",
+ "resolution": "real",
+ "gamePk": 775294,
+ "date": "2024-10-26",
+ "game": "World Series Game 2: New York Yankees at Los Angeles Dodgers",
+ "gameType": "W",
+ "pitcher": {
+  "id": 681911,
+  "name": "Alex Vesia",
+  "throws": "L",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "1.76 ERA, 5 SV, 66.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 2,
+  "bases": 7,
+  "score": {
+   "us": 4,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 68,
+   "batterId": 624431,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "681911": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Jose Trevino flies out to center fielder Tommy Edman.",
+   "feedEvent": "field_out",
+   "feedDescription": "Jose Trevino flies out to center fielder Tommy Edman.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Jose Trevino",
+   "batSideListed": "R",
+   "seasonLine": ".215/.288/.354, 8 HR"
+  }
+ ],
+ "realFaced": 1,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 1,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 657077,
+   "name": "Alex Verdugo",
+   "batSideListed": "L"
+  },
+  {
+   "id": 650402,
+   "name": "Gleyber Torres",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665742,
+   "name": "Juan Soto",
+   "batSideListed": "L"
+  },
+  {
+   "id": 592450,
+   "name": "Aaron Judge",
+   "batSideListed": "R"
+  },
+  {
+   "id": 519317,
+   "name": "Giancarlo Stanton",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665862,
+   "name": "Jazz Chisholm Jr.",
+   "batSideListed": "L"
+  },
+  {
+   "id": 665828,
+   "name": "Oswaldo Cabrera",
+   "batSideListed": "S"
+  },
+  {
+   "id": 683011,
+   "name": "Anthony Volpe",
+   "batSideListed": "R"
+  },
+  {
+   "id": 624431,
+   "name": "Jose Trevino",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1109,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 700,
+     "usage": 0.6312,
+     "velo": 93.4,
+     "pfxXin": 6.2,
+     "pfxZin": 20.3
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 352,
+     "usage": 0.3174,
+     "velo": 85.0,
+     "pfxXin": -7.0,
+     "pfxZin": 4.1
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 56,
+     "usage": 0.0505,
+     "velo": 85.5,
+     "pfxXin": 6.7,
+     "pfxZin": 14.2
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 1,
+     "usage": 0.0009,
+     "velo": 93.3,
+     "pfxXin": 7.7,
+     "pfxZin": 25.0
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=681911"
+  },
+  "postseason": {
+   "pitches": 93,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 58,
+     "usage": 0.6237,
+     "velo": 93.7,
+     "pfxXin": 6.8,
+     "pfxZin": 21.5
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 35,
+     "usage": 0.3763,
+     "velo": 85.5,
+     "pfxXin": -7.6,
+     "pfxZin": 4.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=681911"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 775294: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=775294",
+  "MLB Stats API schedule 2024-10-26 and live feed /api/v1.1/game/775294/feed/live",
+  "MLB Stats API people with 2024 season stats",
+  "Baseball Savant 681911 2024 season search (regular season and postseason) for the arsenal"
+ ]
+}

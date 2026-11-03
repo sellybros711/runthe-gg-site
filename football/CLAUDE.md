@@ -36,6 +36,7 @@ node football/check-boss.mjs          the boss battle (add go: going for it on f
 node football/check-overtime.mjs      a tie goes to overtime
 node football/check-simspeed.mjs      Slow and Slower pace by the drive, Normal untouched
 node football/check-freespin.mjs      the free re-spin: when it shows, what a watched or closed video does
+node football/check-banner.mjs        the closeable bottom banner covers no button at first view
 node football/check-fantasy.mjs       the Fantasy Challenge (--quick: the engine, no browser)
 psql ... -f supabase/test/launch_preflight.sql    the live modes' migrations are applied
 ```
@@ -83,6 +84,14 @@ all `node football/<path>`. Their probes are in `football/build/test/`.
   of the three paid re-spins and it costs nothing: `R.freeRespin` never touches `respinsUsed` or the
   fee ladder. The cap (three a day), the sign in and "watched to the end" are the server's
   (`ad_reward_*`, kind `ps_respin`), reached through `window.RTG_AD`. The page never grants one.
+
+**The bottom banner**
+
+- With the closeable banner from `assets/rtg-ads.js` up, no button or link may sit under it at
+  first view (the owner's call, 2026-10-29). Layout keys on `body.rtg-sticky-on`, never on the
+  ad filling, so nothing moves when the ad arrives; `clearBand()` moves the first lower block
+  that would straddle it to just under the fold. A new block on the front page, the board, the
+  results or a Fantasy banner screen has to keep `check-banner` and check-fantasy's banner section green.
 
 **The Fantasy Challenge**
 

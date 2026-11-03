@@ -253,7 +253,7 @@
             if (Y <= 100.2) lineY(Math.round(Y / 5) * 5, Math.abs(Math.round(Y / 5) * 5 - 100) < 0.1 || Math.round(Y / 5) === 0 ? 0.22 : 0.11);
             lineY(110, 0.22);
             if (Y > 0.3 && Y < 99.7 && Math.round(Y) % 5 !== 0) {
-              var yi = Math.round(Y), hx = [0.33, 23.58, 29.75, FIELD_W - 0.33];
+              var yi = Math.round(Y), hw = opt && opt.hash ? opt.hash : 3.08, hx = [0.33, FIELD_W / 2 - hw, FIELD_W / 2 + hw, FIELD_W - 0.33];
               for (var q = 0; q < 4; q++) if (Math.abs(X - hx[q]) < 0.34) lineY(yi, 0.11);
             }
             if (Y < 100 && yardNumber(X, Y)) cover = Math.max(cover, 0.95);

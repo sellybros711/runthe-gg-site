@@ -267,6 +267,13 @@ export class Crew {
         tracks.push({ i: idx[node], q: prop === 'quaternion', interp: tr.createInterpolant() });
       }
       const c = { name: a.name, dur: a.duration, period: LOOP[a.name] || a.duration, tracks };
+      // (a loop's legs and pelvis close the cycle: the capture's pose a period on is not its start (the
+      // thighs 18-21 degrees off in the run and the sprint), and each new stride began with that jump in one
+      // frame, the runner's foot at 40-45 m/s, check-jolt.mjs. The miss, q(period)^-1 q(0), is taken in
+      // over the cycle (layerClips) while it cannot be seen: a leg's while its foot is in the air, the
+      // pelvis' while both are (loopFix). Spread evenly, a planted foot slid with it. The trunk and arms
+      // keep their own blend over the wrap)
+      if (LOOP[a.name]) { c.fix = loopFix(this.t, tracks, c.period); c.lock = c.fix.lock; }
       // the pelvis' travel over one cycle (a run goes forward; it is taken out, the bob kept)
       const pt = tracks.find((x) => !x.q);
       if (pt) {
@@ -392,6 +399,135 @@ const X = V(1, 0, 0), Y = V(0, 1, 0);
 const UPPER = new Set(['spine_01', 'spine_02', 'spine_03', 'neck_01', 'head', 'clavicle_l', 'clavicle_r', 'deltoid_l', 'deltoid_r',
   ...['l', 'r'].flatMap((s) => ['upperarm', 'upperarm_twist', 'lowerarm', 'lowerarm_twist', 'hand', 'index_01', 'index_02', 'index_03', 'middle_01', 'middle_02', 'middle_03', 'ring_01', 'ring_02', 'ring_03', 'pinky_01', 'pinky_02', 'pinky_03', 'thumb_01', 'thumb_02', 'thumb_03'].map((b) => `${b}_${s}`))]);
 const _q = new THREE.Quaternion();
+const _qf = new THREE.Quaternion();
+
+/** A looped clip's seam, closed where it cannot be seen. For every bone below the trunk: the miss
+    r = q(period)^-1 q(0), and g, its share taken in by each point of the cycle (LOOP_N steps, 0 at the
+    start, 1 at the end). The feet are followed through the cycle by the clip's own rotations on the
+    bind pose, in the root's frame, where the capture still travels: a planted foot stands still there.
+    A leg takes its miss in while its foot is in the air (moving at over a fifth of its fastest, and up
+    a third of its lift), the pelvis while both are (or evenly, a clip with no flight). */
+const LOOP_N = 64, LOCK_IN = 3, LOCK_OUT = 16;
+// (the runner's foot lock: how fast the held point may follow the capture's own foot, and how far it may be
+// off it, field feet a second and feet; under the skate's 4 m/s, check-jolt.mjs)
+const LOCK_SLIP = 3.3, LOCK_OFF = 2.0;
+function loopFix(t, tracks, period) {
+  const n = t.names.length, ix = t.index;
+  const local = t.world.map((w, i) => (t.parents[i] >= 0 ? t.inverses[t.parents[i]].clone().multiply(w) : w.clone()));
+  const rest = local.map((m) => { const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3(); m.decompose(p, q, s); return { p, q, s }; });
+  const qT = tracks.filter((x) => x.q), pT = tracks.find((x) => !x.q);
+  const footAt = (time) => {
+    const q = rest.map((r) => r.q.clone()), pp = rest[ix.pelvis].p.clone();
+    for (const tr of qT) q[tr.i].fromArray(tr.interp.evaluate(time));
+    if (pT) pp.fromArray(pT.interp.evaluate(time));
+    const M = new Array(n), out = {};
+    const mat = (i) => {
+      if (M[i]) return M[i];
+      const m = new THREE.Matrix4().compose(i === ix.pelvis ? pp : rest[i].p, q[i], rest[i].s);
+      // (in the root's frame: the root and anything above the pelvis stand still)
+      M[i] = i === ix.pelvis || t.parents[i] < 0 ? m : mat(t.parents[i]).clone().multiply(m);
+      return M[i];
+    };
+    for (const s of ['l', 'r']) out[s] = new THREE.Vector3().setFromMatrixPosition(mat(ix[`foot_${s}`]));
+    out.pel = new THREE.Vector3().setFromMatrixPosition(mat(ix.pelvis));
+    return out;
+  };
+  const P = [];
+  for (let k = 0; k <= LOOP_N; k++) P.push(footAt((k / LOOP_N) * period));
+  // (up in the root's frame: the axis the feet hang below the pelvis along)
+  const hang = new THREE.Vector3();
+  for (const f of P) hang.add(f.pel.clone().sub(f.l)).add(f.pel.clone().sub(f.r));
+  const ax = ['x', 'y', 'z'].sort((a, b) => Math.abs(hang[b]) - Math.abs(hang[a]))[0], sg = Math.sign(hang[ax]) || 1;
+  const moving = {};
+  for (const s of ['l', 'r']) {
+    const v = [], h = P.map((f) => f[s][ax] * sg);
+    for (let k = 0; k < LOOP_N; k++) v.push(P[k + 1][s].distanceTo(P[k][s]));
+    const vmax = Math.max(...v) || 1, h0 = Math.min(...h), h1 = Math.max(...h);
+    // (clear of the ground too: at toe off and touchdown a foot still low counts as planted, and the seam
+    // taken in there slid it)
+    moving[s] = v.map((x, k) => (x > 0.2 * vmax && Math.min(h[k], h[k + 1]) > h0 + 0.33 * (h1 - h0) ? 1 : 0));
+  }
+  const share = (w) => {
+    const sum = w.reduce((a, x) => a + x, 0), g = new Float32Array(LOOP_N + 1);
+    if (sum < 1) { for (let k = 0; k <= LOOP_N; k++) g[k] = k / LOOP_N; return g; }
+    for (let k = 0; k < LOOP_N; k++) g[k + 1] = g[k] + w[k] / sum;
+    g[LOOP_N] = 1;
+    return g;
+  };
+  // (and none of it on a leg while its foot is down: the share is counted from the middle of its stance, so a
+  // planted leg is the capture's own pose and the swing takes the whole seam. Counted from the cycle's start,
+  // the share already taken in stood on the planted leg, and as the stride gave way to a set pose it slid
+  // the foot, check-jolt.mjs skate fielder set)
+  const anchor = (w, g) => {
+    let best = -1, bestLen = 0;
+    for (let k = 0; k < LOOP_N; k++) {
+      if (w[k] || !w[(k + LOOP_N - 1) % LOOP_N]) continue;
+      let len = 0;
+      while (len < LOOP_N && !w[(k + len) % LOOP_N]) len++;
+      if (len > bestLen) { bestLen = len; best = k; }
+    }
+    if (best < 0) return 0.5;
+    const mid = (best + Math.floor(bestLen / 2)) % LOOP_N;
+    return g[mid];
+  };
+  const gL = share(moving.l), gR = share(moving.r), gP = share(moving.l.map((x, k) => x * moving.r[k]));
+  // (where each foot is down, for the runner's foot lock, Figure.pose footLock: the lower of the two, as the
+  // pose puts the lower foot on the ground (its g0), from when it comes below the other until the other comes
+  // below it, the longest such run of the cycle. Low in its own lift only, the foot the ground was set on came
+  // down still swinging and skidded until the capture's own touchdown. Its weight comes in over LOCK_IN steps
+  // and goes over LOCK_OUT steps after, as the swing takes the foot up and away)
+  const lock = {};
+  for (const s of ['l', 'r']) {
+    const o = s === 'l' ? 'r' : 'l', h = P.map((f) => f[s][ax] * sg), ho = P.map((f) => f[o][ax] * sg);
+    const down = []; for (let k = 0; k < LOOP_N; k++) down.push(h[k] < ho[k] ? 1 : 0);
+    let td = -1, len = 0;
+    for (let k = 0; k < LOOP_N; k++) {
+      if (!down[k] || down[(k + LOOP_N - 1) % LOOP_N]) continue;
+      let n = 0; while (n < LOOP_N && down[(k + n) % LOOP_N]) n++;
+      if (n > len) { len = n; td = k; }
+    }
+    // (and no further than the capture's own stance: from the touchdown the foot skids to a stop, stands, and
+    // the first step it moves again is the lift. Held to the end of its time as the lower foot, it was held
+    // well into its swing, two feet behind where the capture had it)
+    if (td >= 0) {
+      const v = []; for (let k = 0; k < LOOP_N; k++) v.push(P[k + 1][s].distanceTo(P[k][s]));
+      const still = (k) => v[k % LOOP_N] <= 0.2 * (Math.max(...v) || 1);
+      let n = 0;
+      while (n < len && !still(td + n)) n++;
+      while (n < len && still(td + n)) n++;
+      len = Math.max(1, n);
+    }
+    const w = new Float32Array(LOOP_N + 1);
+    if (td >= 0) {
+      for (let j = 0; j < len; j++) w[(td + j) % LOOP_N] = Math.min(1, (j + 1) / LOCK_IN);
+      for (let j = 0; j < LOCK_OUT; j++) { const x = 1 - (j + 1) / (LOCK_OUT + 1); w[(td + len + j) % LOOP_N] = Math.max(w[(td + len + j) % LOOP_N], x * x * (3 - 2 * x)); }
+    }
+    w[LOOP_N] = w[0];
+    lock[s] = { w, td: td < 0 ? 0 : td / LOOP_N };
+  }
+  const oL = anchor(moving.l, gL), oR = anchor(moving.r, gR);
+  const fix = [];
+  for (const tr of qT) {
+    const name = t.names[tr.i];
+    if (UPPER.has(name)) continue;
+    const q0 = new THREE.Quaternion().fromArray(tr.interp.evaluate(0)), q1 = new THREE.Quaternion().fromArray(tr.interp.evaluate(period));
+    const r = q1.invert().multiply(q0);
+    if (r.w < 0) r.set(-r.x, -r.y, -r.z, -r.w);
+    const ang = 2 * Math.acos(Math.min(1, r.w)), sn = Math.sqrt(Math.max(0, 1 - r.w * r.w));
+    const axis = sn > 1e-6 ? new THREE.Vector3(r.x / sn, r.y / sn, r.z / sn) : new THREE.Vector3(1, 0, 0);
+    const side = /_l$/.test(name) ? 'l' : /_r$/.test(name) ? 'r' : null;
+    fix.push({ i: tr.i, axis, ang, g: side === 'l' ? gL : side === 'r' ? gR : gP, off: side === 'l' ? oL : side === 'r' ? oR : 0.5 });
+  }
+  fix.lock = lock;
+  return fix;
+}
+/** A seam's correction at a share u of the cycle (loopFix): its rotation turned by the share taken in, less
+    the share at the anchor. Any constant there leaves the loop closed: it is the same at both ends. */
+function loopTurn(f, u, out) {
+  const x = Math.min(LOOP_N - 1e-6, Math.max(0, u * LOOP_N)), k = Math.floor(x);
+  const g = f.g[k] + (f.g[k + 1] - f.g[k]) * (x - k);
+  return out.setFromAxisAngle(f.axis, f.ang * (g - f.off));
+}
 
 export class Figure {
   constructor(crew, root, mesh, bones) {
@@ -581,6 +717,58 @@ export class Figure {
     // ---- hands to points (two bone IK), the glove's pocket on its target
     if (sp.glove && sp.gloveW > 0 && this.glove) this.reachTo(this.glove, this.toModel(sp.glove), sp.gloveW, true);
     if (sp.hand && sp.handW > 0) this.reachTo(this.glove === 'r' ? 'l' : 'r', this.toModel(sp.hand), sp.handW, false);
+    // ---- a runner's planted foot stays where it came down (spec.footLock). The capture's foot reaches the dirt
+    // still swinging forward and skids five frames before it stops (skate runner run, the most common jolt
+    // there is): from the touchdown to the lift the leg is held by two bone IK to where the foot landed, over
+    // the ground only (the heel still rolls up), coming in over LOCK_IN steps and going over LOCK_OUT as the
+    // swing lifts it. Where it landed is kept from the frame its weight comes in until it goes (locks), so the
+    // same frames give the same pose; a phase that goes back (a replay) starts afresh
+    // (footLock 'keep': a look at him at another moment, to fit a tag or a throw to where he is then: no lock is
+    // used, made or let go, and the frame's own pose after it finds them as they were)
+    if (sp.footLock === true && this.runAt && this.runAt.runW > 0.5 && !this.pitch && clips) {
+      const R = this.runAt, ph = sp.run.phase / (2 * Math.PI);
+      if (this.locks && ph < this.locks.ph - 1e-6) this.locks = null;
+      this.locks = this.locks || { ph };
+      this.locks.ph = ph;
+      // (it gives way as the stride does: to a slide as the slide comes in, never cut in a frame, a held foot let
+      // go at the first frame of a slide at 70 m/s)
+      const c = Math.cos(this.yaw), sn = Math.sin(this.yaw), k = FT / this.scale, kr = smooth((R.runW - 0.5) / 0.3) * (1 - clamp(sp.slide || 0, 0, 1));
+      for (const s of ['l', 'r']) {
+        let w = 0, ws = 0;
+        for (const name of ['jog', 'run', 'sprint']) {
+          const m = R.w[name], L = clips[name] && clips[name].lock;
+          if (!(m > 0.001) || !L) continue;
+          const x = R.u * LOOP_N, i = Math.min(LOOP_N - 1, Math.floor(x));
+          w += m * (L[s].w[i] + (L[s].w[i + 1] - L[s].w[i]) * (x - i)); ws += m;
+        }
+        w = ws > 0 ? (w / ws) * kr : 0;
+        if (w <= 0.001) { this.locks[s] = null; continue; }
+        const F = this.toField(wpos(B[`foot_${s}`]));
+        // (a lock is made where the foot is as its weight first comes in, and kept until the weight is gone: by
+        // the stride's number, read from the leading capture's touchdown, a run and a sprint landing a step apart
+        // made it twice over one touchdown and the foot jumped to the second, 150 m/s)
+        if (!this.locks[s]) this.locks[s] = { x: F.x, y: F.y, t: sp.t };
+        // (a soft lock: where it is held follows the capture's foot at no more than LOCK_SLIP, and is never more than
+        // LOCK_OFF off it. The capture's planted foot creeps on through its stance: held dead, it was a foot behind
+        // the capture by the lift, out of the leg's reach, and let go it flew back at 60 m/s)
+        const Lk = this.locks[s], dt = clamp((sp.t ?? Lk.t) - (Lk.t ?? 0), 0, 0.1);
+        Lk.t = sp.t;
+        let ox = Lk.x - F.x, oy = Lk.y - F.y, od = Math.hypot(ox, oy);
+        const give = Math.min(od, LOCK_SLIP * dt);
+        if (od > 1e-6) { ox -= ox / od * give; oy -= oy / od * give; od -= give; }
+        if (od > LOCK_OFF) { ox *= LOCK_OFF / od; oy *= LOCK_OFF / od; }
+        Lk.x = F.x + ox; Lk.y = F.y + oy;
+        const o = { x: ox, y: oy };
+        const side = s === 'l' ? 1 : -1;
+        const tgt = wpos(B[`foot_${s}`]).add(V((-o.x * c + o.y * sn) * k, 0, (o.x * sn + o.y * c) * k));
+        // (the knee stays in the capture's own plane: its pole is the knee itself, a hair forward so a straight
+        // leg still has one. A pole out in front, as the tag's step has, turned the knee to it the frame the lock
+        // came in, the foot at 150 m/s)
+        const pole = wpos(B[`calf_${s}`]).add(V(0.01 * side, 0, 0.02));
+        twoBoneIK(B[`thigh_${s}`], B[`calf_${s}`], B[`foot_${s}`], tgt, pole, w);
+        root.updateMatrixWorld(true);
+      }
+    } else if (sp.footLock !== 'keep') this.locks = null;
     // ---- a foot kept off where the body puts it (a tag's lunge, inplay.js): two bone IK of the leg to its
     // posed place moved by { x, y } field feet over the ground and z up, the foot level again after
     if (sp.plant && sp.plant.w > 0 && !this.pitch) {
@@ -619,6 +807,7 @@ export class Figure {
 
   layerClips(sp, aRun, useThrow) {
     const C = this.crew.clips, L = this.list, n = L.length;
+    this.runAt = null;
     const qp = this.qp, qa = this.qa, qb = this.qb;
     for (let i = 0; i < n; i++) qp[i].copy(L[i].quaternion);
     const pel = this.bones.pelvis, pelP = pel.position.clone();
@@ -629,6 +818,7 @@ export class Figure {
       // the mix of runs at this speed, each at the same share of its cycle
       const v = aRun * 26, mix = this.crew.runMix(v, sp.run.trot);
       const u = ((sp.run.phase / (2 * Math.PI)) % 1 + 1) % 1;
+      this.runAt = { u, w: mix.w, runW };
       let wsum = 0;
       const pos = V(), pa = V();
       for (const k of ['jog', 'run', 'sprint']) {
@@ -636,6 +826,8 @@ export class Figure {
         if (!(w > 0.001) || !c) continue;
         for (let i = 0; i < n; i++) qb[i].copy(qp[i]);
         this.sample(c, u * c.period, qb, pa);
+        // (the legs' and pelvis' loop closed, a share u of the seam: setMotion c.fix)
+        if (c.fix) for (const f of c.fix) qb[f.i].multiply(loopTurn(f, u, _qf));
         // (the captures are not perfect loops: the pose a period on is not the pose at the start, and each new
         // cycle began with a jump of the arms, a hand at 40 m/s at the wrap, check-jolt.mjs. Over the start of a
         // cycle as long as the capture runs past its period (about two frames), the trunk, arms and head come
@@ -748,7 +940,11 @@ export class Figure {
     const B = this.bones;
     const h = wpos(B.head);
     const d = target.clone().sub(h);
-    const yaw = clamp(Math.atan2(d.x, d.z), -1.3, 1.3) * w;
+    // (a target behind him: past the neck's 1.3 rad the head comes back toward straight ahead as it goes round,
+    // none at all straight behind. Clamped, it flipped from one shoulder to the other in a frame as a ball
+    // crossed behind him, the head at 18 m/s, check-jolt.mjs pop runner run)
+    const ya = Math.atan2(d.x, d.z), yb = Math.abs(ya) <= 1.3 ? ya : Math.sign(ya) * 1.3 * smooth((Math.PI - Math.abs(ya)) / (Math.PI - 1.3));
+    const yaw = yb * w;
     const pitch = clamp(-Math.atan2(d.y, Math.hypot(d.x, d.z)), -0.9, 0.7) * w;
     rotY(B.neck_01, yaw * 0.45); rotY(B.head, yaw * 0.55);
     rotX(B.neck_01, pitch * 0.4); rotX(B.head, pitch * 0.6);

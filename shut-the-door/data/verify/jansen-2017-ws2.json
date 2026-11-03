@@ -62,7 +62,7 @@
    "feedDescription": "Josh Reddick pops out to second baseman Logan Forsythe.",
    "runs": 0,
    "outs": 1,
-   "inSpot": false,
+   "inSpot": true,
    "name": "Josh Reddick",
    "batSideListed": "L",
    "seasonLine": ".314/.363/.484, 13 HR"
@@ -82,7 +82,7 @@
    "feedDescription": "Carlos Beltran flies out to center fielder Chris Taylor.",
    "runs": 0,
    "outs": 1,
-   "inSpot": false,
+   "inSpot": true,
    "name": "Carlos Beltrán",
    "batSideListed": "S",
    "seasonLine": ".231/.283/.383, 14 HR"
@@ -102,7 +102,7 @@
    "feedDescription": "George Springer doubles (1) on a sharp ground ball to left fielder Enrique Hernandez.",
    "runs": 0,
    "outs": 0,
-   "inSpot": false,
+   "inSpot": true,
    "name": "George Springer",
    "batSideListed": "R",
    "seasonLine": ".283/.367/.522, 34 HR"
@@ -122,40 +122,20 @@
    "feedDescription": "Alex Bregman grounds out sharply, shortstop Corey Seager to first baseman Cody Bellinger.",
    "runs": 0,
    "outs": 1,
-   "inSpot": false,
+   "inSpot": true,
    "name": "Alex Bregman",
    "batSideListed": "R",
    "seasonLine": ".284/.352/.475, 19 HR"
   }
  ],
- "realFaced": 1,
+ "realFaced": 5,
  "real": {
-  "outcome": "doors_open",
-  "pitches": 3,
+  "outcome": "tie_held",
+  "pitches": 16,
   "runs": 1,
   "otherPitchersInSpot": []
  },
  "lineupNext": [
-  {
-   "id": 606965,
-   "name": "Chris Devenski",
-   "batSideListed": "R"
-  },
-  {
-   "id": 457727,
-   "name": "Cameron Maybin",
-   "batSideListed": "R"
-  },
-  {
-   "id": 543807,
-   "name": "George Springer",
-   "batSideListed": "R"
-  },
-  {
-   "id": 608324,
-   "name": "Alex Bregman",
-   "batSideListed": "R"
-  },
   {
    "id": 514888,
    "name": "Jose Altuve",
@@ -180,6 +160,26 @@
    "id": 503556,
    "name": "Marwin Gonzalez",
    "batSideListed": "S"
+  },
+  {
+   "id": 606965,
+   "name": "Chris Devenski",
+   "batSideListed": "R"
+  },
+  {
+   "id": 457727,
+   "name": "Cameron Maybin",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543807,
+   "name": "George Springer",
+   "batSideListed": "R"
+  },
+  {
+   "id": 608324,
+   "name": "Alex Bregman",
+   "batSideListed": "R"
   }
  ],
  "arsenal": {

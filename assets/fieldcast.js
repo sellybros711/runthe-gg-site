@@ -505,7 +505,7 @@
     ctx.restore();
 
     drawFx(st, ctx, t);
-    drawLiveTag(st, ctx, t, F.upTo >= 3600 && !(F.drives || []).some(function(d){ return d.tEnd > F.upTo || d.result === 'live'; }));
+    if (st.opts.tag !== false) drawLiveTag(st, ctx, t, F.upTo >= 3600 && !(F.drives || []).some(function(d){ return d.tEnd > F.upTo || d.result === 'live'; }));
     /* Vignette, to sit the picture inside the broadcast frame. */
     var vg = ctx.createRadialGradient(C.w / 2, C.h * 0.62, C.h * 0.35, C.w / 2, C.h * 0.62, C.w * 0.75);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.42)');
@@ -913,6 +913,8 @@
    *   frame.downs    false where the page has real downs and the invented ones must not show
    *   frame.ticker   the ribbon board's words, when the page has something better to say
    *   frame.home     'you', 'them' or 'neutral': whose crowd fills the stands
+   *   frame.tag      false where the page lays its own score bug over the stands, which
+   *                  carries the clock, so the LIVE and FINAL tag under it is not drawn
    */
   function paint(target, frame){
     var cv = target && target.canvas ? target.canvas : target;
@@ -934,7 +936,7 @@
       st.them = { color: them.color, name: String(them.name || 'OPP').toUpperCase() };
       st.style = style; st.home = home; st.stands = null; st.field = null; st.logoIn = false;
     }
-    st.opts = { downs: frame.downs };
+    st.opts = { downs: frame.downs, tag: frame.tag };
     st.ticker = frame.ticker || ('RUNTHE.GG   ' + st.you.name + ' VS ' + st.them.name + '   ');
     var drives = frame.drives || [], up = +frame.upTo || 0;
     /* A new game, or the same game rewound: forget the moments already fired. */

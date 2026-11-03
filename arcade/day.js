@@ -202,7 +202,9 @@
       var t = document.getElementById('rtgShareToast');
       if (!t) {
         var st = document.createElement('style');
-        st.textContent = '#rtgShareToast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) translateY(8px);z-index:9800;background:var(--ink,#0d1b2c);color:var(--bg,#fff);font:800 13px/1 var(--f,system-ui,sans-serif);padding:11px 16px;border-radius:10px;box-shadow:0 10px 30px -8px rgba(0,0,0,.5);opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;max-width:80vw;text-align:center;}#rtgShareToast.on{opacity:1;transform:translateX(-50%) translateY(0);}';
+        st.textContent = '#rtgShareToast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) translateY(8px);z-index:9800;background:var(--ink,#0d1b2c);color:var(--bg,#fff);font:800 13px/1 var(--f,system-ui,sans-serif);padding:11px 16px;border-radius:10px;box-shadow:0 10px 30px -8px rgba(0,0,0,.5);opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;max-width:80vw;text-align:center;}#rtgShareToast.on{opacity:1;transform:translateX(-50%) translateY(0);}' +
+          /* the Arcade's bottom banner (/assets/rtg-ads.js) is up during play, so the toast rides on it */
+          'body.rtg-sticky-on #rtgShareToast{bottom:calc(24px + var(--sticky-ad-h,0px));}';
         (document.head || document.documentElement).appendChild(st);
         t = document.createElement('div'); t.id = 'rtgShareToast'; t.setAttribute('role', 'status'); document.body.appendChild(t);
       }

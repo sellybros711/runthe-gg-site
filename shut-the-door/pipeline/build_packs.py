@@ -53,6 +53,10 @@ RETRO_TEAM = {'OAK': 'Oakland Athletics', 'NYA': 'New York Yankees', 'LAN': 'Los
 _SEASONS = {}
 
 
+class EmptyRow(RuntimeError):
+    """A cell where no outcome kept a real pitch."""
+
+
 def season(y):
     """One season of the library, prepped and cut to what the model reads. Kept
     in memory for the run."""
@@ -200,6 +204,12 @@ def build_one(spec, adv):
     # batters
     if proxy:
         order, cand = order_proxy(v)
+        n_first = len(order)
+        for h in (v.get('halves') or [])[1:]:      # rules 8: a later half's new batters (halves.py)
+            for bid in h['lineupIds']:
+                rid = str(bid).replace('retro:', '') if bid else None
+                if rid and rid not in order:
+                    order.append(rid)
         ids_retro = order
         mlb = retro.retro_to_mlbam(set(order))
         ros = retro.rosters(cand['season'], [cand['game'][:3], v['game'].split(' at ')[0]])
@@ -213,6 +223,13 @@ def build_one(spec, adv):
         ppl = statsapi.people([b['mlbam'] for b in batters_meta if b['mlbam']], season=year)
     else:
         order = order_real(v)
+        n_first = len(order)
+        # rules 8 (halves.py): a batter in a later half's lineup who is not in the first one's
+        # (a defensive substitution or a pinch hitter) gets his own library after them
+        for h in (v.get('halves') or [])[1:]:
+            for bid in h['lineupIds']:
+                if bid is not None and bid not in order:
+                    order.append(bid)
         ppl = statsapi.people(order, season=year)
         stands = {}
         g, _ = savant.fetch(savant.search_url(game_pk=v['gamePk']), f'savant-game-{v["gamePk"]}.csv')
@@ -262,6 +279,21 @@ def build_one(spec, adv):
             pitches.append(row)
         return pidx[row[0]]
 
+    # The league pool, widened to every season in the library: the same type, pitcher hand and
+    # batter side, within VELO_EX of his speed. Used only for a cell where no pool has a single
+    # pitch of the type, which used to end the build with an empty row (2026-10-30: Hoffman's 74
+    # mph changeup in 2009-2011). A pack that built before never reaches it, so none moves.
+    wide_cache, wide_cells = {}, []
+
+    def wide(t, stand_, velo):
+        if t not in wide_cache:
+            years = [y for y in range(2008, 2026)]
+            df = prep.load(years, where=f"pitch_type = '{t}' AND p_throws = '{hand}' AND release_speed BETWEEN {velo - M.VELO_EX} AND {velo + M.VELO_EX}", cols=COLS)
+            p_ = prep.prep(df)
+            wide_cache[t] = p_[p_['pitch_type'].isin(prep.PITCH_TYPES)][KEEP_PREP].reset_index(drop=True)
+        w = wide_cache[t]
+        return w[w['stand'] == stand_]
+
     library, batters, tiers_used = [], [], defaultdict(int)
     for bi, meta in enumerate(batters_meta):
         s = meta['bats']
@@ -298,7 +330,8 @@ def build_one(spec, adv):
             pools = [(0, mine[mine['pitch_type'] == t]), (1, sim_rows[sim_rows['pitch_type'] == t]), (2, L['pool'])]
             pm = np.zeros((25, 4, M.NK), dtype=int)
             xs = []
-            for cell in range(25):
+            def fill(cell, cell_pools):
+                """One cell's outcome rows and their real pitches, or EmptyRow when no key keeps one."""
                 xcell = [-1] * M.NK
                 tried = set()
                 # Until stable: every key with a chance in any bucket needs a
@@ -308,14 +341,14 @@ def build_one(spec, adv):
                 while True:
                     for b in range(4):
                         if prob[cell, b].sum() <= 0:
-                            raise RuntimeError(f'empty outcome row {spec["id"]} batter {bi} {t} cell {cell}')
+                            raise EmptyRow(f'empty outcome row {spec["id"]} batter {bi} {t} cell {cell}')
                         pm[cell, b] = M.permille(prob[cell, b])
                     todo = [k for k in range(M.NK) if pm[cell, :, k].any() and xcell[k] < 0 and k not in tried]
                     if not todo:
                         break
                     for k in todo:
                         tried.add(k)
-                        r, tier = M.pick_exemplar(pools, bi, t, cell, prep.KEYS[k], a['velo'])
+                        r, tier = M.pick_exemplar(cell_pools, bi, t, cell, prep.KEYS[k], a['velo'])
                         if r is None:
                             prob[cell, :, k] = 0
                             continue
@@ -328,12 +361,27 @@ def build_one(spec, adv):
                             pm[cell, b] = M.permille(prob[cell, b])
                     if not pm[cell, :, k].any():
                         xcell[k] = -1
+                return xcell
+
+            for cell in range(25):
+                kept_row, kept_tiers = prob[cell].copy(), dict(tiers_used)
+                try:
+                    xcell = fill(cell, pools)
+                except EmptyRow:
+                    # no key kept a real pitch: the cell again, with the league pool widened to every
+                    # season (the same pitches found first stay first, so nothing picked moves)
+                    prob[cell] = kept_row
+                    tiers_used.clear()
+                    tiers_used.update(kept_tiers)
+                    xcell = fill(cell, pools + [(2, wide(t, s, a['velo']))])
+                    wide_cells.append(f'{bi}:{t}:{cell}')
                 xs.append(xcell)
             lib[t] = {'p': pm.tolist(), 'x': xs}
         library.append(lib)
         batters.append(batter_record(meta, ppl, mine, sim_rows, lg, ars, s, n_mine, nb, proxy, year, hand))
 
     reveal = reveal_of(v)
+    multi = len(v.get('halves') or []) > 1
     us_team = v['pitcher'].get('team') or RETRO_TEAM.get(v['game'].split(' at ')[0 if not sit['usHome'] else 1])
     sc = {
         'id': spec['id'], 'day': None, 'number': None, 'title': spec['title'],
@@ -346,10 +394,18 @@ def build_one(spec, adv):
         'resolution': 'proxy' if proxy else 'real',
         'sources': sources,
     }
+    if multi:
+        sc.update(halves_of(v, [('retro:' + str(x)) if proxy else x for x in order], n_first))
+        reveal_first = reveal
+        reveal = reveal_of(v, full=True)
+        sc['realFaced'] = len(reveal['plateAppearances'])
+        sources.append(v['between'][0]['source'].split(',')[0] + ': the halves, his team\'s half between, the line score')
     # v: the engine's pack format (engine.js PACK_VERSION; 2 has a hold slot for a tied game, pool.js stamps it too)
     pack = {'v': 2, 'keys': prep.KEYS, 'scenario': sc, 'kernelZoneFt': zone_ft, 'pitches': pitches,
             'library': library, 'advance': adv, 'reveal': reveal,
+            **({'reveal1': reveal_first} if multi else {}),
             'build': {'window': window, 'batterWindow': bat_window, 'tiers': dict(tiers_used),
+                      **({'wideCells': len(wide_cells)} if wide_cells else {}),
                       'leaguePitches': int(len(lg)), 'arsenalSource': ars_src}}
     return pack
 
@@ -495,6 +551,27 @@ BASE_WORDS = {0: 'nobody on', 1: 'a man on first', 2: 'a man on second', 3: 'men
 OUT_WORDS = {0: 'nobody out', 1: 'one out', 2: 'two out'}
 
 
+def halves_of(v, order, n_first):
+    """scenario.halves, between and line for a spot with more than one half (rules 8, halves.py).
+    A half's lineup is the index in scenario.batters of each position from the spot's first batter:
+    the first half's is the order he faced, a later one's the batters by slot in that half."""
+    halves = []
+    for k, h in enumerate(v['halves']):
+        if k == 0:
+            lineup = list(range(9)) if n_first >= 9 else None
+        else:
+            lineup = []
+            for pos, bid in enumerate(h['lineupIds']):
+                bid = bid if bid in order else int(bid) if str(bid).isdigit() and int(bid) in order else bid
+                lineup.append(pos if pos < n_first and order[pos] == bid else order.index(bid))
+        assert lineup and len(lineup) == 9, 'a lineup is nine'
+        halves.append({'inning': h['inning'], 'half': h['half'], 'outs': h['outs'], 'bases': h['bases'],
+                       'walkOffLive': h['walkOffLive'], 'lineup': lineup, 'real': h['real']})
+    between = [{k: b[k] for k in ('inning', 'half', 'team', 'abbr', 'runs', 'pas', 'source')} for b in v['between']]
+    line = {k: v['line'][k] for k in ('teams', 'innings', 'H', 'E')}
+    return {'halves': halves, 'between': between, 'line': line}
+
+
 def inning_words(n):
     return {1: '1st', 2: '2nd', 3: '3rd'}.get(n, f'{n}th')
 
@@ -510,8 +587,16 @@ def setup_of(v, spec, us_team, batters):
     lines = [f'{title}.', f'{s["half"]} of the {inning_words(s["inning"])}.',
              f'the {nick} lead {s["score"]["us"]}-{s["score"]["them"]}.',
              f'{OUT_WORDS[s["outs"]]}, {BASE_WORDS[s["bases"]]}.', f'{first} is up.']
-    lines.append('three outs and the door is shut.' if s['outs'] == 0 else
-                 f'{3 - s["outs"]} {"out" if s["outs"] == 2 else "outs"} and the door is shut.')
+    hv = v.get('halves') or []
+    if len(hv) > 1:
+        # rules 8: the outs to the end of the game, and the innings they cover
+        n = (3 - s['outs']) + 3 * (len(hv) - 1)
+        lines.append(f'{n} outs and the door is shut.')
+        lines.append(f'finish the {inning_words(hv[0]["inning"])}. then the {inning_words(hv[-1]["inning"])} is yours.'
+                     if len(hv) == 2 else f'finish the {inning_words(hv[0]["inning"])}. the door is yours through the {inning_words(hv[-1]["inning"])}.')
+    else:
+        lines.append('three outs and the door is shut.' if s['outs'] == 0 else
+                     f'{3 - s["outs"]} {"out" if s["outs"] == 2 else "outs"} and the door is shut.')
     if lead == 1 and s['walkOffLive']:
         lines.append('two runs and it is over.')
     return ' '.join(lines)
@@ -554,8 +639,11 @@ def retro_short(ev):
     return 'out'
 
 
-def reveal_of(v):
+def reveal_of(v, full=False):
+    """What he did. full (rules 8): every half he pitched, the later ones from halves.py."""
     pas = [p for p in v['plateAppearances'] if p.get('inSpot')]
+    if full:
+        pas = pas + [dict(p, inSpot=True) for p in v['laterPlateAppearances']]
     items = []
     for p in pas:
         name = p.get('name') or p.get('fullName') or ''
@@ -572,7 +660,7 @@ def reveal_of(v):
         else:
             res = retro_short(p.get('event') or '')
         items.append({'batter': name, 'result': res, 'pitches': p.get('pitches')})
-    r = v['real']
+    r = v['realFull'] if full else v['real']
     rv = {'outcome': r['outcome'], 'pitches': r['pitches'], 'runs': r['runs'],
           'summary': summary_of(items), 'plateAppearances': items}
     if r['pitches'] is None:

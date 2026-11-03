@@ -11,7 +11,15 @@
  * The league's are the tier 'league' balls (that pitch type, a pitcher of this hand, a hitter of this side).
  *
  * The numbers, per hitter with profileTier 'batter' (a hitter without his own profile, and every proxy
- * spot, stands in the standard alignment, inplay-plan.js spots): the outfield, from his air balls the
+ * spot, stands in the standard alignment, inplay-plan.js spots).
+ * The infield, from his ground balls (fair): each infielder's standard spot (spots) is a share of the
+ * league's ground balls for his side (the share hit to the left of him); he stands where that same share
+ * of this hitter's ground balls is, so a hitter who hits them where the league does stands in the
+ * standard alignment, and one who pulls them turns each man toward his pull side, by as much as his own
+ * balls move at that man's share (inf, degrees about home). His balls are weighed against the league's
+ * as the outfield's are (below), the prior's weight from the ground balls' spray (g): one ball's
+ * variance over the true spread between hitters.
+ * The outfield, from his air balls the
  * outfield takes (fly balls and line drives, fair, past the infield dirt and short of the wall): the three
  * fielders at the medians of his spray in thirds (a one dimensional three median), each at the median carry
  * of his third (contract.js carryOf, the engine's own Statcast fit). The league's balls for his side are the
@@ -30,13 +38,13 @@ const GAME = path.resolve(HERE, '..', '..');
 const PACKS = path.join(GAME, 'data', 'packs');
 const OUT = path.join(GAME, '3d', 'shade-data.js');
 const { carryOf } = require(path.join(GAME, 'contract.js'));
-const { wallDist } = await import('../../3d/inplay-plan.js');
+const { wallDist, spots } = await import('../../3d/inplay-plan.js');
 const KEYS_IP = ['single', 'double', 'triple', 'home_run', 'error', 'out_ground', 'out_line', 'out_fly', 'out_popup'];
 const TIER = { batter: 0, similar: 1, league: 2 };
 
 /** Every pack's hitters: his own balls and the league's balls for his side. */
 function gather() {
-  const hitters = [], league = { L: { g: [], a: [], d: [], o: [] }, R: { g: [], a: [], d: [], o: [] } };
+  const hitters = [], league = { L: { g: [], gi: [], a: [], d: [], o: [] }, R: { g: [], gi: [], a: [], d: [], o: [] } };
   for (const f of fs.readdirSync(PACKS).filter((x) => x.endsWith('.json')).sort()) {
     const pack = JSON.parse(fs.readFileSync(path.join(PACKS, f), 'utf8'));
     const id = pack.scenario.id, keys = pack.keys, P = pack.pitches, bats = pack.scenario.batters;
@@ -51,7 +59,7 @@ function gather() {
         if (t === TIER.batter) own.add(i);
         else if (t === TIER.league && !lgSeen.has(b.bats + i)) { lgSeen.add(b.bats + i); add(league[b.bats], P[i], coef); }
       });
-      const mine = { g: [], a: [], d: [], o: [] };
+      const mine = { g: [], gi: [], a: [], d: [], o: [] };
       for (const i of [...own].sort((x, y) => x - y)) add(mine, P[i], coef);
       hitters.push({ pack: id, id: String(b.id), name: b.name, bats: b.bats, tier: b.profileTier, mine });
     });
@@ -61,7 +69,7 @@ function gather() {
 function add(to, p, coef) {
   const [, , , bb, ev, la, spray] = p;
   if (spray == null) return;
-  if (bb === 'ground') to.g.push(spray);
+  if (bb === 'ground') { to.g.push(spray); if (Math.abs(spray) <= 45) to.gi.push(spray); }
   else if (bb === 'fly' || bb === 'line') {
     to.a.push(spray);
     const c = carryOf(ev, la, coef);
@@ -71,6 +79,30 @@ function add(to, p, coef) {
     // spray only (carry null)
     if (Math.abs(spray) <= 45 && (c == null ? bb === 'fly' : c >= 155 && c < wallDist(spray))) to.o.push([spray, c]);
   }
+}
+
+/** The weighted share of values [[v, w]] at or left of x, and the value at a weighted share f (both
+    linear between neighbours, so a small change in the balls is a small change in the spot). */
+function cdf(vals, x) {
+  const W = vals.reduce((s, p) => s + p[1], 0);
+  let acc = 0;
+  for (const p of vals) if (p[0] <= x) acc += p[1];
+  return acc / W;
+}
+function quantile(vals, f) {
+  const pts = vals.slice().sort((x, y) => x[0] - y[0]);
+  const W = pts.reduce((s, p) => s + p[1], 0);
+  let acc = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const nx = acc + pts[i][1];
+    if (nx >= f * W) {
+      if (i === 0) return pts[0][0];
+      const k = (f * W - acc) / pts[i][1];
+      return pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * Math.max(0, Math.min(1, k));
+    }
+    acc = nx;
+  }
+  return pts[pts.length - 1][0];
 }
 
 /** Three outfielders for weighted balls [[spray, carry, w]]: the 1D three-median of the spray (each
@@ -111,6 +143,9 @@ export function build() {
     const tau2 = Math.max(0, mean(raw.map((r) => (r.d - md) * (r.d - md))) - mean(raw.map((r) => r.v)));
     fit[k] = { s2, tau2, hitters: raw.length };
   }
+  // each infielder's share of the league's ground balls for the side: the share hit left of his spot
+  const leagueIF = {};
+  for (const sd of ['L', 'R']) { const F = spots(sd); leagueIF[sd] = [5, 6, 4, 3].map((n) => cdf(league[sd].gi.map((v) => [v, 1]), Math.atan2(F[n].x, F[n].y) * 180 / Math.PI)); }
   const table = {};
   for (const h of used) {
     const e = { bats: h.bats };
@@ -124,30 +159,37 @@ export function build() {
     // balls in all (one ball's variance over the true spread between hitters: s2 / tau2), in spray and
     // in carry each
     const lg = league[h.bats].o, n0a = fit.a.s2 / fit.a.tau2, n0d = fit.d.s2 / fit.d.tau2;
+    // the infield: his ground balls' four-median against the league's for his side (the prior worth
+    // n0 = s2 / tau2 balls of the league's, from the ground balls' spread), as a turn for each man
+    const lgi = league[h.bats].gi.map((v) => [v, 1]), n0g = fit.g.tau2 ? fit.g.s2 / fit.g.tau2 : Infinity;
+    const post = isFinite(n0g) ? [...h.mine.gi.map((v) => [v, 1]), ...lgi.map(([v]) => [v, n0g / lgi.length])] : lgi;
+    e.inf = leagueIF[h.bats].map((f) => Math.round((quantile(post, f) - quantile(lgi, f)) * 10) / 10);
     e.of = outfield([...h.mine.o.map(([a, d]) => [a, d, 1, 1]), ...lg.map(([a, d]) => [a, d, n0a / lg.length, n0d / lg.length])]);
     e.n = [h.mine.g.length, h.mine.o.length];
     (table[h.pack] ||= {})[h.id] = e;
   }
-  return { table, fit, base, hitters };
+  return { table, fit, base, hitters, leagueIF };
 }
 
-function render(table, fit, base) {
+function render(table, fit, base, leagueIF) {
   const r1 = (v) => Math.round(v * 10) / 10;
   const lines = [
     '/* GENERATED by lab/pipeline/build-shade.mjs from data/packs. Do not edit by hand: rebuild it (and',
     ' * build-shade.mjs --check holds it to the packs, in check-inplay.mjs).',
     ' *',
-    ' * Each hitter\'s outfield, by pack and MLBAM id: of the left, centre and right fielders\' [spray, depth]',
-    ' * from his air balls the outfield takes (with the league\'s as the prior); n his own balls (ground,',
-    ' * outfield air).',
+    ' * Each hitter\'s fielders, by pack and MLBAM id: inf the third, short, second and first basemen\'s turn',
+    ' * about home (degrees, toward first base positive), where his ground balls put the league\'s share of them;',
+    ' * of the left, centre and right fielders\' [spray, depth] from his air balls the outfield takes (with the',
+    ' * league\'s as the prior for each); n his own balls (ground, outfield air).',
     ' * A hitter not here stands in the standard alignment.',
-    ` * The prior's weight: ${['a', 'd'].map((k) => `${k === 'a' ? 'spray' : 'carry'} one ball sd ${r1(Math.sqrt(fit[k].s2))}, between hitters sd ${r1(Math.sqrt(fit[k].tau2))} (${fit[k].hitters} hitters)`).join('; ')}.`,
+    ` * Each infielder's share of the league's ground balls (third, short, second, first): L ${leagueIF.L.map((v) => v.toFixed(3)).join(', ')}; R ${leagueIF.R.map((v) => v.toFixed(3)).join(', ')}.`,
+    ` * The prior's weight: ${['g', 'a', 'd'].map((k) => `${k === 'g' ? 'ground spray' : k === 'a' ? 'spray' : 'carry'} one ball sd ${r1(Math.sqrt(fit[k].s2))}, between hitters sd ${r1(Math.sqrt(fit[k].tau2))} (${fit[k].hitters} hitters)`).join('; ')}.`,
     ' */',
     'export const SHADE = {',
   ];
   for (const [pk, hs] of Object.entries(table).sort()) {
     lines.push(`  '${pk}': {`);
-    for (const [id, e] of Object.entries(hs).sort()) lines.push(`    '${id}': { bats: '${e.bats}', of: ${JSON.stringify(e.of).replace(/,/g, ', ')}, n: [${e.n.join(', ')}] },`);
+    for (const [id, e] of Object.entries(hs).sort()) lines.push(`    '${id}': { bats: '${e.bats}', inf: [${e.inf.join(', ')}], of: ${JSON.stringify(e.of).replace(/,/g, ', ')}, n: [${e.n.join(', ')}] },`);
     lines.push('  },');
   }
   lines.push('};', '');
@@ -155,10 +197,10 @@ function render(table, fit, base) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const { table, fit, base, hitters } = build();
-  const text = render(table, fit, base);
+  const { table, fit, base, hitters, leagueIF } = build();
+  const text = render(table, fit, base, leagueIF);
   if (process.argv.includes('--list')) {
-    for (const h of hitters) { const e = table[h.pack] && table[h.pack][h.id]; console.log(h.pack.padEnd(26), h.name.padEnd(22), h.bats, e ? `of ${JSON.stringify(e.of)} n ${e.n}` : 'standard (' + h.tier + ')'); }
+    for (const h of hitters) { const e = table[h.pack] && table[h.pack][h.id]; console.log(h.pack.padEnd(26), h.name.padEnd(22), h.bats, e ? `inf ${JSON.stringify(e.inf)} of ${JSON.stringify(e.of)} n ${e.n}` : 'standard (' + h.tier + ')'); }
     console.log(fit, base);
   }
   if (process.argv.includes('--check')) {

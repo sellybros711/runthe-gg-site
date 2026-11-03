@@ -42,7 +42,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { inplayCases } from './inplay-cases.mjs';
-import { selection, holding, capStr, openCheckpoint } from './checkpoint.mjs';
+import { selection, holding, capStr, openCheckpoint, pinDay } from './checkpoint.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -60,7 +60,12 @@ const LIM = { WHIP_DEG: 1.0, ANG_JERK: 0.1, POS_JERK: 0.5, FOV_JERK: 0.02, MIN_S
 // (inplay.js): whip 321 of 58,498 plays (high base camera shots that must turn from the ball to a runner's
 // bag, at 1.0-1.1 degrees a frame), jerk 86, lost 7 (balls hit behind the plate, in a plate shot). Lower
 // these as they are fixed, never raise them.
-const CEILING = { whip: 321, jerk: 86, lost: 7, short: 0, 'mid-throw': 0, away: Infinity };
+// Thirty situations (site PR #825, 2026-10-30): the packs went from 10 to 30 and every case from 58,498 to
+// 168,754. On the same 58,498 plays the branch was under both (whip 265, jerk 51, lost 0), so the rise is
+// coverage, not a regression: the 110,256 new plays come in at a lower rate (whip 0.45% of plays against
+// 0.55%, jerk 0.08% against 0.15%). Whip and jerk recorded once at the full set's measured counts, on the
+// coordinator's decision. Lost stays at 7.
+const CEILING = { whip: 755, jerk: 141, lost: 7, short: 0, 'mid-throw': 0, away: Infinity };
 
 function loadPlaywright() {
   for (const t of ['playwright', '/opt/node-tools/node_modules/playwright', '/opt/node22/lib/node_modules/playwright']) { try { return require(t); } catch (e) {} }
@@ -87,6 +92,8 @@ await page.route('**/*', (route) => {
   if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
   return route.abort();
 });
+// (the day pinned: the stage is that day's scenario, checkpoint.mjs pinDay)
+await pinDay(page);
 await page.goto(`http://127.0.0.1:${server.address().port}/shut-the-door/`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.STD_STAGE && window.STD_STAGE.current && window.STD_STAGE.current.loaded, null, { timeout: 400000 });
 await page.evaluate(() => { window.STD_STAGE.current.renderer.render = () => {}; });

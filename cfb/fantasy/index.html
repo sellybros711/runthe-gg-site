@@ -191,6 +191,25 @@
 
   /* The sheet a chip opens. Bottom anchored, because it is opened by a thumb near the
      bottom of a list and a centred box would put the answer under the hand that asked. */
+  /* WHILE THE BOTTOM BANNER IS UP, ON A SHORT PHONE (the owner's call, 2026-10-29; the same rule as the NFL page): the
+     closeable banner from assets/rtg-ads.js covers the bottom 79px, and the week's main button
+     has to be clear of it before anybody scrolls. Keyed on body.rtg-sticky-on, which is set the
+     moment the banner is asked for, so nothing moves when the ad arrives; closed with its X,
+     the class goes and the screen is as it was. The three steps keep their names and lose
+     their sentences (the tiles under them carry the numbers), and the entry screen's lineup
+     sits a little closer. Taller phones already clear it and are untouched. */
+  @media (max-width:919px) and (max-height:719px){
+    body.rtg-sticky-on #s-home .hero-h{font-size:clamp(30px,9.5vw,40px)}
+    body.rtg-sticky-on #s-home .steps{margin-top:12px;gap:6px}
+    body.rtg-sticky-on #s-home .steps li > span{display:block;height:26px;overflow:hidden}
+    body.rtg-sticky-on #s-home .steps li > span strong{line-height:26px}
+    body.rtg-sticky-on #s-home .hero .stack{margin-top:12px}
+    body.rtg-sticky-on #s-in .big{font-size:36px}
+    body.rtg-sticky-on #s-in .rule{margin-top:10px;margin-bottom:10px}
+    body.rtg-sticky-on #s-in #in-roster{margin-top:8px !important}
+    body.rtg-sticky-on #s-in #b-in-board{margin-top:8px !important}
+  }  /* The Live button rides above the closeable bottom banner (/assets/rtg-ads.js) while it is up. */
+  body.rtg-sticky-on .livebtn{bottom:calc(14px + var(--sticky-ad-h,0px) + env(safe-area-inset-bottom))}
   .isheet{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;
     justify-content:center;background:rgba(4,7,14,.74);padding:12px}
   .isheet[hidden]{display:none}
@@ -635,6 +654,18 @@
   .stack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 </style>
 <script src="/football/fantasy/skin.js?v=1"></script>
+<!-- Consent Mode defaults first (Europe denies all four until the certified CMP answers), then the
+     AdSense tag: the same order as every other page on runthe.gg. Added 2026-10-30, the owner: "we should
+     also have ads on the CFB weekly contest". The same set as the NFL Fantasy Challenge. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+/* Europe (EEA, UK, Switzerland): analytics waits for consent too, until the certified CMP answers. */
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<script src="/assets/rtg-ads.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -835,6 +866,26 @@
   </section>
 </div>
 
+<!-- THE FANTASY AD (Ads Agent, 2026-10-30, the same spot as the NFL Fantasy Challenge,
+     unit college-fantasy). One unit under whichever screen is open, so it is at the bottom of every
+     screen without loading a new ad on each one. Started once per page load, never hidden. 150px
+     below the screen's last button once filled, and 170px of room under it so the floating Live
+     button never sits over it. The mid-size 300x250 rectangle (the owner, 2026-10-27), which fits the
+     narrowest phone column; unfilled, it collapses. -->
+<style>
+  .fx-ad{max-width:728px;margin:0 auto;text-align:center}
+  .fx-ad:has(ins[data-ad-status="filled"]){margin:150px auto 0;padding-bottom:170px}
+  .fx-ad .ad-label{display:none;font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.6;margin:0 0 6px}
+  .fx-ad:has(ins[data-ad-status="filled"]) .ad-label{display:block}
+  [data-ad-zone="page"] ins.adsbygoogle{display:inline-block;width:300px;height:250px}
+  [data-ad-zone="page"] ins.adsbygoogle[data-ad-status="unfilled"]{display:none}
+</style>
+<div class="fx-ad" data-ad-zone="page">
+  <span class="ad-label">Advertisement</span>
+  <ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="2167680443"></ins>
+</div>
+<script>(function(){try{(adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}})();</script>
+
 <!-- Outside the wrap because it is fixed to the window rather than to the column. Hidden
      until the first kickoff and gone again once the last game is well over, which is asked
      of the SCHEDULE rather than of the day of the week: "Thursday to Monday" is what that
@@ -1009,6 +1060,18 @@
    * Found by the guard below rather than by reading, which is the only reason it is written
    * up here instead of shipping.
    */
+  /* THE CLOSEABLE BOTTOM BANNER AND THE LEADERBOARD RAILS (Ads Agent, 2026-10-30, the owner: "we
+     should also have ads on the CFB weekly contest"). The same as the NFL Fantasy Challenge: the
+     banner on the home screen (and the closed-week screen that stands in for it), the entry and the
+     live screen, never on the draft or the review. Its X closes it for the rest of the visit. The two
+     rails are desktop only, on the standings tab. /assets/rtg-ads.js owns how both look and behave. */
+  var STICKY_SLOT = {sticky:'9854598778'};                     // college-fantasy-sticky
+  var BOARD_SLOTS = {left:'5646714276', right:'7416584800'};   // college-fantasy-board-left, college-fantasy-board-right
+  function fantasyAds(id){
+    if (!window.RTG_ADS) return;
+    RTG_ADS.sticky(id === 's-home' || id === 's-shut' || id === 's-in' || id === 's-live', STICKY_SLOT.sticky, 'college-fantasy');
+    RTG_ADS.rails(id === 's-live' && !$('lv-pane-board').hidden, BOARD_SLOTS, function(){ return document.querySelector('.wrap'); });
+  }
   var show = function(id){
     var cur = document.querySelector('.screen.on');
     if (cur && cur.id === id) return;
@@ -1027,6 +1090,7 @@
     var all = document.querySelectorAll('.screen');
     for (var i=0;i<all.length;i++) all[i].classList.toggle('on', all[i].id===id);
     window.scrollTo(0,0);
+    fantasyAds(id);
     /* The pinned button is not on any screen, so nothing else would ever hide it. It is
        wrong on two of them: on the live screen it would be a door to the room it is in, and
        on the draft screen it would sit over the board somebody is picking from. */
@@ -3000,6 +3064,7 @@
     $('lv-pane-games').hidden = !games;
     $('lv-pane-board').hidden = games;
     window.scrollTo(0,0);
+    if ($('s-live').classList.contains('on')) fantasyAds('s-live');
   }
   function boardShowing(){
     return $('s-live').classList.contains('on') && !$('lv-pane-board').hidden;

@@ -510,7 +510,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .band:not(.soon) > *{grid-column:1;}
     .band:not(.soon) > .lastset{grid-column:2; grid-row:1 / span 6; margin:14px 6px 6px;}
     .band-hd h2{font-size:56px;}
-    .how, .bands{max-width:960px; margin-left:auto; margin-right:auto;}
+    .how, .bands, .look, .statsline, .hmodes{max-width:960px; margin-left:auto; margin-right:auto;}
+    /* The play card has no setlist beside it now (that moved to the fan side): one column, full width. */
+    .band.play > *{grid-column:1 / -1;}
     .md-t{font-size:26px;}
     .mode{padding:16px 16px 14px;}
   }
@@ -2347,7 +2349,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .tab[data-tab="tour"]{--tc:#E0742E;}
   .tab[data-tab="songs"]{--tc:#D13F86;}
   .tab[data-tab="board"]{--tc:#C9940F;}
-  .tab[data-tab="profile"]{--tc:#7553D0;}
   .tab .ti{display:grid; place-items:center; width:38px; height:28px; border-radius:3px;
     color:var(--tc); background:color-mix(in srgb, var(--tc) 15%, transparent);
     border:2px solid transparent;}
@@ -2893,15 +2894,11 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      Props are objects, so they carry their own colours in BOTH themes, the way the hero always has:
      each one re-scopes the tokens it is drawn with, so everything inside it follows. Square corners,
      hard offset shadows and thick outlines are the pixel kit; the faces stay the game's own. */
-  #app .hero{--stageH:106px; padding-top:12px; padding-bottom:calc(var(--stageH) + 2px);}
-  #app .hero > .hero-stage{position:absolute; left:0; right:0; bottom:0; width:100%;
-    height:var(--stageH); z-index:-1; image-rendering:pixelated; image-rendering:crisp-edges;
-    opacity:0; transition:opacity .6s ease; pointer-events:none;}
-  #app .hero > .hero-stage.on{opacity:1;}
-  #app .hero h1{font-size:clamp(52px,15vw,120px);}
-  #app .hero .tagline{font-size:clamp(15px,4vw,26px); margin:0 0 6px; text-wrap:balance;}
-  #app .hero p{font-size:12.5px;}
-  @media (min-width:900px){ #app .hero{--stageH:184px;} }
+  /* The headline is the promise, not the wordmark: the top bar already says Segue. */
+  #app .hero{padding-top:16px; padding-bottom:18px;}
+  #app .hero h1{font-size:clamp(28px,8vw,52px); line-height:1.05; width:auto; text-wrap:balance;}
+  #app .hero p{font-size:14px; max-width:36ch;}
+  #app .hero .loopline{font-size:12px; font-weight:600; opacity:.8; margin-top:6px;}
 
   /* The rules, on a setlist taped to the floor. */
   .how{--card:#FFF8EA; --card2:#F4EBD8; --card3:#E8DECB; --ink:#1B1726; --mut:#4E4560; --dim:#6E6352;
@@ -2911,7 +2908,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .how:before{content:''; position:absolute; left:50%; top:-7px; width:58px; height:14px;
     transform:translateX(-50%) rotate(-3deg); background:rgba(255,236,170,.78);
     box-shadow:0 1px 0 rgba(0,0,0,.08);}
-  #app .how{margin:14px 0 14px; padding-top:4px; padding-bottom:4px;}
+  #app .how{margin:14px auto 14px; padding-top:4px; padding-bottom:4px;}
   .how .how-tour{background:transparent; color:var(--ink); border:2px solid var(--ink); border-radius:2px;
     box-shadow:2px 2px 0 rgba(8,5,18,.25);}
   .how .loop b{font-family:var(--hand); font-weight:400; font-size:13px; letter-spacing:.2px; white-space:nowrap;}
@@ -2988,6 +2985,35 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .op-role + .op-role{margin-top:8px;}
   .op-lbl{font-size:11px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; color:var(--dim); margin-bottom:4px;}
   .op-row{display:flex; gap:6px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:thin;}
+  /* Your outfits and venue. The players' stages are dark in both themes: a stage is an object. */
+  .look{padding:14px 14px 12px; margin:var(--sp-2, 14px) auto;}
+  .lk-hd{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .lk-hd h2{font-family:var(--ui); font-weight:400; font-size:21px; letter-spacing:1.4px; text-transform:uppercase; margin:0;}
+  .lk-lede{margin:4px 0 12px; font-size:13px; font-weight:600; color:var(--mut);}
+  .lk-k{font-size:11px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase; color:var(--dim); margin:4px 0 8px;}
+  .wardrobe{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+  @media (min-width:760px){ .wardrobe{grid-template-columns:repeat(4,minmax(0,1fr));} }
+  .wr-player{background:#120E24; color:#F6F2EA; border:3px solid #05030C; border-radius:2px; box-shadow:3px 3px 0 rgba(5,3,12,.5); overflow:hidden;}
+  .wr-stage{height:112px; display:flex; align-items:flex-end; justify-content:center; position:relative;
+    background:linear-gradient(#221a40 0 70%, #8a5e3e 70% 74%, #a8744c 74% 78%, #8a5e3e 78% 100%); border-bottom:3px solid #05030C;}
+  .wr-stage:before{content:''; position:absolute; left:50%; top:0; width:90px; height:100%; transform:translateX(-50%);
+    background:radial-gradient(ellipse at 50% 0%, rgba(255,236,190,.35), transparent 70%); pointer-events:none;}
+  .wr-cv{width:96px; height:124px; image-rendering:pixelated; image-rendering:crisp-edges; position:relative; margin-bottom:-6px;}
+  .wr-meta{display:flex; justify-content:space-between; align-items:baseline; gap:6px; padding:8px 9px 6px;}
+  .wr-role{font-family:var(--ui); font-size:16px; letter-spacing:1.2px; text-transform:uppercase;}
+  .wr-now{font-size:11.5px; font-weight:800; color:#B8AFCB; text-align:right;}
+  .wr-chips{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px; padding:0 8px 10px;}
+  .wr-chips .ochip{min-height:44px; height:44px; padding:0; gap:0; flex-direction:column; align-items:stretch;
+    border:2px solid #2E2850; background:#1B1636; overflow:hidden;}
+  .wr-chips .ochip i{flex:1; display:block;}
+  .wr-chips .ochip.locked{background:#1B1636; opacity:.45; filter:saturate(.35);}
+  .wr-chips .ochip.on{border-color:var(--teal); box-shadow:0 0 0 2px var(--teal); opacity:1; filter:none;}
+  .wr-chips .ochip.locked.peek{border-color:var(--violet); opacity:.8;}
+  .look .vp-row{margin-bottom:4px;}
+  .look .vthumb{border-radius:2px; border-color:#15151F;}
+  .shareline{margin:10px 2px 2px; font-size:12.5px; font-weight:700; color:inherit; opacity:.8;}
+  .statsline{margin:4px auto 16px; padding:0 2px; font-size:12.5px; font-weight:600; color:var(--dim); line-height:1.5;}
+  .statsline .linkbtn{font-size:12.5px;}
   .ochip{flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; min-height:44px; padding:0 11px 0 8px;
     border:2px solid #15151F; border-radius:2px; background:#F6F2EA; color:#1B1726; font:inherit;
     font-size:12.5px; font-weight:800; cursor:pointer;}
@@ -3053,6 +3079,117 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   body.lightsdown #app > *:nth-child(3){transition-delay:.1s;}
   body.lightsdown #app > *:nth-child(n+4){transition-delay:.15s;}
   @media (prefers-reduced-motion: reduce){ #houseDim{display:none;} body.lightsdown #app > *{transform:none; opacity:1;} }
+
+  /* THE HOME TABS (owner's call, 2026-11-03), Shut The Door's switcher in Segue's kit: a dark road case
+     with a sliding lit plate. Three tabs, so --n is 3; showHomeTab moves --i. */
+  .hmodes{position:relative; display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr);
+    --n:3; --i:0; padding:4px; margin:0 auto 14px; background:#17112B; border:3px solid #0B0818;
+    border-radius:4px; box-shadow:3px 3px 0 rgba(8,5,18,.35);}
+  .hm-pill{position:absolute; left:4px; top:4px; bottom:4px; width:calc((100% - 8px) / var(--n));
+    background:var(--teal); border-radius:2px; box-shadow:inset 0 -3px 0 rgba(11,8,24,.28);
+    transform:translate3d(calc(var(--i) * 100%),0,0); transition:transform .28s cubic-bezier(.22,.8,.24,1); will-change:transform;
+    pointer-events:none;}
+  .hm-t{position:relative; z-index:1; min-height:44px; padding:0 6px; border:0; background:transparent;
+    color:#CFC4E6; font-family:var(--ui); font-weight:400; font-size:15px; letter-spacing:1.2px;
+    text-transform:uppercase; line-height:1.05; transition:color .2s; -webkit-tap-highlight-color:transparent;}
+  .hm-t.on{color:#0B0818;}
+  .hm-t:not(.on):hover{color:#fff;}
+  .hm-t:focus-visible{outline:3px solid #fff; outline-offset:-3px;}
+  @media (max-width:389px){ .hm-t{font-size:13px; letter-spacing:.6px;} }
+  @media (prefers-reduced-motion: reduce){ .hm-pill{transition:none;} }
+  .hpane[hidden]{display:none;}
+  .hpanes{position:relative; touch-action:pan-y;}
+  .hpanes.anim{overflow-x:clip; overflow-clip-margin:12px; transition:height .28s cubic-bezier(.22,.8,.24,1);}
+  .hpane.go{position:absolute; left:0; right:0; top:0;}
+  .hpane.mv{transition:transform .28s cubic-bezier(.22,.8,.24,1), opacity .22s ease-out; will-change:transform, opacity;}
+  @media (prefers-reduced-motion: reduce){ .hpanes.anim{transition:none;} .hpane.mv{transition:opacity .15s linear;} }
+
+  /* START HERE: a sticker on the Classic slip, so the main mode is never a guess. */
+  .mode.free{overflow:visible;}
+  .starthere{position:absolute; top:-22px; right:8px; z-index:2; padding:4px 9px 3px;
+    font-family:var(--ui); font-weight:400; font-size:13px; letter-spacing:1.4px; text-transform:uppercase;
+    color:#0B0818; background:#F2C43A; border:2px solid #0B0818; border-radius:2px;
+    box-shadow:2px 2px 0 #0B0818; transform:rotate(3deg); animation:shPulse 2.4s ease-in-out infinite;}
+  .starthere:after{content:''; display:inline-block; margin-left:6px; vertical-align:1px;
+    border:5px solid transparent; border-top:6px solid #0B0818; border-bottom:0;}
+  @keyframes shPulse{50%{transform:rotate(3deg) translateY(-2px); box-shadow:2px 4px 0 #0B0818;}}
+  @media (prefers-reduced-motion: reduce){ .starthere{animation:none;} }
+  .modes{padding-top:18px;}
+
+  /* WALK THE GROUNDS: a ticket into the venue world, painted with a slice of the lawn. */
+  .groundsgo{display:flex; align-items:stretch; width:100%; margin:12px 0 4px; padding:0; text-align:left;
+    font-family:inherit; color:#F6F2EA; background:#0E0B1C; border:3px solid #0B0818;
+    border-radius:2px; box-shadow:3px 3px 0 #000; overflow:hidden; cursor:pointer;}
+  .groundsgo:active{transform:translate(2px,2px); box-shadow:1px 1px 0 #000;}
+  .groundsgo:focus-visible{outline:3px solid var(--teal); outline-offset:2px;}
+  .gg-art{flex:0 0 96px; min-height:74px; background:#221a40 url('/setlist/venues/lawn.png?v=4') center / cover no-repeat;
+    image-rendering:pixelated; border-right:3px solid #0B0818;}
+  .gg-tx{flex:1; display:flex; flex-direction:column; justify-content:center; gap:2px; padding:9px 10px;}
+  .gg-k{font-size:10.5px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:#9FE7EF;}
+  .gg-tx b{font-family:var(--ui); font-weight:400; font-size:21px; letter-spacing:1.2px; text-transform:uppercase; line-height:1;}
+  .gg-s{font-size:12px; font-weight:600; color:#CFC4E6; line-height:1.3;}
+  .gg-go{display:grid; place-items:center; flex:0 0 40px; font-size:30px; font-weight:900; color:#0B0818; background:#9FE7EF;
+    border-left:3px solid #0B0818;}
+  .band:not(.soon) .playlinks{grid-template-columns:minmax(0,1fr); margin-top:8px;}
+  .band.fan .statsline{margin:12px 0 0; padding:0; color:#B8AFCB;}
+  .band.fan .statsline .linkbtn{color:#9FE7EF;}
+
+  /* ── Walk the grounds: the venue world full screen, every building a door ── */
+  body[data-screen="grounds"]{overflow:hidden;}
+  body[data-screen="grounds"] .topbar, body[data-screen="grounds"] .sfoot{display:none;}
+  body[data-screen="grounds"] #app{padding:0; max-width:none;}
+  .grounds{position:fixed; inset:0; z-index:30; background:#07051A; overflow:hidden;}
+  .grounds canvas{position:absolute; left:0; top:0; image-rendering:pixelated;}
+  .gr-hud{position:absolute; left:0; right:0; top:0; z-index:3; display:flex; justify-content:space-between; align-items:center;
+    padding:calc(env(safe-area-inset-top,0px) + 12px) 12px 0; pointer-events:none;}
+  .gr-hud > *{pointer-events:auto;}
+  .gr-btn{min-height:44px; padding:0 14px; font-family:var(--ui); font-weight:400; font-size:15px; letter-spacing:1.2px;
+    text-transform:uppercase; color:#1B1726; background:#F6F2EA; border:2px solid #0B0818; border-radius:2px;
+    box-shadow:2px 2px 0 #0B0818;}
+  .gr-btn:active{transform:translate(2px,2px); box-shadow:none;}
+  .gr-spots{position:absolute; inset:0; z-index:2;}
+  .gr-spot{position:absolute; background:none; border:0; padding:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:flex-start; cursor:pointer;}
+  .gr-spot .sign{font-family:var(--ui); font-weight:400; font-size:13px; letter-spacing:1.2px; text-transform:uppercase;
+    white-space:nowrap; color:#fff; background:var(--sc); border:2px solid #0B0818; border-radius:2px; padding:3px 8px 2px;
+    box-shadow:2px 2px 0 #0B0818; transform:translateY(-70%); transition:transform .12s;}
+  .gr-spot:hover .sign, .gr-spot:focus-visible .sign{transform:translateY(-85%) scale(1.06);}
+  .gr-spot:focus-visible{outline:none;}
+  .gr-spot:focus-visible .sign{outline:3px solid #fff; outline-offset:2px;}
+  .gr-spot:active .sign{transform:translateY(-60%);}
+  /* Your stats are an extra for people who sign up: a smaller, quieter sign. */
+  .gr-spot.minor .sign{font-family:var(--body); font-weight:800; font-size:10.5px; letter-spacing:.3px; text-transform:none;
+    background:#1B1726; color:#D8D0EA; border-color:#3a3550; box-shadow:1px 1px 0 #0B0818; padding:2px 6px;}
+  .gr-spot.play .sign{font-size:20px; padding:5px 16px 3px; letter-spacing:2px; animation:grPulse 1.6s ease-in-out infinite;}
+  @keyframes grPulse{50%{box-shadow:2px 2px 0 #0B0818, 0 0 18px var(--sc);}}
+  @media (prefers-reduced-motion: reduce){ .gr-spot.play .sign{animation:none;} }
+  .gr-cta{position:absolute; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 14px); z-index:3; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; white-space:nowrap;}
+  .gr-go{min-height:52px; padding:0 22px; font-family:var(--ui); font-weight:400; font-size:17px; letter-spacing:1.5px;
+    text-transform:uppercase; color:#0B0818; background:var(--teal); border:3px solid #0B0818; border-radius:2px;
+    box-shadow:3px 3px 0 #0B0818;}
+  .gr-go:active{transform:translate(2px,2px); box-shadow:1px 1px 0 #0B0818;}
+  .gr-veil{position:fixed; inset:0; z-index:60; background:rgba(5,3,14,.55); opacity:0; pointer-events:none; transition:opacity .2s;}
+  .gr-veil.on{opacity:1; pointer-events:auto;}
+  .gr-sheet{--card:#17112B; --card2:#211A3A; --ink:#F6F2EA; --mut:#CFC4E6; --dim:#A99FC4; --line2:rgba(255,255,255,.18);
+    position:fixed; left:0; right:0; bottom:0; z-index:61; max-height:78dvh; overflow:auto; color:#F6F2EA;
+    background:#14102A; border-top:3px solid var(--sc, var(--teal)); box-shadow:0 -4px 0 #0B0818;
+    transform:translateY(105%); transition:transform .26s cubic-bezier(.33,1,.68,1); visibility:hidden;
+    padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 18px);}
+  @media (min-width:760px){ .gr-sheet{left:50%; right:auto; width:640px; margin-left:-320px; border:3px solid var(--sc, var(--teal)); border-bottom:0;} }
+  .gr-sheet.on{transform:none; visibility:visible;}
+  @media (prefers-reduced-motion: reduce){ .gr-sheet, .gr-veil{transition:none;} }
+  .gs-hd{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;}
+  .gs-hd h2{font-family:var(--ui); font-weight:400; font-size:24px; letter-spacing:1.6px; text-transform:uppercase; margin:0; color:var(--sc, var(--teal));}
+  .gs-x{min-height:44px; padding:0 14px; background:none; color:#F6F2EA; border:2px solid rgba(255,255,255,.3); border-radius:2px; font-weight:800; font-size:13px;}
+  .gs-p{font-size:14px; font-weight:600; color:#CFC4E6; line-height:1.45; margin:0 0 12px;}
+  .gs-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .gs-row .gr-go{min-height:48px; font-size:15px;}
+  .gr-sheet .modes{margin-top:4px;}
+  .gr-sheet .lastset{margin:0;}
+  .gs-how{margin:0 0 12px; padding:12px 14px 12px 34px; background:#1B1726; border:3px solid #3a3550;
+    font-family:var(--hand); font-size:16px; line-height:1.55; color:#F6F2EA;}
+  .gs-how li::marker{color:#F2B632;}
 </style>
 <!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
      game can be reported on its own. -->
@@ -3181,9 +3318,6 @@ window.GA_ID='G-L29P5MRWKE';
     <button class="tab" type="button" data-tab="board" aria-label="Leaderboard">
       <i class="ti" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5h11V8a5.5 5.5 0 0 1-11 0V4.5z"/><path d="M6.5 6H4v1.2A2.9 2.9 0 0 0 6.9 10.1M17.5 6H20v1.2a2.9 2.9 0 0 1-2.9 2.9"/><path d="M12 13.4V17M9.2 20h5.6M10.6 17h2.8"/></svg></i>
       <span>Board</span></button>
-    <button class="tab" type="button" data-tab="profile" aria-label="Your shows">
-      <i class="ti" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.8 19.6a6.2 6.2 0 0 1 12.4 0"/></svg></i>
-      <span>You</span></button>
   </div>
 </nav>
 
@@ -3380,7 +3514,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=45';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=45';
-import { createStage } from './stage.js?v=20';
+import { createStage } from './stage.js?v=22';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones, tally } from './venues.js?v=2';
 import { ROLES, OUTFITS, ladderProgress, outfitOpen, dressFor } from './outfits.js?v=1';
 
@@ -3423,7 +3557,7 @@ const BANDS = [
  * Now written by scripts/setlist/sync_counts.mjs from a hash of the data
  * itself, in the same step of the daily refresh that already updates the
  * counts. It changes when, and only when, the data does. Do not edit by hand. */
-const DATA_VERSION = '8634a7b0';
+const DATA_VERSION = '74a1dabb';
 
 // A round is only a decision if there is a setlist to read, and — now that time
 // is the currency — only if the songs have durations to spend. 17% of songs in
@@ -3755,7 +3889,7 @@ const app = document.getElementById('app');
 /* Only home and the profile ever lead to these, so anything else is a stale
    breadcrumb and the profile is the safer of the two to land on. */
 function backFrom(){
-  return S.cameFrom === 'home' ? 'home' : 'profile';
+  return S.cameFrom === 'home' || S.cameFrom === 'grounds' ? S.cameFrom : 'profile';
 }
 
 function setScreen(name){
@@ -3765,6 +3899,7 @@ function setScreen(name){
   if (S.stage){ S.stage.destroy(); S.stage = null; }
   if (S.crowdStage){ S.crowdStage.destroy(); S.crowdStage = null; }
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
+  if (S.grounds){ S.grounds.destroy(); S.grounds = null; }
   /* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
      scorecard" at the foot of a long playback landed half way down the
      scorecard, and every round after the first opened its reveal wherever the
@@ -3839,7 +3974,7 @@ function mountStrip(name){
   const mine = S.stripSeq = (S.stripSeq || 0) + 1;
   const cv = document.getElementById('bandStrip');
   if (!act || !cv) return;
-  const go = () => import('./backstage.js?v=7').then(m => {
+  const go = () => import('./backstage.js?v=10').then(m => {
     if (mine !== S.stripSeq || S.strip) return;
     S.strip = { act, h: m.createStrip(cv, { act, sign: busSign(), dress: bandDress(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches }) };
@@ -3945,8 +4080,8 @@ const GUIDE_STEPS = [
     eyebrow: 'Everything else',
     hd: 'The rest lives down here',
     body: `<p><b>Tour</b> has every date Goose has announced. <b>Songs</b> is the
-        whole catalog. <b>Board</b> is the leaderboard. <b>You</b> is where you
-        check off the shows you've been to.</p>
+        whole catalog. <b>Board</b> is the leaderboard. Sign in, top right, to keep
+        your stats.</p>
       <p>You don't need any of it to play. Let's build your show.</p>`,
   },
 ];
@@ -4084,16 +4219,20 @@ function busSign(){
   const d = new Date(next.date + 'T12:00:00');
   return d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getDate();
 }
-function mountBackstage(){
+/* THE WARDROBE'S PLAYERS, painted once the section is near the screen, so the first screen is text
+   and buttons and nothing else. backstage.js draws them from the show's own frames. */
+function mountWardrobe(){
   if (S.backstage){ S.backstage.destroy(); S.backstage = null; }
-  const cv = document.getElementById('heroStage');
-  if (!cv) return;
-  const go = () => import('./backstage.js?v=7').then(m => {
-    if (!cv.isConnected || S.backstage) return;
-    S.backstage = m.createBackstage(cv, { sign: busSign(), dress: bandDress(),
+  const box = document.querySelector('.wardrobe');
+  if (!box) return;
+  const go = () => import('./backstage.js?v=10').then(m => {
+    if (!box.isConnected || S.backstage) return;
+    S.backstage = m.createWardrobe([...box.querySelectorAll('.wr-cv')], { dress: bandDress(),
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches });
   }).catch(() => {});
-  (window.requestIdleCallback || (f => setTimeout(f, 200)))(go);
+  if (typeof IntersectionObserver !== 'function'){ (window.requestIdleCallback || (f => setTimeout(f, 200)))(go); return; }
+  const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)){ io.disconnect(); go(); } }, { rootMargin: '200px' });
+  io.observe(box);
 }
 
 /* THE DAILY, on the band panel under the main button. Three states, and each
@@ -4122,7 +4261,111 @@ function dailyCardHTML(b, saved){
     </button>`;
 }
 
+/* The tabs take the arrow keys, the way a tablist does: focus follows the selection. */
+document.addEventListener('keydown', e => {
+  const t = e.target.closest && e.target.closest('[data-htab]');
+  if (!t) return;
+  const i = HOME_TABS.indexOf(t.dataset.htab), n = HOME_TABS.length;
+  const j = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i + n - 1) % n
+    : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+  if (j < 0) return;
+  e.preventDefault();
+  showHomeTab(HOME_TABS[j]);
+  const nb = document.getElementById('hm-' + HOME_TABS[j]); if (nb) nb.focus();
+});
+
+/* THE TWO WAYS TO PLAY, the same tiles on the home card and on the grounds' stage. */
+function playModesHTML(b, saved){
+  return `
+        <div class="modes">
+          ${saved && !saved.daily
+            ? `<button type="button" class="mode free" data-resume="${b.id}">
+                <span class="md-k">In progress</span>
+                <span class="md-t">Resume your setlist</span>
+                <span class="md-s">${esc(draftSummary(saved))}</span>
+                <span class="md-go">Resume</span></button>`
+            : `<button type="button" class="mode free" data-start="${b.id}">
+                ${/* START HERE (owner's call, 2026-11-03): the main mode says so, on the tile itself. */''}
+                <span class="starthere" aria-hidden="true">Start here</span>
+                <span class="md-k">Classic &middot; Free play</span>
+                <span class="md-t">Build a setlist</span>
+                <span class="md-s">Random nights, as many as you like.</span>
+                <span class="md-go">Build your show</span></button>`}
+          ${b.sample ? '' : dailyCardHTML(b, saved)}
+        </div>`;
+}
+
+const HOME_TABS = ['play', 'look', 'fan'];
+const HOME_TAB_LABEL = { play: 'Play', look: 'Outfits &amp; venue', fan: 'Fan side' };
+/* THE MOVE, Shut The Door's (shut-the-door/ui.js setTab). A tab swaps the panel without a render, so
+   nothing on screen reloads. The pill slides to the tab; the panels cross-slide in the direction of
+   travel with a short fade (transform and opacity only), while the panels' box eases from one height
+   to the other so the page below never jumps. A second tap mid-move lands the first move at once,
+   then starts the next, so the wrong panel never shows. how: 'snap' for no move. */
+const TAB_MS = 290;
+let tabMove = null;
+function landTab(){ if (tabMove){ clearTimeout(tabMove.t); tabMove.land(); } }
+function showHomeTab(t, how){
+  if (!HOME_TABS.includes(t)) return;
+  landTab();
+  const from = S.homeTab;
+  S.homeTab = t;
+  const bar = document.querySelector('.hmodes');
+  if (!bar) return;
+  bar.style.setProperty('--i', HOME_TABS.indexOf(t));
+  for (const b of bar.querySelectorAll('[data-htab]')){
+    const on = b.dataset.htab === t;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on));
+    if (on) b.removeAttribute('tabindex'); else b.setAttribute('tabindex', '-1');
+  }
+  if (from === t) return;
+  const panes = document.getElementById('hpanes');
+  const A = document.getElementById('hp-' + from), B = document.getElementById('hp-' + t);
+  if (!panes || !A || !B) return;
+  if (how === 'snap'){ A.hidden = true; B.hidden = false; return; }
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const dir = HOME_TABS.indexOf(t) > HOME_TABS.indexOf(from) ? 1 : -1, dx = still ? 0 : 26;
+  // The start: B laid over A, off to the side of travel and clear; the box held at A's height.
+  const h0 = panes.offsetHeight;
+  B.hidden = false; B.classList.add('go');
+  B.style.transform = `translate3d(${dir * dx}%,0,0)`; B.style.opacity = '0';
+  const h1 = B.offsetHeight;
+  panes.style.height = h0 + 'px';
+  panes.classList.add('anim');
+  A.classList.add('mv'); B.classList.add('mv');
+  void panes.offsetHeight;
+  // The end state; the transitions carry it.
+  panes.style.height = h1 + 'px';
+  A.style.transform = `translate3d(${-dir * dx}%,0,0)`; A.style.opacity = '0';
+  B.style.transform = ''; B.style.opacity = '';
+  tabMove = { land(){
+    tabMove = null;
+    A.hidden = true; A.classList.remove('mv'); A.style.transform = ''; A.style.opacity = '';
+    B.classList.remove('go', 'mv');
+    panes.classList.remove('anim'); panes.style.height = '';
+  } };
+  tabMove.t = setTimeout(tabMove.land, TAB_MS);
+}
+/* A sideways swipe on the panels moves one tab; an upright drag stays a scroll (touch-action: pan-y). */
+let tabSwipe = null;
+document.addEventListener('touchstart', e => {
+  tabSwipe = e.touches.length === 1 && e.target.closest && e.target.closest('#hpanes')
+    && !e.target.closest('.op-row, .vp-row, .wr-chips')
+    ? { x: e.touches[0].clientX, y: e.touches[0].clientY, at: Date.now() } : null;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!tabSwipe || !e.changedTouches.length) return;
+  const dx = e.changedTouches[0].clientX - tabSwipe.x, dy = e.changedTouches[0].clientY - tabSwipe.y;
+  const quick = Date.now() - tabSwipe.at < 700;
+  tabSwipe = null;
+  if (!quick || Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+  const i = HOME_TABS.indexOf(S.homeTab) + (dx < 0 ? 1 : -1);
+  if (i >= 0 && i < HOME_TABS.length) showHomeTab(HOME_TABS[i]);
+}, { passive: true });
+
 function renderHome(){
+  landTab();
+  if (!HOME_TABS.includes(S.homeTab)) S.homeTab = 'play';
   const real = BANDS.filter(b => !b.sample);
   /* THE SAMPLE BAND IS A DEVELOPMENT FIXTURE and it was on the live page, one
      tap under the real one, labelled "Made-up data we use for testing". A
@@ -4150,16 +4393,11 @@ function renderHome(){
    */
   const card = b => {
     const mine = attendedCount(b.id);
-    const live = b.latest ? LATEST.data : null;
-    const next = b.latest ? nextShow() : null;
-    const last = live && live.last;
-    const days = next ? daysUntil(next.date) : null;
-    const place = s => [s.city, s.state || s.country].filter(Boolean).join(', ');
     const draft = readDraft();
     const saved = draft && draft.band === b.id ? draft : null;
 
     return `
-      <section class="card band">
+      <section class="card band play">
         <div class="band-hd"><span class="eyebrow">Now playing</span><h2>${esc(b.label)}</h2></div>
         <div class="band-meta">${esc(b.note)}${mine
           ? ` <b class="mine">&middot; you've been to ${mine}</b>` : ''}</div>
@@ -4174,23 +4412,37 @@ function renderHome(){
               peers: a random night that is yours alone, or today's night that is
               everybody's. Starting over is a quiet link under them, never a
               second big button that looks like the first. */''}
-        <div class="modes">
-          ${saved && !saved.daily
-            ? `<button type="button" class="mode free" data-resume="${b.id}">
-                <span class="md-k">In progress</span>
-                <span class="md-t">Resume your setlist</span>
-                <span class="md-s">${esc(draftSummary(saved))}</span>
-                <span class="md-go">Resume</span></button>`
-            : `<button type="button" class="mode free" data-start="${b.id}">
-                <span class="md-k">Free play</span>
-                <span class="md-t">Build a setlist</span>
-                <span class="md-s">Random nights, as many as you like.</span>
-                <span class="md-go">Build your show</span></button>`}
-          ${b.sample ? '' : dailyCardHTML(b, saved)}
-        </div>
+        ${playModesHTML(b, saved)}
         ${saved ? `<button class="linkbtn freshlink" type="button" data-start="${b.id}"
           data-fresh="1">Throw it away and start a new one</button>` : ''}
+        ${/* Sharing is the point of building one: say so where the buttons are. */''}
+        <p class="shareline">Every show you build makes a card to send your friends. No account needed.</p>
 
+        ${/* WALK THE GROUNDS (owner's call, 2026-11-03): the venue world from the layout prototypes, a
+              place to look around in. Every building is a door to the real screen it stands for. */''}
+        ${b.shows ? `<button type="button" class="groundsgo" data-grounds="1">
+          <span class="gg-art" aria-hidden="true"></span>
+          <span class="gg-tx"><span class="gg-k">Explore</span><b>Walk the grounds</b>
+            <span class="gg-s">The stage, the bus, the merch. Every booth is a door.</span></span>
+          <span class="gg-go" aria-hidden="true">&rsaquo;</span></button>
+        <div class="bandlinks playlinks">
+          <button type="button" data-go="board">${goIcon('board')}Leaderboard</button>
+        </div>` : ''}
+      </section>`;
+  };
+
+  /* THE FAN SIDE (owner's call, 2026-11-03): what the band is up to, and what you have tracked. It is
+     its own tab, apart from the game, so a player never mistakes a stats page for the way to play. */
+  const fanCard = b => {
+    const live = b.latest ? LATEST.data : null;
+    const next = b.latest ? nextShow() : null;
+    const last = live && live.last;
+    const days = next ? daysUntil(next.date) : null;
+    const place = s => [s.city, s.state || s.country].filter(Boolean).join(', ');
+    return `
+      <section class="card band fan">
+        <div class="band-hd"><span class="eyebrow">The fan side</span><h2>${esc(b.label)}</h2></div>
+        <div class="band-meta">Where they're playing, what they played, and every song they know.</div>
         ${next ? `<div class="nextline">
           <span class="nl-k">Next show</span>
           <b class="nl-v">${esc(countdownWords(days))}</b>
@@ -4218,10 +4470,9 @@ function renderHome(){
 
         ${b.shows ? `<div class="bandlinks">
           <button type="button" data-go="tour">${goIcon('tour')}Tour dates</button>
-          <button type="button" data-go="browse">${goIcon('browse')}Track your shows</button>
           <button type="button" data-go="songs">${goIcon('songs')}All songs</button>
-          <button type="button" data-go="board">${goIcon('board')}Leaderboard</button>
         </div>` : ''}
+        ${statsLineHTML()}
       </section>`;
   };
 
@@ -4234,26 +4485,37 @@ function renderHome(){
      sit above the band panel rather than below it. The play button is still
      the biggest thing on the screen; it is now the biggest thing on the screen
      AFTER you have been told what pressing it does. */
-  /* THE HERO IS BACKSTAGE (2026-10-27): the band soundchecking on a deck at dusk, drawn by
-     backstage.js with the show's own sprites, under the wordmark. The eyebrow went to pay for it:
-     the tagline now names the band, and the play button still has to clear the fold. */
+  /* THE GAME FIRST (owner's call, 2026-11-02, layout A of two prototypes). The front screen leads
+     with what Segue is and the two ways to play; the band picture that sat under the wordmark is
+     gone from here and the band stands in "Your outfits and venue", where you dress them. Segue
+     is a game you can play anytime and share; your stats are an extra for people who sign up. */
   const who = real.length === 1 ? real[0].label + ' ' : '';
   app.innerHTML = `
     <div class="hero">
-      <canvas class="hero-stage" id="heroStage" aria-hidden="true"></canvas>
-      <h1><span class="accent">Segue</span></h1>
-      <div class="tagline">Build the ${esc(who)}show that never happened.</div>
-      <p>Real shows, one at a time. Take one song from each and pay its
-        running time.</p>
+      <h1><span class="accent">Build the ${esc(who)}show that never happened.</span></h1>
+      <p>Build a ${esc(who)}setlist anytime, anywhere. Share it with your friends.</p>
+      <p class="loopline">Real shows, one at a time. Take one song from each and pay its running time.</p>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
 
+    ${/* THE HOME TABS (owner's call, 2026-11-03), the same switcher Shut The Door has: Play is the game,
+          Outfits & venue is how your show looks, and the fan side is the band and your stats. A tab swaps
+          the panel under it and nothing else. Every visit opens on Play: the game comes first. */''}
+    <div class="hmodes" role="tablist" aria-label="Sections" style="--i:${HOME_TABS.indexOf(S.homeTab)}">
+      <i class="hm-pill" aria-hidden="true"></i>
+      ${HOME_TABS.map(t => `<button class="hm-t${S.homeTab === t ? ' on' : ''}" id="hm-${t}" type="button" role="tab"
+        data-htab="${t}" aria-selected="${S.homeTab === t}" aria-controls="hp-${t}"${S.homeTab === t ? '' : ' tabindex="-1"'}>${HOME_TAB_LABEL[t]}</button>`).join('')}
+    </div>
+
+    <div class="hpanes" id="hpanes">
+    <div class="hpane" id="hp-play" role="tabpanel" aria-labelledby="hm-play"${S.homeTab === 'play' ? '' : ' hidden'}>
     <div class="bands">${real.map(card).join('')}
       <section class="card band soon">
         <div><div class="band-hd"><h2>More bands coming soon</h2></div></div>
         <button class="linkbtn" type="button" id="reqBand">Request one</button>
       </section></div>
+
 
     ${/* HOW IT WORKS, FOLDED (owner's call, 2026-10-28). It sat above the band panel and pushed
           Build your show and the daily below the fold on a phone. Now it waits under them, closed,
@@ -4343,9 +4605,16 @@ function renderHome(){
       <button class="btn ghost tiny how-tour" type="button" id="guideBtn">Show me around</button>
     </details>
 
-    ${venuePickerHTML()}
+    </div>
 
-    ${outfitPickerHTML()}
+    <div class="hpane" id="hp-look" role="tabpanel" aria-labelledby="hm-look"${S.homeTab === 'look' ? '' : ' hidden'}>
+      ${lookHTML()}
+    </div>
+
+    <div class="hpane" id="hp-fan" role="tabpanel" aria-labelledby="hm-fan"${S.homeTab === 'fan' ? '' : ' hidden'}>
+      <div class="bands">${real.map(fanCard).join('')}</div>
+    </div>
+    </div>
 
     ${/* THE "YOURS" ROW IS GONE. Leaderboard and Your shows were the only two
           links on it, and both are tabs on the bar that sits under this screen
@@ -4355,7 +4624,7 @@ function renderHome(){
       <button class="btn ghost" data-start="${test[0].id}">Try the sample data</button>
       <span>Made-up data we use for testing.</span>
     </div>` : ''}`;
-  mountBackstage();
+  mountWardrobe();
 
   /* The walkthrough no longer opens by itself (owner's call: no auto tutorial
      on any game). "Show me around" under How it works is the way in. */
@@ -5358,16 +5627,16 @@ const venueLabel = v => {
 };
 
 /* THE PICKER, on the home screen: every room as a picture, open ones pressable, locked ones dark. */
-function venuePickerHTML(){
+function venuePickerHTML(bare){
   const prog = venueProg(), cur = chosenVenue();
   const open = new Set(prog.filter(p => p.open).map(p => p.id));
-  const hint = !ME.signedIn ? 'Sign in to earn new rooms. Every show you build counts.'
+  const hint = !ME.signedIn ? 'Sign in to earn new venues. Every show you build counts.'
     : VSTATE.rows === null && VSTATE.busy ? 'Checking which rooms you have earned...'
-    : `${open.size} of ${VENUE_LIST.length} rooms open. ${cur === 'random' ? 'Each show draws one of them.' : 'Tap a dark one to see what it takes.'}`;
+    : `${open.size} of ${VENUE_LIST.length} venues open. ${cur === 'random' ? 'Each show draws one of them.' : 'Tap a dark one to see what it takes.'}`;
   const rnd = cur === 'random';
-  return `<section class="card vpick">
+  return `${bare ? '' : `<section class="card vpick">
     <div class="vp-hd"><span class="eyebrow">Where your show is played</span>
-      ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
+      ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>`}
     <div class="vp-row" role="radiogroup" aria-label="Choose where your show is played">
       <button type="button" class="vthumb vrand${rnd ? ' on' : ''}" data-venue="random" role="radio"
         aria-checked="${rnd}" aria-label="A random room each show">
@@ -5383,7 +5652,7 @@ function venuePickerHTML(){
       }).join('')}
     </div>
     <div class="vp-say" id="vpSay">${esc(hint)}</div>
-  </section>`;
+  ${bare ? '' : '</section>'}`;
 }
 function venueClueHTML(id){
   const v = VENUE_BY_ID[id], p = venueProg().find(x => x.id === id);
@@ -5421,29 +5690,46 @@ function outfitSwatch(o){
   const L = o.look;
   return [L.jacket || L.shirt || '#efe6cf', L.pants || '#e8dec4'];
 }
-function outfitPickerHTML(){
+/* YOUR OUTFITS AND VENUE (owner's call, 2026-11-02): one section for everything you customise. Each
+   player stands on a little lit stage over their six outfits, so the band is on the front screen
+   where you dress them, and the venue you play in sits under them. */
+function lookHTML(){
   const prog = outfitLadder(), dress = bandDress();
   const rungs = prog.filter(p => p.open).length;
   const hint = !ME.signedIn ? 'Sign in to earn new outfits. Every show you build counts.'
     : VSTATE.rows === null && VSTATE.busy ? 'Checking which outfits you have earned...'
     : `${ROLES.length * (rungs + 1)} of ${ROLES.length * OUTFITS.guitar.length} outfits open. Tap a dark one to see what it takes.`;
-  return `<section class="card vpick opick">
-    <div class="vp-hd"><span class="eyebrow">What your band wears</span>
+  return `<section class="card look">
+    <div class="lk-hd"><h2>Your outfits and venue</h2>
       ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
-    ${ROLES.map(r => `<div class="op-role">
-      <div class="op-lbl">${esc(r.label)}</div>
-      <div class="op-row" role="radiogroup" aria-label="What ${esc(r.label.toLowerCase())} wears">
-        ${OUTFITS[r.id].map((o, i) => {
-          const on = outfitOpen(prog, i), cur = dress[r.id] === o.id, [a, b] = outfitSwatch(o);
-          return `<button type="button" class="ochip${on ? '' : ' locked'}${cur ? ' on' : ''}" role="radio"
-            aria-checked="${cur}" data-outfit="${r.id}:${o.id}" data-rung="${i}"
-            aria-label="${esc(o.name)}${on ? '' : ', locked'}">
-            <span class="osw" aria-hidden="true"><i style="background:${a}"></i><i style="background:${b}"></i></span>
-            <span class="onm">${esc(o.name)}</span></button>`;
-        }).join('')}
-      </div></div>`).join('')}
+    <p class="lk-lede">Dress the band and pick where they play. They wear it on stage.</p>
+    <div class="lk-k">Outfits</div>
+    <div class="wardrobe">${ROLES.map(r => {
+      const cur = OUTFITS[r.id].find(o => o.id === dress[r.id]) || OUTFITS[r.id][0];
+      return `<div class="wr-player">
+        <div class="wr-stage"><canvas class="wr-cv" data-player="${r.id}" aria-hidden="true"></canvas></div>
+        <div class="wr-meta"><span class="wr-role">${esc(r.label)}</span><span class="wr-now">${esc(cur.name)}</span></div>
+        <div class="wr-chips" role="radiogroup" aria-label="What ${esc(r.label.toLowerCase())} wears">
+          ${OUTFITS[r.id].map((o, i) => {
+            const on = outfitOpen(prog, i), isCur = o.id === cur.id, [a, b] = outfitSwatch(o);
+            return `<button type="button" class="ochip${on ? '' : ' locked'}${isCur ? ' on' : ''}" role="radio"
+              aria-checked="${isCur}" data-outfit="${r.id}:${o.id}" data-rung="${i}"
+              aria-label="${esc(o.name)}${on ? '' : ', locked'}"><i style="background:${a}"></i><i style="background:${b}"></i></button>`;
+          }).join('')}
+        </div></div>`;
+    }).join('')}</div>
     <div class="vp-say" id="opSay">${esc(hint)}</div>
+    <div class="lk-k">Venue</div>
+    ${venuePickerHTML(true)}
   </section>`;
+}
+/* YOUR STATS ARE AN EXTRA, not a reason to come (owner's call, 2026-11-02): one quiet line. */
+function statsLineHTML(){
+  return ME.signedIn
+    ? `<p class="statsline">Your stats and the shows you were at are under your name, top right.
+        <button class="linkbtn" type="button" data-go="profile">See your stats</button></p>`
+    : `<p class="statsline">Sign up and Segue keeps your stats: every setlist you've built, and the real shows
+        you were at. Optional, and free. <button class="linkbtn" type="button" data-venue-auth>Sign up</button></p>`;
 }
 function outfitClueHTML(i){
   const p = outfitLadder()[i - 1];
@@ -6451,7 +6737,9 @@ function openAuth(mode){
 }
 function closeAuth(){ authSheet.classList.remove('on'); authMsg = null; }
 
-meBtn.addEventListener('click', () => openAuth());
+/* Signed in, your name opens your stats, which is where your name and sign out also live. Signed
+   out, it signs you in. Stats have no tab of their own: the games are the point (2026-11-02). */
+meBtn.addEventListener('click', () => { if (ME.signedIn) setScreen('profile'); else openAuth(); });
 
 authSheet.addEventListener('click', async e => {
   if (e.target === authSheet){ closeAuth(); return; }
@@ -7853,6 +8141,156 @@ function renderShow(){
   else go();
 }
 
+
+/* ── walk the grounds ──────────────────────────────────────────────────────────
+ *
+ * THE VENUE WORLD (owner's call, 2026-11-03, layout B of the two prototypes, as a place to visit rather
+ * than the front screen). stage.js draws it, in a room made of the stage kit's solids (grounds.js), with
+ * the band in their real frames and the crowd, sky and lights it draws every show. This screen only
+ * hangs signs on it, worked out from the same feet the buildings were built in, and every sign opens
+ * the real screen it stands for. It is not a venue: it earns nothing and is never drawn for a show.
+ */
+const GR_ROTATE = ['jam', 'closer', 'opener', 'peak', 'cover'];
+const GR_SIGNS = [
+  ['stage', 'Play', '#37C5D5', 'play'], ['board', 'Leaderboard', '#C9940F'], ['foh', 'Last show', '#6A58A8'],
+  ['bus', 'Tour dates', '#E0742E'], ['trailer', 'Outfits', '#7553D0'], ['records', 'All songs', '#D13F86'],
+  ['food', 'How it works', '#B8860B'], ['box', 'Your stats', '#7553D0', 'minor'], ['gate', 'Venue', '#2E9AA8'],
+];
+const grArr = () => innerWidth > innerHeight * 1.1 ? 'wide' : 'tall';
+
+function renderGrounds(){
+  const b = BANDS.find(x => !x.sample);
+  if (!b || !b.shows){ S.screen = 'home'; return renderHome(); }
+  loadLatest();
+  app.innerHTML = `
+    <main class="grounds" id="grounds">
+      <canvas id="grCv" aria-hidden="true"></canvas>
+      <div class="gr-spots" id="grSpots"></div>
+      <div class="gr-hud">
+        <button class="gr-btn" type="button" data-gr-back>&lsaquo; Back</button>
+      </div>
+      ${/* No tagline here: it sat over the soundboard and the gate, and the home screen already says it. */''}
+      <div class="gr-cta">
+        <button class="gr-go" type="button" data-gr-open="stage">Build your show</button></div>
+      <div class="gr-veil" id="grVeil" data-gr-close></div>
+      <section class="gr-sheet" id="grSheet" role="dialog" aria-modal="true" aria-labelledby="grHd" aria-hidden="true">
+        <div class="gs-hd"><h2 id="grHd"></h2><button class="gs-x" type="button" data-gr-close>Close</button></div>
+        <div id="grBody"></div>
+      </section>
+    </main>`;
+
+  const host = document.getElementById('grounds'), cv = document.getElementById('grCv');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const G = S.grounds = { arr: grArr(), stage: null, tick: 0, dead: false, cam: null, n: 0,
+    destroy(){
+      G.dead = true; clearInterval(G.tick);
+      if (G.stage){ G.stage.destroy(); G.stage = null; }
+      removeEventListener('resize', onResize); removeEventListener('keydown', onKey);
+    } };
+
+  Promise.all([import('./grounds.js?v=1'), import('./world.js?v=6')]).then(([gm, wm]) => {
+    if (G.dead) return;
+    G.SPOTS = gm.SPOTS; G.ROOMS = gm.GROUNDS; G.cam = wm;
+    start();
+  }).catch(() => { if (!G.dead){ S.screen = 'home'; setScreen('home'); } });
+
+  function start(){
+    if (G.stage) G.stage.destroy();
+    G.stage = createStage(cv, { venue: 'grounds_' + G.arr, seed: 23, shot: 'crowd', dress: bandDress(),
+      you: { d: 1, rnd: null, seed: 5 }, reduce });
+    // Not the end of the night: the band is playing, the lights are on the lawn.
+    G.stage.cue({ kind: 'set', progress: .92 });
+    G.stage.cue({ kind: 'song', instant: true, progress: .92, energy: .6, palette: 'jam' });
+    place();
+  }
+  // A new song every so often, so the lights move round the grounds the way a show does.
+  if (!reduce) G.tick = setInterval(() => {
+    if (G.stage && !document.hidden) G.stage.cue({ kind: 'song', progress: .92, energy: .45 + Math.random() * .4,
+      palette: GR_ROTATE[G.n++ % GR_ROTATE.length], hold: 7000 });
+  }, 7000);
+
+  /* The renderer's own camera, worked the same way stage.js works it, so a sign lands on its building. */
+  function camera(){
+    const { sx, sy, WPX, HPX } = G.cam;
+    const dpr = devicePixelRatio || 1, cw = host.clientWidth, ch = host.clientHeight;
+    const devW = Math.round(cw * dpr), devH = Math.round(ch * dpr);
+    let k = Math.max(1, Math.round(devW / 340)); k = Math.max(k, Math.ceil(devW / WPX), Math.ceil(devH / HPX));
+    const visW = Math.ceil(devW / k), visH = Math.ceil(devH / k), back = G.ROOMS[G.arr].floor.back;
+    const camX = Math.round(sx(0) - visW / 2), camY = Math.round(Math.min(Math.max(0, sy(back + .5, 0) + 5 - visH), HPX - visH));
+    const u = k / dpr;
+    return (x, y, z) => [(sx(x) - camX) * u, (sy(y, z) - camY) * u];
+  }
+  function place(){
+    const P = camera(), at = Object.assign({ stage: [-14, 14, -14.5, 0, 17] }, G.SPOTS[G.arr]);
+    document.getElementById('grSpots').innerHTML = GR_SIGNS.map(([id, label, c, cls]) => {
+      const [x0, x1, y0, y1, h] = at[id], [l, t] = P(x0, y0, h), [r, bt] = P(x1, y1, 0);
+      return `<button type="button" class="gr-spot ${cls || ''}" ${grAction(id)} style="--sc:${c}; left:${l}px; top:${t}px; width:${r - l}px; height:${bt - t}px"><span class="sign">${esc(label)}</span></button>`;
+    }).join('');
+  }
+  function onResize(){
+    if (!G.cam) return;
+    const a = grArr();
+    if (a !== G.arr){ G.arr = a; start(); } else place();
+  }
+  function onKey(e){ if (e.key === 'Escape') grClose(); }
+  addEventListener('resize', onResize);
+  addEventListener('keydown', onKey);
+}
+
+/* What each sign does. The pages are the real ones; the sheets hold what fits on one panel. */
+function grAction(id){
+  switch (id){
+    case 'board': return 'data-go="board"';
+    case 'bus': return 'data-go="tour"';
+    case 'records': return 'data-go="songs"';
+    case 'trailer': case 'gate': return 'data-gr-look';
+    case 'box': return ME.signedIn ? 'data-go="profile"' : 'data-gr-open="box"';
+    default: return `data-gr-open="${id}"`;
+  }
+}
+function grPanel(id){
+  const b = BANDS.find(x => !x.sample);
+  const last = LATEST.data && LATEST.data.last;
+  const place = s => [s.city, s.state || s.country].filter(Boolean).join(', ');
+  if (id === 'stage'){
+    const draft = readDraft();
+    return ['Play', '#37C5D5', `${playModesHTML(b, draft && draft.band === b.id ? draft : null)}
+      <p class="gs-p" style="margin:12px 0 0">Every show you build makes a card to send your friends. No account needed.</p>`];
+  }
+  if (id === 'foh') return ['Last show', '#8A7AE0', last && last.sets.length ? `<div class="lastset">
+      <div class="ls-hd"><span class="ls-hk">Last show</span> <b>${esc(fmtDate(last.date))}</b>
+        <span class="ls-hp">${esc(last.venue)}${place(last) ? `, ${esc(place(last))}` : ''}</span></div>
+      ${last.sets.map(st => `<div class="ls-row"><span class="ls-k">${esc(st.label)}</span>
+        <span class="ls-v">${st.songs.map((sg, i) => esc(sg.n) + (i === st.songs.length - 1 ? ''
+          : sg.s ? '<i class="ls-seg">&gt;</i>' : '<i class="ls-sep">,</i>')).join(' ')}</span></div>`).join('')}
+    </div>` : `<p class="gs-p">${LATEST.tried ? 'No setlist yet.' : 'Loading the last show.'}</p>`];
+  if (id === 'food') return ['How it works', '#E0A82E', `<ol class="gs-how">
+      <li>The wheel picks a real night. Not you.</li>
+      <li>Take one song. It costs every second it ran.</li>
+      <li>Fill 75, 70 and 10 minutes. Then the crowd decides.</li></ol>
+      <p class="gs-p">Real segues are where the points are. Grabbing every monster jam is how you lose.</p>`];
+  if (id === 'box') return ['Your stats', '#A982F3', `<p class="gs-p">Sign up and Segue keeps your stats: every setlist you've built, and the real shows you were at. Optional, and free.</p>
+      <div class="gs-row"><button class="gr-go" type="button" data-venue-auth>Sign up</button></div>`];
+  return null;
+}
+function grOpen(id){
+  const p = grPanel(id), sh = document.getElementById('grSheet');
+  if (!p || !sh) return;
+  const [title, col, body] = p;
+  sh.style.setProperty('--sc', col);
+  document.getElementById('grHd').textContent = title;
+  document.getElementById('grBody').innerHTML = body;
+  sh.classList.add('on'); sh.setAttribute('aria-hidden', 'false');
+  document.getElementById('grVeil').classList.add('on');
+  const x = sh.querySelector('.gs-x'); if (x) x.focus({ preventScroll: true });
+}
+function grClose(){
+  const sh = document.getElementById('grSheet');
+  if (!sh || !sh.classList.contains('on')) return;
+  sh.classList.remove('on'); sh.setAttribute('aria-hidden', 'true');
+  document.getElementById('grVeil').classList.remove('on');
+}
+
 function render(){
   paintTabs();
   if (S.screen === 'home')    return renderHome();
@@ -7867,6 +8305,7 @@ function render(){
   if (S.screen === 'browse')  return renderBrowse();
   if (S.screen === 'songs')   return renderSongs();
   if (S.screen === 'nights')  return renderNights();
+  if (S.screen === 'grounds') return renderGrounds();
 }
 
 /* ── your nights ─────────────────────────────────────────────────────────────
@@ -8925,6 +9364,14 @@ function renderProfile(){
 
 // ── events ───────────────────────────────────────────────────────────────────
 app.addEventListener('click', e => {
+  const hTab = e.target.closest('[data-htab]');
+  if (hTab){ showHomeTab(hTab.dataset.htab); return; }
+  if (e.target.closest('[data-grounds]')){ S.cameFrom = S.screen; setScreen('grounds'); return; }
+  if (e.target.closest('[data-gr-back]')){ S.homeTab = 'play'; setScreen('home'); return; }
+  if (e.target.closest('[data-gr-close]')){ grClose(); return; }
+  const grO = e.target.closest('[data-gr-open]');
+  if (grO){ grOpen(grO.dataset.grOpen); return; }
+  if (e.target.closest('[data-gr-look]')){ S.homeTab = 'look'; setScreen('home'); return; }
   const vAuth = e.target.closest('[data-venue-auth]');
   if (vAuth){ openAuth('in'); return; }
   const vNext = e.target.closest('[data-venue-next]');

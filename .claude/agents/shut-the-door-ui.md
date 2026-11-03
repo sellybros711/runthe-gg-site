@@ -23,9 +23,11 @@ sizes, and show the owner screenshots before anything merges.
   The grid is catcher's view in data and pitcher's view on screen (mirror with `screenCol()` only);
   copy says inside and away, never left and right. A number a player reads comes from the engine,
   the pack or the server (`scripts/check-numbers.mjs`). Nothing on the home screen may spoil the reveal.
-- **The brand.** The Strike Zone mark, ink, white, signal orange and data blue, Barlow Condensed for
-  display and Inter for body, from the tokens in `style.css`. No new fonts. Club colours come from
-  `3d/clubs.js`. No logos or crests.
+- **The brand.** The Home Plate Crest (`brand/`), ink, white, signal orange and data blue, from the
+  tokens in `style.css`. Type (the owner's pick, 2026-11-02): Anton only for the big one-off moments
+  (the home headline, take the mound, the result's outcome and the like), Inter for everything else,
+  rows, titles and names in sentence case, chips and buttons in capitals. No other new fonts without
+  the owner. Club colours come from `3d/clubs.js`. No club or league logos or crests.
 - **Phones first.** 16px gutter, no horizontal scroll, tap targets at least 38px, both themes.
 - **Cache versions.** Bump `ui.js`, `style.css` and any sibling script with
   `node scripts/check-cachebust.mjs --update` in the same commit.

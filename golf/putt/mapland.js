@@ -49,6 +49,9 @@ var PAL={
   neon:{ g:['#0f0c22','#141030','#181338','#1d1742'], sp:[['#ff2bd6',.004],['#00e5ff',.004]], tree:'round', leaf:['#3a0a4a','#5a1a70','#7a2a96','#a64ac8'], trunk:'#2a0a28', path:['#2a2060','#3a2c80'], water:['#008fa0','#00b8cc','#00e5ff','#b8faff'], shadow:.5 },
   school:{ g:['#5f9e45','#6aaa4f','#76b658','#82c262'], sp:[['#ffffff',.004],['#ffd23f',.003]], tree:'round', leaf:['#24552a','#2f6d33','#3f8a3e','#5aa84c'], trunk:'#5a3d26', path:['#d8ccb0','#e4d9c0'], water:['#3a5a76','#4a6e8c','#6a8eaa','#c8dceb'], shadow:.68 },
   iceage:{ g:['#d9e2e8','#e3eaef','#edf2f5','#f6f9fb'], sp:[['#a89884',.012],['#ffffff',.02]], tree:'pine', leaf:['#1e3f30','#28503e','#33624c','#42785c'], snow:'#f6f9fd', trunk:'#4a3626', path:['#b8aa92','#c8bca6'], water:['#141210','#1e1a16','#2c2620','#4a4036'], shadow:.7 },
+  moon:{ g:['#8a8892','#96949e','#a2a0aa','#aeacb6'], sp:[['#c8c6ce',.012],['#6a6872',.01]], tree:'round', leaf:['#6a6872','#7a7882','#8a8892','#9a98a2'], trunk:'#4a4852', path:['#c8ccd8','#dfe3ec'], water:['#05060f','#0b0e22','#141a36','#c8d4ff'], shadow:.62 },
+  saturn:{ g:['#d8b878','#e2c88c','#e8d2a0','#f0dfb4'], sp:[['#b8905a',.012],['#fff2d0',.012]], tree:'round', leaf:['#c8d8ee','#dceaf6','#a8c4e8','#ffffff'], trunk:'#6a6488', path:['#e8e6f6','#f4f2fc'], water:['#b8905a','#c8a060','#d8b878','#fff2d0'], shadow:.62 },
+  mars:{ g:['#b85a32','#c4683e','#d07648','#dc8654'], sp:[['#7a3220',.014],['#f0b088',.01]], tree:'round', leaf:['#5a2a1c','#7a3a22','#8a4a2a','#a8502e'], trunk:'#3a2420', path:['#e8b088','#f2c4a0'], water:['#2a0e08','#3a140c','#5a2010','#a8502e'], shadow:.62 },
   candy:{ g:['#eaa9c0','#f0b8cc','#f5c6d7','#f9d4e2'], sp:[['#ffffff',.012],['#ffd23f',.006]], tree:'round', leaf:['#c2306a','#e0488a','#ff6fa8','#ffa8cc'], trunk:'#f6f1ea', path:['#c98a5a','#d89c6c'], water:['#3a1c0c','#5a2e14','#7a4422','#a8683e'], shadow:.66 },
   harvest:{ g:['#8a7a3a','#9a8a44','#a8984e','#b5a65a'], sp:[['#d07a2a',.012],['#5a3818',.01]], tree:'round', leaf:['#7a2e10','#a8461a','#d06a22','#e8a03a'], trunk:'#3a2416', path:['#c4a46a','#d4b47a'], water:['#2e5a6e','#3a7088','#4f88a0','#c6dde6'], shadow:.6, fog:'#e8a03a' }
 };
@@ -353,6 +356,80 @@ WORLD.iceage=function(P,th,seed){
     P.set(X+1,Y+3,hex('#f4ead2')); P.set(X,Y+4,hex('#f4ead2')); P.rect(X+1,Y+4,X+2,Y+6,function(a,b){ P.set(a,b,hex('#5a3c22')); }); P.rect(X+4,Y+4,X+5,Y+6,function(a,b){ P.set(a,b,hex('#5a3c22')); }); }
   forest(P,th,function(x,y){ return x<P.vx0-4||x>P.vx1+4?.9:fbm(x*.04,y*.04,8)>.64?.6:.03; },seed+97,function(x,y){ return P.pathD(x,y)<7||tar(x,y)>-.05||gl(x,y)>-.2||P.clear(x,y,tk); },8,6);
   for(y=0;y<P.h;y++)for(x=0;x<P.w;x++)if(hash(x,y,seed+71)<.003)P.set(x,y,[255,255,255]);
+};
+WORLD.moon=function(P,th,seed){
+  var tk=[], x, y;
+  // grey regolith pocked with craters, the base's domes up top, the lander, and the launch pad with its rocket by the trail's end. No trees.
+  // the dark seas: broad smooth patches of darker ground, the way the moon looks from earth
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var mr=fbm(x*.025,y*.025,seed+31); if(mr>.58&&P.pathD(x,y)>=7)P.set(x,y,hex(mr>.66?'#6a6872':'#7a7882')); }
+  // the trail crosses massive craters: four big bowls sat on the path, the walk running down through each (the owner, 2026-11-01)
+  [.16,.4,.64,.87].forEach(function(f,i){ var yy=Math.round(P.h*f), px=P.pathX(yy); if(px==null)return; var R=16+hash(i,9,seed)*8, X=px+(hash(i,8,seed)-.5)*R*.6;
+    P.ell(X,yy,R*1.25,R,function(a,b,dx,dy){ var d=Math.hypot(dx,dy); P.set(a,b,hex(d>.84?(dx+dy<0?'#c8c6ce':'#6e6c76'):d>.62?(dx+dy<0?'#5e5c66':'#b6b4bc'):(hash(a,b,seed+5)<.06?'#6a6872':'#7e7c86'))); });
+    for(var q=0;q<10;q++){ var an=q/10*6.283+hash(i,q,seed)*.5, bx=X+Math.cos(an)*R*1.35, by=yy+Math.sin(an)*R*1.08; P.ell(bx+.6,by+1,1.5,.6,function(a,b){ P.shade(a,b,.55); }); P.ell(bx,by,1.3,1,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.3?'#c8c6ce':'#5e5c66')); }); } });
+  var cr=[]; for(var k=0;k<30;k++){ var r=2.5+hash(k,3,seed)*9, q=spot(P,P.w*(.08+.84*hash(k,1,seed)),P.h*hash(k,2,seed),r*2,r*2,4,tk); if(q)cr.push([q[0]+r,q[1]+r,r]); }
+  cr.forEach(function(c){ P.ell(c[0],c[1],c[2],c[2]*.8,function(a,b,dx,dy){ var d=Math.hypot(dx,dy); P.set(a,b,hex(d>.8?(dx+dy<0?'#6e6c76':'#c8c6ce'):(dx+dy<0?'#c0bec6':'#7e7c86'))); }); });
+  var dm=spot(P,P.w*.38,P.h*.06,26,12,9,tk); if(dm){ [[6,6,6],[18,5,5]].forEach(function(o){ P.ell(dm[0]+o[0]+1,dm[1]+o[1]+2,o[2],o[2]*.6,function(a,b){ P.shade(a,b,.6); });
+      P.ell(dm[0]+o[0],dm[1]+o[1],o[2],o[2]*.75,function(a,b,dx,dy){ P.set(a,b,hex(Math.abs(dy+.2)<.12?'#7fd8ff':dx+dy<-.2?'#ffffff':'#d8e0ec')); }); });
+    P.rect(dm[0]+11,dm[1]+5,dm[0]+14,dm[1]+7,function(a,b){ P.set(a,b,hex('#c8d0de')); }); }
+  var dm2=spot(P,P.w*.75,P.h*.62,16,10,9,tk); if(dm2){ P.ell(dm2[0]+7,dm2[1]+7,6,3.6,function(a,b){ P.shade(a,b,.6); }); P.ell(dm2[0]+6,dm2[1]+5,6,4.5,function(a,b,dx,dy){ P.set(a,b,hex(Math.abs(dy+.2)<.12?'#7fd8ff':dx+dy<-.2?'#ffffff':'#d8e0ec')); }); }
+  for(var bq=0;bq<26;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),3,3,5,tk); if(!bb)continue; P.ell(bb[0]+2,bb[1]+2.6,1.6,.7,function(a,b){ P.shade(a,b,.55); }); P.ell(bb[0]+1.5,bb[1]+1.5,1.4,1.1,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.3?'#c8c6ce':'#6a6872')); }); }
+  var ld=spot(P,P.w*.7,P.h*.4,8,8,8,tk); if(ld){ var X=ld[0],Y=ld[1]; P.ell(X+4,Y+6,4,1.4,function(a,b){ P.shade(a,b,.6); }); P.rect(X+1,Y+2,X+6,Y+5,function(a,b){ P.set(a,b,hex((a+b)%3?'#e0b040':'#b8862a')); });
+    P.rect(X+2,Y,X+5,Y+2,function(a,b){ P.set(a,b,hex('#eef0f4')); }); [[0,6],[7,6]].forEach(function(o){ P.set(X+o[0],Y+o[1],hex('#c8c8d0')); }); }
+  var lp=spot(P,P.w*.3,P.h*.82,12,14,9,tk); if(lp){ var lx=lp[0],ly=lp[1]; P.rect(lx,ly+10,lx+11,ly+13,function(a,b){ P.set(a,b,hex((a+b)%2?'#5a5e6a':'#4a4e5a')); });
+    P.rect(lx+4,ly+1,lx+6,ly+10,function(a,b){ P.set(a,b,hex(b<ly+3?'#e5483a':b===ly+6?'#1a1e2a':'#f4f6fa')); }); P.set(lx+5,ly,hex('#e5483a')); P.set(lx+3,ly+9,hex('#e5483a')); P.set(lx+7,ly+9,hex('#e5483a'));
+    P.rect(lx+9,ly+2,lx+9,ly+10,function(a,b){ P.set(a,b,hex('#8a7a5a')); }); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ if(P.pathD(x,y)<7)continue; var h=hash(x,y,seed+71); if(h<.004)P.set(x,y,hex('#5e5c66')); else if(h>.996)P.set(x,y,hex('#d8d6de')); }
+};
+WORLD.mars=function(P,th,seed){
+  var tk=[], x, y;
+  // rust plains swept into dune ripples, the canyon cut down one side, the white polar cap in a far corner, the colony's domes
+  // up top with the green of the greenhouse, the lander and rover by the trail, and Olympus Mons' caldera by the trail's end. No trees.
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ if(P.pathD(x,y)<7)continue; var t=Math.sin(x*.32+y*.14+Math.sin(y*.05)*2); if(t>.82)P.set(x,y,hex('#e09060')); else if(t<-.9)P.set(x,y,hex('#a04a28')); }
+  // the canyon: a long dark gash down the right, banded walls either side
+  var cnx=function(y){ return P.vx0+(P.vx1-P.vx0)*.86+Math.sin(y*.03)*6; };
+  for(y=0;y<P.h;y++){ var cx=cnx(y); for(x=Math.floor(cx-9);x<=cx+9;x++){ if(x<0||x>=P.w||P.pathD(x,y)<7)continue; var d=Math.abs(x-cx); P.set(x,y,hex(d<3.5?'#2a0e08':d<5?'#5a2010':d<7?(x<cx?'#e0905a':'#7a3220'):'#a8502e')); } }
+  // the polar cap: a white sheet in the top left corner, its edge broken
+  for(y=0;y<P.h*.22;y++)for(x=0;x<P.w*.3;x++){ var e=(x/(P.w*.3))+(y/(P.h*.22))+(fbm(x*.15,y*.15,seed+41)-.5)*.5; if(e<.9&&P.pathD(x,y)>=7)P.set(x,y,hex(e<.7?'#f6f9fc':'#d8e6f0')); }
+  // craters, a few
+  for(var k=0;k<14;k++){ var r=2+hash(k,3,seed)*6, q=spot(P,P.w*(.1+.7*hash(k,1,seed)),P.h*hash(k,2,seed),r*2,r*2,4,tk); if(!q)continue;
+    P.ell(q[0]+r,q[1]+r,r,r*.8,function(a,b,dx,dy){ var d=Math.hypot(dx,dy); P.set(a,b,hex(d>.8?(dx+dy<0?'#7a3220':'#e8a070'):(dx+dy<0?'#d88a5a':'#a04a28'))); }); }
+  // the colony: two white domes and the greenhouse
+  var dm=spot(P,P.w*.42,P.h*.05,28,12,9,tk); if(dm){ [[6,6,6,0],[18,5,5,0],[26,7,4,1]].forEach(function(o){ P.ell(dm[0]+o[0]+1,dm[1]+o[1]+2,o[2],o[2]*.6,function(a,b){ P.shade(a,b,.6); });
+      P.ell(dm[0]+o[0],dm[1]+o[1],o[2],o[2]*.75,function(a,b,dx,dy){ P.set(a,b,hex(o[3]?(dx+dy<-.3?'#d8ffd8':'#3fae4a'):Math.abs(dy+.2)<.12?'#ffc890':dx+dy<-.2?'#ffffff':'#e8e0d4')); }); }); }
+  // the lander and the rover
+  var ld=spot(P,P.w*.66,P.h*.35,8,8,8,tk); if(ld){ var X=ld[0],Y=ld[1]; P.ell(X+4,Y+6,4,1.4,function(a,b){ P.shade(a,b,.6); }); P.rect(X+1,Y+2,X+6,Y+5,function(a,b){ P.set(a,b,hex((a+b)%3?'#e0b040':'#b8862a')); });
+    P.rect(X+2,Y,X+5,Y+2,function(a,b){ P.set(a,b,hex('#eef0f4')); }); [[0,6],[7,6]].forEach(function(o){ P.set(X+o[0],Y+o[1],hex('#c8c8d0')); }); }
+  var rv=spot(P,P.w*.3,P.h*.5,7,5,8,tk); if(rv){ P.ell(rv[0]+3.5,rv[1]+5,3.4,1,function(a,b){ P.shade(a,b,.55); }); P.rect(rv[0],rv[1]+1,rv[0]+6,rv[1]+3,function(a,b){ P.set(a,b,hex(b===rv[1]+1?'#1e2a4a':'#eeeef2')); });
+    [0,3,6].forEach(function(o){ P.set(rv[0]+o,rv[1]+4,hex('#2a2a30')); }); P.set(rv[0]+5,rv[1],hex('#c8c8d0')); }
+  // Olympus Mons near the trail's end: a broad cone, its caldera dark at the top
+  var om=spot(P,P.w*.2,P.h*.8,26,18,9,tk); if(om){ var ox=om[0]+13, oy=om[1]+10;
+    P.ell(ox,oy,13,9,function(a,b,dx,dy){ var d=Math.hypot(dx,dy); P.set(a,b,hex(d<.22?'#5a2010':d<.3?'#e8c8a8':dx+dy<0?'#d88a5a':'#9a4a28')); }); }
+  for(var bq=0;bq<22;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),3,3,5,tk); if(!bb)continue; P.ell(bb[0]+2,bb[1]+2.6,1.6,.7,function(a,b){ P.shade(a,b,.55); }); P.ell(bb[0]+1.5,bb[1]+1.5,1.4,1.1,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.3?'#8a4a32':'#3a2420')); }); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ if(P.pathD(x,y)<7)continue; var h=hash(x,y,seed+71); if(h<.004)P.set(x,y,hex('#5a2a1c')); else if(h>.996)P.set(x,y,hex('#f0b088')); }
+};
+WORLD.saturn=function(P,th,seed){
+  var tk=[], x, y;
+  // far below, Saturn's cloud tops in bands of gold and cream, curled by the wind; the walk runs along decks of lavender ring
+  // ice laid over them, chunks of ring ice drifting all round, the ring station up top, and the hexagon storm by the trail's end. No trees.
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var b=Math.sin(y*.11+Math.sin(x*.035)*1.6+fbm(x*.03,y*.03,seed+3)*3);
+    P.set(x,y,hex(b>.62?'#f0dfb4':b>.1?'#e2c88c':b>-.5?'#d8b878':'#c8a060')); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ var pd=P.pathD(x,y), e=11+fbm(x*.06,y*.06,seed+9)*6; if(pd<e)P.set(x,y,hex(pd>e-1.2?'#ffffff':((x>>3)+(y>>3))%2?'#a8a2d8':'#9a94cc')); else if(pd<e+1.5)P.shade(x,y,.6); }
+  // the hexagon: a six sided band in the clouds near the trail's end, its eye dark
+  var hx=spot(P,P.w*.72,P.h*.84,30,26,6,tk); if(hx){ var cx=hx[0]+15, cy=hx[1]+13;
+    for(y=hx[1];y<hx[1]+26;y++)for(x=hx[0];x<hx[0]+30;x++){ var dx=x-cx, dy=(y-cy)*1.15, a=Math.atan2(dy,dx), r=Math.hypot(dx,dy), R0=11/Math.cos(((a%(Math.PI/3))+Math.PI/3)%(Math.PI/3)-Math.PI/6);
+      if(Math.abs(r-R0)<1.4)P.set(x,y,hex('#fff2d0')); else if(Math.abs(r-R0-1.8)<.8)P.set(x,y,hex('#8a5a2a')); else if(r<3)P.set(x,y,hex('#8a5a2a')); } }
+  // the ring station up top: modules in a row, a mast with its dish
+  var st=spot(P,P.w*.4,P.h*.05,30,10,9,tk); if(st){ [0,9,18].forEach(function(o,i){ P.ell(st[0]+o+4,st[1]+7,4.4,1.2,function(a,b){ P.shade(a,b,.6); });
+      P.rect(st[0]+o,st[1]+3,st[0]+o+7,st[1]+6,function(a,b){ P.set(a,b,hex(a===st[0]+o+3?'#ffd34d':b===st[1]+3?'#ffffff':'#d8dcec')); }); P.set(st[0]+o+2,st[1]+4,hex('#9fd8ff')); P.set(st[0]+o+5,st[1]+4,hex('#9fd8ff')); });
+    P.rect(st[0]+26,st[1],st[0]+26,st[1]+6,function(a,b){ P.set(a,b,hex('#c8cce0')); }); P.ell(st[0]+26,st[1],2.4,1,function(a,b){ P.set(a,b,hex('#eef0f8')); }); P.set(st[0]+26,st[1]-1,hex('#ff5577')); }
+  // the Cassini probe and the Titan lander by the walk
+  var pr=spot(P,P.w*.25,P.h*.4,8,8,8,tk); if(pr){ P.ell(pr[0]+4,pr[1]+7,3.6,1.1,function(a,b){ P.shade(a,b,.6); }); P.rect(pr[0]+3,pr[1]+3,pr[0]+5,pr[1]+6,function(a,b){ P.set(a,b,hex((a+b)%2?'#e0b040':'#b8862a')); });
+    P.ell(pr[0]+4,pr[1]+2,3.4,1.2,function(a,b){ P.set(a,b,hex('#f4f6fa')); }); }
+  var ln=spot(P,P.w*.66,P.h*.45,8,6,8,tk); if(ln){ P.ell(ln[0]+4,ln[1]+4,3.6,1.6,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.2?'#e0b040':'#c8962a')); }); P.rect(ln[0]+3,ln[1]+2,ln[0]+5,ln[1]+3,function(a,b){ P.set(a,b,hex('#eef0f4')); }); }
+  // chunks of ring ice drifting over the clouds, each with its shadow
+  for(var bq=0;bq<40;bq++){ var bb=spot(P,P.w*hash(bq,5,seed),P.h*hash(bq,6,seed),4,4,5,tk); if(!bb)continue; var rs=1+hash(bq,7,seed)*1.4;
+    P.ell(bb[0]+2.6,bb[1]+3.4,rs*1.2,rs*.5,function(a,b){ P.shade(a,b,.6); }); P.ell(bb[0]+2,bb[1]+2,rs,rs*.8,function(a,b,dx,dy){ P.set(a,b,hex(dx+dy<-.3?'#ffffff':dx+dy>.4?'#a8c4e8':'#dceaf6')); }); }
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++){ if(P.pathD(x,y)<7)continue; var h=hash(x,y,seed+71); if(h<.003)P.set(x,y,hex('#ffffff')); }
 };
 WORLD.candy=function(P,th,seed){
   var tk=[], x, y;

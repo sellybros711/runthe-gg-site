@@ -415,6 +415,75 @@ def catcher_at(feed, side, ab_index, inning=None, half=None):
     return cur, next((p['person']['fullName'] for p in bx.values() if p['person']['id'] == cur), None)
 
 
+def runner_entry(rid, name, season, h, sp, sprior, lgRate, lgP):
+    """One runner: his attempts per time on first and his success, shrunk toward what his sprint
+    speed predicts (SB and CS alone before 2015)."""
+    s = h.get(rid)
+    speed = sp.get(rid)
+    m0 = math.exp(sprior['att'] * (speed - sprior['mean'])) if speed else 1.0
+    z0 = sprior['z'] * (speed - sprior['mean']) if speed else 0.0
+    r0, p0 = lgRate * m0, N01.cdf(probit(lgP) + z0)
+    A = (s['stolenBases'] + s['caughtStealing']) if s else 0
+    O = first_base_times(s) if s else 0
+    SB = s['stolenBases'] if s else 0
+    rate = (A + K_ATT) / (O + K_ATT / r0)
+    p = (SB + K_SUC * p0) / (A + K_SUC)
+    return {'name': name, 'att': round(rate / lgRate, 3), 'z': round(probit(p) - probit(lgP), 3),
+            'sb': int(SB), 'cs': int(A - SB), 'firstBase': int(O), 'speed': speed,
+            'src': 'SB, CS and sprint speed' if speed else 'SB and CS (no sprint speed before 2015)' if season < 2015 else 'SB and CS'}
+
+
+def catcher_entry(cid, cname, cf, pop, lgP):
+    """The catcher on the field: stolen bases and caught stealing against him, and his pop time."""
+    c = cf.get(cid)
+    if c:
+        A = c.get('stolenBases', 0) + c.get('caughtStealing', 0)
+        cp = (c.get('stolenBases', 0) + K_SUC * lgP) / (A + K_SUC)
+        return {'id': cid, 'name': cname, 'z': round(probit(cp) - probit(lgP), 3), 'sb': int(c.get('stolenBases', 0)),
+                'cs': int(c.get('caughtStealing', 0)), 'pop': pop.get(cid)}
+    return {'id': cid, 'name': cname, 'z': 0.0, 'pop': pop.get(cid)}
+
+
+def halves_main(ids):
+    """Rules 8 (halves.py): for a spot with more than one half, the running game of its later
+    halves, into data/steals.json beside what main() wrote: a runner for every batter in the pack
+    who has none, and the catcher on the field when each later half began (halves[h], h >= 1)."""
+    from common import read_json
+    from statsapi import feed as gfeed
+    GAME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(DATA, 'steals.json')
+    allj = read_json(path)
+    specs = {x['id']: x for x in read_json(os.path.join(GAME, 'scenarios', 'scenarios.json'))['scenarios']}
+    for sid in ids:
+        spec = specs[sid]
+        v = read_json(os.path.join(DATA, 'verify', spec['verify'] + '.json'))
+        pack = read_json(os.path.join(DATA, 'packs', sid + '.json'))
+        sc = allj['scenarios'][sid]
+        season = sc['season']
+        S = allj['sample'][sc['era']]
+        lg = league(season)
+        h, cf = stats(season, 'hitting'), stats(season, 'fielding', 'C')
+        sp = leaderboard('sprint', season) if season >= 2015 else {}
+        pop = leaderboard('pop', season) if season >= 2016 else {}
+        import retro
+        for b in pack['scenario']['batters']:
+            bid = str(b['id'])
+            if bid in sc['runners']:
+                continue
+            mid = int(bid) if bid.isdigit() else retro.retro_to_mlbam({bid[6:]}).get(bid[6:]) if bid.startswith('retro:') else None
+            sc['runners'][bid] = runner_entry(int(mid), b['name'], season, h, sp, S['speed'], lg['attRate'], lg['sbPct']) if mid else {
+                'name': b['name'], 'att': 1.0, 'z': 0.0, 'speed': None, 'src': 'no MLBAM id: the league runner'}
+        f = gfeed(v.get('gamePk') or scenario_facts(spec, v)[0])
+        side = 'home' if v['situation']['usHome'] else 'away'
+        out = []
+        for hv in v['halves'][1:]:
+            cid, cname = catcher_at(f, side, None, hv['inning'], hv['half'])
+            out.append({'catcher': catcher_entry(cid, cname, cf, pop, lg['sbPct'])})
+        sc['halves'] = out
+        log(f'{sid}: runners {len(sc["runners"])}, later halves\' catchers ' + ', '.join(x['catcher']['name'] or '?' for x in out))
+    write_json(path, allj)
+
+
 def scenario_facts(spec, v):
     from statsapi import feed as gfeed
     pk = v.get('gamePk')
@@ -442,8 +511,17 @@ def main():
     a = sys.argv[1:]
     seasons = [int(x) for x in (a[a.index('--seasons') + 1] if '--seasons' in a else '2022,2024').split(',')]
     threads = int(a[a.index('--threads') + 1]) if '--threads' in a else 6
-    sample = {}
-    for se in seasons:
+    # --spots-only: keep the measured league sample (every game feed of its seasons) and the pop
+    # time slope from data/steals.json, and add only the spots it does not have yet: their people,
+    # catcher and runners. The spots already in it are kept as they are.
+    spots_only = '--spots-only' in a
+    prev = read_json(os.path.join(DATA, 'steals.json')) if spots_only else None
+    if spots_only and not prev:
+        raise SystemExit('--spots-only needs data/steals.json')
+    sample = dict(prev['sample']) if spots_only else {}
+    if spots_only:
+        seasons = [int(x) for x in sample]
+    for se in ([] if spots_only else seasons):
         ln = season_lines(se, threads)
         m = measure(ln)
         m['league'] = league(se)
@@ -454,8 +532,10 @@ def main():
             f'3rd {m["success"]["3"]} of {m["sucN"]["3"]}; pickoff {m["pickoff"]}')
     GAME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     specs = read_json(os.path.join(GAME, 'scenarios', 'scenarios.json'))['scenarios']
-    scen = {}
+    scen = dict(prev['scenarios']) if spots_only else {}
     for spec in specs:
+        if spots_only and spec['id'] in scen:
+            continue
         v = read_json(os.path.join(DATA, 'verify', spec['verify'] + '.json'))
         pack = read_json(os.path.join(DATA, 'packs', spec['id'] + '.json'))
         season = pack['scenario']['pitcher']['year']
@@ -471,19 +551,7 @@ def main():
         lgRate, lgP = lg['attRate'], lg['sbPct']
 
         def runner(rid, name):
-            s = h.get(rid)
-            speed = sp.get(rid)
-            m0 = math.exp(sprior['att'] * (speed - sprior['mean'])) if speed else 1.0
-            z0 = sprior['z'] * (speed - sprior['mean']) if speed else 0.0
-            r0, p0 = lgRate * m0, N01.cdf(probit(lgP) + z0)
-            A = (s['stolenBases'] + s['caughtStealing']) if s else 0
-            O = first_base_times(s) if s else 0
-            SB = s['stolenBases'] if s else 0
-            rate = (A + K_ATT) / (O + K_ATT / r0)
-            p = (SB + K_SUC * p0) / (A + K_SUC)
-            return {'name': name, 'att': round(rate / lgRate, 3), 'z': round(probit(p) - probit(lgP), 3),
-                    'sb': int(SB), 'cs': int(A - SB), 'firstBase': int(O), 'speed': speed,
-                    'src': 'SB, CS and sprint speed' if speed else 'SB and CS (no sprint speed before 2015)' if season < 2015 else 'SB and CS'}
+            return runner_entry(rid, name, season, h, sp, sprior, lgRate, lgP)
 
         runners = {}
         retro = {'retro:' + str(pa.get('batterId')): pa.get('mlbamId') for pa in v['plateAppearances'] if pa.get('mlbamId')}
@@ -504,14 +572,7 @@ def main():
                        'sb': int(p['stolenBases']), 'cs': int(p['caughtStealing']), 'pickoffs': int(p.get('pickoffs', 0))}
         else:
             pitcher = {'id': pid, 'att': 1.0, 'z': 0.0}
-        c = cf.get(cid)
-        if c:
-            A = c.get('stolenBases', 0) + c.get('caughtStealing', 0)
-            cp = (c.get('stolenBases', 0) + K_SUC * lgP) / (A + K_SUC)
-            catcher = {'id': cid, 'name': cname, 'z': round(probit(cp) - probit(lgP), 3), 'sb': int(c.get('stolenBases', 0)),
-                       'cs': int(c.get('caughtStealing', 0)), 'pop': pop.get(cid)}
-        else:
-            catcher = {'id': cid, 'name': cname, 'z': 0.0, 'pop': pop.get(cid)}
+        catcher = catcher_entry(cid, cname, cf, pop, lgP)
         scen[spec['id']] = {
             'season': season, 'era': era, 'gamePk': pk,
             'eraAtt': round(lg['attRate'] / lgS['attRate'], 3), 'eraZ': round(probit(lg['sbPct']) - probit(lgS['sbPct']), 3),
@@ -520,7 +581,7 @@ def main():
             'start': {str(b): r['id'] for b, r in start.items()},
         }
         log(f'{spec["id"]}: catcher {cname} z {catcher["z"]}, pitcher z {pitcher["z"]} att {pitcher["att"]}, era att x{scen[spec["id"]]["eraAtt"]} z {scen[spec["id"]]["eraZ"]}')
-    zps = z_per_second()
+    zps = prev['zPerSecond'] if spots_only else z_per_second()
     log(f'pop time: {zps}')
     write_json(os.path.join(DATA, 'steals.json'), {
         'zPerSecond': zps,
@@ -531,4 +592,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if '--halves' in sys.argv:
+        halves_main([x for x in sys.argv[1:] if not x.startswith('--')])
+    else:
+        main()

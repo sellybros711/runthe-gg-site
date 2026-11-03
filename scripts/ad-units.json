@@ -319,12 +319,9 @@
       "slot": "8869997198",
       "status": "live",
       "where": [
-        "arcade/career/index.html",
-        "arcade/crossword/index.html",
-        "arcade/sportegories/index.html",
-        "arcade/almamater/index.html"
+        "arcade/"
       ],
-      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. The four free puzzles, on the result"
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Every Arcade game page, play included (the owner, 2026-10-29)"
     },
     "college-season": {
       "slot": "3062302592",
@@ -413,6 +410,62 @@
         "golf/index.html"
       ],
       "size": "160x600, desktop, pinned beside the leaderboard overlays where they leave 150px"
+    },
+    "college-fantasy": {
+      "slot": "2167680443",
+      "status": "live",
+      "where": [
+        "cfb/fantasy/index.html"
+      ],
+      "size": "300x250"
+    },
+    "college-fantasy-sticky": {
+      "slot": "9854598778",
+      "status": "live",
+      "where": [
+        "cfb/fantasy/index.html"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Home, entry, live"
+    },
+    "college-fantasy-board-left": {
+      "slot": "5646714276",
+      "status": "live",
+      "where": [
+        "cfb/fantasy/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The standings tab"
+    },
+    "college-fantasy-board-right": {
+      "slot": "7416584800",
+      "status": "live",
+      "where": [
+        "cfb/fantasy/index.html"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. The standings tab"
+    },
+    "shut-the-door-sticky": {
+      "slot": "2811195197",
+      "status": "live",
+      "where": [
+        "shut-the-door/ads.js"
+      ],
+      "size": "300x50 pinned to the bottom, with an X that closes it for the visit. Home, result, board, Survivor; never the mound or the tap-to-skip moments"
+    },
+    "shut-the-door-rail-left": {
+      "slot": "4451579924",
+      "status": "live",
+      "where": [
+        "shut-the-door/ads.js"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. Home, result, board, Survivor"
+    },
+    "shut-the-door-rail-right": {
+      "slot": "7871950188",
+      "status": "live",
+      "where": [
+        "shut-the-door/ads.js"
+      ],
+      "size": "160x600, desktop, only where the window leaves 150px beside the column, scrolls with the page. Home, result, board, Survivor"
     }
   },
   "retired": {
